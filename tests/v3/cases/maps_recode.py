@@ -4591,3 +4591,38 @@ def d141(c):
             c.ok(a > 0, f'{a} airway strokes during and after a move at zoom {z}', 'the airways are drawn while moving')
         else:
             c.eq(a, 0, f'no airway stroke while moving at zoom {z}', what='airway strokes')
+
+
+def _long_flight():
+    """KDEN → LEMO through the Atlantic (4 392 NM, the user's capture 101525): five points, level 350."""
+    f = flight()
+    pts = [('KDEN', 39.86, -104.67), ('CYMT', 50.2, -66.0), ('CYAY', 51.4, -56.1), ('4724N03258W', 47.4, -32.97), ('LEMO', 37.17, -5.62)]
+    f['route'] = {'text': ' '.join(p[0] for p in pts), 'dep': 'KDEN', 'arr': 'LEMO', 'points': [{'id': i, 'lat': la, 'lon': lo} for i, la, lo in pts]}
+    f['level'] = {'ft': 35000}
+    return f
+
+
+_MARKS_JS = """() => { const S = window.__mp.S, m = window.__mpMap, r = S.box.getBoundingClientRect(), inV = (S.marks || []).filter(k => { const p = m.project([k.lon, k.lat]); return p.x >= 0 && p.x <= r.width && p.y >= 0 && p.y <= r.height });
+  return { step: S.marksStep, visible: inV.length, nm: inV.map(k => k.nm), ticks: (S.geo?.ticks || []).map(t => t.nm) } }"""
+
+
+@case('D142', 'Distance marks have a round step that follows the length and the zoom (5, 10, 25, 50, 100, 250, 500 NM…), never more than a dozen on the screen, on the map and on the profile’s axis', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0177 (capture 101525, KDEN → LEMO 4 392 NM): the profile’s bottom axis was a band of unreadable markers every 50 NM and the map’s points were dense too; a round step chosen from the visible length (map: the route inside the view; profile: the window), 40 px at least between two, a dozen at most')
+def d142(c):
+    c.open('maps', docs=fdocs(_long_flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.prof && !!window.__mp.S.geo", timeout=15000, what='the profile is drawn')
+    c.wait(1500)
+    r = c.js(_MARKS_JS)
+    c.ok(0 < len(r['ticks']) <= 12 and all(n % 250 == 0 for n in r['ticks']), str(r), 'the profile’s axis: a dozen at most, round (a multiple of 250 NM) on 4 392 NM')
+    c.ok(r['visible'] <= 12 and r['step'] >= 250, str(r), 'the map: a dozen marks at most on the whole route in view, at a round step')
+    # closer: the step follows the zoom
+    wide = r['step']
+    c.js("() => { window.__mpMap.jumpTo({ center: [-60, 50.5], zoom: 5 }); return true }")
+    c.wait(1800)
+    r2 = c.js(_MARKS_JS)
+    c.ok(r2['visible'] <= 12 and r2['step'] < wide, str(r2), f'closer (the step was {wide} NM): a smaller round step, still a dozen at most')
+    c.ok(all(n % r2['step'] == 0 for n in r2['nm']), str(r2), 'the marks are multiples of the step')

@@ -158,6 +158,28 @@ export function moving() {
   }
   tick('move');
 }
+/** Les marques NM de la route au pas rond de ce qui est visible (SOG-0177) : 5, 10, 25, 50, 100, 250, 500, 1 000, 2 500 NM, le plus petit qui laisse
+ *  au plus une douzaine de marques sur la part de la route dans la vue ; refaites seulement quand le pas change. */
+function viewMarks(box) {
+  const pts = S.marksPts;
+  if (!pts || pts.length < 2) return S.marks || [];
+  const d = MapsRender.distances(pts),
+    mw = (box.e - box.w) * .1,
+    mh = (box.n - box.s) * .1;
+  let vis = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const la = (pts[i - 1].lat + pts[i].lat) / 2,
+      lo = (pts[i - 1].lon + pts[i].lon) / 2;
+    if (la >= box.s - mh && la <= box.n + mh && lo >= box.w - mw && lo <= box.e + mw) vis += d[i] - d[i - 1];
+  }
+  const step = [5, 10, 25, 50, 100, 250, 500, 1000, 2500].find(s => vis / s <= 12) || 5000;
+  if (S.marksStep !== step || S.marksFor !== pts) {
+    S.marks = MapsRender.marks(pts, step);
+    S.marksStep = step;
+    S.marksFor = pts;
+  }
+  return S.marks;
+}
 /** Le dessin léger (light.js) à la vue de la carte, gardé comme image à recopier jusqu'au suivant ; les chemins refaits seulement
  *  quand les listes du dernier dessin complet ont changé (mesure à part : maps:light:paths). */
 function light() {
@@ -643,7 +665,7 @@ function draw() {
       id: '',
       name: ''
     } : p) : route, pxDeg),
-    marks: S.marks,
+    marks: viewMarks(shown),
     theme: S.theme,
     level,
     detail: mission ? 0 : detailShift(),

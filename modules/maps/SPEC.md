@@ -88,7 +88,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - `selectAirspaces(list, profile, route)`: kept by family, floor and ceiling (`SiaAero.limitFt`) and the white or
   black list, then by the corridor (a route sample inside the airspace, or an edge within `corridorNm`).
 - `bboxOf(points, marginNm)`, `distances(points)` (great circle, NM), `marks(points, stepNm)` (every 10 NM, every 50 NM
-  beyond 150 NM), `mercator(bbox, W, H, pad)` → `{ toC, shown }`.
+  beyond 150 NM by default; **the Map gives a round step chosen at each drawing from the route inside the view**: 5, 10, 25, 50, 100, 250, 500, 1 000, 2 500 NM, the smallest that leaves a
+  dozen marks at most (`viewMarks`, SOG-0177), the profile's axis the same from its window with 40 px at least between two; noreg D142), `mercator(bbox, W, H, pad)` → `{ toC, shown }`.
 - `drawBackground(ctx, toC, W, H, rings)`: sea, land, borders.
 - `draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, hideVrp, zoom, lines, reserve })`, where `lines` are the
   polylines of the route's points that the route itself traces (null: all of them; § 5, Procedures) and `reserve(placer)` is

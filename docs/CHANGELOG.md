@@ -22,6 +22,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Data: taking the downloaded file builds the zones taken by itself; the messages name only buttons that exist (static case)** (`modules/data/follow.js`, `panels.js`, `texts.js`; Data DECISIONS; L62, L19, L28) — SOG-0180 lot 1: « Lancez maintenant Construire » and the « personnel » box are gone from the messages.
 
+- **Map and profile: distance marks at a round step** (`modules/maps/draw.js`, `profile_view.js`, `data.js`, `mission_view.js`; SPEC § 2.1, DECISIONS; noreg D142; SOG-0177). The step
+  follows the length and the zoom (5, 10, 25, 50, 100, 250, 500 NM…), a dozen marks at most on the screen, on the map and on the profile's axis (a 4 392 NM route had 87).
+
 - **Map: panning at a wide zoom no longer makes the low airways appear** (`modules/maps/render.js`; SPEC § 4.2, DECISIONS; noreg D141; SOG-0173). The light drawing of a
   gesture painted every loaded airway, not those the full drawing's zoom thresholds had kept: it now draws the same airways, during, after and outside a gesture.
 

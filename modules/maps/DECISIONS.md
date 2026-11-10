@@ -2268,6 +2268,16 @@ the Map had seen in between: the same line to within the frame's own sampling.
   label before the reading (it is chosen by the route's middle, after the route is known).
 - **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
 
+## Distance marks at a round step that follows the length and the zoom (10 Nov 2026, SOG-0177; capture 101525, KDEN → LEMO 4 392 NM)
+
+- **Seen**: on the profile the bottom axis was a band of unreadable markers every 50 NM (87 of them), and on the map the points were as dense.
+- **Done**: the map's marks are redone at each drawing from the part of the route inside the view (`viewMarks`): the smallest of 5 / 10 / 25 / 50 / 100 / 250 / 500 /
+  1 000 / 2 500 NM that leaves a dozen at most (cached until the step changes); the profile's axis uses `nmTicks` on its window (or the whole route) with the same bound and
+  40 px between two (steps extended with 250, 1 000, 2 500). The two no longer share `S.marks` (the profile took the map's marks when not zoomed).
+- **Not done**: the marks of the legend line and the route's points are untouched; a mission map's marks follow the same rule.
+- **Noreg** D142 (4 392 NM: the axis has a dozen round ticks at most, multiples of 250; the map shows a dozen at most at the whole-route view, and at a closer zoom a smaller
+  round step; red before: 87 marks).
+
 ## The light drawing of a gesture draws what the rest draws (10 Nov 2026, SOG-0173; capture 095804)
 
 - **Seen**: at a pronounced zoom-out, panning the map made a crowd of low airways (FR, UK, DE) appear, which the map at rest does not show.

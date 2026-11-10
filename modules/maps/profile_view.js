@@ -69,7 +69,9 @@ import {
 /** Repères de distance d'une fenêtre : un pas rond (1, 2, 5, 10, 20, 25, 50, 100, 200, 500 NM), deux repères à 40 px au
  *  moins (SPEC § 8.5). */
 function nmTicks(from, to, plotW) {
-  const step = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500].find(n => plotW * n / Math.max(1e-9, to - from) >= 40) || 500,
+  // un pas rond (1, 2, 5, 10, 20, 25, 50, 100, 250, 500, 1 000, 2 500 NM) : au moins 40 px entre deux repères, jamais plus d'une douzaine dans la fenêtre (SOG-0177)
+  const step = [1, 2, 5, 10, 20, 25, 50, 100, 250, 500, 1000, 2500].find(n => plotW * n / Math.max(1e-9, to - from) >= 40 && (to - from) /
+      n <= 12) || 5000,
     out = [];
   for (let nm = Math.ceil(from / step) * step; nm <= to + 1e-9; nm += step)
     if (nm > 0) out.push({
@@ -242,8 +244,9 @@ function paintProfile(ctx, pl, W, H) {
   // marques NM (celles de la carte) ; dans une fenêtre, des repères au pas rond de ce qui est visible
   const yb = g.H - g.padB,
     inX = x => x >= g.padL - .5 && x <= g.W - g.padR + .5,
-    ticks = g.ticks = (g.zoomed ? nmTicks(g.w0 / FT_NM, g.w1 / FT_NM, g.W - g.padL - g.padR) : S.marks || []).filter(m => inX(MapsProfile
-      .xOf(g, m.nm * FT_NM)));
+    ticks = g.ticks = nmTicks(g.zoomed ? g.w0 / FT_NM : 0, g.zoomed ? g.w1 / FT_NM : S.prof.total / FT_NM, g.W - g.padL - g.padR).filter(
+      m => inX(MapsProfile
+        .xOf(g, m.nm * FT_NM)));
   ctx.save();
   ctx.strokeStyle = '#8e24aa';
   ctx.fillStyle = '#8e24aa';

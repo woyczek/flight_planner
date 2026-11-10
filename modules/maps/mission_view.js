@@ -175,6 +175,7 @@ export async function applyMission() {
     e: 10,
     n: 51.5
   };
+  S.marksPts = shown;
   S.marks = shown.length > 1 ? MapsRender.marks(shown) : [];
   S.data = null;
   S.cursor = null;

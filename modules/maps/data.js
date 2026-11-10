@@ -118,7 +118,8 @@ export function buildPath() {
     path = expandedPath(f, S.procs || {});
   S.route.path = unwrapLons(path);
   S.route.flown = unwrapLons(flownPath(path));
-  S.marks = MapsRender.marks(flownPts());
+  S.marksPts = flownPts(); // les marques NM sont refaites au dessin, au pas rond de ce qui est visible (viewMarks)
+  S.marks = MapsRender.marks(S.marksPts);
 }
 /** Vrai si le vol a une piste ou une procédure choisie (route.procedures v2, côtés vérifiés). */
 const isChosen = f => {
