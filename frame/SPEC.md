@@ -806,6 +806,10 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   The same fact is a **cartouche in the header** beside the sync button (`#fStale`: square corners, white on the design's alert red `--sog-err`, contrast AA,
   « Old version · Reload ×4 »), shown only when the page is older than the launcher or, on a device without launcher, when the next version is ready (a
   tap reloads, or takes it); `hidden` otherwise: nothing reserved, the header keeps its height (not a banner: it would push the screen, § 7.1 rule 22; A118).
+  It is **a cell of the header of its own**, never on a neighbour (10 Nov, the user's refusal: « le cartouche rouge est mal placé, le texte déborde »): one line, square,
+  white on the dark red, and when the room is short `fitStale` shrinks it by steps — « Version ancienne · Recharger », « Recharger », a square dot — the first step
+  where no rectangle of the header cuts another, no neighbour's text is cut (the application's name included) and the header does not overflow; the whole label stays in
+  `aria-label`, the sentence in the tooltip (A122: a long sync state, 390, 768, 1280, 250).
 - **The new version said until it is taken**: the note says the flight in progress and the pending writes are kept; set
   aside (✕), it comes back at the next calm moment — a module change, the app back to the front — at most every 5
   minutes; the Status block carries « New version available · Reload » (badge of the ⚙) meanwhile. Never an automatic

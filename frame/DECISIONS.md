@@ -2714,3 +2714,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   OpenFreeMap vector style and tiles load, choosing the satellite shows the line instead of a silent empty background. The satellite tiles stay blocked (a decision
   for the user, option (a): a per-page policy). Noreg A116 (the original keeps its four hosts; the page opened has only the tiles' two; with nothing outside reachable
   the page has `maplibregl` and `jsyaml`, lists the sites and its YAML export produces `pelicandromes_positions.yaml`; the line appears), red with the CDN version.
+- **10 Nov 2026 — The cartouche in its own cell, shrinking by steps** (SOG-0168 refused by the user at 10 h 42: « le cartouche rouge est mal placé, le texte déborde largement »;
+  the capture: the cartouche and the sync button on one another; Simplification; V3 Frame). **Causes found:** (1) the cartouche matched the header rule for icon-only buttons
+  (`.f-head button:not(.f-sync)…`: `width: 44px; padding: 0`) so a 190 px text lived in a 44 px box and spilled over the neighbours; I measured the height and the contrast but
+  not the width, and A118 did not look at the neighbours. (2) Two sizes of the same text: on a phone it had also `white-space: normal` at 7.6 em. **Change:** the cartouche is
+  excluded from that rule (`:not(.f-stale)`), is a `flex: 0 0 auto` cell, always one line; `fitStale` (`app.js`) tries three steps and keeps the first where no rectangle of
+  the header cuts another, the header does not overflow, the sync button and every other neighbour show all their text and the application's name is whole: the label,
+  « Recharger » (`T.info.staleShort`), a 16 px square dot; the label stays in `aria-label` at every step and the sentence in the tooltip; refit at each paint of the
+  sync state and on resize. No `overflow: hidden` (it would cut the 44 px touch area). **Captures** (A122 writes them): `tests/v3/shots/A122_header_390.png` (« Recharger », the
+  name whole), `_768.png` and `_1280.png` (the whole label beside « Hors ligne · 11 en attente »). Noreg A122 (at 390, 768, 1280 and 250: the longest sync state, no overlap, no
+  neighbour cut, the name whole, square, white, one line, the label in aria-label, a narrow header takes a shorter step), red on f68db9ceb's cartouche; A118 accepts the steps.

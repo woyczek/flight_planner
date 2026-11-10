@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the « Old version » cartouche has its own cell and shrinks by steps** (`frame/frame.css`, `frame/app.js`; frame SPEC § 3.6, DECISIONS; noreg A122, A118;
+  SOG-0168, the user's refusal). It no longer spills over the sync button or the application name: one line, and when the room is short « Version ancienne · Recharger »
+  → « Recharger » → a square dot (the label in `aria-label`); checked with a long sync state at 390, 768 and 1280.
+
 - **Map: a mission map opens in the view of its use, with a « View » choice in the banner** (`modules/maps/mission_view.js`, `layers.js`, `data.js`, `module.js`,
   `screen.js`, `texts.js`, `style.js`; SPEC § 15, DECISIONS, help ×4; noreg D138; SOG-0171). The map's YAML profile first; else target / detail / zone maps of a
   non-commercial mission in VFR topo (now really topographic: the old built-in profile named a base the styles did not know), the general map and a commercial

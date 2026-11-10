@@ -4701,7 +4701,10 @@ def a118(c):
     c.open('settings', docs=LEVEL3, wait=False)
     c.until("document.getElementById('fStale') && !document.getElementById('fStale').hidden", timeout=15000, what='the cartouche')
     on = c.js(info)
-    c.eq((on['shown'], norm(on['text']), on['radius'], on['color']), (True, norm(label), '0px', 'rgb(255, 255, 255)'), 'a square cartouche, the label, white text', what='cartouche')
+    short = {'fr': 'Recharger', 'en': 'Reload', 'de': 'Neu laden', 'es': 'Recargar'}[c.lang]
+    c.eq((on['shown'], norm(on['text']) in (norm(label), norm(short), ''), on['radius'], on['color']), (True, True, '0px', 'rgb(255, 255, 255)'),
+         'a square cartouche, its label (whole, or shortened when the header is tight: A122), white text', what='cartouche')
+    c.eq(norm(c.js("document.getElementById('fStale').getAttribute('aria-label')")), norm(label), 'the whole label stays in aria-label', what='aria-label')
     c.ok(on['contrast'] >= 4.5, str(on['contrast']), 'white on the alert red: contrast AA (4.5)')
     c.ok(on['tall'] <= 40 and not on['overflow'], str(on), 'small, and the page does not scroll sideways')
     c.js("() => { window.__survives = 1 }")
@@ -4800,4 +4803,59 @@ def a121(c):
     c.page.reload(wait_until='load')
     c.page.wait_for_function("() => window.FrameData && window.FrameData.status", timeout=20000)
     c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air Two')", timeout=20000)
+    c.check_errors()
+
+
+@case('A122', 'The « Old version » cartouche has its own cell: with a long sync state and the cartouche present, no rectangle of the header cuts another, at 390, 768 and 1280', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0168, the user’s refusal of 10 Nov (« le cartouche rouge est mal placé, le texte déborde largement »; the capture: the cartouche and the sync button on one another): the cartouche is a cell of the header that never covers a neighbour; when there is not enough room it shrinks by steps — the whole label, « Reload », a square dot (the label stays in its tooltip and aria-label); square, white on the dark red, one line')
+def a122(c):
+    short = {'fr': 'Recharger', 'en': 'Reload', 'de': 'Neu laden', 'es': 'Recargar'}[c.lang]
+    full = {'fr': 'Version ancienne · Recharger', 'en': 'Old version · Reload', 'de': 'Alte Version · Neu laden', 'es': 'Versión antigua · Recargar'}[c.lang]
+    # the longest sync state (« Offline · 11 pending »): the layer says eleven writes wait, the device is offline
+    c.page.add_init_script("""(() => { let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set(v) {
+      if (v && typeof v.status === 'function' && !v.__w) { v.__w = 1; const st = v.status, on = v.onStatus;
+        v.status = async () => ({ ...(await st.apply(v)), transport: 'github', syncing: false, online: false, lastError: '', conflicts: 0, pending: 11, queue: [] }); v.onStatus = fn => on.call(v, s => fn({ ...s, transport: 'github', syncing: false, online: false, lastError: '', conflicts: 0, pending: 11, queue: [] })) }
+      fd = v } }) })()""")
+    state = {'app': 'abcd1234'}
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url).path
+        body = {'server': True, 'data': False, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': [], 'app': state['app']} if u.endswith('/__setup/status') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings', docs=LEVEL3, wait=False)
+    c.until("document.getElementById('fStale') && !document.getElementById('fStale').hidden", timeout=15000, what='the cartouche')
+    c.until("/11/.test(document.querySelector('#fSync .f-lbl').textContent)", timeout=15000, what='the long sync state')
+    probe = """() => { const head = document.querySelector('.f-head'), e = document.getElementById('fStale');
+      const boxes = [...head.children].filter(x => !x.hidden && x.getClientRects().length).map(x => [x.id || x.className, x.getBoundingClientRect()]);
+      const clash = []; for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) { const a = boxes[i][1], b = boxes[j][1];
+        if (a.left < b.right - .5 && b.left < a.right - .5 && a.top < b.bottom - .5 && b.top < a.bottom - .5) clash.push(boxes[i][0] + ' / ' + boxes[j][0]) }
+      const cs = getComputedStyle(e); const d = document.documentElement;
+      const nm = document.getElementById('fName'), cut = [...head.children].filter(x => x !== e && !x.hidden && x.getClientRects().length && x.scrollWidth > x.clientWidth + 1).map(x => x.id || x.className);
+      return { clash, cut, nameCut: !!nm && nm.scrollWidth > nm.clientWidth + 1, tier: e.dataset.tier, text: e.textContent, clipped: (() => { const g = document.createRange(); g.selectNodeContents(e); return g.getBoundingClientRect().width > e.getBoundingClientRect().width + 1 })(), overflow: head.scrollWidth > head.clientWidth + 1 || d.scrollWidth > d.clientWidth,
+        radius: cs.borderTopLeftRadius, color: cs.color, nowrap: cs.whiteSpace, label: e.getAttribute('aria-label'), w: Math.round(e.getBoundingClientRect().width), h: Math.round(e.getBoundingClientRect().height) } }"""
+    for width in (390, 768, 1280):
+        c.page.set_viewport_size({'width': width, 'height': 900})
+        c.wait(900)
+        r = c.js(probe)
+        if c.lang == 'fr' and width in (390, 768, 1280):      # the capture of the header (read by the ergonomics session)
+            (ROOT / 'tests' / 'v3' / 'shots').mkdir(parents=True, exist_ok=True)
+            c.page.screenshot(path=str(ROOT / 'tests' / 'v3' / 'shots' / f'A122_header_{width}.png'), clip={'x': 0, 'y': 0, 'width': width, 'height': 72})
+        c.eq(r['clash'], [], f'at {width}: no rectangle of the header cuts another', what=f'overlaps at {width}')
+        c.eq((r['cut'], r['nameCut']), ([], False), f'at {width}: no neighbour has its text cut, the application name is whole', what=f'cut texts at {width}')
+        c.ok(not r['clipped'] and not r['overflow'], str(r), f'at {width}: the cartouche is not cut and the header does not overflow')
+        c.ok(r['tier'] in ('0', '1', '2') and r['text'] == [full, short, ''][int(r['tier'])], str(r), f'at {width}: the cartouche shows its whole label, « {short} », or a dot')
+        c.eq((r['radius'], r['color'], r['nowrap']), ('0px', 'rgb(255, 255, 255)', 'nowrap'), 'square corners, white text, one line', what=f'look at {width}')
+        c.ok(bool(r['label']) and full in r['label'], str(r['label']), 'the label stays in aria-label whatever the step')
+    # the steps themselves: a narrow header takes the dot, a wide one the whole label
+    c.page.set_viewport_size({'width': 250, 'height': 900})
+    c.wait(900)
+    narrow = c.js(probe)
+    c.page.set_viewport_size({'width': 1280, 'height': 900})
+    c.wait(900)
+    wide = c.js(probe)
+    c.ok(wide['tier'] == '0' and int(narrow['tier']) > 0, f"wide {wide['tier']}, narrow {narrow['tier']}", 'a wide header shows the whole label, a narrow one a shorter step')
+    c.eq(narrow['clash'], [], 'at 250: still no overlap', what='overlaps at 250')
     c.check_errors()

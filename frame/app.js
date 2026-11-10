@@ -605,6 +605,7 @@
       // la version de la suite, dernière ligne du bloc d'état : git describe et la date du commit
       version: ['SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}'],
       staleTag: ['Version ancienne · Recharger', 'Old version · Reload', 'Alte Version · Neu laden', 'Versión antigua · Recargar'],
+      staleShort: ['Recharger', 'Reload', 'Neu laden', 'Recargar'],
       stale: ['Cette page est plus ancienne que le lanceur : recharger', 'This page is older than the launcher: reload',
         'Diese Seite ist älter als der Starter: neu laden', 'Esta página es más antigua que el lanzador: recargar'
       ],
@@ -2143,12 +2144,41 @@
       el.hidden = !next;
     }
     if (!next) return;
-    const label = t(T.info.staleTag),
+    // le libellé entier reste en aria-label à tout palier, la phrase en infobulle
+    const tag = t(T.info.staleTag),
       full = t(T.info.stale);
-    if (el.textContent !== label) el.textContent = label;
-    if (el.title !== full) {
-      el.title = full;
-      el.setAttribute('aria-label', full);
+    if (el.title !== full) el.title = full;
+    if (el.getAttribute('aria-label') !== tag) el.setAttribute('aria-label', tag);
+    fitStale();
+  }
+  /** Le cartouche tient dans sa cellule de l'en-tête sans recouvrir un voisin ni en couper un (SOG-0168) : le libellé entier, puis « Recharger »,
+   *  puis une pastille ; le palier retenu est le premier où aucun rectangle de l'en-tête n'en coupe un autre, où l'en-tête ne déborde pas et où le
+   *  bouton de synchronisation montre tout son texte (au dernier palier, il tronque avec des points de suspension). Écrit seulement si le texte change. */
+  function fitStale() {
+    const el = $('fStale'),
+      head = el?.parentElement;
+    if (!el || el.hidden || !head) return;
+    const sync = $('fSync'),
+      texts = [t(T.info.staleTag), t(T.info.staleShort), ''],
+      clash = () => {
+        const boxes = [...head.children].filter(x => !x.hidden && x.getClientRects().length).map(x => x.getBoundingClientRect());
+        for (let i = 0; i < boxes.length; i++)
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i],
+              b = boxes[j];
+            if (a.left < b.right - .5 && b.left < a.right - .5 && a.top < b.bottom - .5 && b.top < a.bottom - .5) return true;
+          }
+        // un voisin dont le texte est tronqué (le nom de l'application réduit à « P… », la synchronisation en points de suspension) est un conflit
+        // aussi : le cartouche cède avant lui
+        const name = $('fName'),
+          cut = [...head.children].some(x => x !== el && !x.hidden && x.getClientRects().length && x.scrollWidth > x.clientWidth + 1);
+        return head.scrollWidth > head.clientWidth + 1 || sync.scrollWidth > sync.clientWidth + 1 || cut || (name && name.scrollWidth >
+          name.clientWidth + 1);
+      };
+    for (let tier = 0; tier < texts.length; tier++) {
+      if (el.dataset.tier !== String(tier)) el.dataset.tier = String(tier);
+      if (el.textContent !== texts[tier]) el.textContent = texts[tier];
+      if (!clash()) return;
     }
   }
 
@@ -2393,6 +2423,7 @@
     b.title = title;
     b.setAttribute('aria-label', label);
     b.querySelector('.f-lbl').textContent = label;
+    fitStale(); // le texte de la synchronisation a changé : le cartouche se remet à sa taille
   }
   let rewrittenSaid = false;
   /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
@@ -4284,6 +4315,7 @@
     });
     // le cartouche « Version ancienne » : recharge (page plus ancienne que le lanceur), ou prend la version suivante prête (appareil sans lanceur)
     $('fStale').onclick = () => $('fStale').dataset.go === 'update' ? reloadNewVersion() : location.reload();
+    window.addEventListener('resize', fitStale);
     $('fSync').onclick = async () => {
       if (over?.id === 'conflicts') return leaveOver();
       const s = await FD.status();

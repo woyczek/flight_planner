@@ -181,16 +181,18 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 }
 /* boutons à icône seule de l'en-tête (menu, aide, réglages) : carrés de la taille d'une cible ; les boutons à libellé
    (synchronisation, retour, bascule de la vue double) gardent leur largeur */
-.f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn):not(.f-live):not(.f-who):not(.f-app) {
+.f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn):not(.f-live):not(.f-who):not(.f-app):not(.f-stale) {
   width: var(--sog-touch);
   padding: 0;
   flex: none
 }
-/* le cartouche « Version ancienne · Recharger » (SOG-0168) : petit, à coins carrés, blanc sur le rouge d'alerte du design (contraste AA) ; absent
-   il n'occupe rien (hidden) : l'en-tête garde sa hauteur */
+/* le cartouche « Version ancienne · Recharger » (SOG-0168) : sa propre cellule de l'en-tête, jamais sur un voisin ; coins carrés, blanc sur le rouge
+   d'alerte du design (contraste AA), une seule ligne ; quand la place manque, frame/app.js (fitStale) le réduit par paliers : le libellé entier,
+   « Recharger », puis une pastille (le libellé reste en infobulle et en aria-label) ; absent il n'occupe rien (hidden) */
 .f-stale {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
+  max-width: 100%;
   height: 28px;
   min-height: 0;
   position: relative;
@@ -199,24 +201,21 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   border-radius: 0;
   background: var(--sog-err);
   color: #fff;
-  font: 700 .72rem/1.05 var(--sog-font, inherit);
+  font: 700 .72rem/28px var(--sog-font, inherit);
   letter-spacing: .02em;
   white-space: nowrap;
   cursor: pointer
+}
+.f-stale[data-tier="2"] {
+  width: 16px;
+  height: 16px;
+  padding: 0
 }
 .f-stale::after {
   /* la cible tactile reste de 44 px : la zone qui répond dépasse le cartouche, sans l'agrandir */
   content: '';
   position: absolute;
   inset: -8px -4px
-}
-@media (max-width: 760px) {
-  .f-stale {
-    max-width: 7.6em;
-    white-space: normal;
-    font-size: .62rem;
-    padding: 0 6px
-  }
 }
 .f-sync {
   min-width: 0;
