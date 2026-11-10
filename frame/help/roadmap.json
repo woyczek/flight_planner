@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e46c6c8",
-  "fiches": 167,
+  "organisation": "dfff6d2",
+  "fiches": 168,
   "untranslated": 1,
   "priorities": 152
  },
@@ -467,7 +467,7 @@
     {
      "id": "SOG-0158",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Saisie ADEP / ADEST : trouver « Stockholm » (ville et nom du terrain, pas seulement le code)",
      "en": "ADEP / ADEST entry: find “Stockholm” (city and airport name, not only the code)",
      "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
@@ -684,7 +684,7 @@
     {
      "id": "SOG-0163",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Espaces R et D : lire leur texte (activité, conditions) depuis le profil vertical et la carte",
      "en": "R and D areas: read their text (activity, conditions) from the vertical profile and the map",
      "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
@@ -1750,6 +1750,15 @@
      "en": "Pages outside V3 (Maintenance V2, fuel, missions V2, original RAD, stats V2, Canadair…) grouped at the bottom of the column in one entry",
      "de": "Seiten außerhalb V3 (Wartung V2, Fuel, Missionen V2, ursprüngliches RAD, Stats V2, Canadair…) unten in der Spalte in einem Eintrag",
      "es": "Páginas fuera de V3 (Mantenimiento V2, fuel, misiones V2, RAD original, estadísticas V2, Canadair…) agrupadas al pie de la columna en una entrada"
+    },
+    {
+     "id": "SOG-0168",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "L'utilisateur teste une vieille copie sans le savoir : la nouvelle version s'applique seule sur un poste avec lanceur, et la version servie est lisible",
+     "en": "The user tests an old copy without knowing: the new version applies by itself on a workstation with a launcher, and the served version is readable",
+     "de": "Der Benutzer testet unwissentlich eine alte Kopie: die neue Version greift auf einem Rechner mit Launcher von selbst, und die ausgelieferte Version ist lesbar",
+     "es": "El usuario prueba una copia antigua sin saberlo: la nueva versión se aplica sola en un puesto con lanzador, y la versión servida es legible"
     }
    ]
   },

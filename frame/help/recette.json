@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 45,
+  "tests": 47,
   "verdicts": 0
  },
  "apps": [
@@ -557,6 +557,19 @@
    "state": "todo"
   },
   {
+   "id": "SOG-0158",
+   "app": "pilote",
+   "title": {
+    "fr": "Saisie ADEP / ADEST : trouver « Stockholm » (ville et nom du terrain, pas seulement le code)",
+    "en": "ADEP / ADEST entry: find “Stockholm” (city and airport name, not only the code)",
+    "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
+    "es": "Entrada ADEP / ADEST: encontrar «Estocolmo» (ciudad y nombre del aeródromo, no solo el código)"
+   },
+   "test": "Recharger la page (accepter « nouvelle version » si elle est proposée), puis Carburant › Vol › Départ : taper « stockholm » → ESSA et ESSB proposés avec « (Stockholm) » ; taper « suède » ou « sweden » → les terrains de Suède, les plus grands d'abord.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
    "id": "SOG-0159",
    "app": "maintenance",
    "title": {
@@ -579,6 +592,19 @@
     "es": "Hoja de ruta: una vista «Prioridades» sin carriles para ordenar todas las tarjetas y replanificarlas (en integración, en desarrollo, pendientes)"
    },
    "test": "Maintenance › Feuille de route : elle s'ouvre sur « Priorités », trois colonnes sans voies ; glisser une carte au-dessus d'une carte d'un autre thème, puis la glisser sur « En développement » ; recharger → l'ordre et la colonne sont tenus.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0163",
+   "app": "pilote",
+   "title": {
+    "fr": "Espaces R et D : lire leur texte (activité, conditions) depuis le profil vertical et la carte",
+    "en": "R and D areas: read their text (activity, conditions) from the vertical profile and the map",
+    "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
+    "es": "Zonas R y D: leer su texto (actividad, condiciones) desde el perfil vertical y el mapa"
+   },
+   "test": "Carte avec une route qui traverse un espace R ou D, profil vertical ouvert : toucher le bloc de l'espace → sa fiche s'ouvre sous le graphique (nom, limites, organisme, fréquence, activation AZBA ou NOTAM). Les horaires et conditions de l'AIP ne sont pas encore là : en cours chez AeroDB.",
    "since": "2026-11-10",
    "state": "todo"
   },
