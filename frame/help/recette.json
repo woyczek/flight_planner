@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 99,
+  "tests": 100,
   "verdicts": 43
  },
  "apps": [
@@ -434,9 +434,15 @@
     "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
     "es": "Lector de ruta: homónimos (PAM en EE. UU., ALS en Marruecos) y puntos desconocidos dichos con su zona"
    },
-   "test": "Carburant › Route, coller la route ESSB … ALS N872 PAM … LEMO : PAM et ALS sont placés en Europe ; les points inconnus sont listés avec leur zone et son état.",
-   "since": "2026-11-09",
-   "state": "known"
+   "test": "Lanceur relancé. Carburant › Route, taper « LFRS PAM LFBD » : PAM est Pampelune, le tracé reste en Europe, la distance est de quelques centaines de NM. Puis « Calculer A → B » sur ESSB → LEMO : aucun point aux États-Unis ni au Maroc.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:21:30Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "LFRS PAM LFBD passe toujours pas les USA.",
+    "at": "2026-11-10T16:32:49Z"
+   }
   },
   {
    "id": "SOG-0143",
@@ -977,9 +983,15 @@
     "de": "Bericht: sagen, für welche Gesellschaft er geschrieben wird",
     "es": "Informe: decir para qué compañía se escribe"
    },
-   "test": "Compte rendu : sous le titre, « Compte rendu pour <compagnie> · <genre> » ; tant que le CR n'est pas enregistré, le toucher mène au choix de la compagnie ; un CR enregistré garde sa compagnie même si tu en changes ensuite. « Mes vols » dit la compagnie sur chaque ligne dès qu'il y en a plus d'une.",
+   "test": "Compte rendu : à côté de « Compte rendu pour … », « Changer » : choisir une autre compagnie ; on reste sur le compte rendu, ce qui était saisi est toujours là. Enregistrer, puis changer la compagnie courante depuis l'en-tête : l'en-tête dit que ce compte rendu est celui d'une autre compagnie.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T17:09:05Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "presque. on peut bien choisir en sortie, mais on ne revient pas sur l’écran « CR ». On se souvient que le CR va être inscrit au registre, et que, à un moment, le registre pourra être consulté (notamment par une carte avec les trajets tracés).",
+    "at": "2026-11-10T14:59:37Z"
+   }
   },
   {
    "id": "SOG-0183",
@@ -1044,9 +1056,15 @@
     "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
     "es": "Datos, paquetes de países: elegir un país dentro de un paquete (lista plegada)"
    },
-   "test": "Maintenance › Données › « Paquets de pays » : chaque région garde sa case « tout le paquet » et porte un pli « Pays (n) », replié ; ouvert, il liste les pays avec une case chacun ; cocher un pays l'ajoute seul à la couverture, sans rien télécharger.",
+   "test": "Maintenance › Données › « Paquets de pays » : le chevron qui ouvre les pays d'un paquet est sur la ligne du paquet (pas une ligne de plus) ; « Mettre à jour (n) » est un petit lien au bout de la ligne, plus un gros bouton ; ouvert, le paquet liste ses pays avec une case chacun.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T17:19:45Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "non. mettre le chevron d’ouverture sur la ligne même, et réduire le bouton, voire le remplacer par une url !",
+    "at": "2026-11-10T16:25:20Z"
+   }
   },
   {
    "id": "SOG-0187",
@@ -1486,6 +1504,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T16:23:23Z"
+  },
+  {
+   "id": "SOG-0226",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : une zone construite avec une source personnelle est dite « À reconstruire » (Suède : « construite » et « À reconstruire » à la fois)",
+    "en": "Data: a zone built with a personal source is said “To rebuild” (Sweden: “built” and “To rebuild” at once)",
+    "de": "Daten: eine mit persönlicher Quelle gebaute Zone heißt „Neu aufzubauen“ (Schweden: „gebaut“ und „Neu aufzubauen“ zugleich)",
+    "es": "Datos: una zona construida con una fuente personal se dice «Por reconstruir» (Suecia: «construida» y «Por reconstruir» a la vez)"
+   },
+   "test": "Maintenance › Données, la case « Je certifie… » cochée : la Suède (construite ce soir avec le LFV) porte la pastille « à jour », d'accord avec « Base construite : Suède » ; « Mettre à jour » ne propose plus de la reconstruire. Décocher la case : l'état est relu.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:12:28Z"
   }
  ]
 }

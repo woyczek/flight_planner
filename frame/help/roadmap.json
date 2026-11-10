@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d16061a",
+  "organisation": "d3ae42b",
   "fiches": 234,
   "untranslated": 0,
   "priorities": 152
@@ -963,7 +963,7 @@
     {
      "id": "SOG-0181",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Compte rendu : dire pour quelle compagnie on l'écrit",
      "en": "Report: say which airline it is written for",
      "de": "Bericht: sagen, für welche Gesellschaft er geschrieben wird",
@@ -2293,7 +2293,7 @@
     {
      "id": "SOG-0142",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Lecteur de route : les homonymes (PAM aux États-Unis, ALS au Maroc) et les points inconnus dits avec leur zone",
      "en": "Route reader: homonyms (PAM in the USA, ALS in Morocco) and unknown points said with their zone",
      "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
@@ -2623,7 +2623,7 @@
     {
      "id": "SOG-0186",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données, paquets de pays : pouvoir choisir un pays dans un paquet (liste repliée)",
      "en": "Data, country packs: choose one country inside a pack (folded list)",
      "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
@@ -2686,7 +2686,7 @@
     {
      "id": "SOG-0226",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : une zone construite avec une source personnelle est dite « À reconstruire » (Suède : « construite » et « À reconstruire » à la fois)",
      "en": "Data: a zone built with a personal source is said “To rebuild” (Sweden: “built” and “To rebuild” at once)",
      "de": "Daten: eine mit persönlicher Quelle gebaute Zone heißt „Neu aufzubauen“ (Schweden: „gebaut“ und „Neu aufzubauen“ zugleich)",
