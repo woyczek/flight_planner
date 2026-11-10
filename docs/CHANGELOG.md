@@ -45,9 +45,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
-- **Header: the current airline beside the application's name, the airlines in the selector, `ctx.workAirline`** (`frame/app.js`, `frame/index.html`, `frame/frame.css`; INTEGRATION § 15.5, DECISIONS; noreg A139; SOG-0213). « Pilote · ITF »: the code in the
-  header (the whole name in the tooltip and the accessible name; one piece at 390), the airlines as radio buttons under the applications in the selector (seven at most, « Personnel » last; a tap changes the airline without leaving the screen), and
-  `DFA ≠ AIV` when the work shown (`ctx.workAirline`) keeps another airline.
+- **Header: a chip with the device's airline (only when at least two exist) that opens the list of airlines, `ctx.workAirline`** (`frame/app.js`, `frame/index.html`, `frame/frame.css`; INTEGRATION § 15.5, DECISIONS; noreg A139, A141;
+  SOG-0213, the user's counter-proposal). « Pilote [ITF] »: a tap on the chip lists the airlines as radio buttons (seven at most, « Personnel » last; name and kind), a choice changes the airline without leaving the screen; nothing is added to
+  the application selector; the chip yields to the cartouche and the sync state as a last resort; `ITF ≠` when the work shown (`ctx.workAirline`) is for another airline.
 - **Diagnostic: the kept conflicts are listed** (`frame/store/frame_data.js` `conflictList`; bench A53; DECISIONS; SOG-0136). Path, time, side, seen of the ten latest conflicts, never their content; the note explains what they are
   (most probably the current flight rewritten by two modules, SOG-0209) and how they resolve without loss.
 - **Launcher: the content policy survives a file replaced while it is read** (`tools/launch.py` `csp_policy`, `_mtime`; noreg K154; SOG-0219). A `FileNotFoundError` on `frame/app.js` or the modules' list no longer falls on the request: the previous policy
