@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1304324",
+  "organisation": "2cfa2a6",
   "fiches": 179,
   "untranslated": 1,
   "priorities": 152
@@ -1259,7 +1259,7 @@
     {
      "id": "SOG-0171",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Cartes de mission : le thème selon l'usage (VFR topographique sur la carte « cible » d'une mission SO), et un sélecteur de vue",
      "en": "Mission maps: the theme by use (VFR topographic on the “target” map of an SO mission), and a view selector",
      "de": "Missionskarten: Thema nach Verwendung (VFR-Topografie auf der „Ziel“-Karte einer SO-Mission) und eine Ansichtswahl",

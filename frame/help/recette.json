@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 55,
+  "tests": 56,
   "verdicts": 15
  },
  "apps": [
@@ -746,6 +746,19 @@
     "es": "Marco: el árbol de data/ leído cincuenta veces de IndexedDB en cada carga (10 339 entradas clonadas)"
    },
    "test": "Ouvrir la Carte, puis Maintenance › Données : l'affichage arrive nettement plus vite qu'hier (moins d'une seconde pour Données, lanceur relancé).",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0171",
+   "app": "compagnie",
+   "title": {
+    "fr": "Cartes de mission : le thème selon l'usage (VFR topographique sur la carte « cible » d'une mission SO), et un sélecteur de vue",
+    "en": "Mission maps: the theme by use (VFR topographic on the “target” map of an SO mission), and a view selector",
+    "de": "Missionskarten: Thema nach Verwendung (VFR-Topografie auf der „Ziel“-Karte einer SO-Mission) und eine Ansichtswahl",
+    "es": "Mapas de misión: el tema según el uso (VFR topográfico en el mapa «objetivo» de una misión SO) y un selector de vista"
+   },
+   "test": "Compagnie › Missions › une mission SO (SAR, HEMS…) › « Voir sur la Carte » de la carte cible : elle s'ouvre sur un fond VFR topographique (relief, obstacles, terrains VFR), plus sur un fond uni ; le bandeau porte « Vue » : VFR topo / IFR / Fond seul, et le choix est retenu pour cette carte. Retirer le bandeau rend la vue du vol.",
    "since": "2026-11-10",
    "state": "todo"
   }
