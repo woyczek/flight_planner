@@ -5251,7 +5251,10 @@ def a128(c):
     docs = [['device/level.json', {'level': 3}, 'cache'],
             ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
             ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
-            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document'],
+            # the registry of the missions (the count of « Rejoindre », SOG-0202 B4): two at the code « so », one personal (no airline), one at another code, one organisation
+            ['missions/mission_registry.yaml', {'missions': [{'id': 'F-001', 'folder': 'F_FIRE/F-001', 'airline': 'so'}, {'id': 'F-002', 'folder': 'F_FIRE/F-002', 'airline': 'so'}, {'id': 'F-003', 'folder': 'F_FIRE/F-003'},
+                                                              {'id': 'F-004', 'folder': 'F_FIRE/F-004', 'airline': 'other'}, {'id': 'F-005Z', 'folder': 'F_FIRE/F-005Z', 'airline': 'so'}]}, 'document']]
     c.page.add_init_script("""(() => { let fd; window.__puts = []; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; const a = v.adapter; v.adapter = function () { const ad = a.apply(this, arguments); const put = ad.put; ad.put = async function (p) { window.__puts.push(p); return put.apply(this, arguments) }; return ad } } }) })()""")
     c.open('settings?card=company', docs=docs)
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-join]')", timeout=15000, what='the card and the joining assistant')
@@ -5274,6 +5277,17 @@ def a128(c):
     c.eq(norm(c.text('[data-join] [data-jn-counts]')), norm(T('jnCounts').replace('{a}', _noun(lang, 'aircraft', parsed[0])).replace('{b}', _noun(lang, 'operator', parsed[1]))), 'the number of aircraft and of operators, as the Website parser reads them', what='counts')
     c.eq([c.js("document.querySelector('[data-join] [data-f=jn-name]').value"), c.js("document.querySelector('[data-join] [data-f=jn-code]').value")], [parsed[2][:60], c.js("(n) => n.split(/\\s+/)[0].normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 8)", parsed[2][:60])], 'the name is the operator with most aircraft, the code is proposed from it', what='proposed')
     c.eq(c.js("[...document.querySelectorAll('[data-join] input[name=jn-kind]')].map(i => [i.value, i.checked])"), [['va', False], ['sog', True]], 'a joined airline is a squadron by default, editable', what='kind')
+    # ---- the missions of the registry already at this code (Features SOG's rule: a named airline, else personal; organisations apart): counted on this device, following the code typed
+    ms = lambda: norm(c.text('[data-join] [data-jn-missions]'))
+    c.until(f"document.querySelector('[data-join] [data-jn-missions]').textContent.includes('2')", timeout=8000, what='the count of the missions at the proposed code')
+    c.eq(ms(), norm(T('jnMissionsN').replace('{n}', '2').replace('(s)', 's' if lang in ('fr', 'en', 'es') else '').replace('(en)', 'en').replace('(es)', 'es')), 'two missions of the registry are already at the code « so » (the organisation, the personal one and the other airline’s are not)', what='count so')
+    c.page.fill('[data-join] [data-f="jn-code"]', 'other')
+    c.until("document.querySelector('[data-join] [data-jn-missions]').textContent.includes('1')", timeout=8000, what='one at another code')
+    c.page.fill('[data-join] [data-f="jn-code"]', 'zzz')
+    c.until(f"document.querySelector('[data-join] [data-jn-missions]').textContent.includes({json.dumps(norm(T('jnMissionsNone'))[:14])})", timeout=8000, what='none at an unused code')
+    c.eq(ms(), norm(T('jnMissionsNone')), 'no mission of the registry at an unused code: said, with where to change a mission’s airline', what='count none')
+    c.page.fill('[data-join] [data-f="jn-code"]', 'so')
+    c.until("document.querySelector('[data-join] [data-jn-missions]').textContent.includes('2')", timeout=8000, what='back to the proposed code')
     c.ok(c.count('[data-join] img') == 0 and c.js('window.__pwn === undefined'), None, 'a hostile line of the page is text: no element, nothing runs')
     c.eq(c.js('window.__puts.length'), 0, 'nothing is written while it is only shown', what='no put')
     if c.width in (390, 1280):

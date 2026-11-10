@@ -346,6 +346,14 @@
       'Diese Gesellschaft steht schon in der Liste: ihre Flotte wird durch Einfügen der Webseite aktualisiert, im Bildschirm der Webseite der Gesellschaft.',
       'Esta compañía ya está en la lista: su flota se actualiza pegando el sitio, en la pantalla del sitio de la compañía.'
     ],
+    jnMissionsN: ['Registre : {n} mission(s) déjà à ce code.', 'Registry: {n} mission(s) already at this code.',
+      'Register: {n} Mission(en) schon mit diesem Code.', 'Registro: {n} misión(es) ya con este código.'
+    ],
+    jnMissionsNone: ['Aucune mission du registre n’est encore à ce code : Missions permet de changer la compagnie d’une mission.',
+      'No mission of the registry is at this code yet: Missions lets you change a mission’s airline.',
+      'Noch keine Mission des Registers hat diesen Code: in Missionen lässt sich die Gesellschaft einer Mission ändern.',
+      'Ninguna misión del registro tiene aún este código: en Misiones puede cambiar la compañía de una misión.'
+    ],
     jnMissions: ['Les missions préparées de cette compagnie sont dans Missions, une fois la compagnie choisie.',
       'This airline’s prepared missions are in Missions, once the airline is chosen.',
       'Die vorbereiteten Missionen dieser Gesellschaft stehen unter Missionen, sobald die Gesellschaft gewählt ist.',
@@ -1193,6 +1201,10 @@
       });
       const f = e.target?.dataset?.f;
       if (f === 'co-code') e.target.dataset.touched = '1';
+      if (f === 'jn-code' && WZ_ENV.get(view)) { // le code de « Rejoindre » change : le compte des missions à ce code suit
+        clearTimeout(JN_TIMER.get(view));
+        JN_TIMER.set(view, setTimeout(() => joinMissionsPaint(WZ_ENV.get(view)), 250));
+      }
       if (f === 'wz-sheet-q' && WZ_ENV.get(view)) wizardSheetSearch(WZ_ENV.get(view));
       if (f !== 'co-name') return;
       const code = view.querySelector('[data-wizard] [data-f="co-code"]');
@@ -1200,6 +1212,7 @@
     });
   }
   // « Rejoindre une compagnie » (§ 10.38 bis) : la page de la flotte collée, lue sur cet appareil, montrée avant d'écrire
+  const JN_TIMER = new WeakMap(); // par vue : le délai du compte des missions
   const JN = new WeakMap(); // par vue : { aircraft (lus), html (la page collée en HTML), resume, code }
   const JN_MAX = 2000;
   /** L'assistant « Rejoindre » : un bloc construit une fois, deux pas (la page, ce qui en a été lu) et une fin. */
@@ -1297,6 +1310,51 @@
     if (!name.value) name.value = top.slice(0, 60);
     if (!code.value) code.value = proposeCode(name.value);
     joinShow(view, 'read');
+    joinMissionsPaint(env); // combien de missions du registre sont déjà à ce code (sans attendre : la ligne se complète)
+  }
+  let missionsA = null,
+    msLibP = null;
+  /** L'accès en lecture au registre des missions (missions/mission_registry.yaml). */
+  const missionsData = FD => missionsA ||= FD.adapter({
+    id: 'settings-company-missions',
+    reads: ['missions/'],
+    writes: []
+  });
+  /** Le module des missions du cadre (frame/lib/mission.js : readRegistry, missionsFor), chargé une fois ; null s'il ne se charge pas. */
+  const msLib = () => msLibP ||= import(new URL('frame/lib/mission.js', ROOT).href).catch(() => null);
+  /** Le nombre de missions du registre qui sont à ce code (la règle de Missions : un champ airline nommé, sinon « Personnel »), les organisations exclues ; null si le registre ne se lit pas (pas de registre, YAML invalide). */
+  async function missionsOf(FD, code) {
+    try {
+      const [MS, r] = await Promise.all([msLib(), missionsData(FD).read('missions/mission_registry.yaml', {
+        wait: true
+      })]);
+      let doc = r?.value ?? r?.text ?? null;
+      if (typeof doc === 'string') {
+        if (!globalThis.jsyaml) await import(new URL('frame/lib/js-yaml.min.js', ROOT).href);
+        doc = globalThis.jsyaml.load(doc);
+      }
+      if (!MS || !doc || typeof doc !== 'object') return null;
+      return MS.missionsFor(MS.readRegistry(doc).filter(x => !x.organisation), code).length;
+    } catch {
+      return null;
+    }
+  }
+  /** La ligne des missions du pas « ce qui a été lu » : combien sont déjà à ce code (registre lu sur cet appareil) ; la phrase d'attente quand le registre ne se lit pas ou que le code n'est pas valide. */
+  async function joinMissionsPaint(env) {
+    const {
+      view,
+      t,
+      FD
+    } = env,
+    line = view.querySelector('[data-jn-missions]'),
+      code = view.querySelector('[data-join] [data-f="jn-code"]')?.value.trim() || '';
+    if (!line) return;
+    const n = AIRLINE_CODE.test(code) && code !== PERSO ? await missionsOf(FD, code) : null;
+    if (!line.isConnected || code !== (view.querySelector('[data-join] [data-f="jn-code"]')?.value.trim() || ''))
+      return; // le code a changé pendant la lecture
+    line.textContent = n === null ? t(TA.jnMissions) : n === 0 ? t(TA.jnMissionsNone) : t(TA.jnMissionsN, {
+      n
+    });
   }
   /** Les saisies du pas « ce qui a été lu » : { name, code, kind, nets, site }. */
   function joinValues(view) {
