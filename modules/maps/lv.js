@@ -96,14 +96,17 @@ export function spaceCardHtml(a) {
 export function lvEvents() {
   const body = S.dbodyEl,
     click = e => {
-      const li = e.target.closest?.('.mp-lv-list li[data-i]');
+      const col = e.target.closest?.('.mp-lv-col[data-i]'), // un bloc de la pile : il choisit son espace (la fiche change, jamais refermée)
+        li = col ? body.querySelector(`.mp-lv-list li[data-i="${col.dataset.i}"]`) : e.target.closest?.('.mp-lv-list li[data-i]');
       if (!li || S?.dpanel !== 'lv') return;
       const a = (S.lvList || [])[+li.dataset.i],
         card = body.querySelector('.mp-sp-card');
       if (!a || !card) return;
-      const open = li.dataset.open === '1';
+      const open = li.dataset.open === '1' && !col;
       for (const x of body.querySelectorAll('.mp-lv-list li[data-open="1"]')) x.dataset.open = '0';
       card.hidden = open;
+      S.lvOpen = open ? null : a;
+      markSel(body);
       if (open) return;
       li.dataset.open = '1';
       fillCard(card, a);
@@ -117,14 +120,29 @@ export function lvEvents() {
   });
   return () => body.removeEventListener('click', click);
 }
+/** Le bloc de l'espace choisi est surligné dans la pile (écrit seulement s'il change). */
+function markSel(body) {
+  body.querySelectorAll('.mp-lv-col').forEach(r => {
+    const on = (S.lvList || [])[+r.dataset.i] === S.lvOpen,
+      has = r.classList.contains('mp-lv-sel');
+    if (on !== has) {
+      r.classList.toggle('mp-lv-sel', on);
+      r.setAttribute('stroke-width', on ? '2.5' : '1');
+      r.setAttribute('fill-opacity', on ? '.4' : r.getAttribute('stroke-dasharray') ? '.07' : '.18');
+    }
+  });
+}
 /** Fait défiler le corps de la feuille, et lui seul, pour montrer el : jamais `scrollIntoView`, qui fait défiler tous les ancêtres défilables (la page,
  *  le volet de la vue double) et pousse la feuille hors de l'écran — « sizing vertical non recalculé », refus de recette de SOG-0163. */
 function showIn(body, el) {
   if (!body || !el) return;
   const b = body.getBoundingClientRect(),
-    r = el.getBoundingClientRect();
-  if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
-  if (r.top < b.top) body.scrollTop -= b.top - r.top;
+    r = el.getBoundingClientRect(),
+    st = body.querySelector(
+      '.mp-lv-wrap[data-wide="0"] .mp-lv-stack'), // au téléphone la pile reste collée en haut : la fiche se lit dessous
+    top = b.top + (st ? st.getBoundingClientRect().height + 6 : 0);
+  if (r.height > b.bottom - top || r.top < top) body.scrollTop += r.top - top; // le haut de la fiche sous la pile
+  else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
 }
 /** La fiche écrite (et la date de la base, quand AeroDB la donne). */
 function fillCard(card, a) {
@@ -162,16 +180,21 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
         col: ZONE_COL[String(a.type || '').toUpperCase()] || '#6d4c41'
       };
     }),
-    finite = rows.map(r => r.up ?? r.lo).filter(Number.isFinite),
     unl = rows.some(r => r.unl),
     nice = v => {
       for (const s of [1000, 2000, 2500, 5000, 10000, 20000])
         if (v / s <= 5) return s;
       return 50000;
     },
-    raw = Math.max(5000, ...finite) * 1.08,
-    step = nice(raw),
+    // l'échelle est cadrée sur les limites de la pile (SOG-0163 : « jamais vide ») : du sol si la pile y touche (plancher sous 3 000 ft), sinon
+    // depuis le plus bas des planchers (une TRA FL195 | UNL n'est pas tracée au bout de 19 500 ft d'échelle vide) ; au moins 2 000 ft de haut
+    lo0 = Math.min(...rows.map(r => r.lo)),
+    hi0 = Math.max(...rows.map(r => r.up ?? r.lo)),
+    from = lo0 <= 3000 ? 0 : lo0,
+    raw = from + Math.max(2000, (hi0 - from) * 1.08),
+    step = nice(raw - from),
     top = Math.ceil(raw / step) * step,
+    bot = from ? Math.max(0, Math.floor((lo0 - (raw - lo0) * .12) / step) * step) : 0,
     narrow = bw < 600,
     L = narrow ? 40 : 46,
     // le graphique garde la largeur que ses colonnes demandent (22 px au plus sur un téléphone, 14 au moins : le numéro reste lisible),
@@ -189,14 +212,16 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     W = Math.min(bw, Math.round(Math.max(floorW, narrow ? Math.min(bw * .6, L + 6 + rows.length * pitch) : Math.min(400, bw * .6, Math.max(
       240, L + 12 + rows.length * 36))))),
     // avec la ligne « Aussi ici », le plancher de la hauteur laisse la place de la ligne
-    H = Math.round(Math.max(also?.length ? 90 : 110, Math.min(300, bh - 16))),
+    // au téléphone la pile reste en haut de la feuille quand la fiche est ouverte (elle ne défile pas avec elle) : elle ne prend alors que le
+    // tiers de la hauteur, la fiche garde le reste
+    H = Math.round(narrow && S.lvOpen ? Math.min(150, Math.max(96, bh * .4)) : Math.max(also?.length ? 90 : 110, Math.min(300, bh - 16))),
     T = unl ? 16 : 6,
     B = H - 6,
-    y = ft => B - (Math.min(ft, top) / top) * (B - T),
+    y = ft => B - ((Math.min(Math.max(ft, bot), top) - bot) / (top - bot)) * (B - T),
     colW = Math.min(narrow ? 22 : 34, (W - L - 6) / Math.max(1, rows.length)),
     gap = Math.min(4, colW * .2);
   let svg = '';
-  for (let v = 0; v <= top; v += step) svg +=
+  for (let v = bot; v <= top; v += step) svg +=
     `<line x1="${L}" x2="${W - 2}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="currentColor" stroke-opacity=".15"/><text x="${L - 4}" y="${y(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${esc(v ? level(v) : 'SFC')}</text>`;
   if (unl) svg += `<text x="${L - 4}" y="${T - 8}" text-anchor="end" dominant-baseline="middle">UNL</text>`;
   rows.forEach((r, i) => {
@@ -205,7 +230,7 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
       y1 = y(r.lo),
       ft = r.unl ? 'UNL' : r.unk ? '?' : Math.round(r.up);
     svg +=
-      `<rect class="mp-lv-col" data-lo="${Math.round(r.lo)}" data-up="${ft}" x="${(x + gap / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${(colW - gap).toFixed(1)}" height="${Math.max(2, y1 - y0).toFixed(1)}" fill="${r.col}" fill-opacity="${r.unk ? '.07' : '.18'}" stroke="${r.col}"${r.unk ? ' stroke-dasharray="3 2"' : ''}><title>${esc([r.a.type, r.a.name].filter(Boolean).join(' '))} ${esc(MapsRender.siaLimit(r.a.lower))}|${esc(MapsRender.siaLimit(r.a.upper))}</title></rect>`;
+      `<rect class="mp-lv-col${S.lvOpen === r.a ? ' mp-lv-sel' : ''}" data-i="${i}" data-lo="${Math.round(r.lo)}" data-up="${ft}" x="${(x + gap / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${(colW - gap).toFixed(1)}" height="${Math.max(2, y1 - y0).toFixed(1)}" fill="${r.col}" fill-opacity="${S.lvOpen === r.a ? '.4' : r.unk ? '.07' : '.18'}" stroke="${r.col}"${S.lvOpen === r.a ? ' stroke-width="2.5"' : ''}${r.unk ? ' stroke-dasharray="3 2"' : ''}><title>${esc([r.a.type, r.a.name].filter(Boolean).join(' '))} ${esc(MapsRender.siaLimit(r.a.lower))}|${esc(MapsRender.siaLimit(r.a.upper))}</title></rect>`;
     if (colW >= 10) svg +=
       `<text x="${(x + colW / 2).toFixed(1)}" y="${Math.min(B - 4, Math.max(T, y0 + 9)).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${r.col}" font-weight="700">${i + 1}</text>`;
     if (r.unk && colW >= 10 && y1 - y0 > 24) svg +=
@@ -225,7 +250,9 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     return `<li data-i="${i}" data-open="${S.lvOpen && S.lvOpen === x ? 1 : 0}" tabindex="0" role="button" aria-label="${esc(`${name} — ${tt(TX.spOpen)}`)}"${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span class="mp-lv-txt"><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</span></li>`;
   }).join('');
   const fam = sameFamilyOverlap(list, read) ? `<p class="f-muted mp-lv-fam">${esc(tt(TX.levelsFamily))}</p>` : '';
-  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>${fam}${alsoHtml(also)}<div class="mp-sp-card f-card"${S.lvOpen ? '' : ' hidden'} aria-live="polite">${S.lvOpen ? spaceCardHtml(S.lvOpen) : ''}</div>`;
+  // la pile (colonnes plancher → plafond sur l'échelle) reste en vue pendant que la fiche défile (SOG-0163) : à côté de la liste et de la fiche en vue large,
+  // au-dessus au téléphone ; seul le corps de la feuille défile, rien ne sort de l'écran
+  return `<div class="mp-lv-wrap" data-wide="${narrow ? 0 : 1}"><div class="mp-lv-stack"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg></div><div class="mp-lv-side"><ol class="mp-lv-list">${items}</ol>${fam}${alsoHtml(also)}<div class="mp-sp-card f-card"${S.lvOpen ? '' : ' hidden'} aria-live="polite">${S.lvOpen ? spaceCardHtml(S.lvOpen) : ''}</div></div></div>`;
 }
 /** Ligne repliée sous la liste : les espaces écartés du point (FIR, UIR, SIV, secteurs, surface au plafond), par leur nom, sans
  *  colonne ni compte dans le titre (règle 21 amendée). Rien quand il n'y en a pas ; repliée à chaque écriture. */

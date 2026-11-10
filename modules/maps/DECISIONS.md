@@ -2268,6 +2268,23 @@ the Map had seen in between: the same line to within the frame's own sampling.
   label before the reading (it is chosen by the route's middle, after the route is known).
 - **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
 
+## The sheet of a space keeps its stack of levels (10 Nov 2026, SOG-0163 refused again; captures 103950 / 103959 / 104008)
+
+- **Seen**: the open sheet left an **empty scale** and the card went out of the screen. Cause: the graph was `position: sticky` inside `.mp-lv-body`, a
+  box that ended before the card; scrolling to the card (`showIn`) scrolled the graph out of its own box, leaving only the bottom of the scale.
+- **Ergonomics' decision** (the user proposed, the session decided): the sheet keeps a useful column of levels, the stack of the spaces of the point as
+  blocks floor → ceiling on the FL scale **framed on their limits** (never empty), the chosen one highlighted, a tap on a block changes the card; the
+  card beside the stack when wide, under it on a phone, scrolling in the sheet's height.
+- **Done**: `.mp-lv-wrap` (stack + side) so that the sticky stack's box is the whole content; `data-wide`; the card's top is scrolled to just under the
+  stack; the scale framing (`lo0` / `hi0`, 2 000 ft at least); `.mp-lv-sel` and the tap on a block (`markSel`). Found by the case: the list of the sheet opened by
+  the « Sheet » button was read at the cursor, which the mouse moves on its way to the button over the profile: the stack held one space instead of the
+  point's; the list is now kept at the first tap (`S.selList`).
+- **Not done / to know**: on a phone at the default sheet height the stack takes 96 px and the card gets the rest (it scrolls; expanded, more); the case's
+  captures are in the test bench (no tiles).
+- **Noreg** D139 (390 and 1280: two spaces, one highlighted, the stack in view and every block drawn, card under / beside, still in view when the card is
+  scrolled to its end, nothing scrolls outside the body, a tap on the other block changes the card, a stack of an FL195 | UNL space framed without SFC);
+  D28 now measures the « Aussi ici » line after the list (the box `.mp-lv-body` is gone).
+
 ## The view of a mission map, by its use (10 Nov 2026, SOG-0171: the user's reserve on the mission sheet)
 
 - **Asked** (the user: « on affiche les cartes selon différents thèmes : VFR topographique sur la carte « cible » d'un SAR ou HEMS… sur une commerciale,

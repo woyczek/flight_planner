@@ -181,11 +181,16 @@ export const STYLE = `
 [data-module="maps"] .mp-wxlink span{color:var(--sog-accent);text-decoration:underline}
 [data-module="maps"] .mp-dbody{overscroll-behavior:contain;box-sizing:border-box;margin:0 8px 8px;padding:6px 8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
 [data-module="maps"] .mp-dbody p{margin:2px 0}
-[data-module="maps"] .mp-lv-body{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px}
+[data-module="maps"] .mp-lv-wrap{display:flex;align-items:flex-start;gap:8px 12px}
+[data-module="maps"] .mp-lv-wrap[data-wide="0"]{flex-direction:column;gap:6px}
+[data-module="maps"] .mp-lv-stack{flex:none;position:sticky;top:0;z-index:2;background:var(--sog-surface)}
+[data-module="maps"] .mp-lv-wrap[data-wide="0"] .mp-lv-stack{width:100%}
+[data-module="maps"] .mp-lv-side{flex:1 1 auto;min-width:0;width:100%}
+[data-module="maps"] .mp-lv-col{cursor:pointer}
 [data-module="maps"] .mp-lv-also{margin:8px 0 0}
 [data-module="maps"] .mp-lv-fam{margin:6px 0 0;font-size:12px}
 [data-module="maps"] .mp-lv-also>p{margin:0;overflow-wrap:anywhere}
-[data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
+[data-module="maps"] .mp-lv{display:block;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
 [data-module="maps"] .mp-lv-list{flex:1 1 calc(2.5em + 9ch);min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}
 [data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline;break-inside:avoid;margin-bottom:2px;min-width:0;white-space:nowrap}
 /* le texte d'une ligne : le nom, puis les niveaux et la classe ; la base du nom (10ch) décide du retour à la ligne, le nom s'étend jusqu'à

@@ -15,6 +15,7 @@ with (`window.__mpMap`), then asks it where a position is.  Texts drawn on the c
 import datetime
 import json
 import math
+import os
 import re
 import time
 
@@ -4438,3 +4439,58 @@ def d138(c):
     c.until("() => location.hash.includes('flight=1')", timeout=6000, what='the cross removes the banner')
     c.until("() => !!window.__mp?.S && window.__mp.S.missionId === ''", timeout=10000, what='the Map is on the flight again')
     c.until("() => window.__mp.S.profile && window.__mp.S.profile.id !== 'v3-base'", timeout=8000, what='the flight’s own view')
+
+
+_STACK_JS = """() => { const q = s => document.querySelector(s), r = e => e ? e.getBoundingClientRect() : null, body = r(q('.mp-dbody')), st = r(q('.mp-lv-stack')), svg = q('svg.mp-lv'),
+  card = r(q('.mp-sp-card')), cols = [...document.querySelectorAll('svg.mp-lv rect.mp-lv-col')].map(x => { const b = x.getBoundingClientRect(); return { h: b.height, top: b.top, bot: b.bottom, sel: x.classList.contains('mp-lv-sel') } });
+  const inBody = b => !!b && !!body && b.top >= body.top - 1 && b.bottom <= body.bottom + 1;
+  return { n: cols.length, sel: cols.filter(c => c.sel).length, colsInBody: cols.length > 0 && cols.every(c => c.top >= body.top - 1 && c.bot <= body.bottom + 1 && c.h >= 8),
+    stackInBody: inBody(st), stack: st && [Math.round(st.left), Math.round(st.top), Math.round(st.right), Math.round(st.bottom)], card: card && [Math.round(card.left), Math.round(card.top), Math.round(card.right), Math.round(card.bottom)],
+    body: body && [Math.round(body.top), Math.round(body.bottom)], labels: [...svg.querySelectorAll('text')].map(t => t.textContent).filter(t => /^(SFC|FL\\d+)$/.test(t)), cardText: (q('.mp-sp-card')?.textContent || '').slice(0, 40) } }"""
+
+
+@case('D139', 'The sheet of a space keeps its stack of levels: the spaces of the point as blocks floor → ceiling on a scale framed on their limits (never empty), the chosen one highlighted, a tap on a block changes the card; the card beside the stack (wide) or under it (phone), reachable, nothing off the screen', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False,
+      rule='SOG-0163 refused again (the user 10 Nov, captures 103950 / 103959 / 104008: the open sheet leaves an empty level scale and the space card goes off the screen): the sheet keeps a stack of the spaces of the point (blocks floor → ceiling on the FL scale, framed on their limits, the chosen one highlighted, a tap on a block changes the card); the card beside the stack when wide, under it on a phone, scrolling inside the sheet’s height; the stack stays in view while the card scrolls')
+def d139(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'azba': True, 'act': 'AZBA', 'admin': 'CCER Bordeaux',
+              'info': 'BORDEAUX ESSAIS 122.9', 'src': 'sia', 'hours': ['H24', 'MON-FRI 0700-1700'], 'rem': ['Remark one', 'Remark two'], 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'D', 'cls': '', 'name': '62', 'key': 'LFD62', 'lower': 'SFC', 'upper': 'FL195', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    for w, h, q in ((390, 844, 'maps'), (1280, 760, 'maps?pane=1')):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open(q, docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R') && window.__mp.S.prof.crossed.some(x => x.a.type === 'D'))", timeout=15000, what=f'the profile crosses the R and the D ({w} px)')
+        c.wait(900)
+        c.js("async () => { const S = window.__mp.S; (await import('/modules/maps/profile_view.js')).setCursor(S.prof.total * .33); window.__want = 'R'; return true }")
+        _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of an R opens ({w} px)')
+        c.wait(600)
+        g = c.js(_STACK_JS)
+        if os.environ.get('D139_SHOT'):
+            c.page.screenshot(path=f"{os.environ['D139_SHOT']}_{w}.png")
+        c.eq(g['n'], 2, 'the stack holds both spaces of the point', what=f'{w}: columns')
+        c.eq(g['sel'], 1, 'the chosen one is highlighted', what=f'{w}: selected')
+        c.ok(g['colsInBody'] and g['stackInBody'], str(g), 'the stack is in view, every block drawn (none empty, none outside the sheet’s body)')
+        if w < 600:
+            c.ok(g['card'][1] >= g['stack'][3] - 1, str(g), 'on a phone the card is under the stack')
+        else:
+            c.ok(g['card'][0] >= g['stack'][2] - 1, str(g), 'wide: the card is beside the stack')
+        # the stack stays in view while the card scrolls, and the card is wholly reachable
+        c.js("() => { const b = document.querySelector('.mp-dbody'); b.scrollTop = b.scrollHeight; return true }")
+        c.wait(300)
+        g2 = c.js(_STACK_JS)
+        c.ok(g2['stackInBody'] and g2['colsInBody'], str(g2), 'scrolled to the end of the sheet the stack is still in view (not left behind)')
+        c.ok(g2['card'][3] <= g2['body'][1] + 1, str(g2), 'and the end of the card is reachable: nothing off the screen')
+        c.eq(c.js("() => [document.scrollingElement.scrollTop, [...document.querySelectorAll('.mp-data')].map(e => e.scrollTop)]"), [0, [0]], 'nothing scrolls but the body of the sheet', what=f'{w}: scroll')
+        # a tap on the other block changes the card
+        before = g2['cardText']
+        c.js("() => { const r = [...document.querySelectorAll('svg.mp-lv rect.mp-lv-col')].find(x => !x.classList.contains('mp-lv-sel')); r.dispatchEvent(new MouseEvent('click', { bubbles: true })); return true }")
+        c.until("() => document.querySelectorAll('svg.mp-lv rect.mp-lv-sel').length === 1", timeout=3000, what='one block is highlighted')
+        c.ok(c.js(_STACK_JS)['cardText'] != before, before, 'a tap on the other block changes the card')
+    # a stack at the top of the sky is framed on its limits: not an empty scale from the ground, no « SFC »
+    c.js("""async () => { const lv = await import('/modules/maps/lv.js'), a = { type: 'TRA', name: '34', key: 'T34', lower: 'FL195', upper: 'UNL', src: 'sia' }; lv.openSpace(a, [a]); return true }""")
+    c.until("() => document.querySelectorAll('svg.mp-lv rect.mp-lv-col').length === 1", timeout=4000, what='the stack of an FL195 | UNL space')
+    g3 = c.js(_STACK_JS)
+    c.ok(g3['colsInBody'] and 'SFC' not in g3['labels'] and len(g3['labels']) >= 2, str(g3), 'framed on its limits: the scale starts near FL195, the block is drawn, no « SFC »')

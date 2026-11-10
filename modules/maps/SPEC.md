@@ -1095,7 +1095,15 @@ cursor until all fingers are up.
 - **Order**: `sortAirspacesTopDown`: ceiling descending (UNL first), then floor descending (ASFC counted from 0), then the
   name; an unreadable ceiling is ranked as if the ceiling were its floor, after the known ceilings of the same value; an
   unreadable floor counts as 0. Number 1 is the highest, at the top of the list and in the leftmost column.
-- **The graph** (`levelsHtml(list, w, h)`, scale 1): altitude axis from SFC to the highest finite ceiling with a nice step,
+- **The stack stays in view** (SOG-0163, refused twice; ergonomics' decision 10 Nov): the content is `.mp-lv-wrap` = the stack (`.mp-lv-stack`, sticky
+  at the top of the body) and `.mp-lv-side` (the list, « Aussi ici », the card). Wide (body ≥ 600 px): the stack on the left, the list and the card
+  beside it; phone: the stack on top (96–150 px while a card is open) and the list and the card under it, the body scrolling under the sticky stack
+  (the card's top is scrolled to just under it, `showIn`; never `scrollIntoView`). The chosen space's block is highlighted (`.mp-lv-sel`) and a **tap
+  on a block** chooses that space (the card changes, never closed). The scale is **framed on the stack's limits**: from the ground when a floor is under
+  3 000 ft, else from the lowest floor (a TRA FL195 | UNL is not drawn on 19 500 ft of empty scale); at least 2 000 ft high; « UNL » above. The pile of a
+  sheet opened from the profile is the one at the tapped block (`S.selList`), not the one under the cursor when the « Sheet » button is reached
+  (the mouse moves the cursor on the way). Noreg D139.
+- **The graph** (`levelsHtml(list, w, h)`, scale 1): altitude axis (framed as above; formerly from SFC to the highest finite ceiling) with a nice step,
   "UNL" above (66,000 ft and more counted as UNL); one numbered column per airspace from floor to ceiling, coloured by type
   as in the profile, ASFC counted from 0; an unreadable ceiling (or one under the floor) is a dotted column from the floor
   to the top marked "?", never the UNL column. Columns are 14 px at least, 22 px at most; the graph takes the width its

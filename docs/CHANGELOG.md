@@ -20,6 +20,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   SOG-0168, the user's refusal). It no longer spills over the sync button or the application name: one line, and when the room is short « Version ancienne · Recharger »
   → « Recharger » → a square dot (the label in `aria-label`); checked with a long sync state at 390, 768 and 1280.
 
+- **Map: the sheet of a space keeps its stack of levels** (`modules/maps/lv.js`, `profile_view.js`, `style.js`; SPEC § 10, DECISIONS, help ×4; noreg D139, D28;
+  SOG-0163 refused again). The spaces of the point stay drawn as blocks floor → ceiling on a scale framed on their limits (never empty), the chosen one
+  highlighted, a tap on a block changes the card; the card is beside the stack in a wide view and under it on a phone (the stack stays at the top while it
+  scrolls); the sheet opened by the « Sheet » button lists the point's spaces, not the ones under the moved cursor.
+
 - **Map: a mission map opens in the view of its use, with a « View » choice in the banner** (`modules/maps/mission_view.js`, `layers.js`, `data.js`, `module.js`,
   `screen.js`, `texts.js`, `style.js`; SPEC § 15, DECISIONS, help ×4; noreg D138; SOG-0171). The map's YAML profile first; else target / detail / zone maps of a
   non-commercial mission in VFR topo (now really topographic: the old built-in profile named a base the styles did not know), the general map and a commercial

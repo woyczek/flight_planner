@@ -1792,7 +1792,7 @@ def d28(c):
     c.eq(norm(title), norm(tx(M, 'levelsTitle', c.lang).replace('{n}', '4')), 'the title counts the drawn spaces (4), not the ones named on the line', what=f'title {title!r}')
     c.eq(c.js("document.querySelectorAll('svg.mp-lv rect').length"), 4, 'no column for the spaces left out', what='columns')
     d = c.js("""() => { const q = document.querySelector('.mp-dbody[data-kind="lv"] details.mp-lv-also'); if (!q) return null; const s = q.querySelector('summary'), r = s.getBoundingClientRect(),
-        l = document.querySelector('.mp-lv-body').getBoundingClientRect();
+        l = document.querySelector('.mp-lv-list').getBoundingClientRect();
         return { open: q.open, summary: s.textContent, h: r.height, p: q.querySelector('p') ? q.querySelector('p').textContent : null, hiddenP: q.querySelector('p') ? q.querySelector('p').getBoundingClientRect().height === 0 : true,
                  after: r.top >= l.bottom - 1, inList: !!document.querySelector('.mp-lv-list details'), n: document.querySelectorAll('details.mp-lv-also').length } }""")
     c.ok(d is not None, 'no details.mp-lv-also in the sheet', 'a folded "Aussi ici (n)" line ends the sheet')

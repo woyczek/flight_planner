@@ -514,12 +514,15 @@ export function profileEvents() {
       return;
     }
     if (S.selSpace === hit.a) return openSelected(zones.map(z => z.a)); // le second appui sur le bloc choisi ouvre sa fiche
+    S.selList = zones.map(z => z
+      .a); // la pile du point touché : celle de la fiche, même si la souris, en allant au bouton « Fiche », déplace le curseur
     S.selSpace = hit.a; // le premier le choisit : surligné, son nom et ses limites et le bouton « Fiche » sur le profil
     drawProfile();
     selFill();
   });
   S.selEl?.addEventListener('click', e => {
-    if (e.target.closest?.('[data-spfiche]') && S.selSpace) openSelected(S.prof ? MapsProfile.at(S.prof, S.cursor).zones.map(z => z.a)
+    if (e.target.closest?.('[data-spfiche]') && S.selSpace) openSelected(S.selList?.length ? S.selList : S.prof ? MapsProfile.at(S.prof,
+        S.cursor).zones.map(z => z.a)
       .filter(Boolean) : []);
   });
   const openSelected = list => openSpace(S.selSpace, list.includes(S.selSpace) ? list : [S.selSpace, ...list]);
