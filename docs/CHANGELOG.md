@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Changer » drawn at the size of the text** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS; noreg F122). The aircraft
+  line's gesture no longer stands out as a 44 px framed button: magnifier and word in the accent tint, the 44 px target kept, as ⇄.
 - **Fuel: the Procedures card says the ground reading** (`modules/fuel/procedures.js`, `procedures_texts.js`, `module.js`; Fuel SPEC,
   DECISIONS, help; noreg F124; SOG-0135). « Lecture du sol en cours… », « Sol lu », « Sol non lu : <raison> · Réessayer » (the ground
   alone) on each read aerodrome's discreet line, in the words of the Map's Ground panel.

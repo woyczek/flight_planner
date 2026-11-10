@@ -1514,3 +1514,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   procedures reading and every 3 s while it reads. The failure and « Réessayer » are one item of the flex line (the 390 capture showed
   « · Réessayer » alone on its own line). Counter-test on origin/v3 (38ab31cca): the tables are absent, and with the texts alone the
   line says nothing.
+- **10 Nov 2026 — « Changer » drawn at the size of the text** (ergonomist's retouch after F122 at 1 280, from the user's remark on ⇄ and
+  « Ajouter »: « un bouton collé à du texte ne devrait pas dépasser autant de la ligne »): the magnifier and « Changer » in the accent tint,
+  no frame, 26 px high, the 44 px target kept by a `::before`, as ⇄. F122 measures it (≤ 28 px, no border nor background, target ≥ 44 px);
+  counter-test on origin/v3 (df317a309): a 44 px framed button.

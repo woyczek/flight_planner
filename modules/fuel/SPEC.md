@@ -234,7 +234,8 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   this step and on the plan; it blocks nothing (F43).
 - **Aircraft**: one line — the chosen aircraft (name, registration, callsign, type; each value once) with its origin, followed in its
   flow by the text button « Changer » with the magnifier (SOG-0060 refused at acceptance: « au bout du monde »; nothing is aligned alone
-  on the right; the line wraps rather than cutting the name; F122) that unfolds
+  on the right; the line wraps rather than cutting the name; drawn at the size of the text like ⇄ — accent tint, no frame, ≤ 28 px high,
+  a 44 px target by a pseudo-element —, since a button stuck to text must not stand out of the line; F122) that unfolds
   one field and its results from `aircraft().search(text)` (sheets → fleet → reference → types → free code, each with its origin; an
   aircraft shows the sheet that will serve it: its own, its type's, or the type estimate). Choosing writes `aircraft().aircraftOf(hit)`
   into the current flight. No default sheet: a flight without aircraft takes the last one chosen on the device

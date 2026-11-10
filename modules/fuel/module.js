@@ -1656,7 +1656,12 @@ const STYLE = `
 [data-module="fuel"] [data-acsel] .f-muted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* la ligne de l'appareil porte son geste dans son flux (SOG-0060, refus de recette : « le bouton de recherche est au bout du monde ») :
    « Changer » suit le texte, rien n'est aligné seul à droite */
-[data-module="fuel"] [data-acsel] button[data-do="acopen"]{flex:none;min-height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 10px}
+/* dessiné à la taille du texte comme ⇄ (retouche de recette : « un bouton collé à du texte ne devrait pas dépasser autant de la ligne ») :
+   loupe + « Changer » sans cadre, teinte d'accent, 26 px de haut ; la cible de 44 px est un pseudo-élément */
+[data-module="fuel"] [data-acsel] button[data-do="acopen"]{position:relative;flex:none;display:inline-flex;align-items:center;gap:4px;height:26px;min-height:0;min-width:0;padding:0 2px;margin:0;border:0;border-radius:0;background:none;box-shadow:none;color:var(--sog-accent);font:inherit;line-height:1}
+[data-module="fuel"] [data-acsel] button[data-do="acopen"]::before{content:'';position:absolute;inset:-9px -4px}
+[data-module="fuel"] [data-acsel] button[data-do="acopen"] svg{width:16px;height:16px;flex:none}
+[data-module="fuel"] [data-acsel] button[data-do="acopen"]:hover span,[data-module="fuel"] [data-acsel] button[data-do="acopen"]:focus-visible span{text-decoration:underline}
 [data-module="fuel"] .fu-svg{display:block;max-width:100%;height:auto;touch-action:manipulation}
 [data-module="fuel"] .fu-svg text{font-size:11px;fill:var(--sog-muted)}
 [data-module="fuel"] .fu-grid{stroke:var(--sog-chart-grid);stroke-width:1}

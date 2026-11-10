@@ -3346,6 +3346,8 @@ _FLIGHT_ROW_JS = f"""(() => {{ const r = e => e ? e.getBoundingClientRect() : nu
   return {{ dtRight: r(document.querySelector('{FUEL} input[data-k="wxdate"]')).right, cardIn: card ? r(card).right - pad : innerWidth, lvTop: r(lv).top, dtTop: r(dt).top, flIn: r(fl).top, dtIn: r(document.querySelector('{FUEL} input[data-k="wxdate"]')).top, autoTop: r(au).top, flTop: r(fl).top, autoLeft: r(au).left, flRight: r(fl).right,
     help: help.textContent.trim(), helpH: r(help).height, helpLines: help.scrollHeight > help.clientHeight + 1 || getComputedStyle(help).whiteSpace !== 'nowrap',
     acLabel: (acb?.textContent || '').trim(), acGap: acb && prev ? r(acb).left - r(prev).right : null,
+    acH: acb ? r(acb).height : null, acFrame: acb ? [getComputedStyle(acb).borderTopWidth, getComputedStyle(acb).backgroundColor] : null,
+    acTarget: acb ? [parseFloat(getComputedStyle(acb, '::before').height) || 0, parseFloat(getComputedStyle(acb, '::before').width) || 0] : null,
     acRightAlone: acb ? getComputedStyle(acb).marginLeft === 'auto' : null, sw: document.documentElement.scrollWidth, iw: innerWidth }} }})()"""
 
 
@@ -3373,6 +3375,10 @@ def f122(c):
         c.ok(abs(m['autoTop'] - m['flTop']) < 4 and m['autoLeft'] >= m['flRight'] - 1, m, f'{w} px: « Auto » in the row of the level field, on its right')
         c.ok(not m['helpLines'] and m['helpH'] < 26 and not m['help'].startswith('FL'), m, f'{w} px: one help line « auto · time » under the level')
         c.ok(m['acLabel'] and m['acGap'] is not None and m['acGap'] < 16 and not m['acRightAlone'], m, f'{w} px: « Changer » follows the aircraft line, with a label')
+        # retouche (ergonomist, 10 Nov, the user's remark on ⇄ and « Ajouter »): drawn at the size of the text, no frame, a 44 px target
+        c.ok(m['acH'] <= 28 and m['acFrame'][0] in ('0px', '') and m['acFrame'][1] in ('rgba(0, 0, 0, 0)', 'transparent'), m,
+             f'{w} px: « Changer » drawn at the size of the text (≤ 28 px, no frame)')
+        c.ok(m['acTarget'][0] >= 44 and m['acTarget'][1] >= 44, m, f'{w} px: its target stays 44 px')
         c.le(m['sw'], m['iw'], f'{w} px: no horizontal scroll', what='scrollWidth')
         c.shot(f'F122_{c.design}_{w}_{c.lang}.png')
 
