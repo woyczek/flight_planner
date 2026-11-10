@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 52,
-  "verdicts": 1
+  "verdicts": 2
  },
  "apps": [
   "pilote",
@@ -37,9 +37,7 @@
    },
    "test": "Carte sur LFPO à zoom 14 après lecture des procédures : taxiways nommés ; dans le panneau Sol, filtrer « W » surligne le tronçon.",
    "since": "2026-11-09",
-   "state": "ko",
-   "comment": "rien (cf. screenshot, relecture du 10/11 09:00Z)",
-   "at": "2026-11-10T09:04:51Z"
+   "state": "known"
   },
   {
    "id": "SOG-0051",
@@ -65,7 +63,7 @@
    },
    "test": "Carburant › Vol, avec une route et une fiche : toucher « Auto » à côté du niveau → « FL… (auto) » et le temps de vol s'affichent ; changer la route → le niveau est recalculé ; taper un niveau à la main → « (auto) » disparaît.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0057",
@@ -91,7 +89,7 @@
    },
    "test": "Carburant › Résultat : l'appareil du devis est écrit en tête de la barre (« FA50 · F-GXXX ») avec un bouton vers son choix. Dans Fiches, la recherche d'appareil est la même que dans les Réglages.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0065",
@@ -130,7 +128,8 @@
    },
    "test": "Carte en fenêtre élargie sur le grand écran, la laisser ouverte et la redimensionner plusieurs fois → plus de « not enough memory ».",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T09:06:37Z"
   },
   {
    "id": "SOG-0070",
@@ -221,7 +220,8 @@
    },
    "test": "Carburant › Route, LFPO → EIDW : « Calculer A → B » propose des itinéraires en moins de dix secondes ; « Contrôler » une route saisie marque ses segments fautifs ; « Prendre » écrit la route, la SID et la STAR.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T09:06:49Z"
   },
   {
    "id": "SOG-0125",
@@ -299,7 +299,7 @@
    },
    "test": "Lire les procédures de LFPO (Carburant › SID / STAR ou Carte › Procédures), attendre trente secondes, puis Carte sur Orly à zoom 14 : les taxiways sont dessinés et nommés ; le panneau Sol dit « Sol lu avec les procédures du … ».",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0136",
