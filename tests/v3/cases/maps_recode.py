@@ -5317,3 +5317,41 @@ def d_barbs(c):
         seen.append((z, n))
     ok = [(z, n) for z, n in seen if z >= 6 and z <= 9]
     c.ok(all(40 <= n <= 80 for z, n in ok), str(seen), 'between 40 and 80 barbs in the view at the working zooms (the route crosses the view)')
+
+
+@case('D167', 'One path for a direct leg: the solid line follows the great circle (cut into pieces), the distance marks are on it (less than 2 px from the line), the dotted great circle goes when it would lie under the line; 5 to 12 marks in the view at any zoom, without a sudden jump', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0233 (the user, KDEN BGNN LFST): three paths on the map — the solid line straight on the Mercator map, a fine dotted great circle, and the marks « 1250, 1500… » beside the solid line; the marks were placed by linear interpolation of latitude and longitude (distance along the great circle, position on neither path); one path: a direct leg is flown on the great circle, the line follows it, the marks are on it; the marks’ step is chosen on the length of the route that is really in the view (a long leg whose middle is outside it counted for nothing: 5 NM then 250 NM)')
+def d_gcpath(c):
+    f = flight()
+    pts = [('KDEN', 39.8617, -104.6731), ('BGNN', 60.1394, -45.2331), ('LFST', 48.5383, 7.6282)]
+    f['route'] = {'text': 'KDEN BGNN LFST', 'dep': 'KDEN', 'arr': 'LFST', 'points': [{'id': i, 'lat': la, 'lon': lo} for i, la, lo in pts]}
+    f['level'] = {'ft': 35000}
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.wait(1500)
+    probe = """([z, lat, lon]) => new Promise(r => { const S = window.__mp.S, m = window.__mpMap; const mid = window.MapsRender.gcAt(S.marksPts[0], S.marksPts[1], .85); m.jumpTo({ center: [mid.lon, mid.lat], zoom: z });
+      setTimeout(() => { const box = S.box.getBoundingClientRect(), R = window.MapsRender, line = R.densify(S.marksPts).map(p => m.project([p.lon, p.lat])),
+        dist = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
+        const ms = (S.marks || []).map(k => m.project([k.lon, k.lat])), inV = ms.filter(q => q.x >= 0 && q.x <= box.width && q.y >= 0 && q.y <= box.height);
+        let worst = 0; for (const q of ms) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist(q, line[i - 1], line[i])); worst = Math.max(worst, best) }
+        r({ n: inV.length, worst: Math.round(worst * 10) / 10, gc: !!S.gc, step: S.marksStep }) }, 1600) })"""
+    seen = []
+    for z in (2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8):
+        r = c.js(probe, [z, 0, 0])
+        seen.append((z, r['n'], r['worst'], r['step']))
+    c.ok(all(w < 2 for z, n, w, s in seen), str(seen), 'every mark is less than 2 px from the line, at every zoom')
+    c.ok(all(5 <= n <= 12 for z, n, w, s in seen if z >= 3.5), str(seen), '5 to 12 marks in the view at the working zooms, whatever the length of the leg that crosses it')
+    c.eq(c.js("() => !!window.__mp.S.gc"), True, 'the great circle of the whole route (KDEN to LFST) stays: the route is not a direct leg', what='dotted')
+    # a direct route (two points): the line is the great circle, the dotted one would lie under it: it goes
+    f2 = flight()
+    f2['route'] = {'text': 'KDEN LFST', 'dep': 'KDEN', 'arr': 'LFST', 'points': [{'id': i, 'lat': la, 'lon': lo} for i, la, lo in (pts[0], pts[2])]}
+    f2['level'] = {'ft': 35000}
+    c.open('maps', docs=fdocs(f2), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.wait(2000)
+    c.eq(c.js("() => !!window.__mp.S.gc"), False, 'a direct route has no dotted great circle beside its line (the line is the great circle)', what='dotted')
+    c.shot('D167_gc_path_390.png')

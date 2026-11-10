@@ -170,11 +170,18 @@ function viewMarks(box) {
   const d = MapsRender.distances(pts),
     mw = (box.e - box.w) * .1,
     mh = (box.n - box.s) * .1;
+  // la part de la route dans la vue, mesurée le long du grand cercle de chaque tronçon (un tronçon de 2 500 NM dont le milieu est hors de la vue compte pour ce qui en est vu : le pas ne saute plus,
+  // les marques ne disparaissent plus brutalement en dézoomant, SOG-0233)
   let vis = 0;
   for (let i = 1; i < pts.length; i++) {
-    const la = (pts[i - 1].lat + pts[i].lat) / 2,
-      lo = (pts[i - 1].lon + pts[i].lon) / 2;
-    if (la >= box.s - mh && la <= box.n + mh && lo >= box.w - mw && lo <= box.e + mw) vis += d[i] - d[i - 1];
+    const len = d[i] - d[i - 1],
+      n = Math.max(2, Math.min(120, Math.ceil(len / 20)));
+    let inside = 0;
+    for (let j = 0; j <= n; j++) {
+      const q = MapsRender.gcAt(pts[i - 1], pts[i], j / n);
+      if (q.lat >= box.s - mh && q.lat <= box.n + mh && q.lon >= box.w - mw && q.lon <= box.e + mw) inside++;
+    }
+    vis += len * inside / (n + 1);
   }
   const step = [5, 10, 25, 50, 100, 250, 500, 1000, 2500].find(s => vis / s <= 12) || 5000;
   if (S.marksStep !== step || S.marksFor !== pts) {
@@ -448,7 +455,8 @@ function gcScreen(mission, pick, toC) {
     pts = S.route?.points || [],
     a = pts[0],
     b = pts.at(-1);
-  if (mission || pick || pts.length < 2 || !r?.dep || !r?.arr || String(a.id || '').toUpperCase() !== String(r.dep).toUpperCase() ||
+  if (mission || pick || pts.length < 3 || !r?.dep || !r?.arr ||
+    // une route directe (deux points) se vole sur l'orthodromie : le trait plein l'est, le pointillé se confondrait avec lui (SOG-0233) String(a.id || '').toUpperCase() !== String(r.dep).toUpperCase() ||
     String(b.id || '').toUpperCase() !== String(r.arr).toUpperCase()) return null;
   const g = greatCircle(a, b);
   if (!g) return null;

@@ -65,7 +65,8 @@ export function lightPaths(src) {
     airways.lineTo(...at(s.b.lat, s.b.lon));
   }
   const route = new Path2D();
-  (src.route || []).forEach((q, i) => i ? route.lineTo(...at(q.lat, q.lon)) : route.moveTo(...at(q.lat, q.lon)));
+  (window.MapsRender?.densify ? window.MapsRender.densify(src.route || []) : src.route || []).forEach((q, i) => i ? route.lineTo(...at(q
+    .lat, q.lon)) : route.moveTo(...at(q.lat, q.lon))); // le trait suit l'orthodromie (SOG-0233)
   /** Positions d'une liste de points, à plat (x, y, x, y…). */
   const flat = list => {
     const out = new Float64Array(list.length * 2);

@@ -2299,6 +2299,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## One path for a direct leg: the line, the marks and the great circle (10 Nov 2026, SOG-0233; captures 171614, 171816, 171826, 171832, KDEN BGNN LFST)
+- **Three paths on the map**: (1) the solid line, straight between the route points — on a Mercator map that is a rhumb line, not the way a direct is flown; (2) the fine dotted great circle KDEN → LFST
+  (SOG-0145, a reference for the whole route); (3) the marks « 1250, 1500… » (round dots with their NM), beside the solid line. **Which was right**: the **distance** — `distances()` is the great-circle
+  length (haversine) of each leg — and the dotted great circle (the correct geometry of a direct); the solid line (straight on screen) and the marks' **positions** were wrong: `marks()` placed a mark at the
+  fraction of the leg's distance by **linear interpolation of latitude and longitude**, which lies on neither the great circle nor the straight Mercator line (the offset grows with the latitude and the length
+  of the leg: nothing at LFPO-LFML, ten pixels at Greenland). Not K156 (AeroDB): nothing changed in the calculation, the drawing never matched it.
+- **Done**: a direct leg is flown on the great circle: `MapsRender.gcAt(a, b, f)` (slerp, longitude kept continuous) and `densify(points)` (a point of the great circle every 40 NM on a leg over 60 NM): the solid line
+  (`drawRoute`, and the light drawing of a gesture) follows it, cut; the marks are placed with `gcAt`; the dotted great circle of the whole route is not drawn for a route of two points (it would lie under the line)
+  and stays for a route with turning points (KDEN BGNN LFST: it is the comparison). **(a) Steps**: the round steps (5, 10, 25, 50, 100, 250, 500, 1 000, 2 500 NM) are chosen on the length of the route that
+  is really in the view, measured along the great circle of each leg (`viewMarks`): a leg of 2 500 NM whose middle was outside the view counted for nothing (step 5 NM) and, with its middle inside, for all of it
+  (step 250): the sudden appearance and disappearance. Measured: 5 to 12 marks in the view from zoom 3.5 to 8.
+- **Noreg** D167 (KDEN BGNN LFST: every mark less than 2 px from the line at nine zooms, 5 to 12 marks in the view, the dotted one stays for three points and goes for two); capture `D167_gc_path_390.png`.
+
 ## Retouches: the rose's numbers capped, no countdown on the synoptic line (10 Nov 2026, SOG-0175, SOG-0138)
 - **SOG-0175** (capture 150125: the « 18 » of the rose huge at a strong zoom): the numbers' height followed the graduation (up to 30 px); capped at 15 px (`aero_symbols.js`); D143 reads the sizes at 450 px of radius
   (red before: 30).

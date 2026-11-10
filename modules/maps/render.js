@@ -445,7 +445,44 @@
     for (let i = 1; i < points.length; i++) out.push(out[i - 1] + gc(points[i - 1], points[i]));
     return out;
   }
-  /** Marques de distance tous les stepNm (défaut : 10 NM sous 150 NM, 50 NM au-delà) : [{ lat, lon, nm }]. */
+  /** Le point à la fraction f (0 à 1) du grand cercle de a à b : { lat, lon } ; la longitude reste continue avec celles de a et de b (route déroulée au-delà de ±180°).
+   *  La route d'un tronçon direct se vole sur l'orthodromie : le trait, les marques de distance et le pointillé du grand cercle sont le même chemin (SOG-0233). */
+  function gcAt(a, b, f) {
+    const v = p => [Math.cos(rad(p.lat)) * Math.cos(rad(p.lon)), Math.cos(rad(p.lat)) * Math.sin(rad(p.lon)), Math.sin(rad(p.lat))],
+      A = v(a),
+      B = v(b),
+      d = Math.acos(Math.max(-1, Math.min(1, A[0] * B[0] + A[1] * B[1] + A[2] * B[2])));
+    if (!(d > 1e-9) || Math.PI - d < 1e-6) return {
+      lat: a.lat + (b.lat - a.lat) * f,
+      lon: a.lon + (b.lon - a.lon) * f
+    };
+    const k1 = Math.sin((1 - f) * d) / Math.sin(d),
+      k2 = Math.sin(f * d) / Math.sin(d),
+      x = k1 * A[0] + k2 * B[0],
+      y = k1 * A[1] + k2 * B[1],
+      z = k1 * A[2] + k2 * B[2];
+    let lon = Math.atan2(y, x) * 180 / Math.PI;
+    lon += Math.round((a.lon + (b.lon - a.lon) * f - lon) / 360) * 360;
+    return {
+      lat: Math.atan2(z, Math.hypot(x, y)) * 180 / Math.PI,
+      lon
+    };
+  }
+  /** La suite de points avec, dans chaque tronçon de plus de 60 NM, des points du grand cercle tous les 40 NM au plus : le trait plein suit l'orthodromie, découpé. */
+  function densify(points) {
+    const out = [];
+    points.forEach((p, i) => {
+      if (i) {
+        const a = points[i - 1],
+          len = gc(a, p),
+          n = len > 60 ? Math.min(200, Math.ceil(len / 40)) : 1;
+        for (let j = 1; j < n; j++) out.push(gcAt(a, p, j / n));
+      }
+      out.push(p);
+    });
+    return out;
+  }
+  /** Marques de distance tous les stepNm (défaut : 10 NM sous 150 NM, 50 NM au-delà) : [{ lat, lon, nm }] ; posées sur le grand cercle de leur tronçon. */
   function marks(points, stepNm = 0) {
     if (points.length < 2) return [];
     const d = distances(points),
@@ -458,8 +495,7 @@
         b = points[i],
         k = d[i] > d[i - 1] ? (nm - d[i - 1]) / (d[i] - d[i - 1]) : 0;
       out.push({
-        lat: a.lat + (b.lat - a.lat) * k,
-        lon: a.lon + (b.lon - a.lon) * k,
+        ...gcAt(a, b, k),
         nm
       });
     }
@@ -1755,6 +1791,8 @@
     nearLon,
     wrapLon,
     distances,
+    gcAt,
+    densify,
     marks,
     mercator,
     drawBackground,
