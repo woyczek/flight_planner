@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 51,
-  "verdicts": 0
+  "tests": 52,
+  "verdicts": 1
  },
  "apps": [
   "pilote",
@@ -37,7 +37,9 @@
    },
    "test": "Carte sur LFPO à zoom 14 après lecture des procédures : taxiways nommés ; dans le panneau Sol, filtrer « W » surligne le tronçon.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ko",
+   "comment": "rien (cf. screenshot, relecture du 10/11 09:00Z)",
+   "at": "2026-11-10T09:04:51Z"
   },
   {
    "id": "SOG-0051",
@@ -567,7 +569,7 @@
    },
    "test": "Recharger la page (accepter « nouvelle version » si elle est proposée), puis Carburant › Vol › Départ : taper « stockholm » → ESSA et ESSB proposés avec « (Stockholm) » ; taper « suède » ou « sweden » → les terrains de Suède, les plus grands d'abord.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0159",
@@ -596,6 +598,19 @@
    "state": "todo"
   },
   {
+   "id": "SOG-0162",
+   "app": "maintenance",
+   "title": {
+    "fr": "Licences : une seule coche « je certifie utiliser les données pour mon usage personnel » déverrouille toutes les sources ; une page recense sources et licences",
+    "en": "Licences: one “personal use” checkbox unlocks every source; one page lists sources and licences",
+    "de": "Lizenzen: ein Häkchen „persönliche Nutzung“ schaltet alle Quellen frei; eine Seite listet Quellen und Lizenzen",
+    "es": "Licencias: una sola casilla «uso personal» desbloquea todas las fuentes; una página recoge fuentes y licencias"
+   },
+   "test": "Maintenance › Données : une seule case « Je certifie utiliser les données pour mon usage personnel » remplace les cases par source ; cochée, les sources qu'elle débloque sont listées dessous ; le lien « Sources et licences » ouvre la page qui donne éditeur et licence de chaque source.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
    "id": "SOG-0163",
    "app": "pilote",
    "title": {
@@ -606,7 +621,7 @@
    },
    "test": "Maintenance › Données › « Mettre à jour » (la base se reconstruit : analyseur 24), puis Carte avec une route qui traverse R 61, profil vertical ouvert : toucher le bloc de l'espace → sa fiche donne limites, organisme, fréquence, horaires publiés et conditions de l'AIP, et dit que l'activité réelle n'est pas connue.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0164",
@@ -620,19 +635,6 @@
    "test": "Relancer le lanceur, puis ouvrir Maintenance › Données : la page est utilisable en moins d'une seconde, sans temps mort avant l'affichage.",
    "since": "2026-11-10",
    "state": "todo"
-  },
-  {
-   "id": "SOG-0165",
-   "app": "maintenance",
-   "title": {
-    "fr": "Données, thèmes de paquets (Mégalopoles…) : le bouton « Ajouter » est énorme à côté du texte ; page à condenser et à homogénéiser",
-    "en": "Données, pack themes: the “Add” button is huge next to the text; page to condense and make consistent",
-    "de": "Daten, Paket-Themen: der Knopf „Hinzufügen“ ist riesig neben dem Text; Seite verdichten und vereinheitlichen",
-    "es": "Datos, temas de paquetes: el botón «Añadir» es enorme junto al texto; página por condensar y homogeneizar"
-   },
-   "test": "Maintenance › Données › Paquets : « Régions » et « Thèmes » sont deux onglets d'un même bloc ; dans un thème (Mégalopoles), chaque pays est une ligne avec une case, alignée comme la liste des zones, sans bouton « Ajouter ».",
-   "since": "2026-11-10",
-   "state": "known"
   },
   {
    "id": "SOG-0166",
@@ -670,6 +672,19 @@
     "es": "El usuario prueba una copia antigua sin saberlo: la nueva versión se aplica sola en un puesto con lanzador, y la versión servida es legible"
    },
    "test": "Faire une fois Ctrl+Maj+R sur la page et relancer le lanceur. Ensuite, après un correctif annoncé, un seul rechargement suffit, sans « Nouvelle version disponible ». Si la page est plus ancienne que le lanceur, un cartouche rouge « Version ancienne · Recharger » apparaît dans l'en-tête ; le toucher recharge.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0170",
+   "app": "maintenance",
+   "title": {
+    "fr": "Cadre : l'arbre de data/ relu cinquante fois dans IndexedDB à chaque chargement (clonage de 10 339 entrées)",
+    "en": "Frame: the data/ tree read fifty times from IndexedDB at each load (10,339 entries cloned)",
+    "de": "Rahmen: der data/-Baum wird bei jedem Laden fünfzigmal aus IndexedDB gelesen (10 339 Einträge geklont)",
+    "es": "Marco: el árbol de data/ leído cincuenta veces de IndexedDB en cada carga (10 339 entradas clonadas)"
+   },
+   "test": "Ouvrir la Carte, puis Maintenance › Données : l'affichage arrive nettement plus vite qu'hier (moins d'une seconde pour Données, lanceur relancé).",
    "since": "2026-11-10",
    "state": "todo"
   }

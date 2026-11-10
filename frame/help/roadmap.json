@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a8c30f8",
-  "fiches": 169,
+  "organisation": "8715ac6",
+  "fiches": 170,
   "untranslated": 1,
   "priorities": 152
  },
@@ -467,7 +467,7 @@
     {
      "id": "SOG-0158",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Saisie ADEP / ADEST : trouver « Stockholm » (ville et nom du terrain, pas seulement le code)",
      "en": "ADEP / ADEST entry: find “Stockholm” (city and airport name, not only the code)",
      "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
@@ -684,7 +684,7 @@
     {
      "id": "SOG-0163",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Espaces R et D : lire leur texte (activité, conditions) depuis le profil vertical et la carte",
      "en": "R and D areas: read their text (activity, conditions) from the vertical profile and the map",
      "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
@@ -1768,6 +1768,15 @@
      "en": "The user tests an old copy without knowing: the new version applies by itself on a workstation with a launcher, and the served version is readable",
      "de": "Der Benutzer testet unwissentlich eine alte Kopie: die neue Version greift auf einem Rechner mit Launcher von selbst, und die ausgelieferte Version ist lesbar",
      "es": "El usuario prueba una copia antigua sin saberlo: la nueva versión se aplica sola en un puesto con lanzador, y la versión servida es legible"
+    },
+    {
+     "id": "SOG-0170",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Cadre : l'arbre de data/ relu cinquante fois dans IndexedDB à chaque chargement (clonage de 10 339 entrées)",
+     "en": "Frame: the data/ tree read fifty times from IndexedDB at each load (10,339 entries cloned)",
+     "de": "Rahmen: der data/-Baum wird bei jedem Laden fünfzigmal aus IndexedDB gelesen (10 339 Einträge geklont)",
+     "es": "Marco: el árbol de data/ leído cincuenta veces de IndexedDB en cada carga (10 339 entradas clonadas)"
     }
    ]
   },
@@ -1993,7 +2002,7 @@
     {
      "id": "SOG-0162",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Licences : une seule coche « je certifie utiliser les données pour mon usage personnel » déverrouille toutes les sources ; une page recense sources et licences",
      "en": "Licences: one “personal use” checkbox unlocks every source; one page lists sources and licences",
      "de": "Lizenzen: ein Häkchen „persönliche Nutzung“ schaltet alle Quellen frei; eine Seite listet Quellen und Lizenzen",
@@ -2002,7 +2011,7 @@
     {
      "id": "SOG-0165",
      "kind": "bug",
-     "state": "planned",
+     "state": "doing",
      "fr": "Données, thèmes de paquets (Mégalopoles…) : le bouton « Ajouter » est énorme à côté du texte ; page à condenser et à homogénéiser",
      "en": "Données, pack themes: the “Add” button is huge next to the text; page to condense and make consistent",
      "de": "Daten, Paket-Themen: der Knopf „Hinzufügen“ ist riesig neben dem Text; Seite verdichten und vereinheitlichen",
