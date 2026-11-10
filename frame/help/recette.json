@@ -622,7 +622,7 @@
     "de": "Routen-Engine: verbessern, nicht nur kopieren — die längste IFPS-gültige Route in LOW, HIGH oder FRA, iterativ mit Zwischenpunkten (ESSB → LEMO)",
     "es": "Motor de rutas: mejorarlo, no solo copiarlo: la ruta válida IFPS más larga en LOW, HIGH o FRA, iterando con puntos intermedios (ESSB → LEMO)"
    },
-   "test": "Lanceur relancé. Carburant › Route, ESSB → LEMO, « Calculer A → B » : une route arrive en une dizaine de secondes au lieu de « calcul impossible » ; sa ligne dit son partage (« contrôlé … % · incomplet … % · repli … % ») ; le pli « Tronçons » liste chaque tronçon avec son état. Ce n'est pas encore ta variante par le réseau supérieur espagnol : en cours.",
+   "test": "Lanceur relancé. Carburant › Route, ESSB → LEMO au FL350, « Calculer A → B » : une route arrive en moins de dix secondes, par des airways (… PPN N10 CJN …), avec son partage, environ « contrôlé 65 % · incomplet 22 % · repli 13 % » ; le pli « Tronçons » liste chaque tronçon ; sur la Carte, plein = contrôlé, tireté = incomplet, pointillé = repli. LFPG → LEMD : une route en deux secondes.",
    "since": "2026-11-10",
    "state": "known"
   },
