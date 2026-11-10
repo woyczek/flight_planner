@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3cbd9d9",
+  "organisation": "508301b",
   "fiches": 212,
   "untranslated": 1,
   "priorities": 152
@@ -503,7 +503,7 @@
     {
      "id": "SOG-0211",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Route : une coordonnée au format OACI (4959N08712W) est dite « point inconnu »",
      "en": "Route: a coordinate in ICAO format (4959N08712W) is called an “unknown point”",
      "de": "Route: eine Koordinate im ICAO-Format (4959N08712W) gilt als „unbekannter Punkt“",
