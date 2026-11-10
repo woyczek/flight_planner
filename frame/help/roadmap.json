@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "edacdcd",
+  "organisation": "e87bd44",
   "fiches": 224,
   "untranslated": 1,
   "priorities": 152
@@ -2941,7 +2941,7 @@
     {
      "id": "SOG-0218",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Réglages : « Compagnie de cet appareil » met 8 secondes à s'afficher",
      "en": "Settings: “This device's airline” takes 8 seconds to show",
      "de": "Einstellungen: „Gesellschaft dieses Geräts“ braucht 8 Sekunden",

@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 93,
+  "tests": 94,
   "verdicts": 35
  },
  "apps": [
@@ -1332,6 +1332,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T15:56:50Z"
+  },
+  {
+   "id": "SOG-0218",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages : « Compagnie de cet appareil » met 8 secondes à s'afficher",
+    "en": "Settings: “This device's airline” takes 8 seconds to show",
+    "de": "Einstellungen: „Gesellschaft dieses Geräts“ braucht 8 Sekunden",
+    "es": "Ajustes: «Compañía de este dispositivo» tarda 8 segundos en mostrarse"
+   },
+   "test": "Réglages › Compagnie, sur l'appareil où tu as vu 8 s : la liste des compagnies s'affiche en moins de deux secondes, puis leurs détails (genre, flotte) se complètent sans rien déplacer. Dis sur quel appareil et par quel accès (poste, réseau local, relais) c'était lent.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T15:59:00Z"
   },
   {
    "id": "SOG-0221",
