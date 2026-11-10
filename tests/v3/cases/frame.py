@@ -3541,16 +3541,18 @@ def a95(c):
     seeded = c.doc('airline/dfa/settings.json')
     fill = lambda name, code: (c.page.fill('[data-card="company"] [data-f="co-name"]', name), c.page.fill('[data-card="company"] [data-f="co-code"]', code))
     fill('Taken', 'dfa')
-    c.tap('[data-act="companyAdd"]')
+    c.tap('[data-act="companyNext"]')
     c.until(f"document.querySelector('[data-card=\"company\"] [data-msg]').textContent.trim() !== ''", what='a message')
     c.eq([norm(c.text('[data-card="company"] [data-msg]')), c.doc('airline/dfa/settings.json') == seeded], [norm(T('taken')), True], 'a taken code: said, the existing folder is not overwritten', what='taken')
     fill('Bad', 'BAD!')
-    c.tap('[data-act="companyAdd"]')
+    c.tap('[data-act="companyNext"]')
     c.wait(400)
     c.eq(norm(c.text('[data-card="company"] [data-msg]')), norm(T('badCode')), 'a bad code: said', what='bad msg')
     c.eq(c.doc('airline/bad/settings.json'), None, 'a bad code writes nothing', what='bad')
     fill('Air Test', 'atx')
     c.page.check('[data-card="company"] [data-co-net="ivao"]')
+    c.tap('[data-act="companyNext"]')
+    c.until("!document.querySelector('[data-wizard] [data-step-pane=summary]').hidden", timeout=6000, what='the summary step')
     c.tap('[data-act="companyAdd"]')
     d = c.until_doc('airline/atx/settings.json', lambda d: bool(d), what='the settings of the new airline')
     c.eq([d.get('name'), d.get('networks'), (c.until_doc('airline/atx/fleet.json', lambda f: bool(f), what='its empty fleet') or {}).get('aircraft')], ['Air Test', {'ivao': True, 'vatsim': False, 'offline': False}, []], 'the folder: settings (name, networks as booleans) and an empty fleet', what='new folder')
@@ -4975,4 +4977,77 @@ def a124(c):
     long = why('SOG-0508') or ''
     c.ok(0 < len(long) < 700, str(len(long)), 'a long comment is bounded')
     c.eq(state('SOG-0507'), 'todo', 'a delivered that is not a date is ignored: the test is still to test', what='0507')
+@case('A125', 'Settings › Company › « Créer une compagnie » (SOG-0041, step B1): a stepper on the same screen (identity, summary), nothing written before the last button, then settings, fleet and the INDEX last; an interruption says what is done and « Reprendre » finishes without overwriting', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='V3_SPECIFICATION § 10.38 bis (accepted by the ergonomist, 10 Nov): « Créer » is a stepper that never jumps (one block, panes shown and hidden, « Retour » keeps every value), the code is proposed from the name until touched, the kind is chosen (commercial preselected), nothing is written before « Créer la compagnie », the index is written last so an airline is listed only when complete, a failure half-way says what is done and offers « Reprendre » (never a second Create, never an overwrite)')
+def a124(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    KN = lambda: c.js("import('/frame/lib/mission_categories.js').then(m => m.KIND_NAMES)")
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+    # the puts of the adapters are recorded, and the first write of the index can be made to fail (an interruption half-way)
+    c.page.add_init_script("""(() => { let fd; window.__puts = []; window.__failIndex = false; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; const a = v.adapter; v.adapter = function () { const ad = a.apply(this, arguments); const put = ad.put; ad.put = async function (p) { window.__puts.push(p); if (window.__failIndex && p === 'airline/index.json') { window.__failIndex = false; throw new Error('x') } return put.apply(this, arguments) }; return ad } } }) })()""")
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-wizard]')", timeout=15000, what='the card and its stepper')
+    w = lambda extra='': f'[data-wizard] {extra}'.strip()
+    c.js("document.querySelector('[data-airline-add]').open = true")
+    c.eq(c.js("[...document.querySelectorAll('[data-wizard] [data-step-pane]')].map(p => [p.dataset.stepPane, p.hidden])"), [['identity', False], ['summary', True], ['done', True]], 'one block, the first pane shown', what='panes')
+    c.eq(c.count(w('[data-step-dot]')), 2, 'two steps named in the header (identity, summary)', what='dots')
+    c.eq(c.js("[...document.querySelectorAll('[data-wizard] input[name=wz-kind]')].map(i => [i.value, i.checked])"), [['va', True], ['sog', False]], 'the kind: two radio buttons, commercial preselected', what='kind')
+    c.eq(c.count(w('[data-wz-kind] .f-muted')), 2, 'each with its sentence', what='sentences')
+    c.eq([norm(c.text(w('[data-kind-name=va]'))), norm(c.text(w('[data-kind-name=sog]')))], [norm(KN()['va'][['fr', 'en', 'de', 'es'].index(lang)]), norm(KN()['sog'][['fr', 'en', 'de', 'es'].index(lang)])], 'named by the one source of the kind words', what='kind names')
+    # ---- the code is proposed from the name until it is touched
+    c.page.fill('[data-wizard] [data-f="co-name"]', 'Rennes Motoculture')
+    c.eq(c.js("document.querySelector('[data-wizard] [data-f=co-code]').value"), 'rennes', 'the code is proposed from the first word of the name', what='proposed')
+    c.page.fill('[data-wizard] [data-f="co-code"]', 'rmo')
+    c.page.fill('[data-wizard] [data-f="co-name"]', 'Rennes Motoculture SA')
+    c.eq(c.js("document.querySelector('[data-wizard] [data-f=co-code]').value"), 'rmo', 'a code the user typed is never replaced', what='kept code')
+    c.page.check('[data-wizard] [data-co-net="ivao"]')
+    # ---- a refusal stays on the step and writes nothing
+    c.page.fill('[data-wizard] [data-f="co-name"]', '')
+    c.tap('[data-act="companyNext"]')
+    c.until(f"document.querySelector('[data-wizard] [data-msg]').textContent.trim() !== ''", timeout=6000, what='a refusal')
+    c.eq([norm(c.text(w('[data-msg]'))), c.js("document.querySelector('[data-wizard]').dataset.step")], [norm(T('badName')), 'identity'], 'an empty name: said, still on the identity step', what='bad name')
+    c.page.fill('[data-wizard] [data-f="co-name"]', 'Rennes Motoculture')
+    # ---- the summary, in a pilot's words; nothing is written yet
+    c.js("document.querySelector('[data-wizard] [data-msg]').textContent = ''")   # the refusal above is gone with the next gesture
+    h_identity = c.js("document.querySelector('[data-wizard]').getBoundingClientRect().height")
+    below = c.js("document.querySelector('[data-airline-join]').getBoundingClientRect().top + scrollY")
+    c.tap('[data-act="companyNext"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='the summary step')
+    c.ok(abs(c.js("document.querySelector('[data-airline-join]').getBoundingClientRect().top + scrollY") - below) <= 1 and c.js("document.querySelector('[data-wizard]').getBoundingClientRect().height") >= h_identity - 1, [h_identity, below], 'the block never gets shorter from one step to the next: what is under it does not move (rule 22)')
+    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO'), 'name · kind · networks, in words (no file name)', what='summary')
+    c.eq([c.doc('airline/rmo/settings.json'), c.js('window.__puts.length')], [None, 0], 'nothing is written before the last button', what='nothing written')
+    if c.width in (390, 1280):
+        c.shot(f'A125_standard_{c.width}_{lang}_summary_delivered.png')
+    # ---- « Retour » keeps every value
+    c.tap('[data-act="companyBack"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'identity'", timeout=6000, what='back to identity')
+    c.eq([c.js("document.querySelector('[data-wizard] [data-f=co-name]').value"), c.js("document.querySelector('[data-wizard] [data-f=co-code]').value"), c.js("document.querySelector('[data-wizard] [data-co-net=ivao]').checked")], ['Rennes Motoculture', 'rmo', True], 'back keeps the name, the code and the networks', what='kept values')
+    c.tap('[data-act="companyNext"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='the summary again')
+    # ---- an interruption at the index: what is done is said, « Reprendre » finishes without overwriting
+    c.js('window.__failIndex = true')
+    c.tap('[data-act="companyAdd"]')
+    c.until("!document.querySelector('[data-act=companyResume]').hidden", timeout=8000, what='« Reprendre » offered')
+    c.eq([c.js('window.__puts'), c.js("document.querySelector('[data-act=companyAdd]').hidden")], [['airline/rmo/settings.json', 'airline/rmo/fleet.json', 'airline/index.json'], True], 'settings, then the fleet, then the index (which failed): no second « Créer », only « Reprendre »', what='order and resume')
+    said = norm(c.text(w('[data-msg]')))
+    c.ok('rmo' not in c.js("(document.querySelector('[data-card=company] [data-airlines]').textContent)") and not any('rmo' == r for r in c.js("[...document.querySelectorAll('[data-card=company] [data-airlines] [data-airline]')].map(n => n.dataset.airline)")), said, 'the airline is not in the list yet: it is listed only when complete')
+    settings = c.doc('airline/rmo/settings.json')
+    c.tap('[data-act="companyResume"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='the end step')
+    idx = c.until_doc('airline/index.json', lambda i: i and any(a.get('code') == 'rmo' for a in i.get('airlines', [])), what='the index lists it')
+    c.eq([a['code'] for a in idx['airlines']], ['aaa', 'rmo'], 'the index keeps the others and lists the new one', what='index')
+    c.eq([c.doc('airline/rmo/settings.json') == settings, c.js('window.__puts.slice(3)')], [True, ['airline/index.json']], 'the files already written were not written again: only the index', what='no overwrite')
+    c.eq([settings['name'], settings['kind'], settings['networks']], ['Rennes Motoculture', 'va', {'ivao': True, 'vatsim': False, 'offline': False}], 'the settings: name, kind, networks', what='settings')
+    c.eq((c.doc('airline/rmo/fleet.json') or {}).get('aircraft'), [], 'an empty fleet', what='fleet')
+    c.until("document.querySelectorAll('[data-card=company] [data-airlines] [data-airline]').length === 3", timeout=8000, what='the list shows the new airline')
+    # ---- the end: « Voler pour cette compagnie »
+    c.tap('[data-act="companyFly"]')
+    c.until("location.hash.startsWith('#missions')", timeout=8000, what='Missions')
+    c.eq(c.js("FrameData.airline().then(a => a && a.code)"), 'rmo', 'the new airline is the current one', what='current')
     c.check_errors()

@@ -684,6 +684,35 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 [data-card="company"] details {
   margin-top: 8px
 }
+/* « Créer une compagnie » : un seul bloc à hauteur réservée (rien ne saute d'un pas à l'autre), les pas nommés en tête (SOG-0041, B1) */
+.f-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  color: var(--sog-muted)
+}
+.f-steps [data-current] {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline
+}
+.f-wizard {
+  display: flex;
+  flex-direction: column
+}
+.f-wizard [data-wz-nav] {
+  margin-top: auto
+}
+.f-wizard .f-msg:empty {
+  display: block;
+  min-height: 1.4em
+}
+.f-wizard [data-wz-kind] {
+  margin: 8px 0
+}
 [data-card="company"] details>summary {
   min-height: var(--sog-touch, 44px);
   display: flex;

@@ -309,7 +309,32 @@
       vatsim: ['VATSIM', 'VATSIM', 'VATSIM', 'VATSIM'],
       offline: ['hors ligne', 'off-line', 'offline', 'sin conexión']
     },
-    save: ['Créer', 'Create', 'Anlegen', 'Crear'],
+    save: ['Créer la compagnie', 'Create the airline', 'Fluggesellschaft anlegen', 'Crear la compañía'],
+    steps: {
+      identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
+      summary: ['Résumé', 'Summary', 'Zusammenfassung', 'Resumen']
+    },
+    next: ['Suivant', 'Next', 'Weiter', 'Siguiente'],
+    back: ['Retour', 'Back', 'Zurück', 'Atrás'],
+    resume: ['Reprendre', 'Resume', 'Fortsetzen', 'Reanudar'],
+    fly: ['Voler pour cette compagnie', 'Fly for this airline', 'Für diese Gesellschaft fliegen', 'Volar para esta compañía'],
+    stay: ['Rester ici', 'Stay here', 'Hier bleiben', 'Quedarme aquí'],
+    noKind: ['Choisissez un genre.', 'Choose a kind.', 'Wählen Sie eine Art.', 'Elija un tipo.'],
+    dirExists: ['Un dossier existe déjà pour ce code : choisissez-en un autre.',
+      'A folder already exists for this code: choose another.',
+      'Für diesen Code gibt es schon einen Ordner: wählen Sie einen anderen.', 'Ya existe una carpeta para este código: elija otro.'
+    ],
+    part: {
+      settings: ['les réglages', 'the settings', 'die Einstellungen', 'los ajustes'],
+      fleet: ['la flotte', 'the fleet', 'die Flotte', 'la flota'],
+      index: ['l’inscription dans la liste', 'the entry in the list', 'der Eintrag in der Liste', 'la inscripción en la lista']
+    },
+    partial: [
+      'Création interrompue : {done} écrit(s), il reste {todo}. « Reprendre » finit sans rien écraser.',
+      'Creation interrupted: {done} written, {todo} left. “Resume” finishes without overwriting anything.',
+      'Anlegen unterbrochen: {done} geschrieben, offen: {todo}. „Fortsetzen“ beendet es, ohne etwas zu überschreiben.',
+      'Creación interrumpida: {done} escrito(s), falta {todo}. «Reanudar» termina sin sobrescribir nada.'
+    ],
     badName: ['Donnez un nom (60 caractères au plus).', 'Give a name (60 characters at most).',
       'Geben Sie einen Namen an (höchstens 60 Zeichen).', 'Indique un nombre (60 caracteres como máximo).'
     ],
@@ -588,11 +613,230 @@
     } = env;
     if (lvl !== 3 && focus !== 'company') return '';
     return `<div class="f-card" data-card="company"><h2>${esc(t(TA.title))}</h2><p class="f-muted">${esc(t(TA.hint))}</p><div class="f-cos" role="radiogroup" aria-label="${esc(t(TA.title))}" data-airlines></div><p class="f-warn" data-airline-note hidden></p><div class="f-fiche" data-airline-fiche></div>
-      <details data-airline-add><summary>${esc(t(TA.add))}</summary>${fld('co-name', TA.name, '')}${fld('co-code', TA.code, '')}
-      <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-co-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset>
-      <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="companyAdd">${esc(t(TA.save))}</button></div></details>
+      ${wizardHtml(env)}
       <details data-airline-join><summary>${esc(t(TA.join))}</summary><p class="f-muted">${esc(t(TA.joinHint))}</p></details>
       <div data-mig hidden></div></div>`;
+  }
+  // les pas de « Créer une compagnie » (V3_SPECIFICATION § 10.38 bis) ; les catégories et la flotte s'y ajoutent avant le résumé (lots B2 et B3)
+  const WZ_STEPS = ['identity', 'summary'];
+  // par vue : le pas montré et la reprise d'une création interrompue
+  const WZ = new WeakMap();
+  /** Le stepper « Créer une compagnie » : un bloc construit une fois, à hauteur réservée (règle 22), un volet par pas ; rien n'est écrit avant le dernier bouton. Le genre est préchoisi « Commerciale ». */
+  function wizardHtml(env) {
+    const {
+      t,
+      fld
+    } = env;
+    return `<details data-airline-add><summary>${esc(t(TA.add))}</summary><div class="f-wizard" data-wizard data-step="identity">
+      <ol class="f-steps" data-steps>${WZ_STEPS.map((k, i) => `<li data-step-dot="${k}"${i === 0 ? ' data-current' : ''}>${i + 1}. ${esc(t(TA.steps[k]))}</li>`).join('')}</ol>
+      <section data-step-pane="identity">${fld('co-name', TA.name, '')}${fld('co-code', TA.code, '')}
+        <fieldset data-wz-kind><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="wz-kind" value="${k}"${k === 'va' ? ' checked' : ''}><span><b data-kind-name="${k}"></b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
+        <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-co-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset></section>
+      <section data-step-pane="summary" hidden><p data-wz-summary></p></section>
+      <section data-step-pane="done" hidden><p data-wz-done></p><div class="f-row"><button type="button" class="primary" data-act="companyFly">${esc(t(TA.fly))}</button><button type="button" data-act="companyStay">${esc(t(TA.stay))}</button></div></section>
+      <p class="f-msg" data-msg></p>
+      <div class="f-row" data-wz-nav><button type="button" data-act="companyBack" hidden>${esc(t(TA.back))}</button><button type="button" class="primary" data-act="companyNext">${esc(t(TA.next))}</button><button type="button" class="primary" data-act="companyAdd" hidden>${esc(t(TA.save))}</button><button type="button" class="primary" data-act="companyResume" hidden>${esc(t(TA.resume))}</button></div></div></details>`;
+  }
+  /** Montre le pas `name` (identity, summary, done) : les volets, les pastilles, les boutons de navigation ; rien d'autre ne change. */
+  function wizardShow(view, name) {
+    const w = view.querySelector('[data-wizard]');
+    if (!w) return;
+    // la hauteur du bloc ne diminue jamais d'un pas à l'autre : ce qui est dessous ne bouge pas (règle 22) ; « Rester ici » la libère
+    w.style.minHeight = `${Math.max(w.offsetHeight, parseFloat(w.style.minHeight) || 0)}px`;
+    w.dataset.step = name;
+    for (const pane of w.querySelectorAll('[data-step-pane]')) pane.hidden = pane.dataset.stepPane !== name;
+    WZ_STEPS.forEach(k => {
+      const dot = w.querySelector(`[data-step-dot="${k}"]`);
+      if (dot) dot.toggleAttribute('data-current', k === name);
+    });
+    const nav = w.querySelector('[data-wz-nav]'),
+      resume = !!WZ.get(view)?.resume,
+      on = {
+        companyBack: name === 'summary',
+        companyNext: name === 'identity',
+        companyAdd: name === 'summary' && !resume,
+        companyResume: name === 'summary' && resume
+      };
+    for (const [act, show] of Object.entries(on)) nav.querySelector(`[data-act="${act}"]`).hidden = !show;
+    nav.hidden = name === 'done';
+  }
+  /** Ce que l'utilisateur a saisi : { name, code, kind, nets } (la valeur des champs, jamais écrite avant le dernier bouton). */
+  function wizardValues(view) {
+    const w = view.querySelector('[data-wizard]'),
+      v = k => w.querySelector(`[data-f="${k}"]`)?.value.trim() ?? '';
+    return {
+      name: v('co-name').slice(0, 61),
+      code: v('co-code'),
+      kind: w.querySelector('input[name="wz-kind"]:checked')?.value || '',
+      nets: Object.fromEntries(AIRLINE_NETWORKS.map(k => [k, !!w.querySelector(`[data-co-net="${k}"]`)?.checked]))
+    };
+  }
+  /** Dit un message dans le stepper (vide : l'efface). */
+  function wizardSay(view, text) {
+    const m = view.querySelector('[data-wizard] [data-msg]');
+    if (m) {
+      m.textContent = text || '';
+      m.dataset.kind = 'err';
+    }
+  }
+  /** Le code proposé d'après le nom (le premier mot, lettres et chiffres sans accent, 8 signes au plus) ; '' si rien ne s'y prête. */
+  const proposeCode = name => catId(name.split(/\s+/)[0] || '').replace(/-/g, '').slice(0, 8);
+  /** La vérification du pas « Identité » : le nom, le code (règle, pas `perso`, pas déjà pris, pas de dossier orphelin), le genre, vingt compagnies au plus ; rend '' ou la phrase du refus. `resume` : une création interrompue (son dossier est le nôtre). */
+  async function wizardCheck(env, v, resume = false) {
+    const {
+      t,
+      FD
+    } = env;
+    if (!v.name || v.name.length > 60) return t(TA.badName);
+    if (!AIRLINE_CODE.test(v.code) || v.code === PERSO) return t(TA.badCode);
+    if (!KINDS.includes(v.kind)) return t(TA.noKind);
+    const ad = airlineData(FD),
+      list = airlineList(await ad.get(INDEX, {
+        wait: true
+      }).catch(() => null));
+    if (list.some(a => a.code === v.code)) return t(TA.taken);
+    if (list.length >= AIRLINE_MAX) return t(TA.full);
+    if (!resume && await ad.get(`airline/${v.code}/settings.json`, {
+        wait: true
+      }).catch(() => null)) return t(TA.dirExists);
+    return '';
+  }
+  /** Le résumé du dernier pas, en mots de pilote : « Rennes Motoculture · Commerciale · IVAO » (les pas de la catégorie et de la flotte s'y ajoutent). */
+  function wizardSummary(env, v) {
+    const KN = AIR.get(env.view)?.CL?.KIND_NAMES;
+    return [v.name, KN ? env.t(KN[v.kind]) : '', ...AIRLINE_NETWORKS.filter(k => v.nets[k]).map(k => env.t(TA.net[k]))].filter(Boolean)
+      .join(' · ');
+  }
+  /** « Suivant » et « Retour » : du pas Identité (vérifié) au résumé, et retour sans rien perdre. */
+  async function wizardMove(env, dir) {
+    const {
+      view,
+      t
+    } = env, w = view.querySelector('[data-wizard]'), at = w?.dataset.step;
+    if (!w) return;
+    wizardSay(view, '');
+    if (dir < 0) return wizardShow(view, 'identity');
+    if (at !== 'identity') return;
+    const v = wizardValues(view),
+      why = await wizardCheck(env, v);
+    if (why) return wizardSay(view, why);
+    w.querySelector('[data-wz-summary]').textContent = wizardSummary(env, v);
+    wizardShow(view, 'summary');
+  }
+  /** Les noms des genres dans les boutons du stepper (une seule source : KIND_NAMES), posés quand le module des catégories est là. */
+  function wizardKindNames(view, CL, t) {
+    if (!CL?.KIND_NAMES) return;
+    for (const b of view.querySelectorAll('[data-wizard] [data-kind-name]')) b.textContent = t(CL.KIND_NAMES[b.dataset.kindName]);
+  }
+  /** « Créer la compagnie » (ou « Reprendre ») : les fichiers dans l'ordre — réglages, flotte, puis l'INDEX en dernier (une compagnie n'est dans la liste que complète) — sans jamais écraser un fichier existant ; un échec à mi-chemin dit ce qui est fait et propose « Reprendre ». */
+  async function createAirline(env, resume) {
+    const {
+      view,
+      t,
+      FD,
+      c
+    } = env, v = wizardValues(view);
+    wizardSay(view, '');
+    const why = await wizardCheck(env, v, resume);
+    if (why) return wizardSay(view, why);
+    const ad = airlineData(FD),
+      list = airlineList(await ad.get(INDEX, {
+        wait: true
+      }).catch(() => null)),
+      stamp = {
+        updated_at: now(),
+        by: env.id?.trigram || ''
+      },
+      todo = [
+        ['settings', `airline/${v.code}/settings.json`, {
+          schema: 1,
+          name: v.name,
+          networks: v.nets,
+          kind: v.kind,
+          ...stamp
+        }],
+        ['fleet', `airline/${v.code}/fleet.json`, {
+          schema: 1,
+          aircraft: [],
+          ...stamp
+        }],
+        ['index', INDEX, {
+          schema: 1,
+          airlines: [...list, {
+            code: v.code,
+            name: v.name
+          }],
+          ...stamp
+        }]
+      ],
+      done = [];
+    try {
+      for (const [part, path, body] of todo) {
+        // un fichier déjà là (une création reprise) n'est jamais réécrit ; l'index se fusionne par code
+        if (part !== 'index' && await ad.get(path, {
+            wait: true
+          }).catch(() => null)) {
+          done.push(part);
+          continue;
+        }
+        await ad.put(path, body);
+        done.push(part);
+      }
+    } catch {
+      WZ.set(view, {
+        resume: true
+      });
+      wizardShow(view, 'summary');
+      return wizardSay(view, t(TA.partial, {
+        done: done.map(k => t(TA.part[k])).join(', ') || '—',
+        todo: todo.map(x => x[0]).filter(k => !done.includes(k)).map(k => t(TA.part[k])).join(', ')
+      }));
+    }
+    WZ.set(view, {
+      resume: false,
+      code: v.code
+    });
+    view.querySelector('[data-wz-done]').textContent = t(TA.added, {
+      n: v.name
+    });
+    wizardShow(view, 'done');
+    c.notify(t(TA.added, {
+      n: v.name
+    }), 'ok');
+    return airlineLive(env);
+  }
+  /** « Rester ici » : le stepper se vide et revient au premier pas. */
+  function wizardReset(view) {
+    const w = view.querySelector('[data-wizard]');
+    if (!w) return;
+    for (const i of w.querySelectorAll('input[data-f]')) {
+      i.value = '';
+      delete i.dataset.touched;
+    }
+    for (const i of w.querySelectorAll('[data-co-net]')) i.checked = false;
+    const va = w.querySelector('input[name="wz-kind"][value="va"]');
+    if (va) va.checked = true;
+    WZ.set(view, {
+      resume: false
+    });
+    wizardSay(view, '');
+    w.style.minHeight = '';
+    wizardShow(view, 'identity');
+    w.style.minHeight = '';
+  }
+  /** Les saisies du stepper : le code se propose d'après le nom tant qu'il n'a pas été touché (une écoute par vue). */
+  const WZ_WIRED = new WeakSet();
+
+  function wizardWire(view) {
+    if (WZ_WIRED.has(view)) return;
+    WZ_WIRED.add(view);
+    view.addEventListener('input', e => {
+      const f = e.target?.dataset?.f;
+      if (f === 'co-code') e.target.dataset.touched = '1';
+      if (f !== 'co-name') return;
+      const code = view.querySelector('[data-wizard] [data-f="co-code"]');
+      if (code && !code.dataset.touched) code.value = proposeCode(e.target.value);
+    });
   }
   // par vue : ce que la dernière lecture a rendu (lignes, module des catégories, langue, choix possible, compagnie courante), pour repeindre la fiche sans relire
   const AIR = new WeakMap();
@@ -660,6 +904,8 @@
       lang,
       now
     });
+    wizardWire(view);
+    wizardKindNames(view, CL, t);
     paintRows(box, rows, t, can, CL);
     markCurrent(view, now);
     paintFiche(env);
@@ -819,53 +1065,22 @@
       if (out) out.innerHTML = '';
       return migSay(t(TA.migWhy[res.reason || 'failed']));
     }
-    const r = card('company'),
-      name = val('co-name', r).slice(0, 61),
-      code = val('co-code', r);
-    if (!name || name.length > 60) return say('company', t(TA.badName));
-    if (!AIRLINE_CODE.test(code) || code === PERSO) return say('company', t(TA.badCode));
-    const ad = airlineData(FD),
-      list = airlineList(await ad.get(INDEX, {
-        wait: true
-      }).catch(() => null));
-    if (list.some(a => a.code === code)) return say('company', t(TA.taken));
-    if (list.length >= AIRLINE_MAX) return say('company', t(TA.full));
-    const nets = Object.fromEntries(AIRLINE_NETWORKS.map(k => [k, !!r.querySelector(`[data-co-net="${k}"]`)?.checked])),
-      stamp = {
-        updated_at: now(),
-        by: env.id?.trigram || ''
-      };
-    try {
-      await ad.put(`airline/${code}/settings.json`, {
-        schema: 1,
-        name,
-        networks: nets,
-        ...stamp
-      });
-      await ad.put(`airline/${code}/fleet.json`, {
-        schema: 1,
-        aircraft: [],
-        ...stamp
-      });
-      await ad.put(INDEX, {
-        schema: 1,
-        airlines: [...list, {
-          code,
-          name
-        }],
-        ...stamp
-      });
-    } catch {
-      return say('company', t(TA.failed));
+    if (act === 'companyNext' || act === 'companyBack') return wizardMove(env, act === 'companyNext' ? 1 : -1);
+    if (act === 'companyAdd' || act === 'companyResume') return createAirline(env, act === 'companyResume');
+    if (act === 'companyStay') return wizardReset(env.view);
+    if (act === 'companyFly') {
+      // « Voler pour cette compagnie » : la compagnie devient la courante, puis Missions
+      const code = WZ.get(env.view)?.code || '';
+      if (AIRLINE_CODE.test(code) && typeof FD.setAirline === 'function') await FD.setAirline(code);
+      wizardReset(env.view);
+      location.hash = '#missions';
     }
-    c.notify(t(TA.added, {
-      n: name
-    }), 'ok');
-    return again();
   }
 
   (window.SogSettingsParts ||= {}).airline = {
-    acts: ['companyChoose', 'companyAdd', 'companyPlan', 'companyMigrate', 'companyKind', 'companyCatAdd', 'companyCatDel'],
+    acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly', 'companyPlan',
+      'companyMigrate', 'companyKind', 'companyCatAdd', 'companyCatDel'
+    ],
     html: airlineHtml,
     live: airlineLive,
     list: airlineList,
