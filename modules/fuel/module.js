@@ -1654,6 +1654,10 @@ const STYLE = `
 [data-module="fuel"] .fu-flight>.f-field:first-child .fu-when{flex-wrap:nowrap}
 [data-module="fuel"] .fu-flight>.f-field:first-child .fu-when input{flex:1 1 3.5em;min-width:3.5em}
 [data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 11em;max-width:26em;min-width:0} /* min-width:0 : la date ne pousse pas la ligne au-delà de l'écran */
+/* F4 à 360 px (SOG-0056 retouché) : la largeur naturelle du champ date-heure (≈ 190 px) poussait la rangée de 3 px ; le conteneur et le
+   champ rétrécissent à la cellule */
+[data-module="fuel"] .fu-flight>.f-field:last-child .fu-when{min-width:0;max-width:100%}
+[data-module="fuel"] .fu-flight>.f-field:last-child .fu-when input{width:0;min-width:0}
 @container (max-width: 559px){[data-module="fuel"] .fu-lblnote{display:none}} /* le libellé de la date tient sur une ligne au téléphone */
 [data-module="fuel"] .fu-flight [data-lvlauto]{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} /* une ligne, hauteur réservée */
 [data-module="fuel"] .fu-when{display:flex;flex-wrap:wrap;gap:4px;align-items:stretch} /* champ d'abord, les deux boutons passent dessous quand la place manque */

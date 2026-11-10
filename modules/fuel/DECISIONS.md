@@ -1535,3 +1535,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   done and said: Fuel produces no OFP of its own (« Charger mon OFP » reads SimBrief's) and its export is the simulator's FMS / PLN
   file, which has no place for a frequency: the « même ligne dans l'OFP et l'export » of the ticket is asked back to the ergonomist.
   F127; counter-test on origin/v3 (7f1a9b74d): no line.
+- **10 Nov 2026 — F4 at 360 px**: the row Level / Flight date of 181e553c6 overflowed by 3 px at 360 px (F4, seen by Settings' --touched
+  pass): the cell had `min-width: 0` but neither its `.fu-when` nor the date-time input, whose natural width (≈ 190 px) won. Both now
+  shrink to the cell; F4 joins the gate of any change to the step Flight.
