@@ -176,6 +176,9 @@ def latest_run(now, last):
     return None
 
 
+PROGRESS = '@etape'  # ligne d'avancement « @etape k/n » : une par échéance lue (le lanceur la met en barre de progression)
+
+
 def read(step, now, run, times):
     """Télécharge et décode les 9 échéances ; rend le dictionnaire du fichier, ou lève une erreur."""
     lats = list(range(-TOP, TOP + 1, step))
@@ -211,6 +214,7 @@ def read(step, now, run, times):
                 raise RuntimeError(f'+{(t - run) // 3600} h, {k} : {missing} valeurs manquantes sur {n}')
         steps.append(({'schema': 1, 'time': t, 'vars': rows}, {'schema': 1, 'time': t, 'vars': alt}))
         time.sleep(1)  # NOMADS : au plus quelques demandes par minute
+        print(f'{PROGRESS} {len(steps)}/{len(times)}', flush=True)  # l'avancement, lu par le job du lanceur (tools/regen/weather.py)
     index = {
         'schema': 1,
         'model': 'gfs',

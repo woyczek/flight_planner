@@ -602,6 +602,83 @@
       'El archivo AIP_OFFLINE.zip (eAIP sin conexión, unos 1 GB), dejado en Descargas: solo se leen algunas páginas.'
     ]
   }, {
+    // Danemark (Naviair) : source déposée à la main, lecture À VENIR (SOG-0189 / SOG-0153, 10 nov. 2026). Rien n'est lu par le lanceur ;
+    // le futur lecteur local écrira dans data/local seulement, jamais dans sia/base (les conditions de l'AIP danois, GEN 0.1 § 6,
+    // interdisent toute reproduction sans accord écrit de l'autorité : frame/aerodb/NAVIAIR_LICENCE_REQUEST.md).
+    id: 'naviair',
+    localOnly: true,
+    group: 'base',
+    steps: {
+      page: {
+        url: 'https://aim.naviair.dk/en/',
+        home: 'https://aim.naviair.dk/'
+      },
+      files: [{
+        name: 'EK_ENR_3_2_en.pdf',
+        url: 'https://aim.naviair.dk/media/files/mmsbfi0p2t1/EK_ENR_3_2_en.pdf',
+        gives: [
+          'ENR 3.2 · routes RNAV du Danemark, du Groenland et des îles Féroé (le lien direct donné est l’édition AIRAC 06/24 : la page liste le fichier du cycle en cours)',
+          'ENR 3.2 · RNAV routes of Denmark, Greenland and the Faroe Islands (the direct link given is the AIRAC 06/24 edition: the page lists the file of the current cycle)',
+          'ENR 3.2 · RNAV-Strecken Dänemarks, Grönlands und der Färöer (der angegebene Direktlink ist die Ausgabe AIRAC 06/24: die Seite listet die Datei des aktuellen Zyklus)',
+          'ENR 3.2 · rutas RNAV de Dinamarca, Groenlandia y las Feroe (el enlace directo dado es la edición AIRAC 06/24: la página lista el archivo del ciclo en curso)'
+        ]
+      }, {
+        name: 'EK_ENR_2_1_en.pdf',
+        gives: ['ENR 2.1 · espaces aériens (FIR, TMA, CTA) du Danemark, du Groenland et des îles Féroé, à chercher sur la page',
+          'ENR 2.1 · airspaces (FIR, TMA, CTA) of Denmark, Greenland and the Faroe Islands, to find on the page',
+          'ENR 2.1 · Lufträume (FIR, TMA, CTA) Dänemarks, Grönlands und der Färöer, auf der Seite zu suchen',
+          'ENR 2.1 · espacios aéreos (FIR, TMA, CTA) de Dinamarca, Groenlandia y las Feroe, para buscar en la página'
+        ]
+      }, {
+        name: 'EK_AD_2_EKOD_RNP_RWY_24_2_en.pdf',
+        url: 'https://aim.naviair.dk/media/files/sup1b1iyaxv/EK_AD_2_EKOD_RNP_RWY_24_2_en.pdf',
+        gives: [
+          'AD 2 · exemple de procédure (Odense, RNP piste 24) : les procédures sont des PDF, une carte par fichier, utile à la page 2',
+          'AD 2 · example of a procedure (Odense, RNP runway 24): procedures are PDFs, one chart per file, useful on page 2',
+          'AD 2 · Beispiel eines Verfahrens (Odense, RNP Piste 24): Verfahren sind PDFs, eine Karte je Datei, nützlich auf Seite 2',
+          'AD 2 · ejemplo de procedimiento (Odense, RNP pista 24): los procedimientos son PDF, una carta por archivo, útil en la página 2'
+        ]
+      }]
+    },
+    zones: ['dk'],
+    fetch: {
+      how: 'pick',
+      glob: 'EK_*.pdf',
+      name: 'EK_….pdf'
+    },
+    build: {
+      runtime: 'none',
+      id: null
+    },
+    publish: false,
+    no: null,
+    status: 'candidate',
+    n: ['Naviair (AIP du Danemark)', 'Naviair (AIP Denmark)', 'Naviair (AIP Dänemark)', 'Naviair (AIP de Dinamarca)'],
+    url: 'https://aim.naviair.dk/en/',
+    gives: [
+      'Les routes (ENR 3.2), les espaces (ENR 2.1) et les procédures (AD 2) du Danemark : à déposer ; lecture à venir (le lanceur ne lit rien, le lecteur local n’est pas encore livré).',
+      'The routes (ENR 3.2), airspaces (ENR 2.1) and procedures (AD 2) of Denmark: to be dropped by hand; reading to come (the launcher reads nothing, the local reader is not delivered yet).',
+      'Die Strecken (ENR 3.2), Lufträume (ENR 2.1) und Verfahren (AD 2) Dänemarks: von Hand abzulegen; Lesen folgt (der Launcher liest nichts, der lokale Leser ist noch nicht geliefert).',
+      'Las rutas (ENR 3.2), los espacios (ENR 2.1) y los procedimientos (AD 2) de Dinamarca: a depositar a mano; lectura por venir (el lanzador no lee nada, el lector local aún no está entregado).'
+    ],
+    pub: 'Naviair (Danemark), pour la Trafikstyrelsen',
+    credit: ['Source : Naviair, AIP Danemark', 'Source: Naviair, AIP Denmark', 'Quelle: Naviair, AIP Dänemark',
+      'Fuente: Naviair, AIP Dinamarca'
+    ],
+    date: '2026-11-10',
+    lic: [
+      'AIP du Danemark (GEN 0.1 § 6) : aucune reproduction sans accord écrit de l’autorité danoise ; lu sur ce poste seulement, jamais publié (demande d’accord prête)',
+      'AIP of Denmark (GEN 0.1 § 6): no reproduction without the written permission of the Danish authority; read on this workstation only, never published (permission request ready)',
+      'AIP Dänemarks (GEN 0.1 § 6): keine Vervielfältigung ohne schriftliche Erlaubnis der dänischen Behörde; nur auf diesem Rechner gelesen, nie veröffentlicht (Anfrage bereit)',
+      'AIP de Dinamarca (GEN 0.1 § 6): ninguna reproducción sin permiso escrito de la autoridad danesa; leído solo en este equipo, nunca publicado (solicitud lista)'
+    ],
+    how: [
+      'Les fichiers EK_….pdf de la page Naviair, laissés dans Téléchargements ; rien n’est lu pour l’instant.',
+      'The EK_….pdf files from the Naviair page, left in Downloads; nothing is read for now.',
+      'Die EK_….pdf-Dateien der Naviair-Seite im Download-Ordner; vorerst wird nichts gelesen.',
+      'Los archivos EK_….pdf de la página de Naviair, dejados en Descargas; por ahora no se lee nada.'
+    ]
+  }, {
     id: 'nat',
     group: 'weather',
     zones: ['nat'],

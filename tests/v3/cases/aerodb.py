@@ -5299,6 +5299,7 @@ def k111(c):
         'json.dump(idx, open(os.path.join(out, "index.json"), "w"))\n'
         'if mode == "stray": open(os.path.join(out, "evil.html"), "w").write("<script>")\n'
         'if mode == "missing": os.remove(os.path.join(out, names[0]))\n'
+        'for k in range(3): print("@etape %d/3" % (k + 1), flush=True)\n'
         'print("synoptique monde : 2376 lieux, 3 \\u00e9ch\\u00e9ances")\n')
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = os.path.join(td, 'data')
@@ -5307,7 +5308,8 @@ def k111(c):
         open(script, 'w', encoding='utf-8').write(fake)
         ctx = {'data': data, 'script': script}
         dest = os.path.join(data, 'local', 'weather', 'world')
-        run = lambda mode='ok', **a: (open(os.path.join(td, 'mode.txt'), 'w').write(mode), fn(RJ.Job('weather', 'world', {}), check(a), ctx))[1]
+        jobs = []
+        run = lambda mode='ok', **a: (open(os.path.join(td, 'mode.txt'), 'w').write(mode), jobs.append(RJ.Job('weather', 'world', {})), fn(jobs[-1], check(a), ctx))[2]
         r = run(action='status')
         c.eq((r['ok'], r['exists']), (True, False), 'status without a publication: it does not exist, no network call', what='status none')
         r = run('none')
@@ -5320,6 +5322,9 @@ def k111(c):
         r = run('ok')
         c.eq((r['ok'], r['exists'], r['steps'], r['files'], r['step'], r['run'], r['times'], os.path.exists(os.path.join(dest, 'index.json'))), (True, True, 3, 7, 5, '2027-01-15T05:13:20Z', ['2027-01-15T08:00:00Z', '2027-01-15T14:00:00Z'], True),
              'a valid output is put in place in data/local/weather/world/: the run, the steps, the files and their size said', what='ok')
+        v = jobs[-1].view()
+        c.eq((v['done'], v['total'], v['unit'], v['step'], [x for x in v['log'] if '@etape' in x]), (3, 3, 'étapes', 'synoptique monde : échéance 3 sur 3', []),
+             'the tool says « @etape k/n » for each forecast time read: the job reports it as its progress (3 / 3 étapes) and keeps the progress lines out of its log (SOG-0198: « 0 / 1 étapes » for 119 s)', what='progress')
         c.eq(open(os.path.join(td, 'args.txt')).read(), '', 'the first build has no previous publication: no --keep', what='no keep')
         c.eq(sorted(os.listdir(os.path.join(data, 'local', 'weather'))), ['world'], 'nothing else is left next to the publication (no work folder, no old one)', what='clean')
         r = run('ok')
@@ -6619,8 +6624,9 @@ def k140(c):
 def k141(c):
     c.page.goto(f'{c.base}/frame/aerodb/test/catalogue.html', wait_until='load')
     r = c.js("""() => {
-      const C = AeroCatalogue, picks = C.SOURCES.filter(s => s.fetch && s.fetch.how === 'pick' && s.status === 'used');
-      return { picks: picks.map(s => s.id), steps: Object.fromEntries(picks.map(s => [s.id, C.stepsOf(s.id, '2610')])), none: C.stepsOf('geonames'), nobody: C.stepsOf('nobody') };
+      const C = AeroCatalogue, picks = C.SOURCES.filter(s => s.fetch && s.fetch.how === 'pick' && (s.status === 'used' || s.id === 'naviair'));
+      return { picks: picks.map(s => s.id), steps: Object.fromEntries(picks.map(s => [s.id, C.stepsOf(s.id, '2610')])), none: C.stepsOf('geonames'), nobody: C.stepsOf('nobody'),
+        naviair: (n => ({ status: n.status, zones: n.zones, localOnly: n.localOnly, publish: n.publish, build: n.build.runtime, lic: n.lic.length === 4 && n.lic.every(t => t.includes('GEN 0.1 § 6')) }))(C.SOURCES.find(s => s.id === 'naviair')) };
     }""")
     https = lambda u: isinstance(u, str) and u.startswith('https://') and ' ' not in u
     bad = []
@@ -6645,6 +6651,11 @@ def k141(c):
     st = r['steps']
     c.eq((st['lfv']['page']['url'], st['lfv']['files'][0]['name'], st['lfv']['files'][0]['url']), ('https://www.aro.lfv.se/content/eaip/default_offline.html', 'AIP_OFFLINE.zip', 'https://aro.lfv.se/Content/eaip/AIP_OFFLINE.zip'),
          'Sweden: the user’s two links to the letter (the offline eAIP page and the direct download) and the file name the pickup looks for', what='lfv links')
+    c.eq((st['naviair']['page']['url'], [(f['name'], f.get('url')) for f in st['naviair']['files']], r['naviair']), (
+        'https://aim.naviair.dk/en/', [('EK_ENR_3_2_en.pdf', 'https://aim.naviair.dk/media/files/mmsbfi0p2t1/EK_ENR_3_2_en.pdf'), ('EK_ENR_2_1_en.pdf', None),
+                                      ('EK_AD_2_EKOD_RNP_RWY_24_2_en.pdf', 'https://aim.naviair.dk/media/files/sup1b1iyaxv/EK_AD_2_EKOD_RNP_RWY_24_2_en.pdf')],
+        {'status': 'candidate', 'zones': ['dk'], 'localOnly': True, 'publish': False, 'build': 'none', 'lic': True}),
+        'Denmark: the user’s links to the letter, the source is a candidate (« à déposer ; lecture à venir »): local only, nothing published, no build, the licence line cites GEN 0.1 § 6 in four languages', what='naviair')
     c.eq(sorted(f['name'] for f in st['nats']['files']), ['EG_AIP_DS_<AAAAMMJJ>_XML.zip', 'EG_OBS_DS_AREA1_FULL_<AAAAMMJJ>_XML.zip', 'EG_UAS_…_XML.zip'], 'NATS: the three sets the pickup takes, each named', what='nats files')
     c.eq(st['sia']['page']['url'], 'https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/donnees-aeronautiques-xml-airac-10-26.html', 'SIA: the page of the cycle asked for, resolved at the source (not a front page)', what='sia cycle')
 

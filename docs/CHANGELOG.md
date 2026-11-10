@@ -55,6 +55,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Map: the mission window shows even when the list of the missions arrives after the mount** (`modules/maps/mission_view.js`, `module.js`; SPEC § 15, DECISIONS; noreg D148; SOG-0196). A flight that names a
   mission the repository's tree does not give yet (first load) is taken up again when the list changes: the window (provided map, view, cross) appears without a reload, in the double view as on the Map alone.
 
+- **Denmark (Naviair) in the step-by-step; the world forecast job reports its progress** (`frame/aerodb/catalogue.js` source `naviair`, `tools/build_world_weather.py`, `tools/regen/weather.py`; INTEGRATION; noreg K141, K111; SOG-0189, SOG-0198).
+  The catalogue gains `naviair` (zone `dk`, candidate, local only, nothing published, no build): the user's links to the letter (ENR 3.2 file, the page that lists ENR 2.1, the AD 2 example),
+  the files named, and the licence line citing GEN 0.1 § 6 of the Danish AIP; the line reads « à déposer ; lecture à venir » (the launcher reads nothing). The direct ENR 3.2 link is the AIRAC 06/24 edition: the step says so.
+  `weather/world`: the builder prints `@etape k/n` after each forecast time and the job turns it into `job.step` (« 0 / 1 étapes » for 119 s before; now 1 / 25 … 25 / 25), reading the tool's output as it comes.
+
 - **VFR points: a download stopped half-way no longer reads « à jour », and no longer erases the published terrains** (`tools/regen/vfr.py`, `tools/vfr_import.py`,
   `frame/aerodb/aerodb.js` `vfrParts`; INTEGRATION; noreg K142; SOG-0191). Three losses: `sia/vfr/index.json` carried no cycle (the compiler writes `airac`, the importer read
   `cycle`), the build compiled whatever the cache held and **removed every other published terrain** (the build of 10 Nov on 28 charts took the set from 418 terrains to 28),

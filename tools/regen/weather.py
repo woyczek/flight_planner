@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -83,6 +84,20 @@ def _valid(folder):
     return all(isinstance(n, str) and n in names for n in named) and sum(e.stat().st_size for e in entries) <= MAX_BYTES
 
 
+PROGRESS = re.compile(r'^@etape (\d{1,3})/(\d{1,3})\s*$')      # la ligne d'avancement de tools/build_world_weather.py (une par échéance lue)
+
+
+def _read_lines(proc, job, lines):
+    """Lit la sortie de l'outil ligne à ligne : « @etape k/n » devient l'avancement du travail, le reste est gardé (les dernières lignes servent de message)."""
+    for line in proc.stdout:
+        m = PROGRESS.match(line)
+        if m:
+            job.step('synoptique monde : échéance %s sur %s' % m.groups(), int(m.group(1)), int(m.group(2)), 'étapes')
+        elif line.strip():
+            lines.append(line.strip())
+            del lines[:-50]
+
+
 def run(job, args, ctx):
     data = ctx['data']
     dest = os.path.join(data, *DEST)
@@ -103,13 +118,16 @@ def run(job, args, ctx):
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), cwd=work)
         lines, end = [], t0 + ctx.get('timeout', TIMEOUT)
+        reader = threading.Thread(target=_read_lines, args=(proc, job, lines), daemon=True)      # l'avancement (« @etape k/n », une ligne par échéance) monte au fur et à mesure ; lire la sortie en continu évite aussi qu'un tube plein ne fige l'outil
+        reader.start()
         while proc.poll() is None:
             if job.cancelled() or time.time() > end:
                 proc.kill()
                 proc.wait()
                 return {'ok': False, 'reason': 'cancelled' if job.cancelled() else 'timeout', 'seconds': round(time.time() - t0, 1)}
             time.sleep(0.3)
-        lines = (proc.stdout.read() or '').strip().splitlines()[-6:]
+        reader.join(5)
+        lines = lines[-6:]
         for line in lines:
             job.log(line[:300])
         said = ' '.join(lines)
