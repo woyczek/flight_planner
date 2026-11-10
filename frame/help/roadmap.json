@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6161ed5",
-  "fiches": 182,
+  "organisation": "a61a058",
+  "fiches": 185,
   "untranslated": 1,
   "priorities": 152
  },
@@ -725,6 +725,33 @@
      "en": "Long route: too many distance markers",
      "de": "Lange Route: zu viele Distanzmarken",
      "es": "Ruta larga: demasiados marcadores de distancia"
+    },
+    {
+     "id": "SOG-0183",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carte de mission : le curseur de complexité a disparu",
+     "en": "Mission map: the complexity slider is gone",
+     "de": "Missionskarte: der Komplexitätsregler ist verschwunden",
+     "es": "Mapa de misión: ha desaparecido el cursor de complejidad"
+    },
+    {
+     "id": "SOG-0184",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "VFR topo : pas de courbes de niveau (la V2 en avait)",
+     "en": "VFR topo: no contour lines (V2 had them)",
+     "de": "VFR-Topo: keine Höhenlinien (V2 hatte sie)",
+     "es": "VFR topo: sin curvas de nivel (la V2 las tenía)"
+    },
+    {
+     "id": "SOG-0185",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carte : la fiche d'un espace clignote à l'ouverture, et l'onglet « Couches » sert à autre chose qu'à choisir les couches",
+     "en": "Map: an airspace sheet flickers when it opens, and the “Layers” tab is used for more than choosing layers",
+     "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
+     "es": "Mapa: la ficha de un espacio parpadea al abrirse y la pestaña «Capas» sirve para algo más que elegir capas"
     }
    ]
   },
@@ -783,7 +810,7 @@
     {
      "id": "SOG-0181",
      "kind": "bug",
-     "state": "planned",
+     "state": "doing",
      "fr": "Compte rendu : dire pour quelle compagnie on l'écrit",
      "en": "Report: say which airline it is written for",
      "de": "Bericht: sagen, für welche Gesellschaft er geschrieben wird",
@@ -1386,7 +1413,7 @@
     {
      "id": "SOG-0041",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
      "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
      "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",

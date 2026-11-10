@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 62,
-  "verdicts": 24
+  "verdicts": 26
  },
  "apps": [
   "pilote",
@@ -22,9 +22,11 @@
     "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
     "es": "Misiones: categorías « comercial » (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba) e informe de un vuelo comercial"
    },
-   "test": "Réglages › Compagnie : donner son genre à une compagnie (« Commerciale »), ouvrir « Catégories de missions » ; préparer une mission de catégorie fret, voler, puis le compte rendu demande « Fret embarqué (kg) ».",
-   "since": "2026-11-09",
-   "state": "known"
+   "test": "Réglages › Compagnie : la liste est à boutons radio, chaque ligne dit son genre (« Commerciale », « Escadrille SO », « Personnel ») ; choisir une compagnie ne fait rien clignoter ; dessous, la fiche de la compagnie choisie montre Genre et « Catégories de missions » sans rien déplier, avec « Ajouter une catégorie ». (Créer et rejoindre une compagnie : étape suivante, pas encore.)",
+   "since": "2026-11-10",
+   "state": "ko",
+   "comment": "plutôt qu’un bouton « choisir », un bouton radio. ergonomie ! on ne sait pas si c’est un sog, ou une compagnie commerciale. En plus, ça clignote au choix. Où est « catégorie de missions » ? je cesse de chercher, je laisse l’ergo redéfinir le chemin utilisateur. Use cases : - 1/ je crée une compagnie commerciale, rennes motoculture, je définis les catégories de vol, et j’affecte des appareils depuis la base - 2/ je rejoins une compagnie SO, via un site web de la flotte, je le parse, et je vole les missions pré-préparées dans la base. - 3/ uses cases déjà définis de compagnie locale",
+   "at": "2026-11-10T10:23:04Z"
   },
   {
    "id": "SOG-0046",
@@ -772,7 +774,9 @@
    },
    "test": "Compagnie › Missions › une mission SO (SAR, HEMS…) › « Voir sur la Carte » de la carte cible : elle s'ouvre sur un fond VFR topographique (relief, obstacles, terrains VFR), plus sur un fond uni ; le bandeau porte « Vue » : VFR topo / IFR / Fond seul, et le choix est retenu pour cette carte. Retirer le bandeau rend la vue du vol.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "ok",
+   "comment": "oui. ok aussi pour le détail et la vue double. sauf pour la complexité. le curseurs a disparu, et on sait qu’il sert à épargner la vue et le cpu. le vfr topo n’a pas de courbes de niveau ?? il avait ça en v2. Le clignottement au double clic sur un espace ? la vue coupe clignotte tant que la fenêtre n’a pas réduit au max.  Autant j’aime bien la vue « préparer le vol » avec la popup sur la carte, autant c’est déstabilisant d’avoir l’onglet « couches » qui sert à autre chose que choisir les éléments à afficher. Ça doublonne avec la popup en plus.",
+   "at": "2026-11-10T11:01:58Z"
   },
   {
    "id": "SOG-0172",
