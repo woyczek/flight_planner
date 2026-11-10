@@ -404,6 +404,12 @@ def _leg(tokens, rnp, warn, lane=None, fixed=None):
                     if leg:
                         leg['altUnread'] = part[1]
                     return leg
+            if d is None and rnp:
+                leg = _dircam_leg(tokens)
+                if leg:                                                    # SOG-0203 (LFOE) : la page DIRCAM n'imprime pas les cellules vides, la ligne est lue par ses motifs
+                    if fixed is not None:
+                        fixed.append(' '.join(tokens))
+                    return leg
             if d is None:
                 warn(f'ligne illisible ({len(c)} cellules au lieu de {want}): {" ".join(tokens)}')
                 return None
@@ -411,6 +417,47 @@ def _leg(tokens, rnp, warn, lane=None, fixed=None):
             if fixed is not None:
                 fixed.append(' '.join(tokens))
     return _leg_of(tokens, c, rnp, warn)
+
+
+def _dircam_leg(tokens):
+    """Tronçon d'une page de précodage RNP de la DIRCAM (terrains militaires, LFOE : « PRECODING RNP RWY 04 ») ou None. Cette page n'imprime PAS les cellules vides (pas de tiret) : « IF OE401 2200 2200 220 / RNP APCH RNAV 1 »,
+    « TF IOE04 329 329.9 5.0 2100 2100 », « TF RW04 Yes 039 039.8 5.0 -3.0 / 15 », « TF OE406 039 039.9 6.0 » : la position d'un nombre ne dit plus sa colonne, ses MOTIFS la disent. Le point, « Yes » (survol), L / R (virage), le cap magnétique suivi du
+    cap vrai (trois chiffres puis trois chiffres, un décimal), la distance (un décimal, après le cap), l'angle vertical (« -3.0 / 15 »), puis les nombres entiers : ceux de 500 et plus sont les altitudes (mini, maxi), les autres la vitesse. La
+    spécification de navigation (« / RNP APCH RNAV 1 ») est retirée. Un tronçon TF sans cap ou sans distance, un mot inconnu, deux vitesses : None (la ligne reste « illisible », dite)."""
+    if len(tokens) < 3 or tokens[0] not in PATH_TERMINATORS or any(all(ch in DASHES for ch in w) for w in tokens[1:]):      # une page civile imprime un tiret par cellule vide : sa position dit la colonne, jamais lue par motifs
+        return None
+    text = re.sub(r'(-\d+(?:\.\d+)?)\s*°?\s*/\s*(\d+(?:\.\d+)?)', r'@\1/\2', ' '.join(tokens[1:]))
+    text = re.split(r'\s*/?\s*\b(?:RNP|RNAV)\b', text)[0]
+    tok = text.split()
+    if len(tok) < 2 or not re.fullmatch(r'[A-Z][A-Z0-9]{1,5}', tok[0]):
+        return None
+    over = turn = crs = nm = vpa = None
+    nums = []
+    i = 1
+    while i < len(tok):
+        w = tok[i]
+        if w in ('Yes', 'YES'):
+            over = True
+        elif w in ('L', 'R') and turn is None:
+            turn = w
+        elif re.fullmatch(r'@-?\d+(?:\.\d+)?/\d+(?:\.\d+)?', w):
+            vpa = float(w[1:].split('/')[0])
+        elif re.fullmatch(r'\d{3}', w) and crs is None and i + 1 < len(tok) and re.fullmatch(r'\d{3}\.\d', tok[i + 1]):
+            crs = int(w)
+            i += 1
+        elif re.fullmatch(r'\d+\.\d', w) and nm is None and crs is not None:
+            nm = float(w)
+        elif re.fullmatch(r'\d{2,5}', w):
+            nums.append(int(w))
+        else:
+            return None
+        i += 1
+    alts = [n for n in nums if n >= 500]
+    speeds = [n for n in nums if n < 500]
+    if len(alts) > 2 or len(speeds) > 1 or (tokens[0] == 'TF' and (crs is None or nm is None)) or (tokens[0] == 'IF' and not nums):
+        return None
+    return {'id': tok[0], 'leg': tokens[0], 'over': over, 'crs': crs, 'nm': nm, 'turn': turn,
+            'alt': alt_constraint(str(alts[0]) if alts else None, str(alts[1]) if len(alts) > 1 else None), 'kt': speeds[0] if speeds else None, 'vpa': vpa, 'rnp': None}
 
 
 def _leg_of(tokens, c, rnp, warn):

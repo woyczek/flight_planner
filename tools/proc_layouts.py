@@ -1300,7 +1300,7 @@ LAYOUTS = [
     Layout('de-route', _detect_de_route, parse_de_route, frozenset(), None, False, 'magnetic'),
     # empreintes des en-têtes vus (cycle AIRAC 2026-10-01, pages de LFBD, LFAV, LFBO et LFPO ; cycle 2026-10-29, LFPG : colonne « Nav Spec » des SID 08 / 09, identifiant de procédure vide, pages INA et FNA à cellules espacées, toutes lues ; mêmes colonnes, une faute (« Identifcation »), des mots coupés (« V er ti ca l ») ou une colonne « NAV Spec »)
     Layout('sia-code', _detect_sia_code, None, frozenset({'4d7d8e47d5', '96546cf4c0', 'de5a236c1c', '32bceb3062', '30a2533e69', 'd4e263c080', '5abb2f38c4', 'a6e2a3ca47',
-                                                         '2a61bb49b1', '1f4d62dd72', '71818f794d', '98fd783174', 'a43004fbdd', 'f1aa6bb8c7', 'b3f1a81baf', '6fa86c2e12', 'db625c6cfb'}),
+                                                         '2a61bb49b1', '1f4d62dd72', '71818f794d', '98fd783174', 'a43004fbdd', 'f1aa6bb8c7', 'b3f1a81baf', '6fa86c2e12', 'db625c6cfb', '3021d8b493'}),
            None, False, 'magnetic'),
     Layout('uk-app', _detect_uk_app, parse_uk_app, frozenset({'fc0e4cc8ff'}), normalize_uk_app, True),
 ]

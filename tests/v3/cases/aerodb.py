@@ -7206,3 +7206,29 @@ def k147(c):
     sys.path.insert(0, str(c.root / 'tools'))
     L = importlib.import_module('launch')
     c.eq((L.ROUTES[('POST', '/__setup/regen/job')][1], L.ROUTES[('POST', '/__setup/regen/job')][1] != 'lan'), ('poste', True), 'a device of the local network cannot start any job (route « poste »): proc/lnm is out of its reach', what='lan')
+
+
+@case('K148', 'DIRCAM precoding pages (military terrains, LFOE) are read: the page prints no dash for an empty cell, a row is read by its patterns, not by its columns (SOG-0203); a civil row (one dash per empty cell) is never read that way', 'K', static=True,
+      rule='SOG-0203 (10 Nov 2026, « LFOE : aucune procédure lue. 0 page lue sur 2. 2 avertissements. »): the two RNP pages of LFOE (« PRECODING RNP RWY 04 / 22 », DIRCAM AMDT 12/20) are recognised as the civil coding table but only 8 rows of 12 (7 of 10) were read, under the 85 % threshold: « page NON lue », 0 procedure. The DIRCAM page does not print the empty cells, so the column of a number is told by its pattern (magnetic course then true course, distance with one decimal, altitudes from 500, speed below): the same rows are now all read; a row with a dash is a civil row, its columns tell, never read by patterns')
+def k148(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    P = importlib.import_module('proc_sia')
+    rows = ['AIP AD 2 LFOE DATA RWY04 RNP CODE', 'FRANCE 05 NOV 20', 'EVREUX FAUVILLE', 'PRECODING RNP RWY 04', 'DIRCAM AMDT 12/20 CHG : Revision.', 'RNP RWY 04', 'RMK MAG VAR 2020 0,7E Ref NAVAID :',
+            'PathTerminator WaypointIdentification Fly Over Direction MAG Direction True Distance(NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle / TCH (m) Nav Spec',
+            'Leg sequence', 'HLDG OE403 RNAV1 / RNP APCH', 'IF OE401 2200 2200 220 RNAV1 / RNP APCH', 'INA OE401', 'TF IOE04 329 329,9 5,0 2100 2100 RNAV1 / RNP APCH',
+            'IF OE402 2700 2700 220 RNAV1 / RNP APCH', 'INA OE402', 'TF IOE04 039 039,7 5,0 2100 2100 RNAV1 / RNP APCH', 'IF OE403 3200 3200 220 RNAV1 / RNP APCH', 'INA OE403',
+            'TF IOE04 109 109,8 5,0 2100 2100 RNAV1 / RNP APCH', 'IF IOE04 2100 2100 220 RNAV1 / RNP APCH', 'TF FOE04 039 039,7 4,7 2100 2100 RNP APCH', 'TF RW04 Yes 039 039,8 5,0 -3,0 / 15 RNP APCH',
+            'APCH', 'TF OE406 039 039,9 6,0 RNP APCH', 'TF OE407 309 309,9 6,5 2200 210 RNP APCH', 'TF OE403 213 213,9 17,5 3200 3200 220 RNP APCH']
+    r = P.parse_code_table(rows)
+    c.eq((r['kind'], r['runways'], r['rows'], r['read'], [g['label'] for g in r['groups']]), ('APP', ['04'], 12, 12, ['INA OE401', 'INA OE402', 'INA OE403', 'APCH']),
+         'the 12 leg rows of the RWY 04 page are all read (8 of 12 before: under the 85 % threshold, the page was refused): three initial transitions and the final approach', what='rows')
+    by = {g['label']: g['legs'] for g in r['groups']}
+    f = {x['id']: x for x in by['APCH']}
+    c.eq((by['INA OE401'][0]['leg'], by['INA OE401'][0]['alt'], by['INA OE401'][0]['kt'], by['INA OE401'][1]['crs'], by['INA OE401'][1]['nm'], by['INA OE401'][1]['alt']),
+         ('IF', {'type': 'at', 'ft': 2200}, 220, 329, 5.0, {'type': 'at', 'ft': 2100}), 'an IF row (no course, no distance) and a TF row: course, distance and altitudes by their patterns', what='if tf')
+    c.eq((f['RW04']['over'], f['RW04']['vpa'], f['RW04']['crs'], f['RW04']['nm'], f['OE406']['crs'], f['OE406']['nm'], f['OE406']['alt'], f['OE403']['alt']),
+         (True, -3.0, 39, 5.0, 39, 6.0, None, {'type': 'at', 'ft': 3200}), 'the runway point (overfly, vertical angle), a leg without altitude (none invented), the missed approach\'s last leg', what='approach')
+    c.eq((P._dircam_leg(['TF', 'IOE04', '-', '329', '329.9', '5.0', '2100', '2100']), P._dircam_leg(['TF', 'IOE04', '329', '5.0']), P._dircam_leg(['TF', 'IOE04', '329', '329.9', '5.0', '2100', '3000', '4000'])), (None, None, None),
+         'never by patterns: a row with a dash (a civil page: its columns tell), a TF without true course, three altitudes', what='refused')
