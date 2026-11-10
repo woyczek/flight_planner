@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the folded summary of the arrival says the ILS** (`modules/fuel/procedures.js`; Fuel SPEC, DECISIONS, help; noreg F127;
+  SOG-0176). « I13R · TST 110.30 » when the base carries the ILS of the approach.
 - **Fuel: the step Flight holds in 360 px again** (`modules/fuel/module.js`; DECISIONS; noreg F4). The date field shrinks to its cell.
 
 - **Map: contour lines on the mission maps in VFR topo** (`modules/maps/draw.js`, `contours.js`; SPEC § 6, DECISIONS; noreg D147; SOG-0184, regression from V2). They were drawn on flight maps only; a

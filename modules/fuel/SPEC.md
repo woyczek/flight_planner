@@ -428,7 +428,8 @@ before the start, in step 5 after (F11).
   **The aid of the chosen approach** (SOG-0176, F127): under the arrival's lists, « ILS 25 · DO 109.35 · axe 246° · DME » when the
   approach is an ILS or a LOC (its ARINC identifier, `PR.arincApp`: I…, L…) and the published base carries the ILS of its runway
   (`aerodb.navaids` within 15 NM, kind ILS, same aerodrome, same runway; the SIA's ILS, France only for now); no line otherwise —
-  nothing invented, no dash.
+  nothing invented, no dash. The folded summary of the arrival says the ident and the frequency after the approach (« I13R · TST
+  110.30 »): the full line is under the lists, off screen while the side is folded.
   A conflict is marked, never forbidden: ⚠ on a SID, STAR or approach that does not serve the chosen runway (a record naming no runway,
   or `ALL` / `RWALL`, serves them all) and, with no runway chosen, on a STAR that serves no runway of the chosen approach; class
   `conflict`, the reason as `title`, both joined when both apply; the continuity of points between STAR and approach is never a

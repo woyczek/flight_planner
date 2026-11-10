@@ -425,8 +425,12 @@ export function createProcedures(host) {
         wind: w?.c
       }),
       none = k => `${tt(TX[k])} ${tt(TX.procNone)}`,
-      parts = [s.rwy, s.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : s.proc, s.app === null ? none('procApp') : s.app]
-      .filter(Boolean);
+      // SOG-0176 : le résumé replié de l'arrivée dit l'indicatif et la fréquence de l'ILS de l'approche quand la base le porte
+      // (« I13R · TST 110.30 ») : la ligne complète est sous les listes, hors de l'écran tant que le côté est replié
+      aid = side === 'arr' && s.app ? aidFor(m) : null,
+      parts = [s.rwy, s.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : s.proc, s.app === null ? none('procApp') : aid ?
+        `${s.app} · ${aid.x.id} ${aid.x.freq}` : s.app
+      ].filter(Boolean);
     // la piste porte la couleur de son vent (severity) et ses raisons en infobulle, comme dans la liste
     return parts.length ? `<span class="fu-procsum">${parts.map(p => p === s.rwy && w ? `<span class="wind-${w.level}" title="${esc([p, ...w.why].join(' · '))}">${esc(p)}</span>` : `<span>${esc(p)}</span>`).join('')}</span>` : '';
   }
@@ -686,20 +690,32 @@ export function createProcedures(host) {
         };
       }).catch(() => null).then(v => {
         aids.set(k, v || null);
-        if (!host.gone()) refillAid(icao);
+        if (!host.gone() && v) render(); // la ligne et le résumé du titre (une réponse par piste : pas de boucle)
       });
     }
     return aids.get(k);
   }
-  /** La ligne de l'aide de l'approche choisie à l'arrivée (voir l'en-tête) ; '' sans approche ILS / LOC ou sans ILS en base. */
-  function aidHtml(m) {
+  /** L'aide de l'approche choisie à l'arrivée : { t: [, I | L, piste], x: l'ILS } ; null sans approche ILS / LOC ou sans ILS en base
+   *  (ou tant que la réponse n'est pas venue). */
+  function aidFor(m) {
     const id = CF.proceduresOf(host.flight()).arr?.app,
       rec = id ? adOf(m.icao).recs?.get(id) : null,
       a = rec ? PR.arincApp(rec) : '',
-      t = /^([IL])(\d{2}[LRC]?)/.exec(a);
-    if (!t) return '';
-    const x = aidOf(m.icao, t[2]);
-    if (!x) return '';
+      t = /^([IL])(\d{2}[LRC]?)/.exec(a),
+      x = t ? aidOf(m.icao, t[2]) : null;
+    return x ? {
+      t,
+      x
+    } : null;
+  }
+  /** La ligne de l'aide de l'approche choisie à l'arrivée (voir l'en-tête) ; '' sans approche ILS / LOC ou sans ILS en base. */
+  function aidHtml(m) {
+    const f = aidFor(m);
+    if (!f) return '';
+    const {
+      t,
+      x
+    } = f;
     const line = x.axis !== null ? tt(TX.appAid, {
       type: t[1] === 'I' ? 'ILS' : 'LOC',
       rwy: t[2],
@@ -708,13 +724,6 @@ export function createProcedures(host) {
       axis: String(x.axis).padStart(3, '0')
     }) : `${t[1] === 'I' ? 'ILS' : 'LOC'} ${t[2]} · ${x.id} ${x.freq}`;
     return esc(line + (x.dme ? ' · DME' : ''));
-  }
-  /** Les lignes de l'aide d'un terrain, refaites à la réponse d'aerodb. */
-  function refillAid(icao) {
-    const el = host.body?.()?.querySelector?.(`[data-proc="arr"][data-icao="${CSS.escape(icao)}"] [data-r="aid"]`);
-    if (el) setAid(el, ads.get(icao) ? {
-      icao
-    } : null);
   }
   /** Pose la ligne de l'aide (cachée quand elle est vide : pas de place laissée). */
   function setAid(el, m) {

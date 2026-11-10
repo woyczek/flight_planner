@@ -3581,6 +3581,9 @@ def f127(c):
     c.eq(line, want, '« ILS 13R · TST 110.30 · axe 134° · DME »: type and runway, ident and frequency, axis, DME', what='aid line')
     c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-appaid]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F127_{c.design}_{c.width}_{c.lang}.png')
+    # the folded summary of the arrival says the ident and the frequency (the full line is under the lists, off screen when folded)
+    summ = "[...document.querySelectorAll('[data-module=fuel] [data-proc=arr] .fu-procsum > span')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
+    c.until(f"{summ}.includes('I13R · TST 110.30')", timeout=8000, what='the summary « I13R · TST 110.30 »')
     # the same approach, no ILS of LFML in the base (its navaids rewritten: an ILS of another aerodrome only): no line, no dash
     other = _ils_extra()
     other['navaids'][0].update(ad='LFMT', name='LFMT 13R')
@@ -3590,3 +3593,4 @@ def f127(c):
     c.page.wait_for_timeout(1500)
     c.eq(c.js(f"(() => {{ const e = document.querySelector('{FUEL} [data-proc=arr] [data-appaid]'); return e ? [e.hidden, e.textContent.trim()] : null }})()"), [True, ''],
          'without an ILS in the base: no line (hidden, empty)', what='[hidden, text]')
+    c.ok('I13R' in c.js(summ) and not any('110' in x for x in c.js(summ)), c.js(summ), 'and the summary says the approach alone')

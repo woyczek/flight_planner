@@ -1538,3 +1538,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **10 Nov 2026 — F4 at 360 px**: the row Level / Flight date of 181e553c6 overflowed by 3 px at 360 px (F4, seen by Settings' --touched
   pass): the cell had `min-width: 0` but neither its `.fu-when` nor the date-time input, whose natural width (≈ 190 px) won. Both now
   shrink to the cell; F4 joins the gate of any change to the step Flight.
+- **10 Nov 2026 — the ILS in the folded summary** (SOG-0176, the ergonomist's reading of the 390 capture: the full line is under the
+  lists, off screen, while the summary « 13R · MEN1A via NEPIX · I13R » is seen): the summary says « I13R · TST 110.30 » (ident and
+  frequency, nothing more) when the base carries the ILS; « OFP and export » withdrawn (Fuel has neither). F127; counter-test on
+  origin/v3 (01fbc9b46): the summary without the frequency.
