@@ -5069,3 +5069,70 @@ def l66(c):
     c.tap('[data-pack=asie] [data-pack-switch=asie]')
     c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'de' in (d.get('zones') or [])), what='« the whole pack » still adds the rest')
     c.check_errors()
+
+
+@case('L67', 'Données: the coverage table by country (SOG-0174): read from the launcher (base/coverage) only when the block is opened, seven columns at most (country, points, airways, airspaces, FIR, procedures, ground: a number or « non »), sortable, a country unfolds to its sources and their licence; what the launcher answers is untrusted', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0174 (the user: « des données aéro pour TOUS les pays »; the ergonomist: one row per country, columns points / airways / airspaces / FIR / procedures / ground, source and licence, sortable, seven columns at most on screen, the rest in the detail of the row): the block is folded and reads nothing until opened; the answer is bounded (zone ids, closed list of source ids, integers); a refused or unreadable answer is said with « Relire »')
+def l67(c):
+    lang = c.lang
+    T = lambda k: _trow(k, lang, after='  cov: {')
+    cov_ok = _view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': {
+        'fr': {'cycle': '2026-10-29', 'parserVersion': 28, 'counts': {'aerodromes': 1872, 'navaids': 424, 'points': 4277, 'airways': 1493, 'airspaces': 2559, 'vrp': 1121, 'fir': 15}, 'procedures': 6, 'ground': 1,
+               'sources': {'declared': ['sia', 'dircam', 'openaip', 'mora', 'xplane'], 'present': ['dircam', 'openaip', 'sia', 'evil']}, 'has': {'points': True}},
+        'es': {'cycle': '2026-10-29', 'parserVersion': 23, 'counts': {'aerodromes': 217, 'navaids': 84, 'points': 0, 'airways': 0, 'airspaces': 380, 'vrp': 272, 'fir': 0}, 'procedures': 0, 'ground': 0,
+               'sources': {'declared': ['lfv', 'openaip', 'mora', 'xplane'], 'present': ['openaip']}, 'has': {}},
+        'us': {'cycle': 'not a date', 'parserVersion': None, 'counts': {'aerodromes': '<img src=x onerror=window.__pwn=1>', 'navaids': -5, 'points': 0, 'airways': 0, 'airspaces': 9230, 'vrp': 0, 'fir': 0}, 'procedures': 2257, 'ground': 0,
+               'sources': {'declared': ['faa'], 'present': []}, 'has': {}},
+        'ZZ!': {'cycle': None, 'counts': {}, 'sources': {}, 'has': {}}}})
+    st = _launcher(c, [cov_ok], verbs=_VERBS + ['base/coverage'])
+    st['status'] = _ALL_OK()
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the opening is over')
+    c.eq(c.js("document.querySelector('[data-covtable]').open"), False, 'the block is folded', what='folded')
+    c.eq(len(_posts(st, 'coverage')), 0, 'nothing is read until it is opened', what='no read')
+    c.eq(norm(c.text('[data-covtable] > summary')), norm(T('title')), 'named in the language of the run', what='title')
+    c.js("document.querySelector('[data-covtable]').open = true")
+    c.until("document.querySelectorAll('[data-cov-zone]').length === 3", timeout=10000, what='the table')
+    c.eq([[p['set'], p['verb'], p['args']] for p in _posts(st, 'coverage')], [['base', 'coverage', {}]], 'one read, no argument', what='one read')
+    c.eq(c.count('[data-cov-table] thead th'), 7, 'seven columns: the country and six', what='columns')
+    c.eq(c.js("[...document.querySelectorAll('[data-cov-table] thead button')].map(b => b.dataset.covSort)"), ['zone', 'points', 'airways', 'airspaces', 'fir', 'procedures', 'ground'], 'country, points, airways, airspaces, FIR, procedures, ground', what='headings')
+    c.eq(c.js("[...document.querySelectorAll('[data-cov-zone]')].map(r => r.dataset.covZone).sort()"), ['es', 'fr', 'us'], 'the zone with a bad identifier is dropped', what='rows')
+    cellv = lambda z, col: c.js(f"document.querySelector('[data-cov-zone={z}] td[data-col={col}]').dataset.n")
+    c.eq([cellv('fr', 'points'), cellv('fr', 'airways'), cellv('fr', 'fir'), cellv('fr', 'procedures'), cellv('fr', 'ground')], ['4277', '1493', '15', '6', '1'], 'the counts of France', what='fr counts')
+    c.eq([norm(c.text('[data-cov-zone=es] td[data-col=points]')), norm(c.text('[data-cov-zone=es] td[data-col=fir]'))], [norm(T('no')), norm(T('no'))], 'a count of 0 is « non »', what='non')
+    c.ok(cellv('us', 'airspaces') == '9230' and c.count('[data-covtable] img') == 0 and c.js('window.__pwn === undefined'), None, 'a text where a number is expected counts as 0: no element, nothing runs')
+    c.ok(c.js("(() => { const e = document.querySelector('.d-covscroll'); return e.scrollWidth <= e.clientWidth + 1 })()"), c.js("[document.querySelector('.d-covscroll').scrollWidth, document.querySelector('.d-covscroll').clientWidth]"), 'the seven columns fit the width: no sideways scroll to find the last one')
+    c.js("document.querySelector('[data-covtable]').scrollIntoView()")
+    if c.width in (390, 1280):
+        c.shot(f'L67_standard_{c.width}_{lang}_delivered.png')
+    # ---- sort: the same button reverses; numbers go down first
+    order = lambda: c.js("[...document.querySelectorAll('[data-cov-zone]')].map(r => r.dataset.covZone)")
+    c.tap('[data-cov-sort=airspaces]')
+    c.until("document.querySelector('[data-cov-sort=airspaces]').closest('th').getAttribute('aria-sort') === 'descending'", timeout=4000, what='sorted down')
+    c.eq(order(), ['us', 'fr', 'es'], 'airspaces, most first: 9 230, 2 559, 380', what='sort down')
+    c.tap('[data-cov-sort=airspaces]')
+    c.until("document.querySelector('[data-cov-sort=airspaces]').closest('th').getAttribute('aria-sort') === 'ascending'", timeout=4000, what='sorted up')
+    c.eq(order(), ['es', 'fr', 'us'], 'the same heading again reverses', what='sort up')
+    # ---- a country unfolds: its sources with the catalogue's licence, those not read yet
+    c.tap('[data-cov-row=es]')
+    c.until("!!document.querySelector('[data-cov-detail=es]')", timeout=4000, what='the detail of Spain')
+    c.eq(c.js("document.querySelector('[data-cov-row=es]').getAttribute('aria-expanded')"), 'true', 'the country says it is open', what='expanded')
+    c.eq(c.js("[...document.querySelectorAll('[data-cov-detail=es] [data-cov-source]')].map(l => l.dataset.covSource)"), ['openaip'], 'the sources read', what='sources')
+    c.ok(c.count('[data-cov-detail=es] [data-cov-notyet]') == 1 and 'lfv' in c.js("document.querySelector('[data-cov-detail=es] [data-cov-notyet]').textContent.toLowerCase()"), None, 'LFV is declared but not read yet: said (X-Plane and MORA, listed for every zone, are not)')
+    c.tap('[data-cov-row=fr]')
+    c.until("!!document.querySelector('[data-cov-detail=fr]')", timeout=4000, what='the detail of France')
+    c.eq(c.js("[...document.querySelectorAll('[data-cov-detail=fr] [data-cov-source]')].map(l => l.dataset.covSource)"), ['dircam', 'openaip', 'sia'], 'an identifier outside the closed list (« evil ») is ignored', what='closed list')
+    # ---- unreadable answer: said, « Relire » asks again
+    c.js("document.querySelector('[data-covtable]').open = false")
+    c.until("!document.querySelector('[data-covtable]').open", timeout=4000, what='folded again')
+    st['views'], st['i'] = [_view('error', step='Échec', jid='jx', result={'ok': False})], 0
+    c.js("document.querySelector('[data-covtable]').open = true")
+    c.until("!!document.querySelector('[data-cov-state=unread]')", timeout=10000, what='unread')
+    c.eq(norm(c.text('[data-cov-state=unread]')), norm(T('unread')), 'said in words', what='unread text')
+    st['views'], st['i'] = [cov_ok], 0
+    c.tap('[data-cov-reload]')
+    c.until("document.querySelectorAll('[data-cov-zone]').length === 3", timeout=10000, what='the table after « Relire »')
+    c.check_errors()

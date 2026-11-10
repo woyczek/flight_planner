@@ -1381,6 +1381,55 @@ export const TX = {
   ],
   // le journal des opérations
   // la carte « Inventaire des données » (SOG-0010) : ce que « data » recouvre sur ce poste, en lecture seule
+  // le tableau de couverture par pays (SOG-0174) : sept colonnes au plus, le reste au détail de la ligne
+  cov: {
+    title: ['Couverture par pays', 'Coverage by country', 'Abdeckung nach Land', 'Cobertura por país'],
+    intro: [
+      'Ce que la base porte aujourd’hui pour chaque pays, lu dans ses fichiers : le nombre de points, de voies, d’espaces, de FIR, de terrains avec procédures et avec couche sol (non : aucun). Touchez un en-tête pour trier, un pays pour voir ses sources et leur licence.',
+      'What the base holds today for each country, read from its files: the number of points, airways, airspaces, FIRs, aerodromes with procedures and with a ground layer (no: none). Touch a heading to sort, a country to see its sources and their licence.',
+      'Was die Basis heute für jedes Land enthält, aus ihren Dateien gelesen: Zahl der Punkte, Strecken, Lufträume, FIR, Flugplätze mit Verfahren und mit Bodenschicht (nein: keine). Tippen Sie auf eine Überschrift zum Sortieren, auf ein Land für seine Quellen und deren Lizenz.',
+      'Lo que la base contiene hoy para cada país, leído de sus archivos: número de puntos, aerovías, espacios, FIR, aeródromos con procedimientos y con capa de suelo (no: ninguno). Toque un encabezado para ordenar, un país para ver sus fuentes y su licencia.'
+    ],
+    no: ['non', 'no', 'nein', 'no'],
+    country: ['Pays', 'Country', 'Land', 'País'],
+    col: {
+      points: ['Points', 'Points', 'Punkte', 'Puntos'],
+      airways: ['Voies', 'Airways', 'Strecken', 'Aerovías'],
+      airspaces: ['Espaces', 'Airspaces', 'Lufträume', 'Espacios'],
+      fir: ['FIR', 'FIR', 'FIR', 'FIR'],
+      procedures: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
+      ground: ['Sol', 'Ground', 'Boden', 'Suelo']
+    },
+    cycle: ['Cycle', 'Cycle', 'Zyklus', 'Ciclo'],
+    parser: ['analyseur v{n}', 'parser v{n}', 'Parser v{n}', 'analizador v{n}'],
+    also: ['Aussi', 'Also', 'Außerdem', 'También'],
+    alsoLine: ['{a} terrains · {n} balises · {v} points VFR', '{a} aerodromes · {n} navaids · {v} VFR points',
+      '{a} Flugplätze · {n} Funkfeuer · {v} VFR-Punkte', '{a} aeródromos · {n} radioayudas · {v} puntos VFR'
+    ],
+    sources: ['Sources lues', 'Sources read', 'Gelesene Quellen', 'Fuentes leídas'],
+    noSource: ['Aucune source lue.', 'No source read.', 'Keine Quelle gelesen.', 'Ninguna fuente leída.'],
+    notYet: ['Pas encore lues', 'Not read yet', 'Noch nicht gelesen', 'Aún sin leer'],
+    loading: ['Lecture en cours…', 'Reading…', 'Lesen läuft…', 'Leyendo…'],
+    busy: ['Le lanceur a un autre travail en cours : relisez quand il aura fini.',
+      'The launcher is busy with another job: read again when it is over.',
+      'Der Launcher hat einen anderen Auftrag: lesen Sie erneut, wenn er fertig ist.',
+      'El lanzador está ocupado con otro trabajo: vuelva a leer cuando termine.'
+    ],
+    unread: ['Le tableau n’a pas pu être lu.', 'The table could not be read.', 'Die Tabelle konnte nicht gelesen werden.',
+      'No se pudo leer la tabla.'
+    ],
+    reload: ['Relire', 'Read again', 'Erneut lesen', 'Volver a leer'],
+    noLauncher: ['Le tableau se lit au lanceur du poste : lancez-le pour le voir.',
+      'The table is read from the workstation’s launcher: start it to see it.',
+      'Die Tabelle wird vom Launcher des Rechners gelesen: Starten Sie ihn, um sie zu sehen.',
+      'La tabla se lee en el lanzador del equipo: inícielo para verla.'
+    ],
+    unknownVerb: ['Ce lanceur ne connaît pas encore cette lecture : relancez-le avec la dernière version.',
+      'This launcher does not know this reading yet: restart it with the latest version.',
+      'Dieser Launcher kennt diese Abfrage noch nicht: Starten Sie ihn mit der neuesten Version neu.',
+      'Este lanzador aún no conoce esta lectura: reinícielo con la última versión.'
+    ]
+  },
   inventory: {
     title: ['Inventaire des données', 'Data inventory', 'Dateninventar', 'Inventario de datos'],
     intro: [

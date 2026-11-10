@@ -39,6 +39,9 @@ import {
   worldRowHtml
 } from './world.js';
 import {
+  covTableHtml
+} from './covtable.js';
+import {
   packsHtml,
   syncPackSwitches
 } from './packs.js';
@@ -112,6 +115,23 @@ export const STYLE = `
 [data-module="data"] button.d-st{cursor:pointer;text-decoration:underline dotted}
 [data-module="data"] .d-zwhy{grid-column:1/-1;margin:0 0 4px 28px}
 /* le bilan en une ligne et l'action sur la ligne d'une zone (SOG-0180) : chaque nombre est un bouton, « Prendre le fichier » et « Réessayer » sont sur la ligne de leur zone */
+[data-module="data"] details.d-covtable{margin:12px 0}
+[data-module="data"] details.d-covtable>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}
+[data-module="data"] .d-covscroll{overflow-x:auto}
+[data-module="data"] .d-covtab{width:100%;border-collapse:collapse;font-size:var(--sog-size-xs)}
+[data-module="data"] .d-covtab th,[data-module="data"] .d-covtab td{padding:2px 2px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--sog-line,transparent)}
+[data-module="data"] .d-covtab th:first-child,[data-module="data"] .d-covtab thead th:first-child{text-align:left}
+[data-module="data"] .d-covtab button{min-height:var(--sog-touch);padding:0 2px;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+[data-module="data"] .d-covtab thead button{font-size:.9em}
+[data-module="data"] .d-covtab thead [aria-sort="ascending"] button::after{content:" ▲"}
+[data-module="data"] .d-covtab thead [aria-sort="descending"] button::after{content:" ▼"}
+[data-module="data"] .d-covtab tbody th button{text-align:left;font-weight:600;text-decoration:underline dotted}
+[data-module="data"] .d-covtab td[data-n="0"]{color:var(--sog-muted)}
+[data-module="data"] .d-covdl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:4px 0 8px;text-align:left;white-space:normal}
+[data-module="data"] .d-covdl dd{margin:0}
+[data-module="data"] .d-covsrc{margin:0;padding-left:16px}
+@media (max-width:480px){[data-module="data"] .d-covtab{font-size:.7rem}[data-module="data"] .d-covtab th,[data-module="data"] .d-covtab td{padding:2px 1px}[data-module="data"] .d-covtab button{padding:0 1px}}
+@media (pointer:fine){[data-module="data"] .d-covtab button{min-height:32px}}
 [data-module="data"] .d-bal{margin:4px 0 8px}
 [data-module="data"] .d-bal button{min-height:var(--sog-touch);padding:0 8px}
 [data-module="data"] .d-bal button[aria-pressed="true"]{font-weight:600;outline:2px solid var(--sog-accent);outline-offset:-2px}
@@ -503,7 +523,7 @@ function renderBody() {
   }) : null;
   S.attn = M.staleGroups(S
     .groups); // les groupes dont le cycle publié est dépassé : le point d'attention de « Construire » et de « Tout mettre à jour »
-  S.body.innerHTML = `${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${inventoryHtml()}${journalHtml()}`;
+  S.body.innerHTML = `${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
 }
 /** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */
 const wordOf = (map, key) => tt(M.own(map, key) || [key, key, key, key]);

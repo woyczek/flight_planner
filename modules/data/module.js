@@ -82,6 +82,11 @@ import {
   moveClick,
   openInventory
 } from './inventory.js';
+import {
+  closeCovTable,
+  covClick,
+  openCovTable
+} from './covtable.js';
 
 export const meta = {
   id: 'data',
@@ -98,7 +103,7 @@ export const meta = {
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
-    'status.js', 'packs.js', 'model_world.js', 'world.js',
+    'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
@@ -147,6 +152,8 @@ function onClick(e) {
   if (mv) return mv.disabled ? undefined : moveClick(mv); // « Ranger les sources brutes » (carte Inventaire)
   const pt = e.target.closest?.('button[data-pack-tab]');
   if (pt) return setPackTab(pt.dataset.packTab); // les onglets Régions | Thèmes (SOG-0165)
+  if (e.target.closest?.('[data-covtable]') && e.target.closest?.('[data-cov-sort], [data-cov-row], [data-cov-reload]')) return covClick(
+    e); // le tableau de couverture (SOG-0174)
   const zf = e.target.closest?.('[data-act="zone-filter"]');
   if (zf) return setZoneFilter(zf.dataset.filter); // un nombre du bilan : ses zones seules (SOG-0180)
   const zw = e.target.closest?.('[data-act="zone-why"]');
@@ -235,6 +242,10 @@ function onToggle(e) {
     const key = g.dataset.packTheme || g.dataset.packFold; // un thème, ou le pli « Pays » d'une région (SOG-0186)
     g.open ? S.packOpen.add(key) : S.packOpen.delete(key);
   }
+  if (g instanceof HTMLDetailsElement && g.matches('details.d-covtable') && g.isConnected) {
+    if (g.open) openCovTable(); // le tableau se lit à l'ouverture, une fois (SOG-0174)
+    else closeCovTable(); // fermé : la prochaine ouverture relit
+  }
   if (g instanceof HTMLDetailsElement && g.matches('details.d-inventory') && g.isConnected) {
     if (g.open) openInventory(); // l'inventaire se lit à l'ouverture, une fois
     else S.inventory = null; // fermé : la prochaine ouverture relit (une lecture ratée peut être refaite)
@@ -306,6 +317,7 @@ export async function mount(el, ctx) {
     }, // « Publier » : sync-status lu, 'asking' | 'running' | null, la fin { out } ou { unread }
     journal: [],
     journalOpen: false,
+    cov: null, // le tableau de couverture par pays (SOG-0174) : lu à l'ouverture seulement, { open, state, rows, sort, openRows }
     inventory: null, // la carte « Inventaire des données » : lue à l'ouverture seulement, { open, state, rows }
     move: null, // « Ranger les sources brutes » (SOG-0030) : { undo, phase: 'planning' | 'asking' | 'running' | null, kind: 'asking' | 'nothing' | 'done' | 'refused', view, why }
     timer: 0

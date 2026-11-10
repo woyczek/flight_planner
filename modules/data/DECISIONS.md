@@ -376,3 +376,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **What**: the switch stays; a folded « Pays (n) » under it lists the countries (one tick each, the grid of the zones list). A theme already had that list as its whole body; a region now has it as an option, so both kinds tick a country the same way (`togglePackZone`).
 - **Not a second path**: the ticks reuse `togglePackZone` and `addZones` / `removeZones`; no new write, no verb. The open fold scrolls inside itself so a region of 40 countries does not push the neighbours away.
 - **Found on the way**: the « en partie » state of a switch is a property, not HTML; it was set only after a panel redraw, so a country ticked through a full draw left the switch plain. `render()` now sets it too.
+
+## 10 November 2026 — the coverage table by country (SOG-0174)
+
+- **Why**: the user wants aeronautical data for every country; AeroDB gave the verb `base/coverage` (what each zone's base holds, read from its files) and its contract in writing; the ergonomist's brief: a row per country, six columns, source and licence, sortable, seven columns at most.
+- **Folded and read on opening**, like the inventory: about a second of reading for 71 zones, no cost for the user who never opens it; closing drops the read so the next opening is fresh (a build may have run).
+- **Seven columns**: the country and the six the brief names; the source and licence (several per country) and the counts of aerodromes, navaids and VFR points go to the detail of the row, where there is room for words. « non » is a count of 0 (the contract: no unknown). Licence, publisher and credit are the catalogue's, never the launcher's text.
+- **No filter of the user's coverage**: the table shows every zone the launcher knows, not only the zones ticked on this workstation (the point is to see where the data is missing).
+- **Counter-test**: L67 (no block before). Not done: a « Mettre à jour » button on a row (it would be the third way to start an update: the zone's own « Réessayer » and the one gesture stay the only ones).
