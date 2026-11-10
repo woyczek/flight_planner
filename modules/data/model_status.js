@@ -109,3 +109,22 @@ export function groupReasons(items) {
   }
   return groups;
 }
+/** Le bilan d'une liste de zones d'après l'état du lanceur (SOG-0180) : { upToDate, rebuild, failed, waiting, unknown } en listes d'identifiants. `waiting` : pas à jour et pas constructible (un fichier que seul l'utilisateur dépose) ;
+ *  `rebuild` : pas à jour et constructible ; `failed` : la dernière construction a échoué. */
+export function balanceOf(status, ids) {
+  const out = {
+    upToDate: [],
+    rebuild: [],
+    failed: [],
+    waiting: [],
+    unknown: []
+  };
+  for (const id of ids || []) {
+    const z = Object.hasOwn(status?.zones || {}, id) ? status.zones[id] : null;
+    if (!z) out.unknown.push(id);
+    else if (z.state === 'up-to-date') out.upToDate.push(id);
+    else if (z.state === 'failed') out.failed.push(id);
+    else(z.buildable ? out.rebuild : out.waiting).push(id);
+  }
+  return out;
+}

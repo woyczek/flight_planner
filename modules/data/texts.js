@@ -209,6 +209,26 @@ export const TX = {
     failed: ['En échec', 'Failed', 'Fehlgeschlagen', 'Fallida'],
     building: ['En cours', 'Running', 'Läuft', 'En curso']
   },
+  // le bilan en une ligne sous « Mettre à jour » (SOG-0180) : chaque nombre est un bouton qui n'affiche que ses zones
+  bal: {
+    upToDate: [
+      ['{n} à jour', '{n} up to date', '{n} aktuell', '{n} al día'],
+      ['{n} à jour', '{n} up to date', '{n} aktuell', '{n} al día']
+    ],
+    rebuild: [
+      ['{n} à reconstruire', '{n} to rebuild', '{n} neu zu bauen', '{n} por reconstruir'],
+      ['{n} à reconstruire', '{n} to rebuild', '{n} neu zu bauen', '{n} por reconstruir']
+    ],
+    failed: [
+      ['{n} en échec', '{n} failed', '{n} fehlgeschlagen', '{n} fallida'],
+      ['{n} en échec', '{n} failed', '{n} fehlgeschlagen', '{n} fallidas']
+    ],
+    waiting: [
+      ['{n} attend un fichier', '{n} waits for a file', '{n} wartet auf eine Datei', '{n} espera un archivo'],
+      ['{n} attendent un fichier', '{n} wait for a file', '{n} warten auf eine Datei', '{n} esperan un archivo']
+    ]
+  },
+  balShowAll: ['Tout afficher', 'Show all', 'Alle anzeigen', 'Mostrar todo'],
   zr: {
     'never-built': ['Jamais construite', 'Never built', 'Noch nie erstellt', 'Nunca construida'],
     failed: ['Dernière construction en échec', 'Last build failed', 'Letzter Build fehlgeschlagen', 'La última construcción falló'],
@@ -264,9 +284,10 @@ export const TX = {
   // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
   upd: {
     update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
-    more: ['Plus', 'More', 'Mehr', 'Más'],
+    more: ['Détail', 'Detail', 'Details', 'Detalle'],
     recompute: ['Tout recalculer', 'Rebuild all', 'Alles neu berechnen', 'Recalcular todo'],
     selStale: ['Seulement les périmés', 'Only the stale ones', 'Nur die veralteten', 'Solo las caducadas'],
+    retry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
     selNone: ['Tout désélectionner', 'Deselect all', 'Alles abwählen', 'Deseleccionar todo'],
     selLine: ['Sélection : {z}', 'Selection: {z}', 'Auswahl: {z}', 'Selección: {z}'],
     selNothing: ['Aucune zone cochée', 'No zone ticked', 'Keine Zone angekreuzt', 'Ninguna zona marcada'],

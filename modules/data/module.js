@@ -64,9 +64,13 @@ import {
 import {
   follow,
   startOp,
+  retryZone,
   startPickup,
   stopTimer
 } from './follow.js';
+import {
+  setZoneFilter
+} from './status.js';
 import {
   startPublish
 } from './publish.js';
@@ -143,6 +147,8 @@ function onClick(e) {
   if (mv) return mv.disabled ? undefined : moveClick(mv); // « Ranger les sources brutes » (carte Inventaire)
   const pt = e.target.closest?.('button[data-pack-tab]');
   if (pt) return setPackTab(pt.dataset.packTab); // les onglets Régions | Thèmes (SOG-0165)
+  const zf = e.target.closest?.('[data-act="zone-filter"]');
+  if (zf) return setZoneFilter(zf.dataset.filter); // un nombre du bilan : ses zones seules (SOG-0180)
   const zw = e.target.closest?.('[data-act="zone-why"]');
   if (zw) return toggleWhy(zw.dataset.zone); // la pastille d'une zone : ses raisons (SOG-0071)
   const rc = e.target.closest?.('[data-act="map-recenter"]');
@@ -153,6 +159,7 @@ function onClick(e) {
   if (!v || v.disabled) return;
   if (v.dataset.verb === 'stop') return S.run?.ctrl.abort();
   if (v.dataset.verb === 'all') return updateAll();
+  if (v.dataset.verb === 'retry-zone') return retryZone(v.dataset.zone); // « Réessayer » sur la ligne d'une zone en échec (SOG-0180)
   if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') return startPickup(v.dataset.zones);
   if (v.dataset.verb === 'stop-chain') return stopChain();
   if (v.dataset.verb === 'update') return startUpdate();
@@ -254,6 +261,7 @@ export async function mount(el, ctx) {
     statusP: null, // la lecture en cours (une seule à la fois)
     statusAsked: false, // l'état a été demandé à l'ouverture
     whyOpen: new Set(),
+    zoneFilter: null, // le nombre du bilan touché (upToDate, rebuild, failed, waiting) : la liste des zones n'affiche que les siennes
     world: worldInit(), // la ligne « Synoptique monde (GFS) » : phase, état lu, dernière fin (world.js)
     zoneAsked: false, // le lien #data?zone=<id> a été lu (update.js)
     zoneLink: null,

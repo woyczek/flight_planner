@@ -222,6 +222,8 @@ async function endPickup(final, live, seconds) {
   const zones = [...new Set(out.taken.map(t => t.zone).filter(Boolean))];
   if (live && !S.chain && zones.length && out.kind === 'done') await buildAfterPickup(zones);
 }
+/** « Réessayer » sur la ligne d'une zone en échec (SOG-0180) : la construction de cette zone seule, avec la case « usage personnel » ; rien si le bouton de construction est gris. */
+export const retryZone = zone => /^[a-z0-9]{2,8}$/.test(zone || '') ? buildAfterPickup([zone]) : undefined;
 /** La construction qui suit une prise de fichier (SOG-0180) : les zones prises, de la couverture, avec la case « usage personnel » ; rien si le bouton de construction est gris (une autre opération, pas de lanceur). */
 async function buildAfterPickup(zones) {
   const me = S,
@@ -453,8 +455,9 @@ export async function startOp(set, verb) {
     dry: true
   } : args, ids, dry, args), true);
 }
-/** Un verbe de la base sur plus de 60 zones : des tranches de 60 au plus, construites ou téléchargées l'une après l'autre (le lanceur tient UN travail à la fois : la suivante part à la fin de la précédente), arrêt à la première qui ne finit pas bien.
- *  `sel` : la sélection (ids, personal) ; rend 'ok' | 'stop' (la fin de la dernière tranche, ou de la première qui a échoué, reste dans S.lastOp). */
+/** Un verbe de la base sur plus de 60 zones : des tranches de 60 au plus, construites ou téléchargées l'une après l'autre (le lanceur tient UN travail à la fois : la suivante part à la fin de la précédente). Les zones sont indépendantes (SOG-0180) : une tranche en échec (ou en échec partiel)
+ *  ne retient pas les suivantes, ses zones sont des lignes avec leur raison ; seuls un arrêt demandé, une interruption ou un motif propre à tout le travail (M.chunkVerdict : 'stop') arrêtent. `sel` : la sélection (ids, personal) ; rend 'ok' | 'stop' ('failed' des tranches se rend 'ok' : le bilan dit
+ *  les échecs ; la fin la plus grave, ou celle de la dernière tranche, reste dans S.lastOp). */
 export async function runChunks(me, set, verb, sel) {
   const parts = M.chunksOf(sel.ids);
   let verdict = 'ok',
@@ -470,8 +473,9 @@ export async function runChunks(me, set, verb, sel) {
       ids: parts[i]
     }), parts[i]), true);
     if (S !== me) return 'stop';
-    verdict = S.lastOp ? M.chainVerdict(verb, S.lastOp.out) : 'stop';
-    if (verdict === 'stop') worst = S.lastOp;
+    verdict = S.lastOp ? M.chunkVerdict(verb, S.lastOp.out) : 'stop';
+    if (verdict === 'stop' || verdict === 'failed' && !worst) worst = S.lastOp;
+    if (verdict === 'failed') verdict = 'ok'; // la tranche suivante part
   }
   S.chunk = null;
   if (worst) S.lastOp = worst;

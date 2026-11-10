@@ -37,7 +37,9 @@ import {
 } from './update.js';
 import {
   statusKnown,
-  zoneStateHtml
+  zoneStateHtml,
+  zoneActionHtml,
+  balance
 } from './status.js';
 import {
   packsHtml,
@@ -631,12 +633,16 @@ function choiceHtml(set, busy) {
       ids,
       ticked
     } = buildZones(),
-      pers = M.personalSources(ticked);
+      pers = M.personalSources(ticked),
+      bal = balance(),
+      shown = S.zoneFilter && bal.groups ? ids.filter(z => bal.groups[S.zoneFilter].includes(z)) :
+      ids; // le bilan (SOG-0180) : un nombre touché n'affiche que ses zones
     return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
     <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
+    ${bal.html}
     ${packsHtml()}
     <h4 data-zones-title>${esc(tt(TX.zonesTitle, { n: ids.length }))}</h4>
-    <div class="d-opts" data-build-zones>${ids.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}</div>`).join('')}</div>
+    <div class="d-opts" data-build-zones>${shown.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}${zoneActionHtml(z)}</div>`).join('')}</div>
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>
       <label class="d-opt"><input type="checkbox" data-certify${S.certified ? ' checked' : ''}${busy ? ' disabled' : ''}><span><b>${esc(tt(TX.certify))}</b></span></label>
       <p class="f-muted">${esc(tt(TX.certifyHint))} <a href="#sources" data-licences-link>${esc(tt(TX.licencesLink))}</a></p>

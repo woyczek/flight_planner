@@ -5,6 +5,7 @@ import {
   TX
 } from './texts.js';
 import {
+  busyNow,
   catSource,
   esc,
   kind,
@@ -15,6 +16,8 @@ import {
   tt
 } from './state.js';
 import {
+  buildZones,
+  gateOf,
   renderBuild
 } from './panels.js';
 
@@ -102,6 +105,46 @@ export function zoneStateHtml(id) {
   return `${reasons.length ? `<button type="button" class="d-st" data-act="zone-why" data-zone="${esc(id)}" data-zstate="${esc(st)}" aria-expanded="${open ? 'true' : 'false'}">${dot}${esc(label)}</button>` :
     `<span class="d-st" data-zstate="${esc(st)}">${dot}${esc(label)}</span>`}
     ${open ? `<p class="f-muted d-zwhy" data-zone-why="${esc(id)}">${esc(reasons.join(' ; '))}</p>` : ''}${zoneNotices(id).map(n => `<p class="f-muted d-zwhy" data-zone-notice="${esc(id)}">${esc(n)}</p>`).join('')}`;
+}
+/** Le bilan en une ligne (SOG-0180) : « 58 à jour · 2 en échec · 1 attend un fichier » ; chaque nombre est un bouton qui n'affiche que ses zones dans la liste (le même, ou « Tout afficher », rend la liste entière). Vide sans état connu.
+ *  Rend { html, groups } : les listes de la liste filtrée sont celles du bilan. */
+export function balance() {
+  if (!S.status || !statusKnown()) return {
+    html: '',
+    groups: null
+  };
+  const groups = M.balanceOf(S.status, buildZones().ids),
+    parts = ['upToDate', 'rebuild', 'failed', 'waiting'].filter(k => groups[k].length);
+  if (S.zoneFilter && !groups[S.zoneFilter]?.length) S.zoneFilter = null; // plus aucune zone de ce genre : le filtre tombe
+  if (!parts.length) return {
+    html: '',
+    groups
+  };
+  const html = `<p class="d-bal" data-balance>${parts.map(k => `<button type="button" data-act="zone-filter" data-filter="${k}" aria-pressed="${S.zoneFilter === k}">${esc(tt(TX.bal[k][groups[k].length === 1 ? 0 : 1], { n: groups[k].length }))}</button>`).join(' · ')}${S.zoneFilter ? ` <button type="button" data-act="zone-filter" data-filter="">${esc(tt(TX.balShowAll))}</button>` : ''}</p>`;
+  return {
+    html,
+    groups
+  };
+}
+/** Le toucher d'un nombre du bilan : la liste n'affiche que ses zones ; le même nombre, ou « Tout afficher » : toute la liste. */
+export function setZoneFilter(key) {
+  const k = ['upToDate', 'rebuild', 'failed', 'waiting'].includes(key) ? key : null;
+  S.zoneFilter = k && S.zoneFilter !== k ? k : null;
+  renderBuild();
+}
+/** Ce qu'une zone dit et propose SUR sa ligne (SOG-0180) : une zone qui attend un fichier que seul l'utilisateur dépose le dit (sa première raison) avec « Prendre le fichier » (la prise lance ensuite la construction de la zone) ; une zone en échec a « Réessayer » (la construction de cette zone seule) ;
+ *  rien pour les autres. Les boutons sont gris pendant une opération. */
+export function zoneActionHtml(id) {
+  const st = zoneState(id),
+    z = S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id] : null;
+  if (!z || !st) return '';
+  const busy = busyNow();
+  if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>`;
+  if ((st === 'stale' || st === 'never-built') && !z.buildable) {
+    const off = busy || gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled;
+    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button></p>`;
+  }
+  return '';
 }
 /** Le toucher d'une pastille : ouvre ou ferme les raisons de la zone. */
 export function toggleWhy(id) {

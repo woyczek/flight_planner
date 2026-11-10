@@ -107,6 +107,13 @@ export const STYLE = `
 [data-module="data"] .d-st{display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;min-height:var(--sog-touch);padding:0 4px;border:0;background:none;color:inherit;font:inherit;font-size:var(--sog-size-s);white-space:nowrap}
 [data-module="data"] button.d-st{cursor:pointer;text-decoration:underline dotted}
 [data-module="data"] .d-zwhy{grid-column:1/-1;margin:0 0 4px 28px}
+/* le bilan en une ligne et l'action sur la ligne d'une zone (SOG-0180) : chaque nombre est un bouton, « Prendre le fichier » et « Réessayer » sont sur la ligne de leur zone */
+[data-module="data"] .d-bal{margin:4px 0 8px}
+[data-module="data"] .d-bal button{min-height:var(--sog-touch);padding:0 8px}
+[data-module="data"] .d-bal button[aria-pressed="true"]{font-weight:600;outline:2px solid var(--sog-accent);outline-offset:-2px}
+[data-module="data"] .d-zact{grid-column:1/-1;margin:0 0 4px 28px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+[data-module="data"] .d-zact button{min-height:var(--sog-touch)}
+@media (pointer:fine){[data-module="data"] .d-bal button,[data-module="data"] .d-zact button{min-height:32px}}
 [data-module="data"] .d-opt{display:flex;gap:8px;align-items:center;min-height:var(--sog-touch);overflow-wrap:anywhere}
 /* au pointeur fin (souris) une ligne de liste est une ligne de texte, pas une cible de doigt : 32 px ; au doigt, 44 px (SOG-0168) */
 @media (pointer:fine){[data-module="data"] .d-opt{min-height:32px}[data-module="data"] .d-zrow{min-height:32px}}

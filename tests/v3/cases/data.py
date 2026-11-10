@@ -4913,7 +4913,7 @@ def l62(c):
     one = r"'((?:[^'\\]|\\.)*)'"
     unq = lambda x: re.sub(r"\\(.)", r"\1", x)
     # the buttons (and the boxes) of the screen: the keys whose 4 strings are a label; every occurrence of a key counts
-    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'selStale', 'selNone', 'certify', 'licencesLink']
+    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'selStale', 'selNone', 'certify', 'licencesLink', 'retry', 'balShowAll']
     allowed = set()
     for k in labels:
         for m in re.finditer(r"^\s*" + k + r": \[\s*" + one + r",\s*" + one + r",\s*" + one + r",\s*" + one, src, re.M):
@@ -4930,3 +4930,104 @@ def l62(c):
             if name not in allowed and name not in others:
                 orphans.append(name)
     c.eq(sorted(set(orphans)), [], 'every quoted button name of a message is the name of a button of the screen', what='orphans')
+
+
+@case('L63', 'Données: the balance in one line under the selection (« 58 à jour · 2 en échec · 1 attend un fichier »): each number shows its zones only; a zone that waits for a file has « Prendre le fichier » on its line, a failed one « Réessayer » (SOG-0180)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0180 (decision 2 and 4): a zone waiting for a file only the user can drop says so on its own line with the button that takes it; a failed zone has its own « Réessayer » (the build of that zone alone); the end is a one-line balance whose numbers open their lines')
+def l63(c):
+    lang = c.lang
+    ok = _view('done', step='Terminé', jid='j1', zones={'es': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['es'], 'failed': [], 'commits': [{'zone': 'es', 'commit': 'abc1234'}], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})
+    plan = _view('done', step='Terminé', jid='j2', result={'ok': True, 'dry': True, 'taken': [], 'missing': []})
+    st = _launcher(c, [plan], verbs=_VERBS + ['base/pickup'])
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('failed', {'code': 'failed', 'error': 'invalid-output'}), 'fr': _zst('stale', _NEWER),
+                            'gb': _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False), 'us': _zst('up-to-date')})
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-balance]')", timeout=8000, what='the five pills and the balance')
+    nums = lambda: c.js("[...document.querySelectorAll('[data-balance] button[data-filter]')].filter(b => b.dataset.filter).map(b => [b.dataset.filter, +b.textContent.match(/\\d+/)[0]])")
+    c.eq(nums(), [['upToDate', 2], ['rebuild', 1], ['failed', 1], ['waiting', 1]], 'the balance: two up to date, one to rebuild, one failed, one waiting for a file', what='balance')
+    c.eq(c.count('[data-balance]'), 1, 'one line', what='one line')
+    shown = lambda: c.js("[...document.querySelectorAll('[data-zone-row]')].map(r => r.dataset.zoneRow)")
+    c.eq(len(shown()), 5, 'the whole list is shown at first', what='all')
+    # ---- a number opens its lines
+    c.tap('[data-balance] [data-filter=failed]')
+    c.until("document.querySelectorAll('[data-zone-row]').length === 1", timeout=4000, what='only the failed line')
+    c.eq(shown(), ['es'], 'the number of failures shows the failed zone alone', what='failed only')
+    c.eq(c.js("document.querySelector('[data-balance] [data-filter=failed]').getAttribute('aria-pressed')"), 'true', 'and says it is pressed', what='pressed')
+    c.tap('[data-balance] [data-filter=waiting]')
+    c.until("document.querySelectorAll('[data-zone-row]').length === 1 && !!document.querySelector('[data-zone-row=gb]')", timeout=4000, what='the waiting line')
+    c.tap('[data-balance] [data-filter=""]')
+    c.until("document.querySelectorAll('[data-zone-row]').length === 5", timeout=4000, what='the whole list again')
+    # ---- the actions are on the lines of their zones, and only there
+    c.eq(c.js("[...document.querySelectorAll('[data-zone-action]')].map(p => [p.dataset.zoneAction, [...p.querySelectorAll('button')].map(b => b.dataset.verb)])"), [['es', ['retry-zone']], ['gb', ['pickup']]], '« Réessayer » on the failed zone, « Prendre le fichier » on the waiting one, nothing on the others', what='actions')
+    c.eq([norm(c.text('[data-zone-row=es] [data-verb=retry-zone]')), norm(c.text('[data-zone-row=gb] [data-verb=pickup]'))], [norm(_UT('retry', lang)), norm(_trow('pickup', lang))], 'worded in the language of the run (the same name as the button of the screen)', what='labels')
+    c.ok('x.zip' in c.text('[data-zone-row=gb] [data-zone-action]') or c.text('[data-zone-row=gb] [data-zone-action]').strip() != '', None, 'the waiting zone says what it waits for on its own line')
+    # ---- « Prendre le fichier » on the line: the plan of THAT zone
+    n0 = len(st['posts'])
+    c.tap('[data-zone-row=gb] [data-verb=pickup]')
+    for _ in range(40):
+        if _posts(st, 'pickup'):
+            break
+        c.wait(250)
+    c.eq([{k: p.get(k) for k in ('set', 'verb')} | {'zones': p['args']['zones'], 'dry': p['args'].get('dry')} for p in _posts(st, 'pickup')[:1]], [{'set': 'base', 'verb': 'pickup', 'zones': ['gb'], 'dry': True}], 'the plan of the pickup concerns the waiting zone alone', what='pickup body')
+    # ---- « Réessayer »: the build of that zone alone
+    c.until("!document.querySelector('[data-build] [data-verb=update]').disabled", timeout=15000, what='the buttons free again')
+    st['views'], st['i'] = [ok], 0
+    c.tap('[data-zone-row=es] [data-verb=retry-zone]')
+    for _ in range(40):
+        if _posts(st, 'build'):
+            break
+        c.wait(250)
+    c.eq([{k: p[k] for k in ('set', 'verb', 'args')} for p in _posts(st, 'build')[:1]], [{'set': 'base', 'verb': 'build', 'args': {'zones': ['es'], 'personal': []}}], 'the build of the failed zone alone', what='retry body')
+    c.check_errors()
+
+
+@case('L64', 'Données: the zones are independent — a run of 60 that fails or half fails does not hold the next runs; a stop does (SOG-0180)', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0180 (decision 1): « l’échec d’une zone est une ligne avec sa raison, jamais un arrêt des autres »; runChunks used to stop at the first run that did not end well, now only a stop asked by the user, an interruption or a reason that concerns the whole work stops')
+def l64(c):
+    half = _view('error', step='Échec', jid='j1', zones={'ca': _zs('built', 4, 4), 'es': _zs('failed', 1, 4, error='invalid-output')}, result={'built': ['ca'], 'failed': [{'zone': 'es', 'error': 'invalid-output'}], 'commits': [], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': [], 'reason': 'failed'})
+    st = _launcher(c, [half], verbs=_VERBS)   # every run answers the same half failure: the second run only starts if the first did not hold it
+    cfg, _ = _fixture()
+    extra = [f'q{i:02d}' for i in range(73)]
+    for z in extra:
+        cfg['zones'].append({'id': z, 'names': [z.upper()] * 4, 'frames': [], 'published': True})
+        cfg['publication']['base'][z] = cfg['publication']['base']['ca']
+    _open(c, cfg)
+    _all_open(c)
+    c.eq(len(_ticked(c)), 78, 'seventy-eight zones ticked: two runs', what='78 ticked')
+    c.tap('[data-build] [data-verb=build]')
+    for _ in range(60):
+        if len(_posts(st, 'build')) >= 2:
+            break
+        c.wait(250)
+    c.eq([len(p['args']['zones']) for p in _posts(st, 'build')], [60, 18], 'every run half failed: the second run still starts after the first', what='runs after a failure')
+    c.until('document.querySelector("[data-build-result]")', timeout=15000, what='the end')
+    # ---- a stop asked by the user does stop the next runs
+    cancelled = _view('cancelled', step='Arrêté', jid='j3', result={'built': [], 'failed': [], 'commits': [], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})
+    st['views'], st['i'] = [cancelled], 0
+    n = len(_posts(st, 'build'))
+    c.tap('[data-build] [data-verb=build]')
+    c.wait(3000)
+    c.eq(len(_posts(st, 'build')) - n, 1, 'a run that ends stopped: the next one is not started', what='runs after a stop')
+    c.check_errors()
+
+
+@case('L65', 'Données: « Mettre à jour » goes on after a download that half failed: the state is read and the question names the zones to rebuild (SOG-0180)', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0180 (decision 1): the failure of a source is a line with its reason, never a stop of the other zones; the update used to end at the first download that did not end well')
+def l65(c):
+    fetch_half = _view('error', step='Échec', jid='j1', result={'fetched': ['fr'], 'unchanged': [], 'failed': [{'zone': 'ca', 'error': 'timeout'}], 'manual': [], 'reason': 'failed'})
+    st = _launcher(c, [fetch_half], verbs=_VERBS)
+    st['status'] = _FR_STALE()
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.tap('[data-build] [data-verb=update]')
+    q = _ask_text(c)
+    c.ok(len(q['text']) > 0, q, 'a download that half failed: the update goes on, the question asks about the zones to rebuild (the zones are independent)')
+    c.eq([p['verb'] for p in st['posts'] if p['verb'] in ('fetch', 'build')], ['fetch'], 'and nothing is built before the answer', what='posts')
+    c.check_errors()

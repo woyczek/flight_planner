@@ -99,7 +99,8 @@ export async function startUpdate() {
   renderBuild();
   S.lastOp = null;
   const verdict = sel.ids.length > M.MAX_ZONES ? await runChunks(me, 'base', 'fetch', sel) : (await settle(me, await launch('base',
-    'fetch', M.setArgs('base', 'fetch', sel), sel.ids), true), S.lastOp ? M.chainVerdict('fetch', S.lastOp.out) : 'stop');
+      'fetch', M.setArgs('base', 'fetch', sel), sel.ids), true), S.lastOp ? M.chunkVerdict('fetch', S.lastOp.out) :
+    'stop'); // un téléchargement en échec (partiel) ne retient pas la suite : les zones sont indépendantes (SOG-0180)
   if (S !== me) return;
   if (verdict === 'stop') {
     S.updating = false;

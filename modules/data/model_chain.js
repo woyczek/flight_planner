@@ -20,6 +20,14 @@ export function chainVerdict(verb, out) {
   if (k === 'done') return 'ok';
   return verb === 'fetch' && (k === 'nothing' || k === 'not-published') ? 'nothing' : 'stop';
 }
+/** Ce qu'une tranche de zones (runChunks, « Mettre à jour ») laisse faire à la suivante (SOG-0180 : les zones sont indépendantes) : 'ok' (finie), 'failed' (échec ou échec partiel : ses zones en échec sont des lignes avec leur raison, les tranches suivantes partent), 'nothing' (rien à télécharger),
+ *  'stop' (arrêt demandé, interruption, motif propre à tout le travail : pas de lanceur, analyseur absent…). `out` : la fin calculée par setOutcome. */
+export function chunkVerdict(verb, out) {
+  const k = out?.kind;
+  if (k === 'done') return 'ok';
+  if (k === 'partial' || k === 'failed') return 'failed';
+  return verb === 'fetch' && (k === 'nothing' || k === 'not-published') ? 'nothing' : 'stop';
+}
 /** Les groupes dont un jeu publié a un cycle dépassé (la règle de la ligne « cycle X dépassé, à reconstruire pour Y »), d'après buildGroups() :
  *  { base, proc } : le plus ancien cycle publié « AANN » des lignes dépassées de ce groupe, null sans. */
 export function staleGroups(groups) {
