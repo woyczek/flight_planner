@@ -368,9 +368,13 @@ export const TX = {
     themeAll: ['Tout le thème', 'The whole theme', 'Das ganze Thema', 'Todo el tema'],
     inCoverage: ['dans la couverture', 'in the coverage', 'in der Abdeckung', 'en la cobertura'],
     themeCount: ['{n}, {m} à ajouter', '{n}, {m} to add', '{n}, {m} hinzuzufügen', '{n}, {m} por añadir'],
-    partial: ['{n} en partie', '{n} in part', '{n} teilweise', '{n} en parte'],
-    unknown: ['{n} inconnue(s) de la suite, ignorée(s)', '{n} unknown to the suite, ignored', '{n} der Suite unbekannt, ignoriert',
-      '{n} desconocida(s) de la suite, ignorada(s)'
+    partial: ['Pays en partie seulement dans ce paquet : {n}', 'Countries only partly in this pack: {n}',
+      'Länder nur teilweise in diesem Paket: {n}',
+      'Países solo en parte en este paquete: {n}'
+    ],
+    unknown: ['Pays de ce paquet pas encore dans la suite : {n}', 'Countries of this pack not in the suite yet: {n}',
+      'Länder dieses Pakets, die die Suite noch nicht kennt: {n}',
+      'Países de este paquete que la suite aún no conoce: {n}'
     ],
     some: ['{n} déjà dans la couverture', '{n} already in the coverage', '{n} schon in der Abdeckung', '{n} ya en la cobertura'],
     remove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],

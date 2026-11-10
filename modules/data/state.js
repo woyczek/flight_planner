@@ -1,6 +1,10 @@
 // V3 data — l'état de l'écran monté et la petite trousse que tous les fichiers du module utilisent (SPEC § 11) : `S` (un seul écrivain, setState, appelé au montage et au démontage), les
 // constantes (documents gardés, routes du lanceur) et esc / tt / lang / li / count / kind / ask / catSource / busyNow / frozen. Ne dessine rien, ne lance rien.
 import {
+  agree,
+  plural
+} from '../../frame/lib/plural.js';
+import {
   TX
 } from './texts.js';
 
@@ -17,13 +21,14 @@ export let S = null;
 /** Échappe un texte pour le HTML. */
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 /** Texte d'une ligne [fr, en, de, es] dans la langue de l'appli. */
-export const tt = (row, v) => S.ctx.t(row, v);
+export const tt = (row, v) => v && typeof v === 'object' ? S.ctx.t([agree(S.ctx.t(row), v, lang())], v) : S.ctx.t(row,
+  v); // les marques « (s) » des textes sont résolues par le nombre qui les précède (frame/lib/plural.js)
 /** Langue de l'appli (« fr », « en », « de », « es »). */
 export const lang = () => S.ctx.lang?.() || 'fr';
 /** Rang de la langue de l'appli dans une ligne [fr, en, de, es]. */
 export const li = () => Math.max(0, LANGS.indexOf(lang()));
 /** « 3 zones » : le nombre et le nom de l'unité, au singulier ou au pluriel (TX.unit). */
-export const count = (unit, n) => `${n} ${tt(TX.unit[unit][n === 1 ? 0 : 1])}`;
+export const count = (unit, n) => `${n} ${tt(TX.unit[unit][plural(lang(), n, [0, 1])])}`;
 /** Attribut data-kind d'un badge ou d'un point, absent quand il n'y a pas de couleur. */
 export const kind = k => k ? ` data-kind="${esc(k)}"` : '';
 /** Un appel d'aerodb qui ne lève jamais : sa réponse, ou null s'il manque, échoue ou ne répond rien. */

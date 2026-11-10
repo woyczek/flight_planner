@@ -595,9 +595,26 @@ def _trow(key, lang, after=None, row=0):
     return out[4 * row + LANGS.index(lang)]
 
 
+def _one(lang, n):
+    """The agreement of frame/lib/plural.js: fr, 0 and 1 are singular; en, de, es only 1."""
+    return 0 <= n < 2 if lang == 'fr' else n == 1
+
+
+def _agree(text, lang):
+    """A text whose marks « (s) (x) (es) (en) (n) (e) » are resolved by the number that precedes them (an independent version of frame/lib/plural.js agree, on the final text)."""
+    last = [float('nan')]
+
+    def one(m):
+        if m.group(1):
+            last[0] = int(m.group(1))
+            return m.group(0)
+        return '' if _one(lang, last[0]) else m.group(2)
+    return re.sub(r'(\d+)|\((s|x|es|en|n|e)\)', one, text)
+
+
 def _zones_text(lang, n):
-    """« 1 zone », « 3 zones » as the screen counts them."""
-    return f'{n} {UNIT_ZONE[lang][0 if n == 1 else 1]}'
+    """« 1 zone », « 0 zone », « 3 zones » as the screen counts them (0 and 1 singular in French)."""
+    return f'{n} {UNIT_ZONE[lang][0 if _one(lang, n) else 1]}'
 
 
 def _view(state='running', step='', done=0, total=2, zones=None, result=None, jid='j1', unit='zones'):
@@ -2104,7 +2121,7 @@ def l17(c):
     c.eq(c.js("[...document.querySelectorAll('[data-set-panel=proc] input')].every(i => i.disabled)"), True, 'the States are frozen while it runs', what='frozen')
     c.until("document.querySelector('[data-set-panel=proc] [data-item-state=K]')?.dataset.state === 'building'", timeout=8000, what='K is building')
     c.eq(_line(c, '[data-set-panel=proc] [data-item-state=K]'), norm(f"{name('K')} : {T('buildingP', 'zoneState: {').replace('{n}', '1').replace('{m}', '3')}"), 'a line per State, with (n / m) and no noun (the launcher counts aerodromes, not sources)', what='K line')
-    c.eq(_line(c, '[data-set-panel=proc] [data-running] [data-count]'), norm(T('runCount').replace('{n}', f"0 {_unit('state', lang, 2)}").replace('{m}', '2')), 'the count, in States', what='count')
+    c.eq(_line(c, '[data-set-panel=proc] [data-running] [data-count]'), norm(T('runCount').replace('{n}', f"0 {_unit('state', lang, 0)}").replace('{m}', '2')), 'the count, in States', what='count')
     _panels_ok(c, 'a proc job running')
     c.until("!!document.querySelector('[data-set-panel=proc] [data-build-result]')", timeout=10000, what='the end of the job')
     unit_state = lambda n: f"{n} {_unit('state', lang, n)}"
@@ -2346,7 +2363,7 @@ def l17(c):
     c.tap('[data-set-panel=vfr] [data-verb=build]')
     c.until("document.querySelector('[data-set-panel=vfr] [data-build-result]')?.dataset.result === 'invalid'", timeout=8000, what='invalid is said')
     c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), _line(c, '[data-set-panel=vfr] [data-failed] li'), c.count('[data-set-panel=vfr] [data-failed] b b')],
-         [norm(_trow('invalid', lang, 'vfrSum: {').replace('{s}', label('vfr')).replace('{failed}', '1')), 'plan : point <b>x</b>', 0], 'the problem of the plan is listed, as text', what='invalid')
+         [norm(_agree(_trow('invalid', lang, 'vfrSum: {').replace('{s}', label('vfr')).replace('{failed}', '1'), lang)), 'plan : point <b>x</b>', 0], 'the problem of the plan is listed, as text', what='invalid')
     # purge: the plan (dry sent explicitly, no cycle: all of them), one question, the real run; unsafe paths are said
     warn = [{'code': 'unsafe-path', 'count': 2}]
     pd = _sview('vfr', 'purge', None, None, state='done', jid='v6', args={'dry': True}, result={'ok': True, 'dry': True, 'removed': {'files': 6, 'bytes': 3072}, 'warnings': warn})
@@ -2387,7 +2404,7 @@ def l17(c):
 
 def _unit(key, lang, n):
     """A unit noun of texts.js (`unit: { <key>: [[singular…], [plural…]] }`), in the language, for the count n."""
-    return _trow(key, lang, 'unit: {', 0 if n == 1 else 1)
+    return _trow(key, lang, 'unit: {', 0 if _one(lang, n) else 1)
 
 
 # ------------------------------------------------------------------------------------------------------ L18
@@ -3569,7 +3586,7 @@ def l29(c):
     xml = lambda n, cyc, b: {'name': n, 'cycle': cyc, 'from': 'sia/' + n, 'to': f'local/sources/sia/{cyc}/' + n, 'bytes': b}
     f1, f2 = xml('XML_SIA_2026-10-01.xml', '2026-10-01', 41943040), xml('AIXM4.5_all_2026-10-01.xml', '2026-10-01', 5242880)
     total = 41943040 + 5242880
-    ask = lambda undo=False: T('askUndo' if undo else 'ask').replace('{n}', '2').replace('{b}', _size(total, lang))
+    ask = lambda undo=False: _agree(T('askUndo' if undo else 'ask').replace('{n}', '2').replace('{b}', _size(total, lang)), lang)
     go = lambda: c.js("document.querySelector('[data-inventory]').open = true")
     vcode = ALL_VERBS + ['base/move-sources']
     posts = lambda st: [p for p in st['posts'] if p.get('verb') == 'move-sources']
@@ -3613,8 +3630,8 @@ def l29(c):
     lines = [norm(x) for x in c.js("[...document.querySelectorAll('[data-move-state=done] [data-move-line]')].map(p => p.textContent)")]
     refused = [(x[0], norm(x[1])) for x in c.js("[...document.querySelectorAll('[data-move-refused] li')].map(li => [li.dataset.why, li.textContent])")]
     c.eq(posts(st)[-1].get('args'), {'dry': False, 'undo': False}, 'the run is the same verb with dry false', what='run body')
-    c.eq(lines, [norm(T('done').replace('{n}', '2').replace('{b}', _size(total, lang))), norm(T('already').replace('{n}', '1')), norm(T('kept').replace('{n}', '1')),
-                 norm(T('refused').replace('{n}', '2')), norm(_trow('partial', lang, 'reason: {'))],
+    c.eq(lines, [norm(_agree(T('done').replace('{n}', '2').replace('{b}', _size(total, lang)), lang)), norm(_agree(T('already').replace('{n}', '1'), lang)), norm(_agree(T('kept').replace('{n}', '1'), lang)),
+                 norm(_agree(T('refused').replace('{n}', '2'), lang)), norm(_trow('partial', lang, 'reason: {'))],
          'the result: moved, already in place, kept (tracked), refused, the reason of a partial run', what='result lines')
     c.eq([r[0] for r in refused], ['different', 'sha-mismatch'], 'the refused ones, each with its reason from the closed list', what='refused whys')
     c.ok(norm(why('different')) in refused[0][1] and norm(why('sha-mismatch')) in refused[1][1], refused, 'the reasons are said in words')
@@ -3625,7 +3642,7 @@ def l29(c):
     c.tap('[data-move=plan-undo]')
     c.until("!!document.querySelector('[data-move-state=asking]')", timeout=20000, what='the question of the undo')
     c.eq(posts(st)[-1].get('args'), {'dry': True, 'undo': True}, 'the undo is asked as a plan too', what='undo body')
-    c.eq(norm(c.text('[data-move-state=asking] > p')), norm(T('askUndo').replace('{n}', '3').replace('{b}', _size(total + 9, lang))), 'the question of the undo', what='undo question')
+    c.eq(norm(c.text('[data-move-state=asking] > p')), norm(_agree(T('askUndo').replace('{n}', '3').replace('{b}', _size(total + 9, lang)), lang)), 'the question of the undo', what='undo question')
     c.eq([c.count('[data-move-box] img'), c.count('[data-move-box] script'), c.js("window.__pwn === undefined"), c.js("[...document.querySelectorAll('[data-move-files] li')].map(li => li.dataset.name || '')")[2:]],
          [0, 0, True, ['?']], 'a hostile name reads « ? »: no element, nothing runs', what='hostile')
     c.tap('[data-move=cancel]')
@@ -4802,7 +4819,7 @@ def l58(c):
     c.until("document.querySelector('[data-build-result][data-op=pickup]')", timeout=10000, what='the end of the plan')
     c.eq(st['posts'][-1]['args'].get('personal'), [], 'the plan carries the box: nothing declared', what='personal A')
     said = norm(c.text('[data-build-result] b'))
-    c.eq(said, norm(T('inPlace', 'pickupSum: {').replace('{n}', '3').replace('{s}', 'NATS')), 'the end says the sets are already taken', what='already taken')
+    c.eq(said, norm(_agree(T('inPlace', 'pickupSum: {').replace('{n}', '3').replace('{s}', 'NATS'), lang)), 'the end says the sets are already taken', what='already taken')
     c.ok(norm(T('nothing', 'pickupSum: {')) != said, said, 'not « Rien à prendre »')
     want = norm(T('pickupUnread').replace('{z}', gb).replace('{n}', '3').replace('{s}', 'NATS'))
     c.eq(lines(), [want], 'the line says the sets are there but not read: the « personnel » box does not declare NATS', what='unread line')

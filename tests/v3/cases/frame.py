@@ -3464,6 +3464,17 @@ def a92(c):
     c.check_errors()
 
 
+_NOUNS = {'aircraft': {'fr': ('appareil', 'appareils'), 'en': ('aircraft', 'aircraft'), 'de': ('Luftfahrzeug', 'Luftfahrzeuge'), 'es': ('aeronave', 'aeronaves')},
+          'category': {'fr': ('catégorie', 'catégories'), 'en': ('category', 'categories'), 'de': ('Kategorie', 'Kategorien'), 'es': ('categoría', 'categorías')},
+          'operator': {'fr': ('opérateur', 'opérateurs'), 'en': ('operator', 'operators'), 'de': ('Betreiber', 'Betreiber'), 'es': ('operador', 'operadores')}}
+
+
+def _noun(lang, key, n):
+    """« 1 appareil », « 0 appareil », « 2 appareils »: the number and its noun in the right form (fr: 0 and 1 singular; the others: only 1) — never « appareil(s) »."""
+    one = (0 <= n < 2) if lang == 'fr' else n == 1
+    return f"{n} {_NOUNS[key][lang][0 if one else 1]}"
+
+
 def _airline_code(c, want, timeout=8000):
     """The code of the current airline once it is `want` (FrameData may not exist yet right after a navigation: the wait is explicit, never a direct read); '' if it never is."""
     got = ''
@@ -3535,8 +3546,8 @@ def a95(c):
     c.eq([[r[0], r[2]] for r in got], [['dfa', 'DEFA Virtual'], ['aiv', evil], ['perso', T('perso')]], 'the folders found, in order, then « personnel »; a hostile code, an upper-case code, a repeated one and « perso » itself are dropped; a name is text', what='lines')
     c.ok(c.count('[data-card="company"] img') == 0 and c.js("window.__pwn === undefined"), got, 'a hostile name is text: no element, nothing runs')
     line = lambda code: norm(c.text(f'[data-card="company"] [data-airlines] [data-airline="{code}"]'))
-    c.ok(norm(T('fleet').replace('{n}', '3')) in line('dfa') and 'IVAO' in line('dfa') and 'VATSIM' not in line('dfa'), line('dfa'), 'a line: the name, the code, the networks read as booleans, the fleet count')
-    c.ok('IVAO' in line('aiv') and 'VATSIM' in line('aiv') and norm(T('fleet').replace('{n}', '0')) in line('aiv'), line('aiv'), 'no fleet file: 0; a network that is not exactly true is not shown')
+    c.ok(norm(_noun(lang, 'aircraft', 3)) in line('dfa') and 'IVAO' in line('dfa') and 'VATSIM' not in line('dfa'), line('dfa'), 'a line: the name, the code, the networks read as booleans, the fleet count')
+    c.ok('IVAO' in line('aiv') and 'VATSIM' in line('aiv') and norm(_noun(lang, 'aircraft', 0)) in line('aiv'), line('aiv'), 'no fleet file: 0; a network that is not exactly true is not shown')
     c.eq([r[3] for r in got], [True, True, True], 'without FrameData.setAirline every choose button is grey', what='grey')
     c.eq(norm(c.text('[data-card="company"] [data-airline-note]')), norm(T('unavailable')), 'and it says why', what='note')
     # ---- B: with the contract (FrameData.airline / setAirline): the current one marked, the choice sent
@@ -5040,7 +5051,7 @@ def a124(c):
     c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='the summary step')
     c.ok(abs(c.js(top) - below) <= 1 and c.js(hh) >= h_cats - 1, [h_cats, below], 'the block never gets shorter from one step to the next: what is under it does not move (rule 22)')
-    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO · ' + T('wzCatCount').replace('{n}', '7') + ' · ' + T('fleet').replace('{n}', '0')), 'name · kind · networks · number of categories, in words (no file name)', what='summary')
+    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO · ' + _noun(lang, 'category', 7) + ' · ' + _noun(lang, 'aircraft', 0)), 'name · kind · networks · number of categories, in words (no file name)', what='summary')
     c.eq([c.doc('airline/rmo/settings.json'), c.js('window.__puts.length')], [None, 0], 'nothing is written before the last button', what='nothing written')
     if c.width in (390, 1280):
         c.shot(f'A125_standard_{c.width}_{lang}_summary_delivered.png')
@@ -5130,7 +5141,7 @@ def a126(c):
     c.eq([c.js(f"document.querySelector('{pane} [data-wz-cat=vip]').checked"), c.js(f"document.querySelectorAll('{pane} [data-wz-own] li').length")], [False, 1], 'back and forth keeps the unticked box and the typed category', what='kept')
     nxt('fleet')
     nxt('summary')
-    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-2], norm(T('wzCatCount').replace('{n}', '7')), 'the summary counts the categories kept: six of the base and one of our own', what='count')
+    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-2], norm(_noun(lang, 'category', 7)), 'the summary counts the categories kept: six of the base and one of our own', what='count')
     c.eq(c.js('window.__puts.length'), 0, 'nothing is written yet', what='no put')
     c.tap('[data-act="companyAdd"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='created')
@@ -5192,8 +5203,8 @@ def a127(c):
     c.page.fill('[data-wizard] [data-f="wz-reg"]', 'F-GKXA')
     c.tap('[data-act="companyWzReg"]')
     c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T('wzRegDup')), 'the same registration twice: said', what='dup')
-    c.eq(norm(c.text('[data-wz-fleet-title]')), norm(T('wzFleetTitle').replace('{n}', '2')), 'the title of the step says how many aircraft are added', what='title count')
-    c.ok(norm(T('wzFleetTitle').replace('{n}', '2')) in norm(c.text('[data-step-dot=fleet]')), norm(c.text('[data-step-dot=fleet]')), 'and so does its dot in the header')
+    c.eq(norm(c.text('[data-wz-fleet-title]')), norm(T('wzFleetTitle').replace('{x}', _noun(lang, 'aircraft', 2))), 'the title of the step says how many aircraft are added', what='title count')
+    c.ok(norm(T('wzFleetTitle').replace('{x}', _noun(lang, 'aircraft', 2))) in norm(c.text('[data-step-dot=fleet]')), norm(c.text('[data-step-dot=fleet]')), 'and so does its dot in the header')
     c.eq(c.js(f"document.querySelector('{pane} [data-act=companyWzLater]').hidden"), True, '« Plus tard » is only there while the list is empty', what='later hidden')
     # a second type, then one removed
     c.page.fill('[data-wizard] [data-f="wz-sheet-q"]', 'c-130')
@@ -5207,7 +5218,7 @@ def a127(c):
     if c.width in (390, 1280):
         c.shot(f'A127_standard_{c.width}_{lang}_fleet_delivered.png')
     nxt('summary')
-    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-1], norm(T('fleet').replace('{n}', '2')), 'the summary counts the aircraft', what='summary count')
+    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-1], norm(_noun(lang, 'aircraft', 2)), 'the summary counts the aircraft', what='summary count')
     c.tap('[data-act="companyAdd"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='created')
     fl = c.doc('airline/rennes/fleet.json')
@@ -5264,7 +5275,7 @@ def a128(c):
     c.tap('[data-act="companyJnNext"]')
     c.until("document.querySelector('[data-join]').dataset.step === 'read'", timeout=8000, what='what was read')
     parsed = c.js("(page) => import('/modules/website/model.js').then(m => { const l = m.parseFleet(page); const ops = {}; for (const a of l) ops[a.operator] = (ops[a.operator] || 0) + 1; return [l.length, Object.keys(ops).length, Object.entries(ops).sort((x, y) => y[1] - x[1])[0][0]] })", page)
-    c.eq(norm(c.text('[data-join] [data-jn-counts]')), norm(T('jnCounts').replace('{n}', str(parsed[0])).replace('{m}', str(parsed[1]))), 'the number of aircraft and of operators, as the Website parser reads them', what='counts')
+    c.eq(norm(c.text('[data-join] [data-jn-counts]')), norm(T('jnCounts').replace('{a}', _noun(lang, 'aircraft', parsed[0])).replace('{b}', _noun(lang, 'operator', parsed[1]))), 'the number of aircraft and of operators, as the Website parser reads them', what='counts')
     c.eq([c.js("document.querySelector('[data-join] [data-f=jn-name]').value"), c.js("document.querySelector('[data-join] [data-f=jn-code]').value")], [parsed[2][:60], c.js("(n) => n.split(/\\s+/)[0].normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 8)", parsed[2][:60])], 'the name is the operator with most aircraft, the code is proposed from it', what='proposed')
     c.eq(c.js("[...document.querySelectorAll('[data-join] input[name=jn-kind]')].map(i => [i.value, i.checked])"), [['va', False], ['sog', True]], 'a joined airline is a squadron by default, editable', what='kind')
     c.ok(c.count('[data-join] img') == 0 and c.js('window.__pwn === undefined'), None, 'a hostile line of the page is text: no element, nothing runs')
@@ -5389,3 +5400,8 @@ def a130(c):
     c.eq([c.count('.f-modal [data-ask-section]'), c.count('.f-modal .f-muted'), c.count('.f-modal [data-ok]'), c.count('.f-modal [data-no]')], [0, 0, 1, 1], 'a question without sections: the same markup as before', what='plain')
     c.tap('.f-modal [data-no]')
     c.check_errors()
+@case('A131', 'The agreement of a noun with its number (frame/lib/plural.js): fr 0 and 1 singular, en / de / es only 1; the marks (s) (x) (es) (en) (n) (e) of a text are resolved by the number that precedes them', 'A', tags=('settings',),
+      designs=('standard',), screens=False, night=False,
+      rule='ergonomist, 10 Nov: no more « (s) » on screen — « 2 appareils », « 1 appareil », « 0 appareil » (fr) — by a small pure function; the bench reports every assertion')
+def a131(c):
+    _bench(c, 'frame/lib/test/plural.html', '__pluralBench')

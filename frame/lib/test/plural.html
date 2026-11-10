@@ -1,0 +1,102 @@
+<!doctype html>
+<!-- Banc de l'accord (frame/lib/plural.js) : fr 0 et 1 au singulier, en / de / es 1 seul, une marque lie le nombre qui la précède, sans nombre : pluriel, les {clé} restent. Page nue, aucun module.
+     window.__pluralBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>plural — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">plural.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    agree,
+    plural
+  } from '../plural.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const F = ['fichier', 'fichiers'];
+  ck('plural fr : 0 et 1 au singulier, 2 et plus au pluriel', [0, 1, 2, 10].map(n => plural('fr', n, F)).join() === 'fichier,fichier,fichiers,fichiers');
+  ck('plural en, de, es : 1 seul au singulier (0 : pluriel)', ['en', 'de', 'es'].every(l => [0, 1, 2].map(n => plural(l, n, F)).join() === 'fichiers,fichier,fichiers'));
+  ck('plural : un nombre qui n\'est pas fini, ou absent, donne le pluriel ; une chaîne numérique compte', [NaN, Infinity, undefined, 'x'].every(n => plural('fr', n, F) === 'fichiers') && plural('fr', '1', F) === 'fichier');
+  const T = '{n} fichier(s) manquant(s)';
+  ck('agree fr : 0 et 1 sans marque, 2 avec', agree(T, {
+    n: 0
+  }, 'fr') === '{n} fichier manquant' && agree(T, {
+    n: 1
+  }, 'fr') === '{n} fichier manquant' && agree(T, {
+    n: 2
+  }, 'fr') === '{n} fichiers manquants');
+  ck('agree en : 0 au pluriel, 1 au singulier', agree('{n} file(s) missing', {
+    n: 0
+  }, 'en') === '{n} files missing' && agree('{n} file(s) missing', {
+    n: 1
+  }, 'en') === '{n} file missing');
+  ck('agree : les marques (x) (en) (es) (n) (e) comme (s)', agree('{n} jeu(x)', {
+    n: 1
+  }, 'fr') === '{n} jeu' && agree('{n} jeu(x)', {
+    n: 3
+  }, 'fr') === '{n} jeux' && agree('{n} Datei(en)', {
+    n: 1
+  }, 'de') === '{n} Datei' && agree('{n} Datei(en)', {
+    n: 2
+  }, 'de') === '{n} Dateien' && agree('{n} operador(es)', {
+    n: 2
+  }, 'es') === '{n} operadores' && agree('{n} Kategorie(n)', {
+    n: 1
+  }, 'de') === '{n} Kategorie' && agree('{n} Luftfahrzeug(e)', {
+    n: 5
+  }, 'de') === '{n} Luftfahrzeuge');
+  ck('agree : une marque se lie au nombre qui la précède (le deuxième nombre n\'emporte pas le premier)', agree('{a} jeu(x) sur {b} fichier(s)', {
+    a: 1,
+    b: 2
+  }, 'fr') === '{a} jeu sur {b} fichiers' && agree('{b} fichier(s) pour {a} jeu(x)', {
+    a: 3,
+    b: 1
+  }, 'fr') === '{b} fichier pour {a} jeux');
+  ck('agree : sans nombre devant (ou une variable qui n\'est pas un nombre), la marque est au pluriel', agree('fichier(s)', {}, 'fr') === 'fichiers' && agree('{z} fichier(s)', {
+    z: 'abc'
+  }, 'fr') === '{z} fichiers');
+  ck('agree : les {clé} restent à remplacer, le texte autour est intact, un texte vide ou absent donne ""', agree('« {n} »', {
+    n: 1
+  }, 'fr') === '« {n} »' && agree('', {}, 'fr') === '' && agree(null, {}, 'fr') === '');
+  ck('agree : une parenthèse qui n\'est pas une marque est laissée (un code de langue, une unité)', agree('{n} Mo (fr) (kt)', {
+    n: 2
+  }, 'fr') === '{n} Mo (fr) (kt)');
+  window.__pluralBench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__pluralBench.pass} PASS · ${window.__pluralBench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

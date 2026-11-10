@@ -283,7 +283,27 @@
       'La compañía actual de este dispositivo: las misiones, el informe y la flota leen esta. La elección es por dispositivo.'
     ],
     perso: ['Personnel', 'Personal', 'Persönlich', 'Personal'],
-    fleet: ['{n} appareil(s)', '{n} aircraft', '{n} Luftfahrzeug(e)', '{n} aeronave(s)'],
+    // un nom avec ses deux formes par langue (fr, en, de, es) : le nombre l'accorde (frame/lib/plural.js), jamais « (s) »
+    noun: {
+      aircraft: [
+        ['appareil', 'appareils'],
+        ['aircraft', 'aircraft'],
+        ['Luftfahrzeug', 'Luftfahrzeuge'],
+        ['aeronave', 'aeronaves']
+      ],
+      category: [
+        ['catégorie', 'catégories'],
+        ['category', 'categories'],
+        ['Kategorie', 'Kategorien'],
+        ['categoría', 'categorías']
+      ],
+      operator: [
+        ['opérateur', 'opérateurs'],
+        ['operator', 'operators'],
+        ['Betreiber', 'Betreiber'],
+        ['operador', 'operadores']
+      ]
+    },
     unavailable: ['Le choix n’est pas encore disponible dans ce cadre.', 'Choosing is not yet available in this frame.',
       'Die Auswahl ist in diesem Rahmen noch nicht verfügbar.', 'La elección aún no está disponible en este marco.'
     ],
@@ -311,9 +331,7 @@
       'Kein Luftfahrzeug gelesen: Fügen Sie die Seite „Flotte“ der Webseite ein (die Tabelle der Luftfahrzeuge).',
       'Ningún avión leído: pegue la página «Flota» del sitio (la tabla de aeronaves).'
     ],
-    jnCounts: ['{n} appareil(s) · {m} opérateur(s)', '{n} aircraft · {m} operator(s)', '{n} Luftfahrzeug(e) · {m} Betreiber',
-      '{n} aeronave(s) · {m} operador(es)'
-    ],
+    jnCounts: ['{a} · {b}', '{a} · {b}', '{a} · {b}', '{a} · {b}'],
     jnSite: ['Adresse du site (facultatif, pour la relire plus tard)', 'Website address (optional, to read it again later)',
       'Adresse der Webseite (optional, zum späteren erneuten Lesen)', 'Dirección del sitio (opcional, para releerla más tarde)'
     ],
@@ -350,7 +368,7 @@
       fleet: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
       summary: ['Résumé', 'Summary', 'Zusammenfassung', 'Resumen']
     },
-    wzFleetTitle: ['Flotte · {n} appareil(s)', 'Fleet · {n} aircraft', 'Flotte · {n} Luftfahrzeug(e)', 'Flota · {n} aeronave(s)'],
+    wzFleetTitle: ['Flotte · {x}', 'Fleet · {x}', 'Flotte · {x}', 'Flota · {x}'],
     wzFleetHint: [
       'Choisissez un type dans la base des fiches, puis tapez l’immatriculation. Vous pouvez aussi ajouter les appareils plus tard, depuis Appareils.',
       'Choose a type in the sheets base, then type the registration. You can also add the aircraft later, from Aircraft.',
@@ -386,7 +404,6 @@
     wzNoBase: ['Ce genre n’a pas de catégorie commune : ajoutez les vôtres.', 'This kind has no common category: add your own.',
       'Diese Art hat keine gemeinsame Kategorie: fügen Sie eigene hinzu.', 'Este tipo no tiene categorías comunes: añada las suyas.'
     ],
-    wzCatCount: ['{n} catégorie(s)', '{n} categories', '{n} Kategorie(n)', '{n} categoría(s)'],
     next: ['Suivant', 'Next', 'Weiter', 'Siguiente'],
     back: ['Retour', 'Back', 'Zurück', 'Atrás'],
     resume: ['Reprendre', 'Resume', 'Fortsetzen', 'Reanudar'],
@@ -404,10 +421,10 @@
       index: ['l’inscription dans la liste', 'the entry in the list', 'der Eintrag in der Liste', 'la inscripción en la lista']
     },
     partial: [
-      'Création interrompue : {done} écrit(s), il reste {todo}. « Reprendre » finit sans rien écraser.',
-      'Creation interrupted: {done} written, {todo} left. “Resume” finishes without overwriting anything.',
-      'Anlegen unterbrochen: {done} geschrieben, offen: {todo}. „Fortsetzen“ beendet es, ohne etwas zu überschreiben.',
-      'Creación interrumpida: {done} escrito(s), falta {todo}. «Reanudar» termina sin sobrescribir nada.'
+      'Création interrompue. Déjà écrit : {done}. Il reste : {todo}. « Reprendre » finit sans rien écraser.',
+      'Creation interrupted. Already written: {done}. Left: {todo}. “Resume” finishes without overwriting anything.',
+      'Anlegen unterbrochen. Bereits geschrieben: {done}. Offen: {todo}. „Fortsetzen“ beendet es, ohne etwas zu überschreiben.',
+      'Creación interrumpida. Ya escrito: {done}. Falta: {todo}. «Reanudar» termina sin sobrescribir nada.'
     ],
     badName: ['Donnez un nom (60 caractères au plus).', 'Give a name (60 characters at most).',
       'Geben Sie einen Namen an (höchstens 60 Zeichen).', 'Indique un nombre (60 caracteres como máximo).'
@@ -586,18 +603,19 @@
     }];
   }
   const KINDS = ['va', 'sog'];
+  let plP = null;
+  /** Le module pur de l'accord (frame/lib/plural.js), chargé une fois ; null s'il ne se charge pas (les noms restent alors au pluriel). */
+  const plLib = () => plP ||= import(new URL('frame/lib/plural.js', ROOT).href).catch(() => null);
   let catLibP = null;
   /** Le module pur des catégories (frame/lib/mission_categories.js), chargé une fois ; null s'il ne se charge pas (la ligne n'a alors ni genre ni catégories). */
   const catLib = () => catLibP ||= import(new URL('frame/lib/mission_categories.js', ROOT).href).catch(() => null);
   /** Le dossier d'une compagnie sous data/ : « airline/ » avant la migration (code default), sinon « airline/<code>/ ». */
   const airlineBase = code => code === 'default' ? 'airline/' : `airline/${code}/`;
   /** La ligne de la liste (jamais un bouton « Choisir ») : bouton radio, nom, code, puis une ligne grise : le genre dit en toutes lettres, les réseaux, la flotte. Le HTML ne dit rien de l'état courant (posé ensuite sur le nœud) : deux dessins qui ne diffèrent que par le choix donnent le même texte. */
-  function airlineRowHtml(r, t, can, CL) {
+  function airlineRowHtml(r, t, can, CL, aircraft = n => String(n)) {
     const KN = CL?.KIND_NAMES,
       kind = KN ? t(KN[r.code === PERSO ? 'perso' : r.kind || 'none']) : '',
-      meta = [kind, ...r.nets.map(k => t(TA.net[k])), ...(r.fleet === null ? [] : [t(TA.fleet, {
-        n: r.fleet
-      })])].join(' · '),
+      meta = [kind, ...r.nets.map(k => t(TA.net[k])), ...(r.fleet === null ? [] : [aircraft(r.fleet)])].join(' · '),
       code = esc(r.code);
     return `<label class="f-co" data-airline="${code}"><input type="radio" name="co-current" value="${code}" data-act="companyChoose" data-code="${code}"${can ? '' : ' disabled'}><span class="f-co-name"><b>${esc(r.name)}</b> <code>${code}</code></span><span class="f-muted" data-co-meta>${esc(meta)}</span></label>`;
   }
@@ -852,7 +870,7 @@
   function wizardFleetPaint(view, t) {
     const n = view.querySelectorAll('[data-wz-fleet] li').length,
       title = n ? t(TA.wzFleetTitle, {
-        n
+        x: nounText(view, 'aircraft', n)
       }) : t(TA.steps.fleet),
       h = view.querySelector('[data-wz-fleet-title]'),
       dot = view.querySelector('[data-step-dot="fleet"]'),
@@ -965,11 +983,8 @@
   function wizardSummary(env, v) {
     const KN = AIR.get(env.view)?.CL?.KIND_NAMES,
       nets = AIRLINE_NETWORKS.filter(k => v.nets[k]).map(k => env.t(TA.net[k]));
-    return [v.name, KN ? env.t(KN[v.kind]) : '', ...nets, env.t(TA.wzCatCount, {
-      n: wizardCats(env.view).n
-    }), env.t(TA.fleet, {
-      n: wizardFleet(env.view).length
-    })].filter(Boolean).join(' · ');
+    return [v.name, KN ? env.t(KN[v.kind]) : '', ...nets, nounText(env.view, 'category', wizardCats(env.view).n), nounText(env.view,
+      'aircraft', wizardFleet(env.view).length)].filter(Boolean).join(' · ');
   }
   /** « Suivant » et « Retour » : d'un pas à l'autre (l'identité est vérifiée en quittant le premier), sans rien perdre ; le résumé est composé en y arrivant. */
   async function wizardMove(env, dir) {
@@ -1231,8 +1246,8 @@
       name = w.querySelector('[data-f="jn-name"]'),
       code = w.querySelector('[data-f="jn-code"]');
     w.querySelector('[data-jn-counts]').textContent = t(TA.jnCounts, {
-      n: list.length,
-      m: ops.size
+      a: nounText(view, 'aircraft', list.length),
+      b: nounText(view, 'operator', ops.size)
     });
     if (!name.value) name.value = top.slice(0, 60);
     if (!code.value) code.value = proposeCode(name.value);
@@ -1383,13 +1398,20 @@
   }
   // par vue : ce que la dernière lecture a rendu (lignes, module des catégories, langue, choix possible, compagnie courante), pour repeindre la fiche sans relire
   const AIR = new WeakMap();
+  /** « 3 appareils », « 1 appareil » : le nombre et le nom accordé (TA.noun) dans la langue de l'écran. */
+  function nounText(view, key, n) {
+    const A = AIR.get(view),
+      i = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(A?.lang || 'fr')),
+      forms = TA.noun[key][i];
+    return `${n} ${A?.PL ? A.PL.plural(A.lang, n, forms) : forms[1]}`;
+  }
   /** Met la liste à jour SANS la redessiner : une ligne dont le HTML est inchangé garde son nœud (le focus, la hauteur, rien ne bouge) ; seule une ligne qui change est remplacée, une ligne nouvelle insérée, une ligne disparue retirée. */
-  function paintRows(box, rows, t, can, CL) {
+  function paintRows(box, rows, t, can, CL, aircraft) {
     const keys = new Set(rows.map(r => r.code));
     for (const n of [...box.children])
       if (!keys.has(n.dataset.airline)) n.remove();
     rows.forEach((r, i) => {
-      const html = airlineRowHtml(r, t, can, CL),
+      const html = airlineRowHtml(r, t, can, CL, aircraft),
         cur = box.children[i];
       if (cur && cur.dataset.airline === r.code && cur.__html === html) return;
       const tpl = document.createElement('template');
@@ -1436,21 +1458,24 @@
     } = env,
     box = view.querySelector('[data-airlines]');
     if (!box) return;
-    const [rows, CL] = await Promise.all([readAirlines(FD, t), catLib()]),
-      lang = env.c.lang?.() || 'fr';
+    const [rows, CL, PL] = await Promise.all([readAirlines(FD, t), catLib(), plLib()]),
+      lang = env.t(['fr', 'en', 'de',
+        'es'
+      ]); // la langue de l'écran : le texte de la ligne qui lui correspond (le contexte n'en donne pas toujours la fonction)
     if (!view.isConnected) return;
     const can = typeof FD.setAirline === 'function',
       now = String((typeof FD.airline === 'function' ? await Promise.resolve(FD.airline()).catch(() => null) : null)?.code || '');
     AIR.set(view, {
       rows,
       CL,
+      PL,
       lang,
       now
     });
     WZ_ENV.set(view, env);
     wizardWire(view);
     wizardKindNames(view, CL, t);
-    paintRows(box, rows, t, can, CL);
+    paintRows(box, rows, t, can, CL, n => nounText(view, 'aircraft', n));
     markCurrent(view, now);
     paintFiche(env);
     // la migration : seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine
