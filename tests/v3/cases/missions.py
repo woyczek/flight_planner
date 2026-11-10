@@ -621,3 +621,50 @@ def n12(c):
         opts = c.js(f"[...document.querySelectorAll('{M} select[data-k=family] option')].filter(o => o.value).map(o => [o.value, o.textContent.trim()])")
         c.ok(all(t.startswith(v) for v, t in opts) and dict(opts).get('SAR', '').startswith('SAR · '), opts, f'{w} px: the filter « SIGLE · Nom long », the acronym first')
         c.shot(f'N12_{c.design}_{w}_{c.lang}.png')
+
+
+
+@case('N13', 'Preparing a mission: the quote has a distance as soon as the flight of the mission has a route — never « distance inconnue » with a plan',
+      'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0193 (user: « « distance inconnue » alors qu\'on a un plan de vol. dur d\'établir un devis carbu si la distance n\'est pas '
+      'calculée »): the distance comes from the plan of the mission — its points, and its origin and destination by their coordinates when '
+      'the aerodromes are not in the base (XTST / XTSU, invented)')
+def n13(c):
+    seed_texts(c)
+    c.open('missions', docs=docs(), wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions is drawn')
+    c.go('fuel?mission=X-002A')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-002A', 'the flight of the mission is written', timeout=10000)
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d.get('route') or {}).get('distanceNm', 0) > 0, 'the route of the mission has a distance', timeout=10000)
+    nm = f['route']['distanceNm']
+    c.ok(60 <= nm <= 90, nm, 'the distance of the plan: origin → PT1 → PT2 → RDV-1 → destination, four legs of about 18 NM (the points alone: 37 NM)')
+    unknown = norm(tx('modules/fuel/module.js', 'noDistance', c.lang))
+    c.wait(1500)
+    txt = norm(c.js("document.querySelector('[data-module=fuel]')?.textContent || ''"))
+    c.ok(unknown not in txt, unknown, 'never « distance inconnue » with a route')
+    # a mission from its origin to its destination only (no turning point), both bases unknown to the base: the plan still has its
+    # distance (before: no point at all, « distance inconnue »)
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DIRECT_REGISTRY], ['missions/X_DIR/X-501A/missionX-501A.yaml', _DIRECT_MISSION]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"X-501A\"]')", timeout=15000, what='the direct mission is listed')
+    c.go('fuel?mission=X-501A')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=15000, what='Fuel asks before replacing the flight of X-002A')
+    c.tap('.f-modal [data-ok]')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-501A' and (d.get('route') or {}).get('distanceNm', 0) > 0,
+                    'the direct mission has a distance', timeout=10000)
+    c.ok(60 <= f['route']['distanceNm'] <= 80, f['route']['distanceNm'], 'origin → destination, about 73 NM')
+    c.wait(1500)
+    c.ok(unknown not in norm(c.js("document.querySelector('[data-module=fuel]')?.textContent || ''")), unknown, 'and no « distance inconnue »')
+
+
+# SOG-0193: an invented mission from its origin to its destination, no turning point, both bases unknown to the published base
+_DIRECT_REGISTRY = """missions:
+  - { id: X-501A, family: TESTDIR, title: Mission directe, folder: X_DIR/X-501A, files: [missionX-501A.yaml] }
+"""
+_DIRECT_MISSION = """mission: { id: X-501A, type: TRANSPORT }
+title: Mission directe
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+aircraft: [{ type: C30J Hercules, cruise_level: FL240, cruise_speed_kt: 300 }]
+"""

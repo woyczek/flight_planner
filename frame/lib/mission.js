@@ -23,7 +23,7 @@
 //     null si le fichier n'est pas une mission de ce dossier (id différent du dossier, mission.id ou mission.type absents).
 //   icaoOf(name) : le code OACI entre parenthèses à la fin d'un nom (« BA 118 Mont-de-Marsan (LFBM) » → « LFBM ») ; '' sinon.
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
-//   missionFlight(mission, assignment) → { route: { dep, arr, points }, aircraft: { type, registration }, levelFt, speedKt, mission,
+//   missionFlight(mission, assignment) → { route: { dep, arr, points, depAt, arrAt }, aircraft: { type, registration }, levelFt, speedKt, mission,
 //     category } (le vol que Carburant pose ; § 4 de la SPEC) ; null sans mission.
 //   routeNm(mission) → la longueur en NM du trajet de la mission (origine, points dans l'ordre de missionFlight, destination ; les lieux
 //     sans position sautés) ; null sans deux positions.
@@ -365,11 +365,21 @@ export function missionFlight(mission, assignment = null) {
       lon: p.lon,
       name: p.name
     }));
+  // SOG-0193 : la position de l'origine et de la destination (celle de l'origine pour un aller-retour), pour qu'un terrain que la base
+  // ne connaît pas (une base d'opérations, un terrain non publié) reste dans le plan et dans sa distance
+  const at = p => p && latOf(p.lat) !== null && lonOf(p.lon) !== null ? {
+      lat: latOf(p.lat),
+      lon: lonOf(p.lon)
+    } : null,
+    depAt = mission.origin?.icao === dep || !mission.origin?.icao ? at(mission.origin) : null,
+    arrAt = mission.destination ? at(mission.destination) : at(mission.origin);
   return {
     route: {
       dep,
       arr,
-      points
+      points,
+      depAt,
+      arrAt
     },
     aircraft: {
       type: mission.aircraft[0]?.type || clean(a.aircraft?.type).toUpperCase() || '',

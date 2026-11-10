@@ -4777,6 +4777,15 @@ async function applyMission(id) {
     text: [dep, ...points.map(p => RT.icaoCoord(p.lat, p.lon)), arr].filter(Boolean).join(' '),
     dep,
     arr,
+    // SOG-0193 : l'origine et la destination à leur position de la mission, points connus du vol : un terrain que la base ne connaît
+    // pas garde sa place dans le plan et dans la distance (aerodb passe toujours d'abord, knownPoints)
+    points: [dep && mf.route.depAt ? {
+      id: dep,
+      ...mf.route.depAt
+    } : null, arr && mf.route.arrAt ? {
+      id: arr,
+      ...mf.route.arrAt
+    } : null].filter(Boolean),
     manual: false,
     from: 'route'
   };

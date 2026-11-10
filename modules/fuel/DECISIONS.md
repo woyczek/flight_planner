@@ -1542,3 +1542,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   lists, off screen, while the summary « 13R · MEN1A via NEPIX · I13R » is seen): the summary says « I13R · TST 110.30 » (ident and
   frequency, nothing more) when the base carries the ILS; « OFP and export » withdrawn (Fuel has neither). F127; counter-test on
   origin/v3 (01fbc9b46): the summary without the frequency.
+- **10 Nov 2026 — the distance of a mission's plan** (SOG-0193, user: « « distance inconnue » alors qu'on a un plan de vol »): the door
+  `#fuel?mission=` wrote the origin and destination as ICAO codes only; a base the published base does not know (an operations base,
+  an unpublished aerodrome) was dropped by the route reader, and with it the distance (the points alone, or nothing for a direct
+  mission). The flight now carries them as known points at the mission's coordinates (aerodb still first). N13; counter-test on
+  origin/v3 (33dabad38): 37 NM for a plan of 74.

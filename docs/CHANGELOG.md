@@ -12,10 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a mission's plan has its distance** (`frame/lib/mission.js`, `modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg N13;
+  SOG-0193). The origin and destination of the mission keep their coordinates when the base does not know them: no « distance
+  inconnue » with a route.
 - **Recette: a test delivered again after its verdict goes back to « à tester »** (`frame/help/recette.js`; help DECISIONS; noreg A124; SOG-0167, the user: « Je ne vois pas de màj
   de la page de recette »). A verdict (generated, the device's, the launcher's) older than the card's last delivery (`delivered`) is not in force: the test is in the day's
   list, first of its application, with « Relivré depuis votre refus du … : « … » »; a later verdict is in force as usual; the summary counts it as to test.
-
 - **Fuel: the folded summary of the arrival says the ILS** (`modules/fuel/procedures.js`; Fuel SPEC, DECISIONS, help; noreg F127;
   SOG-0176). « I13R · TST 110.30 » when the base carries the ILS of the approach.
 
