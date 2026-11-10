@@ -115,6 +115,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Data layer: the write guard recognises a user's gesture without `navigator.userActivation`** (`frame/store/frame_data.js` `gesture`; bench A53; challenge of the frame, 11 Nov). A browser without the API (older Safari)
+  took a user's own back-and-forth (a box ticked, unticked, ticked) for a series and held its announcement for 30 s; the last pointer or key press (5 s) now stands in.
 - **Data layer: a copy older than the tree is never served; a late read never overwrites a newer copy; old seen conflicts are dropped** (`frame/store/frame_data.js` `fetchOne`, `staleCopy`, `trimConflicts`; INTEGRATION § 4, DECISIONS; bench A53;
   SOG-0235, blocking). `airline/index.json` was served without DEFA although the device's tree had it: a lazy read that started before a pass wrote the old revision back over the pass's copy. The write is guarded, a stale copy is read again at the next read (self-repair).
   The conflicts seen more than 30 days ago are dropped at the first pass of a load (SOG-0136).

@@ -727,6 +727,15 @@
   };
   const serialState = new Map(),
     serialSeen = new Map();
+  // un geste récent de l'utilisateur : navigator.userActivation quand le navigateur l'a (Chrome, Firefox 120, Safari 16.4), sinon le dernier appui ou la dernière touche vus ici (5 s) ;
+  // sans cela, un navigateur plus ancien prendrait les allers-retours voulus d'un utilisateur (une case cochée, décochée, cochée) pour une série et retiendrait leur annonce
+  let lastInput = 0;
+  if (typeof addEventListener === 'function')
+    for (const ev of ['pointerdown', 'keydown', 'touchstart']) addEventListener(ev, () => lastInput = Date.now(), {
+      capture: true,
+      passive: true
+    });
+  const gesture = () => navigator.userActivation ? !!navigator.userActivation.isActive : Date.now() - lastInput < 5000;
   const hashOf = str => {
     let h = 5381;
     for (let i = 0; i < str.length; i++) h = (h * 33 ^ str.charCodeAt(i)) >>> 0;
@@ -759,7 +768,7 @@
       t: now,
       h,
       m: module,
-      act: !!navigator.userActivation?.isActive,
+      act: gesture(),
       repeat
     });
     const quiet = g.w.filter(e => !e.act);
@@ -2081,6 +2090,9 @@
       treeChecked = false;
       trimmed = false;
       heal.clear();
+      for (const g of serialState.values()) clearTimeout(g.timer);
+      serialState.clear();
+      serialSeen.clear();
     }
   };
 })();

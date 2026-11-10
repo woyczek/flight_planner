@@ -2888,3 +2888,12 @@ DEFA gone from the list, the assistant refusing to recreate it.
   (« Tout marquer comme vu »). New: the ones SEEN more than 30 days ago are dropped at the first pass of a load.
 - Noreg: bench A53 (frame/store/test): the late read, the poisoned copy (healed, a pending write never judged stale), the conflicts purge.
 
+
+## 11 November 2026 — challenge à rebours of the frame: two proven risks, fixed
+
+(The five risks the file allows are listed in the report; only the two below are proven by a red case.)
+
+- **R1 (data layer): the write guard without `navigator.userActivation`.** `holdSerial` took the gesture from `navigator.userActivation.isActive` only: a browser without the API (Safari before 16.4, old Android WebViews) always counted `act = false`, so a
+  user's own A B A B (a box ticked, unticked, ticked) within 30 s became a « series » and its event and synchronisation waited up to 30 s (the Map beside Fuel lagging). Proof: bench A53, scenario « a browser without userActivation » — 3 of 10 writes announced before, 10 of 10 after.
+  Fix: `gesture()` = `userActivation.isActive` when the API exists, else the last `pointerdown` / `keydown` / `touchstart` seen by the layer (5 s). No change where the API exists.
+

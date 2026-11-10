@@ -1645,6 +1645,66 @@
       await new Promise(r => setTimeout(r, 150));
       const left = (await FD.conflicts()).map(c => c.path).sort();
       check('only the old SEEN one is gone, the unseen and the recent stay', JSON.stringify(left) === '["old-unseen.json","recent-seen.json"]', left);
+    },
+    async 'write guard: a browser without userActivation: the user’s own back-and-forth (a gesture before each write) is not a series'() {
+      const p = 'pilot/TST/current_flight.json';
+      await fresh({
+        [p]: JSON.stringify({
+          updated_at: '2026-11-10T14:40:00Z',
+          profile: {
+            n: 0
+          }
+        })
+      });
+      FD.configure({
+        transport: {
+          ...FD.github({
+            repo: 'test/data',
+            branch: 'main',
+            token: 'test-token',
+            api: `${location.origin}/api`
+          }),
+          quick: true
+        },
+        identity: {
+          trigram: 'TST'
+        }
+      });
+      const v = FD.adapter({
+        id: 'vol2',
+        reads: ['pilot/'],
+        writes: [{
+          prefix: 'pilot/',
+          merge: 'record'
+        }]
+      });
+      await v.sync();
+      const was = {
+        ...FD.guard
+      };
+      Object.assign(FD.guard, {
+        window: 900,
+        soon: 60
+      });
+      Object.defineProperty(navigator, 'userActivation', {
+        configurable: true,
+        value: undefined
+      }); // an older browser: no such API
+      const events = [];
+      v.watch('pilot/', e => events.push(e));
+      for (let i = 0; i < 10; i++) {
+        window.dispatchEvent(new Event('pointerdown')); // the user touches the screen, then the write follows
+        await v.put(p, {
+          updated_at: new Date().toISOString(),
+          profile: {
+            n: 1 + i % 2
+          }
+        });
+        await new Promise(r => setTimeout(r, 120));
+      }
+      delete navigator.userActivation;
+      Object.assign(FD.guard, was);
+      check('every write of a user who touches the screen is announced (10 of 10), none held as a series', events.length === 10 && !(await FD.diagnostic()).serialWrites.some(x => x.path === p), [events.length, (await FD.diagnostic()).serialWrites]);
     }
   };
   async function runAll() {
