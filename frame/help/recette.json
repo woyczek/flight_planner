@@ -802,7 +802,7 @@
    },
    "test": "Compte rendu › Mission › liste « Famille », et Compagnie › Missions : chaque famille se dit par son sigle d'abord puis son nom long (« SAR · Récupération de personnel »), le sigle en gras dans les intertitres ; jamais le nom long seul.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo"
   }
  ]
 }

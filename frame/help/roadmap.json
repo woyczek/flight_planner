@@ -774,7 +774,7 @@
     {
      "id": "SOG-0179",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Compte rendu de mission : le nom abrégé de la catégorie a disparu (« SAR - Recherche / sauvetage »)",
      "en": "Mission report: the short name of the category is gone (“SAR - Search and rescue”)",
      "de": "Missionsbericht: das Kürzel der Kategorie ist verschwunden („SAR - Suche / Rettung“)",
@@ -1719,7 +1719,7 @@
     {
      "id": "SOG-0174",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Des données aéronautiques pour TOUS les pays, à commencer par l'Europe et les États-Unis",
      "en": "Aeronautical data for ALL countries, starting with Europe and the United States",
      "de": "Luftfahrtdaten für ALLE Länder, zuerst Europa und die USA",
