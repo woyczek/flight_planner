@@ -518,7 +518,7 @@ usted completa, guarda — y, si lo desea, el vuelo se registra en el sitio de l
 
 ## Cómo usarlo
 
-<a id="report-steps"></a>**Tres pasos.** El informe se rellena en tres pasos: Vuelo, Misión, Resultado. En un teléfono, un paso cada vez
+<a id="report-steps"></a>**Tres pasos.** Bajo el título, «Informe para …» dice la compañía y su tipo; mientras el informe no está guardado, un toque lleva a la elección de la compañía (Ajustes › Compañía), y una vez guardado conserva la suya. El informe se rellena en tres pasos: Vuelo, Misión, Resultado. En un teléfono, un paso cada vez
 («Siguiente» abajo); en un ordenador, los tres uno al lado del otro. Nada es obligatorio: lo que falta se indica en el
 último paso, sin bloquear nunca el guardado.
 
@@ -594,7 +594,7 @@ el formulario, rellena los campos y señala las diferencias. En un teléfono, do
   página del vuelo (tracker IVAO, StatSim) en «Otras fuentes».
 - **Sin trigrama**: el informe se escribe de todos modos; ajuste su trigrama (⚙) para que esté a su nombre.
 
-<!-- fr: 9ef38567ebad -->
+<!-- fr: c7defe7f33ab -->
 
 <!-- chapter: flightlog -->
 # Mis vuelos
@@ -612,7 +612,7 @@ aeródromo, una misión o un número de informe, o marque «Sin informe» para v
 elecciones se quedan en el dispositivo: en la visita siguiente, una pastilla las recuerda («1 año · LFRS ✕») y las
 quita de un toque. Un «—» en lugar del bloque: un informe sin horas.
 
-<a id="flightlog-list"></a>**La lista.** Una línea por vuelo: la fecha, el indicativo, la ruta y el tiempo de bloque. Un punto naranja marca un
+<a id="flightlog-list"></a>**La lista.** Una línea por vuelo: la fecha, el indicativo, la ruta y el tiempo de bloque; cuando vuela para más de una compañía, la compañía de cada informe. Un punto naranja marca un
 vuelo sin informe. En un ordenador, la línea muestra también la aeronave y el número del informe.
 
 <a id="flightlog-detail"></a>**El detalle de un vuelo.** Toque una línea para desplegarla: de dónde viene el vuelo (informe, diario del sitio, red
@@ -646,7 +646,7 @@ VATSIM.
 - **Sin lanzador**: IVAO y VATSIM solo se releen a través del lanzador de un equipo.
 - **Sin trigrama**: configúrelo (⚙); es él quien elige sus informes y sus líneas del diario.
 
-<!-- fr: ec2aee8de0eb -->
+<!-- fr: 7b729c25101f -->
 
 <!-- chapter: website -->
 # Sitio de la aerolínea

@@ -68,6 +68,10 @@ export function fromReport(m, path = '') {
     mission: [m.family, m.subtype, m.metadata?.operationName].filter(Boolean).join(' · '),
     family: m.family || '',
     crId: m.metadata?.missionId || '',
+    // la compagnie du compte rendu (SOG-0181), telle qu'il l'a enregistrée ; '' pour un CR d'avant § 10.38
+    airline: typeof m.airline === 'string' && /^[a-z0-9]{2,8}$/.test(m.airline) ? m.airline : '',
+    airlineName: typeof m.airlineName === 'string' ? m.airlineName.slice(0, 60) : '',
+    airlineKind: ['va', 'sog', 'perso'].includes(m.airlineKind) ? m.airlineKind : '',
     path,
     by: up(m.by || m.metadata?.reportedBy),
     notes: [m.results?.detail, m.results?.incidents].filter(Boolean).join(' · ')

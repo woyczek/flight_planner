@@ -504,7 +504,7 @@ move.
 
 ## How to use
 
-<a id="report-steps"></a>**Three steps.** The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
+<a id="report-steps"></a>**Three steps.** Under the title, "Report for …" says the airline and its kind; until the report is saved, a tap leads to the choice of the airline (Settings › Airline), and once saved it keeps its own. The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
 at the bottom); on a computer, the three side by side. Nothing is mandatory: what is missing is shown at the last step,
 without ever blocking the save.
 
@@ -578,7 +578,7 @@ flight's line on the clipboard.
   flight's page (IVAO tracker, StatSim) into “Other sources”.
 - **Without a trigram**: the report is written all the same; set your trigram (⚙) so that it is in your name.
 
-<!-- fr: 9ef38567ebad -->
+<!-- fr: c7defe7f33ab -->
 
 <!-- chapter: flightlog -->
 # My flights
@@ -596,7 +596,7 @@ airfield, a mission or a report number, or tick “Without report” to see only
 stay on the device: at the next visit a chip recalls them ("1 year · LFRS ✕") and removes them in one tap. A "—"
 instead of the block time: a report without times.
 
-<a id="flightlog-list"></a>**The list.** One line per flight: the date, the callsign, the route and the block time. An orange dot marks a flight
+<a id="flightlog-list"></a>**The list.** One line per flight: the date, the callsign, the route and the block time; when you fly for more than one airline, the airline of each report. An orange dot marks a flight
 without a report. On a computer, the line also shows the aircraft and the report number.
 
 <a id="flightlog-detail"></a>**The details of a flight.** Touch a line to unfold it: where the flight comes from (report, website log, IVAO or
@@ -629,7 +629,7 @@ the report, which offers this flight first; once the report is saved, the line d
 - **No launcher**: IVAO and VATSIM can only be read again through the launcher of a computer.
 - **No trigram**: set it (⚙); it is what picks your reports and your rows of the log.
 
-<!-- fr: ec2aee8de0eb -->
+<!-- fr: 7b729c25101f -->
 
 <!-- chapter: website -->
 # Airline website

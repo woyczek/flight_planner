@@ -302,3 +302,61 @@ def g8(c):
         c.ok(sar.startswith('SAR · ') and sar[6:7].isupper(), sar, f'{w} px: « SAR · Récupération de personnel »')
         c.js("document.querySelector('[data-module=report] select[data-family]').scrollIntoView({block: 'center'})")
         c.shot(f'G8_{c.design}_{w}_{c.lang}.png')
+
+
+
+_CO_IDX = [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+           ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'sog'}, 'document'],
+           ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'va'}, 'document']]
+_KIND_JS = """async (lang) => { const M = await import('/frame/lib/mission_categories.js'), i = Math.max(0, M.LANGS.indexOf(lang));
+  return { sog: M.KIND_NAMES.sog[i], va: M.KIND_NAMES.va[i] } }"""
+_CO_LINE_JS = """() => { const e = document.querySelector('[data-module=report] [data-crairline]'); return e ? { text: e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(),
+  saved: e.dataset.saved, href: e.querySelector('a')?.getAttribute('href') || '', shown: !e.hidden && e.getBoundingClientRect().height > 0 } : null }"""
+
+
+def _save_report(c):
+    before = set(c.doc_paths('cr/reports/'))
+    c.tap('[data-module="report"] [data-do="save"]')
+    for _ in range(40):
+        got = [p for p in c.doc_paths('cr/reports/') if p not in before]
+        if got:
+            return got[0]
+        c.wait(200)
+    raise Fail('the report is not saved')
+
+
+@case('G9', 'Report: the header says the airline of the report — « Alpha Air · Escadrille SO » —, a tap leads to Settings › Airline until it is saved; a saved report keeps its own airline; « Mes vols » says the airline of each report when there is more than one',
+      'G', tags=('report', 'flightlog'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0181 (user: « on ne sait pas pour quelle compagnie on fait le cr »): the airline of the aircraft when the report is created, its '
+      'name and kind written with the record and never changed after; the kind read where Settings writes it (settings.json kind, '
+      'mission_categories KIND_NAMES); captures 390 and 1 280')
+def g9(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('report', docs=_CO_IDX)
+        c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+        c.js("async () => { await window.FrameData.setAirline('aaa'); return true }")
+        words = c.js(_KIND_JS, c.lang)
+        c.until("(w) => (document.querySelector('[data-module=report] [data-crairline]')?.textContent || '').includes(w)", f'Alpha Air · {words["sog"]}', timeout=8000,
+                what='the header says the current airline and its kind')
+        line = c.js(_CO_LINE_JS)
+        c.ok(line['shown'] and line['saved'] == '0' and line['href'] == '#settings?card=company', line, f'{w} px: shown under the title, a tap leads to Settings › Airline while not saved')
+        c.shot(f'G9_{c.design}_{w}_{c.lang}.png')
+        path = _save_report(c)
+        doc = c.doc(path)
+        c.eq([doc.get('airline'), doc.get('airlineName'), doc.get('airlineKind')], ['aaa', 'Alpha Air', 'sog'], 'the record keeps the airline, its name and its kind', what='record')
+        c.until("() => document.querySelector('[data-module=report] [data-crairline]')?.dataset.saved === '1'", what='saved: the airline of the record, no gesture')
+        # the current airline changes: the saved report keeps its own; a new report takes the current one
+        c.js("async () => { await window.FrameData.setAirline('bbb'); return true }")
+        c.wait(800)
+        line = c.js(_CO_LINE_JS)
+        c.ok(f'Alpha Air · {words["sog"]}' in line['text'] and not line['href'], line, 'the saved report keeps its airline when the current one changes')
+        c.tap('[data-module="report"] [data-do="new"]')
+        c.until("(w) => (document.querySelector('[data-module=report] [data-crairline]')?.textContent || '').includes(w)", f'Bravo Air · {words["va"]}', timeout=8000,
+                what='a new report: the current airline')
+        # Mes vols: two airlines exist, each report line says its own
+        c.open('flightlog', docs=_CO_IDX)
+        c.until("!!document.querySelector('[data-module=flightlog] [data-flairline]')", timeout=10000, what='the airline on the report line')
+        got = c.js("[...document.querySelectorAll('[data-module=flightlog] [data-flairline]')].map(e => e.textContent.trim())")
+        c.ok(f'Alpha Air · {words["sog"]}' in got, got, f'{w} px: « Mes vols » says the airline of the report')
+        c.shot(f'G9_flightlog_{c.design}_{w}_{c.lang}.png')

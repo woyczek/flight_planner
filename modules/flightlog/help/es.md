@@ -13,7 +13,7 @@ aeródromo, una misión o un número de informe, o marque «Sin informe» para v
 elecciones se quedan en el dispositivo: en la visita siguiente, una pastilla las recuerda («1 año · LFRS ✕») y las
 quita de un toque. Un «—» en lugar del bloque: un informe sin horas.
 
-<a id="flightlog-list"></a>**La lista.** Una línea por vuelo: la fecha, el indicativo, la ruta y el tiempo de bloque. Un punto naranja marca un
+<a id="flightlog-list"></a>**La lista.** Una línea por vuelo: la fecha, el indicativo, la ruta y el tiempo de bloque; cuando vuela para más de una compañía, la compañía de cada informe. Un punto naranja marca un
 vuelo sin informe. En un ordenador, la línea muestra también la aeronave y el número del informe.
 
 <a id="flightlog-detail"></a>**El detalle de un vuelo.** Toque una línea para desplegarla: de dónde viene el vuelo (informe, diario del sitio, red
@@ -47,4 +47,4 @@ VATSIM.
 - **Sin lanzador**: IVAO y VATSIM solo se releen a través del lanzador de un equipo.
 - **Sin trigrama**: configúrelo (⚙); es él quien elige sus informes y sus líneas del diario.
 
-<!-- fr: ec2aee8de0eb -->
+<!-- fr: 7b729c25101f -->

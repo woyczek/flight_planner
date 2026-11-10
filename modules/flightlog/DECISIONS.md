@@ -120,3 +120,8 @@ Memory of the V3 flightlog module: every choice, dated, with its reason. Chat hi
   3. Network sessions are shown, never stored as flights; reuse report's `last_flight.js` (moved to a shared place,
      or imported from `modules/report/`, to agree with the frame's rule on cross-module files).
   4. "Open the report" needs report to accept `{ to: 'report', open: '<record path>' }` in the hand-over record.
+- **10 Nov 2026 — the airline of the report** (SOG-0181, user: « on ne sait pas pour quelle compagnie on fait le cr »): said under the
+  title (« Compte rendu pour SO Group · Escadrille SO »), a link to Settings › Airline until the report is saved; the first save writes
+  the name and the kind with the code, never changed afterwards. The words of the kind have ONE source, `frame/lib/mission_categories.js`
+  `KIND_NAMES` (Settings' words, moved there so that the report and « Mes vols » do not copy them); « Mes vols » says the airline of each
+  report only when more than one exists. G9; counter-test on origin/v3: no airline said.

@@ -47,7 +47,9 @@ for this pilot (V2 `defa_log.js` record fields). The website module writes it wh
 - **Filters** in one row: period (7 days, 31 days, 1 year — default —, all), search (callsign, type, registration,
   aerodromes, mission, report number), "Without report"; kept on the device (`cache/flightlog/view.json`).
 - **List**: one line per flight — on a phone date (MM-DD), callsign · route, block, with a dot when there is no report;
-  on a wide screen (980 px) date, callsign, aircraft, route, block, report or mission. A tap unfolds the details:
+  on a wide screen (980 px) date, callsign, aircraft, route, block, report or mission; **the airline of a report** (SOG-0181, G9),
+  « SO Group · Escadrille SO » as the report recorded it, in small type on its line, only when more than one airline exists (besides
+  « personnel ») or my reports carry more than one. A tap unfolds the details:
   source (report, website log, IVAO / VATSIM network, "in progress"), date and time, aircraft, mission, notes, report
   number, then **Write the report** (no report) or **Open the report** (a V3 report; a V2 registry report says to open
   it in the full suite).

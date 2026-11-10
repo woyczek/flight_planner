@@ -14,7 +14,7 @@ Muster, einem Kennzeichen, einem Flugplatz, einem Einsatz oder einer Berichtsnum
 Besuch erinnert ein Chip daran („1 Jahr · LFRS ✕“) und entfernt sie mit einem Tippen. Ein „—“ statt der Blockzeit:
 ein Bericht ohne Zeiten.
 
-<a id="flightlog-list"></a>**Die Liste.** Eine Zeile pro Flug: Datum, Rufzeichen, Route und Blockzeit. Ein orangefarbener Punkt markiert einen Flug
+<a id="flightlog-list"></a>**Die Liste.** Eine Zeile pro Flug: Datum, Rufzeichen, Route und Blockzeit; wenn Sie für mehr als eine Fluggesellschaft fliegen, die Fluggesellschaft jedes Berichts. Ein orangefarbener Punkt markiert einen Flug
 ohne Bericht. Auf einem Computer zeigt die Zeile auch das Luftfahrzeug und die Nummer des Berichts.
 
 <a id="flightlog-detail"></a>**Die Einzelheiten eines Flugs.** Tippen Sie auf eine Zeile, um sie aufzuklappen: woher der Flug stammt (Bericht,
@@ -50,4 +50,4 @@ und VATSIM-Verbindungen neu zu lesen.
 - **Ohne Starter**: IVAO und VATSIM lassen sich nur über den Starter eines Rechners neu lesen.
 - **Ohne Kürzel**: Stellen Sie es ein (⚙); es wählt Ihre Berichte und Ihre Zeilen im Flugbuch aus.
 
-<!-- fr: ec2aee8de0eb -->
+<!-- fr: 7b729c25101f -->

@@ -12,6 +12,9 @@ import {
 import {
   fmtZLocal
 } from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
+import {
+  airlineText
+} from '../../frame/lib/mission_categories.js'; // la compagnie d'un compte rendu, dite comme Réglages la dit (SOG-0181)
 
 export const meta = {
   id: 'flightlog',
@@ -27,7 +30,7 @@ export const meta = {
     policy: 'cache'
   }],
   files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js',
-    '../../frame/lib/time.js'
+    '../../frame/lib/time.js', '../../frame/lib/mission_categories.js'
   ]
 };
 
@@ -248,6 +251,8 @@ async function load(loud = false) {
   if (S !== s) return;
   S.base = [v3, v2, log];
   S.flights = F.merge(...S.base, S.net || []);
+  S.airlines = await airlinesOf(v3);
+  if (S !== s) return;
   render();
   // au premier passage d'un pilote avec IVAO / VATSIM, le réseau n'est pas encore lu : la liste publiée l'attend
   if (S.net || !(S.ctx.identity.ivao || S.ctx.identity.vatsim)) publishStatus();
@@ -256,6 +261,32 @@ async function load(loud = false) {
   S.flights = F.merge(...S.base, S.net);
   render();
   publishStatus();
+}
+
+/** La compagnie de chaque ligne (SOG-0181), dite seulement quand plus d'une compagnie existe (hors « personnel », toujours là) ou que
+ *  mes comptes rendus en portent plus d'une : code → texte (« SO Group · Escadrille SO ») ; null quand il n'y a rien à dire. Le nom
+ *  et le genre sont ceux que le CR a enregistrés ; un CR d'avant sans nom prend celui que la compagnie porte aujourd'hui. */
+async function airlinesOf(v3) {
+  let known = [];
+  try {
+    known = (await window.FrameData?.airlines?.()) || [];
+  } catch {
+    known = [];
+  }
+  const codes = new Set(v3.map(f => f.airline).filter(Boolean));
+  if (known.filter(a => a?.code && a.code !== 'perso').length < 2 && codes.size < 2) return null;
+  const lang = S.ctx.lang?.() || 'fr',
+    out = new Map();
+  for (const f of v3) {
+    if (!f.airline || out.has(f.path)) continue;
+    const k = known.find(a => a?.code === f.airline);
+    out.set(f.path, airlineText({
+      code: f.airline,
+      name: f.airlineName || (typeof k?.name === 'string' ? k.name.slice(0, 60) : f.airline),
+      kind: f.airlineKind
+    }, lang));
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- écran
@@ -267,6 +298,7 @@ const STYLE = `
 [data-module="flightlog"] .f-tools input[type=search]{flex:1;min-width:8em}
 [data-module="flightlog"] .f-list .f-item{grid-template-columns:5.5em minmax(0,1fr) auto}
 [data-module="flightlog"] .fl-mid{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="flightlog"] .fl-co{display:block;color:var(--sog-muted);font-size:.9em;overflow:hidden;text-overflow:ellipsis} /* la compagnie du CR (SOG-0181) */
 [data-module="flightlog"] .fl-detail{margin:0}
 [data-module="flightlog"] .f-dot{margin-right:6px}
 [data-module="flightlog"] .fl-now{display:flex;gap:10px;align-items:center;justify-content:space-between}
@@ -294,9 +326,12 @@ function renderBody() {
     const k = F.keyOf(f),
       open = S.open === k,
       route = [f.dep, f.arr].filter(Boolean).join(' → ') || '—',
-      dot = f.source === 'cr' ? '' : '<span class="f-dot" data-kind="warn" aria-hidden="true"></span>';
+      dot = f.source === 'cr' ? '' : '<span class="f-dot" data-kind="warn" aria-hidden="true"></span>',
+      // la compagnie du compte rendu, quand plus d'une existe (SOG-0181)
+      co = f.source === 'cr' && S.airlines?.get(f.path) || '',
+      coHtml = co ? `<span class="fl-co" data-flairline>${esc(co)}</span>` : '';
     return `<div data-key="${esc(k)}">
-      <button type="button" class="f-item" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span>${blockCell(f)}<span class="fl-mid">${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}</span>${blockCell(f)}`}</button>
+      <button type="button" class="f-item" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span>${blockCell(f)}<span class="fl-mid">${coHtml}${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}${coHtml}</span>${blockCell(f)}`}</button>
       ${open ? `<div class="f-card fl-detail"><dl class="f-dl">
         <dt>${esc(tt(TX.source))}</dt><dd>${esc(tt(TX.sources[f.source], { n: f.network || '' }))}${f.open ? ` (${esc(tt(TX.inFlight))})` : ''}</dd>
         <dt>${esc(tt(TX.time))}</dt><dd>${esc(f.whenZ || `${f.date} ${f.time}`)}</dd>

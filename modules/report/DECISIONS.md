@@ -210,3 +210,8 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   name does not repeat the acronym (« HEMS / MEDEVAC » → « HEMS · MEDEVAC »). The acronym is the family's code; seven codes are words,
   not acronyms (AIRLIFT, AIRBORNE, MARITIME, SURVEY, COMMAND, COMBAT, SPECIAL): shown as they are, proposals sent to the ergonomist.
   G8; counter-test on origin/v3 (a3ac92f10): « SAR / récupération de personnel », no acronym first for AIRLIFT….
+- **10 Nov 2026 — the airline of the report** (SOG-0181, user: « on ne sait pas pour quelle compagnie on fait le cr »): said under the
+  title (« Compte rendu pour SO Group · Escadrille SO »), a link to Settings › Airline until the report is saved; the first save writes
+  the name and the kind with the code, never changed afterwards. The words of the kind have ONE source, `frame/lib/mission_categories.js`
+  `KIND_NAMES` (Settings' words, moved there so that the report and « Mes vols » do not copy them); « Mes vols » says the airline of each
+  report only when more than one exists. G9; counter-test on origin/v3: no airline said.

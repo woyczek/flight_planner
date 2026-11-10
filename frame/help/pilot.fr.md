@@ -508,7 +508,7 @@ dans le même geste.
 
 ## Comment s'en servir
 
-<a id="report-steps"></a>**Trois pas.** Le compte rendu se remplit en trois pas : Vol, Mission, Résultat. Sur un téléphone, un pas à la fois
+<a id="report-steps"></a>**Trois pas.** Sous le titre, « Compte rendu pour … » dit la compagnie et son genre ; tant que le compte rendu n'est pas enregistré, un appui mène au choix de la compagnie (Réglages › Compagnie), et une fois enregistré il garde la sienne. Le compte rendu se remplit en trois pas : Vol, Mission, Résultat. Sur un téléphone, un pas à la fois
 (« Suivant » en bas) ; sur un ordinateur, les trois côte à côte. Rien n'est obligatoire : ce qui manque est dit au
 dernier pas, sans jamais bloquer l'enregistrement.
 
@@ -600,7 +600,7 @@ immatriculation, un terrain, une mission ou un numéro de compte rendu, ou coche
 qui en attendent un. Vos choix restent sur l'appareil : à la visite suivante, une puce les rappelle (« 1 an · LFRS ✕ »)
 et les retire d'un appui. Un « — » à la place du bloc : compte rendu sans heures.
 
-<a id="flightlog-list"></a>**La liste.** Une ligne par vol : la date, l'indicatif, la route et le temps de bloc. Un point orange marque un vol
+<a id="flightlog-list"></a>**La liste.** Une ligne par vol : la date, l'indicatif, la route et le temps de bloc ; quand vous volez pour plus d'une compagnie, la compagnie de chaque compte rendu. Un point orange marque un vol
 sans compte rendu. Sur un ordinateur, la ligne montre aussi l'appareil et le numéro du compte rendu.
 
 <a id="flightlog-detail"></a>**Le détail d'un vol.** Touchez une ligne pour la déplier : d'où vient le vol (compte rendu, journal du site, réseau

@@ -79,7 +79,13 @@ what is missing is said in the Result step, never blocking.
   `registration`, `startUtc`, `endUtc`, `fuelKg`, `minutes`, `phases`, `cruise`), saved with « Enregistrer »; « Retirer » takes it
   out; nothing raw of the journal is kept (G6).
 - **Airline** (V3 spec § 10.38 step 1): the record carries `airline`, the code of the current airline (`ctx.airline.code`,
-  `default` without an index); a record already saved keeps its own (G5).
+  `default` without an index); a record already saved keeps its own (G5). **Said under the title** (SOG-0181, G9): « Compte rendu pour
+  SO Group · Escadrille SO » (name and kind, `mission_categories.js` `airlineText` / `KIND_NAMES`, the kind read where Settings writes
+  it: `settings.json` `kind`, `kindOf`; « Personnel » alone for the personal airline). It is the airline of the aircraft when the report
+  is created — the current airline, whose fleet the aircraft comes from —; the first save writes `airlineName` and `airlineKind` with
+  `airline`, and a saved report always says those (a report from before without a name: the airline's name of today), whatever the
+  current airline becomes. Until it is saved, the line is a link to Settings › Airline (`#settings?card=company`); a line of its own
+  under the title, since on a phone the frame's header carries the title.
 - **Load** (V3 spec § 10.38, SOG-0041): « Utiliser » on the current flight takes its `missionCategory`; a category the airline knows
   (its `categories.json`, or the common base, through `forAirline`) that carries a `load` adds one card « Charge » on the Flight step
   with one field — « Fret embarqué (kg) » for `freight`, « Passagers » for `passengers` — an integer 0–999 999 or nothing; the record

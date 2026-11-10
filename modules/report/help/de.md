@@ -6,7 +6,7 @@ der Fluggesellschaft eingetragen.
 
 ## So geht’s
 
-<a id="report-steps"></a>**Drei Schritte.** Der Bericht wird in drei Schritten ausgefüllt: Flug, Einsatz, Ergebnis. Auf einem Telefon ein
+<a id="report-steps"></a>**Drei Schritte.** Unter dem Titel nennt „Bericht für …“ die Fluggesellschaft und ihre Art; solange der Bericht nicht gespeichert ist, führt ein Tippen zur Wahl der Fluggesellschaft (Einstellungen › Fluggesellschaft), gespeichert behält er seine. Der Bericht wird in drei Schritten ausgefüllt: Flug, Einsatz, Ergebnis. Auf einem Telefon ein
 Schritt nach dem anderen („Weiter“ unten); auf einem Computer alle drei nebeneinander. Nichts ist Pflicht: Was fehlt,
 wird im letzten Schritt genannt, ohne das Speichern je zu blockieren.
 
@@ -83,4 +83,4 @@ Telefon, wo Lesezeichen umständlich sind, legt „Felder kopieren“ die Zeile 
 - **Ohne Trigramm**: Der Bericht wird trotzdem geschrieben; stellen Sie Ihr Trigramm ein (⚙), damit er auf Ihren Namen
   lautet.
 
-<!-- fr: 9ef38567ebad -->
+<!-- fr: c7defe7f33ab -->

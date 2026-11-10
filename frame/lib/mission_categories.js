@@ -162,6 +162,22 @@ export function kindOf(airline) {
   const k = airline?.settings?.kind;
   return typeof k === 'string' && KINDS.includes(k) ? k : '';
 }
+/** Les mots du genre d'une compagnie (ceux de Réglages › Compagnie, frame/settings/access.js) : une seule source pour qui le dit (SOG-0181). */
+export const KIND_NAMES = Object.freeze({
+  va: Object.freeze(['Commerciale', 'Commercial', 'Kommerziell', 'Comercial']),
+  sog: Object.freeze(['Escadrille SO', 'SO squadron', 'SO-Staffel', 'Escuadrón SO']),
+  perso: Object.freeze(['Personnel', 'Personal', 'Persönlich', 'Personal']),
+  none: Object.freeze(['Genre à choisir', 'Kind to choose', 'Art wählen', 'Tipo por elegir'])
+});
+/** Une compagnie dite pour l'œil (SOG-0181) : « SO Group · Escadrille SO », « Rennes Motoculture · Commerciale », « Personnel » ; le nom
+ *  seul quand le genre n'est pas dit ; '' sans nom ni code. `a` : { code, name, kind } (kind : va | sog | perso | ''). */
+export function airlineText(a, lang) {
+  const i = Math.max(0, LANGS.indexOf(lang)),
+    kind = a?.code === 'perso' ? 'perso' : KINDS.includes(a?.kind) ? a.kind : '';
+  if (kind === 'perso') return KIND_NAMES.perso[i];
+  const name = text(a?.name) || text(a?.code);
+  return name && kind ? `${name} · ${KIND_NAMES[kind][i]}` : name;
+}
 /** Les catégories d'une compagnie : ce que dit son fichier (clean), à défaut la base commune ; les groupes actifs pour son genre ; { groups: [{ id, names, categories }], all: [{ group, id, names, load? }] }
  *  (`all` : la liste à plat, dans l'ordre, pour un choix). `doc` : le contenu lu de categories.json (ou null) ; `airline` : { code, settings } de FrameData.airline(). */
 export function forAirline(doc, airline) {

@@ -539,7 +539,7 @@ der Fluggesellschaft eingetragen.
 
 ## So geht’s
 
-<a id="report-steps"></a>**Drei Schritte.** Der Bericht wird in drei Schritten ausgefüllt: Flug, Einsatz, Ergebnis. Auf einem Telefon ein
+<a id="report-steps"></a>**Drei Schritte.** Unter dem Titel nennt „Bericht für …“ die Fluggesellschaft und ihre Art; solange der Bericht nicht gespeichert ist, führt ein Tippen zur Wahl der Fluggesellschaft (Einstellungen › Fluggesellschaft), gespeichert behält er seine. Der Bericht wird in drei Schritten ausgefüllt: Flug, Einsatz, Ergebnis. Auf einem Telefon ein
 Schritt nach dem anderen („Weiter“ unten); auf einem Computer alle drei nebeneinander. Nichts ist Pflicht: Was fehlt,
 wird im letzten Schritt genannt, ohne das Speichern je zu blockieren.
 
@@ -616,7 +616,7 @@ Telefon, wo Lesezeichen umständlich sind, legt „Felder kopieren“ die Zeile 
 - **Ohne Trigramm**: Der Bericht wird trotzdem geschrieben; stellen Sie Ihr Trigramm ein (⚙), damit er auf Ihren Namen
   lautet.
 
-<!-- fr: 9ef38567ebad -->
+<!-- fr: c7defe7f33ab -->
 
 <!-- chapter: flightlog -->
 # Meine Flüge
@@ -635,7 +635,7 @@ Muster, einem Kennzeichen, einem Flugplatz, einem Einsatz oder einer Berichtsnum
 Besuch erinnert ein Chip daran („1 Jahr · LFRS ✕“) und entfernt sie mit einem Tippen. Ein „—“ statt der Blockzeit:
 ein Bericht ohne Zeiten.
 
-<a id="flightlog-list"></a>**Die Liste.** Eine Zeile pro Flug: Datum, Rufzeichen, Route und Blockzeit. Ein orangefarbener Punkt markiert einen Flug
+<a id="flightlog-list"></a>**Die Liste.** Eine Zeile pro Flug: Datum, Rufzeichen, Route und Blockzeit; wenn Sie für mehr als eine Fluggesellschaft fliegen, die Fluggesellschaft jedes Berichts. Ein orangefarbener Punkt markiert einen Flug
 ohne Bericht. Auf einem Computer zeigt die Zeile auch das Luftfahrzeug und die Nummer des Berichts.
 
 <a id="flightlog-detail"></a>**Die Einzelheiten eines Flugs.** Tippen Sie auf eine Zeile, um sie aufzuklappen: woher der Flug stammt (Bericht,
@@ -671,7 +671,7 @@ und VATSIM-Verbindungen neu zu lesen.
 - **Ohne Starter**: IVAO und VATSIM lassen sich nur über den Starter eines Rechners neu lesen.
 - **Ohne Kürzel**: Stellen Sie es ein (⚙); es wählt Ihre Berichte und Ihre Zeilen im Flugbuch aus.
 
-<!-- fr: ec2aee8de0eb -->
+<!-- fr: 7b729c25101f -->
 
 <!-- chapter: website -->
 # Website der Fluggesellschaft

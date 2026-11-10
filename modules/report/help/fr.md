@@ -6,7 +6,7 @@ dans le même geste.
 
 ## Comment s'en servir
 
-<a id="report-steps"></a>**Trois pas.** Le compte rendu se remplit en trois pas : Vol, Mission, Résultat. Sur un téléphone, un pas à la fois
+<a id="report-steps"></a>**Trois pas.** Sous le titre, « Compte rendu pour … » dit la compagnie et son genre ; tant que le compte rendu n'est pas enregistré, un appui mène au choix de la compagnie (Réglages › Compagnie), et une fois enregistré il garde la sienne. Le compte rendu se remplit en trois pas : Vol, Mission, Résultat. Sur un téléphone, un pas à la fois
 (« Suivant » en bas) ; sur un ordinateur, les trois côte à côte. Rien n'est obligatoire : ce qui manque est dit au
 dernier pas, sans jamais bloquer l'enregistrement.
 

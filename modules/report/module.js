@@ -180,6 +180,10 @@ const TX = {
       'misión (familia y serie tomadas por defecto, aún no vistas)')
   },
   toSee: L('à voir', 'to check', 'prüfen', 'por ver'),
+  // la compagnie du compte rendu (SOG-0181) : tant qu'il n'est pas enregistré, un appui mène au choix de la compagnie
+  airlineFor: L('Compte rendu pour {a}', 'Report for {a}', 'Bericht für {a}', 'Informe para {a}'),
+  airlineChange: L('Choisir la compagnie (Réglages › Compagnie)', 'Choose the airline (Settings › Airline)',
+    'Fluggesellschaft wählen (Einstellungen › Fluggesellschaft)', 'Elegir la compañía (Ajustes › Compañía)'),
   warnings: L('Vérifier : {l}.', 'Check: {l}.', 'Prüfen: {l}.', 'Comprobar: {l}.'),
   // sources du préremplissage
   sources: L('Autres sources', 'Other sources', 'Andere Quellen', 'Otras fuentes'),
@@ -452,18 +456,33 @@ async function save() {
     prev = S.path ? (await S.ctx.data.get(path)) || {} : {},
     // § 10.38 étape 1 : le CR porte le code de la compagnie courante (ctx.airline.code) ; un CR déjà enregistré garde la sienne
     code = v => typeof v === 'string' && /^[a-z0-9]{2,8}$/.test(v) ? v : '',
-    airline = code(prev.airline) || code(S.ctx.airline?.code);
+    airline = code(prev.airline) || code(S.ctx.airline?.code),
+    // SOG-0181 : le nom et le genre de la compagnie au premier enregistrement, gardés ensuite (le CR ne change pas de compagnie)
+    snap = prev.airline ? {
+      airlineName: typeof prev.airlineName === 'string' ? prev.airlineName.slice(0, 60) : '',
+      airlineKind: MC.KINDS.includes(prev.airlineKind) ? prev.airlineKind : ''
+    } : await airlineNow().then(a => ({
+      airlineName: a?.name || '',
+      airlineKind: a?.kind || ''
+    }));
   await S.ctx.data.put(path, {
     ...prev,
     ...structuredClone(m),
     ...(airline ? {
-      airline
+      airline,
+      ...snap
     } : {}),
     schema: SCHEMA,
     updated_at: new Date().toISOString(),
     by: tri || prev.by || ''
   });
   S.path = path;
+  S.saved = savedOf({
+    ...prev,
+    airline,
+    ...snap
+  });
+  airlineLine();
   await S.ctx.data.remove(DRAFT).catch(() => {});
   if (S.usedStarted) { // vol démarré rapporté : la carte « Vol en cours » ne le repropose plus
     const kept = (await S.ctx.data.get(STARTED).catch(() => null))?.done || [];
@@ -569,6 +588,8 @@ const crewCol = () => ({
 // collection, boutons de la barre, carte de préremplissage
 const STYLE = `
 [data-module="report"] .rp-code{text-transform:uppercase}
+[data-module="report"] .rp-airline{margin:-.2em 0 .6em;font-size:.95em} /* la compagnie du compte rendu, sous le titre (SOG-0181) */
+[data-module="report"] .rp-airline a{display:inline-flex;align-items:center;min-height:44px}
 [data-module="report"] .rp-step[hidden]{display:none}
 [data-module="report"] .f-steps>[data-todo]::after{content:" · " attr(data-todo);font-weight:400}
 [data-module="report"] .rp-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:8px}
@@ -597,6 +618,57 @@ function render() {
   return keepScroll(S.body, renderBody);
 }
 // ---------------------------------------------------------------- la charge d'un vol commercial (SOG-0041, § 10.38)
+// ---------------------------------------------------------------- la compagnie du compte rendu (SOG-0181)
+/** La compagnie courante de l'appareil, telle que Réglages la tient : { code, name, kind } (FrameData.airline ; le genre de son
+ *  settings.json, MC.kindOf) ; null sans elle. C'est celle de l'appareil du vol : sa flotte est celle de la compagnie courante. */
+async function airlineNow() {
+  try {
+    const a = await window.FrameData?.airline?.();
+    return a?.code ? {
+      code: String(a.code).slice(0, 8),
+      name: typeof a.name === 'string' ? a.name.slice(0, 60) : '',
+      kind: MC.kindOf(a)
+    } : null;
+  } catch {
+    return null;
+  }
+}
+/** La compagnie qu'un CR enregistré porte (un fichier de data/ : entrée non fiable, chaque champ vérifié) ; null s'il n'en porte pas. */
+function savedOf(r) {
+  const code = typeof r?.airline === 'string' && /^[a-z0-9]{2,8}$/.test(r.airline) ? r.airline : '';
+  return code ? {
+    code,
+    name: typeof r.airlineName === 'string' ? r.airlineName.slice(0, 60) : '',
+    kind: MC.KINDS.includes(r.airlineKind) ? r.airlineKind : ''
+  } : null;
+}
+/** La ligne sous le titre : « Compte rendu pour SO Group · Escadrille SO ». Enregistré : la compagnie du CR, sans geste (un CR d'avant
+ *  SOG-0181 sans nom : le nom que la compagnie porte aujourd'hui). Pas encore : la compagnie courante, un appui mène à Réglages ›
+ *  Compagnie. */
+async function airlineLine() {
+  const s = S,
+    el = s?.body?.parentElement?.querySelector(':scope > [data-crairline]');
+  if (!el) return;
+  let a = s.saved,
+    live = false;
+  if (a && !a.name) {
+    const known = (await window.FrameData?.airlines?.().catch(() => null) || []).find(x => x?.code === a.code);
+    a = {
+      ...a,
+      name: typeof known?.name === 'string' ? known.name.slice(0, 60) : a.code
+    };
+  }
+  if (!a) {
+    a = await airlineNow();
+    live = true;
+  }
+  if (S !== s) return;
+  const words = a ? MC.airlineText(a, s.ctx.lang()) : '';
+  el.hidden = !words;
+  el.dataset.saved = live ? '0' : '1';
+  el.innerHTML = !words ? '' : live ? `<a href="#settings?card=company" data-crairline-go title="${esc(tt(TX.airlineChange))}">${esc(tt(TX.airlineFor, { a: words }))}</a>` :
+    `<span class="f-muted">${esc(tt(TX.airlineFor, { a: words }))}</span>`;
+}
 /** Les catégories de la compagnie courante : son categories.json (FrameData.airline().root, entrée non fiable filtrée par forAirline),
  *  à défaut la base commune ; relues quand la compagnie change. */
 async function loadCategories() {
@@ -1070,6 +1142,8 @@ async function openReport(path) {
   S.m = toZ(M.fillDefaults(mission, M.emptyMission(mission.family)));
   S.missionSeen = true; // CR déjà enregistré : sa mission a été choisie
   S.path = path;
+  S.saved = savedOf(r); // sa compagnie, enregistrée avec lui (SOG-0181)
+  airlineLine();
   S.sources = {};
   S.step = 0;
   render();
@@ -1201,6 +1275,8 @@ async function onClick(e) {
       S.m = freshMission(S.m.family);
       S.missionSeen = false;
       S.path = null;
+      S.saved = null;
+      airlineLine();
       S.sources = {};
       S.step = 0;
       await S.ctx.data.remove(DRAFT).catch(() => {});
@@ -1282,7 +1358,7 @@ export async function mount(el, ctx) {
     sources: {},
     path: null
   };
-  el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><p class="rp-airline" data-crairline></p><div data-body></div>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
   // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
   S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
@@ -1309,10 +1385,12 @@ export async function mount(el, ctx) {
   S.body.addEventListener('click', onClick);
   // compagnie lue en fond par le cadre (frame INTEGRATION § 6) : arrivée ou changée après le montage, la barre
   // d'enregistrement (« Enregistrer et inscrire sur le site ») est redessinée
-  S.onAirline = () => S?.body && loadCategories().then(() => S?.body && render());
+  S.onAirline = () => S?.body && loadCategories().then(() => S?.body && (render(), airlineLine()));
   window.addEventListener('frame-airline', S.onAirline);
   measureStatus(S); // « Mesures » : le dossier Output du poste, s'il est réglé (§ 10.37 A étape 3)
   await loadCategories(); // les catégories de la compagnie (la charge, SOG-0041)
+  if (S.path) S.saved = savedOf(await ctx.data.get(S.path).catch(() => null)); // un brouillon d'un CR enregistré : sa compagnie
+  airlineLine();
   // plan de vol : appels par ctx.net ; types d'appareil par aerodb (modèle, voilure tournante)
   const ac = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
   Fpl.configure({
