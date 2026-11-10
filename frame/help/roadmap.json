@@ -2159,7 +2159,7 @@
     {
      "id": "SOG-0209",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "BLOQUANT : le vol est réécrit en boucle, la synchronisation ne s'arrête pas, les blocs clignotent",
      "en": "BLOCKING: the flight is rewritten in a loop, the synchronisation never stops, the blocks flicker",
      "de": "BLOCKIEREND: der Flug wird in einer Schleife neu geschrieben, die Synchronisation hört nicht auf, die Blöcke flackern",
@@ -2189,7 +2189,7 @@
     {
      "id": "SOG-0208",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Un geste qui a besoin du lanceur le dit quand le lanceur est absent (« Calculer A → B » sans effet)",
      "en": "A gesture that needs the launcher says so when the launcher is absent (“Compute A → B” without effect)",
      "de": "Eine Geste, die den Launcher braucht, sagt es, wenn er fehlt („A → B berechnen“ ohne Wirkung)",

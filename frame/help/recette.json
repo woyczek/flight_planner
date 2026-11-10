@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 82,
+  "tests": 84,
   "verdicts": 20
  },
  "apps": [
@@ -1216,6 +1216,34 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T14:41:04Z"
+  },
+  {
+   "id": "SOG-0208",
+   "app": "maintenance",
+   "title": {
+    "fr": "Un geste qui a besoin du lanceur le dit quand le lanceur est absent (« Calculer A → B » sans effet)",
+    "en": "A gesture that needs the launcher says so when the launcher is absent (“Compute A → B” without effect)",
+    "de": "Eine Geste, die den Launcher braucht, sagt es, wenn er fehlt („A → B berechnen“ ohne Wirkung)",
+    "es": "Un gesto que necesita el lanzador lo dice cuando el lanzador falta («Calcular A → B» sin efecto)"
+   },
+   "test": "Lanceur arrêté, Carburant › Route : « Calculer A → B » (ou « Contrôler ») dit « Disponible avec le lanceur du poste (il ne répond pas) » avec « Réessayer », au lieu de ne rien faire ; l'en-tête dit « Lanceur injoignable ». Lanceur relancé : « Réessayer » fait le calcul.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T14:55:50Z"
+  },
+  {
+   "id": "SOG-0209",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT : le vol est réécrit en boucle, la synchronisation ne s'arrête pas, les blocs clignotent",
+    "en": "BLOCKING: the flight is rewritten in a loop, the synchronisation never stops, the blocks flicker",
+    "de": "BLOCKIEREND: der Flug wird in einer Schleife neu geschrieben, die Synchronisation hört nicht auf, die Blöcke flackern",
+    "es": "BLOQUEANTE: el vuelo se reescribe en bucle, la sincronización no se detiene, los bloques parpadean"
+   },
+   "test": "Ouvrir l'appli dans DEUX onglets sur le même vol (Carburant dans les deux) et ne rien toucher pendant une minute : « Synchronisation » ne clignote plus, le bloc Procédures non plus ; dans le dépôt des données, plus de commit du vol toutes les cinq secondes.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T14:51:16Z"
   }
  ]
 }
