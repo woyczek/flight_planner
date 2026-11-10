@@ -28,6 +28,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Data layer: a write that changes nothing is not made, and a series of writes is held** (`frame/store/frame_data.js` `sameAsKept`, `holdSerial`, `FrameData.guard`; INTEGRATION § 5, DECISIONS;
+  bench A53; SOG-0209). The cause of « refresh en boucle »: two modules rewrote `current_flight.json` every 4 to 6 s, one synchronisation each time. `put` of the kept content (but
+  for `updated_at`) writes nothing, says nothing, syncs nothing (`force` to write anyway); a path written without a gesture that goes back to a content it already had in 30 s is in
+  series: the last value is kept, the event and the synchronisation come once per window, said once in the diagnostic (`serialWrites`).
 - **Frame: `ctx.launcher.upload` — a file sent to the launcher with progress and cancel** (`frame/lib/launcher.js`; bench A29 +14 lines; INTEGRATION § 15.1; SOG-0199). `upload(route,
   file, { name, onProgress(loaded, total), signal })` by XMLHttpRequest: declared routes only (403 and no sending otherwise), `X-SOG-Setup`, `X-SOG-Name` as a hint, the call's answer shapes, `offline` marks the launcher as gone.
 - **Frame: a loop-breaker for the reloads the frame makes itself** (`frame/app.js` `selfNavigate`, `SogFrame.reloads()`, diagnostic `page.reloads`; INTEGRATION § 15.1b, DECISIONS;

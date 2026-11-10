@@ -194,17 +194,15 @@
   /** JSON canonique : clés triées à tous les niveaux, pour comparer deux valeurs sans regarder l'ordre des clés ni la mise en forme. */
   const canon = v => JSON.stringify(v, (k, x) => isObj(x) ? Object.fromEntries(Object.keys(x).sort().map(y => [y, x[y]])) : x);
   /** Deux valeurs analysées disent la même chose : mêmes données hors updated_at / updatedAt de premier niveau. */
-  const sameData = (a, b) => {
-    const bare = v => {
-      if (!isObj(v)) return v;
-      const o = {
-        ...v
-      };
-      for (const k of STAMPS) delete o[k];
-      return o;
+  const bareOf = v => {
+    if (!isObj(v)) return v;
+    const o = {
+      ...v
     };
-    return canon(bare(a)) === canon(bare(b));
+    for (const k of STAMPS) delete o[k];
+    return o;
   };
+  const sameData = (a, b) => canon(bareOf(a)) === canon(bareOf(b));
   /** Documents gardés entiers (jamais fusionnés par clé) : le vol courant — son plan et ses sections dérivées (profile, quote, ofp,
    *  weather, progress.plannedPos…) dépendent de la route et du niveau ; des clés prises de deux appareils feraient un état
    *  incohérent (décision du 6 nov. 2026, après la raison de Réglages pour data_sync). */
@@ -668,6 +666,8 @@
    *  (préfixe déclaré ainsi, ou opts.policy) : document local de l'appareil, jamais en file ni envoyé. */
   async function put(path, value, opts = {}) {
     const text = textOf(path, value);
+    // un document dont le contenu est celui déjà gardé n'est pas écrit : ni file, ni événement, ni synchronisation (SOG-0209) ; opts.force l'écrit quand même
+    if (!opts.force && await sameAsKept(path, text, value, opts)) return;
     if (opts.policy === 'cache' || isCache(path)) {
       await idb('docs', 'put', {
         path,
@@ -687,9 +687,100 @@
       author: cfg.identity.trigram || '',
       module: opts.module || ''
     });
+    // écritures en série du même chemin (deux modules qui se répondent) : la dernière est gardée, l'événement et la synchronisation viennent une fois par fenêtre
+    if (!opts.quiet && holdSerial(path, value, opts.module || '')) return;
     changed([path]);
     emitStatus();
     if (!opts.quiet) soon();
+  }
+  // ---- garde des écritures (SOG-0209 : pilot/…/current_flight.json réécrit toutes les 4 à 6 s, deux modules qui se répondent, une synchronisation à chaque fois)
+  //   1. sameAsKept : un `put` dont le contenu — hors updated_at / updatedAt de premier niveau — est celui qui est gardé ne fait rien ;
+  //   2. holdSerial : un chemin que des écritures SANS geste récent (navigator.userActivation) font revenir à un contenu déjà écrit dans la fenêtre
+  //      (revisits fois), ou écrit plus de plain fois, est « en série » : la dernière écriture reste en file, mais l'événement et la synchronisation
+  //      ne partent qu'une fois par fenêtre, tant que la série dure (une fenêtre sans écriture la termine) ; dit une fois dans le diagnostic.
+  //   Ce qui existait déjà : une file par chemin (une écriture en remplace une autre) et, au poste avec lanceur, un délai de 2 s après la dernière écriture
+  //   (soon) : des écritures rapprochées partent en UN passage ; des écritures espacées de 4 à 6 s en faisaient un chacune.
+  const guard = {
+    revisits: 2,
+    plain: 15,
+    window: 30000,
+    soon: 2000
+  };
+  const serialState = new Map(),
+    serialSeen = new Map();
+  const hashOf = str => {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = (h * 33 ^ str.charCodeAt(i)) >>> 0;
+    return h;
+  };
+  /** Le texte écrit dit la même chose que ce qui est gardé pour ce chemin (la file d'abord, puis le document) ? */
+  async function sameAsKept(path, text, value, opts) {
+    const cache = opts.policy === 'cache' || isCache(path),
+      kept = cache ? await idb('docs', 'get', path) : (await idb('pending', 'get', path)) || await idb('docs', 'get', path);
+    if (!kept || kept.text == null) return false;
+    if (kept.text === text) return true;
+    if (!/\.json$/i.test(path)) return false;
+    const old = valueOf(path, kept.text);
+    return old !== null && sameData(old, value);
+  }
+  /** Note l'écriture ; vrai si le chemin est en série (l'événement et la synchronisation sont retenus jusqu'à la fin de la fenêtre). */
+  function holdSerial(path, value, module) {
+    const now = Date.now();
+    let g = serialState.get(path);
+    if (!g) serialState.set(path, g = {
+      w: [],
+      held: false,
+      dirty: false,
+      timer: 0
+    });
+    g.w = g.w.filter(e => now - e.t < guard.window);
+    const h = hashOf(isObj(value) || Array.isArray(value) ? canon(bareOf(value)) : String(value)),
+      repeat = g.w.some(e => e.h === h);
+    g.w.push({
+      t: now,
+      h,
+      m: module,
+      act: !!navigator.userActivation?.isActive,
+      repeat
+    });
+    const quiet = g.w.filter(e => !e.act);
+    if (!g.held && (quiet.filter(e => e.repeat).length >= guard.revisits || quiet.length >= guard.plain)) {
+      g.held = true;
+      const seen = serialSeen.get(path);
+      if (!seen) {
+        serialSeen.set(path, {
+          path,
+          module,
+          count: g.w.length,
+          at: new Date().toISOString()
+        });
+        console.warn(`serial writes of ${path} by ${module || '?'}: one event and one synchronisation per ${guard.window / 1000} s`);
+      }
+    }
+    if (g.held) {
+      g.dirty = true;
+      const seen = serialSeen.get(path);
+      if (seen) seen.count++;
+      g.timer ||= setTimeout(() => releaseSerial(path), guard.window);
+    }
+    return g.held;
+  }
+  /** Fin d'une fenêtre d'un chemin en série : ce qui a été écrit depuis est annoncé une fois et synchronisé ; une fenêtre sans écriture finit la série. */
+  function releaseSerial(path) {
+    const g = serialState.get(path);
+    if (!g) return;
+    g.timer = 0;
+    if (!g.dirty) {
+      g.held = false;
+      g.w = [];
+      serialState.delete(path);
+      return;
+    }
+    g.dirty = false;
+    g.timer = setTimeout(() => releaseSerial(path), guard.window);
+    changed([path]);
+    emitStatus();
+    soon();
   }
   // transport local au poste (le lanceur et son data/, T.quick) : une écriture part 2 s après la dernière, sans attendre
   // le passage de fond ; l'échange git (T.exchange) garde son rythme (passage « write » : sans échange) ; une écriture
@@ -700,7 +791,7 @@
     clearTimeout(soonTimer);
     soonTimer = setTimeout(() => sync({
       reason: 'write'
-    }), 2e3);
+    }), guard.soon);
   };
   /** Supprime un fichier (suppression envoyée à la prochaine synchronisation ; document en cache : effacé ici). */
   async function remove(path, opts = {}) {
@@ -1377,6 +1468,8 @@
         cached: docs.filter(d => d.policy === 'reference').length
       },
       lastReadError,
+      // chemins écrits en série depuis le chargement (SOG-0209) : « écritures en série de <chemin> par <module> », dits une fois
+      serialWrites: [...serialSeen.values()],
       failures: (await getMeta('failures'))?.list || [] // les cinq derniers échecs de synchronisation, du plus récent
     };
   }
@@ -1892,6 +1985,7 @@
     restore,
     diagnostic,
     noteFailure,
+    guard,
     pendingList,
     lastPushed,
     readBytes,

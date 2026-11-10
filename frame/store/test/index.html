@@ -1194,7 +1194,10 @@
       check('imported writes sent at the next sync', s1.ok && JSON.parse((await stats()).files[q] || '{}').updated_at ===
         '2026-10-03T00:00:00Z', s1);
       // fusion : rien de cet appareil n'est perdu
-      await e.put(p, rec('TST', '2026-10-09T00:00:00Z'));
+      // une écriture dont seul updated_at change n'est pas une modification (garde des écritures, SOG-0209) : celle-ci change aussi un champ
+      await e.put(p, rec('TST', '2026-10-09T00:00:00Z', {
+        edited: true
+      }));
       const r2 = await FD.load(x.text);
       check('merge: a pending write here always wins', r2.kept >= 1 && (await e.get(p)).updated_at === '2026-10-09T00:00:00Z', r2);
       await e.sync();
@@ -1318,6 +1321,166 @@
       await d.sync();
       const tree = (await stats()).files;
       check('same text, same sha', await FD.gitSha('héllo\n') === (await d.read('disponibilites/A/x.json')).rev, null);
+    },
+    // ---- la garde des écritures (SOG-0209 : un document réécrit toutes les 4 à 6 s par deux modules qui se répondent, une synchronisation chaque fois)
+    async 'write guard: a put whose content is the kept one (but for updated_at, key order, layout) writes nothing, says nothing, syncs nothing'() {
+      const p = 'pilot/TST/current_flight.json',
+        base = {
+          updated_at: '2026-11-10T14:40:00Z',
+          route: {
+            text: 'LFRS LFML'
+          },
+          profile: {
+            tocNm: 60,
+            a: 1
+          }
+        };
+      const d = await fresh({
+        [p]: JSON.stringify(base)
+      });
+      const v = FD.adapter({
+        id: 'vol',
+        reads: ['pilot/'],
+        writes: [{
+          prefix: 'pilot/',
+          merge: 'record'
+        }]
+      });
+      await v.sync();
+      const events = [];
+      v.watch('pilot/', e => events.push(e));
+      const before = (await stats()).commits.length;
+      await v.put(p, {
+        profile: {
+          a: 1,
+          tocNm: 60
+        },
+        route: {
+          text: 'LFRS LFML'
+        },
+        updated_at: '2026-11-10T14:40:05Z'
+      });
+      check('identical but for updated_at and key order: nothing pending, no event', (await v.status()).pending === 0 && events.length === 0, [await v.status(), events]);
+      await v.sync();
+      check('and no commit', (await stats()).commits.length === before, (await stats()).commits.length - before);
+      await v.put(p, {
+        ...base,
+        profile: {
+          tocNm: 61,
+          a: 1
+        },
+        updated_at: '2026-11-10T14:41:00Z'
+      });
+      check('a real change is written and announced', (await v.status()).pending === 1 && events.length === 1, [await v.status(), events]);
+      await v.put(p, {
+        ...base,
+        profile: {
+          tocNm: 61,
+          a: 1
+        },
+        updated_at: '2026-11-10T14:41:09Z'
+      });
+      check('the same change again (only the stamp differs) compares with the queue: nothing more', (await v.status()).pending === 1 && events.length === 1, events);
+      await v.put(p, {
+        ...base,
+        profile: {
+          tocNm: 61,
+          a: 1
+        },
+        updated_at: '2026-11-10T14:41:20Z'
+      }, {
+        force: true
+      });
+      check('force: written all the same', events.length === 2, events);
+      const a = FD.adapter({
+        id: 'carnet',
+        reads: ['disponibilites/'],
+        writes: [{
+          prefix: 'disponibilites/',
+          merge: 'record'
+        }]
+      });
+      await a.put('disponibilites/TST/n.txt', 'texte');
+      const ev2 = [];
+      a.watch('disponibilites/', e => ev2.push(e));
+      await a.put('disponibilites/TST/n.txt', 'texte');
+      await a.put('disponibilites/TST/n.txt', 'texte2');
+      check('a text file: only an identical text is skipped', ev2.length === 1, ev2);
+    },
+    async 'write guard: two modules answering each other on one document: the last is kept, one event and one synchronisation per window, said once in the diagnostic'() {
+      const p = 'pilot/TST/current_flight.json';
+      const d = await fresh({
+        [p]: JSON.stringify({
+          updated_at: '2026-11-10T14:40:00Z',
+          profile: {
+            n: 0
+          }
+        })
+      });
+      FD.configure({
+        transport: {
+          ...FD.github({
+            repo: 'test/data',
+            branch: 'main',
+            token: 'test-token',
+            api: `${location.origin}/api`
+          }),
+          quick: true
+        },
+        identity: {
+          trigram: 'TST'
+        }
+      });
+      const mk = id => FD.adapter({
+        id,
+        reads: ['pilot/'],
+        writes: [{
+          prefix: 'pilot/',
+          merge: 'record'
+        }]
+      });
+      const fuel = mk('fuel'),
+        map = mk('maps');
+      await fuel.sync();
+      const was = {
+        ...FD.guard
+      };
+      Object.assign(FD.guard, {
+        window: 900,
+        soon: 60
+      });
+      const events = [];
+      fuel.watch('pilot/', e => events.push(Date.now()));
+      const c0 = (await stats()).commits.length,
+        A = {
+          updated_at: '2026-11-10T14:40:00Z',
+          profile: {
+            n: 1
+          }
+        },
+        B = {
+          updated_at: '2026-11-10T14:40:00Z',
+          profile: {
+            n: 2
+          }
+        };
+      // 14 writes, 150 ms apart, A B A B …: the ping-pong of two modules (no gesture here)
+      for (let i = 0; i < 14; i++) {
+        await (i % 2 ? map : fuel).put(p, {
+          ...(i % 2 ? B : A),
+          updated_at: new Date(Date.now()).toISOString()
+        });
+        await new Promise(r => setTimeout(r, 150));
+      }
+      const during = events.length;
+      await new Promise(r => setTimeout(r, 2200)); // the windows close, the last write is announced and synchronised
+      const commits = (await stats()).commits.length - c0;
+      Object.assign(FD.guard, was);
+      check('without the guard: 14 events; with it, far fewer while the series lasts (three before it is seen, then one per window)', during <= 7, [during, events.length]);
+      check('the last write is the one kept and sent', JSON.parse((await stats()).files[p]).profile.n === 2, (await stats()).files[p]);
+      check('synchronisations: the three before the series is seen, then one per window (without the guard: one per write, 14)', commits >= 1 && commits <= 7, commits);
+      const dg = await FD.diagnostic();
+      check('the diagnostic says it once, with the path and the module', dg.serialWrites.length === 1 && dg.serialWrites[0].path === p && ['fuel', 'maps'].includes(dg.serialWrites[0].module), dg.serialWrites);
     }
   };
   async function runAll() {

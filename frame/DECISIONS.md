@@ -2804,3 +2804,20 @@ The user, 15:20: « bug en cours : refresh en boucle ». Not reproduced (the erg
   frame refuses its own automatic reloads from then on.
 - Counter-proof: noreg A134 (a cycle made on purpose by serving `app.js` with `elsewhere` Company → Pilot for `missions`: three loads, then the note and the cause), red before (it loops).
 
+## 10 November 2026 — the data layer's write guard (SOG-0209: current_flight.json rewritten every 4 to 6 s)
+
+The cause of « refresh en boucle » was not a page reload: two modules (Fuel and the Map beside it) answered each other on `pilot/<trigram>/current_flight.json`, each write
+leaving in a synchronisation (50 commits since 14:40, `updated_at` the only difference most of the time, two profile values alternating). The reload breaker stays (small, it costs
+nothing); the frame now guards the data layer, whatever the module (`frame/store/frame_data.js`):
+
+1. **`put` of the kept content does nothing** (`sameAsKept`): compared with the queue, then the document, ignoring the top-level `updated_at` / `updatedAt` (`bareOf`, the
+   rule `sameData` already used for merges), the order of keys and the layout; no entry, no event, no synchronisation; `{ force: true }` writes anyway. Consequence found by the
+   bench: two checks wrote the same record with a newer stamp to prove « the newest wins »; a stamp alone is not an edit, they now change a field too.
+2. **Series** (`holdSerial`): a path rewritten without a gesture (`navigator.userActivation.isActive` false) that comes back to a content already written in the window
+   (`guard.revisits` 2, window 30 s) or is written `guard.plain` 15 times is held: the last value stays queued, the event and the synchronisation come once per window
+   while it lasts. The ping-pong rule (not the bare frequency) is the main one: a user dragging a point writes new values, not old ones, and a gesture exempts the writes it makes.
+   Said once in the diagnostic (`serialWrites`) and the console, never a notification. `FrameData.guard` is mutable (the bench shortens the window).
+3. **Grouping that existed**: one queue entry per path and a 2 s delay after the last write (launcher transport, `soon`): close writes were already ONE pass; writes 4 to 6 s apart
+   were one commit each. Not changed: the delay stays 2 s (a longer one delays what the user did on purpose).
+- Counter-proof: bench scenarios of frame/store/test (A53): identical put nothing, ping-pong of two modules (14 writes: at most 7 events and 7 commits, one per window after the third), red before.
+

@@ -144,6 +144,18 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   Give records an `updated_at` (ISO date): it decides the winner of a conflict.
 - Never write at every keystroke a file you would not want in a commit: the queue keeps only the last value of a path,
   but a pass may start at any time.
+- **A write that changes nothing is not made** (SOG-0209, 10 Nov 2026). `put` compares what you give with what is kept for the path (the
+  queue first, then the document): equal but for the top-level `updated_at` / `updatedAt` (and the order of keys, the layout), it does
+  **nothing**: no queue entry, no `watch` event, no synchronisation. A text file: only an identical text. So a refresh of the stamp alone is not
+  an edit: change a field with it, or pass `{ force: true }` when the stamp itself must go (rare). Do not rely on an echo of your own write.
+- **Series of writes** (same SOG-0209): a path that is written without a recent gesture (`navigator.userActivation`) and goes back to a content
+  already written in the last 30 s (twice: two modules answering each other, A B A B), or is written more than 15 times in 30 s, is *in series*.
+  The last value stays in the queue, but the `watch` event and the synchronisation come **once per 30 s** while the series lasts (a window without
+  a write ends it); the diagnostic says it once (`serialWrites`: path, module, count), with one `console.warn`; never a notification. Writes made by a
+  gesture, and `quiet` writes, are not counted. What already grouped: one queue entry per path (a later write replaces an earlier one) and, on a
+  workstation with a launcher, a 2 s delay after the last write (`soon`): writes closer than 2 s leave in ONE pass; writes 4 to 6 s apart made one
+  commit each — that was the loop. **Break the cause**: a module that writes in answer to a `watch` event must test that it has something to say
+  (the guard is a seat belt, not a design).
 
 ## 6. Reacting and the rest of the context
 
