@@ -154,3 +154,14 @@ way, not taken (an empty band on every screen while the help loads). noreg A52.
 - **The launcher's file is the truth once read**: the generated state (`ok`/`ko`) is the first look only; taking a verdict back (« Remettre à tester ») writes a set without the id, which a stale generated file must not resurrect.
 - **« Du jour » is relative to the last recette**: the day of the last verdict made *before today*; a verdict made today must not turn today's other tests into « plus anciens ».
 - Counter-test (A115 / K123): the verb absent makes K123 fail on the registry; A115 fails at the first « Refusé » without comment if the page sends it.
+- **A test delivered again after its verdict is no longer « Refusé »** (10 Nov 2026, SOG-0167; the user: « Je ne vois pas de màj de la page de recette, normal ? » — eleven tests
+  refused that morning had been delivered again and the screen kept them « Refusé »; the first design took the launcher's or the device's verdict without asking whether the card
+  had been delivered since; V3 Frame, the generator being the ergonomist's `tools/recette_build.py`, 33dabad38). Each test carries `delivered` (UTC, « AAAA-MM-JJThh:mm:ssZ »,
+  the last commit the card cites) and, when the generator replaced a verdict, `previous: { verdict, comment?, at }`. **On the screen** (`recette.js`): a verdict — generated,
+  the device's, the launcher's — whose `at` is **earlier than `delivered`** (instants, `Date.parse`, never text) is not in force; the test goes back to « à tester », in the day's section,
+  **first of its application**, with one line above the buttons, « Relivré depuis votre refus du <date> : « <commentaire> » » (« … depuis votre validation du <date> » for a pass; without a
+  comment, « … refus du <date> »), the comment read from the old verdict in force on the launcher's or the device's side, else from `previous`; a verdict **later** than `delivered`
+  is in force as usual; the summary counts these tests as to test; the « last recette » day is computed from verdicts in force only. `delivered` (format checked) and `previous`
+  (verdict, comment bounded to 600, `at` checked) are untrusted: a `delivered` that is not a date is ignored. A refusal without comment is kept when the generator says it
+  (`previous`), unlike the verdicts one can write. Noreg A124 (generated, device and `previous` cases; a later verdict stays; hostile and long entries; the summary; the
+  screenshots at 390 and 1280 are written by the case), red on the previous recette.js.

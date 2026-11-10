@@ -9,6 +9,7 @@
   const STORE = 'device/recette.json';
   const ID = /^SOG-\d{4}$/;
   const AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+  const DELIVERED = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/; // la date de livraison d'une fiche : UTC, à la seconde
   const MAX_ITEMS = 1000,
     MAX_COMMENT = 600,
     SEVEN = 7,
@@ -49,6 +50,20 @@
     ok: ['Validé', 'Passed', 'Bestanden', 'Válido'],
     ko: ['Refusé', 'Failed', 'Abgelehnt', 'Rechazado'],
     redo: ['Remettre à tester', 'Test again', 'Erneut testen', 'Volver a probar'],
+    // un test livré de nouveau depuis son verdict : il revient à tester, et la ligne dit pourquoi (SOG-0167)
+    redelivered: {
+      koBare: ['Relivré depuis votre refus du {d}', 'Delivered again since your failure of {d}',
+        'Erneut geliefert seit Ihrer Ablehnung vom {d}',
+        'Entregada de nuevo desde su rechazo del {d}'
+      ],
+      ko: ['Relivré depuis votre refus du {d} : « {c} »', 'Delivered again since your failure of {d}: “{c}”',
+        'Erneut geliefert seit Ihrer Ablehnung vom {d}: „{c}“', 'Entregada de nuevo desde su rechazo del {d}: «{c}»'
+      ],
+      ok: ['Relivré depuis votre validation du {d}', 'Delivered again since your pass of {d}',
+        'Erneut geliefert seit Ihrer Bestätigung vom {d}',
+        'Entregada de nuevo desde su validación del {d}'
+      ]
+    },
     need: ['Un refus demande un commentaire : dites ce qui ne va pas.', 'A failure needs a comment: say what is wrong.',
       'Eine Ablehnung braucht einen Kommentar: Sagen Sie, was nicht stimmt.',
       'Un rechazo pide un comentario: diga qué falla.'
@@ -93,6 +108,18 @@
     if (c) e.comment = c;
     if (typeof v.at === 'string' && AT.test(v.at)) e.at = v.at;
     return v.verdict === 'ko' && !e.comment ? null : e;
+  };
+  /** Le verdict qu'une nouvelle livraison a remplacé (donné par le générateur) : { verdict, comment?, at? } aux règles, sinon null ; contrairement à
+   *  entryOf, un refus sans commentaire reste dicible (« Relivré depuis votre refus du … »). */
+  const previousEntry = v => {
+    if (!v || typeof v !== 'object' || (v.verdict !== 'ok' && v.verdict !== 'ko')) return null;
+    const e = {
+        verdict: v.verdict
+      },
+      c = text(v.comment, MAX_COMMENT);
+    if (c) e.comment = c;
+    if (typeof v.at === 'string' && AT.test(v.at)) e.at = v.at;
+    return e;
   };
   /** Une carte de verdicts lue d'ailleurs : seules les entrées aux règles (identifiant SOG-nnnn), 1000 au plus. */
   const cleanMap = m => {
@@ -163,6 +190,9 @@
       test: text(x.test, 700),
       since: /^\d{4}-\d{2}-\d{2}$/.test(String(x.since)) ? x.since : '',
       state: ['todo', 'known', 'ok', 'ko'].includes(x.state) ? x.state : 'todo',
+      // la date de la dernière livraison de la fiche (UTC, « AAAA-MM-JJThh:mm:ssZ ») et le verdict qu'elle a remplacé : lus comme des entrées non fiables
+      delivered: typeof x.delivered === 'string' && DELIVERED.test(x.delivered) ? x.delivered : '',
+      previous: previousEntry(x.previous),
       gen: x.state === 'ok' || x.state === 'ko' ? entryOf({
         verdict: x.state,
         comment: x.comment,
@@ -185,22 +215,31 @@
       need: ''
     };
     // ---- ce que dit un test : son verdict en vigueur (l'appareil, puis le lanceur, puis le fichier généré), ou rien
+    const rawVerdict = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : ui.fileRead ? ui.file[x.id] || null : x.gen;
+    // un verdict plus ancien que la dernière livraison de la fiche n'est plus en vigueur : le test revient à tester (comparaison des instants, jamais du texte)
+    const superseded = (x, v) => !!(v?.at && x.delivered && Date.parse(v.at) < Date.parse(x.delivered));
     const verdictOf = x => {
-      if (Object.hasOwn(ui.local, x.id)) return ui.local[x.id];
-      if (ui.fileRead) return ui.file[x.id] || null;
-      return x.gen;
+      const v = rawVerdict(x);
+      return superseded(x, v) ? null : v;
+    };
+    /** Le verdict que la dernière livraison a remplacé : celui qui est lu du lanceur ou de l'appareil, à défaut ce que le générateur en dit ; null sinon. */
+    const previousOf = x => {
+      const v = rawVerdict(x);
+      return superseded(x, v) ? v : x.previous;
     };
     const known = x => x.state === 'known';
     // la dernière recette : le jour du dernier verdict d'avant aujourd'hui ; « du jour » = livré depuis (tout, sans verdict encore)
     let lastDay = '';
     const setLastDay = () => {
       const today = new Date().toISOString().slice(0, 10),
-        days = tests.map(x => (ui.fileRead ? ui.file[x.id] : x.gen)?.at?.slice(0, 10)).filter(d => d && d < today)
+        days = tests.map(x => (ui.fileRead ? ui.file[x.id] : x.gen)).filter((v, i) => v && !superseded(tests[i], v)).map(v => v.at
+          ?.slice(0, 10)).filter(d => d && d < today)
         .sort(); // les verdicts d'aujourd'hui ne font pas de la recette d'hier
       lastDay = days[days.length - 1] || '';
     };
     setLastDay();
-    const sectionOf = x => known(x) ? 'known' : verdictOf(x) ? 'seen' : !lastDay || x.since > lastDay ? 'today' : 'older';
+    const sectionOf = x => known(x) ? 'known' : verdictOf(x) ? 'seen' : previousOf(x) || !lastDay || x.since > lastDay ? 'today' :
+      'older';
     const shownTests = () => tests.filter(x => !ui.app || x.app === ui.app);
     const appName = a => T.app[a] ? t(T.app[a]) : a;
     const item = x => {
@@ -210,7 +249,9 @@
       if (known(x)) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="known">${head}<p class="f-muted" data-known>${esc(t(T.knownLine))}</p></li>`;
       if (v) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="${v.verdict}">${head}<p data-verdict="${v.verdict}"><b>${esc(t(T[v.verdict]))}</b>${v.at ? ` <small class="f-muted">${esc(v.at.slice(0, 10))}</small>` : ''}${v.comment ? ` — ${esc(v.comment)}` : ''}</p>
         <div class="f-row"><button type="button" data-redo="${esc(x.id)}">${esc(t(T.redo))}</button></div></li>`;
-      return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="todo">${head}
+      const p = previousOf(x),
+        why = p ? `<p class="f-muted" data-redelivered="${p.verdict}">${esc(t(T.redelivered[p.verdict === 'ko' && !p.comment ? 'koBare' : p.verdict], { d: (p.at || x.delivered || '').slice(0, 10), c: p.comment || '' }))}</p>` : '';
+      return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="todo">${head}${why}
         <label class="f-field">${esc(t(T.comment))}<textarea data-comment="${esc(x.id)}" rows="2" maxlength="${MAX_COMMENT}">${esc(ui.draft[x.id] || '')}</textarea></label>
         ${ui.need === x.id ? `<p class="f-warn" data-need>${esc(t(T.need))}</p>` : ''}
         <div class="f-row"><button type="button" class="primary" data-ok="${esc(x.id)}">${esc(t(T.ok))}</button><button type="button" data-ko="${esc(x.id)}">${esc(t(T.ko))}</button></div></li>`;
@@ -218,7 +259,9 @@
     /** Une section : ses tests par application, sept visibles puis « Voir les n autres » ; hors « Tests du jour » elle est repliée jusqu'à un toucher sur son titre. */
     const sectionHtml = (k, list) => {
       if (!list.length) return '';
-      const sorted = [...list].sort((a, b) => apps.indexOf(a.app) - apps.indexOf(b.app) || (b.since || '').localeCompare(a.since ||
+      // d'une application, les tests relivrés d'abord (ils reviennent après un verdict), puis les plus récents
+      const sorted = [...list].sort((a, b) => apps.indexOf(a.app) - apps.indexOf(b.app) || (previousOf(b) ? 1 : 0) - (previousOf(a) ?
+        1 : 0) || (b.since || '').localeCompare(a.since ||
         '') || a.id.localeCompare(b.id));
       const all = ui.more[k],
         vis = all ? sorted : sorted.slice(0, SEVEN),

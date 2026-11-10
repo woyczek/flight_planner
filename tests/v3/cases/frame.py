@@ -4917,3 +4917,62 @@ def a123(c):
     cls = c.js('window.__cls')
     c.ok(cls['value'] < 0.1, cls, 'the cumulative layout shift stays under 0.1 (rule 22)')
     c.check_errors()
+
+
+@case('A124', 'The Recette screen: a test delivered again after its verdict goes back to « à tester », first, and says why; a later verdict is in force again', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0167 (the user: « Je ne vois pas de màj de la page de recette, normal ? »: eleven refused tests delivered again stayed « Refusé »): a verdict older than the card’s last delivery (`delivered`) is not in force, whichever file it comes from (generated, the device’s, the launcher’s); the test returns to « à tester », the day’s section, first of its application, with one line above the buttons — « Relivré depuis votre refus du <date> : « <comment> » » (or « validation »); a verdict later than `delivered` is in force as usual; the summary counts it as to test; `delivered` and `previous` are untrusted (format checked, bounded)')
+def a124(c):
+    lang = c.lang
+    lab = lambda n: {'fr': f'Titre {n}', 'en': f'Title {n}', 'de': f'Titel {n}', 'es': f'Título {n}'}
+    mk = lambda n, **kw: {'id': f'SOG-{n:04d}', 'app': 'pilote', 'title': lab(n), 'test': f'Aller au test {n}, faire, voir.', 'since': '2026-11-09', 'state': 'todo', **kw}
+    D = '2026-11-10T09:30:00Z'
+    tests = [
+        mk(500),                                                                                       # a plain new test
+        mk(501, state='ko', at='2026-11-10T08:00:00Z', comment='le bouton reste gris', delivered=D),    # generated: refused, delivered again after
+        mk(502, delivered=D, previous={'verdict': 'ko', 'comment': 'texte coupé', 'at': '2026-11-10T07:00:00Z'}),   # what the generator says
+        mk(503, state='ko', at='2026-11-10T10:00:00Z', comment='toujours gris', delivered=D),          # refused AFTER the delivery: still refused
+        mk(504, state='ok', at='2026-11-09T18:00:00Z', delivered=D),                                   # passed, delivered again after
+        mk(505, delivered=D),                                                                          # the device holds an older refusal
+        mk(506, delivered=D),                                                                          # the device holds a later pass
+        mk(507, delivered='javascript:alert(1)', previous={'verdict': 'ko', 'comment': '<img src=x onerror=window.__pwn=1>', 'at': 'nope'}),  # hostile
+        mk(508, app='maintenance', delivered=D, previous={'verdict': 'ko', 'comment': 'x' * 900, 'at': '2026-11-10T06:00:00Z'}),
+    ]
+    doc = {'schema': 'sog-recette/1', 'generated': {'tool': 'tools/recette_build.py', 'at': '2026-11-10', 'tests': len(tests), 'verdicts': 3},
+           'apps': ['pilote', 'compagnie', 'maintenance', 'stats'], 'tests': tests}
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(doc)))
+    store = {'pending': {'SOG-0505': {'verdict': 'ko', 'comment': 'cassé hier', 'at': '2026-11-10T07:00:00Z'}, 'SOG-0506': {'verdict': 'ok', 'at': '2026-11-10T12:00:00Z'}},
+             'unsent': [], 'open': {}}
+    c.open('recette', docs=LEVEL3 + [['device/recette.json', store, 'cache']], wait=False)
+    c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=15000, what='the tests')
+    c.shot(f'A124_recette_{c.width}_{lang}.png')
+    why = lambda i: c.js("(i) => document.querySelector('[data-id=\"' + i + '\"] [data-redelivered]')?.textContent || null", i)
+    state = lambda i: c.js("(i) => document.querySelector('[data-id=\"' + i + '\"]')?.dataset.state || null", i)
+    sec = lambda i: c.js("(i) => document.querySelector('[data-id=\"' + i + '\"]')?.closest('[data-section]')?.dataset.section || null", i)
+    rows = {
+        'ko': {'fr': 'Relivré depuis votre refus du {d} : « {c} »', 'en': 'Delivered again since your failure of {d}: “{c}”',
+               'de': 'Erneut geliefert seit Ihrer Ablehnung vom {d}: „{c}“', 'es': 'Entregada de nuevo desde su rechazo del {d}: «{c}»'},
+        'ok': {'fr': 'Relivré depuis votre validation du {d}', 'en': 'Delivered again since your pass of {d}',
+               'de': 'Erneut geliefert seit Ihrer Bestätigung vom {d}', 'es': 'Entregada de nuevo desde su validación del {d}'}}
+    say = lambda k, **v: norm(rows[k][lang].format(**v))
+    # a refusal older than the delivery (generated): back to test, the reason said
+    c.eq([state('SOG-0501'), sec('SOG-0501'), norm(why('SOG-0501') or '')], ['todo', 'today', say('ko', d='2026-11-10', c='le bouton reste gris')],
+         'a refusal older than the delivery: to test, in the day’s list, with the reason', what='0501')
+    c.eq([state('SOG-0502'), norm(why('SOG-0502') or '')], ['todo', say('ko', d='2026-11-10', c='texte coupé')], 'what the generator says it replaced is said too', what='0502')
+    c.eq([state('SOG-0503'), why('SOG-0503')], ['ko', None], 'a refusal later than the delivery stays « Refusé »', what='0503')
+    c.eq([state('SOG-0504'), sec('SOG-0504'), norm(why('SOG-0504') or '')], ['todo', 'today', say('ok', d='2026-11-09')],
+         'a validation older than the delivery: to test, « depuis votre validation »', what='0504')
+    c.eq([state('SOG-0505'), norm(why('SOG-0505') or '')], ['todo', say('ko', d='2026-11-10', c='cassé hier')], 'the device’s older refusal is not in force either', what='0505')
+    c.eq([state('SOG-0506'), why('SOG-0506')], ['ok', None], 'the device’s later pass is in force', what='0506')
+    # the redelivered ones come first in their application
+    first = c.js("[...document.querySelectorAll('[data-section=today] li[data-id]')].map(l => l.dataset.id)")
+    c.ok(first[0] in ('SOG-0501', 'SOG-0502', 'SOG-0504', 'SOG-0505', 'SOG-0507'), str(first), 'a redelivered test is first of the day’s list')
+    # the summary: the redelivered ones are to test
+    nums = [int(x) for x in re.findall(r'\d+', c.text('[data-summary]'))]
+    c.eq(nums[0], 7, 'the summary counts them as to test (7: 500, 501, 502, 504, 505, 507, 508)', what='summary to test')
+    # untrusted entries: a bad `delivered` is ignored, a bad `at` dropped, a long comment bounded, nothing runs
+    c.ok(c.count('[data-section=today] img') == 0 and c.js('window.__pwn === undefined'), 'img', 'a hostile comment is text')
+    long = why('SOG-0508') or ''
+    c.ok(0 < len(long) < 700, str(len(long)), 'a long comment is bounded')
+    c.eq(state('SOG-0507'), 'todo', 'a delivered that is not a date is ignored: the test is still to test', what='0507')
+    c.check_errors()
