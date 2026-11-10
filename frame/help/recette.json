@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 55,
-  "verdicts": 13
+  "verdicts": 15
  },
  "apps": [
   "pilote",
@@ -294,7 +294,7 @@
    },
    "test": "Carburant › Route avec la Carte à côté (vue double) : après « Calculer A → B », les itinéraires sont tracés sur la Carte, le choisi en plein ; survoler une ligne de la liste épaissit son tracé ; « N écarts aux règles » se déplie en une ligne par écart.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0135",
@@ -346,9 +346,11 @@
     "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
     "es": "GFS: sigue sin haber mapa sinóptico; y una respuesta visible, no entre dos puertas"
    },
-   "test": "Maintenance › Données › Météo › « Synoptique monde (GFS) » › « Construire » (deux minutes la première fois), puis Atmosphère : la carte synoptique s'affiche avec l'heure du modèle.",
-   "since": "2026-11-09",
-   "state": "known"
+   "test": "Pilote › Météo, carte dézoomée au-delà de la zone du vol : en haut à gauche « Synoptique monde absent · Construire (2 min) » ; l'appui montre l'avancement (n/25) puis la carte synoptique s'affiche avec l'heure du modèle, sans quitter l'écran. Un échec dit sa raison avec « Réessayer ».",
+   "since": "2026-11-10",
+   "state": "ko",
+   "comment": "screenshot. {  \"at\": \"2026-11-10T09:26:02.375Z\",  \"app\": \"pilot\",  \"suite\": {   \"version\": \"v6.0.0-alpha.4-173-g6399f5a28\",   \"date\": \"2026-11-10\",   \"time\": \"10:19\",   \"web\": \"https://framagit.org/asr/flight_planner\"  },  \"transport\": \"launcher\",  \"online\": true,  \"syncing\": false,  \"lastSync\": \"2026-11-10T09:21:40.172Z\",  \"lastError\": \"\",  \"pending\": 1,  \"queue\": [   {    \"path\": \"pilot/RBR/current_flight.json\",    \"module\": \"fuel\",    \"at\": \"2026-11-10T09:21:31.301Z\",    \"deletion\": false   }  ],  \"conflicts\": 0,  \"tree\": {   \"head\": \"19c0b8a6436d\",   \"at\": \"2026-11-10T09:21:30.334Z\",   \"fi",
+   "at": "2026-11-10T09:26:17Z"
   },
   {
    "id": "SOG-0139",
@@ -359,9 +361,11 @@
     "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",
     "es": "Meteo en el Mapa: un enlace «descargar AROME» en vez de un botón «mostrar meteo»"
    },
-   "test": "Carte avec une route : un seul bouton « Météo de la route » ; après le toucher il devient « Météo de la route · AROME 12 h » et les vents sont dessinés.",
-   "since": "2026-11-09",
-   "state": "known"
+   "test": "Carte avec une route : toucher « Météo de la route » affiche tout de suite « Lecture de la météo de la route… » avec les secondes ; plusieurs appuis ne lancent qu'une lecture ; à la fin les vents sont dessinés, ou une raison est dite avec « Réessayer ». La page reste utilisable pendant la lecture. (Le gel du lanceur quand Open-Meteo coupe est suivi à part : SOG-0178.)",
+   "since": "2026-11-10",
+   "state": "ko",
+   "comment": "Oui. mais meteo toujours cassée (et bloque le lanceur en cas de clic, peut-être multiple : le bouton est bleu, il reste bleu même après un clic, on ne sait pas ce que fait le lanceur, et rien ne s’affiche. ?). bloque chrome. Néanmoins, stricto-sensu, le bouton fait son taf…",
+   "at": "2026-11-10T09:28:04Z"
   },
   {
    "id": "SOG-0140",
@@ -374,7 +378,8 @@
    },
    "test": "Carburant › Vol : le ⇄ est petit, de la taille du texte, et reste facile à toucher au doigt.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T10:16:31Z"
   },
   {
    "id": "SOG-0141",
@@ -650,9 +655,7 @@
    },
    "test": "Carte avec une route qui traverse des espaces, profil vertical ouvert : un premier appui sur un bloc le surligne et affiche son nom, ses limites et un bouton « Fiche » ; le profil reste en place. « Fiche » (ou un second appui) ouvre la fiche sans déplacer la page ni réduire le profil ; la fermer rend le profil identique. Après « Mettre à jour » : la fiche de R 61 donne ses horaires et conditions.",
    "since": "2026-11-10",
-   "state": "ko",
-   "comment": "noreg : bug d’affichage vertical",
-   "at": "2026-11-10T08:59:08Z"
+   "state": "known"
   },
   {
    "id": "SOG-0164",
@@ -717,7 +720,7 @@
    },
    "test": "Relancer le lanceur et faire une fois Ctrl+Maj+R. Ensuite un seul rechargement suffit après un correctif, sans « Nouvelle version disponible », et la page se charge aussi vite qu'avant. Si la page est plus ancienne que le lanceur, un cartouche rouge « Version ancienne · Recharger » apparaît dans l'en-tête.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0169",

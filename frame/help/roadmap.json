@@ -5,7 +5,7 @@
  "generated": {
   "tool": "tools/roadmap_build.py",
   "organisation": "503fae2",
-  "fiches": 171,
+  "fiches": 179,
   "untranslated": 1,
   "priorities": 152
  },
@@ -438,7 +438,7 @@
     {
      "id": "SOG-0134",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Route (RAD) : montrer les tracés des itinéraires proposés avant de choisir, et dire quels sont les écarts aux règles",
      "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
      "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
@@ -635,7 +635,7 @@
     {
      "id": "SOG-0139",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Météo sur la Carte : un lien « télécharger AROME » plutôt qu'un bouton « afficher la météo »",
      "en": "Weather on the Map: a “download AROME” link rather than a “show weather” button",
      "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",
@@ -684,7 +684,7 @@
     {
      "id": "SOG-0163",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Espaces R et D : lire leur texte (activité, conditions) depuis le profil vertical et la carte",
      "en": "R and D areas: read their text (activity, conditions) from the vertical profile and the map",
      "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
@@ -698,6 +698,33 @@
      "en": "Airspaces: erratic display at the same zoom, complexity shows no more; no FIR outside France",
      "de": "Lufträume: launische Anzeige bei gleichem Zoom, die Komplexität zeigt nicht mehr; keine FIR außerhalb Frankreichs",
      "es": "Espacios aéreos: visualización caprichosa con el mismo zoom, la complejidad no muestra más; sin FIR fuera de Francia"
+    },
+    {
+     "id": "SOG-0173",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Carte : en zoom arrière prononcé, déplacer la carte fait apparaître une foule de voies aériennes basses",
+     "en": "Map: at a wide zoom, dragging the map shows a crowd of low airways",
+     "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
+     "es": "Mapa: con zoom amplio, arrastrar el mapa muestra multitud de aerovías bajas"
+    },
+    {
+     "id": "SOG-0175",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "VOR : doubler le cercle des degrés et poser des repères tous les 30°",
+     "en": "VOR: a double compass circle with marks every 30°",
+     "de": "VOR: doppelter Gradkreis mit Marken alle 30°",
+     "es": "VOR: doble círculo de grados con marcas cada 30°"
+    },
+    {
+     "id": "SOG-0177",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Route longue : trop de marqueurs de distance",
+     "en": "Long route: too many distance markers",
+     "de": "Lange Route: zu viele Distanzmarken",
+     "es": "Ruta larga: demasiados marcadores de distancia"
     }
    ]
   },
@@ -743,6 +770,15 @@
      "de": "Eintragen auf der Website ohne Kopieren und Einfügen (PHP-Webservice)",
      "es": "Inscripción en el sitio sin copiar y pegar (servicio web PHP)",
      "rank": 38
+    },
+    {
+     "id": "SOG-0179",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Compte rendu de mission : le nom abrégé de la catégorie a disparu (« SAR - Recherche / sauvetage »)",
+     "en": "Mission report: the short name of the category is gone (“SAR - Search and rescue”)",
+     "de": "Missionsbericht: das Kürzel der Kategorie ist verschwunden („SAR - Suche / Rettung“)",
+     "es": "Informe de misión: ha desaparecido la sigla de la categoría («SAR - Búsqueda / salvamento»)"
     }
    ]
   },
@@ -903,7 +939,7 @@
     {
      "id": "SOG-0138",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
      "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
@@ -1459,6 +1495,27 @@
    ]
   },
   {
+   "id": "maintenance-base-carte-carburant",
+   "app": "maintenance",
+   "label": {
+    "fr": "Base ; Carte ; Carburant",
+    "en": "Base ; Carte ; Carburant",
+    "de": "Base ; Carte ; Carburant",
+    "es": "Base ; Carte ; Carburant"
+   },
+   "items": [
+    {
+     "id": "SOG-0176",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Fréquences d'ILS : prévues, codées, affichées ?",
+     "en": "ILS frequencies: planned, coded, displayed?",
+     "de": "ILS-Frequenzen: geplant, kodiert, angezeigt?",
+     "es": "Frecuencias ILS: ¿previstas, codificadas, mostradas?"
+    }
+   ]
+  },
+  {
    "id": "maintenance-base",
    "app": "maintenance",
    "label": {
@@ -1658,6 +1715,15 @@
      "en": "“Publishing failed: nothing is lost… Fix the cause and retry”: which cause?",
      "de": "„Veröffentlichung fehlgeschlagen: nichts verloren… Ursache beheben und erneut“: welche Ursache?",
      "es": "«La publicación falló: nada se pierde… Corrija la causa y reintente»: ¿qué causa?"
+    },
+    {
+     "id": "SOG-0174",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Des données aéronautiques pour TOUS les pays, à commencer par l'Europe et les États-Unis",
+     "en": "Aeronautical data for ALL countries, starting with Europe and the United States",
+     "de": "Luftfahrtdaten für ALLE Länder, zuerst Europa und die USA",
+     "es": "Datos aeronáuticos para TODOS los países, empezando por Europa y Estados Unidos"
     }
    ]
   },
@@ -1772,7 +1838,7 @@
     {
      "id": "SOG-0168",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "L'utilisateur teste une vieille copie sans le savoir : la nouvelle version s'applique seule sur un poste avec lanceur, et la version servie est lisible",
      "en": "The user tests an old copy without knowing: the new version applies by itself on a workstation with a launcher, and the served version is readable",
      "de": "Der Benutzer testet unwissentlich eine alte Kopie: die neue Version greift auf einem Rechner mit Launcher von selbst, und die ausgelieferte Version ist lesbar",
@@ -2144,6 +2210,15 @@
      "de": "Die erste Git-Synchronisation des Tages dauert über zwei Minuten",
      "es": "La primera sincronización git del día tarda más de dos minutos",
      "rank": 134
+    },
+    {
+     "id": "SOG-0178",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Lanceur : un service extérieur lent ou en erreur (Open-Meteo, Overpass) fige le lanceur, puis l'appli et Chrome",
+     "en": "Launcher: a slow or failing outside service (Open-Meteo, Overpass) freezes the launcher, then the app and Chrome",
+     "de": "Launcher: ein langsamer oder fehlerhafter externer Dienst (Open-Meteo, Overpass) friert Launcher, App und Chrome ein",
+     "es": "Lanzador: un servicio externo lento o con error (Open-Meteo, Overpass) congela el lanzador, la app y Chrome"
     }
    ]
   },
@@ -2313,6 +2388,15 @@
      "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
      "es": "Ajustes: varios segundos de espera antes de la pantalla, por una versión del repositorio solo accesoria",
      "rank": 144
+    },
+    {
+     "id": "SOG-0172",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Réglages : les clignotements sont revenus",
+     "en": "Settings: the flicker is back",
+     "de": "Einstellungen: das Flackern ist zurück",
+     "es": "Ajustes: han vuelto los parpadeos"
     }
    ]
   },
