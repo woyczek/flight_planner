@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the complexity cursor is back where it was** (`modules/maps/style.js`; DECISIONS; noreg D17, D145; SOG-0183 refused). Its line spans the whole width of the Layers content again
+  on a flight's map (it had been squeezed into one grid column since cc6b3fb05); on a mission map it is at the top, on the whole width.
+
 - **Weather screen: a refusal says its reason, a wait is not a red notification** (`modules/atmosphere`, `modules/maps/weather.js`, `frame/lib/weather_store.js`; DECISIONS; noreg E19, E18;
   SOG-0198). The launcher's reason (busy, timeout, reset, refused, HTTP code) is shown instead of « offline » (kept for `X-SOG-Offline` alone); « reading the forecast grid… » in the
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».

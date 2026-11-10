@@ -2299,6 +2299,14 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## The complexity cursor is back where it was on a flight's map (10 Nov 2026, SOG-0183 refused: « il a été déplacé dans le cas général ! ce n'était pas le propos »)
+- **Cause**: cc6b3fb05 split the Layers content in three blocks to show the cursor on a mission map; the middle block (`.mp-layer-cx`) was a plain grid item, so the cursor's line was
+  squeezed into the first column (170 px of 354 at 390) instead of spanning the content. The other blocks were already `display: contents`.
+- **Done**: `.mp-layer-cx` is `display: contents` like `.mp-layer-set`: on a flight's map the content is as before cc6b3fb05 (the corridor box, the cursor on the whole width, the boxes,
+  « Reset all »; compared on captures: `tests/v3/shots/D17_layers_390_before_cc6b3fb05.png` from a worktree at cc6b3fb05^, against `D17_layers_390.png`); on a mission map the cursor is
+  at the top of the content on the whole width (`D145_layers_mission_general.png`), nothing else shown.
+- **Noreg** D17 (the cursor's line spans the whole width of the content; red before: 170 px), D145 (the same on a mission map).
+
 ## The proposed routes tell what each stretch is (10 Nov 2026, SOG-0134 refused: « moche… uniformément de la même couleur, très gros, sans légende »)
 
 - **Ergonomics' decision**: (a) the line has the width of the flight's route, the chosen solid, the others faded; (b) the style says the nature of the stretch: airway = solid

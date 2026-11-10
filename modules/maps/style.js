@@ -48,7 +48,7 @@ export const STYLE = `
 [data-module="maps"] .mp-layers .mp-picks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;padding-top:8px;border-top:1px solid var(--sog-border);min-width:0}
 [data-module="maps"] .mp-layers .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 150px;text-overflow:ellipsis}
 [data-module="maps"] .mp-layers .mp-picks select[hidden]{display:none}
-[data-module="maps"] .mp-layer-set{display:contents}
+[data-module="maps"] .mp-layer-set,[data-module="maps"] .mp-layer-cx{display:contents}
 [data-module="maps"] .mp-layers .mp-layer-set[hidden]{display:none}
 [data-module="maps"] .mp-layers [data-layers-reset]{grid-column:1/-1;justify-self:start;margin-top:8px}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}

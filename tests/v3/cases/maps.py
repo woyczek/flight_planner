@@ -1052,10 +1052,12 @@ def d17(c):
     c.tap(layers_btn(c))
     c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='the Layers content shows the slider')
     c.wait(300)
+    c.shot('D17_layers_390.png')   # the general view of the Layers content, to compare with the former place of the slider (SOG-0183 refused)
     g = c.js("""() => { const r = e => { const b = e.getBoundingClientRect(); return { t: b.top, b: b.bottom, h: b.height, l: b.left, r: b.right } };
         const lab = document.querySelector('.mp-l-detail'), inp = lab.querySelector('input'), val = lab.querySelector('[data-detail-v]'), help = document.getElementById('mp-detail-help'), nxt = document.querySelector('.mp-layer-cx ~ .mp-layer-set label');
-        return { lab: r(lab), inp: r(inp), val: r(val), help: r(help), nxt: r(nxt), described: inp.getAttribute('aria-describedby') } }""")
+        return { box: r(document.querySelector('.mp-layers')), lab: r(lab), inp: r(inp), val: r(val), help: r(help), nxt: r(nxt), described: inp.getAttribute('aria-describedby') } }""")
     c.le(round(g['lab']['h']), 56, 'the whole Complexity block (label, value, slider) is at most 56 px high at 390 px', what=f'{c.design}: block {g["lab"]["h"]:.0f} px')
+    c.ge(round(g['lab']['r'] - g['lab']['l']), round(g['box']['r'] - g['box']['l']) - 2, 'the slider’s line spans the whole width of the Layers content, as before SOG-0183 (it was squeezed in the first column of the grid)', what='slider line width against the content')
     c.ge(round(g['inp']['h']), 40, 'the slider keeps a finger-sized height', what='slider height')
     c.le(round(abs(g['val']['t'] + g['val']['b'] - g['inp']['t'] - g['inp']['b']) / 2), 4, 'the value is on the slider\'s line (label · value · slider on one row)', what='value against slider, vertical centres')
     c.ge(round(g['inp']['r'] - g['inp']['l']), 90, 'the slider keeps a usable width beside its label', what='slider width')
