@@ -642,18 +642,25 @@
       code = esc(r.code);
     return [`<label class="f-co" data-airline="${code}"><input type="radio" name="co-current" value="${code}" data-act="companyChoose" data-code="${code}"${can ? '' : ' disabled'}><span class="f-co-name"><b>${esc(r.name)}</b> <code>${code}</code></span>`, meta];
   }
+  /** Les thèmes dans l'ordre d'AFFICHAGE : COMMERCIAL en tête (le thème d'une compagnie commerciale), puis ceux de la table dans son ordre. */
+  const themesShown = (CL, lang) => {
+    const all = CL.themes(lang);
+    return [...all.filter(x => x.id === 'COMMERCIAL'), ...all.filter(x => x.id !== 'COMMERCIAL')];
+  };
+  /** Des identifiants de thèmes dans l'ordre d'ÉCRITURE (celui de la table de frame/lib/mission_themes.js), sans doublon. */
+  const themesInTableOrder = (CL, ids) => CL.themes('fr').map(x => x.id).filter(id => ids.includes(id));
   /** La fiche de la compagnie CHOISIE (les autres n'en ont pas) : le genre en deux boutons radio, une ligne d'explication chacun ; puis les thèmes de missions, un par case (le sigle, le nom), cochés d'après son fichier ou, sans fichier, d'après le genre (rien n'est écrit tant qu'on ne coche pas). « Personnel » : une ligne, rien à régler. `lang` : la langue des noms. */
   function airlineFicheHtml(r, CL, lang, t) {
     if (!r) return '';
     if (r.code === PERSO) return `<p class="f-muted" data-fiche-perso>${esc(t(TA.persoNote))}</p>`;
     if (!CL) return '';
-    const list = CL.themes(lang),
+    const list = themesShown(CL, lang),
       chosen = new Set(CL.chosenOf(r.themes, r.kind)),
       code = esc(r.code);
     return `<h3>${esc(t(TA.ficheTitle, { n: r.name }))}</h3>
       <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(CL.KIND_NAMES[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
       <h4 data-themes-title>${esc(t(TA.themeSummary, { n: list.filter(x => chosen.has(x.id)).length, m: list.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}<p class="f-muted">${esc(t(TA.themeHint))}</p>
-      <ul class="f-cats" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label></li>`).join('')}</ul><p class="f-msg" data-fiche-msg></p>`;
+      <ul class="f-themes" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label></li>`).join('')}</ul><p class="f-msg" data-fiche-msg></p>`;
   }
   /** Écrit le genre d'une compagnie dans son settings.json (le fichier lu, le champ `kind` posé ou retiré) ; faux si le fichier manque ou ne s'écrit pas. */
   async function writeKind(env, code, kind) {
@@ -681,10 +688,11 @@
   const catId = name => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
     /^-+|-+$/g, '').slice(0, 24).replace(/-+$/g, '');
   /** Écrit les thèmes cochés d'une compagnie dans son themes.json : { schema, chosen, added (celui du fichier déjà là, jamais perdu), updated_at, by } ; '' (fait) ou la clé du refus. */
-  async function writeThemes(env, code, chosen) {
+  async function writeThemes(env, code, picked) {
     const CL = await catLib();
     if (!CL) return 'failed';
-    if (!chosen.length) return 'themeOne';
+    if (!picked.length) return 'themeOne';
+    const chosen = themesInTableOrder(CL, picked); // l'ordre d'écriture est celui de la table, pas celui de l'affichage
     const ad = airlineData(env.FD),
       path = `${airlineBase(code)}themes.json`,
       old = CL.cleanThemes(await ad.get(path, {
@@ -780,12 +788,14 @@
     pane.dataset.kind = kind;
     const on = new Set(CL ? CL.defaultChosen(kind) : []);
     pane.innerHTML = `<p class="f-muted">${esc(t(TA.wzThemeHint))}</p>
-      <ul class="f-cats" data-wz-themes>${CL ? CL.themes(lang).map(x => `<li><label class="f-check"><input type="checkbox" data-wz-theme="${esc(x.id)}"${on.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label></li>`).join('') : ''}</ul>`;
+      <ul class="f-themes" data-wz-themes>${CL ? themesShown(CL, lang).map(x => `<li><label class="f-check"><input type="checkbox" data-wz-theme="${esc(x.id)}"${on.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label></li>`).join('') : ''}</ul>`;
   }
   /** Les thèmes cochés au pas ② : { chosen: [identifiants dans l'ordre de la table], n }. */
   function wizardThemes(view) {
-    const chosen = [...view.querySelectorAll('[data-step-pane="themes"] [data-wz-theme]')].filter(b => b.checked).map(b => b.dataset
-      .wzTheme);
+    const CL = AIR.get(view)?.CL,
+      ticked = [...view.querySelectorAll('[data-step-pane="themes"] [data-wz-theme]')].filter(b => b.checked).map(b => b.dataset
+        .wzTheme);
+    const chosen = CL ? themesInTableOrder(CL, ticked) : ticked; // l'ordre d'écriture est celui de la table, pas celui de l'affichage
     return {
       chosen,
       n: chosen.length

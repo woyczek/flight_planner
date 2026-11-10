@@ -748,6 +748,20 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   margin: 0 0 4px;
   padding-left: 20px
 }
+/* les thèmes de missions (SOG-0202 T3) : une case par ligne, sans puce, une colonne à 390 px et deux dès que la largeur le permet */
+.f-themes {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 24px
+}
+@media (min-width: 700px) {
+  .f-themes {
+    grid-template-columns: 1fr 1fr
+  }
+}
 [data-card="company"] details {
   margin-top: 8px
 }

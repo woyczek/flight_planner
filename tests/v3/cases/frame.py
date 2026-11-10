@@ -4211,6 +4211,12 @@ def a105(c):
     c.ok(c.js(f"(() => {{ const h = document.querySelector('{fiche('[data-themes-title]')}'); return !!h && h.offsetParent !== null }})()"), None, 'the title « Mission themes » is visible without a tap')
     c.eq(norm(c.text(fiche('[data-themes-title]'))), norm(T('themeSummary').replace('{n}', '17').replace('{m}', '17')), 'no kind and no file: the seventeen themes are ticked in advance', what='no kind count')
     c.eq(c.count(fiche('li[data-theme]')), 17, 'seventeen themes listed, one box each', what='listed')
+    c.eq(c.js(f"document.querySelector('{fiche('li[data-theme]')}').dataset.theme"), 'COMMERCIAL', 'COMMERCIAL first in the list shown (the table carries it 17th: only the file is written in the table order)', what='first')
+    g = c.js(f"(() => {{ const u = document.querySelector('{fiche('[data-themes]')}'), cs = getComputedStyle(u); return [cs.listStyleType, cs.gridTemplateColumns.trim().split(/\s+/).length, u.scrollWidth <= u.clientWidth + 1] }})()")
+    c.eq(g, ['none', 2 if c.width >= 700 else 1, True], 'no bullet before a box; two columns from 700 px, one below', what='layout')
+    c.js(f"document.querySelector('{fiche('[data-themes-title]')}').scrollIntoView({{ block: 'start' }})")
+    c.shot(f"A105_standard_{c.width}_themes_delivered.png")   # the themes of the sheet, read by the ergonomist
+    c.js("window.scrollTo(0, 0)")
     # ---- the kind: written in settings.json, the rest of the file kept; the other lines are not redrawn
     mark()
     c.tap(fiche('[data-act=companyKind][data-kind=va]'))
@@ -5119,6 +5125,7 @@ def a126(c):
     nxt('themes')
     c.eq(c.count(pane + ' [data-wz-theme]'), 17, 'the seventeen themes, one box each', what='listed')
     c.eq(ticked(), ['COMMERCIAL'], 'a commercial airline: the Commercial theme ticked in advance', what='default ticked')
+    c.eq(c.js(f"document.querySelector('{pane} [data-wz-theme]').dataset.wzTheme"), 'COMMERCIAL', 'COMMERCIAL first in the list shown', what='first')
     # tick one more, untick none
     c.js(f"document.querySelector('{pane} [data-wz-theme=HEMS]').click()")
     if c.width in (390, 1280):
