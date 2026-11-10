@@ -165,3 +165,9 @@ way, not taken (an empty band on every screen while the help loads). noreg A52.
   (verdict, comment bounded to 600, `at` checked) are untrusted: a `delivered` that is not a date is ignored. A refusal without comment is kept when the generator says it
   (`previous`), unlike the verdicts one can write. Noreg A124 (generated, device and `previous` cases; a later verdict stays; hostile and long entries; the summary; the
   screenshots at 390 and 1280 are written by the case), red on the previous recette.js.
+
+## 10 November 2026 — « Par thème » by default; « Priorités » is a mode (SOG-0160 refused)
+
+The user, on the first delivery: « oui, mais par thème par défaut. c'est un « mode priorités », pas un default. » My reading was wrong: the roadmap opens **« Par thème »** (the lanes); **« Priorités »** (three columns, drag to rank) is a mode the
+user chooses, and the device keeps it (`device/roadmap.json` `view`: `'priorities'`; anything else reads as `'themes'`). The manuals of the three applications (×4 languages) say so. Noreg A114 rewritten: opens on the lanes, chooses Priorités, a reload keeps it.
+

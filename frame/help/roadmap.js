@@ -104,7 +104,8 @@
     const pri = cleanPri(s?.pri, stones);
     return {
       hide: typeof s?.hideDone === 'boolean' ? s.hideDone : true,
-      view: s?.view === 'themes' ? 'themes' : 'priorities', // la vue par défaut : les priorités (SOG-0160)
+      view: s?.view === 'priorities' ? 'priorities' :
+      'themes', // la vue par défaut : par thème ; « Priorités » est un mode que l'utilisateur choisit, retenu sur l'appareil (SOG-0160)
       col: ['integration', 'development', 'backlog'].includes(s?.col) ? s.col : 'integration', // la colonne que le téléphone montre
       pri,
       // les voies repliées ou dépliées à la main (identifiant de voie → vrai si repliée) : 200 au plus, des booléens seulement

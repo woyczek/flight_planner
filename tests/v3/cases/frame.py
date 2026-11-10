@@ -4453,9 +4453,9 @@ def _prio_fixture():
                       {'id': 'data', 'app': 'pilote', 'label': lab('Thème B', 'Theme B'), 'items': [item('planned', 13), item('planned', 14)]}]}
 
 
-@case('A114', 'The roadmap opens on « Priorités » (SOG-0160): three columns (in integration, in development, backlog), the cards flat by rank with their theme as a label; a card of theme B above a card of theme A, sent to development, held after a reload; « Par thème » is the read-only secondary view', 'A',
+@case('A114', 'The roadmap opens « Par thème »; « Priorités » is a mode you choose (kept on the device): three columns (in integration, in development, backlog), the cards flat by rank with their theme as a label; a card of theme B above a card of theme A, sent to development, held after a reload; « Par thème » is the read-only secondary view', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
-      rule='SOG-0160 (the user, 10 Nov 2026): the lanes blocked the sorting; the default view is a flat list in three columns drawn from the milestones, a drag (a phone: Monter, Descendre, Envoyer vers…) writes the rank and the milestone in organisation/PRIORITES.json; « Par thème » keeps today’s lanes, without dragging')
+      rule='SOG-0160 (the user, 10 Nov 2026, then refused: « oui, mais par thème par défaut. c’est un « mode priorités », pas un default »): the roadmap opens « Par thème »; « Priorités » is a mode the user chooses and the device keeps; that view is a flat list in three columns drawn from the milestones, a drag (a phone: Monter, Descendre, Envoyer vers…) writes the rank and the milestone in organisation/PRIORITES.json; « Par thème » keeps today’s lanes, without dragging')
 def a114(c):
     import tempfile
     from pathlib import Path
@@ -4473,10 +4473,15 @@ def a114(c):
         _prio_launcher(c, root)
         ids = lambda col: c.js("(k) => [...document.querySelectorAll('[data-col=\"' + k + '\"] li[data-id]')].map(l => l.dataset.id)", col)
         cols = lambda: {k: ids(k) for k in ('integration', 'development', 'backlog')}
-        open_ = lambda: (c.open('roadmap', docs=LEVEL3), c.until("!!document.querySelector('[data-priorities] li[data-id]')", timeout=15000, what='the priorities view'))
-        open_()
-        # ---- the default view: the priorities, three columns from the milestones, no lane, the theme on the card
-        c.eq(c.js("[...document.querySelectorAll('[data-view]')].map(b => [b.dataset.view, b.getAttribute('aria-pressed')])"), [['priorities', 'true'], ['themes', 'false']], 'two views, « Priorités » by default', what='views')
+        views = "[...document.querySelectorAll('[data-view]')].map(b => [b.dataset.view, b.getAttribute('aria-pressed')])"
+        c.open('roadmap', docs=LEVEL3)
+        # ---- the default view is « Par thème » (the lanes); « Priorités » is chosen, then kept (the reload below reads it back)
+        c.until("document.querySelectorAll('[data-lane]').length > 0", timeout=15000, what='the lanes (« Par thème » by default)')
+        c.eq([c.js(views), c.count('[data-priorities]')], [[['priorities', 'false'], ['themes', 'true']], 0], '« Par thème » is the default: lanes, no column', what='default')
+        c.tap('[data-view=priorities]')
+        c.until("!!document.querySelector('[data-priorities] li[data-id]')", timeout=15000, what='the priorities view')
+        # ---- the chosen view: the priorities, three columns from the milestones, no lane, the theme on the card
+        c.eq(c.js(views), [['priorities', 'true'], ['themes', 'false']], 'two views, « Priorités » chosen', what='views')
         c.eq(norm(c.text('[data-view=priorities]')), norm(T('vPrio')), 'worded in the language of the run', what='view label')
         c.eq(c.count('[data-lane]'), 0, 'the lanes are effaced', what='no lane')
         c.eq(cols(), {'integration': ['SOG-0015'], 'development': [], 'backlog': ['SOG-0011', 'SOG-0012', 'SOG-0013', 'SOG-0014']},
