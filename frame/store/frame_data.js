@@ -627,8 +627,12 @@
     const remote = await getMeta('remote'),
       pend = await idb('pending', 'getAll');
     let paths;
-    if (remote?.tree && cfg.transport?.kind !== 'local') paths = Object.keys((await liveTree(cfg.transport, remote)) || remote.tree);
-    else if (cfg.transport?.kind === 'local') {
+    if (remote?.tree && cfg.transport?.kind !== 'local') {
+      // l'arbre du dernier passage répond tout de suite (la liste d'un écran se dessine sans attendre le dépôt) ; sa tête est vérifiée en
+      // fond, une fois par chargement, et ce qui a changé est signalé par le passage (watch) comme toute référence apparue (SOG-0164)
+      if (!treeChecked && !peek) liveTree(cfg.transport, remote).catch(() => {});
+      paths = Object.keys(peek?.tree || remote.tree);
+    } else if (cfg.transport?.kind === 'local') {
       paths = await idbKeys('docs', rangeOf(prefix)); // les chemins seuls, sous le préfixe (jamais les textes)
       // références de la source en lecture seule (arbre gardé ; lu une fois s'il ne l'a jamais été)
       const R = refSource(),

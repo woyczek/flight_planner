@@ -227,7 +227,10 @@ The transports:
       transports of a page share one reading (`shared.last`) and one request in flight; `head(hint)` sends as `since` the head the data
       layer kept with its tree at the last pass (meta `remote`), so an unchanged `data/` answers `same` and the layer keeps its tree
       (`pull`, `treeNow`, `liveTree` use it): two 946 KB downloads per load fall to one answer of a few bytes. A changed `data/` is
-      still read in full.
+      still read in full. The head answered is **reused for 3 s** by every read of the same load (SOG-0164: a second call, `since=<the new
+      head>`, followed the first one for nothing: 593 ms then 703 ms on 10 339 files); a later pass asks again. And `list(prefix)`
+      **answers from the tree of the last pass at once** (the screen draws without waiting for the repository); its head is checked in the
+      background, once per load, and what changed is signalled by the pass like any reference that appeared.
     - The tree leaves out `.git`, `local/`, conflict and pre-restore copies, regenerated indexes (`_index.json`), and
       the launcher's marker.
     - Under `sia/`, only two folders are exposed: `sia/base/` (the published aeronautical base) and `sia/vfr/` (the

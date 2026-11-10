@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: opening Maintenance makes one call to the launcher, and a list does not wait for it** (`frame/store/transport_launcher.js`,
+  `frame/store/frame_data.js`; frame SPEC § launcher, DECISIONS; noreg A100; SOG-0164). The head answered is reused for 3 s by every read of the
+  same load (the second `__setup/changes` that followed the first is gone), and `list()` answers from the tree of the last pass while the head
+  is checked in the background (a list asked while the repository takes 1.5 s: 0 ms instead of 1 514 ms). The launcher's own cost per call is AeroDB's.
+
 - **Roadmap: it opens on « Priorités » — three columns (in integration, in development, backlog), flat cards by rank, the theme as a label; « Par thème » is the read-only lanes** (`frame/help/roadmap.js`, `frame.css`; frame/help SPEC § 5; A114, A101) — SOG-0160: a card is dragged above any card or onto a column (the milestone of the column is written with the rank); on a phone one column at a time with Monter, Descendre, Envoyer vers….
 - **Map: a long route no longer freezes the map for seconds after the view's data are read** (`modules/maps/render_airspace.js`; noreg D130; SOG-0156). Traced on the
   user's real base (read-only): a single 2.8 s task, in the selection of the airspaces along the route (every route sample tested against

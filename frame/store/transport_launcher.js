@@ -50,10 +50,15 @@
 
   // Une seule lecture de l'arbre de data/ à la fois, pour tous les transports de cette page (SOG-0063, 9 nov. 2026 : deux lectures de
   // 946 Ko, en parallèle, à chaque chargement) : la dernière réponse { head, tree } et la requête en vol sont partagées.
+  // seen : la dernière tête répondue par le lanceur (même « same »), valable HEAD_FRESH : les lectures d'un même chargement la réutilisent au lieu
+  // de redemander (SOG-0164 : deux appels à la suite à l'ouverture de Maintenance, 593 ms puis 703 ms sur 10 339 fichiers) ; un passage
+  // de fond, plus tard, la redemande
   const shared = {
-    last: null,
-    flying: new Map()
-  };
+      last: null,
+      seen: null,
+      flying: new Map()
+    },
+    HEAD_FRESH = 3000;
   const changes = path => {
     if (!shared.flying.has(path)) shared.flying.set(path, call(path).finally(() => shared.flying.delete(path)));
     return shared.flying.get(path);
@@ -67,10 +72,15 @@
       /** hint : la tête que l'appelant connaît déjà avec son arbre (la couche : meta « remote ») ; le lanceur répond « same » sans
        *  l'arbre, qui n'est alors pas relu. */
       async head(hint = '') {
+        if (shared.seen && Date.now() - shared.seen.at < HEAD_FRESH) return shared.seen.head;
         const j = await changes(`__setup/changes?since=${encodeURIComponent(shared.last?.head || hint || '')}`);
         if (!j.same) shared.last = {
           head: j.head,
           tree: j.tree
+        };
+        shared.seen = {
+          head: j.head,
+          at: Date.now()
         };
         return j.head;
       },
@@ -97,6 +107,7 @@
           author: o.author?.() || '',
           changes
         });
+        shared.seen = null;
         shared.last = null; // l'arbre lu n'est plus celui de data/ : la prochaine lecture le relit (SOG-0063 l'a rangé dans `shared`)
         return j.head;
       },

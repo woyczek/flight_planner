@@ -2604,3 +2604,17 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
 ## 10 November 2026 — `exchange()` passes on the cause and the step of a failed pass (SOG-0155)
 
 `result.exchange` now carries `cause` and `step` (closed lists: the ten causes and six steps of `tools/data_sync.py`; anything else is `''`), next to `message` and `code`, for the Données panel (Data SPEC § 5.8). V3 Frame informed by the coordinator. Case L59 through the real adapter and a fake `POST /__setup/sync`.
+- **10 Nov 2026 — Opening Maintenance: one call, and the list does not wait** (SOG-0164, « la latence à l'ouverture de la page de maintenance n'est pas
+  corrigée »; measured by Simplification on the user's launcher: 170 resources, last answer at 2 475 ms, two `__setup/changes` in a row, 593 ms
+  without a head then 703 ms with `since`; V3 Frame): (1) the launcher transport keeps the last head it was answered (`shared.seen`, « same »
+  included) and gives it to every read of the same load for 3 s (`HEAD_FRESH`) instead of asking again; `commit()` forgets it; the next pass, later,
+  asks again, so a change made by AeroDB in the meantime is seen at the next pass, not later than before. (2) `list(prefix)` returns the tree of the
+  last pass at once and verifies the head in the background (`liveTree`, once per load); a published zone that appeared since is signalled by the
+  pass as before, so a list drawn at once may miss it until then. The cost of one call (700 ms on 10 339 files) is the launcher's (AeroDB, < 50 ms
+  announced); the frame now makes **one** call and nothing waits for it. Measured on a test launcher with a `data/` of 10 339 files (`--data`, 27
+  zones with a `meta.json`): the calls at opening fall from two to one when the head changed (A100: `[('full'), ('same')]` → `[('full')]`), and a list
+  asked while the repository answers in 1.5 s is answered in 0 ms instead of 1 514 ms (A100, red on 1cd5afe98). **What else is avoidable at the
+  first paint of Maintenance › Données** (not in the frame's hands, reported): the 27 sequential `GET /data/sia/base/<zone>/<cycle>/meta.json`
+  of `aerodb.published()` (aerodb.js, ~7 ms each, started only when the list is known: ~200 ms in one run of the page), the map library (`modules/maps`,
+  1 MB) and the map base tiles (`tiles.openfreemap.org`, 8 requests) loaded for a block that is not the first thing seen, 29 scripts of
+  `modules/data` (435 KB) loaded one by one, and the polling of `__setup/regen/job` (4 requests, up to 2 s).

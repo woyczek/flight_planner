@@ -3773,7 +3773,7 @@ def a99(c):
       tags=('data',), designs=('standard',), screens=False, night=False,
       rule='SOG-0063 (V3 Frame, 9 Nov 2026): GET /__setup/changes?since= was asked twice per load, 946 KB each; now one request in flight for every transport of the page, and the head kept by the data layer (meta remote) is sent as since: an unchanged data/ answers « same » with no tree; a changed one still arrives')
 def a100(c):
-    state = {'head': 'h1', 'name': 'Air One', 'calls': []}
+    state = {'head': 'h1', 'name': 'Air One', 'calls': [], 'delay': 0}
     big = {f'fake/f{i}.json': f'r{i}' for i in range(600)}     # a tree of some 30 KB: the weight of the real one (946 KB) in small
 
     def tree():
@@ -3785,6 +3785,7 @@ def a100(c):
             since = urllib.parse.parse_qs(u.query).get('since', [''])[0]
             body = {'same': True, 'head': state['head']} if since == state['head'] else {'head': state['head'], 'tree': tree()}
             state['calls'].append(('same' if since == state['head'] else 'full', len(json.dumps(body))))
+
         elif u.path.endswith('/__setup/status'):
             body = {'server': True, 'data': True, 'dataGit': True, 'host': 'TEST', 'lan': False, 'lnm': []}
         else:
@@ -3799,6 +3800,8 @@ def a100(c):
     c.context.unroute(re.compile(r'/data/airline/'))
     c.context.route(re.compile(r'/__setup/'), launcher)
     c.context.route(re.compile(r'/data/airline/'), data)
+    # the repository answers late when the page asks (sessionStorage __delay, ms): the page, not the test, waits
+    c.page.add_init_script("(() => { const f = window.fetch; window.fetch = async (u, o) => { const d = +sessionStorage.getItem('__delay'); if (d && String(u).includes('__setup/changes')) await new Promise(r => setTimeout(r, d)); return f(u, o) } })()")
     done = "() => FrameData.status().then(s => !!s.lastSync)"
     name = "() => FrameData.airline().then(a => a.name)"
     def settle():
@@ -3829,6 +3832,16 @@ def a100(c):
     settle()
     c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air Two')", timeout=20000)
     c.ok(any(k == 'full' for k, _ in state['calls']), str(state['calls']), 'a changed data/ is read in full, and the change arrives')
+    c.eq(len(state['calls']), 1, 'only one call at opening, even when the head changed (SOG-0164: a second one, since=<the new head>, followed the first one for nothing)', what='calls on a changed load: ' + str(state['calls']))
+    # a list drawn at opening does not wait for the repository: the tree of the last pass answers at once, its head is checked behind (SOG-0164)
+    c.page.evaluate("() => sessionStorage.setItem('__delay', '1500')")
+    c.page.reload(wait_until='load')
+    c.page.wait_for_function("() => window.FrameData && window.FrameData.adapter", timeout=20000)
+    ms = c.js("""async () => { const d = FrameData.adapter({ id: 'probe', reads: ['fake/'] }); const t = performance.now(); const l = await d.list('fake/');
+      return [Math.round(performance.now() - t), l ? l.length : null] }""")
+    c.page.evaluate("() => sessionStorage.removeItem('__delay')")
+    c.ok(ms[1] and ms[0] < 600, str(ms), 'the list of a screen is answered by the known tree without waiting 1.5 s for the repository head')
+    c.check_errors()
     c.check_errors()
 
 
