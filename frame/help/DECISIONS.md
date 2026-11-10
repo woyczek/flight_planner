@@ -138,3 +138,11 @@ way, not taken (an empty band on every screen while the help loads). noreg A52.
 - **10 Nov 2026 — Folding lanes** (SOG-0069). A folded lane keeps its cards in the page, only hidden (`display: none` on its columns), so nothing is
   rebuilt by a touch; the default fold looks at the cards the view shows, delivered ones included when they are shown (a milestone view of delivered work
   opens nothing by itself); the hand-made choice beats the default and is kept per lane id, forever (a lane the file no longer has is simply never read).
+
+## 10 November 2026 — the roadmap opens on priorities, three columns (SOG-0160)
+
+- **The user's words**: « toujours pas de tri des cartes (bloquées par les swimlanes) : un mode priorités où les swimlanes s'effacent… et les replanifier dans la prochaine alpha ou la prochaine beta ». The coordinator's challenge, kept: not one more mode, the **default view**: « Priorités » (three columns, flat cards) and « Par thème » (the lanes, read only) as the secondary one.
+- **The column is derived, not stored**: from `milestones[].state` (`doing` → integration, the first other `planned` → development, the rest → backlog) and the card's effective milestone; the file gets no new field (the coordinator offered `column`; not needed). Moving a card to a column writes **the milestone of that column** in PRIORITES.json through the existing verb, with the ranks; a column with no milestone in the file (no `planned` one yet) takes no card.
+- **Read only « Par thème »**: dragging there would hide the new order behind lanes again; the one place to order is « Priorités ».
+- **Phone**: a drag is a poor gesture on a small screen; each card carries Monter, Descendre, Envoyer vers… and the screen shows one column at a time.
+- Cases: A114 (new: theme B above theme A, sent to development, held after a reload, « Par thème » read only; at 390 with the buttons, at 1280 by dragging); A101 moved to the backlog column; A96 and A103 open « Par thème ».

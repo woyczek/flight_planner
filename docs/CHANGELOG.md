@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Roadmap: it opens on « Priorités » — three columns (in integration, in development, backlog), flat cards by rank, the theme as a label; « Par thème » is the read-only lanes** (`frame/help/roadmap.js`, `frame.css`; frame/help SPEC § 5; A114, A101) — SOG-0160: a card is dragged above any card or onto a column (the milestone of the column is written with the rank); on a phone one column at a time with Monter, Descendre, Envoyer vers….
 - **Map: a long route no longer freezes the map for seconds after the view's data are read** (`modules/maps/render_airspace.js`; noreg D130; SOG-0156). Traced on the
   user's real base (read-only): a single 2.8 s task, in the selection of the airspaces along the route (every route sample tested against
   every vertex of every airspace). Only the samples that can touch a space are tested now, with the same result: 1 286 ms → 45 ms for

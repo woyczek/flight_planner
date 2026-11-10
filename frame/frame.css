@@ -559,7 +559,7 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 [data-card="sync"] [data-sync-head] {
   margin: 0 0 8px
 }
-[data-card="sync"] details > summary {
+[data-card="sync"] details>summary {
   min-height: var(--sog-touch, 44px);
   display: flex;
   align-items: center;
@@ -864,6 +864,77 @@ p.f-back {
 }
 .f-rm-btn[data-drop] {
   outline: 2px dashed var(--sog-accent)
+}
+/* la vue « Priorités » (SOG-0160) : trois colonnes (une de plus, « Livrées », quand on ne masque pas les livrées), les cartes à plat ; l'étiquette du thème sur la carte ; au téléphone une colonne à la fois et les gestes monter, descendre, envoyer vers */
+.f-rm-prio {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start
+}
+.f-rm-prio:has(.f-rm-pcol[data-col="done"]) {
+  grid-template-columns: repeat(4, minmax(0, 1fr))
+}
+.f-rm-pcol {
+  min-width: 0;
+  min-height: 80px;
+  padding: 8px;
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border)
+}
+.f-rm-pcol h3 {
+  margin: 0 0 8px;
+  font-size: 1rem
+}
+.f-rm-pcol ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px
+}
+.f-rm-pcol[data-drop] {
+  outline: 2px dashed var(--sog-accent)
+}
+.f-rm-theme {
+  color: var(--sog-muted);
+  border: 1px solid var(--sog-border);
+  padding: 0 4px;
+  white-space: nowrap
+}
+.f-rm-colbar,
+.f-rm-act {
+  display: none
+}
+@container (max-width: 760px) {
+  .f-rm-prio {
+    display: block
+  }
+  .f-rm-pcol {
+    display: none;
+    border: 0;
+    padding: 0
+  }
+  .f-rm-pcol[data-active] {
+    display: block
+  }
+  .f-rm-pcol[data-col="done"] {
+    display: block;
+    margin-top: var(--sog-gap)
+  }
+  .f-rm-colbar {
+    display: flex
+  }
+  .f-rm-act {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px
+  }
+  .f-rm-act button,
+  .f-rm-act select {
+    min-height: 44px
+  }
 }
 @container (max-width: 760px) {
   .f-rm-time {
