@@ -2724,3 +2724,14 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   sync state and on resize. No `overflow: hidden` (it would cut the 44 px touch area). **Captures** (A122 writes them): `tests/v3/shots/A122_header_390.png` (« Recharger », the
   name whole), `_768.png` and `_1280.png` (the whole label beside « Hors ligne · 11 en attente »). Noreg A122 (at 390, 768, 1280 and 250: the longest sync state, no overlap, no
   neighbour cut, the name whole, square, white, one line, the label in aria-label, a narrow header takes a shorter step), red on f68db9ceb's cartouche; A118 accepts the steps.
+- **10 Nov 2026 — The Esri satellite background of the pelican sites tool: a content policy for that page only** (SOG-0083; the user, in this session: « oui pour esri »,
+  after « placer un pélicandrome sans photo haute def, c'est jouer aux dés avec un tricheur »; V3 Frame). `tools/csp_policy.py` gains `PAGES = { '/apps/outils/pelicandromes/index.html':
+  ['https://server.arcgisonline.com'] }` and `value(extra, meta, page='')` adds the hosts of `PAGES[page]` to `connect-src` **of that page**; `launch.py` sends
+  `csp_policy(path)` when the path is in `PAGES`, `csp_policy()` otherwise. **Nothing for `script-src`** (MapLibre and js-yaml are the repository's, 6991120f5); the general
+  policy is **unchanged byte for byte** (1 048 bytes, compared with the code of 6991120f5 on the same configuration), and the page's is the general one with the host added in
+  `connect-src`. Images are not restricted by the policy today, so none is added. **Checked on a real launcher (Chrome):** from the tool's page a request to
+  `server.arcgisonline.com/…/tile/3/2/4` answers 200 with no policy message and choosing the satellite background leaves the line « Fond satellite indisponible sous le lanceur »
+  hidden (it only appears when a request is blocked, e.g. on the site); from the frame (another page) the same request is blocked (2 policy messages). **Limit:** the site without
+  launcher (GitHub Pages) puts its policy in a `meta` tag per page built by `build_pages.py`, which this does not touch: there the satellite stays blocked and the line says so.
+  Noreg I40 (the table is the one page; the general policy has no Esri host; the page's differs only by the host, in `connect-src`; `script-src` identical; the header uses the
+  per-page value only for a path of the table), red before (no `PAGES`). One line added to the security audit (Appendix A, hosts contacted). The launcher is to be restarted.

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Pelican sites tool: the Esri satellite background works under the launcher** (`tools/csp_policy.py`, `tools/launch.py`; frame DECISIONS; security audit Appendix A; noreg I40;
+  SOG-0083, the user: « oui pour esri »). A content policy **for that page only** admits `https://server.arcgisonline.com` in `connect-src`; nothing for scripts, nothing for
+  any other page, the general policy unchanged byte for byte. The launcher must be restarted.
+
 - **Data: the single « usage personnel » box no longer blocks a rebuild — X-Plane (read on this workstation only) is never sent to the verbs and the texts that asked to untick it are gone** (`modules/data/panels.js`, `model_sets.js`, `texts.js`; L61, L7, L10, L15, L32, L58) — SOG-0162, refused at the recipe.
 
 - **Map: the proposed routes tell what each stretch is** (`modules/maps/alts.js`, `tips.js`, `module.js`, `sheet_view.js`, `texts.js`, `style.js`; SPEC § 5.4, DECISIONS, help ×4;

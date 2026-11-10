@@ -2636,3 +2636,23 @@ def k136(c):
         srv.server_close()
         L.NET_OPENER = kept
         L.Setup.port = kept_port
+
+
+@case('I40', 'The Esri satellite tiles are allowed for the pelican sites tool only: a content policy for that page, the general one unchanged', 'I', static=True,
+      rule='SOG-0083 (the user, 10 Nov: « oui pour esri »): tools/csp_policy.py PAGES gives apps/outils/pelicandromes/index.html server.arcgisonline.com in connect-src and nothing else; script-src is the same; the general policy has no Esri host; launch.py sends the page’s policy for a path of the table only')
+def i40(c):
+    import importlib
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    page = '/apps/outils/pelicandromes/index.html'
+    c.eq(dict(L.cspmod.PAGES), {page: ['https://server.arcgisonline.com']}, 'one page, one host: the pelican sites tool and Esri', what='PAGES')
+    general, mine = L.csp_policy(), L.csp_policy(page)
+    c.ok('arcgisonline' not in general, general, 'the general policy has no Esri host')
+    c.eq(mine.replace(' https://server.arcgisonline.com', '', 1), general, 'the page’s policy is the general one with the host added, nothing else', what='page vs general')
+    cut = lambda p: p[p.index('connect-src'):p.index(';', p.index('connect-src'))]
+    c.ok('https://server.arcgisonline.com' in cut(mine) and 'https://server.arcgisonline.com' not in cut(general), cut(mine)[-80:], 'the host is in the page’s connect-src, not in the general one')
+    c.eq(mine[mine.index('script-src'):], general[general.index('script-src'):], 'script-src (and the rest) is the same: nothing for scripts', what='script-src')
+    c.eq(L.csp_policy('/frame/index.html'), L.csp_policy(), 'a page that is not in the table gets the general policy', what='another page')
+    src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    c.ok("csp_policy(path if path in cspmod.PAGES else '')" in src, '', 'the header uses the page’s policy for a path of the table only')
+

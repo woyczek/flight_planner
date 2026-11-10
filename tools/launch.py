@@ -794,7 +794,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         raw = getattr(self, 'path', '') or ''
         path = raw.split('?', 1)[0].lower()
         sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
-        self.send_header('Content-Security-Policy', strict or ("sandbox; " if sandbox else '') + csp_policy())
+        self.send_header('Content-Security-Policy', strict or ("sandbox; " if sandbox else '') + csp_policy(path if path in cspmod.PAGES else ''))
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
@@ -3330,9 +3330,11 @@ def frame_net(a, site_ok=True):
         net_release(u.hostname)
 
 
-def csp_policy():
+def csp_policy(page=''):
     """Valeur de l'en-tête Content-Security-Policy (refaite quand la configuration, les sites autorisés ou les modules
-    de l'appli V3 changent : meta.net, hôtes que leurs bibliothèques appellent elles-mêmes)."""
+    de l'appli V3 changent : meta.net, hôtes que leurs bibliothèques appellent elles-mêmes) ; page : une page de cspmod.PAGES, qui a la sienne."""
+    if page:
+        return cspmod.value([*config_sites(), *user_sites(), *cspmod.module_hosts(ROOT)], page=page)
     key = tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in
                 (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree'),
                  os.path.join(ROOT, 'frame', 'app.js'), *cspmod.module_files(ROOT)))

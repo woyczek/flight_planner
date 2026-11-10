@@ -94,9 +94,18 @@ def module_hosts(root):
     return out
 
 
-def value(extra=(), meta=False):
+# Une page d'outil qui appelle un hôte de plus (SOG-0083, apps/outils/pelicandromes/ : le fond satellite d'Esri, voulu par l'utilisateur le 10 nov. 2026 :
+# « oui pour esri ») : la politique de CETTE page seulement, jamais celle des autres ; { chemin de la page, en minuscules : [hôtes de connect-src] } ; rien pour
+# script-src (les bibliothèques de la page sont celles du dépôt).
+PAGES = {
+    '/apps/outils/pelicandromes/index.html': ['https://server.arcgisonline.com'],
+}
+
+
+def value(extra=(), meta=False, page=''):
     """Valeur de la politique : connect-src (liste fixe, puis extra : configuration, sites autorisés) ; meta : sans
-    frame-ancestors (ignoré dans une balise meta ; le site sans lanceur n'a pas d'en-tête pour l'imposer)."""
-    connect = ' '.join(dict.fromkeys(["'self'", *CONNECT, *extra]))
+    frame-ancestors (ignoré dans une balise meta ; le site sans lanceur n'a pas d'en-tête pour l'imposer) ; page : le chemin d'une page de PAGES, dont
+    les hôtes s'ajoutent à connect-src."""
+    connect = ' '.join(dict.fromkeys(["'self'", *CONNECT, *extra, *PAGES.get(str(page).lower(), ())]))
     return (f"connect-src {connect}; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' {' '.join(SCRIPTS)}; "
             "object-src 'none'; base-uri 'self'; form-action 'self'" + ('' if meta else "; frame-ancestors 'self'"))

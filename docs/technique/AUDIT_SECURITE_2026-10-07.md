@@ -2346,6 +2346,7 @@ Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 
 | cdn.jsdelivr.net, purge.jsdelivr.net | `assist.js`, `assignments.js`, `maintenance_page.js` | nothing; **pdf.js code executed** |
 | framagit.org (GitLab API) | `suite_update.js` (`credentials: 'omit'`) | nothing |
 | overpass-api.de, s3.amazonaws.com (terrarium), OSM tiles, OpenTopoMap, OpenFreeMap, Versatiles | `sia_base.js`, maps | areas viewed, IP address |
+| server.arcgisonline.com (Esri World Imagery tiles) | `apps/outils/pelicandromes/index.html` **only** (10 Nov 2026, the user: « oui pour esri »; per-page content policy `csp_policy.PAGES`, `connect-src` only, no script, no other page) | tile coordinates (`z/y/x`), IP address |
 | chatgpt.com | `mission_order.js:231` | mission parameters in the address |
 | reports web service (configurable) | `core.js:1293` | **full report, network identifiers, token** |
 | atc-bookings.vatsim.net, api.ivao.aero (with key), flotte.defa-virtual.fr | launcher (Python) | nothing personal; IVAO key in the header |
