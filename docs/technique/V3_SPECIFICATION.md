@@ -2049,3 +2049,28 @@ redesigned for touch at that point.
        autres », teams, zones count, one primary action; a mission without risks says so), N10 (detail: each zone has a
        Map link centred on it, each `maps[]` entry is a Map link and no PNG is shown when coordinates exist, a legacy
        mission without coordinates shows its PNG); phone 390 seen in a capture; red before.
+   47. **Preparing a mission is preparing a flight: one preparation, the mission only adds** (user, 10 Nov, SOG-0193: "pourquoi
+       pas de météo sur la préparation d'une mission ? Finalement, pourquoi faire une différence entre un vol et une mission, dans
+       la prépa ? la seule chose qui doit être différente, c'est : le chemin d'accès (via mission, et non via le 1 du vol) ; le
+       retour possible régulièrement au texte / descriptif / risques de la mission. le pilote a toute liberté pour faire son propre
+       plan de vol, mais les points de rdv, source, cible, restent imposés sur la carte"; 46 is reserved by 45 for SOG-0084).
+       **Survey (10 Nov)**: Fuel had no mission variant — the same five steps, the door `#fuel?mission=<ID>` filling the step Flight
+       —, but nothing of the mission once inside (no text, no risks, no imposed point, no time on area, no way out but « Nouveau
+       vol »); the Map, for a flight that names a mission and is not started, switched to the mission view (`deriveMission` →
+       `onMission()`) and lost the weather section (that is the "pas de météo"), procedures, runways, ground, coverage, VFR, route
+       lines and legs, the buttons Route / Mode / Édition, the profile's airways and filtered spaces, the Layers boxes and Fuel's
+       proposed routes. **Decision**: the same steps of Fuel and the same Map in its flight view (weather, procedures, Édition,
+       layers, proposed routes) for a flight with or without a mission; the mission adds, never removes: (a) **the entry** — the
+       door fills the step Flight; (b) **a permanent access** — a chip « Mission <ID> » in the head of the preparation opens the
+       mission sheet in a pane without leaving the step, its risks first; on the Map, over the flight view, the mission's zones,
+       its points with a role and its banner; (c) **imposed points** — rendezvous, source, target are locked points of
+       `route.points` (`lock: 'mission'`): neither removed nor moved in Fuel nor in the Map's Édition; the pilot adds or removes
+       his own between them; (d) **time on area** — a field « Temps sur zone (min) » on the step Quote, for a mission only, proposed
+       from the family (a table validated by the ergonomist and shown to the user before it is fixed; always editable), counted at
+       the holding rate of the sheet, else at 70 % of the cruise, said in the quote's detail (« régime d'attente absent de la fiche :
+       70 % de la croisière »); (e) **« Quitter la mission »** in the chip, asked once (it removes the locks): a plain flight, route
+       kept, link and locks removed. The mission map (`#maps?mission=<ID>`, from Missions) stays to look at a mission without a
+       flight. **Owners**: Features SOG — (a), the chip and pane of (b), (c) in Fuel, (d), (e); BUGS SOG — (b) on the Map (flight
+       view + overlay of zones, points with a role and the mission banner), (c) in the Map's Édition. **Lots**, one at a time, each
+       with its case red before and its captures written by the case: L1 the Map stays in the flight view for a flight that names a
+       mission (the awaited one), L2 the chip and the pane, L3 the locked points, L4 the time on area, L5 « Quitter la mission ».
