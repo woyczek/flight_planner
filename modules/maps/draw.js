@@ -595,7 +595,8 @@ function draw() {
   // zoom réel, décalé par le curseur de Complexité, corrigé par la taille du cadre : le zoom effectif comparé aux seuils (§ 6.6)
   const pxDeg = W / Math.max(1e-6, shown.e - shown.w),
     zReal = MapsRender.zoomOf(pxDeg),
-    zv = mission ? zReal : MapsRender.effectiveZoom(zReal + MapsRender.detailZoom(detailShift()), W, H),
+    FR = frameRef(W, H),
+    zv = mission ? zReal : MapsRender.effectiveZoom(zReal + MapsRender.detailZoom(detailShift()), FR.W, FR.H),
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv),
     // procédures choisies (SID, STAR, approche) : mise en page à l'écran ; leurs libellés se réservent dans le placeur de la
     // carte, après ceux de la route
@@ -631,6 +632,7 @@ function draw() {
       W,
       H
     },
+    frame: FR,
     scale: 1,
     bbox: wide,
     profile: S.profile,
@@ -713,11 +715,30 @@ function draw() {
     performance.mark('maps:first-draw'); // premier dessin avec les données (mesures : DECISIONS.md)
   }
   // les données couvrent le débordement aussi (le couloir autour du vol dans sa limite)
-  const want = wantBox(wide),
-    corr = corridorFor(shown, W);
+  const corr = corridorFor(shown, W),
+    want = wantBox(wide);
   if (!within(want, S.data?.box) || corr !== S.data?.corridor || !fresh()) refresh(want, corr);
+  // la lecture limitée au couloir du vol masque des espaces : la Carte le dit (SOG-0169), écrit seulement quand cela change
+  if (corr !== (S.corrNote || 0) && !mission) {
+    S.corrNote = corr;
+    status();
+  }
   markFrame(W, H, mx, my);
   performance.measure('maps:draw', 'maps:draw:start');
+}
+/** La taille que le zoom effectif compare aux seuils (SOG-0169) : celle du module (la page ou le volet), qui ne change qu'avec la fenêtre,
+ *  jamais celle de la seule carte, que la feuille fait varier (un même zoom ne montrait pas les mêmes espaces feuille ouverte ou repliée) ;
+ *  0,85 la remet à l'échelle de l'ancienne moyenne (la carte occupe environ 85 % du module). */
+function frameRef(W, H) {
+  const w = S.el?.clientWidth,
+    h = S.el?.clientHeight;
+  return w > 0 && h > 0 ? {
+    W: w * .85,
+    H: h * .85
+  } : {
+    W,
+    H
+  };
 }
 /** Zoom effectif et éléments gardés par les seuils, posés sur l'élément de la carte (data-zoom-eff, data-kept : § 18) ; écrits
  *  seulement s'ils changent. */

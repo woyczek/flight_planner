@@ -245,7 +245,8 @@ export const STYLE = `
 [data-module="maps"] .mp-gd-row[data-drawn="0"] .mp-gd-no{display:inline}
 [data-module="maps"] .mp-lv-list li[data-i]{cursor:pointer}
 [data-module="maps"] .mp-lv-list li[data-open="1"]{background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}
-@media (pointer:coarse){[data-module="maps"] .mp-lv-list li[data-i]{min-height:44px;align-items:center}}
+[data-module="maps"] .mp-lv-list li[data-i]{position:relative}
+@media (pointer:coarse){[data-module="maps"] .mp-lv-list li[data-i]::after{content:'';position:absolute;inset:-9px 0}} /* a 44 px target without changing the row's height */
 [data-module="maps"] .mp-sp-card{margin:8px 0;padding:8px 10px;font-size:13px;line-height:1.35;white-space:normal}
 [data-module="maps"] .mp-sp-card[hidden]{display:none}
 [data-module="maps"] .mp-sp-card p{margin:2px 0}

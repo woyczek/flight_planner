@@ -16,6 +16,7 @@ import datetime
 import json
 import math
 import re
+import time
 
 from lib import AERO_CYCLE, FLIGHT, ROOT, STUB_STYLE, Fail, Skip, case, forget, norm, tx
 
@@ -1968,8 +1969,11 @@ def d74(c):
 # a TMA far from the route (100 NM south of LUGEN–NEPIX), named the foreign way (« TMA FARVILLE »: the type in the name)
 _FAR_TMA = {'type': 'TMA', 'cls': 'D', 'name': 'TMA FARVILLE', 'lower': 'FL200', 'upper': 'FL300',
             'rings': [[[43.2, 0.3], [43.2, 0.9], [43.7, 0.9], [43.7, 0.3], [43.2, 0.3]]]}
+# a far TMA (a big family: read over the whole view, SOG-0169) and a far R (read in the corridor only while « Around the flight only » is ticked)
+_FAR_R = dict(_FAR_TMA, type='R', cls='', name='R FARVILLE')
 _CORR_STATE = """async () => { const S = window.__mp.S, V = await import('/modules/maps/sheet_view.js'); S.legend = true; V.legendSync();
   return { corridor: S.data ? S.data.corridor : null, far: ((S.data && S.data.data.airspaces) || []).some(a => a.name === 'TMA FARVILLE'),
+    farR: ((S.data && S.data.data.airspaces) || []).some(a => a.name === 'R FARVILLE'),
     legend: S.legendEl.textContent.replace(/\\s+/g, ' ').trim() } }"""
 _TEXT_HOOK = """() => { window.__chT = []; const o = CanvasRenderingContext2D.prototype.fillText;
   if (!o.__ch) { CanvasRenderingContext2D.prototype.fillText = function (t, x, y, w) { window.__chT.push(String(t)); return o.call(this, t, x, y, w) };
@@ -1982,13 +1986,13 @@ _TEXT_HOOK = """() => { window.__chT = []; const o = CanvasRenderingContext2D.pr
 def d75(c):
     ui = ['cache/maps/ui.json', {'preset': 'auto', 'layers': {'auto': {'detail': 2}}}, 'cache']
     view = 'maps?view=-1.5,42.2,3.5,45.2'
-    c.open(view, docs=fdocs(flight()) + [ui], flight=False, airfields=True, airspaces=[_FAR_TMA], wait=False)
+    c.open(view, docs=fdocs(flight()) + [ui], flight=False, airfields=True, airspaces=[_FAR_TMA, _FAR_R], wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the first reading')
     c.wait(400)
     st = c.js(_CORR_STATE)
-    c.eq([st['corridor'] > 0, st['far']], [True, False], 'ticked by default: read along the flight, the far TMA is not read', what='ticked')
+    c.eq([st['corridor'] > 0, st['far'], st['farR']], [True, True, False], 'ticked by default: the R is read along the flight only; the far TMA, a big family, is read over the whole view (SOG-0169)', what='ticked')
     c.ok(norm(tx(M, 'lgCorr', c.lang)) in norm(st['legend']), st['legend'], 'the "i" chip says nothing is read outside the corridor')
     # the box heads the Layers content; the title says it
     c.js("async () => (await import('/modules/maps/layers.js')).toggleLayers(true)")
@@ -2005,7 +2009,7 @@ def d75(c):
     c.tap('.mp-layer-set input[data-layer=corridor]')
     c.until("() => { const S = window.__mp.S; return !!(S.data && S.data.corridor === 0) }", timeout=12000, what='the whole view is read')
     st = c.js(_CORR_STATE)
-    c.eq([st['corridor'], st['far']], [0, True], 'unticked: the whole view, the far TMA read', what='unticked')
+    c.eq([st['corridor'], st['far'], st['farR']], [0, True, True], 'unticked: the whole view, the far TMA and the far R read', what='unticked')
     c.ok(norm(tx(M, 'lgCorr', c.lang)) not in norm(st['legend']), st['legend'], 'the chip no longer speaks of the corridor')
     title = c.js("() => document.querySelector('.mp-dtitle').textContent")
     c.ok(not norm(title).endswith(norm(tx(M, 'ttlCorr', c.lang))), title, 'the title no longer says "around the flight"')
@@ -2015,7 +2019,7 @@ def d75(c):
     c.eq(c.js("() => ((window.__mp.S.layers || {}).auto || {}).corridor"), False, 'the choice is kept on the device', what='kept')
     # a continent view (wider than 600 NM): the corridor imposed, said in the chip
     c.open('maps?view=-8,38,14,52', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'auto', 'layers': {'auto': {'detail': 2, 'corridor': False}}}, 'cache']],
-           flight=False, airfields=True, airspaces=[_FAR_TMA], wait=False)
+           flight=False, airfields=True, airspaces=[_FAR_TMA, _FAR_R], wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the continent reading')
@@ -3882,9 +3886,8 @@ def d126(c):
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=6000, what='drawn again')
     # a tap on the second route takes it: a Map alone goes to Fuel with the index
     c.wait(500)   # the last drawing settles (a loaded machine redraws after the event): the touch targets are those of the image
-    p = c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")
-    c.page.mouse.click(p['x'], p['y'])
-    c.until("() => location.hash.includes('ralt=1')", timeout=6000, what='a tap on a route takes it: #fuel?ralt=1')
+    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")),
+                 "() => location.hash.includes('ralt=1')", 'a tap on a route takes it: #fuel?ralt=1')
     # in the double view the choice is an event
     c.open('maps', flight=True)
     c.js(_STATE_JS)
@@ -3894,9 +3897,8 @@ def d126(c):
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='drawn in the pane')
     c.wait(500)
     c.eq(c.js("() => !!document.querySelector('.mp-alts') && !document.querySelector('.mp-alts').hidden"), False, 'beside Fuel the list is Fuel’s: not repeated over the map', what='list in a pane')
-    p = c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")
-    c.page.mouse.click(p['x'], p['y'])
-    c.until("() => window.__picked.length === 1", timeout=6000, what='the tap is maps-route-alt')
+    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")),
+                 "() => window.__picked.length >= 1", 'the tap is maps-route-alt')
     c.eq(c.js("() => window.__picked[0]"), {'index': 1}, 'with the index, nothing else', what='detail')
     # a Map opened afterwards reads the document
     c.open('maps', docs=fdocs(flight()) + [['cache/fuel/route_alts.json', doc, 'cache']], flight=False, airfields=True, wait=False)
@@ -4112,3 +4114,54 @@ def d131(c):
       hours: Array.from({ length: 12 }, (_, i) => 'HOURS ' + i), rem: Array.from({ length: 12 }, (_, i) => 'REM ' + i) }) }""")
     shown = big.split('<details>')[0]
     c.ok(re.search(r'(not known|non connue|unbekannt|no conocida)', shown) and 'AZBA' in shown and 'HOURS 0' in shown and '<details>' in big, shown[:300], 'with twelve lines of hours and of remarks the frank line, the activation and the first hours stay in the seven lines shown')
+
+
+_CLASSES_JS = """() => { const m = document.querySelector('[data-module="maps"] .mp-map'), k = m && m.dataset.kept ? JSON.parse(m.dataset.kept) : null;
+  return k ? { eff: +m.dataset.zoomEff, byKey: k.byKey || {}, note: /(R, D, P|R-, D-, P-|R, D, P y)/.test((document.querySelector('.mp-notes') || {}).textContent || '') } : null }"""
+
+
+def _classes(c, mode, detail, zoom, corridor=True):
+    """Opens the dense base on a phone in `mode` at complexity `detail` (the box « Around the flight only » ticked or not), frames `zoom`, waits for the counters to
+    settle: the classes drawn (airspaces kept by family)."""
+    ads, spaces, cells = _dense_base()
+    ui = ['cache/maps/ui.json', {'preset': mode, 'layers': {mode: {'detail': detail, 'corridor': corridor}}}, 'cache']
+    c.open('maps', docs=fdocs(_awy_flight()) + [ui], flight=False, airfields=True, airspaces=spaces, aero_extra={'aerodromes': ads, 'cells': cells}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.wait(1500)
+    c.js("(z) => { window.__mpMap.jumpTo({ center: [1.5, 47.5], zoom: z }); return true }", zoom)
+    last, end = None, time.time() + 12
+    while time.time() < end:
+        c.wait(700)
+        cur = c.js(_CLASSES_JS)
+        if cur and cur == last and sum(cur['byKey'].values()) > 0:
+            break
+        last = cur
+    cur = c.js(_CLASSES_JS)
+    return {k for k, v in cur['byKey'].items() if v}, cur['note'], cur['eff']
+
+
+@case('D132', 'Airspaces are a function of the zoom and the complexity only: the same view twice shows the same spaces; one more step of complexity, or of zoom, shows one more class; what the corridor hides is said', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='V3 (SOG-0169, ergonomics 10 Nov): the display of the airspaces is deterministic and progressive: the big families (FIR / UIR, TMA / CTA, CTR) are read over the whole view, the others (R, D, P, TSA…) in the flight’s corridor while « Around the flight only » is ticked (the box is the user’s explicit choice, D75), and every family then appears at its own zoom threshold, which the complexity step shifts by one level per step; the frame size compared with the thresholds is the module’s, not the map’s (the sheet changes it); what the corridor hides, the Map says')
+def d132(c):
+    a, note_a, eff_a = _classes(c, 'auto', 0, 5)
+    # the sheet changes the map's height, not the zoom's meaning: the effective zoom is the same with the sheet collapsed, at its default and expanded
+    effs = []
+    for pos in ('collapsed', 'expanded', 'default'):
+        c.js("(pos) => { window.__mp.S.sh.set(pos, true); return true }", pos)
+        c.wait(1200)
+        effs.append(c.js("() => +document.querySelector('[data-module=\"maps\"] .mp-map').dataset.zoomEff"))
+    c.ok(max(effs) - min(effs) < 0.01, str(effs), 'the effective zoom does not move with the sheet (the module’s size is compared, not the map’s)')
+    a2, _, _ = _classes(c, 'auto', 0, 5)
+    c.eq(sorted(a), sorted(a2), 'the same zoom and the same complexity, loaded twice: the same classes', what='classes twice')
+    c.ok(len(a) >= 1, str(a), 'at zoom 5, complexity 0: the big families are drawn over the whole view (the dense base is Paris’s, the route runs south of it)')
+    c.ok(note_a, str(note_a), 'and the Map says that the R, D and P spaces outside the corridor are hidden')
+    b1, note_b, _ = _classes(c, 'auto', 1, 5)
+    c.ok(a < b1, f'{sorted(a)} -> {sorted(b1)}', 'one more step of complexity at the same zoom: one more class')
+    z1, _, _ = _classes(c, 'auto', 0, 6)
+    c.ok(a < z1, f'{sorted(a)} -> {sorted(z1)}', 'one more level of zoom at the same complexity: one more class')
+    full, note_f, _ = _classes(c, 'auto', 4, 5, corridor=False)
+    c.ok(b1 < full and {'asR', 'asD', 'asP'} <= full, f'{sorted(b1)} -> {sorted(full)}', 'with the corridor unticked the view is read whole: R, D and P appear (they were hidden by the corridor)')
+    c.ok(not note_f, str(note_f), 'and the note is gone')

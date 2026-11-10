@@ -2064,6 +2064,39 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## Airspaces: deterministic and progressive (10 Nov 2026, SOG-0169)
+
+- **Asked** (the user, 9 h 45): « à un même niveau de zoom, ils peuvent apparaître, ou non ; « quelque chose » dit que c'est à afficher … si je monte la
+  complexité, ça ne les affiche pas plus … plus de bazar à zoom plus serré, alors qu'on attend un affichage progressif. Pas d'affichage de FIR hors France ? ».
+- **Numbers before** (harness, dense Paris base of 600 spaces, Auto mode, phone; spaces read / kept by zoom 4 5 6 7 8): complexity 0 → 1 · 1 · 1 · 1 · 83;
+  complexity **+4** → 1 · 1 · 1 · 1 · 83 (the same: the effective zoom went from 7 to 11 and nothing more was read). VFR (no corridor), complexity 0 →
+  read 1 · 601 · 601 · 601 · 601, kept 0 · 0 · 0 · 131 · 480.
+- **Causes**: (1) *the « read the whole view » switch* — Auto and the IFR modes carry a 10 NM corridor (« Around the flight only », ticked by default); the
+  whole view is read only from **300 px per degree** (zoom 7.72) — a raw number, in which neither the complexity nor anything else counts: 1 space read at
+  zoom 7, 83 at zoom 8 (« plus de bazar à zoom plus serré »), and the complexity moves nothing; (2) *the read box* — an overview (view ≥ 90 % of the
+  route's width) read **the route's extent only** (`wantBox` → `S.fit`): the display depended on the route, not on the zoom; (3) *the frame size* —
+  the effective zoom adds `log2(((w + h) / 2) / 900)` with the **map's** size, which the sheet changes (collapsed, default, expanded: about 0.6 of a level):
+  the same zoom crossed a threshold when the sheet moved; (4) nothing said what the corridor hid. (The data are read in the order they arrive but the
+  drawing waits for the same read: not the cause.)
+- **Done**: (1) the big families (FIR/UIR…, TMA, CTA, CTR) are read over the whole view even in the corridor (`BIG_TYPES`, `withBig`, one more `types` read, same
+  cost class as the corridor's); the others stay in the corridor until the view is read whole; (2) `wantBox` is the view widened by 15 %, always; (3) the
+  effective zoom compares the **module's** size (`frameRef`, × 0.85 to keep today's scale), independent of the sheet; (4) the notes say what the corridor hides
+  (`corrNote`). The zoom × complexity table is in the SPEC (§ 6.6 bis).
+- **Choices of mine**: (a) **« Around the flight only » stays the user's explicit box** (D75, 30 Oct: « même en augmentant la complexité »): the complexity does *not*
+  lift it — it shifts the thresholds of what is read, and the note tells how to see more (untick it); the ergonomics text « each step of complexity adds a class at
+  the same zoom » holds for the families read (TMA, CTA, CTR, FIR now at every zoom; CTR, D, P, others by threshold), not for R / D / P outside the corridor;
+  (b) the built-in thresholds are the administrators' (§ 14): I did **not** reorder them to « FIR, TMA / CTR, R / D / P, the rest » — in IFR R and TSA are at 0 and CTR / D
+  at 4.75 — a product choice for the ergonomics session (the airline's tuning may already differ); (c) D75 now reads « the R is in the corridor, the far TMA over the
+  whole view ».
+- **FIR outside France**: the SIA bases carry FIR / UIR only for France (10 FIR, 5 UIR, 15 FRA / UTA / OCA in the 29 Oct file); Belgium, Spain, Germany, the UK…
+  have none. The Map draws what exists. **AeroDB to read them** (the ergonomics point « AeroDB relève ce que la base porte »); asked.
+- **Not done**: no « budget of cost » mechanism exists to name (the corridor is the only limit); the table for VFR / Topo is the thresholds', not measured; the
+  claim « the effective zoom does not move with the sheet » is asserted in D132 but was not red-proven on its own; the real base's spaces (2 559 for FR, ~900 for FI)
+  were not drawn at wide zoom with the new whole-view reading of the big families: cost on the user's base to check (D68 green, dense synthetic base).
+- **An escaped defect of my SOG-0163 (found in this run)**: the 44 px minimum height I gave the rows of the list of spaces on a touch screen made D29 fail
+  (« entry is 44 px for a 16 px line »); the touch target is now a `::after` area, the rows keep their height. My gate for SOG-0163 did not include D29.
+- **Noreg** D132 (new), D75 (re-aimed), D29 (green again).
+
 ## The sheet of an airspace (10 Nov 2026, SOG-0163)
 
 - **Asked** (the user, 9 h 15): « un moyen d'avoir le texte pour les espaces R (R61 : est-ce actif, quelles conditions ?), D ; au survol sur le

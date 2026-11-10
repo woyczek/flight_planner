@@ -305,9 +305,9 @@ const enlarge = (b, k) => {
     n: Math.min(85, b.n + dy)
   };
 };
-/** Emprise des données à lire pour la vue montrée : vue d'ensemble (au moins 90 % de la largeur de la route) → l'emprise de
- *  la route ; vue rapprochée → la vue élargie de 15 %. */
-export const wantBox = shown => S.profile?.corridorNm > 0 && (shown.e - shown.w) >= (S.fit.e - S.fit.w) * .9 ? S.fit : enlarge(shown, .15);
+/** Emprise des données à lire pour la vue montrée : la vue élargie de 15 %. (Jusqu'à SOG-0169 une vue d'ensemble lisait l'emprise de la route
+ *  seule : les grandes familles d'espaces de la vue n'y étaient pas lues, et l'affichage dépendait de la route et non du zoom.) */
+export const wantBox = shown => enlarge(shown, .15);
 /** Largeur (NM) au-delà de laquelle la vue n'est lue qu'autour du vol, même « Autour du vol seulement » décochée (garde-fou d'une
  *  vue continent : la puce « i » le dit) ; marge du couloir alors imposé. */
 export const WIDE_NM = 600;
@@ -413,6 +413,19 @@ export async function many(f, boxes, extra = {}) {
 }
 /** Éléments de l'emprise box selon le profil : { box, corridor, data, empty }. Espaces et voies lus pour le couloir de la
  *  route, tronçon par tronçon, quand corridor (NM, corridorFor) n'est pas nul (SPEC § 5). */
+/** Les espaces du couloir et ceux des grandes familles de toute la vue, sans doublon (choisis selon le profil, sans le couloir pour les seconds). */
+function withBig(list, big, p, route) {
+  if (!big?.length) return list;
+  const seen = new Set(list.map(keyOf)),
+    extra = MapsRender.selectAirspaces(big, {
+      ...p,
+      corridorNm: 0
+    }, route).filter(a => !seen.has(keyOf(a)));
+  return extra.length ? [...list, ...extra] : list;
+}
+/** Les grandes familles d'espaces (FIR et UIR, TMA et CTA, CTR) : lues sur toute la vue même quand le couloir du vol limite les autres, pour que
+ *  l'affichage soit progressif à zoom large (SOG-0169) ; R, D, P, TSA et les autres n'arrivent qu'avec la lecture de toute la vue. */
+const BIG_TYPES = ['FIR', 'UIR', 'UTA', 'LTA', 'OCA', 'FRA', 'TMA', 'CTA', 'CTR'];
 async function loadData(box, corridor = 0) {
   const A = S.ctx.aerodb;
   if (!A) return {
@@ -435,7 +448,7 @@ async function loadData(box, corridor = 0) {
     E = p.elements,
     boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, alignBox(box, route)) : bboxes,
     t0 = performance.now();
-  const [airspaces, aerodromes, navaids, airways, moraCells, obstacles, cities, vrp, points] = await Promise.all([
+  const [airspaces, aerodromes, navaids, airways, moraCells, obstacles, cities, vrp, points, bigSpaces] = await Promise.all([
     many(A.airspaces, boxes),
     E.aerodromes ? many(A.aerodromes, bboxes) : [],
     E.navaids ? many(A.navaids, bboxes) : [],
@@ -449,7 +462,10 @@ async function loadData(box, corridor = 0) {
     }) : [],
     // un point par code et par lieu (la base SIA le publie deux fois)
     E.vrpPoints ? Promise.resolve(many(A.vrp, bboxes)).then(l => MapsRender.dedupeVrp(l)) : [],
-    E.rnavPoints ? many(A.points, bboxes) : []
+    E.rnavPoints ? many(A.points, bboxes) : [],
+    +p.corridorNm > 0 ? many(A.airspaces, bboxes, {
+      types: BIG_TYPES
+    }) : [] // le couloir limite les petites familles, pas les grandes
   ].map(x => Promise.resolve(x).catch(() => [])));
   // axes de ravitaillement et tracks NAT : lus après les zones de la vue (SPEC § 6.3)
   const [aar, nat] = await Promise.all([E.aarTracks && A.aarTracks ? A.aarTracks() : [], E.natTracks && A.natTracks ? A.natTracks() : []]
@@ -466,7 +482,7 @@ async function loadData(box, corridor = 0) {
     box,
     corridor,
     data: {
-      airspaces: MapsRender.selectAirspaces(airspaces, pz, route),
+      airspaces: withBig(MapsRender.selectAirspaces(airspaces, pz, route), bigSpaces, pz, route),
       // les espaces de la surface au plafond (FIR, SIV…) : écartés de la coupe et de la liste, nommés dans « Aussi ici »
       flat: airspaces.filter(a => window.SiaAero?.surfaceToCeiling?.(a)),
       aerodromes,

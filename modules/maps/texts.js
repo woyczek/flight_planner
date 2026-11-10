@@ -228,6 +228,12 @@ export const TX = {
   altCheck: ['Route contrôlée', 'Checked route', 'Geprüfte Route', 'Ruta comprobada'],
   altChosen: ['prise', 'taken', 'gewählt', 'elegida'],
   altFaulty: ['faute', 'fault', 'Fehler', 'falta'],
+  corrNote: [
+    'Espaces R, D, P et autres hors du couloir de {n} NM autour du vol masqués à ce zoom : zoomez, montez la complexité ou décochez « Autour du vol seulement ».',
+    'R, D, P and other spaces outside the {n} NM corridor around the flight hidden at this zoom: zoom in, raise the complexity or untick “Around the flight only”.',
+    'R-, D-, P- und andere Lufträume außerhalb des {n}-NM-Korridors um den Flug bei diesem Zoom ausgeblendet: hineinzoomen, die Komplexität erhöhen oder „Nur rund um den Flug“ abwählen.',
+    'Espacios R, D, P y otros fuera del corredor de {n} NM alrededor del vuelo ocultos a este zoom: acerque, suba la complejidad o desmarque «Solo alrededor del vuelo».'
+  ],
   worldNote: [
     'Vue de plus de 3 000 NM de large : les barbules de vent sont masquées (illisibles à cette échelle) ; zoomez pour les voir.',
     'View more than 3,000 NM wide: the wind barbs are hidden (unreadable at this scale); zoom in to see them.',

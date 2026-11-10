@@ -1405,6 +1405,7 @@
     route = [],
     marks: mk = [],
     mission = null,
+    frame = null, // la taille que le zoom effectif compare (SOG-0169) : celle du module, pas de la carte (que la feuille fait varier)
     gc = null, // la route orthodromique : ses points en coordonnées de la vue (SOG-0145)
     theme = null,
     level = null,
@@ -1457,7 +1458,7 @@
       // droite ; detailZoom), puis corrigé par la taille du cadre (effectiveZoom) ; carte de mission : tout ce que son
       // profil montre (ni curseur ni taille) ; vol : les seuils de zoom de chaque élément se comparent à ce zoom effectif
       zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + detailZoom(detail),
-      zv = mission ? zs : effectiveZoom(zs, view?.W ?? W, view?.H ?? H),
+      zv = mission ? zs : effectiveZoom(zs, frame?.W ?? view?.W ?? W, frame?.H ?? view?.H ?? H),
       tier = tierOf(pxOfZoom(zv));
     profile = migrated(profile); // l'ancien airwayLabels lu comme awLabels (§ 10.29 g)
     if (!mission) profile = atZoom(profile, zv);

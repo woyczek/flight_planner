@@ -29,6 +29,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   older than the launcher says so in the Status block, a tap reloads.
 
 - **Data: ONE box « Je certifie utiliser les données pour mon usage personnel » unlocks every personal-licence source; a « Sources et licences » page lists each source** (`modules/data/panels.js`, `screen.js`, `model_sets.js`, `frame/aerodb/sources.js`, `catalogue.js`, `frame/app.js`; Data SPEC § 5.6, aerodb SPEC § 5 sexies; help ×4; L32, A119) — SOG-0162: the old boxes migrate to the one box; X-Plane and EUROCONTROL stay « lu sur ce poste seulement », never published nor exported.
+
+- **Map: the airspaces follow the zoom and the complexity, progressively, and the Map says what the corridor hides** (`modules/maps/data.js`, `draw.js`, `render.js`, `screen.js`,
+  `texts.js`, `style.js`; SPEC § 6.6 bis; noreg D132, D75, D29; SOG-0169). FIR / UIR, TMA, CTA and CTR are read over the whole view even in the corridor of the
+  flight; an overview no longer reads the route's extent only; the effective zoom compares the module's size, not the map's (the sheet moved the thresholds);
+  a note says when R, D, P and the other spaces are hidden by the corridor, with the way out. FIR exist in the published bases for France only (AeroDB's reading).
+  Also: the rows of the list of spaces keep their height on a touch screen (D29, a defect of the sheet of an airspace).
+
 - **Frame: « Anciennes pages (V2) », one last entry in the column of every application** (`frame/app.js`, `frame/legacy.js`, `frame/frame.css`; V3_SPECIFICATION
   § 7.1 rule 23; frame SPEC § 3.1, DECISIONS; noreg A116; SOG-0166). The Maintenance column's V2 entry is gone; a hairline and a muted tint set the last
   entry apart; it opens the V2 pages by group (Carburant, Missions, Maintenance, Route, Statistiques, Canadair), each in a new tab; on a phone it is the

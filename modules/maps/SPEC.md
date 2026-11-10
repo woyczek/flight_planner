@@ -707,6 +707,36 @@ range; the base map's own names hidden while ours are drawn (§ 5).
   the VFR family; only the ranges are inherited, the boxes stay per mode.
 - The map element states the effective zoom and what the thresholds kept (`data-zoom-eff`, `data-kept`, § 18).
 
+### 6.6 bis What the airspaces do: a function of the zoom and the complexity (SOG-0169, 10 Nov)
+
+- **Two stages**, both deterministic. (1) *What is read*: the **big families** — FIR and UIR (and UTA, LTA, OCA, FRA), TMA and CTA, CTR (`BIG_TYPES`,
+  `data.js`) — are read over the whole view (the view widened by 15 %, never the route's extent alone: `wantBox`); the others (R, D, P, TSA, the
+  rest) are read in the corridor of the flight while « Around the flight only » is ticked (the user's explicit box, D75) and the view is under
+  300 px per degree, or on the whole view otherwise; past `WIDE_NM` = 600 NM an unticked box still reads the corridor. (2) *What is drawn*: each family from its
+  own effective-zoom threshold (§ 6.6), the effective zoom being the view's zoom + one level per step of the Complexity slider + the correction of the
+  **module's** size (`frameRef`: the page or the pane, × 0.85, which only the window changes — **never the map's own height, which the sheet
+  changes**: the same zoom did not show the same spaces with the sheet collapsed or open).
+- **The table** (built-in thresholds; the airline's and the device's replace them, § 6.6; the effective zoom `z` = zoom + complexity + frame correction):
+
+  | Family | IFR modes (Auto, Low, High, CAM) | VFR, Topo |
+  | --- | --- | --- |
+  | FIR, UIR, UTA, LTA, OCA, FRA | z ≥ 0 | z ≤ 7 |
+  | TMA, CTA | z ≥ 0 | z ≥ 6 |
+  | R, TSA / TRA / CBA | z ≥ 0 | z ≥ 6.5 |
+  | CTR, D | z ≥ 4.75 | CTR z ≥ 7, D z ≥ 6.5 |
+  | P | z ≥ 5.25 | z ≥ 7.5 |
+  | the others (ATZ, RMZ, …) | z ≥ 5.5 | z ≥ 8 |
+  | names of spaces | z ≥ 4.75 | z ≥ 6 |
+
+  One step of complexity adds what lies in one more zoom level; one level of zoom adds the same. R, D, P, TSA and the others are in
+  the corridor until the view is read whole (300 px per degree, i.e. zoom 7.72, or the box unticked).
+- **What a corridor hides is said**: while the corridor limits the reading (`S.corrNote`), the notes say « R, D, P and other spaces outside the
+  {n} NM corridor around the flight hidden at this zoom: zoom in, raise the complexity or untick “Around the flight only” ». Noreg D132 (same view twice: the
+  same classes; one step of complexity or of zoom: a class more; the box unticked: R, D, P appear and the note goes; the effective zoom does not move
+  with the sheet).
+- **FIR outside France**: the published SIA bases carry FIR / UIR only for France (10 FIR, 5 UIR, 15 other large regions in the 29 Oct file); no
+  other country's base has one. The Map draws what exists; the rest is AeroDB's reading (SOG-0169).
+
 ### 6.7 The Layers content
 
 Opened in the sheet by the Layers button (`openData('layers', …)`, § 7.4), not as a panel over the map; title "Layers ·
