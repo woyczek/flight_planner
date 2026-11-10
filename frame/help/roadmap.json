@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4ed798f",
+  "organisation": "3544eec",
   "fiches": 212,
   "untranslated": 1,
   "priorities": 152
@@ -1372,7 +1372,7 @@
     {
      "id": "SOG-0193",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Préparer une mission, c'est préparer un vol : mêmes étapes, météo comprise ; distance calculée ; temps sur zone",
      "en": "Preparing a mission is preparing a flight: same steps, weather included; distance computed; time on station",
      "de": "Eine Mission vorbereiten heißt einen Flug vorbereiten: gleiche Schritte samt Wetter; Distanz berechnet; Zeit im Einsatzgebiet",
@@ -1403,7 +1403,7 @@
     {
      "id": "SOG-0171",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Cartes de mission : le thème selon l'usage (VFR topographique sur la carte « cible » d'une mission SO), et un sélecteur de vue",
      "en": "Mission maps: the theme by use (VFR topographic on the “target” map of an SO mission), and a view selector",
      "de": "Missionskarten: Thema nach Verwendung (VFR-Topografie auf der „Ziel“-Karte einer SO-Mission) und eine Ansichtswahl",
@@ -1941,7 +1941,7 @@
     {
      "id": "SOG-0203",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Procédures et sol : LFOE ne lit rien (« 0 page lue sur 2 »), LFBD n'a pas de taxiways",
      "en": "Procedures and ground: LFOE reads nothing (“0 page read out of 2”), LFBD has no taxiways",
      "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
