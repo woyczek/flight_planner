@@ -4,7 +4,7 @@
  "updated": "2026-11-11",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "dc4f4a5",
+  "organisation": "73a63e8",
   "fiches": 239,
   "untranslated": 0,
   "priorities": 152
@@ -1459,7 +1459,7 @@
     {
      "id": "SOG-0231",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Flotte et registre des missions : hors de Maintenance, dans un quatrième onglet « CPCO »",
      "en": "Fleet and mission registry: out of Maintenance, in a fourth tab “CPCO”",
      "de": "Flotte und Missionsregister: raus aus der Wartung, in einen vierten Reiter „CPCO“",
