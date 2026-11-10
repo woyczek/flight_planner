@@ -292,10 +292,10 @@
         ['aeronave', 'aeronaves']
       ],
       theme: [
-        ['thème', 'thèmes'],
-        ['theme', 'themes'],
-        ['Thema', 'Themen'],
-        ['tema', 'temas']
+        ['famille', 'familles'],
+        ['family', 'families'],
+        ['Familie', 'Familien'],
+        ['familia', 'familias']
       ],
       operator: [
         ['opérateur', 'opérateurs'],
@@ -372,7 +372,7 @@
     save: ['Créer la compagnie', 'Create the airline', 'Fluggesellschaft anlegen', 'Crear la compañía'],
     steps: {
       identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
-      themes: ['Thèmes de vols', 'Flight themes', 'Flugthemen', 'Temas de vuelos'],
+      themes: ['Familles de vols', 'Flight families', 'Flugfamilien', 'Familias de vuelos'],
       fleet: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
       summary: ['Résumé', 'Summary', 'Zusammenfassung', 'Resumen']
     },
@@ -404,10 +404,10 @@
       'Dieses Kennzeichen steht schon in der Liste.', 'Esta matrícula ya está en la lista.'
     ],
     wzThemeHint: [
-      'Ceux du genre sont cochés d’avance : décochez ce que vous ne volez pas.',
+      'Celles du genre sont cochées d’avance : décochez ce que vous ne volez pas.',
       'The kind’s own are ticked in advance: untick what you do not fly.',
       'Die der Art sind vorab angekreuzt: entfernen Sie, was Sie nicht fliegen.',
-      'Los del tipo vienen marcados: desmarque lo que no vuela.'
+      'Las del tipo vienen marcadas: desmarque lo que no vuela.'
     ],
     next: ['Suivant', 'Next', 'Weiter', 'Siguiente'],
     back: ['Retour', 'Back', 'Zurück', 'Atrás'],
@@ -425,7 +425,7 @@
     adopted: ['Compagnie reprise : {n}.', 'Airline taken back: {n}.', 'Gesellschaft übernommen: {n}.', 'Compañía recuperada: {n}.'],
     part: {
       settings: ['les réglages', 'the settings', 'die Einstellungen', 'los ajustes'],
-      themes: ['les thèmes', 'the themes', 'die Themen', 'los temas'],
+      themes: ['les familles', 'the families', 'die Familien', 'las familias'],
       fleet: ['la flotte', 'the fleet', 'die Flotte', 'la flota'],
       index: ['l’inscription dans la liste', 'the entry in the list', 'der Eintrag in der Liste', 'la inscripción en la lista']
     },
@@ -449,72 +449,72 @@
     kindLabel: ['Genre', 'Kind', 'Art', 'Tipo'],
     kindHelp: {
       va: [
-        'Une compagnie commerciale : le thème Commercial (fret, passagers, rapatriement à vide, VIP, entraînement, transit, essais en vol).',
-        'A commercial airline: the Commercial theme (cargo, passengers, empty leg, VIP, training, transit, test flights).',
-        'Eine kommerzielle Gesellschaft: das Thema Kommerziell (Fracht, Passagiere, Leerflug, VIP, Training, Transit, Testflüge).',
-        'Una compañía comercial: el tema Comercial (carga, pasajeros, vuelo en vacío, VIP, entrenamiento, tránsito, vuelos de prueba).'
+        'Une compagnie commerciale : la famille Commercial (fret, passagers, rapatriement à vide, VIP, entraînement, transit, essais en vol).',
+        'A commercial airline: the Commercial family (cargo, passengers, empty leg, VIP, training, transit, test flights).',
+        'Eine kommerzielle Gesellschaft: die Familie Kommerziell (Fracht, Passagiere, Leerflug, VIP, Training, Transit, Testflüge).',
+        'Una compañía comercial: la familia Comercial (carga, pasajeros, vuelo en vacío, VIP, entrenamiento, tránsito, vuelos de prueba).'
       ],
-      sog: ['Une escadrille SO : ses missions préparées, les seize thèmes militaires.',
-        'An SO squadron: its prepared missions, the sixteen military themes.',
-        'Eine SO-Staffel: ihre vorbereiteten Missionen, die sechzehn militärischen Themen.',
-        'Un escuadrón SO: sus misiones preparadas, los dieciséis temas militares.'
+      sog: ['Une escadrille SO : ses missions préparées, les seize familles militaires.',
+        'An SO squadron: its prepared missions, the sixteen military families.',
+        'Eine SO-Staffel: ihre vorbereiteten Missionen, die sechzehn militärischen Familien.',
+        'Un escuadrón SO: sus misiones preparadas, las dieciséis familias militares.'
       ]
     },
-    kindUnset: ['Choisissez le genre : les thèmes cochés d’avance en dépendent.',
-      'Choose the kind: the themes ticked in advance depend on it.',
-      'Wählen Sie die Art: die vorab angekreuzten Themen hängen davon ab.',
-      'Elija el tipo: los temas marcados de antemano dependen de él.'
+    kindUnset: ['Choisissez le genre : les familles cochées d’avance en dépendent.',
+      'Choose the kind: the families ticked in advance depend on it.',
+      'Wählen Sie die Art: die vorab angekreuzten Familien hängen davon ab.',
+      'Elija el tipo: las familias marcadas de antemano dependen de él.'
     ],
-    persoNote: ['Personnel : vos vols hors compagnie, avec tous les thèmes ; rien à régler ici.',
-      'Personal: your flights outside any airline, with every theme; nothing to set here.',
-      'Persönlich: Ihre Flüge ohne Gesellschaft, mit allen Themen; hier ist nichts einzustellen.',
-      'Personal: sus vuelos fuera de toda compañía, con todos los temas; nada que ajustar aquí.'
+    persoNote: ['Personnel : vos vols hors compagnie, avec toutes les familles ; rien à régler ici.',
+      'Personal: your flights outside any airline, with every family; nothing to set here.',
+      'Persönlich: Ihre Flüge ohne Gesellschaft, mit allen Familien; hier ist nichts einzustellen.',
+      'Personal: sus vuelos fuera de toda compañía, con todas las familias; nada que ajustar aquí.'
     ],
     ficheTitle: ['Compagnie choisie : {n}', 'Chosen airline: {n}', 'Gewählte Gesellschaft: {n}', 'Compañía elegida: {n}'],
     kindSaved: ['Genre enregistré.', 'Kind saved.', 'Art gespeichert.', 'Tipo guardado.'],
     // les thèmes de missions de la compagnie (SOG-0202 T3, V3_SPECIFICATION § 10.48) : cochés d'avance par le genre, écrits seulement quand on coche autrement
-    themeSummary: ['Thèmes de missions ({n} sur {m})', 'Mission themes ({n} of {m})', 'Missionsthemen ({n} von {m})',
-      'Temas de misiones ({n} de {m})'
+    themeSummary: ['Familles de missions ({n} sur {m})', 'Mission families ({n} of {m})', 'Missionsfamilien ({n} von {m})',
+      'Familias de misiones ({n} de {m})'
     ],
-    themeHint: ['Les thèmes que cette compagnie vole : ses missions et le compte rendu ne proposent que ceux-là.',
-      'The themes this airline flies: its missions and the report offer only these.',
-      'Die Themen, die diese Gesellschaft fliegt: ihre Missionen und der Bericht bieten nur diese an.',
-      'Los temas que vuela esta compañía: sus misiones y el informe solo ofrecen estos.'
+    themeHint: ['Les familles que cette compagnie vole : ses missions et le compte rendu ne proposent que celles-là.',
+      'The families this airline flies: its missions and the report offer only these.',
+      'Die Familien, die diese Gesellschaft fliegt: ihre Missionen und der Bericht bieten nur diese an.',
+      'Las familias que vuela esta compañía: sus misiones y el informe solo ofrecen estas.'
     ],
-    themeOne: ['Gardez au moins un thème.', 'Keep at least one theme.', 'Behalten Sie mindestens ein Thema.',
-      'Conserve al menos un tema.'
+    themeOne: ['Gardez au moins une famille.', 'Keep at least one family.', 'Behalten Sie mindestens eine Familie.',
+      'Conserve al menos una familia.'
     ],
-    themeAdd: ['Ajouter un thème', 'Add a theme', 'Thema hinzufügen', 'Añadir un tema'],
+    themeAdd: ['Ajouter une famille', 'Add a family', 'Familie hinzufügen', 'Añadir una familia'],
     themeShort: ['Sigle (2 à 8 lettres ou chiffres)', 'Acronym (2 to 8 letters or digits)', 'Kürzel (2 bis 8 Buchstaben oder Ziffern)',
       'Sigla (2 a 8 letras o cifras)'
     ],
-    themeName: ['Nom du thème', 'Theme name', 'Name des Themas', 'Nombre del tema'],
+    themeName: ['Nom de la famille', 'Family name', 'Name der Familie', 'Nombre de la familia'],
     seriesAdd: ['Ajouter une série', 'Add a series', 'Serie hinzufügen', 'Añadir una serie'],
     seriesName: ['Nom de la série', 'Series name', 'Name der Serie', 'Nombre de la serie'],
-    seriesOf: ['Thème de la série', 'Theme of the series', 'Thema der Serie', 'Tema de la serie'],
+    seriesOf: ['Famille de la série', 'Family of the series', 'Familie der Serie', 'Familia de la serie'],
     themeBad: ['Refusé : un sigle de 2 à 8 lettres ou chiffres (une lettre d’abord) et un nom de 1 à 40 caractères.',
       'Refused: an acronym of 2 to 8 letters or digits (a letter first) and a name of 1 to 40 characters.',
       'Abgelehnt: ein Kürzel aus 2 bis 8 Buchstaben oder Ziffern (zuerst ein Buchstabe) und ein Name von 1 bis 40 Zeichen.',
       'Rechazado: una sigla de 2 a 8 letras o cifras (primero una letra) y un nombre de 1 a 40 caracteres.'
     ],
-    themeDup: ['Ce sigle est déjà pris par un thème.', 'This acronym is already taken by a theme.',
-      'Dieses Kürzel ist schon von einem Thema belegt.', 'Esa sigla ya la usa un tema.'
+    themeDup: ['Ce sigle est déjà pris par une famille.', 'This acronym is already taken by a family.',
+      'Dieses Kürzel ist schon von einer Familie belegt.', 'Esa sigla ya la usa una familia.'
     ],
-    themeFull: ['Huit thèmes ajoutés au plus.', 'Eight added themes at most.', 'Höchstens acht hinzugefügte Themen.',
-      'Ocho temas añadidos como máximo.'
+    themeFull: ['Huit familles ajoutées au plus.', 'Eight added families at most.', 'Höchstens acht hinzugefügte Familien.',
+      'Ocho familias añadidas como máximo.'
     ],
     seriesBad: ['Refusé : un nom de 1 à 40 caractères (lettres, chiffres, espace, . / ( ) -).',
       'Refused: a name of 1 to 40 characters (letters, digits, space, . / ( ) -).',
       'Abgelehnt: ein Name von 1 bis 40 Zeichen (Buchstaben, Ziffern, Leerzeichen, . / ( ) -).',
       'Rechazado: un nombre de 1 a 40 caracteres (letras, cifras, espacio, . / ( ) -).'
     ],
-    seriesDup: ['Cette série existe déjà dans ce thème.', 'This series already exists in this theme.',
-      'Diese Serie gibt es in diesem Thema schon.', 'Esa serie ya existe en este tema.'
+    seriesDup: ['Cette série existe déjà dans cette famille.', 'This series already exists in this family.',
+      'Diese Serie gibt es in dieser Familie schon.', 'Esa serie ya existe en esta familia.'
     ],
-    seriesFull: ['Vingt séries ajoutées au plus par thème.', 'Twenty added series at most per theme.',
-      'Höchstens zwanzig hinzugefügte Serien je Thema.', 'Veinte series añadidas como máximo por tema.'
+    seriesFull: ['Vingt séries ajoutées au plus par famille.', 'Twenty added series at most per family.',
+      'Höchstens zwanzig hinzugefügte Serien je Familie.', 'Veinte series añadidas como máximo por familia.'
     ],
-    themeSaved: ['Thèmes enregistrés.', 'Themes saved.', 'Themen gespeichert.', 'Temas guardados.'],
+    themeSaved: ['Familles enregistrées.', 'Families saved.', 'Familien gespeichert.', 'Familias guardadas.'],
     del: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
     added: ['Compagnie ajoutée : {n}.', 'Airline added: {n}.', 'Fluggesellschaft hinzugefügt: {n}.', 'Compañía añadida: {n}.'],
     failed: ['Écriture impossible.', 'Could not write.', 'Schreiben nicht möglich.', 'No se pudo escribir.'],

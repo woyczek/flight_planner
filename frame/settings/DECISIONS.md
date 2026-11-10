@@ -720,3 +720,7 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
 
 - **User's words (10 Nov evening)**: « defa a (encore ?) sauté. mais si je veux la recréer : « Un dossier existe déjà pour ce code : choisissez-en un autre. » » The index served by the data layer was older than its own tree (V3 Frame's part); here, whatever the cause, a code whose folder exists and which the list lacks is **offered back**, not refused.
 - **Done**: the refusal text says what is true and what to do; the button writes the index entry only (name from the folder, bounded, no `<` `>`), never the folder, then the list is read again. Counter-test A144 (the folder zed exists, the index lacks it: the message, the button, nothing written by the refusal, then only `airline/index.json` is written, the airline is listed).
+
+## 11 November 2026 — « Famille / Série » (SOG-0202, the user's word: « famille / série »)
+
+- **Done in Settings**: « Thèmes de missions » → **« Familles de missions »**, « Ajouter un thème… » → **« Ajouter une famille… »**, the step « Thèmes de vols » → « Familles de vols », the kind sentences, the refusals, the counts (« 1 famille »), ×4 languages (family / Familie / familia), the help ×4; **« série » stays**. `themes.json` keeps its name and its shape (`chosen`, `added.themes`, `added.series`): only the words changed. Cases A105, A126, A142 read the texts from the file; the nouns of the cases follow.

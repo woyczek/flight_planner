@@ -3466,7 +3466,7 @@ def a92(c):
 
 
 _NOUNS = {'aircraft': {'fr': ('appareil', 'appareils'), 'en': ('aircraft', 'aircraft'), 'de': ('Luftfahrzeug', 'Luftfahrzeuge'), 'es': ('aeronave', 'aeronaves')},
-          'theme': {'fr': ('thème', 'thèmes'), 'en': ('theme', 'themes'), 'de': ('Thema', 'Themen'), 'es': ('tema', 'temas')},
+          'theme': {'fr': ('famille', 'familles'), 'en': ('family', 'families'), 'de': ('Familie', 'Familien'), 'es': ('familia', 'familias')},
           'operator': {'fr': ('opérateur', 'opérateurs'), 'en': ('operator', 'operators'), 'de': ('Betreiber', 'Betreiber'), 'es': ('operador', 'operadores')}}
 
 
