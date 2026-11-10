@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 43,
+  "tests": 45,
   "verdicts": 0
  },
  "apps": [
@@ -567,6 +567,32 @@
    },
    "test": "Modifier un vol dans Carburant puis synchroniser : plus de « refusé par le serveur : last is not defined ».",
    "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0160",
+   "app": "maintenance",
+   "title": {
+    "fr": "Roadmap : un mode « Priorités » sans voies pour ordonner toutes les cartes, et les replanifier (en intégration, en développement, backlog)",
+    "en": "Roadmap: a “Priorities” view without lanes to order every card and replan it (in integration, in development, backlog)",
+    "de": "Roadmap: eine Ansicht „Prioritäten“ ohne Bahnen, um alle Karten zu ordnen und umzuplanen (in Integration, in Entwicklung, Backlog)",
+    "es": "Hoja de ruta: una vista «Prioridades» sin carriles para ordenar todas las tarjetas y replanificarlas (en integración, en desarrollo, pendientes)"
+   },
+   "test": "Maintenance › Feuille de route : elle s'ouvre sur « Priorités », trois colonnes sans voies ; glisser une carte au-dessus d'une carte d'un autre thème, puis la glisser sur « En développement » ; recharger → l'ordre et la colonne sont tenus.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0164",
+   "app": "maintenance",
+   "title": {
+    "fr": "Maintenance : la page met plus de deux secondes à s'ouvrir (deux appels /__setup/changes de 0,6 et 0,7 s à la suite)",
+    "en": "Maintenance: the page takes more than two seconds to open (two /__setup/changes calls in a row)",
+    "de": "Wartung: die Seite braucht über zwei Sekunden zum Öffnen (zwei /__setup/changes-Aufrufe nacheinander)",
+    "es": "Mantenimiento: la página tarda más de dos segundos en abrirse (dos llamadas /__setup/changes seguidas)"
+   },
+   "test": "Relancer le lanceur, puis ouvrir Maintenance › Données : la page est utilisable en moins d'une seconde, sans temps mort avant l'affichage.",
+   "since": "2026-11-10",
    "state": "todo"
   }
  ]

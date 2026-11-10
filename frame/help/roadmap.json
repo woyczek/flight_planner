@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4650468",
+  "organisation": "e46c6c8",
   "fiches": 167,
   "untranslated": 1,
   "priorities": 152
@@ -1736,7 +1736,7 @@
     {
      "id": "SOG-0164",
      "kind": "bug",
-     "state": "planned",
+     "state": "done",
      "fr": "Maintenance : la page met plus de deux secondes à s'ouvrir (deux appels /__setup/changes de 0,6 et 0,7 s à la suite)",
      "en": "Maintenance: the page takes more than two seconds to open (two /__setup/changes calls in a row)",
      "de": "Wartung: die Seite braucht über zwei Sekunden zum Öffnen (zwei /__setup/changes-Aufrufe nacheinander)",
@@ -2124,7 +2124,7 @@
     {
      "id": "SOG-0160",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Roadmap : un mode « Priorités » sans voies pour ordonner toutes les cartes, et les replanifier (en intégration, en développement, backlog)",
      "en": "Roadmap: a “Priorities” view without lanes to order every card and replan it (in integration, in development, backlog)",
      "de": "Roadmap: eine Ansicht „Prioritäten“ ohne Bahnen, um alle Karten zu ordnen und umzuplanen (in Integration, in Entwicklung, Backlog)",
