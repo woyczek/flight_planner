@@ -28,7 +28,7 @@ seconds, reason? } ; cycles : le cycle de la source datée de la zone (fr : SIA,
 datée (jamais « dépassée », construite le builtOn) ; folders : le cycle sous lequel elle est écrite (le sien, sinon le cycle en vigueur) ; cycle : celui des
 fichiers du SIA, que la page vérifie ; current : le cycle AIRAC en vigueur ; blocking : les zones construites d'une source d'un cycle passé (construites quand
 même, dit) ; stale : il y en a ; reason : 'partial', 'failed',
-'cancelled' ; refus du travail (ok: False) : 'no-browser', 'no-input', 'xplane-in-page' ('xplane' dans personal : le dossier d'X-Plane est une poignée gardée
+'cancelled' ; refus du travail (ok: False) : 'no-browser', 'no-input' ; `excluded: [{ source, why: 'local-only', message }]` (SOG-0162 refusé : « ça empêche de reconstruire ») : xplane et eurocontrol dans personal sont ÉCARTÉS et dits (ils ne sont jamais construits dans la base commitée), la construction des autres sources a lieu ; avant, refus 'xplane-in-page' (le dossier d'X-Plane est une poignée gardée
 par la page, ce travail reste dans la page), 'failed' (adresse du lanceur inconnue, ou lanceur sans job.offer). Codes d'une zone : 'browser-failed', 'browser-exited',
 'timeout', 'page-error', 'invalid-output', 'write-failed', 'cancelled'.
 Crochets des essais (ctx, jamais posés par le lanceur) : 'browser' (chemin absolu, ou liste de chemins absolus : un faux navigateur et son script), 'origin',
@@ -558,6 +558,16 @@ def _state():
     return types.SimpleNamespace(**entry[0].__globals__) if entry else None
 
 
+LOCAL_ONLY = ('xplane', 'eurocontrol', 'eurocontrol_rad')      # les sources « lues sur ce poste seulement » (Navigraph / Jeppesen, EUROCONTROL) : jamais construites dans la base commitée ni publiée
+
+
+def split_personal(personal):
+    """(sources à lire, écartées) : une source « lue sur ce poste seulement » reçue dans `personal` n'est pas un refus du travail (SOG-0162 refusé : « ça empêche de reconstruire »), elle est écartée et dite : [{ source, why: 'local-only', message }]."""
+    keep = [p for p in (personal or []) if p not in LOCAL_ONLY]
+    out = [{'source': p, 'why': 'local-only', 'message': f'{p} : lu sur ce poste seulement'} for p in dict.fromkeys(personal or []) if p in LOCAL_ONLY]
+    return keep, out
+
+
 def build(job, args, ctx):
     t0 = time.time()
     if regen_jobs.merge_pending(ctx):  # rien n'est écrit dans data/ tant qu'une fusion y attend
@@ -565,14 +575,14 @@ def build(job, args, ctx):
     cmd = find_browser(ctx)
     if not cmd:
         return {'ok': False, 'reason': 'no-browser', 'message': 'no Edge or Chrome found at a known absolute location'}
-    if 'xplane' in (args.get('personal') or []):
-        return {'ok': False, 'reason': 'xplane-in-page', 'message': 'the X-Plane folder is a handle held by the page: that build stays in the page'}
+    personal, excluded = split_personal(args.get('personal'))      # X-Plane (le dossier est une poignée de la page), EUROCONTROL : lus sur ce poste seulement, jamais dans la base commitée : écartés et dits, pas un refus
+    for x in excluded:
+        job.log(x['message'])
     data = ctx['data']
     zones = ['fr'] * ('fr' in args['zones']) + sorted(z for z in args['zones'] if z != 'fr')    # l'ordre du découpage : la France, puis l'alphabet
-    personal = list(args.get('personal') or [])
     inputs = list_inputs(data)
     if not inputs:
-        return {'ok': False, 'reason': 'no-input', 'message': 'no input file in data/sia/'}
+        return {'ok': False, 'reason': 'no-input', 'message': 'no input file in data/sia/', 'excluded': excluded}
     cycle = cycle_of(inputs)  # celui des fichiers du SIA (la page le vérifie contre eux), sinon le cycle en vigueur
     # le cycle de chaque zone est celui de SA source datée (fr : SIA, gb : NATS, es : ENAIRE) ; une zone sans source datée n'a pas de
     # cycle (None : jamais « dépassée ») et s'écrit sous le cycle en vigueur ; jamais celui du SIA pour toutes (1er nov. 2026)
@@ -592,9 +602,9 @@ def build(job, args, ctx):
             sigs[z] = state.signature(state.inputs_of(data, z, personal), before)
     origin = launcher_origin(ctx)
     if not origin:
-        return {'ok': False, 'reason': 'failed', 'message': 'the launcher address is unknown: the build page cannot be loaded'}
+        return {'ok': False, 'reason': 'failed', 'message': 'the launcher address is unknown: the build page cannot be loaded', 'excluded': excluded}
     if not hasattr(job, 'offer'):
-        return {'ok': False, 'reason': 'failed', 'message': 'this launcher has no job.offer: the build page cannot be given its parameters'}
+        return {'ok': False, 'reason': 'failed', 'message': 'this launcher has no job.offer: the build page cannot be given its parameters', 'excluded': excluded}
     # ce que la page doit savoir, déposé AVANT de lancer le navigateur : elle le réclame (POST regen/job/claim) ; l'adresse du navigateur n'en porte rien
     job.offer({'zones': zones, 'cycle': cycle, 'cycles': folder, 'personal': personal, 'inputs': legacy, 'sources': moved})
     netloc = urllib.parse.urlsplit(origin).netloc
@@ -733,7 +743,7 @@ def build(job, args, ctx):
            'builtWith': {s: v['cycle'] for s, v in sources.items()},
            'previous': [{'source': s, 'cycle': v['cycle'], 'current': v['current']} for s, v in sources.items() if v['cycle'] and v['stale']],
            'siaFrom': {'new': [m['name'] for m in moved], 'legacy': sorted(rel for rel in legacy if SIA_RAW.match(rel))},
-           'built': built, 'failed': failed, 'unread': [u for u in unread if u['zone'] in built],
+           'built': built, 'failed': failed, 'unread': [u for u in unread if u['zone'] in built], 'excluded': excluded,
            'commits': [{'zone': z, 'commit': st[z].get('commit')} for z in built], 'zones': {z: dict(st[z]) for z in zones},
            'instances': 1, 'seconds': round(time.time() - t0, 1)}
     if job.cancelled():

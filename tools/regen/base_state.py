@@ -296,7 +296,8 @@ def status(job, args, ctx):
     counts = {}
     for v in states.values():
         counts[v['state']] = counts.get(v['state'], 0) + 1
-    return {'ok': True, 'current': aero_cycles.airac_start(ctx.get('today')), 'parserVersion': parser_version(), 'zones': states, 'counts': counts}
+    return {'ok': True, 'current': aero_cycles.airac_start(ctx.get('today')), 'parserVersion': parser_version(), 'zones': states, 'counts': counts,
+            'excluded': [{'source': p, 'why': 'local-only', 'message': f'{p} : lu sur ce poste seulement'} for p in dict.fromkeys(args.get('personal') or []) if p in _ns(('base', 'build')).LOCAL_ONLY]}
 
 
 # ----------------------------------------------------------------------------------------------------------------------- base/update
@@ -336,6 +337,7 @@ def update(job, args, ctx):
         res['built'] = b.get('built', [])
         res['failed'] = b.get('failed', [])
         res['build'] = {k: b[k] for k in ('ok', 'reason', 'cycle', 'cycles', 'folders', 'commits', 'seconds', 'message') if k in b}
+        res['excluded'] = b.get('excluded') or []
         res['ok'] = bool(b.get('ok'))
         if b.get('reason'):
             res['reason'] = b['reason']

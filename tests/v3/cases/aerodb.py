@@ -3506,7 +3506,7 @@ def k48(c):
         c.eq((res['ok'], res['reason']), (False, 'no-browser'), "no Edge or Chrome: the reason is 'no-browser' (the page says it)", what='no browser')
         c.eq(threading.active_count(), threads, 'nothing was started', what='threads')
         res = fn(RJ.Job('base', 'build', a, author='TST'), {**a, 'personal': ['xplane']}, _d5_ctx(data, fake, origin='http://127.0.0.1:1'))
-        c.eq((res['ok'], res['reason']), (False, 'xplane-in-page'), "'xplane' in personal: the X-Plane folder is a handle held by the page, the build stays in the page", what='xplane')
+        c.eq((res.get('reason') != 'xplane-in-page', res['excluded']), (True, [{'source': 'xplane', 'why': 'local-only', 'message': 'xplane : lu sur ce poste seulement'}]), "'xplane' in personal is no longer a refusal of the whole job (SOG-0162): it is set aside and said, whatever happens to the rest", what='xplane')
         empty = Path(td) / 'empty'
         (empty / 'sia').mkdir(parents=True)
         res = fn(RJ.Job('base', 'build', a, author='TST'), a, _d5_ctx(empty, fake, origin='http://127.0.0.1:1'))
@@ -6542,3 +6542,42 @@ def k137(c):
         c.eq((se['sources']['present'], 'lfv' in se['sources']['declared']), (['openaip'], True), 'the sources present in data/sia (openAIP) and those declared (LFV among them, not yet present)', what='sources')
         c.eq((z['xx']['counts']['points'], z['xx']['has']['procedures'], z['xx']['cycle']), (0, False, '2026-10-29'), 'a zone without files: counts at 0, nothing invented', what='empty')
         c.ok(not os.path.exists(os.path.join(data, 'local')), 'no data/local', 'nothing is written')
+
+
+@case('K138', 'A source read on this workstation only (X-Plane, EUROCONTROL) in `personal` is set aside and said, never a refusal of the whole job (SOG-0162, refused at the acceptance: « ça empêche de reconstruire »): the real headless browser builds the zone, the result says « xplane : lu sur ce poste seulement »; base/status says it too', 'K', static=True,
+      rule='SOG-0162 (10 Nov 2026, blocking): since the single box (74fbc67e8) X-Plane left with the other personal sources to the verbs of the base and base/build answered « xplane-in-page » (« décochez X-Plane et relancez ») while the box no longer exists, so that nothing could be rebuilt (65 zones at parser 23, current 27); a source of Navigraph / Jeppesen or of EUROCONTROL is never built into the committed base: it is excluded with its reason (`excluded`) and the other sources of the zone are built')
+def k138(c):
+    import json
+    import tempfile
+    import time
+    from pathlib import Path
+    RJ, B, fn, check = _d5_modules()
+    if not B.find_browser({}):
+        c.skip('no Edge or Chrome at a known location on this workstation: the real-browser run is not made (the job answers no-browser there)')
+    _d5_offer_shim(RJ)
+    apt = {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [-8.0, 53.0]}, 'properties': {'_id': 'k138a', 'name': 'TESTFIELD', 'icaoCode': 'EITS', 'type': 2, 'trafficType': [0], 'country': 'IE', 'elevation': {'value': 55, 'unit': 0}}}]}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'sia' / 'openaip').mkdir(parents=True)
+        (data / 'sia' / 'openaip' / 'ie_apt.geojson').write_text(json.dumps(apt), encoding='utf-8')
+        ctx = {'data': str(data), 'secrets': str(Path(td) / 's'), 'git_cmd': None, 'git_env': dict, 'zone_timeout': 120}
+        jobs = RJ.Jobs(RJ.REGISTRY, ctx)
+        srv, ctx['origin'] = _d5_site(RJ, data, {'jobs': jobs}, c.root)
+        t0 = time.time()
+        try:
+            jobs.start('base', 'build', {'zones': ['ie'], 'personal': ['eurocontrol', 'xplane']}, 'TST')
+            while jobs.cur.data['state'] == 'running' and time.time() < t0 + 150:
+                time.sleep(0.1)
+        finally:
+            srv.shutdown()
+            srv.server_close()
+        view = jobs.cur.view()
+        res = view['result']
+        c.ok(res.get('ok') and view['zones']['ie']['state'] == 'built', json.dumps(view)[:600], 'the job starts, finishes and builds the zone with the real browser, X-Plane in `personal` notwithstanding')
+        c.eq(res['excluded'], [{'source': 'eurocontrol', 'why': 'local-only', 'message': 'eurocontrol : lu sur ce poste seulement'}, {'source': 'xplane', 'why': 'local-only', 'message': 'xplane : lu sur ce poste seulement'}],
+             'and says what it set aside: « xplane : lu sur ce poste seulement » (EUROCONTROL too), with its reason', what='excluded')
+        c.ok(any('xplane : lu sur ce poste seulement' in str(x) for x in view.get('log') or []), str(view.get('log'))[-300:], 'the journal of the job says it too')
+        c.ok(not list((data / 'sia' / 'base').rglob('*xplane*')), 'no xplane file', 'nothing of X-Plane is written into the base')
+        status, check_s = RJ.REGISTRY[('base', 'status')]
+        st = status(RJ.Job('base', 'status', {}), check_s({'zones': ['ie'], 'personal': ['xplane', 'nats']}), {'data': str(data)})
+        c.eq(st['excluded'], [{'source': 'xplane', 'why': 'local-only', 'message': 'xplane : lu sur ce poste seulement'}], 'base/status says it as well (and keeps answering for the zones)', what='status')
