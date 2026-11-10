@@ -260,7 +260,11 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   « aucun écart détecté », and « Prendre » says it in its notification; **the share of what is controlled** (SOG-0161, F123; AeroDB's
   `control`): each route's line says « contrôlé 22 % · incomplet 65 % · repli 14 % » (the error when it has a share; « contrôlé » alone
   only at 100 %), a fold lists its sections by layer (SID, LOW, HIGH, FRA, STAR, APP) with their state and reason, seven then « N autres »,
-  « Prendre » repeats the share, and route_alts.json gives the Map the control of each segment; **the routes are drawn by the Map** (SOG-0134 a, F114;
+  « Prendre » repeats the share, and route_alts.json gives the Map the control of each segment; **an impossible plan's proposals**
+  (AeroDB 9a7f1dde3, F125): « Calculer » asks `proposals: true`; when no route is computed, the engine's fallback proposals come back
+  marked `proposal` and are listed apart under « Propositions non validées » (« Proposition 1 »…), after the engine's message, never
+  mixed with the checked routes, each with its share in numbers (never « contrôlé » alone, even at 100 %) and its sections; « Prendre »
+  says « Proposition non validée prise : à vérifier — <share> »; **the routes are drawn by the Map** (SOG-0134 a, F114;
   INTEGRATION § 3 bis): Fuel resolves them into positions with the route reader and publishes them (the event `fuel-route-alts` in
   the double view, hover included; `cache/fuel/route_alts.json` for a Map opened afterwards), the chosen one and the hovered row with
   them; a route touched on the Map comes back as « Prendre » (`maps-route-alt`, or `#fuel?ralt=<index>` from a Map alone); Fuel draws

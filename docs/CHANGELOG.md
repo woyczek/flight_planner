@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: an impossible plan lists the engine's proposals apart** (`modules/fuel/route_engine.js`, `module.js`; Fuel SPEC § 9.3,
+  INTEGRATION, DECISIONS, help; noreg F125; SOG-0161). « Calculer » asks `proposals: true`; the fallback proposals come under
+  « Propositions non validées », each with its share and sections, never said checked; « Prendre » says « à vérifier ».
 - **Missions: the sheet gives the summary before the risks** (`modules/missions/module.js`; Missions SPEC, DECISIONS, help; noreg N9;
   SOG-0051 refused). Two lines at most after the category, on every mission; « Volée le … » moves to the category line.
 - **Fuel: « Changer » drawn at the size of the text** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS; noreg F122). The aircraft

@@ -68,6 +68,7 @@ export function request({
   else {
     out.via = (Array.isArray(points) ? points : []).slice(1, -1).map(p => ident(p?.id)).filter(Boolean).slice(0, 8);
     out.alternatives = true;
+    out.proposals = true; // un plan impossible rend les propositions de repli du moteur, marquées proposal (AeroDB 9a7f1dde3, SOG-0161)
   }
   return out;
 }
@@ -175,7 +176,9 @@ function altOf(a, role, errors, reviews = []) {
     distanceNm: num(a?.distanceNm, 0, 19999),
     fl: num(a?.fl, 0, 700) !== null ? Math.round(+a.fl) : null,
     incomplete: a?.incomplete === true,
-    accepted: !faults && !errors.length && a?.incomplete !== true, // un contrôle incomplet n'est jamais présenté comme contrôlé
+    proposal: a?.proposal === true, // une proposition de repli d'un plan impossible : jamais validée, montrée à part
+    accepted: !faults && !errors.length && a?.incomplete !== true && a?.proposal !==
+      true, // un contrôle incomplet n'est jamais présenté comme contrôlé
     errors,
     reviews: a?.incomplete === true ? reviews : [],
     faults,

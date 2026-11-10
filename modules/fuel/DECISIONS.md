@@ -1518,3 +1518,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   « Ajouter »: « un bouton collé à du texte ne devrait pas dépasser autant de la ligne »): the magnifier and « Changer » in the accent tint,
   no frame, 26 px high, the 44 px target kept by a `::before`, as ⇄. F122 measures it (≤ 28 px, no border nor background, target ≥ 44 px);
   counter-test on origin/v3 (df317a309): a 44 px framed button.
+- **10 Nov 2026 — an impossible plan's proposals, apart** (after AeroDB 9a7f1dde3, `proposals: true`): « Calculer » asks for them; they
+  come as alternatives `proposal` / `incomplete` and are listed under « Propositions non validées », below the engine's message, never in
+  the list of checked routes; their share is always in numbers (« contrôlé 100 % · … » rather than « contrôlé » alone: a proposal is
+  never validated); « Prendre » says « non validée : à vérifier »; route_alts.json carries `proposal` so that the Map may say it too.
+  F125; counter-test on origin/v3 (95c5fc071): no proposal listed.

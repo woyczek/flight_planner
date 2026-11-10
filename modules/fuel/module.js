@@ -244,6 +244,12 @@ const TX = {
   },
   rSections: ['Tronçons ({n})', 'Sections ({n})', 'Abschnitte ({n})', 'Tramos ({n})'],
   rTakenShare: ['Itinéraire pris — {share}.', 'Route taken — {share}.', 'Route übernommen — {share}.', 'Itinerario tomado: {share}.'],
+  // un plan impossible : les propositions de repli du moteur, à part (AeroDB 9a7f1dde3), jamais dites contrôlées
+  rProposals: ['Propositions non validées', 'Unvalidated proposals', 'Nicht bestätigte Vorschläge', 'Propuestas no validadas'],
+  rProposal: ['Proposition {n}', 'Proposal {n}', 'Vorschlag {n}', 'Propuesta {n}'],
+  rTakenProposal: ['Proposition non validée prise : à vérifier — {share}.', 'Unvalidated proposal taken: to be checked — {share}.',
+    'Nicht bestätigter Vorschlag übernommen: zu prüfen — {share}.', 'Propuesta no validada tomada: a verificar — {share}.'
+  ],
   // un itinéraire dont le contrôle est incomplet faute de données (SOG-0081, RouteSim du 9 nov. 17 h 05) : jamais présenté comme contrôlé
   rIncomplete: ['contrôle incomplet', 'incomplete check', 'unvollständige Prüfung', 'control incompleto'],
   rIncompleteWhy: ['Contrôle incomplet faute de données : ce qui n’a pas pu être vérifié n’est pas un écart, ni une route validée.',
@@ -1596,6 +1602,7 @@ const STYLE = `
 [data-module="fuel"] .fu-faultlist{margin:.2em 0 .3em;padding-left:1.1em}
 [data-module="fuel"] .fu-faultlist li{margin:.15em 0;overflow-wrap:anywhere} /* un écart par ligne (SOG-0134) : segment · règle · phrase */
 [data-module="fuel"] .fu-faultrule{color:var(--sog-err)}
+[data-module="fuel"] .fu-rprophead{margin:.8em 0 .2em;font-size:.95em;color:var(--sog-warn)} /* « Propositions non validées » (plan impossible) */
 [data-module="fuel"] .fu-rshare{display:block} /* le partage contrôlé / incomplet / repli, sous la route de l'itinéraire (SOG-0161) */
 [data-module="fuel"] .fu-ctrl-controlled{color:var(--sog-ok)}
 [data-module="fuel"] .fu-ctrl-incomplete,[data-module="fuel"] .fu-ctrl-fallback{color:var(--sog-warn)}
@@ -3202,9 +3209,9 @@ function faultsHtml(lines, plan = null) {
 }
 /** Le partage d'un itinéraire (SOG-0161) : « contrôlé 22 % · incomplet 65 % · repli 14 % » (l'erreur si elle a une part) ; « contrôlé »
  *  seul seulement à 100 % ; '' sans contrôle. */
-function shareText(c) {
+function shareText(c, proposal = false) {
   if (!c) return '';
-  if (c.controlledPct >= 100) return tt(TX.rCtrl.controlled);
+  if (c.controlledPct >= 100 && !proposal) return tt(TX.rCtrl.controlled); // une proposition n'est jamais dite « contrôlé » seul
   return [
     ['controlled', c.controlledPct],
     ['incomplete', c.incompletePct],
@@ -3230,11 +3237,21 @@ function routeAltsDraw() {
   const box = S.body?.querySelector('[data-routealts]'),
     A = S.ralts;
   if (!box || !A) return;
-  const name = (a, i) => a.name || (a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
+  const name = (a, i) => a.name || (a.proposal ? tt(TX.rProposal, {
+    n: A.list.slice(0, i + 1).filter(x => x.proposal).length
+  }) : a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
     n: i
   }));
-  box.innerHTML = (A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}" data-alt="${i}"${a.incomplete ? ' data-incomplete' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a.control)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`).join('')}</div>` :
-    `<p class="f-muted">${esc(A.n?.message || tt(TX.rNone))}</p>`) + limitsHtml(A.n || {
+  // un plan impossible (AeroDB 9a7f1dde3) : ses propositions de repli sous leur intertitre, jamais mêlées aux itinéraires contrôlés ; le
+  // message du moteur reste dit au-dessus
+  const both = A.list.map((a, i) => [a, i]),
+    routes = both.filter(([a]) => !a.proposal),
+    props = both.filter(([a]) => a.proposal);
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}" data-alt="${i}"${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a.control)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
+  box.innerHTML = (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
+    `<p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + (props.length ?
+    `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
+    '') + limitsHtml(A.n || {
     limitation: '',
     gaps: []
   });
@@ -3291,7 +3308,8 @@ async function altsPublish(mode, plans, pts) {
         ids,
         points: ps.map(q => [Math.round(+q.lat * 1e5) / 1e5, Math.round(+q.lon * 1e5) / 1e5]),
         faulty: [...faulty].sort((x, y) => x - y),
-        control
+        control,
+        proposal: p.proposal === true // une proposition d'un plan impossible, non validée (la Carte peut la dire)
       };
     }),
     hovered: null
@@ -3396,7 +3414,10 @@ function routeTake(i) {
   S.ralts.chosen = i;
   S.rcheck = null;
   routeAltsDraw();
-  if (a.control) S.ctx.notify(tt(TX.rTakenShare, {
+  if (a.proposal) S.ctx.notify(tt(TX.rTakenProposal, {
+    share: shareText(a.control, true) || tt(TX.rIncomplete)
+  }), 'warn'); // une proposition d'un plan impossible : non validée, à vérifier
+  else if (a.control) S.ctx.notify(tt(TX.rTakenShare, {
     share: shareText(a.control)
   }), a.control.controlledPct >= 100 ? 'ok' : 'warn'); // SOG-0161 : la confirmation redit le partage
   else if (a.incomplete) S.ctx.notify(tt(TX.rTakenIncomplete), 'warn'); // SOG-0081 : la confirmation redit le contrôle incomplet

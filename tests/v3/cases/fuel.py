@@ -2902,8 +2902,8 @@ def f109(c):
     c.tap(f'{FUEL} [data-do="rcompute"]')
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='the computed route and two alternatives')
     comp = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute'][0]
-    c.eq([sorted(comp), comp['via'], comp['alternatives']], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'alternatives']), ['LUGEN', 'NEPIX'], True],
-         'the typed points as imposed passages, alternatives asked', what='compute args')
+    c.eq([sorted(comp), comp['via'], comp['alternatives'], comp['proposals']], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'alternatives', 'proposals']), ['LUGEN', 'NEPIX'], True, True],
+         'the typed points as imposed passages, alternatives and the proposals of an impossible plan asked (AeroDB 9a7f1dde3)', what='compute args')
     names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altname]')].map(e => e.textContent.trim())")
     c.eq(names, ['Via UN10', 'Direct · FL250', 'Direct · FL190'], 'each route named by the launcher', what='names')
     before = cf_doc(c, lambda d: True, 'the flight')['route']['text']
@@ -3477,3 +3477,39 @@ def f124(c):
     c.until(f"!!document.querySelector('{arr} [data-ground=\"failed\"]')", timeout=6000, what='the announced failure is said')
     c.eq(norm(c.text(f'{arr} [data-ground="failed"]')), norm(tx(PT, 'groundFailed', c.lang).replace('{r}', tx(PT, 'failed', c.lang, after='groundWhy'))),
          'an unknown reason is said « la lecture a échoué »', what='failure')
+
+
+
+@case('F125', 'Route step: an impossible plan lists the engine\'s fallback proposals apart, under « Propositions non validées », each with its share and sections, never said « contrôlé »; « Prendre » says « proposition non validée : à vérifier »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0161 continued (AeroDB 9a7f1dde3: the request field `proposals: true`; without a computed route the recovery proposals come back as '
+      'alternatives `proposal` / `incomplete` with their `control`): never mixed with the checked routes, never « contrôlé » alone even at 100 %; a fake launcher')
+def f125(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_ctl_seg('LFRS', 'LUGEN', 'controlled', 'SID'), _ctl_seg('LUGEN', 'LFML', 'fallback', 'FRA', 'raccord direct : aucun chemin contrôlé')]
+    p1 = dict(_alt(1, '', 'LFRS LUGEN LFML', 372, 270, segs, sid=False), proposal=True, incomplete=True,
+              control={'controlledPct': 40, 'incompletePct': 0, 'fallbackPct': 60, 'errorPct': 0,
+                       'sections': [{'layer': g['layer'], 'control': g['control'], 'from': g['from'], 'to': g['to'], 'nm': 150, 'reason': g['controlReason']} for g in segs]})
+    p2 = dict(_alt(2, '', 'LFRS LFML', 364, 270, [_ctl_seg('LFRS', 'LFML', 'controlled', 'FRA')], sid=False), proposal=True, incomplete=True,
+              control={'controlledPct': 100, 'incompletePct': 0, 'fallbackPct': 0, 'errorPct': 0, 'sections': []})
+    st['alts'] = [p1, p2]
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-proposals] [data-alt]').length === 2", timeout=8000, what='the two proposals, apart')
+    c.eq((st['posts'][-1].get('args') or {}).get('proposals'), True, 'the Route step asks for the proposals', what='request proposals')
+    c.eq(norm(c.text(f'{FUEL} [data-proposals-head]')), norm(row(c, 'rProposals')), 'under « Propositions non validées »', what='heading')
+    c.eq(c.count(f'{FUEL} [data-altlist]:not([data-proposals]) [data-alt]'), 0, 'never mixed with checked routes (none here)', what='checked routes')
+    c.eq(c.count(f'{FUEL} [data-rnone]'), 1, 'the engine\'s message stays said above', what='message')
+    shares = c.js(f"[...document.querySelectorAll('{FUEL} [data-proposals] [data-alt] [data-share]')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())")
+    c.ok(len(shares) == 2 and all('%' in x for x in shares), shares, 'each proposal says its share in numbers, never « contrôlé » alone (even at 100 %)')
+    c.eq(c.count(f'{FUEL} [data-proposals] [data-alt="0"] [data-sections] [data-section]'), 2, 'and its sections', what='sections')
+    names = c.js(f"[...document.querySelectorAll('{FUEL} [data-proposals] [data-altname]')].map(e => e.textContent.trim())")
+    c.eq(names, [row(c, 'rProposal').replace('{n}', '1'), row(c, 'rProposal').replace('{n}', '2')], 'named « Proposition 1 », « Proposition 2 »', what='names')
+    doc = c.until_doc('cache/fuel/route_alts.json', lambda x: x and len(x.get('alternatives') or []) == 2, 'the proposals published for the Map', timeout=8000)
+    c.eq([a.get('proposal') for a in doc['alternatives']], [True, True], 'the Map knows they are proposals', what='proposal')
+    c.js(f"const h = document.querySelector('{FUEL} [data-proposals-head]'); h.scrollIntoView({{block: 'start'}}); window.scrollBy(0, -160); document.querySelector('{FUEL} [data-proposals-head]').closest('[class*=scroll], main')?.scrollBy?.(0, -160)")
+    c.shot(f'F125_{c.design}_{c.width}_{c.lang}.png')
+    c.tap(f'{FUEL} [data-proposals] [data-alt="0"] [data-do="rtake"]')
+    want = norm(row(c, 'rTakenProposal').split('{share}')[0])
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", want, what='« Prendre » says « proposition non validée : à vérifier »')
