@@ -3884,3 +3884,34 @@ def f135(c):
         to_step(c, 1)
         c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3 && !!document.querySelector('{FUEL} [data-alt=\"2\"][aria-current]')",
                 what=f'{w} px: the list and the choice stay when the step is drawn again')
+
+
+
+# SOG-0142 (refused 10 Nov): invented positions — the only PAM of the base across the ocean (on the user's machine, the Dutch base of the cycle
+# in force had no points: the only PAM left was in the United States)
+_FAR_EXTRA = {'points': [{'id': 'PAM', 'lat': 39.0, 'lon': -76.0, 'type': 'VOR'}]}
+
+
+@case('F136', 'Route reader: a name whose only known place is far from the route (more than 2 × the direct distance + 400 NM) is not placed — said under the route —, never taken from the flight\'s own earlier points',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0142 refused on 10 Nov (« LFRS PAM LFBD passe toujours pas les USA »): the Dutch base of the cycle in force had no points, the only PAM '
+      'was in the United States and « the nearest homonym » took it; the engine\'s rule of AeroDB (1aa2ceb62) applied to Fuel\'s reader; invented positions')
+def f136(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        docs = flight_docs()
+        # the flight read before, with PAM placed across the ocean (what the user's flight holds): never taken back
+        fl = docs[1][1]
+        fl['route']['text'] = 'LFRS PAM LFML'
+        fl['route']['points'] = [p for p in fl['route']['points'] if p.get('id') in ('LFRS', 'LFML')]
+        fl['route']['points'].insert(1, {'id': 'PAM', 'lat': 39.0, 'lon': -76.0})
+        c.open('fuel', docs=docs, airfields=True, aero_extra=_FAR_EXTRA)
+        wait_quote(c)
+        _route_typed(c, 'LFRS PAM LFML')
+        d = cf_doc(c, lambda d: [q.get('id') for q in (d.get('route') or {}).get('points') or []] == ['LFRS', 'LFML'], f'{w} px: PAM not placed', timeout=10000)
+        c.ok(0 < d['route']['distanceNm'] < 450, d['route']['distanceNm'], 'the distance is the route\'s, not a crossing of the ocean')
+        c.until(f"[...document.querySelectorAll('{FUEL} [data-rwarn] [data-rw]')].some(e => e.textContent.includes('PAM') && /\d/.test(e.textContent))",
+                what=f'{w} px: « PAM : le seul lieu connu est à … NM de la route — non placé »')
+        c.js(f"document.querySelector('{FUEL} [data-rwarn]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F136_{c.design}_{w}_{c.lang}.png')
+

@@ -425,6 +425,12 @@ const TX = {
     '{id}: {n} Namensgleiche, der nächste behalten',
     '{id}: {n} homónimos, se conserva el más cercano'
   ],
+  // SOG-0142 : un nom dont le seul lieu connu est loin de la route (la seule PAM du cycle aux États-Unis) : non placé
+  farPt: ['{id} : le seul lieu connu est à {nm} NM de la route — non placé ; la base de sa zone est peut-être incomplète (Données).',
+    '{id}: the only known place is {nm} NM from the route — not placed; the base of its zone may be incomplete (Data).',
+    '{id}: der einzige bekannte Ort liegt {nm} NM von der Route entfernt — nicht gesetzt; die Basis seiner Zone ist vielleicht unvollständig (Daten).',
+    '{id}: el único lugar conocido está a {nm} NM de la ruta — no colocado; la base de su zona quizá esté incompleta (Datos).'
+  ],
   jump: ['{a} → {b} : {nm} NM d’un point au suivant, à vérifier', '{a} → {b}: {nm} NM from one point to the next, to check',
     '{a} → {b}: {nm} NM von einem Punkt zum nächsten, zu prüfen', '{a} → {b}: {nm} NM de un punto al siguiente, a comprobar'
   ],
@@ -4305,7 +4311,8 @@ function resolveRoute(normalize = true) {
         tokens,
         badAirways,
         homonyms = [],
-        jumps = []
+        jumps = [],
+        far = []
       } = await RM.routeModel(r.text, {
         dep: r.dep,
         arr: r.arr,
@@ -4358,7 +4365,10 @@ function resolveRoute(normalize = true) {
     if (un && un.textContent !== ut) un.textContent = ut;
     // SOG-0142 : les homonymes et les sauts, dits sous la route (jamais corrigés en silence)
     const rw = S.body.querySelector('[data-rwarn]');
-    if (rw) rw.innerHTML = [...homonyms.map(h => tt(TX.homonyms, h)), ...jumps.map(j => tt(TX.jump, {
+    if (rw) rw.innerHTML = [...far.map(x => tt(TX.farPt, {
+      ...x,
+      nm: x.nm.toLocaleString(S.ctx.lang())
+    })), ...homonyms.map(h => tt(TX.homonyms, h)), ...jumps.map(j => tt(TX.jump, {
       ...j,
       nm: j.nm.toLocaleString(S.ctx.lang())
     }))].map(x => `<span data-rw>${esc(x)}</span>`).join('<br>');

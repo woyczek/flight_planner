@@ -1601,3 +1601,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   passagers, essais en vol... ? »). Optional lists, filled by the mission, offered from the airline's themes; written with the flight for
   the report, which has the last word. N23 (a mission « fret » → COMMERCIAL / CARGO; FIRE « GAAR »; a commercial airline offers
   COMMERCIAL only; the flight's theme kept); counter-test on origin/v3: no theme written.
+- **10 Nov 2026 — a far place is not the route's** (SOG-0142 refused: « LFRS PAM LFBD passe toujours pas les USA »). Survey on the user's
+  machine, read only: PAM exists in the Netherlands (Pampus) and in the United States, but the Dutch base of the cycle in force
+  (`sia/base/nl/2026-10-29/`) has no points (no points file, navaids of 1.4 KB) — only the 2026-10-01 cycle had Pampus — so the only PAM
+  left was Tyndall, and « the nearest homonym » took it. Fuel's reader now applies the engine's rule (AeroDB 1aa2ceb62): beyond
+  2 × direct + 400 NM, not placed, said, and not taken back from the flight's earlier points (the user's flight held the US position).
+  The Map reads the flight's points: it follows. The Dutch base is AeroDB's (to rebuild). F136; counter-test on origin/v3: PAM placed in
+  the USA.

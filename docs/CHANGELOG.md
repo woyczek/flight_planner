@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a point whose only known place is far from the route is not placed** (`frame/lib/route_model.js` `far`; Fuel SPEC, DECISIONS, help;
+  noreg F136; SOG-0142). « LFRS PAM LFBD » no longer goes through the United States; the line under the route says it.
 - **Mission themes in Fuel, the report and Missions** (SOG-0202 T2, V3_SPECIFICATION § 10.48; noreg N23, G13; G7, G8, G10 adapted). Theme and
   sub-theme on the step Flight (optional, filled by the mission, the airline's themes); the report takes them and has the last word, its family
   COMMERCIAL (CAT, report letter E), its load following the series; an old category (« fret ») read as COMMERCIAL / CARGO.

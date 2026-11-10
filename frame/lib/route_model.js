@@ -5,6 +5,8 @@
 // API :
 //   routeModel(text, { dep, arr, known, chain, base }) → { points, unresolved, tokens, badAirways, homonyms, jumps } (voir la fonction).
 //   JUMP_NM : au-delà, un tronçon entre deux points consécutifs est dit (jumps) : un homonyme lointain, un point mal tapé (SOG-0142).
+//   far : les noms dont le seul lieu connu (ou le plus proche) est plus loin de la route que 2 × la distance directe + FAR_EXTRA_NM —
+//   non placés, jamais pris en silence (SOG-0142, « LFRS PAM LFBD » : la seule PAM du cycle était aux États-Unis).
 //   AIRWAY_WORD : la forme d'un désignateur de voie, composé compris (UN460, G54-R66).
 
 import {
@@ -44,6 +46,24 @@ export async function routeModel(text, {
   let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
   const ads = new Set(); // les points du texte qu'aerodb connaît comme aérodromes
   const homonyms = [];
+  // SOG-0142 (refus du 10 nov., « LFRS PAM LFBD passe toujours pas les USA ») : un lieu plus loin de la route que FAR (2 × la distance
+  // directe + FAR_EXTRA_NM, la règle du moteur de route d'AeroDB, 1aa2ceb62) n'est pas celui du vol — sur le poste, la seule PAM du cycle en
+  // vigueur était à Tyndall (la base néerlandaise du 29/10 n'a pas de points) : non placé, dit (far), jamais repris des points du vol
+  let farNm = Infinity;
+  const far = [],
+    farIds = new Set();
+  /** Le lieu `c` d'un nom, s'il n'est pas trop loin de `near` ; sinon null, et dit. */
+  const notFar = (id, near, c) => {
+    if (!c || !near || !Number.isFinite(farNm) || !Number.isFinite(+c.lat) || !Number.isFinite(+c.lon)) return c;
+    const nm = nmOf(near, c);
+    if (nm <= farNm) return c;
+    if (!farIds.has(id)) far.push({
+      id,
+      nm: Math.round(nm)
+    });
+    farIds.add(id);
+    return null;
+  };
   /** Le lieu d'un nom le plus proche de `near` parmi ceux que la base rend (coordsAll), sinon sa réponse unique (coords) ; les deux
    *  reçoivent { near } (la recherche de l'homonyme proche toutes zones confondues est celle d'aerodb). */
   const nearest = async (id, near) => {
@@ -59,11 +79,11 @@ export async function routeModel(text, {
       ads = /^[A-Z]{4}$/.test(id) ? ok.filter(x => x.kind === 'aerodrome') : [];
     if (ads.length) {
       const best = ads.sort((x, y) => nmOf(near, x.item) - nmOf(near, y.item))[0];
-      return {
+      return notFar(id, near, {
         lat: +best.item.lat,
         lon: +best.item.lon,
         kind: best.kind
-      };
+      });
     }
     if (ok.length > 1) {
       homonyms.push({
@@ -71,20 +91,20 @@ export async function routeModel(text, {
         n: ok.length
       });
       const best = ok.sort((x, y) => nmOf(near, x.item) - nmOf(near, y.item))[0];
-      return {
+      return notFar(id, near, {
         lat: +best.item.lat,
         lon: +best.item.lon,
         kind: best.kind
-      };
+      });
     }
-    if (ok.length === 1) return {
+    if (ok.length === 1) return notFar(id, near, {
       lat: +ok[0].item.lat,
       lon: +ok[0].item.lon,
       kind: ok[0].kind
-    };
-    return Promise.resolve(base.coords(id, at ? {
+    });
+    return notFar(id, near, await Promise.resolve(base.coords(id, at ? {
       near: at
-    } : undefined)).catch(() => null);
+    } : undefined)).catch(() => null));
   };
   /** Position d'un identifiant : un point arrivé par une voie garde la position de son segment (aerodb ne connaît pas
    *  toujours les extrémités des voies, ni le bon point si le nom existe ailleurs) ; sinon aerodb (l'homonyme le plus proche de
@@ -102,11 +122,12 @@ export async function routeModel(text, {
       ad: c.kind === 'aerodrome' && /^[A-Z]{4}$/.test(
         id) // un code OACI : jamais un repère ou une balise qu'une base nomme comme un terrain
     };
-    const k = known.get(id);
-    return k ? {
+    const k = farIds.has(id) ? null : known.get(id);
+    // un point du vol lui-même (route écrite avant) passe la même borne : un lieu lointain gardé d'une lecture d'avant n'est pas repris
+    return k ? notFar(id, near, {
       lat: k.lat,
       lon: k.lon
-    } : null;
+    }) : null;
   };
   /** Ajoute un point (et son jeton) ; son niveau s'il en a un. */
   const add = (id, c, alt) => {
@@ -156,6 +177,7 @@ export async function routeModel(text, {
         lat: (+depC.lat + +arrC.lat) / 2,
         lon: (+depC.lon + +arrC.lon) / 2
       } : okC(depC) ? depC : okC(arrC) ? arrC : null;
+  if (okC(depC) && okC(arrC)) farNm = 2 * nmOf(depC, arrC) + FAR_EXTRA_NM;
   // jetons du texte (frame/lib/route_text.js) ; un nom est cherché dans aerodb, puis parmi les points connus
   for (const [ti, t] of words.entries()) {
     const nx = words[ti + 1];
@@ -272,9 +294,12 @@ export async function routeModel(text, {
     tokens,
     badAirways,
     homonyms,
-    jumps
+    jumps,
+    far
   };
 }
+/** Au-delà de 2 × la distance directe + cette marge, un lieu n'est pas celui de la route (SOG-0142 ; la règle du moteur d'AeroDB). */
+export const FAR_EXTRA_NM = 400;
 /** Au-delà de cette distance entre deux points consécutifs, le tronçon est dit (SOG-0142). */
 export const JUMP_NM = 1000;
 /** Distance orthodromique en NM entre deux { lat, lon }. */

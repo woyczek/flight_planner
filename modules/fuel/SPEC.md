@@ -343,7 +343,10 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   aerodrome, a beacon or a fix of the same name is no homonym of it, and the flight's departure and arrival are never said as homonyms
   (SOG-0154, F118); « PAX : 2 homonymes, le plus proche gardé » and every leg longer than
   1 000 NM (`JUMP_NM`, « NEPIX → SWEPT : 1 043 NM d'un point au suivant, à vérifier ») are said under the route field
-  (`[data-rwarn]`), never corrected silently. An unknown point's row names its **probable zone** (the zone of the resolved point before
+  (`[data-rwarn]`), never corrected silently. A name whose only (or nearest) known place is farther from the route than 2 × the direct
+  distance + 400 NM (`FAR_EXTRA_NM`, the engine's rule of AeroDB) is **not placed** — `far` of `routeModel`, said first under the route
+  (« PAM : le seul lieu connu est à 3 174 NM de la route — non placé ») —, and never taken back from the flight's own earlier points
+  (SOG-0142, F136). An unknown point's row names its **probable zone** (the zone of the resolved point before
   it, by the zones' frames) and the zone's **state**, with the gesture that fits: « base non installée » + « Ajouter <zone> », « base
   installée, fichier du cycle absent — à reconstruire » + « Mettre à jour <zone> » (both to `?app=maintenance#data?zone=<id>`), « base
   installée, mais sa source ne porte ni points ni voies » (no gesture in Données; the external fallbacks of SOG-0143). Until AeroDB's
