@@ -6,7 +6,7 @@ Combustible, con la misión preparada. El vuelo en curso es el mismo en las dos 
 
 ## Primer inicio
 
-- **Las entradas.** Una sola por ahora: Misiones, en la barra inferior de un teléfono y en la columna izquierda de una
+- **Las entradas.** Misiones y Flota (la de la aerolínea actual, en el nivel Completo), en la barra inferior de un teléfono y en la columna izquierda de una
   pantalla. Arriba a la derecha, «?» abre esta ayuda y ⚙ los Ajustes.
 - **Las apps.** El nombre de la aplicación, arriba a la izquierda, abre la lista de aplicaciones (el nombre de su aerolínea
   bajo «Compañía»): un toque pasa a Piloto.

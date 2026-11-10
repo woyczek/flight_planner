@@ -7,7 +7,7 @@ appairé, elle se lit seulement.
 
 ## Premier démarrage
 
-- **Les entrées.** Sur un téléphone, la barre du bas porte les modules de Maintenance : Données, et Appareils au niveau
+- **Les entrées.** Sur un téléphone, la barre du bas porte les modules de Maintenance : Données, et Fiches (de types de performances) au niveau
   qui l'ouvre. En haut à droite, comme dans Pilote, « ? » ouvre cette aide et ⚙ les Réglages, carte Administration
   comprise. Sur un écran, ce sont les entrées de la colonne de gauche, avec l'Administration et les pages de
   service du poste (jetons des pilotes, appareils, page de maintenance V2). Le nom de l'application, en haut à gauche,

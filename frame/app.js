@@ -254,13 +254,23 @@
       id: 'missions',
       label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
       icon: 'target'
+    }, {
+      // la flotte de la compagnie courante (SOG-0231, « 2 entrées » de Compagnie) : le module des appareils, ouvert à sa seule vue Flotte
+      id: 'aircraft',
+      label: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
+      icon: 'plane',
+      query: 'view=fleet'
     }],
-    // une barre d'une seule entrée reste affichée et marquée
     tabs: [{
       id: 'missions',
       label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
       icon: 'target',
       modules: ['missions']
+    }, {
+      id: 'fleet',
+      label: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
+      icon: 'plane',
+      modules: ['aircraft']
     }],
     elsewhere: {
       fuel: 'pilot'
@@ -285,10 +295,11 @@
       label: ['Données', 'Data', 'Daten', 'Datos'],
       icon: 'database'
     }, {
-      // la flotte, les fiches de performances, le registre des appareils (V3 § 10.34, lot A2)
+      // les fiches de types de performances (V3 § 10.34, lot A2) ; la flotte est dans Compagnie (SOG-0231)
       id: 'aircraft',
-      label: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
-      icon: 'plane'
+      label: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
+      icon: 'plane',
+      query: 'view=sheets'
     }],
     links: [{
       id: 'admin',
@@ -322,7 +333,7 @@
       // la barre d'une application ne porte que ses modules ; l'aide et les réglages sont le « ? » et le ⚙ de l'en-tête,
       // comme dans toutes les applications (retour de l'utilisateur, 31 oct. 2026)
       id: 'aircraft',
-      label: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
+      label: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
       icon: 'plane',
       modules: ['aircraft']
     }],
@@ -2964,7 +2975,7 @@
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
       // liens de l'application (écran du cadre « #… » ou page de la suite, dans le même onglet) après ses modules
-      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('') +
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}${m.query ? `?${esc(m.query)}` : ''}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('') +
         links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings">${icon(l.icon)}${esc(t(l.label))}</a></li>`).join('') +
         // les pages de la V2 : toujours la dernière entrée, séparée par un filet, teinte atténuée (frame.css .f-legacy)
         `<li class="f-legacy"><a href="#legacy" data-link="legacy" data-landmark="settings">${icon('file')}${esc(t(LEGACY.label))}</a></li>`;
@@ -3010,7 +3021,7 @@
     const m = APP.modules.find(x => x.id === id);
     return [{
       module: id,
-      hash: `#${id}`,
+      hash: `#${id}${m.query ? `?${m.query}` : ''}`,
       label: m.label,
       icon: m.icon
     }, ...(tb.views || []).filter(v => v.module === id).map(v => ({
@@ -3033,7 +3044,9 @@
   function tabTarget(tb) {
     if (tb.screen) return `#${tb.screen}`;
     const vis = tabVisible(tb);
-    return `#${vis.includes(lastInTab[tb.id]) ? lastInTab[tb.id] : vis[0] || ''}`;
+    const id = vis.includes(lastInTab[tb.id]) ? lastInTab[tb.id] : vis[0] || '',
+      q = APP.modules.find(m => m.id === id)?.query; // une entrée qui ouvre son module à une vue (SOG-0231)
+    return `#${id}${q ? `?${q}` : ''}`;
   }
   /** Barre des onglets du niveau de l'appareil (redessinée seulement quand la liste ou la langue change), adresses et onglet
    *  choisi mis à jour seulement s'ils changent. */

@@ -5990,3 +5990,27 @@ def a145(c):
     c.ok(res['flying'][2] < 900 and res['flying'][1] == 'aborted', str(res), 'a call abandoned in flight answers at once, not at the end of the launcher’s answer')
     c.ok(res['sent'] <= 4, str(res), 'the one abandoned while it waited never reached the launcher (at most the four others)')
     c.check_errors()
+
+
+@case('A146', 'Compagnie has an entry « Flotte » that opens the aircraft module on its Fleet view alone, Maintenance keeps « Fiches » (the Sheets view alone): the entries carry their view, in the rail and in the phone bar (SOG-0231)', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0231 (the user: « 2 entrées » de Compagnie): the fleet of the current airline is an entry of the Company application (« Flotte », #aircraft?view=fleet), Maintenance keeps the performance sheets only (« Fiches », #aircraft?view=sheets); an entry may carry a `query` that opens its module on a view (the rail, the phone bar and its menu); « Registre des missions » has no screen: nothing coded for it')
+def a146(c):
+    lang = c.lang
+    word = {'fleet': {'fr': 'Flotte', 'en': 'Fleet', 'de': 'Flotte', 'es': 'Flota'}, 'sheets': {'fr': 'Fiches', 'en': 'Sheets', 'de': 'Datenblätter', 'es': 'Fichas'}}
+    for app, view, target in (('maintenance', 'sheets', 'settings'), ('company', 'fleet', 'missions')):
+        c.open(target, app=app, docs=LEVEL3, wait=False)
+        c.until("!!document.querySelector('#fView > *')", timeout=20000, what=f'the application {app}')
+        sel = f'a[href$="#aircraft?view={view}"]'
+        c.until(f"[...document.querySelectorAll('#fMenu {sel}, #fTabs {sel}')].some(a => a.getClientRects().length)", timeout=10000, what=f'the entry of {app}')
+        label = norm(c.js(f"[...document.querySelectorAll('#fMenu {sel}, #fTabs {sel}')].find(a => a.getClientRects().length).textContent"))
+        c.eq(label, norm(word[view][lang]), f'{app}: the entry says « {word[view][lang]} »', what=f'label ({app})')
+        labels = c.js("[...document.querySelectorAll('#fMenu li a, #fTabs a')].filter(a => a.getClientRects().length).map(a => a.textContent.replace(/\\s+/g, ' ').trim())")
+        c.ok('Appareils' not in labels and 'Aircraft' not in labels, str(labels), f'{app}: no entry called « Appareils » any more')
+        c.js(f"() => [...document.querySelectorAll('#fMenu {sel}, #fTabs {sel}')].find(a => a.getClientRects().length).click()")
+        c.until("location.hash.startsWith('#aircraft')", timeout=10000, what='the aircraft module')
+        c.until("!!document.querySelector('[data-module=aircraft]')", timeout=15000, what='the module is drawn')
+        c.wait(600)
+        c.eq(c.count('[data-module=aircraft] [data-view]'), 0, f'{app}: the entry opens the module on its view alone, no bar of two views', what=f'view ({app})')
+        c.shot(f'A146_{app}_{c.width}_{lang}_delivered.png')
+    c.check_errors()

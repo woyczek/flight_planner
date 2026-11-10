@@ -6,7 +6,7 @@ the mission prepared. The flight in progress is the same in both apps.
 
 ## First start
 
-- **The entries.** Only one for now: Missions, in the bottom bar of a phone and in the left column of a screen. Top right,
+- **The entries.** Missions, and Fleet (the current airline's, at the Full level), in the bottom bar of a phone and in the left column of a screen. Top right,
   « ? » opens this help and ⚙ the Settings.
 - **The apps.** The application's name, top left, opens the list of applications (your airline's name under « Company »):
   one tap goes to Pilot.

@@ -8,7 +8,7 @@ Full level. With the workstation's launcher it writes; without a launcher, or fr
 
 ## First start
 
-- **The entries.** On a phone, the bottom bar carries Maintenance's modules: Data, and Aircraft at the level that opens
+- **The entries.** On a phone, the bottom bar carries Maintenance's modules: Data, and Sheets (performance sheets of the types) at the level that opens
   it. Top right, as in Pilot, "?" opens this help and ⚙ the Settings, the Administration card included. On a screen they
   are the entries of the left column, with Administration and the workstation's service pages (pilots' tokens,
   devices, V2 maintenance page). The application's name, top left, opens the list of applications: one tap goes to Pilot.

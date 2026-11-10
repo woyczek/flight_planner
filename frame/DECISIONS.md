@@ -2898,3 +2898,13 @@ DEFA gone from the list, the assistant refusing to recreate it.
   Fix: `gesture()` = `userActivation.isActive` when the API exists, else the last `pointerdown` / `keydown` / `touchstart` seen by the layer (5 s). No change where the API exists.- **R2 (ctx.net): an abandoned relayed call held its place.** `relayTake` ignored `init.signal`, and the relay `fetch` did not take it: a Weather grid left for another screen kept two places of its host (and up to 15 s of the launcher's four) for calls nobody waited for; the next screen's calls queued behind them or came back « busy ».
   Proof: noreg A145 — the abandoned call answered at 1.5 s (the slow launcher's end) before, at once after, one abandoned while waiting never reaches the launcher. Fix: `relayTake(host, signal)` leaves the queue on abort (null → `offline: aborted`), the relay `fetch` carries the signal (AbortError → `aborted`). The launcher finishes its own call; the next place meets « busy » and replays it as designed (SOG-0198).
 
+
+## 11 November 2026 — SOG-0231: « Flotte » in Company, « Fiches » alone in Maintenance (navigation only)
+
+The user: « 2 entrées » of Company (no fourth application). Done in the frame (`APPS` in `frame/app.js`) once Features SOG's `modules/aircraft` could open on one view (`meta.apps: ['maintenance', 'company']`, `ctx.consume('view')`, f8e769d9b):
+- a module entry of an application may carry a **`query`** that opens its module on a view: the rail's link, the phone bar's target (`tabTarget`) and the bar's menu rows follow it;
+- **Company** gets « Flotte » (`#aircraft?view=fleet`, the fleet of the current airline, said in the title; level 3 like the module) and its phone tab; **Maintenance** keeps « Fiches » (`#aircraft?view=sheets`), no longer « Appareils » (which also named the paired devices: « Appareils connectés », A143);
+- **« Registre des missions » has no screen** (the registry is a data index, the Missions list is its derived view): nothing coded; the entry waits for the ergonomist's design;
+- the intro manuals of Company and Maintenance say it (×4). Noreg A146 (the entry says « Flotte » / « Fiches », opens the module on its view alone, no entry called « Appareils »).
+- Found on the way, not mine: `modules/data/follow.js:412` throws « Cannot read properties of null (reading 'ctx') » at the mount of Données in Maintenance in A146's setting (`pageerror`); reported to Settings.
+

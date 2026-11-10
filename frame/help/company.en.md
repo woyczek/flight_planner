@@ -8,7 +8,7 @@ the mission prepared. The flight in progress is the same in both apps.
 
 ## First start
 
-- **The entries.** Only one for now: Missions, in the bottom bar of a phone and in the left column of a screen. Top right,
+- **The entries.** Missions, and Fleet (the current airline's, at the Full level), in the bottom bar of a phone and in the left column of a screen. Top right,
   « ? » opens this help and ⚙ the Settings.
 - **The apps.** The application's name, top left, opens the list of applications (your airline's name under « Company »):
   one tap goes to Pilot.
@@ -41,6 +41,34 @@ The airline's missions, in the Company application: those of the shared reposito
 - The envelope, the page-by-page reader and the assignments will come later.
 
 <!-- fr: e786600425be -->
+
+<!-- chapter: aircraft -->
+# Aircraft
+
+The company's fleet, as the other screens read it: the report (registration → type, callsigns), the map, the CPCO. The performance sheets are in the same screen ("Sheets" tab); the type registry will come.
+
+## How to use it
+
+<a id="aircraft-fleet"></a>**The fleet.** One row per aircraft: registration, type, callsigns, base, "out of service" when it is. The search filters on the registration, the type, a callsign or the base; seven rows are shown, "N more" unfolds the rest. "Add" opens an empty aircraft. The fleet is the one of the airline chosen in Settings › Airline; changing the airline changes the list, and an aircraft added goes into that airline's fleet.
+
+<a id="aircraft-edit"></a>**Editing an aircraft.** A tap on a row opens it: identity (registration, type, variant, operator) and operation (callsigns separated by commas, base, tactical number, in service). Under the fields, a line says what will change ("2 fields changed: base, callsigns"); "Save" writes it. From two characters (upper case or not), the Type field suggests the types of the database and the matching sheets ("H145 · Airbus H145 · sheet H145"); a tap, or ↓ then Enter, writes the type code. A type the database does not know is kept as typed, and the screen says so. The registration is the key: two aircraft cannot share it. The location the site gives stays as it is. "Retire" asks, then the aircraft leaves the fleet; its performance sheet, if it has one, is kept.
+
+<a id="aircraft-sheets"></a>**The sheets.** The "Sheets" tab lists the performance sheets by family (helicopters, turboprops, jets, pistons, others); the search filters on the name, the type or the registration. Each row says where the sheet comes from, what it lacks and its date; a fleet type without a sheet is offered "to complete". "Import a file" reads a CSV, a JSON, a .lnmperf or a SimBrief OFP; "Paste a text" reads a pasted text, a ChatGPT answer included; "New sheet" asks for the type code. Nothing is written at once: an import first shows, field by field, what would change; untick what you keep, then "Apply the selection". Several sheets at once: each preview names its sheet and its rank ("3 / 13"), a sheet that does not change is passed by itself, "Skip this sheet" goes to the next one without writing anything, and the end gives the summary; a note already written is replaced only if you tick it. The chosen tab is kept on the device, and the link `#aircraft?sheet=<id>` opens a sheet's editor directly.
+
+<a id="aircraft-sheet-edit"></a>**Editing a sheet.** A tap on its name (or its line) opens the editor: the fields by group (identity, fuel, runway and alternate, climb, cruise, descent, RPM), the RPM / fuel flow table on a large screen, and the EUROCONTROL completion, "Complete from another sheet…" (a button that opens the search of the sheets, nothing chosen in advance) or "Complete with ChatGPT", which copies the request and opens ChatGPT in a new tab: paste the request there if it is not, then paste its answer under the button. "Fuel as volume" and "Fuel density" are explained under the field; a density outside 0.5 to 1.0 is refused. An RPM / fuel-flow table whose flow goes down while the RPM goes up is flagged (the row in orange, "a range misread?"); nothing is corrected without you. A dot "•" at the end of a filled field's label gives its origin and date ("lnmperf · 28/10", "edited · 30/10") on hover or a tap, with the discarded values; each card's title recalls its sources once ("Sources: V2 base · 28/10, edited · 30/10"). "Save" opens the preview of the changes, which are written only after "Apply the selection"; each changed field thus keeps its source, and the old value is kept. "Export .lnmperf" and "Export JSON" download the sheet; "Delete" asks before removing the sheet from the shared database. An altitude in the "ft" column makes a curve of its own: the rows of that altitude; if its flow goes down while the RPM goes up, a line says so with the altitude ("… at 8000 ft: a range misread?") and marks the row, correcting nothing. Under the table, "Propose from the measurements" reads one or more Fuel Phase Monitor journals (.csv, .csv.gz) chosen on the device (they are neither kept nor sent): the steady levels of the sheet's type are listed by altitude and RPM, with the deviation from the curve of the same altitude ("sheet 40, deviation -5 %") or "new row"; tick the ones to keep, "Add the ticked rows to the draft", then "Save" and "Apply" as for any change. With several altitudes, the table is one folding group per altitude ("8000 ft · 4 settings"); each row also has an optional TAS (kt), which Fuel reads when two rows frame the cruise RPM. On the workstation, "From the Output folder" lists the journals of X-Plane's Output folder (set once with "Set the Output folder"): tick them, "Read the ticked journals", and the levels are shown the same way. At the head of the table, "Curves" draws the fuel flow against the RPM, one colour per altitude with its legend; the measured levels are added as squares. The measured climb and descent each have a line there (RPM, fuel flow, rate, airspeed, throttle, and the sheet's current value): ticked, it fills the climb or the descent of the draft. The editor's top line stays visible: the sheet's name and its unit ("lb · lb/h"); a tap on the unit leads to its choice. The levels are put on significant levels (up to 5,000 ft by 1,000, then FL100, 150, 200 … 450: an FL181 counts as FL200); a level without measurement between two measured ones is computed, greyed and said "extrapolated". The measurements accepted stay on the device for a later computation, never published.
+
+<a id="aircraft-fuel-volume"></a>**Fuel as volume.** Ticked: the quantities of this sheet (usable, taxi, reserve, flows) are volumes — litres or gallons, as the simulator shows them —, not masses; the density below converts them to kilograms.
+
+<a id="aircraft-fuel-density"></a>**Density.** Kilograms per litre of the fuel: Jet A-1 about 0.80, Avgas about 0.72. It belongs to the fuel, not to the aircraft: leave it empty for the airline’s value (Settings), else the typical one. Between 0.5 and 1.0.
+
+**Fuel units.** At the top of the editor, "Fuel read and typed in" offers kg, lb, l or US gal (and kg/h, lb/h, l/h, gal/h for the flows); each field and the RPM / fuel-flow table carry the unit chosen. A converted value is written with two significant digits (12,407.6 lb/h reads 12000); a value you typed stays as you wrote it, and the sheet keeps its value as long as you do not touch the field. The sheet keeps its stored unit: a line says it with the density used; a typed value is converted when saved, an untouched value does not change.
+
+## Good to know
+
+- The Site module also updates the fleet from the pasted "Fleet" page of the site: both write the same file, each save reads the file just before and changes one aircraft only.
+- Nothing leaves before the next synchronisation.
+
+<!-- fr: c202cf6c2d68 -->
 
 <!-- chapter: settings -->
 # Settings

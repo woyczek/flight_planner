@@ -7,7 +7,7 @@ emparejado, solo se lee.
 
 ## Primer arranque
 
-- **Las entradas.** En un teléfono, la barra inferior lleva los módulos de Mantenimiento: Datos, y Aeronaves en el nivel
+- **Las entradas.** En un teléfono, la barra inferior lleva los módulos de Mantenimiento: Datos, y Fichas (fichas de rendimiento de los tipos) en el nivel
   que lo abre. Arriba a la derecha, como en Piloto, «?» abre esta ayuda y ⚙ los Ajustes, tarjeta Administración incluida.
   En una pantalla son las entradas de la columna izquierda, con Administración y las páginas de servicio del puesto
   (tokens de los pilotos, dispositivos, página de mantenimiento V2). El nombre de la aplicación, arriba a la izquierda,

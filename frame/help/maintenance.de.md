@@ -9,7 +9,7 @@ ohne Starter oder von einem gekoppelten Gerät aus ist sie nur lesbar.
 
 ## Erster Start
 
-- **Die Einträge.** Auf einem Telefon trägt die untere Leiste die Module von Wartung: Daten, und Luftfahrzeuge auf der
+- **Die Einträge.** Auf einem Telefon trägt die untere Leiste die Module von Wartung: Daten, und Datenblätter (Leistungsdatenblätter der Typen) auf der
   Stufe, die es öffnet. Oben rechts öffnet wie in Pilot „?“ diese Hilfe und ⚙ die Einstellungen, samt Karte Verwaltung.
   Auf einem Bildschirm sind es die Einträge der linken Spalte, mit Verwaltung und den Dienstseiten des Rechners
   (Token der Piloten, Geräte, Wartungsseite V2). Der Name der Anwendung oben links öffnet die Liste der Anwendungen: Ein

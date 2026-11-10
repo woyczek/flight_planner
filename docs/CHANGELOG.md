@@ -118,6 +118,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Navigation: « Flotte » is an entry of Company, Maintenance keeps « Fiches »** (`frame/app.js` `APPS`: module entries may carry a `query`; intro manuals ×4; noreg A146; SOG-0231, « 2 entrées »). The fleet of the current airline opens in Company on its own view;
+  Maintenance keeps the performance sheets. « Registre des missions » has no screen yet: nothing coded.
 - **Frame: a relayed call the caller gave up frees its place at once** (`frame/app.js` `relayTake`, `ctx.net.fetch`; INTEGRATION § ctx.net; noreg A145; challenge of the frame, 11 Nov). A caller that aborts (leaving a screen) kept its place in
   the relay queue and its request until the launcher answered (15 s at most): the next calls waited behind it or were refused « busy ». An abort now answers `offline` with the reason `aborted`, rejects the page's request and leaves the queue; one abandoned while it waits never reaches the launcher.
 - **Data layer: the write guard recognises a user's gesture without `navigator.userActivation`** (`frame/store/frame_data.js` `gesture`; bench A53; challenge of the frame, 11 Nov). A browser without the API (older Safari)

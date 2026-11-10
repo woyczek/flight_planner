@@ -6,7 +6,7 @@ l'appli Pilote, dans Carburant, avec la mission préparée. Le vol en cours est 
 
 ## Premier démarrage
 
-- **Les entrées.** Une seule pour l'instant : Missions, dans la barre du bas d'un téléphone et dans la colonne de gauche
+- **Les entrées.** Missions, et Flotte (celle de la compagnie courante, au niveau Complet), dans la barre du bas d'un téléphone et dans la colonne de gauche
   d'un écran. En haut à droite, « ? » ouvre cette aide et ⚙ les Réglages.
 - **Les applis.** Le nom de l'application, en haut à gauche, ouvre la liste des applications (le nom de votre compagnie
   sous « Compagnie ») : un toucher passe à Pilote.
