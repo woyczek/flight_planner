@@ -597,6 +597,23 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   background: #fff
 }
 /* réglages, carte Synchronisation : écritures en attente, une par ligne */
+/* une question à groupes titrés (ctx.ask sections) : sept lignes visibles par groupe, le reste défile dans le groupe */
+.f-ask-lines {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  max-height: calc(7 * 1.4em);
+  overflow-y: auto;
+  overflow-wrap: anywhere
+}
+.f-ask-lines li {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1.4
+}
+[data-ask-section] h4 {
+  margin: 8px 0 2px
+}
 .f-queue {
   list-style: none;
   padding: 0;

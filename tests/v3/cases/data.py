@@ -1099,7 +1099,9 @@ def _ask_text(c):
     """The question of the frame's window: { text, ok, no } (the texts of the two buttons)."""
     c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question is asked')
     return c.js("""() => ({ text: document.querySelector('.f-modal p').textContent.replace(/\\s+/g, ' ').trim(), ok: document.querySelector('.f-modal [data-ok]').textContent.trim(),
-      no: !!document.querySelector('.f-modal [data-no]') })""")
+      no: !!document.querySelector('.f-modal [data-no]'),
+      sections: [...document.querySelectorAll('.f-modal [data-ask-section]')].map(g => [g.dataset.askSection, g.querySelector('h4').textContent.replace(/\\s+/g, ' ').trim(), [...g.querySelectorAll('li')].map(li => li.textContent.replace(/\\s+/g, ' ').trim())]),
+      note: (document.querySelector('.f-modal > div > p.f-muted') || { textContent: '' }).textContent.replace(/\\s+/g, ' ').trim() })""")
 
 
 @case('L12', 'Données: Publier against a fake launcher and a fake frame sync (state, one question, the gesture, result, notification, journal, grey reasons)', 'L',
@@ -2649,15 +2651,18 @@ def l19(c):
     c.eq(c.js("[...document.querySelectorAll('[data-build] .d-verbs:not([data-select-row]) button:not([data-verb=update])')].map(b => b.dataset.verb)"), ['download', 'pickup', 'build', 'purge'], 'after Télécharger', what='order')
     _screen_ok(c, 'before')
     # ---- B: the plan (dry sent explicitly), ONE question; No takes nothing
-    taken_txt = T('pickupTaken').replace('{z}', zname('fr')).replace('{s}', s_sia).replace('{zip}', sia_zip['zip']).replace('{n}', f"3 {FILES[lang][1]}").replace('{b}', _size(5242880, lang))
+    PK = lambda key: _trow(key, lang, after='  pk: {')
+    short = lambda x: re.sub(r'\s*\(.*\)\s*$', '', x)
+    take_ln = PK('takeZip').replace('{z}', zname('fr')).replace('{zip}', sia_zip['zip']).replace('{b}', _size(5242880, lang))
     miss_txt = T('pickupMissing').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{e}', miss_gb['expected'])
-    ask = T('pickupAsk').replace('{taken}', taken_txt).replace('{missing}', f' {miss_txt}.').replace('{to}', 'data/sia/')
+    fix_ln = PK('fixMissing').replace('{z}', zname('gb')).replace('{s}', short(s_nats)).replace('{e}', miss_gb['expected'])
+    ask = {'text': norm(PK('title')), 'sections': [['take', norm(PK('take').replace('{n}', '1')), [norm(take_ln)]], ['fix', norm(PK('fix').replace('{n}', '1')), [norm(fix_ln)]]], 'note': ''}
     plan = _pk_plan([sia_zip], [miss_gb])
     st['views'], st['i'], st['start'] = [plan], 0, (200, {'job': 'k1'})
     n = len(st['posts'])
     c.tap(pk)
     q = _ask_text(c)
-    c.eq([norm(q['text']), norm(q['ok']), q['no'], len(st['posts']) - n], [norm(ask), norm(T('pickup')), True, 1], 'ONE question from the plan: the zip found (name, files, size), the file missing with its pattern, where the files go, raw and never committed', what='question')
+    c.eq([{'text': norm(q['text']), 'sections': q['sections'], 'note': norm(q['note'])}, norm(q['ok']), q['no'], len(st['posts']) - n], [ask, norm(T('pickup')), True, 1], 'ONE question from the plan, in titled groups, one line per file: what will be taken (country · file · size), what to fix (country · source : drop the file), and the note on where the files go (raw, never committed', what='question')
     c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'personal': [], 'dry': True}}, 'the plan is a dry run, sent explicitly', what='dry body')
     c.eq([_bv(c), c.js(f"document.querySelector('{pk}').disabled")], [['download:off', 'build:off', 'purge:off'], True], 'every button is grey while the question is open', what='during the question')
     c.tap('.f-modal [data-no]')
@@ -2718,7 +2723,8 @@ def l19(c):
     c.tap(pk)
     q = _ask_text(c)
     big_txt = T('pickupFailedLine').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{r}', T('pickupTooLarge').replace('{n}', '500'))
-    c.eq(norm(q['text']), norm(T('pickupAsk').replace('{taken}', taken_txt).replace('{missing}', f' {big_txt}.').replace('{to}', 'data/sia/')), 'the failure is in the question: the size message in words', what='question 2')
+    big_q = T('pickupFailedLine').replace('{z}', zname('gb')).replace('{s}', short(s_nats)).replace('{r}', T('pickupTooLarge').replace('{n}', '500'))
+    c.eq([q['sections'][0], q['sections'][1]], [['take', norm(PK('take').replace('{n}', '1')), [norm(take_ln)]], ['fix', norm(PK('fix').replace('{n}', '1')), [norm(big_q)]]], 'the failure is in the « to fix » group: the size message in words', what='question 2')
     st['start'] = (200, {'job': 'k5'})
     c.tap('.f-modal [data-ok]')
     c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'partial'", timeout=10000, what='the partial end')
@@ -2795,9 +2801,12 @@ def l19(c):
     c.tap(pk)
     q = _ask_text(c)
     rename = T('pickupRename').replace('{z}', zname('fr')).replace('{s}', s_sia).replace('{zip}', bad_zip['zip'])
-    nats_txt = T('pickupTaken').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{zip}', nats_zip['zip']).replace('{n}', f"1 {FILES[lang][0]}").replace('{b}', _size(4194304, lang))
-    c.eq(norm(q['text']), norm(T('pickupAsk').replace('{taken}', nats_txt).replace('{missing}', f' {rename}.').replace('{to}', 'data/sia/zones/gb/')),
-         'the plan shows the zip with the bad name as « nom de fichier à renommer » and lists only the ready one as to be taken', what='question rename')
+    nats_ln = PK('takeZip').replace('{z}', zname('gb')).replace('{zip}', nats_zip['zip']).replace('{b}', _size(4194304, lang))
+    rename_ln = PK('fixRename').replace('{z}', zname('fr')).replace('{s}', short(s_sia)).replace('{zip}', bad_zip['zip'])
+    if c.width in (390, 1280):
+        c.shot(f'L19_question_{c.width}_{lang}_delivered.png')   # the delivered state: groups, one line per file
+    c.eq(q['sections'], [['take', norm(PK('take').replace('{n}', '1')), [norm(nats_ln)]], ['fix', norm(PK('fix').replace('{n}', '1')), [norm(rename_ln)]]],
+         'the plan lists only the ready zip as to be taken, and the zip with the bad name under « to fix » as an instruction (rename it without space or accent)', what='question rename')
     st['start'] = (200, {'job': 'i2'})
     c.tap('.f-modal [data-ok]')
     for _ in range(40):
@@ -3519,8 +3528,11 @@ def l28(c):
     st['views'], st['i'], st['start'] = [plan], 0, (200, {'job': 'k1'})
     c.tap(pk)
     q = _ask_text(c)
-    c.ok(norm(T('pickupConverted').replace('{n}', '1')) in norm(q['text']), q['text'], 'the question says the JSON that is converted')
-    c.ok('fr_apt.xml' in q['text'], q['text'], 'and the XML that is not read, by its name')
+    if c.width in (390, 1280):
+        c.shot(f'L28_question_{c.width}_{lang}_delivered.png')
+    lines = ' '.join(l for g in q['sections'] for l in g[2])
+    c.ok(norm(T('pickupConverted').replace('{n}', '1')) in norm(lines), lines, 'the question says the JSON that is converted (in the group of what will be taken)')
+    c.eq([[g[0], 'fr_apt.xml' in ' '.join(g[2])] for g in q['sections']], [['take', False], ['ignore', True]], 'and the XML that is not read, by its name, in the « ignored » group')
     st['views'], st['i'], st['start'] = [_pk_plan([taken], dry=False, zones=('fr',), shown=None)], 0, (200, {'job': 'k2'})
     c.tap('.f-modal [data-ok]')
     for _ in range(40):   # the real run is sent (the build of the zone taken follows it by itself, SOG-0180)
@@ -4743,8 +4755,10 @@ def l57(c):
       return { fits: r.top >= 0 && r.bottom <= innerHeight, btn: o.top >= 0 && o.bottom <= innerHeight, h: Math.round(r.height), vh: innerHeight, inner: p.scrollHeight > p.clientHeight } }"""
     c.tap('[data-build] [data-verb=pickup]')
     q = _ask_text(c)
-    more = norm(T('pickupMore').replace('{n}', '53'))
-    c.ok(more in norm(q['text']) and 'EG_06_' in q['text'] and 'EG_07_' not in q['text'], q['text'][-300:], 'sixty files missing: seven lines, then « … et 53 autres »; the eighth is not written')
+    fixg = [g for g in q['sections'] if g[0] == 'fix'][0]
+    c.ok(len(fixg[2]) == 60 and 'EG_00_' in fixg[2][0] and 'EG_59_' in fixg[2][-1], fixg[2][:2], 'sixty files to fix: sixty lines in their group (the group scrolls, nothing is cut by « … et n autres »)')
+    lst = c.js("() => { const u = document.querySelector('.f-modal [data-ask-section=fix] .f-ask-lines'), li = parseFloat(getComputedStyle(u.querySelector('li')).lineHeight); return { rows: Math.round(u.clientHeight / li * 10) / 10, scrolls: u.scrollHeight > u.clientHeight, overflow: getComputedStyle(u).overflowY } }")
+    c.ok(lst['scrolls'] and lst['overflow'] == 'auto' and 6.5 <= lst['rows'] <= 7.6, lst, 'the group shows seven lines of text at most and scrolls inside itself')
     g = c.js(geo)
     c.ok(g['fits'] and g['btn'] and g['h'] <= g['vh'] * 0.7 + 1, g, 'the question fits the screen (70 vh at most), its buttons in view without scrolling the page')
     if c.width in (390, 1280):

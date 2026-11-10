@@ -799,35 +799,61 @@ export function pickupProblems(out) {
     r: pickupWhy(f.error)
   }))];
 }
-/** La question du plan : pour chaque zone le zip trouvé (nom, nombre de fichiers, taille), ce qui manque ou a échoué, où vont les fichiers (sources brutes du poste,
- *  jamais commitées). */
-/** Une liste de lignes bornée à sept, la suite dite « … et n autres » : une question reste lisible, quel que soit le nombre de fichiers (SOG-0151). */
-const capLines = list => list.length > PICKUP_LINES ? [...list.slice(0, PICKUP_LINES), tt(TX.pickupMore, {
-  n: list.length - PICKUP_LINES
-})] : list;
-const PICKUP_LINES = 7;
+/** Le nom court d'une source (celui du catalogue sans sa parenthèse) : « LFV », pas « LFV (eAIP de Suède) ». */
+const shortSource = id => sourceName(id).replace(/\s*\(.*\)\s*$/, '');
+/** La question du plan de la prise (SOG-0197) : une introduction et trois groupes titrés, une ligne par fichier — « Sera pris (n) » (pays · fichier · taille), « Ignoré (n) » (pays · fichier : la raison), « À corriger (n) » (pays · source : ce qu'il faut faire) —, jamais une parenthèse dans une parenthèse ; la phrase sur
+ *  l'endroit où vont les fichiers est une note grise. Rend { text, sections: [{ id, title, lines }], note } pour ctx.ask ; un groupe vide n'est pas là. */
 export function pickupAsk(out) {
-  const problems = pickupProblems(out),
-    dest = [...new Set(out.taken.map(t => M.own(M.PICKUP_DEST, t.source)).filter(Boolean))].join(', ');
-  return tt(TX.pickupAsk, {
-    taken: capLines(out.taken.map(t => t.source === M.OPENAIP ? tt(TX.pickupTakenFiles, {
+  const T = TX.pk,
+    who = x => ({
+      z: itemName('base', x.zone),
+      s: shortSource(x.source)
+    }),
+    take = out.taken.map(t => t.source === M.OPENAIP ? tt(T.takeFiles, {
       z: itemName('base', t.zone),
-      s: sourceName(t.source),
+      s: shortSource(t.source),
       n: count('file', t.files.length),
       b: M.fmtBytes(t.bytes, lang()),
       c: t.converted.length ? tt(TX.pickupConverted, {
         n: t.converted.length
       }) : ''
-    }) : tt(TX.pickupTaken, {
+    }) : tt(T.takeZip, {
       z: itemName('base', t.zone),
-      s: sourceName(t.source),
       zip: t.zip,
-      n: count('file', t.files.length),
       b: M.fmtBytes(t.bytes, lang())
-    }))).join(' ; '),
-    missing: problems.length ? ` ${capLines(problems).join(' ; ')}.` : '',
-    to: dest
-  });
+    })),
+    ignore = (out.skipped || []).map(x => tt(M.own(T, x.why === 'layer' ? 'skipLayer' : 'skipFormat'), {
+      z: itemName('base', x.zone),
+      name: x.name
+    })),
+    fix = [...(out.blocked || []).map(t => tt(T.fixRename, {
+      ...who(t),
+      zip: t.zip
+    })), ...(out.unread || []).map(x => tt(T.fixUnread, {
+      ...who(x),
+      n: x.sets.length
+    })), ...out.missing.map(m => tt(T.fixMissing, {
+      ...who(m),
+      e: m.expected
+    })), ...out.failed.map(f => M.REPLAN_ERRORS.includes(f.error) ? tt(TX[f.error === 'changed' ? 'pickupChanged' : 'pickupNotShown'], {
+      ...who(f),
+      zip: f.zip || '?'
+    }) : tt(TX.pickupFailedLine, {
+      ...who(f),
+      r: pickupWhy(f.error)
+    }))],
+    group = (id, title, lines) => lines.length ? [{
+      id,
+      title: tt(title, {
+        n: lines.length
+      }),
+      lines
+    }] : [];
+  return {
+    text: tt(T.title),
+    sections: [...group('take', T.take, take), ...group('ignore', T.ignore, ignore), ...group('fix', T.fix, fix)],
+    note: ''
+  };
 }
 /** Le résumé de la fin d'une prise : { text, hint (« Lancez maintenant Construire » quand des fichiers ont été pris), level }. */
 export function pickupSummary(out) {

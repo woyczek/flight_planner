@@ -1231,13 +1231,36 @@ export const TX = {
     '{z}: {n} {s}-Datensätze vorhanden: „Ich bestätige, die Daten für meinen persönlichen Gebrauch zu nutzen“ ist nicht angekreuzt',
     '{z}: {n} conjuntos {s} presentes: la casilla «Certifico que uso los datos para mi uso personal» no está marcada'
   ],
-  pickupMore: ['… et {n} autres', '… and {n} more', '… und {n} weitere', '… y {n} más'],
-  pickupAsk: [
-    'Prendre dans Téléchargements : {taken}.{missing} Les fichiers vont dans {to} ; ce sont des sources brutes du poste, jamais commitées.',
-    'Take from Downloads: {taken}.{missing} The files go into {to}; they are raw sources of this workstation, never committed.',
-    'Aus Downloads übernehmen: {taken}.{missing} Die Dateien kommen nach {to}; es sind Rohquellen dieses Rechners, nie committet.',
-    'Tomar de Descargas: {taken}.{missing} Los archivos van a {to}; son fuentes en bruto de este equipo, nunca con commit.'
-  ],
+  // la question du plan de « Prendre le fichier téléchargé » (SOG-0197) : trois groupes titrés, une ligne par fichier (pays · fichier · taille), jamais une parenthèse dans une parenthèse
+  pk: {
+    title: ['Dans Téléchargements :', 'In Downloads:', 'In Downloads:', 'En Descargas:'],
+    take: ['Sera pris ({n})', 'Will be taken ({n})', 'Wird übernommen ({n})', 'Se tomará ({n})'],
+    ignore: ['Ignoré ({n})', 'Ignored ({n})', 'Ignoriert ({n})', 'Ignorado ({n})'],
+    fix: ['À corriger ({n})', 'To fix ({n})', 'Zu korrigieren ({n})', 'Por corregir ({n})'],
+    takeZip: ['{z} · {zip} · {b}', '{z} · {zip} · {b}', '{z} · {zip} · {b}', '{z} · {zip} · {b}'],
+    takeFiles: ['{z} · {s} · {n} · {b}{c}', '{z} · {s} · {n} · {b}{c}', '{z} · {s} · {n} · {b}{c}', '{z} · {s} · {n} · {b}{c}'],
+    skipFormat: ['{z} · {name} : format XML non lu, exportez en GeoJSON ou en JSON sur openaip.net',
+      '{z} · {name}: XML format not read, export it as GeoJSON or JSON on openaip.net',
+      '{z} · {name}: XML-Format wird nicht gelesen, auf openaip.net als GeoJSON oder JSON exportieren',
+      '{z} · {name}: formato XML no leído, expórtelo en GeoJSON o JSON en openaip.net'
+    ],
+    skipLayer: ['{z} · {name} : couche « hot », non utilisée', '{z} · {name}: “hot” layer, not used',
+      '{z} · {name}: „hot“-Ebene, nicht verwendet', '{z} · {name}: capa «hot», no se usa'
+    ],
+    fixRename: ['{z} · {s} : renommez {zip} sans espace ni accent', '{z} · {s}: rename {zip} without space or accent',
+      '{z} · {s}: {zip} ohne Leerzeichen und Akzent umbenennen',
+      '{z} · {s}: renombre {zip} sin espacio ni acento'
+    ],
+    fixMissing: ['{z} · {s} : déposez {e} dans Téléchargements', '{z} · {s}: drop {e} into Downloads',
+      '{z} · {s}: legen Sie {e} in Downloads ab', '{z} · {s}: deje {e} en Descargas'
+    ],
+    fixUnread: [
+      '{z} · {s} : {n} jeu(x) présent(s), cochez « Je certifie utiliser les données pour mon usage personnel », puis « Mettre à jour »',
+      '{z} · {s}: {n} set(s) there, tick “I certify that I use the data for my personal use”, then “Update”',
+      '{z} · {s}: {n} Datensatz/-sätze vorhanden, „Ich bestätige, die Daten für meinen persönlichen Gebrauch zu nutzen“ ankreuzen, dann „Aktualisieren“',
+      '{z} · {s}: {n} conjunto(s) presente(s), marque «Certifico que uso los datos para mi uso personal» y luego «Actualizar»'
+    ]
+  },
   pickupTaken: ['{z} ({s}) : {zip} ({n}, {b})', '{z} ({s}): {zip} ({n}, {b})', '{z} ({s}): {zip} ({n}, {b})',
     '{z} ({s}): {zip} ({n}, {b})'
   ],
@@ -1305,10 +1328,8 @@ export const TX = {
     '{z} ({s}): diese Datei wurde im Plan nicht gezeigt ({zip}): für diese Quelle wurde nichts übernommen',
     '{z} ({s}): este archivo no se mostró en el plan ({zip}): no se tomó nada de esta fuente'
   ],
-  pickupRename: ['{z} ({s}) : {zip} — nom de fichier à renommer : lettres, chiffres, . _ -',
-    '{z} ({s}): {zip} — file name to rename: letters, digits, . _ -',
-    '{z} ({s}): {zip} — Dateiname umbenennen: Buchstaben, Ziffern, . _ -',
-    '{z} ({s}): {zip} — nombre de archivo por renombrar: letras, cifras, . _ -'
+  pickupRename: ['{z} ({s}) : renommez {zip} sans espace ni accent', '{z} ({s}): rename {zip} without space or accent',
+    '{z} ({s}): {zip} ohne Leerzeichen und Akzent umbenennen', '{z} ({s}): renombre {zip} sin espacio ni acento'
   ],
   pickupReplan: ['Relancer le plan', 'Run the plan again', 'Plan erneut ausführen', 'Repetir el plan'],
   pickupHint: ['La construction de ces zones démarre d’elle-même.', 'These zones are built next, by themselves.',

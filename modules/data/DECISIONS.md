@@ -384,3 +384,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **Seven columns**: the country and the six the brief names; the source and licence (several per country) and the counts of aerodromes, navaids and VFR points go to the detail of the row, where there is room for words. « non » is a count of 0 (the contract: no unknown). Licence, publisher and credit are the catalogue's, never the launcher's text.
 - **No filter of the user's coverage**: the table shows every zone the launcher knows, not only the zones ticked on this workstation (the point is to see where the data is missing).
 - **Counter-test**: L67 (no block before). Not done: a « Mettre à jour » button on a row (it would be the third way to start an update: the zone's own « Réessayer » and the one gesture stay the only ones).
+
+## 10 November 2026 — the question of the pickup is a list (SOG-0197)
+
+- **User's picture** (« Screenshot 2026-11-10 122344 »): one paragraph with nested parentheses (`France (métropole et outre-mer) (SIA France (XML SIA + AIXM 4.5))`), a rule for file names given as a sentence (« nom de fichier à renommer : lettres, chiffres, . _ - ») and the path of the raw sources: unreadable.
+- **The frame's `ask` takes titled groups** (a small, backward-compatible option; texts only), not HTML: the module keeps writing sentences and lines, the frame draws and bounds them (seven lines visible per group, the rest scrolls; the window stays within 70 vh).
+- **A rename is an instruction**: « renommez X sans espace ni accent ». AeroDB has already accepted Sweden's `AIP_OFFLINE.zip` (the false « à renommer » came from a missing destination, not the name); the instruction remains for the names the launcher really refuses (accents, spaces).
+- **Counter-test**: L19 and L28 compare the groups and their lines (red before: the question was a paragraph); L57 checks that sixty lines are sixty lines in a scrolling group of seven.

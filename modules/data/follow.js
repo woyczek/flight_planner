@@ -263,8 +263,13 @@ async function finishPlan(me, {
   S.result = null;
   S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
   renderBuild();
-  const yes = await S.ctx.ask(question, {
-    ok
+  // une question à groupes titrés (SOG-0197 : { text, sections, note }) ou une phrase
+  const yes = await S.ctx.ask(typeof question === 'object' ? question.text : question, {
+    ok,
+    ...(typeof question === 'object' ? {
+      sections: question.sections,
+      note: question.note
+    } : {})
   });
   if (S !== me) return;
   S.asking = false;

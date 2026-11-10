@@ -808,7 +808,10 @@
     });
   }
   /** Question oui / non : promesse de vrai (OK) ou faux. */
-  const ask = (text, o = {}) => modal(`<p>${esc(text)}</p><div class="f-row"><button type="button" class="primary" data-ok>${esc(o.ok || t(T.ok))}</button><button type="button" data-no>${esc(o.cancel || t(T.cancel))}</button></div>`,
+  /** `o.sections` : [{ title, lines: [texte] }] — des groupes titrés d'une ligne par élément (sept lignes visibles, le reste défile), `o.note` : une phrase grise ; que des textes, jamais du HTML. */
+  const askSections = o => (Array.isArray(o.sections) ? o.sections : []).slice(0, 6).map(g => `<section data-ask-section="${esc(g.id || '')}"><h4>${esc(g.title)}</h4><ul class="f-ask-lines">${(Array.isArray(g.lines) ? g.lines : []).slice(0, 500).map(l => `<li>${esc(l)}</li>`).join('')}</ul></section>`).join('') + (o.note ? `<p class="f-muted">${esc(o.note)}</p>` :
+    '');
+  const ask = (text, o = {}) => modal(`<p>${esc(text)}</p>${askSections(o)}<div class="f-row"><button type="button" class="primary" data-ok>${esc(o.ok || t(T.ok))}</button><button type="button" data-no>${esc(o.cancel || t(T.cancel))}</button></div>`,
     (m, close) => {
       m.querySelector('[data-ok]').onclick = () => close(true);
       m.querySelector('[data-no]').onclick = () => close(false);
