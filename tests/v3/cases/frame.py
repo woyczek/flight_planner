@@ -4729,3 +4729,49 @@ def a120(c):
     c.ok(len(ids) > 0 and not any(k in ids for k in ('maintenance', 'firstLaunch', 'mapStudio')), f'entries {ids}', 'with a launcher the card still carries no V2 page button')
     c.eq(c.count('[data-card="admin"] a[href*="apps/settings/"], [data-card="admin"] a[href*="apps/cpco/"]'), 0, 'no link to a page of apps/ in the card', what='no V2 link')
     c.check_errors()
+
+
+@case('A121', 'The tree of data/ is read from IndexedDB a handful of times per load, not dozens (each read clones the whole tree)', 'A', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0169 (V3 Frame, BUGS SOG’s trace of the Map alone on the user’s launcher: 1.3 s in the IndexedDB request callback, 10 339 files): the meta « remote » (head and tree of data/) is kept in memory and written through, so a load reads it from IndexedDB a few times instead of about fifty; what a pass learns is still seen (a change at the other end arrives)')
+def a121(c):
+    state = {'head': 'h1', 'name': 'Air One'}
+    big = {f'fake/f{i}.json': f'r{i}' for i in range(3000)}
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url)
+        if u.path.endswith('/__setup/changes'):
+            since = urllib.parse.parse_qs(u.query).get('since', [''])[0]
+            body = {'same': True, 'head': state['head']} if since == state['head'] else {'head': state['head'], 'tree': {**big, 'airline/settings.json': 'rs-' + state['name']}}
+        elif u.path.endswith('/__setup/status'):
+            body = {'server': True, 'data': True, 'dataGit': True, 'host': 'TEST', 'lan': False, 'lnm': []}
+        else:
+            body = {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+
+    def data(route):
+        if route.request.url.endswith('/data/airline/settings.json'):
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'name': state['name']}))
+        route.fulfill(status=404, body='')
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.unroute(re.compile(r'/data/airline/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.context.route(re.compile(r'/data/airline/'), data)
+    c.page.add_init_script("""(() => { window.__remoteReads = 0; const o = IDBObjectStore.prototype.get; IDBObjectStore.prototype.get = function (k) {
+      if (this.name === 'meta' && k === 'remote') window.__remoteReads++; return o.apply(this, arguments) } })()""")
+    c.open('flightlog', flight=False, wait=False)
+    c.page.wait_for_function("() => window.FrameData && window.FrameData.status", timeout=20000)
+    c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air One')", timeout=20000)
+    c.wait(2500)
+    c.page.reload(wait_until='load')          # a second load: the tree is known
+    c.page.wait_for_function("() => window.FrameData && window.FrameData.status", timeout=20000)
+    c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air One')", timeout=20000)
+    c.wait(3000)
+    n = c.js('window.__remoteReads')
+    c.ok(n <= 8, f'{n} reads of the tree from IndexedDB', 'a load reads the head and tree of data/ from IndexedDB a handful of times (it was about fifty, each a structured clone of the whole tree)')
+    # what the pass learns is still seen: a change at the other end arrives
+    state['head'], state['name'] = 'h2', 'Air Two'
+    c.page.reload(wait_until='load')
+    c.page.wait_for_function("() => window.FrameData && window.FrameData.status", timeout=20000)
+    c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air Two')", timeout=20000)
+    c.check_errors()

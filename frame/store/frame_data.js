@@ -93,11 +93,31 @@
   };
   /** Borne des chemins sous un préfixe (tous si vide) ; under() dit la même chose chemin par chemin. */
   const rangeOf = prefix => prefix ? IDBKeyRange.bound(prefix, `${prefix}\uffff`) : undefined;
-  const getMeta = async key => (await idb('meta', 'get', key)) || null;
-  const setMeta = (key, v) => idb('meta', 'put', {
-    ...v,
-    key
-  });
+  // Les deux gros « meta » (la tête et l'arbre de data/ : « remote », « refs ») sont lus plusieurs dizaines de fois par chargement et chaque lecture
+  // IndexedDB clone tout l'objet (clonage structuré : 10 339 entrées dans le dépôt de l'utilisateur, 5 à 25 ms chacune ; relevé de BUGS SOG, la Carte
+  // seule : 1,3 s dans q.onsuccess, SOG-0169) : gardés en mémoire, écrits à travers setMeta, oubliés quand un autre onglet les écrit (BroadcastChannel)
+  // et à reset(). Les appelants ne modifient jamais l'objet lu (ils en font une copie).
+  const BIG_META = new Set(['remote', 'refs']),
+    metaMem = new Map(),
+    metaBC = typeof BroadcastChannel === 'function' ? new BroadcastChannel('sog-frame-meta') : null;
+  if (metaBC) metaBC.onmessage = e => metaMem.delete(e.data);
+  const getMeta = async key => {
+    if (BIG_META.has(key) && metaMem.has(key)) return metaMem.get(key);
+    const v = (await idb('meta', 'get', key)) || null;
+    if (BIG_META.has(key)) metaMem.set(key, v);
+    return v;
+  };
+  const setMeta = async (key, v) => {
+    const row = {
+      ...v,
+      key
+    };
+    await idb('meta', 'put', row);
+    if (BIG_META.has(key)) {
+      metaMem.set(key, row);
+      metaBC?.postMessage(key); // les autres onglets relisent
+    }
+  };
 
   // ---------------------------------------------------------------- outils
   /** Empreinte git d'un texte (sha-1 de « blob <octets>\0<contenu> ») : révision exacte d'un fichier du dépôt. */
@@ -1616,6 +1636,7 @@
     if (mode === 'replace') {
       // les clés et la réserve météo de cet appareil ne sont pas dans une sauvegarde : gardées
       const own = (await idb('docs', 'getAll')).filter(d => !saved(d.path));
+      metaMem.clear();
       for (const s of ['docs', 'pending', 'conflicts']) await idb(s, 'clear');
       for (const d of own) await idb('docs', 'put', d);
       for (const d of docs) await idb('docs', 'put', d);
@@ -1893,6 +1914,7 @@
         r.onsuccess = r.onerror = r.onblocked = () => res();
       });
       reads.length = rules.length = caches.length = 0;
+      metaMem.clear();
       lastError = '';
       treeNowP = peekP = peek = null;
       treeChecked = false;

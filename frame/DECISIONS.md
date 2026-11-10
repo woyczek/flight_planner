@@ -2662,3 +2662,16 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   the next version is ready on a device without launcher (`update.ready`: a tap takes it); `hidden` otherwise, so nothing is reserved and the header
   keeps its height (A118 measures it on and off, and with the cartouche). With the revalidation at each navigation it should almost never be seen on a
   workstation: it is the net. The Status block line stays (A117).
+- **10 Nov 2026 — The tree of data/ kept in memory: IndexedDB read a handful of times, not dozens** (SOG-0169, from BUGS SOG's CPU trace of the Map alone on the
+  user's launcher: `frame_data.js:78-79` `q.onsuccess` 1 269 ms of own time, `get` 90, `list` 140, `valueOf` 83, ~1.7 s of IndexedDB reads over ~12 s, 520
+  requests; V3 Frame). **Cause:** the head and tree of `data/` are one `meta` record, « remote » (10 339 entries on his repository), read from IndexedDB by
+  every `list`, read, pass and check — about fifty times a load — and every IndexedDB read clones the whole object (structured clone). **Change:** the two big
+  meta records (`remote`, `refs`) are kept in memory (`metaMem`), written through by `setMeta`, forgotten when another tab writes them (`BroadcastChannel`
+  `sog-frame-meta`) and at `reset()`/`load()`; callers copy what they change (checked: `{ ...remote.tree }` in `applyPushed`, new objects elsewhere). **Measured**
+  with a profile of every `IDBObjectStore` request on a test launcher with a `data/` of 10 339 files (Chrome, two runs each, `#maps` then Maintenance › Données):
+  the Map 208 requests / 415–487 ms → 165 / 215–227 ms; Maintenance 273 / 582–917 ms → 226 / 360–428 ms; the reads of « remote »: 50 → 3 on Maintenance.
+  A121 counts them in the real frame (3 000-file tree: 21 reads before, 8 at most now, 3 runs stable). **Not done, left to measure on his repository:**
+  the `docs.get` + `pending.get` pair per read (82 + 82 on Maintenance, ~120 ms: a « pending is empty » shortcut would save the second, at the price of a
+  cross-tab flag), the JSON parse of a cached document at every read (`valueOf`, 83 ms in the trace; a shared parsed copy would need callers that never
+  mutate), and `cache/data/coverage.json`, a 121 ms write at every load of Maintenance › Données (the Données module's). The trace of 90 s idle (0 requests,
+  0.3 % CPU) says nothing is polling.
