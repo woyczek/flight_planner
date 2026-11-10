@@ -31,6 +31,7 @@ import device_access  # appareils appairés, réseau local et relais : un code, 
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
 import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit en console (hôte, chemin, code)
 import suite_update  # mise à jour de la suite par canal (stable, early, suivi) : plan d'abord, avance rapide seulement
+import base_upload  # envoi d'un fichier choisi à la main : reconnu par son contenu (SOG-0199)
 import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -272,6 +273,7 @@ def hidden(parts):
 # là où elle est écrite (@route), jamais dans une liste à part.
 ROUTES = {}
 ROUTE_PATHS = set()
+STREAM_POSTS = {'/__setup/base/upload'}      # routes POST dont le gestionnaire lit le corps lui-même (en flux) : do_POST ne le lit pas d'avance
 
 
 def route(method, *paths, public='poste', relay=False):
@@ -910,6 +912,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         path = self.path.split('?')[0]
         if not path.startswith('/__setup/') or not self._allowed():
             return self._json({'error': 'refusé'}, 403)
+        if path in STREAM_POSTS and self.command == 'POST' and not self._lan():      # un fichier de plusieurs centaines de Mo : le gestionnaire lit le corps lui-même, en flux (jamais en mémoire)
+            return getattr(self, ROUTES[('POST', path)][0])(path, None)
         try:
             size = int(self.headers.get('Content-Length') or 0)
         except ValueError:
@@ -1635,6 +1639,21 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
+    @route('POST', '/__setup/base/upload', public='poste')
+    def _post_base_upload(self, path, body):
+        # SOG-0199 : un fichier CHOISI par l'utilisateur (sélecteur du système), ses octets en corps, reconnu par son contenu et posé dans data/local/upload/ (tools/base_upload.py) ;
+        # ce poste seulement ; le corps n'est lu qu'ici, en flux, après les refus qui n'en ont pas besoin
+        try:
+            size = int(self.headers.get('Content-Length') or 0)
+        except ValueError:
+            size = 0
+        job = ((REGEN.view() or {}).get('job') or {}) if REGEN is not None else {}
+        code, out = base_upload.receive(self.rfile, size, self.headers.get('X-SOG-Name', ''), DATA, busy=lambda: job.get('state') == 'running',
+                                        merge_pending=lambda: regen_jobs.merge_pending({'data': DATA}))
+        if out.pop('_close', False):
+            self.close_connection = True       # le corps n'a pas été lu : cette connexion ne sert plus
+        return self._json(out, code)
+
     @route('POST', '/__setup/regen/job/claim', public='poste')
     def _post_regen_job_claim(self, path, body):
         # jeton du travail en cours remis UNE fois à sa page sans fenêtre (ouverte sur l'adresse http du lanceur avec #job=<id>,
@@ -1791,8 +1810,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
 
 
 def downloads_dirs():
-    """Dossiers où chercher un téléchargement : Téléchargements (emplacement réel sous Windows, même déplacé), racine."""
-    dirs = []
+    """Dossiers où chercher un téléchargement : Téléchargements (emplacement réel sous Windows, même déplacé), racine, et data/local/upload/ (les fichiers que l'utilisateur a CHOISIS à la main, SOG-0199)."""
+    dirs = [os.path.join(DATA, 'local', 'upload')]
     if os.name == 'nt':
         try:
             import winreg

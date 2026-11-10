@@ -6959,3 +6959,130 @@ def k144(c):
             except subprocess.TimeoutExpired:
                 p.kill()
             log.close()
+
+
+@case('K146', 'A file CHOSEN by hand is sent to the launcher, recognised by its content and put where base/pickup reads it (SOG-0199): the real launcher class, closed reasons, nothing written elsewhere', 'K', static=True,
+      rule='SOG-0199 (user: « si on n’a pas trouvé automatiquement, proposer de choisir manuellement »): POST /__setup/base/upload, this workstation only, the bytes as the body (X-SOG-Name encoded, a hint), the size bound by Content-Length before any read, streamed to a temporary file, recognised by the content (a zip by its members), put under its canonical name in data/local/upload/ (a folder base/pickup reads as Downloads), the temporary file removed whatever happens; reasons: too-large, empty, type, unrecognised (expected), busy, merge-pending, disk')
+def k146(c):
+    import http.client
+    import io
+    import json
+    import os
+    import shutil
+    import socket
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    import urllib.parse
+    import zipfile
+    from pathlib import Path
+    CRLF = chr(13) + chr(10)
+    ground = (
+        'import time\n'
+        'def fetch(job, args, ctx):\n'
+        '    end = time.time() + 20\n'
+        '    while time.time() < end and not job.cancelled():\n'
+        '        time.sleep(0.1)\n'
+        '    return {"ok": True}\n'
+        'VERBS = {("ground", "fetch"): (fetch, lambda a: dict(a) if isinstance(a, dict) else None)}\n')
+    sys.path.insert(0, str(c.root / 'tools'))
+    import lfv_eaip
+
+    def zipped(members):
+        b = io.BytesIO()
+        with zipfile.ZipFile(b, 'w') as z:
+            for n, t in members.items():
+                z.writestr(n, t)
+        return b.getvalue()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td) / 'root'
+        shutil.copytree(c.root / 'tools', root / 'tools', ignore=shutil.ignore_patterns('__pycache__', '_verify', 'demo', '.regen_last.json'))
+        (root / 'tools' / 'regen' / 'ground.py').write_text(ground, encoding='utf-8')
+        data = root / 'data'
+        data.mkdir()
+        (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        log = open(Path(td) / 'launcher.log', 'w')
+        p = subprocess.Popen([sys.executable, str(root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
+                             stdin=subprocess.DEVNULL, cwd=td, env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp)})
+        try:
+            hdr = {'X-SOG-Setup': '1', 'Sec-Fetch-Site': 'same-origin'}
+
+            def up(body, name='', headers=None, method='POST'):
+                con = http.client.HTTPConnection('127.0.0.1', port, timeout=60)
+                h = {**hdr, 'Content-Type': 'application/octet-stream', **({'X-SOG-Name': urllib.parse.quote(name, safe='')} if name else {}), **(headers or {})}
+                h = {k: v for k, v in h.items() if v != ''}
+                con.request(method, '/__setup/base/upload', body=body, headers=h)
+                r = con.getresponse()
+                raw = r.read()
+                try:
+                    return r.status, json.loads(raw)
+                except ValueError:
+                    return r.status, {}
+            for _ in range(60):
+                try:
+                    http.client.HTTPConnection('127.0.0.1', port, timeout=5).request('GET', '/', headers=hdr)
+                    break
+                except OSError:
+                    time.sleep(0.5)
+            folder = data / 'local' / 'upload'
+            nats = zipped({'EG_AIP_DS_DIFF_DELTA_20261029.xml': '<x/>', 'EG_AIP_DS_FULL_20261029.xml': '<x/>', 'export-filter.xml': '<x/>'})
+            st, r = up(nats, 'EG AIP é (1).zip')
+            c.eq((st, r.get('ok'), r.get('source'), r.get('zone'), r.get('name'), r.get('cycle'), r.get('replaced'), r.get('size')), (200, True, 'nats', 'gb', 'EG_AIP_DS_20261029_XML.zip', '2026-10-29', True, len(nats)),
+                 'a NATS zip with an accented name and spaces (X-SOG-Name encoded): recognised by its members, put under the name base/pickup finds', what='nats')
+            c.ok((folder / 'EG_AIP_DS_20261029_XML.zip').read_bytes() == nats, 'content', 'the bytes are there, intact')
+            st, r = up(nats, 'x.zip')
+            c.eq((st, r.get('ok'), r.get('replaced')), (200, True, False), 'the same file again: « déjà là », nothing rewritten (replaced: false)', what='unchanged')
+            sia = zipped({'AIXM4.5_all_FR_OM_2026-10-29.xml': '<a/>', 'XML_SIA_2026-10-29.xml': '<a/>'})
+            st, r = up(sia, 'export_xml_bd_sia_2026-10-29-v02.zip')
+            c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'sia', 'export_xml_bd_SIA_2026-10-29.zip', 'fr'), 'a SIA zip: recognised by its XML members', what='sia')
+            lfv = zipped({lfv_eaip.COVER: '<html/>', lfv_eaip.ENR44: '<html/>', 'x.pdf': 'pdf'})
+            st, r = up(lfv, 'AIP OFFLINE é.zip')
+            c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'lfv', 'AIP_OFFLINE.zip', 'se'), 'the Swedish eAIP: recognised by its cover page and ENR 4.4, whatever it was called', what='lfv')
+            st, r = up(b'{"type":"FeatureCollection","features":[]}', 'de_apt (1).geojson')
+            c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'openaip', 'de_apt.geojson', 'de'), 'an openAIP export: JSON, its name says country and layer', what='openaip')
+            st, r = up(zipped({'readme.txt': 'hello'}), 'a.zip')
+            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
+            st, r = up(bytes([0, 1, 2]) + b'garbage', 'a.bin')
+            c.eq((st, r.get('reason')), (415, 'type'), 'bytes that are no zip, JSON, PDF or XML: type', what='type')
+            st, r = up(b'', 'a.zip', {'Content-Length': '0'})
+            c.eq((st, r.get('reason')), (400, 'empty'), 'an empty file: empty', what='empty')
+            sk = socket.create_connection(('127.0.0.1', port), timeout=20)
+            sk.sendall((f'POST /__setup/base/upload HTTP/1.1{CRLF}Host: 127.0.0.1:{port}{CRLF}X-SOG-Setup: 1{CRLF}Sec-Fetch-Site: same-origin{CRLF}Content-Length: {3 * 1024 ** 3}{CRLF}{CRLF}').encode())
+            got = b''
+            while len(got) < 8192:
+                part = sk.recv(4096)
+                if not part:
+                    break
+                got += part
+            got = got.decode('utf-8', 'replace')
+            sk.close()
+            c.ok(' 413 ' in got.split(CRLF)[0] and 'too-large' in got, got[:200], 'above 1.5 GB: refused by Content-Length before any byte of the body is read (too-large)')
+            c.eq(up(nats, 'x.zip', {'X-SOG-Setup': ''})[0], 403, 'without the header of the page served here: refused', what='no header')
+            c.eq(up(nats, 'x.zip', {'Sec-Fetch-Site': 'cross-site'})[0], 403, 'from another site: refused', what='cross-site')
+            # a job runs: a placement would change what a build reads: busy, at once
+            sg = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
+            sg.request('POST', '/__setup/regen/job', body=json.dumps({'set': 'ground', 'verb': 'fetch', 'args': {'icao': 'LFBD'}, 'author': 'TST'}), headers={**hdr, 'Content-Type': 'application/json'})
+            gj = json.loads(sg.getresponse().read())
+            st, r = up(nats, 'x.zip')
+            c.eq((st, r.get('reason')), (409, 'busy'), 'while a job runs: busy (a placement changes what a build reads)', what='busy')
+            sg = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
+            sg.request('POST', '/__setup/regen/job/cancel', body=json.dumps({'id': gj.get('job')}), headers={**hdr, 'Content-Type': 'application/json'})
+            sg.getresponse().read()
+            c.eq(sorted(x.name for x in folder.iterdir()), ['AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'de_apt.geojson', 'export_xml_bd_SIA_2026-10-29.zip'],
+                 'only the recognised files are in data/local/upload/: no temporary file left, nothing refused kept', what='folder')
+            stray = [str(x) for x in data.rglob('*') if x.is_file() and 'upload' not in x.parts and x.name not in ('data_tree.js', '.defa_instance')]
+            c.ok(not stray, str(stray[:6]), 'nothing is written elsewhere in data/')
+        finally:
+            p.terminate()
+            try:
+                p.wait(10)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            log.close()

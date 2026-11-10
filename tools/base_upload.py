@@ -1,0 +1,174 @@
+"""Envoi d'un fichier CHOISI par l'utilisateur au lanceur du poste (SOG-0199, route POST /__setup/base/upload) — bibliothèque standard seulement.
+
+« Si on n'a pas trouvé le fichier automatiquement, proposer de le choisir à la main » : la page (sélecteur du système) envoie les OCTETS du fichier tels quels ; le lanceur le reconnaît par son
+CONTENU (jamais par un chemin venu de la page, jamais par son seul nom) ou dit pourquoi. Un fichier reconnu est posé sous son nom canonique dans data/local/upload/, un dossier que base/pickup lit comme
+Téléchargements (tools/launch.py downloads_dirs) : l'envoi ne construit rien, la page enchaîne le parcours normal (plan puis prise de base/pickup, puis construction).
+
+Contrat (frame/aerodb/INTEGRATION.md « Envoi d'un fichier choisi ») :
+  · POST /__setup/base/upload, ce poste seulement (X-SOG-Setup, même origine), corps = les octets (application/octet-stream), `X-SOG-Name` = le nom du fichier choisi, ENCODÉ (encodeURIComponent : accents,
+    espaces), un indice seulement (décodé, réduit à son dernier composant, jamais un chemin) ;
+  · la taille est bornée par Content-Length AVANT toute lecture (MAX_BYTES : 1,5 Go) ; le corps est écrit en flux dans un fichier temporaire de data/local/upload/ (jamais en mémoire), haché au passage ;
+  · reconnu par le contenu : un zip par la liste de ses membres (l'annuaire seul est lu), un JSON par son premier signe (+ son nom, pour openAIP) ; sources de base/pickup : sia, nats, lfv, openaip ;
+  · réponse { ok: true, source, zone, name (le nom rangé), size, cycle?, replaced, sha256 } — replaced: false : le même fichier était déjà là, rien n'est réécrit — ou { ok: false, reason, message, expected? } ;
+    `reason` (liste FERMÉE) : too-large (413), empty (400), type (415), unrecognised (422 ; `expected` : les identifiants des sources attendues), busy (409 : un travail tourne), merge-pending (409),
+    disk (507), refused (403 : appareil du réseau local, rendu par le lanceur).
+Rien n'est écrit hors de data/local/upload/ ; le fichier temporaire est retiré quoi qu'il arrive."""
+import hashlib
+import os
+import re
+import secrets
+import time
+import urllib.parse
+import zipfile
+
+MAX_BYTES = 1536 * 1024 * 1024          # 1,5 Go : l'eAIP suédois hors ligne fait environ 1 Go
+CHUNK = 1024 * 1024
+MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
+FOLDER = ('local', 'upload')
+EXPECTED = ['sia', 'nats', 'lfv', 'openaip']       # les sources que base/pickup prend (dites avec `unrecognised`)
+REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
+STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'busy': 409, 'merge-pending': 409, 'disk': 507, 'refused': 403}
+NATS_MEMBER = re.compile(r'^EG_(AIP|OBS|UAS)_.*?(\d{8})\.xml\Z', re.I | re.A)
+SIA_MEMBER = re.compile(r'^(?:AIXM4\.5_all_FR_OM_|XML_SIA_)(\d{4}-\d{2}-\d{2})\.xml\Z', re.I | re.A)
+OPENAIP_NAME = re.compile(r'^(?P<cc>[a-z]{2})_(?P<layer>asp|apt|nav|rpp)(?: \(\d+\))?\.(?P<ext>geojson|json)\Z', re.A | re.I)    # base_sources.OPENAIP_FILE, sans « hot » ni xml (pas lus)
+
+
+class Refused(Exception):
+    """Un refus de la liste fermée : reason, message, expected (facultatif)."""
+
+    def __init__(self, reason, message='', expected=None):
+        super().__init__(reason)
+        self.reason, self.message, self.expected = reason, message, expected
+
+
+def clean_hint(raw):
+    """Le nom indiqué par la page (encodé) : décodé, sans caractère de contrôle, réduit à son dernier composant (jamais un chemin), 150 caractères au plus ; '' s'il est illisible."""
+    try:
+        s = urllib.parse.unquote(str(raw or ''), errors='strict')
+    except (UnicodeDecodeError, ValueError):
+        return ''
+    s = re.sub(r'[\x00-\x1f\x7f]', '', s).replace('\\', '/').rsplit('/', 1)[-1].strip()
+    return s[:150]
+
+
+def _date_ok(text):
+    """Une date « AAAAMMJJ » ou « AAAA-MM-JJ » plausible (2000-2099) → « AAAA-MM-JJ », sinon ''."""
+    m = re.fullmatch(r'(20\d\d)-?(0[1-9]|1[0-2])-?(0[1-9]|[12]\d|3[01])', text or '')
+    return '-'.join(m.groups()) if m else ''
+
+
+def recognise(path, hint=''):
+    """Ce que le CONTENU du fichier dit : { source, zone, name (le nom canonique que base/pickup retrouve), cycle } ; lève Refused (type, unrecognised). Un zip : la liste de ses membres seulement."""
+    with open(path, 'rb') as f:
+        head = f.read(8)
+    if head[:4] == b'PK\x03\x04':
+        try:
+            z = zipfile.ZipFile(path)
+        except (zipfile.BadZipFile, OSError):
+            raise Refused('type', 'zip illisible') from None
+        with z:
+            infos = z.namelist()
+            if len(infos) > MAX_MEMBERS:
+                raise Refused('unrecognised', 'trop de membres', EXPECTED)
+            names = set(infos)
+            try:
+                import lfv_eaip
+                if lfv_eaip.COVER in names and lfv_eaip.ENR44 in names:
+                    return {'source': 'lfv', 'zone': 'se', 'name': 'AIP_OFFLINE.zip', 'cycle': None}
+            except ImportError:
+                pass
+            sia = sorted(m.group(1) for n in names if (m := SIA_MEMBER.match(n)))
+            if sia:
+                return {'source': 'sia', 'zone': 'fr', 'name': f'export_xml_bd_SIA_{sia[-1]}.zip', 'cycle': sia[-1]}
+            nats = [(m.group(1).upper(), _date_ok(m.group(2))) for n in names if (m := NATS_MEMBER.match(n)) and not re.search(r'DIFF|DELTA', n, re.I)]
+            nats = [x for x in nats if x[1]]
+            if nats:
+                kind, date = sorted(nats, key=lambda x: x[1])[-1]
+                return {'source': 'nats', 'zone': 'gb', 'name': f'EG_{kind}_DS_{date.replace("-", "")}_XML.zip', 'cycle': date}
+        raise Refused('unrecognised', 'le contenu de ce zip ne ressemble à aucune source attendue', EXPECTED)
+    first = head.lstrip()[:1]
+    if first in (b'{', b'['):
+        m = OPENAIP_NAME.match(hint or '')
+        if not m:
+            raise Refused('unrecognised', 'un JSON dont le nom n’est pas « <pays>_<asp|apt|nav|rpp>.geojson » : pas un export d’openAIP', EXPECTED)
+        return {'source': 'openaip', 'zone': m.group('cc').lower(), 'name': f'{m.group("cc").lower()}_{m.group("layer").lower()}.{m.group("ext").lower()}', 'cycle': None}
+    if head[:4] == b'%PDF' or first == b'<':
+        raise Refused('unrecognised', 'ce type de fichier (PDF, XML seul) n’est pas pris par cet envoi', EXPECTED)
+    raise Refused('type', 'ni zip, ni JSON, ni PDF, ni XML')
+
+
+def _sha(path):
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        while chunk := f.read(CHUNK):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _drop(path):
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def receive(rfile, length, hint, data, busy=None, merge_pending=None):
+    """Reçoit `length` octets de rfile, les reconnaît, les pose sous data/local/upload/. Rend (statut HTTP, corps JSON) ; `close` dans le corps (clé « _close ») : le lanceur coupe la connexion (un refus avant lecture du corps).
+    busy() : un travail du lanceur tourne ; merge_pending() : une fusion interrompue attend dans data/."""
+    def no(reason, message='', expected=None, close=False):
+        return STATUS[reason], {'ok': False, 'reason': reason, 'message': message or reason, **({'expected': list(expected)} if expected else {}), **({'_close': True} if close else {})}
+    if not isinstance(length, int) or length <= 0:
+        return no('empty', 'fichier vide', close=True)
+    if length > MAX_BYTES:
+        return no('too-large', f'plus de {MAX_BYTES // (1024 * 1024)} Mo', close=True)
+    if busy and busy():
+        return no('busy', 'un travail du poste tourne : réessayez à sa fin', close=True)
+    if merge_pending and merge_pending():
+        return no('merge-pending', 'une fusion interrompue attend dans data/ : « Synchroniser » la règle', close=True)
+    folder = os.path.join(data, *FOLDER)
+    base = os.path.realpath(data)
+    try:
+        os.makedirs(folder, exist_ok=True)
+        real = os.path.realpath(folder)
+        if os.path.commonpath([real, base]) != base:
+            return no('disk', 'dossier hors de data/', close=True)
+        for n in os.listdir(folder):                       # les restes d'un envoi coupé, vieux d'une heure
+            p = os.path.join(folder, n)
+            if n.startswith('.recv-') and n.endswith('.part') and time.time() - os.path.getmtime(p) > 3600:
+                _drop(p)
+    except OSError as e:
+        return no('disk', str(e)[:120], close=True)
+    tmp = os.path.join(folder, f'.recv-{secrets.token_hex(6)}.part')
+    h, got = hashlib.sha256(), 0
+    try:
+        with open(tmp, 'wb') as out:
+            while got < length:
+                chunk = rfile.read(min(CHUNK, length - got))
+                if not chunk:
+                    break                                  # l'envoi s'est arrêté avant la fin (annulé par la page)
+                out.write(chunk)
+                h.update(chunk)
+                got += len(chunk)
+        if got != length:
+            _drop(tmp)
+            return no('empty', 'envoi interrompu', close=True)
+        try:
+            info = recognise(tmp, clean_hint(hint))
+        except Refused as r:
+            _drop(tmp)
+            return no(r.reason, r.message, r.expected, close=False)
+        except (OSError, ValueError, zipfile.BadZipFile) as e:
+            _drop(tmp)
+            return no('type', str(e)[:120])
+        dest = os.path.join(folder, info['name'])
+        digest = h.hexdigest()
+        replaced = True
+        if os.path.isfile(dest) and not os.path.islink(dest) and os.path.getsize(dest) == got and _sha(dest) == digest:
+            _drop(tmp)
+            replaced = False
+        else:
+            os.replace(tmp, dest)
+        return 200, {'ok': True, 'source': info['source'], 'zone': info['zone'], 'name': info['name'], 'size': got, **({'cycle': info['cycle']} if info['cycle'] else {}), 'replaced': replaced, 'sha256': digest}
+    except OSError as e:
+        _drop(tmp)
+        return no('disk', str(e)[:120])
