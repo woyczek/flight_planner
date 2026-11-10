@@ -2636,3 +2636,20 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   **Not in the repository, so not listed:** « rad d'origine » (`E:/DEFA/rad`, archived per SOG-0152; add the path here when it is served). The
   pages of `apps/sia/` are copies of `apps/cpco/` and are left out. Each link opens in a new tab with `noopener`. Noreg A116 (the last entry, no V2 href among
   the column's entries, the hairline, the six groups, each link `_blank`; on a phone the last menu row), red on 77185fe84.
+- **10 Nov 2026 — A workstation tests the version the launcher serves** (SOG-0168, « l'utilisateur teste une vieille copie sans le savoir »: « stockholm »
+  worked since 3d70ded7a and was said failing the next morning; his port serves origin/v3 byte for byte; the offline copy of the frame kept the old
+  one; every fix not seen became « bug pas corrigé »; Simplification; V3 Frame). **When the copy kept the old version** (read in `frame/sw.js`): the first
+  load after a fix always (cache first, the new version staged in `sog-frame-v1-next`, taken by the *next* navigation or « Reload »); two loads closer
+  than the staging (100–130 files); a changed file the load did not ask for (noticed when asked); a staging cut by a busy launcher, dropped and tried
+  again at the next changed file; an open page keeps its own `app.js` (wanted, 31 Oct); the question « Reload » deferred changes nothing (the next
+  navigation takes the staging anyway); `skipWaiting` retains nothing. **Decision:** (1) on the loopback (`LOCAL` in `sw.js`) every navigation first
+  revalidates all copies with the launcher (`syncLocal`: `If-None-Match`, replaced in place, 4 s at most), so the page is the launcher's at the first
+  load, with no question and no staging (`refreshAll` is not started there); the question stays elsewhere, where it protects a flight in progress. A LAN
+  device (a phone on the workstation's launcher) keeps the question: it can be in flight. Known limit: a tab left open while the files change may
+  mix on a lazy load until it reloads (the same as before for a staged version). (2) The version is readable: the Status block and À propos already give
+  the SHA (`git describe`) and the date; the launcher's status now also gives the commit's **time** (`version.time`, `%cI`), shown after the date, and
+  **`app`, the stamp it puts on `frame/app.js`**; the page compares it with its own (`OWN_STAMP`, the `?v=` of its script) and, when both are
+  known and differ, says « This page is older than the launcher: reload » (`k: 'stale'`, before the version line, `go: 'reload'`). Nothing is said
+  without a stamp (an older launcher, a page served without stamps, the site). Noreg A53 (the SW bench: launcher present → the page and every copy are
+  the new version at the first load, no announcement; launcher stopped → the copy holds; back → the next load takes the next version; the remote
+  origin keeps its scenarios), A117 (the stale line, the time, nothing without a stamp or with the same one), red on 2f9e0cf55.

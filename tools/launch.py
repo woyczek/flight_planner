@@ -948,7 +948,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'error': 'refusé'}, 403)
         return self._json({'server': True, 'data': has_data(), 'dataGit': os.path.isdir(os.path.join(DATA, '.git')),
                            'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds(),
-                           'version': suite_version()})
+                           'version': suite_version(), 'app': app_stamp()})
 
     @route('GET', '/__setup/workstation', public='poste')
     def _get_workstation(self, path):
@@ -2529,13 +2529,24 @@ def suite_version():
     if data_sync.git_exe() and os.path.exists(os.path.join(ROOT, '.git')):
         desc = suite_update.current(ROOT).get('version') or ''
         try:
-            date = subprocess.run(data_sync.git_cmd('-C', ROOT, 'log', '-1', '--format=%cs'), capture_output=True, text=True,
+            date = subprocess.run(data_sync.git_cmd('-C', ROOT, 'log', '-1', '--format=%cs %cI'), capture_output=True, text=True,
                                   timeout=10, env=data_sync.git_env()).stdout.strip()
         except (OSError, subprocess.SubprocessError):
             date = ''
-        v = {'version': desc[:80], 'date': date[:10], 'web': suite_web()} if desc else None
+        # date : AAAA-MM-JJ ; time : l'heure du commit, HH:MM (SOG-0168 : la version servie se lit au SHA et à l'heure)
+        m = re.match(r'(\d{4}-\d{2}-\d{2}) \d{4}-\d{2}-\d{2}T(\d{2}:\d{2})', date)
+        v = {'version': desc[:80], 'date': m.group(1) if m else date[:10], 'time': m.group(2) if m else '', 'web': suite_web()} if desc else None
     _suite_version.update(at=time.monotonic(), v=v)
     return v
+
+
+def app_stamp():
+    """L'empreinte ?v= que le lanceur pose aujourd'hui sur frame/app.js (celle des pages qu'il sert) : la page qui tourne compare la
+    sienne (SOG-0168) et dit « plus ancienne que le lanceur » quand elles diffèrent ; '' si elle ne se calcule pas."""
+    try:
+        return version_stamps.serve(os.path.join(ROOT, 'frame', 'app.js'))[1]
+    except OSError:
+        return ''
 
 
 def suite_web(text=None):

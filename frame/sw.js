@@ -35,6 +35,11 @@ const CACHE = 'sog-frame-v1',
     // les autres langues et les captures des tutoriels sont gardées à leur première lecture
     '../assets/favicon-flight.svg'
   ];
+// Poste avec lanceur (la page est servie par la boucle locale : localhost, 127.0.0.1) : le réseau est le lanceur de ce poste, à portée de main
+// et toujours la dernière version ; la copie ne sert qu'à tenir si le lanceur est arrêté. Une nouvelle version s'y applique d'elle-même, sans
+// question, dès le chargement de la page qui la suit (SOG-0168, 10 nov. 2026 : « l'utilisateur teste une vieille copie sans le savoir »).
+// Sur un autre appareil (téléphone, GitHub Pages), la question « Recharger » reste : elle protège un vol en cours.
+const LOCAL = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(self.location.hostname);
 /** Fichier de l'appli (gardé) ? Le cadre, les modules, l'icône ; pas les essais. */
 const ours = u => u.origin === self.location.origin && (u.pathname.startsWith(SCOPE) || u.pathname.startsWith(`${ROOT}modules/`) || u
   .pathname === `${ROOT}assets/favicon-flight.svg`) && !u.pathname.includes('/test/');
@@ -119,8 +124,10 @@ async function serve(req, e) {
       'x-sog-offline': '1'
     }
   }));
-  // un chargement de page prend la version suivante complète, d'un coup, avant de lire quoi que ce soit
-  if (req.mode === 'navigate' && await stageReady()) await swap(c);
+  // un chargement de page prend la version suivante complète, d'un coup, avant de lire quoi que ce soit ; avec le lanceur du poste, toutes les
+  // copies sont d'abord revérifiées auprès de lui (4 s au plus : un lanceur qui ne répond pas laisse la copie)
+  if (req.mode === 'navigate' && LOCAL) await Promise.race([syncLocal(c), new Promise(r => setTimeout(r, 4000))]);
+  else if (req.mode === 'navigate' && await stageReady()) await swap(c);
   const key = keyOf(req.url),
     hit = await c.match(key),
     old = hit?.clone(); // copie lue plus tard pour la comparaison (le corps de hit part à la page)
@@ -135,7 +142,7 @@ async function serve(req, e) {
     // gardé tout de suite seulement s'il manquait ; changé, il attend la version suivante entière (refreshAll), pour que
     // la page ouverte continue de lire des fichiers de sa propre version
     if (!old) await c.put(key, r.clone());
-    if (changed && !await stageReady()) checking ||= refreshAll(c).finally(() => checking = null);
+    if (changed && !LOCAL && !await stageReady()) checking ||= refreshAll(c).finally(() => checking = null);
     return r;
   }).catch(() => null);
   if (hit) {
@@ -148,6 +155,29 @@ async function serve(req, e) {
       'x-sog-offline': '1'
     }
   });
+}
+/** Poste avec lanceur : chaque copie est redemandée au lanceur (conditionnel : ETag, 304 sans corps) avant que la page soit servie ; celle
+ *  qui a changé est remplacée sur place, celle que le lanceur ne sert plus est retirée ; un échec (lanceur occupé) laisse la copie. La page
+ *  chargée est ainsi celle que le lanceur sert maintenant, au premier chargement qui suit un correctif, sans « nouvelle version » à accepter. */
+async function syncLocal(c) {
+  await caches.delete(STAGE).catch(() => {}); // une version suivante à moitié relue n'a plus d'objet
+  await Promise.all((await c.keys()).map(async req => {
+    try {
+      const had = await c.match(req),
+        tag = had?.headers.get('etag'),
+        r = await fetch(req.url, {
+          cache: 'no-cache',
+          headers: tag ? {
+            'If-None-Match': tag
+          } : {}
+        });
+      if (r.status === 304) return;
+      if (r.status === 404) return void await c.delete(req);
+      if (r.ok && (await had.clone().text()) !== (await r.clone().text())) await c.put(req.url, r);
+    } catch {
+      /* lanceur occupé ou arrêté : la copie reste */
+    }
+  }));
 }
 /** La version suivante est-elle complète (STAGE marqué READY) ? */
 const stageReady = async () => !!(await (await caches.open(STAGE).catch(() => null))?.match(READY));

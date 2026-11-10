@@ -153,8 +153,11 @@
         version: j.version && typeof j.version.version === 'string' ? {
           version: j.version.version.slice(0, 80),
           date: String(j.version.date || '').slice(0, 10),
+          time: /^\d{2}:\d{2}$/.test(j.version.time || '') ? j.version.time : '',
           web: typeof j.version.web === 'string' ? j.version.web.slice(0, 200) : null
-        } : null
+        } : null,
+        // l'empreinte que le lanceur pose aujourd'hui sur frame/app.js : la page la compare à la sienne (SOG-0168)
+        app: typeof j.app === 'string' && /^[0-9a-f]{4,16}$/.test(j.app) ? j.app : ''
       } : null;
     } catch {
       return null;

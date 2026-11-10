@@ -793,6 +793,13 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   next page load or at « Reload ». An open page never gets a file of another version than its own (bench
   `frame/lib/test/sw_update.html`, A53). Known limit: with two tabs open, the one that reloads takes the new version for
   both, and the other may still mix until its own reload.
+- **On a workstation with the launcher** (page served by the loopback: `localhost`, `127.0.0.1`, `[::1]`; 10 Nov 2026, SOG-0168): no question, and
+  no second load. At each page load the service worker asks the launcher again for every copy (conditional: `If-None-Match`, a 304 carries no body),
+  replaces the ones that changed in place and drops the ones the launcher no longer serves, before answering the page; 4 s at most, a launcher that
+  does not answer leaves the copy. The page loaded is the one the launcher serves now, at the first load after a fix. The note « Reload »
+  stays on every other device (phone, GitHub Pages), where it protects a flight in progress. The page says when it is older than the launcher:
+  the launcher's status gives the stamp it puts on `frame/app.js` today (`app`), the page its own (the `?v=` of its script); different, a line
+  « This page is older than the launcher: reload » in the Status block, a tap reloads (A117); the version line gives the commit's time too (`version.time`).
 - **The new version said until it is taken**: the note says the flight in progress and the pending writes are kept; set
   aside (✕), it comes back at the next calm moment — a module change, the app back to the front — at most every 5
   minutes; the Status block carries « New version available · Reload » (badge of the ⚙) meanwhile. Never an automatic

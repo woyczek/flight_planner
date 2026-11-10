@@ -43,12 +43,14 @@
   };
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   try {
-    const O = location.origin,
+    // une adresse qui n'est pas la boucle locale : le service worker y garde la question « Recharger » (le poste avec lanceur est l'essai 4)
+    const O = 'https://example.test',
       F = `${O}/frame/`,
       files = ['index.html', 'app.js', 'settings/settings.js', 'lib/qr.js'].map(p => F + p),
       net = {
         version: 'v2',
-        fail: '' // une adresse dont la relecture échoue (réseau perdu en route)
+        fail: '', // une adresse dont la relecture échoue (réseau perdu en route)
+        down: false // le serveur ne répond plus (lanceur arrêté)
       },
       messages = [];
     for (const k of await caches.keys())
@@ -70,7 +72,7 @@
       },
       fakeFetch = async input => {
         const u = String(input?.url || input).split('?')[0];
-        if (net.fail && u === net.fail) throw new TypeError('Failed to fetch');
+        if (net.down || net.fail && u === net.fail) throw new TypeError('Failed to fetch');
         return new Response(`${net.version} ${u}`);
       };
     const src = await (await fetch('../../sw.js', {
@@ -119,6 +121,58 @@
     ck('chargement de la page : la nouvelle version, entière', page.startsWith('v2') && (await Promise.all(files.map(liveText))).every(t =>
       t?.startsWith('v2')), JSON.stringify(await Promise.all(files.map(liveText))));
     ck('la version suivante quitte son cache à part une fois prise', !(await caches.has('sog-frame-v1-next')));
+
+    // 4. poste avec lanceur (la page est servie par la boucle locale, SOG-0168) : un fichier changé est pris dès le chargement de la page
+    // qui suit, sans question ni annonce ; le lanceur arrêté, la copie tient
+    for (const k of await caches.keys())
+      if (k.startsWith('sog-frame-')) await caches.delete(k);
+    const L = 'http://127.0.0.1:8000/frame/',
+      lfiles = ['index.html', 'app.js', 'settings/settings.js', 'lib/qr.js'].map(p => L + p),
+      lmsgs = [],
+      llisteners = {};
+    const lc = await caches.open('sog-frame-v1');
+    for (const u of lfiles) await lc.put(u, new Response(`v1 ${u}`));
+    new Function('self', 'fetch', src)({
+      location: new URL(`${L}sw.js`),
+      addEventListener: (type, fn) => llisteners[type] = fn,
+      skipWaiting: async () => {},
+      clients: {
+        claim: async () => {},
+        matchAll: async () => [{
+          postMessage: m => lmsgs.push(m.type)
+        }]
+      }
+    }, fakeFetch);
+    const lask = async (url, mode = 'cors') => {
+      const waits = [];
+      let served;
+      llisteners.fetch({
+        request: {
+          url,
+          method: 'GET',
+          mode
+        },
+        respondWith: p => served = p,
+        waitUntil: p => waits.push(p)
+      });
+      const text = await (await served).text();
+      await Promise.all(waits);
+      return text;
+    };
+    net.version = 'v2';
+    net.fail = '';
+    const lpage = await lask(L, 'navigate');
+    const lall = await Promise.all(lfiles.map(liveText));
+    ck('lanceur présent : la page chargée est la nouvelle version, dès ce chargement', lpage.startsWith('v2'), lpage);
+    ck('lanceur présent : toutes les copies sont de la nouvelle version, sans version suivante à part', lall.every(t => t?.startsWith(
+        'v2')) &&
+      !(await caches.has('sog-frame-v1-next')), JSON.stringify(lall));
+    ck('lanceur présent : aucune annonce « Nouvelle version » (rien à accepter)', lmsgs.length === 0, lmsgs.join());
+    net.version = 'v3';
+    net.down = true;
+    ck('lanceur arrêté : la copie tient, la page se charge', (await lask(L, 'navigate')).startsWith('v2'));
+    net.down = false;
+    ck('lanceur de retour : la version suivante est prise au chargement qui suit', (await lask(L, 'navigate')).startsWith('v3'));
   } catch (e) {
     ck('exception', false, e.stack || String(e));
   }

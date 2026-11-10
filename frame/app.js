@@ -130,6 +130,8 @@
   /** Heure de l'appli : fmtZ (« 16:30Z »), fmtZLocal (« 16:30Z (18:30) »), fmtDateZ (date UTC et heure Z). */
   const tz = (fn, iso) => TZ?.[fn]?.(iso, lang()) ?? '';
   const ROOT = new URL('../', document.currentScript.src).href;
+  // l'empreinte (?v=) avec laquelle cette page a chargé son app.js : celle que le lanceur posait quand sa page a été servie ; vide hors lanceur
+  const OWN_STAMP = new URL(document.currentScript.src).searchParams.get('v') || '';
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
@@ -598,6 +600,9 @@
       // cycle : l'utilisateur reconstruisait en boucle une base restée en 2610, 1er nov. 2026)
       // la version de la suite, dernière ligne du bloc d'état : git describe et la date du commit
       version: ['SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}'],
+      stale: ['Cette page est plus ancienne que le lanceur : recharger', 'This page is older than the launcher: reload',
+        'Diese Seite ist älter als der Starter: neu laden', 'Esta página es más antigua que el lanzador: recargar'
+      ],
       cycleOld: ['{s} : cycle {c} dépassé : téléchargez les sources du cycle {n}, puis reconstruisez',
         '{s}: cycle {c} out of date: download the sources of cycle {n}, then rebuild',
         '{s}: Zyklus {c} veraltet: Laden Sie die Quellen des Zyklus {n} herunter und erstellen Sie dann neu',
@@ -2032,13 +2037,21 @@
       go: 'live',
       phone: true
     });
+    // une page plus ancienne que le lanceur qui la sert (copie hors ligne gardée, onglet resté ouvert) : dit franchement, avec le moyen d'en
+    // sortir ; seulement quand les deux empreintes sont connues (SOG-0168)
+    if (OWN_STAMP && launcherHere?.app && launcherHere.app !== OWN_STAMP) items.push({
+      k: 'stale',
+      text: t(T.info.stale),
+      attn: true,
+      go: 'reload'
+    });
     // la version de la suite, en dernier (ni nouvelle ni attention) : sans pied de page qui prend de la hauteur ; elle mène
     // à la carte « À propos » des Réglages (dépôt, licence, feuille de route)
     if (suiteVersion) items.push({
       k: 'version',
       text: t(T.info.version, {
         v: suiteVersion.version,
-        d: suiteVersion.date ? infoDate(suiteVersion.date) : ''
+        d: suiteVersion.date ? infoDate(suiteVersion.date) + (suiteVersion.time ? ` ${suiteVersion.time}` : '') : ''
       }).replace(/ · $/, ''),
       go: 'card:about'
     });
@@ -2054,6 +2067,9 @@
     const next = v && typeof v.version === 'string' && v.version ? {
       version: v.version.slice(0, 80),
       date: /^\d{4}-\d{2}-\d{2}$/.test(v.date || '') ? v.date : '',
+      ...(/^\d{2}:\d{2}$/.test(v.time || '') ? {
+        time: v.time // l'heure du commit (HH:MM), absente d'un lanceur plus ancien
+      } : {}),
       // l'adresse publique du dépôt du code (https), ou null : la carte « À propos » en tire le dépôt et le signalement
       web: typeof v.web === 'string' && /^https:\/\/[^\s"<>]+$/.test(v.web) ? v.web.slice(0, 200) : null
     } : null;
@@ -2163,6 +2179,7 @@
   async function goStatus(go) {
     if (go === 'live') return void(gpsWatch !== null ? liveApi().disable() : liveApi().enable());
     if (go === 'update') return void reloadNewVersion();
+    if (go === 'reload') return void location.reload();
     if (go.startsWith('card:')) {
       const card = go.slice(5).split(',').map(k => $('fView').querySelector(`[data-card="${k}"]`)).find(c => c && !c.hidden);
       card?.scrollIntoView({

@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: a workstation with the launcher tests the version the launcher serves** (`frame/sw.js`, `frame/app.js`, `frame/store/transport_launcher.js`,
+  `tools/launch.py`; frame SPEC § 3.6, DECISIONS; noreg A53, A117; SOG-0168). On the loopback the service worker revalidates all its copies with the
+  launcher before answering a page load: the page is the launcher's version at the first load after a fix, with no « Reload » to accept (the question
+  stays on a phone or the site, where it protects a flight). The launcher's status gives the commit's time and the stamp of `frame/app.js`; a page
+  older than the launcher says so in the Status block, a tap reloads.
+
 - **Frame: « Anciennes pages (V2) », one last entry in the column of every application** (`frame/app.js`, `frame/legacy.js`, `frame/frame.css`; V3_SPECIFICATION
   § 7.1 rule 23; frame SPEC § 3.1, DECISIONS; noreg A116; SOG-0166). The Maintenance column's V2 entry is gone; a hairline and a muted tint set the last
   entry apart; it opens the V2 pages by group (Carburant, Missions, Maintenance, Route, Statistiques, Canadair), each in a new tab; on a phone it is the

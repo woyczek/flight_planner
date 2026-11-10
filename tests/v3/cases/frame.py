@@ -4609,3 +4609,44 @@ def a116(c):
         c.ok(len(links) >= 20 and all(t == '_blank' and 'noopener' in r and '/apps/' in h for t, r, h in links), str(links[:3]), 'every V2 page opens in a new tab, noopener')
         c.eq(c.text('[data-screen=legacy] h1'), title, 'the title says what it is', what=f'title ({app})')
     c.check_errors()
+
+
+@case('A117', 'The version served is readable (SHA and time of the commit) and a page older than the launcher says so, with the way out', 'A', designs=('standard',),
+      screens=False, night=False, langs4=True,
+      rule='SOG-0168 (V3 Frame): the Status block gives the version of the suite with the time of its commit; when the stamp the launcher puts on frame/app.js today is not the one this page loaded with, one line says « this page is older than the launcher: reload » and a tap reloads; with no stamp from the launcher, or the same one, nothing is said')
+def a117(c):
+    ver = {'version': '6.0.0-alpha.5-3-g0a1b2c3', 'date': '2026-11-10', 'time': '09:40', 'web': 'https://framagit.org/asr/flight_planner'}
+    stale = {'fr': 'Cette page est plus ancienne que le lanceur : recharger', 'en': 'This page is older than the launcher: reload',
+             'de': 'Diese Seite ist älter als der Starter: neu laden', 'es': 'Esta página es más antigua que el lanzador: recargar'}[c.lang]
+    state = {'app': 'abcd1234'}
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url).path
+        body = {'server': True, 'data': False, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': [], 'version': ver,
+                **({'app': state['app']} if state['app'] else {})} if u.endswith('/__setup/status') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    # the page loaded with another stamp than the launcher's today: the line, last but the version
+    c.open('settings', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]')", timeout=15000, what='the version line')
+    keys = c.js("[...document.querySelectorAll('[data-card=\"status\"] li[data-k]')].map(l => l.dataset.k)")
+    c.eq(keys[-2:], ['stale', 'version'], 'the stale line comes before the version, the version stays the last line', what='lines')
+    c.ok(norm(stale) in norm(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"stale\"]').textContent")), '', 'the line says the page is older than the launcher')
+    c.eq(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"stale\"] [data-go]')?.dataset.go"), 'reload', 'a tap reloads', what='go')
+    text = norm(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]').textContent"))
+    c.ok(text.startswith('SOG 6.0.0-alpha.5-3-g0a1b2c3 · ') and text.endswith(' 09:40'), text, 'the version gives the SHA and the time of the commit')
+    # no stamp from the launcher (an older launcher): nothing is said
+    state['app'] = ''
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]')", timeout=15000, what='the version line again')
+    c.eq(c.count('[data-card="status"] li[data-k="stale"]'), 0, 'a launcher that gives no stamp: nothing is said', what='no stamp')
+    # the same stamp as the page: nothing is said (the page is served with the stamp the launcher puts today)
+    own = 'abcd1234'
+    state['app'] = own
+    page = (ROOT / 'frame' / 'index.html').read_text(encoding='utf-8')
+    c.context.route(re.compile(r'/frame/index\.html'), lambda r: r.fulfill(status=200, content_type='text/html', body=page.replace('app.js?v=0', f'app.js?v={own}')))
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]')", timeout=15000, what='the version line, same stamp')
+    c.eq(c.count('[data-card="status"] li[data-k="stale"]'), 0, 'the same stamp as the launcher: nothing is said', what='same stamp')
+    c.check_errors()
