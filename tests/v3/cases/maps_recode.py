@@ -4916,3 +4916,26 @@ def d150(c):
     c.page.mouse.move(300, 300)
     c.page.mouse.move(2, 2)   # the pointer leaves the map (over the frame’s header)
     c.until(gone, timeout=3000, what='the pointer leaves the map: the balloon is gone')
+
+
+_INK_JS = """() => { const c = window.__mp.S.canvas, d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n }"""
+
+
+@case('D151', '« New flight » empties the map at once: when the flight’s route becomes empty the traced route, the points, the names and the touch lists go (the layer is redrawn blank, never left as it was)', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0194 (Features SOG, capture of N14: the file of the flight is empty, the profile says « no flight », the route stays drawn on the map even 3 s later): draw() returned early without clearing the layer when the route had no point; a flight whose route becomes empty empties the map at the instant of the tap')
+def d151(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.drawn", timeout=15000, what='the route is drawn')
+    c.wait(800)
+    c.ok(c.js(_INK_JS) > 500, str(c.js(_INK_JS)), 'the route and its names are drawn on the layer')
+    # the flight becomes empty (what « New flight » writes): the layer is blank, the lists are empty
+    c.js("""async () => { const S = window.__mp.S, f = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`);
+      await S.ctx.data.put(`pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`, { ...f, route: { ...f.route, text: '', points: [], dep: '', arr: '', distanceNm: 0 }, profile: null, mission: null, updated_at: new Date(Date.now() + 60000).toISOString() }); return true }""")
+    c.until("() => window.__mp.S.route.points.length === 0", timeout=8000, what='the Map has read the empty flight')
+    c.until("() => (() => { const c = window.__mp.S.canvas, d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return false; return true })()",
+            timeout=4000, what='the layer is blank within 4 s of the empty flight')
+    c.eq(c.js("() => [window.__mp.S.awHits.length, window.__mp.S.adHits.length, (window.__mp.S.altHits || []).length, !!window.__mp.S.lightSrc]"), [0, 0, 0, False], 'no touch list nor light drawing of the old route is kept', what='lists')
+    c.shot('D151_empty_390.png')

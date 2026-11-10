@@ -180,6 +180,17 @@ function viewMarks(box) {
   }
   return S.marks;
 }
+/** Le calque vidé : plus de route, donc plus de tracé, de listes de toucher ni de dessin léger à reprendre (le geste suivant ne ressuscite pas l'ancien). */
+function blank() {
+  const c = S.canvas,
+    g = c.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, c.width, c.height);
+  S.lightSrc = null;
+  S.lightPaths = null;
+  S.frame = null;
+  for (const k of ['awHits', 'zoneHits', 'adHits', 'navHits', 'vrpHits', 'altHits', 'windHits', 'vfrHits']) S[k] = [];
+}
 /** Le dessin léger (light.js) à la vue de la carte, gardé comme image à recopier jusqu'au suivant ; les chemins refaits seulement
  *  quand les listes du dernier dessin complet ont changé (mesure à part : maps:light:paths). */
 function light() {
@@ -567,7 +578,9 @@ function drawAltn(ctx, toC, altn, on, named = true) {
 }
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
-  if (!S?.canvas || !S.fit || !S.route.points.length) return;
+  if (S?.canvas && !S.route.points.length)
+    return blank(); // plus de route (« Nouveau vol ») : la carte se vide à l'instant, rien de l'ancien tracé ne reste (SOG-0194)
+  if (!S?.canvas || !S.fit) return;
   if (!S.map && S.tilesWait) return; // le fond se charge : pas d'image d'un autre cadrage avant la sienne (SPEC § 5)
   performance.mark('maps:draw:start');
   clearTimeout(sched.rest); // ce dessin complet tient lieu de celui du repos (un nouveau mouvement le redemande)

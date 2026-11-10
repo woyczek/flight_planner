@@ -2317,6 +2317,14 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## « New flight » empties the map (10 Nov 2026, SOG-0194, the Map's part)
+
+- **Seen** (Features SOG, capture of N14): Fuel's « Nouveau vol » empties the flight's file, the profile says « no flight », but the route stays drawn on the map. Cause: `draw()` returned at its first line when the route had
+  no point, **without clearing the layer** (`!S.route.points.length`), so the previous image stayed (and the touch lists, the light drawing of the next gesture and the kept frame still held the old route).
+- **Done**: a flight with no point redraws the layer **blank** (`blank()`: cleared, `lightSrc`, `lightPaths`, `frame` and the hit lists emptied); the live read of the flight (300 ms after the write) applies the empty flight
+  as before. Noreg D151 (the route drawn, the flight written empty, the layer blank within 4 s, the lists empty; red before: the old image stayed).
+- **Not done**: the 300 ms of the live watch is the delay between the tap and the empty map (« à l'instant » within a third of a second).
+
 ## D42 follows the round step of the marks (10 Nov 2026, after SOG-0177)
 
 - D42 (« the profile follows the flown path ») measured the NM marks `[50, 100, …]` of the old fixed step. SOG-0177 made the step round and dependent on the visible length (5 NM in D42's close view, 78 marks over the
