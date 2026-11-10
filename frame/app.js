@@ -308,7 +308,7 @@
       // appareils des pilotes, réseau local et relais de la compagnie (R-C2) : codes d'appairage, révocation
       id: 'devices',
       href: '#devices',
-      label: ['Appareils', 'Devices', 'Geräte', 'Dispositivos'],
+      label: ['Appareils connectés', 'Devices', 'Geräte', 'Dispositivos'],
       icon: 'globe',
       level: 3,
       launcher: true

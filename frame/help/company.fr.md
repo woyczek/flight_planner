@@ -242,7 +242,7 @@ nommés sans lien) ; chemins relatifs à la racine de la suite : `labs/design_pr
   dans votre compte IVAO. Sans application IVAO réglée, le bouton est éteint et la carte dit où elle manque : sur ce poste,
   Administration › « Application IVAO » la règle (elle donne l'adresse de retour à déclarer chez IVAO) ; sur le relais,
   l'administrateur la règle.
-- **Appareils** : un seul écran, Maintenance › « Appareils », pour tous les appareils des pilotes, qu'ils viennent du
+- **Appareils** : un seul écran, Maintenance › « Appareils connectés », pour tous les appareils des pilotes, qu'ils viennent du
   réseau local ou du relais de la compagnie (quand le lanceur tourne en relais, derrière le proxy inverse du NAS, en
   https). Un pilote appaire chaque appareil une fois avec un code à 8 chiffres que l'administrateur demande là pour son
   trigramme (une fois, 10 minutes, sur l'un ou l'autre canal) ; ses écritures sont signées de ce trigramme. Chaque ligne

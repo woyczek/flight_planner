@@ -11,7 +11,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const K = window.SogSettingsKit.T; // textes communs des Réglages (kit.js) : les lignes égales dans les quatre langues y sont une fois
   const T = {
-    title: ['Appareils', 'Devices', 'Geräte', 'Dispositivos'],
+    title: ['Appareils connectés', 'Devices', 'Geräte', 'Dispositivos'],
     intro: [
       'Les appareils des pilotes appairés à ce poste, par le réseau local ou par le relais de la compagnie. Un appareil s’appaire une fois avec un code à 8 chiffres demandé ici pour le trigramme du pilote ; ses écritures sont signées de ce trigramme. Révoquez un appareil perdu, ou tous ceux d’un pilote qui part.',
       'The pilots’ devices paired with this computer, through the local network or the airline’s relay. A device pairs once with an 8-digit code asked for here for the pilot’s trigram; its writes are signed with that trigram. Revoke a lost device, or all those of a pilot who leaves.',

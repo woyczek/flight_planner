@@ -90,6 +90,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Maintenance's rail: the paired devices are « Appareils connectés » in French** (`frame/app.js`, `frame/settings/devices.js`, manuals fr ×3; noreg A143; the user's capture of 10 Nov 18:06). « Appareils » appeared twice (the aircraft and the paired devices); the rail of an application
+  never carries two entries with the same label, in the four languages; the aircraft keep « Appareils » until their place is decided (SOG-0231).
 - **Header: a chip with the device's airline (only when at least two exist) that opens the list of airlines, `ctx.workAirline`** (`frame/app.js`, `frame/index.html`, `frame/frame.css`; INTEGRATION § 15.5, DECISIONS; noreg A139, A141;
   SOG-0213, the user's counter-proposal). « Pilote [ITF] »: a tap on the chip lists the airlines as radio buttons (seven at most, « Personnel » last; name and kind), a choice changes the airline without leaving the screen; nothing is added to
   the application selector; the chip yields to the cartouche and the sync state as a last resort; `ITF ≠` when the work shown (`ctx.workAirline`) is for another airline.

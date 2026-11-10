@@ -5891,3 +5891,27 @@ def a142(c):
     d = c.until_doc('airline/aaa/themes.json', lambda d: bool(d) and not d['added']['themes'], what='the theme removed')
     c.eq([d['chosen'], d['added']], [['COMMERCIAL'], {'themes': [], 'series': {}}], 'the theme leaves the file and the choice', what='removed')
     c.check_errors()
+
+
+@case('A143', 'In the rail of an application, never two entries with the same label, in the four languages; the paired devices are « Appareils connectés » in French (SOG-0213 follow-up: the user’s capture of Maintenance’s rail)', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True, phone=False,
+      rule='ergonomist, 10 Nov 18:06 (the user’s capture of Maintenance’s rail: « Appareils » twice — the aircraft and the paired devices): the rail of every application never carries two entries with the same label; in French the paired devices are « Appareils connectés » (frame/app.js, the title of frame/settings/devices.js), the aircraft keep « Appareils » for now (their place is decided with SOG-0231)')
+def a143(c):
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url).path
+        body = {'server': True, 'data': True, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': []} if u.endswith('/__setup/status') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    seen = {}
+    for app, target in (('maintenance', 'data'), ('company', 'missions'), (None, 'fuel')):
+        c.open(target, app=app, docs=LEVEL3, wait=False)
+        c.until("document.querySelectorAll('#fMenu li').length > 1", timeout=20000, what=f'the rail of {app or "pilot"}')
+        c.wait(1200)       # the entries that need the launcher arrive with its survey
+        labels = c.js("[...document.querySelectorAll('#fMenu li a')].map(a => a.textContent.replace(/\\s+/g, ' ').trim()).filter(Boolean)")
+        dup = sorted({x for x in labels if labels.count(x) > 1})
+        c.eq(dup, [], f'the rail of {app or "pilot"} has no two entries with the same label', what=f'duplicates ({app})')
+        seen[app] = labels
+    if c.lang == 'fr':
+        c.ok('Appareils connectés' in seen['maintenance'] and seen['maintenance'].count('Appareils') <= 1, str(seen['maintenance']), 'Maintenance’s rail: the paired devices are « Appareils connectés », the aircraft « Appareils »')
+    c.check_errors()
