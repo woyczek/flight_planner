@@ -5,7 +5,7 @@
  "generated": {
   "tool": "tools/roadmap_build.py",
   "organisation": "fa8f27e",
-  "fiches": 185,
+  "fiches": 186,
   "untranslated": 1,
   "priorities": 152
  },
@@ -747,7 +747,7 @@
     {
      "id": "SOG-0185",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : la fiche d'un espace clignote à l'ouverture, et l'onglet « Couches » sert à autre chose qu'à choisir les couches",
      "en": "Map: an airspace sheet flickers when it opens, and the “Layers” tab is used for more than choosing layers",
      "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
@@ -2145,6 +2145,15 @@
      "en": "Data: rework the whole base update path (one gesture, messages that name buttons that exist)",
      "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",
      "es": "Datos: rehacer todo el recorrido de actualización de la base (un solo gesto, mensajes que nombran botones que existen)"
+    },
+    {
+     "id": "SOG-0186",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données, paquets de pays : pouvoir choisir un pays dans un paquet (liste repliée)",
+     "en": "Data, country packs: choose one country inside a pack (folded list)",
+     "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
+     "es": "Datos, paquetes de países: elegir un país dentro de un paquete (lista plegada)"
     }
    ]
   },

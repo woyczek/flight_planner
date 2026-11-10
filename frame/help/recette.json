@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 64,
+  "tests": 65,
   "verdicts": 30
  },
  "apps": [
@@ -887,6 +887,19 @@
     "es": "Mapa de misión: ha desaparecido el cursor de complejidad"
    },
    "test": "Compagnie › Missions › une mission › « Voir sur la Carte » : le curseur de complexité est là, comme sur la Carte du vol, et le déplacer allège ou enrichit la carte de mission.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0185",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : la fiche d'un espace clignote à l'ouverture, et l'onglet « Couches » sert à autre chose qu'à choisir les couches",
+    "en": "Map: an airspace sheet flickers when it opens, and the “Layers” tab is used for more than choosing layers",
+    "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
+    "es": "Mapa: la ficha de un espacio parpadea al abrirse y la pestaña «Capas» sirve para algo más que elegir capas"
+   },
+   "test": "Carte avec une route qui traverse des espaces, profil ouvert : ouvrir la fiche d'un espace (bloc puis « Fiche ») ne fait plus clignoter la coupe ; la fiche s'ouvre sous l'onglet du profil (sa puce reste allumée, pas celle des Couches), avec son titre et sa croix ; la puce du profil la referme.",
    "since": "2026-11-10",
    "state": "todo"
   }
