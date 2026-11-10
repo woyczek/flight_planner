@@ -699,6 +699,9 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   font-family: var(--sog-font-mono);
   font-size: .85em
 }
+.f-co [data-co-meta]:empty::before {
+  content: "\a0" /* la ligne grise garde sa hauteur avant l'arrivée des détails (SOG-0218) */
+}
 .f-co [data-co-meta] {
   grid-column: 2
 }

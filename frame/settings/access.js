@@ -566,16 +566,39 @@
   const airlineNets = s => AIRLINE_NETWORKS.filter(k => s?.networks?.[k] === true);
   /** Le nombre d'appareils de la flotte (fleet.aircraft) : un entier borné, 0 sans fichier. */
   const airlineFleet = f => Array.isArray(f?.aircraft) ? Math.min(f.aircraft.length, 9999) : 0;
-  /** Lit l'index et, pour chaque compagnie, ses réglages et sa flotte ; rend les lignes [{ code, name, nets, fleet }] puis « Personnel ». Un fichier illisible : la ligne sans ses détails. */
-  async function readAirlines(FD, t) {
+  /** La liste des compagnies, SANS rien lire de plus que l'index (SOG-0218 : la liste se dessine aussitôt, les détails viennent après) : { list: [{ code, name }], known } — la liste du cadre quand il la donne (FrameData.airlines() : celles de l'index, ou « default » avant la migration), sinon l'index lu ici. */
+  async function readAirlineList(FD) {
     const ad = airlineData(FD),
-      // la liste du cadre quand il la donne (FrameData.airlines() : celles de l'index, ou « default » avant la migration), sinon l'index lu ici ; « personnel » vient en dernier
-      known = typeof FD.airlines === 'function' ? await Promise.resolve(FD.airlines()).catch(() => null) : null,
-      list = known ? airlineList({
+      known = typeof FD.airlines === 'function' ? await Promise.resolve(FD.airlines()).catch(() => null) : null;
+    return {
+      known: !!known,
+      list: known ? airlineList({
         airlines: known
       }) : airlineList(await ad.get(INDEX, {
         wait: true
-      }).catch(() => null)),
+      }).catch(() => null))
+    };
+  }
+  /** Les lignes d'après la liste, sans détail encore (réseaux, flotte et genre viennent de la lecture suivante), puis « Personnel » : { code, name, nets: [], fleet: null, kind: '', cats: null, loading: true }. */
+  const quickRows = (list, t) => [...list.map(a => ({
+    ...a,
+    nets: [],
+    fleet: null,
+    kind: '',
+    cats: null,
+    loading: true
+  })), {
+    code: PERSO,
+    name: t(TA.perso),
+    nets: [],
+    fleet: null
+  }];
+  /** Les détails de chaque compagnie de la liste, tous en même temps (réglages, flotte, catégories de chacune) : les lignes [{ code, name, nets, fleet, kind, cats }] puis « Personnel ». Un fichier illisible : la ligne sans ses détails. */
+  async function readAirlines(FD, t, {
+    list,
+    known
+  }) {
+    const ad = airlineData(FD),
       rows = await Promise.all(list.map(async a => {
         // avant la migration, la compagnie d'aujourd'hui (« default ») est à la racine de data/airline/
         const base = known && a.code === 'default' ? 'airline/' : `airline/${a.code}/`,
@@ -612,12 +635,12 @@
   /** Le dossier d'une compagnie sous data/ : « airline/ » avant la migration (code default), sinon « airline/<code>/ ». */
   const airlineBase = code => code === 'default' ? 'airline/' : `airline/${code}/`;
   /** La ligne de la liste (jamais un bouton « Choisir ») : bouton radio, nom, code, puis une ligne grise : le genre dit en toutes lettres, les réseaux, la flotte. Le HTML ne dit rien de l'état courant (posé ensuite sur le nœud) : deux dessins qui ne diffèrent que par le choix donnent le même texte. */
-  function airlineRowHtml(r, t, can, CL, aircraft = n => String(n)) {
+  function airlineRowParts(r, t, can, CL, aircraft = n => String(n)) {
     const KN = CL?.KIND_NAMES,
       kind = KN ? t(KN[r.code === PERSO ? 'perso' : r.kind || 'none']) : '',
       meta = [kind, ...r.nets.map(k => t(TA.net[k])), ...(r.fleet === null ? [] : [aircraft(r.fleet)])].join(' · '),
       code = esc(r.code);
-    return `<label class="f-co" data-airline="${code}"><input type="radio" name="co-current" value="${code}" data-act="companyChoose" data-code="${code}"${can ? '' : ' disabled'}><span class="f-co-name"><b>${esc(r.name)}</b> <code>${code}</code></span><span class="f-muted" data-co-meta>${esc(meta)}</span></label>`;
+    return [`<label class="f-co" data-airline="${code}"><input type="radio" name="co-current" value="${code}" data-act="companyChoose" data-code="${code}"${can ? '' : ' disabled'}><span class="f-co-name"><b>${esc(r.name)}</b> <code>${code}</code></span>`, meta];
   }
   /** La fiche de la compagnie CHOISIE (les autres n'en ont pas) : le genre en deux boutons radio, une ligne d'explication chacun ; puis les catégories de missions de ce genre, visibles, avec « Ajouter une catégorie ». « Personnel » : une ligne, rien à régler. `lang` : la langue des noms. */
   function airlineFicheHtml(r, CL, lang, t) {
@@ -1407,17 +1430,26 @@
   }
   /** Met la liste à jour SANS la redessiner : une ligne dont le HTML est inchangé garde son nœud (le focus, la hauteur, rien ne bouge) ; seule une ligne qui change est remplacée, une ligne nouvelle insérée, une ligne disparue retirée. */
   function paintRows(box, rows, t, can, CL, aircraft) {
+    const metaSpan = m => `<span class="f-muted" data-co-meta>${esc(m)}</span></label>`;
     const keys = new Set(rows.map(r => r.code));
     for (const n of [...box.children])
       if (!keys.has(n.dataset.airline)) n.remove();
     rows.forEach((r, i) => {
-      const html = airlineRowHtml(r, t, can, CL, aircraft),
+      const [head, meta] = airlineRowParts(r, t, can, CL, aircraft),
+        html = head + metaSpan(meta),
         cur = box.children[i];
       if (cur && cur.dataset.airline === r.code && cur.__html === html) return;
+      // la même ligne dont seul le texte gris change (les détails arrivent) : le texte est remplacé EN PLACE, rien ne bouge et le bouton radio garde son focus
+      if (cur && cur.dataset.airline === r.code && cur.__head === head) {
+        cur.querySelector('[data-co-meta]').textContent = meta;
+        cur.__html = html;
+        return;
+      }
       const tpl = document.createElement('template');
       tpl.innerHTML = html;
       const n = tpl.content.firstElementChild;
       n.__html = html;
+      n.__head = head;
       if (cur && cur.dataset.airline === r.code) cur.replaceWith(n);
       else box.insertBefore(n, cur || null);
     });
@@ -1458,38 +1490,71 @@
     } = env,
     box = view.querySelector('[data-airlines]');
     if (!box) return;
-    const [rows, CL, PL] = await Promise.all([readAirlines(FD, t), catLib(), plLib()]),
-      lang = env.t(['fr', 'en', 'de',
+    const lang = env.t(['fr', 'en', 'de',
         'es'
-      ]); // la langue de l'écran : le texte de la ligne qui lui correspond (le contexte n'en donne pas toujours la fonction)
-    if (!view.isConnected) return;
-    const can = typeof FD.setAirline === 'function',
-      now = String((typeof FD.airline === 'function' ? await Promise.resolve(FD.airline()).catch(() => null) : null)?.code || '');
+      ]), // la langue de l'écran : le texte de la ligne qui lui correspond (le contexte n'en donne pas toujours la fonction)
+      token = (view.__airToken = (view.__airToken || 0) + 1), // une lecture plus récente (un geste vient d'écrire) reprend la main
+      libs = Promise.all([catLib(), plLib()]), // les deux modules se chargent pendant les lectures, jamais l'un après l'autre
+      can = typeof FD.setAirline === 'function',
+      // la compagnie courante se lit en même temps que la liste, mais la liste ne l'attend pas (elle lit les réglages de la compagnie : lente sur un appareil lent)
+      nowP = typeof FD.airline === 'function' ? Promise.resolve(FD.airline()).then(a => String(a?.code || '')).catch(() => '') : Promise
+      .resolve(''),
+      // 1) la liste se dessine aussitôt (SOG-0218) : l'index seul, la ligne grise vient après
+      index = await readAirlineList(FD);
+    if (!view.isConnected || token !== view.__airToken) return;
+    const prev = AIR.get(view),
+      // la compagnie courante connue sans attendre : celle du dessin précédent, sinon celle que le cadre a déjà lue
+      now0 = prev?.now || String(env.c?.airline?.code || ''),
+      quick = prev?.rows?.length && prev.token !== undefined ? prev.rows.filter(r => r.code === PERSO || index.list.some(a => a.code ===
+        r.code)) : quickRows(index.list, t);
+    // les lignes déjà lues le restent (un nouveau dessin ne les vide pas) ; celles que la liste a de plus sont sans détail
+    const first = quickRows(index.list, t).map(r => quick.find(q => q.code === r.code) || r);
+    AIR.set(view, {
+      rows: first,
+      CL: prev?.CL || null,
+      PL: prev?.PL || null,
+      lang,
+      now: now0,
+      token
+    });
+    WZ_ENV.set(view, env);
+    wizardWire(view);
+    paintRows(box, first, t, can, prev?.CL || null, n => nounText(view, 'aircraft', n));
+    markCurrent(view, now0);
+    paintAirlineNotes(env, index.list, can);
+    // 2) les détails de chaque compagnie (et les deux modules) : la ligne grise, la fiche de la compagnie choisie
+    const [rows, [CL, PL], now] = await Promise.all([readAirlines(FD, t, index), libs, nowP]);
+    if (!view.isConnected || token !== view.__airToken) return;
     AIR.set(view, {
       rows,
       CL,
       PL,
       lang,
-      now
+      now,
+      token
     });
-    WZ_ENV.set(view, env);
-    wizardWire(view);
     wizardKindNames(view, CL, t);
     paintRows(box, rows, t, can, CL, n => nounText(view, 'aircraft', n));
     markCurrent(view, now);
     paintFiche(env);
-    // la migration : seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine
-    const mig = view.querySelector('[data-mig]');
+  }
+  /** La migration (seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine de data/airline/) et la note sous la liste (le choix pas encore possible, ou aucune compagnie). */
+  function paintAirlineNotes(env, list, can) {
+    const {
+      view,
+      t
+    } = env, mig = view.querySelector('[data-mig]');
     if (mig) {
       const L = env.L && !env.L.lan,
-        pending = L && rows.some(r => r.code === 'default');
+        pending = L && list.some(r => r.code === 'default');
       mig.hidden = !pending;
       if (pending && !mig.firstChild) mig.innerHTML = migHtml(env);
     }
-    const note = view.querySelector('[data-airline-note]');
+    const note = view.querySelector('[data-airline-note]'),
+      n = list.length + 1;
     if (note) {
-      note.hidden = can && rows.length > 1;
-      note.textContent = !can ? t(TA.unavailable) : rows.length > 1 ? '' : t(TA.none);
+      note.hidden = can && n > 1 && list.length > 0;
+      note.textContent = !can ? t(TA.unavailable) : list.length ? '' : t(TA.none);
     }
   }
   /** Lance airline/migrate sur le lanceur du poste et attend sa fin (quelques secondes) : le résultat (objet) ou null (pas de lanceur, pas de réponse, travail en échec). */

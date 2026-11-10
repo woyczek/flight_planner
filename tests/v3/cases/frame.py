@@ -3259,7 +3259,7 @@ def a87(c):
     _sync_open(c, [], pushed=pushed([(sheet, 'ok'), (mission, 'ok'), (flight, evil), ('airline/settings.json', 'ok')]))
     c.until("!!document.querySelector('[data-card=\"sync\"] details[data-pushed]')", timeout=15000, what='the line of what has just left')
     prefix = norm(tx(sj, 'pushedAt', lang).split('{t}')[0])
-    tail = ' · '.join(f'{kind(k)} : {v}' for k, v in [('sheets', 1), ('missions', 1), ('flights', 1), ('other', 1)]) + f" ({norm(tx(sj, 'pushedRefused', lang).replace('{n}', '1'))})"
+    tail = ' · '.join(f'{kind(k)} : {v}' for k, v in [('sheets', 1), ('missions', 1), ('flights', 1), ('other', 1)]) + f" ({norm(tx(sj, 'pushedRefused', lang).replace('{n}', '1').replace('(s)', ''))})"
     got = line()
     c.ok(got.startswith(prefix) and got.endswith(tail), got, 'one line: the time, a count per kind, how many were refused')
     c.eq(c.js("[...document.querySelectorAll('[data-card=\"sync\"] details[data-pushed]')].map(d => [d.open, d.dataset.count, d.dataset.refused])"), [[False, '4', '1']], 'folded, four files, one refused', what='folded')
@@ -3282,6 +3282,7 @@ def a87(c):
     c.settle()
     c.eq(c.count('[data-card="sync"] details[data-pushed]'), 0, 'nothing left, nothing said', what='none')
     # ---- D: the pure reading, a hostile or malformed list says nothing wrong
+    c.until('!!window.SogSyncSummary', timeout=8000, what='the module of the card is loaded')
     r = c.js("""() => { const S = window.SogSyncSummary; return [S.pushedItems(null).items.length, S.pushedItems([{ path: '', result: 'ok' }, 5, null, { path: 'a.json', result: 'ok', at: 'nope' }, { path: 'a.json', result: 'ok' }]).items.map(i => [i.path, i.ok, i.kind]),
       S.pushedItems([{ path: 'x', result: 'y'.repeat(900), at: '2026-11-05T10:00:00Z' }]).items[0].result.length, S.pushedItems([{ path: 'x', result: 'ok', at: '2026-11-05T10:00:00Z' }]).at,
       S.pushedItems([{ path: 'x', result: 'ok' }, { path: 'z', result: '' }]).items.map(i => [i.path, i.ok])] }""")
@@ -4217,7 +4218,7 @@ def a105(c):
     c.until(f"document.querySelector('{fiche('[data-cats-title]')}').textContent.includes('7')", what='the sheet counts the seven categories of the base')
     c.eq(checked(fiche('[data-act=companyKind]')), [['va', True], ['sog', False]], 'the commercial radio is the checked one', what='va checked')
     c.ok(norm(K('va')) in meta('aaa'), meta('aaa'), 'and its line says « Commercial »')
-    c.eq(kept(), [['aaa', False], ['bbb', True], ['perso', True]], 'only the line whose words changed is replaced: the others keep their node', what='kept after kind')
+    c.eq(kept(), [['aaa', True], ['bbb', True], ['perso', True]], 'the line whose words changed has its grey text replaced IN PLACE (SOG-0218): no node of the list is replaced', what='kept after kind')
     c.eq(c.count(fiche('li[data-cat]')), 7, 'the seven commercial categories are listed in the sheet', what='listed')
     # ---- choosing: no node of the list is replaced; only the radios and the sheet change
     mark()
@@ -5723,4 +5724,50 @@ def a139(c):
     c.until("!!document.querySelector('.f-tabpop [data-co]')", what='the selector')
     codes = c.js("[...document.querySelectorAll('.f-tabpop [data-co]')].map(b => b.dataset.co)")
     c.eq([len(codes), codes[-1]], [7, 'perso'], 'nine airlines known: seven rows, « Personnel » is the last', what='seven')
+
+@case('A140', 'Settings › Company (SOG-0218): the list of airlines is drawn from the index at once although the files of each airline arrive late (a slow device or relay); the grey lines are filled after, in place, nothing moves', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0218 (the user: « « compagnie de cet appareil » met 8\u2033 à s\u2019afficher. c\u2019est lent. »): the lines come from the index (name, radio) in the first second; the kind, the fleet and the sheet of the chosen airline are completed afterwards, each line keeping its node and its height (rule 22)')
+def a140(c):
+    lang = c.lang
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}, {'code': 'ccc', 'name': 'Charlie Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': [{'type': 'A320', 'registration': 'F-AAAA'}, {'type': 'A320', 'registration': 'F-AAAB'}]}, 'document'],
+            ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document'],
+            ['airline/bbb/fleet.json', {'schema': 1, 'aircraft': [{'type': 'C30J', 'registration': 'F-RAJA'}]}, 'document'],
+            ['airline/ccc/settings.json', {'schema': 1, 'name': 'Charlie Air', 'kind': 'va'}, 'document']]
+    # the files of each airline (settings, fleet, categories) come back 2.5 s late, the index at once: a slow device, a relay (the data adapter reads them from the page’s store)
+    c.page.add_init_script(CLS_PROBE)
+    c.page.add_init_script("""(() => { const get = IDBObjectStore.prototype.get;
+      IDBObjectStore.prototype.get = function (key) { const q = get.call(this, key);
+        if (!/^airline\\/[a-z0-9_-]+\\/(settings|fleet|categories)\\.json$/.test(String(key))) return q;
+        const late = { get result() { return q.result }, get error() { return q.error } };
+        q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), 2500);
+        q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), 2500);
+        return late } })()""")
+    rows = "[data-card=\"company\"] [data-airlines] [data-airline]"
+    c.open('settings?card=company', docs=docs, wait=False)
+    t0 = c.js("performance.now()")
+    c.until(f"document.querySelectorAll('{rows}').length === 4", timeout=15000, what='the lines, from the index')
+    t_rows = c.js("performance.now()") - t0
+    c.ok(t_rows < 1500, t_rows, 'the list is drawn in less than 1.5 s although the files of each airline take 2.5 s')
+    names = lambda: c.js(f"[...document.querySelectorAll('{rows}')].map(n => [n.dataset.airline, n.querySelector('.f-co-name, [data-co-name]')?.textContent.trim() || n.textContent.trim().slice(0, 30)])")
+    c.eq([n[0] for n in names()], ['aaa', 'bbb', 'ccc', 'perso'], 'every airline of the index and « personal », in order', what='codes')
+    c.ok(c.js(f"document.querySelectorAll('{rows} input[type=radio]').length") == 4, None, 'each with its radio button, already')
+    h0 = c.js(f"[...document.querySelectorAll('{rows}')].map(n => Math.round(n.getBoundingClientRect().height))")
+    top0 = c.js(f"Math.round(document.querySelector('{rows}').getBoundingClientRect().top)")
+    c.js(f"[...document.querySelectorAll('{rows}')].forEach(n => {{ n.__kept = true }})")
+    c.shot(f"A140_standard_{c.page.viewport_size['width']}_early.png")
+    meta = lambda: c.js(f"[...document.querySelectorAll('{rows} [data-co-meta]')].map(n => n.textContent.trim())")
+    # ---- the details arrive: the grey lines are filled in place, the lines keep their node, their height and their place
+    c.until(f"[...document.querySelectorAll('{rows} [data-co-meta]')].some(n => /A320|2|F-/.test(n.textContent) && n.textContent.trim().length > 3)", timeout=15000, what='the grey lines are completed')
+    c.wait(300)
+    c.eq(c.js(f"[...document.querySelectorAll('{rows}')].map(n => !!n.__kept)"), [True, True, True, True], 'every line keeps its node when its details arrive', what='kept')
+    c.eq(c.js(f"[...document.querySelectorAll('{rows}')].map(n => Math.round(n.getBoundingClientRect().height))"), h0, 'and its height', what='heights')
+    c.eq(c.js(f"Math.round(document.querySelector('{rows}').getBoundingClientRect().top)"), top0, 'and its place', what='top')
+    c.until("!!document.querySelector('[data-airline-fiche] [data-kind-set]')", timeout=15000, what='the sheet of the chosen airline')
+    cls = c.js('window.__cls')
+    c.ok(cls['value'] < 0.1, cls, 'the layout shift of the screen at load, details included, stays under 0.1 (rule 22)')
+    c.shot(f"A140_standard_{c.page.viewport_size['width']}_delivered.png")
     c.check_errors()
