@@ -15,7 +15,7 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js'],
+  files: ['../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js', '../report/vocab.js'],
   reads: ['missions/', 'cr/',
     'airline/'
   ], // les missions et leur registre ; les comptes rendus (« volée le … ») ; les catégories de la compagnie
