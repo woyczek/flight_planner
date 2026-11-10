@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 68,
+  "tests": 69,
   "verdicts": 30
  },
  "apps": [
@@ -939,6 +939,19 @@
     "es": "Mapa: la ficha de un espacio parpadea al abrirse y la pestaña «Capas» sirve para algo más que elegir capas"
    },
    "test": "Carte avec une route qui traverse des espaces, profil ouvert : ouvrir la fiche d'un espace (bloc puis « Fiche ») ne fait plus clignoter la coupe ; la fiche s'ouvre sous l'onglet du profil (sa puce reste allumée, pas celle des Couches), avec son titre et sa croix ; la puce du profil la referme.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0186",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, paquets de pays : pouvoir choisir un pays dans un paquet (liste repliée)",
+    "en": "Data, country packs: choose one country inside a pack (folded list)",
+    "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
+    "es": "Datos, paquetes de países: elegir un país dentro de un paquete (lista plegada)"
+   },
+   "test": "Maintenance › Données › « Paquets de pays » : chaque région garde sa case « tout le paquet » et porte un pli « Pays (n) », replié ; ouvert, il liste les pays avec une case chacun ; cocher un pays l'ajoute seul à la couverture, sans rien télécharger.",
    "since": "2026-11-10",
    "state": "todo"
   }

@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c7a4384",
+  "organisation": "7e8d67e",
   "fiches": 186,
   "untranslated": 1,
   "priorities": 152
@@ -2149,7 +2149,7 @@
     {
      "id": "SOG-0186",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données, paquets de pays : pouvoir choisir un pays dans un paquet (liste repliée)",
      "en": "Data, country packs: choose one country inside a pack (folded list)",
      "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
