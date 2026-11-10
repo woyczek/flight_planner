@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map, ground panel: it says when the ground could not be read, and why, with « Try again »** (`modules/maps/ground.js`, `module.js`, `texts.js`; SPEC § 5.2; noreg D135; SOG-0046 / 0135 refused by the
+  user). The launcher had started the reading and written nothing, the failure was swallowed. The panel now says « Reading the ground… », or « Ground not read: <reason> (<the launcher's words>) »
+  with a « Try again » that reads the ground alone; the state survives a reload (AeroDb.groundStatus).
+
 - **Pelican sites tool: it works under the launcher** (`apps/outils/pelicandromes/`; frame DECISIONS; noreg A116; SOG-0083). The user's file is kept as it came
   (`original.html`, not linked); the page linked from the old pages takes MapLibre and js-yaml from the repository instead of the CDN (the launcher's content policy
   blocks them), and says « Fond satellite indisponible sous le lanceur » where the background is chosen. The policy is untouched.

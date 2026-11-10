@@ -607,7 +607,9 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   « Read the procedures » in Fuel), never by a button of the Map. The panel of an aerodrome without a file says « Read the aerodrome's
   procedures to get the ground » with a « Procedures » link (`data-go="fuel?focus=dep|arr"`, the side of the flight the aerodrome is);
   with a file it says « Ground read with the procedures of <date> » (the file's `cycle`, the day it was read) above the rows. The
-  refusals of the reading belong to the procedures' reading (Fuel's notification). AeroDB says `on('change', { ground: ICAO })` when
+  the state of the reading is `AeroDb.groundStatus(icao)` (`reading`, `ok`, `failed` with `reason` busy / too-soon / failed / no-data and the launcher's `message`, kept by the
+  launcher across reloads; `change { ground, groundFailed }`): « Reading the ground… », or « Ground not read: <reason> (<message>) » with a « Try again » button
+  (`AeroDb.fetchGround`, the ground alone, not the procedures); `none` keeps the sentence and the link. Noreg D135. (Refusals of the reading used to belong to Fuel's notification.) AeroDB says `on('change', { ground: ICAO })` when
   it has read the ground after the procedures: the Map reads the file again (`groundChanged`), so an open panel shows it at once. Noreg D120.
 
 ### 5.2 bis The world view (SOG-0156)
@@ -734,8 +736,9 @@ range; the base map's own names hidden while ours are drawn (§ 5).
   {n} NM corridor around the flight hidden at this zoom: zoom in, raise the complexity or untick “Around the flight only” ». Noreg D132 (same view twice: the
   same classes; one step of complexity or of zoom: a class more; the box unticked: R, D, P appear and the note goes; the effective zoom does not move
   with the sheet).
-- **FIR outside France**: the published SIA bases carry FIR / UIR only for France (10 FIR, 5 UIR, 15 other large regions in the 29 Oct file); no
-  other country's base has one. The Map draws what exists; the rest is AeroDB's reading (SOG-0169).
+- **FIR outside France**: the published SIA bases carry FIR / UIR only for France (10 FIR, 5 UIR, 15 other large regions in the 29 Oct file). AeroDB (parser 26, 10 Nov) also keeps the
+  FIR and UIR of openAIP (126 FIR in 32 countries) and of the AIXM 5.1 sources, as airspaces of type `FIR` / `UIR` (rings simplified to 0.01°): **FIR: France only before the rebuild of the
+  zones, the openAIP countries after**. The Map draws every one it receives (family `asFir`); the profile ignores them.
 
 ### 6.7 The Layers content
 

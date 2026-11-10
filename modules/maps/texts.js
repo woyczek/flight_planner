@@ -446,6 +446,23 @@ export const TX = {
     'Lesen Sie die Verfahren des Flugplatzes, um den Boden zu erhalten', 'Lea los procedimientos del aeródromo para tener el suelo'
   ],
   gToProcs: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
+  gReading: ['Lecture du sol en cours…', 'Reading the ground…', 'Boden wird gelesen…', 'Leyendo el suelo…'],
+  gFailed: ['Sol non lu : {r}', 'Ground not read: {r}', 'Boden nicht gelesen: {r}', 'Suelo no leído: {r}'],
+  gRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
+  gWhy: {
+    busy: ['le service ou le lanceur est occupé', 'the service or the launcher is busy', 'der Dienst oder der Launcher ist beschäftigt',
+      'el servicio o el lanzador está ocupado'
+    ],
+    'too-soon': ['lecture trop rapprochée, réessayez dans un instant', 'reading too soon after another, try again in a moment',
+      'Lesen zu kurz nach einem anderen, gleich erneut versuchen',
+      'lectura demasiado seguida de otra, inténtelo en un momento'
+    ],
+    failed: ['la lecture a échoué', 'the reading failed', 'das Lesen ist fehlgeschlagen', 'la lectura ha fallado'],
+    'no-data': ['OpenStreetMap ne décrit rien sur ce terrain', 'OpenStreetMap describes nothing on this aerodrome',
+      'OpenStreetMap beschreibt auf diesem Flugplatz nichts',
+      'OpenStreetMap no describe nada en este aeródromo'
+    ]
+  },
   gSrc: ['Sol lu avec les procédures du {d}', 'Ground read with the procedures of {d}', 'Boden mit den Verfahren vom {d} gelesen',
     'Suelo leído con los procedimientos del {d}'
   ],

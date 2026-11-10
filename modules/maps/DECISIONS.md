@@ -2267,6 +2267,16 @@ the Map had seen in between: the same line to within the frame's own sampling.
   label before the reading (it is chosen by the route's middle, after the route is known).
 - **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
 
+## The ground panel says why a reading failed (10 Nov 2026, SOG-0046 / 0135 refused: « rien »)
+
+- **What happened** (AeroDB): the launcher started the ground reading after LFPO's procedures and wrote nothing; the failure was swallowed, the panel kept the sentence « read the
+  procedures to get the ground ».
+- **Done** (the panel's side of `AeroDb.groundStatus`, `on('change', { ground, groundFailed })`): `reading` → « Reading the ground… »; `ok` → « Ground read with the procedures of <date> »;
+  `failed` → « Ground not read: <reason in the pilot's words> (<the launcher's message>) » and a « Try again » (`AeroDb.fetchGround`: the ground alone, no procedures read again);
+  `none` → the sentence and the link as before. The status is read when the panel opens and on every `change { ground }`; the message is bounded (160 signs, no markup).
+  Noreg D135 (failed → phrase + Try again → reading → read → taxiways drawn; the announcement reaches an open panel; red before).
+- **Not done**: the retry's own progress beyond « reading… »; the Overpass `wait` (seconds) of a `too-soon` is not shown; no automatic retry (AeroDB retries a busy Overpass twice).
+
 ## The ground is read with the procedures, no button of the Map (9 Nov 2026, SOG-0135 — replaces the button of the entry below)
 
 - **Seen**: the user did not find the « Read from OpenStreetMap » button and wants the ground read **with** the procedures, not one more

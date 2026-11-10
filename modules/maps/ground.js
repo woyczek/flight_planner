@@ -56,6 +56,7 @@ const G = () => S.ground ||= {
     hold: true
   },
   icao: '', // terrain du panneau
+  st: new Map(), // ICAO → { state: 'reading' | 'failed' | 'ok' | 'none', reason, message } : la lecture du sol (AeroDb.groundStatus)
   drawn: new Map(), // id → vrai si son nom a trouvé une place au dernier dessin
   hits: [] // { id, x, y | segs } en coordonnées de la vue
 };
@@ -141,11 +142,55 @@ function load(icao) {
 const recOf = icao => G().cache.get(icao);
 /** Le sol d'un terrain vient d'être lu avec les procédures (AeroDB : on('change', { ground: OACI })) : le fichier est relu, la liste du
  *  panneau (ouverte ou non) et le dessin le montrent aussitôt. Rien à faire si la Carte n'avait pas demandé ce terrain. */
-export function groundChanged(icao) {
+export function groundChanged(icao, failed = false) {
   const k = String(icao || '').toUpperCase();
-  if (!S?.ground?.cache.has(k)) return;
+  if (!S) return;
+  status(k); // l'état de la lecture du sol (AeroDB.groundStatus : lecture, lu, non lu et pourquoi) : le panneau le dit
+  if (failed || !S.ground?.cache.has(k)) return;
   S.ground.cache.delete(k);
   load(k);
+}
+/** L'état de la lecture du sol d'un terrain (AeroDb.groundStatus, tenu par le lanceur, même après un rechargement) : gardé, la liste redessinée. */
+async function status(icao) {
+  const api = S?.ctx?.aerodb;
+  if (typeof api?.groundStatus !== 'function') return;
+  const ctx = S.ctx;
+  let st = null;
+  try {
+    st = await api.groundStatus(icao);
+  } catch {
+    st = null;
+  }
+  if (S?.ctx !== ctx || !st || typeof st !== 'object') return;
+  G().st.set(icao, {
+    state: ['reading', 'failed', 'ok', 'none'].includes(st.state) ? st.state : 'none',
+    reason: ['busy', 'too-soon', 'failed', 'no-data'].includes(st.reason) ? st.reason : 'failed',
+    message: typeof st.message === 'string' ? st.message.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0,
+      160) : ''
+  });
+  if (st.state === 'ok' && !recOf(icao)?.items) { // le fichier est arrivé sans qu'on l'attende
+    G().cache.delete(icao);
+    load(icao);
+  }
+  render();
+}
+/** « Réessayer » : la lecture du sol seule (AeroDb.fetchGround), sans relire les procédures ; l'état dit « en cours » tout de suite. */
+async function retry(icao) {
+  const api = S?.ctx?.aerodb,
+    g = G();
+  if (typeof api?.fetchGround !== 'function' || g.st.get(icao)?.state === 'reading') return;
+  g.st.set(icao, {
+    state: 'reading',
+    reason: '',
+    message: ''
+  });
+  render();
+  try {
+    await api.fetchGround(icao);
+  } catch {
+    /* l'état dit pourquoi */
+  }
+  groundChanged(icao, false);
 }
 
 // ---------------------------------------------------------------- dessin
@@ -394,6 +439,11 @@ const notDrawn = r => {
 const rowHtml = r => `<button type="button" class="mp-gd-row" data-id="${esc(r.id)}" data-kind="${r.kind}" data-hl="${G().hl === r.id ? 1 : 0}" data-drawn="${notDrawn(r) ? 0 : 1}"><span class="mp-gd-k">${esc(r.kind === 'rwy' ? tt(TX.gRunway) : kindText(r.kind))}</span><b>${esc(r.name)}</b><span class="mp-gd-no">${esc(tt(TX.gNotDrawn))}</span></button>`;
 /** Pas de fichier du sol : il se lit avec les procédures du terrain (SOG-0135), un seul geste, dans Carburant : la phrase et le lien. */
 const noneHtml = icao => {
+  const st = G().st.get(icao);
+  if (st?.state === 'reading') return `<p class="mp-gd-msg mp-gd-none" aria-live="polite">${esc(tt(TX.gReading))}</p>`;
+  if (st?.state === 'failed') return `<p class="mp-gd-msg mp-gd-none mp-gd-fail" role="alert">${esc(tt(TX.gFailed, {
+    r: tt(TX.gWhy[st.reason] || TX.gWhy.failed)
+  }))}${st.message ? ` <span class="f-muted">(${esc(st.message)})</span>` : ''} <button type="button" class="f-btn mp-gd-retry" data-gretry="${esc(icao)}">${esc(tt(TX.gRetry))}</button></p>`;
   const side = String(S.route?.flight?.route?.dep || S.route?.points?.[0]?.id || '').toUpperCase() === icao ? 'dep' : 'arr';
   return `<p class="mp-gd-msg mp-gd-none">${esc(tt(TX.gNone))} <button type="button" class="f-btn mp-gd-procs" data-go="fuel?focus=${side}">${esc(tt(TX.gToProcs))}</button></p>`;
 };
@@ -435,6 +485,7 @@ export function openFor(icao) {
   const g = G();
   g.icao = icao;
   if (!recOf(icao)) load(icao);
+  status(icao);
   Promise.resolve(wantRunways([icao])).then(() => S && S.dpanel === 'ground' && g.icao === icao &&
     render()); // les pistes arrivent après la liste
   const title = tt(TX.gTitle, {
@@ -499,6 +550,8 @@ export function groundEvents() {
     click = e => {
       if (!on()) return;
       if (e.target.closest('[data-gdone]')) return endData('ground');
+      const rb = e.target.closest('[data-gretry]');
+      if (rb) return retry(rb.dataset.gretry);
       const chip = e.target.closest('.mp-gd-chip');
       if (chip) {
         const k = chip.dataset.kind;

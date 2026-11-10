@@ -3635,7 +3635,7 @@ def d120(c):
     c.until("() => !!document.querySelector('.mp-gd-none')", timeout=6000, what='no file yet: the panel says to read the procedures')
     c.js("async () => { window.__have = true; (await import('/modules/maps/ground.js')).groundChanged('lfpo'); return true }")
     c.until("() => !!document.querySelector('.mp-gd-src') && !document.querySelector('.mp-gd-none')", timeout=8000, what='the file arrives: the open panel shows it without reopening')
-    c.ok('groundChanged(e.ground)' in (ROOT / 'modules/maps/module.js').read_text(encoding='utf-8'), 'module.js', 'the Map listens to AeroDB’s change { ground } and calls it')
+    c.ok('groundChanged(e.ground' in (ROOT / 'modules/maps/module.js').read_text(encoding='utf-8'), 'module.js', 'the Map listens to AeroDB’s change { ground } and calls it')
 
 
 _VIEW_JS = "() => { const x = window.__mpMap.getBounds(); return [x.getWest(), x.getSouth(), x.getEast(), x.getNorth()] }"
@@ -4255,3 +4255,37 @@ def d134(c):
     c.until("() => !!document.querySelector('.mp-spsel [data-spfiche]')", timeout=5000, what='the choice is kept when the sheet closes')
     c.tap('.mp-spsel [data-spfiche]')
     c.until("() => window.__mp.S.dpanel === 'lv'", timeout=6000, what='the button opens the sheet')
+
+
+@case('D135', 'Ground panel: a failed reading says why and offers « Try again », which reads the ground alone; « reading… » while it runs; the taxiways are drawn once it is read', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False, langs4=True,
+      rule='SOG-0046 / 0135 refused (« rien »): the launcher started the ground reading and wrote nothing, the failure was swallowed; AeroDb.groundStatus(icao) { state: none | reading | ok | failed, reason, message } and on(change, { ground, groundFailed }): the panel says « Ground not read: <reason> » with the launcher’s message and a « Try again » that calls AeroDb.fetchGround (the ground only, not the procedures); none keeps the sentence and the link to the procedures')
+def d135(c):
+    c.open('maps', docs=fdocs(_ground_flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""async () => { const S = window.__mp.S, fx = await (await fetch('/tests/v3/fixtures/ground_LFPO.json')).json(), a = S.ctx.aerodb; fx.cycle = '2026-11-10';
+      window.__have = false; window.__retries = 0; window.__st = { state: 'failed', reason: 'failed', message: 'Overpass answered HTTP 429' };
+      a.ground = async icao => icao === 'LFPO' && window.__have ? fx : null;
+      a.groundStatus = async () => ({ ...window.__st });
+      a.fetchGround = async () => { window.__retries++; await new Promise(r => setTimeout(r, 400)); window.__have = true; window.__st = { state: 'ok' }; return { ok: true } };
+      return true }""")
+    _ground_at(c, 15, 1200)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => !!document.querySelector('.mp-gd-fail')", timeout=8000, what='a failed reading is said')
+    t = c.js("() => document.querySelector('.mp-gd-fail').textContent")
+    c.ok('429' in t, t, 'with the launcher’s own words')
+    c.eq(c.js("() => !!document.querySelector('.mp-gd-retry')"), True, 'and a « Try again » button', what='retry')
+    c.eq(c.js("() => !!document.querySelector('.mp-gd-procs')"), False, 'no link to the procedures while the ground failed (the procedures are not the problem)', what='procedures link')
+    c.tap('.mp-gd-retry')
+    c.until("() => /…/.test(document.querySelector('.mp-gd-none')?.textContent || '') || document.querySelectorAll('.mp-gd-row').length > 10", timeout=4000, what='reading… while it runs, or already read')
+    c.until("() => document.querySelectorAll('.mp-gd-row').length > 10", timeout=9000, what='the ground is read: the rows are listed')
+    c.eq(c.js("() => window.__retries"), 1, 'the retry read the ground once, through fetchGround', what='retries')
+    c.eq(c.js("() => !!document.querySelector('.mp-gd-fail, .mp-gd-retry')"), False, 'no failure left', what='failure')
+    c.until("() => window.__mp.S.ground.hits.length > 20", timeout=8000, what='the taxiways are drawn')
+    # the announcement (AeroDB: change { ground }) reaches the open panel: the file is gone and the reading failed again
+    c.js("async () => { window.__st = { state: 'failed', reason: 'too-soon', message: '' }; window.__have = false; (await import('/modules/maps/ground.js')).groundChanged('LFPO', false); return true }")
+    c.until("() => { const f = document.querySelector('.mp-gd-fail'); return !!f && /(too soon|trop|zu kurz|demasiado)/i.test(f.textContent) }", timeout=6000, what='a failure announced while the panel is open is said, with its reason')
