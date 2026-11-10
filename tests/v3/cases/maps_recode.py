@@ -3888,8 +3888,9 @@ def d126(c):
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=6000, what='drawn again')
     # a tap on the second route takes it: a Map alone goes to Fuel with the index
     c.wait(500)   # the last drawing settles (a loaded machine redraws after the event): the touch targets are those of the image
-    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")),
-                 "() => location.hash.includes('ralt=1')", 'a tap on a route takes it: #fuel?ralt=1')
+    c.js("() => { window.__hs = []; window.addEventListener('hashchange', () => window.__hs.push(location.hash)); return true }")   # Fuel consumes `ralt` at mount: the address is read when it changes, not afterwards
+    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], n = h.q[2], r = S.box.getBoundingClientRect(), card = document.querySelector('.mp-alts'), cr = card && !card.hidden ? card.getBoundingClientRect() : null; const at = f => ({ x: r.left + m.x + (n.x - m.x) * f, y: r.top + m.y + (n.y - m.y) * f }); const free = [.5, .35, .65, .25, .75, .15, .85].map(at).find(p => !cr || p.x < cr.left - 6 || p.x > cr.right + 6 || p.y < cr.top - 6 || p.y > cr.bottom + 6); return free || at(.5) }""")),
+                 "() => window.__hs.some(h => h.includes('ralt=1')) || location.hash.includes('ralt=1')", 'a tap on a route takes it: #fuel?ralt=1', tries=6)
     # in the double view the choice is an event
     c.open('maps', flight=True)
     c.js(_STATE_JS)
@@ -3899,8 +3900,8 @@ def d126(c):
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='drawn in the pane')
     c.wait(500)
     c.eq(c.js("() => !!document.querySelector('.mp-alts') && !document.querySelector('.mp-alts').hidden"), False, 'beside Fuel the list is Fuel’s: not repeated over the map', what='list in a pane')
-    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")),
-                 "() => window.__picked.length >= 1", 'the tap is maps-route-alt')
+    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], n = h.q[2], r = S.box.getBoundingClientRect(), card = document.querySelector('.mp-alts'), cr = card && !card.hidden ? card.getBoundingClientRect() : null; const at = f => ({ x: r.left + m.x + (n.x - m.x) * f, y: r.top + m.y + (n.y - m.y) * f }); const free = [.5, .35, .65, .25, .75, .15, .85].map(at).find(p => !cr || p.x < cr.left - 6 || p.x > cr.right + 6 || p.y < cr.top - 6 || p.y > cr.bottom + 6); return free || at(.5) }""")),
+                 "() => window.__picked.length >= 1", 'the tap is maps-route-alt', tries=6)
     c.eq(c.js("() => window.__picked[0]"), {'index': 1}, 'with the index, nothing else', what='detail')
     # a Map opened afterwards reads the document
     c.open('maps', docs=fdocs(flight()) + [['cache/fuel/route_alts.json', doc, 'cache']], flight=False, airfields=True, wait=False)
