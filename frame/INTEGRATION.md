@@ -1295,13 +1295,12 @@ page stays and says « Chain of reloads stopped: <cause> »; the cause is in the
 
 ### 15.5 The airline in the header (SOG-0213)
 
-A **chip** beside the application's name (« Pilote [ITF] ») says the device's airline: its code; the whole name and the kind in the tooltip and the accessible name. It is shown **only when at least two airlines exist**
-(« Personnel » counts) and this one has a code (nothing for `default`: a single airline without an index). A tap on the chip opens the airlines as **radio buttons** (seven at most, « Personnel » always the last; name and kind):
-a choice calls `FrameData.setAirline(code)`, closes the list and stays on the screen — the modules follow `frame-airline` (on `window`) as before. **Nothing is added to the application selector.** The chip yields, as a last resort,
-to the « Old version » cartouche and the sync state (it disappears only when even the cartouche's smallest step does not fit). The words of the kind come from `frame/lib/mission_categories.js` (`airlineText`), the single source.
+The header says the current airline beside the application's name (« Pilote · ITF »: the code; the whole name in the tooltip and in the button's accessible name; nothing for the code `default`, a single airline without an
+index). The selector that opens on the name lists, under the applications, the airlines as **radio buttons** (seven at most, « Personnel » always the last): a tap calls `FrameData.setAirline(code)`, closes the menu and stays on the screen —
+the modules follow `frame-airline` (on `window`) as before. The words of the kind come from `frame/lib/mission_categories.js` (`airlineText`, `KIND_NAMES`), the single source.
 
-- `ctx.workAirline(code)`: tell the frame which airline the **work you show** is for (a report, a prepared flight: the code the object keeps, SOG-0181); `''` / `null`: none. When it differs from the device's airline the
-  chip carries a mark (`ITF ≠`) and the tooltip says « this flight or report is for X; the device's airline is Y »: changing the airline never rewrites a report or a prepared flight — they keep theirs. Valid while your module is the one shown.
+- `ctx.workAirline(code)`: tell the frame which airline the **work you show** keeps (a report, a prepared flight: the code the object carries, SOG-0181); `''` / `null`: none. When it differs from the current airline the
+  header says it (`DFA ≠ AIV`, warn colour, the tooltip says which is which): changing the airline never rewrites a report or a prepared flight in silence — they keep theirs. Valid while your module is the one shown.
 
 ### 15.2 `ctx.publish` — generated files to the data repository, without a launcher
 

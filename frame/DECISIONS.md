@@ -2864,10 +2864,10 @@ The user, 16:07: « 3 conflits ». What the frame keeps and shows:
   until seen: **« Tout marquer comme vu »** (A92) clears the old ones of a device in one tap, « Vu » one by one. Once the writers no longer loop, new ones stop.
 
 
-## 10 November 2026 — the airline in the header: the user's counter-proposal (SOG-0213)
+## 10 November 2026 — the airline in the header and in the selector (SOG-0213)
 
-The first form (airlines in the application selector, the chip always there) was put to the user as a question (« si c'est une mauvaise idée dans l'entête, dis-le »); his answer: « oui pour ta contre-proposition ». Final form: **one control, one role** —
-a chip (`#fCo`, a button beside `#fApp`) with the code of the device's airline, **only when at least two airlines exist** (« Personnel » counts: so as soon as an index exists; not for the legacy `default`); a tap on it opens the list of the
-airlines as radio buttons (seven at most, name and kind from `frame/lib/mission_categories.js`); a choice is `FrameData.setAirline`, the existing event updates the screens; **nothing in the application selector**. `ctx.workAirline(code)`: the module says which airline its
-work is for; when it differs the chip reads `ITF ≠` and the tooltip says which is which — nothing is rewritten (SOG-0181). Space: the cartouche and the sync state come first; `fitStale` shows the chip, tries the cartouche's three steps, and hides the chip only if none fits
-(measured: at 390 the sync state is not in the header, the chip sits beside « Recharger »; at 768 it sits before the long « Hors ligne · 11 en attente »). Class names `f-hco*` (`.f-co` is Settings' airline row). Noreg A139 (list, mark, seven at most, no index → no chip; captures 390 / 1280 written by the case) and A141 (cartouche + long sync state, no overlap at 390 / 768 / 1280).
+The user, after the refusal of SOG-0190: « toujours rien dans l'entête, là où ça devrait être, dans le header. possibilité de changer rapidement de compagnie… quand on clique sur « pilote », on a « compagnie ITF », ou « compagnie DEFA VIRTUAL »… (on n'en aura jamais plus de 7) ».
+(a) `#fCo` in the application button (`frame/index.html`): the code, boxed, in one piece (`white-space: nowrap`; the name is the one that truncates); (b) the selector of the name: under the applications a `radiogroup` of the airlines (`airlineChoices`: seven at most,
+« Personnel » last; the kind read from each airline's settings and worded by `airlineText`); a tap = `FrameData.setAirline`, the existing event does the rest; (c) the ergonomist's objection kept: `ctx.workAirline(code)`, the module says which airline its
+work keeps; when it differs the chip reads `DFA ≠ AIV`. The modules (report, Fuel) call it with the code their object keeps — their part. Class names `f-hco*` (`.f-co` is Settings' airline row). Noreg A139 (captures 390 and 1280 written by the case).
+

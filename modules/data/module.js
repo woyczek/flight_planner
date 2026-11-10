@@ -180,6 +180,8 @@ function onClick(e) {
   if (!v || v.disabled) return;
   if (v.dataset.verb === 'stop') return S.run?.ctrl.abort();
   if (v.dataset.verb === 'all') return updateAll();
+  if (v.dataset.verb === 'retry-fetch') return /^[a-z0-9]{2,8}$/.test(v.dataset.zone || '') ? startUpdate([v.dataset.zone]) :
+    undefined; // « Réessayer » sur la ligne d'une zone dont le téléchargement a échoué (SOG-0180) : son téléchargement seul, puis sa construction
   if (v.dataset.verb === 'retry-zone') return retryZone(v.dataset.zone); // « Réessayer » sur la ligne d'une zone en échec (SOG-0180)
   if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') return startPickup(v.dataset.zones);
   if (v.dataset.verb === 'stop-chain') return stopChain();

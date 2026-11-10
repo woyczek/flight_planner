@@ -362,16 +362,21 @@ export const TX = {
     recompute: ['Tout recalculer', 'Rebuild all', 'Alles neu berechnen', 'Recalcular todo'],
     selStale: ['Seulement les périmés', 'Only the stale ones', 'Nur die veralteten', 'Solo las caducadas'],
     retry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
+    // la ligne d'avant le départ (SOG-0180) : ce que « Mettre à jour » va faire, chaque part dite seulement si elle n'est pas vide
+    planDl: ['{z} à télécharger', '{z} to download', '{z} herunterzuladen', '{z} por descargar'],
+    planBuild: ['{z} à reconstruire', '{z} to rebuild', '{z} neu zu erstellen', '{z} por reconstruir'],
+    planOk: ['{z} déjà à jour', '{z} already up to date', '{z} bereits aktuell', '{z} ya al día'],
+    planWait: ['{z} en attente d’un fichier', '{z} waiting for a file', '{z} mit ausstehender Datei', '{z} a la espera de un archivo'],
     selNone: ['Tout désélectionner', 'Deselect all', 'Alles abwählen', 'Deseleccionar todo'],
     selLine: ['Sélection : {z}', 'Selection: {z}', 'Auswahl: {z}', 'Selección: {z}'],
     selNothing: ['Aucune zone cochée', 'No zone ticked', 'Keine Zone angekreuzt', 'Ninguna zona marcada'],
     noStale: ['Aucune zone périmée : la sélection reste telle quelle.', 'No stale zone: the selection stays as it is.',
       'Keine veraltete Zone: die Auswahl bleibt unverändert.', 'Ninguna zona caducada: la selección se queda como está.'
     ],
-    none: ['Rien à reconstruire : les {n} cochées sont à jour (téléchargement fait).',
-      'Nothing to rebuild: the {n} ticked are up to date (download done).',
-      'Nichts neu zu bauen: die {n} angekreuzten sind aktuell (Download erledigt).',
-      'Nada que reconstruir: las {n} marcadas están al día (descarga hecha).'
+    none: ['Rien à reconstruire : les {n} cochées sont à jour',
+      'Nothing to rebuild: the {n} ticked are up to date',
+      'Nichts neu zu bauen: die {n} angekreuzten sind aktuell',
+      'Nada que reconstruir: las {n} marcadas están al día'
     ],
     ask: ['Mettre à jour : reconstruire {n} des {t} zones cochées ({s}). {l}', 'Update: rebuild {n} of the {t} ticked zones ({s}). {l}',
       'Aktualisieren: {n} der {t} angekreuzten Zonen neu bauen ({s}). {l}',
@@ -788,6 +793,9 @@ export const TX = {
     network: ['le réseau ne répond pas', 'the network does not answer', 'das Netzwerk antwortet nicht', 'la red no responde'],
     http: ['réponse HTTP', 'HTTP answer', 'HTTP-Antwort', 'respuesta HTTP'],
     httpN: ['HTTP {s}', 'HTTP {s}', 'HTTP {s}', 'HTTP {s}'],
+    // la source qui a refusé ou échoué, nommée (SOG-0180 : « États-Unis : FAA : téléchargement refusé (403) »)
+    refused: ['{src} : téléchargement refusé ({s})', '{src}: download refused ({s})', '{src}: Download abgelehnt ({s})', '{src}: descarga rechazada ({s})'],
+    srcWhy: ['{src} : {r}', '{src}: {r}', '{src}: {r}', '{src}: {r}'],
     parse: ['fichier illisible', 'unreadable file', 'Datei nicht lesbar', 'archivo ilegible'],
     personal: ['licence non déclarée', 'licence not declared', 'Lizenz nicht erklärt', 'licencia no declarada'],
     manual: ['source manuelle', 'manual source', 'manuelle Quelle', 'fuente manual'],

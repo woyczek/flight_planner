@@ -35,6 +35,17 @@ function reasonOf(r) {
     error: text(r?.error, 60)
   };
 }
+/** Le champ `download` d'une zone de base/status (AeroDB, 10 nov. 2026) : { done, cycle, at } ; `done` : chaque source téléchargeable de la zone a un fichier écrit depuis le début du cycle en vigueur. null quand le lanceur ne le dit pas (un ancien lanceur : la zone est alors à télécharger). */
+function downloadOf(d) {
+  if (d === null || typeof d !== 'object' || typeof d.done !== 'boolean') return null;
+  return {
+    done: d.done,
+    sources: d.sources !== null && typeof d.sources === 'object' && !Array.isArray(d.sources) ? Math.min(Object.keys(d.sources).length,
+      99) : null, // le nombre de sources que base/fetch télécharge pour cette zone (0 : rien à télécharger)
+    cycle: day(d.cycle),
+    at: typeof d.at === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(d.at) ? d.at.slice(0, 30) : null
+  };
+}
 /** La réponse de base/status lue : { current, parserVersion, zones: { id: { state, reasons: [raison], buildable, builtCycle, expectedCycle } } } ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). Une zone dont l'identifiant ou l'état est hors règle est écartée. */
 export function statusOf(final) {
   const r = final?.state === 'done' && final.result !== null && typeof final.result === 'object' ? final.result : null;
@@ -48,7 +59,8 @@ export function statusOf(final) {
       notices: (Array.isArray(z.notices) ? z.notices : []).filter(n => NOTICE_CODES.includes(n?.code)).slice(0, 4).map(reasonOf),
       buildable: z.buildable === true,
       builtCycle: day(z.builtCycle),
-      expectedCycle: day(z.expectedCycle)
+      expectedCycle: day(z.expectedCycle),
+      download: downloadOf(z.download)
     };
   }
   return {
@@ -91,6 +103,32 @@ export function updatePlan(status, ids) {
     upToDate,
     unknown
   };
+}
+/** Ce que « Mettre à jour » fait d'une sélection d'après l'état lu AVANT de rien télécharger (SOG-0180) : { upToDate: [ids] sautées, fetch: [ids] à télécharger, build: [ids] à reconstruire (celles à télécharger en font partie, les zones qui attendent un fichier non), waiting: [ids] qui attendent un fichier déposé à la main, unknown }.
+ *  Une zone dont les sources du cycle sont déjà là (`download.done`) n'est pas téléchargée de nouveau : sa construction seule ; une zone dont le lanceur ne dit rien du téléchargement est téléchargée. */
+export function downloadPlan(status, ids) {
+  const out = {
+    upToDate: [],
+    fetch: [],
+    build: [],
+    waiting: [],
+    unknown: []
+  };
+  for (const id of ids || []) {
+    const z = Object.hasOwn(status?.zones || {}, id) ? status.zones[id] : null;
+    if (!z) {
+      out.unknown.push(id);
+      out.fetch.push(id);
+    } else if (z.state === 'up-to-date') out.upToDate.push(id);
+    else if (z.reasons.some(r => r.code === 'pickup-waiting')) out.waiting.push(id);
+    else if (z.download && (z.download.done || z.download.sources === 0))(z.buildable ? out.build : out.waiting).push(
+      id); // les sources du cycle sont là : la construction seule, ou, si elle n'est pas possible, un fichier à déposer
+    else {
+      out.fetch.push(id);
+      out.build.push(id);
+    }
+  }
+  return out;
 }
 /** Les zones à reconstruire regroupées par première raison : [{ code, zones: [ids], reason (la première raison du premier de ses zones) }], dans l'ordre d'apparition ; sert à dire « 45 zones : parseur changé » plutôt que quarante-cinq lignes. */
 export function groupReasons(items) {

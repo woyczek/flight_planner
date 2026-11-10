@@ -1555,7 +1555,7 @@ def l15(c):
     c.eq(items, [['fr:sia', norm(f"{fr_name} : {man_names['sia'][li]}"), 'https://www.sia.example/aip', 'noopener noreferrer'],
                  ['gb:nats', norm(f"{gb_name} : {man_names['nats'][li]}"), None, None], ['gb:z', norm(f"{gb_name} : {man_names['z'][li]}"), None, None]],
          'the manual sources by name in the language: a link only for the https:// address, the http:// and javascript: ones are names alone', what='manual sources')
-    c.eq(_zhead(c, 'gb'), norm(f"{gb_name} : {sm('failed', 'fetchState').replace('{r}', sm('http', 'fetchError'))}"), 'the failed zone says why', what='gb failed line')
+    c.eq(_zhead(c, 'gb'), norm(f"{gb_name} : {sm('failed', 'fetchState').replace('{r}', sm('srcWhy', 'fetchError').replace('{src}', c.text('[data-build-result] [data-zone-state=gb] [data-source=ukmil] b')).replace('{r}', sm('httpN', 'fetchError').replace('{s}', '404')))}"), 'the failed zone says why: the source that failed and what it answered (SOG-0180)', what='gb failed line')
     c.eq(norm(c.text('[data-build-result] [data-zone-state=gb] [data-source=ukmil]')), norm(f"{c.text('[data-build-result] [data-zone-state=gb] [data-source=ukmil] b')} : {http404}"), 'its failed source keeps code and status', what='gb source')
     c.eq(c.count('[data-running]'), 0, 'the bar is gone', what='running')
     c.eq(_verbs(c), ['download', 'build', 'purge'], 'the buttons are live again', what='verbs')
@@ -3959,8 +3959,8 @@ def l36(c):
     # ---- Mettre à jour: the fetch, the state, then ONE question that names France (the launcher says: source newer), the reason, the size
     c.tap('[data-build] [data-verb=update]')
     q = _ask_text(c)
-    c.eq([p['verb'] for p in st['posts'][n0:]], ['fetch', 'status'], 'the download first, then the state is read from the launcher', what='order')
-    c.eq(sorted(_posts(st, 'fetch')[0]['args']['zones']), ['ca', 'es', 'fr', 'gb', 'us'], 'the download is that of the whole selection', what='fetch body')
+    c.eq([p['verb'] for p in st['posts'][n0:]], ['status', 'fetch', 'status'], 'the state is read first (SOG-0180), then the download, then the state again', what='order')
+    c.eq(sorted(_posts(st, 'fetch')[0]['args']['zones']), ['fr'], 'the download is that of the zones that are not up to date (SOG-0180): the four up to date are not downloaded again', what='fetch body')
     fr = {'fr': 'France', 'en': 'France', 'de': 'Frankreich', 'es': 'Francia'}[lang]
     c.ok(fr in q['text'] and _bytes(c, _KB['fr']) in q['text'] and norm(_trow('source-newer', lang, after='  zr: {').split('{source}')[0]) in norm(q['text']) and 'Espagne' not in q['text'] and 'Spain' not in q['text'],
          q['text'], 'the question names France, the launcher\u2019s reason and the size of France alone; not the zones that are up to date')
@@ -5198,7 +5198,7 @@ def l68(c):
     c.tap(btn('ouest'))
     q = _ask_text(c)
     posts = st['posts'][n0:]
-    c.eq([[p['verb'], sorted(p['args']['zones'])] for p in posts if p['verb'] == 'fetch'], [['fetch', ['fr', 'gb']]], 'the download concerns the countries of the pack that are in the coverage, no other', what='fetch zones')
+    c.eq([[p['verb'], sorted(p['args']['zones'])] for p in posts if p['verb'] == 'fetch'], [['fetch', ['fr']]], 'the download concerns the countries of the pack that are in the coverage and not up to date, no other (SOG-0180)', what='fetch zones')
     c.ok('fr' in norm(q['text']).lower() or len(q['text']) > 0, q['text'][:200], 'ONE question follows, about the zones to rebuild')
     c.eq(ticked(), before, 'the ticked selection did not move', what='selection kept')
     c.eq(c.count('.f-modal'), 1, 'one question', what='one question')
@@ -5349,4 +5349,105 @@ def l70(c):
             break
         c.wait(250)
     c.ok(bool(_notes_with(c, 'EG_AIP_DS_20261126_XML.zip')), None, 'a file already there: said, with its name')
+    c.check_errors()
+
+
+# The REAL shape of a download where a source answers 403 (AeroDB, 10 Nov 2026, the launcher's own views): the zone is `failed` with `error: 'http'` and, per source, `status: 403`;
+# `result.reason` stays « partial » even when nothing at all was taken (« failed » only when the job itself fails).
+_F403 = lambda: _fview({
+    'fr': _fz('done', 2, 2, {'sia': {'state': 'downloaded', 'files': 2, 'bytes': 354}}),
+    'gb': _fz('failed', 2, 2, {'nats': {'state': 'manual', 'error': 'manual'}, 'ukmil': {'state': 'failed', 'error': 'http', 'status': 403}, 'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 354}}, error='http'),
+    'us': _fz('failed', 3, 3, {'faa': {'state': 'failed', 'error': 'http', 'status': 403}, 'faaclass': {'state': 'failed', 'error': 'http', 'status': 403}, 'openaip': {'state': 'skipped', 'error': 'absent'}}, error='http')},
+    state='error', step='Échec', done=3, total=3,
+    result={'ok': False, 'fetched': ['fr'], 'unchanged': [], 'failed': [{'zone': 'gb', 'source': 'ukmil', 'error': 'http', 'status': 403}, {'zone': 'us', 'source': 'faa', 'error': 'http', 'status': 403}, {'zone': 'us', 'source': 'faaclass', 'error': 'http', 'status': 403}], 'manual': [], 'reason': 'partial'})
+
+
+@case('L71', 'Données: « Mettre à jour » with a source that answers 403 (the real shape of the launcher\u2019s view): the other zones go on (state read, question, build), the failed zone says why on its line with « Réessayer » (SOG-0180 reopened)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0180 reopened (the user, 10 Nov 16:25: « le téléchargement NASR répond 403, ça bloque la mise à jour qui s\u2019arrête dessus »): a download that fails for one zone never stops the others — the state is read, the question names the zones to rebuild, the build goes; the failed zone carries its reason (« la source a refusé le téléchargement (403) ») and « Réessayer » replays ITS download only')
+def l71(c):
+    lang = c.lang
+    st = _launcher(c, [_F403()], verbs=_VERBS)
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('stale', _NEWER), 'gb': _zst('up-to-date'),
+                            'us': _zst('stale', {'code': 'source-old', 'source': 'faa', 'cycle': '2026-10-01', 'current': '2026-11-26'}, buildable=False)})
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.tap('[data-build] [data-verb=update]')
+    q = _ask_text(c)
+    c.ok(len(q['text']) > 0 and 'France' in q['text'] if lang == 'fr' else len(q['text']) > 0, q, 'the download of one zone failed (403): the update goes on, the question names the zone to rebuild')
+    c.eq([p['verb'] for p in st['posts'] if p['verb'] in ('fetch', 'build')], ['fetch'], 'and nothing is built before the answer', what='posts')
+    # the bilan counts ZONES that failed (gb, us), not the sources (ukmil, faa, faaclass)
+    two = norm(_trow('fetchFails', lang, after='  fetchChanged: [', row=1).replace('{n}', '2'))
+    c.ok(bool(_notes_with(c, two)), two, 'the bilan of the download counts two zones that failed (gb, us), not three sources')
+    c.tap('.f-modal [data-no]')
+    c.until("!!document.querySelector('[data-zone-action=us][data-fetch-failed]')", timeout=8000, what='the failed zone says why on its line')
+    why = norm(c.text('[data-zone-action=us][data-fetch-failed] .f-muted'))
+    c.ok('faa' in why.lower() and '403' in why and norm(_trow('refused', lang, after='  fetchError: {').split('{src}')[1].split('({s})')[0]) in why, why, 'the line of the zone names the source and what it answered: « FAA : download refused (403) », not a bare « HTTP answer »')
+    c.eq(c.count('[data-zone-action=us][data-fetch-failed] button[data-verb=retry-fetch]'), 1, 'with « Réessayer » on that line', what='retry button')
+    zl = norm(c.text('[data-zone-state=us]'))
+    c.ok('403' in zl and 'faa' in zl.lower(), zl, 'the result of the download says the same for the zone')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-zone-action=us]').scrollIntoView({ block: 'center' })")
+        c.shot(f"L71_standard_{c.width}_{lang}_delivered.png")
+    n_fetch = len(_posts(st, 'fetch'))
+    c.tap('[data-zone-action=us] button[data-verb=retry-fetch]')
+    for _ in range(40):
+        if len(_posts(st, 'fetch')) > n_fetch:
+            break
+        c.wait(250)
+    c.eq([sorted(p['args']['zones']) for p in _posts(st, 'fetch')[n_fetch:n_fetch + 1]], [['us']], '« Réessayer » replays the download of that zone alone', what='retry body')
+    c.check_errors()
+
+
+_ZDL = lambda z, done: {**z, 'download': {'done': done, 'cycle': '2026-11-26', 'at': '2026-11-27T08:00:00Z' if done else None}}
+
+
+@case('L72', 'Données: « Mettre à jour » only does what is not up to date — the state is read BEFORE the download: up-to-date zones are skipped, zones whose sources of the cycle are already there are only rebuilt, a line says what is going to be done (SOG-0180)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0180 (the user, 10 Nov 16:55: « la mise à jour, qui a quelques items en échec, reprend de 0 dès qu\u2019on « met à jour », alors que c\u2019est déjà vert… ne reprendre que la suite de la màj »): per zone, from base/status — up to date: skipped; `download.done` (the sources of the cycle are there): no new download, the build only; download to do: that one alone; a line before the start says « 1 zone à télécharger, 3 à reconstruire, 2 déjà à jour »')
+def l72(c):
+    lang = c.lang
+    U = lambda key: _trow(key, lang, after='  upd: {')
+    stale = lambda reason, done, **kw: _ZDL(_zst('stale', reason, **kw), done)
+    parser = {'code': 'parser-old', 'built': 22, 'current': 23}
+    old = {'code': 'source-old', 'source': 'faa', 'cycle': '2026-10-01', 'current': '2026-11-26'}
+    st = _launcher(c, [_view('done', step='Terminé', jid='j1', result={'fetched': ['us'], 'unchanged': [], 'failed': [], 'manual': []})], verbs=_VERBS)
+    st['status'] = _status({'ca': _ZDL(_zst('up-to-date'), True), 'es': _ZDL(_zst('up-to-date'), True), 'fr': stale(_NEWER, True), 'gb': stale(parser, True), 'us': stale(old, False)})
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    fetches = lambda: [sorted(p['args']['zones']) for p in _posts(st, 'fetch')]
+    # ---- a first update: only the zone whose download is not done is downloaded; the line before the start says what is going to be done
+    n0 = len(st['posts'])
+    c.tap('[data-build] [data-verb=update]')
+    q = _ask_text(c)
+    plan = ', '.join([norm(U('planDl').replace('{z}', _zones_text(lang, 1))), norm(U('planBuild').replace('{z}', _zones_text(lang, 3))), norm(U('planOk').replace('{z}', _zones_text(lang, 2)))])
+    c.ok(bool(_notes_with(c, plan)), plan, 'a line says what is going to be done: one to download, three to rebuild, two already up to date')
+    c.eq(fetches(), [['us']], 'only the zone whose sources of the cycle are not there is downloaded; the four others are not', what='first fetch')
+    c.eq([p['verb'] for p in st['posts'][n0:] if p['verb'] in ('status', 'fetch')][:2], ['status', 'fetch'], 'the state is read before the download', what='order')
+    c.ok('France' in q['text'] or lang != 'fr', q['text'][:200], 'then the question names the zones to rebuild')
+    if c.width in (390, 1280):
+        c.shot(f"L72_standard_{c.width}_{lang}_delivered.png")
+    c.tap('.f-modal [data-no]')
+    # ---- a second update, once the downloads are done (the launcher says so): nothing is downloaded again, the question comes at once
+    st['status'] = _status({'ca': _ZDL(_zst('up-to-date'), True), 'es': _ZDL(_zst('up-to-date'), True), 'fr': stale(_NEWER, True), 'gb': stale(parser, True), 'us': stale(old, True)})
+    c.until("!document.querySelector('[data-build] [data-verb=update]').disabled", timeout=8000, what='the update button is live again')
+    c.tap('[data-build] [data-verb=update]')
+    _ask_text(c)
+    c.eq(fetches(), [['us']], 'a second update downloads nothing: the sources of every zone are there, only the build is asked', what='second fetch')
+    c.tap('.f-modal [data-no]')
+    # ---- everything up to date: nothing downloaded, nothing asked, said
+    st['status'] = _status({z: _ZDL(_zst('up-to-date'), True) for z in ('ca', 'es', 'fr', 'gb', 'us')})
+    c.until("!document.querySelector('[data-build] [data-verb=update]').disabled", timeout=8000, what='the update button is live again')
+    c.tap('[data-build] [data-verb=update]')
+    none = norm(U('none').replace('{n}', _zones_text(lang, 5)))
+    for _ in range(30):
+        if _notes_with(c, none):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, none)), none, 'all green: said, no download, no question')
+    c.eq([fetches(), c.count('.f-modal')], [[['us']], 0], 'still the one download of the first update', what='nothing more')
     c.check_errors()

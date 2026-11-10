@@ -162,12 +162,26 @@ export function staleBy() {
   }) : '';
 }
 /** Le motif d'un échec de source : « HTTP 404 » (code et statut), « le réseau ne répond pas »… */
-function fetchWhy(code, status) {
+export function fetchWhy(code, status) {
   if (code === 'http' && status !== null) return tt(TX.fetchError.httpN, {
     s: status
   });
   const known = M.own(TX.fetchError, code);
   return code && !known ? itemWhy(code) : tt(known || TX.fetchError.unknown); // un code court d'un autre jeu : sa phrase, sinon tel quel
+}
+/** Le motif d'échec d'une zone dans un téléchargement, d'après ses sources en échec [{ source, code, status }] : chacune nommée avec ce qu'elle a répondu (« FAA : téléchargement refusé (403) », « UKMIL : HTTP 404 », « openAIP : le réseau ne répond pas »), trois au plus ; '' sans source nommée. */
+export function sourcesWhy(list) {
+  return (list || []).slice(0, 3).map(f => {
+    const src = sourceName(f.source);
+    if (f.status === 401 || f.status === 403) return tt(TX.fetchError.refused, {
+      src,
+      s: f.status
+    });
+    return tt(TX.fetchError.srcWhy, {
+      src,
+      r: fetchWhy(f.code, f.status ?? null)
+    });
+  }).join(' ; ');
 }
 /** Le motif d'un code d'erreur d'un élément propre aux jeux autres que la base (TX.itemError : « un terrain à la fois »…), sinon le code tel quel. */
 const itemWhy = code => M.own(TX.itemError, code) ? tt(M.own(TX.itemError, code)) : code ?? '';
@@ -191,11 +205,14 @@ function sourceLineHtml(s) {
   return `<li data-source="${esc(s.id)}" data-state="${s.state}"><i class="f-dot"${kind(k)} aria-hidden="true"></i><span><b>${esc(sourceName(s.id))}</b> : ${esc(word)}</span></li>`;
 }
 /** La phrase d'une zone dans la marche d'un verbe : en attente, en cours (n / m sources), terminée, échec (le motif écrit en toutes lettres). */
-function zoneWord(r, verb) {
+function zoneWord(r, verb, set = 'base') {
   const T = verb === 'fetch' ? TX.fetchState : verb === 'purge' ? TX.purgeState : TX.zoneState;
   if (r.key === 'failed') return tt(T.failed, {
-    r: verb === 'fetch' ? fetchWhy(r.code, null) : verb !== 'purge' && M.own(TX.zoneError, r.code) ? tt(M.own(TX.zoneError, r.code)) :
-      r.code ===
+    r: verb === 'fetch' ? sourcesWhy(M.sourceRows(opView(set)?.zones?.[r.zone]).filter(x => x.state === 'failed').map(x => ({
+        source: x.id,
+        code: x.code,
+        status: x.status
+      }))) || fetchWhy(r.code, null) : verb !== 'purge' && M.own(TX.zoneError, r.code) ? tt(M.own(TX.zoneError, r.code)) : r.code ===
       'unknown' ? tt(TX
         .zoneError.unknown) : itemWhy(r
         .code) // un code que le module ne connaît pas (un jeu autre que la base) : sa phrase, sinon tel quel
@@ -225,7 +242,7 @@ const opView = set => M.normView(set, S.view);
 /** La ligne d'un élément dans la marche : point de couleur, nom, phrase ; pour un téléchargement, dessous une ligne par source. `set` : le jeu
  *  (la base garde data-zone-state, les autres data-item-state). */
 function zoneLineHtml(r, verb = 'build', set = 'base') {
-  const word = zoneWord(r, verb),
+  const word = zoneWord(r, verb, set),
     attr = set === 'base' ? 'data-zone-state' : 'data-item-state',
     k = {
       built: 'ok',
@@ -418,7 +435,8 @@ export function fetchSummary(out, set = 'base') {
   const v = {
       c: plural('fetchChanged', out.fetched.length),
       u: plural('fetchSame', out.unchanged.length),
-      f: plural('fetchFails', out.failed.length)
+      f: plural('fetchFails', new Set(out.failed.map(f => f.zone))
+        .size) // des zones, pas des sources : une zone dont deux sources échouent est un échec
     },
     text = out.kind === 'nothing' ? tt(TX.fetchNothing) : out.kind === 'interrupted' ? tt(TX.fetchSumInterrupted) : out.kind ===
     'cancelled' ? tt(

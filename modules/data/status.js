@@ -22,7 +22,8 @@ import {
 import {
   buildZones,
   gateOf,
-  renderBuild
+  renderBuild,
+  sourcesWhy
 } from './panels.js';
 
 /** Le verbe base/status est-il connu du lanceur de ce poste (regen/verbs) ? Sans lui, aucune zone n'a d'état dessiné et « Mettre à jour » reste grisé. */
@@ -157,6 +158,13 @@ export function zoneActionHtml(id) {
     z = S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id] : null;
   if (!z || !st) return '';
   const busy = busyNow();
+  // un téléchargement de cette zone qui a échoué (SOG-0180) : ce que sa source a répondu, et « Réessayer » rejoue son téléchargement seul (puis sa construction)
+  const ff = S.result?.set === 'base' && S.result.verb === 'fetch' ? (S.result.out?.failed || []).filter(f => f.zone === id) : [];
+  if (ff.length) return `<p class="d-zact" data-zone-action="${esc(id)}" data-fetch-failed><span class="f-muted">${esc(sourcesWhy(ff.map(f => ({
+    source: f.source,
+    code: f.error,
+    status: f.status ?? null
+  }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>`;
   if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>`;
   if ((st === 'stale' || st === 'never-built') && !z.buildable) {
     const off = busy || gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled;

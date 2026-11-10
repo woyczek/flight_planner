@@ -89,7 +89,19 @@ function waitingText(waiting) {
     z: waiting.map(w => `${M.zoneName(S.d.zones, w.zone, li())} : ${w.reasons[0] ? reasonText(w.reasons[0]) : ''}`).join(' ; ')
   });
 }
-/** « Mettre à jour » : télécharger la sélection (comme « Télécharger »), lire l'état au lanceur (base/status), puis, parmi les zones cochées, UNE question qui nomme celles qu'on va reconstruire, pourquoi (par raison commune quand elles sont nombreuses), leur poids, et la construction de celles-là
+/** La ligne d'avant le départ : « 3 zones à télécharger, 5 zones à reconstruire, 52 zones déjà à jour » (les parts vides ne sont pas dites). */
+export function planText(dp) {
+  const z = n => count('zone', n);
+  return [
+    [dp.fetch, TX.upd.planDl],
+    [dp.build, TX.upd.planBuild],
+    [dp.upToDate, TX.upd.planOk],
+    [dp.waiting, TX.upd.planWait]
+  ].filter(([l]) => l.length).map(([l, t]) => tt(t, {
+    z: z(l.length)
+  })).join(', ');
+}
+/** « Mettre à jour » : lit d'abord l'état (base/status), saute les zones à jour et ne télécharge que celles dont les sources du cycle ne sont pas là (comme « Télécharger ») (comme « Télécharger »), lire l'état au lanceur (base/status), puis, parmi les zones cochées, UNE question qui nomme celles qu'on va reconstruire, pourquoi (par raison commune quand elles sont nombreuses), leur poids, et la construction de celles-là
  *  seules. Les zones qui attendent un fichier de Téléchargements sont dites (« Prendre le fichier téléchargé » d'abord) et ne sont pas construites. Rien à reconstruire : une phrase, sans question. Un téléchargement en échec ou arrêté arrête le verbe (sa fin est déjà dite) ; un état
  *  illisible aussi (on le dit : jamais une construction à l'aveugle). */
 export async function startUpdate(zones = null) {
@@ -101,9 +113,27 @@ export async function startUpdate(zones = null) {
   S.updating = true;
   renderBuild();
   S.lastOp = null;
-  const verdict = sel.ids.length > M.MAX_ZONES ? await runChunks(me, 'base', 'fetch', sel) : (await settle(me, await launch('base',
-      'fetch', M.setArgs('base', 'fetch', sel), sel.ids), true), S.lastOp ? M.chunkVerdict('fetch', S.lastOp.out) :
-    'stop'); // un téléchargement en échec (partiel) ne retient pas la suite : les zones sont indépendantes (SOG-0180)
+  // 1) l'état d'abord (SOG-0180) : « Mettre à jour » ne refait que ce qui n'est pas à jour — une zone à jour est sautée, une zone dont les sources du cycle sont là n'est pas téléchargée de nouveau
+  const st0 = await fetchStatus(sel.ids);
+  if (S !== me) return;
+  if (!st0) {
+    S.updating = false;
+    renderBuild();
+    return S.ctx.notify(tt(TX.upd.noStatus), 'err');
+  }
+  const dp = M.downloadPlan(st0, sel.ids);
+  if (dp.fetch.length || dp.build.length) S.ctx.notify(planText(dp), 'info'); // la ligne d'avant le départ : ce qui va être fait
+  let verdict = 'ok';
+  if (dp.fetch
+    .length
+  ) { // 2) le téléchargement des seules zones qui en ont besoin ; un échec (partiel) ne retient pas la suite : les zones sont indépendantes (SOG-0180)
+    const fsel = {
+      ...sel,
+      ids: dp.fetch
+    };
+    verdict = fsel.ids.length > M.MAX_ZONES ? await runChunks(me, 'base', 'fetch', fsel) : (await settle(me, await launch('base', 'fetch',
+      M.setArgs('base', 'fetch', fsel), fsel.ids), true), S.lastOp ? M.chunkVerdict('fetch', S.lastOp.out) : 'stop');
+  }
   if (S !== me) return;
   if (verdict === 'stop') {
     S.updating = false;
