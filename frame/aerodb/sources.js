@@ -11,6 +11,13 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   let cssDone = false;
   const T = {
+    account: [
+      'Compte EUROCONTROL gratuit : inscription sur la page {l}, lien « Registration form (New Users) » ; les accès arrivent par courriel.',
+      'Free EUROCONTROL account: register on the {l} page, link “Registration form (New Users)”; the access arrives by e-mail.',
+      'Kostenloses EUROCONTROL-Konto: Anmeldung auf der Seite {l}, Link „Registration form (New Users)“; die Zugangsdaten kommen per E-Mail.',
+      'Cuenta gratuita de EUROCONTROL: inscripción en la página {l}, enlace «Registration form (New Users)»; los accesos llegan por correo.'
+    ],
+    accountLink: ['EAD Basic d’EUROCONTROL', 'EUROCONTROL EAD Basic', 'EAD Basic von EUROCONTROL', 'EAD Basic de EUROCONTROL'],
     back: ['Réglages › Administration', 'Settings › Administration', 'Einstellungen › Verwaltung', 'Ajustes › Administración'],
     title: ['Sources et licences', 'Sources and licences', 'Quellen und Lizenzen', 'Fuentes y licencias'],
     intro: [
@@ -79,6 +86,13 @@
     const pub = s => typeof s.pub === 'string' ? s.pub : Array.isArray(s.pub) ? L(s.pub) : L(s.n).split(/\s+[(—]/)[0].trim();
     /** La date d'une source : son champ `date`, à défaut la date du cycle AIRAC en vigueur pour celles qui en dépendent ; '' sans. */
     const dateOf = s => typeof s.date === 'string' && s.date ? s.date : s.cycled ? day(cyc.date) : '';
+    /** La ligne du compte EUROCONTROL (SOG-0237) : la page d'inscription EAD Basic en lien direct ; aucun identifiant n'est demandé. */
+    const accountHtml = () => {
+      const [pre, post] = t(T.account, {
+        l: '\u0000'
+      }).split('\u0000');
+      return `${esc(pre)}<a href="https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/ead-solutions/ead-basic" target="_blank" rel="noopener noreferrer">${esc(t(T.accountLink))}</a>${esc(post ?? '')}`;
+    };
     const row = s => {
       const url = S.urlOf(s, cyc.id),
         name = L(s.n);
@@ -91,6 +105,7 @@
         ${dateOf(s) ? `<p class="f-muted" data-date>${esc(t(T.date, { d: dateOf(s) }))}</p>` : ''}
         ${s.localOnly === true ? `<p class="f-warn" data-local-only>${esc(t(T.local))}</p>` : ''}
         ${s.how ? `<p class="f-muted">${esc(t(T.how, { h: L(s.how) }))}</p>` : ''}
+        ${s.id === 'eurocontrol' || s.id === 'eurocontrol_rad' ? `<p class="f-muted" data-account>${accountHtml()}</p>` : ''}
         <p><a class="f-btn" data-open href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(t(T.openTitle, { s: name }))}">${esc(t(T.open))}</a>
         <span class="src-url">${esc(url)}</span></p></li>`;
     };

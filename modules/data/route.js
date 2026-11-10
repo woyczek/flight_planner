@@ -133,6 +133,14 @@ function askHtml() {
 /** La marche : le texte du pas du lanceur (le classeur lu) et la barre indéterminée. */
 const runningHtml = () => `<div data-route-running><span>${esc(S.route.step || tt(S.route.phase === 'planning' ? TX.route.planning : TX.route.running))}</span><div class="d-bar" role="progressbar" data-indeterminate><i></i></div></div>`;
 /** Le détail replié de la ligne : le lien et la licence, ce que fait l'import, le bouton et sa raison, puis la question, la marche ou la fin. */
+/** La ligne du compte EUROCONTROL (SOG-0237) : où s'inscrire (la page EAD Basic, lien direct), sans rien demander ni garder. */
+function accountHtml() {
+  const [pre, post] = tt(TX.route.account, {
+    l: '\u0000'
+  }).split('\u0000');
+  return `${esc(pre)}<a href="https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/ead-solutions/ead-basic" target="_blank" rel="noopener noreferrer">${esc(tt(TX.route.accountLink))}</a>${esc(post ?? '')}`;
+}
+
 function bodyHtml() {
   const src = catSource('eurocontrol_rad'),
     gate = routeGate(),
@@ -140,6 +148,7 @@ function bodyHtml() {
   return `<dl class="f-dl"><dt>${esc(tt(TX.link))}</dt><dd>${src ? linkHtml(src) : ''}</dd>
     ${src ? `<dt>${esc(tt(TX.licence))}</dt><dd>${esc(src.lic[li()])}</dd>` : ''}</dl>
     <p class="f-muted" data-route-hint>${esc(tt(TX.route.hint))}</p>
+    <p class="f-muted" data-route-account>${accountHtml()}</p>
     ${r.phase === 'asking' ? askHtml() : `<p><button type="button" data-verb="route-import"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.route.import))}</button></p>
       ${gate.reason && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`}
     ${r.phase === 'planning' || r.phase === 'running' ? runningHtml() : resultHtml()}`;

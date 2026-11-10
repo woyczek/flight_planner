@@ -3822,6 +3822,9 @@ def l33(c):
     c.eq(norm(c.text('[data-set=route] summary b')), norm(_RT('name', lang)), 'its name', what='name')
     c.eq(norm(c.text('[data-route-meta]')), norm(_RT('noImport', lang)), 'nothing imported on this workstation', what='meta')
     c.js("document.querySelector('[data-set=route]').open = true")
+    # ---- SOG-0237: where to create the free EUROCONTROL account (the EAD Basic page, direct link); nothing is asked or kept here
+    c.eq(c.js("[...document.querySelectorAll('[data-route-account] a')].map(a => [a.getAttribute('href'), a.rel])"), [['https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/ead-solutions/ead-basic', 'noopener noreferrer']], 'the route row says where to register: the EAD Basic page of EUROCONTROL, in a link', what='account link')
+    c.ok('Registration form (New Users)' in c.text('[data-route-account]') and c.count('[data-set=route] input[type=text], [data-set=route] input[type=password]') == 0, c.text('[data-route-account]'), 'with the name of the form, and no field for an identifier or a password')
     c.eq(c.js("document.querySelector('[data-verb=route-import]').disabled"), False, 'the button is live with a launcher that knows the verb', what='button')
     # ---- the plan (dry): nothing is written, the question names the workbooks, their cycles and the licence
     c.tap('[data-verb=route-import]')
@@ -4973,7 +4976,7 @@ def l62(c):
         for m in re.finditer(r"^\s*" + k + r": \[\s*" + one + r",\s*" + one + r",\s*" + one + r",\s*" + one, src, re.M):
             allowed |= {unq(g) for g in m.groups()}
     # names that are not buttons of the screen but panels, layers or other screens' buttons, said as such (the sheets panel of the aircraft group, raw layer names, Fuel and Map's « Relire », the settings path)
-    others = {'Fiches publiées', 'Published sheets', 'Veröffentlichte Datenblätter', 'Fichas publicadas', 'Relire', 'Read again', 'Erneut lesen', 'Volver a leer', 'data', 'hot'}
+    others = {'Fiches publiées', 'Published sheets', 'Veröffentlichte Datenblätter', 'Fichas publicadas', 'Relire', 'Read again', 'Erneut lesen', 'Volver a leer', 'data', 'hot', 'Registration form (New Users)'}   # the last: the link of EUROCONTROL's own EAD Basic page, not a button of this screen (SOG-0237)
     c.ok(len(allowed) >= 40, len(allowed), 'the labels of the screen were read (four languages each)')
     quote = re.compile(r"«\s*([^»]{2,60}?)\s*»|“([^”]{2,60}?)”|„([^“]{2,60}?)“")
     orphans = []

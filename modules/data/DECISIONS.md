@@ -477,3 +477,9 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 ## 11 November 2026 — the text under « Je certifie… » says what is true (SOG-0230, the user: « absolument »)
 
 - **Done**: `certifyHint` (and the help, ×4) now say that a zone built with a personal-licence source (LFV, NATS, ENAIRE, AirNav) **is published in the pilot's own data repository**, and that only X-Plane and EUROCONTROL stay read on this workstation, never published. The previous text was right about the second half and silent about the first.
+
+## 11 November 2026 — where to create the EUROCONTROL account (SOG-0237; the facts are AeroDB's)
+
+- **User's words**: « pour eurocontrol, il faut d'ailleurs ajouter un mot, quelque part, pour donner la procédure de création du compte à l'utilisateur. »
+- **Done**: one more line on the row « Route (RAD, points FRA) » (after the line that already says what to download — `RAD_<cycle>_v….xlsx`, `eurocontrol-airac-<cycle>-fra-points-….xlsx` — and where: Downloads) and on the two EUROCONTROL lines of « Sources et licences »: « Compte EUROCONTROL gratuit : inscription sur la page EAD Basic d'EUROCONTROL, lien « Registration form (New Users) » ; les accès arrivent par courriel. », the page in a direct link (`https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/ead-solutions/ead-basic`). **No identifier or password is asked or kept.** AeroDB did not verify the direct address of the form (the link is ON that page) nor where the FRA points workbook comes from: the text promises no more, and does not give nm.eurocontrol.int/RAD as a registration page.
+- **Counter-tests**: L33 (the link, the name of the form, no field), A119 (the account line on the two EUROCONTROL lines only); L62 knows that « Registration form (New Users) » is EUROCONTROL's own link, not a button of the screen.

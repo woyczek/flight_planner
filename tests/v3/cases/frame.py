@@ -4800,6 +4800,8 @@ def a119(c):
     local = sorted(i for i, flag in re.findall(r"^\s{4}id: '([a-z0-9_]+)',.*?localOnly: (true|false)", cat, re.M | re.S) if flag == 'true')   # read from the catalogue: the case no longer breaks at each source added (Naviair, SOG-0162)
     c.ok(len(local) >= 4 and 'xpcifp' in local and 'eurocontrol' in local, local, 'the catalogue names X-Plane and EUROCONTROL as read on this workstation only (guard)')
     c.eq(sorted(r['id'] for r in rows if r['local']), local, 'every source the catalogue marks localOnly says « read on this workstation only »; no other', what='local only')
+    acc = c.js("[...document.querySelectorAll('[data-screen=sources] li[data-src]')].filter(li => li.querySelector('[data-account] a')).map(li => [li.dataset.src, li.querySelector('[data-account] a').getAttribute('href')]).sort()")
+    c.eq(acc, [['eurocontrol', 'https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/ead-solutions/ead-basic'], ['eurocontrol_rad', 'https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/ead-solutions/ead-basic']], 'the EUROCONTROL sources say where to register (SOG-0237): the EAD Basic page, in a link, on those two lines only', what='account lines')
     sia = next(r for r in rows if r['id'] == 'sia')
     c.ok(norm(T('pub').split('{p}')[0]) in norm(sia['text']) and 'SIA France' in sia['text'], sia['text'][:160], 'the publisher is the start of the name when the catalogue gives none')
     c.ok(norm(T('date').split('{d}')[0]) in norm(sia['text']), sia['text'][:200], 'a dated source (the AIRAC cycle) says its date')

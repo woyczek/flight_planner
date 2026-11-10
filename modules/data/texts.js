@@ -572,6 +572,14 @@ export const TX = {
       'Die EUROCONTROL-Arbeitsmappen in Ihrem Download-Ordner (RAD_<cycle>_v….xlsx und eurocontrol-airac-<cycle>-fra-points-….xlsx) werden für die Streckenberechnung in data/route/ kompiliert. Ein Zyklus ersetzt denselben Zyklus; die anderen bleiben.',
       'Los libros de EUROCONTROL de su carpeta de Descargas (RAD_<cycle>_v….xlsx y eurocontrol-airac-<cycle>-fra-points-….xlsx) se compilan en data/route/ para el cálculo de ruta. Un ciclo sustituye al mismo ciclo; los demás se conservan.'
     ],
+    // où créer le compte (SOG-0237, faits d'AeroDB) : l'inscription est gratuite, sur la page EAD Basic d'EUROCONTROL ; aucun identifiant n'est demandé ni gardé ici
+    account: [
+      'Compte EUROCONTROL gratuit : inscription sur la page {l}, lien « Registration form (New Users) » ; les accès arrivent par courriel.',
+      'Free EUROCONTROL account: register on the {l} page, link “Registration form (New Users)”; the access arrives by e-mail.',
+      'Kostenloses EUROCONTROL-Konto: Anmeldung auf der Seite {l}, Link „Registration form (New Users)“; die Zugangsdaten kommen per E-Mail.',
+      'Cuenta gratuita de EUROCONTROL: inscripción en la página {l}, enlace «Registration form (New Users)»; los accesos llegan por correo.'
+    ],
+    accountLink: ['EAD Basic d’EUROCONTROL', 'EUROCONTROL EAD Basic', 'EAD Basic von EUROCONTROL', 'EAD Basic de EUROCONTROL'],
     import: ['Importer de Téléchargements', 'Import from Downloads', 'Aus Downloads importieren', 'Importar de Descargas'],
     planning: ['Recherche des classeurs dans Téléchargements…', 'Looking for workbooks in Downloads…',
       'Arbeitsmappen im Download-Ordner werden gesucht …', 'Buscando libros en Descargas…'
