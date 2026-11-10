@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1f4a54d",
-  "fiches": 179,
+  "organisation": "418d981",
+  "fiches": 180,
   "untranslated": 1,
   "priorities": 152
  },
@@ -1377,7 +1377,7 @@
     {
      "id": "SOG-0041",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
      "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
      "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
@@ -2077,7 +2077,7 @@
     {
      "id": "SOG-0162",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Licences : une seule coche « je certifie utiliser les données pour mon usage personnel » déverrouille toutes les sources ; une page recense sources et licences",
      "en": "Licences: one “personal use” checkbox unlocks every source; one page lists sources and licences",
      "de": "Lizenzen: ein Häkchen „persönliche Nutzung“ schaltet alle Quellen frei; eine Seite listet Quellen und Lizenzen",
@@ -2091,6 +2091,15 @@
      "en": "Données, pack themes: the “Add” button is huge next to the text; page to condense and make consistent",
      "de": "Daten, Paket-Themen: der Knopf „Hinzufügen“ ist riesig neben dem Text; Seite verdichten und vereinheitlichen",
      "es": "Datos, temas de paquetes: el botón «Añadir» es enorme junto al texto; página por condensar y homogeneizar"
+    },
+    {
+     "id": "SOG-0180",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : revoir tout le parcours de mise à jour de la base (un seul geste, des messages qui nomment des boutons qui existent)",
+     "en": "Data: rework the whole base update path (one gesture, messages that name buttons that exist)",
+     "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",
+     "es": "Datos: rehacer todo el recorrido de actualización de la base (un solo gesto, mensajes que nombran botones que existen)"
     }
    ]
   },

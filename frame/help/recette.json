@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 56,
-  "verdicts": 16
+  "verdicts": 15
  },
  "apps": [
   "pilote",
@@ -24,9 +24,7 @@
    },
    "test": "Réglages › Compagnie : donner son genre à une compagnie (« Commerciale »), ouvrir « Catégories de missions » ; préparer une mission de catégorie fret, voler, puis le compte rendu demande « Fret embarqué (kg) ».",
    "since": "2026-11-09",
-   "state": "ko",
-   "comment": "plutôt qu’un bouton « choisir », un bouton radio. ergonomie ! on ne sait pas si c’est un sog, ou une compagnie commerciale. En plus, ça clignote au choix. Où est « catégorie de missions » ? je cesse de chercher, je laisse l’ergo redéfinir le chemin utilisateur. Use cases : - 1/ je crée une compagnie commerciale, rennes motoculture, je définis les catégories de vol, et j’affecte des appareils depuis la base - 2/ je rejoins une compagnie SO, via un site web de la flotte, je le parse, et je vole les missions pré-préparées dans la base. - 3/ uses cases déjà définis de compagnie locale",
-   "at": "2026-11-10T10:23:04Z"
+   "state": "known"
   },
   {
    "id": "SOG-0046",
@@ -644,7 +642,7 @@
    },
    "test": "Maintenance › Données : une seule case « Je certifie utiliser les données pour mon usage personnel » remplace les cases par source ; cochée, les sources qu'elle débloque sont listées dessous ; le lien « Sources et licences » ouvre la page qui donne éditeur et licence de chaque source.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0163",
