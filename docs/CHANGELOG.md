@@ -12,12 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the chosen ILS approach says its aid** (`modules/fuel/procedures.js`, `procedures_texts.js`; Fuel SPEC, DECISIONS, help;
+  noreg F127; SOG-0176). « ILS 25 · DO 109.35 · axe 246° · DME » under the arrival's lists when the published base carries the ILS of
+  the runway; no line otherwise.
 - **Météo: the world synoptic line leaves the map** (`modules/atmosphere/module.js`, `world_build.js`, `style.js`; SPEC § 4.4, DECISIONS; noreg E18, E2). It is a band above the map, its height reserved
   until the index is read (rule 22), instead of a card over it (E2 « nothing written on the map » was red).
 
 - **Map: the proposed routes write nothing over the flight's route** (`modules/maps/alts.js`, `draw.js`, `texts.js`, `lv.js`; SPEC § 5.4, DECISIONS; noreg D144, D140; SOG-0134). A point the flight's route
   already names is not named again, the strokes pass under its labels (names, NM marks, TOC / TOD), no name overlaps another, « écart » in the list; « UNL » no longer overlaps the scale's graduation.
-
 - **Map: the proposed routes' natures, words and patterns come from the common table** (`modules/maps/alts.js`, `texts.js`, `module.js`; frame `route_legend.js` by Features SOG; SPEC § 5.4, DECISIONS;
   noreg D140; SOG-0134). One source with Fuel's Route screen: the key says « Écart aux règles », DCT is dashed (8 5) and FRA dotted (2 4), a fault keeps its pattern and turns red.
 

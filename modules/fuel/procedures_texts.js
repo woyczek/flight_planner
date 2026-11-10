@@ -28,6 +28,11 @@ export const TX = {
     '{n} procedimientos sin leer en esta página'
   ],
   procNoData: ['aucune procédure publiée', 'no published procedure', 'kein veröffentlichtes Verfahren', 'ningún procedimiento publicado'],
+  // l'aide de l'approche choisie quand la base la porte (SOG-0176) : « ILS 25 · DO 109.35 · axe 246° » (· DME) ; rien sans elle
+  appAid: ['{type} {rwy} · {id} {freq} · axe {axis}°', '{type} {rwy} · {id} {freq} · course {axis}°',
+    '{type} {rwy} · {id} {freq} · Kurs {axis}°',
+    '{type} {rwy} · {id} {freq} · eje {axis}°'
+  ],
   // SOG-0157 : le bouton de lecture d'un État lisible à la demande (eAIP du SIA, EAD Basic)
   procReadDemand: ['Lire à la demande', 'Read on demand', 'Auf Anfrage lesen', 'Leer bajo demanda'],
   procRead: ['Lire les procédures de {icao}', 'Read the procedures of {icao}', 'Verfahren von {icao} lesen',

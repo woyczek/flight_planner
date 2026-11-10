@@ -425,6 +425,10 @@ before the start, in step 5 after (F11).
 - **A choice** rewrites `route.procedures` v2 (`by: 'fuel'`, `at`) and drops what depended on it (another STAR / approach / SID removes
   its transition); a series of choices is written once, 400 ms after the last (F36). A SID, STAR or approach chosen while no runway is,
   and serving one runway only, sets that runway (F21). The STAR chosen offers its transitions, the approach its approach transitions.
+  **The aid of the chosen approach** (SOG-0176, F127): under the arrival's lists, « ILS 25 · DO 109.35 · axe 246° · DME » when the
+  approach is an ILS or a LOC (its ARINC identifier, `PR.arincApp`: I…, L…) and the published base carries the ILS of its runway
+  (`aerodb.navaids` within 15 NM, kind ILS, same aerodrome, same runway; the SIA's ILS, France only for now); no line otherwise —
+  nothing invented, no dash.
   A conflict is marked, never forbidden: ⚠ on a SID, STAR or approach that does not serve the chosen runway (a record naming no runway,
   or `ALL` / `RWALL`, serves them all) and, with no runway chosen, on a STAR that serves no runway of the chosen approach; class
   `conflict`, the reason as `title`, both joined when both apply; the continuity of points between STAR and approach is never a

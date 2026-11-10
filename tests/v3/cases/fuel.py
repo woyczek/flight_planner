@@ -3551,3 +3551,42 @@ def f126(c):
     c.eq([a.get('via'), a.get('layer')], [['NTS1A', 'UN10', 'FRA'], ['SID', 'HIGH', 'FRA']], 'the airway (a direct of the FRA layer is FRA) and the layer of each segment, for the Map', what='[via, layer]')
     c.js(f"document.querySelector('{FUEL} [data-rlegend]').open = true; document.querySelector('{FUEL} [data-rlegend]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F126_{c.design}_{c.width}_{c.lang}.png')
+
+
+
+# an invented ILS of the published base (SOG-0176): the runway 13R of the test LFML, made-up identifier and frequency, its position
+# near the aerodrome of the route (lib.FLIGHT); not an AIP value
+def _ils_extra():
+    import lib
+    p = next(x for x in lib.FLIGHT['route']['points'] if x['id'] == 'LFML')
+    return {'navaids': [{'kind': 'ILS', 'id': 'TST', 'name': 'LFML 13R', 'freq': '110.30', 'ad': 'LFML', 'rwy': '13R', 'bearing': 134, 'dme': True,
+                         'lat': p['lat'] + 0.02, 'lon': p['lon'] - 0.02}]}
+
+
+_ILS_PROCS = {'dep': {'rwy': '03', 'sid': None}, 'arr': {'rwy': '13R', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RWALL.NEPIX',
+                                                          'app': 'LFML.APP.I13R.RW13R.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'}
+
+
+@case('F127', 'Procedures: the chosen ILS approach says its aid when the published base carries it — « ILS 13R · TST 110.30 · axe 134° · DME » —; an aerodrome without an ILS in the base has no line, nothing invented',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0176 (user: « les fréquences d\'ILS sont prévues ? codées ? affichées ? »; AeroDB: the base carries the SIA\'s ILS — ident, '
+      'frequency, runway, axis, DME —, France only): the approach\'s aid from aerodb.navaids, never invented; an invented ILS in the test base')
+def f127(c):
+    open_proc(c, procs=_ILS_PROCS, aero_extra=_ils_extra())
+    wait_rows(c, 'arr')
+    c.until(f"(() => {{ const e = document.querySelector('{FUEL} [data-proc=arr] [data-appaid]'); return !!e && !e.hidden && /110\\.30/.test(e.textContent) }})()", timeout=10000,
+            what='the aid line of the chosen ILS')
+    line = norm(c.text(f'{FUEL} [data-proc="arr"] [data-appaid]'))
+    want = norm(tx(PT, 'appAid', c.lang).replace('{type}', 'ILS').replace('{rwy}', '13R').replace('{id}', 'TST').replace('{freq}', '110.30').replace('{axis}', '134') + ' · DME')
+    c.eq(line, want, '« ILS 13R · TST 110.30 · axe 134° · DME »: type and runway, ident and frequency, axis, DME', what='aid line')
+    c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-appaid]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F127_{c.design}_{c.width}_{c.lang}.png')
+    # the same approach, no ILS of LFML in the base (its navaids rewritten: an ILS of another aerodrome only): no line, no dash
+    other = _ils_extra()
+    other['navaids'][0].update(ad='LFMT', name='LFMT 13R')
+    open_proc(c, procs=_ILS_PROCS, aero_extra=other)
+    wait_rows(c, 'arr')
+    c.settle()
+    c.page.wait_for_timeout(1500)
+    c.eq(c.js(f"(() => {{ const e = document.querySelector('{FUEL} [data-proc=arr] [data-appaid]'); return e ? [e.hidden, e.textContent.trim()] : null }})()"), [True, ''],
+         'without an ILS in the base: no line (hidden, empty)', what='[hidden, text]')

@@ -1529,3 +1529,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (BUGS SOG) draws with it, Fuel says each section's nature and a folded legend with it. route_alts.json gains `via` and `layer` per
   segment. « Écart aux règles » rather than « Faute »: the word the Route step already uses (« N écarts aux règles »). The capture at 390
   showed « SID · ── SID »: the layer is said only when it adds (« Voie (HIGH) »). F126; counter-test on origin/v3 (23bea2d17): no legend.
+- **10 Nov 2026 — the aid of the chosen approach** (SOG-0176, the user: « les fréquences d'ILS sont prévues ? codées ? affichées ? »):
+  the base carries the SIA's ILS (ident, frequency, runway, axis, DME; AeroDB's survey), read here through `aerodb.navaids`; an ILS or
+  LOC approach says « ILS 25 · DO 109.35 · axe 246° · DME » under the arrival's lists, nothing when the base does not carry it. Not
+  done and said: Fuel produces no OFP of its own (« Charger mon OFP » reads SimBrief's) and its export is the simulator's FMS / PLN
+  file, which has no place for a frequency: the « même ligne dans l'OFP et l'export » of the ticket is asked back to the ergonomist.
+  F127; counter-test on origin/v3 (7f1a9b74d): no line.

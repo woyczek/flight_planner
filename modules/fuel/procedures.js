@@ -19,6 +19,9 @@
 //     refresh(),           redessine l'écran (devis compris)
 //     zoneGap(icao),       la ligne « zone manquante » d'un terrain sans procédures, '' tant qu'elle n'est pas connue (SOG-0143)
 //     procState(icao)      l'état des procédures de son État : { readable, demand } ou null tant qu'il n'est pas connu (SOG-0157)
+//   L'aide de l'approche choisie (SOG-0176) : sous les listes de l'arrivée, « ILS 25 · DO 109.35 · axe 246° · DME » quand l'approche
+//   est un ILS ou un LOC (son identifiant ARINC : I…, L…) et que la base porte l'ILS de sa piste (aerodb.navaids, kind ILS, même
+//   terrain, même piste) ; aucune ligne sinon, rien d'inventé.
 //   }
 //   api = { sync, render, reset, choose, read, onChange, focus, applyFocus, textModel, snapshot, applyOfp, groundRetry, stop }
 //
@@ -99,6 +102,7 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-procicao{font-weight:600}
 [data-module="fuel"] .fu-procmeta{display:flex;flex-wrap:wrap;align-items:center;column-gap:.45em;font-size:.85em}
 [data-module="fuel"] .fu-procmeta .fu-linkbtn{padding:0 2px}
+[data-module="fuel"] .fu-appaid{grid-column:1/-1;margin:0;font-variant-numeric:tabular-nums} /* l'aide de l'approche (SOG-0176) : « ILS 25 · DO 109.35 · axe 246° » */
 [data-module="fuel"] .fu-procmeta [data-ground-slot]{display:contents} /* la part « sol » : chaque morceau est un élément de la ligne, la phrase longue passe seule à la ligne (SOG-0135) */
 [data-module="fuel"] .fu-proc .f-field{margin:6px 0 0;min-width:0}
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
@@ -652,7 +656,72 @@ export function createProcedures(host) {
     if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
   /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
-  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}</div>`;
+  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p>' : ''}</div>`;
+  // l'ILS de la base pour une piste d'un terrain (SOG-0176) : clé « OACI|piste » → la fiche nettoyée, null (aucun), absente tant que la
+  // réponse n'est pas venue (demandée une fois)
+  const aids = new Map();
+  /** L'ILS d'une piste, d'après la base publiée (aerodb.navaids autour du terrain ; une entrée non fiable : chaque champ vérifié). */
+  function aidOf(icao, rwy) {
+    const k = `${icao}|${rwy}`;
+    if (!aids.has(k) && typeof ctx.aerodb?.navaids === 'function') {
+      aids.set(k, undefined);
+      Promise.resolve().then(async () => {
+        const ad = (await ctx.aerodb.aerodromes({
+          icao
+        }))?.[0];
+        if (!ad || !Number.isFinite(+ad.lat) || !Number.isFinite(+ad.lon)) return null;
+        const list = await ctx.aerodb.navaids({
+          lat: +ad.lat,
+          lon: +ad.lon,
+          radiusNm: 15
+        });
+        const x = (list || []).find(n => n?.kind === 'ILS' && String(n.ad || '').toUpperCase() === icao && PR.sameRwy(n.rwy, rwy));
+        if (!x || !/^[A-Z0-9]{1,5}$/.test(String(x.id || '')) || !/^1[01]\d\.\d{1,3}$/.test(String(x.freq || ''))) return null;
+        const axis = Number.isFinite(+x.bearing) && +x.bearing >= 0 && +x.bearing <= 360 ? Math.round(+x.bearing) % 360 || 360 : null;
+        return {
+          id: String(x.id),
+          freq: String(x.freq),
+          axis,
+          dme: x.dme === true
+        };
+      }).catch(() => null).then(v => {
+        aids.set(k, v || null);
+        if (!host.gone()) refillAid(icao);
+      });
+    }
+    return aids.get(k);
+  }
+  /** La ligne de l'aide de l'approche choisie à l'arrivée (voir l'en-tête) ; '' sans approche ILS / LOC ou sans ILS en base. */
+  function aidHtml(m) {
+    const id = CF.proceduresOf(host.flight()).arr?.app,
+      rec = id ? adOf(m.icao).recs?.get(id) : null,
+      a = rec ? PR.arincApp(rec) : '',
+      t = /^([IL])(\d{2}[LRC]?)/.exec(a);
+    if (!t) return '';
+    const x = aidOf(m.icao, t[2]);
+    if (!x) return '';
+    const line = x.axis !== null ? tt(TX.appAid, {
+      type: t[1] === 'I' ? 'ILS' : 'LOC',
+      rwy: t[2],
+      id: x.id,
+      freq: x.freq,
+      axis: String(x.axis).padStart(3, '0')
+    }) : `${t[1] === 'I' ? 'ILS' : 'LOC'} ${t[2]} · ${x.id} ${x.freq}`;
+    return esc(line + (x.dme ? ' · DME' : ''));
+  }
+  /** Les lignes de l'aide d'un terrain, refaites à la réponse d'aerodb. */
+  function refillAid(icao) {
+    const el = host.body?.()?.querySelector?.(`[data-proc="arr"][data-icao="${CSS.escape(icao)}"] [data-r="aid"]`);
+    if (el) setAid(el, ads.get(icao) ? {
+      icao
+    } : null);
+  }
+  /** Pose la ligne de l'aide (cachée quand elle est vide : pas de place laissée). */
+  function setAid(el, m) {
+    const html = m ? aidHtml(m) : '';
+    setHtml(el, html);
+    el.hidden = !html;
+  }
   /** Met un côté à jour sur place : le titre, la ligne discrète et les options de chaque liste, chacun seulement s'il a changé. */
   function patchSide(el, side, m, fields) {
     el.classList.toggle('fu-folded', cardState.open !== side && !m.nodata); // sans donnée, la ligne de lecture reste visible
@@ -663,6 +732,8 @@ export function createProcedures(host) {
     if (t) meta.title = t;
     else meta.removeAttribute('title');
     for (const f of fields) setHtml(el.querySelector(`select[data-k="${f.k}"]`), f.html);
+    const aid = el.querySelector('[data-r="aid"]');
+    if (aid) setAid(aid, m);
   }
   /** Signature de la structure d'un côté : terrain, avec ou sans donnée, listes présentes. Changée, la boîte est refaite. */
   const structOf = (side, m, fields) => m ? `${side}:${m.icao}:${m.nodata ? 'n' : 'd'}:${fields.map(f => f.k).join(',')}` : `${side}:-`;

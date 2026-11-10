@@ -1054,7 +1054,7 @@ def aero_docs(cycle=AERO_CYCLE, airfields=False, airspaces_extra=(), airways=(),
         docs.append(kind('aerodromes', [{'icao': i, 'name': i + ' TEST', 'lat': p['lat'], 'lon': p['lon'], 'elev': 100}
                                         for i, p in [('LFRS', pts['LFRS']), ('LFML', pts['LFML']), ('LFMT', altn)]]))
         docs.append(kind('points', [{'id': i, 'lat': pts[i]['lat'], 'lon': pts[i]['lon'], 'type': 'RNAV'} for i in ('LUGEN', 'NEPIX')]))
-    for k in ('aerodromes', 'vrp', 'cities', 'points'):   # a case's own aerodromes, VRPs, towns and points, beside those of the route
+    for k in ('aerodromes', 'vrp', 'cities', 'points', 'navaids'):   # a case's own aerodromes, VRPs, towns, points and navaids, beside those of the route
         if extra.get(k):
             docs = [d for d in docs if d[0] != f'sia/base/fr/{cycle}/{k}.json'] + [kind(k, (extra.get(k) or []) + ([x for d in docs if d[0] == f'sia/base/fr/{cycle}/{k}.json' for x in d[1]['data']]))]
     return docs
