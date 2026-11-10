@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "cc2bf17",
+  "organisation": "4e590ad",
   "fiches": 185,
   "untranslated": 1,
   "priorities": 152
@@ -711,7 +711,7 @@
     {
      "id": "SOG-0175",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "VOR : doubler le cercle des degrés et poser des repères tous les 30°",
      "en": "VOR: a double compass circle with marks every 30°",
      "de": "VOR: doppelter Gradkreis mit Marken alle 30°",

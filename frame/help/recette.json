@@ -817,7 +817,7 @@
    },
    "test": "Carte à zoom proche sur un VOR : la rose a deux cercles, l'extérieur gradué tous les 10° avec chiffres et petites flèches tous les 30°, l'intérieur fin pour lire un relèvement ; elle est tournée de la déclinaison. À comparer à ta capture de référence.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0177",
