@@ -7050,6 +7050,7 @@ def k146(c):
             fix = zipped({'FIX_BASE.csv': 'FIX_ID,LAT_DECIMAL,LONG_DECIMAL'})
             st, r = up(fix, '29_Oct_2026_FIX_CSV (1).zip')
             c.eq((st, r.get('source'), r.get('name'), r.get('zone'), r.get('cycle')), (200, 'faa', '29_Oct_2026_FIX_CSV.zip', 'us', '2026-10-29'), 'an FAA NASR set (the page of the subscription refuses the launcher): the member says the set, the name the cycle', what='faa')
+            c.eq((r.get('deposited'), r.get('missing')), (['FIX'], ['AWY', 'NAV']), 'and says which of the three sets are already there for that cycle, and which are missing (the screen needs not count)', what='faa have')
             c.eq(up(fix, 'whatever.zip')[1].get('reason'), 'unrecognised', 'the same zip without the FAA name: the cycle is unknown, not guessed', what='faa name')
             st, r = up(zipped({'readme.txt': 'hello'}), 'a.zip')
             c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')

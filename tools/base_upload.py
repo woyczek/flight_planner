@@ -177,7 +177,11 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
             replaced = False
         else:
             os.replace(tmp, dest)
-        return 200, {'ok': True, 'source': info['source'], 'zone': info['zone'], 'name': info['name'], 'size': got, **({'cycle': info['cycle']} if info['cycle'] else {}), 'replaced': replaced, 'sha256': digest}
+        extra = {}
+        if info['source'] == 'faa':                      # le NASR arrive en trois jeux : ce qui est déjà posé pour ce cycle et ce qui manque (SOG-0219), pour que l'écran n'ait pas à compter
+            have = sorted(k for k in NASR_MEMBER if os.path.isfile(os.path.join(folder, NASR_NAME.sub(lambda m: f'{m.group(1)}_{m.group(2)}_{m.group(3)}_{k}_CSV.zip', info['name']))))
+            extra = {'deposited': have, 'missing': [k for k in NASR_MEMBER if k not in have]}
+        return 200, {'ok': True, 'source': info['source'], 'zone': info['zone'], 'name': info['name'], 'size': got, **({'cycle': info['cycle']} if info['cycle'] else {}), **extra, 'replaced': replaced, 'sha256': digest}
     except OSError as e:
         _drop(tmp)
         return no('disk', str(e)[:120])
