@@ -99,10 +99,10 @@ export const BASE = Object.freeze({
   }, {
     id: 'virtuel',
     names: {
-      fr: 'Virtuel',
-      en: 'Virtual',
-      de: 'Virtuell',
-      es: 'Virtual'
+      fr: 'Vos catégories',
+      en: 'Your categories',
+      de: 'Ihre Kategorien',
+      es: 'Sus categorías'
     },
     categories: []
   }]

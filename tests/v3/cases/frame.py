@@ -4148,7 +4148,8 @@ def a105(c):
     lang = c.lang
     sj = 'frame/settings/access.js'
     T = lambda k: tx(sj, k, lang, after='const TA = {')
-    K = lambda k: tx(sj, k, lang, after='    kind: {')
+    KN = lambda: c.js("import('/frame/lib/mission_categories.js').then(m => m.KIND_NAMES)")   # the words of the kind: one source, shared with the report and Mes vols (SOG-0181)
+    K = lambda k: KN()[k][['fr', 'en', 'de', 'es'].index(lang)]
     evil = '<img src=x onerror=window.__pwn=1>'
     hostile = {'schema': 1, 'groups': [{'id': 'virtuel', 'names': {'fr': evil}, 'categories': [{'id': 'bad', 'names': {'fr': evil}}, {'id': 'Bad Id', 'names': {'fr': 'x'}}]}]}
     docs = [['device/level.json', {'level': 3}, 'cache'],
@@ -4166,6 +4167,7 @@ def a105(c):
     checked = lambda sel: c.js(f"[...document.querySelectorAll('{sel}')].map(i => [i.value, i.checked])")
     c.open('settings?card=company', docs=docs)
     ready()
+    c.shot(f"A105_standard_{c.page.viewport_size['width']}_delivered.png")   # the delivered state, read by the ergonomist
     # ---- the list: radio buttons, the kind in words, no « Choose » button
     c.eq(c.count('[data-card="company"] [data-airlines] button'), 0, 'no « Choose » button in the list', what='buttons')
     c.eq(c.count('[data-card="company"] [data-airlines] input[type=radio]'), 3, 'one radio button per line (two airlines and « personal »)', what='radios')

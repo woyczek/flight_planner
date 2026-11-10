@@ -322,12 +322,6 @@
     ],
     // le genre de la compagnie et ses catégories de missions (SOG-0041, § 10.38)
     kindLabel: ['Genre', 'Kind', 'Art', 'Tipo'],
-    kind: {
-      va: ['Commerciale', 'Commercial', 'Kommerziell', 'Comercial'],
-      sog: ['Escadrille SO', 'SO squadron', 'SO-Staffel', 'Escuadrón SO'],
-      perso: ['Personnel', 'Personal', 'Persönlich', 'Personal'],
-      none: ['Genre à choisir', 'Kind to choose', 'Art wählen', 'Tipo por elegir']
-    },
     kindHelp: {
       va: ['Une compagnie commerciale : fret, passagers, VIP, entraînement, transit, essais en vol, plus vos propres catégories.',
         'A commercial airline: cargo, passengers, VIP, training, transit, test flights, plus your own categories.',
@@ -499,8 +493,9 @@
   /** Le dossier d'une compagnie sous data/ : « airline/ » avant la migration (code default), sinon « airline/<code>/ ». */
   const airlineBase = code => code === 'default' ? 'airline/' : `airline/${code}/`;
   /** La ligne de la liste (jamais un bouton « Choisir ») : bouton radio, nom, code, puis une ligne grise : le genre dit en toutes lettres, les réseaux, la flotte. Le HTML ne dit rien de l'état courant (posé ensuite sur le nœud) : deux dessins qui ne diffèrent que par le choix donnent le même texte. */
-  function airlineRowHtml(r, t, can) {
-    const kind = r.code === PERSO ? t(TA.kind.perso) : t(TA.kind[r.kind || 'none']),
+  function airlineRowHtml(r, t, can, CL) {
+    const KN = CL?.KIND_NAMES,
+      kind = KN ? t(KN[r.code === PERSO ? 'perso' : r.kind || 'none']) : '',
       meta = [kind, ...r.nets.map(k => t(TA.net[k])), ...(r.fleet === null ? [] : [t(TA.fleet, {
         n: r.fleet
       })])].join(' · '),
@@ -520,7 +515,7 @@
       }),
       code = esc(r.code);
     return `<h3>${esc(t(TA.ficheTitle, { n: r.name }))}</h3>
-      <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(TA.kind[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
+      <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(CL.KIND_NAMES[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
       <h4 data-cats-title>${esc(t(TA.catSummary, { n: info.all.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}
       ${info.groups.map(g => `<p data-cat-group="${esc(g.id)}"><b>${esc(g.names[lang] || g.id)}</b></p>${g.categories.length ? `<ul class="f-cats">${g.categories.map(c => `<li data-cat="${esc(c.id)}">${esc(c.names[lang] || c.id)}${g.id === 'virtuel' ? ` <button type="button" data-act="companyCatDel" data-code="${code}" data-cat="${esc(c.id)}">${esc(t(TA.catDel))}</button>` : ''}</li>`).join('')}</ul>` : `<p class="f-muted">${esc(t(TA.catNone))}</p>`}`).join('')}
       <div class="f-row"><input type="text" maxlength="40" data-f="cat-${code}" aria-label="${esc(t(TA.catName))}" placeholder="${esc(t(TA.catName))}"><button type="button" data-act="companyCatAdd" data-code="${code}">${esc(t(TA.catAdd))}</button></div><p class="f-msg" data-fiche-msg></p>`;
@@ -602,12 +597,12 @@
   // par vue : ce que la dernière lecture a rendu (lignes, module des catégories, langue, choix possible, compagnie courante), pour repeindre la fiche sans relire
   const AIR = new WeakMap();
   /** Met la liste à jour SANS la redessiner : une ligne dont le HTML est inchangé garde son nœud (le focus, la hauteur, rien ne bouge) ; seule une ligne qui change est remplacée, une ligne nouvelle insérée, une ligne disparue retirée. */
-  function paintRows(box, rows, t, can) {
+  function paintRows(box, rows, t, can, CL) {
     const keys = new Set(rows.map(r => r.code));
     for (const n of [...box.children])
       if (!keys.has(n.dataset.airline)) n.remove();
     rows.forEach((r, i) => {
-      const html = airlineRowHtml(r, t, can),
+      const html = airlineRowHtml(r, t, can, CL),
         cur = box.children[i];
       if (cur && cur.dataset.airline === r.code && cur.__html === html) return;
       const tpl = document.createElement('template');
@@ -665,7 +660,7 @@
       lang,
       now
     });
-    paintRows(box, rows, t, can);
+    paintRows(box, rows, t, can, CL);
     markCurrent(view, now);
     paintFiche(env);
     // la migration : seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine

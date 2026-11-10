@@ -4964,6 +4964,7 @@ def l63(c):
     c.eq(c.js("[...document.querySelectorAll('[data-zone-action]')].map(p => [p.dataset.zoneAction, [...p.querySelectorAll('button')].map(b => b.dataset.verb)])"), [['es', ['retry-zone']], ['gb', ['pickup']]], '« Réessayer » on the failed zone, « Prendre le fichier » on the waiting one, nothing on the others', what='actions')
     c.eq([norm(c.text('[data-zone-row=es] [data-verb=retry-zone]')), norm(c.text('[data-zone-row=gb] [data-verb=pickup]'))], [norm(_UT('retry', lang)), norm(_trow('pickup', lang))], 'worded in the language of the run (the same name as the button of the screen)', what='labels')
     c.ok('x.zip' in c.text('[data-zone-row=gb] [data-zone-action]') or c.text('[data-zone-row=gb] [data-zone-action]').strip() != '', None, 'the waiting zone says what it waits for on its own line')
+    c.shot(f"L63_standard_{c.page.viewport_size['width']}_delivered.png")   # the delivered state, read by the ergonomist
     # ---- « Prendre le fichier » on the line: the plan of THAT zone
     n0 = len(st['posts'])
     c.tap('[data-zone-row=gb] [data-verb=pickup]')
