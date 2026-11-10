@@ -717,7 +717,7 @@
     "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
     "es": "Zonas R y D: leer su texto (actividad, condiciones) desde el perfil vertical y el mapa"
    },
-   "test": "Carte avec une route qui traverse des espaces, profil ouvert : un appui sur un bloc le surligne ; « Fiche » ouvre la fiche de l'espace AVEC, à côté (dessous au téléphone), la pile des espaces de ce point en blocs sur l'échelle des niveaux, jamais vide ; toucher un autre bloc change la fiche ; rien ne sort de l'écran.",
+   "test": "Carburant avec la Carte à côté, profil vertical ouvert : appuyer sur un espace : la pile des espaces est à gauche et la fiche de l'espace choisi à droite, sans avoir à défiler ; pareil en Carte seule.",
    "since": "2026-11-10",
    "state": "ok",
    "delivered": "2026-11-10T11:09:43Z",
@@ -1188,7 +1188,7 @@
     "de": "Rollwege: zu spät im Zoom angezeigt, ohne Namen; keine Vorfeldnamen",
     "es": "Calles de rodaje: mostradas demasiado tarde en el zoom, sin nombre; sin nombres de plataformas"
    },
-   "test": "Carte, LFPO, couche Sol : en zoomant, chaque voie de circulation porte son nom une seule fois (plus de « L3 » quatre fois au même endroit) ; les aires de trafic sont nommées avant les postes de stationnement ; la puce « Aires » les masque ou les montre ; le sol du terrain de dégagement est lu aussi.",
+   "test": "Carte, LFPO, couche Sol : en zoomant, chaque voie de circulation porte son nom une seule fois ; les points d'attente rouges apparaissent en même temps que les noms des voies, avant les postes ; les aires de trafic sont nommées avant les postes ; la puce « Aires » les masque ou les montre ; le sol du terrain de dégagement est lu aussi.",
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T16:54:22Z"

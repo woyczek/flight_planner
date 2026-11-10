@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7283730",
-  "fiches": 237,
+  "organisation": "e86c478",
+  "fiches": 238,
   "untranslated": 0,
   "priorities": 152
  },
@@ -1370,7 +1370,7 @@
     {
      "id": "SOG-0152",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Passe de mercredi : nettoyer et réorganiser les dossiers du dépôt (rad, organisation, fuelplanner… points d'entrée morts → archives)",
      "en": "Wednesday pass: clean and reorganise the repository folders (rad, organisation, fuelplanner… dead entry points to archives)",
      "de": "Mittwochsdurchgang: Ordner des Repositorys aufräumen und neu ordnen (rad, organisation, fuelplanner… tote Einstiege ins Archiv)",
@@ -2906,6 +2906,27 @@
      "en": "Launcher log: sets “left aside”, an exception while files are updated, a repeated warning, FAA answering 403",
      "de": "Launcher-Protokoll: Sätze „beiseitegelassen“, Ausnahme während einer Dateiaktualisierung, wiederholte Warnung, FAA mit 403",
      "es": "Registro del lanzador: conjuntos «dejados de lado», excepción durante una actualización de archivos, aviso repetido, FAA con 403"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur-carburant",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; Carburant",
+    "en": "Lanceur ; Carburant",
+    "de": "Lanceur ; Carburant",
+    "es": "Lanceur ; Carburant"
+   },
+   "items": [
+    {
+     "id": "SOG-0238",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Relecture de sécurité du 10/11 : quatre notes (URI sqlite, exports des fiches Little Navmap, annuaire du zip envoyé, relais sans échéance sur le corps d'erreur)",
+     "en": "Security review of 10 Nov: four notes (sqlite URI, exports of Little Navmap records, directory of an uploaded zip, relay without a deadline on an error body)",
+     "de": "Sicherheitsdurchsicht vom 10.11.: vier Anmerkungen (sqlite-URI, Exporte der Little-Navmap-Einträge, Verzeichnis eines hochgeladenen Zip, Relais ohne Frist für den Fehlerkörper)",
+     "es": "Revisión de seguridad del 10/11: cuatro notas (URI de sqlite, exportaciones de fichas de Little Navmap, directorio de un zip enviado, relé sin plazo en el cuerpo de error)"
     }
    ]
   },
