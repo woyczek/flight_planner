@@ -5656,3 +5656,71 @@ def a138(c):
     c.js('() => document.dispatchEvent(new Event("visibilitychange"))')
     c.until("document.getElementById('fStale').hidden", timeout=8000, what='the launcher no longer gives a stamp: the cartouche goes (the survey was taken again)')
     c.check_errors()
+
+
+WORK_MODULE = "export const meta = { id: 'atmosphere' }; export function mount(el, ctx) { window.__ctx = ctx; el.textContent = 'ctx' }; export function unmount() {}"
+CO_KINDS = {'va': {'fr': 'Commerciale', 'en': 'Commercial', 'de': 'Kommerziell', 'es': 'Comercial'}, 'sog': {'fr': 'Escadrille SO', 'en': 'SO squadron', 'de': 'SO-Staffel', 'es': 'Escuadrón SO'},
+            'perso': {'fr': 'Personnel', 'en': 'Personal', 'de': 'Persönlich', 'es': 'Personal'}}
+
+
+def _co_docs(n=2):
+    codes = ['aiv', 'dfa', 'itf', 'sog', 'rmc', 'xyz', 'abc', 'def', 'ghi'][:n]
+    index = {'airlines': [{'code': k, 'name': {'aiv': 'Air Inter Va', 'dfa': 'DEFA Virtual'}.get(k, f'Compagnie {k.upper()}')} for k in codes]}
+    docs = [['device/level.json', {'level': 3}, 'cache'], ['airline/index.json', index, 'document']]
+    for k in codes:
+        docs.append([f'airline/{k}/settings.json', {'name': index['airlines'][codes.index(k)]['name'], 'kind': 'sog' if k == 'dfa' else 'va'}, 'document'])
+    return docs
+
+
+CO_HEAD = """() => { const h = document.querySelector('.f-head'), kids = [...h.children].filter(e => !e.hidden && e.getBoundingClientRect().width > 0), co = document.getElementById('fCo');
+  const r = kids.flatMap(e => e.id === 'fApp' ? [e, ...e.children] : [e]).filter(e => !e.hidden).map(e => [e.id || e.className, e.getBoundingClientRect()]); const clash = [];
+  for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) { const a = r[i][1], b = r[j][1];
+    if (r[i][0] === 'f-app' || r[j][0] === 'f-app') continue;
+    if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) clash.push([r[i][0], r[j][0]]) }
+  return { text: co.textContent, title: co.title, aria: document.getElementById('fApp').getAttribute('aria-label') || '', one: co.getBoundingClientRect().height < parseFloat(getComputedStyle(co).fontSize) * 2.2,
+    over: h.scrollWidth > h.clientWidth, clash } }"""
+
+
+@case('A139', 'The header says the current airline beside the application’s name (« Pilote · AIV »: the code, the whole name in the tooltip), the selector of the name lists the airlines (seven at most, « Personnel » included) as radio buttons: a tap changes the airline and stays on the screen; when the work shown keeps another airline the header says so (SOG-0213)', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0213 (the user, after the refusal of SOG-0190: « toujours rien dans l’entête… possibilité de changer rapidement de compagnie… quand on clique sur « pilote », on a « compagnie ITF »… (on n’en aura jamais plus de 7) »): (a) the header says the current airline beside the application’s name — the code, the whole name in the tooltip and the accessible name — in one piece at 390 (no wrap, no overlap); (b) the selector that opens on the name carries, under the applications, the airlines as radio buttons (seven at most, « Personnel » included): a tap changes the airline without leaving the screen; (c) ctx.workAirline(code): when the work shown keeps another airline than the current one, the header says it (« DFA ≠ AIV »), nothing is rewritten; the words of the kind come from frame/lib/mission_categories.js, one source')
+def a139(c):
+    lang = c.lang
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=WORK_MODULE))
+    c.open('atmosphere', docs=_co_docs(2), wait=False)
+    c.until('!!window.__ctx && !document.getElementById("fCo").hidden', timeout=20000, what='the module and the airline code in the header')
+    c.wait(600)
+    r = c.js(CO_HEAD)
+    c.eq([r['text'], r['one'], r['over'], [x for x in r['clash'] if 'fApp' not in x]], ['AIV', True, False, []], '(a) the code of the current airline beside the name: one piece, the header does not overflow, nothing overlaps', what='chip')
+    c.ok('Air Inter Va' in r['title'] and 'Air Inter Va' in r['aria'], str(r), 'the whole name is in the tooltip and in the accessible name of the button')
+    c.shot(f'A139_header_{c.width}_{lang}.png')
+    # (b) the selector: the applications, then the airlines as radio buttons
+    c.tap('#fApp')
+    c.until("!!document.querySelector('.f-tabpop [data-co]')", what='the selector with the airlines')
+    rows = c.js("[...document.querySelectorAll('.f-tabpop [data-co]')].map(b => [b.dataset.co, b.getAttribute('role'), b.getAttribute('aria-checked'), b.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.eq([[x[0], x[1], x[2]] for x in rows], [['aiv', 'radio', 'true'], ['dfa', 'radio', 'false'], ['perso', 'radio', 'false']], '(b) the airlines of the index, then « Personnel », as radio buttons, the current one checked', what='rows')
+    c.ok(norm(CO_KINDS['va'][lang]) in norm(rows[0][3]) and norm(CO_KINDS['sog'][lang]) in norm(rows[1][3]) and norm(CO_KINDS['perso'][lang]) in norm(rows[2][3]), str(rows), 'the words of the kind are the single source of mission_categories.js')
+    c.shot(f'A139_selector_{c.width}_{lang}.png')
+    hash0 = c.hash()
+    c.tap('.f-tabpop [data-co="dfa"]')
+    c.until("document.getElementById('fCo').textContent === 'DFA'", what='the chip follows the choice')
+    c.eq([c.count('.f-tabpop'), c.hash(), _airline_code(c, 'dfa')], [0, hash0, 'dfa'], 'a tap changes the airline, closes the menu and stays on the screen', what='changed')
+    # (c) the work shown keeps another airline: the header says it, nothing is rewritten
+    c.js("() => window.__ctx.workAirline('aiv')")
+    c.until("document.getElementById('fCo').dataset.differs !== undefined", what='the difference is said')
+    r = c.js(CO_HEAD)
+    c.eq([r['text'], [x for x in r['clash'] if 'fApp' not in x], r['over']], ['DFA ≠ AIV', [], False], '(c) the header says the work keeps another airline: both codes, no overlap', what='differs')
+    c.ok('AIV' in r['title'] and 'DFA' in r['title'], r['title'], 'the tooltip says which one the work keeps and which is current')
+    c.shot(f'A139_differs_{c.width}_{lang}.png')
+    c.js("() => window.__ctx.workAirline('')")
+    c.until("document.getElementById('fCo').dataset.differs === undefined", what='no difference left')
+    c.eq(c.js("document.getElementById('fCo').textContent"), 'DFA', 'back to the current airline alone', what='cleared')
+    # seven at most, « Personnel » included
+    c.js("() => FrameData.reset()")
+    c.open('atmosphere', docs=_co_docs(9), wait=False)
+    c.until('!!window.__ctx && !document.getElementById("fCo").hidden', timeout=20000, what='nine airlines')
+    c.tap('#fApp')
+    c.until("!!document.querySelector('.f-tabpop [data-co]')", what='the selector')
+    codes = c.js("[...document.querySelectorAll('.f-tabpop [data-co]')].map(b => b.dataset.co)")
+    c.eq([len(codes), codes[-1]], [7, 'perso'], 'nine airlines known: seven rows, « Personnel » is the last', what='seven')
+    c.check_errors()

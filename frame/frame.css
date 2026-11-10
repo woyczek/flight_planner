@@ -179,6 +179,53 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   text-overflow: ellipsis;
   white-space: nowrap
 }
+/* la compagnie courante, à côté du nom de l'application (« Pilote · ITF ») : son code, d'un seul bloc (jamais de retour à la ligne : le nom, lui, se tronque) ;
+   les deux codes avec « ≠ » quand le travail montré garde une autre compagnie que la courante (SOG-0213) */
+.f-head .f-hco {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  font-size: .75em;
+  font-weight: 600;
+  letter-spacing: .04em;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: .85
+}
+.f-head .f-hco[hidden] {
+  display: none
+}
+.f-head .f-hco[data-differs] {
+  color: var(--sog-warn, #8a5a00);
+  opacity: 1
+}
+/* la liste des compagnies du sélecteur d'application : des boutons radio, sous les applications */
+.f-tabpop .f-hco-title {
+  margin: 0;
+  padding: 8px 16px 2px;
+  border-top: 1px solid var(--sog-border);
+  color: var(--sog-muted);
+  font-size: .8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em
+}
+.f-tabpop button.f-tabpop-row.f-hco-row[aria-checked="true"] {
+  background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface));
+  font-weight: 600
+}
+.f-tabpop .f-hco-row .f-hco-dot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-radius: 50%
+}
+.f-tabpop .f-hco-row[aria-checked="true"] .f-hco-dot {
+  background: currentColor;
+  box-shadow: inset 0 0 0 2px var(--sog-surface)
+}
 /* boutons à icône seule de l'en-tête (menu, aide, réglages) : carrés de la taille d'une cible ; les boutons à libellé
    (synchronisation, retour, bascule de la vue double) gardent leur largeur */
 .f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn):not(.f-live):not(.f-who):not(.f-app):not(.f-stale) {

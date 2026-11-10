@@ -2863,3 +2863,11 @@ The user, 16:07: « 3 conflits ». What the frame keeps and shows:
 - **How they resolve without any loss**: nothing is lost at the time of the conflict — the winner is the newest version, the loser is kept entirely (« Reprendre » on its card puts it back as a file, and the next pass sends it). They only count
   until seen: **« Tout marquer comme vu »** (A92) clears the old ones of a device in one tap, « Vu » one by one. Once the writers no longer loop, new ones stop.
 
+
+## 10 November 2026 — the airline in the header and in the selector (SOG-0213)
+
+The user, after the refusal of SOG-0190: « toujours rien dans l'entête, là où ça devrait être, dans le header. possibilité de changer rapidement de compagnie… quand on clique sur « pilote », on a « compagnie ITF », ou « compagnie DEFA VIRTUAL »… (on n'en aura jamais plus de 7) ».
+(a) `#fCo` in the application button (`frame/index.html`): the code, boxed, in one piece (`white-space: nowrap`; the name is the one that truncates); (b) the selector of the name: under the applications a `radiogroup` of the airlines (`airlineChoices`: seven at most,
+« Personnel » last; the kind read from each airline's settings and worded by `airlineText`); a tap = `FrameData.setAirline`, the existing event does the rest; (c) the ergonomist's objection kept: `ctx.workAirline(code)`, the module says which airline its
+work keeps; when it differs the chip reads `DFA ≠ AIV`. The modules (report, Fuel) call it with the code their object keeps — their part. Class names `f-hco*` (`.f-co` is Settings' airline row). Noreg A139 (captures 390 and 1280 written by the case).
+

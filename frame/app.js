@@ -391,7 +391,8 @@
    *  français. */
   // l'accord des textes (frame/lib/plural.js, chargé au démarrage) : les marques « (s) (x) (en)… » d'un texte sont résolues d'après le nombre `{n}` qui les précède,
   // seulement quand l'appelant donne un nombre ; avant le chargement du module, ou sans nombre, le texte part tel quel
-  let PLURAL = null;
+  let PLURAL = null,
+    KM = null; // frame/lib/mission_categories.js : les mots du genre d'une compagnie (airlineText), une seule source (SOG-0181)
   const t = (row, v = {}) => {
     const l = lang(),
       raw = String((Array.isArray(row) ? row[LANGS.indexOf(l)] || row[0] : row) ?? ''),
@@ -525,6 +526,16 @@
     ivaoFail: ['Connexion à IVAO refusée ({e}).', 'IVAO sign-in refused ({e}).', 'IVAO-Anmeldung abgelehnt ({e}).',
       'Inicio de sesión en IVAO rechazado ({e}).'
     ],
+    // la compagnie courante dans l'en-tête et son sélecteur (SOG-0213) : le code à côté du nom de l'application, les compagnies (sept au plus) sous les applications
+    co: {
+      title: ['Compagnie', 'Airline', 'Fluggesellschaft', 'Aerolínea'],
+      label: ['Compagnie : {a}', 'Airline: {a}', 'Fluggesellschaft: {a}', 'Aerolínea: {a}'],
+      differs: ['Ce travail reste à la compagnie {w} ; la compagnie courante est {c}.',
+        'This work stays with airline {w}; the current airline is {c}.',
+        'Diese Arbeit bleibt bei der Fluggesellschaft {w}; die aktuelle ist {c}.',
+        'Este trabajo sigue con la aerolínea {w}; la actual es {c}.'
+      ]
+    },
     // coupe-boucle des rechargements (SOG-0209) : la cause est dite telle que le cadre la connaît (technique, en anglais)
     loop: ['Rechargements en série arrêtés : {c}', 'Chain of reloads stopped: {c}', 'Serie von Neuladungen angehalten: {c}',
       'Serie de recargas detenida: {c}'
@@ -1443,6 +1454,7 @@
     readLogo(next.logo, a?.root); // le fichier a pu changer sans que le réglage change : relu par révision, sans frais
     if (JSON.stringify(next) === JSON.stringify(airline)) return;
     airline = next;
+    paintCo();
     window.dispatchEvent(new CustomEvent('frame-airline', {
       detail: airline
     }));
@@ -1526,6 +1538,51 @@
     notify(t(LOGO_T.refused), 'warn', {
       key: 'logo'
     });
+  }
+  // ---- la compagnie courante dans l'en-tête (SOG-0213) : son code à côté du nom de l'application (« Pilote · ITF »), le nom entier en infobulle et en nom accessible ; « ITF ≠ SOG » quand le
+  // travail que le module montre (un compte rendu, un vol préparé : ctx.workAirline) garde une autre compagnie que la courante (il la garde : rien n'est réécrit en silence, SOG-0181)
+  let workAirline = null; // { module, code } : la compagnie du travail montré, dite par le module
+  const coCode = c => String(c || '').slice(0, 8).toUpperCase();
+  /** La puce de l'en-tête ; rien pour le code « default » (une seule compagnie, sans index) ou sans compagnie ; écrite seulement si elle change. */
+  function paintCo() {
+    const el = $('fCo'),
+      btn = $('fApp');
+    if (!el || !btn) return;
+    const cur = airline.code && airline.code !== 'default' ? airline.code : '',
+      work = workAirline && workAirline.module === current?.id && workAirline.code && workAirline.code !== cur ? workAirline.code : '',
+      txt = cur ? work ? `${coCode(cur)} ≠ ${coCode(work)}` : coCode(cur) : '',
+      title = cur ? work ? t(T.co.differs, {
+        w: coCode(work),
+        c: coCode(cur)
+      }) : t(T.co.label, {
+        a: airline.name || coCode(cur)
+      }) : '';
+    if (el.textContent !== txt) el.textContent = txt;
+    if (el.hidden !== !txt) el.hidden = !txt;
+    if (el.title !== title) el.title = title;
+    if (el.toggleAttribute) el.toggleAttribute('data-differs', !!work);
+    const aria = cur ? `${t(APP.name)} · ${work ? title : t(T.co.label, { a: airline.name || coCode(cur) })}` : '';
+    if ((btn.getAttribute('aria-label') || '') !== aria) aria ? btn.setAttribute('aria-label', aria) : btn.removeAttribute('aria-label');
+  }
+  /** Les compagnies du sélecteur : { code, name, kind, current }, sept au plus (« personnel » toujours : la dernière) ; le genre vient des réglages de chacune. */
+  async function airlineChoices() {
+    const all = typeof FD.airlines === 'function' ? await FD.airlines().catch(() => []) : [],
+      list = all.length > 7 ? [...all.slice(0, 6), all[all.length - 1]] : all;
+    return Promise.all(list.map(async a => {
+      let kind = a.code === 'perso' ? 'perso' : '';
+      if (!kind) try {
+        const st = await airlineData.get(a.code === 'default' ? 'airline/settings.json' : `airline/${a.code}/settings.json`);
+        kind = typeof st?.kind === 'string' ? st.kind : '';
+      } catch {
+        /* réglages illisibles : le genre n'est pas dit */
+      }
+      return {
+        code: a.code,
+        name: a.name,
+        kind,
+        current: a.code === airline.code
+      };
+    }));
   }
   /** L'icône d'une application : le logo pour Compagnie quand il est là, sinon son icône teintée. */
   const appIconHtml = p => p.id === 'company' && appLogo ? `<img class="f-logo" alt="" src="${esc(appLogo)}">` : icon(p.icon);
@@ -3064,10 +3121,12 @@
     return `${location.pathname}${s ? `?${s}` : ''}#${app.modules[0]?.id || ''}`;
   }
   /** Ouvre (ou ferme, s'il l'est) la liste des applications sous le bouton du nom. */
-  function toggleAppPop() {
+  async function toggleAppPop() {
     if (tabPop) return closeTabPop();
     const a = $('fApp'),
-      apps = Object.values(APPS);
+      apps = Object.values(APPS),
+      cos = await airlineChoices(); // les compagnies (sept au plus) : lues avant de dessiner, le menu ne bouge pas ensuite
+    if (tabPop) return; // un second appui pendant la lecture
     const el = document.createElement('div');
     el.className = 'f-tabpop f-down';
     el.setAttribute('role', 'group');
@@ -3079,7 +3138,9 @@
         return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico${p.id === 'company' && appLogo ? ' f-has-logo' : ''}" style="color:${esc(p.tint || 'currentColor')}">${appIconHtml(p)}</span><span>${esc(t(p.name))}${p.id === 'company' && airline.name ? `<small>${esc(airline.name)}</small>` : ''}${need}</span></button>`;
       }).join('') +
       // au téléphone, où la colonne n'est pas affichée, les pages de la V2 sont la dernière ligne de ce menu (SOG-0166)
-      `<button type="button" class="f-tabpop-row f-legacy" data-legacy>${icon('file')}<span>${esc(t(LEGACY.label))}</span></button>`;
+      `<button type="button" class="f-tabpop-row f-legacy" data-legacy>${icon('file')}<span>${esc(t(LEGACY.label))}</span></button>` +
+      // les compagnies, sous les applications : des boutons radio, un appui change de compagnie sans quitter l'écran (SOG-0213)
+      (cos.length > 1 ? `<div role="radiogroup" aria-label="${esc(t(T.co.title))}"><p class="f-hco-title">${esc(t(T.co.title))}</p>${cos.map(c => `<button type="button" role="radio" aria-checked="${c.current}" class="f-tabpop-row f-hco-row" data-co="${esc(c.code)}"><span class="f-hco-dot" aria-hidden="true"></span><span>${esc(KM ? KM.airlineText(c, lang()) : c.name)}<small>${esc(coCode(c.code))}</small></span></button>`).join('')}</div>` : '');
     el.style.visibility = 'hidden';
     document.body.append(el);
     // sous le bouton, à gauche de la fenêtre au plus près, la pointe (--f-pop-caret) face à l'icône
@@ -3120,6 +3181,13 @@
       if (e.target.closest('[data-legacy]')) {
         closeTabPop();
         return void(location.hash = '#legacy');
+      }
+      const co = e.target.closest('[data-co]');
+      if (co) {
+        closeTabPop(true);
+        if (co.getAttribute('aria-checked') !== 'true') void FD.setAirline(co.dataset
+          .co); // l'événement frame-data-airline remet la compagnie, la puce et les écrans à jour
+        return;
       }
       const p = APPS[e.target.closest('[data-app]:not([disabled])')?.dataset.app];
       if (!p) return;
@@ -3213,6 +3281,7 @@
         mod,
         life
       };
+      paintCo(); // la compagnie du travail montré est celle du module affiché
       moduleFixed[entry.id] = meta.fixed === true;
       if (Array.isArray(meta.title)) moduleTitle[entry.id] = meta.title;
       paintFixed(entry.id);
@@ -3714,6 +3783,15 @@
         return airline;
       },
       placeholder, // la place d'un bloc dont le contenu arrive plus tard (§ 7.1 règle 22)
+      // la compagnie du travail que le module montre (un compte rendu, un vol préparé : celle que l'objet garde, SOG-0181) ; '' ou null : aucune. Quand elle diffère de la
+      // compagnie courante, l'en-tête le dit (« ITF ≠ SOG ») : changer de compagnie ne réécrit rien en silence (SOG-0213, INTEGRATION § 15.5)
+      workAirline: code => {
+        workAirline = code ? {
+          module: entry.id,
+          code: String(code).slice(0, 20)
+        } : null;
+        paintCo();
+      },
       get live() {
         return liveApi();
       },
@@ -4526,6 +4604,7 @@
       console.warn('frame/lib/icons.js', e);
     }
     PLURAL = await import(new URL('frame/lib/plural.js', ROOT).href).catch(() => null);
+    KM = await import(new URL('frame/lib/mission_categories.js', ROOT).href).catch(() => null);
     headIcon('fHelp', 'help');
     headIcon('fDevice', 'settings');
     document.title = `${t(APP.name)} — SOG`;

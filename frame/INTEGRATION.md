@@ -1293,6 +1293,15 @@ flight » three times in a row is not a loop): the
 page stays and says « Chain of reloads stopped: <cause> »; the cause is in the page diagnostic (`page.reloads`) and `window.SogFrame.reloads()`. A module never reloads the page
 (`location.reload` / `location.replace` of the page are the frame's: use `ctx.consume`, `location.hash`); an `elsewhere` table of an application (`APPS`) must have no cycle.
 
+### 15.5 The airline in the header (SOG-0213)
+
+The header says the current airline beside the application's name (« Pilote · ITF »: the code; the whole name in the tooltip and in the button's accessible name; nothing for the code `default`, a single airline without an
+index). The selector that opens on the name lists, under the applications, the airlines as **radio buttons** (seven at most, « Personnel » always the last): a tap calls `FrameData.setAirline(code)`, closes the menu and stays on the screen —
+the modules follow `frame-airline` (on `window`) as before. The words of the kind come from `frame/lib/mission_categories.js` (`airlineText`, `KIND_NAMES`), the single source.
+
+- `ctx.workAirline(code)`: tell the frame which airline the **work you show** keeps (a report, a prepared flight: the code the object carries, SOG-0181); `''` / `null`: none. When it differs from the current airline the
+  header says it (`DFA ≠ AIV`, warn colour, the tooltip says which is which): changing the airline never rewrites a report or a prepared flight in silence — they keep theirs. Valid while your module is the one shown.
+
 ### 15.2 `ctx.publish` — generated files to the data repository, without a launcher
 
 For outputs too big for the data layer's batch (records, 5,000 changes, a copy kept on the device): 20–60 MB, hundreds of
