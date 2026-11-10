@@ -1475,3 +1475,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   before the state of the base zone (which matters to the map and the points); a State whose procedures cannot be read loses the read
   button, which only failed again (« no-tables »). An ICAO code the base knows as an aerodrome is never a homonym; a town's name brings the
   aerodromes around it in the completion. F118, F119, F120.
+- **10 Nov 2026 — a country in the aerodrome fields; a town of a closed zone** (SOG-0158 reopened): F121 replays a zone that is published
+  and never opened by the flight, in the shapes aerodb reads (index entry with cells, split files, `aeroindex` as { fields, rows },
+  `cities_major.json`), every value invented. A town of such a zone already proposed its aerodromes with 3d70ded7a (green on the closed
+  zone); a country's name did not: it now matches the zones' names (fr, en, de, es) and lists the zone's aerodromes by longest hard runway.
+  The endonyms (« Sverige ») and a light index of names across zones are AeroDB's (asked). Counter-test on 1cd5afe98: « suède » proposes
+  nothing.

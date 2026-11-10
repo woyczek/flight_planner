@@ -207,7 +207,9 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 - **Aerodromes**: departure, arrival, alternate. Each field is a search (F48): from two characters, by code or by name, `aerodb.find`
   gives aerodromes with a four-character code, then, for a town the text names (two at most), the aerodromes within 40 NM of it, nearest
   first, the town in the line (« ESSA Arlanda (Stockholm) »; SOG-0158, F119: `find` only searches the aerodromes of the zones already open,
-  `aerodromes({ lat, lon, radiusNm })` opens the town's zone) — seven at most in all, listed as « LFPO Paris-Orly » in one list laid over the page (never the
+  `aerodromes({ lat, lon, radiusNm })` opens the town's zone) — then, for a country's name (the names of aerodb's zones in four languages: « suède », « sweden »;
+  SOG-0158 reopened, F121), its aerodromes the largest first (longest hard runway, `hardLen`), the country in the line — a zone the flight
+  has not opened included (`aerodromes({ bbox })` opens it); seven at most in all, listed as « LFPO Paris-Orly » in one list laid over the page (never the
   native `datalist`; the list of `suggest.js`); ↑ ↓ move, Enter picks, Esc closes, a tap picks (44 px); it closes when the field
   loses the focus (a press on a proposal keeps it, so the click lands); a full code that is the only proposal opens nothing. A pick
   writes the code and fires the field's `input` event: the same path as typing (F45, F46). Only a code reaches the route; leaving a

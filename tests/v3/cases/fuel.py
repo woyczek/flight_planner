@@ -3265,3 +3265,52 @@ def f120(c):
     c.until(f"(() => {{ const b = document.querySelector('{FUEL} [data-proc][data-icao=\"EBZZ\"] [data-do=procfetch]'); return !!b && b.textContent.trim() === {repr(tx(PROC_TX, 'procReadDemand', c.lang))} }})()",
             timeout=12000, what='EBZZ (EAD Basic): « Lire à la demande »')
     c.eq(c.count(f'{FUEL} [data-proc][data-icao="EBZZ"] [data-procgap]'), 0, 'a readable State: no line of fallbacks', what='readable')
+
+
+
+def _closed_zone_docs(zone='se', prefix='ES', cells=None, aerodromes=(), towns=(), major=()):
+    """The published base of the flight (zone fr, opened by the flight) and a SECOND zone, published but never opened by the flight: its
+    index entry (cycle, prefixes, kb, cells) and its split files (meta, aerodromes, aeroindex as { fields, rows }, cities) in the shapes
+    aerodb reads (frame/aerodb/aerodb.js listZones, part, liteAerodromes, nameCities), plus the world's major towns (cities_major.json).
+    Every value is invented (SOG-0158: the proof without copying data)."""
+    docs = aero_docs(airfields=True)
+    idx = [d for d in docs if d[0] == 'sia/base/index.json'][0][1]
+    idx['zones'][zone] = {'cycle': AERO_CYCLE, 'prefixes': [prefix], 'kb': {'meta': 1, 'aerodromes': 2, 'aeroindex': 1, 'cities': 1},
+                          'cells': cells or {}}
+
+    def kind(k, data):
+        return [f'sia/base/{zone}/{AERO_CYCLE}/{k}.json', {'schema': 2, 'zone': zone, 'cycle': AERO_CYCLE, 'kind': k, 'parserVersion': 1,
+                                                           'data': data, 'updated_at': f'{AERO_CYCLE}T00:00:00Z'}, 'reference']
+    fields = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar']
+    docs += [kind('meta', {}), kind('aerodromes', list(aerodromes)),
+             kind('aeroindex', {'fields': fields, 'rows': [[a.get(f) for f in fields] for a in aerodromes]}),
+             kind('cities', list(towns)),
+             ['sia/base/cities_major.json', {'data': list(major)}, 'reference']]
+    return docs
+
+
+@case('F121', 'Completion across the installed zones: a town or a country of a zone the flight has not opened proposes its aerodromes',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0158 reopened (user: « on ne peut pas trouver ESSB à partir de la saisie stockholm ou suède ni sweden »): the completion searches '
+      'every installed zone, not only the opened ones; a country name (French, English, …) proposes its aerodromes, the largest first, seven at '
+      'most; the second zone is published and never opened by the flight, in the shapes aerodb reads; invented values')
+def f121(c):
+    ads = [{'icao': 'ESZB', 'name': 'ZORLSTAD TESTFIELD', 'lat': 59.35, 'lon': 17.95, 'elev': 14, 'bearing': 120, 'magVar': 6, 'hardLen': 1600,
+            'public': True},
+           {'icao': 'ESZA', 'name': 'NORDFIELD', 'lat': 59.65, 'lon': 17.92, 'elev': 42, 'bearing': 10, 'magVar': 6, 'hardLen': 3300, 'public': True}]
+    docs = flight_docs() + _closed_zone_docs(cells={'59': [[17, 19]]}, aerodromes=ads,
+                                             towns=[{'name': 'ZORLSTAD', 'lat': 59.33, 'lon': 18.07, 'population': 900000}],
+                                             major=[{'name': 'ZORLSTAD', 'lat': 59.33, 'lon': 18.07, 'population': 900000}])
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    to_step(c, 0)
+    type_in(c, 'arr', 'zorlst')
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].some(o => o.dataset.code === 'ESZB')", timeout=10000,
+            what='a town of a zone the flight has not opened proposes its aerodrome')
+    # a country's name: French, then English
+    for name in ('suède', 'sweden'):
+        type_in(c, 'arr', name)
+        c.until(f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].some(o => o.dataset.code === 'ESZB')", timeout=10000,
+                what=f'« {name} » proposes the aerodromes of the country')
+        codes = c.js(f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].map(o => o.dataset.code)")
+        c.eq(codes[:2], ['ESZA', 'ESZB'], f'« {name} »: the largest first (longest hard runway)', what='order')

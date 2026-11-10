@@ -20,7 +20,10 @@ import {
 } from '../../frame/lib/adnames.js'; // la règle de texte du nom, partagée avec la Carte (§ 10.27)
 import {
   createSuggestList
-} from './suggest.js'; // la liste de propositions, commune avec le champ de route (refonte § 10.33 R-F5)
+} from './suggest.js';
+import {
+  zoneAt
+} from './zone_gap.js'; // la zone d'une position (cadres des zones d'aerodb) : un terrain est bien du pays nommé // la liste de propositions, commune avec le champ de route (refonte § 10.33 R-F5)
 const TX = {
   unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
   listLabel: ['Terrains proposés', 'Suggested aerodromes', 'Vorgeschlagene Flugplätze', 'Aeródromos propuestos']
@@ -29,6 +32,8 @@ const TX = {
 const MAX_SUGGESTIONS = 7;
 /** Rayon autour d'une ville où ses terrains sont proposés (NM ; SOG-0158). */
 const CITY_NM = 40;
+/** Un texte replié pour comparer des noms : minuscules, sans accents (« Suède » → « suede »). */
+const fold = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 /** Longueur minimale du texte pour proposer. */
 const MIN_CHARS = 2;
 /** Un code de terrain complet : quatre caractères. */
@@ -116,7 +121,8 @@ export function createAdNames(host) {
   /** Propose les terrains qui répondent au texte tapé dans le champ `k` (au moins deux caractères). aerodb.find classe les lieux (code
    *  exact, nom qui commence, ville…) : on garde les aérodromes à code de quatre caractères, sans doublon ; puis, pour une ville trouvée
    *  (deux au plus : « stockholm », SOG-0158), les terrains à CITY_NM d'elle, du plus proche au plus loin, la ville dans la ligne
-   *  (« ESSA Arlanda (Stockholm) ») ; sept au plus en tout. */
+   *  (« ESSA Arlanda (Stockholm) ») ; puis, pour un nom de pays (« suède », « sweden »), ses terrains les plus grands d'abord, le pays
+   *  dans la ligne ; sept au plus en tout. */
   async function suggest(k, text) {
     const q = String(text || '').trim(),
       seq = list.ticket();
@@ -158,6 +164,36 @@ export function createAdNames(host) {
           label: [name && name !== code ? name : '', city ? `(${city})` : ''].filter(Boolean).join(' ')
         });
         if (hits.length >= MAX_SUGGESTIONS) break;
+      }
+    }
+    // SOG-0158 : un nom de pays (les noms des zones d'aerodb en quatre langues : « suède », « sweden ») propose ses terrains, les plus grands
+    // d'abord (la plus longue piste en dur, hardLen), le pays dans la ligne ; la zone n'a pas besoin d'être ouverte par le vol
+    if (hits.length < MAX_SUGGESTIONS && q.length >= 3 && ctx.aerodb?.zones && ctx.aerodb?.aerodromes) {
+      const zones = await Promise.resolve().then(() => ctx.aerodb.zones()).catch(() => null),
+        fq = fold(q),
+        lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(ctx.lang?.() || 'fr')),
+        z = Array.isArray(zones) ? zones.find(x => x.published && (x.names || []).some(n => fold(n).startsWith(fq))) : null;
+      if (!list.live(seq)) return;
+      if (z) {
+        const frame = [...(z.frames || [])].sort((a, b) => (b[2] - b[0]) * (b[3] - b[1]) - (a[2] - a[0]) * (a[3] - a[1]))[0],
+          all = frame ? await Promise.resolve().then(() => ctx.aerodb.aerodromes({
+            bbox: frame
+          })).catch(() => []) : [];
+        if (!list.live(seq)) return;
+        const country = z.names?.[lang] || z.id;
+        for (const x of (Array.isArray(all) ? all : []).filter(x => x && x.public !== false && Number.isFinite(+x.lat) && zoneAt(zones, x)
+              ?.id === z.id)
+            .sort((a, b) => (+b.hardLen || 0) - (+a.hardLen || 0))) {
+          const code = String(x.icao || x.id || '').trim().toUpperCase();
+          if (!CODE.test(code) || seen.has(code)) continue;
+          seen.add(code);
+          const name = String(x.name || '').trim();
+          hits.push({
+            value: code,
+            label: [name && name !== code ? name : '', `(${country})`].filter(Boolean).join(' ')
+          });
+          if (hits.length >= MAX_SUGGESTIONS) break;
+        }
       }
     }
     // le code complet déjà tapé et seul de sa liste : rien à proposer, le champ est juste

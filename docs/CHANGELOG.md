@@ -22,7 +22,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   on demand → « Lire à la demande »; not readable (images, labels only, text…) → the reason and the Navigraph and ChartFox fallbacks, no read
   button bound to fail.
 - **Fuel: a town's name in the aerodrome fields** (`modules/fuel/adnames.js`; Fuel SPEC, help; noreg F119; SOG-0158). « stockholm » proposes the
-  aerodromes within 40 NM of the town, the town in the line; seven at most.
+  aerodromes within 40 NM of the town, the town in the line; seven at most. A country's name (« suède », « sweden ») proposes its aerodromes,
+  the largest first, even for a zone the flight has not opened (F121).
 - **Fuel: an aerodrome's code is never said as homonyms** (`frame/lib/route_model.js`; Fuel SPEC, help; noreg F118; SOG-0154). An ICAO code the
   base knows as an aerodrome resolves to it; departure and arrival are never « homonymes ».
 
