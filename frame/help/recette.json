@@ -718,13 +718,10 @@
    },
    "test": "Carte avec une route qui traverse des espaces, profil ouvert : un appui sur un bloc le surligne ; « Fiche » ouvre la fiche de l'espace AVEC, à côté (dessous au téléphone), la pile des espaces de ce point en blocs sur l'échelle des niveaux, jamais vide ; toucher un autre bloc change la fiche ; rien ne sort de l'écran.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T11:09:43Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "noreg : bug d’affichage vertical",
-    "at": "2026-11-10T08:59:08Z"
-   }
+   "comment": "pas mal, presque bon. Réserve non bloquante : mettre la liste des espaces à droite dans ce grand espace (en screenshot) vide.",
+   "at": "2026-11-10T13:31:58Z"
   },
   {
    "id": "SOG-0164",
@@ -846,10 +843,7 @@
    },
    "test": "Compagnie › Missions › une mission SO (SAR, HEMS…) › « Voir sur la Carte » de la carte cible : elle s'ouvre sur un fond VFR topographique (relief, obstacles, terrains VFR), plus sur un fond uni ; le bandeau porte « Vue » : VFR topo / IFR / Fond seul, et le choix est retenu pour cette carte. Retirer le bandeau rend la vue du vol.",
    "since": "2026-11-10",
-   "state": "ok",
-   "delivered": "2026-11-10T10:19:55Z",
-   "comment": "oui. ok aussi pour le détail et la vue double. sauf pour la complexité. le curseurs a disparu, et on sait qu’il sert à épargner la vue et le cpu. le vfr topo n’a pas de courbes de niveau ?? il avait ça en v2. Le clignottement au double clic sur un espace ? la vue coupe clignotte tant que la fenêtre n’a pas réduit au max.  Autant j’aime bien la vue « préparer le vol » avec la popup sur la carte, autant c’est déstabilisant d’avoir l’onglet « couches » qui sert à autre chose que choisir les éléments à afficher. Ça doublonne avec la popup en plus.",
-   "at": "2026-11-10T11:01:58Z"
+   "state": "known"
   },
   {
    "id": "SOG-0172",
@@ -1004,8 +998,7 @@
    },
    "test": "Compagnie › Missions › une mission › « Voir sur la Carte » : le curseur de complexité est là, comme sur la Carte du vol, et le déplacer allège ou enrichit la carte de mission.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T11:15:22Z"
+   "state": "known"
   },
   {
    "id": "SOG-0184",

@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e7be67f",
-  "fiches": 198,
+  "organisation": "369b89d",
+  "fiches": 208,
   "untranslated": 1,
   "priorities": 152
  },
@@ -481,6 +481,45 @@
      "en": "Route engine: improve it, not only copy it — the longest IFPS-valid route in LOW, HIGH or FRA, iterating with intermediate points (ESSB → LEMO)",
      "de": "Routen-Engine: verbessern, nicht nur kopieren — die längste IFPS-gültige Route in LOW, HIGH oder FRA, iterativ mit Zwischenpunkten (ESSB → LEMO)",
      "es": "Motor de rutas: mejorarlo, no solo copiarlo: la ruta válida IFPS más larga en LOW, HIGH o FRA, iterando con puntos intermedios (ESSB → LEMO)"
+    },
+    {
+     "id": "SOG-0200",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Carburant, étape Départ : un tableau des aides radio du vol (l'ILS choisi d'abord, puis les VOR qui guident)",
+     "en": "Fuel, Departure step: a board of the flight's radio aids (the chosen ILS first, then the guiding VORs)",
+     "de": "Kraftstoff, Schritt Abflug: eine Tafel der Funkhilfen des Flugs (zuerst das gewählte ILS, dann die leitenden VOR)",
+     "es": "Combustible, paso Salida: un tablero de las ayudas radio del vuelo (primero el ILS elegido, luego los VOR que guían)"
+    },
+    {
+     "id": "SOG-0205",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carburant : le terrain de dégagement n'est pas pris en compte après sa saisie",
+     "en": "Fuel: the alternate aerodrome is not taken into account after it is typed",
+     "de": "Kraftstoff: der Ausweichflugplatz wird nach der Eingabe nicht übernommen",
+     "es": "Combustible: el aeródromo alternativo no se tiene en cuenta tras escribirlo"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-moteur-de-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; moteur de route",
+    "en": "Carburant ; moteur de route",
+    "de": "Carburant ; moteur de route",
+    "es": "Carburant ; moteur de route"
+   },
+   "items": [
+    {
+     "id": "SOG-0206",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carburant › Route : « Contrôler » après le choix d'un itinéraire, d'une piste et d'une SID répond « le contrôle n'a pas répondu »",
+     "en": "Fuel › Route: “Check” after choosing a route, a runway and a SID answers “the check did not answer”",
+     "de": "Kraftstoff › Route: „Prüfen“ nach Wahl von Route, Bahn und SID antwortet „die Prüfung hat nicht geantwortet“",
+     "es": "Combustible › Ruta: «Comprobar» tras elegir itinerario, pista y SID responde «la comprobación no ha respondido»"
     }
    ]
   },
@@ -729,7 +768,7 @@
     {
      "id": "SOG-0183",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Carte de mission : le curseur de complexité a disparu",
      "en": "Mission map: the complexity slider is gone",
      "de": "Missionskarte: der Komplexitätsregler ist verschwunden",
@@ -770,6 +809,27 @@
      "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
      "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
      "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-carburant",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; Carburant",
+    "en": "Carte ; Carburant",
+    "de": "Carte ; Carburant",
+    "es": "Carte ; Carburant"
+   },
+   "items": [
+    {
+     "id": "SOG-0207",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Suivre le vol : un bouton « Suivre » sur la Carte et un tableau de bord du vol en cours",
+     "en": "Follow the flight: a “Follow” button on the Map and a board of the flight in progress",
+     "de": "Dem Flug folgen: eine Schaltfläche „Folgen“ auf der Karte und eine Tafel des laufenden Flugs",
+     "es": "Seguir el vuelo: un botón «Seguir» en el Mapa y un tablero del vuelo en curso"
     }
    ]
   },
@@ -1334,7 +1394,7 @@
     {
      "id": "SOG-0171",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Cartes de mission : le thème selon l'usage (VFR topographique sur la carte « cible » d'une mission SO), et un sélecteur de vue",
      "en": "Mission maps: the theme by use (VFR topographic on the “target” map of an SO mission), and a view selector",
      "de": "Missionskarten: Thema nach Verwendung (VFR-Topografie auf der „Ziel“-Karte einer SO-Mission) und eine Ansichtswahl",
@@ -1436,6 +1496,27 @@
      "de": "Schrittweise Abschaltung der V2 (beschlossen; das Tempo nicht); bis dahin leben die V2-Seiten neben der V3",
      "es": "Apagado progresivo de la V2 (decidido; el ritmo no); hasta entonces las páginas V2 viven junto a la V3",
      "rank": 77
+    }
+   ]
+  },
+  {
+   "id": "compagnie-compagnie-missions",
+   "app": "compagnie",
+   "label": {
+    "fr": "Compagnie ; Missions",
+    "en": "Compagnie ; Missions",
+    "de": "Compagnie ; Missions",
+    "es": "Compagnie ; Missions"
+   },
+   "items": [
+    {
+     "id": "SOG-0202",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Catégories de missions d'une compagnie : reprendre les thèmes et sous-thèmes de la V2, ne pas réinventer",
+     "en": "Mission categories of an airline: reuse the themes and sub-themes of V2, do not reinvent",
+     "de": "Missionskategorien einer Gesellschaft: Themen und Unterthemen der V2 übernehmen, nichts neu erfinden",
+     "es": "Categorías de misiones de una compañía: reutilizar los temas y subtemas de la V2, no reinventar"
     }
    ]
   },
@@ -1838,6 +1919,15 @@
      "en": "Procedures outside France: rebuild them from the text of the charts (at least their names), and overlay the published chart on the Map",
      "de": "Verfahren außerhalb Frankreichs: aus dem Text der Karten nachbauen (mindestens die Namen) und die veröffentlichte Karte über die Karte legen",
      "es": "Procedimientos fuera de Francia: recrearlos desde el texto de las cartas (al menos sus nombres) y superponer la carta publicada al Mapa"
+    },
+    {
+     "id": "SOG-0203",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Procédures et sol : LFOE ne lit rien (« 0 page lue sur 2 »), LFBD n'a pas de taxiways",
+     "en": "Procedures and ground: LFOE reads nothing (“0 page read out of 2”), LFBD has no taxiways",
+     "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
+     "es": "Procedimientos y suelo: LFOE no lee nada («0 páginas leídas de 2»), LFBD no tiene calles de rodaje"
     }
    ]
   },
@@ -1966,6 +2056,15 @@
      "en": "Frame: the data/ tree read fifty times from IndexedDB at each load (10,339 entries cloned)",
      "de": "Rahmen: der data/-Baum wird bei jedem Laden fünfzigmal aus IndexedDB gelesen (10 339 Einträge geklont)",
      "es": "Marco: el árbol de data/ leído cincuenta veces de IndexedDB en cada carga (10 339 entradas clonadas)"
+    },
+    {
+     "id": "SOG-0204",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Cadre : après Ctrl + Maj + R, le cartouche « Version ancienne · Recharger » s'affiche à tort",
+     "en": "Frame: after Ctrl + Shift + R, the “Old version · Reload” cartouche shows wrongly",
+     "de": "Rahmen: nach Strg + Umschalt + R erscheint die Kartusche „Alte Version · Neu laden“ zu Unrecht",
+     "es": "Marco: tras Ctrl + Mayús + R, aparece por error el cartucho «Versión antigua · Recargar»"
     }
    ]
   },
@@ -2038,6 +2137,15 @@
      "en": "Fuel: “New flight” clears nothing at once; the side map can no longer be resized or moved",
      "de": "Kraftstoff: „Neuer Flug“ leert nichts sofort; die Karte daneben lässt sich nicht mehr verschieben oder skalieren",
      "es": "Combustible: «Nuevo vuelo» no vacía nada al instante; el mapa lateral ya no se redimensiona ni se mueve"
+    },
+    {
+     "id": "SOG-0208",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Un geste qui a besoin du lanceur le dit quand le lanceur est absent (« Calculer A → B » sans effet)",
+     "en": "A gesture that needs the launcher says so when the launcher is absent (“Compute A → B” without effect)",
+     "de": "Eine Geste, die den Launcher braucht, sagt es, wenn er fehlt („A → B berechnen“ ohne Wirkung)",
+     "es": "Un gesto que necesita el lanzador lo dice cuando el lanzador falta («Calcular A → B» sin efecto)"
     }
    ]
   },
@@ -2301,6 +2409,24 @@
      "en": "Data: the question of “Take the downloaded file” is an unreadable block of text",
      "de": "Daten: die Rückfrage von „Heruntergeladene Datei übernehmen“ ist ein unlesbarer Textblock",
      "es": "Datos: la pregunta de «Tomar el archivo descargado» es un bloque de texto ilegible"
+    },
+    {
+     "id": "SOG-0199",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : choisir soi-même le fichier quand « Prendre le fichier téléchargé » ne l'a pas trouvé",
+     "en": "Data: pick the file yourself when “Take the downloaded file” did not find it",
+     "de": "Daten: die Datei selbst wählen, wenn „Heruntergeladene Datei übernehmen“ sie nicht gefunden hat",
+     "es": "Datos: elegir uno mismo el archivo cuando «Tomar el archivo descargado» no lo ha encontrado"
+    },
+    {
+     "id": "SOG-0201",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données, carte des pays : les contours ne se rejoignent pas entre deux pays voisins",
+     "en": "Data, country map: the outlines of two neighbouring countries do not meet",
+     "de": "Daten, Länderkarte: die Umrisse zweier Nachbarländer treffen sich nicht",
+     "es": "Datos, mapa de países: los contornos de dos países vecinos no coinciden"
     }
    ]
   },
