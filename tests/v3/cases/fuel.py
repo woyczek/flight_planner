@@ -1061,9 +1061,10 @@ def f32(c):
 # The "Procédures" card redone (V3 spec 10.29 d, e, f; 10.23): a title with the aerodrome's name, ONE secondary line, a fixed grid
 # identical on both sides, lists updated in place, a series of choices written once.
 def meta_parts(c, side):
-    """The pieces of a side's single secondary line (separators, the Source slot and the « zone manquante » slot of SOG-0143 left out), or None without the line."""
+    """The pieces of a side's single secondary line (separators, the Source slot, the « zone manquante » slot of SOG-0143 and the ground slot of
+    SOG-0135, F124, left out), or None without the line."""
     return c.js("""(s) => { const m = document.querySelector('[data-module=fuel] [data-proc="' + s + '"] .fu-procmeta');
-        return m ? [...m.children].filter(e => !e.classList.contains('fu-sep') && !e.hasAttribute('data-source-slot') && !e.hasAttribute('data-gap-slot')).map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()) : null }""", side)
+        return m ? [...m.children].filter(e => !e.classList.contains('fu-sep') && !e.hasAttribute('data-source-slot') && !e.hasAttribute('data-gap-slot') && !e.hasAttribute('data-ground-slot')).map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()) : null }""", side)
 
 
 def select_geometry(c):
@@ -3415,3 +3416,58 @@ def f123(c):
     c.eq(doc['alternatives'][0].get('control'), ['fallback', 'incomplete', 'fallback'], 'the control of each segment, for the Map\'s layer', what='control')
     c.tap(f'{FUEL} [data-alt="0"] [data-do="rtake"]')
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", '22 %', what='« Prendre » repeats the share')
+
+
+
+# AeroDb.groundStatus / fetchGround of the test page: a state per aerodrome (window.__gst), fetchGround counted and slow, the procedures
+# reading counted (« Réessayer » reads the ground alone), the change listeners kept to announce a failure as aerodb does
+_GROUND_INIT = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { window.__gst = { LFML: { state: 'failed', reason: 'too-soon', message: 'Overpass answered <b>HTTP 429</b>\\nretry later' } };
+        window.__gtries = 0; window.__ptries = 0; window.__gon = [];
+        db.groundStatus = async icao => ({ ...(window.__gst[icao] || { state: 'none' }) });
+        db.fetchGround = async icao => { window.__gtries++; window.__gst[icao] = { state: 'reading' }; await new Promise(r => setTimeout(r, 900));
+          window.__gst[icao] = { state: 'ok' }; return { ok: true } };
+        const fp = db.fetchProcedures; db.fetchProcedures = (...x) => { window.__ptries++; return fp.apply(db, x) };
+        const on = db.on; db.on = (ev, fn) => { if (ev === 'change') window.__gon.push(fn); return on.call(db, ev, fn) };
+      } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F124', 'Procedures card: the discreet line of a read aerodrome says its ground reading in the Map\'s words — « Sol non lu : <raison> · Réessayer », « Lecture du sol en cours… », « Sol lu » —, « Réessayer » reads the ground alone, a failure announced by aerodb is said at once',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0135 (a failed ground reading is never silent) on the Procedures card, after the Map\'s Ground panel (BUGS SOG, same four '
+      'sentences: modules/maps/texts.js gReading, gFailed, gWhy, gRetry, agreed 10 Nov); AeroDb.groundStatus(icao) and on(change, '
+      '{ ground, groundFailed }); nothing while the ground is neither read nor tried')
+def f124(c):
+    c.page.add_init_script(_GROUND_INIT)
+    open_proc(c)
+    # the two tables say the same words (BUGS SOG changes a word → this case is red, and Fuel follows)
+    same = c.js("""async () => { const M = (await import('/modules/maps/texts.js')).TX, P = (await import('/modules/fuel/procedures_texts.js')).TX;
+      const j = JSON.stringify; return [j(M.gReading) === j(P.groundReading), j(M.gFailed) === j(P.groundFailed), j(M.gRetry) === j(P.groundRetry),
+        j(M.gWhy) === j(P.groundWhy)] }""")
+    c.eq(same, [True, True, True, True], 'the same four sentences as the Map\'s Ground panel', what='texts')
+    wait_rows(c, 'arr')
+    arr = f'{FUEL} [data-proc="arr"] .fu-procmeta'
+    c.until(f"!!document.querySelector('{arr} [data-ground=\"failed\"]')", timeout=8000, what='the failed ground reading is said on the line')
+    why = tx(PT, "too-soon'", c.lang, after='groundWhy')
+    want = norm(tx(PT, 'groundFailed', c.lang).replace('{r}', why))
+    c.eq(norm(c.text(f'{arr} [data-ground="failed"]')), want, '« Sol non lu : <raison> », the reason in words', what='failure')
+    title = c.js(f"document.querySelector('{arr} [data-ground=\"failed\"]').title")
+    c.ok('429' in title and '<' not in title and '\n' not in title, title, 'the launcher\'s own words in its title, without < > nor line breaks')
+    c.eq(norm(c.text(f'{arr} [data-do="groundretry"]') or ''), norm(tx(PT, 'groundRetry', c.lang)), 'and « Réessayer »', what='retry')
+    c.js(f"document.querySelector('{arr}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F124_{c.design}_{c.width}_{c.lang}.png')
+    c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-ground]'), 0, 'nothing on a line whose ground is neither read nor tried', what='departure')
+    c.tap(f'{arr} [data-do="groundretry"]')
+    c.until(f"!!document.querySelector('{arr} [data-ground=\"reading\"]')", timeout=3000, what='« Lecture du sol en cours… » at once')
+    c.eq(norm(c.text(f'{arr} [data-ground="reading"]')), norm(tx(PT, 'groundReading', c.lang)), 'in the Map\'s words', what='reading')
+    c.until(f"!!document.querySelector('{arr} [data-ground=\"ok\"]')", timeout=8000, what='« Sol lu » once read')
+    c.eq(norm(c.text(f'{arr} [data-ground="ok"]')), norm(tx(PT, 'groundOk', c.lang)), '« Sol lu »', what='read')
+    c.eq(c.js('[window.__gtries, window.__ptries]'), [1, 0], '« Réessayer » read the ground once, not the procedures', what='[ground, procedures] readings')
+    c.eq(c.count(f'{arr} [data-do="groundretry"]'), 0, 'no « Réessayer » once read', what='retry')
+    # aerodb announces a failure (on('change', { ground, groundFailed })): the line says it without another gesture
+    c.js("() => { window.__gst.LFML = { state: 'failed', reason: 'mystery', message: '' }; for (const f of window.__gon) f({ ground: 'LFML', groundFailed: true }); return true }")
+    c.until(f"!!document.querySelector('{arr} [data-ground=\"failed\"]')", timeout=6000, what='the announced failure is said')
+    c.eq(norm(c.text(f'{arr} [data-ground="failed"]')), norm(tx(PT, 'groundFailed', c.lang).replace('{r}', tx(PT, 'failed', c.lang, after='groundWhy'))),
+         'an unknown reason is said « la lecture a échoué »', what='failure')

@@ -63,6 +63,26 @@ export const TX = {
   ],
   procWarnings: [' {n} avertissements.', ' {n} warnings.', ' {n} Warnungen.', ' {n} advertencias.'],
   procReading: ['Lecture de {icao}…', 'Reading {icao}…', '{icao} wird gelesen…', 'Leyendo {icao}…'],
+  // la lecture du sol d'un terrain sur sa ligne discrète (AeroDb.groundStatus) : les MÊMES mots que le panneau Sol de la Carte
+  // (modules/maps/texts.js gReading, gFailed, gWhy, gRetry ; accord avec BUGS SOG, cas F124 qui compare les deux tables)
+  groundReading: ['Lecture du sol en cours…', 'Reading the ground…', 'Boden wird gelesen…', 'Leyendo el suelo…'],
+  groundOk: ['Sol lu', 'Ground read', 'Boden gelesen', 'Suelo leído'],
+  groundFailed: ['Sol non lu : {r}', 'Ground not read: {r}', 'Boden nicht gelesen: {r}', 'Suelo no leído: {r}'],
+  groundRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
+  groundWhy: {
+    busy: ['le service ou le lanceur est occupé', 'the service or the launcher is busy', 'der Dienst oder der Launcher ist beschäftigt',
+      'el servicio o el lanzador está ocupado'
+    ],
+    'too-soon': ['lecture trop rapprochée, réessayez dans un instant', 'reading too soon after another, try again in a moment',
+      'Lesen zu kurz nach einem anderen, gleich erneut versuchen',
+      'lectura demasiado seguida de otra, inténtelo en un momento'
+    ],
+    failed: ['la lecture a échoué', 'the reading failed', 'das Lesen ist fehlgeschlagen', 'la lectura ha fallado'],
+    'no-data': ['OpenStreetMap ne décrit rien sur ce terrain', 'OpenStreetMap describes nothing on this aerodrome',
+      'OpenStreetMap beschreibt auf diesem Flugplatz nichts',
+      'OpenStreetMap no describe nada en este aeródromo'
+    ]
+  },
   // lecture en cours selon la source qu'aerodb annonce (onProgress source) : la France par l'eAIP du SIA, un État à tables par EAD
   procReadingSrc: {
     eaip: ['Lecture de l’eAIP du SIA…', 'Reading the SIA eAIP…', 'eAIP des SIA wird gelesen…', 'Leyendo el eAIP del SIA…'],

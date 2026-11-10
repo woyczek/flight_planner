@@ -20,7 +20,11 @@
 //     zoneGap(icao),       la ligne « zone manquante » d'un terrain sans procédures, '' tant qu'elle n'est pas connue (SOG-0143)
 //     procState(icao)      l'état des procédures de son État : { readable, demand } ou null tant qu'il n'est pas connu (SOG-0157)
 //   }
-//   api = { sync, render, reset, choose, read, onChange, focus, applyFocus, textModel, snapshot, applyOfp, stop }
+//   api = { sync, render, reset, choose, read, onChange, focus, applyFocus, textModel, snapshot, applyOfp, groundRetry, stop }
+//
+// La lecture du sol (SOG-0135, AeroDb.groundStatus) : la ligne discrète d'un terrain lu dit « Lecture du sol en cours… », « Sol lu » ou
+// « Sol non lu : <raison> · Réessayer » (fetchGround, le sol seul) dans les mots du panneau Sol de la Carte ; rien tant qu'il n'est ni
+// lu ni tenté.
 //
 // État : un seul objet par terrain (ads : fiches montrées au dernier dessin, comptes de la dernière lecture). La carte se met à
 // jour sur place : quand seules les listes changent, les options des listes existantes sont remplacées, le focus n'est jamais
@@ -95,6 +99,7 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-procicao{font-weight:600}
 [data-module="fuel"] .fu-procmeta{display:flex;flex-wrap:wrap;align-items:center;column-gap:.45em;font-size:.85em}
 [data-module="fuel"] .fu-procmeta .fu-linkbtn{padding:0 2px}
+[data-module="fuel"] .fu-procmeta [data-ground-slot]{display:contents} /* la part « sol » : chaque morceau est un élément de la ligne, la phrase longue passe seule à la ligne (SOG-0135) */
 [data-module="fuel"] .fu-proc .f-field{margin:6px 0 0;min-width:0}
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
 [data-module="fuel"] .fu-proc option.outdated{color:var(--sog-muted)}
@@ -451,7 +456,9 @@ export function createProcedures(host) {
     // SOG-0143 : sans donnée, la ligne « zone manquante » du terrain (sa zone et son état, le geste, les replis externes), remplie à la
     // réponse ; hors de la suite des parties (pas de « · » devant un emplacement encore vide)
     const gap = m.nodata ? `<span data-gap-slot>${host.zoneGap?.(m.icao) || ''}</span>` : '';
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${slotHtml(m.icao, side)}</span>${gap}`;
+    // la lecture du sol (SOG-0135) : hors de la suite des parties, son emplacement se remplit à la réponse d'aerodb
+    const ground = m.nodata ? '' : `<span data-ground-slot>${groundHtml(m.icao)}</span>`;
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ground + ` <span data-source-slot>${slotHtml(m.icao, side)}</span>${gap}`;
   }
   // l'adresse des cartes officielles de chaque terrain, demandée une fois à aerodb (chartsUrl, lot C2) : une adresse, null (État inconnu
   // d'aerodb) ; absente tant que la réponse n'est pas venue. Les emplacements de ce terrain se remplissent à la réponse
@@ -473,6 +480,73 @@ export function createProcedures(host) {
     return url ? `<a class="fu-procsrc" data-charts href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(tt(TX.procCharts))}</a>` : '';
   }
   /** Remplit à nouveau l'emplacement « Cartes » / « Carte » des côtés d'un terrain (une réponse d'aerodb est venue). */
+  // l'état de la lecture du sol de chaque terrain (AeroDb.groundStatus) : { state: none | reading | ok | failed, reason, message } ;
+  // absent tant que la réponse n'est pas venue. Une lecture en cours est redemandée toutes les 3 s (aerodb n'annonce pas son début)
+  const grounds = new Map(),
+    groundTimers = new Map();
+  const GROUND_WHY = ['busy', 'too-soon', 'failed', 'no-data'];
+  /** Demande l'état du sol d'un terrain à aerodb, le garde borné (entrée non fiable : un texte du lanceur) et remplit ses emplacements. */
+  function askGround(k) {
+    if (typeof ctx.aerodb?.groundStatus !== 'function' || !/^[A-Z0-9]{4}$/.test(k)) return;
+    clearTimeout(groundTimers.get(k));
+    groundTimers.delete(k);
+    Promise.resolve().then(() => ctx.aerodb.groundStatus(k)).catch(() => null).then(st => {
+      if (host.gone()) return;
+      const state = ['reading', 'failed', 'ok', 'none'].includes(st?.state) ? st.state : 'none';
+      grounds.set(k, {
+        state,
+        reason: GROUND_WHY.includes(st?.reason) ? st.reason : 'failed',
+        message: typeof st?.message === 'string' ? st.message.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(
+          0, 160) : ''
+      });
+      refillGround(k);
+      if (state === 'reading') groundTimers.set(k, setTimeout(() => askGround(k), 3000));
+    });
+  }
+  /** La part « sol » de la ligne discrète d'un terrain (précédée de « · ») ; '' tant que l'état n'est pas connu, et pour « none ». */
+  function groundHtml(icao) {
+    const k = String(icao || '').toUpperCase();
+    if (typeof ctx.aerodb?.groundStatus !== 'function') return '';
+    if (!grounds.has(k)) {
+      grounds.set(k, null);
+      askGround(k);
+    }
+    const g = grounds.get(k),
+      sep = '<span class="fu-sep" aria-hidden="true"> · </span>';
+    if (!g || g.state === 'none') return '';
+    if (g.state === 'reading') return `${sep}<span class="fu-procground" data-ground="reading" aria-live="polite">${esc(tt(TX.groundReading))}</span>`;
+    if (g.state === 'ok') return `${sep}<span class="fu-procground" data-ground="ok">${esc(tt(TX.groundOk))}</span>`;
+    // l'échec et « Réessayer » dans un seul élément de la ligne : sur un téléphone, « Réessayer » suit la phrase au lieu d'aller seul à la ligne
+    return `${sep}<span class="fu-procgroundline"><span class="fu-procground fu-procgroundfail" data-ground="failed"${g.message ? ` title="${esc(g.message)}"` : ''}>${esc(tt(TX.groundFailed, {
+      r: tt(TX.groundWhy[g.reason] || TX.groundWhy.failed)
+    }))}</span>${typeof ctx.aerodb?.fetchGround === 'function' ? `${sep}<button type="button" class="fu-linkbtn" data-do="groundretry" data-icao="${esc(k)}">${esc(tt(TX.groundRetry))}</button>` : ''}</span>`;
+  }
+  /** Les emplacements « sol » d'un terrain, refaits sur place (le focus des listes n'est pas touché). */
+  function refillGround(k) {
+    for (const el of host.body?.()?.querySelectorAll?.('[data-proc]') || []) {
+      const slot = el.dataset.icao === k ? el.querySelector('[data-ground-slot]') : null;
+      if (slot) slot.innerHTML = groundHtml(k);
+    }
+  }
+  /** « Réessayer » : la lecture du sol seule (aerodb.fetchGround), sans relire les procédures ; « en cours » tout de suite, puis l'état
+   *  que garde aerodb. */
+  async function groundRetry(icao) {
+    const k = String(icao || '').toUpperCase();
+    if (typeof ctx.aerodb?.fetchGround !== 'function' || grounds.get(k)?.state === 'reading') return;
+    grounds.set(k, {
+      state: 'reading',
+      reason: '',
+      message: ''
+    });
+    refillGround(k);
+    try {
+      await ctx.aerodb.fetchGround(k);
+    } catch {
+      /* l'état dit pourquoi */
+    }
+    if (!host.gone()) askGround(k);
+  }
+
   function refillSlots(k) {
     for (const el of host.body?.()?.querySelectorAll?.('[data-proc]') || []) {
       const slot = el.dataset.icao === k ? el.querySelector('[data-source-slot]') : null;
@@ -869,7 +943,14 @@ export function createProcedures(host) {
    *  autre geste ; pour des procédures d'un terrain du vol, celles lues du vol le sont aussi (leur géométrie a pu changer). Les
    *  autres signaux (fiches d'aéronef, zone ouverte) ne concernent pas la carte. */
   function onChange(e) {
-    if (!e || host.gone() || !host.body() || !(e.procedures || e.changed || e.refreshed)) return;
+    if (!e || host.gone() || !host.body()) return;
+    // le sol d'un terrain lu ou en échec (on('change', { ground, groundFailed })) ; après ses procédures, aerodb lit son sol en
+    // arrière-plan : l'état est redemandé une seconde plus tard (la lecture a commencé)
+    const gk = String(e.ground || '').toUpperCase();
+    if (gk && grounds.has(gk)) askGround(gk);
+    const pk = String(e.procedures || '').toUpperCase();
+    if (pk && grounds.has(pk)) groundTimers.set(pk, setTimeout(() => askGround(pk), 1000));
+    if (!(e.procedures || e.changed || e.refreshed)) return;
     if (dropAd(e.procedures || null)) {
       host.drop();
       host.refresh(); // un terrain du vol : ses procédures lues aussi, le devis suit
@@ -1031,6 +1112,8 @@ export function createProcedures(host) {
       timer = null;
       host.save();
     }
+    for (const t of groundTimers.values()) clearTimeout(t);
+    groundTimers.clear();
     if (live === api) live = null;
   }
 
@@ -1049,6 +1132,7 @@ export function createProcedures(host) {
     snapshot,
     applyOfp,
     afterRead,
+    groundRetry,
     stop
   };
   live = api;

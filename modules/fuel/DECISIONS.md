@@ -1507,3 +1507,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   « contrôlé » before 100 %; its line gives the three shares in words and numbers (non-breaking spaces: the capture showed « 14 / % » cut),
   its fold the sections by layer; route_alts.json gains `control` per segment so that the Map tints them (BUGS SOG told). F123; counter-test
   on 181e553c6: no share said.
+- **10 Nov 2026 — the ground reading on the Procedures card** (SOG-0135, after AeroDB's groundStatus and the Map's Ground panel): the
+  discreet line of a read aerodrome says « Lecture du sol en cours… », « Sol lu » or « Sol non lu : <raison> · Réessayer » in the Map's
+  own words (copied, not imported: Fuel does not depend on modules/maps; F124 compares the two tables, BUGS SOG says a changed word in
+  its delivery). aerodb announces the end of a ground reading but not its start: the state is asked again one second after a
+  procedures reading and every 3 s while it reads. The failure and « Réessayer » are one item of the flex line (the 390 capture showed
+  « · Réessayer » alone on its own line). Counter-test on origin/v3 (38ab31cca): the tables are absent, and with the texts alone the
+  line says nothing.

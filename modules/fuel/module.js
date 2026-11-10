@@ -1600,6 +1600,7 @@ const STYLE = `
 [data-module="fuel"] .fu-ctrl-controlled{color:var(--sog-ok)}
 [data-module="fuel"] .fu-ctrl-incomplete,[data-module="fuel"] .fu-ctrl-fallback{color:var(--sog-warn)}
 [data-module="fuel"] .fu-ctrl-error{color:var(--sog-err)}
+[data-module="fuel"] .fu-procgroundfail{color:var(--sog-err)} /* « Sol non lu : <raison> » sur la ligne discrète (SOG-0135) */
 [data-module="fuel"] .fu-raltinc{opacity:.72} /* contrôle incomplet (SOG-0081) : teinte atténuée, jamais l'air d'une route contrôlée */
 /* « zone manquante » (SOG-0143) : ce qui manque, le geste, les replis externes — trois éléments sur une ou deux lignes */
 [data-module="fuel"] .fu-zonegap{display:flex;flex-wrap:wrap;gap:.2em .8em;align-items:center;margin:.3em 0}
@@ -2232,6 +2233,8 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   const pf = e.target.closest('[data-do="procfetch"]');
   if (pf) return S.P.read(pf.dataset.icao); // « Lire » et « Relire » : un seul geste
+  const gr = e.target.closest('[data-do="groundretry"]');
+  if (gr) return S.P.groundRetry(gr.dataset.icao); // « Réessayer » : le sol seul (SOG-0135)
   // « Sur la carte » : le mode choix de la Carte pour ce côté (§ 10.23) ; elle revient par location.replace avec son choix
   const om = e.target.closest('[data-do="onmap"]');
   if (om) {

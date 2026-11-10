@@ -368,7 +368,12 @@ before the start, in step 5 after (F11).
   without data never folds; the address's focus (§ 9) unfolds its side (F72, F65, F34).
 - **Secondary line**, small and muted, one line, the pieces present only: « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues · Cartes »:
   the date of the aerodrome's last reading (`coverage(icao).read_at`, UTC, `fmtDayZ`: F39; ⌛ when `coverage().outdated`), « Relire », the
-  records left out (« N non lues » ×4; the old sentence in its `title`; nothing at 0), and « Cartes » (F34, F37, F27, F42). Without data:
+  records left out (« N non lues » ×4; the old sentence in its `title`; nothing at 0), **the ground reading** (SOG-0135, F124;
+  `aerodb.groundStatus(icao)`, asked again on `on('change', { ground, groundFailed })`, one second after `{ procedures }`, every 3 s while
+  it reads): « Lecture du sol en cours… », « Sol lu », or « Sol non lu : <raison> · Réessayer » (the launcher's text in its `title`;
+  « Réessayer » = `aerodb.fetchGround(icao)`, the ground alone, never the procedures), nothing while it is neither read nor tried — the
+  same words as the Map's Ground panel (modules/maps/texts.js gReading, gFailed, gWhy, gRetry, agreed with BUGS SOG; F124 compares both
+  tables) —, and « Cartes » (F34, F37, F27, F42). Without data:
   « aucune procédure publiée · Lire les procédures de LFXX » (F14); when the aerodrome's zone is missing, the line « zone manquante »
   follows (SOG-0143, F116, below). The line first follows the **State's procedures** as Données shows them (« Procédures par État »,
   `aerodb.coverageByState()[prefix]`; SOG-0157, F120): readable on demand (the SIA's eAIP, EAD Basic) — the read button says « Lire à

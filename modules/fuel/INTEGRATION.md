@@ -293,7 +293,10 @@ hand a choice back. Contract written before the code, for both sides.
 - `dep` / `arr` are the flight's at publication: a Map that shows another flight's pair does not draw them.
 
 **What the Map draws** (BUGS SOG): the chosen route solid, the others faded, the hovered one thick, the `faulty` segments red; the
-`check` route the same way. Fuel draws nothing (the sketch of a8d158da8 is withdrawn).
+`check` route the same way. Since SOG-0161 (38ab31cca) each segment follows its `control`: `controlled` solid, `incomplete` dashed,
+`fallback` dotted, `error` red like `faulty`; `null`, an unknown word or an absent field draws as before; a key line appears on the list
+once one segment is said; `control` is read only when no point of `points` was dropped (its indices would lie otherwise), cut to
+`points.length − 1` entries. Fuel draws nothing (the sketch of a8d158da8 is withdrawn).
 
 **What the Map hands back** — a tap on a route chooses it, as « Prendre »:
 - double view: the window event **`maps-route-alt`** (`CustomEvent`, `detail: { index }`), which Fuel listens to;
