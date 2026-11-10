@@ -1945,8 +1945,12 @@ function renderPlanBody() {
     <div class="f-card" data-block="fms"><h2>${esc(tt(TX.fmsTitle))}</h2><p class="f-muted">${esc(tt(TX.fmsHint))}</p><div class="f-row">${[['xp11', TX.fmsXp11], ['xp10', TX.fmsXp10], ['pln', TX.fmsPln]].map(([k, t]) => `<button type="button" data-do="fms" data-fms="${k}" disabled>${esc(tt(t))}</button>`).join('')}</div></div>`, true)}
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>`;
   for (const d of S.body.querySelectorAll('details[data-fold]')) {
-    d.open = !!S.ui.open?.[d.dataset.fold];
+    // SOG-0222 (« « points » fermé par défaut. c'était le cas « avant » ») : la liste des points n'est pas mémorisée — fermée à chaque
+    // ouverture ; les autres plis gardent leur état sur l'appareil (depuis f917841cd, 23/10, ils l'étaient tous)
+    const kept = d.dataset.fold !== 'pts';
+    d.open = kept && !!S.ui.open?.[d.dataset.fold];
     d.ontoggle = () => {
+      if (!kept) return;
       S.ui.open = {
         ...S.ui.open,
         [d.dataset.fold]: d.open

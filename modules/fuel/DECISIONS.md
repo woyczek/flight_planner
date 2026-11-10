@@ -1608,3 +1608,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   2 × direct + 400 NM, not placed, said, and not taken back from the flight's earlier points (the user's flight held the US position).
   The Map reads the flight's points: it follows. The Dutch base is AeroDB's (to rebuild). F136; counter-test on origin/v3: PAM placed in
   the USA.
+- **10 Nov 2026 — « Points » is closed when Fuel opens** (SOG-0222, user: « « points » fermé par défaut. c'était le cas « avant » »). No
+  commit opened it: since f917841cd (23 Oct) every fold of Fuel is remembered on the device (`cache/fuel/ui.json`), so a « Points »
+  opened once opened every time. The list of points is no longer remembered; the other folds keep their state. F137; counter-test on
+  origin/v3: « Points » open.

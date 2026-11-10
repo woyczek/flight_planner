@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Points (n) » closed when Fuel opens** (not remembered on the device; noreg F137; SOG-0222).
 - **Aircraft sheets: a converted value is shown with two significant digits** (`modules/aircraft/sheets.js`; DECISIONS; noreg M38; SOG-0220).
   « 12407.61611576491 lb/h » reads « 12000 lb/h »; a typed value stays as typed, the sheet keeps its value until the field is edited.
 - **Fuel: a point whose only known place is far from the route is not placed** (`frame/lib/route_model.js` `far`; Fuel SPEC, DECISIONS, help;

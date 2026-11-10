@@ -3915,3 +3915,28 @@ def f136(c):
         c.js(f"document.querySelector('{FUEL} [data-rwarn]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F136_{c.design}_{w}_{c.lang}.png')
 
+
+
+@case('F137', 'Route: the fold « Points (n) » is closed when Fuel opens, even after it was opened — it is not remembered; the other folds keep their state',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0222 (user: « « points » fermé par défaut. c\'était le cas « avant » »): since f917841cd (23 Oct) every fold of Fuel was remembered on the '
+      'device (cache/fuel/ui.json), so a « Points » opened once opened every time; captures 390 and 1 280')
+def f137(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        # the state of a device where « Points » and « Réglages » were left open
+        c.open('fuel', docs=flight_docs() + [['cache/fuel/ui.json', {'open': {'pts': True, 'settings': True}}, 'cache']])
+        wait_quote(c)
+        to_step(c, 1)
+        c.eq(c.js(f"document.querySelector('{FUEL} details[data-fold=pts]').open"), False, f'{w} px: « Points » closed at the opening', what='pts')
+        c.eq(c.js(f"document.querySelector('{FUEL} details[data-fold=settings]').open"), True, 'another fold keeps its state', what='settings')
+        c.js(f"document.querySelector('{FUEL} details[data-fold=pts]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F137_{c.design}_{w}_{c.lang}.png')
+        c.tap(f'{FUEL} details[data-fold=pts] > summary')
+        c.until(f"document.querySelector('{FUEL} details[data-fold=pts]').open", what='opened by hand')
+        c.go('flightlog')
+        c.go('fuel')
+        wait_quote(c)
+        to_step(c, 1)
+        c.eq(c.js(f"document.querySelector('{FUEL} details[data-fold=pts]').open"), False, f'{w} px: opened by hand, closed again at the next opening', what='pts again')
+
