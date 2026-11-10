@@ -473,3 +473,7 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **L62** (24c5e3435 / 870408de6): the quoted « Choisir le fichier… » of the messages (the FAA fallback) is a real button (`up.choose`); the list of the case's button labels did not name that key. It does now.
 - **Rule kept**: after a change of the Données screen, the whole L area is replayed (79 cases, both widths, four languages) before the push; targeted cases are not enough.
 - **L53 at 390 px** (the ergonomist, 10 Nov evening: unstable, « hover: ok au lieu de accent »): a hover is the gesture of a mouse, so the case hovers only from 700 px and, at 390, plays the touch press that follows (a forced hover there proved nothing); the taps on the switch close the floating notes and centre the pack first (a note covered it: « cannot tap »). Ten runs in a row at 390 (four languages each): green.
+
+## 11 November 2026 — the text under « Je certifie… » says what is true (SOG-0230, the user: « absolument »)
+
+- **Done**: `certifyHint` (and the help, ×4) now say that a zone built with a personal-licence source (LFV, NATS, ENAIRE, AirNav) **is published in the pilot's own data repository**, and that only X-Plane and EUROCONTROL stay read on this workstation, never published. The previous text was right about the second half and silent about the first.

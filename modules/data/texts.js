@@ -272,10 +272,10 @@ export const TX = {
     'Certifico que uso los datos para mi uso personal'
   ],
   certifyHint: [
-    'Cochée, les sources ci-dessous sont lues par la construction ; ce qui est propriétaire (X-Plane, EUROCONTROL) reste lu sur ce poste seulement : jamais publié, jamais exporté, coche ou non.',
-    'Ticked, the sources below are read by the build; what is proprietary (X-Plane, EUROCONTROL) is read on this workstation only: never published, never exported, ticked or not.',
-    'Angekreuzt, werden die Quellen unten vom Aufbau gelesen; was proprietär ist (X-Plane, EUROCONTROL), wird nur auf diesem Rechner gelesen: nie veröffentlicht, nie exportiert, mit oder ohne Häkchen.',
-    'Marcada, la construcción lee las fuentes de abajo; lo que es propietario (X-Plane, EUROCONTROL) se lee solo en este puesto: nunca publicado ni exportado, con o sin marca.'
+    'Cochée, les sources ci-dessous sont lues par la construction, et une zone construite avec l’une d’elles est publiée dans VOTRE dépôt de données ; ce qui est propriétaire (X-Plane, EUROCONTROL) reste lu sur ce poste seulement : jamais publié, jamais exporté, coche ou non.',
+    'Ticked, the sources below are read by the build, and a zone built with one of them is published in YOUR data repository; what is proprietary (X-Plane, EUROCONTROL) is read on this workstation only: never published, never exported, ticked or not.',
+    'Angekreuzt, werden die Quellen unten vom Aufbau gelesen, und eine damit aufgebaute Zone wird in IHREM Datenrepository veröffentlicht; was proprietär ist (X-Plane, EUROCONTROL), wird nur auf diesem Rechner gelesen: nie veröffentlicht, nie exportiert, mit oder ohne Häkchen.',
+    'Marcada, la construcción lee las fuentes de abajo, y una zona construida con una de ellas se publica en SU repositorio de datos; lo que es propietario (X-Plane, EUROCONTROL) se lee solo en este puesto: nunca publicado ni exportado, con o sin marca.'
   ],
   licencesLink: ['Sources et licences', 'Sources and licences', 'Quellen und Lizenzen', 'Fuentes y licencias'],
   personalName: {
