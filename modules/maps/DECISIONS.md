@@ -2299,6 +2299,11 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## A doubtful approach, chosen by hand, is dotted with its tag (11 Nov 2026, SOG-0232, the user: « oui, ajouter les approches en doute, mais avec un panonceau »)
+- Fuel (Features SOG) lists a doubtful approach (`isDoubt`: status `doubt`, no name, `.NONAME.`; `frame/lib/procedures.js`, common) with its tag and never takes it by itself. **Map side**: once chosen it is
+  drawn **dotted** (the way the missed approach is) and its label carries **« à vérifier »** (`procLabel`, `procs.js`); a sure approach is unchanged. In the Map's own choose mode doubtful records are still not
+  offered (`choose.js`): the choice by hand is Fuel's. **Noreg** D171 (a sure approach solid and untagged; a doubtful one, and one without a name, dotted and tagged).
+
 ## The hold points from the names' zoom; the list of the spaces to the right of the stack from 440 px (11 Nov 2026, the user's answers of 10 Nov evening: SOG-0195, SOG-0163)
 - **SOG-0195 « no entry »**: the user reads the red hold points as « no entry » and wants them earlier: shown (and named) from zoom 15, the zoom of the taxiway names, not 16 (the stands stay at 16). D112
   (red before: no hold at 15), capture `D112_holds_at_15_delivered.png`.

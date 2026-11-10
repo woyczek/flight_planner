@@ -388,6 +388,7 @@ export const TX = {
     'Restricciones de los procedimientos: flecha arriba = como mínimo, abajo = como máximo, punto = exactamente, barra = entre dos altitudes'
   ],
   // procédures choisies (V3_SPECIFICATION § 10.20) : état de la source ajouté au libellé du tracé, carte du terrain
+  procDoubt: ['à vérifier', 'to be checked', 'zu prüfen', 'por verificar'],
   procX: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
   procLnm: ['Little Navmap, local', 'Little Navmap, local', 'Little Navmap, lokal', 'Little Navmap, local'],
   // procédure périmée : le seul symbole « ⌛ » (décision du 29 octobre), jamais le mot ; son sens dans la légende et l'infobulle

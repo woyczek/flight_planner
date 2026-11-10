@@ -5415,3 +5415,23 @@ def d_lvwide(c):
             c.ok(g['card'][0] >= g['stack'][2] - 1, str(g), f'{w} px: the card is beside the stack')
         else:
             c.ok(g['card'][1] >= g['stack'][3] - 1, str(g), f'{w} px: the card is under the stack')
+
+
+@case('D171', 'A doubtful approach chosen by hand is drawn dotted with its « to be checked » tag; a sure one is solid, without the tag', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0232 (the user, 10 Nov evening: « oui, ajouter les approches en doute, mais avec un panonceau »): Fuel lists a doubtful approach (status doubt, no name, NONAME) with its tag and never takes it by itself; once chosen the Map draws it dotted (like the missed approach) and its label carries the tag; frame/lib/procedures.js isDoubt is common to both')
+def d_doubt(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const S = window.__mp.S, P = await import('/modules/maps/procs.js'), toC = (la, lo) => ({ x: lo * 100, y: -la * 100 }), cv = document.createElement('canvas').getContext('2d'), out = {};
+      const run = rec => { S.route.path = [{ origin: 'route', id: 'LFRS', lat: 47.1, lon: -1.6 }, { origin: 'app', id: 'AAAAA', lat: 43.6, lon: 5.0 }, { origin: 'app', id: 'BBBBB', lat: 43.5, lon: 5.1 }, { origin: 'route', id: 'LFML', lat: 43.43, lon: 5.2 }];
+        S.procs = { app: rec }; S.route.flight = { ...S.route.flight, route: { ...S.route.flight.route, procedures: { arr: { app: rec.id } } } };
+        const L = P.layout(cv, toC, 300); return { dashed: L.segs.filter(s => s.o === 'app').map(s => !!s.dash), label: P.procLabel('APP', rec, rec.id) } };
+      out.sure = run({ id: 'LFML.APP.ILS13', name: 'ILS 13', status: 'ok' });
+      out.doubt = run({ id: 'LFML.APP.ILS13', name: 'ILS 13', status: 'doubt' });
+      out.noname = run({ id: 'LFML.APP.NONAME.1', name: '', status: 'ok' });
+      return out }""")
+    c.ok(r['sure']['dashed'] and not any(r['sure']['dashed']) and 'vérifier' not in r['sure']['label'] and 'checked' not in r['sure']['label'], str(r['sure']), 'a sure approach: solid, no tag')
+    c.ok(r['doubt']['dashed'] and all(r['doubt']['dashed']), str(r['doubt']), 'a doubtful approach: dotted')
+    c.ok(any(w in r['doubt']['label'] for w in ('vérifier', 'checked', 'prüfen', 'verificar')), r['doubt']['label'], 'and its label carries the tag')
+    c.ok(all(r['noname']['dashed']) and r['noname']['dashed'], str(r['noname']), 'a record without a name (NONAME) is doubtful too (the rule is common: isDoubt)')

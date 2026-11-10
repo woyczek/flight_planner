@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a doubtful approach chosen by hand is dotted with its tag** (`modules/maps/procs.js`, `texts.js`; DECISIONS; noreg D171; SOG-0232, Map side).
+
 - **Map: hold points from zoom 15; the space sheet's list beside the stack from 440 px** (`modules/maps/ground.js`, `lv.js`; DECISIONS; noreg D112, D170; SOG-0195, SOG-0163).
 
 - **Fuel: the quote carries a computed alternate fuel — the block of every flight with an alternate is HIGHER, on purpose** (Fuel SPEC § 3,

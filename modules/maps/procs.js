@@ -19,7 +19,8 @@ import {
   proceduresOf
 } from '../../frame/lib/current_flight.js';
 import {
-  displayName
+  displayName,
+  isDoubt
 } from '../../frame/lib/procedures.js';
 import {
   TX
@@ -115,6 +116,7 @@ export const OUTDATED = '⌛';
  *  « X-Plane, local », « Little Navmap, local », puis « ⌛ » quand elle est périmée (SPEC § 5). */
 export function procLabel(kind, rec, id, key = null) {
   const tags = [];
+  if (rec && isDoubt(rec)) tags.push(tt(TX.procDoubt)); // une approche en doute choisie à la main : son panonceau « à vérifier » (SOG-0232)
   if (rec?.status === 'xplane') tags.push(tt(TX.procX));
   else if (rec?.status === 'lnm') tags.push(tt(TX.procLnm));
   return [`${kind || ''} ${nameOf(rec, id, key)}`.trim(), ...tags].join(' · ') + (rec?.outdated ? ` ${OUTDATED}` : '');
@@ -269,6 +271,11 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
   const P = S.procs || {},
     f = proceduresOf(S.route.flight),
     names = [];
+  // une approche en doute (choisie à la main, jamais d'office) est tracée en pointillé, comme l'approche interrompue : on ne la prend pas pour une procédure publiée sûre (SOG-0232)
+  if ((P.app && isDoubt(P.app)) || (!P.app && P.appTrans && isDoubt(P.appTrans))) {
+    for (const s of segs)
+      if (s.o === 'app') s.dash = true;
+  }
   for (const [origin, rec, id, key] of [
       ['sid', P.sid || P.sidTrans, f.dep?.sid || f.dep?.trans, P.sid ? null : 'trans'],
       ['star', P.star || P.starTrans, f.arr?.star || f.arr?.trans, P.star ? null : 'trans'],
