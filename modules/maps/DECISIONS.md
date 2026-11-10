@@ -2317,6 +2317,12 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## D42 follows the round step of the marks (10 Nov 2026, after SOG-0177)
+
+- D42 (« the profile follows the flown path ») measured the NM marks `[50, 100, …]` of the old fixed step. SOG-0177 made the step round and dependent on the visible length (5 NM in D42's close view, 78 marks over the
+  390 NM of the flown path, a dozen at most on the screen): an **intended change of the case, not a regression of the profile**. The case now checks that the marks come from the flown path (`S.marksPts` as long as `S.route.flown`),
+  start at the step, are regular and stop before the end.
+
 ## The taxiway lines one level of zoom earlier (10 Nov 2026, SOG-0195, first part)
 
 - **Asked** (the user: « TWY : enfin ! apparaissent trop tard au zoom. pas de label. pas non plus de labels des parkings… mêmes règles que les VOR/ILS: les importants d'abord, puis les moins importants,

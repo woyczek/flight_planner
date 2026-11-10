@@ -864,12 +864,15 @@ def d42(c):
     _open_proc(c, f, view='maps?view=-1.5,46.35,-0.9,46.8')
     c.until("() => !!window.__mp.S.prof", timeout=10000, what='the profile is built')
     r = c.js("""() => { const S = window.__mp.S; return { path: !!S.prof.plan?.path, mid: S.prof.plan.alt[Math.round((S.prof.plan.alt.length - 1) / 2)],
-      names: S.prof.marks.map(m => m.name), total: S.prof.total / 1852, marks: S.marks.map(m => m.nm), cons: !!S.lgCons } }""")
+      names: S.prof.marks.map(m => m.name), total: S.prof.total / 1852, marks: S.marks.map(m => m.nm), step: S.marksStep, fromFlown: S.marksPts === undefined ? null : S.marksPts.length === S.route.flown.length, cons: !!S.lgCons } }""")
     c.ok(r['path'], 'profile.path not used', 'profile.path drawn when it exists')
     c.eq(r['mid'], 27000, 'the planned altitude at the middle is the path\'s', what='plan altitude at mid distance')
     c.eq(r['names'], ['LFRS', 'LUGEN', 'NEPIX', 'LFML'], 'only the route points are named under the profile', what='profile marks')
     c.ok(abs(r['total'] - _FLOWN_NM) < 1, f'{r["total"]:.1f} NM against {_FLOWN_NM:.1f}', 'the profile is cut along the flown path')
-    c.ok(r['marks'] and r['marks'][-1] < _FLOWN_NM and r['marks'][0] == 50, f'{r["marks"]}', 'the NM marks follow the flown path')
+    # the marks follow the flown path, at a round step that follows the visible length (SOG-0177: 5 NM in this close view, 50 on a long one): from the first step, regular, none past the end
+    mk = r['marks']
+    c.ok(mk and r['step'] and mk[0] == r['step'] and all(b - a == r['step'] for a, b in zip(mk, mk[1:])) and mk[-1] < _FLOWN_NM and r['fromFlown'] is True,
+         f'{mk[:6]}… step {r["step"]}', 'the NM marks follow the flown path (a round step, regular, none beyond its end)')
     c.ok(r['cons'], 'no constraint step drawn', 'the constraints are drawn as steps on the profile')
     # the ETA labels are etaOf(flight, { path: flown })
     want = c.js("""async () => { const CF = await import('/frame/lib/current_flight.js'), T = await import('/frame/lib/time.js'), S = window.__mp.S,
