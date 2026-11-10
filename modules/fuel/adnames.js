@@ -20,10 +20,10 @@ import {
 } from '../../frame/lib/adnames.js'; // la règle de texte du nom, partagée avec la Carte (§ 10.27)
 import {
   createSuggestList
-} from './suggest.js';
+} from './suggest.js'; // la liste de propositions, commune avec le champ de route (refonte § 10.33 R-F5)
 import {
   zoneAt
-} from './zone_gap.js'; // la zone d'une position (cadres des zones d'aerodb) : un terrain est bien du pays nommé // la liste de propositions, commune avec le champ de route (refonte § 10.33 R-F5)
+} from './zone_gap.js'; // la zone d'une position (cadres des zones d'aerodb) : un terrain est bien du pays nommé
 const TX = {
   unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
   listLabel: ['Terrains proposés', 'Suggested aerodromes', 'Vorgeschlagene Flugplätze', 'Aeródromos propuestos']
@@ -34,28 +34,6 @@ const MAX_SUGGESTIONS = 7;
 const CITY_NM = 40;
 /** Un texte replié pour comparer des noms : minuscules, sans accents (« Suède » → « suede »). */
 const fold = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-/** Les noms usuels, sigles et noms dans la langue du pays qui désignent une zone d'aerodb (SOG-0158 : « usa », « uk », « sverige ») ; les
- *  noms des zones en français, anglais, allemand et espagnol sont cherchés en plus. Repliés (minuscules, sans accents, tirets en espaces). */
-const COUNTRY_ALIASES = {
-  us: ['usa', 'us', 'etats unis', 'etats unis d amerique', 'united states', 'america', 'amerique'],
-  gb: ['uk', 'gb', 'royaume uni', 'grande bretagne', 'great britain', 'britain', 'angleterre', 'england', 'ecosse', 'scotland',
-    'pays de galles', 'wales'
-  ],
-  se: ['sverige'],
-  dk: ['danmark'],
-  no: ['norge'],
-  fi: ['suomi'],
-  es: ['espana'],
-  de: ['deutschland'],
-  it: ['italia'],
-  ch: ['schweiz', 'suisse', 'svizzera'],
-  nl: ['nederland', 'holland', 'hollande', 'pays bas'],
-  be: ['belgie', 'belgique'],
-  at: ['osterreich', 'oesterreich'],
-  pl: ['polska'],
-  ie: ['eire', 'ireland', 'irlande'],
-  gr: ['hellas', 'ellada']
-};
 /** Longueur minimale du texte pour proposer. */
 const MIN_CHARS = 2;
 /** Un code de terrain complet : quatre caractères. */
@@ -155,51 +133,40 @@ export function createAdNames(host) {
   };
   /** Les terrains d'une zone parmi ceux de son cadre : ceux que les cadres de la zone portent (zoneAt), et parmi eux les préfixes OACI
    *  qui y sont nombreux (au moins 15 % du plus fréquent) — un cadre rectangulaire déborde sur ses voisins (la Norvège dans celui de la
-   *  Suède : ENEV, ENBO). */
-  const ofZone = (all, zones, z) => {
-    const inZone = (Array.isArray(all) ? all : []).filter(x => zoneAt(zones, x)?.id === z.id),
-      n = new Map();
-    for (const x of inZone) {
-      const k = String(x.icao || x.id || '').slice(0, 2).toUpperCase();
-      n.set(k, (n.get(k) || 0) + 1);
-    }
+   *  Suède). */
+  const ofZone = (all, zones, id) => {
+    const inZone = (Array.isArray(all) ? all : []).filter(x => zoneAt(zones, x)?.id === id),
+      n = new Map(),
+      pre = x => String(x.icao || x.id || '').slice(0, 2).toUpperCase();
+    for (const x of inZone) n.set(pre(x), (n.get(pre(x)) || 0) + 1);
     const top = Math.max(0, ...n.values());
-    return inZone.filter(x => (n.get(String(x.icao || x.id || '').slice(0, 2).toUpperCase()) || 0) >= top * 0.15);
+    return inZone.filter(x => (n.get(pre(x)) || 0) >= top * 0.15);
   };
-  /** La zone d'un nom de pays (SOG-0158) : un alias de la table (sigles, noms usuels, noms dans la langue du pays) tapé en entier ou par
-   *  son début (trois lettres au moins), sinon un des quatre noms de la zone par son début ; seulement une zone publiée. */
-  function countryOf(zones, q) {
-    const fq = fold(q).replace(/[-'’.]/g, ' ').replace(/\s+/g, ' ');
-    if (fq.length < 2 || !Array.isArray(zones)) return null;
-    const hit = a => a === fq || (fq.length >= 3 && a.startsWith(fq)),
-      alias = Object.entries(COUNTRY_ALIASES).find(([, list]) => list.some(hit))?.[0],
-      z = alias ? zones.find(x => x.id === alias) : fq.length >= 3 ? zones.find(x => (x.names || []).some(n => fold(n).replace(/[-'’.]/g,
-        ' ').startsWith(fq))) : null;
-    return z?.published ? z : null;
-  }
 
-  /** Propose les terrains qui répondent au texte tapé dans le champ `k` (au moins deux caractères), sept au plus, dans cet ordre (SOG-0158,
-   *  refus de recette du 10 nov. : « SWE… fonctionne. STOC… ne fonctionne pas. USA non plus. ») :
-   *  1. les codes qui commencent par le texte (« LFP ») ; 2. un pays (« usa », « suède », « sverige ») : ses terrains, les plus grands
-   *  d'abord, le pays dans la ligne ; 3. les terrains dont un mot du nom commence par le texte (« orly », « stockholm/bromma ») ; 4. les
-   *  terrains à CITY_NM d'une ville que le texte nomme (deux villes au plus), les plus grands d'abord, la ville dans la ligne ; 5. le reste
-   *  de ce que find rend (le texte au milieu d'un nom). Les étapes 2 à 4 cherchent dans toutes les zones installées (aerodromes ouvre la
-   *  zone), find seulement dans les zones ouvertes. */
+  /** Propose les terrains qui répondent au texte tapé dans le champ `k` (au moins deux caractères), sept au plus (SOG-0158, refus de
+   *  recette du 10 nov. : « SWE… fonctionne. STOC… ne fonctionne pas. USA non plus. »), dans cet ordre :
+   *  1. ce qu'aerodb.suggest trouve sur toutes les zones publiées, sans les ouvrir (index léger) : le code ; puis le pays (ses noms, son
+   *     endonyme, ses sigles : « suède », « sverige », « usa »), dont les terrains sont reclassés sur leurs fiches complètes (civils, puis
+   *     militaires, puis hélistations ; la piste la plus longue — l'index léger n'a pas le type, et pas encore la longueur avant la
+   *     reconstruction de la zone), le pays dans la ligne ; puis le début du nom ou d'un de ses mots (« stockholm » → « STOCKHOLM/BROMMA »),
+   *     les quinze premiers reclassés de même ;
+   *  2. les terrains à CITY_NM d'une ville que le texte nomme sans qu'elle soit dans leur nom (deux villes au plus, find), les principaux
+   *     d'abord (civils, militaires, hélistations ; piste), la ville dans la ligne ;
+   *  3. ce qui contient seulement le texte au milieu d'un nom (suggest rang 5, puis find dans les zones ouvertes). */
   async function suggest(k, text) {
     const q = String(text || '').trim(),
       Q = q.toUpperCase(),
-      fq = fold(q),
       seq = list.ticket();
     if (q.length < MIN_CHARS || !ctx.aerodb?.find) return list.close();
     const A = ctx.aerodb,
-      [found, zones] = await Promise.all([Promise.resolve().then(() => A.find(q, 40)).catch(() => []), Promise.resolve().then(() => A
-          .zones?.())
-        .catch(() => null)
-      ]);
+      lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(ctx.lang?.() || 'fr')),
+      [sg, found] = await Promise.all([Promise.resolve().then(() => A.suggest?.(q, {
+        n: 30,
+        lang
+      })).catch(() => null), Promise.resolve().then(() => A.find(q, 40)).catch(() => [])]);
     if (!list.live(seq)) return; // une demande plus récente, ou l'écran n'est plus là
     const seen = new Set(),
       hits = [],
-      lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(ctx.lang?.() || 'fr')),
       full = () => hits.length >= MAX_SUGGESTIONS,
       push = (x, tail = '') => {
         const code = String(x.icao || x.code || x.id || '').trim().toUpperCase();
@@ -211,37 +178,43 @@ export function createAdNames(host) {
           label: [name && name !== code ? name : '', tail ? `(${tail})` : ''].filter(Boolean).join(' ')
         });
       },
-      ads = (found || []).filter(p => p.kind === 'aerodrome'),
-      wordStart = n => fold(n).split(/[\s/\-'’().,]+/).some(w => w.startsWith(fq));
-    // 1. les codes qui commencent par le texte
-    for (const p of ads)
-      if (String(p.code || '').toUpperCase().startsWith(Q)) push(p);
-    // 2. un pays
-    const country = countryOf(zones, q);
-    if (country && !full() && A.aerodromes) {
-      const frame = [...(country.frames || [])].sort((a, b) => (b[2] - b[0]) * (b[3] - b[1]) - (a[2] - a[0]) * (a[3] - a[1]))[0],
+      strong = Array.isArray(sg) ? sg.filter(x => +x.rank <= 4) : [],
+      weak = Array.isArray(sg) ? sg.filter(x => +x.rank >= 5) : [];
+    // 1. le code
+    for (const x of strong.filter(x => +x.rank <= 1)) push(x);
+    if (!Array.isArray(sg))
+      for (const p of (found || []).filter(p => p.kind === 'aerodrome' && String(p.code || '').toUpperCase().startsWith(Q))) push(p);
+    // 1 bis. le pays que suggest a reconnu : ses terrains reclassés sur leurs fiches (la zone lue par son plus grand cadre)
+    const cz = strong.find(x => +x.rank === 2)?.zone;
+    if (cz && !full() && A.aerodromes && A.zones) {
+      const zones = await Promise.resolve().then(() => A.zones()).catch(() => null),
+        z = Array.isArray(zones) ? zones.find(x => x.id === cz) : null,
+        frame = [...(z?.frames || [])].sort((a, b) => (b[2] - b[0]) * (b[3] - b[1]) - (a[2] - a[0]) * (a[3] - a[1]))[0],
         all = frame ? await Promise.resolve().then(() => A.aerodromes({
           bbox: frame
         })).catch(() => []) : [];
       if (!list.live(seq)) return;
-      for (const x of bySize(ofZone(all, zones, country))) push(x, country.names?.[lang] || country.id);
+      const country = strong.find(x => +x.rank === 2)?.country || z?.names?.[lang] || cz;
+      for (const x of bySize(ofZone(all, zones, cz))) push(x, country);
+      for (const x of strong.filter(x => +x.rank === 2)) push(x, x.country); // ce que les fiches n'auraient pas donné
     }
-    // 3. un mot du nom qui commence par le texte, les plus grands d'abord (leur fiche lue par leur code, dans les zones ouvertes)
-    const named = ads.filter(p => !seen.has(String(p.code || '').toUpperCase()) && wordStart(p.name)).slice(0, 15);
+    // 1 ter. le début du nom ou d'un mot : les quinze premiers reclassés sur leurs fiches (lues par leur code)
+    const named = strong.filter(x => +x.rank >= 3 && !seen.has(String(x.code || '').toUpperCase())).slice(0, 15);
     if (named.length && !full()) {
-      const recs = A.aerodromes ? await Promise.all(named.map(p => Promise.resolve().then(() => A.aerodromes({
-        icao: p.code
-      })).then(r => (r || [])[0] || p).catch(() => p))) : named;
+      const recs = A.aerodromes ? await Promise.all(named.map(x => Promise.resolve().then(() => A.aerodromes({
+        icao: x.code
+      })).then(r => ({
+        ...x,
+        ...((r || [])[0] || {}),
+        code: x.code
+      })).catch(() => x))) : named;
       if (!list.live(seq)) return;
-      for (const x of bySize(recs.map((r, n) => ({
-          ...named[n],
-          ...r,
-          code: named[n].code
-        })))) push(x);
+      for (const x of bySize(recs)) push(x);
     }
-    // 4. les terrains autour d'une ville que le texte nomme
-    const cities = (found || []).filter(p => p.kind === 'city' && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && wordStart(p.name))
-      .slice(0, 2);
+    // 2. les terrains autour d'une ville que le texte nomme
+    const cities = (found || []).filter(p => p.kind === 'city' && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && fold(p.name)
+      .split(
+        /[\s/\-'’().,]+/).some(w => w.startsWith(fold(q)))).slice(0, 2);
     for (const c of cities) {
       if (full() || !A.aerodromes) break;
       const near = await Promise.resolve().then(() => A.aerodromes({
@@ -252,8 +225,9 @@ export function createAdNames(host) {
       if (!list.live(seq)) return;
       for (const x of bySize(near, c)) push(x, String(c.name || '').trim());
     }
-    // 5. le reste : le texte au milieu d'un nom
-    for (const p of ads) push(p);
+    // 3. le texte au milieu d'un nom
+    for (const x of weak) push(x);
+    for (const p of (found || []).filter(p => p.kind === 'aerodrome')) push(p);
     // le code complet déjà tapé et seul de sa liste : rien à proposer, le champ est juste
     if (hits.length === 1 && hits[0].value === Q) return list.close();
     list.show(body()?.querySelector(`[data-k="${k}"]`), hits);

@@ -83,8 +83,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   button bound to fail.
 - **Fuel: a town's name in the aerodrome fields** (`modules/fuel/adnames.js`; Fuel SPEC, help; noreg F119; SOG-0158). « stockholm » proposes the
   aerodromes within 40 NM of the town, the town in the line; seven at most. A country's name (« suède », « sweden ») proposes its aerodromes,
-  the largest first, even for a zone the flight has not opened (F121). After the refusal at acceptance: initials and usual names (« usa »,
-  « uk »), the main aerodromes first (civil, then military, then heliports), names holding the letters in their middle last.
+  the largest first, even for a zone the flight has not opened (F121). After the refusal at acceptance: AeroDB's `suggest` across every
+  zone (initials and names in the country's language: « usa », « sverige »), the main aerodromes first (civil, then military, then
+  heliports; longest runway), names holding the letters in their middle last.
 - **Fuel: an aerodrome's code is never said as homonyms** (`frame/lib/route_model.js`; Fuel SPEC, help; noreg F118; SOG-0154). An ICAO code the
   base knows as an aerodrome resolves to it; departure and arrival are never « homonymes ».
 

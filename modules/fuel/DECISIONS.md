@@ -1490,3 +1490,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   names by a word, towns; main ones first (civil, military, heliports; runway); a country's own ICAO prefixes. Limit, said to AeroDB: the
   NATS records of gb carry no `hardLen`, so « uk » cannot put EGLL first. Counter-test on 0db129707: « stoc » never puts the main
   aerodrome first.
+- **10 Nov 2026 (later) — the completion on AeroDB's `suggest`, re-ranked on the records**: AeroDB published `suggest()` (9b060a061:
+  every published zone through its light index, countries with endonyms and initials) while the fix above was being pushed; one source
+  is better, so the module's alias table goes and `suggest` finds. On the user's real base (diagnostic page, read-only) its order is
+  alphabetical (the light index there is parser 24, without `hardLen`) and it has no type, so a country's aerodromes and the first
+  fifteen names are re-ranked on their full records (civil, military, heliports; runway); the re-rank can go once the light index carries
+  both (asked). Measured there: « stoc » → ESSA first, « swe » → ESSA, ESGG, « usa » → KDEN, KLAS. Counter-test on 6024579af (the refused
+  code): « stoc » never puts the main aerodrome first.

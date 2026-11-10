@@ -3276,7 +3276,7 @@ def _closed_zone_docs(zones, fr_extra=None, major=()):
     (SOG-0158: the proof without copying data). `zones`: { id: { prefix, cells, aerodromes, towns } }."""
     docs = aero_docs(airfields=True, extra={'aerodromes': list(fr_extra or [])} if fr_extra else None)
     idx = [d for d in docs if d[0] == 'sia/base/index.json'][0][1]
-    fields = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar']
+    fields = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar', 'hardLen']   # aeroindex of parser 25 (hardLen, frame/aerodb SOG-0158)
     for zone, z in zones.items():
         idx['zones'][zone] = {'cycle': AERO_CYCLE, 'prefixes': [z['prefix']], 'kb': {'meta': 1, 'aerodromes': 2, 'aeroindex': 1, 'cities': 1},
                               'cells': z['cells']}
@@ -3298,13 +3298,13 @@ def _ad(icao, name, lat, lon, kind='AD', hard=None):
 
 _TOWN = {'name': 'Stockholm', 'lat': 59.33, 'lon': 18.07, 'population': 1500000}
 _SE = {'prefix': 'ES', 'cells': {'57': [[11, 13]], '59': [[17, 19]], '68': [[15, 17]]}, 'towns': [_TOWN],
-       'aerodromes': [_ad('ESZA', 'NORDFIELD', 59.65, 17.92, hard=3300), _ad('ESZB', 'STOCKHOLM TESTFIELD', 59.35, 17.95, hard=1600),
-                      _ad('ESZH', 'STOCKHOLM HOSPITAL', 59.33, 18.07, 'HP'), _ad('ESZM', 'MILBASE', 59.9, 17.6, 'MIL', 3500),
-                      _ad('ENZZ', 'NORDNORGE', 68.4, 16.0, hard=2800)]
+       'aerodromes': [_ad('ESZA', 'STOCKHOLM/NORDFIELD', 59.65, 17.92, hard=3300), _ad('ESZB', 'STOCKHOLM/TESTFIELD', 59.35, 17.95, hard=1600),
+                      _ad('ESZH', 'STOCKHOLM/HOSPITAL', 59.33, 18.07, 'HP'), _ad('ESZM', 'MILBASE', 59.9, 17.6, 'MIL', 3500)]
        + [_ad(f'ESZ{c}', f'SMALLFIELD {c}', 57.7, 12.0 + n / 10, hard=800) for n, c in enumerate('CDEFG')]}
 _US = {'prefix': 'K', 'cells': {'39': [[-106, -103]], '34': [[-119, -117]]},
        'aerodromes': [_ad('KZZA', 'TEST INTL', 39.8, -104.7, hard=4000), _ad('KZZB', 'TEST FIELD', 39.7, -104.9, hard=1500),
                       _ad('KZZM', 'TEST AFB', 34.9, -117.9, 'MIL', 4500)]}
+_NO = {'prefix': 'EN', 'cells': {'68': [[15, 17]]}, 'aerodromes': [_ad('ENZZ', 'NORDNORGE', 68.4, 16.0, hard=2800)]}
 # aerodromes of the opened zone whose names hold the typed letters in their middle (they crowded the list out: DUNKESWELL, LAMPEDUSA)
 _FR_NOISE = [_ad('LFZW', 'DUNKESWELL TEST', 45.5, 2.5, hard=1200), _ad('LFZQ', 'LAMPEDUSA TEST', 45.6, 2.6, hard=1200)]
 _OPTS_JS = f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].map(o => o.dataset.code)"
@@ -3312,24 +3312,25 @@ _OPTS_JS = f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')]
 
 @case('F121', 'Completion across the installed zones: « stoc » (a town), « usa » (an alias), « swe » (a country) propose the main aerodromes of zones the flight has not opened, before names that merely hold the letters',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='SOG-0158, refused at acceptance (user, 10 Nov: « SWE… fonctionne. STOC… ne fonctionne pas. USA non plus. »): codes, then a country '
-      '(names, aliases, initials), then names by a word, then the aerodromes around a town; the main ones first (civil, then military, then '
-      'heliports; longest hard runway); a country\'s own ICAO prefixes only; zones published and never opened, in the shapes aerodb reads; invented values')
+      rule='SOG-0158, refused at acceptance (user, 10 Nov: « SWE… fonctionne. STOC… ne fonctionne pas. USA non plus. »): aerodb.suggest across '
+      'the published zones (code, country by names, endonym or initials, name or word), then the aerodromes around a town found by find, then '
+      'names holding the letters; zones published and never opened, in the shapes aerodb reads (aeroindex of parser 25); invented values')
 def f121(c):
-    docs = flight_docs() + _closed_zone_docs({'se': _SE, 'us': _US}, fr_extra=_FR_NOISE, major=[_TOWN])
+    docs = flight_docs() + _closed_zone_docs({'se': _SE, 'us': _US, 'no': _NO}, fr_extra=_FR_NOISE, major=[_TOWN])
     c.open('fuel', docs=docs)
     wait_quote(c)
     to_step(c, 0)
 
     def opts(text, want, what):
         type_in(c, 'arr', text)
-        c.until(f"(w) => {{ const o = {_OPTS_JS}; return o.length > 0 && o[0] === w }}", want, timeout=12000, what=what)
+        c.until(f"(w) => {{ const o = {_OPTS_JS}; return o.length > 0 && o[0] === w }}", want, timeout=20000, what=what)   # the first question reads every zone's light index (cold)
         return c.js(_OPTS_JS)
-    o = opts('stoc', 'ESZA', '« stoc »: the main aerodrome around the town first')
-    c.eq(o[:4], ['ESZA', 'ESZB', 'ESZM', 'ESZH'], '« stoc »: civil by runway, then the military base, then the heliport', what='stoc')
-    o = opts('usa', 'KZZA', '« usa »: the United States\' main aerodrome first')
-    c.eq(o[:3], ['KZZA', 'KZZB', 'KZZM'], '« usa »: the country\'s aerodromes, the main first', what='usa')
+    o = opts('stoc', 'ESZA', '« stoc »: the main aerodrome named after the town first')
+    c.eq(o[:3], ['ESZA', 'ESZB', 'ESZH'], '« stoc »: the aerodromes named after the town, civil by runway, the heliport after', what='stoc')
+    c.ok('ESZM' in o, o, 'and the aerodrome around the town that does not carry its name (the town found by find)')
+    o = opts('usa', 'KZZA', '« usa »: the United States (by its initials), the main civil aerodrome first')
+    c.eq(o[:3], ['KZZA', 'KZZB', 'KZZM'], '« usa »: civil by runway, then the military base', what='usa')
     c.ok('LFZQ' not in o or o.index('LFZQ') > 2, o, '« LAMPEDUSA » (usa in the middle of a name) after the country')
-    o = opts('swe', 'ESZA', '« swe »: Sweden\'s main aerodrome first')
-    c.ok('ENZZ' not in o, o, 'a Norwegian aerodrome inside Sweden\'s frame is not Sweden\'s')
-    c.ok('LFZW' not in o[:4], o, '« DUNKESWELL » (swe in the middle of a name) after the country')
+    o = opts('swe', 'ESZA', '« swe »: Sweden\'s main civil aerodrome first')
+    c.ok('ENZZ' not in o, o, 'a Norwegian aerodrome is not Sweden\'s')
+    c.ok('LFZW' not in o[:6], o, '« DUNKESWELL » (swe in the middle of a name) after the country')
