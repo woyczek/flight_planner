@@ -6008,3 +6008,64 @@ def k121(c):
     c.eq((r['bad'], r['aerodrome'], r['noLauncher']), ([None, None], 'aerodrome', None), 'an identifier or a position that is not one is dropped; without a launcher there is no FRA layer', what='bad')
     c.eq(r['calls'], [['regen/job', 'route', 'fra-points']], 'one read-only job asks for the points, once (kept in memory)', what='calls')
     c.eq((r['noBook'], r['noBookCalls']), ([None, None], 1), 'without a book on the workstation the answer is null and the job is not asked again within 30 s', what='no book')
+
+
+@case('K122', 'LFV eAIP reader (SOG-0153 b): the offline AIP of Sweden gives its designated points (ENR 4.4) and RNAV routes (ENR 3.2) as the GeoJSON the build reads, the pages read out of the archive without unpacking it, the edition date from the cover page, a foreign archive refused', 'K', static=True,
+      rule='SOG-0153 (10 Nov 2026, decision of the user): « lecteur LFV » — NOSLI, MOKNI and the Swedish airways have no source but the eAIP of LFV (AIP_OFFLINE.zip, 988 MB, mostly PDF charts): the reader opens only ES-ENR 4.4, ES-ENR 3.2 <route> and the cover page of the archive, writes lfv_se_enr_<date>.geojson (same shape as the Irish one); positions of SID/STAR waypoints are on PDF charts only, not read')
+def k122(c):
+    import importlib
+    import json
+    import sys
+    import tempfile
+    import zipfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('lfv_eaip')
+    cell = lambda t: f'<td rowspan="1" colspan="1"><span><span>{t}</span></span></td>'
+    row = lambda rid, *cells: f'<tr id="{rid}">' + ''.join(cell(x) for x in cells) + '</tr>'
+    cover = '<html><body><h1>SWEDEN</h1><p>Effective date : 29 OCT 2026</p><p>Publication date : 24 SEP 2026</p></body></html>'
+    enr44 = '<table>' + row('ENR4.4_H1', 'Name-code', 'Coordinates', 'Use') + row('NOSLIENR44', 'NOSLI', '590422N 0171529E', 'N850, T31, ESSA SID') + row('MOKNIENR44', 'MOKNI', '573847N 0150405E', 'N850') \
+        + row('BADENR44', 'BAD', 'xx', 'none') + '</table>'
+
+    def route(name, pts):
+        out = row('723', f'{name} (RNAV)')
+        for pid, label, pos, up, lo in pts:
+            out += row(pid, '∆', f'{label} {pos}') + row(pid + '_1', '', '', '-') + row(pid + 'row8', up) + row(pid + 'row9', lo) + row(pid + 'row10', 'Class C')
+        return '<table>' + out + '</table>'
+    n850 = route('N850', [('MISBI', 'MISBI FIR BDRY', '555355N 0124021E', 'FL 285', 'FL 095'), ('NOSLI', 'NOSLI', '590422N 0171529E', 'FL 660', 'FL 095'),
+                          ('OSS', 'ÖSTERSUND DVOR/DME (OSS)', '631158N 0142915E', 'FL 660', 'FL 095')])
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        zp = Path(td) / 'AIP_OFFLINE.zip'
+        with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('ES-Cover Page-en-GB.html', cover)
+            z.writestr('eAIP/ES-ENR 4.4-en-GB.html', enr44)
+            z.writestr('eAIP/ES-ENR 3.2 N850-en-GB.html', n850)
+            z.writestr('eAIP/ES-ENR 3.2 N850-sv-SE.html', n850.replace('RNAV', 'XXXX'))      # the Swedish pages are not read
+            z.writestr('documents/PDF/ES-ENR 6.1.pdf', b'%PDF-1.4 ' + b'0' * 1000)         # a chart is never opened
+        g, issue, n_pts, n_seg, n_routes = L.convert(str(zp))
+        props = [f['properties'] for f in g['features']]
+        pts = {p['id']: f['geometry']['coordinates'] for p, f in zip(props, g['features']) if p['sog'] == 'point'}
+        aw = [p for p in props if p['sog'] == 'airway']
+        c.eq((issue, n_pts, n_seg, n_routes, L.out_name(issue)), ('2026-10-29', 4, 2, 1, 'lfv_se_enr_20261029.geojson'),
+             'the edition is the effective date of the cover page; the points of ENR 4.4 (a bad position dropped) plus the ones a route names that ENR 4.4 does not list; two segments for three points of one route', what='counts')
+        c.ok(abs(pts['NOSLI'][1] - 59.07278) < 1e-4 and abs(pts['NOSLI'][0] - 17.25806) < 1e-4 and 'OSS' in pts and 'MISBI' in pts and 'BAD' not in pts, str(sorted(pts)),
+             'NOSLI at its position (degrees, minutes, seconds); a beacon is named by its code (OSS); a point on a FIR boundary by its name (MISBI)')
+        c.eq([(a['route'], a['a'], a['b'], a['lower'], a['upper']) for a in aw], [('N850', 'MISBI', 'NOSLI', 9500, 28500), ('N850', 'NOSLI', 'OSS', 9500, 66000)],
+             'a segment runs from a point to the next with the limits read after the first one (upper, then lower), and no direction is invented', what='segments')
+        c.eq(('dir' in aw[0], g['name'], g['features'][0]['geometry']['type']), (False, 'lfv_se_enr', 'Point'), 'the shape of the Irish file (point and airway features), no `dir`', what='shape')
+        json.dumps(g)
+        # refusals: a foreign archive, a cover without the date, a layout without any point
+        for label, files in (('foreign', {'index.html': '<html/>'}),
+                             ('no date', {'ES-Cover Page-en-GB.html': '<h1>SWEDEN</h1>', 'eAIP/ES-ENR 4.4-en-GB.html': enr44}),
+                             ('no point', {'ES-Cover Page-en-GB.html': cover, 'eAIP/ES-ENR 4.4-en-GB.html': '<table></table>', 'eAIP/ES-ENR 3.2 N850-en-GB.html': n850}),
+                             ('wrong route', {'ES-Cover Page-en-GB.html': cover, 'eAIP/ES-ENR 4.4-en-GB.html': enr44, 'eAIP/ES-ENR 3.2 T31-en-GB.html': n850})):
+            bad = Path(td) / f'{label}.zip'
+            with zipfile.ZipFile(bad, 'w') as z:
+                for k, v in files.items():
+                    z.writestr(k, v)
+            try:
+                L.convert(str(bad))
+                got = 'accepted'
+            except ValueError:
+                got = 'refused'
+            c.eq(got, 'refused', f'{label}: refused with a message, nothing written', what=label)
