@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "26e4c7e",
+  "organisation": "23d9dc4",
   "fiches": 223,
   "untranslated": 1,
   "priorities": 152
@@ -2183,7 +2183,7 @@
     {
      "id": "SOG-0215",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Quand le lanceur revient, la page ne se reconnecte pas seule (Maj + F5, cartouche rouge, recharger)",
      "en": "When the launcher comes back, the page does not reconnect by itself",
      "de": "Wenn der Launcher zurückkommt, verbindet sich die Seite nicht von selbst",

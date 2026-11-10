@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 90,
+  "tests": 91,
   "verdicts": 35
  },
  "apps": [
@@ -1304,6 +1304,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T15:09:27Z"
+  },
+  {
+   "id": "SOG-0215",
+   "app": "maintenance",
+   "title": {
+    "fr": "Quand le lanceur revient, la page ne se reconnecte pas seule (Maj + F5, cartouche rouge, recharger)",
+    "en": "When the launcher comes back, the page does not reconnect by itself",
+    "de": "Wenn der Launcher zurückkommt, verbindet sich die Seite nicht von selbst",
+    "es": "Cuando vuelve el lanzador, la página no se reconecta sola"
+   },
+   "test": "Page de l'appli ouverte, arrêter puis relancer le lanceur : en une dizaine de secondes l'en-tête repasse de « Lanceur injoignable » à l'état normal, sans Maj + F5 ; si le lanceur sert une version plus récente, le cartouche « Version ancienne · Recharger » apparaît tout seul et un appui suffit.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T15:38:40Z"
   }
  ]
 }
