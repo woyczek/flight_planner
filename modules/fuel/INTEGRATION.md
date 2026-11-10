@@ -292,7 +292,9 @@ hand a choice back. Contract written before the code, for both sides.
   name on a SID / STAR leg, `DCT`, `FRA` (a direct of the FRA layer) or '' (`route_legend.js` `viaOf`); `layer[k]` SID | LOW | HIGH |
   FRA | STAR | APP | ''. The Map draws the nature of each segment from them with **`frame/lib/route_legend.js`** (`natureOf`, the same
   table, words and strokes as Fuel's legend): airway solid with its name, DCT dashed, FRA dotted, SID / STAR / approach in the
-  procedures' tints, a deviation red.
+  procedures' tints, a deviation red. Since fee38e622 the Map reads the table itself (`natureOf`, `dash`, `label`, `hint`, `tint`; its
+  case D140 compares its key and strokes with it): a faulty segment keeps its nature's stroke and turns red, and the name is written
+  along the line only for the nature `awy` (never on a SID / STAR leg, whose `via` is the procedure's name).
 - `chosen`: the index of the route taken (« Prendre »), else the computed one (0); `null` when there is no route. `hovered`: the
   index of the row under the pointer, the finger or the keyboard focus, else `null`.
 - **Clearing**: a new request, a new pair of aerodromes (`newPair`) or a refusal publishes `alternatives: []`.
