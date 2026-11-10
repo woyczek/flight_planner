@@ -4637,7 +4637,7 @@ def d142(c):
 _ROSE_JS = """([n, s, mv, big, px]) => {
   const cv = document.createElement('canvas'); cv.width = 500; cv.height = 500; const ctx = cv.getContext('2d'), log = { arcs: [], texts: [], rot: [], moves: 0 };
   const arc = ctx.arc.bind(ctx), ft = ctx.fillText.bind(ctx), rot = ctx.rotate.bind(ctx), mt = ctx.moveTo.bind(ctx);
-  ctx.arc = (x, y, r, a, b) => { log.arcs.push(+r.toFixed(2)); return arc(x, y, r, a, b) }; ctx.fillText = (t, x, y) => { log.texts.push(String(t)); return ft(t, x, y) };
+  ctx.arc = (x, y, r, a, b) => { log.arcs.push(+r.toFixed(2)); return arc(x, y, r, a, b) }; ctx.fillText = (t, x, y) => { const m = ctx.getTransform(); log.texts.push(String(t)); (log.ang ||= []).push(Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI)); (log.pos ||= []).push([Math.round(m.e + m.a * x + m.c * y), Math.round(m.f + m.b * x + m.d * y)]); return ft(t, x, y) };
   ctx.rotate = a => { log.rot.push(+(a * 180 / Math.PI).toFixed(2)); return rot(a) }; ctx.moveTo = (x, y) => { log.moves++; return mt(x, y) };
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 500, 500); ctx.strokeStyle = '#d6173f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 330); ctx.lineTo(500, 190); ctx.stroke(); // a route beside it
   window.SiaAero.drawNavaid(ctx, n, { x: 250, y: 250 }, s, 0, mv, 3.2, false, px);
@@ -4666,6 +4666,9 @@ def d143(c):
     c.eq(big, [R], 'one circle, of the radius given (the ground radius)', what=str(r['arcs']))
     c.eq(r['texts'], ['0', '9', '18', '27'], 'the numbers 0, 9, 18, 27 and no other', what=str(r['texts']))
     c.ok(r['rot'] and abs(r['rot'][0] - 12) < .01, str(r['rot']), 'turned to the declination of the nearest point (12°) when the station carries none')
+    r0 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC', 'magVar': 0}, 6, 0, False, R])
+    c.eq(r0['ang'], [0, 90, 180, -90], 'each number is written along the circle, the top of its signs outwards: 0° at the north, 90° (lying, the loop of the 9 outwards) at the east, 180° at the south, −90° at the west', what=str(r0['ang']))
+    c.ok(abs(r0['pos'][1][0] - 250) > 60 and abs(r0['pos'][1][1] - 250) < 2 and r0['pos'][1][0] > 250 and r0['pos'][3][0] < 250, str(r0['pos']), 'the 9 is at the east and the 27 at the west, inside the circle')
     r2 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC', 'magVar': -5}, 6, 12, False, R])
     c.ok(r2['rot'] and abs(r2['rot'][0] + 5) < .01, str(r2['rot']), 'the station’s own declination first (−5°)')
     r3 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 6, 0, False, 30])

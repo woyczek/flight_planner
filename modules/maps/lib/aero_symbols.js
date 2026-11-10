@@ -1194,7 +1194,8 @@
             ctx.lineTo(sn * (R - l), cs * (R - l));
             ctx.stroke();
           }
-          const fs = Math.min(14, Math.max(7, R * .085));
+          const fs = Math.min(30, Math.max(8, long *
+            2.1)); // la hauteur des chiffres : une fois et demie celle des graduations longues, en gras
           if (R >= 36) { // les quatre chiffres, tête vers l'extérieur
             ctx.font = `700 ${fs.toFixed(1)}px Arial,sans-serif`;
             ctx.textAlign = 'center';
@@ -1207,7 +1208,7 @@
                 [27, '27']
               ]) {
               const a = k * Math.PI / 18,
-                r = R - long - fs * .75;
+                r = R - long - fs * .62;
               ctx.save();
               ctx.translate(Math.sin(a) * r, -Math.cos(a) * r);
               ctx.rotate(a);

@@ -2325,7 +2325,8 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Done**: exactly that; **retained ground radius: 5 NM** (what the user estimated; the old rose was about 4 NM at the zoom where it first appears, 19 px at 180 px/deg, and fixed in pixels), scaled by
   the company's `roseSize` / 3.2; below a 36 px radius no number (the circle and ticks stay); the whole rose turned by the station's declination as before.
 - **Also** (ergonomics, seen on D146 at 390): while the sheet of a space is open the weather and legend chips give their place to the title (they come back on closing); only the profile chip stays.
-- **Not done**: the numbers are written with the top of the signs outwards, so the 9 reads sideways and the 18 upside down on screen (« le 18 se lit depuis le centre »): to be compared with Melun by eye.
+- **The 9 at the east** (ergonomics' doubt: it read « 6 »): checked, it is a 9 rotated 90° clockwise (loop outwards), the exact mirror of the 27 at the west (−90°); at 8 px it looked like a 6, so the numbers are now
+  1.5 × the height of the long graduations (font 2.1 × the tick, bold, 8 px at least) and D143 checks the angle of each of the four (0°, 90°, 180°, −90°) and their places. The 18 reads upside down on screen (« le 18 se lit depuis le centre »).
 - **Noreg** D143 (one circle at the given radius, the four numbers exactly, declination, no number on a small rose, 5 NM at 200 / 400 / 800 px per degree; red before: two circles, eleven numbers); capture
   `tests/v3/shots/D143_rose.png` (the rose beside a route).
 
