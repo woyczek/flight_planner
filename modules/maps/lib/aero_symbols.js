@@ -1107,7 +1107,7 @@
   }
   // VOR (hexagone), VOR-DME (hexagone dans un carré), VOR-TACAN / TACAN (lobes), DME (carré), NDB
   // (cercles pointillés) ; cartouche « (D) ROA 110.25 » et nom en clair au-dessus.
-  function drawNavaid(ctx, n, p, s, labelFont, magVar = 0, rose = 3.2, labelOnly = false) {
+  function drawNavaid(ctx, n, p, s, labelFont, magVar = 0, rose = 3.2, labelOnly = false, rosePx = 0) {
     if (!labelOnly) {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -1166,56 +1166,80 @@
           }
         if (n.dme && !n.tacan) ctx.strokeRect(-s * .95, -s * .95, s * 1.9, s * 1.9);
         dot(s * .12);
-        if (n.kind === 'VOR' && rose > 0 && s >= 4) { // rose au nord magnétique de la station, taille réglable (SOG-0175)
-          // deux cercles : l'extérieur gradué tous les 10° (trait long, chiffre et petite flèche tous les 30°), l'intérieur fin qui sert à lire un
-          // relèvement ; la rose est tournée de la déclinaison de la station (la sienne si l'enregistrement la porte, sinon celle du point le plus proche)
-          const R = s * rose,
-            r2 = R - s * .85,
+        if (n.kind === 'VOR' && rose > 0 && s >=
+          4) { // la rose au nord magnétique de la station (SOG-0175, d'après les cartes OACI : Pontoise, Melun, Deauville)
+          // UN cercle fin et grand, un objet de la carte (son rayon est au sol : rosePx, 5 NM, il grandit avec le zoom ; sans lui, le double du pictogramme d'avant) ;
+          // graduations vers l'intérieur tous les 10°, plus longues tous les 30° ; les seuls chiffres 0, 9, 18, 27 (dizaines de degrés), à l'intérieur au pied de leur
+          // graduation, écrits le long du cercle (le haut des signes vers l'extérieur : le 18 se lit depuis le centre) ; une pointe pleine vers l'intérieur aux quatre points
+          // cardinaux et la flèche du nord magnétique de la station vers le 0 ; tournée de la déclinaison (la sienne, sinon celle du point de base le plus proche)
+          const R = rosePx > 0 ? rosePx : s * rose * 2,
             dec = n.magVar != null && n.magVar !== '' && Number.isFinite(+n.magVar) ? +n.magVar : magVar;
           ctx.save();
           ctx.rotate(dec * Math.PI / 180);
-          ctx.lineWidth = Math.max(.6, s / 12);
-          ctx.globalAlpha = .75;
+          ctx.globalAlpha = .7;
+          ctx.lineWidth = Math.max(.8, Math.min(1.4, R / 60));
           ctx.beginPath();
           ctx.arc(0, 0, R, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.globalAlpha = .45;
-          ctx.lineWidth = Math.max(.4, s / 20);
-          ctx.beginPath();
-          ctx.arc(0, 0, r2, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.globalAlpha = .75;
-          const label = s >= 6; // les chiffres ne se lisent pas plus bas
-          ctx.font = `700 ${(s * .95).toFixed(1)}px Arial,sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
+          const short = Math.max(3, R * .04),
+            long = Math.max(5, R * .08);
           for (let k = 0; k < 36; k++) {
             const t = k * Math.PI / 18,
-              big = k % 3 === 0,
               sn = Math.sin(t),
-              cs = -Math.cos(t);
-            ctx.lineWidth = Math.max(big ? .8 : .5, big ? s / 10 : s / 16);
+              cs = -Math.cos(t),
+              l = k % 3 === 0 ? long : short;
+            ctx.lineWidth = Math.max(.6, Math.min(1.2, R / 80)) * (k % 3 === 0 ? 1.3 : 1);
             ctx.beginPath();
             ctx.moveTo(sn * R, cs * R);
-            ctx.lineTo(sn * (big ? r2 : R - s * .35), cs * (big ? r2 : R - s * .35));
+            ctx.lineTo(sn * (R - l), cs * (R - l));
             ctx.stroke();
-            if (big) { // la petite flèche, hors du cercle, pointe vers l'extérieur ; le nord en est plus large
-              const a = s * (k === 0 ? .42 : .3);
-              ctx.beginPath();
-              ctx.moveTo(sn * (R + s * .55), cs * (R + s * .55));
-              ctx.lineTo(sn * R - cs * a, cs * R + sn * a);
-              ctx.lineTo(sn * R + cs * a, cs * R - sn * a);
-              ctx.closePath();
-              ctx.fill();
-              if (label && k) { // le chiffre (30, 60…), droit (contre-tourné de la déclinaison), au-delà de la flèche
-                ctx.save();
-                ctx.translate(sn * (R + s * 1.35), cs * (R + s * 1.35));
-                ctx.rotate(-dec * Math.PI / 180);
-                ctx.fillText(String(k * 10), 0, 0);
-                ctx.restore();
-              }
+          }
+          const fs = Math.min(14, Math.max(7, R * .085));
+          if (R >= 36) { // les quatre chiffres, tête vers l'extérieur
+            ctx.font = `700 ${fs.toFixed(1)}px Arial,sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.globalAlpha = .85;
+            for (const [k, txt] of [
+                [0, '0'],
+                [9, '9'],
+                [18, '18'],
+                [27, '27']
+              ]) {
+              const a = k * Math.PI / 18,
+                r = R - long - fs * .75;
+              ctx.save();
+              ctx.translate(Math.sin(a) * r, -Math.cos(a) * r);
+              ctx.rotate(a);
+              ctx.fillText(txt, 0, 0);
+              ctx.restore();
             }
           }
+          ctx.globalAlpha = .85;
+          const tri = Math.max(3, R * .06); // la pointe pleine, vers l'intérieur, aux quatre points cardinaux
+          for (let k = 0; k < 4; k++) {
+            ctx.save();
+            ctx.rotate(k * Math.PI / 2);
+            ctx.beginPath();
+            ctx.moveTo(0, -R);
+            ctx.lineTo(-tri * .6, -R + tri * 1.4);
+            ctx.lineTo(tri * .6, -R + tri * 1.4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+          // la flèche du nord magnétique : de la station vers le 0
+          ctx.lineWidth = Math.max(1, Math.min(2, R / 40));
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 1.1);
+          ctx.lineTo(0, -R * .62);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, -R * .72);
+          ctx.lineTo(-Math.max(2.5, R * .035), -R * .55);
+          ctx.lineTo(Math.max(2.5, R * .035), -R * .55);
+          ctx.closePath();
+          ctx.fill();
           ctx.restore();
         }
       }
@@ -1465,7 +1489,9 @@
         if (host)(host.merged ||= []).push(x.n);
       }
       [...shown].reverse().forEach(x => {
-        drawNavaid(ctx, x.n, x.p, s, 0, detailed ? nearestMag(x.n.lat, x.n.lon) : 0, detailed ? rose : 0);
+        drawNavaid(ctx, x.n, x.p, s, 0, detailed ? nearestMag(x.n.lat, x.n.lon) : 0, detailed ? rose : 0, false,
+          // le rayon au sol de la rose : 5 NM (rose / 3,2 : le réglage de la compagnie la grandit ou la réduit), en pixels à la latitude de la station
+          pxPerDegree / (60 * Math.max(.2, Math.cos(x.n.lat * Math.PI / 180))) * 5 * (rose / 3.2));
         reserve(sym(x.p), 'navSymbol');
       });
       if (navLabels) shown.forEach(x => drawNavaid(ctx, x.n, x.p, s, font * .85, 0, 0, true));

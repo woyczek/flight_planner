@@ -273,6 +273,8 @@ export function dataHead() {
   const lvView = S.dpanel === 'lv';
   show(S.segEl, !own || lvView);
   for (const b of S.segBtns) {
+    show(b, !lvView || b.dataset.view ===
+      'profile'); // la fiche garde la puce du profil seule : le titre prend la place des autres, qui reviennent à la fermeture
     setPressed(b, lvView ? b.dataset.view === 'profile' : (b.dataset.view === 'weather') === wx);
     setOff(b, b.dataset.view === 'weather' ? !canWeather() : !S.prof); // jamais retirée : désactivée sans objet
     if (b.dataset.view === 'weather') {
@@ -281,6 +283,7 @@ export function dataHead() {
       if (b.getAttribute('aria-label') !== n) b.setAttribute('aria-label', n);
     }
   }
+  if (S.legendBtn) show(S.legendBtn, !lvView);
   legendSync();
   winSync();
 }

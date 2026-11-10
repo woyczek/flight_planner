@@ -2317,6 +2317,18 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## The VOR rose, one large circle as on the charts (10 Nov 2026, SOG-0175 reopened)
+
+- **Reference** (the user's captures 121252 PON, 121330 MLN, 121739 DVL, IGN OACI): one fine circle about 5 NM in radius on the ground, ticks inwards every 10°, longer every 30°, the numbers 0, 9, 18, 27
+  only, inside, along the circle, a solid point inwards at the four cardinal points, the arrow of magnetic north from the station to the 0. My first reading (two circles, outside numbers every 30°, arrows
+  outwards) was wrong: « doubler le cercle » meant twice as LARGE.
+- **Done**: exactly that; **retained ground radius: 5 NM** (what the user estimated; the old rose was about 4 NM at the zoom where it first appears, 19 px at 180 px/deg, and fixed in pixels), scaled by
+  the company's `roseSize` / 3.2; below a 36 px radius no number (the circle and ticks stay); the whole rose turned by the station's declination as before.
+- **Also** (ergonomics, seen on D146 at 390): while the sheet of a space is open the weather and legend chips give their place to the title (they come back on closing); only the profile chip stays.
+- **Not done**: the numbers are written with the top of the signs outwards, so the 9 reads sideways and the 18 upside down on screen (« le 18 se lit depuis le centre »): to be compared with Melun by eye.
+- **Noreg** D143 (one circle at the given radius, the four numbers exactly, declination, no number on a small rose, 5 NM at 200 / 400 / 800 px per degree; red before: two circles, eleven numbers); capture
+  `tests/v3/shots/D143_rose.png` (the rose beside a route).
+
 ## Contour lines in the VFR topo view (10 Nov 2026, SOG-0184, regression from V2)
 
 - **Relevé**: in V2 (`apps/cpco/map_parser.html`) the `contours` layer belongs to the profile (only « VFR détaillé » ticks it) and the `topo` base was **OpenTopoMap, whose raster tiles carry the contour

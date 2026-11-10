@@ -4634,35 +4634,52 @@ def d142(c):
     c.ok(all(n % r2['step'] == 0 for n in r2['nm']), str(r2), 'the marks are multiples of the step')
 
 
-_ROSE_JS = """([n, s, mv, big]) => {
-  const cv = document.createElement('canvas'); cv.width = 400; cv.height = 400; const ctx = cv.getContext('2d'), log = { arcs: [], texts: [], rot: [], moves: 0 };
+_ROSE_JS = """([n, s, mv, big, px]) => {
+  const cv = document.createElement('canvas'); cv.width = 500; cv.height = 500; const ctx = cv.getContext('2d'), log = { arcs: [], texts: [], rot: [], moves: 0 };
   const arc = ctx.arc.bind(ctx), ft = ctx.fillText.bind(ctx), rot = ctx.rotate.bind(ctx), mt = ctx.moveTo.bind(ctx);
   ctx.arc = (x, y, r, a, b) => { log.arcs.push(+r.toFixed(2)); return arc(x, y, r, a, b) }; ctx.fillText = (t, x, y) => { log.texts.push(String(t)); return ft(t, x, y) };
   ctx.rotate = a => { log.rot.push(+(a * 180 / Math.PI).toFixed(2)); return rot(a) }; ctx.moveTo = (x, y) => { log.moves++; return mt(x, y) };
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 400, 400); if (big) ctx.scale(3, 3); window.SiaAero.drawNavaid(ctx, n, big ? { x: 67, y: 67 } : { x: 200, y: 200 }, s, 0, mv, 3.2);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 500, 500); ctx.strokeStyle = '#d6173f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 330); ctx.lineTo(500, 190); ctx.stroke(); // a route beside it
+  window.SiaAero.drawNavaid(ctx, n, { x: 250, y: 250 }, s, 0, mv, 3.2, false, px);
   if (big) log.png = cv.toDataURL('image/png'); return log }"""
 
 
-@case('D143', 'The VOR rose at a close zoom: two circles (the outer graduated every 10°, long ticks, numbers and small arrows every 30°; the inner one thin, to read a bearing), turned to the station’s declination', 'D',
+_ROSE_GROUND_JS = """() => { const cv = document.createElement('canvas'); cv.width = 800; cv.height = 800; const ctx = cv.getContext('2d'), arcs = [];
+  const arc = ctx.arc.bind(ctx); ctx.arc = (x, y, r, a, b) => { arcs.push([+x.toFixed(0), +y.toFixed(0), +r.toFixed(2)]); return arc(x, y, r, a, b) };
+  const out = [];
+  for (const pxDeg of [200, 400, 800]) { arcs.length = 0; const lat = 48, toC = (la, lo) => ({ x: 400 + (lo - 2) * pxDeg, y: 400 - (la - lat) * pxDeg / Math.cos(lat * Math.PI / 180) });
+    window.SiaAero.drawPoints(ctx, { aerodromes: [{ icao: 'LFPO', lat: 48, lon: 2, magVar: 1 }], navaids: [{ id: 'PON', kind: 'VOR', lat: 48, lon: 2, name: 'PONTOISE', freq: '110.00' }], airways: [] }, toC,
+      { W: 800, H: 800, scale: 1, pxPerDegree: pxDeg, navaids: true, aerodromes: false, rose: 3.2 });
+    out.push([pxDeg, arcs.filter(a => a[2] > 10).map(a => a[2])]) }
+  return out }"""
+
+
+@case('D143', 'The VOR rose at a close zoom: one thin, large circle that is an object of the map (5 NM on the ground), graduations inwards every 10° (longer every 30°), the four numbers 0, 9, 18, 27 inside along the circle, a solid point inwards at the cardinal points, the arrow of magnetic north, turned to the station’s declination', 'D',
       tags=('maps',), screens=False, designs=('standard',),
-      rule='SOG-0175 (ergonomics 10 Nov): at a close zoom the VOR rose is a doubled degrees circle: outside graduated every 10° with long ticks, numbers and small arrows every 30°, inside a thin circle to read a bearing, oriented to the station’s declination (the station’s own, else the nearest point’s), at the standard of a VFR chart')
+      rule='SOG-0175 reopened (the user, from the charts of Pontoise, Melun and Deauville: « pas d’angle sur les labels vor, sauf les 9 18 27 0, à l’intérieur »; ergonomics: he wanted a circle twice as LARGE, not two circles): one fine circle whose radius is on the ground (5 NM, it grows with the zoom, not a pictogram of fixed size), graduations inwards every 10° and longer every 30°, only 0, 9, 18, 27 inside along the circle (the 18 reads from the centre), a small solid point at the four cardinal points inwards and the magnetic north arrow from the station to the 0, turned to the declination (the station’s own, else the nearest point’s), no inner circle')
 def d143(c):
     c.open('maps', flight=True)
     c.js(_STATE_JS)
-    r = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 8, 12, True])
-    R = 8 * 3.2
+    R = 100
+    r = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 6, 12, True, R])
     big = sorted({a for a in r['arcs'] if a > 8})
-    c.eq(big, [round(R - 8 * .85, 2), round(R, 2)], 'two circles: the outer one at the rose’s radius, the inner one inside it', what=str(r['arcs']))
-    c.eq(sorted(int(t) for t in r['texts']), list(range(30, 331, 30)), 'a number every 30° (30 … 330)', what=str(r['texts']))
+    c.eq(big, [R], 'one circle, of the radius given (the ground radius)', what=str(r['arcs']))
+    c.eq(r['texts'], ['0', '9', '18', '27'], 'the numbers 0, 9, 18, 27 and no other', what=str(r['texts']))
     c.ok(r['rot'] and abs(r['rot'][0] - 12) < .01, str(r['rot']), 'turned to the declination of the nearest point (12°) when the station carries none')
-    r2 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC', 'magVar': -5}, 8, 12, False])
+    r2 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC', 'magVar': -5}, 6, 12, False, R])
     c.ok(r2['rot'] and abs(r2['rot'][0] + 5) < .01, str(r2['rot']), 'the station’s own declination first (−5°)')
-    r3 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 4.5, 0, False])
-    c.eq(r3['texts'], [], 'a small symbol draws no number (they would not read)', what=str(r3['texts']))
-    c.ok(len([a for a in r3['arcs'] if a > 8]) == 2, str(r3['arcs']), 'but keeps its two circles')
-    import base64
+    r3 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 6, 0, False, 30])
+    c.eq(r3['texts'], [], 'a small rose (30 px) writes no number (they would not read)', what=str(r3['texts']))
+    r4 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 6, 0, False, 0])
+    c.eq(sorted({a for a in r4['arcs'] if a > 8}), [round(6 * 3.2 * 2, 2)], 'without a ground radius, twice the old pictogram’s', what=str(r4['arcs']))
+    # on the map: the radius is on the ground, 5 NM, and grows with the zoom
+    g = c.js(_ROSE_GROUND_JS)
+    want = lambda px: round(px / (60 * math.cos(math.radians(48))) * 5, 2)
+    c.eq([[d, a[0] if a else None] for d, a in g], [[d, want(d)] for d in (200, 400, 800)], '5 NM on the ground at 200, 400 and 800 px per degree', what=str(g))
     (ROOT / 'tests/v3/shots').mkdir(exist_ok=True)
-    (ROOT / 'tests/v3/shots/D143_rose.png').write_bytes(base64.b64decode(r['png'].split(',')[1]))   # the rose at a close zoom, 3 ×: tests/v3/shots/D143_rose.png
+    import base64
+    big_png = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 6, 12, True, 150])['png']
+    (ROOT / 'tests/v3/shots/D143_rose.png').write_bytes(base64.b64decode(big_png.split(',')[1]))   # the rose beside a route: tests/v3/shots/D143_rose.png
 
 
 _NAME_SPY_JS = """() => { window.__nm = []; window.__clip = 0; const f = CanvasRenderingContext2D.prototype.fillText, cl = CanvasRenderingContext2D.prototype.clip;
@@ -4773,9 +4790,11 @@ def d146(c):
         g = c.js(_LV_HEAD_JS)
         c.eq([g['panel'], g['layers']], ['lv', 'false'], f'{w}: the Layers icon is not the sheet’s: it is not pressed', what=str(g))
         c.ok(('profile', 'true', True) in [tuple(x) for x in g['chips']] and g['close'] and g['title'], str(g), f'{w}: the sheet is a view of the profile tab: its chip is pressed, its title and its cross are shown')
+        c.eq([x[2] for x in g['chips'] if x[0] == 'weather'], [False], f'{w}: the weather chip gives its place to the title while the sheet is open', what=str(g['chips']))
         c.shot(f'D146_sheet_{w}.png')
         c.tap('.mp-chip[data-view="profile"]')
         c.until("() => window.__mp.S.dpanel === null", timeout=4000, what=f'{w}: the chip of the profile closes the sheet')
+        c.until("() => { const b = document.querySelector('.mp-chip[data-view=weather]'); return !!b && !b.hidden && b.getBoundingClientRect().width > 0 }", timeout=4000, what=f'{w}: the weather chip is back')
 
 
 _CONT_SPY_JS = """() => { window.__ct = []; const M = window.MapsContours, o = M.draw; if (!M.__spy) { M.__spy = true; M.draw = function (ctx, opt) { window.__ct.push({ minor: opt.minor, z: opt.pxPerDeg }); return o.apply(this, arguments) } } return true }"""

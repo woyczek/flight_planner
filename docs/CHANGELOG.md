@@ -14,6 +14,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Fuel: the folded summary of the arrival says the ILS** (`modules/fuel/procedures.js`; Fuel SPEC, DECISIONS, help; noreg F127;
   SOG-0176). « I13R · TST 110.30 » when the base carries the ILS of the approach.
+
+- **Map: the VOR rose as on the charts** (`modules/maps/lib/aero_symbols.js`, `sheet_view.js`; SPEC § 3, DECISIONS; noreg D143, D146; SOG-0175 reopened). One fine circle of 5 NM on the ground (it grows with the
+  zoom), graduations inwards every 10° (longer every 30°), only the numbers 0, 9, 18, 27 inside along the circle, a solid point inwards at the four cardinal points and the magnetic north arrow, turned to the
+  declination. While the sheet of a space is open the weather and legend chips give their place to its title.
+
 - **Fuel: the step Flight holds in 360 px again** (`modules/fuel/module.js`; DECISIONS; noreg F4). The date field shrinks to its cell.
 
 - **Map: contour lines on the mission maps in VFR topo** (`modules/maps/draw.js`, `contours.js`; SPEC § 6, DECISIONS; noreg D147; SOG-0184, regression from V2). They were drawn on flight maps only; a
