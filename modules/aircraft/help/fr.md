@@ -16,7 +16,7 @@ La flotte de la compagnie, telle que les autres écrans la lisent : le compte re
 
 <a id="aircraft-fuel-density"></a>**Densité.** Kilos par litre du carburant : Jet A-1 environ 0,80, Avgas environ 0,72. Elle tient au carburant, pas à l’appareil : laissez vide pour la valeur de la compagnie (Réglages), sinon la valeur typique. Entre 0,5 et 1,0.
 
-**Unités du carburant.** En tête de l'éditeur, « Carburant lu et saisi en » propose kg, lb, l ou US gal (et kg/h, lb/h, l/h, gal/h pour les débits) ; chaque champ et la table régime / débit portent l'unité choisie. La fiche garde son unité d'enregistrement : une ligne la dit avec la densité utilisée ; une valeur saisie est convertie à l'enregistrement, une valeur non touchée ne change pas.
+**Unités du carburant.** En tête de l'éditeur, « Carburant lu et saisi en » propose kg, lb, l ou US gal (et kg/h, lb/h, l/h, gal/h pour les débits) ; chaque champ et la table régime / débit portent l'unité choisie. Une valeur convertie s'écrit avec deux chiffres significatifs (12 407,6 lb/h se lit 12000) ; une valeur saisie reste telle que vous l'avez écrite, et la fiche garde sa valeur tant que vous ne touchez pas le champ. La fiche garde son unité d'enregistrement : une ligne la dit avec la densité utilisée ; une valeur saisie est convertie à l'enregistrement, une valeur non touchée ne change pas.
 
 ## Bon à savoir
 

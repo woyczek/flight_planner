@@ -899,15 +899,20 @@ export function createSheetsView(host) {
   const densityOf = p => FU.density(p?.jetFuel === false ? 'avgas' : 'jet', {
     sheet: p
   });
-  /** Une valeur de carburant de la fiche dans l'unité de lecture (au dixième) ; '' pour rien ; telle quelle dans l'unité de la fiche. */
+  /** Une valeur de carburant de la fiche dans l'unité de lecture ; '' pour rien. Une valeur CONVERTIE — ramenée à l'unité de lecture, ou
+   *  gardée par la fiche avec plus de trois décimales (le reste d'une conversion à l'import : « 12407.61611576491 lb/h », la S210 et le
+   *  TBM9 du poste de l'utilisateur) — s'écrit avec deux chiffres significatifs (SOG-0220, l'utilisateur, 10 nov. 18 h 06 : « DEUX ») ;
+   *  une valeur saisie, telle qu'écrite. Seul l'affichage change : la fiche garde sa valeur tant que le champ n'est pas retouché (fuelRead). */
   function fuelShown(p, v) {
     if (v === null || v === undefined || v === '') return '';
     const su = storeUnit(p),
       vu = viewUnit(p);
-    if (vu === su) return String(v);
+    if (vu === su) return /\.\d{4,}$/.test(String(v)) ? sig2(+v) : String(v);
     const x = FU.fromKg(FU.toKg(v, su, densityOf(p)), vu, densityOf(p));
-    return x === null ? '' : String(Math.round(x * 10) / 10);
+    return x === null ? '' : sig2(x);
   }
+  /** Deux chiffres significatifs (12 407,6 → 12 000 ; 429,9 → 430 ; 0,456 → 0,46), sans écriture scientifique. */
+  const sig2 = x => Number.isFinite(x) ? String(Number(x.toPrecision(2))) : '';
   /** Un nombre saisi dans l'unité de lecture, ramené à l'unité de la fiche (au millième) ; null si illisible. */
   function fuelStored(p, n) {
     const su = storeUnit(p),

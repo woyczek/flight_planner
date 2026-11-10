@@ -16,7 +16,7 @@ La flota de la compañía, tal como la leen las demás pantallas: el informe (ma
 
 <a id="aircraft-fuel-density"></a>**Densidad.** Kilos por litro del combustible: Jet A-1 unos 0,80, Avgas unos 0,72. Depende del combustible, no de la aeronave: déjela vacía para el valor de la compañía (Ajustes), si no el típico. Entre 0,5 y 1,0.
 
-**Unidades del combustible.** Arriba del editor, «Combustible leído y escrito en» ofrece kg, lb, l o US gal (y kg/h, lb/h, l/h, gal/h para los consumos); cada campo y la tabla régimen / consumo llevan la unidad elegida. La ficha guarda su unidad de almacenamiento: una línea la dice con la densidad usada; un valor escrito se convierte al guardar, un valor sin tocar no cambia.
+**Unidades del combustible.** Arriba del editor, «Combustible leído y escrito en» ofrece kg, lb, l o US gal (y kg/h, lb/h, l/h, gal/h para los consumos); cada campo y la tabla régimen / consumo llevan la unidad elegida. Un valor convertido se escribe con dos cifras significativas (12 407,6 lb/h se lee 12000); un valor escrito por usted queda tal cual, y la ficha conserva su valor mientras no toque el campo. La ficha guarda su unidad de almacenamiento: una línea la dice con la densidad usada; un valor escrito se convierte al guardar, un valor sin tocar no cambia.
 
 ## Bueno saber
 

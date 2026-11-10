@@ -16,7 +16,7 @@ The company's fleet, as the other screens read it: the report (registration → 
 
 <a id="aircraft-fuel-density"></a>**Density.** Kilograms per litre of the fuel: Jet A-1 about 0.80, Avgas about 0.72. It belongs to the fuel, not to the aircraft: leave it empty for the airline’s value (Settings), else the typical one. Between 0.5 and 1.0.
 
-**Fuel units.** At the top of the editor, "Fuel read and typed in" offers kg, lb, l or US gal (and kg/h, lb/h, l/h, gal/h for the flows); each field and the RPM / fuel-flow table carry the unit chosen. The sheet keeps its stored unit: a line says it with the density used; a typed value is converted when saved, an untouched value does not change.
+**Fuel units.** At the top of the editor, "Fuel read and typed in" offers kg, lb, l or US gal (and kg/h, lb/h, l/h, gal/h for the flows); each field and the RPM / fuel-flow table carry the unit chosen. A converted value is written with two significant digits (12,407.6 lb/h reads 12000); a value you typed stays as you wrote it, and the sheet keeps its value as long as you do not touch the field. The sheet keeps its stored unit: a line says it with the density used; a typed value is converted when saved, an untouched value does not change.
 
 ## Good to know
 

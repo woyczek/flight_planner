@@ -995,13 +995,13 @@ def m25(c):
     ff = f'{M} {SHEETS} input[data-path="cruise.fuelFlowPerHour"]'
     c.eq(c.js(f"document.querySelector('{ff}').value"), '1000', 'read in its own unit first (lb/h)', what='lb/h')
     c.page.select_option(f'{M} {SHEETS} select[data-k="vunit"]', 'kg')
-    c.until(f"document.querySelector('{ff}')?.value === '453.6'", what='read in kg/h: 1000 lb/h = 453.6 kg/h')
+    c.until(f"document.querySelector('{ff}')?.value === '450'", what='read in kg/h: 1000 lb/h = 453.6 kg/h, shown at two significant digits « 450 » (SOG-0220)')
     lab = c.js(f"document.querySelector('{ff}').closest('label').textContent")
     c.ok('(kg/h)' in lab, lab, 'the unit is written beside the field')
     # the RPM table: inputs on a computer screen, its rows read only otherwise
     curve = c.js(f"""(() => {{ const i = [...document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=fuelFlowPerHour]')].map(i => i.value);
         return i.length ? i : [...document.querySelectorAll('{M} {SHEETS} details.f-card table tbody tr td:nth-child(3)')].map(td => td.textContent.trim()) }})()""")
-    c.eq(curve, ['362.9', '453.6'], 'the curve read in kg/h', what='curve kg/h')
+    c.eq(curve, ['360', '450'], 'the curve read in kg/h, at two significant digits (SOG-0220)', what='curve kg/h')
     c.ok(c.count(f'{M} {SHEETS} [data-vunitnote]') == 1, 'no note', 'the conversion is said')
     # a value typed in kg/h is stored in lb/h; the untouched ones stay exactly as they were
     open_group(c, 'cruise.fuelFlowPerHour')
@@ -1068,3 +1068,47 @@ def m37(c):
         first = c.js(f"document.querySelector('{M} {SHEETS} .f-item[data-id]').dataset.id")
         c.js(f"(() => {{ const r = document.querySelector('{M} {SHEETS} .f-item[data-id]'), m = r.querySelector('.f-muted:last-child') || r; m.click(); return true }})()")
         c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=save]')", timeout=8000, what=f'a tap on the line of {first} opens it')
+
+
+
+# SOG-0220: an invented sheet kept in lb with what an import's conversion left (more than three decimals), and one value typed by hand
+_S220 = {'id': 'XT220', 'name': 'XT220', 'icao': 'XT22', 'unit': 'lb', 'usableFuel': 2400, 'updated_at': '2026-10-28T10:00:00Z',
+         'cruise': {'tasKt': 280, 'fuelFlowPerHour': 12407.61611576491, 'rpmNominal': 1900}, 'climb': {'fuelFlowPerHour': 429.9014112605113}}
+
+
+@case('M38', 'Sheets: a converted fuel value is shown with two significant digits (« 12407.61611576491 lb/h » → « 12000 »); a typed value stays as typed; the sheet keeps its value until the field is edited',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0220 (user, 10 Nov: « la conversion des unités ne garde que 2 chiffres significatifs (à l\'affichage). si l\'utilisateur change les données, '
+      'on prend ce qu\'il a saisi » — « DEUX », 18 h 06); captures 390 and 1 280')
+def m38(c):
+    fu = lambda path: c.js(f"(document.querySelector('{M} {SHEETS} input[data-fu][data-path=\"{path}\"]') || {{}}).value")
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        sid = f'XT{w}{c.lang.upper()}'  # an id of its own per run: AeroDB keeps the sheets written by an earlier run of this browser
+        sheet = dict(_S220, id=sid, name=sid)
+        c.open('aircraft', docs=LEVEL3 + [[f'aircraft/sheets/{sid}.json', sheet, 'document'], TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+               wait=False, app='maintenance')
+        edit_sheet(c, sid)
+        c.eq(fu('cruise.fuelFlowPerHour'), '12000', f'{w} px: what a conversion left, at two significant digits', what='kept artefact')
+        c.eq(fu('usableFuel'), '2400', 'a value as typed stays as typed', what='typed')
+        c.js(f"document.querySelector('{M} {SHEETS} input[data-fu][data-path=\"cruise.fuelFlowPerHour\"]')?.closest('details')?.setAttribute('open', '')")
+        c.js(f"document.querySelector('{M} {SHEETS} input[data-fu][data-path=\"cruise.fuelFlowPerHour\"]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'M38_{c.design}_{w}_{c.lang}.png')
+        # read in kg: every value converted, at two significant digits
+        c.page.select_option(f'{M} {SHEETS} select[data-k="vunit"]', 'kg')
+        c.until(f"(document.querySelector('{M} {SHEETS} input[data-fu][data-path=\"usableFuel\"]') || {{}}).value === '1100'", what=f'{w} px: 2 400 lb → « 1100 » kg')
+        c.eq(fu('cruise.fuelFlowPerHour'), '5600', '12 407.6 lb/h → « 5600 » kg/h', what='converted')
+        # saved without touching the field: the sheet keeps its value; a value typed is taken as typed
+        c.page.select_option(f'{M} {SHEETS} select[data-k="vunit"]', 'lb')
+        c.until(f"(document.querySelector('{M} {SHEETS} input[data-fu][data-path=\"usableFuel\"]') || {{}}).value === '2400'", what='back in lb')
+        open_group(c, 'cruise.fuelFlowPerHour')
+        c.page.fill(f'{M} {SHEETS} input[data-fu][data-path="cruise.fuelFlowPerHour"]', '12500.5')
+        c.tap(f'{M} {SHEETS} [data-do="save"]')
+        c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review is shown')
+        c.eq(c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-review] input[data-path]')].map(i => i.dataset.path)"), ['cruise.fuelFlowPerHour'],
+             f'{w} px: only the edited field is proposed — the value shown rounded is not « changed »', what='review rows')
+        clear_notes(c)
+        c.tap(f'{M} {SHEETS} [data-do="apply"]')
+        d = c.until_doc(f'aircraft/sheets/{sid}.json', lambda d: d and (d.get('cruise') or {}).get('fuelFlowPerHour') == 12500.5, 'the typed value written', timeout=8000)
+        c.eq([d['cruise']['fuelFlowPerHour'], d['climb']['fuelFlowPerHour']], [12500.5, 429.9014112605113], f'{w} px: the untouched value kept, the typed one taken as typed', what='saved')
+

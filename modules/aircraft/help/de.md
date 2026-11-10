@@ -16,7 +16,7 @@ Die Flotte der Gesellschaft, so wie die anderen Bildschirme sie lesen: der Beric
 
 <a id="aircraft-fuel-density"></a>**Dichte.** Kilogramm pro Liter des Kraftstoffs: Jet A-1 etwa 0,80, Avgas etwa 0,72. Sie hängt vom Kraftstoff ab, nicht vom Luftfahrzeug: leer lassen für den Wert der Gesellschaft (Einstellungen), sonst der typische. Zwischen 0,5 und 1,0.
 
-**Kraftstoffeinheiten.** Oben im Editor bietet „Kraftstoff gelesen und eingegeben in“ kg, lb, l oder US gal (und kg/h, lb/h, l/h, gal/h für den Verbrauch); jedes Feld und die Tabelle Drehzahl / Verbrauch tragen die gewählte Einheit. Das Datenblatt behält seine Speichereinheit: eine Zeile nennt sie mit der verwendeten Dichte; ein eingegebener Wert wird beim Speichern umgerechnet, ein unberührter Wert ändert sich nicht.
+**Kraftstoffeinheiten.** Oben im Editor bietet „Kraftstoff gelesen und eingegeben in“ kg, lb, l oder US gal (und kg/h, lb/h, l/h, gal/h für den Verbrauch); jedes Feld und die Tabelle Drehzahl / Verbrauch tragen die gewählte Einheit. Ein umgerechneter Wert steht mit zwei signifikanten Stellen da (12 407,6 lb/h liest sich 12000); ein eingegebener Wert bleibt, wie Sie ihn geschrieben haben, und das Datenblatt behält seinen Wert, solange Sie das Feld nicht berühren. Das Datenblatt behält seine Speichereinheit: eine Zeile nennt sie mit der verwendeten Dichte; ein eingegebener Wert wird beim Speichern umgerechnet, ein unberührter Wert ändert sich nicht.
 
 ## Gut zu wissen
 

@@ -131,3 +131,9 @@
   kind (the source of SOG-0181); in Fiches the sheet's name opens it (the whole line too), the lone « Modifier » / « Créer la fiche » at
   the end of the line removed; « Ajouter » no longer pushed alone to the right (the 390 capture showed it on a line of its own). M37;
   counter-test on origin/v3: « Flotte » alone.
+- **10 Nov 2026 — a converted value is shown with two significant digits** (SOG-0220, user: « la conversion des unités ne garde que 2
+  chiffres significatifs (à l'affichage). si l'utilisateur change les données, on prend ce qu'il a saisi. 12407.61611576491 lb/h n'est
+  pas une donnée utile… »; the ergonomist proposed three, the user kept « DEUX » at 18 h 06). Converted: a value brought to the reading
+  unit, or a value the sheet keeps with more than three decimals (what an import's conversion left: the S210 and the TBM9 of the user's
+  repository hold them); typed: shown as typed. The sheet keeps its value until the field is edited (`fuelRead` compares with the text
+  shown). M38; counter-test on origin/v3: « 429.9014112605113 ».
