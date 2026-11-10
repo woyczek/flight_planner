@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "dfff6d2",
+  "organisation": "cdeb134",
   "fiches": 168,
   "untranslated": 1,
   "priorities": 152
@@ -1745,7 +1745,7 @@
     {
      "id": "SOG-0166",
      "kind": "bug",
-     "state": "planned",
+     "state": "done",
      "fr": "Pages hors V3 (Maintenance V2, fuel, missions V2, RAD d'origine, stats V2, canadair…) : regroupées en bas de la colonne, dans une seule entrée",
      "en": "Pages outside V3 (Maintenance V2, fuel, missions V2, original RAD, stats V2, Canadair…) grouped at the bottom of the column in one entry",
      "de": "Seiten außerhalb V3 (Wartung V2, Fuel, Missionen V2, ursprüngliches RAD, Stats V2, Canadair…) unten in der Spalte in einem Eintrag",
@@ -2142,7 +2142,7 @@
     {
      "id": "SOG-0167",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Recette : une page des tests fonctionnels à faire chaque jour, avec mes commentaires et le statut validé / refusé",
      "en": "Acceptance: a page of the functional tests to do each day, with my comments and an accepted / refused status",
      "de": "Abnahme: eine Seite mit den täglichen Funktionstests, mit meinen Kommentaren und dem Status angenommen / abgelehnt",

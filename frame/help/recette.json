@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 47,
+  "tests": 49,
   "verdicts": 0
  },
  "apps": [
@@ -618,6 +618,32 @@
     "es": "Mantenimiento: la página tarda más de dos segundos en abrirse (dos llamadas /__setup/changes seguidas)"
    },
    "test": "Relancer le lanceur, puis ouvrir Maintenance › Données : la page est utilisable en moins d'une seconde, sans temps mort avant l'affichage.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0166",
+   "app": "maintenance",
+   "title": {
+    "fr": "Pages hors V3 (Maintenance V2, fuel, missions V2, RAD d'origine, stats V2, canadair…) : regroupées en bas de la colonne, dans une seule entrée",
+    "en": "Pages outside V3 (Maintenance V2, fuel, missions V2, original RAD, stats V2, Canadair…) grouped at the bottom of the column in one entry",
+    "de": "Seiten außerhalb V3 (Wartung V2, Fuel, Missionen V2, ursprüngliches RAD, Stats V2, Canadair…) unten in der Spalte in einem Eintrag",
+    "es": "Páginas fuera de V3 (Mantenimiento V2, fuel, misiones V2, RAD original, estadísticas V2, Canadair…) agrupadas al pie de la columna en una entrada"
+   },
+   "test": "Maintenance : plus d'entrée « Page de maintenance (V2) » dans la colonne ; tout en bas, « Anciennes pages (V2) » ouvre une page qui range les pages V2 par groupe, chacune dans un nouvel onglet.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0167",
+   "app": "maintenance",
+   "title": {
+    "fr": "Recette : une page des tests fonctionnels à faire chaque jour, avec mes commentaires et le statut validé / refusé",
+    "en": "Acceptance: a page of the functional tests to do each day, with my comments and an accepted / refused status",
+    "de": "Abnahme: eine Seite mit den täglichen Funktionstests, mit meinen Kommentaren und dem Status angenommen / abgelehnt",
+    "es": "Recepción: una página con las pruebas funcionales diarias, con mis comentarios y el estado validado / rechazado"
+   },
+   "test": "Relancer le lanceur, puis Maintenance › Recette : valider un test, en refuser un autre avec un commentaire, recharger → les verdicts sont tenus ; un refus sans commentaire n'est pas envoyé.",
    "since": "2026-11-10",
    "state": "todo"
   }
