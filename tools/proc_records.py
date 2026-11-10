@@ -294,7 +294,7 @@ def records(icao, table, coords, source, cycle, ils=None):
         final = next((g for g in reversed(table['groups']) if g['label'] == 'APCH'), None)
         inas = [g for g in table['groups'] if g is not final and (g['label'] or '').startswith('INA ') and not g.get('skip')]
         name = table['title']
-        for g in inas or [None]:
+        for g in (inas + [None] if inas and final else inas or [None]):         # SOG-0216 : chaque transition ET la finale seule (comme le CIFP : « 4 transitions + 1 finale » = 5 tracés)
             legs = (g['legs'] if g else []) + ([l for l in final['legs'] if not (g and l is final['legs'][0] and l['id'] and
                                                                                   g['legs'][-1]['id'] == l['id'])] if final else [])
             trans = g['label'][4:] if g else None

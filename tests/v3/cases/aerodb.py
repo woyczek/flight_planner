@@ -298,7 +298,7 @@ def k3(c):
     c.ok(doc2['procedures'] == [] and doc2['formats'][0]['ok'] is False and any('NON lue' in w for w in doc2['warnings']), f"{doc2['formats']} {doc2['warnings']}",
          'in the aerodrome file a refused page gives no procedure, a "formats" entry with ok false and a "page NON lue" warning')
     idx = P.index_of({'LFBD': doc}, '2026-10-01')
-    c.eq((idx['aerodromes']['LFBD']['SID'], idx['aerodromes']['LFBD']['STAR'], idx['aerodromes']['LFBD']['APP']), (4, 6, 4), 'counts per kind', what='index')
+    c.eq((idx['aerodromes']['LFBD']['SID'], idx['aerodromes']['LFBD']['STAR'], idx['aerodromes']['LFBD']['APP']), (4, 6, 5), 'counts per kind (SOG-0216: each approach also has its final alone)', what='index')
 
 
 # ------------------------------------------------------------------------------------------------ FAA CIFP (static)
@@ -1917,12 +1917,12 @@ def k23(c):
             before = git(data, 'rev-parse', 'HEAD').strip()
             job = RJ.Job('proc', 'eaip-fetch', {'icao': 'LFBD'}, author='TST')
             r = run(ctx, job=job)
-            c.ok(r.get('ok') is True and r['icao'] == 'LFBD' and r['procedures'] == 14 and r['source'] == 'eaip' and r['cycle'] == cycle, str(r)[:300],
-                 'success: ok, the aerodrome, its 14 procedures, source eaip, the cycle in force')
+            c.ok(r.get('ok') is True and r['icao'] == 'LFBD' and r['procedures'] == 15 and r['source'] == 'eaip' and r['cycle'] == cycle, str(r)[:300],
+                 'success: ok, the aerodrome, its 15 procedures, source eaip, the cycle in force')
             c.ok(asked and all(u.startswith(folder) for u in asked), str(asked[:3]), 'every address asked is under the AIRAC folder computed by the tool')
             inst = json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())
             idx = json.loads((data / 'proc' / 'manual' / 'index.json').read_text())
-            c.ok(len(inst['procedures']) == 14 and all(p['status'] == 'check' and p['source']['kind'] == 'eaip' and p['source']['cycle'] == cycle for p in inst['procedures']),
+            c.ok(len(inst['procedures']) == 15 and all(p['status'] == 'check' and p['source']['kind'] == 'eaip' and p['source']['cycle'] == cycle for p in inst['procedures']),
                  str([(p['status'], p['source']) for p in inst['procedures']][:2]), 'installed records keep status check and source eaip, with the cycle')
             c.ok(sorted(idx['aerodromes']) == ['KSEA', 'LFBD'] and idx['aerodromes']['LFBD']['SID'] == 4 and idx['aerodromes']['LFBD']['STAR'] == 6, str(idx),
                  'proc/manual/index.json merged (the other aerodromes kept)')
@@ -1938,9 +1938,9 @@ def k23(c):
             c.ok(job.view()['step'] and job.view()['log'] and job.view()['total'] >= 1, str(job.view()['step']), 'the job reports its steps and keeps a log')
 
             # the report of the reading (counts, not a bare « 0 procedures ») and the installed file as written, for the page
-            c.eq(r['stats'], {'pages': 3, 'read': 3, 'rejected': 0, 'procedures': 14, 'dropped': 0, 'doubt': 0, 'reasons': []}, 'stats: coding pages found / read / rejected, procedures, dropped, doubt, reasons', what='stats')
+            c.eq(r['stats'], {'pages': 3, 'read': 3, 'rejected': 0, 'procedures': 15, 'dropped': 0, 'doubt': 0, 'reasons': []}, 'stats: coding pages found / read / rejected, procedures, dropped, doubt, reasons', what='stats')
             c.eq(r['file'], json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text(encoding='utf-8')), 'the result carries the installed file, read back from the disk (the same JSON)', what='file')
-            c.ok(any('14 procédure' in x and '3 page' in x for x in job.view()['log']), str(job.view()['log'])[-300:], 'the job log says the same counts')
+            c.ok(any('15 procédure' in x and '3 page' in x for x in job.view()['log']), str(job.view()['log'])[-300:], 'the job log says the same counts')
             # a former reading of the same source under an identifier the reader no longer produces does not stay beside the new one
             stale = json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())
             stale['procedures'] += [{'id': 'LFBD.APP.OLDNAME.RW23', 'icao': 'LFBD', 'kind': 'APP', 'status': 'check', 'source': {'kind': 'eaip', 'cycle': '2026-01-01'}, 'points': []}]
@@ -1950,12 +1950,12 @@ def k23(c):
             except Exception as e:
                 r1 = {'ok': False, 'message': str(e)}
             kept = [p['id'] for p in json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())['procedures']]
-            c.ok(r1.get('ok') and 'LFBD.APP.OLDNAME.RW23' not in kept and len(kept) == 14, str(r1)[:200] + str(kept[-3:]),
+            c.ok(r1.get('ok') and 'LFBD.APP.OLDNAME.RW23' not in kept and len(kept) == 15, str(r1)[:200] + str(kept[-3:]),
                  'a new reading replaces the former eaip procedures of the aerodrome: a changed identifier leaves no ghost beside the new ones')
-            # the same reading again (a new `updated_at`): merged by id, still 14 procedures, never duplicated
+            # the same reading again (a new `updated_at`): merged by id, still 15 procedures, never duplicated
             r2 = run(ctx)
-            c.ok(r2['ok'] and r2['procedures'] == 14 and len(json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())['procedures']) == 14, str(r2)[:300],
-                 'the same reading again: installed over the former one by procedure id, 14 procedures and no duplicate')
+            c.ok(r2['ok'] and r2['procedures'] == 15 and len(json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text())['procedures']) == 15, str(r2)[:300],
+                 'the same reading again: installed over the former one by procedure id, 15 procedures and no duplicate')
 
             # a base placed with the data resolves the en-route points; a wrong position fails the geometry check: that procedure is not installed
             base = data / 'sia' / 'base' / 'fr' / cycle
@@ -1965,11 +1965,11 @@ def k23(c):
             r3 = run(ctx)
             inst3 = json.loads((data / 'proc' / 'manual' / 'LFBD.json').read_text(encoding='utf-8'))['procedures']
             bad3 = [p for p in inst3 if p['status'] == 'doubt']
-            c.ok(r3['ok'] and r3['procedures'] == 14 and bad3 and r3['stats']['doubt'] == len(bad3) and r3['stats']['dropped'] == 0
+            c.ok(r3['ok'] and r3['procedures'] == 15 and bad3 and r3['stats']['doubt'] == len(bad3) and r3['stats']['dropped'] == 0
                  and all(p['doubt'] == 'geometry' for p in bad3) and any('À VÉRIFIER' in w for w in r3['warnings']), str(r3)[:300],
                  'a wrong position from the base of the workstation fails the geometry check: that procedure is KEPT with status doubt and its reason, counted in stats.doubt, a warning says which')
             idx3 = json.loads((data / 'proc' / 'manual' / 'index.json').read_text(encoding='utf-8'))['aerodromes']['LFBD']
-            c.ok(idx3['SID'] + idx3['STAR'] + idx3['APP'] == 14 - len(bad3), str(idx3), 'the doubt records are not counted in the index of the aerodromes')
+            c.ok(idx3['SID'] + idx3['STAR'] + idx3['APP'] == 15 - len(bad3), str(idx3), 'the doubt records are not counted in the index of the aerodromes')
 
         # another source's file is never overwritten; git absent keeps ok with a warning
         with tempfile.TemporaryDirectory() as td:
@@ -2035,7 +2035,7 @@ def k23(c):
             with contextlib.redirect_stderr(err):
                 P.main(['LFBD', '--eaip', P.eaip_url('2026-10-01'), '--out', str(Path(td) / 'proc'), '--cache', str(Path(td) / 'cache')])
             out = json.loads((Path(td) / 'proc' / '2026-10-01' / 'LFBD.json').read_text(encoding='utf-8'))
-            c.ok(len(out['procedures']) == 14 and 'LFBD: 14 procédure(s)' in err.getvalue(), err.getvalue()[:200], 'proc_sia.main() still writes the cycle folder and reports on stderr')
+            c.ok(len(out['procedures']) == 15 and 'LFBD: 15 procédure(s)' in err.getvalue(), err.getvalue()[:200], 'proc_sia.main() still writes the cycle folder and reports on stderr')
             state['names'] = ['AD_2_LFXX_ADC.pdf']
             err = io.StringIO()
             with contextlib.redirect_stderr(err):
@@ -2187,7 +2187,7 @@ def k24(c):
     c.ok(_gaps_of({'points': pts}) and not _gaps_of({'points': [pts[0], {**pts[1], 'gap': True}]}), 'gap', 'the geometry check skips the leg flagged gap, and still catches the same leg without the flag')
     # 9. the missed approach of the RNP pages: after the threshold point; none before
     r20 = P.records('LFPO', T('AD_2_LFPO_DATA_RWY20_FNA_RNP_CODE'), {}, 'x', '2026-10-01')[0]
-    c.eq(len(r20), 1, 'RWY20: one approach (the former reading gave two, without its threshold)', what='LFPO RNP 20')
+    c.eq((len(r20), [x['transition'] for x in r20][1:]), (2, [None]), 'RWY20: the transition with its final, and the final alone (SOG-0216: 4 transitions + 1 final); the former reading gave two without the threshold', what='LFPO RNP 20')
     pm = [(p['id'], p.get('phase')) for p in r20[0]['points']]
     k = [p[0] for p in pm].index('RW20')
     c.ok(k > 0 and all(ph is None for _, ph in pm[:k + 1]) and [p for p, ph in pm[k + 1:] if ph == 'missed'] == ['PO425', 'MLN', 'MOLBA'] and all(ph == 'missed' for _, ph in pm[k + 1:]), str(pm),
@@ -7230,6 +7230,9 @@ def k148(c):
          ('IF', {'type': 'at', 'ft': 2200}, 220, 329, 5.0, {'type': 'at', 'ft': 2100}), 'an IF row (no course, no distance) and a TF row: course, distance and altitudes by their patterns', what='if tf')
     c.eq((f['RW04']['over'], f['RW04']['vpa'], f['RW04']['crs'], f['RW04']['nm'], f['OE406']['crs'], f['OE406']['nm'], f['OE406']['alt'], f['OE403']['alt']),
          (True, -3.0, 39, 5.0, 39, 6.0, None, {'type': 'at', 'ft': 3200}), 'the runway point (overfly, vertical angle), a leg without altitude (none invented), the missed approach\'s last leg', what='approach')
+    R = importlib.import_module('proc_records')
+    recs = R.records('LFOE', r, {}, 'x', '2026-10-29')[0]
+    c.eq(([x['transition'] for x in recs], [x['kind'] for x in recs]), (['OE401', 'OE402', 'OE403', None], ['APP'] * 4), 'an approach page gives one record per transition AND the final alone (SOG-0216, LFRS: « 4 transitions + 1 finale » = 5 tracés, as the CIFP does)', what='final alone')
     c.eq((P._dircam_leg(['TF', 'IOE04', '-', '329', '329.9', '5.0', '2100', '2100']), P._dircam_leg(['TF', 'IOE04', '329', '5.0']), P._dircam_leg(['TF', 'IOE04', '329', '329.9', '5.0', '2100', '3000', '4000'])), (None, None, None),
          'never by patterns: a row with a dash (a civil page: its columns tell), a TF without true course, three altitudes', what='refused')
 
