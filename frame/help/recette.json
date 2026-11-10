@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 54,
-  "verdicts": 10
+  "verdicts": 13
  },
  "apps": [
   "pilote",
@@ -52,7 +52,9 @@
    },
    "test": "Compagnie › Missions › une mission : la première page montre titre, catégorie, trois risques, équipes, zones, « Préparer ce vol » ; « Détail » ouvre description, zones à activer, cartes ; « Voir sur la Carte » d'une zone ouvre la Carte centrée dessus.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ko",
+   "comment": "oui, mais la description courte, avant les les risques.  addenda au précédent reporting : oui pour la carte, c’est bien. néanmoins, on affiche les cartes selon différents thèmes : VFR topographique sur la carte « cible » d’un SAR ou HEMS, par ex.. Généralement sur une mission SO, la cible est en vfr. d’autres aussi, à réfléchir (ou trancher, ou permettre de changer de vue). sur une commerciale, non, mais sur du SO, oui.  Validé, avec réserves, donc refusé.",
+   "at": "2026-11-10T09:35:59Z"
   },
   {
    "id": "SOG-0056",
@@ -63,9 +65,11 @@
     "de": "Pilotenbildschirm 1: Eine Schaltfläche „Auto“ berechnet die Flugfläche aus Kraftstoff und Zeit",
     "es": "Pantalla 1 del piloto: un botón « Auto » calcula el nivel a partir del combustible y el tiempo"
    },
-   "test": "Carburant › Vol, avec une route et une fiche : toucher « Auto » à côté du niveau → « FL… (auto) » et le temps de vol s'affichent ; changer la route → le niveau est recalculé ; taper un niveau à la main → « (auto) » disparaît.",
+   "test": "Carburant › Vol : « Niveau (FL) » et « Date du vol » sont sur la même rangée, alignés ; « Auto » est collé à droite du champ Niveau ; dessous, une seule ligne « auto · durée ». Changer la route → le niveau est recalculé ; taper un niveau → « auto » disparaît.",
    "since": "2026-11-09",
-   "state": "known"
+   "state": "ko",
+   "comment": "accepté, mais régression sur l’affichage. mauvais placement du label, écran devenu brouillon (screenshot)",
+   "at": "2026-11-10T09:05:53Z"
   },
   {
    "id": "SOG-0057",
@@ -89,9 +93,11 @@
     "de": "Kraftstoff: Das Flugzeug des Flugs im Klartext; die Flugzeugauswahl hat dieselbe Suchmaschine wie die Einstellungen",
     "es": "Combustible: la aeronave del vuelo dicha en claro; la elección de aeronave usa el mismo motor de búsqueda que los ajustes"
    },
-   "test": "Carburant › Résultat : l'appareil du devis est écrit en tête de la barre (« FA50 · F-GXXX ») avec un bouton vers son choix. Dans Fiches, la recherche d'appareil est la même que dans les Réglages.",
+   "test": "Carburant › Vol : le bouton « Changer » (avec la loupe) suit immédiatement le nom de l'appareil, dans sa ligne ; il ouvre la recherche d'appareil. Carburant › Résultat : l'appareil du devis est écrit en tête de la barre.",
    "since": "2026-11-09",
-   "state": "known"
+   "state": "ko",
+   "comment": "le bouton de recherche est au bout du monde (le seul à être aligné à droite) et on ne le voit pas. ergonomie.",
+   "at": "2026-11-10T09:06:29Z"
   },
   {
    "id": "SOG-0065",

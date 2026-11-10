@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c8af0c1",
+  "organisation": "3f5e1ac",
   "fiches": 170,
   "untranslated": 1,
   "priorities": 152
@@ -303,7 +303,7 @@
     {
      "id": "SOG-0056",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Écran 1 du pilote : un bouton « Auto » calcule le niveau depuis le carburant et le temps",
      "en": "Pilot screen 1: an “Auto” button calculates the level from fuel and time",
      "de": "Pilotenbildschirm 1: Eine Schaltfläche „Auto“ berechnet die Flugfläche aus Kraftstoff und Zeit",
@@ -336,7 +336,7 @@
     {
      "id": "SOG-0060",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant : l'appareil du vol dit en clair ; le choix de l'appareil a le même moteur de recherche que les réglages",
      "en": "Fuel: the flight's aircraft stated in plain words; the aircraft choice has the same search engine as the settings",
      "de": "Kraftstoff: Das Flugzeug des Flugs im Klartext; die Flugzeugauswahl hat dieselbe Suchmaschine wie die Einstellungen",
