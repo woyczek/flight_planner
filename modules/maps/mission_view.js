@@ -22,7 +22,8 @@ import {
 import {
   viewOf,
   saveUi,
-  invalidate
+  invalidate,
+  applyFlight
 } from './data.js';
 import {
   themeProfile,
@@ -32,7 +33,8 @@ import {
   header,
   status,
   showBox,
-  styleFor
+  styleFor,
+  frameFlight
 } from './screen.js';
 import {
   buildProfile
@@ -168,10 +170,43 @@ export async function loadAside() {
   bannerFill();
   schedule();
 }
+/** Une carte fournie choisie dans la fenêtre d'un vol (SOG-0196) : montrée sur place, dans le volet de la Carte, sans changer l'adresse (Carburant reste à côté) ; la Carte
+ *  passe en vue mission (S.missionId) tant que cette carte est montrée, le vol et ses couches reviennent par « Vol » (leaveProvided). */
+export const showProvided = file => serial(async () => {
+  if (!S?.missionAside || !S.mission) return;
+  S.missionId = S.missionAside;
+  S.mapWanted = file;
+  await applyMission();
+  if (!S) return;
+  if (S.map) {
+    S.userMoved = false;
+    frameFlight(true); // la carte choisie est cadrée (SOG-0184 b)
+  }
+  schedule();
+});
+/** Retour au vol depuis la carte fournie montrée sur place : le vol, ses couches et son fond reviennent, la mission en surimpression. */
+export const leaveProvided = () => serial(async () => {
+  if (!S?.missionAside || !S.missionId) return;
+  const before = S.map ? styleFor() : '';
+  S.missionId = '';
+  S.mapWanted = '';
+  S.mapDef = null;
+  await applyFlight(false);
+  if (!S) return;
+  restyle(before);
+  missionUi();
+  await loadAside();
+});
+/** Les passages vol ↔ carte fournie se font l'un après l'autre (un choix fait pendant le précédent attend qu'il ait fini). */
+let turn = Promise.resolve();
+const serial = fn => turn = turn.then(fn, fn);
 /** Mission (re)lue et carte choisie : profil, emprise, cheminement tracé si la carte le demande, profil vertical. */
 export async function applyMission() {
   const q = {
     ...(S.ctx.query || {}),
+    ...(S.mapWanted ? {
+      map: S.mapWanted // la carte fournie choisie dans la fenêtre d'un vol : montrée sur place (SOG-0196), l'adresse ne change pas
+    } : {}),
     mission: S.missionId
   };
   await loadMission(q.mission);
@@ -291,12 +326,14 @@ function go(mission, map) {
  *  relue quand son YAML change. Rend la fonction d'arrêt de l'écoute. */
 export function missionEvents() {
   S.mbarEl.addEventListener('change', e => {
-    if (e.target.matches('.mp-mb-sel')) go(S.missionId, e.target.value);
-    else if (e.target.matches('.mp-mb-theme')) setTheme(e.target.value);
+    if (e.target.matches('.mp-mb-sel')) {
+      if (S.missionAside) e.target.value ? showProvided(e.target.value) :
+        leaveProvided(); // la fenêtre d'un vol : sur place, Carburant reste à côté
+      else go(S.missionId, e.target.value);
+    } else if (e.target.matches('.mp-mb-theme')) setTheme(e.target.value);
   });
   S.mbarEl.addEventListener('click', e => {
-    if (e.target.closest('[data-mbx]')) go('', ''); // le bandeau retiré : le vol et ses couches
-    else if (e.target.closest('[data-mbo]')) go(S.missionAside, ''); // la carte de la mission (vue mission) depuis le vol
+    if (e.target.closest('[data-mbx]')) S.missionAside ? leaveProvided() : go('', ''); // la croix : le vol et ses couches
   });
   const id = S.missionId || S.missionAside;
   if (!id) return () => {};
@@ -316,14 +353,19 @@ export function bannerFill() {
   const el = S?.mbarEl;
   if (!el) return;
   const M = S.mission,
-    aside = !S.missionId && !!S.missionAside && !!M, // la mission d'un vol, en surimpression de la vue vol (SOG-0193 L1)
-    on = (!!S.missionId || aside) && !!M,
+    flightView = !S.missionId && !!S.missionAside && !!M, // la mission d'un vol, en surimpression de la vue vol (SOG-0193 L1)
+    on = (!!S.missionId || flightView) && !!M,
+    id = S.missionId || S.missionAside,
     maps = (M?.maps || []).slice(0, 7),
-    cur = S.mapDef?.file || '',
-    fam = familyOf(S.missionId || S.missionAside),
-    html = aside ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || S.missionAside)}</b></div>
-<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || S.missionAside)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div><button type="button" class="f-btn mp-mb-open" data-mbo>${esc(tt(TX.mbOpen))}</button>` : on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || S.missionId)}</b><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
-<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || S.missionId)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${maps.length > 1 ? `<label class="mp-mb-map"><span>${esc(tt(TX.mbMap))}</span><select class="mp-mb-sel" aria-label="${esc(tt(TX.mbMap))}">${maps.map(m => `<option value="${esc(m.file)}"${m.file === cur ? ' selected' : ''}>${esc(m.description || m.file)}</option>`).join('')}</select></label>` : maps.length === 1 ? `<div class="mp-mb-sub">${esc(maps[0].description || maps[0].file)}</div>` : ''}<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}">${['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml').map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>` : '';
+    cur = flightView ? '' : S.mapDef?.file || '',
+    fam = familyOf(id),
+    // la liste des cartes : celle d'un vol commence par « Vol » (la vue vol, la mission par-dessus), choisir une carte fournie la montre sur place (SOG-0196)
+    mapSel = S.missionAside || maps.length > 1 ? `<label class="mp-mb-map"><span>${esc(tt(TX.mbMap))}</span><select class="mp-mb-sel" aria-label="${esc(tt(TX.mbMap))}">${S.missionAside ? `<option value=""${flightView ? ' selected' : ''}>${esc(tt(TX.mbFlight))}</option>` : ''}${maps.map(m => `<option value="${esc(m.file)}"${m.file === cur ? ' selected' : ''}>${esc(m.description || m.file)}</option>`).join('')}</select></label>` : maps.length === 1 ? `<div class="mp-mb-sub">${esc(maps[0].description || maps[0].file)}</div>` : '',
+    // la vue : celle de la carte fournie montrée ; sur la vue vol, la vue est celle du vol (liste grisée)
+    themes = ['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml'),
+    themeSel = `<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}"${flightView ? ' disabled' : ''}>${flightView ? `<option>${esc(tt(TX.mbFlight))}</option>` : themes.map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>`,
+    html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b>${flightView ? '' : `<button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button>`}</div>
+<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || id)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${mapSel}${themeSel}` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
   setData(el, 'maps', String(maps.length));

@@ -388,13 +388,13 @@ descenso habituales. Cuando falta sitio, el mapa escribe primero el nombre del a
 las radioayudas, los procedimientos, la ruta (nombres, horas, TOC / TOD) y por último lo demás; una hora estimada o el
 nombre de TOC / TOD se desliza a lo largo de la ruta antes de callarse (el rombo queda).
 
-**Un vuelo que nombra una misión.** El mapa sigue siendo el del vuelo, con todo lo que sabe hacer (meteo, procedimientos, edición de la ruta, casillas de Capas, rutas propuestas); la misión se dibuja encima: sus zonas, sus puntos con función (salida, llegada, objetivo…) y, arriba a la izquierda, una ventana con su título, identificador, familia y «Mapa de la misión».
+**Un vuelo que nombra una misión.** El mapa sigue siendo el del vuelo, con todo lo que sabe hacer (meteo, procedimientos, edición de la ruta, casillas de Capas, rutas propuestas); la misión se dibuja encima: sus zonas, sus puntos con función (salida, llegada, objetivo…) y, arriba a la izquierda, una ventana con su título, identificador, familia y dos listas: «Mapa suministrado» («Vuelo» primero, luego los mapas de la misión: elegir uno lo muestra en el sitio, Combustible sigue al lado, «Vuelo» vuelve al vuelo) y «Vista».
 
 **Los mapas de misión.** Una misión se abre desde Misiones («Ver en el mapa»), o desde la ventana de un vuelo que la nombra; una ventana arriba a la izquierda del mapa es el único lugar para elegir la misión, su mapa suministrado (vista de conjunto, objetivo, detalle…) y su vista; la pestaña Capas solo ajusta lo que se muestra.
 Cada
 mapa se redibuja como en el estudio: mismo marco, mismo perfil de visualización, con los puntos de la misión, sus zonas
 rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
-«Mapa de la misión» (o «Ver en el mapa» desde Misiones) abre el mapa de la misión: una banda arriba da su título, su identificador, su familia, el mapa suministrado mostrado y, si hay varios, su elección (siete como máximo). Las zonas son una mancha ligera con su nombre, los puntos llevan su función (salida, llegada, objetivo…) y la leyenda («i») las nombra. La cruz de la banda la quita: se vuelve al vuelo con todas sus capas; otra misión se elige en la lista de capas. El mapa se abre en la vista de su uso: el perfil que lleva el YAML del mapa tiene prioridad; si no, los mapas de objetivo, detalle, cita y zona de una misión operativa (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: todo salvo comercial) se abren en VFR topo (relieve, obstáculos, VRP, aeródromos VFR, espacios bajos), el mapa general y una misión comercial mantienen la vista del vuelo. La banda ofrece «Vista»: VFR topo, IFR o Solo fondo; la elección se recuerda para ese mapa en el dispositivo, y quitar la banda devuelve la vista del vuelo.
+Un mapa suministrado (elegido en la ventana de un vuelo, o «Ver en el mapa» desde Misiones) muestra: una banda arriba da su título, su identificador, su familia, el mapa suministrado mostrado y, si hay varios, su elección (siete como máximo). Las zonas son una mancha ligera con su nombre, los puntos llevan su función (salida, llegada, objetivo…) y la leyenda («i») las nombra. La cruz de la banda la quita: se vuelve al vuelo con todas sus capas; otra misión se elige en la lista de capas. El mapa se abre en la vista de su uso: el perfil que lleva el YAML del mapa tiene prioridad; si no, los mapas de objetivo, detalle, cita y zona de una misión operativa (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: todo salvo comercial) se abren en VFR topo (relieve, obstáculos, VRP, aeródromos VFR, espacios bajos), el mapa general y una misión comercial mantienen la vista del vuelo. La banda ofrece «Vista»: VFR topo, IFR o Solo fondo; la elección se recuerda para ese mapa en el dispositivo, y quitar la banda devuelve la vista del vuelo.
 
 <a id="maps-edit"></a>**Modificar la ruta en el mapa.** Toque «Editar en el mapa» (las cuatro flechas, a la derecha del mapa; la primera vez aparece una breve ayuda): los puntos de giro se rodean de un
 círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar, se
@@ -439,7 +439,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 7b5c7ac7f92b -->
+<!-- fr: 8fdd30cdbb88 -->
 
 <!-- chapter: atmosphere -->
 # Meteo

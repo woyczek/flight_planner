@@ -2299,6 +2299,17 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## The window of a flight keeps its two lists; a provided map is shown in place (10 Nov 2026, SOG-0196 refused again: « sur la vue carburant, on n'a qu'un bouton « carte de la mission » qui renvoie vers les cartes »)
+- **Cause**: my L1 window (SOG-0193) replaced « Provided map » and « View » by a button that changed the address (`#maps?mission=<ID>`): beside Fuel that leaves Fuel. **Ergonomics' ruling**: the window gets its
+  lists back; choosing a provided map shows it on the spot, without leaving Fuel. (I had kept the lists out because the flight view has no « view »: wrong, he likes them.)
+- **Done**: the list « Provided map » of a flight's window starts with « Flight » (the flight view, the mission over it), then the maps of the mission; « View » is greyed on the flight (the flight's own view).
+  Choosing a map (`showProvided`) puts the Map in the mission view in place — `S.missionId` set at run time, `applyMission` with `S.mapWanted`, the base swapped, the map framed — and **the address does not change**;
+  « Flight » or the cross (`leaveProvided`) gives back the flight view (`applyFlight`, base and layers), the mission over it again. The two passages are serialised (a choice made during the previous waits for it);
+  a flight read while a provided map is shown does not take its place (`applyFlight` leaves it). A mission opened from the address (Missions → « See on the Map ») keeps its window and its cross as they were.
+- **Fixed on the way** (found by the cases): a tap before the first drawing called `S.toC` (undefined): « toC is not a function » (`tips.js`, a flake seen in D138 for a day); the light drawing without
+  source (mission view, empty route) falls back to the full drawing (`draw.js`).
+- **Noreg** D157 (in the double view: the map chosen in the window, address unchanged, Fuel still there, a live flight change leaves the map, « Flight » gives the flight back), D123 and D153 follow.
+
 ## Choosing a provided map frames it; the contours are there on real tiles (10 Nov 2026, SOG-0184 a and b refused)
 - **(b) Cause**: the camera the user's gesture keeps (`keep.cam`) was keyed on the flight (`flightSig`), which is empty on a mission map: the same key for every provided map of every mission, so after a
   move or a resize the kept camera won over the extent of the map chosen — « sans effet, à part un clignotement ». `flightSig` is now `mission|id|file` on a mission map; D156 (red before: the map stayed

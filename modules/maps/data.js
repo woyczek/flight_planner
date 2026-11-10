@@ -214,6 +214,7 @@ export const viewOf = () => {
  *  écriture du vol pendant qu'on le regarde — la caméra de l'utilisateur est gardée (SPEC § 5), les zones déjà lues ne sont
  *  pas relues. */
 export async function applyFlight(live = false) {
+  if (S?.missionId) return; // une carte fournie est montrée sur place (SOG-0196) : le vol relu ne prend pas sa place
   const route = await readFlight();
   if (!S || !route) return; // quittée pendant la lecture : rien n'est posé sur un état démonté
   S.route = route;

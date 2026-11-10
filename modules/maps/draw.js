@@ -122,7 +122,8 @@ function tick(kind) {
     sched.raf = 0;
     sched.kind = null;
     if (!S) return;
-    if (k === 'full' || !S.map || !S.frame?.bmp) return draw();
+    if (k === 'full' || !S.map || !S.frame?.bmp || !S.lightSrc)
+      return draw(); // pas de source du dessin léger (carte de mission, route vide) : le dessin complet
     if (sched.lightOn && performance.now() - sched.lastLight >= LIGHT_MS) light();
     else follow();
   });

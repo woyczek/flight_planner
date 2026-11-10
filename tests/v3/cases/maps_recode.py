@@ -3742,19 +3742,24 @@ def d123(c):
     lg = c.js("() => [...document.querySelectorAll('.mp-legend li')].map(l => l.textContent)")
     c.ok(any(r in lg for r in roles), str(lg), 'a role of a point is named in the legend')
     c.tap('.mp-chip[data-legend]')
-    # « The mission's map » opens the mission view (its provided maps, its views), the window follows
-    c.tap('.mp-mbar [data-mbo]')
-    c.until("() => location.hash.includes('mission=ESSAI1')", timeout=6000, what='the button opens the map of the mission')
-    c.until("() => !!document.querySelector('.mp-mbar .mp-mb-sel') && !document.querySelector('.mp-mbar').hidden", timeout=10000, what='the window of the mission view: the provided maps and the views')
+    # choosing a provided map shows it in place (the address does not change: Fuel stays beside), the window keeps its two lists
     opts = c.js("() => [...document.querySelectorAll('.mp-mbar .mp-mb-sel option')].map(o => o.value)")
-    c.eq(opts, ['carte_generale.png', 'carte_cible.png'], 'the provided maps are offered (seven at most), the first one shown', what='options')
-    # removing the banner: the flight and its layers
+    c.eq(opts, ['', 'carte_generale.png', 'carte_cible.png'], 'the window offers the flight first, then the provided maps (seven at most)', what='options')
+    c.eq(c.js("() => [document.querySelector('.mp-mbar .mp-mb-sel').value, document.querySelector('.mp-mbar .mp-mb-theme').disabled]"), ['', True], 'on the flight view the flight is selected and the view list is greyed', what='selected')
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_cible.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === 'ESSAI1' && !!window.__mp.S.mapDef && window.__mp.S.mapDef.file === 'carte_cible.png'", timeout=10000, what='the provided map is shown in place')
+    c.ok('mission=' not in c.js("() => location.hash"), c.js("() => location.hash"), 'the address did not change (Fuel stays beside)')
+    c.eq(c.js("() => document.querySelector('.mp-mbar .mp-mb-theme').disabled"), False, 'the view list works on a provided map', what='view list')
+    # « Flight » (or the cross) gives the flight and its layers back
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === '' && window.__mp.S.route.points.length >= 2 && !!window.__mp.S.route.flight", timeout=10000, what='the flight view is back')
+    c.eq(c.js("() => document.querySelector('.mp-mbar .mp-mb-sel').value"), '', 'the window says the flight again', what='selected after')
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_generale.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === 'ESSAI1'", timeout=10000, what='a provided map again')
     c.tap('.mp-mbar [data-mbx]')
-    c.until("() => location.hash.includes('flight=1')", timeout=6000, what='the cross removes the banner')
-    c.until("() => !document.querySelector('.mp-mbar') || document.querySelector('.mp-mbar').hidden", timeout=10000, what='the banner is gone')
-    c.wait(800)
+    c.until("() => window.__mp.S.missionId === '' && !!window.__mp.S.route.flight", timeout=10000, what='the cross gives the flight back (in place, not through the address)')
+    c.ok('flight=1' not in c.js("() => location.hash"), c.js("() => location.hash"), 'the address is untouched')
     c.js(_STATE_JS)
-    c.eq(c.js("() => window.__mp.S.missionId"), '', 'the Map is on the flight again (its layers, its route)', what='missionId')
 
 
 _WINDS_JS = """() => { const S = window.__mp.S; return (S.windHits || []).map(h => ({ gap: !!h.w.gap, model: h.w.model || '', dir: Math.round(+h.w.dirDeg), kt: Math.round(+h.w.kt), lat: h.w.lat, lon: h.w.lon })) }"""
@@ -4861,8 +4866,7 @@ def d148(c):
         c.js("async () => { await (await import('/modules/maps/mission_view.js')).retryMission(); return true }")
         c.until("() => { const b = document.querySelector('.mp-mbar'); return !!b && !b.hidden && b.getBoundingClientRect().width > 0 }", timeout=10000, what=f'{w}: the window appears without a reload when the list of the missions changes')
         b = c.js(_BANNER_JS)
-        c.ok('ESSAI1' in b['text'] and not b['opts'], str(b), f'{w}: the window carries the mission and its way to the mission map (the flight stays in its view: no choice of provided map or view)')
-        c.eq(c.js("() => !!document.querySelector('.mp-mbar [data-mbo]')"), True, f'{w}: the button to the mission map', what='button')
+        c.ok('ESSAI1' in b['text'] and 'mp-mb-sel' in b['opts'] and 'mp-mb-theme' in b['opts'], str(b), f'{w}: the window carries the mission, the provided map and the view')
         c.shot(f'D148_window_{w}.png')
     # and a mission already in the list is shown at the mount (D123), the double view included
     c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -5019,6 +5023,7 @@ def d153(c):
     c.eq(c.js("() => !!window.__mp.S.ctx.weather && !!document.querySelector('.mp-chip[data-view=\"weather\"]')"), True, 'the weather tab of the Map is there', what='weather chip')
     t = c.js("() => document.querySelector('.mp-mbar').textContent")
     c.ok('ESSAI1' in t and 'ESSAI' in t.split('ESSAI1')[1], t, 'the window says the id and the family')
+    c.eq(c.js("() => [...document.querySelectorAll('.mp-mbar select')].map(s => s.className)"), ['mp-mb-sel', 'mp-mb-theme'], 'and carries the provided map and the view lists (SOG-0196)', what='lists')
     c.shot('D153_flight_with_mission_390.png')
 
 
@@ -5096,3 +5101,29 @@ def d_frame(c):
     c.wait(1200)
     d = c.js("() => { const S = window.__mp.S, m = S.map.getCenter(), f = S.fit; return { c: [m.lng, m.lat], fit: [(f.w + f.e) / 2, (f.s + f.n) / 2], z: S.map.getZoom() } }")
     c.ok(abs(d['c'][0] - d['fit'][0]) < 1.5 and abs(d['c'][1] - d['fit'][1]) < 1.5, str(d), 'the map is framed on the chosen provided map, not left where the user had moved it')
+
+
+@case('D157', 'A provided map chosen in the window of a flight is shown in place, Fuel stays beside: the address does not change, the flight view and its route come back with « Flight », a live flight change does not take the place of the map', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0196 refused (the user: « sur la vue carburant, on n’a qu’un bouton « carte de la mission » qui renvoie vers les cartes »): in the double view the window of the mission keeps its two lists, « Provided map » (the flight first, then the maps) and « View »; choosing a map shows it on the spot, without a hash change that would leave Fuel')
+def d_inplace(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('fuel?with=maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!document.querySelector('.mp-mbar .mp-mb-sel') && !document.querySelector('.mp-mbar').hidden", timeout=20000, what='the window of the mission beside Fuel')
+    h0 = c.js("() => location.hash")
+    c.ok(h0.startswith('#fuel'), h0, 'Fuel is the page, the Map its pane')
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_cible.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === 'ESSAI1' && window.__mp.S.mapDef && window.__mp.S.mapDef.file === 'carte_cible.png'", timeout=10000, what='the provided map is shown in place')
+    c.eq(c.js("() => location.hash"), h0, 'the address did not change: Fuel stays beside', what='hash')
+    c.eq(c.js("() => !!document.querySelector('[data-module=fuel]') && window.__t.shown(document.querySelector('[data-module=fuel]'))"), True, 'Fuel is still shown', what='fuel')
+    # the flight changes from outside (live): it does not take the place of the provided map
+    c.js("""async () => { const S = window.__mp.S, path = `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`, f = await S.ctx.data.get(path); await S.ctx.data.put(path, { ...f, updated_at: new Date(Date.now() + 90000).toISOString() }); return true }""")
+    c.wait(1500)
+    c.eq(c.js("() => window.__mp.S.mapDef && window.__mp.S.mapDef.file"), 'carte_cible.png', 'a live flight change leaves the provided map', what='map after a flight change')
+    c.shot('D157_inplace_1280.png')
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === '' && window.__mp.S.route.points.length >= 2", timeout=10000, what='the flight view is back')
+    c.eq(c.js("() => location.hash"), h0, 'and still the same address', what='hash after')

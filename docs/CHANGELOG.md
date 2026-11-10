@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the window of a flight keeps « Provided map » and « View »; a provided map is shown in place** (`modules/maps/mission_view.js`, `data.js`, `draw.js`, `tips.js`, `texts.js`; DECISIONS, help ×4; noreg D157,
+  D123, D153; SOG-0196). « Flight » first, then the mission's maps: choosing one shows it on the spot, the address does not change and Fuel stays beside; « Flight » (or the cross) goes back. Also fixed:
+  a tap before the first drawing no longer throws, the light drawing without source falls back to the full one.
+
 - **Map: choosing a provided map frames it** (`modules/maps/screen.js`; DECISIONS; noreg D156; SOG-0184 b). The camera kept after a gesture belongs to the mission and the map it was given on; the contours of
   the VFR topo view are proved on real tiles (capture).
 

@@ -171,7 +171,7 @@ export function tipAt(x, y, lat = null, lon = null, tap = false) {
   // la route orthodromique, à 7 px : son nom et sa longueur (SOG-0145) ; la route, les voies et les balises passent avant ; un TOUCHER
   // sur la route y place le curseur (une route directe est son propre grand cercle : l'infobulle du pointillé ne le prend pas)
   if (S.gc?.q?.length > 1 && S.gc.q.slice(1).some((p, i) => segDist(x, y, S.gc.q[i], p) <= 7) &&
-    !(tap && S.prof && MapsProfile.nearest(S.prof, projNow(), x, y) != null)) return [tt(TX.gcTip, {
+    !(tap && S.prof && projNow() && MapsProfile.nearest(S.prof, projNow(), x, y) != null)) return [tt(TX.gcTip, {
     a: S.gc.dep,
     b: S.gc.arr
   }), tt(TX.gcLen, {
@@ -260,7 +260,8 @@ export function tapAt(x, y, lat, lon) {
   if (ad) return pinAd(ad);
   if (!S.cardEl.hidden) return hideTips();
   if (tipAt(x, y, null, null, true)) return mapTip(lat, lon, x, y);
-  const s = S.prof ? MapsProfile.nearest(S.prof, projNow(), x, y) : null;
+  const s = S.prof && projNow() ? MapsProfile.nearest(S.prof, projNow(), x, y) :
+    null; // pas de projection tant que rien n'est dessiné (un toucher avant le premier dessin)
   if (s != null) {
     hideTips();
     return setCursor(s);

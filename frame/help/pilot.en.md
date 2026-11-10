@@ -377,13 +377,13 @@ descent. When room is short, the map writes the aerodrome's name first, then the
 procedures, the route (names, times, TOC / TOD), then the rest; an estimated time or the name of TOC / TOD slides
 along the route before it gives up (the diamond stays).
 
-**A flight that names a mission.** The map stays the flight's, with all it can do (weather, procedures, route editing, Layers boxes, proposed routes); the mission is drawn over it: its zones, its points with a role (departure, arrival, target…) and, at the top left, a window giving its title, identifier, family and “The mission's map”.
+**A flight that names a mission.** The map stays the flight's, with all it can do (weather, procedures, route editing, Layers boxes, proposed routes); the mission is drawn over it: its zones, its points with a role (departure, arrival, target…) and, at the top left, a window giving its title, identifier, family and two lists: “Provided map” (“Flight” first, then the mission's maps: choosing one shows it on the spot, Fuel stays beside, “Flight” goes back to the flight) and “View”.
 
 **Mission maps.** A mission opens from Missions (“See on the Map”), or from the window of a flight that names it; a window at the top left of the map is the only place to choose the mission, its provided map (overview, target, detail…) and its view; the Layers tab only sets what is shown.
 Each map is redrawn as in
 the studio: same frame, same display profile, with the mission's points, its hatched areas and its route. The vertical
 profile then shows the mission's.
-“The mission's map” (or “See on the Map” from Missions) opens the mission's map: a banner at the top gives its title, identifier, family, the provided map shown and, when there are several, the choice among them (seven at most). Zones are a light flat tint with their name, points carry their role (departure, arrival, target…), and the legend (“i”) names them. The banner's cross removes it: you are back on the flight with all its layers; another mission is chosen in the layers list. The map opens in the view of its use: the profile carried by the map's YAML comes first; otherwise the target, detail, rendezvous and zone maps of an operational mission (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: everything but commercial) open in VFR topo (relief, obstacles, VRPs, VFR aerodromes, low spaces), the general map and a commercial mission keep the flight's view. The banner offers “View”: VFR topo, IFR or Base map only; the choice is kept for that map on the device, and removing the banner gives the flight's view back.
+A provided map (chosen in the window of a flight, or “See on the Map” from Missions) gives: a banner at the top gives its title, identifier, family, the provided map shown and, when there are several, the choice among them (seven at most). Zones are a light flat tint with their name, points carry their role (departure, arrival, target…), and the legend (“i”) names them. The banner's cross removes it: you are back on the flight with all its layers; another mission is chosen in the layers list. The map opens in the view of its use: the profile carried by the map's YAML comes first; otherwise the target, detail, rendezvous and zone maps of an operational mission (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: everything but commercial) open in VFR topo (relief, obstacles, VRPs, VFR aerodromes, low spaces), the general map and a commercial mission keep the flight's view. The banner offers “View”: VFR topo, IFR or Base map only; the choice is kept for that map on the device, and removing the banner gives the flight's view back.
 
 <a id="maps-edit"></a>**Editing the route on the map.** Tap “Edit on the map” (the four arrows, at the right of the map; a short help appears the first time you enter the mode): the waypoints get a circle. Drag a point onto
 a fix, a beacon or an airfield: it settles there (dropped elsewhere, it becomes a free point named by its coordinates,
@@ -427,7 +427,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 7b5c7ac7f92b -->
+<!-- fr: 8fdd30cdbb88 -->
 
 <!-- chapter: atmosphere -->
 # Weather
