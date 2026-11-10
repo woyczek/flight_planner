@@ -312,8 +312,19 @@
     save: ['Créer la compagnie', 'Create the airline', 'Fluggesellschaft anlegen', 'Crear la compañía'],
     steps: {
       identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
+      categories: ['Catégories de vols', 'Flight categories', 'Flugkategorien', 'Categorías de vuelos'],
       summary: ['Résumé', 'Summary', 'Zusammenfassung', 'Resumen']
     },
+    wzCatHint: [
+      'Celles du genre sont cochées d’avance : décochez ce que vous ne volez pas, ajoutez les vôtres.',
+      'The kind’s own are ticked in advance: untick what you do not fly, add your own.',
+      'Die der Art sind vorab angekreuzt: entfernen Sie, was Sie nicht fliegen, und fügen Sie eigene hinzu.',
+      'Las del tipo vienen marcadas: desmarque lo que no vuela y añada las suyas.'
+    ],
+    wzNoBase: ['Ce genre n’a pas de catégorie commune : ajoutez les vôtres.', 'This kind has no common category: add your own.',
+      'Diese Art hat keine gemeinsame Kategorie: fügen Sie eigene hinzu.', 'Este tipo no tiene categorías comunes: añada las suyas.'
+    ],
+    wzCatCount: ['{n} catégorie(s)', '{n} categories', '{n} Kategorie(n)', '{n} categoría(s)'],
     next: ['Suivant', 'Next', 'Weiter', 'Siguiente'],
     back: ['Retour', 'Back', 'Zurück', 'Atrás'],
     resume: ['Reprendre', 'Resume', 'Fortsetzen', 'Reanudar'],
@@ -326,6 +337,7 @@
     ],
     part: {
       settings: ['les réglages', 'the settings', 'die Einstellungen', 'los ajustes'],
+      categories: ['les catégories', 'the categories', 'die Kategorien', 'las categorías'],
       fleet: ['la flotte', 'the fleet', 'die Flotte', 'la flota'],
       index: ['l’inscription dans la liste', 'the entry in the list', 'der Eintrag in der Liste', 'la inscripción en la lista']
     },
@@ -618,7 +630,7 @@
       <div data-mig hidden></div></div>`;
   }
   // les pas de « Créer une compagnie » (V3_SPECIFICATION § 10.38 bis) ; les catégories et la flotte s'y ajoutent avant le résumé (lots B2 et B3)
-  const WZ_STEPS = ['identity', 'summary'];
+  const WZ_STEPS = ['identity', 'categories', 'summary'];
   // par vue : le pas montré et la reprise d'une création interrompue
   const WZ = new WeakMap();
   /** Le stepper « Créer une compagnie » : un bloc construit une fois, à hauteur réservée (règle 22), un volet par pas ; rien n'est écrit avant le dernier bouton. Le genre est préchoisi « Commerciale ». */
@@ -632,6 +644,7 @@
       <section data-step-pane="identity">${fld('co-name', TA.name, '')}${fld('co-code', TA.code, '')}
         <fieldset data-wz-kind><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="wz-kind" value="${k}"${k === 'va' ? ' checked' : ''}><span><b data-kind-name="${k}"></b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
         <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-co-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset></section>
+      <section data-step-pane="categories" hidden></section>
       <section data-step-pane="summary" hidden><p data-wz-summary></p></section>
       <section data-step-pane="done" hidden><p data-wz-done></p><div class="f-row"><button type="button" class="primary" data-act="companyFly">${esc(t(TA.fly))}</button><button type="button" data-act="companyStay">${esc(t(TA.stay))}</button></div></section>
       <p class="f-msg" data-msg></p>
@@ -652,13 +665,98 @@
     const nav = w.querySelector('[data-wz-nav]'),
       resume = !!WZ.get(view)?.resume,
       on = {
-        companyBack: name === 'summary',
-        companyNext: name === 'identity',
+        companyBack: name !== 'identity',
+        companyNext: name === 'identity' || name === 'categories',
         companyAdd: name === 'summary' && !resume,
         companyResume: name === 'summary' && resume
       };
     for (const [act, show] of Object.entries(on)) nav.querySelector(`[data-act="${act}"]`).hidden = !show;
     nav.hidden = name === 'done';
+  }
+  /** Le volet « Catégories de vols » : celles du socle pour le genre, cochées d'avance, puis les propres de la compagnie (champ + « Ajouter une catégorie ») ; construit quand le genre change seulement : un coche ou une catégorie saisie ne se perd pas d'un aller-retour. */
+  function wizardCatsBuild(env, kind) {
+    const {
+      view,
+      t
+    } = env, pane = view.querySelector('[data-step-pane="categories"]'), A = AIR.get(view), CL = A?.CL, lang = A?.lang || 'fr';
+    if (!pane || pane.dataset.kind === kind) return;
+    pane.dataset.kind = kind;
+    const base = CL ? CL.forAirline(null, {
+        code: 'new',
+        settings: {
+          kind
+        }
+      }).groups.filter(g => g.id !== 'virtuel') : [],
+      own = CL?.BASE.groups.find(g => g.id === 'virtuel');
+    pane.innerHTML = `<p class="f-muted">${esc(t(TA.wzCatHint))}</p>
+      ${base.length ? base.map(g => `<fieldset data-wz-group="${esc(g.id)}"><legend>${esc(g.names[lang] || g.id)}</legend>${g.categories.map(x => `<label class="f-check"><input type="checkbox" data-wz-cat="${esc(x.id)}" checked> ${esc(x.names[lang] || x.id)}</label>`).join('')}</fieldset>`).join('') : `<p class="f-muted">${esc(t(TA.wzNoBase))}</p>`}
+      <h4>${esc(own?.names[lang] || '')}</h4><ul class="f-cats" data-wz-own></ul>
+      <div class="f-row"><input type="text" maxlength="40" data-f="wz-cat" aria-label="${esc(t(TA.catName))}" placeholder="${esc(t(TA.catName))}"><button type="button" data-act="companyWzCatAdd">${esc(t(TA.catAdd))}</button></div>`;
+  }
+  /** Les catégories saisies au pas ② : { off: [identifiants du socle décochés], own: [{ id, name }] }, et le nombre de catégories retenues. */
+  function wizardCats(view) {
+    const pane = view.querySelector('[data-step-pane="categories"]'),
+      boxes = [...pane.querySelectorAll('[data-wz-cat]')],
+      own = [...pane.querySelectorAll('[data-wz-own] li')].map(li => ({
+        id: li.dataset.wzOwn,
+        name: li.dataset.name
+      }));
+    return {
+      off: boxes.filter(b => !b.checked).map(b => b.dataset.wzCat),
+      own,
+      n: boxes.filter(b => b.checked).length + own.length
+    };
+  }
+  /** Ajoute une catégorie propre à la liste du pas ② (mêmes règles que la fiche : nom de 1 à 40 signes, identifiant sans accent, jamais le doublon d'une catégorie du socle ni d'une déjà saisie, quarante au plus). */
+  function wizardCatAdd(env) {
+    const {
+      view,
+      t
+    } = env, pane = view.querySelector('[data-step-pane="categories"]'), CL = AIR.get(view)?.CL, field = pane.querySelector(
+        '[data-f="wz-cat"]'),
+      name = field.value.replace(/\s+/g, ' ').trim().slice(0, 41), id = catId(name);
+    if (!CL) return;
+    if (!name || name.length > 40 || !id) return wizardSay(view, t(TA.catBad));
+    const taken = new Set([...CL.clean(CL.BASE).groups.flatMap(g => g.categories.map(x => x.id)), ...[...pane.querySelectorAll(
+      '[data-wz-own] li')].map(li => li.dataset.wzOwn)]);
+    if (taken.has(id)) return wizardSay(view, t(TA.catDup));
+    if (wizardCats(view).n >= CL.CATEGORIES_MAX) return wizardSay(view, t(TA.catFull));
+    wizardSay(view, '');
+    const li = document.createElement('li');
+    li.dataset.wzOwn = id;
+    li.dataset.name = name;
+    li.append(name, ' ');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.act = 'companyWzCatDel';
+    b.textContent = t(TA.catDel);
+    li.append(b);
+    pane.querySelector('[data-wz-own]').append(li);
+    field.value = '';
+  }
+  /** Le fichier categories.json du stepper : la base commune sans les catégories décochées, et le groupe propre de la compagnie ; null quand il ne diffère pas de la base (rien n'est alors écrit : la base reste celle de la suite). */
+  function wizardCatsFile(view, v, now_, by) {
+    const CL = AIR.get(view)?.CL,
+      c = wizardCats(view);
+    if (!CL || (!c.off.length && !c.own.length)) return null;
+    const groups = CL.clean(CL.BASE).groups.map(g => ({
+      ...g,
+      categories: g.id === 'virtuel' ? c.own.map(x => ({
+        id: x.id,
+        names: {
+          fr: x.name,
+          en: x.name,
+          de: x.name,
+          es: x.name
+        }
+      })) : g.categories.filter(x => !c.off.includes(x.id))
+    })).filter(g => g.categories.length);
+    return {
+      schema: 1,
+      groups,
+      updated_at: now_,
+      by
+    };
   }
   /** Ce que l'utilisateur a saisi : { name, code, kind, nets } (la valeur des champs, jamais écrite avant le dernier bouton). */
   function wizardValues(view) {
@@ -704,24 +802,26 @@
   /** Le résumé du dernier pas, en mots de pilote : « Rennes Motoculture · Commerciale · IVAO » (les pas de la catégorie et de la flotte s'y ajoutent). */
   function wizardSummary(env, v) {
     const KN = AIR.get(env.view)?.CL?.KIND_NAMES;
-    return [v.name, KN ? env.t(KN[v.kind]) : '', ...AIRLINE_NETWORKS.filter(k => v.nets[k]).map(k => env.t(TA.net[k]))].filter(Boolean)
-      .join(' · ');
+    return [v.name, KN ? env.t(KN[v.kind]) : '', ...AIRLINE_NETWORKS.filter(k => v.nets[k]).map(k => env.t(TA.net[k])), env.t(TA
+      .wzCatCount, {
+        n: wizardCats(env.view).n
+      })].filter(Boolean).join(' · ');
   }
-  /** « Suivant » et « Retour » : du pas Identité (vérifié) au résumé, et retour sans rien perdre. */
+  /** « Suivant » et « Retour » : d'un pas à l'autre (l'identité est vérifiée en quittant le premier), sans rien perdre ; le résumé est composé en y arrivant. */
   async function wizardMove(env, dir) {
     const {
-      view,
-      t
-    } = env, w = view.querySelector('[data-wizard]'), at = w?.dataset.step;
-    if (!w) return;
+      view
+    } = env, w = view.querySelector('[data-wizard]'), at = w?.dataset.step, i = WZ_STEPS.indexOf(at), to = WZ_STEPS[i + dir];
+    if (!w || !to) return;
     wizardSay(view, '');
-    if (dir < 0) return wizardShow(view, 'identity');
-    if (at !== 'identity') return;
-    const v = wizardValues(view),
-      why = await wizardCheck(env, v);
-    if (why) return wizardSay(view, why);
-    w.querySelector('[data-wz-summary]').textContent = wizardSummary(env, v);
-    wizardShow(view, 'summary');
+    if (dir > 0 && at === 'identity') {
+      const v = wizardValues(view),
+        why = await wizardCheck(env, v);
+      if (why) return wizardSay(view, why);
+      wizardCatsBuild(env, v.kind);
+    }
+    if (to === 'summary') w.querySelector('[data-wz-summary]').textContent = wizardSummary(env, wizardValues(view));
+    wizardShow(view, to);
   }
   /** Les noms des genres dans les boutons du stepper (une seule source : KIND_NAMES), posés quand le module des catégories est là. */
   function wizardKindNames(view, CL, t) {
@@ -747,6 +847,7 @@
         updated_at: now(),
         by: env.id?.trigram || ''
       },
+      catsFile = wizardCatsFile(view, v, stamp.updated_at, stamp.by),
       todo = [
         ['settings', `airline/${v.code}/settings.json`, {
           schema: 1,
@@ -755,6 +856,9 @@
           kind: v.kind,
           ...stamp
         }],
+        ...(catsFile ? [
+          ['categories', `airline/${v.code}/categories.json`, catsFile]
+        ] : []),
         ['fleet', `airline/${v.code}/fleet.json`, {
           schema: 1,
           aircraft: [],
@@ -814,6 +918,11 @@
       delete i.dataset.touched;
     }
     for (const i of w.querySelectorAll('[data-co-net]')) i.checked = false;
+    const pane = w.querySelector('[data-step-pane="categories"]');
+    if (pane) {
+      pane.innerHTML = '';
+      delete pane.dataset.kind;
+    }
     const va = w.querySelector('input[name="wz-kind"][value="va"]');
     if (va) va.checked = true;
     WZ.set(view, {
@@ -1068,6 +1177,8 @@
     if (act === 'companyNext' || act === 'companyBack') return wizardMove(env, act === 'companyNext' ? 1 : -1);
     if (act === 'companyAdd' || act === 'companyResume') return createAirline(env, act === 'companyResume');
     if (act === 'companyStay') return wizardReset(env.view);
+    if (act === 'companyWzCatAdd') return wizardCatAdd(env);
+    if (act === 'companyWzCatDel') return b.closest('li')?.remove();
     if (act === 'companyFly') {
       // « Voler pour cette compagnie » : la compagnie devient la courante, puis Missions
       const code = WZ.get(env.view)?.code || '';
@@ -1078,7 +1189,8 @@
   }
 
   (window.SogSettingsParts ||= {}).airline = {
-    acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly', 'companyPlan',
+    acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly', 'companyWzCatAdd',
+      'companyWzCatDel', 'companyPlan',
       'companyMigrate', 'companyKind', 'companyCatAdd', 'companyCatDel'
     ],
     html: airlineHtml,

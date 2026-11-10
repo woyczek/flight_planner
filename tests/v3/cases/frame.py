@@ -3552,6 +3552,8 @@ def a95(c):
     fill('Air Test', 'atx')
     c.page.check('[data-card="company"] [data-co-net="ivao"]')
     c.tap('[data-act="companyNext"]')
+    c.until("!document.querySelector('[data-wizard] [data-step-pane=categories]').hidden", timeout=6000, what='the categories step')
+    c.tap('[data-act="companyNext"]')
     c.until("!document.querySelector('[data-wizard] [data-step-pane=summary]').hidden", timeout=6000, what='the summary step')
     c.tap('[data-act="companyAdd"]')
     d = c.until_doc('airline/atx/settings.json', lambda d: bool(d), what='the settings of the new airline')
@@ -4995,8 +4997,8 @@ def a124(c):
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-wizard]')", timeout=15000, what='the card and its stepper')
     w = lambda extra='': f'[data-wizard] {extra}'.strip()
     c.js("document.querySelector('[data-airline-add]').open = true")
-    c.eq(c.js("[...document.querySelectorAll('[data-wizard] [data-step-pane]')].map(p => [p.dataset.stepPane, p.hidden])"), [['identity', False], ['summary', True], ['done', True]], 'one block, the first pane shown', what='panes')
-    c.eq(c.count(w('[data-step-dot]')), 2, 'two steps named in the header (identity, summary)', what='dots')
+    c.eq(c.js("[...document.querySelectorAll('[data-wizard] [data-step-pane]')].map(p => [p.dataset.stepPane, p.hidden])"), [['identity', False], ['categories', True], ['summary', True], ['done', True]], 'one block, the first pane shown', what='panes')
+    c.eq(c.count(w('[data-step-dot]')), 3, 'three steps named in the header (identity, categories, summary)', what='dots')
     c.eq(c.js("[...document.querySelectorAll('[data-wizard] input[name=wz-kind]')].map(i => [i.value, i.checked])"), [['va', True], ['sog', False]], 'the kind: two radio buttons, commercial preselected', what='kind')
     c.eq(c.count(w('[data-wz-kind] .f-muted')), 2, 'each with its sentence', what='sentences')
     c.eq([norm(c.text(w('[data-kind-name=va]'))), norm(c.text(w('[data-kind-name=sog]')))], [norm(KN()['va'][['fr', 'en', 'de', 'es'].index(lang)]), norm(KN()['sog'][['fr', 'en', 'de', 'es'].index(lang)])], 'named by the one source of the kind words', what='kind names')
@@ -5015,19 +5017,26 @@ def a124(c):
     c.page.fill('[data-wizard] [data-f="co-name"]', 'Rennes Motoculture')
     # ---- the summary, in a pilot's words; nothing is written yet
     c.js("document.querySelector('[data-wizard] [data-msg]').textContent = ''")   # the refusal above is gone with the next gesture
-    h_identity = c.js("document.querySelector('[data-wizard]').getBoundingClientRect().height")
-    below = c.js("document.querySelector('[data-airline-join]').getBoundingClientRect().top + scrollY")
+    top = "document.querySelector('[data-airline-join]').getBoundingClientRect().top + scrollY"
+    hh = "document.querySelector('[data-wizard]').getBoundingClientRect().height"
+    c.tap('[data-act="companyNext"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='the categories step')
+    h_cats, below = c.js(hh), c.js(top)   # the categories pane is taller than the identity one: the block grew once
     c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='the summary step')
-    c.ok(abs(c.js("document.querySelector('[data-airline-join]').getBoundingClientRect().top + scrollY") - below) <= 1 and c.js("document.querySelector('[data-wizard]').getBoundingClientRect().height") >= h_identity - 1, [h_identity, below], 'the block never gets shorter from one step to the next: what is under it does not move (rule 22)')
-    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO'), 'name · kind · networks, in words (no file name)', what='summary')
+    c.ok(abs(c.js(top) - below) <= 1 and c.js(hh) >= h_cats - 1, [h_cats, below], 'the block never gets shorter from one step to the next: what is under it does not move (rule 22)')
+    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO · ' + T('wzCatCount').replace('{n}', '7')), 'name · kind · networks · number of categories, in words (no file name)', what='summary')
     c.eq([c.doc('airline/rmo/settings.json'), c.js('window.__puts.length')], [None, 0], 'nothing is written before the last button', what='nothing written')
     if c.width in (390, 1280):
         c.shot(f'A125_standard_{c.width}_{lang}_summary_delivered.png')
     # ---- « Retour » keeps every value
     c.tap('[data-act="companyBack"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='back to the categories')
+    c.tap('[data-act="companyBack"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'identity'", timeout=6000, what='back to identity')
     c.eq([c.js("document.querySelector('[data-wizard] [data-f=co-name]').value"), c.js("document.querySelector('[data-wizard] [data-f=co-code]').value"), c.js("document.querySelector('[data-wizard] [data-co-net=ivao]').checked")], ['Rennes Motoculture', 'rmo', True], 'back keeps the name, the code and the networks', what='kept values')
+    c.tap('[data-act="companyNext"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='the categories again')
     c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='the summary again')
     # ---- an interruption at the index: what is done is said, « Reprendre » finishes without overwriting
@@ -5050,4 +5059,72 @@ def a124(c):
     c.tap('[data-act="companyFly"]')
     c.until("location.hash.startsWith('#missions')", timeout=8000, what='Missions')
     c.eq(c.js("FrameData.airline().then(a => a && a.code)"), 'rmo', 'the new airline is the current one', what='current')
+    c.check_errors()
+
+
+@case('A126', 'Settings › Company › « Créer une compagnie » (SOG-0041, step B2): the categories of the kind are ticked in advance, unticked ones are not written, own ones are added (same rules as the sheet), categories.json is written only when it differs from the base, between the settings and the fleet', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='V3_SPECIFICATION § 10.38 bis, step 2: the base categories of the kind come ticked (an unticked one is simply not written), a free field adds the airline\u2019s own (name 1 to 40, id without accents, never the duplicate of a base category or of one already typed, forty at most), « Retour » keeps ticks and typed categories; categories.json is written only when it differs from the base (settings, categories, fleet, index); a squadron has no commercial category')
+def a126(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+    c.page.add_init_script("""(() => { let fd; window.__puts = []; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; const a = v.adapter; v.adapter = function () { const ad = a.apply(this, arguments); const put = ad.put; ad.put = async function (p) { window.__puts.push(p); return put.apply(this, arguments) }; return ad } } }) })()""")
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-wizard]')", timeout=15000, what='the card and its stepper')
+    c.js("document.querySelector('[data-airline-add]').open = true")
+    step = lambda: c.js("document.querySelector('[data-wizard]').dataset.step")
+    nxt = lambda to: (c.tap('[data-act="companyNext"]'), c.until(f"document.querySelector('[data-wizard]').dataset.step === '{to}'", timeout=6000, what=f'the {to} step'))
+    pane = '[data-step-pane=categories]'
+    c.page.fill('[data-wizard] [data-f="co-name"]', 'Rennes Motoculture')
+    nxt('categories')
+    c.eq(c.js(f"[...document.querySelectorAll('{pane} [data-wz-cat]')].map(i => [i.dataset.wzCat, i.checked])"), [['fret', True], ['passagers', True], ['vip', True], ['training', True], ['transit', True], ['essais-en-vol', True], ['positionnement', True]], 'a commercial airline: the seven categories of the base, all ticked in advance', what='base ticked')
+    c.eq(c.count(pane + ' [data-wz-group=commercial]'), 1, 'under their group', what='group')
+    # untick one, add two of our own, refuse a duplicate and a bad name
+    c.js(f"document.querySelector('{pane} [data-wz-cat=vip]').click()")
+    for name, key in (('Fret', 'catDup'), ('!!!', 'catBad')):
+        c.page.fill('[data-wizard] [data-f="wz-cat"]', name)
+        c.tap('[data-act="companyWzCatAdd"]')
+        c.until("document.querySelector('[data-wizard] [data-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
+        c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T(key)), f'{name!r}: said', what=f'refusal {key}')
+    for name in ('Évacuation sanitaire', 'Épandage'):
+        c.page.fill('[data-wizard] [data-f="wz-cat"]', name)
+        c.tap('[data-act="companyWzCatAdd"]')
+        c.until(f"!!document.querySelector('{pane} [data-wz-own] li[data-name=\"{name}\"]')", timeout=6000, what=f'{name} listed')
+    c.eq(c.js(f"[...document.querySelectorAll('{pane} [data-wz-own] li')].map(l => l.dataset.wzOwn)"), ['evacuation-sanitaire', 'epandage'], 'two own categories, ids without accents', what='own')
+    c.page.fill('[data-wizard] [data-f="wz-cat"]', 'Évacuation Sanitaire')
+    c.tap('[data-act="companyWzCatAdd"]')
+    c.until("document.querySelector('[data-wizard] [data-msg]').textContent.trim() !== ''", timeout=6000, what='a duplicate of an own one is refused')
+    c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T('catDup')), 'an own category typed twice: refused', what='own duplicate')
+    c.tap(f'{pane} [data-wz-own] li[data-wz-own=epandage] button')
+    c.eq(c.js(f"[...document.querySelectorAll('{pane} [data-wz-own] li')].map(l => l.dataset.wzOwn)"), ['evacuation-sanitaire'], '« Retirer » removes it from the list', what='removed')
+    if c.width in (390, 1280):
+        c.shot(f'A126_standard_{c.width}_{lang}_categories_delivered.png')
+    # « Retour » keeps the ticks and the typed category
+    c.tap('[data-act="companyBack"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'identity'", timeout=6000, what='back')
+    nxt('categories')
+    c.eq([c.js(f"document.querySelector('{pane} [data-wz-cat=vip]').checked"), c.js(f"document.querySelectorAll('{pane} [data-wz-own] li').length")], [False, 1], 'back and forth keeps the unticked box and the typed category', what='kept')
+    nxt('summary')
+    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-1], norm(T('wzCatCount').replace('{n}', '7')), 'the summary counts the categories kept: six of the base and one of our own', what='count')
+    c.eq(c.js('window.__puts.length'), 0, 'nothing is written yet', what='no put')
+    c.tap('[data-act="companyAdd"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='created')
+    c.eq(c.js('window.__puts'), ['airline/rennes/settings.json', 'airline/rennes/categories.json', 'airline/rennes/fleet.json', 'airline/index.json'], 'the settings, the categories, the fleet, and the index last', what='order')
+    doc = c.doc('airline/rennes/categories.json')
+    c.eq([[g['id'], [x['id'] for x in g['categories']]] for g in doc['groups']], [['commercial', ['fret', 'passagers', 'training', 'transit', 'essais-en-vol', 'positionnement']], ['virtuel', ['evacuation-sanitaire']]], 'categories.json: the base without the unticked one, and the airline\u2019s own group', what='file')
+    # a squadron: no commercial category; nothing typed, nothing unticked: no file
+    c.tap('[data-act="companyStay"]')
+    c.page.fill('[data-wizard] [data-f="co-name"]', 'Escadrille Test')
+    c.js("document.querySelector('[data-wizard] input[name=wz-kind][value=sog]').click()")
+    nxt('categories')
+    c.eq([c.count(pane + ' [data-wz-cat]'), c.count(pane + ' [data-wz-own]')], [0, 1], 'a squadron: no commercial category, only the field for its own', what='squadron')
+    nxt('summary')
+    c.tap('[data-act="companyAdd"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='the squadron created')
+    c.eq([p for p in c.js('window.__puts') if 'escadril' in p], ['airline/escadril/settings.json', 'airline/escadril/fleet.json'], 'nothing typed, nothing unticked: no categories.json (the base stays the suite\u2019s)', what='no file')
     c.check_errors()
