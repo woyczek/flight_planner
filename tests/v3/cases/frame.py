@@ -4650,3 +4650,48 @@ def a117(c):
     c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]')", timeout=15000, what='the version line, same stamp')
     c.eq(c.count('[data-card="status"] li[data-k="stale"]'), 0, 'the same stamp as the launcher: nothing is said', what='same stamp')
     c.check_errors()
+
+
+@case('A118', 'The « Old version · Reload » cartouche in the header: square, white on the alert red, only when the page is older than the launcher (or a next version is ready); absent, it takes nothing and the header does not move', 'A',
+      designs=('standard',), night=False, langs4=True,
+      rule='SOG-0168 + Simplification 10 Nov (the user: « un petit label blanc sur cartouche rouge sombre », not a banner: a banner pushes the screen, rule 22): a small square-cornered cartouche beside the sync button, white text on the design’s alert red (contrast AA), « Old version · Reload », a tap reloads; shown only when the page is older than the launcher (or the next version is ready on a device without launcher); hidden otherwise, no reserved place, the header keeps its height')
+def a118(c):
+    label = {'fr': 'Version ancienne · Recharger', 'en': 'Old version · Reload', 'de': 'Alte Version · Neu laden', 'es': 'Versión antigua · Recargar'}[c.lang]
+    state = {'app': 'abcd1234'}
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url).path
+        body = {'server': True, 'data': False, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': [], **({'app': state['app']} if state['app'] else {})}             if u.endswith('/__setup/status') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    info = """() => { const e = document.getElementById('fStale'), cs = getComputedStyle(e), h = document.querySelector('.f-head').getBoundingClientRect().height,
+      d = document.documentElement; const rgb = x => (x.match(/\d+/g) || []).slice(0, 3).map(Number);
+      const lum = ([r, g, b]) => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b) };
+      const L1 = lum(rgb(cs.color)), L2 = lum(rgb(cs.backgroundColor));
+      return { shown: e.getClientRects().length > 0, text: e.textContent, radius: cs.borderTopLeftRadius, color: cs.color, h, tall: Math.round(e.getBoundingClientRect().height),
+        contrast: +((Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05)).toFixed(2), overflow: d.scrollWidth > d.clientWidth } }"""
+    # the page is older than the launcher
+    c.open('settings', docs=LEVEL3, wait=False)
+    c.until("document.getElementById('fStale') && !document.getElementById('fStale').hidden", timeout=15000, what='the cartouche')
+    on = c.js(info)
+    c.eq((on['shown'], norm(on['text']), on['radius'], on['color']), (True, norm(label), '0px', 'rgb(255, 255, 255)'), 'a square cartouche, the label, white text', what='cartouche')
+    c.ok(on['contrast'] >= 4.5, str(on['contrast']), 'white on the alert red: contrast AA (4.5)')
+    c.ok(on['tall'] <= 40 and not on['overflow'], str(on), 'small, and the page does not scroll sideways')
+    c.js("() => { window.__survives = 1 }")
+    c.tap('#fStale')
+    c.until("window.__survives === undefined", timeout=15000, what='a tap reloads the page')
+    # the same stamp as the launcher: absent, the header the same height (nothing reserved)
+    state['app'] = ''
+    c.page.reload(wait_until='load')
+    c.until("!!document.getElementById('fSync')", timeout=15000, what='the header')
+    c.wait(600)
+    off = c.js(info)
+    c.eq(off['shown'], False, 'without a stamp, the cartouche is absent and takes nothing', what='absent')
+    c.eq(off['h'], on['h'], 'the header does not change height', what='header height')
+    # no launcher, a next version ready (the service worker says so): the same cartouche, and a tap takes the version
+    c.js("() => navigator.serviceWorker.dispatchEvent(new MessageEvent('message', { data: { type: 'sog-frame-update' } }))")
+    c.until("!document.getElementById('fStale').hidden", timeout=10000, what='the cartouche for a ready version')
+    c.eq(c.js("document.getElementById('fStale').dataset.go"), 'update', 'a ready version: the cartouche takes it', what='ready version')
+    c.eq(c.js(info)['h'], on['h'], 'the header still does not change height', what='header height with the cartouche')
+    c.check_errors()

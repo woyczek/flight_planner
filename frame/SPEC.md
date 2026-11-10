@@ -800,6 +800,9 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   stays on every other device (phone, GitHub Pages), where it protects a flight in progress. The page says when it is older than the launcher:
   the launcher's status gives the stamp it puts on `frame/app.js` today (`app`), the page its own (the `?v=` of its script); different, a line
   « This page is older than the launcher: reload » in the Status block, a tap reloads (A117); the version line gives the commit's time too (`version.time`).
+  The same fact is a **cartouche in the header** beside the sync button (`#fStale`: square corners, white on the design's alert red `--sog-err`, contrast AA,
+  « Old version · Reload ×4 »), shown only when the page is older than the launcher or, on a device without launcher, when the next version is ready (a
+  tap reloads, or takes it); `hidden` otherwise: nothing reserved, the header keeps its height (not a banner: it would push the screen, § 7.1 rule 22; A118).
 - **The new version said until it is taken**: the note says the flight in progress and the pending writes are kept; set
   aside (✕), it comes back at the next calm moment — a module change, the app back to the front — at most every 5
   minutes; the Status block carries « New version available · Reload » (badge of the ⚙) meanwhile. Never an automatic

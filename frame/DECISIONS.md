@@ -2653,3 +2653,12 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   without a stamp (an older launcher, a page served without stamps, the site). Noreg A53 (the SW bench: launcher present → the page and every copy are
   the new version at the first load, no announcement; launcher stopped → the copy holds; back → the next load takes the next version; the remote
   origin keeps its scenarios), A117 (the stale line, the time, nothing without a stamp or with the same one), red on 2f9e0cf55.
+- **10 Nov 2026 — « Old version · Reload » is a cartouche, not a banner** (SOG-0168; the user: « de la place dans le header pour un bandeau aussi important
+  que « version pas à jour », ou un petit label blanc sur cartouche rouge sombre », with the picture of an airway's cartouche; Simplification: the cartouche, a
+  banner would push the screen, rule 22; V3 Frame): `#fStale` in the header beside the sync button (`frame/index.html`, `frame.css .f-stale`, `paintStale`
+  in `app.js`): square corners, white on `--sog-err` (all the designs' values give a contrast of 5.2 or more, measured 6.5 on the standard one), 28 px
+  high with a 44 px touch area (`::after`), on a phone smaller type and two lines at most (7.6 em); text « Version ancienne · Recharger » ×4, the
+  full sentence in its `title` and `aria-label`. Shown when the page is older than the launcher (`OWN_STAMP` ≠ the launcher's `app`: a tap reloads) or when
+  the next version is ready on a device without launcher (`update.ready`: a tap takes it); `hidden` otherwise, so nothing is reserved and the header
+  keeps its height (A118 measures it on and off, and with the cartouche). With the revalidation at each navigation it should almost never be seen on a
+  workstation: it is the net. The Status block line stays (A117).

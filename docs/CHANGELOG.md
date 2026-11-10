@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the « Old version · Reload » cartouche in the header** (`frame/index.html`, `frame/frame.css`, `frame/app.js`; frame SPEC § 3.6, DECISIONS; noreg
+  A118; SOG-0168). A small square label, white on the alert red, beside the sync button: shown when the page is older than the launcher (or the next
+  version is ready on a device without launcher), a tap reloads; absent it takes nothing and the header does not move.
+
 - **Frame: a workstation with the launcher tests the version the launcher serves** (`frame/sw.js`, `frame/app.js`, `frame/store/transport_launcher.js`,
   `tools/launch.py`; frame SPEC § 3.6, DECISIONS; noreg A53, A117; SOG-0168). On the loopback the service worker revalidates all its copies with the
   launcher before answering a page load: the page is the launcher's version at the first load after a fix, with no « Reload » to accept (the question

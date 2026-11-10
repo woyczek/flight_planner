@@ -186,6 +186,38 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   padding: 0;
   flex: none
 }
+/* le cartouche « Version ancienne · Recharger » (SOG-0168) : petit, à coins carrés, blanc sur le rouge d'alerte du design (contraste AA) ; absent
+   il n'occupe rien (hidden) : l'en-tête garde sa hauteur */
+.f-stale {
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 28px;
+  min-height: 0;
+  position: relative;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0;
+  background: var(--sog-err);
+  color: #fff;
+  font: 700 .72rem/1.05 var(--sog-font, inherit);
+  letter-spacing: .02em;
+  white-space: nowrap;
+  cursor: pointer
+}
+.f-stale::after {
+  /* la cible tactile reste de 44 px : la zone qui répond dépasse le cartouche, sans l'agrandir */
+  content: '';
+  position: absolute;
+  inset: -8px -4px
+}
+@media (max-width: 760px) {
+  .f-stale {
+    max-width: 7.6em;
+    white-space: normal;
+    font-size: .62rem;
+    padding: 0 6px
+  }
+}
 .f-sync {
   min-width: 0;
   max-width: 50vw;

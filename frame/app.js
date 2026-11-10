@@ -600,6 +600,7 @@
       // cycle : l'utilisateur reconstruisait en boucle une base restée en 2610, 1er nov. 2026)
       // la version de la suite, dernière ligne du bloc d'état : git describe et la date du commit
       version: ['SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}'],
+      staleTag: ['Version ancienne · Recharger', 'Old version · Reload', 'Alte Version · Neu laden', 'Versión antigua · Recargar'],
       stale: ['Cette page est plus ancienne que le lanceur : recharger', 'This page is older than the launcher: reload',
         'Diese Seite ist älter als der Starter: neu laden', 'Esta página es más antigua que el lanzador: recargar'
       ],
@@ -2126,7 +2127,29 @@
   /** Pastille et nom du ⚙ de l'en-tête, et les blocs d'état affichés (écrit seulement si cela change). Pastille verte : une
    *  nouvelle (data-badge, partout) ; orange : une chose demande de l'attention (data-attn, téléphone seulement : sur un
    *  écran le bouton de synchronisation et la pastille du trigramme sont dans l'en-tête). */
+  /** Le cartouche de l'en-tête « Version ancienne · Recharger » (SOG-0168) : seulement quand la page est plus ancienne que le lanceur, ou qu'une
+   *  version suivante est prête sur un appareil sans lanceur ; absent (hidden), il n'occupe rien. Écrit seulement si l'état change. */
+  function paintStale() {
+    const el = $('fStale');
+    if (!el) return;
+    const stale = !!(OWN_STAMP && launcherHere?.app && launcherHere.app !== OWN_STAMP),
+      next = stale ? 'reload' : update.ready ? 'update' : '';
+    if ((el.dataset.go || '') !== next) {
+      el.dataset.go = next;
+      el.hidden = !next;
+    }
+    if (!next) return;
+    const label = t(T.info.staleTag),
+      full = t(T.info.stale);
+    if (el.textContent !== label) el.textContent = label;
+    if (el.title !== full) {
+      el.title = full;
+      el.setAttribute('aria-label', full);
+    }
+  }
+
   function paintStatus() {
+    paintStale();
     const items = statusItems();
     badge.news = items.some(it => it.news);
     badge.attn = items.some(it => it.attn);
@@ -4255,6 +4278,8 @@
       anonSync = s.lastSync; // une fois par passage réussi, jamais à chaque écriture
       adoptAnon();
     });
+    // le cartouche « Version ancienne » : recharge (page plus ancienne que le lanceur), ou prend la version suivante prête (appareil sans lanceur)
+    $('fStale').onclick = () => $('fStale').dataset.go === 'update' ? reloadNewVersion() : location.reload();
     $('fSync').onclick = async () => {
       if (over?.id === 'conflicts') return leaveOver();
       const s = await FD.status();
