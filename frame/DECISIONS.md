@@ -2703,3 +2703,14 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   directive »). Widening a policy that is audited is a security decision; the options are the two pinned files and the Esri path for **this page only**
   (a per-page policy in the launcher), or local copies of the two libraries (the page is entered unchanged, so that is an edit of it). A116 pins the hosts the file calls and its
   presence.
+- **10 Nov 2026 — The pelican sites tool: the original kept, `index.html` an adapted copy that works under the launcher** (SOG-0083; Simplification: the
+  content policy is not widened on a session's decision, option (b) meanwhile; V3 Frame). `apps/outils/pelicandromes/original.html` is the user's file **as it came**
+  (git blob `7757e1b7`, not linked, for the record); `index.html`, the page linked from `#legacy`, **differs in four places only**: (1) the stylesheet
+  `unpkg.com/maplibre-gl@5.9.0/…/maplibre-gl.css` → `../../../modules/maps/lib/maplibre-gl.css`; (2) the scripts `unpkg.com/maplibre-gl@5.9.0` and
+  `cdn.jsdelivr.net/npm/js-yaml@4.1.0` → `modules/maps/lib/maplibre-gl.js` (MapLibre 5.6.0 — the page uses `Map`, `Marker`, `NavigationControl`, `setStyle`, `jumpTo`,
+  `panTo`, `addSource`, `addLayer`, which that version has) and `frame/lib/js-yaml.min.js` (js-yaml 4.1.0, the same version, `jsyaml.dump` / `load`); (3) a hidden line
+  `<span id="satnote">Fond satellite indisponible sous le lanceur.</span>` beside the background choice; (4) a `securitypolicyviolation` listener that shows it when
+  a request to `arcgisonline` is blocked. Nothing else; the policy is untouched. **Checked** against the real launcher: `maplibregl` and `jsyaml` are defined, the
+  OpenFreeMap vector style and tiles load, choosing the satellite shows the line instead of a silent empty background. The satellite tiles stay blocked (a decision
+  for the user, option (a): a per-page policy). Noreg A116 (the original keeps its four hosts; the page opened has only the tiles' two; with nothing outside reachable
+  the page has `maplibregl` and `jsyaml`, lists the sites and its YAML export produces `pelicandromes_positions.yaml`; the line appears), red with the CDN version.

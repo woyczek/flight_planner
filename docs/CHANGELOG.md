@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Pelican sites tool: it works under the launcher** (`apps/outils/pelicandromes/`; frame DECISIONS; noreg A116; SOG-0083). The user's file is kept as it came
+  (`original.html`, not linked); the page linked from the old pages takes MapLibre and js-yaml from the repository instead of the CDN (the launcher's content policy
+  blocks them), and says « Fond satellite indisponible sous le lanceur » where the background is chosen. The policy is untouched.
+
 - **Data packs: the zones list has a title « Zones de la couverture (n) » and the countries of a theme are indented under their switch** (`modules/data/panels.js`, `screen.js`, `texts.js`; L44) — the ergonomist's last retouch on SOG-0165.
 - **Old pages: the pelican sites tool, and the group « Canadair et pélicandromes »** (`apps/outils/pelicandromes/index.html`, `frame/legacy.js`; frame DECISIONS;
   noreg A116; SOG-0083). The user's own tool for placing the pelican sites on a map and exporting the YAML is in the repository as it came and linked from the old

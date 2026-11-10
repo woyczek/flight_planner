@@ -39,6 +39,7 @@ import json
 import re
 import socket
 import urllib.parse
+from pathlib import Path
 
 from lib import MAP_JS, ROOT, Fail, Skip, case, flight_docs, forget, norm, tx
 
@@ -4613,11 +4614,24 @@ def a116(c):
         fire = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=missions] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\/apps\//, 'apps/')).filter(p => /FIRE/.test(p))")
         c.eq((peli, fire), (['apps/outils/pelicandromes/index.html'], ['apps/cr/FIRE/fire_cr.html', 'apps/cr/FIRE/fire_reporting.html']),
              'the Canadair group carries the pelican sites tool, the fire reports are under Missions', what=f'Canadair group ({app})')
-    # the tool is in the repository as the user wrote it, and calls only these hosts (SOG-0083; its CDN scripts need the policy's decision, DECISIONS)
-    tool = ROOT / 'apps' / 'outils' / 'pelicandromes' / 'index.html'
-    c.ok(tool.is_file(), str(tool), 'the pelican sites tool is in the repository')
-    hosts = sorted(set(re.findall(r'https://([a-z0-9.-]+)/', tool.read_text(encoding='utf-8'))) - {'www.w3.org'})
-    c.eq(hosts, ['cdn.jsdelivr.net', 'server.arcgisonline.com', 'tiles.openfreemap.org', 'unpkg.com'], 'the tool calls only the map libraries, the vector tiles and the satellite tiles', what='hosts')
+    # the tool: the user's file kept as it came (original.html, not linked), index.html the adapted copy (MapLibre and js-yaml from the repository, the launcher's content
+    # policy blocking the CDN scripts), calling only the vector tiles and the satellite tiles (SOG-0083; DECISIONS)
+    d = ROOT / 'apps' / 'outils' / 'pelicandromes'
+    orig, tool = (d / 'original.html').read_text(encoding='utf-8'), (d / 'index.html').read_text(encoding='utf-8')
+    hosts = lambda t: sorted(set(re.findall(r'https://([a-z0-9.-]+)/', t)) - {'www.w3.org'})
+    c.eq(hosts(orig), ['cdn.jsdelivr.net', 'server.arcgisonline.com', 'tiles.openfreemap.org', 'unpkg.com'], 'the original is kept as it came: it calls the CDN libraries, the vector tiles and the satellite tiles', what='original hosts')
+    c.eq(hosts(tool), ['server.arcgisonline.com', 'tiles.openfreemap.org'], 'the page opened takes MapLibre and js-yaml from the repository: only the tiles are called', what='tool hosts')
+    if c.width == 1280 and c.lang == 'fr':
+        c.context.route(re.compile(r'^https://'), lambda r: r.abort())     # nothing outside: the libraries must be the repository's
+        c.page.goto(f'{c.base}/apps/outils/pelicandromes/index.html', wait_until='load')
+        c.until("typeof maplibregl === 'object' && typeof jsyaml === 'object'", timeout=15000, what='MapLibre and js-yaml from the repository')
+        c.until("document.querySelectorAll('#list .item').length > 20", timeout=10000, what='the list of sites')
+        with c.page.expect_download() as dl:
+            c.page.click('#export')
+        out = Path(dl.value.path()).read_text(encoding='utf-8')
+        c.ok(dl.value.suggested_filename == 'pelicandromes_positions.yaml' and out.startswith('schema: pelicandromes') and 'LFTW' in out, out[:80], 'the YAML export produces its file')
+        c.page.evaluate("() => document.dispatchEvent(new SecurityPolicyViolationEvent('securitypolicyviolation', { blockedURI: 'https://server.arcgisonline.com/x', violatedDirective: 'connect-src' }))")
+        c.eq(c.js("() => !document.getElementById('satnote').hidden"), True, 'a blocked satellite background says it in one line, beside the choice', what='satellite note')
     c.check_errors()
 
 
