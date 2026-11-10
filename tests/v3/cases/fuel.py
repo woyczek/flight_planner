@@ -3743,3 +3743,32 @@ def f200(c):
     st['busy'] = False
     c.tap(f'{FUEL} [data-rrefused=busy] [data-rretry]')
     c.until(f"document.querySelectorAll('{FUEL} [data-segerr]').length === 2", what='« Réessayer » asks again: the check answers')
+
+
+# a second Fuel on the same flight (another tab, another synchronised device): its own profile written over ours (SOG-0209)
+_SECOND_FUEL = """async ([path, i]) => { const d = FrameData.adapter({ id: 'fuel-b', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] });
+  const cur = (await d.get(path)) || {}, at = new Date().toISOString();
+  await d.put(path, { ...cur, profile: { climbFpm: 1200 + i, climbKt: 220, descentFpm: 1500, descentKt: 250, tocNm: 20, todNm: 30 }, by: 'fuel', updated_at: at });
+  return at }"""
+
+
+@case('F132', 'No write of the current flight without a gesture: Fuel left alone writes nothing, and never rewrites its profile in answer to another writer\'s (another tab or device); a write that would only change updated_at is not made',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0209 (user: « synchronisation clignote, procédures clignotent… synchronisation ne s\'arrête pas »; his data repository: 50 commits of '
+      'current_flight.json in a burst, most changing only updated_at, the four fields of the profile alternating between two sets): two Fuel '
+      'answered each other; the rule: Fuel writes the flight on a gesture or when a result it owns changed, never in answer to another writer')
+def f132(c):
+    path = 'pilot/ABC/current_flight.json'
+    c.open('fuel', docs=flight_docs())
+    wait_quote(c)
+    c.wait(2500)
+    a = (c.doc(path) or {}).get('updated_at')
+    c.wait(5000)
+    c.eq((c.doc(path) or {}).get('updated_at'), a, 'alone and without a gesture, Fuel writes nothing for 5 s', what='updated_at')
+    # the second Fuel writes its own profile four times, 4 s apart: Fuel never writes back
+    for i in range(4):
+        at = c.js(_SECOND_FUEL, [path, i])
+        c.wait(4000)
+        d = c.doc(path) or {}
+        c.eq([d.get('updated_at'), (d.get('profile') or {}).get('climbFpm')], [at, 1200 + i],
+             f'write {i + 1} of the other Fuel: the record is still its own, Fuel did not answer', what='[updated_at, climbFpm]')

@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the current flight is no longer rewritten in a loop** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg F132; SOG-0209).
+  Two Fuel on one flight no longer answer each other's profile; a write that would change only `updated_at` is not made.
 - **Fuel: the way back to the mission** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS, help; noreg N16; SOG-0193 L2, § 10.47 b).
   A chip « Mission <ID> » in the head opens the mission sheet in a pane, risks first, without leaving the step.
 - **Map: a mission map's view does what its name says** (`modules/maps/mission_view.js`, `layers.js`, `draw.js`; DECISIONS; noreg D152; SOG-0171 reopened). The base now follows the view

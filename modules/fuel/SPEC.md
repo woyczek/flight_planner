@@ -190,7 +190,10 @@ to `[data-module="fuel"]`, built on the frame's tokens and classes; no global sh
   objectives, the teams, the zones each with « Sur la carte », the description folded), read with `loadMission` (the reader of the
   door: the registry's row, `MS.readMission`, the file untrusted), without leaving the step; the cross (44 px) or Escape closes it.
   On a computer the pane sits in Fuel's column (the Map beside stays free), on a phone at the bottom of the screen.
-- **Writes**: the current flight after a quiet time (§ 4); the quote settings (`pilot/<trigram>/fuel.json`) likewise; never a sheet.
+- **Writes**: the current flight after a quiet time (§ 4), **only on a gesture or when a result Fuel owns has changed** (SOG-0209, F132):
+  a write that would change only `updated_at` / `by` is not made; the profile and the quote are compared with the last result THIS
+  instance computed, never with the record another writer (another tab, another synchronised device) changed, so that two Fuel on one
+  flight never answer each other; a quote not yet computed does not replace a written profile. Fuel is the only writer of the profile; the quote settings (`pilot/<trigram>/fuel.json`) likewise; never a sheet.
 - **Phone**: no horizontal scroll at 375 px (wide tables scroll inside their block), the frame's 44 px targets, drawings redrawn at
   the width of their block (F4).
 

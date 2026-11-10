@@ -1179,6 +1179,17 @@ async function writeFlight(s) {
     by: 'fuel'
   }), ch);
   s.base = CF.routeBase(s.flight);
+  // SOG-0209 : une écriture dont seuls updated_at et by changeraient n'est pas faite (chaque écriture part en synchronisation : 50
+  // commits « current_flight.json » en rafale, sans rien de neuf, chez l'utilisateur le 10 nov.) ; le vol reste celui de l'enregistrement
+  const bare = x => JSON.stringify({
+    ...x,
+    updated_at: undefined,
+    by: undefined
+  });
+  if (cur.updated_at && bare(s.flight) === bare(cur)) {
+    s.flight = cur;
+    return;
+  }
   s.writing = s.flight.updated_at;
   await s.ctx.data.put(path, s.flight);
 }
@@ -5031,6 +5042,14 @@ function shareProfile(C) {
     cur = S.flight,
     lenient = cur.quote != null && cur.quote.distanceNm == null;
   if (JSON.stringify(p) === JSON.stringify(cur.profile ?? null) && quoteCmp(sum, lenient) === quoteCmp(cur.quote ?? null, lenient)) return;
+  // SOG-0209 (« synchronisation ne s'arrête pas ») : deux Carburant ouverts sur le même vol (deux onglets, deux appareils synchronisés)
+  // calculaient chacun leur devis (avec ou sans vents en altitude) et réécrivaient chacun le leur en voyant l'écriture de l'autre. Le
+  // résultat est comparé à celui que CETTE instance a calculé la dernière fois : inchangé, il ne s'écrit pas, même si l'enregistrement
+  // porte celui d'un autre écrivain ; un devis pas encore chiffré (profil null) ne remplace pas un profil écrit
+  const mine = JSON.stringify([p, quoteCmp(sum, lenient)]);
+  if (S.shared === mine) return;
+  S.shared = mine;
+  if (!p && !sum && cur.profile) return;
   if (sum && cur.started
     ?.at) { // un seul état : legsAt = l'heure de la dernière réécriture des legs ou du chemin vertical, gardé tant qu'ils ne changent pas
     const same = JSON.stringify([sum.legs, p?.path ?? null]) === JSON.stringify([cur.quote?.legs, cur.profile?.path ?? null]);

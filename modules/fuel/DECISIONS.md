@@ -1566,3 +1566,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   frame's pane (that one holds the Map beside; Missions lives in the Company application): a pane of Fuel's own, read with the same
   reader as the door (`loadMission`, one YAML reader). The 1 280 capture showed a fixed pane over the Map and its close button: the
   pane sits in Fuel's column; on a phone, at the bottom. N16; counter-test on origin/v3: no chip.
+- **10 Nov 2026 — the flight rewritten in a loop** (SOG-0209, bloquant; user: « synchronisation clignote, procédures clignotent…
+  synchronisation ne s'arrête pas »; his data repository: 50 commits of pilot/RBR/current_flight.json from 14 h 40, up to 8 a minute, most
+  changing only `updated_at`, the profile alternating between 1200 fpm / 220 kt / 1500 / 250 and 580 / 385 / 2000 / 360). Cause: two Fuel on
+  the same flight (two tabs or two synchronised devices; the Map never writes the profile: `CF.setRoute` changes route and level only),
+  each computing its own quote (with and without winds aloft: climbKt is a ground speed), and `shareProfile` comparing its result with the
+  RECORD the other had just written, so each rewrote its own on seeing the other's; and `writeFlight` writing at every `saveFlight`,
+  even when only `updated_at` changed. Now the profile is compared with this instance's own last result, a write equal but for
+  `updated_at` / `by` is skipped, and a quote not yet computed does not erase a written profile. F132 (a simulated second Fuel writes
+  four times; alone, nothing for 5 s); counter-test on origin/v3: Fuel wrote its profile back.
