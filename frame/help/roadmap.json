@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e6c9bec",
+  "organisation": "7dd28b7",
   "fiches": 197,
   "untranslated": 1,
   "priorities": 152
@@ -2269,7 +2269,7 @@
     {
      "id": "SOG-0188",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données, paquets : mettre à jour un paquet sans tout décocher puis recocher",
      "en": "Data, packs: update a pack without unticking and ticking everything again",
      "de": "Daten, Pakete: ein Paket aktualisieren, ohne alles ab- und wieder anzuwählen",
@@ -2278,7 +2278,7 @@
     {
      "id": "SOG-0189",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Sources à télécharger soi-même : des liens directs (AIP danois, suédois) et un pas-à-pas qui dit quel fichier prendre",
      "en": "Sources to download yourself: direct links (Danish, Swedish AIP) and a step-by-step that says which file to take",
      "de": "Selbst herunterzuladende Quellen: direkte Links (dänische, schwedische AIP) und eine Schritt-für-Schritt-Anleitung",
@@ -2287,7 +2287,7 @@
     {
      "id": "SOG-0191",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Points VFR : un téléchargement arrêté puis une construction donnent « à jour » au lieu de « en partie à jour »",
      "en": "VFR points: a stopped download then a build say “up to date” instead of “partly up to date”",
      "de": "VFR-Punkte: abgebrochener Download und Aufbau melden „aktuell“ statt „teilweise aktuell“",
@@ -2296,7 +2296,7 @@
     {
      "id": "SOG-0197",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : la question de « Prendre le fichier téléchargé » est un pavé illisible",
      "en": "Data: the question of “Take the downloaded file” is an unreadable block of text",
      "de": "Daten: die Rückfrage von „Heruntergeladene Datei übernehmen“ ist ein unlesbarer Textblock",

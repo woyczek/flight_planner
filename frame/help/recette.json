@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 75,
+  "tests": 79,
   "verdicts": 17
  },
  "apps": [
@@ -1082,6 +1082,34 @@
    "delivered": "2026-11-10T12:16:09Z"
   },
   {
+   "id": "SOG-0188",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, paquets : mettre à jour un paquet sans tout décocher puis recocher",
+    "en": "Data, packs: update a pack without unticking and ticking everything again",
+    "de": "Daten, Pakete: ein Paket aktualisieren, ohne alles ab- und wieder anzuwählen",
+    "es": "Datos, paquetes: actualizar un paquete sin desmarcar y volver a marcar todo"
+   },
+   "test": "Maintenance › Données › « Paquets de pays » : un paquet dont des pays sont déjà dans la couverture porte « Mettre à jour (n) » ; il met à jour ces pays seuls, sans rien décocher ni recocher, avec une question au plus. Les pays d'un pli ouvert sont décalés sous leur paquet.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T13:00:22Z"
+  },
+  {
+   "id": "SOG-0189",
+   "app": "maintenance",
+   "title": {
+    "fr": "Sources à télécharger soi-même : des liens directs (AIP danois, suédois) et un pas-à-pas qui dit quel fichier prendre",
+    "en": "Sources to download yourself: direct links (Danish, Swedish AIP) and a step-by-step that says which file to take",
+    "de": "Selbst herunterzuladende Quellen: direkte Links (dänische, schwedische AIP) und eine Schritt-für-Schritt-Anleitung",
+    "es": "Fuentes para descargar uno mismo: enlaces directos (AIP danés y sueco) y un paso a paso que dice qué archivo tomar"
+   },
+   "test": "Après relance du lanceur. Maintenance › Données, une zone qui attend un fichier (Royaume-Uni, Suède) : sous sa ligne, un pas-à-pas : 1. le lien direct vers la page de la source, 2. le nom exact de chaque fichier à télécharger et ce qu'il apporte, 3. « Prendre le fichier téléchargé ». Vérifie que les liens suédois sont bien les tiens. (Danemark : pas encore.)",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T13:07:27Z"
+  },
+  {
    "id": "SOG-0190",
    "app": "compagnie",
    "title": {
@@ -1094,6 +1122,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T12:23:27Z"
+  },
+  {
+   "id": "SOG-0191",
+   "app": "maintenance",
+   "title": {
+    "fr": "Points VFR : un téléchargement arrêté puis une construction donnent « à jour » au lieu de « en partie à jour »",
+    "en": "VFR points: a stopped download then a build say “up to date” instead of “partly up to date”",
+    "de": "VFR-Punkte: abgebrochener Download und Aufbau melden „aktuell“ statt „teilweise aktuell“",
+    "es": "Puntos VFR: una descarga detenida y una construcción dicen «al día» en vez de «parcialmente al día»"
+   },
+   "test": "Après relance du lanceur. Maintenance › Données › points VFR : après un téléchargement arrêté puis une construction, l'état est « En partie à jour » avec le détail par cycle (« 28 en 2611, 385 en 2610 »), plus « à jour ».",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T13:07:27Z"
   },
   {
    "id": "SOG-0192",
@@ -1136,6 +1178,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T11:54:52Z"
+  },
+  {
+   "id": "SOG-0197",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la question de « Prendre le fichier téléchargé » est un pavé illisible",
+    "en": "Data: the question of “Take the downloaded file” is an unreadable block of text",
+    "de": "Daten: die Rückfrage von „Heruntergeladene Datei übernehmen“ ist ein unlesbarer Textblock",
+    "es": "Datos: la pregunta de «Tomar el archivo descargado» es un bloque de texto ilegible"
+   },
+   "test": "Maintenance › Données › « Prendre le fichier téléchargé » : la question est une liste lisible : « Sera pris (n) » (pays · fichier · taille), « Ignoré (n) » avec la raison, « À corriger (n) » avec ce qu'il faut faire ; plus de pavé.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T12:50:01Z"
   }
  ]
 }
