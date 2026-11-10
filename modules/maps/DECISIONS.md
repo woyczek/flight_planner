@@ -2317,6 +2317,14 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## The taxiway lines one level of zoom earlier (10 Nov 2026, SOG-0195, first part)
+
+- **Asked** (the user: « TWY : enfin ! apparaissent trop tard au zoom. pas de label. pas non plus de labels des parkings… mêmes règles que les VOR/ILS: les importants d'abord, puis les moins importants,
+  et on finit par les gates si on a l'info »): lines one level earlier; names by order of importance (runways, main one-letter taxiways, secondary ones, apron zones, stands), decluttered, the complexity adding some.
+- **Done now** (the part that needs nothing from AeroDB): `Z_LINE` 14 → 13 (the lines of the taxiways, the light drawing too); the names stay at 15, the stands and holds at 16. D112 follows; D68, D114 (cost at zoom 15) unchanged.
+- **Waiting**: the names by importance and the apron / stand names wait for AeroDB's report of what the ground layer carries as names (the ergonomics asks it); not coded.
+- **To see on his workstation** (the bench has no real ground data except the LFPO fixture): LFPO at zoom 13, the look of the lines and the cost with the real file.
+
 ## The map's balloon does not outlive what it was about (10 Nov 2026, SOG-0192)
 
 - **Seen**: with a balloon on a space open, the « i » chip opens the legend and the balloon stays (tapped balloons have no timer; the hover ones wait 5 s after the pointer leaves).

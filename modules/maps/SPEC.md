@@ -592,8 +592,8 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   `{ icao, cycle, source, attribution, items: [{ id, kind: 'twy' | 'park' | 'hold', name, line: [[lon, lat]…] | point: [lon, lat] }] }`.
   Without the function: no layer, no button, no state. The file is untrusted input (§ 10.36): `sanitize()` keeps finite bounded
   coordinates, names cut to 24 characters and stripped of control characters and `<`, `>`, at most 4 000 items and 600 points a line.
-- **When**: only for the flight's departure and arrival (`groundIcaos()`, four letters) and from zoom 14 (the Map's own MapLibre zoom,
-  `zoomOf`, the scale of `COVER_ZOOM` and `runwayZoom`; a tolerance of .02 absorbs the view's rounding): the taxiway **lines** from 14,
+- **When**: only for the flight's departure and arrival (`groundIcaos()`, four letters) and from zoom 13 (the Map's own MapLibre zoom,
+  `zoomOf`, the scale of `COVER_ZOOM` and `runwayZoom`; a tolerance of .02 absorbs the view's rounding): the taxiway **lines** from 13 (one level earlier than the first 14: SOG-0195),
   their **names** from 15 (rank `ground` in `RANK`, after `procedure`, three places along the line, collision pass), the **stands and
   holds** (points and names) from 16; the aprons are never filled (3 to 5 ms for nothing). During a gesture the light drawing keeps the
   lines only (`groundLight`, D68). The element highlighted from the list is drawn last, thicker, in the accent hue; the attribution

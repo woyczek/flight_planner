@@ -3236,9 +3236,9 @@ _GSTAT = """() => { const g = window.__mp.S.ground; if (!g) return null; const r
            names: [...g.drawn.values()].filter(Boolean).length, asked: g.drawn.size } }"""
 
 
-@case('D112', 'Ground layer: only with a flight aerodrome and zoom 14 or more; lines at 14, names at 15, stands at 16; absent without AeroDB’s ground()', 'D',
+@case('D112', 'Ground layer: only with a flight aerodrome and zoom 13 or more; lines at 13, names at 15, stands at 16; absent without AeroDB’s ground()', 'D',
       tags=('maps',), designs=('standard',), night=False, phone=False,
-      rule='V3 spec 10.40 (SOG-0046), cost rule D68: the layer needs a departure or an arrival of the flight and zoom 14 or more; the taxiway lines from 14, their names from 15, the stands and holds (points and names) from 16; never without AeroDb.ground')
+      rule='V3 spec 10.40 (SOG-0046), cost rule D68: the layer needs a departure or an arrival of the flight and zoom 13 or more (SOG-0195: one level earlier than the first 14); the taxiway lines from 13, their names from 15, the stands and holds (points and names) from 16; never without AeroDb.ground')
 def d112(c):
     _ground_open(c, aerodb=False)
     _ground_at(c, 15)
@@ -3246,12 +3246,15 @@ def d112(c):
     c.ok(st0 is None or (st0['items'] == 0 and st0['hits'] == 0), f'{st0}', 'without a file from AeroDB’s ground() there is no layer (nothing lent, nothing drawn)')
     c.eq(c.js("() => !!document.querySelector('.mp-ad-ground')"), False, 'no « Ground » button either', what='button')
     c.js(_GROUND_JS)
-    _ground_at(c, 13, 1200)
+    _ground_at(c, 12, 1200)
     st = c.js(_GSTAT)
-    c.ok(st and st['hits'] == 0, f'{st}', 'under zoom 14 nothing is drawn')
-    _ground_at(c, 14, 1500)
+    c.ok(st and st['hits'] == 0, f'{st}', 'under zoom 13 nothing is drawn')
+    _ground_at(c, 13, 1500)
     st = c.js(_GSTAT)
-    c.ok(st and st['twy'] > 50 and st['pts'] == 0 and st['asked'] == 0, f'{st}', 'at 14: the taxiway lines, no stand, no name')
+    c.ok(st and st['twy'] > 50 and st['pts'] == 0 and st['asked'] == 0, f'{st}', 'at 13: the taxiway lines, no stand, no name')
+    _ground_at(c, 14, 1200)
+    st = c.js(_GSTAT)
+    c.ok(st and st['twy'] > 50 and st['pts'] == 0 and st['asked'] == 0, f'{st}', 'at 14: the same, still no name')
     _ground_at(c, 15, 1200)
     st = c.js(_GSTAT)
     c.ok(st['twy'] > 20 and st['pts'] == 0 and 8 < st['names'] <= st['asked'], f'{st}', 'at 15: the lines and the names of the taxiways, no stand')

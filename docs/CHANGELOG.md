@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the taxiway lines appear one level of zoom earlier** (`modules/maps/ground.js`; SPEC § 10.40, DECISIONS, help ×4; noreg D112; SOG-0195, first part). From zoom 13 instead of 14; the names and stands unchanged (the names by importance
+  wait for AeroDB's report).
+
 - **Tests: Fuel beside the Map, after « New flight »** (`tests/v3/cases/fuel.py` F128; SOG-0194 (2), the frame's part). The user's path (a started flight with a position, « New flight »,
   two aerodromes) is played with the dual view: the Map beside Fuel is not covered, nothing is inert, a drag pans it, the handle of its sheet answers, and the window
   resizes it. The defect « impossible de la resizer ni de la bouger » is **not reproduced** there; the case stays as a guard of the path.

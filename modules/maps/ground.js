@@ -1,7 +1,7 @@
 // V3 maps — la couche « sol » : voies de circulation, postes de stationnement et points d'attente du départ et de l'arrivée
 // (V3_SPECIFICATION § 10.40, SOG-0046 ; modules/maps/SPEC.md § 5.2). Les données viennent d'AeroDB (ctx.aerodb.ground(icao) : un petit
 // fichier par terrain, OpenStreetMap, ODbL) ; sans cette fonction, ni couche ni bouton. Règle de coût (D68, < 16 ms par image) :
-// seulement avec un terrain du vol (départ, arrivée) et à partir du zoom 14 ; traits à z ≥ 14, noms des voies à z ≥ 15, postes et
+// seulement avec un terrain du vol (départ, arrivée) et à partir du zoom 13 ; traits à z ≥ 13, noms des voies à z ≥ 15, postes et
 // points d'attente (points + noms) à z ≥ 16 ; jamais d'aprons remplis ; pendant un geste, les traits seuls. Le panneau est une liste
 // de la feuille (copiée de choose.js) : un champ de filtre (sous-chaîne sans casse ni accent), des puces par nature, une ligne par
 // élément ; le survol ou le focus d'une ligne la surligne sur la carte (setGroundHl), un toucher la cadre ; de la carte vers la liste,
@@ -32,7 +32,7 @@ import {
   wantRunways
 } from './procs.js';
 
-export const Z_LINE = 14,
+export const Z_LINE = 13, // un cran plus tôt qu'avant (SOG-0195 : « les taxiways apparaissent trop tard au zoom »)
   Z_NAME = 15,
   Z_PARK = 16,
   HIT_PX = 6,
