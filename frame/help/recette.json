@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 81,
+  "tests": 82,
   "verdicts": 20
  },
  "apps": [
@@ -1202,6 +1202,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T14:21:14Z"
+  },
+  {
+   "id": "SOG-0206",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant › Route : « Contrôler » après le choix d'un itinéraire, d'une piste et d'une SID répond « le contrôle n'a pas répondu »",
+    "en": "Fuel › Route: “Check” after choosing a route, a runway and a SID answers “the check did not answer”",
+    "de": "Kraftstoff › Route: „Prüfen“ nach Wahl von Route, Bahn und SID antwortet „die Prüfung hat nicht geantwortet“",
+    "es": "Combustible › Ruta: «Comprobar» tras elegir itinerario, pista y SID responde «la comprobación no ha respondido»"
+   },
+   "test": "Après relance du lanceur. Carburant › Route : choisir un itinéraire, une piste et une SID, puis « Contrôler » tout de suite : le contrôle répond (quelques secondes), même pendant que le sol du terrain se lit en fond ; s'il ne peut pas, il dit pourquoi (lanceur occupé, hors ligne…) avec « Réessayer ».",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T14:41:04Z"
   }
  ]
 }

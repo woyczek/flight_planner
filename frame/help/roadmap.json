@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7add73a",
+  "organisation": "49183f7",
   "fiches": 211,
   "untranslated": 1,
   "priorities": 152
@@ -524,7 +524,7 @@
     {
      "id": "SOG-0206",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant › Route : « Contrôler » après le choix d'un itinéraire, d'une piste et d'une SID répond « le contrôle n'a pas répondu »",
      "en": "Fuel › Route: “Check” after choosing a route, a runway and a SID answers “the check did not answer”",
      "de": "Kraftstoff › Route: „Prüfen“ nach Wahl von Route, Bahn und SID antwortet „die Prüfung hat nicht geantwortet“",
