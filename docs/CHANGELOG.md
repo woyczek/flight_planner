@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the proposed routes' natures, words and patterns come from the common table** (`modules/maps/alts.js`, `texts.js`, `module.js`; frame `route_legend.js` by Features SOG; SPEC § 5.4, DECISIONS;
+  noreg D140; SOG-0134). One source with Fuel's Route screen: the key says « Écart aux règles », DCT is dashed (8 5) and FRA dotted (2 4), a fault keeps its pattern and turns red.
+
 - **Map: the VOR rose at the standard of a VFR chart** (`modules/maps/lib/aero_symbols.js`; SPEC § 3.2, DECISIONS; noreg D143; SOG-0175). Two circles at a close zoom: the outer graduated
   every 10° with long ticks, numbers and small arrows every 30°, the inner one thin to read a bearing, turned to the station's declination.
 

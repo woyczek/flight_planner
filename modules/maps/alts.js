@@ -20,6 +20,8 @@ import {
 import {
   colOf
 } from './procs.js';
+import *
+as RL from '../../frame/lib/route_legend.js'; // la légende commune avec Carburant : les natures, leurs mots et leurs motifs (une seule source)
 
 const DOC = 'cache/fuel/route_alts.json',
   MAX_ROUTES = 8,
@@ -87,19 +89,10 @@ const current = () => {
 /** Vue double : Carburant est à côté (le volet ou la page principale), il écoute maps-route-alt ; seule, la Carte renvoie vers lui. */
 const dual = () => S?.ctx?.query?.pane === '1' || !!S?.ctx?.query?.with;
 
-/** La nature d'un tronçon d'un itinéraire proposé, d'après ce que le moteur en dit (via, layer) et ses fautes : error (rouge), sid / star / app (la teinte
- *  des procédures), fra (pointillé), dct (tirets), awy (une voie : plein, son nom le long), plain (nature non dite : plein). */
-const natureOf = (a, k) => {
-  if (a.faulty.has(k) || a.control[k] === 'error') return 'error';
-  const L = a.layer[k],
-    v = a.via[k];
-  if (L === 'SID') return 'sid';
-  if (L === 'STAR') return 'star';
-  if (L === 'APP') return 'app';
-  if (L === 'FRA' || v === 'FRA') return 'fra';
-  if (v === 'DCT') return 'dct';
-  return v ? 'awy' : 'plain';
-};
+/** La nature d'un tronçon d'un itinéraire proposé : celle de la table commune (frame/lib/route_legend.js : awy, dct, fra, sid, star, app) d'après ce que le moteur
+ *  en dit (via, layer), ou plain (non dite : plein). Un écart ne change pas la nature : le trait garde son motif, la teinte rouge dit l'écart (fault). */
+const natureOf = (a, k) => RL.natureOf(a.via[k], a.layer[k]) || 'plain';
+const faultAt = (a, k) => a.faulty.has(k) || a.control[k] === 'error';
 /** Un itinéraire dit-il la nature de ses tronçons ? Sinon, le dessin de SOG-0161 (contrôlé plein, incomplet tireté, repli pointillé). */
 const natureKnown = a => a.via.some(Boolean) || a.layer.some(Boolean);
 /** Les itinéraires, sur la couche des écrans (après la carte) ; rend les tracés touchables : [{ index, q }] en coordonnées de la vue. Le trait a
@@ -115,8 +108,7 @@ export function drawAlts(ctx, toC) {
     tint = {
       sid: colOf('sid'),
       star: colOf('star'),
-      app: colOf('app'),
-      error: RED
+      app: colOf('app')
     },
     bg = S.theme?.bg || '#fff',
     fg = S.theme?.fg || '#17202a',
@@ -149,11 +141,11 @@ export function drawAlts(ctx, toC) {
       },
       // la sorte d'un tronçon : sa nature (si le moteur la dit) et s'il est contrôlé en entier ; sans nature, le dessin de SOG-0161
       thin = k => known && (a.control[k] === 'incomplete' || a.control[k] === 'fallback'),
-      kind = k => known ? `${natureOf(a, k)}${thin(k) ? '.thin' : ''}` : a.faulty.has(k) || a.control[k] === 'error' ? 'error' : a.control[k] === 'incomplete' ?
+      // sorte : nature, écart (!), fin (.thin) ; le motif est celui de la table commune (px à l'échelle 1) ; sans nature dite, les motifs de SOG-0161
+      kind = k => known ? `${natureOf(a, k)}${faultAt(a, k) ? '!' : ''}${thin(k) ? '.thin' : ''}` : faultAt(a, k) ? 'plain!' : a.control[k] === 'incomplete' ?
       'incomplete' : a.control[k] === 'fallback' ? 'fallback' : 'plain',
-      dash = s => s.startsWith('dct') ? [w * 3, w * 2.2] : s.startsWith('fra') || s === 'fallback' ? [.1, w * 2] : s === 'incomplete' ? [w *
-        2.6, w * 1.6
-      ] : [];
+      dash = s => RL.NATURES.find(n => n.id === s.split(/[!.]/)[0])?.dash.slice() || (s === 'fallback' ? [.1, w * 2] : s === 'incomplete' ?
+        [w * 2.6, w * 1.6] : []);
     ctx.globalAlpha = on ? 1 : .38;
     ctx.strokeStyle = bg;
     ctx.lineWidth = w + 3.5;
@@ -162,7 +154,7 @@ export function drawAlts(ctx, toC) {
       const s = kind(k);
       let e = k + 1;
       while (e < q.length - 1 && kind(e) === s) e++;
-      ctx.strokeStyle = tint[s.split('.')[0]] || col;
+      ctx.strokeStyle = s.includes('!') ? RED : tint[s.split(/[!.]/)[0]] || col;
       ctx.lineWidth = s.endsWith('.thin') ? w * .6 : w;
       ctx.setLineDash(dash(s));
       run(k, e);
@@ -287,26 +279,24 @@ export function altsHover(x, y) {
   S.altHover = h;
   schedule();
 }
-/** Les lignes de la légende des itinéraires, d'après ce que le moteur dit des tronçons de ceux qui sont dessinés : [[symbole (svg), texte]]. */
+/** Les lignes de la légende des itinéraires, d'après ce que le moteur dit des tronçons de ceux qui sont dessinés : [[symbole (svg), texte]] ; les natures et leurs
+ *  mots sont ceux de la table commune avec Carburant (frame/lib/route_legend.js), le trait fin est le mot de la Carte. */
 export function altsLegendRows() {
   const A = current();
   if (!A) return [];
   const seen = new Set(),
-    thin = A.list.some(a => natureKnown(a) && a.control.some(c => c === 'incomplete' || c === 'fallback'));
+    lang = S.ctx.lang?.() || 'fr',
+    thin = A.list.some(a => natureKnown(a) && a.control.some(c => c === 'incomplete' || c === 'fallback')),
+    P = MapsRender.palette(!!S.theme?.dark);
   for (const a of A.list)
-    for (let k = 0; k < a.points.length - 1; k++) seen.add(natureKnown(a) || a.faulty.has(k) ? natureOf(a, k) : 'plain');
-  const dark = !!S.theme?.dark,
-    P = MapsRender.palette(dark),
-    sw = (c, dash = '', wd = 3) => `<svg class="mp-al-sw" width="30" height="8" viewBox="0 0 30 8" aria-hidden="true"><line x1="2" x2="28" y1="4" y2="4" stroke="${c}" stroke-width="${wd}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ''}/></svg>`,
-    rows = [];
-  if (seen.has('awy')) rows.push([sw(P.route), esc(tt(TX.altLgAwy))]);
-  if (seen.has('dct')) rows.push([sw(P.route, '9 6'), esc(tt(TX.altLgDct))]);
-  if (seen.has('fra')) rows.push([sw(P.route, '0.1 6'), esc(tt(TX.altLgFra))]);
-  if (seen.has('sid')) rows.push([sw(colOf('sid')), esc(tt(TX.altLgSid))]);
-  if (seen.has('star')) rows.push([sw(colOf('star')), esc(tt(TX.altLgStar))]);
-  if (seen.has('app')) rows.push([sw(colOf('app')), esc(tt(TX.altLgApp))]);
-  if (seen.has('error')) rows.push([sw(RED), esc(tt(TX.altLgFault))]);
-  if (thin) rows.push([sw(P.route, '', 1.8), esc(tt(TX.altLgThin))]);
+    for (let k = 0; k < a.points.length - 1; k++) {
+      if (natureKnown(a)) seen.add(natureOf(a, k));
+      if (faultAt(a, k)) seen.add('fault');
+    }
+  const tintOf = t => t === 'route' ? P.route : t === 'err' ? RED : colOf(t),
+    sw = (c, dash = [], wd = 3) => `<svg class="mp-al-sw" width="30" height="8" viewBox="0 0 30 8" aria-hidden="true"><line x1="2" x2="28" y1="4" y2="4" stroke="${c}" stroke-width="${wd}" stroke-linecap="round"${dash.length ? ` stroke-dasharray="${dash.join(' ')}"` : ''}/></svg>`,
+    rows = RL.NATURES.filter(n => seen.has(n.id)).map(n => [sw(tintOf(n.tint), n.dash), esc(`${n.label[Math.max(0, RL.LANGS.indexOf(lang))]}${n.hint ? ` (${n.hint[Math.max(0, RL.LANGS.indexOf(lang))]})` : ''}`)]);
+  if (thin) rows.push([sw(P.route, [], 1.8), esc(tt(TX.altLgThin))]);
   return rows;
 }
 /** Prendre l'itinéraire i : seulement un entier de la liste, et seulement pour un calcul (un contrôle n'a rien à choisir). */

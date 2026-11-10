@@ -4529,8 +4529,8 @@ def d140(c):
     c.ok(any(x['w'] == 4 and x['d'] == [] and x['c'] == '#8e24aa' for x in ch), str(ch[:6]), 'the airway: 4 px, the width of the flight’s route, solid, the route’s colour')
     green = lambda h: h.startswith('#') and int(h[3:5], 16) > int(h[1:3], 16) + 40 and int(h[3:5], 16) > int(h[5:7], 16) + 40
     c.ok(any(green(x['c']) and x['w'] == 4 for x in ch), str(ch[:6]), 'the SID in the procedures’ tint (green)')
-    c.ok(any(x['w'] == 2.4 and x['d'] == [12, 8.8] for x in ch), str(ch[:8]), 'the DCT not fully checked: dashes, and thinner')
-    c.ok(any(x['d'] and x['d'][0] == .1 for x in fade), str(fade[:6]), 'the FRA stretches of the other route: dots, faded')
+    c.ok(any(x['w'] == 2.4 and x['d'] == [8, 5] for x in ch), str(ch[:8]), 'the DCT not fully checked: dashes, and thinner')
+    c.ok(any(x['d'] == [2, 4] for x in fade), str(fade[:6]), 'the FRA stretches of the other route: dots, faded')
     c.ok(any(x['c'] == '#d6173f' for x in st), 'no red', 'the faulty stretch is red')
     if os.environ.get('D140_SHOT'):
         c.page.screenshot(path=f"{os.environ['D140_SHOT']}_{c.width}.png")
@@ -4542,6 +4542,11 @@ def d140(c):
     lg = c.js("() => [...document.querySelectorAll('.mp-alts .mp-al-leg li')].map(l => l.textContent)")
     c.ok(any('DCT' in t for t in lg) and any('FRA' in t for t in lg) and any('SID' in t for t in lg), str(lg), 'it names DCT, FRA and the SID, the stretches that are drawn')
     c.eq(c.js("() => document.querySelector('.mp-alts .mp-al-leg').open"), False, 'folded', what='key open')
+    # the common table (frame/lib/route_legend.js, Features SOG): the Map’s words and patterns are the table’s, not its own
+    rl = c.js("""async () => { const RL = await import('/frame/lib/route_legend.js'), l = window.__mp.S.ctx.lang(), i = Math.max(0, RL.LANGS.indexOf(l));
+      return { labels: RL.NATURES.filter(n => ['awy', 'dct', 'fra', 'sid'].includes(n.id)).map(n => n.label[i]), dct: RL.NATURES.find(n => n.id === 'dct').dash, fra: RL.NATURES.find(n => n.id === 'fra').dash } }""")
+    c.ok(all(any(w in t for t in lg) for w in rl['labels']), f'{lg} / {rl}', 'the key’s words are the common table’s (the same as Fuel’s Route screen)')
+    c.ok(any(x['d'] == rl['dct'] for x in ch) and any(x['d'] == rl['fra'] for x in fade), f"{rl}", 'and the dashes drawn are the table’s (DCT, FRA)')
     c.tap('.mp-chip[data-legend]')
     c.until("() => [...document.querySelectorAll('.mp-legend li')].some(l => /DCT/.test(l.textContent))", timeout=6000, what='the map’s legend lists the same lines')
     c.tap('.mp-chip[data-legend]')

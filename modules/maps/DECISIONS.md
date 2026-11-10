@@ -2317,6 +2317,15 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## The proposed routes' natures come from the common table (10 Nov 2026, SOG-0134, after Features SOG's 605def6c1)
+
+- Features SOG wrote `frame/lib/route_legend.js` (`NATURES`, `natureOf`, `labelOf`, `legendHtml`; theirs alone) and publishes `via` / `layer` per segment in `route_alts.json`
+  (605def6c1). The Map now reads the nature, the words and the patterns from it: `RL.natureOf(via, layer)`, `RL.NATURES[i].dash` / `.label` / `.hint` / `.tint`; the keys `altLg*`
+  of `texts.js` are removed except the thin line's. Two words changed from mine: « Écart aux règles » (the Route screen's word) for the fault, « Voie (nom le long du trait) ».
+- **Behaviour change**: a fault no longer turns the stretch solid: it keeps its pattern (dashes / dots) and takes the red tint, as the table says. DCT is 8-5 px dashes and FRA 2-4 px
+  dots at scale 1 (before: 3 × and 2 × the width).
+- **Noreg** D140 closes the loop: the key's words and the dashes drawn are the table's.
+
 ## The sheet of a space keeps its stack of levels (10 Nov 2026, SOG-0163 refused again; captures 103950 / 103959 / 104008)
 
 - **Seen**: the open sheet left an **empty scale** and the card went out of the screen. Cause: the graph was `position: sticky` inside `.mp-lv-body`, a

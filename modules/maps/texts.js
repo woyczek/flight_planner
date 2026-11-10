@@ -233,15 +233,6 @@ export const TX = {
     'continuo: comprobado · rayas: incompleto · puntos: sustituto · rojo: error'
   ],
   altLegend: ['Légende', 'Key', 'Legende', 'Leyenda'],
-  altLgAwy: ['Voie (son nom le long du trait)', 'Airway (named along the line)', 'Luftstraße (Name entlang der Linie)',
-    'Aerovía (nombre a lo largo del trazo)'
-  ],
-  altLgDct: ['DCT (direct)', 'DCT (direct)', 'DCT (direkt)', 'DCT (directo)'],
-  altLgFra: ['FRA (route libre)', 'FRA (free route)', 'FRA (freie Streckenführung)', 'FRA (ruta libre)'],
-  altLgSid: ['SID', 'SID', 'SID', 'SID'],
-  altLgStar: ['STAR', 'STAR', 'STAR', 'STAR'],
-  altLgApp: ['Approche', 'Approach', 'Anflug', 'Aproximación'],
-  altLgFault: ['Faute', 'Fault', 'Fehler', 'Falta'],
   altLgThin: ['Trait fin : non contrôlé en entier (incomplet ou repli)', 'Thin line: not fully checked (incomplete or fallback)',
     'Dünne Linie: nicht vollständig geprüft (unvollständig oder Ersatz)',
     'Trazo fino: no comprobado por completo (incompleto o sustituto)'
