@@ -1029,6 +1029,7 @@ def n22(c):
         c.shot(f'N22_{c.design}_{w}_{c.lang}_one.png')
         c.tap(f'{M} [data-do="moveonewrite"]')
         c.until(f"(document.querySelector('{M} [data-coline]')?.textContent || '').includes('Delta Air')", what='the sheet says Delta Air')
+        c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", norm(row(c, 'moved1').replace('{n}', '1')), what=f'{w} px: « 1 mission changée de compagnie : elle part … », singular')
         t = c.js(_TEXT_OF, path('X-151A')) or ''
         c.ok('airline: ddd' in t and t.startswith('# gardé'), t[:120], f'{w} px: the file has airline: ddd, the rest kept (its comment)')
         c.tap(f'{M} [data-do="back"]')
@@ -1044,6 +1045,7 @@ def n22(c):
         c.shot(f'N22_{c.design}_{w}_{c.lang}_batch.png')
         c.tap(f'{M} [data-do="movewrite"]')
         c.until(f"!document.querySelector('{M} [data-pane=move]')", what='back to the list')
+        c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", norm(row(c, 'moved').replace('{n}', '2')), what=f'{w} px: « 2 missions changées de compagnie : elles partent … », plural')
         for i in ('X-152A', 'X-153A'):
             c.ok('airline: iii' in (c.js(_TEXT_OF, path(i)) or ''), i, f'{w} px: {i} written to India Air')
         c.eq(c.js(_TEXT_OF, path('X-154A')), broken, 'the unreadable file is untouched', what='X-154A')

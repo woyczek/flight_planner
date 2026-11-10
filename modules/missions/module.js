@@ -132,10 +132,24 @@ const TX = {
   scopeMine: ['Ma compagnie', 'My airline', 'Meine Gesellschaft', 'Mi compañía'],
   scopeAll: ['Toutes les compagnies', 'All airlines', 'Alle Gesellschaften', 'Todas las compañías'],
   exists: ['existe déjà : remplacer ?', 'already exists: replace?', 'existiert bereits: ersetzen?', 'ya existe: ¿reemplazar?'],
-  added: ['{n} mission(s) ajoutée(s) : elles partent à la prochaine synchronisation.',
-    '{n} mission(s) added: they leave at the next synchronisation.',
-    '{n} Mission(en) hinzugefügt: Sie gehen bei der nächsten Synchronisierung.',
-    'Misiones añadidas: {n}; salen en la próxima sincronización.'
+  // le nombre accordé (SOG-0223, relecture : « 1 mission changée de compagnie : elles partent » → « elle part ») : une forme par nombre
+  added1: ['{n} mission ajoutée : elle part à la prochaine synchronisation.', '{n} mission added: it leaves at the next synchronisation.',
+    '{n} Mission hinzugefügt: Sie geht bei der nächsten Synchronisierung.', '{n} misión añadida: sale en la próxima sincronización.'
+  ],
+  added: ['{n} missions ajoutées : elles partent à la prochaine synchronisation.',
+    '{n} missions added: they leave at the next synchronisation.',
+    '{n} Missionen hinzugefügt: Sie gehen bei der nächsten Synchronisierung.',
+    '{n} misiones añadidas: salen en la próxima sincronización.'
+  ],
+  addedElsewhereIt: ['Elle n’est pas de cette compagnie (Personnel ou une autre) : elle n’est pas dans cette liste.',
+    'It is not of this airline (Personal or another): it is not in this list.',
+    'Sie gehört nicht zu dieser Gesellschaft (Persönlich oder eine andere): Sie steht nicht in dieser Liste.',
+    'No es de esta compañía (Personal u otra): no está en esta lista.'
+  ],
+  addedElsewhere1: ['L’une d’elles n’est pas de cette compagnie (Personnel ou une autre) : elle n’est pas dans cette liste.',
+    'One of them is not of this airline (Personal or another): it is not in this list.',
+    'Eine davon gehört nicht zu dieser Gesellschaft (Persönlich oder eine andere): Sie steht nicht in dieser Liste.',
+    'Una de ellas no es de esta compañía (Personal u otra): no está en esta lista.'
   ],
   addedElsewhere: ['{n} d’entre elles ne sont pas de cette compagnie (Personnel ou une autre) : elles ne sont pas dans cette liste.',
     '{n} of them are not of this airline (Personal or another): they are not in this list.',
@@ -194,10 +208,15 @@ const TX = {
     'Ilegibles, se dejan tal cual: {l}'
   ],
   moveDo: ['Écrire ({n})', 'Write ({n})', 'Schreiben ({n})', 'Escribir ({n})'],
-  moved: ['{n} mission(s) changée(s) de compagnie : elles partent à la prochaine synchronisation.',
-    '{n} mission(s) moved to another airline: they leave at the next synchronisation.',
-    '{n} Mission(en) einer anderen Gesellschaft zugeordnet: Sie gehen bei der nächsten Synchronisierung.',
-    'Misiones cambiadas de compañía: {n}; salen en la próxima sincronización.'
+  moved1: ['{n} mission changée de compagnie : elle part à la prochaine synchronisation.',
+    '{n} mission moved to another airline: it leaves at the next synchronisation.',
+    '{n} Mission einer anderen Gesellschaft zugeordnet: Sie geht bei der nächsten Synchronisierung.',
+    '{n} misión cambiada de compañía: sale en la próxima sincronización.'
+  ],
+  moved: ['{n} missions changées de compagnie : elles partent à la prochaine synchronisation.',
+    '{n} missions moved to another airline: they leave at the next synchronisation.',
+    '{n} Missionen einer anderen Gesellschaft zugeordnet: Sie gehen bei der nächsten Synchronisierung.',
+    '{n} misiones cambiadas de compañía: salen en la próxima sincronización.'
   ],
   addAs: ['Ajouter ces missions à', 'Add these missions to', 'Diese Missionen hinzufügen zu', 'Añadir estas misiones a'],
   asInFile: ['la compagnie dite dans le fichier', 'the airline the file says', 'die Gesellschaft laut Datei',
@@ -887,7 +906,7 @@ async function moveWrite(s, rows, to) {
     };
   }
   if (S !== s) return;
-  if (done) s.ctx.notify(s.tt(TX.moved, {
+  if (done) s.ctx.notify(s.tt(one(s, done) ? TX.moved1 : TX.moved, {
     n: done
   }), 'ok');
   s.move = null;
@@ -981,7 +1000,7 @@ async function addWrite(s) {
   }
   if (S !== s) return;
   const away = list.slice(0, done).filter(i => s.co?.filter && MS.ownerOf(i) !== s.co.code).length;
-  if (done) s.ctx.notify(`${s.tt(TX.added, { n: done })}${away ? ` ${s.tt(TX.addedElsewhere, { n: away })}` : ''}`, 'ok');
+  if (done) s.ctx.notify(`${s.tt(one(s, done) ? TX.added1 : TX.added, { n: done })}${away ? ` ${s.tt(away === done && done === 1 ? TX.addedElsewhereIt : away === 1 ? TX.addedElsewhere1 : TX.addedElsewhere, { n: away })}` : ''}`, 'ok');
   s.add = null;
   draw(s);
 }

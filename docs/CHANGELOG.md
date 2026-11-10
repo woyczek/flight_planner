@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: the notifications agree with their number** (« 1 mission changée de compagnie : elle part … »; noreg N22).
 - **Report: the airline is chosen on the report** (Report SPEC, DECISIONS, help; noreg G12, G9 adapted; SOG-0181). « Changer » beside
   « Compte rendu pour … », the draft kept; a saved report of another airline is said in the header; no draft written back after a save.
 - **Retouches** (`modules/maps/lib/aero_symbols.js`, `modules/atmosphere/world_build.js`; DECISIONS; noreg D143, E18; SOG-0175, SOG-0138). The numbers of the VOR rose stop at 15 px at a strong zoom; a synoptic
