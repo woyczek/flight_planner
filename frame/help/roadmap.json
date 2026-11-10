@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "63b66ae",
+  "organisation": "924d966",
   "fiches": 197,
   "untranslated": 1,
   "priorities": 152
@@ -1452,7 +1452,7 @@
     {
      "id": "SOG-0190",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Flotte : dire de quelle compagnie on parle ; un appui sur le nom de l'appareil ouvre sa modification",
      "en": "Fleet: say which airline it is; tapping the aircraft's name opens its editing",
      "de": "Flotte: sagen, um welche Gesellschaft es geht; ein Tipp auf den Namen öffnet die Bearbeitung",

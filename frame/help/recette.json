@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 72,
+  "tests": 73,
   "verdicts": 17
  },
  "apps": [
@@ -1066,6 +1066,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T12:16:09Z"
+  },
+  {
+   "id": "SOG-0190",
+   "app": "compagnie",
+   "title": {
+    "fr": "Flotte : dire de quelle compagnie on parle ; un appui sur le nom de l'appareil ouvre sa modification",
+    "en": "Fleet: say which airline it is; tapping the aircraft's name opens its editing",
+    "de": "Flotte: sagen, um welche Gesellschaft es geht; ein Tipp auf den Namen öffnet die Bearbeitung",
+    "es": "Flota: decir de qué compañía se trata; tocar el nombre del aparato abre su edición"
+   },
+   "test": "Maintenance › Appareils › Flotte : l'en-tête dit « Flotte de <compagnie> · <genre> ». Onglet Fiches, après une recherche (« caravelle ») : un appui sur le nom de la fiche, ou n'importe où sur sa ligne, l'ouvre pour la modifier ; plus de bouton seul à droite.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T12:23:27Z"
   },
   {
    "id": "SOG-0192",
