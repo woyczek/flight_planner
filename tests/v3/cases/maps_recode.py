@@ -5127,3 +5127,55 @@ def d_inplace(c):
     c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
     c.until("() => window.__mp.S.missionId === '' && window.__mp.S.route.points.length >= 2", timeout=10000, what='the flight view is back')
     c.eq(c.js("() => location.hash"), h0, 'and still the same address', what='hash after')
+
+
+@case('D158', 'No exception on the Map before its libraries are there, nor without a frame: a pointer moving over the plain box and a fit without extent do nothing', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='ergonomics, in the user’s Chrome: « ReferenceError: MapsRender is not defined » at each hover (tips.js tipAt, the plain box listens before the libraries are loaded) and « Cannot read properties of undefined (reading w) » at screen.js fitMap (S.fit undefined at the map’s load): both guarded; a map created by a mount that is no longer the current one is dropped')
+def d_console(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
+    # the plain box, before the libraries: a hover must not throw
+    c.js("""() => { const S = window.__mp.S, m = S.map, R = window.MapsRender; S.map = null; delete window.MapsRender;
+      try { const r = S.box.getBoundingClientRect(); S.box.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: r.left + 50, clientY: r.top + 50, bubbles: true }));
+        S.box.dispatchEvent(new MouseEvent('click', { clientX: r.left + 50, clientY: r.top + 50, bubbles: true })) } finally { S.map = m; window.MapsRender = R } return true }""")
+    # a fit without extent
+    c.js("async () => { const S = window.__mp.S, fit = S.fit; S.fit = undefined; try { (await import('/modules/maps/screen.js')).frameFlight(false) } finally { S.fit = fit } return true }")
+    c.wait(300)
+
+
+@case('D159', 'The proposed routes go when the flight’s route changes after they arrived (a route taken, the route edited, another flight): never a line left on the map without its row in Fuel’s list', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='ergonomics, in the user’s Chrome (SOG-0134): « un artefact de calcul a-b est resté » — a dark blue line of a past A → B computation stayed beside the chosen violet route while Fuel’s list was empty; the Map clears the layer as soon as the flight’s route differs from the one it was drawn for (a second of grace after the arrival)')
+def d_stale(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps?pane=1', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
+    c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc())
+    c.until("() => (window.__mp.S.altHits || []).length >= 1", timeout=8000, what='the proposed routes are drawn')
+    c.wait(1800)    # past the second of grace
+    c.js("""async () => { const S = window.__mp.S, path = `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`, f = await S.ctx.data.get(path);
+      await S.ctx.data.put(path, { ...f, route: { ...f.route, text: String(f.route.text || '') + ' DCT' }, updated_at: new Date(Date.now() + 120000).toISOString() }); return true }""")
+    c.until("() => (window.__mp.S.altHits || []).length === 0 && !window.__mp.S.alts", timeout=10000, what='the route changed: the proposed routes are gone from the map')
+
+
+@case('D160', 'The names of the route’s points under the profile never pile up: at the right end of a tight route each name has its room or is left out, the arrival always kept', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='ergonomics, in the user’s Chrome: « au bout droit de l’axe du profil, les noms des derniers points se chevauchent (TURLU, DOLUR, LERAK, BALNI entassés) » — the two rows of the axis were not enough for four names close to the arrival and the third fell on the second; a name without room on either row is not drawn (as the distance marks), the departure and the arrival are kept')
+def d_axis(c):
+    f = flight()
+    f['route']['points'][3:3] = [{'id': i, 'lat': la, 'lon': lo} for i, la, lo in (('TURLU', 43.66, 4.80), ('DOLUR', 43.62, 4.88), ('LERAK', 43.58, 4.96), ('BALNI', 43.54, 5.04))]
+    f['route']['text'] = 'LFRS LUGEN NEPIX TURLU DOLUR LERAK BALNI LFML'
+    c.open('maps', docs=fdocs(f), airfields=True, wait=False)
+    c.js("() => { window.__nm = []; const o = CanvasRenderingContext2D.prototype.fillText; CanvasRenderingContext2D.prototype.fillText = function (t, x, y) { if (/^(LFRS|LUGEN|NEPIX|TURLU|DOLUR|LERAK|BALNI|LFML)$/.test(String(t)) && /^bold/.test(this.font)) { const m = this.getTransform(); window.__nm.push({ t: String(t), x: m.a * x + m.e, y: m.d * y + m.f, w: this.measureText(String(t)).width * m.a }) } return o.apply(this, arguments) }; return true }")
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!window.__mp.S.prof", timeout=20000, what='the profile is drawn')
+    c.wait(800)
+    nm = c.js("() => { const last = {}; for (const n of window.__nm) last[n.t] = n; return Object.values(last) }")
+    under = [n for n in nm if n['y'] > 0]
+    c.ok(any(n['t'] == 'LFML' for n in under) and any(n['t'] == 'LFRS' for n in under), str([n['t'] for n in under]), 'the departure and the arrival are written')
+    bad = [(a['t'], b['t']) for i, a in enumerate(under) for b in under[i + 1:] if abs(a['y'] - b['y']) < 6 and abs(a['x'] - b['x']) < (a['w'] + b['w']) / 2]
+    c.eq(bad, [], 'no two names of the axis overlap', what=str([(n['t'], round(n['x']), round(n['y'])) for n in under]))

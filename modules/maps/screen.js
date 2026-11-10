@@ -412,6 +412,7 @@ function keepCam() {
 /** Cadre la carte sur le vol (S.fit) : le seul mouvement de caméra du module avec « Suivre », marqué pour ne pas passer pour
  *  celui de l'utilisateur ; appelé par frameFlight. */
 function fitMap(animate) {
+  if (!S.fit) return; // pas d'emprise (le vol n'est pas lu, ou la Carte vient d'être remontée) : rien à cadrer, jamais « reading 'w' »
   const want = S.map.cameraForBounds([
     [S.fit.w, S.fit.s],
     [S.fit.e, S.fit.n]
@@ -469,6 +470,15 @@ export async function startTiles() {
       baseNames(S.placeWant);
     },
     onLoad: map => {
+      if (!S || S.mapNew !==
+        map) { // la carte d'un montage qui n'est plus le courant (la Carte a été remontée pendant le chargement) : abandonnée
+        try {
+          map.remove();
+        } catch {
+          /* déjà retirée */
+        }
+        return;
+      }
       S.map = map;
       S.mapNew = null;
       mapBase(map);

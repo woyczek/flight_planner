@@ -576,22 +576,37 @@
       inWin = s => !zoomed || (s >= w0 - 1 && s <= w1 + 1);
     ctx.save();
     ctx.font = `bold ${f}px Arial, sans-serif`;
-    const rowEnd = [-Infinity, -Infinity],
-      placed = data.marks.filter(m => inWin(m.s)).map(m => {
-        const x = padL + (W - padL - padR) * (m.s - s0) / dspan,
-          dist = `${(m.s / NM).toFixed(m.s / NM < 10 ? 1 : 0)} NM`,
-          w = Math.max(ctx.measureText(m.name).width, ctx.measureText(dist).width) + 8 * scale,
-          tx = Math.min(W - padR - w / 2, Math.max(padL + w / 2, x)),
-          row = tx - w / 2 >= rowEnd[0] ? 0 : tx - w / 2 >= rowEnd[1] ? 1 : (rowEnd[0] <= rowEnd[1] ? 0 : 1);
-        rowEnd[row] = tx + w / 2;
-        return {
-          m,
-          x,
-          dist,
-          tx,
-          row
+    // deux rangées ; un nom qui n'a de place sur aucune n'est pas posé (comme les repères de distance : les derniers points d'une route serrée ne s'entassent pas) ; le départ
+    // et l'arrivée gardent la leur : l'arrivée fait reculer les noms qui la gênent
+    const visible = data.marks.filter(m => inWin(m.s)),
+      placed = [],
+      ends = () => [0, 1].map(r => Math.max(-Infinity, ...placed.filter(q => q.row === r).map(q => q.tx + q.w / 2)));
+    visible.forEach((m, i) => {
+      const x = padL + (W - padL - padR) * (m.s - s0) / dspan,
+        dist = `${(m.s / NM).toFixed(m.s / NM < 10 ? 1 : 0)} NM`,
+        w = Math.max(ctx.measureText(m.name).width, ctx.measureText(dist).width) + 8 * scale,
+        tx = Math.min(W - padR - w / 2, Math.max(padL + w / 2, x)),
+        pick = () => {
+          const e = ends();
+          return tx - w / 2 >= e[0] ? 0 : tx - w / 2 >= e[1] ? 1 : -1;
         };
-      }),
+      let row = pick();
+      if (row < 0 && i === visible.length - 1)
+        while (row < 0 && placed.length >
+          1) { // l'arrivée : les noms qui la gênent (jamais le départ) s'effacent, du plus proche au plus loin
+          placed.splice(placed.length - 1, 1);
+          row = pick();
+        }
+      if (row >= 0) placed.push({
+        m,
+        x,
+        dist,
+        tx,
+        w,
+        row
+      });
+    });
+    const
       padB = (H < 200 && !placed.some(q => q.row) ? 38 : 64) * scale;
     ctx.restore();
     // échantillons visibles : ceux de la fenêtre et le premier de chaque côté (le tracé la traverse jusqu'au bord)

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: three defects seen beside Fuel, and the axis of the profile** (`modules/maps/module.js`, `screen.js`, `alts.js`, `lib/vertical_profile.js`; DECISIONS; noreg D158, D159, D160; SOG-0134). No more « MapsRender is not
+  defined » on hover nor « reading 'w' » at the framing; the proposed routes of a past computation are cleared when the route changes; the names of the last points of a tight route no longer pile up.
+
 - **Map: the window of a flight keeps « Provided map » and « View »; a provided map is shown in place** (`modules/maps/mission_view.js`, `data.js`, `draw.js`, `tips.js`, `texts.js`; DECISIONS, help ×4; noreg D157,
   D123, D153; SOG-0196). « Flight » first, then the mission's maps: choosing one shows it on the spot, the address does not change and Fuel stays beside; « Flight » (or the cross) goes back. Also fixed:
   a tap before the first drawing no longer throws, the light drawing without source falls back to the full one.

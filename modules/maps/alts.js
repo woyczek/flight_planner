@@ -84,6 +84,17 @@ const current = () => {
   const A = S?.alts,
     r = S?.route?.flight?.route;
   if (!A || !A.list.length || onMission() || S.choose) return null;
+  // la route du vol a changé depuis que les itinéraires sont arrivés (un itinéraire pris, la route modifiée, un autre vol) : ils sont périmés, la couche est vidée — jamais un
+  // tracé sans sa ligne dans la liste de Carburant (SOG-0134 : « un artefact de calcul a-b est resté ») ; dans la seconde qui suit leur arrivée, la route lue est leur référence
+  const key = routeKey();
+  if (key !== S.altsRoute) {
+    if (Date.now() - (S.altsAt || 0) < 1500) S.altsRoute = key;
+    else {
+      S.alts = null;
+      altsCard();
+      return null;
+    }
+  }
   return r && String(r.dep || '').toUpperCase() === A.dep && String(r.arr || '').toUpperCase() === A.arr ? A : null;
 };
 /** Vue double : Carburant est à côté (le volet ou la page principale), il écoute maps-route-alt ; seule, la Carte renvoie vers lui. */
@@ -363,10 +374,17 @@ export function altsCard() {
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
 }
+/** La route du vol telle que les itinéraires proposés la voient : départ, arrivée et texte. */
+const routeKey = () => {
+  const r = S?.route?.flight?.route || {};
+  return JSON.stringify([String(r.dep || ''), String(r.arr || ''), String(r.text || '')]);
+};
 /** Ce que Carburant publie, posé (null : rien ou effacé) et redessiné. */
 function put(raw) {
   if (!S) return;
   S.alts = altsSanitize(raw);
+  S.altsRoute = routeKey();
+  S.altsAt = Date.now();
   if (S.alts && !S.alts.list.length) S.alts = null; // effacé : nouvelle demande, autre couple, refus
   S.altHover = null;
   altsCard();

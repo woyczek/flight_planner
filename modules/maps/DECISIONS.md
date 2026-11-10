@@ -2299,6 +2299,18 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## Three defects seen in the user's Chrome, Fuel beside the Map (10 Nov 2026, urgent; SOG-0134)
+- **« ReferenceError: MapsRender is not defined » at each hover** (`tips.js tipAt ← hoverMap ← module.js`): the plain box (no MapLibre yet) listened from the mount, before `loadLibs()` had loaded the
+  render core; `plainUi` now ignores the pointer until `window.MapsRender` exists, and a library that fails to load stops the mount with a notification (`libsFailed`) instead of leaving a half-mounted Map.
+- **« Cannot read properties of undefined (reading 'w') » at `fitMap`** (the Map did not frame the flight, it opened on Brittany): `S.fit` was undefined when the base map loaded. `fitMap` leaves without an extent; the
+  tiles start only for a flight with points or a mission view (`S.missionId && S.mission`: the mission over a flight (L1) had made `S.mission` true without a flight); `onLoad` drops a map created by a mount that
+  is no longer the current one (`S.mapNew`). I could not reproduce the exact sequence on the bench: the guards and the causes found are those; if it comes back, the console with the time.
+- **The artefact of a past A → B computation** left beside the chosen route while Fuel's list was empty: the layer lived until Fuel published an empty list. It is now also cleared by the Map as soon as the flight's
+  route (departure, arrival, text) differs from the one it was drawn for — a route taken, edited, another flight — with one second of grace after the arrival (`alts.js current`).
+- **Axis of the profile**: the names of the route's points at the right end of a tight route piled up (two rows were not enough); a name without room on either row is left out like the distance marks, the
+  departure and the arrival kept (`lib/vertical_profile.js`).
+- **Noreg** D158 (no exception: the plain box without libraries, a fit without extent; red before), D159 (the proposed routes go when the route changes; red before), D160 (no overlap on the axis; red before).
+
 ## The window of a flight keeps its two lists; a provided map is shown in place (10 Nov 2026, SOG-0196 refused again: « sur la vue carburant, on n'a qu'un bouton « carte de la mission » qui renvoie vers les cartes »)
 - **Cause**: my L1 window (SOG-0193) replaced « Provided map » and « View » by a button that changed the address (`#maps?mission=<ID>`): beside Fuel that leaves Fuel. **Ergonomics' ruling**: the window gets its
   lists back; choosing a provided map shows it on the spot, without leaving Fuel. (I had kept the lists out because the flight view has no « view »: wrong, he likes them.)

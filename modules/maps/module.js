@@ -265,7 +265,8 @@ export async function mount(el, ctx) {
   layersEvents();
   sheetEvents();
   // fond uni (sans MapLibre) : la boîte reçoit le survol et le toucher
-  const plainUi = e => S.map || e.target.closest('.mp-tip, .f-overlay');
+  // (rien avant que le rendu soit chargé : le survol d'une carte qui n'a pas ses bibliothèques lisait MapsRender, « MapsRender is not defined » à chaque mouvement)
+  const plainUi = e => S.map || !window.MapsRender || e.target.closest('.mp-tip, .f-overlay');
   S.box.addEventListener('pointermove', e => {
     if (plainUi(e) || e.pointerType !== 'mouse') return;
     const r = S.box.getBoundingClientRect();
@@ -306,7 +307,15 @@ export async function mount(el, ctx) {
     const go = e.target.closest('[data-go]')?.dataset.go;
     if (go) location.hash = `#${go}`;
   });
-  await loadLibs();
+  try {
+    await loadLibs();
+  } catch (
+    e) { // une bibliothèque qui ne vient pas (fichier absent ou d'une autre version) : la Carte le dit, elle n'est pas à demi montée
+    if (S) ctx.notify?.(tt(TX.libsFailed, {
+      m: e?.message || String(e)
+    }), 'err');
+    return;
+  }
   if (!S) return;
   S.theme = MapsRender.tokens();
   S.stops.push(watchTheme());
@@ -353,7 +362,7 @@ export async function mount(el, ctx) {
   dataHead();
   sheetFit();
   S.tilesWait = true;
-  const tiles = S.route.points.length || S.mission ? await startTiles() : false;
+  const tiles = S.route.points.length || S.missionId && S.mission ? await startTiles() : false;
   if (!S) return;
   S.tilesWait = false;
   if (!tiles) S.plain = true;

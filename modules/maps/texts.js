@@ -579,6 +579,11 @@ export const TX = {
     base: ['Fond seul', 'Base map only', 'Nur Hintergrund', 'Solo fondo'],
     yaml: ['Profil de la carte', 'The map’s own profile', 'Profil der Karte', 'Perfil del mapa']
   },
+  libsFailed: ['Carte : un fichier du module n’a pas pu être chargé ({m}). Rechargez la page.',
+    'Map: a file of the module could not be loaded ({m}). Reload the page.',
+    'Karte: eine Datei des Moduls konnte nicht geladen werden ({m}). Seite neu laden.',
+    'Mapa: no se pudo cargar un archivo del módulo ({m}). Recargue la página.'
+  ],
   mbFlight: ['Vol', 'Flight', 'Flug', 'Vuelo'],
   mbMap: ['Carte fournie', 'Provided map', 'Mitgelieferte Karte', 'Mapa suministrado'],
   mRoles: {
