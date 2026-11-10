@@ -616,6 +616,9 @@
   } = {}) {
     let e = await local(path);
     if (e?.deleted) return null;
+    // plus ancienne que l'arbre du dépôt (SOG-0235) : relue (attendue même sans `wait` : elle ne se sert pas telle quelle) ; sans réponse (hors ligne), la copie gardée vaut mieux que rien
+    const old = e && await staleCopy(path, e) ? e : null;
+    if (old) e = null;
     if (!e) {
       // référence que le dépôt n'a pas, dite il y a moins de 30 s : pas redemandée (un module qui cherche un terrain sans
       // procédures à chaque dessin ne relance ni l'arbre ni le réseau)
@@ -624,9 +627,10 @@
         if (!r && policy === 'reference') absent.set(path, Date.now());
         return r;
       }).catch(() => null);
-      if (!wait) return null;
+      if (!wait && !old) return null;
       e = await job;
-      if (!e) return null;
+      if (!e && !old) return null;
+      e ||= old;
     }
     const {
       policy: _pol,
@@ -637,6 +641,21 @@
       value: valueFor(path, e)
     };
   }
+  /** SOG-0235 : la copie gardée d'un document est-elle PLUS ANCIENNE que l'arbre du dépôt que cet appareil connaît ? Oui quand rien n'attend d'être envoyé pour ce chemin, que le dépôt
+   *  est distant, que la copie vient d'un tirage (une révision, pas le cache de l'appareil) qu'elle a été écrite AVANT la lecture de l'arbre et que sa révision n'est pas celle de l'arbre. Une copie
+   *  écrite après (un passage qui est en train de finir, avant d'écrire son arbre) n'est jamais jugée ainsi. Constat de l'utilisateur : airline/index.json servi sans DEFA, alors que l'arbre
+   *  de l'appareil la portait (une lecture partie avant un passage et finie après avait récrit la révision d'avant). */
+  async function staleCopy(path, e) {
+    if (e.pending || !e.rev || e.policy === 'cache' || !cfg.transport || cfg.transport.kind === 'local') return false;
+    const remote = await getMeta('remote'),
+      rev = remote?.tree?.[path];
+    if (!rev || rev === e.rev || !(e.at <= (remote.at || 0))) return false;
+    if ((await idb('docs', 'get', path))?.restored)
+      return false; // reprise d'une sauvegarde (load, mode « replace ») : l'appareil est ce que la sauvegarde dit, jusqu'au prochain tirage de ce fichier
+    heal.add(path);
+    return true;
+  }
+  const heal = new Set(); // les chemins relus parce que leur copie était périmée (diagnostic)
   /** Valeur d'un fichier (JSON analysé ou texte) ; null s'il est absent. */
   const get = async (path, opts) => (await read(path, opts))?.value ?? null;
   /** Chemins sous un préfixe : dernier arbre connu du dépôt, écritures en attente comprises ; null si aucun arbre n'a
@@ -904,66 +923,85 @@
 
   function fetchOne(path, policy) {
     if (fetching.has(path)) return fetching.get(path);
-    const job = (async () => {
-      let T = cfg.transport,
-        tree;
-      if (!T || T.kind === 'local') {
-        // sans échange : une référence vient de la source en lecture seule, s'il y en a une
-        if (policy !== 'reference' || !(T = refSource())) return null;
-        tree = await refTree(T);
-      } else {
-        let remote = await getMeta('remote');
-        // aucun arbre encore (tout premier passage) : celui du moment, lu une seule fois pour tout ce qui le demande
-        if (!remote?.tree) {
-          remote = {
-            ...(await treeNow(T)),
-            at: Date.now()
-          };
-          await setMeta('remote', remote);
-          treeChecked = true;
+    const startedAt = Date.now(),
+      job = (async () => {
+        let T = cfg.transport,
+          tree;
+        if (!T || T.kind === 'local') {
+          // sans échange : une référence vient de la source en lecture seule, s'il y en a une
+          if (policy !== 'reference' || !(T = refSource())) return null;
+          tree = await refTree(T);
+        } else {
+          let remote = await getMeta('remote');
+          // aucun arbre encore (tout premier passage) : celui du moment, lu une seule fois pour tout ce qui le demande
+          if (!remote?.tree) {
+            remote = {
+              ...(await treeNow(T)),
+              at: Date.now()
+            };
+            await setMeta('remote', remote);
+            treeChecked = true;
+          }
+          tree = remote.tree;
+          // fichier absent d'un arbre pas encore revérifié : arbre du moment (tête relue), sans attendre un passage
+          if (!tree[path]) tree = (await liveTree(T, remote)) || tree;
         }
-        tree = remote.tree;
-        // fichier absent d'un arbre pas encore revérifié : arbre du moment (tête relue), sans attendre un passage
-        if (!tree[path]) tree = (await liveTree(T, remote)) || tree;
-      }
-      const rev = tree[path];
-      if (!rev) return null;
-      const text = await T.read(path, rev);
-      // lecture abandonnée entre-temps (abandon) : rendue à qui l'attend encore, sans rien écrire ni annoncer — une
-      // révision plus ancienne arrivée tard n'écrase jamais celle d'une lecture plus récente (Sécurisation, ligne 129)
-      if (fetching.get(path) !== job) return {
-        text,
-        rev,
-        cached: false,
-        pending: false,
-        at: Date.now()
-      };
-      await idb('docs', 'put', {
-        path,
-        text,
-        base: text,
-        rev,
-        at: Date.now(),
-        policy
-      });
-      changed([path], {
-        remote: false
-      });
-      return {
-        text,
-        rev,
-        cached: false,
-        pending: false,
-        at: Date.now()
-      };
-    })().catch(e => {
-      lastReadError = {
-        path,
-        message: e?.offline ? 'offline' : e?.message || String(e),
-        at: new Date().toISOString()
-      };
-      throw e;
-    }).finally(() => fetching.get(path) === job && fetching.delete(path)); // abandonnée entre-temps : la suivante n'est pas touchée
+        let rev = tree[path];
+        if (!rev) return null;
+        let text = await T.read(path, rev);
+        // lecture abandonnée entre-temps (abandon) : rendue à qui l'attend encore, sans rien écrire ni annoncer — une
+        // révision plus ancienne arrivée tard n'écrase jamais celle d'une lecture plus récente (Sécurisation, ligne 129)
+        if (fetching.get(path) !== job) return {
+          text,
+          rev,
+          cached: false,
+          pending: false,
+          at: Date.now()
+        };
+        // SOG-0235 : la lecture a pris du temps ; pendant ce temps un passage a pu écrire le document (plus récent) et l'arbre pu avancer. Une copie écrite depuis le départ de la lecture, de
+        // révision autre, est plus récente que celle-ci : rendue telle quelle, jamais récrite par l'ancienne ; un arbre qui a avancé fait relire la révision d'aujourd'hui (une fois).
+        if (T.kind !== 'local') {
+          for (let again = 0; again < 2; again++) {
+            const [cur, now] = [await idb('docs', 'get', path), await getMeta('remote')],
+            moved = now?.tree?.[path];
+            if (cur && cur.rev && cur.rev !== rev && cur.at >= startedAt && cur.policy !== 'cache') return {
+              text: cur.text,
+              rev: cur.rev,
+              cached: true,
+              pending: false,
+              at: cur.at
+            };
+            if (!moved || moved === rev) break;
+            rev = moved;
+            text = await T.read(path, rev);
+          }
+        }
+        await idb('docs', 'put', {
+          path,
+          text,
+          base: text,
+          rev,
+          at: Date.now(),
+          policy
+        });
+        changed([path], {
+          remote: false
+        });
+        return {
+          text,
+          rev,
+          cached: false,
+          pending: false,
+          at: Date.now()
+        };
+      })().catch(e => {
+        lastReadError = {
+          path,
+          message: e?.offline ? 'offline' : e?.message || String(e),
+          at: new Date().toISOString()
+        };
+        throw e;
+      }).finally(() => fetching.get(path) === job && fetching.delete(path)); // abandonnée entre-temps : la suivante n'est pas touchée
     fetching.set(path, job);
     return job;
   }
@@ -1040,7 +1078,26 @@
     emitStatus(false);
     return syncing;
   }
+  // SOG-0235 / SOG-0136 : les conflits VUS depuis plus de 30 jours sont retirés (une fois par chargement, au premier passage) ; un conflit non vu, ou récent, reste, avec sa version perdante.
+  const CONFLICT_KEEP_MS = 30 * 864e5;
+  let trimmed = false;
+  async function trimConflicts() {
+    if (trimmed) return;
+    trimmed = true;
+    try {
+      let n = 0;
+      for (const c of await idb('conflicts', 'getAll'))
+        if (c.seen && Date.parse(c.at) < Date.now() - CONFLICT_KEEP_MS) {
+          await idb('conflicts', 'delete', c.id);
+          n++;
+        }
+      if (n) emitStatus();
+    } catch {
+      trimmed = false; // le magasin n'a pas répondu : au passage suivant
+    }
+  }
   async function run(reason) {
+    void trimConflicts();
     const T = cfg.transport,
       result = {
         ok: false,
@@ -1739,7 +1796,10 @@
       metaMem.clear();
       for (const s of ['docs', 'pending', 'conflicts']) await idb(s, 'clear');
       for (const d of own) await idb('docs', 'put', d);
-      for (const d of docs) await idb('docs', 'put', d);
+      for (const d of docs) await idb('docs', 'put', {
+        ...d,
+        restored: true
+      });
       for (const p of pend) await idb('pending', 'put', p);
       for (const {
           id,
@@ -2019,6 +2079,8 @@
       lastError = '';
       treeNowP = peekP = peek = null;
       treeChecked = false;
+      trimmed = false;
+      heal.clear();
     }
   };
 })();

@@ -1483,6 +1483,168 @@
       check('synchronisations: the three before the series is seen, then one per window (without the guard: one per write, 14)', commits >= 1 && commits <= 7, commits);
       const dg = await FD.diagnostic();
       check('the diagnostic says it once, with the path and the module', dg.serialWrites.length === 1 && dg.serialWrites[0].path === p && ['fuel', 'maps'].includes(dg.serialWrites[0].module), dg.serialWrites);
+    },
+    // ---- SOG-0235 : airline/index.json servi sans DEFA — un document plus ancien que l'arbre de l'appareil
+    async 'stale copy: a read that finishes after a pass never overwrites the newer copy the pass wrote'() {
+      const p = 'cr/idx.json',
+        v1 = JSON.stringify({
+          airlines: [{
+            code: 'itf'
+          }]
+        }),
+        v2 = JSON.stringify({
+          airlines: [{
+            code: 'itf'
+          }, {
+            code: 'defa'
+          }]
+        });
+      await fresh({
+        [p]: v1
+      });
+      const base = FD.github({
+        repo: 'test/data',
+        branch: 'main',
+        token: 'test-token',
+        api: `${location.origin}/api`
+      });
+      FD.configure({
+        transport: {
+          ...base,
+          read: async (pth, rev) => {
+            const txt = await base.read(pth, rev);
+            if (pth === p && rev === (await FD.gitSha(v1))) await new Promise(r => setTimeout(r, 900)); // the slow read of the OLD revision
+            return txt;
+          }
+        },
+        identity: {
+          trigram: 'TST'
+        }
+      });
+      const a = FD.adapter({
+        id: 'essai2',
+        reads: ['cr/'],
+        writes: []
+      });
+      const slow = a.get(p, {
+        wait: true
+      });
+      await new Promise(r => setTimeout(r, 200));
+      await T('write', {
+        files: {
+          [p]: v2
+        }
+      });
+      await a.sync(); // the pass pulls v2 and writes the tree while the old read is still going
+      await slow;
+      const now = await a.read(p);
+      check('the newer copy is still there: DEFA is in the list', JSON.stringify(now?.value?.airlines?.map(x => x.code)) === '["itf","defa"]', now);
+      check('its revision is the tree’s', now?.rev === await FD.gitSha(v2), now?.rev);
+    },
+    async 'stale copy: a document older than the tree of the device is read again, never served; nothing pending: healed'() {
+      const p = 'cr/idx.json',
+        v1 = JSON.stringify({
+          airlines: [{
+            code: 'itf'
+          }]
+        }),
+        v2 = JSON.stringify({
+          airlines: [{
+            code: 'itf'
+          }, {
+            code: 'defa'
+          }]
+        });
+      await fresh({
+        [p]: v1
+      });
+      const a = FD.adapter({
+        id: 'essai3',
+        reads: ['cr/'],
+        writes: [{
+          prefix: 'cr/',
+          merge: 'record'
+        }]
+      });
+      await a.sync();
+      await T('write', {
+        files: {
+          [p]: v2
+        }
+      });
+      await a.sync();
+      check('after the pass the copy is the new one', (await a.get(p))?.airlines?.length === 2, await a.get(p));
+      // the state found on the user’s device: the old text under the old revision, written BEFORE the tree was read, nothing pending
+      await new Promise((res, rej) => {
+        const r = indexedDB.open('sogFrame');
+        r.onsuccess = async () => {
+          const db = r.result, rev = await FD.gitSha(v1);
+          const tx = db.transaction('docs', 'readwrite');
+          tx.objectStore('docs').put({
+            path: p,
+            text: v1,
+            base: v1,
+            rev,
+            at: Date.now() - 60000,
+            policy: 'document'
+          });
+          tx.oncomplete = () => (db.close(), res());
+          tx.onerror = () => rej(tx.error);
+        };
+        r.onerror = () => rej(r.error);
+      });
+      const healed = await a.read(p, {
+        wait: true
+      });
+      check('read again, never served: DEFA is in the list', JSON.stringify(healed?.value?.airlines?.map(x => x.code)) === '["itf","defa"]', healed);
+      check('and the copy kept is the tree’s revision again', (await a.read(p))?.rev === await FD.gitSha(v2), (await a.read(p))?.rev);
+      // a copy that is NEWER than the tree (a pass finishing before it writes its tree) is not judged stale: a pending write is served as it is
+      await a.put(p, {
+        airlines: [{
+          code: 'local'
+        }]
+      });
+      check('a pending write is never judged stale', (await a.get(p))?.airlines?.[0]?.code === 'local', await a.get(p));
+    },
+    async 'conflicts: the ones seen more than 30 days ago are dropped at the first pass; the unseen and the recent stay with their lost version'() {
+      await fresh({
+        'disponibilites/A/x.json': '{}'
+      });
+      const day = 864e5,
+        iso = ms => new Date(Date.now() - ms).toISOString();
+      await FD.conflicts(); // opens the store of the layer (its stores exist)
+      await new Promise((res, rej) => {
+        const r = indexedDB.open('sogFrame');
+        r.onsuccess = () => {
+          const db = r.result,
+            tx = db.transaction('conflicts', 'readwrite'),
+            st = tx.objectStore('conflicts');
+          for (const [path, ago, seen] of [
+              ['old-seen.json', 40 * day, true],
+              ['old-unseen.json', 40 * day, false],
+              ['recent-seen.json', 2 * day, true]
+            ]) st.add({
+            path,
+            kept: '{}',
+            lost: '{"a":1}',
+            side: 'remote',
+            at: iso(ago),
+            seen
+          });
+          tx.oncomplete = () => (db.close(), res());
+          tx.onerror = () => rej(tx.error);
+        };
+        r.onerror = () => rej(r.error);
+      });
+      const d = FD.adapter({
+        id: 'essai4',
+        reads: ['disponibilites/'],
+        writes: []
+      });
+      await d.sync();
+      await new Promise(r => setTimeout(r, 150));
+      const left = (await FD.conflicts()).map(c => c.path).sort();
+      check('only the old SEEN one is gone, the unseen and the recent stay', JSON.stringify(left) === '["old-unseen.json","recent-seen.json"]', left);
     }
   };
   async function runAll() {

@@ -2871,3 +2871,20 @@ a chip (`#fCo`, a button beside `#fApp`) with the code of the device's airline, 
 airlines as radio buttons (seven at most, name and kind from `frame/lib/mission_categories.js`); a choice is `FrameData.setAirline`, the existing event updates the screens; **nothing in the application selector**. `ctx.workAirline(code)`: the module says which airline its
 work is for; when it differs the chip reads `ITF ≠` and the tooltip says which is which — nothing is rewritten (SOG-0181). Space: the cartouche and the sync state come first; `fitStale` shows the chip, tries the cartouche's three steps, and hides the chip only if none fits
 (measured: at 390 the sync state is not in the header, the chip sits beside « Recharger »; at 768 it sits before the long « Hors ligne · 11 en attente »). Class names `f-hco*` (`.f-co` is Settings' airline row). Noreg A139 (list, mark, seven at most, no index → no chip; captures 390 / 1280 written by the case) and A141 (cartouche + long sync state, no overlap at 390 / 768 / 1280).
+
+## 11 November 2026 — SOG-0235: airline/index.json served older than the device's own tree
+
+The user's device: `docs['airline/index.json']` = the revision BEFORE the commit of 10/11 11:19 (ITF alone, `at` 22:14:48Z, eleven seconds after a sync commit), `meta.remote.tree` = the new one (ITF and DEFA, read 22:15:09Z), nothing pending:
+DEFA gone from the list, the assistant refusing to recreate it.
+
+- **Cause (proved by the bench scenario, red before)**: `fetchOne` — the lazy read of a file not in the cache — reads the revision it finds in the tree known at its START, then writes `docs` with that revision when the (slow) read ends.
+  A pass that ran meanwhile has already written the newer copy and the newer tree: the late write put the OLD revision back over it, with `at` = the end of the read. Nothing noticed afterwards: a pass only touches the paths that differ between two trees, and this one did not.
+- **Fix 1, at the write** (`fetchOne`): after `T.read`, a copy written since the read started (`at >= startedAt`) with another revision is handed back as it is, never overwritten; a tree that moved while reading makes it read the revision of today (once). The abandoned read keeps its old rule (its own value, nothing written).
+- **Fix 2, the invariant at the read** (`staleCopy`, in `read`): a document with nothing pending, of a remote transport, whose revision ≠ the tree's and whose `at` ≤ the tree's `at` (written before the tree was read) is read again — even without `wait` — and the new copy replaces it; offline, the kept copy is served. A copy written after the tree
+  (a pass finishing before it stores its tree) is never judged stale. A backup restored by `load` in « replace » mode carries `restored: true` and is the device's own until its next pull.
+- **Self-repair**: nothing to run on the device — its next read of `airline/index.json` finds the revision ≠ the tree and reads it again (DEFA is back); the assistant then finds it.
+- **« (encore ?) »**: any lazily read document (references, logo, airline files…) could have been put back to an older revision by the same race; the invariant repairs them all at their next read.
+- **The 89 conflicts**: the versions kept when two writes of a file crossed (`current_flight.json` rewritten every 4–6 s by two modules, SOG-0209, is the likeliest source; `conflictList` of the diagnostic names the paths). Nothing is lost at the time (the newest wins, the other is kept whole, « Reprendre » puts it back); the count only falls when they are seen
+  (« Tout marquer comme vu »). New: the ones SEEN more than 30 days ago are dropped at the first pass of a load.
+- Noreg: bench A53 (frame/store/test): the late read, the poisoned copy (healed, a pending write never judged stale), the conflicts purge.
+

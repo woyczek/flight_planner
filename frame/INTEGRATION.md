@@ -140,6 +140,11 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   never posts `/__setup/sync` itself.
 - Always design for the cached value first: the network may never come.
 
+**A copy older than the tree is never served** (SOG-0235, 10–11 Nov 2026). A document with nothing pending whose revision is not the one of the repository tree this device knows — and that was written
+*before* that tree was read — is read **again** (a read without `wait` waits for it too; offline, the kept copy is served rather than nothing). A read that finishes after a pass has written the document
+never overwrites the pass's copy (it hands that one back) and follows a tree that moved while it read. A document restored from a backup (`load`, mode « replace ») is the device's own until its next pull.
+The conflicts seen more than 30 days ago are dropped at the first pass of a load (the unseen and the recent ones stay with their lost version). `FrameData.diagnostic().conflictList` lists the ten latest.
+
 ## 5. Writing
 
 - `await data.put(path, value)` (JSON for a `.json` path) and `await data.remove(path)` are queued, never sent at once.
