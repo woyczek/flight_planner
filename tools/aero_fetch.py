@@ -182,10 +182,29 @@ def openaip(data, countries, layers=OPENAIP_LAYERS, absent=None, known=()):
     return out, errors
 
 
+def nasr(data):
+    """Le NASR de la FAA (SOG-0153 d) : le cycle en vigueur lu sur la page de l'abonnement, les trois jeux CSV (FIX, AWY, NAV : adresses calculées par tools/faa_nasr.py) lus et convertis en faa_nasr.geojson (points et voies de la zone us) ; le fichier est remplacé seulement s'il change."""
+    import faa_nasr
+    issue = faa_nasr.current_cycle(get(faa_nasr.PAGE).decode('utf-8', 'replace'))
+    if not issue:
+        raise ValueError('cycle en vigueur introuvable sur la page du NASR')
+    g, n, m = faa_nasr.convert(*(get(faa_nasr.url(k, issue)) for k in ('FIX', 'AWY', 'NAV')), issue)
+    body = json.dumps(g, separators=(',', ':')).encode('utf-8')
+    name = faa_nasr.NAME + '.geojson'
+    changed = write(os.path.join(data, 'sia', 'geojson', name), body)
+    return {'name': name, 'bytes': len(body), 'features': n + m, 'unchanged': not changed}
+
+
 def faa(data, layers=('sua', 'mtr')):
-    """Couches ArcGIS de la FAA, lues par pages (le service rend au plus 2000 objets par requête)."""
+    """Couches ArcGIS de la FAA, lues par pages (le service rend au plus 2000 objets par requête) ; « nasr » : le NASR (points et voies)."""
     out, errors = [], []
     for layer in layers:
+        if layer == 'nasr':
+            try:
+                out.append(nasr(data))
+            except (OSError, ValueError) as e:
+                errors.append(f'faa_nasr : {e}')
+            continue
         svc = FAA_LAYERS.get(layer)
         if not svc:
             errors.append(f'couche FAA inconnue : {layer}')
@@ -462,7 +481,7 @@ def fetch(data, provider, args=()):
     if provider == 'openaip':
         files, errors = openaip(data, args or ['gb'])
     elif provider == 'faa':
-        files, errors = faa(data, args or ['sua', 'mtr'])
+        files, errors = faa(data, args or ['sua', 'mtr', 'nasr'])
     elif provider == 'enaire':
         files, errors = enaire(data)
     elif provider == 'ukmil':

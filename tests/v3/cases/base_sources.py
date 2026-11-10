@@ -200,6 +200,28 @@ def _page_enaire():
     return ('<a href="contenido_Datasets/LE_2026_10_AIP_DS_FULL_Airspace.xml">a</a><a href="contenido_Datasets/LE_2026_10_AIP_DS_FULL_EnRoute.xml">b</a>').encode()
 
 
+def _nasr_zips():
+    """Three small NASR zips (FIX, AWY, NAV) in the real layout: two fixes and a VOR, three segments (one with a gap, one with a point nobody knows)."""
+    import csv
+    import io
+    import zipfile
+
+    def zip_of(name, header, rows):
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(header)
+        w.writerows(rows)
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, 'w') as z:
+            z.writestr(name, '﻿' + buf.getvalue())
+        return out.getvalue()
+    fix = zip_of('FIX_BASE.csv', ['EFF_DATE', 'FIX_ID', 'LAT_DECIMAL', 'LONG_DECIMAL'], [['2026/10/29', 'MONPI', '40.5', '-70.5'], ['2026/10/29', 'OATSS', '41.0', '-71.0'], ['2026/10/29', 'AAALL', '42.12', '-71.14']])
+    nav = zip_of('NAV_BASE.csv', ['EFF_DATE', 'NAV_ID', 'NAV_TYPE', 'LAT_DECIMAL', 'LONG_DECIMAL'], [['2026/10/29', 'OAL', 'VOR/DME', '38.0', '-117.0'], ['2026/10/29', 'ILC', 'VORTAC', '38.4', '-113.0']])
+    head = ['AWY_ID', 'FROM_POINT', 'FROM_PT_TYPE', 'TO_POINT', 'MIN_ENROUTE_ALT', 'MAX_AUTH_ALT', 'AWY_SEG_GAP_FLAG']
+    awy = zip_of('AWY_SEG_ALT.csv', head, [['V12', 'MONPI', 'WP   ', 'OATSS', '4000', '', 'N'], ['J80', 'OAL', 'VOR/DME', 'ILC', '18000', '45000', 'N'], ['Q5', 'OATSS', 'WP   ', 'NOWHERE', '18000', '', 'N'], ['V9', 'MONPI', 'WP   ', 'OATSS', '', '', 'Y']])
+    return fix, awy, nav
+
+
 @case('K54', 'Raw sources: base/fetch against a fake network (downloaded, 304, identical, http, network, personal, manual, tracked files, cancel)', 'K', static=True,
       rule='frame/aerodb/INTEGRATION (fetch): aero_fetch writes where it wrote; a failed source stops no other; no commit; files tracked by git that the job modified are counted; cancel between files')
 def k54(c):
@@ -282,7 +304,9 @@ def k54(c):
             nat_json = json.dumps([{'icao_id': 'EGGX', 'transaction_type': 'NAT_TRACK', 'notam_number_formatted': 'N1', 'part_no': 1, 'start_datetime': 'a', 'end_datetime': 'b',
                                     'condition_message': 'A ALPHA BRAVO 50/20\nEAST LVLS 350 360\nWEST LVLS NIL\nNAR NIL\n'}]).encode()
             fc = json.dumps({'type': 'FeatureCollection', 'features': []}).encode()
+            nfix, nawy, nnav = _nasr_zips()
             net = _Net(AF, {'DatosDigitales-en.html': _page_enaire(), 'AIP_DS_FULL_Airspace': b'<a/>', 'AIP_DS_FULL_EnRoute': b'<e/>', 'nat.json': nat_json, 'FeatureServer': fc,
+                            'NASR_Subscription': b'<p>Current Subscription effective October 29, 2026</p>', '_FIX_CSV.zip': nfix, '_AWY_CSV.zip': nawy, '_NAV_CSV.zip': nnav,
                             'es_': ('http', 404), 'us_': ('http', 404)})
             with net:
                 view, res = _run(RJ, BS, 'fetch', {'zones': ['es', 'nat', 'us'], 'personal': ['enaire']}, ctx)
@@ -290,8 +314,8 @@ def k54(c):
             c.eq((z['es']['sources']['enaire']['state'], z['es']['sources']['enaire']['files']), ('downloaded', 2), 'ENAIRE declared: both datasets downloaded', what='enaire')
             c.ok(sorted(os.listdir(data / 'sia' / 'aixm5')) == ['LE_2026_10_AIP_DS_FULL_Airspace.xml', 'LE_2026_10_AIP_DS_FULL_EnRoute.xml'], str(os.listdir(data / 'sia' / 'aixm5')), 'the previous amendment is removed by aero_fetch')
             c.eq((z['nat']['sources']['nat']['state'], (data / 'sia' / 'zones' / 'nat' / 'nat_tracks.json').is_file()), ('downloaded', True), 'NAT: the tracks file written under zones/nat/', what='nat')
-            c.eq({k: v['state'] for k, v in z['us']['sources'].items()}, {'faa': 'downloaded', 'faaclass': 'downloaded', 'openaip': 'skipped'}, 'US: the two FAA sources (sua + mtr, class) downloaded, no openAIP export (absent)', what='us')
-            c.ok(all((data / 'sia' / 'geojson' / f'faa_{l}.geojson').is_file() for l in ('sua', 'mtr', 'class')), str(os.listdir(data / 'sia' / 'geojson')), 'faa_sua, faa_mtr and faa_class written under geojson/')
+            c.eq({k: v['state'] for k, v in z['us']['sources'].items()}, {'faa': 'downloaded', 'faaclass': 'downloaded', 'openaip': 'skipped'}, 'US: the two FAA sources (sua + mtr + nasr, class) downloaded, no openAIP export (absent)', what='us')
+            c.ok(all((data / 'sia' / 'geojson' / f'faa_{l}.geojson').is_file() for l in ('sua', 'mtr', 'class', 'nasr')), str(os.listdir(data / 'sia' / 'geojson')), 'faa_sua, faa_mtr, faa_class and faa_nasr (the fixes and airways of the NASR, SOG-0153 d) written under geojson/')
             c.eq((res['outside_sync'], res['warnings']), (1, [{'code': 'outside-sync', 'count': 1}]), 'the removed amendment was tracked: it counts as modified outside the sync', what='outside enaire')
             c.eq([m['source'] for m in res['manual'] if m['zone'] == 'es'], [], 'es has no manual source; nat none', what='manual es')
 
@@ -1603,3 +1627,41 @@ def k127(c):
     zj = (ROOT / 'shared' / 'aero_zones.js').read_text(encoding='utf-8')
     c.ok("id: 'lfv'" in cat and "zones: ['se']" in cat and 'ES-GEN 0.1' in cat and "se: ['lfv']" in zj and "personal: 'licence'" in zj[zj.index('lfv: {'):zj.index('lfv: {') + 3500], 'catalogue.js / aero_zones.js',
          'the catalogue entry (with the licence line in four languages) and the JS mirror exist, personal-use')
+
+
+@case('K131', 'FAA NASR as a source of points and airways for the zone us (SOG-0153 d): the three CSV sets (FIX, AWY, NAV) of the cycle in force are read and written as the GeoJSON the build reads, the addresses computed, the gaps and unknown points dropped, the limits filled by family', 'K', static=True,
+      rule='SOG-0153 (d) (10 Nov 2026, the user: « FAA : free of use and redistribute »): the zone us had no point and no airway; the NASR (public domain) gives 10 936 points and 17 624 segments for the cycle of 29 Oct (read on the real files: 0.4 s, 4.9 MB of GeoJSON): V (8 575), T, J, Q, colour airways; the route engine refuses a segment with no limits, so the missing ones are filled by the airway’s family (V, T: 0 to 17 999 ft, J, Q: 18 000 to 60 000 ft)')
+def k131(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    N = importlib.import_module('faa_nasr')
+    RJ, BS, AF, DS = _mods()
+    fix, awy, nav = _nasr_zips()
+    g, n_pts, n_seg = N.convert(fix, awy, nav, '2026-10-29')
+    props = [f['properties'] for f in g['features']]
+    pts = {p['id']: f['geometry']['coordinates'] for p, f in zip(props, g['features']) if p['sog'] == 'point'}
+    aw = [p for p in props if p['sog'] == 'airway']
+    c.eq((n_pts, n_seg, sorted(pts)), (4, 2, ['ILC', 'MONPI', 'OAL', 'OATSS']), 'the points that an airway names plus the navaids (4), the two good segments: the gap segment and the one with an unknown point are dropped', what='counts')
+    c.eq(pts['MONPI'], [-70.5, 40.5], 'positions in GeoJSON order (lon, lat), from FIX_BASE; a VOR from NAV_BASE', what='position')
+    c.eq([(a['route'], a['a'], a['b'], a['lower'], a['upper']) for a in aw], [('V12', 'MONPI', 'OATSS', 4000, 17999), ('J80', 'OAL', 'ILC', 18000, 45000)],
+         'the minimum en-route altitude is the lower limit, the maximum authorised altitude the upper; a Victor airway with none stops at 17 999 ft', what='limits')
+    c.eq(('dir' in aw[0], g['name'], g['issue']), (False, 'faa_nasr', '2026-10-29'), 'no direction invented; the shape of the Irish and Swedish files', what='shape')
+    c.eq((N.url('FIX', '2026-10-29'), N.url('AWY', '2026-11-26'), N.current_cycle('<p>Current Subscription effective  <b>October 29, 2026</b></p>'), N.current_cycle('<p>nothing</p>')),
+         ('https://nfdc.faa.gov/webContent/28DaySub/extra/29_Oct_2026_FIX_CSV.zip', 'https://nfdc.faa.gov/webContent/28DaySub/extra/26_Nov_2026_AWY_CSV.zip', '2026-10-29', None),
+         'the addresses are computed (host, path and date fixed), the cycle in force is read from the subscription page', what='urls')
+    bad = []
+    for kind, iso in (('FIX; rm', '2026-10-29'), ('FIX', '10/29/2026'), ('../x', '2026-10-29')):
+        try:
+            N.url(kind, iso)
+            bad.append((kind, iso))
+        except ValueError:
+            pass
+    c.eq(bad, [], 'a bad kind or date is refused', what='refused')
+    try:
+        N.convert(awy, awy, nav, '2026-10-29')
+        got = 'accepted'
+    except ValueError as e:
+        got = 'FIX_BASE' in str(e)
+    c.eq(got, True, 'a zip that is not the one expected: said (FIX_BASE.csv absent), nothing written', what='wrong zip')
+    c.eq((BS.file_source('geojson/faa_nasr.geojson'), 'nasr' in BS.SOURCES['faa']['args']), ({'zone': 'us', 'source': 'faa'}, True), 'the file is of zone us, source faa; the source asks for the nasr layer', what='mirror')

@@ -98,10 +98,10 @@ SOURCES = {
             'AirNav Ireland — eAIP Irland (Punkte und RNAV-Strecken)',
             'AirNav Ireland — eAIP Irlanda (puntos y rutas RNAV)'), personal='licence', provider='airnav'),
     'faa': _src('download', (
-            'FAA — zones à usage spécial et routes militaires',
-            'FAA — special use airspace and military routes',
-            'FAA — Sonderlufträume und Militärrouten',
-            'FAA — espacios de uso especial y rutas militares'), provider='faa', args=('sua', 'mtr')),
+            'FAA — zones à usage spécial, routes militaires, points et voies (NASR)',
+            'FAA — special use airspace, military routes, fixes and airways (NASR)',
+            'FAA — Sonderlufträume, Militärrouten, Punkte und Luftstraßen (NASR)',
+            'FAA — espacios de uso especial, rutas militares, puntos y aerovías (NASR)'), provider='faa', args=('sua', 'mtr', 'nasr')),
     'faaclass': _src('download', (
             'FAA — classes d’espace (B, C, D, E)',
             'FAA — airspace classes (B, C, D, E)',

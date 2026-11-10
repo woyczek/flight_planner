@@ -30,7 +30,7 @@ import regen_jobs  # noqa: E402
 RECORD_DIR = ('local', 'build')
 ORDER = ('index-orphan', 'never-built', 'failed', 'pickup-waiting', 'source-newer', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing', 'source-unread', 'source-missing', 'source-old')
 BUILDABLE = {'index-orphan', 'never-built', 'failed', 'source-newer', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing'}
-POINT_SOURCES = ('sia', 'nats', 'enaire', 'airnav', 'dfs', 'lfv')      # les sources dont la suite lit les points ou les voies aériennes (openAIP n'en porte pas)
+POINT_SOURCES = ('sia', 'nats', 'enaire', 'airnav', 'dfs', 'lfv', 'faa')      # les sources dont la suite lit les points ou les voies aériennes (openAIP n'en porte pas)
 MAX_ZONES = 60
 
 
