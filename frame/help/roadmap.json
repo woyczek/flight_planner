@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5f2c505",
+  "organisation": "b24815e",
   "fiches": 197,
   "untranslated": 1,
   "priorities": 152
@@ -765,7 +765,7 @@
     {
      "id": "SOG-0196",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "RÉGRESSION : la fenêtre de la mission posée sur la carte (titre, « Carte fournie », « Vue ») a disparu",
      "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
      "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",

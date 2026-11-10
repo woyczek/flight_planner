@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 69,
+  "tests": 70,
   "verdicts": 17
  },
  "apps": [
@@ -25,7 +25,7 @@
    "test": "Réglages › Compagnie : la liste est à boutons radio, chaque ligne dit son genre (« Commerciale », « Escadrille SO », « Personnel ») ; choisir une compagnie ne fait rien clignoter ; dessous, la fiche de la compagnie choisie montre Genre et « Catégories de missions » sans rien déplier, avec « Ajouter une catégorie ». (Créer et rejoindre une compagnie : étape suivante, pas encore.)",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T11:05:00Z",
+   "delivered": "2026-11-10T11:52:16Z",
    "previous": {
     "verdict": "ko",
     "comment": "plutôt qu’un bouton « choisir », un bouton radio. ergonomie ! on ne sait pas si c’est un sog, ou une compagnie commerciale. En plus, ça clignote au choix. Où est « catégorie de missions » ? je cesse de chercher, je laisse l’ergo redéfinir le chemin utilisateur. Use cases : - 1/ je crée une compagnie commerciale, rennes motoculture, je définis les catégories de vol, et j’affecte des appareils depuis la base - 2/ je rejoins une compagnie SO, via un site web de la flotte, je le parse, et je vole les missions pré-préparées dans la base. - 3/ uses cases déjà définis de compagnie locale",
@@ -1052,6 +1052,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T11:36:49Z"
+  },
+  {
+   "id": "SOG-0196",
+   "app": "pilote",
+   "title": {
+    "fr": "RÉGRESSION : la fenêtre de la mission posée sur la carte (titre, « Carte fournie », « Vue ») a disparu",
+    "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
+    "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
+    "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)"
+   },
+   "test": "Compagnie › Missions › une mission › « Préparer ce vol » : sur la carte à côté de Carburant, la fenêtre de la mission (titre, « Carte fournie », « Vue ») est là dès la première ouverture, sans recharger ; pareil sur la Carte seule.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T11:54:52Z"
   }
  ]
 }
