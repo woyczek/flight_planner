@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "fa8f27e",
+  "organisation": "7e4e2ba",
   "fiches": 186,
   "untranslated": 1,
   "priorities": 152
@@ -738,7 +738,7 @@
     {
      "id": "SOG-0184",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "VFR topo : pas de courbes de niveau (la V2 en avait)",
      "en": "VFR topo: no contour lines (V2 had them)",
      "de": "VFR-Topo: keine Höhenlinien (V2 hatte sie)",
@@ -2140,7 +2140,7 @@
     {
      "id": "SOG-0180",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : revoir tout le parcours de mise à jour de la base (un seul geste, des messages qui nomment des boutons qui existent)",
      "en": "Data: rework the whole base update path (one gesture, messages that name buttons that exist)",
      "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",

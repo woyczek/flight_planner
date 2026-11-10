@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 65,
+  "tests": 67,
   "verdicts": 30
  },
  "apps": [
@@ -865,6 +865,19 @@
    "at": "2026-11-10T10:41:07Z"
   },
   {
+   "id": "SOG-0180",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : revoir tout le parcours de mise à jour de la base (un seul geste, des messages qui nomment des boutons qui existent)",
+    "en": "Data: rework the whole base update path (one gesture, messages that name buttons that exist)",
+    "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",
+    "es": "Datos: rehacer todo el recorrido de actualización de la base (un solo gesto, mensajes que nombran botones que existen)"
+   },
+   "test": "Maintenance › Données › « Mettre à jour » : la mise à jour va au bout même si une zone échoue ; sous la sélection, un bilan en une ligne (à jour · à reconstruire · en échec · attend un fichier) dont chaque nombre montre ses zones ; une zone en échec porte « Réessayer » sur sa ligne ; une zone qui attend un fichier dit lequel et porte « Prendre le fichier téléchargé », qui lance ensuite sa construction tout seul ; aucun message ne cite un bouton qui n'existe pas.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
    "id": "SOG-0181",
    "app": "pilote",
    "title": {
@@ -887,6 +900,19 @@
     "es": "Mapa de misión: ha desaparecido el cursor de complejidad"
    },
    "test": "Compagnie › Missions › une mission › « Voir sur la Carte » : le curseur de complexité est là, comme sur la Carte du vol, et le déplacer allège ou enrichit la carte de mission.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0184",
+   "app": "pilote",
+   "title": {
+    "fr": "VFR topo : pas de courbes de niveau (la V2 en avait)",
+    "en": "VFR topo: no contour lines (V2 had them)",
+    "de": "VFR-Topo: keine Höhenlinien (V2 hatte sie)",
+    "es": "VFR topo: sin curvas de nivel (la V2 las tenía)"
+   },
+   "test": "Compagnie › Missions › une mission SO › carte cible en vue VFR topo, à zoom de travail : les courbes de niveau sont dessinées sous les espaces et la route ; avec la complexité basse, seules les courbes maîtresses restent. Dis si la carte rame à zoom proche.",
    "since": "2026-11-10",
    "state": "todo"
   },
