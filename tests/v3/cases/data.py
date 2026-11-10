@@ -4519,6 +4519,10 @@ def l53(c):
     c.until("!!document.querySelector('[data-pack-switch=ouest]')", timeout=8000, what='the switches')
     c.js("document.querySelector('[data-packs-fold]').open = true")   # « Paquets de pays » is folded when the screen opens (SOG-0228)
     tone = lambda z: (_zfeat(c, 'base', z) or {}).get('tone')
+    def tapsw():   # nothing floating may cover the switch (a note, the tab bar): notes closed, the pack scrolled to the middle
+        c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click())")
+        c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
+        c.tap('[data-pack-switch=ouest]')
     # ---- the packs are beside the map, with the list (wide) or under it (phone): the same cell as the list
     c.eq(c.js("!!document.querySelector('.d-choice [data-packs]')"), True, 'the packs are in the choice, beside the map and with the list', what='in choice')
     # ---- hover (mouse): the zones of the row light up, then go back
@@ -4526,12 +4530,13 @@ def l53(c):
     c.wait(400)
     base_fr = tone('fr')
     c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
-    c.page.hover('[data-pack=ouest] .d-packname', force=True)
-    c.wait(400)
-    c.eq([tone('fr'), tone('gb')], ['accent', 'accent'], 'hovering Western Europe lights fr and gb on the map', what='hover')
-    c.page.mouse.move(5, 5)
-    c.wait(400)
-    c.eq(tone('fr'), base_fr, 'leaving the row puts the colours back', what='leave')
+    if c.width >= 700:   # the hover is the gesture of a mouse (wide screens); at 390 the gesture is the press below (a forced hover there proved nothing: 2 failures out of 6)
+        c.page.hover('[data-pack=ouest] .d-packname')
+        c.wait(400)
+        c.eq([tone('fr'), tone('gb')], ['accent', 'accent'], 'hovering Western Europe lights fr and gb on the map', what='hover')
+        c.page.mouse.move(5, 5)
+        c.wait(400)
+        c.eq(tone('fr'), base_fr, 'leaving the row puts the colours back', what='leave')
     # ---- press (touch): the zones stay lit until the next press elsewhere
     c.js("document.querySelector('[data-pack=ouest]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', pointerId: 7 }))")
     c.wait(400)
@@ -4541,10 +4546,10 @@ def l53(c):
     c.eq(tone('fr'), base_fr, 'a press elsewhere puts the colours back', what='press elsewhere')
     # ---- off: the question names the zones, No keeps everything
     c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
-    c.tap('[data-pack-switch=ouest]')   # half on → on: adds de and it
+    tapsw()   # half on → on: adds de and it
     c.until("document.querySelector('[data-pack-switch=ouest]').checked", timeout=6000, what='the pack is in the coverage')
     cov = c.doc('cache/data/coverage.json')['zones']
-    c.tap('[data-pack-switch=ouest]')   # on → off: a question
+    tapsw()   # on → off: a question
     q = _ask_text(c)
     names = {'fr': ['France', 'Royaume-Uni'], 'en': ['France', 'United Kingdom'], 'de': ['Frankreich', 'Vereinigtes K'], 'es': ['Francia', 'Reino Unido']}[lang]
     c.ok(all(n in q['text'] for n in names), q['text'], 'the question names the zones that will be unticked')
@@ -4553,7 +4558,7 @@ def l53(c):
     c.until("document.querySelector('[data-pack-switch=ouest]').checked", timeout=6000, what='No: the switch comes back on')
     c.eq(c.doc('cache/data/coverage.json')['zones'], cov, 'No: the coverage is unchanged', what='kept')
     # ---- Yes: the zones leave the coverage and the selection; nothing is purged
-    c.tap('[data-pack-switch=ouest]')
+    tapsw()
     _ask_text(c)
     c.page.click('.f-modal [data-ok]')
     doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d) and 'fr' not in d.get('zones', []) and 'gb' not in d.get('zones', []), what='the pack leaves the coverage')
