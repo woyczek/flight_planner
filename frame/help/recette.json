@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 79,
-  "verdicts": 17
+  "verdicts": 18
  },
  "apps": [
   "pilote",
@@ -328,13 +328,9 @@
    },
    "test": "Carburant › Route avec la Carte à côté, après « Calculer A → B » : les itinéraires sont tracés fins ; une voie est en trait plein avec son nom, un direct en tirets, une route libre (FRA) en pointillé, un écart aux règles en rouge ; les points ne sont nommés qu'une fois ; « Légende » (repliée) dit les mêmes traits et les mêmes mots sur la Carte et dans l'écran Route.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T11:09:43Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "oui, ça fonctionne. c’est moche, on ne voit pas ni les points ni les awy, ni si c’est du DCT, du FRA… parce que c’est uniforméement de la même couleur, très gros, et sans légende. Réserves donc.",
-    "at": "2026-11-10T10:16:08Z"
-   }
+   "at": "2026-11-10T13:30:18Z"
   },
   {
    "id": "SOG-0135",
@@ -391,13 +387,7 @@
    },
    "test": "Pilote › Météo, carte dézoomée au-delà de la zone du vol : en haut à gauche « Synoptique monde absent · Construire (2 min) » ; l'appui montre l'avancement (n/25) puis la carte synoptique s'affiche avec l'heure du modèle, sans quitter l'écran. Un échec dit sa raison avec « Réessayer ».",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T12:08:27Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "screenshot. {  \"at\": \"2026-11-10T09:26:02.375Z\",  \"app\": \"pilot\",  \"suite\": {   \"version\": \"v6.0.0-alpha.4-173-g6399f5a28\",   \"date\": \"2026-11-10\",   \"time\": \"10:19\",   \"web\": \"https://framagit.org/asr/flight_planner\"  },  \"transport\": \"launcher\",  \"online\": true,  \"syncing\": false,  \"lastSync\": \"2026-11-10T09:21:40.172Z\",  \"lastError\": \"\",  \"pending\": 1,  \"queue\": [   {    \"path\": \"pilot/RBR/current_flight.json\",    \"module\": \"fuel\",    \"at\": \"2026-11-10T09:21:31.301Z\",    \"deletion\": false   }  ],  \"conflicts\": 0,  \"tree\": {   \"head\": \"19c0b8a6436d\",   \"at\": \"2026-11-10T09:21:30.334Z\",   \"fi",
-    "at": "2026-11-10T09:26:17Z"
-   }
+   "state": "known"
   },
   {
    "id": "SOG-0139",
