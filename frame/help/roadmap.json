@@ -4,9 +4,9 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "bd13d58",
+  "organisation": "5d81de9",
   "fiches": 225,
-  "untranslated": 1,
+  "untranslated": 0,
   "priorities": 152
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
@@ -438,7 +438,7 @@
     {
      "id": "SOG-0134",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Route (RAD) : montrer les tracés des itinéraires proposés avant de choisir, et dire quels sont les écarts aux règles",
      "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
      "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
@@ -1974,9 +1974,9 @@
      "kind": "bug",
      "state": "done",
      "fr": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
-     "en": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
-     "de": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
-     "es": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
+     "en": "BLOCKING: “Recompute everything” fails in the build page, 46 zones at once, cause not said",
+     "de": "BLOCKIEREND: „Alles neu berechnen“ scheitert auf der Aufbauseite, 46 Zonen auf einmal, Ursache nicht genannt",
+     "es": "BLOQUEANTE: «Recalcular todo» falla en la página de construcción, 46 zonas de golpe, causa no dicha",
      "rank": 99
     },
     {

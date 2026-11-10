@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 97,
-  "verdicts": 44
+  "verdicts": 46
  },
  "apps": [
   "pilote",
@@ -224,7 +224,8 @@
    },
    "test": "Maintenance › Données : cocher la case d'usage personnel, recharger la page → elle est toujours cochée.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T16:44:34Z"
   },
   {
    "id": "SOG-0081",
@@ -252,8 +253,9 @@
    },
    "test": "Maintenance › Données › Procédures › ligne « Route (RAD, points FRA) » : « Importer de Téléchargements » montre d'abord les classeurs trouvés, puis les importe ; dans Carburant, sans RAD, le pas Route dit « Aucun RAD importé » avec un lien vers cette ligne.",
    "since": "2026-11-09",
-   "state": "todo",
-   "delivered": "2026-11-09T14:36:17Z"
+   "state": "ok",
+   "delivered": "2026-11-09T14:36:17Z",
+   "at": "2026-11-10T16:44:47Z"
   },
   {
    "id": "SOG-0126",
@@ -306,9 +308,15 @@
     "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
     "es": "Ruta (RAD): dibujar las rutas propuestas antes de elegir y decir cuáles son las desviaciones a las reglas"
    },
-   "test": "Carburant › Route avec la Carte à côté, après « Calculer A → B » : les itinéraires sont tracés fins ; une voie est en trait plein avec son nom, un direct en tirets, une route libre (FRA) en pointillé, un écart aux règles en rouge ; les points ne sont nommés qu'une fois ; « Légende » (repliée) dit les mêmes traits et les mêmes mots sur la Carte et dans l'écran Route.",
+   "test": "Carburant › Route avec la Carte à côté, « Calculer A → B » : toucher un itinéraire (dans la liste ou sur la carte) le montre : surligné des deux côtés, son détail déplié, sans le prendre ; la liste reste. Seul « Choisir » le prend. Un second « Calculer » : la carte suit en moins d'une seconde, rien du premier calcul ne reste. Les tracés : voie en trait plein avec son nom, direct en tirets, route libre en pointillé, écart aux règles en rouge.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:46:24Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "refusé. un second calcul successif n’affiche pas la carte. ah, pardon, si, mais trèèèèèès longtemps après avoir affiché les itinéraires. idem si on clique sur un itinéraire sur la carte en sidecar, ça fait disparaître leur version texte à gauche. mais les itinéraires restent. 1/ si on clique sur l’itinéraire (carte ou fuel), ça l’affiche, mais ne le choisit pas ; 2/ il faut spécifiquement le bouton « choisir » pour valider.",
+    "at": "2026-11-10T13:53:59Z"
+   }
   },
   {
    "id": "SOG-0135",
@@ -445,7 +453,10 @@
    "id": "SOG-0144",
    "app": "maintenance",
    "title": {
-    "fr": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite"
+    "fr": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
+    "en": "BLOCKING: “Recompute everything” fails in the build page, 46 zones at once, cause not said",
+    "de": "BLOCKIEREND: „Alles neu berechnen“ scheitert auf der Aufbauseite, 46 Zonen auf einmal, Ursache nicht genannt",
+    "es": "BLOQUEANTE: «Recalcular todo» falla en la página de construcción, 46 zonas de golpe, causa no dicha"
    },
    "test": "Maintenance › Données › Plus › « Tout recalculer » sur toute la sélection (plus de 60 zones) : deux constructions de suite, « Tranche 1 sur 2 », toutes les zones construites ; en cas d'échec, la zone dit la phrase exacte.",
    "since": "2026-11-09",
