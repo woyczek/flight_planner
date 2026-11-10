@@ -245,7 +245,8 @@ export function dataHead() {
     own = !!S.dpanel && !wx, // contenu ouvert par openData : son titre
     lay = S.dpanel === 'layers', // « Couches · <vol> » : le contexte comme le profil
     // « Couches · FL260 · 333 NM · autour du vol » : la lecture autour du vol seulement se lit dans le titre du volet
-    title = own && !lay ? S.dtitle : [lay ? S.dtitle : tt(wx ? TX.ttlWeather : TX.ttlProfile), S.sum, lay && S.profile?.corridorNm > 0 ?
+    title = own && !lay ? S.dtitle : [lay ? S.dtitle : tt(wx ? TX.ttlWeather : TX.ttlProfile), lay && onMission() ? '' : S.sum, lay && S
+      .profile?.corridorNm > 0 ?
       tt(TX.ttlCorr) : ''
     ].filter(Boolean).join(' · '),
     tip = own && !lay ? S.dlabel : [lay ? S.dlabel : wx ? S.dlabel : tt(TX.dataProfile), S.sumTip].filter(Boolean).join(' · ');

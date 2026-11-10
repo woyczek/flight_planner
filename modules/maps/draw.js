@@ -652,7 +652,9 @@ function draw() {
   // courbes de niveau (VFR, Topo), de près, sous la surcouche aéronautique : les maîtresses seules d'abord, les intermédiaires 1,5 niveau de zoom plus près
   // (le curseur de Complexité décale ce zoom : peu de complexité, les maîtresses seules) ; sur une carte de mission, la vue qui les veut (VFR topo, ou un profil
   // du studio qui coche les courbes) les allume — l'IFR et le fond seul non (SOG-0184)
-  const contoursWanted = mission ? !!(S.profile?.layers?.contours || (S.mtheme !== 'base' && S.profile?.elements?.vfrDensity)) : L.contours;
+  const contoursWanted = !!(L.contours || mission && S.profile?.layers
+    ?.contours
+  ); // la case « Courbes de niveau » (d'origine : les vues à densité VFR) ; le profil du studio d'une carte de mission les demande aussi
   if (contoursWanted && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(ctx, {
     minor: MapsRender.visibleAt(S.profile, 'contours', zv - 1.5),
     toC,

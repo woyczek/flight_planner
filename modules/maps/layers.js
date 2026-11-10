@@ -219,10 +219,9 @@ export function builtinProfile(mode = S.preset, levelFt = S.route.levelFt) {
     }
   };
 }
-/** Profil d'une carte de mission selon sa vue (SOG-0171) : « vfr » = le VFR topographique du vol (relief ombré et courbes de niveau, obstacles, VRP, terrains
- *  VFR, espaces bas, fond OpenFreeMap liberty), sans les objets IFR (axes de ravitaillement, tracks NAT, voies : le profil du studio « vfr-detail » porte les
- *  axes, que seul le mode CAM du vol allume), « ifr » = l'IFR du niveau de la mission, « base » = le fond seul (aucune couche aéronautique : la mission
- *  garde ses points, ses zones et son cheminement). Sans réglages de couches du vol : la carte de mission n'a que son thème. */
+/** Profil d'une carte de mission selon sa vue (SOG-0171, 0184) : la vue ne change que le FOND et les couches de base — « vfr » = le fond topographique avec le relief
+ *  ombré et les courbes de niveau, « ifr » = le fond IFR, « base » = le fond de la vue IFR sans objet aéronautique ; les objets (axes de ravitaillement, RTBA, voies…) sont ceux
+ *  des cases de Couches, comme sur une carte de vol (effectiveProfile), et ceux de la mission (zones, points, cheminement) restent quelle que soit la vue. */
 export function themeProfile(theme, levelFt = 0) {
   if (theme === 'vfr') {
     const p = builtinProfile('vfr', levelFt);
@@ -231,10 +230,7 @@ export function themeProfile(theme, levelFt = 0) {
       hillshade: true,
       elements: {
         ...p.elements,
-        aarTracks: false,
-        natTracks: false,
-        airwaysLow: false,
-        airwaysHigh: false
+        vfrDensity: true
       }
     };
   }
@@ -243,7 +239,7 @@ export function themeProfile(theme, levelFt = 0) {
   return {
     ...p,
     id: 'v3-base',
-    base: 'ofm-liberty',
+    base: builtinProfile('auto', levelFt).base, // le fond de la vue IFR (SOG-0184)
     cities: false,
     zones: [],
     corridorNm: 0,
@@ -346,12 +342,16 @@ export const modeKey = () => S?.missionId ? 'mission' : S.preset;
 /** Couches de départ du mode : celles du profil, puis celles que la compagnie a enregistrées (profiles[mode].layers) ; une carte de mission part de la Complexité
  *  maximale (tout ce que son profil montre, comme avant le curseur) et le curseur l'allège. */
 export const baseLayers = () => ({
-  ...layerDefaults(flightProfile()),
-  ...(S.repoProfiles?.[S.preset]?.layers || {}),
+  ...layerDefaults(profileBase()),
+  ...(S.missionId ? {} : S.repoProfiles?.[S.preset]?.layers || {}),
   ...(S.missionId ? {
-    detail: 4
+    detail: 4,
+    aar: !!S.mmil && S.mtheme !==
+      'base' // les missions militaires : les axes de ravitaillement (et le RTBA, des espaces) allumés d'origine (SOG-0184 d)
   } : {})
 });
+/** Le profil dont les couches partent : celui du vol, ou la vue de la carte de mission (S.mbase, posé par mission_view). */
+const profileBase = () => S.missionId && S.mbase ? S.mbase : flightProfile();
 /** Couches du mode courant : celles de départ, puis les choix gardés sur cet appareil. */
 export const layersNow = () => ({
   ...baseLayers(),
@@ -362,7 +362,7 @@ export const detailShift = () => Math.max(-4, Math.min(4, Math.round(+layersNow(
 /** Profil effectif du vol : celui du mode, couches appliquées (éléments, familles d'espaces, autres types, couloir) et seuils
  *  dans l'ordre : intégrés, compagnie, appareil, réglage en cours (SPEC § 6.6). */
 export function effectiveProfile() {
-  const B = flightProfile(),
+  const B = profileBase(),
     L = layersNow(),
     P = structuredClone(B),
     E = P.elements ||= {};
@@ -388,14 +388,15 @@ export function effectiveProfile() {
   P.corridorNm = L.corridor ? +B.corridorNm || 10 : 0;
   E.zoom = {
     ...(E.zoom || {}),
-    ...(S.layers?.[S.preset]?.zoom || {}),
-    ...(S.tuneZoom?.[S.preset] || {})
+    ...(S.missionId ? {} : S.layers?.[S.preset]?.zoom || {}),
+    ...(S.missionId ? {} : S.tuneZoom?.[S.preset] || {})
   };
+  if (S.missionId) P.name = S.mbaseName || P.name; // le nom de la vue, dit par la légende
   return P;
 }
 /** Profil refait après un changement de couche, de mode ou de réglage : données relues, carte et profil vertical redessinés. */
 export function reprofile() {
-  if (!S.missionId) S.profile = effectiveProfile(); // une carte de mission garde son profil (sa vue) : seule sa Complexité change
+  S.profile = effectiveProfile(); // le profil du vol, ou celui de la vue de la carte de mission, cases de Couches appliquées
   invalidate();
   if (S.dpanel === 'layers') fillLayers();
   dataHead(); // le titre du volet dit « autour du vol » quand la case l'est
@@ -441,11 +442,11 @@ export function layersHtml(ctx) {
   const mission = !!ctx.query?.mission,
     name = ctx.t(TX.layers);
   return `<div class="mp-layers" role="group" aria-label="${esc(name)}">
-<div class="mp-layer-set"${mission ? ' hidden' : ''}>
+<div class="mp-layer-set mp-layer-corr"${mission ? ' hidden' : ''}>
 <label class="mp-l-main"><input type="checkbox" data-layer="corridor"> <span>${esc(ctx.t(TX.layerNames.corridor))}<small class="f-muted">${esc(ctx.t(TX.corrSub))}</small></span></label></div>
 <div class="mp-layer-cx"><label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span></div>
-<div class="mp-layer-set"${mission ? ' hidden' : ''}>
+<div class="mp-layer-set">
 ${LAYER_KEYS.filter(k => k !== 'corridor' && (k !== 'cov' || covAvail())).map(k => `<label><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div></div>`;
 }

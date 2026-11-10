@@ -2299,6 +2299,18 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## A mission map has the Layers boxes; its view changes only the base; the objects are the mission's and the boxes' (10 Nov 2026, SOG-0185 refused again, SOG-0184 c and d; it replaces what SOG-0171 and SOG-0183 said)
+- **The user** (capture 160736): on a mission map the Layers tab was titled « Couches · T-084 · ISÈRE — … · Vue générale de la mission… » and showed only the complexity; he wants the boxes as on a flight's
+  map, the title without the mission or the provided map (they are in the window); « Base only » is the base of the IFR view, not the VFR one; « on se souvient que c'est intéressant d'avoir le RTBA allumé
+  et les hippodromes de ravitaillement sur les missions militaires ». **Ergonomics** corrected its own SOG-0171 line: the view changes the base and the base layers only; the objects stay whatever the view.
+- **Done**: `effectiveProfile()` serves the mission map too (the view's profile `S.mbase` as the base, then the boxes: `layersNow()` under the key « mission », its own complexity); a view is a base
+  (`themeProfile`: VFR topo = topographic base + shaded relief + contours; IFR = the IFR base; Base only = the IFR base without object) and the boxes decide the objects (airways, beacons, the families of
+  spaces — RTBA is in « R / D / P / TSA… » —, the refuelling tracks, contours, cities…), as on a flight's map; a military mission (family other than commercial) has the refuelling tracks on at the start (not in
+  Base only); the SOG-0171 override that took them out of VFR topo is gone. The corridor row (« around the flight only ») is hidden on a mission map: it means nothing there. The title of the Layers sheet
+  does not repeat the summary (mission, provided map) on a mission map.
+- **Noreg** D145 (boxes there, corridor row hidden, the title says neither the mission nor the map), D152 (the refuelling tracks of a SAR mission are on in VFR topo and IFR, off in Base only, the box acts;
+  Base only = the base of IFR, no relief, no airway).
+
 ## The Map asks the ground of an aerodrome it has to draw, once (10 Nov 2026, SOG-0203: LFBD has no taxiway)
 - **Cause** (AeroDB's survey): LFBD's ground was never asked (procedures read before SOG-0135); the state is `none`, not a failure, and the Map only offered a link to Fuel.
 - **Done** (`ground.js autoRead`): the gesture lives where the need is seen: when the drawing has to show the ground of an aerodrome of the flight (departure, arrival, alternate) that the view

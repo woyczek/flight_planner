@@ -25,7 +25,8 @@ import {
   invalidate
 } from './data.js';
 import {
-  themeProfile
+  themeProfile,
+  effectiveProfile
 } from './layers.js';
 import {
   header,
@@ -178,6 +179,8 @@ export async function applyMission() {
   const M = S.mission,
     m = M ? M.maps.find(x => x.file === q.map) || M.maps[0] || null : null;
   S.mapDef = m;
+  S.mmil = !!familyOf(S.missionId) && !COMMERCIAL.test(familyOf(S
+    .missionId)); // une mission opérationnelle (hors commercial) : axes de ravitaillement allumés d'origine
   S.mthemeAuto = themeOf(m, familyOf(S.missionId)); // la vue de l'usage de la carte, ou celle que l'appareil a retenue pour elle
   const kept = S.mthemes?.[themeKey()];
   S.mtheme = kept && (kept !== 'yaml' || S.mthemeAuto === 'yaml') ? kept : S.mthemeAuto;
@@ -240,13 +243,14 @@ function missionProfile() {
   if (S.mtheme === 'yaml' && m) {
     const c = MapsMission.profileFor(m, window.MAPS_PROFILES);
     S.profileSource = c.source;
-    return c.profile;
+    S.mbase = c.profile;
+    S.mbaseName = c.profile?.name || '';
+  } else {
+    S.profileSource = S.mtheme === S.mthemeAuto ? 'theme' : 'chosen';
+    S.mbase = themeProfile(S.mtheme, S.route?.levelFt || 0);
+    S.mbaseName = tt(TX.mbThemes[S.mtheme] || TX.mbThemes.ifr);
   }
-  S.profileSource = S.mtheme === S.mthemeAuto ? 'theme' : 'chosen';
-  return {
-    ...themeProfile(S.mtheme, S.route?.levelFt || 0),
-    name: tt(TX.mbThemes[S.mtheme] || TX.mbThemes.ifr)
-  };
+  return effectiveProfile(); // la vue (le fond), puis les cases de Couches : les objets sont ceux de la mission et des cases, pas de la vue
 }
 /** Le fond suit la vue (SOG-0171 rouvert : « VFR topo » sur un fond IFR, sans relief) : le style MapLibre change quand celui du profil a changé (carte
  *  d'une autre vue, vue choisie dans le bandeau), le relief ombré est posé ou retiré sinon. Sans carte MapLibre encore, rien : elle naît avec le bon style. */
@@ -329,9 +333,9 @@ export function bannerFill() {
 export function missionUi() {
   if (!S) return;
   const on = !!S.missionId,
-    sets = S.layersEl?.querySelectorAll('.mp-layer-set') || []; // les cases : pas sur une carte de mission ; la Complexité, si (SOG-0183)
-  for (const set of sets)
-    if (set.hidden !== on) set.hidden = on;
+    corr = S.layersEl?.querySelector(
+      '.mp-layer-corr'); // « autour du vol seulement » n'a pas de sens sur une carte de mission ; les autres cases, si (SOG-0185)
+  if (corr && corr.hidden !== on) corr.hidden = on;
   const name = tt(TX.layers),
     b = S.layersBtn;
   if (b && b.title !== name) {
