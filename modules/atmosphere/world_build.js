@@ -53,7 +53,8 @@ export function createWorldBuild({
     if (show) {
       const can = !!ctx.launcher;
       // les étapes du lanceur (n/25) quand il en donne, une seule étape n'en est pas une ; la durée écoulée dans tous les cas
-      if (S.phase === 'building') h = `<span role="status">${esc(T('wbBuilding'))}${S.total > 1 ? ` ${S.n}/${S.total}` : ''} · ${esc(lapse(Date.now() - S.since))}</span>`;
+      if (S.phase === 'soon') h = `<span>${esc(T('wbSoon'))}</span> ${can ? `<button type="button" class="f-btn at-wb-go" data-at="wbReread">${esc(T('wbReread'))}</button>` : ''}`; // jamais un compte à rebours (SOG-0138)
+      else if (S.phase === 'building') h = `<span role="status">${esc(T('wbBuilding'))}${S.total > 1 ? ` ${S.n}/${S.total}` : ''} · ${esc(lapse(Date.now() - S.since))}</span>`;
       else {
         const what = S.phase === 'failed' ? `${esc(T('wbFailed', {
           why: T(WHY[S.why] || 'wbWhyFailed', {
@@ -143,6 +144,13 @@ export function createWorldBuild({
       ctx.notify?.(T('wbDone'), 'info');
       return;
     }
+    if (String(res?.reason || r?.reason || '') ===
+      'too-soon') { // une construction vient d'avoir lieu : ce n'est pas un échec, la couche est relue tout de suite, « Relire » reste
+      S.phase = 'soon';
+      paint();
+      reload();
+      return;
+    }
     S.phase = 'failed';
     S.why = r?.offline ? 'failed' : String(res?.reason || r?.reason || 'failed');
     S.wait = Number.isFinite(+r?.wait) ? Math.ceil(+r.wait) : 0;
@@ -150,6 +158,8 @@ export function createWorldBuild({
   }
   box.addEventListener('click', e => {
     if (e.target.closest('[data-at="wbBuild"]')) build();
+    else if (e.target.closest('[data-at="wbReread"]')) Promise.resolve(reload()).then(() =>
+      read()); // relire la publication sans rien construire
   });
   paint();
   read();

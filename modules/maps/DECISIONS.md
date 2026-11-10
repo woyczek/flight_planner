@@ -2299,6 +2299,14 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## Retouches: the rose's numbers capped, no countdown on the synoptic line (10 Nov 2026, SOG-0175, SOG-0138)
+- **SOG-0175** (capture 150125: the « 18 » of the rose huge at a strong zoom): the numbers' height followed the graduation (up to 30 px); capped at 15 px (`aero_symbols.js`); D143 reads the sizes at 450 px of radius
+  (red before: 30).
+- **SOG-0138** (« prochain essai dans 578 s !! »): a build refused as too soon (the launcher's cool-down: one was just made) is not a failure. The line says « World synoptic built just now » with « Read again » (the
+  layer is read again at once, and by the button); never a countdown (`atmosphere/world_build.js`; E18, red before: it said the seconds). After a successful build the layer was already read again at once.
+- **Not done** (to say): SOG-0163 « déplacer la liste des airspaces à droite de la stack »: the wide layout of the sheet already puts the list to the right of the stack (`mp-lv-wrap`); I do not know which view the
+  words mean (phone width? the card on the map?): asked.
+
 ## Wind barbs: 40 to 80 in the view at any zoom; where they come from (10 Nov 2026, SOG-0214)
 - **Asked**: between 40 and 80 barbs on screen at any zoom; outside AROME the barbs of the model that covers the place, or nothing (« sur LFPO-KDEN toutes dans le même sens »); say where it comes from.
 - **Done**: the list along the trajectory (one wind each 50 NM) is **thinned** by a stride when more than 80 are in the view, and **completed** with winds interpolated between two neighbours that were read (u/v

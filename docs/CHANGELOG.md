@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Retouches** (`modules/maps/lib/aero_symbols.js`, `modules/atmosphere/world_build.js`; DECISIONS; noreg D143, E18; SOG-0175, SOG-0138). The numbers of the VOR rose stop at 15 px at a strong zoom; a synoptic
+  build refused as too soon says « built just now » and offers « Read again », never a countdown.
+
 - **Map: 40 to 80 wind barbs in the view at any zoom** (`modules/maps/tips.js`; DECISIONS; noreg D166; SOG-0214). Thinned when too many, completed by interpolation between two read winds when too few.
 
 - **Map: ground names — one per taxiway, the aprons named, the alternate read** (`modules/maps/ground.js`, `texts.js`; DECISIONS; noreg D165; SOG-0195, SOG-0135). The ways a taxiway is cut into no longer repeat its

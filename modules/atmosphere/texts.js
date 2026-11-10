@@ -86,6 +86,10 @@ export const TX = {
   ],
   wbWhyTimeout: ['plus de 15 minutes', 'over 15 minutes', 'über 15 Minuten', 'más de 15 minutos'],
   wbWhyCancelled: ['annulée', 'cancelled', 'abgebrochen', 'cancelada'],
+  wbSoon: ['Synoptique monde construit à l’instant', 'World synoptic built just now', 'Weltsynoptik soeben erstellt',
+    'Sinóptico mundial construido hace un momento'
+  ],
+  wbReread: ['Relire', 'Read again', 'Neu lesen', 'Releer'],
   wbWhySoon: ['trop tôt, réessayez dans {n} s', 'too soon, try again in {n} s', 'zu früh, in {n} s erneut versuchen',
     'demasiado pronto, reinténtelo en {n} s'
   ],

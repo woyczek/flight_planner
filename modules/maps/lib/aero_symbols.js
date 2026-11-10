@@ -1194,8 +1194,9 @@
             ctx.lineTo(sn * (R - l), cs * (R - l));
             ctx.stroke();
           }
-          const fs = Math.min(30, Math.max(8, long *
-            2.1)); // la hauteur des chiffres : une fois et demie celle des graduations longues, en gras
+          const fs = Math.min(15, Math.max(8, long *
+            2.1
+          )); // la hauteur des chiffres : une fois et demie celle des graduations longues, en gras, plafonnée à 15 px (SOG-0175 : le « 18 » devenait énorme à fort zoom)
           if (R >= 36) { // les quatre chiffres, tête vers l'extérieur
             ctx.font = `700 ${fs.toFixed(1)}px Arial,sans-serif`;
             ctx.textAlign = 'center';

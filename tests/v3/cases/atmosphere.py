@@ -553,7 +553,7 @@ _WB_JS = """async () => {
   out.failed = [text(o), btn(o), o.box.querySelector('[role=alert]') ? 'alert' : '-'];
   o.box.querySelector('[data-at=wbBuild]').click(); await wait(30);
   end = { ok: false, status: 429, reason: 'too-soon', wait: 29.2 }; release(); await wait(80);
-  out.soon = text(o);
+  const rl0 = o.log.reload; out.soon = [text(o), o.log.reload];
   // e. a fresh publication says nothing, an old one says its date, none without a launcher says where
   out.fresh = text(mk({ built: now() - 3600 }, L)); await wait(50);
   const old = mk({ built: now() - 13 * 3600 }, L); await wait(50); out.old = [text(old), btn(old)];
@@ -588,7 +588,8 @@ def e18(c):
     c.eq(r['done'], ['(hidden)', 1, 1], 'the end: the line goes, the layer is read again once, a note says so', what='end')
     c.ok(r['failed'][0].startswith('wbFailed') and 'wbWhyNoRun' in r['failed'][0] and r['failed'][1] is True and r['failed'][2] == 'alert', str(r['failed']),
          'a failure says why (NOAA) and offers « Try again »')
-    c.ok('wbWhySoon' in r['soon'] and ':30' in r['soon'], r['soon'], 'a refusal too soon says the wait in seconds')
+    c.ok('wbSoon' in r['soon'][0] and 'wbReread' in r['soon'][0] and not re.search(r'\d+ ?s', r['soon'][0].replace('wbSoon', '')), str(r['soon']), 'a refusal too soon is not a failure and shows no countdown: « built just now » and « Read again »')
+    c.ok(r['soon'][1] >= 1, str(r['soon']), 'and the layer is read again at once')
     c.eq(r['fresh'], '(hidden)', 'a publication of less than 12 h says nothing', what='fresh')
     c.ok(r['old'][0].startswith('wbOld') and r['old'][1] is True, str(r['old']), 'a publication of more than 12 h says its date and offers « Build »')
     c.ok('wbNoLauncher' in r['nolauncher'][0] and r['nolauncher'][1] is False, str(r['nolauncher']), 'without a launcher: where to make it, no button')
@@ -649,4 +650,3 @@ def e19(c):
     c.ok(norm(row(c, 'offline')) not in norm(notes), notes, 'and never « offline »')
     t = norm(c.js(f"() => document.querySelector('{ATM} .at-layerpop .at-mapnote').textContent"))
     c.ok(norm(row(c, 'whyBusy')) in t, t, 'the layers panel keeps the reason, with « Load » to try again')
-
