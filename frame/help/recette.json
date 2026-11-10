@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 108,
+  "tests": 109,
   "verdicts": 43
  },
  "apps": [
@@ -1546,6 +1546,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T16:23:23Z"
+  },
+  {
+   "id": "SOG-0225",
+   "app": "pilote",
+   "title": {
+    "fr": "Devis : un carburant de dégagement calculé (distance de l'arrivée au terrain de dégagement)",
+    "en": "Fuel quote: a computed alternate fuel (distance from the arrival to the alternate aerodrome)",
+    "de": "Kraftstoffplan: berechneter Ausweichkraftstoff (Strecke vom Ziel zum Ausweichflugplatz)",
+    "es": "Presupuesto de combustible: combustible de alternativo calculado (distancia de la llegada al alternativo)"
+   },
+   "test": "Carburant, un vol avec un terrain de dégagement (LFPO → LFST, dégagement LFRN) : étape Résultat › « Détail du devis » porte une ligne « Dégagement LFRN · distance · niveau · modèle de l'étape (ou débit de la fiche) · vent » avec son temps et son carburant, comptée dans « Carburant bloc » ; sans dégagement saisi, la ligne dit « Dégagement : aucun terrain saisi » et rien n'est ajouté.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T18:03:49Z"
   },
   {
    "id": "SOG-0226",

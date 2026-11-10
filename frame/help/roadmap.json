@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "43004a2",
+  "organisation": "294431f",
   "fiches": 234,
   "untranslated": 0,
   "priorities": 152
@@ -521,7 +521,7 @@
     {
      "id": "SOG-0225",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Devis : un carburant de dégagement calculé (distance de l'arrivée au terrain de dégagement)",
      "en": "Fuel quote: a computed alternate fuel (distance from the arrival to the alternate aerodrome)",
      "de": "Kraftstoffplan: berechneter Ausweichkraftstoff (Strecke vom Ziel zum Ausweichflugplatz)",
