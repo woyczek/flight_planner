@@ -61,7 +61,7 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   (`current_flight.missionCategory`), where the report reads it (N11).
 - **A family is said by its acronym first** (SOG-0179, N12; the sheet, chosen or drawn, under its title: SOG-0187, N15): a heading of the list « **SAR** · Récupération de personnel » (the acronym
   in bold, the long name in plain weight), the filter « SAR · Récupération de personnel » in plain text, the acronym alone for a code
-  the report does not know; the long name never alone; names from `modules/report/vocab.js` (`familyParts`, `familyText`; MEDEVAC,
+  the report does not know; the long name never alone; names from `modules/report/vocab.js` (`familyParts`, `familyText`, which read the one table `frame/lib/mission_themes.js`, § 10.48; MEDEVAC,
   the registry's code, is the report's HEMS).
 - One screen, the module's main: the missions of the airline, newest series first, grouped by family (the sixteen
   families of the generator prompt, their letter and their name, never hard-coded twice: read from the registry),

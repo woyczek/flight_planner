@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille FIRE / GAAR reconstruite sur le Mission Report Core (étape 2b) : mêmes champs
 // que le CR FIRE historique (FIRE/fire_cr.html), plus le modèle commun. Largages et
@@ -67,19 +68,7 @@ const FAMILY = {
   },
   title: L('FIRE / GAAR — feux de forêt', 'FIRE / GAAR — wildfires', 'FIRE / GAAR — Waldbrände',
     'FIRE / GAAR — incendios forestales'),
-  series: [{
-    value: 'GAAR',
-    label: L('GAAR', 'GAAR')
-  }, {
-    value: 'GAAR with diversion',
-    label: L('GAAR avec déroutement', 'GAAR with diversion', 'GAAR mit Umleitung', 'GAAR con desvío')
-  }, {
-    value: 'Response',
-    label: L('Intervention', 'Response', 'Einsatz', 'Intervención')
-  }, {
-    value: 'Training',
-    label: L('Entraînement', 'Training', 'Training', 'Entrenamiento')
-  }],
+  series: MT.seriesOf('FIRE'),
   events: [
     opt('FIRE_ALERT', L('Alerte feu', 'Fire alert', 'Brandalarm', 'Alerta de incendio')), opt('RELOAD', L('Rechargement',
       'Reload', 'Nachladen', 'Recarga')), opt('SCOOPING', L('Écopage', 'Scooping', 'Wasseraufnahme', 'Amerizaje'))

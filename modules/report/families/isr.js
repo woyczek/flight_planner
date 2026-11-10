@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille ISR / RECON / INTELLIGENCE (§9), niveau compte rendu de simulation : tâche de
 // collecte, capteurs, contacts / pistes, émetteurs (SIGINT / ELINT / COMINT), couverture.
@@ -38,37 +39,7 @@ const FAMILY = {
     reporting: 'isr_reporting.html'
   },
   title: L('Renseignement / reconnaissance', 'ISR / reconnaissance', 'Aufklärung', 'Inteligencia / reconocimiento'),
-  series: [{
-    value: 'ISR',
-    label: L('ISR', 'ISR')
-  }, {
-    value: 'RECON',
-    label: L('Reconnaissance', 'Reconnaissance', 'Aufklärung', 'Reconocimiento')
-  }, {
-    value: 'EO_IR',
-    label: L('EO/IR', 'EO/IR')
-  }, {
-    value: 'IMINT',
-    label: L('IMINT (imagerie)', 'IMINT (imagery)', 'IMINT (Bildaufklärung)', 'IMINT (imágenes)')
-  }, {
-    value: 'SIGINT',
-    label: L('SIGINT', 'SIGINT')
-  }, {
-    value: 'ELINT',
-    label: L('ELINT', 'ELINT')
-  }, {
-    value: 'COMINT',
-    label: L('COMINT', 'COMINT')
-  }, {
-    value: 'BORDER_ISR',
-    label: L('ISR frontalier', 'Border ISR', 'Grenzaufklärung', 'ISR fronterizo')
-  }, {
-    value: 'MARITIME_ISR',
-    label: L('ISR maritime', 'Maritime ISR', 'Seeaufklärung', 'ISR marítimo')
-  }, {
-    value: 'INFRASTRUCTURE_ISR',
-    label: L('ISR infrastructures', 'Infrastructure ISR', 'Infrastrukturaufklärung', 'ISR de infraestructuras')
-  }],
+  series: MT.seriesOf('ISR'),
   flags: mission => ({
     maritime: mission.series === 'MARITIME_ISR'
   }),

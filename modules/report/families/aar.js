@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille AAR / RAVITAILLEMENT EN VOL : missions de ravitailleur (tanker) et de ravitaillé
 // (receveur). Hippodrome ou zone (axes MIAM ENR 5.7), rendez-vous, système (perche / panier),
@@ -59,27 +60,7 @@ const FAMILY = {
     reporting: 'aar_reporting.html'
   },
   title: L('Ravitaillement en vol', 'Air-to-air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo'),
-  series: [{
-    value: 'TRAINING',
-    label: L('Entraînement / qualification', 'Training / qualification', 'Training / Qualifikation',
-      'Entrenamiento / calificación')
-  }, {
-    value: 'OPERATIONAL',
-    label: L('Soutien d’opération', 'Operational support', 'Einsatzunterstützung', 'Apoyo a operaciones')
-  }, {
-    value: 'QRA',
-    label: L('Soutien police du ciel (QRA)', 'QRA support', 'QRA-Unterstützung', 'Apoyo QRA')
-  }, {
-    value: 'DRAG',
-    label: L('Convoyage (drag) / déploiement', 'Fighter drag / deployment', 'Überführung (Drag) / Verlegung',
-      'Traslado (drag) / despliegue')
-  }, {
-    value: 'EXERCISE',
-    label: L('Grand exercice', 'Major exercise', 'Großübung', 'Gran ejercicio')
-  }, {
-    value: 'TRIALS',
-    label: L('Essais / certification', 'Trials / certification', 'Erprobung / Zulassung', 'Ensayos / certificación')
-  }],
+  series: MT.seriesOf('AAR'),
   events: [
     opt('AAR_RV', L('Rendez-vous', 'Rendezvous', 'Rendezvous', 'Encuentro')), opt('AAR_TRACK_IN', L('Entrée hippodrome',
       'Track entry', 'Einflug Racetrack', 'Entrada al circuito')),

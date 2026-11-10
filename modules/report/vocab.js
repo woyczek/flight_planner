@@ -1,68 +1,17 @@
 // V3 report — vocabulaire du compte rendu (listes et identifiants), recopié de la V2 (shared/mission_core/vocab.js) le
 // 23/10/2026 sans changement : libellés [fr, en, de, es], familles, lettres de famille et numéros de CR (CRM-016-1, CRX-A01-0),
 // résultats, causes, rôles d'équipage, contexte, unités de carburant, réseaux. Module ES pur : ni page, ni stockage, ni réseau.
+import * as MT from '../../frame/lib/mission_themes.js';
 const L = (fr, en, de, es) => [fr, en, de ?? en, es ?? en];
 /** Option de liste { value : code stable, label : [fr, en, de, es] }. */
 const opt = (value, label) => ({
   value,
   label
 });
-const familyLabels = {
-  HEMS: ['HEMS / MEDEVAC', 'HEMS / MEDEVAC', 'HEMS / MEDEVAC', 'HEMS / MEDEVAC'],
-  FIRE: ['FIRE / GAAR — sécurité civile', 'FIRE / aerial firefighting', 'FIRE / Waldbrandbekämpfung',
-    'FIRE / extinción de incendios'
-  ],
-  SAR: ['SAR / récupération de personnel', 'SAR / personnel recovery', 'SAR / Personenbergung', 'SAR / recuperación de personal'],
-  AIRLIFT: ['Transport aérien / logistique', 'Airlift / logistics', 'Lufttransport / Logistik', 'Transporte aéreo / logística'],
-  AAR: ['Ravitaillement en vol', 'Air-to-air refuelling', 'Luftbetankung', 'Reabastecimiento en vuelo'],
-  MARITIME: ['Surveillance maritime', 'Maritime surveillance', 'Seeüberwachung', 'Vigilancia marítima'],
-  HADR: ['Aide humanitaire / évacuation', 'Humanitarian aid / evacuation', 'Humanitäre Hilfe / Evakuierung',
-    'Ayuda humanitaria / evacuación'
-  ],
-  AIRBORNE: ['Largage / aéroporté', 'Airdrop / airborne', 'Abwurf / Luftlande', 'Lanzamiento / aerotransportado'],
-  FI: ['Contrôle en vol des aides radio', 'Flight inspection (navaids)', 'Flugvermessung (Navigationsanlagen)',
-    'Inspección en vuelo (radioayudas)'
-  ],
-  SURVEY: ['Levés / missions scientifiques', 'Survey / scientific missions', 'Vermessung / Forschungsflüge',
-    'Levantamientos / misiones científicas'
-  ],
-  LE: ['Police / douane / sécurité', 'Police / customs / security', 'Polizei / Zoll / Sicherheit', 'Policía / aduana / seguridad'],
-  ISR: ['Renseignement / reconnaissance', 'Intelligence / reconnaissance', 'Aufklärung / Nachrichtengewinnung',
-    'Inteligencia / reconocimiento'
-  ],
-  COMMAND: ['Commandement / police du ciel / guet aérien', 'Command / air policing / early warning',
-    'Führung / Luftpolizeidienst / Frühwarnung', 'Mando / policía aérea / alerta temprana'
-  ],
-  COMBAT: ['Combat aérien / entraînement chasse', 'Air combat / fighter training', 'Luftkampf / Jagdflugausbildung',
-    'Combate aéreo / entrenamiento de caza'
-  ],
-  SOF: ['Opérations spéciales / tactiques', 'Special / tactical operations', 'Spezial- / taktische Operationen',
-    'Operaciones especiales / tácticas'
-  ],
-  SPECIAL: ['Transport spécial / essais / formation', 'Special transport / trials / training',
-    'Sondertransport / Erprobung / Ausbildung', 'Transporte especial / ensayos / formación'
-  ]
-};
-const familyLetters = {
-  HEMS: 'M',
-  MEDEVAC: 'M',
-  HADR: 'H',
-  FIRE: 'F',
-  SAR: 'S',
-  AIRLIFT: 'T',
-  AAR: 'R',
-  AIRBORNE: 'P',
-  MARITIME: 'N',
-  ISR: 'I',
-  LE: 'L',
-  COMMAND: 'C',
-  COMBAT: 'A',
-  SOF: 'O',
-  FI: 'V',
-  SURVEY: 'G',
-  SPECIAL: 'X',
-  DEMO: 'D'
-};
+// Familles (noms ×4) et lettres des numéros de CR : dans la table unique des thèmes (frame/lib/mission_themes.js, SOG-0202 T1), qui a
+// aussi COMMERCIAL ; le compte rendu ne propose que les familles qu'il sait remplir (FAMILIES de module.js).
+const familyLabels = MT.LABELS;
+const familyLetters = MT.LETTERS;
 const MISSION_ID = /^([A-Z])-?(\d{1,3})([A-Z]?)$/,
   CR_ID = /^CR([A-Z])-(\d{3})([A-Z]?)-(\d+)$/,
   CR_FREE = /^CR([A-Z])-([A-Z])(\d{2})-(\d+)$/;
@@ -224,9 +173,7 @@ const capabilityGroups = [{
 // est le code de la famille (celui du registre des missions : MEDEVAC est la famille HEMS) ; le nom long ne répète pas le sigle
 // (« HEMS / MEDEVAC » → « HEMS · MEDEVAC ») ; un code inconnu n'a que son sigle, jamais un nom long seul. Une seule source pour le
 // compte rendu et les missions.
-const FAMILY_ALIASES = {
-  MEDEVAC: 'HEMS'
-};
+const FAMILY_ALIASES = MT.ALIASES;
 /** { short, long } d'une famille dans la langue ('fr', 'en', 'de', 'es') ; long '' pour un code inconnu. */
 function familyParts(code, lang = 'fr') {
   const short = String(code ?? '').trim().toUpperCase().slice(0, 24),

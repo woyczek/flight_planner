@@ -30,7 +30,7 @@ export const meta = {
     policy: 'cache'
   }],
   files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js',
-    '../../frame/lib/time.js', '../../frame/lib/mission_categories.js'
+    '../../frame/lib/time.js', '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js'
   ]
 };
 

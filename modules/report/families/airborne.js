@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille AIRBORNE / AIRDROP (§13) : largage de personnel et de matériel, ravitaillement,
 // largage humanitaire, kit SAR, largages d'entraînement. Chaque passage sur la DZ est
@@ -41,25 +42,7 @@ const FAMILY = {
     reporting: 'airborne_reporting.html'
   },
   title: L('Largage / aéroporté', 'Airborne / airdrop', 'Luftlandung / Abwurf', 'Aerotransportado / lanzamiento'),
-  series: [{
-    value: 'PERSONNEL_PARADROP',
-    label: L('Largage de personnel', 'Personnel paradrop', 'Personenabsetzen', 'Lanzamiento de personal')
-  }, {
-    value: 'CARGO_AIRDROP',
-    label: L('Largage de matériel', 'Cargo airdrop', 'Lastenabwurf', 'Lanzamiento de carga')
-  }, {
-    value: 'RESUPPLY',
-    label: L('Ravitaillement', 'Resupply', 'Versorgung', 'Reabastecimiento')
-  }, {
-    value: 'HUMANITARIAN_AIRDROP',
-    label: L('Largage humanitaire', 'Humanitarian airdrop', 'Humanitärer Abwurf', 'Lanzamiento humanitario')
-  }, {
-    value: 'SAR_KIT_DROP',
-    label: L('Largage de kit SAR', 'SAR kit drop', 'SAR-Kit-Abwurf', 'Lanzamiento de kit SAR')
-  }, {
-    value: 'TRAINING_DROP',
-    label: L('Largage d’entraînement', 'Training drop', 'Übungsabwurf', 'Lanzamiento de instrucción')
-  }],
+  series: MT.seriesOf('AIRBORNE'),
   events: [opt('RUN_IN', L('Axe d’approche', 'Run-in', 'Anflug', 'Aproximación')), opt('GREEN_LIGHT', L('Feu vert', 'Green light',
     'Grünes Licht', 'Luz verde')), opt('RELEASE', L('Largage', 'Release', 'Absetzen', 'Lanzamiento'))],
   blocks: [{

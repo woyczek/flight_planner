@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille SOF / TACTICAL OPS (§10) — niveau compte rendu de simulation uniquement :
 // unité appuyée, zones (PZ / LZ / DZ), méthodes d'insertion / d'extraction, personnels.
@@ -47,41 +48,7 @@ const FAMILY = {
   },
   title: L('Opérations spéciales / tactiques', 'SOF / tactical operations', 'Spezialkräfte / taktische Einsätze',
     'Operaciones especiales / tácticas'),
-  series: [{
-    value: 'INSERTION',
-    label: L('Insertion', 'Insertion', 'Absetzen', 'Inserción')
-  }, {
-    value: 'EXTRACTION',
-    label: L('Extraction', 'Extraction', 'Aufnahme', 'Extracción')
-  }, {
-    value: 'INFILTRATION',
-    label: L('Infiltration', 'Infiltration', 'Infiltration', 'Infiltración')
-  }, {
-    value: 'EXFILTRATION',
-    label: L('Exfiltration', 'Exfiltration', 'Exfiltration', 'Exfiltración')
-  }, {
-    value: 'TACTICAL_TRANSPORT',
-    label: L('Transport tactique', 'Tactical transport', 'Taktischer Transport', 'Transporte táctico')
-  }, {
-    value: 'SR_SUPPORT',
-    label: L('Appui reconnaissance spéciale', 'Special reconnaissance support', 'Unterstützung Spezialaufklärung',
-      'Apoyo a reconocimiento especial')
-  }, {
-    value: 'FAST_ROPE',
-    label: L('Corde lisse', 'Fast rope', 'Fast Rope', 'Cuerda rápida')
-  }, {
-    value: 'RAPPEL',
-    label: L('Rappel', 'Rappel', 'Abseilen', 'Rápel')
-  }, {
-    value: 'PARACHUTE_INSERTION',
-    label: L('Insertion par parachute', 'Parachute insertion', 'Fallschirmabsetzen', 'Inserción en paracaídas')
-  }, {
-    value: 'LZ_INSERTION',
-    label: L('Insertion sur LZ', 'Landing zone insertion', 'Absetzen in LZ', 'Inserción en LZ')
-  }, {
-    value: 'SHIP_INSERTION',
-    label: L('Insertion sur navire', 'Ship insertion', 'Absetzen auf Schiff', 'Inserción en buque')
-  }],
+  series: MT.seriesOf('SOF'),
   flags: mission => ({
     maritime: mission.series === 'SHIP_INSERTION'
   }),

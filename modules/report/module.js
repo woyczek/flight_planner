@@ -73,6 +73,7 @@ export const meta = {
   }],
   files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../stats/phases.js', '../stats/journals.js',
     '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js', '../../frame/lib/mission_categories.js',
+    '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js',

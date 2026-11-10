@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille SURVEY / SCIENCE (§16) : photographie aérienne, cartographie, LiDAR,
 // photogrammétrie, géophysique, atmosphère, reconnaissance météo, volcans, faune,
@@ -36,43 +37,7 @@ const FAMILY = {
     reporting: 'survey_reporting.html'
   },
   title: L('Levés / missions scientifiques', 'Survey / science', 'Vermessung / Wissenschaft', 'Levantamientos / ciencia'),
-  series: [{
-    value: 'AERIAL_PHOTO',
-    label: L('Photographie aérienne', 'Aerial photography', 'Luftbildaufnahme', 'Fotografía aérea')
-  }, {
-    value: 'MAPPING',
-    label: L('Cartographie', 'Mapping', 'Kartierung', 'Cartografía')
-  }, {
-    value: 'LIDAR',
-    label: L('LiDAR', 'LiDAR')
-  }, {
-    value: 'PHOTOGRAMMETRY',
-    label: L('Photogrammétrie', 'Photogrammetry', 'Photogrammetrie', 'Fotogrametría')
-  }, {
-    value: 'GEOPHYSICS',
-    label: L('Géophysique', 'Geophysics', 'Geophysik', 'Geofísica')
-  }, {
-    value: 'ATMOSPHERIC',
-    label: L('Recherche atmosphérique', 'Atmospheric research', 'Atmosphärenforschung', 'Investigación atmosférica')
-  }, {
-    value: 'WEATHER_RECON',
-    label: L('Reconnaissance météo', 'Weather reconnaissance', 'Wettererkundung', 'Reconocimiento meteorológico')
-  }, {
-    value: 'VOLCANO',
-    label: L('Surveillance volcanique', 'Volcano monitoring', 'Vulkanüberwachung', 'Vigilancia volcánica')
-  }, {
-    value: 'WILDLIFE',
-    label: L('Faune', 'Wildlife', 'Tierwelt', 'Fauna')
-  }, {
-    value: 'ENVIRONMENT',
-    label: L('Environnement', 'Environment', 'Umwelt', 'Medio ambiente')
-  }, {
-    value: 'ICE',
-    label: L('Glaces', 'Ice', 'Eis', 'Hielo')
-  }, {
-    value: 'OCEANOGRAPHIC',
-    label: L('Océanographie', 'Oceanographic', 'Ozeanographie', 'Oceanografía')
-  }],
+  series: MT.seriesOf('SURVEY'),
   flags: mission => ({
     maritime: ['OCEANOGRAPHIC', 'ICE'].includes(mission.series)
   }),

@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille AIRLIFT / LOGISTICS (§11) : transport stratégique, tactique, isolé, offshore,
 // polaire, humanitaire, personnel, fret et mixte. Les rotations utilisent le bloc commun
@@ -54,34 +55,7 @@ const FAMILY = {
     reporting: 'airlift_reporting.html'
   },
   title: L('Transport aérien / logistique', 'Airlift / logistics', 'Lufttransport / Logistik', 'Transporte aéreo / logística'),
-  series: [{
-    value: 'STRATEGIC',
-    label: L('Transport stratégique', 'Strategic airlift', 'Strategischer Lufttransport', 'Transporte estratégico')
-  }, {
-    value: 'TACTICAL',
-    label: L('Transport tactique', 'Tactical airlift', 'Taktischer Lufttransport', 'Transporte táctico')
-  }, {
-    value: 'REMOTE',
-    label: L('Desserte isolée', 'Remote airlift', 'Versorgung abgelegener Orte', 'Transporte a zonas aisladas')
-  }, {
-    value: 'OFFSHORE',
-    label: L('Logistique offshore', 'Offshore logistics', 'Offshore-Logistik', 'Logística offshore')
-  }, {
-    value: 'POLAR',
-    label: L('Antarctique / polaire', 'Antarctic / polar', 'Antarktis / Polar', 'Antártida / polar')
-  }, {
-    value: 'HUMANITARIAN',
-    label: L('Logistique humanitaire', 'Humanitarian logistics', 'Humanitäre Logistik', 'Logística humanitaria')
-  }, {
-    value: 'PERSONNEL',
-    label: L('Transport de personnel', 'Personnel transport', 'Personentransport', 'Transporte de personal')
-  }, {
-    value: 'CARGO',
-    label: L('Fret', 'Cargo', 'Fracht', 'Carga')
-  }, {
-    value: 'COMBI',
-    label: L('Mixte passagers / fret', 'Combi (passengers / cargo)', 'Kombi (Passagiere / Fracht)', 'Mixto (pasajeros / carga)')
-  }],
+  series: MT.seriesOf('AIRLIFT'),
   flags: mission => ({
     maritime: mission.series === 'OFFSHORE'
   }),

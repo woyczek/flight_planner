@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille FLIGHT INSPECTION (§15) : contrôle en vol des moyens de radionavigation, des
 // aides visuelles et validation de procédures. Blocs affichés selon la série (ILS,
@@ -49,43 +50,7 @@ const FAMILY = {
   },
   title: L('Contrôle en vol des aides radio', 'Flight inspection (navaids)', 'Flugvermessung (Navigationsanlagen)',
     'Inspección en vuelo (radioayudas)'),
-  series: [{
-    value: 'ILS',
-    label: L('ILS', 'ILS')
-  }, {
-    value: 'LOC',
-    label: L('Localiser (LOC)', 'Localizer (LOC)', 'Landekurssender (LOC)', 'Localizador (LOC)')
-  }, {
-    value: 'GLIDE_PATH',
-    label: L('Glide path', 'Glide path', 'Gleitweg', 'Senda de planeo')
-  }, {
-    value: 'VOR',
-    label: L('VOR', 'VOR')
-  }, {
-    value: 'DME',
-    label: L('DME', 'DME')
-  }, {
-    value: 'NDB',
-    label: L('NDB', 'NDB')
-  }, {
-    value: 'TACAN',
-    label: L('TACAN', 'TACAN')
-  }, {
-    value: 'RADAR',
-    label: L('Radar', 'Radar')
-  }, {
-    value: 'PAPI_VASI',
-    label: L('PAPI / VASI', 'PAPI / VASI')
-  }, {
-    value: 'RNAV_GNSS',
-    label: L('RNAV / GNSS', 'RNAV / GNSS')
-  }, {
-    value: 'PROCEDURE_VALIDATION',
-    label: L('Validation de procédure', 'Procedure validation', 'Verfahrensvalidierung', 'Validación de procedimiento')
-  }, {
-    value: 'AIRPORT_LIGHTING',
-    label: L('Balisage aéroportuaire', 'Airport lighting', 'Flughafenbefeuerung', 'Balizamiento de aeropuerto')
-  }],
+  series: MT.seriesOf('FI'),
   events: [opt('PASS_START', L('Début de passe', 'Pass start', 'Anflugbeginn', 'Inicio de pasada')), opt('PASS_END', L(
     'Fin de passe', 'Pass end', 'Anflugende', 'Fin de pasada')), opt('FACILITY_ADJUSTED', L('Réglage de l’installation',
     'Facility adjusted', 'Anlage justiert', 'Instalación ajustada'))],

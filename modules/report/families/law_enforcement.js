@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille LAW ENFORCEMENT (§7) : observation police / gendarmerie, frontières, douane,
 // trafic, poursuite, personne disparue, appui tactique, sécurité d'événement.
@@ -41,34 +42,7 @@ const FAMILY = {
     reporting: 'le_reporting.html'
   },
   title: L('Missions de police / sécurité', 'Law enforcement', 'Polizei / Sicherheit', 'Misiones policiales / seguridad'),
-  series: [{
-    value: 'POLICE_OBSERVATION',
-    label: L('Observation police', 'Police observation', 'Polizeiliche Beobachtung', 'Observación policial')
-  }, {
-    value: 'GENDARMERIE',
-    label: L('Gendarmerie', 'Gendarmerie', 'Gendarmerie', 'Gendarmería')
-  }, {
-    value: 'BORDER',
-    label: L('Surveillance des frontières', 'Border surveillance', 'Grenzüberwachung', 'Vigilancia de fronteras')
-  }, {
-    value: 'CUSTOMS',
-    label: L('Douane', 'Customs', 'Zoll', 'Aduana')
-  }, {
-    value: 'TRAFFIC',
-    label: L('Circulation routière', 'Traffic', 'Verkehrsüberwachung', 'Tráfico')
-  }, {
-    value: 'PURSUIT',
-    label: L('Poursuite', 'Pursuit', 'Verfolgung', 'Persecución')
-  }, {
-    value: 'MISSING_PERSON',
-    label: L('Personne disparue', 'Missing person', 'Vermisste Person', 'Persona desaparecida')
-  }, {
-    value: 'TACTICAL_SUPPORT',
-    label: L('Appui tactique', 'Tactical support', 'Taktische Unterstützung', 'Apoyo táctico')
-  }, {
-    value: 'EVENT_SECURITY',
-    label: L('Sécurité d’événement', 'Event security', 'Veranstaltungsschutz', 'Seguridad de eventos')
-  }],
+  series: MT.seriesOf('LE'),
   events: [opt('ACQUISITION', L('Acquisition de l’objectif', 'Target acquired', 'Ziel erfasst', 'Objetivo adquirido')), opt(
     'CONTACT_LOST', L('Perte de contact', 'Contact lost', 'Kontakt verloren', 'Contacto perdido')), opt('HANDOVER', L(
     'Passage de relais au sol', 'Handover to ground units', 'Übergabe an Bodenkräfte', 'Relevo a unidades de tierra'))],

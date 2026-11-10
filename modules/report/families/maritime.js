@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille MARITIME (§8) : patrouille maritime, pêches, douane, pollution, surveillance
 // du trafic, glaces, identification de navires, offshore. Plusieurs contacts navires et
@@ -43,36 +44,7 @@ const FAMILY = {
     reporting: 'maritime_reporting.html'
   },
   title: L('Surveillance maritime', 'Maritime surveillance', 'Seeraumüberwachung', 'Vigilancia marítima'),
-  series: [{
-    value: 'MARPAT',
-    label: L('Patrouille maritime (MARPAT)', 'Maritime patrol (MARPAT)', 'Seefernaufklärung (MARPAT)',
-      'Patrulla marítima (MARPAT)')
-  }, {
-    value: 'FISHERY',
-    label: L('Police des pêches', 'Fishery patrol', 'Fischereiaufsicht', 'Vigilancia pesquera')
-  }, {
-    value: 'CUSTOMS',
-    label: L('Douane maritime', 'Maritime customs', 'Seezoll', 'Aduana marítima')
-  }, {
-    value: 'POLLUTION',
-    label: L('Surveillance des pollutions', 'Pollution surveillance', 'Verschmutzungsüberwachung',
-      'Vigilancia de la contaminación')
-  }, {
-    value: 'SHIPPING',
-    label: L('Surveillance du trafic', 'Shipping surveillance', 'Verkehrsüberwachung', 'Vigilancia del tráfico')
-  }, {
-    value: 'ICE',
-    label: L('Patrouille des glaces', 'Ice patrol', 'Eisbeobachtung', 'Patrulla de hielos')
-  }, {
-    value: 'SHIP_ID',
-    label: L('Identification de navires', 'Ship identification', 'Schiffsidentifizierung', 'Identificación de buques')
-  }, {
-    value: 'ANTI_POLLUTION',
-    label: L('Lutte antipollution', 'Anti-pollution', 'Ölbekämpfung', 'Lucha anticontaminación')
-  }, {
-    value: 'OFFSHORE',
-    label: L('Surveillance offshore', 'Offshore surveillance', 'Offshore-Überwachung', 'Vigilancia offshore')
-  }],
+  series: MT.seriesOf('MARITIME'),
   flags: {
     maritime: true
   },

@@ -1,0 +1,1614 @@
+{
+ "familyLabels": {
+  "HEMS": [
+   "HEMS / MEDEVAC",
+   "HEMS / MEDEVAC",
+   "HEMS / MEDEVAC",
+   "HEMS / MEDEVAC"
+  ],
+  "FIRE": [
+   "FIRE / GAAR — sécurité civile",
+   "FIRE / aerial firefighting",
+   "FIRE / Waldbrandbekämpfung",
+   "FIRE / extinción de incendios"
+  ],
+  "SAR": [
+   "SAR / récupération de personnel",
+   "SAR / personnel recovery",
+   "SAR / Personenbergung",
+   "SAR / recuperación de personal"
+  ],
+  "AIRLIFT": [
+   "Transport aérien / logistique",
+   "Airlift / logistics",
+   "Lufttransport / Logistik",
+   "Transporte aéreo / logística"
+  ],
+  "AAR": [
+   "Ravitaillement en vol",
+   "Air-to-air refuelling",
+   "Luftbetankung",
+   "Reabastecimiento en vuelo"
+  ],
+  "MARITIME": [
+   "Surveillance maritime",
+   "Maritime surveillance",
+   "Seeüberwachung",
+   "Vigilancia marítima"
+  ],
+  "HADR": [
+   "Aide humanitaire / évacuation",
+   "Humanitarian aid / evacuation",
+   "Humanitäre Hilfe / Evakuierung",
+   "Ayuda humanitaria / evacuación"
+  ],
+  "AIRBORNE": [
+   "Largage / aéroporté",
+   "Airdrop / airborne",
+   "Abwurf / Luftlande",
+   "Lanzamiento / aerotransportado"
+  ],
+  "FI": [
+   "Contrôle en vol des aides radio",
+   "Flight inspection (navaids)",
+   "Flugvermessung (Navigationsanlagen)",
+   "Inspección en vuelo (radioayudas)"
+  ],
+  "SURVEY": [
+   "Levés / missions scientifiques",
+   "Survey / scientific missions",
+   "Vermessung / Forschungsflüge",
+   "Levantamientos / misiones científicas"
+  ],
+  "LE": [
+   "Police / douane / sécurité",
+   "Police / customs / security",
+   "Polizei / Zoll / Sicherheit",
+   "Policía / aduana / seguridad"
+  ],
+  "ISR": [
+   "Renseignement / reconnaissance",
+   "Intelligence / reconnaissance",
+   "Aufklärung / Nachrichtengewinnung",
+   "Inteligencia / reconocimiento"
+  ],
+  "COMMAND": [
+   "Commandement / police du ciel / guet aérien",
+   "Command / air policing / early warning",
+   "Führung / Luftpolizeidienst / Frühwarnung",
+   "Mando / policía aérea / alerta temprana"
+  ],
+  "COMBAT": [
+   "Combat aérien / entraînement chasse",
+   "Air combat / fighter training",
+   "Luftkampf / Jagdflugausbildung",
+   "Combate aéreo / entrenamiento de caza"
+  ],
+  "SOF": [
+   "Opérations spéciales / tactiques",
+   "Special / tactical operations",
+   "Spezial- / taktische Operationen",
+   "Operaciones especiales / tácticas"
+  ],
+  "SPECIAL": [
+   "Transport spécial / essais / formation",
+   "Special transport / trials / training",
+   "Sondertransport / Erprobung / Ausbildung",
+   "Transporte especial / ensayos / formación"
+  ]
+ },
+ "familyLetters": {
+  "HEMS": "M",
+  "MEDEVAC": "M",
+  "HADR": "H",
+  "FIRE": "F",
+  "SAR": "S",
+  "AIRLIFT": "T",
+  "AAR": "R",
+  "AIRBORNE": "P",
+  "MARITIME": "N",
+  "ISR": "I",
+  "LE": "L",
+  "COMMAND": "C",
+  "COMBAT": "A",
+  "SOF": "O",
+  "FI": "V",
+  "SURVEY": "G",
+  "SPECIAL": "X",
+  "DEMO": "D"
+ },
+ "families": {
+  "AAR": {
+   "title": [
+    "Ravitaillement en vol",
+    "Air-to-air refuelling",
+    "Luftbetankung",
+    "Reabastecimiento en vuelo"
+   ],
+   "series": [
+    {
+     "value": "TRAINING",
+     "label": [
+      "Entraînement / qualification",
+      "Training / qualification",
+      "Training / Qualifikation",
+      "Entrenamiento / calificación"
+     ]
+    },
+    {
+     "value": "OPERATIONAL",
+     "label": [
+      "Soutien d’opération",
+      "Operational support",
+      "Einsatzunterstützung",
+      "Apoyo a operaciones"
+     ]
+    },
+    {
+     "value": "QRA",
+     "label": [
+      "Soutien police du ciel (QRA)",
+      "QRA support",
+      "QRA-Unterstützung",
+      "Apoyo QRA"
+     ]
+    },
+    {
+     "value": "DRAG",
+     "label": [
+      "Convoyage (drag) / déploiement",
+      "Fighter drag / deployment",
+      "Überführung (Drag) / Verlegung",
+      "Traslado (drag) / despliegue"
+     ]
+    },
+    {
+     "value": "EXERCISE",
+     "label": [
+      "Grand exercice",
+      "Major exercise",
+      "Großübung",
+      "Gran ejercicio"
+     ]
+    },
+    {
+     "value": "TRIALS",
+     "label": [
+      "Essais / certification",
+      "Trials / certification",
+      "Erprobung / Zulassung",
+      "Ensayos / certificación"
+     ]
+    }
+   ]
+  },
+  "AIRBORNE": {
+   "title": [
+    "Largage / aéroporté",
+    "Airborne / airdrop",
+    "Luftlandung / Abwurf",
+    "Aerotransportado / lanzamiento"
+   ],
+   "series": [
+    {
+     "value": "PERSONNEL_PARADROP",
+     "label": [
+      "Largage de personnel",
+      "Personnel paradrop",
+      "Personenabsetzen",
+      "Lanzamiento de personal"
+     ]
+    },
+    {
+     "value": "CARGO_AIRDROP",
+     "label": [
+      "Largage de matériel",
+      "Cargo airdrop",
+      "Lastenabwurf",
+      "Lanzamiento de carga"
+     ]
+    },
+    {
+     "value": "RESUPPLY",
+     "label": [
+      "Ravitaillement",
+      "Resupply",
+      "Versorgung",
+      "Reabastecimiento"
+     ]
+    },
+    {
+     "value": "HUMANITARIAN_AIRDROP",
+     "label": [
+      "Largage humanitaire",
+      "Humanitarian airdrop",
+      "Humanitärer Abwurf",
+      "Lanzamiento humanitario"
+     ]
+    },
+    {
+     "value": "SAR_KIT_DROP",
+     "label": [
+      "Largage de kit SAR",
+      "SAR kit drop",
+      "SAR-Kit-Abwurf",
+      "Lanzamiento de kit SAR"
+     ]
+    },
+    {
+     "value": "TRAINING_DROP",
+     "label": [
+      "Largage d’entraînement",
+      "Training drop",
+      "Übungsabwurf",
+      "Lanzamiento de instrucción"
+     ]
+    }
+   ]
+  },
+  "AIRLIFT": {
+   "title": [
+    "Transport aérien / logistique",
+    "Airlift / logistics",
+    "Lufttransport / Logistik",
+    "Transporte aéreo / logística"
+   ],
+   "series": [
+    {
+     "value": "STRATEGIC",
+     "label": [
+      "Transport stratégique",
+      "Strategic airlift",
+      "Strategischer Lufttransport",
+      "Transporte estratégico"
+     ]
+    },
+    {
+     "value": "TACTICAL",
+     "label": [
+      "Transport tactique",
+      "Tactical airlift",
+      "Taktischer Lufttransport",
+      "Transporte táctico"
+     ]
+    },
+    {
+     "value": "REMOTE",
+     "label": [
+      "Desserte isolée",
+      "Remote airlift",
+      "Versorgung abgelegener Orte",
+      "Transporte a zonas aisladas"
+     ]
+    },
+    {
+     "value": "OFFSHORE",
+     "label": [
+      "Logistique offshore",
+      "Offshore logistics",
+      "Offshore-Logistik",
+      "Logística offshore"
+     ]
+    },
+    {
+     "value": "POLAR",
+     "label": [
+      "Antarctique / polaire",
+      "Antarctic / polar",
+      "Antarktis / Polar",
+      "Antártida / polar"
+     ]
+    },
+    {
+     "value": "HUMANITARIAN",
+     "label": [
+      "Logistique humanitaire",
+      "Humanitarian logistics",
+      "Humanitäre Logistik",
+      "Logística humanitaria"
+     ]
+    },
+    {
+     "value": "PERSONNEL",
+     "label": [
+      "Transport de personnel",
+      "Personnel transport",
+      "Personentransport",
+      "Transporte de personal"
+     ]
+    },
+    {
+     "value": "CARGO",
+     "label": [
+      "Fret",
+      "Cargo",
+      "Fracht",
+      "Carga"
+     ]
+    },
+    {
+     "value": "COMBI",
+     "label": [
+      "Mixte passagers / fret",
+      "Combi (passengers / cargo)",
+      "Kombi (Passagiere / Fracht)",
+      "Mixto (pasajeros / carga)"
+     ]
+    }
+   ]
+  },
+  "COMBAT": {
+   "title": [
+    "Combat aérien / entraînement chasse",
+    "Air combat / fighter training",
+    "Luftkampf / Jagdflugausbildung",
+    "Combate aéreo / entrenamiento de caza"
+   ],
+   "series": [
+    {
+     "value": "BFM",
+     "label": [
+      "BFM — combat rapproché (manœuvres de base)",
+      "BFM — basic fighter manoeuvres",
+      "BFM — Grundmanöver des Luftkampfs",
+      "BFM — maniobras básicas de caza"
+     ]
+    },
+    {
+     "value": "ACM",
+     "label": [
+      "ACM — combat aérien manœuvrant",
+      "ACM — air combat manoeuvring",
+      "ACM — Luftkampfmanöver",
+      "ACM — maniobras de combate aéreo"
+     ]
+    },
+    {
+     "value": "DACT",
+     "label": [
+      "DACT — adversaire dissemblable",
+      "DACT — dissimilar air combat training",
+      "DACT — Luftkampf gegen ungleiches Muster",
+      "DACT — combate aéreo disimilar"
+     ]
+    },
+    {
+     "value": "INTERCEPT",
+     "label": [
+      "Interception / identification (VID)",
+      "Interception / identification (VID)",
+      "Abfangen / Identifizierung (VID)",
+      "Interceptación / identificación (VID)"
+     ]
+    }
+   ]
+  },
+  "COMMAND": {
+   "title": [
+    "Commandement / police du ciel / guet aérien",
+    "Command / air policing / early warning",
+    "Führung / Luftpolizeidienst / Frühwarnung",
+    "Mando / policía aérea / alerta temprana"
+   ],
+   "series": [
+    {
+     "value": "AIR_POLICING",
+     "label": [
+      "Police du ciel / interception (QRA, MASA)",
+      "Air policing / interception (QRA)",
+      "Luftpolizeidienst / Abfangen (QRA)",
+      "Policía aérea / interceptación (QRA)"
+     ]
+    },
+    {
+     "value": "AIRBORNE_COMMAND",
+     "label": [
+      "Poste de commandement aéroporté",
+      "Airborne command",
+      "Luftgestützte Führung",
+      "Mando aerotransportado"
+     ]
+    },
+    {
+     "value": "AEW",
+     "label": [
+      "Guet aérien avancé (AEW)",
+      "Airborne early warning (AEW)",
+      "Luftgestützte Frühwarnung (AEW)",
+      "Alerta temprana aérea (AEW)"
+     ]
+    },
+    {
+     "value": "AIR_COORDINATION",
+     "label": [
+      "Coordination aérienne",
+      "Air coordination",
+      "Luftkoordination",
+      "Coordinación aérea"
+     ]
+    },
+    {
+     "value": "COMM_RELAY",
+     "label": [
+      "Relais de communications",
+      "Communications relay",
+      "Kommunikationsrelais",
+      "Retransmisión de comunicaciones"
+     ]
+    },
+    {
+     "value": "DISASTER_RELAY",
+     "label": [
+      "Relais catastrophe",
+      "Disaster relay",
+      "Katastrophenrelais",
+      "Retransmisión en catástrofes"
+     ]
+    },
+    {
+     "value": "FIRE_COORDINATION",
+     "label": [
+      "Coordination feux de forêt",
+      "Fire coordination",
+      "Waldbrandkoordination",
+      "Coordinación de incendios"
+     ]
+    },
+    {
+     "value": "SAR_COORDINATION",
+     "label": [
+      "Coordination SAR",
+      "SAR coordination",
+      "SAR-Koordination",
+      "Coordinación SAR"
+     ]
+    }
+   ]
+  },
+  "FIRE": {
+   "title": [
+    "FIRE / GAAR — feux de forêt",
+    "FIRE / GAAR — wildfires",
+    "FIRE / GAAR — Waldbrände",
+    "FIRE / GAAR — incendios forestales"
+   ],
+   "series": [
+    {
+     "value": "GAAR",
+     "label": [
+      "GAAR",
+      "GAAR",
+      "GAAR",
+      "GAAR"
+     ]
+    },
+    {
+     "value": "GAAR with diversion",
+     "label": [
+      "GAAR avec déroutement",
+      "GAAR with diversion",
+      "GAAR mit Umleitung",
+      "GAAR con desvío"
+     ]
+    },
+    {
+     "value": "Response",
+     "label": [
+      "Intervention",
+      "Response",
+      "Einsatz",
+      "Intervención"
+     ]
+    },
+    {
+     "value": "Training",
+     "label": [
+      "Entraînement",
+      "Training",
+      "Training",
+      "Entrenamiento"
+     ]
+    }
+   ]
+  },
+  "FI": {
+   "title": [
+    "Contrôle en vol des aides radio",
+    "Flight inspection (navaids)",
+    "Flugvermessung (Navigationsanlagen)",
+    "Inspección en vuelo (radioayudas)"
+   ],
+   "series": [
+    {
+     "value": "ILS",
+     "label": [
+      "ILS",
+      "ILS",
+      "ILS",
+      "ILS"
+     ]
+    },
+    {
+     "value": "LOC",
+     "label": [
+      "Localiser (LOC)",
+      "Localizer (LOC)",
+      "Landekurssender (LOC)",
+      "Localizador (LOC)"
+     ]
+    },
+    {
+     "value": "GLIDE_PATH",
+     "label": [
+      "Glide path",
+      "Glide path",
+      "Gleitweg",
+      "Senda de planeo"
+     ]
+    },
+    {
+     "value": "VOR",
+     "label": [
+      "VOR",
+      "VOR",
+      "VOR",
+      "VOR"
+     ]
+    },
+    {
+     "value": "DME",
+     "label": [
+      "DME",
+      "DME",
+      "DME",
+      "DME"
+     ]
+    },
+    {
+     "value": "NDB",
+     "label": [
+      "NDB",
+      "NDB",
+      "NDB",
+      "NDB"
+     ]
+    },
+    {
+     "value": "TACAN",
+     "label": [
+      "TACAN",
+      "TACAN",
+      "TACAN",
+      "TACAN"
+     ]
+    },
+    {
+     "value": "RADAR",
+     "label": [
+      "Radar",
+      "Radar",
+      "Radar",
+      "Radar"
+     ]
+    },
+    {
+     "value": "PAPI_VASI",
+     "label": [
+      "PAPI / VASI",
+      "PAPI / VASI",
+      "PAPI / VASI",
+      "PAPI / VASI"
+     ]
+    },
+    {
+     "value": "RNAV_GNSS",
+     "label": [
+      "RNAV / GNSS",
+      "RNAV / GNSS",
+      "RNAV / GNSS",
+      "RNAV / GNSS"
+     ]
+    },
+    {
+     "value": "PROCEDURE_VALIDATION",
+     "label": [
+      "Validation de procédure",
+      "Procedure validation",
+      "Verfahrensvalidierung",
+      "Validación de procedimiento"
+     ]
+    },
+    {
+     "value": "AIRPORT_LIGHTING",
+     "label": [
+      "Balisage aéroportuaire",
+      "Airport lighting",
+      "Flughafenbefeuerung",
+      "Balizamiento de aeropuerto"
+     ]
+    }
+   ]
+  },
+  "HADR": {
+   "title": [
+    "Aide humanitaire / évacuation",
+    "Humanitarian assistance / evacuation",
+    "Humanitäre Hilfe / Evakuierung",
+    "Ayuda humanitaria / evacuación"
+   ],
+   "series": [
+    {
+     "value": "DISASTER_RELIEF",
+     "label": [
+      "Secours en cas de catastrophe",
+      "Disaster relief",
+      "Katastrophenhilfe",
+      "Socorro en catástrofes"
+     ]
+    },
+    {
+     "value": "FLOOD",
+     "label": [
+      "Inondation",
+      "Flood",
+      "Hochwasser",
+      "Inundación"
+     ]
+    },
+    {
+     "value": "EARTHQUAKE",
+     "label": [
+      "Séisme",
+      "Earthquake",
+      "Erdbeben",
+      "Terremoto"
+     ]
+    },
+    {
+     "value": "CYCLONE",
+     "label": [
+      "Cyclone",
+      "Cyclone",
+      "Zyklon",
+      "Ciclón"
+     ]
+    },
+    {
+     "value": "STORM",
+     "label": [
+      "Tempête",
+      "Storm",
+      "Sturm",
+      "Tormenta"
+     ]
+    },
+    {
+     "value": "VOLCANO",
+     "label": [
+      "Éruption volcanique",
+      "Volcanic eruption",
+      "Vulkanausbruch",
+      "Erupción volcánica"
+     ]
+    },
+    {
+     "value": "HUMANITARIAN",
+     "label": [
+      "Mission humanitaire",
+      "Humanitarian mission",
+      "Humanitärer Einsatz",
+      "Misión humanitaria"
+     ]
+    },
+    {
+     "value": "NEO",
+     "label": [
+      "Évacuation de ressortissants (NEO)",
+      "Non-combatant evacuation (NEO)",
+      "Evakuierung von Staatsangehörigen (NEO)",
+      "Evacuación de no combatientes (NEO)"
+     ]
+    },
+    {
+     "value": "CIVIL_EVACUATION",
+     "label": [
+      "Évacuation civile",
+      "Civil evacuation",
+      "Zivile Evakuierung",
+      "Evacuación civil"
+     ]
+    },
+    {
+     "value": "ISOLATED_COMMUNITY",
+     "label": [
+      "Désenclavement de population isolée",
+      "Isolated community support",
+      "Versorgung isolierter Gemeinden",
+      "Apoyo a comunidades aisladas"
+     ]
+    },
+    {
+     "value": "SUPPLY_DROP",
+     "label": [
+      "Ravitaillement par largage",
+      "Supply drop",
+      "Versorgungsabwurf",
+      "Lanzamiento de suministros"
+     ]
+    }
+   ]
+  },
+  "HEMS": {
+   "title": [
+    "HEMS / MEDEVAC",
+    "HEMS / MEDEVAC",
+    "HEMS / MEDEVAC",
+    "HEMS / MEDEVAC"
+   ],
+   "series": [
+    {
+     "value": "Primary HEMS",
+     "label": [
+      "HEMS primaire",
+      "Primary HEMS",
+      "Primärer HEMS-Einsatz",
+      "HEMS primario"
+     ]
+    },
+    {
+     "value": "Interhospital transfer (MEDEVAC)",
+     "label": [
+      "Transfert interhospitalier (MEDEVAC)",
+      "Interhospital transfer (MEDEVAC)",
+      "Interhospitaltransfer (MEDEVAC)",
+      "Traslado interhospitalario (MEDEVAC)"
+     ]
+    },
+    {
+     "value": "Rescue",
+     "label": [
+      "Secours / sauvetage",
+      "Rescue",
+      "Rettung",
+      "Socorro / rescate"
+     ]
+    },
+    {
+     "value": "Search / evacuation",
+     "label": [
+      "Recherche / évacuation",
+      "Search / evacuation",
+      "Suche / Evakuierung",
+      "Búsqueda / evacuación"
+     ]
+    },
+    {
+     "value": "Specialized transport",
+     "label": [
+      "Transport spécialisé",
+      "Specialized transport",
+      "Spezialtransport",
+      "Transporte especializado"
+     ]
+    },
+    {
+     "value": "Training",
+     "label": [
+      "Entraînement",
+      "Training",
+      "Training",
+      "Entrenamiento"
+     ]
+    }
+   ]
+  },
+  "ISR": {
+   "title": [
+    "Renseignement / reconnaissance",
+    "ISR / reconnaissance",
+    "Aufklärung",
+    "Inteligencia / reconocimiento"
+   ],
+   "series": [
+    {
+     "value": "ISR",
+     "label": [
+      "ISR",
+      "ISR",
+      "ISR",
+      "ISR"
+     ]
+    },
+    {
+     "value": "RECON",
+     "label": [
+      "Reconnaissance",
+      "Reconnaissance",
+      "Aufklärung",
+      "Reconocimiento"
+     ]
+    },
+    {
+     "value": "EO_IR",
+     "label": [
+      "EO/IR",
+      "EO/IR",
+      "EO/IR",
+      "EO/IR"
+     ]
+    },
+    {
+     "value": "IMINT",
+     "label": [
+      "IMINT (imagerie)",
+      "IMINT (imagery)",
+      "IMINT (Bildaufklärung)",
+      "IMINT (imágenes)"
+     ]
+    },
+    {
+     "value": "SIGINT",
+     "label": [
+      "SIGINT",
+      "SIGINT",
+      "SIGINT",
+      "SIGINT"
+     ]
+    },
+    {
+     "value": "ELINT",
+     "label": [
+      "ELINT",
+      "ELINT",
+      "ELINT",
+      "ELINT"
+     ]
+    },
+    {
+     "value": "COMINT",
+     "label": [
+      "COMINT",
+      "COMINT",
+      "COMINT",
+      "COMINT"
+     ]
+    },
+    {
+     "value": "BORDER_ISR",
+     "label": [
+      "ISR frontalier",
+      "Border ISR",
+      "Grenzaufklärung",
+      "ISR fronterizo"
+     ]
+    },
+    {
+     "value": "MARITIME_ISR",
+     "label": [
+      "ISR maritime",
+      "Maritime ISR",
+      "Seeaufklärung",
+      "ISR marítimo"
+     ]
+    },
+    {
+     "value": "INFRASTRUCTURE_ISR",
+     "label": [
+      "ISR infrastructures",
+      "Infrastructure ISR",
+      "Infrastrukturaufklärung",
+      "ISR de infraestructuras"
+     ]
+    }
+   ]
+  },
+  "LE": {
+   "title": [
+    "Missions de police / sécurité",
+    "Law enforcement",
+    "Polizei / Sicherheit",
+    "Misiones policiales / seguridad"
+   ],
+   "series": [
+    {
+     "value": "POLICE_OBSERVATION",
+     "label": [
+      "Observation police",
+      "Police observation",
+      "Polizeiliche Beobachtung",
+      "Observación policial"
+     ]
+    },
+    {
+     "value": "GENDARMERIE",
+     "label": [
+      "Gendarmerie",
+      "Gendarmerie",
+      "Gendarmerie",
+      "Gendarmería"
+     ]
+    },
+    {
+     "value": "BORDER",
+     "label": [
+      "Surveillance des frontières",
+      "Border surveillance",
+      "Grenzüberwachung",
+      "Vigilancia de fronteras"
+     ]
+    },
+    {
+     "value": "CUSTOMS",
+     "label": [
+      "Douane",
+      "Customs",
+      "Zoll",
+      "Aduana"
+     ]
+    },
+    {
+     "value": "TRAFFIC",
+     "label": [
+      "Circulation routière",
+      "Traffic",
+      "Verkehrsüberwachung",
+      "Tráfico"
+     ]
+    },
+    {
+     "value": "PURSUIT",
+     "label": [
+      "Poursuite",
+      "Pursuit",
+      "Verfolgung",
+      "Persecución"
+     ]
+    },
+    {
+     "value": "MISSING_PERSON",
+     "label": [
+      "Personne disparue",
+      "Missing person",
+      "Vermisste Person",
+      "Persona desaparecida"
+     ]
+    },
+    {
+     "value": "TACTICAL_SUPPORT",
+     "label": [
+      "Appui tactique",
+      "Tactical support",
+      "Taktische Unterstützung",
+      "Apoyo táctico"
+     ]
+    },
+    {
+     "value": "EVENT_SECURITY",
+     "label": [
+      "Sécurité d’événement",
+      "Event security",
+      "Veranstaltungsschutz",
+      "Seguridad de eventos"
+     ]
+    }
+   ]
+  },
+  "MARITIME": {
+   "title": [
+    "Surveillance maritime",
+    "Maritime surveillance",
+    "Seeraumüberwachung",
+    "Vigilancia marítima"
+   ],
+   "series": [
+    {
+     "value": "MARPAT",
+     "label": [
+      "Patrouille maritime (MARPAT)",
+      "Maritime patrol (MARPAT)",
+      "Seefernaufklärung (MARPAT)",
+      "Patrulla marítima (MARPAT)"
+     ]
+    },
+    {
+     "value": "FISHERY",
+     "label": [
+      "Police des pêches",
+      "Fishery patrol",
+      "Fischereiaufsicht",
+      "Vigilancia pesquera"
+     ]
+    },
+    {
+     "value": "CUSTOMS",
+     "label": [
+      "Douane maritime",
+      "Maritime customs",
+      "Seezoll",
+      "Aduana marítima"
+     ]
+    },
+    {
+     "value": "POLLUTION",
+     "label": [
+      "Surveillance des pollutions",
+      "Pollution surveillance",
+      "Verschmutzungsüberwachung",
+      "Vigilancia de la contaminación"
+     ]
+    },
+    {
+     "value": "SHIPPING",
+     "label": [
+      "Surveillance du trafic",
+      "Shipping surveillance",
+      "Verkehrsüberwachung",
+      "Vigilancia del tráfico"
+     ]
+    },
+    {
+     "value": "ICE",
+     "label": [
+      "Patrouille des glaces",
+      "Ice patrol",
+      "Eisbeobachtung",
+      "Patrulla de hielos"
+     ]
+    },
+    {
+     "value": "SHIP_ID",
+     "label": [
+      "Identification de navires",
+      "Ship identification",
+      "Schiffsidentifizierung",
+      "Identificación de buques"
+     ]
+    },
+    {
+     "value": "ANTI_POLLUTION",
+     "label": [
+      "Lutte antipollution",
+      "Anti-pollution",
+      "Ölbekämpfung",
+      "Lucha anticontaminación"
+     ]
+    },
+    {
+     "value": "OFFSHORE",
+     "label": [
+      "Surveillance offshore",
+      "Offshore surveillance",
+      "Offshore-Überwachung",
+      "Vigilancia offshore"
+     ]
+    }
+   ]
+  },
+  "SAR": {
+   "title": [
+    "SAR / récupération de personnel",
+    "SAR / personnel recovery",
+    "SAR / Personalrettung",
+    "SAR / recuperación de personal"
+   ],
+   "series": [
+    {
+     "value": "SAR-LAND",
+     "label": [
+      "SAR terrestre",
+      "Land SAR",
+      "SAR an Land",
+      "SAR terrestre"
+     ]
+    },
+    {
+     "value": "SAR-MARITIME",
+     "label": [
+      "SAR maritime",
+      "Maritime SAR",
+      "Seenotrettung",
+      "SAR marítimo"
+     ]
+    },
+    {
+     "value": "SAR-AIRCRAFT",
+     "label": [
+      "Recherche d’aéronef",
+      "Aircraft search",
+      "Luftfahrzeugsuche",
+      "Búsqueda de aeronave"
+     ]
+    },
+    {
+     "value": "PR",
+     "label": [
+      "Récupération de personnel (PR)",
+      "Personnel recovery (PR)",
+      "Personalrettung (PR)",
+      "Recuperación de personal (PR)"
+     ]
+    },
+    {
+     "value": "CSAR",
+     "label": [
+      "CSAR (contexte militaire)",
+      "CSAR (military context)",
+      "CSAR (militärischer Kontext)",
+      "CSAR (contexto militar)"
+     ]
+    }
+   ]
+  },
+  "SOF": {
+   "title": [
+    "Opérations spéciales / tactiques",
+    "SOF / tactical operations",
+    "Spezialkräfte / taktische Einsätze",
+    "Operaciones especiales / tácticas"
+   ],
+   "series": [
+    {
+     "value": "INSERTION",
+     "label": [
+      "Insertion",
+      "Insertion",
+      "Absetzen",
+      "Inserción"
+     ]
+    },
+    {
+     "value": "EXTRACTION",
+     "label": [
+      "Extraction",
+      "Extraction",
+      "Aufnahme",
+      "Extracción"
+     ]
+    },
+    {
+     "value": "INFILTRATION",
+     "label": [
+      "Infiltration",
+      "Infiltration",
+      "Infiltration",
+      "Infiltración"
+     ]
+    },
+    {
+     "value": "EXFILTRATION",
+     "label": [
+      "Exfiltration",
+      "Exfiltration",
+      "Exfiltration",
+      "Exfiltración"
+     ]
+    },
+    {
+     "value": "TACTICAL_TRANSPORT",
+     "label": [
+      "Transport tactique",
+      "Tactical transport",
+      "Taktischer Transport",
+      "Transporte táctico"
+     ]
+    },
+    {
+     "value": "SR_SUPPORT",
+     "label": [
+      "Appui reconnaissance spéciale",
+      "Special reconnaissance support",
+      "Unterstützung Spezialaufklärung",
+      "Apoyo a reconocimiento especial"
+     ]
+    },
+    {
+     "value": "FAST_ROPE",
+     "label": [
+      "Corde lisse",
+      "Fast rope",
+      "Fast Rope",
+      "Cuerda rápida"
+     ]
+    },
+    {
+     "value": "RAPPEL",
+     "label": [
+      "Rappel",
+      "Rappel",
+      "Abseilen",
+      "Rápel"
+     ]
+    },
+    {
+     "value": "PARACHUTE_INSERTION",
+     "label": [
+      "Insertion par parachute",
+      "Parachute insertion",
+      "Fallschirmabsetzen",
+      "Inserción en paracaídas"
+     ]
+    },
+    {
+     "value": "LZ_INSERTION",
+     "label": [
+      "Insertion sur LZ",
+      "Landing zone insertion",
+      "Absetzen in LZ",
+      "Inserción en LZ"
+     ]
+    },
+    {
+     "value": "SHIP_INSERTION",
+     "label": [
+      "Insertion sur navire",
+      "Ship insertion",
+      "Absetzen auf Schiff",
+      "Inserción en buque"
+     ]
+    }
+   ]
+  },
+  "SPECIAL": {
+   "title": [
+    "Transport spécial / essais / formation",
+    "Special transport / test / training",
+    "Sondertransport / Erprobung / Ausbildung",
+    "Transporte especial / ensayos / formación"
+   ],
+   "series": [
+    {
+     "value": "VIP-VIP",
+     "label": [
+      "VIP — transport VIP",
+      "VIP — VIP transport",
+      "VIP — VIP-Transport",
+      "VIP — transporte VIP"
+     ]
+    },
+    {
+     "value": "VIP-VVIP",
+     "label": [
+      "VIP — transport VVIP",
+      "VIP — VVIP transport",
+      "VIP — VVIP-Transport",
+      "VIP — transporte VVIP"
+     ]
+    },
+    {
+     "value": "VIP-STATE",
+     "label": [
+      "VIP — vol d’État",
+      "VIP — state flight",
+      "VIP — Staatsflug",
+      "VIP — vuelo de Estado"
+     ]
+    },
+    {
+     "value": "VIP-GOVERNMENT",
+     "label": [
+      "VIP — mission gouvernementale",
+      "VIP — government mission",
+      "VIP — Regierungsflug",
+      "VIP — misión gubernamental"
+     ]
+    },
+    {
+     "value": "FERRY-TRANSFER",
+     "label": [
+      "Convoyage — transfert d’appareil",
+      "Ferry — aircraft transfer",
+      "Überführung — Luftfahrzeugtransfer",
+      "Traslado — transferencia de aeronave"
+     ]
+    },
+    {
+     "value": "FERRY-MAINTENANCE",
+     "label": [
+      "Convoyage — mise en place maintenance",
+      "Ferry — maintenance positioning",
+      "Überführung — Wartungspositionierung",
+      "Traslado — posicionamiento para mantenimiento"
+     ]
+    },
+    {
+     "value": "FERRY-DELIVERY",
+     "label": [
+      "Convoyage — livraison",
+      "Ferry — delivery",
+      "Überführung — Auslieferung",
+      "Traslado — entrega"
+     ]
+    },
+    {
+     "value": "FERRY-RTB",
+     "label": [
+      "Convoyage — retour base",
+      "Ferry — return to base",
+      "Überführung — Rückkehr zur Basis",
+      "Traslado — regreso a la base"
+     ]
+    },
+    {
+     "value": "TEST-DEVELOPMENT",
+     "label": [
+      "Essai — développement",
+      "Test — development",
+      "Erprobung — Entwicklung",
+      "Ensayo — desarrollo"
+     ]
+    },
+    {
+     "value": "TEST-ACCEPTANCE",
+     "label": [
+      "Essai — réception",
+      "Test — acceptance",
+      "Erprobung — Abnahme",
+      "Ensayo — aceptación"
+     ]
+    },
+    {
+     "value": "TEST-MCF",
+     "label": [
+      "Essai — vol de contrôle maintenance",
+      "Test — maintenance check flight",
+      "Erprobung — Werkstattflug",
+      "Ensayo — vuelo de control de mantenimiento"
+     ]
+    },
+    {
+     "value": "TEST-FCF",
+     "label": [
+      "Essai — vol de contrôle fonctionnel",
+      "Test — functional check flight",
+      "Erprobung — Funktionsprüfflug",
+      "Ensayo — vuelo de control funcional"
+     ]
+    },
+    {
+     "value": "TEST-CERTIFICATION",
+     "label": [
+      "Essai — certification",
+      "Test — certification",
+      "Erprobung — Zulassung",
+      "Ensayo — certificación"
+     ]
+    },
+    {
+     "value": "TRAINING-IFR",
+     "label": [
+      "Formation — IFR",
+      "Training — IFR",
+      "Ausbildung — IFR",
+      "Formación — IFR"
+     ]
+    },
+    {
+     "value": "TRAINING-VFR",
+     "label": [
+      "Formation — VFR",
+      "Training — VFR",
+      "Ausbildung — VFR",
+      "Formación — VFR"
+     ]
+    },
+    {
+     "value": "TRAINING-NIGHT",
+     "label": [
+      "Formation — vol de nuit",
+      "Training — night",
+      "Ausbildung — Nachtflug",
+      "Formación — vuelo nocturno"
+     ]
+    },
+    {
+     "value": "TRAINING-NVG",
+     "label": [
+      "Formation — NVG",
+      "Training — NVG",
+      "Ausbildung — NVG",
+      "Formación — NVG"
+     ]
+    },
+    {
+     "value": "TRAINING-SAR",
+     "label": [
+      "Formation — SAR",
+      "Training — SAR",
+      "Ausbildung — SAR",
+      "Formación — SAR"
+     ]
+    },
+    {
+     "value": "TRAINING-HOIST",
+     "label": [
+      "Formation — treuillage",
+      "Training — hoist",
+      "Ausbildung — Winde",
+      "Formación — grúa"
+     ]
+    },
+    {
+     "value": "TRAINING-SHIPBOARD",
+     "label": [
+      "Formation — appontage",
+      "Training — shipboard",
+      "Ausbildung — Bordlandung",
+      "Formación — operaciones embarcadas"
+     ]
+    },
+    {
+     "value": "TRAINING-PARADROP",
+     "label": [
+      "Formation — largage de personnel",
+      "Training — paradrop",
+      "Ausbildung — Personenabsetzen",
+      "Formación — lanzamiento de personal"
+     ]
+    },
+    {
+     "value": "TRAINING-AIRDROP",
+     "label": [
+      "Formation — largage de matériel",
+      "Training — airdrop",
+      "Ausbildung — Lastenabwurf",
+      "Formación — lanzamiento de carga"
+     ]
+    },
+    {
+     "value": "TRAINING-LOW_LEVEL",
+     "label": [
+      "Formation — très basse altitude",
+      "Training — low level",
+      "Ausbildung — Tiefflug",
+      "Formación — baja cota"
+     ]
+    },
+    {
+     "value": "TRAINING-FORMATION",
+     "label": [
+      "Formation — vol en patrouille",
+      "Training — formation flying",
+      "Ausbildung — Formationsflug",
+      "Formación — vuelo en formación"
+     ]
+    },
+    {
+     "value": "TRAINING-INSTRUMENT",
+     "label": [
+      "Formation — instruments",
+      "Training — instrument",
+      "Ausbildung — Instrumentenflug",
+      "Formación — instrumental"
+     ]
+    },
+    {
+     "value": "TRAINING-CHECKRIDE",
+     "label": [
+      "Formation — contrôle en vol (checkride)",
+      "Training — checkride",
+      "Ausbildung — Überprüfungsflug",
+      "Formación — vuelo de verificación"
+     ]
+    }
+   ]
+  },
+  "SURVEY": {
+   "title": [
+    "Levés / missions scientifiques",
+    "Survey / science",
+    "Vermessung / Wissenschaft",
+    "Levantamientos / ciencia"
+   ],
+   "series": [
+    {
+     "value": "AERIAL_PHOTO",
+     "label": [
+      "Photographie aérienne",
+      "Aerial photography",
+      "Luftbildaufnahme",
+      "Fotografía aérea"
+     ]
+    },
+    {
+     "value": "MAPPING",
+     "label": [
+      "Cartographie",
+      "Mapping",
+      "Kartierung",
+      "Cartografía"
+     ]
+    },
+    {
+     "value": "LIDAR",
+     "label": [
+      "LiDAR",
+      "LiDAR",
+      "LiDAR",
+      "LiDAR"
+     ]
+    },
+    {
+     "value": "PHOTOGRAMMETRY",
+     "label": [
+      "Photogrammétrie",
+      "Photogrammetry",
+      "Photogrammetrie",
+      "Fotogrametría"
+     ]
+    },
+    {
+     "value": "GEOPHYSICS",
+     "label": [
+      "Géophysique",
+      "Geophysics",
+      "Geophysik",
+      "Geofísica"
+     ]
+    },
+    {
+     "value": "ATMOSPHERIC",
+     "label": [
+      "Recherche atmosphérique",
+      "Atmospheric research",
+      "Atmosphärenforschung",
+      "Investigación atmosférica"
+     ]
+    },
+    {
+     "value": "WEATHER_RECON",
+     "label": [
+      "Reconnaissance météo",
+      "Weather reconnaissance",
+      "Wettererkundung",
+      "Reconocimiento meteorológico"
+     ]
+    },
+    {
+     "value": "VOLCANO",
+     "label": [
+      "Surveillance volcanique",
+      "Volcano monitoring",
+      "Vulkanüberwachung",
+      "Vigilancia volcánica"
+     ]
+    },
+    {
+     "value": "WILDLIFE",
+     "label": [
+      "Faune",
+      "Wildlife",
+      "Tierwelt",
+      "Fauna"
+     ]
+    },
+    {
+     "value": "ENVIRONMENT",
+     "label": [
+      "Environnement",
+      "Environment",
+      "Umwelt",
+      "Medio ambiente"
+     ]
+    },
+    {
+     "value": "ICE",
+     "label": [
+      "Glaces",
+      "Ice",
+      "Eis",
+      "Hielo"
+     ]
+    },
+    {
+     "value": "OCEANOGRAPHIC",
+     "label": [
+      "Océanographie",
+      "Oceanographic",
+      "Ozeanographie",
+      "Oceanografía"
+     ]
+    }
+   ]
+  }
+ }
+}

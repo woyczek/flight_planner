@@ -18,7 +18,7 @@ export const meta = {
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
   files: ['add.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js',
-    '../report/vocab.js'
+    '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
   reads: ['missions/', 'cr/',
     'airline/'

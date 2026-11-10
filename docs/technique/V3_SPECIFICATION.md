@@ -2074,3 +2074,24 @@ redesigned for touch at that point.
        view + overlay of zones, points with a role and the mission banner), (c) in the Map's Édition. **Lots**, one at a time, each
        with its case red before and its captures written by the case: L1 the Map stays in the flight view for a flight that names a
        mission (the awaited one), L2 the chip and the pane, L3 the locked points, L4 the time on area, L5 « Quitter la mission ».
+   48. **Mission themes: one table, a 17th theme COMMERCIAL, the airline chooses its themes** (user, 10 Nov 15 h 20, SOG-0202:
+       "airlift et special sont des thèmes militaires. « commercial » est un grand thème. dedans, on « devrait » trouver : cargo,
+       passagers, rapatriement vide, etc."). **Survey**: the sixteen V2 families and their series lived in two places of the report
+       (`modules/report/vocab.js` for names and report letters, `families/*.js` for series), the categories of SOG-0041
+       (`frame/lib/mission_categories.js`: fret, passagers, positionnement, vip, training, transit, essais en vol) in a third, with
+       no link between them. **Decision**: theme = family, sub-theme = series; ONE table, `frame/lib/mission_themes.js` (pure,
+       frozen), holds the sixteen military themes moved as they were (ids, names ×4, letters, series ×4) and a 17th, COMMERCIAL,
+       with seven series — CARGO (load freight), PASSENGERS (load passengers), EMPTY_LEG, VIP (load passengers), TRAINING, TRANSIT,
+       FLIGHT_TEST; the load is an attribute of the series. Its acronym « CAT » (EASA's Commercial Air Transport) and its report
+       letter « E » are proposals, to be validated by the user. **The airline chooses**: `data/airline/<code>/themes.json`
+       `{ schema: 1, chosen: [ids], added: { themes: [{ id, short, labels ×4 }], series: { THEME: [{ value, labels ×4 }] } } }`,
+       written by Settings only, read through `cleanThemes` (untrusted, § 10.36: an added id never replaces a known one, labels
+       cleaned and bounded to 40 characters, 8 added themes, 20 added series per theme); without a file, `defaultChosen(kind)`
+       pre-ticks: va → COMMERCIAL, sog → the sixteen military, perso and no kind → all seventeen; nothing is written until the
+       pilot ticks. `frame/lib/airline.js` takes `kindOf`, `KIND_NAMES`, `airlineText` out of `mission_categories.js` (re-exported
+       there until T5). **Migration of the SOG-0041 ids** (T2): fret → COMMERCIAL/CARGO, passagers → PASSENGERS, positionnement →
+       EMPTY_LEG, vip → VIP, training → TRAINING, transit → TRANSIT, essais en vol → FLIGHT_TEST. **Owners**: Features SOG (the
+       table and its readers, T1, T2, T4, T5), Settings (the screens, T3). **Lots**: T1 the table and its readers, no visible
+       change (G10: the report's lists equal `tests/v3/fixtures/report_lists_v2.json`, taken before the move, in four languages);
+       T2 the flight carries theme / series, the load read from the series, the old ids read through the migration; T3 Settings'
+       screens; T4 the Missions series filter; T5 `mission_categories.js` removed.

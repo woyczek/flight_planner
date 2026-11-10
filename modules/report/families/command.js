@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille COMMAND / AEW / RELAY (§14) : poste de commandement aéroporté, guet aérien,
 // coordination aérienne, relais radio (y compris catastrophes, feux, SAR). Unités
@@ -71,33 +72,7 @@ const FAMILY = {
   },
   title: L('Commandement / police du ciel / guet aérien', 'Command / air policing / early warning',
     'Führung / Luftpolizeidienst / Frühwarnung', 'Mando / policía aérea / alerta temprana'),
-  series: [{
-    value: 'AIR_POLICING',
-    label: L('Police du ciel / interception (QRA, MASA)', 'Air policing / interception (QRA)',
-      'Luftpolizeidienst / Abfangen (QRA)', 'Policía aérea / interceptación (QRA)')
-  }, {
-    value: 'AIRBORNE_COMMAND',
-    label: L('Poste de commandement aéroporté', 'Airborne command', 'Luftgestützte Führung', 'Mando aerotransportado')
-  }, {
-    value: 'AEW',
-    label: L('Guet aérien avancé (AEW)', 'Airborne early warning (AEW)', 'Luftgestützte Frühwarnung (AEW)',
-      'Alerta temprana aérea (AEW)')
-  }, {
-    value: 'AIR_COORDINATION',
-    label: L('Coordination aérienne', 'Air coordination', 'Luftkoordination', 'Coordinación aérea')
-  }, {
-    value: 'COMM_RELAY',
-    label: L('Relais de communications', 'Communications relay', 'Kommunikationsrelais', 'Retransmisión de comunicaciones')
-  }, {
-    value: 'DISASTER_RELAY',
-    label: L('Relais catastrophe', 'Disaster relay', 'Katastrophenrelais', 'Retransmisión en catástrofes')
-  }, {
-    value: 'FIRE_COORDINATION',
-    label: L('Coordination feux de forêt', 'Fire coordination', 'Waldbrandkoordination', 'Coordinación de incendios')
-  }, {
-    value: 'SAR_COORDINATION',
-    label: L('Coordination SAR', 'SAR coordination', 'SAR-Koordination', 'Coordinación SAR')
-  }],
+  series: MT.seriesOf('COMMAND'),
   events: [opt('SCRAMBLE', L('Décollage sur alerte (scramble)', 'Scramble', 'Alarmstart (Scramble)',
     'Despegue de alerta (scramble)')), opt('INTERCEPT', L('Interception', 'Interception', 'Abfangen', 'Interceptación')), opt(
     'IDENTIFIED', L('Identification', 'Identification', 'Identifizierung', 'Identificación')), opt('ON_STATION', L(

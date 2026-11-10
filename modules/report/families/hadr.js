@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille HADR / EVACUATION (§12) : aide humanitaire et secours en cas de catastrophe,
 // évacuations (NEO, civiles), désenclavement, ravitaillement par largage. Les rotations
@@ -37,42 +38,7 @@ const FAMILY = {
   },
   title: L('Aide humanitaire / évacuation', 'Humanitarian assistance / evacuation', 'Humanitäre Hilfe / Evakuierung',
     'Ayuda humanitaria / evacuación'),
-  series: [{
-    value: 'DISASTER_RELIEF',
-    label: L('Secours en cas de catastrophe', 'Disaster relief', 'Katastrophenhilfe', 'Socorro en catástrofes')
-  }, {
-    value: 'FLOOD',
-    label: L('Inondation', 'Flood', 'Hochwasser', 'Inundación')
-  }, {
-    value: 'EARTHQUAKE',
-    label: L('Séisme', 'Earthquake', 'Erdbeben', 'Terremoto')
-  }, {
-    value: 'CYCLONE',
-    label: L('Cyclone', 'Cyclone', 'Zyklon', 'Ciclón')
-  }, {
-    value: 'STORM',
-    label: L('Tempête', 'Storm', 'Sturm', 'Tormenta')
-  }, {
-    value: 'VOLCANO',
-    label: L('Éruption volcanique', 'Volcanic eruption', 'Vulkanausbruch', 'Erupción volcánica')
-  }, {
-    value: 'HUMANITARIAN',
-    label: L('Mission humanitaire', 'Humanitarian mission', 'Humanitärer Einsatz', 'Misión humanitaria')
-  }, {
-    value: 'NEO',
-    label: L('Évacuation de ressortissants (NEO)', 'Non-combatant evacuation (NEO)', 'Evakuierung von Staatsangehörigen (NEO)',
-      'Evacuación de no combatientes (NEO)')
-  }, {
-    value: 'CIVIL_EVACUATION',
-    label: L('Évacuation civile', 'Civil evacuation', 'Zivile Evakuierung', 'Evacuación civil')
-  }, {
-    value: 'ISOLATED_COMMUNITY',
-    label: L('Désenclavement de population isolée', 'Isolated community support', 'Versorgung isolierter Gemeinden',
-      'Apoyo a comunidades aisladas')
-  }, {
-    value: 'SUPPLY_DROP',
-    label: L('Ravitaillement par largage', 'Supply drop', 'Versorgungsabwurf', 'Lanzamiento de suministros')
-  }],
+  series: MT.seriesOf('HADR'),
   events: [
     opt('EVACUEES_BOARDED', L('Évacués embarqués', 'Evacuees boarded', 'Evakuierte an Bord', 'Evacuados embarcados')), opt(
       'EVACUEES_DELIVERED', L('Évacués débarqués', 'Evacuees delivered', 'Evakuierte abgesetzt', 'Evacuados desembarcados')),

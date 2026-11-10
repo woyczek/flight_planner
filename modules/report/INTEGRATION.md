@@ -8,9 +8,10 @@ module: [SPEC.md](SPEC.md); the frame's adapter: [frame/INTEGRATION.md](../../fr
 | File | Role |
 |---|---|
 | `modules/report/module.js` | the module: `meta`, `mount(el, ctx)`, `unmount()`; the three steps, the draft, saving |
-| `modules/report/vocab.js` | lists and numbers of V2 (`crId`, outcomes, crew roles, families, fuel units), unchanged |
+| `modules/report/vocab.js` | lists and numbers of V2 (`crId`, outcomes, crew roles, fuel units), unchanged; the family names and letters read from `frame/lib/mission_themes.js` (SOG-0202 T1) |
 | `modules/report/model.js` | the V2 mission model (`emptyMission`, paths, durations, statistics, checks), unchanged |
-| `modules/report/families/*.js` | the sixteen V2 families (series, roles, events, blocks, `when` conditions), unchanged but for their imports and export; no statistics, summary or legacy import |
+| `modules/report/families/*.js` | the sixteen V2 families (roles, events, blocks, `when` conditions), unchanged but for their imports and export; their series read from `frame/lib/mission_themes.js` (`seriesOf`; SAR keeps its subtypes here); no statistics, summary or legacy import |
+| `frame/lib/mission_themes.js` (owner Features SOG) | the one table of mission themes (§ 10.48): the sixteen families and a 17th, COMMERCIAL, their series ×4, report letters, an airline's choice (`cleanThemes`, `defaultChosen`, `chosenOf`); the report offers only the families it can fill (`FAMILIES`) |
 | `modules/report/fpl.js` | V2 flight plan: equipment codes, levels, SimBrief / IVAO / VATSIM plans, filling a mission; network through `configure({ getJson })` |
 | `modules/report/text_import.js` | V2 analysis of a pasted text (FPL, IVAO tracker page, StatSim, IVAO list, METAR), track, filling |
 | `frame/lib/website.js` (owner website) | V2's hand-off to the airline website (flight fields, `#defa=` address, copy line, "→ Vol" bookmark); to move into `modules/website` |

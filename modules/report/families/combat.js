@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille COMBAT / ENTRAÎNEMENT AU COMBAT AÉRIEN : BFM (combat rapproché), ACM (combat aérien manœuvrant), DACT
 // (adversaire dissemblable), interceptions d'entraînement. Dispositif et zone (bloc d'altitude, plancher de sécurité,
@@ -89,23 +90,7 @@ const FAMILY = {
   },
   title: L('Combat aérien / entraînement chasse', 'Air combat / fighter training', 'Luftkampf / Jagdflugausbildung',
     'Combate aéreo / entrenamiento de caza'),
-  series: [{
-    value: 'BFM',
-    label: L('BFM — combat rapproché (manœuvres de base)', 'BFM — basic fighter manoeuvres',
-      'BFM — Grundmanöver des Luftkampfs', 'BFM — maniobras básicas de caza')
-  }, {
-    value: 'ACM',
-    label: L('ACM — combat aérien manœuvrant', 'ACM — air combat manoeuvring', 'ACM — Luftkampfmanöver',
-      'ACM — maniobras de combate aéreo')
-  }, {
-    value: 'DACT',
-    label: L('DACT — adversaire dissemblable', 'DACT — dissimilar air combat training',
-      'DACT — Luftkampf gegen ungleiches Muster', 'DACT — combate aéreo disimilar')
-  }, {
-    value: 'INTERCEPT',
-    label: L('Interception / identification (VID)', 'Interception / identification (VID)', 'Abfangen / Identifizierung (VID)',
-      'Interceptación / identificación (VID)')
-  }],
+  series: MT.seriesOf('COMBAT'),
   events: [
     opt('COMMIT', L('Engagement (commit)', 'Commit', 'Commit', 'Commit')), opt('FIGHTS_ON', L('« Fight’s on »', '“Fight’s on”',
       '„Fight’s on“', '«Fight’s on»')),

@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille HEMS / MEDEVAC reconstruite sur le Mission Report Core (étape 2a) : mêmes
 // champs que le CR HEMS historique (HEMS/hems_medevac_cr.html), plus le modèle commun.
@@ -107,26 +108,7 @@ const FAMILY = {
     reporting: 'hems_medevac_reporting.html'
   },
   title: L('HEMS / MEDEVAC', 'HEMS / MEDEVAC'),
-  series: [{
-    value: 'Primary HEMS',
-    label: L('HEMS primaire', 'Primary HEMS', 'Primärer HEMS-Einsatz', 'HEMS primario')
-  }, {
-    value: 'Interhospital transfer (MEDEVAC)',
-    label: L('Transfert interhospitalier (MEDEVAC)', 'Interhospital transfer (MEDEVAC)', 'Interhospitaltransfer (MEDEVAC)',
-      'Traslado interhospitalario (MEDEVAC)')
-  }, {
-    value: 'Rescue',
-    label: L('Secours / sauvetage', 'Rescue', 'Rettung', 'Socorro / rescate')
-  }, {
-    value: 'Search / evacuation',
-    label: L('Recherche / évacuation', 'Search / evacuation', 'Suche / Evakuierung', 'Búsqueda / evacuación')
-  }, {
-    value: 'Specialized transport',
-    label: L('Transport spécialisé', 'Specialized transport', 'Spezialtransport', 'Transporte especializado')
-  }, {
-    value: 'Training',
-    label: L('Entraînement', 'Training', 'Training', 'Entrenamiento')
-  }],
+  series: MT.seriesOf('HEMS'),
   crewRoles: ['PIC', 'COPILOT', 'DOCTOR', 'NURSE', 'WINCH_OPERATOR', 'RESCUE_SWIMMER', 'TECHNICIAN', 'OBSERVER', 'OTHER'],
   events: [
     opt('DISPATCH', L('Déclenchement', 'Dispatch', 'Alarmierung', 'Activación')), opt('ENGINE_START', L('Mise en route',

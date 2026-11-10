@@ -10,6 +10,7 @@ Rules covered
 
 Cases: G1 G2 G3 G4.  Seeding: `lib.pending_doc()` (cache policy) through the frame's IndexedDB cache, no launcher.
 """
+import json
 import re
 
 from lib import ROOT, Fail, Skip, case, norm, tx
@@ -360,3 +361,72 @@ def g9(c):
         got = c.js("[...document.querySelectorAll('[data-module=flightlog] [data-flairline]')].map(e => e.textContent.trim())")
         c.ok(f'Alpha Air · {words["sog"]}' in got, got, f'{w} px: « Mes vols » says the airline of the report')
         c.shot(f'G9_flightlog_{c.design}_{w}_{c.lang}.png')
+
+
+
+_LISTS_JS = """async () => {
+  const V = await import('/modules/report/vocab.js'), T = await import('/frame/lib/mission_themes.js');
+  const files = ['aar', 'airborne', 'airlift', 'combat', 'command', 'fire', 'flight_inspection', 'hadr', 'hems', 'isr', 'law_enforcement', 'maritime', 'sar', 'sof', 'special', 'survey'];
+  const families = {};
+  for (const f of files) {
+    const F = (await import(`/modules/report/families/${f}.js`)).default;
+    families[F.id] = { title: F.title, series: (F.series || []).map(s => ({ value: s.value, label: s.label })) };
+  }
+  const com = T.themeOf('COMMERCIAL');
+  return {
+    lists: JSON.parse(JSON.stringify({ familyLabels: V.familyLabels, familyLetters: V.familyLetters, families })),
+    themes: T.THEMES.map(t => t.id), military: T.MILITARY.length,
+    commercial: com && { short: com.short, letter: com.letter, military: com.military, series: com.series.map(s => s.value), load: Object.fromEntries(com.series.filter(s => s.load).map(s => [s.value, s.load])) },
+    chosen: { va: T.defaultChosen('va'), sog: T.defaultChosen('sog').length, perso: T.defaultChosen('perso').length, none: T.defaultChosen('').length },
+    fileChosen: T.chosenOf({ schema: 1, chosen: ['sar', 'commercial', 'NOPE'] }, 'va'), noFile: T.chosenOf(null, 'va'),
+    clean: T.cleanThemes({ schema: 1, added: { themes: [{ id: 'SAR', short: 'SAR', labels: ['Autre SAR'] }, { id: 'GLIDER', short: 'GLD', labels: ['Planeur <b>x</b>'] },
+      ...Array.from({ length: 12 }, (_, i) => ({ id: `EXTRA_${i}`, short: `X${i}`, labels: ['Extra ' + 'y'.repeat(80)] }))],
+      series: { SAR: [{ value: 'SAR-LAND', labels: ['Doublon'] }, { value: 'MOUNTAIN', labels: ['Montagne'] }], UNKNOWN: [{ value: 'A', labels: ['A'] }] } } }),
+    frozen: (() => { try { T.THEMES[0].series.push({}); return false } catch { return Object.isFrozen(T.THEMES[0].labels) } })(),
+    bounds: { label: T.LABEL_MAX, themes: T.ADDED_MAX.themes, series: T.ADDED_MAX.seriesPerTheme }
+  };
+}"""
+
+
+@case('G10', 'Mission themes: one table (frame/lib/mission_themes.js) — the report\'s families, letters and series ×4 read from it are those of the V2, unchanged; COMMERCIAL is the 17th theme, pre-ticked by the airline\'s kind; an airline\'s file is filtered and bounded',
+      'G', tags=('report', 'missions'), designs=('standard',), screens=False,
+      rule='SOG-0202 T1 (user, 10 Nov 15 h 20: « airlift et special sont des thèmes militaires. « commercial » est un grand thème … »; V3_SPECIFICATION § 10.48): '
+      'the lists moved from modules/report/vocab.js and families/*.js are equal to tests/v3/fixtures/report_lists_v2.json (taken before the move); '
+      'the report still offers its sixteen families (no visible change); captures 390 and 1 280')
+def g10(c):
+    want = json.loads((ROOT / 'tests/v3/fixtures/report_lists_v2.json').read_text(encoding='utf-8'))
+    c.open('report')
+    got = c.js(_LISTS_JS)
+    lists = got['lists']
+    fams = lists['families']
+    c.eq(sorted(fams), sorted(want['families']), 'the sixteen families', what='families')
+    diff = {k: {'now': [s for s in fams[k]['series'] if s not in v['series']] or fams[k]['title'], 'v2': [s for s in v['series'] if s not in fams[k]['series']] or v['title']}
+            for k, v in want['families'].items() if k in fams and fams[k] != v}
+    c.eq(diff, {}, 'each family: the same title ×4 and the same series (value, label ×4), in the same order', what='families that differ')
+    c.eq({k: v for k, v in lists['familyLabels'].items() if k in want['familyLabels']}, want['familyLabels'], 'the sixteen family names ×4 unchanged', what='family names')
+    c.eq(sorted(set(lists['familyLabels']) - set(want['familyLabels'])), ['COMMERCIAL'], 'the only new family name is COMMERCIAL', what='new names')
+    c.eq({k: v for k, v in lists['familyLetters'].items() if k in want['familyLetters']}, want['familyLetters'], 'the report number letters unchanged', what='letters')
+    c.ok(lists['familyLetters'].get('COMMERCIAL') not in want['familyLetters'].values(), lists['familyLetters'].get('COMMERCIAL'), 'COMMERCIAL\'s letter is not one of the sixteen')
+    c.eq(len(got['themes']), 17, 'seventeen themes', what='themes')
+    c.eq(got['military'], 16, 'sixteen military themes', what='military')
+    c.eq(got['commercial'], {'short': 'CAT', 'letter': 'E', 'military': False, 'series': ['CARGO', 'PASSENGERS', 'EMPTY_LEG', 'VIP', 'TRAINING', 'TRANSIT', 'FLIGHT_TEST'],
+                             'load': {'CARGO': 'freight', 'PASSENGERS': 'passengers', 'VIP': 'passengers'}}, 'COMMERCIAL and its seven series, the load as a series attribute', what='COMMERCIAL')
+    c.eq(got['chosen'], {'va': ['COMMERCIAL'], 'sog': 16, 'perso': 17, 'none': 17}, 'pre-ticked by kind: va → COMMERCIAL, sog → the sixteen, perso and none → all', what='defaults')
+    c.eq(got['fileChosen'], ['SAR', 'COMMERCIAL'], 'an airline\'s file says its themes (unknown ids dropped)', what='chosen')
+    c.eq(got['noFile'], ['COMMERCIAL'], 'without a file, the kind\'s defaults (nothing written)', what='no file')
+    cl = got['clean']['added']
+    ids = [t['id'] for t in cl['themes']]
+    c.ok('SAR' not in ids and ids[0] == 'GLIDER' and len(ids) == got['bounds']['themes'], ids, 'an added theme never replaces a known id; at most ADDED_MAX.themes')
+    c.ok('<' not in cl['themes'][0]['labels'][0] and all(len(l) <= got['bounds']['label'] for t in cl['themes'] for l in t['labels']), cl['themes'][:2], 'labels cleaned and bounded (LABEL_MAX)')
+    c.eq(cl['series'], {'SAR': [{'value': 'MOUNTAIN', 'labels': ['Montagne'] * 4}]}, 'an added series never replaces a known one; a series of an unknown theme is dropped', what='series')
+    c.ok(got['frozen'], got['frozen'], 'the table cannot be changed by a reader')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('report')
+        c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the three steps are drawn')
+        c.tap('[data-module="report"] .f-steps button[data-step="1"]')
+        c.until("!!document.querySelector('[data-module=report] select[data-family]')", what='the family list')
+        vals = c.js("[...document.querySelectorAll('[data-module=report] select[data-family] option')].map(o => o.value)")
+        c.eq(vals, list(want['familyLabels']), f'{w} px: the report offers its sixteen families, in the same order (no visible change)', what='options')
+        c.js("document.querySelector('[data-module=report] select[data-family]').scrollIntoView({block: 'center'})")
+        c.shot(f'G10_{c.design}_{w}_{c.lang}.png')

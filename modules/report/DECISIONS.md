@@ -215,3 +215,7 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   the name and the kind with the code, never changed afterwards. The words of the kind have ONE source, `frame/lib/mission_categories.js`
   `KIND_NAMES` (Settings' words, moved there so that the report and « Mes vols » do not copy them); « Mes vols » says the airline of each
   report only when more than one exists. G9; counter-test on origin/v3: no airline said.
+- **10 Nov 2026 — the families and series live in one table** (SOG-0202 T1, V3_SPECIFICATION § 10.48; user, 15 h 20: « « commercial »
+  est un grand thème »): moved from `vocab.js` and `families/*.js` to `frame/lib/mission_themes.js`, with no visible change (G10 compares
+  the report's lists with `tests/v3/fixtures/report_lists_v2.json`, frozen before the move, ×4 languages; counter-test: one SAR label
+  changed in the table turns G10 red). COMMERCIAL, the 17th theme, is in the table but not offered by the report until T2.

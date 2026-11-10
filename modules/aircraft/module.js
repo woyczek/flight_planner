@@ -25,7 +25,7 @@ export const meta = {
   title: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
   files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/dom.js', '../../frame/lib/fuel_units.js', '../stats/phases.js', '../stats/journals.js',
-    '../../frame/lib/mission_categories.js'
+    '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js'
   ],
   // titre lisible d'un document en attente de synchronisation (la carte Synchronisation des Réglages, Simplification 1er nov. 2026) :
   // une fiche (aircraft/sheets/<id>.json) ou la flotte ; [fr, en, de, es], ou null (valeur absente ou illisible) ; pur, sans lecture

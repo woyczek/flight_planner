@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille SAR / PR (§6 du cahier des charges) : recherche et sauvetage terrestre,
 // maritime, recherche d'aéronef, récupération de personnel (PR) et CSAR.
@@ -10,6 +11,18 @@ import * as M from '../model.js';
 const V = Vocab,
   L = V.L,
   opt = V.opt;
+// Les sous-types des séries SAR (la table des thèmes n'a que les séries et leurs noms).
+const SUBTYPES = {
+  'SAR-LAND': [L('Personne disparue', 'Missing person', 'Vermisste Person', 'Persona desaparecida'), L('Aéronef disparu',
+    'Missing aircraft', 'Vermisstes Luftfahrzeug', 'Aeronave desaparecida'), L('Véhicule', 'Vehicle', 'Fahrzeug',
+    'Vehículo'), L('Groupe isolé', 'Isolated group', 'Isolierte Gruppe', 'Grupo aislado'), L('Montagne', 'Mountain',
+    'Gebirge', 'Montaña'), L('Désert', 'Desert', 'Wüste', 'Desierto'), L('Forêt', 'Forest', 'Wald', 'Bosque')],
+  'SAR-MARITIME': [L('Homme à la mer', 'Man overboard', 'Mann über Bord', 'Hombre al agua'), L('Navire disparu', 'Missing vessel',
+    'Vermisstes Schiff', 'Buque desaparecido'), L('Embarcation en détresse', 'Craft in distress', 'Boot in Seenot',
+    'Embarcación en peligro'), L('Naufrage', 'Shipwreck', 'Schiffbruch', 'Naufragio'), L('Balise EPIRB', 'EPIRB beacon',
+    'EPIRB-Bake', 'Radiobaliza EPIRB'), L('Balise PLB', 'PLB beacon', 'PLB-Bake', 'Radiobaliza PLB'), L(
+    'Aéronef tombé en mer', 'Aircraft ditched at sea', 'Luftfahrzeug auf See notgewassert', 'Aeronave amerizada')]
+};
 /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
 const f = (path, label, type = 'text', extra = {}) => ({
   path,
@@ -61,32 +74,10 @@ const SAR = {
   },
   title: L('SAR / récupération de personnel', 'SAR / personnel recovery', 'SAR / Personalrettung',
     'SAR / recuperación de personal'),
-  series: [{
-    value: 'SAR-LAND',
-    label: L('SAR terrestre', 'Land SAR', 'SAR an Land', 'SAR terrestre'),
-    subtypes: [L('Personne disparue', 'Missing person', 'Vermisste Person', 'Persona desaparecida'), L('Aéronef disparu',
-      'Missing aircraft', 'Vermisstes Luftfahrzeug', 'Aeronave desaparecida'), L('Véhicule', 'Vehicle', 'Fahrzeug',
-      'Vehículo'), L('Groupe isolé', 'Isolated group', 'Isolierte Gruppe', 'Grupo aislado'), L('Montagne', 'Mountain',
-      'Gebirge', 'Montaña'), L('Désert', 'Desert', 'Wüste', 'Desierto'), L('Forêt', 'Forest', 'Wald', 'Bosque')]
-  }, {
-    value: 'SAR-MARITIME',
-    label: L('SAR maritime', 'Maritime SAR', 'Seenotrettung', 'SAR marítimo'),
-    subtypes: [L('Homme à la mer', 'Man overboard', 'Mann über Bord', 'Hombre al agua'), L('Navire disparu', 'Missing vessel',
-      'Vermisstes Schiff', 'Buque desaparecido'), L('Embarcation en détresse', 'Craft in distress', 'Boot in Seenot',
-      'Embarcación en peligro'), L('Naufrage', 'Shipwreck', 'Schiffbruch', 'Naufragio'), L('Balise EPIRB', 'EPIRB beacon',
-      'EPIRB-Bake', 'Radiobaliza EPIRB'), L('Balise PLB', 'PLB beacon', 'PLB-Bake', 'Radiobaliza PLB'), L(
-      'Aéronef tombé en mer', 'Aircraft ditched at sea', 'Luftfahrzeug auf See notgewassert', 'Aeronave amerizada')]
-  }, {
-    value: 'SAR-AIRCRAFT',
-    label: L('Recherche d’aéronef', 'Aircraft search', 'Luftfahrzeugsuche', 'Búsqueda de aeronave')
-  }, {
-    value: 'PR',
-    label: L('Récupération de personnel (PR)', 'Personnel recovery (PR)', 'Personalrettung (PR)',
-      'Recuperación de personal (PR)')
-  }, {
-    value: 'CSAR',
-    label: L('CSAR (contexte militaire)', 'CSAR (military context)', 'CSAR (militärischer Kontext)', 'CSAR (contexto militar)')
-  }],
+  series: MT.seriesOf('SAR').map(s => SUBTYPES[s.value] ? {
+    ...s,
+    subtypes: SUBTYPES[s.value]
+  } : s),
   // État de mer, nageurs… : seulement pour la série maritime.,
   flags: mission => ({
     maritime: mission.series === 'SAR-MARITIME'

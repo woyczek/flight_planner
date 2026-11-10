@@ -2,6 +2,7 @@
 // tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
 // statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
 import * as Vocab from '../vocab.js';
+import * as MT from '../../../frame/lib/mission_themes.js'; // les séries : la table unique des thèmes (SOG-0202 T1)
 import * as M from '../model.js';
 // Famille SPECIAL TRANSPORT / TEST / TRAINING (§17) : missions spécialisées sans moteur
 // propre. Quatre sous-modules affichés selon le groupe de la série : VIP / gouvernement,
@@ -43,41 +44,7 @@ const FAMILY = {
   },
   title: L('Transport spécial / essais / formation', 'Special transport / test / training',
     'Sondertransport / Erprobung / Ausbildung', 'Transporte especial / ensayos / formación'),
-  series: [
-    s('VIP-VIP', 'VIP — transport VIP', 'VIP — VIP transport', 'VIP — VIP-Transport', 'VIP — transporte VIP'), s('VIP-VVIP',
-      'VIP — transport VVIP', 'VIP — VVIP transport', 'VIP — VVIP-Transport', 'VIP — transporte VVIP'),
-    s('VIP-STATE', 'VIP — vol d’État', 'VIP — state flight', 'VIP — Staatsflug', 'VIP — vuelo de Estado'), s('VIP-GOVERNMENT',
-      'VIP — mission gouvernementale', 'VIP — government mission', 'VIP — Regierungsflug', 'VIP — misión gubernamental'),
-    s('FERRY-TRANSFER', 'Convoyage — transfert d’appareil', 'Ferry — aircraft transfer', 'Überführung — Luftfahrzeugtransfer',
-      'Traslado — transferencia de aeronave'), s('FERRY-MAINTENANCE', 'Convoyage — mise en place maintenance',
-      'Ferry — maintenance positioning', 'Überführung — Wartungspositionierung', 'Traslado — posicionamiento para mantenimiento'),
-    s('FERRY-DELIVERY', 'Convoyage — livraison', 'Ferry — delivery', 'Überführung — Auslieferung', 'Traslado — entrega'), s(
-      'FERRY-RTB', 'Convoyage — retour base', 'Ferry — return to base', 'Überführung — Rückkehr zur Basis',
-      'Traslado — regreso a la base'),
-    s('TEST-DEVELOPMENT', 'Essai — développement', 'Test — development', 'Erprobung — Entwicklung', 'Ensayo — desarrollo'), s(
-      'TEST-ACCEPTANCE', 'Essai — réception', 'Test — acceptance', 'Erprobung — Abnahme', 'Ensayo — aceptación'),
-    s('TEST-MCF', 'Essai — vol de contrôle maintenance', 'Test — maintenance check flight', 'Erprobung — Werkstattflug',
-      'Ensayo — vuelo de control de mantenimiento'), s('TEST-FCF', 'Essai — vol de contrôle fonctionnel',
-      'Test — functional check flight', 'Erprobung — Funktionsprüfflug', 'Ensayo — vuelo de control funcional'),
-    s('TEST-CERTIFICATION', 'Essai — certification', 'Test — certification', 'Erprobung — Zulassung', 'Ensayo — certificación'),
-    s('TRAINING-IFR', 'Formation — IFR', 'Training — IFR', 'Ausbildung — IFR', 'Formación — IFR'), s('TRAINING-VFR',
-      'Formation — VFR', 'Training — VFR', 'Ausbildung — VFR', 'Formación — VFR'),
-    s('TRAINING-NIGHT', 'Formation — vol de nuit', 'Training — night', 'Ausbildung — Nachtflug', 'Formación — vuelo nocturno'), s(
-      'TRAINING-NVG', 'Formation — NVG', 'Training — NVG', 'Ausbildung — NVG', 'Formación — NVG'),
-    s('TRAINING-SAR', 'Formation — SAR', 'Training — SAR', 'Ausbildung — SAR', 'Formación — SAR'), s('TRAINING-HOIST',
-      'Formation — treuillage', 'Training — hoist', 'Ausbildung — Winde', 'Formación — grúa'),
-    s('TRAINING-SHIPBOARD', 'Formation — appontage', 'Training — shipboard', 'Ausbildung — Bordlandung',
-      'Formación — operaciones embarcadas'), s('TRAINING-PARADROP', 'Formation — largage de personnel', 'Training — paradrop',
-      'Ausbildung — Personenabsetzen', 'Formación — lanzamiento de personal'),
-    s('TRAINING-AIRDROP', 'Formation — largage de matériel', 'Training — airdrop', 'Ausbildung — Lastenabwurf',
-      'Formación — lanzamiento de carga'), s('TRAINING-LOW_LEVEL', 'Formation — très basse altitude', 'Training — low level',
-      'Ausbildung — Tiefflug', 'Formación — baja cota'),
-    s('TRAINING-FORMATION', 'Formation — vol en patrouille', 'Training — formation flying', 'Ausbildung — Formationsflug',
-      'Formación — vuelo en formación'), s('TRAINING-INSTRUMENT', 'Formation — instruments', 'Training — instrument',
-      'Ausbildung — Instrumentenflug', 'Formación — instrumental'),
-    s('TRAINING-CHECKRIDE', 'Formation — contrôle en vol (checkride)', 'Training — checkride', 'Ausbildung — Überprüfungsflug',
-      'Formación — vuelo de verificación')
-  ],
+  series: MT.seriesOf('SPECIAL'),
   flags: mission => ({
     maritime: mission.series === 'TRAINING-SHIPBOARD'
   }),
