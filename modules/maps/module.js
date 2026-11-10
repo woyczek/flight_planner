@@ -80,6 +80,7 @@ import {
 import {
   applyMission,
   deriveMission,
+  retryMission,
   fillPick,
   missionEvents
 } from './mission_view.js';
@@ -330,6 +331,12 @@ export async function mount(el, ctx) {
   fillModes();
   await deriveMission();
   if (!S) return;
+  // le vol nomme une mission que la liste du dépôt ne donne pas encore (premier chargement : l'arbre arrive après le montage) : la Carte la reprend dès que la liste
+  // change, le bandeau apparaît sans rechargement (SOG-0196)
+  if (!S.missionId && S.missionWanted) {
+    S.missionWatch = true; // (dit pour les essais)
+    S.stops.push(S.ctx.data.watch('missions/', () => retryMission()));
+  }
   if (S.missionId) await applyMission();
   else {
     await applyFlight();

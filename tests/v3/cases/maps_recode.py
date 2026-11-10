@@ -4823,3 +4823,39 @@ def d147(c):
     c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'vfr'; s.dispatchEvent(new Event('change', { bubbles: true })); window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 11.7 }); return true }")
     c.until("() => window.__ct.length > 0", timeout=8000, what='back in VFR topo: asked again')
     c.shot('D147_vfr_topo_390.png')
+
+
+_DROP_JS = """async (p) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onupgradeneeded = () => { const d = r.result; for (const [n, o] of [['docs', { keyPath: 'path' }], ['pending', { keyPath: 'path' }], ['meta', { keyPath: 'key' }], ['conflicts', { keyPath: 'id', autoIncrement: true }]]) if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, o) }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  if (db.objectStoreNames.contains('docs')) await new Promise(res => { const tx = db.transaction('docs', 'readwrite'); tx.objectStore('docs').delete(p); tx.oncomplete = res }); db.close(); return true }"""
+_BANNER_JS = """() => { const b = document.querySelector('.mp-mbar'); return { exists: !!b, shown: !!b && !b.hidden && b.getBoundingClientRect().width > 0, text: b ? b.textContent.slice(0, 80) : '', wanted: window.__mp.S.missionWanted, id: window.__mp.S.missionId, opts: [...document.querySelectorAll('.mp-mbar select')].map(x => x.className) } }"""
+
+
+@case('D148', 'The mission window on the map, whenever the mission is known: also when the list of the missions arrives after the Map is mounted (first load), in the double view as on the Map alone: its two choices, the provided map and the view', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0196 (the user, from « Préparer » beside Fuel: « la popup… qui a sauté »): the mission window (title, id, family, « Provided map », « View », its cross) sits at the top left of the map as soon as the flight names a mission the repository knows; a flight naming a mission that the list of the repository does not give yet (first load: the tree arrives after the mount) is taken up again when the list changes — the window appears without a reload; in the double view (pane) as on the Map alone')
+def d148(c):
+    for w, h, q in ((1280, 760, 'maps?pane=1'), (390, 844, 'maps')):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        # the flight names a mission whose file is not in the repository yet
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DROP_JS, MISSION_PATH)
+        c.open(q, docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+        c.js(_STATE_JS)
+        c.wait(2500)
+        b = c.js(_BANNER_JS)
+        c.eq([b['shown'], b['wanted']], [False, 'ESSAI1'], f'{w}: no window while the mission is unknown, the Map remembers it', what=str(b))
+        # the list changes: the file arrives
+        c.eq(c.js("() => window.__mp.S.missionWatch"), True, f'{w}: the Map watches the missions of the repository', what='watch')
+        c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])   # the file arrives (the store would announce it through the watch; the retry is the watch’s callback)
+        c.js("async () => { await (await import('/modules/maps/mission_view.js')).retryMission(); return true }")
+        c.until("() => { const b = document.querySelector('.mp-mbar'); return !!b && !b.hidden && b.getBoundingClientRect().width > 0 }", timeout=10000, what=f'{w}: the window appears without a reload when the list of the missions changes')
+        b = c.js(_BANNER_JS)
+        c.ok('ESSAI1' in b['text'] and 'mp-mb-sel' in b['opts'] and 'mp-mb-theme' in b['opts'], str(b), f'{w}: the window carries the mission, the provided map and the view')
+        c.shot(f'D148_window_{w}.png')
+    # and a mission already in the list is shown at the mount (D123), the double view included
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps?pane=1', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js(_STATE_JS)
+    c.until("() => { const b = document.querySelector('.mp-mbar'); return !!b && !b.hidden }", timeout=12000, what='the window at the mount in the double view')

@@ -18,6 +18,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Recette: a test delivered again after its verdict goes back to « à tester »** (`frame/help/recette.js`; help DECISIONS; noreg A124; SOG-0167, the user: « Je ne vois pas de màj
   de la page de recette »). A verdict (generated, the device's, the launcher's) older than the card's last delivery (`delivered`) is not in force: the test is in the day's
   list, first of its application, with « Relivré depuis votre refus du … : « … » »; a later verdict is in force as usual; the summary counts it as to test.
+
+
+
+- **Map: the mission window shows even when the list of the missions arrives after the mount** (`modules/maps/mission_view.js`, `module.js`; SPEC § 15, DECISIONS; noreg D148; SOG-0196). A flight that names a
+  mission the repository's tree does not give yet (first load) is taken up again when the list changes: the window (provided map, view, cross) appears without a reload, in the double view as on the Map alone.
+
 - **Fuel: the folded summary of the arrival says the ILS** (`modules/fuel/procedures.js`; Fuel SPEC, DECISIONS, help; noreg F127;
   SOG-0176). « I13R · TST 110.30 » when the base carries the ILS of the approach.
 

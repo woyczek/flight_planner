@@ -1300,6 +1300,9 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 - **Drawing fields written by the V2 studio**: `profile_def` (the full display profile, used as is), `resolved_bbox` (the
   extent drawn), `cycle` (AIRAC; a cycle different from aerodb's is said in the notes); in `vertical_profile`:
   `profile_def`, `cycle`, `route_points` [{ name, lat, lon, alt_ft }].
+- **The mission named by the flight but not yet in the list** (SOG-0196): at the first load the repository's tree can arrive after the Map is mounted (`data.list('missions/')` is then empty); the Map
+  remembers the mission the flight names (`S.missionWanted`) and watches `missions/`: when the list changes it looks again (`retryMission`) and, found, puts itself on the mission, window included, without a
+  reload. In the double view as on the Map alone. Noreg D148.
 - **The view of a mission map** (SOG-0171, ergonomics' decision after the user's reserve): a map opens in the view of its use. The
   YAML profile (`profile_def`, or `profile` naming a built-in one) comes first (view « yaml »). Else the **target, detail (detail_rdv)
   and zone** maps of a mission whose folder family is not commercial (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT,

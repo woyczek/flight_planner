@@ -2317,6 +2317,17 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## The mission window that « jumped » (10 Nov 2026, SOG-0196)
+
+- **Reported**: in « Préparer » (the Map beside Fuel) the window of the mission (title, provided map, view, cross) no longer shows on the Map. The ergonomics suspected one of the lot of noon.
+- **Looked for**: none of the five commits (cc6b3fb05, 70d25a01e, 8952622c1, fe47db9a6, a51af622e) touches the window: `bannerFill`, `deriveMission` and the markup are unchanged since 94d10be85 (SOG-0171, which
+  he had validated), and the case D123 and a new one see the window at HEAD, in the double view too, when the mission is in the list. **I could not name the commit.**
+- **Measured on his launcher** (the Map alone and the pane, a fresh local profile, his flight naming T-103, read only): on a cold profile the window is absent, both on `#maps` and on `#maps?pane=1`, even after
+  a reload; it shows after a few loads (the repository's tree, `data.list('missions/')`, answers only once a pass has kept it: `remote.tree`). `deriveMission` asked the list once at the mount and never again.
+- **Done** (the cause I can show): the flight names a mission the list does not give → `S.missionWanted`, a watch on `missions/`, `retryMission()` when the list changes: the Map puts itself on the mission
+  without a reload. If his window is still missing with a warm tree, I need what his flight says (`mission`), the hour and the address of his Préparer view.
+- **Noreg** D148 (the mission unknown at the mount: no window, remembered, watched; the file arrives: the window appears, with the two choices; the double view; red before: never watched).
+
 ## The VOR rose, one large circle as on the charts (10 Nov 2026, SOG-0175 reopened)
 
 - **Reference** (the user's captures 121252 PON, 121330 MLN, 121739 DVL, IGN OACI): one fine circle about 5 NM in radius on the ground, ticks inwards every 10°, longer every 30°, the numbers 0, 9, 18, 27

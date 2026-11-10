@@ -62,7 +62,18 @@ export async function deriveMission() {
   if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,40}$/.test(id) || f?.started?.at) return; // un vol démarré se regarde en vol
   const list = await missionList();
   if (!S) return;
-  if (list.some(x => x.id === id)) S.missionId = id;
+  if (list.some(x => x.id === id)) {
+    S.missionId = id;
+    S.missionWanted = '';
+  } else S.missionWanted =
+    id; // le vol nomme une mission que la liste ne donne pas (encore) : l'arbre du dépôt peut arriver après le montage (SOG-0196)
+}
+/** La liste des missions a changé (l'arbre du dépôt est arrivé, une synchronisation a passé) : la mission que le vol nomme est cherchée de nouveau ; trouvée, la Carte
+ *  se met sur elle (bandeau compris) sans qu'on la recharge. */
+export async function retryMission() {
+  if (!S || S.missionId || !S.missionWanted) return;
+  await deriveMission();
+  if (S?.missionId) await applyMission();
 }
 /** Points du cheminement de la mission : route_points écrits par le studio, sinon le texte (vertical_profile.route,
  *  sinon départ, points tournants, destination) résolu par les points de la mission, puis par aerodb. */
