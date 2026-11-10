@@ -891,7 +891,7 @@
     {
      "id": "SOG-0214",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Barbules de vent : densité selon le zoom ; toutes dans le même sens sur une route longue",
      "en": "Wind barbs: density by zoom; all pointing the same way on a long route",
      "de": "Windfiedern: Dichte je nach Zoom; auf langer Route alle in dieselbe Richtung",
@@ -1140,7 +1140,7 @@
     {
      "id": "SOG-0138",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
      "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
@@ -2367,7 +2367,7 @@
     {
      "id": "SOG-0195",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Taxiways : affichés trop tard au zoom, sans nom ; pas de nom des parkings",
      "en": "Taxiways: shown too late in the zoom, unnamed; no apron names",
      "de": "Rollwege: zu spät im Zoom angezeigt, ohne Namen; keine Vorfeldnamen",

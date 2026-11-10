@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 97,
-  "verdicts": 46
+  "tests": 99,
+  "verdicts": 45
  },
  "apps": [
   "pilote",
@@ -369,9 +369,15 @@
     "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
     "es": "GFS: sigue sin haber mapa sinóptico; y una respuesta visible, no entre dos puertas"
    },
-   "test": "Après relance du lanceur. Pilote › Météo, carte dézoomée au-delà de la zone du vol : la couche du synoptique monde (GFS) s'affiche avec l'heure du modèle, sans reconstruire (celle de 14 h 22 est reprise). Si elle a plus de 12 h : « Construire (2 min) » dans le volet du bas, avec la durée écoulée, puis la couche.",
+   "test": "Lanceur relancé. Météo : la première ligne du panneau dit l'état du synoptique monde ; « Construire » : à la fin, la couche GFS s'affiche tout de suite sur la carte ; plus de « prochain essai dans n s » : au pire « construit à l'instant » avec « Relire ».",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:54:26Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "« synoptique du monde absent », et en // une popup « synoptique construit ». encore un échec. prochain essai dans 578s !!",
+    "at": "2026-11-10T14:12:18Z"
+   }
   },
   {
    "id": "SOG-0139",
@@ -876,12 +882,15 @@
     "de": "VOR: doppelter Gradkreis mit Marken alle 30°",
     "es": "VOR: doble círculo de grados con marcas cada 30°"
    },
-   "test": "Carte à zoom proche sur un VOR (Pontoise, Melun, Deauville) : un seul grand cercle fin (environ 5 NM), graduations vers l'intérieur tous les 10°, seulement les chiffres 0, 9, 18, 27 à l'intérieur, une pointe aux points cardinaux, la flèche du nord magnétique depuis la station. À comparer à tes cartes : taille du cercle, sens des chiffres.",
+   "test": "Carte, un VOR (PON, MLN, DVL) : en zoomant fort, les chiffres 0, 9, 18, 27 de la rose restent petits (ils ne grossissent plus avec le cercle).",
    "since": "2026-11-10",
-   "state": "ok",
-   "delivered": "2026-11-10T11:35:56Z",
-   "comment": "presque. le texte ne doit pas grossir aussi fort (screenshots). sinon, c’est pas mal.",
-   "at": "2026-11-10T14:02:51Z"
+   "state": "todo",
+   "delivered": "2026-11-10T16:54:26Z",
+   "previous": {
+    "verdict": "ok",
+    "comment": "presque. le texte ne doit pas grossir aussi fort (screenshots). sinon, c’est pas mal.",
+    "at": "2026-11-10T14:02:51Z"
+   }
   },
   {
    "id": "SOG-0176",
@@ -1165,6 +1174,20 @@
    "delivered": "2026-11-10T12:34:51Z"
   },
   {
+   "id": "SOG-0195",
+   "app": "maintenance",
+   "title": {
+    "fr": "Taxiways : affichés trop tard au zoom, sans nom ; pas de nom des parkings",
+    "en": "Taxiways: shown too late in the zoom, unnamed; no apron names",
+    "de": "Rollwege: zu spät im Zoom angezeigt, ohne Namen; keine Vorfeldnamen",
+    "es": "Calles de rodaje: mostradas demasiado tarde en el zoom, sin nombre; sin nombres de plataformas"
+   },
+   "test": "Carte, LFPO, couche Sol : en zoomant, chaque voie de circulation porte son nom une seule fois (plus de « L3 » quatre fois au même endroit) ; les aires de trafic sont nommées avant les postes de stationnement ; la puce « Aires » les masque ou les montre ; le sol du terrain de dégagement est lu aussi.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T16:54:22Z"
+  },
+  {
    "id": "SOG-0196",
    "app": "pilote",
    "title": {
@@ -1371,6 +1394,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T16:02:56Z"
+  },
+  {
+   "id": "SOG-0214",
+   "app": "pilote",
+   "title": {
+    "fr": "Barbules de vent : densité selon le zoom ; toutes dans le même sens sur une route longue",
+    "en": "Wind barbs: density by zoom; all pointing the same way on a long route",
+    "de": "Windfiedern: Dichte je nach Zoom; auf langer Route alle in dieselbe Richtung",
+    "es": "Barbas de viento: densidad según el zoom; todas en el mismo sentido en una ruta larga"
+   },
+   "test": "Carte, un vol avec ses vents (LFPO → KDEN après « Charger ») : à tout zoom, la vue porte entre 40 et 80 barbules le long de la route, ni une poignée en zoom avant ni un tapis en zoom arrière. Regarde aussi si elles sont encore toutes dans le même sens au-dessus de l'Atlantique : si oui, dis-le, la cause n'est pas prouvée.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T16:54:25Z"
   },
   {
    "id": "SOG-0215",
