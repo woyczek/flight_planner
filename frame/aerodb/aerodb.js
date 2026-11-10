@@ -2579,10 +2579,12 @@
       },
       /** Les approches « cartes seulement » d'un terrain du SIA (SOG-0232 / SOG-0216) : les cartes IAC de `charts.items` du fichier du terrain qu'AUCUNE fiche d'approche (lue, en doute ou d'une autre source) ne porte :
        *  [{ name: 'ILS LOC RWY 05', runway: '05', url }], triées par piste puis par nom. L'AIP ne publie de table de codage que pour une partie des approches (les RNP, quelques ILS) : les autres n'existent qu'en carte.
-       *  L'adresse est composée ICI, comme chartUrl (`charts.base` du fichier sous l'hôte du SIA + le chemin d'une carte listée par ce même fichier) ; [] hors de la France, sans fichier du terrain ou sans carte IAC. Rien n'est lu de la carte. */
-      async chartOnly(icao) {
+       *  `{ kind: 'STAR' | 'SID' }` : les cartes de départs ou d'arrivées CONVENTIONNELS (mot « CONV » du nom de la carte), qui n'ont jamais de table de codage. L'adresse est composée ICI, comme chartUrl (`charts.base` du fichier sous l'hôte du SIA + le chemin d'une carte listée par ce même fichier) ; [] hors de la France, sans fichier du terrain ou sans carte IAC. Rien n'est lu de la carte. */
+      async chartOnly(icao, {
+        kind: what = 'IAC'
+      } = {}) {
         const k = String(icao || '').trim().toUpperCase();
-        if (!/^[A-Z0-9]{4}$/.test(k)) return [];
+        if (!/^[A-Z0-9]{4}$/.test(k) || !['IAC', 'STAR', 'SID'].includes(what)) return [];
         await api.sources().catch(() => null);
         if (!window.AeroCatalogue?.siaRegionOf?.(k)) return [];
         let e;
@@ -2605,12 +2607,14 @@
             ...p,
             icao: k
           }, items)).filter(Boolean));
-        return items.filter(i => i && i.kind === 'IAC' && typeof i.path === 'string' && mine.test(i.path) && !taken.has(i.path)).map(
+        // IAC : les cartes qu'aucune fiche d'approche ne porte ; STAR / SID : les cartes CONVENTIONNELLES (« …_STAR_RWY05_CONV ») : l'AIP ne code que les procédures RNAV, une carte « CONV » n'a jamais de table
+        return items.filter(i => i && i.kind === what && typeof i.path === 'string' && mine.test(i.path) && (what === 'IAC' ? !taken
+          .has(i.path) : P.chartWords(i.path).words.includes('CONV'))).map(
           i => {
             const w = P.chartWords(i.path),
               runway = w.runways[0] || '';
             return {
-              name: `${w.words.filter(x => x !== 'FNA').join(' ')}${w.runways.length ? ` RWY ${w.runways.join('/')}` : ''}`.trim(),
+              name: `${what === 'IAC' ? '' : `${what} `}${w.words.filter(x => x !== 'FNA').join(' ')}${w.runways.length ? ` RWY ${w.runways.join('/')}` : ''}`.trim(),
               runway,
               url: `${base}Cartes/${k}/${encodeURIComponent(i.path.split('/').pop())}`
             };

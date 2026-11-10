@@ -7559,13 +7559,13 @@ def k163(c):
     r = c.js("""async () => {
       const base = 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/';
       const pt = (id, lat, lon) => ({ id, lat, lon, leg: 'TF', alt: null, seq: 1, phase: 'main' });
-      const items = ['ADC_01', 'IAC_RWY05_FNA_RNP', 'IAC_RWY05_ILS_LOC', 'IAC_RWY05_VOR', 'IAC_RWY23_FNA_ILS_CAT123_LOC', 'IAC_RWY23_FNA_RNP', 'DATA_01'].map(n => ({ path: `Cartes/LFST/AD_2_LFST_${n}.pdf`, kind: n.split('_')[0] }));
+      const items = ['ADC_01', 'IAC_RWY05_FNA_RNP', 'IAC_RWY05_ILS_LOC', 'IAC_RWY05_VOR', 'IAC_RWY23_FNA_ILS_CAT123_LOC', 'IAC_RWY23_FNA_RNP', 'DATA_01', 'STAR_RWY05_CONV', 'STAR_RWY05_RNAV', 'SID_RWY23_CONV'].map(n => ({ path: `Cartes/LFST/AD_2_LFST_${n}.pdf`, kind: n.split('_')[0] }));
       const file = { schema: 1, icao: 'LFST', cycle: '2026-10-29', updated_at: '2026-11-01T00:00:00Z', charts: { base, items }, procedures: [
         { id: 'LFST.APP.RNPRWY05.RW05', icao: 'LFST', kind: 'APP', name: 'RNP RWY 05', runways: ['05'], transition: null, points: [pt('A', 48.6, 7.8), pt('B', 48.5, 7.7)], source: { kind: 'eaip', file: 'AD_2_LFST_DATA_RWY05_FNA_RNP_CODE.pdf' }, status: 'check', doubt: 'geometry' },
         { id: 'LFST.APP.RNPRWY23.RW23', icao: 'LFST', kind: 'APP', name: 'RNP RWY 23', runways: ['23'], transition: null, points: [pt('C', 48.6, 7.8), pt('D', 48.5, 7.7)], source: { kind: 'eaip', file: 'AD_2_LFST_DATA_RWY23_FNA_RNP_CODE.pdf' }, status: 'check' }] };
       const files = { 'proc/manual/LFST.json': file, 'proc/manual/index.json': { schema: 1, aerodromes: { LFST: { SID: 0, STAR: 0, APP: 2, status: 'check' } } } };
       const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse('2026-11-10T12:00:00Z') });
-      return { only: await db.chartOnly('LFST'), none: await db.chartOnly('LFXX'), foreign: await db.chartOnly('EGLL'), bad: await db.chartOnly('x'), base };
+      return { only: await db.chartOnly('LFST'), none: await db.chartOnly('LFXX'), foreign: await db.chartOnly('EGLL'), bad: await db.chartOnly('x'), star: await db.chartOnly('LFST', { kind: 'STAR' }), sid: await db.chartOnly('LFST', { kind: 'SID' }), other: await db.chartOnly('LFST', { kind: 'DATA' }), base };
     }""")
     base = r['base']
     c.eq(r['only'], [
@@ -7574,3 +7574,5 @@ def k163(c):
         {'name': 'ILS CAT123 LOC RWY 23', 'runway': '23', 'url': base + 'Cartes/LFST/AD_2_LFST_IAC_RWY23_FNA_ILS_CAT123_LOC.pdf'}],
          'the three IAC charts with no approach record (the RNP charts are carried by the two records, one of them in doubt; the aerodrome chart and the DATA page are not approach charts), name, runway and address composed from the file', what='only')
     c.eq((r['none'], r['foreign'], r['bad']), ([], [], []), 'an aerodrome without file, a foreign aerodrome, a bad code: nothing', what='empty')
+    c.eq(([x['name'] for x in r['star']], [x['url'].split('/')[-1] for x in r['star']], [x['name'] for x in r['sid']], r['other']), (['STAR CONV RWY 05'], ['AD_2_LFST_STAR_RWY05_CONV.pdf'], ['SID CONV RWY 23'], []),
+         'kind STAR / SID: the conventional charts only (the AIP codes the RNAV procedures, never a CONV chart); another kind: nothing', what='star sid')
