@@ -190,6 +190,35 @@ def _data_len(path):
         return None
 
 
+def download_times(data, inputs, S):
+    """{ (zone, source): date (epoch) du plus récent fichier que le poste détient pour cette source de cette zone } : les fichiers de data/sia/ rangés par file_source ; lecture seule, sans réseau."""
+    latest = {}
+    for rel in inputs:
+        fs = S.file_source(rel)
+        if not fs:
+            continue
+        try:
+            t = os.stat(os.path.join(data, 'sia', *str(rel).split('/'))).st_mtime
+        except OSError:
+            continue
+        k = (fs['zone'], fs['source'])
+        latest[k] = max(latest.get(k, 0), t)
+    return latest
+
+
+def download_state(zone, current, personal, latest, S, absent=frozenset()):
+    """Les sources de la zone TÉLÉCHARGEABLES déjà présentes sur le poste (SOG-0180) : { done, cycle (le cycle AIRAC en vigueur), at (ISO UTC de la plus ancienne des dernières dates, None sans fichier), sources: { <id>: { present, at } } }. `done` : chaque source
+    téléchargeable de la zone (ni déposée à la main, ni lue sur ce poste seulement ; ENAIRE seulement avec sa coche « personnel ») a un fichier écrit depuis le début du cycle en vigueur. Une zone sans source téléchargeable : done faux, sources vides."""
+    names = [x for x in S.sources_of(zone) if S.SOURCES[x]['kind'] == 'download' and (x != 'enaire' or 'enaire' in personal)]
+    if 'openaip' in names and ((zone, 'openaip') not in latest and (len(zone) != 2 or all(f'{zone}_{layer}' in absent for layer in ('asp', 'apt', 'nav', 'rpp')))):
+        names.remove('openaip')                      # openAIP n'a aucun export de ce pays (ou la zone n'a pas de code de pays) : rien à attendre de lui, la zone n'en est pas « en retard »
+    start = datetime.datetime.combine(datetime.date.fromisoformat(current), datetime.time(0, 0), datetime.timezone.utc).timestamp()
+    iso = lambda t: datetime.datetime.fromtimestamp(t, datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    sources = {x: {'present': (zone, x) in latest, 'at': iso(latest[(zone, x)]) if (zone, x) in latest else None} for x in names}
+    ats = [latest[(zone, x)] for x in names if (zone, x) in latest]
+    return {'done': bool(names) and all((zone, x) in latest and latest[(zone, x)] >= start for x in names), 'cycle': current, 'at': iso(min(ats)) if ats else None, 'sources': sources}
+
+
 def zone_states(data, zones, personal, ctx):
     """L'état des zones (voir l'en-tête) : { zone: { state, reason, reasons, buildable, builtCycle, expectedCycle, parserVersion } }."""
     B, S = _ns(('base', 'build')), _ns(('base', 'fetch'))
@@ -200,6 +229,8 @@ def zone_states(data, zones, personal, ctx):
     used = aero_cycles.used_sources(sources, personal)
     parser = parser_version()
     wait = waiting_pickups(data, zones, ctx, sources)
+    latest = download_times(data, inputs, S) if S else {}
+    absent = S.absent_load(ctx, current) if S else frozenset()
     out = {}
     for z in zones:
         reasons, notices = [], []
@@ -252,7 +283,8 @@ def zone_states(data, zones, personal, ctx):
         first = reasons[0]['code'] if reasons else None
         state = 'up-to-date' if not reasons else 'never-built' if first == 'never-built' else 'failed' if first == 'failed' else 'stale'
         out[z] = {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': reasons, 'notices': notices, 'buildable': any(r['code'] in BUILDABLE for r in reasons), 'builtCycle': built,
-                  'expectedCycle': own or built, 'parserVersion': _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json')) if built else None}
+                  'expectedCycle': own or built, 'parserVersion': _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json')) if built else None,
+                  'download': download_state(z, current, personal, latest, S, absent) if S else None}
     return out
 
 

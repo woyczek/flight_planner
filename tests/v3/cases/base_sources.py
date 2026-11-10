@@ -1768,3 +1768,37 @@ def k153(c):
         AF.get = kept
     ob = importlib.import_module('outbound')
     c.ok(ob.UA and 'Mozilla' not in ob.UA and 'Chrome' not in ob.UA, ob.UA, 'the launcher keeps declaring itself as it is: it never poses as a browser to get past a refusal')
+
+
+@case('K158', 'base/status says per zone whether the sources the launcher can download are already there for the cycle in force: `download { done, cycle, at, sources: { id: { present, at } } }` (SOG-0180), read only', 'K', static=True,
+      rule='SOG-0180 (Réglages, 10 Nov 2026): « sources du cycle déjà présentes » had no field: base/status gave state and reasons only, base/fetch dated its sources only for sia, nats and enaire. Per zone: `download` lists the downloadable sources of the zone (not the hand-dropped, not the local-only; ENAIRE only with its personal box; openAIP not counted when it has no export of the country), whether a file is there and when, `done` = each has a file written since the start of the cycle in force, `at` = the oldest of the last file dates, `cycle` = the cycle in force; no network, nothing written')
+def k158(c):
+    RJ, BS, AF, DS = _mods()
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'sia' / 'openaip').mkdir(parents=True)
+        (data / 'sia' / 'geojson').mkdir(parents=True)
+        stamp = lambda p, iso: os.utime(p, (datetime.datetime.fromisoformat(iso).timestamp(),) * 2)
+        put = lambda rel, iso: ((data / 'sia' / rel).write_text('{}', encoding='utf-8'), stamp(data / 'sia' / rel, iso))
+        (data / 'sia' / 'zones' / 'de').mkdir(parents=True)
+        put('openaip/de_asp.geojson', '2026-11-01T10:00:00+00:00')              # de: fetched since the cycle began (29 Oct)
+        put('zones/de/dfs_ed_procedures.xml', '2026-11-02T10:00:00+00:00')       # de: and the DFS file, a day later
+        put('openaip/no_asp.geojson', '2026-10-10T10:00:00+00:00')              # no: fetched, but for the previous cycle
+        put('geojson/faa_sua.geojson', '2026-11-05T08:30:00+00:00')              # us: the FAA layers, not the class layer yet
+        ctx = {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 9), 'cache': str(Path(td) / 'cache')}
+        run = lambda **a: status(RJ.Job('base', 'status', {}), check_s(a), ctx)
+        z = run(zones=['de', 'no', 'it', 'us', 'cyn'])['zones']
+        d = {k: v['download'] for k, v in z.items()}
+        c.eq((d['de']['done'], d['de']['cycle'], d['de']['at'], sorted(d['de']['sources'])), (True, '2026-10-29', '2026-11-01T10:00:00Z', ['dfs', 'openaip']),
+             'de: its two downloadable sources (openAIP, DFS) are there, written since the start of the cycle in force: done; `at` is the OLDEST of their dates', what='done')
+        c.eq((d['no']['done'], d['no']['sources']['openaip']['present'], d['no']['at']), (False, True, '2026-10-10T10:00:00Z'), 'no: a file is there but older than the cycle: present, not done', what='old')
+        c.eq((d['it']['done'], d['it']['at'], d['it']['sources']['openaip']), (False, None, {'present': False, 'at': None}), 'it: nothing downloaded: not present, no date', what='none')
+        c.eq((d['us']['done'], {k: v['present'] for k, v in d['us']['sources'].items()}, d['us']['at']), (False, {'openaip': False, 'faa': True, 'faaclass': False}, '2026-11-05T08:30:00Z'),
+             'us: faa is there, faaclass is not: not done; the oldest date is the only one', what='us')
+        c.eq((d['cyn']['done'], d['cyn']['sources']), (False, {}), 'a zone without country code has no openAIP export to wait for: nothing downloadable, not done', what='no code')
+        BS.absent_save(ctx, '2026-10-29', {f'it_{k}' for k in ('asp', 'apt', 'nav', 'rpp')})
+        z2 = run(zones=['it'])['zones']['it']['download']
+        c.eq((z2['done'], z2['sources']), (False, {}), 'openAIP has no export of it for this cycle (the launcher knows it): it is not waited for', what='absent')
+        c.ok(not [x for x in (data / 'sia').rglob('*') if x.is_file() and x.name not in ('de_asp.geojson', 'no_asp.geojson', 'faa_sua.geojson', 'dfs_ed_procedures.xml')], 'written', 'read only: nothing was written')
