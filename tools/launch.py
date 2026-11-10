@@ -4240,7 +4240,7 @@ def regen():
         # aircraft_publish : la publication de la base des types (verbe aircraft/publish, tools/regen/aircraft.py) reste ici, avec
         # la synchronisation qu'elle déclenche ; le jeu la reçoit par son contexte
         REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env,
-                                                      'aircraft_publish': aircraft_publish, 'downloads': downloads_dirs, 'sync_lock': SYNC_LOCK},
+                                                      'aircraft_publish': aircraft_publish, 'downloads': downloads_dirs, 'sync_lock': SYNC_LOCK, 'lnm_folder': lnm_db_folder},
                                 store=os.path.join(ROOT, 'tools', '.regen_last.json'))
     return REGEN
 _loaded = {}  # module → date du fichier au chargement

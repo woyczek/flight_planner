@@ -213,7 +213,7 @@ SOURCE_PART = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$')     # un nom de 
 # la raison d'un refus d'arguments (400), dans ses mots : chaque jeu exporte EXPLAIN = { (jeu, verbe): fonction(args) → { reason, message, ...paramètres } | None } ; load_verbs les réunit ici (SOG-0144)
 EXPLAIN = {}
 # les verbes qui ne font que lire : leur travail ne remplace pas le dernier travail qui a écrit (Jobs.work, tools/.regen_last.json › work)
-READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('route', 'compute'), ('route', 'fra-points'), ('ground', 'state'), ('stats', 'output')}
+READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('route', 'compute'), ('route', 'fra-points'), ('ground', 'state'), ('stats', 'output'), ('proc', 'lnm')}
 # SOG-0206 : la page lit seule, en fond, la couche sol d'un terrain (ground/fetch, ~30 s) dès qu'elle a lu ses procédures ; le contrôle de route que le pilote lance à ce moment-là
 # était refusé (409 « a job is already running ») et l'écran disait « n'a pas répondu ». Un travail de SIDE (le calcul et le contrôle de route, qui ne font que lire la base et les
 # procédures) part donc à côté d'un travail de BACKGROUND (qui n'écrit que proc/ground/, jamais ce que le calcul lit) : un seul à côté à la fois, jamais à côté d'un autre travail.

@@ -7086,3 +7086,123 @@ def k146(c):
             except subprocess.TimeoutExpired:
                 p.kill()
             log.close()
+
+
+@case('K147', 'Little Navmap as a fallback for the procedures of ONE terrain (SOG-0210): proc/lnm reads the workstation\'s database read-only, hands the records to the page, writes nothing; refused without the personal-use box; closed reasons; the path never comes from the page', 'K', static=True,
+      rule='SOG-0210 (10 Nov 2026, « sans moyen d\'ouvrir littlenavmap en fallback »; decision of the ergonomics session): the refusal said Little Navmap had a database on the workstation and offered no gesture. proc/lnm { icao, personal: true } opens little_navmap_<kind>.sqlite of the launcher\'s own folder with mode=ro&immutable=1 (never copied, no -wal/-shm created), returns the records under `_procedures` (page only, never kept in tools/.regen_last.json), nothing written in data/ nor elsewhere; reasons: not-personal, no-lnm, not-found, no-procedures, unreadable; a local-network device is refused by the jobs route (403, poste only)')
+def k147(c):
+    import http.client
+    import importlib
+    import json
+    import os
+    import shutil
+    import socket
+    import sqlite3
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    from pathlib import Path
+    cols = ('type, alt_descriptor, turn_direction, rnp, fix_ident, fix_lonx, fix_laty, is_flyover, course, distance, altitude1, altitude2, speed_limit, vertical_angle')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td) / 'root'
+        shutil.copytree(c.root / 'tools', root / 'tools', ignore=shutil.ignore_patterns('__pycache__', '_verify', 'demo', '.regen_last.json'))
+        data = root / 'data'
+        data.mkdir()
+        (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        appdata = Path(td) / 'appdata'
+        lnm = appdata / 'ABarthel' / 'little_navmap_db'
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        log = open(Path(td) / 'launcher.log', 'w')
+        p = subprocess.Popen([sys.executable, str(root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
+                             stdin=subprocess.DEVNULL, cwd=td, env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp), 'APPDATA': str(appdata), 'HOME': str(appdata), 'USERPROFILE': str(appdata)})
+        try:
+            hdr = {'X-SOG-Setup': '1', 'Sec-Fetch-Site': 'same-origin', 'Content-Type': 'application/json'}
+
+            def call(method, path, body=None):
+                con = http.client.HTTPConnection('127.0.0.1', port, timeout=60)
+                con.request(method, path, body=json.dumps(body) if body is not None else None, headers=hdr)
+                r = con.getresponse()
+                raw = r.read()
+                try:
+                    return r.status, json.loads(raw)
+                except ValueError:
+                    return r.status, {}
+            for _ in range(60):
+                try:
+                    if call('GET', '/')[0] in (200, 302, 404):
+                        break
+                except OSError:
+                    time.sleep(0.5)
+
+            def job(args):
+                st, j = call('POST', '/__setup/regen/job', {'set': 'proc', 'verb': 'lnm', 'args': args, 'author': 'TST'})
+                if st != 200:
+                    return st, j
+                end, v = time.time() + 30, {}
+                while time.time() < end:
+                    v = call('GET', '/__setup/regen/job?id=' + j['job'])[1]
+                    if v.get('state') != 'running':
+                        break
+                    time.sleep(0.1)
+                return 200, v.get('result') or {}
+            c.ok('proc/lnm' in call('GET', '/__setup/regen/verbs')[1].get('verbs', []), 'verbs', 'the launcher knows proc/lnm')
+            c.eq(job({'icao': 'KDEN', 'personal': False})[1].get('reason'), 'not-personal', 'without the personal-use box: refused (the data are Navigraph / Jeppesen\'s, a personal licence)', what='not personal')
+            c.eq(job({'icao': 'KDEN', 'personal': True})[1].get('reason'), 'no-lnm', 'no Little Navmap database on the workstation: no-lnm', what='no lnm')
+            c.eq([job(a)[0] for a in ({'icao': 'KDEN', 'personal': True, 'path': 'C:/x.sqlite'}, {'icao': 'KDEN', 'file': 'x'}, {'icao': 'K/..', 'personal': True}, {'personal': True})], [400, 400, 400, 400],
+                 'a path, a file name or a bad code in the request: 400 (the base is the launcher\'s own folder, never the page\'s)', what='closed request')
+            lnm.mkdir(parents=True)
+            db = lnm / 'little_navmap_navigraph.sqlite'
+            con = sqlite3.connect(db)
+            con.executescript(
+                'create table airport(airport_id integer primary key, ident text, icao text);'
+                'create table approach(approach_id integer primary key, airport_id int, runway_name text, type text, suffix text, arinc_name text, fix_ident text);'
+                f'create table approach_leg(approach_leg_id integer primary key, approach_id int, is_missed int, {cols} text);'
+                'create table transition(transition_id integer primary key, approach_id int, fix_ident text);'
+                f'create table transition_leg(transition_leg_id integer primary key, transition_id int, {cols} text);'
+                "insert into airport values (1, 'KDEN', 'KDEN'), (2, 'KEMP', 'KEMP');"
+                "insert into approach values (10, 1, '08', 'GPS', 'D', 'RW08', 'BAYLR6'), (11, 1, '08', 'ILS', '', 'I08', 'LOC08');"
+                "insert into approach_leg values (1, 10, 0, 'VA', '+', null, 0, null, null, null, 0, 83, 0, 5934, 0, 0, 0), (2, 10, 0, 'DF', '+', 'R', 0, 'WAKIR', -105.026, 39.7486, 0, 0, 0, 11000, 0, 0, 0),"
+                " (3, 11, 0, 'IF', 'A', null, 0, 'FAF08', -104.9, 39.8, 0, 0, 0, 7000, 0, 0, 0), (4, 11, 1, 'CA', '-', null, 0, null, null, null, 0, 90, 0, 6000, 0, 0, 0);"
+                "insert into transition values (20, 10, 'HBU');"
+                "insert into transition_leg values (1, 20, 'IF', '', null, 0, 'HBU', -105.5, 39.9, 0, 0, 0, 0, 0, 0, 0);")
+            con.commit()
+            con.close()
+            before = (db.stat().st_size, db.stat().st_mtime_ns, sorted(x.name for x in lnm.iterdir()))
+            st, r = job({'icao': 'kden', 'personal': True})
+            procs = r.get('_procedures') or []
+            by = {x['id']: x for x in procs}
+            c.eq((st, r.get('ok'), r.get('source'), r.get('base'), r.get('count'), sorted(by)), (200, True, 'lnm', 'little_navmap_navigraph.sqlite', 3, ['KDEN.APP.I08.RW08', 'KDEN.SID.BAYLR6.RW08', 'KDEN.SID.BAYLR6.RW08.HBU']),
+                 'the procedures of one terrain come back: a SID, its transition, an approach; the base is named, never a path', what='read')
+            sid, tr, app = by['KDEN.SID.BAYLR6.RW08'], by['KDEN.SID.BAYLR6.RW08.HBU'], by['KDEN.APP.I08.RW08']
+            c.eq((sid['kind'], sid['status'], sid['lnm'], sid['source'], sid['runways'], [x['id'] for x in sid['points']], sid['points'][0]['alt'], sid['points'][1]['turn']),
+                 ('SID', 'lnm', True, {'kind': 'lnm', 'ref': 'little_navmap_navigraph.sqlite'}, ['08'], [None, 'WAKIR'], {'type': 'min', 'ft': 5934}, 'R'), 'common schema, marked as read from Little Navmap', what='sid')
+            c.eq(([x['id'] for x in tr['points']], [x['phase'] for x in tr['points']]), (['HBU', None, 'WAKIR'], ['trans', 'main', 'main']), 'a transition is followed by the legs of its procedure, as the CIFP records are', what='transition')
+            c.eq((app['kind'], app['type'], [x['phase'] for x in app['points']], app['points'][1]['alt']), ('APP', 'ILS', ['main', 'missed'], {'type': 'max', 'ft': 6000}), 'an approach: its type, its missed-approach leg marked', what='app')
+            c.eq(job({'icao': 'KEMP', 'personal': True})[1].get('reason'), 'no-procedures', 'a terrain in the base without procedure: no-procedures', what='none')
+            c.eq(job({'icao': 'ZZZZ', 'personal': True})[1].get('reason'), 'not-found', 'a terrain in no base: not-found', what='not found')
+            after = (db.stat().st_size, db.stat().st_mtime_ns, sorted(x.name for x in lnm.iterdir()))
+            c.eq(before, after, 'the database is untouched: same size and date, no -wal / -shm / copy created beside it (opened read-only, immutable)', what='untouched')
+            stray = [str(x) for x in data.rglob('*') if x.is_file() and x.name not in ('data_tree.js', '.defa_instance')]
+            c.ok(not stray, str(stray[:5]), 'nothing is written in data/')
+            last = root / 'tools' / '.regen_last.json'
+            c.ok(not last.exists() or 'BAYLR6' not in last.read_text(encoding='utf-8'), 'kept', 'the records are for the page only: never kept in tools/.regen_last.json')
+            (lnm / 'little_navmap_xp12.sqlite').write_bytes(b'not a database' * 10)
+            (lnm / 'little_navmap_navigraph.sqlite').unlink()
+            c.eq(job({'icao': 'KDEN', 'personal': True})[1].get('reason'), 'unreadable', 'a file that is no SQLite database: unreadable, never an exception', what='unreadable')
+        finally:
+            p.terminate()
+            try:
+                p.wait(10)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            log.close()
+    # the local-network counter-proof: the jobs route is for the workstation only (a paired device gets 403 before any job)
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    c.eq((L.ROUTES[('POST', '/__setup/regen/job')][1], L.ROUTES[('POST', '/__setup/regen/job')][1] != 'lan'), ('poste', True), 'a device of the local network cannot start any job (route « poste »): proc/lnm is out of its reach', what='lan')
