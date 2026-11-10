@@ -55,6 +55,25 @@ def deposited(data, iso):
     return out
 
 
+def deposited_latest(data):
+    """Le cycle le plus récent dont les trois jeux sont déposés à la main : (iso, [FIX, AWY, NAV] en octets, {}) ; sinon (None, None, { iso: [jeux déposés] }) de ce que l'on a, pour dire ce qui manque. Le nom de chaque fichier est celui que la FAA lui donne (tools/base_upload.py)."""
+    have = {}
+    try:
+        names = os.listdir(os.path.join(data, 'local', 'upload'))
+    except OSError:
+        return None, None, {}
+    for n in names:
+        m = re.fullmatch(r'(\d{2})_([A-Z][a-z]{2})_(\d{4})_(FIX|AWY|NAV)_CSV\.zip', n)
+        if m and m.group(2) in MONTHS:
+            have.setdefault(datetime.date(int(m.group(3)), MONTHS.index(m.group(2)) + 1, int(m.group(1))).isoformat(), set()).add(m.group(4))
+    for iso in sorted(have, reverse=True):
+        if have[iso] >= set(KINDS):
+            blobs = deposited(data, iso)
+            if blobs:
+                return iso, blobs, {}
+    return None, None, {iso: [k for k in KINDS if k in ks] for iso, ks in sorted(have.items())}
+
+
 def url(kind, iso):
     """L'adresse du jeu CSV d'un cycle : https://nfdc.faa.gov/webContent/28DaySub/extra/29_Oct_2026_FIX_CSV.zip (calculée ici)."""
     if kind not in KINDS or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(iso)):

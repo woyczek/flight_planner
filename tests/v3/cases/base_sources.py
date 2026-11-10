@@ -1766,8 +1766,16 @@ def k153(c):
             c.ok('refuse l’accès automatique' in said and 'nfdc.faa.gov' in said and cur in said and 'gardés' in said and '403' in said and 'Choisir le fichier' in said, said,
                  'nothing answers: the page refuses automatic access, the host and the cycles tried are named, what is kept is said, and the repli too (the three sets downloaded in a browser, then « Choisir le fichier… »)')
             (Path(td) / 'local' / 'upload').mkdir(parents=True)
-            for k in ('FIX', 'AWY', 'NAV'):                      # the user chose the three sets by hand (K146 recognises them and puts them under the FAA's own name)
-                (Path(td) / 'local' / 'upload' / f'{d.day:02d}_{N.MONTHS[d.month - 1]}_{d.year}_{k}_CSV.zip').write_bytes(zips[k])
+            put = lambda k: (Path(td) / 'local' / 'upload' / f'{d.day:02d}_{N.MONTHS[d.month - 1]}_{d.year}_{k}_CSV.zip').write_bytes(zips[k])
+            put('FIX')                                           # the user chose the sets by hand, one by one (K146 recognises them and puts them under the FAA's own name)
+            try:
+                AF.nasr(td)
+                said = ''
+            except ValueError as e:
+                said = str(e)
+            c.ok('déjà déposés' in said and 'FIX' in said.split('déjà déposés')[1] and 'il manque AWY, NAV' in said, said[-200:], 'one set deposited: the message says which are there and which are missing (the screen asks for the rest)')
+            put('AWY')
+            put('NAV')
             r = AF.nasr(td)
             c.eq((r['features'] > 0, json.loads((Path(td) / 'sia' / 'geojson' / 'faa_nasr.geojson').read_text(encoding='utf-8'))['issue']), (True, cur), 'with the three sets deposited by hand the layer is built from them when the FAA refuses', what='deposited')
     finally:

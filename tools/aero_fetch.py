@@ -203,15 +203,18 @@ def nasr(data):
             blobs = [get(faa_nasr.url(k, cycle)) for k in ('FIX', 'AWY', 'NAV')]
         except OSError as e:
             last = e
-            blobs = faa_nasr.deposited(data, cycle)       # les trois jeux CHOISIS à la main par l'utilisateur (« Choisir le fichier… », data/local/upload/) : le repli quand la FAA refuse le lanceur
-            if not blobs:
-                continue
+            continue
         issue = cycle
         break
     else:
+        cycle, blobs, partial = faa_nasr.deposited_latest(data)     # les trois jeux CHOISIS à la main par l'utilisateur (« Choisir le fichier… », data/local/upload/) : le repli quand la FAA refuse le lanceur, quel que soit leur cycle
+        if blobs:
+            issue = cycle
+    if not issue or not blobs:
         why = (f'la page du NASR refuse l’accès automatique ({refused}) ; ' if refused else 'cycle en vigueur introuvable sur la page du NASR ; ') + \
             f'les jeux du cycle {" ou ".join(cycles)} ne répondent pas non plus sur {faa_nasr.HOST} ({last}) : points et voies des États-Unis non mis à jour, ceux déjà là sont gardés. ' + \
-            f'Repli : télécharger les trois jeux CSV (FIX, AWY, NAV) de {faa_nasr.PAGE} dans un navigateur, puis « Choisir le fichier… » sur la ligne des États-Unis (Données)'
+            f'Repli : télécharger les trois jeux CSV (FIX, AWY, NAV) de {faa_nasr.PAGE} dans un navigateur, puis « Choisir le fichier… » sur la ligne des États-Unis (Données)' + \
+            ''.join(f' ; déjà déposés pour {c} : {", ".join(ks)}, il manque {", ".join(k for k in faa_nasr.KINDS if k not in ks)}' for c, ks in partial.items() if len(ks) < 3)
         raise ValueError(why)
     g, n, m = faa_nasr.convert(*blobs, issue)
     body = json.dumps(g, separators=(',', ':')).encode('utf-8')
