@@ -2731,13 +2731,16 @@
       /** Position d'un identifiant (aérodrome d'abord) : { lat, lon, name, kind } ; null si inconnu. */
       async coords(ident, {
         near,
-        all: every
+        all: every,
+        maxNm
       } = {}) {
         const all = await api.coordsAll(ident, {
             near,
             all: every
           }),
-          best = all[0],
+          // SOG-0142 : `maxNm` (avec `near`) : un lieu plus loin que cela du voisinage n'est pas celui de la route (« LFRS PAM LFBD » plaçait PAM à Tyndall, aux États-Unis, à 3 877 NM) : null, jamais le premier trouvé
+          best = Array.isArray(near) && near.length === 2 && Number.isFinite(maxNm) && all[0] && all[0].distanceNm > maxNm ?
+          undefined : all[0],
           place = x => ({
             lat: +x.item.lat,
             lon: +x.item.lon,

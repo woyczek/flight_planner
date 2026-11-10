@@ -142,6 +142,18 @@ class Nav:
         if len(candidates)>1: raise ValueError('Identifiant géographiquement ambigu : '+ident+' ('+str(len(candidates))+' positions).')
         return candidates[0]
 
+    def check_detour(self,keys,start=None,end=None):
+        """Un point de la route qui n'a aucun voisin plausible (SOG-0142 : « LFRS PAM LFBD » plaçait PAM à Tyndall, aux États-Unis, seul PAM de la base) : le trajet fait plus du double de la distance directe plus 400 NM →
+        « Point loin de la route », avec le point qui coûte le plus. Pas de contrôle sous 50 NM de distance directe (un circuit) ni sans point intermédiaire."""
+        chain=[k for k in [start,*keys,end] if k]
+        if len(chain)<3:return
+        pts=[self.nodes[k] for k in chain]
+        direct=nm(pts[0],pts[-1]);total=sum(nm(a,b) for a,b in zip(pts,pts[1:]))
+        if direct<50 or total<=2*direct+400:return
+        worst=max(range(1,len(pts)-1),key=lambda i:nm(pts[i-1],pts[i])+nm(pts[i],pts[i+1])-nm(pts[i-1],pts[i+1]))
+        extra=nm(pts[worst-1],pts[worst])+nm(pts[worst],pts[worst+1])-nm(pts[worst-1],pts[worst+1])
+        raise ValueError(f"Point loin de la route : {pts[worst]['id']} ajoute {extra:.0f} NM à une route directe de {direct:.0f} NM (position {pts[worst]['lat']:.2f}, {pts[worst]['lon']:.2f}) ; aucun homonyme plus proche dans la base : point inconnu à proximité.")
+
     def resolve_sequence(self,names,start=None,end=None):
         """Resolve homonyms by the shortest complete geographical chain.
         A close second interpretation stays an explicit ambiguity.
@@ -158,6 +170,7 @@ class Nav:
             paths=next_paths
         ranked=sorted((cost+(nm(self.nodes[key],self.nodes[end]) if end else 0),chosen) for cost,key,chosen in paths)
         best=ranked[0]
+        self.check_detour(best[1],start,end)
         if len(ranked)>1 and ranked[1][0]-best[0]<max(1,best[0]*.005):
             raise ValueError('Route géographiquement ambiguë : plusieurs positions de points donnent des trajets comparables. Préciser un point voisin.')
         return best[1]

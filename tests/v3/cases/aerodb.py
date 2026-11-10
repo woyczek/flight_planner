@@ -7494,3 +7494,44 @@ def k157(c):
     }""")
     c.eq(r, [['w2', 'apron', 'U b', False, True, True], ['n4', 'park', 'A12', True, False, True], ['n5', 'park', '12', False, False, True], ['n6', 'hold', 'H', False, False, True]],
          'the page keeps the apron (name cleaned, outline of 3+ points and centre required: two others dropped), the gate flag only on a park and only when true', what='page')
+
+
+@case('K161', 'A homonym far from the route is not « the first found »: the engine says « Point loin de la route » when no neighbour is plausible, and aerodb.coords(id, { near, maxNm }) gives null beyond maxNm (SOG-0142)', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0142 (refused again, 10 Nov 2026: « LFRS PAM LFBD passe toujours pas les USA »): the user\'s base holds two PAM (a TACAN at Tyndall, Florida, a VOR in the Netherlands) and no French one; the engine chose the shortest chain (the Dutch one, 766 NM of detour on a 145 NM route) and the page, which only knows the Tyndall one, drew the route to the United States. Now: the engine refuses a chain more than twice the direct distance plus 400 NM (« Point loin de la route : PAM ajoute 766 NM… »), the page may ask for `maxNm` with `near` and gets null for a place farther than that')
+def k161(c):
+    import collections
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    E = importlib.import_module('route_engine.engine')
+    nav = object.__new__(E.Nav)
+    nav.nodes, nav.ids = {}, collections.defaultdict(list)
+    lfrs = nav.add(dict(id='LFRS', lat=47.157, lon=-1.608))
+    lfbd = nav.add(dict(id='LFBD', lat=44.829, lon=-0.715))
+    kden = nav.add(dict(id='KDEN', lat=39.86, lon=-104.67))
+    nav.add(dict(id='PAM', lat=30.074, lon=-85.572))
+    nav.add(dict(id='PAM', lat=52.335, lon=5.092))
+
+    def said(names):
+        try:
+            nav.resolve_sequence(names)
+            return ''
+        except ValueError as e:
+            return str(e)
+    msg = said(['LFRS', 'PAM', 'LFBD'])
+    c.ok(msg.startswith('Point loin de la route : PAM ajoute') and 'route directe de 145 NM' in msg, msg, 'LFRS PAM LFBD with PAM only in Florida and in the Netherlands: refused, the detour and the direct distance said')
+    c.eq(said(['LFRS', '4959N08712W', 'KDEN']) != '', False, 'a route whose chain follows its direct (a coordinate point on the way, 100° of longitude): not refused', what='long ok')
+    near = nav.add(dict(id='PAM', lat=45.9, lon=-0.9))
+    c.eq(nav.nodes[nav.resolve_sequence(['LFRS', 'PAM', 'LFBD'])[1]]['lat'], 45.9, 'with a PAM on the way, the shortest chain picks it (as before)', what='near')
+    c.eq(said(['LFBD', 'LFRS', 'LFBD']), '', 'a circuit (direct distance under 50 NM) is not checked', what='circuit')
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'];
+      const z = 'us', cycle = '2026-10-29';
+      const files = { ...Object.fromEntries(kinds.map(k => [`sia/base/${z}/${cycle}/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle, kind: 'meta', parserVersion: 27, data: {} } : { schema: 2, zone: z, cycle, kind: k, data: k === 'points' ? [{ id: 'PAM', lat: 30.074, lon: -85.572 }] : [] }])), 'sia/base/index.json': { schema: 2, kind: 'index', zones: { us: { cycle, prefixes: ['K'], kb: {} } } } };
+      const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse('2026-11-10T12:00:00Z') });
+      const near = [47.15, -1.61];
+      const a = await db.coords('PAM', { near }), b = await db.coords('PAM', { near, maxNm: 1500 }), d = await db.coords('PAM', { near, maxNm: 5000 }), e = await db.coords('PAM', { maxNm: 1500 });
+      return { a: a && Math.round(a.distanceNm), b, d: d && Math.round(d.distanceNm), e: e && e.lat };
+    }""")
+    c.eq((r['a'], r['b'], r['d'], r['e']), (3877, None, 3877, 30.074), 'coords with a neighbourhood: the only PAM is 3 877 NM away; with maxNm 1500: null (not the first found); with 5000 or without a neighbourhood: found', what='maxNm')
