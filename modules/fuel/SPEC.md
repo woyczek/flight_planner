@@ -185,7 +185,11 @@ to `[data-module="fuel"]`, built on the frame's tokens and classes; no global sh
   (the Missions module's « Préparer ce vol ») sets the flight of that mission (modules/missions SPEC § 4, case N4); its origin and
   destination are also known points of the flight at the mission's coordinates (`missionFlight` `depAt` / `arrAt`), so that a base
   unknown to the published base keeps its place in the plan and the distance comes from the plan (SOG-0193, N13: never « distance
-  inconnue » with a route).
+  inconnue » with a route). **The mission chip** (§ 10.47 b, SOG-0193 L2, N16): a flight that names a mission shows « Mission <ID> » in
+  the head row; a tap opens the mission sheet in a pane over the step (risks first, « danger → parade », then the summary, the
+  objectives, the teams, the zones each with « Sur la carte », the description folded), read with `loadMission` (the reader of the
+  door: the registry's row, `MS.readMission`, the file untrusted), without leaving the step; the cross (44 px) or Escape closes it.
+  On a computer the pane sits in Fuel's column (the Map beside stays free), on a phone at the bottom of the screen.
 - **Writes**: the current flight after a quiet time (§ 4); the quote settings (`pilot/<trigram>/fuel.json`) likewise; never a sheet.
 - **Phone**: no horizontal scroll at 375 px (wide tables scroll inside their block), the frame's 44 px targets, drawings redrawn at
   the width of their block (F4).

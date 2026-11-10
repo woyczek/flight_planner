@@ -70,6 +70,8 @@ en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS
 con la pestaña «Fichas». Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
 5000 ft (FL060), en pies por debajo (3500 ft).
 
+**La misión.** Un vuelo preparado desde una misión lleva, arriba en la pantalla, la etiqueta «Misión <ID>»: abre la ficha de la misión sobre el paso (primero los riesgos, luego el resumen, los objetivos, los equipos y las zonas, cada una en el mapa), sin salir del paso; la cruz la cierra.
+
 **Vuelo nuevo.** El botón «Nuevo vuelo», arriba en la pantalla, borra el vuelo en preparación (salida, llegada, ruta, procedimientos, nivel, OFP), tras una pregunta si ya contiene algo o está iniciado; la aeronave se queda. Cambiar un aeródromo por otro a más de 150 NM, o cambiar la salida y la llegada, también forma un par nuevo: se borran la ruta, los procedimientos y el OFP del vuelo anterior, y la pantalla lo dice. Un aeródromo cercano (una corrección) solo sustituye al anterior en la ruta.
 
 <a id="fuel-step-1"></a>**1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
@@ -245,7 +247,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: f4b4270883c1 -->
+<!-- fr: 830cefdf57c9 -->
 
 <!-- chapter: maps -->
 # Mapa

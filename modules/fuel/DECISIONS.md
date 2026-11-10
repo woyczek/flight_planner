@@ -1561,3 +1561,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   button says « Vol en cours de lecture… ». The other gestures outside the inert body: the tabs Devis / Fiches only (they change the
   view, write nothing, and work during the reading). F130 (the page taps the moment the body waits: the wait is short and uneven);
   counter-test on origin/v3: the button unchanged, nothing made.
+- **10 Nov 2026 — the way back to the mission** (SOG-0193 L2, user: « le chemin direct de retour vers la mission est où ? »; § 10.47 b):
+  a chip « Mission <ID> » in Fuel's head row opens the mission sheet in a pane of Fuel, risks first, without leaving the step. Not the
+  frame's pane (that one holds the Map beside; Missions lives in the Company application): a pane of Fuel's own, read with the same
+  reader as the door (`loadMission`, one YAML reader). The 1 280 capture showed a fixed pane over the Map and its close button: the
+  pane sits in Fuel's column; on a phone, at the bottom. N16; counter-test on origin/v3: no chip.

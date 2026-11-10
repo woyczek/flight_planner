@@ -733,3 +733,49 @@ def n15(c):
             return e ? {{ short: b?.textContent || '', long: (l?.textContent || '').trim(), bold: +getComputedStyle(b || e).fontWeight, plain: +getComputedStyle(l || e).fontWeight }} : null }})()""")
         c.ok(fam and fam['short'] == 'SAR' and fam['long'] and fam['bold'] >= 600 and fam['plain'] < 600, fam, f'{w} px: « SAR » in bold, then its long name, in the drawn sheet')
         c.shot(f'N15_{c.design}_{w}_{c.lang}.png')
+
+
+
+_PANE_JS = """() => { const p = document.querySelector('[data-module=fuel] [data-mpane]'), r = p?.getBoundingClientRect();
+  return { shown: !!p && !p.hidden && r.height > 0, first: p?.querySelector('section')?.hasAttribute('data-mrisks') || false,
+    risks: [...(p?.querySelectorAll('[data-mrisk]') || [])].map(e => e.textContent.trim()), zones: p?.querySelectorAll('[data-mzone] a').length || 0,
+    step: [...document.querySelectorAll('[data-module=fuel] .fu-steps [data-step]')].findIndex(b => b.getAttribute('aria-current') === 'step'),
+    sw: document.documentElement.scrollWidth, iw: innerWidth } }"""
+
+
+@case('N16', 'Preparing a mission: a chip « Mission <ID> » in the head of Fuel opens the mission sheet in a pane, its risks first, without leaving the step; the pane closes',
+      'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0193 L2 (user: « le chemin direct de retour vers la mission est où ? Parce que l\'accès mission -> fuel est direct, mais pas le '
+      'retour »; § 10.47 b): the chip in the head, the sheet in a pane over the step (risks first, then summary, objectives, teams, zones on the '
+      'Map), the step unchanged; captures 390 and 1 280 written by the case')
+def n16(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _SHEET_REGISTRY], ['missions/X_SH/X-301A/missionX-301A.yaml', _SHEET_FULL]])
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions')
+        c.go('fuel?mission=X-301A')
+        # a flight left by the previous width: Fuel asks before replacing it
+        c.until("() => !!document.querySelector('.f-modal [data-ok]') || !!document.querySelector('[data-module=fuel] .fu-mchip')", timeout=15000,
+                what='the question, or the flight of the mission')
+        if c.js("!!document.querySelector('.f-modal [data-ok]')"):
+            c.tap('.f-modal [data-ok]')
+        c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-301A', 'the flight of the mission is written', timeout=10000)
+        c.until("!!document.querySelector('[data-module=fuel] .fu-mchip')", timeout=8000, what='the chip « Mission X-301A » in the head')
+        chip = c.js("document.querySelector('[data-module=fuel] .fu-mchip').textContent.trim()")
+        c.ok('X-301A' in chip, chip, f'{w} px: the chip names the mission')
+        c.js("document.querySelector(\"[data-module=fuel] .fu-steps [data-step='1']\")?.click()")
+        c.settle()
+        before = c.js(_PANE_JS)['step']
+        c.tap('[data-module="fuel"] .fu-mchip')
+        c.until("!!document.querySelector('[data-module=fuel] [data-mpane] [data-mrisks]')", timeout=10000, what='the pane with the mission sheet')
+        p = c.js(_PANE_JS)
+        c.ok(p['shown'] and p['first'] and len(p['risks']) == 5 and p['risks'][0] == 'Danger un → Parade un', p, f'{w} px: the sheet in a pane, its five risks first')
+        c.eq(p['zones'], 2, f'{w} px: each zone on the Map', what='zone links')
+        c.eq(p['step'], before, f'{w} px: the step is not left', what='step')
+        c.le(p['sw'], p['iw'], f'{w} px: no horizontal scroll', what='scrollWidth')
+        c.shot(f'N16_{c.design}_{w}_{c.lang}.png')
+        c.tap('[data-module="fuel"] [data-mpane] [data-do="mclose"]')
+        c.until("document.querySelector('[data-module=fuel] [data-mpane]').hidden", what='the pane closes')
+        c.eq(c.js(_PANE_JS)['step'], before, f'{w} px: still the same step', what='step after closing')

@@ -68,6 +68,8 @@ where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060�
 “Time” and “TOD” (top of descent). The screen always opens on the “Quote” tab; the sheets open with the “Sheets” tab. A ✓ marks a completed step.
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
+**The mission.** A flight prepared from a mission carries, at the top of the screen, the chip "Mission <ID>": it opens the mission sheet over the step (the risks first, then the summary, the objectives, the teams and the zones, each on the map), without leaving the step; the cross closes it.
+
 **New flight.** The "New flight" button at the top of the screen clears the flight being prepared (departure, arrival, route, procedures, level, OFP), after a question if it already carries something or is started; the aircraft stays. Changing an aerodrome for one more than 150 NM away, or changing both departure and arrival, also makes a new pair: the route, procedures and OFP of the previous flight are cleared, and the screen says so. A nearby aerodrome (a correction) only replaces the old one in the route.
 
 <a id="fuel-step-1"></a>**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
@@ -239,7 +241,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: f4b4270883c1 -->
+<!-- fr: 830cefdf57c9 -->
 
 <!-- chapter: maps -->
 # Map

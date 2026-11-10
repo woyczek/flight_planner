@@ -73,6 +73,8 @@ Winds („Wind: METAR LFRS“, „Wind: ICON-Vorhersage FL060“, „Wind eingeg
 öffnen sich über den Reiter „Datenblätter“. Ein ✓ markiert einen ausgefüllten Schritt.
 Flugflächen werden überall gleich geschrieben: als FL ab 5000 ft (FL060), darunter in Fuß (3500 ft).
 
+**Der Einsatz.** Ein aus einem Einsatz vorbereiteter Flug trägt oben im Bildschirm den Chip „Einsatz <ID>“: er öffnet das Einsatzblatt über dem Schritt (zuerst die Risiken, dann Zusammenfassung, Ziele, Teams und Zonen, jede auf der Karte), ohne den Schritt zu verlassen; das Kreuz schließt es.
+
 **Neuer Flug.** Die Schaltfläche „Neuer Flug“ oben im Bildschirm löscht den vorbereiteten Flug (Abflug, Ankunft, Strecke, Verfahren, Flugfläche, OFP), nach einer Frage, wenn er schon etwas enthält oder gestartet ist; das Luftfahrzeug bleibt. Ein Flugplatz, der durch einen mehr als 150 NM entfernten ersetzt wird, oder geänderter Abflug und Ankunft ergeben ebenfalls ein neues Paar: Strecke, Verfahren und OFP des vorigen Flugs werden gelöscht, und der Bildschirm sagt es. Ein naher Flugplatz (eine Korrektur) ersetzt nur den alten in der Strecke.
 
 <a id="fuel-step-1"></a>**1 Flug.** Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), das Flugdatum, wenn Sie die Vorhersage (TAF) statt der
@@ -256,7 +258,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: f4b4270883c1 -->
+<!-- fr: 830cefdf57c9 -->
 
 <!-- chapter: maps -->
 # Karte

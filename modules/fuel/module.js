@@ -403,6 +403,21 @@ const TX = {
     'Identificador SimBrief por ajustar (⚙).'
   ],
   // « Préparer ce vol » du module Missions (#fuel?mission=<id>)
+  // la puce de la mission et son volet (SOG-0193 L2, § 10.47 b) : le retour direct à la mission, sans quitter l'étape
+  mChip: ['Mission {id}', 'Mission {id}', 'Einsatz {id}', 'Misión {id}'],
+  mChipTitle: ['La fiche de la mission, sans quitter l’étape', 'The mission sheet, without leaving the step',
+    'Das Einsatzblatt, ohne den Schritt zu verlassen',
+    'La ficha de la misión, sin salir del paso'
+  ],
+  mClose: ['Fermer la fiche de la mission', 'Close the mission sheet', 'Einsatzblatt schließen', 'Cerrar la ficha de la misión'],
+  mRisks: ['Risques', 'Risks', 'Risiken', 'Riesgos'],
+  mNoRisk: ['Aucun risque déclaré.', 'No risk declared.', 'Kein Risiko angegeben.', 'Ningún riesgo declarado.'],
+  mObjectives: ['Objectifs', 'Objectives', 'Ziele', 'Objetivos'],
+  mTeams: ['Équipes', 'Teams', 'Teams', 'Equipos'],
+  mZones: ['Zones', 'Zones', 'Zonen', 'Zonas'],
+  mOnMap: ['Sur la carte', 'On the map', 'Auf der Karte', 'En el mapa'],
+  mDetails: ['Description', 'Description', 'Beschreibung', 'Descripción'],
+  mReading: ['Lecture de la mission…', 'Reading the mission…', 'Einsatz wird gelesen…', 'Leyendo la misión…'],
   missionLoaded: ['Mission {id} : {dep} → {arr} ({n} points), à compléter.', 'Mission {id}: {dep} → {arr} ({n} points), to complete.',
     'Mission {id}: {dep} → {arr} ({n} Punkte), zu vervollständigen.', 'Misión {id}: {dep} → {arr} ({n} puntos), por completar.'
   ],
@@ -1730,6 +1745,21 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-rinfo{flex-wrap:wrap;gap:4px 12px;margin:4px 0}
 [data-module="fuel"] .fu-top{justify-content:space-between;align-items:center;gap:8px}
 [data-module="fuel"] .fu-top>.f-tabs{margin:0}
+/* la puce de la mission (SOG-0193 L2) : à la taille du texte, teinte d'accent, cible de 44 px ; son volet par-dessus l'étape, à droite
+   sur un ordinateur, en bas sur un téléphone, sans rien déplacer dessous */
+[data-module="fuel"] .fu-mchipslot:empty{display:none}
+[data-module="fuel"] .fu-mchip{position:relative;min-height:0;height:28px;padding:0 10px;border:1px solid var(--sog-accent);background:none;color:var(--sog-accent);font:inherit;font-size:var(--sog-size-s);font-weight:600;white-space:nowrap}
+[data-module="fuel"] .fu-mchip::before{content:'';position:absolute;inset:-8px -2px}
+[data-module="fuel"] .fu-mchip[aria-expanded="true"]{background:var(--sog-accent);color:var(--sog-surface)}
+[data-module="fuel"]:has(> .fu-mpane:not([hidden])){position:relative} /* le volet dans la colonne de Carburant : la Carte à côté reste libre */
+[data-module="fuel"] .fu-mpane{position:absolute;z-index:30;right:0;top:88px;width:min(420px,100%);max-height:calc(100vh - 128px);overflow:auto;margin:0;box-shadow:var(--sog-shadow)}
+[data-module="fuel"] .fu-mpane[hidden]{display:none}
+[data-module="fuel"] .fu-mhead{align-items:flex-start;justify-content:space-between;gap:8px}
+[data-module="fuel"] .fu-mhead h2{margin:0;font-size:var(--sog-size-s)}
+[data-module="fuel"] .fu-mx{flex:none;min-width:44px;min-height:44px;padding:0}
+[data-module="fuel"] .fu-mpane h3{margin:.6em 0 .2em;font-size:var(--sog-size-s)}
+[data-module="fuel"] .fu-mlist{margin:.2em 0;padding-left:1.1em}
+@media (max-width:599px){[data-module="fuel"] .fu-mpane{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-height:70vh}} /* téléphone : le volet en bas de l'écran */
 [data-module="fuel"] .fu-linkbtn{min-height:44px;padding:0 4px;border:0;border-radius:0;background:none;box-shadow:none;text-shadow:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer}
 [data-module="fuel"] .fu-linkbtn:is(:hover,:focus,:active,:disabled){background:none;box-shadow:none;border:0}
 [data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
@@ -1777,6 +1807,7 @@ function renderPlan() {
   // champ en cours de frappe (data-k, et data-i pour les niveaux des points) : valeur, focus et sélection rendus par
   // keepScroll du cadre (frame/lib/dom.js) — un rendu ne réécrit jamais ce que l'on tape
   keepScroll(S.body, renderPlanBody);
+  mChipDraw(); // la puce suit la mission du vol, même écrite ailleurs (SOG-0193 L2)
 }
 /** Dessine l'écran Devis (champs une fois ; résultats redessinés par refresh). */
 function renderPlanBody() {
@@ -2248,6 +2279,7 @@ async function newFlight() {
   S.rcheck = null;
   S.unres = null;
   markEnds();
+  mChipDraw(); // la mission déliée : plus de puce, le volet fermé
   S.ctx.notify(tt(TX.newFlightDone), 'ok');
   saveFlight();
   if (S.view === 'plan') renderPlan();
@@ -4764,23 +4796,15 @@ async function applyMission(id) {
   const s = S,
     ctx = S.ctx,
     // lu en attendant le réseau (8 s au plus) : un fichier pas encore sur l'appareil n'est pas « introuvable »
-    yaml = async path => {
-      const text = await Promise.race([Promise.resolve().then(() => ctx.data.read(path, {
-        wait: true
-      })).then(r => r?.value ?? r?.text ?? null).catch(() => null), new Promise(res => setTimeout(() => res(null), 8000))]);
-      if (typeof text !== 'string' || !text.trim()) return null;
-      try {
-        if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
-        return globalThis.jsyaml.load(text);
-      } catch {
-        return null;
-      }
-    };
+    yaml = path => missionYaml(ctx, path);
   if (S.flight.started?.at) return ctx.notify(tt(TX.missionStarted, {
     id
   }), 'warn');
-  const row = MS.readRegistry(await yaml('missions/mission_registry.yaml')).find(r => r.id === id),
-    mf = row?.folder && row.file ? MS.missionFlight(MS.readMission(await yaml(`missions/${row.folder}/${row.file}`))) : null; // chemin sûr seulement
+  const {
+    row,
+    mission
+  } = await loadMission(ctx, id, yaml),
+    mf = mission ? MS.missionFlight(mission) : null;
   if (gone(s)) return;
   if (!mf) return ctx.notify(tt(TX.missionUnread, {
     id
@@ -4835,6 +4859,7 @@ async function applyMission(id) {
   f.mission = mf.mission;
   f.missionCategory = mf.category || row?.category || ''; // SOG-0041 : celle du fichier, sinon celle du registre
   markEnds();
+  mChipDraw();
   ctx.notify(tt(TX.missionLoaded, {
     id,
     dep: dep || '?',
@@ -4844,6 +4869,92 @@ async function applyMission(id) {
   saveFlight();
   renderPlan();
   resolveRoute();
+}
+/** Le fichier YAML d'un chemin du dépôt, lu en attendant le réseau (8 s au plus : un fichier pas encore sur l'appareil n'est pas
+ *  « introuvable ») ; null s'il ne se lit pas. */
+async function missionYaml(ctx, path) {
+  const text = await Promise.race([Promise.resolve().then(() => ctx.data.read(path, {
+    wait: true
+  })).then(r => r?.value ?? r?.text ?? null).catch(() => null), new Promise(res => setTimeout(() => res(null), 8000))]);
+  if (typeof text !== 'string' || !text.trim()) return null;
+  try {
+    if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+    return globalThis.jsyaml.load(text);
+  } catch {
+    return null;
+  }
+}
+/** Une mission du dépôt par son identifiant : { row (la ligne du registre), mission (MS.readMission) } ; null pour ce qui ne se lit
+ *  pas. Le chemin vient du registre, nettoyé par MS.readRegistry (jamais pris tel quel). */
+async function loadMission(ctx, id, yaml = path => missionYaml(ctx, path)) {
+  const row = MS.readRegistry(await yaml('missions/mission_registry.yaml')).find(r => r.id === id) || null,
+    mission = row?.folder && row.file ? MS.readMission(await yaml(`missions/${row.folder}/${row.file}`)) : null;
+  return {
+    row,
+    mission
+  };
+}
+// ---------------------------------------------------------------- la puce de la mission et son volet (SOG-0193 L2, § 10.47 b)
+/** La puce « Mission <ID> » de l'en-tête, pour un vol qui porte une mission ; rien sinon (le volet fermé). */
+function mChipDraw() {
+  const slot = S?.body?.parentElement?.querySelector(':scope > .fu-top [data-mchip]');
+  if (!slot) return;
+  const id = typeof S.flight?.mission === 'string' ? S.flight.mission.trim().slice(0, 40) : '';
+  slot.innerHTML = id ? `<button type="button" class="fu-mchip" data-do="mpane" aria-expanded="${!!S.mpane}" title="${esc(tt(TX.mChipTitle))}">${esc(tt(TX.mChip, { id }))}</button>` : '';
+  if (!id) mPaneClose();
+}
+/** Ouvre ou ferme le volet de la mission. */
+function mPaneToggle() {
+  return S?.mpane ? mPaneClose() : mPaneOpen();
+}
+/** Ouvre le volet : la fiche de la mission du vol, les risques en tête, sans quitter l'étape (le corps reste tel quel). */
+async function mPaneOpen() {
+  const s = S,
+    pane = s?.body?.parentElement?.querySelector(':scope > [data-mpane]'),
+    id = typeof s?.flight?.mission === 'string' ? s.flight.mission.trim() : '';
+  if (!pane || !id) return;
+  s.mpane = id;
+  pane.hidden = false;
+  pane.setAttribute('aria-label', tt(TX.mChip, {
+    id
+  }));
+  pane.innerHTML = `${mPaneHead(id)}<p class="f-muted">${esc(tt(TX.mReading))}</p>`;
+  mChipDraw();
+  const {
+    row,
+    mission
+  } = await loadMission(s.ctx, id);
+  if (gone(s) || s.mpane !== id) return;
+  pane.innerHTML = mPaneHead(id, mission?.title || row?.title || '') + (mission ? mPaneBody(id, mission) : `<p class="f-warn">${esc(tt(TX.missionUnread, { id }))}</p>`);
+  pane.querySelector('[data-do="mclose"]')?.focus();
+}
+/** Ferme le volet ; la puce reprend le focus si le volet l'avait. */
+function mPaneClose() {
+  const pane = S?.body?.parentElement?.querySelector(':scope > [data-mpane]');
+  if (!pane || !S.mpane) return;
+  const had = pane.contains(document.activeElement);
+  S.mpane = null;
+  pane.hidden = true;
+  pane.innerHTML = '';
+  mChipDraw();
+  if (had) S.body.parentElement.querySelector('.fu-mchip')?.focus();
+}
+/** La tête du volet : la mission, son titre, la croix (44 px). */
+const mPaneHead = (id, title = '') => `<div class="f-row fu-mhead"><h2><b>${esc(id)}</b>${title ? ` ${esc(title)}` : ''}</h2><button type="button" class="fu-mx" data-do="mclose" aria-label="${esc(tt(TX.mClose))}" title="${esc(tt(TX.mClose))}">×</button></div>`;
+/** Le corps du volet (un fichier de mission : entrée non fiable, tout échappé) : les risques d'abord (« danger → parade »), puis le
+ *  résumé, les objectifs, les équipes, les zones (chacune sur la Carte), la description repliée. */
+function mPaneBody(id, m) {
+  const li = list => `<ul class="fu-mlist">${list.join('')}</ul>`,
+    sec = (title, body) => body ? `<section><h3>${esc(tt(title))}</h3>${body}</section>` : '',
+    risks = (m.risks || []).map(x => `<li data-mrisk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`),
+    obj = [m.objectives?.primary, ...(m.objectives?.secondary || [])].filter(Boolean).map(x => `<li>${esc(x)}</li>`),
+    teams = (m.teams || []).map(t => `<li>${esc(t.name)}${t.role ? ` <span class="f-muted">${esc(t.role)}</span>` : ''}</li>`),
+    zones = (m.zones || []).map(z => `<li data-mzone="${esc(z.id)}">${esc([z.id, z.name].filter(Boolean).join(' '))}${m.hasCoords ? ` <a class="f-linkbtn" href="#maps?mission=${encodeURIComponent(id)}&zone=${encodeURIComponent(z.id)}">${esc(tt(TX.mOnMap))}</a>` : ''}</li>`),
+    details = (m.details || []).map(p => `<p>${esc(p)}</p>`).join('');
+  return `<section data-mrisks><h3>${esc(tt(TX.mRisks))}</h3>${risks.length ? li(risks) : `<p class="f-muted">${esc(tt(TX.mNoRisk))}</p>`}</section>
+    ${m.summary ? `<p data-msummary>${esc(m.summary)}</p>` : ''}
+    ${sec(TX.mObjectives, obj.length ? li(obj) : '')}${sec(TX.mTeams, teams.length ? li(teams) : '')}${sec(TX.mZones, zones.length ? li(zones) : '')}
+    ${details ? `<details><summary>${esc(tt(TX.mDetails))}</summary>${details}</details>` : ''}`;
 }
 /** Redessine ce qui dépend du calcul : origine de la croisière, décision, résultat, blocs repliés ouverts. */
 /** Profil vertical du devis pour maps (pilot/<trigramme>/current_flight.json, champ profile) : vario et vitesse sol
@@ -5417,9 +5528,10 @@ export async function mount(el, ctx) {
   if (S.focus === 'arr') S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
   S.step = S.focus === 'route' ? 1 : S.focus ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
-    <div class="f-row fu-top"><div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div><button type="button" data-do="newflight">${esc(tt(TX.newFlight))}</button></div>
+    <div class="f-row fu-top"><div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div><span class="fu-mchipslot" data-mchip></span><button type="button" data-do="newflight">${esc(tt(TX.newFlight))}</button></div>
     <p class="f-muted" data-wait role="status" hidden></p>
-    <div data-body></div>`;
+    <div data-body></div>
+    <aside class="f-card fu-mpane" data-mpane role="dialog" aria-modal="false" hidden></aside>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
   // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
   S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
@@ -5456,6 +5568,11 @@ export async function mount(el, ctx) {
     'fuel-quote');
   el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
   el.querySelector('[data-do="newflight"]').onclick = () => newFlight();
+  // la puce de la mission et son volet (SOG-0193 L2) : hors du corps, comme « Nouveau vol »
+  el.querySelector('[data-mchip]').onclick = e => e.target.closest('[data-do="mpane"]') && mPaneToggle();
+  el.querySelector('[data-mpane]').onclick = e => e.target.closest('[data-do="mclose"]') && mPaneClose();
+  el.querySelector('[data-mpane]').onkeydown = e => e.key === 'Escape' && mPaneClose();
+  mChipDraw();
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
   S.stops.push(ctx.aerodb?.on?.('change', e => self.P.onChange(e)));
   S.stops.push(ctx.aerodb?.on?.('change', async e => {

@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the way back to the mission** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS, help; noreg N16; SOG-0193 L2, § 10.47 b).
+  A chip « Mission <ID> » in the head opens the mission sheet in a pane, risks first, without leaving the step.
 - **Map: a mission map's view does what its name says** (`modules/maps/mission_view.js`, `layers.js`, `draw.js`; DECISIONS; noreg D152; SOG-0171 reopened). The base now follows the view
   chosen in the banner (it kept the style the map was born with); « VFR topo » has the shaded relief, the contours and no refuelling tracks, tracks or airways; the relief is laid
   after any change of base.
@@ -22,7 +24,6 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Weather screen: a refusal says its reason, a wait is not a red notification** (`modules/atmosphere`, `modules/maps/weather.js`, `frame/lib/weather_store.js`; DECISIONS; noreg E19, E18;
   SOG-0198). The launcher's reason (busy, timeout, reset, refused, HTTP code) is shown instead of « offline » (kept for `X-SOG-Offline` alone); « reading the forecast grid… » in the
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
-
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
 - **Frame: a gesture that needs the launcher is never mute** (`frame/app.js` `ctx.launcherState`, `ctx.needLauncher`, event `frame-launcher`; INTEGRATION § 15.1, SPEC, DECISIONS;
