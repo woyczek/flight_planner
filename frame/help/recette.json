@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 62,
+  "tests": 63,
   "verdicts": 27
  },
  "apps": [
@@ -859,6 +859,19 @@
    "state": "ok",
    "comment": "oui, mais on ne sait pas pour quelle compagnie on fait le cr. réserve non bloquante.",
    "at": "2026-11-10T10:41:07Z"
+  },
+  {
+   "id": "SOG-0183",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte de mission : le curseur de complexité a disparu",
+    "en": "Mission map: the complexity slider is gone",
+    "de": "Missionskarte: der Komplexitätsregler ist verschwunden",
+    "es": "Mapa de misión: ha desaparecido el cursor de complejidad"
+   },
+   "test": "Compagnie › Missions › une mission › « Voir sur la Carte » : le curseur de complexité est là, comme sur la Carte du vol, et le déplacer allège ou enrichit la carte de mission.",
+   "since": "2026-11-10",
+   "state": "todo"
   }
  ]
 }

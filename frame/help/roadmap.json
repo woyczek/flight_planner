@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "295a9ec",
+  "organisation": "cc2bf17",
   "fiches": 185,
   "untranslated": 1,
   "priorities": 152
@@ -729,7 +729,7 @@
     {
      "id": "SOG-0183",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte de mission : le curseur de complexité a disparu",
      "en": "Mission map: the complexity slider is gone",
      "de": "Missionskarte: der Komplexitätsregler ist verschwunden",
