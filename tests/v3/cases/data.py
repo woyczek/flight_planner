@@ -5520,7 +5520,8 @@ def l74(c):
 
     def choose(name):
         c.until(f"!document.querySelector('{btn}').disabled", timeout=8000, what='the button is live')
-        c.js(f"document.querySelector('{btn}').scrollIntoView({{ block: 'center' }})")   # a floating note must not cover it
+        c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click())")   # a floating note must not cover the button (the log keeps what was said)
+        c.js(f"document.querySelector('{btn}').scrollIntoView({{ block: 'center' }})")
         with c.page.expect_file_chooser() as fc:
             c.tap(btn)
         fc.value.set_files({'name': name, 'mimeType': 'application/zip', 'buffer': b'PK\x03\x04' + b'x' * 996})
