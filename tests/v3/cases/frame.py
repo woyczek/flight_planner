@@ -2243,6 +2243,8 @@ def a61(c):
     c.open('settings', docs=LEVEL3 + keys)
     c.until("!!document.querySelector('[data-card=access] [data-f=repo]')", timeout=15000, what='the Access card again')
     c.js("document.querySelector('[data-card=access]').closest('details')?.setAttribute('open', '')")
+    # a token is already saved: the field says it in SHORT (its placeholder), the line under it says it in full — two meanings, two texts (R-S9 debt)
+    c.eq([norm(c.js("document.querySelector('[data-card=access] [data-f=token]').placeholder")), norm(c.text('[data-card=access] [data-token-set]'))], [norm(tx(access_file, 'tokenKept', c.lang)), norm(tx(access_file, 'tokenSet', c.lang))], 'a saved token: the field’s placeholder is the short text, the line under it the long one', what='token texts')
     c.page.fill('[data-card="access"] [data-f="repo"]', 'git.example.test/grp/proj')
     c.eq([c.attr(line, 'data-state'), c.js("document.querySelector('[data-card=access] [data-repo-warn]').hidden"),
           norm(c.text('[data-card="access"] [data-repo-warn]'))], ['gitlab', False, norm(tx(access_file, 'repoOtherGitlab', c.lang))],

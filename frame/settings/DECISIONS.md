@@ -724,3 +724,7 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
 ## 11 November 2026 — « Famille / Série » (SOG-0202, the user's word: « famille / série »)
 
 - **Done in Settings**: « Thèmes de missions » → **« Familles de missions »**, « Ajouter un thème… » → **« Ajouter une famille… »**, the step « Thèmes de vols » → « Familles de vols », the kind sentences, the refusals, the counts (« 1 famille »), ×4 languages (family / Familie / familia), the help ×4; **« série » stays**. `themes.json` keeps its name and its shape (`chosen`, `added.themes`, `added.series`): only the words changed. Cases A105, A126, A142 read the texts from the file; the nouns of the cases follow.
+
+## 11 November 2026 — the R-S9 debt `tokenSet` paid
+
+- The token field of the Access card used the long sentence `tokenSet` as its placeholder, the lost row (« jeton enregistré — vide : inchangé ») being the right placeholder; the line under the field is the long text. Two meanings, two keys: `tokenKept` (short, the field's placeholder) and `tokenSet` (the line). Counter-test: A58's neighbour in the access case (the Access card again, with a token saved).
