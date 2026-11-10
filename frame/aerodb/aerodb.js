@@ -2577,6 +2577,45 @@
         }
         return withSourceUrl(k, file, proc)?.source?.url || null;
       },
+      /** Les approches « cartes seulement » d'un terrain du SIA (SOG-0232 / SOG-0216) : les cartes IAC de `charts.items` du fichier du terrain qu'AUCUNE fiche d'approche (lue, en doute ou d'une autre source) ne porte :
+       *  [{ name: 'ILS LOC RWY 05', runway: '05', url }], triées par piste puis par nom. L'AIP ne publie de table de codage que pour une partie des approches (les RNP, quelques ILS) : les autres n'existent qu'en carte.
+       *  L'adresse est composée ICI, comme chartUrl (`charts.base` du fichier sous l'hôte du SIA + le chemin d'une carte listée par ce même fichier) ; [] hors de la France, sans fichier du terrain ou sans carte IAC. Rien n'est lu de la carte. */
+      async chartOnly(icao) {
+        const k = String(icao || '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(k)) return [];
+        await api.sources().catch(() => null);
+        if (!window.AeroCatalogue?.siaRegionOf?.(k)) return [];
+        let e;
+        try {
+          e = await procEntry(k);
+        } catch {
+          return [];
+        }
+        const {
+          pub,
+          manual
+        } = e.files || {}, file = [pub, manual].find(f => f?.charts?.items?.length), base = file?.charts?.base;
+        if (!file || typeof base !== 'string' || !SIA_EAIP_BASE.test(base) || base.includes('..')) return [];
+        const P = await procLib(),
+          items = file.charts.items,
+          mine = new RegExp('^Cartes/' + k + '/[A-Za-z0-9._ -]+\\.pdf$'),
+          taken = new Set((await api.procedures(k, {
+            doubt: true
+          })).filter(p => p.kind === 'APP').map(p => P.chartFor({
+            ...p,
+            icao: k
+          }, items)).filter(Boolean));
+        return items.filter(i => i && i.kind === 'IAC' && typeof i.path === 'string' && mine.test(i.path) && !taken.has(i.path)).map(
+          i => {
+            const w = P.chartWords(i.path),
+              runway = w.runways[0] || '';
+            return {
+              name: `${w.words.filter(x => x !== 'FNA').join(' ')}${w.runways.length ? ` RWY ${w.runways.join('/')}` : ''}`.trim(),
+              runway,
+              url: `${base}Cartes/${k}/${encodeURIComponent(i.path.split('/').pop())}`
+            };
+          }).sort((a, b) => (a.runway < b.runway ? -1 : a.runway > b.runway ? 1 : a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+      },
       async sources() {
         await loadOwn('airac.js', 'AeroAirac');
         await loadOwn('catalogue.js', 'AeroCatalogue');
