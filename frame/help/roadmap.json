@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "418d981",
+  "organisation": "6830dff",
   "fiches": 180,
   "untranslated": 1,
   "priorities": 152
@@ -2223,7 +2223,7 @@
     {
      "id": "SOG-0178",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Lanceur : un service extérieur lent ou en erreur (Open-Meteo, Overpass) fige le lanceur, puis l'appli et Chrome",
      "en": "Launcher: a slow or failing outside service (Open-Meteo, Overpass) freezes the launcher, then the app and Chrome",
      "de": "Launcher: ein langsamer oder fehlerhafter externer Dienst (Open-Meteo, Overpass) friert Launcher, App und Chrome ein",
@@ -2401,7 +2401,7 @@
     {
      "id": "SOG-0172",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Réglages : les clignotements sont revenus",
      "en": "Settings: the flicker is back",
      "de": "Einstellungen: das Flackern ist zurück",

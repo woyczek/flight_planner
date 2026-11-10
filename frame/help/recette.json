@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 56,
-  "verdicts": 15
+  "tests": 59,
+  "verdicts": 18
  },
  "apps": [
   "pilote",
@@ -694,7 +694,8 @@
    },
    "test": "Maintenance : plus d'entrée « Page de maintenance (V2) » dans la colonne ; tout en bas, « Anciennes pages (V2) » range les pages V2 par groupe. Sous « Canadair et pélicandromes », ouvrir « Positionner les pélicandromes » : la carte s'affiche, déplacer un site puis exporter → le fichier pelicandromes_positions.yaml est téléchargé ; le fond satellite est dit indisponible sous le lanceur.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T10:31:29Z"
   },
   {
    "id": "SOG-0167",
@@ -707,7 +708,8 @@
    },
    "test": "Relancer le lanceur, puis Maintenance › Recette : valider un test, en refuser un autre avec un commentaire, recharger → les verdicts sont tenus ; un refus sans commentaire n'est pas envoyé.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T10:31:35Z"
   },
   {
    "id": "SOG-0168",
@@ -720,7 +722,8 @@
    },
    "test": "Un seul rechargement suffit après un correctif, sans « Nouvelle version disponible ». Quand la page est plus ancienne que le lanceur, un cartouche rouge sombre apparaît dans l'en-tête, sur une ligne, sans recouvrir ses voisins : « Version ancienne · Recharger » en vue large, « Recharger » quand la place manque (téléphone, état de synchronisation long) ; le toucher recharge.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T10:31:43Z"
   },
   {
    "id": "SOG-0169",
@@ -761,6 +764,45 @@
    "test": "Compagnie › Missions › une mission SO (SAR, HEMS…) › « Voir sur la Carte » de la carte cible : elle s'ouvre sur un fond VFR topographique (relief, obstacles, terrains VFR), plus sur un fond uni ; le bandeau porte « Vue » : VFR topo / IFR / Fond seul, et le choix est retenu pour cette carte. Retirer le bandeau rend la vue du vol.",
    "since": "2026-11-10",
    "state": "todo"
+  },
+  {
+   "id": "SOG-0172",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages : les clignotements sont revenus",
+    "en": "Settings: the flicker is back",
+    "de": "Einstellungen: das Flackern ist zurück",
+    "es": "Ajustes: han vuelto los parpadeos"
+   },
+   "test": "Ouvrir Réglages (et Données) : l'écran se dessine une fois et ne clignote plus quand l'état du dépôt arrive ; seuls les blocs qui en dépendent changent, rien ne saute.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0178",
+   "app": "maintenance",
+   "title": {
+    "fr": "Lanceur : un service extérieur lent ou en erreur (Open-Meteo, Overpass) fige le lanceur, puis l'appli et Chrome",
+    "en": "Launcher: a slow or failing outside service (Open-Meteo, Overpass) freezes the launcher, then the app and Chrome",
+    "de": "Launcher: ein langsamer oder fehlerhafter externer Dienst (Open-Meteo, Overpass) friert Launcher, App und Chrome ein",
+    "es": "Lanzador: un servicio externo lento o con error (Open-Meteo, Overpass) congela el lanzador, la app y Chrome"
+   },
+   "test": "Après relance du lanceur : Carte avec une route, toucher plusieurs fois « Météo de la route », y compris quand Open-Meteo répond mal : les autres pages et onglets continuent de se charger, Chrome ne se fige plus ; au pire la météo dit « occupé » ou sa raison avec « Réessayer ».",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0179",
+   "app": "pilote",
+   "title": {
+    "fr": "Compte rendu de mission : le nom abrégé de la catégorie a disparu (« SAR - Recherche / sauvetage »)",
+    "en": "Mission report: the short name of the category is gone (“SAR - Search and rescue”)",
+    "de": "Missionsbericht: das Kürzel der Kategorie ist verschwunden („SAR - Suche / Rettung“)",
+    "es": "Informe de misión: ha desaparecido la sigla de la categoría («SAR - Búsqueda / salvamento»)"
+   },
+   "test": "Compte rendu › Mission › liste « Famille », et Compagnie › Missions : chaque famille se dit par son sigle d'abord puis son nom long (« SAR · Récupération de personnel »), le sigle en gras dans les intertitres ; jamais le nom long seul.",
+   "since": "2026-11-10",
+   "state": "known"
   }
  ]
 }
