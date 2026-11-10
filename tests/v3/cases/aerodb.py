@@ -7404,3 +7404,20 @@ def k152(c):
     want = sorted(f'{a}/{b}' for a, b in RJ.REGISTRY)
     c.eq((len(got), [v == want for v in got].count(True), text.count('laissé de côté'), text.count('already defined')), (12, 12, 0, 0),
          'twelve requests at once at start-up: every one sees the same verbs (those of the sets, none lost or doubled) and the log has no « laissé de côté » / « already defined » line', what='load once')
+
+
+@case('K155', 'The « Cartes » link of a French aerodrome points to the eAIP of the cycle IN FORCE, never an older one (SOG-0221): the published base may be older than the calendar (a listing kept before the update), the link follows the calendar', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0221 (10 Nov 2026, the user): « Cartes » led to …/eAIP_01_OCT_2026/…/AIRAC-2026-10-01/…/FR-AD-2.LFRS-fr-FR.html instead of the cycle in force (29 Oct). chartsUrl took the cycle of the PUBLISHED zone fr; a base listing older than the calendar (the page had read it before the new cycle was published) gave the previous cycle. The link now takes the later of the published cycle and the calendar\'s cycle in force')
+def k155(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'];
+      const zone = (z, cycle) => Object.fromEntries(kinds.map(k => [`sia/base/${z}/${cycle}/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle, kind: 'meta', parserVersion: 27, data: {} } : { schema: 2, zone: z, cycle, kind: k, data: [] }]));
+      const mk = (files, day) => AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse(day) });
+      const old = { ...zone('fr', '2026-10-01'), 'sia/base/index.json': { schema: 2, kind: 'index', zones: { fr: { cycle: '2026-10-01', prefixes: ['LF'], kb: {} } } } };
+      const cur = { ...zone('fr', '2026-10-01'), ...zone('fr', '2026-10-29'), 'sia/base/index.json': { schema: 2, kind: 'index', zones: { fr: { cycle: '2026-10-29', prefixes: ['LF'], kb: {} } } } };
+      return { stale: await mk(old, '2026-11-10T12:00:00Z').chartsUrl('LFRS'), both: await mk(cur, '2026-11-10T12:00:00Z').chartsUrl('LFRS'), before: await mk(cur, '2026-10-15T12:00:00Z').chartsUrl('LFRS'), none: await mk({}, '2026-11-10T12:00:00Z').chartsUrl('LFRS') };
+    }""")
+    ok = lambda cyc, mon: f'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_{mon}/FRANCE/AIRAC-{cyc}/html/eAIP/FR-AD-2.LFRS-fr-FR.html'
+    c.eq((r['stale'], r['both'], r['none']), (ok('2026-10-29', '29_OCT_2026'),) * 3, 'a published base older than the calendar (cycle 1 Oct, today 10 Nov), a base with both cycles, and no base: the eAIP of the cycle in force (29 Oct)', what='in force')
+    c.eq(r['before'], ok('2026-10-01', '01_OCT_2026'), 'on 15 Oct the cycle in force is 1 Oct: the link follows the calendar (not a cycle published in advance)', what='before')

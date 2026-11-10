@@ -2396,7 +2396,8 @@
         const region = window.AeroCatalogue?.siaRegionOf?.(k);
         if (region === 'FRANCE') {
           await loadOwn('airac.js', 'AeroAirac');
-          const cycle = (await api.publication()).base?.fr?.inForce || window.AeroAirac.cycleOf(now()).date;
+          // jamais plus ancien que le cycle en vigueur du calendrier (SOG-0221 : une liste de la base gardée par la page d'avant la mise à jour donnait le dossier du cycle précédent) : le plus récent des deux
+          const cycle = [(await api.publication()).base?.fr?.inForce, window.AeroAirac.cycleOf(now()).date].filter(Boolean).sort().pop();
           return `${window.AeroCatalogue.eaipBase(cycle)}/html/eAIP/FR-AD-2.${k}-fr-FR.html`;
         }
         if (
