@@ -73,7 +73,8 @@ function personalName(id) {
 }
 /** Les sources sous licence personnelle cochées ET proposées (celles d'une zone décochée ne partent pas). */
 function personalPicked(ticked) {
-  return M.personalSources(ticked).filter(p => S.personal.has(p.id)).map(p => p.id);
+  return S.certified ? M.personalSources(ticked).map(p => p.id) :
+[]; // la coche unique débloque toutes les sources à usage personnel des zones cochées
 }
 /** Une case à cocher avec son libellé (44 px de haut) ; attr : l'attribut data- qui la repère ; extra : du HTML déjà sûr après le libellé (la ligne des terrains détenus d'un État). */
 function optHtml(attr, id, label, checked, disabled, extra = '') {
@@ -631,16 +632,17 @@ function choiceHtml(set, busy) {
       ticked
     } = buildZones(),
       pers = M.personalSources(ticked),
-      xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane'));
+      xplaneOn = S.certified && pers.some(p => p.id === 'xplane');
     return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
     <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
     ${packsHtml()}
     <div class="d-opts" data-build-zones>${ids.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}</div>`).join('')}</div>
-    ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
-      ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
-      <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
-      ${S.personal.has(p.id) ? `<p class="f-ok" data-personal-kept>${esc(tt(TX.personalKept))}</p>` : ''}
-      ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}</div>`;
+    ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>
+      <label class="d-opt"><input type="checkbox" data-certify${S.certified ? ' checked' : ''}${busy ? ' disabled' : ''}><span><b>${esc(tt(TX.certify))}</b></span></label>
+      <p class="f-muted">${esc(tt(TX.certifyHint))} <a href="#sources" data-licences-link>${esc(tt(TX.licencesLink))}</a></p>
+      <ul class="d-pers-list" data-personal-list>${pers.map(p => `<li data-personal-row="${p.id}"><b>${esc(personalName(p.id))}</b> <span class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</span>
+        ${p.id === 'xplane' && xplaneOn ? `<span class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</span>` : ''}</li>`).join('')}</ul>
+      ${S.certified ? `<p class="f-ok" data-personal-kept>${esc(tt(TX.personalKept))}</p>` : ''}</div>` : ''}</div>`;
   }
   if (set === 'proc') {
     const list = procList();
@@ -722,8 +724,7 @@ function redrawPanel(box) {
   const a = box.contains(document.activeElement) ? document.activeElement : null,
     q = (attr, v) => `[${attr}="${CSS.escape(v)}"]`,
     sel = a ? a.dataset.buildZone ? q('data-build-zone', a.dataset.buildZone) :
-    a.dataset.personal ? q('data-personal', a.dataset
-      .personal) : a.dataset
+    a.dataset.certify !== undefined ? '[data-certify]' : a.dataset
     .item ? q('data-item', a.dataset.item) : a.dataset.f ? q('data-f', a.dataset.f) : a.dataset.verb ? q('data-verb', a.dataset.verb) : '' :
     '',
     from = a?.selectionStart ?? null,

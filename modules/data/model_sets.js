@@ -67,11 +67,12 @@ export function personalSources(zoneIds) {
       kind: p.kind
     }));
 }
-/** Les sources personnelles mémorisées (le contenu de cache/data/personal.json) : les identifiants connus de PERSONAL, sans doublon, dans l'ordre de la table ;
- *  tout le reste (fichier absent, forme inattendue, identifiant inconnu ou venu du prototype) est ignoré. */
+/** La certification mémorisée (le contenu de cache/data/personal.json) : `true` quand l'utilisateur a certifié l'usage personnel (SOG-0162 : UNE coche, qui déverrouille toutes les sources à usage personnel). Migration des cases d'avant (une case
+ *  par source, `{ sources: [...] }`, SOG-0079) : une seule source cochée suffit, la coche unique est cochée ; tout le reste (fichier absent, forme inattendue) vaut « non certifié ». */
 export function keptPersonal(doc) {
-  const asked = new Set(Array.isArray(doc?.sources) ? doc.sources.filter(x => typeof x === 'string') : []);
-  return Object.keys(PERSONAL).filter(id => asked.has(id));
+  if (!doc || typeof doc !== 'object') return false;
+  if (typeof doc.certified === 'boolean') return doc.certified;
+  return Array.isArray(doc.sources) && doc.sources.some(x => typeof x === 'string' && Object.hasOwn(PERSONAL, x));
 }
 /** Le code d'échec d'une zone : ceux du verbe, sinon 'unknown' ; pour la purge (codes non fixés par le lanceur) le code court tel quel ;
  *  `loose` (les jeux autres que la base : leurs constructeurs sont en Python, codes non fixés) garde aussi le code court d'une construction ou d'un téléchargement. */

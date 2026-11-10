@@ -179,6 +179,18 @@ export const TX = {
   personalTitle: ['Sources sous licence personnelle', 'Personal-licence sources', 'Quellen mit persönlicher Lizenz',
     'Fuentes con licencia personal'
   ],
+  // SOG-0162 : UNE coche à la place d'une case par source ; cochée, toutes les sources à usage personnel des zones cochées sont lues
+  certify: ['Je certifie utiliser les données pour mon usage personnel', 'I certify that I use the data for my personal use',
+    'Ich bestätige, die Daten für meinen persönlichen Gebrauch zu nutzen',
+    'Certifico que uso los datos para mi uso personal'
+  ],
+  certifyHint: [
+    'Cochée, les sources ci-dessous sont lues par la construction ; ce qui est propriétaire (X-Plane, EUROCONTROL) reste lu sur ce poste seulement : jamais publié, jamais exporté, coche ou non.',
+    'Ticked, the sources below are read by the build; what is proprietary (X-Plane, EUROCONTROL) is read on this workstation only: never published, never exported, ticked or not.',
+    'Angekreuzt, werden die Quellen unten vom Aufbau gelesen; was proprietär ist (X-Plane, EUROCONTROL), wird nur auf diesem Rechner gelesen: nie veröffentlicht, nie exportiert, mit oder ohne Häkchen.',
+    'Marcada, la construcción lee las fuentes de abajo; lo que es propietario (X-Plane, EUROCONTROL) se lee solo en este puesto: nunca publicado ni exportado, con o sin marca.'
+  ],
+  licencesLink: ['Sources et licences', 'Sources and licences', 'Quellen und Lizenzen', 'Fuentes y licencias'],
   personalName: {
     airnav: ['AirNav Ireland (AIP Irlande)', 'AirNav Ireland (Ireland AIP)', 'AirNav Ireland (AIP Irland)',
       'AirNav Ireland (AIP Irlanda)'
@@ -468,24 +480,18 @@ export const TX = {
   },
   // la ligne sous chaque source ; texte de shared/maintenance_page.js (data-personal), à garder identique
   personalLine: {
-    licence: [
-      'À cocher seulement si le dépôt de données n’est utilisé que par vous (licence d’usage personnel).',
-      'Tick only if the data repository is used by you alone (personal-use licence).',
-      'Nur ankreuzen, wenn das Datenrepository nur von Ihnen genutzt wird (Lizenz zur persönlichen Nutzung).',
-      'Marque solo si el repositorio de datos lo usa únicamente usted (licencia de uso personal).'
-    ],
-    xplane: [
-      'À cocher seulement si le dépôt de données n’est utilisé que par vous (données X-Plane, usage personnel).',
-      'Tick only if the data repository is used by you alone (X-Plane data, personal use).',
-      'Nur ankreuzen, wenn das Datenrepository nur von Ihnen genutzt wird (X-Plane-Daten, persönliche Nutzung).',
-      'Marque solo si el repositorio de datos lo usa únicamente usted (datos de X-Plane, uso personal).'
+    licence: ['Licence d’usage personnel.', 'Personal-use licence.', 'Lizenz zur persönlichen Nutzung.', 'Licencia de uso personal.'],
+    xplane: ['Données du simulateur, usage personnel : lues sur ce poste seulement.',
+      'Simulator data, personal use: read on this workstation only.',
+      'Simulatordaten, persönliche Nutzung: nur auf diesem Rechner gelesen.',
+      'Datos del simulador, uso personal: se leen solo en este puesto.'
     ]
   },
   // sous une source cochée : elle est retenue sur ce poste et partira à chaque Construire / Télécharger tant qu'on ne la décoche pas (SOG-0079)
-  personalKept: ['Personnel · mémorisé : retrouvé coché à chaque ouverture, envoyé à chaque construction',
-    'Personal · remembered: found ticked at each opening, sent with every build',
-    'Persönlich · gemerkt: bei jedem Öffnen angekreuzt, bei jedem Aufbau gesendet',
-    'Personal · recordado: se encuentra marcada en cada apertura, se envía en cada construcción'
+  personalKept: ['Mémorisé : retrouvée cochée à chaque ouverture, envoyée à chaque construction',
+    'Remembered: found ticked at each opening, sent with every build',
+    'Gemerkt: bei jedem Öffnen angekreuzt, bei jedem Aufbau gesendet',
+    'Recordado: se encuentra marcada en cada apertura, se envía en cada construcción'
   ],
   xplaneHint: ['X-Plane coché : la construction se fait dans la page, pas encore possible ici',
     'X-Plane ticked: the build runs in the page, not yet possible here',

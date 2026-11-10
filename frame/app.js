@@ -328,6 +328,10 @@
     }],
     // écrans de service : « Jetons des pilotes » (frame/settings/pilot_tokens.js), avec trois routes du lanceur seulement
     screens: [{
+      id: 'sources', // « Sources et licences » (SOG-0162) : la même page que celle de Pilote, des liens, rien n'est lu ni écrit
+      scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js?v=0', 'aerodb/sources.js?v=0'],
+      level: 3
+    }, {
       id: 'pilot-tokens',
       scripts: ['settings/kit.js?v=0', 'settings/pilot_tokens.js?v=0'],
       level: 3,

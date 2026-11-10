@@ -4694,4 +4694,23 @@ def a118(c):
     c.until("!document.getElementById('fStale').hidden", timeout=10000, what='the cartouche for a ready version')
     c.eq(c.js("document.getElementById('fStale').dataset.go"), 'update', 'a ready version: the cartouche takes it', what='ready version')
     c.eq(c.js(info)['h'], on['h'], 'the header still does not change height', what='header height with the cartouche')
+
+@case('A119', 'The « Sources et licences » page (SOG-0162): in Maintenance, one line per catalogue source with its publisher, licence, date and, for X-Plane and EUROCONTROL, « read on this workstation only »', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0162 (the user, 10 Nov 2026): « tu collectes bien toutes les licences et les sources, dans la page ad hoc »; the guard: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation and never enters the published base nor an export, box ticked or not — the page says it per source')
+def a119(c):
+    lang = c.lang
+    T = lambda k: tx('frame/aerodb/sources.js', k, lang, after='const T = {')
+    c.open('sources', docs=LEVEL3, wait=False, app='maintenance')
+    c.until("!!document.querySelector('[data-screen=sources] li[data-src]')", timeout=20000, what='the page in Maintenance')
+    c.eq(norm(c.text('[data-screen=sources] h1')), norm(T('title')), 'the page is titled « Sources et licences »', what='title')
+    ids = re.findall(r"^\s{4}id: '([a-z0-9_]+)',", (ROOT / 'frame/aerodb/catalogue.js').read_text(encoding='utf-8'), re.M)
+    rows = c.js("""() => [...document.querySelectorAll('[data-screen=sources] li[data-src]')].map(li => ({ id: li.dataset.src, pub: !!li.querySelector('[data-pub]'), lic: !!li.querySelector('[data-lic]'),
+      local: !!li.querySelector('[data-local-only]'), text: li.textContent.replace(/\\s+/g, ' ').trim() }))""")
+    c.eq(sorted(r['id'] for r in rows), sorted(ids), 'one line per source of the catalogue', what='lines')
+    c.ok(all(r['pub'] and r['lic'] for r in rows), [r['id'] for r in rows if not (r['pub'] and r['lic'])], 'every line says its publisher and its licence')
+    c.eq(sorted(r['id'] for r in rows if r['local']), ['ead', 'eurocontrol', 'eurocontrol_rad', 'xpcifp'], 'X-Plane and the EUROCONTROL sources say « read on this workstation only »; no other', what='local only')
+    sia = next(r for r in rows if r['id'] == 'sia')
+    c.ok(norm(T('pub').split('{p}')[0]) in norm(sia['text']) and 'SIA France' in sia['text'], sia['text'][:160], 'the publisher is the start of the name when the catalogue gives none')
+    c.ok(norm(T('date').split('{d}')[0]) in norm(sia['text']), sia['text'][:200], 'a dated source (the AIRAC cycle) says its date')
     c.check_errors()

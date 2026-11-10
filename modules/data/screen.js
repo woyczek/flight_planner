@@ -198,7 +198,7 @@ export async function load(fresh = false) {
   // les sources sous licence personnelle cochées lors d'un passage d'avant (SOG-0079 : « garder cochées les cases cochées ») : lues une fois par montage, puis la case seule les change
   if (!S.personalRead) {
     S.personalRead = true;
-    S.personal = new Set(M.keptPersonal(kept));
+    S.certified = M.keptPersonal(kept); // la coche unique (SOG-0162), migrée des anciennes cases par source
   }
   if (S.outlines === false) S.outlines = null; // un échec de lecture des contours : la lecture suivante réessaie
   const list = Array.isArray(zones) ? zones : null,
@@ -307,11 +307,12 @@ function addZoneHtml() {
   return `<p><label>${esc(tt(TX.addZone))} <select data-add-zone${frozen() ? ' disabled' : ''}><option value="">${esc(tt(TX.addZonePick))}</option>
     ${rest.map(z => `<option value="${esc(z.id)}">${esc(M.zoneName(zones, z.id, li()))}</option>`).join('')}</select></label></p>`;
 }
-/** Mémorise les sources sous licence personnelle cochées (cache/data/personal.json, ce poste) : écrit à chaque case, pour que la prochaine ouverture les
- *  retrouve cochées et que « Construire » les envoie sans qu'on y pense (SOG-0079). Une source cochée dont la zone est décochée reste mémorisée : seule sa case la défait. */
+/** Mémorise la coche « je certifie utiliser les données pour mon usage personnel » (cache/data/personal.json, ce poste) : écrite à chaque changement, pour que la prochaine ouverture la retrouve cochée et que « Construire » envoie les
+ *  sources à usage personnel sans qu'on y pense (SOG-0079, SOG-0162). `sources` est gardé (les sources que la coche débloquait) pour qu'un poste plus ancien relise la même chose. */
 export function savePersonal() {
   S.ctx.data.put(PERSONAL, {
-    sources: [...S.personal],
+    certified: S.certified === true,
+    sources: S.certified === true ? Object.keys(M.PERSONAL) : [],
     updated_at: new Date().toISOString()
   }).catch(() => {});
 }

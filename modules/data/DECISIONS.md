@@ -317,3 +317,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **Not repeated**: the state pill (a button that opens the reasons) is not drawn on the theme rows — it would double every pill of the zones list a screen below, and be a button inside a row; the coordinator's « (case, nom, état) » is kept for the zones list, the theme grid gives box and name.
 - Unticking removes from the coverage **after a question** (as the region switch does); nothing is ever purged.
 - Case L44 is the case of this fiche (red before: no tabs, an « Ajouter » button per country). L52, L53 count rows of the zones list only.
+
+## 10 November 2026 — one certification box for every personal-licence source (SOG-0162)
+
+- **The user's words**: « on a besoin d'une seule coche « je certifie utiliser les données pour mon usage personnel », et ensuite tu déverrouilles tout. mais tu collectes bien toutes les licences et les sources, dans la page ad hoc ». One box instead of three or four (ENAIRE, NATS, AirNav, X-Plane): the pilot certifies once; every personal-use source of the ticked zones is then read.
+- **Guard (the coordinator's, kept)**: what is proprietary or without a right of redistribution — X-Plane / Navigraph, the EUROCONTROL workbooks — is read on this workstation and **never enters the published base nor an export, box ticked or not**; the box unlocks *reading*, not *publishing*. The page « Sources et licences » says it per source (« Lu sur ce poste seulement », `localOnly` in the catalogue).
+- **Migration**: the old boxes lived in `cache/data/personal.json` as `{ sources: [...] }`; one known source ticked = the new box ticked (a pilot who had ticked any had already certified his use); no `certified` field is invented for an empty one. `sources` is still written (the unlocked ids) so an older page reads the same file.
+- **The sources of the page**: the list is the AeroDB catalogue; optional fields (`pub`, `credit`, `date`, `localOnly`) are shown when present, the publisher falls back to the start of the name and the date to the AIRAC cycle for the dated sources. AeroDB (D4) fills the catalogue's lines; this page does not guess a credit that the catalogue does not give.
+- Cases: L32 (the box, remembered, sent, migrated), L2 / L7 / L10 / L15 / L58 (the box replaces the taps of the boxes), A119 (the page).

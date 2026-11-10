@@ -12,7 +12,7 @@
   let cssDone = false;
   const T = {
     back: ['Réglages › Administration', 'Settings › Administration', 'Einstellungen › Verwaltung', 'Ajustes › Administración'],
-    title: ['Sources', 'Sources', 'Quellen', 'Fuentes'],
+    title: ['Sources et licences', 'Sources and licences', 'Quellen und Lizenzen', 'Fuentes y licencias'],
     intro: [
       'Les sources des données aéronautiques que la suite utilise, envisage ou a écartées, avec leur licence. Chaque lien s’ouvre dans un nouvel onglet : cet écran ne télécharge rien.',
       'The sources of aeronautical data the suite uses, considers or has set aside, with their licence. Each link opens in a new tab: this screen downloads nothing.',
@@ -32,6 +32,13 @@
     groupAbandoned: ['Abandonnées', 'Set aside', 'Zurückgestellt', 'Descartadas'],
     gives: ['Donne : {g}', 'Gives: {g}', 'Liefert: {g}', 'Da: {g}'],
     lic: ['Licence : {l}', 'Licence: {l}', 'Lizenz: {l}', 'Licencia: {l}'],
+    pub: ['Éditeur : {p}', 'Publisher: {p}', 'Herausgeber: {p}', 'Editor: {p}'],
+    credit: ['Crédit obligatoire : {c}', 'Required credit: {c}', 'Vorgeschriebene Quellenangabe: {c}', 'Crédito obligatorio: {c}'],
+    date: ['Date : {d}', 'Date: {d}', 'Datum: {d}', 'Fecha: {d}'],
+    local: ['Lu sur ce poste seulement : jamais publié, jamais exporté',
+      'Read on this workstation only: never published, never exported',
+      'Nur auf diesem Rechner gelesen: nie veröffentlicht, nie exportiert', 'Se lee solo en este puesto: nunca publicado ni exportado'
+    ],
     how: ['Comment : {h}', 'How: {h}', 'Wie: {h}', 'Cómo: {h}'],
     cycled: ['Cycle {c}', 'Cycle {c}', 'Zyklus {c}', 'Ciclo {c}'],
     open: ['Ouvrir', 'Open', 'Öffnen', 'Abrir'],
@@ -68,13 +75,21 @@
         timeZone: 'UTC'
       });
     box.dataset.screen = 'sources';
+    /** L'éditeur d'une source : son champ `pub` (texte ou [4]), à défaut le début de son nom (avant « ( » ou « — »). */
+    const pub = s => typeof s.pub === 'string' ? s.pub : Array.isArray(s.pub) ? L(s.pub) : L(s.n).split(/\s+[(—]/)[0].trim();
+    /** La date d'une source : son champ `date`, à défaut la date du cycle AIRAC en vigueur pour celles qui en dépendent ; '' sans. */
+    const dateOf = s => typeof s.date === 'string' && s.date ? s.date : s.cycled ? day(cyc.date) : '';
     const row = s => {
       const url = S.urlOf(s, cyc.id),
         name = L(s.n);
       return `<li class="src-row" data-src="${esc(s.id)}" data-status="${esc(s.status)}">
         <h3>${esc(name)} <span class="src-status" data-status="${esc(s.status)}">${esc(t(T[s.status]))}</span>${s.cycled ? ` <span class="f-muted">${esc(t(T.cycled, { c: cyc.id }))}</span>` : ''}</h3>
         <p>${esc(t(T.gives, { g: L(s.gives) }))}</p>
-        <p class="f-muted">${esc(t(T.lic, { l: L(s.lic) }))}</p>
+        <p class="f-muted" data-pub>${esc(t(T.pub, { p: pub(s) }))}</p>
+        <p class="f-muted" data-lic>${esc(t(T.lic, { l: L(s.lic) }))}</p>
+        ${s.credit ? `<p class="f-muted" data-credit>${esc(t(T.credit, { c: L(s.credit) }))}</p>` : ''}
+        ${dateOf(s) ? `<p class="f-muted" data-date>${esc(t(T.date, { d: dateOf(s) }))}</p>` : ''}
+        ${s.localOnly === true ? `<p class="f-warn" data-local-only>${esc(t(T.local))}</p>` : ''}
         ${s.how ? `<p class="f-muted">${esc(t(T.how, { h: L(s.how) }))}</p>` : ''}
         <p><a class="f-btn" data-open href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(t(T.openTitle, { s: name }))}">${esc(t(T.open))}</a>
         <span class="src-url">${esc(url)}</span></p></li>`;

@@ -195,12 +195,16 @@ function onChange(e) {
   if (t instanceof HTMLInputElement && t.dataset.packSwitch) return togglePack(t.dataset.packSwitch, t
     .checked); // l'interrupteur d'un paquet (SOG-0147)
   if (!(t instanceof HTMLInputElement) || frozen()) return;
-  const set = t.dataset.buildZone ? S.ticked : t.dataset.personal ? S.personal : t.dataset.item ? S.picked : null,
-    id = t.dataset.buildZone || t.dataset.personal || t.dataset.item;
+  if (t.dataset.certify !== undefined) { // la coche unique « usage personnel » (SOG-0162) : un réglage du poste, retenu
+    S.certified = t.checked;
+    savePersonal();
+    return renderBuild();
+  }
+  const set = t.dataset.buildZone ? S.ticked : t.dataset.item ? S.picked : null,
+    id = t.dataset.buildZone || t.dataset.item;
   if (!set) return;
   if (t.checked) set.add(id);
   else set.delete(id);
-  if (t.dataset.personal) savePersonal(); // la case est un réglage du poste : retenue (SOG-0079)
   renderBuild();
 }
 /** Le champ des types OACI est tapé : le texte est retenu (sans redessin : la frappe n'est pas dérangée) et l'avertissement des codes refusés
@@ -245,7 +249,7 @@ export async function mount(el, ctx) {
     stops: [],
     again: 0,
     ticked: null, // zones cochées pour la construction (toutes à la première lecture)
-    personal: new Set(), // sources sous licence personnelle cochées : celles mémorisées sur ce poste (cache/data/personal.json), aucune la première fois
+    certified: false, // sources sous licence personnelle cochées : celles mémorisées sur ce poste (cache/data/personal.json), aucune la première fois
     status: null, // l'état par zone que le lanceur a dit (base/status, M.statusOf) : { current, parserVersion, zones: { id: { state, reasons, buildable } } } ; null : jamais lu
     statusP: null, // la lecture en cours (une seule à la fois)
     statusAsked: false, // l'état a été demandé à l'ouverture

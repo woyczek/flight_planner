@@ -368,23 +368,23 @@ def l2(c):
     c.eq(g['weather']['states'], {'world': 'absent'}, 'the weather rows from the catalogue have no state; the only one is the world synoptic row (SOG-0138), made on the workstation: absent until published', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 8],
-         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 8 buttons count Mettre à jour, the world synoptic row « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071) and the two selection gestures', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 9],
+         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 9 buttons count Mettre à jour, the two country-pack tabs, the world synoptic row « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071) and the two selection gestures', what='verbs / buttons')
     c.eq([c.attr('[data-publish] [data-reason]', 'data-reason'), norm(c.text('[data-publish] [data-reason]'))], ['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))],
          'Publier is grey for the same reason, written once', what='publish reason')
     c.eq(c.count('[data-group=base] > [data-build] + [data-publish]'), 1, 'the Publier panel follows the Construire panel', what='panel order')
     # the build panel at the top of the base group: every zone of the coverage ticked, the personal sources unticked, the reason written once
     panel = c.js("""() => { const b = document.querySelector('[data-group=base] > [data-build]'); return b && {
       zones: [...b.querySelectorAll('[data-build-zone]')].map(i => [i.dataset.buildZone, i.checked]),
-      personal: [...b.querySelectorAll('[data-personal]')].map(i => [i.dataset.personal, i.checked]),
+      personal: [[...b.querySelectorAll('[data-personal-row]')].map(r => r.dataset.personalRow), b.querySelector('[data-certify]')?.checked],
       lines: [...b.querySelectorAll('[data-personal-line]')].map(p => p.textContent.trim()),
       reasons: [...b.querySelectorAll('[data-reason]')].map(p => [p.dataset.reason, p.textContent.trim()]),
-      labels: [...b.querySelectorAll('label.d-opt')].map(l => Math.round(l.getBoundingClientRect().height)),
+      labels: [...b.querySelectorAll('label.d-opt')].filter(l => l.offsetParent).map(l => Math.round(l.getBoundingClientRect().height)),
       btn: Math.round(b.querySelector('[data-verb=build]').getBoundingClientRect().height), first: b === document.querySelector('[data-group=base]').children[1],
       journal: (j => j && { open: j.open, h: Math.round(j.querySelector('summary').getBoundingClientRect().height), last: j === document.querySelector('[data-module=data] [data-body]').lastElementChild })(document.querySelector('[data-journal]')) } }""")
     c.ok(panel and panel['first'], panel, 'the build panel is the first thing in the content of the base group')
     c.eq(panel['zones'], [[z, True] for z in ('ca', 'es', 'fr', 'gb', 'us')], 'the zones of the coverage, all ticked by default', what='build zones')
-    c.eq(panel['personal'], [['enaire', False], ['nats', False], ['xplane', False]], 'the three personal-licence sources, UNticked, as every zone ticked feeds them', what='personal sources')
+    c.eq(panel['personal'], [['enaire', 'nats', 'xplane'], False], 'the three personal-licence sources are listed (every zone ticked feeds them), ONE certification box, unticked', what='personal sources')
     c.eq([norm(x) for x in panel['lines']], [norm(tx(TX, 'licence', lang, after='personalLine: {'))] * 2 + [norm(tx(TX, 'xplane', lang, after='personalLine: {'))],
          'the personal-use line, the X-Plane variant for X-Plane', what='personal lines')
     c.eq([[r[0], norm(r[1])] for r in panel['reasons']], [['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))]], 'the grey button says why, once', what='reason')
@@ -692,7 +692,7 @@ def _screen_ok(c, what):
     """No horizontal scroll, no element beyond the right edge, 44 px on the build panel's buttons and checkbox lines."""
     m = c.js("""() => { const b = document.querySelector('[data-build]'); return { sw: document.documentElement.scrollWidth, iw: window.innerWidth,
       over: [...b.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && e.getBoundingClientRect().right > window.innerWidth + 1).slice(0, 3).map(e => e.tagName + '.' + e.className),
-      hs: [...b.querySelectorAll('button, label.d-opt')].map(e => Math.round(e.getBoundingClientRect().height)) } }""")
+      hs: [...b.querySelectorAll('button, label.d-opt')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height)) } }""")
     c.le(m['sw'], m['iw'], f'{what}: no horizontal scroll', what='scrollWidth')
     c.ok(not m['over'], m['over'], f'{what}: nothing beyond the right edge')
     c.ge(min(m['hs']), 44, f'{what}: buttons and checkbox lines are 44 px', what='touch height')
@@ -725,15 +725,15 @@ def l7(c):
     _untick(c, 'ca', 'es', 'us', 'fr', 'gb')
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]'))],
          [True, 'no-zone', norm(_trow('no-zone', lang, 'greyReason: {'))], 'no zone ticked: grey, « Cochez au moins une zone » written once', what='no zone')
-    c.eq(c.count('[data-personal]'), 0, 'no zone, no personal source to offer', what='personal sources')
+    c.eq(c.count('[data-certify]') + c.count('[data-personal-row]'), 0, 'no zone, no personal source to offer', what='personal sources')
     c.tap('[data-build-zone="fr"]')
     c.tap('[data-build-zone="gb"]')
-    c.eq(c.js("[...document.querySelectorAll('[data-personal]')].map(i => [i.dataset.personal, i.checked])"), [['nats', False], ['xplane', False]],
-         'France and the UK feed NATS and X-Plane (not ENAIRE): offered, unticked', what='personal sources')
+    c.eq([c.js("[...document.querySelectorAll('[data-personal-row]')].map(r => r.dataset.personalRow)"), c.js("document.querySelector('[data-certify]').checked")], [['nats', 'xplane'], False],
+         'France and the UK feed NATS and X-Plane (not ENAIRE): listed, the one box unticked', what='personal sources')
     # X-Plane ticked: the hint under its checkbox, before the start; unticked again: gone
-    c.tap('[data-personal="xplane"]')
+    c.tap('[data-certify]')
     c.eq(norm(c.text('[data-personal-row="xplane"] [data-xplane-hint]')), norm(_trow('xplaneHint', lang)), 'the build in the page is not possible yet: said before the start', what='X-Plane hint')
-    c.tap('[data-personal="xplane"]')
+    c.tap('[data-certify]')
     c.eq(c.count('[data-xplane-hint]'), 0, 'unticked: no hint', what='X-Plane hint')
     _screen_ok(c, 'before the start')
     before = c.js('window.__stub.calls.publication')
@@ -797,8 +797,7 @@ def l7(c):
                      'sources': {s: {'cycle': _prev_day, 'current': _cur_day, 'stale': True} for s in ('sia', 'nats')}}, jid='j2')]
     st['i'] = 0
     st['start'] = (200, {'job': 'j2'})
-    c.tap('[data-personal="nats"]')
-    c.tap('[data-personal="xplane"]')
+    c.tap('[data-certify]')
     c.tap('[data-verb=build]')
     c.until('document.querySelector("[data-build-result][data-result=done]")', timeout=10000, what='the second build ends')
     c.eq(st['posts'][1]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats', 'xplane']}, 'ticking personal sources adds their ids', what='second body')
@@ -973,11 +972,11 @@ def l10(c):
     st['views'] = [_view('error', jid='j5', zones={}, result={'ok': False, 'reason': 'xplane-in-page'})]
     st['i'] = 0
     st['start'] = (200, {'job': 'j5'})
-    c.tap('[data-personal="xplane"]')
+    c.tap('[data-certify]')
     c.eq(c.count('[data-xplane-hint]'), 1, 'the hint is shown before the start', what='hint')
     c.tap('[data-verb=build]')
     c.until("!!document.querySelector('[data-build-result][data-result=xplane-in-page]')", timeout=8000, what='xplane-in-page is said')
-    c.eq(st['posts'][-1]['args']['personal'], ['xplane'], 'it is sent when asked', what='body')
+    c.eq(st['posts'][-1]['args']['personal'], ['enaire', 'nats', 'xplane'], 'the one box is sent as every personal source of the ticked zones (X-Plane among them)', what='body')
     want = _trow('sumXplane', lang)
     c.eq([norm(c.text('[data-build-result]')), len(_notes_with(c, want))], [norm(want), 1], 'the verb\'s reason is said at the end', what='xplane-in-page')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and len(d.get('ops', [])) >= 5), what='five operations in the journal')
@@ -1551,10 +1550,10 @@ def l15(c):
     st['views'] = [_fview({}, state='error', jid='j2', done=0, total=0, result={'ok': False, 'fetched': [], 'unchanged': [], 'failed': [], 'manual': [], 'outside_sync': 0, 'warnings': [], 'reason': 'nothing-to-fetch'})]
     st['i'], st['start'] = 0, (200, {'job': 'j2'})
     c.tap('[data-build-zone="es"]')
-    c.tap('[data-personal="enaire"]')
+    c.tap('[data-certify]')
     c.tap('[data-verb=download]')
     c.until("!!document.querySelector('[data-build-result][data-result=nothing]')", timeout=10000, what='nothing to download is said')
-    c.eq(st['posts'][1]['args'], {'zones': ['es', 'fr', 'gb'], 'personal': ['enaire']}, 'ENAIRE goes in args.personal when ticked', what='second body')
+    c.eq(st['posts'][1]['args'], {'zones': ['es', 'fr', 'gb'], 'personal': ['enaire', 'nats', 'xplane']}, 'ENAIRE goes in args.personal when the box is ticked, with the other personal sources of the zones', what='second body')
     nothing = _trow('fetchNothing', lang)
     c.eq([norm(c.text('[data-build-result]')), c.count('[data-build-result] [data-zone-state]'), len(_notes_with(c, nothing))], [norm(nothing), 0, 1], '« Rien à télécharger pour ces zones »: the sentence alone, one notification', what='nothing to fetch')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and len(d.get('ops', [])) >= 2), what='the second entry')
@@ -2027,7 +2026,7 @@ def _panels_ok(c, what):
     m = c.js("""() => { const ps = [...document.querySelectorAll('[data-set-panel]')];
       return { sw: document.documentElement.scrollWidth, iw: window.innerWidth,
       over: ps.flatMap(b => [...b.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && e.getBoundingClientRect().right > window.innerWidth + 1)).slice(0, 3).map(e => e.tagName + '.' + e.className),
-      hs: ps.flatMap(b => [...b.querySelectorAll('button, label.d-opt, input[type=text]')].map(e => Math.round(e.getBoundingClientRect().height))) } }""")
+      hs: ps.flatMap(b => [...b.querySelectorAll('button, label.d-opt, input[type=text]')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height))) } }""")
     c.le(m['sw'], m['iw'], f'{what}: no horizontal scroll', what='scrollWidth')
     c.ok(not m['over'], m['over'], f'{what}: nothing beyond the right edge')
     c.ge(min(m['hs']), 44, f'{what}: buttons, checkbox lines and the field are 44 px', what='touch height')
@@ -3677,9 +3676,9 @@ def l31(c):
     c.check_errors()
 
 
-@case('L32', 'Données: a ticked personal-licence source is remembered on the workstation: found ticked at the next opening, sent to Construire without being ticked again, « personnel · mémorisé » under it', 'L', tags=('data',), langs4=True,
+@case('L32', 'Données: ONE box « I certify that I use the data for my personal use » unlocks every personal-licence source: remembered on the workstation, found ticked at the next opening, sent to Construire; an old per-source box ticked migrates to it (SOG-0162, SOG-0079)', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=False, night=False,
-      rule='SOG-0079: « garder cochées les cases cochées (base personnelle), sinon on oublie » — the box is a setting of the workstation (cache/data/personal.json), read at each opening and sent as args.personal; only its own box undoes it')
+      rule='SOG-0162: « on a besoin d\u2019une seule coche « je certifie utiliser les données pour mon usage personnel », et ensuite tu déverrouilles tout » — the box is a setting of the workstation (cache/data/personal.json), read at each opening and sent as args.personal (every personal source of the ticked zones); the boxes of before (one per source) migrate: one ticked = the box ticked')
 def l32(c):
     lang = c.lang
     _t, cur, prev, _n = _cycles()
@@ -3690,40 +3689,45 @@ def l32(c):
     cfg, _ = _fixture()
     _open(c, cfg)
     _untick(c, 'ca', 'es', 'us')
-    boxes = lambda: c.js("[...document.querySelectorAll('[data-personal]')].map(i => [i.dataset.personal, i.checked])")
-    kept = lambda: c.js("[...document.querySelectorAll('[data-personal-kept]')].map(p => p.closest('[data-personal-row]').dataset.personalRow)")
-    c.eq(boxes(), [['nats', False], ['xplane', False]], 'the first time: nothing ticked, as before', what='first time')
-    c.eq(kept(), [], 'nothing remembered, nothing said', what='no note')
-    # ---- ticked: written at once, the line says so
-    c.tap('[data-personal="nats"]')
-    c.tap('[data-personal="xplane"]')
-    doc = c.until_doc('cache/data/personal.json', lambda d: bool(d and sorted(d.get('sources') or []) == ['nats', 'xplane']), what='the two sources written')
-    c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T.*Z', doc.get('updated_at') or ''), doc, 'a UTC time beside the ids')
-    c.eq(kept(), ['nats', 'xplane'], 'the line under each ticked source says it is remembered', what='notes')
-    c.eq(norm(c.text('[data-personal-row="nats"] [data-personal-kept]')), norm(_trow('personalKept', lang)), 'worded in the language of the run', what='note text')
-    # ---- a new opening: ticked again without a gesture, and Construire sends them
+    box = lambda: c.js("document.querySelector('[data-certify]').checked")
+    rows = lambda: c.js("[...document.querySelectorAll('[data-personal-row]')].map(r => r.dataset.personalRow)")
+    c.eq(c.count('[data-personal-box] input[type=checkbox]'), 1, 'ONE box in the personal-licence block, not one per source', what='one box')
+    c.eq(norm(c.text('[data-personal-box] [data-certify] + span')), norm(_trow('certify', lang)), 'worded as the user asked, in the language of the run', what='box label')
+    c.eq([box(), rows(), c.count('[data-personal-kept]')], [False, ['nats', 'xplane'], 0], 'the first time: unticked, the sources it will unlock listed, nothing remembered', what='first time')
+    c.eq(c.count('[data-licences-link]'), 1, 'a link to the « Sources et licences » page', what='link')
+    # ---- ticked: written at once, said remembered
+    c.tap('[data-certify]')
+    doc = c.until_doc('cache/data/personal.json', lambda d: bool(d and d.get('certified') is True), what='the certification written')
+    c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T.*Z', doc.get('updated_at') or ''), doc, 'a UTC time beside it')
+    c.eq(norm(c.text('[data-personal-kept]')), norm(_trow('personalKept', lang)), 'the line under the box says it is remembered, in the language of the run', what='note text')
+    # ---- a new opening: ticked again without a gesture, and Construire sends every personal source of the zones
     c.page.reload()
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen is drawn again')
     c.settle()
     _untick(c, 'ca', 'es', 'us')
-    c.eq(boxes(), [['nats', True], ['xplane', True]], 'found ticked at the next opening, nobody ticked them again', what='after reload')
-    c.eq(kept(), ['nats', 'xplane'], 'and said so', what='notes after reload')
+    c.eq([box(), c.count('[data-personal-kept]')], [True, 1], 'found ticked at the next opening, nobody ticked it again, and said so', what='after reload')
     c.tap('[data-verb=build]')
     c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
-    c.eq(st['posts'][0]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats', 'xplane']},
-         'the build is sent with the remembered sources', what='body')
-    # ---- only its own box undoes it: unticked, written, gone after a reload
-    c.tap('[data-personal="xplane"]')
-    c.until_doc('cache/data/personal.json', lambda d: bool(d and d.get('sources') == ['nats']), what='the unticked source is forgotten')
+    c.eq(st['posts'][0]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats', 'xplane']}, 'the build is sent with every personal source of the ticked zones', what='body')
+    # ---- only its own box undoes it
+    c.tap('[data-certify]')
+    c.until_doc('cache/data/personal.json', lambda d: bool(d) and d.get('certified') is False, what='unticked: written')
     c.page.reload()
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen is drawn a third time')
     c.settle()
     _untick(c, 'ca', 'es', 'us')
-    c.eq([boxes(), kept()], [[['nats', True], ['xplane', False]], ['nats']], 'NATS stays ticked, X-Plane stays unticked', what='third opening')
-    # ---- a source whose zone is unticked is not offered, not sent, but not forgotten
+    c.eq([box(), c.count('[data-personal-kept]')], [False, 0], 'unticked stays unticked', what='third opening')
+    # ---- a source whose zone is unticked is not listed, not sent
+    c.tap('[data-certify]')
     _untick(c, 'gb')
-    c.eq(boxes(), [['xplane', False]], 'NATS feeds only the UK: not offered any more with it unticked (so not sent)', what='offered')
-    c.eq(c.doc('cache/data/personal.json').get('sources'), ['nats'], 'unticking a zone forgets nothing: the memory belongs to the box', what='memory kept')
+    c.eq(rows(), ['xplane'], 'NATS feeds only the UK: not listed with it unticked (so not sent)', what='listed')
+    # ---- the migration: a document of before (one box per source) with one source ticked = the box ticked
+    c.page.evaluate("() => new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const tx = r.result.transaction('docs', 'readwrite'); tx.objectStore('docs').put({ path: 'cache/data/personal.json', text: JSON.stringify({ sources: ['nats'], updated_at: '2026-11-01T08:00:00Z' }), base: '', rev: '', at: Date.now(), policy: 'cache' }); tx.oncomplete = () => { r.result.close(); res() }; tx.onerror = () => rej(tx.error) }; r.onerror = () => rej(r.error) })")
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen after the migration seed')
+    c.settle()
+    _untick(c, 'ca', 'es', 'us')
+    c.eq(box(), True, 'an old document with one source ticked: the one box is ticked (migration)', what='migrated')
     c.check_errors()
 
 
@@ -4750,12 +4754,12 @@ def l58(c):
     c.ok(norm(T('nothing', 'pickupSum: {')) != said, said, 'not « Rien à prendre »')
     want = norm(T('pickupUnread').replace('{z}', gb).replace('{n}', '3').replace('{s}', 'NATS'))
     c.eq(lines(), [want], 'the line says the sets are there but not read: the « personnel » box does not declare NATS', what='unread line')
-    # ---- B: the box declares NATS: personal [nats] is sent, nothing is unread
-    c.tap('[data-personal=nats]')
+    # ---- B: the one box is ticked (it declares NATS): personal [enaire, nats, xplane] is sent, nothing is unread
+    c.tap('[data-certify]')
     st['views'], st['i'], st['start'] = [_pk_plan([], [], [], zones=five, jid='k2', extra=in_place)], 0, (200, {'job': 'k2'})
     c.tap('[data-build] [data-verb=pickup]')
     c.until("document.querySelector('[data-build-result][data-op=pickup]') && !document.querySelector('[data-build-result] [data-line]')", timeout=10000, what='the end of the second plan')
-    c.eq(st['posts'][-1]['args'].get('personal'), ['nats'], 'the box declares NATS: it is sent', what='personal B')
+    c.eq(st['posts'][-1]['args'].get('personal'), ['enaire', 'nats', 'xplane'], 'the one box is ticked: every personal source of the zones is sent (NATS among them)', what='personal B')
     c.eq(c.count('[data-build-result] [data-line]'), 0, 'declared: nothing is there-but-unread', what='no unread')
     # ---- C: « Mettre à jour » carries the same box to the download and to the build
     fetched = _view('done', step='Terminé', jid='j1', result={'fetched': [], 'unchanged': list(five), 'failed': [], 'manual': []})
@@ -4769,7 +4773,7 @@ def l58(c):
         if _posts(st, 'build'):
             break
         c.wait(250)
-    c.eq([p['args'].get('personal') for p in st['posts'][n:] if p.get('verb') in ('fetch', 'build')], [['nats'], ['nats']], '« Mettre à jour »: the download and the build both carry personal [nats]', what='update')
+    c.eq([p['args'].get('personal') for p in st['posts'][n:] if p.get('verb') in ('fetch', 'build')], [['enaire', 'nats', 'xplane']] * 2, '« Mettre à jour »: the download and the build both carry the one box (every personal source)', what='update')
     c.eq(_posts(st, 'build')[0]['args']['zones'], ['gb'], 'only gb (source-unbuilt, buildable) is built', what='build zones')
     c.check_errors()
 

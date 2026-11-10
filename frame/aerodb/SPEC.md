@@ -661,6 +661,8 @@ both ways.
 
 ## 5 sexies. Sources screen (`sources.js`, `#sources`) and the stream readers kept for the Data module
 
+**« Sources et licences »** (SOG-0162, 10 Nov 2026): the same screen, declared by Pilot **and Maintenance** (`frame/app.js` `APP.screens`; reached from Settings › Administration and from the « Sources et licences » link of the certification box of Données), titled « Sources et licences ». Each line adds, under the name and status: the **publisher** (`pub`, text or `[4]`; else the start of the name), the **licence** (`lic`), the **required credit** (`credit` `[4]`, when the catalogue gives one), the **date** (`date`, else the AIRAC cycle for a dated source) and, in warning tone, « Lu sur ce poste seulement : jamais publié, jamais exporté » when `localOnly: true` (X-Plane CIFP, the EUROCONTROL sources: `xpcifp`, `ead`, `eurocontrol_rad`, `eurocontrol`). The optional fields are the catalogue's (AeroDB fills them); the screen shows none it does not have. Case A119.
+
 The data laboratory (`#datalab`, 26-28 October 2026: probes of the sources, the SIA zip parsed in three modes, trial publications) was
 **removed on 28 October 2026** (user: « oui pour le retrait. Du moins, la transformation du lab en « sources » avec les liens vers les
 différents AIP ou sources qu'on utilise ou utiliserait. »). Its measures stay in `docs/technique/V3_APP_DONNEES.md` (P0); what it was is in

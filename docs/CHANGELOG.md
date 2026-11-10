@@ -22,6 +22,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   stays on a phone or the site, where it protects a flight). The launcher's status gives the commit's time and the stamp of `frame/app.js`; a page
   older than the launcher says so in the Status block, a tap reloads.
 
+- **Data: ONE box « Je certifie utiliser les données pour mon usage personnel » unlocks every personal-licence source; a « Sources et licences » page lists each source** (`modules/data/panels.js`, `screen.js`, `model_sets.js`, `frame/aerodb/sources.js`, `catalogue.js`, `frame/app.js`; Data SPEC § 5.6, aerodb SPEC § 5 sexies; help ×4; L32, A119) — SOG-0162: the old boxes migrate to the one box; X-Plane and EUROCONTROL stay « lu sur ce poste seulement », never published nor exported.
 - **Frame: « Anciennes pages (V2) », one last entry in the column of every application** (`frame/app.js`, `frame/legacy.js`, `frame/frame.css`; V3_SPECIFICATION
   § 7.1 rule 23; frame SPEC § 3.1, DECISIONS; noreg A116; SOG-0166). The Maintenance column's V2 entry is gone; a hairline and a muted tint set the last
   entry apart; it opens the V2 pages by group (Carburant, Missions, Maintenance, Route, Statistiques, Canadair), each in a new tab; on a phone it is the

@@ -151,7 +151,7 @@
     href: '#sources',
     copyLink: true, // sous le lien, l'adresse absolue publiée (depuis location) et « Copier le lien » : à ouvrir sur le téléphone
     where: 'app',
-    title: ['Sources des données', 'Data sources', 'Datenquellen', 'Fuentes de datos'],
+    title: ['Sources et licences', 'Sources and licences', 'Quellen und Lizenzen', 'Fuentes y licencias'],
     text: [
       'Les sources des données aéronautiques que la suite utilise, envisage ou a écartées : un lien par source, ce qu’elle donne, sa licence, le cycle AIRAC en vigueur.',
       'The sources of aeronautical data the suite uses, considers or has set aside: one link per source, what it gives, its licence, the AIRAC cycle in force.',

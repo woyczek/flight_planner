@@ -516,8 +516,8 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
   `zones()` (every known zone, for « Ajouter un pays »), `sources()` (the **catalogue**: groups, zones fed, how each source
   is fetched and built, links by cycle, licences, statuses, `eadStates`, the file-name readers); never `sia/base/`, `proc/`
   or `AircraftDB/` directly, never aerodb's files; the workstation's state through `ctx.launcher` (INTEGRATION § 1).
-- **Writes through `ctx.data`** (policy `cache`, never synchronised, never in a backup): `cache/data/personal.json` (`{ sources: [id], updated_at }`: the personal-licence
-  sources ticked on this workstation, SOG-0079; written at each tap of their box, read once per opening, filtered to the ids of `PERSONAL`), `cache/data/coverage.json`
+- **Writes through `ctx.data`** (policy `cache`, never synchronised, never in a backup): `cache/data/personal.json` (`{ certified, sources, updated_at }`: the personal-use
+  certification box ticked on this workstation, SOG-0162 (SOG-0079 before: one box per source); written at each tap, read once per opening, an old `{ sources }` document migrates), `cache/data/coverage.json`
   (`{ zones: [id], updated_at }`) and `cache/data/journal.json` (`{ ops: [{ at, set, verb, zones (the base) | items (any other set), seconds, result, built,
   failed, job, reason? }], updated_at }`, the last 50 operations, newest first; a job found already ended at the opening is
   written once, by its id). Nothing else.
@@ -557,10 +557,7 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
   its cycle of origin is no longer in force, buttons `[data-verb="reread"]` and `[data-verb="remove"]` (« Retirer »).
 - Journal `[data-journal]`, entries `[data-op]`.
 
-**Personal-licence sources are remembered** (SOG-0079, user: « garder cochées les cases cochées, sinon on oublie »): the box of a source (NATS, ENAIRE, AirNav, X-Plane…) is a
-setting of the workstation, not of the visit. Ticked, it is written at once in `cache/data/personal.json`; the next opening of Data reads it and ticks the box again, so
-`base/fetch` and `base/build` receive it in `args.personal` without a gesture, and the line under the source says « Personnel · mémorisé » (`data-personal-kept`). Only its own box
-undoes it (unticking a zone neither forgets it nor sends it: a source is offered and sent only while a ticked zone uses it). Case L32.
+**One certification box unlocks every personal-licence source** (SOG-0162, user: « on a besoin d'une seule coche « je certifie utiliser les données pour mon usage personnel », et ensuite tu déverrouilles tout » — replacing the box per source of SOG-0079): « Je certifie utiliser les données pour mon usage personnel » (`input[data-certify]`, `S.certified`) heads the personal-licence block of the build panel; the sources it unlocks (ENAIRE, NATS, AirNav, X-Plane… — those a ticked zone uses, `PERSONAL`) are listed below it as lines (`[data-personal-row]`, with `data-xplane-hint` for X-Plane), not as boxes. Ticked, `base/fetch`, `base/build` and `base/pickup` receive **every** personal source of the ticked zones in `args.personal` (`personalPicked`); it is a setting of the workstation, written at once in `cache/data/personal.json` (`{ certified, sources, updated_at }`; `sources` is kept for an older page), found ticked at the next opening, and the line « Mémorisé » (`data-personal-kept`) says so. **Migration**: a document of before (`{ sources: [...] }`, no `certified`) with one known source ticked reads as the box ticked (`keptPersonal`). **Guard, not negotiable by the box**: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation only — never in the published base nor an export, ticked or not; the « Sources et licences » page says it per source (frame/aerodb SPEC § 5 sexies). Case L32.
 
 ## 10. Invariants
 

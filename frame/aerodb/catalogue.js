@@ -109,7 +109,8 @@
   // Une ligne par source : { id, no (ligne du tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md, ou null), status
   // ('used' : la suite s'en sert aujourd'hui ; 'candidate' : envisagée ; 'abandoned' : écartée, avec sa raison), cycled (adresse
   // du cycle AIRAC en vigueur), n [fr, en, de, es], url (chaîne, ou fonction du cycle), gives [4] (ce qu'elle donne et où cela
-  // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir) }. Données seules :
+  // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir), et, facultatifs, pour la page « Sources et licences » : pub (l'éditeur, texte ou [4] ; à défaut le début du nom),
+  // credit [4] (le crédit obligatoire), date (la date ou l'édition : texte), localOnly (vrai : lu sur ce poste seulement) }. Données seules :
   // l'écran (sources.js) ne fait qu'afficher des liens, aucune récupération.
   const SOURCES = [{
     id: 'sia',
@@ -585,6 +586,7 @@
     ]
   }, {
     id: 'ead',
+    localOnly: true, // lu sur CE poste seulement : propriétaire (X-Plane, EUROCONTROL), jamais dans la base publiée ni dans un export, coche « usage personnel » ou non (SOG-0162)
     group: 'proc',
     zones: '*',
     fetch: {
@@ -610,6 +612,7 @@
     ]
   }, {
     id: 'xpcifp',
+    localOnly: true, // lu sur CE poste seulement : propriétaire (X-Plane, EUROCONTROL), jamais dans la base publiée ni dans un export, coche « usage personnel » ou non (SOG-0162)
     group: 'proc',
     zones: '*',
     fetch: {
@@ -659,6 +662,7 @@
     ]
   }, {
     id: 'eurocontrol_rad',
+    localOnly: true, // lu sur CE poste seulement : propriétaire (X-Plane, EUROCONTROL), jamais dans la base publiée ni dans un export, coche « usage personnel » ou non (SOG-0162)
     group: 'proc',
     zones: [],
     fetch: {
@@ -691,6 +695,7 @@
     ]
   }, {
     id: 'eurocontrol',
+    localOnly: true, // lu sur CE poste seulement : propriétaire (X-Plane, EUROCONTROL), jamais dans la base publiée ni dans un export, coche « usage personnel » ou non (SOG-0162)
     group: 'proc',
     zones: [],
     fetch: {
