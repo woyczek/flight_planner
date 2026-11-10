@@ -5915,3 +5915,41 @@ def a143(c):
     if c.lang == 'fr':
         c.ok('Appareils connectés' in seen['maintenance'] and seen['maintenance'].count('Appareils') <= 1, str(seen['maintenance']), 'Maintenance’s rail: the paired devices are « Appareils connectés », the aircraft « Appareils »')
     c.check_errors()
+
+
+@case('A144', 'Settings › Company › « Créer une compagnie » (SOG-0235): a code whose folder exists but which is missing from the list offers « Reprendre cette compagnie » — the airline goes back into the list, nothing else is written', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0235 (the user: « defa a (encore ?) sauté. mais si je veux la recréer : « Un dossier existe déjà pour ce code : choisissez-en un autre. » »): the folder airline/<code>/ exists, the index does not list it: the assistant says so and offers « Reprendre cette compagnie », which writes the index only (name read from the folder\u2019s settings.json) instead of sending the pilot to another code')
+def a144(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document'],
+            # the folder of an airline that the index lost (SOG-0235)
+            ['airline/zed/settings.json', {'schema': 1, 'name': 'Zed Air <b>x</b>', 'networks': {}, 'kind': 'sog'}, 'document'],
+            ['airline/zed/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+    c.page.add_init_script("""(() => { let fd; window.__puts = []; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; const a = v.adapter; v.adapter = function () { const ad = a.apply(this, arguments); const put = ad.put; ad.put = async function (p) { window.__puts.push(p); return put.apply(this, arguments) }; return ad } } }) })()""")
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-wizard]')", timeout=15000, what='the card and its stepper')
+    c.js("document.querySelector('[data-airline-add]').open = true")
+    c.page.fill('[data-wizard] [data-f="co-name"]', 'Zed Air')
+    c.page.fill('[data-wizard] [data-f="co-code"]', 'zed')
+    c.tap('[data-act="companyNext"]')
+    c.until("document.querySelector('[data-wizard] [data-msg]').textContent.trim() !== ''", timeout=8000, what='the folder exists: said')
+    c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T('dirExists')), 'the code of an existing folder: said, with what to do', what='message')
+    c.eq([c.js("document.querySelector('[data-wizard] [data-adopt]').hidden"), norm(c.text('[data-wizard] [data-adopt] button'))], [False, norm(T('adopt'))], '« Reprendre cette compagnie » is offered', what='button')
+    c.eq(c.js('window.__puts.length'), 0, 'nothing is written by the refusal', what='no put')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-wizard] [data-adopt]').scrollIntoView({ block: 'center' })")
+        c.shot(f'A144_standard_{c.width}_{lang}_delivered.png')
+    c.tap('[data-wizard] [data-adopt] button')
+    idx = c.until_doc('airline/index.json', lambda d: bool(d) and any(a.get('code') == 'zed' for a in d.get('airlines', [])), what='the airline is back in the index')
+    c.eq([a['code'] for a in idx['airlines']], ['aaa', 'zed'], 'the index keeps the others and lists the folder\u2019s airline', what='index')
+    c.ok('<' not in [a for a in idx['airlines'] if a['code'] == 'zed'][0]['name'], idx['airlines'], 'its name is read from the folder, as text (no < >)')
+    c.eq(c.js('window.__puts'), ['airline/index.json'], 'nothing but the index is written (the folder is left as it is)', what='puts')
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 3", timeout=8000, what='listed')
+    c.eq(c.js("document.querySelector('[data-wizard] [data-adopt]').hidden"), True, 'the offer goes away', what='offer gone')
+    c.check_errors()

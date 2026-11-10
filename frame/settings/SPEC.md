@@ -542,3 +542,5 @@ and kept by its service worker (`frame/sw.js`), each one registered in `window.S
   with `tx(file, key)` follow it to its file and key.
 - The other parts are unchanged by this lot: `kit.js` (helpers and shared texts), `launcher.js`, `access.js`,
   `diagnostic.js`, `admin.js`, `groups.js`, `config.js`, `join.js`, `admin_links.js`.
+
+   **« Reprendre cette compagnie »** (SOG-0235; case A144): when the code typed at step ① has its folder (`airline/<code>/settings.json`) but the airline is missing from the list, the message says so and a button « Reprendre cette compagnie » (`companyAdopt`) puts it back in `airline/index.json` — **only the index is written** (the name read from the folder's `settings.json`, as text, 60 characters), the folder is left as it is — instead of « choisissez-en un autre ».

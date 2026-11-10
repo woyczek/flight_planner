@@ -415,10 +415,14 @@
     fly: ['Voler pour cette compagnie', 'Fly for this airline', 'Für diese Gesellschaft fliegen', 'Volar para esta compañía'],
     stay: ['Rester ici', 'Stay here', 'Hier bleiben', 'Quedarme aquí'],
     noKind: ['Choisissez un genre.', 'Choose a kind.', 'Wählen Sie eine Art.', 'Elija un tipo.'],
-    dirExists: ['Un dossier existe déjà pour ce code : choisissez-en un autre.',
-      'A folder already exists for this code: choose another.',
-      'Für diesen Code gibt es schon einen Ordner: wählen Sie einen anderen.', 'Ya existe una carpeta para este código: elija otro.'
+    dirExists: [
+      'Un dossier existe déjà pour ce code mais la compagnie n’est pas dans la liste : « Reprendre cette compagnie » la remet dans la liste (rien d’autre n’est écrit), ou choisissez un autre code.',
+      'A folder already exists for this code but the airline is not in the list: “Take this airline back” puts it back in the list (nothing else is written), or choose another code.',
+      'Für diesen Code gibt es schon einen Ordner, aber die Gesellschaft steht nicht in der Liste: „Diese Gesellschaft übernehmen“ setzt sie zurück in die Liste (sonst wird nichts geschrieben), oder wählen Sie einen anderen Code.',
+      'Ya existe una carpeta para este código pero la compañía no está en la lista: «Recuperar esta compañía» la vuelve a poner en la lista (no se escribe nada más), o elija otro código.'
     ],
+    adopt: ['Reprendre cette compagnie', 'Take this airline back', 'Diese Gesellschaft übernehmen', 'Recuperar esta compañía'],
+    adopted: ['Compagnie reprise : {n}.', 'Airline taken back: {n}.', 'Gesellschaft übernommen: {n}.', 'Compañía recuperada: {n}.'],
     part: {
       settings: ['les réglages', 'the settings', 'die Einstellungen', 'los ajustes'],
       themes: ['les thèmes', 'the themes', 'die Themen', 'los temas'],
@@ -820,6 +824,7 @@
     WZ_FLEET_MAX = 200;
   // par vue : le pas montré et la reprise d'une création interrompue
   const WZ = new WeakMap();
+  const WZ_ADOPT = new WeakMap(); // par vue : le code dont le dossier existe sans être dans la liste
   /** Le stepper « Créer une compagnie » : un bloc construit une fois, à hauteur réservée (règle 22), un volet par pas ; rien n'est écrit avant le dernier bouton. Le genre est préchoisi « Commerciale ». */
   function wizardHtml(env) {
     const {
@@ -839,6 +844,7 @@
       <section data-step-pane="summary" hidden><p data-wz-summary></p></section>
       <section data-step-pane="done" hidden><p data-wz-done></p><div class="f-row"><button type="button" class="primary" data-act="companyFly">${esc(t(TA.fly))}</button><button type="button" data-act="companyStay">${esc(t(TA.stay))}</button></div></section>
       <p class="f-msg" data-msg></p>
+      <p data-adopt hidden><button type="button" data-act="companyAdopt">${esc(t(TA.adopt))}</button></p>
       <div class="f-row" data-wz-nav><button type="button" data-act="companyBack" hidden>${esc(t(TA.back))}</button><button type="button" class="primary" data-act="companyNext">${esc(t(TA.next))}</button><button type="button" class="primary" data-act="companyAdd" hidden>${esc(t(TA.save))}</button><button type="button" class="primary" data-act="companyResume" hidden>${esc(t(TA.resume))}</button></div></div></details>`;
   }
   /** Montre le pas `name` (identity, summary, done) : les volets, les pastilles, les boutons de navigation ; rien d'autre ne change. */
@@ -1011,11 +1017,16 @@
     };
   }
   /** Dit un message dans le stepper (vide : l'efface). */
-  function wizardSay(view, text) {
-    const m = view.querySelector('[data-wizard] [data-msg]');
+  function wizardSay(view, text, adopt = '') {
+    const m = view.querySelector('[data-wizard] [data-msg]'),
+      b = view.querySelector('[data-wizard] [data-adopt]');
     if (m) {
       m.textContent = text || '';
       m.dataset.kind = 'err';
+    }
+    if (b) { // « Reprendre cette compagnie » : seulement quand le dossier du code existe et que la compagnie manque à la liste (SOG-0235)
+      b.hidden = !adopt;
+      b.dataset.code = adopt;
     }
   }
   /** Le code proposé d'après le nom (le premier mot, lettres et chiffres sans accent, 8 signes au plus) ; '' si rien ne s'y prête. */
@@ -1037,7 +1048,11 @@
     if (list.length >= AIRLINE_MAX) return t(TA.full);
     if (!resume && await ad.get(`airline/${v.code}/settings.json`, {
         wait: true
-      }).catch(() => null)) return t(TA.dirExists);
+      }).catch(() => null)) {
+      WZ_ADOPT.set(env.view, v.code); // le dossier existe, la compagnie manque à la liste : « Reprendre cette compagnie » (SOG-0235)
+      return t(TA.dirExists);
+    }
+    WZ_ADOPT.delete(env.view);
     return '';
   }
   /** Le résumé du dernier pas, en mots de pilote : « Rennes Motoculture · Commerciale · IVAO » (les pas de la catégorie et de la flotte s'y ajoutent). */
@@ -1057,7 +1072,7 @@
     if (dir > 0 && at === 'identity') {
       const v = wizardValues(view),
         why = await wizardCheck(env, v);
-      if (why) return wizardSay(view, why);
+      if (why) return wizardSay(view, why, WZ_ADOPT.get(view) === v.code ? v.code : '');
       wizardThemesBuild(env, v.kind);
     }
     if (to === 'fleet') {
@@ -1083,7 +1098,7 @@
     } = env, v = wizardValues(view);
     wizardSay(view, '');
     const why = await wizardCheck(env, v, resume);
-    if (why) return wizardSay(view, why);
+    if (why) return wizardSay(view, why, WZ_ADOPT.get(view) === v.code ? v.code : '');
     const ad = airlineData(FD),
       list = airlineList(await ad.get(INDEX, {
         wait: true
@@ -1843,6 +1858,41 @@
       return wizardFleetPaint(env.view, env.t);
     }
     if (act === 'companyWzLater') return wizardMove(env, 1);
+    if (act === 'companyAdopt') {
+      const code = b.closest('[data-adopt]')?.dataset.code || '';
+      if (!AIRLINE_CODE.test(code) || code === PERSO) return;
+      const ad = airlineData(FD),
+        list = airlineList(await ad.get(INDEX, {
+          wait: true
+        }).catch(() => null)),
+        mine = await ad.get(`airline/${code}/settings.json`, {
+          wait: true
+        }).catch(() => null);
+      if (!mine || typeof mine !== 'object') return wizardSay(env.view, t(TA.failed));
+      if (!list.some(a => a.code === code)) {
+        const name = typeof mine.name === 'string' && mine.name.trim() ? mine.name.replace(/[\p{Cc}\p{Zl}\p{Zp}<>]/gu, ' ').trim()
+          .slice(0, 60) : code;
+        try {
+          await ad.put(INDEX, {
+            schema: 1,
+            airlines: [...list, {
+              code,
+              name
+            }],
+            updated_at: now(),
+            by: env.id?.trigram || ''
+          });
+        } catch {
+          return wizardSay(env.view, t(TA.failed));
+        }
+        c.notify(t(TA.adopted, {
+          n: name
+        }), 'ok');
+      }
+      WZ_ADOPT.delete(env.view);
+      wizardSay(env.view, '');
+      return airlineLive(env);
+    }
     if (act === 'companyFly') {
       // « Voler pour cette compagnie » : la compagnie devient la courante, puis Missions
       const code = WZ.get(env.view)?.code || '';
@@ -1855,7 +1905,7 @@
   (window.SogSettingsParts ||= {}).airline = {
     acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly',
       'companyJnClip', 'companyJnNext', 'companyJnBack', 'companyJnGo', 'companyJnResume', 'companyJnStay', 'companyJnFly',
-      'companyWzSheet', 'companyWzReg', 'companyWzRegDel', 'companyWzLater', 'companyPlan',
+      'companyWzSheet', 'companyWzReg', 'companyWzRegDel', 'companyWzLater', 'companyAdopt', 'companyPlan',
       'companyMigrate', 'companyKind', 'companyTheme', 'companyThemeAdd', 'companyThemeDel', 'companySeriesAdd', 'companySeriesDel'
     ],
     html: airlineHtml,
