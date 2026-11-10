@@ -5506,7 +5506,10 @@ def l74(c):
     def upload(route):
         name = urllib.parse.unquote(route.request.headers.get('x-sog-name', ''))
         sent.append(name)
-        route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'source': 'faa', 'zone': 'us', 'cycle': '2026-10-29', 'name': name, 'replaced': True}))
+        body = {'ok': True, 'source': 'faa', 'zone': 'us', 'cycle': '2026-10-29', 'name': name, 'replaced': True}
+        if len(sent) > 1:   # the first answer is that of an older launcher (the screen counts); the next ones say what is deposited and missing (AeroDB 42aab1ae8)
+            body.update({'deposited': ['FIX', 'AWY', 'NAV'][:len(sent)], 'missing': ['FIX', 'AWY', 'NAV'][len(sent):]})
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/base/upload'), upload)
     cfg, _ = _fixture()
     _open(c, _sized(cfg))

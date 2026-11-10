@@ -82,6 +82,9 @@ function outcome(r) {
       source: typeof body.source === 'string' ? body.source : '',
       cycle: /^\d{4}-\d{2}-\d{2}$/.test(String(body.cycle ?? '')) ? body.cycle : '',
       file: name,
+      // le lanceur dit lui-même les jeux déjà posés pour CE cycle et ceux à envoyer (AeroDB 42aab1ae8) : listes fermées, jamais autre chose que FIX, AWY, NAV
+      deposited: Array.isArray(body.deposited) ? body.deposited.filter(k => NASR_SETS.includes(k)) : null,
+      missing: Array.isArray(body.missing) ? body.missing.filter(k => NASR_SETS.includes(k)) : null,
       text: tt(body.replaced === false ? TX.up.same : TX.up.done, {
         name,
         s: src,
@@ -112,16 +115,26 @@ function outcome(r) {
 const NASR_SETS = ['FIX', 'AWY', 'NAV'];
 /** Un jeu NASR de la FAA vient d'être reconnu : l'écran compte les envois du cycle (le lanceur ne le dit pas dans la vue) ; au troisième, le téléchargement de la zone lit les trois puis la construction part ; avant, il dit ce qui manque. */
 async function faaSet(out, zone) {
-  const got = S.nasr ||= {},
-    key = out.cycle || '-',
-    names = got[key] ||= new Set();
-  if (names.size < 12) names.add(out.file.toUpperCase());
-  const have = NASR_SETS.filter(k => [...names].some(n => n.includes(k)));
-  if (have.length < NASR_SETS.length && names.size < NASR_SETS.length) return S.ctx.notify(tt(TX.up.nasrWait, {
-    h: have.join(', ') || String(names.size),
-    m: NASR_SETS.filter(k => !have.includes(k)).join(', ')
+  let have, miss;
+  if (out.deposited && out.missing) { // le lanceur le dit : on le lit
+    have = out.deposited;
+    miss = out.missing;
+  } else { // un lanceur plus ancien : l'écran compte lui-même les envois du cycle d'après le nom d'origine de la FAA
+    const got = S.nasr ||= {},
+      key = out.cycle || '-',
+      names = got[key] ||= new Set();
+    if (names.size < 12) names.add(out.file.toUpperCase());
+    have = NASR_SETS.filter(k => [...names].some(n => n.includes(k)));
+    miss = NASR_SETS.filter(k => !have.includes(k));
+    if (!miss.length || names.size >= NASR_SETS.length) {
+      miss = [];
+      delete got[key];
+    }
+  }
+  if (miss.length) return S.ctx.notify(tt(TX.up.nasrWait, {
+    h: have.join(', ') || '0',
+    m: miss.join(', ')
   }), 'warn');
-  delete got[key];
   await fetchThenBuild(out.zone || zone);
 }
 /** Envoie le fichier choisi : un seul à la fois, l'avancement sur la ligne de la zone, la fin en une notification ; un envoi réussi enchaîne la construction de la zone reconnue (celle de la ligne à défaut). */
