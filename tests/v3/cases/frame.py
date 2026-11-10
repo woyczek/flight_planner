@@ -4858,4 +4858,40 @@ def a122(c):
     wide = c.js(probe)
     c.ok(wide['tier'] == '0' and int(narrow['tier']) > 0, f"wide {wide['tier']}, narrow {narrow['tier']}", 'a wide header shows the whole label, a narrow one a shorter step')
     c.eq(narrow['clash'], [], 'at 250: still no overlap', what='overlaps at 250')
+
+@case('A123', 'Settings: the second drawing (the repository arrives) touches only the blocks that depend on it — the other cards and the groups keep their nodes; the layout shift stays under 0.1 with a slow launcher (SOG-0172)', 'A', tags=('settings',), designs=('standard',), screens=True, night=False,
+      rule='SOG-0172 (« retour des clignotements sur la page réglages a minima »; frame rule 22): since SOG-0133 the screen is drawn at once and drawn again when the repository arrives; the second drawing replaced the whole screen; it must replace only the blocks whose HTML changed (access, usages, administration), keeping every other node and the open groups')
+def a123(c):
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    remote = {'repo': True, 'remote': 'origin', 'url': 'https://example.test/acme/data.git', 'branch': 'main', 'state': 'repo', 'default': ''}
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/sync-remote') and route.request.method == 'GET':
+            body = remote
+        elif path.endswith('/__setup/secrets'):
+            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.page.add_init_script(CLS_PROBE)
+    c.page.add_init_script("""(() => { const f = window.fetch; window.fetch = function (u, o) { const url = String((u && u.url) || u); const slow = /sync-remote/.test(url) && (!o || !o.method || o.method === 'GET');
+      return slow ? new Promise(ok => setTimeout(ok, 1500)).then(() => f.apply(this, arguments)) : f.apply(this, arguments) } })()""")
+    c.open('settings', docs=LEVEL3)
+    c.until("document.querySelectorAll('[data-card]').length > 6 && !!document.querySelector('[data-git-line][aria-busy=true]')", timeout=10000, what='the first drawing, the repository still pending')
+    tagged = c.js("""() => { window.__tag = []; document.querySelectorAll('[data-card], details.f-group').forEach((e, i) => { e.__id = i; window.__tag.push(e) }); return window.__tag.length }""")
+    c.ok(tagged >= 8, tagged, 'the first drawing has its cards and its groups')
+    c.js("() => { window.__cls.value = 0; window.__cls.items = [] }")   # the arrival of the repository is what is measured: the shifts of the opening itself are A110’s
+    c.until("(performance.getEntriesByName('sog-settings-start').length >= 2) && !!document.querySelector('[data-card=\"remote\"]')", timeout=10000, what='the screen is drawn a second time with the repository')
+    c.wait(300)
+    res = c.js("""() => { const dep = new Set(['access', 'usages', 'admin', 'remote', 'hist', 'assistant', 'keys', 'ead', 'update', 'folders', 'ivaoapp']);   // the Administration card and its panels, the cards that read the repository
+      const lost = window.__tag.filter(e => !dep.has(e.dataset.card) && !e.isConnected).map(e => e.dataset.card || 'group:' + e.dataset.group);
+      const still = window.__tag.filter(e => !dep.has(e.dataset.card) && e.isConnected).length;
+      const changed = window.__tag.filter(e => dep.has(e.dataset.card) && !e.isConnected).map(e => e.dataset.card);
+      return { lost, still, changed, renders: performance.getEntriesByName('sog-settings-start').length } }""")
+    c.ok(not res['lost'] and res['still'] >= 6, res, 'the cards that do not depend on the repository and the groups kept their nodes through the second drawing')
+    cls = c.js('window.__cls')
+    c.ok(cls['value'] < 0.1, cls, 'the cumulative layout shift stays under 0.1 (rule 22)')
     c.check_errors()

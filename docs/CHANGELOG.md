@@ -23,6 +23,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `screen.js`, `texts.js`, `style.js`; SPEC § 15, DECISIONS, help ×4; noreg D138; SOG-0171). The map's YAML profile first; else target / detail / zone maps of a
   non-commercial mission in VFR topo (now really topographic: the old built-in profile named a base the styles did not know), the general map and a commercial
   mission in the flight's view; the banner offers VFR topo / IFR / Base only, kept per map on the device; removing the banner gives the flight's view back.
+
+- **Settings: the second drawing (the repository arrives) replaces only the blocks that changed — the other cards and the groups keep their nodes** (`frame/settings/settings.js` `reconcile`; frame/settings DECISIONS; A123) — SOG-0172: the whole screen was rebuilt; the trigger now compares only what the screen deduces from the repository.
 - **Fuel: an impossible plan lists the engine's proposals apart** (`modules/fuel/route_engine.js`, `module.js`; Fuel SPEC § 9.3,
   INTEGRATION, DECISIONS, help; noreg F125; SOG-0161). « Calculer » asks `proposals: true`; the fallback proposals come under
   « Propositions non validées », each with its share and sections, never said checked; « Prendre » says « à vérifier ».

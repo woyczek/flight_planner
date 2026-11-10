@@ -4853,6 +4853,7 @@ def l60(c):
     body = json.dumps({'repo': True, 'branch': 'main', 'behind': 0, 'changes': 3, 'ahead': 2, 'merging': False, 'last': None})
     c.page.add_init_script("""(() => { window.__ss = 0; const f = window.fetch; window.fetch = function (u, o) { const url = String((u && u.url) || u);
       if (!url.includes('sync-status')) return f.call(this, u, o); window.__ss++; return new Promise(r => setTimeout(r, 2500)).then(() => new Response(%s, { status: 200, headers: { 'content-type': 'application/json' } })).finally(() => { window.__ss-- }) } })()""" % json.dumps(body))
+    c.page.add_init_script("""(() => { window.__sh = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) { if (!e.hadRecentInput) window.__sh.push([Math.round(e.startTime), +e.value.toFixed(3), (e.sources || []).map(x => { const n = x.node && (x.node.nodeType === 1 ? x.node : x.node.parentElement); return n ? (n.dataset.set || n.dataset.group || n.className || n.nodeName) : '?' }).slice(0, 3)]) } }).observe({ type: 'layout-shift', buffered: true }) } catch (e) {} })()""")
     c.page.add_init_script(_ZHOOK_JS)
     _open(c, _sized(cfg))
     state = c.js("""() => ({ zones: document.querySelectorAll('[data-build-zone]').length, pending: window.__ss, reading: !!document.querySelector('[data-publish-state=reading]'), readingText: document.querySelector('[data-publish-state=reading]')?.textContent.replace(/\s+/g, ' ').trim() || '', unread: !!document.querySelector('[data-publish-state=unread]'),
@@ -4863,6 +4864,8 @@ def l60(c):
     c.eq(norm(state['readingText']), norm(_trow('pubReading', lang)), 'worded in the language of the run', what='reading text')
     # the answer comes: the line is replaced by the real state
     c.until("!document.querySelector('[data-publish-state=reading]') && !!document.querySelector('[data-publish-state=changes]')", timeout=10000, what='the state of data/ arrives')
+    sh = c.js('window.__sh')
+    c.ok(sum(x[1] for x in sh if x[0] > 600) < 0.1, sh, 'the arrival of the state of data/ moves nothing noticeable (layout shift under 0.1, rule 22)')
     # the map comes into the screen: now the library is asked for, and the map is drawn
     for _ in range(20):   # the reader scrolls down to the map (the page settles under his finger: the gesture is repeated until the map is there)
         c.js("document.querySelector('[data-zone-map=base]')?.scrollIntoView({ block: 'center' })")

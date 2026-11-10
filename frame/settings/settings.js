@@ -586,10 +586,50 @@
     const all = [...cards, P.diagnostic.aboutHtml(env), adminHtml, ivaoApp],
       one = focus ? P.groups.pick(all, focus) : '';
     // carte demandée par l'adresse : elle seule, sous « ← Réglages » ; sinon la liste, rangée selon le niveau
-    view.innerHTML = one ? `<h1>${esc(t(T.title))}</h1><p><a class="f-btn" href="#settings" data-settings-back>${esc(t(T.backToList))}</a></p>${one}` :
-      `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange(all, t, lvl)}`;
+    reconcile(view, one ? `<h1>${esc(t(T.title))}</h1><p><a class="f-btn" href="#settings" data-settings-back>${esc(t(T.backToList))}</a></p>${one}` :
+      `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange(all, t, lvl)}`);
     P.groups.wireGroups(view);
     if (help && !one)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
+  }
+
+  // ---- le second dessin ne touche que ce qui change (SOG-0172, règle 22) : le HTML de l'écran est construit dans un conteneur à part, puis comparé au contenu posé ; un bloc dont le HTML construit est le même garde son nœud (et ce que les
+  // peintres vivants y ont écrit), un groupe est gardé (son état ouvert) et ses cartes comparées une à une ; seuls les blocs qui ont changé sont remplacés. Clé d'un bloc : sa carte (data-card) ou son groupe (data-group).
+  const keyOf = e => e.dataset?.card ? `c:${e.dataset.card}` : e.dataset?.group ? `g:${e.dataset.group}` : '';
+  const stamp = root => {
+    for (const e of root.children) e.__gen = e.outerHTML; // le HTML construit, tel qu'il est avant que quoi que ce soit n'y écrive
+  };
+
+  function merge(oldP, newP) {
+    const pool = [...oldP.children],
+      out = [];
+    for (const n of [...newP.children]) {
+      const k = keyOf(n),
+        same = pool.find(o => o.__gen === n.__gen && keyOf(o) === k);
+      if (same) {
+        pool.splice(pool.indexOf(same), 1);
+        out.push(same);
+        continue;
+      }
+      const grp = k.startsWith('g:') ? pool.find(o => keyOf(o) === k) : null;
+      if (grp) { // un groupe qui reste : son nœud (et son pli) est gardé, ses cartes sont comparées
+        pool.splice(pool.indexOf(grp), 1);
+        stamp(n);
+        merge(grp, n);
+        grp.__gen = n.__gen;
+        out.push(grp);
+        continue;
+      }
+      if (k.startsWith('g:')) stamp(n); // un groupe posé tel quel : ses cartes sont marquées pour le prochain dessin
+      out.push(n);
+    }
+    if (out.length !== oldP.children.length || out.some((e, i) => e !== oldP.children[i])) oldP.replaceChildren(...out);
+  }
+  /** Pose `html` dans `view` en gardant les nœuds des blocs inchangés ; au premier dessin (vue vide) tout est posé. */
+  function reconcile(view, html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    stamp(tmp);
+    merge(view, tmp);
   }
 
   /** État vivant de la carte Données hors ligne : zones publiées ou ouvertes, stockage du navigateur, puis la liste des zones (paintZones) et le diagnostic du cadre. */
@@ -716,6 +756,10 @@
       branch: admin?.branch && typeof admin.branch === 'object' ? admin.branch : null
     };
   }
+  /** Ce que l'écran déduit du dépôt distant (SOG-0172 : un champ qui change à chaque lecture ne redessine pas l'écran) : adresse, branche, état, adresse proposée, historique réécrit. */
+  const remoteKey = r => JSON.stringify(r && typeof r === 'object' ? [r.url, r.branch, r.state, r.repo, r.default, r.rewritten, r
+    .remote
+  ] : null);
   const REMOTE_WAIT_MS = 120; // ce que l'écran attend la lecture du dépôt distant avant de se dessiner sans elle
   const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
   /** Dessine l'écran des réglages dans view ; c : contexte du cadre (voir l'en-tête). */
@@ -932,7 +976,7 @@
       if (!view.isConnected || !r) return;
       P.launcher.paintGit(view, t, r);
       const editing = view.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-      if (JSON.stringify(r) !== JSON.stringify(remote) && !editing) render(view, c);
+      if (remoteKey(r) !== remoteKey(remote) && !editing) render(view, c);
     });
     // état vivant : synchronisation, données hors ligne, clés, diagnostic
     P.access.live(env); // synchronisation et écritures en attente, vivantes
