@@ -4326,3 +4326,58 @@ def d136(c):
     doc['alternatives'][0]['control'] = ['fallback', 'incomplete', 'controlled', 'error', 'error']
     c.js(ev, doc)
     c.eq(c.js("() => window.__mp.S.alts.list[0].control.length"), 3, 'one entry per segment at most', what='control length')
+
+
+@case('D137', 'Route weather: the tap answers at once (« Reading… », busy button, seconds counted), ten taps are one reading, the page lives meanwhile, and the end is always said (cut, or the reason with « Try again »)', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0139 refused (« le bouton reste bleu, on ne sait pas ce que fait le lanceur, rien ne s’affiche »): the tap on « Route weather » shows « Reading the route weather… » with the seconds at once and the button is busy (aria-busy); further taps do not start another reading; the page answers during it; the end is always said: the cut, or the reason (offline, daily limit, more than 20 s, HTTP status, nothing returned, no cruise level) with « Try again »')
+def d137(c):
+    c.open('maps', flight=True, forecast=True)
+    c.js(_STATE_JS)
+    c.js("""() => { const S = window.__mp.S, w = S.ctx.weather, g = w.grid.bind(w); window.__got = null;
+      S.ctx = { ...S.ctx, weather: { ...w, grid: async (...a) => { const r = await g(...a); if (r?.locs?.length && !window.__got) window.__got = JSON.parse(JSON.stringify(r)); return r } } }; return true }""")
+    c.until("() => !!window.__mp.S.wxWinds", timeout=12000, what='the kept forecast is read once (to copy a real answer)')
+    c.js("() => { window.__mp.S.wx = null; return true }")
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => !!window.__got", timeout=10000, what='a real answer of the store is kept')
+    got = c.js("() => window.__got")
+    forget(c.page, c.doc_paths('cache/weather/'), c.base)
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    c.page.add_style_tag(content='#fNotes{display:none!important}')
+    c.js("""(r) => { const S = window.__mp.S, w = S.ctx.weather; window.__calls = 0; window.__mode = 'slow'; window.__r = r; window.__stale = null;
+      S.ctx = { ...S.ctx, weather: { ...w, grid: async (places, dep, vars, o) => { if (o?.cacheOnly) return null; window.__calls++; window.__stale = o?.stale || null;
+        if (window.__mode === 'slow') { await new Promise(x => setTimeout(x, 2300)); return window.__r }
+        if (window.__mode === 'hang') return new Promise(() => {})
+        if (window.__mode === 'empty') return { locs: [] }
+        if (window.__mode === '429') throw Object.assign(new Error('x'), { status: 429 })
+        throw Object.assign(new Error('x'), { offline: true }) } } };
+      return true }""", got)
+    # 1. the tap answers at once, the button is busy, ten taps are one reading, the page lives
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => !!document.querySelector('.mp-dbody .mp-wxel')", timeout=1500, what='the sheet says at once that the weather is being read, with the seconds')
+    c.eq(c.attr('.mp-chip[data-view="weather"]', 'aria-busy'), 'true', 'the button is busy while it reads', what='aria-busy')
+    c.js("() => { for (let i = 0; i < 9; i++) document.querySelector('.mp-chip[data-view=\"weather\"]').click(); return true }")
+    c.until("() => /^[1-9]\\d* s/.test(document.querySelector('.mp-dbody .mp-wxel')?.textContent || '')", timeout=4000, what='the page lives meanwhile: the seconds count')
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", timeout=9000, what='the cut is drawn')
+    c.eq(c.js("() => window.__calls"), 1, 'ten taps made one reading', what='readings')
+    c.eq(c.attr('.mp-chip[data-view="weather"]', 'aria-busy'), 'false', 'the button is free again', what='aria-busy')
+    # 2. a reading that never ends is stopped and said, with « Try again »; the store is told it can stop waiting
+    c.js("() => { const S = window.__mp.S; S.wx = null; S.wxDeadline = 1500; window.__mode = 'hang'; window.__calls = 0; return true }")
+    c.tap('.mp-chip[data-view="profile"]')
+    c.wait(300)
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => !!document.querySelector('.mp-wxmsg [data-wxget]')", timeout=6000, what='a reading that takes too long is stopped and said, with a way to try again')
+    t = c.js("() => document.querySelector('.mp-wxmsg').textContent")
+    c.ok(re.search(r'20 s', t), t, 'the message says the delay')
+    c.eq(c.js("() => window.__stale && window.__stale()"), True, 'the store is told to stop waiting (stale)', what='stale')
+    c.eq(c.attr('.mp-chip[data-view="weather"]', 'aria-busy'), 'false', 'the button is free', what='aria-busy')
+    # 3. other ends: an HTTP refusal says its status, an empty answer says so, offline says offline; each offers « Try again »
+    for mode, pat in (('429', r'429'), ('empty', r'(rien rendu|returned nothing|nichts|no devolvi)'), ('offline', r'(Hors ligne|Offline|Sin conexión)')):
+        c.js("(m) => { window.__mode = m; return true }", mode)
+        c.tap('.mp-wxmsg [data-wxget]')
+        c.until("(p) => new RegExp(p, 'i').test(document.querySelector('.mp-wxmsg')?.textContent || '') && !!document.querySelector('.mp-wxmsg [data-wxget]')", pat, timeout=6000, what=f'the end « {mode} » is said with a way to try again')
+    # 4. then it works: « Try again » reads and draws the cut
+    c.js("() => { window.__mode = 'slow'; window.__mp.S.wxDeadline = 0; return true }")
+    c.tap('.mp-wxmsg [data-wxget]')
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", timeout=9000, what='« Try again » draws the cut')

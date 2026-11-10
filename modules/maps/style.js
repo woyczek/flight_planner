@@ -176,6 +176,7 @@ export const STYLE = `
 [data-module="maps"] .mp-dbody[data-kind=weather] svg{display:block;cursor:crosshair}
 [data-module="maps"] .mp-dbody[data-kind=weather]{touch-action:none}
 [data-module="maps"] .mp-wxmsg{margin:0;padding:6px 0}
+[data-module="maps"] .mp-chips .mp-chip[aria-busy="true"]{cursor:progress;opacity:.6}
 [data-module="maps"] .mp-wxlink{display:flex;align-items:center;min-height:var(--sog-touch);color:var(--sog-fg);text-decoration:none}
 [data-module="maps"] .mp-wxlink span{color:var(--sog-accent);text-decoration:underline}
 [data-module="maps"] .mp-dbody{overscroll-behavior:contain;box-sizing:border-box;margin:0 8px 8px;padding:6px 8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}

@@ -16,6 +16,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   SOG-0051 refused). Two lines at most after the category, on every mission; « Volée le … » moves to the category line.
 - **Fuel: « Changer » drawn at the size of the text** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS; noreg F122). The aircraft
   line's gesture no longer stands out as a 44 px framed button: magnifier and word in the accent tint, the 44 px target kept, as ⇄.
+
+- **Map: « Route weather » answers at once and always ends** (`modules/maps/weather.js`, `texts.js`, `style.js`; SPEC § 9, DECISIONS, help ×4; noreg D137, D122;
+  SOG-0139 refused). From the tap: « Reading the route weather… » with the seconds elapsed and a busy button (ten taps = one reading); the reading stops
+  after 20 s; the end is always said, the cut or the reason (offline, daily limit, over 20 s, HTTP status, nothing received, no cruise level) with
+  « Try again »; the heavy computation yields to the browser. The old text « Reading the stored forecast… » during a real read is gone.
+
 - **Fuel: the Procedures card says the ground reading** (`modules/fuel/procedures.js`, `procedures_texts.js`, `module.js`; Fuel SPEC,
   DECISIONS, help; noreg F124; SOG-0135). « Lecture du sol en cours… », « Sol lu », « Sol non lu : <raison> · Réessayer » (the ground
   alone) on each read aerodrome's discreet line, in the words of the Map's Ground panel.

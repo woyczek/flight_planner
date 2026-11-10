@@ -600,6 +600,30 @@ export const TX = {
   wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',
     'Corte meteorológico a lo largo de la ruta'
   ],
+  wxGetting: ['Lecture de la météo de la route…', 'Reading the route weather…', 'Streckenwetter wird gelesen…',
+    'Leyendo el tiempo de la ruta…'
+  ],
+  wxWait: ['limite par minute de la source : reprise dans {n} s', 'the source’s per-minute limit: resuming in {n} s',
+    'Minutenlimit der Quelle: weiter in {n} s',
+    'límite por minuto de la fuente: se reanuda en {n} s'
+  ],
+  wxETimeout: ['La lecture a dépassé 20 s (la source ou le lanceur est lent ou occupé).',
+    'The reading took over 20 s (the source or the launcher is slow or busy).',
+    'Das Lesen dauerte über 20 s (die Quelle oder der Launcher ist langsam oder beschäftigt).',
+    'La lectura superó los 20 s (la fuente o el lanzador está lento u ocupado).'
+  ],
+  wxELevel: ['Ce vol n’a pas de niveau de croisière : la coupe ne peut pas être calculée.',
+    'This flight has no cruise level: the cross-section cannot be computed.',
+    'Dieser Flug hat keine Reiseflughöhe: der Schnitt kann nicht berechnet werden.',
+    'Este vuelo no tiene nivel de crucero: no se puede calcular el corte.'
+  ],
+  wxEPoints: ['La route a moins de deux points : il n’y a rien à couper.', 'The route has fewer than two points: nothing to cut.',
+    'Die Route hat weniger als zwei Punkte: nichts zu schneiden.', 'La ruta tiene menos de dos puntos: nada que cortar.'
+  ],
+  wxEEmpty: ['La source n’a rien rendu pour cette route.', 'The source returned nothing for this route.',
+    'Die Quelle lieferte nichts für diese Route.',
+    'La fuente no devolvió nada para esta ruta.'
+  ],
   wxReading: ['Lecture de la prévision gardée…', 'Reading the stored forecast…', 'Gespeicherte Vorhersage wird gelesen…',
     'Leyendo la previsión guardada…'
   ],

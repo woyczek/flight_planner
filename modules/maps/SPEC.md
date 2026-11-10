@@ -1078,6 +1078,13 @@ cursor until all fingers are up.
   itself: the panel shows the one action (`data-wxget`, « Route weather »). A refused reading (offline, daily limit, other) says why in
   its own line with « Try again » and the link to `#atmosphere`; atmosphere's files not loadable (offline, never cached): one muted
   line says so. Noreg D122.
+  **The gesture never leaves the pilot guessing** (SOG-0139 refused, 10 Nov): from the tap the sheet says « Reading the route weather… »
+  with the seconds elapsed (`.mp-wxel`, written once a second only when it changes) and the chip is busy (`aria-busy`); further taps while
+  it reads do not start another reading (`S.wxRun`: ten taps = one reading); the heavy computation yields to the browser (`pause`)
+  after the data are in. The reading stops at 20 s (`WX_DEADLINE_MS`; the store is told through `stale` to stop waiting for the
+  per-minute limit, `onWait` says « resuming in n s »). The end is always said: the cut, or the reason with « Try again » — offline,
+  daily limit, over 20 s, the HTTP status, an empty answer, or (no « Try again », it would not help) a flight without a cruise level or
+  with fewer than two points. Noreg D137.
 
 ## 10. Airspaces at a point
 

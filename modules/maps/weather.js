@@ -67,7 +67,7 @@ function depTime(f) {
 
 /** Lit la prévision gardée pour le vol montré et prépare le dessin : { key, state: 'ok' | 'none' | 'fail', draw, legend, o } ;
  *  none : rien (ou pas assez) dans le cache pour ce vol ; fail : les fichiers d'Atmosphère n'ont pas pu être chargés. */
-async function loadWeather(key, fetchNow = false) {
+async function loadWeather(key, fetchNow = false, gesture = null) {
   let Sx, A;
   try {
     [Sx, A] = await Promise.all([import('../atmosphere/section.js'), import('../atmosphere/atmo.js')]);
@@ -83,7 +83,10 @@ async function loadWeather(key, fetchNow = false) {
       levelFt = S.route.levelFt || +f?.quote?.levelFt || 0;
     if (pts.length < 2 || !levelFt) return {
       key,
-      state: 'none'
+      state: 'none',
+      err: fetchNow ? {
+        why: pts.length < 2 ? 'points' : 'level'
+      } : null
     };
     // le point qui choisit le modèle : le même qu'Atmosphère (flight_path.js routeMidpoint, mi-longueur de la route)
     const mid = routeMidpoint(pts),
@@ -92,24 +95,45 @@ async function loadWeather(key, fetchNow = false) {
       model = await S.ctx.weather.modelFor(mid.lat, mid.lon), // ctx.weather est asynchrone (INTEGRATION § 14.1)
       ask = cacheOnly => S.ctx.weather.grid(places, dep, Sx.sectionVars(levelFt, pts), {
         model: model?.id,
-        cacheOnly
+        cacheOnly,
+        ...(cacheOnly || !gesture ? {} :
+        { // la lecture du geste : elle s'arrête d'attendre quand le délai est passé ou qu'une autre la remplace
+          stale: () => gesture.stale(),
+          onWait: n => gesture.waiting(n)
+        })
       });
     let r = await ask(true).catch(() => null),
       err = null;
     // « Météo de la route » (SOG-0139) : un seul geste, la prévision gardée d'abord, lue sinon (le clic est la demande ; ctx.weather
     // ne demande que ce qui manque)
-    if (!r?.locs?.length && fetchNow) r = await ask(false).catch(e => {
-      err = e || {};
-      return null;
-    });
+    if (!r?.locs?.length && fetchNow) {
+      let timer = 0;
+      // un délai : la lecture ne reste jamais « en cours » sans fin ; passé WX_DEADLINE_MS, elle est dite trop longue (la source ou le
+      // lanceur est lent ou occupé) et ce qu'elle écrira ensuite restera dans la réserve pour « Réessayer »
+      const late = new Promise((_, no) => {
+        timer = setTimeout(() => no({
+          timeout: true
+        }), S.wxDeadline || WX_DEADLINE_MS); // (S.wxDeadline : le délai des essais)
+      });
+      r = await Promise.race([ask(false), late]).catch(e => {
+        err = e || {};
+        return null;
+      });
+      clearTimeout(timer);
+      if (err?.timeout && gesture) gesture.late = true;
+    }
     if (!r?.locs?.length) return {
       key,
       state: 'none',
-      err: err ? {
-        offline: !!err.offline,
-        quota: !!err.quota
+      err: fetchNow ? {
+        offline: !!err?.offline,
+        quota: !!err?.quota,
+        timeout: !!(err?.timeout || err?.stale),
+        status: Number.isFinite(+err?.status) ? +err.status : 0,
+        why: err ? 'failed' : 'empty'
       } : null
     };
+    await pause(); // « Lecture… » est affichée avant le calcul du modèle de la coupe (le gros morceau)
     const o = {
       route: pts,
       levelFt,
@@ -151,16 +175,25 @@ async function loadWeather(key, fetchNow = false) {
   } catch {
     return {
       key,
-      state: 'none'
+      state: 'none',
+      err: fetchNow ? {
+        why: 'failed'
+      } : null
     };
   }
 }
+/** Rend la main au navigateur (un tour de la boucle d'événements) : l'affichage, les gestes et la lecture de la page restent vivants
+ *  entre deux gros calculs. */
+const pause = () => new Promise(r => setTimeout(r, 0));
+/** Délai de la lecture du geste « Météo de la route » (SOG-0139) : au-delà, elle est dite trop longue, avec « Réessayer ». */
+const WX_DEADLINE_MS = 20000;
 /** Constructeur du contenu « weather » pour openData : dessine dans la zone, ou rend une ligne (lecture, rien dans le cache,
  *  fichiers indisponibles). */
 const weatherBuild = key => (w, h, el) => {
   const wx = S.wx?.key === key ? S.wx : null;
   S.wxGeo = null;
-  if (!wx) return `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxReading))}</p>`;
+  if (!wx) return S.wxRun?.key === key ? `<p class="f-muted mp-wxmsg" role="status">${esc(tt(TX.wxGetting))} <span class="mp-wxel">${esc(runText())}</span></p>` :
+    `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxReading))}</p>`;
   if (wx.state === 'ok') {
     S.wxGeo = wx.draw(el, {
       ...wx.o,
@@ -191,7 +224,12 @@ const weatherBuild = key => (w, h, el) => {
     }) : '';
   // pas de prévision gardée : le geste est là, un seul, nommé par ce que veut le pilote ; une lecture refusée dit pourquoi
   if (!wx.err) return `<p class="mp-wxmsg"><button type="button" class="f-btn primary mp-wxget" data-wxget>${esc(tt(TX.wxTitle))}</button> <span class="f-muted">${esc(tt(TX.wxGetHint))}</span></p>`;
-  return `<p class="f-muted mp-wxmsg">${esc(tt(wx.err.offline ? TX.wxEOffline : wx.err.quota ? TX.wxEQuota : TX.wxEFail2))} <button type="button" class="f-btn mp-wxget" data-wxget>${esc(tt(TX.wxRetry))}</button></p><a class="mp-wxlink" href="#atmosphere">${esc(name ? tt(TX.wxNoneFor, {
+  const E = wx.err,
+    why = E.offline ? TX.wxEOffline : E.quota ? TX.wxEQuota : E.timeout ? TX.wxETimeout : E.why === 'level' ? TX.wxELevel : E.why ===
+    'points' ? TX.wxEPoints :
+    E.why === 'empty' ? TX.wxEEmpty : TX.wxEFail2,
+    again = E.why !== 'level' && E.why !== 'points'; // un vol sans niveau ou sans deux points ne se règle pas en réessayant
+  return `<p class="f-muted mp-wxmsg" role="alert">${esc(tt(why))}${E.status ? ` (HTTP ${E.status})` : ''}${again ? ` <button type="button" class="f-btn mp-wxget" data-wxget>${esc(tt(TX.wxRetry))}</button>` : ''}</p><a class="mp-wxlink" href="#atmosphere">${esc(name ? tt(TX.wxNoneFor, {
     f: name
   }) : tt(TX.wxNone))}&nbsp;<span>${esc(tt(TX.wxOpen))}</span></a>`;
 };
@@ -200,19 +238,49 @@ const weatherBuild = key => (w, h, el) => {
 export async function showWeather(force = false) {
   const key = wxKey(),
     open = () => openData('weather', key, wxName(), weatherBuild(key), tt(TX.wxLabel));
+  if (S.wxRun?.key === key)
+    return open(); // une lecture est en cours pour ce vol : un appui de plus ne la relance pas (dix appuis = une lecture)
   if (force && S.wx?.key === key && S.wx.state !== 'ok') S.wx = null; // un geste : la lecture est refaite, et dite
+  const seq = S.wxSeq = (S.wxSeq || 0) + 1,
+    run = force && !(S.wx?.key === key) ? {
+      key,
+      t0: Date.now(),
+      n: 0, // secondes d'attente de la limite par minute de la source, quand elle en demande
+      late: false,
+      stale: () => run.late || !S || S.wxSeq !== seq,
+      waiting: n => {
+        run.n = n;
+        runPaint();
+      }
+    } : null;
+  if (
+    run
+  ) { // le retour est immédiat : le bouton de la coupe est occupé (il n'est pas relancé), la feuille dit ce qui se passe et depuis combien de temps
+    S.wxRun = run;
+    runBusy(true);
+    S.wxTick = setInterval(runPaint, 1000); // l'horloge de la lecture : seule la durée affichée change, rien d'autre n'est réécrit
+  }
   open();
   if (S.wx?.key === key && !(force && S.wx.state !== 'ok')) {
     if (force) fillGaps();
     return;
   }
-  const seq = S.wxSeq = (S.wxSeq || 0) + 1,
-    st = await loadWeather(key, force);
+  let st;
+  try {
+    st = await loadWeather(key, force, run);
+  } finally {
+    if (run && S?.wxRun === run) { // la fin, quelle qu'elle soit : l'horloge s'arrête, le bouton se libère
+      S.wxRun = null;
+      clearInterval(S.wxTick);
+      runBusy(false);
+    }
+  }
   if (!S || S.wxSeq !== seq) return;
   S.wx = st;
   if (S.dpanel === 'weather' && S.dkey === key) open();
   if (force) {
     if (st.state === 'ok' && !gridWinds()) { // la lecture vient d'arriver : les barbules d'abord, puis leurs trous
+      await pause();
       try {
         S.wxWinds = {
           key,
@@ -225,6 +293,26 @@ export async function showWeather(force = false) {
     }
     fillGaps();
   }
+}
+/** Ce que dit la feuille pendant la lecture : depuis combien de secondes, et l'attente de la limite par minute quand la source en impose une. */
+const runText = () => {
+  const r = S?.wxRun;
+  if (!r) return '';
+  const s = Math.max(0, Math.round((Date.now() - r.t0) / 1000));
+  return r.n ? `${s} s · ${tt(TX.wxWait, {
+    n: r.n
+  })}` : `${s} s`;
+};
+/** Réécrit la durée dans la ligne de lecture, seulement si elle change. */
+function runPaint() {
+  const el = S?.wxRun && S.dbodyEl?.querySelector('.mp-wxel'),
+    t = runText();
+  if (el && el.textContent !== t) el.textContent = t;
+}
+/** Le bouton « Météo de la route » est occupé pendant la lecture (écrit seulement s'il change). */
+function runBusy(on) {
+  const b = S?.segEl?.querySelector('.mp-chip[data-view="weather"]');
+  if (b && b.getAttribute('aria-busy') !== String(on)) b.setAttribute('aria-busy', String(on));
 }
 /** Distance entre deux barbules de la carte (NM), comme pour les vents de Carburant. */
 const WIND_STEP_NM = 50;
@@ -423,5 +511,5 @@ export function weatherEvents() {
       x = e.clientX - svg.getBoundingClientRect().left;
     if (x >= S.wxGeo.x0 && x <= S.wxGeo.x0 + S.wxGeo.pw) setCursor(Math.round(S.wxGeo.nmOf(x) * FT_NM));
   });
-  return [() => S.axx.stop(), () => raf && cancelAnimationFrame(raf)];
+  return [() => S.axx.stop(), () => raf && cancelAnimationFrame(raf), () => clearInterval(S.wxTick)];
 }

@@ -2268,6 +2268,18 @@ the Map had seen in between: the same line to within the frame's own sampling.
   label before the reading (it is chosen by the route's middle, after the route is known).
 - **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
 
+## Route weather, the gesture made honest (10 Nov 2026, SOG-0139 refused)
+
+- **Measured**: measured on the user's launcher, the Map alone, a fresh local profile, his real
+  route (LFPO → LEMO, 776 NM): one tap reads the forecast in 2.6 s (4 POST `/__setup/net`, one long task of 83 ms); ten taps 0.12 s apart are
+  also one reading (the chip is a no-op while the weather view is open). With the launcher's relay answering after 25 s (simulated) the page
+  stayed alive but said only « Reading the stored forecast… » (a wrong text: it was reading the source) with no time, no busy state, and the
+  failure came after 25 s: the symptom « the button stays blue and I do not know what the launcher does ». Not reproduced as a freeze on a
+  healthy network; what is closed is every silence: text, seconds, busy chip, one reading, the 20 s limit, the reason of every end (including
+  the cases that used to fall back to the blue button without a word: an empty answer, no cruise level, a failure of the computation).
+  Not done: cancelling the network request itself (the store has no abort; the late answer still fills the reserve for « Try again »); the
+  launcher's own relay timeout (20 s per call, several calls in parallel through one origin) is not changed here. Noreg D137.
+
 ## The ground panel says why a reading failed (10 Nov 2026, SOG-0046 / 0135 refused: « rien »)
 
 - **What happened** (AeroDB): the launcher started the ground reading after LFPO's procedures and wrote nothing; the failure was swallowed, the panel kept the sentence « read the
