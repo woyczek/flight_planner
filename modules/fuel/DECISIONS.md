@@ -1619,3 +1619,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **11 Nov 2026 — « Famille / Série » on screen** (SOG-0202; the user, 10 Nov: « famille / série »): the step Flight says « Famille » and
   « Série », the report's own words ×4 (no more « Thème / Sous-thème »); the code keeps `theme` / `series` (§ 10.48: theme = family,
   sub-theme = series). N23 checks Fuel's labels against the report's; counter-test on origin/v3: « Thème ».
+- **11 Nov 2026 — the approaches in doubt are listed, « à vérifier »** (SOG-0232 phase 1; the user: « oui, ajouter les approches en doute,
+  mais avec un panonceau. dans une seconde phase, les lister sur une page dédiée, et les faire valider manuellement ? »; LFST had 8 of 11
+  approaches hidden, read « pas d'approche ??? »). Listed with a badge and their reasons, chosen only by hand, never by a proposal or an
+  automatic choice; the shared rule `PR.isDoubt` is unchanged (the Map: BUGS SOG told). The line « Carte seulement dans l'AIP » waits for
+  `AeroDb.chartOnly` (AeroDB, promised for today): Fuel calls it only when it exists. Phase 2 (a page to validate them by hand) is the
+  user's to decide. F139 (an invented approach of LFML read in doubt); counter-test on origin/v3: not listed.

@@ -14,6 +14,26 @@ export const TX = {
   // procédure lue sans nom (identifiant « ….STAR.NONAME.… ») : sa sorte, jamais le mot de l'identifiant
   procUnnamed: ['{k} sans nom', '{k} without a name', '{k} ohne Namen', '{k} sin nombre'],
   procXplane: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
+  // SOG-0232 (l'utilisateur, 10 nov. : « oui, ajouter les approches en doute, mais avec un panonceau ») : une approche dont la lecture est
+  // douteuse est listée, marquée, sa raison en infobulle ; jamais prise par un choix automatique
+  procDoubt: ['à vérifier', 'to check', 'zu prüfen', 'a comprobar'],
+  // les motifs d'un doute (aerodb, liste fermée de tools/proc_geometry.py DOUBT_CODES)
+  doubtWhy: {
+    unread: ['lignes de la table de codage non lues', 'rows of the coding table not read', 'Zeilen der Codiertabelle nicht gelesen',
+      'filas de la tabla de codificación no leídas'
+    ],
+    name: ['sans nom', 'without a name', 'ohne Namen', 'sin nombre'],
+    repeat: ['point répété hors attente', 'point repeated outside a hold', 'Punkt außerhalb einer Warteschleife wiederholt',
+      'punto repetido fuera de una espera'
+    ],
+    zigzag: ['tracé en zigzag', 'zigzag track', 'Zickzack-Verlauf', 'trazado en zigzag'],
+    unresolved: ['points sans position', 'points without a position', 'Punkte ohne Position', 'puntos sin posición'],
+    geometry: ['cap ou distance imprimés en désaccord avec les positions', 'printed course or distance at odds with the positions',
+      'gedruckter Kurs oder Abstand passt nicht zu den Positionen', 'rumbo o distancia impresos en desacuerdo con las posiciones'
+    ]
+  },
+  // les approches que l'AIP ne donne qu'en carte (sans table de codage : conventionnelles, ILS de LFST), avec leur carte
+  procChartOnly: ['Carte seulement dans l’AIP', 'Chart only in the AIP', 'Nur als Karte im AIP', 'Solo carta en el AIP'],
   // procédure lue sous un cycle passé : le seul symbole ⌛ en fin de libellé (PROC_OLD), ce texte en infobulle
   procOutdatedTitle: ['Lue sous un cycle antérieur : à relire', 'Read under an earlier cycle: to read again',
     'Unter einem früheren Zyklus gelesen: neu lesen', 'Leído en un ciclo anterior: volver a leer'

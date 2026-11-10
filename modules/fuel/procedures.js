@@ -126,6 +126,10 @@ export function createProcedures(host) {
   const ctx = host.ctx,
     /** Texte d'une ligne de TX dans la langue de l'appli. */
     tt = (row, v) => ctx.t(row, v),
+    /** Les motifs d'une lecture douteuse en clair (le champ `doubt` d'aerodb : codes séparés par des virgules, liste fermée de
+     *  tools/proc_geometry.py DOUBT_CODES) ; un code inconnu n'est pas dit (SOG-0232). */
+    doubtWhy = rec => String(rec?.doubt ?? '').split(',').map(c => c.trim()).filter(c => Object.hasOwn(TX.doubtWhy, c)).map(c => tt(TX
+      .doubtWhy[c])).join(' ; ') || tt(TX.procDoubt),
     /** État des procédures d'un terrain (un seul objet par OACI) : recs, ses fiches montrées au dernier dessin (par identifiant :
      *  conflits, ordre, ⌛ des notifications) ; stats, les comptes de sa dernière lecture à la demande (fiches douteuses). */
     ads = new Map(),
@@ -255,7 +259,16 @@ export function createProcedures(host) {
         Promise.resolve().then(() => ctx.aerodb?.sources?.()).catch(() =>
           null) // le catalogue : COVERAGE.partial, le libellé de « non lues »
       ]),
-      all = every.filter(p => !PR.isDoubt(p)); // règle partagée avec la Carte (frame/lib/procedures.js)
+      all = every.filter(p => !PR.isDoubt(p)), // règle partagée avec la Carte (frame/lib/procedures.js)
+      // SOG-0232 : à l'arrivée, les approches de lecture douteuse (statut doubt, avec un nom) sont listées, marquées « à vérifier »
+      // (procedures(icao, { doubt: true }) : aerodb ne les rend que sur demande) ; jamais dans un choix automatique (admit, PR.isDoubt)
+      doubts = side === 'arr' ? (await askAero(() => ctx.aerodb?.procedures?.(icao, {
+        doubt: true
+      }))).filter(p => p?.kind === 'APP' && p.status === 'doubt' && String(p.name ?? '').trim() && !/\.NONAME\./i.test(String(p.id ??
+        ''))) : [],
+      // les approches que l'AIP ne donne qu'en carte (aerodb.chartOnly, quand aerodb l'a : [{ name, runway, url }])
+      chartOnly = side === 'arr' && typeof ctx.aerodb?.chartOnly === 'function' ? await Promise.resolve().then(() => ctx.aerodb
+        .chartOnly(icao)).catch(() => []) : [];
     return {
       icao,
       name: adLabel({
@@ -275,7 +288,9 @@ export function createProcedures(host) {
         (+ads.get(icao)?.stats?.doubt || 0) + (+ads.get(icao)?.stats?.rejected || 0)),
       partialLabel: cat?.COVERAGE?.partial ? ctx.t(cat.COVERAGE.partial) :
       '', // « Lu en partie : pages non lues ou procédures à vérifier »
-      lists: Object.fromEntries(kinds.map(k => [k, all.filter(p => p.kind === k)])),
+      lists: Object.fromEntries(kinds.map(k => [k, [...all.filter(p => p.kind === k), ...(k === 'APP' ? doubts : [])]])),
+      chartOnly: (Array.isArray(chartOnly) ? chartOnly : []).filter(x => x && typeof x.url === 'string' && /^https:\/\//.test(x.url))
+        .slice(0, 20),
       nodata: !known.length && !all.length
     };
   }
@@ -291,10 +306,11 @@ export function createProcedures(host) {
     const sub = k === 'trans' || k === 'appTrans',
       opt = (v, l, on, rec) => {
         const pub = lab && rec ? String(rec.name || '').trim() : '', // le nom publié, quand le libellé est court (« ILS 06 »)
-          why = rec ? [pub && !l.startsWith(pub) ? pub : '', rec.outdated ? tt(TX.procOutdatedTitle) : '', ...conflictsOf(k, rec, o)]
-          .filter(
-            Boolean) : [],
-          cls = [rec?.outdated ? 'outdated' : '', rec && conflictsOf(k, rec, o).length ? 'conflict' : ''].filter(Boolean).join(' ');
+          doubt = rec && PR.isDoubt(rec),
+          why = rec ? [pub && !l.startsWith(pub) ? pub : '', doubt ? `${tt(TX.procDoubt)} : ${doubtWhy(rec)}` : '', rec.outdated ? tt(TX
+            .procOutdatedTitle) : '', ...conflictsOf(k, rec, o)].filter(Boolean) : [],
+          cls = [doubt ? 'doubt' : '', rec?.outdated ? 'outdated' : '', rec && conflictsOf(k, rec, o).length ? 'conflict' : ''].filter(
+            Boolean).join(' ');
         return `<option value="${esc(v)}"${on ? ' selected' : ''}${cls ? ` class="${cls}"` : ''} title="${esc([l, ...why].join(' · '))}">${esc(l)}</option>`;
       },
       list = PR.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], k, o, recsNow()),
@@ -407,7 +423,9 @@ export function createProcedures(host) {
       // infobulle ; une transition « via ODILO · ODILO 1A »
       const ac = PR.appChoices(m.lists.APP),
         xp = r => r.status === 'xplane' || r.local ? ` · ${tt(TX.procXplane)}` : '';
-      sel('app', 'app', TX.procApp, ac.list, true, r => PR.labelOf(r, ac.list) + xp(r) + (r.outdated ? PROC_OLD : ''));
+      sel('app', 'app', TX.procApp, ac.list, true, r => PR.labelOf(r, ac.list) + xp(r) + (PR.isDoubt(r) ? ` · ⚑ ${tt(TX.procDoubt)}` : '') + (r
+        .outdated ? PROC_OLD : ''));
+
       const at = ac.transitionsOf(o.app);
       if (at.length) sel('appTrans', 'apptrans', TX.procAppTrans, at, false, r => PR.transitionLabelOf(r) + (r.outdated ? PROC_OLD : ''));
     }
@@ -660,7 +678,7 @@ export function createProcedures(host) {
     if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
   /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
-  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p>' : ''}</div>`;
+  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
   // l'ILS de la base pour une piste d'un terrain (SOG-0176) : clé « OACI|piste » → la fiche nettoyée, null (aucun), absente tant que la
   // réponse n'est pas venue (demandée une fois)
   const aids = new Map();
@@ -743,6 +761,13 @@ export function createProcedures(host) {
     for (const f of fields) setHtml(el.querySelector(`select[data-k="${f.k}"]`), f.html);
     const aid = el.querySelector('[data-r="aid"]');
     if (aid) setAid(aid, m);
+    // SOG-0232 : les approches que l'AIP ne donne qu'en carte (sans table de codage : conventionnelles, ILS de LFST), chacune avec son
+    // lien vers la carte (l'adresse composée par aerodb.chartOnly, jamais ici)
+    const co = el.querySelector('[data-r="chartonly"]');
+    if (co) {
+      co.hidden = !m.chartOnly?.length;
+      setHtml(co, m.chartOnly?.length ? `${esc(tt(TX.procChartOnly))} : ${m.chartOnly.map(x => `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" data-chartonly-item>${esc(String(x.name || '').slice(0, 60))}</a>`).join(' · ')}` : '');
+    }
   }
   /** Signature de la structure d'un côté : terrain, avec ou sans donnée, listes présentes. Changée, la boîte est refaite. */
   const structOf = (side, m, fields) => m ? `${side}:${m.icao}:${m.nodata ? 'n' : 'd'}:${fields.map(f => f.k).join(',')}` : `${side}:-`;

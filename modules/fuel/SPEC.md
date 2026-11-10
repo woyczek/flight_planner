@@ -447,7 +447,12 @@ before the start, in step 5 after (F11).
   'xplane'` comes last, « X-Plane, local »; an `outdated` one ends with ⌛ (class `outdated`, grey on a computer, title « Lue sous un
   cycle antérieur : à relire »), never the word « périmé » (F13); the runway is in the label only when NO runway is chosen, the record
   serves exactly one and its name does not say it already (« MAN1A · 07 », « RNP RWY 02 »); same-name SIDs of two runways make one row
-  with their runways (F78). A record `status: 'doubt'`, or without a name, is never listed and is counted in « N non lues » with the
+  with their runways (F78). **An approach read in doubt** (`status: 'doubt'`, with a name; asked with `procedures(icao, { doubt: true
+  })`) **is listed** at the arrival, « ⚑ à vérifier » on its line, its reasons in clear words in the tooltip (the closed list of
+  aerodb's `doubt` codes: unread, name, repeat, zigzag, unresolved, geometry), class `doubt`; it is chosen only by hand — never by a
+  proposal of an address nor any automatic choice — and, chosen, it is the flight's (`flight_path.js` `loadProcedures` asks the
+  approach with `{ doubt: true }`) (SOG-0232, F139). The approaches charted only in the AIP (`aerodb.chartOnly`, when aerodb has it)
+  are a line « Carte seulement dans l'AIP : ILS LOC RWY 05 · … » under the lists, each its chart. Any other record `status: 'doubt'`, or without a name, is never listed and is counted in « N non lues » with the
   aerodrome's left-out records (`stats.doubt` of the session's last reading, `coverage().doubt`); a runway only such records name is not
   offered; an aerodrome is « without data » only with no procedure of any kind and no runway (F31, F37). The lists are read again when
   aerodb announces new procedures (a `change` naming the aerodrome); the chosen procedures are read again when it is the flight's

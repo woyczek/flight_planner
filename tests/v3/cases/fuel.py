@@ -3999,3 +3999,54 @@ def f138(c):
     wait_quote(c)
     to_step(c, 3)
     c.until(f"!!document.querySelector('{FUEL} [data-altnrow=unknown]')", timeout=12000, what='« Dégagement LFZZ : position inconnue, non compté »')
+
+
+
+def _doubt_docs():
+    """The seeded procedures plus an invented approach of LFML read in doubt (status doubt, reasons unread and geometry)."""
+    from fixtures.procedures import pt, rec
+    docs = proc_docs()
+    dub = rec('LFML', 'APP', 'RNP 31L', ['31L'], [pt(1, 'FAF31', 43.30, 5.40, {'type': 'at', 'ft': 2000}), pt(2, 'RW31L', 43.42, 5.23)], status='doubt')
+    dub['doubt'] = 'unread,geometry'
+    for d in docs:
+        if d[0].endswith('/LFML.json') and d[0].startswith('proc/') and '/manual/' not in d[0] and '/local/' not in d[0]:
+            # an approach the AIP gives only as a chart (an IAC without a coding table, invented): « Carte seulement dans l'AIP »
+            charts = d[1].get('charts') or {'base': 'https://www.sia.aviation-civile.gouv.fr/test/eAIP/', 'items': []}
+            d[1] = {**d[1], 'procedures': [*d[1]['procedures'], dub],
+                    'charts': {**charts, 'items': [*charts.get('items', []), {'path': 'Cartes/LFML/AD_2_LFML_IAC_RWY31R_VOR.pdf', 'kind': 'IAC'}]}}
+    return docs, dub['id']
+
+
+@case('F139', 'Procedures: an approach read in doubt is LISTED with « à vérifier » and its reason, chosen only by hand (kept as the flight\'s), never taken by a proposal of an address',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0232 phase 1 (user, 10 Nov: « oui, ajouter les approches en doute, mais avec un panonceau »; LFST: 8 of 11 approaches hidden as doubt, '
+      '« pas d\'approche ??? »): aerodb.procedures(icao, { doubt: true }); the reasons from the closed list of aerodb (DOUBT_CODES); an invented approach; captures 390 and 1 280')
+def f139(c):
+    docs, dub = _doubt_docs()
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('fuel', docs=docs + proc_flight(V2_PROCS), airfields=True)
+        to_step(c, 1)
+        wait_rows(c, 'arr')
+        opts = c.js(f"[...document.querySelectorAll('{FUEL} select[data-k=\"p-arr-app\"] option')].map(o => [o.value, o.textContent.trim(), o.className, o.title])")
+        mine = [o for o in opts if o[0] == dub]
+        c.ok(mine, opts, f'{w} px: the approach in doubt is listed')
+        c.ok(norm(tx('modules/fuel/procedures_texts.js', 'procDoubt', c.lang)) in norm(mine[0][1]) and 'doubt' in mine[0][2], mine,
+             '« ⚑ à vérifier » on its line, class doubt')
+        why = tx('modules/fuel/procedures_texts.js', 'unread', c.lang, after='doubtWhy')
+        c.ok(norm(why) in norm(mine[0][3]), mine[0][3], 'its reason in clear words in the tooltip')
+        c.eq(procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr').get('app'), 'LFML.APP.I13R.RW13R.NONE', 'the approach of the flight unchanged (nothing taken by itself)', what='kept')
+        c.until(f"!!document.querySelector('{FUEL} [data-chartonly]:not([hidden]) a[data-chartonly-item]')", what=f"{w} px: « Carte seulement dans l'AIP » and its chart")
+        href = c.js(f"document.querySelector('{FUEL} [data-chartonly] a[data-chartonly-item]').getAttribute('href')")
+        c.ok(href.endswith('Cartes/LFML/AD_2_LFML_IAC_RWY31R_VOR.pdf') and href.startswith('https://www.sia.aviation-civile.gouv.fr/'), href, 'its link, composed by aerodb')
+        # chosen by hand: the flight's approach, its line says « à vérifier »
+        c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', dub)
+        cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == dub, f'{w} px: chosen by hand, it is the flight\'s', timeout=8000)
+        c.js(f"document.querySelector('{FUEL} select[data-k=\"p-arr-app\"]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F139_{c.design}_{w}_{c.lang}_delivered.png')
+    # never by a proposal of an address (the Map's « choix » mode): ignored, the flight keeps its approach
+    c.open('fuel?focus=arr&app=' + dub, docs=docs + proc_flight(V2_PROCS), airfields=True)
+    wait_rows(c, 'arr')
+    c.settle()
+    c.wait(800)
+    c.eq(procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr').get('app'), 'LFML.APP.I13R.RW13R.NONE', 'an address cannot propose an approach in doubt', what='proposal')

@@ -78,8 +78,13 @@ export async function loadProcedures(aerodb, f) {
     d = v.dep || {},
     a = v.arr || {},
     r = f?.route || {},
-    get = id => typeof id === 'string' && id && aerodb?.procedure ? Promise.resolve().then(() => aerodb.procedure(id)).catch(() =>
+    get = (id, q) => typeof id === 'string' && id && aerodb?.procedure ? Promise.resolve().then(() => aerodb.procedure(id, q)).catch(() =>
       null) : null,
+    // une approche choisie À LA MAIN, même de lecture douteuse (listée « à vérifier », SOG-0232), est celle du vol : demandée avec
+    // { doubt: true } ; un choix automatique n'en prend jamais (Carburant, PR.isDoubt)
+    asked = {
+      doubt: true
+    },
     rwKey = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, ''),
     rw = async (icao, id) => {
       if (!id || !icao || !aerodb?.runways) return null;
@@ -87,7 +92,8 @@ export async function loadProcedures(aerodb, f) {
       return (list || []).find(x => rwKey(x?.id) === rwKey(id)) || null;
     };
   const [sid, sidTrans, star, starTrans, app, appTrans, depRwy, arrRwy] = await Promise.all([get(d.sid), get(d.trans), get(a.star), get(
-    a.trans), get(a.app), get(a.appTrans), rw(r.dep || r.points?.[0]?.id, d.rwy), rw(r.arr || r.points?.at?.(-1)?.id, a.rwy)]);
+    a.trans), get(a.app, asked), get(a.appTrans, asked), rw(r.dep || r.points?.[0]?.id, d.rwy), rw(r.arr || r.points?.at?.(-1)?.id,
+    a.rwy)]);
   return dedupProcs({
     sid: sid || null,
     sidTrans: sidTrans || null,

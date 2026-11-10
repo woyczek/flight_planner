@@ -12,8 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the approaches read in doubt are listed « ⚑ à vérifier »**, their reasons in the tooltip, chosen only by hand (Fuel SPEC, DECISIONS,
+  help; `frame/lib/flight_path.js`; noreg F139; SOG-0232 phase 1). The approaches charted only in the AIP get a line once AeroDB gives them.
 - **Map: a read of an old mount no longer writes into the new one** (`modules/maps/mission_view.js`, `data.js`; DECISIONS; noreg D172, D4; challenge à rebours).
-
 - **Fuel: « Famille / Série » on the step Flight**, the report's words (the user's choice; help ×4; noreg N23; SOG-0202).
 - **Map: a doubtful approach chosen by hand is dotted with its tag** (`modules/maps/procs.js`, `texts.js`; DECISIONS; noreg D171; SOG-0232, Map side).
 
