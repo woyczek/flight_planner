@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 79,
-  "verdicts": 18
+  "verdicts": 20
  },
  "apps": [
   "pilote",
@@ -400,13 +400,9 @@
    },
    "test": "Carte avec une route : toucher « Météo de la route » affiche tout de suite « Lecture de la météo de la route… » avec les secondes ; plusieurs appuis ne lancent qu'une lecture ; à la fin les vents sont dessinés, ou une raison est dite avec « Réessayer ». La page reste utilisable pendant la lecture. (Le gel du lanceur quand Open-Meteo coupe est suivi à part : SOG-0178.)",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T10:06:38Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "Oui. mais meteo toujours cassée (et bloque le lanceur en cas de clic, peut-être multiple : le bouton est bleu, il reste bleu même après un clic, on ne sait pas ce que fait le lanceur, et rien ne s’affiche. ?). bloque chrome. Néanmoins, stricto-sensu, le bouton fait son taf…",
-    "at": "2026-11-10T09:28:04Z"
-   }
+   "at": "2026-11-10T13:30:38Z"
   },
   {
    "id": "SOG-0140",
@@ -647,13 +643,9 @@
    },
    "test": "Recharger la page, puis Carburant › Vol › Départ : taper « stoc » → Arlanda (ESSA) en tête et Bromma (ESSB) dans les sept ; « usa » → les grands terrains des États-Unis ; « swe » → ceux de Suède. Après « Mettre à jour », l'ordre par taille de piste s'affine.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T09:28:58Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "SWE… fonctionne. STOC… ne fonctionne pas. USA non plus.",
-    "at": "2026-11-10T08:58:53Z"
-   }
+   "at": "2026-11-10T13:30:41Z"
   },
   {
    "id": "SOG-0159",
@@ -1097,7 +1089,7 @@
    "test": "Après relance du lanceur. Maintenance › Données, une zone qui attend un fichier (Royaume-Uni, Suède) : sous sa ligne, un pas-à-pas : 1. le lien direct vers la page de la source, 2. le nom exact de chaque fichier à télécharger et ce qu'il apporte, 3. « Prendre le fichier téléchargé ». Vérifie que les liens suédois sont bien les tiens. (Danemark : pas encore.)",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T13:07:27Z"
+   "delivered": "2026-11-10T13:31:01Z"
   },
   {
    "id": "SOG-0190",
