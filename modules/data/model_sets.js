@@ -71,6 +71,9 @@ export function personalSources(zoneIds) {
       kind: p.kind
     }));
 }
+/** Une source « lue sur ce poste seulement » (X-Plane : données du simulateur, propriétaires) n'est JAMAIS envoyée aux verbes de construction et n'empêche jamais une construction (SOG-0162, refus de recette du 10 nov. 2026 : la coche unique envoyait X-Plane,
+ *  la construction répondait « décochez X-Plane » et la case n'existait plus : plus aucune reconstruction). Elle reste listée, avec sa mention ; le lanceur la lit sur le poste. */
+export const isLocalOnly = p => p?.kind === 'xplane';
 /** La certification mémorisée (le contenu de cache/data/personal.json) : `true` quand l'utilisateur a certifié l'usage personnel (SOG-0162 : UNE coche, qui déverrouille toutes les sources à usage personnel). Migration des cases d'avant (une case
  *  par source, `{ sources: [...] }`, SOG-0079) : une seule source cochée suffit, la coche unique est cochée ; tout le reste (fichier absent, forme inattendue) vaut « non certifié ». */
 export function keptPersonal(doc) {

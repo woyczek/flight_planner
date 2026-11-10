@@ -343,3 +343,9 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - Case L44: the unfolded theme (switch and three countries in full, no clipping, the zones list after it) and the row height by pointer; red before (4 rows clipped, overlap, rows of 45 px).
 
 - **Last retouch** (the ergonomist, after the capture): the countries of a theme and the zones list of the coverage followed each other with no title, « Espagne » looked listed twice. The zones list now has its title « Zones de la couverture (n) » (`zonesTitle`) and the countries of a theme are one step in (24 px) under their « Tout le thème » switch. Case L44.
+
+## 10 November 2026 — the single box no longer blocks a rebuild (SOG-0162, refused at the recipe, blocking)
+
+- **The failure**: the single certification box sent X-Plane with the other sources; the build answered « La construction avec X-Plane se fait dans la page… : décochez X-Plane et relancez » — and no X-Plane box existed any more: no rebuild was possible with the box ticked (the user's base stayed at parser 23, the current one being 27). My fault: I made the box send *every* personal source and kept the two texts of the old per-source boxes.
+- **The rule, now**: a source « lue sur ce poste seulement » (X-Plane; `isLocalOnly`) is **never sent to the verbs** (`personalPicked`) and never stops a build; it stays listed with its mention. The two texts that asked to untick it (`xplaneHint`, the old `sumXplane`) are gone, ×4; an older launcher that still answers `xplane-in-page` is told « X-Plane est lu sur ce poste seulement : il n'entre pas dans cette construction » — nothing to do. AeroDB sets the launcher side (discard with the reason instead of refusing).
+- Cases: L7, L10, L15, L32, L58 (the bodies: `['enaire', 'nats']`, never `xplane`), L61 (static: no text asks to untick X-Plane, ×4).

@@ -73,8 +73,8 @@ function personalName(id) {
 }
 /** Les sources sous licence personnelle cochées ET proposées (celles d'une zone décochée ne partent pas). */
 function personalPicked(ticked) {
-  return S.certified ? M.personalSources(ticked).map(p => p.id) :
-[]; // la coche unique débloque toutes les sources à usage personnel des zones cochées
+  return S.certified ? M.personalSources(ticked).filter(p => !M.isLocalOnly(p)).map(p => p.id) :
+[]; // la coche unique débloque les sources à usage personnel des zones cochées, sauf celles lues sur ce poste seulement (jamais envoyées)
 }
 /** Une case à cocher avec son libellé (44 px de haut) ; attr : l'attribut data- qui la repère ; extra : du HTML déjà sûr après le libellé (la ligne des terrains détenus d'un État). */
 function optHtml(attr, id, label, checked, disabled, extra = '') {
@@ -631,8 +631,7 @@ function choiceHtml(set, busy) {
       ids,
       ticked
     } = buildZones(),
-      pers = M.personalSources(ticked),
-      xplaneOn = S.certified && pers.some(p => p.id === 'xplane');
+      pers = M.personalSources(ticked);
     return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
     <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
     ${packsHtml()}
@@ -641,8 +640,7 @@ function choiceHtml(set, busy) {
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>
       <label class="d-opt"><input type="checkbox" data-certify${S.certified ? ' checked' : ''}${busy ? ' disabled' : ''}><span><b>${esc(tt(TX.certify))}</b></span></label>
       <p class="f-muted">${esc(tt(TX.certifyHint))} <a href="#sources" data-licences-link>${esc(tt(TX.licencesLink))}</a></p>
-      <ul class="d-pers-list" data-personal-list>${pers.map(p => `<li data-personal-row="${p.id}"><b>${esc(personalName(p.id))}</b> <span class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</span>
-        ${p.id === 'xplane' && xplaneOn ? `<span class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</span>` : ''}</li>`).join('')}</ul>
+      <ul class="d-pers-list" data-personal-list>${pers.map(p => `<li data-personal-row="${p.id}"><b>${esc(personalName(p.id))}</b> <span class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</span></li>`).join('')}</ul>
       ${S.certified ? `<p class="f-ok" data-personal-kept>${esc(tt(TX.personalKept))}</p>` : ''}</div>` : ''}</div>`;
   }
   if (set === 'proc') {

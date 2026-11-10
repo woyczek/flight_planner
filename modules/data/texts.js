@@ -495,11 +495,6 @@ export const TX = {
     'Gemerkt: bei jedem Öffnen angekreuzt, bei jedem Aufbau gesendet',
     'Recordado: se encuentra marcada en cada apertura, se envía en cada construcción'
   ],
-  xplaneHint: ['X-Plane coché : la construction se fait dans la page, pas encore possible ici',
-    'X-Plane ticked: the build runs in the page, not yet possible here',
-    'X-Plane angekreuzt: der Aufbau läuft in der Seite, hier noch nicht möglich',
-    'X-Plane marcado: la construcción se hace en la página, todavía no es posible aquí'
-  ],
   build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
   download: ['Télécharger', 'Download', 'Herunterladen', 'Descargar'],
   purge: ['Purger', 'Purge', 'Bereinigen', 'Purgar'],
@@ -583,10 +578,11 @@ export const TX = {
     'Auf diesem Rechner wurden weder Edge noch Chrome gefunden: installieren Sie einen der beiden.',
     'No se encontró Edge ni Chrome en este equipo: instale uno de los dos.'
   ],
-  sumXplane: ['La construction avec X-Plane se fait dans la page, pas encore possible ici : décochez X-Plane et relancez.',
-    'A build with X-Plane runs in the page, not yet possible here: untick X-Plane and start again.',
-    'Ein Aufbau mit X-Plane läuft in der Seite, hier noch nicht möglich: X-Plane abwählen und neu starten.',
-    'Una construcción con X-Plane se hace en la página, todavía no es posible aquí: desmarque X-Plane y vuelva a empezar.'
+  // un lanceur plus ancien peut encore répondre « xplane-in-page » : la phrase ne demande rien (aucune case à décocher), elle dit ce qu'est X-Plane ici
+  sumXplane: ['X-Plane est lu sur ce poste seulement : il n’entre pas dans cette construction.',
+    'X-Plane is read on this workstation only: it does not enter this build.',
+    'X-Plane wird nur auf diesem Rechner gelesen: Er geht nicht in diesen Aufbau ein.',
+    'X-Plane se lee solo en este puesto: no entra en esta construcción.'
   ],
   advice: {
     partial: [

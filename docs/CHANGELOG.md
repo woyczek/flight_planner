@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: the single « usage personnel » box no longer blocks a rebuild — X-Plane (read on this workstation only) is never sent to the verbs and the texts that asked to untick it are gone** (`modules/data/panels.js`, `model_sets.js`, `texts.js`; L61, L7, L10, L15, L32, L58) — SOG-0162, refused at the recipe.
 - **Report and Missions: a family is said by its acronym first** (`modules/report/vocab.js`, `module.js`, `modules/missions/module.js`;
   SPEC, DECISIONS of both, help; noreg G8, N12; SOG-0179). « SAR · Récupération de personnel » in the report's family list, the Missions
   headings (acronym in bold) and filter, as the V2 did; the long name never alone.

@@ -732,11 +732,10 @@ def l7(c):
     c.tap('[data-build-zone="gb"]')
     c.eq([c.js("[...document.querySelectorAll('[data-personal-row]')].map(r => r.dataset.personalRow)"), c.js("document.querySelector('[data-certify]').checked")], [['nats', 'xplane'], False],
          'France and the UK feed NATS and X-Plane (not ENAIRE): listed, the one box unticked', what='personal sources')
-    # X-Plane ticked: the hint under its checkbox, before the start; unticked again: gone
+    # the box ticked: X-Plane (read on this workstation only) is listed with its mention, and nothing tells the user to untick it (SOG-0162: there is no box to untick)
     c.tap('[data-certify]')
-    c.eq(norm(c.text('[data-personal-row="xplane"] [data-xplane-hint]')), norm(_trow('xplaneHint', lang)), 'the build in the page is not possible yet: said before the start', what='X-Plane hint')
+    c.eq([c.count('[data-xplane-hint]'), norm(c.text('[data-personal-row="xplane"] [data-personal-line]'))], [0, norm(tx(TX, 'xplane', lang, after='personalLine: {'))], 'ticked: X-Plane says it is read on this workstation only, no hint to untick it', what='X-Plane line')
     c.tap('[data-certify]')
-    c.eq(c.count('[data-xplane-hint]'), 0, 'unticked: no hint', what='X-Plane hint')
     _screen_ok(c, 'before the start')
     before = c.js('window.__stub.calls.publication')
     # start
@@ -802,7 +801,7 @@ def l7(c):
     c.tap('[data-certify]')
     c.tap('[data-verb=build]')
     c.until('document.querySelector("[data-build-result][data-result=done]")', timeout=10000, what='the second build ends')
-    c.eq(st['posts'][1]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats', 'xplane']}, 'ticking personal sources adds their ids', what='second body')
+    c.eq(st['posts'][1]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats']}, 'ticking the box adds the personal sources of the zones (not X-Plane)', what='second body')
     want = _trow('sumDone', lang).replace('{built}', _zones_text(lang, 2))
     c.eq(norm(c.text('[data-build-result] b')), norm(want), 'a clean end: « Base construite : 2 zones »', what='summary')
     c.eq(len(_notes_with(c, want)), 1, 'its own notification', what='notifications')
@@ -970,15 +969,14 @@ def l10(c):
     c.until("!!document.querySelector('[data-build-result][data-result=no-browser]')", timeout=8000, what='no-browser is said')
     want = _trow('sumNoBrowser', lang)
     c.eq([norm(c.text('[data-build-result]')), len(_notes_with(c, want))], [norm(want), 1], 'Ni Edge ni Chrome…: the sentence, one notification', what='no-browser')
-    # X-Plane ticked: the hint before the start, the id sent, the reason said at the end
+    # the box ticked: X-Plane is never sent; an older launcher that still answers « xplane-in-page » is said without asking to untick anything
     st['views'] = [_view('error', jid='j5', zones={}, result={'ok': False, 'reason': 'xplane-in-page'})]
     st['i'] = 0
     st['start'] = (200, {'job': 'j5'})
     c.tap('[data-certify]')
-    c.eq(c.count('[data-xplane-hint]'), 1, 'the hint is shown before the start', what='hint')
     c.tap('[data-verb=build]')
     c.until("!!document.querySelector('[data-build-result][data-result=xplane-in-page]')", timeout=8000, what='xplane-in-page is said')
-    c.eq(st['posts'][-1]['args']['personal'], ['enaire', 'nats', 'xplane'], 'the one box is sent as every personal source of the ticked zones (X-Plane among them)', what='body')
+    c.eq(st['posts'][-1]['args']['personal'], ['enaire', 'nats'], 'the one box is sent as the personal sources of the ticked zones, X-Plane (read on this workstation only) never among them', what='body')
     want = _trow('sumXplane', lang)
     c.eq([norm(c.text('[data-build-result]')), len(_notes_with(c, want))], [norm(want), 1], 'the verb\'s reason is said at the end', what='xplane-in-page')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and len(d.get('ops', [])) >= 5), what='five operations in the journal')
@@ -1555,7 +1553,7 @@ def l15(c):
     c.tap('[data-certify]')
     c.tap('[data-verb=download]')
     c.until("!!document.querySelector('[data-build-result][data-result=nothing]')", timeout=10000, what='nothing to download is said')
-    c.eq(st['posts'][1]['args'], {'zones': ['es', 'fr', 'gb'], 'personal': ['enaire', 'nats', 'xplane']}, 'ENAIRE goes in args.personal when the box is ticked, with the other personal sources of the zones', what='second body')
+    c.eq(st['posts'][1]['args'], {'zones': ['es', 'fr', 'gb'], 'personal': ['enaire', 'nats']}, 'ENAIRE goes in args.personal when the box is ticked, with the other personal sources of the zones (not X-Plane)', what='second body')
     nothing = _trow('fetchNothing', lang)
     c.eq([norm(c.text('[data-build-result]')), c.count('[data-build-result] [data-zone-state]'), len(_notes_with(c, nothing))], [norm(nothing), 0, 1], '« Rien à télécharger pour ces zones »: the sentence alone, one notification', what='nothing to fetch')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and len(d.get('ops', [])) >= 2), what='the second entry')
@@ -3717,7 +3715,7 @@ def l32(c):
     c.eq([box(), c.count('[data-personal-kept]')], [True, 1], 'found ticked at the next opening, nobody ticked it again, and said so', what='after reload')
     c.tap('[data-verb=build]')
     c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
-    c.eq(st['posts'][0]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats', 'xplane']}, 'the build is sent with every personal source of the ticked zones', what='body')
+    c.eq(st['posts'][0]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats']}, 'the build is sent with the personal sources of the ticked zones, never X-Plane', what='body')
     # ---- only its own box undoes it
     c.tap('[data-certify]')
     c.until_doc('cache/data/personal.json', lambda d: bool(d) and d.get('certified') is False, what='unticked: written')
@@ -4778,7 +4776,7 @@ def l58(c):
     st['views'], st['i'], st['start'] = [_pk_plan([], [], [], zones=five, jid='k2', extra=in_place)], 0, (200, {'job': 'k2'})
     c.tap('[data-build] [data-verb=pickup]')
     c.until("document.querySelector('[data-build-result][data-op=pickup]') && !document.querySelector('[data-build-result] [data-line]')", timeout=10000, what='the end of the second plan')
-    c.eq(st['posts'][-1]['args'].get('personal'), ['enaire', 'nats', 'xplane'], 'the one box is ticked: every personal source of the zones is sent (NATS among them)', what='personal B')
+    c.eq(st['posts'][-1]['args'].get('personal'), ['enaire', 'nats'], 'the one box is ticked: the personal sources of the zones are sent (NATS among them), never X-Plane', what='personal B')
     c.eq(c.count('[data-build-result] [data-line]'), 0, 'declared: nothing is there-but-unread', what='no unread')
     # ---- C: « Mettre à jour » carries the same box to the download and to the build
     fetched = _view('done', step='Terminé', jid='j1', result={'fetched': [], 'unchanged': list(five), 'failed': [], 'manual': []})
@@ -4792,7 +4790,7 @@ def l58(c):
         if _posts(st, 'build'):
             break
         c.wait(250)
-    c.eq([p['args'].get('personal') for p in st['posts'][n:] if p.get('verb') in ('fetch', 'build')], [['enaire', 'nats', 'xplane']] * 2, '« Mettre à jour »: the download and the build both carry the one box (every personal source)', what='update')
+    c.eq([p['args'].get('personal') for p in st['posts'][n:] if p.get('verb') in ('fetch', 'build')], [['enaire', 'nats']] * 2, '« Mettre à jour »: the download and the build both carry the one box (the personal sources, never X-Plane)', what='update')
     c.eq(_posts(st, 'build')[0]['args']['zones'], ['gb'], 'only gb (source-unbuilt, buildable) is built', what='build zones')
     c.check_errors()
 
@@ -4875,3 +4873,14 @@ def l60(c):
     c.until("!!document.querySelector('[data-zone-map=base] .d-map-host .maplibregl-canvas')", timeout=10000, what='the map is drawn once it is in the screen')
     c.ok(c.js("performance.getEntriesByType('resource').some(e => /maplibre/.test(e.name))"), None, 'MapLibre was asked for when the map came near')
     c.check_errors()
+
+
+@case('L61', 'Données: no message of the module asks to untick or deselect X-Plane (there is no such box), in four languages; a source read on this workstation only is never in args.personal (SOG-0162, refused at the recipe: « il ne veut pas construire x-plane, et tout est bloqué »)', 'L', tags=('data',), static=True,
+      rule='SOG-0162: the single certification box used to send X-Plane with the other sources and the build answered « untick X-Plane and start again » although no box existed; the texts that ask for it are gone, the id is not sent (L7, L10, L15, L32, L58 prove the bodies)')
+def l61(c):
+    src = (ROOT / 'modules/data/texts.js').read_text(encoding='utf-8')
+    bad = re.compile(r"(décochez|untick|abwählen|desmarque)[^'\n]{0,40}X-Plane|X-Plane[^'\n]{0,60}(décochez|untick|abwählen|desmarque)|X-Plane (coché|ticked|angekreuzt|marcado)", re.I)
+    c.eq([m.group(0) for m in bad.finditer(src)], [], 'no text of the module asks to untick X-Plane or speaks of X-Plane as ticked', what='texts')
+    c.eq(src.count('xplaneHint'), 0, 'the X-Plane hint (a line under a box that no longer exists) is gone', what='hint key')
+    panels = (ROOT / 'modules/data/panels.js').read_text(encoding='utf-8')
+    c.ok('isLocalOnly' in panels, None, 'the personal sources sent to the verbs leave out those read on this workstation only')
