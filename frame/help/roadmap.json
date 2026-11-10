@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c0833dc",
-  "fiches": 180,
+  "organisation": "7e1a289",
+  "fiches": 181,
   "untranslated": 1,
   "priorities": 152
  },
@@ -779,6 +779,15 @@
      "en": "Mission report: the short name of the category is gone (“SAR - Search and rescue”)",
      "de": "Missionsbericht: das Kürzel der Kategorie ist verschwunden („SAR - Suche / Rettung“)",
      "es": "Informe de misión: ha desaparecido la sigla de la categoría («SAR - Búsqueda / salvamento»)"
+    },
+    {
+     "id": "SOG-0181",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Compte rendu : dire pour quelle compagnie on l'écrit",
+     "en": "Report: say which airline it is written for",
+     "de": "Bericht: sagen, für welche Gesellschaft er geschrieben wird",
+     "es": "Informe: decir para qué compañía se escribe"
     }
    ]
   },
