@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 55,
-  "verdicts": 13
+  "verdicts": 12
  },
  "apps": [
   "pilote",
@@ -52,9 +52,7 @@
    },
    "test": "Compagnie › Missions › une mission : la première page montre titre, catégorie, trois risques, équipes, zones, « Préparer ce vol » ; « Détail » ouvre description, zones à activer, cartes ; « Voir sur la Carte » d'une zone ouvre la Carte centrée dessus.",
    "since": "2026-11-09",
-   "state": "ko",
-   "comment": "oui, mais la description courte, avant les les risques.  addenda au précédent reporting : oui pour la carte, c’est bien. néanmoins, on affiche les cartes selon différents thèmes : VFR topographique sur la carte « cible » d’un SAR ou HEMS, par ex.. Généralement sur une mission SO, la cible est en vfr. d’autres aussi, à réfléchir (ou trancher, ou permettre de changer de vue). sur une commerciale, non, mais sur du SO, oui.  Validé, avec réserves, donc refusé.",
-   "at": "2026-11-10T09:35:59Z"
+   "state": "known"
   },
   {
    "id": "SOG-0056",
