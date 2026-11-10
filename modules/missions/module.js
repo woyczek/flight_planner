@@ -6,6 +6,7 @@
 // page à page, l'affectation (§ 5–6).
 import * as MS from '../../frame/lib/mission.js';
 import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des YAML avant toute écriture (SOG-0212 b)
+import * as MOVE from './move.js'; // changer la compagnie d'une mission : le champ airline retouché dans le texte (SOG-0223)
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
 import {
   familyParts,
@@ -17,7 +18,7 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js',
+  files: ['add.js', 'move.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
   reads: ['missions/', 'cr/',
@@ -121,7 +122,7 @@ const TX = {
     'Wählen Sie eine Datei oder fügen Sie YAML ein.',
     'Elija un archivo o pegue un YAML.'
   ],
-  addFound: ['{n} mission(s) lue(s)', '{n} mission(s) read', '{n} Mission(en) gelesen', '{n} misión(es) leída(s)'],
+  addFound: ['{n} mission(s) lue(s)', '{n} mission(s) read', '{n} Mission(en) gelesen', 'Misiones leídas: {n}'],
   addRefused: ['Refusées', 'Refused', 'Abgelehnt', 'Rechazadas'],
   addDo: ['Ajouter ({n})', 'Add ({n})', 'Hinzufügen ({n})', 'Añadir ({n})'],
   personal: ['Personnel', 'Personal', 'Persönlich', 'Personal'],
@@ -133,7 +134,7 @@ const TX = {
   added: ['{n} mission(s) ajoutée(s) : elles partent à la prochaine synchronisation.',
     '{n} mission(s) added: they leave at the next synchronisation.',
     '{n} Mission(en) hinzugefügt: Sie gehen bei der nächsten Synchronisierung.',
-    '{n} misión(es) añadida(s): salen en la próxima sincronización.'
+    'Misiones añadidas: {n}; salen en la próxima sincronización.'
   ],
   addedElsewhere: ['{n} d’entre elles ne sont pas de cette compagnie (Personnel ou une autre) : elles ne sont pas dans cette liste.',
     '{n} of them are not of this airline (Personal or another): they are not in this list.',
@@ -171,6 +172,35 @@ const TX = {
   why_organisation: ['organisation d’exercice (…Z) : pas un vol', 'exercise organisation (…Z): not a flight',
     'Übungsorganisation (…Z): kein Flug',
     'organización de ejercicio (…Z): no es un vuelo'
+  ],
+  // changer la compagnie d'une mission (SOG-0223) : sur sa fiche, en lot, à l'ajout
+  coLine: ['Compagnie : {c}', 'Airline: {c}', 'Gesellschaft: {c}', 'Compañía: {c}'],
+  change: ['Changer', 'Change', 'Ändern', 'Cambiar'],
+  moveTo: ['Passer à', 'Move to', 'Wechseln zu', 'Pasar a'],
+  moveSay: ['{id} passe de {a} à {b}.', '{id} moves from {a} to {b}.', '{id} wechselt von {a} zu {b}.', '{id} pasa de {a} a {b}.'],
+  write: ['Écrire', 'Write', 'Schreiben', 'Escribir'],
+  cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+  moveAll: ['Attribuer à une compagnie…', 'Assign to an airline…', 'Einer Gesellschaft zuordnen…', 'Asignar a una compañía…'],
+  moveHint: ['Les missions de la liste affichée (portée, famille, recherche) ; décochez celles à laisser.',
+    'The missions of the list shown (scope, family, search); untick those to leave.',
+    'Die Missionen der angezeigten Liste (Bereich, Familie, Suche); entfernen Sie den Haken bei denen, die bleiben sollen.',
+    'Las misiones de la lista mostrada (alcance, familia, búsqueda); desmarque las que deban quedarse.'
+  ],
+  moveReading: ['Lecture des fichiers…', 'Reading the files…', 'Dateien werden gelesen…', 'Leyendo los archivos…'],
+  moveCount1: ['{n} mission passe à {b}.', '{n} mission moves to {b}.', '{n} Mission wechselt zu {b}.', '{n} misión pasa a {b}.'],
+  moveCount: ['{n} missions passent à {b}.', '{n} missions move to {b}.', '{n} Missionen wechseln zu {b}.', '{n} misiones pasan a {b}.'],
+  moveUnread: ['Illisibles, laissées telles quelles : {l}', 'Unreadable, left as they are: {l}', 'Unlesbar, unverändert gelassen: {l}',
+    'Ilegibles, se dejan tal cual: {l}'
+  ],
+  moveDo: ['Écrire ({n})', 'Write ({n})', 'Schreiben ({n})', 'Escribir ({n})'],
+  moved: ['{n} mission(s) changée(s) de compagnie : elles partent à la prochaine synchronisation.',
+    '{n} mission(s) moved to another airline: they leave at the next synchronisation.',
+    '{n} Mission(en) einer anderen Gesellschaft zugeordnet: Sie gehen bei der nächsten Synchronisierung.',
+    'Misiones cambiadas de compañía: {n}; salen en la próxima sincronización.'
+  ],
+  addAs: ['Ajouter ces missions à', 'Add these missions to', 'Diese Missionen hinzufügen zu', 'Añadir estas misiones a'],
+  asInFile: ['la compagnie dite dans le fichier', 'the airline the file says', 'die Gesellschaft laut Datei',
+    'la compañía que indica el archivo'
   ],
   refusedLine: ['{w} : {r}', '{w}: {r}', '{w}: {r}', '{w}: {r}'],
   why_twice: ['en double dans ce qui est lu', 'twice in what is read', 'doppelt im Gelesenen', 'duplicada en lo leído'],
@@ -408,7 +438,8 @@ async function airlineOf() {
       filter: !!code && code !== 'default',
       a,
       // les noms des compagnies de l'index, pour dire celle d'une mission d'à côté (SOG-0212 c) ; textes à échapper
-      names: new Map((Array.isArray(list) ? list : []).map(x => [String(x?.code || ''), String(x?.name || x?.code || '').slice(0, 60)]))
+      names: new Map((Array.isArray(list) ? list : []).map(x => [String(x?.code || ''), String(x?.name || x?.code || '').slice(0, 60)])),
+      list: Array.isArray(list) ? list : []
     };
   } catch {
     return {
@@ -471,7 +502,7 @@ function draw(s) {
   s.ctx.helpAnchor?.(() => s.open ? 'missions-open' : 'missions-list');
   for (const u of s.urls || []) URL.revokeObjectURL(u);
   s.urls = [];
-  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : s.add ? addHtml(s) : listHtml(s)}`;
+  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : listHtml(s)}`;
   if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
 }
 
@@ -487,7 +518,7 @@ function listHtml(s) {
     held = new Set(s.rows.filter(r => ofAirline(s, r)).map(r => catOf(s, r)?.id).filter(Boolean)),
     cats = s.cats.all.filter(c => held.has(c.id)),
     lang = s.ctx.lang?.() || 'fr';
-  return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button></div>
+  return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
     ${scopeHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(familyText(f, s.ctx.lang?.() || 'fr'))}</option>`).join('')}</select></label>
@@ -569,6 +600,7 @@ function firstHtml(s, r, m, drawn, why) {
   // la famille : son sigle en gras puis son nom long (SOG-0187, comme au compte rendu et dans la liste ; familyParts)
   return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted ms-fam" data-family-of="${esc(r.family)}">${famHtml(s, r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
     ${kindLine.length || flownBadge ? `<p class="f-muted" data-cat>${esc(kindLine.join(' · '))}${kindLine.length && flownBadge ? ' ' : ''}${flownBadge}</p>` : ''}
+    ${s.co?.filter ? coHtml(s, r) : ''}
     ${m?.summary ? `<p class="ms-summary" data-summary title="${esc(m.summary)}">${esc(m.summary)}</p>` : ''}
     ${m ? risks.length ? `<div data-risks><h3>${esc(s.tt(TX.risks))}</h3><ul class="ms-lines">${risks.slice(0, 3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>${risks.length > 3 ? `<details class="ms-more" data-riskmore><summary class="f-muted">${esc(s.tt(TX.more, { n: risks.length - 3 }))}</summary><ul class="ms-lines">${risks.slice(3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul></details>` : ''}</div>` :
     `<div data-risks><p class="f-muted" data-norisk>${esc(s.tt(TX.noRisk))}</p></div>` : ''}
@@ -656,6 +688,19 @@ async function openMission(s, row, drawn = false) {
 
 /** Saisie : la recherche et la famille filtrent la liste. */
 function onInput(s, e) {
+  if (e.target?.dataset?.k === 'moveone' && s.open?.move) {
+    s.open.move.to = e.target.value;
+    return draw(s);
+  }
+  if (s.move && (e.target?.dataset?.k === 'moveto' || e.target?.dataset?.movebox)) {
+    if (e.target.dataset.k === 'moveto') s.move.to = e.target.value;
+    else e.target.checked ? s.move.sel.add(e.target.dataset.movebox) : s.move.sel.delete(e.target.dataset.movebox);
+    return draw(s);
+  }
+  if (s.add?.items && e.target?.dataset?.k === 'addas') {
+    s.add.as = e.target.value;
+    return;
+  }
   if (s.add?.items && e.target?.dataset?.replace) {
     e.target.checked ? s.add.replace.add(e.target.dataset.replace) : s.add.replace.delete(e.target.dataset.replace);
     const b = s.el.querySelector('[data-do=addwrite]');
@@ -728,7 +773,125 @@ function onClick(s, e) {
       return addRead(s);
     case 'addwrite':
       return addWrite(s);
+    case 'moveone':
+      s.open.move = {
+        to: MS.ownerOf(s.open.row)
+      };
+      return draw(s);
+    case 'moveonecancel':
+      s.open.move = null;
+      return draw(s);
+    case 'moveonewrite':
+      return moveWrite(s, [s.open.row], s.open.move.to);
+    case 'moveall':
+      return moveOpen(s);
+    case 'movecancel':
+      s.move = null;
+      return draw(s);
+    case 'movewrite':
+      return moveWrite(s, s.move.rows.filter(r => s.move.sel.has(r.id) && !s.move.bad.has(r.id)), s.move.to);
   }
+}
+
+// ---------------------------------------------------------------- changer de compagnie (SOG-0223)
+/** Le nom d'une compagnie pour l'œil (« Personnel » pour perso). */
+const coText = (s, code) => code === MS.PERSONAL ? s.tt(TX.personal) : s.co?.names?.get(code) || code;
+/** Les compagnies proposées : celles de l'index, puis Personnel (jamais un code tapé). */
+const coChoices = s => MOVE.choices(s.co?.list, s.tt(TX.personal));
+/** Une liste de choix de compagnie. */
+const coSelect = (s, k, value, extra = '') => `<select data-k="${k}">${extra}${coChoices(s).map(c => `<option value="${esc(c.code)}"${c.code === value ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`;
+/** Sur la fiche : « Compagnie : X · Changer », puis le choix et ce qui sera écrit, avant d'écrire. */
+function coHtml(s, r) {
+  const own = MS.ownerOf(r),
+    mv = s.open.move;
+  if (!mv) return `<p class="f-muted" data-coline>${esc(s.tt(TX.coLine, { c: coText(s, own) }))} · <button type="button" class="f-linkbtn" data-do="moveone">${esc(s.tt(TX.change))}</button></p>`;
+  return `<div class="f-row" data-comove><label class="f-field"><span>${esc(s.tt(TX.moveTo))}</span>${coSelect(s, 'moveone', mv.to)}</label></div>
+    ${mv.to !== own ? `<p data-movesay>${esc(s.tt(TX.moveSay, { id: r.id, a: coText(s, own), b: coText(s, mv.to) }))}</p>` : ''}
+    <div class="f-row"><button type="button" class="primary" data-do="moveonewrite"${mv.to !== own ? '' : ' disabled'}>${esc(s.tt(TX.write))}</button><button type="button" data-do="moveonecancel">${esc(s.tt(TX.cancel))}</button></div>`;
+}
+/** Le texte d'une mission tel que le dépôt le garde (file d'attente comprise) ; null s'il n'est pas lisible. */
+async function missionText(s, r) {
+  if (!r.folder || !r.file) return null;
+  const v = await Promise.resolve().then(() => s.ctx.data.read(`missions/${r.folder}/${r.file}`, {
+    wait: true
+  })).then(x => x ? x.value ?? x.text ?? null : null).catch(() => null);
+  return typeof v === 'string' && v.trim() ? v : null;
+}
+/** En lot : les missions de la liste affichée, leurs fichiers lus d'abord (les illisibles dites et laissées). */
+async function moveOpen(s) {
+  const rows = filtered(s),
+    first = coChoices(s).find(c => c.code !== s.co.code)?.code || MS.PERSONAL;
+  s.move = {
+    rows,
+    sel: new Set(rows.map(r => r.id)),
+    bad: new Set(),
+    texts: new Map(),
+    to: first,
+    reading: true
+  };
+  draw(s);
+  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  const mv = s.move;
+  for (let i = 0; i < rows.length; i += 8) {
+    await Promise.all(rows.slice(i, i + 8).map(async r => {
+      const t = await missionText(s, r),
+        ok = t !== null && MOVE.withAirline(t, MS.PERSONAL, globalThis.jsyaml) !== null;
+      if (ok) mv.texts.set(r.id, t);
+      else mv.bad.add(r.id);
+    }));
+    if (S !== s || s.move !== mv) return;
+  }
+  mv.reading = false;
+  draw(s);
+}
+/** L'écran du lot : la compagnie visée, les missions (cases), ce qui change et ce qui ne peut pas, avant d'écrire. */
+function moveHtml(s) {
+  const mv = s.move,
+    go = mv.rows.filter(r => mv.sel.has(r.id) && !mv.bad.has(r.id) && MS.ownerOf(r) !== mv.to),
+    bad = mv.rows.filter(r => mv.bad.has(r.id)).map(r => r.id);
+  return `<div class="f-card" data-pane="move"><h2>${esc(s.tt(TX.moveAll))}</h2><p class="f-muted">${esc(s.tt(TX.moveHint))}</p>
+    <label class="f-field"><span>${esc(s.tt(TX.moveTo))}</span>${coSelect(s, 'moveto', mv.to)}</label>
+    ${mv.reading ? `<p class="f-muted" data-movereading>${esc(s.tt(TX.moveReading))}</p>` : `<p data-movecount>${esc(s.tt(go.length === 1 || (s.ctx.lang?.() || 'fr') === 'fr' && go.length < 2 ? TX.moveCount1 : TX.moveCount, { n: go.length, b: coText(s, mv.to) }))}</p>`}
+    ${bad.length ? `<p class="f-warn" data-moveunread>${esc(s.tt(TX.moveUnread, { l: bad.join(', ') }))}</p>` : ''}
+    <div class="f-list" data-movelist>${mv.rows.map(r => `<label class="f-check" data-moverow="${esc(r.id)}"><input type="checkbox" data-movebox="${esc(r.id)}"${mv.sel.has(r.id) && !mv.bad.has(r.id) ? ' checked' : ''}${mv.bad.has(r.id) ? ' disabled' : ''}> <b>${esc(r.id)}</b> ${esc(r.title)} <span class="f-muted">${esc(coText(s, MS.ownerOf(r)))}</span></label>`).join('')}</div>
+    <div class="f-row"><button type="button" class="primary" data-do="movewrite"${!mv.reading && go.length ? '' : ' disabled'}>${esc(s.tt(TX.moveDo, { n: go.length }))}</button><button type="button" data-do="movecancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
+}
+/** Écrit la compagnie `to` dans chaque mission (une écriture par mission ; le cadre les envoie en un passage) ; la liste suit. */
+async function moveWrite(s, rows, to) {
+  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  let done = 0;
+  for (const r of rows.filter(x => MS.ownerOf(x) !== to)) {
+    const t = s.move?.texts.get(r.id) ?? await missionText(s, r),
+      out = t !== null ? MOVE.withAirline(t, to, globalThis.jsyaml) : null;
+    if (!out) continue;
+    try {
+      await s.ctx.data.put(`missions/${r.folder}/${r.file}`, out.text, {
+        module: 'missions'
+      });
+    } catch (e) {
+      s.ctx.notify(s.tt(TX.addFailed, {
+        e: String(e?.message || e).slice(0, 120)
+      }), 'error');
+      break;
+    }
+    done++;
+    const airline = to === MS.PERSONAL ? '' : to;
+    s.rows = s.rows.map(x => x.id === r.id ? {
+      ...x,
+      airline
+    } : x);
+    if (s.open?.row?.id === r.id) s.open.row = {
+      ...s.open.row,
+      airline
+    };
+  }
+  if (S !== s) return;
+  if (done) s.ctx.notify(s.tt(TX.moved, {
+    n: done
+  }), 'ok');
+  s.move = null;
+  if (s.open) s.open.move = null;
+  draw(s);
 }
 
 // ---------------------------------------------------------------- « Ajouter des missions » (SOG-0212 b)
@@ -751,6 +914,7 @@ function addHtml(s) {
     });
   return `<div class="f-card" data-pane="add">${head}<p class="f-muted" data-found>${esc(s.tt(TX.addFound, { n: a.items.length }))}</p>
     <div class="f-list" data-addlist>${a.items.map(item).join('')}</div>
+    ${s.co?.filter && a.items.length ? `<label class="f-field"><span>${esc(s.tt(TX.addAs))}</span>${coSelect(s, 'addas', a.as || '', `<option value=""${a.as ? '' : ' selected'}>${esc(s.tt(TX.asInFile))}</option>`)}</label>` : ''}
     ${a.refused.length ? `<h3 class="f-muted">${esc(s.tt(TX.addRefused))}</h3><ul data-refused>${a.refused.map(r => `<li data-reason="${esc(r.reason)}">${esc(s.tt(TX.refusedLine, { w: [r.name, r.id].filter(Boolean).join(' · '), r: why(r) }))}</li>`).join('')}</ul>` : ''}
     <div class="f-row"><button type="button" class="primary" data-do="addwrite"${n ? '' : ' disabled'}>${esc(s.tt(TX.addDo, { n }))}</button><button type="button" data-do="addcancel">${esc(s.tt(TX.back))}</button></div></div>`;
 }
@@ -789,7 +953,17 @@ async function addWrite(s) {
   const list = toWrite(s);
   if (!list.length) return;
   let done = 0;
+  const as = s.add.as || '';
   for (const i of list) {
+    // « Ajouter ces missions à » : la compagnie choisie écrite dans chaque mission (SOG-0223), sinon celle du fichier
+    if (as) {
+      const out = MOVE.withAirline(i.text, as, globalThis.jsyaml);
+      if (out) {
+        i.text = out.text;
+        i.doc = globalThis.jsyaml.load(out.text);
+        i.airline = as === MS.PERSONAL ? '' : as;
+      }
+    }
     try {
       await s.ctx.data.put(i.path, i.text, {
         module: 'missions'

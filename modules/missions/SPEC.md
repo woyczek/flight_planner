@@ -108,6 +108,18 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   « remplacer ? » is ticked; a file holding one mission is written as it is (comments kept), a mission of a pool is rewritten
   (`jsyaml.dump`). The registry is not written: a mission file absent from it is listed at the next display (SOG-0036). N19.
 
+### 3 ter. Change a mission's airline (SOG-0223)
+
+- With an index of airlines only. On the sheet, in the category line: « Compagnie : <name> · Changer » → a list (the index's airlines,
+  then « Personnel »; never a typed code) and the sentence « <ID> passe de A à B » before « Écrire ». In the list: « Attribuer à une
+  compagnie… » takes the missions of the list shown (scope, family, search), each with a box; their files are read first, an unreadable
+  one is said and left (box disabled); « n missions passent à B » before « Écrire (n) ». When adding from YAML: « Ajouter ces missions
+  à » (the airline the file says, or a chosen one).
+- The write (`modules/missions/move.js` `withAirline(text, code, yaml)`, pure): the `airline` field removed where it was
+  (`mission.airline`, top-level `airline`), then `airline: <code>` at the top level for an airline (none for « Personnel »); the text is
+  edited line by line (comments and layout kept), read again and compared with what was meant (everything else identical), else the
+  mission is re-written whole. One write per mission; the frame sends them in one pass. N22.
+
 ## 4. From the mission to the flight: `missionFlight(mission, assignment?)`
 
 Pure function of `frame/lib/mission.js`, benched, one output shape consumed by Fuel through its "Nouveau vol :

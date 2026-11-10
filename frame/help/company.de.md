@@ -32,6 +32,8 @@ Die Missionen der Gesellschaft, in der Anwendung Gesellschaft: die des gemeinsam
 
 <a id="missions-add"></a>**Missionen hinzufügen.** „Missionen hinzufügen“ neben „Zufällig ziehen“ liest eine oder mehrere YAML-Missionsdateien (eine Datei kann mehrere enthalten, getrennt durch „---“ oder in einer Liste `missions:`) oder eingefügtes YAML. Vor dem Schreiben zeigt der Bildschirm, was gelesen wurde (Kennung, Titel, Familie, Serie, Gesellschaft) und was abgelehnt wird, mit dem Grund (Kennung außerhalb der Regel, Übungsorganisation, Duplikat, YAML in einer Zeile unlesbar). „Hinzufügen (n)“ schreibt jede Mission an ihren Platz, `missions/<Buchstabe>_<FAMILIE>/<ID>/mission<ID>.yaml`; eine bereits vorhandene Mission wird nur ersetzt, wenn „ersetzen?“ angekreuzt ist. Eine Mission ohne Gesellschaft ist persönlich. Sie gehen bei der nächsten Synchronisierung.
 
+<a id="missions-airline"></a>**Gesellschaft wechseln.** Auf dem Blatt einer Mission bietet „Gesellschaft: … · Ändern“ die Gesellschaften und „Persönlich“ an; der Satz „… wechselt von … zu …“ steht vor „Schreiben“. In der Liste nimmt „Einer Gesellschaft zuordnen…“ die angezeigten Missionen (Bereich, Familie, Suche), jede angekreuzt: Der Bildschirm sagt vor dem Schreiben, wie viele wechseln und welche unlesbar sind (unverändert gelassen). Beim Hinzufügen aus YAML wählt „Diese Missionen hinzufügen zu“ ihre Gesellschaft. Nur das Feld `airline` der Datei ändert sich.
+
 ## Gut zu wissen
 
 - Das Modul liest die Missionen und ändert sie nie; sie werden im CPCO geschrieben.

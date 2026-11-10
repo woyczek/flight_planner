@@ -12,13 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: change a mission's airline** (`modules/missions/move.js`; Missions SPEC § 3 ter, DECISIONS, help; noreg N22; SOG-0223). On its
+  sheet, in a batch of the list shown, or when adding from YAML; said before writing; only the `airline` field of the file changes.
 - **Map: a tap on a proposed route shows it, it does not take it** (`modules/maps/alts.js`, `texts.js`; DECISIONS; noreg D126, D164; SOG-0134). New window event `maps-route-alt-show { index }` for Fuel; a Map alone
   has a « Choose this route » button; a second computation replaces the first within a second and releases the route shown.
 
 - **Map: the light drawing of a gesture serves only near the zoom of the full drawing** (`modules/maps/draw.js`; DECISIONS; noreg D163; SOG-0173, not reproduced: guard).
 
 - **Map: the space chosen on the profile goes when another panel opens** (`modules/maps/profile_view.js`, `sheet_view.js`, `layers.js`; DECISIONS; noreg D162; SOG-0192). Its strip « name, limits, Sheet » no longer stays over the legend.
-
 - **Missions: one id per mission** (`frame/lib/mission.js` `readRegistry`; noreg N21). A registry row that keeps an old number (« 71 ») is
   listed under the id of its folder (« F-071 »); the search finds both.
 - **Site: no error when the page is left while the Site is still reading** (`modules/website/module.js` mount; DECISIONS; noreg G11; A66 intermittent).

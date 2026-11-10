@@ -10,6 +10,8 @@ Las misiones de la compañía, en la aplicación Compañía: las del repositorio
 
 <a id="missions-add"></a>**Añadir misiones.** «Añadir misiones», junto a «Sortear», lee uno o varios archivos YAML de misiones (un archivo puede contener varias, separadas por «---» o en una lista `missions:`), o un YAML pegado. Antes de escribir, la pantalla muestra lo leído (identificador, título, familia, serie, compañía) y lo rechazado, con la razón (identificador fuera de la regla, organización de ejercicio, duplicado, YAML ilegible en tal línea). «Añadir (n)» escribe cada misión en su lugar, `missions/<letra>_<FAMILIA>/<ID>/mission<ID>.yaml`; una misión que ya existe solo se reemplaza si «¿reemplazar?» está marcado. Una misión sin compañía es personal. Salen en la próxima sincronización.
 
+<a id="missions-airline"></a>**Cambiar de compañía.** En la ficha de una misión, «Compañía: … · Cambiar» propone las compañías y «Personal»; la frase «… pasa de … a …» se dice antes de «Escribir». En la lista, «Asignar a una compañía…» toma las misiones mostradas (alcance, familia, búsqueda), cada una marcada: la pantalla dice cuántas cambian y cuáles son ilegibles (se dejan tal cual) antes de escribir. Al añadir desde un YAML, «Añadir estas misiones a» elige su compañía. Solo cambia el campo `airline` del archivo.
+
 ## Bueno saber
 
 - El módulo lee las misiones y nunca las modifica; se escriben en el CPCO.

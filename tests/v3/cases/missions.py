@@ -983,3 +983,78 @@ def n21(c):
     for q in ('123', 'X-123A'):
         c.page.fill(f'{M} [data-k="q"]', q)
         c.until(f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(b => b.dataset.id).join() === 'X-123A'", what=f'the search « {q} » finds it')
+
+
+
+_MOVE_REGISTRY = """missions:
+  - { id: X-151A, family: TESTCO, title: Mission une, folder: X_CO/X-151A, files: [missionX-151A.yaml] }
+  - { id: X-152A, family: TESTCO, title: Mission deux, folder: X_CO/X-152A, files: [missionX-152A.yaml] }
+  - { id: X-153A, family: TESTCO, title: Mission trois, folder: X_CO/X-153A, files: [missionX-153A.yaml] }
+  - { id: X-154A, family: TESTCO, title: Mission cassée, folder: X_CO/X-154A, files: [missionX-154A.yaml] }
+"""
+
+
+@case('N22', 'Missions: a mission changes airline — on its sheet (« Compagnie : … · Changer », said before writing), in a batch (what changes and what cannot, before writing) and when adding from YAML; only the airline field of the file changes',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0223 (user, 10 Nov: « il faut pouvoir changer une mission de compagnie. comme pour les appareils »): codes from the index only; '
+      'an unreadable file is said and left; invented airlines iii, ddd; captures 390 and 1 280')
+def n22(c):
+    docs = [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'iii', 'name': 'India Air'}, {'code': 'ddd', 'name': 'Delta Air'}]}, 'document'],
+            ['airline/iii/settings.json', {'schema': 1, 'name': 'India Air', 'kind': 'va'}, 'document'],
+            ['airline/ddd/settings.json', {'schema': 1, 'name': 'Delta Air', 'kind': 'sog'}, 'document']]
+    broken = 'mission: { id: X-154A, type: TEST }\ntitle: Mission X-154A\nnotes: ok\n  bad: indent\n'
+    lst = f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(b => b.dataset.id).join()"
+    path = lambda i: f'missions/X_CO/{i}/mission{i}.yaml'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_CLEAR_ADD)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _MOVE_REGISTRY], [path('X-154A'), broken]] +
+             [[path(i), '# gardé\n' + mission_doc(i)] for i in ('X-151A', 'X-152A', 'X-153A')])
+        c.open('missions', docs=docs, wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-results] [data-count]')", timeout=15000, what='the list is drawn')
+        set_airline(c, 'iii')
+        c.until(f"!!document.querySelector('{M} select[data-k=scope]')", what='the scope')
+        c.page.select_option(f'{M} select[data-k=scope]', 'perso')
+        c.until(f"{lst} === 'X-154A,X-153A,X-152A,X-151A'", what='the four personal missions')
+        # one mission, on its sheet
+        c.tap(f'{M} [data-list] [data-id="X-151A"]')
+        c.until(f"!!document.querySelector('{M} [data-coline] [data-do=moveone]')", what=f'{w} px: « Compagnie : Personnel · Changer » on the sheet')
+        c.ok(norm(row(c, 'personal')) in norm(c.text(f'{M} [data-coline]')), c.text(f'{M} [data-coline]'), 'the sheet says its airline')
+        c.tap(f'{M} [data-do="moveone"]')
+        c.page.select_option(f'{M} select[data-k=moveone]', 'ddd')
+        c.until(f"!!document.querySelector('{M} [data-movesay]')", what='what will be written, said before')
+        c.ok('Delta Air' in c.text(f'{M} [data-movesay]'), c.text(f'{M} [data-movesay]'), f'{w} px: « X-151A passe de Personnel à Delta Air »')
+        c.ok('airline' not in (c.js(_TEXT_OF, path('X-151A')) or ''), '', 'nothing written before « Écrire »')
+        c.shot(f'N22_{c.design}_{w}_{c.lang}_one.png')
+        c.tap(f'{M} [data-do="moveonewrite"]')
+        c.until(f"(document.querySelector('{M} [data-coline]')?.textContent || '').includes('Delta Air')", what='the sheet says Delta Air')
+        t = c.js(_TEXT_OF, path('X-151A')) or ''
+        c.ok('airline: ddd' in t and t.startswith('# gardé'), t[:120], f'{w} px: the file has airline: ddd, the rest kept (its comment)')
+        c.tap(f'{M} [data-do="back"]')
+        # a batch: the personal missions left, one unreadable
+        c.until(f"{lst} === 'X-154A,X-153A,X-152A'", what='X-151A is no longer personal')
+        c.tap(f'{M} [data-do="moveall"]')
+        c.until(f"!!document.querySelector('{M} [data-movecount]')", timeout=10000, what='the files read')
+        c.page.select_option(f'{M} select[data-k=moveto]', 'iii')
+        c.until(f"(document.querySelector('{M} [data-movecount]')?.textContent || '').includes('India Air')", what='the target said')
+        c.ok('X-154A' in c.text(f'{M} [data-moveunread]'), c.text(f'{M} [data-moveunread]'), f'{w} px: the unreadable one is said and left')
+        c.ok(c.text(f'{M} [data-movecount]').strip().startswith('2'), c.text(f'{M} [data-movecount]'), f'{w} px: two missions change')
+        c.js(f"document.querySelector('{M} [data-pane=move]').scrollIntoView({{block: 'start'}})")
+        c.shot(f'N22_{c.design}_{w}_{c.lang}_batch.png')
+        c.tap(f'{M} [data-do="movewrite"]')
+        c.until(f"!document.querySelector('{M} [data-pane=move]')", what='back to the list')
+        for i in ('X-152A', 'X-153A'):
+            c.ok('airline: iii' in (c.js(_TEXT_OF, path(i)) or ''), i, f'{w} px: {i} written to India Air')
+        c.eq(c.js(_TEXT_OF, path('X-154A')), broken, 'the unreadable file is untouched', what='X-154A')
+        c.page.select_option(f'{M} select[data-k=scope]', 'mine')
+        c.until(f"{lst} === 'X-153A,X-152A'", what=f'{w} px: India Air now lists them')
+        # when adding from YAML: « Ajouter ces missions à »
+        c.tap(f'{M} [data-do="add"]')
+        c.page.fill(f'{M} [data-pane=add] textarea[data-k=addtext]', 'mission: { id: X-155A, type: TESTCO }\ntitle: Ajoutée\n')
+        c.tap(f'{M} [data-do="addread"]')
+        c.until(f"!!document.querySelector('{M} select[data-k=addas]')", what='« Ajouter ces missions à »')
+        c.page.select_option(f'{M} select[data-k=addas]', 'ddd')
+        c.tap(f'{M} [data-do="addwrite"]')
+        c.until(f"!document.querySelector('{M} [data-pane=add]')", what='added')
+        c.ok('airline: ddd' in (c.js(_TEXT_OF, 'missions/X_TESTCO/X-155A/missionX-155A.yaml') or ''), '', f'{w} px: the added mission is Delta Air\'s')

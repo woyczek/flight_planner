@@ -106,3 +106,9 @@
   for the mission F-071). `readRegistry` takes the id the folder and the file say (`F_FIRE/F-071` → F-071) when it has the form of a
   mission id and differs from the registry's; the old one stays in `formerId`, found by the search; the registry (the V2 CPCO's data) is
   not touched. N21; counter-test on origin/v3: the list shows « 123 ».
+- **10 Nov 2026 — a mission changes airline: on its sheet, in a batch, when adding** (SOG-0223, user: « il faut pouvoir changer une
+  mission de compagnie. comme pour les appareils »; his 128 missions are now all personal). Only the `airline` field of the file changes,
+  by a line edit checked by reading the result again (a full re-dump only when the check fails), so a CPCO file keeps its comments;
+  codes from the index only (§ 10.36: never a typed code); the batch is the list shown (scope, family, search) with boxes, its files read
+  before anything is written. The pure part (`move.js`) and the gesture (a list of airlines + « Personnel », said before writing) are
+  meant to serve the aircraft later. N22; counter-test on origin/v3: no « Changer ».

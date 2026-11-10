@@ -10,6 +10,8 @@ Les missions de la compagnie, dans l'application Compagnie : celles du dépôt c
 
 <a id="missions-add"></a>**Ajouter des missions.** « Ajouter des missions », à côté de « Tirer au sort », lit un ou plusieurs fichiers YAML de missions (un fichier peut en porter plusieurs, séparées par « --- » ou dans une liste `missions:`), ou un YAML collé. Avant d’écrire, l’écran montre ce qu’il a lu (identifiant, titre, famille, série, compagnie) et ce qu’il refuse, avec la raison (identifiant hors règle, organisation d’exercice, doublon, YAML illisible à telle ligne). « Ajouter (n) » écrit chaque mission à sa place, `missions/<lettre>_<FAMILLE>/<ID>/mission<ID>.yaml` ; une mission qui existe déjà n’est remplacée que si « remplacer ? » est coché. Une mission sans compagnie est personnelle. Elles partent à la prochaine synchronisation.
 
+<a id="missions-airline"></a>**Changer de compagnie.** Sur la fiche d’une mission, « Compagnie : … · Changer » propose les compagnies et « Personnel » ; la phrase « … passe de … à … » est dite avant « Écrire ». Dans la liste, « Attribuer à une compagnie… » prend les missions affichées (portée, famille, recherche), chacune cochée : l’écran dit combien changent et lesquelles sont illisibles (laissées telles quelles) avant d’écrire. À l’ajout depuis un YAML, « Ajouter ces missions à » choisit leur compagnie. Seul le champ `airline` du fichier change.
+
 ## Bon à savoir
 
 - Le module lit les missions, il ne les modifie jamais ; elles s'écrivent dans le CPCO.

@@ -10,6 +10,8 @@ The airline's missions, in the Company application: those of the shared reposito
 
 <a id="missions-add"></a>**Add missions.** « Add missions », next to « Draw at random », reads one or more YAML mission files (a file may hold several, separated by « --- » or in a `missions:` list), or a pasted YAML. Before writing, the screen shows what it read (id, title, family, series, airline) and what it refuses, with the reason (id outside the rule, exercise organisation, duplicate, YAML unreadable at a given line). « Add (n) » writes each mission at its place, `missions/<letter>_<FAMILY>/<ID>/mission<ID>.yaml`; a mission that already exists is replaced only when « replace? » is ticked. A mission without an airline is personal. They leave at the next synchronisation.
 
+<a id="missions-airline"></a>**Change airline.** On a mission’s sheet, « Airline: … · Change » offers the airlines and « Personal »; the sentence « … moves from … to … » is said before « Write ». In the list, « Assign to an airline… » takes the missions shown (scope, family, search), each ticked: the screen says how many change and which are unreadable (left as they are) before writing. When adding from YAML, « Add these missions to » chooses their airline. Only the `airline` field of the file changes.
+
 ## Good to know
 
 - The module reads the missions and never changes them; they are written in the CPCO.
