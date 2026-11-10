@@ -4776,3 +4776,28 @@ def d146(c):
         c.shot(f'D146_sheet_{w}.png')
         c.tap('.mp-chip[data-view="profile"]')
         c.until("() => window.__mp.S.dpanel === null", timeout=4000, what=f'{w}: the chip of the profile closes the sheet')
+
+
+_CONT_SPY_JS = """() => { window.__ct = []; const M = window.MapsContours, o = M.draw; if (!M.__spy) { M.__spy = true; M.draw = function (ctx, opt) { window.__ct.push({ minor: opt.minor, z: opt.pxPerDeg }); return o.apply(this, arguments) } } return true }"""
+
+
+@case('D147', 'Contour lines in the VFR topo view: asked and drawn on a mission map of that view (they were only on flight maps), the master lines alone at a low complexity, the intermediate ones when closer; none in the IFR or base-only views', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0184 (regression from V2: « le vfr topo n’a pas de courbes de niveau ?? il avait ça en v2 »): in V2 the « topo » base was OpenTopoMap, whose tiles carry the contour lines; V3 replaced that base (host outside meta.net) and drew its own lines from the elevation tiles on flight maps only; a mission map in VFR topo now asks them (the Map’s own, from the Terrarium tiles), the master lines alone below one level and a half of zoom over their threshold (the Complexity cursor shifts it), then the intermediate ones; the IFR and base-only views have none')
+def d147(c):
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    hook_map(c)
+    c.js(_CONT_SPY_JS)
+    c.js("() => { const r = window.__mp.S.layersEl.querySelector('input[data-layer=detail]'); r.value = '0'; r.dispatchEvent(new Event('input', { bubbles: true })); return true }")   # a middle complexity: the master lines alone far out
+    c.js("() => { window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 12 }); return true }")
+    c.until("() => window.__ct.length > 0", timeout=8000, what='the contour lines are asked on a mission map in VFR topo at a working zoom')
+    c.eq(c.js("() => window.__ct.at(-1).minor"), True, 'with their intermediate lines when close', what='minor close')
+    c.js("() => { window.__ct = []; window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 10 }); return true }")
+    c.until("() => window.__ct.length > 0", timeout=8000, what='asked again further out')
+    c.eq(c.js("() => window.__ct.at(-1).minor"), False, 'the master lines alone further out (the threshold of the layer, one level and a half before the intermediate ones)', what='minor far')
+    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'ifr'; s.dispatchEvent(new Event('change', { bubbles: true })); window.__ct = []; window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 11.6 }); return true }")
+    c.wait(2500)
+    c.eq(c.js("() => window.__ct.length"), 0, 'none in the IFR view', what='ifr calls')
+    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'vfr'; s.dispatchEvent(new Event('change', { bubbles: true })); window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 11.7 }); return true }")
+    c.until("() => window.__ct.length > 0", timeout=8000, what='back in VFR topo: asked again')
+    c.shot('D147_vfr_topo_390.png')

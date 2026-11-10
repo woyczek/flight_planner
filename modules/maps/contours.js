@@ -157,6 +157,8 @@
     H,
     unit = 'ft',
     scale = 1,
+    minor =
+    true, // les courbes intermédiaires (sinon les maîtresses seules) : la Carte les demande au-delà d'un cran de zoom de plus que les maîtresses (SOG-0184)
     onReady = () => {},
     load: read = null // la lecture des tuiles de l'appelant (le nom load est celui de la fonction de la brique)
   }) {
@@ -193,7 +195,7 @@
           continue;
         }
         const s = segments(e, z, txw, ty, I.step);
-        for (const major of [false, true]) {
+        for (const major of minor ? [false, true] : [true]) {
           ctx.globalAlpha = major ? .75 : .45;
           ctx.lineWidth = (major ? 1.1 : .6) * scale;
           ctx.beginPath();

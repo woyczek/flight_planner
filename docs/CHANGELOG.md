@@ -13,6 +13,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### V3
 
 - **Fuel: the step Flight holds in 360 px again** (`modules/fuel/module.js`; DECISIONS; noreg F4). The date field shrinks to its cell.
+
+- **Map: contour lines on the mission maps in VFR topo** (`modules/maps/draw.js`, `contours.js`; SPEC § 6, DECISIONS; noreg D147; SOG-0184, regression from V2). They were drawn on flight maps only; a
+  mission map in VFR topo (or whose studio profile ticks them) now asks them: the master lines alone at a low complexity, the intermediate ones 1.5 zoom level closer, under the spaces and the route.
+
 - **Report and « Mes vols »: the airline of the report** (`modules/report/module.js`, `modules/flightlog/`, `frame/lib/mission_categories.js`
   `KIND_NAMES`, `airlineText`; SPEC, DECISIONS, help; noreg G9; SOG-0181). « Compte rendu pour SO Group · Escadrille SO » under the title,
   a link to Settings › Airline until saved, kept with the record; « Mes vols » says it on each report line when more than one airline exists.

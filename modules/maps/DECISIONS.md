@@ -2317,6 +2317,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## Contour lines in the VFR topo view (10 Nov 2026, SOG-0184, regression from V2)
+
+- **Relevé**: in V2 (`apps/cpco/map_parser.html`) the `contours` layer belongs to the profile (only « VFR détaillé » ticks it) and the `topo` base was **OpenTopoMap, whose raster tiles carry the contour
+  lines** (« OpenTopoMap — relief et courbes »). V3 replaced that base (the host is outside `meta.net`; `STYLES` has no `topo`: the target maps were on the plain style) and draws its own lines
+  (`contours.js`, marching squares on the Terrarium tiles) **on flight maps only**: `!mission && L.contours …`. The VFR and Topo modes of a flight turn the `contours` box on by default (zoom threshold 9);
+  a mission map never asked for them, so the VFR topo view that SOG-0171 made for the target maps had none.
+- **Done**: a mission map asks them when its view wants them (VFR topo; a studio profile with `layers.contours`); the master lines alone, the intermediate lines 1.5 level of zoom closer (`minor`, no new
+  threshold key to explain in the tune page: the intermediate ones follow the layer's threshold), the Complexity cursor shifting that zoom; drawn before the overlay, so under the spaces and the route
+  (alpha .75 / .45, 1.1 / .6 px).
+- **To see on his workstation** (the bench has no tiles: the cases check that the layer is asked and with which lines): the real Terrarium tiles (AWS, `meta.net`), the look of the lines under the spaces,
+  the CPU at a close zoom with the intermediate lines.
+- **Noreg** D147 (VFR topo mission map at zoom 12: asked with the intermediate lines; zoom 10 at a middle complexity: masters only; the IFR view: none; back to VFR topo: asked; red before: never asked on a mission).
+
 ## The sheet of a space: one drawing, a view of the profile tab (10 Nov 2026, SOG-0185 (a) and (b); (c) proposed apart)
 
 - **Measured** (bench, 390 and 1 280, from the first tap on a block to the rest): the body of the sheet is built once (two DOM writes in one frame), no later replacement of the graph node, the

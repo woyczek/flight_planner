@@ -711,6 +711,10 @@ range; the base map's own names hidden while ours are drawn (§ 5).
   one function serves the ranges, the VRP layer, labels, contour lines, the towns' place-name switch and the density tier.
   What needs real room stays in raw pixels per degree: obstacle heights, ETA labels, the "everything in the view is read"
   switch, the overview rule.
+- **Contour lines** (SOG-0184): computed in the browser from the Terrarium tiles (`contours.js`), drawn under the aeronautical overlay when the layer is on and its zoom threshold (`contours`, 9)
+  is passed by the effective zoom; **the master lines alone**, the **intermediate ones from a level and a half of zoom closer** (the Complexity cursor shifts that zoom: a low complexity keeps
+  the masters only). On a flight map the layer is the `contours` box (on by default in the VFR and Topo modes); on a **mission map** the view that wants them draws them (VFR topo; a studio
+  profile that ticks `layers.contours`), not the IFR or base-only views. (V2: the « topo » base was OpenTopoMap, whose tiles carry the lines; V3 replaced that base, its host being outside `meta.net`.) Noreg D147.
 - **The Complexity cursor is in every view, a mission map included** (SOG-0183): the layer boxes are hidden on a mission map (its view of the use picks the layers, § 15), the cursor is not;
   a mission map has **its own setting** (`S.layers.mission.detail`, `modeKey()`; the flight's is untouched), starting at **+4** (all that the view shows, as before the cursor) and lowering
   it spares the view and the CPU; the thresholds of § 6.6 now apply to a mission map too (they did not before: it was drawn whole). Noreg D145.
