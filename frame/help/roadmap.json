@@ -5,7 +5,7 @@
  "generated": {
   "tool": "tools/roadmap_build.py",
   "organisation": "9bba6f0",
-  "fiches": 212,
+  "fiches": 222,
   "untranslated": 1,
   "priorities": 152
  },
@@ -438,7 +438,7 @@
     {
      "id": "SOG-0134",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Route (RAD) : montrer les tracés des itinéraires proposés avant de choisir, et dire quels sont les écarts aux règles",
      "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
      "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
@@ -508,6 +508,15 @@
      "en": "Route: a coordinate in ICAO format (4959N08712W) is called an “unknown point”",
      "de": "Route: eine Koordinate im ICAO-Format (4959N08712W) gilt als „unbekannter Punkt“",
      "es": "Ruta: una coordenada en formato OACI (4959N08712W) se da como «punto desconocido»"
+    },
+    {
+     "id": "SOG-0222",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carburant › Route : le pli « Points » doit être fermé par défaut",
+     "en": "Fuel › Route: the “Points” fold must be closed by default",
+     "de": "Kraftstoff › Route: der Abschnitt „Punkte“ muss standardmäßig geschlossen sein",
+     "es": "Combustible › Ruta: el pliegue «Puntos» debe estar cerrado por defecto"
     }
    ]
   },
@@ -529,6 +538,15 @@
      "en": "Fuel › Route: “Check” after choosing a route, a runway and a SID answers “the check did not answer”",
      "de": "Kraftstoff › Route: „Prüfen“ nach Wahl von Route, Bahn und SID antwortet „die Prüfung hat nicht geantwortet“",
      "es": "Combustible › Ruta: «Comprobar» tras elegir itinerario, pista y SID responde «la comprobación no ha respondido»"
+    },
+    {
+     "id": "SOG-0217",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Calcul de route automatique : entre deux terrains lointains, suivre l'orthodromie",
+     "en": "Automatic route computation: between two distant aerodromes, follow the great circle",
+     "de": "Automatische Routenberechnung: zwischen zwei fernen Plätzen der Orthodrome folgen",
+     "es": "Cálculo automático de ruta: entre dos aeródromos lejanos, seguir la ortodrómica"
     }
    ]
   },
@@ -750,7 +768,7 @@
     {
      "id": "SOG-0173",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Carte : en zoom arrière prononcé, déplacer la carte fait apparaître une foule de voies aériennes basses",
      "en": "Map: at a wide zoom, dragging the map shows a crowd of low airways",
      "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
@@ -786,7 +804,7 @@
     {
      "id": "SOG-0184",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "VFR topo : pas de courbes de niveau (la V2 en avait)",
      "en": "VFR topo: no contour lines (V2 had them)",
      "de": "VFR-Topo: keine Höhenlinien (V2 hatte sie)",
@@ -795,7 +813,7 @@
     {
      "id": "SOG-0185",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Carte : la fiche d'un espace clignote à l'ouverture, et l'onglet « Couches » sert à autre chose qu'à choisir les couches",
      "en": "Map: an airspace sheet flickers when it opens, and the “Layers” tab is used for more than choosing layers",
      "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
@@ -804,7 +822,7 @@
     {
      "id": "SOG-0192",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Carte : l'infobulle d'un espace reste affichée quand on ouvre le « i »",
      "en": "Map: an airspace tooltip stays when the “i” panel opens",
      "de": "Karte: der Luftraum-Tooltip bleibt, wenn das „i“-Feld geöffnet wird",
@@ -813,7 +831,7 @@
     {
      "id": "SOG-0196",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "RÉGRESSION : la fenêtre de la mission posée sur la carte (titre, « Carte fournie », « Vue ») a disparu",
      "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
      "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
@@ -839,6 +857,27 @@
      "en": "Follow the flight: a “Follow” button on the Map and a board of the flight in progress",
      "de": "Dem Flug folgen: eine Schaltfläche „Folgen“ auf der Karte und eine Tafel des laufenden Flugs",
      "es": "Seguir el vuelo: un botón «Seguir» en el Mapa y un tablero del vuelo en curso"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-meteo",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; Météo",
+    "en": "Carte ; Météo",
+    "de": "Carte ; Météo",
+    "es": "Carte ; Météo"
+   },
+   "items": [
+    {
+     "id": "SOG-0214",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Barbules de vent : densité selon le zoom ; toutes dans le même sens sur une route longue",
+     "en": "Wind barbs: density by zoom; all pointing the same way on a long route",
+     "de": "Windfiedern: Dichte je nach Zoom; auf langer Route alle in dieselbe Richtung",
+     "es": "Barbas de viento: densidad según el zoom; todas en el mismo sentido en una ruta larga"
     }
    ]
   },
@@ -897,7 +936,7 @@
     {
      "id": "SOG-0181",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Compte rendu : dire pour quelle compagnie on l'écrit",
      "en": "Report: say which airline it is written for",
      "de": "Bericht: sagen, für welche Gesellschaft er geschrieben wird",
@@ -1006,6 +1045,27 @@
    ]
   },
   {
+   "id": "pilote-appareils",
+   "app": "pilote",
+   "label": {
+    "fr": "Fiches appareil",
+    "en": "Aircraft sheets",
+    "de": "Flugzeugdatenblätter",
+    "es": "Fichas de aeronave"
+   },
+   "items": [
+    {
+     "id": "SOG-0220",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Fiches d'appareils : une valeur convertie s'affiche avec treize décimales",
+     "en": "Aircraft sheets: a converted value shows thirteen decimals",
+     "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",
+     "es": "Fichas de aeronaves: un valor convertido muestra trece decimales"
+    }
+   ]
+  },
+  {
    "id": "pilote-guidage-pilote",
    "app": "pilote",
    "label": {
@@ -1062,7 +1122,7 @@
     {
      "id": "SOG-0138",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
      "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
@@ -1542,7 +1602,7 @@
     {
      "id": "SOG-0190",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Flotte : dire de quelle compagnie on parle ; un appui sur le nom de l'appareil ouvre sa modification",
      "en": "Fleet: say which airline it is; tapping the aircraft's name opens its editing",
      "de": "Flotte: sagen, um welche Gesellschaft es geht; ein Tipp auf den Namen öffnet die Bearbeitung",
@@ -1563,7 +1623,7 @@
     {
      "id": "SOG-0041",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
      "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
      "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
@@ -1955,6 +2015,15 @@
      "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
      "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
      "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto"
+    },
+    {
+     "id": "SOG-0216",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Procédures de Nantes (LFRS) : seulement les points de transition, pas les approches ; aucune STAR",
+     "en": "Nantes (LFRS) procedures: only the transition points, no approaches; no STAR",
+     "de": "Verfahren Nantes (LFRS): nur die Übergangspunkte, keine Anflüge; keine STAR",
+     "es": "Procedimientos de Nantes (LFRS): solo los puntos de transición, sin aproximaciones; ninguna STAR"
     }
    ]
   },
@@ -2092,6 +2161,24 @@
      "en": "Frame: after Ctrl + Shift + R, the “Old version · Reload” cartouche shows wrongly",
      "de": "Rahmen: nach Strg + Umschalt + R erscheint die Kartusche „Alte Version · Neu laden“ zu Unrecht",
      "es": "Marco: tras Ctrl + Mayús + R, aparece por error el cartucho «Versión antigua · Recargar»"
+    },
+    {
+     "id": "SOG-0213",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "En-tête de l'appli : dire la compagnie courante, et en changer vite depuis le sélecteur d'application",
+     "en": "App header: say the current airline, and switch quickly from the application picker",
+     "de": "Kopfzeile der App: die aktuelle Gesellschaft nennen und schnell über die App-Auswahl wechseln",
+     "es": "Cabecera de la app: decir la compañía actual y cambiarla rápido desde el selector de aplicación"
+    },
+    {
+     "id": "SOG-0215",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Quand le lanceur revient, la page ne se reconnecte pas seule (Maj + F5, cartouche rouge, recharger)",
+     "en": "When the launcher comes back, the page does not reconnect by itself",
+     "de": "Wenn der Launcher zurückkommt, verbindet sich die Seite nicht von selbst",
+     "es": "Cuando vuelve el lanzador, la página no se reconecta sola"
     }
    ]
   },
@@ -2168,6 +2255,27 @@
    ]
   },
   {
+   "id": "maintenance-carburant-base",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; base",
+    "en": "Carburant ; base",
+    "de": "Carburant ; base",
+    "es": "Carburant ; base"
+   },
+   "items": [
+    {
+     "id": "SOG-0221",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Lien « Cartes » : il mène à l'eAIP du cycle précédent",
+     "en": "“Charts” link: it leads to the eAIP of the previous cycle",
+     "de": "Link „Karten“: führt zur eAIP des vorigen Zyklus",
+     "es": "Enlace «Cartas»: lleva al eAIP del ciclo anterior"
+    }
+   ]
+  },
+  {
    "id": "maintenance-carburant-cadre",
    "app": "maintenance",
    "label": {
@@ -2210,7 +2318,7 @@
     {
      "id": "SOG-0135",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Lire le sol (taxiways) avec les procédures du terrain, pas par un bouton de plus",
      "en": "Read the ground (taxiways) with the airport's procedures, not through one more button",
      "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
@@ -2603,6 +2711,15 @@
      "en": "Launcher: a slow or failing outside service (Open-Meteo, Overpass) freezes the launcher, then the app and Chrome",
      "de": "Launcher: ein langsamer oder fehlerhafter externer Dienst (Open-Meteo, Overpass) friert Launcher, App und Chrome ein",
      "es": "Lanzador: un servicio externo lento o con error (Open-Meteo, Overpass) congela el lanzador, la app y Chrome"
+    },
+    {
+     "id": "SOG-0219",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Journal du lanceur : jeux « laissés de côté », exception pendant une mise à jour des fichiers, avertissement répété, FAA en 403",
+     "en": "Launcher log: sets “left aside”, an exception while files are updated, a repeated warning, FAA answering 403",
+     "de": "Launcher-Protokoll: Sätze „beiseitegelassen“, Ausnahme während einer Dateiaktualisierung, wiederholte Warnung, FAA mit 403",
+     "es": "Registro del lanzador: conjuntos «dejados de lado», excepción durante una actualización de archivos, aviso repetido, FAA con 403"
     }
    ]
   },
@@ -2619,7 +2736,7 @@
     {
      "id": "SOG-0160",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Roadmap : un mode « Priorités » sans voies pour ordonner toutes les cartes, et les replanifier (en intégration, en développement, backlog)",
      "en": "Roadmap: a “Priorities” view without lanes to order every card and replan it (in integration, in development, backlog)",
      "de": "Roadmap: eine Ansicht „Prioritäten“ ohne Bahnen, um alle Karten zu ordnen und umzuplanen (in Integration, in Entwicklung, Backlog)",
@@ -2787,7 +2904,7 @@
     {
      "id": "SOG-0133",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Réglages : plusieurs secondes d'attente avant l'écran, pour une version du dépôt qui n'est qu'accessoire",
      "en": "Settings: several seconds of waiting before the screen, for a repository version that is only accessory",
      "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
@@ -2802,6 +2919,15 @@
      "en": "Settings: the flicker is back",
      "de": "Einstellungen: das Flackern ist zurück",
      "es": "Ajustes: han vuelto los parpadeos"
+    },
+    {
+     "id": "SOG-0218",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Réglages : « Compagnie de cet appareil » met 8 secondes à s'afficher",
+     "en": "Settings: “This device's airline” takes 8 seconds to show",
+     "de": "Einstellungen: „Gesellschaft dieses Geräts“ braucht 8 Sekunden",
+     "es": "Ajustes: «Compañía de este dispositivo» tarda 8 segundos en mostrarse"
     }
    ]
   },
@@ -2884,7 +3010,7 @@
     {
      "id": "SOG-0136",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Nouvelle brouette de conflits de synchronisation alors que l'utilisateur est seul",
      "en": "A new barrowful of sync conflicts while the user is alone",
      "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
