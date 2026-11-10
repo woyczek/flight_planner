@@ -4469,8 +4469,7 @@ def d139(c):
         _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of an R opens ({w} px)')
         c.wait(600)
         g = c.js(_STACK_JS)
-        if os.environ.get('D139_SHOT'):
-            c.page.screenshot(path=f"{os.environ['D139_SHOT']}_{w}.png")
+        c.shot(f'D139_sheet_{w}.png')   # the delivered state: the bench writes a capture only on a failure
         c.eq(g['n'], 2, 'the stack holds both spaces of the point', what=f'{w}: columns')
         c.eq(g['sel'], 1, 'the chosen one is highlighted', what=f'{w}: selected')
         c.ok(g['colsInBody'] and g['stackInBody'], str(g), 'the stack is in view, every block drawn (none empty, none outside the sheet’s body)')
@@ -4499,7 +4498,7 @@ def d139(c):
 
 _NAT_SPY_JS = """() => { window.__ns = []; window.__tx = []; const o = CanvasRenderingContext2D.prototype.stroke, f = CanvasRenderingContext2D.prototype.fillText;
   CanvasRenderingContext2D.prototype.stroke = function () { window.__ns.push({ c: this.strokeStyle, w: +this.lineWidth.toFixed(2), a: this.globalAlpha, d: this.getLineDash().map(x => +x.toFixed(2)) }); return o.apply(this, arguments) };
-  CanvasRenderingContext2D.prototype.fillText = function (t) { window.__tx.push(String(t)); return f.apply(this, arguments) }; return true }"""
+  CanvasRenderingContext2D.prototype.fillText = function (t) { if (/11px sans-serif/.test(this.font)) window.__tx.push(String(t)); return f.apply(this, arguments) }; return true }   // only the proposed routes’ layer writes in 11 px sans-serif"""
 
 
 @case('D140', 'Proposed routes tell what each stretch is: the width of the flight’s route, an airway solid with its name along it, DCT dashed, FRA dotted, SID / STAR in the procedures’ tint, a fault red, a thin line when not fully checked; the chosen route’s points marked and named; a key; the hover of a line on the map highlights it', 'D',
@@ -4533,11 +4532,9 @@ def d140(c):
     c.ok(any(x['w'] == 2.4 and x['d'] == [8, 5] for x in ch), str(ch[:8]), 'the DCT not fully checked: dashes, and thinner')
     c.ok(any(x['d'] == [2, 4] for x in fade), str(fade[:6]), 'the FRA stretches of the other route: dots, faded')
     c.ok(any(x['c'] == '#d6173f' for x in st), 'no red', 'the faulty stretch is red')
-    if os.environ.get('D140_SHOT'):
-        c.page.screenshot(path=f"{os.environ['D140_SHOT']}_{c.width}.png")
+    c.shot(f'D140_routes_{c.width}.png')
     tx = c.js("() => window.__tx")
-    c.ok('UN10' in tx, str(tx), 'the airway’s name is written along it')
-    c.ok('LFRS' in tx and 'LFML' in tx, str(tx), 'the entry and the exit of the chosen route are named')
+    c.ok('LFRS' not in tx and 'LFML' not in tx and 'AAA' not in tx and 'BBB' not in tx, str(tx), 'the points the flight’s route already names are not named again by the proposed routes (here the chosen route is the flight’s)')
     # the key: collapsible in the list, and in the map’s legend
     c.until("() => !!document.querySelector('.mp-alts .mp-al-leg')", timeout=4000, what='a collapsible key in the list')
     lg = c.js("() => [...document.querySelectorAll('.mp-alts .mp-al-leg li')].map(l => l.textContent)")
@@ -4561,6 +4558,9 @@ def d140(c):
     c.until("() => window.__ns.some(x => x.w === 6.5)", timeout=4000, what='and drawn thick')
     c.page.mouse.move(5, 5)
     c.until("() => window.__mp.S.altHover === null", timeout=4000, what='and let go when the pointer leaves it')
+    # closer, there is room along the airway’s stretch: its name is written along it (a name that finds no room is not written)
+    c.js("() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 0), a = window.__mpMap.unproject([(h.q[1].x + h.q[2].x) / 2, (h.q[1].y + h.q[2].y) / 2]); window.__mpMap.jumpTo({ center: [a.lng, a.lat], zoom: window.__mpMap.getZoom() + 1.3 }); window.__tx = []; return true }")
+    c.until("() => window.__tx.includes('UN10')", timeout=8000, what='the airway’s name is written along its stretch when there is room')
 
 
 _PAN_SPY_JS = """() => { window.__aw = 0; const o = CanvasRenderingContext2D.prototype.stroke, low = MapsRender.palette(!!window.__mp.S.theme?.dark).airwayLow;
@@ -4660,6 +4660,55 @@ def d143(c):
     r3 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 4.5, 0, False])
     c.eq(r3['texts'], [], 'a small symbol draws no number (they would not read)', what=str(r3['texts']))
     c.ok(len([a for a in r3['arcs'] if a > 8]) == 2, str(r3['arcs']), 'but keeps its two circles')
-    if os.environ.get('D143_SHOT'):
-        import base64
-        open(f"{os.environ['D143_SHOT']}.png", 'wb').write(base64.b64decode(r['png'].split(',')[1]))
+    import base64
+    (ROOT / 'tests/v3/shots').mkdir(exist_ok=True)
+    (ROOT / 'tests/v3/shots/D143_rose.png').write_bytes(base64.b64decode(r['png'].split(',')[1]))   # the rose at a close zoom, 3 ×: tests/v3/shots/D143_rose.png
+
+
+_NAME_SPY_JS = """() => { window.__nm = []; window.__clip = 0; const f = CanvasRenderingContext2D.prototype.fillText, cl = CanvasRenderingContext2D.prototype.clip;
+  CanvasRenderingContext2D.prototype.fillText = function (t, x, y) { if (/11px sans-serif/.test(this.font)) { const m = this.getTransform(), p = m.transformPoint(new DOMPoint(x, y)); window.__nm.push({ t: String(t), x: p.x / (window.devicePixelRatio || 1), y: p.y / (window.devicePixelRatio || 1), w: this.measureText(t).width }) } return f.apply(this, arguments) };
+  CanvasRenderingContext2D.prototype.clip = function () { if (arguments[0] === 'evenodd') window.__clip++; return cl.apply(this, arguments) }; return true }"""
+
+
+@case('D144', 'Proposed routes never write over the flight’s route: a point the route already names is not named again, no name overlaps another, the strokes pass under the route’s labels', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0134 (ergonomics, capture of D140 at 390): the points of the chosen route were named in black over the violet names of the flight’s route (LFRS twice, AAA over LUGEN, the DCT dashes crossing NEPIX); in use the chosen route IS the flight’s route: a point already named by it (same identifier or same place) is not named again; the names go over the strokes with their halo; a name that does not fit without overlapping is not drawn')
+def d144(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js(_NAME_SPY_JS)
+    ev = "(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }"
+    doc = _alts_doc()
+    a = doc['alternatives'][0]
+    n = len(a['points'])
+    a['ids'] = ['LFRS', 'LUGEN', 'NEPIX', 'LFML'][:n]
+    a['via'] = ['', 'UN10', 'DCT'][:n - 1]
+    a['layer'] = ['SID', 'LOW', ''][:n - 1]
+    c.js(ev, doc)    # the chosen route is the flight’s route
+    c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='the routes are drawn')
+    c.wait(800)
+    nm = c.js("() => window.__nm")
+    ids = c.js("() => window.__mp.S.route.points.map(p => String(p.id).toUpperCase())")
+    c.ok(not any(x['t'] in ids for x in nm), f'{[x["t"] for x in nm]} / {ids}', 'a point the flight’s route already names is not named again')
+    c.ok(c.js("() => window.__clip") > 0, 'no clip', 'the strokes are cut under the route’s labels (nothing is crossed out)')
+    rects = c.js("() => window.__mp.S.routeLabelRects")
+    box = lambda x: (x['x'] - x['w'] / 2, x['y'] - 6, x['x'] + x['w'] / 2, x['y'] + 6)
+    hit = lambda p, q: p[0] < q[2] and p[2] > q[0] and p[1] < q[3] and p[3] > q[1]
+    bad = [x['t'] for x in nm if any(hit(box(x), (r['x0'], r['y0'], r['x1'], r['y1'])) for r in rects)]
+    c.eq(bad, [], 'no name of the proposed routes overlaps a label of the flight’s route', what='overlaps')
+    # a chosen route that is not the flight’s: its own points are named, still without overlapping anything
+    b = doc['alternatives'][1]
+    b['ids'] = ['LFRS', 'XA', 'XB', 'LFML']
+    b['via'] = ['', 'T11', 'T11']
+    b['layer'] = ['SID', 'LOW', 'LOW']
+    doc['chosen'] = 1
+    c.js("() => { window.__nm = []; return true }")
+    c.js(ev, doc)
+    c.until("() => window.__nm.some(x => x.t === 'XA' || x.t === 'XB')", timeout=8000, what='its own points (not on the flight’s route) are named')
+    nm = c.js("() => window.__nm")
+    rects = c.js("() => window.__mp.S.routeLabelRects")
+    c.eq([x['t'] for x in nm if x['t'] in ('LFRS', 'LFML')], [], 'but the ends it shares with the flight’s route are not', what='shared ends')
+    boxes = [box(x) for x in nm if x['t'] in ('XA', 'XB', 'T11')]
+    c.ok(not any(hit(p, q) for i, p in enumerate(boxes) for q in boxes[i + 1:]), str(nm), 'no two names overlap')
+    c.ok(not any(hit(p, (r['x0'], r['y0'], r['x1'], r['y1'])) for p in boxes for r in rects), str(nm), 'and none overlaps a label of the flight’s route')

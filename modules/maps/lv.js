@@ -222,7 +222,7 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     gap = Math.min(4, colW * .2);
   let svg = '';
   for (let v = bot; v <= top; v += step) svg +=
-    `<line x1="${L}" x2="${W - 2}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="currentColor" stroke-opacity=".15"/><text x="${L - 4}" y="${y(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${esc(v ? level(v) : 'SFC')}</text>`;
+    `<line x1="${L}" x2="${W - 2}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="currentColor" stroke-opacity=".15"/>${unl && y(v) - (T - 8) < 12 ? '' : `<text x="${L - 4}" y="${y(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${esc(v ? level(v) : 'SFC')}</text>`}`; // « UNL » prend la place d'une graduation voisine, jamais par-dessus
   if (unl) svg += `<text x="${L - 4}" y="${T - 8}" text-anchor="end" dominant-baseline="middle">UNL</text>`;
   rows.forEach((r, i) => {
     const x = L + 4 + i * colW,

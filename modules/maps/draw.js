@@ -728,7 +728,15 @@ function draw() {
     status();
   }
   S.windHits = !mission && !pick && !world && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
-  S.altHits = drawAlts(ctx, toC); // les itinéraires proposés par Carburant, sur la route (SOG-0134 a)
+  // les étiquettes de la route du vol (rectangles, du canvas à la vue) : les itinéraires proposés ne les barrent pas et ne nomment pas un point déjà nommé
+  S.routeLabelRects = [...(got0.routeLabels || []), ...(got0.plan || []).map(p => p.r).filter(Boolean)].map(r =>
+    ({ // y compris les noms de TOC et de TOD
+      x0: r.x0 - mx - 2,
+      x1: r.x1 - mx + 2,
+      y0: r.y0 - my - 2,
+      y1: r.y1 - my + 2
+    }));
+  S.altHits = drawAlts(ctx, toC, S.routeLabelRects); // les itinéraires proposés par Carburant, sur la route (SOG-0134 a)
   if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
   S.toC = toC;
   if (S.edit.on) got('edit')?.drawEdit(ctx, toC);

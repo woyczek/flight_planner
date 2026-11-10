@@ -2317,6 +2317,17 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## The proposed routes write nothing over the flight's route (10 Nov 2026, SOG-0134: the ergonomics' reading of D140's capture)
+
+- **Seen**: the chosen route's points were named in black over the violet names of the flight's route (LFRS twice, AAA over LUGEN, BBB over NEPIX, the DCT dashes across NEPIX); in use the
+  chosen route is the flight's route: everything would be written twice.
+- **Done**: no mark nor name for a point the flight's route already has (identifier or place); the flight's labels (names, NM marks, TOC / TOD: `S.routeLabelRects`, view coordinates) are
+  the first rectangles taken, the strokes are clipped around them (even-odd clip), the names are written after the strokes, with their halo; the airway's name tries five places on either
+  side of its stretch; no room, no name. The list's tag « faute » is « écart » (the common table's word). The thin line's meaning is one line of the key (« Trait fin : non contrôlé en entier »).
+- **Also** (D139 at 1 280): « UNL » on the scale no longer overlaps the graduation near it (the graduation gives way).
+- **Noreg** D144 (chosen = the flight's route: no name equal to a route point, the clip used, no name over a route label; a chosen route of its own: its points named, no overlap; red before:
+  UN10, LFRS, LUGEN, NEPIX, LFML written again). D140 and D139 now write their captures (`tests/v3/shots/D140_routes_<w>.png`, `D139_sheet_<w>.png`), D143 the rose (`D143_rose.png`).
+
 ## The proposed routes' natures come from the common table (10 Nov 2026, SOG-0134, after Features SOG's 605def6c1)
 
 - Features SOG wrote `frame/lib/route_legend.js` (`NATURES`, `natureOf`, `labelOf`, `legendHtml`; theirs alone) and publishes `via` / `layer` per segment in `route_alts.json`

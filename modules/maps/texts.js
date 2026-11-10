@@ -238,7 +238,7 @@ export const TX = {
     'Trazo fino: no comprobado por completo (incompleto o sustituto)'
   ],
   altChosen: ['prise', 'taken', 'gewählt', 'elegida'],
-  altFaulty: ['faute', 'fault', 'Fehler', 'falta'],
+  altFaulty: ['écart', 'deviation', 'Abweichung', 'desviación'],
   corrNote: [
     'Espaces R, D, P et autres hors du couloir de {n} NM autour du vol masqués à ce zoom : zoomez, montez la complexité ou décochez « Autour du vol seulement ».',
     'R, D, P and other spaces outside the {n} NM corridor around the flight hidden at this zoom: zoom in, raise the complexity or untick “Around the flight only”.',

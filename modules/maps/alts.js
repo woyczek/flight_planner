@@ -99,7 +99,7 @@ const natureKnown = a => a.via.some(Boolean) || a.layer.some(Boolean);
  *  l'épaisseur de la route du vol (le choisi plein, les autres estompés, le survolé plus épais) ; il dit la nature du tronçon (SOG-0134) :
  *  voie = plein avec son nom le long, DCT = tirets, FRA = pointillé, SID / STAR / approche = la teinte des procédures, faute = rouge, un tronçon
  *  non contrôlé en entier est plus fin ; les points du choisi sont marqués et nommés, désencombrés au zoom large. */
-export function drawAlts(ctx, toC) {
+export function drawAlts(ctx, toC, avoid = []) {
   const A = current();
   if (A || (S.altsEl && !S.altsEl.hidden)) altsCard(); // la liste suit ce qui est dessiné (écrite seulement si elle change)
   if (!A) return [];
@@ -115,7 +115,16 @@ export function drawAlts(ctx, toC) {
     hov = S.altHover ?? A.hovered,
     rank = a => a.index === hov ? 2 : a.index === A.chosen ? 1 : 0,
     hits = [],
-    taken = []; // les cadres des noms déjà posés (jamais deux noms l'un sur l'autre)
+    // les cadres des noms déjà posés (jamais deux noms l'un sur l'autre), ceux de la route du vol d'abord (avoid : ses étiquettes, en coordonnées de la vue)
+    taken = avoid.map(r => ({
+      x: r.x0,
+      y: r.y0,
+      w: r.x1 - r.x0,
+      h: r.y1 - r.y0
+    })),
+    // les points que la route du vol nomme déjà (même identifiant ou même place) : la couche des itinéraires ne les nomme pas une seconde fois
+    own = new Set((S.route?.points || []).map(p => String(p.id || p.name || '').toUpperCase()).filter(Boolean)),
+    ownPx = (S.route?.points || []).map(p => toC(p.lat, p.lon));
   const free = (x, y, w, h) => !taken.some(r => x < r.x + r.w && x + w > r.x && y < r.y + r.h && y + h > r.y);
   ctx.save();
   ctx.lineCap = 'round';
@@ -146,6 +155,14 @@ export function drawAlts(ctx, toC) {
       'incomplete' : a.control[k] === 'fallback' ? 'fallback' : 'plain',
       dash = s => RL.NATURES.find(n => n.id === s.split(/[!.]/)[0])?.dash.slice() || (s === 'fallback' ? [.1, w * 2] : s === 'incomplete' ?
         [w * 2.6, w * 1.6] : []);
+    ctx
+      .save(); // les traits passent sous les étiquettes de la route du vol (rien n'est barré), les noms de cette couche sont posés ensuite, hors de ce découpage
+    if (avoid.length) {
+      ctx.beginPath();
+      ctx.rect(-1e4, -1e4, 2e4, 2e4);
+      for (const r of avoid) ctx.rect(r.x0 - 1, r.y0 - 1, r.x1 - r.x0 + 2, r.y1 - r.y0 + 2);
+      ctx.clip('evenodd');
+    }
     ctx.globalAlpha = on ? 1 : .38;
     ctx.strokeStyle = bg;
     ctx.lineWidth = w + 3.5;
@@ -161,6 +178,11 @@ export function drawAlts(ctx, toC) {
       k = e;
     }
     ctx.setLineDash([]);
+    ctx.restore();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.font = '700 11px sans-serif';
+    ctx.textBaseline = 'middle';
     if (on && known) { // le nom de la voie le long du trait, sur le plus long tronçon de chaque suite, quand il y tient
       ctx.fillStyle = fg;
       ctx.strokeStyle = bg;
@@ -180,24 +202,34 @@ export function drawAlts(ctx, toC) {
             len = Math.hypot(p1.x - p0.x, p1.y - p0.y),
             tw = ctx.measureText(v).width;
           if (len >= tw + 16) {
-            const mx = (p0.x + p1.x) / 2,
-              my = (p0.y + p1.y) / 2;
             let ang = Math.atan2(p1.y - p0.y, p1.x - p0.x);
             if (ang > Math.PI / 2 || ang < -Math.PI / 2) ang += Math.PI; // le nom se lit toujours à l'endroit
-            if (free(mx - tw / 2, my - 7, tw, 14)) {
-              taken.push({
-                x: mx - tw / 2,
-                y: my - 7,
-                w: tw,
-                h: 14
-              });
-              ctx.save();
-              ctx.translate(mx, my - 8);
-              ctx.rotate(ang);
-              ctx.strokeText(v, 0, 0);
-              ctx.fillText(v, 0, 0);
-              ctx.restore();
-            }
+            // quelques places le long du tronçon, d'un côté puis de l'autre du trait ; la première où le cadre (englobant, le texte étant incliné) ne chevauche
+            // aucun nom posé (les étiquettes de la route du vol comprises) ; sans place, le nom n'est pas écrit
+            const dir = Math.atan2(p1.y - p0.y, p1.x - p0.x),
+              nx = -Math.sin(dir),
+              ny = Math.cos(dir),
+              bw = Math.abs(Math.cos(ang)) * tw + Math.abs(Math.sin(ang)) * 14,
+              bh = Math.abs(Math.sin(ang)) * tw + Math.abs(Math.cos(ang)) * 14;
+            place: for (const f of [.5, .36, .64, .24, .76])
+              for (const side of [-1, 1]) {
+                const mx = p0.x + (p1.x - p0.x) * f + nx * 9 * side,
+                  my = p0.y + (p1.y - p0.y) * f + ny * 9 * side;
+                if (!free(mx - bw / 2, my - bh / 2, bw, bh)) continue;
+                taken.push({
+                  x: mx - bw / 2,
+                  y: my - bh / 2,
+                  w: bw,
+                  h: bh
+                });
+                ctx.save();
+                ctx.translate(mx, my);
+                ctx.rotate(ang);
+                ctx.strokeText(v, 0, 0);
+                ctx.fillText(v, 0, 0);
+                ctx.restore();
+                break place;
+              }
           }
         }
         k = e;
@@ -211,6 +243,8 @@ export function drawAlts(ctx, toC) {
       for (let i = 0; i < q.length; i++) {
         const far = Math.hypot(q[i].x - lastX, q[i].y - lastY) >= 70;
         if (!key(i) && !far) continue;
+        if (own.has(a.ids[i]) || ownPx.some(o => Math.hypot(o.x - q[i].x, o.y - q[i].y) < 10))
+          continue; // déjà nommé (et marqué) par la route du vol
         const id = a.ids[i],
           tw = id ? ctx.measureText(id).width : 0,
           ok = !id || free(q[i].x + 6, q[i].y - 14, tw, 12);
