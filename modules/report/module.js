@@ -588,7 +588,7 @@ const crewCol = () => ({
 // collection, boutons de la barre, carte de préremplissage
 const STYLE = `
 [data-module="report"] .rp-code{text-transform:uppercase}
-[data-module="report"] .rp-airline{margin:-.2em 0 .6em;font-size:.95em} /* la compagnie du compte rendu, sous le titre (SOG-0181) */
+[data-module="report"] .rp-airline{margin:-.2em 0 .6em;font-size:var(--sog-size-s)} /* la compagnie du compte rendu, sous le titre (SOG-0181) ; le jeton du cadre (G4) */
 [data-module="report"] .rp-airline a{display:inline-flex;align-items:center;min-height:44px}
 [data-module="report"] .rp-step[hidden]{display:none}
 [data-module="report"] .f-steps>[data-todo]::after{content:" · " attr(data-todo);font-weight:400}
