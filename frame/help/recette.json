@@ -1232,10 +1232,10 @@
     "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
     "es": "Procedimientos y suelo: LFOE no lee nada («0 páginas leídas de 2»), LFBD no tiene calles de rodaje"
    },
-   "test": "Après relance du lanceur. Carburant › Procédures, terrain LFOE : « Lire les procédures de LFOE » lit maintenant ses pages (5 procédures) au lieu de « 0 page lue sur 2 ». (Taxiways de LFBD : pas encore.)",
+   "test": "Après relance du lanceur. (1) Carburant › Procédures, terrain LFOE : « Lire les procédures de LFOE » lit ses pages (5 procédures) au lieu de « 0 page lue sur 2 ». (2) Un vol vers ou depuis LFBD, Carte zoomée sur le terrain : « Lecture du sol… » puis les taxiways s'affichent sans rien demander ; en cas d'échec, la raison et « Réessayer ».",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T14:54:36Z"
+   "delivered": "2026-11-10T15:14:07Z"
   },
   {
    "id": "SOG-0204",
