@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 62,
-  "verdicts": 26
+  "verdicts": 27
  },
  "apps": [
   "pilote",
@@ -295,9 +295,11 @@
     "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
     "es": "Ruta (RAD): dibujar las rutas propuestas antes de elegir y decir cuáles son las desviaciones a las reglas"
    },
-   "test": "Carburant › Route avec la Carte à côté (vue double) : après « Calculer A → B », les itinéraires sont tracés sur la Carte, le choisi en plein ; survoler une ligne de la liste épaissit son tracé ; « N écarts aux règles » se déplie en une ligne par écart.",
-   "since": "2026-11-09",
-   "state": "known"
+   "test": "Carburant › Route avec la Carte à côté, après « Calculer A → B » : les itinéraires sont tracés fins ; une voie est en trait plein avec son nom, un direct en tirets, une route libre (FRA) en pointillé, un écart aux règles en rouge ; les points ne sont nommés qu'une fois ; « Légende » (repliée) dit les mêmes traits et les mêmes mots sur la Carte et dans l'écran Route.",
+   "since": "2026-11-10",
+   "state": "ko",
+   "comment": "oui, ça fonctionne. c’est moche, on ne voit pas ni les points ni les awy, ni si c’est du DCT, du FRA… parce que c’est uniforméement de la même couleur, très gros, et sans légende. Réserves donc.",
+   "at": "2026-11-10T10:16:08Z"
   },
   {
    "id": "SOG-0135",
