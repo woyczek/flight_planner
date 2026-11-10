@@ -2397,7 +2397,8 @@
         if (region === 'FRANCE') {
           await loadOwn('airac.js', 'AeroAirac');
           // jamais plus ancien que le cycle en vigueur du calendrier (SOG-0221 : une liste de la base gardée par la page d'avant la mise à jour donnait le dossier du cycle précédent) : le plus récent des deux
-          const cycle = [(await api.publication()).base?.fr?.inForce, window.AeroAirac.cycleOf(now()).date].filter(Boolean).sort().pop();
+          const cycle = [(await api.publication()).base?.fr?.inForce, window.AeroAirac.cycleOf(now()).date].filter(Boolean).sort()
+            .pop();
           return `${window.AeroCatalogue.eaipBase(cycle)}/html/eAIP/FR-AD-2.${k}-fr-FR.html`;
         }
         if (
@@ -2996,18 +2997,24 @@
             0, n) : '',
           items = [];
         for (const it of v.items.slice(0, GROUND_MAX)) {
-          if (!it || typeof it !== 'object' || !['twy', 'park', 'hold'].includes(it.kind) || typeof it.id !== 'string' || !
+          if (!it || typeof it !== 'object' || !['twy', 'park', 'hold', 'apron'].includes(it.kind) || typeof it.id !== 'string' || !
             /^[wn]\d{1,12}$/.test(it.id)) continue;
           const out = {
             id: it.id,
             kind: it.kind,
             name: text(it.name, 16)
           };
-          if (it.kind === 'twy') {
+          if (it.kind === 'twy' || it.kind === 'apron') {
             const line = Array.isArray(it.line) ? it.line.slice(0, 2000).map(pt) : [];
-            if (line.length < 2 || line.includes(null)) continue;
+            if (line.length < (it.kind === 'apron' ? 3 : 2) || line.includes(null)) continue;
             out.line = line;
+            if (it.kind === 'apron') {
+              const c = pt(it.point);
+              if (!c) continue;
+              out.point = c; // le centre de l'aire : où poser son nom
+            }
           } else {
+            if (it.kind === 'park' && it.gate === true) out.gate = true;
             const p = pt(it.point);
             if (!p) continue;
             out.point = p;

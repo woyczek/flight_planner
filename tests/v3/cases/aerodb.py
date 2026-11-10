@@ -4203,7 +4203,7 @@ def k84(c):
         c.eq((r['ok'], r['dry'], r['plan']['host'], r['plan']['calls'], len(calls), os.path.exists(out)), (True, True, 'overpass-api.de', 1, 0, False), 'dry run: the plan (host, one call), no call made, nothing written', what='dry')
         # the real run
         r = run({'icao': 'LFPO'})
-        c.eq((r['ok'], r['items'], len(calls), r['file']), (True, {'twy': 4, 'park': 3, 'hold': 1}, 1, 'proc/ground/LFPO.json'), 'one request, four taxiways, three stands (a polygon gives its centre), one holding point', what='run')
+        c.eq((r['ok'], r['items'], len(calls), r['file']), (True, {'twy': 4, 'park': 3, 'hold': 1, 'apron': 0}, 1, 'proc/ground/LFPO.json'), 'one request, four taxiways, three stands (a polygon gives its centre), one holding point', what='run')
         u = urllib.parse.urlparse(calls[0])
         q = urllib.parse.parse_qs(u.query)['data'][0]
         c.eq((u.scheme, u.netloc, u.path), ('https', 'overpass-api.de', '/api/interpreter'), 'the address is computed by the job: https, the one Overpass host', what='host')
@@ -7421,3 +7421,71 @@ def k155(c):
     ok = lambda cyc, mon: f'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_{mon}/FRANCE/AIRAC-{cyc}/html/eAIP/FR-AD-2.LFRS-fr-FR.html'
     c.eq((r['stale'], r['both'], r['none']), (ok('2026-10-29', '29_OCT_2026'),) * 3, 'a published base older than the calendar (cycle 1 Oct, today 10 Nov), a base with both cycles, and no base: the eAIP of the cycle in force (29 Oct)', what='in force')
     c.eq(r['before'], ok('2026-10-01', '01_OCT_2026'), 'on 15 Oct the cycle in force is 1 Oct: the link follows the calendar (not a cycle published in advance)', what='before')
+
+
+@case('K156', 'Where the network is missing the automatic route follows the great circle by points in coordinates, one every 10° of longitude, and says which sections are « direct (hors réseau) » (SOG-0217)', 'K', static=True,
+      rule='SOG-0217 (10 Nov 2026, the user: « un calcul auto entre deux AD devrait prendre la route orthodromique, non ? »): KDEN → LFRS gave « Calcul réseau incomplet » with a direct « KDEN DCT LFRS » and two proposals through odd fixes. The direct proposal now follows the great circle: a point in coordinates (ddmmNdddmmW, readable by the engine) at every multiple of 10° of longitude between the two aerodromes, each section flagged `offnet` with the note « direct (hors réseau) »; a short leg (under 600 NM) stays a plain DCT')
+def k156(c):
+    import collections
+    import importlib
+    import math
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    E = importlib.import_module('route_engine.engine')
+    RC = importlib.import_module('route_engine.recovery')
+    nav = object.__new__(E.Nav)
+    nav.nodes, nav.ids = {}, collections.defaultdict(list)
+    kden = nav.add(dict(id='KDEN', lat=39.8617, lon=-104.6732))
+    lfrs = nav.add(dict(id='LFRS', lat=47.1532, lon=-1.6107))
+    keys = RC.meridian_nodes(nav, kden, lfrs)
+    pts = [(nav.nodes[k]['id'], E.coordinate(nav.nodes[k]['id'])) for k in keys]
+    c.eq(([i for i, _ in pts], [round(p[1]) for _, p in pts]), (['4310N10000W', '4840N09000W', '5228N08000W', '5458N07000W', '5627N06000W', '5704N05000W', '5653N04000W', '5552N03000W', '5355N02000W', '5051N01000W'], [-100, -90, -80, -70, -60, -50, -40, -30, -20, -10]),
+         'KDEN → LFRS: ten points, one at every multiple of 10° of longitude from 100°W to 10°W, named in coordinates, on the great circle (the latitude peaks near 57°N)', what='points')
+    c.ok(max(nav.nodes[k]['lat'] for k in keys) > 56 and nav.nodes[keys[0]]['lat'] < 44 and nav.nodes[keys[-1]]['lat'] < 52, 'lat', 'the points bulge north as a great circle does')
+    great = RC.orthodrome(nav, [kden, lfrs])
+    path, pieces = great
+    c.eq((len(path), round(sum(e['nm'] for _, _, e in path)), pieces[0]['offnet'], pieces[0]['status'], 'direct (hors réseau)' in pieces[0]['note'], pieces[0]['route'].count(' DCT ')), (11, round(E.nm(nav.nodes[kden], nav.nodes[lfrs])), True, 'candidate', True, 11),
+         'the section is flagged « direct (hors réseau) », eleven DCT legs of the same total length as the direct', what='section')
+    near = nav.add(dict(id='ABCDE', lat=40.5, lon=-100.0))
+    c.eq((RC.orthodrome(nav, [kden, near]), RC.meridian_nodes(nav, kden, near)), (None, []), 'a short leg (under 600 NM, under 10° of longitude) stays a plain DCT: nothing added', what='short')
+    nz = nav.add(dict(id='NZCH', lat=-37.0, lon=174.8))
+    cl = nav.add(dict(id='SCEL', lat=-33.4, lon=-70.8))
+    k2 = RC.meridian_nodes(nav, nz, cl)
+    lons = [E.coordinate(nav.nodes[k]['id'])[1] for k in k2]
+    c.eq((len(k2), [round(x) for x in lons]), (11, [-180, -170, -160, -150, -140, -130, -120, -110, -100, -90, -80]), 'across the date line: eastbound from 174.8°E to 70.8°W, the points follow the longitude through 180', what='dateline')
+
+
+@case('K157', 'The ground layer names the aprons and tells a gate from a parking position (SOG-0195): kind `apron` (name, outline, centre) and `gate: true` on a gate; the page keeps both, bounded and cleaned', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0195 (BUGS SOG, 10 Nov 2026: taxiway names, aprons « U, V, G, M », stands): the ground layer carried taxiways, parking and holding points only; `park` mixed gates and parking positions and there was no apron. The Overpass request asks for aeroway=apron too; an apron is `{ kind: \'apron\', name, line: outline (3 points or more), point: centre }`, a gate a `park` with `gate: true`; the page (aerodb.ground) keeps them, names cleaned, outline and centre checked')
+def k157(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tools' / 'regen'))
+    G = importlib.import_module('ground')
+    geom = lambda pts: [{'lat': la, 'lon': lo} for lo, la in pts]
+    resp = {'elements': [
+        {'type': 'way', 'id': 1, 'tags': {'aeroway': 'taxiway', 'ref': 'L1'}, 'geometry': geom([(2.36, 48.72), (2.37, 48.73)])},
+        {'type': 'way', 'id': 2, 'tags': {'aeroway': 'apron', 'ref': 'U', 'name': 'Aire U'}, 'geometry': geom([(2.0, 49.0), (2.1, 49.0), (2.1, 49.1), (2.0, 49.1), (2.0, 49.0)])},
+        {'type': 'way', 'id': 3, 'tags': {'aeroway': 'apron'}, 'geometry': geom([(2.0, 49.0), (2.1, 49.0)])},
+        {'type': 'node', 'id': 4, 'lat': 48.7, 'lon': 2.3, 'tags': {'aeroway': 'gate', 'ref': 'A12'}},
+        {'type': 'node', 'id': 5, 'lat': 48.71, 'lon': 2.31, 'tags': {'aeroway': 'parking_position', 'ref': '12'}}]}
+    w = []
+    doc = G.build('LFPO', resp, '2026-10-29', w)
+    by = {i['id']: i for i in doc['items']}
+    c.eq((G.KINDS, [i['kind'] for i in doc['items']], 'way["aeroway"="apron"](area.a);' in G.query('LFPO')), (('twy', 'park', 'hold', 'apron'), ['twy', 'park', 'park', 'apron'], True), 'the request asks for the aprons; the items are sorted by kind (an apron after the holding points)', what='kinds')
+    c.eq((by['w2']['name'], len(by['w2']['line']), by['w2']['point'], 'w3' in by, by['n4'].get('gate'), by['n4']['name'], by['n5'].get('gate'), by['n5']['name']), ('U', 5, [2.05, 49.05], False, True, 'A12', None, '12'),
+         'an apron: name (the ref first), outline, centre; an apron of two points is dropped; a gate is flagged, a parking position is not', what='apron gate')
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const files = { 'proc/ground/LFPO.json': { schema: 1, icao: 'LFPO', cycle: '2026-10-29', source: 'osm', attribution: 'x', items: [
+        { id: 'w2', kind: 'apron', name: 'U<b>', line: [[2, 49], [2.1, 49], [2.1, 49.1], [2, 49]], point: [2.05, 49.05] },
+        { id: 'w3', kind: 'apron', name: 'V', line: [[2, 49], [2.1, 49]], point: [2.05, 49.05] },
+        { id: 'w6', kind: 'apron', name: 'M', line: [[2, 49], [2.1, 49], [2.1, 49.1]], point: null },
+        { id: 'n4', kind: 'park', name: 'A12', point: [2.3, 48.7], gate: true }, { id: 'n5', kind: 'park', name: '12', point: [2.31, 48.71], gate: 'yes' }, { id: 'n6', kind: 'hold', name: 'H', point: [2.4, 48.7], gate: true }] } };
+      const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async () => [], watch: () => () => {} }, lnmperf: false });
+      const g = await db.ground('LFPO');
+      return g.items.map(i => [i.id, i.kind, i.name, i.gate === true, !!i.line, !!i.point]);
+    }""")
+    c.eq(r, [['w2', 'apron', 'U b', False, True, True], ['n4', 'park', 'A12', True, False, True], ['n5', 'park', '12', False, False, True], ['n6', 'hold', 'H', False, False, True]],
+         'the page keeps the apron (name cleaned, outline of 3+ points and centre required: two others dropped), the gate flag only on a park and only when true', what='page')

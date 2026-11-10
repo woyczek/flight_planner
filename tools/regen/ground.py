@@ -5,7 +5,7 @@ met ~30 s et le serveur est public : un appel par terrain, MIN_GAP 30 s entre de
   · `dry: true` : à blanc, le plan seulement (l'hôte et le fichier), aucun appel, rien d'écrit ;
   · sinon : UNE requête Overpass (overpass-api.de, adresse calculée ici, jamais prise de la page) sur la surface de l'aérodrome (le tag `icao`), les réponses compactées dans
     data/proc/ground/<OACI>.json = { icao, cycle (la date du jour), source: 'osm', attribution: '© OpenStreetMap contributors, ODbL',
-    items: [{ id, kind: 'twy' | 'park' | 'hold', name, line: [[lon, lat]…] | point: [lon, lat] }] } et le manifeste proc/ground/index.json ({ aerodromes: { <OACI>: { cycle, twy, park, hold, bytes } } }),
+    items: [{ id, kind: 'twy' | 'park' | 'hold' | 'apron', name, gate?: vrai (une porte), line: [[lon, lat]…] (twy, apron) | point: [lon, lat] (park, hold, apron : son centre) }] } et le manifeste proc/ground/index.json ({ aerodromes: { <OACI>: { cycle, twy, park, hold, bytes } } }),
     UN commit (regen_jobs.commit_outputs, au nom de l'auteur, sans push). Noms bornés à 16 signes (sans signe de commande), éléments bornés à 5 000, coordonnées arrondies à 1e-6 ; rien n'est écrit
     sans un seul élément (« no-data »). Licence : base dérivée sous ODbL, dépôt privé de la compagnie (décision de l'utilisateur du 6 nov. 2026) ; l'attribution est dans le fichier.
 Résultat : { ok, icao, items: { twy, park, hold }, bytes, truncated, commit, warnings, file } ou { ok: False, reason: 'no-data' | 'failed' | 'cancelled', message? } ; ou, à blanc, { ok, dry, plan }."""
@@ -30,7 +30,7 @@ MAX_ITEMS = 5000
 MAX_POINTS = 2000        # points d'une ligne
 MAX_NAME = 16
 MAX_BYTES = 40 * 1024 * 1024
-KINDS = ('twy', 'park', 'hold')
+KINDS = ('twy', 'park', 'hold', 'apron')      # apron : l'aire de trafic (SOG-0195 : « U, V, G, M »), son nom et son contour
 MIN_GAP = {('ground', 'fetch'): 30}
 ICAO = re.compile(r'[A-Z0-9]{4}')
 
@@ -111,6 +111,7 @@ def query(icao):
     return ('[out:json][timeout:90];'
             f'area["aeroway"="aerodrome"]["icao"="{icao}"]->.a;('
             'way["aeroway"="taxiway"](area.a);'
+            'way["aeroway"="apron"](area.a);'
             'way["aeroway"~"^(parking_position|gate)$"](area.a);'
             'node["aeroway"~"^(parking_position|gate|holding_position)$"](area.a);'
             'way["aeroway"="holding_position"](area.a););out geom;')
@@ -173,12 +174,14 @@ def build(icao, response, cycle, warnings=None):
             continue
         tags = el.get('tags') if isinstance(el.get('tags'), dict) else {}
         aeroway = tags.get('aeroway')
-        kind = 'twy' if aeroway == 'taxiway' else 'hold' if aeroway == 'holding_position' else 'park' if aeroway in ('parking_position', 'gate') else None
+        kind = 'twy' if aeroway == 'taxiway' else 'hold' if aeroway == 'holding_position' else 'apron' if aeroway == 'apron' else 'park' if aeroway in ('parking_position', 'gate') else None
         ident = ('w' if el['type'] == 'way' else 'n') + str(el['id'])
         if kind is None or ident in seen:
             skipped += 1
             continue
         item = {'id': ident, 'kind': kind, 'name': _name(tags)}
+        if kind == 'park' and aeroway == 'gate':
+            item['gate'] = True                            # une porte (pas un poste de stationnement) : le poste 12 d'une aire n'est pas la porte A12
         if el['type'] == 'node':
             p = _pt(el.get('lon'), el.get('lat'))
             if not p:
@@ -192,6 +195,13 @@ def build(icao, response, cycle, warnings=None):
                     skipped += 1
                     continue
                 item['line'] = pts
+            elif kind == 'apron':                          # une aire de trafic : son contour (au moins 3 sommets) et son centre, où poser son nom
+                if len(pts) < 3:
+                    skipped += 1
+                    continue
+                m = pts[:-1] if pts[0] == pts[-1] else pts
+                item['line'] = pts
+                item['point'] = [round(sum(p[0] for p in m) / len(m), 6), round(sum(p[1] for p in m) / len(m), 6)]
             elif pts:                                      # un poste ou un point d'attente dessiné en ligne ou en surface : un point (le milieu des sommets)
                 m = pts[:-1] if len(pts) > 2 and pts[0] == pts[-1] else pts
                 item['point'] = [round(sum(p[0] for p in m) / len(m), 6), round(sum(p[1] for p in m) / len(m), 6)]

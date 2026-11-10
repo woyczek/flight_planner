@@ -34,6 +34,45 @@ def interpolate(a,b,f):
     v=[(math.sin((1-f)*angle)*i+math.sin(f*angle)*j)/den for i,j in zip(x,y)]
     return dict(lat=math.degrees(math.atan2(v[2],math.hypot(v[0],v[1]))),lon=math.degrees(math.atan2(v[1],v[0])))
 
+def coordinate_id(lat,lon):
+    """« ddmmNdddmmW » : le point en coordonnées d'une route (arrondi à la minute d'arc), lisible par engine.coordinate."""
+    def part(v,width,pos,neg):
+        m=round(abs(v)*60);return f"{m//60:0{width}d}{m%60:02d}{pos if v>=0 else neg}"
+    return part(lat,2,'N','S')+part(lon,3,'E','W')
+
+def meridian_nodes(nav,a,b,step=10):
+    """Les nœuds de l'orthodromie a → b à chaque multiple de `step` degrés de longitude entre eux (SOG-0217 : « un calcul auto entre deux AD devrait prendre la route orthodromique »), en points en coordonnées ;
+    [] si la route est trop courte, passe près d'un pôle ou fait un demi-tour de la Terre (la longitude ne dit plus rien)."""
+    A,B=nav.nodes[a],nav.nodes[b]
+    dl=((B['lon']-A['lon']+180)%360)-180
+    if abs(dl)<step or abs(abs(dl)-180)<2:return []
+    la1,la2=math.radians(A['lat']),math.radians(B['lat'])
+    if abs(A['lat'])>85 or abs(B['lat'])>85:return []
+    out=[];seen=set()
+    for m in range(-18,19):
+        lon=m*step;d=((lon-A['lon']+180)%360)-180
+        if not (0<d<dl if dl>0 else dl<d<0) or round(d,6) in seen:continue      # -180° et 180° sont le même méridien
+        seen.add(round(d,6))
+        lat=math.degrees(math.atan((math.tan(la1)*math.sin(math.radians(dl-d))+math.tan(la2)*math.sin(math.radians(d)))/math.sin(math.radians(dl))))
+        out.append((abs(d),lat,lon))
+    keys=[]
+    for _,lat,lon in sorted(out):
+        ident=coordinate_id(lat,lon);p=engine.coordinate(ident)
+        if p:keys.append(nav.add(dict(id=ident,lat=p[0],lon=p[1])))
+    return keys
+
+def orthodrome(nav,anchors,min_nm=600):
+    """Le direct des passages imposés, suivi par l'orthodromie : un point en coordonnées tous les 10° de longitude sur chaque tronçon de plus de `min_nm` ; (chemin, tronçons) ou None si aucun tronçon n'en reçoit. Chaque tronçon est dit « direct (hors réseau) » (`offnet`)."""
+    path=[];pieces=[];used=False
+    for a,b in zip(anchors,anchors[1:]):
+        keys=meridian_nodes(nav,a,b) if engine.nm(nav.nodes[a],nav.nodes[b])>min_nm else []
+        chain=[a,*keys,b];used=used or bool(keys)
+        legs=[(u,v,dict(route='DCT',kind='DCT_PROPOSAL',nm=engine.nm(nav.nodes[u],nav.nodes[v]))) for u,v in zip(chain,chain[1:])]
+        path.extend(legs)
+        pieces.append(dict(start=nav.nodes[a],end=nav.nodes[b],status='candidate',offnet=True,route=' DCT '.join(nav.nodes[k]['id'] for k in chain),distance_nm=round(sum(e['nm'] for u,v,e in legs),1),
+            note='direct (hors réseau)'+(' : orthodromie par '+str(len(keys))+' point(s) en coordonnées, un tous les 10° de longitude' if keys else '')))
+    return (path,pieces) if used else None
+
 def propose(request,nav,rad):
     begun=time.perf_counter();dep,arr=request['dep'],request['arr'];fl=int(request['fl'])
     mandatory=engine.via_points(request)
@@ -51,7 +90,10 @@ def propose(request,nav,rad):
         r['status']='PROPOSITION DE REPLI — NON VALIDÉE';r['report']=engine.report(r)
         return r
     proposals=[];notes=[]
-    try:proposals.append(assess([direct(a,b) for a,b in zip(anchors,anchors[1:])],'Direct proposé — passages imposés conservés','direct',[]))
+    try:
+        great=orthodrome(nav,anchors)
+        if great:proposals.append(assess(great[0],'Orthodromie — direct par points en coordonnées, un tous les 10° de longitude (hors réseau)','direct',great[1]))
+        else:proposals.append(assess([direct(a,b) for a,b in zip(anchors,anchors[1:])],'Direct proposé — passages imposés conservés','direct',[]))
     except ValueError as e:notes.append('Direct : '+str(e))
     blocks=rad.blocks(dep,arr,None);g=nav.graph(None)
     for u,edges in list(g.items()):
