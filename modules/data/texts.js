@@ -166,6 +166,10 @@ export const TX = {
     nasrWait: ['NASR de la FAA : reçu {h}, il manque {m}.', 'FAA NASR: received {h}, {m} still missing.',
       'NASR der FAA: erhalten {h}, es fehlt {m}.', 'NASR de la FAA: recibido {h}, falta {m}.'
     ],
+    // un classeur EUROCONTROL (RAD, points FRA) reconnu à son contenu : pas de zone, l'import de la ligne Route suit (SOG-0237)
+    doneRoute: ['{name} reconnu : {s}. L’import suit.', '{name} recognised: {s}. The import follows.',
+      '{name} erkannt: {s}. Der Import folgt.', '{name} reconocido: {s}. La importación sigue.'
+    ],
     nasrPage: ['la page des abonnements NASR', 'the NASR subscription page', 'der NASR-Abonnementseite',
       'la página de suscripciones del NASR'
     ],
@@ -567,10 +571,10 @@ export const TX = {
     importedOne: ['importé il y a 1 jour', 'imported 1 day ago', 'vor 1 Tag importiert', 'importado hace 1 día'],
     importedMany: ['importé il y a {n} jours', 'imported {n} days ago', 'vor {n} Tagen importiert', 'importado hace {n} días'],
     hint: [
-      'Les classeurs EUROCONTROL de votre dossier Téléchargements (RAD_<cycle>_v….xlsx et eurocontrol-airac-<cycle>-fra-points-….xlsx) sont compilés dans data/route/ pour le calcul de route. Un cycle remplace le même cycle ; les autres restent.',
-      'The EUROCONTROL workbooks in your Downloads folder (RAD_<cycle>_v….xlsx and eurocontrol-airac-<cycle>-fra-points-….xlsx) are compiled into data/route/ for route calculation. A cycle replaces the same cycle; the others stay.',
-      'Die EUROCONTROL-Arbeitsmappen in Ihrem Download-Ordner (RAD_<cycle>_v….xlsx und eurocontrol-airac-<cycle>-fra-points-….xlsx) werden für die Streckenberechnung in data/route/ kompiliert. Ein Zyklus ersetzt denselben Zyklus; die anderen bleiben.',
-      'Los libros de EUROCONTROL de su carpeta de Descargas (RAD_<cycle>_v….xlsx y eurocontrol-airac-<cycle>-fra-points-….xlsx) se compilan en data/route/ para el cálculo de ruta. Un ciclo sustituye al mismo ciclo; los demás se conservan.'
+      'Les classeurs EUROCONTROL de votre dossier Téléchargements (RAD_<cycle>_v….xlsx et eurocontrol-airac-<cycle>-fra-points-….xlsx) sont compilés dans data/route/ pour le calcul de route. Un cycle remplace le même cycle ; les autres restent. Vous pouvez aussi les choisir avec « Choisir le fichier… ».',
+      'The EUROCONTROL workbooks in your Downloads folder (RAD_<cycle>_v….xlsx and eurocontrol-airac-<cycle>-fra-points-….xlsx) are compiled into data/route/ for route calculation. A cycle replaces the same cycle; the others stay. You can also pick them with “Choose the file…”.',
+      'Die EUROCONTROL-Arbeitsmappen in Ihrem Download-Ordner (RAD_<cycle>_v….xlsx und eurocontrol-airac-<cycle>-fra-points-….xlsx) werden für die Streckenberechnung in data/route/ kompiliert. Ein Zyklus ersetzt denselben Zyklus; die anderen bleiben. Sie können sie auch mit „Datei wählen…“ auswählen.',
+      'Los libros de EUROCONTROL de su carpeta de Descargas (RAD_<cycle>_v….xlsx y eurocontrol-airac-<cycle>-fra-points-….xlsx) se compilan en data/route/ para el cálculo de ruta. Un ciclo sustituye al mismo ciclo; los demás se conservan. También puede elegirlos con «Elegir el archivo…».'
     ],
     // où créer le compte (SOG-0237, faits d'AeroDB) : l'inscription est gratuite, sur la page EAD Basic d'EUROCONTROL ; aucun identifiant n'est demandé ni gardé ici
     account: [

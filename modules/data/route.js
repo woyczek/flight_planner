@@ -28,6 +28,10 @@ import {
 import {
   renderBuild
 } from './panels.js';
+import {
+  uploadHtml,
+  uploadOff
+} from './upload.js';
 
 /** L'état de la ligne au montage : aucune phase, aucun plan ni résultat, la mémoire du poste lue par load(). */
 export const routeInit = () => ({
@@ -149,7 +153,7 @@ function bodyHtml() {
     ${src ? `<dt>${esc(tt(TX.licence))}</dt><dd>${esc(src.lic[li()])}</dd>` : ''}</dl>
     <p class="f-muted" data-route-hint>${esc(tt(TX.route.hint))}</p>
     <p class="f-muted" data-route-account>${accountHtml()}</p>
-    ${r.phase === 'asking' ? askHtml() : `<p><button type="button" data-verb="route-import"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.route.import))}</button></p>
+    ${r.phase === 'asking' ? askHtml() : `<p><button type="button" data-verb="route-import"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.route.import))}</button> <button type="button" data-act="zone-upload" data-zone="route"${gate.disabled || uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button></p>${uploadHtml('route')}
       ${gate.reason && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`}
     ${r.phase === 'planning' || r.phase === 'running' ? runningHtml() : resultHtml()}`;
 }

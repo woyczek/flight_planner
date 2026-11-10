@@ -5681,3 +5681,56 @@ def l77(c):
     first = s['lines'][0][1] if s['lines'] else ''
     c.ok(first.startswith(norm(_trow('pubDoneCommits', lang).split('{n}')[0])) and '2' in first, s['lines'], 'the commits that left are said (two, already made by the build), never « committed files: 0 » alone')
     c.check_errors()
+
+
+@case('L78', 'Données: « Choisir le fichier… » on the « Route (RAD, points FRA) » row sends an EUROCONTROL workbook to the launcher, which recognises it by its content (source eurocontrol_rad, no zone), then the import of the row follows: its plan, its question (SOG-0237)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0237 + AeroDB 6dc9c5a1e: the launcher recognises RAD_AAMM_v<n>_<m>.xlsx and eurocontrol-airac-AAMM-fra-points-<texte>.xlsx (content checked) and puts them in data/local/upload/, which route/import-rad reads as Downloads; the answer carries source eurocontrol_rad, kind rad|fra and no zone: the screen chains the import (the plan, then the question), never a zone build')
+def l78(c):
+    lang = c.lang
+    UP = lambda key: _trow(key, lang, after='  up: {')
+    _t, cur, prev, _n = _cycles()
+    rad = 'RAD_2611_v1_0.xlsx'
+    plan = _view('done', step='Terminé', result={'ok': True, 'dry': True, 'files': [{'name': rad, 'size': 1500000, 'kind': 'rad', 'cycle': cur.isoformat(), 'title': 'Rolling RAD'}], 'taken': [], 'failed': [], 'rad': [], 'fra': [], 'commit': None})
+    st = _launcher(c, [plan], verbs=['base/fetch', 'base/build', 'base/purge', 'route/import-rad'])
+    sent = []
+
+    def upload(route):
+        sent.append(urllib.parse.unquote(route.request.headers.get('x-sog-name', '')))
+        route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'source': 'eurocontrol_rad', 'kind': 'rad', 'zone': '', 'name': sent[-1], 'size': 1500000, 'replaced': True, 'sha256': 'cd' * 32}))
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    c.js("document.querySelector('[data-set=route]').open = true")
+    btn = '[data-set=route] [data-act=zone-upload]'
+    c.until(f"!!document.querySelector('{btn}') && !document.querySelector('{btn}').disabled", timeout=8000, what='« Choisir le fichier… » on the route row')
+    c.eq(norm(c.text(btn)), norm(UP('choose')), 'named like the other upload buttons', what='button')
+    c.js(f"document.querySelector('{btn}').scrollIntoView({{ block: 'center' }})")
+    if c.width in (390, 1280):
+        c.shot(f'L78_standard_{c.width}_{lang}_delivered.png')
+    with c.page.expect_file_chooser() as fc:
+        c.tap(btn)
+    fc.value.set_files({'name': rad, 'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'buffer': b'PK' + b'x' * 996})
+    for _ in range(40):
+        if sent:
+            break
+        c.wait(250)
+    c.eq(sent, [rad], 'the workbook is sent to the launcher, under its own name', what='sent')
+    done = norm(UP('doneRoute').split('{name}')[0] + rad + UP('doneRoute').split('{name}')[1].split('{s}')[0])
+    for _ in range(30):
+        if _notes_with(c, rad):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, rad)), None, 'the recognition is said, with the name and the source')
+    # the import of the row follows: its plan (dry), then its question — never a build of a zone
+    for _ in range(40):
+        if _posts(st, 'import-rad'):
+            break
+        c.wait(250)
+    c.eq([{k: p[k] for k in ('set', 'verb')} | {'dry': p['args'].get('dry')} for p in _posts(st, 'import-rad')[:1]], [{'set': 'route', 'verb': 'import-rad', 'dry': True}], 'the plan of the import follows (dry), the workbook just put away is read as if it were in Downloads', what='plan')
+    c.until('!!document.querySelector("[data-route-ask]")', timeout=10000, what='the question of the row is asked')
+    c.ok(rad in c.text('[data-route-books]'), c.text('[data-route-books]'), 'the question names the workbook just chosen')
+    c.eq(len(_posts(st, 'pickup')) + len(_posts(st, 'build')), 0, 'no zone pickup, no build of a zone', what='no zone job')
+    c.tap('[data-verb=route-no]')
+    c.check_errors()

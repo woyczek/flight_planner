@@ -16,6 +16,9 @@ import {
   renderBuild
 } from './panels.js';
 import {
+  startRoute
+} from './route.js';
+import {
   fetchThenBuild,
   startPickup
 } from './follow.js';
@@ -73,7 +76,10 @@ function outcome(r) {
     text: tt(TX.up.offline)
   };
   if (r?.ok && body.ok !== false) {
-    const src = typeof body.source === 'string' && M.COV_SOURCES.includes(body.source) ? nameOfSource(body.source) : '',
+    const src = typeof body.source === 'string' && (M.COV_SOURCES.includes(body.source) || /^eurocontrol(_rad)?$/.test(body.source)) ?
+      nameOfSource(body.source) : '',
+      route = typeof body.source === 'string' && /^eurocontrol(_rad)?$/.test(body
+        .source), // un classeur EUROCONTROL : pas de zone, l'import de la ligne Route suit
       zone = typeof body.zone === 'string' && /^[a-z0-9_-]{2,12}$/.test(body.zone) ? body.zone : '',
       name = String(body.name ?? '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120);
     return {
@@ -85,7 +91,7 @@ function outcome(r) {
       // le lanceur dit lui-même les jeux déjà posés pour CE cycle et ceux à envoyer (AeroDB 42aab1ae8) : listes fermées, jamais autre chose que FIX, AWY, NAV
       deposited: Array.isArray(body.deposited) ? body.deposited.filter(k => NASR_SETS.includes(k)) : null,
       missing: Array.isArray(body.missing) ? body.missing.filter(k => NASR_SETS.includes(k)) : null,
-      text: tt(body.replaced === false ? TX.up.same : TX.up.done, {
+      text: tt(body.replaced === false ? TX.up.same : route ? TX.up.doneRoute : TX.up.done, {
         name,
         s: src,
         z: zone ? M.zoneName(S.d.zones, zone, li()) : ''
@@ -170,6 +176,8 @@ export async function startUpload(zone, file) {
   S.ctx.notify(out.text, out.kind === 'fail' ? 'err' : 'ok');
   // le fichier est rangé là où « Prendre le fichier téléchargé » lit (data/local/upload/) : le parcours normal suit — le plan, la prise, puis la construction de la zone reconnue
   if (out.kind === 'fail') return;
+  if (/^eurocontrol(_rad)?$/.test(out.source))
+    return startRoute(); // le classeur est rangé là où l'import de la ligne Route lit : son plan à blanc, sa question, la prise (SOG-0237)
   if (out.source === 'faa') return faaSet(out,
     zone); // la FAA : trois jeux à déposer, lus par le téléchargement de la zone (AeroDB), pas par la prise
   await startPickup(out.zone || zone);
