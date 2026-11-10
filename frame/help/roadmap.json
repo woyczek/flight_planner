@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "369b89d",
+  "organisation": "926971a",
   "fiches": 208,
   "untranslated": 1,
   "priorities": 152
@@ -768,7 +768,7 @@
     {
      "id": "SOG-0183",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte de mission : le curseur de complexité a disparu",
      "en": "Mission map: the complexity slider is gone",
      "de": "Missionskarte: der Komplexitätsregler ist verschwunden",
@@ -1053,7 +1053,7 @@
     {
      "id": "SOG-0138",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
      "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
@@ -2624,7 +2624,7 @@
     {
      "id": "SOG-0198",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Météo : « prévision de la grille injoignable (hors ligne) » pendant la construction du synoptique, alors que le réseau est là",
      "en": "Weather: “grid forecast unreachable (offline)” while the synoptic is being built, although the network is there",
      "de": "Wetter: „Gittervorhersage nicht erreichbar (offline)“ während des Aufbaus der Synoptik, obwohl das Netz da ist",
