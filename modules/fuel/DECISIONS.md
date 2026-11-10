@@ -1616,3 +1616,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the arrival-end wind, the source said, never silent, the order of the block). Every quote with an alternate has a larger block: wanted.
   The Fuel cases did not compare a block that changes (122 green in French before F138). F138 (LFPO → LFST, alternate LFRN at invented
   positions); counter-test on origin/v3: no alternate line.
+- **11 Nov 2026 — « Famille / Série » on screen** (SOG-0202; the user, 10 Nov: « famille / série »): the step Flight says « Famille » and
+  « Série », the report's own words ×4 (no more « Thème / Sous-thème »); the code keeps `theme` / `series` (§ 10.48: theme = family,
+  sub-theme = series). N23 checks Fuel's labels against the report's; counter-test on origin/v3: « Thème ».

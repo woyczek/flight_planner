@@ -278,10 +278,10 @@ const TX = {
   altnModel: ['modèle de l’étape', 'model of the trip', 'Modell der Strecke', 'modelo del trayecto'],
   altnWind: ['vent {d}/{s} kt', 'wind {d}/{s} kt', 'Wind {d}/{s} kt', 'viento {d}/{s} kt'],
   altnNoWind: ['vent inconnu', 'wind unknown', 'Wind unbekannt', 'viento desconocido'],
-  // thème et sous-thème du vol (SOG-0202 T2)
-  theme: ['Thème', 'Theme', 'Thema', 'Tema'],
-  series: ['Sous-thème', 'Sub-theme', 'Unterthema', 'Subtema'],
-  themeNone: ['— aucun —', '— none —', '— keins —', '— ninguno —'],
+  // la famille et la série du vol (SOG-0202 T2) ; les mots du compte rendu (l'utilisateur, 10 nov. : « famille / série »)
+  theme: ['Famille', 'Family', 'Familie', 'Familia'],
+  series: ['Série', 'Series', 'Serie', 'Serie'],
+  themeNone: ['— aucune —', '— none —', '— keine —', '— ninguna —'],
   rTaken: ['pris', 'taken', 'übernommen', 'tomado'],
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
   // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle

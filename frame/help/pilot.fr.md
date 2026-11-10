@@ -84,7 +84,7 @@ l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière
 
 À côté de la date, l'horloge « +30 » pose le vol dans 30 min (arrondi aux 5 min ; chaque appui ajoute 30 min) et « Maint. » revient à l'heure courante : la météo des terrains (le TAF s'il couvre cette heure) et les vents en altitude sont relus aussitôt.
 
-<a id="fuel-theme"></a>**Thème et sous-thème.** Sous la date, « Thème » et « Sous-thème » disent ce que vous allez faire : un vol de fret, de passagers, d'essais, une mission SAR… Facultatifs, ils sont remplis par la mission que vous préparez et ne proposent que les thèmes de votre compagnie (une compagnie commerciale : CAT · Transport aérien commercial). Le compte rendu les reprend et peut les changer : oubliés ici, ils se choisissent là.
+<a id="fuel-theme"></a>**Famille et série.** Sous la date, « Famille » et « Série » disent ce que vous allez faire : un vol de fret, de passagers, d'essais, une mission SAR… Facultatives, elles sont remplies par la mission que vous préparez et ne proposent que les familles de votre compagnie (une compagnie commerciale : CAT · Transport aérien commercial). Le compte rendu les reprend et peut les changer : oubliées ici, elles se choisissent là.
 
 <a id="fuel-step-2"></a>**2 Route.** Tapez la route dans le champ « Route » (Entrée la valide),
 toujours visible : les points, les voies aériennes et les niveaux, comme dans un plan de vol (« LFBO TOU UN460
@@ -542,7 +542,7 @@ marqué « à voir » au lieu du ✓ : la famille et la série d'un compte rendu
 le carburant au départ et à l'atterrissage. Les incohérences — heures dans le désordre, date future, carburant qui
 augmente — sont signalées.
 
-<a id="report-load"></a>**Charge.** « Utiliser » reprend le thème et le sous-thème du vol (sa famille et sa série) ; vous pouvez les changer, le compte rendu a le dernier mot. Une série qui transporte (Fret, Passagers, VIP) ajoute, au dernier pas, la carte « Charge » avec un seul champ : le fret embarqué en kg, ou le nombre de passagers. Une autre série n'ajoute rien.
+<a id="report-load"></a>**Charge.** « Utiliser » reprend la famille et la série du vol ; vous pouvez les changer, le compte rendu a le dernier mot. Une série qui transporte (Fret, Passagers, VIP) ajoute, au dernier pas, la carte « Charge » avec un seul champ : le fret embarqué en kg, ou le nombre de passagers. Une autre série n'ajoute rien.
 
 <a id="report-measures"></a>**Mesures.** À la fin du dernier pas, « Mesures » lit les journaux du Fuel Phase Monitor (« Choisir des journaux », ou « Depuis le dossier Output » sur le poste) et propose le vol dont l'immatriculation et les heures UTC recouvrent ce compte rendu ; « Garder ce vol » met son carburant consommé, sa durée et ses phases dans le compte rendu, enregistrés avec lui. Rien d'autre du journal n'est gardé.
 

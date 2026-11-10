@@ -12,10 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Famille / Série » on the step Flight**, the report's words (the user's choice; help ×4; noreg N23; SOG-0202).
 - **Map: a doubtful approach chosen by hand is dotted with its tag** (`modules/maps/procs.js`, `texts.js`; DECISIONS; noreg D171; SOG-0232, Map side).
 
 - **Map: hold points from zoom 15; the space sheet's list beside the stack from 440 px** (`modules/maps/ground.js`, `lv.js`; DECISIONS; noreg D112, D170; SOG-0195, SOG-0163).
-
 - **Fuel: the quote carries a computed alternate fuel — the block of every flight with an alternate is HIGHER, on purpose** (Fuel SPEC § 3,
   DECISIONS, help; noreg F138; SOG-0225). Block = taxi + trip + contingency + alternate + final reserve; the line of the detail says the
   distance, the level, the source (the sheet's alternate flow or the model of the trip) and the wind; without alternate or position, said.

@@ -33,7 +33,7 @@ Beispiel VIP oder Überführung bei den Sondereinsätzen). Solange Sie diesen Sc
 der Kraftstoff beim Start und bei der Landung. Unstimmigkeiten — Zeiten in falscher Reihenfolge, Datum in der Zukunft,
 Kraftstoff, der zunimmt — werden gemeldet.
 
-<a id="report-load"></a>**Zuladung.** „Verwenden“ übernimmt Thema und Unterthema des Flugs (Familie und Serie); Sie können sie ändern, der Bericht hat das letzte Wort. Eine Serie, die etwas befördert (Fracht, Passagiere, VIP), fügt im letzten Schritt die Karte „Zuladung“ mit einem einzigen Feld hinzu: die beförderte Fracht in kg oder die Zahl der Passagiere. Jede andere Serie fügt nichts hinzu.
+<a id="report-load"></a>**Zuladung.** „Verwenden“ übernimmt Familie und Serie des Flugs; Sie können sie ändern, der Bericht hat das letzte Wort. Eine Serie, die etwas befördert (Fracht, Passagiere, VIP), fügt im letzten Schritt die Karte „Zuladung“ mit einem einzigen Feld hinzu: die beförderte Fracht in kg oder die Zahl der Passagiere. Jede andere Serie fügt nichts hinzu.
 
 <a id="report-measures"></a>**Messungen.** Am Ende des letzten Schritts liest „Messungen“ die Protokolle des Fuel Phase Monitor („Protokolle wählen“ oder „Aus dem Output-Ordner“ am Arbeitsplatz) und schlägt den Flug vor, dessen Kennzeichen und UTC-Zeiten diesen Bericht überdecken; „Diesen Flug behalten“ übernimmt seinen Verbrauch, seine Dauer und seine Phasen in den Bericht, mit ihm gespeichert. Sonst wird nichts aus dem Protokoll behalten.
 

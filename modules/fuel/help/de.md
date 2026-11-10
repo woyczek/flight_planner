@@ -36,7 +36,7 @@ Neben dem Datum legt die Uhr „+30“ den Flug 30 Min. in die Zukunft (auf 5 Mi
 hinzu), und „Jetzt“ kehrt zur aktuellen Uhrzeit zurück: Flugplatzwetter (die TAF, wenn sie diese Uhrzeit abdeckt) und
 Höhenwinde werden sofort neu gelesen.
 
-<a id="fuel-theme"></a>**Thema und Unterthema.** Unter dem Datum sagen „Thema“ und „Unterthema“, was Sie vorhaben: ein Fracht-, Passagier- oder Erprobungsflug, eine SAR-Mission… Sie sind freiwillig, werden von der vorbereiteten Mission ausgefüllt und bieten nur die Themen Ihrer Gesellschaft an (eine kommerzielle Gesellschaft: CAT · Gewerblicher Luftverkehr). Der Bericht übernimmt sie und kann sie ändern: hier vergessen, dort gewählt.
+<a id="fuel-theme"></a>**Familie und Serie.** Unter dem Datum sagen „Familie“ und „Serie“, was Sie vorhaben: ein Fracht-, Passagier- oder Erprobungsflug, eine SAR-Mission… Sie sind freiwillig, werden von der vorbereiteten Mission ausgefüllt und bieten nur die Familien Ihrer Gesellschaft an (eine kommerzielle Gesellschaft: CAT · Gewerblicher Luftverkehr). Der Bericht übernimmt sie und kann sie ändern: hier vergessen, dort gewählt.
 
 <a id="fuel-step-2"></a>**2 Route.** Tippen Sie die Route in das stets sichtbare Feld „Route“ (die Eingabetaste bestätigt sie): die Punkte, die
 Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“). Sie können dort auch einen

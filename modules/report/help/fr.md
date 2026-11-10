@@ -33,7 +33,7 @@ marqué « à voir » au lieu du ✓ : la famille et la série d'un compte rendu
 le carburant au départ et à l'atterrissage. Les incohérences — heures dans le désordre, date future, carburant qui
 augmente — sont signalées.
 
-<a id="report-load"></a>**Charge.** « Utiliser » reprend le thème et le sous-thème du vol (sa famille et sa série) ; vous pouvez les changer, le compte rendu a le dernier mot. Une série qui transporte (Fret, Passagers, VIP) ajoute, au dernier pas, la carte « Charge » avec un seul champ : le fret embarqué en kg, ou le nombre de passagers. Une autre série n'ajoute rien.
+<a id="report-load"></a>**Charge.** « Utiliser » reprend la famille et la série du vol ; vous pouvez les changer, le compte rendu a le dernier mot. Une série qui transporte (Fret, Passagers, VIP) ajoute, au dernier pas, la carte « Charge » avec un seul champ : le fret embarqué en kg, ou le nombre de passagers. Une autre série n'ajoute rien.
 
 <a id="report-measures"></a>**Mesures.** À la fin du dernier pas, « Mesures » lit les journaux du Fuel Phase Monitor (« Choisir des journaux », ou « Depuis le dossier Output » sur le poste) et propose le vol dont l'immatriculation et les heures UTC recouvrent ce compte rendu ; « Garder ce vol » met son carburant consommé, sa durée et ses phases dans le compte rendu, enregistrés avec lui. Rien d'autre du journal n'est gardé.
 
