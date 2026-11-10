@@ -490,6 +490,7 @@
     // chemin lu → révision lue : un fichier changé se reconnaît à sa révision, et l'écho d'une lecture d'aerodb elle-même dans les
     // observateurs (zones, types d'aéronefs, proc/) ne compte pas
     const revs = new Map();
+    const lnmBusy = new Map(); // OACI → lecture Little Navmap en cours (fetchLnm)
     const eadBusy = new Map(); // OACI → lecture EAD Basic en cours (fetchProcedures : une seule à la fois par terrain)
     // chemins que CETTE instance est en train de lire : la couche de données annonce aux observateurs, pendant la lecture, l'arrivée dans son
     // cache du fichier qu'on lui demande ; ce n'est pas un changement (procWatch l'ignore)
@@ -755,7 +756,8 @@
           ...p,
           status: 'xplane',
           local: true
-        }))
+        })),
+        lnm: lnmProcs.get(k)?.list || [] // lues de Little Navmap sur CE poste (fetchLnm), en mémoire de la page seulement
       };
     }
     // ---- mémo des fiches (§ 10.29, g) : par terrain, la liste fusionnée + phasée + placée, les pistes et les fiches brutes. UNE lecture
@@ -766,6 +768,8 @@
     // `baseEpoch` (fichiers publiés de la base remplacés) et, pour une entrée à qui il manquait un point ou un terrain, `loadEpoch` (une
     // zone de plus peut l'apporter). Une entrée sans aucun fichier, ou à qui la base entière n'a pas encore tout dit, n'est crue que
     // EMPTY_RETRY (le lecteur n'avait peut-être pas encore le fichier, la zone n'a peut-être pas pu être lue).
+    const lnmProcs =
+      new Map(); // OACI → { list, base, notice, at } : les fiches lues dans la base de Little Navmap du poste (fetchLnm, SOG-0210), jamais écrites
     const procMemo = new Map(); // OACI → entrée { day, base, load, sensitive, until, done, p: Promise<{ lists, list, table, … }> }
     const procStats = {
       merges: 0, // fusions faites (une par version des fichiers d'un terrain)
@@ -891,8 +895,9 @@
         return ad;
       });
       procStats.merges++;
-      const placed = await Promise.all(P.merge(lists.pub, lists.manual, lists.seen, lists.local).map(rec => placeProc(k, P.withPhases(
-        rec), lk)));
+      const placed = await Promise.all(P.merge(lists.pub, lists.manual, lists.seen, lists.local, lists.lnm).map(rec => placeProc(k, P
+        .withPhases(
+          rec), lk)));
       const table = await runwayTable(src, P.filter(placed), adOf),
         list = await Promise.all(placed.map(rec => finishProc(P, rec, table, adOf, () => lk.missed = true)));
       return {
@@ -1851,9 +1856,10 @@
         if (merged) return {
           ...merged
         };
-        const raw = [...e.lists.pub, ...e.lists.manual, ...e.lists.seen, ...e.lists.local].find(p => p && p.id === s && (q.doubt ===
-          true ||
-          p.status !== 'doubt'));
+        const raw = [...e.lists.pub, ...e.lists.manual, ...e.lists.seen, ...e.lists.local, ...e.lists.lnm].find(p => p && p.id ===
+          s && (q.doubt ===
+            true ||
+            p.status !== 'doubt'));
         if (!raw) return null;
         const rec = await placeProc(k, e.P.withPhases({
           ...raw,
@@ -2019,6 +2025,123 @@
         } finally {
           eadBusy.delete(k);
         }
+      },
+      /** Les procédures d'UN terrain lues dans la base de Little Navmap de CE poste (SOG-0210 ; travail proc/lnm du lanceur, lecture seule) : { ok: true, icao, count, notice, base } ou { ok: false, reason } avec
+       *  reason ∈ not-personal (sans `personal: true` : la coche « usage personnel » de l'utilisateur, cache/data/personal.json { certified }, que l'appelant lit : aucun travail n'est lancé), no-launcher, paired, busy,
+       *  bad-icao, cancelled, no-lnm, not-found, no-procedures, unreadable, failed. Les fiches (`status: 'lnm'`, `lnm: true`, `local: true`) sont gardées EN MÉMOIRE de la page seulement (jamais écrites, jamais exportées,
+       *  jamais commitées) et servies par procedures(icao) / procedure(id) / runways comme les autres : rang `lnm` (après les lectures officielles, de l'OFP et d'X-Plane : une procédure publiée garde sa place), la Carte et
+       *  Carburant les voient donc toutes deux ; on('change') annonce { procedures: icao, lnm: true }. forgetLnm(icao) les oublie. */
+      async fetchLnm(icao, {
+        personal,
+        signal,
+        onProgress
+      } = {}) {
+        const k = String(icao || '').trim().toUpperCase(),
+          no = (reason, more = {}) => ({
+            ok: false,
+            reason,
+            ...more
+          });
+        if (!/^[A-Z0-9]{4}$/.test(k)) return no('bad-icao');
+        if (signal?.aborted) return no('cancelled');
+        if (personal !== true) return no('not-personal');
+        if (typeof launcher?.job !== 'function' || !launcher.info?.()) return no('no-launcher');
+        if (launcher.info().lan) return no('paired');
+        if (lnmBusy.has(k)) return no('busy');
+        const run = (async () => {
+          const r = await launcher.job('regen/job', {
+            set: 'proc',
+            verb: 'lnm',
+            args: {
+              icao: k,
+              personal: true
+            }
+          }, {
+            onProgress: st => {
+              try {
+                onProgress?.({
+                  step: st.step,
+                  done: st.done,
+                  total: st.total
+                });
+              } catch {
+                /* écouteur du module en échec : la lecture continue */
+              }
+            },
+            signal
+          });
+          if (!r) return no('no-launcher');
+          if (r.cancelled) return no('cancelled');
+          if (r.status === 409) return no('busy');
+          if (r.status === 403) return no('paired');
+          const res = r.result;
+          if (res?.ok !== true) {
+            const why = res?.ok === false && typeof res.reason === 'string' ? res.reason : 'failed';
+            return no(['not-personal', 'no-lnm', 'not-found', 'no-procedures', 'unreadable'].includes(why) ? why : 'failed');
+          }
+          const ref = String(res.base || '').slice(0, 80),
+            list = (Array.isArray(res._procedures) ? res._procedures : []).slice(0, 1500).filter(p => p && ['SID', 'STAR',
+              'APP'
+            ].includes(p.kind) && typeof p.id === 'string' && Array.isArray(p.points) && p.points.length)
+            .map(p => ({
+              ...p,
+              status: 'lnm',
+              lnm: true,
+              local: true,
+              source: {
+                kind: 'lnm',
+                ref
+              }
+            }));
+          if (!list.length) return no('no-procedures');
+          lnmProcs.set(k, {
+            list,
+            base: ref,
+            notice: String(res.notice || '').slice(0, 400),
+            at: new Date(now()).toISOString()
+          });
+          dropProc(k);
+          emit({
+            procedures: k,
+            lnm: true
+          });
+          return {
+            ok: true,
+            icao: k,
+            count: list.length,
+            notice: lnmProcs.get(k).notice,
+            base: ref
+          };
+        })();
+        lnmBusy.set(k, run);
+        try {
+          return await run;
+        } finally {
+          lnmBusy.delete(k);
+        }
+      },
+      /** Oublie les fiches lues de Little Navmap pour un terrain (ou pour tous sans argument) ; true si quelque chose a été oublié. */
+      forgetLnm(icao) {
+        const k = icao == null ? null : String(icao).trim().toUpperCase(),
+          had = k ? lnmProcs.delete(k) : lnmProcs.size > 0;
+        if (!k) lnmProcs.clear();
+        if (had) {
+          dropProc(k);
+          emit({
+            procedures: k,
+            lnm: true
+          });
+        }
+        return had;
+      },
+      /** Les terrains dont des fiches Little Navmap sont en mémoire : { icao: { count, base, notice, at } } (de quoi marquer « lues de Little Navmap sur ce poste »). */
+      lnmState() {
+        return Object.fromEntries([...lnmProcs].map(([k, v]) => [k, {
+          count: v.list.length,
+          base: v.base,
+          notice: v.notice,
+          at: v.at
+        }]));
       },
       /** Couverture des procédures d'un terrain (§ 10.22) : de quoi colorer une épingle de la Carte, sans charger la base. Une table
        *  des terrains détenus est bâtie une fois (procedureIndex + EAD_STATES), puis chaque appel est une recherche. null pour un

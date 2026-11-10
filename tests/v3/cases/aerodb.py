@@ -7285,3 +7285,58 @@ def k150(c):
     except ValueError as e:
         bad = 'Point inconnu' in str(e)
     c.ok(bad, 'no error', 'an impossible value stays « Point inconnu »')
+
+
+@case('K151', 'AeroDb.fetchLnm (SOG-0210): the procedures of one terrain read from Little Navmap live in aerodb, in the page\'s memory only, and are served by procedures() / procedure() to every module; refused without the personal-use box before any job; closed reasons; a published procedure keeps its place', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0210 (Features SOG, 10 Nov 2026): the Fuel procedures card and the Map both read the procedures through aerodb; if Fuel alone kept the records of proc/lnm, a STAR chosen from Little Navmap would be neither drawn by the Map nor counted in the estimate. The layer lives in aerodb like the X-Plane points: fetchLnm(icao, { personal }) runs proc/lnm and keeps `_procedures` in memory (never written), procedures(icao) serves them with status `lnm`, on(change) says { procedures, lnm }; without `personal: true` no job is started')
+def k151(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z');
+      const pt = (id, lat, lon) => ({ id, lat, lon, leg: 'TF', alt: null, seq: 1, phase: 'main' });
+      const pub = { schema: 1, icao: 'KDEN', cycle: '2026-10-29', updated_at: '2026-11-01T00:00:00Z', procedures: [{ id: 'KDEN.SID.BAYLR6.RW08', icao: 'KDEN', kind: 'SID', name: 'BAYLR6', runways: ['08'], transition: null, points: [pt('WAKIR', 39.7, -105.0), pt('TUULO', 39.6, -105.2)], source: { kind: 'cifp', ref: 'FAACIFP18' }, status: 'official' }] };
+      const files = { 'proc/2026-10-29/KDEN.json': pub, 'proc/2026-10-29/index.json': { schema: 1, cycle: '2026-10-29', aerodromes: { KDEN: { SID: 1, STAR: 0, APP: 0, status: 'official' } } } };
+      const writes = [];
+      const reader = { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {}, write: async (p) => { writes.push(p); return { ok: true }; } };
+      const rec = (id, kind, name, rw, extra = {}) => ({ id, icao: 'KDEN', kind, name, runways: rw, transition: null, points: [pt('ABC', 39.9, -105.1), pt('DEF', 39.8, -105.3)], source: { kind: 'lnm', ref: 'little_navmap_navigraph.sqlite' }, status: 'lnm', ...extra });
+      const jobs = [];
+      let answer = { result: { ok: true, base: 'little_navmap_navigraph.sqlite', notice: 'Navigraph', _procedures: [rec('KDEN.STAR.GARNT3.RW16L', 'STAR', 'GARNT3', ['16L']), rec('KDEN.SID.BAYLR6.RW08', 'SID', 'BAYLR6', ['08']), { id: 'X', kind: 'NOPE', points: [pt('A', 1, 1)] }, { id: 'KDEN.APP.I08.RW08', kind: 'APP', points: [] }] } };
+      const launcher = { info: () => ({ lan: false, lnm: ['navigraph'] }), job: async (route, body) => { jobs.push({ route, body }); return typeof answer === 'function' ? answer() : answer; } };
+      const db = AeroDB.create({ reader, launcher, lnmperf: false, now: () => day });
+      const out = {}, changes = [];
+      db.on('change', w => changes.push(w));
+      out.before = (await db.procedures('KDEN')).map(p => [p.id, p.status]);
+      out.noBox = [await db.fetchLnm('KDEN'), await db.fetchLnm('KDEN', { personal: false }), await db.fetchLnm('KDEN', { personal: 'yes' })];
+      out.jobsWithoutBox = jobs.length;
+      out.bad = await db.fetchLnm('K/N', { personal: true });
+      out.ok = await db.fetchLnm('kden', { personal: true });
+      out.sent = jobs[0];
+      const all = await db.procedures('KDEN');
+      out.after = all.map(p => [p.id, p.status, !!p.lnm, !!p.local, p.source?.kind || null, (p.sources || []).map(s => s.kind || s.status)]);
+      out.byId = (await db.procedure('KDEN.STAR.GARNT3.RW16L'))?.status || null;
+      out.state = db.lnmState();
+      out.changes = changes.filter(w => w?.lnm).map(w => [w.procedures, w.lnm]);
+      out.reasons = {};
+      for (const [name, a] of Object.entries({ none: { result: { ok: false, reason: 'no-lnm' } }, nf: { result: { ok: false, reason: 'not-found' } }, np: { result: { ok: false, reason: 'no-procedures' } }, un: { result: { ok: false, reason: 'unreadable' } },
+        odd: { result: { ok: false, reason: 'whatever' } }, busy: { ok: false, status: 409 }, paired: { ok: false, status: 403 }, cancelled: { cancelled: true }, empty: { result: { ok: true, _procedures: [] } }, nothing: null })) {
+        answer = a;
+        out.reasons[name] = (await db.fetchLnm('EKCH', { personal: true })).reason;
+      }
+      out.noLauncher = (await AeroDB.create({ reader, lnmperf: false, now: () => day }).fetchLnm('KDEN', { personal: true })).reason;
+      out.paired = (await AeroDB.create({ reader, launcher: { ...launcher, info: () => ({ lan: true }) }, lnmperf: false, now: () => day }).fetchLnm('KDEN', { personal: true })).reason;
+      out.forgot = [db.forgetLnm('KDEN'), db.forgetLnm('KDEN'), (await db.procedures('KDEN')).map(p => p.id)];
+      out.writes = writes.length;
+      return out;
+    }""")
+    c.eq((r['before'], r['noBox'][0]['reason'], r['noBox'][1]['reason'], r['noBox'][2]['reason'], r['jobsWithoutBox']), ([['KDEN.SID.BAYLR6.RW08', 'official']], 'not-personal', 'not-personal', 'not-personal', 0),
+         'without `personal: true` (the user\'s box, read by the caller): refused before any job is started', what='no box')
+    c.eq((r['bad']['reason'], r['ok']['ok'], r['ok']['count'], r['ok']['base'], r['sent']['route'], r['sent']['body']), ('bad-icao', True, 2, 'little_navmap_navigraph.sqlite', 'regen/job', {'set': 'proc', 'verb': 'lnm', 'args': {'icao': 'KDEN', 'personal': True}}),
+         'with the box: the job proc/lnm { icao, personal: true } (the code upper-cased), two valid records kept (a bad kind and a record without points dropped)', what='fetch')
+    by = {x[0]: x for x in r['after']}
+    c.eq((sorted(by), by['KDEN.STAR.GARNT3.RW16L'][1:5], by['KDEN.SID.BAYLR6.RW08'][1], r['byId']), (['KDEN.SID.BAYLR6.RW08', 'KDEN.STAR.GARNT3.RW16L'], ['lnm', True, True, 'lnm'], 'official', 'lnm'),
+         'procedures() serves them to every module with status lnm (marked local, read from Little Navmap); a procedure the published file has keeps its place (official); procedure(id) finds them', what='served')
+    c.eq((r['state'], r['changes']), ({'KDEN': {'count': 2, 'base': 'little_navmap_navigraph.sqlite', 'notice': 'Navigraph', 'at': r['state']['KDEN']['at']}}, [['KDEN', True]]), 'lnmState() says what is in memory; on(change) announced { procedures, lnm }', what='state')
+    c.eq(r['reasons'], {'none': 'no-lnm', 'nf': 'not-found', 'np': 'no-procedures', 'un': 'unreadable', 'odd': 'failed', 'busy': 'busy', 'paired': 'paired', 'cancelled': 'cancelled', 'empty': 'no-procedures', 'nothing': 'no-launcher'},
+         'the refusals of the launcher, in a closed list (an unknown reason is « failed »)', what='reasons')
+    c.eq((r['noLauncher'], r['paired']), ('no-launcher', 'paired'), 'without a launcher, or from a paired device: nothing runs', what='refused')
+    c.eq((r['forgot'], r['writes']), ([True, False, ['KDEN.SID.BAYLR6.RW08']], 0), 'forgetLnm drops them; nothing was ever written (the records live in the page\'s memory only)', what='memory only')

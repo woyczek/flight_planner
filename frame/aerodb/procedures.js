@@ -12,6 +12,7 @@
       check: 1,
       ofp: 2,
       xplane: 3,
+      lnm: 3,
       doubt: 4
     },
     KINDS = ['SID', 'STAR', 'APP'],
