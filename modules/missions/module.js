@@ -125,6 +125,10 @@ const TX = {
   addRefused: ['Refusées', 'Refused', 'Abgelehnt', 'Rechazadas'],
   addDo: ['Ajouter ({n})', 'Add ({n})', 'Hinzufügen ({n})', 'Añadir ({n})'],
   personal: ['Personnel', 'Personal', 'Persönlich', 'Personal'],
+  // la portée de la liste (SOG-0212 c : « possibilité de rechercher une mission dans une compagnie d'à côté »)
+  scope: ['Portée', 'Scope', 'Bereich', 'Alcance'],
+  scopeMine: ['Ma compagnie', 'My airline', 'Meine Gesellschaft', 'Mi compañía'],
+  scopeAll: ['Toutes les compagnies', 'All airlines', 'Alle Gesellschaften', 'Todas las compañías'],
   exists: ['existe déjà : remplacer ?', 'already exists: replace?', 'existiert bereits: ersetzen?', 'ya existe: ¿reemplazar?'],
   added: ['{n} mission(s) ajoutée(s) : elles partent à la prochaine synchronisation.',
     '{n} mission(s) added: they leave at the next synchronisation.',
@@ -316,6 +320,7 @@ export async function mount(el, ctx) {
     s.co = co;
     s.cats = cats;
     s.category = '';
+    s.scope = 'mine';
     s.all = false;
     if (!s.open) draw(s);
   };
@@ -393,21 +398,23 @@ async function airlineOf() {
     const FD = window.FrameData;
     if (typeof FD?.airline !== 'function' || typeof FD?.airlines !== 'function') return {
       code: '',
-      first: '',
-      filter: false
+      filter: false,
+      names: new Map()
     };
-    const a = await FD.airline(),
+    const [a, list] = await Promise.all([FD.airline(), Promise.resolve(FD.airlines()).catch(() => [])]),
       code = String(a?.code || '');
     return {
       code,
       filter: !!code && code !== 'default',
-      a
+      a,
+      // les noms des compagnies de l'index, pour dire celle d'une mission d'à côté (SOG-0212 c) ; textes à échapper
+      names: new Map((Array.isArray(list) ? list : []).map(x => [String(x?.code || ''), String(x?.name || x?.code || '').slice(0, 60)]))
     };
   } catch {
     return {
       code: '',
-      first: '',
-      filter: false
+      filter: false,
+      names: new Map()
     };
   }
 }
@@ -419,8 +426,24 @@ async function categoriesOf(ctx, a) {
 }
 /** La catégorie d'une ligne, si la compagnie la connaît ({ id, names, load? }) ; null sinon (une catégorie inconnue est ignorée). */
 const catOf = (s, r) => r.category ? s.cats.all.find(c => c.id === r.category) || null : null;
-/** Une mission de la compagnie courante : celle que nomme son champ airline, personnelle sans lui (MS.ownerOf) ; toutes sans index. */
-const ofAirline = (s, r) => !s.co?.filter || MS.ownerOf(r) === s.co.code;
+/** Une mission de la portée choisie (SOG-0212 c) : « Ma compagnie » (celle que nomme son champ airline, personnelle sans lui :
+ *  MS.ownerOf), « Personnel », ou toutes ; toutes sans index. */
+const ofAirline = (s, r) => !s.co?.filter || s.scope === 'all' || MS.ownerOf(r) === (s.scope === 'perso' ? MS.PERSONAL : s.co.code);
+/** Le nom de la compagnie d'une mission qui n'est pas de la compagnie courante (« Delta Air », « Personnel ») ; '' pour la sienne. */
+const coName = (s, r) => {
+  const o = MS.ownerOf(r);
+  return !s.co?.filter || o === s.co.code ? '' : o === MS.PERSONAL ? s.tt(TX.personal) : s.co.names?.get(o) || o;
+};
+/** Le choix de la portée : ma compagnie, Personnel (sauf si c'est la compagnie courante), toutes ; rien sans index. */
+function scopeHtml(s) {
+  if (!s.co?.filter) return '';
+  const opts = [
+    ['mine', s.tt(TX.scopeMine)], ...(s.co.code === MS.PERSONAL ? [] : [
+      ['perso', s.tt(TX.personal)]
+    ]), ['all', s.tt(TX.scopeAll)]
+  ];
+  return `<label class="f-field"><span class="f-sr">${esc(s.tt(TX.scope))}</span><select data-k="scope" aria-label="${esc(s.tt(TX.scope))}">${opts.map(([v, l]) => `<option value="${v}"${(s.scope || 'mine') === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
+}
 
 /** Les missions que ce pilote a volées : les comptes rendus (cr/reports/) qui nomment une mission, les miens ou sans auteur. */
 async function flownOf(s) {
@@ -465,6 +488,7 @@ function listHtml(s) {
     cats = s.cats.all.filter(c => held.has(c.id)),
     lang = s.ctx.lang?.() || 'fr';
   return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button></div>
+    ${scopeHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(familyText(f, s.ctx.lang?.() || 'fr'))}</option>`).join('')}</select></label>
     ${cats.length ? `<label class="f-field"><span class="f-sr">${esc(s.tt(TX.allCategories))}</span><select data-k="category"><option value="">${esc(s.tt(TX.allCategories))}</option>${cats.map(c => `<option value="${esc(c.id)}"${s.category === c.id ? ' selected' : ''}>${esc(MC.nameOf(s.cats, c.id, lang))}</option>`).join('')}</select></label>` : ''}
@@ -480,8 +504,9 @@ function resultsHtml(s) {
   const hits = filtered(s),
     shown = s.all ? hits : hits.slice(0, ROWS),
     row = r => {
-      const f = s.flown.get(r.id);
-      return `<button type="button" class="f-item" data-id="${esc(r.id)}"><span><b>${esc(r.id)}</b> ${esc(r.title)}</span><span class="f-muted">${esc([r.originIcao && r.destinationIcao ? `${r.originIcao} → ${r.destinationIcao}` : r.originIcao, r.types[0], hmm(r.blockMin)].filter(Boolean).join(' · '))}${f !== undefined ? ` <span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flown, { d: day(f) }))}</span>` : ''}</span></button>`;
+      const f = s.flown.get(r.id),
+        co = coName(s, r);
+      return `<button type="button" class="f-item" data-id="${esc(r.id)}"><span><b>${esc(r.id)}</b> ${esc(r.title)}${co ? ` <span class="f-badge" data-co>${esc(co)}</span>` : ''}</span><span class="f-muted">${esc([r.originIcao && r.destinationIcao ? `${r.originIcao} → ${r.destinationIcao}` : r.originIcao, r.types[0], hmm(r.blockMin)].filter(Boolean).join(' · '))}${f !== undefined ? ` <span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flown, { d: day(f) }))}</span>` : ''}</span></button>`;
     };
   let fam = '',
     body = '';
@@ -644,6 +669,13 @@ function onInput(s, e) {
     return;
   }
   const k = e.target?.dataset?.k;
+  if (k === 'scope') {
+    s.scope = ['perso', 'all'].includes(e.target.value) ? e.target.value : 'mine';
+    s.family = '';
+    s.category = '';
+    s.all = false;
+    return draw(s);
+  }
   if (k !== 'q' && k !== 'family' && k !== 'category') return;
   s[k] = e.target.value;
   s.all = false;

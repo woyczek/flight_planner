@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: search another airline** (Missions SPEC, DECISIONS, help; noreg N20; SOG-0212 c). A scope « Ma compagnie · Personnel ·
+  Toutes les compagnies »; a mission of another airline says its name and can be prepared.
 - **Map: the alternate changed in Fuel is drawn at once** (`modules/maps/flight_time.js`; DECISIONS; noreg D161; SOG-0205). The signature of the route holds the alternate: its write alone is no longer taken for a progress.
 
 - **Map: three defects seen beside Fuel, and the axis of the profile** (`modules/maps/module.js`, `screen.js`, `alts.js`, `lib/vertical_profile.js`; DECISIONS; noreg D158, D159, D160; SOG-0134). No more « MapsRender is not
@@ -27,7 +29,6 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Map: a mission map has the Layers boxes, its view changes only the base** (`modules/maps/layers.js`, `mission_view.js`, `draw.js`, `sheet_view.js`; DECISIONS; noreg D145, D152; SOG-0185, SOG-0184 c and d).
   The boxes (airways, spaces, refuelling tracks, contours…) act on a mission map as on a flight's map; VFR topo = topographic base, relief and contours; « Base only » = the IFR base without objects; the
   objects of a military mission (refuelling tracks, RTBA) stay whatever the view; the Layers title no longer repeats the mission.
-
 - **Missions: « Ajouter des missions » from YAML files or a pasted YAML** (`modules/missions/add.js`; Missions SPEC § 3 bis, DECISIONS,
   help; noreg N19; SOG-0212 b). A pool in one file, what is read and refused shown before writing, an existing mission replaced only when ticked.
 - **Missions: a mission whose registry row lists its summary first opens** (`frame/lib/mission.js` `readRegistry`; Missions DECISIONS;

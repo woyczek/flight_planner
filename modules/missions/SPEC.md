@@ -48,6 +48,11 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   `MS.airlineCode`, `^[a-z0-9]{2,8}$`); without it, it is PERSONAL (`MS.ownerOf` → `perso`; user, 10 Nov: never the first airline
   of the index). The list shows the current airline's missions (`MS.ownerOf(row) === code`; « Personnel » shows the personal ones) and
   is drawn again on `frame-data-airline`; without an index (code `default`), every mission as before (N8, N17; N2, N7 without index).
+- **The scope** (SOG-0212 c, user: « possibilité de rechercher une mission dans une compagnie d'à côté »): a list « Ma compagnie ·
+  Personnel · Toutes les compagnies » above the search (no « Personnel » when it is the current airline; none without an index); the
+  families, categories, search and « Tirer au sort » follow it; a mission of another airline carries a badge with that airline's name
+  (from `FrameData.airlines()`, its code otherwise; « Personnel » for a personal one); its sheet and « Préparer ce vol » are the same.
+  Back to « Ma compagnie » when the airline changes. N20.
 - **Categories** (V3 spec § 10.38, SOG-0041): a mission says its `category` (registry row or file, `MS.categoryOf`, an id of the form
   of `frame/lib/mission_categories.js`); the airline's categories are its `categories.json` (`FrameData.airline().root`, untrusted,
   filtered by `forAirline`; absent: the common base), the groups active for its kind (`commercial` for `va` and « personnel »). A filter

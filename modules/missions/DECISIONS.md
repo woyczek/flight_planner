@@ -99,3 +99,6 @@
   mission files absent from it are already listed at each display (SOG-0036); the added missions show at once. Existing missions are
   replaced only when ticked, at their own path (never a second copy elsewhere). Untrusted input: bounds, id and family rules, the
   path built from them. N19; counter-test on origin/v3: no « Ajouter des missions ».
+- **10 Nov 2026 — the scope of the list: my airline, Personal, all** (SOG-0212 c). A native list above the search, the simplest form;
+  the ownership rule is `MS.ownerOf`, the same as the list's; another airline's mission says its airline in a badge and can be prepared
+  like any other (the flight is the pilot's). N20; counter-test on origin/v3: no scope list.
