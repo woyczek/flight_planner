@@ -137,6 +137,7 @@ def d4(c):
 def fixed_chips(c, what, legend, weather=True):
     """V3 spec 7.1.13, fourth refinement (user 25 Oct: "ils doivent rester 3, pas faire d'aller-retour entre 2 et 3"): the three chips (Profile,
     Weather, "i") are always there, shown, in this order; one with nothing to show is `disabled` + `aria-disabled`, never removed or hidden."""
+    c.until("() => { const b = document.querySelector('.f-sheet-head .mp-chip[data-view=\"profile\"]'); return !!b && !b.disabled }", timeout=10000, what=f'{what}: the profile chip is enabled (a loaded machine draws the profile later; D4 was red once in a zone run, green alone)')
     g = c.js("""() => [...document.querySelectorAll('.f-sheet-head .mp-chip')].map(b => ({ kind: b.dataset.view || 'legend', hidden: b.hidden, shown: window.__t.shown(b),
         disabled: b.disabled, aria: b.getAttribute('aria-disabled') }))""")
     c.eq([x['kind'] for x in g], ['profile', 'weather', 'legend'], 'three chips, always, in the head line, in this order', what=f'{what}: chips')
@@ -2004,4 +2005,3 @@ def d111(c):
     c.wait(300)
     back = win_state(c)
     c.ok(abs(back['from'] - whole['from']) < .5 and abs(back['to'] - whole['to']) < .5, f'window {back["from"]}..{back["to"]}', 'a double click goes back to the whole flight')
-

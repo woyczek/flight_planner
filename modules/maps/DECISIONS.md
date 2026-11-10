@@ -2299,6 +2299,15 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## Challenge à rebours of the Map (11 Nov 2026): a read of an old mount no longer writes into the new one
+- **Risk 1 — proved (D172, red before)**: `S` is one module variable replaced at each mount; the async functions tested `if (!S) return` after each wait, which is also true for the NEXT mount. A slow read
+  (a cold repository tree, a launcher answering late) that ends after a remount wrote its mission, its mission points, or its flight into the new Map (« the flight of before in the Map of after »).
+  **Done**: `loadMission`, `loadAside`, `applyMission` (`mission_view.js`) and `applyFlight` (`data.js`) keep their own `S` (`const me = S`) and leave when it is no longer the current one. The same pattern
+  exists in other continuations (weather reads, ground, procedures: several already compare `S?.ctx !== ctx`); not changed without a case.
+- **D4** hardened: it measured the chips before the profile was there on a loaded machine (the chip is enabled when the profile is drawn).
+- **Not proved, not touched**: D146 stays flaky under load (« redrawn four times at most » counts 5 once in a zone run; the cause of the fifth drawing is not isolated); the cost of `tipAt` per mouse move on a dense
+  view (the hit lists are scanned linearly: not measured).
+
 ## A doubtful approach, chosen by hand, is dotted with its tag (11 Nov 2026, SOG-0232, the user: « oui, ajouter les approches en doute, mais avec un panonceau »)
 - Fuel (Features SOG) lists a doubtful approach (`isDoubt`: status `doubt`, no name, `.NONAME.`; `frame/lib/procedures.js`, common) with its tag and never takes it by itself. **Map side**: once chosen it is
   drawn **dotted** (the way the missed approach is) and its label carries **« à vérifier »** (`procLabel`, `procs.js`); a sure approach is unchanged. In the Map's own choose mode doubtful records are still not

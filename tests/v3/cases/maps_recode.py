@@ -5435,3 +5435,30 @@ def d_doubt(c):
     c.ok(r['doubt']['dashed'] and all(r['doubt']['dashed']), str(r['doubt']), 'a doubtful approach: dotted')
     c.ok(any(w in r['doubt']['label'] for w in ('vérifier', 'checked', 'prüfen', 'verificar')), r['doubt']['label'], 'and its label carries the tag')
     c.ok(all(r['noname']['dashed']) and r['noname']['dashed'], str(r['noname']), 'a record without a name (NONAME) is doubtful too (the rule is common: isDoubt)')
+
+
+@case('D172', 'A read that ends after the Map was remounted does not write into the new Map: the mission read, the mission’s load aside and the flight read each belong to the mount that started them', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='challenge à rebours (11 Nov, risk 1): the Map’s state S is one module variable replaced at each mount; the async functions tested `if (!S) return` after each wait, which is true for the NEXT mount too: a slow read (a cold repository tree, a launcher that answers late) finished into the new instance (its mission, its route, its profile) — « le vol d’avant dans la Carte d’après »; each function keeps its own S and leaves when it is no longer the current one')
+def d_remount(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!window.__mp.S.route && window.__mp.S.route.points.length >= 2 && window.__mp.S.missionAside === 'ESSAI1' && !!window.__mp.S.mission", timeout=20000, what='the flight and its mission are there')
+    r = c.js("""async () => { const st = window.__mp, S0 = st.S, mv = await import('/modules/maps/mission_view.js'), out = {};
+      // 1. the mission read of a mount that is replaced meanwhile
+      const orig = S0.ctx.data.read.bind(S0.ctx.data); let release = null;
+      S0.ctx.data.read = (...a) => new Promise(r => { release = () => r(orig(...a)) });
+      S0.mission = null;
+      const p = mv.loadAside();
+      await new Promise(r => setTimeout(r, 300));
+      const N = { ...S0, mission: null, missionPts: null, missionError: '', missionAside: '' };   // the next mount
+      st.setS(N);
+      if (release) release();
+      await p.catch(() => {});
+      await new Promise(r => setTimeout(r, 300));
+      out.mission = !!N.mission; out.pts = !!N.missionPts; out.same = st.S === N;
+      st.setS(S0); S0.ctx.data.read = orig;
+      return out }""")
+    c.ok(r['same'] and not r['mission'] and not r['pts'], str(r), 'the read of the old mount did not write its mission into the new one')

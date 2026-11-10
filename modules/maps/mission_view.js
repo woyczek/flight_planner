@@ -128,12 +128,13 @@ async function missionRoute(mission) {
 }
 /** La mission lue (YAML du dépôt, analysé) dans S.mission, ou S.missionError ; commun à la vue mission (applyMission) et à la surimpression (loadAside). */
 async function loadMission(id) {
+  const me = S; // ce montage : une lecture qui finit après un remontage n'écrit pas dans le suivant (D172)
   const q = {
       mission: id
     },
     list = await missionList(),
     hit = list.find(x => x.id === q.mission);
-  if (!S) return;
+  if (S !== me) return;
   S.missions = list;
   S.mission = null;
   S.missionError = '';
@@ -146,7 +147,7 @@ async function loadMission(id) {
         wait: true
       }),
       text = typeof r?.value === 'string' ? r.value : r?.text;
-    if (!S) return; // la Carte a été quittée pendant la lecture
+    if (S !== me) return; // la Carte a été quittée pendant la lecture
     if (!text) throw new Error('empty');
     S.mission = MapsMission.parse(window.jsyaml.load(text));
     S.mission.id ||= hit.id;
@@ -160,9 +161,10 @@ async function loadMission(id) {
 /** Le vol nomme une mission (SOG-0193 L1) : la Carte reste en vue vol (météo, procédures, Édition, couches, itinéraires) et la mission passe en surimpression : ses zones,
  *  ses points à rôle, sa fenêtre ; la carte de la mission (cartes fournies, vues) est un lien de la fenêtre. */
 export async function loadAside() {
+  const me = S; // ce montage : une lecture qui finit après un remontage n'écrit pas dans le suivant (D172)
   if (!S?.missionAside) return;
   await loadMission(S.missionAside);
-  if (!S) return;
+  if (S !== me) return;
   S.missionPts = S.mission ? S.mission.points.map(p => ({
     ...p,
     sub: roleText(p)
@@ -202,6 +204,7 @@ let turn = Promise.resolve();
 const serial = fn => turn = turn.then(fn, fn);
 /** Mission (re)lue et carte choisie : profil, emprise, cheminement tracé si la carte le demande, profil vertical. */
 export async function applyMission() {
+  const me = S; // ce montage : une lecture qui finit après un remontage n'écrit pas dans le suivant (D172)
   const q = {
     ...(S.ctx.query || {}),
     ...(S.mapWanted ? {
@@ -210,7 +213,7 @@ export async function applyMission() {
     mission: S.missionId
   };
   await loadMission(q.mission);
-  if (!S) return;
+  if (S !== me) return;
   const M = S.mission,
     m = M ? M.maps.find(x => x.file === q.map) || M.maps[0] || null : null;
   S.mapDef = m;
@@ -225,7 +228,7 @@ export async function applyMission() {
   })) : null;
   S.vprofProfile = M?.vprof.profileDef || window.MAPS_PROFILES.find(p => p.id === 'vprof') || null;
   const pts = unwrapLons(M ? await missionRoute(M) : []); // cheminement d'un seul tenant au-delà de la ligne de changement de date
-  if (!S) return;
+  if (S !== me) return;
   const trace = m?.trace || (M?.vprof.onMap !== false && pts.length > 1 ? 'route' : 'none'),
     shown = trace === 'route' || trace === 'both' ? pts : [];
   S.route = {

@@ -215,8 +215,9 @@ export const viewOf = () => {
  *  pas relues. */
 export async function applyFlight(live = false) {
   if (S?.missionId) return; // une carte fournie est montrée sur place (SOG-0196) : le vol relu ne prend pas sa place
-  const route = await readFlight();
-  if (!S || !route) return; // quittée pendant la lecture : rien n'est posé sur un état démonté
+  const me = S, // ce montage : un vol lu après un remontage n'est pas posé dans le suivant (D172)
+    route = await readFlight();
+  if (S !== me || !route) return; // quittée pendant la lecture : rien n'est posé sur un état démonté
   S.route = route;
   if (S.procs && !isChosen(S.route.flight)) S.procs = null; // le choix est vidé : le chemin redevient la route tout de suite
   buildPath();
