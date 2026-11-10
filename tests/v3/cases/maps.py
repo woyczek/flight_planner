@@ -930,7 +930,7 @@ def d14(c):
     order = c.js("""() => [...document.querySelectorAll('.mp-dbody select, .mp-dbody input, .mp-dbody button')].filter(e => window.__t.shown(e) || e.type === 'range')
         .map(e => e.tagName.toLowerCase() + (e.type ? ':' + e.type : ''))""")
     c.eq(order[:3], ['input:checkbox', 'input:range', 'input:checkbox'], '"Around the flight only", then the Complexity slider, before the other boxes (SPEC § 6.7, 30 Oct)', what='first controls of the Layers content')
-    c.eq(order[-1:], ['select:select-one'], 'the flight selector comes last (rarely used, SPEC § 6.7)', what='last control of the Layers content')
+    c.eq(order[-1:], ['button:button'], '"Reset all" comes last: the flight selector left the Layers content (SOG-0185, the banner and the sheet’s chips carry it now)', what='last control of the Layers content')
     label = norm(c.text('.mp-l-detail') or '')
     c.ok(label.startswith(norm(row(c, 'detail'))), f'slider label {label!r}', f'starts with "{row(c, "detail")}"')
     c.ok(not re.search(r'essai|trial|test|prueba', label, re.I), f'slider label {label!r}', 'no "(trial)" any more: the function is assumed')
@@ -1053,7 +1053,7 @@ def d17(c):
     c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='the Layers content shows the slider')
     c.wait(300)
     g = c.js("""() => { const r = e => { const b = e.getBoundingClientRect(); return { t: b.top, b: b.bottom, h: b.height, l: b.left, r: b.right } };
-        const lab = document.querySelector('.mp-l-detail'), inp = lab.querySelector('input'), val = lab.querySelector('[data-detail-v]'), help = document.getElementById('mp-detail-help'), nxt = document.querySelector('.mp-l-detail ~ label');
+        const lab = document.querySelector('.mp-l-detail'), inp = lab.querySelector('input'), val = lab.querySelector('[data-detail-v]'), help = document.getElementById('mp-detail-help'), nxt = document.querySelector('.mp-layer-cx ~ .mp-layer-set label');
         return { lab: r(lab), inp: r(inp), val: r(val), help: r(help), nxt: r(nxt), described: inp.getAttribute('aria-describedby') } }""")
     c.le(round(g['lab']['h']), 56, 'the whole Complexity block (label, value, slider) is at most 56 px high at 390 px', what=f'{c.design}: block {g["lab"]["h"]:.0f} px')
     c.ge(round(g['inp']['h']), 40, 'the slider keeps a finger-sized height', what='slider height')

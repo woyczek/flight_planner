@@ -339,7 +339,7 @@ def d34(c):
 @case('D35', 'Device settings kept', 'D', tags=('maps',), screens=False, designs=('standard',),
       rule='maps SPEC § 6.7: cache/maps/ui.json holds only the differences from the defaults, per mode; "Reset all" removes them')
 def d35(c):
-    c.open('maps', flight=True)
+    c.open('maps', flight=True, aero=True)   # with the base: without it the floating notice « data access not set » covers the foot of the sheet at 390, over « Reset all »
     c.tap('[data-mp="mode"]')
     c.until("window.__t.shown(document.getElementById('mp-mode-opts'))", what='the modes panel opens')
     c.tap('.mp-choice[data-mode="vfr"]')
