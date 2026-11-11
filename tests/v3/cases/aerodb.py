@@ -7744,3 +7744,26 @@ def k168(c):
             seen.append((code, out))
     L.Setup._post_base_upload(Fake(), '/__setup/base/upload', None)
     c.eq([x[0] for x in seen], [403], 'a request received by the local-network server is refused by the handler itself (403), before any read of the body', what='lan')
+
+
+@case('K170', 'AeroDb.lnmAvailable(): true only on a local, unpaired launcher that declares a Little Navmap base (SOG-0210, Fuel offers the gesture only there)', 'K', tags=('aerodb',), phone=False,
+      rule='Features SOG (11 Nov 2026): the « Lire depuis Little Navmap » gesture of Fuel must show only on a workstation that can do it; only the `no-tables` answer carried `lnm`. `lnmAvailable()` is a synchronous boolean: a launcher with `job`, an `info()` that answers, `lan` false and `info().lnm` a non-empty list; no launcher, a paired device, no base, a missing list: false. Never a path nor a base name')
+def k170(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const reader = { read: async () => null, list: async () => [], watch: () => () => {} };
+      const mk = launcher => AeroDB.create({ reader, launcher, lnmperf: false, now: () => Date.parse('2026-11-10T12:00:00Z') }).lnmAvailable();
+      const job = async () => ({});
+      return {
+        ok: mk({ job, info: () => ({ launcher: true, lnm: ['navigraph'] }) }),
+        none: mk(null),
+        nojob: mk({ info: () => ({ lnm: ['navigraph'] }) }),
+        noinfo: mk({ job, info: () => null }),
+        paired: mk({ job, info: () => ({ lan: true, lnm: ['navigraph'] }) }),
+        empty: mk({ job, info: () => ({ launcher: true, lnm: [] }) }),
+        missing: mk({ job, info: () => ({ launcher: true }) }),
+        bad: mk({ job, info: () => ({ launcher: true, lnm: 'navigraph' }) })
+      };
+    }""")
+    c.eq(r, {'ok': True, 'none': False, 'nojob': False, 'noinfo': False, 'paired': False, 'empty': False, 'missing': False, 'bad': False},
+         'true with a local launcher declaring one base; false without launcher, without job, without info, paired, with an empty or missing or malformed list', what='available')

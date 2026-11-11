@@ -2026,6 +2026,12 @@
           eadBusy.delete(k);
         }
       },
+      /** Ce poste peut-il lire Little Navmap ? Vrai seulement si le lanceur est là, n'est pas celui d'un appareil appairé (`lan` faux) et déclare au moins une base `little_navmap_<genre>.sqlite` (`info().lnm` non vide). Un booléen,
+       *  jamais un chemin ni un nom de base ; synchrone, aucun travail, aucune lecture. La coche « usage personnel » reste à l'appelant (fetchLnm répond `not-personal`). Sert à n'offrir le geste « Lire depuis Little Navmap » que là où il peut aboutir. */
+      lnmAvailable() {
+        const i = typeof launcher?.job === 'function' ? launcher.info?.() : null;
+        return !!i && !i.lan && Array.isArray(i.lnm) && i.lnm.length > 0;
+      },
       /** Les procédures d'UN terrain lues dans la base de Little Navmap de CE poste (SOG-0210 ; travail proc/lnm du lanceur, lecture seule) : { ok: true, icao, count, notice, base } ou { ok: false, reason } avec
        *  reason ∈ not-personal (sans `personal: true` : la coche « usage personnel » de l'utilisateur, cache/data/personal.json { certified }, que l'appelant lit : aucun travail n'est lancé), no-launcher, paired, busy,
        *  bad-icao, cancelled, no-lnm, not-found, no-procedures, unreadable, failed. Les fiches (`status: 'lnm'`, `lnm: true`, `local: true`) sont gardées EN MÉMOIRE de la page seulement (jamais écrites, jamais exportées,

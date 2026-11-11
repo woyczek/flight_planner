@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **AeroDB: `lnmAvailable()`** — true only on a local, unpaired launcher that declares a Little Navmap base; Fuel shows its gesture only there (`frame/aerodb/aerodb.js`, INTEGRATION; noreg K170; SOG-0210).
 - **Fuel: an approach in doubt carries one panonceau**, its reason said under the list once chosen, « ⚑ » in the folded summary (Fuel SPEC, DECISIONS, help; noreg F139; SOG-0232).
 - **Fuel: « Lire depuis Little Navmap »** in the procedure card — only after the personal-use box of Données is ticked (Fuel SPEC, DECISIONS, help; noreg F144; SOG-0210).
 - **Relay of `/__setup/net`: an error answer that drips no longer holds a slot, and the workstation's page keeps one of the four** — the body of an HTTP error is read under the deadline of the relay (one raw read at a time), a paired device or the company relay holds three slots at most (`tools/launch.py`; audit, review of 10 Nov, N4; noreg K169).
