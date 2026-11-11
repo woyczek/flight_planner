@@ -1011,6 +1011,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 159 | Review of 10 November (before the refactoring day): file upload `/__setup/base/upload` (3f101da7b, 1805057c5, 0a99d0738, 42aab1ae8, 870408de6), Little Navmap verb and `fetchLnm` (801c90c2b, eaf75ea65), per-page Esri CSP (e60e412d1), relay limits (4c75c1df3), `repair_ledger_defaults.py` (6f23e1a50), UK Mil TLS fallback (d86b81d6d), `personal-undeclared` (e293f3741) | acceptable, four notes |
 | 160 | Little Navmap records kept on this device: no position in the flight, left out of the FMS / PLN files (4eaf79a59): the note 2 of 159 closed | acceptable, one note |
 | 161 | Fuel “Read from Little Navmap” gesture, the read of `cache/data/personal.json` (d4e807cdf) | acceptable, one note |
+| 162 | Review of 11 November: Little Navmap procedures in the simulator files (af3c60e9f), `recette/decision` verb and its generator (ed9080347, 7126fb750), clean-up of the hand-deposited files (f8bbdda36, d7cb8b9ca) | one to fix (clean-up), the rest acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2383,6 +2384,27 @@ Fuel never writes it, and `ctx.launcher` is not used, so the module's launcher d
 declaration of the user in the page, not a check by the launcher (`personal: true` is accepted from any page code of the
 workstation); it is the same level as before, and the licence promise rests on the paired-device refusal and on the records
 staying in memory, so a launcher-side read of the tick would be the stronger form if the user wants one.
+
+**162. Review of 11 November — one to fix, the rest acceptable.** *Notes of 160 and 161 decided by the user.* Names and totals of
+a Little Navmap procedure may go into `data/` and the simulator files may carry the procedure (“everything that comes from the
+base can go to the simulator”): `exportFms` now passes the unfiltered records, and the file is a local download (`download`),
+never a write; `pubProcs` stays on the two paths that can write a position into the flight (`knownPoints`, `autoAirways`), and
+F143 still holds “no latitude or longitude in `data/`”. *`recette/decision`.* Same guards as `recette/verdict`: a launcher job,
+workstation only, closed arguments (`check`: `get`, or `set` with `items` and nothing else, 1000 entries, keys of 20 characters
+at most), then per entry an identifier `Q-nnnn`, a choice 0 to 9 or none, a text of 600 characters without control characters,
+an ISO date; a bad entry refuses the whole `set` (`bad-items`) and writes nothing; the path is fixed
+(`organisation/DECISIONS_REPONSES.json`), written through a `.tmp` and `os.replace`; `get` discards what is not to the rules and
+a file over 2 MB. The generator reads that file as untrusted (`clean`: control characters out, lengths bounded, a choice kept
+only inside the options) and the screen escapes every text with `esc`. Minor: `\d` without `re.A` in `recette.py` accepts
+non-ASCII digits in an identifier (no path is built from it). *Clean-up of the deposits (`upload_cleanup.py`).* It lists the
+folder `data/local/upload/` only; a name must match one of three anchored patterns (`\Z`, ASCII) so no separator or `..` can
+come out of it, a directory, a link and a transfer in progress (`.recv-….part`) are never touched, an incomplete NASR set
+never counts, and `os.remove` takes the joined name, never a path of the page. **To fix:** for `us`, the cycle read comes from
+the `issue` of `data/sia/geojson/faa_nasr.geojson`, a file of `data/` that any pilot's token can now write (or a bad fetch can
+leave); only the format is checked. Proved on a scratch folder: with a deposited set of 10 Sep 2026 (current cycle 29 Oct), the
+real `issue` removes nothing, a forged `issue` of 2099-01-01 removes the three files. Only local, canonical, re-downloadable
+files are at stake, and nothing outside the folder, but it is the rule of 157: take the `issue` as untrusted, for instance never
+later than the current cycle (`read = min(issue, current)`), with a case that fails without that bound.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
