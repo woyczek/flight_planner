@@ -22,7 +22,8 @@ import sys
 import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import airnav_eaip as ae  # noqa: E402  (dms, level_ft : les mêmes lecteurs de coordonnées et de limites)
+import eaip_annexe15 as core  # noqa: E402  (le noyau commun : dms, level_ft, GeoJSON, nom de fichier)
+import airnav_eaip as ae  # noqa: E402  (le profil d'Irlande : les mêmes lecteurs de coordonnées et de limites, par le noyau)
 
 NAME = 'lfv_se_enr'
 OUT_RE = re.compile(r'^lfv_se_enr_(\d{8})\.geojson\Z')
@@ -32,16 +33,13 @@ ROUTE_RE = re.compile(r'^eAIP/ES-ENR 3\.2 ([A-Z]{1,2}\d{1,4}[A-Z]?)-en-GB\.html\
 MEMBER_MAX = 8 * 1024 * 1024        # une page d'eAIP : 2 Mo au plus aujourd'hui (ENR 4.4 : 1 Mo)
 MAX_ROUTES = 400
 MAX_FEATURES = 60000
-MONTHS = ae.MONTHS
+MONTHS = core.MONTHS
 
 
-def text_of(cell):
-    return re.sub(r'\s+', ' ', htmllib.unescape(re.sub(r'<[^>]+>', ' ', cell))).strip()
+text_of = core.text_of      # le texte d'une cellule HTML (tools/eaip_annexe15.py)
 
 
-def rows_of(page):
-    """[(id de la ligne, [texte de chaque cellule])] dans l'ordre de la page."""
-    return [(rid, [text_of(c) for c in re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', body, re.S)]) for rid, body in re.findall(r'<tr id="([^"]+)"[^>]*>(.*?)</tr>', page, re.S)]
+rows_of = core.rows_of      # [(id de la ligne, [texte de chaque cellule])] (tools/eaip_annexe15.py)
 
 
 def issue_of(cover):
@@ -157,23 +155,12 @@ def convert(path):
 
 
 def to_geojson(points, segments, issue):
-    feats = []
-    seen = set()
-    for p in points:
-        if p['id'] in seen:
-            continue
-        seen.add(p['id'])
-        feats.append({'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [p['lon'], p['lat']]}, 'properties': {'sog': 'point', 'id': p['id'], 'remarks': p.get('uses', '')}})
-    lim = lambda v: 'UNL' if v == float('inf') else v
-    for s in segments:
-        feats.append({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': [[s['a']['lon'], s['a']['lat']], [s['b']['lon'], s['b']['lat']]]},
-                      'properties': {'sog': 'airway', 'route': s['route'], 'a': s['a']['id'], 'b': s['b']['id'], 'lower': lim(s['lower']), 'upper': lim(s['upper'])}})
-    return {'type': 'FeatureCollection', 'name': NAME, 'issue': issue, 'source': 'LFV AIP Sweden (ENR 4.4, ENR 3.2)', 'features': feats}
+    return core.to_geojson(NAME, 'LFV AIP Sweden (ENR 4.4, ENR 3.2)', points, segments, issue, remark='uses')
 
 
 def out_name(issue):
     """Le nom du fichier d'une édition : lfv_se_enr_20261029.geojson (la date du cycle AIRAC y est lue par tools/aero_cycles.py)."""
-    return f'{NAME}_{issue.replace("-", "")}.geojson'
+    return core.out_name(NAME, issue)
 
 
 def main(argv=None):

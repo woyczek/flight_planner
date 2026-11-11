@@ -22,11 +22,14 @@ import re
 import sys
 import urllib.parse
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import eaip_annexe15 as core  # noqa: E402  (le noyau commun : dms, level_ft, GeoJSON, nom de fichier)
+
 HOST = 'https://www.airnav.ie'
 AIM = HOST + '/air-traffic-management/aeronautical-information-management'
 ISSUE_PATH = re.compile(r'^/[A-Za-z0-9_-]+/[A-Za-z0-9_-]+/html/index\.html$')      # /AIRAC/2026-10-29-AIRAC/html/index.html, /AIRAC_MAY_2026/2026-05-14-AIRAC/html/index.html
 PAGES = ('EI-ENR-4.4-en-IE.html', 'EI-ENR-3.3-en-IE.html')
-MONTHS = {m: i + 1 for i, m in enumerate(('JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'))}
+MONTHS = core.MONTHS
 NAME = 'airnav_ie_enr'
 OUT_RE = re.compile(r'^airnav_ie_enr_(\d{8})\.geojson\Z')
 MAX_FEATURES = 20000                                    # l'Irlande : quelques centaines de points, dix routes ; au-delà, la page n'est pas celle qu'on croit
@@ -62,16 +65,7 @@ def page_url(issue_url, name):
     return issue_url.rsplit('/', 1)[0] + '/eAIP/' + name
 
 
-def dms(text):
-    """Degrés décimaux d'une coordonnée de l'eAIP : « 523012N », « 0073848W », « 532957.8N » (DDMMSS[.s] pour la latitude, DDDMMSS[.s] pour la longitude) ; None si illisible."""
-    m = re.fullmatch(r'(\d{2,3})(\d{2})(\d{2}(?:\.\d+)?)([NSEW])', str(text).strip())
-    if not m:
-        return None
-    deg, mn, sec, h = int(m.group(1)), int(m.group(2)), float(m.group(3)), m.group(4)
-    if (h in 'NS' and len(m.group(1)) != 2) or (h in 'EW' and len(m.group(1)) != 3) or mn >= 60 or sec >= 60 or deg > (90 if h in 'NS' else 180):
-        return None
-    v = deg + mn / 60 + sec / 3600
-    return round(-v if h in 'SW' else v, 6)
+dms = core.dms          # « 523012N » → degrés décimaux (tools/eaip_annexe15.py)
 
 
 def parse_enr44(page):
@@ -99,20 +93,7 @@ _TOK = re.compile(
     r'|class="Route-segment-mag-track">(?P<trk>\d*)<')
 
 
-def level_ft(text):
-    """Une limite verticale de l'eAIP en pieds : « FL245 » / « FL 245 » → 24500, « 3000 ft » → 3000, « GND » / « SFC » → 0 ; None si absente ou illisible, Infinity pour « UNL »."""
-    t = re.sub(r'\s+', ' ', htmllib.unescape(str(text or ''))).strip().upper()
-    m = re.fullmatch(r'FL ?(\d{2,3})', t)
-    if m:
-        return int(m.group(1)) * 100
-    m = re.fullmatch(r'(\d{3,5}) ?(?:FT|F)(?: ?(?:AMSL|MSL|AGL|ALT))?', t)
-    if m:
-        return int(m.group(1))
-    if t in ('GND', 'SFC'):
-        return 0
-    if t in ('UNL', 'UNLTD', 'UNLIMITED'):
-        return float('inf')
-    return None
+level_ft = core.level_ft    # « FL245 », « 3000 ft », « GND », « UNL » → pieds (tools/eaip_annexe15.py)
 
 
 def point_id(name):
@@ -145,20 +126,9 @@ def parse_enr33(page):
 
 
 def to_geojson(points, segments, issue):
-    """Le GeoJSON de la zone ie : un Feature `sog: 'point'` par point désigné de l'ENR 4.4, un Feature `sog: 'airway'` (LineString de deux positions) par tronçon de l'ENR 3.3.
+    """Le GeoJSON de la zone ie : un Feature `sog: 'point'` par point désigné de l'ENR 4.4, un Feature `sog: 'airway'` (LineString de deux positions) par tronçon de l'ENR 3.3 (avec la distance `nm` et le cap `trk`).
     `issue` : la date de l'édition (AAAA-MM-JJ). Les limites infinies sont écrites « UNL » (le JSON n'a pas d'infini)."""
-    feats = []
-    seen = set()
-    for p in points:
-        if p['id'] in seen:
-            continue
-        seen.add(p['id'])
-        feats.append({'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [p['lon'], p['lat']]}, 'properties': {'sog': 'point', 'id': p['id'], 'remarks': p.get('remarks', '')}})
-    lim = lambda v: 'UNL' if v == float('inf') else v
-    for s in segments:
-        feats.append({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': [[s['a']['lon'], s['a']['lat']], [s['b']['lon'], s['b']['lat']]]},
-                      'properties': {'sog': 'airway', 'route': s['route'], 'a': s['a']['id'], 'b': s['b']['id'], 'lower': lim(s['lower']), 'upper': lim(s['upper']), 'nm': s['nm'], 'trk': s['trk']}})
-    return {'type': 'FeatureCollection', 'name': NAME, 'issue': issue, 'source': 'AirNav Ireland eAIP (ENR 4.4, ENR 3.3)', 'features': feats}
+    return core.to_geojson(NAME, 'AirNav Ireland eAIP (ENR 4.4, ENR 3.3)', points, segments, issue, extra=('nm', 'trk'))
 
 
 def convert(enr44, enr33, issue):
@@ -175,7 +145,7 @@ def convert(enr44, enr33, issue):
 
 def out_name(issue):
     """Le nom du fichier d'une édition : airnav_ie_enr_20261029.geojson (la date du cycle AIRAC y est lue par tools/aero_cycles.py)."""
-    return f'{NAME}_{issue.replace("-", "")}.geojson'
+    return core.out_name(NAME, issue)
 
 
 def main(argv=None):
