@@ -148,8 +148,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
-- **Notes: one floating note at a time on a phone** (`frame/app.js` `notify`; INTEGRATION, DECISIONS; noreg A149; SOG-0131). The others wait, an error goes in front of an information; above 760 px they stack as before.
-- **Help: the « First time? » card appears once**, on the first screen opened (`frame/help/help.js` `seen`; DECISIONS; noreg A150; SOG-0131), then only in the help.
+- **Notes: one floating note at a time on a phone** (`frame/app.js` `notify`; INTEGRATION, DECISIONS; noreg A151; SOG-0131). The others wait, an error goes in front of an information; above 760 px they stack as before.
+- **Help: the « First time? » card appears once**, on the first screen opened (`frame/help/help.js` `seen`; DECISIONS; noreg A152; SOG-0131), then only in the help.
 - **Recette « À trancher »: the answers kept on the device are seen and leave by themselves** (`frame/help/recette.js`; help/DECISIONS; noreg A148; SOG-0241). With a launcher started before `recette/decision` existed (400 « unknown operation »)
   the answers stayed on the device and nothing said so: each card and the head of the tab now say « not sent » with the count and the reason (« restart the launcher »), and they are sent when the launcher is back and at the next opening.
 - **Archive: `labs/` moved to `_archives/2026-11-11_labs/`** (git mv, a `DEPRECATED - 2026-11-11` file; `tools/build_pages.py` and `tools/publish_dist.py` leave `_archives/` out, the dispos package reads its example page from the archive;

@@ -6291,7 +6291,7 @@ def a148(c):
     c.check_errors()
 
 
-@case('A149', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
+@case('A151', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')
 def a149(c):
@@ -6304,7 +6304,7 @@ def a149(c):
     c.js("() => { const n = window.SogFrame.notify; n('one', 'info', { key: 'k1' }); n('two', 'ok', { key: 'k2' }); n('three', 'warn', { key: 'k3' }) }")
     if c.phone:
         c.eq(c.js(texts), ['one'], 'at 390 px: one note, the others wait', what='one at a time')
-        c.shot(f'A149_note_{c.width}_delivered.png')
+        c.shot(f'A151_note_{c.width}_delivered.png')
         c.js(close)
         c.eq(c.js(texts), ['two'], 'the next appears when the shown one is closed', what='next')
         c.js("() => window.SogFrame.notify('boom', 'err', { key: 'e1' })")
@@ -6321,7 +6321,7 @@ def a149(c):
     c.check_errors()
 
 
-@case('A150', 'The « First time? Start with a short tutorial » card appears ONCE, on the first screen opened, then only in the help (SOG-0131)', 'A',
+@case('A152', 'The « First time? Start with a short tutorial » card appears ONCE, on the first screen opened, then only in the help (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user, answering the questionnaire: « oui, UNE seule fois »): the welcome card of Pilot (frame/help/help.js) is put on the first screen opened and never again on the next ones nor after a reload (it was shown on every module until it was closed or a tutorial opened); the tutorials stay at the top of the help')
 def a150(c):
