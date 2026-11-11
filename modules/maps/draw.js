@@ -170,18 +170,40 @@ function viewMarks(box) {
   const d = MapsRender.distances(pts),
     mw = (box.e - box.w) * .1,
     mh = (box.n - box.s) * .1;
-  // la part de la route dans la vue, mesurée le long du grand cercle de chaque tronçon (un tronçon de 2 500 NM dont le milieu est hors de la vue compte pour ce qui en est vu : le pas ne saute plus,
-  // les marques ne disparaissent plus brutalement en dézoomant, SOG-0233)
+  // la part de la route dans la vue, mesurée le long de la loxodromie de chaque tronçon (la droite de la carte : un tronçon de 2 500 NM dont le milieu est hors de la vue compte pour ce qui
+  // en est vu, le pas ne saute plus, les marques ne disparaissent plus brutalement en dézoomant, SOG-0233 ; le chemin d'un direct est la loxodromie, SOG-0243) : le segment est rogné par la
+  // vue en coordonnées de Mercator, où il est droit, et la longueur gardée est la part de latitude retenue (la distance d'une loxodromie lui est proportionnelle)
+  const psi = lat => Math.log(Math.tan(Math.PI / 4 + Math.max(-89.9, Math.min(89.9, lat)) * Math.PI / 360)),
+    unpsi = y => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI,
+    lim = [box.w - mw, box.e + mw, psi(box.s - mh), psi(box.n + mh)];
   let vis = 0;
   for (let i = 1; i < pts.length; i++) {
-    const len = d[i] - d[i - 1],
-      n = Math.max(2, Math.min(120, Math.ceil(len / 20)));
-    let inside = 0;
-    for (let j = 0; j <= n; j++) {
-      const q = MapsRender.gcAt(pts[i - 1], pts[i], j / n);
-      if (q.lat >= box.s - mh && q.lat <= box.n + mh && q.lon >= box.w - mw && q.lon <= box.e + mw) inside++;
+    const a = pts[i - 1],
+      b = pts[i],
+      len = d[i] - d[i - 1],
+      ay = psi(a.lat),
+      dx = b.lon - a.lon,
+      dy = psi(b.lat) - ay;
+    let t0 = 0,
+      t1 = 1;
+    for (const [pp, qq] of [
+        [-dx, a.lon - lim[0]],
+        [dx, lim[1] - a.lon],
+        [-dy, ay - lim[2]],
+        [dy, lim[3] - ay]
+      ]) {
+      if (Math.abs(pp) < 1e-12) {
+        if (qq < 0) t1 = -1; // parallèle à ce bord et dehors
+      } else {
+        const r = qq / pp;
+        if (pp < 0) t0 = Math.max(t0, r);
+        else t1 = Math.min(t1, r);
+      }
     }
-    vis += len * inside / (n + 1);
+    if (t1 <= t0) continue;
+    const dLat = b.lat - a.lat,
+      f = t => Math.abs(dLat) > 1e-9 ? (unpsi(ay + dy * t) - a.lat) / dLat : t;
+    vis += len * Math.max(0, f(t1) - f(t0));
   }
   const step = [5, 10, 25, 50, 100, 250, 500, 1000, 2500].find(s => vis / s <= 12) || 5000;
   if (S.marksStep !== step || S.marksFor !== pts) {
@@ -455,8 +477,7 @@ function gcScreen(mission, pick, toC) {
     pts = S.route?.points || [],
     a = pts[0],
     b = pts.at(-1);
-  if (mission || pick || pts.length < 3 || !r?.dep || !r?.arr ||
-    // une route directe (deux points) se vole sur l'orthodromie : le trait plein l'est, le pointillé se confondrait avec lui (SOG-0233) String(a.id || '').toUpperCase() !== String(r.dep).toUpperCase() ||
+  if (mission || pick || pts.length < 2 || !r?.dep || !r?.arr || String(a.id || '').toUpperCase() !== String(r.dep).toUpperCase() ||
     String(b.id || '').toUpperCase() !== String(r.arr).toUpperCase()) return null;
   const g = greatCircle(a, b);
   if (!g) return null;

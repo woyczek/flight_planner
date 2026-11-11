@@ -28,7 +28,10 @@
   import {
     wrapLon,
     nearLon,
-    unwrapLons
+    unwrapLons,
+    rhumbAt,
+    rhumbNm,
+    rhumbCourse
   } from '../geo.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -203,6 +206,52 @@
     ck('identité avec atmo.js (module non chargé)', false, String(e));
   }
 
+  // rhumbAt, rhumbNm, rhumbCourse : la loxodromie, le chemin d'un direct (SOG-0243)
+  {
+    const den = {
+        lat: 39.8617,
+        lon: -104.6731
+      },
+      st = {
+        lat: 48.5383,
+        lon: 7.6282
+      },
+      psi = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+    ck('rhumbAt 0 rend a, 1 rend b', near(rhumbAt(den, st, 0).lat, den.lat) && near(rhumbAt(den, st, 0).lon, den.lon) && near(rhumbAt(den, st, 1).lat, st.lat, 1e-9) && near(rhumbAt(den, st, 1).lon, st.lon, 1e-9));
+    let straight = true;
+    for (let f = .05; f < 1; f += .05) {
+      const p = rhumbAt(den, st, f),
+        t = (psi(p.lat) - psi(den.lat)) / (psi(st.lat) - psi(den.lat)),
+        x = den.lon + (st.lon - den.lon) * t;
+      if (!near(p.lon, x, 1e-7)) straight = false;
+    }
+    ck('rhumbAt : chaque point est sur la droite de la carte Mercator (λ linéaire en ψ)', straight);
+    const half = rhumbAt(den, st, .5),
+      d1 = rhumbNm(den, half),
+      d2 = rhumbNm(half, st);
+    ck('rhumbAt .5 : à la moitié de la distance loxodromique', near(d1, d2, 1e-6) && near(d1 + d2, rhumbNm(den, st), 1e-6), `${d1} ${d2}`);
+    ck('rhumbNm Denver → Strasbourg : plus long que le grand cercle (4 400 NM environ), pas de plus de 5 %', rhumbNm(den, st) > 4300 && rhumbNm(den, st) < 4800, String(rhumbNm(den, st)));
+    ck('rhumbNm sur un méridien : 60 NM par degré', near(rhumbNm({ lat: 10, lon: 5 }, { lat: 11, lon: 5 }), 60.0011, 1e-2), String(rhumbNm({ lat: 10, lon: 5 }, { lat: 11, lon: 5 })));
+    ck('rhumbNm sur un parallèle : 60 NM × cos φ par degré', near(rhumbNm({ lat: 60, lon: 5 }, { lat: 60, lon: 6 }), 30.0, 1e-1), String(rhumbNm({ lat: 60, lon: 5 }, { lat: 60, lon: 6 })));
+    ck('rhumbCourse : est 90°, nord 0°, ouest 270°, sud 180°', near(rhumbCourse({ lat: 40, lon: 0 }, { lat: 40, lon: 5 }), 90, 1e-9) && near(rhumbCourse({ lat: 40, lon: 0 }, { lat: 45, lon: 0 }), 0, 1e-9) && near(rhumbCourse({ lat: 40, lon: 0 }, { lat: 40, lon: -5 }), 270, 1e-9) && near(rhumbCourse({ lat: 40, lon: 0 }, { lat: 35, lon: 0 }), 180, 1e-9));
+    const a1 = {
+        lat: 64.3,
+        lon: 177.7
+      },
+      b1 = {
+        lat: 64.5,
+        lon: 195
+      },
+      m1 = rhumbAt(a1, b1, .5);
+    ck('rhumbAt passe la ligne de changement de date : longitude continue (entre 177,7 et 195)', m1.lon > 177.7 && m1.lon < 195, String(m1.lon));
+    const w1 = rhumbAt({ lat: 64.3, lon: 177.7 }, { lat: 64.5, lon: -165 }, .5);
+    ck('rhumbAt avec une longitude déjà enroulée (−165 pour 195) : le chemin le plus court, continu', w1.lon > 177.7 && w1.lon < 195, String(w1.lon));
+    ck('rhumbAt a = b : le point', eq(rhumbAt(den, den, .5), {
+      lat: den.lat,
+      lon: den.lon
+    }));
+    ck('rhumbAt sur un parallèle : interpolation droite', near(rhumbAt({ lat: 50, lon: 0 }, { lat: 50, lon: 10 }, .3).lon, 3, 1e-9));
+  }
   // la copie de render.js (script classique, il n'importe rien) : mêmes valeurs
   try {
     await import('../../../modules/maps/render.js?v=0');
@@ -217,6 +266,12 @@
         break;
       }
     }
+    let rhSame = true;
+    const pairs = [[{ lat: 39.8617, lon: -104.6731 }, { lat: 48.5383, lon: 7.6282 }], [{ lat: 64.3, lon: 177.7 }, { lat: 64.5, lon: 195 }], [{ lat: 10, lon: 10 }, { lat: 10, lon: 10 }], [{ lat: 47.1, lon: -1.6 }, { lat: 43.4, lon: 5.2 }], [{ lat: 50, lon: 0 }, { lat: 50, lon: 10 }]];
+    for (const [a, b] of pairs)
+      for (const f of [0, .13, .5, .9, 1])
+        if (R.rhumbAt(a, b, f).lat !== rhumbAt(a, b, f).lat || R.rhumbAt(a, b, f).lon !== rhumbAt(a, b, f).lon) rhSame = false;
+    ck('copie de render.js : rhumbAt identique', rhSame);
     ck('copie de modules/maps/render.js identique (nearLon ; wrapLon, sauf une longitude déjà dans [-180, 180[ rendue telle quelle)', same,
       bad);
   } catch (e) {

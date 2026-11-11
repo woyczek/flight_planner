@@ -200,9 +200,7 @@
     // lines : les suites de points que la route trace (la SID et la STAR choisies dessinent leurs propres tronçons) ; sans elles,
     // tous les points de la route
     const line = () => {
-      for (const run0 of lines || [pts]) {
-        const run = R.densify ? R.densify(run0) :
-          run0; // un tronçon direct se vole sur l'orthodromie : le trait la suit, découpé (SOG-0233)
+      for (const run of lines || [pts]) {
         ctx.beginPath();
         run.forEach((p, i) => {
           const q = toC(p.lat, p.lon);

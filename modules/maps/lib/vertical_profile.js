@@ -19,11 +19,12 @@
       h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
   };
-  /** Point interpolé entre a et b (fraction t). */
-  const lerp = (a, b, t) => ({
+  /** Point interpolé entre a et b (fraction t) : sur la loxodromie du tronçon dans la Carte V3 (MapsRender.rhumbAt, le chemin du trait : SOG-0243) ;
+   *  droit en degrés seulement là où la Carte n'est pas chargée (les pages de la V2, qui gardent leur copie). */
+  const lerp = (a, b, t) => window.MapsRender?.rhumbAt ? window.MapsRender.rhumbAt(a, b, t) : {
     lat: a.lat + (b.lat - a.lat) * t,
     lon: a.lon + (b.lon - a.lon) * t
-  });
+  };
 
   // Groupe vitesse / niveau du plan de vol OACI (case 15) : vitesse N (nœuds), K (km/h), M (Mach,
   // centièmes) ; niveau F (niveau de vol), A (altitude, centaines de ft), S (niveau métrique) ou
@@ -423,10 +424,12 @@
         leg = legs.find(l => s <= l.from + l.d + 1e-6) || legs[legs.length - 1],
         t = leg.d ? (s - leg.from) / leg.d : 0,
         p = lerp(leg.a, leg.b, t);
-      // décalage latéral perpendiculaire au segment (approximation locale plane)
+      // décalage latéral perpendiculaire à la route à cet endroit (approximation locale plane)
       const k = Math.cos(rad(p.lat)),
-        dx = (leg.b.lon - leg.a.lon) * k,
-        dy = leg.b.lat - leg.a.lat,
+        q0 = lerp(leg.a, leg.b, Math.max(0, t - .001)),
+        q1 = lerp(leg.a, leg.b, Math.min(1, t + .001)),
+        dx = (q1.lon - q0.lon) * k,
+        dy = q1.lat - q0.lat,
         len = Math.hypot(dx, dy) || 1,
         off = corridorM / 111320;
       const side = [{

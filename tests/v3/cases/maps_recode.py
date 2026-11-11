@@ -3844,20 +3844,19 @@ def d125(c):
     c.js(_STATE_JS)
     c.wait(1500)
     c.eq(c.js("() => window.__mp.S.gc"), None, 'without a known arrival there is no great circle', what='S.gc')
-    # a direct route is its own great circle: the line follows it (no dotted line), and a tap on it places the cursor
+    # a direct route: the rhumb line and the dotted great circle beside it (the comparison, SOG-0243); a tap on the route still places the cursor (the hover of the dotted line must not take the tap)
     f = flight()
     f['route']['points'] = [f['route']['points'][0], f['route']['points'][-1]]
     c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     hook_map(c)
-    c.until("() => !!window.__mp.S.prof", timeout=10000, what='the direct route and its profile')
+    c.until("() => !!window.__mp.S.gc && !!window.__mp.S.prof", timeout=10000, what='the direct route, its great circle and its profile')
     c.wait(600)
-    c.eq(c.js("() => window.__mp.S.gc"), None, 'a direct route is its own great circle: the line follows it, no dotted one under it (SOG-0233)', what='S.gc')
     a, z = f['route']['points'][0], f['route']['points'][-1]
     p = xy(c, (a['lat'] + z['lat']) / 2, (a['lon'] + z['lon']) / 2)
     c.page.mouse.click(*p)
-    c.until("!!document.querySelector('.mp-map')?.dataset.cursorNm", timeout=6000, what='a tap on a route that is its own great circle sets the cursor')
+    c.until("!!document.querySelector('.mp-map')?.dataset.cursorNm", timeout=6000, what='a tap on the route sets the cursor, not the hover of the dotted great circle')
 
 
 def _alts_doc(**over):
@@ -4037,12 +4036,13 @@ def d129(c):
 _NEAR_JS = """() => {
   const R = window.MapsRender, rad = x => x * Math.PI / 180, rnd = (() => { let s = 11; return () => (s = (s * 16807) % 2147483647) / 2147483647 })();
   const ring = (la, lo, r) => Array.from({ length: 40 }, (_, k) => [la + r * Math.sin(2 * Math.PI * k / 40), lo + r * 1.4 * Math.cos(2 * Math.PI * k / 40)]);
-  const mk = (n, laMin, laMax, loMin, loMax) => Array.from({ length: n }, (_, i) => ({ type: 'TMA', cls: 'D', name: 'Z' + i, lower: 'SFC', upper: 'FL195',
-    rings: [ring(laMin + rnd() * (laMax - laMin), loMin + rnd() * (loMax - loMin), .03 + rnd() * .2)] }));
+  // the spaces are along the rhumb line of the route (the route is flown on it, SOG-0243): each one on a point of it, a degree and a bit aside at most
+  const mk = (n, route, band) => Array.from({ length: n }, (_, i) => { const g = R.rhumbAt(route[0], route[1], rnd());
+    return { type: 'TMA', cls: 'D', name: 'Z' + i, lower: 'SFC', upper: 'FL195', rings: [ring(g.lat + (rnd() - .5) * band, g.lon, .03 + rnd() * .2)] } });
   // the reference: the complete test of the samples against every ring (the algorithm before SOG-0156), written here
   const gc = (a, b) => { const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2; return 2 * 3440.065 * Math.asin(Math.sqrt(h)) };
   const samples = pts => { const out = []; for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], n = Math.max(1, Math.ceil(gc(a, b) / 2));
-    for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, a.lon + (b.lon - a.lon) * k / n]) } out.push([pts.at(-1).lat, pts.at(-1).lon]); return out };
+    for (let k = 0; k < n; k++) { const g = R.rhumbAt(a, b, k / n); out.push([g.lat, g.lon]) } } out.push([pts.at(-1).lat, pts.at(-1).lon]); return out };
   const ref = (a, smp, nm) => { const seg = (la, lo, p, q) => { const k = Math.cos(rad(la)), ax = (p[1] - lo) * 60 * k, ay = (p[0] - la) * 60, bx = (q[1] - lo) * 60 * k, by = (q[0] - la) * 60, dx = bx - ax, dy = by - ay,
       t = dx || dy ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy))) : 0; return Math.hypot(ax + t * dx, ay + t * dy) };
     const inside = (la, lo, r) => { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [yi, xi] = r[i], [yj, xj] = r[j]; if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) c = !c } return c };
@@ -4050,10 +4050,10 @@ _NEAR_JS = """() => {
   const prof = { zones: ['TMA'], corridorNm: 10, elements: {} };
   const run = (list, route) => { const t0 = performance.now(), got = R.selectAirspaces(list, prof, route).map(a => a.name), ms = performance.now() - t0; return { got, ms } };
   // a 2 800 NM route at 48 N with 3 000 spaces along it
-  const route = [{ lat: 48, lon: -30 }, { lat: 48.4, lon: 40 }], list = mk(3000, 47.6, 48.8, -30, 40);
+  const route = [{ lat: 48, lon: -30 }, { lat: 48.4, lon: 40 }], list = mk(3000, route, 1.2);
   const a = run(list, route), want = list.filter(x => ref(x, samples(route), 10)).map(x => x.name);
   // high latitude (the longitude margin): a route at 66 N with spaces near it
-  const route2 = [{ lat: 66, lon: -20 }, { lat: 66.3, lon: 30 }], list2 = mk(600, 65.6, 66.7, -20, 30);
+  const route2 = [{ lat: 66, lon: -20 }, { lat: 66.3, lon: 30 }], list2 = mk(600, route2, 1.1);
   const b2 = run(list2, route2), want2 = list2.filter(x => ref(x, samples(route2), 10)).map(x => x.name);
   return { ms: a.ms, n: a.got.length, same: JSON.stringify(a.got) === JSON.stringify(want), n2: b2.got.length, same2: JSON.stringify(b2.got) === JSON.stringify(want2) } }"""
 
@@ -5324,9 +5324,9 @@ def d_barbs(c):
     c.ok(all(40 <= n <= 80 for z, n in ok), str(seen), 'between 40 and 80 barbs in the view at the working zooms (the route crosses the view)')
 
 
-@case('D167', 'One path for a direct leg: the solid line follows the great circle (cut into pieces), the distance marks are on it (less than 2 px from the line), the dotted great circle goes when it would lie under the line; 5 to 12 marks in the view at any zoom, without a sudden jump', 'D',
+@case('D167', 'One path for a direct leg, the rhumb line (constant heading, straight on the Mercator map): the distance marks are on the solid line (less than 2 px from it), the dotted great circle stays beside it as the comparison, on a direct route too; 5 to 12 marks in the view at any zoom, without a sudden jump', 'D',
       tags=('maps',), screens=False, designs=('standard',),
-      rule='SOG-0233 (the user, KDEN BGNN LFST): three paths on the map — the solid line straight on the Mercator map, a fine dotted great circle, and the marks « 1250, 1500… » beside the solid line; the marks were placed by linear interpolation of latitude and longitude (distance along the great circle, position on neither path); one path: a direct leg is flown on the great circle, the line follows it, the marks are on it; the marks’ step is chosen on the length of the route that is really in the view (a long leg whose middle is outside it counted for nothing: 5 NM then 250 NM)')
+      rule='SOG-0233 (the user, KDEN BGNN LFST): three paths on the map — the solid line straight on the Mercator map, a fine dotted great circle, and the marks « 1250, 1500… » beside the solid line; the marks were placed by linear interpolation of latitude and longitude (on neither the rhumb line nor the great circle); SOG-0243 (the user: « un direct se fait au compas »): the path of a direct leg is the RHUMB LINE, the straight line of the map, the marks are on it, the great circle stays the dotted comparison; the marks’ step is chosen on the length of the route that is really in the view (a long leg whose middle is outside it counted for nothing: 5 NM then 250 NM)')
 def d_gcpath(c):
     f = flight()
     pts = [('KDEN', 39.8617, -104.6731), ('BGNN', 60.1394, -45.2331), ('LFST', 48.5383, 7.6282)]
@@ -5337,8 +5337,8 @@ def d_gcpath(c):
     c.js(_STATE_JS)
     hook_map(c)
     c.wait(1500)
-    probe = """([z, lat, lon]) => new Promise(r => { const S = window.__mp.S, m = window.__mpMap; const mid = window.MapsRender.gcAt(S.marksPts[0], S.marksPts[1], .85); m.jumpTo({ center: [mid.lon, mid.lat], zoom: z });
-      setTimeout(() => { const box = S.box.getBoundingClientRect(), R = window.MapsRender, line = R.densify(S.marksPts).map(p => m.project([p.lon, p.lat])),
+    probe = """([z, lat, lon]) => new Promise(r => { const S = window.__mp.S, m = window.__mpMap; const mid = window.MapsRender.rhumbAt(S.marksPts[0], S.marksPts[1], .85); m.jumpTo({ center: [mid.lon, mid.lat], zoom: z });
+      setTimeout(() => { const box = S.box.getBoundingClientRect(), R = window.MapsRender, line = S.marksPts.map(p => m.project([p.lon, p.lat])),
         dist = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
         const ms = (S.marks || []).map(k => m.project([k.lon, k.lat])), inV = ms.filter(q => q.x >= 0 && q.x <= box.width && q.y >= 0 && q.y <= box.height);
         let worst = 0; for (const q of ms) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist(q, line[i - 1], line[i])); worst = Math.max(worst, best) }
@@ -5349,8 +5349,8 @@ def d_gcpath(c):
         seen.append((z, r['n'], r['worst'], r['step']))
     c.ok(all(w < 2 for z, n, w, s in seen), str(seen), 'every mark is less than 2 px from the line, at every zoom')
     c.ok(all(5 <= n <= 12 for z, n, w, s in seen if z >= 3.5), str(seen), '5 to 12 marks in the view at the working zooms, whatever the length of the leg that crosses it')
-    c.eq(c.js("() => !!window.__mp.S.gc"), True, 'the great circle of the whole route (KDEN to LFST) stays: the route is not a direct leg', what='dotted')
-    # a direct route (two points): the line is the great circle, the dotted one would lie under it: it goes
+    c.eq(c.js("() => !!window.__mp.S.gc"), True, 'the great circle of the whole route (KDEN to LFST) is the dotted comparison', what='dotted')
+    # a direct route (two points): the line is the rhumb line, the dotted great circle beside it shows the gap
     f2 = flight()
     f2['route'] = {'text': 'KDEN LFST', 'dep': 'KDEN', 'arr': 'LFST', 'points': [{'id': i, 'lat': la, 'lon': lo} for i, la, lo in (pts[0], pts[2])]}
     f2['level'] = {'ft': 35000}
@@ -5358,7 +5358,7 @@ def d_gcpath(c):
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     c.wait(2000)
-    c.eq(c.js("() => !!window.__mp.S.gc"), False, 'a direct route has no dotted great circle beside its line (the line is the great circle)', what='dotted')
+    c.eq(c.js("() => !!window.__mp.S.gc"), True, 'a direct route has its dotted great circle beside its line: it shows the gap and helps to put intermediate points', what='dotted')
     c.shot('D167_gc_path_390.png')
 
 
@@ -5499,3 +5499,53 @@ def d_locked(c):
     doc = c.until_doc(PATH, lambda d: d and d.get('by') == 'maps' and len(d['route']['points']) == 3, what='the free point removed, written', timeout=8000)
     p = doc['route']['points'][1]
     c.ok(p['id'] == 'NEPIX' and p.get('lock') == 'mission' and p.get('mission') == 'RDV-1', f'{p}', 'the imposed point is kept with its lock and its mission name')
+
+
+@case('D174', 'Everything along a direct leg is on the same path, the rhumb line: the wind barbs and the distance marks are less than 2 px from the line at every zoom (KDEN → LFST direct, and with a point between), the great circle is dotted, the places where the wind is read and the profile’s samples are on the rhumb line', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0243 (the user, capture 091755: « conflit entre les barbules et le tracé; l’orthodromie est devenue la norme, ce n’est pas le cas; un direct se fait au compas »): SOG-0233 had put the line on the great circle (the wrong way) while the barbs, the places where the wind is read (modules/fuel/winds.js samples, shared by Fuel, the Weather module and the Map) and the profile were interpolated in degrees (neither path); the nominal path of a direct leg is the rhumb line, the straight line of the Mercator map; one function (frame/lib/geo.js rhumbAt) for the line, the marks, the places read, the barbs, the profile; the great circle is the dotted comparison')
+def d_barbpath(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})   # wide enough for the straight line and the great circle to be in the same view
+    pts = [('KDEN', 39.8617, -104.6731), ('BGNN', 60.1394, -45.2331), ('LFST', 48.5383, 7.6282)]
+    probe = """([z, mid]) => new Promise(r => { const S = window.__mp.S, m = window.__mpMap; m.jumpTo({ center: [mid.lon, mid.lat], zoom: z });
+      setTimeout(() => { const box = S.box.getBoundingClientRect(), R = window.MapsRender, line = S.marksPts.map(p => m.project([p.lon, p.lat])),
+        dist = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
+        const ms = (S.marks || []).map(k => m.project([k.lon, k.lat])).filter(q => q.x >= 0 && q.x <= box.width && q.y >= 0 && q.y <= box.height);
+        let wm = 0; for (const q of ms) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist(q, line[i - 1], line[i])); wm = Math.max(wm, best) }
+        const hs = (S.windHits || []).filter(h => h.x >= 0 && h.x <= box.width && h.y >= 0 && h.y <= box.height);
+        let worst = 0; for (const h of hs) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.x, y: h.y }, line[i - 1], line[i])); worst = Math.max(worst, best) }
+        r({ n: hs.length, worst: Math.round(worst * 10) / 10, marks: ms.length, worstMark: Math.round(wm * 10) / 10 }) }, 1800) })"""
+    for name, use in (('direct', (pts[0], pts[2])), ('with a point between', pts)):
+        f = flight()
+        wind = {'dirDeg': 270, 'kt': 60, 'tempC': -45, 'levelFt': 35000, 'at': '2026-11-11T10:00:00Z'}
+        f['route'] = {'text': ' '.join(i for i, _, _ in use), 'dep': 'KDEN', 'arr': 'LFST',
+                      'points': [{'id': i, 'lat': la, 'lon': lo, 'wind': dict(wind, kt=50 + 10 * k)} for k, (i, la, lo) in enumerate(use)]}
+        f['level'] = {'ft': 35000}
+        c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        hook_map(c)
+        mid = c.js("() => { const S = window.__mp.S; return window.MapsRender.rhumbAt(S.marksPts[0], S.marksPts[1], .5) }")
+        c.js("(mid) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat], zoom: 4 }); return true }", mid)   # the first view of a 4 000 NM route is a world view: no barbs
+        c.wait(2500)
+        seen = []
+        for z in (3, 3.5, 4, 5, 6, 8):
+            r = c.js(probe, [z, mid])
+            seen.append((z, r['n'], r['worst'], r['marks'], r['worstMark']))
+        c.ok(all(n >= 8 for z, n, w, m, wm in seen if 3.5 <= z <= 6), f'{name}: {seen}', 'barbs are along the line in the view at the wide zooms (at 3 the view is a world view: no barbs)')
+        c.ok(all(w < 2 and wm < 2 for z, n, w, m, wm in seen), f'{name}: {seen}', 'every barb and every distance mark is less than 2 px from the line, at every zoom')
+        c.eq(c.js("() => !!window.__mp.S.gc"), True, f'{name}: the dotted great circle is there, the comparison', what='dotted')
+        pr = c.js("""() => { const S = window.__mp.S, line = S.marksPts, smp = (S.prof && S.prof.samples) || [], psi = la => Math.log(Math.tan(Math.PI / 4 + la * Math.PI / 360)), X = p => [p.lon * Math.PI / 180, psi(p.lat)]; let worst = 0;
+          for (const p of smp) { let best = 1e9; const q = X(p); for (let i = 1; i < line.length; i++) { const a = X(line[i - 1]), b = X(line[i]), dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy,
+            t = l2 ? Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l2)) : 0; best = Math.min(best, Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy) * Math.cos(p.lat * Math.PI / 180) * 3440.065) } worst = Math.max(worst, best) }
+          return { n: smp.length, worst: Math.round(worst * 10) / 10 } }""")
+        c.ok(pr['n'] >= 100 and pr['worst'] < 12, f'{name}: {pr}', 'the profile (relief, spaces crossed, TOC / TOD, cursor) is sampled on the rhumb line of the route')
+        c.js("([z, mid]) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat + 4], zoom: z }); return true }", [3.5, mid])   # the dotted great circle, north of the line, is in the capture
+        c.wait(1800)
+        c.shot(f'D174_{c.design}_{"direct" if len(use) == 2 else "via"}_delivered.png')
+    # the places where the wind is read (Fuel, the Weather module and the Map share them): on the great circle of the leg
+    far = c.js("""async () => { const WD = await import('/modules/fuel/winds.js'), a = { lat: 39.8617, lon: -104.6731 }, b = { lat: 48.5383, lon: 7.6282 },
+      psi = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)), s = WD.samples([a, b]); let worst = 0;
+      for (const p of s) { const t = (psi(p.lat) - psi(a.lat)) / (psi(b.lat) - psi(a.lat)), x = a.lon + (b.lon - a.lon) * t; worst = Math.max(worst, Math.abs(p.lon - x) * Math.cos(p.lat * Math.PI / 180) * 60) }
+      return { n: s.length, worst: Math.round(worst * 10) / 10 } }""")
+    c.ok(far['n'] >= 10 and far['worst'] < 1, f'{far}', 'the places where the wind is read are on the rhumb line (the line in degrees was up to 90 NM from it)')

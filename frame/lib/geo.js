@@ -19,6 +19,45 @@ export const wrapLon = lon => ((((+lon + 180) % 360) + 360) % 360) - 180;
  *  ligne (195°). */
 export const nearLon = (lon, ref) => +lon + 360 * Math.round((ref - lon) / 360);
 
+// ---------------------------------------------------------------- la loxodromie : le chemin d'un direct (SOG-0243)
+// Un direct se vole au compas (cap vrai constant) : c'est la droite de la carte Mercator ; le grand cercle n'est que la comparaison (le pointillé de la Carte).
+// UN SEUL chemin pour tout ce qui longe un tronçon direct : le trait, les repères de distance, les lieux où le vent est lu, les barbules, le relief et les espaces du profil, TOC / TOD,
+// la position à une distance — tous passent par rhumbAt, jamais par une interpolation de la latitude et de la longitude en degrés (qui n'est ni la loxodromie ni l'orthodromie).
+const RHUMB_R = 3440.065,
+  mercY = lat => Math.log(Math.tan(Math.PI / 4 + Math.max(-89.9, Math.min(89.9, +lat)) * Math.PI / 360)),
+  dLonOf = (a, b) => ((((+b.lon - +a.lon + 180) % 360) + 360) % 360) - 180; // l'écart en longitude le plus court, dans [-180, 180[
+/** Le point à la fraction f (0 à 1) de la distance de a vers b le long de la loxodromie : { lat, lon } ; la latitude est linéaire en f (la distance d'une loxodromie
+ *  est proportionnelle à l'écart en latitude), la longitude suit la projection de Mercator. Longitude continue avec celles de a et de b (route déroulée ; hors de
+ *  [-180, 180[ au-delà de la ligne de changement de date : l'appelant la ramène par wrapLon). Même cap, ou parallèle (écart de latitude nul) : interpolation droite.
+ *  modules/maps/render.js en tient une copie (script classique) que frame/lib/test/geo.html compare. */
+export function rhumbAt(a, b, f) {
+  const dPsi = mercY(b.lat) - mercY(a.lat),
+    lat = +a.lat + (+b.lat - +a.lat) * f,
+    dl = dLonOf(a, b);
+  if (Math.abs(dPsi) < 1e-12) return {
+    lat,
+    lon: +a.lon + dl * f
+  };
+  return {
+    lat,
+    lon: +a.lon + dl * (mercY(lat) - mercY(a.lat)) / dPsi
+  };
+}
+/** Distance (NM) de a à b le long de la loxodromie (la route déroulée : l'écart en longitude est le plus court). */
+export function rhumbNm(a, b) {
+  const r = Math.PI / 180,
+    dPhi = (+b.lat - +a.lat) * r,
+    dLam = dLonOf(a, b) * r,
+    dPsi = mercY(b.lat) - mercY(a.lat),
+    q = Math.abs(dPsi) > 1e-12 ? dPhi / dPsi : Math.cos(+a.lat * r);
+  return Math.hypot(dPhi, q * dLam) * RHUMB_R;
+}
+/** Cap vrai constant (degrés, 0 à 360) de la loxodromie de a vers b. */
+export function rhumbCourse(a, b) {
+  const dPsi = mercY(b.lat) - mercY(a.lat);
+  return (Math.atan2(dLonOf(a, b) * Math.PI / 180, dPsi) * 180 / Math.PI + 360) % 360;
+}
+
 /** Points d'une route aux longitudes continues : chaque point prend la copie la plus proche du précédent (donc à moins de
  *  180° de lui) ; une route qui passe la ligne de changement de date (177° puis −165°) va de 177° à 195°, sans faire le
  *  tour du monde. Le premier point garde sa longitude ; un point déjà continu est rendu tel quel (même objet).

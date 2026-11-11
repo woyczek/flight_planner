@@ -650,3 +650,15 @@ def e19(c):
     c.ok(norm(row(c, 'offline')) not in norm(notes), notes, 'and never « offline »')
     t = norm(c.js(f"() => document.querySelector('{ATM} .at-layerpop .at-mapnote').textContent"))
     c.ok(norm(row(c, 'whyBusy')) in t, t, 'the layers panel keeps the reason, with « Load » to try again')
+
+
+@case('E20', 'The place at a distance along the route (cursor, cut, trajectory of the Météo) is on the rhumb line of the leg, the same path as the Map’s line', 'E',
+      tags=('atmosphere',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0243 (the user: « un direct se fait au compas »): the Météo module placed the cursor, the cut’s columns and the trajectory by linear interpolation of latitude and longitude in degrees between two route points (atmo.js posAt), which is neither the rhumb line (the straight line of the Mercator map, the Map’s line) nor the great circle: one function (frame/lib/geo.js rhumbAt)')
+def e20(c):
+    c.open('atmosphere', flight=True)
+    r = c.js("""async () => { const A = await import('/modules/atmosphere/atmo.js'), G = await import('/frame/lib/geo.js'), R = { lat: 39.8617, lon: -104.6731 }, E = { lat: 48.5383, lon: 7.6282 }, pts = [R, E], nm = [0, A.gcNm(R, E)],
+      psi = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)); let worst = 0;
+      for (const f of [.1, .3, .5, .7, .9]) { const p = A.posAt(pts, nm, nm[1] * f), t = (psi(p.lat) - psi(R.lat)) / (psi(E.lat) - psi(R.lat)), x = R.lon + (E.lon - R.lon) * t; worst = Math.max(worst, Math.abs(p.lon - x) * Math.cos(p.lat * Math.PI / 180) * 60) }
+      return { worst: Math.round(worst * 10) / 10, mid: A.posAt(pts, nm, nm[1] / 2), same: JSON.stringify(G.rhumbAt(R, E, .5)) === JSON.stringify((({ lat, lon }) => ({ lat, lon }))(A.posAt(pts, nm, nm[1] / 2))) } }""")
+    c.ok(r['worst'] < 1 and r['same'], f'{r}', 'the place at a distance is on the rhumb line (longitude linear in the Mercator ordinate), the function of the Map’s line')

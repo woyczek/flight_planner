@@ -6,7 +6,8 @@
 
 import {
   wrapLon,
-  unwrapLons
+  unwrapLons,
+  rhumbAt
 } from '../../frame/lib/geo.js';
 
 /** Niveaux de pression demandés (hPa), du sol vers le haut. */
@@ -65,7 +66,10 @@ const gc = (a, b) => {
  *  au plus max lieux (le pas grandit). [{ lat, lon, nm (depuis le départ), point (indice du point de route ou -1) }].
  *  Les longitudes sont interpolées sur la route déroulée (frame/lib/geo.js : une route qui passe la ligne de changement de
  *  date, 177° puis −165°, va de 177° à 195° : sans cela, les lieux intermédiaires feraient le tour du monde) ; les lieux
- *  rendus sont enroulés dans [-180, 180[ (une longitude déjà dans cet intervalle est rendue telle quelle). */
+ *  rendus sont enroulés dans [-180, 180[ (une longitude déjà dans cet intervalle est rendue telle quelle).
+ *  Les lieux intermédiaires sont sur la LOXODROMIE du tronçon (rhumbAt de frame/lib/geo.js, SOG-0243) : un direct se vole au compas, c'est la droite de la carte Mercator ;
+ *  la droite en degrés lat/lon (l'interpolation d'avant) s'en écartait de dizaines de milles sur un tronçon transatlantique. nm reste la distance orthodromique des tronçons
+ *  (celle du devis : l'utilisateur n'a pas encore décidé de la changer). */
 export function samples(points, stepNm = 50, max = 24) {
   const raw = (points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
     pts = unwrapLons(raw);
@@ -81,10 +85,11 @@ export function samples(points, stepNm = 50, max = 24) {
         len = gc(a, p),
         n = Math.floor(len / step);
       for (let k = 1; k <= n; k++) {
-        const f = k / (n + 1);
+        const f = k / (n + 1),
+          g = rhumbAt(a, p, f);
         out.push({
-          lat: a.lat + (p.lat - a.lat) * f,
-          lon: wrap(+a.lon + (+p.lon - +a.lon) * f),
+          lat: g.lat,
+          lon: wrap(g.lon),
           nm: cum + len * f,
           point: -1
         });

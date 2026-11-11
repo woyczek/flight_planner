@@ -2,6 +2,10 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 11 November 2026 — the place at a distance is on the rhumb line (SOG-0243)
+- `posAt` (cursor, cut columns, trajectory) now follows the rhumb line of each leg (`rhumbAt` of `frame/lib/geo.js`: a direct is flown by compass, the straight line of the Mercator map,
+  the Map's line); the places where the wind is read (`samples`, in `modules/fuel/winds.js`) too. Details and survey: `modules/maps/DECISIONS.md`. Noreg E20.
+
 ## 10 November 2026 — the grid's read says what it does and why it fails (SOG-0198)
 - **Cause** (the user's synoptic build, 14:22): since SOG-0178 the launcher relays two calls per host and refuses the next (503, `X-SOG-Reason: busy`); the map's grid and the
   route and the aerodromes were asked at once, and a refusal was shown as « offline » in a red notification.

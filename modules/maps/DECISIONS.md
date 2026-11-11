@@ -2822,3 +2822,23 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D173 (4 languages): the drag of an imposed point writes nothing, its card has no « Remove » and says why, a free point
   removed is written with the imposed one still locked and named. On the code before: the point moved (`by: maps`).
 
+## The rhumb line is the one path along a direct leg (SOG-0243, blocking; user, 11 Nov 2026, capture 091755: « un direct se fait au compas »)
+- **Report**: « conflit entre les barbules et le tracé. L'orthodromie est devenue la norme, ce n'est pas le cas. » Then: « orthodromie n'est pas le cas nominal. un direct se fait au
+  compas. » SOG-0233 (393b60a18) had gone the wrong way: it put the solid line and the marks on the great circle and removed the dotted great circle of a direct route. The nominal path of a
+  direct leg is the **rhumb line** (constant heading), the straight line of the Mercator map; the shortest route is made by intermediate points (the A → B computation, SOG-0217), each leg
+  flown by compass. What was wrong yesterday was only the distance marks, placed by linear interpolation of latitude and longitude in degrees (neither the rhumb line nor the great circle:
+  a rhumb line is straight in Mercator coordinates, not in degrees).
+- **Return of SOG-0233** (a commit, no rewrite): the solid line is the plain straight segment again (no `densify`), the dotted great circle comes back on a direct route (and its test of
+  the departure and arrival ids, which a comment inserted by 393b60a18 had swallowed), the light drawing the same; the marks are placed by `rhumbAt`; the step of the marks stays chosen on the
+  length of route in the view (5 to 12), now measured exactly: the segment is clipped by the view in Mercator coordinates (no sampling).
+- **Survey** (every place that interpolates a position between two route points; ✗ was in degrees, ✓ now `rhumbAt`): ✗→✓ `modules/fuel/winds.js samples` (the places the wind is read at:
+  Fuel, the Weather module and the Map share them; up to 89 NM from the rhumb line on Denver → Strasbourg); ✗→✓ `maps/tips.js` (winds Fuel writes on the points, interpolated every 50 NM;
+  winds interpolated between two read ones: barbs up to 81 px from the line at zoom 8); ✗→✓ `maps/lib/vertical_profile.js` (the profile's samples: relief, spaces crossed, TOC / TOD, cursor;
+  58 NM); ✗→✓ `maps/render_airspace.js samples` (which spaces are near the route); ✗→✓ `atmosphere/atmo.js posAt` (cursor, cut, trajectory); ✗→✓ `maps/flight_time.js alongRoute` (progress and
+  cross-track, in Mercator coordinates instead of a plane in degrees); ✗→✓ the marks. Left to Fuel's owner: `modules/fuel/module.js alongRoute` and `wxCorridor`,
+  `frame/lib/flight_time.js plannedPositionAt` (its own great-circle `gcPoint`), `progress.js`, `flight_path.js routeMidpoint`.
+- **Rule**: one function, `rhumbAt` in `frame/lib/geo.js` (the master; `render.js` keeps a copy checked by `frame/lib/test/geo.html`; the profile library calls `MapsRender.rhumbAt` and keeps
+  the degrees only where the Map is not loaded: the V2 pages); `rhumbNm`, `rhumbCourse` beside it; never recomputed apart. The distance and the course of the quote stay great-circle until the
+  user decides (not changed here: `winds.js samples` keeps the great-circle `nm`).
+- **Noreg** D174 (barbs and marks less than 2 px from the line at six zooms, direct and with a point between, the dotted great circle there; places read on the rhumb line; profile samples the
+  same): red before (barbs 81 px, 89 NM, 58 NM), green now; D167 redone for the rhumb line; E20 (`posAt`); geo bench. D29's and D130's fixtures were unchanged in the end.

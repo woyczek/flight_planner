@@ -68,7 +68,10 @@
         b = points[i],
         n = Math.max(1, Math.ceil(gc(a, b) / 2));
       // les espaces d'aerodb sont en [-180, 180[ : les échantillons (route déroulée) y sont ramenés
-      for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, wrapLon(a.lon + (b.lon - a.lon) * k / n)]);
+      for (let k = 0; k < n; k++) {
+        const g = R.rhumbAt(a, b, k / n); // sur la loxodromie du tronçon, le chemin du trait (SOG-0243)
+        out.push([g.lat, wrapLon(g.lon)]);
+      }
     }
     if (points.length) out.push([points[points.length - 1].lat, wrapLon(points[points.length - 1].lon)]);
     return out;

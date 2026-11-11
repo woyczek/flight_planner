@@ -141,26 +141,37 @@ export function progressUpdate() {
     });
   }
 }
-/** Projection d'une position sur la route : { nm (depuis le départ), xtk (écart latéral, NM, positif à droite), total }. */
+/** Projection d'une position sur la route : { nm (depuis le départ), xtk (écart latéral, NM, positif à droite), total }. Mesurée sur la loxodromie de chaque tronçon (le
+ *  chemin d'un direct, la droite de la carte Mercator : SOG-0243) : l'écart et l'avancement se calculent en coordonnées de Mercator (λ, ψ), où elle est droite, avec l'échelle
+ *  locale cos φ ; l'avancement est la fraction de latitude (la distance d'une loxodromie lui est proportionnelle). */
 function alongRoute(p) {
   const pts = flownPts();
   if (pts.length < 2 || !p) return null;
-  const cum = MapsRender.distances(pts);
+  const cum = MapsRender.distances(pts),
+    rad = x => +x * Math.PI / 180,
+    psi = lat => Math.log(Math.tan(Math.PI / 4 + Math.max(-89.9, Math.min(89.9, +lat)) * Math.PI / 360)),
+    unpsi = y => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI,
+    R = 3440.065;
   let best = null;
   for (let i = 0; i < pts.length - 1; i++) {
     const a = pts[i],
       b = pts[i + 1],
-      k = Math.cos((a.lat + b.lat) / 2 * Math.PI / 180),
-      bx = dLon(b.lon, a.lon) * k * 60, // modulo 360 : la route peut passer la ligne de changement de date
-      by = (b.lat - a.lat) * 60,
-      px = dLon(p.lon, a.lon) * k * 60,
-      py = (p.lat - a.lat) * 60,
-      L2 = bx * bx + by * by || 1e-9,
-      t = Math.max(0, Math.min(1, (px * bx + py * by) / L2)),
-      d = Math.hypot(px - t * bx, py - t * by);
+      bx = rad(dLon(b.lon, a.lon)), // modulo 360 : la route peut passer la ligne de changement de date
+      by = psi(b.lat) - psi(a.lat),
+      px = rad(dLon(p.lon, a.lon)),
+      py = psi(p.lat) - psi(a.lat),
+      L2 = bx * bx + by * by || 1e-18,
+      t = Math.max(0, Math.min(1, (px * bx + py * by) / L2)), // fraction le long du segment en (λ, ψ)
+      cx = bx * t,
+      cy = by * t,
+      k = Math.cos(rad((+p.lat + unpsi(psi(a.lat) + cy)) / 2)), // échelle de la projection à la hauteur du point
+      d = Math.hypot(px - cx, py - cy) * k * R, // distance sur la sphère : Mercator est conforme, l'échelle locale est cos φ
+      latAt = unpsi(psi(a.lat) + cy),
+      f = Math.abs(b.lat - a.lat) > 1e-9 ? (latAt - a.lat) / (b.lat - a.lat) :
+      t; // avancement : fraction de latitude (ou de longitude sur un parallèle)
     if (!best || d < best.d) best = {
       d,
-      s: cum[i] + t * (cum[i + 1] - cum[i]),
+      s: cum[i] + Math.max(0, Math.min(1, f)) * (cum[i + 1] - cum[i]),
       side: bx * py - by * px < 0 ? 1 : -1 // à droite du sens de vol : produit vectoriel négatif
     };
   }

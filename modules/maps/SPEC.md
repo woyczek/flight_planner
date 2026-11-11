@@ -92,6 +92,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     drawn with the points, so under the route and the names, thin and discreet (alpha .7). Noreg D143.
 - `selectAirspaces(list, profile, route)`: kept by family, floor and ceiling (`SiaAero.limitFt`) and the white or
   black list, then by the corridor (a route sample inside the airspace, or an edge within `corridorNm`).
+- `rhumbAt(a, b, f)` (copy of `frame/lib/geo.js`, compared by `frame/lib/test/geo.html`): **one path along a direct leg, the rhumb line** (constant heading, the straight
+  line of the Mercator map; the user: « un direct se fait au compas ») — the solid line, the distance marks (`marks`, step chosen on the length of route in the view, clipped
+  in Mercator coordinates), the profile's samples (relief, spaces crossed, TOC / TOD, cursor), the barbs and the places where the wind is read (`modules/fuel/winds.js
+  samples`, `atmo.js posAt`), the progress projection (`flight_time.js alongRoute`, in Mercator coordinates) all follow it, never the straight lat/lon line in degrees (SOG-0243;
+  noreg D167, D174, E20). The great circle of the whole route stays the thin dotted line beside it, on a direct route too. The labels of the marks stay the great-circle distances of
+  the plan (the quote's distance is Fuel's, unchanged).
 - `bboxOf(points, marginNm)`, `distances(points)` (great circle, NM), `marks(points, stepNm)` (every 10 NM, every 50 NM
   beyond 150 NM by default; **the Map gives a round step chosen at each drawing from the route inside the view**: 5, 10, 25, 50, 100, 250, 500, 1 000, 2 500 NM, the smallest that leaves a
   dozen marks at most (`viewMarks`, SOG-0177), the profile's axis the same from its window with 40 px at least between two; noreg D142), `mercator(bbox, W, H, pad)` → `{ toC, shown }`.

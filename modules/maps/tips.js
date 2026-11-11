@@ -327,8 +327,8 @@ function carburantWinds() {
         u = a[0] + (b[0] - a[0]) * f,
         v = a[1] + (b[1] - a[1]) * f;
       out.push({
-        lat: +p.lat + (+q.lat - +p.lat) * f,
-        lon: +p.lon + (+q.lon - +p.lon) * f,
+        ...MapsRender.rhumbAt(p, q, f), // sur la loxodromie du tronçon, le chemin du trait (SOG-0243)
+
         dirDeg: (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360,
         kt: Math.hypot(u, v),
         tempC: Number.isFinite(tA) && Number.isFinite(tB) ? tA + (tB - tA) * f : null,
@@ -452,8 +452,7 @@ function windsInView(list, toC, W, H) {
             v1 = ua[1] + (ub[1] - ua[1]) * f,
             w = {
               ...a.w,
-              lat: +a.w.lat + (+b.w.lat - +a.w.lat) * f,
-              lon: +a.w.lon + (+b.w.lon - +a.w.lon) * f,
+              ...MapsRender.rhumbAt(a.w, b.w, f), // sur la loxodromie entre les deux lieux lus (SOG-0243)
               dirDeg: (Math.atan2(-u1, -v1) * 180 / Math.PI + 360) % 360,
               kt: Math.hypot(u1, v1),
               tempC: Number.isFinite(+a.w.tempC) && Number.isFinite(+b.w.tempC) ? +a.w.tempC + (+b.w.tempC - +a.w.tempC) * f : null,

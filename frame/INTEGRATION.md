@@ -946,6 +946,8 @@ import { wrapLon, nearLon, unwrapLons } from '../../frame/lib/geo.js';
 | --- | --- |
 | `wrapLon(lon)` | the longitude in `[-180, 180[` (195 → −165; 180 → −180) |
 | `nearLon(lon, ref)` | the copy of `lon` (± whole turns) within 180° of `ref`: a datum at −170° drawn on a map centred on 190°, or compared with a point at 185° |
+| `rhumbAt(a, b, f)` | the point at the fraction `f` (0 to 1) of the distance from `a` to `b` along the **rhumb line** (constant heading: the straight line of the Mercator map; `{ lat, lon }`, the route unwrapped): a new `{ lat, lon }`, latitude linear in `f`, longitude following the Mercator ordinate, continuous with those of `a` and `b` (outside `[-180, 180[` past the date line: wrap it at the door). **The one path for everything along a direct leg** (SOG-0243: « un direct se fait au compas »): the line, the distance marks, the places where the wind is read (`modules/fuel/winds.js samples`), the barbs, the profile's samples, the place at a distance (`atmo.js posAt`). The great circle is only the dotted comparison. A copy lives in `modules/maps/render.js` (a classic script) that `frame/lib/test/geo.html` compares |
+| `rhumbNm(a, b)`, `rhumbCourse(a, b)` | the distance (NM) of the rhumb line from `a` to `b` and its constant true course (degrees, 0 to 360) |
 | `unwrapLons(points)` | a route with continuous longitudes: each point takes the copy nearest the previous one. Accepts `{ lat, lon }` (other fields kept) and `[lon, lat]` pairs; a point already continuous is returned as is (same object), so an ordinary route is unchanged |
 
 The rule for a module: **unwrap the route first** (`unwrapLons`), before any distance, interpolation, bounding box or

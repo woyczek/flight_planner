@@ -18,7 +18,8 @@ import {
 import {
   wrapLon,
   nearLon,
-  unwrapLons
+  unwrapLons,
+  rhumbAt
 } from '../../frame/lib/geo.js';
 
 export {
@@ -486,14 +487,13 @@ export function trajectory(points, {
   };
 }
 
-/** Lieu à une distance le long de la route (interpolation linéaire par tronçon). */
+/** Lieu à une distance le long de la route : sur la loxodromie du tronçon (rhumbAt, le chemin du trait et des lieux de lecture : SOG-0243). */
 export function posAt(points, nmOf, nm) {
   for (let i = 1; i < points.length; i++)
     if (nm <= nmOf[i] || i === points.length - 1) {
       const f = Math.max(0, Math.min(1, (nm - nmOf[i - 1]) / ((nmOf[i] - nmOf[i - 1]) || 1)));
       return {
-        lat: points[i - 1].lat + (points[i].lat - points[i - 1].lat) * f,
-        lon: points[i - 1].lon + (points[i].lon - points[i - 1].lon) * f,
+        ...rhumbAt(points[i - 1], points[i], f),
         leg: i - 1,
         track: bearing(points[i - 1], points[i])
       };
