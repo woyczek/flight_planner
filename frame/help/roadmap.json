@@ -4,7 +4,7 @@
  "updated": "2026-11-11",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "bcb385d",
+  "organisation": "6e613a3",
   "fiches": 243,
   "untranslated": 0,
   "priorities": 152
@@ -281,7 +281,7 @@
     {
      "id": "SOG-0241",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Les points à trancher présentés comme la recette : un QCM et un champ libre, dans la page de recette",
      "en": "Points to decide shown like the acceptance tests: multiple choice and a free field, in the acceptance page",
      "de": "Zu entscheidende Punkte wie die Abnahme dargestellt: Auswahl und Freitext, auf der Abnahmeseite",

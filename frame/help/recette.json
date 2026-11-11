@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-11",
-  "tests": 115,
+  "tests": 116,
   "verdicts": 43
  },
  "apps": [
@@ -1722,6 +1722,20 @@
    "since": "2026-11-11",
    "state": "todo",
    "delivered": "2026-11-10T23:02:41Z"
+  },
+  {
+   "id": "SOG-0241",
+   "app": "pilote",
+   "title": {
+    "fr": "Les points à trancher présentés comme la recette : un QCM et un champ libre, dans la page de recette",
+    "en": "Points to decide shown like the acceptance tests: multiple choice and a free field, in the acceptance page",
+    "de": "Zu entscheidende Punkte wie die Abnahme dargestellt: Auswahl und Freitext, auf der Abnahmeseite",
+    "es": "Los puntos por decidir presentados como la aceptación: opción múltiple y campo libre, en la página de aceptación"
+   },
+   "test": "Lanceur relancé. Aide › Recette : un second onglet « À trancher (18) ». Chaque carte pose une question avec ses réponses à cocher (celle que je propose est dite) et un champ libre ; « Répondre » l'enregistre, « Modifier » permet de changer d'avis ; les questions sans réponse sont en tête.",
+   "since": "2026-11-11",
+   "state": "todo",
+   "delivered": "2026-11-11T08:31:13Z"
   }
  ],
  "decisions": [
@@ -1897,12 +1911,12 @@
    "id": "Q-0013",
    "fiche": "SOG-0152",
    "app": "pilote",
-   "question": "La V2 dans un dossier « v2 », gardée fonctionnelle : quand ?",
-   "context": "Mon objection : 640 fichiers à déplacer (apps/, shared/, examples/…), shared/ est encore lu par la V3, et tous les chemins du lanceur, des cas et des liens « Anciennes pages (V2) » sont à réécrire — pour une V2 que tu supprimeras. Relevé demandé à V3 Frame.",
+   "question": "La V2 « gardée fonctionnelle, dans un dossier v2 » : comment ?",
+   "context": "Relevé de V3 Frame : 643 fichiers à déplacer, 44 fichiers de shared/ encore lus par la V3 (il faudrait scinder shared/), plus de 600 chemins à réécrire dans le code, les outils et les cas, et un risque sur le lanceur. Or la V2 est déjà gardée fonctionnelle à part : la branche develop du dépôt est figée au 28 octobre avec la V2 entière.",
    "options": [
-    "Après la recette et l'alpha.5, en un lot à part",
-    "Maintenant",
-    "La laisser en place jusqu'à sa suppression"
+    "Ne rien déplacer : un tag « v2-final » sur la branche develop, et plus tard on retire de la V3 ce que seule la V2 lit",
+    "Déplacer quand même dans un dossier v2, après la recette et l'alpha.5",
+    "Déplacer maintenant"
    ],
    "since": "2026-11-11",
    "state": "todo",
