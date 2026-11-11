@@ -5911,10 +5911,10 @@ def a142(c):
     c.check_errors()
 
 
-@case('A148', 'Settings › Company (SOG-0202, letters): « Ajouter une famille » proposes a free letter for the reports (the first free one), refuses a taken one in words (the table’s, M, D, X, another added family) and writes it in themes.json; a family added before the letters gets a proposal, written only on a gesture', 'A', langs4=True, tags=('airline',),
+@case('A149', 'Settings › Company (SOG-0202, letters): « Ajouter une famille » proposes a free letter for the reports (the first free one), refuses a taken one in words (the table’s, M, D, X, another added family) and writes it in themes.json; a family added before the letters gets a proposal, written only on a gesture', 'A', langs4=True, tags=('airline',),
       designs=('standard',), screens=True, night=False,
       rule='V3_SPECIFICATION § 10.48 (SOG-0202), the user on 11/11: « oui, avec anti recouvrement »; added.themes[i].letter, written by Settings only; frame/lib/mission_themes.js freeLetters / takenLetters / letterOf (Features SOG, 507a028ea); the proposal is freeLetters(doc)[0]; nothing is written without a gesture')
-def a148(c):
+def a149(c):
     lang = c.lang
     sj = 'frame/settings/access.js'
     T = lambda k: tx(sj, k, lang, after='const TA = {')
@@ -5987,7 +5987,7 @@ def a148(c):
     if c.width in (390, 1280):
         c.js("document.querySelector('[data-airline-fiche] [data-theme-add]').open = true")
         c.js(f"document.querySelector('{fiche('[data-theme-add]')}').scrollIntoView({{ block: 'center' }})")
-        c.shot(f'A148_standard_{c.width}_{lang}_delivered.png')   # the family form with its letter, the families with their letters
+        c.shot(f'A149_standard_{c.width}_{lang}_delivered.png')   # the family form with its letter, the families with their letters
     c.check_errors()
 
 
