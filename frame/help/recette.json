@@ -1812,6 +1812,35 @@
    "since": "2026-11-11",
    "state": "todo",
    "recommended": 1
+  },
+  {
+   "id": "Q-0022",
+   "fiche": "SOG-0240",
+   "app": "maintenance",
+   "question": "Naviair (Danemark), réponse à ta question « le téléchargement dans downloads est mauvais ? » : les fichiers de tes Téléchargements sont l'AIP du CANADA, pas du Danemark.",
+   "context": "AeroDB les a ouverts : enreng29-october-2026.pdf et adeng29-october-2026.pdf sont « AIP CANADA » de NAV CANADA (« eng » = English). Pour le Danemark il faut ceux de aim.naviair.dk : EK_ENR_3_x (voies), EK_ENR_4_1 (balises), EK_ENR_4_4 (points), du cycle en vigueur, dans Téléchargements.",
+   "options": [
+    "Je télécharge ceux de Naviair",
+    "Plus tard",
+    "On laisse le Danemark pour l'instant"
+   ],
+   "since": "2026-11-11",
+   "state": "todo"
+  },
+  {
+   "id": "Q-0023",
+   "fiche": "SOG-0240",
+   "app": "maintenance",
+   "question": "L'AIP du Canada que tu as téléchargé porte les voies (ENR 3.1, 3.2) et les points (ENR 4.4) : on le lit ?",
+   "context": "Téléchargement libre sur le site de NAV CANADA, « © NAV CANADA, All rights reserved ». La zone Canada de ta base n'a aujourd'hui ni points ni voies. Tu as répondu « comme la Suède » pour les AIP européens.",
+   "options": [
+    "Oui, comme la Suède : sous la case d'usage personnel, publié dans mon dépôt",
+    "Oui, sur ce poste seulement",
+    "Pas maintenant"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }
