@@ -112,6 +112,19 @@
     'Nada que decidir por ahora.'
   ];
   T.dCopy = ['Copier l’identifiant', 'Copy the identifier', 'Kennung kopieren', 'Copiar el identificador'];
+  T.dKept = ['{n} réponse(s) gardée(s) sur cet appareil, pas encore envoyée(s).', '{n} answer(s) kept on this device, not sent yet.',
+    '{n} Antwort(en) auf diesem Gerät behalten, noch nicht gesendet.',
+    '{n} respuesta(s) guardada(s) en este dispositivo, aún no enviada(s).'
+  ];
+  T.dUnknown = ['Non envoyé : le lanceur de ce poste ne connaît pas encore ce geste, relancez-le.',
+    'Not sent: this workstation’s launcher does not know this gesture yet, restart it.',
+    'Nicht gesendet: Der Starter dieses Arbeitsplatzes kennt diese Funktion noch nicht, starten Sie ihn neu.',
+    'No enviado: el lanzador de este puesto aún no conoce este gesto, reinícielo.'
+  ];
+  T.dNoLauncher = ['Non envoyé : aucun lanceur ne répond sur ce poste.', 'Not sent: no launcher answers on this workstation.',
+    'Nicht gesendet: Auf diesem Arbeitsplatz antwortet kein Starter.',
+    'No enviado: ningún lanzador responde en este puesto.'
+  ];
   T.dNoWrite = ['Le lanceur n’a pas pu écrire les réponses : elles restent sur cet appareil.',
     'The launcher could not write the answers: they stay on this device.',
     'Der Launcher konnte die Antworten nicht schreiben: Sie bleiben auf diesem Gerät.',
@@ -320,7 +333,8 @@
       dfileRead: false,
       dedit: new Set(),
       ddraft: {},
-      dneed: ''
+      dneed: '',
+      dwhy: '' // pourquoi la dernière réponse n'est pas partie : unknown (le lanceur n'a pas ce verbe), offline, failed
     };
     // ---- ce que dit un test : son verdict en vigueur (l'appareil, puis le lanceur, puis le fichier généré), ou rien
     const rawVerdict = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : ui.fileRead ? ui.file[x.id] || null : x.gen;
@@ -392,7 +406,7 @@
     const decisionItem = q => {
       const a = answerNow(q),
         editing = !a || ui.dedit.has(q.id),
-        head = `<p><button type="button" class="f-rm-id" data-copy="${esc(q.fiche || q.id)}" title="${esc(t(T.dCopy))}">${esc(q.fiche || q.id)}</button> <small class="f-muted">${esc(q.id)}${q.app ? ` · ${esc(appName(q.app))}` : ''}</small>${ui.dunsent.has(q.id) ? ` <small class="f-muted" data-unsent>${esc(t(T.unsent))}</small>` : ''}</p>
+        head = `<p><button type="button" class="f-rm-id" data-copy="${esc(q.fiche || q.id)}" title="${esc(t(T.dCopy))}">${esc(q.fiche || q.id)}</button> <small class="f-muted">${esc(q.id)}${q.app ? ` · ${esc(appName(q.app))}` : ''}</small>${Object.hasOwn(ui.dlocal, q.id) ? ` <small class="f-warn" data-unsent>${esc(t(ui.dwhy === 'unknown' ? T.dUnknown : T.unsent))}</small>` : ''}</p>
         <p><b>${esc(q.question)}</b></p>${q.context ? `<p class="f-muted" data-context>${esc(q.context)}</p>` : ''}`;
       if (!editing) return `<li class="f-rc-item" data-q="${esc(q.id)}" data-state="answered">${head}<p data-answer><b>${esc(t(T.dYours))}</b> : ${a.choice !== null && q.options[a.choice] ? esc(q.options[a.choice]) : ''}${a.choice !== null && a.text ? ' · ' : ''}${esc(a.text)}${a.at ? ` <small class="f-muted">${esc(a.at.slice(0, 10))}</small>` : ''}</p>
         <div class="f-row"><button type="button" data-dmod="${esc(q.id)}">${esc(t(T.dModify))}</button></div></li>`;
@@ -409,7 +423,9 @@
     const decisionsPanel = () => {
       const sorted = [...questions].sort((a, b) => (answerNow(a) ? 1 : 0) - (answerNow(b) ? 1 : 0) || (b.since || '').localeCompare(a
         .since || '') || a.id.localeCompare(b.id));
-      return `<p class="f-muted">${esc(t(T.dIntro))}</p>${sorted.length ? `<ul class="f-rc-list" data-decisions>${sorted.map(decisionItem).join('')}</ul>` : `<p class="f-muted" data-nothing>${esc(t(T.dNone))}</p>`}`;
+      const kept = Object.values(ui.dlocal).filter(Boolean).length,
+        banner = kept ? `<p class="f-warn" data-dbanner role="status">${esc(t(T.dKept, { n: kept }))}${ui.dwhy === 'unknown' ? ` ${esc(t(T.dUnknown))}` : ui.dwhy === 'offline' ? ` ${esc(t(T.dNoLauncher))}` : ''}</p>` : '';
+      return `${banner}<p class="f-muted">${esc(t(T.dIntro))}</p>${sorted.length ? `<ul class="f-rc-list" data-decisions>${sorted.map(decisionItem).join('')}</ul>` : `<p class="f-muted" data-nothing>${esc(t(T.dNone))}</p>`}`;
     };
     const draw = focus => {
       const mine = shownTests();
@@ -505,12 +521,17 @@
     // ---- les réponses : écrites par le lanceur (recette/decision), sinon gardées sur l'appareil, « non envoyé » (comme les verdicts)
     const callDec = async args => {
       const L = launcher();
-      if (!L) return null;
+      if (!L) {
+        ui.dwhy = 'offline';
+        return null;
+      }
       const r = await L.job('regen/job', {
         set: 'recette',
         verb: 'decision',
         args
       }).catch(() => null);
+      ui.dwhy = r?.ok ? '' : r?.offline ? 'offline' : r?.status === 400 && /unknown operation/.test(String(r.message || '')) ?
+        'unknown' : 'failed';
       return r?.ok && r.result && typeof r.result === 'object' ? r.result : null;
     };
     let dsending = Promise.resolve();
@@ -544,19 +565,30 @@
         });
         return true;
       }
-      if (!quiet && launcher()) c.notify?.(t(r?.reason === 'no-organisation' ? T.noOrg : T.dNoWrite), 'warn');
+      if (!quiet && launcher()) c.notify?.(t(r?.reason === 'no-organisation' ? T.noOrg : ui.dwhy === 'unknown' ? T.dUnknown : T
+        .dNoWrite), 'warn');
+      draw(); // la raison se dit sur les cartes et en tête de l'onglet
       return false;
     });
-    dpulling = !questions.length ? Promise.resolve() : (async () => { // pas de question : le lanceur n'est pas interrogé
-      const r = await callDec({
-        action: 'get'
-      });
-      if (!r?.ok) return;
-      ui.dfile = answerMap(r.items);
-      ui.dfileRead = true;
-      draw();
-    })();
-    dpulling.then(() => Object.keys(ui.dlocal).length ? sendDec(true).then(ok => ok && draw()) : null);
+    /** Lit les réponses du fichier du lanceur, puis envoie celles que cet appareil garde : à l'ouverture, et au retour du lanceur (le verbe peut être connu depuis un redémarrage). */
+    const syncDec = () => {
+      dpulling = !questions.length ? Promise.resolve() : (async () => { // pas de question : le lanceur n'est pas interrogé
+        const r = await callDec({
+          action: 'get'
+        });
+        if (!r?.ok) return;
+        ui.dfile = answerMap(r.items);
+        ui.dfileRead = true;
+        draw();
+      })();
+      return dpulling.then(() => Object.keys(ui.dlocal).length ? sendDec(true).then(ok => ok && draw()) : null);
+    };
+    syncDec();
+    const onLauncher = e => {
+      if (!view.isConnected) return window.removeEventListener('frame-launcher', onLauncher);
+      if (e.detail?.state === 'up' && questions.length) syncDec();
+    };
+    window.addEventListener('frame-launcher', onLauncher);
     /** Garde la réponse d'une question (`null` : la retirer) : sur l'appareil d'abord, puis on tente l'envoi. */
     const commitDec = async (id, a) => {
       ui.dlocal[id] = a;

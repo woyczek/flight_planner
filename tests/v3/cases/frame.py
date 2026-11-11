@@ -3907,6 +3907,8 @@ def _prio_launcher(c, root, verb=('roadmap', 'priorities'), ctx=None):
                 st['posts'].append(post)
                 if not st['up']:
                     code, body = 500, {'ok': False, 'message': 'down'}
+                elif st.get('unknown'):     # a launcher started before the verb existed: the job does not start (400)
+                    code, body = 400, {'ok': False, 'status': 400, 'message': f'unknown operation {verb[0]}/{verb[1]}'}
                 else:
                     st['n'] += 1
                     args = check(post.get('args'))
@@ -6118,4 +6120,70 @@ def a147(c):
         c.until("!!document.querySelector('[data-q=Q-0002] [data-unsent]')", what='not sent')
         c.eq(norm(c.text('[data-q=Q-0002] [data-unsent]')), unsent, 'an answer the launcher did not take stays on the device, said « not sent »', what='unsent')
         c.eq('Q-0002' in (written() or {}), False, 'and is not in the file', what='not written')
+    c.check_errors()
+
+
+@case('A148', 'The « À trancher » answers kept on the device are SEEN and leave by themselves: with a launcher that does not know the verb yet each card and the head of the tab say « not sent: restart the launcher » with the count; when the launcher is back (or at the next opening) they are sent (SOG-0241 fix)', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0241 (the user answered 14 questions with a launcher started before recette/decision existed: the answers stayed in device/recette.json › dpending, nothing told him): an answer kept on the device is said on its card and at the head of the tab with the number (« n answer(s) kept on this device, not sent yet »), with the reason when the launcher does not know the verb (« restart it ») or does not answer; the frame sends them by itself when the launcher is back (event frame-launcher up) and at the next opening of the screen; the unsent mark comes from the kept answers themselves')
+def a148(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    W = {'kept': {'fr': '{n} réponse(s) gardée(s) sur cet appareil, pas encore envoyée(s).', 'en': '{n} answer(s) kept on this device, not sent yet.', 'de': '{n} Antwort(en) auf diesem Gerät behalten, noch nicht gesendet.',
+                  'es': '{n} respuesta(s) guardada(s) en este dispositivo, aún no enviada(s).'},
+         'kept1': {'fr': '1 réponse gardée sur cet appareil, pas encore envoyée.', 'en': '1 answer kept on this device, not sent yet.', 'de': '1 Antwort auf diesem Gerät behalten, noch nicht gesendet.',
+                   'es': '1 respuesta guardada en este dispositivo, aún no enviada.'},
+         'unknown': {'fr': 'Non envoyé : le lanceur de ce poste ne connaît pas encore ce geste, relancez-le.', 'en': 'Not sent: this workstation’s launcher does not know this gesture yet, restart it.',
+                     'de': 'Nicht gesendet: Der Starter dieses Arbeitsplatzes kennt diese Funktion noch nicht, starten Sie ihn neu.', 'es': 'No enviado: el lanzador de este puesto aún no conoce este gesto, reinícielo.'}}
+    fx = _dq_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'DECISIONS_REPONSES.json'
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items'] if f.exists() else None
+        st = _prio_launcher(c, root, verb=('recette', 'decision'))
+        st['unknown'] = True                              # a launcher started before the verb existed
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-tabs]')", timeout=15000, what='the tabs')
+        c.tap('[data-tab=decisions]')
+        c.until("!!document.querySelector('[data-decisions] li[data-q=Q-0001]')", what='the cards')
+        c.eq(c.count('[data-dbanner]'), 0, 'nothing kept: no banner', what='no banner')
+        c.page.check('[data-q=Q-0001] input[value="0"]')
+        c.tap('[data-dok=Q-0001]')
+        c.until("!!document.querySelector('[data-q=Q-0001] [data-unsent]')", what='the card says it is not sent')
+        c.eq(norm(c.text('[data-q=Q-0001] [data-unsent]')), norm(W['unknown'][lang]), 'the card says why: the launcher does not know the gesture yet, restart it', what='card')
+        c.page.check('[data-q=Q-0002] input[value="1"]')
+        c.tap('[data-dok=Q-0002]')
+        c.until("document.querySelectorAll('[data-unsent]').length === 2", what='two kept')
+        banner = norm(c.text('[data-dbanner]'))
+        c.ok('2' in banner, banner, 'the head of the tab counts them')
+        c.ok(norm(W['unknown'][lang]) in banner, banner, 'and gives the reason')
+        c.shot(f'A148_unsent_{c.width}_{lang}_delivered.png')
+        kept = c.doc('device/recette.json') or {}
+        c.eq(sorted((kept.get('dpending') or {}).keys()), ['Q-0001', 'Q-0002'], 'the answers are on the device', what='dpending')
+        c.eq(written() and 'Q-0001' in written(), None, 'nothing is written by the launcher', what='nothing written')
+        # the launcher is started again: the event says it, the answers leave by themselves
+        st['unknown'] = False
+        c.js("() => window.dispatchEvent(new CustomEvent('frame-launcher', { detail: { state: 'up' } }))")
+        got = None
+        for _ in range(40):
+            got = written()
+            if got and 'Q-0001' in got and 'Q-0002' in got:
+                break
+            c.wait(250)
+        c.eq(sorted(got or {}), ['Q-0001', 'Q-0002'], 'the launcher is back: both answers are written, nobody clicked again', what='sent by itself')
+        c.until("document.querySelectorAll('[data-unsent]').length === 0 && !document.querySelector('[data-dbanner]')", what='the marks go')
+        # the next opening sends what was kept (answers seeded on the device, the launcher knows the verb)
+        f.unlink()
+        seed = {'dpending': {'Q-0001': {'choice': 1, 'text': '', 'at': '2026-11-11T08:00:00Z'}, 'Q-0002': {'choice': 0, 'text': 'oui', 'at': '2026-11-11T08:01:00Z'}}, 'dunsent': [], 'tab': 'decisions'}
+        c.open('recette', docs=LEVEL3 + [['device/recette.json', seed, 'cache']])
+        got = None
+        for _ in range(40):
+            got = written()
+            if got and len(got) >= 2:
+                break
+            c.wait(250)
+        c.eq([sorted(got or {}), (got or {}).get('Q-0002', {}).get('text')], [['Q-0001', 'Q-0002'], 'oui'], 'answers kept (even with « unsent » empty in the store) leave at the next opening', what='at opening')
     c.check_errors()

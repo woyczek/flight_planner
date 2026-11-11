@@ -180,3 +180,10 @@ The user, on the evening review: « comme pour la recette, un qcm + choix libre 
 - **Without the launcher** (or when the job fails): the answer stays on the device (`device/recette.json` `dpending`), « non envoyé », sent at the next opening, like the Roadmap's priorities. The file the launcher holds wins over the generated `answered` once read (as for the verdicts).
 - Noreg A147 (4 languages, 390 and 1280, `A147_decisions_*_delivered.png`) and K171 (the verb), red before.
 
+## 11 November 2026 — the answers kept on the device are seen and leave by themselves (SOG-0241 fix)
+
+The user answered 14 questions with a launcher started before `recette/decision` existed: the job did not start (400 « unknown operation »), the answers stayed in `device/recette.json › dpending`, and nothing told him.
+- **Said on the card and at the head of the tab**: each kept answer shows « Non envoyé : le lanceur de ce poste ne connaît pas encore ce geste, relancez-le » (or « aucun lanceur ne répond sur ce poste », or the plain « non envoyé »); the head of the tab says « n réponse(s) gardée(s) sur cet appareil, pas encore envoyée(s) » with the reason. The mark comes from the kept answers themselves (the keys of `dpending`), no longer from a separate `dunsent` list that could be empty.
+- **They leave by themselves**: when the launcher comes back (the `frame-launcher` event, state `up`, while the screen is open) and at each opening of the screen (the get, then the send of what is kept). The user's 14 answers in `dpending` will therefore leave at his next opening after restarting the launcher; he does not click again.
+- Noreg A148 (a launcher without the verb: the card and the head say it with the count; the event sends them; an opening sends the kept ones even with `dunsent` empty), red before (`non envoyé` only).
+
