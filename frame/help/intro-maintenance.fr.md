@@ -1,7 +1,7 @@
 # Maintenance — manuel
 
 L'appli Maintenance sert à l'administrateur de la compagnie : les données qu'elle publie pour les pilotes (module
-Données), la flotte et ses fiches de performances (module Appareils), et l'administration de la suite (Réglages, carte
+Données), les fiches de performances des aéronefs (module Fiches ; la flotte est dans Compagnie), et l'administration de la suite (Réglages, carte
 Administration). Elle s'ouvre au niveau Complet. Avec le lanceur du poste, elle écrit ; sans lanceur, ou depuis un appareil
 appairé, elle se lit seulement.
 

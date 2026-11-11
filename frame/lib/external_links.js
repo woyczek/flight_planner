@@ -116,7 +116,7 @@ const MISS = {
   arr: ['pas de terrain d’arrivée dans le vol', 'no arrival aerodrome in the flight', 'kein Zielflugplatz im Flug',
     'no hay aeródromo de llegada en el vuelo'
   ],
-  type: ['pas de type d’appareil (choisir l’avion)', 'no aircraft type (choose the aircraft)',
+  type: ['pas de type d’aéronef (choisir l’aéronef)', 'no aircraft type (choose the aircraft)',
     'kein Luftfahrzeugtyp (Flugzeug wählen)', 'no hay tipo de aeronave (elegir el avión)'
   ],
   login: ['connexion requise ; page de l’aérodrome si le site la garde',

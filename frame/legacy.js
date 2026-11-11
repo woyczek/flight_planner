@@ -85,7 +85,7 @@
       label: L('Flotte', 'Fleet', 'Flotte', 'Flota')
     }, {
       path: 'apps/cr/appareil.html',
-      label: L('Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave')
+      label: L('Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave')
     }, {
       path: 'apps/cr/equipage.html',
       label: L('Équipage', 'Crew', 'Besatzung', 'Tripulación')

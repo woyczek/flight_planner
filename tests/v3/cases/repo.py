@@ -2828,3 +2828,16 @@ def k169(c):
     finally:
         L.frame_net = kept_net
     c.eq(seen, [True, False, False], 'the route marks the request: the own page of the workstation is `own`, a paired device of the local network and the company relay are guests', what='route')
+
+
+@case('I41', 'Vocabulary (SOG-0242): the frame’s own French texts say « aéronef » for an aircraft; « appareil » stays the phone, the tablet or the computer', 'I', static=True,
+      rule='SOG-0242 (the user: « 11 aéronefs »; one word per thing): in French an aeroplane or a helicopter is an « aéronef », « appareil » is the device (« Appareils connectés », « sur cet appareil »); the frame’s texts about an aircraft — the V2 page of the aircraft, the missing aircraft type, the introduction of Maintenance — never say « appareil » for it; en, de, es unchanged')
+def i41(c):
+    root = c.root
+    ext = (root / 'frame' / 'lib' / 'external_links.js').read_text(encoding='utf-8')
+    leg = (root / 'frame' / 'legacy.js').read_text(encoding='utf-8')
+    intro = (root / 'frame' / 'help' / 'intro-maintenance.fr.md').read_text(encoding='utf-8')
+    c.ok('pas de type d’aéronef' in ext and 'type d’appareil' not in ext, '', 'the missing aircraft type says « aéronef »')
+    c.ok("L('Aéronef', 'Aircraft'" in leg and "L('Appareil', 'Aircraft'" not in leg, '', 'the V2 page of the aircraft is « Aéronef »')
+    c.ok('module Appareils' not in intro and 'aéronefs' in intro, '', 'the introduction of Maintenance says « aéronefs », not « module Appareils »')
+

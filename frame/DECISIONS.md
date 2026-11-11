@@ -2908,3 +2908,9 @@ The user: « 2 entrées » of Company (no fourth application). Done in the frame
 - the intro manuals of Company and Maintenance say it (×4). Noreg A146 (the entry says « Flotte » / « Fiches », opens the module on its view alone, no entry called « Appareils »).
 - Found on the way, not mine: `modules/data/follow.js:412` throws « Cannot read properties of null (reading 'ctx') » at the mount of Données in Maintenance in A146's setting (`pageerror`); reported to Settings.
 
+## 11 November 2026 — vocabulary: « aéronef » for an aircraft (SOG-0242)
+
+The user: « 11 aéronefs ». In French an aeroplane or a helicopter is an « aéronef »; « appareil » stays the phone, the tablet or the computer (« Appareils connectés », « sur cet appareil », « Compagnie de cet appareil »). The frame's own texts were read one occurrence at a time
+(no global replace: both meanings coexist in `frame/app.js`, all of them the device's): three said « appareil » for an aircraft — the missing aircraft type (`frame/lib/external_links.js`), the V2 page of the aircraft (`frame/legacy.js`) and the introduction of Maintenance. The tutorials and the module chapters
+assembled into the manuals (Fuel, Fleet, report) are their sessions' texts (Features SOG). Static case I41.
+
