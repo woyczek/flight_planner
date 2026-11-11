@@ -410,6 +410,47 @@ def airnav(data):
     return [{'name': name, 'bytes': len(body), 'features': n + m, 'edition': issue, 'unchanged': not changed}], []
 
 
+def eaip_tables(data, key):
+    """Un eAIP à tableaux d'Annexe 15 (tools/eaip_annexe15.py, profil `key`) : l'ENR 4.4 lu d'abord (sa date d'entrée en vigueur, dans son titre, est l'édition) ; si l'édition est déjà là, rien d'autre n'est lu ; sinon les
+    pages de routes, puis le GeoJSON écrit dans zones/<zone>/ sous la date de l'édition (son cycle) ; les éditions précédentes du même jeu sont retirées. Les adresses sont celles du profil (hôte et base fixes), jamais celles d'une page."""
+    import eaip_annexe15 as core
+    prof = core.PROFILES[key]
+    label = prof['label'].split(' (')[0]
+    folder = os.path.join(data, 'sia', 'zones', prof['zone'])
+    out_re = core.out_re(prof)
+    try:
+        p44 = get(core.page_url(prof, prof['points'])).decode('utf-8', 'replace')
+        issue = core.issue_of_title(p44)
+        if not issue:
+            return [], [f'{label} : date d’entrée en vigueur introuvable dans le titre de l’ENR 4.4 (page changée ?)']
+        name = core.out_name(prof['name'], issue)
+        path = os.path.join(folder, name)
+        if os.path.exists(path):  # l'édition en vigueur est déjà là : rien d'autre à lire
+            return [{'name': name, 'bytes': os.path.getsize(path), 'edition': issue, 'unchanged': True}], []
+        routes = [get(core.page_url(prof, n)).decode('utf-8', 'replace') for n in prof['routes']]
+    except (OSError, ValueError) as e:
+        return [], [f'{label} : {e}']
+    try:
+        g, n, m = core.convert_tables(prof, p44, routes, issue)
+    except ValueError as e:
+        return [], [f'{label} : {e}']
+    body = json.dumps(g, ensure_ascii=False).encode('utf-8')
+    changed = write(path, body)
+    from proc_pdf import safe_path
+    for old in os.listdir(folder):  # les éditions précédentes (même contrôle de nom avant de retirer)
+        if old != name and out_re.fullmatch(old):
+            try:
+                os.remove(safe_path(folder, old, out_re))
+            except ValueError:
+                pass
+    return [{'name': name, 'bytes': len(body), 'features': n + m, 'edition': issue, 'unchanged': not changed}], []
+
+
+def navpt(data):
+    """eAIP du Portugal (NAV Portugal) : ENR 4.4, ENR 3.1 et ENR 3.3 (tools/eaip_annexe15.py, profil pt)."""
+    return eaip_tables(data, 'pt')
+
+
 def unchanged_outputs(folder, pdf, outputs):
     """Compte rendu « rien n'a changé » d'un PDF déjà lu (le PDF et ses sorties présentes), sinon None."""
     names = [pdf] + [o for o in outputs if os.path.exists(os.path.join(folder, o))]

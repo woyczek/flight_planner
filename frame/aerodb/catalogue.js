@@ -456,6 +456,41 @@
       'Sin licencia de reutilización: uso personal'
     ]
   }, {
+    id: 'navpt',
+    group: 'base',
+    zones: ['pt'],
+    fetch: {
+      how: 'launcher',
+      provider: 'navpt'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'geojson'
+    },
+    publish: true,
+    no: 21,
+    status: 'used',
+    n: ['NAV Portugal (eAIP du Portugal)', 'NAV Portugal (Portuguese eAIP)', 'NAV Portugal (eAIP Portugal)',
+      'NAV Portugal (eAIP de Portugal)'
+    ],
+    url: 'https://www.nav.pt/ais',
+    gives: [
+      'Les points désignés et les routes (ENR 4.4, 3.1, 3.3) du Portugal (zone pt) ; pas de procédures.',
+      'The designated points and routes (ENR 4.4, 3.1, 3.3) of Portugal (zone pt); no procedures.',
+      'Die benannten Punkte und Strecken (ENR 4.4, 3.1, 3.3) Portugals (Zone pt); keine Verfahren.',
+      'Los puntos designados y las rutas (ENR 4.4, 3.1, 3.3) de Portugal (zona pt); sin procedimientos.'
+    ],
+    pub: 'NAV Portugal, E.P.E.',
+    credit: ['Source : NAV Portugal (eAIP)', 'Source: NAV Portugal (eAIP)', 'Quelle: NAV Portugal (eAIP)',
+      'Fuente: NAV Portugal (eAIP)'
+    ],
+    localOnly: false,
+    lic: ['Reproduction et redistribution par accord préalable de NAV Portugal (GEN 0.1) : usage personnel',
+      'Reproduction and redistribution by prior agreement with NAV Portugal (GEN 0.1): personal use',
+      'Vervielfältigung und Weitergabe nur nach vorheriger Vereinbarung mit NAV Portugal (GEN 0.1): persönliche Nutzung',
+      'Reproducción y redistribución con acuerdo previo de NAV Portugal (GEN 0.1): uso personal'
+    ]
+  }, {
     id: 'adds',
     group: 'base',
     zones: ['us'],

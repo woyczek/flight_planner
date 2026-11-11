@@ -4780,7 +4780,7 @@ def k63(c):
         stale_fr = '2026-10-01' < cur
         c.eq((res['stale'], res['blocking']), (stale_fr, [{'zone': 'fr', 'source': 'sia', 'cycle': '2026-10-01'}] if stale_fr else []),
              'only fr blocks (its SIA files of 2610): gb holds its NATS cycle, de has no AIRAC', what='blocking')
-        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None, 'airnav': None, 'lfv': None}, 'the cycle the workstation holds per dated source (LFV is one since 9b060a061: none held here)', what='sources')
+        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None, 'airnav': None, 'lfv': None, 'navpt': None}, 'the cycle the workstation holds per dated source (LFV is one since 9b060a061: none held here)', what='sources')
         c.ok(not stale_fr or any(x.startswith('fr: sources sia du cycle 2026-10-01') for x in view['log']), str(view['log'][-4:]), 'the blocking zone is said in the journal')
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
         c.eq({z: idx['zones'][z]['cycle'] for z in ('fr', 'gb', 'de')}, res['folders'], 'the manifest carries each zone\'s cycle', what='manifest')

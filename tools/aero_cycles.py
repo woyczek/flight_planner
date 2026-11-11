@@ -14,11 +14,12 @@ import os
 import re
 
 REF = datetime.date(2024, 1, 25)  # AIRAC 2401
-CYCLED = {'sia': 'fr', 'nats': 'gb', 'enaire': 'es', 'airnav': 'ie', 'lfv': 'se'}  # source cyclée → sa zone (modules : shared/aero_zones.js, catalogue.js)
+CYCLED = {'sia': 'fr', 'nats': 'gb', 'enaire': 'es', 'airnav': 'ie', 'lfv': 'se', 'navpt': 'pt'}  # source cyclée → sa zone (modules : shared/aero_zones.js, catalogue.js)
 ZONE_SOURCE = {z: s for s, z in CYCLED.items()}
 _SIA = re.compile(r'^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4})-(\d{2})-(\d{2})\.xml$', re.I)
 _NATS = re.compile(r'^zones/gb/EG_AIP_DS_[A-Za-z0-9_]*?(\d{4})(\d{2})(\d{2})\.xml$')     # l'AIP seul date le cycle (SOG-0077) : un jeu de zones de drones ou d'obstacles daté d'un cycle PLUS TARD (EG_UAS_…_20261126) ne dit rien de l'AIP
 _AIRNAV = re.compile(r'^zones/ie/airnav_ie_enr_(\d{4})(\d{2})(\d{2})\.geojson$')       # la date de l'édition de l'eAIP d'Irlande (tools/airnav_eaip.py)
+_NAVPT = re.compile(r'^zones/pt/navpt_pt_enr_(\d{4})(\d{2})(\d{2})\.geojson$')       # la date de l'édition de l'eAIP du Portugal (tools/eaip_annexe15.py, profil pt)
 _LFV = re.compile(r'^zones/se/lfv_se_enr_(\d{4})(\d{2})(\d{2})\.geojson$')            # la date de l'édition de l'eAIP de Suède (tools/lfv_eaip.py)
 _ENAIRE = re.compile(r'^aixm5/LE_[A-Za-z0-9_]*_AIP_DS_FULL_(?:Airspace|EnRoute)\.xml$')
 _VALID = re.compile(rb'<gml:validTime>\s*<gml:TimePeriod[^>]*>\s*<gml:beginPosition>(\d{4})-(\d{2})-(\d{2})')
@@ -67,6 +68,9 @@ def cycled(rel, root=None, today=None):
         m = _AIRNAV.match(rel)
         if m:
             return 'airnav', airac_start(datetime.date(*map(int, m.groups())))
+        m = _NAVPT.match(rel)
+        if m:
+            return 'navpt', airac_start(datetime.date(*map(int, m.groups())))
         m = _LFV.match(rel)
         if m:
             return 'lfv', airac_start(datetime.date(*map(int, m.groups())))
@@ -90,7 +94,7 @@ def report(rels, today=None, root=None):
     return {s: {'cycle': c, 'current': current, 'stale': bool(c and c < current)} for s, c in best.items()}
 
 
-PERSONAL_CYCLED = ('nats', 'enaire', 'airnav', 'lfv')    # les sources datées sous licence d'usage personnel : lues seulement si la case « personnel » les déclare (shared/aero_zones.js, personal: 'licence' ; base/build, argument personal)
+PERSONAL_CYCLED = ('nats', 'enaire', 'airnav', 'lfv', 'navpt')    # les sources datées sous licence d'usage personnel : lues seulement si la case « personnel » les déclare (shared/aero_zones.js, personal: 'licence' ; base/build, argument personal)
 
 
 def used_sources(sources, personal=()):

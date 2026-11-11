@@ -773,7 +773,7 @@ def k64(c):
     c.ok(not any(s in C.CYCLED for z in ('de', 'it', 'us', 'ca', 'nat') for s in BS.sources_of(z)), 'others', 'zones fed only by sources without AIRAC have no dated source')
     rep = C.report(names, d(2026, 11, 1))
     c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-01', 'current': '2026-10-29', 'stale': True},
-               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'lfv': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
+               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'lfv': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'navpt': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
          'report: the newest cycle of each source (NATS: the AIP alone dates it, SOG-0077; ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
     c.eq(C.report([], d(2026, 11, 1))['sia'], {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'no file: no cycle, not stale', what='no file')
     # base/fetch: the plan (in the view from the start) and the end carry it
@@ -787,7 +787,7 @@ def k64(c):
             view, res = _run(RJ, BS, 'fetch', {'zones': ['de']}, ctx)
         cur = C.airac_start()
         want = {'sia': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur}, 'nats': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur},
-                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}, 'lfv': {'cycle': None, 'current': cur, 'stale': False}}
+                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}, 'lfv': {'cycle': None, 'current': cur, 'stale': False}, 'navpt': {'cycle': None, 'current': cur, 'stale': False}}
         c.eq((view['sources'], res['sources']), (want, want), 'the plan and the end of base/fetch give the cycle held per dated source', what='fetch sources')
 
 
@@ -2063,3 +2063,78 @@ def k166(c):
     finally:
         AF.get = kept
         N.convert = kept_convert
+
+
+@case('K174', 'Portugal (NAV Portugal eAIP, family F1): the edition read in the title of ENR 4.4, the points of ENR 4.4 and the legs of ENR 3.x read from real page extracts, the file written under its date, the previous edition removed, the same edition not read again; wired as a personal-licence source (SOG-0240)', 'K', static=True,
+      rule='SOG-0240, step 2 of the F1 family (the ergonomics session, 11 Nov 2026): NAV Portugal publishes its AIP as an Annex 15 eAIP at a fixed address (…/eAIP_Current/…/LP-ENR-4.4-en-PT.html); the pages were opened and extracts kept as fixtures (frame/aerodb/test/fixtures/eaip_pt/, address and date in their header). tools/eaip_annexe15.py reads the Table-row-type tables: ENR 4.4 (name-code, coordinates on two lines, routes, remarks; a row without readable coordinates is not a point), ENR 3.x (route designator row, one row per point, the leg row with track, distance and limits in two stacked lines). The edition is the « valid from » date of the title; the launcher reads ENR 4.4 first and nothing else when the edition is already there; only the profile’s host and base are asked. Same regime as Sweden: personal-licence source (the tick), the zone published in the user’s data repository; the licence line says what NAV Portugal states (reproduction and redistribution by prior agreement, GEN 0.1)')
+def k174(c):
+    import json
+    import os
+    import tempfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    import aero_cycles as C
+    import eaip_annexe15 as E
+    fx = ROOT / 'frame' / 'aerodb' / 'test' / 'fixtures' / 'eaip_pt'
+    p44 = (fx / 'LP-ENR-4.4-extract.html').read_text(encoding='utf-8')
+    p33 = (fx / 'LP-ENR-3.3-extract.html').read_text(encoding='utf-8')
+    prof = E.PROFILES['pt']
+    c.eq((E.issue_of_title(p44), E.issue_of_title(p33), E.issue_of_title('<title>AIP x valid from 31 FEB 2026</title>'), E.issue_of_title('<p>nothing</p>')), ('2026-10-01', '2026-10-01', None, None),
+         'the edition is the « valid from » date of the page title; an impossible date or no title: none', what='issue')
+    pts = E.parse_points(p44)
+    c.eq([(p['id'], p['lat'], p['lon']) for p in pts], [('ABALO', 32.331111, -18.130278), ('ABLEG', 40.722778, -8.431111), ('ABONU', 38.5975, -28.007222)],
+         'ENR 4.4: the three points (coordinates on two lines, three layouts of the same row), the row without readable coordinates is not one', what='points')
+    c.ok('FIR BDRY' in pts[0]['remarks'] and pts[2]['remarks'].startswith('NIL'), str([p['remarks'] for p in pts]), 'their remarks are kept')
+    segs = E.parse_routes(p33)
+    c.eq([(s['route'], s['a']['id'], s['b']['id'], s['lower'], s['upper'], s['nm'], s['trk']) for s in segs], [('A44', 'ROSAL', 'ALAGU', 10500, 19500, 24.7, 281), ('A44', 'ALAGU', 'ODPAK', 10500, 19500, 15.0, 281)],
+         'ENR 3.3: the route A44, two legs between its three points, FL 105 to FL 195 in feet, distance and track', what='legs')
+    g, n, m = E.convert_tables(prof, p44, [p33], '2026-10-01')
+    c.eq((n, m, g['issue'], g['name'], sorted(f['properties']['id'] for f in g['features'] if f['properties']['sog'] == 'point')), (6, 2, '2026-10-01', 'navpt_pt_enr', ['ABALO', 'ABLEG', 'ABONU', 'ALAGU', 'ODPAK', 'ROSAL']),
+         'the GeoJSON: the three points of ENR 4.4 and the three the route names and ENR 4.4 does not list, two legs', what='geojson')
+    json.dumps(g, allow_nan=False)
+    for page, what in (('<p>nothing</p>', 'ENR 4.4'),):
+        try:
+            E.convert_tables(prof, page, [p33], '2026-10-01')
+            got = 'read'
+        except ValueError as e:
+            got = str(e)
+        c.ok('ENR 4.4' in got, got, 'a page that gives no point is refused, said (a layout changed), never an empty file')
+    try:
+        E.convert_tables(prof, p44, ['<p>nothing</p>'], '2026-10-01')
+        got = 'read'
+    except ValueError as e:
+        got = str(e)
+    c.ok('ENR 3' in got, got, 'an ENR 3 that gives no leg is refused too (a NIL section is the business of a State whose profile says so)')
+    c.eq([E.page_url(prof, 'LP-ENR-4.4-en-PT.html')[:30]] + [bool(E.out_re(prof).fullmatch(x)) for x in ('navpt_pt_enr_20261001.geojson', 'navpt_pt_enr_2026100.geojson', 'x/navpt_pt_enr_20261001.geojson')], ['https://ais.nav.pt/wp-content/', True, False, False],
+         'only the profile’s pages are asked, only its file names are removed', what='names')
+    try:
+        E.page_url(prof, '../x.html')
+        got = 'asked'
+    except ValueError:
+        got = 'refused'
+    c.eq(got, 'refused', 'a page name that the profile does not hold is refused', what='refused page')
+    # the launcher: ENR 4.4 first (the edition), the routes, the file under its date, the previous edition removed, the same edition not read again
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        folder = data / 'sia' / 'zones' / 'pt'
+        folder.mkdir(parents=True)
+        (folder / 'navpt_pt_enr_20260903.geojson').write_text('{}', encoding='utf-8')
+        (folder / 'notes.txt').write_text('keep', encoding='utf-8')
+        net = _Net(AF, {'LP-ENR-4.4-en-PT.html': p44.encode(), 'LP-ENR-3.1-en-PT.html': b'<title>x valid from 01 OCT 2026</title><p>NIL</p>', 'LP-ENR-3.3-en-PT.html': p33.encode()})
+        with net:
+            out, err = AF.navpt(str(data))
+        c.eq((err, [(f['name'], f['features'], f['edition'], f['unchanged']) for f in out]), ([], [('navpt_pt_enr_20261001.geojson', 8, '2026-10-01', False)]), 'written: eight features, the edition', what='written')
+        c.eq(sorted(os.listdir(folder)), ['navpt_pt_enr_20261001.geojson', 'notes.txt'], 'the previous edition is removed, another file kept', what='folder')
+        c.ok(all(u.startswith('https://ais.nav.pt/') for u, _ in net.calls) and len(net.calls) == 3, str(net.calls), 'only ais.nav.pt is asked: ENR 4.4, 3.1, 3.3')
+        with _Net(AF, {'LP-ENR-4.4-en-PT.html': p44.encode()}) as net2:
+            out2, err2 = AF.navpt(str(data))
+        c.eq((err2, [f['unchanged'] for f in out2], len(net2.calls)), ([], [True], 1), 'the same edition again: unchanged, only ENR 4.4 is read', what='unchanged')
+        with _Net(AF, {'LP-ENR-4.4-en-PT.html': ('http', 403)}) as net3:
+            out3, err3 = AF.navpt(str(data))
+        c.ok(out3 == [] and err3 and 'NAV Portugal' in err3[0], str(err3), 'a host that refuses: a failure said with its name, nothing written, nothing worked round')
+    # the wiring: cycle of the file, personal licence, zone, the same lists everywhere
+    c.eq((C.cycled('zones/pt/navpt_pt_enr_20261001.geojson'), C.CYCLED.get('navpt'), 'navpt' in C.PERSONAL_CYCLED), (('navpt', '2026-10-01'), 'pt', True), 'the date of the file is its cycle (AIRAC), the source is personal-licence', what='cycle')
+    z = (ROOT / 'shared' / 'aero_zones.js').read_text(encoding='utf-8')
+    c.ok("navpt: {" in z and "pt: ['navpt']" in z and "provider: 'navpt'" in z and "personal: 'licence'" in z[z.index('navpt: {'):z.index('navpt: {') + 1800], 'aero_zones.js', 'the catalogue of the page holds the source, its zone and its personal licence (K52 compares the launcher’s mirror)')
+    cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
+    c.ok("id: 'navpt'" in cat and 'NAV Portugal' in cat and 'GEN 0.1' in cat, 'catalogue.js', 'Sources and licences: the line of NAV Portugal says what the publisher states')

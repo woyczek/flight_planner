@@ -81,3 +81,125 @@ def to_geojson(name, source, points, segments, issue, remark='remarks', extra=()
 def out_name(name, issue):
     """Le nom du fichier d'une édition : « airnav_ie_enr_20261029.geojson » (la date du cycle AIRAC y est lue par tools/aero_cycles.py)."""
     return f'{name}_{issue.replace("-", "")}.geojson'
+
+
+# ----------------------------------------------------------------------------------------------------------------------- la mise en page à tableaux « Table-row-type » (Portugal, Hongrie, Géorgie, Islande, Finlande…)
+# Les lignes d'un tableau d'ENR portent la classe `Table-row-type-1` (en-tête ou désignateur de route), `-2` (numéros de colonnes ou point d'une route), `-3` (une ligne de données ou le tronçon d'une route) ; une ligne de
+# données peut porter un tableau imbriqué (limites haute / basse) dont les `<tr>` n'ont pas de classe : le découpage ne part que des lignes classées.
+_ROW = re.compile(r'<tr\b[^>]*\bclass="Table-row-type-(\d)[^"]*"[^>]*>(.*?)(?=<tr\b[^>]*\bclass="Table-row-type-|</table>\s*</body>|\Z)', re.S)
+_COORDS = re.compile(r'(\d{6,7}(?:\.\d+)?[NS])\s*(\d{6,8}(?:\.\d+)?[EW])')
+_NAMECODE = re.compile(r'[A-Z0-9]{2,6}')
+MAX_POINTS = 20000
+MAX_SEGMENTS = 60000
+
+
+def table_rows(page):
+    """[(type de ligne : '1' | '2' | '3', le HTML de la ligne et de ce qu'elle porte)] dans l'ordre de la page."""
+    return [(m.group(1), m.group(2)) for m in _ROW.finditer(page)]
+
+
+def cells_of(chunk):
+    """Le texte des cellules `<td>` / `<th>` du premier niveau d'une ligne (un tableau imbriqué est un seul texte)."""
+    chunk = re.sub(r'<table\b.*?</table>', lambda m: re.sub(r'<(/?)t[dr]\b[^>]*>', ' ', m.group(0)), chunk, flags=re.S)       # un tableau imbriqué : ses cellules ne sont pas celles de la ligne
+    return [text_of(c) for c in re.findall(r'<t[dh]\b[^>]*>(.*?)</t[dh]>', chunk, re.S)]
+
+
+def issue_of_title(page):
+    """La date d'entrée en vigueur d'une page d'eAIP (« … valid from 01 OCT 2026 » dans son titre) en AAAA-MM-JJ, ou None."""
+    m = re.search(r'<title>[^<]*?valid from\s+(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})', page, re.I)
+    return date_of(*m.groups()) if m else None
+
+
+def parse_points(page):
+    """Les points désignés d'une page ENR 4.4 à tableau : [{ id, lat, lon, remarks }] dans l'ordre de la page. Une ligne de données : nom-code (2 à 6 lettres ou chiffres), les coordonnées (deux lignes ou une seule),
+    les routes, les remarques ; une ligne sans coordonnées lisibles (une suite de remarques) n'est pas un point."""
+    out = []
+    for kind, chunk in table_rows(page):
+        if kind != '3':
+            continue
+        cells = cells_of(chunk)
+        if len(cells) < 2:
+            continue
+        name = cells[0].strip().upper()
+        m = _COORDS.search(cells[1])
+        la, lo = (dms(m.group(1)), dms(m.group(2))) if m else (None, None)
+        if _NAMECODE.fullmatch(name) and la is not None and lo is not None:
+            out.append({'id': name, 'lat': la, 'lon': lo, 'remarks': cells[-1][:200] if len(cells) > 3 else ''})
+    return out
+
+
+def point_id(name):
+    """L'identifiant d'un point de route : « ROSAL » → ROSAL ; « ALCARIA RUIVA DME (DML) » → DML (le code entre parenthèses d'une balise) ; '' si aucun nom-code lisible."""
+    t = re.sub(r'\s+', ' ', name or '').strip().upper()
+    m = re.search(r'\(([A-Z0-9]{2,5})\)$', t)
+    if m:
+        return m.group(1)
+    return t if _NAMECODE.fullmatch(t) else ''
+
+
+def parse_routes(page):
+    """Les tronçons des routes d'une page ENR 3.x à blocs : [{ route, a: { id, lat, lon }, b: { id, lat, lon }, lower, upper, nm, trk }]. Un bloc : la ligne du désignateur (`Route-designator`), puis pour chaque point
+    sa ligne (`Significant-point-description` et les coordonnées), puis la ligne du tronçon qui part de lui (cap, distance « 24.7 NM », limites en deux lignes superposées `Upper` / `Lower`). Un tronçon dont un point
+    est illisible n'est pas rendu ; une limite absente est null."""
+    out, route, prev, pend = [], None, None, None
+    for kind, chunk in table_rows(page):
+        if kind == '1' and 'Route-designator' in chunk:
+            m = re.search(r'[A-Z]{1,2}\d{1,4}[A-Z]?', text_of(chunk))
+            route, prev, pend = (m.group(0) if m else None), None, None
+        elif kind == '2' and 'Significant-point-description' in chunk and route:
+            nm = re.search(r'Significant-point-description[^>]*>(.*?)</span>', chunk, re.S)
+            m = _COORDS.search(text_of(chunk))
+            la, lo = (dms(m.group(1)), dms(m.group(2))) if m else (None, None)
+            pid = point_id(text_of(nm.group(1))) if nm else ''
+            pt = {'id': pid, 'lat': la, 'lon': lo} if pid and la is not None and lo is not None else None
+            if pt and prev and pend:
+                out.append({'route': route, 'a': prev, 'b': pt, 'lower': pend.get('lower'), 'upper': pend.get('upper'), 'nm': pend.get('nm'), 'trk': pend.get('trk')})
+            prev, pend = pt, None
+        elif kind == '3' and prev is not None and ('UpperAndLower' in chunk or 'RouteTemplate' in chunk):
+            pairs = [(text_of(u), text_of(l)) for u, l in re.findall(r'class="Upper"[^>]*>(.*?)</td>.*?class="Lower"[^>]*>(.*?)</td>', chunk, re.S)]
+            lim = next(((level_ft(u), level_ft(l)) for u, l in pairs if level_ft(u) is not None and level_ft(l) is not None), (None, None))
+            trk = next((int(re.match(r'\d+', u).group(0)) for u, l in pairs if re.fullmatch(r'\d{1,3}', u)), None)
+            dist = re.search(r'([\d.]+)\s*NM', text_of(chunk))
+            pend = {'upper': lim[0], 'lower': lim[1], 'trk': trk, 'nm': float(dist.group(1)) if dist else None}
+    return out
+
+
+def convert_tables(profile, points_page, route_pages, issue):
+    """(GeoJSON, nombre de points, nombre de tronçons) d'un État à tableaux : ses points (ENR 4.4), ses routes (une ou plusieurs pages ENR 3.x). Les points qu'une route nomme et que l'ENR 4.4 ne liste pas (balises,
+    points de limite de FIR) sont ajoutés. Lève ValueError si l'ENR 4.4 ne donne rien (une page changée) ou s'il y a trop d'objets ; une section d'ENR 3 vide (« NIL ») donne zéro tronçon sans erreur quand
+    le profil dit `routes_nil_ok`."""
+    points = parse_points(points_page)
+    if not points:
+        raise ValueError('aucun point lu dans l’ENR 4.4 (mise en page changée ?)')
+    segments = [s for page in route_pages for s in parse_routes(page)]
+    if route_pages and not segments and not profile.get('routes_nil_ok'):
+        raise ValueError('aucun tronçon lu dans l’ENR 3 (mise en page changée ?)')
+    known = {p['id'] for p in points}
+    for s in segments:
+        for p in (s['a'], s['b']):
+            if p['id'] not in known:
+                known.add(p['id'])
+                points.append({'id': p['id'], 'lat': p['lat'], 'lon': p['lon'], 'remarks': ''})
+    if len(points) > MAX_POINTS or len(segments) > MAX_SEGMENTS:
+        raise ValueError('trop d’objets : ce ne sont pas les pages attendues')
+    return to_geojson(profile['name'], profile['label'], points, segments, issue, extra=('nm', 'trk')), len(points), len(segments)
+
+
+# les États à tableaux : le profil dit où sont les pages (adresse fixe, hôte contrôlé) et comment s'appelle le fichier écrit (sa date est son cycle AIRAC : tools/aero_cycles.py)
+PROFILES = {
+    'pt': {'zone': 'pt', 'source': 'navpt', 'name': 'navpt_pt_enr', 'label': 'NAV Portugal eAIP (ENR 4.4, ENR 3.1, ENR 3.3)', 'host': 'ais.nav.pt',
+           'base': 'https://ais.nav.pt/wp-content/uploads/AIS_Files/eAIP_Current/eAIP_Online/eAIP/html/eAIP/',
+           'points': 'LP-ENR-4.4-en-PT.html', 'routes': ('LP-ENR-3.1-en-PT.html', 'LP-ENR-3.3-en-PT.html')},
+}
+
+
+def out_re(profile):
+    """Le nom d'un fichier écrit pour ce profil : navpt_pt_enr_20261001.geojson."""
+    return re.compile(r'^' + re.escape(profile['name']) + r'_(\d{8})\.geojson\Z')
+
+
+def page_url(profile, name):
+    """L'adresse d'une page du profil : sa base fixe + un nom connu du profil, jamais autre chose."""
+    if name != profile['points'] and name not in profile['routes']:
+        raise ValueError(f'page refusée : {name!r}')
+    return profile['base'] + name

@@ -88,6 +88,22 @@
       personal: 'licence', // aucune licence de réutilisation trouvée : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'file'
     },
+    // eAIP du Portugal (NAV Portugal, adresse fixe « eAIP_Current ») : ENR 4.4 (points), ENR 3.1 et 3.3 (routes) lus par le lanceur (tools/aero_fetch.py navpt → tools/eaip_annexe15.py) ;
+    // zones/pt/navpt_pt_enr_AAAAMMJJ.geojson. Reproduction et redistribution seulement par accord préalable de NAV Portugal (GEN 0.1) : usage personnel (V3, SOG-0240, 11 nov. 2026)
+    navpt: {
+      kind: 'download',
+      readable: true,
+      provider: 'navpt',
+      label: L4('NAV Portugal — eAIP Portugal (points et routes)', 'NAV Portugal — Portuguese eAIP (points and routes)',
+        'NAV Portugal — eAIP Portugal (Punkte und Strecken)', 'NAV Portugal — eAIP Portugal (puntos y rutas)'),
+      gives: L4('points désignés (ENR 4.4), routes conventionnelles et RNAV (ENR 3.1, 3.3)',
+        'designated points (ENR 4.4), conventional and RNAV routes (ENR 3.1, 3.3)',
+        'benannte Punkte (ENR 4.4), konventionelle und RNAV-Strecken (ENR 3.1, 3.3)',
+        'puntos designados (ENR 4.4), rutas convencionales y RNAV (ENR 3.1, 3.3)'),
+      licence: 'NAV Portugal (usage personnel)',
+      personal: 'licence', // reproduction et redistribution par accord préalable : la case dit qu'elle ne vaut que pour un dépôt à soi
+      age: 'file'
+    },
     // eAIP hors ligne de la Suède (LFV, « AIP_OFFLINE.zip » déposé dans Téléchargements) : « Mettre à jour » en lit l'ENR 4.4 (points) et l'ENR 3.2 (routes RNAV) sans déployer l'archive (tools/lfv_eaip.py) et écrit zones/se/lfv_se_enr_AAAAMMJJ.geojson.
     // Aucune condition de réutilisation dans l'archive (ES-GEN 0.1 : publié sous l'autorité de l'Agence suédoise des transports, produit par LFV) : usage personnel, en attendant la réponse de aip@lfv.se (SOG-0153 b)
     lfv: {
@@ -312,6 +328,7 @@
     es: ['enaire'],
     ie: ['airnav'],
     se: ['lfv'],
+    pt: ['navpt'],
     us: ['faa', 'faaclass'],
     ca: ['navcan']
   };

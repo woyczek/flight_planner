@@ -300,6 +300,7 @@ export const TX = {
     ],
     enaire: ['ENAIRE (AIP Espagne)', 'ENAIRE (Spain AIP)', 'ENAIRE (AIP Spanien)', 'ENAIRE (AIP España)'],
     lfv: ['LFV (AIP Suède)', 'LFV (Sweden AIP)', 'LFV (AIP Schweden)', 'LFV (AIP Suecia)'],
+    navpt: ['NAV Portugal (AIP Portugal)', 'NAV Portugal (Portugal AIP)', 'NAV Portugal (AIP Portugal)', 'NAV Portugal (AIP Portugal)'],
     nats: ['NATS (AIP Royaume-Uni)', 'NATS (UK AIP)', 'NATS (AIP Vereinigtes Königreich)', 'NATS (AIP Reino Unido)'],
     xplane: ['X-Plane (données du simulateur)', 'X-Plane (simulator data)', 'X-Plane (Simulatordaten)', 'X-Plane (datos del simulador)']
   },

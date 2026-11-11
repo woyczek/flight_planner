@@ -151,6 +151,7 @@ Format families: **F1** eAIP in the EUROCONTROL / ICAO Annex 15 HTML layout (one
 - **Hosts that refuse automated access** (recorded, not worked around): lt, be / lu, sk, al (403), ru and tr (captcha / login). Their files would be **taken by hand**, as for LVNL.
 - **Not found or not reachable from the agents' network**: ro, ba, gr, cy, mt, it / va, ch / li, ua, az, je, im: to look at from a browser; no format can be claimed.
 - **What the FRA book already gives** (counts in the first table): the designated points of most of these European zones, near a route (`coords(id, { near })`). The airways (ENR 3) have no source on the workstation for any of them.
+- **Done from this survey** (F1, one State per commit): **Portugal** (`pt`, 11 Nov 2026: ENR 4.4, 3.1, 3.3 read from NAV Portugal's eAIP, personal-licence regime like Sweden; K174). Next, in the ergonomics session's order: Iceland, Georgia (only if the current cycle is found), Hungary and Finland (points only: their ENR 3 is NIL or prose).
 
 ## What is missing, by kind
 
