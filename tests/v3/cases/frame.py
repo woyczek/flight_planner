@@ -5947,6 +5947,7 @@ def a144(c):
     c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T('dirExists')), 'the code of an existing folder: said, with what to do', what='message')
     c.eq([c.js("document.querySelector('[data-wizard] [data-adopt]').hidden"), norm(c.text('[data-wizard] [data-adopt] button'))], [False, norm(T('adopt'))], '« Reprendre cette compagnie » is offered', what='button')
     c.eq(c.js('window.__puts.length'), 0, 'nothing is written by the refusal', what='no put')
+    c.eq([c.js("document.querySelector('[data-wizard] [data-msg]').dataset.kind || null"), c.js("document.querySelector('[data-wizard] [data-adopt] button').classList.contains('primary')"), c.js("document.querySelector('[data-wizard] [data-act=companyNext]').classList.contains('primary')")], [None, True, False], 'an OFFER, not an error: the text is neutral (not red), « Reprendre cette compagnie » is the main action and « Suivant » the secondary one', what='offer look')
     if c.width in (390, 1280):
         c.js("document.querySelector('[data-wizard] [data-adopt]').scrollIntoView({ block: 'center' })")
         c.shot(f'A144_standard_{c.width}_{lang}_delivered.png')

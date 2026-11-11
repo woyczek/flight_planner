@@ -728,3 +728,4 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
 ## 11 November 2026 — the R-S9 debt `tokenSet` paid
 
 - The token field of the Access card used the long sentence `tokenSet` as its placeholder, the lost row (« jeton enregistré — vide : inchangé ») being the right placeholder; the line under the field is the long text. Two meanings, two keys: `tokenKept` (short, the field's placeholder) and `tokenSet` (the line). Counter-test: A58's neighbour in the access case (the Access card again, with a token saved).
+- **A144 retouch** (the ergonomist, after the 390 px capture): « Un dossier existe déjà pour ce code mais… » is an OFFER, not an error: the message is neutral (no `data-kind`, not red) and « Reprendre cette compagnie » is the main (`primary`) action while « Suivant » goes secondary, as long as the code is that of an existing folder; A144 reads the neutral text and the two roles.

@@ -1026,8 +1026,12 @@
       b = view.querySelector('[data-wizard] [data-adopt]');
     if (m) {
       m.textContent = text || '';
-      m.dataset.kind = 'err';
+      if (adopt) delete m.dataset.kind; // une OFFRE, pas une erreur : texte neutre (SOG-0235, retouche de l'ergonome)
+      else m.dataset.kind = 'err';
     }
+    // tant que le code est celui d'un dossier existant, « Reprendre cette compagnie » est l'action principale, « Suivant » passe en secondaire
+    view.querySelector('[data-wizard] [data-act="companyNext"]')?.classList.toggle('primary', !adopt);
+    b?.querySelector('button')?.classList.toggle('primary', !!adopt);
     if (b) { // « Reprendre cette compagnie » : seulement quand le dossier du code existe et que la compagnie manque à la liste (SOG-0235)
       b.hidden = !adopt;
       b.dataset.code = adopt;
