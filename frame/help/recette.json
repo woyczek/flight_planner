@@ -1754,48 +1754,6 @@
    "recommended": 0
   },
   {
-   "id": "Q-0002",
-   "fiche": "SOG-0229",
-   "app": "maintenance",
-   "question": "Refonte : « Publier » sort de la vue courante ?",
-   "context": "La construction publie déjà (c'était ton « 0 fichier envoyé »). Il resterait une ligne « Publiée à … » et un « Publier maintenant » dans « Détail ».",
-   "options": [
-    "Oui",
-    "Non : je garde le bouton « Publier » en vue"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0003",
-   "fiche": "SOG-0229",
-   "app": "maintenance",
-   "question": "Refonte : la ligne EAD et « Lire un terrain / Relire / Retirer », décrites dans les specs et jamais codées ?",
-   "context": "Les procédures se lisent aujourd'hui depuis Carburant, terrain par terrain.",
-   "options": [
-    "On les retire des specs de cet écran",
-    "On les veut sur cet écran"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0004",
-   "fiche": "SOG-0229",
-   "app": "maintenance",
-   "question": "Refonte : les autres groupes de l'écran (procédures, route, synoptique, fiches) suivent le même modèle ?",
-   "context": "Une phrase d'état, un bouton, le reste replié ; leur état est repris dans la phrase du haut.",
-   "options": [
-    "Oui",
-    "Non : seulement la base aéronautique"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0005",
    "fiche": "SOG-0229",
    "app": "maintenance",
@@ -1811,187 +1769,49 @@
    "recommended": 0
   },
   {
-   "id": "Q-0006",
-   "fiche": "SOG-0193",
-   "app": "compagnie",
-   "question": "Temps sur zone : un seul champ « Sur zone (min) » à l'étape Vol, vide par défaut ?",
-   "context": "Cas d'usage sur ta mission F-071 (CONCEPTION_2026-11-11.md § 1) : le devis passe aujourd'hui la cible sans s'arrêter. Pas de table par famille : la mission dit la durée, ou tu la saisis.",
+   "id": "Q-0019",
+   "fiche": "SOG-0243",
+   "app": "pilote",
+   "question": "« Un direct se fait au compas » : le DEVIS compte-t-il aussi la distance et le cap d'un tronçon direct en loxodromie ?",
+   "context": "Aujourd'hui le devis compte la distance du grand cercle. Sur un tronçon court rien ne change (LFPO DCT LFST : 208,5 contre 208,6 NM). Sur KDEN DCT LFST en un seul direct : 4 400 NM en grand cercle, 4 848 NM au compas (+10 %, +60 à 90 min, +2,6 à 4,3 t). Avec des points intermédiaires (ce que fait « Calculer A → B »), les deux se rejoignent. La Carte, les repères, les barbules et les lectures du vent passent en loxodromie dans tous les cas.",
    "options": [
-    "Oui",
-    "Non : je veux autre chose (dis quoi)"
+    "Oui : distance et cap au compas, tronçon par tronçon (le devis dit ce que je vole)",
+    "Non : le devis garde la distance du grand cercle",
+    "Oui, et un avertissement quand un direct au compas dépasse de plus de 2 % le grand cercle (« ajoutez des points intermédiaires »)"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 2
+  },
+  {
+   "id": "Q-0020",
+   "fiche": "SOG-0229",
+   "app": "maintenance",
+   "question": "Refonte de l'écran des données, le détail que tu demandes : les autres groupes sur le même modèle que la base ?",
+   "context": "Aujourd'hui chaque groupe (Procédures, Route RAD / FRA, Synoptique, Fiches d'aéronefs) a ses propres boutons et messages. Proposé : chacun devient UNE ligne repliée — par exemple « Procédures : 312 terrains, cycle 2611 · à jour », « Route : RAD du 29 oct. · à jour », « Synoptique : run de 06Z · à refaire » — avec son bouton quand il y a quelque chose à faire ; la phrase du haut dit seulement « Procédures, route et synoptique : à jour » ou nomme celui qui ne l'est pas. Rien n'est retiré : le déta",
+   "options": [
+    "Oui : une ligne par groupe, repliée",
+    "Non : seulement la base aéronautique, les autres groupes restent comme aujourd'hui",
+    "Oui, mais chaque groupe sur sa propre page"
    ],
    "since": "2026-11-11",
    "state": "todo",
    "recommended": 0
   },
   {
-   "id": "Q-0007",
-   "fiche": "SOG-0193",
-   "app": "compagnie",
-   "question": "Temps sur zone : un champ facultatif dans le fichier d'une mission pour qu'elle dise sa durée sur zone ?",
-   "context": "Tes missions n'ont aucune durée aujourd'hui ; le champ s'appellerait on_station_min.",
-   "options": [
-    "Oui",
-    "Non : saisie dans Carburant seulement"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0008",
-   "fiche": "SOG-0193",
-   "app": "compagnie",
-   "question": "Temps sur zone : plusieurs zones dans un même vol (deux largages, deux rendez-vous) ?",
-   "context": "",
-   "options": [
-    "Une seule pour commencer, sur la cible ou le premier rendez-vous",
-    "Plusieurs dès la première version"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0009",
+   "id": "Q-0021",
    "fiche": "SOG-0231",
    "app": "compagnie",
-   "question": "Registre des missions : un écran de tenue (état de chaque mission, « Affecter ») sans saisie d'une mission dans la première version ?",
-   "context": "La saisie à la main (générateur et éditeur de la V2) resterait sur la page V2, liée depuis l'écran. CONCEPTION_2026-11-11.md § 2.",
+   "question": "Registre des missions, repris sur ta précision (le registre géré seul, sans affectation) : que doit faire le premier écran ?",
+   "context": "CONCEPTION_2026-11-11.md § 2 bis. Le registre (mission_registry.yaml, 153 lignes) n'est écrit aujourd'hui que par la page V2 ; « Ajouter des missions » de la V3 ne le touche pas ; deux lignes n'ont pas de fichier.",
    "options": [
-    "Oui : tenue d'abord",
-    "Non : la saisie d'une mission d'abord"
+    "Tenir le registre d'accord avec les fichiers : « Mettre à jour le registre » ajoute les missions présentes sans ligne, signale les lignes sans fichier, corrige ",
+    "Cela, plus modifier une ligne à la main (titre, série, numéro, opération) et retirer une mission",
+    "Cela, plus créer une mission à la main (la saisie de la V2, refaite)"
    ],
    "since": "2026-11-11",
    "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0010",
-   "fiche": "SOG-0231",
-   "app": "compagnie",
-   "question": "Registre : qui peut affecter une mission à un pilote ?",
-   "context": "",
-   "options": [
-    "Tout pilote de la compagnie",
-    "L'administrateur seulement"
-   ],
-   "since": "2026-11-11",
-   "state": "todo"
-  },
-  {
-   "id": "Q-0011",
-   "fiche": "SOG-0207",
-   "app": "pilote",
-   "question": "« Suivre » le vol : où vit le bandeau du vol (prévu / réel) ?",
-   "context": "CONCEPTION_2026-11-11.md § 3.",
-   "options": [
-    "Sur la Carte seulement",
-    "Aussi sur l'étape Départ de Carburant quand la Carte est à côté"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0012",
-   "fiche": "SOG-0236",
-   "app": "maintenance",
-   "question": "Procédures en doute : une validation à la main (« Je l'ai vérifiée ») vaut pour qui ?",
-   "context": "Risque : valider une géométrie fausse la rend sûre pour tous les pilotes du dépôt.",
-   "options": [
-    "Pour le pilote seul, tant qu'un second ne l'a pas confirmée",
-    "Pour tout le dépôt dès la première validation"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0013",
-   "fiche": "SOG-0152",
-   "app": "pilote",
-   "question": "La V2 « gardée fonctionnelle, dans un dossier v2 » : comment ?",
-   "context": "Relevé de V3 Frame : 643 fichiers à déplacer, 44 fichiers de shared/ encore lus par la V3 (il faudrait scinder shared/), plus de 600 chemins à réécrire dans le code, les outils et les cas, et un risque sur le lanceur. Or la V2 est déjà gardée fonctionnelle à part : la branche develop du dépôt est figée au 28 octobre avec la V2 entière.",
-   "options": [
-    "Ne rien déplacer : un tag « v2-final » sur la branche develop, et plus tard on retire de la V3 ce que seule la V2 lit",
-    "Déplacer quand même dans un dossier v2, après la recette et l'alpha.5",
-    "Déplacer maintenant"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0014",
-   "fiche": "SOG-0131",
-   "app": "pilote",
-   "question": "Passe d'ergonomie : une seule note flottante à la fois sur un téléphone, et l'aide de l'Édition de la Carte dans un pli plutôt qu'en note ?",
-   "context": "Deux notes empilées couvrent un tiers de l'écran à 390 px. ERGONOMIE_2026-11-11.md, T1.",
-   "options": [
-    "Oui",
-    "Non"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0015",
-   "fiche": "SOG-0131",
-   "app": "pilote",
-   "question": "Passe d'ergonomie : le carton « Première fois ? Commencez par un tutoriel court » une seule fois, puis dans l'aide ?",
-   "context": "Il est aujourd'hui sous chaque écran de Carburant, du compte rendu et des missions. ERGONOMIE_2026-11-11.md, T4.",
-   "options": [
-    "Oui",
-    "Non : je le garde partout"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0016",
-   "fiche": "SOG-0131",
-   "app": "pilote",
-   "question": "Passe d'ergonomie : l'aéronef en premier à l'étape Vol de Carburant ?",
-   "context": "Rien ne se calcule sans lui, et « Aucun aéronef : cherchez-le » arrive aujourd'hui en dernier, après sept champs.",
-   "options": [
-    "Oui",
-    "Non"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0017",
-   "fiche": "SOG-0240",
-   "app": "maintenance",
-   "question": "Rappel que tu m'as demandé — Naviair (Danemark) : il me faut un PDF réel de l'AIP pour écrire le lecteur.",
-   "context": "Le lien que tu avais donné date de juin 2024. Il faut les pages ENR 3 (voies) et ENR 4 (points, balises) du cycle en vigueur, déposées dans Téléchargements. Même besoin pour les Pays-Bas (LVNL refuse les accès automatiques).",
-   "options": [
-    "Je les dépose dans Téléchargements",
-    "Plus tard",
-    "On laisse le Danemark et les Pays-Bas pour l'instant"
-   ],
-   "since": "2026-11-11",
-   "state": "todo"
-  },
-  {
-   "id": "Q-0018",
-   "fiche": "SOG-0240",
-   "app": "maintenance",
-   "question": "Sources de points et de voies : sous quel régime lire les AIP étrangers au format eAIP (Hongrie, Portugal, Géorgie, Islande, Finlande d'abord ; jusqu'à 23 États) ?",
-   "context": "Relevé d'AeroDB sur 46 zones : aucun de ces AIP n'a de licence de réutilisation ; presque tous demandent la permission de l'éditeur pour copier ou convertir (la Finlande seule l'autorise sans frais). La Suède (LFV) est déjà lue sous la case d'usage personnel et publiée dans ton dépôt. En attendant ta réponse : poste seulement.",
-   "options": [
-    "Comme la Suède : sous la case d'usage personnel, publiés dans mon dépôt",
-    "Sur ce poste seulement : jamais publiés (data/local)",
-    "D'abord demander les licences aux éditeurs"
-   ],
-   "since": "2026-11-11",
-   "state": "todo",
-   "recommended": 0
+   "recommended": 1
   }
  ]
 }
