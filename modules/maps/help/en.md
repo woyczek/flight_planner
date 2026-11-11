@@ -144,7 +144,7 @@ a fix, a beacon or an airfield: it settles there (dropped elsewhere, it becomes 
 such as 4530N00030E). To add a point, tap “+” (in the same column), then tap the place you want (or keep pressing for half a
 second): on a fix, a beacon or an airfield it settles there, elsewhere it is a free point; it is added to the nearest
 segment. A simple tap adds nothing: it shows the bubble. Tap a route point: its card gives its level and offers
-“Remove”. Departure and arrival do not move here. On the profile, drag a level up or down: the level changes from the
+“Remove”. A point the mission imposes (rendezvous, target, source; a filled square, “set by the mission” on its card) is neither moved nor removed: the pilot keeps the other points. Departure and arrival do not move here. On the profile, drag a level up or down: the level changes from the
 point that opens that segment, in steps of FL10 (on the first segment, it is the flight's level); in a point's card, “−”
 and “+” do the same. “Undo” takes back the last gesture. Each change is saved in the flight at once, and Fuel redoes the
 quote; the profile follows. Tapping the button again (or Escape) closes the mode, and the map moves under your finger again. To type the route as

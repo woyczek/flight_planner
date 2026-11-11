@@ -66,13 +66,15 @@ const UNDO_MAX = 20;
 
 /** Points de l'enregistrement aux longitudes continues, tous leurs champs gardés (wind, via, awy…). */
 const rawPoints = () => unwrapLons((S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)));
-/** Point de la route sous (x, y) : son rang, ou null ; movable : sans le départ ni l'arrivée. */
+/** Un point que la mission impose (rendez-vous, cible, source ; Carburant le marque lock: 'mission', SOG-0193 L3) : la Carte ne le déplace ni ne le retire, elle le garde tel quel à l'écriture. */
+const locked = p => p?.lock === 'mission';
+/** Point de la route sous (x, y) : son rang, ou null ; movable : sans le départ, l'arrivée ni un point imposé par la mission. */
 function pointAt(x, y, movable = false) {
   const pts = rawPoints();
   let best = null,
     bd = HIT;
   pts.forEach((p, i) => {
-    if (movable && (i === 0 || i === pts.length - 1)) return;
+    if (movable && (i === 0 || i === pts.length - 1 || locked(p))) return;
     const q = S.toC(+p.lat, +p.lon),
       d = Math.hypot(q.x - x, q.y - y);
     if (d <= bd) {
@@ -250,6 +252,7 @@ function remember() {
 function movePoint(i, a) {
   const pts = rawPoints(),
     old = pts[i];
+  if (locked(old)) return; // imposé par la mission : jamais déplacé
   remember();
   pts[i] = {
     id: a.id,
@@ -294,7 +297,7 @@ function insertPoint(a) {
 /** Point i retiré (jamais le départ ni l'arrivée). */
 function removePoint(i) {
   const pts = rawPoints();
-  if (i <= 0 || i >= pts.length - 1) return;
+  if (i <= 0 || i >= pts.length - 1 || locked(pts[i])) return; // ni le départ, ni l'arrivée, ni un point imposé par la mission
   remember();
   pts.splice(i, 1);
   commit(pts);
@@ -392,6 +395,12 @@ export function drawEdit(ctx, toC) {
     if (i === 0 || i === pts.length - 1 || d?.i === i) return;
     const q = toC(+p.lat, +p.lon);
     ctx.beginPath();
+    if (locked(p)) { // imposé par la mission : un carré plein, pas la poignée ronde d'un point qu'on glisse
+      ctx.fillStyle = acc;
+      ctx.rect(q.x - 5, q.y - 5, 10, 10);
+      ctx.fill();
+      return;
+    }
     ctx.arc(q.x, q.y, 9, 0, Math.PI * 2);
     ctx.stroke();
   });
@@ -439,13 +448,14 @@ function openCard(i) {
     p = pts[i];
   if (!p) return;
   const end = i === 0 || i === pts.length - 1,
+    held0 = locked(p),
     lvl = +p.alt_ft > 0 ? tt(TX.ptLevel, {
       l: level(+p.alt_ft)
     }) : tt(TX.ptSame),
     held = i < pts.length - 1 ? heldLevel(i) : 0,
     btn = (d, label, sign) => `<button type="button" class="f-btn" data-lvl="${i}" data-d="${d}" aria-label="${esc(label)}" title="${esc(label)}">${sign}</button>`,
     step = held ? `<div class="mp-lvl">${btn(-1000, tt(TX.lvlDown), '−')}<b>${esc(level(held))}</b>${btn(1000, tt(TX.lvlUp), '+')}</div>` : '',
-    html = `<div><b>${esc(p.id || icaoCoord(+p.lat, outLon(+p.lon)))}</b></div><div class="f-muted">${esc(i === 0 ? tt(TX.ptDep) : end ? tt(TX.ptArr) : lvl)}</div>${step}${end ? '' : `<button type="button" class="f-btn" data-remove="${i}">${esc(tt(TX.remove))}</button>`}`,
+    html = `<div><b>${esc(p.id || icaoCoord(+p.lat, outLon(+p.lon)))}</b></div><div class="f-muted">${esc(i === 0 ? tt(TX.ptDep) : end ? tt(TX.ptArr) : lvl)}</div>${step}${end ? '' : held0 ? `<div class="f-muted">${esc(tt(TX.ptLocked))}</div>` : `<button type="button" class="f-btn" data-remove="${i}">${esc(tt(TX.remove))}</button>`}`,
     q = S.toC(+p.lat, +p.lon);
   hideTips();
   showTip(S.cardEl, S.box, q.x, q.y, html);

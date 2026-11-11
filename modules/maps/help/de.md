@@ -158,7 +158,7 @@ losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 453
 tippen Sie auf „+“ (in derselben Spalte) und dann auf die gewünschte Stelle (oder halten Sie eine halbe Sekunde gedrückt):
 auf einem Fix, einem Funkfeuer oder einem Flugplatz setzt er sich dort, anderswo ist es ein freier Punkt; er wird dem
 nächstgelegenen Abschnitt hinzugefügt. Ein einfaches Tippen fügt nichts hinzu: es zeigt die Blase. Tippen Sie einen
-Routenpunkt an: seine Karte nennt seine Flughöhe und bietet „Entfernen“ an. Abflug und Ankunft bewegen sich hier nicht.
+Routenpunkt an: seine Karte nennt seine Flughöhe und bietet „Entfernen“ an. Ein Punkt, den die Mission vorgibt (Treffpunkt, Ziel, Quelle; gefülltes Quadrat, „von der Mission vorgegeben“ auf seiner Karte), wird weder verschoben noch entfernt: die übrigen Punkte bleiben dem Piloten. Abflug und Ankunft bewegen sich hier nicht.
 Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten: sie ändert sich ab dem Punkt, der diesen Abschnitt
 eröffnet, in Schritten von FL10 (auf dem ersten Abschnitt ist es die Flughöhe des Flugs); in der Karte eines Punkts tun
 „−“ und „+“ dasselbe. „Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im Flug gespeichert, und

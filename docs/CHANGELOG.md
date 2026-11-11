@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the points a mission imposes cannot be moved or removed in Edit** — a point with `lock: 'mission'` (rendezvous, target, source) is drawn as a filled square, its card says "set by the mission", no drag, no "Remove"; the lock is kept in what the Map writes (maps SPEC § 12, DECISIONS, help ×4; noreg D173; SOG-0193 L3).
 - **Fuel: a reading of the route is never lost to a save of the flight** — with a slow base, the points read stayed on an old copy of the flight and the route kept its old distance (Fuel DECISIONS; noreg F142).
 - **Fuel: the points a mission imposes are locked** — rendezvous, target and source carry `lock: 'mission'` in the route, neither moved nor removed, put back when the text loses them (Fuel SPEC, DECISIONS, help; noreg N24; SOG-0193 L3).
 - **Fuel: the warnings of a procedures reading are said in text** under the aerodrome's line, folded (DECISIONS; noreg F141; SOG-0203).

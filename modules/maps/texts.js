@@ -151,6 +151,10 @@ export const TX = {
   lvlDown: ['Niveau plus bas (−FL10)', 'Lower level (−FL10)', 'Niedrigere Flughöhe (−FL10)', 'Nivel más bajo (−FL10)'],
   lvlUp: ['Niveau plus haut (+FL10)', 'Higher level (+FL10)', 'Höhere Flughöhe (+FL10)', 'Nivel más alto (+FL10)'],
   remove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
+  ptLocked: ['Imposé par la mission : ni déplacé, ni retiré', 'Set by the mission: neither moved nor removed',
+    'Von der Mission vorgegeben: weder verschoben noch entfernt',
+    'Impuesto por la misión: no se mueve ni se quita'
+  ],
   ptDep: ['départ', 'departure', 'Abflug', 'salida'],
   ptArr: ['arrivée', 'arrival', 'Ankunft', 'llegada'],
   ptLevel: ['{l} à partir de ce point', '{l} from this point', '{l} ab diesem Punkt', '{l} desde este punto'],

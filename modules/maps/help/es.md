@@ -149,7 +149,7 @@ círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se co
 vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Para añadir un punto, toque «+» (en la misma columna)
 y luego el lugar deseado (o mantenga pulsado medio segundo): sobre un fijo, una radioayuda o un aeródromo se coloca
 allí, en otro lugar es un punto libre; se añade al tramo más cercano. Un toque simple no añade nada: muestra la burbuja.
-Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la llegada no se mueven aquí. En el
+Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». Un punto que la misión impone (encuentro, objetivo, fuente; cuadrado lleno, «impuesto por la misión» en su tarjeta) no se mueve ni se quita: el piloto conserva los demás puntos. La salida y la llegada no se mueven aquí. En el
 perfil, arrastre un nivel hacia arriba o hacia abajo: el nivel cambia desde el punto que abre ese tramo, en pasos de
 FL10 (en el primer tramo, es el nivel del vuelo); en la tarjeta de un punto, «−» y «+» hacen lo mismo. «Deshacer»
 deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combustible rehace el cálculo; el perfil sigue.

@@ -1181,6 +1181,11 @@ Hidden for mission maps. The Edit toggle enters the mode; entering it says its h
   the finger (navaid, aerodrome, airway point, RNAV point, VRP of the data read, within 20 px) ringed with its id. Released
   on it: the point takes its id and position and keeps its `alt_ft`; elsewhere a free point named by its ICAO coordinates
   (`icaoCoord`, "4530N00030E").
+- **Points the mission imposes** (SOG-0193 L3): a point of `route.points` with `lock: 'mission'` (written by Fuel on a rendezvous, the
+  target, a source; its name in the mission is `mission`) is not a handle: a press on it drags nothing (the map pans), `movePoint`
+  and `removePoint` refuse it, its card says "set by the mission" instead of offering "Remove", and it is drawn as a filled
+  square. The Map keeps `lock` and `mission` in what it writes (`commit` spreads the point) and never touches `route.locks`
+  (Fuel's). A free point can still be added anywhere, even between two imposed points.
 - **Adding**: the "+" button arms one insertion (pressed while armed, hint by notification), the next tap adds the anchor
   under the finger (else a free point) where it lengthens the route least, then disarms; a press held 500 ms without moving
   (8 px) does the same at once (the browser menu is suppressed in the mode). A simple tap never inserts: on a route point it

@@ -5462,3 +5462,40 @@ def d_remount(c):
       st.setS(S0); S0.ctx.data.read = orig;
       return out }""")
     c.ok(r['same'] and not r['mission'] and not r['pts'], str(r), 'the read of the old mount did not write its mission into the new one')
+
+
+@case('D173', 'A point the mission imposes (lock « mission ») is neither dragged nor removed in the Édition: its card says so, a drag leaves the route as it was, and the lock is kept in what the Map writes', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0193 L3 (user: « les points de rdv, source, cible, restent imposés sur la carte »; V3 § 10.47 c): Fuel writes lock « mission » and the mission’s name on the points the mission imposes; the Map’s Édition neither moves nor removes them, draws them as squares, and writes the route with the lock')
+def d_locked(c):
+    f = flight()
+    f['route']['points'][2] = {'id': 'NEPIX', 'lat': 44.9, 'lon': 2.4, 'lock': 'mission', 'mission': 'RDV-1'}
+    c.open('maps', docs=fdocs(f), flight=False)
+    c.ready('maps', sheet=True)
+    hook_map(c)
+    c.js(_STATE_JS)
+    c.tap('[data-mp="edit"]')
+    c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'true'", what='Edit becomes pressed')
+    a = xy(c, 44.9, 2.4)                                   # the imposed point
+    mouse_drag(c, a, (a[0] + 45, a[1] + 35))
+    c.wait(900)                                            # past the 400 ms of the write
+    d = c.doc(PATH)
+    c.ok(d['by'] == 'fuel' and d['route']['points'][2]['id'] == 'NEPIX', f"by {d['by']}, {d['route']['points'][2]}", 'the drag of an imposed point changes nothing')
+    # its card: the word, no « Retirer »
+    c.js("(p) => { const S = window.__mp.S; S.edit.tapGuard = 0; return true }")
+    a = xy(c, 44.9, 2.4)
+    c.page.mouse.click(*a)
+    c.until("() => !window.__mp.S.cardEl.hidden", timeout=4000, what='the card of the imposed point')
+    c.eq(c.js("() => !!window.__mp.S.cardEl.querySelector('[data-remove]')"), False, 'no « Remove » on an imposed point', what='remove button')
+    card = norm(c.js("() => window.__mp.S.cardEl.textContent"))
+    c.ok(norm(row(c, 'ptLocked')) in card, card, 'the card says the mission imposes the point')
+    c.shot(f'D173_{c.design}_{c.lang}_delivered.png')
+    # a free point is still removed, and the lock stays in what is written
+    c.js("() => { window.__mp.S.cardEl.hidden = true; window.__mp.S.edit.tapGuard = 0; return true }")
+    b = xy(c, 46.5833, -1.2)                               # LUGEN, the pilot’s
+    c.page.mouse.click(*b)
+    c.until("() => !!window.__mp.S.cardEl.querySelector('[data-remove]')", timeout=4000, what='the card of a free point has « Remove »')
+    c.js("() => window.__mp.S.cardEl.querySelector('[data-remove]').click()")
+    doc = c.until_doc(PATH, lambda d: d and d.get('by') == 'maps' and len(d['route']['points']) == 3, what='the free point removed, written', timeout=8000)
+    p = doc['route']['points'][1]
+    c.ok(p['id'] == 'NEPIX' and p.get('lock') == 'mission' and p.get('mission') == 'RDV-1', f'{p}', 'the imposed point is kept with its lock and its mission name')

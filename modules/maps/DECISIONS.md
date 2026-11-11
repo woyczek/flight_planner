@@ -2810,3 +2810,15 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D96 (1280 and 390): the base map held then released, five aerodb arrivals one after the other; every full drawing of
   the first load noted at its end — data shown or not, the sheet's height. On the code before: 4 drawings without data out of 15
   (one per arrival); now none, the sheet keeps its height, each arrival read again and the last one shown.
+
+## Imposed points are not the pilot's to move (SOG-0193 L3; user: « les points de rdv, source, cible, restent imposés sur la carte »)
+
+- **Contract** (Features SOG, f141c550a): Fuel marks `lock: 'mission'` and `mission: '<name>'` on the imposed points of `route.points`
+  (`lockedPoint` in `frame/lib/mission.js`: rendezvous, target, a turn or zone whose role says a source) and keeps `route.locks`; it puts
+  the lock back at each reading of the route. The Map is the second place where a route is edited.
+- **Rule**: in the Édition an imposed point is not grabbed (`pointAt(…, movable)`), not moved, not removed; a tap shows its card
+  with the line « set by the mission » instead of « Remove »; handles of free points are rings, imposed ones filled squares. What is
+  written keeps `lock` and `mission` (the point is spread whole); `route.locks` is Fuel's. Undo restores them with the points.
+- **Noreg** D173 (4 languages): the drag of an imposed point writes nothing, its card has no « Remove » and says why, a free point
+  removed is written with the imposed one still locked and named. On the code before: the point moved (`by: maps`).
+
