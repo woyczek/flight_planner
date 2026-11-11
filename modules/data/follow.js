@@ -408,6 +408,7 @@ export async function settle(me, r, live = true) {
 /** Suit le travail connu (n'importe quel jeu et verbe) que le lanceur fait tourner (page rechargée, ou départ refusé pour cause d'opération
  *  en cours) ; si le dernier s'est terminé, en dit la fin. Ne bloque pas le montage. */
 export async function follow() {
+  if (!S) return; // le module est démonté : rien à suivre
   const me = S,
     L = S.ctx.launcher;
   if (!L) return;

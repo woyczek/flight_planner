@@ -5762,3 +5762,17 @@ def l79(c):
     c.ok(bool(said), said, 'the update says nothing is to rebuild')
     c.ok('3' in said[0] and '5' not in said[0], said, 'only the three zones the launcher said up to date are counted (3), not the five ticked')
     c.check_errors()
+
+
+@case('L80', 'Données: opening Maintenance straight on #data raises no page error (follow() ran on an unmounted state: « Cannot read properties of null (reading ‘ctx’) »)', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='V3 Frame (11 Nov): c.open(‘data’, app=‘maintenance’, docs=LEVEL3, wait=False) then check_errors showed a pageerror at follow (modules/data/follow.js:412) from mount (module.js:399): mount went on after an await although the module had been unmounted (the state S is null), and follow() read S.ctx')
+def l80(c):
+    # the cache reads of the screen are slow (900 ms): the pilot leaves for another module while the screen is still loading — the state is gone when mount goes on
+    c.page.add_init_script("""(() => { const get = IDBObjectStore.prototype.get; IDBObjectStore.prototype.get = function (key) { const q = get.call(this, key); if (!/^(pilot|cache)\//.test(String(key))) return q;
+      const late = { get result() { return q.result }, get error() { return q.error } }; q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), 900); q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), 900); return late } })()""")
+    c.open('data', app='maintenance', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-module=data]')", timeout=20000, what='the module is mounted (still loading)')
+    c.js("location.hash = '#devices'")
+    c.wait(5000)
+    c.check_errors()

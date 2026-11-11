@@ -395,6 +395,7 @@ export async function mount(el, ctx) {
     S.chainNote = true;
   }
   await load();
+  if (S !== me) return; // démonté pendant la lecture (le pilote est parti vers un autre module) : rien n'est suivi ni dit
   if (open) S.ctx.notify(tt(TX.chainReload), 'warn');
   follow(); // un travail de la base en cours sur le lanceur (page rechargée) se suit ; le dernier terminé dit sa fin
 }
