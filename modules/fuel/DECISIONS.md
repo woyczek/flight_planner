@@ -1631,3 +1631,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **11 Nov 2026 — the warnings of a reading are said in text** (SOG-0203, the rest given to Features SOG: LFOE said « 0 page lue sur 2.
   2 avertissements. » and nothing of them): the warnings of the aerodrome's last reading are kept and listed in a fold under its line
   (twenty at most, bounded, escaped: texts of the launcher's reader). F141; counter-test on origin/v3: no fold.
+- **11 Nov 2026 — a reading of the route is never lost to a save of the flight** (challenge à rebours; N13 and N24 failed under
+  load: « the direct mission has a distance » never came): `resolveRoute` kept the route object of its start and wrote the points it
+  read there after its wait; but each save of the flight (`writeFlight`, 300 ms after a change) and each flight taken from the record
+  make a new object, so a reading longer than 300 ms (a slow base, a loaded device) left its points on the old one, and nothing read
+  again: the route stayed on its old points and distance. Now the reading is applied to today's route when it has the same text,
+  departure and arrival, and done again otherwise. F142 (a base slowed to 1.5 s a lookup); counter-test on origin/v3: the points never
+  reach the record.

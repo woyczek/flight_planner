@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a reading of the route is never lost to a save of the flight** — with a slow base, the points read stayed on an old copy of the flight and the route kept its old distance (Fuel DECISIONS; noreg F142).
 - **Fuel: the warnings of a procedures reading are said in text** under the aerodrome's line, folded (DECISIONS; noreg F141; SOG-0203).
 - **Fuel: « Aides radio » at the step Departure** — the chosen ILS first, the route's VOR / DME folded (Fuel SPEC § 9.7, DECISIONS, help; noreg F140; SOG-0200).
 - **Aircraft: one view per entry** — the Fleet from Compagnie (`?view=fleet`), the Sheets from Maintenance (`?view=sheets`) (SPEC, DECISIONS; noreg M39; SOG-0231).

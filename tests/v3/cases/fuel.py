@@ -4110,3 +4110,40 @@ def f141(c):
         c.ok('ligne illisible' in items[0] and '<b>x</b>' in items[0] and c.count(f'{FUEL} [data-procwarn] li b') == 0, items, 'said as text, escaped (never markup)')
         c.js(f"(() => {{ const d = document.querySelector('{FUEL} [data-proc=arr] [data-procwarn]'); d.open = true; d.scrollIntoView({{block: 'center'}}) }})()")
         c.shot(f'F141_{c.design}_{w}_{c.lang}_delivered.png')
+
+
+
+@case('F142', 'A reading of the route is never lost when the flight is taken again meanwhile (another writer, a stored echo): its points reach the record',
+      'F', tags=('fuel',), designs=('standard',), screens=False,
+      rule='Challenge of 11 Nov (N13 / N24 under load: « the direct mission has a distance » never came): resolveRoute kept the route object '
+      'of its start and wrote the points read there after its wait; each save of the flight (writeFlight, 300 ms after a change) and each '
+      'flight taken from the record make a new object, so a reading longer than 300 ms left its points on the old one and nothing read again. '
+      'A slow base (every lookup 1.5 s) and another writer (the level only) during the reading')
+def f142(c):
+    c.page.add_init_script("""(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+        real = v && { ...v, create: (...a) => { const db = v.create(...a);
+          try { const slow = f => f && (async (...x) => { await new Promise(r => setTimeout(r, window.__slowBase ? 1500 : 0)); return f.apply(db, x) });
+            db.coords = slow(db.coords); if (db.coordsAll) db.coordsAll = slow(db.coordsAll) } catch (e) {}
+          return db } } } }) })()""")
+    c.open('fuel', flight=True, airfields=True)
+    to_step(c, 1)
+    path = 'pilot/ABC/current_flight.json'
+    c.js('window.__slowBase = true')
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, 'LFRS 4600N00100E LFML')
+    c.page.press(rt, 'Tab')
+    c.wait(700)  # the reading has started (its 250 ms timer), the slow base holds it
+    # another writer during the reading: the level only, the route text Fuel wrote stays
+    c.js("""async ([path]) => { const d = FrameData.adapter({ id: 'maps', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] });
+      const cur = (await d.get(path)) || {};
+      await d.put(path, { ...cur, level: { ft: 25000 }, by: 'maps', updated_at: new Date().toISOString() }); return true }""", [path])
+    try:
+        d = c.until_doc(path, lambda d: d and '4600N00100E' in [x.get('id') for x in (d.get('route') or {}).get('points') or []],
+                        'the points of the reading reach the record', timeout=12000)
+    except Fail:   # say the route as it was (the generic message stops before it)
+        r = (c.doc(path) or {}).get('route') or {}
+        shown = c.js("[...document.querySelectorAll('[data-module=fuel] [data-pts] .fu-pt b')].map(b => b.textContent)")
+        raise Fail(f"route text {r.get('text')!r}, points {[x.get('id') for x in r.get('points') or []]}; in Fuel: {shown}",
+                   'the points of the reading on the record')
+    c.eq([x.get('id') for x in d['route']['points']], ['LFRS', '4600N00100E', 'LFML'], 'the route read, on the record', what='points')
+    c.eq((d.get('level') or {}).get('ft'), 25000, 'the other writer\'s level stays', what='level')
