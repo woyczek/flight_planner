@@ -2354,6 +2354,8 @@ directory before the `MAX_MEMBERS` test, and the upload handler lacks the `_lan(
 the relay's error body (`e.read(NET_MAX)`) has no deadline, so a slow-dripping error body from an allowed host holds a slot,
 and the four slots are shared between the workstation's own page and paired devices.
 
+**Settled on 11 November (AeroDB, one commit and one red case each):** note (1) — the whole path of the SQLite URI is quoted (`%` first), K167.
+
 **160. Little Navmap records stay on this device (4eaf79a59) — acceptable, one note.** Note 2 of 159 is closed for positions.
 `pubProcs` turns every record with `status: 'lnm'` or `lnm: true` into `null`; `knownPoints` and `autoAirways` read the chosen
 procedures through it, so a typed point no longer takes the position of an lnm point and nothing of it reaches

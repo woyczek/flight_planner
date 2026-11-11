@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Little Navmap job: the SQLite URI escapes `%`** — a profile folder named « 100%41 » was opened as « 100A » (`tools/regen/lnm.py`; audit, review of 10 Nov, N1; noreg K167).
 - **Launcher: a file chosen by hand and read for want of network is dated** — the NASR and UK Mil AIP lines of `base/fetch` carry `deposited` (the date of the file) and the job log says « fichier déposé à la main le … »; `data/local/upload/` is not cleaned (user's decision) (`tools/aero_fetch.py`, `faa_nasr.py`, `regen/base_sources.py`, INTEGRATION; noreg K166; challenge c of AeroDB).
 - **Launcher: a mute host no longer holds the one job slot** — `aero_fetch` gives the connection (TCP and TLS) its own 15 s (`CONNECT_TIMEOUT`); the time of a request (120 s, per read) is unchanged (`tools/aero_fetch.py`; noreg K165; challenge a of AeroDB).
 - **Launcher: the ten-minute gap of the world synoptic (`weather/world`) counts the jobs that reached the NOAA** — a tool that crashes, an unsafe path or a cancel before the first forecast time no longer forbids a new try (« prochain essai dans 578 s »); the job gives `reached: false` and `Jobs` gives the start back (`tools/regen_jobs.py`, `tools/regen/weather.py`; noreg K164; challenge b of AeroDB).

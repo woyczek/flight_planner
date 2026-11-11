@@ -11,6 +11,7 @@ Garde : le chemin de la base ne vient JAMAIS de la page (le dossier est celui du
 import os
 import re
 import sqlite3
+import urllib.parse
 
 NOTICE = ('Procédures lues de la base de Little Navmap de ce poste (données Navigraph / Jeppesen, licence personnelle) : usage personnel, jamais publiées ni exportées ; non destinées à la navigation.')
 SKIP = {'logbook', 'logbook_backup', 'track', 'userdata', 'userdata_backup', 'userairspace', 'onlinedata'}      # les bases de Little Navmap qui ne portent pas de procédures
@@ -172,7 +173,7 @@ def run(job, args, ctx):
         if job.cancelled():
             return {'ok': False, 'reason': 'unreadable', 'icao': icao}
         try:
-            uri = 'file:' + path.replace('\\', '/').replace('?', '%3f').replace('#', '%23') + '?mode=ro&immutable=1'
+            uri = 'file:' + urllib.parse.quote(path.replace('\\', '/'), safe='/:') + '?mode=ro&immutable=1'      # tout le chemin est échappé (SQLite décode l'URI : un dossier « 100%41 » devenait « 100A »)
             con = sqlite3.connect(uri, uri=True, timeout=5)
             try:
                 procs, there = procedures_of(con, icao, os.path.basename(path))

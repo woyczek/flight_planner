@@ -7638,3 +7638,35 @@ def k164(c):
             time.sleep(0.1)
         again = jobs2.start('weather', 'world', {})
         c.eq((again.get('ok'), again.get('reason')), (False, 'too-soon'), 'a job that read a forecast time (@etape) and then failed holds the gap too', what='etape holds')
+
+
+@case('K167', 'proc/lnm: the SQLite URI of the Little Navmap base escapes `%` (a profile folder named « 100%41 » was opened as « 100A »: unreadable), `#` and `?` too (N1 of the security review)', 'K', static=True,
+      rule='Security review of 10 Nov 2026, N1 (audit line 159): tools/regen/lnm.py built `file:` + path with only `?` and `#` escaped; a `%` in the path of the user profile (a folder named 100%41) was decoded by SQLite into another path, so the base was never found (unreadable) or, worse, another file was opened. The whole path is now quoted (`%` first); a base in a folder whose name holds `%`, a space or `#` is read as it is, still read-only')
+def k167(c):
+    import os
+    import sqlite3
+    import tempfile
+    from pathlib import Path
+    RJ = _regen()
+    fn, check = RJ.REGISTRY[('proc', 'lnm')]
+    cols = ('type, alt_descriptor, turn_direction, rnp, fix_ident, fix_lonx, fix_laty, is_flyover, course, distance, altitude1, altitude2, speed_limit, vertical_angle')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        folder = Path(td) / 'profil 100%41 #1' / 'little_navmap_db'
+        folder.mkdir(parents=True)
+        db = folder / 'little_navmap_navigraph.sqlite'
+        con = sqlite3.connect(db)
+        con.executescript(
+            'create table airport(airport_id integer primary key, ident text, icao text);'
+            'create table approach(approach_id integer primary key, airport_id int, runway_name text, type text, suffix text, arinc_name text, fix_ident text);'
+            f'create table approach_leg(approach_leg_id integer primary key, approach_id int, is_missed int, {cols} text);'
+            'create table transition(transition_id integer primary key, approach_id int, fix_ident text);'
+            f'create table transition_leg(transition_leg_id integer primary key, transition_id int, {cols} text);'
+            "insert into airport values (1, 'KDEN', 'KDEN');"
+            "insert into approach values (11, 1, '08', 'ILS', '', 'I08', 'LOC08');"
+            "insert into approach_leg values (3, 11, 0, 'IF', 'A', null, 0, 'FAF08', -104.9, 39.8, 0, 0, 0, 7000, 0, 0, 0), (4, 11, 0, 'DF', '+', 'R', 0, 'WAKIR', -105.026, 39.7486, 0, 0, 0, 11000, 0, 0, 0);")
+        con.commit()
+        con.close()
+        before = sorted(x.name for x in folder.iterdir())
+        r = fn(RJ.Job('proc', 'lnm', {}), check({'icao': 'KDEN', 'personal': True}), {'lnm_folder': lambda: str(folder)})
+        c.eq((r.get('ok'), r.get('reason'), r.get('count')), (True, None, 1), 'a base in a folder whose name holds `%41`, a space and `#`: read as it is (the path is quoted, `%` first), the one approach found', what='percent')
+        c.eq(sorted(x.name for x in folder.iterdir()), before, 'still read-only: nothing created beside the base', what='read only')
