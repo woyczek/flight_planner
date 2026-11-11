@@ -12,7 +12,7 @@ export const TX = {
     piston: ['Pistons', 'Piston engines', 'Kolbenmotoren', 'Pistón'],
     other: ['Autres', 'Others', 'Andere', 'Otros']
   },
-  coType: ['Type de la compagnie ({n} appareil(s)) : performances à renseigner',
+  coType: ['Type de la compagnie ({n} aéronef(s)) : performances à renseigner',
     'Company type ({n} aircraft): performance to fill in', 'Typ der Fluggesellschaft ({n} Luftfahrzeug(e)): Leistungen einzutragen',
     'Tipo de la compañía ({n} aeronave(s)): rendimientos por completar'
   ],
@@ -32,7 +32,7 @@ export const TX = {
     taxi: ['roulage', 'taxi', 'Rollen', 'rodaje'],
     runway: ['piste', 'runway', 'Piste', 'pista'],
     fuel: ['carburant', 'fuel', 'Kraftstoff', 'combustible'],
-    aircraft: ['appareil', 'aircraft', 'Luftfahrzeug', 'aeronave'],
+    aircraft: ['aéronef', 'aircraft', 'Luftfahrzeug', 'aeronave'],
     other: ['divers', 'other', 'Sonstiges', 'otros']
   },
   complete: ['complète', 'complete', 'vollständig', 'completa'],

@@ -85,7 +85,7 @@ const TX = {
   secRoute: ['Route fournie', 'Route provided', 'Vorgegebene Route', 'Ruta facilitada'],
   routeNm: ['{n} NM au total', '{n} NM in all', '{n} NM insgesamt', '{n} NM en total'],
   secMaps: ['Cartes fournies', 'Maps provided', 'Mitgelieferte Karten', 'Mapas facilitados'],
-  secPayload: ['Charge et appareils', 'Payload and aircraft', 'Zuladung und Luftfahrzeuge', 'Carga y aeronaves'],
+  secPayload: ['Charge et aéronefs', 'Payload and aircraft', 'Zuladung und Luftfahrzeuge', 'Carga y aeronaves'],
   payload: ['Charge', 'Payload', 'Zuladung', 'Carga'],
   massKg: ['Masse (kg)', 'Mass (kg)', 'Masse (kg)', 'Masa (kg)'],
   pax: ['Passagers', 'Passengers', 'Passagiere', 'Pasajeros'],
@@ -96,7 +96,7 @@ const TX = {
   category: ['Catégorie', 'Category', 'Kategorie', 'Categoría'],
   search: ['Rechercher une mission', 'Search a mission', 'Mission suchen', 'Buscar una misión'],
   // ce que la recherche lit, écrit sous le champ (SOG-0009)
-  searchHint: ['Identifiant, titre, terrain (code OACI), type d’appareil, indicatif (SAMU66), activité (MEDEVAC, HEMS, SAMU…).',
+  searchHint: ['Identifiant, titre, terrain (code OACI), type d’aéronef, indicatif (SAMU66), activité (MEDEVAC, HEMS, SAMU…).',
     'Id, title, aerodrome (ICAO code), aircraft type, callsign (SAMU66), activity (MEDEVAC, HEMS, SAMU…).',
     'ID, Titel, Flugplatz (ICAO-Code), Luftfahrzeugtyp, Rufzeichen (SAMU66), Tätigkeit (MEDEVAC, HEMS, SAMU…).',
     'Id, título, aeródromo (código OACI), tipo de aeronave, indicativo (SAMU66), actividad (MEDEVAC, HEMS, SAMU…).'
@@ -238,7 +238,7 @@ const TX = {
   flown: ['volée le {d}', 'flown on {d}', 'geflogen am {d}', 'volada el {d}'],
   drawn: ['Tirée au sort', 'Drawn at random', 'Zufällig gezogen', 'Sorteada'],
   route: ['Trajet', 'Route', 'Strecke', 'Trayecto'],
-  aircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
+  aircraft: ['Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
   block: ['Bloc estimé', 'Estimated block', 'Geschätzte Blockzeit', 'Bloque estimado'],
   operation: ['Opération', 'Operation', 'Operation', 'Operación'],
   notes: ['Notes', 'Notes', 'Hinweise', 'Notas'],

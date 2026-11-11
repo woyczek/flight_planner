@@ -76,7 +76,7 @@ const TX = {
     net: ['réseau {n}', '{n} network', '{n}-Netz', 'red {n}']
   },
   time: ['Heure', 'Time', 'Uhrzeit', 'Hora'],
-  aircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
+  aircraft: ['Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
   mission: ['Mission', 'Mission', 'Einsatz', 'Misión'],
   notes: ['Remarques', 'Notes', 'Bemerkungen', 'Observaciones'],
   inFlight: ['en cours', 'in progress', 'laufend', 'en curso'],
@@ -85,7 +85,7 @@ const TX = {
   cols: [
     ['Date', 'Date', 'Datum', 'Fecha'],
     ['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'],
-    ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
+    ['Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
     ['Route', 'Route', 'Route', 'Ruta'],
     ['Bloc', 'Block', 'Block', 'Bloque'],
     ['Mission', 'Mission', 'Einsatz', 'Misión'],

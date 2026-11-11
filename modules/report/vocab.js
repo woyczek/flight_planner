@@ -71,7 +71,7 @@ const outcomes = [
   opt('OPERATIONAL', L('Opérationnel', 'Operational', 'Operativ', 'Operacional')), opt('OTHER', L('Autre', 'Other', 'Andere', 'Otro'))
 ];
 const mneCauses = [
-  opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('TECHNICAL', L('Technique (appareil)', 'Technical (aircraft)',
+  opt('WEATHER', L('Météo', 'Weather', 'Wetter', 'Meteorología')), opt('TECHNICAL', L('Technique (aéronef)', 'Technical (aircraft)',
     'Technisch (Luftfahrzeug)', 'Técnico (aeronave)')),
   opt('SIMULATOR', L('Simulateur', 'Simulator', 'Simulator', 'Simulador')), opt('CREW', L('Pilote ou équipage absent',
     'Pilot or crew missing', 'Pilot oder Besatzung fehlt', 'Piloto o tripulación ausente')),

@@ -56,7 +56,7 @@ modifier. « Nouveau CR » repart d'un compte rendu vierge.
 - **Les heures** sont en UTC, notées « (Z) » sur les champs ; la reprise du vol démarré et celles du réseau les
   remplissent en UTC. Un compte rendu plus ancien, saisi à l'heure de l'appareil, est montré converti avec l'heure
   saisie dans la ligne sous le titre de la carte (« Décollage saisi 18:30 locale ») ; il n'est réécrit en UTC que si vous l'enregistrez.
-- **SimBrief** : votre dernier plan (identifiant réglé dans ⚙) — appareil, route, niveau, vitesse, carburant prévu,
+- **SimBrief** : votre dernier plan (identifiant réglé dans ⚙) — aéronef, route, niveau, vitesse, carburant prévu,
   METAR et TAF.
 - **Depuis Mes vols** : « Écrire le CR » d'un vol ouvre un compte rendu neuf, déjà rempli avec ce vol et sa date ;
   « Ouvrir le CR » rouvre celui qui existe.
@@ -70,7 +70,7 @@ de la suite complète, ne sont jamais réutilisés.
 ## Le favori « → Vol »
 
 Dépliez « Sur le site de la compagnie » au dernier pas et glissez le lien « → Vol » dans la barre des favoris de
-votre navigateur. Il ne sert que sur le site : sur la liste des appareils, il ouvre celui de votre vol ; sur sa page,
+votre navigateur. Il ne sert que sur le site : sur la liste des aéronefs, il ouvre celui de votre vol ; sur sa page,
 « Ajouter un vol » ; sur le formulaire, il remplit les champs et signale les écarts. Sur un téléphone, où les favoris
 sont malcommodes, « Copier les champs » met la ligne du vol dans le presse-papiers.
 

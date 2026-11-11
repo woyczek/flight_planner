@@ -118,14 +118,14 @@ const OFP_PATH = 'cache/fuel/last_ofp.json',
 const TX = {
   plan: ['Devis', 'Quote', 'Berechnung', 'Cálculo'],
   sheets: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
-  aircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
+  aircraft: ['Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
   acSearch: ['Fiche, immatriculation, indicatif ou type', 'Sheet, registration, callsign or type',
     'Datenblatt, Kennzeichen, Rufzeichen oder Typ',
     'Ficha, matrícula, indicativo o tipo'
   ],
-  acChange: ['Changer d’appareil', 'Change aircraft', 'Luftfahrzeug wechseln', 'Cambiar de aeronave'],
+  acChange: ['Changer d’aéronef', 'Change aircraft', 'Luftfahrzeug wechseln', 'Cambiar de aeronave'],
   acChangeShort: ['Changer', 'Change', 'Wechseln', 'Cambiar'],
-  loadingRefs: ['Chargement des appareils et des fiches…', 'Loading aircraft and sheets…',
+  loadingRefs: ['Chargement des aéronefs et des fiches…', 'Loading aircraft and sheets…',
     'Luftfahrzeuge und Datenblätter werden geladen…', 'Cargando aeronaves y fichas…'
   ],
   loadingFlight: ['Chargement du vol…', 'Loading the flight…', 'Flug wird geladen…', 'Cargando el vuelo…'],
@@ -141,7 +141,7 @@ const TX = {
     'Datos aún no sincronizados: prepara un vuelo nuevo; su vuelo guardado se recupera en cuanto llegue.'
   ],
   syncLink: ['Réglages › Synchronisation', 'Settings › Synchronisation', 'Einstellungen › Synchronisierung', 'Ajustes › Sincronización'],
-  acNone: ['Aucun appareil : cherchez-le.', 'No aircraft: search for it.', 'Kein Luftfahrzeug: suchen.', 'Ninguna aeronave: búsquela.'],
+  acNone: ['Aucun aéronef : cherchez-le.', 'No aircraft: search for it.', 'Kein Luftfahrzeug: suchen.', 'Ninguna aeronave: búsquela.'],
   acNoRegistry: ['Base des aéronefs indisponible (aerodb).', 'Aircraft base unavailable (aerodb).',
     'Luftfahrzeugbasis nicht verfügbar (aerodb).',
     'Base de aeronaves no disponible (aerodb).'
@@ -150,7 +150,7 @@ const TX = {
     last: ['dernier choisi', 'last chosen', 'zuletzt gewählt', 'último elegido'],
     sheet: ['ma fiche', 'my sheet', 'mein Datenblatt', 'mi ficha'],
     fleet: ['flotte de la compagnie', 'airline fleet', 'Flotte der Fluggesellschaft', 'flota de la aerolínea'],
-    reference: ['appareil connu (journal)', 'known aircraft (log)', 'bekanntes Luftfahrzeug (Flugbuch)', 'aeronave conocida (diario)'],
+    reference: ['aéronef connu (journal)', 'known aircraft (log)', 'bekanntes Luftfahrzeug (Flugbuch)', 'aeronave conocida (diario)'],
     type: ['type publié', 'published type', 'veröffentlichter Typ', 'tipo publicado'],
     free: ['code libre', 'free code', 'freier Code', 'código libre']
   },
@@ -160,7 +160,7 @@ const TX = {
     estimate: ['estimation du type', 'type estimate', 'Typschätzung', 'estimación del tipo']
   },
   otherType: ['Autre type (code OACI)…', 'Other type (ICAO code)…', 'Anderer Typ (ICAO-Code)…', 'Otro tipo (código OACI)…'],
-  noSheet: ['Aucune fiche : créez-en une dans Maintenance › Appareils, ou choisissez un type (estimation).',
+  noSheet: ['Aucune fiche : créez-en une dans Maintenance › Aéronefs, ou choisissez un type (estimation).',
     'No sheet: create one in Maintenance › Aircraft, or choose a type (estimate).',
     'Kein Datenblatt: eines in Wartung › Luftfahrzeuge anlegen oder einen Typ wählen (Schätzung).',
     'Ninguna ficha: cree una en Mantenimiento › Aeronaves o elija un tipo (estimación).'
@@ -424,7 +424,7 @@ const TX = {
   sumLevel: ['Niveau', 'Level', 'Flugfläche', 'Nivel'],
   sumWind: ['Vent', 'Wind', 'Wind', 'Viento'],
   sumBlock: ['Carburant bloc', 'Block fuel', 'Blockkraftstoff', 'Combustible bloque'],
-  sumAircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
+  sumAircraft: ['Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
   sumNone: ['—', '—', '—', '—'],
   distance: ['Distance ({u})', 'Distance ({u})', 'Entfernung ({u})', 'Distancia ({u})'],
   track: ['Route vraie (°)', 'True track (°)', 'Rechtweisender Kurs (°)', 'Rumbo verdadero (°)'],
@@ -522,20 +522,20 @@ const TX = {
   // « Nouveau vol » et le nouveau couple de terrains (retour de l'utilisateur du 1er nov. 2026 : un KSET → KDOV gardait la route de France)
   newFlight: ['Nouveau vol', 'New flight', 'Neuer Flug', 'Nuevo vuelo'],
   newFlightAsk: [
-    'Commencer un nouveau vol ? Le départ, l’arrivée, la route, les procédures et le niveau du vol en préparation sont effacés ; l’appareil reste.',
+    'Commencer un nouveau vol ? Le départ, l’arrivée, la route, les procédures et le niveau du vol en préparation sont effacés ; l’aéronef reste.',
     'Start a new flight? The departure, arrival, route, procedures and level of the flight being prepared are cleared; the aircraft stays.',
     'Einen neuen Flug beginnen? Abflug, Ankunft, Strecke, Verfahren und Flugfläche des vorbereiteten Flugs werden gelöscht; das Luftfahrzeug bleibt.',
     '¿Empezar un vuelo nuevo? Se borran la salida, la llegada, la ruta, los procedimientos y el nivel del vuelo en preparación; la aeronave se queda.'
   ],
   newFlightStarted: [
-    'Le vol est démarré. Commencer un nouveau vol l’abandonne (il n’est plus proposé au compte rendu comme démarré) ; l’appareil reste.',
+    'Le vol est démarré. Commencer un nouveau vol l’abandonne (il n’est plus proposé au compte rendu comme démarré) ; l’aéronef reste.',
     'The flight is started. Starting a new flight abandons it (no longer offered to the report as started); the aircraft stays.',
     'Der Flug ist gestartet. Ein neuer Flug gibt ihn auf (er wird dem Bericht nicht mehr als gestartet angeboten); das Luftfahrzeug bleibt.',
     'El vuelo está iniciado. Empezar uno nuevo lo abandona (ya no se propone al informe como iniciado); la aeronave se queda.'
   ],
   // SOG-0194 : un appui pendant la lecture du vol n'est jamais ignoré : le bouton le dit, le geste se fait dès que le vol est lu
   newWaiting: ['Vol en cours de lecture…', 'Reading the flight…', 'Flug wird gelesen…', 'Leyendo el vuelo…'],
-  newFlightDone: ['Nouveau vol : tout est à saisir, l’appareil est gardé.', 'New flight: everything to enter, the aircraft is kept.',
+  newFlightDone: ['Nouveau vol : tout est à saisir, l’aéronef est gardé.', 'New flight: everything to enter, the aircraft is kept.',
     'Neuer Flug: alles einzugeben, das Luftfahrzeug bleibt.', 'Vuelo nuevo: todo por introducir, la aeronave se conserva.'
   ],
   adSwap: ['Inverser départ et arrivée', 'Swap departure and arrival', 'Abflug und Ankunft tauschen', 'Invertir salida y llegada'],
@@ -592,7 +592,7 @@ const TX = {
   levelAutoNoRoute: ['Auto : il faut une route (au moins deux points)', 'Auto: a route is needed (two points at least)',
     'Auto: eine Route ist nötig (mindestens zwei Punkte)', 'Auto: hace falta una ruta (al menos dos puntos)'
   ],
-  levelAutoNoSheet: ['Auto : il faut une fiche de l’appareil (pas une estimation du type)',
+  levelAutoNoSheet: ['Auto : il faut une fiche de l’aéronef (pas une estimation du type)',
     'Auto: an aircraft sheet is needed (not a type estimate)',
     'Auto: ein Datenblatt des Luftfahrzeugs ist nötig (keine Typschätzung)',
     'Auto: hace falta una ficha de la aeronave (no una estimación del tipo)'
@@ -936,14 +936,14 @@ const TX = {
     piston: ['Pistons', 'Piston engines', 'Kolbenmotoren', 'Pistón'],
     other: ['Autres', 'Others', 'Andere', 'Otros']
   },
-  coType: ['Type de la compagnie ({n} appareil(s)) : performances à renseigner',
+  coType: ['Type de la compagnie ({n} aéronef(s)) : performances à renseigner',
     'Company type ({n} aircraft): performance to fill in', 'Typ der Fluggesellschaft ({n} Luftfahrzeug(e)): Leistungen einzutragen',
     'Tipo de la compañía ({n} aeronave(s)): rendimientos por completar'
   ],
   // § 10.38 : la vue Fiches range d'abord les fiches des types de la flotte de la compagnie courante
   coSheets: ['Flotte de {a}', 'Fleet of {a}', 'Flotte von {a}', 'Flota de {a}'],
   otherSheets: ['Autres fiches ({n})', 'Other sheets ({n})', 'Weitere Datenblätter ({n})', 'Otras fichas ({n})'],
-  sheetsIntro: ['Fiches de la base partagée, lues ici ; elles se modifient dans Maintenance › Appareils.',
+  sheetsIntro: ['Fiches de la base partagée, lues ici ; elles se modifient dans Maintenance › Aéronefs.',
     'Sheets of the shared database, read here; they are edited in Maintenance › Aircraft.',
     'Datenblätter der gemeinsamen Datenbank, hier nur lesbar; bearbeitet wird in Wartung › Luftfahrzeuge.',
     'Fichas de la base compartida, leídas aquí; se modifican en Mantenimiento › Aeronaves.'
@@ -962,7 +962,7 @@ const TX = {
     taxi: ['roulage', 'taxi', 'Rollen', 'rodaje'],
     runway: ['piste', 'runway', 'Piste', 'pista'],
     fuel: ['carburant', 'fuel', 'Kraftstoff', 'combustible'],
-    aircraft: ['appareil', 'aircraft', 'Luftfahrzeug', 'aeronave'],
+    aircraft: ['aéronef', 'aircraft', 'Luftfahrzeug', 'aeronave'],
     other: ['divers', 'other', 'Sonstiges', 'otros']
   },
   complete: ['complète', 'complete', 'vollständig', 'completa'],

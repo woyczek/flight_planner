@@ -1058,7 +1058,7 @@ def m37(c):
         kind = c.js(_KIND_JS, c.lang)
         c.until(f"(w) => (document.querySelector('{M} [data-fleetof]')?.textContent || '').includes(w)", f'Alpha Air · {kind}', timeout=8000,
                 what='the head says whose fleet it is')
-        one = {'fr': '1 appareil', 'en': '1 aircraft', 'de': '1 Luftfahrzeug', 'es': '1 aeronave'}[c.lang]
+        one = {'fr': '1 aéronef', 'en': '1 aircraft', 'de': '1 Luftfahrzeug', 'es': '1 aeronave'}[c.lang]
         c.eq(c.js(f"(document.querySelector('{M} [data-count]')?.textContent || '').trim()"), one, f'{w} px: one aircraft said in the singular', what='count')
         c.shot(f'M37_fleet_{c.design}_{w}_{c.lang}.png')
         # Sheets: the name is the button, no lone button at the end of the line
@@ -1136,3 +1136,27 @@ def m39(c):
         c.eq([c.count(f'{M} [data-view]'), c.js(title)], [0, tx(AC, 'sheets', c.lang)], 'the Sheets only, titled « Fiches »', what='maintenance')
     c.open('aircraft', docs=docs, wait=False, app='maintenance')
     c.until(f"document.querySelectorAll('{M} [data-view]').length === 2", timeout=15000, what='an old address: both views, as before')
+
+
+
+@case('M41', 'Vocabulary: in French, the texts of the fleet, the sheets and the choice of the aircraft say « aéronef », never « appareil »', 'M',
+      static=True, rule='SOG-0242 (user, 11 Nov: « aéronefs »): « appareil » stays the phone, tablet or workstation; an aeroplane or a helicopter is an '
+      '« aéronef » (French only; en / de / es unchanged)')
+def m41(c):
+    import re
+    from lib import tx_row
+    keys = {'modules/fuel/module.js': ['aircraft', 'acChange', 'loadingRefs', 'acNone', 'noSheet', 'sumAircraft', 'coType', 'sheetsIntro',
+                                       'newFlightDone', 'levelAutoNoSheet'],
+            'modules/aircraft/module.js': ['title', 'none', 'noHit', 'count', 'count1', 'statusCount'],
+            'modules/aircraft/sheets_texts.js': ['coType'],
+            'modules/missions/module.js': ['secPayload', 'searchHint', 'aircraft'],
+            'modules/flightlog/module.js': ['aircraft']}
+    bad = []
+    for path, ks in keys.items():
+        for k in ks:
+            fr = tx_row(path, k)[0]
+            if re.search(r'\bappareils?\b', fr, re.I):
+                bad.append(f'{path} {k}: {fr[:80]}')
+    c.ok(not bad, bad, 'no « appareil » for an aircraft in these French texts')
+    c.ok(re.search(r'\baéronefs?\b', tx_row('modules/fuel/module.js', 'acNone')[0]) is not None, tx_row('modules/fuel/module.js', 'acNone')[0],
+         '« Aucun aéronef : cherchez-le. »')

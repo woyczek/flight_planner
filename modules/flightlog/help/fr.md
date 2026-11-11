@@ -6,7 +6,7 @@ journal du site de la compagnie et vos connexions IVAO ou VATSIM, sans doublon.
 ## Comment s'en servir
 
 <a id="flightlog-totals"></a>**Les totaux.** En haut, trois cases : le nombre de vols, les heures de bloc et les vols qui n'ont pas encore de
-compte rendu, pour la période choisie. Juste dessous, les trois types d'appareils que vous avez le plus volés.
+compte rendu, pour la période choisie. Juste dessous, les trois types d'aéronefs que vous avez le plus volés.
 
 <a id="flightlog-filters"></a>**Les filtres.** Choisissez la période (7 jours, 31 jours, un an, tout), cherchez un indicatif, un type, une
 immatriculation, un terrain, une mission ou un numéro de compte rendu, ou cochez « Sans CR » pour ne voir que les vols
@@ -14,13 +14,13 @@ qui en attendent un. Vos choix restent sur l'appareil : à la visite suivante, u
 et les retire d'un appui. Un « — » à la place du bloc : compte rendu sans heures.
 
 <a id="flightlog-list"></a>**La liste.** Une ligne par vol : la date, l'indicatif, la route et le temps de bloc ; quand vous volez pour plus d'une compagnie, la compagnie de chaque compte rendu. Un point orange marque un vol
-sans compte rendu. Sur un ordinateur, la ligne montre aussi l'appareil et le numéro du compte rendu.
+sans compte rendu. Sur un ordinateur, la ligne montre aussi l'aéronef et le numéro du compte rendu.
 
 <a id="flightlog-detail"></a>**Le détail d'un vol.** Touchez une ligne pour la déplier : d'où vient le vol (compte rendu, journal du site, réseau
-IVAO ou VATSIM), son heure, l'appareil, la mission et les remarques.
+IVAO ou VATSIM), son heure, l'aéronef, la mission et les remarques.
 
 <a id="flightlog-report"></a>**Écrire ou ouvrir le compte rendu.** Sur un vol qui n'en a pas, « Écrire le CR » ouvre un compte rendu neuf, déjà
-rempli avec ce vol — date, appareil, indicatif, terrains — et une famille de mission proposée. Sur un vol qui en a un,
+rempli avec ce vol — date, aéronef, indicatif, terrains — et une famille de mission proposée. Sur un vol qui en a un,
 « Ouvrir le CR » le rouvre pour le modifier.
 
 <a id="flightlog-current"></a>**Le vol en cours.** Un vol démarré dans Carburant (« Démarrer le vol ») et pas encore rapporté apparaît en tête, « En

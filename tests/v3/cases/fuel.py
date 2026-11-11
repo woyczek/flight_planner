@@ -2169,7 +2169,7 @@ def f85(c):
     c.eq(got['settings'][0], 'Réglages du devis', 'the quote settings', what='settings')
     c.eq(got['sheet'][0], 'Fiche H145', 'Aircraft: a sheet', what='sheet')
     c.eq([got['sheetNull'], got['fleetBad']], [None, None], 'an absent or unreadable value: null', what='aircraft null')
-    c.eq(got['fleet'][0], 'Flotte de la compagnie (2 appareils)', 'the fleet', what='fleet')
+    c.eq(got['fleet'][0], 'Flotte de la compagnie (2 aéronefs)', 'the fleet', what='fleet')
     c.eq(got['mission'], ['X-002A Second essai'] * 4, 'Missions: id and title', what='mission')
     c.eq([got['missionNoText'], got['missionOther']], [None, None], 'no text, or not a mission file: null', what='mission null')
 

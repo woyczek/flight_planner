@@ -24,7 +24,7 @@ export const meta = {
   // les Fiches restent dans Maintenance (#aircraft?view=sheets) ; les entrées sont celles du cadre (frame/app.js APPS)
   apps: ['maintenance', 'company'],
   level: 3,
-  title: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
+  title: ['Aéronefs', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
   files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/dom.js', '../../frame/lib/fuel_units.js', '../stats/phases.js', '../stats/journals.js',
     '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js'
@@ -42,7 +42,7 @@ export const meta = {
     if (!/^(airline\/([a-z0-9]{2,8}\/)?|pilot\/[^/]+\/airline\/perso\/)fleet\.json$/.test(path) || !Array.isArray(v?.aircraft))
       return null;
     const n = v.aircraft.length;
-    return [`Flotte de la compagnie (${n} appareils)`, `Airline fleet (${n} aircraft)`, `Flotte der Gesellschaft (${n} Luftfahrzeuge)`,
+    return [`Flotte de la compagnie (${n} aéronefs)`, `Airline fleet (${n} aircraft)`, `Flotte der Gesellschaft (${n} Luftfahrzeuge)`,
       `Flota de la compañía (${n} aeronaves)`
     ];
   },
@@ -76,7 +76,7 @@ const TX = {
   fleet: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
   fleetOf: ['Flotte de {a}', 'Fleet of {a}', 'Flotte von {a}', 'Flota de {a}'], // SOG-0190 : « Flotte de SO Group · Escadrille SO »
   sheets: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
-  statusCount: ['{n} appareils, {m} fiches', '{n} aircraft, {m} sheets', '{n} Luftfahrzeuge, {m} Datenblätter',
+  statusCount: ['{n} aéronefs, {m} fiches', '{n} aircraft, {m} sheets', '{n} Luftfahrzeuge, {m} Datenblätter',
     '{n} aeronaves, {m} fichas'
   ],
   statusTodo: ['{k} types de la flotte sans fiche', '{k} fleet types without a sheet', '{k} Flottentypen ohne Datenblatt',
@@ -86,13 +86,13 @@ const TX = {
     'Suchen (Kennzeichen, Typ, Rufzeichen, Basis)', 'Buscar (matrícula, tipo, indicativo, base)'
   ],
   add: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
-  none: ['Aucun appareil dans la flotte.', 'No aircraft in the fleet.', 'Kein Luftfahrzeug in der Flotte.',
+  none: ['Aucun aéronef dans la flotte.', 'No aircraft in the fleet.', 'Kein Luftfahrzeug in der Flotte.',
     'Ninguna aeronave en la flota.'
   ],
-  noHit: ['Aucun appareil ne correspond.', 'No aircraft matches.', 'Kein Luftfahrzeug passt.', 'Ninguna aeronave coincide.'],
+  noHit: ['Aucun aéronef ne correspond.', 'No aircraft matches.', 'Kein Luftfahrzeug passt.', 'Ninguna aeronave coincide.'],
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
-  count: ['{n} appareils', '{n} aircraft', '{n} Luftfahrzeuge', '{n} aeronaves'],
-  count1: ['1 appareil', '1 aircraft', '1 Luftfahrzeug', '1 aeronave'], // au singulier (« 1 appareils », relu par l'ergonome)
+  count: ['{n} aéronefs', '{n} aircraft', '{n} Luftfahrzeuge', '{n} aeronaves'],
+  count1: ['1 aéronef', '1 aircraft', '1 Luftfahrzeug', '1 aeronave'], // au singulier (« 1 aéronefs », relu par l'ergonome)
   out: ['hors service', 'out of service', 'außer Dienst', 'fuera de servicio'],
   identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
   operation: ['Exploitation', 'Operation', 'Betrieb', 'Operación'],
