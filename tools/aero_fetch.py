@@ -38,13 +38,14 @@ Usage (racine du dépôt) :
 Appelé aussi par le lanceur (POST /__setup/aero-fetch) pour les boutons de Paramètres › Maintenance › Données
 aéronautiques.
 """
-import datetime, email.utils, json, os, re, ssl, sys, urllib.error, urllib.parse, urllib.request
+import datetime, email.utils, http.client, json, os, re, ssl, sys, urllib.error, urllib.parse, urllib.request
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import outbound  # noqa: E402 (le User-Agent du lanceur, chaque échec dit en console)
 
 UA = {'User-Agent': outbound.UA}
-TIMEOUT = 120
+TIMEOUT = 120          # secondes : le temps d'une requête (chaque lecture de la socket une fois connecté)
+CONNECT_TIMEOUT = 15   # secondes : la connexion (TCP, puis la poignée de main TLS) — un hôte muet ne tient plus l'unique emplacement de travail deux minutes par requête
 OPENAIP = 'https://s3.openaip.net/openaip-system-exports/{cc}_{layer}.geojson'
 OPENAIP_LAYERS = ('asp', 'apt', 'nav', 'rpp')
 FAA = 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/{svc}/FeatureServer/0/query'
@@ -65,13 +66,39 @@ class TooLarge(OSError):
     """Réponse plus grande que MAX_BYTES : lecture arrêtée, rien n'est écrit (une erreur réseau pour l'appelant)."""
 
 
+def _bounded(base):
+    """La classe de connexion `base` avec sa connexion bornée à CONNECT_TIMEOUT (au plus le temps de la requête) ; une fois connectée (TLS compris), la socket reprend le temps de la requête."""
+    class Bounded(base):
+        def connect(self):
+            whole = self.timeout
+            if isinstance(whole, (int, float)) and not isinstance(whole, bool):
+                self.timeout = min(whole, CONNECT_TIMEOUT)
+            try:
+                super().connect()
+            finally:
+                self.timeout = whole
+            if self.sock is not None and isinstance(whole, (int, float)):
+                self.sock.settimeout(whole)
+    return Bounded
+
+
+class _Http(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_bounded(http.client.HTTPConnection), req)
+
+
+class _Https(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_bounded(http.client.HTTPSConnection), req, context=self._context)
+
+
 _OPENERS = {}
 
 
 def _open(req, timeout, quiet):
     """La requête par un ouvreur du lanceur (outbound : User-Agent, redirections sur le même hôte, console) qui n'écrit pas les codes
     de quiet : un 304 n'est jamais un échec (la copie locale est bonne), un 404 / 410 d'un export facultatif une absence attendue."""
-    op = _OPENERS.get(quiet) or _OPENERS.setdefault(quiet, outbound.opener(quiet=quiet))
+    op = _OPENERS.get(quiet) or _OPENERS.setdefault(quiet, outbound.opener(_Http(), _Https(), quiet=quiet))
     return op.open(req, timeout=timeout)
 
 

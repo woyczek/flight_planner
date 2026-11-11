@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: a mute host no longer holds the one job slot** — `aero_fetch` gives the connection (TCP and TLS) its own 15 s (`CONNECT_TIMEOUT`); the time of a request (120 s, per read) is unchanged (`tools/aero_fetch.py`; noreg K165; challenge a of AeroDB).
 - **Launcher: the ten-minute gap of the world synoptic (`weather/world`) counts the jobs that reached the NOAA** — a tool that crashes, an unsafe path or a cancel before the first forecast time no longer forbids a new try (« prochain essai dans 578 s »); the job gives `reached: false` and `Jobs` gives the start back (`tools/regen_jobs.py`, `tools/regen/weather.py`; noreg K164; challenge b of AeroDB).
 - **Fuel: what is read from Little Navmap stays on the device** — no position of an `lnm` procedure in the flight, left out of the FMS / PLN files (said in one line), labelled « Little Navmap, lue sur ce poste » (Fuel SPEC, DECISIONS, help; noreg F143; SOG-0210 N2).
 - **Map: the points a mission imposes cannot be moved or removed in Edit** — a point with `lock: 'mission'` (rendezvous, target, source) is drawn as a filled square, its card says "set by the mission", no drag, no "Remove"; the lock is kept in what the Map writes (maps SPEC § 12, DECISIONS, help ×4; noreg D173; SOG-0193 L3).

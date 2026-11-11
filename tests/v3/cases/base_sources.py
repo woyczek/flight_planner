@@ -1897,3 +1897,70 @@ def k162(c):
         AF.get = kept
     ob = importlib.import_module('outbound') if 'importlib' in globals() else __import__('outbound')
     c.ok('Mozilla' not in ob.UA, ob.UA, 'and the launcher still declares itself as it is')
+
+
+@case('K165', 'aero_fetch: a mute host no longer holds the one job slot — the connection (TCP and TLS) is given 15 s, the time for a request (reading) is unchanged', 'K', static=True,
+      rule='Lot of 11 Nov 2026, challenge a of AeroDB (granted by the ergonomics session): every request of aero_fetch had a single time of 120 s for everything, so a host that does not answer the connection (a firewall that drops) held the only job slot for two minutes per request (the NASR path alone about six minutes). The connection now has its own 15 s (CONNECT_TIMEOUT, TCP and TLS handshake); once connected, the socket gets the time of a request (TIMEOUT) again: a slow server that answers is not cut')
+def k165(c):
+    import socket
+    import threading
+    import time
+    RJ, B, AF, DS = _mods()
+    seen = []
+    real = socket.create_connection
+
+    def spy(addr, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, *a, **k):
+        seen.append(timeout)
+        return real(addr, timeout, *a, **k)
+
+    srv = socket.socket()
+    srv.bind(('127.0.0.1', 0))
+    srv.listen(5)
+    port = srv.getsockname()[1]
+    held = []
+
+    def serve():
+        while True:
+            try:
+                conn, _ = srv.accept()
+            except OSError:
+                return
+            held.append(conn)                 # accepts, never answers : a server that is connected but mute
+
+    threading.Thread(target=serve, daemon=True).start()
+    AF._OPENERS.clear()
+    kept = AF.TIMEOUT
+    socket.create_connection = spy
+    try:
+        c.eq(getattr(AF, 'CONNECT_TIMEOUT', None), 15, 'a connection time of 15 s', what='constant')
+        AF.TIMEOUT = 2
+        t0 = time.time()
+        try:
+            AF.get(f'http://127.0.0.1:{port}/x')
+            err = 'no error'
+        except OSError as e:
+            err = 'OSError'
+        took = time.time() - t0
+        c.eq((err, 1.5 <= took < 6), ('OSError', True), f'a server that is connected but never answers is read for the time of a request (TIMEOUT, here 2 s: {took:.1f} s), not cut at the connection time', what='read time')
+        c.eq(seen[:1], [min(15, 2)], 'the TCP connection is asked with the smaller of the two times (here TIMEOUT 2 s)', what='tcp timeout small')
+        AF.TIMEOUT = 120
+        # the connection asked for the connection time, and the socket then gets the time of a request
+        import urllib.request
+
+        def one(url):
+            seen.clear()
+            AF._OPENERS.clear()
+            try:
+                AF._open(urllib.request.Request(url), AF.TIMEOUT, ())
+            except OSError:
+                pass
+            return seen[:1]
+        socket.create_connection = lambda addr, timeout=None, *a, **k: (seen.append(timeout), (_ for _ in ()).throw(OSError('refused')))[1]
+        c.eq((one(f'http://127.0.0.1:{port}/'), one('https://127.0.0.1:9/')), ([15], [15]), 'a request of 120 s asks its connection (http and https) for 15 s', what='tcp timeout')
+    finally:
+        socket.create_connection = real
+        AF.TIMEOUT = kept
+        AF._OPENERS.clear()
+        srv.close()
+        for k in held:
+            k.close()
