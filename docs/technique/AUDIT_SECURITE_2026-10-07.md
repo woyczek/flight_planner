@@ -1010,6 +1010,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 158 | Data-repository files as untrusted input: mission registry paths (4ac930efa), the site's page links, Missions apps (a15c17d0a) | acceptable, one note |
 | 159 | Review of 10 November (before the refactoring day): file upload `/__setup/base/upload` (3f101da7b, 1805057c5, 0a99d0738, 42aab1ae8, 870408de6), Little Navmap verb and `fetchLnm` (801c90c2b, eaf75ea65), per-page Esri CSP (e60e412d1), relay limits (4c75c1df3), `repair_ledger_defaults.py` (6f23e1a50), UK Mil TLS fallback (d86b81d6d), `personal-undeclared` (e293f3741) | acceptable, four notes |
 | 160 | Little Navmap records kept on this device: no position in the flight, left out of the FMS / PLN files (4eaf79a59): the note 2 of 159 closed | acceptable, one note |
+| 161 | Fuel “Read from Little Navmap” gesture, the read of `cache/data/personal.json` (d4e807cdf) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2369,6 +2370,19 @@ unfiltered records, so identifiers (the SID name, its exit and entry, `quote.leg
 planned position from their own path), and F143 covers the typed route but not the text `procsToText` writes. Whether names and
 aggregates count as “read from Little Navmap” is the user's licence decision, with the export of those points to the
 simulator.
+
+**161. “Read from Little Navmap” in Fuel (d4e807cdf) — acceptable, one note.** `readLnm` takes only an ICAO checked by
+`^[A-Z0-9]{4}$`; it reads `cache/data/personal.json` through `ctx.data` and applies `keptPersonal` (a pure module, no state,
+no page: only a boolean `certified` or a known source id counts, anything else means “not certified”), and without the tick
+it says where to tick it and starts nothing. With it, the call is `aerodb.fetchLnm(icao, { personal: true })` and nothing else:
+no path, no option from the page; one airfield at a time (`lnmReading`). A paired device is refused by `fetchLnm` (`paired`),
+and the launcher verb stays refused to LAN devices. The reason shown comes from a closed table or a `^[a-z-]{1,30}$` code, the
+count is clamped, the label goes through `esc`. `admit` never proposes an lnm record by default. The widening of the module's
+reach is one file, read only (`meta.reads` gets `cache/data/personal.json`; `meta.files` two pure modules for offline use);
+Fuel never writes it, and `ctx.launcher` is not used, so the module's launcher declaration is unchanged. Note: the tick is a
+declaration of the user in the page, not a check by the launcher (`personal: true` is accepted from any page code of the
+workstation); it is the same level as before, and the licence promise rests on the paired-device refusal and on the records
+staying in memory, so a launcher-side read of the tick would be the stronger form if the user wants one.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
