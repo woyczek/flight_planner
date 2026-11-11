@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-11",
-  "tests": 114,
+  "tests": 115,
   "verdicts": 43
  },
  "apps": [
@@ -1387,6 +1387,20 @@
    "delivered": "2026-11-10T14:59:09Z"
   },
   {
+   "id": "SOG-0210",
+   "app": "maintenance",
+   "title": {
+    "fr": "États-Unis : aucune procédure pour KDEN, et le repli Little Navmap annoncé n'a pas de geste",
+    "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
+    "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
+    "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto"
+   },
+   "test": "Lanceur relancé, sur ce poste, case « Je certifie… » cochée dans Données. Carburant, arrivée KDEN, étape Procédures : la ligne « aucune procédure publiée » porte un lien « Lire depuis Little Navmap » ; il lit les procédures de KDEN, dites « Little Navmap, lue sur ce poste » dans les listes. Depuis ton téléphone appairé : le lien est refusé et la ligne le dit. Les fichiers .fms / .pln laissent ces procédures de côté et le disent.",
+   "since": "2026-11-11",
+   "state": "todo",
+   "delivered": "2026-11-11T01:12:54Z"
+  },
+  {
    "id": "SOG-0211",
    "app": "pilote",
    "title": {
@@ -1648,7 +1662,7 @@
     "de": "LFST: kein Anflug (mehrere RNAV, mehrere konventionelle); keine Rollwegnamen",
     "es": "LFST: ninguna aproximación (varias RNAV, varias convencionales); sin nombres de calles de rodaje"
    },
-   "test": "Lanceur relancé. Carburant, arrivée LFST, étape Procédures : la liste des approches porte aussi celles « ⚑ à vérifier » (elles étaient cachées) ; aucune n'est choisie d'office ; choisie à la main, elle est tracée en pointillé sur la Carte. Sous la liste, « Carte seulement dans l'AIP : … » donne le lien des approches que l'AIP ne publie qu'en carte (conventionnelles, ILS). Côté sol : le panneau Sol dit que la source ne nomme que 13 voies sur 213.",
+   "test": "Lanceur relancé. Carburant, arrivée LFST, étape Procédures : la liste des approches porte aussi celles « ⚑ à vérifier » (elles étaient cachées) ; aucune n'est choisie d'office ; choisie à la main, sa raison est écrite sous la liste et elle est tracée en pointillé sur la Carte. « Carte seulement dans l'AIP : … » donne le lien des approches que l'AIP ne publie qu'en carte (conventionnelles, ILS). Côté sol : le panneau Sol dit que la source ne nomme que 13 voies sur 213.",
    "since": "2026-11-11",
    "state": "todo",
    "delivered": "2026-11-10T23:12:54Z"
