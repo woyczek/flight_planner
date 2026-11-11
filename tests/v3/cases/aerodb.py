@@ -7728,12 +7728,12 @@ def k168(c):
             c.eq(run(make(10, zip64=True)), ('unrecognised', 0), 'the same when the count is in the zip64 end record (the plain record says only 3: the zip64 one is read too)', what='zip64')
             # a fake record placed where the zip64 end record used to be looked for (« extensible data » between the record and its locator, which zipfile follows by the locator's offset)
             import struct
-            real = make(10, zip64=True)
-            eocd = len(real) - 22
+            blob = make(10, zip64=True)
+            eocd = len(blob) - 22
             loc = eocd - 20
             rec = loc - 56
             fake = struct.pack('<4sQHHIIQQQQ', b'PK\x06\x06', 44, 45, 45, 0, 0, 1, 1, 20, 0)
-            forged = real[:rec] + real[rec:loc] + b'x' * 44 + fake + struct.pack('<4sIQI', b'PK\x06\x07', 0, rec, 1) + real[eocd:]
+            forged = blob[:rec] + blob[rec:loc] + b'x' * 44 + fake + struct.pack('<4sIQI', b'PK\x06\x07', 0, rec, 1) + blob[eocd:]
             BU.MAX_MEMBERS = 5
             c.eq(run(forged), ('unrecognised', 0), 'a zip64 whose end record is followed by extensible data ending in a fake record of one entry: the locator\'s offset is followed, the true count is read, the zip is refused before its directory is built', what='forged')
             BU.MAX_MEMBERS = 200000
