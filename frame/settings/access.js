@@ -504,6 +504,24 @@
     themeDup: ['Ce sigle est déjà pris par une famille.', 'This acronym is already taken by a family.',
       'Dieses Kürzel ist schon von einer Familie belegt.', 'Esa sigla ya la usa una familia.'
     ],
+    // la lettre qui numérote les comptes rendus d'une famille ajoutée (SOG-0202, l'utilisateur : « oui, avec anti recouvrement »)
+    themeLetter: ['Lettre des comptes rendus', 'Letter of the reports', 'Buchstabe der Berichte', 'Letra de los informes'],
+    themeLetterOf: ['lettre {l}', 'letter {l}', 'Buchstabe {l}', 'letra {l}'],
+    themeLetterSet: ['Fixer la lettre', 'Set the letter', 'Buchstabe festlegen', 'Fijar la letra'],
+    themeLetterBad: ['Refusé : une seule lettre, de A à Z.', 'Refused: a single letter, A to Z.',
+      'Abgelehnt: ein einzelner Buchstabe, A bis Z.',
+      'Rechazado: una sola letra, de la A a la Z.'
+    ],
+    themeLetterTaken: ['La lettre {l} est déjà prise (une famille de la table, M, D, X ou une autre famille ajoutée). Libres : {free}.',
+      'The letter {l} is already taken (a family of the table, M, D, X or another added family). Free: {free}.',
+      'Der Buchstabe {l} ist schon belegt (eine Familie der Tabelle, M, D, X oder eine andere hinzugefügte Familie). Frei: {free}.',
+      'La letra {l} ya está tomada (una familia de la tabla, M, D, X u otra familia añadida). Libres: {free}.'
+    ],
+    themeLetterNone: ['Plus aucune lettre libre : supprimez d’abord une famille ajoutée.',
+      'No free letter left: remove an added family first.',
+      'Kein Buchstabe mehr frei: entfernen Sie zuerst eine hinzugefügte Familie.',
+      'No queda ninguna letra libre: elimine antes una familia añadida.'
+    ],
     themeFull: ['Huit familles ajoutées au plus.', 'Eight added families at most.', 'Höchstens acht hinzugefügte Familien.',
       'Ocho familias añadidas como máximo.'
     ],
@@ -715,6 +733,15 @@
         series: {}
       },
       list = themesShown(CL, lang, added.themes),
+      free = CL.freeLetters(doc),
+      lacking = added.themes.filter(a => !CL.letterOf(a.id, doc)).map(a => a
+        .id), // une famille ajoutée avant les lettres : une lettre libre proposée, rien n'est écrit sans geste
+      letterHtml = x => {
+        if (!x.added) return '';
+        const l = CL.letterOf(x.id, doc);
+        if (l) return ` <span class="f-muted" data-letter="${esc(l)}">${esc(t(TA.themeLetterOf, { l }))}</span>`;
+        return ` <span class="f-letter-set" data-letter-set="${esc(x.id)}"><input type="text" maxlength="1" size="2" data-f="th-letterof-${code}-${esc(x.id)}" value="${esc(free[lacking.indexOf(x.id)] || '')}" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="${esc(t(TA.themeLetter))}"> <button type="button" data-act="companyThemeLetter" data-code="${code}" data-theme="${esc(x.id)}">${esc(t(TA.themeLetterSet))}</button></span>`;
+      },
       chosen = new Set(CL.chosenOf(r.themes, r.kind)),
       code = esc(r.code),
       li = CL.LANGS.indexOf(lang) < 0 ? 0 : CL.LANGS.indexOf(lang),
@@ -722,10 +749,11 @@
     return `<h3>${esc(t(TA.ficheTitle, { n: r.name }))}</h3>
       <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(CL.KIND_NAMES[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
       <h4 data-themes-title>${esc(t(TA.themeSummary, { n: list.filter(x => chosen.has(x.id)).length, m: list.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}<p class="f-muted">${esc(t(TA.themeHint))}</p>
-      <ul class="f-themes" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label>${x.added ? ` <button type="button" data-act="companyThemeDel" data-code="${code}" data-theme="${esc(x.id)}">${esc(t(TA.del))}</button>` : ''}${added.series[x.id]?.length ? `<ul class="f-series" data-series-list="${esc(x.id)}">${seriesList(x.id)}</ul>` : ''}</li>`).join('')}</ul>
+      <ul class="f-themes" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label>${letterHtml(x)}${x.added ? ` <button type="button" data-act="companyThemeDel" data-code="${code}" data-theme="${esc(x.id)}">${esc(t(TA.del))}</button>` : ''}${added.series[x.id]?.length ? `<ul class="f-series" data-series-list="${esc(x.id)}">${seriesList(x.id)}</ul>` : ''}</li>`).join('')}</ul>
       <details data-theme-add><summary>${esc(t(TA.themeAdd))}…</summary>
         <label class="f-field">${esc(t(TA.themeShort))}<input type="text" maxlength="8" data-f="th-short-${code}" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
         <label class="f-field">${esc(t(TA.themeName))}<input type="text" maxlength="40" data-f="th-name-${code}" autocomplete="off" spellcheck="false"></label>
+        <label class="f-field">${esc(t(TA.themeLetter))}<input type="text" maxlength="1" size="2" data-f="th-letter-${code}" value="${esc(free[0] || '')}" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
         <div class="f-row"><button type="button" class="primary" data-act="companyThemeAdd" data-code="${code}">${esc(t(TA.themeAdd))}</button></div></details>
       <details data-series-add><summary>${esc(t(TA.seriesAdd))}…</summary>
         <label class="f-field">${esc(t(TA.seriesOf))}<select data-f="sr-theme-${code}">${list.map(x => `<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('')}</select></label>
@@ -795,7 +823,7 @@
   /** Le texte d'un libellé saisi : sans caractères de contrôle ni < >, espaces réduits, 40 signes au plus (comme le filtre du fichier). */
   const themeText = v => String(v ?? '').replace(/[\p{Cc}\p{Zl}\p{Zp}<>]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 41);
   /** Écrit themes.json par `edit` (writeThemes) puis le dit : le refus sous la fiche (la fiche se repeint d'après la dernière lecture : une case décochée pour rien revient), ou « Thèmes enregistrés » et la relecture. */
-  async function themeWrite(env, code, edit, repaint = false) {
+  async function themeWrite(env, code, edit, repaint = false, said = {}) {
     const why = await writeThemes(env, code, edit);
     if (why) {
       const host = env.view.querySelector('[data-airline-fiche]');
@@ -803,7 +831,7 @@
         host.__html = '';
         paintFiche(env);
       }
-      return ficheSay(env, env.t(TA[why] || TA.failed));
+      return ficheSay(env, env.t(TA[why] || TA.failed).replace('{l}', said.l || '').replace('{free}', said.free || ''));
     }
     env.c.notify(env.t(TA.themeSaved), 'ok');
     return airlineLive(env);
@@ -1751,7 +1779,8 @@
         return '';
       }, true);
     }
-    if (act === 'companyThemeAdd' || act === 'companyThemeDel' || act === 'companySeriesAdd' || act === 'companySeriesDel') {
+    if (act === 'companyThemeAdd' || act === 'companyThemeDel' || act === 'companyThemeLetter' || act === 'companySeriesAdd' || act ===
+      'companySeriesDel') {
       const code = b.dataset.code || '',
         root = card('company');
       if (!AIRLINE_CODE.test(code)) return;
@@ -1773,22 +1802,50 @@
           return '';
         });
       }
+      // la lettre d'une famille : une lettre A-Z, jamais prise (la table, M, D, X, une autre famille ajoutée) ; relue dans le fichier au moment d'écrire
+      const letterRule = (d, CL, letter, said, keepId = '') => {
+        const taken = CL.takenLetters(d),
+          free = CL.freeLetters(d, keepId);
+        if (!/^[A-Z]$/.test(letter)) return 'themeLetterBad';
+        if (!taken.has(letter) || free.includes(letter)) return '';
+        said.l = letter;
+        said.free = free.join(' ');
+        return free.length ? 'themeLetterTaken' : 'themeLetterNone';
+      };
+      if (act === 'companyThemeLetter') {
+        const id = b.dataset.theme || '',
+          letter = val(`th-letterof-${code}-${id}`, root).trim().toUpperCase(),
+          said = {};
+        return themeWrite(env, code, (d, CL) => {
+          const own = d.added.themes.find(x => x.id === id);
+          if (!own) return 'failed';
+          const why = letterRule(d, CL, letter, said, id);
+          if (why) return why;
+          own.letter = letter;
+          return '';
+        }, false, said);
+      }
       if (act === 'companyThemeAdd') {
         const short = val(`th-short-${code}`, root).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
           name = themeText(val(`th-name-${code}`, root));
         if (!/^[A-Z][A-Z0-9]{1,7}$/.test(short) || !name || name.length > 40) return ficheSay(env, t(TA.themeBad));
+        const letter = val(`th-letter-${code}`, root).trim().toUpperCase(),
+          said = {};
         return themeWrite(env, code, (d, CL) => {
           if (CL.THEMES.some(x => x.id === short || x.short === short) || d.added.themes.some(x => x.id === short || x.short ===
               short)) return 'themeDup';
           if (d.added.themes.length >= CL.ADDED_MAX.themes) return 'themeFull';
+          const why = letterRule(d, CL, letter, said);
+          if (why) return why;
           d.added.themes.push({
             id: short,
             short,
-            labels: [name, name, name, name]
+            labels: [name, name, name, name],
+            letter
           });
           d.chosen.push(short);
           return '';
-        });
+        }, false, said);
       }
       // une série ajoutée à un thème : la valeur est le nom sans accent (la forme permise du fichier), le libellé est le nom tel que saisi, recopié dans les quatre langues
       const theme = root.querySelector(`[data-f="sr-theme-${code}"]`)?.value || '',
@@ -1914,7 +1971,8 @@
     acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly',
       'companyJnClip', 'companyJnNext', 'companyJnBack', 'companyJnGo', 'companyJnResume', 'companyJnStay', 'companyJnFly',
       'companyWzSheet', 'companyWzReg', 'companyWzRegDel', 'companyWzLater', 'companyAdopt', 'companyPlan',
-      'companyMigrate', 'companyKind', 'companyTheme', 'companyThemeAdd', 'companyThemeDel', 'companySeriesAdd', 'companySeriesDel'
+      'companyMigrate', 'companyKind', 'companyTheme', 'companyThemeAdd', 'companyThemeDel', 'companyThemeLetter', 'companySeriesAdd',
+      'companySeriesDel'
     ],
     html: airlineHtml,
     live: airlineLive,

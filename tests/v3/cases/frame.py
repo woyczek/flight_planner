@@ -5872,7 +5872,7 @@ def a142(c):
         c.eq(doc(), before, 'and nothing is written', what=f'unchanged after {key}')
     # ---- a theme of our own: written (one label in the four languages), listed, ticked, removable
     opn('[data-theme-add]')
-    c.eq(c.count(fiche('[data-theme-add] label.f-field')), 2, 'opened: two fields, each with a visible label', what='labels')
+    c.eq(c.count(fiche('[data-theme-add] label.f-field')), 3, 'opened: three fields (acronym, name, letter), each with a visible label', what='labels')
     c.page.fill('[data-f="th-short-aaa"]', 'rsc')
     c.page.fill('[data-f="th-name-aaa"]', 'Courrier <b>express</b>')
     c.tap(fiche('[data-act=companyThemeAdd]'))
@@ -5908,6 +5908,86 @@ def a142(c):
     c.tap(fiche('[data-act=companyThemeDel][data-theme=RSC]'))
     d = c.until_doc('airline/aaa/themes.json', lambda d: bool(d) and not d['added']['themes'], what='the theme removed')
     c.eq([d['chosen'], d['added']], [['COMMERCIAL'], {'themes': [], 'series': {}}], 'the theme leaves the file and the choice', what='removed')
+    c.check_errors()
+
+
+@case('A148', 'Settings › Company (SOG-0202, letters): « Ajouter une famille » proposes a free letter for the reports (the first free one), refuses a taken one in words (the table’s, M, D, X, another added family) and writes it in themes.json; a family added before the letters gets a proposal, written only on a gesture', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='V3_SPECIFICATION § 10.48 (SOG-0202), the user on 11/11: « oui, avec anti recouvrement »; added.themes[i].letter, written by Settings only; frame/lib/mission_themes.js freeLetters / takenLetters / letterOf (Features SOG, 507a028ea); the proposal is freeLetters(doc)[0]; nothing is written without a gesture')
+def a148(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    old = {'schema': 1, 'chosen': ['COMMERCIAL', 'OLD'], 'added': {'themes': [{'id': 'OLD', 'short': 'OLD', 'labels': ['Ancienne'] * 4}], 'series': {}}}
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+            ['airline/aaa/themes.json', old, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+    fiche = lambda extra='': f'[data-card="company"] [data-airline-fiche] {extra}'.strip()
+    c.open('settings?card=company', docs=docs)
+    c.until("!!document.querySelector('[data-airline-fiche] [data-theme-add]')", timeout=15000, what='the sheet with its forms')
+    # the free letters, from the library (the same rule as the report), for the document as it is in the file
+    free = lambda raw, keep='': c.js("""async ([raw, keep]) => { const MT = await import('/frame/lib/mission_themes.js'); return MT.freeLetters(raw, keep) }""", [raw, keep])
+    f0 = free(old)
+    c.ok(len(f0) >= 2, f0, 'the library has free letters to propose')
+    doc = lambda: c.doc('airline/aaa/themes.json')
+    say = lambda: norm(c.text('[data-fiche-msg]'))
+    opn = lambda: c.js("document.querySelector('[data-airline-fiche] [data-theme-add]').open = true")
+    # ---- the proposals: the form (first free letter) and the family added before the letters (a free letter, nothing written)
+    opn()
+    c.eq(c.count(fiche('[data-theme-add] label.f-field')), 3, 'opened: three fields (acronym, name, letter), each with a visible label', what='labels')
+    c.eq(c.js("document.querySelector('[data-f=th-letter-aaa]').value"), f0[0], 'the form proposes the first free letter', what='proposal form')
+    c.eq(c.js("document.querySelector('[data-letter-set=OLD] input').value"), f0[0], 'the family added before the letters gets a free letter proposed', what='proposal old')
+    c.eq(doc(), old, 'and nothing is written by the proposals', what='unchanged')
+
+    def refuse(fields, key, l='', fr=None):
+        before = doc()
+        opn()
+        c.js("document.querySelector('[data-fiche-msg]').textContent = ''")
+        for f, v in fields.items():
+            c.page.fill(f'[data-f="{f}"]', v)
+        c.tap(fiche('[data-act=companyThemeAdd]'))
+        c.until("document.querySelector('[data-fiche-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
+        c.eq(say(), norm(T(key).replace('{l}', l).replace('{free}', ' '.join(fr or []))), f'refused in words: {key}', what=f'refusal {key}')
+        c.eq(doc(), before, 'and nothing is written', what=f'unchanged after {key}')
+    # ---- refusals: a letter of the table (M), not a letter, nothing
+    refuse({'th-short-aaa': 'tst', 'th-name-aaa': 'Essai', 'th-letter-aaa': 'm'}, 'themeLetterTaken', 'M', f0)
+    refuse({'th-short-aaa': 'tst', 'th-name-aaa': 'Essai', 'th-letter-aaa': '1'}, 'themeLetterBad')
+    refuse({'th-short-aaa': 'tst', 'th-name-aaa': 'Essai', 'th-letter-aaa': ''}, 'themeLetterBad')
+    # ---- a family with the proposed letter: written
+    c.page.fill('[data-f="th-short-aaa"]', 'rsc')
+    c.page.fill('[data-f="th-name-aaa"]', 'Courrier')
+    c.page.fill('[data-f="th-letter-aaa"]', f0[0].lower())
+    c.tap(fiche('[data-act=companyThemeAdd]'))
+    d = c.until_doc('airline/aaa/themes.json', lambda d: bool(d) and len(d['added']['themes']) == 2, what='the family written with its letter')
+    c.eq([[t['id'], t.get('letter', '')] for t in d['added']['themes']], [['OLD', ''], ['RSC', f0[0]]], 'the letter is written in added.themes[i].letter, in capital', what='written')
+    c.until("!!document.querySelector('[data-airline-fiche] li[data-theme=RSC] [data-letter]')", what='the letter shown on its line')
+    c.eq(norm(c.text(fiche('li[data-theme=RSC] [data-letter]'))), norm(T('themeLetterOf').replace('{l}', f0[0])), 'its line says its letter', what='letter shown')
+    # ---- the letter is now taken: refused with the free ones left; the form proposes the next free one
+    f1 = free(d)
+    c.ok(f0[0] not in f1 and f1 == f0[1:], f1, 'the library no longer offers it')
+    opn()
+    c.eq(c.js("document.querySelector('[data-f=th-letter-aaa]').value"), f1[0], 'the form proposes the next free letter', what='proposal after')
+    refuse({'th-short-aaa': 'zzz', 'th-name-aaa': 'Autre', 'th-letter-aaa': f0[0]}, 'themeLetterTaken', f0[0], f1)
+    # ---- the old family: its proposed letter, written on the gesture only
+    c.eq(c.js("document.querySelector('[data-letter-set=OLD] input').value"), f1[0], 'the old family’s proposal follows', what='proposal old after')
+    c.page.fill('[data-letter-set=OLD] input', f0[0])
+    c.js("document.querySelector('[data-fiche-msg]').textContent = ''")
+    before = doc()
+    c.tap(fiche('[data-act=companyThemeLetter][data-theme=OLD]'))
+    c.until("document.querySelector('[data-fiche-msg]').textContent.trim() !== ''", timeout=6000, what='the refusal of the taken letter')
+    c.eq([say(), doc()], [norm(T('themeLetterTaken').replace('{l}', f0[0]).replace('{free}', ' '.join(f1))), before], 'a taken letter is refused for the old family too, nothing written', what='old refused')
+    c.page.fill('[data-letter-set=OLD] input', f1[0].lower())
+    c.tap(fiche('[data-act=companyThemeLetter][data-theme=OLD]'))
+    d = c.until_doc('airline/aaa/themes.json', lambda d: bool(d) and any(t['id'] == 'OLD' and t.get('letter') for t in d['added']['themes']), what='the old family’s letter written')
+    c.eq([[t['id'], t.get('letter', '')] for t in d['added']['themes']], [['OLD', f1[0]], ['RSC', f0[0]]], 'both letters written, none twice', what='both')
+    c.until("!document.querySelector('[data-letter-set]')", what='no proposal left')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll with the letters', what='scroll')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-airline-fiche] [data-theme-add]').open = true")
+        c.js(f"document.querySelector('{fiche('[data-theme-add]')}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'A148_standard_{c.width}_{lang}_delivered.png')   # the family form with its letter, the families with their letters
     c.check_errors()
 
 

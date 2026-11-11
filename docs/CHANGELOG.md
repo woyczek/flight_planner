@@ -13,6 +13,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### V3
 
 - **Report: an added family numbers its reports with its own letter** (`added.themes[i].letter`, anti-overlap in `cleanThemes`; `takenLetters` / `freeLetters` / `letterOf` for Settings) (report DECISIONS; noreg G17; SOG-0202).
+- **Settings › Company: a letter for the added families** — « Ajouter une famille » proposes the first free letter for the reports, refuses a taken one in words (the table's, M, D, X, another added family) and writes it in `added.themes[i].letter`; a family added before the letters gets a proposal, written only on « Fixer la lettre » (frame/settings SPEC, DECISIONS, help ×4; noreg A148; SOG-0202).
 - **Données: « Tout mettre à jour » goes on after a failure** — the sets are independent (a failure stops the steps of that set only, like « Mettre à jour » on zones); the end summary lists each failure with its reason and « Réessayer » (that set alone, then the publication); what failed is not published, the rest is in one publication, nothing when no set succeeded (data SPEC § 5.3, DECISIONS, help ×4; noreg L18; SOG-0239).
 - **Report: a Commercial flight starts on the series « Passagers »** (a default series said by the family; the others keep the first) (report DECISIONS; noreg G16; SOG-0239).
 - **Fuel: the FMS / PLN files carry the procedures read from Little Navmap**, still never a position of them in the flight (Fuel SPEC, DECISIONS, help; noreg F143; SOG-0238).
