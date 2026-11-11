@@ -1395,7 +1395,7 @@
     "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
     "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto"
    },
-   "test": "Lanceur relancé, sur ce poste, case « Je certifie… » cochée dans Données. Carburant, arrivée KDEN, étape Procédures : la ligne « aucune procédure publiée » porte un lien « Lire depuis Little Navmap » ; il lit les procédures de KDEN, dites « Little Navmap, lue sur ce poste » dans les listes. Depuis ton téléphone appairé : le lien est refusé et la ligne le dit. Les fichiers .fms / .pln laissent ces procédures de côté et le disent.",
+   "test": "Lanceur relancé, sur ce poste. Maintenance › Données : la case « Je certifie… » est cochée (elle reflète maintenant ce que le lanceur a noté ; décoche et recoche-la une fois si elle ne l'est pas). Carburant, arrivée KDEN, étape Procédures : la ligne « aucune procédure publiée » porte un lien « Lire depuis Little Navmap » ; il lit les procédures de KDEN, dites « Little Navmap, lue sur ce poste ». Depuis ton téléphone appairé : le lien n'est pas proposé. Les fichiers .fms / .pln portent ces procédures.",
    "since": "2026-11-11",
    "state": "todo",
    "delivered": "2026-11-11T01:12:54Z"
