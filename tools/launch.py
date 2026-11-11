@@ -32,6 +32,7 @@ import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée
 import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit en console (hôte, chemin, code)
 import suite_update  # mise à jour de la suite par canal (stable, early, suivi) : plan d'abord, avance rapide seulement
 import base_upload  # envoi d'un fichier choisi à la main : reconnu par son contenu (SOG-0199)
+import personal_use  # la coche « usage personnel » tenue par le lanceur (data/local/personal_use.json, SOG-0238)
 import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -1638,6 +1639,37 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         v = regen().cancel(str(a.get('id') or '')[:40]) if path.endswith('/cancel') else regen().start(
             a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
+    @route('GET', '/__setup/personal', public='poste')
+    def _get_personal(self, path):
+        # SOG-0238 : la coche « usage personnel », tenue par le lanceur (data/local/personal_use.json) ; ce poste seulement
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        v = personal_use.read(DATA)
+        return self._json({'certified': v['certified'], 'at': v['at'], **({'migrated': True} if v.get('migrated') else {})})
+
+    @route('POST', '/__setup/personal', public='poste')
+    def _post_personal(self, path, body):
+        # SOG-0238 : l'utilisateur coche ou décoche ; corps STRICT { certified: booléen } (ou { certified: true, migrated: true } : le report unique de la coche du cache de la page, jamais si le fichier existe) ;
+        # ce poste seulement (un appareil du réseau local, le relais : 403) ; une ligne à la console à chaque changement, rien d'autre
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = personal_use.check(json.loads(body or b'null'))
+        except ValueError:
+            a = None
+        if a is None:
+            return self._json({'ok': False, 'message': 'corps invalide : { certified: true | false }'}, 400)
+        before = personal_use.certified(DATA)
+        try:
+            rec = personal_use.write(DATA, a['certified'], a['migrated'])
+        except OSError:
+            return self._json({'ok': False, 'message': 'écriture impossible'}, 500)
+        if rec is None:
+            return self._json({'ok': False, 'reason': 'exists', 'message': 'la coche est déjà tenue par le lanceur'}, 409)
+        if rec['certified'] != before or a['migrated']:
+            say('usage personnel certifié' + (' (reporté du cache de la page)' if a['migrated'] else '') if rec['certified'] else 'usage personnel retiré')
+        return self._json({'ok': True, 'certified': rec['certified'], 'at': rec['at'], **({'migrated': True} if rec.get('migrated') else {})})
 
     @route('POST', '/__setup/base/upload', public='poste')
     def _post_base_upload(self, path, body):

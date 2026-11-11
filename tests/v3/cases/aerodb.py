@@ -7166,6 +7166,9 @@ def k147(c):
                 return 200, v.get('result') or {}
             c.ok('proc/lnm' in call('GET', '/__setup/regen/verbs')[1].get('verbs', []), 'verbs', 'the launcher knows proc/lnm')
             c.eq(job({'icao': 'KDEN', 'personal': False})[1].get('reason'), 'not-personal', 'without the personal-use box: refused (the data are Navigraph / Jeppesen\'s, a personal licence)', what='not personal')
+            c.eq(job({'icao': 'KDEN', 'personal': True})[1].get('reason'), 'not-personal', 'SOG-0238: `personal: true` passed by the page WITHOUT the real tick (the launcher holds it: data/local/personal_use.json) is refused', what='page declares')
+            c.eq(call('POST', '/__setup/personal', {'certified': True})[0], 200, 'the user ticks the box: the launcher writes it', what='tick')
+            c.eq(job({'icao': 'KDEN', 'personal': False})[1].get('reason'), 'no-lnm', 'with the real tick the argument of the page no longer matters (`personal: false` is not a refusal): here, no database yet', what='tick holds')
             c.eq(job({'icao': 'KDEN', 'personal': True})[1].get('reason'), 'no-lnm', 'no Little Navmap database on the workstation: no-lnm', what='no lnm')
             c.eq([job(a)[0] for a in ({'icao': 'KDEN', 'personal': True, 'path': 'C:/x.sqlite'}, {'icao': 'KDEN', 'file': 'x'}, {'icao': 'K/..', 'personal': True}, {'personal': True})], [400, 400, 400, 400],
                  'a path, a file name or a bad code in the request: 400 (the base is the launcher\'s own folder, never the page\'s)', what='closed request')
@@ -7201,8 +7204,8 @@ def k147(c):
             c.eq(job({'icao': 'ZZZZ', 'personal': True})[1].get('reason'), 'not-found', 'a terrain in no base: not-found', what='not found')
             after = (db.stat().st_size, db.stat().st_mtime_ns, sorted(x.name for x in lnm.iterdir()))
             c.eq(before, after, 'the database is untouched: same size and date, no -wal / -shm / copy created beside it (opened read-only, immutable)', what='untouched')
-            stray = [str(x) for x in data.rglob('*') if x.is_file() and x.name not in ('data_tree.js', '.defa_instance')]
-            c.ok(not stray, str(stray[:5]), 'nothing is written in data/')
+            stray = [str(x) for x in data.rglob('*') if x.is_file() and x.name not in ('data_tree.js', '.defa_instance', 'personal_use.json')]
+            c.ok(not stray, str(stray[:5]), 'nothing is written in data/ by the reading (only the tick of the user, data/local/personal_use.json, is there)')
             last = root / 'tools' / '.regen_last.json'
             c.ok(not last.exists() or 'BAYLR6' not in last.read_text(encoding='utf-8'), 'kept', 'the records are for the page only: never kept in tools/.regen_last.json')
             (lnm / 'little_navmap_xp12.sqlite').write_bytes(b'not a database' * 10)
@@ -7667,7 +7670,9 @@ def k167(c):
         con.commit()
         con.close()
         before = sorted(x.name for x in folder.iterdir())
-        r = fn(RJ.Job('proc', 'lnm', {}), check({'icao': 'KDEN', 'personal': True}), {'lnm_folder': lambda: str(folder)})
+        import personal_use
+        personal_use.write(str(Path(td) / 'launcher_data'), True)       # SOG-0238: the tick is the launcher's own file
+        r = fn(RJ.Job('proc', 'lnm', {}), check({'icao': 'KDEN', 'personal': True}), {'lnm_folder': lambda: str(folder), 'data': str(Path(td) / 'launcher_data')})
         c.eq((r.get('ok'), r.get('reason'), r.get('count')), (True, None, 1), 'a base in a folder whose name holds `%41`, a space and `#`: read as it is (the path is quoted, `%` first), the one approach found', what='percent')
         c.eq(sorted(x.name for x in folder.iterdir()), before, 'still read-only: nothing created beside the base', what='read only')
 
@@ -7847,3 +7852,69 @@ def k172(c):
         c.eq((z.get('state'), z.get('cleaned'), sorted(x.name for x in up.iterdir())), ('built', [{'name': 'export_xml_bd_SIA_2026-08-06.zip', 'size': 2048}], ['export_xml_bd_SIA_2026-10-01.zip']),
              'the successful build of fr removes the older deposit and the zone line says what went (name, size); the deposit it read stays', what='build')
         c.ok(any('export_xml_bd_SIA_2026-08-06.zip' in x and '2048' in x for x in view.get('log', [])), str(view.get('log'))[-300:], 'the job log says it too')
+
+
+@case('K173', 'The personal-use tick is held by the LAUNCHER (data/local/personal_use.json, written by POST /__setup/personal): a strict body, this workstation only, one launcher line per change, one migration; the page cannot declare it (SOG-0238)', 'K', static=True,
+      rule='SOG-0238 (security review of 10 Nov; the user said yes, 11 Nov 2026): the tick lived in the page cache and every call declared `personal: true`, so any page code could pass it. The launcher now holds it: data/local/personal_use.json { certified, at, migrated? } (data/local is served to nobody, never synchronised nor committed, written by the launcher only) through POST /__setup/personal with a STRICT body { certified: true | false } (anything else: 400); GET gives { certified, at }; a device of the local network or the relay: 403; a launcher line « usage personnel certifié / retiré » at each change; the one-off migration of a tick already in the page cache is { certified: true, migrated: true }, refused (409) when the file exists. Limit, said: a script of the same origin can call the write route too')
+def k173(c):
+    import importlib
+    import io
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    PU = importlib.import_module('personal_use')
+    L = importlib.import_module('launch')
+    c.eq(PU.check({'certified': True}), {'certified': True, 'migrated': False}, 'the body: { certified: true }', what='ok true')
+    c.eq([PU.check(b) for b in ({'certified': 1}, {'certified': 'true'}, {}, None, [], {'certified': True, 'x': 1}, {'certified': False, 'migrated': True}, {'certified': True, 'migrated': False}, {'certified': True, 'migrated': 'yes'}, 'true')],
+         [None] * 10, 'anything else is refused: another type, another field, a migration that is not a certification', what='strict')
+    c.eq(PU.check({'certified': True, 'migrated': True}), {'certified': True, 'migrated': True}, 'the migration body: { certified: true, migrated: true }', what='migration')
+    kept_data, kept_say = L.DATA, L.say
+    said = []
+    L.say = lambda m='': said.append(m)
+
+    class Fake:
+        def __init__(self, lan):
+            self.lan, self.out = lan, []
+
+        def _lan(self):
+            return self.lan
+
+        def _json(self, out, code=200):
+            self.out.append((code, out))
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            L.DATA = td
+            post = lambda body, lan=False: (lambda f: (L.Setup._post_personal(f, '/__setup/personal', json.dumps(body).encode() if not isinstance(body, bytes) else body), f.out[-1])[1])(Fake(lan))
+            get = lambda lan=False: (lambda f: (L.Setup._get_personal(f, '/__setup/personal'), f.out[-1])[1])(Fake(lan))
+            c.eq(get(), (200, {'certified': False, 'at': None}), 'without the file: not certified', what='get none')
+            c.eq(PU.certified(td), False, 'and the verbs read the same', what='none')
+            c.eq((post({'certified': True}, lan=True)[0], get(lan=True)[0], (Path(td) / 'local' / 'personal_use.json').exists()), (403, 403, False), 'a device of the local network (or the relay): 403 for the write and for the read, nothing written', what='lan')
+            c.eq([post(b)[0] for b in (b'not json', b'{"certified": "yes"}', b'{"certified": true, "x": 1}', b'[]', b'')], [400] * 5, 'a malformed or loose body: 400', what='400')
+            c.eq(said, [], 'a refusal says nothing on the console', what='silent')
+            code, out = post({'certified': True})
+            c.eq((code, out['ok'], out['certified'], bool(out['at']), PU.certified(td), said), (200, True, True, True, True, ['usage personnel certifié']), 'the tick: written, said once on the launcher console', what='tick')
+            post({'certified': True})
+            c.eq(said, ['usage personnel certifié'], 'the same tick again changes nothing and says nothing', what='again')
+            c.eq(get()[1]['certified'], True, 'GET gives it', what='get')
+            code, out = post({'certified': True, 'migrated': True})
+            c.eq((code, out.get('reason')), (409, 'exists'), 'a migration when the file exists: 409, nothing rewritten', what='migrate exists')
+            post({'certified': False})
+            c.eq((PU.certified(td), said[-1]), (False, 'usage personnel retiré'), 'the untick is written and said', what='untick')
+            (Path(td) / 'local' / 'personal_use.json').unlink()
+            code, out = post({'certified': True, 'migrated': True})
+            c.eq((code, out['migrated'], PU.read(td).get('migrated'), said[-1]), (200, True, True, 'usage personnel certifié (reporté du cache de la page)'), 'the one-off migration without a file: written with migrated: true, dated, said', what='migrate')
+            (Path(td) / 'local' / 'personal_use.json').write_text('{"certified": "true"}', encoding='utf-8')
+            c.eq(PU.certified(td), False, 'a file that does not say certified: true is not a tick (a string, a broken file)', what='loose file')
+    finally:
+        L.DATA, L.say = kept_data, kept_say
+    # the verb reads the launcher's tick, not the page's
+    RJ = _regen()
+    fn, check = RJ.REGISTRY[('proc', 'lnm')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        ctx = {'data': td, 'lnm_folder': lambda: ''}
+        asked = check({'icao': 'KDEN', 'personal': True})
+        c.eq(fn(RJ.Job('proc', 'lnm', {}), asked, ctx).get('reason'), 'not-personal', 'proc/lnm: `personal: true` from the page without the tick of the launcher: refused', what='verb refuses')
+        PU.write(td, True)
+        c.eq(fn(RJ.Job('proc', 'lnm', {}), check({'icao': 'KDEN'}), ctx).get('reason'), 'no-lnm', 'with the tick of the launcher the verb goes on (here: no database), whatever the page says', what='verb goes on')

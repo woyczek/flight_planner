@@ -4,14 +4,20 @@
   · lit la base SQLite de Little Navmap (little_navmap_<genre>.sqlite du dossier de ce poste, tools/launch.py lnm_db_folder) en LECTURE SEULE (`mode=ro&immutable=1` : ni copie, ni fichier -wal ou -shm créé à côté, ni verrou) ;
   · rend { ok, icao, source: 'lnm', base (le NOM du fichier, jamais un chemin), count, notice, _procedures: [fiches du schéma commun, `status: 'lnm'`, `lnm: true`, `source: { kind: 'lnm', ref: <nom du fichier> }`] } ;
     la clé « _procedures » est pour la page seule (elle n'entre jamais dans tools/.regen_last.json) : la page les garde en MÉMOIRE, marquées « lues de Little Navmap sur ce poste » ; AUCUNE écriture, ni dans data/, ni dans data/local, ni ailleurs ;
-  · refus (ok: false, reason, liste fermée) : not-personal (sans la coche « usage personnel » : les données de Little Navmap sont celles de Navigraph / Jeppesen, sous licence personnelle), no-lnm (aucune base sur ce poste), not-found (le terrain n'est dans
+  · refus (ok: false, reason, liste fermée) : not-personal (sans la coche « usage personnel » TENUE PAR LE LANCEUR, SOG-0238 : l'argument `personal` de la page est accepté et sans effet : les données de Little Navmap sont celles de Navigraph / Jeppesen, sous licence personnelle), no-lnm (aucune base sur ce poste), not-found (le terrain n'est dans
     aucune base), no-procedures (le terrain y est, sans procédure), unreadable (SQLite illisible ou schéma inconnu).
 Garde : le chemin de la base ne vient JAMAIS de la page (le dossier est celui du lanceur, le fichier un nom de la forme little_navmap_<genre>.sqlite listé ici) ; l'appareil du réseau local est refusé par la route des travaux (403) ; ces fiches ne sont ni compilées dans la base publiée, ni
 écrites, ni commitées, ni exportées (licence personnelle : LICENSE.md). Bibliothèque standard seulement (sqlite3)."""
 import os
 import re
 import sqlite3
+import sys
 import urllib.parse
+
+TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if TOOLS not in sys.path:
+    sys.path.insert(0, TOOLS)
+import personal_use  # noqa: E402  (la coche « usage personnel » tenue par le lanceur, SOG-0238)
 
 NOTICE = ('Procédures lues de la base de Little Navmap de ce poste (données Navigraph / Jeppesen, licence personnelle) : usage personnel, jamais publiées ni exportées ; non destinées à la navigation.')
 SKIP = {'logbook', 'logbook_backup', 'track', 'userdata', 'userdata_backup', 'userairspace', 'onlinedata'}      # les bases de Little Navmap qui ne portent pas de procédures
@@ -161,7 +167,7 @@ def procedures_of(con, icao, ref):
 
 def run(job, args, ctx):
     icao = args['icao']
-    if not args['personal']:
+    if not personal_use.certified(ctx['data']):      # SOG-0238 : la coche est CELLE DU LANCEUR (data/local/personal_use.json), jamais ce que la page dit (`personal` est accepté, sans effet)
         return {'ok': False, 'reason': 'not-personal', 'icao': icao}
     folder = folder_of(ctx)
     found = candidates(folder) if folder else []
