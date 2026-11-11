@@ -59,6 +59,58 @@ export const TX = {
   ],
   // SOG-0157 : le bouton de lecture d'un État lisible à la demande (eAIP du SIA, EAD Basic)
   procReadDemand: ['Lire à la demande', 'Read on demand', 'Auf Anfrage lesen', 'Leer bajo demanda'],
+  // SOG-0210 : « Lire depuis Little Navmap » (la base de Little Navmap de CE poste, par le lanceur ; en mémoire de la page seulement)
+  procLnmRead: ['Lire depuis Little Navmap', 'Read from Little Navmap', 'Aus Little Navmap lesen', 'Leer desde Little Navmap'],
+  procLnmReading: ['Lecture Little Navmap…', 'Reading Little Navmap…', 'Little Navmap wird gelesen…', 'Leyendo Little Navmap…'],
+  procLnmPersonal: ['Little Navmap : cochez d\'abord l\'usage personnel dans Données › Sources sous licence personnelle.',
+    'Little Navmap: first tick personal use in Data › Personal-licence sources.',
+    'Little Navmap: zuerst die persönliche Nutzung in Daten › Quellen mit persönlicher Lizenz ankreuzen.',
+    'Little Navmap: marque primero el uso personal en Datos › Fuentes con licencia personal.'
+  ],
+  procLnmDone: ['{icao} : {n} procédure(s) lue(s) de Little Navmap, sur ce poste seulement.',
+    '{icao}: {n} procedure(s) read from Little Navmap, on this device only.',
+    '{icao}: {n} Verfahren aus Little Navmap gelesen, nur auf diesem Gerät.',
+    '{icao}: {n} procedimiento(s) leído(s) de Little Navmap, solo en este equipo.'
+  ],
+  // les raisons fermées d'AeroDb.fetchLnm (frame/aerodb/aerodb.js) ; une raison inconnue : « other »
+  procLnmWhy: {
+    'not-personal': ['{icao} : usage personnel non coché.', '{icao}: personal use not ticked.',
+      '{icao}: persönliche Nutzung nicht angekreuzt.',
+      '{icao}: uso personal no marcado.'
+    ],
+    'no-launcher': ['{icao} : Little Navmap se lit par le lanceur de ce poste.',
+      '{icao}: Little Navmap is read through this device\'s launcher.',
+      '{icao}: Little Navmap wird über den Launcher dieses Geräts gelesen.',
+      '{icao}: Little Navmap se lee con el lanzador de este equipo.'
+    ],
+    paired: ['{icao} : un appareil appairé ne lit pas Little Navmap ; lisez-le sur le poste.',
+      '{icao}: a paired device does not read Little Navmap; read it on the workstation.',
+      '{icao}: Ein gekoppeltes Gerät liest Little Navmap nicht; lesen Sie es am Arbeitsplatz.',
+      '{icao}: un equipo emparejado no lee Little Navmap; léalo en el puesto.'
+    ],
+    busy: ['{icao} : une lecture de Little Navmap est déjà en cours.', '{icao}: a Little Navmap reading is already running.',
+      '{icao}: Eine Little-Navmap-Lesung läuft bereits.', '{icao}: ya hay una lectura de Little Navmap en curso.'
+    ],
+    'no-lnm': ['{icao} : aucune base de Little Navmap trouvée sur ce poste.', '{icao}: no Little Navmap database found on this device.',
+      '{icao}: keine Little-Navmap-Datenbank auf diesem Gerät gefunden.', '{icao}: ninguna base de Little Navmap en este equipo.'
+    ],
+    'not-found': ['{icao} : terrain absent de la base de Little Navmap.', '{icao}: aerodrome not in the Little Navmap database.',
+      '{icao}: Flugplatz nicht in der Little-Navmap-Datenbank.', '{icao}: aeródromo ausente de la base de Little Navmap.'
+    ],
+    'no-procedures': ['{icao} : Little Navmap n\'a aucune procédure pour ce terrain.',
+      '{icao}: Little Navmap has no procedure for this aerodrome.',
+      '{icao}: Little Navmap hat kein Verfahren für diesen Flugplatz.',
+      '{icao}: Little Navmap no tiene ningún procedimiento para este aeródromo.'
+    ],
+    cancelled: ['{icao} : lecture de Little Navmap annulée.', '{icao}: Little Navmap reading cancelled.',
+      '{icao}: Little-Navmap-Lesung abgebrochen.',
+      '{icao}: lectura de Little Navmap cancelada.'
+    ],
+    other: ['{icao} : Little Navmap n\'a pas pu être lu ({r}).', '{icao}: Little Navmap could not be read ({r}).',
+      '{icao}: Little Navmap konnte nicht gelesen werden ({r}).',
+      '{icao}: no se pudo leer Little Navmap ({r}).'
+    ]
+  },
   procRead: ['Lire les procédures de {icao}', 'Read the procedures of {icao}', 'Verfahren von {icao} lesen',
     'Leer los procedimientos de {icao}'
   ],

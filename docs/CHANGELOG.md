@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Lire depuis Little Navmap »** in the procedure card — only after the personal-use box of Données is ticked (Fuel SPEC, DECISIONS, help; noreg F144; SOG-0210).
 - **Relay of `/__setup/net`: an error answer that drips no longer holds a slot, and the workstation's page keeps one of the four** — the body of an HTTP error is read under the deadline of the relay (one raw read at a time), a paired device or the company relay holds three slots at most (`tools/launch.py`; audit, review of 10 Nov, N4; noreg K169).
 - **File upload: the number of entries of a zip is read before its directory is built** — the end-of-directory record (zip64 included) gives the count and the size; over `MAX_MEMBERS` or 64 MB, `unrecognised` without `ZipFile`; and the handler repeats the local-network refusal (`tools/base_upload.py`, `tools/launch.py`; audit, review of 10 Nov, N3; noreg K168).
 - **Little Navmap job: the SQLite URI escapes `%`** — a profile folder named « 100%41 » was opened as « 100A » (`tools/regen/lnm.py`; audit, review of 10 Nov, N1; noreg K167).

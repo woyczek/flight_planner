@@ -51,6 +51,9 @@ import {
 import {
   TX
 } from './procedures_texts.js';
+import {
+  keptPersonal
+} from '../data/model_sets.js'; // la coche « usage personnel » mémorisée (cache/data/personal.json), règle du module Données
 
 /** Champs de chaque côté de route.procedures. */
 export const PROC_FIELDS = {
@@ -77,6 +80,10 @@ const keep = x => x === null ? null : cleanSide(x);
 /** Lecture de procédures à la demande en cours, hors de l'instance : elle survit au démontage (le travail du poste continue, sa
  *  fin est dite quand même) ; { icao, text (texte du bouton, avancement compris) }. */
 let reading = null;
+/** Lecture de Little Navmap en cours (SOG-0210), hors de l'instance comme `reading` : l'OACI lu, null sinon. */
+let lnmReading = null;
+/** Ce que l'appareil a mémorisé de la coche « usage personnel » (module Données, Réglages › Sources). */
+const PERSONAL_DOC = 'cache/data/personal.json';
 /** L'instance du montage vivant : la fin d'une lecture lui est rendue même si elle a commencé sous un autre montage. */
 let live = null;
 
@@ -467,6 +474,11 @@ export function createProcedures(host) {
     const busy = reading?.icao === icao;
     return `<button type="button" class="fu-linkbtn" data-do="procfetch"${again ? ' data-again="1"' : ''} data-icao="${esc(icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? reading.text : text)}</button>`;
   };
+  /** « Lire depuis Little Navmap » (SOG-0210) : occupé tant que la lecture de ce terrain est en cours. */
+  const lnmButton = icao => {
+    const busy = lnmReading === icao;
+    return `<button type="button" class="fu-linkbtn" data-do="proclnm" data-icao="${esc(icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(tt(busy ? TX.procLnmReading : TX.procLnmRead))}</button>`;
+  };
   /** Date de la dernière lecture d'un terrain (aerodb coverage(icao).read_at), « lu le 28/10 18:01Z », ⌛ quand ce qu'il détient est une
    *  lecture d'un cycle passé (coverage().outdated) ; '' sans date (read_at null, aerodb plus ancien). */
   function fileHtml(m) {
@@ -483,6 +495,11 @@ export function createProcedures(host) {
       parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, ps && !ps.readable ? '' : readButton(m.icao, ps?.demand ? tt(TX.procReadDemand) : tt(TX.procRead, {
         icao: m.icao
       }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
+    // SOG-0210 : « Lire depuis Little Navmap » seulement là où la base n'a pas de procédure pour ce terrain (KDEN), et quand l'État ne se
+    // lit pas ici ou que la lecture a dit qu'une base de Little Navmap est sur ce poste ; jamais sur un terrain lisible sans cet indice
+    // (la ligne de LFQQ garde ses deux parties, F34)
+    if (m.nodata && typeof ctx.aerodb?.fetchLnm === 'function' && (adOf(m.icao).lnmHint || ps && !ps.readable)) parts.push(lnmButton(m
+      .icao));
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
     // SOG-0143 : sans donnée, la ligne « zone manquante » du terrain (sa zone et son état, le geste, les replis externes), remplie à la
     // réponse ; hors de la suite des parties (pas de « · » devant un emplacement encore vide)
@@ -1057,6 +1074,8 @@ export function createProcedures(host) {
    *  et les fiches du terrain oubliées ; la carte est redessinée dans tous les cas (le bouton n'est plus occupé). */
   function afterRead(icao, res) {
     if (host.gone()) return;
+    if (res?.lnm) adOf(icao).lnmHint =
+      true; // une base de Little Navmap est sur ce poste (indice de la lecture, § 10.21) : le geste est offert
     // SOG-0203 : les avertissements de cette lecture, gardés pour la ligne du terrain (textes du lecteur, bornés, échappés au dessin)
     adOf(icao).warnings = (Array.isArray(res?.warnings) ? res.warnings : []).slice(0, 20).map(w => String(w ?? '').replace(/\s+/g, ' ')
       .trim()
@@ -1133,7 +1152,9 @@ export function createProcedures(host) {
         if (v === 'none') return k === 'rwy' ? null : '__none';
         if (k === 'rwy') return /^\d{2}[LRC]?$/.test(v) ? (ad.rwys || []).find(r => PR.rwNum(r) === v) ?? null : null;
         const rec = ad.recs.get(v);
-        return rec && rec.kind === KIND[k] && !PR.isDoubt(rec) && (k !== 'trans' && k !== 'appTrans' || rec.transition) ? rec.id : null;
+        // ni une fiche douteuse, ni une fiche lue de Little Navmap (SOG-0210 : jamais la proposition par défaut)
+        return rec && rec.kind === KIND[k] && !PR.isDoubt(rec) && rec.status !== 'lnm' && rec.lnm !== true && (k !== 'trans' && k !==
+          'appTrans' || rec.transition) ? rec.id : null;
       };
     let any = false;
     for (const k of PROC_FIELDS[side]) {
@@ -1248,8 +1269,48 @@ export function createProcedures(host) {
     if (live === api) live = null;
   }
 
+  /** « Lire depuis Little Navmap » (SOG-0210) : la coche « usage personnel » d'abord (cache/data/personal.json, celle du module Données) ;
+   *  sans elle, une ligne dit où la cocher et rien n'est lancé ; avec elle, AeroDb.fetchLnm(icao, { personal: true }) : les fiches
+   *  restent en mémoire de la page (jamais écrites ; Carburant n'en garde que la référence, N2) et la carte se redessine. */
+  async function readLnm(icao) {
+    const k = String(icao || '').toUpperCase(),
+      say = (row, v, level) => ctx.notify(ctx.t(row, v), level);
+    if (!/^[A-Z0-9]{4}$/.test(k) || typeof ctx.aerodb?.fetchLnm !== 'function') return;
+    if (lnmReading) return say(TX.procLnmWhy.busy, {
+      icao: lnmReading
+    }, 'warn');
+    const doc = await Promise.resolve().then(() => ctx.data.get(PERSONAL_DOC)).catch(() => null);
+    if (!keptPersonal(doc)) return say(TX.procLnmPersonal, {}, 'warn');
+    lnmReading = k;
+    if (!host.gone()) render();
+    let res;
+    try {
+      res = await ctx.aerodb.fetchLnm(k, {
+        personal: true
+      });
+    } catch {
+      res = {
+        ok: false,
+        reason: 'failed'
+      };
+    }
+    lnmReading = null;
+    if (res?.ok) say(TX.procLnmDone, {
+      icao: k,
+      n: Math.max(0, Math.min(9999, +res.count || 0))
+    }, 'ok');
+    else say(TX.procLnmWhy[res?.reason] || TX.procLnmWhy.other, {
+      icao: k,
+      r: /^[a-z-]{1,30}$/.test(String(res?.reason || '')) ? res.reason : '?'
+    }, 'warn');
+    if (!host.gone()) {
+      key = null;
+      render();
+    }
+  }
   const api = {
     approachAid,
+    readLnm,
     sync,
     render,
     propose,

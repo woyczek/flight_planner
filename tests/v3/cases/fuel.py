@@ -4201,3 +4201,69 @@ def f143(c):
     c.ok('LNM1A' not in text and 'LNMXA' not in text and 'ADEP LFRS' in text, repr(text[:400]), 'the .fms carries nothing read from Little Navmap')
     head = tx('modules/fuel/module.js', 'fmsLnmOut', c.lang).split('{l}')[0].strip()[:20]
     c.until("(h) => (window.__notes || []).some(n => n.includes(h) && n.includes('LNM1A'))", head, timeout=5000, what='one line says the SID was left out')
+
+
+
+# SOG-0210: LFML has no procedure in the base and its reading says a Little Navmap database is here; fetchLnm records what it is asked
+# (never a launcher job): held until window.__lnmGo(), « paired » when window.__lnmPaired
+_LNM_GESTURE_STUB = """(() => { window.__lnm = []; let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { const ps = db.procedures;
+        db.procedures = async (icao, q) => String(icao).toUpperCase() === 'LFML' ? [] : ps.call(db, icao, q);
+        const rw = db.runways; db.runways = async (icao, ...q) => String(icao).toUpperCase() === 'LFML' ? [] : rw.call(db, icao, ...q);
+        db.fetchProcedures = async icao => ({ ok: false, reason: 'no-tables', lnm: true, icao });
+        db.fetchLnm = async (...x) => { window.__lnm.push(JSON.parse(JSON.stringify(x)));
+          if (window.__lnmPaired) return { ok: false, reason: 'paired' };
+          await new Promise(r => { window.__lnmGo = r }); return { ok: true, icao: x[0], count: 3 } } } catch (e) {}
+      return db } } } }) })()"""
+_PERSONAL_PUT = """async () => { const d = FrameData.adapter({ id: 'data', reads: ['cache/data/'], writes: [{ prefix: 'cache/data/', policy: 'cache' }] });
+  await d.put('cache/data/personal.json', { certified: true, updated_at: new Date().toISOString() }); return true }"""
+_NOTE = "(h) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(h))"
+
+
+@case('F144', 'Little Navmap: « Lire depuis Little Navmap » only where the base has no procedure and a Little Navmap database is said here; personal-use box first, one aerodrome at a time, this device only, nothing but the code and personal asked',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0210 (user: « Lire depuis Little Navmap », KDEN; ergonomist 11/11: one aerodrome at a time, this device only and said, the personal-use box '
+      'required, the database path never from the page, nothing in data/ (F143), never the default proposal): fetchLnm stubbed (no launcher job); '
+      'captures 390 and 1 280')
+def f144(c):
+    c.page.add_init_script(_LNM_GESTURE_STUB)
+    open_proc(c)
+    btn = f'{FUEL} [data-proc="arr"] [data-do="proclnm"]'
+    c.until(f"!!document.querySelector('{FUEL} [data-proc=arr][data-nodata] [data-do=procfetch]')", timeout=15000, what='LFML without procedure: « Lire » offered')
+    c.eq(c.count(btn), 0, 'no Little Navmap gesture before the reading said a database is here', what='gesture before')
+    c.tap(f'{FUEL} [data-proc="arr"] [data-do="procfetch"]')
+    c.until(f"!!document.querySelector('{btn}')", timeout=10000, what='« Lire depuis Little Navmap » offered after the reading said a database is here')
+    c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-do="proclnm"]'), 0, 'not on LFRS, which has its procedures', what='gesture at departure')
+    c.eq(norm(c.text(btn) or ''), norm(tx('modules/fuel/procedures_texts.js', 'procLnmRead', c.lang)), 'the gesture is named', what='button')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")   # the notes of the reading, gone for the captures
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.js(f"document.querySelector('{btn}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F144_{c.design}_{w}_{c.lang}_delivered.png')
+    # the box not ticked: a line says where, nothing asked of the launcher
+    head = tx('modules/fuel/procedures_texts.js', 'procLnmPersonal', c.lang).split('›')[0][:30]
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")   # a floating note must not cover the gesture
+    c.tap(btn)
+    c.until(_NOTE, head, timeout=5000, what='the line says where to tick personal use')
+    c.eq(c.js('window.__lnm'), [], 'no reading without the personal-use box', what='fetchLnm calls')
+    # ticked: asked once, with the code and personal only (never a path from the page); one aerodrome at a time
+    c.js(_PERSONAL_PUT)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")   # a floating note must not cover the gesture
+    c.tap(btn)
+    c.until('window.__lnm.length === 1', timeout=5000, what='fetchLnm asked once')
+    c.eq(c.js('window.__lnm'), [['LFML', {'personal': True}]], 'asked with the code and personal: true, nothing else', what='fetchLnm arguments')
+    c.until(f"document.querySelector('{btn}')?.disabled === true", timeout=5000, what='the gesture is busy during the reading')
+    c.js(f"document.querySelector('{btn}').disabled = false; document.querySelector('{btn}').click()")
+    c.wait(300)
+    c.eq(len(c.js('window.__lnm')), 1, 'a second gesture during the reading asks nothing (one aerodrome at a time)', what='fetchLnm calls')
+    c.js('window.__lnmGo()')
+    done = tx('modules/fuel/procedures_texts.js', 'procLnmDone', c.lang).split('{n}')[0].replace('{icao}', 'LFML') + '3'
+    c.until(_NOTE, done, timeout=5000, what='the count of the reading is said')
+    # a device of the local network: refused, and the screen says it
+    c.js('window.__lnmPaired = true')
+    c.until(f"!!document.querySelector('{btn}') && !document.querySelector('{btn}').disabled", timeout=5000, what='the gesture is free again')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")   # a floating note must not cover the gesture
+    c.tap(btn)
+    paired = tx('modules/fuel/procedures_texts.js', 'paired', c.lang, after='procLnmWhy').replace('{icao}', 'LFML')[:20]
+    c.until(_NOTE, paired, timeout=5000, what='a paired device is refused, and said')

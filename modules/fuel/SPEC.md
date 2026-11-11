@@ -463,7 +463,15 @@ before the start, in step 5 after (F11).
   poste » on its line (never « X-Plane, local »); what is read there stays on the device (SOG-0210 N2, F143): the flight keeps the
   chosen id only (its reference: aerodrome and name), never a position of its points (`pubProcs` in `knownPoints` and in the ends of
   « Auto »: a fix only that record places stays a word), and the FMS / PLN files leave it out (`pubFlight`, `pubProcs`), said in one
-  line « Lue(s) de Little Navmap sur ce poste, laissée(s) hors du fichier : SID … ». Any other record `status: 'doubt'`, or without a name, is never listed and is counted in « N non lues » with the
+  line « Lue(s) de Little Navmap sur ce poste, laissée(s) hors du fichier : SID … ». **« Lire depuis Little Navmap »** (SOG-0210,
+  F144) is on the discreet line of an aerodrome the base has no procedure for (`nodata`, the user's KDEN), when aerodb has
+  `fetchLnm` and either its State is not readable here (`procState().readable` false) or its reading said a Little Navmap database is
+  on this device (`res.lnm`) — not on a readable aerodrome without that hint (F34's line keeps its parts); an lnm record is never
+  proposed by an address (`admit`); one aerodrome at a time; a paired device is refused by aerodb and the line says it; only the code
+  and `personal` are passed (the database's path never comes from the page): it reads the personal-use box first (`cache/data/personal.json`, the rule
+  `keptPersonal` of the Données module, the only file of `cache/data/` Fuel reads); without it, one line « cochez d'abord l'usage
+  personnel dans Données › Sources sous licence personnelle » and nothing is asked; with it, `fetchLnm(icao, { personal: true })`, its
+  count or its closed reason said, the card drawn again. Any other record `status: 'doubt'`, or without a name, is never listed and is counted in « N non lues » with the
   aerodrome's left-out records (`stats.doubt` of the session's last reading, `coverage().doubt`); a runway only such records name is not
   offered; an aerodrome is « without data » only with no procedure of any kind and no runway (F31, F37). The lists are read again when
   aerodb announces new procedures (a `change` naming the aerodrome); the chosen procedures are read again when it is the flight's

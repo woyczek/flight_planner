@@ -72,7 +72,9 @@ export const meta = {
       `Flug ${leg}`, `Vuelo ${leg}`
     ];
   },
-  reads: ['pilot/', 'cache/fuel/', 'missions/'], // missions/ : « Préparer ce vol » du module Missions (#fuel?mission=<id>)
+  // missions/ : « Préparer ce vol » du module Missions (#fuel?mission=<id>) ; cache/data/personal.json : la coche « usage personnel »
+  // de ce poste (module Données), lue seulement avant « Lire depuis Little Navmap » (SOG-0210)
+  reads: ['pilot/', 'cache/fuel/', 'missions/', 'cache/data/personal.json'],
   // « Calculer A → B » et « Contrôler » (SOG-0080) : le travail route/compute du lanceur (AeroDB, RouteSim), détecté par regen/verbs
   launcher: {
     routes: ['regen/job', 'regen/job/cancel', 'regen/verbs', 'folders'],
@@ -86,9 +88,10 @@ export const meta = {
     prefix: 'cache/fuel/',
     policy: 'cache'
   }],
-  // gardés hors ligne dès la première visite (service worker du cadre)
+  // gardés hors ligne dès la première visite (service worker du cadre) ; ../data/model_sets.js et model_kit.js : la règle de la coche
+  // « usage personnel » du module Données (SOG-0210)
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
-    'procedures_texts.js', 'adnames.js', 'routecomplete.js', 'suggest.js',
+    'procedures_texts.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js', 'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
@@ -2439,6 +2442,8 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   const pf = e.target.closest('[data-do="procfetch"]');
   if (pf) return S.P.read(pf.dataset.icao); // « Lire » et « Relire » : un seul geste
+  const pl = e.target.closest('[data-do="proclnm"]');
+  if (pl) return S.P.readLnm(pl.dataset.icao); // « Lire depuis Little Navmap » (SOG-0210)
   const gr = e.target.closest('[data-do="groundretry"]');
   if (gr) return S.P.groundRetry(gr.dataset.icao); // « Réessayer » : le sol seul (SOG-0135)
   // « Sur la carte » : le mode choix de la Carte pour ce côté (§ 10.23) ; elle revient par location.replace avec son choix

@@ -1650,3 +1650,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   lists said « X-Plane, local » for them (`local: true`): now « Little Navmap, lue sur ce poste ». Exporting them to the pilot's own
   simulator is a licence decision for the user (Sécurisation carries it to the report), not coded. F143; counter-test on origin/v3: the
   label, then LNMXA placed in the flight.
+- **11 Nov 2026 — the gesture « Lire depuis Little Navmap »** (SOG-0210, after N2): offered only where it helps — an aerodrome
+  without procedure in the base whose State is not readable here, or whose reading said a Little Navmap database is here (not every
+  aerodrome without procedures: F34) —, never the default proposal (`admit` refuses lnm records), one aerodrome at a time, this device
+  only (« paired » said), never `personal: true` without the box the user ticked in Données (read,
+  never written, by Fuel); the box's place is said, not « Réglages › Sources » (the box is in Données). F144 (fetchLnm stubbed: no
+  launcher job); counter-test on origin/v3: no gesture.
