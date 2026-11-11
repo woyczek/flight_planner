@@ -1291,10 +1291,10 @@
     "de": "Missionskategorien einer Gesellschaft: Themen und Unterthemen der V2 übernehmen, nichts neu erfinden",
     "es": "Categorías de misiones de una compañía: reutilizar los temas y subtemas de la V2, no reinventar"
    },
-   "test": "(1) Réglages › Compagnie : la fiche de la compagnie liste les thèmes de missions (CAT en tête), cochés d'après le genre ; « Ajouter un thème… » et « Ajouter une série… » repliés dessous. (2) Carburant, étape Vol : « Thème » et « Sous-thème » ne proposent que ceux de la compagnie ; en venant d'une mission ils sont déjà remplis. (3) Compte rendu, étape Mission : le thème et le sous-thème du vol sont repris, on peut les changer ; un vol commercial est numéroté E.",
+   "test": "(1) Réglages › Compagnie : la fiche de la compagnie liste les familles de missions (CAT en tête), cochées d'après le genre. « Ajouter une famille… » : sigle, nom et « Lettre des comptes rendus », proposée libre et refusée si elle est prise. (2) Carburant, étape Vol : « Famille » et « Série » ne proposent que celles de la compagnie ; en venant d'une mission elles sont déjà remplies. (3) Compte rendu, étape Mission : la famille et la série du vol sont reprises, on peut les changer ; un vol Commercial part sur « Passagers » et se numérote E ; une famille ajoutée se numérote avec sa lettre.",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T17:32:31Z"
+   "delivered": "2026-11-11T09:24:08Z"
   },
   {
    "id": "SOG-0203",
