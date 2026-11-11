@@ -510,3 +510,13 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   the one-time migration). A failed migration writes nothing back over the page's tick (the next opening tries again). Limit
   said in the help: a script of the same origin can call the write route; the gain is against forgetting and against page code
   declaring the tick in place of the user. `base/fetch` still takes `personal` from the page (AeroDB's rest).
+- **11 Nov 2026 — Redesign of the base panel, lot 1 (SOG-0229; the user: « tout de suite »; « je veux cocher les zones avant »)**:
+  the panel opens on a state sentence (cycle in force + effective date, then the non-zero counts: à jour · à reconstruire · en
+  échec · attendent un fichier · sans état — a zone without state is counted, a failed zone is not a stale one); each number
+  unfolds its zones in place (same rows and same `S.ticked` as the « Zones de la couverture » list, ticking nothing); ONE
+  button, the same `update` verb: « Mettre à jour (n) » on the whole coverage (nothing ticked or everything ticked), « Mettre à
+  jour la sélection (n) » when the selection is partial; n = what `downloadPlan` says is to fetch or build (a zone waiting only
+  for a file by hand is out, said under the button); the progress and the final summary (with « Réessayer ») sit under the
+  sentence. The old balance line and its list filter are gone. « Publier » stays its own step: the line under the button says
+  « télécharger …, reconstruire … » and does NOT say « puis publier », because `startUpdate` does not publish (the build
+  publishing is for a later lot). The confirmation question still says « cochées » (left for the next lot).

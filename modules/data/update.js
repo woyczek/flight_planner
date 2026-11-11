@@ -16,7 +16,6 @@ import {
   buildZones,
   gateOf,
   renderBuild,
-  selection,
   selectionOf
 } from './panels.js';
 import {
@@ -30,9 +29,30 @@ import {
   statusKnown
 } from './status.js';
 
-/** L'état du bouton « Mettre à jour » : celui de « Télécharger » ET de « Construire », et le lanceur doit connaître base/status (sa raison : la première qui grise). */
+/** Ce que « Mettre à jour » prend : { ids, partial, known, counts, plan, todo, n }. La sélection est PARTIELLE quand des zones sont cochées et moins que toute la couverture (0 < cochées < couverture) : le bouton n'agit alors que sur les cochées ; sinon (rien de coché, ou tout coché : le défaut), sur TOUTE la couverture.
+ *  `counts` : le bilan des zones prises (M.balanceOf) et `plan` ce que le bouton va faire (M.downloadPlan), tous deux null sans état du lanceur ; `todo` : les zones que le bouton traite (à télécharger ou à reconstruire : celles à reconstruire, en échec ou sans état ; une zone qui attend un fichier déposé à la main n'en est pas) ; `n` : leur nombre, null sans état du lanceur. */
+export function updateScope() {
+  const {
+    ids,
+    ticked
+  } = buildZones(), partial = ticked.length > 0 && ticked.length < ids.length, scope = partial ? ticked : ids,
+    known = !!S.status && statusKnown(),
+    counts = known ? M.balanceOf(S.status, scope) : null,
+    plan = known ? M.downloadPlan(S.status, scope) : null,
+    todo = plan ? [...new Set([...plan.fetch, ...plan.build])] : [];
+  return {
+    ids: scope,
+    partial,
+    known,
+    counts,
+    plan,
+    todo,
+    n: known ? todo.length : null
+  };
+}
+/** L'état du bouton « Mettre à jour » : celui de « Télécharger » ET de « Construire », et le lanceur doit connaître base/status (sa raison : la première qui grise). `ids` : les zones d'un paquet ou d'une zone à réessayer ; sans elles, la portée du bouton (updateScope : toute la couverture quand rien n'est coché). */
 export function updateGate(ids = null) {
-  const g = gateOf('base', ids ? ids.length : selection('base').ids.length);
+  const g = gateOf('base', (ids || updateScope().ids).length);
   return {
     disabled: g.verbs.fetch.disabled || g.verbs.build.disabled || !statusKnown(),
     reason: g.verbs.fetch.reason || g.verbs.build.reason || (statusKnown() ? null : 'unknown-verb')
@@ -107,9 +127,9 @@ export function planText(dp) {
 export async function startUpdate(zones = null) {
   const me = S;
   if (updateGate(zones).disabled) return;
-  const sel = zones ? selectionOf(zones) : selection(
-    'base'
-  ); // `zones` : le « Mettre à jour » d'un paquet (SOG-0188), les seuls pays de ce paquet qui sont dans la couverture ; la sélection cochée ne bouge pas
+  const sel = selectionOf(zones || updateScope()
+    .ids
+  ); // `zones` : le « Mettre à jour » d'un paquet (SOG-0188), les seuls pays de ce paquet qui sont dans la couverture ; sans elles, la portée du bouton (les cochées si la sélection est partielle, sinon toute la couverture) ; la sélection cochée ne bouge pas
   S.updating = true;
   renderBuild();
   S.lastOp = null;

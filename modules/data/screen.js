@@ -145,12 +145,15 @@ export const STYLE = `
 [data-module="data"] .d-zup{grid-column:1/-1;margin:0 0 4px 28px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
 [data-module="data"] .d-zup progress{width:min(100%,220px)}
 [data-module="data"] .d-zup button{min-height:var(--sog-touch)}
-[data-module="data"] .d-bal{margin:4px 0 8px}
-[data-module="data"] .d-bal button{min-height:var(--sog-touch);padding:0 8px}
-[data-module="data"] .d-bal button[aria-pressed="true"]{font-weight:600;outline:2px solid var(--sog-accent);outline-offset:-2px}
+[data-module="data"] .d-statehead{margin:4px 0 12px}
+[data-module="data"] .d-statehead [data-state-sentence]{margin:0 0 4px;line-height:1.3}
+[data-module="data"] .d-statehead [data-filter]{min-height:var(--sog-touch);padding:0 8px;margin:2px 0}
+[data-module="data"] .d-statehead [data-filter][aria-expanded="true"]{font-weight:600;outline:2px solid var(--sog-accent);outline-offset:-2px}
+[data-module="data"] .d-statezones{list-style:none;margin:4px 0 8px;padding:0}
+[data-module="data"] .d-statehead p{margin:4px 0}
 [data-module="data"] .d-zact{grid-column:1/-1;margin:0 0 4px 28px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
 [data-module="data"] .d-zact button{min-height:var(--sog-touch)}
-@media (pointer:fine){[data-module="data"] .d-bal button,[data-module="data"] .d-zact button{min-height:32px}}
+@media (pointer:fine){[data-module="data"] .d-statehead [data-filter],[data-module="data"] .d-zact button{min-height:32px}}
 [data-module="data"] .d-opt{display:flex;gap:8px;align-items:center;min-height:var(--sog-touch);overflow-wrap:anywhere}
 /* au pointeur fin (souris) une ligne de liste est une ligne de texte, pas une cible de doigt : 32 px ; au doigt, 44 px (SOG-0168) */
 @media (pointer:fine){[data-module="data"] .d-opt{min-height:32px}[data-module="data"] .d-zrow{min-height:32px}}

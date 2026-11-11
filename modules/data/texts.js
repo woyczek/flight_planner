@@ -312,26 +312,6 @@ export const TX = {
     failed: ['En échec', 'Failed', 'Fehlgeschlagen', 'Fallida'],
     building: ['En cours', 'Running', 'Läuft', 'En curso']
   },
-  // le bilan en une ligne sous « Mettre à jour » (SOG-0180) : chaque nombre est un bouton qui n'affiche que ses zones
-  // la ligne qui suit un nombre du bilan touché (SOG-0228) : ce que sont les zones montrées et quoi faire
-  balLine: {
-    rebuild: ['{n} zone(s) à reconstruire, cochée(s) ci-dessous : « Mettre à jour » s’en charge.',
-      '{n} zone(s) to rebuild, ticked below: “Update” takes care of it.',
-      '{n} Zone(n) neu zu bauen, unten angekreuzt: „Aktualisieren“ übernimmt das.',
-      '{n} zona(s) por reconstruir, marcada(s) abajo: «Actualizar» se encarga.'
-    ],
-    failed: ['{n} zone(s) en échec, cochée(s) ci-dessous : « Mettre à jour » s’en charge.',
-      '{n} zone(s) failed, ticked below: “Update” takes care of it.',
-      '{n} Zone(n) fehlgeschlagen, unten angekreuzt: „Aktualisieren“ übernimmt das.',
-      '{n} zona(s) con fallo, marcada(s) abajo: «Actualizar» se encarga.'
-    ],
-    waiting: ['{n} zone(s) en attente d’un fichier : « Prendre le fichier téléchargé » est sur chaque ligne.',
-      '{n} zone(s) waiting for a file: “Take the downloaded file” is on each line.',
-      '{n} Zone(n) mit ausstehender Datei: „Heruntergeladene Datei übernehmen“ steht in jeder Zeile.',
-      '{n} zona(s) a la espera de un archivo: «Tomar el archivo descargado» está en cada línea.'
-    ],
-    upToDate: ['{n} zone(s) à jour.', '{n} zone(s) up to date.', '{n} Zone(n) aktuell.', '{n} zona(s) al día.']
-  },
   // ce que compte le nombre de « Zones de la couverture (n) » (SOG-0228) : les zones que la base couvre sur ce poste, sur celles que la suite connaît
   zonesNote: ['Les zones que la base couvre sur ce poste : {n} sur les {m} que la suite connaît.',
     'The zones the base covers on this workstation: {n} of the {m} the suite knows.',
@@ -354,9 +334,25 @@ export const TX = {
     waiting: [
       ['{n} attend un fichier', '{n} waits for a file', '{n} wartet auf eine Datei', '{n} espera un archivo'],
       ['{n} attendent un fichier', '{n} wait for a file', '{n} warten auf eine Datei', '{n} esperan un archivo']
+    ],
+    unknown: [
+      ['{n} sans état', '{n} without a state', '{n} ohne Zustand', '{n} sin estado'],
+      ['{n} sans état', '{n} without a state', '{n} ohne Zustand', '{n} sin estado']
     ]
   },
-  balShowAll: ['Tout afficher', 'Show all', 'Alle anzeigen', 'Mostrar todo'],
+  // la phrase d'état en tête du panneau de la base : « Cycle 2611, en vigueur depuis le … Votre base : 3 zones à jour · … » ; chaque nombre est un bouton qui déplie ses zones sur place
+  stateCycle: ['Cycle {c}, en vigueur depuis le {d}.', 'Cycle {c}, in force since {d}.', 'Zyklus {c}, gültig seit dem {d}.',
+    'Ciclo {c}, vigente desde el {d}.'
+  ],
+  stateBase: ['Votre base :', 'Your base:', 'Ihre Basis:', 'Su base:'],
+  stateEmpty: ['Aucune zone dans la couverture.', 'No zone in the coverage.', 'Keine Zone in der Abdeckung.',
+    'Ninguna zona en la cobertura.'
+  ],
+  stateUnknown: ['L’état de votre base n’est pas connu : {r}.', 'The state of your base is not known: {r}.',
+    'Der Zustand Ihrer Basis ist nicht bekannt: {r}.', 'No se conoce el estado de su base: {r}.'
+  ],
+  stateUnread: ['il n’a pas encore été lu', 'it has not been read yet', 'er wurde noch nicht gelesen', 'aún no se ha leído'],
+  allFresh: ['Tout est à jour.', 'Everything is up to date.', 'Alles ist aktuell.', 'Todo está al día.'],
   zr: {
     'never-built': ['Jamais construite', 'Never built', 'Noch nie erstellt', 'Nunca construida'],
     failed: ['Dernière construction en échec', 'Last build failed', 'Letzter Build fehlgeschlagen', 'La última construcción falló'],
@@ -413,6 +409,24 @@ export const TX = {
   upd: {
     update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
     updatePack: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
+    // le bouton de la tête du panneau : tout ce que la base couvre, ou la sélection quand elle est partielle ; n : les zones à reconstruire, en échec ou sans état
+    updateN: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
+    updateSel: ['Mettre à jour la sélection ({n})', 'Update the selection ({n})', 'Auswahl aktualisieren ({n})',
+      'Actualizar la selección ({n})'
+    ],
+    updateSelNo: ['Mettre à jour la sélection', 'Update the selection', 'Auswahl aktualisieren', 'Actualizar la selección'],
+    // sous le bouton : ce qu'il va faire, ce qu'il saute, ce qu'il laisse à l'utilisateur
+    doLine: ['Ce que fait ce bouton : {l}.', 'What this button does: {l}.', 'Was diese Schaltfläche tut: {l}.',
+      'Lo que hace este botón: {l}.'
+    ],
+    doDl: ['télécharger {z}', 'download {z}', '{z} herunterladen', 'descargar {z}'],
+    doBuild: ['reconstruire {z}', 'rebuild {z}', '{z} neu bauen', 'reconstruir {z}'],
+    skipNote: ['Ignoré : {z} déjà à jour.', 'Skipped: {z} already up to date.', 'Übersprungen: {z} bereits aktuell.',
+      'Omitido: {z} ya al día.'
+    ],
+    waitNote: ['Pas dans cette mise à jour : {z}.', 'Not in this update: {z}.', 'Nicht in dieser Aktualisierung: {z}.',
+      'No entra en esta actualización: {z}.'
+    ],
     more: ['Détail', 'Detail', 'Details', 'Detalle'],
     recompute: ['Tout recalculer', 'Rebuild all', 'Alles neu berechnen', 'Recalcular todo'],
     selStale: ['Seulement les périmés', 'Only the stale ones', 'Nur die veralteten', 'Solo las caducadas'],

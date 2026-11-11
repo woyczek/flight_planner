@@ -3883,6 +3883,129 @@ def l82(c):
     c.check_errors()
 
 
+@case('L83', 'Données: the base panel opens on its state (lot 1 of the redesign) — a sentence with its five numbers that unfold their zones in place, ONE « Mettre à jour » with its scope, its plan and its reason, the progress and the bilan under it', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='Données redesign, lot 1 (the ergonomist): the base panel starts with « Cycle AAMM, en vigueur depuis le … Votre base : n à jour · n à reconstruire · n en échec · n attendent un fichier · n sans état »; a number unfolds its zones right under the sentence (same rows as the list below, same selection, nothing ticked, no scroll); one « Mettre à jour (n) » acts on the whole coverage or, with a partial selection, on « la sélection »; up to date: « Tout est à jour. » and no button; grey: its reason beside it; the progress and the bilan are in the same block')
+def l83(c):
+    lang = c.lang
+    z = lambda n: _zones_text(lang, n)
+    BT = lambda k, n: _trow(k, lang, after='  bal: {', row=0 if _one(lang, n) else 1).replace('{n}', z(n))
+    UT = lambda k: _UT(k, lang)
+    ticked = lambda: sorted(set(_ticked(c)))   # the zones ticked (a zone unfolded in the sentence shows its tick twice: one selection, two places)
+    fetched = _view('done', step='Terminé', result={'fetched': ['fr'], 'unchanged': [], 'failed': [], 'manual': []})
+    running = _view('running', step='Construction', done=1, total=5, zones={'ca': _zs('built', 4, 4), 'es': _zs('building', 1, 4)})
+    partial = _view('done', step='Terminé', jid='j2', zones={'fr': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['fr'], 'failed': [{'zone': 'es', 'error': 'invalid-output'}], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'reason': 'partial'})
+    st = _launcher(c, [fetched], verbs=_VERBS)
+    waiting = {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}
+    mixed = _status({'ca': _zst('up-to-date'), 'es': _zst('failed', {'code': 'failed', 'error': 'invalid-output'}), 'fr': _zst('stale', _NEWER), 'gb': _zst('stale', waiting, buildable=False)})   # us: no state at all
+    st['status'] = mixed
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 5", timeout=10000, what='the five numbers of the sentence')
+    keys = lambda: c.js("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].map(b => b.dataset.filter)")
+    rows = lambda sel: c.js("(s) => [...document.querySelectorAll(s + ' [data-zone-row]')].map(r => r.dataset.zoneRow)", sel)
+    top = lambda: c.js("Math.round(document.querySelector('[data-state-sentence]').getBoundingClientRect().top + window.scrollY)")
+    # ---- the sentence: the cycle in force and its date (the ones of the screen head), then the five numbers in their order
+    cycle = c.text('[data-cycle-now]').strip()
+    pat = re.escape(_trow('cycleDates', lang)).replace(re.escape('{a}'), '(?P<a>.+?)').replace(re.escape('{b}'), '(?P<b>.+?)')
+    date = re.fullmatch(pat, norm(c.text('[data-cycle-dates]')).split(' · ')[0]).group('a')
+    want = _trow('stateCycle', lang).replace('{c}', cycle).replace('{d}', date) + ' ' + _trow('stateBase', lang) + ' ' + ' · '.join(BT(k, 1) for k in ('upToDate', 'rebuild', 'failed', 'waiting', 'unknown')) + '.'
+    c.eq(norm(c.text('[data-state-sentence]')), norm(want), 'the first thing of the base panel: the cycle in force and since when, then the zones of the base — one up to date, one to rebuild, one failed, one that waits for a file, one WITHOUT a state (counted, never hidden)', what='sentence')
+    c.eq([keys(), c.count('[data-balance]'), c.count('[data-build] > h2 + [data-state-head]')], [['upToDate', 'rebuild', 'failed', 'waiting', 'unknown'], 0, 1], 'the numbers are the buttons of the sentence (five keys), the old one-line balance is gone, the block sits right under the title', what='numbers')
+    c.eq([c.count('[data-state-zones]'), c.js("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].map(b => b.getAttribute('aria-expanded'))")], [0, ['false'] * 5], 'nothing is unfolded at first', what='folded')
+    # ---- ONE button, the same verb, whole coverage by default: n = to rebuild + failed + without state (the zone that waits for a file is not in it)
+    c.eq(c.count('[data-build] [data-verb=update]'), 1, 'one « Mettre à jour » in the base panel', what='one button')
+    c.eq(c.js("(() => { const b = document.querySelector('[data-build] [data-verb=update]'); return [!!b.closest('[data-state-head]'), b.disabled, b.classList.contains('primary')] })()"), [True, False, True], 'it is in the head block, live and primary', what='button place')
+    c.eq(norm(c.text('[data-verb=update]')), norm(UT('updateN').replace('{n}', '3')), 'whole coverage (everything ticked is the default): 3 = one to rebuild + one failed + one without state', what='label whole')
+    doing = lambda dl, bd: UT('doLine').replace('{l}', ', '.join([UT('doDl').replace('{z}', z(dl))] + ([UT('doBuild').replace('{z}', z(bd))] if bd else [])))
+    c.eq(norm(c.text('[data-update-plan]')), norm(doing(3, 2)), 'under it one line says what it will do: download three zones, rebuild two (« Publier » stays its own step)', what='plan')
+    c.eq(norm(c.text('[data-update-notes]')), norm(UT('waitNote').replace('{z}', BT('waiting', 1))), 'and that the zone that waits for a file is left to the user', what='notes')
+    # ---- a number unfolds its zones in place: same rows as the list below, nothing ticked, no scroll, the lower list stays whole
+    ticked0 = ticked()
+    y0 = top()
+    c.tap('[data-state-sentence] [data-filter=failed]')
+    c.until("!!document.querySelector('[data-state-zones]')", timeout=4000, what='the failed zones unfold')
+    c.eq([c.js("document.querySelector('[data-state-zones]').dataset.stateOpen"), rows('[data-state-zones]'), c.js("document.querySelector('[data-state-sentence] [data-filter=failed]').getAttribute('aria-expanded')")], ['failed', ['es'], 'true'], 'the number of failures unfolds the failed zone, and says it is open', what='unfold failed')
+    c.eq(c.js("document.querySelector('[data-state-sentence]').nextElementSibling === document.querySelector('[data-state-zones]')"), True, 'right below the sentence', what='in place')
+    c.eq(c.count('[data-state-zones] [data-zone-row=es] [data-zstate=failed]'), 1, 'the row is the one of the list below: name, state pill', what='row state')
+    c.eq([norm(c.text('[data-state-zones] [data-zone-row=es] [data-verb=retry-zone]')), c.count('[data-state-zones] [data-zone-row=es] [data-build-zone]')], [norm(UT('retry')), 1], 'with its « Réessayer » and its tick', what='row actions')
+    c.eq([ticked() == ticked0, abs(top() - y0) <= 1, len(rows('[data-build-zones]'))], [True, True, 5], 'nothing was ticked, the page did not move, the lower list still shows its five zones', what='no side effect')
+    c.tap('[data-state-sentence] [data-filter=waiting]')
+    c.until("document.querySelector('[data-state-zones]')?.dataset.stateOpen === 'waiting'", timeout=4000, what='the waiting zones unfold')
+    c.eq([rows('[data-state-zones]'), c.count('[data-state-zones] [data-zone-row=gb] [data-verb=pickup]'), c.count('[data-state-zones] [data-zone-row=gb] [data-act=zone-upload]'), c.count('[data-state-zones]')], [['gb'], 1, 1, 1], 'another number replaces it: the zone that waits for a file, with « Prendre le fichier » and « Choisir le fichier… »', what='unfold waiting')
+    c.tap('[data-state-sentence] [data-filter=unknown]')
+    c.until("document.querySelector('[data-state-zones]')?.dataset.stateOpen === 'unknown'", timeout=4000, what='the zone without state unfolds')
+    c.eq([rows('[data-state-zones]'), c.count('[data-state-zones] [data-zstate]')], [['us'], 0], 'the zone without a state is listed, with no pill', what='unfold unknown')
+    c.tap('[data-state-sentence] [data-filter=rebuild]')
+    c.until("document.querySelector('[data-state-zones]')?.dataset.stateOpen === 'rebuild'", timeout=4000, what='the zones to rebuild unfold')
+    c.eq(rows('[data-state-zones]'), ['fr'], 'to rebuild: France', what='unfold rebuild')
+    # ---- one selection, two places: unticking in the unfolded list unticks the list below, and the scope becomes « la sélection »
+    c.tap('[data-state-zones] [data-build-zone=fr]')
+    c.eq([ticked(), c.js("document.querySelector('[data-build-zones] [data-build-zone=fr]').checked")], [['ca', 'es', 'gb', 'us'], False], 'the tick of the unfolded row is the tick of the list below (one state)', what='one state')
+    c.eq(norm(c.text('[data-verb=update]')), norm(UT('updateSel').replace('{n}', '2')), 'a partial selection: the button says « la sélection » and counts its own zones (the failed one and the one without state)', what='label partial')
+    c.eq(norm(c.text('[data-update-plan]')), norm(doing(2, 1)), 'and its plan is that of the selection alone', what='plan partial')
+    c.eq(norm(c.text('[data-update-notes]')), norm(UT('skipNote').replace('{z}', z(1)) + ' ' + UT('waitNote').replace('{z}', BT('waiting', 1))), 'a zone already up to date inside the selection is said to be skipped, and the one that waits for a file is left out', what='notes partial')
+    c.tap('[data-state-sentence] [data-filter=rebuild]')
+    c.until("!document.querySelector('[data-state-zones]')", timeout=4000, what='the same number folds it again')
+    # ---- the partial selection acts on the ticked zones only; nothing ticked is the whole coverage (not a grey button)
+    n0 = len(st['posts'])
+    c.tap('[data-build] [data-verb=update]')
+    _ask_text(c)
+    c.eq([sorted(p['args']['zones']) for p in st['posts'][n0:] if p['verb'] == 'status'][0], ['ca', 'es', 'gb', 'us'], 'the selection: the state is read for the ticked zones alone', what='status partial')
+    c.eq(sorted(_posts(st, 'fetch')[-1]['args']['zones']), ['es', 'us'], 'and the download is that of the ticked zones that are not up to date (never France, never the zone that waits)', what='fetch partial')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal') && !document.querySelector('[data-build] [data-verb=update]').disabled", timeout=6000, what='the question is closed')
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=4000, what='nothing ticked')
+    c.eq([norm(c.text('[data-verb=update]')), c.js("document.querySelector('[data-build] [data-verb=update]').disabled")], [norm(UT('updateN').replace('{n}', '3')), False], 'nothing ticked: the whole coverage, the button is live (it used to be grey)', what='label none')
+    st['views'], st['i'] = [fetched], 0
+    n0 = len(st['posts'])
+    c.tap('[data-build] [data-verb=update]')
+    _ask_text(c)
+    c.eq([sorted(p['args']['zones']) for p in st['posts'][n0:] if p['verb'] == 'status'][0], ['ca', 'es', 'fr', 'gb', 'us'], 'it reads the state of the whole coverage', what='status whole')
+    c.eq(sorted(_posts(st, 'fetch')[-1]['args']['zones']), ['es', 'fr', 'us'], 'and downloads the zones of the whole coverage that need it', what='fetch whole')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", timeout=6000, what='the question is closed')
+    # ---- the progress and the bilan are in the head block, under the button; the sentence stays while it works
+    c.tap('[data-build-zones] [data-build-zone=es]')
+    st['views'], st['i'], st['start'] = [running], 0, (200, {'job': 'j2'})
+    c.js("document.querySelector('[data-verbs-more]').open = true")
+    c.tap('[data-build] [data-verb=build]')
+    c.until("!!document.querySelector('[data-build] [data-running]')", timeout=10000, what='the progress')
+    c.eq([c.count('[data-build] [data-running]'), c.js("!!document.querySelector('[data-build] [data-running]').closest('[data-state-head]')"), c.count('[data-state-sentence] [data-filter]')], [1, True, 5], 'while it works the progress is in the head block, under the button, and the sentence stays', what='progress')
+    st['views'], st['i'] = [partial], 0
+    st['status'] = mixed
+    c.until("!!document.querySelector('[data-build] [data-build-result]')", timeout=12000, what='the bilan')
+    c.eq([c.count('[data-build] [data-build-result]'), c.js("!!document.querySelector('[data-build] [data-build-result]').closest('[data-state-head]')"), c.count('[data-build] [data-running]')], [1, True, 0], 'the bilan replaces it in the same block, and appears nowhere else of the base panel', what='bilan')
+    c.until("!!document.querySelector('[data-state-sentence] [data-filter=failed]')", timeout=6000, what='the state is read again')
+    c.tap('[data-state-sentence] [data-filter=failed]')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=es] [data-verb=retry-zone]')", timeout=6000, what='« Réessayer » on the failed zone, in the head block')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-state-head]').scrollIntoView({ block: 'start' }); window.scrollBy(0, -140)")
+        c.shot(f'L83_{c.width}_{lang}_delivered.png')   # the failure of one zone unfolded, the bilan of the run under the button
+    # ---- the whole coverage up to date: the sentence and « Tout est à jour. », no button
+    st['status'] = _ALL_OK()
+    st['views'], st['i'] = [fetched], 0
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen again')
+    c.settle()
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1", timeout=10000, what='the sentence with its one number')
+    c.eq([keys(), c.count('[data-build] [data-verb=update]'), norm(c.text('[data-all-fresh]'))], [['upToDate'], 0, norm(_trow('allFresh', lang))], 'everything up to date: one number, no button, « Tout est à jour. »', what='all fresh')
+    c.eq(norm(c.text('[data-state-sentence]')).endswith(norm(_trow('stateBase', lang) + ' ' + BT('upToDate', 5) + '.')), True, 'the sentence says the five zones are up to date', what='sentence fresh')
+    # ---- the launcher does not know base/status: the sentence says the cycle and why it cannot say more; the button is grey with its reason beside it
+    st['verbs'] = ['base/fetch', 'base/build', 'base/purge']
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen with an older launcher')
+    c.settle()
+    c.until("!!document.querySelector('[data-state-sentence]') && !!document.querySelector('[data-update-reason]')", timeout=10000, what='the sentence without state and the reason')
+    why = _trow('unknown-verb', lang, after='  greyReason: {')
+    c.eq(norm(c.text('[data-state-sentence]')), norm(_trow('stateCycle', lang).replace('{c}', cycle).replace('{d}', date) + ' ' + _trow('stateUnknown', lang).replace('{r}', why)), 'no state known: the cycle, then why the base cannot be told', what='sentence unknown')
+    c.eq([c.count('[data-state-sentence] [data-filter]'), c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), norm(c.text('[data-update-reason]'))], [0, True, norm(why)], 'the button is grey and its reason is written beside it', what='grey')
+    c.check_errors()
+
+
 _RT = lambda key, lang: _trow(key, lang, after='  route: {')
 
 
@@ -4042,12 +4165,12 @@ def l36(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the state of the five zones, read at the opening')
     labels = c.js("[...document.querySelectorAll('[data-build] .d-verbs:not([data-select-row]) button')].map(b => [b.dataset.verb, b.textContent.trim()])")
-    c.eq([[v for v, _l in labels if v != 'pickup'], dict(labels)['update'], dict(labels)['build']], [['update', 'download', 'build', 'purge'], norm(_UT('update', lang)), norm(_UT('recompute', lang))],
-         'the verbs row: Mettre à jour, Télécharger, Tout recalculer (today\u2019s build), Purger', what='verbs')
+    c.eq([[v for v, _l in labels if v != 'pickup'], dict(labels)['update'], dict(labels)['build']], [['update', 'download', 'build', 'purge'], norm(_UT('updateN', lang).replace('{n}', '1')), norm(_UT('recompute', lang))],
+         'Mettre à jour (1: France) in the head block, then the verbs row: Télécharger, Tout recalculer (today\u2019s build), Purger', what='verbs')
     total = sum(_KB.values())
     c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 5)) + ' · ' + _bytes(c, total)), 'the selection says its count and its size before any verb', what='selection line')
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the state of the five zones, read at the opening')
     n0 = len(st['posts'])
     # ---- Mettre à jour: the fetch, the state, then ONE question that names France (the launcher says: source newer), the reason, the size
     c.tap('[data-build] [data-verb=update]')
@@ -4070,7 +4193,19 @@ def l36(c):
             break
         c.wait(200)
     c.eq(c.js("[...document.querySelectorAll('[data-zstate]')].map(b => b.dataset.zstate)"), ['up-to-date'] * 5, 'after the build the state is read again from the launcher: every zone is up to date', what='state after')
-    # ---- nothing to do: the download, a sentence, no question, no build
+    # ---- nothing to do: the download, a sentence, no question, no build.  The screen says « Tout est à jour. » (no button) once every zone is up to date, so the page is
+    # opened again on a state where France is stale; the launcher then says « up to date » at its second reading (the download made it so)
+    st['status'] = _FR_STALE()
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen again')
+    c.settle()
+    c.until("document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-build] [data-verb=update]')", timeout=8000, what='the state of the five zones and the button')
+    seq = {'n': 0}
+
+    def after_download(args):
+        seq['n'] += 1
+        return _FR_STALE() if seq['n'] == 1 else _ALL_OK()
+    st['status'] = after_download
     st['views'] = [fetched]
     st['i'] = 0
     st['start'] = (200, {'job': 'j3'})
@@ -4116,7 +4251,7 @@ def l37(c):
     c.tap('[data-select-row] [data-verb=select-none]')
     c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=6000, what='nothing ticked')
     c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selNothing', lang)), 'the line says so', what='nothing line')
-    c.eq([c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), c.js("document.querySelector('[data-build] [data-verb=build]').disabled")], [True, True], 'no zone: the verbs are grey', what='verbs grey')
+    c.eq([c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), c.js("document.querySelector('[data-build] [data-verb=build]').disabled")], [False, True], 'nothing ticked: « Mettre à jour » takes the whole coverage and stays live, « Tout recalculer » has no zone and is grey', what='verbs grey')
     # ---- a zone that waits for a file of Downloads is not buildable: « only the stale ones » leaves it out; nothing buildable: said, the selection stays
     st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'us': _zst('up-to-date'),
                             'gb': _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)})
@@ -4830,7 +4965,7 @@ def l56(c):
         folded: f ? [...f.querySelectorAll('button')].map(b => [b.dataset.verb, b.classList.contains('primary')]) : null,
         primaries: [...document.querySelectorAll('[data-build] button.primary')].map(b => b.dataset.verb),
         hidden: f ? [...f.querySelectorAll('button')].every(b => !b.checkVisibility()) : null } }""")
-    c.eq([row['shown'], row['open'], norm(row['summary'])], [['update'], False, norm(_trow('more', lang, after='  upd: {'))], 'only « Mettre à jour » is in view; « Plus » is folded', what='row')
+    c.eq([row['shown'], row['open'], norm(row['summary']), c.count('[data-build] > [data-state-head] [data-verb=update]'), c.count('[data-build] [data-verb=update]')], [[], False, norm(_trow('more', lang, after='  upd: {')), 1, 1], '« Mettre à jour » is the only button in view, in the head block; the row holds nothing but « Plus » (folded)', what='row')
     c.eq([[v for v, p in row['folded']], row['hidden']], [['download', 'pickup', 'build', 'purge'], True], 'under « Plus »: Télécharger, Prendre le fichier, Tout recalculer, Purger; none is visible while folded', what='folded verbs')
     c.eq(row['primaries'], ['update'], 'one primary button in the panel: « Mettre à jour »', what='one primary')
     c.js("document.querySelector('[data-build] [data-verbs-row]').scrollIntoView({ block: 'center' })")
@@ -5057,7 +5192,7 @@ def l62(c):
     one = r"'((?:[^'\\]|\\.)*)'"
     unq = lambda x: re.sub(r"\\(.)", r"\1", x)
     # the buttons (and the boxes) of the screen: the keys whose 4 strings are a label; every occurrence of a key counts
-    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'selStale', 'selNone', 'certify', 'licencesLink', 'retry', 'balShowAll', 'choose']   # « Choisir le fichier… » (SOG-0199: the button on the line of a zone that waits for a file or whose download was refused)
+    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'selStale', 'selNone', 'certify', 'licencesLink', 'retry', 'choose']   # « Choisir le fichier… » (SOG-0199: the button on the line of a zone that waits for a file or whose download was refused)
     allowed = set()
     for k in labels:
         for m in re.finditer(r"^\s*" + k + r": \[\s*" + one + r",\s*" + one + r",\s*" + one + r",\s*" + one, src, re.M):
@@ -5076,7 +5211,7 @@ def l62(c):
     c.eq(sorted(set(orphans)), [], 'every quoted button name of a message is the name of a button of the screen', what='orphans')
 
 
-@case('L63', 'Données: the balance in one line under the selection (« 58 à jour · 2 en échec · 1 attend un fichier »): each number shows its zones only; a zone that waits for a file has « Prendre le fichier » on its line, a failed one « Réessayer » (SOG-0180)', 'L', tags=('data',), langs4=True,
+@case('L63', 'Données: the numbers of the state sentence (« 58 à jour · 2 en échec · 1 attend un fichier »): each number unfolds its zones in place; a zone that waits for a file has « Prendre le fichier » on its line, a failed one « Réessayer » (SOG-0180)', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=True, night=False,
       rule='SOG-0180 (decision 2 and 4): a zone waiting for a file only the user can drop says so on its own line with the button that takes it; a failed zone has its own « Réessayer » (the build of that zone alone); the end is a one-line balance whose numbers open their lines')
 def l63(c):
@@ -5089,21 +5224,21 @@ def l63(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-balance]')", timeout=8000, what='the five pills and the balance')
-    nums = lambda: c.js("[...document.querySelectorAll('[data-balance] button[data-filter]')].filter(b => b.dataset.filter).map(b => [b.dataset.filter, +b.textContent.match(/\\d+/)[0]])")
-    c.eq(nums(), [['upToDate', 2], ['rebuild', 1], ['failed', 1], ['waiting', 1]], 'the balance: two up to date, one to rebuild, one failed, one waiting for a file', what='balance')
-    c.eq(c.count('[data-balance]'), 1, 'one line', what='one line')
-    shown = lambda: c.js("[...document.querySelectorAll('[data-zone-row]')].map(r => r.dataset.zoneRow)")
-    c.eq(len(shown()), 5, 'the whole list is shown at first', what='all')
-    # ---- a number opens its lines
-    c.tap('[data-balance] [data-filter=failed]')
-    c.until("document.querySelectorAll('[data-zone-row]').length === 1", timeout=4000, what='only the failed line')
-    c.eq(shown(), ['es'], 'the number of failures shows the failed zone alone', what='failed only')
-    c.eq(c.js("document.querySelector('[data-balance] [data-filter=failed]').getAttribute('aria-pressed')"), 'true', 'and says it is pressed', what='pressed')
-    c.tap('[data-balance] [data-filter=waiting]')
-    c.until("document.querySelectorAll('[data-zone-row]').length === 1 && !!document.querySelector('[data-zone-row=gb]')", timeout=4000, what='the waiting line')
-    c.tap('[data-balance] [data-filter=""]')
-    c.until("document.querySelectorAll('[data-zone-row]').length === 5", timeout=4000, what='the whole list again')
+    c.until("document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=8000, what='the five pills and the numbers of the sentence')
+    nums = lambda: c.js("[...document.querySelectorAll('[data-state-sentence] button[data-filter]')].filter(b => b.dataset.filter).map(b => [b.dataset.filter, +b.textContent.match(/\\d+/)[0]])")
+    c.eq(nums(), [['upToDate', 2], ['rebuild', 1], ['failed', 1], ['waiting', 1]], 'the numbers of the sentence: two up to date, one to rebuild, one failed, one waiting for a file (nothing without a state)', what='balance')
+    c.eq(c.count('[data-state-sentence]'), 1, 'one sentence', what='one sentence')
+    shown = lambda: c.js("[...document.querySelectorAll('[data-state-zones] [data-zone-row]')].map(r => r.dataset.zoneRow)")
+    c.eq(c.count('[data-build-zones] [data-zone-row]'), 5, 'the whole list of the coverage is shown, always', what='all')
+    # ---- a number unfolds its lines in place (the list of the coverage below stays whole)
+    c.tap('[data-state-sentence] [data-filter=failed]')
+    c.until("document.querySelectorAll('[data-state-zones] [data-zone-row]').length === 1", timeout=4000, what='only the failed line')
+    c.eq(shown(), ['es'], 'the number of failures unfolds the failed zone alone', what='failed only')
+    c.eq([c.js("document.querySelector('[data-state-sentence] [data-filter=failed]').getAttribute('aria-expanded')"), c.count('[data-build-zones] [data-zone-row]')], ['true', 5], 'and says it is open; the list below is not filtered', what='expanded')
+    c.tap('[data-state-sentence] [data-filter=waiting]')
+    c.until("document.querySelectorAll('[data-state-zones] [data-zone-row]').length === 1 && !!document.querySelector('[data-state-zones] [data-zone-row=gb]')", timeout=4000, what='the waiting line')
+    c.tap('[data-state-sentence] [data-filter=waiting]')
+    c.until("!document.querySelector('[data-state-zones]')", timeout=4000, what='the same number folds it')
     # ---- the actions are on the lines of their zones, and only there
     c.eq(c.js("[...document.querySelectorAll('[data-zone-action]')].map(p => [p.dataset.zoneAction, [...p.querySelectorAll('button[data-verb]')].map(b => b.dataset.verb)])"), [['es', ['retry-zone']], ['gb', ['pickup']]], '« Réessayer » on the failed zone, « Prendre le fichier » on the waiting one, nothing on the others', what='actions')
     c.eq([norm(c.text('[data-zone-row=es] [data-verb=retry-zone]')), norm(c.text('[data-zone-row=gb] [data-verb=pickup]'))], [norm(_UT('retry', lang)), norm(_trow('pickup', lang))], 'worded in the language of the run (the same name as the button of the screen)', what='labels')
@@ -5368,7 +5503,7 @@ def l70(c):
     UP = lambda key: _trow(key, lang, after='  up: {')
     st = _launcher(c, [_pk_plan([], [], [], jid='k1')], verbs=_VERBS + ['base/pickup'])   # the plan finds nothing to take: no question, the buttons are free again
     st['start'] = (200, {'job': 'k1'})
-    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'us': _zst('up-to-date'),
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('stale', _NEWER), 'us': _zst('up-to-date'),   # France is stale and buildable: « Mettre à jour » has something to do, so it is drawn
                             'gb': _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)})
     sent = []
     answer = {'status': 200, 'body': {'ok': True, 'source': 'nats', 'zone': 'gb', 'name': 'EG_AIP_DS_20261126_XML.zip', 'size': 5004, 'replaced': True, 'sha256': 'ab' * 32}}
@@ -5672,8 +5807,9 @@ def l75(c):
     def status(args):   # the real launcher: a zone built with ENAIRE is up to date only when the status is told that ENAIRE may be read
         asked = args.get('personal') or []
         es = _zst('up-to-date') if 'enaire' in asked else _zst('stale', {'code': 'inputs-changed', 'count': 1, 'names': ['zones/es/enaire_es_enr.geojson']})
-        return _status({'ca': _zst('up-to-date'), 'es': es, 'fr': _zst('up-to-date'), 'gb': _zst('up-to-date'), 'us': _zst('up-to-date')})
-    st = _launcher(c, [], verbs=_VERBS)
+        return _status({'ca': _zst('up-to-date'), 'es': es, 'fr': _zst('up-to-date'), 'gb': _zst('stale', _NEWER), 'us': _zst('up-to-date')})   # Great Britain is stale whatever the personal sources: « Mettre à jour » always has something to do
+    fetched = _view('done', step='Terminé', result={'fetched': ['gb'], 'unchanged': [], 'failed': [], 'manual': []})
+    st = _launcher(c, [fetched], verbs=_VERBS)
     st['status'] = status
     st['by_args'] = True
     cfg, _ = _fixture()
@@ -5687,12 +5823,12 @@ def l75(c):
     # ---- the box ticked: the same sources as the build, the state is read again, Spain is up to date
     n = len(st['posts'])
     c.tap('[data-certify]')
-    c.until("[...document.querySelectorAll('[data-zstate]')].every(e => e.dataset.zstate === 'up-to-date')", timeout=8000, what='every zone up to date once the state is read with the personal sources')
+    c.until("[...document.querySelectorAll('[data-zstate]')].filter(e => e.closest('[data-zone-row]').dataset.zoneRow !== 'gb').every(e => e.dataset.zstate === 'up-to-date')", timeout=8000, what='every zone but Great Britain up to date once the state is read with the personal sources')
     ask2 = [p['args'].get('personal') for p in st['posts'][n:] if p['verb'] == 'status']
     c.ok(bool(ask2) and 'enaire' in ask2[-1], ask2, 'the state was read again with the personal sources the build would send (ENAIRE)')
     if c.width in (390, 1280):
         c.shot(f'L75_standard_{c.width}_{lang}_delivered.png')
-    # ---- « Mettre à jour » reads the state with them too: nothing to rebuild, said
+    # ---- « Mettre à jour » reads the state with them too: only Great Britain is left to rebuild
     n = len(st['posts'])
     c.tap('[data-build] [data-verb=update]')
     for _ in range(40):
@@ -5700,22 +5836,23 @@ def l75(c):
             break
         c.wait(250)
     c.ok(all('enaire' in (p['args'].get('personal') or []) for p in st['posts'][n:] if p['verb'] == 'status'), [p['args'].get('personal') for p in st['posts'][n:] if p['verb'] == 'status'], '« Mettre à jour » reads the state with the same personal sources')
-    c.eq(c.count('.f-modal'), 0, 'nothing to rebuild: no question', what='no question')
+    q = _ask_text(c)
+    c.ok('Espagne' not in q['text'] and 'Spain' not in q['text'] and 'Spanien' not in q['text'] and 'España' not in q['text'], q['text'], 'the question is asked for the zone that is left (Great Britain), never for Spain')
+    c.tap('.f-modal [data-no]')
     c.check_errors()
 
 
-@case('L76', 'Données: the minimum before the redesign (SOG-0228) — « Paquets de pays » is folded when the screen opens, a note says what « Zones de la couverture (n) » counts, and a tap on « n à reconstruire » ticks those zones, shows them alone and says what to do', 'L', tags=('data',), langs4=True,
+@case('L76', 'Données: the minimum before the redesign (SOG-0228) — « Paquets de pays » is folded when the screen opens, a note says what « Zones de la couverture (n) » counts, and a tap on « n à reconstruire » unfolds those zones in place without ticking or scrolling (lot 1 of the redesign)', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=True, night=False,
-      rule='SOG-0228 (the user: « j’ai « 68 à jour, 7 à reconstruire ». je clique sur le bouton, j’ai l’impression qu’il ne se passe rien… je ne sais pas quoi faire pour reconstruire ces 7 … replier « paquets de pays ». expliquer pourquoi « zone de la couverture » est suivi d’un « 75 » »): the packs are folded at the opening (and kept as the pilot leaves them); the count of the coverage is explained; a number of the balance (to rebuild, failed) ticks its zones, reduces the list to them, brings the list into view and says in one line what to do')
+      rule='SOG-0228 (the user: « j’ai « 68 à jour, 7 à reconstruire ». je clique sur le bouton, j’ai l’impression qu’il ne se passe rien… je ne sais pas quoi faire pour reconstruire ces 7 … replier « paquets de pays ». expliquer pourquoi « zone de la couverture » est suivi d’un « 75 » »): the packs are folded at the opening (and kept as the pilot leaves them); the count of the coverage is explained; since the lot 1 redesign a number of the sentence of the base panel (to rebuild, failed…) unfolds its zones in place, ticks nothing, does not scroll and leaves the list of the coverage whole')
 def l76(c):
     lang = c.lang
-    T = lambda k: _trow(k, lang, after='  balLine: {')
     st = _launcher(c, [], verbs=_VERBS)
     st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('stale', _NEWER), 'gb': _zst('stale', _NEWER), 'us': _zst('stale', _NEWER)})
     cfg = _packs_cfg()
     _open(c, cfg)
     _all_open(c)
-    c.until("!!document.querySelector('[data-packs-fold]') && document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-balance]')", timeout=10000, what='the packs fold, the pills and the balance')
+    c.until("!!document.querySelector('[data-packs-fold]') && document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=10000, what='the packs fold, the pills and the numbers of the sentence')
     # ---- (a) the packs are folded at the opening; opened by hand, they stay so
     c.eq(c.js("document.querySelector('[data-packs-fold]').open"), False, '« Paquets de pays » is folded when the screen opens', what='packs folded')
     c.eq(norm(c.text('[data-packs-fold] > summary')), norm(_trow('title', lang, after='  packs: {')), 'its summary is its title', what='packs summary')
@@ -5728,18 +5865,19 @@ def l76(c):
     n_zones = c.js("document.querySelectorAll('[data-build-zone]').length")
     m_zones = len(cfg['zones'])
     c.eq(norm(c.text('[data-zones-note]')), norm(_trow('zonesNote', lang).replace('{n}', str(n_zones)).replace('{m}', str(m_zones))), 'a line says what the number counts: the zones the base covers on this workstation, of those the suite knows', what='zones note')
-    # ---- (b) a tap on « n à reconstruire »: the zones are ticked, alone in the list, in view, with the line that says what to do
-    c.js("document.querySelector('[data-build-zone=fr]').click()")   # untick one: the tap must tick it back
-    c.tap('[data-balance] [data-filter=rebuild]')
-    c.until("document.querySelectorAll('[data-zone-row]').length === 3 && !!document.querySelector('[data-filter-line]')", timeout=6000, what='the three zones to rebuild, alone, with their line')
-    c.eq(c.js("[...document.querySelectorAll('[data-zone-row]')].map(r => [r.dataset.zoneRow, r.querySelector('[data-build-zone]').checked])"), [['fr', True], ['gb', True], ['us', True]], 'the zones to rebuild are the only ones listed and they are ticked', what='ticked')
-    want = norm(T('rebuild').replace('{n}', '3').replace('(s)', 's' if lang in ('fr', 'en', 'es') else '').replace('(n)', 'n').replace('(e)', 'e'))
-    c.ok(c.text('[data-filter-line]').strip() != '' and '3' in c.text('[data-filter-line]'), c.text('[data-filter-line]'), 'one line says what to do: ' + want)
-    c.until("(() => { const r = document.querySelector('[data-zones-title]').getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight })()", timeout=4000, what='the list is brought into view')
+    # ---- (b) a tap on « n à reconstruire » (lot 1 of the redesign): the zones unfold in place under the sentence; nothing is ticked, the page does not move, the list below stays whole
+    c.js("document.querySelector('[data-build-zone=fr]').click()")   # untick one: the tap must not tick it back (the selection is the pilot's)
+    ticked = lambda: sorted(set(_ticked(c)))
+    t0 = ticked()
+    y0 = c.js("Math.round(document.querySelector('[data-state-sentence]').getBoundingClientRect().top + window.scrollY)")
+    c.tap('[data-state-sentence] [data-filter=rebuild]')
+    c.until("document.querySelectorAll('[data-state-zones] [data-zone-row]').length === 3", timeout=6000, what='the three zones to rebuild unfold')
+    c.eq(c.js("[...document.querySelectorAll('[data-state-zones] [data-zone-row]')].map(r => [r.dataset.zoneRow, r.querySelector('[data-build-zone]').checked])"), [['fr', False], ['gb', True], ['us', True]], 'the zones to rebuild are listed under the sentence with the ticks they already had (France was unticked: it stays so)', what='ticked')
+    c.eq([ticked() == t0, c.count('[data-build-zones] [data-zone-row]'), c.count('[data-filter-line]'), abs(c.js("Math.round(document.querySelector('[data-state-sentence]').getBoundingClientRect().top + window.scrollY)") - y0) <= 1], [True, 5, 0, True], 'nothing was ticked, the list of the coverage is whole, no line to follow, the page did not scroll', what='no side effect')
     if c.width in (390, 1280):
         c.shot(f'L76_standard_{c.width}_{lang}_delivered.png')
-    c.tap('[data-balance] [data-filter=rebuild]')
-    c.until("document.querySelectorAll('[data-zone-row]').length === 5 && !document.querySelector('[data-filter-line]')", timeout=6000, what='the whole list again, the line gone')
+    c.tap('[data-state-sentence] [data-filter=rebuild]')
+    c.until("!document.querySelector('[data-state-zones]')", timeout=6000, what='the same number folds the list again')
     c.check_errors()
 
 

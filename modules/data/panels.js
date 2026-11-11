@@ -33,13 +33,15 @@ import {
 } from './chain.js';
 import {
   selectionLine,
-  updateGate
+  updateGate,
+  updateScope
 } from './update.js';
 import {
   statusKnown,
   zoneStateHtml,
   zoneActionHtml,
-  balance
+  balance,
+  ZONE_KEYS
 } from './status.js';
 import {
   packsHtml,
@@ -638,17 +640,68 @@ function verbsHtml(gate, panel, pk) {
   const off = verb => gate.verbs[verb].disabled ? ' disabled' : '',
     miss = !!pk && missingList().length >
     0; // un cycle manuel manque : la prise du fichier passe avant Construire (qui referait l'ancien cycle)
-  const base = panel === 'base',
-    upd = base ? updateGate() : null; // « Mettre à jour » (SOG-0071) : le téléchargement puis la construction des seules zones périmées
+  const base = panel === 'base';
   const dl = `<button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>`,
     pick = pk ? `<button type="button"${miss ? ' class="primary"' : ''} data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>` : '',
     rebuild = `<button type="button"${miss || base ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(base ? TX.upd.recompute : TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>`,
     purge = `<button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button>`;
   if (!base) return `<p class="d-verbs">${dl}\n      ${pick}${rebuild}\n      ${purge}</p>`;
-  // la base : « Mettre à jour » seule en vue et primaire (règle 13 : un seul primaire par écran) ; le reste sous « Plus », replié. Quand un cycle manuel manque, la prise du fichier, qui passe avant
+  // la base : « Mettre à jour » est dans la tête du panneau (stateHeadHtml), seule en vue et primaire (règle 13 : un seul primaire par écran) ; ici le reste sous « Plus », replié. Quand un cycle manuel manque, la prise du fichier, qui passe avant
   // tout, reste en vue et devient le primaire
-  return `<div class="d-verbs" data-verbs-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${upd.disabled ? ' disabled' : ''}>${esc(tt(TX.upd.update))}</button>${miss ? pick : ''}
+  return `<div class="d-verbs" data-verbs-row>${miss ? pick : ''}
     <details class="d-moreverbs" data-verbs-more${S.verbsOpen ? ' open' : ''}><summary>${esc(tt(TX.upd.more))}</summary><div class="d-verbs">${dl}${miss ? '' : pick}${rebuild}${purge}</div></details></div>`;
+}
+/** Ce qu'il y a dans la ligne d'une zone de la base (la même dans la liste de la couverture et dans la liste dépliée de la phrase d'état) : sa case (la sélection est UNE : S.ticked), son nom, son état et ce qu'elle propose. */
+function zoneRowInner(z, busy) {
+  return `${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}${zoneActionHtml(z)}`;
+}
+/** Pourquoi l'état de la base n'est pas dit : le lanceur manque, il ne connaît pas base/status, ou l'état n'est pas encore lu. */
+function stateWhy() {
+  return tt(!S.ctx.launcher ? TX.greyReason['no-launcher'] : !statusKnown() ? TX.greyReason['unknown-verb'] : TX.stateUnread);
+}
+/** La tête du panneau de la base (lot 1 de l'écran Données) : la phrase d'état (le cycle en vigueur et sa date d'effet, puis les zones de la base : n à jour · n à reconstruire · n en échec · n attendent un fichier · n sans état, chaque nombre un bouton qui déplie ses zones sur place, juste dessous),
+ *  puis LE bouton « Mettre à jour » (le même verbe `update`) avec sa portée (toute la couverture, ou « la sélection » quand elle est partielle), ce qu'il va faire, la raison s'il est gris ; « Tout est à jour. » sans bouton quand il n'y a rien à faire ; enfin la marche et la fin de l'opération de la base. */
+function stateHeadHtml() {
+  const head = S.airac ? M.cycleHead(S.airac, S.now) : null,
+    cyc = head ? tt(TX.stateCycle, {
+      c: head.id,
+      d: M.dateText(head.date, lang())
+    }) : '',
+    groups = balance().groups,
+    busy = frozen(),
+    z = n => count('zone', n),
+    bal = (k, n) => tt(TX.bal[k][n === 1 ? 0 : 1], {
+      n: z(n)
+    });
+  const parts = groups ? ZONE_KEYS.filter(k => groups[k].length) : [],
+    tail = !groups ? esc(tt(TX.stateUnknown, {
+      r: stateWhy()
+    })) : parts.length ? `${esc(tt(TX.stateBase))} ${parts.map(k => `<button type="button" data-act="zone-filter" data-filter="${k}" aria-expanded="${S.zoneFilter === k}">${esc(bal(k, groups[k].length))}</button>`).join(' · ')}.` : esc(tt(TX.stateEmpty)),
+    open = groups && S.zoneFilter && groups[S.zoneFilter]?.length ? S.zoneFilter : null;
+  const list = open ? `<ul class="d-statezones" data-state-zones data-state-open="${open}">${groups[open].map(id => `<li class="d-zrow" data-zone-row="${esc(id)}">${zoneRowInner(id, busy)}</li>`).join('')}</ul>` : '';
+  const sc = updateScope(),
+    gate = updateGate(),
+    miss = missingList().length > 0; // un cycle manuel manque : la prise du fichier est le primaire, pas « Mettre à jour »
+  const action = sc.known && sc.n === 0 ? `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
+    `<p class="d-verbs" data-update-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(sc.known ? tt(sc.partial ? TX.upd.updateSel : TX.upd.updateN, { n: sc.n }) : tt(sc.partial ? TX.upd.updateSelNo : TX.upd.update))}</button></p>${gate.reason ? `<p class="f-muted" data-update-reason="${esc(gate.reason)}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`;
+  const dl = sc.plan?.fetch.length || 0,
+    bd = sc.plan?.build.length || 0,
+    doing = [dl ? tt(TX.upd.doDl, {
+      z: z(dl)
+    }) : '', bd ? tt(TX.upd.doBuild, {
+      z: z(bd)
+    }) : ''].filter(Boolean),
+    plan = sc.n > 0 && doing.length ? `<p class="f-muted" data-update-plan>${esc(tt(TX.upd.doLine, { l: doing.join(', ') }))}</p>` : '',
+    left = sc.counts ? sc.counts.waiting.filter(id => !sc.todo.includes(id)) :
+  [], // les zones qui attendent un fichier et que le bouton ne traite pas : à la main de l'utilisateur
+    notes = sc.counts ? [sc.partial && sc.counts.upToDate.length ? tt(TX.upd.skipNote, {
+      z: z(sc.counts.upToDate.length)
+    }) : '', left.length ? tt(TX.upd.waitNote, {
+      z: bal('waiting', left.length)
+    }) : ''].filter(Boolean) : [];
+  return `<div class="d-statehead" data-state-head><p data-state-sentence>${[esc(cyc), tail].filter(Boolean).join(' ')}</p>${list}
+    ${action}${plan}${notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : ''}
+    ${opAreaHtml('base')}</div>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
  *  vigueur (points VFR), le champ des types OACI (appareils). */
@@ -658,17 +711,13 @@ function choiceHtml(set, busy) {
       ids,
       ticked
     } = buildZones(),
-      pers = M.personalSources(ticked),
-      bal = balance(),
-      shown = S.zoneFilter && bal.groups ? ids.filter(z => bal.groups[S.zoneFilter].includes(z)) :
-      ids; // le bilan (SOG-0180) : un nombre touché n'affiche que ses zones
+      pers = M.personalSources(ticked);
     return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
     <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
-    ${bal.html}
     ${packsHtml()}
     <h4 data-zones-title>${esc(tt(TX.zonesTitle, { n: ids.length }))}</h4>
-    ${Array.isArray(S.d.zones) && S.d.zones.length ? `<p class="f-muted" data-zones-note>${esc(tt(TX.zonesNote, { n: ids.length, m: S.d.zones.length }))}</p>` : ''}${S.zoneFilter && bal.groups ? `<p class="f-ok" data-filter-line>${esc(tt(TX.balLine[S.zoneFilter], { n: shown.length }))}</p>` : ''}
-    <div class="d-opts" data-build-zones>${shown.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}${zoneActionHtml(z)}</div>`).join('')}</div>
+    ${Array.isArray(S.d.zones) && S.d.zones.length ? `<p class="f-muted" data-zones-note>${esc(tt(TX.zonesNote, { n: ids.length, m: S.d.zones.length }))}</p>` : ''}
+    <div class="d-opts" data-build-zones>${ids.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${zoneRowInner(z, busy)}</div>`).join('')}</div>
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>
       <label class="d-opt"><input type="checkbox" data-certify${S.certified ? ' checked' : ''}${busy ? ' disabled' : ''}><span><b>${esc(tt(TX.certify))}</b></span></label>
       <p class="f-muted">${esc(tt(TX.certifyHint))} <a href="#sources" data-licences-link>${esc(tt(TX.licencesLink))}</a></p>
@@ -730,6 +779,7 @@ function setInner(panel) {
     pk = panel === M.PICKUP.set ? gateOf(panel, sel.ids.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb] :
     null; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
   return `<h2>${esc(tt(ui.title))}</h2>
+    ${panel === 'base' ? stateHeadHtml() : ''}
     <h3>${esc(tt(ui.items))}</h3>
     ${spec.map ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
     ${verbsHtml(gate, panel, pk)}
@@ -737,7 +787,7 @@ function setInner(panel) {
     ${pk?.reason === 'unknown-verb' && gate.reason !== 'unknown-verb' ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason['unknown-verb']))}</p>` : ''}
     ${panel === 'base' ? missingHtml() : ''}
     ${ui.hint ? `<p class="f-muted" ${ui.hint[0]}>${esc(tt(ui.hint[1]))}</p>` : ''}
-    ${opAreaHtml(panel)}`;
+    ${panel === 'base' ? '' : opAreaHtml(panel)}`;
 }
 /** Le panneau d'un jeu (base comprise, repérée par `data-build`) ou celui des fiches publiées (`data-set-panel`). */
 function setPanelHtml(panel) {
@@ -755,7 +805,8 @@ export function panelsHtml(group) {
 function redrawPanel(box) {
   const a = box.contains(document.activeElement) ? document.activeElement : null,
     q = (attr, v) => `[${attr}="${CSS.escape(v)}"]`,
-    sel = a ? a.dataset.buildZone ? q('data-build-zone', a.dataset.buildZone) :
+    sel = a ? a.dataset.buildZone ? (a.closest('[data-state-zones]') ? '[data-state-zones] ' : '[data-build-zones] ') + q('data-build-zone',
+      a.dataset.buildZone) :
     a.dataset.certify !== undefined ? '[data-certify]' : a.dataset
     .item ? q('data-item', a.dataset.item) : a.dataset.f ? q('data-f', a.dataset.f) : a.dataset.verb ? q('data-verb', a.dataset.verb) : '' :
     '',

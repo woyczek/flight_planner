@@ -134,37 +134,25 @@ export function zoneStateHtml(id) {
     `<span class="d-st" data-zstate="${esc(st)}">${dot}${esc(label)}</span>`}
     ${open ? `<p class="f-muted d-zwhy" data-zone-why="${esc(id)}">${esc(reasons.join(' ; '))}</p>` : ''}${zoneNotices(id).map(n => `<p class="f-muted d-zwhy" data-zone-notice="${esc(id)}">${esc(n)}</p>`).join('')}`;
 }
-/** Le bilan en une ligne (SOG-0180) : « 58 à jour · 2 en échec · 1 attend un fichier » ; chaque nombre est un bouton qui n'affiche que ses zones dans la liste (le même, ou « Tout afficher », rend la liste entière). Vide sans état connu.
- *  Rend { html, groups } : les listes de la liste filtrée sont celles du bilan. */
+/** Les genres du bilan, dans l'ordre où la phrase d'état les dit : à jour, à reconstruire, en échec, attendent un fichier, sans état. */
+export const ZONE_KEYS = ['upToDate', 'rebuild', 'failed', 'waiting', 'unknown'];
+/** Le bilan des zones de la couverture d'après l'état du lanceur (SOG-0180) : { groups } — les identifiants par genre (ZONE_KEYS), dans l'ordre de la couverture ; null sans état connu (la phrase d'état le dit). Le genre ouvert qui se vide se referme.
+ *  Une zone sans état du lanceur est comptée « sans état » : jamais cachée. */
 export function balance() {
   if (!S.status || !statusKnown()) return {
-    html: '',
     groups: null
   };
-  const groups = M.balanceOf(S.status, buildZones().ids),
-    parts = ['upToDate', 'rebuild', 'failed', 'waiting'].filter(k => groups[k].length);
-  if (S.zoneFilter && !groups[S.zoneFilter]?.length) S.zoneFilter = null; // plus aucune zone de ce genre : le filtre tombe
-  if (!parts.length) return {
-    html: '',
-    groups
-  };
-  const html = `<p class="d-bal" data-balance>${parts.map(k => `<button type="button" data-act="zone-filter" data-filter="${k}" aria-pressed="${S.zoneFilter === k}">${esc(tt(TX.bal[k][groups[k].length === 1 ? 0 : 1], { n: groups[k].length }))}</button>`).join(' · ')}${S.zoneFilter ? ` <button type="button" data-act="zone-filter" data-filter="">${esc(tt(TX.balShowAll))}</button>` : ''}</p>`;
+  const groups = M.balanceOf(S.status, buildZones().ids);
+  if (S.zoneFilter && !groups[S.zoneFilter]?.length) S.zoneFilter = null; // plus aucune zone de ce genre : la liste se referme
   return {
-    html,
     groups
   };
 }
-/** Le toucher d'un nombre du bilan : la liste n'affiche que ses zones ; le même nombre, ou « Tout afficher » : toute la liste. */
+/** Le toucher d'un nombre de la phrase d'état : la liste de ses zones se déplie sur place, sous la phrase ; le même nombre la referme, un autre la remplace. Rien n'est coché, rien ne défile : la sélection est celle de la liste de la couverture. */
 export function setZoneFilter(key) {
-  const k = ['upToDate', 'rebuild', 'failed', 'waiting'].includes(key) ? key : null;
+  const k = ZONE_KEYS.includes(key) ? key : null;
   S.zoneFilter = k && S.zoneFilter !== k ? k : null;
-  // un nombre à reconstruire ou en échec : ces zones sont COCHÉES (« Mettre à jour » les prend) et la liste vient sous les yeux (SOG-0228 : « je ne sais pas quoi faire pour reconstruire ces 7 »)
-  const groups = S.zoneFilter ? balance().groups : null;
-  if (groups && (S.zoneFilter === 'rebuild' || S.zoneFilter === 'failed')) S.ticked = new Set(groups[S.zoneFilter]);
   renderBuild();
-  if (S.zoneFilter) setTimeout(() => S?.body?.querySelector('[data-zones-title]')?.scrollIntoView({
-    block: 'start'
-  }), 80); // après le dessin et la relecture qui peut le suivre (la page ne se remet pas à sa place ensuite)
 }
 /** La page des abonnements du NASR de la FAA (le lien direct des trois jeux : FIX, AWY, NAV). */
 const NASR_URL = 'https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/';

@@ -172,7 +172,7 @@ function onClick(e) {
     return up.disabled || !p ? undefined : startUpdate(M.packState(p, S.d.zones, S.d.cov.ids).inCoverage);
   }
   const zf = e.target.closest?.('[data-act="zone-filter"]');
-  if (zf) return setZoneFilter(zf.dataset.filter); // un nombre du bilan : ses zones seules (SOG-0180)
+  if (zf) return setZoneFilter(zf.dataset.filter); // un nombre de la phrase d'état : ses zones se déplient sur place
   const zw = e.target.closest?.('[data-act="zone-why"]');
   if (zw) return toggleWhy(zw.dataset.zone); // la pastille d'une zone : ses raisons (SOG-0071)
   const rc = e.target.closest?.('[data-act="map-recenter"]');
@@ -324,7 +324,7 @@ export async function mount(el, ctx) {
     statusP: null, // la lecture en cours (une seule à la fois)
     statusAsked: false, // l'état a été demandé à l'ouverture
     whyOpen: new Set(),
-    zoneFilter: null, // le nombre du bilan touché (upToDate, rebuild, failed, waiting) : la liste des zones n'affiche que les siennes
+    zoneFilter: null, // le nombre de la phrase d'état déplié (upToDate, rebuild, failed, waiting, unknown) : ses zones sont listées sous la phrase ; null : rien de déplié
     world: worldInit(), // la ligne « Synoptique monde (GFS) » : phase, état lu, dernière fin (world.js)
     zoneAsked: false, // le lien #data?zone=<id> a été lu (update.js)
     zoneLink: null,
