@@ -1723,5 +1723,246 @@
    "state": "todo",
    "delivered": "2026-11-10T23:02:41Z"
   }
+ ],
+ "decisions": [
+  {
+   "id": "Q-0001",
+   "fiche": "SOG-0229",
+   "app": "maintenance",
+   "question": "Refonte de l'écran de la base : plus de sélection à faire avant « Mettre à jour » ?",
+   "context": "Le bouton agirait sur tout ce qui n'est pas à jour ; une zone seule se referait depuis « Détail ». Aujourd'hui il faut cocher des zones, et tu as écrit « je ne sais pas quoi faire pour reconstruire ces 7 ».",
+   "options": [
+    "Oui : le bouton agit sur tout ce qui n'est pas à jour",
+    "Non : je veux cocher les zones avant"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0002",
+   "fiche": "SOG-0229",
+   "app": "maintenance",
+   "question": "Refonte : « Publier » sort de la vue courante ?",
+   "context": "La construction publie déjà (c'était ton « 0 fichier envoyé »). Il resterait une ligne « Publiée à … » et un « Publier maintenant » dans « Détail ».",
+   "options": [
+    "Oui",
+    "Non : je garde le bouton « Publier » en vue"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0003",
+   "fiche": "SOG-0229",
+   "app": "maintenance",
+   "question": "Refonte : la ligne EAD et « Lire un terrain / Relire / Retirer », décrites dans les specs et jamais codées ?",
+   "context": "Les procédures se lisent aujourd'hui depuis Carburant, terrain par terrain.",
+   "options": [
+    "On les retire des specs de cet écran",
+    "On les veut sur cet écran"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0004",
+   "fiche": "SOG-0229",
+   "app": "maintenance",
+   "question": "Refonte : les autres groupes de l'écran (procédures, route, synoptique, fiches) suivent le même modèle ?",
+   "context": "Une phrase d'état, un bouton, le reste replié ; leur état est repris dans la phrase du haut.",
+   "options": [
+    "Oui",
+    "Non : seulement la base aéronautique"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0005",
+   "fiche": "SOG-0229",
+   "app": "maintenance",
+   "question": "Refonte : quand démarre le lot 1 (la phrase d'état, le bouton unique, les nombres dépliés sur place) ?",
+   "context": "Quatre lots, une recette chacun. Proposition complète : PROPOSITION_REFONTE_BASE_2026-11-12.md.",
+   "options": [
+    "Après ma recette et l'alpha.5",
+    "Tout de suite",
+    "Pas avant d'en avoir reparlé"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0006",
+   "fiche": "SOG-0193",
+   "app": "compagnie",
+   "question": "Temps sur zone : un seul champ « Sur zone (min) » à l'étape Vol, vide par défaut ?",
+   "context": "Cas d'usage sur ta mission F-071 (CONCEPTION_2026-11-11.md § 1) : le devis passe aujourd'hui la cible sans s'arrêter. Pas de table par famille : la mission dit la durée, ou tu la saisis.",
+   "options": [
+    "Oui",
+    "Non : je veux autre chose (dis quoi)"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0007",
+   "fiche": "SOG-0193",
+   "app": "compagnie",
+   "question": "Temps sur zone : un champ facultatif dans le fichier d'une mission pour qu'elle dise sa durée sur zone ?",
+   "context": "Tes missions n'ont aucune durée aujourd'hui ; le champ s'appellerait on_station_min.",
+   "options": [
+    "Oui",
+    "Non : saisie dans Carburant seulement"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0008",
+   "fiche": "SOG-0193",
+   "app": "compagnie",
+   "question": "Temps sur zone : plusieurs zones dans un même vol (deux largages, deux rendez-vous) ?",
+   "context": "",
+   "options": [
+    "Une seule pour commencer, sur la cible ou le premier rendez-vous",
+    "Plusieurs dès la première version"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0009",
+   "fiche": "SOG-0231",
+   "app": "compagnie",
+   "question": "Registre des missions : un écran de tenue (état de chaque mission, « Affecter ») sans saisie d'une mission dans la première version ?",
+   "context": "La saisie à la main (générateur et éditeur de la V2) resterait sur la page V2, liée depuis l'écran. CONCEPTION_2026-11-11.md § 2.",
+   "options": [
+    "Oui : tenue d'abord",
+    "Non : la saisie d'une mission d'abord"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0010",
+   "fiche": "SOG-0231",
+   "app": "compagnie",
+   "question": "Registre : qui peut affecter une mission à un pilote ?",
+   "context": "",
+   "options": [
+    "Tout pilote de la compagnie",
+    "L'administrateur seulement"
+   ],
+   "since": "2026-11-11",
+   "state": "todo"
+  },
+  {
+   "id": "Q-0011",
+   "fiche": "SOG-0207",
+   "app": "pilote",
+   "question": "« Suivre » le vol : où vit le bandeau du vol (prévu / réel) ?",
+   "context": "CONCEPTION_2026-11-11.md § 3.",
+   "options": [
+    "Sur la Carte seulement",
+    "Aussi sur l'étape Départ de Carburant quand la Carte est à côté"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0012",
+   "fiche": "SOG-0236",
+   "app": "maintenance",
+   "question": "Procédures en doute : une validation à la main (« Je l'ai vérifiée ») vaut pour qui ?",
+   "context": "Risque : valider une géométrie fausse la rend sûre pour tous les pilotes du dépôt.",
+   "options": [
+    "Pour le pilote seul, tant qu'un second ne l'a pas confirmée",
+    "Pour tout le dépôt dès la première validation"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0013",
+   "fiche": "SOG-0152",
+   "app": "pilote",
+   "question": "La V2 dans un dossier « v2 », gardée fonctionnelle : quand ?",
+   "context": "Mon objection : 640 fichiers à déplacer (apps/, shared/, examples/…), shared/ est encore lu par la V3, et tous les chemins du lanceur, des cas et des liens « Anciennes pages (V2) » sont à réécrire — pour une V2 que tu supprimeras. Relevé demandé à V3 Frame.",
+   "options": [
+    "Après la recette et l'alpha.5, en un lot à part",
+    "Maintenant",
+    "La laisser en place jusqu'à sa suppression"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0014",
+   "fiche": "SOG-0131",
+   "app": "pilote",
+   "question": "Passe d'ergonomie : une seule note flottante à la fois sur un téléphone, et l'aide de l'Édition de la Carte dans un pli plutôt qu'en note ?",
+   "context": "Deux notes empilées couvrent un tiers de l'écran à 390 px. ERGONOMIE_2026-11-11.md, T1.",
+   "options": [
+    "Oui",
+    "Non"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0015",
+   "fiche": "SOG-0131",
+   "app": "pilote",
+   "question": "Passe d'ergonomie : le carton « Première fois ? Commencez par un tutoriel court » une seule fois, puis dans l'aide ?",
+   "context": "Il est aujourd'hui sous chaque écran de Carburant, du compte rendu et des missions. ERGONOMIE_2026-11-11.md, T4.",
+   "options": [
+    "Oui",
+    "Non : je le garde partout"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0016",
+   "fiche": "SOG-0131",
+   "app": "pilote",
+   "question": "Passe d'ergonomie : l'aéronef en premier à l'étape Vol de Carburant ?",
+   "context": "Rien ne se calcule sans lui, et « Aucun aéronef : cherchez-le » arrive aujourd'hui en dernier, après sept champs.",
+   "options": [
+    "Oui",
+    "Non"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0017",
+   "fiche": "SOG-0240",
+   "app": "maintenance",
+   "question": "Rappel que tu m'as demandé — Naviair (Danemark) : il me faut un PDF réel de l'AIP pour écrire le lecteur.",
+   "context": "Le lien que tu avais donné date de juin 2024. Il faut les pages ENR 3 (voies) et ENR 4 (points, balises) du cycle en vigueur, déposées dans Téléchargements. Même besoin pour les Pays-Bas (LVNL refuse les accès automatiques).",
+   "options": [
+    "Je les dépose dans Téléchargements",
+    "Plus tard",
+    "On laisse le Danemark et les Pays-Bas pour l'instant"
+   ],
+   "since": "2026-11-11",
+   "state": "todo"
+  }
  ]
 }

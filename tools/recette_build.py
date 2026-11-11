@@ -23,7 +23,16 @@ longer in force: the test is 'todo' again and the old verdict is kept in `previo
 screen can say « delivered again since your refusal » (the user, 10 Nov 2026: « je ne vois pas de màj de la page de recette »).
 A test rewritten after a refusal that was about the test itself (the user, 10 Nov 2026: « refusé par manque de cas de test »)
 carries `rewritten` (UTC): it counts as a delivery, so the refusal no longer stands and the new test is to be done.
-Every text is bounded; the verdict file is read as an untrusted input (written through a screen)."""
+Every text is bounded; the verdict file is read as an untrusted input (written through a screen).
+
+The points to decide (SOG-0241; the user, 11 Nov 2026: « comme pour la recette, un qcm + choix libre des points à trancher »):
+  · DECISIONS_A_PRENDRE.json  { questions: { "Q-0001": { since, fiche: "SOG-xxxx", question, context, options: [2 to 4 texts],
+                              recommended?: index, closed?: true } } }, kept by the ergonomist;
+  · DECISIONS_REPONSES.json   { items: { "Q-0001": { choice: index | null, text, at } } }, written by the launcher from the
+                              screen: an untrusted input like the verdicts; optional.
+Output `decisions`: [{ id, fiche, app, question, context, options, recommended?, since, state: 'todo' | 'answered', choice?,
+text?, at? }]; a closed question (its fiche is dispatched) leaves the list; an answer with neither a valid choice nor a text
+does not count."""
 import argparse
 import datetime
 import io
@@ -44,6 +53,7 @@ SHA = re.compile(r'(?<![0-9a-zA-Z])[0-9a-f]{7,12}(?![0-9a-zA-Z])')
 _COMMITS = None
 
 
+QID = re.compile(r'^Q-\d{4}$')
 STAMP = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 
 
@@ -117,6 +127,40 @@ def verdicts(org):
     return out
 
 
+def clean(text, n):
+    """A text of the organisation or of the screen: no control character, bounded."""
+    return re.sub(r'[\x00-\x1f]', ' ', str(text)).strip()[:n]
+
+
+def decisions(org, fs):
+    """The points to decide, with the user's answers (see the header)."""
+    answers = read_json(os.path.join(org, 'DECISIONS_REPONSES.json')).get('items') or {}
+    out = []
+    for qid, q in sorted((read_json(os.path.join(org, 'DECISIONS_A_PRENDRE.json')).get('questions') or {}).items()):
+        if not QID.match(str(qid)) or not isinstance(q, dict) or q.get('closed') is True or not isinstance(q.get('question'), str):
+            continue
+        options = [clean(o, 160) for o in q.get('options') or [] if isinstance(o, str)][:4]
+        if len(options) < 2:
+            continue
+        fid = q.get('fiche') if ID.match(str(q.get('fiche', ''))) and q.get('fiche') in fs else ''
+        row = {'id': qid, 'fiche': fid, 'app': RB.app_of(fs[fid]['theme']) if fid else '', 'question': clean(q['question'], 300),
+               'context': clean(q.get('context', ''), 500), 'options': options, 'since': str(q.get('since', ''))[:10], 'state': 'todo'}
+        r = q.get('recommended')
+        if isinstance(r, int) and not isinstance(r, bool) and 0 <= r < len(options):
+            row['recommended'] = r
+        a = answers.get(qid) if isinstance(answers, dict) else None
+        if isinstance(a, dict):
+            c = a.get('choice')
+            choice = c if isinstance(c, int) and not isinstance(c, bool) and 0 <= c < len(options) else None
+            text = clean(a['text'], 600) if isinstance(a.get('text'), str) else ''
+            if choice is not None or text:
+                row.update({'state': 'answered', 'choice': choice, 'text': text})
+                if isinstance(a.get('at'), str) and re.match(r'^\d{4}-\d{2}-\d{2}T', a['at']):
+                    row['at'] = a['at'][:24]
+        out.append(row)
+    return sorted(out, key=lambda r: (r['state'] != 'todo', r['id']))
+
+
 def build(org):
     """The acceptance document."""
     fs = fiches(org)
@@ -150,7 +194,7 @@ def build(org):
             'generated': {'tool': 'tools/recette_build.py', 'at': datetime.date.today().isoformat(), 'tests': len(tests),
                           'verdicts': sum(1 for t in tests if t['state'] in ('ok', 'ko'))},
             'apps': [a for a, _, _ in RB.APPS] if hasattr(RB, 'APPS') else ['pilote', 'compagnie', 'maintenance', 'stats'],
-            'tests': tests}
+            'tests': tests, 'decisions': decisions(org, fs)}
 
 
 def main():
@@ -163,7 +207,8 @@ def main():
         json.dump(doc, f, ensure_ascii=False, indent=1)
         f.write('\n')
     g = doc['generated']
-    print(f"recette: {g['tests']} tests, {g['verdicts']} verdicts")
+    todo = sum(1 for d in doc['decisions'] if d['state'] == 'todo')
+    print(f"recette: {g['tests']} tests, {g['verdicts']} verdicts ; {len(doc['decisions'])} points à trancher, {todo} sans réponse")
     print('written', os.path.relpath(a.out))
 
 

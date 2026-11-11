@@ -4,8 +4,8 @@
  "updated": "2026-11-11",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f890615",
-  "fiches": 240,
+  "organisation": "f7769d1",
+  "fiches": 243,
   "untranslated": 0,
   "priorities": 152
  },
@@ -265,6 +265,27 @@
      "de": "Tutorial „Der Gesellschaft beitreten“ für GitLab neu geschrieben (Token vom Administrator, kein Konto anzulegen), Bildschirmfotos erneuert",
      "es": "Tutorial «Unirse a la compañía» reescrito para GitLab (token recibido del administrador, sin cuenta que crear), capturas rehechas",
      "rank": 5
+    }
+   ]
+  },
+  {
+   "id": "pilote-aide-organisation",
+   "app": "pilote",
+   "label": {
+    "fr": "Aide ; organisation",
+    "en": "Aide ; organisation",
+    "de": "Aide ; organisation",
+    "es": "Aide ; organisation"
+   },
+   "items": [
+    {
+     "id": "SOG-0241",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Les points à trancher présentés comme la recette : un QCM et un champ libre, dans la page de recette",
+     "en": "Points to decide shown like the acceptance tests: multiple choice and a free field, in the acceptance page",
+     "de": "Zu entscheidende Punkte wie die Abnahme dargestellt: Auswahl und Freitext, auf der Abnahmeseite",
+     "es": "Los puntos por decidir presentados como la aceptación: opción múltiple y campo libre, en la página de aceptación"
     }
    ]
   },
@@ -888,6 +909,27 @@
    ]
   },
   {
+   "id": "pilote-carte-carburant-meteo",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; Carburant ; Météo",
+    "en": "Carte ; Carburant ; Météo",
+    "de": "Carte ; Carburant ; Météo",
+    "es": "Carte ; Carburant ; Météo"
+   },
+   "items": [
+    {
+     "id": "SOG-0243",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "BLOQUANT : les barbules (et tout ce qui longe la route) ne suivent pas le tracé — le tracé est sur le grand cercle, les barbules sur la ligne droite",
+     "en": "BLOCKING: the wind barbs (and everything along the route) do not follow the track — the track is on the great circle, the barbs on the straight line",
+     "de": "BLOCKIEREND: die Windfiedern (und alles entlang der Route) folgen der Linie nicht — die Linie liegt auf dem Großkreis, die Fiedern auf der Geraden",
+     "es": "BLOQUEANTE: las barbas de viento (y todo lo que sigue la ruta) no siguen el trazado — el trazado va por el círculo máximo, las barbas por la línea recta"
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-meteo",
    "app": "pilote",
    "label": {
@@ -1443,6 +1485,27 @@
      "es": "Marco: liveCheck compara dos instantes como cadenas",
      "milestone": "6.0.0-alpha.4",
      "rank": 69
+    }
+   ]
+  },
+  {
+   "id": "compagnie-cadre-carburant-flotte-aide",
+   "app": "compagnie",
+   "label": {
+    "fr": "Cadre ; Carburant ; Flotte ; aide",
+    "en": "Cadre ; Carburant ; Flotte ; aide",
+    "de": "Cadre ; Carburant ; Flotte ; aide",
+    "es": "Cadre ; Carburant ; Flotte ; aide"
+   },
+   "items": [
+    {
+     "id": "SOG-0242",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Vocabulaire : un aéronef s'appelle « Aéronef », plus « Appareil »",
+     "en": "Wording (French): an aircraft is called “Aéronef”, no longer “Appareil”",
+     "de": "Wortwahl (Französisch): ein Luftfahrzeug heißt „Aéronef“, nicht mehr „Appareil“",
+     "es": "Vocabulario (francés): una aeronave se llama «Aéronef», ya no «Appareil»"
     }
    ]
   },
