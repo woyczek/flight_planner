@@ -5310,7 +5310,17 @@ def a128(c):
     # ---- joining
     c.page.fill('[data-join] [data-f="jn-site"]', 'https://sog.example/flotte/')
     c.page.check('[data-join] [data-jn-net="ivao"]')
-    c.tap('[data-act="companyJnGo"]')
+    # at 390 px the touch that follows a fill and a check was lost now and then (the message of the previous refusal stayed, joinGo never ran): scrolled to the middle and tapped again until the button has acted, as a pilot would
+    for _try in range(3):
+        c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click()); document.querySelector('[data-act=companyJnGo]').scrollIntoView({ block: 'center' })")
+        c.tap('[data-act="companyJnGo"]')
+        for _ in range(15):
+            if c.js("document.querySelector('[data-join]').dataset.step === 'done' || !document.querySelector('[data-join] [data-jn-msg]').textContent.trim()"):
+                break
+            c.wait(200)
+        else:
+            continue
+        break
     c.until("document.querySelector('[data-join]').dataset.step === 'done'", timeout=8000, what='joined')
     c.eq(c.js('window.__puts'), ['airline/sog/settings.json', 'airline/sog/fleet.json', 'airline/index.json'], 'the settings, the fleet read, and the index last', what='order')
     st = c.doc('airline/sog/settings.json')
