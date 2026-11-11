@@ -428,6 +428,14 @@
       return `${banner}<p class="f-muted">${esc(t(T.dIntro))}</p>${sorted.length ? `<ul class="f-rc-list" data-decisions>${sorted.map(decisionItem).join('')}</ul>` : `<p class="f-muted" data-nothing>${esc(t(T.dNone))}</p>`}`;
     };
     const draw = focus => {
+      // un redessin (réponse du lanceur, retour du lanceur…) ne coupe pas la frappe : le champ où l'on écrit reprend le focus et la position du curseur (SOG-0241)
+      const ae = document.activeElement,
+        typing = ae && view.contains(ae) && ae.tagName === 'TEXTAREA' ? {
+          sel: ae.hasAttribute('data-dtext') ? 'data-dtext' : ae.hasAttribute('data-comment') ? 'data-comment' : '',
+          id: ae.getAttribute('data-dtext') ?? ae.getAttribute('data-comment'),
+          from: ae.selectionStart,
+          to: ae.selectionEnd
+        } : null;
       const mine = shownTests();
       const by = Object.fromEntries(SECTIONS.map(k => [k, mine.filter(x => sectionOf(x) === k)]));
       const n = k => by[k].length,
@@ -438,6 +446,13 @@
         <div class="f-rm-bar" data-apps>${[''].concat(apps).map(a => `<button type="button" class="f-rm-btn" data-app="${esc(a)}" aria-pressed="${ui.app === a}">${esc(a ? appName(a) : t(T.all))}</button>`).join('')}</div>
         ${mine.length ? SECTIONS.map(k => sectionHtml(k, by[k])).join('') : `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`}`}`;
       if (focus) view.querySelector(focus)?.focus();
+      else if (typing?.sel) {
+        const ta = view.querySelector(`textarea[${typing.sel}="${CSS.escape(typing.id)}"]`);
+        if (ta) {
+          ta.focus();
+          ta.setSelectionRange(typing.from, typing.to);
+        }
+      }
     };
 
     // ---- les verdicts : écrits par le lanceur (recette/verdict), sinon gardés sur l'appareil, « non envoyé »
@@ -463,20 +478,39 @@
     let pulling = Promise.resolve();
     /** Les verdicts du fichier avec ceux de l'appareil (un retrait : `null`) ; vrai si le lanceur les a écrits (les « non envoyé » disparaissent), faux sinon (avec la raison dite). */
     const send = quiet => sending = sending.then(async () => {
-      await pulling; // ce que le fichier porte déjà est lu avant d'écrire : un envoi ne l'écrase pas
+      await pulling; // ce que le fichier porte déjà est lu avant d'écrire
+      if (!ui
+        .fileRead
+      ) { // la lecture a échoué (lanceur occupé, redémarré) : on la refait ; jamais d'envoi sans avoir lu (le lanceur fusionne, mais un lanceur plus ancien remplace)
+        const g = await callRec({
+          action: 'get'
+        });
+        if (g?.ok) {
+          ui.file = cleanMap(g.items);
+          ui.fileRead = true;
+        }
+      }
+      if (!ui.fileRead) return notSent(quiet, null);
       const mine = {
           ...ui.local
         },
         all = {
           ...ui.file
-        };
+        },
+        drop = [];
       for (const [k, v] of Object.entries(mine)) {
         if (v) all[k] = v;
-        else delete all[k];
+        else {
+          delete all[k];
+          drop.push(k); // une entrée ne sort du fichier que reprise par l'utilisateur
+        }
       }
       const r = await callRec({
         action: 'set',
-        items: Object.fromEntries(Object.entries(all).slice(0, MAX_ITEMS))
+        items: Object.fromEntries(Object.entries(all).slice(0, MAX_ITEMS)),
+        ...(drop.length ? {
+          drop
+        } : {})
       });
       if (r?.ok) {
         ui.file = cleanMap(all);
@@ -491,9 +525,12 @@
         });
         return true;
       }
+      return notSent(quiet, r);
+    });
+    const notSent = (quiet, r) => {
       if (!quiet && launcher()) c.notify?.(t(r?.reason === 'no-organisation' ? T.noOrg : T.noWrite), 'warn');
       return false;
-    });
+    };
     pulling = (async () => {
       const r = await callRec({
         action: 'get'
@@ -537,20 +574,43 @@
     let dsending = Promise.resolve();
     let dpulling = Promise.resolve();
     const sendDec = quiet => dsending = dsending.then(async () => {
-      await dpulling; // ce que le fichier porte déjà est lu avant d'écrire : un envoi ne l'écrase pas
+      await dpulling; // ce que le fichier porte déjà est lu avant d'écrire
+      if (!ui
+        .dfileRead
+      ) { // la lecture a échoué (lanceur occupé, redémarré, ou aucune question ouverte) : on la refait ; jamais d'envoi sans avoir lu — SOG-0241 : 14 réponses du matin perdues
+        const g = await callDec({
+          action: 'get'
+        });
+        if (g?.ok) {
+          ui.dfile = answerMap(g.items);
+          ui.dfileRead = true;
+        }
+      }
+      if (!ui.dfileRead) {
+        draw();
+        if (!quiet && launcher()) c.notify?.(t(ui.dwhy === 'unknown' ? T.dUnknown : T.dNoWrite), 'warn');
+        return false;
+      }
       const mine = {
           ...ui.dlocal
         },
         all = {
           ...ui.dfile
-        };
+        },
+        drop = [];
       for (const [k, v] of Object.entries(mine)) {
         if (v) all[k] = v;
-        else delete all[k];
+        else {
+          delete all[k];
+          drop.push(k);
+        }
       }
       const r = await callDec({
         action: 'set',
-        items: Object.fromEntries(Object.entries(all).slice(0, MAX_ITEMS))
+        items: Object.fromEntries(Object.entries(all).slice(0, MAX_ITEMS)),
+        ...(drop.length ? {
+          drop
+        } : {})
       });
       if (r?.ok) {
         ui.dfile = answerMap(all);

@@ -3910,7 +3910,7 @@ def _prio_launcher(c, root, verb=('roadmap', 'priorities'), ctx=None):
             if req.method == 'POST':
                 post = json.loads(req.post_data or '{}')
                 st['posts'].append(post)
-                if not st['up']:
+                if not st['up'] or (st.get('fail_get') and (post.get('args') or {}).get('action') == 'get'):   # fail_get: the reads fail (a launcher busy or just restarted), the writes work
                     code, body = 500, {'ok': False, 'message': 'down'}
                 elif st.get('unknown'):     # a launcher started before the verb existed: the job does not start (400)
                     code, body = 400, {'ok': False, 'status': 400, 'message': f'unknown operation {verb[0]}/{verb[1]}'}
@@ -6288,6 +6288,83 @@ def a148(c):
                 break
             c.wait(250)
         c.eq([sorted(got or {}), (got or {}).get('Q-0002', {}).get('text')], [['Q-0001', 'Q-0002'], 'oui'], 'answers kept (even with « unsent » empty in the store) leave at the next opening', what='at opening')
+    c.check_errors()
+
+
+@case('A153', 'The answers already written are never lost: with a read that failed, the screen sends nothing (« not sent ») instead of replacing the file with its own answers; at the launcher’s return it reads, then sends; a drop takes only the entry taken back (SOG-0241, 11 Nov)', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0241 (the user’s 14 answers of the morning, written at 09:11, were gone from organisation/DECISIONS_REPONSES.json after his 7 answers of noon): the file is completed, never replaced; the screen never writes without having read the file (a read that failed is redone, and if it fails again the answer stays on the device « not sent »), and recette/decision merges by identifier on the launcher side')
+def a153(c):
+    import tempfile
+    from pathlib import Path
+    fx = _dq_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'DECISIONS_REPONSES.json'
+        morning = {f'Q-01{n:02d}': {'choice': 0, 'text': '', 'at': '2026-11-11T09:11:52Z'} for n in range(1, 15)}     # fourteen answers to questions since closed (not on the screen)
+        f.write_text(json.dumps({'schema': 'sog-decisions/1', 'updated': '2026-11-11T09:11:52Z', 'items': morning}), encoding='utf-8')
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items']
+        st = _prio_launcher(c, root, verb=('recette', 'decision'))
+        st['fail_get'] = True
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-tabs]')", timeout=15000, what='the tabs')
+        c.tap('[data-tab=decisions]')
+        c.until("!!document.querySelector('[data-decisions] li[data-q=Q-0001]')", what='the cards')
+        c.page.check('[data-q=Q-0001] input[value="0"]')
+        c.tap('[data-dok=Q-0001]')
+        c.until("!!document.querySelector('[data-q=Q-0001] [data-unsent]')", what='the answer is kept « not sent »')
+        c.eq(sorted(written()), sorted(morning), 'the read failed: nothing was written, the fourteen answers of the morning are still in the file', what='nothing lost')
+        st['fail_get'] = False
+        c.js("() => window.dispatchEvent(new CustomEvent('frame-launcher', { detail: { state: 'up' } }))")
+        got = None
+        for _ in range(40):
+            got = written()
+            if 'Q-0001' in got:
+                break
+            c.wait(250)
+        c.eq(sorted(got), sorted([*morning, 'Q-0001']), 'the launcher is back: the screen read the file first, then added its answer to the fourteen', what='merged')
+        c.until("document.querySelectorAll('[data-unsent]').length === 0", what='the mark goes')
+    c.check_errors()
+
+
+@case('A154', 'The Recette screen keeps the typing across a redraw: the answer typed in the free field survives an answer of the launcher (the field keeps its focus and its cursor) (SOG-0241, 11 Nov)', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0241 (A147 once wrote the answer with an EMPTY free text): the screen redraws itself when the launcher answers (the read, its return); the textarea where the user is typing lost its focus, what was typed afterwards went nowhere and the answer left without it; the redraw now gives the focus and the cursor back to the field')
+def a154(c):
+    import tempfile
+    from pathlib import Path
+    fx = _dq_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'DECISIONS_REPONSES.json'
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items'] if f.exists() else {}
+        _prio_launcher(c, root, verb=('recette', 'decision'))
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-tabs]')", timeout=15000, what='the tabs')
+        c.tap('[data-tab=decisions]')
+        c.until("!!document.querySelector('[data-decisions] li[data-q=Q-0001]')", what='the cards')
+        c.page.check('[data-q=Q-0001] input[value="2"]')
+        ta = c.page.locator('[data-dtext=Q-0001]')
+        ta.click()
+        ta.press_sequentially('mais « Mettre ', delay=15)
+        # the launcher answers in the middle of the typing: the screen redraws (the read, then the sending of what was kept)
+        c.js("() => window.dispatchEvent(new CustomEvent('frame-launcher', { detail: { state: 'up' } }))")
+        c.wait(600)
+        c.eq(c.js("() => document.activeElement?.getAttribute('data-dtext') || ''"), 'Q-0001', 'after the redraw the field where the user types still has the focus', what='focus kept')
+        ta.press_sequentially('à jour » reste en haut', delay=15)
+        c.eq(c.js("() => document.querySelector('[data-dtext=Q-0001]').value"), 'mais « Mettre à jour » reste en haut', 'everything typed is in the field, before and after the redraw', what='typed')
+        c.tap('[data-dok=Q-0001]')
+        got = None
+        for _ in range(40):
+            got = written().get('Q-0001')
+            if got:
+                break
+            c.wait(250)
+        c.eq([(got or {}).get('choice'), (got or {}).get('text')], [2, 'mais « Mettre à jour » reste en haut'], 'the answer left with its free text', what='written')
     c.check_errors()
 
 

@@ -1506,7 +1506,7 @@ def k96(c):
         r = run(action='set', items=good)
         doc = json.loads(f.read_text(encoding='utf-8'))
         c.eq((r['ok'], r['count'], doc['schema'], list(doc['items']), doc['items']['SOG-0001'], bool(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', doc['updated'])), list(org.glob('*.tmp'))),
-             (True, 3, 'sog-priorities/1', ['SOG-0001', 'SOG-0002', 'SOG-0003'], {'milestone': 'alpha.5', 'rank': 1}, True, []), 'a set replaces the file: the schema, the date, the entries by rank, no temporary file', what='set')
+             (True, 3, 'sog-priorities/1', ['SOG-0001', 'SOG-0002', 'SOG-0003'], {'milestone': 'alpha.5', 'rank': 1}, True, []), 'a set writes the file: the schema, the date, the entries by rank, no temporary file', what='set')
         r = run(action='get')
         c.eq((r['items'], r['dropped'], r['exists'], r['updated'] == doc['updated']), (good, 0, True, True), 'a get gives back what was set', what='get')
         before = f.read_bytes()
@@ -1556,9 +1556,18 @@ def k123(c):
         r = run(action='set', items=good)
         doc = json.loads(f.read_text(encoding='utf-8'))
         c.eq((r['ok'], r['count'], doc['schema'], list(doc['items']), doc['items']['SOG-0002'], bool(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', doc['updated'])), list(org.glob('*.tmp'))),
-             (True, 2, 'sog-recette/1', ['SOG-0001', 'SOG-0002'], good['SOG-0002'], True, []), 'a set replaces the file: the schema, the date, the entries by identifier, no temporary file', what='set')
+             (True, 2, 'sog-recette/1', ['SOG-0001', 'SOG-0002'], good['SOG-0002'], True, []), 'a set writes the file: the schema, the date, the entries by identifier, no temporary file', what='set')
         r = run(action='get')
         c.eq((r['items'], r['dropped'], r['exists'], r['updated'] == doc['updated']), (good, 0, True, True), 'a get gives back what was set', what='get')
+        # a set MERGES by identifier (11 Nov: 14 answers lost when the screen, which had not read them, sent only its own): what the file holds stays, only `drop` takes an entry out
+        r = run(action='set', items={'SOG-0003': {'verdict': 'ok'}})
+        c.eq((r['ok'], r['count'], sorted(run(action='get')['items'])), (True, 3, sorted([*good, 'SOG-0003'])), 'a set of ONE entry keeps the others already written', what='merge')
+        r = run(action='set', items={}, drop=['SOG-0003', 'SOG-0009'])
+        c.eq((r['ok'], r['count'], sorted(run(action='get')['items'])), (True, 2, sorted(good)), 'drop takes entries out (one the file does not hold changes nothing), nothing else', what='drop')
+        c.eq(check({'action': 'set', 'items': {}, 'drop': 'SOG-0001'}), None, 'drop must be a list', what='drop shape')
+        r = run(action='set', items={'SOG-0003': {'verdict': 'ok'}})
+        c.eq(r['ok'], True, 'the file is complete again for what follows', what='refill')
+        run(action='set', items={}, drop=['SOG-0003'])
         before = f.read_bytes()
         for bad in ({'SOG-12': {'verdict': 'ok'}}, {'SOG-0003': {'verdict': 'maybe'}}, {'SOG-0003': {}}, {'SOG-0003': {'verdict': 'ko'}}, {'SOG-0003': {'verdict': 'ko', 'comment': '   '}},
                     {'SOG-0003': {'verdict': 'ok', 'comment': 'x' * 601}}, {'SOG-0003': {'verdict': 'ok', 'comment': 'a\x00b'}}, {'SOG-0003': {'verdict': 'ok', 'at': 'yesterday'}},
@@ -1606,9 +1615,18 @@ def k171(c):
         r = run(action='set', items=good)
         doc = json.loads(f.read_text(encoding='utf-8'))
         c.eq((r['ok'], r['count'], doc['schema'], list(doc['items']), doc['items']['Q-0002'], bool(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', doc['updated'])), list(org.glob('*.tmp'))),
-             (True, 2, 'sog-decisions/1', ['Q-0001', 'Q-0002'], good['Q-0002'], True, []), 'a set replaces the file: the schema, the date, the entries by identifier, no temporary file', what='set')
+             (True, 2, 'sog-decisions/1', ['Q-0001', 'Q-0002'], good['Q-0002'], True, []), 'a set writes the file: the schema, the date, the entries by identifier, no temporary file', what='set')
         r = run(action='get')
         c.eq((r['items'], r['dropped'], r['exists'], r['updated'] == doc['updated']), (good, 0, True, True), 'a get gives back what was set', what='get')
+        # a set MERGES by identifier (11 Nov: 14 answers lost when the screen, which had not read them, sent only its own): what the file holds stays, only `drop` takes an entry out
+        r = run(action='set', items={'Q-0003': {'choice': 0}})
+        c.eq((r['ok'], r['count'], sorted(run(action='get')['items'])), (True, 3, sorted([*good, 'Q-0003'])), 'a set of ONE entry keeps the others already written', what='merge')
+        r = run(action='set', items={}, drop=['Q-0003', 'Q-0009'])
+        c.eq((r['ok'], r['count'], sorted(run(action='get')['items'])), (True, 2, sorted(good)), 'drop takes entries out (one the file does not hold changes nothing), nothing else', what='drop')
+        c.eq(check({'action': 'set', 'items': {}, 'drop': 'SOG-0001'}), None, 'drop must be a list', what='drop shape')
+        r = run(action='set', items={'Q-0003': {'choice': 0}})
+        c.eq(r['ok'], True, 'the file is complete again for what follows', what='refill')
+        run(action='set', items={}, drop=['Q-0003'])
         before = f.read_bytes()
         for bad in ({'Q-12': {'choice': 0}}, {'SOG-0003': {'choice': 0}}, {'Q-0003': {}}, {'Q-0003': {'choice': None}}, {'Q-0003': {'choice': None, 'text': '   '}}, {'Q-0003': {'choice': 10}},
                     {'Q-0003': {'choice': -1}}, {'Q-0003': {'choice': True}}, {'Q-0003': {'choice': '1'}}, {'Q-0003': {'choice': 0, 'text': 'x' * 601}}, {'Q-0003': {'choice': 0, 'text': 'a\x00b'}},
