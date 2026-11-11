@@ -1012,6 +1012,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 160 | Little Navmap records kept on this device: no position in the flight, left out of the FMS / PLN files (4eaf79a59): the note 2 of 159 closed | acceptable, one note |
 | 161 | Fuel “Read from Little Navmap” gesture, the read of `cache/data/personal.json` (d4e807cdf) | acceptable, one note |
 | 162 | Review of 11 November: Little Navmap procedures in the simulator files (af3c60e9f), `recette/decision` verb and its generator (ed9080347, 7126fb750), clean-up of the hand-deposited files (f8bbdda36, d7cb8b9ca) | one to fix (clean-up), the rest acceptable |
+| 163 | The personal-use tick held by the launcher (3dcc5e780), the notes of 159 and 162 fixed (a5f6dd6ab, 6606df07c, d69a96d8c, 607dc8819) | acceptable, one to fix (zip64) |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2405,6 +2406,24 @@ leave); only the format is checked. Proved on a scratch folder: with a deposited
 real `issue` removes nothing, a forged `issue` of 2099-01-01 removes the three files. Only local, canonical, re-downloadable
 files are at stake, and nothing outside the folder, but it is the rule of 157: take the `issue` as untrusted, for instance never
 later than the current cycle (`read = min(issue, current)`), with a case that fails without that bound.
+
+**163. The tick held by the launcher and the fixes of the notes — acceptable, one to fix.** *The tick (3dcc5e780).* `personal_use.py`
+writes `data/local/personal_use.json` (never served, synchronised or committed) through `POST /__setup/personal`, declared for
+this workstation only and refused to a LAN device or the relay on both routes; the body is strict (`{ certified: bool }`, or
+`{ certified: true, migrated: true }` once, 409 when the file exists), the write goes through a `.tmp` and `os.replace`, and
+`proc/lnm` reads that file and ignores the `personal` of the page. A change is said on the console. The limit stated by AeroDB
+stands: a script of the same origin can call the write route, and `base/fetch` still takes `personal: [sources]` from the page.
+*Note 1 of 159 (a5f6dd6ab).* The whole path is percent-encoded in the SQLite URI (`%` included). *Note 4 (d69a96d8c).* The error
+body is read under the relay's deadline with `read1` (one socket read at a time), and one of the four slots is kept for the
+workstation's own page (guests, a paired device or the company relay, hold three at most). *Note 2 of 162 (607dc8819).* A read
+cycle later than the current one never says “the current cycle is built” (b) and is capped for (a); what a forged `issue` can
+still do is remove a deposit older than a newer deposit, which the rule already treats as superseded. **To fix, note 3 of 159
+(6606df07c).** `_directory` reads the zip64 record at a fixed place, 76 bytes before the end record, whereas `zipfile` follows
+the locator's offset and accepts “extensible data” between the record and the locator. Proved on a scratch file of 70,000
+entries with 100 bytes of extensible data ending in a forged record of one entry: the helper says 1 entry, `ZipFile` reads
+70,000; with more than 200,000 entries the check passes and the directory is loaded whole. Local file chosen by the user, memory
+only; fix: follow the locator as `zipfile` does, or refuse a zip64 locator whose record is not just before it, with a case that
+fails without it (more than `MAX_MEMBERS` entries, forged record in the extensible data).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
