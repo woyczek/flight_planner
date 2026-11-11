@@ -4524,7 +4524,8 @@ def l53(c):
     tone = lambda z: (_zfeat(c, 'base', z) or {}).get('tone')
     def tapsw():   # nothing floating may cover the switch (a note, the tab bar): notes closed, the pack scrolled to the middle
         c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click())")
-        c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
+        c.until("!document.querySelector('.f-modal')", timeout=8000, what='no question left on the screen (it locks the page scroll while it closes)')
+        c.until("(() => { const f = document.querySelector('[data-packs-fold]'); if (!f.open) f.open = true; const e = document.querySelector('[data-pack-switch=ouest]'); e.scrollIntoView({ block: 'center' }); const b = e.getBoundingClientRect(); return b.top >= 0 && b.bottom <= window.innerHeight && document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2) === e })()", timeout=8000, what='the switch is in view and uncovered (the page can still be settling: scrolled again until it is)')
         c.tap('[data-pack-switch=ouest]')
     # ---- the packs are beside the map, with the list (wide) or under it (phone): the same cell as the list
     c.eq(c.js("!!document.querySelector('.d-choice [data-packs]')"), True, 'the packs are in the choice, beside the map and with the list', what='in choice')
@@ -4532,7 +4533,11 @@ def l53(c):
     c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the states are drawn (the colours settle)')
     c.wait(400)
     base_fr = tone('fr')
+    c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click())")   # a floating note must not cover the row
     c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
+    if c.width >= 700:   # the row is hovered only there
+        c.until("(() => { const f = document.querySelector('[data-packs-fold]'); if (!f.open) f.open = true; const r = document.querySelector('[data-pack=ouest] .d-packname'); if (!r) return false; r.scrollIntoView({ block: 'center' }); const b = r.getBoundingClientRect(), o = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return !!o && (o === r || r.contains(o) || o.contains(r)) })()", timeout=8000, what='the name of the pack is uncovered and in view (fold open, notes closed)')
+    c.wait(300)
     if c.width >= 700:   # the hover is the gesture of a mouse (wide screens); at 390 the gesture is the press below (a forced hover there proved nothing: 2 failures out of 6)
         c.page.hover('[data-pack=ouest] .d-packname')
         c.wait(400)
