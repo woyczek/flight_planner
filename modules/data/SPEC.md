@@ -50,7 +50,7 @@ for `modules/data/module.js` and its files. Every rule below is a requirement.
 | **Jeux de données** | Data sets | Datensätze | Conjuntos de datos | the sources (one row each) |
 | **Télécharger** | Download | Herunterladen | Descargar | bring the source into the workstation's cache |
 | **Construire** | Build | Erstellen | Construir | run the builder on the cache, outputs written locally |
-| **Publier** | Publish | Veröffentlichen | Publicar | send the outputs to the data repository |
+| **Publier** | Publish | Veröffentlichen | Publicar | send the outputs to the data repository (11 Nov 2026, SOG-0229, the user: « oui »: « Publier » leaves the current view, **the construction publishes**; the gesture stays on screen until the refonte lot that does it) |
 | **Purger** | Purge | Bereinigen | Purgar | remove what is superseded (cycles beyond the three kept, caches); never a procedure read by hand, EAD or OCR |
 | **Mettre à jour** | Update | Aktualisieren | Actualizar | the four in a row for one data set |
 | **Tout mettre à jour** | Update all | Alle aktualisieren | Actualizar todo | « Mettre à jour » for every data set of the coverage, in order (§ 5.3) |
@@ -103,7 +103,7 @@ A non-fixed module (it scrolls like a page), `meta.title` « Données ». From t
    grey reason (no launcher, another operation running, offline, no item ticked, a verb the launcher does not know); after it,
    the launcher's refusals (409 `updating` or another operation, 429 too soon, 404, 400 refused arguments) go through `refusal`
    and a job's end such as `merge-pending` through the one summary table, with no branch of the base's own.
-6. **The EAD line** in the Procédures group (§ 4.3): an ICAO code field and « Lire un terrain ».
+6. ~~**The EAD line** in the Procédures group (§ 4.3): an ICAO code field and « Lire un terrain ».~~ **Out of this screen's specs** (the user, 11 Nov 2026, SOG-0229 questionnaire: « oui »): the EAD line and the gestures « Lire un terrain / Relire / Retirer » are no longer part of the Données screen; where they live next is the procedures' own decision (aerodb, Fuel). The code stays as it is until the refonte lot that moves it; nothing is removed by this entry.
 7. **Journal**: a fold at the foot, the last 50 operations (time UTC with Z, data set, verb, duration, result), each
    unfolding to its log; « Copier ».
 
@@ -167,6 +167,8 @@ never part of « Purger » nor of « Tout mettre à jour ». A file built by a c
 `proc/<cycle>/` and never touches `proc/manual/`.
 
 ### 4.3 « Lire un terrain depuis EAD » (Procédures, one line)
+
+> **11 Nov 2026 (SOG-0229, the user: « oui »)**: this section, « Relire » and « Retirer » leave the specs of the Données screen (see § 3 item 6). Kept below as the description of what the code still does until the refonte lot moves it.
 
 - A field for **one ICAO code** and the button « Lire un terrain »: one aerodrome per call, an explicit gesture, never a
   list, never scheduled (decision of the data owner of the day, `frame/aerodb/EAD_BASIC.md`).
