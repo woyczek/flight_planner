@@ -53,6 +53,7 @@ if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import regen_jobs  # noqa: E402  (le socle : commit_outputs, Job)
 import aero_cycles  # noqa: E402  (le cycle AIRAC de chaque source datée, et d'une zone par sa source)
+import upload_cleanup  # noqa: E402  (les dépôts à la main devenus inutiles, retirés à la fin d'une construction réussie de leur zone : SOG-0239)
 
 PAGE = 'frame/aerodb/build/headless.html'
 # fichiers du code que la page lit (le même ensemble que la page V2 : constructeurs, lecteurs, contours des zones, villes) ; rien d'autre
@@ -643,7 +644,12 @@ def build(job, args, ctx):
             except (KeyError, ValueError, AttributeError):
                 version = None
             state.write_record(data, zone, cycle=folder[zone], builtAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), parserVersion=version, personal=personal, inputs=sigs.get(zone, {}))
-        update(zone, state='built', commit=done.get('commit'), warning=done.get('warning'), files=written, seconds=round(time.time() - z0, 1))
+        try:
+            cleaned = upload_cleanup.clean(data, zone, folder[zone], current, say=job.log)     # la zone est construite : ses dépôts à la main devenus inutiles partent (jamais celui que cette construction a lu)
+        except Exception as e:  # un nettoyage qui échoue ne défait pas une construction réussie
+            cleaned = []
+            job.log(f'{zone}: nettoyage de data/local/upload/ non fait ({type(e).__name__})')
+        update(zone, state='built', commit=done.get('commit'), warning=done.get('warning'), files=written, seconds=round(time.time() - z0, 1), **({'cleaned': cleaned} if cleaned else {}))
 
     z0 = time.time()
     profile = tempfile.mkdtemp(prefix='sog-base-')

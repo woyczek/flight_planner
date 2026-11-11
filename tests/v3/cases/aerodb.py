@@ -7767,3 +7767,83 @@ def k170(c):
     }""")
     c.eq(r, {'ok': True, 'none': False, 'nojob': False, 'noinfo': False, 'paired': False, 'empty': False, 'missing': False, 'bad': False},
          'true with a local launcher declaring one base; false without launcher, without job, without info, paired, with an empty or missing or malformed list', what='available')
+
+
+@case('K171', 'Deposits by hand (data/local/upload/) are removed at the end of a successful build of their zone when a later deposit was read or their cycle is past; never the file the build read, never an incomplete NASR set; the log and the zone line say what went (name, size)', 'K', static=True,
+      rule='Ergonomics session, 11 Nov 2026 (user: « nettoyer les vieux fichiers », SOG-0239): a file chosen by hand stays in data/local/upload/ for ever (up to 1.5 GB each). It is REMOVED when (a) a more recent deposit of the same source was read by a successful build, or (b) its cycle is past and the cycle in force is built for its zone; NEVER a file the last successful build read, never a set still being deposited (NASR: FIX received, AWY and NAV awaited), never anything that is not a dated deposit of the zone (names built by tools/base_upload.py); done at the end of the successful build of the zone, no verb of its own; the job log and the zone line (`cleaned: [{ name, size }]`) say what was removed. These are SOURCES deposited, not compiled data (never purged)')
+def k171(c):
+    import importlib
+    import json
+    import os
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    UC = importlib.import_module('upload_cleanup')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td)
+        up = data / 'local' / 'upload'
+        up.mkdir(parents=True)
+
+        def put(name, n=10):
+            (up / name).write_bytes(b'x' * n)
+
+        def left():
+            return sorted(x.name for x in up.iterdir())
+        sia = lambda d: f'export_xml_bd_SIA_{d}.zip'
+        for d in ('2026-09-03', '2026-10-01', '2026-10-29', '2026-11-26'):
+            put(sia(d), 100)
+        for n in ('notes.txt', 'ENR-5-2.pdf', 'AIP_OFFLINE.zip', 'RAD_2610_v1_0.xlsx', 'de_nav.geojson', '.recv-abc.part', 'EG_AIP_DS_20260903_XML.zip'):
+            put(n)
+        # (a) the build read 2026-10-29 (the cycle in force is 2026-11-26: a late build); 09-03 and 10-01 are older, a later deposit was read
+        gone = UC.clean(str(data), 'fr', '2026-10-29', '2026-11-26')
+        c.eq((sorted(g['name'] for g in gone), [g['size'] for g in gone]), ([sia('2026-09-03'), sia('2026-10-01')], [100, 100]), 'a later deposit was read: the older deposits of the zone go, with their size; the one read and a later one (not yet read) stay', what='a')
+        c.eq(left(), sorted([sia('2026-10-29'), sia('2026-11-26'), 'notes.txt', 'ENR-5-2.pdf', 'AIP_OFFLINE.zip', 'RAD_2610_v1_0.xlsx', 'de_nav.geojson', '.recv-abc.part', 'EG_AIP_DS_20260903_XML.zip']),
+             'nothing else is touched: another source (NATS), a PDF, a workbook, an openAIP file, a transfer in progress', what='untouched')
+        # (b) the cycle in force is built, a deposit of a past cycle goes
+        gone = UC.clean(str(data), 'fr', '2026-11-26', '2026-11-26')
+        c.eq(sorted(g['name'] for g in gone), [sia('2026-10-29')], 'the cycle in force is built: a deposit of a past cycle goes, even without a later deposit read', what='b')
+        c.eq(UC.clean(str(data), 'fr', '2026-11-26', '2026-11-26'), [], 'a second pass removes nothing: the file read (cycle 2026-11-26) stays', what='stays')
+        c.ok((up / sia('2026-11-26')).is_file(), 'gone', 'the file the build read is never removed')
+        # a stale build (not the cycle in force) with a single deposit: it is what was read, it stays
+        put(sia('2026-10-01'))
+        c.eq(UC.clean(str(data), 'fr', '2026-10-01', '2026-11-26'), [], 'a build that is not of the cycle in force removes only on (a): the single deposit it read stays', what='stale build')
+        os.remove(up / sia('2026-10-01'))
+        # NASR: sets of three, one cycle each
+        nasr = lambda d, k: f'{d}_{k}_CSV.zip'
+        for d in ('03_Sep_2026', '29_Oct_2026'):
+            for k in ('FIX', 'AWY', 'NAV'):
+                put(nasr(d, k), 50)
+        put(nasr('01_Oct_2026', 'AWY'), 50)       # an old, incomplete set
+        put(nasr('26_Nov_2026', 'FIX'), 50)       # a set being deposited: FIX received, AWY and NAV awaited
+        (data / 'sia' / 'geojson').mkdir(parents=True)
+        (data / 'sia' / 'geojson' / 'faa_nasr.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'issue': '2026-10-29', 'features': []}), encoding='utf-8')
+        gone = UC.clean(str(data), 'us', '2026-11-26', '2026-11-26')
+        c.eq((sorted(g['name'] for g in gone), sum(g['size'] for g in gone)), (sorted(nasr('03_Sep_2026', k) for k in ('FIX', 'AWY', 'NAV')), 150),
+             'NASR: the complete set of an older cycle goes when the set read (the issue of faa_nasr.geojson) is later; the set read stays', what='nasr')
+        c.ok(all((up / nasr('29_Oct_2026', k)).is_file() for k in ('FIX', 'AWY', 'NAV')) and (up / nasr('26_Nov_2026', 'FIX')).is_file() and (up / nasr('01_Oct_2026', 'AWY')).is_file(), left(),
+             'and an incomplete set is never removed: the one being deposited (FIX received) and the old partial one stay')
+        # NATS: the AIP dates the zone; OBS and UAS keep their newest
+        for n in ('EG_AIP_DS_20261029_XML.zip', 'EG_OBS_DS_20260903_XML.zip', 'EG_OBS_DS_20261001_XML.zip', 'EG_UAS_DS_20260903_XML.zip'):
+            put(n)
+        gone = UC.clean(str(data), 'gb', '2026-10-29', '2026-11-26')
+        c.eq(sorted(g['name'] for g in gone), ['EG_AIP_DS_20260903_XML.zip', 'EG_OBS_DS_20260903_XML.zip'], 'NATS: the older AIP and the older OBS (a later one of the same kind is there) go; the only UAS stays (the newest of its kind is never removed)', what='nats')
+        # a folder with the name of a deposit is never taken for one
+        (up / sia('2026-01-07')).mkdir()
+        c.eq([g['name'] for g in UC.clean(str(data), 'fr', '2026-11-26', '2026-11-26') if g['name'] == sia('2026-01-07')], [], 'a folder with the name of a deposit is not a deposit', what='folder')
+        c.eq(UC.clean(str(data / 'nope'), 'fr', '2026-11-26', '2026-11-26'), [], 'no upload folder: nothing', what='no folder')
+        c.eq(UC.clean(str(data), 'de', '2026-11-26', '2026-11-26'), [], 'a zone without dated deposits (de): nothing', what='other zone')
+    # the build calls it: the zone line and the log say what went
+    RJ, B, fn, check = _d5_modules()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, fake = _d5_scene(td, with_git=False)
+        up = data / 'local' / 'upload'
+        up.mkdir(parents=True)
+        for d in ('2026-08-06', '2026-10-01'):
+            (up / f'export_xml_bd_SIA_{d}.zip').write_bytes(b'z' * 2048)
+        run = _D5Run(RJ, data, fake, {'zones': ['fr'], 'personal': []})
+        view = run.wait()
+        z = (view.get('zones') or {}).get('fr') or {}
+        c.eq((z.get('state'), z.get('cleaned'), sorted(x.name for x in up.iterdir())), ('built', [{'name': 'export_xml_bd_SIA_2026-08-06.zip', 'size': 2048}], ['export_xml_bd_SIA_2026-10-01.zip']),
+             'the successful build of fr removes the older deposit and the zone line says what went (name, size); the deposit it read stays', what='build')
+        c.ok(any('export_xml_bd_SIA_2026-08-06.zip' in x and '2048' in x for x in view.get('log', [])), str(view.get('log'))[-300:], 'the job log says it too')
