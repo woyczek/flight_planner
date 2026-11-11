@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Lire depuis Little Navmap » only on a device that can read it** (`AeroDb.lnmAvailable()`), never from a reading's hint alone (Fuel SPEC, DECISIONS, help; noreg F144; SOG-0210).
 - **AeroDB: `lnmAvailable()`** — true only on a local, unpaired launcher that declares a Little Navmap base; Fuel shows its gesture only there (`frame/aerodb/aerodb.js`, INTEGRATION; noreg K170; SOG-0210).
 - **Fuel: an approach in doubt carries one panonceau**, its reason said under the list once chosen, « ⚑ » in the folded summary (Fuel SPEC, DECISIONS, help; noreg F139; SOG-0232).
 - **Fuel: « Lire depuis Little Navmap »** in the procedure card — only after the personal-use box of Données is ticked (Fuel SPEC, DECISIONS, help; noreg F144; SOG-0210).

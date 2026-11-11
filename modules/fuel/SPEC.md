@@ -466,9 +466,8 @@ before the start, in step 5 after (F11).
   chosen id only (its reference: aerodrome and name), never a position of its points (`pubProcs` in `knownPoints` and in the ends of
   « Auto »: a fix only that record places stays a word), and the FMS / PLN files leave it out (`pubFlight`, `pubProcs`), said in one
   line « Lue(s) de Little Navmap sur ce poste, laissée(s) hors du fichier : SID … ». **« Lire depuis Little Navmap »** (SOG-0210,
-  F144) is on the discreet line of an aerodrome the base has no procedure for (`nodata`, the user's KDEN), when aerodb has
-  `fetchLnm` and either its State is not readable here (`procState().readable` false) or its reading said a Little Navmap database is
-  on this device (`res.lnm`) — not on a readable aerodrome without that hint (F34's line keeps its parts); an lnm record is never
+  F144) is on the discreet line of an aerodrome the base has no procedure for (`nodata`, the user's KDEN), on a device that can
+  read Little Navmap (`AeroDb.lnmAvailable()`: a local launcher, not paired, a Little Navmap database found); an lnm record is never
   proposed by an address (`admit`); one aerodrome at a time; a paired device is refused by aerodb and the line says it; only the code
   and `personal` are passed (the database's path never comes from the page): it reads the personal-use box first (`cache/data/personal.json`, the rule
   `keptPersonal` of the Données module, the only file of `cache/data/` Fuel reads); without it, one line « cochez d'abord l'usage

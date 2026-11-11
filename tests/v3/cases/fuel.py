@@ -4220,6 +4220,7 @@ _LNM_GESTURE_STUB = """(() => { window.__lnm = []; let real; Object.defineProper
         db.procedures = async (icao, q) => String(icao).toUpperCase() === 'LFML' ? [] : ps.call(db, icao, q);
         const rw = db.runways; db.runways = async (icao, ...q) => String(icao).toUpperCase() === 'LFML' ? [] : rw.call(db, icao, ...q);
         db.fetchProcedures = async icao => ({ ok: false, reason: 'no-tables', lnm: true, icao });
+        db.lnmAvailable = () => sessionStorage.getItem('lnmOn') === '1';
         db.fetchLnm = async (...x) => { window.__lnm.push(JSON.parse(JSON.stringify(x)));
           if (window.__lnmPaired) return { ok: false, reason: 'paired' };
           await new Promise(r => { window.__lnmGo = r }); return { ok: true, icao: x[0], count: 3 } } } catch (e) {}
@@ -4239,9 +4240,17 @@ def f144(c):
     open_proc(c)
     btn = f'{FUEL} [data-proc="arr"] [data-do="proclnm"]'
     c.until(f"!!document.querySelector('{FUEL} [data-proc=arr][data-nodata] [data-do=procfetch]')", timeout=15000, what='LFML without procedure: « Lire » offered')
-    c.eq(c.count(btn), 0, 'no Little Navmap gesture before the reading said a database is here', what='gesture before')
+    # the reading says « Little Navmap has a database here », but this device cannot read it (AeroDb.lnmAvailable false): no gesture
     c.tap(f'{FUEL} [data-proc="arr"] [data-do="procfetch"]')
-    c.until(f"!!document.querySelector('{btn}')", timeout=10000, what='« Lire depuis Little Navmap » offered after the reading said a database is here')
+    c.until(f"!document.querySelector('{FUEL} [data-proc=arr] [data-do=procfetch][aria-busy]')", timeout=10000, what='the reading ends')
+    c.settle()
+    c.eq(c.count(btn), 0, 'no Little Navmap gesture on a device that cannot read it (AeroDb.lnmAvailable false), whatever the reading said',
+         what='gesture without a database')
+    # a device that can read it (the launcher found a database): offered at once on the aerodrome without procedure, not at LFRS
+    c.js("sessionStorage.setItem('lnmOn', '1')")
+    c.page.reload(wait_until='load')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{btn}')", timeout=15000, what='« Lire depuis Little Navmap » offered on a device that can read it')
     c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-do="proclnm"]'), 0, 'not on LFRS, which has its procedures', what='gesture at departure')
     c.eq(norm(c.text(btn) or ''), norm(tx('modules/fuel/procedures_texts.js', 'procLnmRead', c.lang)), 'the gesture is named', what='button')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")   # the notes of the reading, gone for the captures

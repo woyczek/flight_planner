@@ -485,6 +485,14 @@ export function createProcedures(host) {
     const busy = reading?.icao === icao;
     return `<button type="button" class="fu-linkbtn" data-do="procfetch"${again ? ' data-again="1"' : ''} data-icao="${esc(icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? reading.text : text)}</button>`;
   };
+  /** Ce poste peut lire Little Navmap (AeroDb.lnmAvailable : un booléen, ni chemin ni nom de base) ; faux en cas de doute. */
+  const lnmHere = () => {
+    try {
+      return ctx.aerodb?.lnmAvailable?.() === true;
+    } catch {
+      return false;
+    }
+  };
   /** « Lire depuis Little Navmap » (SOG-0210) : occupé tant que la lecture de ce terrain est en cours. */
   const lnmButton = icao => {
     const busy = lnmReading === icao;
@@ -506,11 +514,9 @@ export function createProcedures(host) {
       parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, ps && !ps.readable ? '' : readButton(m.icao, ps?.demand ? tt(TX.procReadDemand) : tt(TX.procRead, {
         icao: m.icao
       }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
-    // SOG-0210 : « Lire depuis Little Navmap » seulement là où la base n'a pas de procédure pour ce terrain (KDEN), et quand l'État ne se
-    // lit pas ici ou que la lecture a dit qu'une base de Little Navmap est sur ce poste ; jamais sur un terrain lisible sans cet indice
-    // (la ligne de LFQQ garde ses deux parties, F34)
-    if (m.nodata && typeof ctx.aerodb?.fetchLnm === 'function' && (adOf(m.icao).lnmHint || ps && !ps.readable)) parts.push(lnmButton(m
-      .icao));
+    // SOG-0210 : « Lire depuis Little Navmap » seulement là où la base n'a pas de procédure pour ce terrain (KDEN), et sur un poste qui
+    // peut le faire : AeroDb.lnmAvailable() (lanceur local, non appairé, une base de Little Navmap trouvée ; AeroDB a8cc2ba8b)
+    if (m.nodata && typeof ctx.aerodb?.fetchLnm === 'function' && lnmHere()) parts.push(lnmButton(m.icao));
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
     // SOG-0143 : sans donnée, la ligne « zone manquante » du terrain (sa zone et son état, le geste, les replis externes), remplie à la
     // réponse ; hors de la suite des parties (pas de « · » devant un emplacement encore vide)
@@ -1092,8 +1098,6 @@ export function createProcedures(host) {
    *  et les fiches du terrain oubliées ; la carte est redessinée dans tous les cas (le bouton n'est plus occupé). */
   function afterRead(icao, res) {
     if (host.gone()) return;
-    if (res?.lnm) adOf(icao).lnmHint =
-      true; // une base de Little Navmap est sur ce poste (indice de la lecture, § 10.21) : le geste est offert
     // SOG-0203 : les avertissements de cette lecture, gardés pour la ligne du terrain (textes du lecteur, bornés, échappés au dessin)
     adOf(icao).warnings = (Array.isArray(res?.warnings) ? res.warnings : []).slice(0, 20).map(w => String(w ?? '').replace(/\s+/g, ' ')
       .trim()
