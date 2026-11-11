@@ -1148,3 +1148,78 @@ def n23(c):
         flight_is(['FIRE', 'GAAR'], f'{w} px: FIRE « GAAR » from the mission')
         c.wait(1500)
         c.eq(opts('theme'), ['', 'FIRE', 'COMMERCIAL'], 'the flight\'s theme kept in the list, with the airline\'s', what='themes kept')
+
+
+
+# SOG-0193 L3: an invented mission with a transit point (free), a source (by its role), a rendezvous and a target (imposed)
+_LOCK_REGISTRY = """missions:
+  - { id: X-601A, family: TESTLOCK, title: Mission verrouillée, folder: X_LOCK/X-601A, files: [missionX-601A.yaml] }
+"""
+_LOCK_MISSION = """mission: { id: X-601A, type: FIRE }
+title: Mission verrouillée
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+turning_points:
+  - { id: PT1, name: Transit inventé, lat: 44.8, lon: 1.2, role: transit }
+  - { id: PT2, name: Lac inventé, lat: 44.6, lon: 1.4, role: écopage simulé }
+rendezvous: { id: RDV-1, lat: 44.4, lon: 1.6 }
+target: { id: TARGET, name: Cible inventée, lat: 44.2, lon: 1.8 }
+route_order: [ORIGIN, PT1, PT2, RDV-1, TARGET, DESTINATION]
+"""
+_LOCKS = {'4436N00124E': 'PT2', '4424N00136E': 'RDV-1', '4412N00148E': 'TARGET'}
+
+
+@case('N24', 'Preparing a mission: its rendezvous, source and target are locked points of the route (lock: « mission »), neither moved nor removed in Fuel, put back when the text loses them',
+      'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0193 L3 (user: « le pilote a toute liberté pour faire son propre plan de vol, mais les points de rdv, source, cible, restent '
+      'imposés sur la carte »; V3 § 10.47 c): route.points carries lock « mission » on them (the Map locks them in its Édition), the transit point '
+      'stays the pilot\'s; captures 390 and 1 280 written by the case')
+def n24(c):
+    fuel = '[data-module=fuel]'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _LOCK_REGISTRY], ['missions/X_LOCK/X-601A/missionX-601A.yaml', _LOCK_MISSION]])
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions')
+        c.go('fuel?mission=X-601A')
+        c.until("() => !!document.querySelector('.f-modal [data-ok]') || !!document.querySelector('[data-module=fuel] .fu-mchip')", timeout=15000,
+                what='the question, or the flight of the mission')
+        if c.js("!!document.querySelector('.f-modal [data-ok]')"):
+            c.tap('.f-modal [data-ok]')
+
+        def locked(d):
+            pts = (d or {}).get('route', {}).get('points') or []
+            return {p.get('id'): p.get('mission') for p in pts if p.get('lock') == 'mission'}
+        try:
+            f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-601A' and len(locked(d)) == 3,
+                            f'{w} px: the flight of the mission has its three imposed points locked', timeout=15000)
+        except Fail:   # say the route as it was (the generic message stops before it)
+            r = (c.doc('pilot/ABC/current_flight.json') or {}).get('route') or {}
+            raise Fail(f"{w} px: route text {r.get('text')!r}, locks {r.get('locks')}, points {[(p.get('id'), p.get('lock')) for p in r.get('points') or []]}",
+                       'the three imposed points locked')
+        c.eq(locked(f), _LOCKS, f'{w} px: source (by its role), rendezvous and target locked, with their mission names', what='locked points')
+        ids = [p.get('id') for p in f['route']['points']]
+        c.ok('4448N00112E' in ids and '4448N00112E' not in locked(f), ids, f'{w} px: the transit point is in the route and stays the pilot\'s')
+        c.js(f"document.querySelector(\"{fuel} .fu-steps [data-step='1']\")?.click()")
+        c.until(f"document.querySelectorAll('{fuel} [data-pts] [data-lock]').length === 3", timeout=8000, what=f'{w} px: the three rows say « imposé par la mission »')
+        rows = c.js(f"""[...document.querySelectorAll('{fuel} [data-pts] .fu-pt')].filter(r => r.querySelector('[data-lock]')).map(r =>
+            [r.querySelector('[data-lock]').textContent.trim(), [...r.querySelectorAll('[data-do=ptup],[data-do=ptdown],[data-do=ptdel]')].every(b => b.disabled)])""")
+        word = tx(FU, 'ptLock', c.lang).split('{id}')[-1].strip()
+        c.ok(all(r[1] for r in rows) and all(word in r[0] for r in rows) and 'RDV-1' in ' '.join(r[0] for r in rows), rows,
+             f'{w} px: each imposed row named, its up / down / remove off')
+        c.js(f"(() => {{ const r = [...document.querySelectorAll('{fuel} [data-pts] .fu-pt')].find(r => r.querySelector('[data-lock]'));"
+             " let d = r.closest('details'); while (d) { d.open = true; d = d.parentElement?.closest('details') } r.scrollIntoView({block: 'center'}) })()")
+        c.ok(c.js('document.documentElement.scrollWidth <= innerWidth + 1'), c.js('[document.documentElement.scrollWidth, innerWidth]'),
+             f'{w} px: the imposed rows fit the width (the line « imposé par la mission » wraps, never widens the page)')
+        c.shot(f'N24_{c.design}_{w}_{c.lang}_delivered.png')
+        # the text loses the rendezvous: put back after the source at the exit of the field, still locked
+        rt = f'{fuel} [data-k="rtext"]'
+        text = c.js(f"document.querySelector('{rt}').value")
+        c.ok('4424N00136E' in text, text, 'the rendezvous is a word of the route text')
+        c.page.fill(rt, ' '.join(x for x in text.split() if x != '4424N00136E'))
+        c.page.locator(rt).blur()
+        c.until(f"document.querySelector('{rt}').value.includes('4424N00136E')", timeout=8000, what=f'{w} px: the rendezvous put back in the text')
+        t2 = [x for x in c.js(f"document.querySelector('{rt}').value").split() if x != 'DCT']
+        c.ok(t2.index('4424N00136E') == t2.index('4436N00124E') + 1, t2, 'put back after the imposed point that precedes it (the order of the mission)')
+        c.until_doc('pilot/ABC/current_flight.json', lambda d: locked(d) == _LOCKS, f'{w} px: still three locked points after the edit', timeout=10000)

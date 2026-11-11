@@ -1631,6 +1631,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **11 Nov 2026 — the warnings of a reading are said in text** (SOG-0203, the rest given to Features SOG: LFOE said « 0 page lue sur 2.
   2 avertissements. » and nothing of them): the warnings of the aerodrome's last reading are kept and listed in a fold under its line
   (twenty at most, bounded, escaped: texts of the launcher's reader). F141; counter-test on origin/v3: no fold.
+- **11 Nov 2026 — the points a mission imposes are locked** (SOG-0193 L3, V3 § 10.47 c): rendezvous, target and source (by the
+  role of the point: the user's missions say « écopage simulé en mer », never `kind: source`) carry `lock: 'mission'` in `route.points`;
+  the lock is kept by their word of the text (coordinates to the minute), not by an index (the route is re-read from its text at each
+  edit). A lost imposed point is put back, never refused: the pilot's text stays his, only the mission's points come back. The line
+  « imposé par la mission » wraps (nowrap had widened the card to 442 px at 390). N24; counter-test on origin/v3: no locked point.
 - **11 Nov 2026 — a reading of the route is never lost to a save of the flight** (challenge à rebours; N13 and N24 failed under
   load: « the direct mission has a distance » never came): `resolveRoute` kept the route object of its start and wrote the points it
   read there after its wait; but each save of the flight (`writeFlight`, 300 ms after a change) and each flight taken from the record

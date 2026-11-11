@@ -18,6 +18,8 @@ façon : en FL à partir de 5 000 ft (FL060), en pieds en dessous (3 500 ft).
 
 **La mission.** Un vol préparé depuis une mission porte, en haut de l'écran, la puce « Mission <ID> » : elle ouvre la fiche de la mission par-dessus l'étape (les risques d'abord, puis le résumé, les objectifs, les équipes et les zones, chacune sur la carte), sans quitter l'étape ; la croix la referme.
 
+**Points imposés par la mission.** Les rendez-vous, la cible et la source (écopage) d'une mission sont des points imposés de la route : dans la liste des points, ils portent « imposé par la mission » et ne se montent, descendent ni retirent ; si le texte de la route en perd un, il y est remis à la sortie du champ. Les autres points (transit) sont les vôtres : ajoutez ou retirez librement les vôtres entre eux.
+
 **Nouveau vol.** Le bouton « Nouveau vol », en haut de l'écran, efface le vol en préparation (départ, arrivée, route, procédures, niveau, OFP), après une question s'il porte déjà quelque chose ou s'il est démarré ; l'appareil reste. Changer de terrain pour un autre à plus de 150 NM, ou changer le départ et l'arrivée, fait aussi un nouveau couple : la route, les procédures et l'OFP de l'ancien vol sont effacés, et l'écran le dit. Un terrain proche (une correction) remplace seulement l'ancien dans la route.
 
 <a id="fuel-step-1"></a>**1 Vol.** Le départ, l'arrivée et le dégagement (codes OACI), la date du vol si vous voulez la prévision (TAF) plutôt

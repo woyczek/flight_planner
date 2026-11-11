@@ -122,6 +122,9 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
 
 ## 4. From the mission to the flight: `missionFlight(mission, assignment?)`
 
+- **Imposed points** (SOG-0193 L3, V3 § 10.47 c): a point of the flight that is a rendezvous, the target, or a turning point / zone whose
+  role says a source (`lockedPoint`) carries `lock: 'mission'`; Fuel keeps it in the route (N24), the Map in its Édition.
+
 Pure function of `frame/lib/mission.js`, benched, one output shape consumed by Fuel through its "Nouveau vol :
 depuis une mission" gesture (the same door as the OFP, § 10.32 of the specification):
 

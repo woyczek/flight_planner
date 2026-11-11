@@ -75,6 +75,8 @@ Flugflächen werden überall gleich geschrieben: als FL ab 5000 ft (FL060), daru
 
 **Der Einsatz.** Ein aus einem Einsatz vorbereiteter Flug trägt oben im Bildschirm den Chip „Einsatz <ID>“: er öffnet das Einsatzblatt über dem Schritt (zuerst die Risiken, dann Zusammenfassung, Ziele, Teams und Zonen, jede auf der Karte), ohne den Schritt zu verlassen; das Kreuz schließt es.
 
+**Von der Mission vorgegebene Punkte.** Treffpunkte, Ziel und Quelle (Wasseraufnahme) einer Mission sind vorgegebene Punkte der Route: In der Punkteliste tragen sie „von der Mission vorgegeben“ und lassen sich weder nach oben oder unten schieben noch entfernen; verliert der Routentext einen davon, wird er beim Verlassen des Feldes wieder eingesetzt. Die anderen Punkte (Transit) gehören Ihnen: Fügen Sie Ihre eigenen frei dazwischen ein oder entfernen Sie sie.
+
 **Neuer Flug.** Die Schaltfläche „Neuer Flug“ oben im Bildschirm löscht den vorbereiteten Flug (Abflug, Ankunft, Strecke, Verfahren, Flugfläche, OFP), nach einer Frage, wenn er schon etwas enthält oder gestartet ist; das Luftfahrzeug bleibt. Ein Flugplatz, der durch einen mehr als 150 NM entfernten ersetzt wird, oder geänderter Abflug und Ankunft ergeben ebenfalls ein neues Paar: Strecke, Verfahren und OFP des vorigen Flugs werden gelöscht, und der Bildschirm sagt es. Ein naher Flugplatz (eine Korrektur) ersetzt nur den alten in der Strecke.
 
 <a id="fuel-step-1"></a>**1 Flug.** Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), das Flugdatum, wenn Sie die Vorhersage (TAF) statt der

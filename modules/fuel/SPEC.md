@@ -200,6 +200,12 @@ to `[data-module="fuel"]`, built on the frame's tokens and classes; no global sh
   objectives, the teams, the zones each with « Sur la carte », the description folded), read with `loadMission` (the reader of the
   door: the registry's row, `MS.readMission`, the file untrusted), without leaving the step; the cross (44 px) or Escape closes it.
   On a computer the pane sits in Fuel's column (the Map beside stays free), on a phone at the bottom of the screen.
+  **The imposed points** (§ 10.47 c, SOG-0193 L3, N24): the rendezvous, the target and a point or zone whose role says a source
+  (« écopage simulé », « source d'eau »; `MS.lockedPoint`) are kept in `route.locks` (`{ id: their word of the text, coordinates to the
+  minute; mid: their mission name; name }`, 60 at most); each reading of the route marks them `lock: 'mission'` (and `mission: <name>`)
+  in `route.points` — the Map locks them in its Édition —; the list of points names them (« RDV-1 · imposé par la mission »), its
+  up / down / remove are off for them; a text that loses one gets it back at the exit of the field, after the imposed point before it,
+  said in a notification. The transit points stay the pilot's. « Nouveau vol » clears them with the route.
 - **Writes**: the current flight after a quiet time (§ 4), **only on a gesture or when a result Fuel owns has changed** (SOG-0209, F132):
   a write that would change only `updated_at` / `by` is not made; the profile and the quote are compared with the last result THIS
   instance computed, never with the record another writer (another tab, another synchronised device) changed, so that two Fuel on one

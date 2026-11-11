@@ -25,6 +25,8 @@
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points, depAt, arrAt }, aircraft: { type, registration }, levelFt, speedKt, mission,
 //     category } (le vol que Carburant pose ; § 4 de la SPEC) ; null sans mission.
+//   lockedPoint(p) : vrai pour un point que la mission impose (rendez-vous, cible, source par son rôle) ; missionFlight le marque
+//     lock: 'mission' (SOG-0193 L3, V3 § 10.47 c).
 //   routeNm(mission) → la longueur en NM du trajet de la mission (origine, points dans l'ordre de missionFlight, destination ; les lieux
 //     sans position sautés) ; null sans deux positions.
 //   categoryOf(v) : l'identifiant de catégorie d'une mission (SOG-0041, § 10.38 ; la forme des identifiants de
@@ -176,7 +178,8 @@ export function readMission(doc) {
         name: clean(p.name),
         lat: +p.lat,
         lon: +p.lon,
-        kind
+        kind,
+        role: clean(p.role).slice(0, 120) // le rôle du fichier (« écopage simulé en mer ») : dit une source (SOG-0193 L3)
       };
     };
   (d.turning_points || []).forEach(p => add(p, 'turn'));
@@ -187,7 +190,8 @@ export function readMission(doc) {
       id: z.id,
       name: z.name,
       lat: c[0],
-      lon: c[1]
+      lon: c[1],
+      role: z.role
     }, 'zone');
   });
   if (d.target) add(d.target, 'target');
@@ -377,6 +381,15 @@ export function routeNm(mission) {
   return Math.round(nm);
 }
 
+/** Un point que la mission impose (§ 10.47 c ; l'utilisateur : « les points de rdv, source, cible, restent imposés sur la carte ») :
+ *  un rendez-vous, la cible, et un point ou une zone dont le rôle dit une source (« écopage simulé en mer », « source d'eau ») ; les
+ *  tournants de transit restent ceux du pilote. */
+export function lockedPoint(p) {
+  return !!p && (p.kind === 'rdv' || p.kind === 'target' || (p.kind === 'turn' || p.kind === 'zone') && SOURCE_ROLE.test(String(p.role ||
+    '')));
+}
+const SOURCE_ROLE = /(^|[^a-zà-ÿ])(source|sources|[ée]copage|[ée]coper|scoop|scooping|plan d'eau|pélicandage|pelicandage)([^a-zà-ÿ]|$)/i;
+
 /** Le vol qu'une mission donne à Carburant (voir l'en-tête). */
 export function missionFlight(mission, assignment = null) {
   if (!mission) return null;
@@ -388,7 +401,11 @@ export function missionFlight(mission, assignment = null) {
       id: p.id,
       lat: p.lat,
       lon: p.lon,
-      name: p.name
+      name: p.name,
+      // SOG-0193 L3 (§ 10.47 c) : un point que la mission impose — rendez-vous, cible, source — est verrouillé dans le vol
+      ...(lockedPoint(p) ? {
+        lock: 'mission'
+      } : {})
     }));
   // SOG-0193 : la position de l'origine et de la destination (celle de l'origine pour un aller-retour), pour qu'un terrain que la base
   // ne connaît pas (une base d'opérations, un terrain non publié) reste dans le plan et dans sa distance

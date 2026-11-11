@@ -19,6 +19,8 @@ con la pestaña «Fichas». Una ✓ marca un paso completado. Los niveles se esc
 
 **La misión.** Un vuelo preparado desde una misión lleva, arriba en la pantalla, la etiqueta «Misión <ID>»: abre la ficha de la misión sobre el paso (primero los riesgos, luego el resumen, los objetivos, los equipos y las zonas, cada una en el mapa), sin salir del paso; la cruz la cierra.
 
+**Puntos impuestos por la misión.** Los encuentros, el objetivo y la fuente (carga de agua) de una misión son puntos impuestos de la ruta: en la lista de puntos llevan «impuesto por la misión» y no se suben, bajan ni quitan; si el texto de la ruta pierde uno, se vuelve a poner al salir del campo. Los demás puntos (tránsito) son suyos: añada o quite libremente los suyos entre ellos.
+
 **Vuelo nuevo.** El botón «Nuevo vuelo», arriba en la pantalla, borra el vuelo en preparación (salida, llegada, ruta, procedimientos, nivel, OFP), tras una pregunta si ya contiene algo o está iniciado; la aeronave se queda. Cambiar un aeródromo por otro a más de 150 NM, o cambiar la salida y la llegada, también forma un par nuevo: se borran la ruta, los procedimientos y el OFP del vuelo anterior, y la pantalla lo dice. Un aeródromo cercano (una corrección) solo sustituye al anterior en la ruta.
 
 <a id="fuel-step-1"></a>**1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en

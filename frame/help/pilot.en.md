@@ -70,6 +70,8 @@ Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in f
 
 **The mission.** A flight prepared from a mission carries, at the top of the screen, the chip "Mission <ID>": it opens the mission sheet over the step (the risks first, then the summary, the objectives, the teams and the zones, each on the map), without leaving the step; the cross closes it.
 
+**Points imposed by the mission.** The rendezvous, the target and the source (water scooping) of a mission are imposed points of the route: in the list of points they read "imposed by the mission" and cannot be moved up, down or removed; if the route text loses one, it is put back when you leave the field. The other points (transit) are yours: add or remove your own freely between them.
+
 **New flight.** The "New flight" button at the top of the screen clears the flight being prepared (departure, arrival, route, procedures, level, OFP), after a question if it already carries something or is started; the aircraft stays. Changing an aerodrome for one more than 150 NM away, or changing both departure and arrival, also makes a new pair: the route, procedures and OFP of the previous flight are cleared, and the screen says so. A nearby aerodrome (a correction) only replaces the old one in the route.
 
 <a id="fuel-step-1"></a>**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)

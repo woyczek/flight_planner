@@ -442,6 +442,17 @@ const TX = {
   ptUp: ['Monter {id} dans la liste', 'Move {id} up', '{id} nach oben', 'Subir {id}'],
   ptDown: ['Descendre {id} dans la liste', 'Move {id} down', '{id} nach unten', 'Bajar {id}'],
   ptDel: ['Retirer {id}', 'Remove {id}', '{id} entfernen', 'Quitar {id}'],
+  // SOG-0193 L3 : un point imposé par la mission (rendez-vous, source, cible) : ni retiré ni déplacé
+  ptLock: ['{id} · imposé par la mission', '{id} · imposed by the mission', '{id} · von der Mission vorgegeben',
+    '{id} · impuesto por la misión'
+  ],
+  ptLocked: ['{id} est imposé par la mission : ni retiré ni déplacé.', '{id} is imposed by the mission: neither removed nor moved.',
+    '{id} ist von der Mission vorgegeben: weder entfernt noch verschoben.', '{id} está impuesto por la misión: ni se quita ni se mueve.'
+  ],
+  locksBack: ['Points imposés par la mission remis dans la route : {ids}.', 'Points imposed by the mission put back in the route: {ids}.',
+    'Von der Mission vorgegebene Punkte wieder in die Route gesetzt: {ids}.',
+    'Puntos impuestos por la misión devueltos a la ruta: {ids}.'
+  ],
   ptUnknown: ['Point inconnu : {id}', 'Unknown point: {id}', 'Unbekannter Punkt: {id}', 'Punto desconocido: {id}'],
   steps: ['Paliers', 'Steps', 'Stufen', 'Escalones'],
   unresolved: ['Points inconnus : {l}', 'Unknown points: {l}', 'Unbekannte Punkte: {l}', 'Puntos desconocidos: {l}'],
@@ -1853,6 +1864,8 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 [data-module="fuel"] .fu-ptid{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 [data-module="fuel"] .fu-ptid small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="fuel"] .fu-ptid small.fu-ptlock{display:block;font-weight:600;white-space:normal} /* un point imposé par la mission (SOG-0193 L3) */
+[data-module="fuel"] .fu-ptlock svg{width:1em;height:1em;vertical-align:-.15em;margin-right:.2em}
 [data-module="fuel"] .f-card .fu-pt input[data-k]{width:4.2em;flex:none;text-align:center}
 [data-module="fuel"] .fu-ptgap{width:4.2em;flex:none}
 [data-module="fuel"] .fu-pt button{flex:none;min-width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center}
@@ -3911,10 +3924,12 @@ function renderPts() {
     if (mid && inGroup.has(String(p.id || '').toUpperCase())) return unRows(i); // un repère de procédure : dans son groupe
     shown++;
     const id = esc(p.id || '?'),
+      lock = p.lock === 'mission', // SOG-0193 L3 : ni monté, ni descendu, ni retiré
+      off = lock ? ` disabled title="${esc(tt(TX.ptLocked, { id: p.mission || p.id }))}"` : '',
       bad = rc ? rc.find(g => g.state === 'error' && g.to === String(p.id || '').toUpperCase()) : null;
-    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}"${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
+    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}"${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small>${lock ? `<small class="fu-ptlock" data-lock>${svg('pin')} ${esc(tt(TX.ptLock, { id: p.mission || p.id }))}</small>` : ''}</span>
       ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
-      <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>${after}${unRows(i)}`;
+      <button type="button" data-do="ptup" data-i="${i}" ${i && !lock ? '' : 'disabled'}${off} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 && !lock ? '' : 'disabled'}${off} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}"${off} aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>${after}${unRows(i)}`;
   }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
   const n = S.body.querySelector('[data-ptsn]');
   if (n) n.textContent = tt(TX.ptsN, {
@@ -3942,6 +3957,9 @@ async function pointAction(act, i) {
   const s = S,
     r = S.flight.route ||= emptyFlight().route,
     pts = r.points ||= [];
+  if (['ptup', 'ptdown', 'ptdel'].includes(act) && pts[i]?.lock === 'mission') return S.ctx.notify(tt(TX.ptLocked, {
+    id: pts[i].mission || pts[i].id
+  }), 'warn'); // SOG-0193 L3 : un point imposé par la mission
   if (act === 'ptup' && i > 0)[pts[i - 1], pts[i]] = [pts[i], pts[i - 1]];
   else if (act === 'ptdown' && i < pts.length - 1)[pts[i + 1], pts[i]] = [pts[i], pts[i + 1]];
   else if (act === 'ptdel') pts.splice(i, 1);
@@ -4332,6 +4350,11 @@ function resolveRoute(normalize = true) {
   const seq = S.routeSeq = (S.routeSeq || 0) + 1;
   clearTimeout(S.routeTimer);
   S.routeTimer = setTimeout(async () => {
+    // SOG-0193 L3 : à la sortie du champ, un point imposé par la mission que le texte a perdu y est remis (à sa place parmi les imposés)
+    const back = normalize ? keepLocks(S.flight.route) : [];
+    if (back.length) S.ctx.notify(tt(TX.locksBack, {
+      ids: back.join(', ')
+    }), 'warn');
     const s = S,
       asked = S.flight.route, // la route lue : l'enregistrement du vol (writeFlight) en fait un nouvel objet pendant la lecture
       // les points déjà connus du vol, et ceux des procédures choisies (la sortie d'une SID, l'entrée d'une STAR) : un nom qu'aerodb ne
@@ -4358,7 +4381,7 @@ function resolveRoute(normalize = true) {
     // jamais écrite sur l'objet d'avant (les points s'y perdaient dès qu'une lecture durait plus de 300 ms : N13 / N24 sous charge, F142)
     const r = S.flight.route ||= emptyFlight().route;
     if (r !== asked && (r.text !== asked.text || r.dep !== asked.dep || r.arr !== asked.arr)) return resolveRoute(normalize);
-    r.points = points;
+    r.points = markLocks(r, points);
     // une voie écrite qui ne relie pas ses deux points : tronçon direct, dit une fois par texte (pas à chaque frappe) (§ 10.31)
     const bad = badAirways.map(x => tt(TX.awyBad, x)).join(' · ');
     if (normalize && bad && S.awyBadSaid !== bad) S.ctx.notify(bad, 'warn');
@@ -4978,7 +5001,13 @@ async function applyMission(id) {
       ...mf.route.arrAt
     } : null].filter(Boolean),
     manual: false,
-    from: 'route'
+    from: 'route',
+    // SOG-0193 L3 : les points imposés, par leur mot du texte (coordonnées à la minute), gardés à chaque relecture de la route
+    locks: points.filter(p => p.lock === 'mission').slice(0, 60).map(p => ({
+      id: RT.icaoCoord(p.lat, p.lon),
+      mid: String(p.id || '').slice(0, 40),
+      name: String(p.name || '').slice(0, 120)
+    }))
   };
   if (mf.levelFt > 0) f.level = {
     ft: mf.levelFt
@@ -6231,4 +6260,55 @@ function aidsDraw() {
     list = vors?.length ? `<details class="fu-aidsroute" data-aidsroute><summary>${esc(tt(TX.aidsRoute, { n: vors.length }))}</summary><ul class="fu-aidlist">${vors.map(v => `<li data-aid="${esc(v.id)}"><b>${esc(v.id)}</b> ${esc(v.kind)} ${esc(v.freq)} <span class="f-muted">${esc(v.leg)}</span></li>`).join('')}</ul></details>` : '',
     html = ils || list ? `${ils ? `<p class="fu-aidils" data-aidils><b>${ils}</b></p>` : ''}${list}` : vors === null ? '' : `<p class="f-muted" data-aidsnone>${esc(tt(TX.aidsNone))}</p>`;
   if (box.innerHTML !== html) box.innerHTML = html;
+}
+
+// ---------------------------------------------------------------- points imposés par la mission (SOG-0193 L3, V3 § 10.47 c)
+// L'utilisateur : « le pilote a toute liberté pour faire son propre plan de vol, mais les points de rdv, source, cible, restent imposés
+// sur la carte ». Le vol garde route.locks ([{ id : le mot du texte, en coordonnées à la minute ; mid : l'identifiant de la mission ;
+// name }], posé par applyMission) ; chaque relecture de la route marque ces points lock: 'mission' dans route.points (la Carte les
+// verrouille dans son Édition) ; la liste ne les monte, descend ni retire ; un texte qui en perd un le retrouve à la sortie du champ.
+/** Les verrous du vol, bornés (la route est relue de pilot/, écrite par la Carte aussi). */
+function locksOf(r) {
+  return (Array.isArray(r?.locks) ? r.locks : []).slice(0, 60).filter(l => l && /^\d{4}[NS]\d{5}[EW]$/.test(String(l.id || '')));
+}
+/** route.points avec lock: 'mission' (et l'identifiant de la mission) sur les points imposés, retiré des autres. */
+function markLocks(r, points) {
+  const by = new Map(locksOf(r).map(l => [l.id, l]));
+  return (points || []).map(p => {
+    const l = p && by.get(String(p.id || '').toUpperCase());
+    if (!p || typeof p !== 'object') return p;
+    const {
+      lock,
+      mission,
+      ...rest
+    } = p;
+    return l ? {
+      ...rest,
+      lock: 'mission',
+      mission: String(l.mid || '').slice(0, 40)
+    } : rest;
+  });
+}
+/** Remet dans le texte de la route les points imposés qu'il a perdus : chacun juste après l'imposé qui le précède (l'ordre de la
+ *  mission), sinon après le départ ; rend les identifiants de la mission remis ([] quand rien ne manquait). */
+function keepLocks(r) {
+  const locks = locksOf(r);
+  if (!locks.length) return [];
+  const words = String(r.text || '').trim().split(/\s+/).filter(Boolean),
+    up = w => w.toUpperCase().replace(/\/.*$/, ''),
+    back = [];
+  locks.forEach((l, k) => {
+    if (words.some(w => up(w) === l.id)) return;
+    let at = -1;
+    for (let j = k - 1; j >= 0 && at < 0; j--) at = words.findIndex(w => up(w) === locks[j].id);
+    if (at < 0) at = words.length && up(words[0]) === String(r.dep || '').toUpperCase() ? 0 : -1;
+    words.splice(at + 1, 0, l.id);
+    back.push(l.mid || l.id);
+  });
+  if (back.length) {
+    r.text = words.join(' ');
+    const ta = S.body?.querySelector('[data-k="rtext"]');
+    if (ta) ta.value = r.text;
+  }
+  return back;
 }
