@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-11",
-  "tests": 119,
+  "tests": 120,
   "verdicts": 43
  },
  "apps": [
@@ -1620,10 +1620,23 @@
     "de": "Daten: bis zur Neugestaltung „Länderpakete“ einklappen, „Aktualisieren“ verkleinern, „Zonen der Abdeckung (75)“ erklären, von „7 neu aufzubauen“ zu den 7 Zonen führen",
     "es": "Datos: hasta el rediseño, plegar «Paquetes de países», reducir los «Actualizar», explicar «Zonas de la cobertura (75)», llevar de «7 por reconstruir» a las 7 zonas"
    },
-   "test": "Maintenance › Données : « Paquets de pays » est replié à l'ouverture. Dans le bilan, appuyer sur « n à reconstruire » : la liste « Zones de la couverture » vient sous les yeux, réduite à ces zones, cochées, avec une ligne qui dit quoi faire ; « Mettre à jour » les reconstruit. Sous « Zones de la couverture (n) », une ligne dit ce que compte le nombre.",
+   "test": "Maintenance › Données : « Paquets de pays » est replié à l'ouverture ; sous « Zones de la couverture (n) », une ligne dit ce que compte le nombre ; « Mettre à jour (n) » d'un paquet est un petit lien au bout de sa ligne. (Le bilan « n à jour · n à reconstruire » est maintenant la phrase d'état en tête du panneau : test SOG-0229.)",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T17:26:45Z"
+   "delivered": "2026-11-11T12:03:52Z"
+  },
+  {
+   "id": "SOG-0229",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : refonte de l'écran de construction de la base, depuis les spécifications fonctionnelles — proposition de l'ergonome pour le jeudi 12/11",
+    "en": "Data: redesign of the base build screen from the functional specifications — proposal for Thursday 12 Nov",
+    "de": "Daten: Neugestaltung des Aufbau-Bildschirms aus den funktionalen Spezifikationen — Vorschlag für Donnerstag, 12.11.",
+    "es": "Datos: rediseño de la pantalla de construcción de la base desde las especificaciones funcionales — propuesta para el jueves 12/11"
+   },
+   "test": "Maintenance › Données, panneau de la base : en tête, une phrase dit le cycle et ta base (« n zones à jour · n à reconstruire · n en échec · n attendent un fichier · n sans état »). Appuie sur un nombre : ses zones se déplient juste dessous, sans défilement. Le bouton dit « Mettre à jour (n) » : il traite tout ce qui n'est pas à jour. Décoche des zones pour n'en garder que deux ou trois : il devient « Mettre à jour la sélection (n) » et ne traite qu'elles. Une ligne sous le bouton dit ce qu'il va faire.",
+   "since": "2026-11-11",
+   "state": "known"
   },
   {
    "id": "SOG-0230",
