@@ -92,7 +92,7 @@ vuelven a leer en el acto.
 
 <a id="fuel-theme"></a>**Familia y serie.** Bajo la fecha, «Familia» y «Serie» dicen lo que va a hacer: un vuelo de carga, de pasajeros, de ensayo, una misión SAR… Opcionales, las rellena la misión que prepara y solo proponen las familias de su compañía (una compañía comercial: CAT · Transporte aéreo comercial). El informe las toma y puede cambiarlas: olvidadas aquí, se eligen allí.
 
-<a id="fuel-step-2"></a>**2 Ruta.** Escriba la ruta en el campo «Ruta» (Intro la valida), siempre visible: los puntos, las aerovías y los
+<a id="fuel-step-2"></a>**2 Ruta.** Escriba la ruta en el campo «Ruta» (Intro la valida), siempre visible: los puntos, las aerovías y los Un tramo directo se vuela a rumbo: su distancia y su rumbo son los de la loxodrómica, la línea recta del mapa. Cuando un directo a rumbo supera en más de un 2 % el círculo máximo (un trayecto largo en un solo tramo), una línea bajo la ruta lo dice: añada puntos intermedios, por ejemplo con «Calcular A → B».
 niveles, como en un plan de vuelo («LFBO TOU UN460 NTS/F280 LFRN»). También puede pegar ahí un plan de vuelo OACI o la
 lista de un OFP. Al salir del campo, la ruta se pone en limpio: en mayúsculas en una línea, sin DCT ni grupos
 velocidad-nivel, la salida y la llegada en los extremos, un cambio de nivel escrito «/F280» tras el punto donde empieza.

@@ -90,7 +90,7 @@ at once.
 
 <a id="fuel-theme"></a>**Family and series.** Under the date, "Family" and "Series" say what you are going to do: a cargo flight, a passenger flight, a test flight, a SAR mission… Optional, they are filled by the mission you prepare and offer only your airline's families (a commercial airline: CAT · Commercial air transport). The report takes them and can change them: forgotten here, they are chosen there.
 
-<a id="fuel-step-2"></a>**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
+<a id="fuel-step-2"></a>**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the A direct leg is flown by compass: its distance and course are those of the rhumb line, the straight line of the map. When a direct by compass is more than 2 % longer than the great circle (a long trip in a single leg), a line under the route says so: add intermediate points, for instance with "Compute A → B".
 levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can also paste an ICAO flight plan or the list of an
 OFP there. When you leave the field, the route is tidied up: in capitals on one line, without DCT or speed-level groups,
 the departure and the arrival at the ends, a level change written “/F280” after the point where it starts. Airways stay

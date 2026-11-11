@@ -13,6 +13,10 @@ import * as WIND from '../../frame/lib/wind.js'; // le vent sur une piste : une 
 import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
+import {
+  rhumbCourse,
+  rhumbNm
+} from '../../frame/lib/geo.js'; // un direct se vole au compas : distance et cap de chaque tronçon (SOG-0243, Q-0019)
 import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son texte (refonte § 10.33 R-F4)
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
@@ -264,6 +268,12 @@ const TX = {
   rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
   // le bloc « Aides radio » de l'étape Départ (SOG-0200)
   aidsTitle: ['Aides radio', 'Radio aids', 'Funknavigationshilfen', 'Radioayudas'],
+  // Q-0019 : un direct au compas plus long de 2 % que son grand cercle
+  rhumbLong: ['{a} → {b} : {r} NM au compas, {g} par le grand cercle (+{p} %) : ajoutez des points intermédiaires.',
+    '{a} → {b}: {r} NM by compass, {g} by the great circle (+{p} %): add intermediate points.',
+    '{a} → {b}: {r} NM nach Kompass, {g} über den Großkreis (+{p} %): fügen Sie Zwischenpunkte hinzu.',
+    '{a} → {b}: {r} NM a rumbo, {g} por el círculo máximo (+{p} %): añada puntos intermedios.'
+  ],
   aidsRoute: ['VOR / DME de la route ({n})', 'VOR / DME of the route ({n})', 'VOR / DME der Route ({n})', 'VOR / DME de la ruta ({n})'],
   aidsNone: ['Aucune aide radio en base pour ce vol.', 'No radio aid in the base for this flight.',
     'Keine Funknavigationshilfe in der Basis für diesen Flug.',
@@ -1945,6 +1955,7 @@ function renderPlanBody() {
       <div data-routealts></div>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
+      <p class="f-warn" data-rhumb hidden></p>
       <div data-zonegaps></div>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
@@ -2018,6 +2029,7 @@ function renderPlanBody() {
     }
   };
   renderPts();
+  rhumbWarn(S.flight.route); // Q-0019 : la ligne des directs trop longs au compas, dès le dessin
   renderRinfo();
   S.body.onclick = e => S.AD.onClick(e) || S.RC.onClick(e) || onPlanClick(e);
   S.AD.paint();
@@ -2699,7 +2711,7 @@ function aloftCalc() {
     plan = +S.flight.level?.ft || 0;
   if (!A?.profiles?.length || A.key !== aloftKey() || !(plan > 0) || pts.length < 2) return null;
   const nmPts = [0];
-  for (let i = 1; i < pts.length; i++) nmPts.push(nmPts[i - 1] + gcNm(pts[i - 1], pts[i]));
+  for (let i = 1; i < pts.length; i++) nmPts.push(nmPts[i - 1] + rhumbNm(pts[i - 1], pts[i]));
   // l'altitude du profil à chaque lieu (montée, paliers, descente : profile.path, sinon tocNm / todNm), pas le niveau de croisière
   // partout (utilisateur, 29 octobre) ; les distances de la route ramenées sur le chemin volé des procédures
   const fp = fpNow(),
@@ -2908,7 +2920,7 @@ const wxStations = () => {
   const r = S.flight.route || {},
     corr = new Map((S.wxCorr?.list || []).map(x => [x.id, x])),
     pts = S.wxCorr?.pts || [],
-    total = pts.length >= 2 ? pts.slice(1).reduce((t, p, i) => t + gcNm(pts[i], p), 0) : null;
+    total = pts.length >= 2 ? pts.slice(1).reduce((t, p, i) => t + rhumbNm(pts[i], p), 0) : null;
   return wxIds().map(id => {
     const ad = S.wxAd?.[id] || null,
       role = id === r.dep ? 'dep' : id === r.arr ? 'arr' : id === r.altn && !corr.has(id) ? 'altn' : 'mid',
@@ -3818,8 +3830,10 @@ function swapEnd(text, was, now, atEnd) {
 function routeDerived(r) {
   const points = r.points || [];
   if (points.length >= 2) {
-    r.distanceNm = Math.round(points.slice(1).reduce((s, p, i) => s + gcNm(points[i], p), 0));
-    r.trackDeg = Math.round(bearing(points[0], points.at(-1)));
+    // SOG-0243, Q-0019 (l'utilisateur : « Oui ») : chaque tronçon direct au compas, sa loxodromie ; la route est leur somme, son cap
+    // celui de la loxodromie du départ à l'arrivée (un seul vent moyen sur un seul cap : le modèle du vent n'est pas refait ici)
+    r.distanceNm = Math.round(points.slice(1).reduce((s, p, i) => s + rhumbNm(points[i], p), 0));
+    r.trackDeg = Math.round(rhumbCourse(points[0], points.at(-1)));
     r.manual = false;
     S.rmanualOpen = false;
     const $ = k => S.body?.querySelector(`[data-k="${k}"]`);
@@ -3827,6 +3841,7 @@ function routeDerived(r) {
     if ($('trk')) $('trk').value = r.trackDeg;
   }
   renderRinfo();
+  rhumbWarn(r); // Q-0019 : la ligne des directs trop longs au compas
 }
 /** Ligne de lecture sous la route : distance, route vraie et leur source (route résolue, OFP SimBrief, saisie à la
  *  main) ; sans route résolue, « Saisir à la main » déplie les deux champs (gardés ouverts tant que la saisie à la
@@ -3975,7 +3990,7 @@ function routeSteps(r, distanceNm) {
   const pts = r?.points || [];
   if (pts.length < 3) return null;
   const cum = [0];
-  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + gcNm(pts[i - 1], pts[i]));
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + rhumbNm(pts[i - 1], pts[i]));
   const k = cum.at(-1) > 0 ? distanceNm / cum.at(-1) : 1,
     out = pts.slice(1, -1).map((p, i) => p.alt_ft > 0 ? {
       nm: cum[i + 1] * k,
@@ -6307,4 +6322,29 @@ const isLnm = rec => !!rec && typeof rec === 'object' && (rec.status === 'lnm' |
 function pubProcs(procs) {
   if (!procs || typeof procs !== 'object') return procs;
   return Object.fromEntries(Object.entries(procs).map(([k, v]) => [k, isLnm(v) ? null : v]));
+}
+
+// ---------------------------------------------------------------- un direct au compas (SOG-0243, Q-0019)
+/** Les tronçons directs de la route plus longs de 2 % au compas que par le grand cercle : une ligne sous la route (l'utilisateur :
+ *  « un avertissement quand un direct au compas dépasse de plus de 2 % le grand cercle (« ajoutez des points intermédiaires ») ») ;
+ *  « Calculer A → B » reste le geste qui les pose. Jamais une note flottante. */
+function rhumbWarn(r) {
+  const box = S?.body?.querySelector('[data-rhumb]');
+  if (!box) return;
+  const pts = (r?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
+    lines = [];
+  for (let i = 1; i < pts.length; i++) {
+    const g = gcNm(pts[i - 1], pts[i]),
+      x = rhumbNm(pts[i - 1], pts[i]);
+    if (g > 1 && x > g * 1.02) lines.push(tt(TX.rhumbLong, {
+      a: String(pts[i - 1].id || '?'),
+      b: String(pts[i].id || '?'),
+      r: Math.round(x).toLocaleString(S.ctx.lang()),
+      g: Math.round(g).toLocaleString(S.ctx.lang()),
+      p: Math.round((x / g - 1) * 100)
+    }));
+  }
+  const text = lines.join(' ');
+  box.hidden = !text;
+  if (box.textContent !== text) box.textContent = text;
 }

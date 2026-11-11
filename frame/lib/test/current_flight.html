@@ -798,7 +798,7 @@
     gcr = (a, b) => 3440.065 * 2 * Math.asin(Math.sqrt(Math.sin((b.lat - a.lat) * Math.PI / 360) ** 2 + Math.cos(a.lat * Math.PI / 180) *
       Math.cos(b.lat *
         Math.PI / 180) * Math.sin((b.lon - a.lon) * Math.PI / 360) ** 2)),
-    rAAA = gcr(RT.points[0], RT.points[1]),
+    rAAA = rhumbNm(RT.points[0], RT.points[1]), // la route se mesure au compas (Q-0019), comme routeNmToFlown
     fAAA = FPr.find(p => p.id === 'AAA').nm;
   ck('routeNmToFlown : un point de la route tombe sur son nm du chemin volé', Math.abs(toF(rAAA) - fAAA) < 1e-6, `${toF(rAAA)} / ${fAAA}`);
   ck('routeNmToFlown : sans chemin, l’identité', routeNmToFlown(fl({}), null)(42) === 42);

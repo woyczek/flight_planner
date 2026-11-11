@@ -4310,7 +4310,7 @@ def f145(c):
       for (const f of [0.1, 0.25, 0.5, 0.75, 0.9]) out.pos.push(gc(PG.position([A, B], [0, L], L * f), G.rhumbAt(A, B, f)));
       out.mid = gc(FP.routeMidpoint([A, B]), G.rhumbAt(A, B, 0.5));
       const m = G.rhumbAt(A, B, 0.5), a = PG.alongRoute ? PG.alongRoute([A, B], m) : null, o = PG.alongRoute ? PG.alongRoute([A, B], { lat: m.lat + 0.5, lon: m.lon }) : null;
-      out.along = a && [a.cross, a.along / L]; out.off = o && o.cross;
+      out.along = a && [a.cross, a.along / G.rhumbNm(A, B)]; out.off = o && o.cross;   // along: by compass, as the quote (Q-0019)
       return out }""")
     c.ok(all(x < 0.5 for x in r['pos']), [round(x, 2) for x in r['pos']], 'the position of the flight at 10 to 90 % of the leg is on its rhumb line')
     c.ok(r['mid'] < 0.5, round(r['mid'], 2), 'the point that picks the weather model is on the rhumb line')
@@ -4333,3 +4333,76 @@ def f146(c):
         c.ok(0 <= order['ac'] < order['dep'] < order['fl'] and order['ac'] < order['th'], order, f'{w} px: the aircraft first, then the aerodromes, the level, the family')
         c.js("(() => { document.querySelector('[data-module=fuel] [data-block=flight]').scrollIntoView({block: 'start'}); scrollBy(0, -140) })()")
         c.shot(f'F146_{c.design}_{w}_{c.lang}_delivered.png')
+
+
+
+def _direct_flight(a, b, text=None):
+    """The planned flight of lib.FLIGHT on a direct a → b ((id, lat, lon), invented codes), its two points known by the flight."""
+    from lib import flight_docs
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            r = d[1]['route']
+            r.update({'dep': a[0], 'arr': b[0], 'altn': '', 'text': text or f'{a[0]} {b[0]}', 'procedures': None,
+                      'points': [{'id': a[0], 'lat': a[1], 'lon': a[2]}, {'id': b[0], 'lat': b[1], 'lon': b[2]}]})
+            r.pop('procedures', None)
+            r.pop('distanceNm', None)
+    return docs
+
+
+def _gc_coords(a, b, n):
+    """n points on the great circle between a and b, written as ICAO coordinates to the minute (what « Calculer A → B » would place)."""
+    import math
+    r = math.pi / 180
+    p1, l1, p2, l2 = a[1] * r, a[2] * r, b[1] * r, b[2] * r
+    d = 2 * math.asin(math.sqrt(math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin((l2 - l1) / 2) ** 2))
+    out = []
+    for i in range(1, n + 1):
+        f = i / (n + 1)
+        A, B = math.sin((1 - f) * d) / math.sin(d), math.sin(f * d) / math.sin(d)
+        x = A * math.cos(p1) * math.cos(l1) + B * math.cos(p2) * math.cos(l2)
+        y = A * math.cos(p1) * math.sin(l1) + B * math.cos(p2) * math.sin(l2)
+        z = A * math.sin(p1) + B * math.sin(p2)
+        la, lo = math.atan2(z, math.hypot(x, y)) / r, math.atan2(y, x) / r
+
+        def dm(v):
+            v = abs(v)
+            dd, mm = int(v), round((v - int(v)) * 60)
+            return (dd + 1, 0) if mm == 60 else (dd, mm)
+        (ld, lm), (od, om) = dm(la), dm(lo)
+        out.append(f"{ld:02d}{lm:02d}{'N' if la >= 0 else 'S'}{od:03d}{om:02d}{'E' if lo >= 0 else 'W'}")
+    return out
+
+
+@case('F147', 'A direct leg counts its rhumb-line distance (by compass); more than 2 % above its great circle, a line under the route says « ajoutez des points intermédiaires »',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='Q-0019 (the user, 11 Nov 12 h 25: « Oui, et un avertissement quand un direct au compas dépasse de plus de 2 % le grand cercle (« ajoutez des '
+      'points intermédiaires ») »): rhumbNm / rhumbCourse of frame/lib/geo.js for each direct leg; invented codes at rounded public positions; '
+      'the intermediate points are those a great-circle route would place; captures 390 and 1 280')
+def f147(c):
+    path = 'pilot/ABC/current_flight.json'
+    den, stb, ory = ('XTDN', 39.8617, -104.6731), ('XTSB', 48.5383, 7.6281), ('XTPO', 48.7233, 2.3794)
+    warn = f'{FUEL} [data-rhumb]'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('fuel', docs=_direct_flight(den, stb))
+        to_step(c, 1)
+        d = c.until_doc(path, lambda d: d and abs(((d.get('route') or {}).get('distanceNm') or 0) - 4849) <= 1, f'{w} px: the transatlantic direct, by compass',
+                        timeout=12000)
+        c.until(f"!!document.querySelector('{warn}:not([hidden])')", timeout=8000, what=f'{w} px: the line « ajoutez des points intermédiaires »')
+        line = norm(c.text(warn) or '')
+        c.ok('XTDN → XTSB' in line and '+10' in line and ('4 849' in line or '4,849' in line or '4.849' in line or '4849' in line), line, f'{w} px: the leg, its two distances and the excess')
+        c.js(f"document.querySelector('{warn}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F147_{c.design}_{w}_{c.lang}_delivered.png')
+    # the same route with intermediate points on the great circle: no line, a shorter route
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, ' '.join(['XTDN', *_gc_coords(den, stb, 7), 'XTSB']))
+    c.page.locator(rt).blur()
+    d = c.until_doc(path, lambda d: d and ((d.get('route') or {}).get('distanceNm') or 0) < 4500, 'the route by the intermediate points', timeout=12000)
+    c.ok(4400 <= d['route']['distanceNm'] <= 4450, d['route']['distanceNm'], 'close to the great circle (4 401 NM)')
+    c.until(f"!!document.querySelector('{warn}[hidden]')", timeout=8000, what='no more line with intermediate points')
+    # a short direct: the same number as before (rhumb line and great circle coincide at 0.1 NM)
+    c.open('fuel', docs=_direct_flight(ory, stb))
+    d = c.until_doc(path, lambda d: d and ((d.get('route') or {}).get('distanceNm') or 0) > 0, 'the short direct', timeout=12000)
+    c.eq(d['route']['distanceNm'], 209, 'XTPO DCT XTSB: 209 NM, as by the great circle (208.53 → 208.57)', what='short direct')
+    c.eq(c.js(f"document.querySelector('{warn}')?.hidden"), True, 'no line on a short direct', what='line')

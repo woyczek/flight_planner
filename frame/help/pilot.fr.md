@@ -88,7 +88,7 @@ l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière
 
 <a id="fuel-theme"></a>**Famille et série.** Sous la date, « Famille » et « Série » disent ce que vous allez faire : un vol de fret, de passagers, d'essais, une mission SAR… Facultatives, elles sont remplies par la mission que vous préparez et ne proposent que les familles de votre compagnie (une compagnie commerciale : CAT · Transport aérien commercial). Le compte rendu les reprend et peut les changer : oubliées ici, elles se choisissent là.
 
-<a id="fuel-step-2"></a>**2 Route.** Tapez la route dans le champ « Route » (Entrée la valide),
+<a id="fuel-step-2"></a>**2 Route.** Tapez la route dans le champ « Route » (Entrée la valide), Un tronçon direct se vole au compas : sa distance et son cap sont ceux de la loxodromie, la ligne droite de la carte. Quand un direct au compas dépasse de plus de 2 % le grand cercle (un long trajet en un seul tronçon), une ligne sous la route le dit : ajoutez des points intermédiaires, par exemple avec « Calculer A → B ».
 toujours visible : les points, les voies aériennes et les niveaux, comme dans un plan de vol (« LFBO TOU UN460
 NTS/F280 LFRN »). Vous pouvez aussi y coller un plan de vol OACI ou la liste d'un OFP. Quand vous quittez le champ, la
 route est remise au propre : en majuscules sur une ligne, sans DCT ni groupes vitesse-niveau, le départ et l'arrivée

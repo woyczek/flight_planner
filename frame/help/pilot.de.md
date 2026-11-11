@@ -96,7 +96,7 @@ Höhenwinde werden sofort neu gelesen.
 
 <a id="fuel-theme"></a>**Familie und Serie.** Unter dem Datum sagen „Familie“ und „Serie“, was Sie vorhaben: ein Fracht-, Passagier- oder Erprobungsflug, eine SAR-Mission… Sie sind freiwillig, werden von der vorbereiteten Mission ausgefüllt und bieten nur die Familien Ihrer Gesellschaft an (eine kommerzielle Gesellschaft: CAT · Gewerblicher Luftverkehr). Der Bericht übernimmt sie und kann sie ändern: hier vergessen, dort gewählt.
 
-<a id="fuel-step-2"></a>**2 Route.** Tippen Sie die Route in das stets sichtbare Feld „Route“ (die Eingabetaste bestätigt sie): die Punkte, die
+<a id="fuel-step-2"></a>**2 Route.** Tippen Sie die Route in das stets sichtbare Feld „Route“ (die Eingabetaste bestätigt sie): die Punkte, die Ein Direktabschnitt wird nach Kompass geflogen: Seine Distanz und sein Kurs sind die der Loxodrome, der geraden Linie der Karte. Ist ein Direktabschnitt nach Kompass mehr als 2 % länger als der Großkreis (eine lange Strecke in einem einzigen Abschnitt), sagt es eine Zeile unter der Route: Fügen Sie Zwischenpunkte hinzu, zum Beispiel mit „A → B berechnen“.
 Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“). Sie können dort auch einen
 ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route bereinigt: in
 Großbuchstaben auf einer Zeile, ohne DCT und ohne Geschwindigkeits-Flugflächen-Gruppen, Abflug und Ankunft an den Enden,

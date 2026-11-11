@@ -13,6 +13,9 @@ import {
   tokenize
 } from './route_text.js';
 import {
+  rhumbNm
+} from './geo.js';
+import {
   along,
   corridor
 } from './routing.js';
@@ -281,7 +284,7 @@ export async function routeModel(text, {
   // les tronçons de plus de JUMP_NM entre deux points consécutifs (un homonyme lointain, un nom mal tapé) : dits, jamais corrigés en silence
   const jumps = [];
   for (let i = 1; i < points.length; i++) {
-    const nm = nmOf(points[i - 1], points[i]);
+    const nm = rhumbNm(points[i - 1], points[i]); // la longueur du tronçon au compas, celle du devis (Q-0019)
     if (nm > JUMP_NM) jumps.push({
       a: points[i - 1].id,
       b: points[i].id,

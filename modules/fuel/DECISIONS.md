@@ -1672,3 +1672,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   one wind projected on one course for the whole route is a known defect, to take leg by leg after the acceptance. F145.
 - **11 Nov 2026 — the aircraft first at the step Flight** (SOG-0131 (a), ergonomics pass, the user: « oui »): the block moved, unchanged,
   above the aerodromes (nothing is computed without it). F146; counter-test on origin/v3: the aircraft after the family.
+- **11 Nov 2026 — the quote counts each direct leg by compass** (Q-0019, the user: « Oui, et un avertissement quand un direct au
+  compas dépasse de plus de 2 % le grand cercle (« ajoutez des points intermédiaires ») »): one length of a route leg, `legNm` =
+  `rhumbNm` (frame/lib/flight_time.js), in the quote's distance, the flown path, the plan of the flight, the steps of the profile, the
+  corridor and the jumps of the route reader; the course of the route and of each leg of the plan is `rhumbCourse`; the great circle
+  stays the measure of proximities (an aid within 1.5 NM, an aerodrome near a point, the inner routing of « Auto »). A leg more than 2 %
+  longer than its great circle: one line under the route (never a floating note). LFPO DCT LFST: 209 NM as before; KDEN DCT LFST:
+  4 849 NM instead of 4 401. The wind of the quote stays ONE mean wind on ONE course (the route's rhumb course): a component per leg is
+  a change of the wind model, not done here (after the acceptance). F147.

@@ -6,6 +6,7 @@
 
 import {
   rhumbAt,
+  rhumbNm,
   unwrapLons,
   wrapLon
 } from './geo.js';
@@ -26,6 +27,9 @@ export const gcNm = (a, b) => {
     2) ** 2;
   return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(d)));
 };
+/** Longueur (NM) d'un tronçon de route : sa loxodromie, un direct se vole au compas (SOG-0243 ; l'utilisateur, Q-0019 : « Oui ») ; gcNm
+ *  reste la mesure des proximités (un point près d'un autre). */
+export const legNm = (a, b) => rhumbNm(a, b);
 /** Nombre fini lu strictement (un texte, null ou un booléen ne sont pas des minutes) ; sinon null. */
 export const num = v => typeof v === 'number' && Number.isFinite(v) ? v : null;
 /** Instant (ms) d'une date ISO, ou null. */
@@ -51,9 +55,9 @@ export function legTimes(f, opts = {}) {
   })));
   const q = f?.quote;
   if (pts.length < 2 || !q) return null;
-  // les distances du chemin (flownPath, une seule mesure pour tous) ; sinon le grand cercle point à point
+  // les distances du chemin (flownPath, une seule mesure pour tous) ; sinon la loxodromie point à point (legNm)
   const cum = opts.path && pts.every(p => p.nm != null) ? pts.map(p => p.nm) : [0];
-  for (let i = cum.length; i < pts.length; i++) cum.push(cum[i - 1] + gcNm(pts[i - 1], pts[i]));
+  for (let i = cum.length; i < pts.length; i++) cum.push(cum[i - 1] + legNm(pts[i - 1], pts[i]));
   for (const p of pts) delete p.nm;
   const D = cum.at(-1),
     taxi = num(q.taxiMin) != null && q.taxiMin >= 0 ? q.taxiMin : TAXI_MIN,

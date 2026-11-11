@@ -11,6 +11,7 @@ import {
 } from './geo.js';
 import {
   gcNm,
+  legNm,
   num
 } from './flight_time.js';
 
@@ -351,13 +352,13 @@ export function flownPath(path) {
     out = [];
   for (const p of pts) out.push({
     ...p,
-    nm: out.length ? out.at(-1).nm + gcNm(out.at(-1), p) : 0
+    nm: out.length ? out.at(-1).nm + legNm(out.at(-1), p) : 0
   });
   return out;
 }
 
 // ---------------------------------------------------------------- l'altitude du vol le long du chemin
-/** Distances de la route (grand cercle point à point sur points, par défaut route.points) ramenées sur le chemin volé
+/** Distances de la route (au compas point à point, legNm, sur points, par défaut route.points) ramenées sur le chemin volé
  *  (flownPath) : une fonction nm de la route → nm du chemin. Les points de la route que le chemin garde font les repères ;
  *  entre deux repères, au prorata ; au-delà, décalé du dernier repère. Sans chemin (ou sans repère) : l'identité. */
 export function routeNmToFlown(f, flown, points = f?.route?.points) {
@@ -365,7 +366,7 @@ export function routeNmToFlown(f, flown, points = f?.route?.points) {
     fp = (flown || []).filter(p => coord(p?.lat) !== null && coord(p?.lon) !== null && Number.isFinite(+p.nm));
   if (pts.length < 2 || fp.length < 2) return nm => nm;
   const cum = [0];
-  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + gcNm({
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + legNm({
     lat: +pts[i - 1].lat,
     lon: +pts[i - 1].lon
   }, {
@@ -422,7 +423,7 @@ export function altitudeAt(f, nm, opts = {}) {
     D = num(opts.total) ?? (fl.length ? +fl.at(-1).nm : (() => {
       const pts = (f?.route?.points || []).filter(p => coord(p?.lat) !== null && coord(p?.lon) !== null);
       let s = 0;
-      for (let i = 1; i < pts.length; i++) s += gcNm({
+      for (let i = 1; i < pts.length; i++) s += legNm({
         lat: +pts[i - 1].lat,
         lon: +pts[i - 1].lon
       }, {
@@ -454,7 +455,7 @@ export function routeMidpoint(points) {
     lon: wrapLon(pts[0].lon)
   } : null;
   const cum = [0];
-  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + gcNm(pts[i - 1], pts[i]));
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + legNm(pts[i - 1], pts[i]));
   const half = cum.at(-1) / 2;
   let i = 1;
   while (i < pts.length - 1 && cum[i] < half) i++;
