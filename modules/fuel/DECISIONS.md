@@ -1643,3 +1643,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   again: the route stayed on its old points and distance. Now the reading is applied to today's route when it has the same text,
   departure and arrival, and done again otherwise. F142 (a base slowed to 1.5 s a lookup); counter-test on origin/v3: the points never
   reach the record.
+- **11 Nov 2026 — what is read from Little Navmap stays on the device** (SOG-0210 N2 of Sécurisation, the user's rule « rien
+  d'écrit dans data/ » for it): before the gesture « Lire depuis Little Navmap » is offered, the flight never takes a position from an
+  `lnm` record (the exit / entry of a chosen SID / STAR placed a typed fix with it, then `route.points` went to `pilot/`, synchronised)
+  and the simulator files leave the `lnm` procedures out (names and fixes), said in one line; the reference (the chosen id) stays. The
+  lists said « X-Plane, local » for them (`local: true`): now « Little Navmap, lue sur ce poste ». Exporting them to the pilot's own
+  simulator is a licence decision for the user (Sécurisation carries it to the report), not coded. F143; counter-test on origin/v3: the
+  label, then LNMXA placed in the flight.

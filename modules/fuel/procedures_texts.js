@@ -14,6 +14,10 @@ export const TX = {
   // procédure lue sans nom (identifiant « ….STAR.NONAME.… ») : sa sorte, jamais le mot de l'identifiant
   procUnnamed: ['{k} sans nom', '{k} without a name', '{k} ohne Namen', '{k} sin nombre'],
   procXplane: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
+  // SOG-0210 : une fiche lue dans la base de Little Navmap du poste (en mémoire de la page seulement, jamais écrite ni exportée)
+  procSrcLnm: ['Little Navmap, lue sur ce poste', 'Little Navmap, read on this device', 'Little Navmap, auf diesem Gerät gelesen',
+    'Little Navmap, leída en este equipo'
+  ],
   // SOG-0232 (l'utilisateur, 10 nov. : « oui, ajouter les approches en doute, mais avec un panonceau ») : une approche dont la lecture est
   // douteuse est listée, marquée, sa raison en infobulle ; jamais prise par un choix automatique
   procDoubt: ['à vérifier', 'to check', 'zu prüfen', 'a comprobar'],

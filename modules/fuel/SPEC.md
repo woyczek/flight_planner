@@ -458,7 +458,12 @@ before the start, in step 5 after (F11).
   aerodb's `doubt` codes: unread, name, repeat, zigzag, unresolved, geometry), class `doubt`; it is chosen only by hand — never by a
   proposal of an address nor any automatic choice — and, chosen, it is the flight's (`flight_path.js` `loadProcedures` asks the
   approach with `{ doubt: true }`) (SOG-0232, F139). The approaches charted only in the AIP (`aerodb.chartOnly`, when aerodb has it)
-  are a line « Carte seulement dans l'AIP : ILS LOC RWY 05 · … » under the lists, each its chart. Any other record `status: 'doubt'`, or without a name, is never listed and is counted in « N non lues » with the
+  are a line « Carte seulement dans l'AIP : ILS LOC RWY 05 · … » under the lists, each its chart. **A record read from Little
+  Navmap** on this device (`status: 'lnm'`, aerodb `fetchLnm`, kept in the page's memory only) says « Little Navmap, lue sur ce
+  poste » on its line (never « X-Plane, local »); what is read there stays on the device (SOG-0210 N2, F143): the flight keeps the
+  chosen id only (its reference: aerodrome and name), never a position of its points (`pubProcs` in `knownPoints` and in the ends of
+  « Auto »: a fix only that record places stays a word), and the FMS / PLN files leave it out (`pubFlight`, `pubProcs`), said in one
+  line « Lue(s) de Little Navmap sur ce poste, laissée(s) hors du fichier : SID … ». Any other record `status: 'doubt'`, or without a name, is never listed and is counted in « N non lues » with the
   aerodrome's left-out records (`stats.doubt` of the session's last reading, `coverage().doubt`); a runway only such records name is not
   offered; an aerodrome is « without data » only with no procedure of any kind and no runway (F31, F37). The lists are read again when
   aerodb announces new procedures (a `change` naming the aerodrome); the chosen procedures are read again when it is the flight's

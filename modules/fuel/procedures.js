@@ -204,11 +204,16 @@ export function createProcedures(host) {
    *  n'en dessert qu'une que le nom ne dit pas déjà (« MAN1A · 07 » ; « RNP RWY 02 » la porte) — avec une piste choisie, « OPALE 2E »
    *  seul —, « X-Plane, local » pour le repli du poste, puis ⌛ pour une lecture à la main dont le cycle est passé. ⚠ (conflit) est
    *  ajouté par l'appelant, après ⌛. o : le choix courant du côté. */
+  /** La source d'une fiche du poste dite dans la liste : « Little Navmap, lue sur ce poste » (SOG-0210 ; une fiche lnm est aussi
+   *  local), « X-Plane, local » pour le repli d'X-Plane ; '' pour une lecture officielle. */
+  function srcLabel(rec) {
+    return rec?.status === 'lnm' || rec?.lnm === true ? tt(TX.procSrcLnm) : rec?.status === 'xplane' || rec?.local ? tt(TX.procXplane) : '';
+  }
+
   function procLabel(rec, o) {
     const name = rec.name || nameOfId(rec.id),
       one = o?.rwy || PR.servesAll(rec) ? [] : [...new Set(rec.runways.map(PR.rwNum))];
-    return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', rec.status === 'xplane' || rec.local ? tt(TX
-        .procXplane) : '']
+    return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', srcLabel(rec)]
       .filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
   }
   /** Raisons (textes ×4) pour lesquelles une fiche est en conflit avec le choix courant o du côté ; [] sans conflit. La règle est celle
@@ -422,7 +427,7 @@ export function createProcedures(host) {
       // les finales de leur piste (§ 10.30, quatrième lecture) ; une finale par son libellé court (« ILS 06 »), le nom publié en
       // infobulle ; une transition « via ODILO · ODILO 1A »
       const ac = PR.appChoices(m.lists.APP),
-        xp = r => r.status === 'xplane' || r.local ? ` · ${tt(TX.procXplane)}` : '';
+        xp = r => srcLabel(r) ? ` · ${srcLabel(r)}` : '';
       sel('app', 'app', TX.procApp, ac.list, true, r => PR.labelOf(r, ac.list) + xp(r) + (PR.isDoubt(r) ? ` · ⚑ ${tt(TX.procDoubt)}` : '') + (r
         .outdated ? PROC_OLD : ''));
 

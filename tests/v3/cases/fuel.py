@@ -4147,3 +4147,57 @@ def f142(c):
                    'the points of the reading on the record')
     c.eq([x.get('id') for x in d['route']['points']], ['LFRS', '4600N00100E', 'LFML'], 'the route read, on the record', what='points')
     c.eq((d.get('level') or {}).get('ft'), 25000, 'the other writer\'s level stays', what='level')
+
+
+
+# SOG-0210 N2: an invented SID « read from Little Navmap » at LFRS, its only point LNMXA known to no published base
+_LNM_STUB = """(() => { const rec = { id: 'LFRS.SID.LNM1A.RW03', icao: 'LFRS', kind: 'SID', name: 'LNM1A', runways: ['03'], transition: null,
+    status: 'lnm', lnm: true, local: true, source: { kind: 'lnm', ref: 'little_navmap_test.sqlite' },
+    points: [{ id: 'LNMXA', lat: 47.45, lon: -1.25, seq: 1, phase: 'main' }] };
+  let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { const ps = db.procedures, p1 = db.procedure;
+        db.procedures = async (icao, q) => { const l = await ps.call(db, icao, q); return String(icao).toUpperCase() === 'LFRS' ? [...(l || []), rec] : l };
+        db.procedure = async (id, q) => id === rec.id ? rec : p1.call(db, id, q) } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F143', 'Little Navmap: a procedure read on this device gives no position to the flight and stays out of the FMS / PLN files (said in one line); the list says « Little Navmap, lue sur ce poste »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0210 N2 (Sécurisation, 10/11: « rien d\'écrit dans data/ » for what is read from Little Navmap): the flight keeps the reference only '
+      '(the chosen id), never the position of an lnm point (route.points, synchronised); the exports leave the lnm procedures out and say it; an '
+      'lnm record is no longer labelled « X-Plane, local ». Invented SID LNM1A / point LNMXA')
+def f143(c):
+    c.page.add_init_script(_LNM_STUB)
+    procs = {'dep': {'rwy': '03', 'sid': 'LFRS.SID.LNM1A.RW03'}, 'arr': {}, 'by': 'fuel', 'at': '2026-11-11T08:00:00Z'}
+    open_proc(c, procs=procs)
+    wait_rows(c, 'dep')
+    lnm = tx('modules/fuel/procedures_texts.js', 'procSrcLnm', c.lang)
+    xp = tx('modules/fuel/procedures_texts.js', 'procXplane', c.lang)
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-proc=dep] option')].some(o => o.textContent.includes('LNM1A'))", timeout=10000,
+            what='the Little Navmap SID is listed')
+    lab = c.js(f"[...document.querySelectorAll('{FUEL} [data-proc=dep] option')].find(o => o.textContent.includes('LNM1A')).textContent")
+    c.ok(lnm in lab and xp not in lab, lab, 'the SID read from Little Navmap says so (never « X-Plane, local »)')
+    # the SID's point typed in the route: no position from the lnm record reaches the flight (it stays a word)
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, 'LFRS LNM1A LNMXA NEPIX LFML')
+    c.page.locator(rt).blur()
+    path = 'pilot/ABC/current_flight.json'
+    d = c.until_doc(path, lambda d: d and 'LNMXA' in ((d.get('route') or {}).get('text') or '') and 'NEPIX' in [p.get('id') for p in d['route'].get('points') or []],
+                    'the typed route is read and written', timeout=10000)
+    c.wait(600)
+    d = c.doc(path)
+    ids = [p.get('id') for p in d['route']['points']]
+    c.ok('LNMXA' not in ids and not any(abs((p.get('lat') or 0) - 47.45) < 1e-6 for p in d['route']['points']), ids,
+         'no position of the Little Navmap point in the flight (data/)')
+    c.eq(((d['route'].get('procedures') or {}).get('dep') or {}).get('sid'), 'LFRS.SID.LNM1A.RW03', 'the flight keeps the reference (the chosen id)', what='reference')
+    # the export: the lnm SID left out, said in one line
+    c.tap(f'{FUEL} [data-step="4"]')
+    sel = f'{FUEL} [data-block="fms"] button[data-fms="xp11"]'
+    c.until(f"!document.querySelector('{sel}')?.disabled", timeout=10000, what='the export is offered')
+    with c.page.expect_download(timeout=10000) as di:
+        c.tap(sel)
+    text = Path(di.value.path()).read_bytes().decode('utf-8')
+    c.ok('LNM1A' not in text and 'LNMXA' not in text and 'ADEP LFRS' in text, repr(text[:400]), 'the .fms carries nothing read from Little Navmap')
+    head = tx('modules/fuel/module.js', 'fmsLnmOut', c.lang).split('{l}')[0].strip()[:20]
+    c.until("(h) => (window.__notes || []).some(n => n.includes(h) && n.includes('LNM1A'))", head, timeout=5000, what='one line says the SID was left out')
