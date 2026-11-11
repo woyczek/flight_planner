@@ -281,6 +281,18 @@ export const TX = {
     'Angekreuzt, werden die Quellen unten vom Aufbau gelesen, und eine damit aufgebaute Zone wird in IHREM Datenrepository veröffentlicht; was proprietär ist (X-Plane, EUROCONTROL), wird nur auf diesem Rechner gelesen: nie veröffentlicht, nie exportiert, mit oder ohne Häkchen.',
     'Marcada, la construcción lee las fuentes de abajo, y una zona construida con una de ellas se publica en SU repositorio de datos; lo que es propietario (X-Plane, EUROCONTROL) se lee solo en este puesto: nunca publicado ni exportado, con o sin marca.'
   ],
+  // sans lanceur à jour sur ce poste (ou sur un appareil appairé) : la coche ne vaut que pour la mise à jour ; « Lire depuis Little Navmap » lit la certification du lanceur (SOG-0238)
+  tickOnStation: [
+    'Ici la coche ne sert qu’à la mise à jour : pour lire les procédures depuis Little Navmap, la certification se fait sur le poste qui porte le lanceur.',
+    'Here the box only serves the update: for reading the procedures from Little Navmap, the certification is made on the workstation that carries the launcher.',
+    'Hier dient das Häkchen nur der Aktualisierung: für das Lesen der Verfahren aus Little Navmap erfolgt die Bestätigung auf dem Rechner mit dem Starter.',
+    'Aquí la casilla solo sirve para la actualización: para leer los procedimientos desde Little Navmap, la certificación se hace en el puesto que lleva el lanzador.'
+  ],
+  // le lanceur n'a pas pu enregistrer la coche : elle revient comme elle était (SOG-0238)
+  tickRefused: ['Le lanceur n’a pas enregistré la coche : elle reste comme avant.',
+    'The launcher did not record the tick: it stays as it was.',
+    'Der Starter hat das Häkchen nicht gespeichert: es bleibt wie zuvor.', 'El lanzador no registró la casilla: queda como estaba.'
+  ],
   licencesLink: ['Sources et licences', 'Sources and licences', 'Quellen und Lizenzen', 'Fuentes y licencias'],
   personalName: {
     airnav: ['AirNav Ireland (AIP Irlande)', 'AirNav Ireland (Ireland AIP)', 'AirNav Ireland (AIP Irland)',

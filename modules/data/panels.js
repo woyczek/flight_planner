@@ -672,6 +672,7 @@ function choiceHtml(set, busy) {
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>
       <label class="d-opt"><input type="checkbox" data-certify${S.certified ? ' checked' : ''}${busy ? ' disabled' : ''}><span><b>${esc(tt(TX.certify))}</b></span></label>
       <p class="f-muted">${esc(tt(TX.certifyHint))} <a href="#sources" data-licences-link>${esc(tt(TX.licencesLink))}</a></p>
+      ${S.tickLauncher ? '' : `<p class="f-muted" data-tick-station>${esc(tt(TX.tickOnStation))}</p>`}
       <ul class="d-pers-list" data-personal-list>${pers.map(p => `<li data-personal-row="${p.id}"><b>${esc(personalName(p.id))}</b> <span class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</span></li>`).join('')}</ul>
       ${S.certified ? `<p class="f-ok" data-personal-kept>${esc(tt(TX.personalKept))}</p>` : ''}</div>` : ''}</div>`;
   }

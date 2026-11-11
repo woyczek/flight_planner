@@ -632,17 +632,17 @@ def _zs(state, done=0, total=0, **extra):
     return {'state': state, 'done': done, 'total': total, **extra}
 
 
-def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None):
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None):
     """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
     after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
     POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
     (409) leaves in place; `sync`: what GET sync-status answers (`{'changes', 'ahead', 'merging', 'last'}`, or `(status, body)`).  The dict it returns records
     `posts`, `cancels` and `syncs` (the reads of sync-status) and can be changed between steps.  `verbs`: what GET regen/verbs answers: None = an old launcher
     (200 with no list), a list = `{ verbs: [...] }`, an int = that status (404...); `st['verbs_calls']` counts the reads.  `inventory`: what GET data/inventory answers (a body, or `(status, body)`; None = an old
-    launcher, 404); `st['inventory_calls']` counts the reads."""
+    launcher, 404); `st['inventory_calls']` counts the reads.  `personal`: the file of the launcher that holds the personal-use tick (`{'certified', 'at'}`; None = an older launcher, 404); `st['personal_posts']` records the bodies posted, `st['personal_refuse']` makes the next POST fail (500)."""
     st = {'status': None, 'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
           'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
-          'inventory': inventory, 'inventory_calls': 0}
+          'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0}
 
     def handler(route):
         req = route.request
@@ -657,6 +657,22 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 code, body = body
             else:
                 body = {'repo': True, 'branch': 'main', 'behind': 0, **body}
+        elif u.path.endswith('/__setup/personal'):
+            if st['personal'] is None:
+                code = 404
+            elif req.method == 'POST':
+                b = json.loads(req.post_data or '{}')
+                st['personal_posts'].append(b)
+                if st['personal_refuse']:
+                    code, body = 500, {'ok': False}
+                elif b.get('migrated') and st['personal'].get('at'):
+                    code, body = 409, {'ok': False, 'reason': 'exists'}
+                else:
+                    st['personal'] = {'certified': b.get('certified') is True, 'at': '2026-11-11T10:00:00Z'}
+                    body = {'ok': True, **st['personal']}
+            else:
+                st['personal_gets'] += 1
+                body = st['personal']
         elif u.path.endswith('/__setup/data/inventory'):
             st['inventory_calls'] += 1
             if st['inventory'] is None:
@@ -3808,6 +3824,62 @@ def l32(c):
     c.settle()
     _untick(c, 'ca', 'es', 'us')
     c.eq(box(), True, 'an old document with one source ticked: the one box is ticked (migration)', what='migrated')
+    c.check_errors()
+
+
+@case('L82', 'Données: the personal-use box is held by the launcher (SOG-0238): the opening shows ITS file, the click posts the strict body, the cache of the page migrates once, a refusal puts the box back; an older launcher keeps the page’s own setting', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='AeroDB K147 / K173 (SOG-0238, 3dcc5e780): GET /__setup/personal → { certified, at } at the opening; POST { certified } at each click (nothing else); once POST { certified: true, migrated: true } when the launcher has no file and the page cache is ticked (409 exists: no retry); the route is declared by the module')
+def l82(c):
+    lang = c.lang
+    box = lambda: c.js("document.querySelector('[data-certify]').checked")
+    cfg, _ = _fixture()
+    # ---- the launcher's file wins over the cache of the page: it says ticked, the cache has nothing
+    st = _launcher(c, [], personal={'certified': True, 'at': '2026-11-10T09:00:00Z'})
+    _open(c, cfg)
+    c.eq([box(), st['personal_gets'] >= 1, st['personal_posts'], c.count('[data-tick-station]')], [True, True, [], 0], 'the box shows the file of the launcher, not the cache of the page; nothing is posted at the opening; no « on the workstation » line', what='launcher wins')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")   # the notes of the repeated reloads of this case are not the delivered state
+        c.js("document.querySelector('[data-personal-box]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L82_launcher_{c.width}_{lang}_delivered.png')   # the box held by the launcher
+    # ---- a click posts the strict body, the launcher answers, the cache follows
+    c.tap('[data-certify]')
+    c.until_doc('cache/data/personal.json', lambda d: bool(d) and d.get('certified') is False, what='the cache follows the launcher')
+    c.eq([st['personal_posts'], box()], [[{'certified': False}], False], 'the click posts { certified: false } and nothing else; the box follows the answer', what='click post')
+    # ---- a refusal of the launcher: the box comes back as it was, said
+    st['personal_refuse'] = True
+    c.tap('[data-certify]')
+    c.until("!document.querySelector('[data-certify]').checked && !!document.querySelector('#fNotes .f-note')", timeout=6000, what='the box comes back')
+    c.eq([box(), len(_notes_with(c, tx('modules/data/texts.js', 'tickRefused', lang)))], [False, 1], 'a refused write puts the box back and says it', what='refused')
+    c.eq(st['personal_posts'][-1], {'certified': True}, 'what was posted is still the strict body', what='refused body')
+    # ---- the migration: no file at the launcher, the page cache ticked → one POST with migrated, then the launcher's file holds
+    # the cache says ticked, the launcher has no file: the page declares it once
+    c.page.evaluate("""() => new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const tx = r.result.transaction('docs', 'readwrite'); tx.objectStore('docs').put({ path: 'cache/data/personal.json', text: JSON.stringify({ certified: true, sources: [], updated_at: '2026-11-01T10:00:00Z' }), base: '', rev: '', at: Date.now(), policy: 'cache' }); tx.oncomplete = () => { r.result.close(); res() }; tx.onerror = () => rej(tx.error) }; r.onerror = () => rej(r.error) })""")
+    st['personal'] = {'certified': False, 'at': None}
+    st['personal_posts'].clear()
+    st['personal_refuse'] = False
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen after the cache seed')
+    c.settle()
+    c.until("document.querySelector('[data-certify]') && document.querySelector('[data-certify]').checked", timeout=8000, what='the box ticked by the migration')
+    c.eq(st['personal_posts'], [{'certified': True, 'migrated': True}], 'once: { certified: true, migrated: true }, the only second body the launcher admits', what='migration')
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen once more')
+    c.settle()
+    c.eq([box(), len(st['personal_posts'])], [True, 1], 'at the next opening the launcher has its file: no second migration', what='no retry')
+    # ---- an older launcher (404): the page’s own setting, as before, nothing posted
+    st['personal'] = None
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen with an older launcher')
+    c.settle()
+    c.tap('[data-certify]')
+    c.until_doc('cache/data/personal.json', lambda d: bool(d) and d.get('certified') is False, what='the page keeps its own tick')
+    c.eq(st['personal_posts'][1:], [], 'an older launcher: no POST (the migration’s one is the only one so far)', what='old launcher')
+    c.eq(norm(c.text('[data-tick-station]')), norm(tx('modules/data/texts.js', 'tickOnStation', lang)), 'without the launcher’s route the screen says the certification for Little Navmap is made on the workstation', what='station line')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")   # the notes of the repeated reloads of this case are not the delivered state
+        c.js("document.querySelector('[data-personal-box]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L82_station_{c.width}_{lang}_delivered.png')   # the box of the page, with the line on the workstation
     c.check_errors()
 
 

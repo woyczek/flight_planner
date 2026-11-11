@@ -22,6 +22,7 @@ import {
   lang,
   li,
   PERSONAL,
+  PERSONAL_ROUTE,
   ROUTE_MEM,
   S,
   tt,
@@ -246,6 +247,8 @@ export async function load(fresh = false) {
   if (!S.personalRead) {
     S.personalRead = true;
     S.certified = M.keptPersonal(kept); // la coche unique (SOG-0162), migrée des anciennes cases par source
+    await readLauncherTick(me);
+    if (S !== me) return;
   }
   if (S.outlines === false) S.outlines = null; // un échec de lecture des contours : la lecture suivante réessaie
   const list = Array.isArray(zones) ? zones : null,
@@ -366,6 +369,27 @@ function addZoneHtml() {
   if (!rest.length) return '';
   return `<p><label>${esc(tt(TX.addZone))} <select data-add-zone${frozen() ? ' disabled' : ''}><option value="">${esc(tt(TX.addZonePick))}</option>
     ${rest.map(z => `<option value="${esc(z.id)}">${esc(M.zoneName(zones, z.id, li()))}</option>`).join('')}</select></label></p>`;
+}
+/** À l'ouverture, avec un lanceur sur ce poste : la coche reflète SON fichier (GET personal : { certified, at }), pas le cache de la page. Une seule fois, si le lanceur n'a pas de fichier
+ *  (certified:false sans `at`) et que le cache de la page est déjà coché : POST { certified: true, migrated: true } (409 'exists' : on ne réessaie pas). Sans lanceur, d'un lanceur plus ancien
+ *  (404) ou d'un appareil appairé (403) : la réponse n'a pas de `certified` booléen, la coche reste celle du cache (S.tickLauncher faux). */
+async function readLauncherTick(me) {
+  S.tickLauncher = false;
+  const cached = S.certified === true,
+    r = await S.ctx.launcher?.call?.(PERSONAL_ROUTE).catch(() => null);
+  if (S !== me || !r || r.ok === false || typeof r.certified !== 'boolean') return;
+  S.tickLauncher = true;
+  S.certified = r.certified;
+  if (!r.certified && !r.at && cached) {
+    const m = await S.ctx.launcher.call(PERSONAL_ROUTE, {
+      certified: true,
+      migrated: true
+    }).catch(() => null);
+    if (S !== me) return;
+    if (m && m.ok !== false && m.certified === true) S.certified = true;
+    else return; // la migration a échoué : le cache de la page garde sa coche (rien n'est écrasé), la prochaine ouverture réessaie
+  }
+  if (S.certified !== cached) savePersonal(); // le cache de la page suit le fichier du lanceur
 }
 /** Mémorise la coche « je certifie utiliser les données pour mon usage personnel » (cache/data/personal.json, ce poste) : écrite à chaque changement, pour que la prochaine ouverture la retrouve cochée et que « Construire » envoie les
  *  sources à usage personnel sans qu'on y pense (SOG-0079, SOG-0162). `sources` est gardé (les sources que la coche débloquait) pour qu'un poste plus ancien relise la même chose. */

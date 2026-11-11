@@ -13,6 +13,7 @@ import {
   esc,
   frozen,
   JOURNAL,
+  PERSONAL_ROUTE,
   S,
   setState,
   tt
@@ -104,7 +105,7 @@ export const meta = {
   launcher: {
     // regen/job couvre aussi son annulation regen/job/cancel (cadre, f70eba426) ; sync-status : l'état de data/ avant la
     // question de « Publier » (GET, jamais de POST /__setup/sync : la publication passe par ctx.data.sync)
-    routes: ['regen/job', 'regen/verbs', 'sync-status', 'data/inventory', 'base/upload'],
+    routes: ['regen/job', 'regen/verbs', 'sync-status', 'data/inventory', 'base/upload', 'personal'],
     read: []
   },
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
@@ -220,6 +221,29 @@ function onPackDown(e) {
   const r = packRow(e);
   highlightZones(r ? r.dataset.zones.split(',').filter(Boolean) : []);
 }
+/** Le clic sur la coche « usage personnel » : le lanceur la tient (POST personal { certified }, SOG-0238) et c'est SA réponse qui fait foi ; sans lui (ou un lanceur plus ancien, un appareil
+ *  appairé), la coche reste le réglage de cette page (cache/data/personal.json). Un refus du lanceur : la coche revient comme elle était, dite. */
+async function setCertified(want) {
+  const me = S,
+    before = S.certified;
+  S.certified = want;
+  if (S.tickLauncher) {
+    const r = await S.ctx.launcher.call(PERSONAL_ROUTE, {
+      certified: want
+    }).catch(() => null);
+    if (S !== me) return;
+    if (!r || r.ok === false || typeof r.certified !== 'boolean') {
+      S.certified = before;
+      S.ctx.notify(tt(TX.tickRefused), 'warn');
+      return renderBuild();
+    }
+    S.certified = r.certified;
+  }
+  savePersonal();
+  if (S.d?.cov?.ids) refreshStatus(S.d.cov
+    .ids); // l'état par zone dépend de la coche (les sources personnelles comptent dans « fichiers changés ») : relu
+  return renderBuild();
+}
 /** Une case des panneaux (zone, source sous licence personnelle, État des procédures) change : le choix est retenu, le panneau redessiné
  *  (les sources proposées suivent les zones cochées). */
 function onChange(e) {
@@ -236,13 +260,8 @@ function onChange(e) {
     return f ? startUpload(S.uploadZone, f) : undefined;
   }
   if (!(t instanceof HTMLInputElement) || frozen()) return;
-  if (t.dataset.certify !== undefined) { // la coche unique « usage personnel » (SOG-0162) : un réglage du poste, retenu
-    S.certified = t.checked;
-    savePersonal();
-    if (S.d?.cov?.ids) refreshStatus(S.d.cov
-      .ids); // l'état par zone dépend de la coche (les sources personnelles comptent dans « fichiers changés ») : relu
-    return renderBuild();
-  }
+  if (t.dataset.certify !== undefined) return setCertified(t
+    .checked); // la coche unique « usage personnel » (SOG-0162) : un réglage du poste, retenu
   const set = t.dataset.buildZone ? S.ticked : t.dataset.item ? S.picked : null,
     id = t.dataset.buildZone || t.dataset.item;
   if (!set) return;

@@ -9,6 +9,8 @@ import {
 } from './texts.js';
 
 export const COVERAGE = 'cache/data/coverage.json'; // { zones: [id], updated_at } : la couverture de ce poste (SPEC § 3.2)
+export const PERSONAL_ROUTE =
+  'personal'; // le lanceur tient la coche « usage personnel » (data/local/personal_use.json, SOG-0238) : GET { certified, at }, POST { certified } à chaque clic
 export const PERSONAL = 'cache/data/personal.json'; // { sources: [id], updated_at } : sources personnelles cochées, mémorisées (SOG-0079)
 export const ROUTE_MEM =
   'cache/data/route.json'; // { rad: [dates], fra: [dates], at, commit } : les cycles RAD et points FRA importés sur ce poste (SOG-0125)
