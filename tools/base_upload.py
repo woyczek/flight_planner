@@ -78,11 +78,20 @@ def _directory(path):
         at = size - back + i                      # la place de l'enregistrement de fin dans le fichier
         if at >= 20 + 56:
             f.seek(at - 20)
-            if f.read(4) == b'PK\x06\x07':          # un localisateur zip64 le précède : le vrai nombre et la vraie taille sont dans l'enregistrement zip64, juste avant lui
-                f.seek(at - 20 - 56)
-                rec = f.read(56)
-                if len(rec) == 56 and rec[:4] == b'PK\x06\x06':
-                    count, cd = struct.unpack('<QQ', rec[32:48])
+            loc = f.read(20)
+            if loc[:4] == b'PK\x06\x07':          # un localisateur zip64 le précède : le vrai nombre et la vraie taille sont dans l'enregistrement zip64 qu'il désigne (zipfile le suit : des « données étendues » peuvent s'intercaler avant lui)
+                reloff = struct.unpack('<Q', loc[8:16])[0] if len(loc) == 20 else -1
+                found = None
+                for pos in {reloff, at - 20 - 56}:       # le décalage du localisateur ET la place fixe (juste avant lui) : selon la version de Python, zipfile suit l'un ou l'autre ; on retient le plus grand des deux
+                    if 0 <= pos <= at - 20 - 56:
+                        f.seek(pos)
+                        rec = f.read(56)
+                        if len(rec) == 56 and rec[:4] == b'PK\x06\x06':
+                            got = struct.unpack('<QQ', rec[32:48])
+                            found = got if not found else (max(found[0], got[0]), max(found[1], got[1]))
+                if not found:
+                    return MAX_MEMBERS + 1, CD_MAX + 1      # un zip64 dont l'enregistrement ne se trouve nulle part : refusé sans l'ouvrir
+                count, cd = found
         return count, cd
 
 
