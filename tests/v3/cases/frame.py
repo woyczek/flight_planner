@@ -2280,8 +2280,13 @@ def a62(c):
     c.eq(got.get('offline'), True, '« offline » when the browser says so', what='offline')
     # one note per key
     c.js("() => { window.__ctx.notify('SOG note x', 'warn'); window.__ctx.notify('SOG note x', 'warn'); window.__ctx.notify('SOG note y', 'warn') }")
-    c.eq(c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).filter(t => t.includes('SOG note')).length"), 2,
-         'the same note replaces the one shown; another note stays', what='notes')
+    shown = "[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).filter(t => t.includes('SOG note'))"
+    if c.phone:     # one floating note at a time on a phone (SOG-0131): the same note replaced the one shown, the other waits its turn
+        c.eq(len(c.js(shown)), 1, 'the same note replaces the one shown; another note waits (one at a time on a phone)', what='notes')
+        c.js("() => document.querySelector('#fNotes .f-note [data-x]').click()")
+        c.eq(len(c.js(shown)), 1, 'it appears when the first is closed', what='second note')
+    else:
+        c.eq(len(c.js(shown)), 2, 'the same note replaces the one shown; another note stays', what='notes')
 
 
 
@@ -2373,7 +2378,7 @@ def a65(c):
     c.wait(400)
     c.eq(c.js(note), 0, 'within 5 minutes of the last one: not offered again', what='soon after')
     c.js("() => { const real = Date.now.bind(Date); Date.now = () => real() + 6 * 60e3; location.hash = '#flightlog' }")
-    c.until(f"{note} === 1", timeout=5000, what='the note offered again at a module change, after 5 minutes')
+    c.until(f"{note} === 1", timeout=20000 if c.phone else 5000, what='the note offered again at a module change, after 5 minutes')    # on a phone it waits for the shown note to leave (SOG-0131)
     # the Status block keeps a line until the reload; the page was never reloaded by itself
     c.js("() => { location.hash = '#settings' }")
     c.until("!!document.querySelector('[data-card=\"status\"] [data-k=\"update\"]')", timeout=10000, what='the Status line')
@@ -6283,4 +6288,57 @@ def a148(c):
                 break
             c.wait(250)
         c.eq([sorted(got or {}), (got or {}).get('Q-0002', {}).get('text')], [['Q-0001', 'Q-0002'], 'oui'], 'answers kept (even with « unsent » empty in the store) leave at the next opening', what='at opening')
+    c.check_errors()
+
+
+@case('A149', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')
+def a149(c):
+    c.open('fuel', wait=False)
+    c.until('!!window.SogFrame', timeout=15000, what='the frame')
+    c.wait(1500)
+    c.js("() => document.querySelectorAll('.f-note [data-x]').forEach(b => b.click())")
+    texts = "() => [...document.querySelectorAll('#fNotes .f-note span')].map(s => s.textContent)"
+    close = "() => document.querySelector('#fNotes .f-note [data-x]')?.click()"
+    c.js("() => { const n = window.SogFrame.notify; n('one', 'info', { key: 'k1' }); n('two', 'ok', { key: 'k2' }); n('three', 'warn', { key: 'k3' }) }")
+    if c.phone:
+        c.eq(c.js(texts), ['one'], 'at 390 px: one note, the others wait', what='one at a time')
+        c.shot(f'A149_note_{c.width}_delivered.png')
+        c.js(close)
+        c.eq(c.js(texts), ['two'], 'the next appears when the shown one is closed', what='next')
+        c.js("() => window.SogFrame.notify('boom', 'err', { key: 'e1' })")
+        c.eq(c.js(texts), ['boom'], 'an error goes in front of an information', what='error first')
+        c.js("() => window.SogFrame.notify('three again', 'warn', { key: 'k3' })")
+        c.js(close)
+        c.eq(c.js(texts), ['two'], 'the information the error hid comes back first', what='comes back')
+        c.js(close)
+        c.eq(c.js(texts), ['three again'], 'a note of the same key replaced its queued one (not twice)', what='replaced')
+        c.js(close)
+        c.eq(c.js(texts), [], 'nothing left, nothing stuck', what='empty')
+    else:
+        c.eq(c.js(texts), ['one', 'two', 'three'], 'above 760 px the notes stack as before', what='stacked')
+    c.check_errors()
+
+
+@case('A150', 'The « First time? Start with a short tutorial » card appears ONCE, on the first screen opened, then only in the help (SOG-0131)', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0131 (the user, answering the questionnaire: « oui, UNE seule fois »): the welcome card of Pilot (frame/help/help.js) is put on the first screen opened and never again on the next ones nor after a reload (it was shown on every module until it was closed or a tutorial opened); the tutorials stay at the top of the help')
+def a150(c):
+    c.open('flightlog', flights=2, wait=False)
+    c.until("!!document.querySelector('[data-module=flightlog]')", timeout=20000, what='the first screen')
+    c.until("!!document.querySelector('[data-welcome]')", timeout=15000, what='the welcome card on the first screen')
+    c.wait(800)                     # the « seen » mark is written
+    c.go('settings')
+    c.go('fuel')
+    c.wait(1500)
+    c.eq(c.count('[data-welcome]'), 0, 'the next screens do not show it again', what='second screen')
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=fuel]')", timeout=20000, what='the screen after a reload')
+    c.wait(1500)
+    c.eq(c.count('[data-welcome]'), 0, 'nor after a reload', what='after reload')
+    # the tutorials stay in the help
+    c.go('help')
+    c.until("!!document.querySelector('[data-screen=help], #fView .f-doc')", timeout=15000, what='the help')
+    c.ok(c.count('#fView a[href*="t="]') >= 1 or 'tutorial' in c.js("document.getElementById('fView').innerHTML.toLowerCase()") or 'tutoriel' in c.js("document.getElementById('fView').innerHTML.toLowerCase()"), '', 'the tutorials are still reachable in the help')
     c.check_errors()

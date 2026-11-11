@@ -379,12 +379,9 @@ window.__t = (() => {
     return { x: r.left, y: r.top, w: r.width, h: r.height, l: r.left, t: r.top, r: r.right, b: r.bottom,
              display: cs.display, shown: shown(e), text: (e.textContent || '').trim().slice(0, 200) };
   };
-  // every floating notification ever added (text), whatever its lifetime: window.__notes
+  // every floating notification ever asked (text), whatever its lifetime and whether it waited its turn (one at a time on a phone, SOG-0131): window.__notes, from the frame's event
   window.__notes = [];
-  const watch = () => new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes)
-    if (n.nodeType === 1 && n.classList.contains('f-note')) window.__notes.push((n.textContent || '').replace(/✕$/, '').trim()) })
-    .observe(document, { childList: true, subtree: true });
-  watch();
+  window.addEventListener('frame-note', e => window.__notes.push(((e.detail.text || '') + (e.detail.label || '')).trim()));
   return { q, qa, shown, box };
 })();
 """

@@ -837,21 +837,70 @@
     }
     return later;
   })();
+  const NOTE_QUEUE_MAX = 8,
+    noteQueue = []; // les notes qui attendent leur tour sur un téléphone (SOG-0131)
   /** Notification flottante : effacée seule (6 s, erreur 12 s) ou par sa croix. kind : info, ok, warn, err. o.action
    *  { label, run } : un bouton d'action, et la notification reste jusqu'au clic. */
   function notify(text, kind = 'info', o = {}) {
-    // une note par clé (par défaut : sa sorte et son texte) : la même note remplace celle qui est affichée au lieu de s'empiler
+    // une note par clé (par défaut : sa sorte et son texte) : la même note remplace celle qui est affichée (ou celle qui attend) au lieu de s'empiler
     const key = o.key || `${kind}|${text}`;
     for (const old of $('fNotes').querySelectorAll('.f-note'))
       if (old.dataset.key === key) old.remove();
+    const q = noteQueue.findIndex(x => x.key === key);
+    if (q >= 0) noteQueue.splice(q, 1);
+    const note = {
+      text,
+      kind,
+      key,
+      o
+    };
+    // chaque notification est annoncée à son appel, qu'elle soit affichée tout de suite ou attende son tour (un téléphone n'en montre qu'une) : le journal des essais (tests/v3/lib.py) s'en sert
+    window.dispatchEvent(new CustomEvent('frame-note', {
+      detail: {
+        text,
+        kind,
+        key,
+        label: o.action?.label || ''
+      }
+    }));
+    // SOG-0131 : sur un téléphone, UNE seule note flottante à la fois (deux notes empilées couvraient un tiers de l'écran à 390 px) : la suivante attend que la précédente parte
+    // ou soit fermée ; une erreur passe devant une information (celle-ci reprend sa place en tête de la file) ; sur un écran, elles s'empilent comme avant
+    const shown = $('fNotes').querySelector('.f-note');
+    if (matchMedia('(max-width: 760px)').matches && shown) {
+      if (kind === 'err' && shown.dataset.kind !== 'err') {
+        noteQueue.unshift(shown._note);
+        shown.remove();
+      } else {
+        noteQueue.push(note);
+        if (noteQueue.length > NOTE_QUEUE_MAX) noteQueue.shift();
+        return;
+      }
+    }
+    showNote(note);
+  }
+  /** La note suivante de la file, quand plus aucune n'est affichée. */
+  function nextNote() {
+    if (!$('fNotes').querySelector('.f-note') && noteQueue.length) showNote(noteQueue.shift());
+  }
+  /** Pose une note : effacée seule (6 s, erreur 12 s) ou par sa croix ; action : un bouton, la note reste jusqu'au clic. */
+  function showNote(note) {
+    const {
+      text,
+      kind,
+      key,
+      o
+    } = note;
     const n = document.createElement('div');
     n.className = 'f-note';
     n.dataset.kind = kind;
     n.dataset.key = key;
+    n._note = note;
     n.innerHTML = `<span>${esc(text)}</span>${o.action ? `<button type="button" data-act>${esc(o.action.label)}</button>` : ''}<button type="button" data-x aria-label="${esc(t(T.close))}">✕</button>`;
     const drop = () => {
+      if (!n.isConnected) return; // déjà partie (une erreur l'a devancée, ou la même note l'a remplacée)
       n.remove();
       notesClear();
+      nextNote();
     };
     n.querySelector('[data-x]').onclick = drop;
     if (o.action) n.querySelector('[data-act]').onclick = () => {
@@ -2900,7 +2949,8 @@
       if (meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && (view.querySelector(
         ':scope > [data-welcome]') || el).after(p)).catch(e => console.warn('help', e));
       // carte d'accueil des tutoriels : celle de Pilote, pas d'une autre application (APP.welcome: false)
-      if (APP.welcome !== false) SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && el.after(w)).catch(e => console.warn(
+      if (APP.welcome !== false) SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && (el.after(w), SogHelp.seen?.(
+        helpCtx()))).catch(e => console.warn(
         'help', e));
     }).catch(e => console.warn('help', e));
   }

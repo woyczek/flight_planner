@@ -225,7 +225,11 @@ def open_group(c, path):
 
 def clear_notes(c):
     """Closes the notifications (on a phone they lie over the buttons until they fade)."""
-    c.js("document.querySelectorAll('#fNotes .f-note [data-x]').forEach(b => b.click())")
+    for _ in range(12):     # one note at a time on a phone (SOG-0131): closing the shown one shows the next, until the queue is empty
+        c.js("document.querySelectorAll('#fNotes .f-note [data-x]').forEach(b => b.click())")
+        if not c.js("!!document.querySelector('#fNotes .f-note')"):
+            break
+        c.wait(100)
     c.until("!document.querySelector('#fNotes .f-note')", what='the notifications are closed')
 
 

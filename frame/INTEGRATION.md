@@ -341,7 +341,7 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
   `frame/lib/test/wind.html` (F62).
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
-- `ctx.notify(text, kind)`, `ctx.ask(text, { ok, cancel, sections, note })` (titled groups of lines, SPEC § ctx), `ctx.askText(text, { value })`: the frame's notifications and question
+- `ctx.notify(text, kind)` (on a phone, up to 760 px, **one note at a time**: the others wait, an `err` goes in front of an information; SOG-0131; every call is announced by the window event `frame-note`), `ctx.ask(text, { ok, cancel, sections, note })` (titled groups of lines, SPEC § ctx), `ctx.askText(text, { value })`: the frame's notifications and question
   windows.
 - The header's application name is the frame's (a button that switches application, SPEC § 3.1): a module never writes
   into `#fApp`, `#fAppIco` or `#fName`; on a phone its `meta.title` takes the name's place by itself (rule 16). The notes rise above your sticky result bar by themselves when it has the class `.f-bar` and sits in the

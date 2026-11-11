@@ -278,7 +278,18 @@
     }));
     return items.join('');
   }
-  /** Carte d'accueil de la première ouverture : les tutoriels ; null une fois vue (fermée, ou un tutoriel ouvert). */
+  /** La carte d'accueil vient d'être posée sur un écran : elle ne reviendra pas sur les suivants (SOG-0131, « UNE seule fois, sur le premier écran ouvert, puis dans l'aide ») ; la carte
+   *  posée reste sous les yeux jusqu'à ce que l'écran change. */
+  async function seen(c) {
+    const s = (await c.own.get('device/help.json').catch(() => null)) || {};
+    if (s.welcomed) return;
+    await c.own.put('device/help.json', {
+      ...s,
+      welcomed: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).catch(() => {});
+  }
+  /** Carte d'accueil de la première ouverture : les tutoriels ; null une fois vue (posée une fois, fermée, ou un tutoriel ouvert). */
   async function welcome(c) {
     const s = (await c.own.get('device/help.json').catch(() => null)) || {};
     if (s.welcomed) return null;
@@ -428,6 +439,7 @@
     files,
     screen,
     welcome,
+    seen,
     split,
     howTo,
     T
