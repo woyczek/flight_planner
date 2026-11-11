@@ -1963,6 +1963,21 @@
    ],
    "since": "2026-11-11",
    "state": "todo"
+  },
+  {
+   "id": "Q-0018",
+   "fiche": "SOG-0240",
+   "app": "maintenance",
+   "question": "Sources de points et de voies : sous quel régime lire les AIP étrangers au format eAIP (Hongrie, Portugal, Géorgie, Islande, Finlande d'abord ; jusqu'à 23 États) ?",
+   "context": "Relevé d'AeroDB sur 46 zones : aucun de ces AIP n'a de licence de réutilisation ; presque tous demandent la permission de l'éditeur pour copier ou convertir (la Finlande seule l'autorise sans frais). La Suède (LFV) est déjà lue sous la case d'usage personnel et publiée dans ton dépôt. En attendant ta réponse : poste seulement.",
+   "options": [
+    "Comme la Suède : sous la case d'usage personnel, publiés dans mon dépôt",
+    "Sur ce poste seulement : jamais publiés (data/local)",
+    "D'abord demander les licences aux éditeurs"
+   ],
+   "since": "2026-11-11",
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }
