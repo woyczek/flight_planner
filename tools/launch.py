@@ -1643,6 +1643,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _post_base_upload(self, path, body):
         # SOG-0199 : un fichier CHOISI par l'utilisateur (sélecteur du système), ses octets en corps, reconnu par son contenu et posé dans data/local/upload/ (tools/base_upload.py) ;
         # ce poste seulement ; le corps n'est lu qu'ici, en flux, après les refus qui n'en ont pas besoin
+        if self._lan():       # la porte de la route le refuse déjà ; le gestionnaire le répète, comme les autres (N3 de la relecture de sécurité)
+            self.close_connection = True
+            return self._json({'error': 'refusé'}, 403)
         try:
             size = int(self.headers.get('Content-Length') or 0)
         except ValueError:

@@ -7670,3 +7670,77 @@ def k167(c):
         r = fn(RJ.Job('proc', 'lnm', {}), check({'icao': 'KDEN', 'personal': True}), {'lnm_folder': lambda: str(folder)})
         c.eq((r.get('ok'), r.get('reason'), r.get('count')), (True, None, 1), 'a base in a folder whose name holds `%41`, a space and `#`: read as it is (the path is quoted, `%` first), the one approach found', what='percent')
         c.eq(sorted(x.name for x in folder.iterdir()), before, 'still read-only: nothing created beside the base', what='read only')
+
+
+@case('K168', 'The upload reads the number of entries of a zip BEFORE building its directory (ZipFile loads the whole directory first), and the handler repeats the local-network refusal like the other verbs (N3 of the security review)', 'K', static=True,
+      rule='Security review of 10 Nov 2026, N3 (audit line 159): `recognise()` built `zipfile.ZipFile(path)` (which reads the whole central directory into memory) and only then tested MAX_MEMBERS; a 1.5 GB zip of tiny entries could cost gigabytes before the refusal. The end-of-directory record (the last bytes of the file, zip64 included) gives the count and the size of the directory: over MAX_MEMBERS or CD_MAX, `unrecognised` is answered without `ZipFile`. And `_post_base_upload` repeated no `_lan()` refusal while the others do (the route gate refuses it, the handler must too)')
+def k168(c):
+    import importlib
+    import io
+    import os
+    import sys
+    import tempfile
+    import zipfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    BU = importlib.import_module('base_upload')
+    L = importlib.import_module('launch')
+    def make(n, zip64=False):
+        b = io.BytesIO()
+        old = zipfile.ZIP_FILECOUNT_LIMIT
+        if zip64:
+            zipfile.ZIP_FILECOUNT_LIMIT = 3          # the writer then adds a zip64 end record, and the plain one says only 3
+        try:
+            with zipfile.ZipFile(b, 'w') as z:
+                for i in range(n):
+                    z.writestr(zipfile.ZipInfo(f'a{i}.txt'), 'x', zipfile.ZIP_STORED)
+        finally:
+            zipfile.ZIP_FILECOUNT_LIMIT = old
+        return b.getvalue()
+    built = []
+    real = zipfile.ZipFile
+
+    class Spy(real):
+        def __init__(self, *a, **k):
+            built.append(1)
+            super().__init__(*a, **k)
+    keep = (BU.MAX_MEMBERS, getattr(BU, 'CD_MAX', None))
+    zipfile.ZipFile = Spy
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            def run(blob):
+                path = os.path.join(td, 'x.zip')
+                with open(path, 'wb') as f:
+                    f.write(blob)
+                built.clear()
+                try:
+                    BU.recognise(path, 'x.zip')
+                    why = 'recognised'
+                except BU.Refused as e:
+                    why = e.reason
+                return why, len(built)
+            BU.MAX_MEMBERS = 5
+            c.eq(run(make(10)), ('unrecognised', 0), 'a zip of 10 entries when 5 is the most: refused on the count in the end-of-directory record, the directory is never built', what='count')
+            c.eq(run(make(10, zip64=True)), ('unrecognised', 0), 'the same when the count is in the zip64 end record (the plain record says only 3: the zip64 one is read too)', what='zip64')
+            BU.MAX_MEMBERS = 200000
+            c.eq(run(make(3)), ('unrecognised', 1), 'a zip within the bound is opened as before (and then judged by its content)', what='within')
+            if getattr(BU, 'CD_MAX', None) is not None:
+                BU.CD_MAX = 100
+                c.eq(run(make(10)), ('unrecognised', 0), 'a directory larger than CD_MAX bytes is refused as well, even when its count is small enough', what='size')
+            else:
+                c.ok(False, 'no CD_MAX', 'the size of the directory is bounded too')
+    finally:
+        zipfile.ZipFile = real
+        BU.MAX_MEMBERS = keep[0]
+        if keep[1] is not None:
+            BU.CD_MAX = keep[1]
+    seen = []
+
+    class Fake:
+        _lan = lambda self: True
+        headers = {}
+        rfile = None
+
+        def _json(self, out, code=200):
+            seen.append((code, out))
+    L.Setup._post_base_upload(Fake(), '/__setup/base/upload', None)
+    c.eq([x[0] for x in seen], [403], 'a request received by the local-network server is refused by the handler itself (403), before any read of the body', what='lan')

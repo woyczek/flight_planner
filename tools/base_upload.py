@@ -17,6 +17,7 @@ import hashlib
 import os
 import re
 import secrets
+import struct
 import time
 import urllib.parse
 import zipfile
@@ -24,6 +25,7 @@ import zipfile
 MAX_BYTES = 1536 * 1024 * 1024          # 1,5 Go : l'eAIP suédois hors ligne fait environ 1 Go
 CHUNK = 1024 * 1024
 MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
+CD_MAX = 64 * 1024 * 1024               # un annuaire de plus de 64 Mo : idem (ZipFile le charge entier en mémoire avant tout autre contrôle)
 FOLDER = ('local', 'upload')
 EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad']       # les sources que base/pickup prend (dites avec `unrecognised`)
 REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
@@ -61,11 +63,37 @@ def _date_ok(text):
     return '-'.join(m.groups()) if m else ''
 
 
+def _directory(path):
+    """(nombre d'entrées, taille de l'annuaire en octets) lus dans l'enregistrement de fin du zip — les derniers octets du fichier, zip64 compris — SANS construire l'annuaire (zipfile.ZipFile le charge entier avant tout contrôle) ; None si l'enregistrement est introuvable (ZipFile dira BadZipFile)."""
+    with open(path, 'rb') as f:
+        f.seek(0, os.SEEK_END)
+        size = f.tell()
+        back = min(size, 22 + 65535)
+        f.seek(size - back)
+        tail = f.read(back)
+        i = tail.rfind(b'PK\x05\x06')
+        if i < 0 or len(tail) - i < 22:
+            return None
+        count, cd = struct.unpack('<HI', tail[i + 10:i + 16])
+        at = size - back + i                      # la place de l'enregistrement de fin dans le fichier
+        if at >= 20 + 56:
+            f.seek(at - 20)
+            if f.read(4) == b'PK\x06\x07':          # un localisateur zip64 le précède : le vrai nombre et la vraie taille sont dans l'enregistrement zip64, juste avant lui
+                f.seek(at - 20 - 56)
+                rec = f.read(56)
+                if len(rec) == 56 and rec[:4] == b'PK\x06\x06':
+                    count, cd = struct.unpack('<QQ', rec[32:48])
+        return count, cd
+
+
 def recognise(path, hint=''):
     """Ce que le CONTENU du fichier dit : { source, zone, name (le nom canonique que base/pickup retrouve), cycle } ; lève Refused (type, unrecognised). Un zip : la liste de ses membres seulement."""
     with open(path, 'rb') as f:
         head = f.read(8)
     if head[:4] == b'PK\x03\x04':
+        dirinfo = _directory(path)
+        if dirinfo and (dirinfo[0] > MAX_MEMBERS or dirinfo[1] > CD_MAX):
+            raise Refused('unrecognised', 'trop de membres', EXPECTED)        # avant de construire l'annuaire : ZipFile le lit entier en mémoire
         try:
             z = zipfile.ZipFile(path)
         except (zipfile.BadZipFile, OSError):
