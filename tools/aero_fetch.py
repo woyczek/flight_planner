@@ -212,7 +212,7 @@ def openaip(data, countries, layers=OPENAIP_LAYERS, absent=None, known=()):
 def nasr(data):
     """Le NASR de la FAA (SOG-0153 d) : le cycle en vigueur lu sur la page de l'abonnement, les trois jeux CSV (FIX, AWY, NAV : adresses calculées par tools/faa_nasr.py) lus et convertis en faa_nasr.geojson (points et voies de la zone us) ; le fichier est remplacé seulement s'il change."""
     import faa_nasr
-    issue, refused = None, ''
+    issue, refused, used = None, '', None
     try:
         issue = faa_nasr.current_cycle(get(faa_nasr.PAGE).decode('utf-8', 'replace'))
     except OSError as e:
@@ -237,6 +237,7 @@ def nasr(data):
         cycle, blobs, partial = faa_nasr.deposited_latest(data)     # les trois jeux CHOISIS à la main par l'utilisateur (« Choisir le fichier… », data/local/upload/) : le repli quand la FAA refuse le lanceur, quel que soit leur cycle
         if blobs:
             issue = cycle
+            used = faa_nasr.deposited_date(data, cycle)      # lus faute de réseau : la ligne du résultat dit DEPUIS QUAND (un dépôt ancien n'est jamais pris pour une lecture du jour)
     if not issue or not blobs:
         why = (f'la page du NASR refuse l’accès automatique ({refused}) ; ' if refused else 'cycle en vigueur introuvable sur la page du NASR ; ') + \
             f'les jeux du cycle {" ou ".join(cycles)} ne répondent pas non plus sur {faa_nasr.HOST} ({last}) : points et voies des États-Unis non mis à jour, ceux déjà là sont gardés. ' + \
@@ -247,7 +248,7 @@ def nasr(data):
     body = json.dumps(g, separators=(',', ':')).encode('utf-8')
     name = faa_nasr.NAME + '.geojson'
     changed = write(os.path.join(data, 'sia', 'geojson', name), body)
-    return {'name': name, 'bytes': len(body), 'features': n + m, 'unchanged': not changed}
+    return {'name': name, 'bytes': len(body), 'features': n + m, 'unchanged': not changed, **({'deposited': used} if used else {})}
 
 
 def faa(data, layers=('sua', 'mtr')):
@@ -423,6 +424,7 @@ def ukmil(data):
     folder = os.path.join(data, 'sia', 'zones', 'gb')
     outputs = ('ukmil_enr52.geojson', 'ukmil_aara-tracks.xml')
     pdf = os.path.join(folder, 'ukmil_ENR-5-2.pdf')
+    used = None
     try:
         raw = get(ukmil_aip.URL, since=mtime(pdf), copy=pdf)
     except OSError as e:
@@ -430,6 +432,7 @@ def ukmil(data):
         try:
             with open(deposited, 'rb') as f:
                 raw = f.read(MAX_BYTES)
+            used = datetime.date.fromtimestamp(os.path.getmtime(deposited)).isoformat()      # lu faute de réseau : la ligne du résultat dit depuis quand
         except OSError:
             tls = isinstance(getattr(e, 'reason', e), ssl.SSLError) or 'SSL' in str(e)
             return [], [f'UK Mil AIP : {e}' + (' (la connexion est coupée pendant la poignée de main TLS, avant toute requête HTTP : l’agent n’y est pour rien)' if tls else '') +
@@ -450,7 +453,7 @@ def ukmil(data):
         err = [] if n.get('zones') else ['UK Mil AIP : aucune zone lue dans l’ENR 5.2 (mise en page changée ?)']
     out = []
     changed = write(pdf, raw)
-    out.append({'name': 'ukmil_ENR-5-2.pdf', 'bytes': len(raw), 'unchanged': not changed})
+    out.append({'name': 'ukmil_ENR-5-2.pdf', 'bytes': len(raw), 'unchanged': not changed, **({'deposited': used} if used else {})})
     if g and n.get('zones'):
         body = json.dumps(g, ensure_ascii=False).encode('utf-8')
         changed = write(os.path.join(folder, 'ukmil_enr52.geojson'), body)

@@ -55,6 +55,17 @@ def deposited(data, iso):
     return out
 
 
+def deposited_date(data, iso):
+    """La date (AAAA-MM-JJ, heure locale) à laquelle les trois jeux d'un cycle ont été déposés à la main : celle du plus ancien des trois fichiers ; None si l'un manque."""
+    times = []
+    for k in KINDS:
+        try:
+            times.append(os.path.getmtime(os.path.join(data, 'local', 'upload', os.path.basename(url(k, iso)))))
+        except OSError:
+            return None
+    return datetime.date.fromtimestamp(min(times)).isoformat()
+
+
 def deposited_latest(data):
     """Le cycle le plus récent dont les trois jeux sont déposés à la main : (iso, [FIX, AWY, NAV] en octets, {}) ; sinon (None, None, { iso: [jeux déposés] }) de ce que l'on a, pour dire ce qui manque. Le nom de chaque fichier est celui que la FAA lui donne (tools/base_upload.py)."""
     have = {}

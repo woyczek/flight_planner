@@ -446,6 +446,9 @@ def _fetch_source(job, data, zone, source, absent=None, known=frozenset()):
     else:
         entry = {'state': 'downloaded' if any(not f.get('unchanged') for f in files) else 'unchanged', 'files': len(files),
                  'bytes': sum(f.get('bytes', 0) for f in files)}
+    dep = max((f['deposited'] for f in files if f.get('deposited')), default=None)
+    if dep:
+        entry['deposited'] = dep      # lu dans un fichier choisi à la main faute de réseau, DATÉ : « déposé le … » (jamais pris pour une lecture du jour)
     mods = [f"{FOLDERS[p]}/{f['name']}" for f in files if not f.get('unchanged')] + removed
     return entry, files, errors, mods, cancelled
 
@@ -514,7 +517,7 @@ def fetch(job, args, ctx):
             else:
                 good += 1
                 job.log(f"{z}: {s} " + (f"{len(mods)} fichier(s) écrit(s) sur {entry['files']}, {entry['bytes'] // 1024} Ko" if entry['state'] == 'downloaded'
-                                         else f"inchangée ({entry['files']} fichier(s))"))
+                                         else f"inchangée ({entry['files']} fichier(s))") + (f" — fichier déposé à la main le {entry['deposited']} (le réseau n’a pas répondu)" if entry.get('deposited') else ''))
             if cancelled:
                 break
         if cancelled:

@@ -1964,3 +1964,50 @@ def k165(c):
         srv.close()
         for k in held:
             k.close()
+
+
+@case('K166', 'A file chosen by hand and read for want of network is DATED in the result line (« déposé le … »): a stale deposit is never taken for a reading of the day (NASR, UK Mil AIP)', 'K', static=True,
+      rule='Lot of 11 Nov 2026, challenge c of AeroDB (granted for its first half by the ergonomics session; no clean-up of data/local/upload/: the user decided): when the network fails the layer reads the files the user put in data/local/upload/ whatever their age, and said nothing of it: an old NASR could be read as the one of the day. The result of the source now carries `deposited` (the date of the file, AAAA-MM-JJ) and the job log says « fichier déposé à la main le … (le réseau n’a pas répondu) »; a reading that reached the network carries no date')
+def k166(c):
+    import datetime
+    import os
+    import ssl
+    import sys
+    import tempfile
+    import urllib.error
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ, BS, AF, DS = _mods()
+    import faa_nasr as N
+    kept, kept_convert = AF.get, N.convert
+    when = datetime.datetime(2026, 10, 2, 12, 0).timestamp()
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            def cut(url, *a, **k):
+                raise urllib.error.URLError(ssl.SSLEOFError(8, 'EOF'))
+            AF.get = cut
+            up = Path(td) / 'local' / 'upload'
+            up.mkdir(parents=True)
+            (up / 'ENR-5-2.pdf').write_bytes(b'%PDF-1.4 not an AIP')
+            os.utime(up / 'ENR-5-2.pdf', (when, when))
+            out, errs = AF.ukmil(td)
+            c.eq([o.get('deposited') for o in out if o['name'] == 'ukmil_ENR-5-2.pdf'], ['2026-10-02'], 'UK Mil: the PDF read from data/local/upload/ for want of network carries the date of the file', what='ukmil')
+            entry, files, errors, mods, cancelled = BS._fetch_source(RJ.Job('base', 'fetch', {}), td, 'gb', 'ukmil', absent=[], known=set())
+            c.eq(entry.get('deposited'), '2026-10-02', 'and so does the line of the source in the result of base/fetch (the page says « déposé le … »)', what='entry')
+            # the NASR: three sets deposited by hand, the FAA refusing
+            iso = '2026-10-29'
+            for k in N.KINDS:
+                p = up / os.path.basename(N.url(k, iso))
+                p.write_bytes(b'PK')
+                os.utime(p, (when + 86400, when + 86400))
+            N.convert = lambda *a, **k: ({'type': 'FeatureCollection', 'features': []}, 1, 1)
+            AF.get = lambda url, *a, **k: (_ for _ in ()).throw(urllib.error.HTTPError(url, 403, 'Forbidden', {}, None))
+            r = AF.nasr(td)
+            c.eq((r.get('deposited'), r['features']), ('2026-10-03', 2), 'NASR: the layer read from the sets deposited by hand carries their date (the oldest of the three files)', what='nasr')
+            # a reading that reached the network carries no date
+            AF.get = lambda url, *a, **k: b'%PDF-1.4 not an AIP'
+            out, errs = AF.ukmil(td)
+            c.ok(all('deposited' not in o for o in out), str(out), 'a reading that reached the network carries no deposit date')
+    finally:
+        AF.get = kept
+        N.convert = kept_convert
