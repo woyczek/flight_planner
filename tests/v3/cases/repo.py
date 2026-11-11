@@ -2742,3 +2742,89 @@ def k154(c):
         L.os.path.getmtime, L.cspmod.module_files = real_mtime, real_files
         L._csp.update(key=None, value='')
     c.eq(L.csp_policy(), first, 'back to normal: the policy is built again from the files', what='back')
+
+
+@case('K169', 'The relay of /__setup/net: the body of an ERROR answer is read under the same deadline as a good one (a slow drip no longer holds a slot), and one of the four slots is kept for the own page of the workstation (N4 of the security review)', 'K', static=True,
+      rule='Security review of 10 Nov 2026, N4 (audit line 159; the relay of 4c75c1df3, SOG-0178): `e.read(NET_MAX)` on an HTTP error had no deadline, so an allowed host that answers 500 and drips its body held a slot (and the browser connection) as long as it liked; and the four slots were shared with paired devices and the company relay, which could hold them all while the page of the workstation waited. The error body is now read by _read_capped under the deadline of the relay, the status being kept; guests (a paired device of the local network, the company relay) hold three slots at most, the page of the workstation always has the fourth')
+def k169(c):
+    import importlib
+    import io
+    import sys
+    import threading
+    import time
+    import urllib.error
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+
+    class Drip(io.RawIOBase):
+        """A body that gives one byte every 0.2 s for 4 s: an error answer that drips."""
+        def __init__(self):
+            self.n = 0
+
+        def readinto(self, b):
+            time.sleep(0.2)
+            self.n += 1
+            if self.n > 20:
+                return 0
+            b[:1] = b'x'
+            return 1
+
+        def readable(self):
+            return True
+
+    class Fake:
+        def open(self, req, timeout=None):
+            raise urllib.error.HTTPError(req.full_url, 500, 'x', {'Content-Type': 'text/plain'}, io.BufferedReader(Drip()))
+    kept, kept_total = L.NET_OPENER, L.NET_TOTAL_S
+    L.NET_OPENER = Fake()
+    L.NET_TOTAL_S = 1
+    try:
+        t = time.perf_counter()
+        try:
+            code, hdrs, out = L.frame_net({'url': 'https://api.open-meteo.com/v1/forecast', 'method': 'GET'})
+            got = (code, hdrs.get('X-SOG-Reason'))
+        except Exception as e:  # noqa: BLE001
+            got = ('raised', type(e).__name__)
+        took = time.perf_counter() - t
+        c.eq((got, took < 2.5), ((500, 'http-500'), True), f'an error answer that drips for 4 s is cut at the deadline of the relay (1 s here: {took:.1f} s), its status and its reason kept', what='error body')
+        c.eq((L._net_slots['all'], sum(L._net_slots['host'].values())), (0, 0), 'and the slot is given back', what='released')
+    finally:
+        L.NET_OPENER, L.NET_TOTAL_S = kept, kept_total
+    # the slots: three for the guests, the fourth is the page's
+    got = []
+    hosts = ['api.open-meteo.com', 'aviationweather.gov', 'api.vatsim.net', 'api.ivao.aero']
+    try:
+        for h in hosts[:3]:
+            got.append(L.net_acquire(h, own=False))
+        got.append(L.net_acquire(hosts[3], own=False))
+        got.append(L.net_acquire(hosts[3], own=True))
+        got.append(L.net_acquire('metar.vatsim.net', own=True))
+    except TypeError as e:
+        got = [f'TypeError: {e}']
+    finally:
+        L._net_slots.update({'all': 0, 'host': {}, 'guest': 0})
+    c.eq(got, [True, True, True, False, True, False], 'three guests (a paired device, the company relay) take three slots, a fourth guest is refused, the page of the workstation takes the fourth, a fifth of anyone is refused', what='reserved')
+
+    class Fake2:
+        def __init__(self, lan, relay):
+            self._lan, self._relay = (lambda: lan), (lambda: relay)
+            self.sent = []
+            self.wfile = io.BytesIO()
+
+        def send_response(self, code):
+            self.sent.append(code)
+
+        def send_header(self, *a):
+            pass
+
+        def end_headers(self):
+            pass
+    seen = []
+    kept_net = L.frame_net
+    L.frame_net = lambda a, site_ok=True, own=True: (seen.append(own), (200, {}, b'{}'))[1]
+    try:
+        for lan, relay in ((False, False), (True, False), (False, True)):
+            L.Setup._post_net(Fake2(lan, relay), '/__setup/net', b'{}')
+    finally:
+        L.frame_net = kept_net
+    c.eq(seen, [True, False, False], 'the route marks the request: the own page of the workstation is `own`, a paired device of the local network and the company relay are guests', what='route')

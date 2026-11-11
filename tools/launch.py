@@ -1476,7 +1476,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             a = json.loads(body or b'{}')
         except ValueError:
             return self._json({'error': 'JSON invalide'}, 400)
-        code, hdrs, out = frame_net(a if isinstance(a, dict) else {}, site_ok=not self._relay())
+        code, hdrs, out = frame_net(a if isinstance(a, dict) else {}, site_ok=not self._relay(), own=not (self._lan() or self._relay()))
         self.send_response(code)
         for k, v in hdrs.items():
             self.send_header(k, v)
@@ -3215,32 +3215,37 @@ NET_MAX = 8 * 1048576
 # quatre en tout : il reste toujours deux connexions du navigateur pour les pages ; le suivant est refusé tout de suite, « occupé »).
 NET_CONNECT_S, NET_TOTAL_S = 5, 15
 NET_PER_HOST, NET_TOTAL = 2, 4
-_net_slots = {'lock': threading.Lock(), 'host': {}, 'all': 0}
+_net_slots = {'lock': threading.Lock(), 'host': {}, 'all': 0, 'guest': 0}
+# une des quatre places est celle de la page du poste : les invités (un appareil appairé du réseau local, le relais de la compagnie) n'en tiennent que trois (N4 de la relecture de sécurité du 10 novembre)
+NET_GUESTS = NET_TOTAL - 1
 
 
-def net_acquire(host):
-    """Prend une place de relais pour cet hôte (deux par hôte, quatre en tout) ; False si elles sont prises : le relais est refusé aussitôt."""
+def net_acquire(host, own=True):
+    """Prend une place de relais pour cet hôte (deux par hôte, quatre en tout, dont une réservée à la page du poste : own faux = un invité, trois au plus) ; False si elles sont prises : le relais est refusé aussitôt."""
     with _net_slots['lock']:
-        if _net_slots['all'] >= NET_TOTAL or _net_slots['host'].get(host, 0) >= NET_PER_HOST:
+        if _net_slots['all'] >= NET_TOTAL or _net_slots['host'].get(host, 0) >= NET_PER_HOST or (not own and _net_slots['guest'] >= NET_GUESTS):
             return False
         _net_slots['all'] += 1
+        _net_slots['guest'] += 0 if own else 1
         _net_slots['host'][host] = _net_slots['host'].get(host, 0) + 1
         return True
 
 
-def net_release(host):
+def net_release(host, own=True):
     with _net_slots['lock']:
         _net_slots['all'] = max(0, _net_slots['all'] - 1)
+        _net_slots['guest'] = max(0, _net_slots['guest'] - (0 if own else 1))
         _net_slots['host'][host] = max(0, _net_slots['host'].get(host, 0) - 1)
 
 
 def _read_capped(r, cap, deadline):
     """Le corps d'une réponse, au plus `cap` octets et avant `deadline` (time.monotonic) : un serveur qui goutte-à-goutte ne tient pas le relais au-delà."""
     parts, n = [], 0
+    pull = getattr(r, 'read1', None) or r.read       # read1 : UNE lecture de la socket (read(n) en attend n, ou la fin : un goutte-à-goutte passerait sous l'échéance)
     while True:
         if time.monotonic() > deadline:
             raise TimeoutError('timeout')
-        chunk = r.read(min(65536, cap - n + 1))
+        chunk = pull(min(65536, cap - n + 1))
         if not chunk:
             return b''.join(parts)
         n += len(chunk)
@@ -3314,9 +3319,10 @@ class _RelayRedirect(urllib.request.HTTPRedirectHandler):
 NET_OPENER = outbound.opener(_RelayRedirect(), _RelayHTTPSHandler(context=ssl.create_default_context()), what='relais')
 
 
-def frame_net(a, site_ok=True):
+def frame_net(a, site_ok=True, own=True):
     """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps). site_ok faux (relais de la
-    compagnie) : la liste blanche NET_HOSTS seule, jamais le site de la compagnie (aucun hôte choisi par la page)."""
+    compagnie) : la liste blanche NET_HOSTS seule, jamais le site de la compagnie (aucun hôte choisi par la page). own faux :
+    l'appel d'un invité (appareil appairé, relais de la compagnie), qui ne prend jamais la dernière place."""
     url = str(a.get('url') or '')
     u = urllib.parse.urlparse(url)
     site = site_ok and u.scheme == 'https' and bool(u.hostname) and u.hostname not in NET_HOSTS and u.hostname == airline_host()
@@ -3335,7 +3341,7 @@ def frame_net(a, site_ok=True):
         data = a['body'].encode('utf-8')
         headers['Content-Type'] = str(a.get('contentType') or 'application/json')
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
-    if not net_acquire(u.hostname):      # SOG-0178 : tout de suite, sans attendre : la page réessaie plus tard
+    if not net_acquire(u.hostname, own):      # SOG-0178 : tout de suite, sans attendre : la page réessaie plus tard
         return 503, {'Content-Type': 'application/json', 'X-SOG-Reason': 'busy', 'Retry-After': '2'}, json.dumps({'error': 'occupé', 'busy': True}).encode()
     deadline = time.monotonic() + NET_TOTAL_S
     why = lambda e: 'timeout' if isinstance(e, (TimeoutError, socket.timeout)) or 'timed out' in str(e).lower() else 'reset' if isinstance(e, (ConnectionResetError, ConnectionAbortedError)) else 'refused' if isinstance(e, ConnectionRefusedError) else 'unreachable'
@@ -3343,7 +3349,11 @@ def frame_net(a, site_ok=True):
         with NET_OPENER.open(req, timeout=NET_CONNECT_S) as r:
             return r.status, {'Content-Type': r.headers.get('Content-Type') or 'application/octet-stream'}, _read_capped(r, NET_MAX, deadline)
     except urllib.error.HTTPError as e:
-        return e.code, {'Content-Type': e.headers.get('Content-Type') or 'text/plain', 'X-SOG-Reason': f'http-{e.code}'}, e.read(NET_MAX)
+        try:
+            body = _read_capped(e, NET_MAX, deadline)       # le corps d'une réponse en erreur est lu sous la même échéance : un hôte qui goutte-à-goutte ne tient pas la place (N4)
+        except (OSError, ValueError):
+            body = b''                                      # coupé à l'échéance : le statut et sa raison suffisent
+        return e.code, {'Content-Type': e.headers.get('Content-Type') or 'text/plain', 'X-SOG-Reason': f'http-{e.code}'}, body
     except urllib.error.URLError as e:
         if isinstance(e.reason, NotPublic):
             return 403, {'Content-Type': 'application/json'}, json.dumps({'error': str(e.reason)}).encode()
@@ -3353,7 +3363,7 @@ def frame_net(a, site_ok=True):
     except (OSError, ValueError) as e:
         return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1', 'X-SOG-Reason': why(e)}, b'unreachable'
     finally:
-        net_release(u.hostname)
+        net_release(u.hostname, own)
 
 
 def _mtime(p):
