@@ -4034,6 +4034,7 @@ def f139(c):
         c.ok(mine, opts, f'{w} px: the approach in doubt is listed')
         c.ok(norm(tx('modules/fuel/procedures_texts.js', 'procDoubt', c.lang)) in norm(mine[0][1]) and 'doubt' in mine[0][2], mine,
              '« ⚑ à vérifier » on its line, class doubt')
+        c.ok('⚠' not in mine[0][1], mine[0][1], 'one panonceau only: never « ⚠ » after « ⚑ à vérifier » (retouche)')
         why = tx('modules/fuel/procedures_texts.js', 'unread', c.lang, after='doubtWhy')
         c.ok(norm(why) in norm(mine[0][3]), mine[0][3], 'its reason in clear words in the tooltip')
         c.eq(procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr').get('app'), 'LFML.APP.I13R.RW13R.NONE', 'the approach of the flight unchanged (nothing taken by itself)', what='kept')
@@ -4043,7 +4044,14 @@ def f139(c):
         # chosen by hand: the flight's approach, its line says « à vérifier »
         c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', dub)
         cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == dub, f'{w} px: chosen by hand, it is the flight\'s', timeout=8000)
-        c.js(f"document.querySelector('{FUEL} select[data-k=\"p-arr-app\"]').scrollIntoView({{block: 'center'}})")
+        # its reason said in clear words under the list (no hover on a phone), and the panonceau in the folded summary (retouches)
+        c.until(f"!!document.querySelector('{FUEL} [data-proc=arr] [data-doubtline]:not([hidden])')", timeout=8000, what=f'{w} px: the line under the list')
+        line = norm(c.text(f'{FUEL} [data-proc="arr"] [data-doubtline]') or '')
+        c.ok(norm(tx('modules/fuel/procedures_texts.js', 'procDoubt', c.lang)) in line and norm(why) in line and line.startswith('⚑'), line,
+             f'{w} px: « ⚑ à vérifier : <its reason> » under the list')
+        summ = c.text(f'{FUEL} [data-proc="arr"] .fu-procsum') or ''
+        c.ok('⚑' in summ, summ, f'{w} px: the folded summary carries the panonceau')
+        c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-doubtline]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F139_{c.design}_{w}_{c.lang}_delivered.png')
     # never by a proposal of an address (the Map's « choix » mode): ignored, the flight keeps its approach
     c.open('fuel?focus=arr&app=' + dub, docs=docs + proc_flight(V2_PROCS), airfields=True)

@@ -457,7 +457,9 @@ before the start, in step 5 after (F11).
   })`) **is listed** at the arrival, « ⚑ à vérifier » on its line, its reasons in clear words in the tooltip (the closed list of
   aerodb's `doubt` codes: unread, name, repeat, zigzag, unresolved, geometry), class `doubt`; it is chosen only by hand — never by a
   proposal of an address nor any automatic choice — and, chosen, it is the flight's (`flight_path.js` `loadProcedures` asks the
-  approach with `{ doubt: true }`) (SOG-0232, F139). The approaches charted only in the AIP (`aerodb.chartOnly`, when aerodb has it)
+  approach with `{ doubt: true }`) (SOG-0232, F139). One panonceau only on its line (never « ⚠ » after it: its conflicts stay in
+  the tooltip); chosen, its reason is a line under the lists, « ⚑ à vérifier : <reasons> » (no hover on a phone), and the folded
+  summary of the arrival carries « ⚑ » after the approach (retouches of 11 Nov). The approaches charted only in the AIP (`aerodb.chartOnly`, when aerodb has it)
   are a line « Carte seulement dans l'AIP : ILS LOC RWY 05 · … » under the lists, each its chart. **A record read from Little
   Navmap** on this device (`status: 'lnm'`, aerodb `fetchLnm`, kept in the page's memory only) says « Little Navmap, lue sur ce
   poste » on its line (never « X-Plane, local »); what is read there stays on the device (SOG-0210 N2, F143): the flight keeps the

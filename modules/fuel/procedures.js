@@ -327,7 +327,9 @@ export function createProcedures(host) {
       },
       list = PR.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], k, o, recsNow()),
       html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''],
-      mark = r => conflictsOf(k, r, o).length ? PROC_CONFLICT : '';
+      // une approche en doute porte un seul panonceau, « ⚑ à vérifier » (retouche de F139) : pas de ⚠ en plus, ses conflits restent en
+      // infobulle
+      mark = r => !PR.isDoubt(r) && conflictsOf(k, r, o).length ? PROC_CONFLICT : '';
     if (!lab && !sub) {
       // les fiches de même nom (une par piste : « AMOLO 7A » pour 14L et pour 14R) font UNE ligne avec ses pistes (« AMOLO 7A ·
       // 14L/14R ») : jamais deux libellés identiques ; la valeur est la fiche choisie, sinon celle qui dessert la piste choisie
@@ -446,6 +448,14 @@ export function createProcedures(host) {
   /** Le résumé du choix d'un côté, la même règle que le volet de la Carte (PR.summaryOf, § 10.30) : « 13R · ↑ 12 kt · ← 6 kt »,
    *  « MEN1A via NEPIX », « I13R » ; « Aucune » dit avec sa sorte (« SID aucune ») ; '' sans choix. Le vent est celui de la piste
    *  choisie, du METAR connu (runwayWind), en couleur. */
+  /** L'approche choisie à l'arrivée quand elle est de lecture douteuse (SOG-0232), sa fiche des listes (m.all ne garde pas les
+   *  douteuses) ; null sinon. */
+  function chosenDoubt(m) {
+    const id = CF.proceduresOf(host.flight()).arr?.app,
+      rec = typeof id === 'string' ? (m?.lists?.APP || []).find(r => r?.id === id) : null;
+    return rec && PR.isDoubt(rec) ? rec : null;
+  }
+
   function summaryHtml(side, m) {
     const o = CF.proceduresOf(host.flight())[side] || {},
       r = o.rwy ? m.rwys.find(x => PR.rwNum(x.id) === PR.rwNum(o.rwy)) : null,
@@ -458,9 +468,10 @@ export function createProcedures(host) {
       // SOG-0176 : le résumé replié de l'arrivée dit l'indicatif et la fréquence de l'ILS de l'approche quand la base le porte
       // (« I13R · TST 110.30 ») : la ligne complète est sous les listes, hors de l'écran tant que le côté est replié
       aid = side === 'arr' && s.app ? aidFor(m) : null,
-      parts = [s.rwy, s.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : s.proc, s.app === null ? none('procApp') : aid ?
-        `${s.app} · ${aid.x.id} ${aid.x.freq}` : s.app
-      ].filter(Boolean);
+      // une approche en doute choisie : son panonceau dans le résumé replié aussi (retouche de F139)
+      flag = side === 'arr' && s.app && chosenDoubt(m) ? ' ⚑' : '',
+      parts = [s.rwy, s.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : s.proc, s.app === null ? none('procApp') : s.app ? (
+        aid ? `${s.app} · ${aid.x.id} ${aid.x.freq}` : s.app) + flag : s.app].filter(Boolean);
     // la piste porte la couleur de son vent (severity) et ses raisons en infobulle, comme dans la liste
     return parts.length ? `<span class="fu-procsum">${parts.map(p => p === s.rwy && w ? `<span class="wind-${w.level}" title="${esc([p, ...w.why].join(' · '))}">${esc(p)}</span>` : `<span>${esc(p)}</span>`).join('')}</span>` : '';
   }
@@ -703,7 +714,7 @@ export function createProcedures(host) {
     if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
   /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
-  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
+  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p><p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
   // l'ILS de la base pour une piste d'un terrain (SOG-0176) : clé « OACI|piste » → la fiche nettoyée, null (aucun), absente tant que la
   // réponse n'est pas venue (demandée une fois)
   const aids = new Map();
@@ -799,6 +810,13 @@ export function createProcedures(host) {
     if (aid) setAid(aid, m);
     // SOG-0232 : les approches que l'AIP ne donne qu'en carte (sans table de codage : conventionnelles, ILS de LFST), chacune avec son
     // lien vers la carte (l'adresse composée par aerodb.chartOnly, jamais ici)
+    // retouche de F139 : une approche en doute choisie, sa raison dite en clair sous la liste (pas de survol sur un téléphone)
+    const dl = el.querySelector('[data-r="doubt"]');
+    if (dl) {
+      const rec = chosenDoubt(m);
+      dl.hidden = !rec;
+      setHtml(dl, rec ? `⚑ ${esc(tt(TX.procDoubt))} : ${esc(doubtWhy(rec))}` : '');
+    }
     const co = el.querySelector('[data-r="chartonly"]');
     if (co) {
       co.hidden = !m.chartOnly?.length;

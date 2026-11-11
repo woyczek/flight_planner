@@ -1873,6 +1873,7 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 [data-module="fuel"] .fu-ptid{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 [data-module="fuel"] .fu-ptid small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="fuel"] .fu-doubtline{margin:.3em 0 0;color:var(--sog-warn)} /* la raison d'une approche en doute choisie (F139) */
 [data-module="fuel"] .fu-ptid small.fu-ptlock{display:block;font-weight:600;white-space:normal} /* un point imposé par la mission (SOG-0193 L3) */
 [data-module="fuel"] .fu-ptlock svg{width:1em;height:1em;vertical-align:-.15em;margin-right:.2em}
 [data-module="fuel"] .f-card .fu-pt input[data-k]{width:4.2em;flex:none;text-align:center}

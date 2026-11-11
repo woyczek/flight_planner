@@ -1656,3 +1656,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   only (« paired » said), never `personal: true` without the box the user ticked in Données (read,
   never written, by Fuel); the box's place is said, not « Réglages › Sources » (the box is in Données). F144 (fetchLnm stubbed: no
   launcher job); counter-test on origin/v3: no gesture.
+- **11 Nov 2026 — F139 retouches** (the ergonomist, 390 capture read): one panonceau (« ⚑ à vérifier », the « ⚠ » of a runway
+  conflict no longer added: the conflict stays in the tooltip), the reason of a chosen approach in doubt said in a line under the lists
+  (a tooltip alone has no hover on a phone), « ⚑ » in the folded summary. F139 extended; counter-test: « ⚑ à vérifier ⚠ ».
