@@ -5305,9 +5305,9 @@ def d_names(c):
     c.eq(c.js("async () => (await import('/modules/maps/ground.js')).groundIcaos().includes('LFMT')"), True, 'the alternate (LFMT) is a ground aerodrome', what='icaos')
 
 
-@case('D166', 'Wind barbs: between 40 and 80 in the view at any zoom (thinned when too many, completed between two read winds when too few)', 'D',
+@case('D166', 'Wind barbs: at most 80 in the view at any zoom, never closer than 30 px to each other (thinned when too many, completed between two read winds when too few)', 'D',
       tags=('maps',), screens=False, designs=('standard',),
-      rule='SOG-0214 (the user): « barbules : entre 40 et 80 à l’écran à tout zoom »; the list along the trajectory (one wind each 50 NM) gave a handful at a close zoom and a crowd at a wide one; it is thinned above 80 and completed with winds interpolated between two neighbours that were read (never across a place without wind) below 40')
+      rule='SOG-0214 (the user): « barbules : entre 40 et 80 à l’écran à tout zoom »; the list along the trajectory (one wind each 50 NM) gave a handful at a close zoom and a crowd at a wide one; it is thinned above 80 and completed with winds interpolated between two neighbours that were read (never across a place without wind) below 40; SOG-0243 (the ergonomist, on the capture of KDEN DCT LFST): on a route that fits one straight line sixty barbs overlap and hide the line: the count is a ceiling, two barbs are at least 30 px (a shaft) from each other')
 def d_barbs(c):
     c.open('maps', flight=True, forecast=True)
     c.js(_STATE_JS)
@@ -5318,10 +5318,12 @@ def d_barbs(c):
     for z in (4.5, 6, 7.5, 9, 10.5):
         c.js("(z) => { window.__mpMap.jumpTo({ center: [1.8, 45.2], zoom: z }); return true }", z)
         c.wait(1500)
-        n = c.js("() => { const S = window.__mp.S, r = S.box.getBoundingClientRect(); return (S.windHits || []).filter(h => h.x >= 0 && h.x <= r.width && h.y >= 0 && h.y <= r.height).length }")
-        seen.append((z, n))
-    ok = [(z, n) for z, n in seen if z >= 6 and z <= 9]
-    c.ok(all(40 <= n <= 80 for z, n in ok), str(seen), 'between 40 and 80 barbs in the view at the working zooms (the route crosses the view)')
+        n = c.js("""() => { const S = window.__mp.S, r = S.box.getBoundingClientRect(), hs = (S.windHits || []).filter(h => h.x >= 0 && h.x <= r.width && h.y >= 0 && h.y <= r.height); let min = 1e9;
+          hs.forEach((a, i) => hs.forEach((b, j) => { if (i < j) min = Math.min(min, Math.hypot(a.x - b.x, a.y - b.y)) })); return [hs.length, Math.round(min)] }""")
+        seen.append((z, n[0], n[1]))
+    ok = [(z, n, g) for z, n, g in seen if z >= 6 and z <= 9]
+    c.ok(all(8 <= n <= 80 for z, n, g in ok), str(seen), 'barbs in the view at the working zooms, 80 at most (the route crosses the view)')
+    c.ok(all(g >= 29.9 for z, n, g in seen), str(seen), 'no two barbs closer than 30 px, at any zoom')
 
 
 @case('D167', 'One path for a direct leg, the rhumb line (constant heading, straight on the Mercator map): the distance marks are on the solid line (less than 2 px from it), the dotted great circle stays beside it as the comparison, on a direct route too; 5 to 12 marks in the view at any zoom, without a sudden jump', 'D',
@@ -5532,7 +5534,7 @@ def d_barbpath(c):
         for z in (3, 3.5, 4, 5, 6, 8):
             r = c.js(probe, [z, mid])
             seen.append((z, r['n'], r['worst'], r['marks'], r['worstMark']))
-        c.ok(all(n >= 8 for z, n, w, m, wm in seen if 3.5 <= z <= 6), f'{name}: {seen}', 'barbs are along the line in the view at the wide zooms (at 3 the view is a world view: no barbs)')
+        c.ok(all(n >= 4 for z, n, w, m, wm in seen if 3.5 <= z <= 6), f'{name}: {seen}', 'barbs are along the line in the view at the wide zooms (at 3 the view is a world view: no barbs)')
         c.ok(all(w < 2 and wm < 2 for z, n, w, m, wm in seen), f'{name}: {seen}', 'every barb and every distance mark is less than 2 px from the line, at every zoom')
         c.eq(c.js("() => !!window.__mp.S.gc"), True, f'{name}: the dotted great circle is there, the comparison', what='dotted')
         pr = c.js("""() => { const S = window.__mp.S, line = S.marksPts, smp = (S.prof && S.prof.samples) || [], psi = la => Math.log(Math.tan(Math.PI / 4 + la * Math.PI / 360)), X = p => [p.lon * Math.PI / 180, psi(p.lat)]; let worst = 0;
@@ -5549,3 +5551,42 @@ def d_barbpath(c):
       for (const p of s) { const t = (psi(p.lat) - psi(a.lat)) / (psi(b.lat) - psi(a.lat)), x = a.lon + (b.lon - a.lon) * t; worst = Math.max(worst, Math.abs(p.lon - x) * Math.cos(p.lat * Math.PI / 180) * 60) }
       return { n: s.length, worst: Math.round(worst * 10) / 10 } }""")
     c.ok(far['n'] >= 10 and far['worst'] < 1, f'{far}', 'the places where the wind is read are on the rhumb line (the line in degrees was up to 90 NM from it)')
+
+
+@case('D175', 'Wind barbs on a route that is one straight line: never closer than 30 px to each other, never on a distance mark or its label (the labels read 1000, 1500…), at 1 280 and 390 px', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0243 (the ergonomist, on the capture of KDEN DCT LFST at 1 280): the labels of the distance marks were hidden by the barbs (« \'00 », « \'50 » instead of 1000, 1500) and sixty barbs on one straight line overlapped, their shafts and flags hiding the line; the barbs are put before the labels and skip a mark or its label, two barbs are at least 30 px from each other (the count, 40 to 80 of SOG-0214, is a ceiling)')
+def d_barbgap(c):
+    pts = [('KDEN', 39.8617, -104.6731), ('LFST', 48.5383, 7.6282)]
+    wind = {'dirDeg': 270, 'kt': 60, 'tempC': -45, 'levelFt': 35000, 'at': '2026-11-11T10:00:00Z'}
+    f = flight()
+    f['route'] = {'text': 'KDEN LFST', 'dep': 'KDEN', 'arr': 'LFST', 'points': [{'id': i, 'lat': la, 'lon': lo, 'wind': dict(wind, kt=50 + 10 * k)} for k, (i, la, lo) in enumerate(pts)]}
+    f['level'] = {'ft': 35000}
+    for w, h in ((1280, 760), (390, 844)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        hook_map(c)
+        mid = c.js("() => { const S = window.__mp.S; return window.MapsRender.rhumbAt(S.marksPts[0], S.marksPts[1], .5) }")
+        c.js("""() => { window.__ord = []; if (!CanvasRenderingContext2D.prototype.__ordHook) { const f = CanvasRenderingContext2D.prototype.fillText, s = CanvasRenderingContext2D.prototype.stroke;
+          CanvasRenderingContext2D.prototype.fillText = function (t) { window.__ord.push(['t', String(t)]); return f.apply(this, arguments) };
+          CanvasRenderingContext2D.prototype.stroke = function () { window.__ord.push(['s', this.lineWidth]); return s.apply(this, arguments) }; CanvasRenderingContext2D.prototype.__ordHook = true } return true }""")
+        for z in (3.5, 4, 5, 6):
+            c.js("([z, mid]) => { window.__ord = []; window.__mpMap.jumpTo({ center: [mid.lon, mid.lat], zoom: z }); return true }", [z, mid])
+            c.wait(1800)
+            r = c.js("""() => { const S = window.__mp.S, box = S.box.getBoundingClientRect(), hs = (S.windHits || []).filter(h => h.x >= 0 && h.x <= box.width && h.y >= 0 && h.y <= box.height), m = window.__mpMap;
+              let min = 1e9; hs.forEach((a, i) => hs.forEach((b, j) => { if (i < j) min = Math.min(min, Math.hypot(a.x - b.x, a.y - b.y)) }));
+              const marks = (S.marks || []).map(k => m.project([k.lon, k.lat])).filter(q => q.x >= 0 && q.x <= box.width && q.y >= 0 && q.y <= box.height);
+              // no barb anchor on a distance mark’s point
+              const on = hs.filter(h => marks.some(q => Math.hypot(q.x - h.x, q.y - h.y) < 7)).length;
+              // the labels of the marks (« 500 », « 1000 »…) are written after the last barb stroke of the drawing, with their halo
+              const o = window.__ord, lastBarb = o.map((e, i) => e[0] === 's' && (Math.abs(e[1] - 1.8) < .01 || e[1] === 5) ? i : -1).reduce((a, b) => Math.max(a, b), -1),
+                lastLabel = o.map((e, i) => e[0] === 't' && /^\d{3,4}$/.test(e[1]) ? i : -1).reduce((a, b) => Math.max(a, b), -1);
+              return { n: hs.length, min: Math.round(min), on, marks: marks.length, lastBarb, lastLabel } }""")
+            c.ok(r['n'] >= 3 and (r['n'] < 2 or r['min'] >= 29.9), f'{w} px, zoom {z}: {r}', 'barbs are in the view and none is closer than 30 px to another')
+            c.eq(r['on'], 0, f'{w} px, zoom {z}: no barb on a distance mark', what=str(r))
+            c.ok(r['marks'] == 0 or (r['lastLabel'] > r['lastBarb'] >= 0), f'{w} px, zoom {z}: {r}', 'the labels of the marks are written after the barbs')
+        c.js("([z, mid]) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat + 4], zoom: z }); return true }", [3.5, mid])
+        c.wait(1800)
+        c.shot(f'D175_{c.design}_{w}_delivered.png')

@@ -1750,6 +1750,7 @@
           ...toC(+a.lat, +a.lon)
         })).filter(h => h.x > -10 && h.y > -10 && h.x < W + 10 && h.y < H + 10),
         zoneLabels,
+        routeLabelDraws: labels, // ce qui s'écrit sur la route (texte, place, taille) : l'écran les redessine par-dessus les barbules
         routeLabels: labels.map(l => ({
           x0: l.align === 'center' ? l.x - l.text.length * l.size * .3 : l.x,
           x1: l.align === 'center' ? l.x + l.text.length * l.size * .3 : l.x + l.text.length * l.size * .6,

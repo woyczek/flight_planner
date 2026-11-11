@@ -789,6 +789,20 @@ function draw() {
     status();
   }
   S.windHits = !mission && !pick && !world && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
+  if (S.windHits
+    .length) { // les points de repère et les libellés de la route se lisent : redessinés par-dessus les barbules, avec leur halo (SOG-0243)
+    const col = MapsRender.palette(!!S.theme?.dark).route;
+    ctx.save();
+    ctx.fillStyle = col;
+    for (const m of S.marks || []) {
+      const q = toC(m.lat, m.lon);
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (const l of got0.routeLabelDraws || []) MapsRender.kit.halo(ctx, l.text, l.x, l.y, l.size, l.color || col, l.align);
+    ctx.restore();
+  }
   // les étiquettes de la route du vol (rectangles, du canvas à la vue) : les itinéraires proposés ne les barrent pas et ne nomment pas un point déjà nommé
   S.routeLabelRects = [...(got0.routeLabels || []), ...(got0.plan || []).map(p => p.r).filter(Boolean)].map(r =>
     ({ // y compris les noms de TOC et de TOD

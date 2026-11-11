@@ -696,6 +696,8 @@ a barb at each point that has one and every 50 NM between two such points, inter
 linearly). Staff 30 px towards where the wind comes from, feathers on the low-pressure side (left with the wind at one's
 back in the northern hemisphere, right in the southern): pennant 50 kt, barb 10 kt, half barb 5 kt, a circle under 3 kt,
 a 5 px background edge under it. Tooltip: "Wind 290° / 65 kt", then temperature, level and forecast hour.
+Two barbs are at least 30 px apart on the screen (one shaft; the 40 to 80 of the view is a ceiling of 80, SOG-0243); a barb whose point would fall on a distance mark slides along
+the line (8 to 24 px) or is skipped, and the marks' points and labels are drawn again over the barbs with their halo.
 
 ### 6.5 Towns
 

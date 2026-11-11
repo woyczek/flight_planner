@@ -2842,3 +2842,13 @@ the Map had seen in between: the same line to within the frame's own sampling.
   user decides (not changed here: `winds.js samples` keeps the great-circle `nm`).
 - **Noreg** D174 (barbs and marks less than 2 px from the line at six zooms, direct and with a point between, the dotted great circle there; places read on the rhumb line; profile samples the
   same): red before (barbs 81 px, 89 NM, 58 NM), green now; D167 redone for the rhumb line; E20 (`posAt`); geo bench. D29's and D130's fixtures were unchanged in the end.
+
+## Barbs on a straight line: a minimal spacing, and the labels of the marks stay readable (SOG-0243, retouch; the ergonomist on the capture of KDEN DCT LFST at 1 280)
+- **Seen**: the labels of the distance marks were hidden by the barbs (« '00 », « '50 » for 1000, 1500…), and about sixty barbs on one straight line overlapped, shafts and flags hiding the line:
+  the rule « 40 to 80 in the view » (SOG-0214) is no help when the whole route is one line.
+- **Done**: (a) two barbs are at least `WIND_GAP_PX` = 30 px (a shaft) from each other, those that were read first; the count (80) is a ceiling, the 40 of SOG-0214 is no longer a target;
+  (b) a barb whose anchor would fall on a distance mark slides along the line (8 to 24 px each way: the line is straight) or is skipped; (c) the points of the marks and their labels are
+  drawn again after the barbs with their halo (`draw.js`, the route's label list `routeLabelDraws` of `render.js`): a shaft that crosses them hides nothing. Wanted by the user: nothing
+  of the route is covered by what is read along it.
+- **Noreg** D175 (1 280 and 390 px, four zooms: spacing, no anchor on a mark, labels written after the last barb stroke), red before (20 px apart, 5 anchors on marks, labels before the barbs);
+  D166 now checks the ceiling and the spacing.

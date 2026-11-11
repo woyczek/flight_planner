@@ -412,9 +412,12 @@ function drawBarb(ctx, c, w, col, lw = 1.8) {
  *  de vent inventé à travers un lieu sans vent ou entre deux lieux éloignés de plus de 400 NM. Rend [{ w, c }] des barbules de la vue. */
 const WIND_MIN = 40,
   WIND_MAX = 80,
-  WIND_TARGET = 60;
+  WIND_TARGET = 60,
+  /** Écart minimal à l'écran entre deux barbules (px : une hampe) : sur une route qui tient sur un trait droit, soixante barbules se chevauchaient et cachaient le trait ; le compte
+   *  « 40 à 80 » est un plafond, l'espacement la règle (SOG-0243, retouche). */
+  WIND_GAP_PX = 30;
 
-function windsInView(list, toC, W, H) {
+function windsPicked(list, toC, W, H) {
   const at = list.map(w => ({
       w,
       c: toC(w.lat, w.lon)
@@ -474,6 +477,72 @@ function windsInView(list, toC, W, H) {
   for (let t = 0; t < 2 && (out.length < WIND_MIN || out.length > WIND_MAX); t++) {
     step = Math.max(4, step * (out.length - seen.length) / Math.max(1, WIND_TARGET - seen.length));
     out = build(step);
+  }
+  return out;
+}
+/** Les barbules de la vue (windsPicked : de 40 à 80, éclaircies ou complétées), jamais posées sur un point de repère de distance : une barbule dont le point tomberait sur un repère se décale le long du
+ *  trait (de 8 à 24 px, de part et d'autre : le trait est droit) ou saute ; deux barbules sont à WIND_GAP_PX au moins l'une de l'autre, les lues d'abord ; au plus WIND_MAX. Les points
+ *  des repères et leurs libellés (« 1000 », « 1500 ») sont redessinés par-dessus les barbules (draw.js) : une hampe qui les croise ne les cache pas. Rend [{ w, c }]. */
+function windsInView(list, toC, W, H) {
+  const blocks = (S.marks || []).map(m => {
+      const c = toC(m.lat, m.lon);
+      return {
+        x0: c.x - 7,
+        x1: c.x + 7,
+        y0: c.y - 7,
+        y1: c.y + 7
+      };
+    }),
+    boxOf = ({
+      c
+    }) => ({
+      x0: c.x - 3,
+      x1: c.x + 3,
+      y0: c.y - 3,
+      y1: c.y + 3
+    }),
+    hit = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0,
+    pts = (S.marksPts || []).map(p => toC(p.lat, p.lon)),
+    // la direction à l'écran du tronçon de la route le plus proche du point (la loxodromie est droite sur la carte)
+    legDir = c => {
+      let best = null,
+        bd = Infinity;
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1],
+          b = pts[i],
+          dx = b.x - a.x,
+          dy = b.y - a.y,
+          l2 = dx * dx + dy * dy,
+          t = l2 ? Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.y - a.y) * dy) / l2)) : 0,
+          d = Math.hypot(c.x - a.x - t * dx, c.y - a.y - t * dy);
+        if (d < bd && l2) {
+          bd = d;
+          best = [dx / Math.sqrt(l2), dy / Math.sqrt(l2)];
+        }
+      }
+      return best;
+    },
+    out = [];
+  for (const q of windsPicked(list, toC, W, H)) {
+    if (out.length >= WIND_MAX) break;
+    const dir = legDir(q.c);
+    for (const sh of [0, 8, -8, 16, -16, 24, -24]) {
+      if (sh && !dir) break;
+      const c = sh ? {
+          x: q.c.x + dir[0] * sh,
+          y: q.c.y + dir[1] * sh
+        } : q.c,
+        b = boxOf({
+          w: q.w,
+          c
+        });
+      if (blocks.some(k => hit(b, k)) || out.some(o => Math.hypot(o.c.x - c.x, o.c.y - c.y) < WIND_GAP_PX)) continue;
+      out.push(sh ? {
+        ...q,
+        c
+      } : q);
+      break;
+    }
   }
   return out;
 }
