@@ -4,7 +4,7 @@
  "updated": "2026-11-11",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2469295",
+  "organisation": "1d59fc9",
   "fiches": 239,
   "untranslated": 0,
   "priorities": 152
@@ -1360,7 +1360,7 @@
     {
      "id": "SOG-0131",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Passe d'ergonomie (refactoring) : confronter chaque écran à la roadmap idéale et à l'ergonomie idéale, et challenger les demandes",
      "en": "Ergonomics pass (refactoring): confront every screen with the ideal roadmap and ergonomics, challenge the requests",
      "de": "Ergonomie-Durchgang (Refactoring): jeden Bildschirm an idealer Roadmap und Ergonomie messen, Anfragen hinterfragen",
@@ -2755,7 +2755,7 @@
     {
      "id": "SOG-0229",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Données : refonte de l'écran de construction de la base, depuis les spécifications fonctionnelles — proposition de l'ergonome pour le jeudi 12/11",
      "en": "Data: redesign of the base build screen from the functional specifications — proposal for Thursday 12 Nov",
      "de": "Daten: Neugestaltung des Aufbau-Bildschirms aus den funktionalen Spezifikationen — Vorschlag für Donnerstag, 12.11.",
