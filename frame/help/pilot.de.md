@@ -136,7 +136,7 @@ auf der Karte führt zu diesem Schritt zurück, das Routenfeld bereit zur Eingab
 
 **Zu prüfende Anflüge.** Ein Anflug, dessen Lesung zweifelhaft ist (Zeilen der Codiertabelle nicht gelesen, Geometrie passt nicht…), wird trotzdem angeboten, markiert „⚑ zu prüfen“, sein Grund im Tooltip: Sie können ihn von Hand wählen, nichts wählt ihn für Sie. Die Anflüge, die das AIP nur als Karte gibt (ohne Codiertabelle), stehen unter den Listen, „Nur als Karte im AIP“, jeder mit seiner Karte. Gewählt, nennt ein zu prüfender Anflug seinen Grund in einer Zeile unter der Liste, und die eingeklappte Zusammenfassung der Ankunft trägt „⚑“.
 
-**Aus Little Navmap gelesene Verfahren.** Ein in der Little-Navmap-Datenbank dieses Geräts gelesenes Verfahren trägt „Little Navmap, auf diesem Gerät gelesen“. Es bleibt auf diesem Gerät: Der Flug behält nur seinen Namen, keinen seiner Punkte, und die Dateien für X-Plane und MSFS lassen es weg (eine Zeile sagt es beim Export).
+**Aus Little Navmap gelesene Verfahren.** Ein in der Little-Navmap-Datenbank dieses Geräts gelesenes Verfahren trägt „Little Navmap, auf diesem Gerät gelesen“. Es bleibt auf diesem Gerät: Der Flug behält nur seinen Namen, keinen seiner Punkte. Die Dateien für X-Plane und MSFS enthalten es wie die anderen Verfahren.
 
 **Aus Little Navmap lesen.** Für einen Flugplatz, für den die Basis kein Verfahren hat (zum Beispiel KDEN), auf einem Gerät, auf dem der Launcher eine Little-Navmap-Datenbank gefunden hat, liest „Aus Little Navmap lesen“ seine Verfahren in dieser Datenbank, über den Launcher. Zuvor muss die persönliche Nutzung in Daten › Quellen mit persönlicher Lizenz angekreuzt sein; sonst erinnert eine Zeile daran und nichts wird gelesen.
 

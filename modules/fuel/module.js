@@ -264,12 +264,6 @@ const TX = {
   rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
   // le bloc « Aides radio » de l'étape Départ (SOG-0200)
   aidsTitle: ['Aides radio', 'Radio aids', 'Funknavigationshilfen', 'Radioayudas'],
-  // SOG-0210 : les procédures lues de Little Navmap ne partent pas dans les fichiers des simulateurs
-  fmsLnmOut: ['Lue(s) de Little Navmap sur ce poste, laissée(s) hors du fichier : {l}.',
-    'Read from Little Navmap on this device, left out of the file: {l}.',
-    'Aus Little Navmap auf diesem Gerät gelesen, nicht in der Datei: {l}.',
-    'Leída(s) de Little Navmap en este equipo, fuera del archivo: {l}.'
-  ],
   aidsRoute: ['VOR / DME de la route ({n})', 'VOR / DME of the route ({n})', 'VOR / DME der Route ({n})', 'VOR / DME de la ruta ({n})'],
   aidsNone: ['Aucune aide radio en base pour ce vol.', 'No radio aid in the base for this flight.',
     'Keine Funknavigationshilfe in der Basis für diesen Flug.',
@@ -5547,22 +5541,18 @@ async function exportFms(which) {
       st = await Promise.resolve().then(() => s.ctx.aerodb?.status?.()).catch(() => null),
       cycle = st?.cycle || Object.values(st?.published || {}).filter(Boolean).sort().pop() || null;
     if (gone(s)) return;
-    // SOG-0210 : une procédure lue de Little Navmap reste sur ce poste : laissée hors du fichier, et dit en une ligne
-    const pub = pubProcs(procs || {}),
-      left = lnmNames(procs || {});
+    // SOG-0238 (l'utilisateur, 11/11 : « tout ce qui vient de la bdd peut partir vers le simu ») : une procédure lue de Little Navmap
+    // part dans le fichier comme les autres, ses positions prises sur l'appareil au moment de l'export (jamais dans data/ : pubProcs)
     const file = FMS.exportOf({
       xp11: 'fms1100',
       xp10: 'fmsv3',
       pln: 'pln2020'
-    } [which] || 'fms1100', pubFlight(f, procs || {}), CF.expandedPath(f, pub), {
-      procs: pub,
+    } [which] || 'fms1100', f, CF.expandedPath(f, procs || {}), {
+      procs: procs || {},
       cycle,
       ...look
     });
     download(file.name, file.text, `${file.type};charset=utf-8`);
-    if (left.length) s.ctx.notify(tt(TX.fmsLnmOut, {
-      l: left.join(', ')
-    }), 'warn');
   } catch (e) {
     if (!gone(s)) s.ctx.notify(tt(TX.fmsFailed), 'warn');
   }
@@ -6333,47 +6323,12 @@ function keepLocks(r) {
 
 // ---------------------------------------------------------------- ce qui est lu de Little Navmap reste sur ce poste (SOG-0210, N2)
 // Sécurisation (10/11, N2) : les points d'une procédure lue dans la base de Little Navmap du poste restent sur l'appareil ; le vol n'en
-// garde que la référence (l'identifiant choisi : terrain et nom) ; les fichiers des simulateurs les laissent de côté et le disent.
+// garde que la référence (l'identifiant choisi : terrain et nom). Les fichiers des simulateurs, eux, les portent (SOG-0238, l'utilisateur
+// le 11/11 : « tout ce qui vient de la bdd peut partir vers le simu »).
 /** Une fiche lue de Little Navmap (aerodb fetchLnm : status 'lnm', lnm: true). */
 const isLnm = rec => !!rec && typeof rec === 'object' && (rec.status === 'lnm' || rec.lnm === true);
-/** Les procédures choisies sans les fiches de Little Navmap (mises à null) : ce qui peut donner une position au vol ou à un fichier. */
+/** Les procédures choisies sans les fiches de Little Navmap (mises à null) : ce qui peut donner une position au vol (data/). */
 function pubProcs(procs) {
   if (!procs || typeof procs !== 'object') return procs;
   return Object.fromEntries(Object.entries(procs).map(([k, v]) => [k, isLnm(v) ? null : v]));
-}
-/** Le vol pour un fichier des simulateurs : une copie sans les identifiants des procédures lues de Little Navmap (les écrivains y
- *  lisent les noms : SID, STAR, APP du .fms). */
-function pubFlight(f, procs) {
-  const pr = f?.route?.procedures;
-  if (!pr || typeof pr !== 'object') return f;
-  const at = {
-      sid: ['dep', 'sid'],
-      sidTrans: ['dep', 'trans'],
-      star: ['arr', 'star'],
-      starTrans: ['arr', 'trans'],
-      app: ['arr', 'app'],
-      appTrans: ['arr', 'appTrans']
-    },
-    out = structuredClone(pr);
-  for (const [k, v] of Object.entries(procs || {}))
-    if (at[k] && isLnm(v) && out[at[k][0]] && typeof out[at[k][0]] === 'object') delete out[at[k][0]][at[k][1]];
-  return {
-    ...f,
-    route: {
-      ...f.route,
-      procedures: out
-    }
-  };
-}
-/** Les noms des procédures choisies lues de Little Navmap (« SID LNM1A »), pour la ligne de l'export. */
-function lnmNames(procs) {
-  const kind = {
-    sid: 'SID',
-    sidTrans: 'SID',
-    star: 'STAR',
-    starTrans: 'STAR',
-    app: 'APP',
-    appTrans: 'APP'
-  };
-  return [...new Set(Object.entries(procs || {}).filter(([k, v]) => kind[k] && isLnm(v)).map(([k, v]) => `${kind[k]} ${PR.nameOf(v, v.id)}`))];
 }

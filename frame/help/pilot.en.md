@@ -127,7 +127,7 @@ route field ready for typing.
 
 **Approaches to check.** An approach whose reading is doubtful (rows of the coding table not read, a geometry that does not fit…) is still offered, marked "⚑ to check", its reason in the tooltip: you can choose it by hand, nothing chooses it for you. The approaches the AIP gives only as a chart (no coding table) are said under the lists, "Chart only in the AIP", each with its chart. Once chosen, an approach to check says its reason on a line under the list, and the folded summary of the arrival carries "⚑".
 
-**Procedures read from Little Navmap.** A procedure read in this device's Little Navmap database reads "Little Navmap, read on this device". It stays on this device: the flight keeps only its name, none of its points, and the files for X-Plane and MSFS leave it out (a line says so at export).
+**Procedures read from Little Navmap.** A procedure read in this device's Little Navmap database reads "Little Navmap, read on this device". It stays on this device: the flight keeps only its name, none of its points. The files for X-Plane and MSFS carry it like the other procedures.
 
 **Read from Little Navmap.** For an aerodrome the base has no procedure for (KDEN, for example), on a device where the launcher found a Little Navmap database, "Read from Little Navmap" reads its procedures in that database, through the launcher. You must first tick personal use in Data › Personal-licence sources; otherwise a line reminds you and nothing is read.
 

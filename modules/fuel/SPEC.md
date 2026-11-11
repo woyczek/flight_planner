@@ -464,8 +464,8 @@ before the start, in step 5 after (F11).
   Navmap** on this device (`status: 'lnm'`, aerodb `fetchLnm`, kept in the page's memory only) says « Little Navmap, lue sur ce
   poste » on its line (never « X-Plane, local »); what is read there stays on the device (SOG-0210 N2, F143): the flight keeps the
   chosen id only (its reference: aerodrome and name), never a position of its points (`pubProcs` in `knownPoints` and in the ends of
-  « Auto »: a fix only that record places stays a word), and the FMS / PLN files leave it out (`pubFlight`, `pubProcs`), said in one
-  line « Lue(s) de Little Navmap sur ce poste, laissée(s) hors du fichier : SID … ». **« Lire depuis Little Navmap »** (SOG-0210,
+  « Auto »: a fix only that record places stays a word); the FMS / PLN files carry it like any other procedure, its positions taken
+  on the device at the export (SOG-0238, the user on 11 Nov: « tout ce qui vient de la bdd peut partir vers le simu »). **« Lire depuis Little Navmap »** (SOG-0210,
   F144) is on the discreet line of an aerodrome the base has no procedure for (`nodata`, the user's KDEN), on a device that can
   read Little Navmap (`AeroDb.lnmAvailable()`: a local launcher, not paired, a Little Navmap database found); an lnm record is never
   proposed by an address (`admit`); one aerodrome at a time; a paired device is refused by aerodb and the line says it; only the code

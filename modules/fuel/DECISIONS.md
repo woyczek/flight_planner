@@ -1658,3 +1658,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **11 Nov 2026 — F139 retouches** (the ergonomist, 390 capture read): one panonceau (« ⚑ à vérifier », the « ⚠ » of a runway
   conflict no longer added: the conflict stays in the tooltip), the reason of a chosen approach in doubt said in a line under the lists
   (a tooltip alone has no hover on a phone), « ⚑ » in the folded summary. F139 extended; counter-test: « ⚑ à vérifier ⚠ ».
+- **11 Nov 2026 — the simulator files carry what is read from Little Navmap** (SOG-0238, the user answering the report: « ce n'est
+  pas contraire. tout ce qui vient de la bdd peut partir vers le simu »): the filter of the exports (4eaf79a59) and its line are
+  removed; names and totals of an lnm procedure may stay in data/; still no position of it in the flight (`pubProcs` in `knownPoints`
+  and « Auto »). F143 turned: the export carries the SID and its point, the record none; counter-test: the file without them.

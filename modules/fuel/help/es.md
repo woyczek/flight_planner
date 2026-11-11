@@ -77,7 +77,7 @@ campo de la ruta listo para escribir.
 
 **Aproximaciones a comprobar.** Una aproximación cuya lectura es dudosa (filas de la tabla de codificación no leídas, una geometría que no cuadra…) se propone igualmente, marcada «⚑ a comprobar», su razón en la información emergente: puede elegirla a mano, nada la elige por usted. Las aproximaciones que el AIP solo da como carta (sin tabla de codificación) se dicen bajo las listas, «Solo carta en el AIP», cada una con su carta. Elegida, una aproximación a comprobar dice su motivo en una línea bajo la lista, y el resumen plegado de la llegada lleva «⚑».
 
-**Procedimientos leídos de Little Navmap.** Un procedimiento leído en la base de Little Navmap de este equipo lleva «Little Navmap, leída en este equipo». Se queda en este equipo: el vuelo solo guarda su nombre, ninguno de sus puntos, y los archivos para X-Plane y MSFS lo dejan fuera (una línea lo dice al exportar).
+**Procedimientos leídos de Little Navmap.** Un procedimiento leído en la base de Little Navmap de este equipo lleva «Little Navmap, leída en este equipo». Se queda en este equipo: el vuelo solo guarda su nombre, ninguno de sus puntos. Los archivos para X-Plane y MSFS lo llevan como los demás procedimientos.
 
 **Leer desde Little Navmap.** Para un aeródromo sin ningún procedimiento en la base (KDEN, por ejemplo), en un equipo donde el lanzador encontró una base de Little Navmap, «Leer desde Little Navmap» lee sus procedimientos en esa base, a través del lanzador. Antes hay que marcar el uso personal en Datos › Fuentes con licencia personal; si no, una línea lo recuerda y no se lee nada.
 
