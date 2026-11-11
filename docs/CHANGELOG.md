@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **AeroDB: first survey of the official sources of points and airways, State by State** (46 zones of Europe and North America: provider, address, format family, access, licence, evidence; `docs/technique/AERODB_POINTS_COVERAGE.md`; SOG-0240). No reader written.
 - **Fuel: « Lire depuis Little Navmap » only on a device that can read it** (`AeroDb.lnmAvailable()`), never from a reading's hint alone (Fuel SPEC, DECISIONS, help; noreg F144; SOG-0210).
 - **AeroDB: `lnmAvailable()`** — true only on a local, unpaired launcher that declares a Little Navmap base; Fuel shows its gesture only there (`frame/aerodb/aerodb.js`, INTEGRATION; noreg K170; SOG-0210).
 - **Fuel: an approach in doubt carries one panonceau**, its reason said under the list once chosen, « ⚑ » in the folded summary (Fuel SPEC, DECISIONS, help; noreg F139; SOG-0232).
