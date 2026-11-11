@@ -226,6 +226,9 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 
 ### 9.2 Step 1 — Flight
 
+- **The aircraft first** (SOG-0131 (a), 11 Nov 2026; the user: « oui »): its block is right under the title of the step, before the
+  aerodromes, the level and the family — nothing is computed without it. F146.
+
 - **Theme and sub-theme** (SOG-0202 T2, V3 spec § 10.48): two lists under the date, optional (« — aucun — »), written with the flight
   as `theme` / `series` (`frame/lib/current_flight.js` FUEL_FIELDS); offered from the airline's themes (`themes.json` under
   `FrameData.airline().root`, else its kind: `mission_themes.js` `forAirline`), the flight's theme always kept; read again on

@@ -4316,3 +4316,20 @@ def f145(c):
     c.ok(r['mid'] < 0.5, round(r['mid'], 2), 'the point that picks the weather model is on the rhumb line')
     c.ok(r['along'] and r['along'][0] < 0.5 and abs(r['along'][1] - 0.5) < 0.01, r['along'], 'a place on the rhumb line is on the route, at mid-length')
     c.ok(r['off'] and 28 < r['off'] < 32, r['off'], 'a place 30 NM north of it is 30 NM off the route (the corridor of the weather)')
+
+
+
+@case('F146', 'Step Flight: the aircraft comes first, before the aerodromes, the level and the family (nothing is computed without it)', 'F',
+      tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0131 (a) (the ergonomics pass; the user, 11 Nov: « oui »): the aircraft block right under the title of the step; captures 390 and 1 280')
+def f146(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('fuel', flight=True)
+        to_step(c, 0)
+        order = c.js("""(() => { const card = document.querySelector('[data-module=fuel] [data-block=flight]');
+          const at = sel => { const e = card.querySelector(sel); return e ? [...card.querySelectorAll('*')].indexOf(e) : -1 };
+          return { ac: at('[data-block=aircraft]'), dep: at('input[data-k=dep]'), fl: at('input[data-k=fl]'), th: at('[data-themes]') } })()""")
+        c.ok(0 <= order['ac'] < order['dep'] < order['fl'] and order['ac'] < order['th'], order, f'{w} px: the aircraft first, then the aerodromes, the level, the family')
+        c.js("(() => { document.querySelector('[data-module=fuel] [data-block=flight]').scrollIntoView({block: 'start'}); scrollBy(0, -140) })()")
+        c.shot(f'F146_{c.design}_{w}_{c.lang}_delivered.png')

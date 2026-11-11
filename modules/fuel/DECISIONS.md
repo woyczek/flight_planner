@@ -1670,3 +1670,5 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   interpolated in a straight line: 89 NM off the rhumb line at the middle of KDEN DCT LFST. The quote's distance (great circles) and
   course (initial course of the great circle) are NOT changed: the user's answer is awaited (Q-0019: +10 % on KDEN DCT LFST);
   one wind projected on one course for the whole route is a known defect, to take leg by leg after the acceptance. F145.
+- **11 Nov 2026 — the aircraft first at the step Flight** (SOG-0131 (a), ergonomics pass, the user: « oui »): the block moved, unchanged,
+  above the aerodromes (nothing is computed without it). F146; counter-test on origin/v3: the aircraft after the family.
