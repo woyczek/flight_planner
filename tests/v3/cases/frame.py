@@ -3468,7 +3468,7 @@ def a92(c):
     c.check_errors()
 
 
-_NOUNS = {'aircraft': {'fr': ('appareil', 'appareils'), 'en': ('aircraft', 'aircraft'), 'de': ('Luftfahrzeug', 'Luftfahrzeuge'), 'es': ('aeronave', 'aeronaves')},
+_NOUNS = {'aircraft': {'fr': ('aéronef', 'aéronefs'), 'en': ('aircraft', 'aircraft'), 'de': ('Luftfahrzeug', 'Luftfahrzeuge'), 'es': ('aeronave', 'aeronaves')},
           'theme': {'fr': ('famille', 'familles'), 'en': ('family', 'families'), 'de': ('Familie', 'Familien'), 'es': ('familia', 'familias')},
           'operator': {'fr': ('opérateur', 'opérateurs'), 'en': ('operator', 'operators'), 'de': ('Betreiber', 'Betreiber'), 'es': ('operador', 'operadores')}}
 
@@ -5989,6 +5989,23 @@ def a149(c):
         c.js(f"document.querySelector('{fiche('[data-theme-add]')}').scrollIntoView({{ block: 'center' }})")
         c.shot(f'A149_standard_{c.width}_{lang}_delivered.png')   # the family form with its letter, the families with their letters
     c.check_errors()
+
+
+@case('A150', 'Vocabulary (SOG-0242): the French texts of the fleet step of « Créer une compagnie », of « Rejoindre » and of the fleet count say « aéronef » for an aircraft; « appareil » stays the phone, the tablet or the computer', 'A', screens=False, tags=('airline',),
+      rule='ergonomist, 11 Nov (SOG-0242, the user): in French an aeroplane or a helicopter is an « aéronef », a « appareil » is the phone, the tablet or the workstation (« Compagnie de cet appareil », « Appareils connectés » unchanged); the module’s own name « Appareils » (capital) is the rail’s label until its owner renames it')
+def a150(c):
+    sj = 'frame/settings/access.js'
+    keys = ['wzFleetTitle', 'wzFleetHint', 'wzSheetQ', 'wzReg', 'wzRegAdd', 'wzLater', 'wzNoSheets', 'wzNoHit', 'wzPickFirst', 'jnPage', 'jnNone', 'jnCounts']
+    bad = {}
+    for k in keys:
+        fr = tx(sj, k, 'fr', after='const TA = {')
+        if re.search(r'\bappareils?\b', fr):   # lower case: the capital « Appareils » is the name of the module in the rail
+            bad[k] = fr
+    c.eq(bad, {}, 'no « appareil » in the French texts of the fleet step and of the fleet page', what='keys')
+    c.ok('cet appareil' in tx(sj, 'jnHint', 'fr', after='const TA = {'), '', 'and « cet appareil » stays the device in the hint of « Rejoindre »')
+    src = (ROOT / sj).read_text(encoding='utf-8')
+    m = re.search(r"noun:\s*\{\s*aircraft:\s*\[\s*\[([^\]]*)\]", src)
+    c.ok(bool(m) and "'aéronef'" in m.group(1) and 'appareil' not in m.group(1), m.group(1) if m else '', 'the count of the fleet agrees « aéronef » / « aéronefs »')
 
 
 @case('A143', 'In the rail of an application, never two entries with the same label, in the four languages; the paired devices are « Appareils connectés » in French (SOG-0213 follow-up: the user’s capture of Maintenance’s rail)', 'A',

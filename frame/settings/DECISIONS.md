@@ -736,3 +736,7 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   `added.themes[i].letter`; the rule is re-checked inside `writeThemes` on the file just read (another pilot may have taken the
   letter meanwhile). A family added before the letters gets a free letter proposed beside its name (one per family, distinct),
   written only on « Fixer la lettre ». No letter is invented silently: the report falls back to « X » until it is set.
+- **11 Nov 2026 — « aéronef » for an aircraft** (user, SOG-0242; ergonomics' list): read one by one, not a global replace — the
+  fleet count, the fleet step of the assistant, « Rejoindre », « Base des aéronefs », « Fiches d'aéronefs », « Références aéronefs »,
+  the data group and the French help; « cet appareil », « Appareils connectés », « appareil photo » stay. Case A150 forbids
+  the lower-case word in the fleet keys. « depuis Appareils » (the module's label, not mine) stays until its owner renames it.

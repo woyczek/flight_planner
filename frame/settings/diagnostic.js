@@ -58,7 +58,7 @@
       ],
       refKnown: ['Références connues', 'Known references', 'Bekannte Referenzen', 'Referencias conocidas'],
       refSia: ['Références SIA', 'SIA references', 'SIA-Referenzen', 'Referencias SIA'],
-      refAircraft: ['Références appareils', 'Aircraft references', 'Flugzeugreferenzen', 'Referencias de aeronaves'],
+      refAircraft: ['Références aéronefs', 'Aircraft references', 'Flugzeugreferenzen', 'Referencias de aeronaves'],
       refCached: ['Références en cache', 'Cached references', 'Referenzen im Cache', 'Referencias en caché'],
       lastReadError: ['Dernière erreur de lecture', 'Last read error', 'Letzter Lesefehler', 'Último error de lectura'],
       aeroSource: ['Base aéro : source', 'Aero base: source', 'Luftfahrtbasis: Quelle', 'Base aeronáutica: fuente'],

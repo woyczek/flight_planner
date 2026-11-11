@@ -346,7 +346,7 @@
     released: ['Zone {z} libérée sur cet appareil.', 'Zone {z} freed on this device.', 'Zone {z} auf diesem Gerät freigegeben.',
       'Zona {z} liberada en este dispositivo.'
     ],
-    aircraftDb: ['Base des appareils', 'Aircraft base', 'Flugzeugbasis', 'Base de aeronaves'],
+    aircraftDb: ['Base des aéronefs', 'Aircraft base', 'Flugzeugbasis', 'Base de aeronaves'],
     aircraftLine: ['{s} · {n} types', '{s} · {n} types', '{s} · {n} Typen', '{s} · {n} tipos'],
     storageState: ['{u} utilisé(s) sur {q}', '{u} used of {q}', '{u} von {q} belegt', '{u} usado(s) de {q}'],
     unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],

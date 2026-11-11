@@ -50,7 +50,7 @@
       'GitHub: token personal «clásico» con la casilla «repo» para el repositorio de un usuario, de grano fino (solo este repositorio, «Contents» lectura y escritura) para el de una organización; un año como máximo. GitLab (gitlab.com, framagit…): pegue la dirección del proyecto y el token de acceso de proyecto que le dio el administrador; solo se envía a esa instancia. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
     ],
     accessRead: [
-      'Sans échange coché, l’accès ne sert qu’à lire les bases aéronautiques et des appareils publiées dans le dépôt des données : rien n’est envoyé.',
+      'Sans échange coché, l’accès ne sert qu’à lire les bases aéronautiques et des aéronefs publiées dans le dépôt des données : rien n’est envoyé.',
       'With no exchange ticked, the access only reads the aeronautical and aircraft bases published in the data repository: nothing is sent.',
       'Ohne angekreuzten Austausch dient der Zugang nur zum Lesen der im Datenrepository veröffentlichten Luftfahrt- und Flugzeugdaten: Es wird nichts gesendet.',
       'Sin intercambio marcado, el acceso solo sirve para leer las bases aeronáuticas y de aeronaves publicadas en el repositorio de datos: no se envía nada.'
@@ -290,7 +290,7 @@
     // un nom avec ses deux formes par langue (fr, en, de, es) : le nombre l'accorde (frame/lib/plural.js), jamais « (s) »
     noun: {
       aircraft: [
-        ['appareil', 'appareils'],
+        ['aéronef', 'aéronefs'],
         ['aircraft', 'aircraft'],
         ['Luftfahrzeug', 'Luftfahrzeuge'],
         ['aeronave', 'aeronaves']
@@ -330,7 +330,7 @@
     jnEmpty: ['Collez d’abord la page de la flotte.', 'Paste the fleet page first.', 'Fügen Sie zuerst die Seite der Flotte ein.',
       'Pegue primero la página de la flota.'
     ],
-    jnNone: ['Aucun appareil lu : collez la page « Flotte » du site (le tableau des appareils).',
+    jnNone: ['Aucun aéronef lu : collez la page « Flotte » du site (le tableau des aéronefs).',
       'No aircraft read: paste the “Fleet” page of the website (the table of aircraft).',
       'Kein Luftfahrzeug gelesen: Fügen Sie die Seite „Flotte“ der Webseite ein (die Tabelle der Luftfahrzeuge).',
       'Ningún avión leído: pegue la página «Flota» del sitio (la tabla de aeronaves).'
@@ -382,16 +382,16 @@
     },
     wzFleetTitle: ['Flotte · {x}', 'Fleet · {x}', 'Flotte · {x}', 'Flota · {x}'],
     wzFleetHint: [
-      'Choisissez un type dans la base des fiches, puis tapez l’immatriculation. Vous pouvez aussi ajouter les appareils plus tard, depuis Appareils.',
+      'Choisissez un type dans la base des fiches, puis tapez l’immatriculation. Vous pouvez aussi ajouter les aéronefs plus tard, depuis Appareils.',
       'Choose a type in the sheets base, then type the registration. You can also add the aircraft later, from Aircraft.',
       'Wählen Sie einen Typ in der Datenblatt-Basis, dann tippen Sie das Kennzeichen. Sie können die Luftfahrzeuge auch später unter Luftfahrzeuge hinzufügen.',
       'Elija un tipo en la base de fichas y escriba la matrícula. También puede añadir las aeronaves más tarde, desde Aeronaves.'
     ],
-    wzSheetQ: ['Type ou nom d’appareil', 'Aircraft type or name', 'Typ oder Name des Luftfahrzeugs', 'Tipo o nombre de aeronave'],
+    wzSheetQ: ['Type ou nom d’aéronef', 'Aircraft type or name', 'Typ oder Name des Luftfahrzeugs', 'Tipo o nombre de aeronave'],
     wzReg: ['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'],
-    wzRegAdd: ['Ajouter l’appareil', 'Add the aircraft', 'Luftfahrzeug hinzufügen', 'Añadir la aeronave'],
+    wzRegAdd: ['Ajouter l’aéronef', 'Add the aircraft', 'Luftfahrzeug hinzufügen', 'Añadir la aeronave'],
     wzLater: ['Plus tard', 'Later', 'Später', 'Más tarde'],
-    wzNoSheets: ['Aucune fiche d’appareil lue : ajoutez les appareils plus tard.', 'No aircraft sheet read: add the aircraft later.',
+    wzNoSheets: ['Aucune fiche d’aéronef lue : ajoutez les aéronefs plus tard.', 'No aircraft sheet read: add the aircraft later.',
       'Kein Datenblatt gelesen: Luftfahrzeuge später hinzufügen.', 'Ninguna ficha leída: añada las aeronaves más tarde.'
     ],
     wzNoHit: ['Aucune fiche ne correspond.', 'No sheet matches.', 'Kein Datenblatt passt.', 'Ninguna ficha coincide.'],

@@ -52,7 +52,7 @@ export const TX = {
   groups: {
     base: ['Base aéronautique', 'Aeronautical base', 'Luftfahrtdatenbank', 'Base aeronáutica'],
     proc: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
-    aircraft: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
+    aircraft: ['Aéronefs', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
     weather: ['Météo', 'Weather', 'Wetter', 'Meteorología']
   },
   attention: ['À regarder', 'Needs attention', 'Bitte ansehen', 'Requiere atención'],
@@ -1121,7 +1121,7 @@ export const TX = {
     vfr: ['Points VFR des cartes VAC : télécharger, construire, purger', 'VFR points of the VAC charts: download, build, purge',
       'VFR-Punkte der VAC-Karten: herunterladen, aufbauen, bereinigen', 'Puntos VFR de las cartas VAC: descargar, construir, purgar'
     ],
-    aircraft: ['Appareils : télécharger, construire, purger', 'Aircraft: download, build, purge',
+    aircraft: ['Aéronefs : télécharger, construire, purger', 'Aircraft: download, build, purge',
       'Luftfahrzeuge: herunterladen, aufbauen, bereinigen',
       'Aeronaves: descargar, construir, purgar'
     ],
@@ -1133,7 +1133,7 @@ export const TX = {
   setLabel: {
     proc: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
     vfr: ['Points VFR', 'VFR points', 'VFR-Punkte', 'Puntos VFR'],
-    aircraft: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']
+    aircraft: ['Aéronefs', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']
   },
   setItems: {
     proc: ['États concernés', 'States affected', 'Betroffene Staaten', 'Estados afectados'],

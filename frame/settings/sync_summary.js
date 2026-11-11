@@ -23,7 +23,7 @@
   Object.assign(T, {
     // les sortes d'élément (le préfixe du chemin) : fiches d'appareils, missions, vols, flotte, le reste
     kind: {
-      sheets: ['Fiches d’appareils', 'Aircraft sheets', 'Flugzeug-Datenblätter', 'Fichas de aeronaves'],
+      sheets: ['Fiches d’aéronefs', 'Aircraft sheets', 'Flugzeug-Datenblätter', 'Fichas de aeronaves'],
       missions: ['Missions', 'Missions', 'Missionen', 'Misiones'],
       flights: ['Vols', 'Flights', 'Flüge', 'Vuelos'],
       fleet: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
