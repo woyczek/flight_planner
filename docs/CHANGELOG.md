@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Old deposits: a cycle read later than the cycle in force is worth no more than it** — the `issue` of `faa_nasr.geojson` is a file of data/ that others can write; read after the cycle in force, it never says « the cycle in force is built » (`tools/upload_cleanup.py`; noreg K172; review by Sécurisation).
 - **Launcher: the personal-use tick is held by the launcher** — `data/local/personal_use.json`, written by `POST /__setup/personal` (strict body, this workstation only, one console line per change, one migration of the tick of the page cache); `proc/lnm` reads it and ignores the `personal` of the page (`tools/personal_use.py`, `tools/launch.py`, `tools/regen/lnm.py`, DECISIONS, INTEGRATION; noreg K147, K173; SOG-0238). `base/fetch` still takes `personal: [...]` from the page.
 - **Report: an added family numbers its reports with its own letter** (`added.themes[i].letter`, anti-overlap in `cleanThemes`; `takenLetters` / `freeLetters` / `letterOf` for Settings) (report DECISIONS; noreg G17; SOG-0202).
 - **Settings › Company: a letter for the added families** — « Ajouter une famille » proposes the first free letter for the reports, refuses a taken one in words (the table's, M, D, X, another added family) and writes it in `added.themes[i].letter`; a family added before the letters gets a proposal, written only on « Fixer la lettre » (frame/settings SPEC, DECISIONS, help ×4; noreg A149; SOG-0202).

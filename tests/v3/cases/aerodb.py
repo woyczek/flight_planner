@@ -7828,6 +7828,14 @@ def k172(c):
              'NASR: the complete set of an older cycle goes when the set read (the issue of faa_nasr.geojson) is later; the set read stays', what='nasr')
         c.ok(all((up / nasr('29_Oct_2026', k)).is_file() for k in ('FIX', 'AWY', 'NAV')) and (up / nasr('26_Nov_2026', 'FIX')).is_file() and (up / nasr('01_Oct_2026', 'AWY')).is_file(), left(),
              'and an incomplete set is never removed: the one being deposited (FIX received) and the old partial one stay')
+        # the issue is read in a file of data/ that others can write (audit 157): a cycle later than the one in force is worth no more than it
+        for k in ('FIX', 'AWY', 'NAV'):
+            put(nasr('10_Sep_2026', k), 50)
+        for k in ('FIX', 'AWY', 'NAV'):
+            os.remove(up / nasr('29_Oct_2026', k))
+        (data / 'sia' / 'geojson' / 'faa_nasr.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'issue': '2099-01-01', 'features': []}), encoding='utf-8')
+        c.eq(UC.clean(str(data), 'us', '2026-10-29', '2026-10-29'), [], 'an issue of 2099 in faa_nasr.geojson (a file others can write) does not make « the cycle in force built »: the deposit of 10 Sep is not removed', what='forged issue')
+        c.ok((up / nasr('10_Sep_2026', 'FIX')).is_file(), left(), 'it is still there')
         # NATS: the AIP dates the zone; OBS and UAS keep their newest
         for n in ('EG_AIP_DS_20261029_XML.zip', 'EG_OBS_DS_20260903_XML.zip', 'EG_OBS_DS_20261001_XML.zip', 'EG_UAS_DS_20260903_XML.zip'):
             put(n)

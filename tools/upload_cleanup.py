@@ -68,6 +68,9 @@ def clean(data, zone, built, current, say=None):
     read = read_cycle(data, zone, built)
     if not read:
         return []
+    # le cycle lu vient d'un fichier de data/ que d'autres peuvent écrire (l'issue de faa_nasr.geojson : audit, ligne 157) : un cycle POSTÉRIEUR au cycle en vigueur ne vaut pas plus que lui, et il ne dit jamais « le cycle en vigueur est construit » (b)
+    future = read > current
+    read = min(read, current)
     groups, keep_newest = _groups([n for n in names if os.path.isfile(os.path.join(folder, n)) and not os.path.islink(os.path.join(folder, n))], zone)
     gone = []
     for g, entries in groups.items():
@@ -76,7 +79,7 @@ def clean(data, zone, built, current, say=None):
             if c >= read:        # celui que la construction a lu, ou plus récent : jamais
                 continue
             later_read = any(c < d <= read for d in cycles)       # (a) un dépôt plus récent a été lu
-            past_built = c < current and read >= current          # (b) son cycle est dépassé et le cycle en vigueur est construit
+            past_built = c < current and read >= current and not future          # (b) son cycle est dépassé et le cycle en vigueur est construit (lu, pas supposé)
             if keep_newest.get(g) and c == max(cycles):
                 continue
             if not (later_read or past_built):
