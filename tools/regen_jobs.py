@@ -147,6 +147,7 @@ class Job:
         self.token = token_urlsafe(32)
         self._inbox, self._given, self._cv = {}, set(), threading.Condition()
         self._offer, self._claimed = None, False
+        self.gap = None  # (verbe, départ d'avant, départ de ce travail) : voir Jobs._give_back
 
     def offer(self, payload=None):
         """Le verbe ouvre la réclamation du jeton par sa page sans fenêtre (POST /__setup/regen/job/claim), avec ce qu'elle
@@ -326,8 +327,10 @@ class Jobs:
             if gap and key in self.last and now - self.last[key] < gap:
                 wait = max(1, int(gap - (now - self.last[key]) + 0.999))
                 return {'ok': False, 'status': 429, 'reason': 'too-soon', 'wait': wait, 'message': f'too soon: wait {wait} s'}
+            prev = self.last.get(key)
             self.last[key] = now
             job = Job(*key, a, clean=lambda t: clean_error(t, self.ctx), author=author)
+            job.gap = (key, prev, now)      # le départ rendu si le travail dit qu'il n'a pas atteint le réseau (_run)
             if side:
                 self.side = job
             else:
@@ -348,6 +351,9 @@ class Jobs:
                 job.data['state'] = 'error'
                 job.data['result'] = {'message': msg[:300]}
             job.data['ended'] = int(time.time())
+            res = job.data['result']
+            if isinstance(res, dict) and res.get('reached') is False and job.gap:
+                self._give_back(job)
         finally:
             job.drop()  # sorties de zones non reprises : oubliées avec le travail, quoi qu'il arrive (même une BaseException)
             if job.data['state'] == 'running':  # BaseException (arrêt du fil) : jamais un travail qui « tourne » pour toujours
@@ -355,6 +361,17 @@ class Jobs:
                 job.data['ended'] = job.data['ended'] or int(time.time())
         with self.lock:
             self._save()
+
+    def _give_back(self, job):
+        """Le délai minimal (MIN_GAP) ne compte que les travaux qui ont atteint le réseau : un verbe qui a échoué avant de l'avoir fait rend { reached: False }, et le départ qu'il avait posé est retiré (SOG-0138 : « prochain essai dans 578 s » après un échec immédiat). Jamais un départ plus récent."""
+        key, prev, at = job.gap
+        with self.lock:
+            if self.last.get(key) == at:
+                if prev is None:
+                    self.last.pop(key, None)
+                else:
+                    self.last[key] = prev
+                self._save()
 
     def hold(self, why):
         """Suspend les départs (start refusé avec reason why) si aucun travail ne tourne ; False sinon. view, cancel, claim et

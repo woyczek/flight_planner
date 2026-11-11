@@ -7576,3 +7576,65 @@ def k163(c):
     c.eq((r['none'], r['foreign'], r['bad']), ([], [], []), 'an aerodrome without file, a foreign aerodrome, a bad code: nothing', what='empty')
     c.eq(([x['name'] for x in r['star']], [x['url'].split('/')[-1] for x in r['star']], [x['name'] for x in r['sid']], r['other']), (['STAR CONV RWY 05'], ['AD_2_LFST_STAR_RWY05_CONV.pdf'], ['SID CONV RWY 23'], []),
          'kind STAR / SID: the conventional charts only (the AIP codes the RNAV procedures, never a CONV chart); another kind: nothing', what='star sid')
+
+
+@case('K164', 'The ten-minute gap of weather/world counts the jobs that reached the NOAA: a job that failed before any read (the tool crashes, nothing written) does not forbid a new try (« prochain essai dans 578 s »)', 'K', static=True,
+      rule='Lot of 11 Nov 2026, challenge b of AeroDB (granted by the ergonomics session; user complaint « prochain essai dans 578 s »): MIN_GAP (600 s) was set when the job STARTED, so a job that failed at once (tool crash, unsafe path, cancelled before the first forecast time) still forbade a new try for ten minutes. A job that read the NOAA (the tool ran to its end, or said one forecast time) keeps the gap: the server is public')
+def k164(c):
+    import os
+    import tempfile
+    import time
+    RJ = _regen()
+    fake = ('import os, sys\n'
+            'here = os.path.dirname(os.path.abspath(__file__))\n'
+            'mode = open(os.path.join(here, "mode.txt")).read().strip()\n'
+            'if mode == "crash":\n'
+            '    print("Traceback: boom", file=sys.stderr); sys.exit(3)\n'
+            'if mode == "slow":\n'
+            '    import time; time.sleep(30)\n'
+            'if mode == "none":\n'
+            '    print("lecture impossible : timed out", file=sys.stderr); print("aucun synoptique monde \u00e9crit", file=sys.stderr); sys.exit(0)\n'
+            'print("@etape 1/3", flush=True); sys.exit(4)\n')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        script = os.path.join(td, 'fake_world.py')
+        open(script, 'w', encoding='utf-8').write(fake)
+        jobs = RJ.Jobs(RJ.REGISTRY, {'data': data, 'script': script}, min_gap={('weather', 'world'): 600})
+
+        def play(mode, cancel=False):
+            open(os.path.join(td, 'mode.txt'), 'w').write(mode)
+            s = jobs.start('weather', 'world', {})
+            if not s.get('ok'):
+                return s, None
+            if cancel:
+                time.sleep(0.5)
+                jobs.cancel(s['job'])
+            end = time.time() + 20
+            v = jobs.view()['job']
+            while v['state'] == 'running' and time.time() < end:
+                time.sleep(0.1)
+                v = jobs.view()['job']
+            return s, v
+
+        s, v = play('crash')
+        c.eq((s.get('ok'), (v['result'] or {}).get('reason')), (True, 'failed'), 'the tool crashes before any read: the job fails', what='crash')
+        s, v = play('crash')
+        c.eq((s.get('ok'), s.get('status'), s.get('reason')), (True, None, None), 'and a new try is not refused (no ten minutes lost for a failure that never reached the NOAA)', what='retry after crash')
+        s, v = play('slow', cancel=True)
+        c.eq((s.get('ok'), v['state']), (True, 'cancelled'), 'a job cancelled by the user before the first forecast time is read is a cancel', what='cancel')
+        s, v = play('crash')
+        c.eq(s.get('ok'), True, 'and it does not hold the next try either', what='retry after cancel')
+        s, v = play('none')
+        c.eq((s.get('ok'), (v['result'] or {}).get('reason')), (True, 'no-run'), 'the tool ran to its end and found no run (the NOAA was asked)', what='no run')
+        s, v = play('crash')
+        c.eq((s.get('ok'), s.get('status'), s.get('reason')), (False, 429, 'too-soon'), 'the NOAA was asked: the ten minutes hold (the server is public)', what='gap holds')
+        jobs2 = RJ.Jobs(RJ.REGISTRY, {'data': data, 'script': script}, min_gap={('weather', 'world'): 600})
+        open(os.path.join(td, 'mode.txt'), 'w').write('read')
+        s = jobs2.start('weather', 'world', {})
+        time.sleep(1.5)
+        end = time.time() + 10
+        while jobs2.view()['job']['state'] == 'running' and time.time() < end:
+            time.sleep(0.1)
+        again = jobs2.start('weather', 'world', {})
+        c.eq((again.get('ok'), again.get('reason')), (False, 'too-soon'), 'a job that read a forecast time (@etape) and then failed holds the gap too', what='etape holds')

@@ -8,7 +8,7 @@ Un verbe, `weather/world` { action?: 'build' (par défaut) | 'status' } :
   · `build` : exécute tools/build_world_weather.py (bibliothèque standard ; NOMADS de la NOAA, GFS 1°, sans clé ni quota) vers un dossier de travail, CONTRÔLE ce qu'il a écrit (un index de schéma 1, des fichiers nommés par lui seul, taille et nombre bornés), puis le
     met en place d'un coup dans data/weather/world/ (SOG-0138 : data/local/ n'est servi à personne, hidden() du lanceur ; data/weather/ l'est, et n'est ni dans l'arbre du lanceur, FRAME_SKIP, ni dans git : `weather/` dans data/.gitignore et dans .git/info/exclude, posés ici s'ils manquent ; une publication de plusieurs Mo toutes les six heures n'a rien à faire dans l'historique). L'ancienne publication de data/local/weather/world/ est déplacée une fois, pas reconstruite. La publication d'avant sert de reprise
     (`--keep file://…`) : même run de GFS → rien n'est redemandé à la NOAA. Rend { ok, kept, run, built, times, steps, files, bytes, seconds, reason?, message? } ; reason : 'no-run' (aucun run publié / NOAA injoignable : l'ancienne publication reste), 'invalid' (le dossier produit n'est pas conforme : rien n'est remplacé), 'timeout', 'cancelled', 'failed'.
-Rien n'est lu hors de la NOAA ; aucun chemin, aucune adresse ne vient de la page. Un départ par dix minutes au plus (MIN_GAP)."""
+Rien n'est lu hors de la NOAA ; aucun chemin, aucune adresse ne vient de la page. Un départ par dix minutes au plus (MIN_GAP), compté pour les travaux qui ont lu la NOAA : un échec avant toute lecture rend `reached: False`, le délai n'en tient pas compte."""
 import json
 import os
 import re
@@ -88,11 +88,13 @@ def _valid(folder):
 PROGRESS = re.compile(r'^@etape (\d{1,3})/(\d{1,3})\s*$')      # la ligne d'avancement de tools/build_world_weather.py (une par échéance lue)
 
 
-def _read_lines(proc, job, lines):
-    """Lit la sortie de l'outil ligne à ligne : « @etape k/n » devient l'avancement du travail, le reste est gardé (les dernières lignes servent de message)."""
+def _read_lines(proc, job, lines, seen=None):
+    """Lit la sortie de l'outil ligne à ligne : « @etape k/n » devient l'avancement du travail (et `seen` en garde la trace : la NOAA a été lue), le reste est gardé (les dernières lignes servent de message)."""
     for line in proc.stdout:
         m = PROGRESS.match(line)
         if m:
+            if seen is not None:
+                seen.append(1)
             job.step('synoptique monde : échéance %s sur %s' % m.groups(), int(m.group(1)), int(m.group(2)), 'étapes')
         elif line.strip():
             lines.append(line.strip())
@@ -173,7 +175,7 @@ def run(job, args, ctx):
     base = os.path.realpath(data)
     parent = os.path.dirname(dest)
     if not regen_jobs.inside(parent, base):
-        return {'ok': False, 'reason': 'failed', 'message': 'unsafe path'}
+        return {'ok': False, 'reason': 'failed', 'message': 'unsafe path', 'reached': False}
     os.makedirs(parent, exist_ok=True)
     ignored = _ignore(data)
     t0 = time.time()
@@ -185,14 +187,14 @@ def run(job, args, ctx):
     job.step('synoptique monde : lecture de GFS (NOAA)', 0, 1, 'étapes')
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), cwd=work)
-        lines, end = [], t0 + ctx.get('timeout', TIMEOUT)
-        reader = threading.Thread(target=_read_lines, args=(proc, job, lines), daemon=True)      # l'avancement (« @etape k/n », une ligne par échéance) monte au fur et à mesure ; lire la sortie en continu évite aussi qu'un tube plein ne fige l'outil
+        lines, seen, end = [], [], t0 + ctx.get('timeout', TIMEOUT)
+        reader = threading.Thread(target=_read_lines, args=(proc, job, lines, seen), daemon=True)      # l'avancement (« @etape k/n », une ligne par échéance) monte au fur et à mesure ; lire la sortie en continu évite aussi qu'un tube plein ne fige l'outil
         reader.start()
         while proc.poll() is None:
             if job.cancelled() or time.time() > end:
                 proc.kill()
                 proc.wait()
-                return {'ok': False, 'reason': 'cancelled' if job.cancelled() else 'timeout', 'seconds': round(time.time() - t0, 1)}
+                return {'ok': False, 'reason': 'cancelled' if job.cancelled() else 'timeout', 'seconds': round(time.time() - t0, 1), **({'reached': False} if job.cancelled() and not seen else {})}
             time.sleep(0.3)
         reader.join(5)
         lines = lines[-6:]
@@ -200,7 +202,7 @@ def run(job, args, ctx):
             job.log(line[:300])
         said = ' '.join(lines)
         if proc.returncode != 0:
-            return {'ok': False, 'reason': 'failed', 'message': said[:300], 'seconds': round(time.time() - t0, 1)}
+            return {'ok': False, 'reason': 'failed', 'message': said[:300], 'seconds': round(time.time() - t0, 1), **({} if seen else {'reached': False})}      # sorti en erreur sans avoir lu une échéance : la NOAA n'a pas été lue, le délai ne compte pas
         if not os.path.isdir(out):
             return {'ok': False, 'reason': 'no-run', 'message': said[:300], 'seconds': round(time.time() - t0, 1)}      # aucune publication écrite : l'ancienne reste
         if not _valid(out):
@@ -213,7 +215,7 @@ def run(job, args, ctx):
         shutil.rmtree(old, ignore_errors=True)
         return {'ok': True, 'kept': any('reprise' in x for x in lines), **_summary(dest), 'gitignore': ignored, **({'migrated': True} if moved else {}), 'seconds': round(time.time() - t0, 1)}
     except OSError as e:
-        return {'ok': False, 'reason': 'failed', 'message': str(e)[:200], 'seconds': round(time.time() - t0, 1)}
+        return {'ok': False, 'reason': 'failed', 'message': str(e)[:200], 'seconds': round(time.time() - t0, 1), 'reached': False}
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
