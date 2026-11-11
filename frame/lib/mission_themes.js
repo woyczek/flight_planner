@@ -7,6 +7,8 @@
 //
 //   THEMES                 [{ id, short (sigle), letter (numéros de CR), military, labels [fr, en, de, es], series: [{ value, labels, load? }],
 //                          defaultSeries? }] ; defaultSeriesOf(code, list) : la série par défaut d'une famille (SOG-0239)
+//   takenLetters(doc), freeLetters(doc, keepId), letterOf(id, doc) : la lettre des comptes rendus d'une famille ajoutée
+//                          (added.themes[i].letter, SOG-0202 ; anti-recouvrement aussi dans cleanThemes)
 //                          load : ce que transporte un vol de la série (freight : fret en kg, passengers : nombre), absent = rien
 //   themeOf(code)          le thème d'un code (alias : MEDEVAC → HEMS) ou null ; seriesOf(code) → [{ value, label }] (la forme des familles
 //                          du compte rendu) ; themes(lang) → [{ id, short, name, label }] ; LABELS / LETTERS : les tables du vocabulaire du CR
@@ -703,6 +705,9 @@ export const LETTERS = Object.freeze({
   MEDEVAC: 'M',
   DEMO: 'D'
 });
+/** Les lettres jamais attribuables à une famille ajoutée (SOG-0202) : celles de la table et des anciens codes (LETTERS), et « X », le
+ *  repli du compte rendu pour une famille sans lettre. */
+const RESERVED_LETTERS = Object.freeze([...new Set([...Object.values(LETTERS), 'X'])]);
 const at = lang => Math.max(0, LANGS.indexOf(lang));
 /** Le thème d'un code (alias compris) ou null. */
 export function themeOf(code) {
@@ -750,6 +755,7 @@ const labels4 = v => {
 export function cleanThemes(doc) {
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return null;
   const taken = new Set(THEMES.map(t => t.id)),
+    used = new Set(RESERVED_LETTERS), // SOG-0202 : la lettre d'une famille ajoutée, jamais celle d'une autre (anti-recouvrement)
     added = [];
   for (const t of (Array.isArray(doc.added?.themes) ? doc.added.themes : []).slice(0, 40)) {
     const id = String(t?.id ?? '').trim().toUpperCase(),
@@ -757,10 +763,16 @@ export function cleanThemes(doc) {
       lb = labels4(t?.labels);
     if (!THEME_ID.test(id) || taken.has(id) || !SHORT.test(short) || !lb || added.length >= ADDED_MAX.themes) continue;
     taken.add(id);
+    const letter = String(t?.letter ?? '').trim().toUpperCase(),
+      ok = /^[A-Z]$/.test(letter) && !used.has(letter);
+    if (ok) used.add(letter);
     added.push({
       id,
       short,
-      labels: lb
+      labels: lb,
+      ...(ok ? {
+        letter
+      } : {})
     });
   }
   const series = {},
@@ -860,6 +872,7 @@ export function forAirline(doc, kind, keep = '') {
       id: t.id,
       short: t.short,
       labels: t.labels,
+      letter: t.letter || '', // SOG-0202 : la lettre de ses comptes rendus ('' : « X »)
       added: true,
       series: (more[t.id] || []).map(s => ({
         ...s,
@@ -867,4 +880,26 @@ export function forAirline(doc, kind, keep = '') {
       }))
     });
   return out;
+}
+
+// ---------------------------------------------------------------- la lettre d'une famille ajoutée (SOG-0202, avec Réglages)
+// L'utilisateur, 11/11 : « oui, avec anti recouvrement ». Réglages propose freeLetters(doc)[0] à l'ajout, refuse une lettre de
+// takenLetters(doc) et l'écrit dans added.themes[i].letter ; cleanThemes la retire si elle est prise (le fichier est écrit par n'importe
+// quel pilote) ; le compte rendu numérote avec letterOf. `doc` : le fichier de la compagnie, brut ou passé par cleanThemes (relu ici).
+/** Les lettres prises : les réservées (table, anciens codes, « X ») et celles des familles ajoutées de `doc` — un Set. */
+export function takenLetters(doc) {
+  return new Set([...RESERVED_LETTERS, ...(cleanThemes(doc)?.added?.themes || []).map(t => t.letter).filter(Boolean)]);
+}
+/** Les lettres libres, dans l'ordre alphabétique ; `keepId` : la famille ajoutée en cours d'édition, dont la lettre reste proposable. */
+export function freeLetters(doc, keepId = '') {
+  const k = String(keepId || '').trim().toUpperCase(),
+    own = (cleanThemes(doc)?.added?.themes || []).find(t => t.id === k)?.letter || '',
+    taken = takenLetters(doc);
+  return [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].filter(l => l === own || !taken.has(l));
+}
+/** La lettre des comptes rendus d'une famille : celle de la table (ou d'un ancien code), sinon celle d'une famille ajoutée de `doc` ;
+ *  '' sinon (le compte rendu prend alors « X »). */
+export function letterOf(id, doc = null) {
+  const k = String(id ?? '').trim().toUpperCase();
+  return LETTERS[k] || (cleanThemes(doc)?.added?.themes || []).find(t => t.id === k)?.letter || '';
 }

@@ -637,3 +637,43 @@ def g16(c):
     c.tap('[data-module="report"] [data-do="new"]')
     c.tap('[data-module="report"] .f-steps button[data-step="1"]')
     c.until(f"{ser} === 'PASSENGERS'", timeout=5000, what='a new report after a Commercial one starts on « Passagers », never asking for freight first')
+
+
+
+@case('G17', 'Report: an added family numbers its reports with its own letter (anti-overlap: a letter of the table, « X » or another added family\'s is refused)',
+      'G', tags=('report',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0202 (user, 11 Nov: « oui, avec anti recouvrement »): added.themes[i].letter, written by Settings, kept by cleanThemes only when free; '
+      'takenLetters / freeLetters / letterOf of frame/lib/mission_themes.js; invented families GLD, BAL and WTR')
+def g17(c):
+    from lib import flight_docs
+    # the pure rules: GLD asks « H » (a letter of the table: refused), BAL asks « Q », WTR asks « Q » too (taken by BAL: refused)
+    raw = {'schema': 1, 'chosen': ['GLD', 'BAL', 'WTR'], 'added': {'themes': [
+        {'id': 'GLD', 'short': 'GLD', 'labels': ['Planeur', 'Glider', 'Segelflug', 'Planeador'], 'letter': 'H'},
+        {'id': 'BAL', 'short': 'BAL', 'labels': ['Ballon', 'Balloon', 'Ballon', 'Globo'], 'letter': 'q'},
+        {'id': 'WTR', 'short': 'WTR', 'labels': ['Hydravion', 'Seaplane', 'Wasserflugzeug', 'Hidroavión'], 'letter': 'Q'}]}}
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js("""async (raw) => { const MT = await import('/frame/lib/mission_themes.js'); const cl = MT.cleanThemes(raw);
+      return { letters: cl.added.themes.map(t => [t.id, t.letter || '']), taken: [...MT.takenLetters(raw)].sort().join(''),
+        free: MT.freeLetters(raw).join(''), freeBal: MT.freeLetters(cl, 'BAL').includes('Q'), of: [MT.letterOf('BAL', raw), MT.letterOf('GLD', raw),
+        MT.letterOf('HEMS', raw)], idem: JSON.stringify(MT.cleanThemes(cl)) === JSON.stringify(cl) } }""", raw)
+    c.eq(r['letters'], [['GLD', ''], ['BAL', 'Q'], ['WTR', '']], 'a letter of the table refused, a free one kept (upper case), a taken one refused', what='letters')
+    c.ok('X' in r['taken'] and 'Q' in r['taken'] and 'Q' not in r['free'] and 'X' not in r['free'] and r['free'], r, 'taken and free letters')
+    c.ok(r['freeBal'], r, 'the family being edited keeps its own letter proposable')
+    c.eq(r['of'][0], 'Q', 'letterOf: an added family\'s letter', what='letterOf BAL')
+    c.eq(r['of'][1], '', 'letterOf: none for an added family without a letter', what='letterOf GLD')
+    c.ok(r['of'][2] and r['idem'], r, 'letterOf of a family of the table; cleanThemes idempotent (Settings may pass its result)')
+    # the report numbers BAL with « Q »
+    docs = flight_docs() + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+                            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+                            ['airline/aaa/themes.json', raw, 'document'], ['cache/report/draft.json', {}, 'cache']]
+    c.open('report', docs=docs)
+    c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+    c.js("async () => { await window.FrameData.setAirline('aaa'); return true }")
+    c.tap('[data-module="report"] .f-steps button[data-step="1"]')
+    c.until("[...document.querySelectorAll('[data-module=report] select[data-family] option')].some(o => o.value === 'BAL')", timeout=8000,
+            what='the added family offered')
+    c.page.select_option('[data-module=report] select[data-family]', 'BAL')
+    path = _save_report(c)
+    d = c.doc(path)
+    mid = (d.get('metadata') or {}).get('missionId', '')
+    c.ok(mid.startswith('CRQ-'), mid, 'the report of BAL is numbered with « Q »')

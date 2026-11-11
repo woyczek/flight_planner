@@ -455,7 +455,8 @@ async function save() {
     m.metadata.missionId = V.crId({
       family: m.family,
       missionNumber: m.metadata.missionNumber,
-      crIds: await knownIds()
+      crIds: await knownIds(),
+      letter: ADDED[m.family]?.letter || '' // SOG-0202 : la lettre d'une famille ajoutée (Réglages), filtrée par MT.cleanThemes
     });
   }
   m.statistics = M.computeStatistics(m);
@@ -727,7 +728,7 @@ async function loadCategories() {
 }
 /** Les familles AJOUTÉES par la compagnie (Réglages, themes.json ; entrée non fiable filtrée par MT.cleanThemes : identifiant à la
  *  règle, jamais celui d'une famille de la table) sont aussi des familles du compte rendu : le formulaire commun seul, sans bloc ni
- *  charge propres, leurs séries (ajoutées) ; numéro de CR à la lettre X (une famille sans lettre, la règle de la V2). Les anciennes
+ *  charge propres, leurs séries (ajoutées) ; numéro de CR à sa lettre (added.themes[i].letter, SOG-0202), sinon à la lettre X (la règle de la V2). Les anciennes
  *  ajoutées sont retirées de FAMILIES à chaque lecture. */
 function addedFamilies(list) {
   for (const id of Object.keys(ADDED)) {

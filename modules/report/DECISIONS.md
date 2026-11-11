@@ -247,3 +247,7 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   family COMMERCIAL starts on « Passagers », not on « Fret » (the first of the list, which asked for freight on a passenger flight);
   the order of the series is unchanged; `defaultSeries` in the common table (frame/lib/mission_themes.js `defaultSeriesOf`), the other
   families keep the first series. G16; counter-test on origin/v3: « CARGO ».
+- **11 Nov 2026 — an added family numbers its reports with its own letter** (SOG-0202, the user: « oui, avec anti recouvrement »):
+  `added.themes[i].letter`, written by Settings (a free letter proposed, a taken one refused: `freeLetters` / `takenLetters` of
+  frame/lib/mission_themes.js, never a copy), kept by `cleanThemes` only when free (not one of the table's, not « M », « D », « X »,
+  not another added family's: the file is written by any pilot); without it, « X » as before. G17; counter-test on origin/v3: « CRX- ».

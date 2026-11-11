@@ -542,7 +542,7 @@ to replace them.
 <a id="report-step-2"></a>**The mission.** At the second step: the family, said by its acronym then its name ("SAR · Personnel recovery", suggested from your last report), the series, the mission identifier
 if the flight follows one, then the blocks specific to the family. Some blocks only appear for one series (for example
 VIP or ferry for special missions). Until you open this step it is marked "to check" instead of ✓: the family and
-the series of a new report are taken by default. The default series is the family's first, except for Commercial: "Passengers".
+the series of a new report are taken by default. The default series is the family's first, except for Commercial: "Passengers". A family added by the airline numbers its reports with the letter it was given in Settings.
 
 <a id="report-step-3"></a>**The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are

@@ -49,13 +49,14 @@ const parseCrId = v => {
 function crId({
   family,
   missionNumber = '',
-  crIds = []
+  crIds = [],
+  letter = '' // SOG-0202 : la lettre d'une famille ajoutée (MT.letterOf), sinon celle de la table, sinon « X »
 } = {}) {
   const mission = missionIdOf(missionNumber),
     parsed = crIds.map(parseCrId).filter(Boolean);
   if (mission) return `CR${mission}-${Math.max(0, ...parsed.filter(c => c.mission === mission).map(c => c.attempt)) + 1}`;
-  const letter = familyLetters[String(family || '').toUpperCase()] || 'X';
-  return `CR${letter}-${freeCode(Math.max(0, ...parsed.filter(c => c.free && c.letter === letter).map(c => c.free)) + 1)}-0`;
+  const l = familyLetters[String(family || '').toUpperCase()] || (/^[A-Z]$/.test(letter) ? letter : '') || 'X';
+  return `CR${l}-${freeCode(Math.max(0, ...parsed.filter(c => c.free && c.letter === l).map(c => c.free)) + 1)}-0`;
 }
 const outcomes = [
   opt('SUCCESS', L('Succès', 'Success', 'Erfolgreich', 'Éxito')), opt('PARTIAL_SUCCESS', L('Succès partiel', 'Partial success',
