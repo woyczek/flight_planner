@@ -262,8 +262,12 @@ def d32(c):
     c.until("!!document.querySelector('canvas.mp-pc')?.dataset.window", timeout=8000, what='the profile drawn')
     w = c.attr('canvas.mp-pc', 'data-window')
     total = float(w.split(',')[1])
-    want = _gc((64.7349, 177.7414), (64.5122, -165.4453))
-    c.le(round(abs(total - want), 1), 1.0, 'the profile is the great circle across 180°, not around the world', what=f'profile {total} NM, great circle {want:.1f} NM')
+    (la1, lo1), (la2, lo2) = (64.7349, 177.7414), (64.5122, -165.4453)
+    psi = lambda la: math.log(math.tan(math.pi / 4 + math.radians(la) / 2))
+    dl = math.radians((lo2 - lo1 + 180) % 360 - 180)                  # the short way across 180°
+    dp = math.radians(la2 - la1)
+    want = math.hypot(dp, (dp / (psi(la2) - psi(la1))) * dl) * 3440.065   # the rhumb line: the quote’s distance (SOG-0243, Q-0019)
+    c.le(round(abs(total - want), 1), 1.0, 'the profile is the rhumb line across 180° (the quote’s distance), not around the world', what=f'profile {total} NM, rhumb line {want:.1f} NM')
     hook_map(c)
     span = c.js("() => { const b = window.__mpMap.getBounds(); return b.getEast() - b.getWest() }")
     c.le(round(span, 1), 40, 'the framed span is a few tens of degrees (one continuous route)', what='framed longitude span')
@@ -5542,6 +5546,9 @@ def d_barbpath(c):
             t = l2 ? Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l2)) : 0; best = Math.min(best, Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy) * Math.cos(p.lat * Math.PI / 180) * 3440.065) } worst = Math.max(worst, best) }
           return { n: smp.length, worst: Math.round(worst * 10) / 10 } }""")
         c.ok(pr['n'] >= 100 and pr['worst'] < 12, f'{name}: {pr}', 'the profile (relief, spaces crossed, TOC / TOD, cursor) is sampled on the rhumb line of the route')
+        if len(use) == 2:   # the distance is the quote’s (Fuel counts each direct leg by compass: Q-0019, 4 849 NM), not the great circle’s 4 401
+            tot = c.js("() => window.__mp.S.prof.total / 1852")
+            c.ok(abs(tot - 4848.5) < 1.5 and abs(c.js("() => window.MapsRender.distances(window.__mp.S.marksPts).pop()") - 4848.5) < 1.5, f'{tot:.1f} NM', 'the profile and the marks count the direct leg along the rhumb line: 4 849 NM, as the quote')
         c.js("([z, mid]) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat + 4], zoom: z }); return true }", [3.5, mid])   # the dotted great circle, north of the line, is in the capture
         c.wait(1800)
         c.shot(f'D174_{c.design}_{"direct" if len(use) == 2 else "via"}_delivered.png')

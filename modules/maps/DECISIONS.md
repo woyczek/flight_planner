@@ -2852,3 +2852,8 @@ the Map had seen in between: the same line to within the frame's own sampling.
   of the route is covered by what is read along it.
 - **Noreg** D175 (1 280 and 390 px, four zooms: spacing, no anchor on a mark, labels written after the last barb stroke), red before (20 px apart, 5 anchors on marks, labels before the barbs);
   D166 now checks the ceiling and the spacing.
+
+## The Map counts a direct leg as the quote does: along the rhumb line (SOG-0243, Q-0019: the user said « oui »; Features SOG 4232bf38b)
+- Fuel's quote counts each direct leg by compass (`route.distanceNm` = the sum of `rhumbNm`: KDEN DCT LFST 4 849 NM, not 4 401). The Map's distances follow it: `MapsRender.distances` (the marks' labels and
+  positions, the edit's written `distanceNm`, the progress) and the profile library's leg lengths (`legDist`, hence the profile's axis, TOC / TOD, cursor) use `rhumbNm` (a copy of `frame/lib/geo.js`, compared by
+  the bench). One radius for every distance: 3 440,065 NM = 6 371 000 m / 1 852. The dotted great circle keeps its own great-circle length in its hover (the comparison). Noreg D174 (4 849 NM).

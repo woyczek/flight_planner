@@ -19,6 +19,8 @@
       h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
   };
+  /** Longueur (m) d'un tronçon : la loxodromie dans la Carte V3 (MapsRender.rhumbNm : la distance du devis, SOG-0243), le grand cercle là où elle n'est pas chargée (pages de la V2). */
+  const legDist = (a, b) => window.MapsRender?.rhumbNm ? window.MapsRender.rhumbNm(a, b) * NM : dist(a, b);
   /** Point interpolé entre a et b (fraction t) : sur la loxodromie du tronçon dans la Carte V3 (MapsRender.rhumbAt, le chemin du trait : SOG-0243) ;
    *  droit en degrés seulement là où la Carte n'est pas chargée (les pages de la V2, qui gardent leur copie). */
   const lerp = (a, b, t) => window.MapsRender?.rhumbAt ? window.MapsRender.rhumbAt(a, b, t) : {
@@ -407,7 +409,7 @@
     const legs = [];
     let total = 0;
     for (let i = 1; i < points.length; i++) {
-      const d = dist(points[i - 1], points[i]);
+      const d = legDist(points[i - 1], points[i]);
       legs.push({
         a: points[i - 1],
         b: points[i],

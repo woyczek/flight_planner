@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the distances follow the quote — each direct leg counted along the rhumb line** — the marks, the profile's axis, TOC / TOD and the cursor, the distance written by the Edit: KDEN DCT LFST 4 849 NM, not 4 401; the dotted great circle keeps its own length (maps DECISIONS; noreg D174; SOG-0243, Q-0019).
 - **Fuel: a direct leg is counted by compass** (rhumb-line distance and course in the quote, the flown path and the plan); a leg more than 2 % longer than its great circle is said under the route, « ajoutez des points intermédiaires » (Fuel DECISIONS, help; noreg F147; SOG-0243, Q-0019).
 - **Portugal: points and routes from NAV Portugal's eAIP** (zone `pt`, source `navpt`, personal-licence regime like Sweden: the tick, the zone published in the owner's data repository; ENR 4.4, 3.1, 3.3 read from the fixed address, the edition in the page title; a profile of `tools/eaip_annexe15.py`; the licence line on « Sources et licences »; noreg K174; SOG-0240, first State of the F1 family).
 - **Map: the Edit help is a « How to » fold on the screen, no more a notification** — « Glissez un point… » and the « + » hint are in a closed fold at the top left of the map while the mode is open (the user: one note at a time on a phone); help ×4, SPEC § 4 and § 12 (noreg D2).

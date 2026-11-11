@@ -439,10 +439,19 @@
       h = Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
     return 2 * Math.asin(Math.min(1, Math.sqrt(h))) * 6371008.8 / NM;
   };
-  /** Distances cumulées (NM) depuis le premier point. */
+  /** (COPIE de rhumbNm de frame/lib/geo.js, comparée par frame/lib/test/geo.html.) Distance (NM) de a à b le long de la loxodromie : celle du devis (SOG-0243, Q-0019 : « oui »). */
+  function rhumbNm(a, b) {
+    const psi = lat => Math.log(Math.tan(Math.PI / 4 + Math.max(-89.9, Math.min(89.9, +lat)) * Math.PI / 360)),
+      dPhi = rad(+b.lat - +a.lat),
+      dLam = rad(((((+b.lon - +a.lon + 180) % 360) + 360) % 360) - 180),
+      dPsi = psi(b.lat) - psi(a.lat),
+      q = Math.abs(dPsi) > 1e-12 ? dPhi / dPsi : Math.cos(rad(+a.lat));
+    return Math.hypot(dPhi, q * dLam) * 3440.065;
+  }
+  /** Distances cumulées (NM) depuis le premier point, le long de la loxodromie de chaque tronçon (comme le devis de Carburant). */
   function distances(points) {
     const out = [0];
-    for (let i = 1; i < points.length; i++) out.push(out[i - 1] + gc(points[i - 1], points[i]));
+    for (let i = 1; i < points.length; i++) out.push(out[i - 1] + rhumbNm(points[i - 1], points[i]));
     return out;
   }
   /** (COPIE de rhumbAt de frame/lib/geo.js, que frame/lib/test/geo.html compare : un seul chemin pour tout ce qui longe la route, la loxodromie, SOG-0243.)
@@ -1773,6 +1782,7 @@
     wrapLon,
     distances,
     rhumbAt,
+    rhumbNm,
     marks,
     mercator,
     drawBackground,

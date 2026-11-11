@@ -272,6 +272,10 @@
       for (const f of [0, .13, .5, .9, 1])
         if (R.rhumbAt(a, b, f).lat !== rhumbAt(a, b, f).lat || R.rhumbAt(a, b, f).lon !== rhumbAt(a, b, f).lon) rhSame = false;
     ck('copie de render.js : rhumbAt identique', rhSame);
+    let nmSame = true;
+    for (const [a, b] of pairs)
+      if (Math.abs(R.rhumbNm(a, b) - rhumbNm(a, b)) > 1e-9) nmSame = false;
+    ck('copie de render.js : rhumbNm identique', nmSame);
     ck('copie de modules/maps/render.js identique (nearLon ; wrapLon, sauf une longitude déjà dans [-180, 180[ rendue telle quelle)', same,
       bad);
   } catch (e) {
