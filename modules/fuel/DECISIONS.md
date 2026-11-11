@@ -1662,3 +1662,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   pas contraire. tout ce qui vient de la bdd peut partir vers le simu »): the filter of the exports (4eaf79a59) and its line are
   removed; names and totals of an lnm procedure may stay in data/; still no position of it in the flight (`pubProcs` in `knownPoints`
   and « Auto »). F143 turned: the export carries the SID and its point, the record none; counter-test: the file without them.
+- **11 Nov 2026 — a direct leg is flown on its rhumb line** (SOG-0243, the user: « orthodromie n'est pas le cas nominal. un direct se
+  fait au compas. »): the positions read along a leg are on its rhumb line (frame/lib/geo.js `rhumbAt`, written by BUGS SOG):
+  `progress.js position()` (the flight's position), `flight_path.js routeMidpoint` (the point that picks the weather model),
+  `flight_time.js plannedPositionAt`, and the weather corridor (`alongRoute`, moved to progress.js, pure: the closest point of the
+  rhumb line, the gap measured to it; the bounding box of a leg already holds its rhumb line). Before, latitude and longitude were
+  interpolated in a straight line: 89 NM off the rhumb line at the middle of KDEN DCT LFST. The quote's distance (great circles) and
+  course (initial course of the great circle) are NOT changed: the user's answer is awaited (Q-0019: +10 % on KDEN DCT LFST);
+  one wind projected on one course for the whole route is a known defect, to take leg by leg after the acceptance. F145.

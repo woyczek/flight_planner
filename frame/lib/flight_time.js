@@ -5,6 +5,7 @@
 //   aides partagées avec flight_path.js : gcNm, num.
 
 import {
+  rhumbAt,
   unwrapLons,
   wrapLon
 } from './geo.js';
@@ -25,29 +26,6 @@ export const gcNm = (a, b) => {
     2) ** 2;
   return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(d)));
 };
-/** Point du grand cercle de a vers b à la fraction k de la distance (degrés ; longitude continue, sans repli). */
-function gcPoint(a, b, k) {
-  const d = gcNm(a, b) / 3440.065;
-  if (!(d > 1e-9) || k <= 0) return {
-    lat: a.lat,
-    lon: a.lon
-  };
-  if (k >= 1) return {
-    lat: b.lat,
-    lon: b.lon
-  };
-  const A = Math.sin((1 - k) * d) / Math.sin(d),
-    B = Math.sin(k * d) / Math.sin(d),
-    [la1, lo1, la2, lo2] = [a.lat * RAD, a.lon * RAD, b.lat * RAD, b.lon * RAD],
-    x = A * Math.cos(la1) * Math.cos(lo1) + B * Math.cos(la2) * Math.cos(lo2),
-    y = A * Math.cos(la1) * Math.sin(lo1) + B * Math.cos(la2) * Math.sin(lo2),
-    z = A * Math.sin(la1) + B * Math.sin(la2),
-    lon = Math.atan2(y, x) / RAD;
-  return {
-    lat: Math.atan2(z, Math.hypot(x, y)) / RAD,
-    lon: lon + 360 * Math.round((a.lon - lon) / 360) // la copie du monde du point de départ
-  };
-}
 /** Nombre fini lu strictement (un texte, null ou un booléen ne sont pas des minutes) ; sinon null. */
 export const num = v => typeof v === 'number' && Number.isFinite(v) ? v : null;
 /** Instant (ms) d'une date ISO, ou null. */
@@ -155,7 +133,7 @@ export function plannedPositionAt(f, now = Date.now(), opts = {}) {
     const a = T.pts[i],
       b = T.pts[Math.min(n - 1, i + 1)],
       nm = T.cum[i] + (T.cum[Math.min(n - 1, i + 1)] - T.cum[i]) * k,
-      g = gcPoint(a, b, k);
+      g = rhumbAt(a, b, Math.max(0, Math.min(1, k))); // SOG-0243 : sur la loxodromie du tronçon (le trait de la Carte)
     return {
       lat: g.lat,
       lon: wrapLon(g.lon),

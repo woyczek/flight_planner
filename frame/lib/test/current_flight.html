@@ -40,6 +40,9 @@
     routeNmToFlown,
     routeMidpoint
   } from '../current_flight.js?v=0';
+  import {
+    rhumbNm
+  } from '../geo.js?v=0';
 
   const rows = [],
     out = document.getElementById('out');
@@ -269,7 +272,7 @@
     JSON.stringify(
       strict?.min));
 
-  // branche océanique : la position suit le grand cercle (au nord de la droite des latitudes)
+  // branche océanique : la position suit la loxodromie du tronçon (SOG-0243 : « un direct se fait au compas »), plus le grand cercle
   const ocean = {
       route: {
         points: [{
@@ -291,12 +294,12 @@
       }
     },
     op = plannedPositionAt(ocean, min(200));
-  ck('océan : à mi-temps, sur le grand cercle (plus de 52° N, la droite donnerait 46° N)',
-    op && op.lat > 52, JSON.stringify(op));
-  ck('océan : à mi-chemin des deux terrains (± 1 NM)', op && near(gc({
+  ck('océan : à mi-temps, sur la loxodromie (latitude moyenne, 46° N ; le grand cercle donnerait plus de 52° N)',
+    op && near(op.lat, (40.64 + 51.47) / 2, 0.05), JSON.stringify(op));
+  ck('océan : à mi-chemin des deux terrains le long de la loxodromie (± 1 NM)', op && near(rhumbNm({
     lat: 40.64,
     lon: -73.78
-  }, op), gc(op, {
+  }, op), rhumbNm(op, {
     lat: 51.47,
     lon: -0.45
   }), 1), JSON.stringify(op));

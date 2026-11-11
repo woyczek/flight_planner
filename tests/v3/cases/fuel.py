@@ -4291,3 +4291,28 @@ def f144(c):
     c.tap(btn)
     paired = tx('modules/fuel/procedures_texts.js', 'paired', c.lang, after='procLnmWhy').replace('{icao}', 'LFML')[:20]
     c.until(_NOTE, paired, timeout=5000, what='a paired device is refused, and said')
+
+
+
+@case('F145', 'A direct leg is flown on its rhumb line: the position of the flight, the point that picks the weather model and the corridor of the route are on it (KDEN DCT LFST, invented codes)',
+      'F', tags=('fuel', 'maps'), designs=('standard',), screens=False,
+      rule='SOG-0243 (user, 11 Nov: « orthodromie n\'est pas le cas nominal. un direct se fait au compas. »): progress.js position(), flight_path.js '
+      'routeMidpoint and progress.js alongRoute on frame/lib/geo.js rhumbAt (BUGS SOG 59ab1737e); before, latitude and longitude interpolated in '
+      'a straight line: 89 NM off the rhumb line at mid-route; the quote\'s distance and course unchanged (Q-0019)')
+def f145(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js("""async () => {
+      const [PG, FP, G] = await Promise.all([import('/modules/fuel/progress.js'), import('/frame/lib/flight_path.js'), import('/frame/lib/geo.js')]);
+      const A = { lat: 39.86, lon: -104.67 }, B = { lat: 48.54, lon: 7.63 };   // XDEN, XLST: invented codes at rounded positions
+      const gc = (a, b) => { const r = Math.PI / 180, d = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) *
+        Math.sin((b.lon - a.lon) * r / 2) ** 2; return 2 * 3440.065 * Math.asin(Math.sqrt(d)) };
+      const L = gc(A, B), out = { pos: [], mid: 0, along: null, off: null };
+      for (const f of [0.1, 0.25, 0.5, 0.75, 0.9]) out.pos.push(gc(PG.position([A, B], [0, L], L * f), G.rhumbAt(A, B, f)));
+      out.mid = gc(FP.routeMidpoint([A, B]), G.rhumbAt(A, B, 0.5));
+      const m = G.rhumbAt(A, B, 0.5), a = PG.alongRoute ? PG.alongRoute([A, B], m) : null, o = PG.alongRoute ? PG.alongRoute([A, B], { lat: m.lat + 0.5, lon: m.lon }) : null;
+      out.along = a && [a.cross, a.along / L]; out.off = o && o.cross;
+      return out }""")
+    c.ok(all(x < 0.5 for x in r['pos']), [round(x, 2) for x in r['pos']], 'the position of the flight at 10 to 90 % of the leg is on its rhumb line')
+    c.ok(r['mid'] < 0.5, round(r['mid'], 2), 'the point that picks the weather model is on the rhumb line')
+    c.ok(r['along'] and r['along'][0] < 0.5 and abs(r['along'][1] - 0.5) < 0.01, r['along'], 'a place on the rhumb line is on the route, at mid-length')
+    c.ok(r['off'] and 28 < r['off'] < 32, r['off'], 'a place 30 NM north of it is 30 NM off the route (the corridor of the weather)')

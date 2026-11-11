@@ -9,10 +9,16 @@
 //     points) } ou null — legWinds : vent de chaque tronçon { dirDeg, kt } (ou null), wind : vent du devis en repli,
 //     windComponent(track, dir, speed) : composante sur la route (positive : arrière), celle de FuelModel.
 //   etas(P, startMs) → [{ i, at (ms) }] : heure prévue de passage à chaque point (le départ : après le roulage).
+//   alongRoute(pts, p) → { along (NM depuis le départ), cross (NM de la route) } : un lieu ramené à la route, chaque tronçon pris
+//     sur sa loxodromie (SOG-0243 : « un direct se fait au compas ») ; null sans tronçon.
 //   at(P, elapsedMin) → { nmFromDep, remainingNm, fuelUsed, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived') }.
 //   position(points, cum, nm) → { lat, lon, legIndex } : le point de la route à nm NM du départ.
 //   verticalPath(path, q) → [{ nm, ft }] : le chemin vertical prévu le long de flownPath (profile.path), contraintes de procédure comprises.
 //   nmAlong(path, pos) → NM : la distance du départ du point du chemin le plus proche d'une position (le départ est-il passé ?).
+import {
+  rhumbAt,
+  wrapLon
+} from '../../frame/lib/geo.js'; // la loxodromie d'un tronçon direct (SOG-0243, BUGS SOG)
 
 const R = Math.PI / 180;
 /** Distance orthodromique (NM). */
@@ -144,10 +150,18 @@ export function position(points, cum, nm) {
   if (!pts.length) return null;
   for (let i = 1; i < pts.length; i++)
     if (nm <= cum[i] + 1e-6) {
-      const f = cum[i] > cum[i - 1] ? (nm - cum[i - 1]) / (cum[i] - cum[i - 1]) : 0;
+      const f = cum[i] > cum[i - 1] ? (nm - cum[i - 1]) / (cum[i] - cum[i - 1]) : 0,
+        // SOG-0243 : sur la loxodromie du tronçon (le trait de la Carte), plus en ligne droite de latitude et longitude
+        g = rhumbAt({
+          lat: +pts[i - 1].lat,
+          lon: +pts[i - 1].lon
+        }, {
+          lat: +pts[i].lat,
+          lon: +pts[i].lon
+        }, f);
       return {
-        lat: +pts[i - 1].lat + (+pts[i].lat - +pts[i - 1].lat) * f,
-        lon: +pts[i - 1].lon + (+pts[i].lon - +pts[i - 1].lon) * f,
+        lat: g.lat,
+        lon: wrapLon(g.lon),
         legIndex: i - 1
       };
     }
@@ -363,4 +377,53 @@ export function nmAlong(path, pos) {
     };
   }
   return best.nm;
+}
+
+/** Un lieu p ramené à la route (voir l'en-tête) : sur chaque tronçon, la fraction f de sa loxodromie la plus proche de p (recherche
+ *  par sections dorées sur [0, 1] ; la distance à une loxodromie n'a qu'un minimum sur un tronçon), l'écart mesuré au point trouvé
+ *  (grand cercle de p à lui) ; `along` en distances orthodromiques des tronçons, comme le devis (la distance du devis ne change pas
+ *  sans la réponse de l'utilisateur, Q-0019). Le tronçon le plus proche gagne. */
+export function alongRoute(pts, p) {
+  const gcNm = gc;
+  const P = (pts || []).filter(x => Number.isFinite(+x?.lat) && Number.isFinite(+x?.lon)).map(x => ({
+    lat: +x.lat,
+    lon: +x.lon
+  }));
+  if (P.length < 2 || !Number.isFinite(+p?.lat) || !Number.isFinite(+p?.lon)) return null;
+  const q = {
+      lat: +p.lat,
+      lon: +p.lon
+    },
+    off = (a, b, f) => {
+      const g = rhumbAt(a, b, f);
+      return gcNm(q, {
+        lat: g.lat,
+        lon: wrapLon(g.lon)
+      });
+    },
+    phi = (Math.sqrt(5) - 1) / 2;
+  let best = null,
+    cum = 0;
+  for (let i = 1; i < P.length; i++) {
+    const a = P[i - 1],
+      b = P[i],
+      len = gcNm(a, b);
+    let lo = 0,
+      hi = 1;
+    for (let k = 0; k < 40 && hi - lo > 1e-6; k++) {
+      const m1 = hi - (hi - lo) * phi,
+        m2 = lo + (hi - lo) * phi;
+      if (off(a, b, m1) <= off(a, b, m2)) hi = m2;
+      else lo = m1;
+    }
+    const f = (lo + hi) / 2,
+      cross = Math.min(off(a, b, f), off(a, b, 0), off(a, b, 1)),
+      t = cross === off(a, b, 0) ? 0 : cross === off(a, b, 1) ? 1 : f;
+    if (!best || cross < best.cross) best = {
+      along: cum + t * len,
+      cross
+    };
+    cum += len;
+  }
+  return best;
 }

@@ -2503,31 +2503,6 @@ const wxIds = () => {
     corr = S.wxCorr?.list?.map(x => x.id) || [];
   return [...new Set([r.dep, ...corr, r.arr, r.altn].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z]{4}$/.test(x)))];
 };
-/** Position d'un point le long de la route (polyligne de points { lat, lon }) : { along (NM depuis le départ), cross
- *  (NM de la route) }, par projection sur le tronçon le plus proche (plan local, assez juste à l'échelle du couloir). */
-function alongRoute(pts, p) {
-  let best = null,
-    cum = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1],
-      b = pts[i],
-      k = Math.cos(a.lat * Math.PI / 180) * 60,
-      bx = (b.lon - a.lon) * k,
-      by = (b.lat - a.lat) * 60,
-      px = (p.lon - a.lon) * k,
-      py = (p.lat - a.lat) * 60,
-      l2 = bx * bx + by * by,
-      t = l2 > 0 ? Math.max(0, Math.min(1, (px * bx + py * by) / l2)) : 0,
-      cross = Math.hypot(px - t * bx, py - t * by),
-      len = gcNm(a, b);
-    if (!best || cross < best.cross) best = {
-      along: cum + t * len,
-      cross
-    };
-    cum += len;
-  }
-  return best;
-}
 /** Terrains du couloir de la route : aerodromes d'aerodb dans l'emprise de chaque tronçon élargie du rayon des réglages
  *  (10 NM par défaut), gardés à ce rayon de la route, départ et arrivée exclus, triés le long de la route. Gardé tant que
  *  la route et le rayon ne changent pas ; ceux sans METAR ni TAF sont écartés à l'affichage et pour le vent. */
@@ -2563,7 +2538,7 @@ async function wxCorridor() {
     }
     for (const [id, ad] of seen) {
       if (id === r.dep || id === r.arr) continue;
-      const pos = alongRoute(pts, {
+      const pos = PG.alongRoute(pts, { // SOG-0243 : sur la loxodromie de chaque tronçon
         lat: +ad.lat,
         lon: +ad.lon
       });

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a direct leg is flown on its rhumb line** — the flight's position, the weather-model point and the weather corridor are on it; the quote's distance and course unchanged pending the user's answer (Fuel DECISIONS; noreg F145; SOG-0243).
 - **Vocabulary (French): « aéronef » for an aeroplane or a helicopter** in Fuel, the fleet and sheets, Missions, the flight log and the report, screen and help; « appareil » stays the phone, tablet or workstation (noreg M41; SOG-0242).
 - **Map: the wind barbs keep 30 px between them and leave the distance marks readable** — on a route that is one straight line sixty barbs overlapped and hid the line, and the labels « 1000 », « 1500 » were hidden by them; a minimal spacing (the count of 80 is a ceiling), a barb slides off a mark, the marks' points and labels are drawn again over the barbs (maps DECISIONS; noreg D175, D166; SOG-0243).
 - **eAIP readers: a common core for the Annex 15 layout** (`tools/eaip_annexe15.py`: coordinates, limits, dates, the GeoJSON, the file name); `tools/airnav_eaip.py` (Ireland) and `tools/lfv_eaip.py` (Sweden) become two profiles of it, same output byte for byte (noreg K70, K71, K122, K127 unchanged; SOG-0240, first step of the F1 family).

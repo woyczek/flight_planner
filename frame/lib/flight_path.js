@@ -6,6 +6,7 @@
 //   routeMidpoint (le point qui choisit le modèle météo).
 
 import {
+  rhumbAt,
   wrapLon
 } from './geo.js';
 import {
@@ -439,7 +440,8 @@ export function altitudeAt(f, nm, opts = {}) {
 }
 
 // ---------------------------------------------------------------- le point qui choisit le modèle météo
-/** Point à mi-longueur d'une route (grand cercle point à point ; interpolé dans son tronçon, longitude dans [-180, 180[) : le
+/** Point à mi-longueur d'une route (distances orthodromiques ; dans son tronçon, sur la loxodromie, SOG-0243 ; longitude dans
+ *  [-180, 180[) : le
  *  seul point où la Carte et Atmosphère demandent au cadre son modèle (ctx.weather.modelFor), pour qu'ils prennent le même au
  *  bord des boîtes des modèles ; null sans deux points placés. */
 export function routeMidpoint(points) {
@@ -459,9 +461,9 @@ export function routeMidpoint(points) {
   const a = pts[i - 1],
     b = pts[i],
     k = cum[i] > cum[i - 1] ? (half - cum[i - 1]) / (cum[i] - cum[i - 1]) : 0,
-    dl = ((b.lon - a.lon + 540) % 360) - 180; // le plus court autour de la ligne de changement de date
+    g = rhumbAt(a, b, k); // SOG-0243 : sur la loxodromie du tronçon (l'écart de longitude le plus court, rendu continu)
   return {
-    lat: a.lat + (b.lat - a.lat) * k,
-    lon: wrapLon(a.lon + dl * k)
+    lat: g.lat,
+    lon: wrapLon(g.lon)
   };
 }
