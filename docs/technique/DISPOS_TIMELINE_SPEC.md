@@ -2,7 +2,7 @@
 
 This document describes the availability timeline component completely enough for a developer or a language model to
 rebuild it without seeing its code. The reference implementation is `shared/dispos_timeline.js`, with its formats in
-`shared/dispos_formats.js` and an example page in `labs/dispos_timeline.html`. To put the component into a page, read
+`shared/dispos_formats.js` and an example page in `_archives/2026-11-11_labs/dispos_timeline.html` (the former `labs/`, archived on 11 Nov 2026). To put the component into a page, read
 [DISPOS_TIMELINE_INTEGRATION.md](DISPOS_TIMELINE_INTEGRATION.md) instead.
 
 **How to use this document as a prompt.** Give it whole to the model and ask for one plain JavaScript file that defines

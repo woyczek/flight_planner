@@ -3,7 +3,7 @@
    leurs polices) ; metro, swiss, cupertino et material (maquettes à trancher : aplats, style typographique international, Réglages
    d'iOS, Material Design 3). Jour / nuit : nuit si le système la demande (prefers-color-scheme), sauf html[data-tone="day"] ;
    html[data-tone="night"] la force. Les jeux de nuit ne valent qu'à l'écran : l'impression garde l'encre du jour.
-   Un design peut aussi être posé sur un bloc ([data-design][data-tone], page de démonstration labs/design_primitives.html) :
+   Un design peut aussi être posé sur un bloc ([data-design][data-tone], page de démonstration labs/design_primitives.html, archivée le 11 nov. 2026) :
    chaque jeu déclare toutes ses couleurs, ses polices et ses rayons. */
 
 /* ---- communs à tous les designs : espaces, densité, échelle du texte */

@@ -19,7 +19,7 @@ Module side: [INTEGRATION.md](INTEGRATION.md).
 | `frame/design/demo_metro.html` | the mock-up page of the four designs (`?design=metro` by default, `swiss`, `cupertino`, `material`): scenes (phone and screen, day and night) of the real frame markup and primitives; the file kept its name, the link is known |
 | `frame/frame.css` | the application's chrome (header, rail, bottom tab bar, view, notes, dialogs); imports the two files above, so a page that loads `frame.css` has everything |
 | `frame/lib/icons.js` | the line icon set (ES module, owner: design) |
-| `labs/design_primitives.html` | every primitive in every design, day and night, side by side; the icons; the chart colours |
+| `_archives/2026-11-11_labs/design_primitives.html` (archived 11 Nov 2026) | every primitive in every design, day and night, side by side; the icons; the chart colours |
 
 ## 2. Tokens
 

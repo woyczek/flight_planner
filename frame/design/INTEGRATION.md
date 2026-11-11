@@ -1,7 +1,7 @@
 # V3 design — what a module does with it
 
 The rules a module follows so that it looks right in every design, by day and by night, on a phone and on a screen.
-The full list of tokens and primitives is in [SPEC.md](SPEC.md); `labs/design_primitives.html` shows each of them.
+The full list of tokens and primitives is in [SPEC.md](SPEC.md); the former demo page `labs/design_primitives.html` (archived on 11 Nov 2026, `_archives/2026-11-11_labs/`) showed each of them.
 
 ## 1. The rule
 

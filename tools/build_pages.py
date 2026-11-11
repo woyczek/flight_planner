@@ -32,7 +32,7 @@ import csp_policy  # noqa: E402
 
 ROOT = version_stamps.ROOT
 LFS_HEAD = b'version https://git-lfs.github.com/spec/v1'
-SKIP = ('data/', '.github/')  # données : jamais publiées (dépôt privé des données, lu par le service worker)
+SKIP = ('data/', '.github/', '_archives/')  # données : jamais publiées (dépôt privé des données, lu par le service worker) ; archives : gardées pour mémoire, jamais publiées (SOG-0152)
 
 
 def git(*args):

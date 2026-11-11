@@ -136,6 +136,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Archive: `labs/` moved to `_archives/2026-11-11_labs/`** (git mv, a `DEPRECATED - 2026-11-11` file; `tools/build_pages.py` and `tools/publish_dist.py` leave `_archives/` out, the dispos package reads its example page from the archive;
+  the Administration card no longer links the primitives page; docs and help sources follow; static case I42; SOG-0152, the user: « archiver »). The V2 pages (`apps/`, `shared/`, the root) stay where they are.
 - **Vocabulary: « aéronef » for an aircraft in the frame's French texts** (`frame/lib/external_links.js`, `frame/legacy.js`, `frame/help/intro-maintenance.fr.md`; static case I41; SOG-0242). « appareil » stays the phone, the tablet or the computer
   (« Appareils connectés », « sur cet appareil »); each occurrence read one by one, no global replace; en, de, es unchanged.
 - **Recette: a second tab « À trancher (n) » — the points to decide as multiple-choice with a free field, answered through the launcher** (`frame/help/recette.js`, `tools/regen/recette.py` `recette/decision` → `organisation/DECISIONS_REPONSES.json`;

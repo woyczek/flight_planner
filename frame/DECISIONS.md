@@ -967,7 +967,7 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - *The grip and ✕ rules weigh three classes*: the first run showed cupertino's `[data-design="cupertino"] :is(button, .f-btn)`
       winning over a two-class rule and turning the title blue; with the third class all seven designs are pixel-identical.
     - *Pointer capture is in a `try`*: a synthetic event (the bench) or a finished pointer throws `InvalidPointerId`.
-    - *Not done*: the sheet is not in `labs/design_primitives.html` (the design agent's page); no print rule for it (a
+    - *Not done*: the sheet is not in `labs/design_primitives.html` (the design agent's page; archived on 11 Nov 2026 in `_archives/2026-11-11_labs/`); no print rule for it (a
       fixed module is not printed).
   - **Maps' side** (`modules/maps/DECISIONS.md` has the full entry): the local `createSheet` and its CSS are removed; the pane
     and split height rules and the `!important` too (the frame applies `--f-view-h`, § 9.2); atmosphere is not touched.
@@ -2913,4 +2913,11 @@ The user: « 2 entrées » of Company (no fourth application). Done in the frame
 The user: « 11 aéronefs ». In French an aeroplane or a helicopter is an « aéronef »; « appareil » stays the phone, the tablet or the computer (« Appareils connectés », « sur cet appareil », « Compagnie de cet appareil »). The frame's own texts were read one occurrence at a time
 (no global replace: both meanings coexist in `frame/app.js`, all of them the device's): three said « appareil » for an aircraft — the missing aircraft type (`frame/lib/external_links.js`), the V2 page of the aircraft (`frame/legacy.js`) and the introduction of Maintenance. The tutorials and the module chapters
 assembled into the manuals (Fuel, Fleet, report) are their sessions' texts (Features SOG). Static case I41.
+
+## 11 November 2026 — `labs/` archived (SOG-0152, « archiver »)
+
+`labs/` (the primitives demo page, the availability timeline example, the first Atmosphere mock-up, old mobile test pages) moved by `git mv` to `_archives/2026-11-11_labs/`, a `DEPRECATED - 2026-11-11.md` in it. Checked: `tools/build_pages.py` publishes the tracked files minus `SKIP` — `_archives/` added; `.github/workflows/pages.yml` calls it
+and lists nothing; `tools/publish_dist.py` (version archive) excludes `EXCLUS` — `_archives/` added, and the dispos package, which shipped `labs/dispos_timeline.html` as its example, reads it from the archive (its `../shared/…` script paths are rewritten by the package, not by the page).
+The only live reader of `labs/` was the Administration card's « Primitives et designs » link (Settings' `admin_links.js`): removed, with its sentence in the help (×4) and in the Settings SPEC — the page cannot work from a deeper folder (`../frame/…`). The docs that cite it follow (`docs/technique`, `frame/design`, the agents' notes).
+Left as history: `docs/CHANGELOG.md`, the cloud journal, the specification, and the Atmosphere module's notes (`modules/atmosphere/DECISIONS.md`, `ROADMAP.md`, a comment of `atmo.js`: BUGS SOG's files). Static case I42.
 

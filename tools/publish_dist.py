@@ -35,7 +35,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 PREFIX = 'xplane-web-suite'
 # données, même fictives : jamais livrées (le code seul ; les données viennent du dépôt de données, INSTALL.md)
-EXCLUS = ('examples/', 'data/')
+EXCLUS = ('examples/', 'data/', '_archives/')  # les archives (SOG-0152) ne partent pas dans l'archive de version
 LFS_HEAD = b'version https://git-lfs.github.com/spec/v1'
 # modules livrés à part : chemin dans le paquet → chemin dans le dépôt ; example : page d'exemple dont les scripts du
 # dépôt (../shared/x.js?v=0) sont chargés à côté d'elle (x.js)
@@ -44,7 +44,7 @@ MODULES = {
         'files': {
             'dispos_timeline.js': 'shared/dispos_timeline.js',
             'dispos_formats.js': 'shared/dispos_formats.js',
-            'example.html': 'labs/dispos_timeline.html',
+            'example.html': '_archives/2026-11-11_labs/dispos_timeline.html',
             'DISPOS_TIMELINE_SPEC.md': 'docs/technique/DISPOS_TIMELINE_SPEC.md',
             'DISPOS_TIMELINE_INTEGRATION.md': 'docs/technique/DISPOS_TIMELINE_INTEGRATION.md',
             'LICENSE': 'LICENSES/MPL-2.0.txt',

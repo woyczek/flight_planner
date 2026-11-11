@@ -22,4 +22,4 @@ desktop before a "poussé".
 ## First lots
 
 1. Reading (one page): what of V2's designs is kept, the token list, the primitives the first three modules need.
-2. The tokens and primitives on the frame, with a demo page (`labs/`) that shows every primitive in every design.
+2. The tokens and primitives on the frame, (the former demo page `labs/` is archived, `_archives/2026-11-11_labs/`, since 11 Nov 2026).

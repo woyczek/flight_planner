@@ -467,7 +467,7 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 - **Today**: "Map threshold tuning" `#maps?tune=1` (read only on a phone), "Flight zone limit" (`panel: edge`), "Export a
   configuration for a pilot" removed (1 Nov 2026), "Add a pilot" (`panel: addPilot`), "Remote repository of data/" (`panel: remote`, `where: launcher`), "Airline
   API keys (IVAO, EAD Basic)" (`panel: keys`, `where: launcher`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
-  diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
+  diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches (`labs/design_primitives.html` left on 11 Nov 2026: `labs/` is archived, SOG-0152)
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
   **no V2 page any more** (SOG-0166, 10 Nov 2026: `maintenance.html`, `premier_lancement.html` and `map_parser.html` buttons removed; the « Anciennes pages (V2) » screen `#legacy` lists them; case A120).
 - Paths are relative to the root of the suite; pages outside the app open in a new tab, the app's own addresses in place.

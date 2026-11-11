@@ -17,7 +17,7 @@ données, les corrections transversales. Tes lots viennent de la session **Simpl
 `tools/publish_dist.py`, `tools/format_sources.py`, `config/repository_tree`, `docs/technique/FRAMEWORK.md`,
 `DISPOS_*.md`, `DETTE_TECHNIQUE.md`. Le module des dispos est livré à part (`dist/dispos-module-<version>.zip`,
 spécification et guide d'intégration dans `docs/technique/`) : toute retouche du module met à jour la spécification,
-le guide, `labs/dispos_timeline.html` et le paquet.
+le guide, `_archives/2026-11-11_labs/dispos_timeline.html` et le paquet.
 Hors de ton périmètre sans accord : les pages de fonctionnalités (CR, Carburant, Fiches, Mes missions), les clés.
 
 ## Façon de travailler

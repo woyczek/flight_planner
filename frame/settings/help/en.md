@@ -175,8 +175,7 @@ unfold their setting (see “A git repository for data/” and “The airline's 
 <a id="settings-sources"></a>**Data sources.** The “Data sources” button (`#sources`, Full level) lists the sources of aeronautical data the suite uses, considers or has set aside: for each, what it gives, its licence, its status and a link that opens in a new tab; for those that change with each AIRAC cycle (SIA, VAC, eAIP, CIFP), the link is the one of the cycle in force, written at the top of the screen. The screen downloads nothing. Under the button of the Administration card, the absolute address of the screen, to open or bookmark (“Copy the link”). It replaces the data laboratory, removed on 28 October 2026.
 
 **The benches, on a workstation.** Served by the launcher, they only open on a workstation with a launcher (elsewhere
-they are named without a link); paths relative to the root of the suite: `labs/design_primitives.html` (primitives and
-designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeronautical base, online and offline),
+they are named without a link); paths relative to the root of the suite: `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeronautical base, online and offline),
 `frame/store/test/` (data layer, against the fake GitHub) and `modules/maps/test/render.html` (map rendering).
 
 **The V2 pages.** No button in this card any more: every page of the old version (Settings › Maintenance, First launch, map studio…) is kept in the “Old pages (V2)” screen (`#legacy`), the last entry of each application's navigation column.

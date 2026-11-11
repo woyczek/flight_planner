@@ -67,7 +67,7 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
     (they keep working until then).
   - The frame fixed what was its own: `summary` at 44 px everywhere (fuel's "Detailed route" included), links, fields.
 - **23 Oct 2026 — Tests of lot 2**:
-  - `labs/design_primitives.html`: six panels, 54 icons, folded sections 44 px, fields 16 px, no horizontal scroll;
+  - `labs/design_primitives.html` (archived on 11 Nov 2026 in `_archives/2026-11-11_labs/`): six panels, 54 icons, folded sections 44 px, fields 16 px, no horizontal scroll;
   - the survey again: 7 screens × 375 / 1280 px × day / night × three designs (84 captures), no JavaScript error,
     no horizontal scroll;
   - every DOM colour follows the tokens (probe on every colour token), except fuel's and report's own bar shadow;

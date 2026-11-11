@@ -187,16 +187,6 @@
       'El estado de la sincronización y de las bases, línea por línea, para copiar al señalar un problema (tarjeta Acerca de).'
     ]
   }, {
-    id: 'primitives',
-    href: 'labs/design_primitives.html',
-    where: 'bench',
-    title: ['Primitives et designs', 'Primitives and designs', 'Primitive und Designs', 'Primitivas y diseños'],
-    text: ['Démonstration : chaque composant commun du cadre dans chaque design, jour et nuit.',
-      'Demonstration: each common component of the frame in each design, day and night.',
-      'Demonstration: jede gemeinsame Komponente des Rahmens in jedem Design, Tag und Nacht.',
-      'Demostración: cada componente común del marco en cada diseño, de día y de noche.'
-    ]
-  }, {
     id: 'aerodbBench',
     href: 'frame/aerodb/bench.html',
     where: 'bench',

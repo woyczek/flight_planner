@@ -2841,3 +2841,21 @@ def i41(c):
     c.ok("L('Aéronef', 'Aircraft'" in leg and "L('Appareil', 'Aircraft'" not in leg, '', 'the V2 page of the aircraft is « Aéronef »')
     c.ok('module Appareils' not in intro and 'aéronefs' in intro, '', 'the introduction of Maintenance says « aéronefs », not « module Appareils »')
 
+
+@case('I42', 'The former labs/ is archived: _archives/2026-11-11_labs/ with its DEPRECATED file, not published, not shipped, and no live page or tool reads labs/ any more (SOG-0152)', 'I', static=True,
+      rule='SOG-0152 (the user: « archiver »): labs/ moved by git mv to _archives/2026-11-11_labs/ with a « DEPRECATED - 2026-11-11 » file; tools/build_pages.py (SKIP) and tools/publish_dist.py (EXCLUS) leave _archives/ out; the dispos package reads its example page from the archive; the Administration card no longer links the primitives page; no source reads labs/ (history notes and the changelog keep the old name)')
+def i42(c):
+    root = c.root
+    c.ok(not (root / 'labs').exists(), '', 'labs/ is gone from the root')
+    arch = root / '_archives' / '2026-11-11_labs'
+    c.ok((arch / 'DEPRECATED - 2026-11-11.md').is_file() and (arch / 'design_primitives.html').is_file() and (arch / 'dispos_timeline.html').is_file(), str(sorted(p.name for p in arch.glob('*'))), 'the archive holds the pages and its DEPRECATED file')
+    bp = (root / 'tools' / 'build_pages.py').read_text(encoding='utf-8')
+    pd = (root / 'tools' / 'publish_dist.py').read_text(encoding='utf-8')
+    c.ok(re.search(r"SKIP = \([^)]*'_archives/'", bp) is not None, '', 'the site is built without _archives/ (tools/build_pages.py SKIP)')
+    c.ok(re.search(r"EXCLUS = \([^)]*'_archives/'", pd) is not None and "'_archives/2026-11-11_labs/dispos_timeline.html'" in pd, '', 'the version archive leaves _archives/ out; the dispos package reads its example from the archive')
+    rc, out, err = c.git('grep', '-nE', r"labs/(design_primitives|dispos_timeline|tests_mobile)", '--', '*.py', '*.js', '*.html', '*.yml', '*.json', ':(exclude)_archives', ':(exclude)apps/aide/docs_bundle.js')
+    hits = [l for l in out.splitlines() if l and '_archives' not in l]
+    c.ok(not hits, f'{len(hits)} source(s) still read labs/, first: {hits[0][:160] if hits else ""}', 'no source reads labs/')
+    links = (root / 'frame' / 'settings' / 'admin_links.js').read_text(encoding='utf-8')
+    c.ok("id: 'primitives'" not in links, '', 'the Administration card no longer links the primitives page')
+
