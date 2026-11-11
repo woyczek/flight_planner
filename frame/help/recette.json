@@ -1159,8 +1159,8 @@
     "de": "Eine Mission vorbereiten heißt einen Flug vorbereiten: gleiche Schritte samt Wetter; Distanz berechnet; Zeit im Einsatzgebiet",
     "es": "Preparar una misión es preparar un vuelo: mismos pasos, meteo incluida; distancia calculada; tiempo en zona"
    },
-   "test": "Compagnie › Missions › une mission › « Préparer ce vol ». (1) La Carte à côté reste la carte du vol : météo, procédures, édition de la route, cases de Couches ; la mission est dessinée par-dessus (zones, cible, points à rôle) avec sa fenêtre et « Carte de la mission ». (2) Dans Carburant, la puce « Mission <ID> » en haut ouvre la fiche (risques en tête) sans quitter l'étape : c'est le retour vers la mission. (3) Le devis a une distance dès qu'il y a une route. Dis si les listes « Carte fournie » et « Vue » te manquent dans la fenêtre. (Points verrouillés, temps sur zone, « Quitter la mission » : à venir.)",
-   "since": "2026-11-10",
+   "test": "Compagnie › Missions › une mission avec un rendez-vous ou une cible › « Préparer ce vol » : dans Carburant › Route › Points, les points de la mission sont dits « imposé par la mission » et ne se montent, ne se descendent ni ne se retirent ; le reste de la route se modifie librement. Sur la Carte, en Édition : ces points sont des carrés pleins, on ne peut ni les glisser ni les retirer. La préparation suit les mêmes étapes qu'un vol, météo comprise, avec la distance calculée.",
+   "since": "2026-11-11",
    "state": "ok",
    "delivered": "2026-11-10T14:55:14Z",
    "at": "2026-11-10T16:02:27Z"
