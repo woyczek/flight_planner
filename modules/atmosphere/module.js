@@ -545,7 +545,7 @@ export async function mount(el, ctx) {
     }) : '');
     else if (S.view === 'info') sheetTitle(ctxt(T('infoShort')), T('infoTitle'));
   }
-  /** Le vol en bref (appareil, route, niveau, départ, modèle et run), connu avant la météo ; la marque d'un vol qui n'est
+  /** Le vol en bref (aéronef, route, niveau, départ, modèle et run), connu avant la météo ; la marque d'un vol qui n'est
    *  pas le vol courant (démonstration, exemple, texte, fichier). */
   function flightSum() {
     const f = S.flight,

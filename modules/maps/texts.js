@@ -815,7 +815,7 @@ export const TX = {
     'Vertikalprofil nicht gezeichnet: keine Reiseflughöhe.', 'Trayectoria vertical no trazada: sin nivel de crucero.'
   ],
   planEstimated: [
-    'Trajectoire verticale estimée : montée et descente aux taux standard (performances de l’appareil non lues dans Carburant).',
+    'Trajectoire verticale estimée : montée et descente aux taux standard (performances de l’aéronef non lues dans Carburant).',
     'Vertical path estimated: climb and descent at standard rates (the aircraft’s performance is not read from Fuel).',
     'Vertikalprofil geschätzt: Steig- und Sinkflug mit Standardraten (Leistungsdaten des Flugzeugs nicht aus Carburant gelesen).',
     'Trayectoria vertical estimada: ascenso y descenso a tasas estándar (rendimiento de la aeronave no leído en Carburant).'
