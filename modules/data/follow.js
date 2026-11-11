@@ -234,8 +234,9 @@ export async function fetchThenBuild(zone) {
     ids: [zone],
     personal
   }), [zone]), true);
+  if (S !== me) return; // l'écran a été quitté pendant le travail : rien de ce que le travail dit n'est lu
   const out = S.lastOp?.out;
-  if (S !== me || !out || ['cancelled', 'interrupted', 'no-codes', 'no-script'].includes(out.kind)) return;
+  if (!out || ['cancelled', 'interrupted', 'no-codes', 'no-script'].includes(out.kind)) return;
   if (out.failed.some(f => f.zone === zone && f.source === 'faa')) return;
   await buildAfterPickup([zone]);
 }

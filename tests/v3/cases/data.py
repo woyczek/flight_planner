@@ -5773,6 +5773,47 @@ def l80(c):
       const late = { get result() { return q.result }, get error() { return q.error } }; q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), 900); q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), 900); return late } })()""")
     c.open('data', app='maintenance', docs=LEVEL3, wait=False)
     c.until("!!document.querySelector('[data-module=data]')", timeout=20000, what='the module is mounted (still loading)')
-    c.js("location.hash = '#devices'")
+    # leave, come back, leave again while the reads are slow: three mounts, two unmounts, each read still pending when its screen is gone
+    for h in ('#devices', '#data', '#devices', '#data', '#devices'):
+        c.js(f"location.hash = '{h}'")
+        c.wait(150)
     c.wait(5000)
+    c.check_errors()
+
+
+@case('L81', 'Données: leaving the screen while a download chained after a chosen NASR set is still running raises no page error (fetchThenBuild read the state of a screen that was gone)', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='the same shape as follow() (11 Nov, V3 Frame / BUGS SOG b69dfb381): a module variable tested after an await — fetchThenBuild read S.lastOp after settle() without first checking that the screen was still the one that started the job; leaving the screen while the job ran threw « Cannot read properties of null »')
+def l81(c):
+    st = _launcher(c, [_F403()], verbs=_VERBS)
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'gb': _zst('up-to-date'),
+                            'us': _zst('stale', {'code': 'source-old', 'source': 'faa', 'cycle': '2026-10-01', 'current': '2026-11-26'}, buildable=False)})
+    sent = []
+
+    def upload(route):
+        name = urllib.parse.unquote(route.request.headers.get('x-sog-name', ''))
+        sent.append(name)
+        route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'source': 'faa', 'zone': 'us', 'cycle': '2026-10-29', 'name': name, 'replaced': True, 'deposited': ['FIX', 'AWY', 'NAV'], 'missing': []}))
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.tap('[data-build] [data-verb=update]')
+    btn = '[data-zone-action=us] [data-act=zone-upload]'
+    c.until(f"!!document.querySelector('{btn}') && !document.querySelector('{btn}').disabled", timeout=8000, what='« Choisir le fichier… » on the refused zone')
+    running = _fview({'us': _fz('fetching', 1, 3, {'faa': {'state': 'downloaded', 'files': 3, 'bytes': 900}})}, state='running', step='Téléchargement', done=0, total=1)
+    st['views'], st['i'], st['start'] = [running], 0, (200, {'job': 'j2'})
+    c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click())")
+    c.js(f"document.querySelector('{btn}').scrollIntoView({{ block: 'center' }})")
+    with c.page.expect_file_chooser() as fc:
+        c.tap(btn)
+    fc.value.set_files({'name': '29_Oct_2026_NAV_CSV.zip', 'mimeType': 'application/zip', 'buffer': b'PK' + b'x' * 996})
+    for _ in range(40):
+        if len(_posts(st, 'fetch')) >= 2:
+            break
+        c.wait(250)
+    c.eq(len(_posts(st, 'fetch')), 2, 'the download of the zone is running (the job is still « running »)', what='fetch started')
+    c.js("location.hash = '#devices'")      # the pilot leaves while the job runs
+    c.wait(3000)
     c.check_errors()
