@@ -1009,6 +1009,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 157 | The airline's logo in PNG or WEBP only, never SVG (a9d29f446): the point of 156 fixed | acceptable |
 | 158 | Data-repository files as untrusted input: mission registry paths (4ac930efa), the site's page links, Missions apps (a15c17d0a) | acceptable, one note |
 | 159 | Review of 10 November (before the refactoring day): file upload `/__setup/base/upload` (3f101da7b, 1805057c5, 0a99d0738, 42aab1ae8, 870408de6), Little Navmap verb and `fetchLnm` (801c90c2b, eaf75ea65), per-page Esri CSP (e60e412d1), relay limits (4c75c1df3), `repair_ledger_defaults.py` (6f23e1a50), UK Mil TLS fallback (d86b81d6d), `personal-undeclared` (e293f3741) | acceptable, four notes |
+| 160 | Little Navmap records kept on this device: no position in the flight, left out of the FMS / PLN files (4eaf79a59): the note 2 of 159 closed | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2352,6 +2353,20 @@ so the “never exported” promise needs checking (a licence question); (3) `zi
 directory before the `MAX_MEMBERS` test, and the upload handler lacks the `_lan()` refusal the other handlers repeat; (4)
 the relay's error body (`e.read(NET_MAX)`) has no deadline, so a slow-dripping error body from an allowed host holds a slot,
 and the four slots are shared between the workstation's own page and paired devices.
+
+**160. Little Navmap records stay on this device (4eaf79a59) — acceptable, one note.** Note 2 of 159 is closed for positions.
+`pubProcs` turns every record with `status: 'lnm'` or `lnm: true` into `null`; `knownPoints` and `autoAirways` read the chosen
+procedures through it, so a typed point no longer takes the position of an lnm point and nothing of it reaches
+`route.points`. `exportFms` gives the writers `pubFlight` (a `structuredClone` of the procedures without the lnm identifiers,
+so the SID / STAR / APP names leave the file too), `expandedPath(f, pub)` and the filtered `procs`, and says in one line what
+was left out. The lists no longer label an lnm record “X-Plane, local”. The new case F143 types an invented point and
+checks `current_flight.json` and the `.fms`. *The Map's Edition* cannot take such a point: its anchors are the layers' own data
+(navaids, aerodromes, airways, points, VRP), never `S.procs`. Note: `fpNow`, `procsToText` and `procGroups` still read the
+unfiltered records, so identifiers (the SID name, its exit and entry, `quote.legs[].id`) and aggregates (`quote.distanceNm`,
+`profile.path`) derived from an lnm geometry are written to `data/`; never a latitude or a longitude (the readers rebuild a
+planned position from their own path), and F143 covers the typed route but not the text `procsToText` writes. Whether names and
+aggregates count as “read from Little Navmap” is the user's licence decision, with the export of those points to the
+simulator.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
