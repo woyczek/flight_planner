@@ -864,23 +864,30 @@
       }
     }));
     // SOG-0131 : sur un téléphone, UNE seule note flottante à la fois (deux notes empilées couvraient un tiers de l'écran à 390 px) : la suivante attend que la précédente parte
-    // ou soit fermée ; une erreur passe devant une information (celle-ci reprend sa place en tête de la file) ; sur un écran, elles s'empilent comme avant
+    // ou soit fermée ; une erreur passe devant une information (celle-ci reprend sa place en tête de la file) ; une note à action (elle reste jusqu'au clic) ne bloque jamais
+    // la file : la note qui arrive prend sa place, elle revient quand plus aucune autre n'attend ; sur un écran, elles s'empilent comme avant
     const shown = $('fNotes').querySelector('.f-note');
     if (matchMedia('(max-width: 760px)').matches && shown) {
-      if (kind === 'err' && shown.dataset.kind !== 'err') {
+      if ((kind === 'err' && shown.dataset.kind !== 'err') || (shown._note.o.action && !o.action)) {
         noteQueue.unshift(shown._note);
         shown.remove();
       } else {
         noteQueue.push(note);
-        if (noteQueue.length > NOTE_QUEUE_MAX) noteQueue.shift();
+        // le plafond ne jette qu'une information, puis une réussite, puis une alerte : jamais une erreur ni une note à action (la file dépasse alors le plafond plutôt que de perdre l'utilisateur)
+        if (noteQueue.length > NOTE_QUEUE_MAX) {
+          const gone = ['info', 'ok', 'warn'].map(k => noteQueue.findIndex(x => x.kind === k && !x.o.action)).find(i => i >= 0);
+          if (gone !== undefined) noteQueue.splice(gone, 1);
+        }
         return;
       }
     }
     showNote(note);
   }
-  /** La note suivante de la file, quand plus aucune n'est affichée. */
+  /** La note suivante de la file, quand plus aucune n'est affichée : une note sans action d'abord (une note à action attend, elle ne bloque pas les autres). */
   function nextNote() {
-    if (!$('fNotes').querySelector('.f-note') && noteQueue.length) showNote(noteQueue.shift());
+    if ($('fNotes').querySelector('.f-note') || !noteQueue.length) return;
+    const i = noteQueue.findIndex(x => !x.o.action);
+    showNote(noteQueue.splice(i < 0 ? 0 : i, 1)[0]);
   }
   /** Pose une note : effacée seule (6 s, erreur 12 s) ou par sa croix ; action : un bouton, la note reste jusqu'au clic. */
   function showNote(note) {

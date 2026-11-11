@@ -6316,6 +6316,28 @@ def a149(c):
         c.eq(c.js(texts), ['three again'], 'a note of the same key replaced its queued one (not twice)', what='replaced')
         c.js(close)
         c.eq(c.js(texts), [], 'nothing left, nothing stuck', what='empty')
+        # a note with an action stays until clicked: it never blocks the queue (what is SHOWN is read from window.__shown, what was ASKED from window.__notes)
+        c.js("() => { window.__shown.length = 0; const n = window.SogFrame.notify; n('with action', 'info', { key: 'a1', action: { label: 'Go', run() {} } }) }")
+        c.eq(c.js(texts), ['with action'], 'the action note is shown', what='action shown')
+        c.js("() => { const n = window.SogFrame.notify; n('later info', 'info', { key: 'i2' }); n('later alert', 'warn', { key: 'w2' }) }")
+        c.eq(c.js(texts), ['later info'], 'an information asked behind an action note takes its place (the alert waits its turn)', what='info in front')
+        c.shot(f'A151_action_{c.width}_delivered.png')
+        c.js(close)
+        c.eq(c.js(texts), ['later alert'], 'the alert is shown next, not the action note', what='alert')
+        c.js(close)
+        c.eq(c.js(texts), ['with action'], 'the action note comes back when nothing else waits', what='action back')
+        c.js(close)
+        c.eq(c.js(texts), [], 'and goes with its click', what='action closed')
+        c.eq(c.js('() => window.__shown'), ['with action', 'later info', 'later alert', 'with action'], 'the three were SHOWN in turn (not only asked)', what='shown list')
+        # the cap of eight drops information first, never an alert or an action
+        c.js("() => { window.__shown.length = 0; const n = window.SogFrame.notify; n('first', 'info', { key: 'f0' }); n('keep me', 'warn', { key: 'w0' }); for (let i = 1; i <= 8; i++) n('i' + i, 'info', { key: 'q' + i }) }")
+        seen = []
+        for _ in range(12):
+            seen += c.js(texts)
+            c.js(close)
+        c.eq(seen[:2], ['first', 'keep me'], 'the alert asked among nine notes was not thrown away', what='alert kept')
+        c.eq(len(seen), 9, 'eight notes at most wait; the oldest information was dropped', what='cap')
+        c.eq('i1' in seen, False, 'the oldest information is the one dropped', what='oldest')
     else:
         c.eq(c.js(texts), ['one', 'two', 'three'], 'above 760 px the notes stack as before', what='stacked')
     c.check_errors()

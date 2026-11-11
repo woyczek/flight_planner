@@ -382,6 +382,10 @@ window.__t = (() => {
   // every floating notification ever asked (text), whatever its lifetime and whether it waited its turn (one at a time on a phone, SOG-0131): window.__notes, from the frame's event
   window.__notes = [];
   window.addEventListener('frame-note', e => window.__notes.push(((e.detail.text || '') + (e.detail.label || '')).trim()));
+  // every floating notification actually put in the page (#fNotes), in the order shown: window.__shown (what was ASKED is __notes, what was SHOWN is here: a queue that never shows a note is seen)
+  window.__shown = [];
+  new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1 && n.classList.contains('f-note')) window.__shown.push((n.querySelector('span')?.textContent || '').trim()); })
+    .observe(document, { childList: true, subtree: true });
   return { q, qa, shown, box };
 })();
 """

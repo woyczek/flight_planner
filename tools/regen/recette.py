@@ -18,8 +18,8 @@ TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(TOOLS)
 SCHEMA = 'sog-recette/1'
 FILE = 'RECETTE.json'
-ID = re.compile(r'SOG-\d{4}')
-AT = re.compile(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z')
+ID = re.compile(r'SOG-[0-9]{4}')
+AT = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,3})?Z')
 MAX_ITEMS = 1000
 MAX_COMMENT = 600
 FILE_MAX = 2 * 1024 * 1024
@@ -135,7 +135,7 @@ def verdict(job, args, ctx):
 #   de 0 à 9 ou rien, un texte libre de 600 signes au plus (SANS caractère de commande), au moins l'un des deux, une date ISO UTC ; 1000 entrées au plus ; rien d'autre n'est écrit.
 DECISIONS_FILE = 'DECISIONS_REPONSES.json'
 DECISIONS_SCHEMA = 'sog-decisions/1'
-QID = re.compile(r'Q-\d{4}')
+QID = re.compile(r'Q-[0-9]{4}')
 
 
 def check_decision(a):

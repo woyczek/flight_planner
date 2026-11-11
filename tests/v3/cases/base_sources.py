@@ -1548,6 +1548,8 @@ def k123(c):
         org = root / 'organisation'
         org.mkdir()
         f = org / 'RECETTE.json'
+        r = run(action='set', items={'SOG-٠٠٠١': {'verdict': 'ok'}})   # Arabic-indic digits are digits for \d, not for an identifier (SOG-0241 audit)
+        c.eq((r['ok'], r.get('reason'), f.exists()), (False, 'bad-items', False), 'an identifier with non-ASCII digits is refused in a block, nothing written', what='non-ASCII digits')
         r = run(action='get')
         c.eq((r['ok'], r['items'], r['exists']), (True, {}, False), 'no file yet: nothing, said', what='absent')
         good = {'SOG-0002': {'verdict': 'ko', 'comment': 'le bouton reste gris', 'at': '2026-11-10T09:30:00Z'}, 'SOG-0001': {'verdict': 'ok', 'at': '2026-11-10T09:31:00Z'}}
@@ -1596,6 +1598,8 @@ def k171(c):
         org = root / 'organisation'
         org.mkdir()
         f = org / 'DECISIONS_REPONSES.json'
+        r = run(action='set', items={'Q-٠٠٠١': {'choice': 0}})   # Arabic-indic digits are digits for \d, not for an identifier (SOG-0241 audit)
+        c.eq((r['ok'], r.get('reason'), f.exists()), (False, 'bad-items', False), 'an identifier with non-ASCII digits is refused in a block, nothing written', what='non-ASCII digits')
         r = run(action='get')
         c.eq((r['ok'], r['items'], r['exists']), (True, {}, False), 'no file yet: nothing, said', what='absent')
         good = {'Q-0002': {'choice': None, 'text': 'plutôt la deuxième, mais sans le bouton', 'at': '2026-11-11T09:30:00Z'}, 'Q-0001': {'choice': 1, 'text': '', 'at': '2026-11-11T09:31:00Z'}}
