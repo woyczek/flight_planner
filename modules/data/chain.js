@@ -96,8 +96,8 @@ function chainRows() {
   }));
 }
 /** La liste des jeux de la chaîne, une ligne chacun avec où il en est. */
-function chainListHtml() {
-  return `<ul class="d-sl" data-chain-sets>${chainRows().map(r => `<li data-chain-set="${esc(r.set)}" data-result="${esc(r.result)}"><b>${esc(chainName(r.set))}</b> : ${esc(tt(TX.chainWord[r.result]))}${r.why ? ` (${esc(r.why)})` : ''}</li>`).join('')}</ul>`;
+function chainListHtml(ended = false) {
+  return `<ul class="d-sl" data-chain-sets>${chainRows().map(r => `<li data-chain-set="${esc(r.set)}" data-result="${esc(r.result)}"><b>${esc(chainName(r.set))}</b> : ${esc(tt(TX.chainWord[r.result]))}${r.why ? ` (${esc(r.why)})` : ''}${ended && r.result === 'failed' ? ` <button type="button" data-verb="chain-retry" data-set="${esc(r.set)}"${busyNow() || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button>` : ''}</li>`).join('')}</ul>`;
 }
 /** La chaîne en cours (jeu, étape, « n / m jeux », « Arrêter » pour toute la chaîne) ou sa fin (le résumé et les jeux). */
 function chainHtml() {
@@ -112,7 +112,7 @@ function chainHtml() {
   }
   const end = S.chainEnd;
   if (!end) return S.chainNote ? `<p class="f-warn" data-chain-note>${esc(tt(TX.chainReload))}</p>` : '';
-  return `<div data-chain-result data-result="${end.result}"><p class="${end.result === 'done' ? '' : 'f-warn'}"><b>${esc(end.text)}</b></p>${chainListHtml()}</div>`;
+  return `<div data-chain-result data-result="${end.result}"><p class="${end.result === 'done' ? '' : 'f-warn'}"><b>${esc(end.text)}</b></p>${chainListHtml(true)}</div>`;
 }
 /** L'intérieur de la carte « Tout mettre à jour » : le bouton avec le nombre de jeux (et le point d'attention d'un cycle dépassé), sa raison grise, la
  *  chaîne ou sa fin. */
@@ -180,7 +180,8 @@ async function endChain(me, ch, result, text, level) {
   S.chainEnd = {
     result,
     text,
-    rows: ch.rows
+    rows: ch.rows,
+    runs: ch.allRuns || ch.runs // pour « Réessayer » d'un jeu en échec
   };
   renderBuild();
   S.ctx.notify(text, level);
@@ -195,14 +196,20 @@ async function endChain(me, ch, result, text, level) {
 }
 /** La chaîne : pour chaque jeu, Télécharger puis Construire par le suiveur ; au premier échec, arrêt (ce qui est construit reste commité sur le poste, rien n'est
  *  publié) ; si tout a réussi, UNE publication sans autre question que celle du plan. */
-async function runChain(me, plan) {
+async function runChain(me, plan, prevRows = null) {
   const ch = S.chain = {
     phase: 'running',
     runs: plan.runs,
     i: 0,
     verb: 'fetch',
     stopped: false,
-    rows: chainStartRows(plan),
+    rows: prevRows ? prevRows.map(r => r.set === plan.runs[0]?.set && plan.runs.length === 1 ? {
+      set: r.set,
+      result: 'waiting'
+    } : {
+      ...r
+    }) : chainStartRows(plan), // une reprise (« Réessayer ») garde ce que les autres jeux ont fait
+    allRuns: prevRows ? S.chainEnd?.runs || plan.runs : plan.runs,
     t0: Date.now(),
     job: `chain-${Date.now()}`
   };
@@ -216,18 +223,18 @@ async function runChain(me, plan) {
     job: ch.job
   }), true);
   const row = set => ch.rows.find(r => r.set === set);
-  let failure = null;
-  for (let i = 0; i < ch.runs.length && !failure; i++) {
+  let cancelled = null;
+  // les jeux sont indépendants (SOG-0239 : « on continue ») : un échec arrête les étapes de CE jeu (pas de construction sans téléchargement), jamais les autres ; seul « Arrêter » arrête tout
+  for (let i = 0; i < ch.runs.length && !cancelled; i++) {
     const run = ch.runs[i];
     ch.i = i;
     row(run.set).result = 'running';
+    let failed = null;
     for (const verb of M.CHAIN_VERBS) {
       ch.verb = verb;
       if (ch.stopped) {
-        failure = {
-          set: run.set,
-          kind: 'cancelled',
-          text: ''
+        cancelled = {
+          set: run.set
         };
         break;
       }
@@ -235,28 +242,30 @@ async function runChain(me, plan) {
       const res = await chainOp(me, run, verb);
       if (S !== me || !res) return;
       if (res.verdict === 'stop') {
-        failure = {
-          set: run.set,
-          kind: ch.stopped || res.kind === 'cancelled' ? 'cancelled' : 'failed',
-          text: res.text
+        if (ch.stopped || res.kind === 'cancelled') cancelled = {
+          set: run.set
         };
+        else failed = res.text;
         break;
       }
     }
-    row(run.set).result = failure ? failure.kind : 'done';
+    row(run.set).result = cancelled ? 'cancelled' : failed !== null ? 'failed' : 'done';
+    if (failed !== null) row(run.set).why = failed;
   }
-  if (failure) {
+  if (cancelled) {
     for (const r of ch.rows)
       if (r.result === 'waiting') r.result = 'notrun';
-    const s = chainName(failure.set);
-    return endChain(me, ch, failure.kind, failure.kind === 'cancelled' ? tt(TX.chainStopped, {
-      s
-    }) : tt(TX.chainFailed, {
-      s,
-      r: failure.text
-    }), failure.kind === 'cancelled' ? 'warn' : 'err');
+    return endChain(me, ch, 'cancelled', tt(TX.chainStopped, {
+      s: chainName(cancelled.set)
+    }), 'warn');
   }
-  // tout a réussi : une seule publication, sans autre question que celle du plan
+  const failures = ch.rows.filter(r => r.result === 'failed'),
+    list = failures.map(r => `${chainName(r.set)} : ${r.why || tt(TX.chainWord.failed)}`).join(' ; '),
+    made = ch.rows.filter(r => r.result === 'done').length;
+  if (failures.length && !made) return endChain(me, ch, 'failed', tt(TX.chainFailedAll, {
+    list
+  }), 'err');
+  // au moins un jeu a réussi : une seule publication, sans autre question que celle du plan (ce qui a échoué n'a rien commité de plus : il n'est pas publié)
   ch.phase = 'publishing';
   renderBuild();
   S.pub.status = await readStatus();
@@ -277,10 +286,33 @@ async function runChain(me, plan) {
     if (out && (out.kind === 'failed' || out.kind === 'no-exchange'))[result, level] = ['failed', 'err'];
     else if (out && out.kind !== 'done') level = 'warn';
   }
+  if (failures.length) {
+    if (result === 'done') result = 'partial';
+    level = level === 'err' ? 'err' : 'warn';
+    return endChain(me, ch, result, tt(TX.chainPartial, {
+      n: made,
+      f: failures.length,
+      list,
+      p
+    }), level);
+  }
   return endChain(me, ch, result, tt(TX.chainDone, {
     n: count('set', ch.runs.length),
     p
   }), level);
+}
+/** « Réessayer » sur un jeu en échec de la fin de la chaîne : ce jeu seul est relancé (télécharger puis construire), puis la publication ; les autres jeux gardent leur résultat. */
+export async function retryChain(set) {
+  const me = S,
+    end = S.chainEnd,
+    run = (end?.runs || []).find(r => r.set === set);
+  if (!run || !end.rows.some(r => r.set === set && r.result === 'failed') || chainGate({
+      runs: [run]
+    }).disabled) return;
+  await runChain(me, {
+    runs: [run],
+    skipped: []
+  }, end.rows);
 }
 /** « Tout mettre à jour » : le plan, UNE question ; sur Non rien n'est appelé ; sur Oui la chaîne (runChain). */
 export async function updateAll() {

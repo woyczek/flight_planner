@@ -229,10 +229,15 @@ Rules (V3 § 10.34, 30 Oct 2026):
   à jour » runs only after the answer.
 - **Downloads and builds in the published order** (§ 4.5), each set with its own verbs (§ 5.5), one operation at a time,
   the running set and step shown, « Arrêter » for the whole chain.
-- **Stop at the first failure**: the failing set and its reason said; what was built before it stays committed on the
-  workstation; nothing is published. A set waiting for the user (a file to pick) is a stop too, said as such.
-- **One Publier at the end** (the frame's gesture sync, INTEGRATION § 1.3), only when every set succeeded; no purge in
-  the chain (Purger stays its own gesture, plan first).
+- **The sets are independent** (SOG-0239, the user: « on continue »): a failure stops the steps of that set only (no build
+  without its download), never the others, like « Mettre à jour » on zones. Only « Arrêter » or a set waiting for the
+  user (a file to pick) stops the whole chain, said as such. What was built before a failure stays committed on the
+  workstation.
+- **The end summary lists the failures**, each with its reason and « Réessayer »: that set alone is run again (download
+  then build, then the publication); the other sets keep their result.
+- **One Publier at the end** (the frame's gesture sync, INTEGRATION § 1.3), as soon as one set succeeded: what failed adds
+  nothing to publish (a partial build may have committed part of its files, those go too); no set succeeded → nothing is
+  published. No purge in the chain (Purger stays its own gesture, plan first).
 - Journal: one entry for the chain, `{ set: 'all', verb: 'update', items: [{ set, result }], result }`, written as a marker
   (`result: 'running'`) at the start and replaced at the end; a marker found without its end at the opening is said
   « chaîne interrompue par le rechargement » (the chain itself does not survive a reload, its running job does). The sets'

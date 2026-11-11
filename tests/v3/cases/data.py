@@ -2466,7 +2466,7 @@ def _chain_rows(c):
     return c.js("[...document.querySelectorAll('[data-update-all] [data-chain-set]')].map(l => [l.dataset.chainSet, l.dataset.result])")
 
 
-@case('L18', 'Données: « Tout mettre à jour » against a fake launcher (plan question, the published order, one Publier, stop at the first failure, Arrêter, skipped sets, attention mark, reload)',
+@case('L18', 'Données: « Tout mettre à jour » against a fake launcher (plan question, the published order, one Publier, the sets go on after a failure and the failed one is listed with « Réessayer », Arrêter, skipped sets, attention mark, reload)',
       'L', tags=('data',), langs4=True, designs=('standard',),
       rule='modules/data/SPEC 5.3 (plan first, one question; downloads and builds in the published order; stop at the first failure; one Publier at the end), 6.3 (end of cycle)')
 def l18(c):
@@ -2557,23 +2557,32 @@ def l18(c):
          [['update', 'done', [('base', 'done'), ('proc', 'done'), ('vfr', 'done'), ('aircraft', 'done')], True]], 'ONE journal entry for the chain, with each set\'s result (the start marker is replaced by the end)', what='journal')
     c.eq([o['verb'] for o in ops if o.get('set') != 'all'], ['publish'], 'the jobs themselves are not journaled one by one: the chain\'s entry and the publication', what='other entries')
     _card_ok(c, 'at the end')
-    # ---- D: a failing proc build: the chain stops, the others are not run, nothing is published
+    # ---- D: a failing proc build (SOG-0239, « on continue »): the other sets still run, the failed set is listed with its reason and « Réessayer », the rest is published
     part = _sview('proc', 'build', 'states', {'K': {'state': 'done'}, 'LF': {'state': 'failed', 'error': 'no-cache'}}, state='error', jid='c4', unit='states', done=2,
                   result={'ok': False, 'cycle': cyc, 'built': {'K': 10}, 'commits': {'K': 'a1'}, 'failed': [{'state': 'LF', 'error': 'no-cache'}], 'reason': 'partial'})
-    st['views'], st['i'] = views[:3] + [part], 0
+    st['views'], st['i'] = views[:3] + [part] + views[4:], 0
     posts1, syncs1, n_notes = len(st['posts']), len(c.js('window.__sync.calls')), len(c.note_log())
     c.tap('[data-update-all] [data-verb=all]')
     _ask_text(c)
     c.tap('.f-modal [data-ok]')
-    c.until("document.querySelector('[data-update-all] [data-chain-result]')?.dataset.result === 'failed'", timeout=60000, what='the chain stops')
+    c.until("document.querySelector('[data-update-all] [data-chain-result]')?.dataset.result === 'partial'", timeout=60000, what='the chain goes on after the failure and ends « partial »')
     reason = sm('buildPartial').replace('{s}', label('proc')).replace('{built}', f"1 {_unit('state', lang, 1)}").replace('{failed}', '1').replace('{items}', name('LF'))
-    want = T('chainFailed').replace('{s}', label('proc')).replace('{r}', reason)
-    c.eq([_line(c, '[data-chain-result] b'), _chain_rows(c), [(p['set'], p['verb']) for p in st['posts'][posts1:]], len(c.js('window.__sync.calls')) - syncs1, len(c.note_log()) - n_notes],
-         [norm(want), [['base', 'done'], ['proc', 'failed'], ['vfr', 'notrun'], ['aircraft', 'notrun']], [('base', 'fetch'), ('base', 'build'), ('proc', 'fetch'), ('proc', 'build')], 0, 1],
-         'stopped at the proc build: the set and the reason said, the next sets not run, nothing published, one notification', what='failure')
+    line = _line(c, '[data-chain-result] b')
+    c.ok(norm(reason) in line and norm(label('proc')) in line, line, 'the end names the failed set and its reason')
+    c.eq([_chain_rows(c), [(p['set'], p['verb']) for p in st['posts'][posts1:] if p['verb'] in ('fetch', 'build')]],
+         [[['base', 'done'], ['proc', 'failed'], ['vfr', 'done'], ['aircraft', 'done']], [('base', 'fetch'), ('base', 'build'), ('proc', 'fetch'), ('proc', 'build'), ('vfr', 'fetch'), ('vfr', 'build'), ('aircraft', 'fetch'), ('aircraft', 'build')]],
+         'the sets are independent: after the failed proc build the vfr and aircraft sets still ran (SOG-0239)', what='failure goes on')
+    c.eq([c.count('[data-chain-set=proc] [data-verb=chain-retry]'), c.count('[data-chain-set=base] [data-verb=chain-retry]'), c.count('[data-chain-set=vfr] [data-verb=chain-retry]')], [1, 0, 0], '« Réessayer » only on the failed set', what='retry button')
     c.eq(c.count('[data-update-all] [data-chain]'), 0, 'the chain line is gone', what='chain line')
     al = [o for o in c.doc('cache/data/journal.json')['ops'] if o.get('set') == 'all']
-    c.eq([o['result'] for o in al], ['done', 'failed'], 'journaled: failed', what='journal')
+    c.eq([o['result'] for o in al], ['done', 'partial'], 'journaled: partial', what='journal')
+    # ---- D2: « Réessayer » on the failed set: that set alone is run again (download then build), the others keep their result
+    st['views'], st['i'] = [views[2], views[3]], 0
+    posts_r = len(st['posts'])
+    c.tap('[data-chain-set=proc] [data-verb=chain-retry]')
+    c.until("document.querySelector('[data-update-all] [data-chain-result]')?.dataset.result === 'done'", timeout=60000, what='the retried set succeeds: the chain ends « done »')
+    c.eq([_chain_rows(c), [(p['set'], p['verb']) for p in st['posts'][posts_r:] if p['verb'] in ('fetch', 'build')]], [[['base', 'done'], ['proc', 'done'], ['vfr', 'done'], ['aircraft', 'done']], [('proc', 'fetch'), ('proc', 'build')]],
+         '« Réessayer » runs the failed set alone; the others keep their result; everything is done now', what='retry')
     # ---- E: Arrêter mid-chain: the current job is cancelled, the chain stops, nothing is published
     run = _fview({'fr': _fz('fetching', 1, 3), 'gb': _fz('waiting')}, step='Zone fr', verb='fetch', jid='c1')
     st['views'], st['i'], st['cancelled'] = [run], 0, False
@@ -2604,7 +2613,7 @@ def l18(c):
     c.eq([_line(c, '[data-update-all] [data-chain-note]'), len(_notes_with(c, T('chainReload')))], [norm(T('chainReload')), 1], '« chaîne interrompue par le rechargement : relancez « Tout mettre à jour » », in the card and once as a notification', what='reload note')
     c.until("!!document.querySelector('[data-build] [data-running][data-op=fetch]')", timeout=8000, what='the running job is followed as before')
     al = [o for o in c.doc('cache/data/journal.json')['ops'] if o.get('set') == 'all']
-    c.eq([o['result'] for o in al], ['done', 'failed', 'cancelled', 'interrupted'], 'the start marker without its end is journaled « interrupted »', what='journal')
+    c.eq([o['result'] for o in al], ['done', 'partial', 'done', 'cancelled', 'interrupted'], 'the start marker without its end is journaled « interrupted » (the retry of the failed set is journaled as its own chain)', what='journal')
     # ---- G: skipped sets with their reasons: nothing ticked in the States, the launcher does not know the aircraft verbs
     st['current'] = None
     st['verbs'] = BASE3 + PROC3 + VFR3
@@ -2626,10 +2635,11 @@ def l18(c):
     c.tap('[data-update-all] [data-verb=all]')
     _ask_text(c)
     c.tap('.f-modal [data-ok]')
-    c.until("document.querySelector('[data-update-all] [data-chain-result]')?.dataset.result === 'failed'", timeout=30000, what='the chain stops on the refusal')
+    c.until("document.querySelector('[data-update-all] [data-chain-result]')?.dataset.result === 'failed'", timeout=30000, what='no set succeeded: every job start is refused')
+    refused = T('updating', 'refused: {')
     c.eq([_line(c, '[data-chain-result] b'), len(st['posts']) - posts1, len(c.js('window.__sync.calls')) - syncs1, _chain_rows(c)],
-         [norm(T('chainFailed').replace('{s}', base_label).replace('{r}', T('updating', 'refused: {'))), 1, 0, [['base', 'failed'], ['proc', 'skipped'], ['vfr', 'notrun'], ['aircraft', 'skipped']]],
-         'every job start is refused during an update of the suite: the chain stops at the first, nothing is published', what='chain updating')
+         [norm(T('chainFailedAll').replace('{list}', f"{base_label} : {refused} ; {label('vfr')} : {refused}")), 2, 0, [['base', 'failed'], ['proc', 'skipped'], ['vfr', 'failed'], ['aircraft', 'skipped']]],
+         'every job start is refused during an update of the suite: each set fails at its first step, none succeeded, nothing is published', what='chain updating')
     st['start'] = (200, {'job': 'j1'})
     c.wait(300)
     # ---- H: nothing gone by: no attention mark

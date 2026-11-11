@@ -76,6 +76,7 @@ import {
   startPublish
 } from './publish.js';
 import {
+  retryChain,
   stopChain,
   updateAll
 } from './chain.js';
@@ -186,6 +187,8 @@ function onClick(e) {
   if (v.dataset.verb === 'retry-zone') return retryZone(v.dataset.zone); // « Réessayer » sur la ligne d'une zone en échec (SOG-0180)
   if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') return startPickup(v.dataset.zones);
   if (v.dataset.verb === 'stop-chain') return stopChain();
+  if (v.dataset.verb === 'chain-retry') return /^[a-z]{2,10}$/.test(v.dataset.set || '') ? retryChain(v.dataset.set) :
+    undefined; // « Réessayer » sur un jeu en échec de la fin de la chaîne (SOG-0239)
   if (v.dataset.verb === 'update') return startUpdate();
 
   if (v.dataset.verb === 'world-build') return startWorld();

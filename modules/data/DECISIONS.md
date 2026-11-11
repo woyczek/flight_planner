@@ -117,6 +117,13 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   drops `regen/job/cancel` from `meta.launcher.routes` (the « Construire » entry above described the gap); the provisional
   `rail: false` entry of Pilot is gone, the module lives in the Maintenance application (`APPS`, e3870b354); « Publier »
   checked on the real frame (`ctx.data.sync.gesture === true`, a215d47bd: L12 sees the button live with the real adapter).
+- **11 Nov 2026 — « Tout mettre à jour » goes on after a failure** (user: « on continue. », SOG-0239; it replaces the
+  « stop at the first failure » of 30 Oct, which contradicted § 3 « a failure never stops the others »): the sets are
+  independent, a failure stops the steps of its own set (no build without its download), only « Arrêter » or a merge
+  waiting in data/ stops the whole chain. The end summary lists each failure with its reason and a « Réessayer » that runs
+  that set alone (`retryChain`, the other rows keep their result). Publication: still ONE, when at least one set succeeded;
+  nothing when none did. Open point told to the ergonomics session: a `partial` build may have committed part of its files,
+  they leave with the publication.
 - **30 Oct 2026 — « Publier » means « send now »** (real trial on `ie`, ergonomics session): a zone built by `base/build` is
   committed whole on the workstation (`commit_outputs`), so it is consistent and leaves at the next synchronisation, even a
   background one; the gesture rule (`sync_gesture`, 1c2506a41) holds back only `sia/base/` files not committed (half written,

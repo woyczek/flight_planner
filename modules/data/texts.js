@@ -1534,10 +1534,16 @@ export const TX = {
   chainDone: ['Tout mettre à jour terminé : {n}. {p}', 'Update all finished: {n}. {p}', 'Alle aktualisieren abgeschlossen: {n}. {p}',
     'Actualizar todo terminado: {n}. {p}'
   ],
-  chainFailed: ['Tout mettre à jour arrêté ({s}) : {r}. Ce qui est déjà construit est gardé sur le poste ; rien n’est publié.',
-    'Update all stopped ({s}): {r}. What is already built is kept on this workstation; nothing is published.',
-    'Alle aktualisieren angehalten ({s}): {r}. Was bereits erstellt ist, bleibt auf dem Rechner erhalten; nichts wird veröffentlicht.',
-    'Actualizar todo se detuvo ({s}): {r}. Lo ya construido se conserva en el equipo; no se publica nada.'
+  // « Tout mettre à jour » continue après un échec (SOG-0239, la décision de l'utilisateur : « on continue ») : les jeux sont indépendants, le bilan liste les échecs avec leur raison et « Réessayer », rien n'est publié de ce qui a échoué
+  chainPartial: ['Tout mettre à jour terminé avec des échecs : {n} fait(s), {f} en échec ({list}). {p}',
+    'Update all finished with failures: {n} done, {f} failed ({list}). {p}',
+    'Alle aktualisieren mit Fehlern abgeschlossen: {n} erledigt, {f} fehlgeschlagen ({list}). {p}',
+    'Actualizar todo terminó con fallos: {n} hecho(s), {f} con fallo ({list}). {p}'
+  ],
+  chainFailedAll: ['Tout mettre à jour : aucun jeu n’a réussi ({list}). Rien n’est publié.',
+    'Update all: no data set succeeded ({list}). Nothing is published.',
+    'Alle aktualisieren: kein Datensatz war erfolgreich ({list}). Es wird nichts veröffentlicht.',
+    'Actualizar todo: ningún conjunto tuvo éxito ({list}). No se publica nada.'
   ],
   chainStopped: ['Tout mettre à jour arrêté par vos soins ({s}). Ce qui est déjà construit est gardé sur le poste ; rien n’est publié.',
     'Update all stopped by you ({s}). What is already built is kept on this workstation; nothing is published.',
