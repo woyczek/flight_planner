@@ -578,7 +578,7 @@ eine Quelle etwas anderes für bereits ausgefüllte Felder, bietet eine Schaltfl
 <a id="report-step-2"></a>**Der Einsatz.** Im zweiten Schritt: die Familie, mit Kürzel und dann Namen („SAR · Personenbergung“, vorgeschlagen nach Ihrem letzten Bericht), die Serie, die Kennung des
 Einsatzes, wenn der Flug einem folgt, dann die Blöcke der Familie. Manche Blöcke erscheinen nur für eine Serie (zum
 Beispiel VIP oder Überführung bei den Sondereinsätzen). Solange Sie diesen Schritt nicht geöffnet haben, steht dort
-„prüfen“ statt ✓: Familie und Serie eines neuen Berichts sind standardmäßig übernommen.
+„prüfen“ statt ✓: Familie und Serie eines neuen Berichts sind standardmäßig übernommen. Die Standardserie ist die erste der Familie, außer bei Commercial: „Passagiere“.
 
 <a id="report-step-3"></a>**Das Ergebnis.** Im letzten Schritt: das Ergebnis, Ihre Beobachtungen, die Besatzung (Sie zuerst, als Kommandant) und
 der Kraftstoff beim Start und bei der Landung. Unstimmigkeiten — Zeiten in falscher Reihenfolge, Datum in der Zukunft,

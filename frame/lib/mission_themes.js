@@ -5,7 +5,8 @@
 // thème. dedans, on « devrait » trouver : cargo, passagers, rapatriement vide, etc. »). Thème = famille, sous-thème = série. Pur : ni page,
 // ni stockage, ni réseau ; les libellés sont du texte à échapper par qui l'affiche.
 //
-//   THEMES                 [{ id, short (sigle), letter (numéros de CR), military, labels [fr, en, de, es], series: [{ value, labels, load? }] }]
+//   THEMES                 [{ id, short (sigle), letter (numéros de CR), military, labels [fr, en, de, es], series: [{ value, labels, load? }],
+//                          defaultSeries? }] ; defaultSeriesOf(code, list) : la série par défaut d'une famille (SOG-0239)
 //                          load : ce que transporte un vol de la série (freight : fret en kg, passengers : nombre), absent = rien
 //   themeOf(code)          le thème d'un code (alias : MEDEVAC → HEMS) ou null ; seriesOf(code) → [{ value, label }] (la forme des familles
 //                          du compte rendu) ; themes(lang) → [{ id, short, name, label }] ; LABELS / LETTERS : les tables du vocabulaire du CR
@@ -662,6 +663,7 @@ export const THEMES = deep([{
   short: 'CAT',
   letter: 'E',
   military: false,
+  defaultSeries: 'PASSENGERS', // l'utilisateur, 11/11 : « passagers » (SOG-0239) ; l'ordre des séries ne change pas
   labels: ["Transport aérien commercial", "Commercial air transport", "Gewerblicher Luftverkehr", "Transporte aéreo comercial"],
   series: [{
     value: "CARGO",
@@ -706,6 +708,14 @@ const at = lang => Math.max(0, LANGS.indexOf(lang));
 export function themeOf(code) {
   const k = String(code ?? '').trim().toUpperCase();
   return THEMES.find(t => t.id === k || t.id === ALIASES[k]) || null;
+}
+/** La série par défaut d'une famille (SOG-0239) : celle que la table lui donne (defaultSeries, COMMERCIAL → PASSENGERS), sinon la
+ *  première ; `list` : les séries proposées (celles du compte rendu, [{ value }]), la série par défaut n'est rendue que si elle y est ;
+ *  '' sans série. */
+export function defaultSeriesOf(code, list = null) {
+  const t = themeOf(code),
+    values = (Array.isArray(list) ? list : t?.series || []).map(x => x?.value).filter(v => typeof v === 'string' && v);
+  return t?.defaultSeries && values.includes(t.defaultSeries) ? t.defaultSeries : values[0] || '';
 }
 /** Les séries d'un thème, dans la forme des familles du compte rendu : [{ value, label: [fr, en, de, es] }] ; [] pour un code inconnu. */
 export function seriesOf(code) {

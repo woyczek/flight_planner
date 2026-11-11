@@ -26,7 +26,7 @@ botón propone sustituirlos.
 <a id="report-step-2"></a>**La misión.** En el segundo paso: la familia, dicha por su sigla y luego su nombre («SAR · Recuperación de personal», propuesta según su último informe), la serie, el identificador de la
 misión si el vuelo sigue una, y después los bloques propios de la familia. Algunos bloques solo aparecen para una serie
 (por ejemplo VIP o traslado en las misiones especiales). Mientras no abra este paso, aparece «por ver» en lugar
-de ✓: la familia y la serie de un informe nuevo se toman por defecto.
+de ✓: la familia y la serie de un informe nuevo se toman por defecto. La serie por defecto es la primera de la familia, salvo en Comercial: «Pasajeros».
 
 <a id="report-step-3"></a>**El resultado.** En el último paso: el resultado, sus observaciones, la tripulación (usted primero, como comandante) y
 el combustible a la salida y al aterrizaje. Las incoherencias — horas desordenadas, fecha futura, combustible que

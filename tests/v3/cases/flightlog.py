@@ -604,3 +604,36 @@ def g15(c):
         path = _save_report(c)
         d = c.doc(path)
         c.eq([d.get('family'), d.get('series')], ['GLD', 'WINCH'], f'{w} px: the report saved with its family and series', what='record')
+
+
+
+@case('G16', 'Report: a Commercial report starts on the series « Passagers » (a default series said by the family), the other families on their first series',
+      'G', tags=('report',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0239 (user, 11 Nov: « passagers », not Fret: a new report after a Commercial one asked for freight): defaultSeries of the common '
+      'table (frame/lib/mission_themes.js); the order of the series unchanged')
+def g16(c):
+    from lib import flight_docs
+    th = {'schema': 1, 'chosen': ['COMMERCIAL', 'HEMS']}
+    docs = flight_docs() + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+                            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+                            ['airline/aaa/themes.json', th, 'document'], ['cache/report/draft.json', {}, 'cache']]
+    c.open('report', docs=docs)
+    c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+    c.js("async () => { await window.FrameData.setAirline('aaa'); return true }")
+    c.tap('[data-module="report"] .f-steps button[data-step="1"]')
+    fam = '[data-module=report] select[data-family]'
+    ser = "(document.querySelector('[data-module=report] [data-path=series]') || {}).value"
+    c.until(f"[...document.querySelectorAll('{fam} option')].some(o => o.value === 'COMMERCIAL')", timeout=8000, what='Commercial offered')
+    c.page.select_option(fam, 'COMMERCIAL')
+    c.until(f"{ser} === 'PASSENGERS'", timeout=5000, what='Commercial starts on « Passagers »')
+    order = c.js("[...document.querySelectorAll('[data-module=report] [data-path=series] option')].map(o => o.value).filter(Boolean)")
+    c.eq(order[:2], ['CARGO', 'PASSENGERS'], 'the order of the series is unchanged', what='series order')
+    c.page.select_option(fam, 'HEMS')
+    first = c.js("[...document.querySelectorAll('[data-module=report] [data-path=series] option')].map(o => o.value).filter(Boolean)[0]")
+    c.until(f"(v) => {ser} === v", first, timeout=5000, what='another family keeps its first series')
+    # a new report after a Commercial one: « Nouveau » keeps the family, on « Passagers »
+    c.page.select_option(fam, 'COMMERCIAL')
+    c.until(f"{ser} === 'PASSENGERS'", timeout=5000, what='Commercial again')
+    c.tap('[data-module="report"] [data-do="new"]')
+    c.tap('[data-module="report"] .f-steps button[data-step="1"]')
+    c.until(f"{ser} === 'PASSENGERS'", timeout=5000, what='a new report after a Commercial one starts on « Passagers », never asking for freight first')

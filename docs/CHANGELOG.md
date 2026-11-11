@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report: a Commercial flight starts on the series « Passagers »** (a default series said by the family; the others keep the first) (report DECISIONS; noreg G16; SOG-0239).
 - **Fuel: the FMS / PLN files carry the procedures read from Little Navmap**, still never a position of them in the flight (Fuel SPEC, DECISIONS, help; noreg F143; SOG-0238).
 - **Launcher: the old files chosen by hand are removed** — at the end of a successful build of their zone, a deposit of `data/local/upload/` goes when a later one was read or its cycle is past and the cycle in force is built; never the file read, never an incomplete NASR set; the log and the zone line (`cleaned`) say what went (`tools/upload_cleanup.py`, `tools/regen/base.py`, INTEGRATION; noreg K172; SOG-0239).
 - **AeroDB: first survey of the official sources of points and airways, State by State** (46 zones of Europe and North America: provider, address, format family, access, licence, evidence; `docs/technique/AERODB_POINTS_COVERAGE.md`; SOG-0240). No reader written.

@@ -411,13 +411,13 @@ async function recentReports() {
   }
   return out.sort((a, b) => String(b.r.updated_at || '').localeCompare(String(a.r.updated_at || ''))).slice(0, 10);
 }
-/** CR neuf : mission vide de la famille (première série, date du jour, catégorie de la famille, moi commandant de bord,
+/** CR neuf : mission vide de la famille (sa série par défaut, date du jour, catégorie de la famille, moi commandant de bord,
  *  identifiants réseau de l'identité) — le fresh() de la V2 sans le registre ni la météo. */
 function freshMission(fam = 'HEMS') {
   S.tzOrigin = {};
   const F = FAMILIES[fam],
     m = M.emptyMission(fam);
-  m.series = F.series?.[0]?.value || '';
+  m.series = MT.defaultSeriesOf(fam, F.series); // SOG-0239 : la série par défaut de la famille (Commercial : Passagers), sinon la première
   m.metadata.date = todayZ();
   m.timeline.tz = 'Z'; // heures du CR en UTC (règle de l'appli Pilote)
   m.aircraft[0].category = F.defaultCategory || '';
@@ -796,7 +796,7 @@ function takeTheme(cf) {
     sr = cf?.theme ? cf.series : mig?.series;
   if (!th || !FAMILIES[th]) return;
   S.m.family = th;
-  S.m.series = (FAMILIES[th].series || []).some(x => x.value === sr) ? sr : FAMILIES[th].series?.[0]?.value || '';
+  S.m.series = (FAMILIES[th].series || []).some(x => x.value === sr) ? sr : MT.defaultSeriesOf(th, FAMILIES[th].series);
 }
 /** La catégorie du vol repris (current_flight.missionCategory) : la charge appartient à la catégorie du vol, pas au brouillon
  *  (Simplification, 9 nov.) — connue et transportant, elle pose la charge du CR (les valeurs déjà saisies gardées si c'est la même) ;
@@ -1311,7 +1311,7 @@ function onInput(e) {
     const fam = el.value;
     if (FAMILIES[fam] && fam !== S.m.family) {
       S.m.family = fam;
-      S.m.series = FAMILIES[fam].series?.[0]?.value || '';
+      S.m.series = MT.defaultSeriesOf(fam, FAMILIES[fam].series);
       saveDraft();
       render();
     }

@@ -243,3 +243,7 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   after Settings' T3b). The report's `FAMILIES` gets the airline's added families at each reading of `themes.json` (the previous ones
   removed); they have no block nor load of their own, and their report number takes the letter X. Decision to bring to the user: a
   letter of their own for added families (none is free by rule today). G15; counter-test on origin/v3: the added family not offered.
+- **11 Nov 2026 — the default series is said by the family** (SOG-0239, the user answering the report: « passagers »): a report of
+  family COMMERCIAL starts on « Passagers », not on « Fret » (the first of the list, which asked for freight on a passenger flight);
+  the order of the series is unchanged; `defaultSeries` in the common table (frame/lib/mission_themes.js `defaultSeriesOf`), the other
+  families keep the first series. G16; counter-test on origin/v3: « CARGO ».
