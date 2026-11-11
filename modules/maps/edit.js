@@ -139,10 +139,6 @@ export function setEdit(on) {
   closePanels();
   setPressed(S.editBtn, on);
   setLabel(S.editBtn, tt(on ? TX.editDone : TX.editHelp));
-  if (on && !keep.editHinted) {
-    keep.editHinted = true;
-    S.ctx.notify?.(tt(TX.editHint), 'info');
-  }
   setAdding(false);
   if (S.el.classList.contains('mp-editing') !== on) S.el.classList.toggle('mp-editing', on);
   S.undoBtn.disabled = !S.edit.undo.length;
@@ -150,14 +146,10 @@ export function setEdit(on) {
   hideTips();
   schedule();
 }
-/** « + » armé ou non : le prochain toucher ajoute un point ; l'aide dite une fois par page. */
+/** « + » armé ou non : le prochain toucher ajoute un point (son aide est dans le pli « Comment faire », jamais en note). */
 export function setAdding(on) {
   S.edit.adding = on;
   setPressed(S.addBtn, on);
-  if (on && !keep.addHinted) {
-    keep.addHinted = true;
-    S.ctx.notify?.(tt(TX.addHint), 'info');
-  }
 }
 
 // ---------------------------------------------------------------- les gestes appliqués
@@ -490,6 +482,12 @@ let installed = null;
 function install() {
   if (installed === S) return;
   installed = S;
+  // l'aide du mode : un pli « Comment faire » dans l'écran (fermé), montré tant que le mode est ouvert (classe mp-editing) ; plus de note flottante (l'utilisateur, 11 nov. 2026)
+  const how = document.createElement('details');
+  how.className = 'mp-howto';
+  how.dataset.mp = 'howto';
+  how.innerHTML = `<summary>${esc(tt(TX.howTo))}</summary><p>${esc(tt(TX.editHint))}</p><p>${esc(tt(TX.addHint))}</p>`;
+  S.box.append(how);
   mapGestures();
   levelGestures();
 }

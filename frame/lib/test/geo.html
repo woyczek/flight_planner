@@ -230,9 +230,9 @@
       d1 = rhumbNm(den, half),
       d2 = rhumbNm(half, st);
     ck('rhumbAt .5 : à la moitié de la distance loxodromique', near(d1, d2, 1e-6) && near(d1 + d2, rhumbNm(den, st), 1e-6), `${d1} ${d2}`);
-    ck('rhumbNm Denver → Strasbourg : plus long que le grand cercle (4 400 NM environ), pas de plus de 5 %', rhumbNm(den, st) > 4300 && rhumbNm(den, st) < 4800, String(rhumbNm(den, st)));
-    ck('rhumbNm sur un méridien : 60 NM par degré', near(rhumbNm({ lat: 10, lon: 5 }, { lat: 11, lon: 5 }), 60.0011, 1e-2), String(rhumbNm({ lat: 10, lon: 5 }, { lat: 11, lon: 5 })));
-    ck('rhumbNm sur un parallèle : 60 NM × cos φ par degré', near(rhumbNm({ lat: 60, lon: 5 }, { lat: 60, lon: 6 }), 30.0, 1e-1), String(rhumbNm({ lat: 60, lon: 5 }, { lat: 60, lon: 6 })));
+    ck('rhumbNm Denver → Strasbourg : plus long que le grand cercle (4 401 NM), de 5 à 15 % de plus', rhumbNm(den, st) > 4401 * 1.05 && rhumbNm(den, st) < 4401 * 1.15, String(rhumbNm(den, st)));
+    ck('rhumbNm sur un méridien : un degré de latitude (R = 3 440,065 NM : 60,04 NM)', near(rhumbNm({ lat: 10, lon: 5 }, { lat: 11, lon: 5 }), 3440.065 * Math.PI / 180, 1e-6), String(rhumbNm({ lat: 10, lon: 5 }, { lat: 11, lon: 5 })));
+    ck('rhumbNm sur un parallèle : un degré de longitude × cos φ', near(rhumbNm({ lat: 60, lon: 5 }, { lat: 60, lon: 6 }), 3440.065 * Math.PI / 180 * Math.cos(60 * Math.PI / 180), 1e-6), String(rhumbNm({ lat: 60, lon: 5 }, { lat: 60, lon: 6 })));
     ck('rhumbCourse : est 90°, nord 0°, ouest 270°, sud 180°', near(rhumbCourse({ lat: 40, lon: 0 }, { lat: 40, lon: 5 }), 90, 1e-9) && near(rhumbCourse({ lat: 40, lon: 0 }, { lat: 45, lon: 0 }), 0, 1e-9) && near(rhumbCourse({ lat: 40, lon: 0 }, { lat: 40, lon: -5 }), 270, 1e-9) && near(rhumbCourse({ lat: 40, lon: 0 }, { lat: 35, lon: 0 }), 180, 1e-9));
     const a1 = {
         lat: 64.3,

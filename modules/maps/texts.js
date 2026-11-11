@@ -129,6 +129,7 @@ export const TX = {
       'CAM: vuelo militar (zonas R / D / P, TSA / TRA / CBA, red de vuelo bajo, a todos los niveles)'
     ]
   },
+  howTo: ['Comment faire', 'How to', 'So geht es', 'Cómo hacerlo'],
   editMode: ['Modifier', 'Edit', 'Bearbeiten', 'Editar'],
   editDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],
   editHelp: ['Modifier la route sur la carte', 'Edit the route on the map', 'Route auf der Karte bearbeiten',

@@ -60,7 +60,8 @@ def d1(c):
         c.ok(not c.shown(f'[data-mp="{mp}"]'), f'[data-mp={mp}] is displayed', why)
 
 
-@case('D2', 'Edit mode', 'D', tags=('overlay', 'maps'), screens=False, langs4=True, rule='maps lot points 2, 6, 8')
+@case('D2', 'Edit mode: the help is a closed « How to » fold on the screen, never a notification', 'D', tags=('overlay', 'maps'), screens=False, langs4=True,
+      rule='maps lot points 2, 6, 8; the user, 11 Nov 2026 (« oui »): the Edit help (« Glissez un point… ») in a fold « Comment faire » of the screen, no more in a floating note (one note at a time on a phone)')
 def d2(c):
     c.open('maps', flight=True)
     hint = norm(row(c, 'editHint'))
@@ -71,13 +72,21 @@ def d2(c):
     c.ok('add' in order and 'undo' in order, f'right column after Edit: {order}', '"+" and Undo appear in the right column')
     c.eq(c.js("document.querySelector('[data-mp=undo]').disabled"), True, 'Undo is disabled with nothing to undo', what='Undo disabled')
     aligned(c, 'Edit mode')
-    c.eq(sum(1 for n in c.note_log() if norm(n) == hint), 1, 'the Edit help appears as a notification once', what='Edit hint notifications after the first toggle')
+    c.eq(sum(1 for n in c.note_log() if norm(n) == hint), 0, 'the Edit help is not a notification', what='Edit hint notifications')
+    fold = c.js("""() => { const d = document.querySelector('.mp-howto'); if (!d) return null; const r = d.getBoundingClientRect(); return { shown: r.width > 0 && r.height > 0, open: d.open, summary: d.querySelector('summary').textContent.trim(), text: d.textContent, left: r.left, top: r.top } }""")
+    c.ok(fold and fold['shown'] and not fold['open'], str(fold), 'the closed fold « How to » is on the screen in Edit mode')
+    c.eq(norm(fold['summary']), norm(row(c, 'howTo')), 'the fold is called « How to » in the language of the run', what='summary')
+    c.ok(hint in norm(fold['text']), fold['text'][:80], 'the Edit help is inside the fold')
+    c.tap('.mp-howto summary')
+    c.until("document.querySelector('.mp-howto').open", what='the fold opens at a tap')
+    c.shot(f'D2_{c.design}_{c.lang}_delivered.png')
     c.tap('[data-mp="edit"]')
     c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'false'", what='Edit is released')
+    c.ok(not c.shown('.mp-howto'), 'the fold is displayed', 'the fold goes with the mode')
     c.tap('[data-mp="edit"]')
     c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'true'", what='Edit pressed again')
     c.wait(300)
-    c.eq(sum(1 for n in c.note_log() if norm(n) == hint), 1, 'the Edit help is not repeated on a second toggle', what='Edit hint notifications after the second toggle')
+    c.eq(sum(1 for n in c.note_log() if norm(n) == hint), 0, 'still no notification on a second toggle', what='Edit hint notifications after the second toggle')
     c.key('Escape')
     c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'false'", what='Escape leaves the Edit mode')
 

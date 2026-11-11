@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the Edit help is a « How to » fold on the screen, no more a notification** — « Glissez un point… » and the « + » hint are in a closed fold at the top left of the map while the mode is open (the user: one note at a time on a phone); help ×4, SPEC § 4 and § 12 (noreg D2).
 - **Fuel: the aircraft comes first at the step Flight** (Fuel SPEC, DECISIONS, help; noreg F146; SOG-0131).
 - **Fuel: a direct leg is flown on its rhumb line** — the flight's position, the weather-model point and the weather corridor are on it; the quote's distance and course unchanged pending the user's answer (Fuel DECISIONS; noreg F145; SOG-0243).
 - **Vocabulary (French): « aéronef » for an aeroplane or a helicopter** in Fuel, the fleet and sheets, Missions, the flight log and the report, screen and help; « appareil » stays the phone, tablet or workstation (noreg M41; SOG-0242).

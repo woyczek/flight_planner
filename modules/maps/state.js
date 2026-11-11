@@ -20,7 +20,6 @@ export const keep = {
   sheet: 'default',
   view: 'profile',
   win: null,
-  editHinted: false,
   touchAt: -1e9,
   // cadrage de l'utilisateur { sig, center, zoom } : gardé pour ce vol-là seulement (signature flightSig, SPEC § 5)
   cam: null

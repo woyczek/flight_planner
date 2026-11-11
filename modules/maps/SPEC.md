@@ -293,8 +293,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   its name and help as tooltip and `aria-label`, the current one pressed (accent ring and inset shadow; red for CAM);
   closed by a choice, a tap on the map or the sheet, or Escape. Nothing is drawn over the map outside the frame's
   overlay layer except the light tooltip and the route point's card (§ 11, § 12), inside the map box.
-- **Messages**: a floating notification (`ctx.notify`) for what must be seen once (the base's state at mount, the
-  Edit mode's help when entering it, the "+" armed hint, GPS not enabled); the sheet's notes (§ 7.6) keep what stays
+- **Messages**: a floating notification (`ctx.notify`) for what must be seen once (the base's state at mount,
+  GPS not enabled; the Edit mode's help is a folded « How to » in the screen, not a note); the sheet's notes (§ 7.6) keep what stays
   true. Never a line over the map.
 - **Empty states**, written only when they change:
   - no flight (or a mission without maps, or an unreadable mission): the sheet is hidden, so are Recentre, the mode,
@@ -1182,7 +1182,7 @@ follow a touch are ignored (`sourceCapabilities.firesTouchEvents`, or within 1 s
 
 ## 12. Editing the route on the map
 
-Hidden for mission maps. The Edit toggle enters the mode; entering it says its help once per page (notification).
+Hidden for mission maps. The Edit toggle enters the mode; the mode's help (drag, « + », tap, levels) is a closed fold « How to » (`details.mp-howto`) at the top left of the map box, shown while the mode is open, never a notification (the user, 11 Nov 2026).
 - **Moving a point**: a press within 22 px of a waypoint (not departure nor arrival) drags it; the press is caught before
   MapLibre (`pointerdown` in the capture phase, `mousedown` / `touchstart` / `touchmove` stopped while dragging), so the map
   does not pan; elsewhere the map pans. While dragging: rubber band from the previous to the next point, the anchor under
@@ -1194,7 +1194,7 @@ Hidden for mission maps. The Edit toggle enters the mode; entering it says its h
   and `removePoint` refuse it, its card says "set by the mission" instead of offering "Remove", and it is drawn as a filled
   square. The Map keeps `lock` and `mission` in what it writes (`commit` spreads the point) and never touches `route.locks`
   (Fuel's). A free point can still be added anywhere, even between two imposed points.
-- **Adding**: the "+" button arms one insertion (pressed while armed, hint by notification), the next tap adds the anchor
+- **Adding**: the "+" button arms one insertion (pressed while armed, its hint in the fold), the next tap adds the anchor
   under the finger (else a free point) where it lengthens the route least, then disarms; a press held 500 ms without moving
   (8 px) does the same at once (the browser menu is suppressed in the mode). A simple tap never inserts: on a route point it
   opens its card, elsewhere the tooltip; the click that follows a drag is ignored.

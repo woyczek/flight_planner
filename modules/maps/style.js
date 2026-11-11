@@ -40,6 +40,10 @@ export const STYLE = `
 :is([data-module="maps"],.f-overlay) .mp-mil:hover,:is([data-module="maps"],.f-overlay) .mp-choice.mp-mil[aria-pressed=true]{background:color-mix(in srgb,var(--sog-err) 12%,var(--sog-surface));color:var(--sog-err);box-shadow:inset 0 0 0 1.5px var(--sog-err),inset 0 2px 3px #0000002e}
 [data-module="maps"] .mp-tip{position:absolute;z-index:4;max-width:min(92%,340px);padding:6px 8px;margin:0;font-size:.88em;line-height:1.35;pointer-events:none;box-shadow:0 2px 8px #0003}
 [data-module="maps"] .mp-tip>div+div{margin-top:4px}
+[data-module="maps"] .mp-howto{display:none;position:absolute;z-index:3;top:8px;left:8px;max-width:min(78%,360px);padding:4px 8px;font-size:12px;line-height:1.35;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:0 2px 8px #0003}
+[data-module="maps"].mp-editing .mp-howto{display:block}
+[data-module="maps"] .mp-howto>summary{cursor:pointer;font-weight:600}
+[data-module="maps"] .mp-howto>p{margin:6px 0 0}
 [data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 65%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
 [data-module="maps"] .mp-tip.mp-hover>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
 [data-module="maps"] .mp-tip.mp-hover>.mp-also{color:var(--sog-muted)}
