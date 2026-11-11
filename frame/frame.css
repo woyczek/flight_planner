@@ -1249,6 +1249,19 @@ p.f-back {
   display: grid;
   gap: 8px
 }
+/* l'onglet « À trancher » de la recette (SOG-0241) : une réponse par ligne, la zone de toucher de la hauteur d'une cible */
+.f-rc-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: var(--sog-touch, 44px);
+  padding: 6px 0;
+  cursor: pointer
+}
+.f-rc-opt input {
+  flex: none;
+  margin-top: 6px
+}
 .f-rc-item {
   background: var(--sog-surface);
   border: 1px solid var(--sog-border);

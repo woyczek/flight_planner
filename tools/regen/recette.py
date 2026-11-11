@@ -129,6 +129,109 @@ def verdict(job, args, ctx):
     return {'ok': True, 'action': 'set', 'count': len(items), 'updated': doc['updated']}
 
 
+# ---- recette/decision (SOG-0241) : les réponses de l'utilisateur aux points à trancher (onglet « À trancher » de la recette) — même forme et mêmes gardes que recette/verdict.
+#   { action: 'get' } → { ok, action, schema, updated, items, dropped, exists } ; { action: 'set', items } REMPLACE le contenu. Fichier : organisation/DECISIONS_REPONSES.json,
+#   { "schema": "sog-decisions/1", "updated": "<ISO UTC>", "items": { "Q-0001": { "choice": 0..9 | null, "text": "…", "at": "<ISO UTC>" } } } : un identifiant ^Q-\d{4}$, un choix entier
+#   de 0 à 9 ou rien, un texte libre de 600 signes au plus (SANS caractère de commande), au moins l'un des deux, une date ISO UTC ; 1000 entrées au plus ; rien d'autre n'est écrit.
+DECISIONS_FILE = 'DECISIONS_REPONSES.json'
+DECISIONS_SCHEMA = 'sog-decisions/1'
+QID = re.compile(r'Q-\d{4}')
+
+
+def check_decision(a):
+    """Contrôle d'arguments (→ 400 si None) : { action: 'get' } ou { action: 'set', items: { id: { choice?, text?, at? } } } et rien d'autre (la forme seulement)."""
+    return check(a)
+
+
+def decision_entry(v):
+    """L'entrée nettoyée { choice, text, at? } d'une valeur, ou None hors des règles : `choice` entier 0 à 9 ou None, `text` de 600 signes au plus sans caractère de commande, au moins un des deux, `at` ISO UTC."""
+    if not isinstance(v, dict) or not set(v) <= {'choice', 'text', 'at'}:
+        return None
+    choice = v.get('choice')
+    if choice is not None and (isinstance(choice, bool) or not isinstance(choice, int) or not 0 <= choice <= 9):
+        return None
+    text = v.get('text', '')
+    if not isinstance(text, str) or len(text) > MAX_COMMENT or re.search(r'[\x00-\x08\x0b-\x1f\x7f]', text):
+        return None
+    text = text.strip()
+    if choice is None and not text:
+        return None
+    out = {'choice': choice, 'text': text}
+    if 'at' in v:
+        if not isinstance(v['at'], str) or not AT.fullmatch(v['at']):
+            return None
+        out['at'] = v['at']
+    return out
+
+
+def clean_decisions(items):
+    """(entrées aux règles, nombre d'écartées) d'une carte lue d'un fichier."""
+    out, dropped = {}, 0
+    if not isinstance(items, dict):
+        return out, 0
+    for k, v in list(items.items())[:MAX_ITEMS * 2]:
+        e = decision_entry(v) if isinstance(k, str) and QID.fullmatch(k) else None
+        if e is None:
+            dropped += 1
+            continue
+        out[k] = e
+    if len(out) > MAX_ITEMS:
+        dropped += len(out) - MAX_ITEMS
+        out = dict(list(out.items())[:MAX_ITEMS])
+    return out, dropped
+
+
+def read_decisions(path):
+    """(items, dropped, exists, updated) du fichier des réponses ; rien d'un fichier absent, trop gros, illisible ou d'un autre schéma."""
+    try:
+        if os.path.getsize(path) > FILE_MAX:
+            return {}, 0, True, ''
+        with open(path, encoding='utf-8') as f:
+            d = json.load(f)
+    except FileNotFoundError:
+        return {}, 0, False, ''
+    except (OSError, ValueError):
+        return {}, 0, True, ''
+    if not isinstance(d, dict) or d.get('schema') != DECISIONS_SCHEMA:
+        return {}, 0, True, ''
+    items, dropped = clean_decisions(d.get('items'))
+    upd = d.get('updated')
+    return items, dropped, True, upd if isinstance(upd, str) and len(upd) <= 40 else ''
+
+
+def decision(job, args, ctx):
+    """Verbe recette/decision (voir ci-dessus) : lire ou remplacer organisation/DECISIONS_REPONSES.json."""
+    root = (ctx or {}).get('root') or ROOT
+    org = os.path.join(root, 'organisation')
+    if not os.path.isdir(org):
+        return {'ok': False, 'action': args['action'], 'reason': 'no-organisation'}
+    path = os.path.join(org, DECISIONS_FILE)
+    if args['action'] == 'get':
+        items, dropped, exists, updated = read_decisions(path)
+        return {'ok': True, 'action': 'get', 'schema': DECISIONS_SCHEMA, 'updated': updated, 'items': items, 'dropped': dropped, 'exists': exists}
+    bad = [k for k, v in args['items'].items() if not QID.fullmatch(k) or decision_entry(v) is None]
+    if bad:
+        return {'ok': False, 'action': 'set', 'reason': 'bad-items', 'bad': bad[:BAD_MAX]}
+    items = {k: decision_entry(v) for k, v in args['items'].items()}
+    doc = {'schema': DECISIONS_SCHEMA, 'updated': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'items': {k: items[k] for k in sorted(items)}}
+    tmp = path + '.tmp'
+    try:
+        with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
+        os.replace(tmp, path)
+    except OSError:
+        return {'ok': False, 'action': 'set', 'reason': 'failed'}
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+    job.log(f'recette : {len(items)} réponse(s) aux points à trancher')
+    return {'ok': True, 'action': 'set', 'count': len(items), 'updated': doc['updated']}
+
+
 VERBS = {
     ('recette', 'verdict'): (verdict, check),
+    ('recette', 'decision'): (decision, check_decision),
 }

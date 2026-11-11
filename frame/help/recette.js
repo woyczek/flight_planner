@@ -90,6 +90,33 @@
       'La lista de recepción aún no está disponible en este dispositivo (¿sin conexión en la primera visita?).'
     ]
   };
+  // ---- l'onglet « À trancher » (SOG-0241) : les points que l'ergonome soumet à l'utilisateur, en QCM et choix libre ; même boucle que les verdicts (recette/decision → organisation/DECISIONS_REPONSES.json)
+  T.tabTests = ['Tests', 'Tests', 'Tests', 'Pruebas'];
+  T.tabDecide = ['À trancher ({n})', 'To decide ({n})', 'Zu entscheiden ({n})', 'Por decidir ({n})'];
+  T.dIntro = ['Les points à trancher, un par carte : cochez une réponse, ou écrivez la vôtre. L’ergonome lit vos réponses à chaque tour.',
+    'The points to decide, one per card: tick an answer, or write your own. The ergonomist reads your answers every round.',
+    'Die zu entscheidenden Punkte, einer je Karte: Kreuzen Sie eine Antwort an oder schreiben Sie Ihre eigene. Die Ergonomie liest Ihre Antworten in jeder Runde.',
+    'Los puntos por decidir, uno por tarjeta: marque una respuesta o escriba la suya. La ergonomía lee sus respuestas en cada ronda.'
+  ];
+  T.dProposed = ['proposé par l’ergonome', 'proposed by the ergonomist', 'von der Ergonomie vorgeschlagen', 'propuesta por la ergonomía'];
+  T.dFree = ['Votre réponse libre (facultatif)', 'Your own answer (optional)', 'Ihre eigene Antwort (optional)',
+    'Su propia respuesta (opcional)'
+  ];
+  T.dAnswer = ['Répondre', 'Answer', 'Antworten', 'Responder'];
+  T.dModify = ['Modifier', 'Change', 'Ändern', 'Modificar'];
+  T.dYours = ['Votre réponse', 'Your answer', 'Ihre Antwort', 'Su respuesta'];
+  T.dNeed = ['Cochez une réponse ou écrivez la vôtre.', 'Tick an answer or write your own.',
+    'Kreuzen Sie eine Antwort an oder schreiben Sie Ihre eigene.', 'Marque una respuesta o escriba la suya.'
+  ];
+  T.dNone = ['Rien à trancher pour l’instant.', 'Nothing to decide for now.', 'Im Moment nichts zu entscheiden.',
+    'Nada que decidir por ahora.'
+  ];
+  T.dCopy = ['Copier l’identifiant', 'Copy the identifier', 'Kennung kopieren', 'Copiar el identificador'];
+  T.dNoWrite = ['Le lanceur n’a pas pu écrire les réponses : elles restent sur cet appareil.',
+    'The launcher could not write the answers: they stay on this device.',
+    'Der Launcher konnte die Antworten nicht schreiben: Sie bleiben auf diesem Gerät.',
+    'El lanzador no pudo escribir las respuestas: se quedan en este dispositivo.'
+  ];
   /** Ligne [fr, en, de, es] d'un texte du fichier ({ fr, en, de, es }) ; une langue absente reprend l'anglais, puis le français. */
   const row = o => {
     if (typeof o === 'string') return o;
@@ -167,6 +194,77 @@
       /* le choix vaut pour cet affichage seulement */
     }
   };
+  const QID = /^Q-\d{4}$/;
+  const MAX_Q = 200;
+  /** Une réponse lue d'ailleurs (le fichier du lanceur, le magasin de l'appareil, le fichier généré) : { choice: 0 à 9 | null, text, at? } aux règles, sinon null (au moins un choix ou un texte). */
+  const answerOf = v => {
+    if (!v || typeof v !== 'object') return null;
+    const choice = Number.isInteger(v.choice) && v.choice >= 0 && v.choice <= 9 ? v.choice : null,
+      tx = text(v.text, MAX_COMMENT);
+    if (choice === null && !tx) return null;
+    return {
+      choice,
+      text: tx,
+      ...(typeof v.at === 'string' && AT.test(v.at) ? {
+        at: v.at
+      } : {})
+    };
+  };
+  const answerMap = m => {
+    const out = {};
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return out;
+    let n = 0;
+    for (const k of Object.keys(m)) {
+      const a = QID.test(k) && n < MAX_ITEMS ? answerOf(m[k]) : null;
+      if (a) {
+        out[k] = a;
+        n++;
+      }
+    }
+    return out;
+  };
+  /** Les questions du fichier (non fiable) : identifiant Q-nnnn, fiche SOG-nnnn, textes bornés, 2 à 6 réponses, 200 au plus. */
+  const questionsOf = list => (Array.isArray(list) ? list : []).filter(q => q && typeof q === 'object' && QID.test(q.id)).slice(0, MAX_Q)
+    .map(q => {
+      const options = (Array.isArray(q.options) ? q.options : []).map(o => text(typeof o === 'string' ? o : o?.text, 200)).filter(
+        Boolean).slice(0, 6);
+      return {
+        id: q.id,
+        fiche: typeof q.fiche === 'string' && ID.test(q.fiche) ? q.fiche : '',
+        app: typeof q.app === 'string' ? q.app.slice(0, 20) : '',
+        question: text(q.question, 300),
+        context: text(q.context, 500),
+        options,
+        recommended: Number.isInteger(q.recommended) && q.recommended >= 0 && q.recommended < options.length ? q.recommended : null,
+        since: /^\d{4}-\d{2}-\d{2}$/.test(String(q.since)) ? q.since : '',
+        gen: q.state === 'answered' ? answerOf({
+          choice: q.choice,
+          text: q.text,
+          at: q.at
+        }) : null
+      };
+    }).filter(q => q.question && q.options.length >= 2);
+  /** Le magasin des réponses (même fichier device/recette.json) : { dpending (id → réponse, ou null : à retirer), dunsent, tab }. */
+  const readStoreD = async c => {
+    let s = null;
+    try {
+      s = await c.own?.get(STORE);
+    } catch {
+      s = null;
+    }
+    const dpending = {};
+    if (s?.dpending && typeof s.dpending === 'object' && !Array.isArray(s.dpending))
+      for (const k of Object.keys(s.dpending).slice(0, MAX_Q)) {
+        if (!QID.test(k)) continue;
+        if (s.dpending[k] === null) dpending[k] = null;
+        else if (answerOf(s.dpending[k])) dpending[k] = answerOf(s.dpending[k]);
+      }
+    return {
+      dpending,
+      dunsent: (Array.isArray(s?.dunsent) ? s.dunsent : []).filter(k => typeof k === 'string' && Object.hasOwn(dpending, k)),
+      tab: s?.tab === 'decisions' ? 'decisions' : 'tests'
+    };
+  };
   let docP = null;
   /** La liste des tests (JSON) ; null si elle est introuvable. */
   const load = c => docP ||= fetch(new URL('frame/help/recette.json', c.root), {
@@ -201,6 +299,7 @@
     }));
     const apps = (Array.isArray(d.apps) ? d.apps : []).filter(a => typeof a === 'string' && tests.some(x => x.app === a));
     const saved = await readStore(c);
+    const savedD = await readStoreD(c);
     const ui = {
       app: '',
       file: {},
@@ -212,7 +311,16 @@
       open: saved.open,
       more: {},
       draft: {},
-      need: ''
+      need: '',
+      // l'onglet « À trancher » (SOG-0241)
+      tab: savedD.tab,
+      dlocal: savedD.dpending,
+      dunsent: new Set(savedD.dunsent),
+      dfile: {},
+      dfileRead: false,
+      dedit: new Set(),
+      ddraft: {},
+      dneed: ''
     };
     // ---- ce que dit un test : son verdict en vigueur (l'appareil, puis le lanceur, puis le fichier généré), ou rien
     const rawVerdict = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : ui.fileRead ? ui.file[x.id] || null : x.gen;
@@ -277,16 +385,42 @@
       return k === 'today' ? `<section class="f-rc-sec" data-section="${k}"><h2>${title}</h2>${body}${more}</section>` :
         `<details class="f-rc-sec" data-section="${k}"${ui.open[k] ? ' open' : ''}><summary><b>${title}</b></summary>${body}${more}</details>`;
     };
+    // ---- l'onglet « À trancher » : une carte par question, les non répondues d'abord
+    const questions = questionsOf(d.decisions);
+    const answerNow = q => Object.hasOwn(ui.dlocal, q.id) ? ui.dlocal[q.id] : ui.dfileRead ? ui.dfile[q.id] || null : q.gen;
+    const undecided = () => questions.filter(q => !answerNow(q)).length;
+    const decisionItem = q => {
+      const a = answerNow(q),
+        editing = !a || ui.dedit.has(q.id),
+        head = `<p><button type="button" class="f-rm-id" data-copy="${esc(q.fiche || q.id)}" title="${esc(t(T.dCopy))}">${esc(q.fiche || q.id)}</button> <small class="f-muted">${esc(q.id)}${q.app ? ` · ${esc(appName(q.app))}` : ''}</small>${ui.dunsent.has(q.id) ? ` <small class="f-muted" data-unsent>${esc(t(T.unsent))}</small>` : ''}</p>
+        <p><b>${esc(q.question)}</b></p>${q.context ? `<p class="f-muted" data-context>${esc(q.context)}</p>` : ''}`;
+      if (!editing) return `<li class="f-rc-item" data-q="${esc(q.id)}" data-state="answered">${head}<p data-answer><b>${esc(t(T.dYours))}</b> : ${a.choice !== null && q.options[a.choice] ? esc(q.options[a.choice]) : ''}${a.choice !== null && a.text ? ' · ' : ''}${esc(a.text)}${a.at ? ` <small class="f-muted">${esc(a.at.slice(0, 10))}</small>` : ''}</p>
+        <div class="f-row"><button type="button" data-dmod="${esc(q.id)}">${esc(t(T.dModify))}</button></div></li>`;
+      const dr = ui.ddraft[q.id] || {
+        choice: a?.choice ?? null,
+        text: a?.text || ''
+      };
+      return `<li class="f-rc-item" data-q="${esc(q.id)}" data-state="todo">${head}
+        <div role="radiogroup" aria-label="${esc(q.question)}">${q.options.map((o, i) => `<label class="f-rc-opt"><input type="radio" name="dq-${esc(q.id)}" value="${i}" data-dchoice="${esc(q.id)}"${dr.choice === i ? ' checked' : ''}> ${esc(o)}${q.recommended === i ? ` <small class="f-muted" data-proposed>(${esc(t(T.dProposed))})</small>` : ''}</label>`).join('')}</div>
+        <label class="f-field">${esc(t(T.dFree))}<textarea data-dtext="${esc(q.id)}" rows="2" maxlength="${MAX_COMMENT}">${esc(dr.text)}</textarea></label>
+        ${ui.dneed === q.id ? `<p class="f-warn" data-need>${esc(t(T.dNeed))}</p>` : ''}
+        <div class="f-row"><button type="button" class="primary" data-dok="${esc(q.id)}">${esc(t(T.dAnswer))}</button></div></li>`;
+    };
+    const decisionsPanel = () => {
+      const sorted = [...questions].sort((a, b) => (answerNow(a) ? 1 : 0) - (answerNow(b) ? 1 : 0) || (b.since || '').localeCompare(a
+        .since || '') || a.id.localeCompare(b.id));
+      return `<p class="f-muted">${esc(t(T.dIntro))}</p>${sorted.length ? `<ul class="f-rc-list" data-decisions>${sorted.map(decisionItem).join('')}</ul>` : `<p class="f-muted" data-nothing>${esc(t(T.dNone))}</p>`}`;
+    };
     const draw = focus => {
       const mine = shownTests();
       const by = Object.fromEntries(SECTIONS.map(k => [k, mine.filter(x => sectionOf(x) === k)]));
       const n = k => by[k].length,
         verdictN = v => mine.filter(x => !known(x) && verdictOf(x)?.verdict === v).length;
-      view.innerHTML = `<h1>${esc(t(T.title))}</h1>
-        <p class="f-muted">${esc(t(T.intro))}</p>
+      const tabs = questions.length ? `<div class="f-rm-bar" role="tablist" data-tabs>${['tests', 'decisions'].map(k => `<button type="button" class="f-rm-btn" data-tab="${k}" aria-pressed="${ui.tab === k}">${esc(k === 'tests' ? t(T.tabTests) : t(T.tabDecide, { n: undecided() }))}</button>`).join('')}</div>` : '';
+      view.innerHTML = `<h1>${esc(t(T.title))}</h1>${tabs}${ui.tab === 'decisions' && questions.length ? decisionsPanel() : `        <p class="f-muted">${esc(t(T.intro))}</p>
         <p data-summary>${esc(t(T.summary, { a: n('today') + n('older'), b: verdictN('ok'), c: verdictN('ko'), d: n('known') }))}</p>
         <div class="f-rm-bar" data-apps>${[''].concat(apps).map(a => `<button type="button" class="f-rm-btn" data-app="${esc(a)}" aria-pressed="${ui.app === a}">${esc(a ? appName(a) : t(T.all))}</button>`).join('')}</div>
-        ${mine.length ? SECTIONS.map(k => sectionHtml(k, by[k])).join('') : `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`}`;
+        ${mine.length ? SECTIONS.map(k => sectionHtml(k, by[k])).join('') : `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`}`}`;
       if (focus) view.querySelector(focus)?.focus();
     };
 
@@ -368,10 +502,108 @@
       draw();
       if (await send(false)) draw();
     };
+    // ---- les réponses : écrites par le lanceur (recette/decision), sinon gardées sur l'appareil, « non envoyé » (comme les verdicts)
+    const callDec = async args => {
+      const L = launcher();
+      if (!L) return null;
+      const r = await L.job('regen/job', {
+        set: 'recette',
+        verb: 'decision',
+        args
+      }).catch(() => null);
+      return r?.ok && r.result && typeof r.result === 'object' ? r.result : null;
+    };
+    let dsending = Promise.resolve();
+    let dpulling = Promise.resolve();
+    const sendDec = quiet => dsending = dsending.then(async () => {
+      await dpulling; // ce que le fichier porte déjà est lu avant d'écrire : un envoi ne l'écrase pas
+      const mine = {
+          ...ui.dlocal
+        },
+        all = {
+          ...ui.dfile
+        };
+      for (const [k, v] of Object.entries(mine)) {
+        if (v) all[k] = v;
+        else delete all[k];
+      }
+      const r = await callDec({
+        action: 'set',
+        items: Object.fromEntries(Object.entries(all).slice(0, MAX_ITEMS))
+      });
+      if (r?.ok) {
+        ui.dfile = answerMap(all);
+        ui.dfileRead = true;
+        for (const k of Object.keys(mine)) {
+          if (!Object.hasOwn(ui.dlocal, k) || JSON.stringify(ui.dlocal[k]) === JSON.stringify(mine[k])) delete ui.dlocal[k];
+          if (!Object.hasOwn(ui.dlocal, k)) ui.dunsent.delete(k);
+        }
+        await saveStore(c, {
+          dpending: ui.dlocal,
+          dunsent: [...ui.dunsent]
+        });
+        return true;
+      }
+      if (!quiet && launcher()) c.notify?.(t(r?.reason === 'no-organisation' ? T.noOrg : T.dNoWrite), 'warn');
+      return false;
+    });
+    dpulling = !questions.length ? Promise.resolve() : (async () => { // pas de question : le lanceur n'est pas interrogé
+      const r = await callDec({
+        action: 'get'
+      });
+      if (!r?.ok) return;
+      ui.dfile = answerMap(r.items);
+      ui.dfileRead = true;
+      draw();
+    })();
+    dpulling.then(() => Object.keys(ui.dlocal).length ? sendDec(true).then(ok => ok && draw()) : null);
+    /** Garde la réponse d'une question (`null` : la retirer) : sur l'appareil d'abord, puis on tente l'envoi. */
+    const commitDec = async (id, a) => {
+      ui.dlocal[id] = a;
+      ui.dunsent.add(id);
+      delete ui.ddraft[id];
+      ui.dedit.delete(id);
+      ui.dneed = '';
+      await saveStore(c, {
+        dpending: ui.dlocal,
+        dunsent: [...ui.dunsent]
+      });
+      draw();
+      if (await sendDec(false)) draw();
+    };
     const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     view.onclick = e => {
       const b = e.target.closest?.('button');
       if (!b || !view.contains(b)) return;
+      if (b.dataset.tab) {
+        ui.tab = b.dataset.tab === 'decisions' ? 'decisions' : 'tests';
+        saveStore(c, {
+          tab: ui.tab
+        });
+        return draw(`[data-tab="${ui.tab}"]`);
+      }
+      if (b.dataset.copy) return void(c.copy ? c.copy(b.dataset.copy) : navigator.clipboard?.writeText(b.dataset.copy).catch(
+        () => {}));
+      if (b.dataset.dmod && QID.test(b.dataset.dmod)) {
+        ui.dedit.add(b.dataset.dmod);
+        return draw(`[data-dtext="${CSS.escape(b.dataset.dmod)}"]`);
+      }
+      if (b.dataset.dok && QID.test(b.dataset.dok)) {
+        const id = b.dataset.dok,
+          q = questions.find(x => x.id === id),
+          dr = ui.ddraft[id] || {},
+          choice = Number.isInteger(dr.choice) ? dr.choice : Number(view.querySelector(`input[name="dq-${CSS.escape(id)}"]:checked`)?.value ?? NaN),
+          a = answerOf({
+            choice: Number.isInteger(choice) && q && choice < q.options.length ? choice : null,
+            text: dr.text ?? view.querySelector(`[data-dtext="${CSS.escape(id)}"]`)?.value,
+            at: now()
+          });
+        if (!a) { // ni choix ni texte : on le dit, on garde la place
+          ui.dneed = id;
+          return draw(`[data-dok="${CSS.escape(id)}"]`);
+        }
+        return commitDec(id, a);
+      }
       if (b.dataset.app !== undefined) {
         ui.app = b.dataset.app;
         return draw(`[data-app="${CSS.escape(ui.app)}"]`);
@@ -396,7 +628,31 @@
         at: now()
       });
     };
+    view.onchange = e => {
+      const r = e.target.closest?.('input[data-dchoice]');
+      if (!r || !QID.test(r.dataset.dchoice)) return;
+      ui.ddraft[r.dataset.dchoice] = {
+        ...(ui.ddraft[r.dataset.dchoice] || {}),
+        choice: Number(r.value)
+      };
+      if (ui.dneed === r.dataset.dchoice) {
+        ui.dneed = '';
+        r.closest('li')?.querySelector('[data-need]')?.remove();
+      }
+    };
     view.oninput = e => {
+      const dt = e.target.closest?.('textarea[data-dtext]');
+      if (dt && QID.test(dt.dataset.dtext)) {
+        ui.ddraft[dt.dataset.dtext] = {
+          ...(ui.ddraft[dt.dataset.dtext] || {}),
+          text: dt.value
+        };
+        if (ui.dneed === dt.dataset.dtext && dt.value.trim()) {
+          ui.dneed = '';
+          dt.closest('li')?.querySelector('[data-need]')?.remove();
+        }
+        return;
+      }
       const ta = e.target.closest?.('textarea[data-comment]');
       if (!ta || !ID.test(ta.dataset.comment)) return;
       ui.draft[ta.dataset.comment] = ta.value;

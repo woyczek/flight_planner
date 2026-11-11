@@ -1577,6 +1577,54 @@ def k123(c):
         c.eq(len(run(action='get')['items']), 1000, 'at most 1000 entries are read', what='cap')
 
 
+@case('K171', 'recette/decision: organisation/DECISIONS_REPONSES.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a hostile file filtered, atomic write) (SOG-0241)', 'K',
+      static=True, rule='SOG-0241: the user’s answers to the points to decide (the « À trancher » tab of the recette) are written by the launcher: 1000 entries at most, ids Q-nnnn, a choice 0 to 9 or none, a free text of 600 signs, one of the two at least, nothing else written; same guards as recette/verdict')
+def k171(c):
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('recette', 'decision')]
+    good_set = {'action': 'set', 'items': {'Q-0001': {'choice': 0}}}
+    for bad in (None, 'x', {}, {'action': 'x'}, {'action': 'get', 'items': {}}, {'action': 'set'}, {'action': 'set', 'items': []}, {'action': 'set', 'items': {'Q-0001': 5}},
+                {'action': 'set', 'items': {'x' * 30: {'choice': 1}}}, {'action': 'set', 'items': {f'Q-{n:04d}': {'choice': 0} for n in range(1001)}}, {'action': 'get', 'path': 'C:/x'}):
+        c.ok(check(bad) is None, repr(bad)[:60], f'recette/decision refuses {repr(bad)[:50]}')
+    c.eq((check({'action': 'get'}), check(good_set)), ({'action': 'get'}, good_set), 'the two good shapes pass', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        ctx = {'root': str(root)}
+        run = lambda **a: fn(RJ.Job('recette', 'decision', {}), check(a), ctx)
+        c.eq((run(action='get').get('reason'), run(action='set', items={}).get('reason'), (root / 'organisation').exists()), ('no-organisation', 'no-organisation', False),
+             'no organisation folder: said, nothing created', what='no organisation')
+        org = root / 'organisation'
+        org.mkdir()
+        f = org / 'DECISIONS_REPONSES.json'
+        r = run(action='get')
+        c.eq((r['ok'], r['items'], r['exists']), (True, {}, False), 'no file yet: nothing, said', what='absent')
+        good = {'Q-0002': {'choice': None, 'text': 'plutôt la deuxième, mais sans le bouton', 'at': '2026-11-11T09:30:00Z'}, 'Q-0001': {'choice': 1, 'text': '', 'at': '2026-11-11T09:31:00Z'}}
+        r = run(action='set', items=good)
+        doc = json.loads(f.read_text(encoding='utf-8'))
+        c.eq((r['ok'], r['count'], doc['schema'], list(doc['items']), doc['items']['Q-0002'], bool(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', doc['updated'])), list(org.glob('*.tmp'))),
+             (True, 2, 'sog-decisions/1', ['Q-0001', 'Q-0002'], good['Q-0002'], True, []), 'a set replaces the file: the schema, the date, the entries by identifier, no temporary file', what='set')
+        r = run(action='get')
+        c.eq((r['items'], r['dropped'], r['exists'], r['updated'] == doc['updated']), (good, 0, True, True), 'a get gives back what was set', what='get')
+        before = f.read_bytes()
+        for bad in ({'Q-12': {'choice': 0}}, {'SOG-0003': {'choice': 0}}, {'Q-0003': {}}, {'Q-0003': {'choice': None}}, {'Q-0003': {'choice': None, 'text': '   '}}, {'Q-0003': {'choice': 10}},
+                    {'Q-0003': {'choice': -1}}, {'Q-0003': {'choice': True}}, {'Q-0003': {'choice': '1'}}, {'Q-0003': {'choice': 0, 'text': 'x' * 601}}, {'Q-0003': {'choice': 0, 'text': 'a\x00b'}},
+                    {'Q-0003': {'choice': 0, 'at': 'yesterday'}}, {'Q-0003': {'choice': 0, 'extra': 1}}, {'Q-0003': {'choice': 0, 'text': 3}}):
+            r = run(action='set', items={**good, **bad})
+            c.ok(r.get('reason') == 'bad-items' and f.read_bytes() == before, (r.get('reason'), r.get('bad')), f'a bad entry {repr(bad)[:50]} refuses the whole set, nothing written')
+        # a hostile file: wrong schema, junk, bad ids and shapes, too many entries
+        f.write_text('{not json', encoding='utf-8')
+        c.eq((run(action='get')['items'], run(action='get')['exists']), ({}, True), 'an unreadable file reads as nothing', what='unreadable')
+        f.write_text(json.dumps({'schema': 'other/1', 'items': good}), encoding='utf-8')
+        c.eq(run(action='get')['items'], {}, 'a file of another schema reads as nothing', what='foreign')
+        hostile = {'schema': 'sog-decisions/1', 'updated': 'x' * 100, 'items': {'Q-0001': {'choice': 0}, 'Q-0002': {'choice': None, 'text': ''}, '../x': {'choice': 0}, 'Q-0004': 'a',
+                   'Q-0005': {'choice': None, 'text': '<img src=x onerror=1>', 'at': '2026-11-11T09:30:00Z'}, '__proto__': {'choice': 0}}}
+        f.write_text(json.dumps(hostile), encoding='utf-8')
+        r = run(action='get')
+        c.eq((list(r['items']), r['dropped'], r['updated']), (['Q-0001', 'Q-0005'], 4, ''), 'a hostile file is filtered: bad ids and shapes, an empty answer dropped, a long date ignored', what='hostile')
+        f.write_text(json.dumps({'schema': 'sog-decisions/1', 'items': {f'Q-{n:04d}': {'choice': 0} for n in range(1500)}}), encoding='utf-8')
+        c.eq(len(run(action='get')['items']), 1000, 'at most 1000 entries are read', what='cap')
+
+
 @case('K127', 'LFV (Sweden) wired as a source (SOG-0153 b): the pickup converts AIP_OFFLINE.zip of Downloads without unpacking it (plan first, then the file written, a foreign archive refused), the cycle comes from the edition date, the file belongs to zone se and source lfv, the catalogue and the mirror know it with its licence line', 'K', static=True,
       rule='SOG-0153 (b) (10 Nov 2026): the user left AIP_OFFLINE.zip (988 MB) in Downloads; « Mettre à jour » takes it by conversion (tools/lfv_eaip.py) — the archive is opened for its pages ENR 4.4 and ENR 3.2 only and sia/zones/se/lfv_se_enr_<date>.geojson (160 KB) is the only thing written; LFV is a personal-use source (no reuse condition in the archive), declared by the single box of Données (modules/data: PERSONAL lfv); the file is zone se, source lfv, cycle of its edition; K52 and L1 compare the mirrors')
 def k127(c):

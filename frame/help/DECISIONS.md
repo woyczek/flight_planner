@@ -171,3 +171,12 @@ way, not taken (an empty band on every screen while the help loads). noreg A52.
 The user, on the first delivery: « oui, mais par thème par défaut. c'est un « mode priorités », pas un default. » My reading was wrong: the roadmap opens **« Par thème »** (the lanes); **« Priorités »** (three columns, drag to rank) is a mode the
 user chooses, and the device keeps it (`device/roadmap.json` `view`: `'priorities'`; anything else reads as `'themes'`). The manuals of the three applications (×4 languages) say so. Noreg A114 rewritten: opens on the lanes, chooses Priorités, a reload keeps it.
 
+## 11 November 2026 — the Recette screen, tab « À trancher » and the verb recette/decision (SOG-0241)
+
+The user, on the evening review: « comme pour la recette, un qcm + choix libre des points à trancher (dans la page recette ?) ». Yes, in the recette: a second tab **« À trancher (n) »** (n = the questions without an answer), the same loop as the verdicts.
+- **The contract** (the ergonomist's generator and questions, my screen and verb): `frame/help/recette.json` gains `decisions: [{ id 'Q-nnnn', fiche 'SOG-nnnn', app, question, context, options [2 to 6], recommended, since, state todo | answered, choice?, text?, at? }]`; every text is untrusted (escaped, bounded: 300 / 500 / 200 signs, six options at most, 200 questions).
+- **The screen** (`frame/help/recette.js`): a card per question — the fiche (copiable), its context, the answers as radio buttons (the recommended one says « proposé par l'ergonome »), a free field, « Répondre »; an answered one shows its answer and « Modifier »; the unanswered first. An empty answer is refused, said. Same template and classes as the tests (`f-rc-item`), `f-rc-opt` for one answer per line.
+- **The verb** (`tools/regen/recette.py`, `recette/decision`, next to `recette/verdict`, same guards): `get` / `set { items }` of `organisation/DECISIONS_REPONSES.json` (`sog-decisions/1`; `{ 'Q-0001': { choice: 0..9 | null, text, at } }`, one of choice / text at least, 600 signs, no control character, 1000 entries, atomic write, nothing else written; the launcher only, no organisation folder → said, nothing created).
+- **Without the launcher** (or when the job fails): the answer stays on the device (`device/recette.json` `dpending`), « non envoyé », sent at the next opening, like the Roadmap's priorities. The file the launcher holds wins over the generated `answered` once read (as for the verdicts).
+- Noreg A147 (4 languages, 390 and 1280, `A147_decisions_*_delivered.png`) and K171 (the verb), red before.
+

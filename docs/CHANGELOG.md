@@ -135,6 +135,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Recette: a second tab « À trancher (n) » — the points to decide as multiple-choice with a free field, answered through the launcher** (`frame/help/recette.js`, `tools/regen/recette.py` `recette/decision` → `organisation/DECISIONS_REPONSES.json`;
+  help/DECISIONS, manuals ×4; noreg A147, K171; SOG-0241). One card per question (the fiche copiable, the context, radio answers — the ergonomist's recommendation said —, a free field, « Répondre »); an answered one shows its answer and « Modifier »;
+  without the launcher the answer stays on the device « non envoyé ».
 - **Navigation: « Flotte » is an entry of Company, Maintenance keeps « Fiches »** (`frame/app.js` `APPS`: module entries may carry a `query`; intro manuals ×4; noreg A146; SOG-0231, « 2 entrées »). The fleet of the current airline opens in Company on its own view;
   Maintenance keeps the performance sheets. « Registre des missions » has no screen yet: nothing coded.
 - **Frame: a relayed call the caller gave up frees its place at once** (`frame/app.js` `relayTake`, `ctx.net.fetch`; INTEGRATION § ctx.net; noreg A145; challenge of the frame, 11 Nov). A caller that aborts (leaving a screen) kept its place in

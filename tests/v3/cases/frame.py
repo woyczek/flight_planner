@@ -6016,3 +6016,96 @@ def a146(c):
         c.eq(c.count('[data-module=aircraft] [data-view]'), 0, f'{app}: the entry opens the module on its view alone, no bar of two views', what=f'view ({app})')
         c.shot(f'A146_{app}_{c.width}_{lang}_delivered.png')
     c.check_errors()
+
+
+def _dq_fixture():
+    """A frame/help/recette.json (sog-recette/1) with `decisions`: two to decide (the first with a recommended answer), one answered by the generator, a hostile one, one with a single option (dropped)."""
+    fx = _rc_fixture()
+    fx['decisions'] = [
+        {'id': 'Q-0001', 'fiche': 'SOG-0229', 'app': 'maintenance', 'question': 'Un seul bouton « Mettre à jour » ?', 'context': 'La refonte de l’écran de la base propose un état en une phrase et un seul bouton.\nLes nombres se déplient sur place.',
+         'options': ['Oui, un seul bouton', 'Non, garder les trois', 'Un bouton, plus un détail replié'], 'recommended': 0, 'since': '2026-11-11', 'state': 'todo'},
+        {'id': 'Q-0002', 'fiche': 'SOG-0236', 'app': 'pilote', 'question': 'Où lister les approches en doute ?', 'context': 'Une page dédiée, ou le panneau de la fiche du terrain.',
+         'options': ['Une page dédiée', 'Dans la fiche du terrain'], 'recommended': None, 'since': '2026-11-10', 'state': 'todo'},
+        {'id': 'Q-0003', 'fiche': 'SOG-0231', 'app': 'compagnie', 'question': 'Le registre des missions : un écran ?', 'context': 'Il n’a pas d’écran aujourd’hui.',
+         'options': ['Oui', 'Non'], 'recommended': 1, 'since': '2026-11-09', 'state': 'answered', 'choice': 1, 'text': 'pas avant jeudi', 'at': '2026-11-10T20:00:00Z'},
+        {'id': 'Q-0004', 'fiche': 'SOG-0001', 'app': 'pilote', 'question': '<img src=x onerror=window.__pwn=1> ?', 'context': '<b>x</b>', 'options': ['<img src=x onerror=window.__pwn=1>', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], 'recommended': 9, 'since': '2026-11-08', 'state': 'todo'},
+        {'id': 'Q-0005', 'fiche': 'SOG-0002', 'app': 'pilote', 'question': 'Une seule réponse ?', 'context': 'x', 'options': ['seule'], 'since': '2026-11-08', 'state': 'todo'},
+    ]
+    return fx
+
+
+@case('A147', 'The Recette screen, tab « À trancher » (SOG-0241): a card per question (the card, its context, the answers as radio buttons, the one the ergonomist recommends said, a free field), the unanswered first; « Répondre » is written by the launcher (recette/decision → organisation/DECISIONS_REPONSES.json), an answered one shows its answer and « Modifier »; without the launcher: « non envoyé »', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0241 (the user: « comme pour la recette, un qcm + choix libre des points à trancher (dans la page recette ?) »): frame/help/recette.json carries `decisions` (id Q-nnnn, fiche, question, context, 2 to 6 options, recommended, state answered with choice / text / at); the screen shows them in a second tab « À trancher (n) », same template as the tests; an answer is kept on the device first and sent by the verb recette/decision (the launcher’s file organisation/DECISIONS_REPONSES.json, same guards as the verdicts); a file and a launcher’s answer are untrusted input (escaped, bounded, filtered)')
+def a147(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    W = {'tab': {'fr': 'À trancher ({n})', 'en': 'To decide ({n})', 'de': 'Zu entscheiden ({n})', 'es': 'Por decidir ({n})'},
+         'proposed': {'fr': 'proposé par l’ergonome', 'en': 'proposed by the ergonomist', 'de': 'von der Ergonomie vorgeschlagen', 'es': 'propuesta por la ergonomía'},
+         'answer': {'fr': 'Répondre', 'en': 'Answer', 'de': 'Antworten', 'es': 'Responder'}, 'modify': {'fr': 'Modifier', 'en': 'Change', 'de': 'Ändern', 'es': 'Modificar'}}
+    unsent = norm(tx('frame/help/recette.js', 'unsent', lang, after='const T = {'))
+    fx = _dq_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'DECISIONS_REPONSES.json'
+        # the launcher's file already holds the answer of the generated list (it is what the list was generated from)
+        f.write_text(json.dumps({'schema': 'sog-decisions/1', 'updated': '2026-11-10T20:00:00Z', 'items': {'Q-0003': {'choice': 1, 'text': 'pas avant jeudi', 'at': '2026-11-10T20:00:00Z'}}}), encoding='utf-8')
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items'] if f.exists() else None
+        st = _prio_launcher(c, root, verb=('recette', 'decision'))
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-tabs]')", timeout=15000, what='the two tabs')
+        tabs = c.js("[...document.querySelectorAll('[data-tabs] [data-tab]')].map(b => [b.dataset.tab, b.getAttribute('aria-pressed'), b.textContent.trim()])")
+        c.eq([[x[0], x[1]] for x in tabs], [['tests', 'true'], ['decisions', 'false']], 'two tabs, the tests first', what='tabs')
+        c.eq(norm(tabs[1][2]), norm(W['tab'][lang].replace('{n}', '3')), 'the tab counts the questions without an answer (Q-0001, Q-0002 and the hostile one)', what='count')
+        c.tap('[data-tab=decisions]')
+        c.until("!!document.querySelector('[data-decisions] li[data-q]')", what='the cards')
+        order = c.js("[...document.querySelectorAll('[data-decisions] li[data-q]')].map(l => [l.dataset.q, l.dataset.state])")
+        c.eq(order, [['Q-0001', 'todo'], ['Q-0002', 'todo'], ['Q-0004', 'todo'], ['Q-0003', 'answered']], 'the unanswered first (the most recent first), then the answered; a question with one option is dropped', what='order')
+        c.eq(c.js("[...document.querySelectorAll('[data-q=Q-0001] input[type=radio]')].map(r => r.value)"), ['0', '1', '2'], 'the answers are radio buttons', what='radios')
+        c.eq(norm(c.text('[data-q=Q-0001] [data-proposed]')), norm(f"({W['proposed'][lang]})"), 'the answer the ergonomist recommends is said', what='proposed')
+        c.eq(c.count('[data-q=Q-0002] [data-proposed]'), 0, 'a question without a recommendation says nothing', what='no proposal')
+        c.eq(c.js("document.querySelector('[data-q=Q-0001] [data-copy]').dataset.copy"), 'SOG-0229', 'the card names its fiche, copiable', what='copy')
+        c.eq(c.js("[...document.querySelectorAll('[data-q=Q-0004] input[type=radio]')].length"), 6, 'six answers at most', what='six')
+        c.ok(c.count('[data-decisions] img') == 0 and c.js('window.__pwn === undefined'), 'img', 'a hostile question is text')
+        c.eq('Non · pas avant jeudi' in norm(c.text('[data-q=Q-0003] [data-answer]')), True, 'an answered question (given by the generator) shows its answer', what='answered')
+        c.shot(f'A147_decisions_{c.width}_{lang}_delivered.png')
+        # an empty answer is refused, said
+        c.tap('[data-dok=Q-0001]')
+        c.until("!!document.querySelector('[data-q=Q-0001] [data-need]')", what='a need')
+        # answer: a choice and a free text, written by the launcher
+        c.page.check('[data-q=Q-0001] input[value="2"]')
+        c.page.fill('[data-q=Q-0001] [data-dtext]', 'mais « Mettre à jour » reste en haut')
+        c.tap('[data-dok=Q-0001]')
+        c.until("document.querySelector('[data-q=Q-0001]')?.dataset.state === 'answered'", what='the question is answered')
+        got = None
+        for _ in range(40):
+            got = written()
+            if got and 'Q-0001' in got:
+                break
+            c.wait(250)
+        c.eq([got['Q-0001']['choice'], got['Q-0001']['text'], bool(got['Q-0001'].get('at'))], [2, 'mais « Mettre à jour » reste en haut', True], 'the launcher wrote the answer in organisation/DECISIONS_REPONSES.json', what='written')
+        c.eq(c.js("[...document.querySelectorAll('[data-decisions] li[data-q]')].map(l => l.dataset.q)"), ['Q-0002', 'Q-0004', 'Q-0001', 'Q-0003'], 'it joins the answered ones', what='moved')
+        c.eq(norm(c.js("document.querySelector('[data-tab=decisions]').textContent")), norm(W['tab'][lang].replace('{n}', '2')), 'the count goes down', what='count after')
+        # modify
+        c.tap('[data-dmod=Q-0001]')
+        c.until("!!document.querySelector('[data-q=Q-0001] input[type=radio]')", what='the form again')
+        c.eq(c.js("document.querySelector('[data-q=Q-0001] input[value=\"2\"]').checked"), True, 'the form holds the answer given', what='prefilled')
+        c.tap('[data-q=Q-0001] [data-dok]')
+        c.until("document.querySelector('[data-q=Q-0001]')?.dataset.state === 'answered'", what='answered again')
+        # a reload: the answer is read back from the launcher's file
+        c.page.reload()
+        c.until("!!document.querySelector('[data-tabs]')", timeout=15000, what='the screen again')
+        c.until("document.querySelector('[data-tab=decisions]') && /\\b2\\b/.test(document.querySelector('[data-tab=decisions]').textContent)", timeout=15000, what='the answer is read back')
+        # without the launcher's job: kept on the device, « not sent »
+        st['up'] = False
+        c.tap('[data-tab=decisions]')
+        c.until("!!document.querySelector('[data-decisions] li[data-q=Q-0002]')", what='cards')
+        c.page.check('[data-q=Q-0002] input[value="1"]')
+        c.tap('[data-dok=Q-0002]')
+        c.until("!!document.querySelector('[data-q=Q-0002] [data-unsent]')", what='not sent')
+        c.eq(norm(c.text('[data-q=Q-0002] [data-unsent]')), unsent, 'an answer the launcher did not take stays on the device, said « not sent »', what='unsent')
+        c.eq('Q-0002' in (written() or {}), False, 'and is not in the file', what='not written')
+    c.check_errors()
