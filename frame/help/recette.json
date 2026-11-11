@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-11",
-  "tests": 117,
+  "tests": 118,
   "verdicts": 43
  },
  "apps": [
@@ -1676,10 +1676,10 @@
     "de": "Karte: Distanzmarken entlang des Flugs — Stufen zwischen 25 und 500 NM; Marken neben der Linie",
     "es": "Mapa: marcas de distancia a lo largo del vuelo — escalones entre 25 y 500 NM; marcas fuera del trazado"
    },
-   "test": "Carte, route KDEN BGNN LFST (ou KDEN DCT LFST) : le trait du vol est une seule courbe (le grand cercle), les repères de distance sont posés dessus, plus de pointillé à côté ; en zoomant et dézoomant il y a toujours entre 5 et 12 repères dans la vue, sans disparition brutale.",
+   "test": "Carte, route KDEN BGNN LFST : les repères de distance sont posés sur le trait du vol (droit sur la carte), jamais à côté ; en zoomant et dézoomant il y a toujours entre 5 et 12 repères dans la vue, sans disparition brutale ; le grand cercle est en pointillé fin.",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T17:29:23Z"
+   "delivered": "2026-11-11T09:35:03Z"
   },
   {
    "id": "SOG-0234",
@@ -1749,6 +1749,20 @@
    "since": "2026-11-11",
    "state": "todo",
    "delivered": "2026-11-11T08:31:13Z"
+  },
+  {
+   "id": "SOG-0243",
+   "app": "pilote",
+   "title": {
+    "fr": "BLOQUANT : les barbules (et tout ce qui longe la route) ne suivent pas le tracé — le tracé est sur le grand cercle, les barbules sur la ligne droite",
+    "en": "BLOCKING: the wind barbs (and everything along the route) do not follow the track — the track is on the great circle, the barbs on the straight line",
+    "de": "BLOCKIEREND: die Windfiedern (und alles entlang der Route) folgen der Linie nicht — die Linie liegt auf dem Großkreis, die Fiedern auf der Geraden",
+    "es": "BLOQUEANTE: las barbas de viento (y todo lo que sigue la ruta) no siguen el trazado — el trazado va por el círculo máximo, las barbas por la línea recta"
+   },
+   "test": "Carte, KDEN DCT LFST (ou ta route de ce matin) avec les vents chargés : le trait du vol est droit sur la carte, les barbules et les repères de distance sont posés dessus, et le grand cercle est en pointillé fin à côté. Sur la Météo, la trajectoire et la coupe suivent le même trait. (Deux retouches en cours : les libellés des repères passent encore sous les barbules, qui sont trop serrées.)",
+   "since": "2026-11-11",
+   "state": "todo",
+   "delivered": "2026-11-11T09:31:51Z"
   }
  ],
  "decisions": [

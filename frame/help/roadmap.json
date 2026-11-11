@@ -4,7 +4,7 @@
  "updated": "2026-11-11",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5619879",
+  "organisation": "05ee411",
   "fiches": 243,
   "untranslated": 0,
   "priorities": 152
@@ -921,7 +921,7 @@
     {
      "id": "SOG-0243",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "BLOQUANT : les barbules (et tout ce qui longe la route) ne suivent pas le tracé — le tracé est sur le grand cercle, les barbules sur la ligne droite",
      "en": "BLOCKING: the wind barbs (and everything along the route) do not follow the track — the track is on the great circle, the barbs on the straight line",
      "de": "BLOCKIEREND: die Windfiedern (und alles entlang der Route) folgen der Linie nicht — die Linie liegt auf dem Großkreis, die Fiedern auf der Geraden",
