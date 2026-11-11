@@ -7769,9 +7769,9 @@ def k170(c):
          'true with a local launcher declaring one base; false without launcher, without job, without info, paired, with an empty or missing or malformed list', what='available')
 
 
-@case('K171', 'Deposits by hand (data/local/upload/) are removed at the end of a successful build of their zone when a later deposit was read or their cycle is past; never the file the build read, never an incomplete NASR set; the log and the zone line say what went (name, size)', 'K', static=True,
+@case('K172', 'Deposits by hand (data/local/upload/) are removed at the end of a successful build of their zone when a later deposit was read or their cycle is past; never the file the build read, never an incomplete NASR set; the log and the zone line say what went (name, size)', 'K', static=True,
       rule='Ergonomics session, 11 Nov 2026 (user: « nettoyer les vieux fichiers », SOG-0239): a file chosen by hand stays in data/local/upload/ for ever (up to 1.5 GB each). It is REMOVED when (a) a more recent deposit of the same source was read by a successful build, or (b) its cycle is past and the cycle in force is built for its zone; NEVER a file the last successful build read, never a set still being deposited (NASR: FIX received, AWY and NAV awaited), never anything that is not a dated deposit of the zone (names built by tools/base_upload.py); done at the end of the successful build of the zone, no verb of its own; the job log and the zone line (`cleaned: [{ name, size }]`) say what was removed. These are SOURCES deposited, not compiled data (never purged)')
-def k171(c):
+def k172(c):
     import importlib
     import json
     import os
