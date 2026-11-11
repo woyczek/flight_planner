@@ -3017,15 +3017,16 @@ def location_has(c):
     return 'mission=X-1' in c.js('location.hash')
 
 
-@case('A82', 'The Company application: Missions alone, in the switcher, its manual; « Prepare this flight » goes to Fuel in Pilot', 'A', designs=('standard',), screens=False, night=False,
+@case('A82', 'The Company application: Missions then the Fleet (SOG-0231), in the switcher, its manual; « Prepare this flight » goes to Fuel in Pilot', 'A', designs=('standard',), screens=False, night=False,
       rule='Simplification 1 Nov (the user: « the Missions module is the first, and for now only, module of the airline pilot »): a third application `company` « Compagnie » ×4, Missions alone in its bar and column (a one-entry bar stays shown and marked), its manual (company.*: the Missions chapter); Missions leaves Pilot; #fuel from Company opens Fuel in Pilot, #missions in Pilot opens Company')
 def a82(c):
     c.open('missions', app='company', docs=LEVEL3, wait=False)
     c.until("!!document.querySelector('[data-module=missions]')", timeout=20000, what='Company mounts Missions')
     rail = c.js("[...document.querySelectorAll('#fMenu a[data-id]')].map(a => a.dataset.id)")
     tabs = c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)")
-    c.eq([[x for x in rail if x], tabs], [['missions'], ['missions']], 'Company: Missions alone in the column and the bar', what='entries')
-    c.eq(c.js("[...document.querySelectorAll('#fTabs a[aria-current], #fMenu a[aria-current]')].length >= 1"), True, 'the one entry is marked', what='marked')
+    # SOG-0231 (the user, 10 Nov: « 2 entrées »): the Fleet is the second entry of Company (the module `aircraft` on its view `fleet`); it was Missions alone
+    c.eq([[x for x in rail if x], tabs], [['missions', 'aircraft'], ['missions', 'fleet']], 'Company: Missions then the Fleet, in the column and the bar', what='entries')
+    c.eq(c.js("[...document.querySelectorAll('#fTabs a[aria-current], #fMenu a[aria-current]')].length >= 1"), True, 'the current entry is marked', what='marked')
     c.ok(c.js('document.title').startswith(tx('frame/app.js', 'name', c.lang, after='APPS.company = {')), c.js('document.title'), 'the application’s name in the page title')
     # the switcher lists the three applications
     c.tap('#fApp')
