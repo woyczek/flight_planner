@@ -1024,6 +1024,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 172 | The DIRCAM lot of the Data screen: one zip member read on the device and sent, the lines of the datasets to do (1eafcd087) | acceptable |
 | 173 | `current_flight.airline` written by Fuel and read by the report (a2bb9cfc4, SOG-0041): the families, the heading and the saved record follow the company of the flight taken | acceptable, one functional note |
 | 174 | The night of 13 November: the Map's Weather layer (163722b25, SOG-0092) and the weather store's `cacheOnly` (01b1538f8); the mission Registry, one line per mission (db091c505, SOG-0286); the GeoNames extract for Portugal and Ireland (0114f9cdb, SOG-0102); the Data map's wheel and hover (6889a1d7b) and the editor mock-up (7c3b8e4bb) | acceptable, two notes |
+| 175 | Little Navmap sheets: "Export the sheets" writes only (e6811d642, SOG-0023); the report's families follow the company of the opened report (fec39491b, SOG-0041) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2584,6 +2585,21 @@ key into a fixed list; nothing links to it. **Notes.** (1) The reader of the reg
 so a very long title is a heavy line, not an injection (the line is one `nowrap` ellipsis); cut them to 120 characters in `readRegistry` when
 convenient. (2) In `regLoad`, beyond `REG_READ_MAX` (500 files) a line is marked `ok` without having been read although the comment two lines
 above says “never there without having read it”: an integrity wording, not a security one (older than this commit).
+
+**175. Little Navmap export and the report's company — acceptable.** *Export (e6811d642).* The claim “no path takes the content of a
+`.lnmperf` into a sheet outside the preview of Aircraft” holds, read branch by branch of `run(reason, exportOnly)`. With `exportOnly` set:
+(1) a linked file whose sheet is gone and whose digest changed is only listed (`changed`), the `importFile` branch that follows is unreachable;
+an unchanged one is moved aside by the launcher (no content read); (2) a linked file with its sheet and a changed digest is listed, the `merge`
+branch is unreachable, and a file whose sheet alone changed is rewritten (a write, no read); (3) every file not in the manifest is listed and
+skipped, so neither `read(name)` nor `importFile` nor `merge` is reached; (4) a sheet without file is written unless a file of that name
+exists in the folder (compared without case), so no existing file is overwritten but the unchanged one of (2). The only callers of the two-way
+`sync()` are `start()` (timer, after-sync, folder), which `aerodb.js` calls once under `lnmAuto`, off by default and held by a case, and the
+bench. Names shown on the card come from the launcher's list, cut to twenty and passed through `esc`, as the error names. The launcher is not
+touched by the commit. K218 (a changed file and a file alone are listed, none enters a sheet, the file named like a sheet is not overwritten)
+green. *Report (fec39491b).* `loadCategories` takes the opened report's company through `airlineOfCode` (the same pattern
+`^[a-z0-9]{2,8}$`, present in the index, folder built from the code), `savedOf` having checked the code and the kind of the saved report (a data
+file); a code the index no longer knows gives `{ code, kind }` without a folder, so the common base and never another company's families; the
+folder or the settings of a company are read exactly as in 173. G21 green; no new input, no new sink.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
