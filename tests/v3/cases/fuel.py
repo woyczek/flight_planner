@@ -3868,11 +3868,12 @@ def f134(c):
 
 
 
-@case('F135', 'Proposed routes: a tap on a row SHOWS it (marked, its detail unfolded, published to the Map), it does not take it; « Choisir » takes it; the list stays after the choice and after the step is drawn again',
+@case('F135', 'Proposed routes: a tap on a row SHOWS it (marked, its detail unfolded, published to the Map), it does not take it; « Choisir » takes it; then the other routes go, « Itinéraire pris » stays, also after the step is drawn again',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0134 refused on 10 Nov (« un second calcul successif n\'affiche pas la carte… si on clique sur un itinéraire sur la carte en sidecar, ça fait '
       'disparaître leur version texte à gauche. … 1/ si on clique sur l\'itinéraire (carte ou fuel), ça l\'affiche, mais ne le choisit pas ; 2/ il faut '
-      'spécifiquement le bouton « choisir » pour valider »); the Map is BUGS SOG\'s (maps-route-alt-show); captures 390 and 1 280')
+      'spécifiquement le bouton « choisir » pour valider »); since SOG-0224 (user, 12 Nov: the other routes disappear at once on « Choisir ») the list gives way to the line '
+      'of the route taken; the Map is BUGS SOG\'s (maps-route-alt-show); captures 390 and 1 280')
 def f135(c):
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
@@ -3894,12 +3895,13 @@ def f135(c):
         c.shot(f'F135_{c.design}_{w}_{c.lang}.png')
         c.tap(f'{FUEL} [data-alt="2"] [data-do="rtake"]')
         cf_doc(c, lambda d: [x for x in str((d.get('route') or {}).get('text', '')).split() if x != 'DCT'][:3] == ['LFRS', 'LUGEN', 'LFML'], '« Choisir » takes it', timeout=10000)
-        c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what=f'{w} px: the list stays after the choice')
-        # the step drawn again (another step, then back): the list is still there
+        c.until(f"!document.querySelector('{FUEL} [data-altlist] [data-alt]') && !!document.querySelector('{FUEL} [data-rtaken]')",
+                what=f'{w} px: the other routes go at once, « Itinéraire pris » said (SOG-0224)')
+        # the step drawn again (another step, then back): the routes do not come back
         to_step(c, 0)
         to_step(c, 1)
-        c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3 && !!document.querySelector('{FUEL} [data-alt=\"2\"][aria-current]')",
-                what=f'{w} px: the list and the choice stay when the step is drawn again')
+        c.settle()
+        c.ok(not c.js(f"!!document.querySelector('{FUEL} [data-altlist] [data-alt]')"), '', f'{w} px: the other routes do not come back when the step is drawn again')
 
 
 
