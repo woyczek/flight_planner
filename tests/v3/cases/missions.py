@@ -1223,3 +1223,70 @@ def n24(c):
         t2 = [x for x in c.js(f"document.querySelector('{rt}').value").split() if x != 'DCT']
         c.ok(t2.index('4424N00136E') == t2.index('4436N00124E') + 1, t2, 'put back after the imposed point that precedes it (the order of the mission)')
         c.until_doc('pilot/ABC/current_flight.json', lambda d: locked(d) == _LOCKS, f'{w} px: still three locked points after the edit', timeout=10000)
+
+
+
+@case('N25', 'Preparing a mission, then « Nouveau vol »: the mission is left — no chip, no imposed point, no mission in the flight, and it never comes back (address, another screen and back)',
+      'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0251 (user: « si on a démarré la préparation d\'une mission, et qu\'on passe à « nouveau vol », la mission reste active »): '
+      'the invented mission X-601A of N24')
+def n25(c):
+    fuel = '[data-module=fuel]'
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _LOCK_REGISTRY], ['missions/X_LOCK/X-601A/missionX-601A.yaml', _LOCK_MISSION]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions')
+    c.go('fuel?mission=X-601A')
+    c.until("() => !!document.querySelector('.f-modal [data-ok]') || !!document.querySelector('[data-module=fuel] .fu-mchip')", timeout=15000,
+            what='the question, or the flight of the mission')
+    if c.js("!!document.querySelector('.f-modal [data-ok]')"):
+        c.tap('.f-modal [data-ok]')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-601A', 'the flight of the mission', timeout=12000)
+    c.until(f"!!document.querySelector('{fuel} .fu-mchip')", timeout=8000, what='the chip « Mission X-601A »')
+    c.tap(f'{fuel} [data-do="newflight"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='« Nouveau vol » asks')
+    c.tap('.f-modal [data-ok]')
+    d = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and not d.get('mission'), 'the mission left in the flight', timeout=10000)
+    c.ok(not (d.get('route') or {}).get('locks') and not any(p.get('lock') for p in (d.get('route') or {}).get('points') or []), d.get('route'),
+         'no imposed point left')
+    c.eq(c.count(f'{fuel} .fu-mchip'), 0, 'no chip', what='chip')
+    c.ok('mission=' not in c.js('location.hash'), c.js('location.hash'), 'the address no longer names the mission')
+    # another screen and back: the mission does not come back
+    c.go('maps')
+    c.wait(1500)
+    c.page.go_back()
+    c.page.go_back()
+    c.wait(2500)
+    d = c.doc('pilot/ABC/current_flight.json') or {}
+    c.ok(not d.get('mission'), [d.get('mission'), c.js('location.hash')], 'back to Fuel: the mission never comes back')
+
+
+
+@case('N26', 'The Map leaves the mission (its cross writes the flight without it): Fuel follows at once — no chip, no imposed point — without changing screen',
+      'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0251 (user: « on ferme la croix de la mission (sur la carte), la croix disparait, la mission reste toujours active »): the other side of '
+      'the cross — another writer of the flight (the Map) removes mission and locks; the invented mission X-601A of N24')
+def n26(c):
+    fuel = '[data-module=fuel]'
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _LOCK_REGISTRY], ['missions/X_LOCK/X-601A/missionX-601A.yaml', _LOCK_MISSION]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions')
+    c.go('fuel?mission=X-601A')
+    c.until("() => !!document.querySelector('.f-modal [data-ok]') || !!document.querySelector('[data-module=fuel] .fu-mchip')", timeout=15000,
+            what='the question, or the flight of the mission')
+    if c.js("!!document.querySelector('.f-modal [data-ok]')"):
+        c.tap('.f-modal [data-ok]')
+    c.until(f"!!document.querySelector('{fuel} .fu-mchip')", timeout=12000, what='the chip « Mission X-601A »')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-601A' and (d.get('route') or {}).get('locks'),
+                'the flight of the mission, its locks', timeout=12000)
+    # the Map's cross: the flight written without its mission (another writer, as the Map is)
+    c.js("""async () => { const d = FrameData.adapter({ id: 'maps', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] });
+      const path = 'pilot/ABC/current_flight.json', cur = (await d.get(path)) || {}, r = { ...(cur.route || {}) };
+      delete r.locks; r.points = (r.points || []).map(({ lock, mission, ...p }) => p);
+      await d.put(path, { ...cur, mission: null, missionCategory: '', route: r, by: 'maps', updated_at: new Date().toISOString() }); return true }""")
+    c.until(f"!document.querySelector('{fuel} .fu-mchip')", timeout=8000, what='Fuel drops the chip at once, same screen')
+    c.wait(1500)
+    d = c.doc('pilot/ABC/current_flight.json') or {}
+    c.ok(not d.get('mission') and not (d.get('route') or {}).get('locks'), [d.get('mission'), (d.get('route') or {}).get('locks')],
+         'Fuel does not write the mission back (nor its locks)')

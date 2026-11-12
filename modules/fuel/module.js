@@ -4328,6 +4328,7 @@ function renderSummary(C) {
 function adoptForeignFlight() {
   const r = S.flight.route ||= emptyFlight().route;
   markEnds();
+  mChipDraw(); // SOG-0251 : la mission quittée ailleurs (la croix de la Carte) : la puce part aussitôt, sans changer d'écran
   routeDerived(r);
   if (S.aloft) aloftApply(); // vents en altitude aux nouveaux points (relus si la route a changé : scheduleWx)
   S.froze = false; // une route changée ailleurs refait le devis de la longueur qu'elle a maintenant

@@ -1691,3 +1691,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   seul dès qu'on l'ouvre »): cause — `aidsDraw` compared its HTML to `box.innerHTML`; an opened `<details>` carries `open`, so every
   redraw of the step found a difference and rewrote the block, closed. Now compared to the last HTML written there, the open state kept
   when it must be rewritten. F140 extended (red before: « fold open: False »).
+- **12 Nov 2026 — the mission is left on both sides** (SOG-0251, the user: « si on a démarré la préparation d'une mission, et qu'on passe
+  à « nouveau vol », la mission reste active. pire, on ferme la croix de la mission (sur la carte), la croix disparait, la mission reste
+  toujours active »): survey — Fuel's « Nouveau vol » already wrote the flight without its mission and locks, and the mission never came
+  back (N25, green on origin/v3: what stayed active is the Map's mission view, BUGS SOG). The other side was Fuel's: a flight written
+  without its mission by another writer (the Map's cross) kept the chip « Mission » in Fuel until a new screen; `adoptForeignFlight` now
+  draws the chip again. N26 (red before).
