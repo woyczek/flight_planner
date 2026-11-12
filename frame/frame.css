@@ -52,7 +52,7 @@ body {
   grid-template-rows: auto 1fr;
   /* minmax(0, …) : une colonne ne s'élargit jamais à la largeur minimale de son contenu (un en-tête chargé élargissait
      toute la page au-delà de l'écran du téléphone) */
-  grid-template-columns: 210px minmax(0, 1fr);
+  grid-template-columns: var(--f-nav-w, 210px) minmax(0, 1fr);
   grid-template-areas: "head head" "nav main"
 }
 /* vue fixe (meta.fixed d'un module, frame/INTEGRATION.md § 2) : <html class="f-fixed"> — la page ne défile plus ; l'en-tête
@@ -359,6 +359,37 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   border-radius: var(--sog-radius);
   color: inherit;
   text-decoration: none
+}
+/* le libellé d'une entrée de la barre de gauche : un texte comme un autre en barre entière ; au palier du rail (ci-dessous) il se cache pour les yeux mais reste lu par les lecteurs d'écran */
+.f-nav-lab {
+  min-width: 0
+}
+/* SOG-0274 : trois paliers de la barre de gauche selon la largeur de la fenêtre. Large (≥ 1100 px) : la barre entière, icône et libellé (210 px). Intermédiaire (761 à 1099 px) : un RAIL d'icônes
+   seules (56 px) qui rend sa largeur au contenu — un écran à deux colonnes (Données : la carte et la fiche) n'a plus sa largeur utile sous 1100 px avec la barre entière : l'écran actif reste marqué, le libellé
+   est en infobulle (title) et lu par les lecteurs d'écran (le texte est caché pour les yeux, pas retiré), les séparateurs sont gardés, « Anciennes pages (V2) » est réduit à son icône. Étroit (≤ 760 px) : le mode
+   téléphone d'aujourd'hui (barre du bas, cette colonne masquée). */
+@media (min-width: 761px) and (max-width: 1099px) {
+  :root {
+    --f-nav-w: 56px
+  }
+  .f-nav {
+    padding: 10px 6px;
+    overflow-x: hidden
+  }
+  .f-nav a {
+    justify-content: center;
+    gap: 0;
+    padding: 0
+  }
+  .f-nav .f-nav-lab {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap
+  }
 }
 /* « Anciennes pages (V2) » : la dernière entrée, un filet au-dessus et une teinte atténuée (SOG-0166) */
 .f-nav li.f-legacy {

@@ -6625,6 +6625,55 @@ def a158(c):
     c.check_errors()
 
 
+
+@case('A159', 'The left bar in three steps by the width of the window (SOG-0274): the whole bar from 1100 px, an icon RAIL (56 px) from 761 to 1099 px, the phone mode up to 760 px; the label is the tooltip and the accessible name, the active screen stays marked, the separators and the V2 entry (an icon) stay, no horizontal scroll; on Pilot and on Maintenance', 'A',
+      screens=False, night=False,
+      rule='SOG-0274 (the user, seeing the mock-up of the Data screen: « prévoir de réduire la barre de gauche (conserver les icônes uniquement) comme premier niveau de rétrécissement. puis bascule en mode téléphone. »): three steps by the window width — (1) 1100 px and more: the whole bar, icon and label (210 px); (2) 761 to 1099 px: a rail of icons only (56 px) that gives the width back to the content (a two-column screen has no more useful width under about 1100 px with the whole bar: at 1099 px the content passes from 857 to 1011 px), the active screen marked, the label as tooltip (title) and read by screen readers (hidden for the eyes, not removed), the separators kept, « Old pages (V2) » reduced to its icon; (3) 760 px and less: the phone mode of today (the bar at the bottom); no button to force the rail in this batch')
+def a159(c):
+    LAB = "[...document.querySelectorAll('#fMenu a')].map(a => [a.dataset.id || a.dataset.link, a.title, a.textContent.replace(/\\s+/g, ' ').trim(), Math.round(a.getBoundingClientRect().width), Math.round(a.getBoundingClientRect().left + a.getBoundingClientRect().width / 2), a.hasAttribute('aria-current')])"
+    GEO = "(() => { const n = document.getElementById('fNav'), v = document.querySelector('.f-view'), r = n.getBoundingClientRect(), vr = v.getBoundingClientRect(); const l = document.querySelector('#fMenu a .f-nav-lab'); const lr = l ? l.getBoundingClientRect() : null; return { nav: Math.round(r.width), shown: getComputedStyle(n).display !== 'none', viewLeft: Math.round(vr.left), scrollW: document.documentElement.scrollWidth, innerW: window.innerWidth, label: lr ? [Math.round(lr.width), Math.round(lr.height)] : null, tabbar: getComputedStyle(document.querySelector('.f-tabbar')).display } })()"
+    if c.design == 'material':
+        # Material already carries its own rail on a screen (88 px, the label under the icon: the design's grammar): it keeps it at every width above the phone, the three steps are the other designs'
+        for w, h in ((1280, 800), (1099, 800), (761, 1200)):
+            c.page.set_viewport_size({'width': w, 'height': h})
+            c.open('fuel', docs=LEVEL3, wait=False)
+            c.until("!!document.querySelectorAll('#fMenu a').length", timeout=20000, what='material: the bar')
+            c.wait(300)
+            g = c.js(GEO)
+            c.eq([g['nav'], g['scrollW'] <= g['innerW']], [88, True], f'material {w}: its own 88 px rail, no horizontal scroll', what=f'material {w}')
+        c.check_errors()
+        return
+    for app, mod in (('pilot', 'fuel'), ('maintenance', 'data')):
+        c.page.set_viewport_size({'width': 1280, 'height': 800})
+        c.open(mod, app=app, docs=LEVEL3, wait=False)
+        c.until("!!document.querySelectorAll('#fMenu a').length", timeout=20000, what=f'{app}: the bar')
+        c.wait(800)
+        # ---- (1) wide: the whole bar
+        g = c.js(GEO)
+        c.eq([g['nav'], g['shown'], g['viewLeft'] - g['nav'] <= 1, g['label'][0] > 20, g['scrollW'] <= g['innerW']], [210, True, True, True, True], f'{app} 1280: the whole bar (210 px), the labels visible, no horizontal scroll', what=f'{app} wide')
+        rows = c.js(LAB)
+        c.ok(len(rows) >= 3 and rows[-1][0] == 'legacy' and sum(1 for r in rows if r[5]) == 1, rows, f'{app}: the entries, the V2 one last, one entry marked')
+        c.shot(f'A159_{app}_1280_{c.design}_delivered.png')
+        # ---- (2) the rail, at the two ends and in the middle of its range
+        for w, h in ((1099, 800), (1024, 800), (900, 1200), (761, 1200)):   # the window wider than tall and under 1024 px is a phone turned (html.f-land: its own rail of tabs), not a desktop window
+            c.page.set_viewport_size({'width': w, 'height': h})
+            c.wait(300)
+            g, rows = c.js(GEO), c.js(LAB)
+            c.eq([g['nav'], g['shown'], g['viewLeft'] - g['nav'] <= 1, g['scrollW'] <= g['innerW']], [56, True, True, True], f'{app} {w}: the rail (56 px) and the content right after it, no horizontal scroll', what=f'{app} rail {w}')
+            c.ok(g['label'][0] <= 1 and g['label'][1] <= 1, g['label'], f'{app} {w}: the label is hidden for the eyes (1 px, not removed)')
+            c.ok(all(r[1] and r[1] == r[2] for r in rows), rows, f'{app} {w}: every entry has its label as tooltip and as accessible text')
+            c.ok(len({r[4] for r in rows}) == 1 and all(r[3] <= 56 for r in rows), rows, f'{app} {w}: the icons are aligned in one column of the rail')
+            c.ok(sum(1 for r in rows if r[5]) == 1 and rows[-1][0] == 'legacy', rows, f'{app} {w}: the active entry is still marked, the V2 entry is last (an icon)')
+            c.ok(c.js("getComputedStyle(document.querySelector('#fMenu li.f-legacy')).borderTopWidth") == '1px', None, f'{app} {w}: the separator of the V2 entry is kept')
+        c.shot(f'A159_{app}_1024_{c.design}_delivered.png')
+        # ---- (3) the phone mode from 760 px
+        c.page.set_viewport_size({'width': 760, 'height': 1200})
+        c.wait(400)
+        g = c.js(GEO)
+        c.eq([g['shown'], g['tabbar'] != 'none', g['scrollW'] <= g['innerW']], [False, True, True], f'{app} 760: the phone mode (the bar is at the bottom, the left bar is gone)', what=f'{app} phone')
+    c.check_errors()
+
+
 @case('A151', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')

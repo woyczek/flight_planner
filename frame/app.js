@@ -3128,10 +3128,10 @@
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
       // liens de l'application (écran du cadre « #… » ou page de la suite, dans le même onglet) après ses modules
-      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}${m.query ? `?${esc(m.query)}` : ''}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('') +
-        links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings">${icon(l.icon)}${esc(t(l.label))}</a></li>`).join('') +
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}${m.query ? `?${esc(m.query)}` : ''}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}" title="${esc(t(m.label))}">${icon(m.icon)}<span class="f-nav-lab">${esc(t(m.label))}</span></a></li>`).join('') +
+        links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings" title="${esc(t(l.label))}">${icon(l.icon)}<span class="f-nav-lab">${esc(t(l.label))}</span></a></li>`).join('') +
         // les pages de la V2 : toujours la dernière entrée, séparée par un filet, teinte atténuée (frame.css .f-legacy)
-        `<li class="f-legacy"><a href="#legacy" data-link="legacy" data-landmark="settings">${icon('file')}${esc(t(LEGACY.label))}</a></li>`;
+        `<li class="f-legacy"><a href="#legacy" data-link="legacy" data-landmark="settings" title="${esc(t(LEGACY.label))}">${icon('file')}<span class="f-nav-lab">${esc(t(LEGACY.label))}</span></a></li>`;
     }
     // une seule entrée marquée, comme dans la barre : le lien de l'écran du cadre ouvert (Administration, Aide), ou le module
     const scr = shownScreen(active, screen) ? screenBase(screen) : '';
