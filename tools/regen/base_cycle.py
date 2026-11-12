@@ -176,6 +176,8 @@ def run(job, args, ctx):
             item['hand'] = hand
         return item
     items = [make_item(sid, src, [z for z in zones_all if sid in S.sources_of(z)]) for sid, src in S.SOURCES.items()]
+    local = [{'id': it['id'], 'label': it['label'], 'at': it['steps']['download']['at'], 'personal': it['personal'], 'zoneCount': it['zoneCount']} for it in items if it['regime'] == 'local']      # SOG-0273 / 12 Nov : les sources calculées ou lues sur ce poste (MORA, X-Plane…) ne sont pas des choses « à faire » : « quand ça change », avec leur date
+    items = [it for it in items if it['regime'] != 'local']
     # le cycle suivant : ce que le poste a déjà reçu pour lui (par les noms), ce qui reste à prendre
     nxt_files = {}
     for sid, rx in NEXT_NAMES:
@@ -217,7 +219,7 @@ def run(job, args, ctx):
                          'addWillAsk': {'sources': [i['id'] for i in srcs], 'auto': [i['id'] for i in srcs if i['regime'] == 'auto'],
                                         'hand': [{'id': i['id'], 'expected': (i.get('hand') or {}).get('expected', [])} for i in srcs if i['regime'] == 'hand'],
                                         'personal': [i['id'] for i in srcs if i['personal'] == 'licence'], 'noReader': [u for u, zl in NO_READER_ZONES.items() if zid in zl]}}
-    return {'ok': True, **({'zoneView': zone_view} if zone_view else {}), 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'unavailable': [it['id'] for it in items if it['id'] in UNAVAILABLE], 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
+    return {'ok': True, **({'zoneView': zone_view} if zone_view else {}), 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'local': local, 'unavailable': [it['id'] for it in items if it['id'] in UNAVAILABLE], 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
 
 
 def check_last(a):

@@ -8151,6 +8151,9 @@ def k186(c):
       m.t.v += 301e3;
       const f3 = await m.db.natEnsure();
       out.fail = { first: [f1.refreshed, f1.ok], second: f2.refreshed, third: f3.refreshed, calls: calls.length };
+      calls.length = 0;
+      const busy = await mk(() => ({ info: () => ({ launcher: true }), job: async () => { calls.push('b'); return { status: 409, running: { set: 'base', verb: 'build' } }; } }), '2026-11-12T12:00:00Z').db.natEnsure();
+      out.busy = { refreshed: busy.refreshed, busy: busy.busy, running: busy.running, expired: busy.expired };
       return out;
     }""")
     c.eq((r['expired']['present'], r['expired']['expired'], r['expired']['count'], r['expired']['current'], r['expired']['validUntil']), (True, True, 2, 0, '2026-11-10T19:00:00.000Z'), 'two days later: the routes are expired, 0 valid, until when they were', what='expired')
@@ -8160,6 +8163,7 @@ def k186(c):
          'expired: ONE job (two simultaneous calls share it), base/update on the nat zone, then the new routes are read', what='refresh')
     c.eq((r['paired'], r['pairedCalls']), (False, 0), 'a paired workstation (not the launcher\'s own): nothing is asked', what='paired')
     c.eq(r['fail'], {'first': [True, False], 'second': False, 'third': True, 'calls': 2}, 'a failure is said (ok false); no new try within 5 minutes; after that, one more', what='failure')
+    c.eq(r['busy'], {'refreshed': False, 'busy': True, 'running': {'set': 'base', 'verb': 'build'}, 'expired': True}, 'a busy launcher (409): not swallowed, not a failure: `busy` and `running` say which operation runs (the « operation in progress » card)', what='busy')
 
 
 @case('K188', 'A zip of FRA points workbooks (the 41-workbook history of EUROCONTROL, SOG-0273) is recognised by the names of its members; only the workbooks of the cycle in force and of the next one are taken (the others stay in the archive); an archive with none of them is refused with its reason', 'K', static=True,

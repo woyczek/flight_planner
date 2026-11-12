@@ -2700,7 +2700,7 @@
       /** Les routes NAT valides, reprises à la demande (SOG-0263) : si celles que l'on détient sont périmées (ou absentes) et que le lanceur est là (poste du pilote, pas de paire), il les reprend — téléchargement puis construction de la zone « nat »,
        *  UN seul travail à la fois, pas deux essais à moins de 5 minutes — puis l'état est relu. Aucun minuteur : on l'appelle quand la couche NAT est affichée ou quand la ligne est ouverte. Rend l'état de natState() avec `refreshed` (une reprise a eu lieu)
        *  et `ok` (elle a abouti ; absent si rien n'a été demandé). */
-      async natEnsure() {
+      async natEnsure() { // { …natState, refreshed, ok?, busy? (le lanceur fait déjà une autre opération), running? (laquelle, comme la réponse 409 la dit) }
         const s0 = await api.natState();
         if (s0.expired === false || typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan || natRefresh
           .p || now() - natRefresh.failedAt < 300000)
@@ -2710,7 +2710,7 @@
           };
         natRefresh.p = (async () => {
           try {
-            const res = (await launcher.job('regen/job', {
+            const r = await launcher.job('regen/job', {
               set: 'base',
               verb: 'update',
               args: {
@@ -2718,8 +2718,12 @@
                 personal: [],
                 fetch: true
               }
-            }))?.result;
-            if (res?.ok === false) throw new Error('nat refresh failed');
+            });
+            if (r?.status === 409) return {
+              busy: true,
+              running: r.running || null
+            }; // le lanceur fait déjà une autre opération : dite avec ce qui tourne (la carte « opération en cours »), pas un échec
+            if (r?.result?.ok === false) throw new Error('nat refresh failed');
             return true;
           } catch {
             natRefresh.failedAt = now();
@@ -2729,6 +2733,12 @@
           }
         })();
         const ok = await natRefresh.p;
+        if (ok?.busy) return {
+          ...s0,
+          refreshed: false,
+          busy: true,
+          running: ok.running
+        };
         loaded.delete('nat');
         missing.delete('nat');
         return {

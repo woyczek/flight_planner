@@ -2665,6 +2665,7 @@ def k185(c):
     by = {i['id']: i for i in r['items']}
     c.eq(r['unavailable'], ['ukmil'], 'the shelved source (UK Mil only: DIRCAM is read from the SIA CD), apart', what='list')
     c.eq([(by[k]['steps']['download']['state'], by[k]['why'], by[k]['unavailable']) for k in ('ukmil',)], [('unavailable', 'unavailable-at-publisher', {'since': '2025-11'})], 'never « late », never « missing »: unavailable, and since when', what='state')
+    c.eq(('mora' in by, [x['id'] for x in r['local'] if x['id'] == 'mora'], all(i['regime'] != 'local' for i in r['items'])), (False, ['mora'], True), 'computed or local sources (MORA, X-Plane) are not items to do: under `local`, « quand ça change », with their date', what='local')
     nx = {i['id']: i['state'] for i in r['next']['items']}
     c.eq((nx.get('ukmil'), nx.get('sia')), ('unavailable', 'to-take'), 'the next cycle: nothing to take for them, the others unchanged', what='next')
     c.eq(BC['UNAVAILABLE'], {'ukmil': '2025-11'}, 'the launcher side of the list (K183 and the catalogue say the same)', what='py')
