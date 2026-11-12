@@ -295,6 +295,7 @@ export async function status() {
   if (S.corrNote > 0 && !onMission()) soft.push(`<p>${esc(tt(TX.corrNote, {
     n: S.corrNote
   }))}</p>`); // des espaces hors du couloir du vol sont masqués à ce zoom (SOG-0169)
+  if (S.natNote && S.profile?.elements?.natTracks) soft.push(`<p>${esc(S.natNote)}</p>`); // la validité des routes NAT affichées (SOG-0266)
   if (S.worldView) soft.push(`<p>${esc(tt(TX.worldNote))}</p>`); // plus de 3 000 NM de large : pas de barbules (SOG-0156)
   if (S.prof && !S.prof.terrainOk) soft.push(`<p>${esc(tt(TX.noTerrain))}</p>`); // tant que rien n'est arrivé, ou faute de relief
   // la trajectoire verticale : ce qui manque quand elle n'est pas tracée (le niveau), ce qui est estimé quand elle l'est (SOG-0006)

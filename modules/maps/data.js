@@ -5,9 +5,13 @@
 import {
   S,
   keep,
+  tt,
   flightPath,
   flownPts
 } from './state.js';
+import {
+  TX
+} from './texts.js';
 import {
   wrapLon,
   nearLon,
@@ -124,6 +128,37 @@ export function buildPath() {
   S.marksPts = flownPts(); // les marques NM sont refaites au dessin, au pas rond de ce qui est visible (viewMarks)
   S.marks = MapsRender.marks(S.marksPts);
 }
+/** La couche des routes NAT est affichée : leur validité est lue (aerodb natState : rien n'est demandé au réseau) et dite dans les notes ; périmées, le lanceur du poste est prié de les relire
+ *  (natEnsure : une fois, jamais de minuterie), puis les tracés sont relus (SOG-0266 ; contrat frame/aerodb/INTEGRATION.md, SOG-0263). Une fois par montage de la Carte. */
+export async function natCheck() {
+  const A = S?.ctx.aerodb;
+  if (!A?.natState || S.natAsked) return;
+  S.natAsked = true;
+  const me = S,
+    say = st => {
+      S.natNote = !st?.present ? '' : st.expired === true ? tt(TX.natExpired) : st.validUntil ? tt(TX.natValid, {
+        d: new Date(st.validUntil).toISOString().slice(8, 10) + '/' + new Date(st.validUntil).toISOString().slice(5, 7) + ' ' +
+          new Date(st.validUntil).toISOString().slice(11, 16) + 'Z'
+      }) : '';
+      status();
+    };
+  try {
+    let st = await A.natState();
+    if (S !== me) return;
+    say(st);
+    if (A.natEnsure && st?.expired !== false) {
+      const r = await A.natEnsure();
+      if (S !== me) return;
+      say(r);
+      if (r?.refreshed && r.ok) { // les routes ont été relues : les tracés de la vue aussi
+        invalidate();
+        schedule();
+      }
+    }
+  } catch {
+    /* sans état : rien n'est dit */
+  }
+}
 /** Vrai si le vol a une piste ou une procédure choisie (route.procedures v2, côtés vérifiés). */
 const isChosen = f => {
   const v = proceduresOf(f);
@@ -217,7 +252,8 @@ export const viewOf = () => {
  *  écriture du vol pendant qu'on le regarde — la caméra de l'utilisateur est gardée (SPEC § 5), les zones déjà lues ne sont
  *  pas relues. */
 export async function applyFlight(live = false) {
-  if (S?.missionAside) followMission(); // le vol ne nomme plus la mission : la Carte la quitte (SOG-0251) ; pas attendu : applyFlight est appelé par des passages de la file (leaveProvided), qui s'attendraient eux-mêmes
+  if (S?.missionAside)
+    followMission(); // le vol ne nomme plus la mission : la Carte la quitte (SOG-0251) ; pas attendu : applyFlight est appelé par des passages de la file (leaveProvided), qui s'attendraient eux-mêmes
   if (S?.missionId) return; // une carte fournie est montrée sur place (SOG-0196) : le vol relu ne prend pas sa place
   const me = S, // ce montage : un vol lu après un remontage n'est pas posé dans le suivant (D172)
     route = await readFlight();

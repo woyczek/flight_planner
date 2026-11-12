@@ -2888,3 +2888,8 @@ the Map had seen in between: the same line to within the frame's own sampling.
   `applyFlight`, also while a provided map is shown) the window, the mission's objects and the map shown in place go and the flight view comes back; the Map's watcher of the flight now starts as well for a window of a flight (the choice of a provided map
   can come before the end of the mount). The cross (`×`, on the window of a flight and on a provided map shown in place) writes the flight without its mission (`mission: null`, `missionCategory: ''`, no `route.locks`,
   no `lock` / `mission` on the points; `updated_at` never older than the flight read) and leaves; « Flight » of the list keeps the mission. Noreg D180 (the three paths), N26 simulates Fuel's side.
+
+## The NAT layer says the validity of the tracks and asks for them when they are out of date (SOG-0266, with SOG-0263; AeroDB 467209177)
+- Contract: `frame/aerodb/INTEGRATION.md` (« NAT routes: validity and on-demand refresh »). When the layer is displayed (`elements.natTracks`) the Map reads `AeroDb.natState()` (nothing asked to the network) and says in its
+  notes « NAT tracks: valid until dd/mm hh:mmZ » or « out of date »; out of date, it calls `AeroDb.natEnsure()` ONCE per mount (no timer; the launcher refuses a second try within five minutes by itself), says
+  the new state and, after a refresh that succeeded, reads the tracks of the view again. Texts ×4. Noreg D181.

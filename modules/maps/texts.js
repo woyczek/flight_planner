@@ -251,6 +251,10 @@ export const TX = {
     'R-, D-, P- und andere Lufträume außerhalb des {n}-NM-Korridors um den Flug bei diesem Zoom ausgeblendet: hineinzoomen, die Komplexität erhöhen oder „Nur rund um den Flug“ abwählen.',
     'Espacios R, D, P y otros fuera del corredor de {n} NM alrededor del vuelo ocultos a este zoom: acerque, suba la complejidad o desmarque «Solo alrededor del vuelo».'
   ],
+  natValid: ['Routes NAT : valides jusqu’au {d}.', 'NAT tracks: valid until {d}.', 'NAT-Tracks: gültig bis {d}.', 'Rutas NAT: válidas hasta el {d}.'],
+  natExpired: ['Routes NAT : périmées (le lanceur les relit dès qu’il le peut).', 'NAT tracks: out of date (the launcher reads them again as soon as it can).',
+    'NAT-Tracks: veraltet (der Launcher liest sie neu, sobald er kann).', 'Rutas NAT: caducadas (el lanzador las vuelve a leer en cuanto pueda).'
+  ],
   worldNote: [
     'Vue de plus de 3 000 NM de large : les barbules de vent sont masquées (illisibles à cette échelle) ; zoomez pour les voir.',
     'View more than 3,000 NM wide: the wind barbs are hidden (unreadable at this scale); zoom in to see them.',

@@ -5741,3 +5741,27 @@ def d_leavemission(c):
     c.js(bare)
     c.until("() => window.__mp.S.missionId === '' && !window.__mp.S.missionAside && window.__mp.S.route.points.length >= 2 && document.querySelector('.mp-mbar').hidden", timeout=10000, what='the flight view is back, without the mission')
     c.shot('D180_{}_delivered.png'.format('standard'))
+
+
+@case('D181', 'The NAT layer says how long the tracks are valid and asks the launcher for them when they are out of date (once, no timer): the state is read when the layer is displayed, the notes say « valid until » or « out of date »', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0266 (the ergonomist; contract frame/aerodb/INTEGRATION.md, SOG-0263): the Map’s NAT layer calls AeroDb.natEnsure() when it is displayed and says the validity (natState()); out of date, the launcher of the workstation reads the tracks again, once; the tracks of the view are read again after a refresh that succeeded')
+def d_nat(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""() => { const A = window.__mp.S.ctx.aerodb; window.__nat = { state: 0, ensure: 0 }; const until = '2026-11-13T12:00:00.000Z';
+      A.natState = async () => { window.__nat.state++; return { present: true, count: 4, validUntil: '2026-11-11T12:00:00.000Z', expired: true, current: 0 } };
+      A.natEnsure = async () => { window.__nat.ensure++; return { present: true, count: 4, validUntil: until, expired: false, current: 4, refreshed: true, ok: true } }; return true }""")
+    c.tap('[data-mp="layers"]')
+    c.until("() => window.__t.shown(document.querySelector('.mp-dbody input[data-layer=nat]'))", timeout=8000, what='the Layers content has the NAT box')
+    c.tap('.mp-dbody input[data-layer="nat"]')
+    c.until("() => window.__nat.ensure >= 1", timeout=8000, what='the NAT layer displayed: the launcher is asked for the tracks')
+    c.until("() => (window.__mp.S.natNote || '').length > 0", timeout=8000, what='the validity is said')
+    note = norm(c.js("() => window.__mp.S.natNote"))
+    c.ok('13/11 12:00Z' in note, note, 'the notes say the tracks are valid until their end, in the language of the run')
+    c.eq(c.js("() => window.__nat.ensure"), 1, 'asked once', what='natEnsure calls')
+    c.tap('.mp-dbody input[data-layer="nat"]')
+    c.tap('.mp-dbody input[data-layer="nat"]')
+    c.wait(800)
+    c.eq(c.js("() => window.__nat.ensure"), 1, 'displayed again: not asked again in this mount', what='natEnsure calls after a second display')

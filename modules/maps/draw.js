@@ -38,6 +38,7 @@ import {
   refresh,
   wantBox,
   corridorFor,
+  natCheck,
   within,
   fresh,
   widthNm,
@@ -685,6 +686,8 @@ function draw() {
   // courbes de niveau (VFR, Topo), de près, sous la surcouche aéronautique : les maîtresses seules d'abord, les intermédiaires 1,5 niveau de zoom plus près
   // (le curseur de Complexité décale ce zoom : peu de complexité, les maîtresses seules) ; sur une carte de mission, la vue qui les veut (VFR topo, ou un profil
   // du studio qui coche les courbes) les allume — l'IFR et le fond seul non (SOG-0184)
+  if (!mission && S.profile?.elements?.natTracks)
+    natCheck(); // la couche NAT est affichée : sa validité est dite, périmée elle est relue (SOG-0266)
   const contoursWanted = !!(L.contours || mission && S.profile?.layers
     ?.contours
   ); // la case « Courbes de niveau » (d'origine : les vues à densité VFR) ; le profil du studio d'une carte de mission les demande aussi
