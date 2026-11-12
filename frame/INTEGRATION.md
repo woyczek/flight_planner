@@ -1128,7 +1128,7 @@ launcher: { routes: ['regen/', 'vfr-import'], read: ['sia/', 'proc/', 'local/'] 
 **A refusal has one shape**: `{ ok: false, status, route, message, reason?, wait? }`. `status` is the launcher's HTTP status
 (403 for a route or a path not declared, then also `refused: true`, without any call); `reason` (a short code, 40
 characters at most), `wait` (seconds) and `expected` (a closed list of short words, 10 at most, 20 characters each, `[a-z0-9_-]`: the source ids AeroDB expects, on a 422 `unrecognised`; `call` and `upload` alike) come only from a launcher that gives them (429 `'too-soon'`: wait before starting
-that verb again); nothing else of the launcher's answer is handed on. Without an answer: `{ ok: false, offline: true,
+that verb again), and `running` (SOG-0245; a 409 « busy »: the operation in progress, a **closed set** `{ id, set, verb, args { zones ≤ 12, icao, action }, started, step (120 characters, control characters out), done, total, unit, seen, silent, alive ∈ alive|quiet|stuck|gone|'', cancelling (strictly true) }`, words `[a-z0-9_-]`, finite numbers; nothing without a readable `id`; `call` and `upload` alike); nothing else of the launcher's answer is handed on. Without an answer: `{ ok: false, offline: true,
 route }` (or `aborted: true` when your `signal` stopped it).
 
 **Declaring a job's route declares its cancel** (29 Oct 2026): `routes: ['regen/job']` also allows `regen/job/cancel`, the cancel being part of the jobs' protocol (the client sends it itself when the signal aborts); nothing else under it. **aerodb declares its routes too**: `AeroDB.declaration().launcher = { routes: ['regen/job'] }`, next to its reads; the frame

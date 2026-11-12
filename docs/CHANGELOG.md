@@ -204,6 +204,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   « Priorités » is kept on the device when chosen.
 - **Frame: a refusal of the launcher carries its `expected` list** (`frame/lib/launcher.js` `expectedOf`, `call` and `upload`; bench A29 +2; INTEGRATION § 15.1). On a 422 `unrecognised` AeroDB lists
   the source ids it expects: a closed list of short words (10 at most, 20 characters, `[a-z0-9_-]`) now reaches the module; nothing else of the body does.
+- **Frame: a refusal of the launcher carries the operation in progress** (`frame/lib/launcher.js` `runningOf`, `call` and `upload`; bench A29 +6; INTEGRATION § 15.1; SOG-0245, patch of the Settings session). A 409 « busy » says which operation holds the launcher (`running`): a closed set of fields with bounded types, nothing else of the body, nothing without a readable `id`.
 - **Frame: the reload loop-breaker only stops a chain** (`frame/app.js` `selfNavigate`, `bootedBySelf`; DECISIONS; noreg A137; fixes the regression of the previous version that turned N4, N13, N14 red). A redirect
   is refused only when made at the first routing of a page itself born of a redirect of the frame (under 5 s); an address change made in the page is never a link of a chain.
 - **Frame: the texts of `frame/app.js` and `ctx.t` agree with their number** (`frame/app.js` `t`, `frame/sw.js` keeps `lib/plural.js`; noreg A136; thanks to Settings' `plural.js`). The marks

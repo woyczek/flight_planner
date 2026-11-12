@@ -110,6 +110,57 @@
           }, (_, i) => `s${i}`) : ['sia', 'Bad Name!'],
           secret: 'never handed on'
         }, 422);
+        if (route.startsWith('busy')) { // « une autre opération est en cours » (SOG-0245) : `running` bon, hostile, ou de mauvaise forme
+          const good = {
+            id: 'j7',
+            set: 'base',
+            verb: 'build',
+            args: {
+              zones: ['lfpg', 'Bad Zone!', ...Array.from({
+                length: 14
+              }, (_, i) => `z${i}`)],
+              icao: 'lfpo',
+              action: 'run',
+              path: 'C:/secret',
+              token: 'never'
+            },
+            started: 1760000000,
+            step: 'lecture\u0007 des cartes\n'.padEnd(300, 'x'),
+            done: 3,
+            total: 10,
+            unit: 'files',
+            seen: 1760000100,
+            silent: 5,
+            alive: 'quiet',
+            cancelling: true,
+            secret: 'never handed on'
+          };
+          const running = route === 'busy' ? good : route === 'busystr' ? 'x' : route === 'busyarr' ? [good] : route === 'busyid' ? {
+            ...good,
+            id: 'Bad Id!'
+          } : route === 'busytypes' ? {
+            id: 'j8',
+            set: 5,
+            verb: {},
+            args: 'x',
+            started: 'now',
+            step: 42,
+            done: -1,
+            total: 1e999,
+            unit: 'Bad Unit!',
+            seen: null,
+            silent: 'NaN',
+            alive: 'dancing',
+            cancelling: 'true'
+          } : undefined;
+          return json({
+            ok: false,
+            message: 'busy',
+            reason: 'busy',
+            running,
+            secret: 'never handed on'
+          }, 409);
+        }
         if (route === 'boom') return json({
           message: 'kaput'
         }, 500);
@@ -198,7 +249,7 @@
     };
   };
   const DECL = {
-    routes: ['regen/', 'echo', 'array', 'boom', 'missing', 'slow', 'unrec', 'unrecmany', 'unrecbad'],
+    routes: ['regen/', 'echo', 'array', 'boom', 'missing', 'slow', 'unrec', 'unrecmany', 'unrecbad', 'busy', 'busystr', 'busyarr', 'busyid', 'busynone', 'busytypes'],
     read: ['sia/', 'proc/']
   };
 
@@ -242,6 +293,23 @@
       'unrecognised' && JSON.stringify(ue.expected) === '["sia","nats","lfv","openaip"]' && !('secret' in ue), JSON.stringify(ue));
     ck('call : `expected` de plus de dix éléments, ou avec un mot hors [a-z0-9_-] : écarté', !('expected' in await M.call('unrecmany')) && !('expected' in await M
       .call('unrecbad')));
+    // l'opération en cours que dit un refus (SOG-0245) : un jeu fermé de champs aux types bornés, rien d'autre
+    const bz = await M.call('busy'), rz = bz.running || {};
+    ck('call : refus avec `running` → champs fermés (mots courts, nombres finis, `alive` parmi quatre mots, `step` de 120 signes sans contrôle), le reste du corps écarté',
+      bz.status === 409 && rz.id === 'j7' && rz.set === 'base' && rz.verb === 'build' && !('secret' in bz) && J(Object.keys(rz).sort()) === J(['alive', 'args', 'cancelling', 'done', 'id', 'seen', 'set', 'silent', 'started', 'step', 'total', 'unit', 'verb']) &&
+      rz.step.length === 120 && !/[\u0000-\u001f]/.test(rz.step) && rz.step.startsWith('lecture') && rz.done === 3 && rz.total === 10 && rz.alive === 'quiet' && rz.cancelling === true && rz.unit === 'files', J(bz));
+    ck('call : `running.args` ne garde que zones (12 mots au plus), icao, action', J(rz.args) === J({
+      zones: ['lfpg', ...Array.from({
+        length: 11
+      }, (_, i) => `z${i}`)],
+      icao: 'lfpo',
+      action: 'run'
+    }), J(rz.args));
+    ck('call : `running` qui n’est pas un objet (texte, tableau) ou sans identifiant lisible : rien', !('running' in await M.call('busystr')) && !('running' in await M.call('busyarr')) &&
+      !('running' in await M.call('busyid')) && !('running' in await M.call('busynone')));
+    const bt = (await M.call('busytypes')).running || {};
+    ck('call : `running` aux types faux → champs vides ou nuls, jamais le type reçu', bt.id === 'j8' && bt.set === '' && bt.verb === '' && J(bt.args) === '{}' && bt.started === null && bt.step === '' && bt.done === null && bt.total === null && bt.unit === '' && bt.seen === null &&
+      bt.silent === null && bt.alive === '' && bt.cancelling === false, J(bt));
     ck('call : route exacte déclarée acceptée', (await M.call('echo')).method === 'GET');
     ck('call : corps → POST', (await M.call('echo', {
       x: 1
@@ -504,6 +572,32 @@
       ck('upload : refus du lanceur → { ok: false, status, route, message, reason, wait }, rien d\'autre', rr.ok === false && rr.status ===
         429 && rr.reason ===
         'too-soon' && rr.wait === 9 && !('secret' in rr), JSON.stringify(rr));
+      U = up({
+        status: 409,
+        text: JSON.stringify({
+          message: 'busy',
+          reason: 'busy',
+          running: {
+            id: 'j9',
+            set: 'base',
+            verb: 'build',
+            step: 'x\u0007y',
+            alive: 'stuck',
+            secret: 'never'
+          },
+          secret: 'never'
+        })
+      });
+      const rb = await U.M.upload('base/upload', file);
+      ck('upload : refus « busy » avec `running` → les mêmes champs fermés que call', rb.status === 409 && rb.running?.id === 'j9' && rb.running.alive === 'stuck' && rb.running.step === 'x y' && !('secret' in rb) && !('secret' in rb.running), J(rb));
+      U = up({
+        status: 409,
+        text: JSON.stringify({
+          reason: 'busy',
+          running: 'x'
+        })
+      });
+      ck('upload : `running` hostile (texte) → rien', !('running' in await U.M.upload('base/upload', file)));
       ck('upload : 404 → « unknown route » (lanceur plus ancien)', (await up({
         status: 404,
         text: '{}'

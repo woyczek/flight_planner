@@ -33,6 +33,43 @@ const expectedOf = b => Array.isArray(b?.expected) && b.expected.length <= 10 &&
   /^[a-z0-9_-]{1,20}$/.test(x)) ? {
   expected: [...b.expected]
 } : {};
+/** L'opération en cours que le lanceur dit dans un refus « busy » (`running`, SOG-0245) : un jeu fermé de champs aux types bornés (mots courts [a-z0-9_-], nombres finis, `alive` parmi quatre mots, `step`
+ *  un texte de 120 signes sans caractère de commande) ; rien d'autre du corps ne passe. Sans identifiant lisible : rien (un lanceur ancien). */
+const runningOf = b => {
+  const r = b?.running,
+    w = x => typeof x === 'string' && /^[a-z0-9_-]{1,40}$/.test(x) ? x : '',
+    n = (x, max = 1e9) => typeof x === 'number' && Number.isFinite(x) && x >= 0 ? Math.min(x, max) : null;
+  if (!r || typeof r !== 'object' || Array.isArray(r) || !w(r.id)) return {};
+  const a = r.args && typeof r.args === 'object' && !Array.isArray(r.args) ? r.args : {},
+    zones = Array.isArray(a.zones) ? a.zones.filter(z => w(z)).slice(0, 12) : [];
+  return {
+    running: {
+      id: w(r.id),
+      set: w(r.set),
+      verb: w(r.verb),
+      args: {
+        ...(zones.length ? {
+          zones
+        } : {}),
+        ...(w(a.icao) ? {
+          icao: w(a.icao)
+        } : {}),
+        ...(w(a.action) ? {
+          action: w(a.action)
+        } : {})
+      },
+      started: n(r.started, 4e9),
+      step: typeof r.step === 'string' ? r.step.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) : '',
+      done: n(r.done),
+      total: n(r.total),
+      unit: w(r.unit),
+      seen: n(r.seen, 4e9),
+      silent: n(r.silent, 1e7),
+      alive: ['alive', 'quiet', 'stuck', 'gone'].includes(r.alive) ? r.alive : '',
+      cancelling: r.cancelling === true
+    }
+  };
+};
 /** Vrai si x relève d'un préfixe déclaré : égal, ou sous un préfixe terminé par « / ». */
 const under = (x, list) => [].concat(list || []).some(p => typeof p === 'string' && p && (x === p || p.endsWith('/') && x.startsWith(p)));
 /** Route permise par une déclaration : sous elle, ou l'annulation d'une route déclarée (<route>/cancel, protocole des travaux). */
@@ -130,7 +167,8 @@ export function launcherClient({
         ...(Number.isFinite(res.body?.wait) ? {
           wait: res.body.wait
         } : {}),
-        ...expectedOf(res.body)
+        ...expectedOf(res.body),
+        ...runningOf(res.body)
       };
       return res.body && typeof res.body === 'object' && !Array.isArray(res.body) ? res.body : {
         ok: true,
@@ -350,7 +388,8 @@ export function launcherClient({
             ...(Number.isFinite(body?.wait) ? {
               wait: body.wait
             } : {}),
-            ...expectedOf(body)
+            ...expectedOf(body),
+            ...runningOf(body)
           });
           end({
             ok: true,
