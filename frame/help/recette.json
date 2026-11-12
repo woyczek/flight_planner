@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 159,
+  "tests": 160,
   "verdicts": 59
  },
  "apps": [
@@ -346,6 +346,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T15:53:47Z"
+  },
+  {
+   "id": "SOG-0102",
+   "app": "maintenance",
+   "title": {
+    "fr": "Extrait GeoNames plus complet (Portugal, Irlande)",
+    "en": "Fuller GeoNames extract (Portugal, Ireland)",
+    "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)",
+    "es": "Extracto de GeoNames más completo (Portugal, Irlanda)"
+   },
+   "test": "Recharge la page. Carte : zoome sur l'Alentejo ou l'Algarve, puis sur l'ouest de l'Irlande : les villes et les bourgs sont nommés comme en France (avant : deux lieux pour tout le Portugal). Recherche d'un lieu : « Évora » et « Westport » sont trouvés.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T22:43:16Z"
   },
   {
    "id": "SOG-0125",

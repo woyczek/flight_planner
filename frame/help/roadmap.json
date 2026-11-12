@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a90f07d",
+  "organisation": "6c562de",
   "fiches": 287,
   "untranslated": 0,
   "priorities": 243
@@ -2336,12 +2336,13 @@
     {
      "id": "SOG-0102",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Extrait GeoNames plus complet (Portugal, Irlande)",
      "en": "Fuller GeoNames extract (Portugal, Ireland)",
      "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)",
      "es": "Extracto de GeoNames más completo (Portugal, Irlanda)",
-     "rank": 89
+     "rank": 89,
+     "test": true
     },
     {
      "id": "SOG-0106",
