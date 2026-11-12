@@ -459,9 +459,30 @@
     id: 'navpt',
     group: 'base',
     zones: ['pt'],
+    // le lanceur lit le site de NAV Portugal ; il prend AUSSI le fichier que l'utilisateur a téléchargé (le zip qui porte l'ISO de l'eAIP, l'ISO, le dossier extrait : reconnus par leur contenu, SOG-0244) :
+    // `pick` dit à l'écran d'offrir « Choisir le fichier… » d'emblée sur la ligne du Portugal, avec le pas-à-pas ci-dessous (stepsOf)
     fetch: {
       how: 'launcher',
-      provider: 'navpt'
+      provider: 'navpt',
+      pick: {
+        glob: '*.zip|*.iso',
+        name: 'EAIP ISO.zip'
+      }
+    },
+    steps: {
+      page: {
+        url: 'https://www.nav.pt/ais',
+        home: 'https://www.nav.pt/'
+      },
+      files: [{
+        name: 'AIP Portugal (eAIP hors ligne : un zip qui porte une ISO, l’ISO ou son dossier extrait)',
+        gives: [
+          'L’AIP du Portugal hors ligne : points désignés (ENR 4.4) et routes (ENR 3.1, 3.3) ; le lanceur lit le site quand il peut, ce fichier quand le site ne suffit pas ; le nom importe peu : il est reconnu par son contenu.',
+          'The Portuguese AIP offline: designated points (ENR 4.4) and routes (ENR 3.1, 3.3); the launcher reads the site when it can, this file when the site is not enough; the name does not matter: it is recognised by its content.',
+          'Der portugiesische AIP offline: benannte Punkte (ENR 4.4) und Strecken (ENR 3.1, 3.3); der Starter liest die Webseite, wenn er kann, diese Datei, wenn sie nicht reicht; der Name ist egal: sie wird am Inhalt erkannt.',
+          'El AIP de Portugal sin conexión: puntos designados (ENR 4.4) y rutas (ENR 3.1, 3.3); el lanzador lee el sitio cuando puede, este archivo cuando no basta; el nombre da igual: se reconoce por su contenido.'
+        ]
+      }]
     },
     build: {
       runtime: 'worker',

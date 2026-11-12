@@ -7965,7 +7965,9 @@ def k175(c):
     reg = {('t', 'slow'): (slow, ok), ('t', 'quick'): (quick, ok)}
     jobs = RJ.Jobs(reg, {}, min_gap={}, quiet_s=0.4, stale_s=1.0)
     s = jobs.start('t', 'slow', {'zones': ['fr', 'gb']})
-    time.sleep(0.15)
+    end = time.time() + 10
+    while not (jobs.view(s['job']).get('step')) and time.time() < end:       # wait for the step the slow job says (a wait on the fact, not a sleep: under load the second start came first)
+        time.sleep(0.02)
     b = jobs.start('t', 'quick', {})
     r = b.get('running') or {}
     c.eq((b.get('status'), b.get('reason'), r.get('id') == s.get('job'), r.get('set'), r.get('verb'), r.get('step'), (r.get('done'), r.get('total'), r.get('unit')), r.get('alive'), r.get('args')),

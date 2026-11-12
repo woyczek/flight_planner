@@ -2327,3 +2327,56 @@ def k176(c):
     c.eq((E.parse_routes(unnamed, st), st), ([], {'unnamed': 1}), 'a route block with an empty designator: its legs are not read, counted', what='unnamed')
     g, n, m = E.convert_tables(prof, p44, [p33, unnamed], '2026-10-01')
     c.eq((m, g.get('skipped')), (2, {'routes_without_name': 1}), 'and the result says it (skipped)', what='skipped')
+
+
+@case('K177', 'The Portugal chain, launcher side, end to end: « Choisir le fichier… » (the real upload handler) recognises a zip carrying an ISO and says the edition, then the download of the zone takes it (base/fetch through the jobs, the tick of navpt declared) and writes the layer; without the tick nothing is read (SOG-0244)', 'K', static=True,
+      rule='SOG-0244, the join between the screen and the launcher (the ergonomics session, 12 Nov): the screen (L84, a fake launcher) and K176 (the readers alone) were not joined. Here the REAL upload handler (base_upload.receive, the body of POST /__setup/base/upload) receives a fabricated zip carrying an ISO named like Windows names it, answers { ok, source: navpt, zone: pt, name: navpt_eaip.zip, cycle: <edition> } and puts it in data/local/upload/; the REAL jobs run base/fetch for zone pt with the personal tick of navpt, which takes the file from the launcher\'s folders (no network) and writes data/sia/zones/pt/navpt_pt_enr_<edition>.geojson; without the tick (a personal-licence source) nothing is read. The ISO is built by the case; the building of the zone is the browser job covered elsewhere (K42 to K51). The page side of the chain is L84')
+def k177(c):
+    import io
+    import json
+    import os
+    import tempfile
+    import time
+    import zipfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    import base_upload as BU
+    fx = ROOT / 'frame' / 'aerodb' / 'test' / 'fixtures' / 'eaip_pt'
+    p44 = (fx / 'LP-ENR-4.4-extract.html').read_text(encoding='utf-8').replace('valid from 01 OCT 2026', 'valid from 15 JAN 2020')
+    p33 = (fx / 'LP-ENR-3.3-extract.html').read_text(encoding='utf-8').replace('valid from 01 OCT 2026', 'valid from 15 JAN 2020')
+    iso = _iso_image({'EAIP': {'HTML': {'EAIP': {'LP_ENR31.HTM': p44.encode(), 'LP_ENR24.HTM': p33.encode()}}}})
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.writestr('EAIP_PORTUGAL.ISO', iso)
+    blob = buf.getvalue()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td, {})
+        # 1. the upload
+        code, out = BU.receive(io.BytesIO(blob), len(blob), 'EAIP ISO (1).zip', str(data), busy=None, merge_pending=None)
+        c.eq((code, out.get('ok'), out.get('source'), out.get('zone'), out.get('name'), out.get('cycle')), (200, True, 'navpt', 'pt', 'navpt_eaip.zip', '2020-01-15'),
+             'the zip carrying an ISO, named « EAIP ISO (1).zip », is recognised by its content: the source, the zone, its canonical name and the EDITION it carries (the screen says it on the line)', what='upload')
+        c.ok((data / 'local' / 'upload' / 'navpt_eaip.zip').is_file(), 'not there', 'and it is put where the launcher looks for what the user chose')
+        # 2. the download of the zone through the jobs: without the tick nothing is read, with it the file is taken (no network: any request would fail the case)
+        ctx = _ctx(DS, data)
+        ctx['downloads'] = lambda: [str(data / 'local' / 'upload')]
+        jobs = RJ.Jobs(RJ.REGISTRY, ctx, min_gap={})
+
+        def play(personal):
+            s = jobs.start('base', 'fetch', {'zones': ['pt'], 'personal': personal})
+            end = time.time() + 60
+            v = jobs.view(s['job'])
+            while v.get('state') == 'running' and time.time() < end:
+                time.sleep(0.1)
+                v = jobs.view(s['job'])
+            return v
+        net = _Net(AF, {})
+        with net:
+            v = play([])
+            c.eq((v['state'], (v['result'] or {}).get('fetched'), os.path.exists(data / 'sia' / 'zones' / 'pt')), ('done', [], False), 'without the tick of navpt (a personal-licence source) nothing is read and nothing is written', what='no tick')
+            v = play(['navpt'])
+        res = v['result'] or {}
+        zone = (v.get('zones') or {}).get('pt') or {}
+        c.eq((v['state'], res.get('fetched'), res.get('failed'), [u for u, _ in net.calls if 'nav.pt' in u]), ('done', ['pt'], [], []), 'with the tick the download of pt takes the file the user chose: the zone is fetched, nothing failed, the site was not asked', what='fetch')
+        layer = data / 'sia' / 'zones' / 'pt' / 'navpt_pt_enr_20200115.geojson'
+        g = json.loads(layer.read_text(encoding='utf-8')) if layer.is_file() else {}
+        c.eq((g.get('issue'), len(g.get('features') or []), zone.get('sources', {}).get('navpt', {}).get('state')), ('2020-01-15', 8, 'downloaded'), 'the layer is written under its edition (six points, two legs) and the line of the source says downloaded', what='layer')
