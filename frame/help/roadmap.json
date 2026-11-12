@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "70479bb",
-  "fiches": 267,
+  "organisation": "4514b85",
+  "fiches": 272,
   "untranslated": 0,
   "priorities": 243
  },
@@ -317,6 +317,27 @@
      "de": "Wo rechnen, Seite oder Launcher? Zahlen, Aufgabe mit Vorher/Nachher, Launcher-Zwänge und die kommende Apple/Android-App",
      "es": "¿Dónde calcular, la página o el lanzador? Cifras, tarea con antes / después, restricciones del lanzador y la futura app Apple / Android",
      "rank": 5
+    }
+   ]
+  },
+  {
+   "id": "pilote-aeronefs",
+   "app": "pilote",
+   "label": {
+    "fr": "Aéronefs",
+    "en": "Aéronefs",
+    "de": "Aéronefs",
+    "es": "Aéronefs"
+   },
+   "items": [
+    {
+     "id": "SOG-0271",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Aéronefs : « Rechercher » une immatriculation hors de France (rzjets.net), à la demande",
+     "en": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
+     "de": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
+     "es": "Aircraft: “Search” a registration outside France (rzjets.net), on request"
     }
    ]
   },
@@ -1606,6 +1627,45 @@
    ]
   },
   {
+   "id": "compagnie-aeronefs-flotte",
+   "app": "compagnie",
+   "label": {
+    "fr": "Aéronefs ; flotte",
+    "en": "Aéronefs ; flotte",
+    "de": "Aéronefs ; flotte",
+    "es": "Aéronefs ; flotte"
+   },
+   "items": [
+    {
+     "id": "SOG-0268",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Fiche d'un aéronef : « Exploitant » et « Exploitation » — qu'est-ce à dire ?",
+     "en": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
+     "de": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
+     "es": "Aircraft sheet: “Operator” and “Operation” — what do they mean?"
+    },
+    {
+     "id": "SOG-0269",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Liste des aéronefs : « Aucun aéronef ne correspond » doit offrir « Créer »",
+     "en": "Aircraft list: “No aircraft matches” must offer “Create”",
+     "de": "Aircraft list: “No aircraft matches” must offer “Create”",
+     "es": "Aircraft list: “No aircraft matches” must offer “Create”"
+    },
+    {
+     "id": "SOG-0272",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Importer la flotte et les données depuis SimToolkitPro",
+     "en": "Import the fleet and data from SimToolkitPro",
+     "de": "Import the fleet and data from SimToolkitPro",
+     "es": "Import the fleet and data from SimToolkitPro"
+    }
+   ]
+  },
+  {
    "id": "compagnie-cadre-carburant-flotte-aide",
    "app": "compagnie",
    "label": {
@@ -2006,6 +2066,27 @@
      "de": "Fahrplan: bereits vorhandene Bahnen einklappen",
      "es": "Hoja de ruta: contraer los carriles ya existentes",
      "rank": 82
+    }
+   ]
+  },
+  {
+   "id": "maintenance-aeronefs-base",
+   "app": "maintenance",
+   "label": {
+    "fr": "Aéronefs ; base",
+    "en": "Aéronefs ; base",
+    "de": "Aéronefs ; base",
+    "es": "Aéronefs ; base"
+   },
+   "items": [
+    {
+     "id": "SOG-0270",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Aéronefs : un registre local des immatriculations — le type depuis une immatriculation, les immatriculations d'un type",
+     "en": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
+     "de": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
+     "es": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type"
     }
    ]
   },
