@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4514b85",
+  "organisation": "970296d",
   "fiches": 272,
   "untranslated": 0,
   "priorities": 243
@@ -3233,20 +3233,22 @@
     {
      "id": "SOG-0260",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : l'écran dit « 69 zones attendent un fichier » et peint tout en brun alors que tout est construit ; « Tout est à jour » juste dessous ; « Raison non reconnue »",
      "en": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
      "de": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
-     "es": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”"
+     "es": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
+     "test": true
     },
     {
      "id": "SOG-0261",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : un clic sur « À reconstruire » d'un pays — on ne sait pas ce que ça fait, et la liste revient au début",
      "en": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
      "de": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
-     "es": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top"
+     "es": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
+     "test": true
     },
     {
      "id": "SOG-0262",

@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 122,
+  "tests": 124,
   "verdicts": 60
  },
  "apps": [
@@ -1767,24 +1767,35 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T09:33:08Z"
-  }
- ],
- "decisions": [
+  },
   {
-   "id": "Q-0031",
-   "fiche": "SOG-0262",
+   "id": "SOG-0260",
    "app": "maintenance",
-   "question": "La fiche d'un pays : je veux être sûr d'avoir compris ta réponse « au dessus du bloc Europe de l'Ouest, on a déjà l'info par la carte ».",
-   "context": "Tu as coché « en plein écran avec un retour » pour le téléphone, et ajouté cette autre option. Je la lis ainsi : la fiche du pays touché s'ouvre dans la page, juste sous la carte (et sous « ce qui reste à faire »), AU-DESSUS de la liste des groupes — pas à droite comme dans la maquette, pas sous le pays touché — parce que la carte montre déjà de quel pays on parle.",
-   "options": [
-    "Oui : la fiche sous la carte, au-dessus des groupes, en large comme au téléphone",
-    "En large : à droite de la carte comme dans la maquette ; au téléphone : sous la carte, au-dessus des groupes",
-    "En large : à droite de la carte ; au téléphone : en plein écran avec un retour",
-    "Autre chose (je l'écris)"
-   ],
+   "title": {
+    "fr": "Données : l'écran dit « 69 zones attendent un fichier » et peint tout en brun alors que tout est construit ; « Tout est à jour » juste dessous ; « Raison non reconnue »",
+    "en": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
+    "de": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
+    "es": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”"
+   },
+   "test": "Relance le lanceur. Maintenance › Données : la phrase d'état doit donner des chiffres qui se tiennent (environ 72 zones à jour, une douzaine à faire) et ne plus dire « Tout est à jour » à côté de zones à faire. Un pays sans rien à faire est vert, même s'il porte la remarque « sans points ni voies ». Aucun « Raison non reconnue ». L'Afghanistan n'a pas de bouton de fichier ; l'Espagne, la Suède ou l'Irlande disent « cochez Je certifie… » et non « prendre un fichier ». Le Portugal n'est plus dit « cycle passé ».",
    "since": "2026-11-12",
    "state": "todo",
-   "recommended": 0
+   "delivered": "2026-11-12T10:07:31Z"
+  },
+  {
+   "id": "SOG-0261",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : un clic sur « À reconstruire » d'un pays — on ne sait pas ce que ça fait, et la liste revient au début",
+    "en": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
+    "de": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
+    "es": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top"
+   },
+   "test": "Maintenance › Données : fais défiler la liste des zones jusqu'en bas, touche « pourquoi ? » à côté d'un « À reconstruire » : la raison se déplie sur la ligne, la liste ne remonte pas ; un second appui la replie.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T10:07:31Z"
   }
- ]
+ ],
+ "decisions": []
 }
