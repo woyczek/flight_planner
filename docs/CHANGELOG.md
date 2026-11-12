@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a provided map appears at once beside Fuel, and the mission's cross leaves the mission** — the choice no longer re-reads the repository (each read slowed by 3 s: the map is there within 2); the cross of the window writes the flight without its mission and locks, and the Map leaves the mission when the flight no longer names it (maps DECISIONS; noreg D179, D180; SOG-0196, SOG-0251).
 - **Aircraft: « Créer F-BHHH » and « Rechercher sur rzjets.net » when the search finds nothing** (a link to a new tab; the suite never reads that site) (aircraft DECISIONS, help; noreg M43; SOG-0269, SOG-0271).
 - **Aircraft: « Propriétaire ou exploitant » and « En vol »** on an aircraft's sheet, each with one line that says what is expected (aircraft DECISIONS, help; noreg M42; SOG-0268).
 - **Report: « Mesures » finds the flight by departure, arrival and times**, never by the registration (an X-Plane livery has its own) (report DECISIONS, help; noreg G18; SOG-0250).

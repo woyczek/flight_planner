@@ -127,8 +127,11 @@ async function missionRoute(mission) {
   }
 }
 /** La mission lue (YAML du dépôt, analysé) dans S.mission, ou S.missionError ; commun à la vue mission (applyMission) et à la surimpression (loadAside). */
-async function loadMission(id) {
+async function loadMission(id, reuse = false) {
   const me = S; // ce montage : une lecture qui finit après un remontage n'écrit pas dans le suivant (D172)
+  // la mission de la fenêtre est déjà lue (loadAside) : le choix d'une carte fournie ne la relit pas (liste du dépôt, puis fichier attendu : lent sur un poste chargé, et la carte n'apparaissait qu'après un
+  // aller-retour d'écran, SOG-0196 refusé le 11/11 à 20 h 17)
+  if (reuse && S.mission && S.mission.id === id && !S.missionError) return;
   const q = {
       mission: id
     },
@@ -178,7 +181,7 @@ export const showProvided = file => serial(async () => {
   if (!S?.missionAside || !S.mission) return;
   S.missionId = S.missionAside;
   S.mapWanted = file;
-  await applyMission();
+  await applyMission(true);
   if (!S) return;
   if (S.map) {
     S.userMoved = false;
@@ -199,11 +202,72 @@ export const leaveProvided = () => serial(async () => {
   missionUi();
   await loadAside();
 });
+/** Le vol ne nomme plus la mission (« Nouveau vol », la croix de la fenêtre, un autre poste) : la Carte la quitte — plus de fenêtre, plus de points ni d'objets de mission, la carte fournie montrée
+ *  sur place rend le vol (SOG-0251). Le vol est relu du dépôt : c'est lui qui dit quelle mission est active. */
+export const followMission = () => serial(async () => {
+  if (!S?.missionAside) return;
+  const me = S,
+    f = await S.ctx.data.get(flightPath()).catch(() => null);
+  if (S !== me) return;
+  const id = typeof f?.mission === 'string' ? f.mission.trim() : '';
+  if (id === S.missionAside) return;
+  const was = S.missionId,
+    before = S.map ? styleFor() : '';
+  S.missionAside = '';
+  S.mission = null;
+  S.missionPts = null;
+  S.mapWanted = '';
+  S.mapDef = null;
+  S.missionId = '';
+  if (was) {
+    await applyFlight(false);
+    if (S !== me) return;
+    restyle(before);
+  }
+  if (id) await deriveMission(); // le vol nomme une autre mission : la fenêtre est celle-là
+  missionUi();
+  if (S.missionAside) await loadAside();
+  bannerFill();
+  schedule();
+});
+/** La croix de la fenêtre d'un vol : le vol est écrit sans sa mission ni ses verrous (mission: null, missionCategory vide, route.locks et lock / mission des points retirés) ; Carburant suit, la Carte la quitte. */
+async function leaveMission() {
+  const me = S,
+    path = flightPath(),
+    cur = await S.ctx.data.get(path).catch(() => null);
+  if (S !== me || !cur) return;
+  const r = {
+    ...(cur.route || {})
+  };
+  delete r.locks;
+  r.points = (r.points || []).map(({
+    lock,
+    mission,
+    ...p
+  }) => p);
+  try {
+    await S.ctx.data.put(path, {
+      ...cur,
+      mission: null,
+      missionCategory: '',
+      route: r,
+      by: 'maps',
+      updated_at: new Date(Math.max(Date.now(), (Date.parse(cur.updated_at || '') || 0) + 1))
+        .toISOString() // jamais plus vieux que le vol lu : l'écriture la plus récente l'emporte
+    });
+  } catch (e) {
+    S?.ctx.notify?.(tt(TX.saveFailed, {
+      m: e?.message || String(e)
+    }), 'err');
+    return;
+  }
+  if (S === me) await followMission();
+}
 /** Les passages vol ↔ carte fournie se font l'un après l'autre (un choix fait pendant le précédent attend qu'il ait fini). */
 let turn = Promise.resolve();
 const serial = fn => turn = turn.then(fn, fn);
 /** Mission (re)lue et carte choisie : profil, emprise, cheminement tracé si la carte le demande, profil vertical. */
-export async function applyMission() {
+export async function applyMission(reuse = false) {
   const me = S; // ce montage : une lecture qui finit après un remontage n'écrit pas dans le suivant (D172)
   const q = {
     ...(S.ctx.query || {}),
@@ -212,7 +276,7 @@ export async function applyMission() {
     } : {}),
     mission: S.missionId
   };
-  await loadMission(q.mission);
+  await loadMission(q.mission, reuse);
   if (S !== me) return;
   const M = S.mission,
     m = M ? M.maps.find(x => x.file === q.map) || M.maps[0] || null : null;
@@ -336,7 +400,9 @@ export function missionEvents() {
     } else if (e.target.matches('.mp-mb-theme')) setTheme(e.target.value);
   });
   S.mbarEl.addEventListener('click', e => {
-    if (e.target.closest('[data-mbx]')) S.missionAside ? leaveProvided() : go('', ''); // la croix : le vol et ses couches
+    if (e.target.closest('[data-mbx]')) S.missionAside ? leaveMission() : go('',
+      ''
+    ); // la croix quitte la mission pour de bon : le vol est écrit sans elle, la carte fournie montrée rend le vol (SOG-0251) ; « Vol » de la liste garde la mission
   });
   const id = S.missionId || S.missionAside;
   if (!id) return () => {};
@@ -367,7 +433,7 @@ export function bannerFill() {
     // la vue : celle de la carte fournie montrée ; sur la vue vol, la vue est celle du vol (liste grisée)
     themes = ['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml'),
     themeSel = `<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}"${flightView ? ' disabled' : ''}>${flightView ? `<option>${esc(tt(TX.mbFlight))}</option>` : themes.map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>`,
-    html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b>${flightView ? '' : `<button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button>`}</div>
+    html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
 <div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || id)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${mapSel}${themeSel}` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;

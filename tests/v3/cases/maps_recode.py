@@ -5684,3 +5684,60 @@ def d_signs(c):
     _ground_at(c, 16, 900)
     c.wait(1200)
     c.shot('D178_{}_390_delivered.png'.format('standard'))
+
+
+@case('D179', 'A provided map chosen in the window of the mission beside Fuel appears at once, even when the repository reads are slow: the mission already read is not read again', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0196 refused (the user, 11 Nov 20:17: « elle est très lente à apparaître dans la fenêtre carburant, même pas sûr qu’elle apparaisse tant qu’on n’a pas switché et retour vers carburant »): choosing a provided map read the registry of the repository and the mission file again (wait: true), after the window had read them; on a slow reading the map came late or seemed not to come; it uses the mission already read now')
+def d_slowprov(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('fuel?with=maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!document.querySelector('.mp-mbar .mp-mb-sel') && !document.querySelector('.mp-mbar').hidden", timeout=20000, what='the window of the mission beside Fuel')
+    # the repository is slow from now on: three seconds for each read of the registry or of a file
+    c.js("""() => { const d = window.__mp.S.ctx.data, read = d.read.bind(d), list = d.list.bind(d); d.read = async (...a) => { await new Promise(r => setTimeout(r, 3000)); return read(...a) };
+      d.list = async (...a) => { await new Promise(r => setTimeout(r, 3000)); return list(...a) }; return true }""")
+    t0 = time.time()
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_cible.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === 'ESSAI1' && window.__mp.S.mapDef && window.__mp.S.mapDef.file === 'carte_cible.png'", timeout=2000, what='the provided map is shown within two seconds although each read takes three')
+    c.ok(time.time() - t0 < 2.2, f'{time.time() - t0:.1f} s', 'the map is there without waiting for the slow repository')
+
+
+@case('D180', 'The Map leaves the mission when the flight no longer names it (« New flight », another writer) and its cross leaves it for real: the flight is written without mission nor locks, the window goes, a provided map shown in place gives the flight back', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0251 (the user: « si on a démarré la préparation d’une mission, et qu’on passe à « nouveau vol », la mission reste active; on ferme la croix de la mission (sur la carte), la croix disparaît, la mission reste toujours active »): Fuel writes the new flight without mission (N25); the Map’s mission view stayed; its cross wrote nothing and left the window as it was; the Map follows the flight and its cross writes mission: null, missionCategory: «», route.locks and the points’ lock / mission removed (N26 simulates it)')
+def d_leavemission(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    bare = """async () => { const S = window.__mp.S, path = `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`, f = await S.ctx.data.get(path), r = { ...(f.route || {}) };
+      delete r.locks; r.points = (r.points || []).map(({ lock, mission, ...p }) => p);
+      await S.ctx.data.put(path, { ...f, mission: null, missionCategory: '', route: r, by: 'fuel', updated_at: new Date(Math.max(Date.now(), Date.parse(f.updated_at) + 60000)).toISOString() }); return true }"""
+
+    step = [0]
+
+    def opened():
+        step[0] += 1
+        c.page.goto(c.base + '/frame/manifest.webmanifest')   # each step seeds a flight newer than what the step before wrote
+        c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+        c.open('fuel?with=maps', docs=fdocs(flight(mission='ESSAI1', updated_at=iso(now() + datetime.timedelta(seconds=864000 * step[0])))), airfields=True, wait=False)
+        c.js(_STATE_JS)
+        c.until("() => !!window.__mp.S && !!document.querySelector('.mp-mbar .mp-mb-sel') && !document.querySelector('.mp-mbar').hidden", timeout=20000, what='the window of the mission beside Fuel')
+        c.until("() => window.__mp.S.stops.length >= 4", timeout=20000, what='the Map is mounted (it follows the flight)')
+    # 1. the flight is written without its mission by another writer (« New flight »): the Map leaves the mission
+    opened()
+    c.js(bare)
+    c.until("() => document.querySelector('.mp-mbar').hidden && !window.__mp.S.missionAside && !window.__mp.S.mission && !(window.__mp.S.missionPts || []).length", timeout=8000, what='the flight names no mission: the window and the mission’s objects are gone')
+    # 2. the cross of the window: the flight is written without mission nor locks
+    opened()
+    c.tap('.mp-mbar [data-mbx]')
+    doc = c.until_doc(PATH, lambda d: d and not d.get('mission') and not (d.get('route') or {}).get('locks'), what='the flight written without its mission and its locks', timeout=8000)
+    c.ok(not doc.get('mission') and doc.get('missionCategory', '') == '' and not any(p.get('lock') or p.get('mission') for p in doc['route']['points']), str(doc.get('route', {}).get('points')), 'no mission, no category, no lock on the points')
+    c.until("() => document.querySelector('.mp-mbar').hidden && !window.__mp.S.missionAside", timeout=6000, what='the window goes with the cross')
+    # 3. a provided map shown in place: the flight losing its mission gives the flight view back
+    opened()
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_cible.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === 'ESSAI1' && window.__mp.S.mapDef", timeout=10000, what='the provided map is shown in place')
+    c.js(bare)
+    c.until("() => window.__mp.S.missionId === '' && !window.__mp.S.missionAside && window.__mp.S.route.points.length >= 2 && document.querySelector('.mp-mbar').hidden", timeout=10000, what='the flight view is back, without the mission')
+    c.shot('D180_{}_delivered.png'.format('standard'))

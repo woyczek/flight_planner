@@ -374,7 +374,9 @@ export async function mount(el, ctx) {
   status();
   if (S.choose) chooseStart();
   schedule();
-  if (!S.missionId) S.stops.push(...watchFlight());
+  if (!S.missionId || S.missionAside) S.stops.push(...
+    watchFlight()
+  ); // la fenêtre d'un vol suit le vol même quand une carte fournie y est déjà montrée (le choix peut venir avant la fin du montage, SOG-0251)
   S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
   S.stops.push(lvEvents()); // la fiche d'un espace de la liste (SOG-0163)
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {

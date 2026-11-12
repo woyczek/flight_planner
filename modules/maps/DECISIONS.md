@@ -2879,3 +2879,12 @@ the Map had seen in between: the same line to within the frame's own sampling.
   of the base map under it; the taxiways are taken longest first on the screen and a taxiway whose visible stretch is shorter than 2.2 signs (60 px at least) has no name: zooming out thins the signs to the
   long taxiways, then none below the names' zoom; two signs of the same name within 140 px are merged into one (every candidate place of the second is tested).
 - **Noreg** D178 (LFPO fixture: none at 13, signs at 15 and 16 each a drawn box, no two of the same name within 140 px; captures 1 280 and 390). No LFBD file in the repository: the capture is LFPO's.
+
+## A provided map appears at once; the cross leaves the mission for real (SOG-0196 refused on 11 Nov 20:17; SOG-0251; Fuel 1c850684b, 1428f455b)
+- **SOG-0196**: « elle est très lente à apparaître dans la fenêtre « carburant », même pas sûr qu'elle apparaisse tant qu'on n'a pas switché ». Choosing a provided map read the repository's registry and the mission
+  file again (`wait: true`) after the window had read them: late on a slow reading. `applyMission(true)` (the choice made in the window) reuses the mission already read. Noreg D179 (each repository read slowed by
+  three seconds: the map is there within two), red before.
+- **SOG-0251** (Map side; Fuel side: « New flight » writes the flight without mission, N25, and Fuel follows the Map's write): the Map follows the flight — when it no longer names the mission (`followMission`, from the live watcher and
+  `applyFlight`, also while a provided map is shown) the window, the mission's objects and the map shown in place go and the flight view comes back; the Map's watcher of the flight now starts as well for a window of a flight (the choice of a provided map
+  can come before the end of the mount). The cross (`×`, on the window of a flight and on a provided map shown in place) writes the flight without its mission (`mission: null`, `missionCategory: ''`, no `route.locks`,
+  no `lock` / `mission` on the points; `updated_at` never older than the flight read) and leaves; « Flight » of the list keeps the mission. Noreg D180 (the three paths), N26 simulates Fuel's side.

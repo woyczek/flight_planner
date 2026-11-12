@@ -50,6 +50,9 @@ import {
 import {
   wantRunways
 } from './procs.js';
+import {
+  followMission
+} from './mission_view.js';
 
 // ---------------------------------------------------------------- vol
 /** Le vol courant lu : { flight, points, altn, levelFt, updated }. Le dégagement vient d'aerodb, sans être attendu : sa
@@ -214,6 +217,7 @@ export const viewOf = () => {
  *  écriture du vol pendant qu'on le regarde — la caméra de l'utilisateur est gardée (SPEC § 5), les zones déjà lues ne sont
  *  pas relues. */
 export async function applyFlight(live = false) {
+  if (S?.missionAside) followMission(); // le vol ne nomme plus la mission : la Carte la quitte (SOG-0251) ; pas attendu : applyFlight est appelé par des passages de la file (leaveProvided), qui s'attendraient eux-mêmes
   if (S?.missionId) return; // une carte fournie est montrée sur place (SOG-0196) : le vol relu ne prend pas sa place
   const me = S, // ce montage : un vol lu après un remontage n'est pas posé dans le suivant (D172)
     route = await readFlight();
@@ -259,6 +263,12 @@ export function watchFlight() {
   const check = (ms = 300) => {
     clearTimeout(live);
     live = setTimeout(async () => {
+      if (S
+        ?.missionAside
+      ) { // le vol ne nomme plus la mission (même route, seul le champ a changé) : la Carte la quitte ; une carte fournie montrée sur place n'est pas remplacée par le vol relu (SOG-0251)
+        const left = followMission();
+        if (S.missionId) return left;
+      }
       const f = await S?.ctx.data.get(flightPath()).catch(() => null);
       if (!S || !((f?.updated_at || '') > (S.route.updated || ''))) return;
       performance.mark('maps:live');
