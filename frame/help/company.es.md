@@ -44,6 +44,33 @@ Las misiones de la compañía, en la aplicación Compañía: las del repositorio
 
 <!-- fr: e786600425be -->
 
+<!-- chapter: missions -->
+# Misiones
+
+Las misiones de la compañía, en la aplicación Compañía: las del repositorio común (escritas con el CPCO): elegir una, o sortear una, y prepararla luego en Combustible.
+
+## Cómo usarlo
+
+<a id="missions-list"></a>**La lista.** Las misiones de las series más recientes primero, agrupadas por familia. Cada fila da el identificador, el título, el trayecto, el tipo de aeronave y el bloque estimado; «volada el …» marca una misión cuyo informe ha escrito usted. La búsqueda filtra por identificador, título, aeródromo (código OACI), tipo de aeronave, indicativo (SAMU66) o actividad (MEDEVAC, HEMS, SAMU…); la lista desplegable conserva una familia. Se muestran siete filas, «N más» despliega el resto. Las misiones de organización de un ejercicio (las que terminan en Z) no son vuelos y no aparecen. Solo se listan las misiones de la compañía elegida en Ajustes › Compañía; una misión que no nombra compañía es personal: está en «Personnel». La lista «Mi compañía · Personal · Todas las compañías», encima de la búsqueda, muestra también las misiones personales o las de otras compañías, cada una con el nombre de su compañía; se preparan igual. Cuando la compañía tiene categorías (carga, pasajeros…), una segunda lista desplegable conserva una categoría, y la misión abierta dice la suya.
+
+<a id="missions-open"></a>**Elegir, o sortear.** Un toque en una fila abre la ficha de la misión: su categoría, su resumen en dos líneas, sus riesgos (los tres primeros, «peligro → medida», los demás plegados, o «Ningún riesgo declarado»), los equipos implicados y sus zonas. «Detalle» muestra el resto en secciones plegables: descripción, objetivos, zonas que activar, encuentros, ruta facilitada, mapas facilitados, carga y aeronaves; «Ver en el Mapa» abre el Mapa en una zona o en un mapa de la misión (trazado a partir de sus coordenadas). En un teléfono, el retroceso del navegador vuelve del detalle a la ficha y luego a la lista; en una pantalla grande, la ficha y el detalle están lado a lado. «Sortear» toma una al azar entre las misiones de la lista filtrada que aún no ha volado; «Sortear otra» toma otra. Nada arranca solo: «Preparar este vuelo» abre Combustible, en la aplicación Piloto, con la salida, la llegada, los puntos de la misión (en coordenadas), el nivel y el tipo de aeronave; la pista, los procedimientos, el combustible y la meteorología se preparan después como para cualquier vuelo.
+
+<a id="missions-add"></a>**Añadir misiones.** «Añadir misiones», junto a «Sortear», lee uno o varios archivos YAML de misiones (un archivo puede contener varias, separadas por «---» o en una lista `missions:`), o un YAML pegado. Antes de escribir, la pantalla muestra lo leído (identificador, título, familia, serie, compañía) y lo rechazado, con la razón (identificador fuera de la regla, organización de ejercicio, duplicado, YAML ilegible en tal línea). «Añadir (n)» escribe cada misión en su lugar, `missions/<letra>_<FAMILIA>/<ID>/mission<ID>.yaml`; una misión que ya existe solo se reemplaza si «¿reemplazar?» está marcado. Una misión sin compañía es personal. Salen en la próxima sincronización.
+
+<a id="missions-airline"></a>**Cambiar de compañía.** En la ficha de una misión, «Compañía: … · Cambiar» propone las compañías y «Personal»; la frase «… pasa de … a …» se dice antes de «Escribir». En la lista, «Asignar a una compañía…» toma las misiones mostradas (alcance, familia, búsqueda), cada una marcada: la pantalla dice cuántas cambian y cuáles son ilegibles (se dejan tal cual) antes de escribir. Al añadir desde un YAML, «Añadir estas misiones a» elige su compañía. Solo cambia el campo `airline` del archivo.
+
+<a id="missions-registry"></a>**El registro.** «Registro», junto a «Sortear» (o la dirección `#missions?view=registry`), muestra una línea por misión tal como la escribe el registro `missions/mission_registry.yaml`, con el estado de su archivo: presente, ausente, ilegible o ruta rechazada; y las misiones del depósito que el registro no conoce. «Actualizar el registro» dice primero lo que haría (misiones por añadir, líneas sin archivo legible, identificadores duplicados, identificadores anteriores) y, con «Escribir el registro», añade las misiones del depósito, conserva una sola línea por identificador y sustituye un identificador anterior por el de la carpeta; una línea sin archivo legible se conserva (quizá el archivo aún no ha llegado). «Corregir» cambia el título, la serie, el número o la operación de una línea; «Quitar del registro» la elimina, el archivo de la misión permanece en el depósito. Un registro ilegible nunca se reescribe; uno ausente se crea a partir de los archivos.
+
+## Bueno saber
+
+- El módulo lee las misiones y nunca las modifica; se escriben en el CPCO.
+- Una misión cuyo archivo no llega lo dice: «no encontrado» (el repositorio no lo tiene), «aún no está en el dispositivo» (la sincronización lo trae, la misión aparece al llegar) o «ilegible» (con el motivo). Entonces solo se muestra el registro.
+- Una misión llegada con la sincronización sin el registro que la nombra se lista igualmente, leída de su archivo, en la siguiente visualización; ningún botón que pulsar.
+- Un vuelo en preparación solo se sustituye tras una pregunta; un vuelo iniciado nunca (anule la salida, o termine el vuelo, antes).
+- El sobre, el lector página a página y las asignaciones llegarán más tarde.
+
+<!-- fr: e786600425be -->
+
 <!-- chapter: aircraft -->
 # Aeronaves
 

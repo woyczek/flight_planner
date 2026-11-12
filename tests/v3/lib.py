@@ -179,10 +179,11 @@ _SEED_JS = """async (docs) => {
     r.onerror = () => rej(r.error);
   });
   await new Promise((res, rej) => {
-    const tx = db.transaction('docs', 'readwrite'), s = tx.objectStore('docs');
+    const tx = db.transaction(['docs', 'pending'], 'readwrite'), s = tx.objectStore('docs'), pd = tx.objectStore('pending');
     for (const [path, val, policy] of docs) {
       const text = JSON.stringify(val, null, 1) + '\\n';
       s.put({ path, text, base: text, rev: '', at: Date.now(), policy });
+      pd.delete(path);   // a seed REPLACES the document: an earlier write that still waits (the held flight, SOG-0279) goes
     }
     tx.oncomplete = res;
     tx.onerror = () => rej(tx.error);
@@ -605,11 +606,12 @@ class Ctx(Asserts):
           const w = p.getBoundingClientRect().width; p.remove(); return w }""", [sel, name])
 
     def doc(self, path):
-        """The seeded or written document `path` of the frame's cache (IndexedDB `sogFrame`, what the application itself reads
-        and writes without a launcher), parsed; None when there is none."""
+        """The seeded or written document `path` as the APPLICATION reads it (IndexedDB `sogFrame`: the write that still waits first, then the cached copy), parsed; None when there is none.
+        The write that waits comes first because the current flight is HELD (SOG-0279): written at once, kept in the queue until its gesture, so the cached copy alone would not show it."""
         text = self.page.evaluate("""async (p) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame');
             r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
-          const row = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').get(p); q.onsuccess = () => res(q.result); q.onerror = () => res(null) });
+          const get = st => new Promise(res => { const q = db.transaction(st).objectStore(st).get(p); q.onsuccess = () => res(q.result); q.onerror = () => res(null) });
+          const pend = await get('pending'), row = pend && typeof pend.text === 'string' ? pend : await get('docs');
           db.close(); return row && typeof row.text === 'string' ? row.text : null }""", path)
         try:
             return json.loads(text) if text else None

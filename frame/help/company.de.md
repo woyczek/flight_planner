@@ -46,6 +46,33 @@ Die Missionen der Gesellschaft, in der Anwendung Gesellschaft: die des gemeinsam
 
 <!-- fr: e786600425be -->
 
+<!-- chapter: missions -->
+# Missionen
+
+Die Missionen der Gesellschaft, in der Anwendung Gesellschaft: die des gemeinsamen Repositorys (mit dem CPCO geschrieben): eine auswählen oder zufällig ziehen und dann in Kraftstoff vorbereiten.
+
+## So geht's
+
+<a id="missions-list"></a>**Die Liste.** Die Missionen der neuesten Serien zuerst, nach Familie gruppiert. Jede Zeile nennt die ID, den Titel, die Strecke, den Luftfahrzeugtyp und die geschätzte Blockzeit; „geflogen am …“ kennzeichnet eine Mission, deren Bericht Sie geschrieben haben. Die Suche filtert nach ID, Titel, Flugplatz (ICAO-Code), Luftfahrzeugtyp, Rufzeichen (SAMU66) oder Tätigkeit (MEDEVAC, HEMS, SAMU…); die Auswahlliste behält eine Familie. Sieben Zeilen werden gezeigt, „N weitere“ klappt den Rest auf. Die Organisationsmissionen einer Übung (die auf Z enden) sind keine Flüge und erscheinen nicht. Nur die Missionen der unter Einstellungen › Fluggesellschaft gewählten Gesellschaft werden aufgeführt; eine Mission ohne Gesellschaft ist persönlich: Sie steht unter „Personnel“. Die Liste „Meine Gesellschaft · Persönlich · Alle Gesellschaften“ über der Suche zeigt auch die persönlichen Missionen oder die anderer Gesellschaften, jede mit dem Namen ihrer Gesellschaft; sie lassen sich ebenso vorbereiten. Hat die Fluggesellschaft Kategorien (Fracht, Passagiere …), behält eine zweite Auswahlliste eine Kategorie, und die geöffnete Mission nennt ihre.
+
+<a id="missions-open"></a>**Auswählen oder zufällig ziehen.** Ein Tippen auf eine Zeile öffnet das Missionsblatt: Kategorie, Kurzbeschreibung in zwei Zeilen, Risiken (die ersten drei, „Gefahr → Gegenmaßnahme“, die übrigen eingeklappt, oder „Kein Risiko angegeben“), die eingesetzten Teams und die Zonen. „Details“ zeigt den Rest in aufklappbaren Abschnitten: Beschreibung, Ziele, zu aktivierende Zonen, Treffpunkte, vorgegebene Route, mitgelieferte Karten, Zuladung und Luftfahrzeuge; „Auf der Karte zeigen“ öffnet die Karte auf einer Zone oder einer Karte der Mission (aus ihren Koordinaten gezeichnet). Auf dem Telefon führt „Zurück“ des Browsers von den Details zum Blatt und dann zur Liste; auf einem großen Bildschirm stehen Blatt und Details nebeneinander. „Zufällig ziehen“ nimmt eine der Missionen der gefilterten Liste, die Sie noch nicht geflogen sind; „Erneut ziehen“ nimmt eine andere. Nichts startet von selbst: „Diesen Flug vorbereiten“ öffnet Kraftstoff, in der Anwendung Pilot, mit Abflug, Ankunft, den Punkten der Mission (als Koordinaten), der Flugfläche und dem Luftfahrzeugtyp; Piste, Verfahren, Kraftstoff und Wetter werden danach wie bei jedem Flug vorbereitet.
+
+<a id="missions-add"></a>**Missionen hinzufügen.** „Missionen hinzufügen“ neben „Zufällig ziehen“ liest eine oder mehrere YAML-Missionsdateien (eine Datei kann mehrere enthalten, getrennt durch „---“ oder in einer Liste `missions:`) oder eingefügtes YAML. Vor dem Schreiben zeigt der Bildschirm, was gelesen wurde (Kennung, Titel, Familie, Serie, Gesellschaft) und was abgelehnt wird, mit dem Grund (Kennung außerhalb der Regel, Übungsorganisation, Duplikat, YAML in einer Zeile unlesbar). „Hinzufügen (n)“ schreibt jede Mission an ihren Platz, `missions/<Buchstabe>_<FAMILIE>/<ID>/mission<ID>.yaml`; eine bereits vorhandene Mission wird nur ersetzt, wenn „ersetzen?“ angekreuzt ist. Eine Mission ohne Gesellschaft ist persönlich. Sie gehen bei der nächsten Synchronisierung.
+
+<a id="missions-airline"></a>**Gesellschaft wechseln.** Auf dem Blatt einer Mission bietet „Gesellschaft: … · Ändern“ die Gesellschaften und „Persönlich“ an; der Satz „… wechselt von … zu …“ steht vor „Schreiben“. In der Liste nimmt „Einer Gesellschaft zuordnen…“ die angezeigten Missionen (Bereich, Familie, Suche), jede angekreuzt: Der Bildschirm sagt vor dem Schreiben, wie viele wechseln und welche unlesbar sind (unverändert gelassen). Beim Hinzufügen aus YAML wählt „Diese Missionen hinzufügen zu“ ihre Gesellschaft. Nur das Feld `airline` der Datei ändert sich.
+
+<a id="missions-registry"></a>**Das Register.** „Register“ neben „Zufällig ziehen“ (oder die Adresse `#missions?view=registry`) zeigt eine Zeile je Mission, wie das Register `missions/mission_registry.yaml` sie schreibt, mit dem Zustand ihrer Datei: da, fehlt, unlesbar oder Pfad abgelehnt; und die Depot-Missionen, die das Register nicht kennt. „Register aktualisieren“ sagt zuerst, was es täte (hinzuzufügende Missionen, Zeilen ohne lesbare Datei, doppelte Kennungen, frühere Kennungen); „Register schreiben“ fügt dann die Depot-Missionen hinzu, behält eine Zeile je Kennung und ersetzt eine frühere Kennung durch die des Ordners; eine Zeile ohne lesbare Datei bleibt (die Datei ist vielleicht noch nicht angekommen). „Bearbeiten“ ändert Titel, Serie, Nummer oder Operation einer Zeile; „Aus dem Register entfernen“ nimmt sie heraus, die Missionsdatei bleibt im Depot. Ein unlesbares Register wird nie überschrieben; ein fehlendes wird aus den Dateien angelegt.
+
+## Gut zu wissen
+
+- Das Modul liest die Missionen und ändert sie nie; sie werden im CPCO geschrieben.
+- Eine Mission, deren Datei nicht kommt, sagt es: „nicht gefunden“ (das Repository hat sie nicht), „noch nicht auf dem Gerät“ (die Synchronisierung bringt sie, die Mission erscheint bei ihrer Ankunft) oder „unlesbar“ (mit dem Grund). Dann wird nur das Register gezeigt.
+- Eine Mission, die mit der Synchronisation ohne das Register kam, das sie nennt, wird trotzdem aufgeführt, aus ihrer Datei gelesen, bei der nächsten Anzeige; kein Knopf zu drücken.
+- Ein Flug in Vorbereitung wird erst nach einer Frage ersetzt; ein gestarteter Flug nie (erst den Start abbrechen oder den Flug beenden).
+- Der Umschlag, der seitenweise Leser und die Zuweisungen kommen später.
+
+<!-- fr: e786600425be -->
+
 <!-- chapter: aircraft -->
 # Luftfahrzeuge
 

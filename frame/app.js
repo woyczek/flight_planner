@@ -3172,7 +3172,7 @@
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
       // liens de l'application (écran du cadre « #… » ou page de la suite, dans le même onglet) après ses modules
-      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}${m.query ? `?${esc(m.query)}` : ''}" data-id="${esc(m.id)}" data-view="${esc(new URLSearchParams(m.query || '').get('view') || '')}" data-landmark="${esc(m.id)}" title="${esc(t(m.label))}">${icon(m.icon)}<span class="f-nav-lab">${esc(t(m.label))}</span></a></li>`).join('') +
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}${m.query ? `?${esc(m.query)}` : ''}" data-id="${esc(m.id)}" data-menu-view="${esc(new URLSearchParams(m.query || '').get('view') || '')}" data-landmark="${esc(m.id)}" title="${esc(t(m.label))}">${icon(m.icon)}<span class="f-nav-lab">${esc(t(m.label))}</span></a></li>`).join('') +
         links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings" title="${esc(t(l.label))}">${icon(l.icon)}<span class="f-nav-lab">${esc(t(l.label))}</span></a></li>`).join('') +
         // les pages de la V2 : toujours la dernière entrée, séparée par un filet, teinte atténuée (frame.css .f-legacy)
         `<li class="f-legacy"><a href="#legacy" data-link="legacy" data-landmark="settings" title="${esc(t(LEGACY.label))}">${icon('file')}<span class="f-nav-lab">${esc(t(LEGACY.label))}</span></a></li>`;
@@ -3183,7 +3183,7 @@
       // deux entrées d'un même module (une vue de lui : Missions et Registre) : la vue de l'adresse départage ; un module à une seule entrée n'a pas besoin de vue
       const twins = !scr && a.dataset.id && ul.querySelectorAll(`a[data-id="${CSS.escape(a.dataset.id)}"]`).length > 1,
         on = scr ? !!a.dataset.link && (a.getAttribute('href') || '').replace(/^#/, '').split('?')[0] === scr : a.dataset.id === active &&
-        (!twins || (a.dataset.view || '') === menuView);
+        (!twins || (a.dataset.menuView || '') === menuView);
       if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
         'aria-current');
     }

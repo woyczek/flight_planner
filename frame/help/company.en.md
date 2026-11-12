@@ -44,6 +44,33 @@ The airline's missions, in the Company application: those of the shared reposito
 
 <!-- fr: e786600425be -->
 
+<!-- chapter: missions -->
+# Missions
+
+The airline's missions, in the Company application: those of the shared repository (written with the CPCO): choose one, or draw one at random, then prepare it in Fuel.
+
+## How to use
+
+<a id="missions-list"></a>**The list.** The missions of the newest series first, grouped by family. Each row gives the id, the title, the route, the aircraft type and the estimated block; "flown on …" marks a mission whose report you wrote. The search filters on the id, the title, an aerodrome (ICAO code), an aircraft type, a callsign (SAMU66) or the activity (MEDEVAC, HEMS, SAMU…); the drop-down list keeps one family. Seven rows are shown, "N more" unfolds the rest. The organisation missions of an exercise (those ending in Z) are not flights and are not listed. Only the missions of the airline chosen in Settings › Airline are listed; a mission that names no airline is personal: it is under « Personnel ». The list « My airline · Personal · All airlines », above the search, also shows the personal missions or those of other airlines, each with the name of its airline; they can be prepared the same way. When the airline has categories (cargo, passengers…), a second drop-down keeps one category, and the open mission says its own.
+
+<a id="missions-open"></a>**Choose, or draw at random.** A tap on a row opens the mission sheet: its category, its summary in two lines, its risks (the first three, "hazard → mitigation", the others folded, or "No risk declared"), the teams engaged and its zones. "Detail" shows the rest in foldable sections: description, objectives, zones to activate, rendezvous, route provided, maps provided, payload and aircraft; "See on the Map" opens the Map on a zone or on a map of the mission (drawn from its coordinates). On a phone, the browser's back returns from the detail to the sheet, then to the list; on a large screen, the sheet and the detail are side by side. "Draw at random" picks one among the missions of the filtered list you have not flown yet; "Draw again" picks another. Nothing starts by itself: "Prepare this flight" opens Fuel, in the Pilot application, with the departure, the arrival, the points of the mission (as coordinates), the level and the aircraft type; the runway, the procedures, the fuel and the weather are then prepared as for any flight.
+
+<a id="missions-add"></a>**Add missions.** « Add missions », next to « Draw at random », reads one or more YAML mission files (a file may hold several, separated by « --- » or in a `missions:` list), or a pasted YAML. Before writing, the screen shows what it read (id, title, family, series, airline) and what it refuses, with the reason (id outside the rule, exercise organisation, duplicate, YAML unreadable at a given line). « Add (n) » writes each mission at its place, `missions/<letter>_<FAMILY>/<ID>/mission<ID>.yaml`; a mission that already exists is replaced only when « replace? » is ticked. A mission without an airline is personal. They leave at the next synchronisation.
+
+<a id="missions-airline"></a>**Change airline.** On a mission’s sheet, « Airline: … · Change » offers the airlines and « Personal »; the sentence « … moves from … to … » is said before « Write ». In the list, « Assign to an airline… » takes the missions shown (scope, family, search), each ticked: the screen says how many change and which are unreadable (left as they are) before writing. When adding from YAML, « Add these missions to » chooses their airline. Only the `airline` field of the file changes.
+
+<a id="missions-registry"></a>**The registry.** « Registry », next to « Draw at random » (or the address `#missions?view=registry`), shows one line per mission as the registry `missions/mission_registry.yaml` writes it, with the state of its file: there, missing, unreadable or path refused; and the repository missions the registry does not know. « Update the registry » first says what it would do (missions to add, lines without a readable file, duplicate identifiers, former identifiers), then « Write the registry » adds the repository missions, keeps one line per identifier and replaces a former identifier by the folder's; a line without a readable file stays (the file may not have arrived yet). « Edit » changes the title, series, number or operation of a line; « Remove from the registry » takes it out, the mission file stays in the repository. An unreadable registry is never rewritten; an absent one is created from the files.
+
+## Good to know
+
+- The module reads the missions and never changes them; they are written in the CPCO.
+- A mission whose file does not come says so: "not found" (the repository has not got it), "not on this device yet" (the synchronisation brings it, the mission appears when it arrives) or "unreadable" (with the reason). Only the registry is shown then.
+- A mission that came with the synchronisation without the registry naming it is listed all the same, read from its file, at the next display; no button to press.
+- A flight being prepared is replaced only after a question; a started flight never is (cancel the start, or finish the flight, first).
+- The envelope, the page-by-page reader and the assignments will come later.
+
+<!-- fr: e786600425be -->
+
 <!-- chapter: aircraft -->
 # Aircraft
 

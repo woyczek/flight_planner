@@ -3030,7 +3030,7 @@ def a82(c):
     rail = c.js("[...document.querySelectorAll('#fMenu a[data-id]')].map(a => a.dataset.id)")
     tabs = c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)")
     # SOG-0231 (the user, 10 Nov: « 2 entrées »): the Fleet is the second entry of Company (the module `aircraft` on its view `fleet`); it was Missions alone
-    c.eq([[x for x in rail if x], tabs], [['missions', 'aircraft'], ['missions', 'fleet']], 'Company: Missions then the Fleet, in the column and the bar', what='entries')
+    c.eq([[x for x in rail if x], tabs], [['missions', 'missions', 'aircraft'], ['missions', 'fleet']], 'Company: Missions, the Registry (a view of it), then the Fleet, in the column; Missions then the Fleet in the bar (the register is a view of the Missions tab)', what='entries')
     c.eq(c.js("[...document.querySelectorAll('#fTabs a[aria-current], #fMenu a[aria-current]')].length >= 1"), True, 'the current entry is marked', what='marked')
     c.ok(c.js('document.title').startswith(tx('frame/app.js', 'name', c.lang, after='APPS.company = {')), c.js('document.title'), 'the application’s name in the page title')
     # the switcher lists the three applications
