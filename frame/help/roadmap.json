@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8e9c7da",
+  "organisation": "8b2fb95",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -2673,11 +2673,12 @@
     {
      "id": "SOG-0274",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Cadre : la barre de gauche se réduit aux icônes avant de basculer en mode téléphone",
      "en": "Frame: the left bar shrinks to its icons before switching to phone mode",
      "de": "Frame: the left bar shrinks to its icons before switching to phone mode",
-     "es": "Frame: the left bar shrinks to its icons before switching to phone mode"
+     "es": "Frame: the left bar shrinks to its icons before switching to phone mode",
+     "test": true
     }
    ]
   },

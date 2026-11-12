@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 144,
+  "tests": 145,
   "verdicts": 59
  },
  "apps": [
@@ -2088,6 +2088,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T17:04:58Z"
+  },
+  {
+   "id": "SOG-0274",
+   "app": "maintenance",
+   "title": {
+    "fr": "Cadre : la barre de gauche se réduit aux icônes avant de basculer en mode téléphone",
+    "en": "Frame: the left bar shrinks to its icons before switching to phone mode",
+    "de": "Frame: the left bar shrinks to its icons before switching to phone mode",
+    "es": "Frame: the left bar shrinks to its icons before switching to phone mode"
+   },
+   "test": "Recharge la page et rétrécis la fenêtre : au-dessus de 1 100 px la barre de gauche est entière ; entre 761 et 1 099 px elle se réduit aux icônes (le libellé au survol, l'écran actif marqué) et le contenu prend la place ; à 760 px et moins, le mode téléphone. Regarde Pilote et Maintenance.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T17:22:59Z"
   },
   {
    "id": "SOG-0279",
