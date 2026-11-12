@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8e20b7c",
+  "organisation": "87d9a06",
   "fiches": 283,
   "untranslated": 0,
   "priorities": 243
@@ -1981,13 +1981,14 @@
     {
      "id": "SOG-0041",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
      "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
      "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
      "es": "Misiones: categorías « comercial » (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba) e informe de un vuelo comercial",
      "milestone": "6.0.0-alpha.5",
-     "rank": 2
+     "rank": 2,
+     "test": true
     },
     {
      "id": "SOG-0051",

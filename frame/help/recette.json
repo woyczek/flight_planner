@@ -36,9 +36,15 @@
     "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
     "es": "Misiones: categorías « comercial » (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba) e informe de un vuelo comercial"
    },
-   "test": "Réglages › Compagnie. (1) La liste est à boutons radio, chaque ligne dit son genre, choisir ne fait rien clignoter ; la compagnie choisie montre Genre et « Catégories de missions » sans rien déplier. (2) « Créer une compagnie » (ton cas Rennes Motoculture) : identité et genre, catégories de vols cochées d'avance, flotte choisie dans les fiches de la base avec l'immatriculation tapée (ou « Plus tard »), un résumé en mots, puis « Créer la compagnie » et « Voler pour cette compagnie ». (3) « Rejoindre une compagnie » : coller la page « Flotte » du site ; « Ce que j'ai lu » (appareils, opérateurs, nom, code, genre Escadrille SO) est montré avant toute écriture ; « Rejoindre » l'ajoute et la choi",
+   "test": "Recharge la page. Ton dépôt n'a pas de mission commerciale : le parcours se joue sans mission. 1. Réglages › Compagnie : choisis ITF ; sa fiche dit qu'elle est commerciale. 2. Carburant, « Nouveau vol » : à l'étape Vol, choisis Famille « Commercial » et Série « Fret ». 3. Choisis l'aéronef, puis « Démarrer le vol ». 4. CR : touche « Vol en cours ». L'en-tête dit « Compte rendu pour ITF » ; au pas Mission tu lis Commercial / Fret ; au pas suivant, la carte « Fret » demande les kg. 5. Comme si tu avais oublié de choisir au départ : change la série dans le CR (Passagers) ; la carte de charge devient « Passagers » — c'est le CR qui décide. 6. Enregistre : dans « Mes vols », le CR porte ITF et Co",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-12T19:38:05Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "bah non, actuellement, si je me mets en « missions ITF », je vois toutes les missions hems, le, sar… donc ça ne marche probablement pas. idem sur l’écran 2 du CR, je peux choisir n’importe laquelle des missions. À quel moment, je décide de faire une mission fret, passagers, essais en vol... ? à quel moment le cr match ce choix ? que faire si j’ai oublié de choisir au départ du vol, et que je m’en rend compte en fin de vol, au moment du cr ?",
+    "at": "2026-11-10T14:56:09Z"
+   }
   },
   {
    "id": "SOG-0046",
