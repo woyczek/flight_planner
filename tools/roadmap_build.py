@@ -8,7 +8,8 @@ pushed lot and at the evening pass, and commits the result.
 
 Schema: ``sog-roadmap/1`` kept for the help build's check (every text in four languages, known states) with ``version: 2``
 and the fields the screen reads when present — ``apps`` (pilote, compagnie, maintenance, stats), ``milestones``, and on each
-item ``id``, ``kind`` (feature | bug), ``milestone``. The historical lanes of the previous file are kept with their
+item ``id``, ``kind`` (feature | bug), ``milestone``, ``rank`` (the user's order) and ``test: true`` on a delivered item
+whose recette test still waits for his verdict (SOG-0256: « in test » is not yet « delivered » for him). The historical lanes of the previous file are kept with their
 translations (``legacy: true``) and ranged by application. Translations of the fiches' titles come from
 ``<org>/roadmap_i18n.json`` (``{"SOG-0045": {"en": …, "de": …, "es": …}}``); a missing one copies the French text and is
 listed by ``--check`` so a helper translates it.
@@ -202,6 +203,13 @@ def read_priorities(org):
     return out
 
 
+def tests_to_do(org):
+    """The fiches delivered whose recette test still waits for the user's verdict (state « todo » of recette_build): they are
+    « in test », not yet « delivered » for him (SOG-0256). recette_build imports this module, hence the late import."""
+    import recette_build
+    return {t['id'] for t in recette_build.build(org).get('tests') or [] if t.get('state') == 'todo'}
+
+
 def git_short(path):
     try:
         return subprocess.check_output(['git', '-C', path, 'rev-parse', '--short', 'HEAD'], text=True).strip()
@@ -228,6 +236,7 @@ def build(org, previous):
     for m in milestones:
         m['items'] = [fid for fid in m['items'] if by_id.get(fid) == m['id']] + \
             [fid for fid, ms in by_id.items() if ms == m['id'] and fid not in m['items']]
+    in_test = tests_to_do(org)
     lanes = {}
     missing = []
     for f in fiches:
@@ -244,6 +253,8 @@ def build(org, previous):
             item['milestone'] = by_id[f['id']]
         if isinstance(prio.get(f['id'], {}).get('rank'), int):
             item['rank'] = prio[f['id']]['rank']
+        if item['state'] == 'done' and f['id'] in in_test:
+            item['test'] = True  # delivered, waiting for the user's verdict: the « En test » column of the screen (SOG-0256)
         lane['items'].append(item)
     for lane in lanes.values():
         lane['items'].sort(key=lambda it: (it.get('rank', 10 ** 6), it['id']))

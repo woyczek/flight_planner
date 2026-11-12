@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f586faf",
-  "fiches": 255,
+  "organisation": "f36e2c8",
+  "fiches": 258,
   "untranslated": 0,
   "priorities": 243
  },
@@ -553,7 +553,8 @@
      "en": "Fuel quote: a computed alternate fuel (distance from the arrival to the alternate aerodrome)",
      "de": "Kraftstoffplan: berechneter Ausweichkraftstoff (Strecke vom Ziel zum Ausweichflugplatz)",
      "es": "Presupuesto de combustible: combustible de alternativo calculado (distancia de la llegada al alternativo)",
-     "rank": 156
+     "rank": 156,
+     "test": true
     },
     {
      "id": "SOG-0090",
@@ -1244,7 +1245,8 @@
      "en": "Aircraft sheets: a converted value shows thirteen decimals",
      "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",
      "es": "Fichas de aeronaves: un valor convertido muestra trece decimales",
-     "rank": 177
+     "rank": 177,
+     "test": true
     }
    ]
   },
@@ -1816,7 +1818,8 @@
      "en": "Mission categories of an airline: reuse the themes and sub-themes of V2, do not reinvent",
      "de": "Missionskategorien einer Gesellschaft: Themen und Unterthemen der V2 übernehmen, nichts neu erfinden",
      "es": "Categorías de misiones de una compañía: reutilizar los temas y subtemas de la V2, no reinventar",
-     "rank": 182
+     "rank": 182,
+     "test": true
     }
    ]
   },
@@ -1924,7 +1927,8 @@
      "en": "Missions: “unreadable file” on many missions; add a mission or a batch of missions from a YAML; search in another airline",
      "de": "Missionen: „Datei unlesbar“ bei vielen Missionen; eine Mission oder einen Satz aus einer YAML hinzufügen; in einer anderen Gesellschaft suchen",
      "es": "Misiones: «archivo ilegible» en muchas misiones; añadir una misión o un lote desde un YAML; buscar en otra compañía",
-     "rank": 184
+     "rank": 184,
+     "test": true
     },
     {
      "id": "SOG-0223",
@@ -1934,7 +1938,8 @@
      "en": "Move a mission to another airline (one by one, or in a batch)",
      "de": "Eine Mission einer anderen Gesellschaft zuweisen (einzeln oder im Stapel)",
      "es": "Cambiar una misión de compañía (una a una o en lote)",
-     "rank": 185
+     "rank": 185,
+     "test": true
     }
    ]
   },
@@ -1989,7 +1994,8 @@
      "en": "Roadmap: reprioritise from the screen (readable, copyable id; drag and drop of rank and milestone, written by the launcher to organisation/PRIORITES.json)",
      "de": "Fahrplan: Prioritäten direkt im Bildschirm ändern (lesbare, kopierbare Kennung; Rang und Meilenstein per Ziehen und Ablegen, vom Launcher in organisation/PRIORITES.json geschrieben)",
      "es": "Hoja de ruta: repriorizar desde la pantalla (identificador legible y copiable; arrastrar y soltar del rango y del hito, escrito por el lanzador en organisation/PRIORITES.json)",
-     "rank": 81
+     "rank": 81,
+     "test": true
     },
     {
      "id": "SOG-0069",
@@ -2219,7 +2225,8 @@
      "en": "Zone gb (NATS) still “ko” after dropping the files into Downloads",
      "de": "Zone gb (NATS) weiterhin „ko“ nach Ablage der Dateien in Downloads",
      "es": "Zona gb (NATS) sigue «ko» tras dejar los archivos en Descargas",
-     "rank": 94
+     "rank": 94,
+     "test": true
     },
     {
      "id": "SOG-0144",
@@ -2229,7 +2236,8 @@
      "en": "BLOCKING: “Recompute everything” fails in the build page, 46 zones at once, cause not said",
      "de": "BLOCKIEREND: „Alles neu berechnen“ scheitert auf der Aufbauseite, 46 Zonen auf einmal, Ursache nicht genannt",
      "es": "BLOQUEANTE: «Recalcular todo» falla en la página de construcción, 46 zonas de golpe, causa no dicha",
-     "rank": 95
+     "rank": 95,
+     "test": true
     },
     {
      "id": "SOG-0150",
@@ -2239,7 +2247,8 @@
      "en": "NATS: the pickup says “nothing to take” and talks about openAIP while the NATS zips are in Downloads",
      "de": "NATS: die Übernahme sagt „nichts zu nehmen“ und spricht von openAIP, obwohl die NATS-Zips in Downloads liegen",
      "es": "NATS: la recogida dice «nada que tomar» y habla de openAIP mientras los zips NATS están en Descargas",
-     "rank": 96
+     "rank": 96,
+     "test": true
     },
     {
      "id": "SOG-0108",
@@ -2269,7 +2278,8 @@
      "en": "“Publishing failed: nothing is lost… Fix the cause and retry”: which cause?",
      "de": "„Veröffentlichung fehlgeschlagen: nichts verloren… Ursache beheben und erneut“: welche Ursache?",
      "es": "«La publicación falló: nada se pierde… Corrija la causa y reintente»: ¿qué causa?",
-     "rank": 189
+     "rank": 189,
+     "test": true
     },
     {
      "id": "SOG-0174",
@@ -2279,7 +2289,8 @@
      "en": "Aeronautical data for ALL countries, starting with Europe and the United States",
      "de": "Luftfahrtdaten für ALLE Länder, zuerst Europa und die USA",
      "es": "Datos aeronáuticos para TODOS los países, empezando por Europa y Estados Unidos",
-     "rank": 190
+     "rank": 190,
+     "test": true
     },
     {
      "id": "SOG-0182",
@@ -2309,7 +2320,8 @@
      "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
      "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
      "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto",
-     "rank": 193
+     "rank": 193,
+     "test": true
     },
     {
      "id": "SOG-0216",
@@ -2482,7 +2494,8 @@
      "en": "Frame: after Ctrl + Shift + R, the “Old version · Reload” cartouche shows wrongly",
      "de": "Rahmen: nach Strg + Umschalt + R erscheint die Kartusche „Alte Version · Neu laden“ zu Unrecht",
      "es": "Marco: tras Ctrl + Mayús + R, aparece por error el cartucho «Versión antigua · Recargar»",
-     "rank": 200
+     "rank": 200,
+     "test": true
     },
     {
      "id": "SOG-0213",
@@ -2492,7 +2505,8 @@
      "en": "App header: say the current airline, and switch quickly from the application picker",
      "de": "Kopfzeile der App: die aktuelle Gesellschaft nennen und schnell über die App-Auswahl wechseln",
      "es": "Cabecera de la app: decir la compañía actual y cambiarla rápido desde el selector de aplicación",
-     "rank": 201
+     "rank": 201,
+     "test": true
     },
     {
      "id": "SOG-0215",
@@ -2502,7 +2516,8 @@
      "en": "When the launcher comes back, the page does not reconnect by itself",
      "de": "Wenn der Launcher zurückkommt, verbindet sich die Seite nicht von selbst",
      "es": "Cuando vuelve el lanzador, la página no se reconecta sola",
-     "rank": 202
+     "rank": 202,
+     "test": true
     },
     {
      "id": "SOG-0235",
@@ -2565,6 +2580,36 @@
      "de": "Rückblickende Prüfung vom 11.11.: von den Sitzungen gefundene Stabilitätsrisiken (drei behoben, zehn zu entscheiden oder zu messen)",
      "es": "Revisión a posteriori del 11/11: riesgos de estabilidad hallados por las sesiones (tres corregidos, diez por decidir o medir)",
      "rank": 204
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-aide",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; aide",
+    "en": "Cadre ; aide",
+    "de": "Cadre ; aide",
+    "es": "Cadre ; aide"
+   },
+   "items": [
+    {
+     "id": "SOG-0256",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Feuille de route, vue Priorités : les colonnes « Livré · En test · alpha.5 · beta.1 · Backlog » au lieu d'une seule « en dev »",
+     "en": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
+     "de": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
+     "es": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one"
+    },
+    {
+     "id": "SOG-0257",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Feuille de route, vue Priorités : un déplacement latéral allume tout de suite la colonne ; plus de long glisser dans une colonne de 40 cartes",
+     "en": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
+     "de": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
+     "es": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards"
     }
    ]
   },
@@ -2638,7 +2683,8 @@
      "en": "BLOCKING: the flight is rewritten in a loop, the synchronisation never stops, the blocks flicker",
      "de": "BLOCKIEREND: der Flug wird in einer Schleife neu geschrieben, die Synchronisation hört nicht auf, die Blöcke flackern",
      "es": "BLOQUEANTE: el vuelo se reescribe en bucle, la sincronización no se detiene, los bloques parpadean",
-     "rank": 206
+     "rank": 206,
+     "test": true
     }
    ]
   },
@@ -2660,7 +2706,8 @@
      "en": "“Charts” link: it leads to the eAIP of the previous cycle",
      "de": "Link „Karten“: führt zur eAIP des vorigen Zyklus",
      "es": "Enlace «Cartas»: lleva al eAIP del ciclo anterior",
-     "rank": 207
+     "rank": 207,
+     "test": true
     }
    ]
   },
@@ -2682,7 +2729,8 @@
      "en": "Fuel: “New flight” clears nothing at once; the side map can no longer be resized or moved",
      "de": "Kraftstoff: „Neuer Flug“ leert nichts sofort; die Karte daneben lässt sich nicht mehr verschieben oder skalieren",
      "es": "Combustible: «Nuevo vuelo» no vacía nada al instante; el mapa lateral ya no se redimensiona ni se mueve",
-     "rank": 208
+     "rank": 208,
+     "test": true
     },
     {
      "id": "SOG-0208",
@@ -2692,7 +2740,8 @@
      "en": "A gesture that needs the launcher says so when the launcher is absent (“Compute A → B” without effect)",
      "de": "Eine Geste, die den Launcher braucht, sagt es, wenn er fehlt („A → B berechnen“ ohne Wirkung)",
      "es": "Un gesto que necesita el lanzador lo dice cuando el lanzador falta («Calcular A → B» sin efecto)",
-     "rank": 209
+     "rank": 209,
+     "test": true
     }
    ]
   },
@@ -2737,7 +2786,8 @@
      "en": "Map: at a very wide zoom only the SIA aerodromes remain (France, Réunion…)",
      "de": "Karte: bei sehr weitem Zoom bleiben nur die Flugplätze des SIA (Frankreich, Réunion…)",
      "es": "Mapa: con el zoom muy alejado solo quedan los aeródromos del SIA (Francia, Reunión…)",
-     "rank": 210
+     "rank": 210,
+     "test": true
     }
    ]
   },
@@ -2759,7 +2809,8 @@
      "en": "Taxiways: shown too late in the zoom, unnamed; no apron names",
      "de": "Rollwege: zu spät im Zoom angezeigt, ohne Namen; keine Vorfeldnamen",
      "es": "Calles de rodaje: mostradas demasiado tarde en el zoom, sin nombre; sin nombres de plataformas",
-     "rank": 211
+     "rank": 211,
+     "test": true
     }
    ]
   },
@@ -2857,7 +2908,8 @@
      "en": "Data: rework the overall ergonomics of the screen (choose, update the differences, purge, recompute only the outdated ones, deselect all, by package or by rectangle)",
      "de": "Daten: die Gesamtergonomie des Bildschirms überarbeiten (auswählen, Unterschiede aktualisieren, bereinigen, nur veraltete neu berechnen, alles abwählen, nach Paket oder per Rechteck)",
      "es": "Datos: revisar la ergonomía global de la pantalla (elegir, actualizar las diferencias, purgar, recalcular solo las obsoletas, deseleccionar todo, por paquete o por rectángulo)",
-     "rank": 116
+     "rank": 116,
+     "test": true
     },
     {
      "id": "SOG-0072",
@@ -2867,7 +2919,8 @@
      "en": "Data: a country stays orange “new” after recompute and publication, until a forced reload",
      "de": "Daten: ein Land bleibt nach Neuberechnung und Veröffentlichung orange „neu“, bis zu einem erzwungenen Neuladen",
      "es": "Datos: un país sigue en naranja «nuevo» tras recalcular y publicar, hasta una recarga forzada",
-     "rank": 117
+     "rank": 117,
+     "test": true
     },
     {
      "id": "SOG-0079",
@@ -2937,7 +2990,8 @@
      "en": "Data: rework the whole base update path (one gesture, messages that name buttons that exist)",
      "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",
      "es": "Datos: rehacer todo el recorrido de actualización de la base (un solo gesto, mensajes que nombran botones que existen)",
-     "rank": 214
+     "rank": 214,
+     "test": true
     },
     {
      "id": "SOG-0186",
@@ -2947,7 +3001,8 @@
      "en": "Data, country packs: choose one country inside a pack (folded list)",
      "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
      "es": "Datos, paquetes de países: elegir un país dentro de un paquete (lista plegada)",
-     "rank": 215
+     "rank": 215,
+     "test": true
     },
     {
      "id": "SOG-0188",
@@ -2957,7 +3012,8 @@
      "en": "Data, packs: update a pack without unticking and ticking everything again",
      "de": "Daten, Pakete: ein Paket aktualisieren, ohne alles ab- und wieder anzuwählen",
      "es": "Datos, paquetes: actualizar un paquete sin desmarcar y volver a marcar todo",
-     "rank": 216
+     "rank": 216,
+     "test": true
     },
     {
      "id": "SOG-0189",
@@ -2967,7 +3023,8 @@
      "en": "Sources to download yourself: direct links (Danish, Swedish AIP) and a step-by-step that says which file to take",
      "de": "Selbst herunterzuladende Quellen: direkte Links (dänische, schwedische AIP) und eine Schritt-für-Schritt-Anleitung",
      "es": "Fuentes para descargar uno mismo: enlaces directos (AIP danés y sueco) y un paso a paso que dice qué archivo tomar",
-     "rank": 217
+     "rank": 217,
+     "test": true
     },
     {
      "id": "SOG-0191",
@@ -2977,7 +3034,8 @@
      "en": "VFR points: a stopped download then a build say “up to date” instead of “partly up to date”",
      "de": "VFR-Punkte: abgebrochener Download und Aufbau melden „aktuell“ statt „teilweise aktuell“",
      "es": "Puntos VFR: una descarga detenida y una construcción dicen «al día» en vez de «parcialmente al día»",
-     "rank": 218
+     "rank": 218,
+     "test": true
     },
     {
      "id": "SOG-0197",
@@ -2987,7 +3045,8 @@
      "en": "Data: the question of “Take the downloaded file” is an unreadable block of text",
      "de": "Daten: die Rückfrage von „Heruntergeladene Datei übernehmen“ ist ein unlesbarer Textblock",
      "es": "Datos: la pregunta de «Tomar el archivo descargado» es un bloque de texto ilegible",
-     "rank": 219
+     "rank": 219,
+     "test": true
     },
     {
      "id": "SOG-0199",
@@ -2997,7 +3056,8 @@
      "en": "Data: pick the file yourself when “Take the downloaded file” did not find it",
      "de": "Daten: die Datei selbst wählen, wenn „Heruntergeladene Datei übernehmen“ sie nicht gefunden hat",
      "es": "Datos: elegir uno mismo el archivo cuando «Tomar el archivo descargado» no lo ha encontrado",
-     "rank": 220
+     "rank": 220,
+     "test": true
     },
     {
      "id": "SOG-0201",
@@ -3007,7 +3067,8 @@
      "en": "Data, country map: the outlines of two neighbouring countries do not meet",
      "de": "Daten, Länderkarte: die Umrisse zweier Nachbarländer treffen sich nicht",
      "es": "Datos, mapa de países: los contornos de dos países vecinos no coinciden",
-     "rank": 221
+     "rank": 221,
+     "test": true
     },
     {
      "id": "SOG-0226",
@@ -3017,7 +3078,8 @@
      "en": "Data: a zone built with a personal source is said “To rebuild” (Sweden: “built” and “To rebuild” at once)",
      "de": "Daten: eine mit persönlicher Quelle gebaute Zone heißt „Neu aufzubauen“ (Schweden: „gebaut“ und „Neu aufzubauen“ zugleich)",
      "es": "Datos: una zona construida con una fuente personal se dice «Por reconstruir» (Suecia: «construida» y «Por reconstruir» a la vez)",
-     "rank": 222
+     "rank": 222,
+     "test": true
     },
     {
      "id": "SOG-0228",
@@ -3027,7 +3089,8 @@
      "en": "Data: until the redesign, fold “Country packs”, shrink the “Update” buttons, explain “Zones of the coverage (75)”, lead from “7 to rebuild” to the 7 zones",
      "de": "Daten: bis zur Neugestaltung „Länderpakete“ einklappen, „Aktualisieren“ verkleinern, „Zonen der Abdeckung (75)“ erklären, von „7 neu aufzubauen“ zu den 7 Zonen führen",
      "es": "Datos: hasta el rediseño, plegar «Paquetes de países», reducir los «Actualizar», explicar «Zonas de la cobertura (75)», llevar de «7 por reconstruir» a las 7 zonas",
-     "rank": 223
+     "rank": 223,
+     "test": true
     },
     {
      "id": "SOG-0229",
@@ -3047,7 +3110,8 @@
      "en": "Data: “Publish” answers “0 files sent” after a build (Sweden built, “Nothing to publish”)",
      "de": "Daten: „Veröffentlichen“ meldet „0 Dateien gesendet“ nach einem Aufbau (Schweden gebaut, „Nichts zu veröffentlichen“)",
      "es": "Datos: «Publicar» responde «0 archivos enviados» tras una construcción (Suecia construida, «Nada que publicar»)",
-     "rank": 225
+     "rank": 225,
+     "test": true
     },
     {
      "id": "SOG-0244",
@@ -3057,6 +3121,15 @@
      "en": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
      "de": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
      "es": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why"
+    },
+    {
+     "id": "SOG-0258",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Données : télécharger, intégrer et publier se font zone par zone, chaque étape dite et faisable séparément",
+     "en": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
+     "de": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
+     "es": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own"
     }
    ]
   },
@@ -3078,7 +3151,8 @@
      "en": "EUROCONTROL: tell the user how to create the account and get the workbooks",
      "de": "EUROCONTROL: dem Nutzer sagen, wie das Konto angelegt und die Arbeitsmappen geholt werden",
      "es": "EUROCONTROL: decir al usuario cómo crear la cuenta y obtener los libros",
-     "rank": 226
+     "rank": 226,
+     "test": true
     }
    ]
   },
@@ -3176,7 +3250,8 @@
      "en": "Aircraft sheets: “Complete from another sheet” shows “Douglas DC-3” when editing the Caravelle, and takes up space",
      "de": "Flugzeugdatenblätter: „Aus einem anderen Datenblatt ergänzen“ zeigt „Douglas DC-3“ beim Bearbeiten der Caravelle und beansprucht Platz",
      "es": "Fichas de aeronave: «Completar desde otra ficha» muestra «Douglas DC-3» al editar la Caravelle, y ocupa espacio",
-     "rank": 127
+     "rank": 127,
+     "test": true
     },
     {
      "id": "SOG-0074",
@@ -3218,7 +3293,8 @@
      "en": "The first git synchronisation of the day takes more than two minutes",
      "de": "Die erste Git-Synchronisation des Tages dauert über zwei Minuten",
      "es": "La primera sincronización git del día tarda más de dos minutos",
-     "rank": 130
+     "rank": 130,
+     "test": true
     },
     {
      "id": "SOG-0178",
@@ -3228,7 +3304,8 @@
      "en": "Launcher: a slow or failing outside service (Open-Meteo, Overpass) freezes the launcher, then the app and Chrome",
      "de": "Launcher: ein langsamer oder fehlerhafter externer Dienst (Open-Meteo, Overpass) friert Launcher, App und Chrome ein",
      "es": "Lanzador: un servicio externo lento o con error (Open-Meteo, Overpass) congela el lanzador, la app y Chrome",
-     "rank": 227
+     "rank": 227,
+     "test": true
     },
     {
      "id": "SOG-0219",
@@ -3283,7 +3360,8 @@
      "en": "Launcher: the British military source (aidu.mod.uk, ENR 5.2) fails in SSL",
      "de": "Launcher: die britische Militärquelle (aidu.mod.uk, ENR 5.2) scheitert an SSL",
      "es": "Lanzador: la fuente militar británica (aidu.mod.uk, ENR 5.2) falla en SSL",
-     "rank": 230
+     "rank": 230,
+     "test": true
     }
    ]
   },
@@ -3360,7 +3438,8 @@
      "en": "Weather: “grid forecast unreachable (offline)” while the synoptic is being built, although the network is there",
      "de": "Wetter: „Gittervorhersage nicht erreichbar (offline)“ während des Aufbaus der Synoptik, obwohl das Netz da ist",
      "es": "Meteo: «previsión de la malla inalcanzable (sin conexión)» durante la construcción del sinóptico, aunque hay red",
-     "rank": 233
+     "rank": 233,
+     "test": true
     }
    ]
   },
@@ -3486,7 +3565,8 @@
      "en": "Settings: the flicker is back",
      "de": "Einstellungen: das Flackern ist zurück",
      "es": "Ajustes: han vuelto los parpadeos",
-     "rank": 234
+     "rank": 234,
+     "test": true
     },
     {
      "id": "SOG-0218",
@@ -3496,7 +3576,8 @@
      "en": "Settings: “This device's airline” takes 8 seconds to show",
      "de": "Einstellungen: „Gesellschaft dieses Geräts“ braucht 8 Sekunden",
      "es": "Ajustes: «Compañía de este dispositivo» tarda 8 segundos en mostrarse",
-     "rank": 235
+     "rank": 235,
+     "test": true
     }
    ]
   },
@@ -3617,7 +3698,8 @@
      "en": "Missing zone: everywhere, say what is missing, offer the gesture (Données) and the external fallbacks (LittleNavMap, Navigraph, ChartFox)",
      "de": "Fehlende Zone: überall sagen, was fehlt, die Geste anbieten (Daten) und die externen Ausweichwege (LittleNavMap, Navigraph, ChartFox)",
      "es": "Zona ausente: en todas partes, decir qué falta, ofrecer el gesto (Datos) y los recursos externos (LittleNavMap, Navigraph, ChartFox)",
-     "rank": 145
+     "rank": 145,
+     "test": true
     }
    ]
   },
