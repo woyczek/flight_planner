@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missions : l'éditeur (maquette SOG-0287)</title>
+<style>
+:root{
+  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa; --card:#fff; --bg:#f3f4f6;
+  --ok:#1e7d32; --ok-bg:#e6f6ea; --warn:#7d4e00; --warn-bg:#fff4d1; --accent:#1a6fd8; --accent-bg:#eaf2fb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.top{display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);font-weight:700}
+.top .sp{flex:1}
+.top .chip{font-weight:400;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--muted)}
+.page{max-width:1240px;margin:0 auto;padding:12px 16px 96px}
+.crumb{font-size:14px;color:var(--muted);margin:4px 0}
+h1{font-size:22px;line-height:1.25;margin:0 0 4px}
+.state{display:inline-block;font-size:13px;background:var(--warn-bg);color:var(--warn);border-radius:4px;padding:2px 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
+.steps{display:flex;gap:6px;overflow-x:auto;margin:12px -16px 0;padding:0 16px 4px;scrollbar-width:none}
+.steps a{flex:none;display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:22px;background:#fff;color:var(--ink);text-decoration:none;font-size:15px}
+.steps a .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--soft);font-size:12px;font-weight:700}
+.steps a.done .n{background:var(--ok-bg);color:var(--ok)}
+.steps a.todo .n{background:var(--warn-bg);color:var(--warn)}
+.steps a[aria-current]{border-color:var(--accent);background:var(--accent-bg);font-weight:600}
+h2{font-size:18px;margin:0 0 4px}
+.hint{color:var(--muted);font-size:14px;margin:0 0 10px}
+.f{display:block;margin:0 0 12px}
+.f>span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;min-height:44px;font:inherit;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff;color:var(--ink)}
+.f small{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.f small.warn{color:var(--warn)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,.btn{font:inherit;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.link{border:0;background:none;color:var(--accent);text-decoration:underline;padding:0 4px}
+.places{border-top:1px solid var(--line)}
+.place{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.place .k{grid-row:span 2;display:inline-grid;place-items:center;min-width:44px;height:28px;border-radius:4px;background:var(--soft);font-size:12px;font-weight:700}
+.place b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place .m{grid-column:2;color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place .act{grid-row:1/3;grid-column:3;align-self:center;min-height:44px}
+.add{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:8px 16px;display:flex;gap:8px;align-items:center;z-index:2}
+.bar .sp{flex:1}
+.bar .note{font-size:13px;color:var(--muted)}
+.side,.prev{display:none}
+.todo-list{margin:0;padding-left:1.1em;font-size:14px}
+.todo-list li{margin:.2em 0}
+.prev h3{margin:0;font-size:17px}
+.prev .fam{font-size:13px;color:var(--muted)}
+.prev p{margin:.4em 0;font-size:14px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.prev ul{margin:.2em 0;padding-left:1.1em;font-size:14px}
+.map{height:150px;border-radius:6px;background:linear-gradient(135deg,#e8eef4,#dfe8df);position:relative;overflow:hidden;margin-top:8px;border:1px solid var(--line)}
+.map i{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.map i.t{background:#b42318}
+.map s{position:absolute;border:2px dashed #1e7d32;border-radius:50%}
+.lbl{font-size:12px;color:var(--muted)}
+.mockbar{background:#fffbe6;border-bottom:1px solid #f0d78a;font-size:13px;color:#6b5200;padding:6px 16px}
+@media (min-width:1000px){
+  .page{display:grid;grid-template-columns:220px minmax(0,1fr) 300px;gap:0 20px;align-items:start}
+  .head{grid-column:1/-1}
+  .steps{display:none}
+  .side{display:block;position:sticky;top:12px}
+  .side a{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;border-radius:6px;color:var(--ink);text-decoration:none}
+  .side a .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--soft);font-size:12px;font-weight:700}
+  .side a.done .n{background:var(--ok-bg);color:var(--ok)}
+  .side a.todo .n{background:var(--warn-bg);color:var(--warn)}
+  .side a[aria-current]{background:var(--accent-bg);font-weight:600}
+  .prev{display:block;position:sticky;top:12px}
+  .bar{left:0;padding-left:calc((100vw - 1240px)/2 + 16px + 240px)}
+  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px}
+}
+</style>
+</head>
+<body>
+<div class="mockbar">Maquette SOG-0287 — rien n'est écrit ; mission X-301A du banc (inventée). Étape montrée : <a href="#cadre">Cadre</a> · <a href="#lieux">Lieux</a></div>
+<div class="top"><span>✈ Compagnie</span><span class="sp"></span><span class="chip">● Sur cet appareil</span></div>
+<div class="page">
+  <div class="head">
+    <div class="crumb">Missions › Registre › Modifier</div>
+    <h1>X-301A · Mission complète</h1>
+    <span class="state">modifiée sur cet appareil — pas encore envoyée</span>
+    <nav class="steps" aria-label="Étapes" data-steps></nav>
+  </div>
+  <nav class="side" aria-label="Étapes" data-side></nav>
+  <main>
+    <section class="card" data-step="cadre">
+      <h2>1. Cadre</h2>
+      <p class="hint">Ce qui range la mission : sa famille, sa série, son identifiant, d'où elle part et où elle arrive.</p>
+      <label class="f"><span>Famille</span><select><option>SAR · Recherche et sauvetage</option></select></label>
+      <div class="two">
+        <label class="f"><span>Série</span><input value="1" inputmode="numeric"><small>suivante : 2</small></label>
+        <label class="f"><span>Identifiant</span><input value="X-301A"><small>l'ancien est gardé</small></label>
+      </div>
+      <label class="f"><span>Titre</span><input value="Mission complète"></label>
+      <label class="f"><span>Théâtre</span><select><option>Métropole</option></select></label>
+      <div class="two">
+        <label class="f"><span>Départ</span><input value="XTST · Base Test"><small>terrain de la base aéronautique</small></label>
+        <label class="f"><span>Arrivée</span><input value="XTSU · Base Test Sud"></label>
+      </div>
+    </section>
+    <section class="card" data-step="lieux" hidden>
+      <h2>3. Lieux</h2>
+      <p class="hint">Cible, zones, points tournants et rendez-vous. Une ligne par lieu ; « Sur la carte » le place ou le déplace.</p>
+      <div class="places">
+        <div class="place"><span class="k">CIBLE</span><b>Cible d'essai</b><span class="m">44°36′N 1°24′E</span><button class="link act">Modifier</button></div>
+        <div class="place"><span class="k">ZONE</span><b>ZONE-1 · Secteur nord</b><span class="m">recherche · cercle 12 km · 30 min sur zone</span><button class="link act">Modifier</button></div>
+        <div class="place"><span class="k">ZONE</span><b>ZONE-2 · Secteur sud</b><span class="m">exclusion · 3 points</span><button class="link act">Modifier</button></div>
+        <div class="place"><span class="k">PT</span><b>PT1 · Point un</b><span class="m">entrée · 44°48′N 1°12′E</span><button class="link act">Modifier</button></div>
+        <div class="place"><span class="k">PT</span><b>PT2 · Point deux</b><span class="m">sortie · 44°24′N 1°36′E</span><button class="link act">Modifier</button></div>
+        <div class="place"><span class="k">RDV</span><b>RDV-1 · Rendez-vous d'essai</b><span class="m">ralliement · ALPHA1, BRAVO2</span><button class="link act">Modifier</button></div>
+      </div>
+      <div class="add"><button>+ Zone</button><button>+ Point tournant</button><button>+ Rendez-vous</button><button class="link">Sur la carte</button></div>
+    </section>
+  </main>
+  <aside class="prev">
+    <div class="card">
+      <div class="lbl">Aperçu de la fiche</div>
+      <h3>Mission complète</h3>
+      <div class="fam"><b>SAR</b> · Recherche et sauvetage · série 1</div>
+      <p>Une recherche inventée au-dessus d'un terrain d'essai, longue à dessein pour tenir plus de deux lignes sur un téléphone, avec une fin…</p>
+      <ul><li>Danger un → Parade un</li><li>Danger deux → Parade deux</li><li>Danger trois → Parade trois</li></ul>
+      <div class="map"><i class="t" style="left:46%;top:48%"></i><s style="left:20%;top:12%;width:70px;height:70px"></s><i style="left:12%;top:8%"></i><i style="left:80%;top:84%"></i></div>
+    </div>
+    <div class="card">
+      <div class="lbl">À compléter</div>
+      <ul class="todo-list"><li>Chronologie : aucun événement</li><li>Cartes : « zone_1 » à refaire</li></ul>
+    </div>
+  </aside>
+</div>
+<div class="bar"><button class="primary">Enregistrer</button><button data-next>Suivante</button><span class="sp"></span><button class="link">Annuler</button></div>
+<script>
+const STEPS = [['cadre', 'Cadre', 'done'], ['equipes', 'Équipes', 'done'], ['lieux', 'Lieux', 'done'], ['recit', 'Récit', 'done'], ['risques', 'Risques', 'done'], ['chrono', 'Chronologie et cartes', 'todo']];
+function show() {
+  const cur = (location.hash || '#cadre').slice(1);
+  const html = STEPS.map(([k, l, st], i) => `<a href="#${k}" class="${st}"${k === cur ? ' aria-current="step"' : ''}><span class="n">${st === 'done' ? '✓' : st === 'todo' ? '!' : i + 1}</span>${i + 1}. ${l}</a>`).join('');
+  document.querySelector('[data-steps]').innerHTML = html;
+  document.querySelector('[data-side]').innerHTML = html;
+  for (const s of document.querySelectorAll('[data-step]')) s.hidden = s.dataset.step !== cur;
+}
+addEventListener('hashchange', show);
+show();
+</script>
+</body>
+</html>
