@@ -1020,6 +1020,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 168 | The French aircraft register reader: five columns by header name, original never kept, code-only refusals (7c6ec44ae, f6f5874d9, acac33c67, bcb60f834) | one to fix, fixed (builders' names in CONSTRUCTEUR) |
 | 169 | The Data screen rebuilt (044ece8cf to 90a3d43bd: country groups, country sheet and its gestures, what is left to do, Publish with the plan first, multiple selection, `zipmember.js`, the last operation's thread from `base/last`), `sendNow` (03a8c1813), the version guard (d303565f8) | acceptable, two notes |
 | 170 | The evening of 12 November: Fuel direct to a point (be836ed83), ATIS runway (616a86f69), flight-plan route text (9bdf17bcc, 2633fb837), route timing and diagnostic (53c265b03); glyph-name PDF decoding and the SIA parser (9ec05bd67, 72cc16492); the second push of the Data screen (c08a6dd92) | acceptable, one to harden |
+| 171 | The glyph-name digits and the radius bounded (3799bd678): the point to harden of 170 closed | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2534,6 +2535,8 @@ list comprehension catches, so the page's reading stops; the same family: `Radiu
 `inf`, which `json` writes as `Infinity`. Only a hostile or corrupt PDF reaches it (the user's own deposit, or an official file), and the effect is
 a failed zone, not an injection; take `/g(\d{1,3})` and bound the radius. *Note.* `route_timing` copies `route.dep` and `route.arr` as they stand
 (flight data written by any device): cut them to 12 characters.
+
+**171. The glyph-name digits and the radius bounded (3799bd678) — acceptable, the point of 170 closed.** `GLYPH` reads `/g` and at most three digits not followed by another digit, so a fragment of 5,000 or 100,000 digits is left as it stands and nothing raises (the probe of 170 now passes; 200,000 glyph names still decode in 0.12 s); the radius of an RF leg is read as `\d{1,2}[.,]\d{1,3}` and kept only in ]0, 50] NM by `_radius()` (a 400-digit number, 99.9 and 0 give no radius, never `inf`), the navigation precision is bounded the same way, and a leg without radius stays in doubt. K215.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
