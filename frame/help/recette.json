@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 131,
+  "tests": 132,
   "verdicts": 60
  },
  "apps": [
@@ -1787,6 +1787,20 @@
    "delivered": "2026-11-12T09:33:08Z"
   },
   {
+   "id": "SOG-0246",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : la coche « autour du plan de vol uniquement » est sans effet (toujours appliquée)",
+    "en": "Map: the box “around the flight plan only” has no effect",
+    "de": "Map: the box “around the flight plan only” has no effect",
+    "es": "Map: the box “around the flight plan only” has no effect"
+   },
+   "test": "Recharge la page. Carte, la France entière à l'écran : décoche « autour du plan de vol uniquement » — toute la vue doit être lue (zones loin de la route comprises), le curseur de Complexité descend et une ligne le dit ; remonte-le si tu veux, il reste où tu le mets ; recoche : la Complexité d'avant revient. Avec un vol LFPO–LFST en cours, zoome sur l'Australie, case décochée : ses espaces doivent se dessiner. Dis-moi si la France décochée est lisible et fluide au cran proposé.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:36:53Z"
+  },
+  {
    "id": "SOG-0247",
    "app": "pilote",
    "title": {
@@ -1913,51 +1927,5 @@
    "delivered": "2026-11-12T15:20:40Z"
   }
  ],
- "decisions": [
-  {
-   "id": "Q-0033",
-   "fiche": "SOG-0090",
-   "app": "pilote",
-   "question": "Piste probable d'après le METAR : la dire seulement, ou la proposer d'office quand tu n'as rien choisi ?",
-   "context": "Aujourd'hui Carburant colore chaque piste d'après le vent du METAR, sans rien choisir. Proposition : dire la « piste probable (METAR 1230Z, vent 240/12) » en tête de la liste — celle dont le vent de face est le plus fort, le travers dans la limite de la fiche ; vent calme ou variable : rien n'est dit.",
-   "options": [
-    "La dire, avec un bouton « Prendre la piste probable » : jamais posée d'office",
-    "La poser d'office quand aucune piste n'est choisie, en le disant (« d'après le METAR »), modifiable",
-    "Ne rien proposer : les couleurs suffisent"
-   ],
-   "since": "2026-11-12",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0034",
-   "fiche": "SOG-0090",
-   "app": "pilote",
-   "question": "La piste en service publiée par l'ATIS d'un réseau (IVAO, VATSIM) doit-elle passer avant la déduction du METAR ?",
-   "context": "Aujourd'hui Carburant colore chaque piste d'après le vent du METAR, sans rien choisir. Proposition : dire la « piste probable (METAR 1230Z, vent 240/12) » en tête de la liste — celle dont le vent de face est le plus fort, le travers dans la limite de la fiche ; vent calme ou variable : rien n'est dit. L'ATIS d'un réseau est une source de plus à ouvrir : un autre lot.",
-   "options": [
-    "Oui, dans un second lot : l'ATIS du réseau du vol d'abord, le METAR sinon",
-    "Non : le METAR seul",
-    "Plus tard, en feuille de route"
-   ],
-   "since": "2026-11-12",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0035",
-   "fiche": "SOG-0279",
-   "app": "maintenance",
-   "question": "Le vol en cours doit-il te suivre d'un appareil à l'autre (le préparer au poste, le retrouver au téléphone) ?",
-   "context": "Aujourd'hui chaque retouche du vol dans Carburant est écrite dans le dépôt : 340 commits sur 527 depuis le 9/11, et c'est la source des conflits. La raison d'origine : retrouver son vol sur le téléphone. Dans tous les cas, plus jamais un commit par frappe : l'envoi sera groupé (cinq minutes au plus, ou sur demande).",
-   "options": [
-    "Oui, mais seulement sur un geste (« Envoyer ce vol à mes appareils ») et avec l'envoi groupé",
-    "Oui, automatiquement avec l'envoi groupé (toutes les cinq minutes au plus)",
-    "Non : le vol reste sur l'appareil où je le prépare ; seuls le compte rendu et le journal se synchronisent"
-   ],
-   "since": "2026-11-12",
-   "state": "todo",
-   "recommended": 0
-  }
- ]
+ "decisions": []
 }
