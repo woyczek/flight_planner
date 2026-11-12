@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8757a79",
+  "organisation": "a8776ad",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -449,12 +449,13 @@
     {
      "id": "SOG-0088",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Direct vers un point sur instruction du contrôle : chercher le point, reprendre le reste du vol",
      "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
      "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
      "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo",
-     "rank": 16
+     "rank": 16,
+     "test": true
     },
     {
      "id": "SOG-0089",
