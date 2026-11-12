@@ -59,7 +59,8 @@ def reason(e):
 
 def log(url, e, what=''):
     """La ligne de console d'un échec sortant (jamais un secret : where et reason seulement)."""
-    print(f'[sortant] échec{" " + what if what else ""} : {where(url)} : {reason(e)}', file=sys.stdout, flush=True)
+    import console_log      # SOG-0265 : horodaté, les répétitions comptées
+    console_log.emit(f'[sortant] échec{" " + what if what else ""} : {where(url)} : {reason(e)}')
 
 
 class SameHost(urllib.request.HTTPRedirectHandler):

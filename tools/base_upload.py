@@ -198,6 +198,8 @@ def recognise(path, hint='', today=None):
         if not m:
             raise Refused('unrecognised', 'un JSON dont le nom n’est pas « <pays>_<asp|apt|nav|rpp>.geojson » : pas un export d’openAIP', EXPECTED)
         return {'source': 'openaip', 'zone': m.group('cc').lower(), 'name': f'{m.group("cc").lower()}_{m.group("layer").lower()}.{m.group("ext").lower()}', 'cycle': None}
+    if head[:4] == b'%PDF' and re.fullmatch(r'MIAM_OACI_ENR 5\.7(?: \(\d+\))?\.pdf', hint or '', re.I):      # SOG-0273 : l'ENR 5.7 du MIAM (CD DIRCAM du SIA, sorti du zip par la page) : gardé tel quel ; c'est la PAGE qui le lit (pdf.js → miam-enr-5-7-tracks.xml), le lanceur n'a pas de lecteur de PDF
+        return {'source': 'dircam', 'zone': 'fr', 'name': 'MIAM_OACI_ENR 5.7.pdf', 'cycle': None}
     if head[:4] == b'%PDF' and re.fullmatch(r'ENR-5-2(?: \(\d+\))?\.pdf', hint or ''):         # l'ENR 5.2 de l'AIP militaire britannique (SOG-0234 : le serveur coupe la connexion TLS du lanceur)
         return {'source': 'ukmil', 'zone': 'gb', 'name': 'ENR-5-2.pdf', 'cycle': None}
     if head[:4] == b'%PDF' or first == b'<':

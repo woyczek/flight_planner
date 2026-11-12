@@ -8198,3 +8198,53 @@ def k188(c):
         except base_upload.Refused as e:
             said = e.message
         c.ok('2611' in said and '2612' in said, said, 'an archive of past cycles only: refused, with the two cycles it wanted')
+
+
+@case('K192', 'The upload accepts the ENR 5.7 PDF of the MIAM (DIRCAM CD of the SIA, SOG-0273) by its content (%PDF) and its name: source dircam, zone fr, canonical name; any other PDF stays refused', 'K', static=True,
+      rule='SOG-0273 / Ergonomist 12 Nov 2026: the page now takes `MIAM_OACI_ENR 5.7.pdf` out of the 1.3 GB `info_aero_dircam.zip` (Réglages, zipmember.js); `base_upload` answered `unrecognised` for every PDF but ENR-5-2.pdf. A %PDF named like the MIAM ENR 5.7 (with or without the « (1) » of a second download) is accepted as source dircam, zone fr, under `MIAM_OACI_ENR 5.7.pdf`. The launcher does not read it (no PDF reader in the standard library): the page does (pdf.js, AarTracks.parseEnr57 → `miam-enr-5-7-tracks.xml`).')
+def k192(c):
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    import base_upload
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        p = Path(td) / 'x.pdf'
+        p.write_bytes(b'%PDF-1.4\n%%EOF\n')
+        r = base_upload.recognise(str(p), 'MIAM_OACI_ENR 5.7 (1).pdf')
+        c.eq((r['source'], r['zone'], r['name']), ('dircam', 'fr', 'MIAM_OACI_ENR 5.7.pdf'), 'the MIAM ENR 5.7 PDF: recognised, canonical name', what='accepted')
+        try:
+            base_upload.recognise(str(p), 'MIAM_OACI_ENR 5.8.pdf')
+            other = 'recognised'
+        except base_upload.Refused as e:
+            other = e.reason
+        c.eq(other, 'unrecognised', 'another PDF: still refused', what='other')
+        p.write_bytes(b'not a pdf at all')
+        try:
+            base_upload.recognise(str(p), 'MIAM_OACI_ENR 5.7.pdf')
+            bad = 'recognised'
+        except (base_upload.Refused, ValueError) as e:
+            bad = 'refused'
+        c.eq(bad, 'refused', 'the right name without %PDF content: refused', what='content')
+
+
+@case('K193', 'The launcher console (SOG-0265): every line carries the time (HH:MM:SS, workstation time), identical lines that follow each other are counted (« ↑ ×14 ») instead of scrolling, a blank line passes as it is and cuts the series', 'K', static=True,
+      rule='SOG-0265 (12 Nov 2026, « il manque un horodatage sur ces sorties de logs »): the lines written by the launcher in its window (say(), the « [sortant] échec » lines of outbound.py) had no time and the same failure scrolled by tens of times. tools/console_log.emit() stamps each line and counts the repetitions: the first line is written, the following identical ones are not, and when a different line comes a line « HH:MM:SS ↑ ×N » says how many times the previous one came.')
+def k193(c):
+    import io
+    import sys
+    import time
+    sys.path.insert(0, str(c.root / 'tools'))
+    import console_log
+    console_log._state.update({'last': None, 'count': 0})
+    out = io.StringIO()
+    t = time.mktime((2026, 11, 12, 14, 20, 15, 0, 0, -1))
+    a = console_log.emit('[sortant] échec : www.aidu.mod.uk : URLError (SSLEOFError)', out, now=t)
+    for i in range(13):
+        console_log.emit('[sortant] échec : www.aidu.mod.uk : URLError (SSLEOFError)', out, now=t + 1 + i)
+    b = console_log.emit('gb : construite', out, now=t + 20)
+    c.eq((a, b), (['14:20:15 [sortant] échec : www.aidu.mod.uk : URLError (SSLEOFError)'], ['14:20:35 ↑ ×14', '14:20:35 gb : construite']), 'the first line is stamped, the 13 identical ones are counted, the next different line says « ×14 » then comes with its time', what='count')
+    c.eq(out.getvalue().count('\n'), 3, 'three lines written in all, not fourteen', what='lines')
+    blank = console_log.emit('', out, now=t + 30)
+    again = console_log.emit('gb : construite', out, now=t + 31)
+    c.eq((blank, again), ([''], ['14:20:46 gb : construite']), 'a blank line passes as it is and cuts the series: the same text after it is written again', what='blank')

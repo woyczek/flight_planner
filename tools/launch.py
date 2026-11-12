@@ -29,6 +29,7 @@ import version_stamps  # empreintes ?v=… posées au moment de servir (pages, s
 import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
 import device_access  # appareils appairés, réseau local et relais : un code, une liste, une révocation (R-C2)
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
+import console_log
 import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit en console (hôte, chemin, code)
 import suite_update  # mise à jour de la suite par canal (stable, early, suivi) : plan d'abord, avance rapide seulement
 import base_upload  # envoi d'un fichier choisi à la main : reconnu par son contenu (SOG-0199)
@@ -46,7 +47,7 @@ except Exception:
 
 def say(msg=''):
     """Message à la console du lanceur, écrit aussitôt (sortie non tamponnée)."""
-    print(msg, flush=True)
+    console_log.emit(msg)      # SOG-0265 : l'heure sur chaque ligne, les lignes identiques qui se suivent comptées (tools/console_log.py)
 
 
 def config_text():
