@@ -56,9 +56,25 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-fam{display:block;font-size:.72em;margin-top:.15em} /* la famille sous le titre de la fiche : « SAR · Récupération de personnel » (SOG-0187) */ /* le sigle en gras, le nom long en clair (SOG-0179) */
 [data-module="missions"] .ms-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:.2em 0 .4em} /* le résumé, deux lignes au plus avec « … » (SOG-0051) */
 [data-module="missions"] .ms-lines li{margin:.15em 0}
-[data-module="missions"] .ms-rrow{display:block;border-top:1px solid var(--sog-border);padding:.6em .75em}
-[data-module="missions"] .ms-rrow button + button{margin-left:.5em} /* « Corriger » et « Retirer du registre » ne se touchent pas (retouche de N28) */ /* une ligne du registre : ses informations l'une sous l'autre, sur toute la largeur (SOG-0021) */
-[data-module="missions"] .ms-rrow>span{display:block;margin:.15em 0}
+[data-module="missions"] .ms-rrow{display:block;border-top:1px solid var(--sog-border)} /* une ligne du registre : une mission, repliée (le modèle de la V2, SOG-0286) */
+[data-module="missions"] .ms-rrow>summary{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:8px;padding:.3em .75em;min-height:44px;box-sizing:border-box} /* le chevron du cadre à gauche, les deux lignes à droite */
+[data-module="missions"] .ms-rrow>summary::before{grid-row:span 2}
+[data-module="missions"] .ms-rrow>summary::-webkit-details-marker{display:none}
+[data-module="missions"] .ms-rrow>summary>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* deux lignes au plus au téléphone */
+[data-module="missions"] .ms-rsign{display:inline-block;min-width:1.3em;font-weight:700;color:var(--sog-warn)}
+[data-module="missions"] .ms-rsign[data-kind=ok]{color:var(--sog-ok)}
+[data-module="missions"] .ms-rsign[data-kind=info]{color:inherit}
+[data-module="missions"] .ms-rbody{padding:0 .75em .6em}
+[data-module="missions"] .ms-rbody>span{display:block;margin:.15em 0}
+[data-module="missions"] .ms-rrow button + button{margin-left:.5em} /* « Corriger » et « Retirer du registre » ne se touchent pas (retouche de N28) */
+[data-module="missions"] .ms-regbar{align-items:center}
+[data-module="missions"] .ms-reghead{display:flex;flex-wrap:wrap;gap:0 .75em;align-items:center}
+[data-module="missions"] .ms-reghead>.f-field{flex:1 1 12em;margin:0}
+@container (min-width: 700px){
+  [data-module="missions"] .ms-rrow>summary{display:flex;gap:1em;min-height:0;padding:.1em .75em;line-height:1.3}
+  [data-module="missions"] .ms-rrow>summary>span:first-child{flex:1 1 auto;min-width:0}
+  [data-module="missions"] .ms-rrow>summary>span+span{flex:0 0 auto}
+}
 [data-module="missions"] .ms-route{border-collapse:collapse;width:100%}
 [data-module="missions"] .ms-route td{padding:.2em .4em;border-bottom:1px solid var(--sog-border);vertical-align:top}
 [data-module="missions"] .ms-sec{border-top:1px solid var(--sog-border)} /* une section du détail : un filet, pas une carte dans la carte */
@@ -72,7 +88,8 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 }`;
 
 const REGISTRY = 'missions/mission_registry.yaml',
-  ROWS = 7; // lignes montrées avant « N autres » (sept éléments au plus par écran)
+  ROWS = 7, // lignes montrées avant « N autres » (sept éléments au plus par écran)
+  REG_ROWS = 60; // lignes du Registre montrées avant « N autres » : une ligne par mission, comme le tableau de la V2 (SOG-0286)
 
 const TX = {
   // la fiche en deux niveaux (§ 10.45, SOG-0051)
@@ -793,10 +810,13 @@ async function openMission(s, row, drawn = false) {
 /** Saisie : la recherche et la famille filtrent la liste. */
 function onInput(s, e) {
   if (s.reg) {
-    // l'écran Registre : la recherche seule redessine les lignes (le champ garde son curseur)
-    if (e.target?.dataset?.k === 'rq' && e.type ===
-      'input') { // « change » (à la perte du focus) ne redessine pas : il mangerait le toucher qui la provoque
-      s.reg.q = e.target.value;
+    // l'écran Registre : la recherche et le filtre de famille redessinent les lignes seules (le champ garde son curseur)
+    const rk = e.target?.dataset?.k;
+    if ((rk === 'rq' && e.type === 'input') || (rk === 'rfam' && e
+        .type === 'change'
+      )) { // « change » de la recherche (à la perte du focus) ne redessine pas : il mangerait le toucher qui la provoque
+      if (rk === 'rq') s.reg.q = e.target.value;
+      else s.reg.fam = e.target.value;
       s.reg.all = false;
       const box = s.el.querySelector('[data-regrows]');
       if (box) box.innerHTML = regListHtml(s);
@@ -1114,6 +1134,7 @@ const REG_READ_MAX = 500; // fichiers lus à l'ouverture de l'écran, au plus (u
 async function regOpen(s) {
   s.reg = {
     q: '',
+    fam: '', // le filtre de famille ('' : toutes), en tête comme dans la V2 (SOG-0286)
     all: false,
     doc: null,
     why: 'loading',
@@ -1201,24 +1222,27 @@ function regState(s, idx) {
   ];
 }
 
-/** Les lignes de l'écran, dans l'ordre : les missions que le registre ne connaît pas, les lignes à problème, les autres ; la recherche
- *  filtre sur l'identifiant et le titre. */
+/** Les lignes de l'écran, dans l'ordre : les missions que le registre ne connaît pas, les lignes à problème, les autres ; chaque groupe
+ *  par série puis identifiant, l'ordre du tableau de la V2 (SOG-0286) ; la recherche filtre sur l'identifiant et le titre, le filtre
+ *  sur la famille. */
 function regRows(s) {
   const r = s.reg,
     plan = RG.planOf(r.doc, r.status, r.found),
     bad = new Set([...plan.dup, ...plan.former]),
+    serOf = e => Number.isFinite(+e.raw.series) && e.raw.series !== '' && e.raw.series !== null ? +e.raw.series : 1e9,
     q = r.q.trim().toUpperCase(),
-    hit = (id, title) => !q || `${id} ${title}`.toUpperCase().includes(q),
+    hit = (id, title, fam) => (!q || `${id} ${title}`.toUpperCase().includes(q)) && (!r.fam || fam === r.fam),
     rows = [
-      ...r.found.filter(f => hit(f.entry.id, f.entry.title)).sort((a, b) => b.entry.id.localeCompare(a.entry.id)).map(f => ({
-        kind: 'found',
-        f
-      })),
-      ...r.lines.filter(e => hit(e.row.id, e.row.title)).map(e => ({
+      ...r.found.filter(f => hit(f.entry.id, f.entry.title, f.entry.family)).sort((a, b) => b.entry.id.localeCompare(a.entry.id)).map(f =>
+        ({
+          kind: 'found',
+          f
+        })),
+      ...r.lines.filter(e => hit(e.row.id, e.row.title, e.row.family)).map(e => ({
         kind: 'line',
         e,
         rank: r.status.get(e.idx) === 'ok' && !bad.has(e.idx) ? 1 : 0
-      })).sort((a, b) => a.rank - b.rank)
+      })).sort((a, b) => a.rank - b.rank || serOf(a.e) - serOf(b.e) || a.e.row.id.localeCompare(b.e.row.id))
     ];
   return {
     rows,
@@ -1226,22 +1250,49 @@ function regRows(s) {
   };
 }
 
-/** Une ligne du registre : l'identifiant, famille · série · numéro, titre, opération, l'état du fichier, « Corriger » / « Retirer ». */
+/** Le signe d'état d'une ligne repliée (le mot entier en infobulle, et au dépli) : ✓ fichier là, … lecture, + pas dans le registre,
+ *  ! tout le reste (manquant, illisible, chemin refusé, double, ancien identifiant). */
+const SIGN = {
+  ok: '✓',
+  checking: '…',
+  notyet: '+'
+};
+
+/** La ligne repliée d'une mission (le modèle du tableau de la V2, SOG-0286) : le signe d'état, l'identifiant, le titre ; puis famille ·
+ *  série et origine → destination. Deux lignes de texte au plus au téléphone, une seule sur un écran large. */
+function regSumHtml(s, k, word, id, title, fam, series, from, to, warn) {
+  const kind = warn ? 'warn' : k === 'ok' ? 'ok' : k === 'checking' ? 'info' : 'warn',
+    has = v => v !== undefined && v !== null && v !== '',
+    second = [
+      [familyParts(fam, s.ctx.lang?.() || 'fr').short, has(series) ? cut(series, 8) : ''].filter(Boolean).join(' · '),
+      from || to ? `${from || '?'} → ${to || '?'}` : ''
+    ].filter(Boolean).join(' · ');
+  return `<summary><span><span class="ms-rsign" data-kind="${kind}" data-rstate="${k}" title="${esc(word)}" aria-label="${esc(word)}">${SIGN[k] && !warn ? SIGN[k] : '!'}</span><b>${esc(id)}</b> ${esc(title)}</span><span class="f-muted">${esc(second)}</span></summary>`;
+}
+
+/** Une ligne du registre : repliée, le signe d'état, l'identifiant, le titre, famille · série, origine → destination ; au dépli, l'état
+ *  du fichier en toutes lettres, famille · série · numéro · opération, le chemin, « Corriger » / « Retirer ». */
 function regLineHtml(s, e, plan) {
   const r = s.reg,
     row = e.row,
     [k, st] = regState(s, e.idx),
     lang = s.ctx.lang?.() || 'fr',
-    badges = [`<span class="f-badge" data-kind="${k === 'ok' ? 'ok' : k === 'checking' ? 'info' : 'warn'}" data-rstate="${k}">${esc(st)}</span>`,
-      plan.dup.includes(e.idx) ? `<span class="f-badge" data-kind="warn" data-rdup>${esc(s.tt(TX.regDup))}</span>` : '',
-      plan.former.includes(e.idx) ? `<span class="f-badge" data-kind="info" data-rformer>${esc(s.tt(TX.regFormer, { f: cut(e.raw.id, 40) }))}</span>` : ''
+    dup = plan.dup.includes(e.idx),
+    former = plan.former.includes(e.idx),
+    badges = [`<span class="f-badge" data-kind="${k === 'ok' ? 'ok' : k === 'checking' ? 'info' : 'warn'}">${esc(st)}</span>`,
+      dup ? `<span class="f-badge" data-kind="warn" data-rdup>${esc(s.tt(TX.regDup))}</span>` : '',
+      former ? `<span class="f-badge" data-kind="info" data-rformer>${esc(s.tt(TX.regFormer, { f: cut(e.raw.id, 40) }))}</span>` : ''
     ].join(' '),
     has = v => v !== undefined && v !== null && v !== '',
     detail = [familyText(row.family, lang), has(e.raw.series) ? `${s.tt(TX.regSeries)} ${cut(e.raw.series, 8)}` : '',
       has(e.raw.number) ? `${s.tt(TX.regNumber)} ${cut(e.raw.number, 8)}` : '', row.operation
-    ].filter(Boolean).join(' · ');
-  return `<div class="f-item ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"><span><b>${esc(row.id)}</b> ${esc(row.title)}</span><span class="f-muted">${esc(detail)}</span>
-    <span>${badges}</span>${r.edit === e.idx ? regEditHtml(s, e) : `<span class="f-row"><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></span>`}</div>`;
+    ].filter(Boolean).join(' · '),
+    path = RG.pathOf(row),
+    word = [st, dup ? s.tt(TX.regDup) : '', former ? s.tt(TX.regFormer, {
+      f: cut(e.raw.id, 40)
+    }) : ''].filter(Boolean).join(' · ');
+  return `<details class="ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"${r.edit === e.idx ? ' open' : ''}>${regSumHtml(s, k, word, row.id, row.title, row.family, e.raw.series, row.originIcao || cut(row.origin, 12), row.destinationIcao || cut(row.destination, 12), dup || former)}
+    <div class="ms-rbody"><span>${badges}</span><span class="f-muted">${esc(detail)}</span>${path ? `<span class="f-muted" data-rpath>${esc(path)}</span>` : ''}${r.edit === e.idx ? regEditHtml(s, e) : `<span class="f-row"><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></span>`}</div></details>`;
 }
 
 /** Le formulaire de correction d'une ligne : titre, série, numéro, opération. */
@@ -1251,15 +1302,17 @@ function regEditHtml(s, e) {
     <div class="f-row"><button type="button" class="primary" data-do="regsave" data-rid="${e.idx}">${esc(s.tt(TX.regSave))}</button><button type="button" data-do="regeditcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
 }
 
-/** Les lignes (sept, puis « N autres ») : redessinées seules à la frappe. */
+/** Les lignes (une par mission, soixante puis « N autres », SOG-0286) : redessinées seules à la frappe et au filtre de famille. */
 function regListHtml(s) {
   const r = s.reg,
     {
       rows,
       plan
     } = regRows(s),
-    shown = r.all ? rows : rows.slice(0, ROWS),
-    item = x => x.kind === 'found' ? `<div class="f-item ms-rrow" data-rid="new" data-rowid="${esc(x.f.entry.id)}"><span><b>${esc(x.f.entry.id)}</b> ${esc(x.f.entry.title)}</span><span class="f-muted">${esc([familyText(x.f.entry.family, s.ctx.lang?.() || 'fr'), x.f.entry.operation?.name].filter(Boolean).join(' · '))}</span><span><span class="f-badge" data-kind="warn" data-rstate="notyet">${esc(s.tt(TX.regNotYet))}</span></span></div>` : regLineHtml(s, x.e, plan);
+    shown = r.all ? rows : rows.slice(0, REG_ROWS),
+    found = f => `<details class="ms-rrow" data-rid="new" data-rowid="${esc(f.entry.id)}">${regSumHtml(s, 'notyet', s.tt(TX.regNotYet), f.entry.id, f.entry.title, f.entry.family, f.entry.series, '', '', false)}
+      <div class="ms-rbody"><span><span class="f-badge" data-kind="warn">${esc(s.tt(TX.regNotYet))}</span></span><span class="f-muted">${esc([familyText(f.entry.family, s.ctx.lang?.() || 'fr'), f.entry.operation?.name].filter(Boolean).join(' · '))}</span><span class="f-muted" data-rpath>${esc(f.path)}</span></div></details>`,
+    item = x => x.kind === 'found' ? found(x.f) : regLineHtml(s, x.e, plan);
   return `<div class="f-list" data-reglist>${rows.length ? shown.map(item).join('') : `<p class="f-muted">${esc(s.tt(TX.regNone))}</p>`}</div>
     ${rows.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="regmore">${esc(s.tt(TX.more, { n: rows.length - shown.length }))}</button>` : ''}`;
 }
@@ -1278,15 +1331,21 @@ function regPlanHtml(s) {
 function regHtml(s) {
   const r = s.reg,
     n = r.lines.length,
+    lang = s.ctx.lang?.() || 'fr',
+    // les familles des lignes et des missions hors registre : le filtre en tête, comme le « Type » de la V2 (SOG-0286)
+    fams = [...new Set([...r.lines.map(e => e.row.family), ...r.found.map(f => f.entry.family)].filter(Boolean))].sort(),
     broken = r.why === 'unreadable',
-    head = `<div class="f-card" data-pane="registry"><h2>${esc(s.tt(TX.regTitle))}</h2><p class="f-muted">${esc(s.tt(TX.regHint))}</p>
-    <div class="f-row"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button></div>`;
+    // l'en-tête tient en deux lignes (SOG-0286 : vingt missions vues sans défiler à 1 280) : le titre (l'explication en infobulle et
+    // dans l'aide), puis « Mettre à jour le registre », « Retour » et le compte sur la même ligne
+    count = r.why === 'loading' || broken ? '' : `<span class="f-muted" data-regcount>${esc(s.tt(TX.regCount, { n }))}${r.found.length ? ` · ${esc(s.tt(TX.regUnlisted, { n: r.found.length }))}` : ''}${r.checking ? ` · ${esc(s.tt(TX.regChecking))}` : ''}</span>`,
+    head = `<div class="f-card" data-pane="registry"><h2 title="${esc(s.tt(TX.regHint))}">${esc(s.tt(TX.regTitle))}</h2>
+    <div class="f-row ms-regbar"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button>${count}</div>`;
   if (r.why === 'loading') return `${head}<p class="f-muted" data-why="loading">${esc(s.tt(TX.regLoading))}</p></div>`;
   if (broken) return `${head}<p class="f-warn" data-why="unreadable">${esc(s.tt(TX.regUnreadable, { e: r.err }))}</p></div>`;
   return `${head}${r.why === 'missing' ? `<p class="f-muted" data-why="missing">${esc(s.tt(TX.none))}</p>` : ''}
-    <p class="f-muted" data-regcount>${esc(s.tt(TX.regCount, { n }))}${r.found.length ? ` · ${esc(s.tt(TX.regUnlisted, { n: r.found.length }))}` : ''}${r.checking ? ` · ${esc(s.tt(TX.regChecking))}` : ''}</p>
     ${r.plan ? regPlanHtml(s) : ''}
-    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.regSearch))}</span><input type="search" data-k="rq" value="${esc(r.q)}" placeholder="${esc(s.tt(TX.regSearch))}" autocomplete="off"></label>
+    <div class="ms-reghead"><label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="rfam"><option value="">${esc(s.tt(TX.allFamilies))}</option>${fams.map(f => `<option value="${esc(f)}"${r.fam === f ? ' selected' : ''}>${esc(familyText(f, lang))}</option>`).join('')}</select></label>
+    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.regSearch))}</span><input type="search" data-k="rq" value="${esc(r.q)}" placeholder="${esc(s.tt(TX.regSearch))}" autocomplete="off"></label></div>
     <div data-regrows>${regListHtml(s)}</div></div>`;
 }
 

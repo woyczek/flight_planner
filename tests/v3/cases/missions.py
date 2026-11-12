@@ -1445,8 +1445,7 @@ def reg_wait_text(c, test):
 def n27(c):
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
-        reg_open(c)
-        c.tap(f'{R} [data-do="regmore"]')
+        reg_open(c)  # nine lines: all shown (one line per mission, SOG-0286)
         got = reg_states(c)
         c.eq(got, {'X-711A': 'notyet', 'X-710A': 'notyet', 'X-702A': 'missing', 'X-703A': 'unreadable', 'X-704A': 'ok+former', 'X-705A': 'ok+dup',
                    'X-706A': 'refused', 'X-701A': 'ok', 'X-705A#': 'ok'}, f'{w} px: the state of each line', what='states')
@@ -1507,6 +1506,7 @@ def n29(c):
     reg_open(c)
     c.page.fill(f'{R} [data-k=rq]', 'X-701A')
     c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-701A found')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] summary')  # the line unfolded (SOG-0286)
     c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] [data-do="regedit"]')
     c.until(f"!!document.querySelector('{R} [data-redit]')", what='the form of the line')
     c.page.fill(f'{R} [data-redit] [data-k=rtitle]', 'Titre corrigé')
@@ -1530,6 +1530,7 @@ def n29(c):
     c.until(_REG_READ, timeout=20000, what='read again')
     c.page.fill(f'{R} [data-k=rq]', 'quatre')
     c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-704A found')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] summary')
     c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] [data-do="regremove"]')
     c.until("!!document.querySelector('.f-modal [data-ok]')", what='asks before removing')
     c.ok(norm(row(c, 'regRemoveAsk').replace('{id}', 'X-704A')) in norm(c.text('.f-modal') or ''), '', 'the question says the file stays')
@@ -1595,6 +1596,7 @@ def n41(c):
     c.open('missions', docs=docs(), wait=False, app='company')
     c.go('missions?view=registry')
     c.until(f"document.querySelectorAll('{M} .ms-rrow button').length >= 2", timeout=15000, what='a line of the registry with its buttons')
+    c.js(f"[...document.querySelectorAll('{M} .ms-rrow')].find(r => r.querySelectorAll('button').length >= 2).open = true")  # unfolded (SOG-0286)
     m = c.js(f"""(() => {{ const row = [...document.querySelectorAll('{M} .ms-rrow')].find(r => r.querySelectorAll('button').length >= 2);
       const [a, b] = row.querySelectorAll('button'), ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), rr = row.getBoundingClientRect(),
         t = row.querySelector('b').getBoundingClientRect();
@@ -1654,3 +1656,57 @@ def n42(c):
     d = c.doc(path) if path else {}
     c.eq([d.get('family'), d.get('series'), d.get('airline')], ['COMMERCIAL', 'PASSENGERS', 'aaa'], 'saved as the report says, for Alpha Air',
          what='record')
+
+
+
+# SOG-0286: a registry of 24 invented missions over two families, each with its file, an origin and a destination
+_BIG_IDS = [f'X-{720 + i}A' for i in range(24)]
+_BIG_REGISTRY = 'schema: mission-registry\nversion: 1\nmissions:\n' + ''.join(
+    f"  - {{ id: {m}, series: {1 + i % 3}, number: {i + 1}, family: {'TESTREG' if i % 2 else 'TESTAUX'}, title: Mission d'essai numéro {i + 1} "
+    f"vers le sud, origin: LFRS, destination: LFML, folder: X_REG/{m}, files: [mission{m}.yaml] }}\n" for i, m in enumerate(_BIG_IDS))
+_BIG_TEXTS = [['missions/mission_registry.yaml', _BIG_REGISTRY]] + [[f'missions/X_REG/{m}/mission{m}.yaml', mission_doc(m)] for m in _BIG_IDS]
+
+
+@case('N43', 'Missions › Registre, the V2 model: one line per mission (state sign, identifier, title, family · series, origin → destination); '
+      'the state in words, « Corriger », « Retirer » and the path when the line is unfolded; a family filter at the head; at 1 280 twenty '
+      'missions seen without scrolling, at 390 two lines of text at most per mission',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0286 (the user, 12 Nov: « trop de lignes. prendre le modèle de la v2, qui était efficace »): the V2 registry is a table, one '
+      'row per mission, the sheet when the row is opened; nothing changes in the data nor in their guards (24 invented X-7xx missions); '
+      'captures 390 and 1 280')
+def n43(c):
+    rows = f'{R} [data-reglist] [data-rowid]'
+    for w in (1280, 390):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        reg_open(c, _BIG_TEXTS)
+        m = c.js(f"""(() => {{ const rs = [...document.querySelectorAll('{rows}')];
+          const head = r => r.querySelector('summary') || r;
+          // the lines of text of a folded line: the tops of the boxes of its text (a gap of more than 6 px: a new line)
+          const lines = rs.map(r => {{ const g = document.createRange(); g.selectNodeContents(head(r));
+            const tops = [...g.getClientRects()].filter(x => x.width > 0 && x.height > 0).map(x => x.top).sort((a, b) => a - b);
+            return tops.reduce((n, t, i) => n + (i && t - tops[i - 1] > 6 ? 1 : 0), tops.length ? 1 : 0) }});
+          const seen = rs.filter(r => {{ const b = head(r).getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight }}).length;
+          const hidden = rs.every(r => !r.querySelector('[data-do=regedit]')?.checkVisibility());
+          return {{ n: rs.length, seen, maxLines: Math.max(...lines), hidden }} }})()""")
+        c.eq(m['n'], 24, f'{w} px: one line per mission, all listed', what='rows')
+        c.eq(c.js(f"[...document.querySelectorAll('{rows}')].slice(0, 3).map(r => r.dataset.rowid)"), ['X-720A', 'X-723A', 'X-726A'],
+             f'{w} px: by series, then identifier (the order of the V2 table)', what='order')
+        if w == 1280:
+            c.ok(m['seen'] >= 20, m, '1 280 px: twenty missions at least seen without scrolling')
+        else:
+            c.ok(m['maxLines'] <= 2, m, '390 px: two lines of text at most per mission')
+        c.ok(m['hidden'], m, f'{w} px: « Corriger » is folded')
+        first = c.js(f"(() => {{ const r = document.querySelector('{rows}'); return r.querySelector('summary')?.textContent.replace(/\\s+/g, ' ') || '' }})()")
+        c.ok('LFRS' in first and 'LFML' in first and '→' in first, first, f'{w} px: origin → destination on the line')
+        c.ok(c.count(f"{R} [data-reglist] [data-rowid] summary [data-rstate]") == 24, '', f'{w} px: the state sign on each line')
+        c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")
+        c.shot(f'N43_{c.design}_{w}_{c.lang}_delivered.png')
+        c.tap(f'{rows} summary')
+        c.until(f"!!document.querySelector('{rows} [data-do=regedit]')?.checkVisibility()", what='the unfolded line shows « Corriger »')
+        c.ok('missions/X_REG/' in c.text(f'{rows}'), '', f'{w} px: the path when unfolded')
+        c.until(f"!!document.querySelector('{R} select[data-k=rfam]')", what='the family filter at the head')
+        c.page.select_option(f'{R} select[data-k=rfam]', 'TESTREG')
+        c.until(f"document.querySelectorAll('{rows}').length === 12", what='the family filter keeps the twelve TESTREG missions')
+        c.tap(f'{R} [data-do="regback"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=list]')", what='back to the list')
+    c.js(_REG_CLEAR)
