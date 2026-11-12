@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 142,
+  "tests": 143,
   "verdicts": 59
  },
  "apps": [
@@ -1340,7 +1340,7 @@
    "test": "Relance d'abord le lanceur, puis relis LFOE (Réglages › Procédures, « relire »). Un fichier existe maintenant avec les pistes 04 et 22 même si aucune procédure n'est lue. Si le correctif des pages militaires agit : les RNP 04 et 22 ; pas d'ILS (l'AIP n'en publie pas de carte), pas de départ ni d'arrivée. Sinon l'écran dit « pistes lues, aucune procédure » : dis-le-moi.",
    "since": "2026-11-12",
    "state": "todo",
-   "delivered": "2026-11-12T16:31:00Z",
+   "delivered": "2026-11-12T16:30:00Z",
    "previous": {
     "verdict": "ko",
     "comment": "LFOE : les procédures little nav map sont bien lues, pas l’AIP. même pas les pistes…",
@@ -1905,7 +1905,7 @@
    "test": "Relance d'abord le lanceur. Puis relis les procédures, terrain par terrain (Réglages › Procédures, « relire », ou « Relire » dans Carburant) et dis-moi ce que tu obtiens. LFBD : la finale des ILS 23 et 29 à côté des RNP 05, 11, 23, 29 ; les VOR et les autres ILS / LOC en lignes « carte seulement dans l'AIP ». LFST : la finale des ILS 05 et 23 ; les RNP 05 et 23 avec leur arc (piste 05 : un arc d'environ 179° et 8,6 NM ; piste 23 : 7,1 NM, ou « à vérifier : branche en arc RF » si le centre n'est pas dans la base). LFRS : les huit départs nommés de la piste 21 (ANG 4S, ANG 4T, BALNI 4S, RIMON 4S, ERBIN 4S, ERIGA 4S, LUSON 4S, LUGEN 4S), la RNP 03 avec les routes 117 / 232 / 314, la finale de l",
    "since": "2026-11-12",
    "state": "todo",
-   "delivered": "2026-11-12T16:31:00Z"
+   "delivered": "2026-11-12T16:30:00Z"
   },
   {
    "id": "SOG-0250",
@@ -2074,6 +2074,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T15:20:40Z"
+  },
+  {
+   "id": "SOG-0270",
+   "app": "maintenance",
+   "title": {
+    "fr": "Aéronefs : un registre local des immatriculations — le type depuis une immatriculation, les immatriculations d'un type",
+    "en": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
+    "de": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
+    "es": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type"
+   },
+   "test": "Relance le lanceur. Maintenance › Données : dépose ton export.csv du registre (« Choisir le fichier… »). Puis Fiches › Flotte, tape « fbhhh » : la ligne doit dire ce que c'était (modèle, « registre français, données du … », l'aérodrome d'attache s'il existe), proposer un type en le disant « suggestion », et « Créer à l'identique ». En créant un aéronef, « Chercher dans le registre français » liste les immatriculations d'un modèle. Aucun nom de personne ne doit apparaître nulle part.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T17:04:58Z"
   }
  ],
  "decisions": [
