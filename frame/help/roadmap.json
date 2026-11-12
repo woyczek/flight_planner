@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "87d9a06",
+  "organisation": "43d8d96",
   "fiches": 283,
   "untranslated": 0,
   "priorities": 243
@@ -639,11 +639,12 @@
     {
      "id": "SOG-0281",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Devis : le vent est compté sur le cap global du vol, pas tronçon par tronçon (temps faux sur une route coudée)",
      "en": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "de": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
-     "es": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)"
+     "es": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
+     "test": true
     }
    ]
   },
@@ -3693,7 +3694,7 @@
     {
      "id": "SOG-0283",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Relecture de sécurité du 12/11 au soir (ligne d'audit 170) : un durcissement prouvé dans la lecture des PDF de procédures, une note sur les durées du calcul",
      "en": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
      "de": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
