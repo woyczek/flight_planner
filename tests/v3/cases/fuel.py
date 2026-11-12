@@ -2917,7 +2917,12 @@ def f109(c):
     d = cf_doc(c, lambda d: 'LUGEN' not in [p.get('id') for p in (d.get('route') or {}).get('points') or []] and procs_of(d, 'dep').get('sid') == _SID
                and procs_of(d, 'arr').get('star') == _STAR, 'route, SID and STAR of the taken route written', timeout=10000)
     c.ok(before != d['route']['text'], d['route']['text'], 'the route text changed only after « Prendre »')
-    c.ok(c.js(f"!!document.querySelector('{FUEL} [data-alt=\"1\"][aria-current]')"), 'not marked', 'the taken route is marked')
+    # SOG-0224 (user, 11/11: « faire disparaitre les alternatives »): the others are gone at once, one line says the route taken
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rtaken]')", timeout=5000, what='the line « Itinéraire pris »')
+    c.eq(c.count(f'{FUEL} [data-routealts] [data-alt]'), 0, 'the other routes are gone, without changing screen', what='alternatives')
+    c.ok('Direct · FL250' in (c.text(f'{FUEL} [data-rtaken]') or ''), c.text(f'{FUEL} [data-rtaken]'), 'the line names the route taken')
+    c.js(f"document.querySelector('{FUEL} [data-rtaken]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F109_taken_{c.design}_390_{c.lang}_delivered.png')
     # without the job: no buttons
     st['verbs'] = []
     open_proc(c)
@@ -3070,13 +3075,23 @@ def f114(c):
     c.js("window.dispatchEvent(new CustomEvent('maps-route-alt-show', { detail: { index: 7 } }))")
     c.settle()
     c.eq(c.js(_ALTS_LAST)['shown'], 1, 'an index outside the list is ignored', what='bad index')
+    # a Map alone: #fuel?ralt=2 takes the third route from the document (before any « Choisir »: a choice clears the alternatives)
+    c.go('fuel?ralt=2')
+    cf_doc(c, lambda d: [w for w in str((d.get('route') or {}).get('text', '')).split() if w != 'DCT'][:3] == ['LFRS', 'LUGEN', 'LFML'], 'the address ralt=2 takes the third route', timeout=12000)
+    # « Choisir » (SOG-0224, user 11/11: « valider l'itinéraire, modifier la route, et faire disparaitre les alternatives »): a new
+    # computation, then the choice: route written, the alternatives published EMPTY (event and document: the Map clears them), the list gone
+    c.js(_ALTS_LISTEN)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the buttons again')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='three routes again')
     c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
     cf_doc(c, lambda d: 'LUGEN' not in [q.get('id') for q in (d.get('route') or {}).get('points') or []] and procs_of(d, 'dep').get('sid') == _SID,
            '« Choisir » takes it (route, SID)', timeout=10000)
-    c.until(f"({_ALTS_LAST} || {{}}).chosen === 1", what='the choice published')
-    # a Map alone: #fuel?ralt=2 takes the third route from the document
-    c.go('fuel?ralt=2')
-    cf_doc(c, lambda d: [w for w in str((d.get('route') or {}).get('text', '')).split() if w != 'DCT'][:3] == ['LFRS', 'LUGEN', 'LFML'], 'the address ralt=2 takes the third route', timeout=12000)
+    c.until(f"(() => {{ const d = {_ALTS_LAST}; return !!d && Array.isArray(d.alternatives) && d.alternatives.length === 0 }})()", timeout=5000,
+            what='the alternatives published empty at once (the Map clears its layer and its legend)')
+    c.until_doc('cache/fuel/route_alts.json', lambda x: x is not None and len(x.get('alternatives') or []) == 0, 'the document too', timeout=8000)
+    c.eq(c.count(f'{FUEL} [data-routealts] [data-alt]'), 0, 'the other routes gone in Fuel, same screen', what='alternatives in Fuel')
     # « Contrôler »: the typed route published in mode check
     c.js(_ALTS_LISTEN)
     to_step(c, 1)

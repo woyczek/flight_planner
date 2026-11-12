@@ -266,6 +266,14 @@ const TX = {
   },
   rRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
   rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
+  // SOG-0224 : après « Choisir », les autres itinéraires disparaissent ; cette ligne dit celui qui a été pris
+  rTakenLine: ['Itinéraire pris : {name}. La route est modifiée.', 'Route taken: {name}. The route is changed.',
+    'Route übernommen: {name}. Die Route ist geändert.', 'Itinerario elegido: {name}. La ruta se ha cambiado.'
+  ],
+  rTakenLine0: ['Itinéraire pris. La route est modifiée.', 'Route taken. The route is changed.',
+    'Route übernommen. Die Route ist geändert.',
+    'Itinerario elegido. La ruta se ha cambiado.'
+  ],
   // le bloc « Aides radio » de l'étape Départ (SOG-0200)
   aidsTitle: ['Aides radio', 'Radio aids', 'Funknavigationshilfen', 'Radioayudas'],
   // Q-0019 : un direct au compas plus long de 2 % que son grand cercle
@@ -3442,6 +3450,10 @@ function routeAltsDraw() {
   const box = S.body?.querySelector('[data-routealts]'),
     A = S.ralts;
   if (!box || !A) return;
+  if (A.taken !== undefined && !A.list?.length) { // SOG-0224 : un itinéraire pris, les autres disparus ; une ligne le dit
+    box.innerHTML = `<p class="f-muted" data-rtaken>${esc(A.taken ? tt(TX.rTakenLine, { name: A.taken }) : tt(TX.rTakenLine0))}</p>`;
+    return;
+  }
   const name = (a, i) => a.name || (a.proposal ? tt(TX.rProposal, {
     n: A.list.slice(0, i + 1).filter(x => x.proposal).length
   }) : a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
@@ -3648,8 +3660,13 @@ function routeTake(i) {
   if (a.star?.id) S.P.propose('arr', {
     star: a.star.id
   });
-  S.ralts.chosen = i;
   S.rcheck = null;
+  // SOG-0224 (l'utilisateur : « faire disparaitre les alternatives ») : la route est prise, les autres partent tout de suite, ici
+  // (une ligne dit ce qui a été pris) et sur la Carte (alternatives [] publiées : couche et mini-légende vidées), sans changer d'écran
+  S.ralts = {
+    list: [],
+    taken: a.name || ''
+  };
   routeAltsDraw();
   if (a.proposal) S.ctx.notify(tt(TX.rTakenProposal, {
     share: shareText(a.control, true) || tt(TX.rIncomplete)
@@ -3658,7 +3675,7 @@ function routeTake(i) {
     share: shareText(a.control)
   }), a.control.controlledPct >= 100 ? 'ok' : 'warn'); // SOG-0161 : la confirmation redit le partage
   else if (a.incomplete) S.ctx.notify(tt(TX.rTakenIncomplete), 'warn'); // SOG-0081 : la confirmation redit le contrôle incomplet
-  if (S.alts?.mode === 'compute') altsSend(true); // le choix, pour la Carte (INTEGRATION § 3 bis)
+  altsClear(); // plus rien à dessiner pour la Carte (INTEGRATION § 3 bis)
 }
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
 function levelAutoOn() {
