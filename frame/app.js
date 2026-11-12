@@ -764,6 +764,21 @@
     loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
       'Modul „{m}“ konnte nicht geladen werden: {e}', 'No se pudo cargar el módulo «{m}»: {e}'
     ],
+    // un écran qui ne se charge pas (SOG-0267) : la cause dite, quoi faire, le diagnostic à copier
+    loadDown: ['Le lanceur de ce poste ne répond plus : relancez lancer.cmd. L’écran « {m} » se chargera de lui-même à son retour.',
+      'This computer’s launcher is no longer answering: start lancer.cmd again. The “{m}” screen will load by itself when it is back.',
+      'Der Starter dieses Rechners antwortet nicht mehr: Starten Sie lancer.cmd neu. Der Bildschirm „{m}“ lädt sich von selbst, sobald er wieder da ist.',
+      'El lanzador de este equipo ya no responde: vuelva a iniciar lancer.cmd. La pantalla «{m}» se cargará sola cuando vuelva.'
+    ],
+    loadOffline: [
+      'L’écran « {m} » n’a pas pu être chargé : pas de réponse du réseau, et il n’est pas gardé sur cet appareil. Il se chargera de lui-même au retour du réseau.',
+      'The “{m}” screen could not be loaded: no answer from the network, and it is not kept on this device. It will load by itself when the network is back.',
+      'Der Bildschirm „{m}“ konnte nicht geladen werden: keine Antwort aus dem Netz, und er ist nicht auf diesem Gerät gespeichert. Er lädt sich von selbst, sobald das Netz wieder da ist.',
+      'No se pudo cargar la pantalla «{m}»: sin respuesta de la red y no está guardada en este dispositivo. Se cargará sola cuando vuelva la red.'
+    ],
+    loadDetails: ['Détails', 'Details', 'Details', 'Detalles'],
+    loadCopy: ['Copier le diagnostic', 'Copy the diagnostic', 'Diagnose kopieren', 'Copiar el diagnóstico'],
+    loadCopied: ['Diagnostic copié.', 'Diagnostic copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.'],
     // un écran de service qui déclare une route que le lanceur de ce poste ne publie pas (GET /__setup/routes, R-C4)
     screenOld: ['Le lanceur de ce poste est plus ancien que cet écran : relancez-le à jour (lancer.cmd).',
       'This computer’s launcher is older than this screen: restart it up to date (lancer.cmd).',
@@ -2929,6 +2944,90 @@
   async function need(k) {
     for (const p of LAZY[k]) await script(p);
   }
+  /** SOG-0267 : un écran qui ne se charge pas (un script du cadre ou un module). La carte dit la CAUSE et quoi faire — le lanceur de ce poste ne répond plus (la page n'est plus servie : adresse demandée sans réponse
+   *  alors que la page vient d'une adresse locale), ou le réseau manque, ou une autre erreur dite telle quelle —, garde le diagnostic (écran, adresse demandée, réponse reçue, état du lanceur, erreur) derrière « Copier le
+   *  diagnostic », et charge l'écran de lui-même au retour (toutes les 5 s tant que la carte est là et que l'adresse n'a pas changé, et à l'événement frame-launcher). */
+  const failedModules = new Set(); // les modules dont l'import a échoué (redemandés sous une adresse neuve)
+  async function loadFailed(box, id, e, href) {
+    const at = location.hash;
+    let answer = '';
+    try {
+      const r = await fetch(href, {
+        cache: 'no-store'
+      });
+      // le service worker répond 503 + x-sog-offline quand il n'a pas de copie et que le réseau ne répond pas : c'est « pas de réponse »
+      answer = r.headers.get('x-sog-offline') ? 'no answer (the network does not answer and no copy is kept)' : `HTTP ${r.status}`;
+    } catch (x) {
+      answer = `no answer (${x?.message || x})`;
+    }
+    const noAnswer = answer.startsWith('no answer'),
+      local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname),
+      down = noAnswer && (local || launcherState() === 'down'),
+      msg = down ? t(T.loadDown, {
+        m: id
+      }) : noAnswer && navigator.onLine === false ? t(T.loadOffline, {
+        m: id
+      }) : t(T.loadErr, {
+        m: id,
+        e: e?.message || e
+      }),
+      diag = Object.entries({
+        screen: id,
+        requested: href,
+        answer,
+        error: e?.message || e,
+        launcher: launcherState(),
+        page: `${location.origin}${location.pathname}${at}`,
+        online: navigator.onLine,
+        at: new Date().toISOString()
+      }).map(([k, v]) => `${k}: ${v}`).join('\n');
+    if (!box.isConnected || location.hash !== at) return;
+    box.innerHTML = `<div class="f-card" role="alert" data-loadfail="${down ? 'launcher' : noAnswer ? 'offline' : 'error'}"><p>${esc(msg)}</p><details><summary>${esc(t(T.loadDetails))}</summary><pre>${esc(diag)}</pre></details>
+      <p class="f-row"><button type="button" data-retry>${esc(t(T.need.retry))}</button> <button type="button" data-copy>${esc(t(T.loadCopy))}</button></p></div>`;
+    const retry = () => {
+      clearInterval(timer);
+      window.removeEventListener('frame-launcher', onLauncher);
+      if (box.isConnected && location.hash === at) route();
+    };
+    const onLauncher = ev => ev.detail?.state === 'up' && retry();
+    const timer = setInterval(async () => {
+      if (!box.isConnected || location.hash !== at) {
+        clearInterval(timer);
+        window.removeEventListener('frame-launcher', onLauncher);
+        return;
+      }
+      try {
+        const r = await fetch(href, {
+          cache: 'no-store'
+        });
+        if (r.ok) retry();
+      } catch {
+        /* toujours rien : on reste sur la carte */
+      }
+    }, 5000);
+    window.addEventListener('frame-launcher', onLauncher);
+    box.querySelector('[data-retry]').onclick = retry;
+    box.querySelector('[data-copy]').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(diag);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = diag;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.append(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+        } catch {
+          /* rien d'autre à tenter : le diagnostic reste lisible dans les détails */
+        }
+        ta.remove();
+      }
+      notify(t(T.loadCopied), 'ok', {
+        key: 'load-copied'
+      });
+    };
+  }
   /** Écran d'aide ou de feuille de route : ses scripts d'abord ; rien si l'adresse a changé entre-temps. */
   async function showDoc(id, box, query) {
     const tok = navSeq,
@@ -2936,10 +3035,7 @@
     try {
       await need(id);
     } catch (e) {
-      return notify(t(T.loadErr, {
-        m: id,
-        e: e.message || e
-      }), 'err');
+      return loadFailed(box, id, e, new URL(`frame/${LAZY[id].find(p => p.split('?')[0] === e.message) || LAZY[id][0]}`, ROOT).href);
     }
     if (tok !== navSeq || location.hash !== at || !box.isConnected) return;
     return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : id === 'recette' ? SogRecette.screen(box, helpCtx()) : SogRoadmap
@@ -3397,7 +3493,8 @@
     if (!entry) return renderSettings(view);
     paintFixed(entry.id); // vue fixe connue d'avance : pas de saut de mise en page à l'arrivée du module
     try {
-      const mod = await import(new URL(`modules/${entry.id}/module.js`, ROOT).href);
+      // un module dont le chargement a échoué : le navigateur garde l'échec pour cette adresse jusqu'au rechargement ; on le redemande donc sous une adresse neuve (SOG-0267 : le retour du lanceur le charge sans recharger la page)
+      const mod = await import(new URL(`modules/${entry.id}/module.js${failedModules.has(entry.id) ? `?retry=${Date.now()}` : ''}`, ROOT).href);
       if (tok !== navSeq) return; // une autre adresse est arrivée pendant le chargement : rien n'est écrit
       const meta = mod.meta || {};
       if (meta.id && meta.id !== entry.id) throw new Error(`meta.id ${meta.id} ≠ ${entry.id}`);
@@ -3431,11 +3528,8 @@
     } catch (e) {
       if (tok !== navSeq) return console.error(e); // erreur d'un montage abandonné : la vue n'est plus la sienne
       paintFixed('');
-      view.innerHTML = `<p class="f-card">${esc(t(T.loadErr, { m: entry.id, e: e.message || e }))}</p>`;
-      notify(t(T.loadErr, {
-        m: entry.id,
-        e: e.message || e
-      }), 'err');
+      failedModules.add(entry.id);
+      return loadFailed(view, entry.id, e, new URL(`modules/${entry.id}/module.js`, ROOT).href);
     }
   }
   // ---------------------------------------------------------------- vue double (grand écran, ≥ 980 px)

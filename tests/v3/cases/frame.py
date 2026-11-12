@@ -6570,6 +6570,51 @@ def a157(c):
     c.check_errors()
 
 
+
+@case('A158', 'A screen that cannot be loaded says WHY and what to do (SOG-0267): the launcher no longer answers (never visited screen, its script unreachable) → « restart lancer.cmd », the exact address and answer in the details, « Copy the diagnostic », and the screen loads by itself when the launcher is back', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0267 (the user: « la roadmap est cassée. « module roadmap impossible à charger ». c’est bien pour le user final, mais moi je ne sais pas comment t’aider à diag. »; the ergonomist: his launcher on port 8000 was STOPPED, the page stayed displayed from its cache and a screen not yet visited could no longer load): when a screen script or a module cannot be fetched and the page comes from a local address (or the launcher is known stopped) the card says « the launcher of this computer no longer answers: restart lancer.cmd », with the details (screen, requested address, answer, error, launcher state) behind « Copy the diagnostic »; it retries every 5 s and when the launcher comes back, and the screen then loads without a click; the card is the page’s, not a floating note')
+def a158(c):
+    lang = c.lang
+    W = {'down': {'fr': 'Le lanceur de ce poste ne répond plus : relancez lancer.cmd. L’écran « roadmap » se chargera de lui-même à son retour.',
+                  'en': 'This computer’s launcher is no longer answering: start lancer.cmd again. The “roadmap” screen will load by itself when it is back.',
+                  'de': 'Der Starter dieses Rechners antwortet nicht mehr: Starten Sie lancer.cmd neu. Der Bildschirm „roadmap“ lädt sich von selbst, sobald er wieder da ist.',
+                  'es': 'El lanzador de este equipo ya no responde: vuelva a iniciar lancer.cmd. La pantalla «roadmap» se cargará sola cuando vuelva.'},
+         'copy': {'fr': 'Copier le diagnostic', 'en': 'Copy the diagnostic', 'de': 'Diagnose kopieren', 'es': 'Copiar el diagnóstico'}}
+    st = {'down': True}
+    c.page.add_init_script("""(() => { window.__clip = []; const w = async t => { window.__clip.push(t) };
+      try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: w } }) } catch (e) {} })()""")
+    c.context.route(re.compile(r'/frame/help/roadmap\.js'), lambda r: r.abort() if st['down'] else r.continue_())
+    c.open('fuel', docs=LEVEL3, wait=False)
+    c.until('!!window.SogFrame', timeout=20000, what='the frame')
+    c.wait(1500)
+    c.js("() => { location.hash = '#roadmap' }")
+    c.until("!!document.querySelector('[data-loadfail]')", timeout=15000, what='the card that says why')
+    c.eq(c.js("document.querySelector('[data-loadfail]').dataset.loadfail"), 'launcher', 'the cause: the launcher no longer answers (the page comes from a local address, the script has no answer)', what='cause')
+    c.eq(norm(c.text('[data-loadfail] > p')), norm(W['down'][lang]), 'the message says it and says what to do', what='message')
+    c.eq(c.js("document.querySelector('[data-loadfail] pre').textContent.split('\\n').map(l => l.split(':')[0])"), ['screen', 'requested', 'answer', 'error', 'launcher', 'page', 'online', 'at'], 'the details: screen, requested address, answer, error, launcher state, page, network, time', what='details')
+    c.ok('help/roadmap.js' in c.js("document.querySelector('[data-loadfail] pre').textContent") and 'no answer' in c.js("document.querySelector('[data-loadfail] pre').textContent"), None, 'the exact address asked and the answer received (none) are in the details')
+    c.eq(norm(c.text('[data-loadfail] [data-copy]')), norm(W['copy'][lang]), '« Copy the diagnostic »', what='copy label')
+    c.tap('[data-loadfail] [data-copy]')
+    c.until('window.__clip.length === 1', what='the diagnostic is copied')
+    c.eq('requested:' in c.js('window.__clip[0]'), True, 'what is copied is the diagnostic', what='copied')
+    c.shot(f'A158_down_{c.width}_{lang}_delivered.png')
+    c.eq(c.count('.f-note[data-kind=err]'), 0, 'no floating error note: the card is the message', what='no note')
+    # the launcher is back: the screen loads by itself (within 5 s), nobody clicks
+    st['down'] = False
+    c.until("!!document.querySelector('[data-kanban]') && !document.querySelector('[data-loadfail]')", timeout=12000, what='the roadmap loaded by itself')
+    # a module that cannot be loaded says the same
+    st2 = {'down': True}
+    c.context.route(re.compile(r'/modules/missions/module\.js'), lambda r: r.abort() if st2['down'] else r.continue_())
+    c.js("() => { location.hash = '#missions' }")
+    c.until("!!document.querySelector('[data-loadfail]')", timeout=15000, what='the card for a module')
+    c.ok('modules/missions/module.js' in c.js("document.querySelector('[data-loadfail] pre').textContent"), None, 'the details name the module file asked')
+    st2['down'] = False
+    c.until("!document.querySelector('[data-loadfail]') && !!document.querySelector('[data-module=missions]')", timeout=12000, what='the module loaded by itself')
+    c.errors[:] = [e for e in c.errors if 'roadmap.js' not in e and 'missions/module.js' not in e]   # the two files we cut on purpose (the browser logs their 503)
+    c.check_errors()
+
+
 @case('A151', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')
