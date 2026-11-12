@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "98a46c6",
+  "organisation": "65d19e7",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -3773,11 +3773,12 @@
     {
      "id": "SOG-0266",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Relais météo : des rafales d'échecs vers open-meteo (délais dépassés, puis HTTP 429)",
      "en": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)",
      "de": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)",
-     "es": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)"
+     "es": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)",
+     "test": true
     }
    ]
   },
