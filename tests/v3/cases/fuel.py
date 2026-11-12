@@ -4103,6 +4103,14 @@ def f140(c):
         c.eq(c.js(f"document.querySelector('{FUEL} [data-aidsroute]').open"), False, 'the route\'s VOR / DME folded by default', what='folded')
         vor = norm(c.js(f"document.querySelector('{FUEL} [data-aid=LUGEN]').textContent"))
         c.ok('113.50' in vor and 'LFRS' in vor and 'NEPIX' in vor, vor, 'ident, kind, frequency and its leg (LFRS → NEPIX)')
+        # SOG-0247 (user: « le chevron de visibilité (aides radio) se referme tout seul dès qu'on l'ouvre »): opened, it stays open through
+        # the redraws of the step (a level changed: the quote and the summary drawn again)
+        c.tap(f'{FUEL} [data-aidsroute] > summary')
+        c.until(f"document.querySelector('{FUEL} [data-aidsroute]').open === true", timeout=3000, what=f'{w} px: the fold opens')
+        c.js(f"""(() => {{ const i = document.querySelector('{FUEL} input[data-k=fl]'); i.value = '250'; i.dispatchEvent(new Event('input', {{ bubbles: true }}));
+          i.dispatchEvent(new Event('change', {{ bubbles: true }})) }})()""")
+        c.wait(1500)
+        c.eq(c.js(f"document.querySelector('{FUEL} [data-aidsroute]')?.open"), True, f'{w} px: still open after the step is drawn again', what='fold open')
         c.js(f"document.querySelector('{FUEL} [data-block=aids]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F140_{c.design}_{w}_{c.lang}_delivered.png')
     # no aid in the base for this flight: said, nothing invented

@@ -6275,7 +6275,13 @@ function aidsDraw() {
     vors = routeAids(),
     list = vors?.length ? `<details class="fu-aidsroute" data-aidsroute><summary>${esc(tt(TX.aidsRoute, { n: vors.length }))}</summary><ul class="fu-aidlist">${vors.map(v => `<li data-aid="${esc(v.id)}"><b>${esc(v.id)}</b> ${esc(v.kind)} ${esc(v.freq)} <span class="f-muted">${esc(v.leg)}</span></li>`).join('')}</ul></details>` : '',
     html = ils || list ? `${ils ? `<p class="fu-aidils" data-aidils><b>${ils}</b></p>` : ''}${list}` : vors === null ? '' : `<p class="f-muted" data-aidsnone>${esc(tt(TX.aidsNone))}</p>`;
-  if (box.innerHTML !== html) box.innerHTML = html;
+  // SOG-0247 (l'utilisateur : « se referme tout seul dès qu'on l'ouvre ») : comparé au dernier HTML écrit ICI, pas à innerHTML (un pli
+  // ouvert y ajoute open : chaque redessin le réécrivait, donc le refermait) ; réécrit, il garde son état ouvert
+  if (box.__html === html) return;
+  const open = !!box.querySelector('[data-aidsroute]')?.open;
+  box.__html = html;
+  box.innerHTML = open ? html.replace('<details class="fu-aidsroute" data-aidsroute>',
+    '<details class="fu-aidsroute" data-aidsroute open>') : html;
 }
 
 // ---------------------------------------------------------------- points imposés par la mission (SOG-0193 L3, V3 § 10.47 c)

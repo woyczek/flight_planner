@@ -1687,3 +1687,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (event and cache/fuel/route_alts.json): the Map clears its layer and legend, same screen. `#fuel?ralt=` from a Map alone works while
   alternatives exist. F109, F114 (rouges avant). The time after « Calculer A → B » is the launcher's job (route/compute), not measured on
   this workstation without his launcher.
+- **12 Nov 2026 — the fold of the radio aids stays open** (SOG-0247, the user: « le chevron de visibilité (aides radio) se referme tout
+  seul dès qu'on l'ouvre »): cause — `aidsDraw` compared its HTML to `box.innerHTML`; an opened `<details>` carries `open`, so every
+  redraw of the step found a difference and rewrote the block, closed. Now compared to the last HTML written there, the open state kept
+  when it must be rewritten. F140 extended (red before: « fold open: False »).

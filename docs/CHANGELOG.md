@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the fold of the radio aids no longer closes itself** at the step Departure (Fuel DECISIONS; noreg F140; SOG-0247).
 - **Map: the barbs follow the route leg by leg** — between two read winds they were put on the straight chord, cutting the elbow (LFPO → SFD via MOPAR KOLIV VEPET PETAX: straight from KOLIV to PETAX, VEPET ignored); they follow the drawn line now (maps DECISIONS; noreg D176; SOG-0243).
 - **Fuel: « Choisir » makes the other proposed routes disappear at once**, in Fuel and on the Map (alternatives published empty), one line says the route taken (Fuel DECISIONS, help; noreg F109, F114; SOG-0224, SOG-0134).
 - **`base/cycle`: local sources apart; `natEnsure` says a busy launcher** — the computed or local sources (MORA, X-Plane…) leave `items` (they are not things to do) and come under `local: [{ id, label, at, personal, zoneCount }]` (« when it changes », with their date); `AeroDb.natEnsure()` no longer swallows the 409: it answers `busy: true` and `running` (which operation runs), without counting a failure and without a retry delay. K185, K186.
