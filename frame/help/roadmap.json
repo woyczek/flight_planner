@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "96a8191",
+  "organisation": "d899118",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -2799,11 +2799,12 @@
     {
      "id": "SOG-0279",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Synchronisation : un envoi groupé (toutes les cinq minutes ou sur demande) ; seules les données se synchronisent, pas le vol en cours de frappe ni les réglages d'affichage",
      "en": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
      "de": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
-     "es": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings"
+     "es": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
+     "test": true
     }
    ]
   },

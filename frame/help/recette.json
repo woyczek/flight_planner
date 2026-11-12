@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 143,
+  "tests": 144,
   "verdicts": 59
  },
  "apps": [
@@ -2088,6 +2088,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T17:04:58Z"
+  },
+  {
+   "id": "SOG-0279",
+   "app": "maintenance",
+   "title": {
+    "fr": "Synchronisation : un envoi groupé (toutes les cinq minutes ou sur demande) ; seules les données se synchronisent, pas le vol en cours de frappe ni les réglages d'affichage",
+    "en": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
+    "de": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
+    "es": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings"
+   },
+   "test": "Recharge la page. Modifie plusieurs fois ton vol dans Carburant, puis une donnée (une ligne de la flotte) : la puce en haut à droite doit dire « n modifications à envoyer · dans k min » ; rien ne part tout de suite. Un clic sur la puce envoie tout en une fois. Dans le dépôt des données, tu ne dois plus voir un commit par retouche du vol : au plus un toutes les cinq minutes, ou à ta demande. Le vol en cours reste sur l'appareil tant que tu ne synchronises pas.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T17:02:46Z"
   }
  ],
  "decisions": [
