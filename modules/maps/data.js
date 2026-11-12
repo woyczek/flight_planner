@@ -105,7 +105,11 @@ export function pointsOf(f) {
       lon: +p.lon,
       ...(+f?.route?.holds?.[p.id]?.count > 0 ? {
         hold: Math.min(1440, Math.round(+f.route.holds[p.id]
-          .count)) // le temps sur zone compté à ce point, en minutes (Carburant l'écrit, la Carte le lit : route.holds, § 1 bis)
+          .count)), // le temps sur zone compté à ce point, en minutes (Carburant l'écrit, la Carte le lit : route.holds, § 1 bis)
+        ...(typeof f.route.holds[p.id].name === 'string' && /^[A-Za-z0-9][A-Za-z0-9 ._-]{0,23}$/.test(f.route.holds[p.id].name
+          .trim()) ? {
+          holdName: f.route.holds[p.id].name.trim() // le nom du point dans la mission (« PT1 »)
+        } : {})
       } : {}),
       ...(i > 0 && typeof p.via === 'string' && /^[A-Z]{1,2}\d{1,4}[A-Z]?$/i.test(p.via) ? {
         via: p.via

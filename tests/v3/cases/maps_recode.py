@@ -5952,5 +5952,5 @@ def d_holds(c):
     c.js("() => { window.__mpTexts = []; window.__mp.S.map.panBy([3, 3], { duration: 0 }); return true }")
     c.wait(1800)
     t = [norm(x) for x in c.js("window.__mpTexts || []")]
-    c.ok(any(x.startswith('NEPIX') and '⏱ 0:20' in x for x in t), str(sorted(set(t))[:14]), 'the label of NEPIX carries the time on station')
+    c.ok(any(x.startswith('NEPIX (PT1)') and '⏱ 0:20' in x for x in t), str(sorted(set(t))[:14]), 'the label of NEPIX carries the mission’s name of the point and the time on station')
     c.shot('D188_{}_delivered.png'.format('standard'))

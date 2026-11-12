@@ -93,7 +93,9 @@
         alt = Number.isFinite(h) ? level ? level(h) : h >= 10000 ? `FL${Math.round(h / 100)}` : `${h} ft` : '',
         // le temps sur zone du point (« ⏱ 0:20 », Carburant : route.holds) à la suite de son nom
         hold = +p.hold > 0 ? `⏱ ${Math.floor(p.hold / 60)}:${String(p.hold % 60).padStart(2, '0')}` : '',
-        text = [p.id || p.name || '', alt, hold].filter(Boolean).join(' · ');
+        // le nom du point dans la mission (« PT1 ») : seul quand l'identifiant est un mot de coordonnées (illisible), sinon à la suite de l'identifiant
+        title = p.holdName ? /^[0-9]{4}[NS][0-9]{5}[EW]$/.test(p.id || '') ? p.holdName : `${p.id || ''} (${p.holdName})` : p.id || p.name || '',
+        text = [title, alt, hold].filter(Boolean).join(' · ');
       if (!text) continue;
       const f = end ? 13 * scale : f0,
         r = {
