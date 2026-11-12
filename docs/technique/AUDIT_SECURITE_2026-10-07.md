@@ -1016,6 +1016,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 164 | The zip64 directory check follows the locator (5fe013431): the point to fix of 163 closed | acceptable |
 | 165 | Review of 12 November: ISO reader (f10dff198), NASR subscription read in place (48cc3811c), file deposit (zip carrying an ISO, FRA archive: f10dff198, 971fe40e6), job release (8494deb47, 8ec252fb7), persistent journal and `base/last` (476074e7b), `base/publish` (77ad22f6d), `base/cycle` (d370bc220, 5cb9dc776), `zipmember.js` | two to fix, one to harden, the rest acceptable |
 | 166 | The zip guard, the FRA cap and the ISO page cap (24144e4c4): the points of 165 closed | acceptable, two notes |
+| 167 | The follow-ups of 166: the older zip openings through the guard, 600 ENR pages, FRA archive two workbooks, ISO reading time (72afa5864, bfce4aa0e) | acceptable |
+| 168 | The French aircraft register reader: five columns by header name, original never kept, code-only refusals (7c6ec44ae, f6f5874d9, acac33c67, bcb60f834) | one to fix, fixed (builders' names in CONSTRUCTEUR) |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2469,6 +2471,28 @@ Notes: (1) the case K195 checks the refusal, not the memory, which is enough sin
 (2) a few older openings are still direct, `launch.extract_data` and `proc_cifp.lines_of` (both call `zip_check` after the open) and the
 inner zip of the NASR subscription (bounded by `INNER_MAX`), so they could go through `open_zip` too; and 2,000 pages in a deflated
 member is still hours in the worst case (about 5 s per far read on 1 GB), a few hundred would be nearer to a real eAIP.
+
+**167. The follow-ups of 166 — acceptable.** `launch.extract_data` and `proc_cifp.lines_of` open through `zip_guard.open_zip` (the guard's
+`BadZipFile` is already caught by `extract_data`); `ISO_MAX_PAGES` is 600 (both real Portuguese eAIP still read); the FRA archive takes two
+workbooks at most; the ISO pages are read under a total time of 90 s, the bound said when it plays.
+
+**168. The French aircraft register reader (7c6ec44ae, f6f5874d9, acac33c67, bcb60f834) — one to fix, fixed.** The export has 13 columns, eight of them
+third parties (owner, lessee, creditor, the person who entered it, and their addresses). `registry_fr.derive` takes five columns by header
+name (an allow-list), refuses a header where an allow-listed name is repeated (`names.index` would take the first one, so a third-party column
+renamed before the real one would pass), writes only `data/local/registry/fr_immat.json` and removes the original and its temporary file
+whether the derivation succeeds or not; every refusal is a code (`size`, `headers`, `line`, `rows`, `empty`, `read`), never a line. Probed on
+a copy of origin/v3 with a witness in each of the eight third-party columns, in a quoted field with a newline, in the file name and in the
+header lookalikes: no witness in the derived file, the answer, the console, the files left on disk or the persistent journal; the synchronisation
+(`data_sync.run`) tracks nothing of `local/` (`:(exclude)local/**`, and every `git add` of the launcher has explicit paths). The verb
+`aircraft/registry` answers `reg`, `maker`, `model`, `serial`, `base` only. **To fix (proved, fixed in f6f5874d9).** The allow-list was not
+enough: `CONSTRUCTEUR` holds the names of natural persons, the amateur builders (on the real export, 2,276 of 43,260 rows carry a value that
+appears once, nearly all of the form “SURNAME FIRSTNAME” on the sample read). The maker is now kept only when at least ten distinct
+aircraft carry it (first five in f6f5874d9, ten in acac33c67 and bcb60f834 by the ergonomist's decision), counted in a pass before writing; otherwise it is empty (the screen says “constructeur non précisé”); ten CESSNA and a
+builder with two aircraft give CESSNA kept and the builder's name nowhere (file, verb by registration, by type, by word). *Trade-off, settled.* At five,
+405 makers of the real export passed, about ten of them individuals with five to eight aircraft; at ten, 293 makers are kept and the real brands are untouched. *Sampled.* The values
+seen once of `MODELE` (166 of two or three alphabetic words), `AERODROME_ATTACHE` (144) and `NUMERO_SERIE` (none of that form) were read by hand: no
+natural person's name (designer surnames inside type names, communes, fields, a few “lieu-dit”), so only `CONSTRUCTEUR` is thresholded. The original `export.csv` stays in the user's Downloads, which the suite
+does not touch.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
