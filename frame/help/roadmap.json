@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "55eaf43",
-  "fiches": 284,
+  "organisation": "a90f07d",
+  "fiches": 287,
   "untranslated": 0,
   "priorities": 243
  },
@@ -802,7 +802,7 @@
     {
      "id": "SOG-0092",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Calques météo sur la carte depuis la bibliothèque de Météo (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
      "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
      "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
@@ -1943,6 +1943,24 @@
      "es": "Categorías de misiones de una compañía: reutilizar los temas y subtemas de la V2, no reinventar",
      "rank": 182,
      "test": true
+    },
+    {
+     "id": "SOG-0286",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Compagnie › Registre : trop de lignes par mission — reprendre le modèle de la V2",
+     "en": "Airline › Register: too many lines per mission — take the V2 layout",
+     "de": "Airline › Register: too many lines per mission — take the V2 layout",
+     "es": "Airline › Register: too many lines per mission — take the V2 layout"
+    },
+    {
+     "id": "SOG-0287",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Compagnie : l'éditeur de missions en V3",
+     "en": "Airline: the mission editor in V3",
+     "de": "Airline: the mission editor in V3",
+     "es": "Airline: the mission editor in V3"
     }
    ]
   },
@@ -2318,7 +2336,7 @@
     {
      "id": "SOG-0102",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Extrait GeoNames plus complet (Portugal, Irlande)",
      "en": "Fuller GeoNames extract (Portugal, Ireland)",
      "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)",
@@ -3824,6 +3842,27 @@
    ]
   },
   {
+   "id": "maintenance-maintenance-donnees-carte",
+   "app": "maintenance",
+   "label": {
+    "fr": "Maintenance › Données ; carte",
+    "en": "Maintenance › Données ; carte",
+    "de": "Maintenance › Données ; carte",
+    "es": "Maintenance › Données ; carte"
+   },
+   "items": [
+    {
+     "id": "SOG-0285",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Écran Données, la carte : pas de molette au-dessus des pays, Maj + clic ne surligne pas les pays choisis, survoler un paquet devrait montrer son périmètre",
+     "en": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
+     "de": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
+     "es": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter"
+    }
+   ]
+  },
+  {
    "id": "maintenance-meteo-cadre-relais",
    "app": "maintenance",
    "label": {
@@ -3915,7 +3954,7 @@
     {
      "id": "SOG-0118",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
      "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
      "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
