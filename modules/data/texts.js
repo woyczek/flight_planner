@@ -1824,5 +1824,64 @@ export const TX = {
     cancelled: ['arrêtée', 'stopped', 'angehalten', 'detenida'],
     interrupted: ['interrompue', 'interrupted', 'unterbrochen', 'interrumpida'],
     nothing: ['rien à faire', 'nothing to do', 'nichts zu tun', 'nada que hacer']
+  },
+  // la carte de l'opération en cours que le lanceur refuse de doubler (SOG-0245) : laquelle, depuis quand, où elle en est, si elle répond ; Voir, Arrêter, Libérer
+  busy: {
+    title: ['Une autre opération est en cours : {n}', 'Another operation is running: {n}', 'Ein anderer Vorgang läuft: {n}',
+      'Hay otra operación en curso: {n}'
+    ],
+    started: ['Démarrée : {t}', 'Started: {t}', 'Gestartet: {t}', 'Iniciada: {t}'],
+    step: ['Étape : {s}', 'Step: {s}', 'Schritt: {s}', 'Paso: {s}'],
+    alive: ['Toujours vivante', 'Still alive', 'Läuft noch', 'Sigue viva'],
+    quiet: ['Silencieuse depuis {t} min', 'Silent for {t} min', 'Seit {t} min ohne Lebenszeichen', 'Sin señales desde hace {t} min'],
+    stuck: ['Ne répond plus (silencieuse depuis {t} min)', 'Not responding any more (silent for {t} min)',
+      'Antwortet nicht mehr (seit {t} min ohne Lebenszeichen)', 'Ya no responde (sin señales desde hace {t} min)'
+    ],
+    gone: ['Ne répond plus : son processus a disparu', 'Not responding any more: its process is gone',
+      'Antwortet nicht mehr: der Prozess ist verschwunden',
+      'Ya no responde: su proceso ha desaparecido'
+    ],
+    cancelling: ['Arrêt demandé : elle s’arrêtera à sa prochaine vérification.', 'Stop requested: it will stop at its next check.',
+      'Anhalten angefordert: der Vorgang hält bei der nächsten Prüfung an.',
+      'Parada solicitada: se detendrá en su próxima comprobación.'
+    ],
+    see: ['Voir', 'View', 'Ansehen', 'Ver'],
+    stop: ['Arrêter', 'Stop', 'Anhalten', 'Detener'],
+    release: ['Libérer', 'Release', 'Freigeben', 'Liberar'],
+    hide: ['Masquer', 'Hide', 'Ausblenden', 'Ocultar'],
+    aliveFirst: ['Arrêtez d’abord l’opération : elle a donné signe de vie il y a {t} min.',
+      'Stop the operation first: it gave a sign of life {t} min ago.',
+      'Halten Sie den Vorgang zuerst an: er hat vor {t} min ein Lebenszeichen gegeben.',
+      'Detenga primero la operación: dio señales de vida hace {t} min.'
+    ],
+    released: ['Opération libérée : vous pouvez en lancer une autre.', 'Operation released: you can start another one.',
+      'Vorgang freigegeben: Sie können einen anderen starten.', 'Operación liberada: puede iniciar otra.'
+    ],
+    ended: ['Cette opération est terminée.', 'That operation has ended.', 'Dieser Vorgang ist beendet.', 'Esa operación ha terminado.'],
+    seeFailed: ['Le lanceur ne répond pas : l’opération n’a pas pu être relue.',
+      'The launcher does not answer: the operation could not be read.',
+      'Der Starter antwortet nicht: der Vorgang konnte nicht gelesen werden.', 'El lanzador no responde: no se pudo leer la operación.'
+    ],
+    stopFailed: ['L’arrêt n’a pas pu être demandé au lanceur.', 'The stop could not be requested from the launcher.',
+      'Das Anhalten konnte beim Starter nicht angefordert werden.', 'No se pudo pedir la parada al lanzador.'
+    ],
+    releaseFailed: ['Le lanceur n’a pas pu libérer l’opération.', 'The launcher could not release the operation.',
+      'Der Starter konnte den Vorgang nicht freigeben.', 'El lanzador no pudo liberar la operación.'
+    ],
+    // les jeux et les verbes que le lanceur nomme par identifiant (les jeux de la base et des procédures ont déjà leur nom : TX.groups, TX.setLabel)
+    sets: {
+      route: ['Route (RAD, FRA)', 'Route (RAD, FRA)', 'Route (RAD, FRA)', 'Ruta (RAD, FRA)'],
+      weather: ['Météo', 'Weather', 'Wetter', 'Meteorología']
+    },
+    verbs: {
+      fetch: ['Télécharger', 'Download', 'Herunterladen', 'Descargar'],
+      build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
+      purge: ['Purger', 'Purge', 'Bereinigen', 'Purgar'],
+      publish: ['Publier', 'Publish', 'Veröffentlichen', 'Publicar'],
+      pickup: ['Prendre le fichier', 'Take the file', 'Datei übernehmen', 'Tomar el archivo'],
+      status: ['Relever l’état', 'Read the state', 'Zustand erfassen', 'Leer el estado'],
+      world: ['Prévision mondiale', 'World forecast', 'Weltweite Vorhersage', 'Pronóstico mundial'],
+      'import-rad': ['Importer', 'Import', 'Importieren', 'Importar']
+    }
   }
 };

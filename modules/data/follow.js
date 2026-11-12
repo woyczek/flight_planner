@@ -73,8 +73,10 @@ const viewIds = (set, v) => Object.keys(M.normView(set, v)?.zones || {});
 /** Une vue du travail arrive : elle remplace la précédente et le panneau se redessine. Un travail connu (n'importe quel jeu et verbe : construction,
  *  téléchargement, purge, fiches) trouvé en route (resume) est adopté à sa première vue, avec son jeu et son verbe ; le travail d'une autre
  *  opération n'est que signalé. */
-function onView(me, v, ctrl) {
+export function onView(me, v, ctrl) {
   if (S !== me || !v) return;
+  if (S.busy && v.id === S.busy.running.id) S.busy.running = M.mergeRunning(S.busy.running, M.runningOf(
+    v)); // la carte de l'opération en cours suit ses signes de vie
   const op = M.viewOp(v);
   if (!op) {
     S.other = v;
@@ -99,6 +101,7 @@ async function endRun(me, final, live) {
   stopTimer();
   S.run = null;
   S.other = null;
+  S.busy = null;
   S.view = final;
   if (dry && !live) return renderBuild(); // le plan terminé avant l'ouverture : il n'est plus à poser
   if (dry && verb === 'purge' && set === 'base' && S
@@ -383,6 +386,11 @@ function refused(me, r) {
     refused: f
   };
   if (f.key === 'busy') S.other = S.other || {}; // une opération tourne : le bouton reste gris pendant qu'on la rejoint
+  S.busy = f.key === 'busy' && f.running ? {
+    running: f.running,
+    panel: M.panelOf(set, verb)
+  } : null; // la carte de l'opération qui tourne, dans le panneau du geste (SOG-0245)
+  S.busyHidden = null;
   renderBuild();
   S.ctx.notify(refusedText(f), 'err');
   if (f.key === 'busy') follow();
@@ -410,6 +418,7 @@ export async function settle(me, r, live = true) {
   if (r.state && r.state !== 'running') {
     if (M.viewOp(r) || S.run) return endRun(me, r, live);
     S.other = null; // la fin d'une autre opération : le bouton redevient actif
+    S.busy = null;
     return renderBuild();
   }
   if (r.aborted) return;
@@ -423,13 +432,16 @@ export async function follow() {
     L = S.ctx.launcher;
   if (!L) return;
   const ctrl = new AbortController();
+  S.following = true; // « Voir » ne relance pas un suivi qui tourne
   const r = await L.resume(ROUTE, {
     onProgress: v => onView(me, v, ctrl),
     signal: ctrl.signal
   });
+  if (S === me) S.following = false;
   if (S !== me || !r) return;
   if (r.ok === false && !r.state && !r.cancelled) return; // pas de réponse : l'écran reste tel quel
   S.other = null;
+  S.busy = null;
   return settle(me, r, !!S.run);
 }
 /** Lance un travail d'un jeu sur le lanceur (regen/job) et le suit par ses vues : la marche commence aussitôt ; rend la fin que

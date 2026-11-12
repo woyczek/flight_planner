@@ -530,3 +530,12 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   pickup nor the upload take an `.iso` / `AIP ISO.zip` (launcher side); no folder variant of the upload exists on the
   page; a stale buildable row has no action before a first attempt (L63, L70 keep that; offering it earlier needs a catalogue
   field `how: 'pick'`).
+- **12 Nov 2026 — SOG-0245 (screen): « une autre opération est en cours » becomes a card** (the user's blocker: which
+  operation, since when, how far, alive?, how to go back, stop, free a dead lock): on AeroDB's contract 8494deb47 (`running` in
+  every busy refusal, `regen/job?id=`, `cancel`, `release`). `model_busy.js` re-sanitises `running` (closed fields, bounded
+  numbers, alive in four words); `busy.js` draws the card in the panel that started the gesture: name in plain words from
+  set + verb, UTC start, step / count / percentage, « toujours vivante / silencieuse / ne répond plus / processus disparu »,
+  « Voir » (follow by id), « Arrêter » (`cancel`, then « arrêt demandé »), « Libérer » ONLY when alive is stuck or gone
+  (`release`; 409 alive → « arrêtez d'abord »). An upload refused busy shows the same card. Without `running` the old sentence
+  stays. Needs `frame/lib/launcher.js` to hand `running` through (V3 Frame's file: patch asked). `regen/job/release` is
+  declared in the module's routes.

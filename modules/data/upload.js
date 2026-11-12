@@ -22,6 +22,9 @@ import {
   fetchThenBuild,
   startPickup
 } from './follow.js';
+import {
+  showBusy
+} from './busy.js';
 
 const ROUTE_UPLOAD = 'base/upload';
 const MAX_BYTES = 1.5 * 1024 ** 3; // le plafond du lanceur : au-delà, rien n'est envoyé
@@ -107,6 +110,7 @@ function outcome(r) {
       expected = (given.length ? given : TAKEN).filter(x => M.COV_SOURCES.includes(x)).slice(0, 10).map(nameOfSource).join(', ');
     return {
       kind: 'fail',
+      running: reason === 'busy' ? M.runningOf(r?.running ?? body.running) : null, // l'opération qui tourne, dite par le lanceur (SOG-0245)
       text: tt(TX.up.why[reason], {
         s: expected
       })
@@ -191,6 +195,8 @@ export async function startUpload(zone, file) {
   const out = outcome(r);
   if (out.kind === 'fail') sayOnLine(zone, name, out.text);
   else renderBuild();
+  if (out.running) showBusy(out.running,
+    'base'); // la carte de l'opération en cours, dans le panneau de la base, avec Voir / Arrêter / Libérer
   S.ctx.notify(out.text, out.kind === 'fail' ? 'err' : 'ok');
   // le fichier est rangé là où « Prendre le fichier téléchargé » lit (data/local/upload/) : le parcours normal suit — le plan, la prise, puis la construction de la zone reconnue
   if (out.kind === 'fail') return;

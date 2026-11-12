@@ -52,6 +52,7 @@ Cases: L1 .. L20.  The suite never reads a real data repository, never reaches t
 import datetime
 import json
 import re
+import time
 import urllib.parse
 
 from lib import ROOT, Fail, case, norm, tx
@@ -632,17 +633,21 @@ def _zs(state, done=0, total=0, **extra):
     return {'state': state, 'done': done, 'total': total, **extra}
 
 
-def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None):
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None, busy_running=None):
     """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
     after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
     POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
     (409) leaves in place; `sync`: what GET sync-status answers (`{'changes', 'ahead', 'merging', 'last'}`, or `(status, body)`).  The dict it returns records
     `posts`, `cancels` and `syncs` (the reads of sync-status) and can be changed between steps.  `verbs`: what GET regen/verbs answers: None = an old launcher
     (200 with no list), a list = `{ verbs: [...] }`, an int = that status (404...); `st['verbs_calls']` counts the reads.  `inventory`: what GET data/inventory answers (a body, or `(status, body)`; None = an old
-    launcher, 404); `st['inventory_calls']` counts the reads.  `personal`: the file of the launcher that holds the personal-use tick (`{'certified', 'at'}`; None = an older launcher, 404); `st['personal_posts']` records the bodies posted, `st['personal_refuse']` makes the next POST fail (500)."""
+    launcher, 404); `st['inventory_calls']` counts the reads.  `personal`: the file of the launcher that holds the personal-use tick (`{'certified', 'at'}`; None = an older launcher, 404); `st['personal_posts']` records the bodies posted, `st['personal_refuse']` makes the next POST fail (500).
+    `busy_running`: the running operation a « busy » refusal names (SOG-0245; AeroDB's `running`, see _running); the dict is LIVE (the test changes its vitals), GET regen/job?id=<its id> answers it as a running view
+    (`st['gets']` records the reads), POST regen/job/cancel flips its `cancelling`, POST regen/job/release is recorded in `st['releases']` and answers 200 (or 409 `alive` while `st['release_alive']`).  The 409 itself is
+    the test's `start=(409, {'reason': 'busy', 'job': id, 'running': busy_running})`."""
     st = {'status': None, 'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
           'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
-          'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0}
+          'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0,
+          'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False}
 
     def handler(route):
         req = route.request
@@ -687,9 +692,17 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 code = st['verbs']
             elif isinstance(st['verbs'], list):
                 body = {'verbs': st['verbs']}
+        elif u.path.endswith('/__setup/regen/job/release'):
+            st['releases'].append(json.loads(req.post_data or '{}'))
+            if st['release_alive']:
+                code, body = 409, {'ok': False, 'reason': 'alive', 'silent': 3}
+            else:
+                body = {'ok': True, 'job': (st['running'] or {}).get('id'), 'released': True}
         elif u.path.endswith('/__setup/regen/job/cancel'):
             st['cancels'].append(json.loads(req.post_data or '{}'))
             st['cancelled'] = True
+            if st['running']:
+                st['running']['cancelling'] = True
             body = {'ok': True}
             if cancel_view:
                 st['current'] = cancel_view
@@ -707,6 +720,9 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                     want = (st['posts'][-1].get('args') or {}).get('zones')
                     res = {**res, 'zones': {k: v for k, v in res['zones'].items() if want is None or k in want}}
                 body = {'id': 'jst', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': res, 'zones': {}}
+            elif 'id=' in u.query and st['running'] and f"id={st['running']['id']}" in u.query:
+                st['gets'].append(st['running']['id'])
+                body = {**st['running'], 'state': 'running', 'log': [], 'result': None}
             elif 'id=' in u.query:
                 if st['cancelled'] and cancel_view:
                     body = cancel_view
@@ -6122,4 +6138,133 @@ def l81(c):
     c.eq(len(_posts(st, 'fetch')), 2, 'the download of the zone is running (the job is still « running »)', what='fetch started')
     c.js("location.hash = '#devices'")      # the pilot leaves while the job runs
     c.wait(3000)
+    c.check_errors()
+
+
+
+# ------------------------------------------------------------------------------------------------------ L85
+def _running(**kw):
+    """What AeroDB's « busy » refusal names (`running`, SOG-0245): the Procédures download of two States, started five minutes ago, a quarter of the way, last sign 5 s ago."""
+    now = int(time.time())
+    r = {'id': 'o1', 'set': 'proc', 'verb': 'fetch', 'args': {'action': 'plan'}, 'started': now - 300, 'step': 'Lecture des sources', 'done': 2, 'total': 10, 'unit': 'states',
+         'seen': now - 5, 'silent': 5, 'alive': 'alive', 'cancelling': False}
+    r.update(kw)
+    return r
+
+
+def _clock(s):
+    """« 5:10 »: seconds as the screen writes them."""
+    return f'{s // 60}:{s % 60:02d}'
+
+
+@case('L85', 'Données: « une autre opération est en cours » is a card — which operation, since when (UTC), where it is, alive or « ne répond plus » — with Voir, Arrêter and, only when it is stuck or gone, Libérer (SOG-0245)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0245 (the user: « une autre opération est en cours : on ne sait pas quoi, et on ne peut pas l’arrêter. S’il reste un lock suite à un souci, on ne peut donc pas l’enlever. On devrait pouvoir retourner sur l’appli en cours, horodatage démarrage, pourcentage d’achèvement, et est-elle toujours vivante »): AeroDB INTEGRATION « The running operation » — every « busy » refusal (job start, file upload) carries `running`; Voir = GET regen/job?id=, Arrêter = POST regen/job/cancel { id }, Libérer = POST regen/job/release { id } (409 alive: stop it first), offered for stuck or gone only; an older launcher without `running` keeps the bare sentence')
+def l85(c):
+    lang = c.lang
+    B = lambda key: _trow(key, lang, after='  busy: {')
+    name = f"{_trow('proc', lang, after='  groups: {')} · {_trow('fetch', lang, after='Ruta (RAD, FRA)')}"
+    hhmm = lambda r: time.strftime('%H:%MZ', time.gmtime(r['started']))
+    card = '[data-build] [data-busy-card]'
+    acts = lambda: c.js(f"[...document.querySelectorAll('{card} [data-busy-act]')].map(b => b.dataset.busyAct)")
+    lines = lambda: [norm(x) for x in c.js(f"[...document.querySelectorAll('{card} [data-busy-line]')].map(p => p.textContent)")]
+    quiet_notes = lambda: c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    R = _running()
+    cfg, _ = _fixture()
+    cfg['zones'].append({'id': 'pt', 'names': ['Portugal', 'Portugal', 'Portugal', 'Portugal'], 'frames': [], 'published': True})
+    cfg['publication']['base']['pt'] = cfg['publication']['base']['fr']
+    waiting = {'code': 'pickup-waiting', 'source': 'navpt', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'AIP_PT.zip'}
+    st = _launcher(c, [_view('running')], start=(409, {'reason': 'busy', 'job': 'o1', 'running': R}), busy_running=R, verbs=_VERBS + ['base/pickup'])
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'gb': _zst('up-to-date'), 'us': _zst('up-to-date'),
+                            'pt': _zst('stale', waiting, buildable=False)})
+    c.context.route(re.compile(r'/__setup/base/upload'), lambda route: route.fulfill(status=409, content_type='application/json', body=json.dumps({'ok': False, 'reason': 'busy', 'running': R})))
+    _open(c, _sized(cfg))
+    _all_open(c)
+    # ---- (a) a start refused while an operation runs: the card names it, says since when, where it is, that it is alive; Voir and Arrêter, no Libérer
+    c.tap('[data-verb=build]')
+    c.until(f"!!document.querySelector('{card}')", timeout=8000, what='the card of the running operation')
+    c.eq(norm(c.text(f'{card} [data-busy-name]')), norm(B('title').replace('{n}', name)), 'the card names the operation in plain words (the set and the verb), not an identifier', what='name')
+    got = lines()
+    c.ok(norm(B('started').replace('{t}', hhmm(R))) in got, got, 'since when, in UTC (« 16:30Z »)')
+    c.ok(norm(B('step').replace('{s}', R['step'])) in got, got, 'the step it is at')
+    c.ok(any('20 %' in x for x in got), got, 'the percentage of completion (2 of 10)')
+    c.ok(norm(B('alive')) in got, got, 'and that it is still alive')
+    c.eq([c.attr(f'{card} [role=progressbar]', 'aria-valuenow'), c.attr(f'{card} [role=progressbar]', 'aria-valuemax'), c.attr(card, 'data-alive')], ['2', '10', 'alive'], 'a bar with the count', what='bar')
+    c.eq(acts(), ['see', 'stop', 'hide'], 'Voir and Arrêter; no Libérer while it is alive', what='buttons')
+    c.eq(c.count('[data-build] [data-build-result][data-refusal=busy]'), 0, 'the bare sentence is replaced by the card', what='bare sentence')
+    c.eq(c.js("document.querySelector('[data-verb=build]').disabled"), True, 'the screen stays grey while it runs', what='grey')
+    _screen_ok(c, 'the card')
+    # Voir: the job is read again by its identifier, the card shows what it says now
+    R['done'], R['step'] = 5, 'Calcul'
+    c.tap(f'{card} [data-busy-act=see]')
+    c.until(f"document.querySelector('{card}').textContent.includes('50 %')", timeout=8000, what='the card shows the fresh count')
+    c.eq(st['gets'][:1], ['o1'], 'Voir reads GET regen/job?id=o1', what='see')
+    # ---- (b) Arrêter: the id is posted, the card says the stop was requested
+    quiet_notes()
+    c.tap(f'{card} [data-busy-act=stop]')
+    c.until(f"document.querySelector('{card}[data-cancelling]')", timeout=8000, what='the stop is requested')
+    c.eq([st['cancels'], c.js(f"document.querySelector('{card} [data-busy-act=stop]').disabled"), norm(B('cancelling')) in lines()], [[{'id': 'o1'}], True, True], 'Arrêter posts { id }; the card says « arrêt demandé » and the button is spent', what='cancel')
+    # ---- (c) stuck: « ne répond plus », Libérer; it posts { id }, the card goes away and the screen can start again
+    R['alive'], R['silent'], R['cancelling'] = 'stuck', 400, False
+    c.tap(f'{card} [data-busy-act=see]')
+    c.until(f"document.querySelector('{card}[data-alive=stuck]')", timeout=8000, what='the card says it is stuck')
+    c.ok(norm(B('stuck').replace('{t}', _clock(400))) in lines(), lines(), '« ne répond plus » with the silence')
+    c.eq(acts(), ['see', 'stop', 'release', 'hide'], 'Libérer appears for a stuck operation', what='buttons stuck')
+    quiet_notes()
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L85_{c.width}_{lang}_delivered.png')
+    R['alive'] = 'gone'
+    c.tap(f'{card} [data-busy-act=see]')
+    c.until(f"document.querySelector('{card}[data-alive=gone]')", timeout=8000, what='the card says its thread is gone')
+    c.ok(norm(B('gone')) in lines() and 'release' in acts(), lines(), 'gone: its process has disappeared, Libérer still offered')
+    c.tap(f'{card} [data-busy-act=release]')
+    c.until(f"!document.querySelector('{card}')", timeout=8000, what='the card goes away')
+    c.eq([st['releases'], c.js("document.querySelector('[data-verb=build]').disabled"), c.count('[data-other]')], [[{'id': 'o1'}], False, 0], 'Libérer posts { id }; the screen is free again', what='release')
+    st['start'] = (200, {'job': 'j1'})
+    n = len(st['posts'])
+    c.tap('[data-verb=build]')
+    c.wait(600)
+    c.eq(len(st['posts']), n + 1, 'a new operation can start', what='start again')
+    # ---- (d) the launcher refuses to release an operation that gave a sign of life: « arrêtez d'abord »
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    R.update(alive='stuck', silent=310, cancelling=False)
+    st['start'], st['release_alive'] = (409, {'reason': 'busy', 'job': 'o1', 'running': R}), True
+    c.tap('[data-verb=build]')
+    c.until(f"!!document.querySelector('{card}[data-alive=stuck]')", timeout=8000, what='the card of the stuck operation')
+    n0 = len(lines())
+    c.tap(f'{card} [data-busy-act=release]')
+    c.until(f"document.querySelectorAll('{card} [data-busy-line]').length > {n0}", timeout=8000, what='the card says to stop it first')
+    c.ok(norm(B('aliveFirst').replace('{t}', _clock(310))) in lines(), lines(), '« arrêtez d’abord » (it gave a sign of life)')
+    c.eq([len(st['releases']), c.count(card)], [2, 1], 'the release was asked (and refused): the card stays', what='refused')
+    # ---- (f) an older launcher (no `running`, or a body that does not read): the bare sentence, nothing breaks
+    for body in ({'message': 'busy'}, {'reason': 'busy', 'running': {'id': 'Bad Id!', 'alive': 'dead'}}, {'reason': 'busy', 'running': 'x'}):
+        st['start'] = (409, body)
+        c.page.reload(wait_until='load')
+        _head(c)
+        _all_open(c)
+        c.tap('[data-verb=build]')
+        c.until("!!document.querySelector('[data-build-result][data-refusal=busy]')", timeout=8000, what='the bare sentence')
+        c.eq([norm(c.text('[data-build-result]')), c.count('[data-busy-card]')], [norm(_trow('busy', lang, 'refused: {')), 0], f'no usable `running` ({body}): the old sentence, no card', what='older launcher')
+    # ---- (e) a file refused because an operation runs (409 busy on base/upload): the same card, in the panel of the base
+    R.update(alive='alive', silent=5, cancelling=False)
+    st['start'] = (200, {'job': 'j1'})
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=8000, what='the six pills')
+    row = '[data-build-zones] [data-zone-row=pt]'
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.tap('[data-build-zones] [data-build-zone=pt]')
+    with c.page.expect_file_chooser() as fc:
+        c.js(f"document.querySelector('{row} [data-act=zone-upload]').click()")
+    fc.value.set_files({'name': 'AIP_PT.zip', 'mimeType': 'application/zip', 'buffer': b'PK' + b'x' * 998})
+    c.until(f"!!document.querySelector('{card}')", timeout=8000, what='the card of the running operation after a refused file')
+    quiet_notes()
+    c.eq([norm(c.text(f'{card} [data-busy-name]')), acts()], [norm(B('title').replace('{n}', name)), ['see', 'stop', 'hide']], 'a file refused because an operation runs: the same card, named, with Voir and Arrêter', what='upload card')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L85_{c.width}_{lang}_upload.png')
     c.check_errors()

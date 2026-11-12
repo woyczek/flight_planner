@@ -29,6 +29,9 @@ import {
   renderPublish
 } from './publish.js';
 import {
+  busyCardHtml
+} from './busy.js';
+import {
   updateAllInner
 } from './chain.js';
 import {
@@ -264,7 +267,7 @@ function zoneLineHtml(r, verb = 'build', set = 'base') {
 }
 /** « 12 terrains » : le nombre fait, avec le nom de ce que le travail compte (la vue dit son unité : aerodromes, steps…) ; la base compte des zones ; un
  *  jeu dont l'unité est inconnue donne le nombre seul. */
-function runUnit(set, view, n) {
+export function runUnit(set, view, n) {
   if (set === 'base') return count('zone', n);
   const u = M.own({
     steps: 'step',
@@ -564,10 +567,11 @@ function sheetsResultHtml(r) {
 }
 /** La fin de la dernière opération du panneau `panel` (M.panelOf) : la phrase de résumé, ce qu'il y a à faire, puis les lignes des éléments (leurs
  *  derniers états, avec le motif des échecs) ; ou la phrase d'un départ refusé. Vide si la dernière opération est celle d'un autre panneau. */
-function resultHtml(panel = 'base') {
+function resultHtml(panel = 'base', carded = false) {
   const r = S.result;
   if (!r || M.panelOf(r.set || 'base', r.verb) !== panel) return '';
   if (r.verb === M.PICKUP.verb && !r.refused) return pickupResultHtml(r);
+  if (r.refused && carded && r.refused.key === 'busy') return ''; // la carte dit déjà quelle opération tourne
   if (r.refused) return `<div data-build-result data-result="refused" data-refusal="${r.refused.key}"><p class="f-warn">${esc(refusedText(r.refused))}</p></div>`;
   const set = r.set || 'base';
   if (panel === 'sheets') return sheetsResultHtml(r);
@@ -590,9 +594,10 @@ function resultHtml(panel = 'base') {
 }
 /** Ce que dit un panneau sous ses boutons : une autre opération du lanceur, puis la marche (si c'est son jeu qui tourne) ou la dernière fin. */
 function opAreaHtml(panel) {
-  const here = S.run && M.panelOf(S.run.set, S.run.verb) === panel;
-  return `${S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : ''}
-    ${here ? runningHtml() : S.run ? '' : resultHtml(panel)}`;
+  const here = S.run && M.panelOf(S.run.set, S.run.verb) === panel,
+    card = busyCardHtml(panel); // la carte de l'opération qui tourne remplace la phrase nue « une autre opération est en cours » (SOG-0245)
+  return `${card || (S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : '')}
+    ${here ? runningHtml() : S.run ? '' : resultHtml(panel, !!card)}`;
 }
 /** Les États proposés aux procédures : verts et oranges de coverageByState(), dans l'ordre de leurs noms. */
 export function procList() {

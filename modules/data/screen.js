@@ -177,6 +177,10 @@ export const STYLE = `
 [data-module="data"] .d-manual li{overflow-wrap:anywhere}
 [data-module="data"] .d-run{margin-top:10px;display:grid;gap:6px}
 [data-module="data"] .d-runhead{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+[data-module="data"] .d-busy{margin-top:10px;display:grid;gap:6px;padding:8px 10px;border:1px solid var(--sog-border)}
+[data-module="data"] .d-busy p{margin:0}
+[data-module="data"] .d-busy[data-alive=stuck],[data-module="data"] .d-busy[data-alive=gone]{border-color:var(--sog-warn)}
+[data-module="data"] .d-busy [data-busy-act]{min-height:var(--sog-touch);min-width:44px}
 [data-module="data"] .d-bar{height:10px;border:1px solid var(--sog-border);background:var(--sog-surface);overflow:hidden}
 [data-module="data"] .d-bar>i{display:block;height:100%;background:var(--sog-accent);transition:width .3s}
 [data-module="data"] .d-bar[data-indeterminate]>i{width:30%;animation:d-slide 1.2s linear infinite}

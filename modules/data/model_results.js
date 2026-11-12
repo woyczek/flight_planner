@@ -9,6 +9,9 @@ import {
   SHEETS
 } from './model_sets.js';
 import {
+  runningOf
+} from './model_busy.js';
+import {
   entryHead,
   jobOf,
   obj
@@ -182,7 +185,9 @@ export function refusal(r) {
   return {
     key,
     wait: key === 'tooSoon' ? Math.max(1, Math.ceil(num(r.wait) ?? 1)) : null,
-    why: ['bad-args', 'failed', 'refused'].includes(key) ? why : ''
+    why: ['bad-args', 'failed', 'refused'].includes(key) ? why : '',
+    running: key === 'busy' ? runningOf(r?.running) :
+      null // ce que le lanceur dit de l'opération en cours (SOG-0245), lu sans confiance ; null d'un lanceur ancien
   };
 }
 /** Une entrée du journal : { at (UTC ISO), set, verb, zones, seconds, result, built, failed, job? }. `at` : instant en ms ; `set` et `key` : pour un autre jeu que la base. */

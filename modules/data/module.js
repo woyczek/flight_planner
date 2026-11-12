@@ -71,6 +71,9 @@ import {
   stopTimer
 } from './follow.js';
 import {
+  busyAct
+} from './busy.js';
+import {
   setZoneFilter
 } from './status.js';
 import {
@@ -105,13 +108,14 @@ export const meta = {
   launcher: {
     // regen/job couvre aussi son annulation regen/job/cancel (cadre, f70eba426) ; sync-status : l'état de data/ avant la
     // question de « Publier » (GET, jamais de POST /__setup/sync : la publication passe par ctx.data.sync)
-    routes: ['regen/job', 'regen/verbs', 'sync-status', 'data/inventory', 'base/upload', 'personal'],
+    routes: ['regen/job', 'regen/job/release', 'regen/verbs', 'sync-status', 'data/inventory', 'base/upload', 'personal'],
     read: []
   },
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
-    'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', '../../frame/lib/plural.js',
+    'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
+    '../../frame/lib/plural.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
@@ -179,6 +183,9 @@ function onClick(e) {
   if (rc) return recenterMap(rc.closest('[data-zone-map]')?.dataset.zoneMap);
   const g = e.target.closest?.('details.f-group > summary')?.parentElement;
   if (g) S.focus = g.dataset.group;
+  const ba = e.target.closest?.('button[data-busy-act]');
+  if (ba) return ba.disabled ? undefined : busyAct(ba.dataset
+    .busyAct); // la carte de l'opération en cours : Voir, Arrêter, Libérer, Masquer (SOG-0245)
   const v = e.target.closest?.('button[data-verb]');
   if (!v || v.disabled) return;
   if (v.dataset.verb === 'stop') return S.run?.ctrl.abort();
@@ -361,6 +368,9 @@ export async function mount(el, ctx) {
     ids: [], // les éléments du travail en cours ou du dernier (zones, États, cycle, types)
     result: null, // la fin du dernier : { set, verb, out } (plan vide : nothing) ou { set, verb, refused }
     other: null, // la vue d'une autre opération du lanceur, tant qu'elle tourne
+    busy: null, // la carte de l'opération qui a refusé un départ ou un envoi : { running (M.runningOf), panel, msg? }, jusqu'à sa fin (SOG-0245)
+    busyHidden: null, // l'identifiant de l'opération dont la carte a été masquée
+    following: false, // un suivi de travail (follow) est en cours
     pub: {
       status: null,
       reading: false, // la lecture de sync-status est en cours (premier dessin sans l'attendre, SOG-0164)
