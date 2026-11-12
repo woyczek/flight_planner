@@ -8399,3 +8399,21 @@ def k198(c):
          'five departures, each in its own group with its name (last point + suffix): ANG 4S, ANG 4T, BALNI 4S, RIMON 4S, ERBIN 4S; every leg row read', what='split')
     c.eq(P._garbled_title(['AN', 'AN', 'G', '4', '4', 'S']), ('AN', '4S'), 'the garbled title « AN AN G 4 4 S »: first token and suffix', what='title')
     c.eq((P._garbled_title(['CF', 'LULID', 'YES', '208']), P._garbled_title(['ENORI', '9W']), P._garbled_title(['RNAV', '1'])), (None, None, None), 'a leg row, an ordinary title and a short row are never taken for a garbled title', what='not')
+
+
+@case('K199', 'LFRS RNP RWY 03 (SOG-0248): a magnetic course printed digit by digit after the dash of the empty overfly cell (« TF DOGOV -1 1 7 117.2 5.0 ») is 117, not 17 — the true course that follows confirms it', 'K', static=True,
+      rule='AeroDB survey 12 Nov 2026 (LFRS RNP 03: NITEM / NEDAN / LAROK hidden as doubt): the reader gave courses 17, 32, 14 where the page prints 117, 232, 314: the column prints its three digits one by one and the dash of the empty « Fly Over » cell sticks to the first one (« -1 1 7 »), which was read as « -1 » then « 17 ». A glued dash + three single digits followed by the true course (ddd.d) is now « - ddd ». Rows: the public AIP page AD_2_LFRS_DATA_RWY03_RNP_CODE of the 29 Oct 2026 cycle.')
+def k199(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    P = importlib.import_module('proc_sia')
+
+    def leg(r):
+        t = P.norm_tokens(r, split=True)
+        w = []
+        x = P._leg(t[t.index('TF'):], True, w.append)
+        return x and (x['id'], x['crs'], x['nm'], x['rnp']), w
+    c.eq([leg(r) for r in ['TF DOGOV -1 1 7 117.2 5.0 - 3000 - 220 -1 . 0', 'TF RS701 -2 3 2 232.3 24.2 - FL70 - 220 -1 . 0', 'TF DOGOV -3 1 4 314.1 19.5 - 3000 - 220 -1 . 0', 'TF DOGOV - 117 117.2 5.0 - 3000 - 220 - 1.0', 'TF RS712 - 205 205.2 14.4 - 4000 - 220 -1 . 0']],
+         [(('DOGOV', 117, 5.0, 1.0), []), (('RS701', 232, 24.2, 1.0), []), (('DOGOV', 314, 19.5, 1.0), []), (('DOGOV', 117, 5.0, 1.0), []), (('RS712', 205, 14.4, 1.0), [])],
+         'the three rows with spaced digits give 117, 232, 314 (not 17, 32, 14); the rows that already read well are unchanged', what='courses')

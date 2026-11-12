@@ -226,6 +226,8 @@ def norm_tokens(row, split=False):
     terminateur collé à des tirets (« F M-- » → FM --) ou virage collé à des tirets (« L- », « ---L »), virgule décimale → point (« 198,4 » → 198.4), colonne « Nav Spec » remise en fin de ligne
     (_navspec_last), `split` : identifiants et nombres espacés des pages d'approche rejoints (_unsplit). Ne change aucune valeur : elle remet seulement les mots où l'extracteur les avait
     coupés ou collés."""
+    if split:                              # LFRS RNP 03 (SOG-0248) : la colonne « cap magnétique » imprime ses trois chiffres un à un (« TF DOGOV -1 1 7 117.2 5.0 ») : le tiret de la cellule vide du survol colle au premier chiffre (« -1 »), puis « 1 7 » : le cap devenait « 17 » ; le cap vrai qui suit (« 117.2 ») le confirme : « - 117 117.2 »
+        row = re.sub(r'(?<!\S)-(\d) (\d) (\d) (?=\d{3}[.,]\d)', lambda m: '- ' + m.group(1) + m.group(2) + m.group(3) + ' ', row)
     t = row.split()
     glued = []
     for w in t:                                            # « RNAV 1-- » : la précision « 1 » de la spécification de navigation collée aux tirets des cellules vides qui la suivent (LFPG SID 08, MONOT 6L) : le chiffre reste au mot RNAV
