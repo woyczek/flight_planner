@@ -26,12 +26,13 @@ TOLERANCES = {
 PAGE_CODES = ('layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout')
 
 # raisons d'une procédure douteuse, dans l'ordre où les lecteurs les posent ; « uncheckable » est un avertissement, jamais un doute
-CODES = ('unread', 'name', 'repeat', 'zigzag', 'unresolved', 'geometry', 'uncheckable')
+CODES = ('unread', 'name', 'repeat', 'zigzag', 'unresolved', 'rf-arc', 'geometry', 'uncheckable')
 DOUBT_CODES = tuple(c for c in CODES if c != 'uncheckable')
 
 # le texte de la console (le fichier ne porte que le code)
 PHRASES = {
     'geometry': 'géométrie incohérente',
+    'rf-arc': 'branche en arc RF : tracé en cours',
     'unresolved': 'positions non résolues',
     'uncheckable': 'géométrie non contrôlable (ni cap ni distance imprimés)',
     'name': 'sans nom',
@@ -177,7 +178,16 @@ def findings(proc, positions=DEFERRED, basis=None):
     seulement avec positions=REQUIRED : par défaut aerodb résout encore les points en route à la lecture, le contrôle les saute), écart imprimé / recalculé (« geometry », le premier écart
     seul est dit ; `basis` : la tolérance de la disposition, pour un tronçon qui n'imprime qu'une distance), ou « uncheckable » (des tronçons positionnés, aucun ne porte de cap ni de distance : un avertissement, jamais un doute)."""
     out = guardrails(proc)
-    res = check_legs(legs_of(proc.get('points', [])), basis)
+    pts = proc.get('points', [])
+    for i, q in enumerate(pts):          # SOG-0248 : une branche en arc (RF) dont l'arc n'a pas pu être DÉVELOPPÉ en points (centre ou extrémité sans position) n'est jamais présentée comme sûre : une corde droite serait un tracé faux
+        if q.get('leg') == 'RF' and q.get('center') and not q.get('arc') and not (i and pts[i - 1].get('arc')):
+            out.append(('rf-arc', PHRASES['rf-arc'] + f' ({q.get("id")})'))
+            break
+    for q in pts:                        # …et un arc développé dont le rayon ou la longueur imprimés ne collent pas avec le centre et les deux points est une géométrie incohérente
+        if q.get('arcGaps'):
+            out.append(('geometry', f'{PHRASES["geometry"]}: {q["id"]}: {q["arcGaps"][0]}'))
+            break
+    res = check_legs(legs_of(pts), basis)
     if res['unresolved'] and positions == REQUIRED:
         out.append(('unresolved', f'{PHRASES["unresolved"]}: ' + ', '.join(res['unresolved'][:4])))
     if res['gaps']:

@@ -32,6 +32,9 @@ export const TX = {
     ],
     zigzag: ['tracé en zigzag', 'zigzag track', 'Zickzack-Verlauf', 'trazado en zigzag'],
     unresolved: ['points sans position', 'points without a position', 'Punkte ohne Position', 'puntos sin posición'],
+    'rf-arc': ['branche en arc RF : tracé en cours', 'RF arc leg: drawing in progress', 'RF-Bogen: Darstellung in Arbeit',
+      'tramo en arco RF: trazado en curso'
+    ],
     geometry: ['cap ou distance imprimés en désaccord avec les positions', 'printed course or distance at odds with the positions',
       'gedruckter Kurs oder Abstand passt nicht zu den Positionen', 'rumbo o distancia impresos en desacuerdo con las posiciones'
     ]

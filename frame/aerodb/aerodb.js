@@ -971,12 +971,73 @@
     /** Points publiés sans position (points en route des pages DATA de l'eAIP) : cherchés dans la base, le plus proche du premier
      *  point placé de la procédure ; un tronçon SANS point (id null : VA, CA, VM, FM…) reste sans position, jamais placé. `lk` : les
      *  recherches de la construction en cours (lookups) ; sans lui, celles de ce seul appel. */
+    /** Les branches en arc (RF) d'une fiche dont l'arc n'est pas encore développé en points (le centre n'avait pas de position à la lecture de la page : un point de la base) : le centre est cherché comme un point en route, l'arc est
+     *  développé (procedures.js developArc) et inséré avant le point de fin ; une fiche dont la SEULE raison de doute était l'arc (`rf-arc`) et dont l'arc colle avec ce que la page imprime est rendue sûre (statut check), sinon elle reste
+     *  à vérifier. */
+    async function developRf(rec, lk, anchor) {
+      const P = await procLib(),
+        out = [];
+      let done = 0,
+        open = 0;
+      for (const p of rec.points) {
+        if (p.leg === 'RF' && p.center && !p.arc && !out[out.length - 1]?.arc && p.lat != null) {
+          const prev = out[out.length - 1],
+            all = await lk.places(p.center),
+            d = x => (anchor ? (x.item.lat - anchor.lat) ** 2 + ((x.item.lon - anchor.lon) * Math.cos(anchor.lat * Math.PI / 180)) **
+              2 : 0),
+            best = all.slice().sort((a, b) => d(a) - d(b))[0],
+            res = prev && best ? P.developArc(best.item, prev, p, p.turn, p.radius, p.nm) : null;
+          if (res) {
+            res.points.forEach(q => out.push({
+              seq: 0,
+              id: null,
+              lat: q.lat,
+              lon: q.lon,
+              alt: null,
+              leg: 'RF',
+              arc: true
+            }));
+            out.push(res.gaps.length ? {
+              ...p,
+              arcGaps: res.gaps
+            } : p);
+            done++;
+            if (res.gaps.length) open++;
+            continue;
+          }
+          open++;
+        }
+        out.push(p);
+      }
+      if (!done) return rec;
+      const codes = String(rec.doubt || '').split(',').filter(Boolean),
+        points = out.map((q, i) => ({
+          ...q,
+          seq: i + 1
+        }));
+      if (!open && rec.status === 'doubt' && codes.length === 1 && codes[0] === 'rf-arc') {
+        const {
+          doubt,
+          ...rest
+        } = rec;
+        return {
+          ...rest,
+          status: 'check',
+          points
+        };
+      }
+      return {
+        ...rec,
+        points
+      };
+    }
+    const needsArc = rec => rec.points.some((p, i, a) => p.leg === 'RF' && p.center && !p.arc && !a[i - 1]?.arc);
     async function placeProc(k, rec, lk = lookups()) {
-      if (!rec.points.some(p => p.lat == null && p.id)) return rec;
+      if (!rec.points.some(p => p.lat == null && p.id) && !needsArc(rec)) return rec;
       const anchor = rec.points.find(p => p.lat != null) || await (lk.anchor ||= api.coords(k).catch(() => null)).then(a => (a || (lk
         .missed =
         true), a));
-      return {
+      const placedRec = {
         ...rec,
         points: await Promise.all(rec.points.map(async p => {
           if (p.lat != null || !p.id) return p;
@@ -991,6 +1052,7 @@
           } : p;
         }))
       };
+      return developRf(placedRec, lk, anchor);
     }
     /** Zones dont un cadre (élargi de la marge) touche l'emprise b ; limitées aux zones publiées si elles sont connues. */
     /** Vrai si l'emprise b touche une des cases d'un degré d'une zone ({ "lat": [[lon0, lon1], …] }, manifeste). */

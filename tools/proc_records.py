@@ -9,6 +9,7 @@ import os
 import re
 from datetime import datetime, timezone
 
+import proc_arc
 import proc_geometry as G
 from proc_layouts import BY_NAME, detect_layout, ei_names, fingerprint, KNOWN_FINGERPRINTS, page_date, PARSERS, read_page
 from proc_pdf import PdfTimeout, waypoint_coords
@@ -155,9 +156,19 @@ def _points(icao, legs, coords, warnings, missed_after=None):
             missing.append(leg['id'])
         p = {'seq': len(pts) + 1, 'id': leg['id'], 'lat': c[0] if c else None, 'lon': c[1] if c else None,
              'alt': leg['alt'], 'leg': leg['leg']}
-        for k in ('turn', 'crs', 'nm', 'kt', 'rnp', 'vpa'):
+        for k in ('turn', 'crs', 'nm', 'kt', 'rnp', 'vpa', 'center', 'radius'):
             if leg.get(k) is not None:
                 p[k] = leg[k]
+        if leg.get('leg') == 'RF' and leg.get('center'):           # SOG-0248 : la branche en arc est DÉVELOPPÉE en points (proc_arc), du point précédent au point de fin, autour du centre, dans le sens du virage
+            before = next((x for x in reversed(pts) if x.get('lat') is not None), None)
+            ctr = coords.get(leg['center'])
+            res = proc_arc.develop(ctr, (before['lat'], before['lon']) if before and pts and pts[-1] is before else None, c, leg.get('turn'), leg.get('radius'), leg.get('nm'))
+            if res:
+                for lat, lon in res['points']:
+                    pts.append({'seq': len(pts) + 1, 'id': None, 'lat': round(lat, 6), 'lon': round(lon, 6), 'alt': None, 'leg': 'RF', 'arc': True})
+                p['seq'] = len(pts) + 1
+                if res['gaps']:
+                    p['arcGaps'] = res['gaps']
         if leg['over']:
             p['over'] = True
         if leg.get('synthetic'):

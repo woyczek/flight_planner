@@ -138,10 +138,10 @@
       const RR = K.READ_REASONS,
         rrKeys = ['layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout', 'geometry', 'unresolved', 'name', 'repeat',
           'zigzag',
-          'unread'
+          'unread', 'rf-arc'
         ];
       check(
-        'READ_REASONS: the 7 page codes and the 6 doubt codes, each with four non-empty strings [fr, en, de, es], and the catalogue serves it',
+        'READ_REASONS: the 7 page codes and the 7 doubt codes, each with four non-empty strings [fr, en, de, es], and the catalogue serves it',
         J(Object.keys(RR).sort()) === J([...rrKeys].sort()) && Object.values(RR).every(v => Array.isArray(v) && v.length === 4 && v
           .every(t =>
             typeof t === 'string' && t.trim())) && AeroSources.READ_REASONS === RR, Object.keys(RR));

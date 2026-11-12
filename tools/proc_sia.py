@@ -621,9 +621,27 @@ def parse_code_table(rows):
             cur['lost'] = cur.get('lost', 0) + 1
         else:
             lost += 1
+    last_rf = None
     for r in rows[start + 1:]:
         t = norm_tokens(r, split=rnp)
         if not t:
+            continue
+        if rnp and t == ['RF']:                                         # SOG-0248 : la branche en arc (RF) s'imprime sur TROIS lignes : « RF », puis « Center ST400 ST425 … » (centre, point de fin, puis les cellules d'un tronçon), puis « Radius 2.76 NM »
+            continue
+        if rnp and t[0] == 'Center' and len(t) >= 3:
+            leg = _leg(['RF', t[2]] + t[3:], True, warnings.append)
+            seen += 1
+            if leg:
+                leg['center'] = t[1]
+                read += 1
+                place(leg, '', None)
+                last_rf = leg
+            else:
+                miss()
+            continue
+        if rnp and t[0] == 'Radius' and len(t) >= 2 and last_rf is not None and re.fullmatch(r'\d+(?:\.\d+)?', t[1]):
+            last_rf['radius'] = float(t[1])
+            last_rf = None
             continue
         lane = LANE.match(' '.join(t)) if not rnp else None
         if lane:

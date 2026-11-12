@@ -1824,7 +1824,10 @@
       'punto repetido fuera de una espera'
     ],
     zigzag: ['trajet en zigzag', 'zigzag path', 'Zickzack-Verlauf', 'trayecto en zigzag'],
-    unread: ['lignes de la table non lues', 'table rows not read', 'Tabellenzeilen nicht gelesen', 'filas de la tabla sin leer']
+    unread: ['lignes de la table non lues', 'table rows not read', 'Tabellenzeilen nicht gelesen', 'filas de la tabla sin leer'],
+    'rf-arc': ['branche en arc RF : tracé en cours', 'RF arc leg: drawing in progress', 'RF-Bogen: Darstellung in Arbeit',
+      'tramo en arco RF: trazado en curso'
+    ]
   };
   /** Version du format de la base publiée que les constructeurs écrivent (`parserVersion` des meta.json) : la valeur de `VERSION` de
    *  shared/sia_base.js, DOIT la suivre (le cas K21 lit les deux fichiers et compare). Le module Données la montre à côté de celle d'une zone

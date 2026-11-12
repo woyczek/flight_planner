@@ -296,7 +296,58 @@
     return null;
   }
 
+  // ---- les branches en arc (RF, SOG-0248) : l'arc est DÉVELOPPÉ en points (centre, rayon, sens du virage), jamais une corde droite ; même géométrie que tools/proc_arc.py
+  const R_NM = 3440.065;
+  const bearingNm = (a, b) => {
+    const rad = Math.PI / 180,
+      la1 = a.lat * rad,
+      la2 = b.lat * rad,
+      dl = (b.lon - a.lon) * rad,
+      y = Math.sin(dl) * Math.cos(la2),
+      x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl),
+      h = Math.sin((la2 - la1) / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dl / 2) ** 2;
+    return [(Math.atan2(y, x) / rad + 360) % 360, 2 * R_NM * Math.asin(Math.sqrt(h))];
+  };
+  const destination = (a, bearing, nm) => {
+    const rad = Math.PI / 180,
+      la1 = a.lat * rad,
+      th = bearing * rad,
+      d = nm / R_NM,
+      la2 = Math.asin(Math.sin(la1) * Math.cos(d) + Math.cos(la1) * Math.sin(d) * Math.cos(th)),
+      lo2 = a.lon * rad + Math.atan2(Math.sin(th) * Math.sin(d) * Math.cos(la1), Math.cos(d) - Math.sin(la1) * Math.sin(la2));
+    return {
+      lat: la2 / rad,
+      lon: ((lo2 / rad + 540) % 360) - 180
+    };
+  };
+  /** L'arc de `start` à `end` autour de `center` ({ lat, lon } chacun), `turn` 'L' | 'R' : { points (intermédiaires), radius, sweep, arcNm, gaps } ou null (sens ou position manquants). `radiusNm` et `printedNm` : ce que la page imprime ;
+   *  un écart (rayon 0,3 NM, longueur d'arc 0,3 NM) est dit dans `gaps`, le tracé est rendu quand même. */
+  function developArc(center, start, end, turn, radiusNm, printedNm) {
+    const ok = x => x && Number.isFinite(x.lat) && Number.isFinite(x.lon);
+    if (!['L', 'R'].includes(turn) || !ok(center) || !ok(start) || !ok(end)) return null;
+    const [bs, rs] = bearingNm(center, start),
+      [be, re] = bearingNm(center, end),
+      sweep = turn === 'R' ? (be - bs + 360) % 360 : (bs - be + 360) % 360,
+      radius = (rs + re) / 2,
+      arcNm = radius * sweep * Math.PI / 180,
+      gaps = [];
+    if (Number.isFinite(radiusNm) && (Math.abs(rs - radiusNm) > 0.3 || Math.abs(re - radiusNm) > 0.3)) gaps.push(`rayon calculé ${rs.toFixed(2)} / ${re.toFixed(2)} NM pour ${radiusNm} imprimés`);
+    if (Number.isFinite(printedNm) && Math.abs(arcNm - printedNm) > 0.3) gaps.push(`longueur d'arc calculée ${arcNm.toFixed(2)} NM pour ${printedNm} imprimés`);
+    const n = Math.max(1, Math.ceil(sweep / 5)),
+      sign = turn === 'R' ? 1 : -1,
+      points = [];
+    for (let k = 1; k < n; k++) points.push(destination(center, (bs + sign * sweep * k / n + 720) % 360, radius));
+    return {
+      points,
+      radius,
+      sweep,
+      arcNm,
+      gaps
+    };
+  }
+
   window.AeroDBProcedures = {
+    developArc,
     chartFor,
     chartWords,
     RANK,

@@ -8417,3 +8417,79 @@ def k199(c):
     c.eq([leg(r) for r in ['TF DOGOV -1 1 7 117.2 5.0 - 3000 - 220 -1 . 0', 'TF RS701 -2 3 2 232.3 24.2 - FL70 - 220 -1 . 0', 'TF DOGOV -3 1 4 314.1 19.5 - 3000 - 220 -1 . 0', 'TF DOGOV - 117 117.2 5.0 - 3000 - 220 - 1.0', 'TF RS712 - 205 205.2 14.4 - 4000 - 220 -1 . 0']],
          [(('DOGOV', 117, 5.0, 1.0), []), (('RS701', 232, 24.2, 1.0), []), (('DOGOV', 314, 19.5, 1.0), []), (('DOGOV', 117, 5.0, 1.0), []), (('RS712', 205, 14.4, 1.0), [])],
          'the three rows with spaced digits give 117, 232, 314 (not 17, 32, 14); the rows that already read well are unchanged', what='courses')
+
+
+@case('K200', 'RF (arc) legs of LFST RNP 23 (SOG-0248): the three printed rows (« RF » / « Center ST500 ST430 … » / « Radius 2.47 NM ») are ONE leg {RF, end point, centre, radius, turn, arc length}; the arc is DEVELOPED in points around the centre (never a straight chord), checked against the printed radius and arc length; without a position for the centre the procedure stays « à vérifier » with the reason `rf-arc` in words', 'K', static=True,
+      rule='Ergonomist decision 12 Nov 2026 (iv-b): the « two RNAV to verify » of LFST were RF legs dropped by the reader (distance « ST415 → ST435 14.7 NM for 13.6 », course « 284° for 227° »). The reader now reads the three rows as one leg; proc_arc.develop gives the arc as intermediate points (a point every 5° at most) and its gaps (radius within 0.3 NM of the distance of each end to the centre, printed arc length within 0.3 NM); a record whose arc cannot be developed (centre without position) is marked doubt `rf-arc` (« branche en arc RF : tracé en cours »); aerodb develops it when it resolves the centre (procedures.js developArc, K201). Rows: the public AIP page AD_2_LFST_DATA_RWY23_FNA_RNP_CODE of the 29 Oct 2026 cycle; positions: its DATA_01 page (ST420, ST430) and, for the centre, the point that closes the printed geometry (the page DATA_01 does not give ST500).')
+def k200(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    P, R, G, A = (importlib.import_module(m) for m in ('proc_sia', 'proc_records', 'proc_geometry', 'proc_arc'))
+    rows = [
+        'AIP AD 2 LFST DA T A RWY23 FNA RNP CODE',
+        'FRANCE 28 NOV 2 4',
+        'STRASBOURG ENTZHEIM',
+        'PRECODING FNA RNP RWY 23',
+        'AMDT 1 2 /2 4 © SIA',
+        'FNA RNP RWY 23',
+        'RMK - MAG VAR 2020 2.5°E REF NAVAID : -',
+        'Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)',
+        'HLDG - STS26 - ---- - - -- -',
+        'IF IST23 - ---- 3500 4500 190 - -',
+        'TF FST23 - 226 228.7 3.3 - 3500 3500 - - 1.0',
+        'TF RW23 Yes 226 228.7 9.3 - - - - -3.00 / 54 0.3',
+        'APCH TF ST420 - 226 228.7 3.6 - - - 220 - 1.0',
+        'RF',
+        'Center ST500 ST430 - - - 7.1 R - 3500 220 - 1.0',
+        'Radius 2.47 NM',
+        'TF STS26 - 032 034.5 8.8 - 3500 4500 220 - 1.0',
+    ]
+    t = P.parse_code_table(rows)
+    rf = [x for g in t['groups'] for x in g['legs'] if x['leg'] == 'RF']
+    c.eq(([(x['id'], x['center'], x['radius'], x['nm'], x['turn'], x['kt'], x['rnp']) for x in rf], t['rows'], t['read']), ([('ST430', 'ST500', 2.47, 7.1, 'R', 220, 1.0)], 6, 6),
+         'the three rows are one RF leg: end point ST430, centre ST500, radius 2.47, arc 7.1 NM, right turn; all six leg rows read (the RF was lost before)', what='read')
+    coords = {'ST420': (48.505417, 7.571917), 'ST430': (48.559528, 7.480167)}
+    rec = R.records('LFST', t, coords, 'x', '2026-10-29')[0][0]
+    w = G.review(rec)
+    c.eq((rec['status'], rec['doubt'], any(q.get('arc') for q in rec['points']), G.PHRASES['rf-arc'], [x for x in w if 'arc RF' in x][:1] != []), ('doubt', 'rf-arc', False, 'branche en arc RF : tracé en cours', True),
+         'no position for the centre ST500: the procedure is « à vérifier » with the reason in words, no chord drawn', what='doubt')
+    s, e = coords['ST420'], coords['ST430']
+    mid = ((s[0] + e[0]) / 2, (s[1] + e[1]) / 2)
+    ctr = None
+    for sgn in (1, -1):                  # the centre that closes the printed geometry (radius 2.47, arc 7.1, right turn): one of the two points at 2.47 NM of both ends
+        b, dist = A._bearing_nm(s, e)
+        h = (2.47 ** 2 - (dist / 2) ** 2) ** 0.5
+        m = A.destination(s, b, dist / 2)
+        cand = A.destination(m, (b + 90 * sgn) % 360, h)
+        res = A.develop(cand, s, e, 'R', 2.47, 7.1)
+        if res and not res['gaps']:
+            ctr = cand
+    c.ok(ctr is not None, str(ctr), 'a centre at 2.47 NM of both ends gives a right-turn arc of 7.1 NM (radius and length agree with the page)')
+    coords2 = {**coords, 'ST500': ctr}
+    rec2 = R.records('LFST', t, coords2, 'x', '2026-10-29')[0][0]
+    G.review(rec2)
+    arcs = [q for q in rec2['points'] if q.get('arc')]
+    i = next(k for k, q in enumerate(rec2['points']) if q['id'] == 'ST430')
+    c.eq((rec2.get('status'), len(arcs) >= 20, all(q['id'] is None and q['leg'] == 'RF' for q in arcs), rec2['points'][i - 1].get('arc'), rec2['points'][i].get('arcGaps')), ('check', True, True, True, None),
+         'with the centre known: the arc is developed in 20+ intermediate points (a point every 5° at most) BEFORE the end point, no doubt, no gap against the printed radius and arc length', what='developed')
+    d = A.develop((48.671194, 7.751306), (48.636611, 7.797194), (48.706389, 7.7065), 'L', 2.76, 8.6)
+    c.eq((d['radius'], round(d['sweep']), d['gaps']), (2.761, 179, []), 'RWY 05 (real positions of ST400, ST415, ST425): radius 2.761 NM, 178.8° of arc, 8.614 NM: exactly what the page prints (2.76 and 8.6)', what='rwy05')
+    bad = A.develop((48.671194, 7.751306), (48.636611, 7.797194), (48.706389, 7.7065), 'L', 2.0, 5.0)
+    c.eq(len(bad['gaps']), 2, 'a printed radius and arc length that do not fit the positions: two gaps said (the procedure would stay in doubt)', what='gaps')
+
+
+@case('K201', 'RF arcs in aerodb (SOG-0248): AeroDBProcedures.developArc gives the same arc as tools/proc_arc.py (real LFST RWY 05 numbers) and the READ_REASONS say `rf-arc` in four languages', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist decision 12 Nov 2026 (iv-b): aerodb develops the arc itself (centre, radius, turn known) when the page could not place the centre at read time: placeProc → developRf inserts the intermediate points before the end point and, when the only doubt was `rf-arc` and the arc agrees with the page, serves the procedure as check. This case checks the geometry in JS against the Python numbers; the code `rf-arc` carries its words in AeroCatalogue.READ_REASONS (a test already keeps them equal to proc_geometry.CODES).')
+def k201(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const P = window.AeroDBProcedures || (await import('/frame/aerodb/procedures.js'), window.AeroDBProcedures);
+      const d = P.developArc({ lat: 48.671194, lon: 7.751306 }, { lat: 48.636611, lon: 7.797194 }, { lat: 48.706389, lon: 7.7065 }, 'L', 2.76, 8.6);
+      const bad = P.developArc({ lat: 48.671194, lon: 7.751306 }, { lat: 48.636611, lon: 7.797194 }, { lat: 48.706389, lon: 7.7065 }, 'L', 2.0, 5.0);
+      const none = [P.developArc(null, { lat: 1, lon: 1 }, { lat: 2, lon: 2 }, 'L'), P.developArc({ lat: 0, lon: 0 }, { lat: 1, lon: 1 }, { lat: 2, lon: 2 }, 'X')];
+      return { radius: +d.radius.toFixed(3), sweep: Math.round(d.sweep), arc: +d.arcNm.toFixed(3), n: d.points.length, gaps: d.gaps.length, badGaps: bad.gaps.length, none,
+        reasons: window.AeroCatalogue ? window.AeroCatalogue.READ_REASONS['rf-arc'] : null };
+    }""")
+    c.eq((r['radius'], r['sweep'], r['arc'], r['n'], r['gaps'], r['badGaps'], r['none']), (2.761, 179, 8.614, 35, 0, 2, [None, None]), 'the same arc as proc_arc.py: radius 2.761 NM, 179° (8.614 NM), 35 intermediate points, no gap; a radius and an arc length that do not fit: two gaps; a missing centre or a bad turn: null', what='arc')
+    c.ok(r['reasons'] is None or (len(r['reasons']) == 4 and r['reasons'][0].startswith('branche en arc RF')), str(r['reasons']), 'the reason in four languages (the page of the test may not load the catalogue)')
