@@ -31,6 +31,7 @@ import * as RL from '../../frame/lib/route_legend.js'; // la légende commune de
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
+import * as ATIS from './atis.js'; // la piste en service d'après l'ATIS des réseaux du vol (SOG-0090, second lot)
 import {
   createProcedures,
   sideChosen,
@@ -95,7 +96,7 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre) ; ../data/model_sets.js et model_kit.js : la règle de la coche
   // « usage personnel » du module Données (SOG-0210)
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
-    'procedures_texts.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js', 'suggest.js',
+    'procedures_texts.js', 'atis.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js', 'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
@@ -1993,6 +1994,7 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-ptlock svg{width:1em;height:1em;vertical-align:-.15em;margin-right:.2em}
 [data-module="fuel"] .f-card .fu-pt input[data-k]{width:4.2em;flex:none;text-align:center}
 [data-module="fuel"] .fu-ptgap{width:4.2em;flex:none}
+[data-module="fuel"] .fu-rwyprob .fu-rwyline{display:block} /* l'ATIS de chaque réseau, puis le METAR : une ligne chacun (SOG-0090) */
 [data-module="fuel"] .fu-chartonly .fu-chartline{display:block} /* une approche « carte seulement » par ligne (SOG-0248) */
 [data-module="fuel"] .fu-pt.fu-pthas{flex-wrap:wrap}
 [data-module="fuel"] .fu-pt.fu-pthas > .fu-ptid{flex:1 1 0}
@@ -2624,7 +2626,10 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="when30"]')) return setWhen(30);
   if (e.target.closest('[data-do="whennow"]')) return setWhen(0);
   const wb = e.target.closest('[data-do="wx"]');
-  if (wb) return wxRead(wb);
+  if (wb) {
+    atisRead(true); // « Lire la météo » relit aussi l'ATIS (SOG-0090)
+    return wxRead(wb);
+  }
   const b = e.target.closest('[data-do]'),
     pick = e.target.closest('[data-pick]');
   if (b?.dataset.do === 'simbrief') return loadSimbrief();
@@ -4149,6 +4154,7 @@ function routeSteps(r, distanceNm) {
 function goStep(i) {
   S.step = Math.max(0, Math.min(4, i));
   S.ui.step = S.step;
+  if (S.step === 1) atisRead(); // SOG-0090 : l'ATIS est lue à l'ouverture de l'étape des procédures
   S.ctx.data.put(UI_PATH, S.ui);
   for (const sec of S.body.querySelectorAll('.fu-step')) sec.hidden = +sec.dataset.s !== S.step;
   S.body.querySelectorAll('.fu-steps button').forEach((b, k) => k === S.step ? b.setAttribute('aria-current', 'step') : b.removeAttribute(
@@ -5783,6 +5789,9 @@ export async function mount(el, ctx) {
           '' // l'heure du METAR (SOG-0090 : « piste probable (METAR 1230Z, …) »)
       } : null;
     },
+    // SOG-0090, second lot : ce que l'ATIS de chaque réseau du vol dit de la piste d'un côté (lu par atisRead, jamais en minuterie)
+    atis: (icao, side, known) => (self.atis?.nets || []).map(n => ATIS.atisSide(n, self.atis.feeds?.[n], icao, side, known)).filter(
+      Boolean),
     // la limite de vent de travers de la fiche de l'appareil (maxCrosswindKt), 0 sans fiche ou sans limite
     crossLimit: () => +self.sheets?.find(p => p.id === self.flight.aircraft?.sheetId)?.maxCrosswindKt || 0
   });
@@ -6127,6 +6136,77 @@ async function sendFlight() {
   sendDraw();
 }
 
+// ---------------------------------------------------------------- l'ATIS des réseaux du vol (SOG-0090, second lot)
+/** Les deux flux publics que la suite lit déjà (la couche ATC de la Carte, le plan de vol du compte rendu) : aucun hôte neuf. */
+const ATIS_FEEDS = {
+  ivao: 'https://api.ivao.aero/v2/tracker/whazzup',
+  vatsim: 'https://data.vatsim.net/v3/vatsim-data.json'
+};
+/** Une lecture de moins de cinq minutes sert telle quelle (l'étape rouverte) ; « Lire la météo » la refait. */
+const ATIS_FRESH_MS = 5 * 60e3;
+/** Les réseaux du vol (Q-0038 en attente : la réponse de l'utilisateur ne change que cette fonction) : ceux que la compagnie courante
+ *  déclare (settings.networks, ivao / vatsim vrais ; « offline » seul : aucun) et pour lesquels le pilote a son identifiant. */
+async function flightNetworks() {
+  const a = await Promise.resolve().then(() => window.FrameData?.airline?.()).catch(() => null),
+    n = a?.settings?.networks || a?.networks ||
+    {}, // FrameData.airline() : { settings: { networks } } (le fichier de la compagnie, non fiable : === true seulement)
+    id = S.ctx.identity || {};
+  return ['ivao', 'vatsim'].filter(k => n[k] === true && String(id[k] || '').trim());
+}
+/** Un flux public par ctx.net, réduit à ce qui porte une ATIS (indicatif, lettre, heure, lignes) : ni nom ni identifiant de personne
+ *  n'est gardé ; null hors ligne ou en erreur. */
+async function atisFeed(url, net) {
+  try {
+    const r = await S.ctx.net.fetch(url, {
+      headers: {
+        accept: 'application/json'
+      }
+    });
+    if (!r.ok || r.headers?.get?.('x-sog-offline') || r.headers?.get?.('x-sog-unreachable')) return null;
+    const j = await r.json();
+    return net === 'vatsim' ? {
+      atis: (Array.isArray(j?.atis) ? j.atis : []).map(a => ({
+        callsign: a?.callsign,
+        atis_code: a?.atis_code,
+        last_updated: a?.last_updated,
+        text_atis: a?.text_atis
+      }))
+    } : {
+      clients: {
+        atcs: (Array.isArray(j?.clients?.atcs) ? j.clients.atcs : []).filter(a => a?.atis).map(a => ({
+          callsign: a.callsign,
+          atis: a.atis
+        }))
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+/** Lit l'ATIS des réseaux du vol (à l'ouverture de l'étape des procédures, sur « Lire la météo » ; jamais en minuterie), puis redessine
+ *  les procédures. Sans réseau du vol : rien n'est demandé. */
+async function atisRead(force = false) {
+  const s = S;
+  if (!s?.ctx?.net?.fetch || s.atisBusy || (!force && s.atis && Date.now() - s.atis.at < ATIS_FRESH_MS)) return;
+  s.atisBusy = true;
+  try {
+    const nets = await flightNetworks(),
+      feeds = {};
+    await Promise.all(nets.map(async n => {
+      feeds[n] = await atisFeed(ATIS_FEEDS[n], n);
+    }));
+    if (S !== s) return;
+    s.atis = {
+      nets: nets.filter(n => feeds[n]),
+      feeds,
+      at: Date.now()
+    };
+    s.P?.render?.();
+  } finally {
+    s.atisBusy = false;
+  }
+}
+
 /** Lecture qui attend le réseau, bornée : null au-delà de ms (late() appelé), la valeur sinon. */
 function bounded(job, ms, late) {
   return Promise.race([job, new Promise(res => setTimeout(() => {
@@ -6190,6 +6270,7 @@ async function completeMount(self) {
   }
   S.refsPending = false;
   themesLoad(); // les thèmes de la compagnie, pour l'étape Vol (SOG-0202 T2)
+  if (S.step === 1) atisRead(); // SOG-0090 : l'écran rouvert sur l'étape des procédures lit l'ATIS une fois
   if (S.view === 'plan') renderPlan();
   else keepScroll(S.body, renderSheets);
   // le vol encore attendu (flightArrives) : il reprendra le vol à son arrivée ; sinon la reprise, devis compris

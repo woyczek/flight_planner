@@ -4582,3 +4582,85 @@ def f151(c):
         c.ok(not c.js(f"!!document.querySelector('{FUEL} [data-do=sendflight]')"), '', 'no button once the flight left')
         c.context.unroute(re.compile(r'/__setup/changes'))
         c.context.unroute(re.compile(r'/__setup/batch'))
+
+
+
+def _atis_feeds(c, vatsim_text, vatsim_age_min=12, ivao_lines=None):
+    """FAKE public feeds (c.context.route on the two hosts the suite already reads, never the real ones), in the shapes of the survey of
+    12 Nov: VATSIM `atis[]` (callsign, atis_code, last_updated, text_atis; a name and a cid that must never be read) and IVAO
+    `clients.atcs[].atis` (lines, revision, timestamp; a userId). The calls are counted in st['calls']."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    iso = lambda m: (now - datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+    vat = {'controllers': [], 'atis': [{'callsign': 'LFML_ATIS', 'atis_code': 'F', 'last_updated': iso(vatsim_age_min), 'text_atis': vatsim_text,
+                                        'name': 'Invented Person', 'cid': 1000001, 'frequency': '128.500'}]}
+    iv = {'clients': {'atcs': [{'callsign': 'LFML_TWR', 'userId': 200001, 'atcSession': {'frequency': 118.1},
+                                'atis': {'lines': ivao_lines or [], 'revision': 'D', 'timestamp': iso(5)}}]}}
+    st = {'calls': []}
+
+    def handler(route):
+        u = route.request.url
+        st['calls'].append(u)
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(vat if 'vatsim' in u else iv))
+    c.context.route(re.compile(r'https://(data\.vatsim\.net|api\.ivao\.aero)/'), handler)
+    return st
+
+
+def _atis_open(c, networks):
+    """Fuel on the flight with the seeded procedures (LFML arrival), a company whose networks are `networks`, a pilot with both identities."""
+    c.open('fuel', docs=proc_docs() + proc_flight(None) + [['airline/settings.json', {'name': 'Test', 'networks': networks}, 'document']],
+           airfields=True, identity={'vatsim': '1000001', 'ivao': '200001'})
+    to_step(c, 1)
+    wait_rows(c, 'arr')
+
+
+@case('F152', 'Procedures: the runway in use from the ATIS of the flight\'s networks, above the METAR line (both when they differ, the ATIS alone '
+      'when they agree), with its gesture; the traps of the survey give no runway; an offline company reads nothing; an ATIS over 90 min is not said',
+      'F', tags=('fuel', 'weather'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0090 second lot (the ergonomist\'s GO, 12 Nov: a closed list of phrasings, a runway kept only if the aerodrome has it, a clash or a '
+      'phrasing off the list = nothing, never a timer, the age shown, 90 min at most; the networks of the current company crossed with the pilot\'s '
+      'identities, Q-0038); invented feeds in the shapes of the survey; captures 390 and 1 280')
+def f152(c):
+    T = 'modules/fuel/procedures_texts.js'
+    traps = ['LFML_TWR', 'ATTN RWY 31L RENAMED TO RWY 13R', 'VISUAL OPS RWY 31L', 'LFML 121700Z 31012KT 2000 R13R/1100U', 'RMK VOR 13R']
+    route_metar(c, {'LFML': (310, 12)})
+    line = f'{FUEL} [data-proc="arr"] [data-rwyprob]'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        st = _atis_feeds(c, ['MARSEILLE INFORMATION F', 'EXPECT ILS APCH RWY 13R. RWY IN USE 13R', 'TRL 70'], ivao_lines=traps)
+        _atis_open(c, {'vatsim': True, 'ivao': True})
+        c.until(f"!!document.querySelector('{line} [data-atisline=vatsim]') && !!document.querySelector('{line} [data-metarline]')", timeout=20000,
+                what=f'{w} px: the ATIS line above the METAR line')
+        atis = norm(c.text(f'{line} [data-atisline=vatsim]') or '')
+        head = norm(tx(T, 'procAtisRwy', c.lang).split('{rwy}')[0])
+        c.ok(atis.startswith(head) and atis[len(head):].strip().startswith('13R') and 'VATSIM' in atis and ' F' in atis and 'Z' in atis and norm(tx(T, 'procAtisTake', c.lang)) in atis
+             and 'RWY IN USE' not in atis and 'Invented' not in atis, atis, f'{w} px: « Piste en service : 13R (ATIS VATSIM, information F, …Z) », its gesture; never the text, never a name')
+        c.ok(not c.js(f"!!document.querySelector('{line} [data-atisline=ivao]')"), '', 'the IVAO ATIS made only of traps (renamed, visual ops, RVR, RMK) gives no runway')
+        order = c.js(f"[...document.querySelectorAll('{line} .fu-rwyline')].map(e => e.hasAttribute('data-atisline') ? 'atis' : 'metar')")
+        c.eq(order, ['atis', 'metar'], 'the ATIS above, the METAR (31L, it differs) below', what='order')
+        c.ok(sorted({u.split('/')[2] for u in st['calls']}) == ['api.ivao.aero', 'data.vatsim.net'], st['calls'], 'the two feeds the suite already reads, no other host')
+        c.js(f"document.querySelector('{line}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F152_{c.design}_{w}_{c.lang}_delivered.png')
+        c.context.unroute(re.compile(r'https://(data\.vatsim\.net|api\.ivao\.aero)/'))
+    c.tap(f'{line} [data-atisline=vatsim] [data-do="rwyprob"]')
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '13R', 'the ATIS runway taken by the gesture', timeout=8000)
+    c.until(f"!document.querySelector('{line} [data-atisline]')", timeout=5000, what='the ATIS line said no more once it is the flight\'s')
+    # agreeing with the METAR: the ATIS alone
+    _atis_feeds(c, ['RWY IN USE 31L'])
+    _atis_open(c, {'vatsim': True})
+    c.until(f"!!document.querySelector('{line} [data-atisline=vatsim]')", timeout=20000, what='the ATIS 31L')
+    c.ok(not c.js(f"!!document.querySelector('{line} [data-metarline]')"), '', 'the METAR line is quiet when it agrees with the ATIS')
+    c.context.unroute(re.compile(r'https://(data\.vatsim\.net|api\.ivao\.aero)/'))
+    # an ATIS older than 90 min: nothing; the METAR line alone
+    _atis_feeds(c, ['RWY IN USE 13R'], vatsim_age_min=100)
+    _atis_open(c, {'vatsim': True})
+    c.until(f"!!document.querySelector('{line} [data-metarline]')", timeout=20000, what='the METAR line')
+    c.settle()
+    c.ok(not c.js(f"!!document.querySelector('{line} [data-atisline]')"), '', 'an ATIS of 100 min is not said')
+    c.context.unroute(re.compile(r'https://(data\.vatsim\.net|api\.ivao\.aero)/'))
+    # a company offline only: nothing asked
+    st = _atis_feeds(c, ['RWY IN USE 13R'])
+    _atis_open(c, {'offline': True})
+    c.until(f"!!document.querySelector('{line} [data-metarline]')", timeout=20000, what='the METAR line')
+    c.settle()
+    c.eq(st['calls'], [], 'a company offline only reads no ATIS feed', what='calls')
+    c.context.unroute(re.compile(r'https://(data\.vatsim\.net|api\.ivao\.aero)/'))

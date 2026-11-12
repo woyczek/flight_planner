@@ -379,6 +379,11 @@ export function createProcedures(host) {
     return best;
   }
 
+  /** Le nom d'un réseau dans la ligne de l'ATIS (un nom propre, non traduit). */
+  const NET_NAME = {
+    ivao: 'IVAO',
+    vatsim: 'VATSIM'
+  };
   /** Une approche « finale seule » (SOG-0248) : la base n'a que le FAF et le seuil (la page DATA du SIA, sans table de codage), ses
    *  points synthétiques ; dite « ILS 23 — finale seule ». */
   function finalOnly(r) {
@@ -858,13 +863,30 @@ export function createProcedures(host) {
     // lien vers la carte (l'adresse composée par aerodb.chartOnly, jamais ici)
     // SOG-0090 : la piste probable d'après le METAR, dite en tête des listes avec son geste ; jamais posée d'office, cachée quand elle
     // est déjà celle du vol
+    // SOG-0090, second lot : au-dessus, la piste en service d'après l'ATIS de chaque réseau du vol (host.atis : la piste, la lettre,
+    // l'heure ; une ligne par réseau qui en a une, sans en préférer un) ; la ligne du METAR dessous quand elle diffère, tue quand elle
+    // concorde ; rien de ce qui est déjà la piste du vol
     const rp = el.querySelector('[data-r="rwyprob"]');
     if (rp) {
-      const p = m.nodata ? null : probableRwy(m),
-        cur = CF.proceduresOf(host.flight())[side]?.rwy,
-        show = !!p && PR.rwNum(p.r.id) !== PR.rwNum(cur);
-      rp.hidden = !show;
-      setHtml(rp, show ? `<span>${esc(tt(TX.procRwyProb, { rwy: PR.rwNum(p.r.id), at: m.wind.at ? `${m.wind.at}Z` : '—', dir: String(Math.round(+m.wind.dir)).padStart(3, '0'), kt: Math.round(+m.wind.kt) }))}</span> <button type="button" class="fu-linkbtn" data-do="rwyprob" data-side="${side}" data-rwy="${esc(p.r.id)}">${esc(tt(TX.procRwyTake))}</button>` : '');
+      const cur = PR.rwNum(CF.proceduresOf(host.flight())[side]?.rwy),
+        rwOf = k => (m.rwys || []).find(r => PR.rwNum(r.id) === k),
+        atis = m.nodata ? [] : (host.atis?.(m.icao, side, (m.rwys || []).map(r => PR.rwNum(r.id))) || []).filter(a => a?.rwys?.length && a
+          .rwys.every(rwOf)),
+        said = new Set(atis.flatMap(a => a.rwys)),
+        p = m.nodata ? null : probableRwy(m),
+        lines = atis.filter(a => !a.rwys.includes(cur)).map(a => {
+          const v = {
+              rwy: a.rwys.join(', '),
+              net: NET_NAME[a.net] || '',
+              letter: a.letter,
+              at: a.at || '—'
+            },
+            take = a.rwys.map(k => `<button type="button" class="fu-linkbtn" data-do="rwyprob" data-side="${side}" data-rwy="${esc(rwOf(k).id)}">${esc(a.rwys.length > 1 ? tt(TX.procAtisTakeOne, { rwy: k }) : tt(TX.procAtisTake))}</button>`).join(' ');
+          return `<span class="fu-rwyline" data-atisline="${esc(a.net)}"><span>${esc(tt(a.letter ? TX.procAtisRwy : TX.procAtisRwyNoL, v))}</span> ${take}</span>`;
+        });
+      if (p && PR.rwNum(p.r.id) !== cur && !said.has(PR.rwNum(p.r.id))) lines.push(`<span class="fu-rwyline" data-metarline><span>${esc(tt(TX.procRwyProb, { rwy: PR.rwNum(p.r.id), at: m.wind.at ? `${m.wind.at}Z` : '—', dir: String(Math.round(+m.wind.dir)).padStart(3, '0'), kt: Math.round(+m.wind.kt) }))}</span> <button type="button" class="fu-linkbtn" data-do="rwyprob" data-side="${side}" data-rwy="${esc(p.r.id)}">${esc(tt(TX.procRwyTake))}</button></span>`);
+      rp.hidden = !lines.length;
+      setHtml(rp, lines.join(''));
     }
     // retouche de F139 : une approche en doute choisie, sa raison dite en clair sous la liste (pas de survol sur un téléphone)
     const dl = el.querySelector('[data-r="doubt"]');

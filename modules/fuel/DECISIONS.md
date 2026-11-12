@@ -1746,3 +1746,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   bounded to the declared writes; the ergonomist: never `window.FrameData` for a send). The result said: sent (pushed), « pas encore :
   hors ligne », « aucun dépôt réglé » (local transport: nothing leaves). F151 (red before, fake launcher
   transport: no commit before the gesture, one commit with the flight).
+- **12 Nov 2026 — the runway in use from the ATIS** (SOG-0090, second lot; survey of the two public feeds the suite already reads, the
+  ergonomist's GO): modules/fuel/atis.js, pure. VATSIM `atis[]` (ICAO_ATIS, ICAO_A_ATIS / ICAO_D_ATIS) and IVAO `clients.atcs[].atis` (the
+  ATC position ICAO_TWR / APP / GND / DEL; a CTR never); a closed list of phrasings (ARR / LDG / LANDING RWY, DEP / DEPARTURE / TKOF RWY,
+  RWY IN USE, APCH RWY, « RUNWAY nn FOR ARRIVALS / DEPARTURES »); a runway kept only if the aerodrome has it; phrasings that disagree, or
+  two ATIS of a network that disagree: nothing; over 90 min: nothing. Shown: one line per network with an ATIS above the METAR line
+  (« Piste en service : 25 (ATIS VATSIM, information F, 1655Z) » and « Prendre la piste de l'ATIS », a gesture); the METAR line below when
+  it differs, quiet when it agrees. Read at the opening of the procedures step and on « Lire la météo des terrains », never on a timer; kept five
+  minutes. The networks of the flight = those of the current company (`settings.networks`, `=== true`) where the pilot has an identity,
+  in `flightNetworks()` only (Q-0038 pending). The feeds are reduced at reception to callsign, letter, time and lines: no name, no
+  identifier of a person is kept; the text is never shown. F152 (red before): the traps of the survey (« RWY 31L RENAMED TO RWY 13R »,
+  « VISUAL OPS », a RVR group, « RMK VOR ») give no runway; an offline company reads nothing.

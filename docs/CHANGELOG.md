@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the runway in use from the ATIS** — the ATIS of the company's networks (IVAO, VATSIM) says the runway, letter and time above the METAR line, with « Prendre la piste de l'ATIS »; a closed list of phrasings, nothing when in doubt (Fuel DECISIONS, help; noreg F152; SOG-0090).
 - **Fuel: « Envoyer ce vol à mes appareils »** — the current flight held on the device is said in the Departure summary and sent at once by its gesture, then « envoyé à … » (Fuel DECISIONS, help; noreg F151; SOG-0279).
 - **Fuel: display units are a setting of the device** — moved from fuel.json to cache/fuel/display.json, copied at the first read without loss, never sent (Fuel DECISIONS, help; noreg F153; SOG-0279).
 - **Map: the contours' unit follows the device's display settings** — `displayAlt` is read from `cache/fuel/display.json` (read-only), `fuel.json` as the fallback before Fuel has run (noreg D191; Features SOG, V3 Frame SOG-0279 (3)).

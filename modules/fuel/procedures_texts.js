@@ -76,6 +76,18 @@ export const TX = {
   procRwyProb: ['Piste probable : {rwy} (METAR {at}, vent {dir}/{kt})', 'Probable runway: {rwy} (METAR {at}, wind {dir}/{kt})',
     'Wahrscheinliche Piste: {rwy} (METAR {at}, Wind {dir}/{kt})', 'Pista probable: {rwy} (METAR {at}, viento {dir}/{kt})'
   ],
+  // SOG-0090, second lot : la piste en service d'après l'ATIS du réseau du vol (la piste, la lettre, l'heure ; jamais le texte)
+  procAtisRwy: ['Piste en service : {rwy} (ATIS {net}, information {letter}, {at})',
+    'Runway in use: {rwy} (ATIS {net}, information {letter}, {at})',
+    'Piste in Betrieb: {rwy} (ATIS {net}, Information {letter}, {at})',
+    'Pista en servicio: {rwy} (ATIS {net}, información {letter}, {at})'
+  ],
+  procAtisRwyNoL: ['Piste en service : {rwy} (ATIS {net}, {at})', 'Runway in use: {rwy} (ATIS {net}, {at})',
+    'Piste in Betrieb: {rwy} (ATIS {net}, {at})',
+    'Pista en servicio: {rwy} (ATIS {net}, {at})'
+  ],
+  procAtisTake: ['Prendre la piste de l’ATIS', 'Take the ATIS runway', 'Piste der ATIS übernehmen', 'Tomar la pista del ATIS'],
+  procAtisTakeOne: ['Prendre {rwy}', 'Take {rwy}', '{rwy} übernehmen', 'Tomar {rwy}'],
   procRwyTake: ['Prendre la piste probable', 'Take the probable runway', 'Wahrscheinliche Piste übernehmen', 'Tomar la pista probable'],
   // SOG-0210 : « Lire depuis Little Navmap » (la base de Little Navmap de CE poste, par le lanceur ; en mémoire de la page seulement)
   procLnmRead: ['Lire depuis Little Navmap', 'Read from Little Navmap', 'Aus Little Navmap lesen', 'Leer desde Little Navmap'],
