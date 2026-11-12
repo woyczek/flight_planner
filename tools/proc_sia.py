@@ -495,7 +495,7 @@ def _leg_of(tokens, c, rnp, warn):
         m = last and re.fullmatch(r'@(-?[\d.]+)/([\d.]+)', last)
         leg['vpa'] = float(m.group(1)) if m else None
         tail = extra[0] if extra else None
-        leg['rnp'] = float(tail) if tail and re.fullmatch(r'\d+(?:\.\d+)?', tail) else None
+        leg['rnp'] = float(tail) if tail and re.fullmatch(r'\d{1,3}(?:\.\d{1,3})?', tail) else None
     else:
         nav = last and re.fullmatch(r'RNAV\s+(\d+)', last)          # « RNAV 1 » : précision de 1 NM
         leg['rnp'] = float(last) if last and re.fullmatch(r'\d+(?:\.\d+)?', last) else float(nav.group(1)) if nav else None
@@ -553,6 +553,18 @@ def _garbled_title(t):
 
 
 STAR_TITLE = re.compile(r'[A-Z]{2,5} ?\d[A-Z](?: \(.*\))?')
+
+
+RADIUS_MAX = 50.0        # NM : un rayon d'arc RF imprimé au-delà n'est pas lu (page piégée ou cellule déplacée) ; jamais inf ni nan dans le fichier
+
+
+def _radius(w):
+    """Rayon d'un arc RF (« 2.20 », « 2,20NM »), en NM, ou None s'il n'est pas dans ]0 ; RADIUS_MAX] : le tronçon reste sans rayon, la géométrie le dit (rf-arc)."""
+    try:
+        v = float(w.replace(',', '.').replace('NM', ''))
+    except ValueError:
+        return None
+    return v if 0 < v <= RADIUS_MAX else None
 
 
 def _arc_of(legs):
@@ -659,17 +671,17 @@ def parse_code_table(rows):
             else:
                 miss()
             continue
-        if rnp and t[0] == 'Radius' and len(t) == 2 and last_rf is not None and re.fullmatch(r'\d+[.,]\d+(?:NM)?', t[1]):       # « Radius 2,20NM » : virgule décimale et NM collé
-            last_rf['radius'] = float(t[1].replace(',', '.').replace('NM', ''))
+        if rnp and t[0] == 'Radius' and len(t) == 2 and last_rf is not None and re.fullmatch(r'\d{1,2}[.,]\d{1,3}(?:NM)?', t[1]):       # « Radius 2,20NM » : virgule décimale et NM collé
+            last_rf['radius'] = _radius(t[1])
             last_rf = None
             continue
         if rnp and t == ['Radius'] and last_rf is not None:
             want_radius = True
             continue
-        if rnp and want_radius and len(t) == 1 and re.fullmatch(r'\d+[.,]\d+(?:NM)?', t[0]):
+        if rnp and want_radius and len(t) == 1 and re.fullmatch(r'\d{1,2}[.,]\d{1,3}(?:NM)?', t[0]):
             want_radius = False
             if last_rf is not None:
-                last_rf['radius'] = float(t[0].replace(',', '.').replace('NM', ''))
+                last_rf['radius'] = _radius(t[0])
                 last_rf = None
             continue
         if rnp and t[0] == 'Center' and len(t) >= 3:
@@ -683,8 +695,8 @@ def parse_code_table(rows):
             else:
                 miss()
             continue
-        if rnp and t[0] == 'Radius' and len(t) >= 2 and last_rf is not None and re.fullmatch(r'\d+(?:\.\d+)?', t[1]):
-            last_rf['radius'] = float(t[1])
+        if rnp and t[0] == 'Radius' and len(t) >= 2 and last_rf is not None and re.fullmatch(r'\d{1,2}(?:\.\d{1,3})?', t[1]):
+            last_rf['radius'] = _radius(t[1])
             last_rf = None
             continue
         lane = LANE.match(' '.join(t)) if not rnp else None

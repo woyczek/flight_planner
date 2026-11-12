@@ -8788,3 +8788,25 @@ def k214(c):
     z = g['STR 1Z']['legs']
     c.eq([(x['leg'], x.get('id'), x.get('crs'), x.get('nm')) for x in z], [('CA', None, 210, None), ('CF', 'LUPEN', 212, None), ('TF', 'STR', 301, 7.7)],
          'STR 1Z: climb on 210, to LUPEN on 212, then STR on 301 for 7.7 NM; the course of the CF stays the course (not a distance)', what='STR 1Z')
+
+
+@case('K215', 'Trapped PDF text does not stop the procedure reader (audit 170): « /g » followed by thousands of digits is not a glyph name (no ValueError from int() past 4300 digits, the fragment is left as printed); an RF radius of 400 digits, or over 50 NM, is not read (no inf in the file), the leg keeps no radius and stays in doubt', 'K', static=True,
+      rule='Security audit 170 (Sécurisation, 12 Nov 2026), low severity: a trapped PDF could stop the reading of a page (ValueError) or write « Infinity » in a procedure file (float of a 400-digit run), unreadable by the page. Names of glyphs have at most three digits; a radius of an RF arc is a few NM (bound 50); the accuracy cell has at most three digits.')
+def k215(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    PP = importlib.import_module('proc_pdf')
+    big = '/g' + '9' * 5000
+    c.eq((PP._glyphs(big) == big, PP._glyphs(big + '/g50/g46/g48') == big + '/g50/g46/g48', PP._glyphs('/g1000/g50/g46/g48')), (True, True, '/g1000RNP'),
+         'a 5000-digit « /g » run raises nothing and is left as printed; a name of four digits is no glyph name, the real ones next to it still decode', what='glyphs')
+    base = ['AIP AD 2 LFBD DATA RWY05 RNP A VPT CODE', 'PRECODING RNP A VPT RWY 05', 'RNP A RWY 05 (VPT)', HDR_LFBD, 'IF FD05A - - - - - 4000 4000 185 - -', 'RF', 'Center CD051', 'BD05C - - - 5.7 L - - 185 -3.40 /49 -', 'Radius']
+    out = []
+    for rad in ('2,20NM', '9' * 400 + ',5NM', '99,9NM', '0,00NM'):
+        t = _sia(base + [rad])
+        rf = [x for q in t['groups'] for x in q['legs'] if x['leg'] == 'RF']
+        out.append(rf[0].get('radius') if rf else 'noRF')
+    c.eq(out, [2.2, None, None, None], 'a radius is kept in ]0 ; 50] NM only; a run of 400 digits, 99.9 and 0 leave the leg without radius (never inf)', what='radius')
+    t = _sia(base[:8] + ['Radius ' + '9' * 400 + '.5'])
+    rf = [x for q in t['groups'] for x in q['legs'] if x['leg'] == 'RF']
+    c.eq(rf[0].get('radius') if rf else 'noRF', None, 'the one-line form « Radius <400 digits> » is ignored too', what='oneline')

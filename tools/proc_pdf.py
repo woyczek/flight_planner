@@ -42,7 +42,7 @@ def _unshift(text):
     return ''.join(chr(ord(ch) + 29) if 0x13 <= ord(ch) <= 0x64 else ch for ch in text)
 
 
-GLYPH = re.compile(r'/g(\d+)')
+GLYPH = re.compile(r'/g(\d{1,3})(?!\d)')      # trois chiffres au plus : « /g » suivi de milliers de chiffres n'est pas un nom de glyphe (int() lèverait au-delà de 4300 chiffres)
 
 
 def _glyphs(text):
