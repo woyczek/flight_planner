@@ -8650,7 +8650,7 @@ def k205(c):
         res = registry_fr.derive(str(src), str(out))
         raw = (out / 'fr_immat.json').read_text(encoding='utf-8')
         doc = json.loads(raw)
-        c.eq((res['rows'], res['makerBlanked'], sorted({r[1] for r in doc['rows']}), 'DUPONT' in raw), (7, 2, ['', 'CESSNA'], False), '10 CESSNA kept, the two « DUPONT JEAN » rows keep their registration and model but an EMPTY maker: the name is nowhere in the derived file', what='threshold')
+        c.eq((res['rows'], res['makerBlanked'], sorted({r[1] for r in doc['rows']}), 'DUPONT' in raw), (12, 2, ['', 'CESSNA'], False), '10 CESSNA kept, the two « DUPONT JEAN » rows keep their registration and model but an EMPTY maker: the name is nowhere in the derived file', what='threshold')
         fn, check = RJ.REGISTRY[('aircraft', 'registry')]
         ctx = {'data': str(td / 'data')}
         r = fn(RJ.Job('aircraft', 'registry', {}), check({'reg': 'F-PZZZ'}), ctx)
