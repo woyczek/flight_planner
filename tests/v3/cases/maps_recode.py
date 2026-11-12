@@ -5976,3 +5976,20 @@ def d_turns(c):
     c.ok(r['hair'] == 3 and r['same'] and r['turn'] in ('L', 'R'), str(r), 'a hairpin (135°) is cut at its tangent points and joined by an arc')
     c.ok(r['rr'] > 3 and abs(r['tangentLen'] - r['rr'] * 2.414) < 1, str(r), 'the arc’s radius and the tangent length agree (t = r tan(δ/2)); the radius was shrunk to fit the legs')
     c.eq([r['small'], r['route'], r['missed']], [2, 2, 2], 'a turn under 90° (here 45°), the route and the missed approach keep their corner', what=str(r))
+
+
+@case('D190', 'The arc points of an RF leg (arc: true, no id) carry the procedure’s line through all of them, and are neither dots, labels nor targets: the polyline is never a straight line across the arc', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='AeroDB (SOG-0248, RF legs: LFST RNP 05 / 23): a procedure’s points can now contain arc points { arc: true, id: null, leg: «RF», lat, lon }, twenty or more between the previous point and the RF end; the line goes through every positioned point in flight order (AeroDBProcedures.pathOf); nothing named, no label, no dot, no hover target on an arc point')
+def d_arcpoints(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const S = window.__mp.S, P = await import('/modules/maps/procs.js'), toC = (la, lo) => ({ x: lo * 100, y: -la * 100 }), cv = document.createElement('canvas').getContext('2d');
+      const arc = Array.from({ length: 22 }, (_, k) => ({ origin: 'app', arc: true, id: null, leg: 'RF', phase: 'main', lat: 43.60 + .004 * Math.sin(k / 21 * Math.PI) , lon: 5.00 + .01 * k }));
+      S.route.path = [{ origin: 'route', id: 'LFRS', lat: 47.1, lon: -1.6 }, { origin: 'app', id: 'AAAAA', lat: 43.6, lon: 4.9, phase: 'main' }, ...arc, { origin: 'app', id: 'BBBBB', lat: 43.5, lon: 5.3, phase: 'main', arc: { centre: { lat: 43.5, lon: 5.1 } }, turn: 'R' }, { origin: 'route', id: 'LFML', lat: 43.44, lon: 5.2 }];
+      S.procs = { app: { id: 'LFML.APP.RNP13', name: 'RNP 13', status: 'ok' } }; S.route.flight = { ...S.route.flight, route: { ...S.route.flight.route, procedures: { arr: { app: 'LFML.APP.RNP13' } } } };
+      const L = P.layout(cv, toC, 300), app = L.segs.filter(s => s.o === 'app'), ends = new Set(app.flatMap(s => [s.a, s.b].map(q => `${Math.round(q.x)}:${Math.round(q.y)}`)));
+      const through = arc.every(a => ends.has(`${Math.round(a.lon * 100)}:${Math.round(-a.lat * 100)}`));
+      return { segs: app.length, through, dots: L.dots.length, pts: L.pts.length, namedPts: L.pts.every(q => q.src && q.src.id), names: L.names.length } }""")
+    c.ok(r['through'] and r['segs'] >= 23, str(r), 'the line goes through all twenty-two arc points (a segment between each pair)')
+    c.ok(r['dots'] <= 3 and r['namedPts'], str(r), 'no dot and no label on an arc point: only the named fixes')

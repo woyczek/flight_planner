@@ -264,6 +264,12 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     cur = q;
     vec = false;
     if (!missed && (p.origin === 'star' || p.origin === 'app')) anchor = q;
+    // un point d'ARC (jambe RF : { arc: true, id: null }, sans nom) fait passer le trait mais n'est ni un point, ni un libellé, ni une cible (AeroDB, SOG-0248)
+    if (p.arc === true) {
+      cur = q;
+      vec = false;
+      continue;
+    }
     if (p.origin !== 'route' && !isRwy(p)) dots.push(q);
     if (p.origin !== 'route' || p.alt || p.kt) pts.push(q);
   }
