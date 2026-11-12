@@ -1018,6 +1018,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 166 | The zip guard, the FRA cap and the ISO page cap (24144e4c4): the points of 165 closed | acceptable, two notes |
 | 167 | The follow-ups of 166: the older zip openings through the guard, 600 ENR pages, FRA archive two workbooks, ISO reading time (72afa5864, bfce4aa0e) | acceptable |
 | 168 | The French aircraft register reader: five columns by header name, original never kept, code-only refusals (7c6ec44ae, f6f5874d9, acac33c67, bcb60f834) | one to fix, fixed (builders' names in CONSTRUCTEUR) |
+| 169 | The Data screen rebuilt (044ece8cf to 90a3d43bd: country groups, country sheet and its gestures, what is left to do, Publish with the plan first, multiple selection, `zipmember.js`, the last operation's thread from `base/last`), `sendNow` (03a8c1813), the version guard (d303565f8) | acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2493,6 +2494,28 @@ builder with two aircraft give CESSNA kept and the builder's name nowhere (file,
 seen once of `MODELE` (166 of two or three alphabetic words), `AERODROME_ATTACHE` (144) and `NUMERO_SERIE` (none of that form) were read by hand: no
 natural person's name (designer surnames inside type names, communes, fields, a few “lieu-dit”), so only `CONSTRUCTEUR` is thresholded. The original `export.csv` stays in the user's Downloads, which the suite
 does not touch.
+
+**169. The Data screen rebuilt, `sendNow` and the version guard — acceptable, two notes.** *Text into markup.* Read by sinks: the module builds
+text first and escapes at the HTML boundary (`esc(...)` on every label, reason, `why`, `refused`, file name seen in Downloads (cut to 120
+characters), `partNames` (control characters removed, 40 characters, 12 names), `from`, the busy card and the journal); the numbers that
+reach an attribute or a style go through `num` / `Math.round` (`progress`), the SVG path data are made of finite numbers only (`pathOf`).
+A dynamic probe backed this: every free-text string of the launcher's answers in the 98 Data cases carried a payload that calls
+`/__pwn?k=<field>` if it is ever taken as markup (the same payload injected by hand did call it): no call. Its reach is limited (the payload
+was shown as text in a handful of states, because tainting free text breaks many flows), so the reading is the main evidence.
+*Links.* Catalogue and `where` addresses become a link only through `isHttps` (`^https://[^\s"'<>]+$`), escaped in `href`, with `target=_blank
+rel="noopener noreferrer"`, otherwise written as text (a `javascript:`, `data:` or `http:` address is never a link). *Page to launcher.*
+Every call goes through the frame's `ctx.launcher` client (declared routes; 403 without a call for any other), the upload name is an encoded
+hint of 200 characters, `base/publish`, `base/fetch`, `base/build`, `base/pickup` and `base/cycle` keep their closed arguments on the
+launcher's side (zone identifiers by pattern, bounded lists). *`zipmember.js`.* Read in the earlier pass: bounds on the entries (200,000), the
+directory (64 MB), the member (128 MB, announced and actually read: a bomb is cut at the announced size), zip64 followed through the locator
+and checked, CRC-32 verified, nothing written or sent from it. *The reads loop (90a3d43bd).* A read the launcher refuses as “busy” is tried
+again twice at once and then at most every 4 seconds per kind of read (`tries`, `at`): no tight loop. *`sendNow` (03a8c1813).* It applies the
+same `allowed(path)` guard as `put` to each path before anything is sent, so a module sends only its declared writes. *Version guard
+(d303565f8).* A remote revision counts as “own” only when it equals one of the ten last revisions this browser pushed (at most 200 paths):
+content-addressed, so it is that same content coming back; a different remote version is still a conflict. Notes: (1) the selectors
+`[data-zone="${z}"]` of `countries.js` (two places) take the identifier without `CSS.escape` (the neighbouring ones use it): a hostile
+identifier would raise a selector error, not inject anything; (2) the dynamic probe is a probe, not a case: a permanent case would taint the
+fields one family at a time to keep the flows alive.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
