@@ -2,8 +2,8 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-12",
-  "tests": 162,
+  "at": "2026-11-13",
+  "tests": 164,
   "verdicts": 59
  },
  "apps": [
@@ -304,6 +304,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T17:53:08Z"
+  },
+  {
+   "id": "SOG-0092",
+   "app": "pilote",
+   "title": {
+    "fr": "Calques météo sur la carte depuis la bibliothèque de Météo (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
+    "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
+    "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
+    "es": "Capas meteorológicas en el mapa desde la biblioteca de Meteo (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación"
+   },
+   "test": "Recharge la page. Ouvre Météo pour un vol (elle charge sa prévision), puis la Carte › Couches : coche « Météo (vent, nuages) ». Les barbules du vent et le voile des nuages se dessinent au niveau de croisière, la ligne sous la case dit le niveau et l'heure (mi-route), un trait fin borde la zone couverte. Sur un vol dont Météo n'a rien chargé : « Pas de prévision chargée : ouvrir Météo ». Dis-moi si la case fait double emploi avec « Vents en altitude », et si le voile des nuages se lit sur un vrai run.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-12T23:02:04Z"
   },
   {
    "id": "SOG-0093",
@@ -2371,6 +2385,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T22:46:31Z"
+  },
+  {
+   "id": "SOG-0286",
+   "app": "compagnie",
+   "title": {
+    "fr": "Compagnie › Registre : trop de lignes par mission — reprendre le modèle de la V2",
+    "en": "Airline › Register: too many lines per mission — take the V2 layout",
+    "de": "Airline › Register: too many lines per mission — take the V2 layout",
+    "es": "Airline › Register: too many lines per mission — take the V2 layout"
+   },
+   "test": "Recharge la page. Compagnie › Registre : une ligne par mission (signe d'état, identifiant, titre ; à droite la famille, la série, origine → destination) ; plus de vingt missions tiennent à l'écran. Le chevron déplie la ligne : état en mots, chemin, « Corriger », « Retirer ». Le filtre de famille et la recherche sont en tête. Dis-moi s'il te manque des colonnes de la V2 (Statut, Durée, CR, Généré) ou le tri par colonne.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-12T22:59:55Z"
   }
  ],
  "decisions": [
@@ -2431,6 +2459,21 @@
     "Ne rien changer au site publié pour l'instant"
    ],
    "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0040",
+   "fiche": "SOG-0287",
+   "app": "compagnie",
+   "question": "Éditeur de missions en V3 : la maquette te va-t-elle ? (modules/missions/maquette/ : editeur_cadre_1280.png, editeur_lieux_1280.png, et les deux mêmes au 390)",
+   "context": "Six étapes reprises du pas à pas de la V2 : Cadre, Équipes, Lieux, Récit, Risques, Chronologie et cartes. Au téléphone une étape à la fois ; à l'écran large les étapes à gauche, le formulaire au centre, l'aperçu de la fiche et « À compléter » à droite. « Enregistrer » écrit sur l'appareil, la mission part avec l'envoi groupé. Restent en V2 : la commande à ChatGPT, les exports PDF, l'arbre YAML, le studio cartographique. Pas de code avant ta réponse.",
+   "options": [
+    "Oui, on code sur cette maquette",
+    "Oui, avec mes remarques (dans le texte)",
+    "Non, à reprendre (dis-moi quoi)"
+   ],
+   "since": "2026-11-13",
    "state": "todo",
    "recommended": 0
   }

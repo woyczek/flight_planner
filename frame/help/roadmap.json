@@ -1,10 +1,10 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-12",
+ "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "200e9a8",
+  "organisation": "89a0ba3",
   "fiches": 287,
   "untranslated": 0,
   "priorities": 243
@@ -802,12 +802,13 @@
     {
      "id": "SOG-0092",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Calques météo sur la carte depuis la bibliothèque de Météo (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
      "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
      "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
      "es": "Capas meteorológicas en el mapa desde la biblioteca de Meteo (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación",
-     "rank": 28
+     "rank": 28,
+     "test": true
     },
     {
      "id": "SOG-0095",
@@ -1947,16 +1948,17 @@
     {
      "id": "SOG-0286",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Compagnie › Registre : trop de lignes par mission — reprendre le modèle de la V2",
      "en": "Airline › Register: too many lines per mission — take the V2 layout",
      "de": "Airline › Register: too many lines per mission — take the V2 layout",
-     "es": "Airline › Register: too many lines per mission — take the V2 layout"
+     "es": "Airline › Register: too many lines per mission — take the V2 layout",
+     "test": true
     },
     {
      "id": "SOG-0287",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Compagnie : l'éditeur de missions en V3",
      "en": "Airline: the mission editor in V3",
      "de": "Airline: the mission editor in V3",
