@@ -643,7 +643,7 @@ function sheetHtml() {
     null, // la source du dernier geste de fichier garde l'avancement et le message
     seenAny = inCov && hands.some(s => handSeen(s, z, split.find(x => x.id === s)?.item, cy)),
     op = cardAreaHtml('base', 'sheet')
-    .trim(); // la carte de l'opération qui a refusé le geste de CETTE fiche ; la fiche ne montre que son pays (son fil), jamais le bilan d'une autre opération
+    .trim(); // la carte de l'opération qui a refusé le geste de CETTE fiche ; la fiche ne montre que son pays (son fil), jamais le bilan d'une autre opération ; le fil, la carte et l'avancement de la dernière opération sont SOUS l'état, avant les sources (visibles sans parcourir les inventaires)
   const gp = packList().find(x => x.pack.zones.includes(id))?.pack,
     sub = [id.toUpperCase(), gp ? tt(TX.d2.subGroup, {
       g: gp.names[li()] || gp.names[0]
@@ -657,9 +657,10 @@ function sheetHtml() {
     ${S.cw.proc?.state === 'ready' ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
     ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
     ${inCov ? '' : addHtml(id, cy)}
+    ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? failedHtml(id) : ''}${inCov && progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny) : ''}
     <h4 class="d-sh">${esc(tt(T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
-    ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? sheetPublishHtml(id, z) : ''}${inCov ? failedHtml(id) : ''}
-    ${gest ? `<div class="d-gest" data-sheet-gestures>${gest}</div>` : ''}${inCov ? updateBlockHtml(id, !seenAny, seenAny) : ''}
+    ${inCov ? sheetPublishHtml(id, z) : ''}
+    ${gest ? `<div class="d-gest" data-sheet-gestures>${gest}</div>` : ''}${inCov && !progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny) : ''}
     ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}${inCov ? removeHtml(id) : ''}</section>`;
 }
 /** Le bloc de la base sous la barre d'état : la carte (et la fiche à sa droite quand un pays est ouvert, en large), puis « ce qui reste à faire ce mois-ci », puis les paquets. */
@@ -817,10 +818,14 @@ export async function wantCycle(zone) {
     zone,
     state: 'ready',
     data: keep,
-    dirty: true
+    dirty: true,
+    at: Date.now(),
+    tries: (c?.tries || 0) + 1
   } : {
     zone,
-    state: 'busy'
+    state: 'busy',
+    at: Date.now(),
+    tries: (c?.tries || 0) + 1
   } : {
     zone,
     state: 'unread'
@@ -860,9 +865,13 @@ export async function wantLast() {
   } : final?.status === 409 ? keep ? {
     state: 'ready',
     data: keep,
-    dirty: true
+    dirty: true,
+    at: Date.now(),
+    tries: (c?.tries || 0) + 1
   } : {
-    state: 'busy'
+    state: 'busy',
+    at: Date.now(),
+    tries: (c?.tries || 0) + 1
   } : {
     state: 'unread'
   };
@@ -921,9 +930,13 @@ export async function wantTodo() {
   } : final?.status === 409 ? keep ? {
     state: 'ready',
     data: keep,
-    dirty: true
+    dirty: true,
+    at: Date.now(),
+    tries: (c?.tries || 0) + 1
   } : {
-    state: 'busy'
+    state: 'busy',
+    at: Date.now(),
+    tries: (c?.tries || 0) + 1
   } : {
     state: 'unread'
   };
@@ -998,9 +1011,11 @@ export function readsIdle() {
     c.statusDirty = false;
     refreshStatus(S.d.cov.ids); // les lectures qui suivent attendent celle-ci (S.statusP)
   }
-  if (c.sheet && (c.cycle?.dirty || c.cycle?.state === 'busy')) wantCycle(c.sheet);
-  if (c.todo?.dirty || c.todo?.state === 'busy') wantTodo();
-  if (c.last?.dirty || c.last?.state === 'busy') wantLast();
+  // une lecture que le lanceur a refusée (une autre opération tourne chez lui sans que la page la connaisse) est retentée tout de suite deux fois (la fin d'une opération la débloque), puis au plus toutes les 4 s : chaque relecture redessine l'écran, qui rappelle readsIdle, et le lanceur occupé faisait tourner la page en boucle
+  const due = r => !!r && (r.dirty || r.state === 'busy') && !(r.tries >= 3 && Date.now() - r.at < 4000);
+  if (c.sheet && due(c.cycle)) wantCycle(c.sheet);
+  if (due(c.todo)) wantTodo();
+  if (due(c.last)) wantLast();
   if (c.lc?.nat?.deferred && c.lc.open.change)
     natOpen(); // la reprise des routes NAT, reportée pour cause d'opération en cours, repart quand l'écran est libre
   wantPlan(); // le plan de « Publier » : lu dès que l'état des zones l'est, relu quand il est « à relire »

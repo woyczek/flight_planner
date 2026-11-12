@@ -5217,6 +5217,11 @@ def l67(c):
     _all_open(c)
     c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the opening is over')
     c.eq(c.js("document.querySelector('[data-covtable]').open"), False, 'the block is folded', what='folded')
+    for _ in range(50):   # the read of the map follows the state read: wait for it, never a fixed delay
+        if _posts(st, 'coverage'):
+            break
+        c.wait(150)
+    c.wait(600)
     c.eq(len(_posts(st, 'coverage')), 1, 'the block reads nothing itself until it is opened; the world map read base/coverage once at the opening for its hatch (procSources, SOG-0264)', what='one read by the map')
     c.eq(norm(c.text('[data-covtable] > summary')), norm(T('title')), 'named in the language of the run', what='title')
     c.js("document.querySelector('[data-covtable]').open = true")
@@ -7666,6 +7671,10 @@ def l99(c):
     fail = [{'zone': 'gb', 'source': 'nats', 'error': 'http', 'status': 404}]
     _l97_run(c, st, world, [_l97_dl('done', failed=fail, jid='f1')])
     c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]')", timeout=20000, what='the thread of the failed operation')
+    c.eq(c.js("(s => { const th = s.querySelector('[data-sheet-thread]'), cells = s.querySelector('.d-cells3'), src = s.querySelector('[data-sheet-source]'); return !!(cells.compareDocumentPosition(th) & 4) && !!(th.compareDocumentPosition(src) & 4) })(document.querySelector('[data-sheet=gb]'))"), True, 'the thread of the last operation sits UNDER the state cells and ABOVE the sources (visible without scrolling through the inventories)', what='thread order')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-sheet=gb] [data-sheet-thread]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L99_{c.width}_{lang}_thread.png')
     c.eq(c.js("!!window.__modal"), False, 'no question at any time', what='no modal')
     steps = c.js("[...document.querySelectorAll('[data-sheet=gb] [data-thread-step]')].map(s => [s.dataset.threadStep, s.dataset.ok])")
     c.eq(steps, [['download', 'no'], ['build', 'todo']], 'the thread: the download FAILED (a red failure, with its reason), the build was not reached (to do, neutral)', what='failed thread')
@@ -7690,6 +7699,7 @@ def l99(c):
     n0 = len([p for p in st['posts'] if p['verb'] == 'build'])
     st['status'] = lambda args: _status({**world['zs'], 'gb': _zst('up-to-date') if len([p for p in st['posts'] if p['verb'] == 'build']) > n0 else world['zs']['gb']})
     c.js(_L97_MODAL)
+    c.js("document.querySelector('[data-sheet=gb] [data-act=zop-retry]').scrollIntoView({ block: 'center' })")   # the sheet of the United Kingdom lists three files to take by hand now (catalogue of 12 Nov): the thread is under them, inside the scroll of the sheet
     c.tap('[data-sheet=gb] [data-act=zop-retry]')
     c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread][data-thread-state=done]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=30000, what='the thread of the retry')
     c.eq([c.js("[...document.querySelectorAll('[data-sheet=gb] [data-thread-step]')].map(s => [s.dataset.threadStep, s.dataset.ok])"), norm(c.text('[data-sheet=gb] [data-thread-bilan]')), c.js("!!window.__modal")],
@@ -7702,6 +7712,7 @@ def l99(c):
     _l97_run(c, st, world, [_l97_dl('done', failed=fail, jid='f3')])
     c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=20000, what='the second failed thread')
     st['start'] = (409, {'reason': 'busy', 'job': 'o1', 'running': R})
+    c.js("document.querySelector('[data-sheet=gb] [data-act=zop-retry]').scrollIntoView({ block: 'center' })")   # the sheet of the United Kingdom lists three files to take by hand now (catalogue of 12 Nov): the thread is under them, inside the scroll of the sheet
     c.tap('[data-sheet=gb] [data-act=zop-retry]')
     c.until("!!document.querySelector('[data-sheet=gb] [data-busy-card]')", timeout=10000, what='the card on the sheet for the refused retry')
     c.eq([c.count('[data-sheet=gb] [data-busy-card]'), c.count('[data-other]')], [1, 0], 'a retry refused because an operation runs: THE card, on the sheet', what='retry busy')
@@ -8105,11 +8116,18 @@ def l103(c):
     st['start'] = (200, {'job': 'j1'})
     n0 = len([p for p in st['posts'] if p['verb'] == 'build'])
     st['status'] = lambda args: _status({**world['zs'], 'gb': _zst('up-to-date') if len([p for p in st['posts'] if p['verb'] == 'build']) > n0 else world['zs']['gb']})
+    c.js("document.querySelector('[data-sheet=gb] [data-act=zop-retry]').scrollIntoView({ block: 'center' })")   # the sheet of the United Kingdom lists three files to take by hand now (catalogue of 12 Nov): the thread is under them, inside the scroll of the sheet
     c.tap('[data-sheet=gb] [data-act=zop-retry]')
     c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread][data-thread-state=done]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=30000, what='the thread of the retry')
     c.eq([[k, ok] for k, ok, _t in steps()], [['download', 'yes'], ['build', 'yes']], 'the retry of a step read from the journal chains the rest and succeeds', what='retry thread')
     # ---- 5. a launcher that does not list base/last: not asked, the in-memory thread is all there is (nothing breaks)
     st['verbs'] = _VERBS + ['base/pickup', 'base/cycle']
+    prev = -1
+    for _ in range(20):   # the reads of the previous page end first (a late one must not be counted against the new page)
+        if len(reads()) == prev:
+            break
+        prev = len(reads())
+        c.wait(500)
     n1 = len(reads())
     _l98_fresh(c, st)
     _l89_sheet(c, 'gb')

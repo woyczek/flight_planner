@@ -98,8 +98,10 @@ function boxEl(svg) {
 }
 /** Dessine le rectangle en cours et dit le nombre de pays touchés (avant le relâchement). */
 function draw() {
-  const r = S.cw.rect,
-    box = r && boxEl(r.svg);
+  const r = S.cw.rect;
+  if (r && !r.svg.isConnected) r.svg = S.body?.querySelector('[data-wmap]') || r
+    .svg; // un redessin de la carte en plein geste remplace le SVG : le rectangle suit le nouveau
+  const box = r && boxEl(r.svg);
   if (!box) return;
   const f = r.svg.closest('.d-mapframe').getBoundingClientRect();
   r.ids = rectIds(r.svg, r);
