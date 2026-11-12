@@ -1744,5 +1744,21 @@
    "state": "known"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0025",
+   "fiche": "SOG-0258",
+   "app": "maintenance",
+   "question": "Publier une zone seule : aujourd'hui « publier » envoie tout ce qui n'est pas encore parti (toutes les zones construites et tes propres données). Que veux-tu ?",
+   "context": "Télécharger et construire existent déjà zone par zone. Publier, non : c'est la synchronisation du dépôt, qui pousse tout d'un coup. Isoler une zone demande de réécrire l'ordre des commits : possible, mais lourd et risqué. Sans attendre ta réponse, chaque zone dira si elle est publiée ou non, et « Publier » annoncera avant de partir tout ce qui part avec.",
+   "options": [
+    "Ça me va : l'état « publiée / non publiée » par zone, et un « Publier » qui dit d'abord tout ce qui part avec",
+    "Je veux pouvoir publier UNE zone sans les autres : chiffre le chantier",
+    "L'état par zone suffit : pas de « Publier » par zone, la synchronisation s'en charge"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }
