@@ -8664,3 +8664,18 @@ def k205(c):
         except registry_fr.RegistryError as e:
             code = e.code
         c.eq(code, 'headers', 'a whitelisted header name present twice: refused (code only)', what='duplicate header')
+
+
+@case('K206', 'Catalogue for the country sheet (Réglages, Data screen redesign): `steps.why` says the KNOWN reason a source is taken by hand (five sources, ×4 languages; none for a source without a known reason) and `partNamesOf(zone)` names the parts of a zone that is not in one piece (PT: continent, Madère, Açores), null otherwise', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist 12 Nov 2026 (Réglages asks for the fields the redesigned country sheet expects): (2) `partNamesOf` — « PT · 3 zones : continent, Madère, Açores »: only the zones whose parts are KNOWN (the rings of shared/carto/aero_zones_geo.js grouped by proximity: Portugal = mainland, Madeira (32.7°N, 17°W), the Azores; Spain = mainland + Balearics, Canary Islands; Netherlands + Bonaire; Denmark + Bornholm; Norway with Jan Mayen, Bjørnøya, Svalbard; the United States contiguous, Alaska with the Aleutians, Hawaii), nothing guessed; (3) `steps.why` for SIA (the basket), DIRCAM (site down, file in the SIA CD), UK Mil (SSLEOF, no publication for about a year), NAV Portugal (published by editions, not by cycle), FAA (HTTP 403 sometimes): a source with no known reason has no line.')
+def k206(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/catalogue.html', wait_until='load')
+    r = c.js("""() => { const C = AeroCatalogue, ids = C.SOURCES.filter(s => s.steps).map(s => s.id);
+      const why = Object.fromEntries(ids.map(i => [i, C.stepsOf(i, '2612').why || null]));
+      return { why, parts: Object.fromEntries(['pt', 'es', 'us', 'no', 'fr', 'de', 'xx'].map(z => [z, C.partNamesOf(z)])), ptFr: C.partNamesOf('PT').map(n => n[0]), mutate: (() => { const a = C.partNamesOf('pt'); a[0][0] = 'x'; return C.partNamesOf('pt')[0][0]; })() }; }""")
+    withWhy = sorted(k for k, v in r['why'].items() if v)
+    c.eq(withWhy, ['adds', 'dircam', 'navpt', 'sia', 'ukmil'], 'the five sources with a known reason have `why`; the others (NATS, LFV, Naviair, NAV CANADA, EUROCONTROL, VAC) have none', what='which')
+    c.ok(all(isinstance(v, list) and len(v) == 4 and all(isinstance(t, str) and len(t.strip()) > 20 for t in v) for v in r['why'].values() if v), str(r['why'])[:200], 'each reason in four languages')
+    c.eq((r['ptFr'], r['parts']['fr'], r['parts']['de'], r['parts']['xx'], len(r['parts']['pt']), len(r['parts']['es']), len(r['parts']['us']), len(r['parts']['no'])), (['continent', 'Madère', 'Açores'], None, None, None, 3, 2, 3, 4),
+         'PT: continent, Madère, Açores; a zone in one piece or with unnamed parts (DE, FR with its overseas, an unknown code): null', what='parts')
+    c.ok(all(len(n) == 4 for z in ('pt', 'es', 'us', 'no') for n in r['parts'][z]) and r['mutate'] == 'continent', str(r['mutate']), 'each part name in four languages; the table cannot be modified from outside (copies)')

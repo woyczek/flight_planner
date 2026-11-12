@@ -109,13 +109,18 @@
   // Une ligne par source : { id, no (ligne du tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md, ou null), status
   // ('used' : la suite s'en sert aujourd'hui ; 'candidate' : envisagée ; 'abandoned' : écartée, avec sa raison), cycled (adresse
   // du cycle AIRAC en vigueur), n [fr, en, de, es], url (chaîne, ou fonction du cycle), gives [4] (ce qu'elle donne et où cela
-  // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir), unavailable { since, note [4] } (SOG-0273 : l'éditeur ne publie plus le fichier : la source est rangée à part, ni « en retard » ni « à faire »), steps { page: { url, home }, files: [{ name, url?, gives [4] }] } (SOG-0189, facultatif : le pas-à-pas d'une source déposée à la main, lu par stepsOf), et, facultatifs, pour la page « Sources et licences » : pub (l'éditeur, texte ou [4] ; à défaut le début du nom),
+  // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir), unavailable { since, note [4] } (SOG-0273 : l'éditeur ne publie plus le fichier : la source est rangée à part, ni « en retard » ni « à faire »), steps { why [4]? (SOG-0273 : la raison SUE de la prise à la main — rien d'inventé ; absente quand elle n'est pas connue), page: { url, home }, files: [{ name, url?, gives [4] }] } (SOG-0189, facultatif : le pas-à-pas d'une source déposée à la main, lu par stepsOf), et, facultatifs, pour la page « Sources et licences » : pub (l'éditeur, texte ou [4] ; à défaut le début du nom),
   // credit [4] (le crédit obligatoire), date (la date ou l'édition : texte), localOnly (vrai : lu sur ce poste seulement) }. Données seules :
   // l'écran (sources.js) ne fait qu'afficher des liens, aucune récupération.
   const SOURCES = [{
     id: 'sia',
     group: 'base',
     steps: {
+      why: ['le SIA ne propose ce fichier que par son panier : « Ajouter au panier », puis valider le panier',
+        'the SIA offers this file only through its basket: "Ajouter au panier" (add to basket), then check out',
+        'das SIA bietet diese Datei nur über seinen Warenkorb an: „Ajouter au panier“ (in den Warenkorb), dann abschließen',
+        'el SIA ofrece este archivo solo por su cesta: « Ajouter au panier » (añadir a la cesta) y validar'
+      ],
       page: {
         url: c => siaPage(c),
         home: 'https://www.sia.aviation-civile.gouv.fr/'
@@ -242,6 +247,12 @@
     id: 'dircam',
     group: 'base',
     steps: {
+      why: [
+        'le site de la DIRCAM ne répond plus (depuis environ un an, dit l\'utilisateur) : le fichier se prend dans le CD DIRCAM du SIA',
+        'the DIRCAM site has not answered for about a year (user\'s word): the file is taken from the DIRCAM CD on the SIA site',
+        'die DIRCAM-Seite antwortet seit etwa einem Jahr nicht mehr (Aussage des Nutzers): die Datei kommt von der DIRCAM-CD auf der SIA-Seite',
+        'el sitio de la DIRCAM no responde desde hace casi un año (dicho por el usuario): el archivo se toma del CD DIRCAM del SIA'
+      ],
       page: {
         url: 'https://www.dircam.dsae.defense.gouv.fr/fr/milaip',
         home: 'https://www.dircam.dsae.defense.gouv.fr/'
@@ -309,6 +320,12 @@
       ]
     },
     steps: {
+      why: [
+        'le serveur de l\'AIP militaire britannique coupe la connexion du lanceur (SSLEOF) et ne publie plus depuis environ un an (dit l\'utilisateur)',
+        'the UK military AIP server cuts the launcher\'s connection (SSLEOF) and has not published for about a year (user\'s word)',
+        'der Server der britischen Militär-AIP trennt die Verbindung des Launchers (SSLEOF) und veröffentlicht seit etwa einem Jahr nichts (Aussage des Nutzers)',
+        'el servidor de la AIP militar británica corta la conexión del lanzador (SSLEOF) y no publica desde hace casi un año (dicho por el usuario)'
+      ],
       page: {
         url: 'https://www.aidu.mod.uk/aip/aipVolumes.html',
         home: 'https://www.aidu.mod.uk/'
@@ -599,6 +616,12 @@
       }
     },
     steps: {
+      why: [
+        'NAV Portugal publie son eAIP hors ligne par éditions (01 oct., 26 nov. 2026), pas par cycle AIRAC : le disque ISO se prend à la main',
+        'NAV Portugal publishes its offline eAIP by editions (01 Oct, 26 Nov 2026), not by AIRAC cycle: the ISO disk is taken by hand',
+        'NAV Portugal veröffentlicht seine Offline-eAIP in Ausgaben (01. Okt., 26. Nov. 2026), nicht nach AIRAC-Zyklus: die ISO-Disk wird von Hand genommen',
+        'NAV Portugal publica su eAIP sin conexión por ediciones (01 oct., 26 nov. 2026), no por ciclo AIRAC: el disco ISO se toma a mano'
+      ],
       page: {
         url: 'https://ais.nav.pt/eaip-downloads-en/',
         home: 'https://ais.nav.pt/'
@@ -659,6 +682,12 @@
     group: 'base',
     // SOG-0262 : l'inventaire exact du NASR pris à la main (SOG-0219 : la FAA refuse parfois le lanceur) : trois jeux CSV du cycle, le nom est celui de la FAA
     steps: {
+      why: [
+        'le serveur de la FAA refuse parfois le téléchargement automatique (HTTP 403) : l\'abonnement NASR se prend alors à la main',
+        'the FAA server sometimes refuses the automatic download (HTTP 403): the NASR subscription is then taken by hand',
+        'der FAA-Server verweigert manchmal den automatischen Download (HTTP 403): das NASR-Abonnement wird dann von Hand genommen',
+        'el servidor de la FAA rechaza a veces la descarga automática (HTTP 403): la suscripción NASR se toma entonces a mano'
+      ],
       page: {
         url: c => `https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/${dateOf(c)}/`,
         home: 'https://www.faa.gov/'
@@ -1837,6 +1866,42 @@
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;
   /** Adresse d'une source pour un cycle (« 2610 », date ou rien : le cycle en vigueur). */
+  /** Les PARTIES d'une zone dont le territoire n'est pas d'un seul tenant (SOG-0273 / Réglages : « PT · 3 zones : continent, Madère, Açores »), ou null : [[fr, en, de, es], …] dans l'ordre d'affichage. Seules les zones dont les parties sont SUES (contours de shared/carto/aero_zones_geo.js regroupés par proximité, nommés
+   *  d'après leurs coordonnées) sont dans la table ; une zone d'un seul tenant, ou dont les parties ne sont pas nommées, rend null : jamais de nom deviné. */
+  const PART_NAMES = {
+    pt: [
+      ['continent', 'mainland', 'Festland', 'continente'],
+      ['Madère', 'Madeira', 'Madeira', 'Madeira'],
+      ['Açores', 'Azores', 'Azoren', 'Azores']
+    ],
+    es: [
+      ['péninsule et Baléares', 'peninsula and Balearic Islands', 'Festland und Balearen', 'península y Baleares'],
+      ['Canaries', 'Canary Islands', 'Kanarische Inseln', 'Canarias']
+    ],
+    nl: [
+      ['Pays-Bas européens', 'European Netherlands', 'Europäische Niederlande', 'Países Bajos europeos'],
+      ['Bonaire', 'Bonaire', 'Bonaire', 'Bonaire']
+    ],
+    dk: [
+      ['Danemark (continent et îles)', 'Denmark (mainland and islands)', 'Dänemark (Festland und Inseln)',
+        'Dinamarca (continente e islas)'
+      ],
+      ['Bornholm', 'Bornholm', 'Bornholm', 'Bornholm']
+    ],
+    no: [
+      ['Norvège continentale', 'mainland Norway', 'Festlandnorwegen', 'Noruega continental'],
+      ['Jan Mayen', 'Jan Mayen', 'Jan Mayen', 'Jan Mayen'],
+      ['Bjørnøya (île aux Ours)', 'Bjørnøya (Bear Island)', 'Bjørnøya (Bäreninsel)', 'Bjørnøya (isla de los Osos)'],
+      ['Svalbard', 'Svalbard', 'Svalbard', 'Svalbard']
+    ],
+    us: [
+      ['États-Unis continentaux', 'contiguous United States', 'zusammenhängende USA', 'Estados Unidos continentales'],
+      ['Alaska (et Aléoutiennes)', 'Alaska (and Aleutian Islands)', 'Alaska (und Aleuten)', 'Alaska (y Aleutianas)'],
+      ['Hawaï', 'Hawaii', 'Hawaii', 'Hawái']
+    ]
+  };
+  const partNamesOf = zone => (PART_NAMES[String(zone || '').toLowerCase()] || null) && PART_NAMES[String(zone).toLowerCase()].map(n => n
+    .slice());
   /** Le mot que l'écran pose à côté d'un chemin dont `verified` est faux (le site n'a pas pu être lu : ni contourné ni deviné). */
   const PATH_TO_CHECK = ['chemin à vérifier', 'path to check', 'Pfad zu prüfen', 'ruta por verificar'];
   const urlOf = (s, cycle) => typeof s.url === 'function' ? s.url(cycle || A.cycleOf().id) : s.url;
@@ -1856,6 +1921,9 @@
           since: s.unavailable.since,
           note: s.unavailable.note.slice()
         }
+      } : {}),
+      ...(st.why ? {
+        why: st.why.slice()
       } : {}),
       page: {
         url: typeof st.page.url === 'function' ? st.page.url(cycle || A.cycleOf().id) : st.page.url,
@@ -1892,6 +1960,7 @@
     urlOf,
     stepsOf,
     PATH_TO_CHECK,
+    partNamesOf,
     eaipBase,
     SIA_REGIONS,
     siaRegionOf,
