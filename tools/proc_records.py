@@ -149,6 +149,7 @@ def _points(icao, legs, coords, warnings, missed_after=None):
     if by_angle:
         warnings.append('point de piste (RWnn) absent de la table: approche interrompue repérée après le tronçon qui porte l\'angle vertical')
     for leg in legs:
+        arcs = []
         c = coords.get(leg['id']) if leg['id'] else None        # un tronçon sans point (CA, FM…) : id, lat et lon null, jamais un point inventé
         if c is None and leg.get('pos'):
             c = leg['pos']                                      # le FAF d'une approche ILS porte sa position (pages DATA), il n'a pas de nom dans les listes
@@ -164,9 +165,7 @@ def _points(icao, legs, coords, warnings, missed_after=None):
             ctr = coords.get(leg['center'])
             res = proc_arc.develop(ctr, (before['lat'], before['lon']) if before and pts and pts[-1] is before else None, c, leg.get('turn'), leg.get('radius'), leg.get('nm'))
             if res:
-                for lat, lon in res['points']:
-                    pts.append({'seq': len(pts) + 1, 'id': None, 'lat': round(lat, 6), 'lon': round(lon, 6), 'alt': None, 'leg': 'RF', 'arc': True})
-                p['seq'] = len(pts) + 1
+                arcs = [{'id': None, 'lat': round(lat, 6), 'lon': round(lon, 6), 'alt': None, 'leg': 'RF', 'arc': True} for lat, lon in res['points']]
                 if res['gaps']:
                     p['arcGaps'] = res['gaps']
         if leg['over']:
@@ -175,6 +174,12 @@ def _points(icao, legs, coords, warnings, missed_after=None):
             p['synthetic'] = leg['synthetic']        # point que la table n'imprime pas (le seuil d'une approche ILS), ajouté d'après la page AD 2.12
         if seen_rw or leg.get('phase'):
             p['phase'] = 'missed'
+        for a in arcs:                                         # les points de l'arc suivent la phase du tronçon qu'ils dessinent (approche interrompue comprise), puis le point de fin
+            if p.get('phase'):
+                a['phase'] = p['phase']
+            a['seq'] = len(pts) + 1
+            pts.append(a)
+        p['seq'] = len(pts) + 1
         if leg.get('gap'):
             p['gap'] = True        # la table ne code pas ce qui sépare ce tronçon du précédent (page ILS, « See chart »)
         if missed_after and (re.fullmatch(r'RW\d{2}[LRC]?', leg['id'] or '') or (by_angle and leg.get('vpa') is not None)):

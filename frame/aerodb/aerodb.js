@@ -995,7 +995,10 @@
               lon: q.lon,
               alt: null,
               leg: 'RF',
-              arc: true
+              arc: true,
+              ...(p.phase ? {
+                phase: p.phase
+              } : {})
             }));
             out.push(res.gaps.length ? {
               ...p,

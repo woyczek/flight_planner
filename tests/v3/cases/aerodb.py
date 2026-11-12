@@ -8591,3 +8591,37 @@ def k203(c):
         res = fn(RJ.Job('base', 'cycle', {}), check({}), {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 12)})
         loc = [x for x in res['local'] if x['id'] == 'registry_fr']
         c.eq((len(loc), loc and len(loc[0]['label']), loc and bool(loc[0]['at'])), (1, 4, True), 'base/cycle.local lists the registry with its date', what='local')
+
+
+@case('K204', 'RF arcs through aerodb itself (SOG-0248, LFST RWY 23 path): the centre is resolved like an en-route point, the arc developed before the end point and the record served once it agrees with the page; kept in doubt when the centre does not resolve or the arc does not fit; fixesOf() never returns an arc point, pathOf() returns all of them', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist 12 Nov 2026: the Python build path (K200) cannot place the centre ST500 of LFST RWY 23 (not on the DATA_01 page): it is resolved by aerodb at read time (placeProc → developRf). Invented positions: ST420 and ST430 as on the page, the centre at 2.47 NM of both ends (arc 7.02 NM for 7.1 printed). The record comes in doubt `rf-arc`; aerodb resolves the centre in the zone, develops the arc (a point every 5° at most, `arc: true`, `id` null, before ST430), checks it against the printed radius and arc length and, when it fits and `rf-arc` was the only doubt, serves it as check (the default list then has it). Centre absent from the zone, or a printed radius that does not fit: the record stays in doubt, no chord. AeroDBProcedures.fixesOf (named fixes: the points list, locks, time over zone, FMS / PLN export) never returns an arc point; pathOf (the Map, the profile, distances) returns the whole path.')
+def k204(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'], z = 'fr', cycle = '2026-10-29';
+      const mk = async (centre, radius) => {
+        const rec = { id: 'LFST.APP.RNPRWY23.RW23', icao: 'LFST', kind: 'APP', name: 'RNP RWY 23', runways: ['23'], transition: null, status: 'doubt', doubt: 'rf-arc', source: { kind: 'eaip', file: 'AD_2_LFST_DATA_RWY23_FNA_RNP_CODE.pdf' }, points: [
+          { seq: 1, id: 'ST420', lat: 48.505417, lon: 7.571917, leg: 'TF', alt: null },
+          { seq: 2, id: 'ST430', lat: 48.559528, lon: 7.480167, leg: 'RF', alt: null, center: 'ST500', radius, nm: 7.1, turn: 'R' },
+          { seq: 3, id: 'STS26', lat: 48.62, lon: 7.40, leg: 'TF', alt: null }] };
+        const file = { schema: 1, icao: 'LFST', cycle, updated_at: '2026-11-01T00:00:00Z', procedures: [rec] };
+        const pts = centre ? [{ id: 'ST500', lat: 48.537057, lon: 7.532228 }] : [{ id: 'XXXXX', lat: 48.5, lon: 7.5 }];
+        const files = { ...Object.fromEntries(kinds.map(k => [`sia/base/${z}/${cycle}/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle, kind: 'meta', parserVersion: 27, data: {} } : { schema: 2, zone: z, cycle, kind: k, data: k === 'points' ? pts : [] }])),
+          'sia/base/index.json': { schema: 2, kind: 'index', zones: { [z]: { cycle, prefixes: ['LF'], kb: {} } } },
+          'proc/manual/LFST.json': file, 'proc/manual/index.json': { schema: 1, aerodromes: { LFST: { SID: 0, STAR: 0, APP: 1, status: 'check' } } } };
+        const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse('2026-11-10T12:00:00Z') });
+        const all = await db.procedures('LFST', { doubt: true }), dflt = await db.procedures('LFST');
+        const r = all.find(x => x.id === rec.id);
+        return { status: r && r.status, doubt: r && r.doubt, ids: r && r.points.map(p => p.id), arcs: r ? r.points.filter(p => p.arc).length : -1, arcOk: r ? r.points.filter(p => p.arc).every(p => p.id === null && p.leg === 'RF' && Number.isFinite(p.lat)) : false,
+          gaps: r && r.points.find(p => p.id === 'ST430').arcGaps, inDefault: dflt.some(x => x.id === rec.id), pts: r && r.points };
+      };
+      const ok = await mk(true, 2.47), noCentre = await mk(false, 2.47), badRadius = await mk(true, 3.5);
+      const P = window.AeroDBProcedures || (await import('/frame/aerodb/procedures.js'), window.AeroDBProcedures);
+      return { ok: { ...ok, pts: undefined, ids: ok.ids.filter(Boolean), order: ok.ids.map(i => i === null ? 'a' : i).join(',').replace(/(a,)+/, 'a,') }, noCentre: { ...noCentre, pts: undefined }, badRadius: { status: badRadius.status, arcs: badRadius.arcs, gaps: badRadius.gaps && badRadius.gaps.length, inDefault: badRadius.inDefault },
+        fixes: P.fixesOf(ok.pts).map(p => p.id), pathLen: P.pathOf(ok.pts).length, total: ok.pts.length, nullIds: P.fixesOf(ok.pts).some(p => !p.id || p.arc) }; }""")
+    ok = r['ok']
+    c.eq((ok['status'], ok['doubt'], ok['arcs'] >= 20, ok['arcOk'], ok['gaps'], ok['inDefault'], ok['order']), ('check', None, True, True, None, True, 'ST420,a,ST430,STS26'),
+         'centre resolved in the zone: the arc is developed (20+ points, id null, leg RF) BETWEEN ST420 and ST430, no gap against the page, the doubt `rf-arc` is lifted and the default list has the procedure', what='lifted')
+    c.eq((r['noCentre']['status'], r['noCentre']['doubt'], r['noCentre']['arcs'], r['noCentre']['inDefault']), ('doubt', 'rf-arc', 0, False), 'centre that does not resolve: still in doubt `rf-arc`, no arc point, no chord, hidden from the default list', what='no centre')
+    c.eq((r['badRadius']['status'], r['badRadius']['arcs'] >= 20, r['badRadius']['gaps'] >= 1, r['badRadius']['inDefault']), ('doubt', True, True, False), 'a printed radius that does not fit the positions: the arc is drawn but the gaps are said (arcGaps) and the procedure stays in doubt', what='gap')
+    c.eq((r['fixes'], r['pathLen'] == r['total'], r['nullIds']), (['ST420', 'ST430', 'STS26'], True, False), 'fixesOf: only the named fixes (never an arc point, never an id null); pathOf: every positioned point, arcs included', what='consumers')

@@ -346,7 +346,14 @@
     };
   }
 
+  /** Les POINTS DE ROUTE d'une procédure (les fixes nommés : liste des points, verrous, temps sur zone, export FMS / PLN) : jamais un point d'arc (`arc: true`, `id` null, SOG-0248) ni un point sans nom. */
+  const fixesOf = points => arr(points).filter(p => p && p.id && !p.arc);
+  /** Le TRACÉ d'une procédure (la Carte, le profil, les distances) : TOUS les points positionnés dans l'ordre de vol, arcs développés compris. */
+  const pathOf = points => arr(points).filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lon));
+
   window.AeroDBProcedures = {
+    fixesOf,
+    pathOf,
     developArc,
     chartFor,
     chartWords,
