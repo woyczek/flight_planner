@@ -4465,3 +4465,47 @@ def f149(c):
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && [...s.options].some(o => o.textContent.includes('kt')) })()",
             timeout=20000, what='the METAR read')
     c.eq(c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-rwyprob]')?.hidden"), True, 'nothing said by a calm wind', what='probable runway')
+
+
+
+def _chartonly_docs():
+    """The seeded procedures of LFML (invented) plus a « finale seule » ILS 31R (FAF and threshold, synthetic) and three IAC charts: VOR 31R
+    and NDB 13L (charts only), ILS 31R (carried by the final-only record: never a second line)."""
+    from fixtures.procedures import pt, rec
+    docs = proc_docs()
+    fin = rec('LFML', 'APP', 'ILS RWY 31R', ['31R'], [{**pt(1, 'FAF31R', 43.30, 5.40), 'synthetic': 'faf'}, {**pt(2, 'RW31R', 43.42, 5.23), 'synthetic': 'threshold'}],
+              status='check')
+    for d in docs:
+        if d[0].endswith('/LFML.json') and d[0].startswith('proc/') and '/manual/' not in d[0] and '/local/' not in d[0]:
+            charts = d[1].get('charts') or {'base': 'https://www.sia.aviation-civile.gouv.fr/test/eAIP/', 'items': []}
+            d[1] = {**d[1], 'procedures': [*d[1]['procedures'], fin],
+                    'charts': {**charts, 'items': [*charts.get('items', []), *[{'path': f'Cartes/LFML/AD_2_LFML_IAC_{n}.pdf', 'kind': 'IAC'}
+                                                                                  for n in ('RWY31R_VOR', 'RWY13L_NDB', 'RWY31R_ILS')]]}}
+    return docs, fin['id']
+
+
+@case('F150', 'Procedures: the coded approaches, then one line per approach charted only in the AIP (its chart, never chosen); a « finale seule » named so and never doubled by a chart line',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0248 / SOG-0232 (user, recette: « aucune ils, aucune vor, aucune loc. pourtant existantes »): AeroDb.approachSummary / chartOnly (AeroDB '
+      '6cc170b8e, K163); an invented aerodrome; captures 390 and 1 280')
+def f150(c):
+    docs, fin = _chartonly_docs()
+    T = 'modules/fuel/procedures_texts.js'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('fuel', docs=docs + proc_flight(V2_PROCS), airfields=True)
+        to_step(c, 1)
+        wait_rows(c, 'arr')
+        c.until(f"document.querySelectorAll('{FUEL} [data-proc=arr] [data-chartline]').length >= 2", timeout=15000, what=f'{w} px: one line per chart-only approach')
+        lines = [norm(x) for x in c.js(f"[...document.querySelectorAll('{FUEL} [data-proc=arr] [data-chartline]')].map(l => l.textContent)")]
+        one = norm(tx(T, 'procChartOnlyOne', c.lang).split('{name}')[1])
+        c.ok(len(lines) == 2 and all(one in l for l in lines) and any('VOR' in l and '31R' in l for l in lines) and any('NDB' in l and '13L' in l for l in lines),
+             lines, 'VOR 31R and NDB 13L, each « — carte seulement dans l\'AIP », each with its chart')
+        c.ok(not any('ILS' in l and '31R' in l for l in lines), lines, 'the ILS 31R chart is carried by the final-only record: no second line')
+        opts = c.js(f"[...document.querySelectorAll('{FUEL} select[data-k=\"p-arr-app\"] option')].map(o => [o.value, o.textContent.trim(), o.disabled])")
+        fo = [o for o in opts if o[0] == fin]
+        c.ok(fo and norm(tx(T, 'procFinalOnly', c.lang)) in norm(fo[0][1]), fo, 'the final-only ILS named « — finale seule », selectable')
+        dis = [o for o in opts if o[2] and o[1] not in ('—',)]
+        c.ok(len(dis) == 2 and all(one in norm(o[1]) for o in dis), dis, 'the two chart-only approaches listed after the coded ones, never selectable')
+        c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-chartonly]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F150_{c.design}_{w}_{c.lang}_delivered.png')

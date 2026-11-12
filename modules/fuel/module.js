@@ -1905,6 +1905,7 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-ptlock svg{width:1em;height:1em;vertical-align:-.15em;margin-right:.2em}
 [data-module="fuel"] .f-card .fu-pt input[data-k]{width:4.2em;flex:none;text-align:center}
 [data-module="fuel"] .fu-ptgap{width:4.2em;flex:none}
+[data-module="fuel"] .fu-chartonly .fu-chartline{display:block} /* une approche « carte seulement » par ligne (SOG-0248) */
 [data-module="fuel"] .fu-pt.fu-pthas{flex-wrap:wrap}
 [data-module="fuel"] .fu-pt.fu-pthas > .fu-ptid{flex:1 1 0}
 @media (max-width:420px){[data-module="fuel"] .f-card .fu-pt input[data-k="ptalt"]{width:3.4em}} /* un identifiant en coordonnées (11 caractères) tient à côté */

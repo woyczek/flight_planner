@@ -59,6 +59,16 @@ export const TX = {
   ],
   // SOG-0157 : le bouton de lecture d'un État lisible à la demande (eAIP du SIA, EAD Basic)
   procReadDemand: ['Lire à la demande', 'Read on demand', 'Auf Anfrage lesen', 'Leer bajo demanda'],
+  // SOG-0248 : les approches que l'AIP ne donne qu'en carte, une ligne chacune ; une finale seule nommée ; « aucune » seulement si c'est vrai
+  procChartOnlyOne: ['{name} — carte seulement dans l’AIP', '{name} — chart only in the AIP', '{name} — nur Karte im AIP',
+    '{name} — solo carta en el AIP'
+  ],
+  procChartLink: ['carte', 'chart', 'Karte', 'carta'],
+  procFinalOnly: ['finale seule', 'final only', 'nur Endanflug', 'solo tramo final'],
+  procNoApp: ['Aucune approche publiée pour ce terrain.', 'No approach published for this aerodrome.',
+    'Kein Anflug für diesen Flugplatz veröffentlicht.',
+    'Ninguna aproximación publicada para este aeródromo.'
+  ],
   // SOG-0090 : la piste probable d'après le METAR, dite, jamais posée d'office
   procRwyProb: ['Piste probable : {rwy} (METAR {at}, vent {dir}/{kt})', 'Probable runway: {rwy} (METAR {at}, wind {dir}/{kt})',
     'Wahrscheinliche Piste: {rwy} (METAR {at}, Wind {dir}/{kt})', 'Pista probable: {rwy} (METAR {at}, viento {dir}/{kt})'

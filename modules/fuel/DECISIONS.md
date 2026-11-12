@@ -1718,3 +1718,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   following points; `plannedPositionAt` keeps the aircraft on the point during its hold (phase « hold »), then flies the leg in the
   time left. The Map's progress follows with nothing to change (BUGS SOG). Bench of frame/lib/test/current_flight.html (D38), red
   before: the aircraft moved on during the hold.
+- **12 Nov 2026 — the approaches of an aerodrome, all said** (SOG-0248 / SOG-0232, refused: « aucune ils, aucune vor, aucune loc. pourtant
+  existantes »; AeroDb.approachSummary, AeroDB 6cc170b8e, K163): the coded approaches, then one line per approach charted only in the
+  AIP with its chart (and the same, disabled, in the list: never chosen); a « finale seule » record (synthetic FAF and threshold) named
+  so; a chart-only approach of the same kind and runway as a coded one (final-only comprised) is not said twice; « Aucune approche
+  publiée » only when `approachSummary.none`. F150 (red before).

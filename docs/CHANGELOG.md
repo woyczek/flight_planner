@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: every approach of an aerodrome is said** — the coded ones, then one line per approach charted only in the AIP with its chart, a « finale seule » named so, « aucune approche » only when it is true (Fuel DECISIONS, help; noreg F150; SOG-0248).
 - **Map: the turns of more than 90° of a procedure are arcs, the radius from the indicated speed** — V / 62.8 NM, shrunk to fit the legs (maps DECISIONS; noreg D189; SOG-0093).
 - **Map and frame: the planned position stays on a point during its time on area**, then the following times shift (Fuel DECISIONS; bench D38).
 - **Procedures: courses printed digit by digit (LFRS RNP 03)** (SOG-0248) — `-1 1 7 117.2` (the dash of the empty overfly cell glued to the first digit of a magnetic course printed one digit at a time) is course 117, not 17; the true course that follows confirms it (NITEM / NEDAN / LAROK were hidden as doubt). K199. NOT done: the RF (arc) legs of LFST RNP 05 and 23, printed over three rows (`RF` / `APCH` / `Center ST400 ST425 … Radius 2.76 NM`): no layer downstream (geometry check, records, aerodb) knows an RF leg yet — a design decision first.

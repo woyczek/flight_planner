@@ -280,7 +280,10 @@ export function createProcedures(host) {
         ''))) : [],
       // les approches que l'AIP ne donne qu'en carte (aerodb.chartOnly, quand aerodb l'a : [{ name, runway, url }])
       chartOnly = side === 'arr' && typeof ctx.aerodb?.chartOnly === 'function' ? await Promise.resolve().then(() => ctx.aerodb
-        .chartOnly(icao)).catch(() => []) : [];
+        .chartOnly(icao)).catch(() => []) : [],
+      // SOG-0248 : « aucune approche » ne se dit que quand aerodb le sait (approachSummary.none : un terrain du SIA sans carte d'approche)
+      summary = side === 'arr' && typeof ctx.aerodb?.approachSummary === 'function' ? await Promise.resolve().then(() => ctx.aerodb
+        .approachSummary(icao)).catch(() => null) : null;
     return {
       icao,
       name: adLabel({
@@ -301,6 +304,7 @@ export function createProcedures(host) {
       partialLabel: cat?.COVERAGE?.partial ? ctx.t(cat.COVERAGE.partial) :
       '', // « Lu en partie : pages non lues ou procédures à vérifier »
       lists: Object.fromEntries(kinds.map(k => [k, [...all.filter(p => p.kind === k), ...(k === 'APP' ? doubts : [])]])),
+      appNone: summary?.none === true,
       chartOnly: (Array.isArray(chartOnly) ? chartOnly : []).filter(x => x && typeof x.url === 'string' && /^https:\/\//.test(x.url))
         .slice(0, 20),
       nodata: !known.length && !all.length
@@ -373,6 +377,21 @@ export function createProcedures(host) {
       };
     }
     return best;
+  }
+
+  /** Une approche « finale seule » (SOG-0248) : la base n'a que le FAF et le seuil (la page DATA du SIA, sans table de codage), ses
+   *  points synthétiques ; dite « ILS 23 — finale seule ». */
+  function finalOnly(r) {
+    const pts = Array.isArray(r?.points) ? r.points : [];
+    return pts.length > 0 && pts.length <= 3 && pts.some(p => p?.synthetic === 'faf') && pts.every(p => p?.synthetic);
+  }
+  /** Les approches « carte seulement » d'un côté (aerodb.chartOnly), sans celles qu'une approche codée (finale seule comprise) porte
+   *  déjà : même type (ILS, LOC, VOR, NDB, RNP…) et même piste — jamais deux lignes pour un même ILS. */
+  function chartOnlyOf(m) {
+    const kindOf = n => String(n || '').trim().toUpperCase().split(/[\s(]+/)[0],
+      rw = v => PR.rwNum(String(v || '').replace(/^RWY?\s*/i, '')),
+      coded = new Set((m?.lists?.APP || []).flatMap(r => (r.runways || []).map(x => `${kindOf(r.name)}|${rw(x)}`)));
+    return (m?.chartOnly || []).filter(x => !coded.has(`${kindOf(x.name)}|${rw(x.runway)}`));
   }
 
   function runwayWind(m, r, lim) {
@@ -454,8 +473,12 @@ export function createProcedures(host) {
       // infobulle ; une transition « via ODILO · ODILO 1A »
       const ac = PR.appChoices(m.lists.APP),
         xp = r => srcLabel(r) ? ` · ${srcLabel(r)}` : '';
-      sel('app', 'app', TX.procApp, ac.list, true, r => PR.labelOf(r, ac.list) + xp(r) + (PR.isDoubt(r) ? ` · ⚑ ${tt(TX.procDoubt)}` : '') + (r
-        .outdated ? PROC_OLD : ''));
+      sel('app', 'app', TX.procApp, ac.list, true, r => PR.labelOf(r, ac.list) + (finalOnly(r) ? ` — ${tt(TX.procFinalOnly)}` : '') + xp(r) + (PR
+        .isDoubt(r) ? ` · ⚑ ${tt(TX.procDoubt)}` : '') + (r.outdated ? PROC_OLD : ''));
+      // SOG-0248 : après les approches codées, chaque approche « carte seulement » de l'AIP, dite mais jamais choisie (son lien est sous
+      // la liste)
+      const co = chartOnlyOf(m);
+      if (co.length) out.at(-1).html += `<optgroup label="${esc(tt(TX.procChartOnly))}">${co.map(x => `<option disabled data-chartopt>${esc(tt(TX.procChartOnlyOne, { name: x.name }))}</option>`).join('')}</optgroup>`;
 
       const at = ac.transitionsOf(o.app);
       if (at.length) sel('appTrans', 'apptrans', TX.procAppTrans, at, false, r => PR.transitionLabelOf(r) + (r.outdated ? PROC_OLD : ''));
@@ -852,8 +875,11 @@ export function createProcedures(host) {
     }
     const co = el.querySelector('[data-r="chartonly"]');
     if (co) {
-      co.hidden = !m.chartOnly?.length;
-      setHtml(co, m.chartOnly?.length ? `${esc(tt(TX.procChartOnly))} : ${m.chartOnly.map(x => `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" data-chartonly-item>${esc(String(x.name || '').slice(0, 60))}</a>`).join(' · ')}` : '');
+      const list = chartOnlyOf(m),
+        html = list.length ? list.map(x => `<span class="fu-chartline" data-chartline>${esc(tt(TX.procChartOnlyOne, { name: String(x.name || '').slice(0, 60) }))} · <a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" data-chartonly-item>${esc(tt(TX.procChartLink))}</a></span>`).join('') :
+        m.appNone && !(m.lists?.APP || []).length ? `<span data-appnone>${esc(tt(TX.procNoApp))}</span>` : '';
+      co.hidden = !html;
+      setHtml(co, html);
     }
   }
   /** Signature de la structure d'un côté : terrain, avec ou sans donnée, listes présentes. Changée, la boîte est refaite. */
