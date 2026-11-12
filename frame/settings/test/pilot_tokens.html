@@ -298,7 +298,8 @@
       const fresh = view.querySelector('[data-token-fresh]');
       ck('la ligne du nouveau : le trigramme d’abord, créé le, l’expiration, « créé à l’instant » — jamais « jamais utilisé »', !!
         fresh &&
-        /^ABC\s+créé le 2026-11-01 · expire le 2027-10-29 · créé à l’instant/.test(fresh.textContent.trim().replace(/\s+/g, ' ')) && !
+        /^ABC\s+créé le 2026-11-01 · expire le 2027-10-29 · dans \d+ jours · créé à l’instant/.test(fresh.textContent.trim().replace(
+          /\s+/g, ' ')) && !
         /jamais utilisé/.test(fresh.textContent), fresh?.textContent.trim().replace(/\s+/g, ' '));
       view.querySelector('[data-act=another]').click();
       await tick();
@@ -476,6 +477,84 @@
       ck('la protection perdue (remise refusée) : la notification dit de la reposer dans GitLab', notes.some(n => n[1] === 'err' &&
         /n’est plus protégée : reposez sa protection dans GitLab/
         .test(n[0])), JSON.stringify(notes));
+      // SOG-0277 : l'expiration dite sur chaque ligne (« expire le … · dans 12 jours »), orange sous 30 jours, rouge sous 7, « a expiré le … » ;
+      // la liste relue à chaque ouverture, et la puce du mainteneur gardée sur l'appareil (des nombres et une date, jamais un nom ni un jeton)
+      const plus = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+      try {
+        localStorage.removeItem('sogFrame:tokenExpiry');
+      } catch {}
+      tokens = [{
+        id: 31,
+        name: 'LON',
+        active: true,
+        revoked: false,
+        created: '2026-01-01T09:00:00Z',
+        expires: plus(400),
+        used: null
+      }, {
+        id: 32,
+        name: 'MID',
+        active: true,
+        revoked: false,
+        created: '2026-01-01T09:00:00Z',
+        expires: plus(12),
+        used: null
+      }, {
+        id: 33,
+        name: 'URG',
+        active: true,
+        revoked: false,
+        created: '2026-01-01T09:00:00Z',
+        expires: plus(3),
+        used: null
+      }, {
+        id: 34,
+        name: 'OLD',
+        active: false,
+        revoked: false,
+        created: '2025-01-01T09:00:00Z',
+        expires: plus(-5),
+        used: null
+      }, {
+        id: 35,
+        name: 'REV',
+        active: false,
+        revoked: true,
+        created: '2025-01-01T09:00:00Z',
+        expires: plus(2),
+        used: null
+      }, {
+        id: 36,
+        name: 'NEV',
+        active: true,
+        revoked: false,
+        created: '2026-01-01T09:00:00Z',
+        expires: null,
+        used: null
+      }];
+      mode = 'ok';
+      S.screen(view, ctx());
+      await tick(80);
+      const li = id => view.querySelector(`[data-token="${id}"]`),
+        ex = id => li(id)?.querySelector('.f-exp'),
+        lvl = id => li(id)?.dataset.expiry || '';
+      ck('l’expiration lointaine : la date et « dans 400 jours », aucune couleur',
+        /expire le \d{4}-\d\d-\d\d · dans 40\d jours/.test(ex(31)?.textContent || '') && !ex(31).dataset.level && lvl(31) === '', ex(
+          31)?.textContent);
+      ck('sous 30 jours : « expire le … · dans 12 jours » en orange (niveau soon)', /expire le \d{4}-\d\d-\d\d · dans 1[12] jours/.test(
+          ex(32)?.textContent || '') &&
+        ex(32).dataset.level === 'soon' && lvl(32) === 'soon', ex(32)?.textContent);
+      ck('sous 7 jours : en rouge (niveau urgent)', ex(33)?.dataset.level === 'urgent' && lvl(33) === 'urgent' && /dans [23] jours/
+        .test(ex(33).textContent), ex(33)?.textContent);
+      ck('un jeton expiré, non révoqué : « a expiré le … » en rouge (niveau expired)', /^a expiré le \d{4}-\d\d-\d\d$/.test(ex(34)
+        ?.textContent || '') && lvl(34) === 'expired', ex(34)?.textContent);
+      ck('un jeton révoqué garde sa date sans couleur ; un jeton sans expiration n’en dit pas',
+        !!ex(35) && !ex(35).dataset.level && lvl(35) === '' && !li(36).querySelector('.f-exp'), ex(35)?.outerHTML);
+      const kept = JSON.parse(localStorage.getItem('sogFrame:tokenExpiry') || 'null');
+      ck('la puce du mainteneur : le nombre sous 30 jours (2), l’expiré (1) et la date la plus proche, gardés sur l’appareil',
+        kept?.pilots?.soon === 2 && kept.pilots.expired === 1 && kept.pilots.nearest === plus(3), JSON.stringify(kept));
+      ck('rien de plus que des nombres et des dates : ni nom de jeton, ni valeur, dans ce qui est gardé',
+        !/LON|MID|URG|OLD|REV|NEV|glpat/.test(JSON.stringify(kept)), JSON.stringify(kept));
     } catch (x) {
       ck('exception du banc', false, x?.stack || x);
     }

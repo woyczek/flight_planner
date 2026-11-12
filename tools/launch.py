@@ -2753,13 +2753,32 @@ def gitlab_tokens():
                                    for t in j if isinstance(t, dict)]}
 
 
-def gitlab_tokens_count():
-    """{ ok, active } : les jetons de pilote (nom = un trigramme) actifs et non révoqués ; un refus : gitlab_refusal (reason
-    secret sans jeton de l'administrateur sur le poste)."""
+def gitlab_tokens_count(today=None):
+    """{ ok, active, soon, expired, nearest } : les jetons de pilote (nom = un trigramme) actifs et non révoqués ; soon : ceux qui expirent dans
+    les 30 jours (SOG-0277), expired : ceux qui ont expiré sans être révoqués ni remplacés par un jeton actif du même nom, nearest : la plus
+    proche des dates de `soon` (AAAA-MM-JJ, ou None) ; des nombres et une date, jamais un nom ni une valeur. Un jeton ne vaut plus à 00:00 UTC
+    de sa date d'expiration. Un refus : gitlab_refusal (reason secret sans jeton de l'administrateur sur le poste)."""
     v = gitlab_tokens()
     if not v.get('ok'):
         return v
-    return {'ok': True, 'active': sum(1 for t in v['tokens'] if t['active'] and not t['revoked'] and re.fullmatch(r'[A-Z0-9]{2,5}', t['name']))}
+    today = today or datetime.datetime.now(datetime.timezone.utc).date()
+    pilots = [t for t in v['tokens'] if re.fullmatch(r'[A-Z0-9]{2,5}', t['name'])]
+    live = {t['name'] for t in pilots if t['active'] and not t['revoked']}
+    soon, expired = [], 0
+    for t in pilots:
+        m = re.match(r'(\d{4}-\d{2}-\d{2})', str(t.get('expires') or ''))
+        try:
+            end = datetime.date.fromisoformat(m.group(1)) if m else None
+        except ValueError:
+            end = None
+        if t['revoked'] or end is None:
+            continue
+        left = (end - today).days
+        if t['active'] and 0 < left <= 30:
+            soon.append(end)
+        elif not t['active'] and left <= 0 and t['name'] not in live:
+            expired += 1
+    return {'ok': True, 'active': len(live), 'soon': len(soon), 'expired': expired, 'nearest': min(soon).isoformat() if soon else None}
 
 
 def gitlab_token_create(a):

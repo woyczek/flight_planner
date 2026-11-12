@@ -150,8 +150,13 @@
    *  (api, read_api, read_repository, write_repository). Le jeton personnel n'y est pas : chaque écran le dit à sa façon (une question à « Rejoindre », un avertissement à la carte Accès). */
   function tokenWarnings(t, who) {
     const out = [],
-      day = Date.parse(who?.expiresAt || '');
+      day = Date.parse(who?.expiresAt || ''),
+      left = TE?.stateOf(who?.expiresAt); // SOG-0277 : une expiration dans les 30 jours se dit aussi, avec sa date et le nombre de jours
     if (!who?.expiresAt || !(day - Date.now() <= 365 * 864e5)) out.push(t(T.tokenExpiry));
+    else if (left && (left.level === 'soon' || left.level === 'urgent')) out.push(t(TE.TX.ownSoon, {
+      d: left.date,
+      w: t(...TE.whenRow(left))
+    }));
     const extra = Array.isArray(who?.scopes) ? who.scopes.filter(s => !['api', 'read_api', 'read_repository', 'write_repository']
       .includes(s)) : [];
     if (extra.length) out.push(t(T.tokenScopes, {
@@ -170,7 +175,16 @@
     ct(
       row, v);
 
+  // l'expiration des jetons (frame/lib/token_expiry.js, SOG-0277) : chargée avec le kit (un écran asynchrone attend `teReady`) ; `recordOwn`
+  // garde la date d'expiration du jeton qui vient d'être accepté dans le stockage de l'appareil (jamais le jeton, jamais le dépôt des données)
+  let TE = null;
+  const teReady = import(new URL('frame/lib/token_expiry.js', ROOT).href).then(m => TE = m).catch(() => null),
+    recordOwn = who => void TE?.recordOwn(who?.expiresAt);
+
   window.SogSettingsKit = {
+    teReady,
+    recordOwn,
+    expiry: () => TE,
     plReady,
     agreeT,
     ROOT,

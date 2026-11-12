@@ -342,9 +342,21 @@
         .used, {
           d: day(x.used)
         }) : t(T.never);
-      return `<li data-token="${esc(x.id)}"${fresh && x.id === fresh.id ? ' data-token-fresh' : ''}><b>${esc(x.name)}</b>
-        <span class="f-muted">${esc([x.created ? t(T.createdOn, { d: day(x.created) }) : '', x.expires ? t(K.expires, { d: day(x.expires) }) : '', state]
-          .filter(Boolean).join(' · '))}</span>
+      // SOG-0277 : « expire le 2026-12-01 · dans 12 jours », orange sous 30 jours, rouge sous 7, « a expiré le … » ; la date est relue chez
+      // GitLab à chaque ouverture (rien n'est gardé ici) ; un jeton révoqué garde sa date sans couleur
+      const TE = window.SogSettingsKit.expiry(),
+        e = TE && x.expires ? TE.stateOf(x.expires) : null,
+        lvl = e && !x.revoked && e.level !== 'ok' ? e.level : '',
+        text = !x.expires ? '' : e?.level === 'expired' ? t(TE.TX.expiredOn, {
+          d: day(x.expires)
+        }) : [t(K.expires, {
+          d: day(x.expires)
+        }), e && !x.revoked ? t(...TE.whenRow(e)) : ''].filter(Boolean).join(' · ');
+      const bits = [x.created ? esc(t(T.createdOn, {
+        d: day(x.created)
+      })) : '', text ? `<span class="f-exp"${lvl ? ` data-level="${lvl}"` : ''}>${esc(text)}</span>` : '', esc(state)].filter(Boolean).join(' · ');
+      return `<li data-token="${esc(x.id)}"${fresh && x.id === fresh.id ? ' data-token-fresh' : ''}${lvl ? ` data-expiry="${lvl}"` : ''}><b>${esc(x.name)}</b>
+        <span class="f-muted">${bits}</span>
         ${x.active && !x.revoked ? `<button type="button" data-act="revoke" data-id="${esc(x.id)}" data-name="${esc(x.name)}">${esc(t(K.revoke))}</button>` : ''}</li>`;
     };
     // à l'ouverture, sept éléments au plus : le titre, l'introduction, le formulaire (trigramme, durée, « Créer »), la liste
@@ -352,6 +364,7 @@
     // du jeton seule en haut, la liste repliée dessous, « Créer un autre jeton » (qui redessine : la valeur s'efface)
     async function draw(fresh = null, tested = null) {
       const seq = ++drawn;
+      await window.SogSettingsKit.teReady; // l'expiration des jetons (frame/lib/token_expiry.js), avant le premier dessin des lignes
       const r = await R.call('gitlab/tokens');
       if (!view.isConnected) return;
       if (r?.ok === false) {
@@ -362,6 +375,9 @@
       }
       const list = r.tokens || [],
         rows = list.map(x => rowOf(x, fresh)).join('');
+      // la puce du mainteneur (SOG-0277) : le nombre de jetons qui expirent et la date la plus proche, gardés sur l'appareil (jamais un nom)
+      const TE = window.SogSettingsKit.expiry();
+      if (TE) TE.recordPilots(TE.pilotsOf(list));
       pilots = list.filter(x => x.active && !x.revoked && /^[A-Z0-9]{2,5}$/.test(x.name)).length;
       const listBlock = `<details data-tokens-existing><summary>${esc(t(T.existing, { n: list.length }))}</summary>
         ${rows ? `<ul class="f-list" data-tokens-list>${rows}</ul>` : `<p class="f-muted">${esc(t(T.none))}</p>`}</details>`;

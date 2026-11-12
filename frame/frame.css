@@ -658,6 +658,24 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   max-width: 100%;
   text-align: left
 }
+/* l'expiration d'un jeton de pilote (SOG-0277) : orange sous 30 jours, rouge sous 7 et une fois expiré ; le texte garde la couleur de
+   l'écran (le contraste), la pastille porte le niveau */
+.f-exp[data-level] {
+  font-weight: 600
+}
+.f-exp[data-level]::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--sog-warn)
+}
+.f-exp[data-level="urgent"]::before,
+.f-exp[data-level="expired"]::before {
+  background: var(--sog-err)
+}
 .f-admin li>.f-muted {
   display: block;
   margin-top: 4px

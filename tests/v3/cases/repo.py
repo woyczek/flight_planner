@@ -16,6 +16,7 @@ Rules covered
 
 Cases: I1 I2 I3 I4 I5 I6 I7 I8 I9.
 """
+import datetime
 import glob
 import os
 import re
@@ -2073,8 +2074,8 @@ def i32(c):
                 refuse(req, 403, 'insufficient_scope' if 'api' not in st['scopes'] else '403 Forbidden')
             if st['tokens'] != 200:
                 refuse(req, st['tokens'], f"{st['tokens']} GitLab")
-            return Resp([{'id': 7, 'name': 'ABC', 'active': True, 'revoked': False}, {'id': 8, 'name': 'DEF', 'active': False, 'revoked': True},
-                         {'id': 9, 'name': 'owner-bot', 'active': True, 'revoked': False}, {'id': 10, 'name': 'GHI', 'active': True, 'revoked': False}])
+            return Resp(st.get('list') or [{'id': 7, 'name': 'ABC', 'active': True, 'revoked': False}, {'id': 8, 'name': 'DEF', 'active': False, 'revoked': True},
+                                           {'id': 9, 'name': 'owner-bot', 'active': True, 'revoked': False}, {'id': 10, 'name': 'GHI', 'active': True, 'revoked': False}])
         refuse(req, 404, '404 Not Found')
     try:
         L.SECRETS, L.NO_REDIRECT_OPEN = str(tmp), fake
@@ -2104,7 +2105,18 @@ def i32(c):
         st['tokens'], st['scopes'] = 200, ['api']
         # the count of active pilot tokens (Settings, the assistant’s « first pilot »): a number, never a name
         n = L.gitlab_tokens_count()
-        c.eq(n, {'ok': True, 'active': 2}, 'active pilot tokens counted: neither a revoked one nor a token not named after a trigram; no name', what='count')
+        c.eq(n, {'ok': True, 'active': 2, 'soon': 0, 'expired': 0, 'nearest': None}, 'active pilot tokens counted: neither a revoked one nor a token not named after a trigram; no name; no expiry known, none soon', what='count')
+        # SOG-0277: the pilots’ tokens that expire within 30 days (soon, with the nearest date), the expired ones not revoked nor replaced by an active token of the
+        # same name; numbers and one date, never a name; a token stops at 00:00 UTC of its date
+        d = lambda n, name, active, revoked, end: {'id': n, 'name': name, 'active': active, 'revoked': revoked, 'expires_at': end}
+        st['list'] = [d(1, 'ABC', True, False, '2026-11-20'), d(2, 'DEF', True, False, '2026-12-20'), d(3, 'GHI', False, False, '2026-10-01'), d(4, 'JKL', False, True, '2026-10-01'),
+                      d(5, 'owner-bot', True, False, '2026-11-14'), d(6, 'MNO', True, False, '2026-11-12'), d(7, 'PQR', True, False, '2026-12-02T00:00:00.000Z'), d(8, 'STU', False, False, '2026-10-01'),
+                      d(9, 'STU', True, False, '2027-10-01'), d(10, 'XYZ', True, False, None), d(11, 'BAD', True, False, 'not a date')]
+        n = L.gitlab_tokens_count(today=datetime.date(2026, 11, 12))
+        c.eq(n, {'ok': True, 'active': 7, 'soon': 2, 'expired': 1, 'nearest': '2026-11-20'},
+             'ABC (8 days) and PQR (20 days) soon, GHI expired; DEF in 38 days, a revoked, the owner’s token, a token ending today still active, an expired one replaced by an active STU, no date, a bad date: not counted', what='soon and expired')
+        c.ok(not any(x in json.dumps(n) for x in ('ABC', 'GHI', 'PQR', 'glpat')), json.dumps(n), 'the answer carries numbers and one date, never a name or a token')
+        st.pop('list')
         # « Tester »: who, scopes, expiry, role; never the value
         v = L.gitlab_admin_test()
         c.eq([v['ok'], v['username'], v['scopes'], v['expires'], v['level'], v['problems']], [True, 'chef', ['api'], '2027-06-30', 40, []],

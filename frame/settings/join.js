@@ -476,6 +476,9 @@
             say('');
             return null;
           }
+          await window.SogSettingsKit
+            .teReady; // SOG-0277 : l'expiration dans les 30 jours se dit aussi ; la date du jeton accepté est gardée sur l'appareil
+          window.SogSettingsKit.recordOwn(who);
           return tokenWarnings(t, who);
         };
         let warn = [];

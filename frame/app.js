@@ -2403,6 +2403,7 @@
       attn: true
     });
     items.push(...cycleItems()); // fin de cycle AIRAC de ce qui est publié (base, proc/)
+    items.push(...tokenItems()); // l'expiration des jetons : le sien, et ceux des pilotes sur le poste (SOG-0277)
     // la base aéronautique : trois états distincts, jamais « non publiée » pendant qu'elle charge ni sans accès
     if (baseState) items.push({
       k: 'base',
@@ -2951,6 +2952,10 @@
       if (who === 'GitLab' && code === '403' && /not allowed to push|protected branch/i.test(msg)) return `${t(T.sync.errs.gitlabBranch, {
         b: FD.github.config?.()?.branch || 'main'
       })} (${who} ${code})`;
+      // SOG-0277 : un 401 de GitLab dit « expiré » seulement quand la date connue de SON jeton est passée (GitLab répond 401 de la même façon à un
+      // jeton expiré, révoqué ou inconnu : sans date connue, la phrase reste « refusé ou expiré »)
+      const gone = who === 'GitLab' && code === '401' && TOKEN_EXP ? TOKEN_EXP.stateOf(TOKEN_EXP.readCache().own?.expiresAt) : null;
+      if (gone?.level === 'expired') return `${t(TOKEN_EXP.TX.ownExpired, { d: gone.date })} (${who} ${code})`;
       if (phrase) return `${t(phrase)} (${who} ${code})`;
     }
     return k ? t(T.sync.errs[k]) : t(T.sync.errs.other, {
@@ -3913,6 +3918,51 @@
       CYCLE = 28 * 864e5,
       first = REF + Math.ceil((Date.UTC(y, 0, 1) - REF) / CYCLE) * CYCLE;
     return `${String(y).slice(2)}${String(Math.round((at - first) / CYCLE) + 1).padStart(2, '0')}`;
+  }
+  // ---------------------------------------------------------------- l'expiration des jetons (SOG-0277, GitLab seulement)
+  // Jamais un jeton : seulement la DATE d'expiration (frame/lib/token_expiry.js), gardée dans le stockage de l'appareil — la sienne, relue
+  // au plus une fois par jour (GET /personal_access_tokens/self par whoami), et sur le poste le compte des jetons de pilote qui expirent
+  // (gitlab/tokens/count du lanceur, qui garde le jeton de l'administrateur).
+  let TOKEN_EXP = null;
+  /** Les lignes de la puce d'état pour l'expiration : « Votre jeton expire le … », « 2 jetons de pilote expirent bientôt » (le poste seulement). */
+  function tokenItems() {
+    if (!TOKEN_EXP) return [];
+    const poste = !!launcherHere && !launcherHere.lan,
+      pilotsGo = launcherHere && !launcherHere.lan && level >= 3 ? APP.modules.some(m => m.id === 'pilot-tokens') ? '#pilot-tokens' :
+      '?app=maintenance#pilot-tokens' : '';
+    return TOKEN_EXP.lines(TOKEN_EXP.readCache(), Date.now(), poste).map(l => ({
+      k: l.k,
+      text: l.text(t),
+      go: l.go === 'pilot-tokens' ? pilotsGo : l.go,
+      attn: true
+    }));
+  }
+  /** Relit ce qui est dû (au plus une fois par jour : son jeton, les jetons des pilotes), repeint la puce et dit une fois par jour, en notification
+   *  flottante, que SON jeton expire (ou a expiré). Sans réseau ni lanceur, rien ne change : la dernière date connue reste dite. */
+  async function watchTokens() {
+    TOKEN_EXP ||= await import(new URL('frame/lib/token_expiry.js', ROOT).href).catch(() => null);
+    const TE = TOKEN_EXP;
+    if (!TE) return;
+    const now = Date.now(),
+      cache = TE.readCache(),
+      cfg = FD.github.config?.();
+    if (cfg?.provider === 'gitlab' && TE.due(cache.own?.at, now)) try {
+      TE.recordOwn((await FD.gitlab(cfg).whoami()).expiresAt, now);
+    } catch {
+      /* hors ligne ou jeton refusé : la dernière date connue reste */
+    }
+    if (launcherHere && !launcherHere.lan && TE.due(cache.pilots?.at, now)) try {
+      const r = await launcherRequest('gitlab/tokens/count');
+      if (r?.body?.ok) TE.recordPilots(r.body, now);
+    } catch {
+      /* le lanceur ne répond pas : rien */
+    }
+    paintStatus();
+    const own = TE.lines(TE.readCache(), Date.now(), false).find(l => l.k === 'token-own');
+    if (own && TE.readCache().own?.toldOn !== new Date().toISOString().slice(0, 10)) {
+      notify(own.text(t), own.level === 'soon' ? 'info' : 'warn');
+      TE.recordTold();
+    }
   }
   /** Lignes de fin de cycle (SPEC du module Données § 6.3) : la base ou proc/ publiés pour un cycle plus ancien que celui en
    *  vigueur (à reconstruire), ou le cycle qui se termine dans 3 jours sans rien de publié pour le suivant ; calculées au
@@ -5027,6 +5077,7 @@
     readWeather();
     readModuleLines();
     readPending();
+    watchTokens(); // l'expiration des jetons (SOG-0277) : en fond, une relecture par jour au plus
     window.addEventListener('online', async () => {
       FD.status().then(paintSync);
       // le réseau revient : une base lue sans réponse (hors ligne, au lancement) ou vide est relue à la prochaine question

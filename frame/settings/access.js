@@ -207,11 +207,15 @@
     } = env;
     /** Ce que le jeton GitLab dit de lui (§ 10.36, whoami du transport) en avertissements à lire dans le message de la carte, jamais un refus : un jeton personnel, une expiration absente ou à plus d'un an, des droits en trop ;
      *  vide pour un jeton de projet en règle, pour un autre fournisseur, ou quand la lecture échoue (le test et l'enregistrement disent déjà leurs échecs). */
-    const warnings = async cfg => {
+    const warnings = async (cfg, keep = false) => {
       if (cfg.provider !== 'gitlab') return [];
       try {
-        const who = await FD.gitlab(cfg).whoami();
-        return [...(who.bot === true ? [] : [t(T.tokenPersonal)]), ...window.SogSettingsKit.tokenWarnings(t, who)];
+        const who = await FD.gitlab(cfg).whoami(),
+          K = window.SogSettingsKit;
+        await K
+          .teReady; // SOG-0277 : l'expiration dans les 30 jours se dit aussi ; la date du jeton ENREGISTRÉ est gardée sur l'appareil (jamais le jeton)
+        if (keep) K.recordOwn(who);
+        return [...(who.bot === true ? [] : [t(T.tokenPersonal)]), ...K.tokenWarnings(t, who)];
       } catch {
         return [];
       }
@@ -248,7 +252,7 @@
         }
       }
       const warn = await warnings(
-        cfg); // dit après l'enregistrement : jamais bloquant (seul avec son dépôt, un jeton personnel est le bon)
+        cfg, true); // dit après l'enregistrement : jamais bloquant (seul avec son dépôt, un jeton personnel est le bon)
       FD.github.save(cfg);
       await c.reload();
       // la première synchronisation sur le nouveau dépôt, proposée par le bouton de la notification (jamais une fenêtre bloquante)

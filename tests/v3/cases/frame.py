@@ -5443,6 +5443,125 @@ def a131(c):
 
 
 
+@case('A170', 'Token expiry (frame/lib/token_expiry.js, SOG-0277): days left and level (orange under 30, red under 7, expired at 00:00 UTC of the date), the pilots’ tokens counted by name-free numbers, the device storage read with distrust (dates and bounded numbers, never a token), one read a day, the status lines in four languages', 'A',
+      designs=('standard',), screens=False, night=False, tags=('settings',),
+      rule='SOG-0277 (the user, 12 Nov: « penser à le renouveler. avoir une alerte »): the suite never keeps a token, so the alert rests on the DATE GitLab gives; what is kept on the device is a date and numbers, never a token or a name; the bench reports every assertion')
+def a170(c):
+    _bench(c, 'frame/lib/test/token_expiry.html', '__tokenExpiryBench')
+
+
+def _expiry_seed(c, own_days=None, pilots=None, told=''):
+    """Seeds the device storage of the expiry (frame/lib/token_expiry.js, key sogFrame:tokenExpiry) before the page loads, only when nothing is there yet
+    (a reload keeps what the page wrote): the date of the own token `own_days` days ahead (read a minute ago: no new read is due) and, given `pilots`, the count of the pilots’ tokens."""
+    c.page.add_init_script("""(() => { try { if (localStorage.getItem('sogFrame:tokenExpiry')) return; const at = new Date(Date.now() - 60e3).toISOString(), o = %s, p = %s;
+      localStorage.setItem('sogFrame:tokenExpiry', JSON.stringify({ own: o === null ? null : { expiresAt: new Date(Date.now() + o * 864e5).toISOString().slice(0, 10), at, toldOn: %s }, pilots: p ? { ...p, at } : null })) } catch {} })()"""
+                          % (json.dumps(own_days), json.dumps(pilots), json.dumps(told)))
+
+
+def _days_left(date):
+    import datetime
+    import math
+    end = datetime.datetime.fromisoformat(date + 'T00:00:00+00:00')
+    return math.ceil((end - datetime.datetime.now(datetime.timezone.utc)).total_seconds() / 86400)
+
+
+@case('A171', 'Expiry of the own token (SOG-0277): « Your token expires on … (in 12 days) » in the Status block (amber), once a day in a floating note, never shown for a far or unknown date', 'A', langs4=True,
+      designs=('standard',), screens=False, night=False, tags=('settings',),
+      rule='SOG-0277 (the user, 12 Nov: « penser à le renouveler. avoir une alerte »): the date of the own token, read from GitLab once a day (never the token), is said under 30 days with its date and the days left, in the Status block and once a day in a floating note; a far date or none says nothing')
+def a171(c):
+    import datetime
+    _expiry_seed(c, own_days=12)
+    c.open('fuel')
+    rows = open_status(c)
+    row = next((r for r in rows if r['k'] == 'token-own'), None)
+    date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=12)).date().isoformat()
+    when = tx('frame/lib/token_expiry.js', 'inDays', c.lang).replace('{n}', str(_days_left(date)))
+    want = tx('frame/lib/token_expiry.js', 'ownSoon', c.lang).replace('{d}', date).replace('{w}', when)
+    c.ok(row is not None and norm(want) in norm(row['text']), [r['k'] for r in rows] if row is None else row['text'], 'the own token expires in 12 days: the line says the date and the days left, in the language of the run')
+    c.ok(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"token-own\"] .f-status-dot').hasAttribute('data-attn')"), 'no amber dot', 'an amber dot (attention)')
+    c.eq(row['go'], 'card:access', 'the line leads to the Access card', what='go')
+    # the floating note: once, then not again the same day (the page remembers the day, not the token)
+    c.until("[...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.includes('%s'))" % date, timeout=10000, what='the floating note of the day')
+    kept = c.js("localStorage.getItem('sogFrame:tokenExpiry')")
+    c.eq(json.loads(kept)['own']['toldOn'], datetime.datetime.now(datetime.timezone.utc).date().isoformat(), 'the day is remembered', what='toldOn')
+    c.ok(date in kept and not re.search(r'glpat|token"', kept), kept, 'only a date and instants are kept, never a token')
+    c.open('fuel')
+    c.wait(1500)
+    c.eq(c.count('#fNotes .f-note'), 0, 'reloaded the same day: no second note', what='notes')
+
+
+@case('A173', 'Expiry of the own token, far date (SOG-0277): a token that expires in 200 days says nothing: no line in the Status block, no floating note', 'A', designs=('standard',), screens=False, night=False, tags=('settings',),
+      rule='SOG-0277: a date beyond 30 days says nothing (and none known says nothing either, as in every other case of the Status block)')
+def a173(c):
+    _expiry_seed(c, own_days=200)
+    c.open('fuel')
+    c.wait(1200)
+    rows = open_status(c)
+    c.ok(all(not r['k'].startswith('token-') for r in rows), [r['k'] for r in rows], 'a token date 200 days ahead: no token line')
+    c.eq(c.count('#fNotes .f-note'), 0, 'no floating note', what='notes')
+
+
+@case('A172', 'Expiry of the pilots’ tokens on the workstation (SOG-0277): « 2 pilot tokens expire soon (nearest: …) » and « 1 pilot token has expired » in the Status block, from the counts the launcher gives (numbers and a date, never a name); nothing of them on a device without the launcher', 'A', langs4=True,
+      designs=('standard',), screens=False, night=False, tags=('settings',),
+      rule='SOG-0277: the maintainer is told, on the workstation that holds the administrator’s token, that pilots’ tokens expire or have expired; the launcher answers numbers and one date (gitlab/tokens/count), read at most once a day; a device without the launcher says nothing of them')
+def a172(c):
+    import datetime
+    near = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=5)).date().isoformat()
+    _ap_launcher(c, 'https://gitlab.com/acme/data.git', tokens={'ok': True, 'active': 3, 'soon': 2, 'expired': 1, 'nearest': near},
+                 secrets={'gitlab': {'instance': {'set': True, 'at': '2026-11-01'}, 'project': {'set': True, 'at': '2026-11-01'}, 'token': {'set': True, 'at': '2026-11-01'}}})
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"token-pilots-soon\"]')", timeout=20000, what='the pilots’ tokens line')
+    rows = {r['k']: r for r in c.js("""[...document.querySelectorAll('[data-card="status"] .f-status-list > li')].map(li => ({ k: li.dataset.k, text: (li.innerText || '').replace(/\\s+/g, ' ').trim() }))""")}
+    want_soon = tx('frame/lib/token_expiry.js', 'chipSoonN', c.lang).replace('{n}', '2').replace('{d}', near)
+    want_old = tx('frame/lib/token_expiry.js', 'chipOld1', c.lang)
+    c.eq([norm(rows['token-pilots-soon']['text']), norm(rows['token-pilots-expired']['text'])], [norm(want_soon), norm(want_old)],
+         'two tokens soon with the nearest date, one expired: worded in the language of the run, no name', what='lines')
+    kept = json.loads(c.js("localStorage.getItem('sogFrame:tokenExpiry')"))['pilots']
+    c.eq([kept['soon'], kept['expired'], kept['nearest']], [2, 1, near], 'the counts and the nearest date are kept on the device', what='kept')
+    # a device without the launcher: the counts are not said (nothing to act with there)
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), lambda route: route.fulfill(status=404, body=''))
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"identity\"], [data-card=\"access\"]')", timeout=15000, what='Settings is drawn')
+    c.wait(1500)
+    c.eq(c.count('[data-card="status"] li[data-k^="token-pilots"]'), 0, 'no launcher: nothing about the pilots’ tokens', what='pilots lines')
+
+
+@case('A174', 'A GitLab 401 says « expired on … » only when the known date of the own token is past (SOG-0277); without a known date, or a future one, it stays « token refused or expired »', 'A', langs4=True, designs=('standard',), screens=False, night=False, tags=('settings',),
+      rule='SOG-0277: GitLab answers a 401 the same way for an expired, a revoked and an unknown token, so « expired » can be said only from the date the page knows; otherwise the wording stays « refused or expired »')
+def a174(c):
+    import datetime
+    gitlab = ("try { localStorage.setItem('githubData:frame', JSON.stringify({ provider: 'gitlab', api: 'https://gitlab.com/api/v4', repo: 'acme/data', branch: 'main', token: 'glpat-test' })) } catch (e) {}")
+    c.context.add_init_script(gitlab)
+    c.context.route(re.compile(r'^https://gitlab\.com/api/v4/'), lambda r: r.fulfill(status=401, content_type='application/json', body=json.dumps({'message': '401 Unauthorized'})))
+    _expiry_seed(c, own_days=-3)
+    c.open('atmosphere', wait=False, docs=[['device/usages.json', {'devices': True}, 'cache']])
+    c.until('!!window.FrameData && FrameData.status', timeout=15000, what='the data layer')
+    for _ in range(100):
+        if c.js("() => FrameData.status().then(s => s.transport)") == 'github':
+            break
+        c.wait(100)
+    row = "() => { const b = document.querySelector('[data-card=\"status\"] [data-k=\"data\"]'); return b ? b.textContent : '' }"
+
+    def said():
+        err = c.js("() => FrameData.sync().then(r => r.error)")
+        c.page.evaluate("location.hash = '#settings'")
+        c.until("!!document.querySelector('[data-card=\"status\"] [data-k=\"data\"]')", timeout=10000, what='the Status block')
+        text = norm(c.js(row))
+        c.page.evaluate("location.hash = '#atmosphere'")
+        return err, text
+    err, text = said()
+    c.ok(err.startswith('GitLab 401'), err, 'a GitLab 401 is the last error')
+    date = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=3)).date().isoformat()
+    want = norm(tx('frame/lib/token_expiry.js', 'ownExpired', c.lang).replace('{d}', date))
+    c.ok(want in text and '(GitLab 401)' in text, text, 'the known date of the own token is past: « expired on … », the provider and the status after it')
+    # a future date: the answer stays « refused or expired »
+    c.page.evaluate("() => { const k = JSON.parse(localStorage.getItem('sogFrame:tokenExpiry')); k.own.expiresAt = new Date(Date.now() + 40 * 864e5).toISOString().slice(0, 10); localStorage.setItem('sogFrame:tokenExpiry', JSON.stringify(k)) }")
+    err, text = said()
+    c.ok(norm(tx('frame/app.js', 'http401', c.lang)) in text and norm(tx('frame/lib/token_expiry.js', 'ownExpired', c.lang).split('{d}')[0]) not in text, text, 'a future date: the wording stays « refused or expired »')
+    c.ok('glpat-test' not in text, text, 'never the token')
+
+
 LAUNCHER_MODULE = "export const meta = { id: 'atmosphere', launcher: { routes: ['calc'] } }; export function mount(el, ctx) { window.__ctx = ctx; window.__ev = []; window.addEventListener('frame-launcher', e => window.__ev.push(e.detail.state)); el.textContent = 'ctx' }; export function unmount() {}"
 LAUNCHER_TEXTS = {
     'none': {'fr': 'Cette fonction passe par le lanceur du poste, et aucun lanceur ne sert cette page : ouvrez la suite par le lanceur de votre ordinateur.',

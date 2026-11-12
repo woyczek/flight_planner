@@ -1,0 +1,241 @@
+<!doctype html>
+<!-- Banc de l'expiration des jetons (frame/lib/token_expiry.js ; SOG-0277) : jours restants et niveau (orange sous 30 jours, rouge sous 7, expiré à
+     00:00 UTC de la date), liste de jetons de pilote (actifs qui expirent, expirés non remplacés, jamais un nom), stockage de l'appareil relu avec
+     méfiance (des dates et des nombres bornés, jamais une chaîne libre ni un jeton), une relecture par jour, lignes de la puce d'état en quatre
+     langues. window.__tokenExpiryBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>token expiry — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">token_expiry.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import * as TE from '../token_expiry.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const now = Date.parse('2026-11-12T10:00:00Z'),
+    mem = () => {
+      const m = new Map();
+      return {
+        getItem: k => m.has(k) ? m.get(k) : null,
+        setItem: (k, v) => void m.set(k, String(v)),
+        raw: m
+      };
+    },
+    tr = (row, v = {}) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? `{${k}}`),
+    s = d => TE.stateOf(d, now);
+  ck('jours restants : 12 jours → soon, 6 → urgent, 230 → ok',
+    JSON.stringify([s('2026-11-24'), s('2026-11-18'), s('2027-06-30')].map(x => [x.days, x.level])) ===
+    '[[12,"soon"],[6,"urgent"],[230,"ok"]]');
+  ck('les seuils : 30 jours orange (soon), 31 jours rien ; 7 jours rouge (urgent), 8 orange',
+    [s('2026-12-12').level, s('2026-12-13').level, s('2026-11-19').level, s('2026-11-20').level].join() === 'soon,ok,urgent,soon', [s(
+      '2026-12-12').level, s('2026-12-13').level, s('2026-11-19').level, s('2026-11-20').level].join());
+  ck('un jeton ne vaut plus à 00:00 UTC de sa date : le jour même, expiré (à 10:00 UTC) ; la veille, 1 jour',
+    s('2026-11-12').level === 'expired' && s('2026-11-13').days === 1 && s('2026-11-13').level === 'urgent');
+  ck('un horodatage d’API est lu par sa date ; une date qui n’existe pas, un texte, un jeton, rien : null',
+    s('2026-11-24T00:00:00.000Z')?.date === '2026-11-24' && [s('2026-02-30'), s('glpat-AAAA'), s(''), s(null), s(undefined), s(5)].every(
+      x => x === null));
+  ck('« dans 12 jours » / « dans 1 jour » : les lignes de la liste', tr(...TE.whenRow(s('2026-11-24'))) === 'dans 12 jours' && tr(...TE
+    .whenRow(s('2026-11-13'))) === 'dans 1 jour');
+  const L = (name, active, revoked, expires) => ({
+    name,
+    active,
+    revoked,
+    expires
+  });
+  ck('les jetons de pilote : actifs sous 30 jours (soon), expirés ni révoqués ni remplacés (expired), la date la plus proche ; ni le jeton du propriétaire ni un révoqué',
+    JSON.stringify(TE.pilotsOf([L('ABC', true, false, '2026-11-20'), L('DEF', true, false, '2026-12-01'), L('GHI', false, false,
+        '2026-10-01'), L('JKL', false, true, '2026-10-01'),
+      L('owner-bot', true, false, '2026-11-14'), L('MNO', true, false, null), L('PQR', true, false, '2027-12-01')
+    ], now)) === '{"soon":2,"expired":1,"nearest":"2026-11-20"}',
+    JSON.stringify(TE.pilotsOf([L('ABC', true, false, '2026-11-20'), L('DEF', true, false, '2026-12-01')], now)));
+  ck('un jeton expiré remplacé par un actif du même nom ne compte pas', JSON.stringify(TE.pilotsOf([L('ABC', false, false, '2026-10-01'), L(
+    'ABC', true, false, '2027-10-01')], now)) === '{"soon":0,"expired":0,"nearest":""}');
+  ck('pilotsOf : une liste absente ou des entrées inattendues ne lèvent rien', JSON.stringify(TE.pilotsOf(null, now)) ===
+    '{"soon":0,"expired":0,"nearest":""}' && TE.pilotsOf([null, 5, {}, {
+      name: {}
+    }], now).soon === 0);
+  // le stockage de l'appareil
+  const st = mem();
+  ck('sans rien de gardé : own et pilots absents', JSON.stringify(TE.readCache(st)) === '{"own":null,"pilots":null}');
+  TE.recordOwn('2026-12-01', now, st);
+  TE.recordPilots({
+    soon: 2,
+    expired: 1,
+    nearest: '2026-11-20',
+    name: 'ABC'
+  }, now, st);
+  const c = TE.readCache(st);
+  ck('gardé : la date de son jeton et le compte des jetons de pilote, avec l’instant de la lecture ; les deux se retrouvent après l’autre écriture',
+    c.own?.expiresAt === '2026-12-01' && c.own.at === new Date(now).toISOString() && c.pilots?.soon === 2 && c.pilots.expired === 1 && c
+    .pilots.nearest === '2026-11-20', JSON.stringify(c));
+  ck('jamais un jeton ni un nom dans ce qui est gardé : une valeur qui n’est pas une date est effacée, un champ en plus n’est pas copié',
+    (() => {
+      const t = mem();
+      TE.recordOwn('glpat-SECRET-VALUE', now, t);
+      TE.recordPilots({
+        soon: 1,
+        nearest: 'glpat-X',
+        name: 'ABC',
+        token: 'glpat-Y'
+      }, now, t);
+      const raw = [...t.raw.values()].join('');
+      return !/glpat|ABC/.test(raw) && TE.readCache(t).own.expiresAt === '' && TE.readCache(t).pilots.nearest === '';
+    })());
+  ck('un stockage altéré est relu avec méfiance : nombres bornés, dates vérifiées, forme inattendue ou JSON cassé → rien',
+    (() => {
+      const t = mem();
+      t.setItem(TE.KEY, JSON.stringify({
+        own: {
+          expiresAt: '<script>',
+          at: '2026-11-12T10:00:00.000Z',
+          toldOn: 'x'
+        },
+        pilots: {
+          soon: -4,
+          expired: 1e9,
+          nearest: 7,
+          at: '2026-11-12T10:00:00.000Z'
+        }
+      }));
+      const a = TE.readCache(t);
+      const u = mem();
+      u.setItem(TE.KEY, '{cassé');
+      const v = mem();
+      v.setItem(TE.KEY, JSON.stringify({
+        own: {
+          expiresAt: '2026-12-01',
+          at: 'jamais'
+        },
+        pilots: 5
+      }));
+      return a.own.expiresAt === '' && a.own.toldOn === '' && a.pilots.soon === 0 && a.pilots.expired === 0 && a.pilots.nearest ===
+        '' && JSON.stringify(TE.readCache(u)) === '{"own":null,"pilots":null}' &&
+        JSON.stringify(TE.readCache(v)) === '{"own":null,"pilots":null}';
+    })());
+  ck('un stockage qui refuse (navigation privée) : aucune exception, rien de gardé', (() => {
+    const t = {
+      getItem() {
+        throw new Error('refusé');
+      },
+      setItem() {
+        throw new Error('plein');
+      }
+    };
+    TE.recordOwn('2026-12-01', now, t);
+    TE.recordPilots({
+      soon: 1
+    }, now, t);
+    TE.recordTold(now, t);
+    return JSON.stringify(TE.readCache(t)) === '{"own":null,"pilots":null}';
+  })());
+  ck('une relecture par jour au plus : moins de 24 h non due, plus due, sans lecture due',
+    TE.due(new Date(now - 3600e3).toISOString(), now) === false && TE.due(new Date(now - 25 * 3600e3).toISOString(), now) === true && TE
+    .due(undefined, now) === true && TE.due('n’importe quoi', now) === true);
+  ck('la notification du jour : dite une seule fois par jour',
+    (() => {
+      const t = mem();
+      TE.recordOwn('2026-11-20', now, t);
+      const before = TE.readCache(t).own.toldOn;
+      TE.recordTold(now, t);
+      return before === '' && TE.readCache(t).own.toldOn === '2026-11-12' && TE.readCache(t).own.expiresAt === '2026-11-20';
+    })());
+  // les lignes de la puce
+  const lines = (cache, pilots = true) => TE.lines(cache, now, pilots),
+    texts = l => l.text((row, v) => tr(row, v));
+  const own12 = lines({
+    own: {
+      expiresAt: '2026-11-24'
+    },
+    pilots: null
+  });
+  ck('son jeton sous 30 jours : « Votre jeton expire le 2026-11-24 (dans 12 jours) … », niveau soon, mène à la carte Accès',
+    own12.length === 1 && /^Votre jeton expire le 2026-11-24 \(dans 12 jours\)/.test(texts(own12[0])) && own12[0].level === 'soon' &&
+    own12[0].go === 'card:access', own12[0] && texts(own12[0]));
+  const gone = lines({
+    own: {
+      expiresAt: '2026-11-01'
+    },
+    pilots: null
+  });
+  ck('son jeton expiré : « Votre jeton a expiré le … » (niveau expired) ; lointain ou inconnu : rien',
+    /^Votre jeton a expiré le 2026-11-01 :/.test(texts(gone[0])) && gone[0].level === 'expired' && lines({
+      own: {
+        expiresAt: '2027-06-30'
+      }
+    }).length === 0 && lines({
+      own: {
+        expiresAt: ''
+      }
+    }).length === 0 && lines({}).length === 0);
+  const pil = lines({
+    own: null,
+    pilots: {
+      soon: 2,
+      expired: 1,
+      nearest: '2026-11-15'
+    }
+  });
+  ck('les jetons des pilotes : un expiré d’abord, puis « 2 jetons de pilote expirent bientôt (le plus proche : …) » en rouge quand la date est sous 7 jours ; menés à l’écran des jetons',
+    pil.length === 2 && /^1 jeton de pilote a expiré$/.test(texts(pil[0])) &&
+    /^2 jetons de pilote expirent bientôt \(le plus proche : 2026-11-15\)$/.test(texts(pil[1])) && pil[1].level === 'urgent' && pil.every(
+      x => x.go === 'pilot-tokens'),
+    pil.map(texts).join(' | '));
+  ck('un seul : le singulier ; hors du poste (pilots faux) : rien sur les jetons de pilote',
+    /^1 jeton de pilote expire bientôt \(2026-12-01\)$/.test(texts(lines({
+      pilots: {
+        soon: 1,
+        expired: 0,
+        nearest: '2026-12-01'
+      }
+    })[0])) && lines({
+      pilots: {
+        soon: 2,
+        expired: 2,
+        nearest: '2026-11-15'
+      }
+    }, false).length === 0);
+  ck('chaque phrase existe dans les quatre langues, non vide, avec ses variables',
+    Object.entries(TE.TX).every(([, r]) => Array.isArray(r) && r.length === 4 && r.every(x => typeof x === 'string' && x.trim())) &&
+    Object.entries(TE.TX).every(([, r]) => {
+      const v = r[0].match(/\{\w+\}/g) || [];
+      return r.every(x => JSON.stringify((x.match(/\{\w+\}/g) || []).sort()) === JSON.stringify([...v].sort()));
+    }));
+  window.__tokenExpiryBench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows: rows.map(r => `${r.ok ? 'PASS' : 'FAIL'} ${r.name}${r.ok ? '' : ' — ' + r.detail}`)
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__tokenExpiryBench.pass} PASS · ${window.__tokenExpiryBench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>
