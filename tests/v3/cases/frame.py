@@ -6984,3 +6984,23 @@ def a150(c):
     c.until("!!document.querySelector('[data-screen=help], #fView .f-doc')", timeout=15000, what='the help')
     c.ok(c.count('#fView a[href*="t="]') >= 1 or 'tutorial' in c.js("document.getElementById('fView').innerHTML.toLowerCase()") or 'tutoriel' in c.js("document.getElementById('fView').innerHTML.toLowerCase()"), '', 'the tutorials are still reachable in the help')
     c.check_errors()
+
+
+@case('A175', 'The selected tab of the bottom bar is never without an icon: every tab of every application shows its icon once selected (SOG-0284)', 'A',
+      designs=None, screens=False, night=False,
+      rule='SOG-0284 (the ergonomist, 12 Nov, captures L120/L121 of Maintenance at 390): the selected tab hides the line icon to show the filled one; an icon without a filled variant (database, plane…) left the pill EMPTY. Now the line icon stays on the selected tab when there is no filled variant, and database and plane have theirs. Every tab of every application is selected in turn: its pill shows a visible icon of a real size')
+def a175(c):
+    PILL = "(() => { const a = document.querySelector('.f-tabbar a[aria-current=\"page\"]'); if (!a) return null; return [...a.querySelectorAll('.f-tab-ico svg')].filter(s => getComputedStyle(s).display !== 'none' && s.getBoundingClientRect().width > 8).map(s => !!s.dataset.filled) })()"
+    for app in ('pilot', 'maintenance', 'company'):
+        c.open('', app=app, docs=LEVEL3, wait=False)
+        c.until("!!document.querySelector('.f-tabbar a[data-tab]')", timeout=20000, what=f'{app}: the bar')
+        tabs = c.js("[...document.querySelectorAll('.f-tabbar a[data-tab]')].map(a => a.dataset.tab)")
+        c.ok(len(tabs) >= 2, tabs, f'{app}: the bar has tabs')
+        for tab in tabs:
+            c.tap(f'.f-tabbar a[data-tab="{tab}"]')
+            c.until(f"document.querySelector('.f-tabbar a[data-tab=\"{tab}\"]')?.getAttribute('aria-current') === 'page'", timeout=15000, what=f'{app}/{tab} selected')
+            shown = c.js(PILL)
+            c.ok(shown and len(shown) == 1, shown, f'{app}/{tab}: the selected tab shows exactly one icon (never an empty pill)')
+            if app == 'maintenance':
+                c.shot(f'A175_{tab}_390_{c.design}_delivered.png')
+    c.check_errors()

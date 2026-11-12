@@ -80,6 +80,9 @@ const P = {
 // variantes pleines : racine remplie et cernée de currentColor (trait 1, jointures rondes) ; ce qui doit rester un trait
 // (tuyau, socle, rayons) le dit (fill="none", trait 2)
 const F = {
+  // SOG-0284 : les icônes d'onglet de Maintenance (Données, Fiches) ont leur variante pleine ; une icône sans variante garde son trait sur l'onglet choisi (frame.css)
+  database: '<path d="M4 5c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"/><path d="M4 7.4c0 1.7 3.6 3 8 3s8-1.3 8-3v3c0 1.7-3.6 3-8 3s-8-1.3-8-3z"/><path d="M4 12.8c0 1.7 3.6 3 8 3s8-1.3 8-3V19c0 1.7-3.6 3-8 3s-8-1.3-8-3z"/>',
+  plane: '<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/>',
   cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
   fuel: '<path fill-rule="evenodd" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16zM6.5 6h5v4h-5z"/><path fill="none" stroke-width="2" d="M3 21h12M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>',
   map: '<path d="M3 6 8 4.33v14L3 20z"/><path d="M10 4.33 14 5.67v14l-4-1.34z"/><path d="M16 5.67 21 4v14l-5 1.67z"/>',

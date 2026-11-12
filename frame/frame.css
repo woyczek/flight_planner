@@ -1761,9 +1761,10 @@ p.f-back {
   white-space: nowrap
 }
 /* l'onglet choisi change de forme : l'icône pleine sur une pastille arrondie, le libellé en couleur d'accent et plus gras ;
-   les autres gardent l'icône au trait, en gris */
+   les autres gardent l'icône au trait, en gris. SOG-0284 : un onglet choisi n'est JAMAIS sans icône — l'icône au trait n'est
+   cachée que si la pastille porte une variante pleine (`:has`) ; sans variante pleine, le trait reste affiché sur l'onglet choisi */
 .f-tabbar .f-icon[data-filled],
-.f-tabbar a[aria-current="page"] .f-icon:not([data-filled]) {
+.f-tabbar a[aria-current="page"] .f-tab-ico:has(.f-icon[data-filled]) .f-icon:not([data-filled]) {
   display: none
 }
 .f-tabbar a[aria-current="page"] .f-icon[data-filled] {

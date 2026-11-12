@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The selected tab of the bottom bar is never without an icon** — an icon without a filled variant (Maintenance's « Data » database, « Sheets » plane, and every other such icon) left the blue pill empty: the line icon now stays on the selected tab when there is no filled variant (CSS `:has`, every design, every application), and the database and the plane have their filled variant (frame/lib/icons.js). Noreg A175 walks every tab of Pilot, Maintenance and Company; captures delivered (SOG-0284).
 - **Fuel: the quote counts the wind leg by leg** — each leg on its course with its wind and the full wind triangle (drift comprised), one function shared with the plan of progression; « vent par tronçon » said (Fuel DECISIONS, help; noreg F160; SOG-0281).
 - **Fuel: the route timing keeps only a recognised code** — a departure or arrival that is not one is kept as « ? » on the device and in the diagnostic (Fuel DECISIONS; noreg F159; SOG-0283).
 - **Report: a flight of another company keeps its own** — the families offered, the heading and the saved report follow the company of the flight taken; the commercial path (mission → Fuel → report) held by a case (Report and Fuel DECISIONS, help; noreg G20, N42; SOG-0041).

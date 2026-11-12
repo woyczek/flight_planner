@@ -406,6 +406,10 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
     4.5 at the worst pixel, the text made transparent and its boxes shot), H6 (phone: not offered, `standard` applied, the
     choice kept, no request under `frame/design/aqua/` within 6 s).
 
+## 12 November 2026 — the selected tab is never without an icon (SOG-0284)
+
+The bottom bar hides the line icon of the selected tab to show the filled one on the pill. An icon with no filled variant (`database`, `plane`, `layers`, `globe`, `target`…) left the pill empty. Decision: the rule is by the markup, not by a list — the line icon is hidden on the selected tab only when the pill carries a filled twin (`.f-tab-ico:has(.f-icon[data-filled])`); otherwise it stays. The filled variants of `database` and `plane` are drawn (three stacked discs, the plane's solid silhouette). Noreg A175 selects every tab of every application and checks one visible icon in the pill.
+
 ## 12 November 2026 — the title icon is the design's ink in Swiss and Metro (SOG-0276)
 
 The user: « l'avion (pilote) rouge, parce que rouge comme couleur de contraste. idem pour les contrastes sur metro. » Read on the real screens (captures `A166_*`):
