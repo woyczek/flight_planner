@@ -8354,3 +8354,48 @@ def k197(c):
             f"IF RWY 05 48°20'25.8'' N 007°17'24.0'' E XX", f"IF VOR RWY 23 48°40'09.5'' N 007°51'13.0'' E XX", f"IF ILS/LOC RWY 07 48°40'05.1'' N 002°04'58.4'' E"]
     c.eq((sorted(P.parse_faf(rows)), sorted(P.parse_if(rows))), (['03', '05', '06', '17L', '23', '29'], ['05', '07']),
          'the FAF of the ILS/LOC runways under the four wordings (05 from « FAP/FAF RWY 05 », 03 without space, 23/29 « LOC + DME »), the two old wordings still read; no VOR runway (21 and the VOR 05 row); the IF of « IF RWY 05 » and the old « IF ILS/LOC », not the VOR one', what='rows')
+
+
+@case('K198', 'LFRS SID RWY 21 (SOG-0248): the named departures whose title the page prints in a shifted font (« AN AN G 4 4 S » for ANG 4S) are SPLIT into their own groups and named by their last point + the printed suffix, not fused into one « NONAME » block', 'K', static=True,
+      rule='AeroDB survey 12 Nov 2026 (LFRS): the page of the SID RWY 21 prints the title of each departure doubled and interleaved (« AN AN G 4 4 S », « BAL BAL NI 4 4 S », « LU LU SON 4S 4S ») on a row of its own, so no title was recognised and all the legs fell into ONE block of 28 points (zigzag, hidden as doubt): every named SID of the runway was lost. A row of upper-case tokens with two identical neighbours and a digit, between two groups, now opens a group; its name is the LAST point of its legs + the suffix printed (ANG 4S, BALNI 4S, RIMON 4S…) when that point starts with the first token of the title, otherwise the group stays unnamed (and says so). Rows: the public AIP page AD_2_LFRS_DATA_SID_RWY21_RNAV_CODE_01 of the 29 Oct 2026 cycle, cut to five departures.')
+def k198(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    P = importlib.import_module('proc_sia')
+    rows = [
+        'AIP AD 2 LFRS DATA SID RWY21 RNAV CODE 01',
+        'FRANCE 18 MAY 23',
+        'NANTES ATLANTIQUE',
+        'SID RNAV RWY 21',
+        'Codage proposé / Proposed coding',
+        'SI SI D R R NAV R AV R WY 21 Y 21',
+        'RMK GNSS requis/required Ref NAVAID : VOR - DME NTSMAG VAR 2020 0,1°W',
+        'Procedure',
+        'Identification Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Nav Spec',
+        'AN AN G 4 4 S',
+        'CF LULID YES 208 207.5 - - 490 - - RNAV 1',
+        'DF VELUD - - - - L - - - RNAV 1',
+        'TF ANG - 038 037.7 30.3 - - - - RNAV 1',
+        'AN AN G 4 4 T',
+        'CF LULID YES 208 207.5 - - 490 - - RNAV 1',
+        'DF ELNER - - - - R - - - RNAV 1',
+        'TF ANG - 063 062.9 41.2 - - - - RNAV 1',
+        'BAL BAL NI 4 4 S',
+        'CF LULID YES 208 207.5 - - 490 - - RNAV 1',
+        'DF ELNER - - - - R - - - RNAV 1',
+        'TF BALNI - 008 007.8 23.6 - - - - RNAV 1',
+        'RI RI MON 4 N 4 S',
+        'CF LULID YES 208 207.5 - - 490 - - RNAV 1',
+        'DF MT - - - - R - - - RNAV 1',
+        'TF RIMON - 331 331.1 12 - - - - RNAV 1',
+        'ER ER BIN BIN 4 4 S',
+        'CF LULID YES 208 207.5 - - 490 - - RNAV 1',
+        'DF MT - - - - R - - - RNAV 1',
+        'TF ERBIN - 290 289.4 12 - - - - RNAV 1',
+    ]
+    r = P.parse_code_table(rows)
+    c.eq(([(g['label'], len(g['legs'])) for g in r['groups']], r['read'], r['rows']), ([('ANG 4S', 3), ('ANG 4T', 3), ('BALNI 4S', 3), ('RIMON 4S', 3), ('ERBIN 4S', 3)], 15, 15),
+         'five departures, each in its own group with its name (last point + suffix): ANG 4S, ANG 4T, BALNI 4S, RIMON 4S, ERBIN 4S; every leg row read', what='split')
+    c.eq(P._garbled_title(['AN', 'AN', 'G', '4', '4', 'S']), ('AN', '4S'), 'the garbled title « AN AN G 4 4 S »: first token and suffix', what='title')
+    c.eq((P._garbled_title(['CF', 'LULID', 'YES', '208']), P._garbled_title(['ENORI', '9W']), P._garbled_title(['RNAV', '1'])), (None, None, None), 'a leg row, an ordinary title and a short row are never taken for a garbled title', what='not')

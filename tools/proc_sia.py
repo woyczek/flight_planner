@@ -526,6 +526,15 @@ def _bare_if(t):
 DESIGNATOR = re.compile(r'^[A-Z]{3,6} \d[A-Z]$')
 # intitulé d'une STAR seul sur sa ligne : « ROYAN 6P », « ENORI 9W (UIR FIR) », « BIBAX 9V (Utilisable uniquement sur instruction du contrôle / Use on ATC instruction only ) » ; les parenthèses
 # portent l'espace aérien du point d'entrée (« FIR », « UIR ») et les conditions d'emploi (réacteurs seulement, sur instruction) : elles ne font pas partie du nom
+def _garbled_title(t):
+    """Un intitulé de départ que la page imprime en police décalée (LFRS piste 21 : « AN AN G 4 4 S » pour « ANG 4S », « LU LU SON 4S 4S » pour « LUSON 4S ») : des jetons en MAJUSCULES, au moins trois, dont deux voisins identiques (le doublement du décalage) et un chiffre ; ce n'est jamais une ligne de tronçon.
+    Rend (premier jeton, suffixe « 4S ») ou None ; le nom du départ se complète avec le DERNIER point de ses tronçons (« ANG » + « 4S ») quand celui-ci commence par le premier jeton."""
+    if len(t) < 3 or not all(re.fullmatch(r'[A-Z0-9]{1,6}', w) for w in t) or not any(a == b for a, b in zip(t, t[1:])) or not any(re.search(r'\d', w) for w in t):
+        return None
+    m = re.search(r'(\d)([A-Z])$', ''.join(t))
+    return (t[0], m.group(1) + m.group(2)) if m else None
+
+
 STAR_TITLE = re.compile(r'[A-Z]{2,5} ?\d[A-Z](?: \(.*\))?')
 
 
@@ -705,8 +714,20 @@ def parse_code_table(rows):
             cur = {'label': re.match(r'[A-Z]{2,5} ?\d[A-Z]', ' '.join(t)).group(0), 'legs': [], 'lost': lost}
             groups.append(cur)
             lost = 0
+        elif not rnp and (gt := _garbled_title(t)) and (cur is None or cur['legs']):
+            cur = {'label': None, 'legs': [], 'lost': lost, 'garbled': gt}         # un départ de plus, au titre brouillé : un groupe à lui (il n'est plus fondu dans le précédent, SOG-0248)
+            groups.append(cur)
+            lost = 0
         elif rnp and DESIGNATOR.match(' '.join(t)):
             designators.append(' '.join(t))
+    for g in groups:                       # le nom d'un départ au titre brouillé : son dernier point + le suffixe imprimé, si ce point commence par le début du titre ; sinon il reste sans nom (un groupe à part, À VÉRIFIER)
+        if g.get('garbled') and g['legs'] and not g.get('label'):
+            first, suffix = g['garbled']
+            last = next((l['id'] for l in reversed(g['legs']) if l.get('id')), None)
+            if last and last.startswith(first):
+                g['label'] = f'{last} {suffix}'
+            else:
+                warnings.append(f'titre de départ brouillé ({first}… {suffix}) : nom non retrouvé, le départ reste sans nom')
     # départs à plusieurs pistes : un groupe par piste
     spread, notes = [], []
     for g in groups:
