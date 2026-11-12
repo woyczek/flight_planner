@@ -1348,7 +1348,16 @@ def n40(c):
     # the pilot counts 10 min at PT1: the trip goes down
     c.js(f"document.querySelector('{fuel} .fu-steps [data-step=\"1\"]')?.click()")
     c.js(f"(() => {{ const d = document.querySelector('{fuel} details[data-fold=pts]'); if (d) d.open = true }})()")
-    c.until(f"document.querySelectorAll('{fuel} [data-pts] input[data-k=pthold]').length >= 3", timeout=8000, what='a time-on-area field on each middle point')
+    c.until(f"document.querySelectorAll('{fuel} [data-pts] [data-holdline]').length === 2", timeout=8000, what='a line « Sur zone » on the two points with a time')
+    # the retouche (ergonomist, 12/11): one line in one piece, said in words; a point without time only « ⏱ + », which opens its line
+    line = norm(c.js(f"[...document.querySelectorAll('{fuel} [data-pts] [data-holdline]')].map(l => l.textContent).join(' | ')"))
+    c.ok('⏱ Sur zone' in line and 'min · mission : 5 à 40' in line, line, '« ⏱ Sur zone [40] min · mission : 5 à 40 »')
+    c.ok(c.js(f"[...document.querySelectorAll('{fuel} [data-pts] [data-holdline]')].every(l => l.getBoundingClientRect().height < 48)"), 'wrapped',
+         'each line in one piece (one row high)')
+    c.eq(c.count(f'{fuel} [data-pts] [data-do="holdopen"]'), 1, 'the point without time carries only « ⏱ + »', what='holdopen')
+    c.ok(c.js("document.documentElement.scrollWidth <= innerWidth + 1"), c.js('[document.documentElement.scrollWidth, innerWidth]'), 'the list fits the width')
+    c.tap(f'{fuel} [data-pts] [data-do="holdopen"]')
+    c.until(f"document.querySelectorAll('{fuel} [data-pts] [data-holdline]').length === 3", timeout=5000, what='« ⏱ + » opens the line of that point')
     sel = f"{fuel} [data-pts] input[data-k=pthold][value='40']"
     c.page.fill(sel, '10')
     c.js(f"(() => {{ const i = [...document.querySelectorAll('{fuel} [data-pts] input[data-k=pthold]')].find(x => x.value === '10'); i.dispatchEvent(new Event('change', {{ bubbles: true }})) }})()")

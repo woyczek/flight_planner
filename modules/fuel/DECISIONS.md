@@ -1710,3 +1710,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   trip (so before the contingency), one line per point in the detail (« Sur zone · PT1 · 5 à 40 min, 40 comptées »); the plan of the
   flight (progress.js) inserts each after its point, the following times shifted. The Map's planned position (flight_time.js) does not
   count it yet. N40.
+- **12 Nov 2026 — the time on area, its line** (the ergonomist on N40_points at 390): one line of its own under the point, in one piece,
+  said in words (« ⏱ Sur zone [10] min · mission : 5 à 40 »); a point without time only « ⏱ + », which opens its line; the level field
+  narrower under 420 px so that an id in coordinates (11 characters) stays whole. N40 extended.
