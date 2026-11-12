@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a route taken makes the other proposals go at once** — the list and the pale lines vanish without waiting for Fuel and without a change of screen; « Choose » is always on the list (grey until a route is shown) (maps DECISIONS; noreg D177; SOG-0224).
 - **Fuel: the fold of the radio aids no longer closes itself** at the step Departure (Fuel DECISIONS; noreg F140; SOG-0247).
 - **Map: the barbs follow the route leg by leg** — between two read winds they were put on the straight chord, cutting the elbow (LFPO → SFD via MOPAR KOLIV VEPET PETAX: straight from KOLIV to PETAX, VEPET ignored); they follow the drawn line now (maps DECISIONS; noreg D176; SOG-0243).
 - **Fuel: « Choisir » makes the other proposed routes disappear at once**, in Fuel and on the Map (alternatives published empty), one line says the route taken (Fuel DECISIONS, help; noreg F109, F114; SOG-0224, SOG-0134).

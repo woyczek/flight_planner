@@ -354,6 +354,16 @@ export function altsPick(i) {
     }
   }));
   else location.hash = `#fuel?ralt=${i}`;
+  // le choix est fait : les autres propositions, leurs traits pâles et la liste disparaissent tout de suite, sans attendre que Carburant le publie (SOG-0224 : « faire disparaître les alternatives ») ;
+  // Carburant publie ensuite une liste vide (alternatives: []), qui dit la même chose
+  if (S) {
+    S.alts = null;
+    S.altShow = null;
+    S.altHover = null;
+    S.altsSig = '';
+    altsCard();
+    schedule();
+  }
   return true;
 }
 /** Un itinéraire proposé MONTRÉ (SOG-0134 : un appui sur un tracé ne le choisit pas) : surligné, gardé jusqu'à un autre appui ; Carburant en est prévenu (l'événement maps-route-alt-show,
@@ -384,7 +394,7 @@ export function altsCard() {
     on = !!A && !dual() && A.list.length > 0,
     said = on && A.list.some(a => a.control.some(Boolean)), // le moteur dit ses tronçons : la clef du dessin
     legend = on ? altsLegendRows() : [],
-    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${A.mode === 'compute' && A.list.some(a => a.index === S.altShow) ? `<button type="button" class="f-btn mp-al-take" data-alttake>${esc(tt(TX.altTake))}</button>` : ''}` : '';
+    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${A.mode === 'compute' ? `<button type="button" class="f-btn mp-al-take" data-alttake${A.list.some(a => a.index === S.altShow) ? '' : ' disabled'}>${esc(tt(TX.altTake))}</button>` : ''}` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
 }

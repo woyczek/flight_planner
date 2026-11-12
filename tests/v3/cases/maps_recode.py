@@ -3912,7 +3912,7 @@ def d126(c):
                  "() => window.__mp.S.altShow === 1", 'a tap on a route SHOWS it (SOG-0134: it does not take it)', tries=6)
     c.wait(300)
     c.ok(not c.js("() => window.__hs.some(h => h.includes('ralt=')) || location.hash.includes('ralt=')"), 'the address changed', 'a tap on a route does not go to Fuel')
-    c.until("() => !!document.querySelector('.mp-alts [data-alttake]')", timeout=4000, what='a Map alone offers « Choose this route » for the shown one')
+    c.until("() => !!document.querySelector('.mp-alts [data-alttake]:not([disabled])')", timeout=4000, what='a Map alone offers « Choose this route » for the shown one')
     c.tap('.mp-alts [data-alttake]')
     c.until("() => window.__hs.some(h => h.includes('ralt=1')) || location.hash.includes('ralt=1')", timeout=6000, what='the button takes it: #fuel?ralt=1')
     # in the double view the choice is an event
@@ -5625,3 +5625,32 @@ def d_barbelbow(c):
         c.ok(r['n'] >= 3, f'zoom {z}: {r}', 'barbs are in the view')
         c.ok(r['worst'] < 2, f'zoom {z}: {r}', 'every barb is less than 2 px from the line (the route, leg by leg, through VEPET)')
     c.shot(f'D176_{c.design}_delivered.png')
+
+
+@case('D177', 'A route taken makes the other proposals go at once, on the Map too: the list and the pale lines vanish without a change of screen (in the double view as in a Map alone), « Choose » is always on the list (grey until a route is shown), an empty publication clears everything', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0224 refused (the user, 11 Nov 22:21: « toujours pas. il faut switcher d’écran pour faire disparaître le choix, et en vue carte, toujours la popup même après le choix »; his functional reminder: « clic sur le bouton choix : valider l’itinéraire, modifier la route, et faire disparaître les alternatives »): Fuel publishes `alternatives: []` as soon as a route is taken; the Map clears its layer and its list at once, and does not wait for it when the choice is made from the Map itself')
+def d_altsgone(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    # the double view: the choice is made, the traces go at once
+    c.open('maps?pane=1', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
+    c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc())
+    c.until("() => (window.__mp.S.altHits || []).length >= 1", timeout=8000, what='the proposed routes are drawn')
+    c.js("async () => (await import('/modules/maps/alts.js')).altsPick(1)")
+    c.until("() => !window.__mp.S.alts && (window.__mp.S.altHits || []).length === 0", timeout=4000, what='the choice is made: the proposals are gone from the Map at once')
+    # a Map alone: « Choose » is on the list from the start, grey; an empty publication clears the list and the lines
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
+    c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc())
+    c.until("() => !!document.querySelector('.mp-alts [data-alttake]')", timeout=6000, what='« Choose » is on the list before any route is shown')
+    c.eq(c.js("() => document.querySelector('.mp-alts [data-alttake]').disabled"), True, '« Choose » is grey while no route is shown', what='disabled')
+    c.tap('.mp-alts .mp-al-row[data-alt="1"]')
+    c.until("() => !document.querySelector('.mp-alts [data-alttake]').disabled", timeout=4000, what='« Choose » is on once a route is shown')
+    c.shot(f'D177_{c.design}_delivered.png')
+    c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc(alternatives=[], chosen=None))
+    c.until("() => !window.__mp.S.alts && (window.__mp.S.altHits || []).length === 0 && document.querySelector('.mp-alts').hidden", timeout=4000, what='an empty publication: no list, no pale line')

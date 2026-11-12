@@ -2864,3 +2864,10 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Rule**: a wind interpolated between two read ones is put on the **drawn route** (`S.marksPts`, the line: straight between two of its points on the map), at the abscissa between the two places measured
   along it, so it never cuts an elbow; a read place that is not on the line (8 px) gets no wind invented beside it; a pair whose stretch of line crosses the view counts even when both read places are outside it.
 - **Noreg** D176 (that route, 1 280 px, three zooms: every barb less than 2 px from the line through VEPET), red before (102 px).
+
+## A route taken: the proposals go at once, « Choose » is always on the list (SOG-0224 refused on 11 Nov 22:21; Fuel 45a5a38be)
+- **The user**: « toujours pas : il faut switcher d'écran pour faire disparaître le choix, et en vue carte, toujours la popup même après le choix. Clic sur le bouton choix : valider l'itinéraire, modifier la
+  route, et faire disparaître les alternatives. » Fuel now publishes `alternatives: []` as soon as a route is taken (event `fuel-route-alts` and `cache/fuel/route_alts.json`): `put` already clears the layer and the list on it.
+- **Done on the Map**: taking a route (`altsPick`, from the list of a Map alone or the tap on a line in the double view) clears the proposals, their pale lines and the list right away, without waiting for Fuel's
+  publication (nor for a change of screen); « Choose » (`data-alttake`) is on the list from the start in a computation, grey until a route is shown, so the list does not jump.
+- **Noreg** D177 (the double view: gone at once; a Map alone: grey « Choose », an empty publication clears the list and the lines), red before; D126 follows the button's state.
