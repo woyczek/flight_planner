@@ -1222,6 +1222,22 @@ p.f-back {
 [data-dragging] .f-rm-pcol .f-rm-act {
   display: none
 }
+/* pendant un glissement, les colonnes prennent toute la hauteur du tableau : la bande teintée de la colonne visée se voit où est le pointeur, quelle que soit la longueur de son contenu (SOG-0257) */
+[data-dragging] .f-rm-prio {
+  align-items: stretch
+}
+.f-rm-aim {
+  position: fixed;
+  z-index: 30;
+  max-width: 220px;
+  padding: 3px 8px;
+  background: var(--sog-accent);
+  color: var(--sog-btn-primary-ink, var(--sog-accent-ink, #fff));
+  font-size: .85rem;
+  font-weight: 600;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3)
+}
 .f-rm-theme {
   color: var(--sog-muted);
   border: 1px solid var(--sog-border);

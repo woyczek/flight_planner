@@ -47,6 +47,11 @@
     colBacklog: ['Backlog', 'Backlog', 'Backlog', 'Backlog'],
     colDone: ['Livré', 'Delivered', 'Geliefert', 'Entregado'],
     top: ['En tête', 'To the top', 'Ganz nach oben', 'Al principio'],
+    // l'étiquette qui suit la carte glissée : la cible en mots (SOG-0257)
+    aimHead: ['→ {c}, en tête', '→ {c}, at the top', '→ {c}, ganz oben', '→ {c}, al principio'],
+    aimBefore: ['→ {c}, avant {i}', '→ {c}, before {i}', '→ {c}, vor {i}', '→ {c}, antes de {i}'],
+    aimAfter: ['→ {c}, après {i}', '→ {c}, after {i}', '→ {c}, nach {i}', '→ {c}, después de {i}'],
+    aimStone: ['→ jalon {c}', '→ milestone {c}', '→ Meilenstein {c}', '→ hito {c}'],
     up: ['Monter', 'Move up', 'Nach oben', 'Subir'],
     down: ['Descendre', 'Move down', 'Nach unten', 'Bajar'],
     sendTo: ['Envoyer vers…', 'Send to…', 'Senden an…', 'Enviar a…'],
@@ -425,6 +430,7 @@
       if (!g) return;
       clearTimeout(g.timer);
       clearInterval(g.tick);
+      g.tag?.remove();
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
       document.removeEventListener('pointercancel', cancel);
@@ -496,12 +502,39 @@
         el.removeAttribute('data-dropcol');
       }
       g.aim = aim(g.cx, g.cy);
-      if (!g.aim) return;
-      if (g.aim.kind === 'milestone') g.aim.el.dataset.drop = 'milestone';
-      else {
-        g.aim.col.dataset.dropcol = '';
-        if (g.aim.kind !== 'column') g.aim.el.dataset.drop = g.aim.kind;
+      if (g.aim) {
+        if (g.aim.kind === 'milestone') g.aim.el.dataset.drop = 'milestone';
+        else {
+          g.aim.col.dataset.dropcol = '';
+          if (g.aim.kind !== 'column') g.aim.el.dataset.drop = g.aim.kind;
+        }
       }
+      tagAim();
+    };
+    /** L'étiquette qui suit la carte glissée et dit la cible en mots (« → alpha 6, en tête », « → alpha 6, après SOG-0200 ») : la colonne visée est teintée sur toute la hauteur du tableau, mais le pointeur
+     *  peut être loin de ses cartes ; l'étiquette est là où il est. Écrite seulement si le texte change. */
+    const tagAim = () => {
+      const a = g.aim,
+        text = !a ? '' : a.kind === 'milestone' ? t(T.aimStone, {
+          c: a.el.querySelector('b')?.textContent.trim() || a.el.dataset.ms || ''
+        }) : t(a.kind === 'column' ? T.aimHead : a.kind === 'before' ? T.aimBefore : T.aimAfter, {
+          c: colName(a.col.dataset.col),
+          i: a.el.dataset?.id || ''
+        });
+      if (!text) {
+        g.tag?.remove();
+        g.tag = null;
+        return;
+      }
+      if (!g.tag) {
+        g.tag = document.createElement('div');
+        g.tag.className = 'f-rm-aim';
+        g.tag.setAttribute('aria-hidden', 'true');
+        view.append(g.tag);
+      }
+      if (g.tag.textContent !== text) g.tag.textContent = text;
+      g.tag.style.left = `${Math.min(g.cx + 16, window.innerWidth - 220)}px`;
+      g.tag.style.top = `${Math.max(8, g.cy - 34)}px`;
     };
     /** Défile tant que le pointeur reste près du bord haut ou bas de la fenêtre (même immobile) : plus il s'en approche, plus c'est vite. */
     const autoScroll = () => {

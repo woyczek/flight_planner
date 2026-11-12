@@ -6436,7 +6436,8 @@ def a156(c):
     c.eq([ids('backlog')[0], len(ids('backlog'))], [last, 45], 'the 45th card is the first, nobody dragged', what='to the top')
     # ---- (1)(2) a card dragged sideways into the next column, far below its cards: the whole column lights, the card goes to its head
     if not c.phone:
-        card = '[data-col="backlog"] li[data-id="SOG-0120"]'
+        bottom = ids('backlog')[-1]                                           # the user starts from the BOTTOM of a column of 45 cards
+        card = f'[data-col="backlog"] li[data-id="{bottom}"]'
         c.js(f"() => document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
         c.wait(200)
         a = c.page.locator(card).bounding_box()
@@ -6447,10 +6448,14 @@ def a156(c):
         y_low = min(c.js('window.innerHeight') - 100, a['y'] + 200)           # far below the three cards of the next column
         c.page.mouse.move(dev['x'] + 30, y_low, steps=8)                      # 30 px inside the neighbour column
         c.eq(c.js("[...document.querySelectorAll('[data-col]')].filter(e => e.hasAttribute('data-dropcol')).map(e => e.dataset.col)"), ['alpha.6'], 'the neighbour column is lit as a whole as soon as the card is above it', what='lit')
+        # the band of the target column is tinted over the WHOLE height of the board (the pointer is far below the three cards of that short column), and a label follows the card and says the target in words
+        band = c.js("(() => { const r = document.querySelector('[data-col=\"alpha.6\"][data-dropcol]').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom)] })()")
+        c.ok(band[0] <= y_low <= band[1], (band, y_low), 'the lit band of the short column reaches the pointer (the columns stretch to the height of the board while dragging)')
+        c.eq(norm(c.text('.f-rm-aim')), norm(T('aimHead').replace('{c}', 'alpha 6' + ('' if lang in ('fr', 'en') else f' ({lang})'))), 'the label that follows the card says the target in words: the column and « at the top »', what='label head')
         c.shot(f'A156_lit_{c.width}_{lang}_delivered.png')
         c.page.mouse.up()
-        c.until("document.querySelector('[data-col=\"alpha.6\"] li[data-id]').dataset.id === 'SOG-0120'", what='the card is at the head of the next column')
-        c.eq([ids('alpha.6'), 'SOG-0120' in ids('backlog')], [['SOG-0120', 'SOG-0200', 'SOG-0201', 'SOG-0202'], False], 'dropped on the column: at its head (the first), not at the end', what='head')
+        c.until(f"document.querySelector('[data-col=\"alpha.6\"] li[data-id]').dataset.id === '{bottom}'", what='the card is at the head of the next column')
+        c.eq([ids('alpha.6'), bottom in ids('backlog')], [[bottom, 'SOG-0200', 'SOG-0201', 'SOG-0202'], False], 'dropped on the column: at its head (the first), not at the end', what='head')
         # on a card: the exact place kept
         card = '[data-col="backlog"] li[data-id]:nth-child(5)'
         moved = c.js(f"document.querySelector('{card}').dataset.id")
@@ -6466,9 +6471,11 @@ def a156(c):
         c.page.mouse.down()
         c.page.mouse.move(a['x'] + 30, a['y'] + 18, steps=2)
         c.page.mouse.move(b['x'] + b['width'] / 2, b['y'] + b['height'] - 4, steps=8)
+        c.eq(norm(c.text('.f-rm-aim')), norm(T('aimAfter').replace('{c}', 'alpha 6' + ('' if lang in ('fr', 'en') else f' ({lang})')).replace('{i}', 'SOG-0200')), 'over a card the label says the exact place: after that card', what='label after')
         c.page.mouse.up()
+        c.eq(c.count('.f-rm-aim'), 0, 'the label goes with the drop', what='label gone')
         c.until(f"document.querySelector('[data-col=\"alpha.6\"] li[data-id=\"{moved}\"]')", what='the card is in the next column')
-        c.eq(ids('alpha.6')[:3], ['SOG-0120', 'SOG-0200', moved], 'dropped on the lower half of a card: right after it (a precise place stays possible)', what='precise')
+        c.eq(ids('alpha.6')[:3], [bottom, 'SOG-0200', moved], 'dropped on the lower half of a card: right after it (a precise place stays possible)', what='precise')
         # ---- (4) the page scrolls while the pointer stays near the bottom edge (no move needed)
         card = '[data-col="backlog"] li[data-id]:nth-child(3)'
         c.js("() => window.scrollTo(0, 0)")

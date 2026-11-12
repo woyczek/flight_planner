@@ -212,3 +212,10 @@ The user: « il n'y a qu'une colonne « en dev », j'aurai voulu « livré en-te
 - **Phone**: one column at a time, the bar lists all of them (the shown one is the device's choice if it still exists, else the milestone in progress, else the first column that receives).
 - The grid follows the number of columns (`--cols`), not a fixed three or four.
 - Noreg A157 (columns and names, In test, Hide delivered, nothing in or out, Backlog without a milestone and held after a reload; phone: the bar), A114, A101 and A156 accorded (the columns are the milestones'), K96 (empty milestone), red before. Capture `A157_columns_*_delivered.png`.
+
+## 12 November 2026 — roadmap, priorities: the target is SEEN where the pointer is (SOG-0257, the ergonomist's reading of A156_lit)
+
+On the capture of the lit column nothing lit was visible where one drags: the next column is short and its frame ends above the pointer, which is exactly the user's case (he leaves from the bottom of a column of 40 cards and moves sideways).
+- **While dragging, the columns stretch to the height of the board** (`[data-dragging] .f-rm-prio { align-items: stretch }`): the band of the target column is tinted from the top to the bottom of the board, so on screen it reaches the pointer wherever the page is scrolled.
+- **A label follows the card and says the target in words** (`tagAim`, `.f-rm-aim`, fixed, not clickable, hidden from the accessibility tree): « → alpha 6, at the top », « → alpha 6, after SOG-0200 », « → alpha 6, before SOG-0200 », « → milestone beta 1 » on the strip. Written only when the text changes; removed with the drop.
+- Noreg A156 (the case starts from the LAST of the 45 cards, scrolled to the bottom: the lit band reaches the pointer, the label says « at the top », then « after SOG-0200 » over a card, gone at the drop); capture `A156_lit_1280_fr_delivered.png` (tinted band and label, page scrolled to the bottom of the column).
