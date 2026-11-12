@@ -204,15 +204,15 @@ angezeigt. Auf einem vom Starter bedienten Rechner ist er unnötig: Der Starter 
 
 ## Little-Navmap-Profile
 
-Auf einem vom Starter bedienten Rechner verbindet die Karte „Little-Navmap-Profile (.lnmperf)“ Ihre Leistungsprofile
-in beide Richtungen mit den .lnmperf-Dateien eines Ordners. Wählen Sie den Ordner (der von Little Navmap wird
-vorgeschlagen, wenn er gefunden wird) und dann „Speichern“. Danach ist nichts zu tun: ein in Kraftstoff geändertes
-Profil schreibt seine Datei neu, eine in Little Navmap geänderte Datei aktualisiert das Profil, eine neue Datei wird
-ein Profil. Hat sich derselbe Wert auf beiden Seiten geändert, gewinnt der neueste, der andere bleibt im Profil
-erhalten; die Abgleich-Schaltfläche meldet es. Eine Datei wird nie gelöscht: die Datei eines entfernten Profils kommt
-in den Unterordner `_removed`. „Jetzt abgleichen“ macht den Durchgang sofort, „Beenden“ trennt die Verbindung. Profile,
-denen ein von Little Navmap verlangter Wert fehlt, werden aufgeführt und nicht geschrieben. Auf einem Telefon lädt
-Kraftstoff das Profil als .lnmperf-Datei herunter.
+Auf einem vom Starter bedienten Rechner exportiert die Karte „Little-Navmap-Profile (.lnmperf)“ Ihre Leistungsprofile
+in die .lnmperf-Dateien eines Ordners. Das JSON-Profil ist die einzige Quelle: Ordner wählen (der von Little Navmap
+wird vorgeschlagen, wenn er gefunden wird), „Speichern“, dann „Profile exportieren“, wann Sie wollen; im Hintergrund
+geschieht nichts. Ein Profil ohne Datei erhält eine, ein geändertes Profil schreibt seine neu; eine in Little Navmap
+geänderte oder nur aus Little Navmap stammende Datei wird nie stillschweigend übernommen oder überschrieben: die Karte
+listet sie, und sie wird über Luftfahrzeuge › „Datei importieren“ importiert, das das Profil vor dem Schreiben zeigt.
+Eine Datei wird nie gelöscht: die eines entfernten Profils kommt in den Unterordner `_removed`. „Beenden“ trennt die
+Verbindung. Profile, denen ein von Little Navmap verlangter Wert fehlt, werden aufgelistet und nicht geschrieben. Auf
+einem Telefon lädt Kraftstoff das Profil als .lnmperf-Datei herunter.
 
 ## Die API-Schlüssel der Fluggesellschaft
 

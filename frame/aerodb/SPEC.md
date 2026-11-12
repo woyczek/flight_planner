@@ -355,7 +355,7 @@ All the aircraft data in one place, read from every source and written in one pl
 **Since 5 Nov 2026 nothing runs by itself** (§ 10.35: the sheet JSON is the only source; `.lnmperf` is an import through the Aircraft
 module's preview or an explicit export, never a silent synchronisation). `create({ lnmperf })` is **false by default** — aerodb no longer loads
 `lnmperf.js` nor calls `start()` 1.5 s after the page, and setting the folder in Settings starts no follow either; `true` is for a test. What stays, on
-request: `api.lnmperf()` (the service), the Settings card (folder, « Synchroniser maintenant » = one two-way pass, the five cases below), `download`.
+request: `api.lnmperf()` (the service), the Settings card (folder, « Exporter les fiches » = `exportNow()`, one pass that only WRITES files: a file changed in Little Navmap or of Little Navmap alone is listed (`state.changed`), never merged nor overwritten — it is imported through the Aircraft module's preview; SOG-0023, 13 Nov 2026), `download`. `sync()` keeps the two-way pass below for the bench and the `create({ lnmperf: true })` trial only.
 What follows describes one pass.
 
 On a workstation served by the launcher, one pass makes the performance sheets and the `.lnmperf` files of one folder the same

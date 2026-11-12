@@ -14,8 +14,11 @@
   //     visible ; un seul passage à la fois ;
   //   · téléchargement d'une fiche en .lnmperf (téléphone, sans lanceur) ;
   //   · unités : un .lnmperf est en livres (ou en gallons) ; une fiche en kg est convertie à l'écriture et à la lecture.
-  // API : AeroDBLnmperf.create({ reader, aircraft, launcherRoot }) → { start, sync, status, on, folder, setFolder,
+  // API : AeroDBLnmperf.create({ reader, aircraft, launcherRoot }) → { start, sync, exportNow, status, on, folder, setFolder,
   //   download, card } ; AeroDBLnmperf.fileName(id), viewOf(text, unit, lib).
+  // La carte des Réglages n'offre que l'EXPORT (exportNow, SOG-0023, § 10.35) : les fiches écrivent leurs fichiers, un fichier changé
+  // dans Little Navmap n'est jamais repris en silence (listé : il s'importe par Appareils › « Importer un fichier », aperçu avant
+  // écriture). sync() garde le passage dans les deux sens pour le banc et l'essai create({ lnmperf: true }) seulement.
   const MANIFEST = 'cache/aerodb/lnmperf.json',
     EVERY = 120000, // toutes les deux minutes, page visible
     START_DELAY = 4000,
@@ -33,10 +36,10 @@
       'Fichas de Little Navmap (.lnmperf)'
     ],
     hint: [
-      'La fiche JSON est la source ; ce dossier ne sert qu\'à importer ou exporter des fiches Little Navmap, à votre demande : « Synchroniser maintenant » compare une fois les fiches et les fichiers .lnmperf (une fiche changée réécrit son fichier, un fichier changé met la fiche à jour). Rien ne se fait en arrière-plan. Rien n\'est perdu : une valeur écartée reste gardée dans la fiche.',
-      'The JSON sheet is the source; this folder only serves to import or export Little Navmap sheets, when you ask: “Synchronise now” compares the sheets and the .lnmperf files once (a changed sheet rewrites its file, a changed file updates the sheet). Nothing happens in the background. Nothing is lost: a value set aside stays kept in the sheet.',
-      'Das JSON-Profil ist die Quelle; dieser Ordner dient nur dazu, Little-Navmap-Profile auf Ihren Wunsch zu importieren oder zu exportieren: „Jetzt abgleichen“ vergleicht Profile und .lnmperf-Dateien einmal (ein geändertes Profil schreibt seine Datei neu, eine geänderte Datei aktualisiert das Profil). Im Hintergrund geschieht nichts. Nichts geht verloren: ein verworfener Wert bleibt im Profil erhalten.',
-      'La ficha JSON es la fuente; esta carpeta solo sirve para importar o exportar fichas de Little Navmap, cuando usted lo pide: «Sincronizar ahora» compara una vez las fichas y los archivos .lnmperf (una ficha cambiada reescribe su archivo, un archivo cambiado actualiza la ficha). No se hace nada en segundo plano. Nada se pierde: un valor descartado queda guardado en la ficha.'
+      'La fiche JSON est la seule source. « Exporter les fiches » écrit vos fiches dans ce dossier, à votre demande ; rien ne se fait en arrière-plan. Un fichier changé dans Little Navmap n\'est jamais repris ni écrasé : il est listé ici, et s\'importe par Appareils › « Importer un fichier » (aperçu avant écriture).',
+      'The JSON sheet is the only source. “Export the sheets” writes your sheets to this folder, when you ask; nothing happens in the background. A file changed in Little Navmap is never taken nor overwritten: it is listed here, and is imported through Aircraft › “Import a file” (preview before writing).',
+      'Das JSON-Profil ist die einzige Quelle. „Profile exportieren“ schreibt Ihre Profile auf Ihren Wunsch in diesen Ordner; im Hintergrund geschieht nichts. Eine in Little Navmap geänderte Datei wird nie übernommen oder überschrieben: sie wird hier aufgelistet und über Luftfahrzeuge › „Datei importieren“ importiert (Vorschau vor dem Schreiben).',
+      'La ficha JSON es la única fuente. «Exportar las fichas» escribe sus fichas en esta carpeta, cuando usted lo pide; no se hace nada en segundo plano. Un archivo cambiado en Little Navmap nunca se recoge ni se sobrescribe: se lista aquí, y se importa por Aeronaves › «Importar un archivo» (vista previa antes de escribir).'
     ],
     folder: ['Dossier des fichiers .lnmperf', 'Folder of the .lnmperf files', 'Ordner der .lnmperf-Dateien',
       'Carpeta de los archivos .lnmperf'
@@ -46,11 +49,23 @@
     ],
     save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
     off: ['Arrêter', 'Stop', 'Beenden', 'Detener'],
-    now: ['Synchroniser maintenant', 'Synchronise now', 'Jetzt abgleichen', 'Sincronizar ahora'],
-    saved: ['Dossier enregistré. « Synchroniser maintenant » compare les fiches et les fichiers.',
-      'Folder saved. “Synchronise now” compares the sheets and the files.',
-      'Ordner gespeichert. „Jetzt abgleichen“ vergleicht Profile und Dateien.',
-      'Carpeta guardada. «Sincronizar ahora» compara las fichas y los archivos.'
+    now: ['Exporter les fiches', 'Export the sheets', 'Profile exportieren', 'Exportar las fichas'],
+    changed: ['Changés dans Little Navmap', 'Changed in Little Navmap', 'In Little Navmap geändert', 'Cambiados en Little Navmap'],
+    changedTxt: ['{l} — non repris : à importer par Appareils › « Importer un fichier » (aperçu avant écriture)',
+      '{l} — not taken: import them through Aircraft › “Import a file” (preview before writing)',
+      '{l} — nicht übernommen: über Luftfahrzeuge › „Datei importieren“ importieren (Vorschau vor dem Schreiben)',
+      '{l} — no recogidos: importarlos por Aeronaves › «Importar un archivo» (vista previa antes de escribir)'
+    ],
+    exported: ['Fiches exportées vers le dossier.', 'Sheets exported to the folder.', 'Profile in den Ordner exportiert.',
+      'Fichas exportadas a la carpeta.'
+    ],
+    exportDone: ['{t} — {w} écrit(s), {r} écarté(s)', '{t} — {w} written, {r} set aside', '{t} — {w} geschrieben, {r} beiseitegelegt',
+      '{t} — {w} escrito(s), {r} apartado(s)'
+    ],
+    saved: ['Dossier enregistré. « Exporter les fiches » y écrit vos fiches.',
+      'Folder saved. “Export the sheets” writes your sheets there.',
+      'Ordner gespeichert. „Profile exportieren“ schreibt Ihre Profile dorthin.',
+      'Carpeta guardada. «Exportar las fichas» escribe allí sus fichas.'
     ],
     stopped: ['Synchronisation .lnmperf arrêtée.', '.lnmperf synchronisation stopped.', '.lnmperf-Abgleich beendet.',
       'Sincronización .lnmperf detenida.'
@@ -164,8 +179,10 @@
       retired: 0,
       conflicts: 0,
       incomplete: [],
+      changed: [], // fichiers changés dans Little Navmap qu'un export n'a pas repris (SOG-0023)
       errors: [],
-      message: ''
+      message: '',
+      mode: '' // 'export' : le dernier passage n'a fait qu'écrire
     };
     let busy = null,
       timer = 0,
@@ -249,9 +266,11 @@
       };
     }
 
-    /** Un passage (un seul à la fois) ; rend l'état. */
-    function sync(reason = 'manual') {
-      return busy ||= run(reason).catch(e => {
+    /** Un passage (un seul à la fois) ; rend l'état. exportOnly : les fiches écrivent leurs fichiers, rien n'est lu dans une fiche. */
+    function sync(reason = 'manual', {
+      exportOnly = false
+    } = {}) {
+      return busy ||= run(reason, exportOnly).catch(e => {
         emit({
           state: 'error',
           message: e?.message || String(e)
@@ -262,7 +281,12 @@
       });
     }
 
-    async function run() {
+    /** L'export à la demande (la carte des Réglages, SOG-0023) : un passage qui n'écrit que des fichiers. */
+    const exportNow = () => sync('export', {
+      exportOnly: true
+    });
+
+    async function run(reason, exportOnly = false) {
       const list = await call('__setup/lnmperf');
       if (!list || list.status !== 200) {
         emit({
@@ -286,6 +310,7 @@
           retired: 0,
           conflicts: 0,
           incomplete: [],
+          changed: [],
           errors: []
         };
       let man = clone(await reader.get(MANIFEST).catch(() => null)) || null;
@@ -418,7 +443,8 @@
             delete man.files[name];
           } else if (!s) {
             // fiche retirée : le fichier est mis à l'écart s'il n'a pas changé, sinon il redevient une fiche
-            if (f.sha === m.sha) {
+            if (f.sha !== m.sha && exportOnly) stats.changed.push(name); // changé dans Little Navmap : jamais repris par un export
+            else if (f.sha === m.sha) {
               const r = await call(`__setup/lnmperf?name=${enc(name)}&action=retire`, {
                 method: 'POST',
                 json: {}
@@ -433,6 +459,7 @@
             const sheetCh = !same(viewOfSheet(s, lib), m.view),
               fileCh = f.sha !== m.sha;
             if (sheetCh && !fileCh) await write(name, s);
+            else if (fileCh && exportOnly) stats.changed.push(name); // ni fusion ni écrasement : dit, à importer avec l'aperçu
             else if (fileCh) await merge(name, s, f, await read(name), m.view || {});
           }
         } catch (e) {
@@ -445,6 +472,10 @@
       // 2. fichiers nouveaux : la fiche du même nom s'il y en a une (fusion sans base), sinon une fiche importée
       const byName = new Map([...sheets.values()].filter(s => !linked.has(String(s.id))).map(s => [fileName(s.id).toLowerCase(), s]));
       for (const [name, f] of files) {
+        if (exportOnly) {
+          stats.changed.push(name); // un fichier venu de Little Navmap seul : ni importé ni écrasé par un export
+          continue;
+        }
         try {
           const text = await read(name),
             s = byName.get(name.toLowerCase());
@@ -463,7 +494,7 @@
       for (const s of sheets.values()) {
         if (linked.has(String(s.id))) continue;
         const name = fileName(s.id);
-        if (man.files[name]) continue;
+        if (man.files[name] || (exportOnly && [...files.keys()].some(k => k.toLowerCase() === name.toLowerCase()))) continue;
         try {
           if (await write(name, s)) linked.add(String(s.id));
         } catch (e) {
@@ -480,6 +511,7 @@
         linked: Object.keys(man.files).length,
         message: '',
         ...stats,
+        mode: exportOnly ? 'export' : 'sync',
         conflicts: state.conflicts + stats.conflicts,
         lastConflicts: stats.conflicts
       });
@@ -562,7 +594,11 @@ ${f.suggestions?.length ? `<p class="f-muted">${esc(t(T.found))}</p><div class="
         if (s.state === 'off' || !s.folder) rows.push(['', t(T.none)]);
         else {
           rows.push([t(T.files), String(s.linked || 0)]);
-          rows.push([t(T.last), s.state === 'running' ? t(T.running) : s.at ? t(T.lastDone, {
+          rows.push([t(T.last), s.state === 'running' ? t(T.running) : s.at && s.mode === 'export' ? t(T.exportDone, {
+            t: new Date(s.at).toLocaleTimeString(),
+            w: s.written || 0,
+            r: s.retired || 0
+          }) : s.at ? t(T.lastDone, {
             t: new Date(s.at).toLocaleTimeString(),
             w: s.written || 0,
             i: s.imported || 0,
@@ -574,6 +610,9 @@ ${f.suggestions?.length ? `<p class="f-muted">${esc(t(T.found))}</p><div class="
           })]);
           if (s.incomplete?.length) rows.push([t(T.incomplete), t(T.incompleteTxt, {
             l: s.incomplete.join(', ')
+          })]);
+          if (s.changed?.length) rows.push([t(T.changed), t(T.changedTxt, {
+            l: s.changed.slice(0, 20).join(', ') + (s.changed.length > 20 ? ' …' : '')
           })]);
           if (s.errors?.length) rows.push([t(T.errors), s.errors.map(e => e.name).join(', ')]);
         }
@@ -598,17 +637,15 @@ ${f.suggestions?.length ? `<p class="f-muted">${esc(t(T.found))}</p><div class="
             state: r.folder ? state.state : 'off'
           });
           notify(t(r.folder ? T.saved : T.stopped), 'info');
-          // pas de suivi tout seul (V3 § 10.35, 5 nov. 2026) : le dossier réglé ne déclenche aucun passage, « Synchroniser maintenant » en fait un
+          // pas de suivi tout seul (V3 § 10.35, 5 nov. 2026) : le dossier réglé ne déclenche aucun passage, « Exporter les fiches » fait un passage d’export (SOG-0023)
           return;
         }
-        const s = await sync('manual');
+        // « Exporter les fiches » : l'export seul (SOG-0023, § 10.35) ; un fichier changé dans Little Navmap est dit, jamais repris
+        const s = await exportNow();
         if (s.state === 'error') notify(t(T.failed, {
           m: s.message
         }), 'warn');
-        else if (s.lastConflicts) notify(t(T.conflictNote, {
-          n: s.lastConflicts
-        }), 'warn');
-        else if (s.state !== 'off') notify(t(T.done), 'info');
+        else if (s.state !== 'off') notify(t(T.exported), 'info');
       });
     }
 
@@ -620,6 +657,7 @@ ${f.suggestions?.length ? `<p class="f-muted">${esc(t(T.found))}</p><div class="
     return {
       start,
       sync,
+      exportNow,
       status: () => state,
       on,
       folder,

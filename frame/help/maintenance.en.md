@@ -197,13 +197,14 @@ provides the TAF.
 
 ## Little Navmap sheets
 
-On a workstation served by the launcher, the "Little Navmap sheets (.lnmperf)" card links your performance sheets
-with the .lnmperf files of a folder, both ways. Choose the folder (Little Navmap's is offered when found), then
-"Save". After that, nothing to do: a sheet changed in Fuel rewrites its file, a file changed in Little Navmap updates
-the sheet, a new file becomes a sheet. If the same value changed on both sides, the newest wins and the other stays
-kept in the sheet; the synchronisation button says so. A file is never deleted: the file of a removed sheet goes to
-the `_removed` subfolder. "Synchronise now" runs a pass at once, "Stop" cuts the link. Sheets missing a value that
-Little Navmap requires are listed and not written. On a phone, Fuel downloads the sheet as a .lnmperf file.
+On a workstation served by the launcher, the "Little Navmap sheets (.lnmperf)" card exports your performance sheets
+to the .lnmperf files of a folder. The JSON sheet is the only source: choose the folder (Little Navmap's is offered
+when found), "Save", then "Export the sheets" whenever you want; nothing happens in the background. A sheet without a
+file gets one, a changed sheet rewrites its own; a file changed in Little Navmap, or coming from Little Navmap alone,
+is never taken silently nor overwritten: the card lists it, and it is imported through Aircraft › "Import a file",
+which shows the sheet before writing it. A file is never deleted: the file of a removed sheet goes to the `_removed`
+subfolder. "Stop" cuts the link. Sheets missing a value that Little Navmap requires are listed and not written. On a
+phone, Fuel downloads the sheet as a .lnmperf file.
 
 ## The airline's API keys
 

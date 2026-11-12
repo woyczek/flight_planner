@@ -8835,3 +8835,65 @@ def k216(c):
     sys.path.insert(0, str(ROOT / 'tools'))
     src = (ROOT / 'tools' / 'regen' / 'proc.py').read_text(encoding='utf-8')
     c.ok('allow_nan=False' in src and 'nombre non fini' in src, 'writer', 'the aerodrome writer of the proc/build job refuses a non-finite number (allow_nan=False, said in the log, the file not written)')
+
+
+
+@case('K218', 'Little Navmap card: « Exporter les fiches » only writes files — a file changed in Little Navmap and a file of Little Navmap alone are '
+      'never taken into a sheet (listed, to import through Aircraft with its preview); a sheet without file is written; a file of the folder is never overwritten',
+      'K', tags=('aerodb', 'aircraft'), phone=False,
+      rule='SOG-0023 / § 10.35 (5 Nov 2026): the sheet JSON is the only source; .lnmperf is an import through the preview or an explicit export, never a '
+      'silent synchronisation — the card\'s « Synchroniser maintenant » still merged both ways (a changed file updated the sheet, the newest value won); '
+      'a fake launcher, invented sheets and files')
+def k218(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      if (!window.AeroDBAircraft) await new Promise(r => { const x = document.createElement('script'); x.src = '../aircraft.js?v=0'; x.onload = r; document.head.append(x) });  // the type catalogue (the procedures page does not load it)
+      const lnm = (name, type, tas) => `<?xml version="1.0" encoding="UTF-8"?>
+<LittleNavmap><AircraftPerf><Options><Name>${name}</Name><AircraftType>${type}</AircraftType><Description>essai</Description><FuelAsVolume>0</FuelAsVolume><JetFuel>1</JetFuel></Options>
+<Perf><ContingencyFuelPercent>5.0</ContingencyFuelPercent><ExtraFuelLbsGal>0</ExtraFuelLbsGal><MinRunwayLengthFt>3000</MinRunwayLengthFt><ReserveFuelLbsGal>2000</ReserveFuelLbsGal><RunwayType>HARD</RunwayType><TaxiFuelLbsGal>200</TaxiFuelLbsGal><UsableFuelLbsGal>40000</UsableFuelLbsGal>
+<Alternate><FuelFlowLbsGalPerHour>5000</FuelFlowLbsGalPerHour><SpeedKtsTAS>250</SpeedKtsTAS></Alternate>
+<Climb><FuelFlowLbsGalPerHour>7000</FuelFlowLbsGalPerHour><SpeedKtsTAS>200</SpeedKtsTAS><VertSpeedFtPerMin>1200</VertSpeedFtPerMin></Climb>
+<Cruise><FuelFlowLbsGalPerHour>6000</FuelFlowLbsGalPerHour><SpeedKtsTAS>${tas}</SpeedKtsTAS></Cruise>
+<Descent><FuelFlowLbsGalPerHour>3000</FuelFlowLbsGalPerHour><SpeedKtsTAS>280</SpeedKtsTAS><VertSpeedFtPerMin>1500</VertSpeedFtPerMin></Descent>
+</Perf></AircraftPerf></LittleNavmap>
+`;
+      const writes = [], puts = [];
+      const reader = files => ({ read: async p => p in files ? { value: files[p], rev: 'r' } : null, get: async p => files[p] ?? null,
+        list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {},
+        put: async (p, v) => { writes.push(p); files[p] = v; return {}; } });
+      const lib = (await AeroDB.create({ reader: reader({}), lnmperf: false }).aircraft()).lib;
+      const sheet = (id, tas) => ({ ...lib.parseLnmperf(lnm(id, 'C30J', tas), id + '.lnmperf'), id });
+      const texts = { 'C30J-TEST.lnmperf': lnm('C30J-TEST', 'C30J', 330), 'Foreign.lnmperf': lnm('Foreign', 'PC12', 270) };
+      const launcher = { info: () => ({ launcher: true }), request: async (path, o = {}) => {
+        const m = /^__setup\\/lnmperf(-folder)?(?:\\?name=([^&]+))?/.exec(path) || [];
+        if (m[1]) return { status: 200, body: { folder: 'C:/LNM', exists: true, suggestions: [] } };
+        if (!m[2]) return { status: 200, body: { folder: 'C:/LNM', files: Object.keys(texts).map(name => ({ name, sha: 'sha-' + name })) } };
+        const name = decodeURIComponent(m[2]);
+        if ((o.method || 'GET') === 'PUT') { puts.push(name); return { status: 200, body: { ok: true, sha: 'new' } }; }
+        return name in texts ? { status: 200, body: { text: texts[name] } } : { status: 404, body: {} };
+      } };
+      const files = { 'aircraft/sheets/C30J-TEST.json': sheet('C30J-TEST', 300), 'aircraft/sheets/C30J-SOLO.json': sheet('C30J-SOLO', 310) };
+      const db = AeroDB.create({ reader: reader(files), lnmperf: false, launcher }), L = await db.lnmperf();
+      const el = document.createElement('div');
+      el.id = 'k218card';
+      el.style.cssText = 'max-width:900px;padding:12px;background:#fff;font:16px system-ui';
+      document.body.append(el);
+      await L.card(el, { t: (row, v = {}) => String(row[0]).replace(/\\{(\\w+)\\}/g, (_, k) => v[k] ?? ''), notify: () => {} });
+      const btn = el.querySelector('[data-lnm=now]');
+      const label = btn?.textContent || '';
+      btn?.click();
+      for (let i = 0; i < 40 && L.status().state !== 'idle' || i < 2; i++) await new Promise(r => setTimeout(r, 100));
+      await new Promise(r => setTimeout(r, 200));
+      const st = L.status();
+      return { label, sheetWrites: writes.filter(p => p.startsWith('aircraft/')), puts, changed: (st.changed || []).slice().sort(), text: el.textContent,
+        tas: (await (await db.aircraft()).sheets.get('C30J-TEST'))?.cruise?.tasKt };
+    }""")
+    c.eq(r['sheetWrites'], [], 'no sheet is written: neither the file changed in Little Navmap nor the file of Little Navmap alone', what='sheets')
+    c.eq(r['label'], 'Exporter les fiches', 'the card offers the export, not a two-way « Synchroniser maintenant »', what='label')
+    c.eq(r['tas'], 300, 'the sheet keeps its own cruise (the file says 330)', what='sheet kept')
+    c.eq(r['puts'], ['C30J-SOLO.lnmperf'], 'the sheet without file is written; the file of the folder named like a sheet is not overwritten', what='written')
+    c.eq(r['changed'], ['C30J-TEST.lnmperf', 'Foreign.lnmperf'], 'both files are listed, to import through Aircraft', what='changed')
+    c.ok('Importer un fichier' in r['text'], r['text'][:300], 'the card says where to import them (Aircraft › « Importer un fichier », preview first)')
+    for w in (390, 1280):  # the card after the export, at both widths (shown to the ergonomist)
+        c.page.set_viewport_size({'width': w, 'height': 800})
+        c.page.locator('#k218card').screenshot(path=str(ROOT / 'tests' / 'v3' / 'shots' / f'K218_card_{w}.png'))

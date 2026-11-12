@@ -2949,3 +2949,11 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Seen after**: `tools/check_cities.py` lists 63 more towns outside their contour: the Azores and Madeira (the simplified Portuguese contour has no islands, the same class as Jeju or Hawaii, 22 October), Sagres (south-west tip), Moville (Inishowen, on the border). They are filed by their country (`cc`) as decided on 22 October; the contour is not a defect of the extract.
 - **Case K217**: Portugal ≥ 900 and Ireland ≥ 500 towns; every row has a finite latitude and longitude in range, an integer population, a two-letter country and a readable name; no geonameid twice. Red before (PT 2, IE 43).
 - **Not done**: the same measure for the other countries of the world is not made (only the zones' neighbours were looked at); the refill is a developer action (the extract is in the repository), not a button of the Data screen.
+- **13 Nov 2026 — the Little Navmap card only exports** (SOG-0023, § 10.35; written by Features SOG): after 5 Nov nothing ran by
+  itself, but the card's « Synchroniser maintenant » still made ONE two-way pass — a file changed in Little Navmap updated the sheet, the
+  newest value won, a file of Little Navmap alone became a sheet — without the preview the rule asks for. The card now offers « Exporter
+  les fiches » (`exportNow()` = `sync('export', { exportOnly: true })`): sheets without a file get one, a changed sheet rewrites its own,
+  a removed sheet's unchanged file is set aside; a changed file, a file of Little Navmap alone, and a sheet whose file name is taken by
+  an unlinked file are listed (`state.changed`, shown on the card with « à importer par Appareils › Importer un fichier »), never merged
+  nor overwritten. `sync()` and its five cases stay for the bench (test/lnmperf.html) and the opt-in trial. K218 (red before: two sheets
+  written by the button).

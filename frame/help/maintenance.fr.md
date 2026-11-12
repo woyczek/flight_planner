@@ -199,15 +199,15 @@ lanceur, elle est inutile : le lanceur fournit le TAF.
 
 ## Les fiches Little Navmap
 
-Sur un poste servi par le lanceur, la carte « Fiches Little Navmap (.lnmperf) » relie vos fiches de performances aux
-fichiers .lnmperf d'un dossier, dans les deux sens. Choisissez le dossier (celui de Little Navmap est proposé quand il
-est trouvé), puis « Enregistrer ». Ensuite, rien à faire : une fiche changée dans Carburant réécrit son fichier, un
-fichier changé dans Little Navmap met la fiche à jour, un nouveau fichier devient une fiche. Si une même valeur a
-changé des deux côtés, la plus récente gagne et l'autre reste gardée dans la fiche ; le bouton de synchronisation le
-signale. Un fichier n'est jamais effacé : celui d'une fiche retirée est rangé dans le sous-dossier `_removed`.
-« Synchroniser maintenant » fait le passage tout de suite, « Arrêter » coupe le lien. Les fiches à qui il manque une
-valeur demandée par Little Navmap sont listées et ne sont pas écrites. Sur un téléphone, Carburant télécharge la fiche
-en .lnmperf.
+Sur un poste servi par le lanceur, la carte « Fiches Little Navmap (.lnmperf) » exporte vos fiches de performances
+vers les fichiers .lnmperf d'un dossier. La fiche JSON est la seule source : choisissez le dossier (celui de Little
+Navmap est proposé quand il est trouvé), « Enregistrer », puis « Exporter les fiches » quand vous le voulez ; rien ne se
+fait en arrière-plan. Une fiche sans fichier en reçoit un, une fiche changée réécrit le sien ; un fichier changé dans
+Little Navmap, ou venu de Little Navmap seul, n'est jamais repris en silence ni écrasé : la carte le liste, et il
+s'importe par Appareils › « Importer un fichier », qui montre la fiche avant de l'écrire. Un fichier n'est jamais
+effacé : celui d'une fiche retirée est rangé dans le sous-dossier `_removed`. « Arrêter » coupe le lien. Les fiches à
+qui il manque une valeur demandée par Little Navmap sont listées et ne sont pas écrites. Sur un téléphone, Carburant
+télécharge la fiche en .lnmperf.
 
 ## Les clés d'API de la compagnie
 

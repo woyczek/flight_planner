@@ -73,14 +73,15 @@ lanzador es innecesaria: el lanzador proporciona el TAF.
 
 ## Fichas de Little Navmap
 
-En un equipo servido por el lanzador, la tarjeta «Fichas de Little Navmap (.lnmperf)» une sus fichas de rendimiento con
-los archivos .lnmperf de una carpeta, en ambos sentidos. Elija la carpeta (se propone la de Little Navmap cuando se
-encuentra) y luego «Guardar». Después, nada que hacer: una ficha cambiada en Combustible reescribe su archivo, un
-archivo cambiado en Little Navmap actualiza la ficha, un archivo nuevo se vuelve ficha. Si el mismo valor cambió en
-ambos lados, gana el más reciente y el otro queda guardado en la ficha; el botón de sincronización lo indica. Un
-archivo nunca se borra: el de una ficha retirada va a la subcarpeta `_removed`. «Sincronizar ahora» hace la pasada en
-seguida, «Detener» corta el vínculo. Las fichas a las que les falta un valor requerido por Little Navmap se listan y no
-se escriben. En un teléfono, Combustible descarga la ficha en .lnmperf.
+En un equipo servido por el lanzador, la tarjeta «Fichas de Little Navmap (.lnmperf)» exporta sus fichas de
+rendimiento a los archivos .lnmperf de una carpeta. La ficha JSON es la única fuente: elija la carpeta (se propone la
+de Little Navmap cuando se encuentra), «Guardar», y luego «Exportar las fichas» cuando quiera; no se hace nada en
+segundo plano. Una ficha sin archivo recibe uno, una ficha cambiada reescribe el suyo; un archivo cambiado en Little
+Navmap, o venido solo de Little Navmap, nunca se recoge en silencio ni se sobrescribe: la tarjeta lo lista, y se
+importa por Aeronaves › «Importar un archivo», que muestra la ficha antes de escribirla. Un archivo nunca se borra: el
+de una ficha retirada va a la subcarpeta `_removed`. «Detener» corta el vínculo. Las fichas a las que les falta un
+valor requerido por Little Navmap se listan y no se escriben. En un teléfono, Combustible descarga la ficha en
+.lnmperf.
 
 ## Las claves API de la aerolínea
 
