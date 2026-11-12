@@ -2871,3 +2871,11 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Done on the Map**: taking a route (`altsPick`, from the list of a Map alone or the tap on a line in the double view) clears the proposals, their pale lines and the list right away, without waiting for Fuel's
   publication (nor for a change of screen); « Choose » (`data-alttake`) is on the list from the start in a computation, grey until a route is shown, so the list does not jump.
 - **Noreg** D177 (the double view: gone at once; a Map alone: grey « Choose », an empty publication clears the list and the lines), red before; D126 follows the button's state.
+
+## Taxiway names as signs (SOG-0252, « à traiter pour ce cycle »; the user: « TWY : illisible… fusionner les points au même endroit s'ils sont identiques »)
+- **Read from his captures** (12 Nov): ours, tiny grey letters on the line, the same name twice a few metres apart (« B », « P4 »), a road name more readable than a taxiway's; his target (Navigraph): the
+  runway-sign look — light letters on a dark sign, once per taxiway, fewer of them when zoomed out (the main taxiways only), then none.
+- **Done** (`ground.js`): a sign per taxiway — a dark box, the design's ink (`S.theme.fg`) as ground and its paper (`S.theme.bg`) as letters (never a hard yellow), opaque so it covers a road name
+  of the base map under it; the taxiways are taken longest first on the screen and a taxiway whose visible stretch is shorter than 2.2 signs (60 px at least) has no name: zooming out thins the signs to the
+  long taxiways, then none below the names' zoom; two signs of the same name within 140 px are merged into one (every candidate place of the second is tested).
+- **Noreg** D178 (LFPO fixture: none at 13, signs at 15 and 16 each a drawn box, no two of the same name within 140 px; captures 1 280 and 390). No LFBD file in the repository: the capture is LFPO's.

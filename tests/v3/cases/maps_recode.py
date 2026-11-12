@@ -5654,3 +5654,33 @@ def d_altsgone(c):
     c.shot(f'D177_{c.design}_delivered.png')
     c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc(alternatives=[], chosen=None))
     c.until("() => !window.__mp.S.alts && (window.__mp.S.altHits || []).length === 0 && document.querySelector('.mp-alts').hidden", timeout=4000, what='an empty publication: no list, no pale line')
+
+
+@case('D178', 'Taxiway names as signs: one dark sign with light letters (the design’s ink and paper) per taxiway, never two of the same name within 140 px, only the long taxiways when zoomed out, none below the names’ zoom; the sign covers a road name under it', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='SOG-0252 (the user, « TWY : illisible… fusionner les points au même endroit s’ils sont identiques », two Navigraph captures as the target: black signs with yellow letters on the taxiway, once per taxiway, fewer when zoomed out, none further out; ours: tiny grey letters on the line, twice a few metres apart (« B », « P4 »), a road name more readable than a taxiway’s): a sign per taxiway in the design’s colours (its ink as the ground, its paper as the letters), the long ones first, the names that repeat within 140 px merged, a taxiway shorter on the screen than its sign has none')
+def d_signs(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    _ground_open(c)
+    c.js("""() => { window.__ct = []; const f = CanvasRenderingContext2D.prototype.fillText, r = CanvasRenderingContext2D.prototype.fillRect;
+      CanvasRenderingContext2D.prototype.fillText = function (t, x, y) { if (window.__sg) { window.__sg = false; window.__ct.push({ t: String(t), x, y }) } return f.apply(this, arguments) };
+      CanvasRenderingContext2D.prototype.fillRect = function (x, y, w, h) { if (h === 16 && w > 12 && w < 80) { window.__rc = (window.__rc || 0) + 1; window.__sg = true } return r.apply(this, arguments) }; return true }""")
+    seen = {}
+    for z in (13, 15, 16):
+        _ground_at(c, z, 900)
+        c.js("() => { window.__ct = []; window.__rc = 0; window.__mp.S.map.panBy([3, 3], { duration: 0 }); return true }")
+        c.wait(1500)
+        ct = c.js("() => ({ ct: window.__ct, rc: window.__rc })")
+        names = ct['ct']
+        dup = sum(1 for i, a in enumerate(names) for b in names[i + 1:] if a['t'] == b['t'] and ((a['x'] - b['x']) ** 2 + (a['y'] - b['y']) ** 2) ** .5 < 140)
+        seen[z] = (len({(x['t'], round(x['x']), round(x['y'])) for x in names}), ct['rc'], dup)
+    c.eq(seen[13][0], 0, 'no sign below the names’ zoom', what=str(seen))
+    c.ok(seen[15][0] >= 3 and seen[16][0] >= 3, str(seen), 'signs at 15 and at 16')
+    c.ok(seen[15][1] >= 3 and seen[16][1] >= 3, str(seen), 'each one is a sign (a filled box of the design’s ink behind the letters)')
+    c.ok(all(v[2] == 0 for v in seen.values()), str(seen), 'no two signs of the same name within 140 px')
+    c.shot('D178_{}_1280_delivered.png'.format('standard'))
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    c.wait(600)
+    _ground_at(c, 16, 900)
+    c.wait(1200)
+    c.shot('D178_{}_390_delivered.png'.format('standard'))

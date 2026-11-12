@@ -313,7 +313,7 @@ export function groundLayout(toC, zReal, W, H) {
       c.font = '10.5px system-ui, sans-serif';
       c.textBaseline = 'middle';
       const drawn = new Map(),
-        put = (key, ids, spots, w) => {
+        put = (key, ids, spots, w, hh = 7) => {
           const got = MapsRender.kit.ask(pl, {
             layer: 'points',
             rank: 'ground',
@@ -321,9 +321,9 @@ export function groundLayout(toC, zReal, W, H) {
             anchor: spots[0],
             boxes: spots.map(p => ({
               x0: p.x - w / 2,
-              y0: p.y - 7,
+              y0: p.y - hh,
               x1: p.x + w / 2,
-              y1: p.y + 7
+              y1: p.y + hh
             }))
           });
           for (const id of ids) drawn.set(id, !!got);
@@ -335,6 +335,21 @@ export function groundLayout(toC, zReal, W, H) {
           c.strokeText(name, (got.x0 + got.x1) / 2 - w / 2 + 2, (got.y0 + got.y1) / 2);
           c.fillStyle = dark ? '#eee' : '#222';
           c.fillText(name, (got.x0 + got.x1) / 2 - w / 2 + 2, (got.y0 + got.y1) / 2);
+        },
+        // le nom d'une voie : un cartouche à la façon du panneau (opaque, aux couleurs du design : l'encre du design en fond, son papier en lettres ; il couvre le nom d'une route du fond sous lui,
+        // SOG-0252) posé sur la voie
+        writeBox = (got, name, w) => {
+          const x = (got.x0 + got.x1) / 2,
+            y = (got.y0 + got.y1) / 2;
+          c.fillStyle = S.theme.fg;
+          c.fillRect(x - w / 2, y - 8, w, 16);
+          c.lineWidth = 1;
+          c.strokeStyle = S.theme.bg;
+          c.strokeRect(x - w / 2 + .5, y - 7.5, w - 1, 15);
+          c.fillStyle = S.theme.bg;
+          c.textAlign = 'center';
+          c.fillText(name, x, y + .5);
+          c.textAlign = 'left';
         },
         len = pts => pts.slice(1).reduce((a, p, k) => a + Math.hypot(p.x - pts[k].x, p.y - pts[k].y), 0);
       if (pl && at(zReal, Z_NAME)) {
@@ -356,14 +371,40 @@ export function groundLayout(toC, zReal, W, H) {
             if (!byName.has(k)) byName.set(k, []);
             byName.get(k).push(s);
           }
-        for (const list of byName.values()) {
+        // les voies principales d'abord (la plus longue à l'écran) ; une voie dont le tronçon visible est plus court que son cartouche ne porte pas de nom (en reculant, les cartouches se raréfient
+        // jusqu'aux voies principales seules, puis disparaissent) ; deux cartouches du même nom à moins de 140 px sont fondus en un
+        c.font = 'bold 11px system-ui, sans-serif';
+        const cand = [...byName.values()].map(list => {
+            const best = list.slice().sort((a, b) => len(b.pts) - len(a.pts))[0];
+            return {
+              list,
+              best,
+              L: len(best.pts)
+            };
+          }).sort((a, b) => b.L - a.L),
+          placed = [];
+        for (const {
+            list,
+            best,
+            L
+          }
+          of cand) {
           const name = list[0].it.name,
-            w = c.measureText(name).width + 4,
-            best = list.slice().sort((a, b) => len(b.pts) - len(a.pts))[0],
-            at3 = [.5, .25, .75].map(f => best.pts[Math.min(best.pts.length - 1, Math.floor((best.pts.length - 1) * f))]),
-            got = put(`gnd:${grpOf(list[0].it)}`, list.map(s => s.it.id), at3, w);
-          if (got) write(got, name, w);
+            w = c.measureText(name).width + 10;
+          if (L < Math.max(60, w * 2.2)) continue;
+          const at3 = [.5, .25, .75].map(f => best.pts[Math.min(best.pts.length - 1, Math.floor((best.pts.length - 1) * f))]);
+          if (placed.some(q => q.name === name && at3.some(a => Math.hypot(q.x - a.x, q.y - a.y) < 140))) continue;
+          const got = put(`gnd:${grpOf(list[0].it)}`, list.map(s => s.it.id), at3, w, 8);
+          if (got) {
+            writeBox(got, name, w);
+            placed.push({
+              name,
+              x: (got.x0 + got.x1) / 2,
+              y: (got.y0 + got.y1) / 2
+            });
+          }
         }
+        c.font = '10.5px system-ui, sans-serif';
         // 3. les attentes (au zoom des noms), puis les postes (au zoom des postes)
         for (const s of shown) {
           const it = s.it;
