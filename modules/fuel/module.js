@@ -31,9 +31,13 @@ import * as RL from '../../frame/lib/route_legend.js'; // la légende commune de
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
+// la piste en service d'après l'ATIS des réseaux du vol (SOG-0090, second lot) ; un direct vers un point sur instruction du contrôle
+// (SOG-0088, calcul pur)
 import * as ATIS from './atis.js';
-import *
-as DIR from './direct.js'; // un direct vers un point sur instruction du contrôle (SOG-0088), calcul pur // la piste en service d'après l'ATIS des réseaux du vol (SOG-0090, second lot)
+import * as DIR from './direct.js';
+import {
+  copyText
+} from '../../frame/lib/clipboard.js'; // « Copier le diagnostic » du calcul de route (SOG-0134)
 import {
   createProcedures,
   sideChosen,
@@ -226,6 +230,25 @@ const TX = {
   rCompute: ['Calculer A → B', 'Compute A → B', 'A → B berechnen', 'Calcular A → B'],
   rCheck: ['Contrôler', 'Check', 'Prüfen', 'Comprobar'],
   rBusy: ['Calcul en cours…', 'Computing…', 'Berechnung läuft…', 'Calculando…'],
+  // SOG-0134 : la durée d'un calcul de route, dite au-delà de 3 s, et où elle est passée
+  rBusyS: ['Calcul en cours… {s} s', 'Computing… {s} s', 'Berechnung läuft… {s} s', 'Calculando… {s} s'],
+  rTimeLauncher: ['Calculé en {t} s — dont {p} s chez le lanceur.', 'Computed in {t} s — {p} s of it at the launcher.',
+    'Berechnet in {t} s — davon {p} s beim Starter.', 'Calculado en {t} s — de ellos {p} s en el lanzador.'
+  ],
+  rTimeDraw: ['Calculé en {t} s — dont {p} s de dessin.', 'Computed in {t} s — {p} s of it drawing.',
+    'Berechnet in {t} s — davon {p} s Zeichnen.',
+    'Calculado en {t} s — de ellos {p} s de dibujo.'
+  ],
+  rTimeMap: ['Calculé en {t} s — dont {p} s de dessin sur la Carte.', 'Computed in {t} s — {p} s of it drawing on the Map.',
+    'Berechnet in {t} s — davon {p} s Zeichnen auf der Karte.', 'Calculado en {t} s — de ellos {p} s de dibujo en el Mapa.'
+  ],
+  rTimeCheck: ['Calculé en {t} s — dont {p} s pour joindre le lanceur.', 'Computed in {t} s — {p} s of it to reach the launcher.',
+    'Berechnet in {t} s — davon {p} s, um den Starter zu erreichen.', 'Calculado en {t} s — de ellos {p} s para alcanzar el lanzador.'
+  ],
+  rTimeCopy: ['Copier le diagnostic', 'Copy the diagnostic', 'Diagnose kopieren', 'Copiar el diagnóstico'],
+  rTimeCopied: ['Diagnostic du calcul copié.', 'Diagnostic of the computation copied.', 'Diagnose der Berechnung kopiert.',
+    'Diagnóstico del cálculo copiado.'
+  ],
   // SOG-0208 : un bouton qui ne fait rien sans le dire est un défaut ; le lanceur est vérifié à l'appui
   rNoLauncher: ['Disponible avec le lanceur du poste (il ne répond pas).',
     'Available with the workstation’s launcher (it does not answer).',
@@ -2212,7 +2235,7 @@ function renderPlanBody() {
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
       <div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div>
-      <div data-routealts></div>
+      <div data-routealts></div><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
       <p class="f-warn" data-rhumb hidden></p>
@@ -2769,6 +2792,7 @@ function onPlanClick(e) {
   if (pk) return pickAircraft(pk.dataset.pick);
   if (e.target.closest('[data-do="acopen"]')) return acOpen();
   if (e.target.closest('[data-do="acgo"]')) return acGo();
+  if (e.target.closest('[data-do="rtimecopy"]')) return routeTimingCopy(); // SOG-0134
   const rb = e.target.closest('[data-do="rcompute"],[data-do="rcheck"],[data-do="rtake"]');
   if (rb) return rb.dataset.do === 'rtake' ? routeTake(+rb.dataset.i) : routeAsk(rb.dataset.do === 'rcompute' ? 'compute' : 'check');
   const ar = e.target.closest('[data-altlist] [data-alt]');
@@ -3617,6 +3641,8 @@ function renderDa(C) {
  *  (RE.normalize), donne la liste des itinéraires (calculate) ou les segments fautifs marqués dans la liste des points (validate). Un
  *  refus du moteur est dit avec sa phrase. La saisie n'est jamais touchée ici. */
 async function routeAsk(action) {
+  // SOG-0134 : un second appui pendant un calcul ne lance rien ; le temps de chaque étape est gardé (routeTiming)
+  if (S.routeBusy) return;
   const s = S,
     r = S.flight.route || {},
     o = CF.proceduresOf(S.flight),
@@ -3630,6 +3656,15 @@ async function routeAsk(action) {
     return;
   }
   if (box) box.innerHTML = `<p class="f-muted" data-rbusy>${esc(tt(TX.rBusy))}</p>`;
+  routeBusy(s, true, act);
+  try {
+    await routeAskRun(s, act, r, o, box, retry);
+  } finally {
+    routeBusy(s, false);
+  }
+}
+/** La demande elle-même (routeAsk), mesurée : appui (t0), départ de la demande au lanceur (t1), réponse (t2), liste dessinée (t3). */
+async function routeAskRun(s, act, r, o, box, retry) {
   if (!(await RE.answers(S.ctx.launcher))) {
     if (!gone(s) && box) box.innerHTML = `<p class="f-warn" data-rnolauncher>${esc(tt(TX.rNoLauncher))} ${retry}</p>`;
     return;
@@ -3647,8 +3682,10 @@ async function routeAsk(action) {
       date: new Date(Number.isFinite(when) ? when : Date.now()).toISOString().slice(0, 16),
       depRunway: o.dep?.rwy,
       arrRunway: o.arr?.rwy
-    }),
-    res = await RE.run(S.ctx.launcher, args);
+    });
+  s.rtime.t1 = performance.now();
+  const res = await RE.run(S.ctx.launcher, args);
+  s.rtime.t2 = performance.now();
   if (gone(s) || !S.body) return;
   if (!res) { // le lanceur a répondu à l'appui puis pas au calcul : dit en place, avec « Réessayer »
     if (box) box.innerHTML = `<p class="f-warn" data-rfail>${esc(tt(TX.rFail))} ${retry}</p>`;
@@ -3675,7 +3712,8 @@ async function routeAsk(action) {
     S.ralts = null;
     if (a) altsPublish('check', [a], [r.points || []]); // la route tapée est déjà lue : ses points (INTEGRATION § 3 bis)
     renderPts();
-    return refresh();
+    refresh();
+    return routeDrawn(s);
   }
   S.ralts = {
     list: n.plans,
@@ -3684,6 +3722,100 @@ async function routeAsk(action) {
   };
   routeAltsDraw();
   altsPublish('compute', n.plans); // pour la Carte (INTEGRATION § 3 bis)
+  return routeDrawn(s);
+}
+// ---------------------------------------------------------------- la durée d'un calcul de route (SOG-0134)
+// Refusé en recette le 11/11 (« toujours pareil. instable, lent. ») sans un fait : le poste de l'utilisateur les donne lui-même. Quatre
+// instants du dernier calcul (l'appui, le départ de la demande au lanceur, la réponse, la liste dessinée) et, la Carte à côté, son dessin
+// des tracés (l'événement maps-route-alts-drawn) ; gardés sur l'appareil (cache/fuel/route_timing.json, jamais envoyé), en millisecondes,
+// sans route ni adresse au-delà de départ → arrivée. Au-delà de 3 s, la ligne le dit en clair, avec « Copier le diagnostic ».
+const ROUTE_TIMING = 'cache/fuel/route_timing.json',
+  SLOW_MS = 3000;
+/** L'attente visible dès l'appui : les deux boutons occupés, « Calcul en cours… » puis ses secondes au-delà de 2 s ; libérés à la fin. */
+function routeBusy(s, on, act = '') {
+  s.routeBusy = on;
+  clearInterval(s.rbusyTimer);
+  for (const b of s.body?.querySelectorAll('[data-do="rcompute"], [data-do="rcheck"]') || []) {
+    b.disabled = on;
+    b.setAttribute('aria-busy', on ? 'true' : 'false');
+  }
+  if (!on) return;
+  s.rtime = {
+    act,
+    t0: performance.now(),
+    at: new Date().toISOString(),
+    dep: String(s.flight.route?.dep || ''),
+    arr: String(s.flight.route?.arr || '')
+  };
+  const line = s.body?.querySelector('[data-rtime]');
+  if (line) line.hidden = true;
+  s.rbusyTimer = setInterval(() => {
+    const el = s.body?.querySelector('[data-rbusy]'),
+      sec = Math.floor((performance.now() - s.rtime.t0) / 1000);
+    if (!el || gone(s)) return clearInterval(s.rbusyTimer);
+    if (sec >= 2) el.textContent = tt(TX.rBusyS, {
+      s: sec
+    });
+  }, 500);
+}
+/** La liste dessinée (après la peinture de la page) : t3, puis la ligne et le document de l'appareil. */
+function routeDrawn(s) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (gone(s) || !s.rtime) return;
+    s.rtime.t3 = performance.now();
+    routeTiming(s);
+  }));
+}
+/** Les durées du dernier calcul (ms) : joindre le lanceur (l'appui → la demande), le lanceur (demande → réponse), le dessin de la liste,
+ *  celui de la Carte s'il est arrivé, le total. */
+function timingOf(T) {
+  const ms = v => Number.isFinite(v) ? Math.max(0, Math.round(v)) : null;
+  return {
+    reach: ms(T.t1 - T.t0),
+    launcher: ms(T.t2 - T.t1),
+    draw: ms(T.t3 - T.t2),
+    map: ms(T.t4 - T.t2),
+    total: ms(Math.max(T.t3 || 0, T.t4 || 0) - T.t0)
+  };
+}
+/** La ligne du calcul : rien sous 3 s ; au-delà, la durée et sa plus grande part (« Calculé en 7,4 s — dont 6,8 s chez le lanceur. »),
+ *  avec « Copier le diagnostic » ; le document de l'appareil écrit. */
+function routeTiming(s) {
+  const T = s.rtime,
+    d = timingOf(T),
+    line = s.body?.querySelector('[data-rtime]');
+  s.ctx.data.put(ROUTE_TIMING, {
+    schema: 1,
+    at: T.at,
+    action: T.act,
+    route: `${T.dep} → ${T.arr}`,
+    ms: d
+  })?.catch?.(() => {});
+  if (!line) return;
+  if (!(d.total > SLOW_MS)) return void(line.hidden = true);
+  const sec = v => (v / 1000).toLocaleString(s.ctx.lang(), {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }),
+    parts = [
+      ['launcher', TX.rTimeLauncher],
+      ['draw', TX.rTimeDraw],
+      ['map', TX.rTimeMap],
+      ['reach', TX.rTimeCheck]
+    ].filter(([k]) => d[k] != null).sort((a, b) => d[b[0]] - d[a[0]]),
+    [k, row] = parts[0];
+  line.innerHTML = `${esc(tt(row, { t: sec(d.total), p: sec(d[k]) }))} <button type="button" class="fu-linkbtn" data-do="rtimecopy">${esc(tt(TX.rTimeCopy))}</button>`;
+  line.dataset.part = k;
+  line.hidden = false;
+}
+/** « Copier le diagnostic » : les durées du dernier calcul en une ligne, sans rien d'autre que départ → arrivée. */
+async function routeTimingCopy() {
+  const T = S.rtime;
+  if (!T) return;
+  const d = timingOf(T),
+    text = `SOG route ${T.act} ${T.dep} → ${T.arr} · ${T.at} · reach ${d.reach} ms · launcher ${d.launcher} ms · draw ${d.draw} ms · map ${d.map ?? '—'} ms · total ${d.total} ms`;
+  await copyText(text);
+  S.ctx.notify(tt(TX.rTimeCopied), 'ok');
 }
 /** « N écarts aux règles » n'est jamais un nombre seul (SOG-0134) : un pli dont le titre dit le nombre et qui liste chaque écart — son
  *  segment, sa règle (l'identifiant du RAD ou du point FRA, sinon son genre), la phrase du moteur — sept lignes puis « N autres ». */
@@ -6068,6 +6200,13 @@ export async function mount(el, ctx) {
   S.body.addEventListener('focusin', e => altsHover(e));
   S.onAltPick = e => altsPicked(e);
   window.addEventListener('maps-route-alt-show', S.onAltPick);
+  // SOG-0134 : la Carte à côté dit quand elle a dessiné les tracés publiés : la dernière part du calcul
+  S.onAltsDrawn = () => {
+    if (gone(self) || !self.rtime?.t2 || self.rtime.t4) return;
+    self.rtime.t4 = performance.now();
+    if (self.rtime.t3) routeTiming(self);
+  };
+  window.addEventListener('maps-route-alts-drawn', S.onAltsDrawn);
   S.onCoThemes = () => themesLoad();
   window.addEventListener('frame-airline', S.onCoThemes);
   S.body.addEventListener('focusout', e => {
@@ -6660,6 +6799,8 @@ export function unmount() {
   // et sa fin est dite (procedures.js)
   S.P.stop();
   window.removeEventListener('maps-route-alt-show', S.onAltPick);
+  window.removeEventListener('maps-route-alts-drawn', S.onAltsDrawn);
+  clearInterval(S.rbusyTimer);
   window.removeEventListener('frame-airline', S.onCoThemes);
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);

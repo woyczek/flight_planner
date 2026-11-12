@@ -36,6 +36,7 @@ Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F2
 computes an estimated quote with no sheet and no network.
 """
 import json
+import time
 import datetime
 import re
 from pathlib import Path
@@ -2870,7 +2871,11 @@ def _route_launcher(c, verbs):
             return
         elif u.path.endswith('/__setup/regen/job') and req.method == 'POST':
             st['posts'].append(json.loads(req.post_data or '{}'))
+            st['t'] = time.time()
             body = {'job': 'j' + str(len(st['posts']))}
+        elif u.path.endswith('/__setup/regen/job') and time.time() - st.get('t', 0) < st.get('delay', 0):
+            # SOG-0134: a slow launcher (st['delay'] seconds after the request): the job says « running » until then
+            body = {'id': 'j' + str(len(st['posts'])), 'state': 'running', 'step': '', 'done': 0, 'total': 1, 'unit': '', 'log': []}
         elif u.path.endswith('/__setup/regen/job'):
             a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
             res = {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'} \
@@ -4804,3 +4809,50 @@ def f156(c):
     _route_typed(c, txt.replace('LFRS/03', 'LFRS'))
     cf_doc(c, lambda d: not (procs_of(d, 'dep') or {}).get('rwy'), '« /03 » erased: the departure runway removed', timeout=8000)
     c.until("(n) => (window.__notes || []).slice(n).some(x => /LFRS/.test(x))", n0, timeout=6000, what='« Piste de départ retirée (LFRS) »')
+
+
+
+@case('F157', 'Route computation: the wait is visible from the tap (both buttons busy, then the seconds), a second tap starts nothing; over 3 s '
+      'the line says where the time went (« Calculé en 4,6 s — dont 4,2 s chez le lanceur ») with « Copier le diagnostic »; under 3 s nothing',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0134 refused on 11 Nov (« toujours pareil. instable, lent. »), the ergonomist on 12 Nov: the user\'s workstation gives the facts '
+      '(four instants, kept on the device, cache/fuel/route_timing.json, no route beyond departure → arrival); a fake launcher delayed by 4 s; '
+      'the route engine untouched; captures 390 and 1 280')
+def f157(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        st = _route_launcher(c, ['route/compute'])
+        st['delay'] = 4.0
+        open_proc(c)
+        c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+        c.tap(f'{FUEL} [data-do="rcompute"]')
+        c.until(f"document.querySelector('{FUEL} [data-do=rcompute]').disabled && document.querySelector('{FUEL} [data-do=rcheck]').disabled "
+                f"&& !!document.querySelector('{FUEL} [data-rbusy]')", timeout=3000, what=f'{w} px: busy from the tap')
+        c.js(f"document.querySelector('{FUEL} [data-do=rcompute]').click()")   # a second tap: a disabled button, nothing starts
+        c.until(f"/\\d/.test(document.querySelector('{FUEL} [data-rbusy]')?.textContent || '')", timeout=4000, what='the seconds after 2 s')
+        c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", timeout=15000, what='three routes')
+        c.until(f"!!document.querySelector('{FUEL} [data-rtime]:not([hidden])')", timeout=5000, what=f'{w} px: the line of the duration')
+        line = norm(c.text(f'{FUEL} [data-rtime]') or '')
+        head = norm(tx(F, 'rTimeLauncher', c.lang).split('{t}')[0])
+        c.ok(line.startswith(head) and c.js(f"document.querySelector('{FUEL} [data-rtime]').dataset.part") == 'launcher'
+             and norm(tx(F, 'rTimeCopy', c.lang)) in line, line, 'said in words, the launcher\'s part first, « Copier le diagnostic »')
+        c.eq(len([p for p in st['posts'] if (p.get('args') or {}).get('action') == 'calculate' or p.get('verb') == 'compute']), 1,
+             'one computation only (the second tap started nothing)', what='posts')
+        d = c.until_doc('cache/fuel/route_timing.json', lambda d: bool(d and (d.get('ms') or {}).get('total')), 'the durations kept on the device')
+        c.ok(d['ms']['launcher'] >= 3500 and d['ms']['total'] > 3000 and d['route'] == 'LFRS → LFML' and set(d) <= {'schema', 'at', 'action', 'route', 'ms'},
+             d, 'milliseconds, departure → arrival only')
+        c.ok(not c.js(f"document.querySelector('{FUEL} [data-do=rcompute]').disabled"), '', 'the buttons free again')
+        c.js(f"document.querySelector('{FUEL} [data-rtime]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F157_{c.design}_{w}_{c.lang}_delivered.png')
+        c.context.unroute(re.compile(r'/__setup/'))
+    n0 = c.js("(window.__notes || []).length")
+    c.tap(f'{FUEL} [data-do="rtimecopy"]')
+    c.until("(n) => (window.__notes || []).length > n", n0, timeout=4000, what='« Diagnostic du calcul copié. »')
+    # a quick launcher: nothing said
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", timeout=15000, what='three routes')
+    c.settle()
+    c.ok(c.js(f"document.querySelector('{FUEL} [data-rtime]').hidden"), '', 'under 3 s: nothing said')

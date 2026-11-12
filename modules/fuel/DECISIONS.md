@@ -1780,3 +1780,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (« N0450F350 LFPO/07 … », item 15 of a flight plan) has no point to attach to: ignored and said, never hiding the aerodrome
   (`leadingGroup`). F155 (red before: the runways set by the text alone; the group), F156 (an old flight redone, then « /03 » erased),
   bench F69 (+5); F70 and F77 now expect « LFRS/03 … » and « LFRS/21 … ».
+- **12 Nov 2026 — the duration of a route computation, measured on the user's workstation** (SOG-0134, refused 11/11 « toujours pareil.
+  instable, lent. »; the ergonomist: the facts from the workstation, without the user timing it). Four instants of the last computation —
+  the tap, the request leaving for the launcher, the answer, the list drawn (two animation frames after) — and, the Map beside, its
+  `maps-route-alts-drawn` event (asked of BUGS SOG; the line works without it). Kept on the device only, `cache/fuel/route_timing.json`
+  { at, action, route: « DEP → ARR », ms: { reach, launcher, draw, map, total } }, no route beyond departure → arrival. Over 3 s the line
+  under the list says the total and its largest part (« dont 6,8 s chez le lanceur », « de dessin », « de dessin sur la Carte », « pour
+  joindre le lanceur ») with « Copier le diagnostic » (the same durations in one line); under 3 s nothing. The wait visible from the tap
+  (both buttons disabled and aria-busy, « Calcul en cours… » then its seconds beyond 2 s); a second tap starts nothing (`routeBusy`). The
+  route engine is untouched. F157 (red before, a fake launcher delayed by 4 s). The two import lines of atis.js and direct.js, merged with
+  their comments by the formatter, written apart again.
