@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 124,
+  "tests": 125,
   "verdicts": 60
  },
  "apps": [
@@ -1515,9 +1515,15 @@
     "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
     "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)"
    },
-   "test": "Carburant avec la carte à côté : après « Calculer A → B » et le choix d'un itinéraire, plus aucun tracé d'itinéraire proposé ne reste sur la carte ; survoler une voie ou une balise affiche de nouveau son infobulle ; à l'ouverture, la carte est cadrée sur tout le vol. Si un tracé reste : l'heure, et je regarde la console.",
-   "since": "2026-11-10",
-   "state": "known"
+   "test": "Recharge la page. Carburant avec la Carte à côté, ton scénario du 11/11 : « Calculer A → B » donne trois propositions ; survole-en une, puis clique : elle s'affiche avec ses calculs ; « Choisir » : la route est modifiée, une ligne dit « Itinéraire pris : … », et les deux autres disparaissent tout de suite — dans Carburant ET sur la Carte (traits pâles et mini-légende), sans changer d'écran.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:10:00Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "toujours pas. il faut switcher d’écran (vers carte, meteo...) pour faire disparaître le choix, d’une part, et d’autre part en vue carte, toujours la popup même après le choix. Rappel fonctionnel : - clic sur A->B  => 3 propositions - survol ou clic sur proposition : affichage, et calculs - clic sur le bouton choix : valider l’itinéraire, modifier la route, et faire disparaitre les alternatives.",
+    "at": "2026-11-11T21:21:20Z"
+   }
   },
   {
    "id": "SOG-0225",
@@ -1773,6 +1779,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T09:33:08Z"
+  },
+  {
+   "id": "SOG-0247",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant, étape Départ : le pli des aides radio se referme dès qu'on l'ouvre",
+    "en": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
+    "de": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
+    "es": "Fuel, Departure step: the radio aids fold closes as soon as it is opened"
+   },
+   "test": "Carburant, étape 5 (Départ) : ouvre le pli « VOR / DME de la route », puis change le niveau de vol : le pli doit rester ouvert.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:03:28Z"
   },
   {
    "id": "SOG-0260",

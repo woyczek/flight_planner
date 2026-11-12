@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "842ae9a",
+  "organisation": "8d22356",
   "fiches": 273,
   "untranslated": 0,
   "priorities": 243
@@ -591,11 +591,12 @@
     {
      "id": "SOG-0247",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant, étape Départ : le pli des aides radio se referme dès qu'on l'ouvre",
      "en": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
      "de": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
-     "es": "Fuel, Departure step: the radio aids fold closes as soon as it is opened"
+     "es": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
+     "test": true
     }
    ]
   },
@@ -953,12 +954,13 @@
     {
      "id": "SOG-0224",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte à côté de Carburant : un tracé d'itinéraire proposé reste après le calcul ; deux erreurs dans la console (infobulles, cadrage)",
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
      "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)",
-     "rank": 170
+     "rank": 170,
+     "test": true
     },
     {
      "id": "SOG-0233",
