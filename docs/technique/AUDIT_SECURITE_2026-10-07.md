@@ -1023,6 +1023,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 171 | The glyph-name digits and the radius bounded (3799bd678): the point to harden of 170 closed | acceptable |
 | 172 | The DIRCAM lot of the Data screen: one zip member read on the device and sent, the lines of the datasets to do (1eafcd087) | acceptable |
 | 173 | `current_flight.airline` written by Fuel and read by the report (a2bb9cfc4, SOG-0041): the families, the heading and the saved record follow the company of the flight taken | acceptable, one functional note |
+| 174 | The night of 13 November: the Map's Weather layer (163722b25, SOG-0092) and the weather store's `cacheOnly` (01b1538f8); the mission Registry, one line per mission (db091c505, SOG-0286); the GeoNames extract for Portugal and Ireland (0114f9cdb, SOG-0102); the Data map's wheel and hover (6889a1d7b) and the editor mock-up (7c3b8e4bb) | acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2557,6 +2558,32 @@ writing the flight's route or aircraft). *Note (not security).* `S.flightCo` is 
 cours”, but not when the pilot opens an already saved report afterwards: the heading and the saved record keep the report's own company
 (`S.saved` first, `prev.airline` first), yet `loadCategories` would offer the families of the earlier flight's company until the next press.
 Case G20 and N42 green; no counter-test needed.
+
+**174. The night of 13 November — acceptable, two notes.** *Weather layer (163722b25).* `wx.js` posts the drawing of Weather's library
+(`weather_map.js`, unchanged, no `innerHTML`, no network call) on the map and writes one line under the box: its two values are the level
+(`formatLevel` on a rounded number, text) and the hour (`fmtZ` on an ISO string built from a finite number of seconds: `depTime` is always finite,
+`etaOf` is parsed with `Date.parse` and checked), the whole line goes through `esc`, the only link is the constant `#atmosphere`. The Map hands
+the library a facade whose `grid` is forced to `cacheOnly: true` and whose `world` answers `null`. A probe fed the kept forecast with strings
+(one of them an `onerror` payload), `1e308`, `-1e308`, `null`, an object, an array and a boolean in a fifth of the values and in `elevation`:
+state `ok`, no page error, no request but the page's own code; the flight's level and departure time set to `1e300`, `-5`, `"abc"`,
+`+275760-09-13`, year 1 and a normal value, then `wxSync()`: no error either. D194 (zero outgoing call when ticked) green.
+*Store (01b1538f8).* `cacheOnly` reads `knownRun` (memory, then the reserve's `meta.json`, never the network) and a plan that misses anything
+returns `null` before any fetch; an unknown run gives the 30-minute blind validity, a known one is still bounded by the file's own age
+(`RUN_TTL`, 6 hours) and, for a stale `meta.json`, by that same age. A forged reserve is the device's own cache (not the data repository), so it
+reaches nothing a local writer could not already reach; A25 holds both the empty-reserve and the warm-reserve cases. *Registry (db091c505).*
+Every field of a line comes from `readRegistry` (strings, `clean`ed; the path through `safeFolder` / `safeFile`) and goes into markup through
+`esc` (identifier, title, `second`, `detail`, the path of a line and of a mission found in the repository, the option values and labels of the
+family filter) or a closed set (`data-rstate`, `data-kind`, the numeric `data-rid`); the sign is a constant glyph; the path is shown as text and
+never made a link or a call; the new sort uses numbers (`+series`, finite or `1e9`) and `row.id` (a string). The 60-row cap bounds the page.
+*GeoNames (0114f9cdb).* 1,561 rows added (PT 1,025, IE 536), parsed as a CSV: six columns everywhere, names of at most 27 characters with no
+control, bidirectional or markup character and no leading `=+-@`, latitude/longitude in range, integer population 500 to 517,802, integer
+`geonameid`; K217 holds the same bounds, and the consumers already render 71,000 such names. *Data map (6889a1d7b).* The hover reads
+`data-zones` of the page's own markup and passes each identifier through `CSS.escape`; the wheel only changes a viewBox. *Mock-up
+(7c3b8e4bb).* A static page: no external address, no form, one inline script that builds markup from constants and `location.hash` read as a
+key into a fixed list; nothing links to it. **Notes.** (1) The reader of the registry cuts no title or identifier (`clean` only collapses spaces),
+so a very long title is a heavy line, not an injection (the line is one `nowrap` ellipsis); cut them to 120 characters in `readRegistry` when
+convenient. (2) In `regLoad`, beyond `REG_READ_MAX` (500 files) a line is marked `ok` without having been read although the comment two lines
+above says “never there without having read it”: an integrity wording, not a security one (older than this commit).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
