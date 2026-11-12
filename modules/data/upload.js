@@ -9,11 +9,14 @@ import {
   catSource,
   esc,
   li,
+  pickSource,
   S,
   tt
 } from './state.js';
 import {
-  renderBuild
+  handMsgOf,
+  renderBuild,
+  selectionOf
 } from './panels.js';
 import {
   startRoute
@@ -30,9 +33,8 @@ const ROUTE_UPLOAD = 'base/upload';
 const MAX_BYTES = 1.5 * 1024 ** 3; // le plafond du lanceur : au-delà, rien n'est envoyé
 /** Les raisons de refus que le lanceur sait dire (liste fermée du contrat) : leur clé de TX.up.why. */
 const REASONS = ['too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused'];
-/** Les sources que le contrat connaît : un identifiant hors de cette liste est ignoré. */
-/** Les sources que l'envoi prend (premier lot d'AeroDB) quand le lanceur ne les redit pas : un PDF, un XML seul ou un tableau n'est pas pris. */
-const TAKEN = ['sia', 'nats', 'lfv', 'openaip'];
+/** Un identifiant de source tel que le lanceur le dit dans `expected` : minuscules, chiffres et tiret bas, 2 à 25 signes (il peut nommer une source que le catalogue n'a pas : son identifiant en majuscules). */
+const SOURCE_ID = /^[a-z][a-z0-9_]{1,24}$/;
 const nameOfSource = id => (catSource(id)?.n?.[li()] || String(id).toUpperCase()).replace(/\s*\(.*\)\s*$/, '');
 
 /** Le bouton « Choisir le fichier… » de la ligne d'une zone peut-il partir ? Un lanceur, aucune autre opération, aucun envoi en cours. */
@@ -106,12 +108,19 @@ function outcome(r) {
     text: tt(TX.up.unknownRoute)
   };
   if (REASONS.includes(reason)) {
-    const given = [r?.expected, body.expected].find(Array.isArray) || [],
-      expected = (given.length ? given : TAKEN).filter(x => M.COV_SOURCES.includes(x)).slice(0, 10).map(nameOfSource).join(', ');
+    // les sources que l'envoi prend : celles que le lanceur dit (`expected`, dix au plus), jamais une liste de la page ; sans elles la phrase n'en nomme aucune
+    const said0 = r?.message ?? body
+      .message, // le motif en clair du lanceur (la bibliothèque le rend dans `message`, « HTTP 422 » à défaut : ce n'est pas un motif)
+      given = [r?.expected, body.expected].find(Array.isArray) || [],
+      expected = [...new Set(given.filter(x => typeof x === 'string' && SOURCE_ID.test(x)))].slice(0, 10).map(nameOfSource).join(', '),
+      row = !expected && Object.hasOwn(TX.up.whyNone, reason) ? TX.up.whyNone[reason] : TX.up.why[reason],
+      said = reason === 'unrecognised' && typeof said0 === 'string' && !/^HTTP \d+$/.test(said0) ? said0.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu,
+        ' ').trim().slice(0, 240) : '';
     return {
       kind: 'fail',
       running: reason === 'busy' ? M.runningOf(r?.running ?? body.running) : null, // l'opération qui tourne, dite par le lanceur (SOG-0245)
-      text: tt(TX.up.why[reason], {
+      detail: said, // « unrecognised » : la raison que le lanceur donne en clair (un eAIP qui n'est pas celui du Portugal, une image illisible…)
+      text: tt(row, {
         s: expected
       })
     };
@@ -148,14 +157,38 @@ async function faaSet(out, zone) {
   await fetchThenBuild(out.zone || zone);
 }
 /** Ce que l'envoi n'a pas pu faire est écrit sur la ligne de la zone (le fichier choisi, puis le motif du lanceur) : la notification s'efface, la ligne reste jusqu'à la tentative suivante. */
-function sayOnLine(zone, name, text) {
+function sayOnLine(zone, name, text, detail = '') {
   S.zoneMsg.set(zone, {
     level: 'err',
     lines: [tt(TX.zm.chosen, {
       name
-    }), text]
+    }), text, ...(detail ? [detail] : [])]
   });
   renderBuild();
+}
+/** Un fichier reçu pour une source qu'on choisit à la main d'emblée (`fetch.pick`, le Portugal : SOG-0244) : la ligne de la zone dit le fichier choisi et l'ÉDITION qu'il porte (la réponse de l'envoi), puis le téléchargement de la zone le lit (le lanceur prend le fichier avant le site) et
+ *  la construction suit ; sans la coche d'usage personnel (la source est à licence personnelle) rien ne le lirait : la ligne le dit et rien ne part. */
+async function pickTaken(out, zone, name, src) {
+  const m = handMsgOf({
+    edition: out.cycle
+  }, name) || {
+    level: 'ok',
+    kind: 'hand',
+    lines: [tt(TX.zm.chosen, {
+      name
+    })]
+  };
+  if (M.PERSONAL[src.id] && !selectionOf([zone]).personal.includes(src.id)) {
+    S.zoneMsg.set(zone, {
+      ...m,
+      level: 'warn',
+      lines: [...m.lines, tt(TX.up.tick)]
+    });
+    return renderBuild();
+  }
+  S.zoneMsg.set(zone, m);
+  renderBuild();
+  await fetchThenBuild(zone, true);
 }
 /** Envoie le fichier choisi : un seul à la fois, l'avancement sur la ligne de la zone, la fin en une notification ; un envoi réussi enchaîne la construction de la zone reconnue (celle de la ligne à défaut). */
 export async function startUpload(zone, file) {
@@ -193,13 +226,16 @@ export async function startUpload(zone, file) {
   if (S !== me) return;
   S.upload = null;
   const out = outcome(r);
-  if (out.kind === 'fail') sayOnLine(zone, name, out.text);
+  if (out.kind === 'fail') sayOnLine(zone, name, out.text, out.detail);
   else renderBuild();
   if (out.running) showBusy(out.running,
     'base'); // la carte de l'opération en cours, dans le panneau de la base, avec Voir / Arrêter / Libérer
   S.ctx.notify(out.text, out.kind === 'fail' ? 'err' : 'ok');
   // le fichier est rangé là où « Prendre le fichier téléchargé » lit (data/local/upload/) : le parcours normal suit — le plan, la prise, puis la construction de la zone reconnue
   if (out.kind === 'fail') return;
+  const own = pickSource(out.zone || zone);
+  if (own && out.source === own.id) return pickTaken(out, out.zone || zone, name,
+    own); // une source choisie à la main d'emblée (Portugal) : c'est le téléchargement de la zone qui lit le fichier
   if (/^eurocontrol(_rad)?$/.test(out.source))
     return startRoute(); // le classeur est rangé là où l'import de la ligne Route lit : son plan à blanc, sa question, la prise (SOG-0237)
   if (out.source === 'faa') return faaSet(out,

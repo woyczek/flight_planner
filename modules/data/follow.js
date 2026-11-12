@@ -31,6 +31,8 @@ import {
   purgeSummary,
   renderBuild,
   selection,
+  selectionOf,
+  setHandMsgs,
   setZoneMsgs,
   sheetsSummary,
   summary
@@ -176,6 +178,7 @@ async function endBuild(final, live, seconds, set = 'base') {
 async function endFetch(final, live, seconds, set = 'base') {
   const out = M.setOutcome(set, 'fetch', final).out,
     sm = fetchSummary(out, set);
+  if (set === 'base') setHandMsgs(out.hand); // l'édition lue d'un fichier pris à la main, écrite sur la ligne de sa zone (SOG-0244)
   return finishOp(set, 'fetch', out, live, {
     sm,
     note: [sm.text, sm.outside],
@@ -232,9 +235,10 @@ async function endPickup(final, live, seconds) {
 /** « Réessayer » sur la ligne d'une zone en échec (SOG-0180) : la construction de cette zone seule, avec la case « usage personnel » ; rien si le bouton de construction est gris. */
 export const retryZone = zone => /^[a-z0-9]{2,8}$/.test(zone || '') ? buildAfterPickup([zone]) : undefined;
 /** Le téléchargement de la zone puis, si sa source déposée est bonne, sa construction (SOG-0180) : la couche NASR de la FAA n'est pas produite par la construction mais par base/fetch, qui lit les trois jeux déposés (FIX, AWY, NAV) ; la zone se construit ensuite d'après ce fichier. Un échec de la source `faa` se dit (le téléchargement l'a dit) et rien ne se construit ; celui de `faaclass` seul n'empêche pas la construction. */
-export async function fetchThenBuild(zone) {
+export async function fetchThenBuild(zone, own = false) {
   const me = S,
-    personal = selection('base').personal;
+    personal = own ? selectionOf([zone]).personal : selection('base')
+    .personal; // `own` : la zone de la ligne seule (un fichier choisi à la main, SOG-0244), cochée ou non dans la liste
   if (!/^[a-z0-9]{2,8}$/.test(zone || '') || !S.d?.cov?.ids?.includes(zone) || gateOf('base', 1).verbs.fetch.disabled) return;
   S.lastOp = null;
   await settle(me, await launch('base', 'fetch', M.setArgs('base', 'fetch', {
@@ -245,12 +249,12 @@ export async function fetchThenBuild(zone) {
   const out = S.lastOp?.out;
   if (!out || ['cancelled', 'interrupted', 'no-codes', 'no-script'].includes(out.kind)) return;
   if (out.failed.some(f => f.zone === zone && f.source === 'faa')) return;
-  await buildAfterPickup([zone]);
+  await buildAfterPickup([zone], own);
 }
 /** La construction qui suit une prise de fichier (SOG-0180) : les zones prises, de la couverture, avec la case « usage personnel » ; rien si le bouton de construction est gris (une autre opération, pas de lanceur). */
-async function buildAfterPickup(zones) {
+async function buildAfterPickup(zones, own = false) {
   const me = S,
-    personal = selection('base').personal,
+    personal = own ? selectionOf(zones).personal : selection('base').personal,
     ids = zones.filter(z => S.d?.cov?.ids?.includes(z));
   if (!ids.length || gateOf('base', ids.length).verbs.build.disabled) return;
   if (ids.length > M.MAX_ZONES) return void await runChunks(me, 'base', 'build', {

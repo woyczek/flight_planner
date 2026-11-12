@@ -155,6 +155,8 @@ export const STYLE = `
 [data-module="data"] .d-statehead p{margin:4px 0}
 [data-module="data"] .d-zact{grid-column:1/-1;margin:0 0 4px 28px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
 [data-module="data"] .d-zact button{min-height:var(--sog-touch)}
+[data-module="data"] .d-zact .d-link{margin-left:0;padding:0 4px}
+[data-module="data"] .d-zalt{margin-top:-6px}
 @media (pointer:fine){[data-module="data"] .d-statehead [data-filter],[data-module="data"] .d-zact button{min-height:32px}}
 [data-module="data"] .d-opt{display:flex;gap:8px;align-items:center;min-height:var(--sog-touch);overflow-wrap:anywhere}
 /* au pointeur fin (souris) une ligne de liste est une ligne de texte, pas une cible de doigt : 32 px ; au doigt, 44 px (SOG-0168) */

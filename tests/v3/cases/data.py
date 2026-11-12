@@ -283,7 +283,13 @@ def _stub(cfg):
     A.refresh = () => { const k = window.__stub.calls = window.__stub.calls || {}; k.refresh = (k.refresh || 0) + 1; window.__stub.memoPub = null };
     if (cfg.packs) A.packs = async () => cfg.packs;   // the country packs of aerodb (packs(), SOG-0065): absent unless the case gives them
     A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states'); A.zoneOutlines = ok('zoneOutlines', 'outlines');
-    const s = A.sources; A.sources = async () => { const r = await s.call(A); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
+    // Portugal's catalogue entry (SOG-0244): 'pick' = the source the user takes by hand from the start (fetch.pick + its step-by-step), 'nopick' = an ordinary downloaded source (the cases of the plain line)
+    const navpt = r => { const e = r?.byId?.('navpt'); if (!e || !cfg.navpt) return;
+      if (cfg.navpt === 'nopick') { if (e.fetch) delete e.fetch.pick; return }
+      if (e.fetch?.pick) return;
+      e.fetch = { how: 'launcher', provider: 'navpt', pick: { glob: '*.zip|*.iso', name: 'EAIP ISO.zip' } };
+      e.steps = { page: { url: 'https://www.nav.pt/ais', home: 'https://www.nav.pt/' }, files: [{ name: 'AIP Portugal (eAIP hors ligne)', gives: ['L\u2019AIP du Portugal hors ligne', 'The Portuguese AIP offline', 'Der portugiesische AIP offline', 'El AIP de Portugal sin conexi\u00f3n'] }] } };
+    const s = A.sources; A.sources = async () => { const r = await s.call(A); navpt(r); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
     const on = A.on; A.on = function (ev, fn) { const un = on.call(A, ev, fn); if (ev === 'change') window.__stub.fns.add(fn); return () => { window.__stub.fns.delete(fn); un() } };
     return A };
   Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab },
@@ -4033,6 +4039,7 @@ def l84(c):
     cfg, _ = _fixture()
     cfg['zones'].append({'id': 'pt', 'names': ['Portugal', 'Portugal', 'Portugal', 'Portugal'], 'frames': [], 'published': True})
     cfg['publication']['base']['pt'] = cfg['publication']['base']['fr']
+    cfg['navpt'] = 'nopick'      # here Portugal is an ordinary source of the catalogue (the early « Choisir le fichier… » of a `fetch.pick` source is L86)
     waiting = {'code': 'pickup-waiting', 'source': 'navpt', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'AIP_PT.zip'}
     # the pickup finds nothing for Portugal: the plan says « nothing found » and the file it expected
     plan = _pk_plan(missing=[{'zone': 'pt', 'source': 'navpt', 'expected': 'AIP_PT_*.zip'}], zones=('pt',))
@@ -6173,6 +6180,7 @@ def l85(c):
     cfg, _ = _fixture()
     cfg['zones'].append({'id': 'pt', 'names': ['Portugal', 'Portugal', 'Portugal', 'Portugal'], 'frames': [], 'published': True})
     cfg['publication']['base']['pt'] = cfg['publication']['base']['fr']
+    cfg['navpt'] = 'nopick'      # here Portugal is an ordinary source of the catalogue (the early « Choisir le fichier… » of a `fetch.pick` source is L86)
     waiting = {'code': 'pickup-waiting', 'source': 'navpt', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'AIP_PT.zip'}
     st = _launcher(c, [_view('running')], start=(409, {'reason': 'busy', 'job': 'o1', 'running': R}), busy_running=R, verbs=_VERBS + ['base/pickup'])
     st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'gb': _zst('up-to-date'), 'us': _zst('up-to-date'),
@@ -6267,4 +6275,135 @@ def l85(c):
     if c.width in (390, 1280):
         c.js(f"document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
         c.shot(f'L85_{c.width}_{lang}_upload.png')
+    c.check_errors()
+
+
+@case('L86', 'Données: Portugal (a source whose catalogue entry carries fetch.pick) offers « Choisir le fichier… » on its zone line from the start with its step-by-step; a file seen in Downloads makes « Prendre le fichier téléchargé » the one gesture and « Choisir un autre fichier… » a link under it; the line says the edition read, the cycle comparison and the refused files from the launcher\'s answers; the list of sources an unrecognised file refuses comes from the launcher only (SOG-0244)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0244, the join with the launcher (K177: the upload answers { ok, source: navpt, zone: pt, name, cycle: <edition> } or unrecognised with a `message` and `expected`; the base/fetch line of the source carries edition, from (a file NAME), future, older_than_cycle, skipped.routes_without_name, refused [« nom : raison »]): the zone line of a source taken by hand offers the file from the start (a plain France line still has no action: L63/L70), ONE purpose per button (the file seen in Downloads is taken, another one is chosen by a link; nothing seen: « Choisir le fichier… » alone), says what the launcher read, and the sentence of a refusal names only the sources the launcher gives (none: no name at all); every launcher string is bounded and escaped')
+def l86(c):
+    lang = c.lang
+    ZM = lambda key: _trow(key, lang, after='  zm: {')
+    UP = lambda key: _trow(key, lang, after='  up: {')
+    WHY = lambda key: _trow(key, lang, after='    why: {')
+    NONE = lambda key: _trow(key, lang, after='    whyNone: {')
+    ST = lambda key: _trow(key, lang, after='  steps: {')
+    cfg, _ = _fixture()
+    cfg['zones'].append({'id': 'pt', 'names': ['Portugal', 'Portugal', 'Portugal', 'Portugal'], 'frames': [], 'published': True})
+    cfg['publication']['base']['pt'] = cfg['publication']['base']['fr']
+    cfg['navpt'] = 'pick'
+    ok = lambda: _zst('up-to-date')
+    newer = {'code': 'source-newer', 'source': 'navpt', 'cycle': '2026-11-26', 'built': '2026-10-29'}
+    seen = {'code': 'pickup-waiting', 'source': 'navpt', 'zip': 'EAIP ISO (1).zip'}
+    st = _launcher(c, [], verbs=['base/fetch', 'base/status', 'base/purge', 'base/pickup'])       # no base/build: the build that follows a download is not part of this case
+    st['status'] = _status({'ca': ok(), 'es': ok(), 'fr': _zst('stale', _NEWER), 'gb': ok(), 'us': ok(), 'pt': _zst('stale', newer)})
+    answer = {'status': 200, 'body': {}}
+    c.context.route(re.compile(r'/__setup/base/upload'), lambda route: route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body'])))
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=8000, what='the six pills')
+    row = '[data-build-zones] [data-zone-row=pt]'
+    fr = '[data-build-zones] [data-zone-row=fr]'
+    lines = lambda: [norm(x) for x in c.js(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].map(p => p.textContent)")]
+    quiet = lambda: c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+
+    def choose(name, mime='application/zip'):
+        c.until(f"!document.querySelector('{row} [data-act=zone-upload]').disabled", timeout=8000, what='the choose button is free')
+        with c.page.expect_file_chooser() as fc:
+            c.js(f"document.querySelector('{row} [data-act=zone-upload]').click()")
+        fc.value.set_files({'name': name, 'mimeType': mime, 'buffer': b'PK' + b'x' * 998})
+
+    def reopen():
+        c.page.reload(wait_until='load')
+        _head(c)
+        _all_open(c)
+        c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=10000, what='the six pills')
+    # ---- 1. from the start: « Choisir le fichier… » alone, with the step-by-step; France (an ordinary stale line) still has no action
+    c.eq([c.count(f'{row} [data-zone-action]'), c.count(f'{row} [data-act=zone-upload]'), c.count(f'{row} [data-verb=pickup]'), c.count(f'{row} [data-zone-alt]'), c.count(f'{row} [data-zone-msg]')], [1, 1, 0, 0, 0],
+         'Portugal, to rebuild, nothing seen in Downloads: its line offers « Choisir le fichier… » from the start, and nothing else (no pickup, no link, no message)', what='line at once')
+    c.eq(norm(c.text(f'{row} [data-act=zone-upload]')), norm(UP('choose')), 'the button says « Choisir le fichier… »', what='button text')
+    c.eq(c.count(f'{fr} [data-zone-action]'), 0, 'France, an ordinary stale line, has no action on it (the early offer is for the sources that carry fetch.pick)', what='France plain')
+    steps = c.js(f"(() => {{ const o = document.querySelector('{row} [data-pickup-steps=pt]'); return o ? [[...o.querySelectorAll('[data-step-page] a')].map(a => a.getAttribute('href')), o.querySelectorAll('[data-step-file]').length, o.querySelector('[data-step-then]').textContent] : null }})()")
+    c.eq([steps[0], steps[1], norm(steps[2])] if steps else None,
+         [['https://www.nav.pt/ais', 'https://www.nav.pt/'], 1, norm(ST('thenChoose'))], 'its step-by-step: the page of NAV Portugal and its home, the file to take, and the last step is « Choisir le fichier… » (no pickup button to touch)', what='steps')
+    # ---- 2. a file SEEN in Downloads (the launcher's status says it): the pickup is the one gesture, another file is a link under it
+    st['status'] = _status({'ca': ok(), 'es': ok(), 'fr': _zst('stale', _NEWER), 'gb': ok(), 'us': ok(), 'pt': _zst('stale', seen, buildable=False)})
+    reopen()
+    c.eq([c.count(f'{row} [data-zone-action=pt] [data-verb=pickup]'), c.count(f'{row} [data-zone-action=pt] [data-act=zone-upload]'), c.count(f'{row} [data-zone-alt=pt] [data-act=zone-upload].d-link')], [1, 0, 1],
+         'a file seen in Downloads: « Prendre le fichier téléchargé » on the line, « Choisir un autre fichier… » as a link on the line under it, never two buttons side by side', what='seen buttons')
+    c.eq([norm(c.text(f'{row} [data-zone-action=pt] > span')), norm(c.text(f'{row} [data-zone-alt=pt] button'))], [norm(ZM('seen').replace('{zip}', 'EAIP ISO (1).zip')), norm(UP('chooseOther'))],
+         'the line names the file seen, the link says « Choisir un autre fichier… »', what='seen texts')
+    c.ok(len(norm(c.text(f'{row} [data-verb=pickup]'))) > 3, c.text(f'{row} [data-verb=pickup]'), 'and the primary button has its label')
+    c.ok(c.js(f"document.querySelector('{row} [data-zone-alt=pt]').getBoundingClientRect().top > document.querySelector('{row} [data-zone-action=pt]').getBoundingClientRect().top + 20"), 'not under', 'the link is under the primary gesture')
+    c.eq(norm(c.text(f'{row} [data-step-then]')), norm(ST('then')), 'and the step-by-step ends on the pickup button', what='seen then')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{row}').scrollIntoView({{ block: 'center' }})")
+        c.wait(300)
+        c.shot(f'L86_{c.width}_{lang}_seen.png')
+    # ---- 3. a file the launcher does not recognise: its `message` in plain words, and ONLY the sources it names
+    st['status'] = _status({'ca': ok(), 'es': ok(), 'fr': _zst('stale', _NEWER), 'gb': ok(), 'us': ok(), 'pt': _zst('stale', newer)})
+    reopen()
+    answer.update(status=422, body={'ok': False, 'reason': 'unrecognised', 'message': 'ISO illisible : <b>aucune page</b> de « AIP for PORTUGAL »', 'expected': ['navpt', 'faa', 'ukmil']})
+    choose('AIP_ES.zip')
+    c.until(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].some(p => p.textContent.includes('AIP_ES.zip'))", timeout=8000, what='the refusal is on the line')
+    quiet()
+    got = lines()
+    c.eq([len(got), got[0]], [3, norm(ZM('chosen').replace('{name}', 'AIP_ES.zip'))], 'the file chosen, the sentence, and the launcher\'s own words (three lines)', what='refusal lines')
+    c.ok(got[1].startswith(norm(WHY('unrecognised').split('{s}')[0])) and 'NAV Portugal' in got[1] and 'SIA' not in got[1] and 'NATS' not in got[1], got[1], 'the sources named are the launcher\'s expected (Portugal among them), not a list of the page')
+    c.eq(got[2], norm('ISO illisible : <b>aucune page</b> de « AIP for PORTUGAL »'), 'the launcher\'s message, as it is (escaped, bounded)', what='refusal message')
+    c.eq(c.js(f"document.querySelector('{row} [data-zone-msg]').querySelectorAll('b').length"), 0, 'nothing a launcher says is read as HTML', what='escaped')
+    # the launcher names no source: the sentence names nobody (neither the old list of the page)
+    answer.update(status=422, body={'ok': False, 'reason': 'unrecognised'})
+    choose('AIP_ES.zip')
+    c.until(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].length === 2", timeout=8000, what='the second refusal replaces the first')
+    quiet()
+    got = lines()
+    c.eq(got, [norm(ZM('chosen').replace('{name}', 'AIP_ES.zip')), norm(NONE('unrecognised'))], 'without `expected` the sentence names no source (and has no braces left)', what='no list')
+    # ---- 4. an eAIP ISO recognised: the edition on the line; without the personal-use tick nothing reads it, and the line says so
+    answer.update(status=200, body={'ok': True, 'source': 'navpt', 'zone': 'pt', 'name': 'navpt_eaip.iso', 'cycle': '2026-10-01'})
+    posts = len(st['posts'])
+    choose('EAIP_PORTUGAL.iso', 'application/x-iso9660-image')
+    c.until(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].length === 3", timeout=8000, what='the edition and the tick are on the line')
+    quiet()
+    edition = _date_text(datetime.date(2026, 10, 1), lang)
+    c.eq(lines(), [norm(ZM('chosen').replace('{name}', 'EAIP_PORTUGAL.iso')), norm(ZM('edition').replace('{d}', edition)), norm(UP('tick'))], 'an ISO recognised: the file chosen, its EDITION (the launcher\'s `cycle`), and that the personal-use box is not ticked', what='edition line')
+    c.eq([len([p for p in st['posts'][posts:] if p.get('verb') == 'fetch']), c.attr(f'{row} [data-zone-msg]', 'data-level')], [0, 'warn'], 'without the tick nothing is downloaded (the licence is personal), the line is amber', what='no fetch')
+    # ---- 5. with the tick: the download of the zone reads the file; its result says the edition read, the cycle comparison, the routes skipped and the refused files
+    st['personal'] = {'certified': True, 'at': '2026-11-10T09:00:00Z'}
+    reopen()
+    entry = {'state': 'downloaded', 'files': 1, 'bytes': 120000, 'edition': '2026-10-01', 'from': 'EAIP ISO (1).zip', 'older_than_cycle': True, 'skipped': {'routes_without_name': 2},
+             'refused': ['EAIP_OLD.zip : ISO illisible', 'notes.zip : ce n’est pas cet eAIP']}
+    done = _fview({'pt': _fz('done', 1, 1, {'navpt': entry})}, state='done', step='Terminé', done=1, total=1, jid='jf', args={'zones': ['pt'], 'personal': ['navpt']},
+                  result={'ok': True, 'fetched': ['pt'], 'unchanged': [], 'failed': []})
+    st['views'], st['i'], st['start'] = [done], 0, (200, {'job': 'jf'})
+    posts = len(st['posts'])
+    answer.update(status=200, body={'ok': True, 'source': 'navpt', 'zone': 'pt', 'name': 'navpt_eaip.zip', 'cycle': '2026-10-01'})
+    choose('EAIP ISO (1).zip')
+    c.until(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].some(p => p.textContent.includes('EAIP_OLD.zip'))", timeout=12000, what='the result of the download is on the line')
+    quiet()
+    sent = [p for p in st['posts'][posts:] if p.get('verb') == 'fetch']
+    c.eq([{k: sent[0][k] for k in ('set', 'verb', 'args')}] if sent else None, [{'set': 'base', 'verb': 'fetch', 'args': {'zones': ['pt'], 'personal': ['navpt']}}], 'the download of Portugal alone, with the tick of navpt, follows the upload of the file', what='fetch body')
+    c.eq(lines(), [norm(ZM('edition').replace('{d}', edition) + ' (EAIP ISO (1).zip)'), norm(ZM('older')), norm(ZM('routes').replace('{n}', '2')),
+                   norm(ZM('refused').replace('{r}', 'EAIP_OLD.zip : ISO illisible')), norm(ZM('refused').replace('{r}', 'notes.zip : ce n’est pas cet eAIP'))],
+         'the line: the edition and the NAME of the file read, « ce fichier est celui du cycle précédent » (the launcher said older_than_cycle), the routes without a name, each refused file « nom : raison »', what='result lines')
+    c.eq(c.attr(f'{row} [data-zone-msg]', 'data-level'), 'warn', 'amber: something to read', what='level')
+    if c.width in (390, 1280):
+        c.settle()
+        c.js(f"document.querySelector('{row}').scrollIntoView({{ block: 'center' }})")
+        c.wait(300)
+        c.shot(f'L86_{c.width}_{lang}_delivered.png')
+    # ---- 6. an edition still to come: said with its date; the zone is up to date again and the line stays
+    entry2 = {'state': 'downloaded', 'files': 1, 'bytes': 120000, 'edition': '2026-12-24', 'from': 'EAIP_PORTUGAL', 'future': True}
+    done2 = _fview({'pt': _fz('done', 1, 1, {'navpt': entry2})}, state='done', step='Terminé', done=1, total=1, jid='jg', args={'zones': ['pt'], 'personal': ['navpt']},
+                   result={'ok': True, 'fetched': ['pt'], 'unchanged': [], 'failed': []})
+    st['views'], st['i'], st['start'] = [done2], 0, (200, {'job': 'jg'})
+    st['status'] = _status({'ca': ok(), 'es': ok(), 'fr': _zst('stale', _NEWER), 'gb': ok(), 'us': ok(), 'pt': ok()})      # what the launcher says once the zone is built: up to date
+    c.until(f"!document.querySelector('{row} [data-act=zone-upload]').disabled", timeout=8000, what='the choose button is free')
+    choose('EAIP_PORTUGAL.zip')
+    c.until(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].some(p => p.textContent.includes('EAIP_PORTUGAL'))", timeout=12000, what='the second result is on the line')
+    quiet()
+    ed = _date_text(datetime.date(2026, 12, 24), lang)
+    c.eq(lines(), [norm(ZM('edition').replace('{d}', ed) + ' (EAIP_PORTUGAL)'), norm(ZM('future').replace('{d}', ed))], 'an edition to come: its date, and « il sera pris le <date> » (the launcher said future)', what='future lines')
+    c.until("document.querySelector('[data-build-zones] [data-zone-row=pt] [data-zstate]').dataset.zstate === 'up-to-date'", timeout=8000, what='the zone is up to date')
+    c.eq([c.count(f'{row} [data-zone-action]'), c.count(f'{row} [data-act=zone-upload]'), len(lines())], [0, 0, 2], 'up to date: no button, and the line of the edition stays', what='up to date')
     c.check_errors()

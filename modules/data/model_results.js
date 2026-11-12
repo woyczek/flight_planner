@@ -238,6 +238,31 @@ function warningsOf(r) {
 }
 /** Le total d'un avertissement d'un code donné. */
 const warned = (list, code) => list.filter(w => w.code === code).reduce((a, w) => a + w.count, 0);
+/** Un texte du lanceur borné, sans caractère de commande ('' sinon). */
+const clean = (v, n) => typeof v === 'string' ? v.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, n) : '';
+/** Ce que la ligne d'une source dit d'un fichier pris à la main (SOG-0244, K177) : [{ zone, source, edition (AAAA-MM-JJ ou null), from (le NOM du fichier, jamais un chemin), future, older (édition plus ancienne que le cycle en vigueur),
+ *  routes (routes sans nom, non lues), refused ['nom : raison'] (cinq au plus) }] ; seulement les lignes qui portent une édition ou des fichiers refusés. Entrée non fiable : dates, nombres et textes bornés. */
+function handOf(zones) {
+  const out = [];
+  for (const [zone, z] of Object.entries(obj(zones)).slice(0, 90)) {
+    for (const [source, s] of Object.entries(obj(obj(z).sources)).slice(0, 20)) {
+      const e = obj(s),
+        refused = (Array.isArray(e.refused) ? e.refused : []).slice(0, 5).map(x => clean(x, 160)).filter(Boolean);
+      if (!day(e.edition) && !refused.length) continue;
+      out.push({
+        zone,
+        source,
+        edition: day(e.edition),
+        from: clean(e.from, 120).replace(/^.*[\\/]/, ''),
+        future: e.future === true,
+        older: e.older_than_cycle === true,
+        routes: Math.max(0, Math.min(num(obj(e.skipped).routes_without_name) ?? 0, 1e6)),
+        refused
+      });
+    }
+  }
+  return out;
+}
 /** La fin d'un téléchargement, d'après sa dernière vue : { kind, fetched: [zone], unchanged: [zone], failed: [{ zone, source, error,
  *  status? }], manual: [{ zone, source, url, name }], outside, level } ; kind : 'done' | 'partial' | 'failed' | 'cancelled' |
  *  'interrupted' | 'nothing' (rien à télécharger pour ces zones) ; outside : les fichiers suivis par git que le travail a modifiés
@@ -299,6 +324,7 @@ export function fetchOutcome(final) {
     manual,
     outside: Math.max(0, outside),
     sources: sourcesOf(r.sources ?? final?.sources),
+    hand: handOf(final?.zones), // l'édition lue et les fichiers pris à la main (SOG-0244), dits sur la ligne de la zone
     level
   };
 }

@@ -11,6 +11,7 @@ import {
   kind,
   lang,
   li,
+  pickSource,
   ROUTE,
   S,
   tt
@@ -159,21 +160,36 @@ const NASR_URL = 'https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/
 /** Un lien https en texte sûr : `<a>` ouvert dans un autre onglet seulement si l'adresse est en https:// (sinon le texte seul). */
 const linkHtml = (url, label) => M.isHttps(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
 /** Le pas-à-pas d'une source que l'on dépose soi-même (SOG-0189, `AeroCatalogue.stepsOf`) sur la ligne de la zone qui l'attend : ① le lien DIRECT de la page (et, si elle ne répond plus, l'accueil du site), ② chaque fichier à prendre (son nom exact, son lien direct s'il en a un, ce qu'il apporte), ③ le bouton de la ligne ; '' sans pas-à-pas (une source que le lanceur télécharge) ou sans le catalogue. */
-function stepsHtml(id, z) {
+function stepsHtml(id, z, choose = false) {
   const r = z.reasons.find(x => x.source),
-    steps = r && typeof S.d?.cat?.stepsOf === 'function' ? S.d.cat.stepsOf(r.source, r.cycle || undefined) : null;
+    stepsOf = typeof S.d?.cat?.stepsOf === 'function' ? S.d.cat.stepsOf : null,
+    pick = pickSource(id),
+    steps = (r && stepsOf ? stepsOf(r.source, r.cycle || undefined) : null) || (pick && stepsOf ? stepsOf(pick.id) :
+      null); // une source choisie à la main d'emblée a son pas-à-pas même sans raison qui la nomme
   if (!steps) return '';
   const T = TX.steps,
     [pre, post] = tt(T.file, {
       f: '\u0000'
     }).split('\u0000'),
     files = (Array.isArray(steps.files) ? steps.files : []).slice(0, 6).map(f => `<li data-step-file><span>${esc(pre)}${f.url ? linkHtml(f.url, String(f.name)) : `<code>${esc(String(f.name))}</code>`}${esc(post ?? '')}</span>${Array.isArray(f.gives) ? ` <span class="f-muted">${esc(String(f.gives[li()] ?? f.gives[0] ?? ''))}</span>` : ''}</li>`).join('');
-  return `<ol class="d-zsteps" data-pickup-steps="${esc(id)}"><li data-step-page>${tt(T.page, { l: linkHtml(steps.page?.url, tt(T.pageName)) })}${steps.page?.home ? ` <span class="f-muted">${tt(T.home, { l: linkHtml(steps.page.home, tt(T.homeName)) })}</span>` : ''}</li>${files}<li data-step-then>${esc(tt(T.then))}</li></ol>`;
+  return `<ol class="d-zsteps" data-pickup-steps="${esc(id)}"><li data-step-page>${tt(T.page, { l: linkHtml(steps.page?.url, tt(T.pageName)) })}${steps.page?.home ? ` <span class="f-muted">${tt(T.home, { l: linkHtml(steps.page.home, tt(T.homeName)) })}</span>` : ''}</li>${files}<li data-step-then>${esc(tt(choose ? T.thenChoose : T.then))}</li></ol>`;
 }
 /** Ce que la dernière prise ou le dernier envoi de fichier a dit de cette zone, écrit sur sa ligne tant qu'une autre tentative ne l'a pas remplacé (une notification s'efface) : ce qui a été reçu, ce qui manque ou a été refusé ; '' sans message. */
 function zoneMsgHtml(id) {
   const m = S.zoneMsg.get(id);
-  return m ? `<div class="f-muted d-zmsg" data-zone-msg="${esc(id)}" data-level="${esc(m.level)}">${m.lines.map(l => `<p data-line>${esc(l)}</p>`).join('')}</div>` : '';
+  return m ? `<div class="f-muted d-zmsg" data-zone-msg="${esc(id)}" data-level="${esc(m.level)}"${m.kind ? ` data-kind="${esc(m.kind)}"` : ''}>${m.lines.map(l => `<p data-line>${esc(l)}</p>`).join('')}</div>` : '';
+}
+/** La ligne d'une source qu'on choisit à la main d'emblée (`fetch.pick` du catalogue : le Portugal, SOG-0244), UN geste par but : un fichier VU dans Téléchargements (le statut du lanceur : `pickup-waiting`, avec son nom) — « Prendre le fichier téléchargé » est le geste principal et
+ *  « Choisir un autre fichier… » un lien dessous ; rien de vu — « Choisir le fichier… » seul. Puis l'avancement de l'envoi, ce que la ligne dit (l'édition lue…) et le pas-à-pas de la source. */
+function pickHtml(id, z, st, msg, main = 'data-zone-action') {
+  const busy = busyNow(),
+    g = gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb],
+    seen = z.reasons.find(r => r.code === 'pickup-waiting' && r.zip),
+    choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>`;
+  if (!seen) return `<p class="d-zact" ${main}="${esc(id)}" data-waiting data-pick><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> ${choose('', TX.up.choose)}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z, true)}`;
+  const off = busy || g.disabled,
+    grey = busy ? 'busy' : g.reason; // un bouton gris dit pourquoi, à côté de lui
+  return `<p class="d-zact" ${main}="${esc(id)}" data-waiting data-pick data-seen><span class="f-muted">${esc(tt(TX.zm.seen, { zip: seen.zip }))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p><p class="d-zact d-zalt" data-zone-alt="${esc(id)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
 }
 /** Ce qu'une zone dit et propose SUR sa ligne (SOG-0180) : une zone qui attend un fichier que seul l'utilisateur dépose le dit (sa première raison) avec « Prendre le fichier » (la prise lance ensuite la construction de la zone) ; une zone en échec a « Réessayer » (la construction de cette zone seule) ;
  *  rien pour les autres. Les boutons sont gris pendant une opération. */
@@ -186,7 +202,13 @@ export function zoneActionHtml(id) {
   // un téléchargement de cette zone qui a échoué (SOG-0180) : ce que sa source a répondu, et « Réessayer » rejoue son téléchargement seul (puis sa construction)
   const ff = S.result?.set === 'base' && S.result.verb === 'fetch' ? (S.result.out?.failed || []).filter(f => f.zone === id) : [];
   const nasr = ff.some(f => f.source === 'faa' || f.source ===
-    'faaclass'); // la FAA refuse : « Choisir le fichier… » et le lien direct des trois jeux (SOG-0180)
+      'faaclass'), // la FAA refuse : « Choisir le fichier… » et le lien direct des trois jeux (SOG-0180)
+    pick = pickSource(id);
+  if (ff.length && pick) return `<p class="d-zact" data-zone-action="${esc(id)}" data-fetch-failed><span class="f-muted">${esc(sourcesWhy(ff.map(f => ({
+    source: f.source,
+    code: f.error,
+    status: f.status ?? null
+  }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>${pickHtml(id, z, st, msg, 'data-zone-pick')}`; // le site ne répond pas : le fichier pris à la main reste le chemin (le pas-à-pas est dessous)
   if (ff.length) return `<p class="d-zact" data-zone-action="${esc(id)}" data-fetch-failed><span class="f-muted">${esc(sourcesWhy(ff.map(f => ({
     source: f.source,
     code: f.error,
@@ -194,14 +216,17 @@ export function zoneActionHtml(id) {
   }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button>${nasr ? ` <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>` : ''}</p>${msg}${nasr ? `<p class="f-muted" data-nasr-hint>${tt(TX.up.nasr, { l: linkHtml(NASR_URL, tt(TX.up.nasrPage)) })}</p>${uploadHtml(id)}` : ''}`;
   if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>${msg}`;
   // la zone attend un fichier, ou une prise ou un envoi vient de lui dire ce qui manque : « Choisir le fichier… » reste sur sa ligne
-  const byHand = !z.buildable || !!msg;
+  const byHand = !z.buildable || !!msg || !!
+    pick; // une source à `fetch.pick` (le Portugal) offre le fichier choisi à la main d'emblée (SOG-0244)
   if ((st === 'stale' || st === 'never-built') && byHand) {
+    if (pick) return pickHtml(id, z, st, msg);
     const g = gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb],
       off = busy || g.disabled,
       grey = busy ? 'busy' : g.reason; // un bouton gris dit pourquoi, à côté de lui
     return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button> <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
   }
-  return '';
+  return st === 'up-to-date' && S.zoneMsg.get(id)?.kind === 'hand' ? msg :
+    ''; // l'édition lue d'un fichier pris à la main reste dite quand la zone est à jour
 }
 /** Le toucher d'une pastille : ouvre ou ferme les raisons de la zone. */
 export function toggleWhy(id) {

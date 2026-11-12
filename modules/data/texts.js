@@ -155,6 +155,15 @@ export const TX = {
   // « Choisir le fichier… » (SOG-0199) : l'envoi d'un fichier choisi au lanceur, qui le reconnaît par son contenu
   up: {
     choose: ['Choisir le fichier…', 'Choose the file…', 'Datei wählen…', 'Elegir el archivo…'],
+    // le fichier vu dans Téléchargements est le geste principal ; ce lien-ci ouvre le sélecteur pour un autre (SOG-0244)
+    chooseOther: ['Choisir un autre fichier…', 'Choose another file…', 'Andere Datei wählen…', 'Elegir otro archivo…'],
+    // l'eAIP du Portugal est une source à usage personnel : reçu, mais rien ne le lit tant que la coche n'est pas cochée
+    tick: [
+      'Fichier reçu, mais la coche « Je certifie utiliser les données pour mon usage personnel » n’est pas cochée : cochez-la, puis « Mettre à jour ».',
+      'File received, but the “I certify that I use the data for my personal use” box is not ticked: tick it, then “Update”.',
+      'Datei erhalten, aber „Ich bestätige, die Daten für meinen persönlichen Gebrauch zu nutzen“ ist nicht angekreuzt: ankreuzen, dann „Aktualisieren“.',
+      'Archivo recibido, pero la casilla «Certifico que uso los datos para mi uso personal» no está marcada: márquela y luego «Actualizar».'
+    ],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     // la FAA refuse le téléchargement automatique (HTTP 403) : le repli par fichiers choisis à la main (SOG-0180 ; les trois jeux du NASR, que le lanceur reconnaît)
     nasr: [
@@ -190,6 +199,12 @@ export const TX = {
       'Este lanzador aún no conoce el envío: reinícielo con la última versión.'
     ],
     failed: ['L’envoi a échoué.', 'The upload failed.', 'Das Senden ist fehlgeschlagen.', 'El envío falló.'],
+    // le lanceur ne dit aucune source prise par l'envoi (`expected` absent) : la phrase n'en nomme aucune
+    whyNone: {
+      unrecognised: ['Ce fichier ne ressemble à aucune source prise ici.', 'This file looks like no source taken here.',
+        'Diese Datei gleicht keiner hier übernommenen Quelle.', 'Este archivo no se parece a ninguna fuente tomada aquí.'
+      ]
+    },
     why: {
       'too-large': ['Fichier trop gros : 1,5 Go au plus.', 'File too large: 1.5 GB at most.', 'Datei zu groß: höchstens 1,5 GB.',
         'Archivo demasiado grande: 1,5 GB como máximo.'
@@ -233,6 +248,10 @@ export const TX = {
     file: ['Téléchargez {f}', 'Download {f}', 'Laden Sie {f} herunter', 'Descargue {f}'],
     then: ['Puis touchez le bouton « Prendre le fichier téléchargé ».', 'Then touch the “Take the downloaded file” button.',
       'Tippen Sie dann auf „Heruntergeladene Datei übernehmen“.', 'Luego toque el botón «Tomar el archivo descargado».'
+    ],
+    // une source choisie à la main d'emblée (Portugal) : rien n'est vu dans Téléchargements, le geste est « Choisir le fichier… »
+    thenChoose: ['Puis touchez « Choisir le fichier… » et choisissez ce fichier.', 'Then touch “Choose the file…” and pick that file.',
+      'Tippen Sie dann auf „Datei wählen…“ und wählen Sie diese Datei.', 'Luego toque «Elegir el archivo…» y elija ese archivo.'
     ]
   },
   // le détail replié d'une ligne
@@ -1418,7 +1437,26 @@ export const TX = {
     chosen: ['Fichier choisi : {name}', 'File chosen: {name}', 'Gewählte Datei: {name}', 'Archivo elegido: {name}'],
     got: ['Trouvé dans Téléchargements : {zip} ({b})', 'Found in Downloads: {zip} ({b})', 'In Downloads gefunden: {zip} ({b})',
       'Encontrado en Descargas: {zip} ({b})'
-    ]
+    ],
+    // ce que le statut du lanceur voit dans Téléchargements, avant toute prise (sans la taille)
+    seen: ['Trouvé dans Téléchargements : {zip}', 'Found in Downloads: {zip}', 'In Downloads gefunden: {zip}',
+      'Encontrado en Descargas: {zip}'
+    ],
+    // l'édition d'un fichier pris à la main, d'après le lanceur (SOG-0244) : la date de l'édition, puis ce qui la compare au cycle en vigueur
+    edition: ['Édition du {d}', 'Edition of {d}', 'Ausgabe vom {d}', 'Edición del {d}'],
+    older: ['Ce fichier est celui du cycle précédent.', 'This file is the one of the previous cycle.',
+      'Diese Datei ist die des vorherigen Zyklus.',
+      'Este archivo es el del ciclo anterior.'
+    ],
+    future: ['Ce fichier est celui d’une édition à venir : il sera pris le {d}.',
+      'This file is the one of an upcoming edition: it will be taken on {d}.',
+      'Diese Datei gehört zu einer kommenden Ausgabe: sie wird am {d} übernommen.',
+      'Este archivo es el de una edición futura: se tomará el {d}.'
+    ],
+    routes: ['Routes sans nom dans l’édition, non lues : {n}', 'Routes without a name in the edition, not read: {n}',
+      'Strecken ohne Namen in der Ausgabe, nicht gelesen: {n}', 'Rutas sin nombre en la edición, no leídas: {n}'
+    ],
+    refused: ['Non pris : {r}', 'Not taken: {r}', 'Nicht übernommen: {r}', 'No tomado: {r}']
   },
   pk: {
     title: ['Dans Téléchargements :', 'In Downloads:', 'In Downloads:', 'En Descargas:'],

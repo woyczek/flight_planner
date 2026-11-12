@@ -539,3 +539,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   (`release`; 409 alive → « arrêtez d'abord »). An upload refused busy shows the same card. Without `running` the old sentence
   stays. Needs `frame/lib/launcher.js` to hand `running` through (V3 Frame's file: patch asked). `regen/job/release` is
   declared in the module's routes.
+- **12 Nov 2026 — SOG-0244 (Portugal, the junction with the launcher)**: the sentence « Sources prises par l'envoi : … » comes
+  ONLY from the launcher's `expected` (the page's `TAKEN` list is gone; without `expected` a variant names nobody). A source whose
+  catalogue entry carries `fetch.pick` (navpt, AeroDB dc5d615c0) offers « Choisir le fichier… » from the start with its steps
+  (`pickSource`); when a file is seen in Downloads (status reason `pickup-waiting` with its zip) « Prendre le fichier
+  téléchargé » is the primary gesture and « Choisir un autre fichier… » a link under it. The zone line says the edition read
+  (upload `cycle`), `older_than_cycle`, `future`, `skipped.routes_without_name` and each refused file (`refused`), from the
+  K177 shape. Open on the launcher side: `base_sources._fetch_source` does not yet copy edition / from / future /
+  older_than_cycle / skipped / refused into the `base/fetch` view, and `base/status` emits no `pickup-waiting` for navpt yet.

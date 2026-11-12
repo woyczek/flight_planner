@@ -60,6 +60,12 @@ export function catSource(id) {
   const cat = S.d.cat;
   return cat?.byId ? cat.byId(id) : cat?.SOURCES?.find(s => s.id === id);
 }
+/** La source du catalogue qui offre « Choisir le fichier… » d'emblée sur la ligne de sa zone (`fetch.pick` : { glob, name }, SOG-0244 : le Portugal) ; undefined sans. */
+export function pickSource(zone) {
+  const list = S.d?.cat?.SOURCES;
+  return Array.isArray(list) ? list.find(s => s?.fetch?.pick && typeof s.fetch.pick === 'object' && Array.isArray(s.zones) && s.zones
+    .includes(zone)) : undefined;
+}
 /** Remplace l'état de l'écran monté (`S`) : le seul endroit où `S` change de valeur (au montage, puis `null` au démontage) ; les autres fichiers lisent `S` (une liaison vivante) et écrivent ses champs. */
 export function setState(v) {
   S = v;

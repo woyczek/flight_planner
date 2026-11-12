@@ -992,6 +992,39 @@ export function setZoneMsgs(zones, out) {
     else S.zoneMsg.delete(z);
   }
 }
+/** Ce que la ligne d'une zone dit d'un fichier pris à la main, d'après le lanceur (SOG-0244) : { level, kind: 'hand', lines } — le fichier choisi (`chosen`, à l'envoi), l'édition lue (« Édition du 01/10/2026 », avec le NOM du fichier lu), puis ce que le lanceur compare au cycle
+ *  en vigueur (plus ancien : « le cycle précédent » ; à venir : « il sera pris le … »), les routes sans nom non lues et chaque fichier refusé (« nom : raison ») ; null sans rien à dire. `h` : une entrée de `hand` (M.fetchOutcome) ou { edition } seul (la réponse de l'envoi). */
+export function handMsgOf(h, chosen = '') {
+  const T = TX.zm,
+    d = h.edition ? M.dateText(h.edition, lang()) : '',
+    lines = [];
+  if (chosen) lines.push(tt(T.chosen, {
+    name: chosen
+  }));
+  if (d) lines.push(`${tt(T.edition, { d })}${h.from ? ` (${h.from})` : ''}`);
+  if (h.older) lines.push(tt(T.older));
+  if (h.future && d) lines.push(tt(T.future, {
+    d
+  }));
+  if (h.routes > 0) lines.push(tt(T.routes, {
+    n: h.routes
+  }));
+  for (const r of h.refused || []) lines.push(tt(T.refused, {
+    r
+  }));
+  return lines.length ? {
+    level: h.older || h.future || h.refused?.length ? 'warn' : 'ok',
+    kind: 'hand',
+    lines
+  } : null;
+}
+/** Retient sur la ligne de chaque zone ce que la fin d'un téléchargement dit de son fichier pris à la main (`out.hand`, M.fetchOutcome) ; une zone sans édition ni refus garde ce que sa ligne disait. */
+export function setHandMsgs(hand) {
+  for (const h of hand || []) {
+    const m = handMsgOf(h);
+    if (m) S.zoneMsg.set(h.zone, m);
+  }
+}
 /** La fin d'une prise (ou « Rien à prendre » quand le plan ne trouve rien) : le résumé, le conseil, puis ce qui manque ou a échoué. */
 function pickupResultHtml(r) {
   const sm = pickupSummary(r.out);
