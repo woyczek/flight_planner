@@ -1026,6 +1026,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 174 | The night of 13 November: the Map's Weather layer (163722b25, SOG-0092) and the weather store's `cacheOnly` (01b1538f8); the mission Registry, one line per mission (db091c505, SOG-0286); the GeoNames extract for Portugal and Ireland (0114f9cdb, SOG-0102); the Data map's wheel and hover (6889a1d7b) and the editor mock-up (7c3b8e4bb) | acceptable, two notes |
 | 175 | Little Navmap sheets: "Export the sheets" writes only (e6811d642, SOG-0023); the report's families follow the company of the opened report (fec39491b, SOG-0041) | acceptable |
 | 176 | The registry reader bounded and "not read" beyond 500 files (81148257a, audit 174 notes) | the 500-file limit acceptable; one defect to fix (identifier cut to 12 against the 40 of the plan) |
+| 177 | The registry identifier kept at 40 characters, shortened on screen only (ae9df7beb): the fix of 176 | closed |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2619,6 +2620,12 @@ today): a registry of two lines with identifiers of 14 characters sharing their 
 `planOf` must give `former: []` and `dup: []`, and `applyPlan` must leave both lines as they were. Fix at the owner: cut the identifier at
 40 in the reader (the length `registry.js` already uses for `formerId` and its comparisons), or take the same cut in `planOf`, `applyPlan` and
 `entryOfMission`; the display may shorten it, the identity may not.
+
+**177. The identifier at 40 characters (ae9df7beb) — defect of 176 closed.** `readRegistry` keeps the identifier at 40, the length that
+`registry.js` compares (`formerId`, duplicates), so `cut(e.raw.id, 40) === e.row.id` holds again; the line on screen shortens it to 12 characters
+for the eye only (`shown`), the whole identifier in a `title` attribute passed through `esc`. The probe of 176 replayed on the real modules
+(the four lines, then with a 52-character identifier): `former []`, `dup []`, `applyPlan` leaves every identifier as it was and removes
+no line. Case N45 (two 14-character identifiers sharing their first 12, `X_CO/old1` and `old2`: plan then application) green, N44 green.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
