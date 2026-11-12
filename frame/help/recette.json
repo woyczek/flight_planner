@@ -1320,9 +1320,15 @@
     "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
     "es": "Procedimientos y suelo: LFOE no lee nada («0 páginas leídas de 2»), LFBD no tiene calles de rodaje"
    },
-   "test": "Carburant › Procédures, un terrain dont la lecture a des avertissements (LFOE) : sous la ligne du terrain, un pli dit les avertissements en texte, plus seulement leur nombre.",
-   "since": "2026-11-11",
-   "state": "known"
+   "test": "Relance le lanceur. Carburant, arrivée ou départ LFOE : « Relire » les procédures de l'AIP. Les pistes 04 et 22 doivent apparaître, et les approches RNP 04 et RNP 22 (éventuellement « à vérifier »). Dis-moi ce que tu obtiens : c'est la première relecture réelle de ce terrain depuis le correctif des pages militaires.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T16:09:00Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "LFOE : les procédures little nav map sont bien lues, pas l’AIP. même pas les pistes…",
+    "at": "2026-11-12T07:47:25Z"
+   }
   },
   {
    "id": "SOG-0204",

@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2ca4e93",
+  "organisation": "038723e",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -2422,12 +2422,13 @@
     {
      "id": "SOG-0203",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Procédures et sol : LFOE ne lit rien (« 0 page lue sur 2 »), LFBD n'a pas de taxiways",
      "en": "Procedures and ground: LFOE reads nothing (“0 page read out of 2”), LFBD has no taxiways",
      "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
      "es": "Procedimientos y suelo: LFOE no lee nada («0 páginas leídas de 2»), LFBD no tiene calles de rodaje",
-     "rank": 192
+     "rank": 192,
+     "test": true
     },
     {
      "id": "SOG-0210",
