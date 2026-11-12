@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2138d0f",
-  "fiches": 278,
+  "organisation": "1556015",
+  "fiches": 279,
   "untranslated": 0,
   "priorities": 243
  },
@@ -613,11 +613,12 @@
     {
      "id": "SOG-0251",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Une mission reste active après « Nouveau vol », et même après sa croix sur la carte",
      "en": "A mission stays active after “New flight”, and even after its cross on the map",
      "de": "A mission stays active after “New flight”, and even after its cross on the map",
-     "es": "A mission stays active after “New flight”, and even after its cross on the map"
+     "es": "A mission stays active after “New flight”, and even after its cross on the map",
+     "test": true
     }
    ]
   },
@@ -944,12 +945,13 @@
     {
      "id": "SOG-0196",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "RÉGRESSION : la fenêtre de la mission posée sur la carte (titre, « Carte fournie », « Vue ») a disparu",
      "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
      "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
      "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)",
-     "rank": 169
+     "rank": 169,
+     "test": true
     },
     {
      "id": "SOG-0224",
@@ -2768,6 +2770,27 @@
      "en": "V3 becomes the default version; every V2 page stays reachable from V3",
      "de": "V3 becomes the default version; every V2 page stays reachable from V3",
      "es": "V3 becomes the default version; every V2 page stays reachable from V3"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-synchronisation",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; synchronisation",
+    "en": "Cadre ; synchronisation",
+    "de": "Cadre ; synchronisation",
+    "es": "Cadre ; synchronisation"
+   },
+   "items": [
+    {
+     "id": "SOG-0279",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Synchronisation : un envoi groupé (toutes les cinq minutes ou sur demande) ; seules les données se synchronisent, pas le vol en cours de frappe ni les réglages d'affichage",
+     "en": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
+     "de": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
+     "es": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings"
     }
    ]
   },

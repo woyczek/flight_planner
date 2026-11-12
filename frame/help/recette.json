@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 130,
+  "tests": 131,
   "verdicts": 60
  },
  "apps": [
@@ -1160,9 +1160,15 @@
     "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
     "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)"
    },
-   "test": "Compagnie › Missions › une mission › « Préparer ce vol » : sur la carte à côté de Carburant, la fenêtre de mission porte « Carte fournie » et « Vue » ; choisir une carte fournie la montre sur place, sans quitter Carburant ; la croix rend la carte du vol.",
-   "since": "2026-11-10",
-   "state": "known"
+   "test": "Recharge la page. Carburant avec la Carte à côté, sur une mission qui a une carte fournie : choisis la carte fournie ; elle doit apparaître dans la carte à côté en une ou deux secondes, sans aller-retour vers un autre écran.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:29:00Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "elle est très lente à apparaître dans la fenêtre « carburant ». même pas sûr qu’elle apparaisse tant qu’on n’a pas switché et retour vers carburant.",
+    "at": "2026-11-11T19:17:55Z"
+   }
   },
   {
    "id": "SOG-0197",
@@ -1809,6 +1815,20 @@
    "delivered": "2026-11-12T15:15:05Z"
   },
   {
+   "id": "SOG-0251",
+   "app": "pilote",
+   "title": {
+    "fr": "Une mission reste active après « Nouveau vol », et même après sa croix sur la carte",
+    "en": "A mission stays active after “New flight”, and even after its cross on the map",
+    "de": "A mission stays active after “New flight”, and even after its cross on the map",
+    "es": "A mission stays active after “New flight”, and even after its cross on the map"
+   },
+   "test": "Prépare une mission (Carburant, Carte à côté), puis « Nouveau vol » : plus de puce « Mission », plus de points imposés, plus de bandeau ni d'objets de mission sur la Carte. Recommence, et ferme la mission par sa croix sur la Carte : elle doit être quittée des deux côtés, tout de suite.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:25:07Z"
+  },
+  {
    "id": "SOG-0252",
    "app": "pilote",
    "title": {
@@ -1919,6 +1939,21 @@
     "Oui, dans un second lot : l'ATIS du réseau du vol d'abord, le METAR sinon",
     "Non : le METAR seul",
     "Plus tard, en feuille de route"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0035",
+   "fiche": "SOG-0279",
+   "app": "maintenance",
+   "question": "Le vol en cours doit-il te suivre d'un appareil à l'autre (le préparer au poste, le retrouver au téléphone) ?",
+   "context": "Aujourd'hui chaque retouche du vol dans Carburant est écrite dans le dépôt : 340 commits sur 527 depuis le 9/11, et c'est la source des conflits. La raison d'origine : retrouver son vol sur le téléphone. Dans tous les cas, plus jamais un commit par frappe : l'envoi sera groupé (cinq minutes au plus, ou sur demande).",
+   "options": [
+    "Oui, mais seulement sur un geste (« Envoyer ce vol à mes appareils ») et avec l'envoi groupé",
+    "Oui, automatiquement avec l'envoi groupé (toutes les cinq minutes au plus)",
+    "Non : le vol reste sur l'appareil où je le prépare ; seuls le compte rendu et le journal se synchronisent"
    ],
    "since": "2026-11-12",
    "state": "todo",
