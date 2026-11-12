@@ -2860,3 +2860,28 @@ def k213(c):
     c.eq([len(n)] + [all(w in t for w in ws) and 'NATS' in t for t, ws in zip(n, want)], [4, True, True, True, True],
          'the four notes name the military AIP as what is missing and the civil AIP as what NATS already covers', what='texts')
     c.eq(len({t for t in n}), 4, 'four distinct texts (no language left in another)', what='distinct')
+
+
+@case('K217', 'The GeoNames extract (shared/carto/villes_geonames.csv) holds the inhabited places of Portugal and Ireland as it does for the other countries of the zones, and nothing in it is malformed (SOG-0102): at least 900 towns for PT and 500 for IE, every row with a finite latitude and longitude in range, an integer population and a known country', 'K', static=True,
+      rule='Ergonomist 12 Nov 2026 (roadmap pass, SOG-0102): the extract held 2 towns for Portugal and 43 for Ireland (DECISIONS, 22 Oct) while the criterion of the other countries is the inhabited places (class P) of 500 inhabitants and more (cities500); tools/update_cities_geonames.py PT IE refills them from the GeoNames country extracts (same host as the catalogue, CC BY 4.0). A compiled file never carries a non-finite number.')
+def k217(c):
+    import csv
+    import math
+    with open(ROOT / 'shared' / 'carto' / 'villes_geonames.csv', encoding='utf-8', newline='') as f:
+        rows = list(csv.DictReader(f))
+    n = {}
+    for r in rows:
+        n[r['country']] = n.get(r['country'], 0) + 1
+    c.ok(n.get('PT', 0) >= 900 and n.get('IE', 0) >= 500, str({k: n.get(k, 0) for k in ('PT', 'IE')}), 'Portugal holds at least 900 towns and Ireland at least 500 (500 inhabitants and more, as the other countries)')
+    bad = []
+    for r in rows:
+        try:
+            la, lo, p = float(r['lat']), float(r['lon']), int(r['population'])
+            ok = math.isfinite(la) and math.isfinite(lo) and -90 <= la <= 90 and -180 <= lo <= 180 and p >= 0 and len(r['country']) == 2 and r['name'].strip() and '�' not in r['name']
+        except (ValueError, TypeError, KeyError):
+            ok = False
+        if not ok:
+            bad.append(r.get('geonameid'))
+    c.ok(not bad, str(bad[:5]), 'every row has a finite latitude and longitude in range, an integer population, a two-letter country and a readable name')
+    ids = [r['geonameid'] for r in rows]
+    c.ok(len(ids) == len(set(ids)), str(len(ids) - len(set(ids))), 'no geonameid twice (the refill replaced the rows of the two countries, it did not add to them)')
