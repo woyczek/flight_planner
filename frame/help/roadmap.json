@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "970296d",
-  "fiches": 272,
+  "organisation": "dacd7ce",
+  "fiches": 273,
   "untranslated": 0,
   "priorities": 243
  },
@@ -3311,6 +3311,27 @@
      "es": "EUROCONTROL: decir al usuario cómo crear la cuenta y obtener los libros",
      "rank": 226,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-base",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; base",
+    "en": "Données ; base",
+    "de": "Données ; base",
+    "es": "Données ; base"
+   },
+   "items": [
+    {
+     "id": "SOG-0273",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Sources à la main : les chemins rapportés par l'utilisateur (FAA en un seul téléchargement, DIRCAM par le SIA, éditions de l'AIP de France, points FRA, repli pour l'AIP militaire britannique)",
+     "en": "Sources taken by hand: the paths reported by the user (FAA in one download, DIRCAM through the SIA, editions of the French AIP, FRA points, fallback for the UK military AIP)",
+     "de": "Sources taken by hand: the paths reported by the user (FAA in one download, DIRCAM through the SIA, editions of the French AIP, FRA points, fallback for the UK military AIP)",
+     "es": "Sources taken by hand: the paths reported by the user (FAA in one download, DIRCAM through the SIA, editions of the French AIP, FRA points, fallback for the UK military AIP)"
     }
    ]
   },
