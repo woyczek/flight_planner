@@ -405,9 +405,15 @@
     "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
     "es": "Una nueva carretilla de conflictos de sincronización estando el usuario solo"
    },
-   "test": "Réglages › Synchronisation › Conflits : « Tout marquer comme vu » ; après une heure de travail dans Carburant, aucune nouvelle entrée « version d'un autre appareil » sans différence réelle ; une entrée montre ses lignes qui diffèrent.",
-   "since": "2026-11-09",
-   "state": "known"
+   "test": "Recharge la page, « Tout marquer comme vu » sur les anciens conflits, puis travaille normalement un jour ou deux (Carburant, la Carte à côté, le lanceur ouvert) : tu ne dois plus voir de nouveaux conflits « celle d'un autre appareil » alors que tu es seul. S'il en revient un, « Copier le diagnostic » avant de recharger : il dira si la version écartée était la tienne ou celle d'un autre appareil.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T17:40:00Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "3 conflits aujourd’hui.",
+    "at": "2026-11-10T15:11:52Z"
+   }
   },
   {
    "id": "SOG-0137",

@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d6cd7f3",
+  "organisation": "b48fc05",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -4008,13 +4008,14 @@
     {
      "id": "SOG-0136",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Nouvelle brouette de conflits de synchronisation alors que l'utilisateur est seul",
      "en": "A new barrowful of sync conflicts while the user is alone",
      "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
      "es": "Una nueva carretilla de conflictos de sincronización estando el usuario solo",
      "milestone": "6.0.0-alpha.6",
-     "rank": 242
+     "rank": 242,
+     "test": true
     }
    ]
   },
