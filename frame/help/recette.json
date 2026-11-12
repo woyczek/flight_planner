@@ -1771,74 +1771,16 @@
  ],
  "decisions": [
   {
-   "id": "Q-0026",
+   "id": "Q-0031",
    "fiche": "SOG-0262",
    "app": "maintenance",
-   "question": "Maquette de l'écran Données (carte du monde, groupes de pays, fiche d'un pays, liste du cycle) : on part là-dessus ?",
-   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte. La carte est l'entrée, la liste à plat des 75 pays disparaît, on n'agit que dans la fiche d'un pays (trois coches, inventaire exact des fichiers), « Publier » dit d'abord ce qui part avec.",
+   "question": "La fiche d'un pays : je veux être sûr d'avoir compris ta réponse « au dessus du bloc Europe de l'Ouest, on a déjà l'info par la carte ».",
+   "context": "Tu as coché « en plein écran avec un retour » pour le téléphone, et ajouté cette autre option. Je la lis ainsi : la fiche du pays touché s'ouvre dans la page, juste sous la carte (et sous « ce qui reste à faire »), AU-DESSUS de la liste des groupes — pas à droite comme dans la maquette, pas sous le pays touché — parce que la carte montre déjà de quel pays on parle.",
    "options": [
-    "Oui, on code ce dessin",
-    "Oui, avec des corrections (je les écris)",
-    "Non, ce n'est pas ça (je dis pourquoi)"
-   ],
-   "since": "2026-11-12",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0027",
-   "fiche": "SOG-0262",
-   "app": "maintenance",
-   "question": "Où mettre « Ce qui reste à faire ce mois-ci » : tout en haut, avant la carte, ou sous les groupes de pays comme dans la maquette ?",
-   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte. C'est la réponse à ta question du matin (« autres téléchargements pour moi ? »). Dans la maquette elle est sous les vingt groupes, donc loin.",
-   "options": [
-    "Tout en haut, juste sous la barre d'état ; la carte et les groupes ensuite",
-    "Sous les groupes, comme dans la maquette",
-    "À côté de la carte, à la place des groupes, qui passent dessous"
-   ],
-   "since": "2026-11-12",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0028",
-   "fiche": "SOG-0262",
-   "app": "maintenance",
-   "question": "Au téléphone, la fiche d'un pays s'ouvre comment ?",
-   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte. En large elle tient à droite de la carte. Au téléphone il n'y a pas la place.",
-   "options": [
-    "En plein écran, avec un retour vers la carte",
-    "Dans la page, dépliée sous le pays touché"
-   ],
-   "since": "2026-11-12",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0029",
-   "fiche": "SOG-0262",
-   "app": "maintenance",
-   "question": "La carte s'ouvre cadrée sur quoi ?",
-   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte.",
-   "options": [
-    "Sur le monde ; ouvrir un groupe zoome dessus",
-    "Sur le dernier groupe ouvert",
-    "Sur ma couverture (les pays que j'ai)"
-   ],
-   "since": "2026-11-12",
-   "state": "todo",
-   "recommended": 2
-  },
-  {
-   "id": "Q-0030",
-   "fiche": "SOG-0262",
-   "app": "maintenance",
-   "question": "Un pays gris, hors de ta couverture : que propose sa fiche ?",
-   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte.",
-   "options": [
-    "« Ajouter à ma couverture », avec ce que cela demandera (sources, fichiers)",
-    "Rien : la couverture se règle ailleurs",
-    "Seulement dire ce qui existe pour ce pays, sans bouton"
+    "Oui : la fiche sous la carte, au-dessus des groupes, en large comme au téléphone",
+    "En large : à droite de la carte comme dans la maquette ; au téléphone : sous la carte, au-dessus des groupes",
+    "En large : à droite de la carte ; au téléphone : en plein écran avec un retour",
+    "Autre chose (je l'écris)"
    ],
    "since": "2026-11-12",
    "state": "todo",
