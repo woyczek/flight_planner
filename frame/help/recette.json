@@ -266,10 +266,10 @@
     "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
     "es": "Pista en uso o probable según el METAR de salida y llegada"
    },
-   "test": "Recharge la page. Carburant, section Procédures d'un terrain dont le METAR donne un vent net : au-dessus du choix de la piste, « Piste probable : … (METAR …, vent …) » et « Prendre la piste probable ». La piste n'est pas choisie à ta place ; le lien la prend. Par vent calme ou variable, rien n'est proposé.",
+   "test": "Recharge la page. Carburant, section Procédures d'un terrain dont le METAR donne un vent net : au-dessus du choix de la piste, « Piste probable : … (METAR …, vent …) » et « Prendre la piste probable ». La piste n'est pas choisie à ta place ; le lien la prend. Par vent calme ou variable, rien n'est proposé. Sur un terrain tenu par un contrôleur du réseau de ta compagnie, la ligne « Piste en service : … (ATIS IVAO ou VATSIM, information …, heure) » apparaît au-dessus, avec « Prendre la piste de l'ATIS ».",
    "since": "2026-11-12",
    "state": "todo",
-   "delivered": "2026-11-12T15:49:39Z"
+   "delivered": "2026-11-12T17:53:08Z"
   },
   {
    "id": "SOG-0093",
