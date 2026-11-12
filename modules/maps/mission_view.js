@@ -166,8 +166,13 @@ async function loadMission(id, reuse = false) {
 export async function loadAside() {
   const me = S; // ce montage : une lecture qui finit après un remontage n'écrit pas dans le suivant (D172)
   if (!S?.missionAside) return;
-  await loadMission(S.missionAside);
+  const id = S.missionAside;
+  await loadMission(id);
   if (S !== me) return;
+  if (S.missionAside !== id) { // le vol a cessé de nommer cette mission pendant la lecture (SOG-0251) : elle ne revient pas
+    if (!S.missionAside && !S.missionId) S.mission = null;
+    return;
+  }
   S.missionPts = S.mission ? S.mission.points.map(p => ({
     ...p,
     sub: roleText(p)
