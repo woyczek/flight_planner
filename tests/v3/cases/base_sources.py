@@ -2810,3 +2810,42 @@ def k196(c):
              'no procedure read: still the failure, but the aerodrome file exists with its runways and no procedure', what='kept')
         idx = json.loads((data / 'proc' / 'manual' / 'index.json').read_text(encoding='utf-8'))['aerodromes']['LFOE']
         c.eq((idx['SID'], idx['STAR'], idx['APP']), (0, 0, 0), 'the index entry says zero procedures (the coverage lists it as procEmpty, K194)', what='index')
+
+
+@case('K207', 'base/cycle.datasets: one line per OTHER dataset of the Data screen (procedures, world weather, NAT tracks, VFR points, aircraft, performance sheets) with its state (up-to-date / todo / n/a), its date and what it says of itself, read on the workstation without network (SOG-0273, Réglages)', 'K', static=True,
+      rule='Réglages (12 Nov 2026, Data screen redesign): the header « Cycle AIRAC 2611 · n done on m » and the single « Tout mettre à jour » cover the other sets too. Each set tells what it already knows of itself: procedures — the newest CIFP cycle (data/proc/<cycle>/index.json) against the cycle in force, the aerodromes read by hand; world weather — the GFS run and build time of data/weather/world/index.json (« old » beyond 12 h: a run every 6 h); NAT tracks — the end of validity of their messages (« expired »); VFR points, aircraft, performance sheets — a file and its date, no due date (`n/a`). An absent set is `todo` with `why: absent`. The failure of the last operation comes from `base/last`.')
+def k207(c):
+    import datetime
+    import tempfile
+    import time as _t
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('base', 'cycle')]
+    now = _t.time()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'sia').mkdir(parents=True)
+        ctx = {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 12)}
+        ds = lambda: {d['id']: d for d in fn(RJ.Job('base', 'cycle', {}), check({}), ctx)['datasets']}
+        empty = ds()
+        c.eq(({k: (v['state'], v.get('why')) for k, v in empty.items()}, [len(v['label']) for v in empty.values()]), ({k: ('todo', 'absent') for k in ('procedures', 'weather', 'nat', 'vfr', 'aircraft', 'sheets')}, [4] * 6), 'nothing on the workstation: every set is todo / absent, with its four-language label', what='empty')
+        w = lambda rel, obj: (rel.parent.mkdir(parents=True, exist_ok=True), rel.write_text(json.dumps(obj), encoding='utf-8'))
+        w(data / 'proc' / '2026-10-29' / 'index.json', {'schema': 1, 'aerodromes': {'KATL': {}, 'KJFK': {}}})
+        w(data / 'proc' / 'manual' / 'index.json', {'schema': 1, 'aerodromes': {'LFBO': {}}})
+        w(data / 'weather' / 'world' / 'index.json', {'schema': 1, 'run': int(now) - 7200, 'built': int(now) - 3600})
+        end = datetime.datetime.fromtimestamp(now - 86400, datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        w(data / 'sia' / 'zones' / 'nat' / 'nat_tracks.json', {'tracks': [], 'messages': [{'to': end}]})
+        w(data / 'sia' / 'vfr' / 'index.json', {'schema': 2, 'generatedAt': '2026-11-10T10:28:38+00:00', 'aerodromes': [{'ad': 'LFAB'}, {'ad': 'LFAC'}]})
+        (data.parent / 'x').mkdir()
+        w(data / 'AircraftDB' / 'aircraft_db.js', {})
+        w(data / 'planner' / 'flight_performance_database_merged.fpdb.json', {})
+        full = ds()
+        c.eq((full['procedures']['state'], full['procedures']['cycle'], full['procedures']['counts'], full['weather']['state'], full['nat']['state'], full['nat']['why'], full['vfr']['state'], full['vfr']['counts'], full['aircraft']['state'], full['sheets']['state']),
+             ('up-to-date', '2026-10-29', {'cifp': 2, 'eaip': 1}, 'up-to-date', 'todo', 'expired', 'n/a', {'aerodromes': 2}, 'n/a', 'n/a'),
+             'procedures: CIFP cycle 2026-10-29 = the cycle in force; weather built an hour ago; NAT messages ended yesterday = todo / expired; VFR, aircraft, sheets: a date and no due date', what='full')
+        w(data / 'weather' / 'world' / 'index.json', {'schema': 1, 'run': int(now) - 90000, 'built': int(now) - 86400})
+        w(data / 'proc' / '2026-10-29' / 'index.json', {'schema': 1, 'aerodromes': {'KATL': {}}})
+        (data / 'proc' / 'manual' / 'index.json').unlink()
+        old = fn(RJ.Job('base', 'cycle', {}), check({}), {**ctx, 'today': datetime.date(2026, 11, 27)})['datasets']
+        o = {d['id']: d for d in old}
+        c.eq((o['weather']['state'], o['weather']['why'], o['procedures']['state'], o['procedures']['why']), ('todo', 'old', 'todo', 'older-than-cycle'), 'weather built a day ago is old; the CIFP cycle of 29 Oct while the 26 Nov cycle is in force (nothing read by hand): procedures todo / older-than-cycle', what='late')

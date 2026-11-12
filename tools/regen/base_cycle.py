@@ -16,6 +16,7 @@ Les coches sont posées par l'outil seul, d'après l'état réel (base_state, gi
 import datetime
 import fnmatch
 import json
+import time
 import os
 import re
 import sys
@@ -226,7 +227,59 @@ def run(job, args, ctx):
                          'addWillAsk': {'sources': [i['id'] for i in srcs], 'auto': [i['id'] for i in srcs if i['regime'] == 'auto'],
                                         'hand': [{'id': i['id'], 'expected': (i.get('hand') or {}).get('expected', [])} for i in srcs if i['regime'] == 'hand'],
                                         'personal': [i['id'] for i in srcs if i['personal'] == 'licence'], 'noReader': [u for u, zl in NO_READER_ZONES.items() if zid in zl]}}
-    return {'ok': True, **({'zoneView': zone_view} if zone_view else {}), 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'local': local, 'unavailable': [it['id'] for it in items if it['id'] in UNAVAILABLE], 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
+    return {'ok': True, **({'zoneView': zone_view} if zone_view else {}), 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'local': local, 'datasets': datasets(data, current, time.time()), 'unavailable': [it['id'] for it in items if it['id'] in UNAVAILABLE], 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
+
+
+def _json(path):
+    try:
+        with open(path, encoding='utf-8') as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def datasets(data, current, now):
+    """Les AUTRES jeux de l'écran Données (SOG-0273, Réglages) : une ligne par jeu, `{ id, label[4], state: 'up-to-date' | 'todo' | 'n/a', at (ISO UTC ou null), why?: code, ...ce que le jeu dit de lui }`, lue SUR LE POSTE, sans réseau. `n/a` : le jeu existe et n'a pas de notion d'échéance (sa date seule est dite) ;
+    `todo` : absent (`why: 'absent'`) ou en retard d'après ce que le jeu sait de lui (`why: 'older-than-cycle' | 'expired' | 'old'`). Procédures : le cycle CIFP le plus récent contre le cycle en vigueur ; météo du monde : le run GFS (un run toutes les 6 h : « en retard » au-delà de 12 h) ; routes NAT : la fin de validité de leurs messages ; points VFR, aéronefs, fiches de performances : leur date (aucune échéance).
+    L'échec de la dernière opération vient de `base/last` (le journal persistant), pas d'ici."""
+    iso = lambda t: datetime.datetime.fromtimestamp(t, datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    mt = lambda *p: (os.path.getmtime(os.path.join(str(data), *p)) if os.path.isfile(os.path.join(str(data), *p)) else None)
+    L = lambda *x: list(x)
+    out = []
+    # procédures : le cycle CIFP le plus récent (data/proc/<cycle>/index.json) et les terrains lus à la main (data/proc/manual/index.json)
+    cycles = sorted((c for c in os.listdir(os.path.join(str(data), 'proc')) if re.fullmatch(r'\d{4}-\d{2}-\d{2}', c)), reverse=True) if os.path.isdir(os.path.join(str(data), 'proc')) else []
+    man = _json(os.path.join(str(data), 'proc', 'manual', 'index.json'))
+    held = len((man or {}).get('aerodromes') or {})
+    cifp = len((_json(os.path.join(str(data), 'proc', cycles[0], 'index.json')) or {}).get('aerodromes') or {}) if cycles else 0
+    at = max([t for t in (mt('proc', 'manual', 'index.json'), mt('proc', cycles[0], 'index.json') if cycles else None) if t] or [0]) or None
+    state, why = ('todo', 'absent') if not (cycles or held) else ('todo', 'older-than-cycle') if cycles and cycles[0] < current and not held else ('up-to-date', None)
+    out.append({'id': 'procedures', 'label': L('Procédures', 'Procedures', 'Verfahren', 'Procedimientos'), 'state': state, **({'why': why} if why else {}), 'at': iso(at) if at else None, 'cycle': cycles[0] if cycles else None, 'counts': {'cifp': cifp, 'eaip': held}})
+    # météo du monde (synoptique GFS) : l'index de data/weather/world/
+    w = _json(os.path.join(str(data), 'weather', 'world', 'index.json'))
+    built = w.get('built') if w and isinstance(w.get('built'), (int, float)) else None
+    state, why = ('todo', 'absent') if not w else ('todo', 'old') if built and now - built > 12 * 3600 else ('up-to-date', None)
+    out.append({'id': 'weather', 'label': L('Météo du monde (synoptique)', 'World weather (synoptic)', 'Weltwetter (Synoptik)', 'Meteorología mundial (sinóptico)'), 'state': state, **({'why': why} if why else {}), 'at': iso(built) if built else None, 'run': iso(w['run']) if w and isinstance(w.get('run'), (int, float)) else None})
+    # routes NAT : la fin de validité de leurs messages
+    nat = _json(os.path.join(str(data), 'sia', 'zones', 'nat', 'nat_tracks.json'))
+    ends = []
+    for m in (nat or {}).get('messages') or []:
+        try:
+            ends.append(datetime.datetime.strptime(m.get('to', ''), '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc).timestamp())
+        except (ValueError, AttributeError, TypeError):
+            pass
+    until = max(ends) if ends else None
+    state, why = ('todo', 'absent') if not nat else ('todo', 'expired') if until is not None and until < now else ('up-to-date', None) if until is not None else ('n/a', None)
+    out.append({'id': 'nat', 'label': L('Routes NAT du jour', 'Today’s NAT tracks', 'NAT-Tracks des Tages', 'Tracks NAT del día'), 'state': state, **({'why': why} if why else {}), 'at': iso(mt('sia', 'zones', 'nat', 'nat_tracks.json')) if mt('sia', 'zones', 'nat', 'nat_tracks.json') else None, 'validUntil': iso(until) if until else None})
+    # points VFR, aéronefs, fiches de performances : un fichier et sa date, aucune échéance
+    vfr = _json(os.path.join(str(data), 'sia', 'vfr', 'index.json'))
+    for sid, label, rel, extra in (
+            ('vfr', L('Points VFR', 'VFR points', 'VFR-Punkte', 'Puntos VFR'), ('sia', 'vfr', 'index.json'), {'counts': {'aerodromes': len((vfr or {}).get('aerodromes') or [])}, 'generatedAt': (vfr or {}).get('generatedAt')}),
+            ('aircraft', L('Aéronefs (types, performances)', 'Aircraft (types, performance)', 'Luftfahrzeuge (Typen, Leistung)', 'Aeronaves (tipos, rendimiento)'), ('AircraftDB', 'aircraft_db.js'), {}),
+            ('sheets', L('Fiches de performances', 'Performance sheets', 'Leistungsblätter', 'Fichas de rendimiento'), ('planner', 'flight_performance_database_merged.fpdb.json'), {})):
+        t = mt(*rel)
+        out.append({'id': sid, 'label': label, 'state': 'n/a' if t else 'todo', **({} if t else {'why': 'absent'}), 'at': iso(t) if t else None, **extra})
+    return out
 
 
 def check_last(a):
