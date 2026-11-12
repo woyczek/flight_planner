@@ -2309,6 +2309,11 @@ def k176(c):
             out, err = AF.navpt(str(data), downloads=lambda: [str(dl)])
         c.eq((err, [(f['name'], f['edition'], f['from'], f.get('future'), f['features']) for f in out], net.calls), ([], [('navpt_pt_enr_20200115.geojson', '2020-01-15', 'AIP ISO.zip', None, 10)], []),
              'two zips in Downloads: the edition IN FORCE is taken (not the one of 2099 that is not yet), no call to the site, the other zip (not an eAIP) is not looked at', what='fetch')
+        c.eq(out[0].get('older_than_cycle'), True, 'an edition older than the AIRAC cycle in force is taken but SIGNALLED (older_than_cycle): never a silent « up to date »', what='older')
+        deep = td / 'deep'
+        (deep / 'x' / 'eAIP' / 'html' / 'eAIP').mkdir(parents=True)
+        (deep / 'x' / 'eAIP' / 'html' / 'eAIP' / 'LP-ENR-4.4-en-PT.html').write_bytes(edition(p44, '15 JAN 2020').encode())
+        c.ok('aucune page' in refused(E.read_package, prof, str(deep)) or 'manque' in refused(E.read_package, prof, str(deep)), refused(E.read_package, prof, str(deep)), 'an extracted folder is read at ONE known relative path, never searched in depth (pages two levels down are not found)')
         c.ok(any('broken.iso' in r for r in out[0].get('refused', [])) and 'ISO illisible' in ' '.join(out[0].get('refused', [])), str(out[0].get('refused')), 'an image that does not read is said in the result, in clear, and the source does not fail for it')
         os.remove(dl / 'AIP ISO.zip')
         os.remove(data / 'sia' / 'zones' / 'pt' / 'navpt_pt_enr_20200115.geojson')

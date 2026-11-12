@@ -234,21 +234,25 @@ def _is_enr_page(path):
 
 
 def pages_of_dir(root):
-    """{ chemin : lecteur(limite) → octets } des pages ENR d'un dossier extrait (eAIP/html/eAIP/…), bornés (profondeur, nombre de fichiers) ; ni lien suivi, ni fichier hors du dossier."""
-    out, count = {}, 0
+    """{ chemin : lecteur(n) } des pages ENR d'un dossier extrait : UN seul dossier est listé, à un chemin relatif connu (`eAIP/html/eAIP`, `html/eAIP` ou le dossier lui-même s'il porte les pages), jamais un parcours récursif ; ni lien suivi."""
+    out = {}
     root = os.path.realpath(root)
-    for dp, dn, fn in os.walk(root, followlinks=False):
-        if dp[len(root):].count(os.sep) > 8:
-            dn[:] = []
+    for sub in (('eAIP', 'html', 'eAIP'), ('html', 'eAIP'), ()):
+        d = os.path.join(root, *sub)
+        if not os.path.isdir(d) or os.path.islink(d):
             continue
-        dn[:] = [d for d in dn if not os.path.islink(os.path.join(dp, d))]
-        for n in fn:
-            count += 1
-            if count > PKG_MAX_FILES:
-                raise ValueError('trop de fichiers dans le dossier : ce n’est pas un eAIP')
-            p = os.path.join(dp, n)
-            if _is_enr_page(p) and not os.path.islink(p):
+        try:
+            names = sorted(os.listdir(d))
+        except OSError:
+            continue
+        if len(names) > PKG_MAX_FILES:
+            raise ValueError('trop de fichiers dans le dossier : ce n’est pas un eAIP')
+        for n in names:
+            p = os.path.join(d, n)
+            if n.lower().endswith(('.htm', '.html')) and 'enr' in n.lower() and os.path.isfile(p) and not os.path.islink(p):
                 out[p] = (lambda limit, p=p: _read_file(p, limit))
+        if out:
+            break
     return out
 
 

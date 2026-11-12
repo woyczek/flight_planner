@@ -500,6 +500,8 @@ def eaip_tables(data, key, downloads=None):
         entry['from'] = how          # pris à la main : le nom du fichier ou du dossier (jamais un chemin)
         if issue > datetime.date.today().isoformat():
             entry['future'] = True   # édition pas encore en vigueur : seule celle-là était là
+        if issue < __import__('aero_cycles').airac_start():
+            entry['older_than_cycle'] = True    # prise mais signalée : l'édition lue est plus ancienne que le cycle AIRAC en vigueur (l'écran le dit, jamais une coche « à jour » muette)
     if g.get('skipped'):
         entry['skipped'] = g['skipped']
     if refused:
