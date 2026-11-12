@@ -233,6 +233,38 @@ export function hoverMap(x, y) {
   stay('map');
   followTip(S.tipEl, S.box, x, y, hoverHtml(t[0], t[1], t[2]));
 }
+/** Le bouton « Direct vers ce point » d'une fiche (SOG-0088 ; contrat de Carburant : `#fuel?direct=<ID>[&lat=&lon=]`, l'ID en majuscules ^[A-Z0-9]{2,11}$, la position à 5 décimales au plus) :
+ *  jamais le vol n'est écrit ici, Carburant propose le direct (« Appliquer » / « Annuler ») ; null si le nom ou la position ne tiennent pas le contrat. */
+export function directHtml(id, lat, lon) {
+  const k = String(id || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{2,11}$/.test(k)) return '';
+  const pos = Number.isFinite(+lat) && Math.abs(+lat) <= 90 && Number.isFinite(+lon) && Math.abs(+lon) <= 180 ? ` data-lat="${(+lat).toFixed(5)}" data-lon="${outLon(+lon).toFixed(5)}"` : '';
+  return `<button type="button" class="f-btn mp-direct" data-direct="${esc(k)}"${pos}>${esc(tt(TX.directTo))}</button>`;
+}
+/** Écoute du bouton « Direct vers ce point » des fiches (la fiche d'un point de la carte, celle d'un point de la route en Édition) ; rend l'arrêt. */
+export function directEvents() {
+  const on = e => {
+    const b = e.target.closest('[data-direct]');
+    if (!b) return;
+    const q = S.ctx?.query || {},
+      lat = b.dataset.lat,
+      lon = b.dataset.lon;
+    hideTips();
+    location.hash = `#fuel?direct=${encodeURIComponent(b.dataset.direct)}${lat != null && lon != null ? `&lat=${lat}&lon=${lon}` : ''}${q.pane === '1' || q.with ? '&with=maps' : ''}`;
+  };
+  S.cardEl.addEventListener('click', on);
+  return () => S.cardEl?.removeEventListener('click', on);
+}
+/** Une balise ou un point de voie touché : sa fiche (nom, et « Direct vers ce point ») ; vrai si une fiche est montrée. */
+function navTap(x, y) {
+  const nv = (S.navHits || []).find(h => Math.hypot(h.x - x, h.y - y) <= 12);
+  if (!nv) return false;
+  const html = directHtml(nv.n.id, nv.n.lat, nv.n.lon);
+  if (!html) return false;
+  hideTips();
+  showTip(S.cardEl, S.box, nv.x, nv.y, `<div><b>${esc(navName(nv.n))}</b></div>${nv.n.name ? `<div class="f-muted">${esc(nv.n.name)}</div>` : ''}${html}`);
+  return true;
+}
 /** Toucher ou clic sur la carte en (x, y), position (lat, lon) : une barbule ou une voie dessous passent avant ; des espaces
  *  sous le point : leur liste dans la feuille ; sinon l'infobulle de ce qui est dessous, posée 5 s ; rien : fermée. Vrai si
  *  quelque chose est montré. */
@@ -263,6 +295,7 @@ export function tapAt(x, y, lat, lon) {
   if (S.edit.on) return got('edit')?.editTap(x, y);
   if (!onMission() && vrpTap(x, y)) return;
   if (altsTap(x, y)) return; // un tracé proposé par Carburant touché : « Prendre » (SOG-0134 a)
+  if (!onMission() && navTap(x, y)) return; // une balise ou un point de voie : sa fiche, avec « Direct vers ce point » (SOG-0088)
   if (!onMission() && groundTap(x, y)) return; // un trait ou un point du sol touché : sa ligne dans le panneau (§ 10.40)
   const ad = onMission() ? null : adAt(x, y);
   if (ad) return pinAd(ad);

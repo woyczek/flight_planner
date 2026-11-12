@@ -54,6 +54,7 @@ import {
 import {
   hideTips,
   showTip,
+  directHtml,
   mapTip,
   llAt as llOf
 } from './tips.js';
@@ -447,7 +448,7 @@ function openCard(i) {
     held = i < pts.length - 1 ? heldLevel(i) : 0,
     btn = (d, label, sign) => `<button type="button" class="f-btn" data-lvl="${i}" data-d="${d}" aria-label="${esc(label)}" title="${esc(label)}">${sign}</button>`,
     step = held ? `<div class="mp-lvl">${btn(-1000, tt(TX.lvlDown), '−')}<b>${esc(level(held))}</b>${btn(1000, tt(TX.lvlUp), '+')}</div>` : '',
-    html = `<div><b>${esc(p.id || icaoCoord(+p.lat, outLon(+p.lon)))}</b></div><div class="f-muted">${esc(i === 0 ? tt(TX.ptDep) : end ? tt(TX.ptArr) : lvl)}</div>${step}${end ? '' : held0 ? `<div class="f-muted">${esc(tt(TX.ptLocked))}</div>` : `<button type="button" class="f-btn" data-remove="${i}">${esc(tt(TX.remove))}</button>`}`,
+    html = `<div><b>${esc(p.id || icaoCoord(+p.lat, outLon(+p.lon)))}</b></div><div class="f-muted">${esc(i === 0 ? tt(TX.ptDep) : end ? tt(TX.ptArr) : lvl)}</div>${step}${end ? '' : directHtml(p.id, p.lat, outLon(+p.lon))}${end ? '' : held0 ? `<div class="f-muted">${esc(tt(TX.ptLocked))}</div>` : `<button type="button" class="f-btn" data-remove="${i}">${esc(tt(TX.remove))}</button>`}`,
     q = S.toC(+p.lat, +p.lon);
   hideTips();
   showTip(S.cardEl, S.box, q.x, q.y, html);

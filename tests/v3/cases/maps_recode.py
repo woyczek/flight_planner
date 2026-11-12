@@ -6029,3 +6029,31 @@ def d_v3return(c):
     c.page.unroute('**/frame/manifest.webmanifest')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
 
+
+@case('D192', 'A point of the map has a « Direct to this point » button that only composes Fuel’s address (#fuel?direct=<ID>&lat=&lon=): on the card of a route point in Edit, on the card of a beacon or a fix; a name or a position that does not hold the contract has none', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0088 (direct to a point on the controller’s instruction; Features SOG’s address contract, the ergonomist’s go): `#fuel?direct=<ID>[&lat=<deg>&lon=<deg>]`, ID in capitals ^[A-Z0-9]{2,11}$ (encodeURIComponent), the position with five decimals at most; Fuel proposes the direct (Apply / Cancel) and writes nothing before; the Map never writes the flight for it; no button on a procedure point')
+def d_direct(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    r = c.js("""async () => { const T = await import('/modules/maps/tips.js');
+      return { ok: T.directHtml('nepix', 44.9, 2.4), short: T.directHtml('X', 44.9, 2.4), long: T.directHtml('ABCDEFGHIJKL', 44.9, 2.4), bad: T.directHtml('NE PIX', 44.9, 2.4), nopos: T.directHtml('NEPIX', 'x', 2.4) } }""")
+    c.ok('data-direct="NEPIX"' in r['ok'] and 'data-lat="44.90000"' in r['ok'] and 'data-lon="2.40000"' in r['ok'], str(r), 'the name in capitals and the position at five decimals')
+    c.ok(r['short'] == '' and r['long'] == '' and r['bad'] == '', str(r), 'a name that does not hold ^[A-Z0-9]{2,11}$ has no button')
+    c.ok('data-direct="NEPIX"' in r['nopos'] and 'data-lat' not in r['nopos'], str(r), 'without a usable position the address goes without it (Fuel takes the point of the remaining route)')
+    # the card of a beacon or a fix touched on the map
+    c.js("""() => { const S = window.__mp.S; S.navHits = [{ x: 140, y: 140, n: { id: 'NEPIX', kind: 'FIX', lat: 44.9, lon: 2.4, name: 'Test fix' }, merged: [] }]; return true }""")
+    c.js("async () => { (await import('/modules/maps/tips.js')).tapAt(140, 140, 44.9, 2.4); return true }")
+    c.until("() => !window.__mp.S.cardEl.hidden && !!window.__mp.S.cardEl.querySelector('[data-direct]')", timeout=5000, what='the card of the fix has the button')
+    c.eq(norm(c.js("() => window.__mp.S.cardEl.querySelector('[data-direct]').textContent")), norm(row(c, 'directTo')), 'the button is named in the language of the run', what='label')
+    c.shot('D192_{}_delivered.png'.format('standard'))
+    # the card of a route point in Edit (not the departure nor the arrival): the same button
+    c.js("() => { window.__mp.S.cardEl.hidden = true; return true }")
+    c.tap('[data-mp="edit"]')
+    c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'true'", what='Edit becomes pressed')
+    a = xy(c, 44.9, 2.4)
+    c.page.mouse.click(*a)
+    c.until("() => !window.__mp.S.cardEl.hidden && !!window.__mp.S.cardEl.querySelector('[data-direct=\"NEPIX\"]')", timeout=6000, what='the card of the route point NEPIX has the button')
+    c.tap('.mp-pcard [data-direct]')
+    c.until("() => location.hash.startsWith('#fuel?direct=NEPIX&lat=44.90000&lon=2.40000')", timeout=8000, what='the click composes Fuel’s address and goes there')

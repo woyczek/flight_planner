@@ -260,6 +260,7 @@ export const TX = {
   corrEmpty: ['Rien autour du vol dans cette vue : décochez « Autour du vol seulement » pour tout voir.', 'Nothing around the flight in this view: untick “Around the flight only” to see everything.',
     'Nichts rund um den Flug in dieser Ansicht: „Nur rund um den Flug“ abwählen, um alles zu sehen.', 'Nada alrededor del vuelo en esta vista: desmarque «Solo alrededor del vuelo» para verlo todo.'
   ],
+  directTo: ['Direct vers ce point', 'Direct to this point', 'Direkt zu diesem Punkt', 'Directo a este punto'],
   atcTitle: ['{a} : contrôleurs en ligne', '{a}: online controllers', '{a}: Lotsen online', '{a}: controladores en línea'],
   atcNet: {
     ivao: ['IVAO', 'IVAO', 'IVAO', 'IVAO'],

@@ -2936,3 +2936,6 @@ the Map had seen in between: the same line to within the frame's own sampling.
 
 ## The altitude unit of the contours comes from the device's display settings (Features SOG; V3 Frame SOG-0279 (3))
 - `displayAlt`, `displayDist`, `displaySpeed`, `displayUnit`, `wxRadiusNm` move from `pilot/<tri>/fuel.json` to `cache/fuel/display.json` (a device setting, never sent). The Map reads `displayAlt` there (`readSettings`, `meta.reads` gains the document, read-only) and falls back on `fuel.json` on a device where Fuel has not run. Noreg D191.
+
+## « Direct to this point » (SOG-0088; Features SOG's address contract, the ergonomist's go)
+- `#fuel?direct=<ID>[&lat=<deg>&lon=<deg>]` (+ `&with=maps` in the double view): ID in capitals `^[A-Z0-9]{2,11}$`, `encodeURIComponent`; lat / lon with five decimals at most, in range (they pick the right homonym). Fuel takes it once, opens the Departure step with « Direct NEPIX from your position » and [Apply] [Cancel] (started flight), or the Route step (not started); it refuses a point already passed, beyond the remaining distance, or unknown. The Map only composes the address (`directHtml`, `directEvents` in tips.js): the card of a beacon or a fix touched on the map (`navTap`) and the card of a route point in Edit (not the departure or the arrival); never on a procedure point; never a write of the flight. Noreg D192.

@@ -107,6 +107,9 @@ import {
   lvEvents
 } from './lv.js';
 import {
+  directEvents
+} from './tips.js';
+import {
   altsStart,
   altsHover
 } from './alts.js';
@@ -384,6 +387,7 @@ export async function mount(el, ctx) {
   S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
   S.stops.push(atcStart()); // les contrôleurs en ligne IVAO / VATSIM, lus tant que leur couche est allumée (SOG-0094)
   S.stops.push(lvEvents()); // la fiche d'un espace de la liste (SOG-0163)
+  S.stops.push(directEvents()); // « Direct vers ce point » des fiches : l'adresse de Carburant, jamais le vol (SOG-0088)
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte
     if (e?.ground) groundChanged(e.ground, !!e
