@@ -42,10 +42,10 @@ export const TX = {
     'Nur rund um den Flug: außerhalb des Flugkorridors wird nichts gelesen — zoomen Sie oder entfernen Sie den Haken unter Ebenen',
     'Solo alrededor del vuelo: fuera del corredor del vuelo no se lee nada — acérquese o desmárquela en Capas'
   ],
-  lgCorrWide: ['Vue de plus de 600 NM : seulement autour du vol — zoomez pour tout voir',
-    'View wider than 600 NM: around the flight only — zoom in to see everything',
-    'Ansicht breiter als 600 NM: nur rund um den Flug — zoomen Sie, um alles zu sehen',
-    'Vista de más de 600 NM: solo alrededor del vuelo — acérquese para verlo todo'
+  lgCorrWide: ['Vue de plus de 3 000 NM : seulement autour du vol — zoomez pour tout voir',
+    'View wider than 3,000 NM: around the flight only — zoom in to see everything',
+    'Ansicht breiter als 3 000 NM: nur rund um den Flug — zoomen Sie, um alles zu sehen',
+    'Vista de más de 3 000 NM: solo alrededor del vuelo — acérquese para verlo todo'
   ],
   ttlWeather: ['Météo', 'Weather', 'Wetter', 'Meteo'],
   stPlanned: ['vol prévu', 'planned flight', 'geplanter Flug', 'vuelo previsto'],
@@ -250,6 +250,15 @@ export const TX = {
     'R, D, P and other spaces outside the {n} NM corridor around the flight hidden at this zoom: zoom in, raise the complexity or untick “Around the flight only”.',
     'R-, D-, P- und andere Lufträume außerhalb des {n}-NM-Korridors um den Flug bei diesem Zoom ausgeblendet: hineinzoomen, die Komplexität erhöhen oder „Nur rund um den Flug“ abwählen.',
     'Espacios R, D, P y otros fuera del corredor de {n} NM alrededor del vuelo ocultos a este zoom: acerque, suba la complejidad o desmarque «Solo alrededor del vuelo».'
+  ],
+  corrForced: ['Vue de plus de 3 000 NM de large : seulement autour du vol — zoomez pour décocher', 'View more than 3,000 NM wide: around the flight only — zoom in to untick',
+    'Ansicht von mehr als 3 000 NM Breite: nur rund um den Flug — hineinzoomen zum Abwählen', 'Vista de más de 3 000 NM de ancho: solo alrededor del vuelo — acerque para desmarcar'
+  ],
+  cxReduced: ['Complexité réduite pour montrer toute la vue', 'Complexity lowered to show the whole view', 'Komplexität gesenkt, um die ganze Ansicht zu zeigen',
+    'Complejidad reducida para mostrar toda la vista'
+  ],
+  corrEmpty: ['Rien autour du vol dans cette vue : décochez « Autour du vol seulement » pour tout voir.', 'Nothing around the flight in this view: untick “Around the flight only” to see everything.',
+    'Nichts rund um den Flug in dieser Ansicht: „Nur rund um den Flug“ abwählen, um alles zu sehen.', 'Nada alrededor del vuelo en esta vista: desmarque «Solo alrededor del vuelo» para verlo todo.'
   ],
   natValid: ['Routes NAT : valides jusqu’au {d}.', 'NAT tracks: valid until {d}.', 'NAT-Tracks: gültig bis {d}.', 'Rutas NAT: válidas hasta el {d}.'],
   natExpired: ['Routes NAT : périmées (le lanceur les relit dès qu’il le peut).', 'NAT tracks: out of date (the launcher reads them again as soon as it can).',

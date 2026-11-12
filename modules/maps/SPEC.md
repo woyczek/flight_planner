@@ -630,7 +630,7 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
 - A view wider than `WORLD_NM` = 3 000 NM (`widthNm(shown)`, `data.js`; a route to another continent frames to it) is a **world view**
   (`S.worldView`, set by `draw.js`): the wind barbs are not drawn (unreadable at that scale), the notes say so (« view more than 3 000 NM
   wide: the wind barbs are hidden; zoom in »), and no weather model is read for a route longer than that (`ensureWinds`). Everything else
-  keeps its own rule (the corridor of 10 NM past `WIDE_NM` = 600 NM already limits what is read). The screen points of the great circle and of
+  keeps its own rule (the corridor of 10 NM past `WORLD_NM` = 3 000 NM already limits what is read). The screen points of the great circle and of
   the proposed routes are thinned to one per pixel (`thinPx`, `state.js`). The cost of an image does not depend on the route's length.
   Noreg D128.
 
@@ -747,7 +747,7 @@ range; the base map's own names hidden while ours are drawn (§ 5).
 - **Two stages**, both deterministic. (1) *What is read*: the **big families** — FIR and UIR (and UTA, LTA, OCA, FRA), TMA and CTA, CTR (`BIG_TYPES`,
   `data.js`) — are read over the whole view (the view widened by 15 %, never the route's extent alone: `wantBox`); the others (R, D, P, TSA, the
   rest) are read in the corridor of the flight while « Around the flight only » is ticked (the user's explicit box, D75) and the view is under
-  300 px per degree, or on the whole view otherwise; past `WIDE_NM` = 600 NM an unticked box still reads the corridor. (2) *What is drawn*: each family from its
+  300 px per degree, or on the whole view otherwise; past `WORLD_NM` = 3 000 NM an unticked box still reads the corridor (shown on the box with its reason); unticking lowers the Complexity one step per doubling of the width past 300 NM (SOG-0246). (2) *What is drawn*: each family from its
   own effective-zoom threshold (§ 6.6), the effective zoom being the view's zoom + one level per step of the Complexity slider + the correction of the
   **module's** size (`frameRef`: the page or the pane, × 0.85, which only the window changes — **never the map's own height, which the sheet
   changes**: the same zoom did not show the same spaces with the sheet collapsed or open).
@@ -795,7 +795,7 @@ Opened in the sheet by the Layers button (`openData('layers', …)`, § 7.4), no
   defaults; "Reset all" removes them.
 - **Around the flight only** (30 Oct 2026): on by default when the mode's profile has a corridor (IFR), off in VFR; ticked,
   the pane title ends "· around the flight" and the "i" chip says nothing is read outside the corridor; unticked, the whole
-  view is read (complexity filters by class and size, never by place), except a view wider than `WIDE_NM` = 600 NM where
+  view is read (complexity filters by class and size, never by place), except a view wider than `WORLD_NM` = 3 000 NM where
   the corridor is imposed (`corridorFor`, said in the chip).
 - The effective profile (`effectiveProfile()`) is the mode's with the layers applied: elements, `zones` (whole
   families), `otherZones`, `corridorNm`.

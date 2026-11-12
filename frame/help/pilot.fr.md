@@ -337,7 +337,7 @@ carte suit, et votre choix est gardé pour ce réglage sur cet appareil. « Tout
 tête, « Autour du vol seulement (plus rapide) », cochée d'origine en IFR, limite les espaces et les voies au voisinage
 du vol : le titre du volet finit alors par « autour du vol », et la puce « i » dit que rien n'est lu hors du couloir ;
 décochée (« sinon toute la vue »), toute la vue est lue, à la même densité partout, filtrée par la seule complexité —
-sauf une vue de plus de 600 NM de large, lue autour du vol quand même (la puce « i » le dit). Vue de près, tout est
+sauf une vue de plus de 3 000 NM de large, lue autour du vol quand même (la case le dit, avec sa raison). Décocher la case baisse d'un coup la Complexité si la vue est large (une ligne le dit) ; vous la remontez si vous voulez, et recocher rend celle d'avant. Vue de près, tout est
 dessiné de toute façon.
 Chaque élément de la carte a sa plage de zoom : les points de report VFR n'apparaissent que tout près, les CTR de
 près, les TMA en vue moyenne, les FIR de loin. La taille de la carte compte aussi : sur un petit cadre (téléphone, volet

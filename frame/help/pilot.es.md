@@ -344,7 +344,7 @@ Marque o desmarque: el mapa sigue, y su elección se conserva para este ajuste e
 vuelve a la elección de origen. Arriba del todo, «Solo alrededor del vuelo (más rápido)», marcada de origen en IFR, limita
 espacios y aerovías a la cercanía del vuelo: el título del panel termina entonces con «alrededor del vuelo», y el chip «i»
 dice que fuera del corredor no se lee nada; desmarcada («si no, toda la vista»), se lee toda la vista, con la misma
-densidad en todas partes, filtrada solo por la complejidad — salvo una vista de más de 600 NM de ancho, leída alrededor
+densidad en todas partes, filtrada solo por la complejidad — salvo una vista de más de 3 000 NM de ancho, leída alrededor
 del vuelo de todos modos (el chip «i» lo dice). De cerca, todo se dibuja de todos modos. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
 muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos. El tamaño del mapa también cuenta: en un marco
 pequeño (teléfono, panel de la vista doble) muestra menos elementos que en uno grande con el mismo zoom, como si

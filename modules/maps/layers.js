@@ -22,7 +22,8 @@ import {
 } from './draw.js';
 import {
   saveUi,
-  invalidate
+  invalidate,
+  widthNm
 } from './data.js';
 import {
   buildProfile,
@@ -444,7 +445,8 @@ export function layersHtml(ctx) {
     name = ctx.t(TX.layers);
   return `<div class="mp-layers" role="group" aria-label="${esc(name)}">
 <div class="mp-layer-set mp-layer-corr"${mission ? ' hidden' : ''}>
-<label class="mp-l-main"><input type="checkbox" data-layer="corridor"> <span>${esc(ctx.t(TX.layerNames.corridor))}<small class="f-muted">${esc(ctx.t(TX.corrSub))}</small></span></label></div>
+<label class="mp-l-main"><input type="checkbox" data-layer="corridor"> <span>${esc(ctx.t(TX.layerNames.corridor))}<small class="f-muted">${esc(ctx.t(TX.corrSub))}</small></span></label>
+<small class="mp-corr-why f-muted" hidden>${esc(ctx.t(TX.corrForced))}</small><small class="mp-cx-note f-muted" hidden>${esc(ctx.t(TX.cxReduced))}</small></div>
 <div class="mp-layer-cx"><label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span></div>
 <div class="mp-layer-set">
@@ -468,9 +470,50 @@ export function fillLayers() {
       if (out && out.textContent !== t) out.textContent = t;
       continue;
     }
-    const v = c.dataset.layer === 'cov' ? covShown() : !!L[c.dataset.layer]; // la case de la couche dit ce qui est montré
+    const v = c.dataset.layer === 'cov' ? covShown() : c.dataset.layer === 'corridor' && S.corrForced ? true : !!L[c.dataset
+      .layer]; // la case de la couche dit ce qui est montré
     if (c.checked !== v) c.checked = v;
+    if (c.dataset.layer === 'corridor' && c.disabled !== !!S.corrForced) c.disabled = !!S
+      .corrForced; // forcée : la case l'est, sa raison écrite à côté (SOG-0246)
   }
+  const why = S.layersEl.querySelector('.mp-corr-why'),
+    note = S.layersEl.querySelector('.mp-cx-note');
+  if (why && why.hidden === !!S.corrForced) why.hidden = !S.corrForced;
+  const cx = !!S.cxBefore && S.cxBefore.mode === modeKey() && detailShift() === S.cxBefore.set;
+  if (note && note.hidden === cx) note.hidden = !cx;
+}
+/** La case « Autour du vol seulement » décochée lit toute la vue : si la vue est large, la Complexité descend d'un coup au cran que sa largeur permet (un cran par doublement au-delà de 300 NM :
+ *  600 NM −1, 1 200 NM −2, 2 400 NM −3, au-delà −4), jamais plus haut que ce qu'elle était ; une ligne le dit sous la case ; recochée, la Complexité d'avant revient — sauf si le curseur a été
+ *  touché depuis (son réglage gagne). Une carte de mission garde sa Complexité (SOG-0183). SOG-0246. */
+export const cxCap = w => -Math.max(0, Math.min(4, Math.ceil(Math.log2(Math.max(1, w) / 300))));
+
+function corridorSwitch(on) {
+  if (on) {
+    const b = S.cxBefore;
+    S.cxBefore = null;
+    if (b && b.mode === modeKey() && detailShift() === b.set) setLayer('detail', b.value);
+    return setLayer('corridor', true);
+  }
+  setLayer('corridor', false);
+  S.cxBefore = null;
+  const bd = S.map?.getBounds?.(),
+    w = bd ? widthNm({
+      w: bd.getWest(),
+      e: bd.getEast(),
+      s: bd.getSouth(),
+      n: bd.getNorth()
+    }) : 0,
+    cur = detailShift(),
+    cap = cxCap(w);
+  if (!S.missionId && cap < 0 && cur > cap) {
+    S.cxBefore = {
+      mode: modeKey(),
+      value: cur,
+      set: cap
+    };
+    setLayer('detail', cap);
+  }
+  fillLayers();
 }
 /** Contenu Couches ouvert dans la feuille (ou fermé) : titre « Couches · <vol> », la croix ramène le profil ; le bouton de la
  *  colonne de gauche est pressé tant qu'il est ouvert. Un seul contenu à la fois : un terrain épinglé est relâché. */
@@ -493,12 +536,17 @@ export function layersEvents() {
   S.layersEl.addEventListener('change', e => {
     const c = e.target.closest('input[data-layer]');
     if (c && c.type !== 'range') {
-      setLayer(c.dataset.layer, c.checked);
+      if (c.dataset.layer === 'corridor') corridorSwitch(c.checked);
+      else setLayer(c.dataset.layer, c.checked);
     }
   });
   S.layersEl.addEventListener('input', e => {
     const c = e.target.closest('input[type="range"][data-layer]');
-    if (c) setLayer(c.dataset.layer, Math.round(+c.value));
+    if (c) {
+      S.cxBefore = null; // le curseur a été touché : son réglage gagne
+      setLayer(c.dataset.layer, Math.round(+c.value));
+      fillLayers();
+    }
   });
   S.layersEl.addEventListener('click', e => {
     if (e.target.closest('[data-layers-reset]')) setLayer(null);

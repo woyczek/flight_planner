@@ -32,7 +32,8 @@ import {
 } from './lib/map_base.js';
 import {
   layersNow,
-  detailShift
+  detailShift,
+  fillLayers
 } from './layers.js';
 import {
   refresh,
@@ -827,6 +828,20 @@ function draw() {
     want = wantBox(wide);
   if (!within(want, S.data?.box) || corr !== S.data?.corridor || !fresh()) refresh(want, corr);
   // la lecture limitée au couloir du vol masque des espaces : la Carte le dit (SOG-0169), écrit seulement quand cela change
+  const forced = corr > 0 && !(+S.profile?.corridorNm > 0) && !
+    mission; // la case décochée, mais la vue est à l'échelle du monde : le dernier garde-fou la force (SOG-0246)
+  if (forced !== !!S.corrForced) {
+    S.corrForced = forced;
+    fillLayers();
+    status();
+  }
+  const dd = S.data?.data,
+    empty = corr > 0 && !!dd && fresh() && !(dd.airspaces || []).length && !(dd.aerodromes || []).length && !(dd.navaids || []).length && !
+    mission;
+  if (empty !== !!S.corrEmpty) {
+    S.corrEmpty = empty;
+    status();
+  }
   if (corr !== (S.corrNote || 0) && !mission) {
     S.corrNote = corr;
     status();

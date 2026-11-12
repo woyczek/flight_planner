@@ -368,12 +368,13 @@ const FORCED_NM = 10;
 /** Largeur d'une emprise en NM, à sa latitude moyenne. */
 export const widthNm = b => (b.e - b.w) * 60 * Math.cos((b.s + b.n) / 2 * Math.PI / 180);
 /** Couloir de lecture (NM ; 0 : toute l'emprise) : « Autour du vol seulement » cochée, hors vue rapprochée (300 px par degré et
- *  plus : toute l'emprise est lue) ; décochée, toute la vue filtrée par la complexité, sauf au-delà de WIDE_NM de large (couloir
+ *  plus : toute l'emprise est lue) ; décochée, toute la vue filtrée par la complexité, sauf au-delà de WORLD_NM de large (couloir
  *  imposé). Jamais sur une carte de mission. */
 export const corridorFor = (shown, W) => {
   const nm = +S.profile?.corridorNm || 0;
   if (nm > 0) return W / Math.max(1e-6, shown.e - shown.w) < 300 ? nm : 0;
-  return !S.missionId && S.route.points.length > 1 && widthNm(shown) > WIDE_NM ? FORCED_NM : 0;
+  return !S.missionId && S.route.points.length > 1 && widthNm(shown) > WORLD_NM ? FORCED_NM :
+    0; // le dernier garde-fou : l'échelle du monde (SOG-0246) ; la case décochée lit toute la vue sinon
 };
 /** Vrai si l'emprise inner est dans outer. */
 /** Les données de la vue sont à relire (une part d'aerodb arrivée, un autre vol, un autre profil, d'autres réglages) : la lecture

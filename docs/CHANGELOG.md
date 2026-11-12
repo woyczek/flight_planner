@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: « Around the flight only » unticked reads the whole view and lowers the Complexity** — no more 600 NM corridor imposed; the slider goes down at once to the step the width allows (a line says so), the user's setting wins, ticking again gives the earlier step back; only a view wider than 3 000 NM forces the box, with its reason beside it (maps DECISIONS; noreg D182, D75; SOG-0246).
 - **Map: the NAT layer says how long the tracks are valid and asks for them when they are out of date** — `natState()` / `natEnsure()` of aerodb once per mount, « valid until … » or « out of date » in the notes, tracks read again after a refresh (maps DECISIONS; noreg D181; SOG-0266).
 - **Map: a provided map appears at once beside Fuel, and the mission's cross leaves the mission** — the choice no longer re-reads the repository (each read slowed by 3 s: the map is there within 2); the cross of the window writes the flight without its mission and locks, and the Map leaves the mission when the flight no longer names it (maps DECISIONS; noreg D179, D180; SOG-0196, SOG-0251).
 - **Aircraft: « Créer F-BHHH » and « Rechercher sur rzjets.net » when the search finds nothing** (a link to a new tab; the suite never reads that site) (aircraft DECISIONS, help; noreg M43; SOG-0269, SOG-0271).

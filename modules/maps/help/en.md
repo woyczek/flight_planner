@@ -74,8 +74,8 @@ altitudes, towns, graticule, alternate, airspace names, airway names. Tick or un
 is kept for this setting on this device. “Reset all” goes back to the original choice. At the top, “Around the flight only
 (faster)”, ticked by default in IFR, keeps airspaces and airways near the flight: the pane title then ends with “around
 the flight”, and the “i” chip says nothing is read outside the corridor; unticked (“otherwise the whole view”), the whole
-view is read, at the same density everywhere, filtered by complexity alone — except a view wider than 600 NM, read around
-the flight anyway (the “i” chip says so). Close up, everything is drawn anyway. Each element of the map has its zoom range: VFR reporting points appear only
+view is read, at the same density everywhere, filtered by complexity alone — except a view wider than 3,000 NM, read around
+the flight anyway (the box says so, with its reason). Unticking the box lowers the Complexity at once when the view is wide (a line says so); raise it if you wish, and ticking again gives the earlier one back. Close up, everything is drawn anyway. Each element of the map has its zoom range: VFR reporting points appear only
 very close, CTRs close up, TMAs in a medium view, FIRs from afar. The size of the map counts too: in a small frame
 (phone, pane of the dual view) it shows fewer elements than a large one at the same zoom, as if you were further out
 (the zoom is corrected by the mean of the frame's height and width, 900 px meaning no correction).

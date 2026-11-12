@@ -2026,15 +2026,15 @@ def d75(c):
     names = sorted({t for t in c.js('window.__chT') if 'FARVILLE' in t})
     c.ok(not any('TMA TMA' in t for t in names), f'{names}', 'the type is written once ("TMA FARVILLE", not "TMA TMA FARVILLE")')
     c.eq(c.js("() => ((window.__mp.S.layers || {}).auto || {}).corridor"), False, 'the choice is kept on the device', what='kept')
-    # a continent view (wider than 600 NM): the corridor imposed, said in the chip
-    c.open('maps?view=-8,38,14,52', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'auto', 'layers': {'auto': {'detail': 2, 'corridor': False}}}, 'cache']],
+    # a world view (wider than 3 000 NM, SOG-0246): the corridor imposed, said in the chip
+    c.open('maps?view=-40,25,50,65', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'auto', 'layers': {'auto': {'detail': 2, 'corridor': False}}}, 'cache']],
            flight=False, airfields=True, airspaces=[_FAR_TMA, _FAR_R], wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the continent reading')
     c.wait(400)
     st = c.js(_CORR_STATE)
-    c.ok(st['corridor'] > 0, f"{st['corridor']}", 'wider than 600 NM: around the flight even unticked')
+    c.ok(st['corridor'] > 0, f"{st['corridor']}", 'wider than 3 000 NM: around the flight even unticked')
     c.ok(norm(tx(M, 'lgCorrWide', c.lang)) in norm(st['legend']), st['legend'], 'the chip says the view is too wide')
 
 
@@ -5765,3 +5765,71 @@ def d_nat(c):
     c.tap('.mp-dbody input[data-layer="nat"]')
     c.wait(800)
     c.eq(c.js("() => window.__nat.ensure"), 1, 'displayed again: not asked again in this mount', what='natEnsure calls after a second display')
+
+
+@case('D182', 'Unticking « Around the flight only » reads the whole view, whatever its width up to 3 000 NM: the Complexity goes down at once to the step the width allows and says so, the user’s own setting wins, ticking again gives the earlier one back; only a world view forces the box, with its reason beside it; a view away from the flight is read', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0246 (the user: « en décochant la case, on diminue d’un coup la complexité; l’utilisateur peut la monter s’il le souhaite »; « le garde-fou 3000 nm, c’est en zoom out; je veux pouvoir zoomer les espaces australiens même si j’ai un vol en cours »): the box does what it says; the cost is set by the Complexity slider, lowered one step per doubling of the width past 300 NM (600 NM −1, 1 200 −2, 2 400 −3, beyond −4), never raised; ticking again restores the earlier step unless the slider was touched; a mission map keeps its own Complexity; the guard is the width of the displayed view only (3 000 NM), shown on the box, free again when zoomed in')
+def d_corrbox(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    ui = ['cache/maps/ui.json', {'preset': 'auto', 'layers': {}}, 'cache']
+    c.open('maps?view=-4,40,8,50', docs=fdocs(flight()) + [ui], flight=False, airfields=True, airspaces=[_FAR_TMA, _FAR_R], wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the first reading')
+    c.js("async () => (await import('/modules/maps/layers.js')).toggleLayers(true)")
+    c.until("() => window.__t.shown(document.querySelector('.mp-dbody input[data-layer=corridor]'))", timeout=8000, what='the Layers content')
+    state = """async () => { const S = window.__mp.S, L = await import('/modules/maps/layers.js'), b = S.map.getBounds(), d = S.data && S.data.data;
+      return { corridor: S.data ? S.data.corridor : null, detail: L.detailShift(), forced: !!S.corrForced, checked: document.querySelector('.mp-dbody input[data-layer=corridor]').checked,
+        disabled: document.querySelector('.mp-dbody input[data-layer=corridor]').disabled, why: !document.querySelector('.mp-corr-why').hidden, note: !document.querySelector('.mp-cx-note').hidden,
+        airspaces: d ? (d.airspaces || []).length : 0, w: Math.round((b.getEast() - b.getWest()) * 60 * Math.cos((b.getNorth() + b.getSouth()) / 2 * Math.PI / 180)) } }"""
+    # a country-wide view (about 900 NM): unticked, the whole view is read and the Complexity goes down by two steps, said
+    c.js("() => { window.__mpMap.fitBounds([[-4, 41], [8, 50]], { duration: 0, padding: 0 }); return true }")
+    c.wait(1500)
+    s0 = c.js(state)
+    c.ok(s0['corridor'] > 0 and s0['detail'] == 0 and not s0['note'], str(s0), 'ticked by default: the corridor, the Complexity at 0')
+    c.tap('.mp-dbody input[data-layer="corridor"]')
+    c.until("() => window.__mp.S.data && window.__mp.S.data.corridor === 0", timeout=12000, what='unticked: the whole view is read')
+    s1 = c.js(state)
+    c.ok(s1['detail'] <= -2 and s1['note'], str(s1), 'the Complexity went down at once, and a line says so under the box')
+    # the user raises the slider: it stays where he put it, the line goes; ticking again does not give the old one back
+    c.js("() => { const r = document.querySelector('.mp-dbody input[data-layer=detail]'); r.value = '1'; r.dispatchEvent(new Event('input', { bubbles: true })); return true }")
+    c.wait(600)
+    s2 = c.js(state)
+    c.ok(s2['detail'] == 1 and not s2['note'], str(s2), 'the slider the user touched stays where he put it, the line is gone')
+    c.tap('.mp-dbody input[data-layer="corridor"]')
+    c.wait(1200)
+    s3 = c.js(state)
+    c.eq(s3['detail'], 1, 'ticked again: the user’s own setting wins', what=str(s3))
+    # untick then tick, the slider untouched: the earlier Complexity comes back
+    c.tap('.mp-dbody input[data-layer="corridor"]')
+    c.wait(1200)
+    c.tap('.mp-dbody input[data-layer="corridor"]')
+    c.wait(1200)
+    s4 = c.js(state)
+    c.eq(s4['detail'], 1, 'unticked then ticked with the slider untouched: the earlier step is back', what=str(s4))
+    c.shot('D182_{}_{}_delivered.png'.format('standard', 'unticked'))
+    # far from the flight (the fixture’s base has no Australia): a view of a few hundred NM on a space 100 NM from the route; unticked it is read, ticked it is not and the view says it is empty
+    c.js("() => { window.__mpMap.jumpTo({ center: [0.6, 43.45], zoom: 6 }); return true }")
+    c.wait(1500)
+    sa = c.js(state)
+    c.eq([sa['corridor'] > 0, sa['forced']], [True, False], 'ticked: around the flight only', what=str(sa))
+    c.eq(c.js("() => ((window.__mp.S.data && window.__mp.S.data.data.airspaces) || []).some(a => a.name === 'R FARVILLE')"), False, 'ticked: nothing far from the flight is read', what='R FARVILLE')
+    c.js("() => { window.__mpMap.jumpTo({ center: [40, 20], zoom: 6 }); return true }")   # nothing at all around the flight in this view
+    c.until("() => !!window.__mp.S.corrEmpty", timeout=8000, what='the view says it is empty')
+    c.js("() => { window.__mpMap.jumpTo({ center: [0.6, 43.45], zoom: 6 }); return true }")
+    c.wait(1200)
+    c.tap('.mp-dbody input[data-layer="corridor"]')
+    c.until("() => window.__mp.S.data && window.__mp.S.data.corridor === 0 && (window.__mp.S.data.data.airspaces || []).some(a => a.name === 'R FARVILLE')", timeout=12000, what='unticked: the far space is read')
+    sb = c.js(state)
+    c.ok(not sb['forced'] and not sb['why'], str(sb), 'no mention of a guard on a view of a few hundred NM, wherever it is')
+    # a world view: the box is forced, its reason beside it; zoomed in, it is free again
+    c.js("() => { window.__mpMap.jumpTo({ center: [10, 40], zoom: 2.2 }); return true }")
+    c.until("() => !!window.__mp.S.corrForced", timeout=10000, what='a view wider than 3 000 NM: the box is forced')
+    sw = c.js(state)
+    c.ok(sw['checked'] and sw['disabled'] and sw['why'] and sw['corridor'] > 0, str(sw), 'checked, grey and its reason written beside it')
+    c.js("() => { window.__mpMap.jumpTo({ center: [0.6, 43.45], zoom: 6 }); return true }")
+    c.until("() => !window.__mp.S.corrForced", timeout=10000, what='zoomed in: the box is free again')
+    sf = c.js(state)
+    c.ok(not sf['disabled'] and not sf['why'] and not sf['checked'], str(sf), 'free again, as the user left it (unticked), the reason gone')

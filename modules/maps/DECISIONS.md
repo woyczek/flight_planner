@@ -2893,3 +2893,15 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - Contract: `frame/aerodb/INTEGRATION.md` (« NAT routes: validity and on-demand refresh »). When the layer is displayed (`elements.natTracks`) the Map reads `AeroDb.natState()` (nothing asked to the network) and says in its
   notes « NAT tracks: valid until dd/mm hh:mmZ » or « out of date »; out of date, it calls `AeroDb.natEnsure()` ONCE per mount (no timer; the launcher refuses a second try within five minutes by itself), says
   the new state and, after a refresh that succeeded, reads the tracks of the view again. Texts ×4. Noreg D181.
+
+## « Around the flight only »: the box does what it says; the cost is the Complexity's (SOG-0246; the user: « en décochant la case, on diminue d'un coup la complexité; l'utilisateur peut la monter s'il le souhaite »)
+- **Finding**: no commit broke the box. `corridorFor` (4f9dca4c3, 30 Oct) imposed a 10 NM corridor on any view wider than 600 NM whatever the box said: at 1 280 px a country-wide view (zoom ≈ 5.3) made « unticked » invisible.
+- **Rule** (`layers.js` `corridorSwitch`, `cxCap`): unticking reads the whole view; the Complexity slider goes down at once to the step the view's width allows — one step per doubling of the width past 300 NM (`cap = −⌈log₂(width / 300 NM)⌉`,
+  at most −4: 600 NM −1, 900 NM −2, 1 200 NM −2, 2 400 NM −3, beyond −4), never raised; one line under the box says it (« Complexité réduite pour montrer toute la vue »); ticking again gives the earlier step back
+  unless the slider was touched since (the user's setting wins, `S.cxBefore`); a mission map (own Complexity, SOG-0183) is left alone.
+- **Last guard**: only a view wider than `WORLD_NM` = 3 000 NM (the barbs' world limit) still imposes the corridor, and the box then shows it — checked, grey, its reason beside it (« Vue de plus de 3 000 NM de large : seulement autour du vol »), free again
+  as soon as one zooms in; it looks only at the width of the displayed view, never at the distance to the flight (a view of a few hundred NM on a space far from the flight is read unticked). Ticked, a view with nothing around the flight says so (« Rien autour du vol dans cette vue : décochez… »).
+- **Cost** (the whole France base, not measured in drawing time: the test base is five spaces): 2 559 airspaces, 1 872 aerodromes, 424 navaids, 4 277 RNAV points, 1 121 VRPs, 1 493 airway segments, 13 863 obstacles (≈ 6 MB of JSON); on the test fixture a drawing frame is 18 ms at Complexity 0 and −2 (nothing to thin). The step table is
+  by area (objects ∝ width²), to be adjusted on the user's real base.
+- **Noreg** D182 (900 NM view: whole view read and Complexity −2 said; slider touched: it stays; ticking again: the user's step; untick / tick untouched: the earlier step back; a far space read unticked and not ticked, with the empty-view note; a world view: the
+  box forced with its reason, free again zoomed in), D75 (the continent view is now 3 000 NM wide or more).

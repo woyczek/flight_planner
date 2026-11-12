@@ -357,7 +357,7 @@ erhalten. „Alles zurücksetzen“ kehrt zur ursprünglichen Wahl zurück. Ganz
 Flug (schneller)“, in IFR vorgewählt, Lufträume und Flugwege auf die Umgebung des Flugs: Der Titel des Bereichs endet dann
 mit „rund um den Flug“, und der Chip „i“ sagt, dass außerhalb des Korridors nichts gelesen wird; ohne Haken („sonst die
 ganze Ansicht“) wird die ganze Ansicht gelesen, überall gleich dicht, nur nach der Komplexität gefiltert — außer bei einer
-Ansicht von mehr als 600 NM Breite, die trotzdem rund um den Flug gelesen wird (der Chip „i“ sagt es). Aus der Nähe wird
+Ansicht von mehr als 3 000 NM Breite, die trotzdem rund um den Flug gelesen wird (das Kästchen sagt es, mit Grund). Das Abwählen senkt bei einer breiten Ansicht sofort die Komplexität (eine Zeile sagt es); Sie können sie wieder erhöhen, und erneutes Anwählen gibt die vorherige zurück. Aus der Nähe wird
 ohnehin alles gezeichnet. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
 erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem. Auch die Größe der Karte zählt: In
 einem kleinen Rahmen (Telefon, Fenster der Doppelansicht) zeigt sie bei gleichem Zoom weniger Elemente als in einem
