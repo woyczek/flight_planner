@@ -5986,7 +5986,7 @@ def d_arcpoints(c):
     c.js(_STATE_JS)
     r = c.js("""async () => { const S = window.__mp.S, P = await import('/modules/maps/procs.js'), toC = (la, lo) => ({ x: lo * 100, y: -la * 100 }), cv = document.createElement('canvas').getContext('2d');
       const arc = Array.from({ length: 22 }, (_, k) => ({ origin: 'app', arc: true, id: null, leg: 'RF', phase: 'main', lat: 43.60 + .004 * Math.sin(k / 21 * Math.PI) , lon: 5.00 + .01 * k }));
-      S.route.path = [{ origin: 'route', id: 'LFRS', lat: 47.1, lon: -1.6 }, { origin: 'app', id: 'AAAAA', lat: 43.6, lon: 4.9, phase: 'main' }, ...arc, { origin: 'app', id: 'BBBBB', lat: 43.5, lon: 5.3, phase: 'main', arc: { centre: { lat: 43.5, lon: 5.1 } }, turn: 'R' }, { origin: 'route', id: 'LFML', lat: 43.44, lon: 5.2 }];
+      S.route.path = [{ origin: 'route', id: 'LFRS', lat: 47.1, lon: -1.6 }, { origin: 'app', id: 'AAAAA', lat: 43.6, lon: 4.9, phase: 'main' }, ...arc, { origin: 'app', id: 'BBBBB', lat: 43.5, lon: 5.3, phase: 'main', leg: 'RF', center: 'CCCCC', radius: 3, nm: 5, turn: 'R' }, { origin: 'route', id: 'LFML', lat: 43.44, lon: 5.2 }];
       S.procs = { app: { id: 'LFML.APP.RNP13', name: 'RNP 13', status: 'ok' } }; S.route.flight = { ...S.route.flight, route: { ...S.route.flight.route, procedures: { arr: { app: 'LFML.APP.RNP13' } } } };
       const L = P.layout(cv, toC, 300), app = L.segs.filter(s => s.o === 'app'), ends = new Set(app.flatMap(s => [s.a, s.b].map(q => `${Math.round(q.x)}:${Math.round(q.y)}`)));
       const through = arc.every(a => ends.has(`${Math.round(a.lon * 100)}:${Math.round(-a.lat * 100)}`));
