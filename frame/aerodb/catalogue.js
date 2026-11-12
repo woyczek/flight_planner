@@ -272,6 +272,23 @@
   }, {
     id: 'ukmil',
     group: 'base',
+    // SOG-0262 : l'inventaire exact : le fichier que le lanceur lit seul, et que l'utilisateur prend à la main quand le serveur coupe sa connexion (SOG-0234)
+    steps: {
+      page: {
+        url: 'https://www.aidu.mod.uk/aip/aipVolumes.html',
+        home: 'https://www.aidu.mod.uk/'
+      },
+      files: [{
+        name: 'ENR-5-2.pdf',
+        url: 'https://www.aidu.mod.uk/aip/pdf/enr/ENR-5-2.pdf',
+        gives: [
+          'ENR 5.2 · zones de ravitaillement en vol et zones militaires du Royaume-Uni (le lanceur le lit seul ; si le serveur coupe sa connexion, ce fichier se prend à la main)',
+          'ENR 5.2 · air refuelling and military areas of the United Kingdom (the launcher reads it by itself; if the server cuts its connection, this file is taken by hand)',
+          'ENR 5.2 · Luftbetankungs- und Militärgebiete des Vereinigten Königreichs (der Launcher liest sie selbst; trennt der Server die Verbindung, wird die Datei von Hand genommen)',
+          'ENR 5.2 · zonas de reabastecimiento en vuelo y zonas militares del Reino Unido (el lanzador lo lee solo; si el servidor corta su conexión, este archivo se toma a mano)'
+        ]
+      }]
+    },
     zones: ['gb'],
     fetch: {
       how: 'launcher',
@@ -304,6 +321,36 @@
   }, {
     id: 'navcan',
     group: 'base',
+    // SOG-0262 : le DAH que le lanceur lit seul, et les fichiers de l'AIP Canada que l'utilisateur dépose et que la suite ne lit pas encore (Q-0023)
+    steps: {
+      page: {
+        url: 'https://www.navcanada.ca/',
+        home: 'https://www.navcanada.ca/'
+      },
+      files: [{
+        name: 'dah<AAAAMMJJ>.pdf',
+        gives: ['DAH · le Designated Airspace Handbook du Canada (le lanceur le lit seul : espaces désignés)',
+          'DAH · the Designated Airspace Handbook of Canada (the launcher reads it by itself: designated airspace)',
+          'DAH · das Designated Airspace Handbook Kanadas (der Launcher liest es selbst: ausgewiesene Lufträume)',
+          'DAH · el Designated Airspace Handbook de Canadá (el lanzador lo lee solo: espacios designados)'
+        ]
+      }, {
+        name: 'enreng<JJ>-<mois>-<AAAA>.pdf',
+        gives: [
+          'AIP Canada, partie 2 (ENR) : routes (ENR 3.1, 3.2) et points (ENR 4.4) ; déposé à la main, PAS ENCORE LU par la suite (décision de l’utilisateur à venir)',
+          'AIP Canada, part 2 (ENR): routes (ENR 3.1, 3.2) and points (ENR 4.4); taken by hand, NOT READ YET by the suite (the user’s decision is pending)',
+          'AIP Kanada, Teil 2 (ENR): Strecken (ENR 3.1, 3.2) und Punkte (ENR 4.4); von Hand abgelegt, von der Suite NOCH NICHT GELESEN (Entscheidung des Nutzers steht aus)',
+          'AIP Canadá, parte 2 (ENR): rutas (ENR 3.1, 3.2) y puntos (ENR 4.4); depositado a mano, AÚN NO LEÍDO por la suite (decisión del usuario pendiente)'
+        ]
+      }, {
+        name: 'adeng<JJ>-<mois>-<AAAA>.pdf',
+        gives: ['AIP Canada, partie 3 (AD) : aérodromes ; déposé à la main, pas encore lu',
+          'AIP Canada, part 3 (AD): aerodromes; taken by hand, not read yet',
+          'AIP Kanada, Teil 3 (AD): Flugplätze; von Hand abgelegt, noch nicht gelesen',
+          'AIP Canadá, parte 3 (AD): aeródromos; depositado a mano, aún no leído'
+        ]
+      }]
+    },
     zones: ['ca'],
     fetch: {
       how: 'launcher',
@@ -514,6 +561,36 @@
   }, {
     id: 'adds',
     group: 'base',
+    // SOG-0262 : l'inventaire exact du NASR pris à la main (SOG-0219 : la FAA refuse parfois le lanceur) : trois jeux CSV du cycle, le nom est celui de la FAA
+    steps: {
+      page: {
+        url: 'https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/',
+        home: 'https://www.faa.gov/'
+      },
+      files: [{
+        name: '<JJ>_<Mon>_<AAAA>_FIX_CSV.zip',
+        gives: [
+          'NASR · points de report (FIX) des États-Unis, un jeu CSV du cycle (le lanceur le lit seul ; la FAA le refuse parfois : ce jeu se prend à la main)',
+          'NASR · reporting points (FIX) of the United States, one CSV set of the cycle (the launcher reads it by itself; the FAA sometimes refuses it: take this set by hand)',
+          'NASR · Meldepunkte (FIX) der USA, ein CSV-Satz des Zyklus (der Launcher liest ihn selbst; die FAA verweigert ihn manchmal: diesen Satz von Hand nehmen)',
+          'NASR · puntos de notificación (FIX) de Estados Unidos, un juego CSV del ciclo (el lanzador lo lee solo; la FAA a veces lo rechaza: este juego se toma a mano)'
+        ]
+      }, {
+        name: '<JJ>_<Mon>_<AAAA>_AWY_CSV.zip',
+        gives: ['NASR · routes aériennes (AWY) des États-Unis, le deuxième jeu CSV du cycle',
+          'NASR · airways (AWY) of the United States, the second CSV set of the cycle',
+          'NASR · Luftstraßen (AWY) der USA, der zweite CSV-Satz des Zyklus',
+          'NASR · aerovías (AWY) de Estados Unidos, el segundo juego CSV del ciclo'
+        ]
+      }, {
+        name: '<JJ>_<Mon>_<AAAA>_NAV_CSV.zip',
+        gives: ['NASR · aides radio (NAV) des États-Unis, le troisième jeu CSV du cycle (les trois sont nécessaires)',
+          'NASR · navaids (NAV) of the United States, the third CSV set of the cycle (all three are needed)',
+          'NASR · Funknavigationshilfen (NAV) der USA, der dritte CSV-Satz des Zyklus (alle drei sind nötig)',
+          'NASR · radioayudas (NAV) de Estados Unidos, el tercer juego CSV del ciclo (los tres son necesarios)'
+        ]
+      }]
+    },
     zones: ['us'],
     fetch: {
       how: 'launcher',
@@ -670,36 +747,93 @@
         home: 'https://aim.naviair.dk/'
       },
       files: [{
+        name: 'EK_ENR_3_1_en.pdf',
+        gives: [
+          'Danemark · ENR 3.1 routes conventionnelles (AIP Denmark). Le préfixe EK_ sert le Danemark ET les îles Féroé : la page a deux AIP, les noms sont les mêmes, le navigateur ajoute « (1) » au second',
+          'Denmark · ENR 3.1 conventional routes (AIP Denmark). The prefix EK_ serves Denmark AND the Faroe Islands: the page has two AIPs, the names are the same, the browser adds « (1) » to the second',
+          'Dänemark · ENR 3.1 konventionelle Strecken (AIP Denmark). Das Präfix EK_ gilt für Dänemark UND die Färöer: die Seite hat zwei AIP, die Namen sind gleich, der Browser hängt dem zweiten « (1) » an',
+          'Dinamarca · ENR 3.1 rutas convencionales (AIP Denmark). El prefijo EK_ sirve a Dinamarca Y a las Feroe: la página tiene dos AIP, los nombres son iguales, el navegador añade « (1) » al segundo'
+        ]
+      }, {
         name: 'EK_ENR_3_2_en.pdf',
         url: 'https://aim.naviair.dk/media/files/mmsbfi0p2t1/EK_ENR_3_2_en.pdf',
         gives: [
-          'ENR 3.2 · routes RNAV du Danemark, du Groenland et des îles Féroé (le lien direct donné est l’édition AIRAC 06/24 : la page liste le fichier du cycle en cours)',
-          'ENR 3.2 · RNAV routes of Denmark, Greenland and the Faroe Islands (the direct link given is the AIRAC 06/24 edition: the page lists the file of the current cycle)',
-          'ENR 3.2 · RNAV-Strecken Dänemarks, Grönlands und der Färöer (der angegebene Direktlink ist die Ausgabe AIRAC 06/24: die Seite listet die Datei des aktuellen Zyklus)',
-          'ENR 3.2 · rutas RNAV de Dinamarca, Groenlandia y las Feroe (el enlace directo dado es la edición AIRAC 06/24: la página lista el archivo del ciclo en curso)'
+          'Danemark · ENR 3.2 routes RNAV (36 pages) — le lien direct est celui d’une édition passée : la page liste le fichier du cycle',
+          'Denmark · ENR 3.2 RNAV routes (36 pages) — the direct link is that of a past edition: the page lists the file of the cycle',
+          'Dänemark · ENR 3.2 RNAV-Strecken (36 Seiten) — der Direktlink ist der einer früheren Ausgabe: die Seite listet die Datei des Zyklus',
+          'Dinamarca · ENR 3.2 rutas RNAV (36 páginas) — el enlace directo es el de una edición pasada: la página lista el archivo del ciclo'
         ]
       }, {
-        name: 'EK_ENR_2_1_en.pdf',
-        gives: ['ENR 2.1 · espaces aériens (FIR, TMA, CTA) du Danemark, du Groenland et des îles Féroé, à chercher sur la page',
-          'ENR 2.1 · airspaces (FIR, TMA, CTA) of Denmark, Greenland and the Faroe Islands, to find on the page',
-          'ENR 2.1 · Lufträume (FIR, TMA, CTA) Dänemarks, Grönlands und der Färöer, auf der Seite zu suchen',
-          'ENR 2.1 · espacios aéreos (FIR, TMA, CTA) de Dinamarca, Groenlandia y las Feroe, para buscar en la página'
+        name: 'EK_ENR_3_3_en.pdf',
+        gives: ['Danemark · ENR 3.3 autres routes',
+          'Denmark · ENR 3.3 other routes',
+          'Dänemark · ENR 3.3 andere Strecken',
+          'Dinamarca · ENR 3.3 otras rutas'
         ]
       }, {
-        name: 'EK_AD_2_EKOD_RNP_RWY_24_2_en.pdf',
-        url: 'https://aim.naviair.dk/media/files/sup1b1iyaxv/EK_AD_2_EKOD_RNP_RWY_24_2_en.pdf',
+        name: 'EK_ENR_3_4_en.pdf',
+        gives: ['Danemark · ENR 3.4 attentes en route',
+          'Denmark · ENR 3.4 en-route holding',
+          'Dänemark · ENR 3.4 Warteverfahren auf der Strecke',
+          'Dinamarca · ENR 3.4 esperas en ruta'
+        ]
+      }, {
+        name: 'EK_ENR_4_1_en.pdf',
         gives: [
-          'AD 2 · exemple de procédure (Odense, RNP piste 24) : les procédures sont des PDF, une carte par fichier, utile à la page 2',
-          'AD 2 · example of a procedure (Odense, RNP runway 24): procedures are PDFs, one chart per file, useful on page 2',
-          'AD 2 · Beispiel eines Verfahrens (Odense, RNP Piste 24): Verfahren sind PDFs, eine Karte je Datei, nützlich auf Seite 2',
-          'AD 2 · ejemplo de procedimiento (Odense, RNP pista 24): los procedimientos son PDF, una carta por archivo, útil en la página 2'
+          'Danemark · ENR 4.1 aides radio — ATTENTION : un fichier de ce nom peut être celui des îles Féroé (le contenu le dit : « AIP FAEROE ISLANDS ») ; celui du Danemark est à reprendre sur la page « AIP Denmark »',
+          'Denmark · ENR 4.1 radio navigation aids — CAUTION: a file of this name can be the Faroe Islands’ (the content says so: « AIP FAEROE ISLANDS »); the Danish one is to be taken again on the « AIP Denmark » page',
+          'Dänemark · ENR 4.1 Funknavigationshilfen — ACHTUNG: eine Datei dieses Namens kann die der Färöer sein (der Inhalt sagt es: « AIP FAEROE ISLANDS »); die dänische ist auf der Seite « AIP Denmark » neu zu nehmen',
+          'Dinamarca · ENR 4.1 radioayudas — ATENCIÓN: un archivo con este nombre puede ser el de las Feroe (el contenido lo dice: « AIP FAEROE ISLANDS »); el danés se vuelve a tomar en la página « AIP Denmark »'
+        ]
+      }, {
+        name: 'EK_ENR_4_4_en.pdf',
+        gives: ['Danemark · ENR 4.4 points désignés (10 pages)',
+          'Denmark · ENR 4.4 designated points (10 pages)',
+          'Dänemark · ENR 4.4 benannte Punkte (10 Seiten)',
+          'Dinamarca · ENR 4.4 puntos designados (10 páginas)'
+        ]
+      }, {
+        name: 'BG_ENR_3_1_en.pdf',
+        gives: ['Groenland (AIP Greenland) · ENR 3.1 routes conventionnelles',
+          'Greenland (AIP Greenland) · ENR 3.1 conventional routes',
+          'Grönland (AIP Greenland) · ENR 3.1 konventionelle Strecken',
+          'Groenlandia (AIP Greenland) · ENR 3.1 rutas convencionales'
+        ]
+      }, {
+        name: 'BG_ENR_3_2_en.pdf',
+        gives: ['Groenland · ENR 3.2 routes RNAV',
+          'Greenland · ENR 3.2 RNAV routes',
+          'Grönland · ENR 3.2 RNAV-Strecken',
+          'Groenlandia · ENR 3.2 rutas RNAV'
+        ]
+      }, {
+        name: 'BG_ENR_4_1_en.pdf',
+        gives: ['Groenland · ENR 4.1 aides radio',
+          'Greenland · ENR 4.1 radio navigation aids',
+          'Grönland · ENR 4.1 Funknavigationshilfen',
+          'Groenlandia · ENR 4.1 radioayudas'
+        ]
+      }, {
+        name: 'BG_ENR_4_4_en.pdf',
+        gives: ['Groenland · ENR 4.4 points désignés',
+          'Greenland · ENR 4.4 designated points',
+          'Grönland · ENR 4.4 benannte Punkte',
+          'Groenlandia · ENR 4.4 puntos designados'
+        ]
+      }, {
+        name: 'EK_ENR_3_1_en.pdf',
+        gives: [
+          'Îles Féroé (AIP Faroe Islands) · ENR 3.1, 4.1 et 4.4 : mêmes noms EK_ENR_3_1_en.pdf, EK_ENR_4_1_en.pdf, EK_ENR_4_4_en.pdf, pages « NIL » pour les routes et les points ; 4.1 : les stations',
+          'Faroe Islands (AIP Faroe Islands) · ENR 3.1, 4.1 and 4.4: the same names EK_ENR_3_1_en.pdf, EK_ENR_4_1_en.pdf, EK_ENR_4_4_en.pdf, « NIL » pages for routes and points; 4.1: the stations',
+          'Färöer (AIP Faroe Islands) · ENR 3.1, 4.1 und 4.4: dieselben Namen EK_ENR_3_1_en.pdf, EK_ENR_4_1_en.pdf, EK_ENR_4_4_en.pdf, « NIL »-Seiten für Strecken und Punkte; 4.1: die Stationen',
+          'Islas Feroe (AIP Faroe Islands) · ENR 3.1, 4.1 y 4.4: los mismos nombres EK_ENR_3_1_en.pdf, EK_ENR_4_1_en.pdf, EK_ENR_4_4_en.pdf, páginas « NIL » para rutas y puntos; 4.1: las estaciones'
         ]
       }]
     },
-    zones: ['dk'],
+    zones: ['dk', 'fo', 'gl'],
     fetch: {
       how: 'pick',
-      glob: 'EK_*.pdf',
+      glob: '*_ENR_*_en*.pdf',
       name: 'EK_….pdf'
     },
     build: {
