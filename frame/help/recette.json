@@ -1925,7 +1925,7 @@
    "test": "Relance d'abord le lanceur. Puis relis les procédures, terrain par terrain (Réglages › Procédures, « relire », ou « Relire » dans Carburant) et dis-moi ce que tu obtiens. LFBD : la finale des ILS 23 et 29 à côté des RNP 05, 11, 23, 29 ; les VOR et les autres ILS / LOC en lignes « carte seulement dans l'AIP ». LFST : la finale des ILS 05 et 23 ; les RNP 05 et 23 avec leur arc (piste 05 : un arc d'environ 179° et 8,6 NM ; piste 23 : 7,1 NM, ou « à vérifier : branche en arc RF » si le centre n'est pas dans la base). LFRS : les huit départs nommés de la piste 21 (ANG 4S, ANG 4T, BALNI 4S, RIMON 4S, ERBIN 4S, ERIGA 4S, LUSON 4S, LUGEN 4S), la RNP 03 avec les routes 117 / 232 / 314, la finale de l",
    "since": "2026-11-12",
    "state": "todo",
-   "delivered": "2026-11-12T16:30:00Z"
+   "delivered": "2026-11-12T19:16:57Z"
   },
   {
    "id": "SOG-0249",
