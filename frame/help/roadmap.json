@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "160f55e",
-  "fiches": 259,
+  "organisation": "406d129",
+  "fiches": 267,
   "untranslated": 0,
   "priorities": 243
  },
@@ -2537,6 +2537,15 @@
      "en": "Old pages (V2): the fuel performance parser is missing",
      "de": "Old pages (V2): the fuel performance parser is missing",
      "es": "Old pages (V2): the fuel performance parser is missing"
+    },
+    {
+     "id": "SOG-0267",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "« Module roadmap impossible à charger » : dire la cause (le lanceur ne répond plus) et ce qu'il faut faire",
+     "en": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
+     "de": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
+     "es": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do"
     }
    ]
   },
@@ -3139,6 +3148,63 @@
      "en": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
      "de": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
      "es": "Data: the list of everything to refresh at each cycle, ticked by the tool when done"
+    },
+    {
+     "id": "SOG-0260",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : l'écran dit « 69 zones attendent un fichier » et peint tout en brun alors que tout est construit ; « Tout est à jour » juste dessous ; « Raison non reconnue »",
+     "en": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
+     "de": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
+     "es": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”"
+    },
+    {
+     "id": "SOG-0261",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : un clic sur « À reconstruire » d'un pays — on ne sait pas ce que ça fait, et la liste revient au début",
+     "en": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
+     "de": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
+     "es": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top"
+    },
+    {
+     "id": "SOG-0262",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Données : la carte du monde et les paquets de pays comme entrée ; la liste des 75 pays disparaît ; une fiche par pays avec l'inventaire exact de ses fichiers",
+     "en": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
+     "de": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
+     "es": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files"
+    },
+    {
+     "id": "SOG-0264",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Données : la carte de couverture de retour dans « Couverture », avec une marque pour les procédures disponibles",
+     "en": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
+     "de": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
+     "es": "Data: the coverage map back in “Coverage”, with a mark for the available procedures"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-carburant",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; Carburant",
+    "en": "Données ; Carburant",
+    "de": "Données ; Carburant",
+    "es": "Données ; Carburant"
+   },
+   "items": [
+    {
+     "id": "SOG-0263",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Routes NAT du jour : « Ouvrir » affiche un JSON ; les prendre seul ; servent-elles au calcul d'une route transatlantique ?",
+     "en": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
+     "de": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
+     "es": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?"
     }
    ]
   },
@@ -3325,6 +3391,15 @@
      "de": "Launcher-Protokoll: Sätze „beiseitegelassen“, Ausnahme während einer Dateiaktualisierung, wiederholte Warnung, FAA mit 403",
      "es": "Registro del lanzador: conjuntos «dejados de lado», excepción durante una actualización de archivos, aviso repetido, FAA con 403",
      "rank": 228
+    },
+    {
+     "id": "SOG-0265",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Lanceur : les lignes de son journal n'ont pas d'heure",
+     "en": "Launcher: the lines of its log carry no time",
+     "de": "Launcher: the lines of its log carry no time",
+     "es": "Launcher: the lines of its log carry no time"
     }
    ]
   },
@@ -3449,6 +3524,27 @@
      "es": "Meteo: «previsión de la malla inalcanzable (sin conexión)» durante la construcción del sinóptico, aunque hay red",
      "rank": 233,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-meteo-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Météo ; lanceur",
+    "en": "Météo ; lanceur",
+    "de": "Météo ; lanceur",
+    "es": "Météo ; lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0266",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Relais météo : des rafales d'échecs vers open-meteo (délais dépassés, puis HTTP 429)",
+     "en": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)",
+     "de": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)",
+     "es": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)"
     }
    ]
   },
