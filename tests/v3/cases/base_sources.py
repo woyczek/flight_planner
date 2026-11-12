@@ -2380,3 +2380,77 @@ def k177(c):
         layer = data / 'sia' / 'zones' / 'pt' / 'navpt_pt_enr_20200115.geojson'
         g = json.loads(layer.read_text(encoding='utf-8')) if layer.is_file() else {}
         c.eq((g.get('issue'), len(g.get('features') or []), zone.get('sources', {}).get('navpt', {}).get('state')), ('2020-01-15', 8, 'downloaded'), 'the layer is written under its edition (six points, two legs) and the line of the source says downloaded', what='layer')
+
+
+@case('K178', 'Publication per zone (SOG-0258): base/status says per zone when it was built and whether its build commit is published (an ancestor of the known remote branch, no network); « Publier » first gives the plan — the other zones that leave with it, the NUMBER of the user\'s files, never their names — then the synchronisation, said as it is', 'K', static=True,
+      rule='SOG-0258 (the ergonomics session, 12 Nov 2026: A + B): A) base/status carries per zone `builtAt` and `publish { state: published | unpublished | unknown, commit, at }`: published when the last commit that touched sia/base/<zone>/ is an ancestor of the remote branch the last synchronisation saw (four git calls for all the zones, no network), unpublished when that commit is not sent or the zone was changed since; unknown without repository or without a known remote branch. B) the verb base/publish { zone, dry } : the plan (default) lists what leaves with the zone: the other built zones not published (their names), the number of the user\'s files committed and not sent, the number to commit (never a name); the real run is the synchronisation of data/ (a push carries every unsent commit: no isolation of a zone, said), with the author\'s trigram')
+def k178(c):
+    import json
+    import os
+    import subprocess
+    import tempfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    import zone_publish as ZP
+
+    def git(cwd, *a):
+        r = subprocess.run(DS.git_cmd('-C', str(cwd), '-c', 'user.name=T', '-c', 'user.email=t@t', *a), capture_output=True, text=True, encoding='utf-8', env=DS.git_env())
+        return r.returncode, r.stdout.strip()
+
+    def commit(cwd, rel, text, msg):
+        p = Path(cwd) / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text, encoding='utf-8')
+        git(cwd, 'add', '--', rel)
+        git(cwd, 'commit', '-q', '-m', msg)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        remote, data = td / 'remote.git', td / 'data'
+        subprocess.run(DS.git_cmd('init', '-q', '--bare', str(remote)), check=True, env=DS.git_env())
+        data.mkdir()
+        git(data, 'init', '-q')
+        git(data, 'checkout', '-q', '-b', 'main')
+        git(data, 'remote', 'add', 'origin', str(remote))
+        commit(data, 'README.md', 'x', 'initial')
+        commit(data, 'sia/base/fr/2026-10-29/meta.json', '{}', 'Base aéronautique fr 2026-10-29 construite sur le poste')
+        commit(data, 'sia/base/de/2026-10-29/meta.json', '{}', 'Base aéronautique de 2026-10-29 construite sur le poste')
+        git(data, 'push', '-q', '-u', 'origin', 'main')
+        # sent: fr, de. Then: gb built and NOT sent, de changed after its commit (not committed), the user's files (one committed not sent, one to commit)
+        commit(data, 'sia/base/gb/2026-10-29/meta.json', '{}', 'Base aéronautique gb 2026-10-29 construite sur le poste')
+        (data / 'sia' / 'base' / 'de' / '2026-10-29' / 'meta.json').write_text('{"changed": true}', encoding='utf-8')
+        commit(data, 'pilot/RBR/current_flight.json', '{}', 'RBR : 1 fichier(s)')
+        (data / 'notes').mkdir()
+        (data / 'notes' / 'private_name.json').write_text('{}', encoding='utf-8')
+        st = ZP.states(str(data), ['fr', 'de', 'gb', 'zz'])
+        c.eq({z: v['state'] for z, v in st.items()}, {'fr': 'published', 'de': 'unpublished', 'gb': 'unpublished'}, 'published: its build commit is on the remote; unpublished: not sent (gb) or changed since (de); a zone with no build commit (zz) is absent', what='states')
+        c.ok(all(len(v['commit']) == 40 and v['at'].endswith('Z') for v in st.values()), str(st), 'with the commit and its date')
+        p = ZP.plan(str(data), 'gb')
+        c.eq((p['ok'], p['state'], p['ahead'], p['commits'], p['otherFiles'], p['pending']), (True, 'unpublished', ['de'], 2, 1, 1), 'the plan of gb: the zone de leaves with it, two commits are not sent, ONE file of the user is committed and not sent, one is to commit', what='plan gb')
+        c.ok('current_flight' not in json.dumps(p) and 'private_name' not in json.dumps(p), json.dumps(p), 'and the plan never names a file of the user')
+        p = ZP.plan(str(data), 'fr')
+        c.eq((p['state'], p['ahead'], p['nothing']), ('published', ['de', 'gb'], False), 'the plan of a published zone still says what would leave (the other zones) and that there is something to send', what='plan fr')
+        c.eq([ZP.plan(str(data), z).get('reason') for z in ('../x', 'zz')], ['bad-zone', 'not-built'], 'a bad zone and a zone never built are refused with their reason', what='refused')
+        nored = td / 'noremote'
+        nored.mkdir()
+        git(nored, 'init', '-q')
+        commit(nored, 'sia/base/fr/2026-10-29/meta.json', '{}', 'Base aéronautique fr')
+        c.eq((ZP.states(str(nored), ['fr'])['fr']['state'], ZP.states(str(nored), ['fr'])['fr']['reason'], ZP.plan(str(nored), 'fr')['reason']), ('unknown', 'no-remote', 'no-remote'), 'without a known remote branch nothing is said published: unknown, no-remote', what='no remote')
+        plain = td / 'plain'
+        plain.mkdir()
+        c.eq(ZP.plan(str(plain), 'fr')['reason'], 'no-repo', 'and a folder that is not a repository: no-repo', what='no repo')
+        # the verb
+        fn, check = RJ.REGISTRY[('base', 'publish')]
+        c.eq([check(a) for a in ({'zone': 'gb'}, {'zone': 'gb', 'dry': False}, {'zone': 'GB'}, {'zone': 'gb', 'x': 1}, {'zone': 'gb', 'dry': 'no'}, {}, None)],
+             [{'zone': 'gb', 'dry': True}, {'zone': 'gb', 'dry': False}, None, None, None, None, None], 'the verb takes a zone and dry (the plan by default) and nothing else', what='check')
+        ran = []
+        ctx = {'data': str(data), 'base_publish': lambda author: (ran.append(author), {'ok': True, 'pushed': True, 'committed': 1})[1]}
+        job = RJ.Job('base', 'publish', {}, author='RBR')
+        r = fn(job, check({'zone': 'gb'}), ctx)
+        c.eq((r['ok'], r['ahead'], ran), (True, ['de'], []), 'the plan runs nothing: no synchronisation', what='dry')
+        r = fn(job, check({'zone': 'gb', 'dry': False}), ctx)
+        c.eq((r['ok'], ran, r['sync']['pushed']), (True, ['RBR'], True), 'the real run is the synchronisation with the trigram of the page', what='run')
+        r = fn(RJ.Job('base', 'publish', {}, author=''), check({'zone': 'gb', 'dry': False}), ctx)
+        c.eq((r['ok'], r['reason'], ran), (False, 'no-author', ['RBR']), 'without a trigram nothing is synchronised', what='no author')
+    # base/status carries the keys (the state of the zones, the same source as the page)
+    src = (c.root / 'tools' / 'regen' / 'base_state.py').read_text(encoding='utf-8')
+    c.ok("'builtAt': (rec or {}).get('builtAt')" in src and "out[z]['publish'] = pub.get(z)" in src, 'base_state.py', 'base/status gives builtAt and publish per zone')

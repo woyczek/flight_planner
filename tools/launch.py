@@ -4144,6 +4144,21 @@ def aircraft_publish(author='', apply=False):
     return res
 
 
+def base_publish_sync(author):
+    """« Publier » une zone de la base (verbe base/publish, tools/regen/base_publish.py) : le passage de synchronisation de data/ tel que le bouton « Synchroniser » le fait (commit au nom du trigramme, fusion, envoi) ; UN envoi emporte tous les commits non envoyés.
+    Le passage est celui du geste : sia/base y est commitée aussi, le travail qui l'appelle est lui-même le travail en cours."""
+    with SYNC_LOCK:
+        try:
+            registry_bridge()
+            r = data_sync.run(DATA, str(author or '').upper(), '', True)
+            if r.get('received'):
+                registry_bridge()
+        except Exception as e:      # jamais une erreur sans texte
+            r = {'ok': False, 'cause': 'launcher-error', 'message': data_sync.clean_text(f'Erreur du lanceur pendant la synchronisation ({type(e).__name__} : {e}).', DATA)[-800:]}
+    sync_status_reset()
+    return r
+
+
 def vfr_publish(compiled, author='', apply=False):
     """Compilation VFR des cartes VAC dans le dépôt des données (tools/vfr_import.py) : apply faux, le plan seulement
     (erreurs, ou résumé : terrains, points, séquences, consignes, points non rapprochés des VRP, fichiers changés et
@@ -4306,7 +4321,7 @@ def regen():
                 # aircraft_publish : la publication de la base des types (verbe aircraft/publish, tools/regen/aircraft.py) reste ici, avec
                 # la synchronisation qu'elle déclenche ; le jeu la reçoit par son contexte
                 REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env,
-                                                              'aircraft_publish': aircraft_publish, 'downloads': downloads_dirs, 'sync_lock': SYNC_LOCK, 'lnm_folder': lnm_db_folder},
+                                                              'aircraft_publish': aircraft_publish, 'base_publish': base_publish_sync, 'downloads': downloads_dirs, 'sync_lock': SYNC_LOCK, 'lnm_folder': lnm_db_folder},
                                         store=os.path.join(ROOT, 'tools', '.regen_last.json'))
     return REGEN
 _loaded = {}  # module → date du fichier au chargement

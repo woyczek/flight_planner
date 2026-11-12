@@ -26,6 +26,7 @@ if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import aero_cycles  # noqa: E402
 import regen_jobs  # noqa: E402
+import zone_publish  # noqa: E402  (l'état de publication de chaque zone, SOG-0258)
 
 RECORD_DIR = ('local', 'build')
 ORDER = ('index-orphan', 'never-built', 'failed', 'pickup-waiting', 'source-newer', 'personal-undeclared', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing', 'source-unread', 'source-missing', 'source-old')
@@ -286,9 +287,15 @@ def zone_states(data, zones, personal, ctx):
         reasons.sort(key=lambda r: ORDER.index(r['code']))
         first = reasons[0]['code'] if reasons else None
         state = 'up-to-date' if not reasons else 'never-built' if first == 'never-built' else 'failed' if first == 'failed' else 'stale'
-        out[z] = {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': reasons, 'notices': notices, 'buildable': any(r['code'] in BUILDABLE for r in reasons), 'builtCycle': built,
+        out[z] = {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': reasons, 'notices': notices, 'buildable': any(r['code'] in BUILDABLE for r in reasons), 'builtCycle': built, 'builtAt': (rec or {}).get('builtAt'),
                   'expectedCycle': own or built, 'parserVersion': _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json')) if built else None,
                   'download': download_state(z, current, personal, latest, S, absent) if S else None}
+    try:
+        pub = zone_publish.states(data, list(out))      # SOG-0258 : publiée = le commit de construction est un ancêtre de la branche distante connue (quatre appels de git en tout, aucun réseau)
+    except Exception:       # un état de publication qui échoue ne fait pas échouer l'état des zones
+        pub = {}
+    for z in out:
+        out[z]['publish'] = pub.get(z)
     return out
 
 
