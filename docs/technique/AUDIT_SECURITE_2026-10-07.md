@@ -1015,6 +1015,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 163 | The personal-use tick held by the launcher (3dcc5e780), the notes of 159 and 162 fixed (a5f6dd6ab, 6606df07c, d69a96d8c, 607dc8819) | acceptable, one to fix (zip64) |
 | 164 | The zip64 directory check follows the locator (5fe013431): the point to fix of 163 closed | acceptable |
 | 165 | Review of 12 November: ISO reader (f10dff198), NASR subscription read in place (48cc3811c), file deposit (zip carrying an ISO, FRA archive: f10dff198, 971fe40e6), job release (8494deb47, 8ec252fb7), persistent journal and `base/last` (476074e7b), `base/publish` (77ad22f6d), `base/cycle` (d370bc220, 5cb9dc776), `zipmember.js` | two to fix, one to harden, the rest acceptable |
+| 166 | The zip guard, the FRA cap and the ISO page cap (24144e4c4): the points of 165 closed | acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2458,6 +2459,16 @@ member is read through `ZipExtFile`, whose backward `seek` restarts the decompre
 launcher's “busy” lock; cap the pages (a few hundred) or copy the member to a temporary file first. *Notes.* After `release`, the
 abandoned thread is told to stop but nothing proves that a verb stops writing to `data/` once `job.released` is set (the check is only
 on its result); and `_trim` cleans the values but not the keys, nor the non-text values turned into text.
+
+**166. The zip guard, the FRA cap and the ISO page cap (24144e4c4) — acceptable, two notes.** `tools/zip_guard.py` keeps the end-record
+check of 164 (locator offset and fixed place, zip64 included) and `open_zip` applies it before `zipfile` builds the directory;
+`aero_fetch`, `eaip_annexe15`, `base_sources` (pickup), `base_state`, `lfv_eaip` and `faa_nasr` open through it. The scratch zips of 165
+now give: 250,000 entries refused with “trop de membres”, the Downloads scan returns nothing in 0.0 s instead of 5 s and 138 MB; the FRA
+archive of 500 names is refused (`FRA_TAKE_MAX` = 6); the ISO path stops at 2,000 ENR pages and at four times `PKG_MAX_FILES` files.
+Notes: (1) the case K195 checks the refusal, not the memory, which is enough since the refusal is before the directory is built;
+(2) a few older openings are still direct, `launch.extract_data` and `proc_cifp.lines_of` (both call `zip_check` after the open) and the
+inner zip of the NASR subscription (bounded by `INNER_MAX`), so they could go through `open_zip` too; and 2,000 pages in a deflated
+member is still hours in the worst case (about 5 s per far read on 1 GB), a few hundred would be nearer to a real eAIP.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
