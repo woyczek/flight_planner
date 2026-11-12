@@ -222,7 +222,7 @@ def page_url(profile, name):
 # peut porter n'importe quel nom. Un fichier d'un tel paquet est une ENTRÉE NON FIABLE : tout est borné et chaque refus dit sa raison en clair (ValueError).
 PKG_MAX_BYTES = 1536 * 1024 * 1024      # un paquet (zip ou ISO) plus gros : refusé avant d'être ouvert
 ISO_MAX_SECONDS = 90                   # temps total de lecture des pages d'une image ISO (sous le verrou « occupé ») : au-delà, refusé en le disant
-ISO_MAX_PAGES = 2000                    # pages ENR prises dans une image ISO (Sécurisation 12/11 : le chemin ISO n'avait pas le plafond du zip et du dossier ; chaque lecture d'un membre déflaté relance la décompression)
+ISO_MAX_PAGES = 600                     # pages ENR prises dans une image ISO (Sécurisation 12/11 : le chemin ISO n'avait pas le plafond du zip et du dossier ; chaque lecture d'un membre déflaté relance la décompression)
 PKG_MAX_FILES = 8000                    # fichiers regardés dans un dossier ou un zip
 PAGE_MAX = 8 * 1024 * 1024              # une page d'eAIP : 0,5 Mo (ENR 3.3) ; au-delà, ce n'est pas la page attendue
 HEAD = 4096

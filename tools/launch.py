@@ -30,6 +30,7 @@ import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Na
 import device_access  # appareils appairés, réseau local et relais : un code, une liste, une révocation (R-C2)
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
 import console_log
+import zip_guard
 import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit en console (hôte, chemin, code)
 import suite_update  # mise à jour de la suite par canal (stable, early, suivi) : plan d'abord, avance rapide seulement
 import base_upload  # envoi d'un fichier choisi à la main : reconnu par son contenu (SOG-0199)
@@ -103,7 +104,7 @@ def extract_data(z, quiet=False):
     """Archive des données (.zip contenant data_tree.js) extraite dans data/ ; faux si ce n'en est pas une. Dossiers
     .git et exécutables ignorés (SKIP_EXT)."""
     try:
-        with zipfile.ZipFile(z) as zf:
+        with zip_guard.open_zip(z) as zf:
             regen_jobs.zip_check(zf)  # taille décompressée plafonnée (2 Go), avant toute lecture
             marker = next((n for n in zf.namelist() if n.endswith('data_tree.js')), None)
             if not marker:
