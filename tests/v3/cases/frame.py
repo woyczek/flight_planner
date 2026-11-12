@@ -3130,8 +3130,8 @@ def a84(c):
     c.until("!!document.querySelector('[data-card=\"about\"] [data-version]')", timeout=15000, what='the About card with its version')
     c.eq(norm(c.text('[data-card="about"] [data-version]')), norm(tx(diag, 'aboutVersion', c.lang).replace('{v}', '6.0.0-alpha.2-25-g1a2b3c4').replace('{d}', '2026-11-01')),
          'the version and its date, first', what='version')
-    c.eq([c.count('[data-card="about"] [data-licence]'), c.count('[data-card="about"] a[href="#roadmap"]'), c.count('[data-card="about"] a[href^="#help"]')], [1, 1, 0],
-         'the licence and the roadmap; no link to the help (its one door is the « ? » of the header)', what='links')
+    c.eq([c.count('[data-card="about"] [data-licence]'), c.count('[data-card="about"] a[href="#roadmap"]'), c.count('[data-card="about"] a[href^="#help"]:not([data-licence])')], [1, 1, 0],
+         'the licence and the roadmap; no link to the help manual (its one door is the « ? » of the header; the licence opens in the help viewer, SOG-0275)', what='links')
     c.open('settings', docs=LEVEL3)
     c.until("!!document.querySelector('[data-group=\"help\"] > summary')", timeout=15000, what='the settings groups')
     c.eq(norm(c.text('[data-group="help"] > summary')).startswith(norm(tx('frame/settings/groups.js', 'help', c.lang))), True, 'the group is named « À propos »', what='group name')
@@ -6863,6 +6863,24 @@ def a162(c):
     c.eq([a['land'], a['desk'], a['nav'], a['tabs'], a['left'] - a['nav'] <= 1, a['scrollW'] <= a['innerW']], [False, True, 88 if c.design == 'material' else 56, False, True, True], '900 x 700 (touch): not a phone turned, the 56 px icon rail (Material: its own 88 px), the content right after it, no horizontal scroll', what='900x700')
     c.eq([b['land'], b['desk'], b['nav'], b['tabs']], [True, False, 0, True], '844 x 390: the phone turned (its own rail of tabs, the left bar gone)', what='844x390')
     c.eq([p['land'], p['desk'], p['nav'], p['tabs']], [False, False, 0, True], '760 x 900: the phone mode (the bar at the bottom, the left bar gone)', what='760x900')
+    c.check_errors()
+
+
+
+@case('A165', 'The licence opens in the help viewer, formatted, inside the frame with its way back — never the raw file in a tab; the same for any link to a document of the suite (SOG-0275)', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0275 (the user: « pas d’afficheur md pour les licenses … depuis l’aide « à propos » ? c’est perturbant. », seen on the published site without a launcher): the « À propos » card links to #help?d=licence, which reads LICENSE.md and shows it formatted in the frame (the headings and the tables rendered), with the link back to the manual; no new tab, no raw .md; LICENSE.md, docs/CHANGELOG.md and docs/VERSION.md named by a link of a Markdown text are opened the same way (#help?d=…); a document that cannot be read says so with the way back')
+def a165(c):
+    c.open('settings?card=about', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"about\"] [data-licence]')", timeout=15000, what='the About card')
+    c.eq([c.js("document.querySelector('[data-card=\"about\"] [data-licence]').getAttribute('href')"), c.js("document.querySelector('[data-card=\"about\"] [data-licence]').hasAttribute('target')")], ['#help?d=licence', False], 'the licence link goes to the help viewer, in the same tab', what='link')
+    c.tap('[data-card="about"] [data-licence]')
+    c.until("!!document.querySelector('[data-suite-doc=licence] h1')", timeout=15000, what='the licence in the viewer')
+    c.eq([c.js('location.hash'), c.count('[data-suite-doc=licence] h1') >= 1, c.count('[data-suite-doc=licence] table') >= 1, c.count('#fView > .f-back a[href="#help"]')], ['#help?d=licence', True, True, 1], 'the licence is formatted (a heading, its tables) with the way back to the manual', what='viewer')
+    c.ok(not c.js("/^#\s|\|---/m.test(document.querySelector('[data-suite-doc=licence]').textContent)"), None, 'no raw Markdown on the screen (no « # » titles, no table pipes)')
+    c.shot(f'A165_licence_{c.width}_{c.lang}_delivered.png')
+    c.tap('#fView > .f-back a[href="#help"]')
+    c.until("!!document.querySelector('[data-help-manuals], [data-toc], .f-doc')", what='back in the help')
     c.check_errors()
 
 

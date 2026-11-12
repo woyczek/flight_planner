@@ -30,6 +30,12 @@
     label: ['{h} :', '{h}:', '{h}:', '{h}:'],
     contents: ['Sommaire', 'Contents', 'Inhalt', 'Índice'],
     back: ['↑ Sommaire', '↑ Contents', '↑ Inhalt', '↑ Índice'],
+    // un document de la suite (licence, journal des changements, version) lu dans l'aide (SOG-0275)
+    docMissing: ['Ce document n’a pas pu être lu : pas de réponse, et il n’est pas gardé sur cet appareil.',
+      'This document could not be read: no answer, and it is not kept on this device.',
+      'Dieses Dokument konnte nicht gelesen werden: keine Antwort, und es ist nicht auf diesem Gerät gespeichert.',
+      'No se pudo leer este documento: sin respuesta y no está guardado en este dispositivo.'
+    ],
     chapter: ['Lire tout le chapitre', 'Read the whole chapter', 'Ganzes Kapitel lesen', 'Leer todo el capítulo'],
     missing: ['L’aide n’est pas encore disponible sur cet appareil (hors ligne à la première visite ?).',
       'Help is not available on this device yet (offline at the first visit?).',
@@ -187,9 +193,21 @@
   }
   /** HTML d'un texte Markdown, liens internes ramenés à l'écran d'aide (#help?a=…) sauf les adresses d'aide déjà
    *  écrites (#help?t=…, #help?m=…), liens extérieurs dans un onglet ; images relatives à base (dossier des tutoriels). */
+  /** Les documents Markdown de la suite que l'aide lit elle-même (jamais le fichier brut dans un onglet) : id → fichier à la racine du site (SOG-0275). */
+  const SUITE_DOCS = {
+    licence: 'LICENSE.md',
+    changelog: 'docs/CHANGELOG.md',
+    version: 'docs/VERSION.md'
+  };
+  /** L'adresse d'aide d'un lien vers un de ces documents (LICENSE.md, docs/CHANGELOG.md, VERSION.md), sinon null. */
+  const suiteDocLink = href => {
+    const m = /(?:^|\/)(LICENSE|CHANGELOG|VERSION)\.md(?:#.*)?$/i.exec(String(href).split('?')[0]);
+    return m ? `#help?d=${m[1].toLowerCase() === 'license' ? 'licence' : m[1].toLowerCase()}` : null;
+  };
+
   function md(text, base) {
     const r = window.DocMarkdown.render(text, {
-      link: href => href.startsWith('#help?') ? href : href.startsWith('#') ? `#help?a=${encodeURIComponent(href.slice(1))}` : href,
+      link: href => href.startsWith('#help?') ? href : href.startsWith('#') ? `#help?a=${encodeURIComponent(href.slice(1))}` : suiteDocLink(href) || href,
       image: src => base && !/^[a-z]+:/i.test(src) ? new URL(src, base).href : src
     });
     return r;
@@ -355,7 +373,41 @@
   /** Écran d'aide : le manuel entier, texte d'abord, ouvert au chapitre q.m ou à l'ancre q.a ; en tête, le lien « Toute
    *  l'aide » et le sommaire (replié sur un téléphone) ; « Commencer par… » (les tutoriels) au début du manuel ; q.t : un
    *  tutoriel ; q.all : l'index de toute l'aide. */
+  /** Un document de la suite (licence, journal des changements, version) lu dans l'aide : mis en forme, dans le cadre, avec le retour à l'aide ; jamais le fichier brut dans un onglet (SOG-0275). */
+  async function suiteDocScreen(view, c, id) {
+    const path = SUITE_DOCS[id];
+    let text = '';
+    try {
+      const r = path ? await fetch(new URL(path, c.root), {
+        cache: 'no-cache'
+      }) : null;
+      text = r?.ok ? await r.text() : '';
+    } catch {
+      text = '';
+    }
+    if (!text) {
+      view.innerHTML = `<p class="f-back"><a href="#help">${esc(c.t(T.manual))}</a></p><h1>${esc(c.t(T.title))}</h1><p class="f-card" data-doc-missing>${esc(c.t(T.docMissing))}</p>`;
+      return;
+    }
+    const doc = document.createElement('article');
+    doc.className = 'f-doc';
+    doc.dataset.suiteDoc = id;
+    doc.innerHTML = md(text, new URL(path, c.root).href).html;
+    view.innerHTML = `<p class="f-back"><a href="#help">${esc(c.t(T.manual))}</a></p>`;
+    view.append(doc);
+    labelTables(doc, c.t);
+    for (const a of doc.querySelectorAll(
+        'a[href]')) { // un lien du texte vers un fichier de la suite (LICENSES/*.txt) : le site, dans un onglet
+      const h = a.getAttribute('href');
+      if (!/^(#|https?:)/i.test(h)) {
+        a.href = new URL(h, new URL(path, c.root)).href;
+        a.target = '_blank';
+        a.rel = 'noopener';
+      }
+    }
+  }
   async function screen(view, c, q = {}) {
+    if (q.d && SUITE_DOCS[q.d]) return suiteDocScreen(view, c, q.d);
     if (q.t) return tutorialScreen(view, c, q.t, q);
     if (q.all) return indexScreen(view, c);
     const text = await manual(c);

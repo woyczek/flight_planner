@@ -140,7 +140,7 @@
       issues = web ? `${web}/${window.SogConfig?.providerOf?.(`${web}.git`).provider === 'github' ? 'issues/new' : '-/issues/new'}` : '',
       ver = v?.version ? `<p data-version><b>${esc(v.date ? t(T.aboutVersion, { v: v.version, d: v.date }) : t(T.aboutVersionNoDate, { v: v.version }))}</b></p>` : '',
       code = web ? `<p><a href="${esc(web)}" target="_blank" rel="noopener" data-code>${esc(t(T.aboutCode))}</a> · <a href="${esc(issues)}" target="_blank" rel="noopener" data-report>${esc(t(T.aboutReport))}</a></p>` : '';
-    return `<div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2>${ver}<p><a href="${esc(new URL('LICENSE.md', ROOT).href)}" target="_blank" rel="noopener" data-licence>${esc(t(T.aboutLicence))}</a></p>${code}<p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
+    return `<div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2>${ver}<p><a href="#help?d=licence" data-licence>${esc(t(T.aboutLicence))}</a></p>${code}<p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
       <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>`;
   }
   /** Diagnostic du cadre : lignes lisibles et JSON complet (env.diagJson) ; est : estimation du stockage, déjà lue. */
