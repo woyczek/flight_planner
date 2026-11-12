@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 127,
+  "tests": 130,
   "verdicts": 60
  },
  "apps": [
@@ -1823,6 +1823,20 @@
    "delivered": "2026-11-12T15:11:24Z"
   },
   {
+   "id": "SOG-0256",
+   "app": "maintenance",
+   "title": {
+    "fr": "Feuille de route, vue Priorités : les colonnes « Livré · En test · alpha.5 · beta.1 · Backlog » au lieu d'une seule « en dev »",
+    "en": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
+    "de": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
+    "es": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one"
+   },
+   "test": "Recharge la page. Feuille de route, vue « Priorités » : les colonnes sont Livré, En test, alpha.5, alpha.6, beta.1, Backlog. « En test » porte ce qui est livré et attend ton verdict. Glisse une carte de Backlog vers alpha.6 puis vers Backlog : elle y revient. « Masquer les livrées » cache Livré, pas En test.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:21:11Z"
+  },
+  {
    "id": "SOG-0260",
    "app": "maintenance",
    "title": {
@@ -1849,7 +1863,66 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T10:07:31Z"
+  },
+  {
+   "id": "SOG-0268",
+   "app": "compagnie",
+   "title": {
+    "fr": "Fiche d'un aéronef : « Exploitant » et « Exploitation » — qu'est-ce à dire ?",
+    "en": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
+    "de": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
+    "es": "Aircraft sheet: “Operator” and “Operation” — what do they mean?"
+   },
+   "test": "Maintenance › Fiches › Flotte, ouvre un aéronef : le champ s'appelle « Propriétaire ou exploitant » avec une ligne qui dit ce qu'on attend ; le titre « Exploitation » est devenu « En vol » ; les indicatifs disent à quoi ils servent, avec un exemple.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:17:55Z"
+  },
+  {
+   "id": "SOG-0269",
+   "app": "compagnie",
+   "title": {
+    "fr": "Liste des aéronefs : « Aucun aéronef ne correspond » doit offrir « Créer »",
+    "en": "Aircraft list: “No aircraft matches” must offer “Create”",
+    "de": "Aircraft list: “No aircraft matches” must offer “Create”",
+    "es": "Aircraft list: “No aircraft matches” must offer “Create”"
+   },
+   "test": "Flotte : tape « fbhhh » dans la recherche. Sous « Aucun aéronef… », « Créer F-BHHH » doit ouvrir une fiche neuve avec l'immatriculation remplie ; « Rechercher sur rzjets.net » doit ouvrir le site dans un nouvel onglet sur cette immatriculation.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:20:40Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0033",
+   "fiche": "SOG-0090",
+   "app": "pilote",
+   "question": "Piste probable d'après le METAR : la dire seulement, ou la proposer d'office quand tu n'as rien choisi ?",
+   "context": "Aujourd'hui Carburant colore chaque piste d'après le vent du METAR, sans rien choisir. Proposition : dire la « piste probable (METAR 1230Z, vent 240/12) » en tête de la liste — celle dont le vent de face est le plus fort, le travers dans la limite de la fiche ; vent calme ou variable : rien n'est dit.",
+   "options": [
+    "La dire, avec un bouton « Prendre la piste probable » : jamais posée d'office",
+    "La poser d'office quand aucune piste n'est choisie, en le disant (« d'après le METAR »), modifiable",
+    "Ne rien proposer : les couleurs suffisent"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0034",
+   "fiche": "SOG-0090",
+   "app": "pilote",
+   "question": "La piste en service publiée par l'ATIS d'un réseau (IVAO, VATSIM) doit-elle passer avant la déduction du METAR ?",
+   "context": "Aujourd'hui Carburant colore chaque piste d'après le vent du METAR, sans rien choisir. Proposition : dire la « piste probable (METAR 1230Z, vent 240/12) » en tête de la liste — celle dont le vent de face est le plus fort, le travers dans la limite de la fiche ; vent calme ou variable : rien n'est dit. L'ATIS d'un réseau est une source de plus à ouvrir : un autre lot.",
+   "options": [
+    "Oui, dans un second lot : l'ATIS du réseau du vol d'abord, le METAR sinon",
+    "Non : le METAR seul",
+    "Plus tard, en feuille de route"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }

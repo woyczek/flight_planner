@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "22ecd78",
+  "organisation": "2138d0f",
   "fiches": 278,
   "untranslated": 0,
   "priorities": 243
@@ -333,7 +333,7 @@
     {
      "id": "SOG-0271",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Aéronefs : « Rechercher » une immatriculation hors de France (rzjets.net), à la demande",
      "en": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
      "de": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
@@ -1665,20 +1665,22 @@
     {
      "id": "SOG-0268",
      "kind": "bug",
-     "state": "planned",
+     "state": "done",
      "fr": "Fiche d'un aéronef : « Exploitant » et « Exploitation » — qu'est-ce à dire ?",
      "en": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
      "de": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
-     "es": "Aircraft sheet: “Operator” and “Operation” — what do they mean?"
+     "es": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
+     "test": true
     },
     {
      "id": "SOG-0269",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Liste des aéronefs : « Aucun aéronef ne correspond » doit offrir « Créer »",
      "en": "Aircraft list: “No aircraft matches” must offer “Create”",
      "de": "Aircraft list: “No aircraft matches” must offer “Create”",
-     "es": "Aircraft list: “No aircraft matches” must offer “Create”"
+     "es": "Aircraft list: “No aircraft matches” must offer “Create”",
+     "test": true
     },
     {
      "id": "SOG-0272",
@@ -2721,11 +2723,12 @@
     {
      "id": "SOG-0256",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Feuille de route, vue Priorités : les colonnes « Livré · En test · alpha.5 · beta.1 · Backlog » au lieu d'une seule « en dev »",
      "en": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
      "de": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
-     "es": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one"
+     "es": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
+     "test": true
     },
     {
      "id": "SOG-0257",
