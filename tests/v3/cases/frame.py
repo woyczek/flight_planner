@@ -6884,6 +6884,33 @@ def a165(c):
     c.check_errors()
 
 
+
+@case('A166', 'Swiss and Metro: the plane of the title is the design’s ink — not the red signal of Swiss (read as an error), not the module blue that vanished on Metro’s own blue band; the tab icon keeps the application’s tint (SOG-0276)', 'A',
+      designs=('swiss', 'metro', 'standard'), screens=False, night=True,
+      rule='SOG-0276 (the user: « l’avion (pilote) rouge, parce que rouge comme couleur de contraste. idem pour les contrastes sur metro. »): the title icon took the application’s tint (the design’s accent): Swiss’s accent is its red signal (the plane read as an error, like Maintenance), and Metro’s header is filled with the module colour, so the plane (blue on blue) vanished. By the tokens only: Swiss — the ink (--sog-fg); Metro — the band’s ink (--sog-module-ink); the other designs unchanged (the accent); the icon of the browser tab (a company or Maintenance page) still takes the application’s tint, not the ink')
+def a166(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 800})
+    c.open('fuel', docs=LEVEL3, wait=False)
+    c.until("!!document.getElementById('fAppIco') && !!document.querySelector('#fAppIco svg')", timeout=15000, what='the title icon')
+    c.wait(600)
+    r = c.js("""(() => { const ico = document.getElementById('fAppIco'), head = document.querySelector('.f-head'), rt = getComputedStyle(document.documentElement);
+      const rgb = s => (s.match(/[\d.]+/g) || []).slice(0, 3).map(Number), lum = a => { const [r, g, b] = a.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 }); return .2126 * r + .7152 * g + .0722 * b };
+      const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05) };
+      const col = rgb(getComputedStyle(ico).color), bg = rgb(getComputedStyle(head).backgroundColor), tok = n => { const e = document.createElement('i'); e.style.color = `var(${n})`; document.body.append(e); const v = rgb(getComputedStyle(e).color); e.remove(); return v };
+      return { col, ratio: Math.round(ratio(col, bg) * 10) / 10, accent: tok('--sog-accent'), ink: tok('--sog-fg'), moduleInk: tok('--sog-module-ink'), err: tok('--sog-err'), tint: getComputedStyle(ico).getPropertyValue('--f-app-tint').trim() } })()""")
+    same = lambda a, b: all(abs(x - y) < 2 for x, y in zip(a, b))
+    c.ok(r['ratio'] >= 3, r, f'{c.design} {c.tone}: the plane reads on the header (contrast {r["ratio"]}:1, 3:1 at least)')
+    if c.design == 'swiss':
+        c.ok(same(r['col'], r['ink']) and not same(r['col'], r['accent']) and not same(r['col'], r['err']), r, 'Swiss: the ink, not the red signal nor an error colour')
+    elif c.design == 'metro':
+        c.ok(same(r['col'], r['moduleInk']), r, 'Metro: the ink of the coloured band')
+    else:
+        c.ok(same(r['col'], r['accent']), r, f'{c.design}: unchanged, the accent')
+    c.ok(bool(r['tint']), r, 'the application’s tint stays a token on the icon (the browser tab’s icon reads it)')
+    c.shot(f'A166_{c.design}_{c.tone}_delivered.png')
+    c.check_errors()
+
+
 @case('A151', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')

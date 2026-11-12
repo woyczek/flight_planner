@@ -1961,8 +1961,12 @@
     }
     // le logo arrivé pendant la lecture du fichier : il garde l'onglet (l'avion teinté ne repasse jamais par-dessus)
     if (APP.id === 'company' && appLogo) return void(link.getAttribute('href') !== appLogo && link.setAttribute('href', appLogo));
-    const tint = getComputedStyle(ico).color,
-      svg = faviconText.replace(/(<path\b[^>]*\bfill=")[^"]*"/, `$1${tint}"`),
+    // la teinte de l'application, résolue en couleur (pas celle que le design donne à l'icône de l'en-tête)
+    const probe = ico.appendChild(document.createElement('i'));
+    probe.style.color = 'var(--f-app-tint)';
+    const tint = getComputedStyle(probe).color || getComputedStyle(ico).color;
+    probe.remove();
+    const svg = faviconText.replace(/(<path\b[^>]*\bfill=")[^"]*"/, `$1${tint}"`),
       href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
   }
@@ -4935,7 +4939,9 @@
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
     // identité de l'application (icône dans sa teinte, posée à la source) et sélecteur d'application
-    $('fAppIco').style.color = APP.tint || '';
+    $('fAppIco').style.setProperty('--f-app-tint', APP.tint ||
+      ''
+    ); // la teinte de l'application : un jeton ; l'icône de l'en-tête la prend (frame.css), sauf là où un design a son encre (Swiss, Metro : SOG-0276)
     paintAppIcon(); // le logo de la compagnie pour Compagnie, sinon l'icône teintée
     $('fApp').title = t(T.appSwitch);
     $('fApp').onclick = toggleAppPop;

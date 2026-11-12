@@ -12,6 +12,10 @@
     color: var(--sog-module-ink);
     border-bottom-color: var(--sog-module)
   }
+  /* l'icône du titre : l'encre du bandeau (le bandeau est de la couleur du module : l'icône à la teinte de l'application y disparaissait, bleu sur bleu) — SOG-0276 */
+  [data-design="metro"] .f-head .f-app-ico {
+    color: var(--sog-module-ink)
+  }
   [data-design="metro"] .f-head .f-name {
     font-size: .8rem;
     font-weight: 600;

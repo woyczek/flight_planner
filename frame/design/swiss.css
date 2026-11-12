@@ -21,6 +21,10 @@
     background: transparent;
     border-color: transparent
   }
+  /* l'avion du titre : l'encre du design, ni le rouge signal (l'accent de Swiss, lu comme une erreur) ni la couleur du module (« seul usage » : le filet du verbe courant) — SOG-0276 */
+  [data-design="swiss"] .f-head .f-app-ico {
+    color: var(--sog-fg)
+  }
 
   /* ---- verbes : une liste, le verbe courant en gras avec le filet de la couleur de son module (seul usage de cette
      couleur) ; sur téléphone, la barre du bas (plus bas) */
