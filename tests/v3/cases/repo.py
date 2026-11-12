@@ -2712,6 +2712,31 @@ def k144(c):
         L.Setup.port = kept_port
 
 
+
+@case('K208', 'The « Old pages (V2) » menu holds every page of the V2 the repository carries: each page under apps/ (and the fuel phase monitor) is listed (an address stub apart); every listed page exists (SOG-0278, SOG-0249)', 'K', static=True,
+      rule='SOG-0278 (the user: « les pages v2 sont toutes accessibles de la v3 »; SOG-0249: the fuel performance parser was missing): the list of frame/legacy.js is compared with the V2 pages tracked by git — apps/**/*.html and FuelDashboard/index.html. A page is accounted for when it is listed, or when it is an address stub (« Page déplacée », a redirect). Nothing else may stay out; nothing listed may be missing')
+def k208(c):
+    root = Path(__file__).resolve().parents[3]
+    files = subprocess.run(['git', 'ls-files', 'apps', 'FuelDashboard'], cwd=root, capture_output=True, text=True, encoding='utf-8').stdout.split()
+    pages = sorted(f for f in files if f.endswith('.html'))
+    src = (root / 'frame' / 'legacy.js').read_text(encoding='utf-8')
+    listed = set(re.findall(r"path: '([^']+)'", src))
+    for d, base in re.findall(r"\['([A-Z]+)', '([a-z_]+)', '[^']*'\]", src):      # the mission families, generated from a table: a report and an operations reporting each
+        listed |= {f'apps/cr/{d}/{base}_cr.html', f'apps/cr/{d}/{base}_reporting.html'}
+    missing = []
+    for f in pages:
+        if f in listed:
+            continue
+        text = (root / f).read_text(encoding='utf-8', errors='replace')
+        if 'Page déplacée' in text[:800]:      # an old address that redirects
+            continue
+        missing.append(f)
+    c.eq(missing, [], 'every V2 page of the repository is listed in « Old pages (V2) » (an address stub apart)', what='pages not listed')
+    gone = sorted(p for p in listed if not (root / p).is_file())
+    c.eq(gone, [], 'every listed page exists', what='listed pages missing')
+    c.ok('FuelDashboard/index.html' in listed, None, 'the fuel performance parser (the fuel phase monitor) is in the menu (SOG-0249)')
+
+
 @case('K154', 'The launcher’s content policy survives a file replaced while it is read: a failing read keeps the previous value, the request does not fail (SOG-0219)', 'K', static=True,
       rule='SOG-0219 (the ergonomist, 10 Nov: « FileNotFoundError … frame\app.js » raised in csp_policy while an alignment of E:\DEFA replaced the file): csp_policy() read the dates of the files it depends on with « exists » then « getmtime » (a race) and listed the modules from frame/app.js; any OSError there fell on the request; now a read that fails keeps the previous policy (tried again at the next call), and without a previous one the base policy with no added site')
 def k154(c):

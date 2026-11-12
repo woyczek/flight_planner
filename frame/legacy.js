@@ -5,10 +5,40 @@
   // navigation. La liste vient de ce fichier (pas de la configuration) : { id, label [fr, en, de, es], pages: [{ path (relatif à la racine de la
   // suite), label, launcher (la page ne marche qu'avec le lanceur du poste) }] } ; chaque page s'ouvre dans un nouvel onglet.
   const L = (fr, en, de, es) => [fr, en, de, es];
+  // les familles de missions du cœur de comptes rendus de la V2 (apps/cr/<FAMILLE>/ : un compte rendu et un rapport des opérations chacune ; FIRE est dans le groupe Missions) : une page par famille et par sorte, ouverte comme les autres (SOG-0278 : toutes les pages de la V2 sont accessibles)
+  const FAMILIES = [
+    ['AAR', 'aar', 'AAR / ravitaillement en vol'],
+    ['AIRBORNE', 'airborne', 'Airborne / airdrop'],
+    ['AIRLIFT', 'airlift', 'Airlift / logistics'],
+    ['COMBAT', 'combat', 'Combat / ACM'],
+    ['COMMAND', 'command', 'Command / AEW / relay'],
+    ['FLIGHTINSPECTION', 'fi', 'Flight inspection'],
+    ['HADR', 'hadr', 'HADR / evacuation'],
+    ['HEMS', 'hems_medevac', 'HEMS / medevac'],
+    ['ISR', 'isr', 'ISR / recon'],
+    ['LE', 'le', 'Law enforcement'],
+    ['MARITIME', 'maritime', 'Maritime'],
+    ['SAR', 'sar', 'SAR / PR'],
+    ['SOF', 'sof', 'SOF / tactical'],
+    ['SPECIAL', 'special', 'Special / test / training'],
+    ['SURVEY', 'survey', 'Survey / science']
+  ];
+  const familyPages = FAMILIES.flatMap(([dir, base, name]) => [{
+    path: `apps/cr/${dir}/${base}_cr.html`,
+    label: L(`${name} : compte rendu`, `${name}: report`, `${name}: Bericht`, `${name}: informe`)
+  }, {
+    path: `apps/cr/${dir}/${base}_reporting.html`,
+    label: L(`${name} : rapport des opérations`, `${name}: operations reporting`, `${name}: Einsatzbericht`, `${name}: informe de operaciones`)
+  }]);
   const GROUPS = Object.freeze([{
     id: 'fuel',
     label: L('Carburant', 'Fuel', 'Kraftstoff', 'Combustible'),
     pages: [{
+      // le moniteur des phases de vol d'après les performances de carburant (le « parser des performances de carburant » de la V2, SOG-0249), gardé tel quel à la racine du dépôt
+      path: 'FuelDashboard/index.html',
+      label: L('Moniteur des phases de carburant (lecture des performances)', 'Fuel phase monitor (performance reading)',
+        'Kraftstoff-Phasenmonitor (Leistungsauswertung)', 'Monitor de fases de combustible (lectura de rendimiento)')
+    }, {
       path: 'apps/planner/flight_performance_planner.html',
       label: L('Planificateur de vol et performances', 'Flight and performance planner', 'Flug- und Leistungsplaner',
         'Planificador de vuelo y rendimiento')
@@ -56,9 +86,17 @@
         'Informe de operaciones de incendio')
     }]
   }, {
+    id: 'families',
+    label: L('Comptes rendus par famille de mission', 'Reports by mission family', 'Berichte nach Missionsfamilie',
+      'Informes por familia de misión'),
+    pages: familyPages
+  }, {
     id: 'maintenance',
     label: L('Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'),
     pages: [{
+      path: 'apps/aide/aide.html',
+      label: L('Aide de la V2', 'Help of V2', 'Hilfe der V2', 'Ayuda de la V2')
+    }, {
       path: 'apps/settings/maintenance.html',
       launcher: true,
       label: L('Page de maintenance', 'Maintenance page', 'Wartungsseite', 'Página de mantenimiento')
@@ -122,6 +160,10 @@
       label: L('Positionner les pélicandromes (export YAML)', 'Place the pelican sites (YAML export)',
         'Löschwasserstellen positionieren (YAML-Export)',
         'Posicionar los puntos de carga de agua (exportación YAML)')
+    }, {
+      path: 'apps/outils/pelicandromes/original.html',
+      label: L('Pélicandromes : vérification GPS (version d’origine)', 'Pelican sites: GPS check (original version)',
+        'Löschwasserstellen: GPS-Prüfung (Originalversion)', 'Puntos de carga de agua: verificación GPS (versión original)')
     }]
   }]);
   const T = {

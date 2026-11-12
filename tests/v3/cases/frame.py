@@ -4656,7 +4656,7 @@ def a115(c):
       rule='SOG-0166 / V3_SPECIFICATION 7.1 rule 23 (V3 Frame): one entry « Old pages (V2) » at the very bottom of the navigation column of each application, a hairline above and a muted tint; on a phone, the last row of the application menu; it opens #legacy, the V2 pages by group (Fuel, Missions, Maintenance, Route, Statistics, Canadair), each in a new tab; no V2 page anywhere else in the navigation')
 def a116(c):
     sj = ROOT / 'frame' / 'legacy.js'
-    groups = ['fuel', 'missions', 'maintenance', 'route', 'stats', 'canadair']
+    groups = ['fuel', 'missions', 'families', 'maintenance', 'route', 'stats', 'canadair']   # SOG-0278: the mission families' pages are a group of their own
     title = {'fr': 'Anciennes pages (V2)', 'en': 'Old pages (V2)', 'de': 'Alte Seiten (V2)', 'es': 'Páginas antiguas (V2)'}[c.lang]   # written here: the case fails while a text key is wrong
     for app in (None, 'company', 'maintenance'):
         c.open('fuel' if app is None else ('missions' if app == 'company' else 'data'), app=app, docs=LEVEL3, wait=False)
@@ -4676,12 +4676,12 @@ def a116(c):
         c.until("!!document.querySelector('[data-screen=legacy]')", timeout=10000, what='the V2 pages screen')
         c.eq(c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group]')].map(g => g.dataset.group)"), groups, 'the six groups', what=f'groups ({app})')
         links = c.js("[...document.querySelectorAll('[data-screen=legacy] a[data-legacy]')].map(a => [a.target, a.rel, new URL(a.href).pathname])")
-        c.ok(len(links) >= 20 and all(t == '_blank' and 'noopener' in r and '/apps/' in h for t, r, h in links), str(links[:3]), 'every V2 page opens in a new tab, noopener')
+        c.ok(len(links) >= 20 and all(t == '_blank' and 'noopener' in r and ('/apps/' in h or '/FuelDashboard/' in h) for t, r, h in links), str(links[:3]), 'every V2 page opens in a new tab, noopener')
         c.eq(c.text('[data-screen=legacy] h1'), title, 'the title says what it is', what=f'title ({app})')
         # the pelican sites tool (SOG-0083) is the Canadair group; the fire reports are under Missions
         peli = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=canadair] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\/apps\//, 'apps/'))")
         fire = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=missions] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\/apps\//, 'apps/')).filter(p => /FIRE/.test(p))")
-        c.eq((peli, fire), (['apps/outils/pelicandromes/index.html'], ['apps/cr/FIRE/fire_cr.html', 'apps/cr/FIRE/fire_reporting.html']),
+        c.eq((peli, fire), (['apps/outils/pelicandromes/index.html', 'apps/outils/pelicandromes/original.html'], ['apps/cr/FIRE/fire_cr.html', 'apps/cr/FIRE/fire_reporting.html']),
              'the Canadair group carries the pelican sites tool, the fire reports are under Missions', what=f'Canadair group ({app})')
     # the tool: the user's file kept as it came (original.html, not linked), index.html the adapted copy (MapLibre and js-yaml from the repository, the launcher's content
     # policy blocking the CDN scripts), calling only the vector tiles and the satellite tiles (SOG-0083; DECISIONS)
