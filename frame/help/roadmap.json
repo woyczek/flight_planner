@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3f0475d",
+  "organisation": "ae0c442",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -2120,7 +2120,7 @@
     {
      "id": "SOG-0270",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Aéronefs : un registre local des immatriculations — le type depuis une immatriculation, les immatriculations d'un type",
      "en": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
      "de": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",

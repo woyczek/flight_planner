@@ -1337,10 +1337,10 @@
     "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
     "es": "Procedimientos y suelo: LFOE no lee nada («0 páginas leídas de 2»), LFBD no tiene calles de rodaje"
    },
-   "test": "Relance le lanceur. Carburant, arrivée ou départ LFOE : « Relire » les procédures de l'AIP. Les pistes 04 et 22 doivent apparaître, et les approches RNP 04 et RNP 22 (éventuellement « à vérifier »). Dis-moi ce que tu obtiens : c'est la première relecture réelle de ce terrain depuis le correctif des pages militaires.",
+   "test": "Relance d'abord le lanceur, puis relis LFOE (Réglages › Procédures, « relire »). Un fichier existe maintenant avec les pistes 04 et 22 même si aucune procédure n'est lue. Si le correctif des pages militaires agit : les RNP 04 et 22 ; pas d'ILS (l'AIP n'en publie pas de carte), pas de départ ni d'arrivée. Sinon l'écran dit « pistes lues, aucune procédure » : dis-le-moi.",
    "since": "2026-11-12",
    "state": "todo",
-   "delivered": "2026-11-12T16:09:00Z",
+   "delivered": "2026-11-12T16:31:00Z",
    "previous": {
     "verdict": "ko",
     "comment": "LFOE : les procédures little nav map sont bien lues, pas l’AIP. même pas les pistes…",
@@ -1902,10 +1902,10 @@
     "de": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
     "es": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)"
    },
-   "test": "Relance le lanceur, puis dans Carburant « Relire » les procédures de LFBD, LFST et LFRS. Attendu : LFBD gagne la finale des ILS 23 et 29 ; LFST celle des ILS 05 et 23 (ses RNP 05 / 23 restent « à vérifier » pour l'instant) ; LFRS gagne ses huit départs nommés de la piste 21 (ANG 4S, BALNI 4S…), la finale de l'ILS 03 et la RNP 03. Dis-moi ce que tu obtiens terrain par terrain. Sous le choix de l'approche, chaque ILS, LOC ou VOR qui n'a qu'une carte doit apparaître en « … — carte seulement dans l'AIP » avec le lien vers sa carte.",
+   "test": "Relance d'abord le lanceur. Puis relis les procédures, terrain par terrain (Réglages › Procédures, « relire », ou « Relire » dans Carburant) et dis-moi ce que tu obtiens. LFBD : la finale des ILS 23 et 29 à côté des RNP 05, 11, 23, 29 ; les VOR et les autres ILS / LOC en lignes « carte seulement dans l'AIP ». LFST : la finale des ILS 05 et 23 ; les RNP 05 et 23 avec leur arc (piste 05 : un arc d'environ 179° et 8,6 NM ; piste 23 : 7,1 NM, ou « à vérifier : branche en arc RF » si le centre n'est pas dans la base). LFRS : les huit départs nommés de la piste 21 (ANG 4S, ANG 4T, BALNI 4S, RIMON 4S, ERBIN 4S, ERIGA 4S, LUSON 4S, LUGEN 4S), la RNP 03 avec les routes 117 / 232 / 314, la finale de l",
    "since": "2026-11-12",
    "state": "todo",
-   "delivered": "2026-11-12T16:13:46Z"
+   "delivered": "2026-11-12T16:31:00Z"
   },
   {
    "id": "SOG-0250",
