@@ -121,3 +121,9 @@
   path, « Corriger », « Retirer »); the lines to check first, then by series and identifier; family filter and search at the head; sixty
   lines before « N autres » (a table, not the seven of a list); the explanation of the screen moves to the tooltip of its title and to the
   help (twenty missions seen at 1 280 × 800). Nothing changes in the data nor in their guards. N43 (red before: 7 lines of 24).
+- **13 Nov 2026 — the registry read bounded, and « not read » said** (Sécurisation, audit 174 on db091c505): `readRegistry`
+  (frame/lib/mission.js) only folded the spaces; the identifier is now cut at 12 signs (the X-001A form has 6; an old « BFM-001A » or
+  « 71 » fits), the title and the operation at 120, origin and destination at 80. Older than SOG-0286: beyond `REG_READ_MAX` (500 files)
+  `regLoad` marked the lines « ok » without reading them; they are now « notread » (sign « ? », « fichier non lu (au-delà des 500
+  premiers) », listed last), the count says « 500 fichiers lus sur N », and the plan of « Mettre à jour » does not count them as lines
+  without a file. N44 (red before on both; counter-test of the limit with the old module.js: 503 « ok »).

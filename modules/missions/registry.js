@@ -101,7 +101,8 @@ export function planOf(doc, status, found) {
   const ids = new Set(list.map(e => e.row.id));
   return {
     add: (found || []).filter(f => f?.entry && !ids.has(f.entry.id)),
-    noFile: list.filter(e => status?.get(e.idx) && status.get(e.idx) !== 'ok').map(e => e.idx),
+    // une ligne non lue (au-delà de la limite de lecture de l'écran) n'est pas « sans fichier » : on n'en sait rien (audit 174)
+    noFile: list.filter(e => status?.get(e.idx) && !['ok', 'notread'].includes(status.get(e.idx))).map(e => e.idx),
     dup,
     former
   };

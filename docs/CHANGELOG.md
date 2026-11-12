@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions › Registre: texts bounded at reading, files beyond the 500 read said « non lu »** — never « fichier là » without reading it (Missions DECISIONS, help; noreg N44; audit 174).
 - **Settings › Little Navmap sheets: « Exporter les fiches » replaces « Synchroniser maintenant »** — the JSON sheet is the only source; a file changed in Little Navmap is listed, never merged nor overwritten, and imported through Aircraft with its preview (aerodb DECISIONS, SPEC § 5 ter, Settings help; noreg K218; SOG-0023).
 - **Report: the families offered are always those of the company the heading says** — a saved report reopened after « Vol en cours » no longer offers the families of that flight's company (Report DECISIONS; noreg G21; SOG-0041, audit 173).
 - **Missions: the registry, one line per mission** — the V2 model: state sign, identifier, title, family · series, origin → destination; the rest when the line is unfolded; family filter at the head, sorted by series (Missions DECISIONS, help; noreg N43; SOG-0286).

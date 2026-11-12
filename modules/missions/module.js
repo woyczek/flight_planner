@@ -320,6 +320,12 @@ const TX = {
   regMissing: ['fichier manquant', 'file missing', 'Datei fehlt', 'archivo ausente'],
   regUnread: ['fichier illisible', 'file unreadable', 'Datei unlesbar', 'archivo ilegible'],
   regRefused: ['chemin refusé', 'path refused', 'Pfad abgelehnt', 'ruta rechazada'],
+  // au-delà des REG_READ_MAX premiers fichiers : pas lu, dit (audit 174) ; jamais « fichier là » sans l'avoir lu
+  regNotRead: ['fichier non lu (au-delà des {m} premiers)', 'file not read (beyond the first {m})',
+    'Datei nicht gelesen (nach den ersten {m})',
+    'archivo no leído (más allá de los {m} primeros)'
+  ],
+  regReadOf: ['{r} fichiers lus sur {n}', '{r} files read of {n}', '{r} Dateien von {n} gelesen', '{r} archivos leídos de {n}'],
   regNotYet: ['pas dans le registre', 'not in the registry', 'nicht im Register', 'no está en el registro'],
   regDup: ['identifiant en double', 'duplicate identifier', 'doppelte Kennung', 'identificador duplicado'],
   regFormer: ['ancien identifiant : {f}', 'former identifier: {f}', 'frühere Kennung: {f}', 'identificador anterior: {f}'],
@@ -1163,6 +1169,7 @@ async function regLoad(s) {
   r.err = got.err || '';
   r.lines = RG.entries(r.doc);
   r.status = new Map();
+  r.readOf = null;
   r.found = [];
   r.plan = null;
   r.edit = null;
@@ -1205,8 +1212,12 @@ async function regLoad(s) {
     }));
     if (!live()) return;
   }
-  // au-delà de la limite : « à vérifier » reste vide, jamais « là » sans l'avoir lu
-  for (const e of todo.slice(REG_READ_MAX)) r.status.set(e.idx, 'ok');
+  // au-delà de la limite : « non lu », dit sur la ligne et au compte (« 500 fichiers lus sur N ») ; jamais « là » sans l'avoir lu (audit 174)
+  for (const e of todo.slice(REG_READ_MAX)) r.status.set(e.idx, 'notread');
+  r.readOf = todo.length > REG_READ_MAX ? {
+    r: REG_READ_MAX,
+    n: todo.length
+  } : null;
   r.checking = false;
   draw(s);
 }
@@ -1217,7 +1228,9 @@ const regSig = doc => JSON.stringify(RG.entries(doc).map(e => [e.idx, e.row.id])
 /** L'état d'une ligne pour l'œil : [clé, texte]. */
 function regState(s, idx) {
   const k = s.reg.status.get(idx);
-  return k ? [k, s.tt(k === 'ok' ? TX.regOk : k === 'missing' ? TX.regMissing : k === 'refused' ? TX.regRefused : TX.regUnread)] : [
+  return k ? [k, k === 'notread' ? s.tt(TX.regNotRead, {
+    m: REG_READ_MAX
+  }) : s.tt(k === 'ok' ? TX.regOk : k === 'missing' ? TX.regMissing : k === 'refused' ? TX.regRefused : TX.regUnread)] : [
     'checking', s.tt(TX.regChecking)
   ];
 }
@@ -1241,7 +1254,7 @@ function regRows(s) {
       ...r.lines.filter(e => hit(e.row.id, e.row.title, e.row.family)).map(e => ({
         kind: 'line',
         e,
-        rank: r.status.get(e.idx) === 'ok' && !bad.has(e.idx) ? 1 : 0
+        rank: r.status.get(e.idx) === 'notread' ? 2 : r.status.get(e.idx) === 'ok' && !bad.has(e.idx) ? 1 : 0 // les non lues en dernier
       })).sort((a, b) => a.rank - b.rank || serOf(a.e) - serOf(b.e) || a.e.row.id.localeCompare(b.e.row.id))
     ];
   return {
@@ -1255,13 +1268,14 @@ function regRows(s) {
 const SIGN = {
   ok: '✓',
   checking: '…',
+  notread: '?',
   notyet: '+'
 };
 
 /** La ligne repliée d'une mission (le modèle du tableau de la V2, SOG-0286) : le signe d'état, l'identifiant, le titre ; puis famille ·
  *  série et origine → destination. Deux lignes de texte au plus au téléphone, une seule sur un écran large. */
 function regSumHtml(s, k, word, id, title, fam, series, from, to, warn) {
-  const kind = warn ? 'warn' : k === 'ok' ? 'ok' : k === 'checking' ? 'info' : 'warn',
+  const kind = warn ? 'warn' : k === 'ok' ? 'ok' : k === 'checking' || k === 'notread' ? 'info' : 'warn',
     has = v => v !== undefined && v !== null && v !== '',
     second = [
       [familyParts(fam, s.ctx.lang?.() || 'fr').short, has(series) ? cut(series, 8) : ''].filter(Boolean).join(' · '),
@@ -1279,7 +1293,7 @@ function regLineHtml(s, e, plan) {
     lang = s.ctx.lang?.() || 'fr',
     dup = plan.dup.includes(e.idx),
     former = plan.former.includes(e.idx),
-    badges = [`<span class="f-badge" data-kind="${k === 'ok' ? 'ok' : k === 'checking' ? 'info' : 'warn'}">${esc(st)}</span>`,
+    badges = [`<span class="f-badge" data-kind="${k === 'ok' ? 'ok' : k === 'checking' || k === 'notread' ? 'info' : 'warn'}">${esc(st)}</span>`,
       dup ? `<span class="f-badge" data-kind="warn" data-rdup>${esc(s.tt(TX.regDup))}</span>` : '',
       former ? `<span class="f-badge" data-kind="info" data-rformer>${esc(s.tt(TX.regFormer, { f: cut(e.raw.id, 40) }))}</span>` : ''
     ].join(' '),
@@ -1337,7 +1351,7 @@ function regHtml(s) {
     broken = r.why === 'unreadable',
     // l'en-tête tient en deux lignes (SOG-0286 : vingt missions vues sans défiler à 1 280) : le titre (l'explication en infobulle et
     // dans l'aide), puis « Mettre à jour le registre », « Retour » et le compte sur la même ligne
-    count = r.why === 'loading' || broken ? '' : `<span class="f-muted" data-regcount>${esc(s.tt(TX.regCount, { n }))}${r.found.length ? ` · ${esc(s.tt(TX.regUnlisted, { n: r.found.length }))}` : ''}${r.checking ? ` · ${esc(s.tt(TX.regChecking))}` : ''}</span>`,
+    count = r.why === 'loading' || broken ? '' : `<span class="f-muted" data-regcount>${esc(s.tt(TX.regCount, { n }))}${r.found.length ? ` · ${esc(s.tt(TX.regUnlisted, { n: r.found.length }))}` : ''}${r.checking ? ` · ${esc(s.tt(TX.regChecking))}` : ''}${r.readOf ? ` · <span data-regreadof>${esc(s.tt(TX.regReadOf, r.readOf))}</span>` : ''}</span>`,
     head = `<div class="f-card" data-pane="registry"><h2 title="${esc(s.tt(TX.regHint))}">${esc(s.tt(TX.regTitle))}</h2>
     <div class="f-row ms-regbar"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button>${count}</div>`;
   if (r.why === 'loading') return `${head}<p class="f-muted" data-why="loading">${esc(s.tt(TX.regLoading))}</p></div>`;

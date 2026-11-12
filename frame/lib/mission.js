@@ -279,18 +279,20 @@ export function readRegistry(doc) {
     // l'identifiant est celui que disent le dossier et le fichier de la mission (« F_FIRE/F-071 » → F-071) quand le registre garde un
     // ancien numéro (« 71 », 50 missions du poste de l'utilisateur, SOG-0212) : jamais deux identifiants pour une mission ; l'ancien
     // reste dans formerId (la recherche le trouve) ; le registre n'est pas touché
-    const reg = clean(x.id),
+    // les textes d'un fichier de data/ sont bornés à la lecture (audit 174) : l'identifiant à 12 signes (la forme X-001A en a 6 ; un
+    // ancien numéro « BFM-001A » ou « 71 » tient), le titre et l'opération à 120, l'origine et la destination à 80
+    const reg = clean(x.id).slice(0, 12),
       leaf = safeFolder(clean(x.folder)).split('/').pop(),
       id = MISSION_FORM.test(leaf) && leaf !== reg ? leaf : reg;
     return {
       id,
       formerId: id !== reg ? reg.slice(0, 40) : '',
       family: clean(x.family || x.type),
-      title: clean(x.title),
-      operation: clean(x.operation?.name),
+      title: clean(x.title).slice(0, 120),
+      operation: clean(x.operation?.name).slice(0, 120),
       types: (x.aircraftTypes || x.teamTypes || []).map(clean).filter(Boolean),
-      origin: clean(x.origin),
-      destination: clean(x.destination),
+      origin: clean(x.origin).slice(0, 80),
+      destination: clean(x.destination).slice(0, 80),
       originIcao: icaoOf(x.origin),
       destinationIcao: icaoOf(x.destination),
       blockMin: num(x.estimate?.block),

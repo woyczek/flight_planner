@@ -1710,3 +1710,35 @@ def n43(c):
         c.tap(f'{R} [data-do="regback"]')
         c.until(f"!!document.querySelector('{M} [data-pane=list]')", what='back to the list')
     c.js(_REG_CLEAR)
+
+
+
+_MANY_IDS = [f'X-{i:03d}A' for i in range(1, 504)]
+_MANY_TEXTS = [['missions/mission_registry.yaml', 'schema: mission-registry\nversion: 1\nmissions:\n' + ''.join(
+    f'  - {{ id: {m}, family: TESTREG, title: Ligne {m}, folder: X_REG/{m}, files: [mission{m}.yaml] }}\n' for m in _MANY_IDS)]] + [
+    [f'missions/X_REG/{m}/mission{m}.yaml', mission_doc(m)] for m in _MANY_IDS]
+
+
+@case('N44', 'Missions › Registre, read bounded: a title of 4 000 signs is cut at 120, an identifier at 12, the operation at 120, origin and '
+      'destination at 80; beyond the 500 files read, a line says « fichier non lu » and the count « 500 fichiers lus sur 503 » — never « fichier là » '
+      'without reading it, never « sans fichier » in the plan', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='Sécurisation, audit 174 on db091c505: the texts of a file of data/ are bounded at reading (readRegistry only folded the spaces); '
+      'regLoad marked « ok » the lines beyond REG_READ_MAX without reading them (invented X-001A … X-503A)')
+def n44(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    got = c.js("""async () => { const MS = await import('/frame/lib/mission.js'); const R = await import('/modules/missions/registry.js');
+      const long = k => k.repeat(4000);
+      const [row] = MS.readRegistry({ missions: [{ id: long('X'), title: long('T'), operation: { name: long('O') }, origin: long('A'), destination: long('B') }] });
+      const plan = R.planOf({ missions: [{ id: 'X-001A' }, { id: 'X-002A' }] }, new Map([[0, 'notread'], [1, 'missing']]), []);
+      return { id: row.id.length, title: row.title.length, op: row.operation.length, from: row.origin.length, to: row.destination.length, noFile: plan.noFile } }""")
+    c.eq(got, {'id': 12, 'title': 120, 'op': 120, 'from': 80, 'to': 80, 'noFile': [1]},
+         'the texts are bounded at reading; a line not read is not « sans fichier » in the plan', what='bounds')
+    reg_open(c, _MANY_TEXTS)
+    c.until(f"!!document.querySelector('{R} [data-do=regmore]')", timeout=10000, what='« N autres »')
+    c.tap(f'{R} [data-do="regmore"]')
+    n = c.js(f"""(() => {{ const q = k => document.querySelectorAll('{R} [data-reglist] [data-rstate=' + k + ']').length;
+      return {{ ok: q('ok'), notread: q('notread') }} }})()""")
+    c.eq(n, {'ok': 500, 'notread': 3}, 'five hundred lines read and said there, the three beyond said « non lu »', what='states')
+    c.ok(norm(row(c, 'regReadOf').replace('{r}', '500').replace('{n}', '503')) in norm(c.text(f'{R} [data-regcount]')), c.text(f'{R} [data-regcount]'),
+         'the count says how many files were read')
+    c.js(_REG_CLEAR)
