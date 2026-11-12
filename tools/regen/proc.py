@@ -578,9 +578,15 @@ def _build_eaip(job, view, s, data, cycle, out):
         except (OSError, ValueError, SystemExit) as e:
             job.log(f'{icao}: {e.__class__.__name__}')
             d = None
+        text = None
         if d:
+            try:
+                text = json.dumps(d, ensure_ascii=False, indent=1, allow_nan=False) + '\n'      # jamais « Infinity » / « NaN » (JSON invalide pour la page) : un fichier qui en porterait n'est pas écrit, et le terrain est dit
+            except ValueError:
+                job.log(f'{icao}: nombre non fini dans la lecture, fichier non écrit')
+        if text is not None:
             with open(os.path.join(out, f'{icao}.json'), 'w', encoding='utf-8') as f:
-                f.write(json.dumps(d, ensure_ascii=False, indent=1) + '\n')
+                f.write(text)
             entries.update(proc_sia.index_of({icao: d}, cycle)['aerodromes'])
             n_ok += 1
         view.set(s, done=n + 1)

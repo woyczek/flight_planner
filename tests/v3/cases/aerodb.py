@@ -8810,3 +8810,28 @@ def k215(c):
     t = _sia(base[:8] + ['Radius ' + '9' * 400 + '.5'])
     rf = [x for q in t['groups'] for x in q['legs'] if x['leg'] == 'RF']
     c.eq(rf[0].get('radius') if rf else 'noRF', None, 'the one-line form « Radius <400 digits> » is ignored too', what='oneline')
+
+
+@case('K216', 'No non-finite number can leave the procedure reader (SOG-0283, audit 170): a distance, a vertical angle, an accuracy or an RF radius of hundreds of digits is not read (the cell stays empty), the whole reading serialises with allow_nan=False, and the aerodrome writer refuses a document that would carry « Infinity » instead of writing it', 'K', static=True,
+      rule='Ergonomist 12 Nov 2026 (SOG-0283): after the glyph and radius bounds (K215), the other float() sites of tools/proc_sia.py (distance, vertical angle, accuracy, RNAV accuracy) take one to three integer digits; and tools/regen/proc.py writes with allow_nan=False, said in the job log and the file not written, never an invalid JSON file. Radius range: ]0 ; 50] NM (DECISIONS).')
+def k216(c):
+    import json
+    big = '9' * 400
+    rows = ['AIP AD 2 LFBD DATA RWY05 RNP A VPT CODE', 'PRECODING RNP A VPT RWY 05', 'RNP A RWY 05 (VPT)', HDR_LFBD, 'IF FD05A - - - - - 4000 4000 185 - -',
+            f'TF BD05B - 193 193.0 {big}.5 - - - 185 -3.40 /49 -', f'TF RW05 Yes 045 045.4 3.6 - - - - -{big}.5 /49 {big}.5',
+            'RF', 'Center CD051', 'BD05C - - - 5.7 L - - 185 -3.40 /49 -', 'Radius', big + ',5NM']
+    t = _sia(rows)
+    legs = [x for q in t['groups'] for x in q['legs']]
+    c.ok(all(x.get('nm') is None or x['nm'] < 1000 for x in legs) and all(x.get('rnp') is None or x['rnp'] < 100 for x in legs) and all(x.get('vpa') is None or abs(x['vpa']) < 100 for x in legs),
+         str([(x.get('id'), x.get('nm'), x.get('vpa'), x.get('rnp')) for x in legs]), 'no leg carries a distance, an angle or an accuracy of hundreds of digits')
+    try:
+        json.dumps(t['groups'], allow_nan=False)
+        ok = True
+    except ValueError:
+        ok = False
+    c.ok(ok, 'serialised', 'the whole reading serialises with allow_nan=False (nothing non-finite)')
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    src = (ROOT / 'tools' / 'regen' / 'proc.py').read_text(encoding='utf-8')
+    c.ok('allow_nan=False' in src and 'nombre non fini' in src, 'writer', 'the aerodrome writer of the proc/build job refuses a non-finite number (allow_nan=False, said in the log, the file not written)')

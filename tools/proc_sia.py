@@ -459,12 +459,12 @@ def _dircam_leg(tokens):
             over = True
         elif w in ('L', 'R') and turn is None:
             turn = w
-        elif re.fullmatch(r'@-?\d+(?:\.\d+)?/\d+(?:\.\d+)?', w):
+        elif re.fullmatch(r'@-?\d{1,2}(?:\.\d{1,3})?/\d{1,3}(?:\.\d{1,3})?', w):
             vpa = float(w[1:].split('/')[0])
         elif re.fullmatch(r'\d{3}', w) and crs is None and i + 1 < len(tok) and re.fullmatch(r'\d{3}\.\d', tok[i + 1]):
             crs = int(w)
             i += 1
-        elif re.fullmatch(r'\d+\.\d', w) and nm is None and crs is not None:
+        elif re.fullmatch(r'\d{1,3}\.\d', w) and nm is None and crs is not None:
             nm = float(w)
         elif re.fullmatch(r'\d{2,5}', w):
             nums.append(int(w))
@@ -487,18 +487,18 @@ def _leg_of(tokens, c, rnp, warn):
         return None
     leg = {'id': wpt, 'leg': tokens[0], 'over': True if over == 'Yes' else None,
            'crs': int(mag) if mag and mag.isdigit() else None,
-           'nm': float(nm) if nm and re.fullmatch(r'\d+(?:\.\d+)?', nm) else None,
+           'nm': float(nm) if nm and re.fullmatch(r'\d{1,3}(?:\.\d{1,3})?', nm) else None,
            'turn': turn if turn in ('L', 'R') else None,
            'alt': alt_constraint(lo, hi),
            'kt': int(ias) if ias and ias.isdigit() else None}
     if rnp:
-        m = last and re.fullmatch(r'@(-?[\d.]+)/([\d.]+)', last)
+        m = last and re.fullmatch(r'@(-?\d{1,2}(?:\.\d{1,3})?)/(\d{1,3}(?:\.\d{1,3})?)', last)
         leg['vpa'] = float(m.group(1)) if m else None
         tail = extra[0] if extra else None
         leg['rnp'] = float(tail) if tail and re.fullmatch(r'\d{1,3}(?:\.\d{1,3})?', tail) else None
     else:
-        nav = last and re.fullmatch(r'RNAV\s+(\d+)', last)          # « RNAV 1 » : précision de 1 NM
-        leg['rnp'] = float(last) if last and re.fullmatch(r'\d+(?:\.\d+)?', last) else float(nav.group(1)) if nav else None
+        nav = last and re.fullmatch(r'RNAV\s+(\d{1,2})', last)          # « RNAV 1 » : précision de 1 NM
+        leg['rnp'] = float(last) if last and re.fullmatch(r'\d{1,3}(?:\.\d{1,3})?', last) else float(nav.group(1)) if nav else None
     return leg
 
 
