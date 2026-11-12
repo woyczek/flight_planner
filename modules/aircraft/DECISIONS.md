@@ -151,3 +151,16 @@
   typed, as a registration when it has the shape (fbhhh → F-BHHH; an N-number or a typed dash kept), opens a new aircraft with it; the
   third-party site opens in a new tab at the registration (a link, the pilot's gesture: no launcher call, no reading of its pages, no
   host added). The button carries `data-newreg` (a `data-reg` was taken for a row of the fleet by the click handler). M43.
+- **12 Nov 2026 — the French register on the Fleet** (SOG-0270, the user's three uses; AeroDB 7c6ec44ae, verb `aircraft/registry`,
+  read only, through `regen/job` already declared: no launcher access widened). (1) Under « Aucun aéronef ne correspond », a registration
+  the register knows: « F-BHHH : CESSNA 172 S (registre français, données du …) » and « Créer à l'identique » (then the primary gesture,
+  the empty « Créer F-BHHH » second). (2) In a new aircraft, the registrations of a type (seven, then « n autres », « plus de n » when the
+  answer is truncated), the source and its date cited; one chosen fills the sheet. (3) The home aerodrome only when the register carries
+  it; it fills the base field only when it has the shape of an ICAO indicator. The type: the register model is a LABEL; the proposed
+  code is the one of the local type base whose model has a word EXACTLY equal to a word of the label (« PA-28-181 » gives PA, PA28,
+  PA28181) and whose name carries the register's maker, one candidate only, else « non reconnu » (« SR22 » never becomes SR2T); said
+  « suggestion, à vérifier ». `absent` → « registre non déposé sur ce poste » and the link to Data. No person's name shown nor asked;
+  the rows are bounded and escaped (a deposited file is untrusted); nothing is written but the sheet the pilot saves. M45 (red before,
+  fake launcher in the contract's shape). The maker: the reader gives it only when ten aircraft or more carry it (a homebuilder is a
+  person; AeroDB bcb60f834, Sécurisation); empty, the line says « <model> · constructeur non précisé »; no label, key or type is ever built
+  from the maker alone (it only narrows the type candidates); a row without model is dropped.

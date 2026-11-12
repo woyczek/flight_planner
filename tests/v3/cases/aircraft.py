@@ -1221,3 +1221,118 @@ def m44(c):
     got = norm(c.text(f'{M} [data-count]') or '')
     want = {'fr': '0 aéronef', 'en': '0 aircraft', 'de': '0 Luftfahrzeuge', 'es': '0 aeronaves'}[c.lang]
     c.eq(got, want, 'an empty fleet said by the rule of the language (French: 0 is singular)', what='count')
+
+
+
+# SOG-0270: an INVENTED register in the shape of the contract of aircraft/registry (frame/aerodb/INTEGRATION.md « French aircraft
+# registry »): registration, maker, model, serial, home aerodrome; no person anywhere (the verb has none)
+_REG_ROWS = [{'reg': 'F-BHHH', 'maker': 'CESSNA', 'model': '172 S', 'serial': '17299901', 'base': 'LFPN'},
+             {'reg': 'F-GXYZ', 'maker': 'ROBIN', 'model': 'DR 400-120', 'serial': '9901', 'base': ''},
+             {'reg': 'F-PXYZ', 'maker': '', 'model': 'RV-7', 'serial': '70001', 'base': ''},
+             *[{'reg': f'F-GC{c}{d}', 'maker': 'CESSNA', 'model': '172 N', 'serial': f'1729{i:04d}', 'base': ''}
+               for i, (c, d) in enumerate([('A', 'A'), ('A', 'B'), ('A', 'C'), ('A', 'D'), ('A', 'E'), ('A', 'F'), ('A', 'G'), ('A', 'H')])]]
+_REG_TYPES = ['AircraftDB/aircraft_db.json', {'C172': {'description': 'L1P', 'model': 'Cessna 172'}, 'SR2T': {'description': 'L1P', 'model': 'Cirrus SR22T'},
+                                              'EC25': {'description': 'H2T', 'model': 'EC225'}}, 'document']
+
+
+def _registry_launcher(c, absent=False):
+    """A FAKE launcher (c.context.route on /__setup/, never a real one) answering the job aircraft/registry by the contract; the posted
+    bodies are recorded in st['posts']."""
+    import urllib.parse
+    st = {'posts': []}
+
+    def answer(a):
+        if absent:
+            return {'ok': True, 'rows': [], 'count': 0, 'absent': True}
+        want = str(a.get('reg') or '').replace('-', '').upper()
+        words = str(a.get('type') or '').lower().split()
+        rows = [r for r in _REG_ROWS if (not want or r['reg'].replace('-', '') == want) and all(w in f"{r['maker']} {r['model']}".lower() for w in words)]
+        lim = a.get('limit', 50)
+        return {'ok': True, 'source': 'Registre français des immatriculations, DGAC', 'date': '2026-10-01', 'rows': rows[:lim], 'count': min(len(rows), lim),
+                'truncated': len(rows) > lim}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        body = {}
+        if u.path.endswith('/__setup/status'):
+            body = _LAUNCHER_STATUS
+        elif u.path.endswith('/__setup/regen/job') and req.method == 'POST':
+            st['posts'].append(json.loads(req.post_data or '{}'))
+            body = {'job': f"j{len(st['posts'])}"}
+        elif u.path.endswith('/__setup/regen/job'):
+            post = st['posts'][-1] if st['posts'] else {}
+            res = answer(post.get('args') or {}) if (post.get('set'), post.get('verb')) == ('aircraft', 'registry') else {'ok': False}
+            body = {'id': f"j{len(st['posts'])}", 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    return st
+
+
+@case('M45', 'Fleet and the French register: under « Aucun aéronef ne correspond » the register line (type, source and date, home aerodrome when it '
+      'is there, the type proposed as a SUGGESTION or « non reconnu ») and « Créer à l\'identique »; in a new aircraft, the registrations of a type '
+      '(seven, then « n autres »); « registre non déposé » with the Data link',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0270 (user, three uses; AeroDB 7c6ec44ae, verb aircraft/registry): the register model is a LABEL, matched to our types by the local '
+      'type base and said « suggestion », never guessed; no person\'s name shown nor asked; a fake launcher in the shape of the contract; captures 390 and 1 280')
+def m45(c):
+    A = 'modules/aircraft/module.js'
+    docs = [_REG_TYPES]
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        st = _registry_launcher(c)
+        c.open('aircraft', docs=docs, app='maintenance')
+        c.until(f"!!document.querySelector('{M} input[data-k=q]')", timeout=15000, what='the fleet and its search')
+        # (1) + (3): a registration the register knows, with its home aerodrome; the type proposed as a suggestion
+        c.page.fill(f'{M} input[data-k="q"]', 'fbhhh')
+        c.until(f"!!document.querySelector('{M} [data-regline] [data-regsays]')", timeout=10000, what=f'{w} px: the register line under « Aucun aéronef »')
+        says = norm(c.text(f'{M} [data-regsays]') or '')
+        c.ok(says.startswith('F-BHHH') and 'CESSNA 172 S' in says and norm(tx(A, 'regLine', c.lang).split('{type}')[1].split('{date}')[0]) in says
+             and '2026' in says and norm(tx(A, 'regBase', c.lang).replace('{b}', 'LFPN')) in says, says,
+             'the registration, the register label as it is, the source and its date, the home aerodrome (it is in the register)')
+        c.eq(norm(c.text(f'{M} [data-regsug]') or ''), norm(tx(A, 'regSug', c.lang).replace('{t}', 'C172')), 'C172 proposed, said a suggestion', what='suggestion')
+        c.ok(all(set(p.get('args', {})) <= {'reg', 'type', 'limit'} for p in st['posts']), st['posts'], 'the verb is asked a registration or a type, nothing else')
+        c.js(f"document.querySelector('{M} [data-regline]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'M45_{c.design}_{w}_{c.lang}_delivered.png')
+        c.tap(f'{M} [data-do="addreg"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=edit]')", timeout=5000, what='« Créer à l\'identique »: the new aircraft')
+        got = c.js(f"['registration', 'type', 'base', 'operator'].map(k => document.querySelector('{M} [data-f=' + k + ']').value)")
+        c.eq(got, ['F-BHHH', 'C172', 'LFPN', ''], 'registration, proposed type and home aerodrome filled; the operator never (no person in the register)', what='filled')
+        c.ok(norm(tx(A, 'regFrom', c.lang).replace('{label}', 'CESSNA 172 S')) in norm(c.text(f'{M} [data-regnote]') or ''), c.text(f'{M} [data-regnote]'),
+             'the sheet says where the type comes from')
+        c.tap(f'{M} [data-do="back"]')
+        # a type the base does not know: shown as it is, never guessed; no home aerodrome said when the register has none
+        c.page.fill(f'{M} input[data-k="q"]', 'fgxyz')
+        c.until(f"!!document.querySelector('{M} [data-regline] [data-regsays]')", timeout=10000, what='the register line of F-GXYZ')
+        says = norm(c.text(f'{M} [data-regsays]') or '')
+        c.ok('ROBIN DR 400-120' in says and norm(tx(A, 'regBase', c.lang).split('{b}')[0]) not in says, says, 'the label as it is, no « attaché à »')
+        c.eq(norm(c.text(f'{M} [data-regsug]') or ''), norm(tx(A, 'regNoType', c.lang)), 'an unknown type said « non reconnu », never guessed', what='no type')
+        # a maker the reader emptied (fewer than ten aircraft: a homebuilder is a person): « constructeur non précisé », the line said by its model
+        c.page.fill(f'{M} input[data-k="q"]', 'fpxyz')
+        c.until(f"(document.querySelector('{M} [data-regline] [data-regsays]')?.textContent || '').includes('RV-7')", timeout=10000, what='the register line of F-PXYZ')
+        c.ok(norm(tx(A, 'regNoMaker', c.lang).replace('{model}', 'RV-7')) in norm(c.text(f'{M} [data-regsays]') or ''), c.text(f'{M} [data-regsays]'),
+             'the model and « constructeur non précisé »')
+        # (2): in a new aircraft, the registrations of a type, seven then « n autres »; one chosen fills the sheet
+        c.page.fill(f'{M} input[data-k="q"]', '')
+        c.tap(f'{M} [data-do="add"]')
+        c.until(f"!!document.querySelector('{M} [data-regsearch] input[data-k=rq]')", timeout=5000, what='the register search in a new aircraft')
+        c.page.fill(f'{M} input[data-k="rq"]', 'cessna 172')
+        c.until(f"document.querySelectorAll('{M} [data-regpick]').length === 7", timeout=10000, what='seven registrations of the type')
+        c.eq(norm(c.text(f'{M} [data-do=regmore]') or ''), norm(tx(A, 'regMore', c.lang).replace('{n}', '2')), 'then « 2 autres »', what='more')
+        c.ok('2026' in (c.text(f'{M} [data-regsource]') or '') and 'DGAC' in (c.text(f'{M} [data-regsource]') or ''), c.text(f'{M} [data-regsource]'), 'the source and its date cited')
+        c.js(f"document.querySelector('{M} [data-regsearch]').scrollIntoView({{block: 'start'}})")
+        c.shot(f'M45_{c.design}_{w}_{c.lang}_type_delivered.png')
+        c.tap(f'{M} [data-do="regmore"]')
+        c.until(f"document.querySelectorAll('{M} [data-regpick]').length === 9", timeout=5000, what='all nine')
+        c.tap(f'{M} [data-regpick="1"]')
+        c.until(f"document.querySelector('{M} [data-f=registration]')?.value === 'F-GCAA'", timeout=5000, what='the chosen registration fills the sheet')
+        c.eq(c.js(f"document.querySelector('{M} [data-f=type]').value"), 'C172', 'its type proposed from the local type base', what='type')
+        c.context.unroute(re.compile(r'/__setup/'))
+    # without the register on the workstation: one line, not an error, and the way to the Data screen
+    _registry_launcher(c, absent=True)
+    c.open('aircraft', docs=docs, app='maintenance')
+    c.until(f"!!document.querySelector('{M} input[data-k=q]')", timeout=15000, what='the fleet and its search')
+    c.page.fill(f'{M} input[data-k="q"]', 'fbhhh')
+    c.until(f"!!document.querySelector('{M} [data-regline][data-absent]')", timeout=10000, what='« registre non déposé sur ce poste »')
+    c.ok(norm(tx(A, 'regAbsent', c.lang)) in norm(c.text(f'{M} [data-regline]') or '') and c.js(f"document.querySelector('{M} [data-regline] a').getAttribute('href')") == '#data',
+         c.text(f'{M} [data-regline]'), 'the line and its link to Data')

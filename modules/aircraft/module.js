@@ -156,7 +156,42 @@ const TX = {
     '{r} aus der Flotte nehmen? Sein Leistungsblatt, falls vorhanden, bleibt erhalten.',
     '¿Retirar {r} de la flota? Su ficha de rendimiento, si la tiene, se conserva.'
   ],
-  retired: ['{r} retiré de la flotte.', '{r} retired from the fleet.', '{r} aus der Flotte genommen.', '{r} retirado de la flota.']
+  retired: ['{r} retiré de la flotte.', '{r} retired from the fleet.', '{r} aus der Flotte genommen.', '{r} retirado de la flota.'],
+  // SOG-0270 : le registre français des immatriculations (verbe aircraft/registry d'AeroDB, lu sur ce poste ; aucun nom de personne)
+  regLine: ['{reg} : {type} (registre français, données du {date})', '{reg}: {type} (French register, data of {date})',
+    '{reg}: {type} (französisches Register, Stand {date})', '{reg}: {type} (registro francés, datos del {date})'
+  ],
+  regNoMaker: ['{model} · constructeur non précisé', '{model} · maker not given', '{model} · Hersteller nicht angegeben',
+    '{model} · fabricante no indicado'
+  ],
+  regBase: ['attaché à {b}', 'based at {b}', 'Heimatflugplatz {b}', 'con base en {b}'],
+  regSug: ['Type proposé : {t} — suggestion d’après le libellé du registre, à vérifier.',
+    'Proposed type: {t} — a suggestion from the register\'s label, to check.',
+    'Vorgeschlagener Typ: {t} — Vorschlag nach der Bezeichnung im Register, zu prüfen.',
+    'Tipo propuesto: {t} — sugerencia según la denominación del registro, a comprobar.'
+  ],
+  regNoType: ['Type du registre non reconnu dans la base des types : à choisir.',
+    'Register type not recognised in the type database: to choose.',
+    'Typ des Registers in der Typendatenbank nicht erkannt: bitte wählen.',
+    'Tipo del registro no reconocido en la base de tipos: a elegir.'
+  ],
+  regFrom: ['Registre français : {label}.', 'French register: {label}.', 'Französisches Register: {label}.',
+    'Registro francés: {label}.'
+  ],
+  regSame: ['Créer à l’identique', 'Create as registered', 'Wie im Register anlegen', 'Crear igual que en el registro'],
+  regAbsent: ['Registre français non déposé sur ce poste.', 'French register not deposited on this workstation.',
+    'Französisches Register auf diesem Rechner nicht hinterlegt.', 'Registro francés no depositado en este equipo.'
+  ],
+  regDataLink: ['Le déposer dans Données', 'Deposit it in Data', 'In Daten hinterlegen', 'Depositarlo en Datos'],
+  regSearch: ['Chercher dans le registre français (constructeur et modèle)', 'Search the French register (maker and model)',
+    'Im französischen Register suchen (Hersteller und Modell)', 'Buscar en el registro francés (fabricante y modelo)'
+  ],
+  regNone: ['Aucune immatriculation de ce type au registre.', 'No registration of this type in the register.',
+    'Kein Kennzeichen dieses Typs im Register.', 'Ninguna matrícula de este tipo en el registro.'
+  ],
+  regSource: ['{source}, données du {date}', '{source}, data of {date}', '{source}, Stand {date}', '{source}, datos del {date}'],
+  regMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
+  regMorePlus: ['plus de {n} autres', 'more than {n} more', 'mehr als {n} weitere', 'más de {n} más']
 };
 
 /** Le style du module (aucune feuille globale : les jetons et les classes du cadre, ces quelques règles en plus). */
@@ -168,7 +203,12 @@ const STYLE = `[data-module="aircraft"] .ac-head{align-items:center;gap:8px}
 [data-module="aircraft"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
 [data-module="aircraft"] .fu-sugitem:last-child{border-bottom-width:0}
 [data-module="aircraft"] .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
-[data-module="aircraft"] .ac-group>legend{font-weight:600;padding:0;margin-bottom:4px}`;
+[data-module="aircraft"] .ac-group>legend{font-weight:600;padding:0;margin-bottom:4px}
+[data-module="aircraft"] .ac-regline{display:grid;gap:4px;margin:8px 0}
+[data-module="aircraft"] .ac-regline p{margin:0}
+[data-module="aircraft"] .ac-regline>button{justify-self:start}
+[data-module="aircraft"] .ac-regsearch{margin:0 0 12px;padding-bottom:12px;border-bottom:1px solid var(--sog-border)}
+[data-module="aircraft"] .ac-regsearch .f-list{margin-top:4px}`;
 
 let S = null;
 
@@ -193,7 +233,8 @@ export async function mount(el, ctx) {
     view: 'fleet',
     q: '',
     all: false,
-    edit: null // { was: immatriculation d'origine ('' pour un ajout), draft }
+    edit: null, // { was: immatriculation d'origine ('' pour un ajout), draft, rq (recherche du registre), rall, note }
+    regs: new Map() // SOG-0270 : les réponses du registre de la séance, par question ({ wait } pendant l'appel)
   };
   s.sv = createSheetsView({
     ctx,
@@ -383,7 +424,199 @@ function noHitActions(s) {
   const reg = regOfQuery(s.q);
   if (!reg) return '';
   const url = `https://rzjets.net/aircraft/?registry=${encodeURIComponent(reg.replace(/-/g, ''))}`;
-  return `<div class="f-row ac-nohit"><button type="button" class="primary" data-do="addq" data-newreg="${esc(reg)}">${esc(s.tt(TX.createReg, { reg }))}</button><a class="f-linkbtn" data-rzjets href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.tt(TX.searchRzHint))}">${esc(s.tt(TX.searchRz))}</a></div>`;
+  regAsk(s, {
+    reg
+  });
+  const line = regLineHtml(s, reg);
+  return `${line}<div class="f-row ac-nohit"><button type="button"${line.includes('data-do="addreg"') ? '' : ' class="primary"'} data-do="addq" data-newreg="${esc(reg)}">${esc(s.tt(TX.createReg, { reg }))}</button><a class="f-linkbtn" data-rzjets href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.tt(TX.searchRzHint))}">${esc(s.tt(TX.searchRz))}</a></div>`;
+}
+
+/* ---- SOG-0270 : le registre français des immatriculations (AeroDB, verbe aircraft/registry, lecture seule) ----
+ * Le verbe passe par regen/job (déjà déclaré par ce module : rien n'élargit l'accès du lanceur). Il ne rend aucun nom de personne :
+ * immatriculation, constructeur, modèle, numéro de série, aérodrome d'attache (vide pour 55 % des lignes). Le type du registre est un
+ * LIBELLÉ : rapproché de nos types par la base locale, dit « suggestion », jamais deviné (un type non reconnu se montre tel quel). Rien
+ * n'est écrit hormis la fiche que le pilote enregistre lui-même. */
+
+/** Une clé de question au registre ; null si la question n'a pas la forme que le verbe accepte (rien n'est alors demandé). */
+function regKey(args) {
+  if (args.reg) return /^[A-Z0-9 -]{2,12}$/.test(args.reg) ? `r:${args.reg.replace(/-/g, '')}` : null;
+  const t = String(args.type || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  return t.length >= 3 && t.length <= 60 && /^[\p{L}\p{N}_ .+/-]+$/u.test(t) ? `t:${t}` : null;
+}
+/** Un texte du registre, borné (le fichier est déposé par le pilote : une entrée non fiable). */
+const regText = (v, n) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
+/** Une ligne du registre, gardée seulement si son immatriculation en a la forme ; les seuls champs du contrat. */
+function regRow(r) {
+  const reg = regText(r?.reg, 12).toUpperCase();
+  if (!/^[A-Z0-9-]{2,12}$/.test(reg) || !regText(r.model, 60)) return null; // une ligne sans modèle ne dit rien d'utile
+  return {
+    reg,
+    maker: regText(r.maker, 60),
+    model: regText(r.model, 60),
+    base: regText(r.base, 40)
+  };
+}
+/** Demande au registre (une fois par question et par séance, 350 ms après la dernière frappe) ; le dessin suit la réponse. Sans
+ *  lanceur, lanceur occupé ou réponse illisible : rien n'est dit (la question pourra être reposée). */
+function regAsk(s, args) {
+  const key = regKey(args);
+  if (!key || s.regs.has(key) || typeof s.ctx.launcher?.job !== 'function') return;
+  clearTimeout(s.regTimer);
+  s.regTimer = setTimeout(async () => {
+    if (S !== s || s.regs.has(key)) return;
+    s.regs.set(key, {
+      wait: true
+    });
+    let v = null;
+    try {
+      const r = await s.ctx.launcher.job('regen/job', {
+        set: 'aircraft',
+        verb: 'registry',
+        args: {
+          ...(args.reg ? {
+            reg: args.reg
+          } : {
+            type: key.slice(2)
+          }),
+          limit: args.reg ? 5 : 50
+        }
+      });
+      const x = r?.result;
+      if (x && typeof x === 'object' && x.ok === true) v = x.absent === true ? {
+        absent: true,
+        rows: []
+      } : {
+        rows: (Array.isArray(x.rows) ? x.rows : []).slice(0, 200).map(regRow).filter(Boolean),
+        source: regText(x.source, 80),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? x.date : '',
+        truncated: x.truncated === true
+      };
+    } catch {
+      v = null;
+    }
+    if (S !== s) return;
+    if (!v) return s.regs.delete(key);
+    if (args.reg) {
+      const row = v.rows.find(x => x.reg.replace(/-/g, '') === args.reg.replace(/-/g, ''));
+      if (row) row.sug = await typeOfRegistry(s, row);
+    }
+    if (S !== s) return;
+    s.regs.set(key, v);
+    regRedraw(s);
+  }, 350);
+}
+/** Redessine ce que le registre a répondu, là où l'écran le montre encore (la ligne sous « Aucun aéronef », ou la recherche de
+ *  l'éditeur). */
+function regRedraw(s) {
+  if (s.view !== 'fleet') return;
+  if (!s.edit) {
+    const reg = regOfQuery(s.q),
+      line = s.el.querySelector('[data-regline]');
+    if (reg && line) line.outerHTML = regLineHtml(s, reg);
+    // le registre connaît l'immatriculation : « Créer à l'identique » est le geste premier, « Créer F-BHHH » (vide) passe en second
+    s.el.querySelector('[data-do="addq"]')?.classList.toggle('primary', !s.el.querySelector('[data-do="addreg"]'));
+    return;
+  }
+  const res = s.el.querySelector('[data-regres]');
+  if (res) res.innerHTML = regResHtml(s);
+}
+/** La date du registre dite à la façon de la langue (« 01/10/2026 »), ou telle quelle. */
+function regDate(s, d) {
+  if (!d) return '?';
+  try {
+    return new Date(`${d}T00:00:00Z`).toLocaleDateString(s.ctx.lang?.() || 'fr', {
+      timeZone: 'UTC'
+    });
+  } catch {
+    return d;
+  }
+}
+/** « CESSNA 172 S », le libellé du registre tel quel ; sans constructeur (le lecteur le vide quand moins de dix aéronefs le portent :
+ *  un constructeur amateur est une personne), « RV-7 · constructeur non précisé » : jamais un libellé du constructeur seul. */
+const regLabel = (s, row) => row.maker ? `${row.maker} ${row.model}`.trim() : s.tt(TX.regNoMaker, {
+  model: row.model || '?'
+});
+/** Le type proposé pour une ligne du registre : le code de la base locale des types dont un mot du modèle (« 172 », « PA-28 »)
+ *  est EXACTEMENT un mot du libellé du registre, et dont le nom porte le constructeur du registre ; un seul candidat, sinon '' (non
+ *  reconnu : jamais deviné ; « SR22 » ne devient pas « SR22T »). */
+async function typeOfRegistry(s, row) {
+  const A = await Promise.resolve().then(() => s.ctx.aerodb?.aircraft?.()).catch(() => null);
+  if (typeof A?.searchTypes !== 'function') return '';
+  const fold = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+    // les mots d'un libellé : chacun, et ses morceaux joints par leurs tirets (« PA-28-181 » → PA, PA28, PA28181)
+    words = text => new Set(String(text || '').split(/[\s/]+/).flatMap(w => {
+      const parts = w.split('-').filter(Boolean);
+      return parts.map((_, i) => fold(parts.slice(0, i + 1).join('')));
+    }).filter(w => /\d/.test(w) && w.length >= 2)),
+    mine = words(row.model),
+    maker = fold(String(row.maker || '').split(/\s+/)[0]), // un filtre seulement : le type se lit toujours dans le MODÈLE
+    asks = [...new Set(String(row.model || '').split(/[\s/-]+/).map(fold).filter(w => /\d/.test(w) && w.length >= 2))],
+    found = new Set();
+  for (const q of asks) {
+    const hits = await Promise.resolve().then(() => A.searchTypes(q, 20)).catch(() => []) || [];
+    for (const h of Array.isArray(hits) ? hits : []) {
+      const code = String(h?.code || '').toUpperCase(),
+        label = String(h?.label || '').replace(/\s*\([A-Z0-9]{2,4}\)\s*$/, '');
+      if (code && [...words(label)].some(w => mine.has(w)) && (!maker || maker.length < 3 || fold(label).includes(maker))) found.add(
+        code);
+    }
+  }
+  return found.size === 1 ? [...found][0] : '';
+}
+/** La ligne du registre sous « Aucun aéronef ne correspond » : « F-BHHH : CESSNA 172 S (registre français, données du …) », l'aérodrome
+ *  d'attache seulement s'il est au registre, le type proposé (suggestion) ou « non reconnu », et « Créer à l'identique » ; « registre
+ *  non déposé sur ce poste » et le lien vers Données quand le registre manque ; rien sinon. */
+function regLineHtml(s, reg) {
+  const v = s.regs.get(regKey({
+    reg
+  }));
+  if (!v || v.wait) return '<div data-regline hidden></div>';
+  if (v.absent) return `<p class="f-muted ac-regline" data-regline data-absent>${esc(s.tt(TX.regAbsent))} <a href="#data">${esc(s.tt(TX.regDataLink))}</a></p>`;
+  const row = v.rows.find(x => x.reg.replace(/-/g, '') === reg.replace(/-/g, ''));
+  if (!row) return '<div data-regline hidden></div>';
+  const head = s.tt(TX.regLine, {
+    reg: regOfQuery(row.reg) || row.reg,
+    type: regLabel(s, row),
+    date: regDate(s, v.date)
+  }) + (row.base ? ` · ${s.tt(TX.regBase, { b: row.base })}` : '');
+  return `<div class="ac-regline" data-regline title="${esc([v.source, v.date].filter(Boolean).join(', '))}"><p data-regsays>${esc(head)}</p><p class="f-muted" data-regsug>${esc(row.sug ? s.tt(TX.regSug, { t: row.sug }) : s.tt(TX.regNoType))}</p><button type="button" class="primary" data-do="addreg" data-newreg="${esc(reg)}">${esc(s.tt(TX.regSame))}</button></div>`;
+}
+/** Les immatriculations d'un type au registre (la recherche de l'éditeur d'un nouvel aéronef) : la source citée, sept lignes puis
+ *  « n autres » ; « registre non déposé » ou « aucune » sinon. */
+function regResHtml(s) {
+  const key = regKey({
+      type: s.edit?.rq || ''
+    }),
+    v = key ? s.regs.get(key) : null;
+  if (!v || v.wait) return '';
+  if (v.absent) return `<p class="f-muted" data-absent>${esc(s.tt(TX.regAbsent))} <a href="#data">${esc(s.tt(TX.regDataLink))}</a></p>`;
+  if (!v.rows.length) return `<p class="f-muted" data-regnone>${esc(s.tt(TX.regNone))}</p>`;
+  const shown = s.edit.rall ? v.rows : v.rows.slice(0, ROWS),
+    rest = v.rows.length - shown.length,
+    more = rest > 0 ? `<button type="button" class="f-linkbtn" data-do="regmore">${esc(s.tt(v.truncated ? TX.regMorePlus : TX.regMore, { n: rest }))}</button>` : '';
+  return `<p class="f-muted" data-regsource>${esc(s.tt(TX.regSource, { source: v.source || '', date: regDate(s, v.date) }))}</p><div class="f-list">${shown.map((r, i) => `<button type="button" class="f-item ac-row" data-regpick="${i}"><span><b>${esc(r.reg)}</b> ${esc(regLabel(s, r))}</span><span class="f-muted">${esc(r.base)}</span></button>`).join('')}</div>${more}`;
+}
+/** Une fiche neuve remplie d'après une ligne du registre : l'immatriculation, le type proposé (vide s'il n'est pas reconnu), l'aérodrome
+ *  d'attache s'il a la forme d'un indicateur OACI ; la note dit d'où cela vient. Rien n'est enregistré avant « Enregistrer ». */
+function regFill(s, row, base = {}) {
+  s.edit = {
+    was: '',
+    rq: s.edit?.rq || '',
+    draft: FL.normalize({
+      ...base,
+      registration: regOfQuery(row.reg) || row.reg,
+      type: row.sug || '',
+      ...(/^[A-Z]{4}$/.test(row.base) ? {
+        base: row.base
+      } : {})
+    }),
+    note: {
+      label: regLabel(s, row),
+      sug: row.sug || ''
+    }
+  };
+  draw(s);
+  s.el.querySelector('[data-f="type"]')?.focus();
 }
 /** « 1 aéronef », « 0 aéronef », « 2 aéronefs » : le nombre et son nom, au singulier pour 0 et 1 en français, pour 1 seulement en
  *  anglais, en allemand et en espagnol (jamais « 0 aéronefs »). */
@@ -412,9 +645,11 @@ function editorHtml(s) {
   const d = s.edit.draft,
     field = (k, label, extra = '') => `<label class="f-field">${esc(s.tt(label))}<input data-f="${k}" value="${esc(k === 'callsigns' ? (d.callsigns || []).join(', ') : d[k] ?? '')}"${extra} autocomplete="off"></label>`,
     old = s.edit.was ? listOf(s).find(a => a.registration === s.edit.was) : null;
-  return `<div class="f-card" data-pane="edit"><fieldset class="ac-group"><legend>${esc(s.tt(TX.identity))}</legend>
+  const note = s.edit.note ? `<small class="f-muted" data-regnote>${esc(`${s.tt(TX.regFrom, { label: s.edit.note.label })} ${s.edit.note.sug ? s.tt(TX.regSug, { t: s.edit.note.sug }) : s.tt(TX.regNoType)}`)}</small>` : '',
+    search = s.edit.was || typeof s.ctx.launcher?.job !== 'function' ? '' : `<div class="ac-regsearch" data-regsearch><label class="f-field">${esc(s.tt(TX.regSearch))}<input type="search" data-k="rq" value="${esc(s.edit.rq || '')}" placeholder="cessna 172" autocomplete="off" spellcheck="false"></label><div data-regres>${regResHtml(s)}</div></div>`;
+  return `<div class="f-card" data-pane="edit">${search}<fieldset class="ac-group"><legend>${esc(s.tt(TX.identity))}</legend>
       ${field('registration', TX.registration, ' autocapitalize="characters" spellcheck="false"')}
-      ${field('type', TX.type, ' autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ac-typesug"')}<small class="f-muted" data-typeinfo></small>
+      ${field('type', TX.type, ' autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ac-typesug"')}<small class="f-muted" data-typeinfo></small>${note}
       <div class="ac-sug" id="ac-typesug" data-typesug role="listbox" aria-label="${esc(s.tt(TX.typeList))}" hidden></div>
       ${field('variant', TX.variant)}${field('operator', TX.operator)}<small class="f-muted" data-hint="operator">${esc(s.tt(TX.operatorHint))}</small></fieldset>
     <fieldset class="ac-group"><legend>${esc(s.tt(TX.operation))}</legend>
@@ -484,6 +719,15 @@ function onInput(s, e) {
     q?.setSelectionRange(at, at);
     return;
   }
+  if (e.target.dataset.k === 'rq' && s.edit) { // SOG-0270 : les immatriculations d'un type au registre
+    s.edit.rq = e.target.value;
+    s.edit.rall = false;
+    const res = s.el.querySelector('[data-regres]');
+    if (res) res.innerHTML = regResHtml(s);
+    return regAsk(s, {
+      type: e.target.value
+    });
+  }
   if (e.target.dataset.f === 'type' && s.edit && !s.TS.picking()) typeSuggest(s, e.target);
   if (e.target.dataset.f && s.edit) refreshEditor(s);
 }
@@ -540,6 +784,21 @@ async function onClick(s, e) {
     };
     return draw(s);
   }
+  const pick = e.target.closest('[data-regpick]');
+  if (pick && s.edit) { // SOG-0270 : une immatriculation du registre choisie : la fiche se remplit (le type, une suggestion)
+    const v = s.regs.get(regKey({
+        type: s.edit.rq || ''
+      })),
+      row = v?.rows?.[Number(pick.dataset.regpick)];
+    if (!row) return;
+    const base = readForm(s),
+      sug = await typeOfRegistry(s, row);
+    if (S !== s || !s.edit) return;
+    return regFill(s, {
+      ...row,
+      sug
+    }, base);
+  }
   const b = e.target.closest('[data-do]');
   if (!b) return;
   switch (b.dataset.do) {
@@ -559,6 +818,17 @@ async function onClick(s, e) {
       };
       draw(s);
       return s.el.querySelector('[data-f="type"]')?.focus();
+    case 'addreg': { // SOG-0270 : « Créer à l'identique » : la fiche neuve d'après la ligne du registre
+      const reg = b.dataset.newreg,
+        v = s.regs.get(regKey({
+          reg
+        })),
+        row = v?.rows?.find(x => x.reg.replace(/-/g, '') === reg.replace(/-/g, ''));
+      return row && regFill(s, row);
+    }
+    case 'regmore':
+      s.edit.rall = true;
+      return regRedraw(s);
     case 'more':
       s.all = true;
       return draw(s);
