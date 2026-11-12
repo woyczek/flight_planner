@@ -149,10 +149,14 @@ function lineHtml(it, k, data) {
     zones = M.zonesOfItem(it, S.d.cov.ids, catSource(it.id)?.zones),
     sheets = zones.length ? zones : (Array.isArray(it.zones) ? it.zones : []).filter(z => /^[a-z0-9_-]{2,12}$/.test(z)).slice(0, 2),
     act = k ? gestureHtml(it, k) : '';
-  return `<li class="d-todo-i" data-todo-item="${esc(it.id)}" data-todo-kind="${k || 'done'}"${reg ? ` data-regime="${reg}"` : ''}>
-    <p class="d-todo-h"><b data-todo-label>${esc(label)}</b>${reg ? ` <span class="d-badge" data-regime-badge="${reg}">${esc(tt(TX.cwb.badge[reg]))}</span>` : ''} <span class="d-kind" data-kind-word>${esc(tt(TX.cwb.kind[k || 'done']))}</span></p>
+  const seen = k === 'hand' && it.hand?.inDownloads?.length ? ` · ${tt(TX.d2.tdSeen, { f: String(it.hand.inDownloads[0]).slice(0, 120) })}` :
+    '', // « AIP ISO.zip » trouvé dans Téléchargements : le nom vient du lanceur, borné et échappé
+    sign = k ? (it.download?.state === 'failed' ? '✗' : '!') : '✓';
+  return `<li class="d-todo-i" data-todo-item="${esc(it.id)}" data-todo-kind="${k || 'done'}"${sign === '✗' ? ' data-todo-fail' : ''}${reg ? ` data-regime="${reg}"` : ''}>
+    <p class="d-todo-h"><b data-todo-label>${esc(label)}</b>${reg ? ` <span class="d-badge" data-regime-badge="${reg}">${esc(tt(TX.cwb.badge[reg]))}</span>` : ''}${sheets.length ? ` <span class="d-badge" data-country-badge>${esc(nameOf(sheets[0]))}</span>` : ''}</p>
+    <p class="d-todo-one"><b class="d-wsign" aria-hidden="true">${sign}</b> <span class="d-kind" data-kind-word>${esc(tt(TX.cwb.kind[k || 'done']))}</span>${esc(seen)}</p>
     <ul class="d-ticks d-todo-t">${downloadStep(it, data)}${buildStep(it)}${publishStep(it)}</ul>
-    ${k ? `<p class="d-todo-go" data-todo-gesture>${act}${sheets.map(z => `<button type="button" class="d-link" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}">${esc(tt(TX.cw.openSheet, { c: nameOf(z) }))}</button>`).join(' ')}${!act && !sheets.length ? `<span class="f-muted" data-todo-nogesture>${esc(tt(TX.zx.tdNoGesture))}</span>` : ''}</p>` : zones.length ? `<p class="d-todo-go">${zones.map(z => `<button type="button" class="d-link" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}">${esc(tt(TX.cw.openSheet, { c: nameOf(z) }))}</button>`).join(' ')}</p>` : ''}</li>`;
+    ${k ? `<p class="d-todo-go" data-todo-gesture>${act}${sheets.map((z, n) => `<button type="button" class="d-link${n ? '' : ' d-stretch'}" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}">${esc(tt(TX.cw.openSheet, { c: nameOf(z) }))}</button>`).join(' ')}${!act && !sheets.length ? `<span class="f-muted" data-todo-nogesture>${esc(tt(TX.zx.tdNoGesture))}</span>` : ''}</p>` : zones.length ? `<p class="d-todo-go">${zones.map((z, n) => `<button type="button" class="d-link${n ? '' : ' d-stretch'}" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}">${esc(tt(TX.cw.openSheet, { c: nameOf(z) }))}</button>`).join(' ')}</p>` : ''}</li>`;
 }
 /** Une source que son éditeur n'offre plus : son nom, depuis quand, la note du catalogue ; ni coche, ni « en retard », hors du compte. */
 function goneHtml(it) {
@@ -179,6 +183,20 @@ export function todoGesture(btn) {
   }
   if (act === 'choose' && /^[a-z0-9_-]{2,12}$/.test(zone || '') && cov.has(zone)) return chooseFile(zone, btn.dataset.source);
 }
+/** Le titre du cycle et sa barre d'avancement, en tête de l'écran (la maquette validée, lot D2) : « Cycle AIRAC 2611 · 10 faits sur 15 » et la barre des sources faites ; la liste du cycle n'étant pas lue (pas de lanceur, lecture en cours), le titre dit seulement le cycle en vigueur. */
+export function cycleBarHtml() {
+  const t = S.cw?.todo,
+    r = t?.state === 'ready' ? M.todoOf(t.data, it => M.isComputed(regimeOf(it.id, it))) : null;
+  if (!r || !r.total) return S.cycleId ? `<p class="d-title" data-cycle-title>${esc(tt(TX.cycle, { c: S.cycleId }))}</p>` : '';
+  const title = tt(TX.cwb.todoHead, {
+      c: r.cycle || '?',
+      n: r.done.length,
+      m: r.total
+    }),
+    pct = Math.max(0, Math.min(100, Math.round(r.done.length * 100 / r.total)));
+  return `<p class="d-title${r.done.length === r.total ? ' d-title-ok' : ''}" data-cycle-title data-todo-head>${esc(title)}</p>
+    <div class="d-cbar" role="progressbar" aria-valuemin="0" aria-valuemax="${r.total}" aria-valuenow="${r.done.length}" aria-label="${esc(title)}" data-cycle-bar><i style="width:${pct}%"></i></div>`;
+}
 /** Le bloc « À faire ce mois-ci » ; '' sans lanceur (ou sans le verbe base/cycle), ou quand la liste ne compte aucune source. Replié d'origine sous son repère « À faire ce mois-ci · n » ; pendant la première lecture, une ligne le dit ; une lecture qui a échoué ou refusée (opération en cours) aussi. */
 export function todoHtml() {
   const t = S.cw?.todo;
@@ -194,8 +212,7 @@ export function todoHtml() {
   const sc = updateScope(),
     gate = updateGate(),
     all = r.todo.length && (!sc.known || sc.n > 0) ? `<p class="d-verbs" data-todo-all><button type="button" class="primary" data-todo-act="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.zx.tdAll, { n: sc.known ? sc.n : r.todo.length }))}</button>${gate.disabled ? greyNote(gate.reason) : ''}</p>` : '';
-  return `<details class="d-todo" data-todo data-todo-state="ready"${open}${t.dirty || t.reading ? ' aria-busy="true"' : ''}>${marker(r.todo.length)}<h3>${esc(tt(TX.cwb.todoTitle))}</h3>
-    <p data-todo-head>${esc(tt(TX.cwb.todoHead, { c: r.cycle || '?', n: r.done.length, m: r.total }))}</p>
+  return `<details class="d-todo" data-todo data-todo-state="ready"${open}${t.dirty || t.reading ? ' aria-busy="true"' : ''}>${marker(r.todo.length)}<h3 class="d-sh">${esc(tt(TX.cwb.todoTitle))} (${r.todo.length}) <small>${esc(tt(TX.d2.tdHelp))}</small></h3>
     ${all}
     ${r.todo.length ? `<ul class="d-todo-l" data-todo-list>${r.todo.map(x => lineHtml(x.item, x.kind, t.data)).join('')}</ul>` : `<p class="f-ok" data-todo-all>${esc(tt(TX.cwb.todoAll))}</p>`}
     ${opAreaHtml('base', 'todo')}
@@ -204,22 +221,39 @@ export function todoHtml() {
 }
 /** La mise en page de « À faire ce mois-ci » (à côté de CW_STYLE) : un bloc encadré, replié sous son repère de la hauteur d'un doigt ; une ligne par source, les coches l'une sous l'autre au téléphone et côte à côte en large ; chaque bouton a la taille d'un doigt. */
 export const TODO_STYLE = `
-[data-module="data"] details.d-todo{border:1px solid var(--sog-border);background:var(--sog-surface);padding:0 12px;min-width:0}
-[data-module="data"] details.d-todo>summary{min-height:var(--sog-touch);display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;font-weight:600}
-[data-module="data"] details.d-todo[open]>summary{border-bottom:1px solid var(--sog-border);margin-bottom:8px}
+[data-module="data"] details.d-todo{border:1px solid var(--sog-border);background:var(--sog-surface);padding:0 12px;min-width:0;margin:10px 0 0}
+[data-module="data"] details.d-todo>summary{min-height:var(--sog-touch);display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;font-weight:600;text-align:left}
+[data-module="data"] details.d-todo>summary>span{flex:1;min-width:0}
+[data-module="data"] details.d-todo[open]>summary{border-bottom:1px solid var(--sog-border);margin-bottom:4px}
 [data-module="data"] details.d-todo[open]>summary .d-chev{transform:rotate(180deg)}
 [data-module="data"] .d-todo h3{margin:8px 0 4px}
+[data-module="data"] .d-todo .d-sh{margin:8px 0 8px}
 [data-module="data"] .d-todo p{margin:4px 0}
-[data-module="data"] .d-todo-l{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--sog-line,var(--sog-border))}
-[data-module="data"] .d-todo-i{padding:6px 4px;border-bottom:1px solid var(--sog-line,var(--sog-border));min-width:0;overflow-wrap:anywhere}
-[data-module="data"] .d-todo-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
-[data-module="data"] .d-badge{font-size:var(--sog-size-s);padding:0 6px;border:1px solid var(--sog-border);white-space:nowrap}
-[data-module="data"] .d-kind{font-size:var(--sog-size-s);color:var(--sog-muted)}
-[data-module="data"] .d-todo-i[data-todo-kind=hand] .d-kind,[data-module="data"] .d-todo-i[data-todo-kind=late] .d-kind{color:var(--sog-warn)}
-[data-module="data"] .d-todo-go{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px}
-[data-module="data"] .d-todo-go button,[data-module="data"] [data-todo-all] button{min-height:var(--sog-touch)}
-[data-module="data"] .d-todo-done summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer}
-@media (min-width:900px){
-[data-module="data"] .d-todo-t{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 12px}
-}
+[data-module="data"] [data-todo-all]{display:none}
+[data-module="data"] .d-todo-l{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px;border:0}
+[data-module="data"] .d-todo-i{position:relative;min-width:0;padding:8px 36px 8px 12px;border:1px solid var(--sog-border);border-left:5px solid var(--sog-warn);background:var(--sog-surface);overflow-wrap:anywhere}
+[data-module="data"] .d-todo-i[data-todo-kind=done]{border-left-color:var(--sog-ok)}
+[data-module="data"] .d-todo-i[data-todo-fail]{border-left-color:var(--sog-err)}
+[data-module="data"] .d-todo-i[data-todo-unavailable]{border-left-color:var(--sog-muted)}
+[data-module="data"] .d-todo-i::after{content:"\\203A";position:absolute;right:14px;top:50%;margin-top:-14px;font-size:1.4rem;line-height:1;color:var(--sog-muted);pointer-events:none}
+[data-module="data"] .d-todo-h{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0}
+[data-module="data"] .d-badge{padding:3px 6px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);background:var(--d-soft);color:var(--sog-muted);font-size:.78em;line-height:1;white-space:nowrap}
+[data-module="data"] .d-todo-one{margin:2px 0;font-size:.93em}
+[data-module="data"] .d-wsign{color:var(--sog-warn)}
+[data-module="data"] .d-todo-i[data-todo-fail] .d-wsign{color:var(--sog-err)}
+[data-module="data"] .d-todo-i[data-todo-kind=done] .d-wsign{color:var(--sog-ok)}
+[data-module="data"] .d-kind{font-size:1em;color:var(--sog-warn);font-weight:600}
+[data-module="data"] .d-todo-i[data-todo-kind=done] .d-kind{color:var(--sog-ok)}
+[data-module="data"] .d-todo-t{display:flex;flex-wrap:wrap;gap:0 14px;margin:2px 0;font-size:.8em;color:var(--sog-muted)}
+[data-module="data"] .d-todo-t li{font-size:0}
+[data-module="data"] .d-todo-t li>*{font-size:.8rem}
+[data-module="data"] .d-todo-t li{display:inline-flex;align-items:baseline;gap:3px}
+[data-module="data"] .d-todo-t .d-tkw,[data-module="data"] .d-todo-t [data-tick-text]{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+[data-module="data"] .d-todo-t b{font-weight:400}
+[data-module="data"] .d-todo-go{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin:2px 0 0}
+[data-module="data"] .d-todo-go button,[data-module="data"] [data-todo-all] button{min-height:var(--sog-touch);position:relative;z-index:1}
+[data-module="data"] .d-todo-go .d-link{margin-left:0;font-size:.85em}
+[data-module="data"] .d-todo-go .d-stretch{position:static;z-index:auto}
+[data-module="data"] .d-todo-go .d-stretch::after{content:"";position:absolute;inset:0;z-index:0}
+[data-module="data"] .d-todo-done summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}
 `;

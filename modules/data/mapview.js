@@ -1,5 +1,6 @@
 // V3 data — le zoom et le déplacement de la carte du monde (SOG-0262, lot D1) : la molette, le pincement à deux doigts, le glisser et les boutons « + » / « − » / « Voir le monde entier » / « Recentrer sur ma couverture » (le cadre de départ). La vue est un cadre
 // [x, y, l, h] gardé dans S.cw.view : la carte est redessinée avec le panneau (innerHTML), elle reprend alors sa vue ; pendant un geste seul l'attribut viewBox du SVG bouge. Un glisser n'ouvre jamais la fiche d'un pays (le toucher qui suit est avalé).
+// Au toucher, UN doigt fait défiler la PAGE (touch-action: pan-y sur la carte) et DEUX doigts déplacent et pincent la carte ; un appui bref sur un pays ouvre sa fiche. À la souris : Ctrl + molette zoome (la molette seule aussi quand la page n'a rien à défiler), glisser déplace.
 // Le contour bleu du paquet ouvert et le plein du survol sont des attributs des chemins (trait non mis à l'échelle) : ils survivent au zoom.
 import * as M from './model.js';
 import {
@@ -56,10 +57,20 @@ export function viewFor(base) {
   const v = S?.cw?.view;
   return v && v.key === base.join(' ') && okBox(v.box) ? v.box : base;
 }
-/** Un cran de molette : zoom autour du pointeur, borné. */
+/** La page a-t-elle quelque chose à faire défiler sous la carte ? Le premier ancêtre qui défile (ou le document) a plus de hauteur que sa fenêtre. */
+function pageScrolls(el) {
+  for (let n = el?.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+    const oy = getComputedStyle(n).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight - n.clientHeight > 2) return true;
+  }
+  const d = document.scrollingElement;
+  return !!d && d.scrollHeight - d.clientHeight > 2;
+}
+/** Un cran de molette : zoom autour du pointeur, borné ; avec Ctrl (aussi le pincement d'un pavé tactile) toujours, sans Ctrl seulement quand la page n'a rien à défiler — sinon la molette fait défiler la page. */
 export function mapWheel(e) {
   const m = mapOf(e.target);
   if (!m || !S.cw) return;
+  if (!e.ctrlKey && pageScrolls(m.svg)) return;
   e.preventDefault();
   const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 100 : e.deltaY,
     f = Math.exp(Math.max(-300, Math.min(300, dy)) * .0016),
@@ -92,7 +103,7 @@ export function mapClickGuard(e) {
   S.cw.mapDragEnd = 0;
 }
 const DRAG = 5; // pixels de la fenêtre au-delà desquels un appui devient un glisser
-/** Un appui sur la carte : un doigt ou la souris peut glisser, deux doigts pincent ; ne capture le pointeur qu'au premier mouvement (un simple toucher garde sa cible et ouvre la fiche). */
+/** Un appui sur la carte : la souris peut glisser, un doigt fait défiler la page, deux doigts déplacent et pincent ; ne capture le pointeur qu'au premier mouvement (un simple toucher garde sa cible et ouvre la fiche). */
 export function mapDown(e) {
   const m = mapOf(e.target);
   if (!m || !S.cw || (e.pointerType === 'mouse' && e.button !== 0)) return;
@@ -146,6 +157,7 @@ export function mapMove(e) {
     e.preventDefault();
     return;
   }
+  if (e.pointerType === 'touch') return; // un seul doigt : la page défile, la carte ne bouge pas (deux doigts la déplacent)
   if (!g.moved && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) < DRAG) return;
   if (!g.moved) {
     g.moved = true;

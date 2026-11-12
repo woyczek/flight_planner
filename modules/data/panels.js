@@ -57,6 +57,9 @@ import {
   packsHtml,
   syncPackSwitches
 } from './packs.js';
+import {
+  cycleBarHtml
+} from './todo.js';
 
 /** L'assistant de première installation (page V2 servie par le lanceur : SPEC § 6.5), adresse fixe du dépôt, jamais prise d'une réponse. */
 const FIRST_INSTALL = new URL('../../apps/settings/premier_lancement.html', import.meta.url).pathname;
@@ -727,8 +730,10 @@ function stateHeadHtml() {
       z: [left.length ? bal('waiting', left.length) : '', leftTick.length ? bal('personal', leftTick.length) : ''].filter(Boolean).join(
         ' · ')
     }) : ''].filter(Boolean) : [];
-  return `<div class="d-statehead" data-state-head><p data-state-sentence>${[esc(cyc), tail].filter(Boolean).join(' ')}</p>${list}
-    ${action}${plan}${notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : ''}
+  // la forme de la maquette validée (lot D2) : le titre du cycle et sa barre d'avancement, la légende en une ligne (la phrase d'état, ses nombres restent des boutons), puis le bouton avec, à côté, ce qu'il fait
+  const what = [plan, notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : ''].join('');
+  return `<div class="d-statehead" data-state-head>${cycleBarHtml()}<p class="d-cap" data-state-sentence>${[esc(cyc), tail].filter(Boolean).join(' ')}</p>${list}
+    <div class="d-go">${action}${what ? `<div class="d-what">${what}</div>` : ''}</div>
     ${opAreaHtml('base', 'head')}</div>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
@@ -797,12 +802,11 @@ function setInner(panel) {
     why = greyOnce(gate.reason, panel) ? tt(TX.greyReason[gate.reason]) : '',
     pk = panel === M.PICKUP.set ? gateOf(panel, sel.ids.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb] :
     null; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
-  return `<h2>${esc(tt(ui.title))}</h2>
+  return `<h2${panel === 'base' ? ' class="f-sr"' : ''}>${esc(tt(ui.title))}</h2>
     ${panel === 'base' ? stateHeadHtml() : `<h3>${esc(tt(ui.items))}</h3>`}
-    ${panel === 'base' ? '' : spec.map ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
+    ${panel === 'base' ? missingHtml() + countriesHtml() : spec.map ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
     ${verbsHtml(gate, panel, pk)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
-    ${panel === 'base' ? missingHtml() + countriesHtml() : ''}
     ${ui.hint ? `<p class="f-muted" ${ui.hint[0]}>${esc(tt(ui.hint[1]))}</p>` : ''}
     ${panel === 'base' ? '' : opAreaHtml(panel)}`;
 }
@@ -821,9 +825,8 @@ function setPanelHtml(panel) {
 /** Les panneaux d'un groupe : base (Télécharger · Construire · Purger de la base, « Publier » partagé, puis les points VFR), procédures, appareils (puis
  *  les fiches publiées) ; aucun pour la météo, publiée avec le site. */
 export function panelsHtml(group) {
-  if (group === 'base') return setPanelHtml('base') + publishHtml() + laterHtml() + myCovHtml() + setPanelHtml(
-    'vfr'
-  ); // la barre d'état, la carte, ce qui reste à faire et les groupes de pays (le panneau de la base), puis « Publier », les trois blocs repliés et « Ma couverture »
+  if (group === 'base')
+    return `<div class="d-page" data-page>${setPanelHtml('base') + publishHtml() + laterHtml() + myCovHtml() + setPanelHtml('vfr')}</div>`; // la barre d'état, la carte, ce qui reste à faire et les groupes de pays (le panneau de la base), puis « Publier », les trois blocs repliés et « Ma couverture » : en large, la colonne de gauche d'une page à deux colonnes (la fiche d'un pays est à droite, collante)
   if (group === 'proc') return setPanelHtml('proc');
   if (group === 'aircraft') return setPanelHtml('aircraft') + setPanelHtml('sheets');
   return '';

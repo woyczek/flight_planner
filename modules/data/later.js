@@ -15,6 +15,7 @@ import {
 import {
   busyNow,
   catSource,
+  count,
   esc,
   lang,
   li,
@@ -51,7 +52,7 @@ const cycleData = () => S.cw?.todo?.state === 'ready' ? S.cw.todo.data : null;
 /** Le nom court d'une source : celui du catalogue, à défaut celui de la liste du cycle, à défaut son identifiant. */
 const srcName = (id, data) => String(catSource(id)?.n?.[li()] || data?.items?.[id]?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
 /** Un pli : son titre et son contenu ; l'état ouvert / fermé est retenu à la main. */
-const fold = (id, title, body) => `<details class="d-lc" data-lc-fold="${id}"${S.cw.lc.open[id] ? ' open' : ''}><summary>${esc(title)}</summary>${body}</details>`;
+const fold = (id, title, body, pill = '') => `<details class="d-lc" data-lc-fold="${id}"${S.cw.lc.open[id] ? ' open' : ''}><summary><span class="d-lct">${esc(title)}</span>${pill ? ` <span class="d-pill" data-lc-pill>${esc(pill)}</span>` : ''}<i class="d-chev" aria-hidden="true"></i></summary>${body}</details>`;
 
 // ------------------------------------------------------------------------------------------------ Cycle suivant
 /** « Cycle suivant (2612) » : trois listes — déjà dans Téléchargements (par les noms de fichiers), à aller chercher à la main, que le poste prendra seul quand il sera en vigueur — puis, à part, ce que l'éditeur n'offre plus ; '' tant que la liste du cycle n'est pas lue. */
@@ -68,7 +69,7 @@ function nextHtml() {
     body = ['in-downloads', 'to-take', 'will-be-taken'].map(part).join('') + (gone.length ? `<h4 class="f-muted" data-later-gone-title>${esc(tt(TX.cw.unavailableTitle))}</h4><ul class="d-lcl" data-later-gone>${gone.map(it => `<li data-later-item="${esc(it.id)}" data-later-state="unavailable"><b>${esc(srcName(it.id, data))}</b></li>`).join('')}</ul>` : '');
   return fold('later', n.id ? tt(TX.lc.laterTitle, {
     c: n.id
-  }) : tt(TX.lc.laterTitleNo), body || `<p class="f-muted" data-later-none>${esc(tt(TX.lc.laterNone))}</p>`);
+  }) : tt(TX.lc.laterTitleNo), body || `<p class="f-muted" data-later-none>${esc(tt(TX.lc.laterNone))}</p>`, n.items.some(it => it.state === 'in-downloads') ? `${count('file', n.items.filter(it => it.state === 'in-downloads').length)} ${tt(TX.d2.pillHere)}` : '');
 }
 
 // ------------------------------------------------------------------------------------------------ Quand ça change
@@ -139,7 +140,9 @@ function changeHtml() {
     grey = new Set(),
     lines = CHANGE.map(c => changeLine(c, data, grey)).join(''),
     why = [...grey].find(r => greyOnce(r, 'base'));
-  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`);
+  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`, tt(TX.d2.pillSources, {
+    n: CHANGE.length
+  }));
 }
 /** Le geste d'une ligne : « Recalculer » (la construction de la base de la couverture) ou « Télécharger de nouveau » (le téléchargement des sources automatiques) : les verbes de la base que l'écran a déjà, avec leur question et leur marche. */
 export function changeAct(kind) {
@@ -153,7 +156,7 @@ function unreadHtml() {
   const u = cycleData()?.unread;
   if (!u?.length) return '';
   const line = it => `<li data-unread="${esc(it.id)}" data-unread-reason="${esc(it.reason)}"><b>${esc(M.own(TX.lc.unreadName, it.id) ? tt(TX.lc.unreadName[it.id]) : srcName(it.id, null))}</b>${it.files.length ? ` : ${esc(it.files.join(', '))}` : ''} — <span data-unread-why>${esc(tt(TX.lc.unreadReason[it.reason]))}</span>${it.note ? `<br><span class="f-muted" data-unread-note>${esc(it.note)}</span>` : ''}</li>`;
-  return fold('unread', tt(TX.lc.unreadTitle), `<p class="f-muted">${esc(tt(TX.lc.unreadHint))}</p><ul class="d-lcl" data-unread-list>${u.map(line).join('')}</ul>`);
+  return fold('unread', tt(TX.lc.unreadTitle), `<p class="f-muted">${esc(tt(TX.lc.unreadHint))}</p><ul class="d-lcl" data-unread-list>${u.map(line).join('')}</ul>`, count('file', u.length));
 }
 
 // ------------------------------------------------------------------------------------------------ l'ensemble
@@ -224,9 +227,13 @@ export async function natOpen() {
 /** La mise en page de ces blocs (à côté de TODO_STYLE) : chaque pli a un titre de la taille d'un doigt, ses listes sans puce, les boutons à 44 px. */
 export const LATER_STYLE = `
 [data-module="data"] .d-later{display:grid;gap:8px;margin:12px 0;min-width:0}
-[data-module="data"] details.d-lc{border:1px solid var(--sog-border);padding:0 12px}
-[data-module="data"] details.d-lc>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}
-[data-module="data"] details.d-lc[open]>summary{border-bottom:1px solid var(--sog-border);margin-bottom:8px}
+[data-module="data"] details.d-lc{border:1px solid var(--sog-border);background:var(--sog-surface);padding:0 12px;min-width:0}
+[data-module="data"] details.d-lc>summary{min-height:var(--sog-touch);display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700}
+[data-module="data"] details.d-lc>summary>.d-lct{min-width:0;overflow-wrap:anywhere}
+[data-module="data"] details.d-lc>summary>.d-chev{margin-left:auto;flex:none}
+[data-module="data"] details.d-lc[open]>summary>.d-chev{transform:rotate(180deg)}
+[data-module="data"] .d-pill{padding:3px 6px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);background:color-mix(in srgb,var(--sog-muted) 9%,var(--sog-surface));color:var(--sog-muted);font-size:.78em;font-weight:600;line-height:1;white-space:nowrap}
+[data-module="data"] details.d-lc[open]>summary{border-bottom:1px dashed var(--sog-border);margin-bottom:8px}
 [data-module="data"] details.d-lc h4{margin:10px 0 4px}
 [data-module="data"] .d-lcl{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
 [data-module="data"] .d-lcl li{overflow-wrap:anywhere}

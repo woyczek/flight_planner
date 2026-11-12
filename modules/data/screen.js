@@ -230,6 +230,10 @@ export const STYLE = `
 [data-module="data"] .d-journal summary{min-height:var(--sog-touch);display:flex;align-items:center}
 [data-module="data"] .d-ops{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 [data-module="data"] .d-ops li{overflow-wrap:anywhere}
+/* l'ordre vu de l'écran (la maquette validée, lot D2) : le cycle, puis la base (la carte, les groupes, « Publier »), puis la couverture, « Tout mettre à jour » et les autres jeux */
+[data-module="data"] [data-body]{display:flex;flex-direction:column;min-width:0}
+[data-module="data"] [data-body]>[data-data-head]{order:-2}
+[data-module="data"] [data-body]>details.f-group[data-group="base"]{order:-1}
 `;
 /** Les opérations que le lanceur connaît (GET regen/verbs), lues une fois au montage : M.knownVerbs de sa réponse ; sans lanceur, sans réponse, sur
  *  un 404 ou un refus : celles d'un lanceur ancien (base/fetch, base/build, base/purge). Ne lève jamais. */

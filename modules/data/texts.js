@@ -456,7 +456,7 @@ export const TX = {
     update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
     updatePack: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
     // le bouton de la tête du panneau : tout ce que la base couvre, ou la sélection quand elle est partielle ; n : les zones à reconstruire, en échec ou sans état
-    updateN: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
+    updateN: ['Tout mettre à jour ({n})', 'Update everything ({n})', 'Alles aktualisieren ({n})', 'Actualizar todo ({n})'],
     // sous le bouton : ce qu'il va faire, ce qu'il saute, ce qu'il laisse à l'utilisateur
     doLine: ['Ce que fait ce bouton : {l}.', 'What this button does: {l}.', 'Was diese Schaltfläche tut: {l}.',
       'Lo que hace este botón: {l}.'
@@ -2132,8 +2132,8 @@ export const TX = {
     todoTitle: ['Ce qui reste à faire ce mois-ci', 'What is left to do this month', 'Was diesen Monat noch zu tun ist',
       'Lo que queda por hacer este mes'
     ],
-    todoHead: ['Cycle AIRAC {c} : {n} faits sur {m}', 'AIRAC cycle {c}: {n} of {m} done', 'AIRAC-Zyklus {c}: {n} von {m} erledigt',
-      'Ciclo AIRAC {c}: {n} de {m} hechos'
+    todoHead: ['Cycle AIRAC {c} · {n} faits sur {m}', 'AIRAC cycle {c} · {n} of {m} done', 'AIRAC-Zyklus {c} · {n} von {m} erledigt',
+      'Ciclo AIRAC {c} · {n} de {m} hechos'
     ],
     todoAll: ['Tout est fait pour ce cycle.', 'Everything is done for this cycle.', 'Für diesen Zyklus ist alles erledigt.',
       'Todo está hecho para este ciclo.'
@@ -2557,5 +2557,45 @@ export const TX = {
     tdNoGesture: ['rien à faire seul : voir la fiche du pays', 'nothing to do alone: see the sheet of the country',
       'allein nichts zu tun: siehe das Blatt des Landes', 'nada que hacer solo: vea la ficha del país'
     ]
+  },
+  // la forme de l'écran d'après la maquette validée (SOG-0262, lot D2) : titres de section avec leur aide, barre de la carte, tuiles, fiche en carte, plis et leurs pastilles
+  d2: {
+    mapTitle: ['La carte', 'The map', 'Die Karte', 'El mapa'],
+    mapHelp: ['touchez un pays, ou ouvrez un groupe plus bas', 'tap a country, or open a group below',
+      'tippen Sie ein Land an oder öffnen Sie unten eine Gruppe',
+      'toque un país, o abra un grupo más abajo'
+    ],
+    mapOpen: ['Groupe ouvert : {g}', 'Open group: {g}', 'Geöffnete Gruppe: {g}', 'Grupo abierto: {g}'],
+    mapNone: ['Aucun groupe ouvert', 'No group open', 'Keine Gruppe geöffnet', 'Ningún grupo abierto'],
+    mapTouch: [
+      'deux doigts pour déplacer la carte (un doigt fait défiler la page) ; Ctrl + molette pour zoomer, glisser à la souris pour déplacer',
+      'two fingers to move the map (one finger scrolls the page); Ctrl + wheel to zoom, drag with the mouse to move',
+      'zwei Finger verschieben die Karte (ein Finger blättert die Seite); Strg + Mausrad zoomt, mit der Maus ziehen verschiebt',
+      'dos dedos para mover el mapa (un dedo desplaza la página); Ctrl + rueda para acercar, arrastrar con el ratón para mover'
+    ],
+    groupsHelp: ['{n} · ouvrez un groupe pour voir ses pays', '{n} · open a group to see its countries',
+      '{n} · öffnen Sie eine Gruppe, um ihre Länder zu sehen',
+      '{n} · abra un grupo para ver sus países'
+    ],
+    procShort: ['proc.', 'proc.', 'Verf.', 'proc.'],
+    invSeen: ['{n} vu', '{n} seen', '{n} gesehen', '{n} visto'],
+    invMiss: ['{n} manque', '{n} missing', '{n} fehlt', '{n} falta'],
+    subGroup: ['groupe {g}', 'group {g}', 'Gruppe {g}', 'grupo {g}'],
+    stateCell: ['État', 'State', 'Zustand', 'Estado'],
+    emptyTitle: ['Fiche d’un pays', 'Sheet of a country', 'Blatt eines Landes', 'Ficha de un país'],
+    emptyHint: ['Touchez un pays sur la carte ou dans un groupe : sa fiche s’ouvre ici, avec ses sources et ses gestes.',
+      'Tap a country on the map or in a group: its sheet opens here, with its sources and its gestures.',
+      'Tippen Sie auf der Karte oder in einer Gruppe ein Land an: sein Blatt öffnet sich hier, mit Quellen und Aktionen.',
+      'Toque un país en el mapa o en un grupo: su ficha se abre aquí, con sus fuentes y sus gestos.'
+    ],
+    tdSeen: ['« {f} » trouvé dans Téléchargements', '“{f}” found in Downloads', '„{f}“ in Downloads gefunden',
+      '«{f}» encontrado en Descargas'
+    ],
+    tdHelp: ['une ligne par source, touchez-la pour ouvrir la fiche du pays',
+      'one line per source, tap it to open the sheet of the country',
+      'eine Zeile pro Quelle, antippen öffnet das Blatt des Landes', 'una línea por fuente, tóquela para abrir la ficha del país'
+    ],
+    pillHere: ['déjà là', 'already here', 'schon da', 'ya está'],
+    pillSources: ['{n} sources', '{n} sources', '{n} Quellen', '{n} fuentes']
   }
 };

@@ -9,6 +9,7 @@ import {
 import {
   busyNow,
   catSource,
+  count,
   esc,
   frozen,
   kind,
@@ -195,41 +196,73 @@ function mapHtml() {
     return `<path class="d-wz" d="${p.d}" data-zone="${esc(p.id)}" data-hz="${esc(p.id)}" data-tone="${esc(t)}" data-act="open-country" tabindex="-1" role="button" aria-label="${esc(label)}"${p.approx ? ' data-approx' : ''}${open.has(p.id) ? ' data-grp' : ''}${S.cw.hover === p.id ? ' data-hover' : ''}${S.packHl?.has(p.id) ? ' data-hl' : ''}><title>${esc(label)}</title></path>`;
   }).join('');
   const hatch = list.filter(p => procs[p.id]).map(p => `<path class="d-wh" d="${p.d}" data-proc="${esc(p.id)}"></path>`).join('');
-  const sw = t => `<span class="d-sw" data-tone="${t}"></span>`;
-  return `<div class="d-wmapbox" data-world-map><svg class="d-wmap" data-wmap viewBox="${fr.view.join(' ')}" data-base="${frame.join(' ')}" data-world="${fr.world.join(' ')}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${(frame[2] / frame[3]).toFixed(3)}" role="group" aria-label="${esc(tt(TX.cw.mapLabel))}"><defs><pattern id="d-hatch" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${cell.toFixed(2)}" stroke="currentColor" stroke-width="${(cell * .3).toFixed(2)}"></line></pattern></defs><g data-wz>${paths}</g><g class="d-whg" data-wh>${hatch}</g></svg>
-    <p class="d-lgd" data-cw-legend><span>${esc(tt(TX.mapLegend))} : ${['ok', 'warn', 'err'].map(t => `${sw(t)}${esc(tt(TX.mapLegendBase[t]))}`).join(' · ')} · ${sw('muted')}${esc(tt(TX.cw.outside))}</span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
-    ${S.cw.legend ? `<p class="f-muted" data-cw-legend-more><span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}</p>` : ''}
-    <p class="d-map-row" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button> <button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">−</button> <button type="button" data-act="world-toggle" aria-pressed="${S.cw.world}">${esc(tt(TX.zx.mvWorld))}</button> <button type="button" data-act="map-home" aria-pressed="${!S.cw.world}">${esc(tt(TX.zx.mvHome))}</button></p>
-    <p class="f-muted" data-map-hint>${esc(tt(TX.zx.mvHint))}</p></div>`;
+  const sw = t => `<span class="d-sw" data-tone="${t}"></span>`,
+    gp = S.cw.grp ? packList().find(x => x.pack.id === S.cw.grp)?.pack : null,
+    gname = gp ? gp.names[li()] || gp.names[0] : '';
+  return `<section class="d-wmapbox d-mapsec" data-world-map><h3 class="d-sh">${esc(tt(TX.d2.mapTitle))} <small>${esc(tt(TX.d2.mapHelp))}</small></h3>
+    <div class="d-mapbar"><span class="d-maptitle" data-map-title>${gname ? esc(tt(TX.d2.mapOpen, { g: '\u0001' })).replace('\u0001', () => `<b>${esc(gname)}</b>`) : esc(tt(TX.d2.mapNone))}</span>
+      <span class="d-maplinks" data-map-links><button type="button" class="d-link" data-act="world-toggle" aria-pressed="${S.cw.world}">${esc(tt(TX.zx.mvWorld))}</button> <button type="button" class="d-link" data-act="map-home" aria-pressed="${!S.cw.world}">${esc(tt(TX.zx.mvHome))}</button></span></div>
+    <div class="d-mapframe"><svg class="d-wmap" data-wmap viewBox="${fr.view.join(' ')}" data-base="${frame.join(' ')}" data-world="${fr.world.join(' ')}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${(frame[2] / frame[3]).toFixed(3)}" role="group" aria-label="${esc(tt(TX.cw.mapLabel))}"><defs><pattern id="d-hatch" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${cell.toFixed(2)}" stroke="currentColor" stroke-width="${(cell * .3).toFixed(2)}"></line></pattern></defs><g data-wz>${paths}</g><g class="d-whg" data-wh>${hatch}</g></svg>
+</div>
+    <p class="d-lgd" data-cw-legend><span class="d-lgl">${['ok', 'warn', 'err'].map(t => `<span class="d-lgi">${sw(t)}${esc(tt(TX.mapLegendBase[t]))}</span>`).join('')}<span class="d-lgi">${sw('muted')}${esc(tt(TX.cw.outside))}</span></span><span class="d-zoom" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button><button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">\u2212</button></span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
+    ${S.cw.legend ? `<p class="f-muted" data-cw-legend-more><span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''} · ${esc(tt(TX.d2.mapTouch))}</p>` : ''}</section>`;
 }
 /** Le nom d'une origine de procédures (CIFP, eAIP, EAD) ; le code tel quel pour une autre. */
 const procName = s => tt(M.own(TX.cw.procSource, s) || [s, s, s, s]);
 /** La phrase du bilan d'un paquet : « 12 sur 14 à jour · 2 à faire · 1 en échec », puis les pays sans état et ceux hors de la couverture ; sans état lu, le nombre de pays de la couverture et « état non lu ». */
 export function groupSummary(tl) {
-  const T = TX.cw;
-  if (!tl.inCov) return tt(T.sumNoCov) + (tl.out ? ` · ${tt(T.sumOut, { n: tl.out })}` : '');
-  const parts = [tt(T.sumOk, {
-    n: tl.ok,
-    m: tl.inCov
-  })];
-  if (tl.warn) parts.push(tt(T.sumTodo, {
-    n: tl.warn
-  }));
-  if (tl.err) parts.push(tt(T.sumErr, {
-    n: tl.err
-  }));
-  if (tl.none) parts.push(tt(T.sumNone, {
-    n: tl.none
-  }));
-  if (tl.out) parts.push(tt(T.sumOut, {
-    n: tl.out
-  }));
-  return S.status && statusKnown() ? parts.join(' · ') : [tt(T.sumUnread, {
-    m: tl.inCov
-  }), tl.out ? tt(T.sumOut, {
-    n: tl.out
-  }) : ''].filter(Boolean).join(' · ');
+  return groupParts(tl).map(x => x[0]).join(' · ');
 }
+/** Les morceaux du bilan d'un paquet, chacun avec sa teinte : [[texte, teinte]] (la phrase du paquet est leur mise bout à bout). */
+function groupParts(tl) {
+  const T = TX.cw;
+  if (!tl.inCov) return [
+    [tt(T.sumNoCov), 'muted'], ...(tl.out ? [
+      [tt(T.sumOut, {
+        n: tl.out
+      }), 'muted']
+    ] : [])
+  ];
+  if (!(S.status && statusKnown())) return [
+    [tt(T.sumUnread, {
+      m: tl.inCov
+    }), 'muted'], ...(tl.out ? [
+      [tt(T.sumOut, {
+        n: tl.out
+      }), 'muted']
+    ] : [])
+  ];
+  const parts = [
+    [tt(T.sumOk, {
+      n: tl.ok,
+      m: tl.inCov
+    }), 'ok']
+  ];
+  if (tl.warn) parts.push([tt(T.sumTodo, {
+    n: tl.warn
+  }), 'warn']);
+  if (tl.err) parts.push([tt(T.sumErr, {
+    n: tl.err
+  }), 'err']);
+  if (tl.none) parts.push([tt(T.sumNone, {
+    n: tl.none
+  }), 'muted']);
+  if (tl.out) parts.push([tt(T.sumOut, {
+    n: tl.out
+  }), 'muted']);
+  return parts;
+}
+/** Le même bilan, une teinte par morceau (le texte est celui de groupSummary). */
+function groupSummaryHtml(tl) {
+  return groupParts(tl).map(([t, k]) => `<span data-sum-tone="${k}">${esc(t)}</span>`).join(' · ');
+}
+/** Le signe d'un état sur une tuile de pays (jamais la couleur seule : le mot suit). */
+const SIGN_OF = {
+  ok: '✓',
+  warn: '!',
+  err: '✗',
+  muted: '–'
+};
 /** Les paquets : une ligne par paquet (nom, état résumé, chevron), un seul ouvert ; ouvert, ses pays (nom et état en mot, chacun ouvre sa fiche) puis le « Mettre à jour » du paquet. '' sans paquet. */
 function groupsHtml() {
   const packs = packList();
@@ -242,14 +275,14 @@ function groupsHtml() {
       const open = S.cw.grp === pack.id,
         tl = M.tally(state.known, cov, tone),
         name = pack.names[li()] || pack.names[0];
-      return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-open="${open}"><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><b>${esc(name)}</b> <span class="f-muted" data-group-sum>${esc(groupSummary(tl))}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
+      return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-open="${open}"><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><span class="d-gtitle"><b>${esc(name)}</b> <span class="f-muted d-gcount">${esc(count('country', state.known.length))}</span></span> <span class="d-gsum" data-group-sum>${groupSummaryHtml(tl)}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
         <ul class="d-gc">${state.known.map(z => {
           const t = tone(z);
-          return `<li><button type="button" class="d-gcb" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}" data-tone="${esc(t)}"${S.cw.hover === z ? ' data-hover' : ''}><span>${esc(nameOf(z))}</span> <span class="d-gw"><i class="f-dot"${kind(t === 'muted' ? '' : t)} aria-hidden="true"></i>${esc(word(t))}</span></button></li>`;
+          return `<li><button type="button" class="d-gcb" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}" data-tone="${esc(t)}"${S.cw.hover === z ? ' data-hover' : ''}${S.cw.sheet === z ? ' aria-current="true"' : ''}><span class="d-gcn">${esc(nameOf(z))}</span> <span class="d-gw"><b aria-hidden="true">${M.own(SIGN_OF, t) || ''}</b> ${esc(word(t))}${S.cw.proc?.zones?.[z] ? ` <span class="d-gproc" data-has-proc><i class="d-sw" data-hatch aria-hidden="true"></i>${esc(tt(TX.d2.procShort))}</span>` : ''}</span></button></li>`;
         }).join('')}</ul>
         <p class="d-gup">${packUpdateHtml(pack, state)}</p>${opAreaHtml('base', 'group')}</div>` : ''}</li>`;
     });
-  return `<section class="d-groups" data-cw-groups><h3>${esc(tt(TX.cw.groupsTitle))} (${packs.length})</h3><p class="f-muted">${esc(tt(TX.cw.groupsHint))}</p><ul class="d-gl">${items.join('')}</ul></section>`;
+  return `<section class="d-groups" data-cw-groups><h3 class="d-sh">${esc(tt(TX.cw.groupsTitle))} (${packs.length}) <small>${esc(tt(TX.d2.groupsHelp, { n: count('country', new Set(packs.flatMap(x => x.state.known)).size) }))}</small></h3><ul class="d-gl">${items.join('')}</ul></section>`;
 }
 /** Un lien https en texte sûr (nouvel onglet, sans référent) ; sans adresse en https, le libellé seul. */
 const link = (url, label) => M.isHttps(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
@@ -370,7 +403,9 @@ function inventoryHtml(id, item, cy) {
     hand = item?.hand || null,
     ready = cy.state === 'ready' && !!hand;
   if (!files.length) return '';
-  return `<div data-inventory="${esc(id)}"><p class="d-invh"><b>${esc(tt(T.inventory))}</b></p>${!ready ? `<p class="f-muted" data-inventory-state="${esc(cy.state || 'none')}">${esc(tt(M.own(T.cycleState, cy.state) || T.inDlUnread))}</p>` : ''}<ul class="d-inv">${files.map(f => {
+  const nSeen = ready ? files.filter(f => M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(String(f.file || f.name), hand.inDownloads))
+    .length : 0;
+  return `<div data-inventory="${esc(id)}"><p class="d-invh d-sh d-sh2"><b>${esc(tt(T.inventory))}</b>${ready ? ` <small data-inventory-count>${esc(tt(TX.d2.invSeen, { n: nSeen }))} · ${esc(tt(TX.d2.invMiss, { n: files.length - nSeen }))}</small>` : ''}</p>${!ready ? `<p class="f-muted" data-inventory-state="${esc(cy.state || 'none')}">${esc(tt(M.own(T.cycleState, cy.state) || T.inDlUnread))}</p>` : ''}<ul class="d-inv">${files.map(f => {
     const shown = String(f.file || f.name),
       seen = ready ? M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(shown, hand.inDownloads) : null,
       what = Array.isArray(f.what) ? f.what : f.gives;
@@ -432,8 +467,11 @@ function sourceHtml(id, zone, z, inCov, msg) {
     item = cy.state === 'ready' ? cy.zv?.sources[id] || cy.data.items[id] || null : null,
     reg = regimeOf(id, item),
     name = (catSource(id)?.n?.[li()] || item?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
-  return `<section class="d-src" data-sheet-source="${esc(id)}"${reg ? ` data-regime="${reg}"` : ''}><h4>${esc(name)}</h4>${reg ? `<p class="f-muted" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}
-    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z) : ''}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}${inCov && reg === 'hand' ? handHtml(id, zone, z, item, cy, msg) : ''}</section>`;
+  const ds = item?.download?.state,
+    tone = ds === 'done' ? 'ok' : ds === 'failed' ? 'err' : !ds || ds === 'n/a' || ds === 'unavailable' ? 'muted' :
+    'warn'; // la couleur du bord gauche du bloc : l'état de CETTE source
+  return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="${tone}"${reg ? ` data-regime="${reg}"` : ''}><div class="d-srch"><h4>${esc(name)}</h4>${reg ? `<p class="f-muted d-regbadge" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}</div>
+    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z) : ''}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}</section>`;
 }
 /** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
  *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
@@ -531,14 +569,21 @@ function sheetHtml() {
     seenAny = inCov && hands.some(s => handSeen(s, z, split.find(x => x.id === s)?.item, cy)),
     op = cardAreaHtml('base', 'sheet')
     .trim(); // la carte de l'opération qui a refusé le geste de CETTE fiche ; la fiche ne montre que son pays (son fil), jamais le bilan d'une autre opération
+  const gp = packList().find(x => x.pack.zones.includes(id))?.pack,
+    sub = [id.toUpperCase(), gp ? tt(TX.d2.subGroup, {
+      g: gp.names[li()] || gp.names[0]
+    }) : ''].filter(Boolean).join(' \u00b7 '),
+    tn = tone(id),
+    gest = hands.map(s => handHtml(s, id, z, split.find(x => x.id === s)?.item, cy, s === msgSrc)).join('');
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">
-    <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><h3 data-sheet-name>${esc(name)}</h3><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">✕</span></button></header>
-    ${inCov ? `<div class="d-sheetst" data-sheet-state>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tone(id)))}</span>`}</div><ul class="d-ticks d-facts" data-sheet-facts>${buildTick(id, z)}${publishTick(z)}</ul>` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
+    <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(tn)}" data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, tn) || ''}</b> ${esc(word(tn))}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
+    ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div><ul class="d-ticks d-facts d-cells" data-sheet-facts>${buildTick(id, z)}${publishTick(z)}</ul></div>` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
     ${S.cw.proc?.state === 'ready' ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
     ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
     ${inCov ? '' : addHtml(id, cy)}
-    ${inCov ? updateBlockHtml(id, !seenAny, seenAny) : ''}${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? sheetPublishHtml(id, z) : ''}${inCov ? failedHtml(id) : ''}
-    <h4>${esc(tt(T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
+    <h4 class="d-sh">${esc(tt(T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
+    ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? sheetPublishHtml(id, z) : ''}${inCov ? failedHtml(id) : ''}
+    ${gest ? `<div class="d-gest" data-sheet-gestures>${gest}</div>` : ''}${inCov ? updateBlockHtml(id, !seenAny, seenAny) : ''}
     ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}${inCov ? removeHtml(id) : ''}</section>`;
 }
 /** Le bloc de la base sous la barre d'état : la carte (et la fiche à sa droite quand un pays est ouvert, en large), puis « ce qui reste à faire ce mois-ci », puis les paquets. */
@@ -549,7 +594,7 @@ export function countriesHtml() {
     todo = todoHtml(),
     groups = groupsHtml();
   if (!map && !sheet && !groups && !todo) return '';
-  return `<div class="d-cw" data-countries><div class="d-cwtop"${sheet ? ' data-sheet-open' : ''}>${map ? `<div class="d-cwmap">${map}</div>` : ''}${sheet}</div>${todo}${groups}</div>`;
+  return `<div class="d-cw" data-countries><div class="d-cwtop"${sheet ? ' data-sheet-open' : ''}>${map}${sheet || (map ? `<aside class="d-sheetph" data-sheet-empty><b>${esc(tt(TX.d2.emptyTitle))}</b><p class="f-muted">${esc(tt(TX.d2.emptyHint))}</p></aside>` : '')}</div>${todo}${groups}</div>`;
 }
 /** Le sélecteur qui retrouve l'élément touché après un redessin (le focus lui revient à la fermeture de la fiche). */
 function selectorOf(el, zone) {
@@ -839,12 +884,41 @@ export function readsIdle() {
 }
 /** La mise en page propre à la carte, aux paquets et à la fiche (à côté de STYLE, jetons du cadre). En large la fiche est à droite de la carte ; au téléphone elle recouvre l'écran (position fixe, son propre défilement). */
 export const CW_STYLE = `
-[data-module="data"] .d-cw{display:grid;gap:12px;margin:8px 0 12px;min-width:0}
+[data-module="data"]{--d-ok-bg:color-mix(in srgb,var(--sog-ok) 12%,var(--sog-surface));--d-warn-bg:color-mix(in srgb,var(--sog-warn) 13%,var(--sog-surface));--d-err-bg:color-mix(in srgb,var(--sog-err) 11%,var(--sog-surface));--d-soft:color-mix(in srgb,var(--sog-muted) 9%,var(--sog-surface));--d-acc-bg:color-mix(in srgb,var(--sog-accent) 9%,var(--sog-surface));--d-sea:color-mix(in srgb,var(--sog-accent) 7%,var(--sog-surface));--d-ok-line:color-mix(in srgb,var(--sog-ok) 40%,var(--sog-surface));--d-err-line:color-mix(in srgb,var(--sog-err) 40%,var(--sog-surface));--d-warn-line:color-mix(in srgb,var(--sog-warn) 45%,var(--sog-surface))}
+/* l'en-tête du cycle : le titre, sa barre, la phrase d'état en légende, le bouton et, à côté, ce qu'il fait (la forme de la maquette validée, lot D2) */
+[data-module="data"] [data-data-head]{border:0;background:none;box-shadow:none;padding:0;margin:0 0 6px}
+[data-module="data"] [data-data-head] p{margin:2px 0}
+[data-module="data"] .d-title{margin:10px 0 8px;font-size:1.25rem;font-weight:700;line-height:1.25}
+[data-module="data"] .d-title-ok{color:var(--sog-ok)}
+[data-module="data"] .d-cbar{height:8px;background:var(--d-soft);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);overflow:hidden}
+[data-module="data"] .d-cbar>i{display:block;height:100%;background:var(--sog-ok)}
+[data-module="data"] .d-cap{margin:8px 0 4px;color:var(--sog-muted);font-size:var(--sog-size-s);line-height:1.4}
+[data-module="data"] .d-cap button{min-height:var(--sog-touch);padding:0 3px;border:0;background:none;color:var(--sog-link);text-decoration:underline;font:inherit}
+[data-module="data"] .d-cap button[aria-expanded="true"]{font-weight:700;outline:0}
+[data-module="data"] .d-go{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin:8px 0}
+[data-module="data"] .d-go>.d-verbs{margin:0}
+[data-module="data"] .d-go>[data-update-reason]{order:3;flex:1 1 100%;margin:0}
+[data-module="data"] .d-go [data-verb="update"]{min-width:230px;font-weight:600}
+[data-module="data"] .d-what{flex:1 1 260px;min-width:0;order:2}
+[data-module="data"] .d-what p{margin:2px 0}
+/* la page : une colonne ; en large, deux (la fiche d'un pays est une carte collante à droite, tout le reste à gauche) */
+[data-module="data"] .d-page{min-width:0}
+[data-module="data"] .d-page>.f-card{margin-bottom:var(--sog-gap)}
+[data-module="data"] .d-cw{display:grid;gap:12px;margin:4px 0 12px;min-width:0}
 [data-module="data"] .d-cwtop{display:grid;gap:12px;min-width:0}
-[data-module="data"] .d-cwmap{min-width:0}
+/* les titres de section : petites capitales, leur aide sur la même ligne */
+[data-module="data"] .d-sh{margin:18px 0 8px;padding:0 0 6px;border-bottom:1px solid var(--sog-border);font-size:.8em;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--sog-muted);line-height:1.4}
+[data-module="data"] .d-sh small{font-size:1em;font-weight:400;letter-spacing:0;text-transform:none}
+[data-module="data"] .d-sh2{margin:12px 0 4px;padding:0;border:0}
+/* la carte */
 [data-module="data"] .d-wmapbox{margin:0;min-width:0}
-[data-module="data"] .d-wmap{display:block;width:100%;height:auto;max-height:70vh;border:1px solid var(--sog-border);background:var(--sog-surface);touch-action:none;cursor:grab;user-select:none}
-[data-module="data"] .d-map-row button{min-height:var(--sog-touch);min-width:var(--sog-touch)}
+[data-module="data"] .d-mapbar{display:flex;flex-wrap:wrap;gap:0 12px;align-items:center;justify-content:space-between;min-height:var(--sog-touch)}
+[data-module="data"] .d-maplinks{display:inline-flex;flex-wrap:wrap;gap:0 12px}
+[data-module="data"] .d-maplinks .d-link{margin-left:0}
+[data-module="data"] .d-mapframe{position:relative;border:1px solid var(--sog-border);background:var(--d-sea);overflow:hidden}
+[data-module="data"] .d-wmap{display:block;width:100%;height:auto;max-height:clamp(170px,calc(100vh - 600px),330px);margin:0 auto;border:0;background:none;touch-action:pan-y;cursor:grab;user-select:none}
+[data-module="data"] .d-zoom{flex:none;display:inline-flex;gap:4px}
+[data-module="data"] .d-zoom button{min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0;font-size:1.2rem;font-weight:700}
 [data-module="data"] .d-wz{stroke-width:1.1px;vector-effect:non-scaling-stroke;fill-opacity:.3;cursor:pointer;stroke:var(--sog-muted);fill:var(--sog-muted);outline:none}
 [data-module="data"] .d-wz[data-tone=ok]{stroke:var(--sog-ok);fill:var(--sog-ok)}
 [data-module="data"] .d-wz[data-tone=warn]{stroke:var(--sog-warn);fill:var(--sog-warn)}
@@ -858,27 +932,84 @@ export const CW_STYLE = `
 [data-module="data"] .d-wh{fill:url(#d-hatch);stroke:none;pointer-events:none}
 [data-module="data"] .d-sw[data-hatch]{background:repeating-linear-gradient(45deg,var(--sog-text,currentColor) 0 1px,transparent 1px 4px);border-color:var(--sog-muted)}
 [data-module="data"] .d-sw[data-grp]{background:transparent;border:2px solid var(--sog-accent)}
-[data-module="data"] .d-groups h3{margin:8px 0 4px}
-[data-module="data"] .d-groups p{margin:2px 0 6px}
-[data-module="data"] .d-gl{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--sog-line,var(--sog-border))}
-[data-module="data"] .d-gp{border-bottom:1px solid var(--sog-line,var(--sog-border));min-width:0}
-[data-module="data"] .d-gh{display:flex;align-items:center;gap:8px;width:100%;min-height:var(--sog-touch);padding:4px 4px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
-[data-module="data"] .d-gname{flex:1;min-width:0;overflow-wrap:anywhere}
+[data-module="data"] .d-lgd{display:flex;align-items:center;gap:8px;margin:4px 0 0}
+[data-module="data"] .d-lgl{flex:1;min-width:0}
+[data-module="data"] .d-lgl{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:.85em}
+[data-module="data"] .d-lgi{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+[data-module="data"] .d-lgd .d-sw,[data-module="data"] [data-cw-legend-more] .d-sw{margin:0 4px 0 0;border-radius:50%;width:12px;height:12px}
+[data-module="data"] .d-lg{flex:none;min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0;border-radius:50%}
+[data-module="data"] [data-cw-legend-more]{margin:2px 0 0}
+/* les groupes de pays : des cartes en deux colonnes ; le groupe ouvert, encadré de bleu sur toute la largeur, ses pays en tuiles */
+[data-module="data"] .d-groups{min-width:0}
+[data-module="data"] .d-gl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;border:0}
+[data-module="data"] .d-gp{min-width:0;border:1px solid var(--sog-border);background:var(--sog-surface);border-radius:var(--sog-radius-s)}
+[data-module="data"] .d-gp[data-open=true]{grid-column:1/-1;border:2px solid var(--sog-accent);background:var(--d-acc-bg)}
+[data-module="data"] .d-gh{display:flex;align-items:center;gap:8px;width:100%;min-height:52px;padding:7px 12px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+[data-module="data"] .d-gname{flex:1;min-width:0;display:grid;gap:1px;overflow-wrap:anywhere}
+[data-module="data"] .d-gtitle b{font-weight:700}
+[data-module="data"] .d-gcount{margin-left:6px}
+[data-module="data"] .d-gsum{font-size:.88em}
+[data-module="data"] [data-sum-tone=ok]{color:var(--sog-ok)}
+[data-module="data"] [data-sum-tone=warn]{color:var(--sog-warn);font-weight:600}
+[data-module="data"] [data-sum-tone=err]{color:var(--sog-err);font-weight:600}
+[data-module="data"] [data-sum-tone=muted]{color:var(--sog-muted)}
 [data-module="data"] .d-gh[aria-expanded=true] .d-chev{transform:rotate(180deg)}
-[data-module="data"] .d-gb{padding:0 0 8px 12px}
-[data-module="data"] .d-gc{list-style:none;margin:0;padding:0;display:grid;gap:0}
-[data-module="data"] .d-gcb{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;min-height:var(--sog-touch);padding:2px 8px;background:none;border:0;border-bottom:1px solid var(--sog-line,var(--sog-border));color:inherit;font:inherit;text-align:left;cursor:pointer}
-[data-module="data"] .d-gcb[data-hover]{background:color-mix(in srgb,var(--sog-accent,#08c) 14%,transparent)}
-[data-module="data"] .d-gw{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:var(--sog-size-s)}
-[data-module="data"] .d-gup{margin:4px 0 0}
-[data-module="data"] .d-sheet{min-width:0;padding:12px;border:1px solid var(--sog-border);background:var(--sog-surface);box-sizing:border-box}
-[data-module="data"] .d-sheeth{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-[data-module="data"] .d-sheeth h3{margin:0;flex:1 1 8em;overflow-wrap:anywhere}
+[data-module="data"] .d-gb{padding:0 10px 10px}
+[data-module="data"] .d-gc{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+[data-module="data"] .d-gcb{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;width:100%;height:100%;min-height:48px;padding:4px 8px 4px 10px;background:var(--sog-surface);border:1px solid var(--sog-border);border-left:6px solid var(--d-c,var(--sog-muted));border-radius:var(--sog-radius-s);color:inherit;font:inherit;text-align:left;cursor:pointer;min-width:0}
+[data-module="data"] .d-gcb[data-tone=ok]{--d-c:var(--sog-ok)}
+[data-module="data"] .d-gcb[data-tone=warn]{--d-c:var(--sog-warn)}
+[data-module="data"] .d-gcb[data-tone=err]{--d-c:var(--sog-err)}
+[data-module="data"] .d-gcb[data-hover]{background:var(--d-acc-bg)}
+[data-module="data"] .d-gcb[aria-current=true]{outline:3px solid var(--sog-fg);outline-offset:-1px}
+[data-module="data"] .d-gcn{font-weight:600;font-size:.93em;line-height:1.2;overflow-wrap:anywhere}
+[data-module="data"] .d-gw{display:block;font-size:.8em;line-height:1.25;color:var(--sog-muted);white-space:normal}
+[data-module="data"] .d-gproc{white-space:nowrap}
+[data-module="data"] .d-gproc .d-sw{margin:0 3px 0 0;width:10px;height:10px;vertical-align:-1px}
+[data-module="data"] .d-gup{margin:6px 0 0}
+/* la fiche d'un pays : une carte (cadre, ombre) ; un bloc par source, bord gauche à la couleur de son état ; les étapes en cellules sur fond teinté ; les gestes en bas, pleine largeur */
+[data-module="data"] .d-sheet,[data-module="data"] .d-sheetph{min-width:0;box-sizing:border-box;border:1px solid var(--sog-border);background:var(--sog-surface);box-shadow:var(--sog-shadow);border-radius:var(--sog-radius-s)}
+[data-module="data"] .d-sheet{display:flex;flex-direction:column;padding:0 12px 12px}
+[data-module="data"] .d-sheetph{padding:14px;border-style:dashed;box-shadow:none;background:var(--d-soft);display:none}
+[data-module="data"] .d-sheetph p{margin:4px 0 0}
+[data-module="data"] .d-sheeth{display:flex;align-items:flex-start;gap:8px;padding:10px 0 6px}
+[data-module="data"] .d-sheett{flex:1;min-width:0}
+[data-module="data"] .d-sheett h3{margin:0;font-size:1.3rem;line-height:1.2;overflow-wrap:anywhere}
+[data-module="data"] .d-sheetsub{margin:2px 0 0}
+[data-module="data"] .d-sbadge{flex:none;margin-top:3px;padding:4px 6px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);background:var(--d-soft);color:var(--sog-muted);font-size:.78em;font-weight:700;line-height:1;white-space:nowrap}
+[data-module="data"] .d-sbadge[data-tone=ok]{background:var(--d-ok-bg);border-color:var(--d-ok-line);color:var(--sog-ok)}
+[data-module="data"] .d-sbadge[data-tone=warn]{background:var(--d-warn-bg);border-color:var(--d-warn-line);color:var(--sog-warn)}
+[data-module="data"] .d-sbadge[data-tone=err]{background:var(--d-err-bg);border-color:var(--d-err-line);color:var(--sog-err)}
 [data-module="data"] .d-back{min-height:var(--sog-touch);min-width:var(--sog-touch)}
-[data-module="data"] .d-sheet h4{margin:12px 0 4px}
+[data-module="data"] .d-x{flex:none;margin:-6px -8px 0 0;min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0;display:none;border:0;background:none;font-size:1.4rem;color:var(--sog-muted)}
 [data-module="data"] .d-sheet p{margin:4px 0}
-[data-module="data"] .d-src{border-top:1px solid var(--sog-line,var(--sog-border));margin-top:8px;padding-top:4px}
-[data-module="data"] .d-src h4{margin:4px 0}
+[data-module="data"] .d-sheet h4{margin:12px 0 4px}
+[data-module="data"] .d-sheet .d-sh{margin:14px 0 4px}
+[data-module="data"] .d-cells3{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px;margin:8px 0}
+[data-module="data"] .d-cells3>.d-cells{display:contents}
+[data-module="data"] .d-cells1{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin:4px 0}
+[data-module="data"] .d-cells{list-style:none;margin:0;padding:0}
+[data-module="data"] .d-cells>li,[data-module="data"] .d-cell{display:flex;flex-wrap:wrap;align-content:flex-start;gap:1px 4px;min-width:0;padding:6px 7px;border:1px solid var(--sog-border);background:var(--d-soft);font-size:0;line-height:1.3;overflow-wrap:anywhere}
+[data-module="data"] .d-cell{font-size:.85rem}
+[data-module="data"] .d-cells>li>b,[data-module="data"] .d-cl{order:0;flex:1 1 100%;font-size:.7rem;font-weight:400;letter-spacing:.03em;text-transform:uppercase;color:var(--sog-muted)}
+[data-module="data"] .d-cells>li>.d-tk{order:1;width:auto;font-size:.85rem}
+[data-module="data"] .d-cells>li>.d-tkw{order:2;font-size:.85rem;font-weight:700;color:var(--sog-muted)}
+[data-module="data"] .d-cells>li>[data-tick-text]{order:3;flex:1 1 100%;font-size:.75rem;color:var(--sog-fg)}
+[data-module="data"] .d-cells>li[data-ok=yes]{background:var(--d-ok-bg);border-color:var(--d-ok-line)}
+[data-module="data"] .d-cells>li[data-ok=yes] .d-tkw{color:var(--sog-ok)}
+[data-module="data"] .d-cells>li[data-ok=no]{background:var(--d-err-bg);border-color:var(--d-err-line)}
+[data-module="data"] .d-cells>li[data-ok=no] .d-tkw{color:var(--sog-err)}
+[data-module="data"] .d-cells>li[data-ok=todo]{background:var(--sog-surface)}
+[data-module="data"] .d-cells1>li{grid-column:1/-1}
+[data-module="data"] .d-cell .d-st{display:flex;flex-wrap:wrap;gap:2px 6px;min-height:0;padding:0;justify-content:flex-start;white-space:normal;text-align:left;overflow-wrap:normal;word-break:normal}
+[data-module="data"] .d-cell .d-whyhint{flex:1 1 100%}
+[data-module="data"] .d-src{margin:10px 0 0;padding:10px;border:1px solid var(--sog-border);border-left:5px solid var(--d-c,var(--sog-border));background:var(--sog-surface)}
+[data-module="data"] .d-src[data-src-tone=ok]{--d-c:var(--sog-ok)}
+[data-module="data"] .d-src[data-src-tone=warn]{--d-c:var(--sog-warn)}
+[data-module="data"] .d-src[data-src-tone=err]{--d-c:var(--sog-err)}
+[data-module="data"] .d-srch{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:6px}
+[data-module="data"] .d-srch h4{flex:1 1 140px;margin:0}
+[data-module="data"] .d-regbadge{flex:none;margin:0;padding:3px 6px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);background:var(--d-soft);font-size:.78em;line-height:1;white-space:nowrap}
 [data-module="data"] .d-ticks,[data-module="data"] .d-inv{list-style:none;margin:4px 0;padding:0;display:grid;gap:4px}
 [data-module="data"] .d-ticks li,[data-module="data"] .d-inv li{overflow-wrap:anywhere}
 [data-module="data"] .d-tk{display:inline-block;width:1.2em;text-align:center;font-weight:700}
@@ -890,29 +1021,49 @@ export const CW_STYLE = `
 [data-module="data"] .d-thr{list-style:none;margin:4px 0;padding:0;display:grid;gap:4px}
 [data-module="data"] .d-thr li{overflow-wrap:anywhere}
 [data-module="data"] .d-prog p{margin:4px 0}
-[data-module="data"] .d-thread{border-top:1px solid var(--sog-line,var(--sog-border));margin-top:8px;padding-top:4px}
-[data-module="data"] .d-inv li{display:grid;gap:2px;padding:4px 0;border-bottom:1px solid var(--sog-line,var(--sog-border))}
+[data-module="data"] .d-thread{border-top:1px solid var(--sog-border);margin-top:8px;padding-top:4px}
+[data-module="data"] .d-inv li{display:grid;gap:2px;padding:6px 0;border-top:1px solid var(--sog-border)}
+[data-module="data"] .d-inv li:first-child{border-top:0}
 [data-module="data"] .d-fl{font-size:var(--sog-size-s)}
-[data-module="data"] .d-fl code{overflow-wrap:anywhere}
+[data-module="data"] .d-fl code{padding:1px 5px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);background:var(--d-soft);font:.9em var(--sog-font-mono);overflow-wrap:anywhere}
+[data-module="data"] .d-fs{white-space:normal;font-weight:700}
 [data-module="data"] .d-fs[data-file-state=seen]{color:var(--sog-ok)}
 [data-module="data"] .d-fs[data-file-state=missing]{color:var(--sog-muted)}
-[data-module="data"] .d-lgd{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:6px 0 0}
-[data-module="data"] .d-lg{min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0}
-[data-module="data"] .d-x{margin-left:auto;min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0;display:none}
-[data-module="data"] .d-facts{margin:6px 0}
+[data-module="data"] .d-gest{display:grid;gap:2px;margin-top:14px}
+[data-module="data"] .d-gest .d-hand{margin:0}
+[data-module="data"] .d-gest .d-zact{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin:0 0 4px}
+[data-module="data"] .d-gest button:not(.d-link),[data-module="data"] [data-sheet-update] button:not(.d-link){width:100%}
+[data-module="data"] .d-gest .d-link,[data-module="data"] [data-sheet-update] .d-link{align-self:flex-start}
+[data-module="data"] .d-facts{margin:0}
 [data-module="data"] .d-hand{margin-top:6px}
 [data-module="data"] .d-zalt{margin:2px 0}
-[data-module="data"] .d-upd{margin:8px 0}
+[data-module="data"] .d-upd{margin:8px 0 0}
 [data-module="data"] .d-upd p{margin:4px 0}
-[data-module="data"] .d-fs{white-space:normal}
+[data-module="data"] .d-lg{min-width:var(--sog-touch)}
+/* « Publier » : un bloc encadré, son bouton sur toute la largeur */
+[data-module="data"] .f-card[data-publish]{margin:20px 0 var(--sog-gap);padding:12px;border:1px solid var(--sog-fg)}
+[data-module="data"] [data-publish] h2{margin:0 0 6px;font-size:1.1rem}
+[data-module="data"] [data-publish] [data-verb="publish"]{display:block;width:100%}
+@media (pointer:fine){
+[data-module="data"] .d-cap button,[data-module="data"] .d-mapbar{min-height:32px}
+[data-module="data"] .d-lg,[data-module="data"] .d-zoom button{min-width:32px;min-height:32px}
+}
+@media (min-width:640px){
+[data-module="data"] .d-gl{grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-module="data"] .d-gc{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 @media (min-width:900px){
 [data-module="data"] .d-back{display:none}
 [data-module="data"] .d-x{display:inline-flex;align-items:center;justify-content:center}
-[data-module="data"] .d-cwtop:not([data-sheet-open]) .d-wmap{max-height:45vh}
-[data-module="data"] .d-cwtop[data-sheet-open]{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
-[data-module="data"] .d-cwtop[data-sheet-open] .d-sheet{position:sticky;top:8px;max-height:calc(100vh - 24px);overflow:auto}
+[data-module="data"] .d-page{display:grid;grid-template-columns:minmax(0,3fr) minmax(300px,2fr);column-gap:24px;row-gap:0;align-items:start}
+[data-module="data"] .d-page>[data-build],[data-module="data"] .d-cw,[data-module="data"] .d-cwtop{display:contents}
+[data-module="data"] .d-page>*,[data-module="data"] .d-page>[data-build]>*,[data-module="data"] .d-cw>*,[data-module="data"] .d-cwtop>*{grid-column:1;min-width:0}
+[data-module="data"] .d-page>[data-build]>*,[data-module="data"] .d-cw>*{margin-bottom:var(--sog-gap)}
+[data-module="data"] .d-cwtop>.d-sheet,[data-module="data"] .d-cwtop>.d-sheetph{display:flex;grid-column:2;grid-row:1/span 80;position:sticky;top:8px;align-self:start;margin:0;max-height:calc(100vh - 24px);overflow:auto}
+[data-module="data"] .d-cwtop>.d-sheetph{display:block}
 }
 @media (max-width:899px){
-[data-module="data"] .d-sheet{position:fixed;inset:0;z-index:15;overflow:auto;overscroll-behavior:contain;padding:16px;border:0;background:var(--sog-bg,var(--sog-surface))}
+[data-module="data"] .d-sheet{position:fixed;inset:0;z-index:15;overflow:auto;overscroll-behavior:contain;padding:0 16px 24px;border:0;border-radius:0;background:var(--sog-bg,var(--sog-surface))}
+[data-module="data"] .d-wmap{max-height:min(40vh,300px)}
 }
 `;
