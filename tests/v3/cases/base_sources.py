@@ -2702,3 +2702,47 @@ def k187(c):
         c.eq((f.get('ok'), f.get('fetched'), len(doc['tracks']), t['from'], t['to']), (True, ['nat'], 1, '2026-11-12T11:30:00Z', '2026-11-12T19:00:00Z'), 'the NAT message is taken; the track keeps the validity of its message', what='fetch')
         c.eq((asked, res.get('built')), ([['nat']], ['nat']), 'the nat zone, and only it, is handed to the build', what='build')
         c.ok(all('datanat' in u or 'nat' in u.lower() for u, _ in net.calls), str([u for u, _ in net.calls]), 'nothing else was downloaded')
+
+
+@case('K189', 'A leftover built folder of a LATER cycle (built early, old parser) is not « the built cycle » of a zone: base/status follows the cycle the sources support, not the newest folder (the UK Maintenance rebuild « construite, 0 fichier écrit » stayed « pas à jour »)', 'K', static=True,
+      rule='Ergonomist (12 Nov 2026, the user rebuilt the United Kingdom: « toujours pas à jour ») : data/sia/base/gb/ holds 2026-10-29 (built now, parser 28, the record says so) and 2026-11-26 (built on 9 Nov when the UAS file of 26 Nov arrived early, parser 21). base/status took the NEWEST folder as the built one: builtCycle 2026-11-26, parser-old 21 → 28, source-unbuilt, for ever, because a rebuild of the cycle 2026-10-29 never touches the 26 Nov folder. The built cycle is now the newest folder that is not later than the cycle the sources support (or the cycle in force); the later folder is not counted (it is stale only once its own cycle comes).')
+def k189(c):
+    RJ, BS, AF, DS = _mods()
+    BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
+        (data / 'sia' / 'zones' / 'gb' / 'EG_AIP_DS_FULL_20261029.xml').write_text('<x/>', encoding='utf-8')
+        parser = ST.parser_version()
+        for cyc, ver in (('2026-10-29', parser), ('2026-11-26', max(1, parser - 7))):
+            d = data / 'sia' / 'base' / 'gb' / cyc
+            d.mkdir(parents=True)
+            (d / 'meta.json').write_text(json.dumps({'schema': 2, 'zone': 'gb', 'cycle': cyc, 'kind': 'meta', 'parserVersion': ver, 'data': {}}), encoding='utf-8')
+            for k in BA.KINDS:
+                if k != 'meta':
+                    (d / f'{k}.json').write_text('{}', encoding='utf-8')
+        ST.write_record(data, 'gb', cycle='2026-10-29', builtAt='2026-11-12T13:20:47Z', parserVersion=parser, personal=['nats'], inputs=ST.signature(ST.inputs_of(str(data), 'gb', {'nats'})))
+        ctx = {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 12)}
+        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['gb'], 'personal': ['nats']}), ctx)['zones']['gb']
+        c.eq((z['state'], [r['code'] for r in z['reasons']], z['builtCycle']), ('up-to-date', [], '2026-10-29'), 'the cycle the sources support is built and current: the leftover 2026-11-26 folder (parser 21) is not the built cycle, the zone is up to date', what='leftover')
+
+
+@case('K190', 'A source the publisher no longer publishes (UK Mil: the server cuts the TLS connection) is NOT a failure of the operation: base/fetch says it apart (`unavailable`, state `unavailable` on its line), the operation stays ok and the zone « done » (SOG-0273)', 'K', static=True,
+      rule='Ergonomist (12 Nov 2026, the user rebuilt the United Kingdom: « des échecs intermédiaires »): the fetch of gb tries openAIP and UK Mil; UK Mil (ENR-5-2.pdf, last taken 6 Oct) answers SSLEOF; that was a `failed` entry, so the chain said « partial » and the zone « failed » for a source that is unavailable at the publisher and that nothing can fix. Now such a source (base_sources.UNAVAILABLE, the same list as base_cycle and the catalogue) is counted apart: the line says `unavailable` with its error and since when, `ok` stays true, the other sources count.')
+def k190(c):
+    RJ, BS, AF, DS = _mods()
+    fetch, check_f = RJ.REGISTRY[('base', 'fetch')]
+    c.eq(BS.UNAVAILABLE, RJ.REGISTRY[('base', 'cycle')][0].__globals__['UNAVAILABLE'], 'the launcher says the same in both places (cycle and fetch)', what='same list')
+    geo = json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [-1, 51]}, 'properties': {'_id': 'a', 'name': 'X', 'country': 'GB'}}]}).encode()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td, {})
+        ctx = _ctx(DS, data)
+        net = _Net(AF, {'gb_asp': geo, 'gb_apt': geo, 'gb_': ('http', 404), 'aidu.mod.uk': ('os', '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol')})
+        job = RJ.Job('base', 'fetch', {})
+        with net:
+            res = fetch(job, check_f({'zones': ['gb'], 'personal': []}), ctx)
+        c.eq((res['ok'], res['failed'], [(u['zone'], u['source'], u['since']) for u in res.get('unavailable', [])]), (True, [], [('gb', 'ukmil', '2025-11')]), 'UK Mil cut by the server: said apart, not a failure; the operation is ok', what='apart')
+        line = (job.view().get('zones', {}).get('gb', {}).get('sources', {}) if hasattr(job, 'view') else {}).get('ukmil', {})
+        c.ok(not line or line.get('state') == 'unavailable', str(line), 'its line says unavailable')

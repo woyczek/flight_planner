@@ -60,6 +60,7 @@ import regen_jobs  # noqa: E402  (le socle : inside, la règle commune des purge
 ZONES_GEO = 'shared/carto/aero_zones_geo.js'
 ZONE_ID = re.compile(r'^[a-z0-9_-]{2,12}$')
 MAX_ZONES = 60                  # comme base/build
+UNAVAILABLE = {'ukmil': '2025-11'}      # SOG-0273 : les sources que l'éditeur ne publie plus (base_cycle.UNAVAILABLE et le catalogue disent la même chose, K185) : leur échec n'en est pas un
 MIN_GAP = {('base', 'fetch'): 30}  # openAIP, la FAA, ENAIRE… : pas deux départs coup sur coup (30 s)
 
 
@@ -486,6 +487,7 @@ def fetch(job, args, ctx):
     job.data['sources'] = aero_cycles.report(sia_rels(data), root=os.path.join(data, 'sia'))
     _step(job, 0, len(zones))
     fetched, unchanged, failed, modified = [], [], [], []
+    unavailable = []
     attempted = good = 0
     cancelled = False
     for n, z in enumerate(zones):
@@ -516,7 +518,13 @@ def fetch(job, args, ctx):
             view.set(z, done=tried)
             modified.extend(mods)
             changed = changed or bool(mods)
-            if entry['state'] == 'failed':
+            if entry['state'] == 'failed' and s in UNAVAILABLE:       # SOG-0273 : l'éditeur ne publie plus (UK Mil, SSLEOF, 403…) : ce n'est PAS un échec de l'opération ; dit à part, la zone reste faite
+                entry['state'] = 'unavailable'
+                view.source(z, s, entry)
+                unavailable.append({'zone': z, 'source': s, 'error': entry['error'], 'since': UNAVAILABLE[s], **({'status': entry['status']} if 'status' in entry else {})})
+                good += 1
+                job.log(f"{z}: {s} indisponible chez l'éditeur depuis {UNAVAILABLE[s]} ({entry['error']}) : ni échec ni à faire")
+            elif entry['state'] == 'failed':
                 bad = True
                 first_error = first_error or entry['error']
                 failed.append({'zone': z, 'source': s, 'error': entry['error'], **({'status': entry['status']} if 'status' in entry else {})})
@@ -553,7 +561,7 @@ def fetch(job, args, ctx):
     manual_list = [{'zone': z, 'source': s, **({'url': SOURCES[s]['link']} if SOURCES[s]['link'].startswith('https://') else {}), 'name': list(SOURCES[s]['label']),
                     **({'pickup': True, 'expected': PICKUP[s]['zip']} if s in PICKUP else {})} for z in zones for s in plans[z][2]]
     reason = ('cancelled' if cancelled else 'nothing-to-fetch' if not attempted else 'failed' if failed and not good else 'partial' if failed else None)
-    res = {'ok': reason is None, 'fetched': fetched, 'unchanged': unchanged, 'failed': failed, 'manual': manual_list, 'outside_sync': outside,
+    res = {'ok': reason is None, 'fetched': fetched, 'unchanged': unchanged, 'failed': failed, **({'unavailable': unavailable} if unavailable else {}), 'manual': manual_list, 'outside_sync': outside,
            'absent': sorted(set(absent)), 'sources': aero_cycles.report(sia_rels(data), root=os.path.join(data, 'sia')),
            'warnings': [{'code': 'outside-sync', 'count': outside}] if outside else []}
     if reason:

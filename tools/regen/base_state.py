@@ -253,7 +253,8 @@ def zone_states(data, zones, personal, ctx):
             if gone:        # l'index annonce un cycle dont des fichiers manquent : l'appli dirait « aucune base installée » (SOG-0143)
                 reasons.append({'code': 'index-orphan', 'cycle': declared, 'count': len(gone)})
         rec = read_record(data, z)
-        built = folders[-1] if folders else None
+        limit = max(own, current) if own else current           # Maintenance du Royaume-Uni (12/11) : un dossier d'un cycle POSTÉRIEUR à celui que les sources portent (construit trop tôt, à l'arrivée anticipée d'un fichier du cycle suivant) n'est pas « le cycle construit » : un nouveau passage sur le cycle courant ne le touche jamais ; il compte quand son cycle vient
+        built = ([f for f in folders if f <= limit] or folders)[-1] if folders else None
         if not folders:
             if not reasons:
                 reasons.append({'code': 'never-built'})
