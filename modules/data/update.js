@@ -30,6 +30,9 @@ import {
 import {
   openCountryById
 } from './countries.js';
+import {
+  refuseBusy
+} from './busy.js';
 
 /** Ce que « Mettre à jour » prend : { ids, partial, known, counts, plan, todo, n } — toute la couverture (`partial` reste faux : plus de sélection partielle).
  *  `counts` : le bilan des zones prises (M.balanceOf) et `plan` ce que le bouton va faire (M.downloadPlan), tous deux null sans état du lanceur ; `todo` : les zones que le bouton traite (à télécharger ou à reconstruire : celles à reconstruire, en échec ou sans état ; une zone qui attend un fichier déposé à la main n'en est pas) ; `n` : leur nombre, null sans état du lanceur. */
@@ -120,6 +123,8 @@ export async function startUpdate(zones = null) {
   if (!st0) {
     S.updating = false;
     renderBuild();
+    if (refuseBusy(S.statusRefused, S.at))
+      return; // « une autre opération est en cours » : la carte de cette opération, à l'endroit du geste
     return S.ctx.notify(tt(TX.upd.noStatus), 'err');
   }
   const dp = M.downloadPlan(st0, sel.ids);
@@ -146,6 +151,7 @@ export async function startUpdate(zones = null) {
   if (!plan || !plan.build.length) {
     S.updating = false;
     renderBuild();
+    if (!plan && refuseBusy(S.statusRefused, S.at)) return;
     return S.ctx.notify(!plan ? tt(TX.upd.noStatus) : [plan.upToDate || !plan.unknown ? tt(TX.upd
       .none, { // le nombre dit est celui des zones que le lanceur a dites à jour (jamais toutes les cochées)
         n: count('zone', plan.upToDate)

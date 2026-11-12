@@ -23,6 +23,9 @@ import {
 import {
   updateGate
 } from './update.js';
+import {
+  busyCardHtml
+} from './busy.js';
 
 /** Le nom d'un paquet dans la langue (index li). */
 const nameOf = p => p.names[li()] || p.names[0];
@@ -41,8 +44,11 @@ const zonesAttr = st => ` data-zones="${esc(st.known.join(','))}"`;
 /** Le « Mettre à jour (n) » d'un paquet (SOG-0188) : le parcours de mise à jour sur les seuls pays du paquet qui sont dans la couverture (n), sans toucher à la sélection ; absent quand aucun pays du paquet n'y est ; grisé pour la raison du geste (une opération en cours, pas de lanceur, verbe inconnu). */
 export function packUpdateHtml(p, st) {
   if (!st.inCoverage.length) return '';
-  const off = frozen() || updateGate(st.inCoverage).disabled ? ' disabled' : '';
-  return `<button type="button" class="d-link" data-act="update-pack" data-pack="${esc(p.id)}"${off}>${esc(tt(TX.upd.updatePack, { n: st.inCoverage.length }))}</button>`;
+  const gate = updateGate(st.inCoverage),
+    off = frozen() || gate.disabled,
+    reason = off ? gate.reason || 'busy' : '',
+    carded = reason === 'busy' && !!busyCardHtml('base', 'group'); // la carte de l'opération en cours, dans le paquet, le dit déjà
+  return `<button type="button" class="d-link" data-act="update-pack" data-pack="${esc(p.id)}"${off ? ' disabled' : ''}>${esc(tt(TX.upd.updatePack, { n: st.inCoverage.length }))}</button>${off && !carded ? ` <span class="f-muted" data-grey="${esc(reason)}">${esc(tt(M.own(TX.greyReason, reason) || TX.greyReason.busy))}</span>` : ''}`;
 }
 /** La rangée d'un paquet régional : UN INTERRUPTEUR « tout le paquet dans la couverture » (coché quand toutes ses zones y sont, « à moitié » quand une partie y est) : l'allumer ajoute les zones qui manquent, l'éteindre retire toutes ses
  *  zones de la couverture après une confirmation qui nomme ce qui sera décoché (jamais purgé). Le survol ou l'appui de la rangée surligne ses zones sur la carte. */

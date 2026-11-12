@@ -6503,8 +6503,8 @@ def l88(c):
     c.until("!document.querySelector('[data-cw-legend-more]')", timeout=3000, what='the second line folds')
     c.tap('[data-act=world-toggle]')
     c.until("(() => { const v = document.querySelector('[data-wmap]').getAttribute('viewBox').split(' ').map(Number); return v[0] + v[2] > 140 })()", timeout=4000, what='the whole world is framed')
-    c.eq(norm(c.text('[data-act=world-toggle]')), norm(CW('mine')), 'the button now says how to come back', what='world button')
-    c.tap('[data-act=world-toggle]')
+    c.eq(norm(c.text('[data-act=map-home]')), norm(_trow('mvHome', lang, after='  zx: {')), 'a second button gives back the framing of the coverage (lot D1: the map zooms, see L96)', what='home button')
+    c.tap('[data-act=map-home]')
     c.until("document.querySelector('[data-wmap]').getAttribute('viewBox').split(' ').map(Number).reduce((a, b, i) => i === 2 ? b : a, 0) < 250", timeout=4000, what='the coverage again')
     # ---- 3. the packs: one line each with its summarised state, one open at a time
     c.eq(c.count('[data-group-id]'), 3, 'three packs, always visible (not a folded block)', what='groups')
@@ -6579,7 +6579,7 @@ def l88(c):
     c.eq(c.js("document.querySelector('[data-sheet] [data-zstate]').dataset.zstate"), 'stale', 'its state', what='state')
     facts = lambda key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-facts] [data-tick={key}]'); return e ? [e.dataset.ok, e.textContent.replace(/[\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
     built = facts('build')
-    c.ok(built[0] == 'no' and _date_text(datetime.date(2026, 10, 5), lang) in built[1] and '2610' in built[1], built, 'built (a fact of the COUNTRY, once, at the top): not up to date, the reason, then the date and the cycle of the last build')
+    c.ok(built[0] == 'todo' and _date_text(datetime.date(2026, 10, 5), lang) in built[1] and '2610' in built[1], built, 'built (a fact of the COUNTRY, once, at the top): ○ to do (not a failure: nothing failed), the reason, then the date and the cycle of the last build')
     c.ok('eAIP' in c.text('[data-sheet-proc]'), c.text('[data-sheet-proc]'), 'procedures: yes, from the eAIP (procSources)')
     c.eq(c.js("[...document.querySelectorAll('[data-sheet] [data-sheet-source]:not([data-unavailable])')].map(e => e.dataset.sheetSource)"), ['sia', 'openaip'], 'the sources that feed France, in the order the launcher gives', what='sources')
     gone = c.js("(() => { const e = document.querySelector('[data-sheet] [data-sheet-source][data-unavailable]'); return e ? [e.dataset.sheetSource, e.textContent.replace(/\s+/g, ' '), e.querySelectorAll('[data-tick], [data-inventory]').length, document.querySelector('[data-unavailable-title]').compareDocumentPosition(e) & 4] : null })()")
@@ -6589,9 +6589,9 @@ def l88(c):
     d1 = tk('sia', 'download')
     c.ok(d1[0] == 'yes' and _date_text(datetime.date(2026, 11, 2), lang) in d1[1] and 'AIRAC 2611' in d1[1], d1, 'SIA downloaded: ticked with the date and the edition the launcher gives')
     p1 = facts('publish')
-    c.ok(p1[0] == 'no' and norm(CW('pubNo')) in norm(p1[1]), p1, 'published (a fact of the country): no, not sent yet, said in words')
+    c.ok(p1[0] == 'na' and norm(_trow('pubWaitBuild', lang, after='  zx: {')) in norm(p1[1]), p1, 'published (a fact of the country): — not yet possible, the country is not built (lot D1: the four signs)')
     o1 = tk('openaip', 'download')
-    c.ok(o1[0] == 'no' and norm(_trow('older-than-cycle', lang, after='    why: {')) in norm(o1[1]), o1, 'a file older than the cycle in force: a reason in words, not a tick')
+    c.ok(o1[0] == 'todo' and norm(_trow('older-than-cycle', lang, after='    why: {')) in norm(o1[1]), o1, 'a file older than the cycle in force: a reason in words, not a tick')
     c.eq(c.count('[data-sheet] img'), 0, 'the launcher\'s label is escaped (no element, nothing runs)', what='escaped')
     c.eq(c.js('window.__pwn === undefined'), True, 'nothing ran', what='no pwn')
     inv = c.js("""[...document.querySelectorAll('[data-sheet-source=sia] [data-file]')].map(f => ({ what: f.querySelector('[data-file-what]').textContent, path: (f.querySelector('[data-file-path]') || {}).textContent || '', check: !!f.querySelector('[data-path-check]'),
@@ -6674,7 +6674,7 @@ def _l89_cycle(world):
         items = [mora, openaip, enaire, dircam] if world.get('done') else [mora, faa, navcan, xplane, lfv, openaip, nats, enaire, sia, dircam, ukmil]
         res = {'ok': True, 'cycle': {'inForce': '2026-10-29', 'next': '2026-11-26', 'ids': {'inForce': '2611', 'next': '2612'}}, 'items': items, 'unavailable': ['ukmil'], 'next': world.get('next', {'cycle': '2026-11-26', 'items': []}), 'unread': world.get('unread', [])}   # world['next'] / world['unread']: the cycle after and what is seen but not read (lot C)
         zone = args.get('zone')
-        by = {'fr': [sia, dircam, openaip], 'gb': [nats, ukmil, openaip], 'es': [enaire, openaip], 'ca': [navcan, openaip], 'us': [faa, openaip]}
+        by = {'fr': [sia, dircam, openaip], 'gb': [nats, ukmil, openaip] + ([mora] if world.get('mora') else []), 'es': [enaire, openaip], 'ca': [navcan, openaip], 'us': [faa, openaip]}
         if zone in by:
             res['zoneView'] = {'zone': zone, 'known': True, 'inCoverage': True, 'sources': by[zone], 'state': None, 'addWillAsk': {'sources': [], 'auto': [], 'hand': [], 'personal': [], 'noReader': []}}
         if zone == 'de':   # a country outside the coverage: what adding it will ask (K182 addWillAsk, lot C)
@@ -6758,17 +6758,18 @@ def l89(c):
     c.eq([c.attr(hand, 'data-hand-state'), c.count(f'{hand} button'), norm(c.text(f'{hand} [data-act=zone-upload]')), c.count(f'{hand} [data-verb=pickup]'), c.attr(f'{hand} [data-act=zone-upload]', 'data-source')],
          ['none', 1, norm(UP('choose')), 0, 'nats'], 'nothing seen in Downloads: « Choisir le fichier… » alone, on the line of its source', what='choose alone')
     n0 = len(st['posts'])
-    st['views'] = [_fview({'gb': _fz('fetched', 1, 1)}, state='done', step='Terminé', result={'fetched': ['gb'], 'unchanged': [], 'failed': [], 'manual': []}, jid='f1', args={'zones': ['gb']})]
+    st['views'] = [_l97_dl('done', jid='f1'), _l97_build('done', jid='b1')]
     st['i'] = 0
     st['start'] = (200, {'job': 'f1'})
+    c.js(_L97_MODAL)
     c.tap(btn)
-    c.until("!!document.querySelector('.f-modal')", timeout=15000, what='the question of the update')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=30000, what='the thread of the update')
     mine = st['posts'][n0:]
     c.eq([[sorted(p['args'].get('zones', [])), p['verb']] for p in mine if p['verb'] in ('status', 'fetch', 'build')][:2], [[['gb'], 'status'], [['gb'], 'fetch']],
          'the same path as the pack and the top button, for ONE country: its state is read, then ONLY its download is posted', what='posts')
-    c.tap('.f-modal [data-no]')
-    c.until("!document.querySelector('.f-modal')", timeout=6000, what='the question closes')
-    c.eq([p for p in st['posts'][n0:] if p['verb'] == 'build'], [], 'No: nothing is built', what='no build')
+    c.eq([[p['verb'], sorted(p['args'].get('zones', []))] for p in mine if p['verb'] in ('fetch', 'build')], [['fetch', ['gb']], ['build', ['gb']]],
+         'lot D1: no question any more, the build of that country follows its download in the same gesture; the sheet says what it did', what='chain')
+    c.eq(c.js("!!window.__modal"), False, 'no window « reconstruire » at any time', what='no question')
     for _ in range(40):
         if len(_l89_reads(st)) >= 2:
             break
@@ -6779,8 +6780,9 @@ def l89(c):
     r = c.js("(() => { const b = document.querySelector('[data-sheet=es] [data-act=sheet-update]'), w = document.querySelector('[data-sheet=es] [data-sheet-update-reason]'); return [b.disabled, w && w.dataset.sheetUpdateReason, w && w.textContent.trim()] })()")
     c.eq([r[0], r[1], norm(r[2])], [True, 'up-to-date', norm(CWB('upToDate'))], 'up to date: the button is grey and says why', what='grey up to date')
     _l89_sheet(c, 'fr')
-    r = c.js("(() => { const b = document.querySelector('[data-sheet=fr] [data-act=sheet-update]'), w = document.querySelector('[data-sheet=fr] [data-sheet-update-reason]'); return [b.disabled, w && w.dataset.sheetUpdateReason, w && w.textContent.trim(), b.className] })()")
-    c.eq([r[0], r[1], norm(r[2]), 'primary' in r[3]], [True, 'waits-file', norm(CWB('waitsFile')), False], 'a country that waits for a file: grey, « prenez-le d’abord », and no longer the primary button', what='grey waits')
+    r = c.js("(() => { const b = document.querySelector('[data-sheet=fr] [data-act=sheet-update]'), w = document.querySelector('[data-sheet=fr] [data-sheet-update-plan]'); return [b.disabled, w && w.textContent.trim(), b.className] })()")
+    c.eq([r[0], norm(r[1]), 'primary' in r[2]], [False, norm(CWB('doLine').replace('{l}', _trow('doPick', lang, after='  zx: {') + ', ' + CWB('doBuild'))), False],
+         'lot D1: a country whose file is SEEN in Downloads: the gesture takes it then builds (said under the button), and it is no longer the primary button (the pickup is)', what='seen file')
     # ---- 3. a file SEEN in Downloads: « Prendre le fichier téléchargé » is THE primary gesture, « Choisir un autre fichier… » a link under it
     hand = '[data-sheet=fr] [data-hand=sia]'
     c.eq([c.attr(hand, 'data-hand-state'), norm(c.text(f'{hand} [data-verb=pickup]')), 'primary' in cls(f'{hand} [data-verb=pickup]'), c.attr(f'{hand} [data-verb=pickup]', 'data-zones'),
@@ -6865,16 +6867,18 @@ def l90(c):
     st, _x4 = _l89_open(c, world)
     # ---- 1. one read of the list of the month at the opening (no zone), and the page order
     c.eq([len(_l89_reads(st)), len(_l89_reads(st, 'fr'))], [1, 0], 'the list of the month is read once at the opening (base/cycle, no zone)', what='one read')
+    c.eq(c.js("document.querySelector('details[data-todo]').open"), False, 'the block is folded by default (lot D1)', what='folded')
+    c.js("document.querySelector('details[data-todo]').open = true")
     pos = c.js("""(() => { const q = s => document.querySelector(s), before = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
       return [before('[data-state-head]', '[data-world-map]'), before('[data-world-map]', '[data-todo]'), before('[data-todo]', '[data-cw-groups]'), before('[data-cw-groups]', '[data-publish]')] })()""")
     c.eq(pos, [True] * 4, 'the page order: state bar, the map, what is left to do, the packs, the rest', what='page order')
     head = norm(c.text('[data-todo-head]'))
-    c.eq(head, norm(CWB('todoHead').replace('{c}', '2611').replace('{n}', '4').replace('{m}', '10')), 'the header counts the sources done among the ten counted (the one the publisher no longer offers is not counted)', what='head')
+    c.eq(head, norm(CWB('todoHead').replace('{c}', '2611').replace('{n}', '3').replace('{m}', '8')), 'the header counts the sources done among the eight counted (the one the publisher no longer offers and the two computed here, MORA and X-Plane, are not counted: lot D1)', what='head')
     c.eq(norm(c.text('[data-todo] h3')), norm(CWB('todoTitle')), 'the block has its title', what='title')
     # ---- 2. one line per source not done, sorted: waits for your hand (launcher order), late, to build, to publish
     ids = c.js("[...document.querySelectorAll('[data-todo-list] > [data-todo-item]')].map(l => [l.dataset.todoItem, l.dataset.todoKind])")
-    c.eq(ids, [['lfv', 'hand'], ['nats', 'hand'], ['sia', 'hand'], ['navcan', 'late'], ['xplane', 'build'], ['faa', 'publish']], 'six lines, sorted: your hand, late, to build, to publish', what='sorted')
-    c.eq(c.count('[data-todo-list] [data-todo-item=openaip], [data-todo-list] [data-todo-item=mora], [data-todo-list] [data-todo-item=ukmil]'), 0, 'a source that is done (or shelved) has no line in the list', what='no done line')
+    c.eq(ids, [['lfv', 'hand'], ['nats', 'hand'], ['sia', 'hand'], ['navcan', 'late'], ['faa', 'publish']], 'five lines, sorted: your hand, late, to publish (X-Plane, computed on this workstation, is no longer a line: lot D1)', what='sorted')
+    c.eq(c.count('[data-todo-list] [data-todo-item=openaip], [data-todo-list] [data-todo-item=mora], [data-todo-list] [data-todo-item=ukmil], [data-todo-list] [data-todo-item=xplane]'), 0, 'a source that is done, shelved or computed here has no line in the list', what='no done line')
     line = lambda i: c.js(f"""(() => {{ const l = document.querySelector('[data-todo-list] [data-todo-item={i}]'), t = k => {{ const e = l.querySelector('[data-tick=' + k + ']'); return [e.dataset.ok, e.textContent.replace(/[\\s\\\u00a0\\\u202f]+/g, ' ').trim()] }};
       return {{ label: l.querySelector('[data-todo-label]').textContent, badge: l.querySelector('[data-regime-badge]').dataset.regimeBadge, badgeText: l.querySelector('[data-regime-badge]').textContent, kind: l.querySelector('[data-kind-word]').textContent,
         ticks: [t('download'), t('build'), t('publish')], go: [...l.querySelectorAll('[data-act=open-country]')].map(b => b.dataset.zone) }} }})()""")
@@ -6883,25 +6887,25 @@ def l90(c):
     nats = line('nats')
     c.eq([nats['label'], nats['badge'], norm(nats['badgeText']), norm(nats['kind'])], [f'nats {["fr", "en", "de", "es"][li]}', 'hand', badge('hand'), kind('hand')], 'a line: the label of the source in the language of the run, its regime, where it stands', what='nats head')
     late = norm(CWB('dlLateDates').replace('{f}', _date_text(datetime.date(2026, 10, 1), lang)).replace('{c}', _date_text(datetime.date(2026, 10, 29), lang)))
-    c.eq([nats['ticks'][0][0], norm(nats['ticks'][0][1])], ['no', norm(f"✗ {_trow('dlTick', lang, after='    tick: {')} : {late}")], 'téléchargé: a file older than the cycle says it in dates (« en retard : fichier du 1 oct., le cycle est du 29 oct. »)', what='late reason')
-    c.eq([t[0] for t in nats['ticks']], ['no', 'no', 'na'], 'the three ticks set by the tool: not downloaded in time, not built, publication not read', what='nats ticks')
+    ZXW = lambda k: _trow(k, lang, after='  zx: {')
+    c.eq([nats['ticks'][0][0], norm(nats['ticks'][0][1])], ['todo', norm(f"○ {_trow('dlTick', lang, after='    tick: {')} ({ZXW('twTodo')}) : {late}")], 'téléchargé: a file older than the cycle says it in dates (« en retard : fichier du 1 oct., le cycle est du 29 oct. »), ○ to do with its word', what='late reason')
+    c.eq([t[0] for t in nats['ticks']], ['todo', 'todo', 'na'], 'the three ticks set by the tool: to do (not a failure), to do, publication not read (not applicable)', what='nats ticks')
     sia = line('sia')
     c.ok(norm(_trow('newer-in-downloads', lang, after='    why: {')) in norm(sia['ticks'][0][1]) or norm(CW('dlWaiting')) in norm(sia['ticks'][0][1]), sia['ticks'][0][1], 'a file of the cycle waits in Downloads: said in words')
     c.eq(norm(line('navcan')['ticks'][0][1].split(':', 1)[1]), norm(_trow('not-downloaded', lang, after='    why: {')), 'a source the launcher takes and has not taken: « pas encore téléchargé »', what='not downloaded')
+    c.eq(c.count('[data-todo-item=xplane]'), 0, 'X-Plane is computed here: no line', what='no xplane')
     c.eq([line('navcan')['kind'].strip() == kind('late'), line('navcan')['badge']], [True, 'auto'], 'late, automatic', what='navcan')
-    xp = line('xplane')
-    c.eq([xp['badge'], norm(xp['badgeText']), [t[0] for t in xp['ticks']], norm(xp['ticks'][1][1].split(':', 1)[1])], ['local', badge('local'), ['na', 'no', 'no'], norm(CWB('buildCount').replace('{u}', '3').replace('{n}', '5'))], 'built from this source: 3 of 5 countries up to date; nothing to download', what='xplane')
-    c.eq(c.count('[data-todo] img') + c.count('[data-todo] [data-todo-item=xplane] b img'), 0, 'a label from the launcher is escaped (nothing is injected)', what='escaped')
+    c.eq(c.count('[data-todo] img'), 0, 'a label from the launcher is escaped (nothing is injected)', what='escaped')
     c.eq(c.js('window.__pwn === undefined'), True, 'nothing ran', what='no pwn')
     fa = line('faa')
-    c.eq([t[0] for t in fa['ticks']], ['yes', 'yes', 'no'], 'faa: downloaded and built, not published yet', what='faa ticks')
+    c.eq([t[0] for t in fa['ticks']], ['yes', 'yes', 'todo'], 'faa: downloaded and built, not published yet (○ to do)', what='faa ticks')
     # ---- 3. a line leads to the sheet of its country (a button), sources of no country of the coverage have none
-    c.eq([nats['go'], sia['go'], line('lfv')['go'], line('xplane')['go']], [['gb'], ['fr'], [], []], 'the button of a line opens the sheet of the first country of the source in the coverage; Sweden (not in the coverage) and a source common to all countries have none', what='go')
+    c.eq([nats['go'], sia['go'], line('lfv')['go']], [['gb'], ['fr'], ['se']], 'the buttons of a line open the sheet of the countries of the source in the coverage; Sweden (not in the coverage) opens its own sheet, where adding it is offered (lot D1: no line without a gesture)', what='go')
     # ---- 4. the folded ones and the shelved ones
-    c.eq([c.attr('[data-todo-done]', 'open'), norm(c.text('[data-todo-done] summary'))], [None, norm(CWB('todoDone').replace('{n}', '4'))], 'the done ones are folded under « Déjà faits (4) »', what='done fold')
+    c.eq([c.attr('[data-todo-done]', 'open'), norm(c.text('[data-todo-done] summary'))], [None, norm(CWB('todoDone').replace('{n}', '3'))], 'the done ones are folded under « Déjà faits (3) »', what='done fold')
     c.tap('[data-todo-done] summary')
     c.until("document.querySelector('[data-todo-done]').open", timeout=3000, what='the fold opens')
-    c.eq(c.js("[...document.querySelectorAll('[data-todo-done] [data-todo-item]')].map(l => l.dataset.todoItem).sort()"), ['dircam', 'enaire', 'mora', 'openaip'], 'the four done sources', what='done list')
+    c.eq(c.js("[...document.querySelectorAll('[data-todo-done] [data-todo-item]')].map(l => l.dataset.todoItem).sort()"), ['dircam', 'enaire', 'openaip'], 'the three done sources (MORA is computed here: not a line)', what='done list')
     gone = c.js("""(() => { const g = document.querySelector('[data-todo-gone] [data-todo-unavailable=ukmil]'), t = document.querySelector('[data-todo-unavailable-title]');
       return g ? [g.textContent.replace(/\s+/g, ' '), !!(t.compareDocumentPosition(g) & 4), g.querySelectorAll('[data-tick]').length, document.querySelector('[data-todo-list] [data-todo-item=ukmil]') !== null] : null })()""")
     c.ok(gone and f'unavailable note {lang}' in gone[0] and '2025-11' in gone[0] and gone[1] and gone[2] == 0 and not gone[3], gone, 'UK Mil is shelved APART under its muted title with the note of the catalogue: no tick, not « late », not in the list')
@@ -7298,4 +7302,468 @@ def l95(c):
     c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'de' not in d.get('zones', [])), what='the country leaves the coverage')
     c.eq([len(_notes_with(c, LC('removed').replace('{c}', de))), [p['verb'] for p in st['posts'][n_posts:] if p['verb'] == 'purge']], [1, []], 'Yes: out of the coverage, one notification, nothing purged', what='removed')
     c.until("!!document.querySelector('[data-sheet=de] [data-add-ask]')", timeout=8000, what='the sheet offers to add it again')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L96 .. L101 (lot D1: the user's real trial)
+def _l96_inside(v, world, base, eps=1e-3):
+    """The view [x, y, w, h] stays in the world (or in the frame it started from when that one is larger)."""
+    x0, x1 = min(world[0], base[0]), max(world[0] + world[2], base[0] + base[2])
+    y0, y1 = min(world[1], base[1]), max(world[1] + world[3], base[1] + base[3])
+    return v[0] >= x0 - eps and v[1] >= y0 - eps and v[0] + v[2] <= x1 + eps and v[1] + v[3] <= y1 + eps
+
+
+_L96_WHEEL = """([dy, fx, fy]) => { const s = document.querySelector('[data-wmap]'), r = s.getBoundingClientRect();
+  return !s.dispatchEvent(new WheelEvent('wheel', { deltaY: dy, clientX: r.left + r.width * fx, clientY: r.top + r.height * fy, bubbles: true, cancelable: true })) }"""
+_L96_PTR = """([type, id, fx, fy, kind, target]) => { const s = document.querySelector('[data-wmap]'), r = s.getBoundingClientRect(), t = target ? document.querySelector(target) : s;
+  t.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: kind, isPrimary: id === 1, button: type === 'pointermove' ? -1 : 0, buttons: type === 'pointerup' ? 0 : 1, clientX: r.left + r.width * fx, clientY: r.top + r.height * fy, bubbles: true, cancelable: true })) }"""
+
+
+@case('L96', 'Données: the world map zooms and pans again (SOG-0262, lot D1) — wheel zoom around the pointer, pinch, drag, bounded to the world, « Voir le monde entier » and « Recentrer sur ma couverture »; the blue border of the open pack and the hover survive; a drag never opens a sheet',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D1 (the user\'s trial: « on ne peut plus zoomer sur la carte »): the lot A SVG map lost zoom and pan; the view is a box kept in the state of the screen (a redraw keeps it), bounded to the world (no panning off it, a minimum and a maximum zoom); a drag is swallowed (no sheet), a plain tap still opens the sheet; the two buttons give back the world and the framing of the coverage')
+def l96(c):
+    lang = c.lang
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    st, _x4 = _l89_open(c, {'sia_seen': True})
+    vb = lambda: c.js("document.querySelector('[data-wmap]').getAttribute('viewBox').split(' ').map(Number)")
+    frame = lambda a: c.js(f"(s => (s.getAttribute('{a}') || s.getAttribute('viewBox')).split(' ').map(Number))(document.querySelector('[data-wmap]'))")
+    base0, world, v0 = frame('data-base'), frame('data-world'), vb()
+    ptr = lambda *a: c.js(_L96_PTR, list(a))
+    c.eq(v0, base0, 'the map opens framed on the coverage', what='initial frame')
+    # ---- 1. a plain tap still opens the sheet, a drag is swallowed (no sheet)
+    _l89_sheet(c, 'gb')
+    c.eq(c.count('[data-sheet=gb]'), 1, 'a plain tap on a country opens its sheet', what='tap opens')
+    c.tap('[data-sheet] [data-act=sheet-close]:visible')
+    c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='the sheet closes')
+    gb = '[data-wmap] path[data-zone=gb]'
+    ptr('pointerdown', 1, .5, .5, 'mouse', gb)
+    for i in range(1, 7):
+        ptr('pointermove', 1, .5 + i * .02, .5 + i * .01, 'mouse', None)
+    ptr('pointerup', 1, .62, .56, 'mouse', None)
+    c.js(f"document.querySelector('{gb}').dispatchEvent(new MouseEvent('click', {{ bubbles: true, cancelable: true }}))")
+    c.wait(300)
+    c.eq(c.count('[data-sheet]'), 0, 'a drag that ends on a country does not open its sheet', what='drag swallowed')
+    c.ok(vb() != v0, vb(), 'the drag moved the view')
+    # ---- 2. the wheel zooms around the pointer, and the page does not scroll
+    c.tap('[data-act=map-home]')
+    c.until("document.querySelector('[data-wmap]').getAttribute('viewBox') === document.querySelector('[data-wmap]').getAttribute('data-base')", timeout=4000, what='back to the framing of the coverage')
+    v1 = vb()
+    r = c.js("""() => { const s = document.querySelector('[data-wmap]'), b = s.getBoundingClientRect(), x = b.left + b.width * .3, y = b.top + b.height * .5, at = () => { const p = new DOMPoint(x, y).matrixTransform(s.getScreenCTM().inverse()); return [p.x, p.y] };
+      const u1 = at(), prevented = !s.dispatchEvent(new WheelEvent('wheel', { deltaY: -240, clientX: x, clientY: y, bubbles: true, cancelable: true })); return [prevented, u1, at()] }""")
+    prevented, u1, u2 = r
+    v2 = vb()
+    c.ok(prevented, prevented, 'the wheel over the map is taken (the page does not scroll)')
+    c.ok(v2[2] < v1[2] - 1e-6, (v1, v2), 'wheel forward zooms in (the view is narrower)')
+    c.ok(abs(u1[0] - u2[0]) < v1[2] * 1e-3 and abs(u1[1] - u2[1]) < v1[3] * 1e-2, (u1, u2), 'the zoom is around the pointer (not around the centre of the view): the point under it stays under it')
+    c.ok(abs(v2[2] / v2[3] - v1[2] / v1[3]) < 1e-3, (v1, v2), 'the proportions of the frame are kept')
+    # ---- 3. bounded: zoom out far, zoom in far, drag far
+    for _ in range(14):
+        c.js(_L96_WHEEL, [800, .5, .5])
+    v3 = vb()
+    c.ok(_l96_inside(v3, world, base0) and v3[2] <= max(min(world[2], world[3] * base0[2] / base0[3]), base0[2]) + 1e-3, (v3, world), 'zoomed out as far as it goes: the view stays in the world, never wider than it')
+    for _ in range(40):
+        c.js(_L96_WHEEL, [-800, .5, .5])
+    v4 = vb()
+    c.ok(v4[2] >= world[2] / 80 - 1e-6 and v4[2] <= v3[2], (v4, world), 'zoomed in as far as it goes: a minimum width, it never collapses')
+    ptr('pointerdown', 1, .5, .5, 'mouse', None)
+    for i in range(1, 12):
+        ptr('pointermove', 1, .5 - i * .5, .5 - i * .5, 'mouse', None)
+    ptr('pointerup', 1, -5, -5, 'mouse', None)
+    v5 = vb()
+    c.ok(_l96_inside(v5, world, base0) and v5 != v4, (v5, world), 'a long drag moves the view but never off the world')
+    # ---- 4. pinch
+    c.tap('[data-act=map-home]')
+    c.until("document.querySelector('[data-wmap]').getAttribute('viewBox') === document.querySelector('[data-wmap]').getAttribute('data-base')", timeout=4000, what='home again')
+    v6 = vb()
+    ptr('pointerdown', 1, .4, .5, 'touch', None)
+    ptr('pointerdown', 2, .6, .5, 'touch', None)
+    for i in range(1, 6):
+        ptr('pointermove', 1, .4 - i * .03, .5, 'touch', None)
+        ptr('pointermove', 2, .6 + i * .03, .5, 'touch', None)
+    ptr('pointerup', 1, .25, .5, 'touch', None)
+    ptr('pointerup', 2, .75, .5, 'touch', None)
+    v7 = vb()
+    c.ok(v7[2] < v6[2] * .9, (v6, v7), 'two fingers moving apart zoom in')
+    # ---- 5. the buttons
+    c.tap('[data-act=map-zoom][data-dir=out]')
+    c.ok(vb()[2] > v7[2], vb(), '« − » zooms out')
+    c.eq([norm(c.text('[data-act=world-toggle]')), norm(c.text('[data-act=map-home]'))], [norm(ZX('mvWorld')), norm(ZX('mvHome'))], 'the two buttons say what they do', what='button labels')
+    c.tap('[data-act=world-toggle]')
+    c.until("document.querySelector('[data-wmap]').getAttribute('viewBox') === document.querySelector('[data-wmap]').getAttribute('data-world')", timeout=4000, what='the whole world is framed')
+    c.eq(vb(), world, '« Voir le monde entier »: the frame of the world', what='world frame')
+    c.tap('[data-act=map-home]')
+    c.until("document.querySelector('[data-wmap]').getAttribute('viewBox') === document.querySelector('[data-wmap]').getAttribute('data-base')", timeout=4000, what='the coverage is framed again')
+    c.eq(vb(), base0, '« Recentrer sur ma couverture »: the first framing', what='home frame')
+    # ---- 6. the border of the open pack and the hover survive a zoom and a redraw
+    c.tap('[data-group-id=ouest] [data-act=grp-toggle]')
+    c.until("document.querySelectorAll('[data-wmap] path[data-grp]').length >= 2", timeout=4000, what='the pack is outlined')
+    sw0 = c.js("getComputedStyle(document.querySelector('[data-wmap] path[data-grp]')).strokeWidth")
+    for _ in range(3):
+        c.js(_L96_WHEEL, [-240, .5, .5])
+    vz = vb()
+    c.tap('[data-group-id=amerique] [data-act=grp-toggle]')
+    c.until("document.querySelector('[data-group-id=amerique]').dataset.open === 'true'", timeout=4000, what='another pack opens (a redraw)')
+    c.eq(vb(), vz, 'a redraw of the panel keeps the zoom and the position', what='redraw keeps')
+    c.tap('[data-group-id=ouest] [data-act=grp-toggle]')
+    c.until("document.querySelectorAll('[data-wmap] path[data-grp]').length >= 2", timeout=4000, what='the first pack is outlined again')
+    c.eq(c.js("getComputedStyle(document.querySelector('[data-wmap] path[data-grp]')).strokeWidth"), sw0, 'the blue border keeps its width when zoomed (it is not scaled)', what='border width')
+    c.js("document.querySelector('[data-wmap] path[data-zone=fr]').dispatchEvent(new PointerEvent('pointerover', { pointerType: 'mouse', bubbles: true }))")
+    c.eq([c.count('[data-wmap] path[data-hover]'), c.js("getComputedStyle(document.querySelector('[data-wmap] path[data-hover]')).fillOpacity")], [1, '1'], 'the hovered country is filled, zoomed', what='hover')
+    c.check_errors()
+
+
+def _l97_world(ca_stale=False):
+    """A world where the United Kingdom is stale and buildable (and Canada too, when asked), the other countries up to date; the file of the SIA is not in Downloads."""
+    zs = {'ca': _zst('stale', _NEWER) if ca_stale else _zst('up-to-date'), 'es': _zst('up-to-date'), 'us': _zst('up-to-date'),
+          'fr': _zst('stale', {'code': 'pickup-waiting', 'source': 'sia', 'cycle': '2026-11-26', 'zip': 'export_xml_bd_sia_2026-10-29-v01.zip'}, buildable=False), 'gb': _zst('stale', _NEWER)}
+    return {'sia_seen': False, 'zs': zs}
+
+
+def _l97_dl(state='done', zone='gb', failed=None, jid='f1'):
+    """A download view of the United Kingdom: running (one source read), done (fetched) or failed (a source refused)."""
+    res = {'fetched': [] if failed else [zone], 'unchanged': [], 'failed': failed or [], 'manual': []}
+    return _fview({zone: _fz('fetching', 0, 1) if state == 'running' else _fz('failed', 1, 1, error='http') if failed else _fz('fetched', 1, 1)}, state=state, step='Lecture de NATS' if state == 'running' else 'Terminé',
+                  done=0 if state == 'running' else 1, total=1, result=None if state == 'running' else res, jid=jid, args={'zones': [zone]})
+
+
+def _l97_build(state='done', zone='gb', jid='b1'):
+    """A build view of the United Kingdom: running or done (built)."""
+    return _fview({zone: _zs('building', 2, 4) if state == 'running' else _zs('built', 4, 4)}, state=state, step='Calcul des couches' if state == 'running' else 'Terminé', done=0 if state == 'running' else 1, total=1, verb='build',
+                  result=None if state == 'running' else {'built': [zone], 'failed': [], 'commits': []}, jid=jid, args={'zones': [zone]})
+
+
+_L97_MODAL = "(() => { window.__modal = false; new MutationObserver(() => { if (document.querySelector('.f-modal')) window.__modal = true }).observe(document.body, { childList: true, subtree: true }) })()"
+_L97_BARE = """(() => [...document.querySelectorAll('[data-sheet=gb] button:disabled')].filter(b => { let e = b.closest('div'); if (e && e.matches('[data-sheet]')) e = b.closest('p'); return !(e && e.querySelector('[data-grey]')) }).map(b => b.textContent.trim()))()"""
+
+
+def _l97_run(c, st, world, views, after_build_state='up-to-date', n_status=None):
+    """Taps « Mettre à jour ce pays » on the open sheet of the United Kingdom with the given job views; the state of the country after the build is `after_build_state`."""
+    st['views'], st['i'] = list(views), 0
+    st['start'] = (200, {'job': 'j1'})
+    n0 = len([p for p in st['posts'] if p['verb'] == 'build'])
+    st['status'] = lambda args: _status({**world['zs'], 'gb': _zst(after_build_state, *(() if after_build_state == 'up-to-date' else (_NEWER,))) if len([p for p in st['posts'] if p['verb'] == 'build']) > n0 else world['zs']['gb']})
+    c.js(_L97_MODAL)
+    c.tap('[data-sheet=gb] [data-act=sheet-update]')
+
+
+def _rx(text, lang, **kv):
+    """A regular expression of a text of the screen whose {t} is a time (« 14:20Z ») and whose other marks are free."""
+    pat = re.escape(norm(text))
+    for k in kv:
+        pat = pat.replace(re.escape('{' + k + '}'), kv[k])
+    return re.sub(r'\\\{\w+\\\}', '.+', pat)
+
+
+@case('L97', 'Données: « Mettre à jour ce pays » shows its progress IN PLACE of the button, chained without a question (SOG-0262, lot D1) — the step in words, « n sur m », a bar, « Arrêter »; then the thread of the operation under the state (what was done, at what time), the sheet of the country re-read; no popup, no floating note alone, no grey button without its reason; a chain that leaves the country stale says why',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D1 (the user: « Portugal. j\'ai cliqué sur « mettre à jour ». le bouton est désactivé. où est l\'avancement ? »; « ça a disparu, remplacé par une popup « reconstruire » »): the button becomes the progress on the sheet (step, n of m, bar, Arrêter), the single-country gesture chains download then build with no ctx.ask, the sheet keeps the thread of the last operation of THIS country and says why it is still not up to date; every disabled button has its reason beside it')
+def l97(c):
+    lang = c.lang
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    world = _l97_world()
+    st, _x4 = _l89_open(c, world)
+    _l89_sheet(c, 'gb')
+    n_notes = len(c.note_log())
+    reads0 = len(_l89_reads(st, 'gb'))
+    _l97_run(c, st, world, [_l97_dl('running'), _l97_dl('done'), _l97_build('running'), _l97_build('done')])
+    # ---- 1. the button BECOMES the progress, in place
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=10000, what='the progress is on the sheet')
+    prog = '[data-sheet=gb] [data-sheet-update] [data-sheet-progress]'
+    c.eq([c.count('[data-sheet=gb] [data-act=sheet-update]'), c.count(prog)], [0, 1], 'the button is gone: its place holds the progress', what='in place')
+    c.until("document.querySelector('[data-sheet=gb] [data-prog-count]') !== null", timeout=10000, what='the count « n sur m »')
+    c.ok(re.search(r'\d+\D+\d+', c.text('[data-sheet=gb] [data-prog-count]') or ''), c.text('[data-sheet=gb] [data-prog-count]'), 'the count says « n sur m »')
+    c.ok(len(norm(c.text('[data-sheet=gb] [data-prog-step]') or '')) > 3, c.text('[data-sheet=gb] [data-prog-step]'), 'the step is said in words')
+    c.eq([c.count(f'{prog} [role=progressbar]'), norm(c.text(f'{prog} [data-act=zop-stop]') or '')], [1, norm(_trow('stop', lang, after='  stop: '))], 'a bar and « Arrêter »', what='bar and stop')
+    c.eq(c.js(_L97_BARE), [], 'no disabled button of the sheet is bare: each one has its reason beside it', what='no bare grey')
+    # a second gesture meanwhile: the buttons of the screen are grey and SAY why
+    r = c.js("(() => { const b = document.querySelector('[data-state-head] [data-verb=update]'); const w = document.querySelector('[data-state-head] [data-update-reason]'); return b ? [b.disabled, w ? w.textContent.trim() : ''] : null })()")
+    c.ok(r and r[0] and len(r[1]) > 3, r, 'the top button is grey while it runs and writes why beside it')
+    # ---- 2. the end: the thread, no question, no note alone
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]')", timeout=30000, what='the thread of the operation')
+    c.eq(c.js("!!window.__modal"), False, 'no question was asked at any time (no « reconstruire » window)', what='no modal')
+    c.eq([[p['verb'], p['args'].get('zones')] for p in st['posts'] if p['verb'] in ('fetch', 'build')], [['fetch', ['gb']], ['build', ['gb']]], 'the download then the build of that country only, chained', what='chain')
+    steps = c.js("[...document.querySelectorAll('[data-sheet=gb] [data-thread-step]')].map(s => [s.dataset.threadStep, s.dataset.ok, s.querySelector('[data-thread-text]').textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])")
+    c.eq([s[:2] for s in steps], [['download', 'yes'], ['build', 'yes']], 'the thread: downloaded, built, both done', what='thread steps')
+    c.ok(re.fullmatch(_rx(ZX('thDl'), lang, t=r'\d{2}:\d{2}Z'), steps[0][2]) and re.fullmatch(_rx(ZX('thBuild'), lang, t=r'\d{2}:\d{2}Z'), steps[1][2]), steps, 'each step says what it did and at what time')
+    c.eq([norm(c.text('[data-sheet=gb] [data-thread-bilan]')), c.attr('[data-sheet=gb] [data-thread-bilan]', 'data-level')], [norm(ZX('thOk')), 'ok'], 'the one-line bilan: the country is up to date', what='bilan ok')
+    c.eq(len(c.note_log()), n_notes, 'nothing was said in a floating note', what='no note')
+    for _ in range(40):
+        if len(_l89_reads(st, 'gb')) > reads0:
+            break
+        c.wait(250)
+    c.ge(len(_l89_reads(st, 'gb')), reads0 + 1, 'the cells of the sheet (the view of the country) were read again after the operation', what='re-read')
+    c.eq(c.js(_L97_BARE), [], 'and still no bare grey button', what='no bare grey end')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-sheet=gb] [data-sheet-thread]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L97_{c.width}_{lang}_thread.png')
+    # ---- 3. a successful chain that leaves the country stale says WHY, in the launcher\'s words
+    world['zs']['gb'] = _zst('stale', _NEWER)
+    st['status'] = lambda args: _status(world['zs'])
+    _l98_fresh(c)
+    _l89_sheet(c, 'gb')
+    _l97_run(c, st, world, [_l97_dl('done', jid='f2'), _l97_build('done', jid='b2')], after_build_state='stale')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread][data-thread-state=done]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=30000, what='the second thread')
+    why = norm(c.text('[data-sheet=gb] [data-thread-bilan]'))
+    mid = norm(_trow('source-newer', lang, after="'source-newer'").split('{cycle}')[1].split('{built}')[0])
+    c.ok(mid.strip() in why and why.startswith(norm(ZX('thStale')).split('{r}')[0].strip()[:12]), why, 'the country is still not up to date after a good chain: the bilan says why, with the launcher\'s reason (source newer than the build)')
+    c.check_errors()
+
+
+def _l98_fresh(c, st=None):
+    """Reloads the screen: nothing is open, nothing runs (a refusal leaves the screen grey while the other operation is followed: it is over for the launcher stub)."""
+    if st is not None:
+        st['current'], st['start'] = None, (200, {'job': 'j1'})
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length === 8 && !!document.querySelector('[data-todo-state=ready]')", timeout=20000, what='the screen again')
+    _ready(c, 5)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+
+
+@case('L98', 'Données: « une autre opération est en cours » is THE card (which operation, since when, step, progress, Voir / Arrêter) at the place of the gesture, from every path (SOG-0262, lot D1) — the sheet, the top button, a line of the month, a pack, a file sent, the pickup, Publier, the NAT routes; never the bare sentence',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D1 + SOG-0245 (the user: « retour du « une autre opération est en cours ». laquelle ? depuis combien de temps ? comment la stopper ? »): the refusal of ANY launcher call — the read of the state of a country, a job start, a file upload, the plan of Publier — draws the card where the gesture was made (sheet, group body, block of the month, state bar, Publier); the grey buttons do not repeat the sentence')
+def l98(c):
+    lang = c.lang
+    B = lambda key: _trow(key, lang, after='  busy: {')
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    name = f"{_trow('proc', lang, after='  groups: {')} · {_trow('fetch', lang, after='Ruta (RAD, FRA)')}"
+    R = _running()
+    RV = {**_fview({}, state='running', step='Lecture des sources', jid='o1', verb='fetch'), 'set': 'proc'}
+    busy = {'reason': 'busy', 'job': 'o1', 'running': R}
+    world = _l93_world()
+    for z in ('gb', 'ca'):
+        world['zs'][z] = {**_zst('stale', _NEWER), 'publish': world['zs'][z]['publish']}
+    expired = {'present': True, 'count': 17, 'from': '2026-11-09T07:00:00Z', 'validUntil': '2026-11-10T19:00:00Z', 'expired': True, 'current': 0}
+    st, _x4 = _l89_open(c, world, busy_running=R, busy_view=RV, verbs=('base/pickup', 'base/cycle', 'base/publish'), publish=lambda a: world['plan'] if a.get('dry', True) else world['real'], nat={'state': expired})
+    c.context.route(re.compile(r'/__setup/base/upload'), lambda route: route.fulfill(status=409, content_type='application/json', body=json.dumps({'ok': False, 'reason': 'busy', 'running': R})))
+    st['views'] = [_fview({}, state='done', jid='j1')]
+    where = lambda sel: [c.count(f'{sel} [data-busy-card]'), c.count('[data-busy-card]'), c.count('[data-other]'), c.count('[data-refusal=busy]')]
+
+    def card(sel, why):
+        c.until(f"!!document.querySelector('{sel} [data-busy-card]')", timeout=12000, what=f'the card {why}')
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.eq(where(sel), [1, 1, 0, 0], f'{why}: ONE card, at the place of the gesture, no bare sentence', what=why)
+        c.eq(norm(c.text(f'{sel} [data-busy-name]')), norm(B('title').replace('{n}', name)), f'{why}: it names the operation, since when and where it is (the card of SOG-0245)', what=f'{why} name')
+        c.eq(c.js(f"[...document.querySelectorAll('{sel} [data-busy-act]')].map(b => b.dataset.busyAct)"), ['see', 'stop', 'hide'], f'{why}: Voir and Arrêter', what=f'{why} buttons')
+    # (a) the sheet of a country
+    _l89_sheet(c, 'gb')
+    st['start'] = (409, busy)
+    c.tap('[data-sheet=gb] [data-act=sheet-update]')
+    card('[data-sheet=gb]', 'sheet: « Mettre à jour ce pays »')
+    c.eq(c.count('[data-state-head] [data-busy-card]'), 0, 'the state bar does not repeat it', what='head silent')
+    # the NAT routes (expired): an operation runs, so they are not taken now: the line says so and the card of that operation is there too
+    c.tap('[data-sheet] [data-act=sheet-close]:visible')
+    c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='the sheet closes')
+    c.eq(c.count('[data-state-head] [data-busy-card]'), 1, 'the sheet closed, the card of the refusal is not lost: it moves to the state bar', what='card moves')
+    c.tap('[data-lc-fold=change] > summary')
+    c.until("document.querySelector('[data-lc-fold=change]').open && !!document.querySelector('[data-later-blocks] [data-busy-card]')", timeout=8000, what='the card in the NAT block')
+    c.eq([c.count('[data-later-blocks] [data-busy-card]'), (c.js('window.__stub.calls') or {}).get('natEnsure', 0), norm(ZX('natDeferred')) in norm(c.text('[data-change=nat]'))], [1, 0, True],
+         'NAT routes: not taken while an operation runs; the line says it will be taken again at its end, with the card of that operation', what='nat deferred')
+    # (b) the top button of the state bar
+    _l98_fresh(c, st)
+    st['start'] = (409, busy)
+    c.tap('[data-state-head] [data-verb=update]')
+    card('[data-state-head]', 'state bar: the top button')
+    # (c) a line of the list of the month
+    _l98_fresh(c, st)
+    st['start'] = (409, busy)
+    c.js("(d => { if (d) d.open = true })(document.querySelector('details[data-todo]'))")
+    c.tap('[data-todo-item=navcan] [data-todo-act=update]')
+    card('[data-todo]', 'a line of the month')
+    # (d) the « Mettre à jour (n) » of a pack
+    _l98_fresh(c, st)
+    st['start'] = (409, busy)
+    c.tap('[data-group-id=ouest] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-act=update-pack]')
+    card('[data-group-body]', 'a pack')
+    # (e) a file chosen on the sheet (the launcher refuses the upload: busy)
+    _l98_fresh(c, st)
+    st['start'] = (200, {'job': 'j1'})
+    _l89_sheet(c, 'gb')
+    with c.page.expect_file_chooser() as fc:
+        c.js("document.querySelector('[data-sheet=gb] [data-act=zone-upload]').click()")
+    fc.value.set_files({'name': 'EG_AIP.zip', 'mimeType': 'application/zip', 'buffer': b'PK' + b'x' * 998})
+    card('[data-sheet=gb]', 'a file sent')
+    # (f) the pickup of a file seen in Downloads
+    _l98_fresh(c, st)
+    world['sia_seen'] = True
+    world['zs']['fr'] = _zst('stale', {'code': 'pickup-waiting', 'source': 'sia', 'cycle': '2026-11-26', 'zip': 'export_xml_bd_sia_2026-10-29-v01.zip'}, buildable=False)
+    _l89_sheet(c, 'fr')
+    st['start'] = (409, busy)
+    c.tap('[data-sheet=fr] [data-hand=sia] [data-verb=pickup]')
+    card('[data-sheet=fr]', 'the pickup')
+    # (g) Publier: the plan is refused while an operation runs
+    world['zs']['fr'] = {**_zst('up-to-date'), 'publish': world['zs']['es']['publish']}
+    _l98_fresh(c, st)
+    c.until("document.querySelector('[data-publish-plan=ready]') !== null", timeout=15000, what='the plan of Publier is read')
+    st['start'] = (409, busy)
+    c.tap('[data-publish] [data-verb=publish]')
+    card('[data-publish]', 'Publier')
+    c.eq(c.count('.f-modal'), 0, 'Publier asked nothing', what='no question')
+    # (h) « Tout mettre à jour »: the chain asks its one question, then its first operation is refused
+    _l98_fresh(c, st)
+    st['start'] = (409, busy)
+    c.tap('[data-update-all] [data-verb=all]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    card('[data-update-all]', 'the chain « Tout mettre à jour »')
+    c.check_errors()
+
+
+@case('L99', 'Données: nothing ephemeral for a failure or a result (SOG-0262, lot D1) — the thread of the last operation of THIS country stays on its sheet step by step until the next operation: a failed step stays with its reason and « Réessayer », the retry chains the rest and succeeds; a floating note never carries a result alone; the sheet of another country shows nothing of it',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D1 (the user: « Essai réel du Royaume-Uni : échec, ça a disparu, remplacé par une popup « reconstruire » ; manque de fluidité »): the thread keeps the failed download with the reason the launcher gave and « Réessayer »; the retry re-reads the state and does what is missing; the bilan of an operation shows on the sheet of ITS country only (the sheet of France showed « Royaume-Uni : en attente »); a retry refused busy draws the card on the sheet')
+def l99(c):
+    lang = c.lang
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    world = _l97_world()
+    R = _running()
+    st, _x4 = _l89_open(c, world, busy_running=R, busy_view={**_fview({}, state='running', step='Lecture des sources', jid='o1', verb='fetch'), 'set': 'proc'})
+    _l89_sheet(c, 'gb')
+    n_notes = len(c.note_log())
+    fail = [{'zone': 'gb', 'source': 'nats', 'error': 'http', 'status': 404}]
+    _l97_run(c, st, world, [_l97_dl('done', failed=fail, jid='f1')])
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]')", timeout=20000, what='the thread of the failed operation')
+    c.eq(c.js("!!window.__modal"), False, 'no question at any time', what='no modal')
+    steps = c.js("[...document.querySelectorAll('[data-sheet=gb] [data-thread-step]')].map(s => [s.dataset.threadStep, s.dataset.ok])")
+    c.eq(steps, [['download', 'no'], ['build', 'todo']], 'the thread: the download FAILED (a red failure, with its reason), the build was not reached (to do, neutral)', what='failed thread')
+    c.ok(norm(c.text('[data-sheet=gb] [data-thread-step=download] [data-thread-text]')).startswith(norm(ZX('thWDl'))) and '404' in c.text('[data-sheet=gb] [data-thread-step=download] [data-thread-text]'),
+         c.text('[data-sheet=gb] [data-thread-step=download] [data-thread-text]'), 'the failed step stays with the launcher\'s reason (the status 404)')
+    c.eq([c.attr('[data-sheet=gb] [data-sheet-thread]', 'data-thread-state'), c.attr('[data-sheet=gb] [data-thread-bilan]', 'data-level'), c.count('[data-sheet=gb] [data-act=zop-retry]')], ['failed', 'err', 1], 'the bilan is a failure with « Réessayer » on the failed step', what='failed bilan')
+    c.eq([[p['verb']] for p in st['posts'] if p['verb'] in ('fetch', 'build')], [['fetch']], 'the chain stopped at the failure: nothing was built', what='stopped')
+    c.eq(len(c.note_log()), n_notes, 'the failure is not said in a floating note (it would vanish): the thread says it', what='no note')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.wait(1500)
+    c.eq(c.count('[data-sheet=gb] [data-sheet-thread]'), 1, 'it is still there, long after (nothing ephemeral)', what='stays')
+    # the sheet of another country does not show it
+    _l89_sheet(c, 'es')
+    gbname = _L88_NAMES['gb'][{'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]]
+    c.eq([c.count('[data-sheet=es] [data-sheet-thread]'), c.count('[data-sheet=es] [data-build-result]'), gbname in (c.text('[data-sheet=es]') or '')], [0, 0, False], 'the sheet of another country shows nothing of the United Kingdom\'s operation', what='only its country')
+    _l89_sheet(c, 'fr')
+    c.eq([c.count('[data-sheet=fr] [data-build-result]'), gbname in (c.text('[data-sheet=fr]') or '')], [0, False], 'nor does the sheet of France (it showed « Royaume-Uni : en attente »)', what='fr silent')
+    # the retry that succeeds: the state is read again and only what is missing is done (the download again, then the build)
+    _l89_sheet(c, 'gb')
+    st['start'] = (200, {'job': 'j1'})
+    st['views'], st['i'] = [_l97_dl('done', jid='f2'), _l97_build('done', jid='b2')], 0
+    n0 = len([p for p in st['posts'] if p['verb'] == 'build'])
+    st['status'] = lambda args: _status({**world['zs'], 'gb': _zst('up-to-date') if len([p for p in st['posts'] if p['verb'] == 'build']) > n0 else world['zs']['gb']})
+    c.js(_L97_MODAL)
+    c.tap('[data-sheet=gb] [data-act=zop-retry]')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread][data-thread-state=done]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=30000, what='the thread of the retry')
+    c.eq([c.js("[...document.querySelectorAll('[data-sheet=gb] [data-thread-step]')].map(s => [s.dataset.threadStep, s.dataset.ok])"), norm(c.text('[data-sheet=gb] [data-thread-bilan]')), c.js("!!window.__modal")],
+         [[['download', 'yes'], ['build', 'yes']], norm(ZX('thOk')), False], 'the retry succeeded: the download done again, the build done, the country up to date, no question', what='retry thread')
+    # a retry refused because an operation runs: THE card, on the sheet, and the failed thread stays (a fresh failure first)
+    world['zs']['gb'] = _zst('stale', _NEWER)
+    st['status'] = lambda args: _status(world['zs'])
+    _l98_fresh(c, st)
+    _l89_sheet(c, 'gb')
+    _l97_run(c, st, world, [_l97_dl('done', failed=fail, jid='f3')])
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=20000, what='the second failed thread')
+    st['start'] = (409, {'reason': 'busy', 'job': 'o1', 'running': R})
+    c.tap('[data-sheet=gb] [data-act=zop-retry]')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-busy-card]')", timeout=10000, what='the card on the sheet for the refused retry')
+    c.eq([c.count('[data-sheet=gb] [data-busy-card]'), c.count('[data-other]')], [1, 0], 'a retry refused because an operation runs: THE card, on the sheet', what='retry busy')
+    c.eq([c.count('[data-sheet=gb] [data-sheet-thread]'), c.count('[data-sheet=gb] [data-act=zop-retry]')], [1, 1], 'the refused retry did nothing: the failed thread is still there, with its « Réessayer »', what='thread kept')
+    c.check_errors()
+
+
+@case('L100', 'Données: every line of « À faire ce mois-ci » carries THE gesture that does it (SOG-0262, lot D1) — a source the launcher takes or computes has « Mettre à jour (n pays) » / « Construire » / « Publier… », a hand-taken one « Prendre le fichier » or « Choisir le fichier… », « Tout mettre à jour (n) » at the top; the regime reads « pris par le lanceur »; « 74 sur 83 » says why; computed sources are never a line',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D1 (the user: « OpenAIP : 74 sur 83 à jour, statut non construit, et pourtant construction automatique. ben alors, on fait un refresh, non ? »): a line the launcher can do alone carries its button running exactly that work (startUpdate on the countries the source feeds that need it); a hand-taken line carries the pickup or the chooser; no line without a gesture; the reason of the countries that are not up to date is the launcher\'s, in words, never « non construit »; MORA and X-Plane (computed here) are not lines: they are facts, under « Quand ça change » and on the sheet of a country')
+def l100(c):
+    lang = c.lang
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    CWB = lambda k, row=0: _trow(k, lang, after='  cwb: {', row=row)
+    world = _l97_world(ca_stale=True)
+    world['sia_seen'] = True
+    st, _x4 = _l89_open(c, world)
+    c.js("(d => { if (d) d.open = true })(document.querySelector('details[data-todo]'))")
+    c.eq(c.js("[...document.querySelectorAll('[data-todo-list] > [data-todo-item]')].map(l => l.dataset.todoItem)"), ['lfv', 'nats', 'sia', 'navcan', 'faa'], 'the lines: your hand, late, to publish — the computed sources (X-Plane, MORA) are NOT lines (filtered here)', what='lines')
+    c.eq(c.count('[data-todo-item=xplane], [data-todo-item=mora]'), 0, 'no line for a source computed on this workstation, done or not', what='no computed line')
+    gest = lambda i: c.js(f"[...document.querySelectorAll('[data-todo-item={i}] [data-todo-act]')].map(b => [b.dataset.todoAct, b.textContent.trim(), b.disabled])")
+    z = lambda n: _trow('country', lang, after='  unit: {', row=0 if n == 1 else 1)
+    c.eq([gest('navcan')[0][0], gest('sia')[0][0], gest('nats')[0][0], gest('faa')[0][0]], ['update', 'pick', 'choose', 'publish'], 'every kind of line carries its gesture: update, pickup (a file is seen), chooser (nothing seen), publish', what='gestures')
+    c.eq(norm(gest('navcan')[0][1]), norm(ZX('tdUpdate').replace('{z}', f"1 {z(1)}")), 'the launcher\'s line: « Mettre à jour (1 pays) », the countries that need it', what='update label')
+    c.eq(norm(gest('sia')[0][1]), norm(ZX('tdPick')), '« Prendre le fichier »', what='pick label')
+    c.eq(norm(gest('nats')[0][1]), norm(_trow('choose', lang, after='  up: {')), '« Choisir le fichier… »', what='choose label')
+    c.ok(all(not g[2] for i in ('navcan', 'sia', 'nats') for g in gest(i)), [gest(i) for i in ('navcan', 'sia', 'nats')], 'the buttons are live')
+    c.eq(c.js("(() => { const b = document.querySelector('[data-todo-item=faa] [data-todo-act=publish]'); return !b.disabled || !!b.closest('p').querySelector('[data-grey]') })()"), True, 'Publier is live, or says why beside it (no bare grey button)', what='publish grey')
+    c.eq(c.js("[...document.querySelectorAll('[data-todo-list] > [data-todo-item]')].filter(l => !l.querySelector('[data-todo-act], [data-act=open-country], [data-todo-nogesture]')).map(l => l.dataset.todoItem)"), [], 'no line without a gesture', what='no bare line')
+    c.eq(c.js("document.querySelector('[data-todo-item=navcan] [data-regime-badge]').textContent.trim()"), norm(_trow('auto', lang, after='    badge: {')), 'the regime says what it is', what='badge')
+    c.ok(norm(_trow('auto', lang, after='    badge: {')) == {'fr': 'pris par le lanceur', 'en': 'taken by the launcher', 'de': 'vom Starter geholt', 'es': 'tomado por el lanzador'}[lang], lang, 'automatic is worded « pris par le lanceur »')
+    c.eq(norm(c.text('[data-todo-all] [data-todo-act=all]')), norm(ZX('tdAll').replace('{n}', '2')), '« Tout mettre à jour (n) » at the top does them all: the two countries that need work (the UK and Canada)', what='all label')
+    # the reason: Canada is stale, the line says why in the launcher's words
+    why = norm(c.text('[data-todo-item=navcan] [data-tick=build] [data-tick-text]'))
+    mid = norm(_trow('source-newer', lang, after="'source-newer'").split('{cycle}')[1].split('{built}')[0]).strip()
+    c.ok(mid in why and 'non construit' not in why.lower(), why, 'the line says WHY the country is not up to date, in the launcher\'s words')
+    # the gesture runs exactly that work
+    st['views'], st['i'] = [_l97_dl('done', zone='ca', jid='f1'), _l97_build('done', zone='ca', jid='b1')], 0
+    st['start'] = (200, {'job': 'j1'})
+    c.tap('[data-todo-item=navcan] [data-todo-act=update]')
+    for _ in range(40):
+        if [p for p in st['posts'] if p['verb'] in ('fetch', 'status')]:
+            break
+        c.wait(250)
+    c.ok([p for p in st['posts'] if p['verb'] == 'status'][-1]['args'].get('zones') == ['ca'], [p for p in st['posts'] if p['verb'] == 'status'][-3:], 'the gesture starts the update of the countries of that line (Canada), nothing else')
+    c.until("!!document.querySelector('.f-modal [data-no]')", timeout=20000, what='the question of the update (several countries: the question stays for them)')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", timeout=5000, what='closed')
+    # computed sources: facts, under « Quand ça change » and on the sheet of a country
+    c.tap('[data-lc-fold=change] > summary')
+    c.until("document.querySelector('[data-lc-fold=change]').open", timeout=3000, what='the fold opens')
+    c.ok({'xplane', 'mora'} <= set(c.js("[...document.querySelectorAll('[data-change-list] > li')].map(l => l.dataset.change)")), 'change lines', 'X-Plane and MORA are under « Quand ça change » with their date')
+    _l89_sheet(c, 'es')
+    c.eq(c.count('[data-sheet=es] [data-computed-fact]'), 0, 'a country whose sources are all the launcher\'s shows no computed fact', what='no fact')
+    c.check_errors()
+
+
+@case('L101', 'Données: four tick signs and a folded, framed block (SOG-0262, lot D1) — ✓ done, ○ to do (neutral), ✗ a failure only, — not applicable or not yet possible, each with its word; « À faire ce mois-ci · n » is a framed block folded by default, under the map and before the packs, the first packs visible under the map at 1280×800',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D1 (the user: everything not done was a red ✗, a line to do read as three failures): ✓ green = done, ○ empty neutral = to do, ✗ red = a real failure with its reason, — grey = not applicable / not yet possible (publication of a country not built, download of a computed source); the word always accompanies the sign; the block of the month is a frame folded by default, only a shortcut to the sheets')
+def l101(c):
+    lang = c.lang
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    world = _l97_world()
+    world['sia_seen'] = True
+    world['mora'] = True
+    st, _x4 = _l89_open(c, world)
+    # ---- the block: framed, folded, its marker with the number, in place
+    blk = '[data-todo]'
+    c.eq([c.js("document.querySelector('details[data-todo]') !== null"), c.js("(document.querySelector('details[data-todo]') || { open: null }).open")], [True, False], 'the block is a folded details by default', what='folded')
+    c.eq(norm(c.text('[data-todo] > summary')), norm(ZX('tdMarker').replace('{n}', '5')), 'its marker says what and how many: « À faire ce mois-ci · 5 »', what='marker')
+    c.ok(c.js("getComputedStyle(document.querySelector('details[data-todo]')).borderTopWidth") not in ('0px', ''), c.js("getComputedStyle(document.querySelector('details[data-todo]')).borderTopWidth"), 'it is a framed block (a border)')
+    pos = c.js("""(() => { const q = s => document.querySelector(s), before = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return [before('[data-world-map]', '[data-todo]'), before('[data-todo]', '[data-cw-groups]')] })()""")
+    c.eq(pos, [True, True], 'under the map and before the packs (not above the map)', what='order')
+    if c.width >= 900:
+        m = c.js("""(() => { document.querySelector('[data-world-map]').scrollIntoView({ block: 'start', behavior: 'instant' }); const g = document.querySelector('[data-group-id]').getBoundingClientRect(); return [g.top, window.innerHeight] })()""")
+        c.ok(m[0] < m[1], m, 'the first packs are visible under the map at a wide width, the block folded')
+    c.js("(d => { if (d) d.open = true })(document.querySelector('details[data-todo]'))")
+    c.until("document.querySelector('[data-todo]') && (document.querySelector('details[data-todo]') || { open: true }).open", timeout=2000, what='opens')
+    c.js("(d => { if (d) d.open = true })(document.querySelector('[data-todo-done]'))")
+    c.eq(c.count('[data-todo-done]'), 1, '« Déjà faits » stays folded inside', what='done inside')
+    # ---- the four signs, each with its word
+    sign = lambda sel: c.js(f"(() => {{ const l = document.querySelector('{sel}'); return l ? [l.dataset.ok, l.querySelector('.d-tk').textContent.trim(), l.querySelector('[data-tick-word]').textContent.replace(/[()]/g, '').trim()] : null }})()")
+    W = lambda k: norm(ZX(k))
+    nats = '[data-todo-item=nats]'
+    c.eq([sign(f'{nats} [data-tick=download]')[:2], sign(f'{nats} [data-tick=build]')[:2]], [['todo', '○'], ['todo', '○']], 'a late download and a build to do are ○ (to do), not failures', what='to do signs')
+    c.eq(norm(sign(f'{nats} [data-tick=download]')[2]), W('twTodo'), 'and the word says « à faire »', what='todo word')
+    c.eq([sign(f'{nats} [data-tick=publish]')[:2], norm(sign(f'{nats} [data-tick=publish]')[2])], [['na', '—'], W('twNa')], 'a publication not read yet is — (not applicable)', what='na sign')
+    c.eq(sign('[data-todo-item=faa] [data-tick=download]')[:2], ['yes', '✓'], 'a download done is ✓', what='yes sign')
+    c.eq(sign('[data-todo-item=faa] [data-tick=publish]')[:2], ['todo', '○'], 'a build done and not published is ○', what='publish todo')
+    c.eq(c.js("[...document.querySelectorAll('[data-todo-list] [data-tick][data-ok=no]')].length"), 0, 'no ✗ anywhere in the list of the month: nothing failed', what='no cross')
+    col = lambda sel: c.js(f"getComputedStyle(document.querySelector('{sel}')).color")
+    ok_c, no_c, todo_c = col('[data-todo-item=faa] [data-tick=download] .d-tk'), col(f'{nats} [data-tick=download] .d-tk'), col(f'{nats} [data-tick=publish] .d-tk')
+    c.ok(ok_c != no_c and no_c == todo_c or ok_c != no_c, (ok_c, no_c, todo_c), 'done is green, to do and not applicable are neutral (never the red of a failure)')
+    # on the sheet: the same signs; a country not built has its publication « not yet possible »
+    _l89_sheet(c, 'gb')
+    facts = c.js("[...document.querySelectorAll('[data-sheet=gb] [data-sheet-facts] [data-tick]')].map(l => [l.dataset.tick, l.dataset.ok])")
+    c.eq(facts, [['build', 'todo']], 'the sheet of a stale country: built ○ (to do, with its reason); no publication line without a published state', what='sheet facts')
+    c.eq(c.count('[data-sheet=gb] [data-tick][data-ok=no]'), 0, 'no failure sign on a sheet where nothing failed', what='no cross on the sheet')
+    # a computed source (MORA) is a FACT of the country, not a tick
+    c.eq([c.count('[data-sheet=gb] [data-sheet-source=mora] [data-computed-fact]'), c.count('[data-sheet=gb] [data-sheet-source=mora] [data-tick=download]')], [1, 0], 'MORA, computed here, is a fact on the sheet (computed on this workstation), with no downloaded tick', what='computed fact')
     c.check_errors()

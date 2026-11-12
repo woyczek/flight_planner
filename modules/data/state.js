@@ -45,7 +45,8 @@ export async function ask(name) {
 /** Une opération tourne-t-elle sur ce poste, de n'importe quel jeu ? Le nôtre, un autre travail du lanceur, la question d'une purge ou d'une
  *  publication de fiches, une publication : une opération à la fois, tous panneaux confondus. */
 export function busyNow() {
-  return !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.route?.phase || S.world?.phase === 'running' || !!S
+  return !!S.run || !!S.zop || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.route?.phase || S.world?.phase === 'running' ||
+    !!S
     .updating || !!S.upload || !!S.move
     ?.phase; // S.upload : un envoi de fichier au lanceur (SOG-0199) ; S.move.phase : le rangement des sources brutes (SOG-0030), plan ou exécution ou question
 }
@@ -54,7 +55,7 @@ export const refusedText = f => tt(TX.refused[f?.key] || TX.refused.failed, {
   n: f?.wait
 }) + (f?.why ? ` ${tt(TX.refusedWhy, { m: f.why })}` : '');
 /** Les choix des panneaux sont-ils figés ? Pendant une marche et pendant toute la chaîne (y compris entre deux de ses opérations). */
-export const frozen = () => !!S.run || !!S.chain;
+export const frozen = () => !!S.run || !!S.chain || !!S.zop;
 /** Une source du catalogue d'aerodb par son identifiant (byId, à défaut une recherche dans SOURCES) ; undefined si elle n'y est pas. */
 export function catSource(id) {
   const cat = S.d.cat;

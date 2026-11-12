@@ -56,12 +56,27 @@ import {
   removeCountry,
   toggleDone,
   toggleGroup,
-  toggleLegend,
-  toggleWorld
+  toggleLegend
 } from './countries.js';
 import {
+  todoGesture,
   TODO_STYLE
 } from './todo.js';
+import {
+  mapClickGuard,
+  mapDown,
+  mapHome,
+  mapMove,
+  mapUp,
+  mapWheel,
+  mapWorld,
+  mapZoomButton
+} from './mapview.js';
+import {
+  zoneUpdate,
+  zopRetry,
+  zopStop
+} from './zoneop.js';
 import {
   changeAct,
   LATER_STYLE,
@@ -89,7 +104,8 @@ import {
   stopTimer
 } from './follow.js';
 import {
-  busyAct
+  busyAct,
+  startGesture
 } from './busy.js';
 import {
   setZoneFilter
@@ -133,7 +149,9 @@ export const meta = {
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
-    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'zipmember.js',
+    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'zipmember.js', 'model_mapview.js', 'mapview.js',
+    'model_thread.js',
+    'zoneop.js',
     '../../frame/lib/plural.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
@@ -187,10 +205,15 @@ function onClick(e) {
     e); // le tableau de couverture (SOG-0174)
   const uc = e.target.closest?.(
     '[data-act="zone-upload"], [data-act="upload-cancel"]'); // « Choisir le fichier… » et « Annuler » de la ligne d'une zone (SOG-0199)
-  if (uc) return uc.dataset.act === 'upload-cancel' ? cancelUpload() : chooseFile(uc.dataset.zone, uc.dataset.source);
+  if (uc) {
+    if (uc.dataset.act !== 'upload-cancel') startGesture(
+      uc); // où le geste a été fait : un refus « une autre opération est en cours » y dessine sa carte
+    return uc.dataset.act === 'upload-cancel' ? cancelUpload() : chooseFile(uc.dataset.zone, uc.dataset.source);
+  }
   const up = e.target.closest?.(
     '[data-act="update-pack"]'); // « Mettre à jour (n) » d'un paquet (SOG-0188) : ses seuls pays de la couverture
   if (up) {
+    startGesture(up);
     const p = (S.d?.packs || []).find(x => x.id === up.dataset.pack);
     return up.disabled || !p ? undefined : startUpdate(M.packState(p, S.d.zones, S.d.cov.ids).inCoverage);
   }
@@ -200,12 +223,25 @@ function onClick(e) {
   const su = e.target.closest?.(
     '[data-act="sheet-update"]'
   ); // « Mettre à jour ce pays » : le même chemin que le bouton d'un paquet, pour ce pays seul (SOG-0262, lot B)
-  if (su) return su.disabled || !/^[a-z0-9_-]{2,12}$/.test(su.dataset.zone || '') ? undefined : startUpdate([su.dataset.zone]);
+  if (su) {
+    if (su.disabled || !/^[a-z0-9_-]{2,12}$/.test(su.dataset.zone || '')) return;
+    startGesture(su);
+    return zoneUpdate(su.dataset
+      .zone); // un seul pays : prise du fichier vu, téléchargement, construction, enchaînés, l'avancement sur place (zoneop.js)
+  }
+  const zs = e.target.closest?.('[data-act="zop-stop"], [data-act="zop-retry"]');
+  if (zs) return zs.disabled ? undefined : zs.dataset.act === 'zop-stop' ? zopStop() : zopRetry(zs.dataset.zone);
+  const td = e.target.closest?.('[data-todo-act]');
+  if (td) {
+    startGesture(td);
+    return td.disabled ? undefined : todoGesture(td);
+  }
   const ac = e.target.closest?.(
     '[data-act="add-country"], [data-act="remove-country"], [data-act="sheet-publish"], [data-act="change-act"]'
   ); // lot C : ajouter ou retirer un pays, publier cette zone, le geste d'une ligne de « Quand ça change »
   if (ac) {
     if (ac.disabled) return;
+    startGesture(ac);
     if (ac.dataset.act === 'add-country') return addCountry(ac.dataset.zone);
     if (ac.dataset.act === 'remove-country') return removeCountry(ac.dataset.zone);
     if (ac.dataset.act === 'change-act') return changeAct(ac.dataset.kind);
@@ -217,7 +253,10 @@ function onClick(e) {
   const gt = e.target.closest?.('[data-act="grp-toggle"]');
   if (gt) return toggleGroup(gt.dataset.gid);
   if (e.target.closest?.('[data-act="sheet-close"]')) return closeSheet();
-  if (e.target.closest?.('[data-act="world-toggle"]')) return toggleWorld();
+  if (e.target.closest?.('[data-act="world-toggle"]')) return mapWorld();
+  if (e.target.closest?.('[data-act="map-home"]')) return mapHome();
+  const mz = e.target.closest?.('[data-act="map-zoom"]');
+  if (mz) return mapZoomButton(mz.dataset.dir);
   const zf = e.target.closest?.('[data-act="zone-filter"]');
   if (zf) return setZoneFilter(zf.dataset.filter); // un nombre de la phrase d'état : ses zones se déplient sur place
   const zw = e.target.closest?.('[data-act="zone-why"]');
@@ -234,6 +273,10 @@ function onClick(e) {
   const v = e.target.closest?.('button[data-verb]');
   if (!v || v.disabled) return;
   if (v.dataset.verb === 'stop') return S.run?.ctrl.abort();
+  if (['all', 'update', 'retry-fetch', 'retry-zone', 'pickup', 'pickup-replan', 'chain-retry', 'publish', 'download', 'build', 'purge',
+      'publish-sheets'
+    ]
+    .includes(v.dataset.verb)) startGesture(v); // où le geste a été fait : un refus « une autre opération est en cours » y dessine sa carte
   if (v.dataset.verb === 'all') return updateAll();
   if (v.dataset.verb === 'retry-fetch') return /^[a-z0-9]{2,8}$/.test(v.dataset.zone || '') ? startUpdate([v.dataset.zone]) :
     undefined; // « Réessayer » sur la ligne d'une zone dont le téléchargement a échoué (SOG-0180) : son téléchargement seul, puis sa construction
@@ -362,6 +405,8 @@ function onToggle(e) {
     .open; // « Paquets de pays », replié d'origine (SOG-0228)
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-mycov') && g.isConnected) S.myCovOpen = g
     .open; // « Ma couverture » (paquets, case « Je certifie… »), repliée d'origine
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-todo') && g.isConnected && S.cw) S.cw.todoOpen = g
+    .open; // « À faire ce mois-ci » : replié d'origine, l'ouverture à la main est gardée
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-lc') && g.isConnected) toggleLc(g.dataset.lcFold, g
     .open); // cycle suivant, quand ça change, vu pas encore lu
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-pack') && g.isConnected) {
@@ -441,6 +486,11 @@ export async function mount(el, ctx) {
     other: null, // la vue d'une autre opération du lanceur, tant qu'elle tourne
     busy: null, // la carte de l'opération qui a refusé un départ ou un envoi : { running (M.runningOf), panel, msg? }, jusqu'à sa fin (SOG-0245)
     busyHidden: null, // l'identifiant de l'opération dont la carte a été masquée
+    zop: null, // « Mettre à jour ce pays » en cours : { zone, phase, stopped } (zoneop.js)
+    at: null, // l'endroit du dernier geste (busy.js : placeOf) et son numéro (gid) : où dessiner l'avancement, la fin et la carte d'un refus
+    gid: 0,
+    otherAt: null, // l'endroit de la phrase « une autre opération est en cours » d'un lanceur qui ne dit pas laquelle
+    statusRefused: null, // le refus « une autre opération est en cours » de la dernière lecture de l'état (status.js)
     following: false, // un suivi de travail (follow) est en cours
     pub: {
       status: null,
@@ -472,6 +522,14 @@ export async function mount(el, ctx) {
   S.body.addEventListener('pointerout', onZoneOut);
   S.body.addEventListener('keydown', onKey);
   S.body.addEventListener('pointerdown', onPackDown);
+  S.body.addEventListener('pointerdown', mapDown); // le zoom et le déplacement de la carte du monde (mapview.js)
+  S.body.addEventListener('pointermove', mapMove);
+  S.body.addEventListener('pointerup', mapUp);
+  S.body.addEventListener('pointercancel', mapUp);
+  S.body.addEventListener('wheel', mapWheel, {
+    passive: false
+  });
+  S.body.addEventListener('click', mapClickGuard, true); // le toucher qui suit un glisser n'ouvre pas de fiche
   S.body.addEventListener('change', onChange);
   S.body.addEventListener('input', onInput);
   S.onResize = () => { // les cartes reprennent la taille de leur hôte quand la fenêtre change (une seule écoute, retirée au démontage)

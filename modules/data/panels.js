@@ -578,7 +578,8 @@ function resultHtml(panel = 'base', carded = false) {
   const r = S.result;
   if (!r || M.panelOf(r.set || 'base', r.verb) !== panel) return '';
   if (r.verb === M.PICKUP.verb && !r.refused) return pickupResultHtml(r);
-  if (r.refused && carded && r.refused.key === 'busy') return ''; // la carte dit déjà quelle opération tourne
+  if (r.refused && (carded || S.busy) && r.refused.key === 'busy')
+    return ''; // la carte (ici ou à l'endroit du geste) dit déjà quelle opération tourne
   if (r.refused) return `<div data-build-result data-result="refused" data-refusal="${r.refused.key}"><p class="f-warn">${esc(refusedText(r.refused))}</p></div>`;
   const set = r.set || 'base';
   if (panel === 'sheets') return sheetsResultHtml(r);
@@ -599,12 +600,22 @@ function resultHtml(panel = 'base', carded = false) {
     ${failedHtml(r.out, set)}
     ${rows.length ? `<ul class="d-zl">${rows.map(z => zoneLineHtml(z, 'build', set)).join('')}</ul>` : ''}</div>`;
 }
-/** Ce que dit un panneau sous ses boutons : une autre opération du lanceur, puis la marche (si c'est son jeu qui tourne) ou la dernière fin. */
-export function opAreaHtml(panel, skipCard = false) {
+/** La carte (ou, d'un lanceur qui ne dit pas laquelle, la phrase seule) d'une autre opération du lanceur à l'endroit `place` ; '' sans. */
+export function cardAreaHtml(panel, place = 'head') {
+  return busyCardHtml(panel, place) || (S.other && !S.other.id && !S.run && !S.busy && (S.otherAt || 'head') === place ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : '');
+}
+/** Ce que dit un panneau sous ses boutons, à l'endroit `place` ('head' : la barre d'état, 'group' : le corps d'un paquet, 'todo' : le bloc du mois, 'publish', 'later' ; la fiche d'un pays a son propre fil, zoneop.js) : la carte d'une autre opération du lanceur (À L'ENDROIT du geste refusé), puis la marche
+ *  (si c'est son jeu qui tourne) ou la dernière fin, là où le dernier geste a été fait (S.at ; la carte « Tout mettre à jour » rend la main à la barre d'état). */
+export function opAreaHtml(panel, place = 'head') {
   const here = S.run && M.panelOf(S.run.set, S.run.verb) === panel,
-    card = busyCardHtml(panel); // la carte de l'opération qui tourne remplace la phrase nue « une autre opération est en cours » (SOG-0245)
-  return `${skipCard ? '' : card || (S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : '')}
-    ${skipCard ? '' : here ? runningHtml() : S.run ? '' : resultHtml(panel, !!card)}`;
+    card = busyCardHtml(panel,
+      place), // la carte de l'opération qui tourne remplace la phrase nue « une autre opération est en cours » (SOG-0245)
+    at = S.at || 'head',
+    mine = panel !== 'base' || at === place || place === 'head' && at === 'chain',
+    bare = S.other && !S.other.id && !S.run && !S.busy && (S.otherAt || 'head') === place ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` :
+    ''; // un lanceur qui ne dit pas laquelle : la phrase seule, au même endroit
+  return `${card || bare}
+    ${!mine ? '' : here ? runningHtml() : S.run ? '' : resultHtml(panel, !!card)}`;
 }
 /** Les États proposés aux procédures : verts et oranges de coverageByState(), dans l'ordre de leurs noms. */
 export function procList() {
@@ -647,7 +658,7 @@ export function selection(set) {
   };
 }
 /** La raison grise « une autre opération est en cours » : la carte de l'opération la dit déjà (son titre) quand elle est à l'écran du panneau ; jamais deux fois. null alors, sinon la raison telle quelle. */
-export const greyOnce = (reason, panel) => reason === 'busy' && busyCardHtml(panel) ? null : reason;
+export const greyOnce = (reason, panel, place = 'head') => reason === 'busy' && busyCardHtml(panel, place) ? null : reason;
 /** Les boutons Télécharger · Construire · Purger d'un panneau (gris pour la raison de M.setGate) ; pour la base, entre Télécharger et Construire, « Prendre le fichier téléchargé » (`pk` : l'état de
  *  son verbe base/pickup, grisé pour sa propre raison). */
 function verbsHtml(gate, panel, pk) {
@@ -718,7 +729,7 @@ function stateHeadHtml() {
     }) : ''].filter(Boolean) : [];
   return `<div class="d-statehead" data-state-head><p data-state-sentence>${[esc(cyc), tail].filter(Boolean).join(' ')}</p>${list}
     ${action}${plan}${notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : ''}
-    ${opAreaHtml('base', !!S.cw?.sheet)}</div>`;
+    ${opAreaHtml('base', 'head')}</div>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
  *  vigueur (points VFR), le champ des types OACI (appareils). */

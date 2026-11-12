@@ -23,6 +23,9 @@ import {
   forgetReads
 } from './countries.js';
 import {
+  threadRecord
+} from './zoneop.js';
+import {
   buildZones,
   fetchSummary,
   gateOf,
@@ -151,7 +154,11 @@ async function finishOp(set, verb, out, live, {
     out,
     text: sm.text
   };
-  if (live && !quiet) S.ctx.notify(note.filter(Boolean).join(' · '), sm.level);
+  threadRecord(set, verb,
+    out
+  ); // le fil de chaque pays de l'opération : ce qui a été fait, ou ce qui a échoué et pourquoi (reste sur la fiche jusqu'à l'opération suivante)
+  if (live && !quiet && !S.zop) S.ctx.notify(note.filter(Boolean).join(' · '), sm
+    .level); // un geste « Mettre à jour ce pays » ne dit rien en notification : son fil est sur la fiche
   if (!quiet) journalWrite(entry);
   if (live && !quiet && reload) await load(true); // les états des lignes ont changé : même chemin de lecture que l'ouverture
 }
@@ -237,7 +244,8 @@ async function endPickup(final, live, seconds) {
   });
   // prendre le fichier lance de lui-même la construction des zones prises (SOG-0180) : aucune consigne « cliquez ensuite sur… »
   const zones = [...new Set(out.taken.map(t => t.zone).filter(Boolean))];
-  if (live && !S.chain && zones.length && out.kind === 'done') await buildAfterPickup(zones);
+  if (live && !S.chain && !S.zop && zones.length && out.kind === 'done') await buildAfterPickup(
+    zones); // dans « Mettre à jour ce pays » la construction est l'étape suivante de la chaîne
 }
 /** « Réessayer » sur la ligne d'une zone en échec (SOG-0180) : la construction de cette zone seule, avec la case « usage personnel » ; rien si le bouton de construction est gris. */
 export const retryZone = zone => /^[a-z0-9]{2,8}$/.test(zone || '') ? buildAfterPickup([zone]) : undefined;
@@ -295,6 +303,7 @@ async function finishPlan(me, {
     return;
   }
   S.result = null;
+  if (S.zop) return go(true); // « Mettre à jour ce pays » : le geste est la réponse, la fiche dit ce qui a été fait (aucune question)
   S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
   renderBuild();
   // une question à groupes titrés (SOG-0197 : { text, sections, note }) ou une phrase
@@ -399,11 +408,13 @@ function refused(me, r) {
   if (f.key === 'busy') S.other = S.other || {}; // une opération tourne : le bouton reste gris pendant qu'on la rejoint
   S.busy = f.key === 'busy' && f.running ? {
     running: f.running,
-    panel: M.panelOf(set, verb)
-  } : null; // la carte de l'opération qui tourne, dans le panneau du geste (SOG-0245)
+    panel: M.panelOf(set, verb),
+    at: S.at || 'head'
+  } : null; // la carte de l'opération qui tourne, à l'endroit du geste (SOG-0245)
+  if (f.key === 'busy' && !f.running) S.otherAt = S.at || 'head';
   S.busyHidden = null;
   renderBuild();
-  S.ctx.notify(refusedText(f), 'err');
+  if (!S.busy) S.ctx.notify(refusedText(f), 'err'); // la carte dit déjà quelle opération tourne : pas de notification de plus
   if (f.key === 'busy') follow();
 }
 /** Termine d'après ce que rend ctx.launcher.job ou .resume : une fin (état connu), un arrêt demandé (on attend la vraie fin du

@@ -32,6 +32,9 @@ import {
 import {
   startOp
 } from './follow.js';
+import {
+  busyCardHtml
+} from './busy.js';
 
 /** L'état propre à ces blocs, créé avec celui de la carte : les plis ouverts à la main (retenus d'un dessin à l'autre) et la lecture des routes NAT. */
 export const lcInit = () => ({
@@ -115,7 +118,7 @@ export function natText() {
     head = s.expired === null || !until ? tt(T.unknown) : tt(s.expired ? T.expired : n.refreshed ? T.refreshed : T.valid, {
       d: until
     });
-  return `${head}${s.count ? ` · ${tt(T.count, { n: s.count })}` : ''}${n.failed ? ` — ${tt(T.failed)}` : ''}`;
+  return `${head}${s.count ? ` · ${tt(T.count, { n: s.count })}` : ''}${n.failed ? ` — ${tt(T.failed)}` : ''}${n.deferred ? ` — ${tt(TX.zx.natDeferred)}` : ''}`;
 }
 /** Une ligne de « Quand ça change » : son nom, sa dernière date (ou la validité des routes NAT), la note de ce que fait son geste, le geste (gris pour sa raison, écrite une fois sous la liste). */
 function changeLine(c, data, grey) {
@@ -136,7 +139,7 @@ function changeHtml() {
     grey = new Set(),
     lines = CHANGE.map(c => changeLine(c, data, grey)).join(''),
     why = [...grey].find(r => greyOnce(r, 'base'));
-  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`);
+  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`);
 }
 /** Le geste d'une ligne : « Recalculer » (la construction de la base de la couverture) ou « Télécharger de nouveau » (le téléchargement des sources automatiques) : les verbes de la base que l'écran a déjà, avec leur question et leur marche. */
 export function changeAct(kind) {
@@ -181,6 +184,7 @@ export async function natOpen() {
   if (n.phase === 'reading' || n.phase === 'refreshing') return;
   n.refreshed = false;
   n.failed = false;
+  n.deferred = false;
   if (typeof ab?.natState !== 'function') {
     n.phase = 'ready';
     n.state = null;
@@ -196,6 +200,8 @@ export async function natOpen() {
   }
   if (S !== me) return;
   n.state = s;
+  n.deferred = (!s || s.expired !== false) && typeof ab.natEnsure === 'function' && busyNow() && !!S.ctx
+    .launcher; // une opération tourne : la reprise attend sa fin, et le dit (avec la carte de cette opération)
   if ((!s || s.expired !== false) && typeof ab.natEnsure === 'function' && !busyNow() && S.ctx.launcher) {
     n.phase = 'refreshing';
     renderLater();

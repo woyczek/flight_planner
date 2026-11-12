@@ -3,6 +3,8 @@
 
 /** Les genres d'une source pas faite, dans l'ordre où la liste les dit : elle attend votre main, elle est en retard, elle est à construire, elle est à publier. */
 export const TODO_KINDS = Object.freeze(['hand', 'late', 'build', 'publish']);
+/** Le régime d'une source calculée sur ce poste (MORA, X-Plane…) : un fait, jamais une ligne « à faire » (SOG-0262, lot D1). */
+export const isComputed = reg => reg === 'local' || reg === 'computed';
 /** La source n'est-elle plus offerte par son éditeur d'après la liste (son champ `unavailable`, l'état de son téléchargement, ou la liste du haut) ? */
 export const isUnavailable = (it, data) => !!it && (!!it.unavailable || it.download.state === 'unavailable' || (data?.unavailable || [])
   .includes(it.id));
@@ -26,17 +28,23 @@ export function todoKind(it) {
   if (s.build === 'no') return 'build';
   return s.publish === 'no' ? 'publish' : null;
 }
-/** La liste du cycle en trois paquets : { cycle (l'identifiant « 2611 »), total (les sources comptées), done (les sources faites), todo: [{ item, kind }] triées par genre puis dans l'ordre reçu, gone (celles que leur éditeur n'offre plus : hors compte) }. */
-export function todoOf(data) {
+/** La liste du cycle en trois paquets : { cycle (l'identifiant « 2611 »), total (les sources comptées), done (les sources faites), todo: [{ item, kind }] triées par genre puis dans l'ordre reçu, gone (celles que leur éditeur n'offre plus : hors compte), computed (les sources calculées sur ce poste : un fait,
+ *  jamais une ligne à faire, hors compte) }. `skip(item)` dit celles qui sont calculées (leur régime vient du catalogue quand la liste ne le dit pas). */
+export function todoOf(data, skip = null) {
   const out = {
       cycle: data?.inForce || '',
       total: 0,
       done: [],
       todo: [],
-      gone: []
+      gone: [],
+      computed: []
     },
     items = (data?.order || []).map(id => data.items[id]).filter(Boolean);
   for (const it of items) {
+    if (isComputed(it.regime) || skip?.(it)) {
+      out.computed.push(it);
+      continue;
+    }
     if (isUnavailable(it, data)) {
       out.gone.push(it);
       continue;
@@ -53,9 +61,9 @@ export function todoOf(data) {
   return out;
 }
 /** Les pays vers lesquels une source mène : ceux de la liste du cycle qui sont dans la couverture, à défaut ceux que le catalogue lui attribue, dans la couverture ; [] sans (une source commune à tous les pays). Cinq au plus. */
-export function zonesOfItem(it, covIds, catZones) {
+export function zonesOfItem(it, covIds, catZones, max = 5) {
   const cov = new Set(covIds || []),
     pick = a => (Array.isArray(a) ? a : []).filter(z => cov.has(z));
   const own = pick(it.zones);
-  return (own.length ? own : pick(catZones)).slice(0, 5);
+  return (own.length ? own : pick(catZones)).slice(0, max);
 }

@@ -2159,7 +2159,7 @@ export const TX = {
       done: ['fait', 'done', 'erledigt', 'hecho']
     },
     badge: {
-      auto: ['automatique', 'automatic', 'automatisch', 'automático'],
+      auto: ['pris par le lanceur', 'taken by the launcher', 'vom Starter geholt', 'tomado por el lanzador'],
       hand: ['à la main', 'by hand', 'von Hand', 'a mano'],
       local: ['sur ce poste', 'on this workstation', 'auf diesem Rechner', 'en este equipo']
     },
@@ -2441,6 +2441,121 @@ export const TX = {
     ],
     removed: ['{c} n’est plus dans votre couverture.', '{c} is no longer in your coverage.', '{c} ist nicht mehr in Ihrer Abdeckung.',
       '{c} ya no está en su cobertura.'
+    ]
+  },
+  // lot D1 (SOG-0262, l'essai réel) : le zoom de la carte, l'avancement et le fil d'un pays, la liste du mois qui agit, les quatre signes
+  zx: {
+    mvWorld: ['Voir le monde entier', 'See the whole world', 'Die ganze Welt ansehen', 'Ver el mundo entero'],
+    mvHome: ['Recentrer sur ma couverture', 'Recenter on my coverage', 'Auf meine Abdeckung zentrieren', 'Recentrar en mi cobertura'],
+    mvIn: ['Zoom avant', 'Zoom in', 'Hineinzoomen', 'Acercar'],
+    mvOut: ['Zoom arrière', 'Zoom out', 'Herauszoomen', 'Alejar'],
+    mvHint: ['Molette ou pincement pour zoomer, glisser pour déplacer la carte.', 'Wheel or pinch to zoom, drag to move the map.',
+      'Mausrad oder Pinch zum Zoomen, Ziehen zum Verschieben der Karte.', 'Rueda o pellizco para acercar, arrastrar para mover el mapa.'
+    ],
+    // les quatre signes : le mot est dit avec le signe
+    twYes: ['fait', 'done', 'erledigt', 'hecho'],
+    twTodo: ['à faire', 'to do', 'zu tun', 'por hacer'],
+    twNo: ['en échec', 'failed', 'fehlgeschlagen', 'fallido'],
+    twNa: ['sans objet', 'not applicable', 'nicht zutreffend', 'no aplicable'],
+    pubWaitBuild: ['pas encore possible : ce pays n’est pas construit', 'not possible yet: this country is not built',
+      'noch nicht möglich: dieses Land ist nicht erstellt', 'aún no es posible: este país no está construido'
+    ],
+    // l'avancement en place d’« Mettre à jour ce pays »
+    pgStatus: ['Lecture de l’état du pays…', 'Reading the state of the country…', 'Der Zustand des Landes wird gelesen…',
+      'Leyendo el estado del país…'
+    ],
+    pgPick: ['Prise du fichier téléchargé…', 'Taking the downloaded file…', 'Die heruntergeladene Datei wird geholt…',
+      'Tomando el archivo descargado…'
+    ],
+    pgDl: ['Téléchargement…', 'Downloading…', 'Herunterladen…', 'Descargando…'],
+    pgBuild: ['Construction du pays…', 'Building the country…', 'Das Land wird erstellt…', 'Construyendo el país…'],
+    pgAgain: ['Relecture de l’état du pays…', 'Reading the state of the country again…', 'Der Zustand des Landes wird erneut gelesen…',
+      'Leyendo de nuevo el estado del país…'
+    ],
+    // le fil de la dernière opération de CE pays
+    thTitle: ['Dernière opération de ce pays', 'Last operation of this country', 'Letzter Vorgang dieses Landes',
+      'Última operación de este país'
+    ],
+    thPick: ['pris à {t}', 'taken at {t}', 'um {t} geholt', 'tomado a las {t}'],
+    thDl: ['téléchargé à {t}', 'downloaded at {t}', 'um {t} heruntergeladen', 'descargado a las {t}'],
+    thDlSame: ['téléchargé à {t} : rien de nouveau', 'downloaded at {t}: nothing new', 'um {t} heruntergeladen: nichts Neues',
+      'descargado a las {t}: nada nuevo'
+    ],
+    thBuild: ['construit à {t}', 'built at {t}', 'um {t} erstellt', 'construido a las {t}'],
+    thWPick: ['pris', 'taken', 'geholt', 'tomado'],
+    thWDl: ['téléchargé', 'downloaded', 'heruntergeladen', 'descargado'],
+    thWBuild: ['construit', 'built', 'erstellt', 'construido'],
+    thFail: ['{w} : {r}', '{w}: {r}', '{w}: {r}', '{w}: {r}'],
+    thBuildSame: ['construit à {t} : rien n’a changé', 'built at {t}: nothing changed', 'um {t} erstellt: nichts hat sich geändert',
+      'construido a las {t}: nada cambió'
+    ],
+    thPickNone: ['pris : rien trouvé dans Téléchargements', 'taken: nothing found in Downloads',
+      'geholt: nichts in Downloads gefunden', 'tomado: nada encontrado en Descargas'
+    ],
+    thPickMissing: ['pris : rien au nom attendu dans Téléchargements ({f})', 'taken: nothing with the expected name in Downloads ({f})',
+      'geholt: nichts mit dem erwarteten Namen in Downloads ({f})', 'tomado: nada con el nombre esperado en Descargas ({f})'
+    ],
+    doPick: ['prendre le fichier vu dans Téléchargements', 'take the file seen in Downloads', 'die in Downloads gesehene Datei holen',
+      'tomar el archivo visto en Descargas'
+    ],
+    thNotYet: ['{w} : pas fait', '{w}: not done', '{w}: nicht erledigt', '{w}: no hecho'],
+    thNoBuild: ['construit : rien à construire pour l’instant', 'built: nothing to build for now',
+      'erstellt: vorerst nichts zu erstellen', 'construido: nada que construir por ahora'
+    ],
+    thOk: ['Ce pays est à jour.', 'This country is up to date.', 'Dieses Land ist aktuell.', 'Este país está al día.'],
+    thStale: ['Terminé, mais ce pays n’est toujours pas à jour : {r}', 'Finished, but this country is still not up to date: {r}',
+      'Beendet, aber dieses Land ist noch immer nicht aktuell: {r}', 'Terminado, pero este país sigue sin estar al día: {r}'
+    ],
+    thStaleBare: ['Terminé, mais ce pays n’est toujours pas à jour (état : {s}).',
+      'Finished, but this country is still not up to date (state: {s}).',
+      'Beendet, aber dieses Land ist noch immer nicht aktuell (Zustand: {s}).',
+      'Terminado, pero este país sigue sin estar al día (estado: {s}).'
+    ],
+    thFailed: ['Arrêté à l’étape {w} : {r}', 'Stopped at the step {w}: {r}', 'Bei Schritt {w} angehalten: {r}',
+      'Detenido en el paso {w}: {r}'
+    ],
+    thStopped: ['Arrêté à votre demande.', 'Stopped at your request.', 'Auf Ihren Wunsch angehalten.', 'Detenido a petición suya.'],
+    thUnread: ['Terminé ; l’état du pays n’a pas pu être relu.', 'Finished; the state of the country could not be read again.',
+      'Beendet; der Zustand des Landes konnte nicht erneut gelesen werden.', 'Terminado; no se pudo volver a leer el estado del país.'
+    ],
+    thNothing: ['Rien à faire : ce pays attend un fichier ou est déjà à jour.',
+      'Nothing to do: this country waits for a file or is already up to date.',
+      'Nichts zu tun: dieses Land wartet auf eine Datei oder ist schon aktuell.',
+      'Nada que hacer: este país espera un archivo o ya está al día.'
+    ],
+    thRefused: ['refusé : une autre opération est en cours', 'refused: another operation is running',
+      'abgelehnt: ein anderer Vorgang läuft', 'rechazado: hay otra operación en curso'
+    ],
+    thNoState: ['L’état du pays n’a pas pu être lu : rien n’est parti.', 'The state of the country could not be read: nothing started.',
+      'Der Zustand des Landes konnte nicht gelesen werden: nichts wurde gestartet.',
+      'No se pudo leer el estado del país: no se inició nada.'
+    ],
+    stWhy: ['Pourquoi pas à jour : {r}', 'Why not up to date: {r}', 'Warum nicht aktuell: {r}', 'Por qué no está al día: {r}'],
+    greyBusy: ['Une opération est en cours : voyez son avancement.', 'An operation is running: see its progress.',
+      'Ein Vorgang läuft: sehen Sie seinen Fortschritt.', 'Hay una operación en curso: vea su avance.'
+    ],
+    // une source calculée sur ce poste : un fait du pays, jamais une ligne à faire
+    computed: ['{s} : calculée le {d}', '{s}: computed on {d}', '{s}: berechnet am {d}', '{s}: calculada el {d}'],
+    computedHere: ['{s} : calculée sur ce poste', '{s}: computed on this workstation', '{s}: auf diesem Rechner berechnet',
+      '{s}: calculada en este equipo'
+    ],
+    // la liste du mois : un bloc encadré, replié, dont chaque ligne porte son geste
+    natDeferred: ['reprise à la fin de l’opération en cours', 'taken again when the running operation ends',
+      'wird nach dem laufenden Vorgang erneut geholt', 'se tomarán de nuevo al terminar la operación en curso'
+    ],
+    tdMarker: ['À faire ce mois-ci · {n}', 'To do this month · {n}', 'Diesen Monat zu tun · {n}', 'Por hacer este mes · {n}'],
+    tdAll: ['Tout mettre à jour ({n})', 'Update everything ({n})', 'Alles aktualisieren ({n})', 'Actualizar todo ({n})'],
+    tdUpdate: ['Mettre à jour ({z})', 'Update ({z})', 'Aktualisieren ({z})', 'Actualizar ({z})'],
+    tdBuild: ['Construire ({z})', 'Build ({z})', 'Erstellen ({z})', 'Construir ({z})'],
+    tdPublish: ['Publier…', 'Publish…', 'Veröffentlichen…', 'Publicar…'],
+    tdPick: ['Prendre le fichier', 'Take the file', 'Datei holen', 'Tomar el archivo'],
+    tdWhyZones: ['{z} : {r}', '{z}: {r}', '{z}: {r}', '{z}: {r}'],
+    tdWhyBare: ['{z} : état {s}', '{z}: state {s}', '{z}: Zustand {s}', '{z}: estado {s}'],
+    tdWhyUnread: ['l’état des pays n’est pas lu', 'the state of the countries is not read', 'der Zustand der Länder ist nicht gelesen',
+      'el estado de los países no está leído'
+    ],
+    tdNoGesture: ['rien à faire seul : voir la fiche du pays', 'nothing to do alone: see the sheet of the country',
+      'allein nichts zu tun: siehe das Blatt des Landes', 'nada que hacer solo: vea la ficha del país'
     ]
   }
 };

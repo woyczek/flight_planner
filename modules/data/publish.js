@@ -27,6 +27,10 @@ import {
 import {
   renderBuild
 } from './panels.js';
+import {
+  busyCardHtml,
+  refuseBusy
+} from './busy.js';
 
 /** L'état de data/ pour « Publier » (GET sync-status, relevé refait) : la réponse du lanceur, ou null sans lanceur, sans réponse
  *  ou sur un refus. Ne lève jamais. */
@@ -50,7 +54,7 @@ export function publishGate() {
     launcher: !!S.ctx.launcher,
     publishing: !!S.pub.phase,
     building: !!S.run,
-    other: !!S.other || !!S.asking || !!S.chain && S.chain.phase !==
+    other: !!S.other || !!S.zop || !!S.asking || !!S.chain && S.chain.phase !==
       'publishing', // la question d'une purge est posée, ou la chaîne tourne (sauf à sa publication finale)
     gesture: canGesture() || !!
       livePlan(), // le lanceur qui établit le plan envoie lui-même (base/publish) : le cadre n'a pas à savoir publier
@@ -84,7 +88,7 @@ async function planJob(args, guard = false) {
   }
 }
 /** Une opération tourne-t-elle (la lecture passive du plan attend qu'elle finisse) ? */
-const busyNowGuard = () => !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.upload || !!S.updating;
+const busyNowGuard = () => !!S.run || !!S.zop || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.upload || !!S.updating;
 /** Lit, sans écrire, ce que l'envoi emporterait (base/publish à blanc) : la zone du plan est la première construite et pas encore envoyée de la couverture ; une fois à l'ouverture, puis après chaque opération (le plan est « à relire » : l'ancien reste affiché). Sans le verbe, sans état de zone ou pendant une opération, rien n'est lu. Ne lève jamais. */
 export async function wantPlan() {
   const p = S?.pub?.plan;
@@ -266,7 +270,7 @@ function publishInner() {
   const gate = publishGate(),
     why = gate.reason ? publishReason(gate.reason) : '';
   return `<h2>${esc(tt(TX.publishTitle))}</h2>
-    ${planHtml()}${publishStateHtml()}
+    ${planHtml()}${publishStateHtml()}${busyCardHtml('base', 'publish')}
     <p><button type="button" data-verb="publish"${gate.disabled ? ' disabled' : ''}>${esc(tt(planKnown() ? TX.lc.publishDots : TX.publish))}</button></p>
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
     ${S.pub.phase === 'running' ? publishingHtml() : publishResultHtml()}`;
@@ -323,6 +327,12 @@ export async function startPublish(skipAsk = false, forZone = '') {
         dry: true
       }) : null;
     if (S !== me) return;
+    if (final?.status === 409 && refuseBusy(final,
+        'publish')) { // une autre opération tourne : sa carte, dans ce panneau, et rien n'est demandé
+      S.pub.phase = null;
+      renderBuild();
+      return;
+    }
     plan = final?.status === 409 ? null : M.publishPlanOf(final);
     if (plan) S.pub.plan = {
       state: 'ready',
@@ -363,6 +373,11 @@ export async function startPublish(skipAsk = false, forZone = '') {
       dry: false
     });
     if (S !== me) return;
+    if (final?.status === 409 && refuseBusy(final, 'publish')) {
+      S.pub.phase = null;
+      renderBuild();
+      return;
+    }
     return void await endPublish(me, {
       ...M.verbOutcome(final),
       sent: {

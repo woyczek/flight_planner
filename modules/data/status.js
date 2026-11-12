@@ -48,11 +48,12 @@ export function fetchStatus(ids) {
     ]); // la même demande : la lecture en cours ; une autre (la case « usage personnel » a changé) : elle attend la fin de celle-là
   if (S.statusP) return S.statusKey === key ? S.statusP : S.statusP.then(() => S !== me ? null : fetchStatus(ids));
   S.statusKey = key;
+  S.statusRefused = null; // un refus « une autre opération est en cours » de la lecture, pour que le geste en dessine la carte
   S.statusP = (async () => {
     let st = null;
     try {
       for (const zones of parts) {
-        const part = M.statusOf(await serial(() => S.ctx.launcher.job(ROUTE, {
+        const part = M.statusOf(S.statusRefused = await serial(() => S.ctx.launcher.job(ROUTE, {
           set: 'base',
           verb: 'status',
           // `personal` : exactement ce que la construction envoie (la coche unique « Je certifie… » cochée : les sources personnelles de ces zones ; décochée : aucune) — sans lui une zone construite avec LFV, NATS, ENAIRE ou AirNav se disait « à reconstruire » pour toujours (inputs-changed)
@@ -64,7 +65,9 @@ export function fetchStatus(ids) {
           onProgress: () => {},
           signal: new AbortController().signal
         })));
-        if (!part) {
+        if (part) S.statusRefused = null;
+        else {
+          if (S.statusRefused?.status !== 409) S.statusRefused = null;
           st = null;
           break;
         }
@@ -82,7 +85,13 @@ export function fetchStatus(ids) {
     if (S !== me) return null;
     S.statusP = null;
     if (st) {
-      S.status = st;
+      S.status = ids?.length && S.status?.zones ? { // la lecture de quelques pays (un paquet, un pays) garde l'état des autres
+        ...st,
+        zones: {
+          ...S.status.zones,
+          ...st.zones
+        }
+      } : st;
       renderBuild();
     }
     return st;

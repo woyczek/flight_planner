@@ -30,6 +30,9 @@ import {
   settle
 } from './follow.js';
 import {
+  busyCardHtml
+} from './busy.js';
+import {
   publishGate,
   publishLines,
   publishReason,
@@ -124,7 +127,7 @@ export function updateAllInner() {
   return `<h2>${esc(tt(TX.updateAll))}</h2>${stale}
     <p class="d-verbs"><button type="button" class="primary" data-verb="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.updateAllN, { n: count('set', n) }))}${attnDot(S.attn?.base || S.attn?.proc, S.attn?.base ? staleBy() : '')}</button></p>
     ${gate.reason ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
-    ${chainHtml()}`;
+    ${busyCardHtml('base', 'chain')}${chainHtml()}`;
 }
 /** La carte « Tout mettre à jour », sous la couverture et au-dessus des groupes. */
 export function updateAllHtml() {

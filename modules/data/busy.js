@@ -47,9 +47,31 @@ function aliveText(r) {
     t
   }) : '';
 }
-/** La carte de l'opération en cours, pour le panneau `panel` : celle d'un départ ou d'un envoi refusés (S.busy, dans le panneau du geste), ou celle d'une autre opération trouvée en route (S.other, dans tous) ;
- *  '' sans rien à dire, ou quand l'opération est celle dont la marche s'affiche (sauf si elle ne répond plus : la carte dit alors ce qui manque, avec « Libérer »). */
-export function busyCardHtml(panel) {
+/** Où un geste a été fait : 'sheet' (la fiche d'un pays), 'group' (le corps d'un paquet), 'todo' (le bloc « À faire ce mois-ci »), 'chain' (la carte « Tout mettre à jour »), 'publish' (le panneau « Publier »), 'later' (les blocs « Quand ça change »), sinon 'head' (la barre d'état). */
+export function placeOf(el) {
+  const at = el?.closest;
+  if (!at) return 'head';
+  return el.closest('[data-sheet]') ? 'sheet' : el.closest('[data-group-body]') ? 'group' : el.closest('[data-todo]') ? 'todo' : el.closest(
+    '[data-update-all]') ? 'chain' : el.closest('[data-publish]') ? 'publish' : el.closest('[data-later-blocks]') ? 'later' : 'head';
+}
+/** Un geste commence (un bouton touché) : l'endroit où il a été fait (S.at) et son numéro (S.gid : le fil de chaque pays de l'opération est celui du dernier geste). */
+export function startGesture(el) {
+  S.at = placeOf(el);
+  S.gid = (S.gid || 0) + 1;
+}
+/** L'endroit où la carte de l'opération en cours se dessine : celui du geste refusé (S.busy.at), pour une autre opération trouvée en route la fiche ouverte, sinon la barre d'état ; null sans carte à dire. */
+export function cardPlace() {
+  const at = S.busy?.at || 'head';
+  return S.busy ? at === 'sheet' && !S.cw?.sheet || at === 'group' && !S.cw?.grp ? 'head' : at : S.other?.id ? S.cw?.sheet ? 'sheet' :
+    'head' : null; // la fiche ou le paquet du geste est refermé : la carte revient à la barre d'état
+}
+/** La carte de l'opération en cours, pour le panneau `panel` et l'endroit `place` : celle d'un départ ou d'un envoi refusés (S.busy, À L'ENDROIT du geste : la fiche, le paquet, le bloc du mois, la chaîne, « Publier »), ou celle d'une autre opération trouvée en route (S.other, la fiche
+ *  ouverte ou la barre d'état) ; '' sans rien à dire, ou quand l'opération est celle dont la marche s'affiche (sauf si elle ne répond plus : la carte dit alors ce qui manque, avec « Libérer »). */
+export function busyCardHtml(panel, place = 'head') {
+  const where = cardPlace(),
+    later = place === 'later' && !!S.cw?.lc?.nat?.deferred && !!
+    where; // les routes NAT reportées pour cause d'opération en cours : la carte de celle-ci y est aussi
+  if (where !== place && !later) return '';
   const fromOther = !S.busy && !!S.other?.id,
     r = S.busy ? !S.busy.panel || S.busy.panel === panel ? S.busy.running : null : fromOther ? M.runningOf(S.other) : null;
   if (!r || r.id === S.busyHidden || S.run && (r.alive === 'alive' || !r.alive)) return '';
@@ -80,17 +102,34 @@ export function busyCardHtml(panel) {
       <button type="button" data-busy-act="release">${esc(tt(TX.busy.release))}</button>` : ''}
       <button type="button" data-busy-act="hide">${esc(tt(TX.busy.hide))}</button></p></div>`;
 }
-/** Pose la carte d'une opération refusée (un envoi de fichier, par exemple) dans le panneau `panel` ; l'écran reste gris tant qu'elle tourne et la suit (follow). */
-export function showBusy(running, panel) {
+/** Pose la carte d'une opération refusée (un envoi de fichier, par exemple) dans le panneau `panel`, à l'endroit `place` du geste (S.at, par défaut la barre d'état) ; l'écran reste gris tant qu'elle tourne et la suit (follow). */
+export function showBusy(running, panel, place) {
   if (!running) return;
   S.busy = {
     running,
-    panel
+    panel,
+    at: place || S.at || 'head'
   };
   S.busyHidden = null;
   S.other = S.other || {};
   renderBuild();
   if (!S.following) follow();
+}
+/** Un refus « une autre opération est en cours » lu sur n'importe quel chemin (l'état d'un pays, un plan, un envoi, la reprise des routes NAT) : `r` = { status: 409, reason, running }. La carte se dessine À L'ENDROIT du geste (`place`) ; sans `running` lisible (un lanceur ancien) la phrase seule, au même endroit. Rend vrai quand c'était ce refus
+ *  (409 « busy », pas « updating »). */
+export function refuseBusy(r, place) {
+  if (!r || r.status !== 409 || r.reason === 'updating') return false;
+  const at = place || S.at || 'head',
+    running = M.runningOf(r.running);
+  if (running) showBusy(running, 'base', at);
+  else {
+    S.busy = null;
+    S.other = S.other || {};
+    S.otherAt = at;
+    renderBuild();
+    if (!S.following) follow();
+  }
+  return true;
 }
 /** Le travail dont la carte parle, d'après S.busy ou S.other. */
 const current = () => S.busy?.running || (S.other?.id ? M.runningOf(S.other) : null);
