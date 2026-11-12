@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 145,
+  "tests": 146,
   "verdicts": 59
  },
  "apps": [
@@ -2102,6 +2102,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T17:22:59Z"
+  },
+  {
+   "id": "SOG-0277",
+   "app": "maintenance",
+   "title": {
+    "fr": "Jetons : prévenir avant l'expiration (les jetons envoyés aux pilotes et le sien)",
+    "en": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
+    "de": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
+    "es": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)"
+   },
+   "test": "Relance le lanceur. Maintenance › Jetons des pilotes : chaque jeton dit « expire le … · dans n jours », en orange sous 30 jours, en rouge sous 7. Dans les Réglages, l'État prévient quand des jetons de pilotes expirent bientôt, et quand le tien expire dans moins de 30 jours (avec une notification, une fois par jour).",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T17:24:32Z"
   },
   {
    "id": "SOG-0279",

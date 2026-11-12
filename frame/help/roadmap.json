@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8b2fb95",
+  "organisation": "d6cd7f3",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -4031,11 +4031,12 @@
     {
      "id": "SOG-0277",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Jetons : prévenir avant l'expiration (les jetons envoyés aux pilotes et le sien)",
      "en": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
      "de": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
-     "es": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)"
+     "es": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
+     "test": true
     }
    ]
   },
