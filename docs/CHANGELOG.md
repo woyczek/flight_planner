@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report: « Mesures » finds the flight by departure, arrival and times**, never by the registration (an X-Plane livery has its own) (report DECISIONS, help; noreg G18; SOG-0250).
 - **Map: taxiway names are signs** — one dark sign with light letters (the design's colours) per taxiway, the long taxiways first and fewer of them when zoomed out, two signs of the same name within 140 px merged, the sign covers a road name under it (maps DECISIONS; noreg D178; SOG-0252).
 - **Fuel: a mission left on the Map is left in Fuel at once** (the chip goes, same screen); « Nouveau vol » leaves it for good (Fuel DECISIONS; noreg N25, N26; SOG-0251).
 - **Map: a route taken makes the other proposals go at once** — the list and the pale lines vanish without waiting for Fuel and without a change of screen; « Choose » is always on the list (grey until a route is shown) (maps DECISIONS; noreg D177; SOG-0224).

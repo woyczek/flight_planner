@@ -554,7 +554,7 @@ augmente — sont signalées.
 
 <a id="report-load"></a>**Charge.** « Utiliser » reprend la famille et la série du vol ; vous pouvez les changer, le compte rendu a le dernier mot. Une série qui transporte (Fret, Passagers, VIP) ajoute, au dernier pas, la carte « Charge » avec un seul champ : le fret embarqué en kg, ou le nombre de passagers. Une autre série n'ajoute rien.
 
-<a id="report-measures"></a>**Mesures.** À la fin du dernier pas, « Mesures » lit les journaux du Fuel Phase Monitor (« Choisir des journaux », ou « Depuis le dossier Output » sur le poste) et propose le vol dont l'immatriculation et les heures UTC recouvrent ce compte rendu ; « Garder ce vol » met son carburant consommé, sa durée et ses phases dans le compte rendu, enregistrés avec lui. Rien d'autre du journal n'est gardé.
+<a id="report-measures"></a>**Mesures.** À la fin du dernier pas, « Mesures » lit les journaux du Fuel Phase Monitor (« Choisir des journaux », ou « Depuis le dossier Output » sur le poste) et propose le vol parti du terrain de départ et arrivé au terrain d'arrivée de ce compte rendu, à ses heures UTC à une heure près — jamais d'après l'immatriculation, celle d'une livrée X-Plane n'étant pas la vôtre ; plusieurs vols conviennent : ils sont listés, vous choisissez ; « Garder ce vol » met son carburant consommé, sa durée et ses phases dans le compte rendu, enregistrés avec lui. Rien d'autre du journal n'est gardé.
 
 <a id="report-save"></a>**Enregistrer.** Le bouton en bas enregistre le compte rendu et lui donne son numéro au premier enregistrement. Tant
 que vous n'avez pas enregistré, votre saisie est gardée sur l'appareil et reprise à la prochaine ouverture.

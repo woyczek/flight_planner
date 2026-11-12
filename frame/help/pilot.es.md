@@ -565,7 +565,7 @@ aumenta — se señalan.
 
 <a id="report-load"></a>**Carga.** «Usar» toma la familia y la serie del vuelo; puede cambiarlos, el informe tiene la última palabra. Una serie que transporta (Carga, Pasajeros, VIP) añade, en el último paso, la tarjeta «Carga» con un solo campo: la carga embarcada en kg o el número de pasajeros. Cualquier otra serie no añade nada.
 
-<a id="report-measures"></a>**Mediciones.** Al final del último paso, «Mediciones» lee los registros del Fuel Phase Monitor («Elegir registros», o «Desde la carpeta Output» en el puesto) y propone el vuelo cuya matrícula y horas UTC coinciden con este informe; «Guardar este vuelo» pone su combustible consumido, su duración y sus fases en el informe, guardados con él. Nada más del registro se guarda.
+<a id="report-measures"></a>**Mediciones.** Al final del último paso, «Mediciones» lee los registros del Fuel Phase Monitor («Elegir registros», o «Desde la carpeta Output» en el puesto) y propone el vuelo que salió del aeródromo de salida de este informe y llegó a su llegada, a sus horas UTC con una hora de margen — nunca por la matrícula, la de una librea de X-Plane no es la suya; si varios vuelos encajan, se listan y usted elige; «Guardar este vuelo» pone su combustible consumido, su duración y sus fases en el informe, guardados con él. Nada más del registro se guarda.
 
 <a id="report-save"></a>**Guardar.** El botón de abajo guarda el informe y le da su número en el primer guardado. Mientras no haya guardado, lo
 introducido se conserva en el dispositivo y se recupera la próxima vez que lo abra.

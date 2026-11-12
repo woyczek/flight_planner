@@ -245,10 +245,10 @@ const TX = {
   ),
   measFiles: L('Choisir des journaux', 'Choose journals', 'Protokolle wählen', 'Elegir registros'),
   measOutput: L('Depuis le dossier Output', 'From the Output folder', 'Aus dem Output-Ordner', 'Desde la carpeta Output'),
-  measNone: L('Aucun vol des journaux ne correspond (immatriculation, heures UTC) : {n} vol(s) lu(s).',
-    'No flight of the journals matches (registration, UTC times): {n} flight(s) read.',
-    'Kein Flug der Protokolle passt (Kennzeichen, UTC-Zeiten): {n} Flug/Flüge gelesen.',
-    'Ningún vuelo de los registros coincide (matrícula, horas UTC): {n} vuelo(s) leído(s).'),
+  measNone: L('Aucun vol des journaux ne correspond (départ, arrivée, heures UTC à une heure près) : {n} vol(s) lu(s).',
+    'No flight of the journals matches (departure, arrival, UTC times within an hour): {n} flight(s) read.',
+    'Kein Flug der Protokolle passt (Abflug, Ankunft, UTC-Zeiten auf eine Stunde genau): {n} Flug/Flüge gelesen.',
+    'Ningún vuelo de los registros coincide (salida, llegada, horas UTC con una hora de margen): {n} vuelo(s) leído(s).'),
   measKeep: L('Garder ce vol', 'Keep this flight', 'Diesen Flug behalten', 'Guardar este vuelo'),
   measDrop: L('Retirer', 'Remove', 'Entfernen', 'Quitar'),
   measKept: L('Mesuré : {f} kg · {t} (vol {id})', 'Measured: {f} kg · {t} (flight {id})', 'Gemessen: {f} kg · {t} (Flug {id})',
@@ -824,15 +824,43 @@ function crWindow(m) {
     t1raw = b.length ? Math.max(...b) : Math.max(...a);
   return [t0, t1raw < t0 ? t1raw + 864e5 : t1raw];
 }
-/** Les vols des journaux qui vont avec ce CR : même immatriculation (sans tiret ni espace) quand le CR en a une, heures qui
- *  recouvrent les siennes quand il en a ; sept au plus, les plus récents d'abord. */
+/** Les vols des journaux qui vont avec ce CR (SOG-0250, l'utilisateur : « l'imat X-Plane ne collera jamais, c'est une imat de livrée.
+ *  simplement, source/dest, horaire. ») : le début du vol à MEAS_NM du terrain de départ, sa fin à MEAS_NM de l'arrivée (positions
+ *  d'aerodb, S.measAd ; un terrain sans position ne filtre pas), ses heures dans celles du CR élargies de MEAS_PAD ; jamais
+ *  l'immatriculation ; sept au plus, les plus récents d'abord. */
+const MEAS_NM = 15,
+  MEAS_PAD = 3600e3;
+
 function matching(list) {
-  const fold = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
-    reg = fold(S.m.aircraft?.[0]?.registration),
-    w = crWindow(S.m);
-  return list.filter(f => (!reg || fold(f.registration) === reg) && (!w || (Date.parse(f.startUtc) <= w[1] && Date.parse(f.endUtc) >= w[
-      0])))
+  const w = crWindow(S.m),
+    ad = S.measAd || {},
+    gc = (a, b) => {
+      const r = Math.PI / 180,
+        h = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+      return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
+    },
+    near = (p, a) => !a || !!p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && gc(p, a) <= MEAS_NM;
+  return list.filter(f => near(f.start, ad.dep) && near(f.end, ad.arr) && (!w || (Date.parse(f.startUtc) <= w[1] + MEAS_PAD && Date.parse(f
+      .endUtc) >= w[0] - MEAS_PAD)))
     .slice(0, 7);
+}
+/** Les positions des terrains de départ et d'arrivée du CR (aerodb), pour « Mesures » (SOG-0250) ; un code inconnu : null. */
+async function measAirfields() {
+  const s = S,
+    at = async icao => {
+        const k = String(icao || '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(k) || typeof s.ctx.aerodb?.coords !== 'function') return null;
+        const c = await Promise.resolve().then(() => s.ctx.aerodb.coords(k)).catch(() => null);
+        return c && Number.isFinite(+c.lat) && Number.isFinite(+c.lon) ? {
+          lat: +c.lat,
+          lon: +c.lon
+        } : null;
+      },
+      [dep, arr] = await Promise.all([at(s.m?.navigation?.dep), at(s.m?.navigation?.arr)]);
+  if (S === s) S.measAd = {
+    dep,
+    arr
+  };
 }
 /** Le pli « Mesures » : le vol gardé (son agrégat) et « Retirer », ou les gestes (journaux choisis, dossier Output du poste) et les
  *  vols lus qui vont avec le CR, chacun avec « Garder ce vol ». */
@@ -866,6 +894,8 @@ async function measureTexts(list) {
       }), 'warn');
     }
   }
+  if (!S) return;
+  await measAirfields(); // SOG-0250 : départ et arrivée, jamais l'immatriculation
   if (!S) return;
   S.meas = PH.flights(rows);
   render();

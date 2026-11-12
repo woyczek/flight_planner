@@ -251,3 +251,8 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   `added.themes[i].letter`, written by Settings (a free letter proposed, a taken one refused: `freeLetters` / `takenLetters` of
   frame/lib/mission_themes.js, never a copy), kept by `cleanThemes` only when free (not one of the table's, not « M », « D », « X »,
   not another added family's: the file is written by any pilot); without it, « X » as before. G17; counter-test on origin/v3: « CRX- ».
+- **12 Nov 2026 — « Mesures » matches by departure, arrival and times, never by the registration** (SOG-0250, the user: « l'imat X-Plane
+  ne collera jamais, c'est une imat de livrée. simplement, source/dest, horaire. »): the journal's start within 15 NM of the report's
+  departure, its end within 15 NM of its arrival (aerodb positions; an aerodrome without a position does not filter), its times within
+  the report's widened by one hour; several candidates are listed. G18 (red before: the flight with the report's registration from
+  elsewhere proposed, the livery's flight not).

@@ -677,3 +677,38 @@ def g17(c):
     d = c.doc(path)
     mid = (d.get('metadata') or {}).get('missionId', '')
     c.ok(mid.startswith('CRQ-'), mid, 'the report of BAL is numbered with « Q »')
+
+
+
+@case('G18', 'Report: « Mesures » matches a flight of the journals by its departure, arrival and times, never by the registration (an X-Plane livery has its own)',
+      'G', tags=('report',), screens=False, designs=('standard',), langs4=False,
+      rule='SOG-0250 (user: « l\'imat X-Plane ne collera jamais, c\'est une imat de livrée. simplement, source/dest, horaire. »): the journal\'s start near '
+      'the departure, its end near the arrival (aerodb positions), its times within the report\'s (± 1 h); several candidates listed; an invented journal')
+def g18(c):
+    import tempfile
+    from pathlib import Path
+    head = ['schema_version', 'flight_id', 'phase', 'aircraft_icao', 'registration', 'start_utc', 'end_utc', 'duration_sec', 'fuel_kg', 'fuel_coverage_pct',
+            'mean_fuel_flow_kg_h', 'engine_count', 'engine_fuel_flow_kg_h', 'mean_pressure_altitude_ft', 'mean_ias_kt', 'mean_tas_kt', 'mean_vertical_speed_fpm',
+            'mean_engine_rpm', 'quality_flags', 'start_lat', 'start_lon', 'end_lat', 'end_lon']
+    row = lambda fid, reg, i, a, b: ['0.4.1', fid, 'CRUISE', 'C30J', reg, f'2026-11-09T08:{i:02d}:00Z', f'2026-11-09T08:{i:02d}:15Z', 15, 0.5, 100, 120, 1, 120,
+                                     8000, 150, 170, 0, 2300, '', a[0], a[1], b[0], b[1]]
+    lfrs, lfml, away = (47.16, -1.61), (43.44, 5.21), (45.0, 1.0)
+    rows = [row('FPM-LIVERY', 'F-LIVR', i, lfrs, lfml) for i in (5, 10, 15)]      # the flight of the report, an X-Plane livery's registration
+    rows += [row('FPM-AWAY', 'F-TEST', i, away, away) for i in (5, 10)]           # the same times and the report's registration, from elsewhere
+    c.open('report', airfields=True)
+    c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+    for path, v in (('aircraft.0.registration', 'F-TEST'), ('navigation.dep', 'LFRS'), ('navigation.arr', 'LFML'), ('metadata.date', '2026-11-09'),
+                    ('timeline.takeoff', '08:00'), ('timeline.landing', '08:20')):
+        sel = f'[data-module="report"] [data-path="{path}"]'
+        if c.count(sel):
+            c.page.fill(sel, v)
+            c.page.locator(sel).blur()
+    c.tap('[data-module="report"] .f-steps button[data-step="2"]')
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / 'FuelPhaseMonitor_livery.csv'
+        f.write_text('\n'.join(','.join(str(x) for x in r) for r in [head] + rows), encoding='utf-8')
+        c.page.set_input_files('[data-module="report"] input[data-measfile]', str(f))
+        c.until("!!document.querySelector('[data-module=report] [data-measflights], [data-module=report] [data-measnone]')", what='the journals read')
+        c.wait(800)
+    got = c.js("[...document.querySelectorAll('[data-module=report] [data-measflight]')].map(e => e.dataset.measflight)")
+    c.eq(got, ['FPM-LIVERY'], 'the flight from LFRS to LFML at the report\'s times, whatever its registration; not the one from elsewhere', what='proposed')
