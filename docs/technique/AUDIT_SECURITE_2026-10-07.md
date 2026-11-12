@@ -1014,6 +1014,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 162 | Review of 11 November: Little Navmap procedures in the simulator files (af3c60e9f), `recette/decision` verb and its generator (ed9080347, 7126fb750), clean-up of the hand-deposited files (f8bbdda36, d7cb8b9ca) | one to fix (clean-up), the rest acceptable |
 | 163 | The personal-use tick held by the launcher (3dcc5e780), the notes of 159 and 162 fixed (a5f6dd6ab, 6606df07c, d69a96d8c, 607dc8819) | acceptable, one to fix (zip64) |
 | 164 | The zip64 directory check follows the locator (5fe013431): the point to fix of 163 closed | acceptable |
+| 165 | Review of 12 November: ISO reader (f10dff198), NASR subscription read in place (48cc3811c), file deposit (zip carrying an ISO, FRA archive: f10dff198, 971fe40e6), job release (8494deb47, 8ec252fb7), persistent journal and `base/last` (476074e7b), `base/publish` (77ad22f6d), `base/cycle` (d370bc220, 5cb9dc776), `zipmember.js` | two to fix, one to harden, the rest acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2431,6 +2432,32 @@ record at the offset the locator gives and at the fixed place just before it, ke
 follows one or the other according to the Python version), and refuses without opening the archive a zip64 whose record is found
 in neither place. The scratch file of 163 (70,000 entries, 100 bytes of extensible data ending in a forged record of one entry)
 now gives the real 70,000 from the helper; K168 carries the same shape and was red before.
+
+**165. Review of 12 November — two to fix, one to harden, the rest acceptable.** *Acceptable.* `tools/iso9660.py` never writes and
+never extracts: a path of the image is only a dictionary key, every extent is checked against the image size, and the depth (12),
+the entries (50,000), a directory (4 MB) and a file read (32 MB) are bounded; 20,000 random mutations of a small image gave only
+`IsoError`, and a directory that points back at itself stops at the depth limit. The NASR subscription is recognised by a name
+pattern (`\Z`, ASCII) AND by its content (`CSV_Data/…_CSV.zip` and `FIX.txt`), the canonical name is rebuilt from the date, and
+the inner zip is read in place under `INNER_MAX`. `base/publish` takes a zone checked by `^[a-z0-9_-]{2,12}$` and a trigram checked
+by `^[A-Z0-9]{2,5}$`, the plan runs read-only git commands with fixed arguments and never names a user file, and the push is the
+“Synchronise” gesture (one push carries every unsent commit, said in the plan). `base/cycle` and `base/last` are read-only and
+take closed arguments. The release route is for this workstation only and kills only the processes the job itself declared
+(`track`), after five silent minutes. The persistent journal keeps four verbs, trims depth, lists and texts, and runs the texts
+through `clean_error` (no secret, e-mail address or session parameter) and the data path; it lives in `data/local/`. `zipmember.js`
+bounds the entries, the directory, the member (announced and actually read: a bomb is cut at the announced size) and checks the CRC;
+nothing is written or sent from it. *To fix 1 (proved).* `aero_fetch.eaip_manual` opens with `zipfile.ZipFile` every `.zip` up to
+1.5 GB of the Downloads folder, whatever its name, before any count of entries: a scratch zip of 250,000 entries (21 MB, above the
+`MAX_MEMBERS` that `base_upload` refuses) takes 138 MB of Python memory, so a hostile zip of 1.5 GB with tens of millions of
+entries would take several GB. The same unguarded opening is in `eaip_annexe15.read_package` and, for files picked by their name,
+in `base_sources` (pickup) and `base_state`: one helper that applies the end-record count of `base_upload._directory` before every
+`ZipFile(path)` on a file we did not write. *To fix 2 (proved).* The FRA archive branch of `recognise` has no cap on `take`: a zip of
+500 distinct names of the current cycle (84 KB) gives 500 members, each written to `data/local/upload/` up to `TAKE_MAX` (32 MB),
+i.e. up to 15 GB from a deflated archive; a real archive has one or two per cycle. *To harden (measured).* An ISO inside a deflated zip
+member is read through `ZipExtFile`, whose backward `seek` restarts the decompression: 0.39 s per far read on 80 MB, so about 5 s on
+1 GB, and the ISO path has no cap on the number of ENR pages (`PKG_MAX_FILES` applies to zips and folders only), all under the
+launcher's “busy” lock; cap the pages (a few hundred) or copy the member to a temporary file first. *Notes.* After `release`, the
+abandoned thread is told to stop but nothing proves that a verb stops writing to `data/` once `job.released` is set (the check is only
+on its result); and `_trim` cleans the values but not the keys, nor the non-text values turned into text.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
