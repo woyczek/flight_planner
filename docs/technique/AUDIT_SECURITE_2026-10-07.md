@@ -1025,6 +1025,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 173 | `current_flight.airline` written by Fuel and read by the report (a2bb9cfc4, SOG-0041): the families, the heading and the saved record follow the company of the flight taken | acceptable, one functional note |
 | 174 | The night of 13 November: the Map's Weather layer (163722b25, SOG-0092) and the weather store's `cacheOnly` (01b1538f8); the mission Registry, one line per mission (db091c505, SOG-0286); the GeoNames extract for Portugal and Ireland (0114f9cdb, SOG-0102); the Data map's wheel and hover (6889a1d7b) and the editor mock-up (7c3b8e4bb) | acceptable, two notes |
 | 175 | Little Navmap sheets: "Export the sheets" writes only (e6811d642, SOG-0023); the report's families follow the company of the opened report (fec39491b, SOG-0041) | acceptable |
+| 176 | The registry reader bounded and "not read" beyond 500 files (81148257a, audit 174 notes) | the 500-file limit acceptable; one defect to fix (identifier cut to 12 against the 40 of the plan) |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2600,6 +2601,24 @@ green. *Report (fec39491b).* `loadCategories` takes the opened report's company 
 `^[a-z0-9]{2,8}$`, present in the index, folder built from the code), `savedOf` having checked the code and the kind of the saved report (a data
 file); a code the index no longer knows gives `{ code, kind }` without a folder, so the common base and never another company's families; the
 folder or the settings of a company are read exactly as in 173. G21 green; no new input, no new sink.
+
+**176. The registry reader bounded, “not read” beyond 500 files (81148257a) — one defect to fix.** *The limit (fine).* Beyond
+`REG_READ_MAX` the lines get the status `notread` (sign `?`, last in the order, “500 files read of N” in the count); `planOf` leaves them out
+of `noFile`, so the plan never offers to drop a line nobody read; the status is a closed key, and the text goes through `esc` as before. *The
+bounds on titles, operations, origins and destinations (fine).* 120 and 80 characters at the reader. **Defect (proved).** `readRegistry` now cuts
+the identifier to 12 characters (`reg = clean(x.id).slice(0, 12)`), but `planOf` and `applyPlan` still compare it to `cut(e.raw.id, 40)`.
+A line whose identifier has 13 to 40 characters and whose folder name is not of the mission form (`X-001A`, the form that wins over the
+registry's identifier) is therefore classed as a “former identifier”, and **applying the plan rewrites its identifier to the first 12
+characters** (the old one goes to `formerId`); two such lines that share their first 12 characters become “duplicates” and **the second is
+removed from the registry** (`splice` in `applyPlan`). Probed on the real modules (`planOf` / `applyPlan` on four lines: `X-001A`, a 20-character
+identifier under `X_CO/old2`, `AAAAAAAAAAAA1` under `X_CO/old3`, `AAAAAAAAAAAA2` under `X_CO/old4`; every status `ok`): plan `former [1, 2]`, `dup [3]`;
+after applying: identifiers `ABCDEFGHIJKL` and `AAAAAAAAAAAA`, the fourth line gone. The plan is shown before anything is written and the pilot
+confirms it, so this is data loss on confirmation, not a silent one; and any pilot can put such a line in the registry (every line is untrusted
+input), which makes the proposal a lure. Not raised by case N44 (it bounds the reader, it does not run the plan). Counter-test to add (red
+today): a registry of two lines with identifiers of 14 characters sharing their first 12, folders `X_CO/old1` and `X_CO/old2`, files present;
+`planOf` must give `former: []` and `dup: []`, and `applyPlan` must leave both lines as they were. Fix at the owner: cut the identifier at
+40 in the reader (the length `registry.js` already uses for `formerId` and its comparisons), or take the same cut in `planOf`, `applyPlan` and
+`entryOfMission`; the display may shorten it, the identity may not.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
