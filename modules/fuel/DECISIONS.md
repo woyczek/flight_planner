@@ -1680,3 +1680,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   longer than its great circle: one line under the route (never a floating note). LFPO DCT LFST: 209 NM as before; KDEN DCT LFST:
   4 849 NM instead of 4 401. The wind of the quote stays ONE mean wind on ONE course (the route's rhumb course): a component per leg is
   a change of the wind model, not done here (after the acceptance). F147.
+- **12 Nov 2026 — « Choisir » makes the other routes disappear** (SOG-0224 / SOG-0134, refused on 11 Nov 22 h 21: « il faut switcher
+  d'écran pour faire disparaître le choix … clic sur le bouton choix : valider l'itinéraire, modifier la route, et faire disparaitre les
+  alternatives »): cause — `routeTake` kept the whole list (the taken one marked, the others with their button) and published the choice
+  WITH the alternatives to the Map. Now the list gives way to one line « Itinéraire pris : … » and the alternatives are published empty
+  (event and cache/fuel/route_alts.json): the Map clears its layer and legend, same screen. `#fuel?ralt=` from a Map alone works while
+  alternatives exist. F109, F114 (rouges avant). The time after « Calculer A → B » is the launcher's job (route/compute), not measured on
+  this workstation without his launcher.
