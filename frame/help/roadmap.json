@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ac0494b",
+  "organisation": "8757a79",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -1206,11 +1206,12 @@
     {
      "id": "SOG-0276",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Designs Swiss et Metro : l'avion du titre en rouge, la couleur de contraste prise pour la couleur d'accent",
      "en": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
      "de": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
-     "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour"
+     "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
+     "test": true
     }
    ]
   },
@@ -2759,11 +2760,12 @@
     {
      "id": "SOG-0275",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Aide › À propos : les licences s'ouvrent en texte brut (pas d'afficheur pour LICENSE.md)",
      "en": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
      "de": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
-     "es": "Help › About: the licences open as raw text (no viewer for LICENSE.md)"
+     "es": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
+     "test": true
     }
    ]
   },

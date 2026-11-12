@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 149,
+  "tests": 151,
   "verdicts": 59
  },
  "apps": [
@@ -2150,6 +2150,34 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T17:22:59Z"
+  },
+  {
+   "id": "SOG-0275",
+   "app": "maintenance",
+   "title": {
+    "fr": "Aide › À propos : les licences s'ouvrent en texte brut (pas d'afficheur pour LICENSE.md)",
+    "en": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
+    "de": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
+    "es": "Help › About: the licences open as raw text (no viewer for LICENSE.md)"
+   },
+   "test": "Aide › À propos, lien de la licence (sur le site publié aussi) : elle s'ouvre mise en forme dans l'afficheur de l'aide, avec le retour au manuel, pas en texte brut dans un onglet.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T17:58:23Z"
+  },
+  {
+   "id": "SOG-0276",
+   "app": "pilote",
+   "title": {
+    "fr": "Designs Swiss et Metro : l'avion du titre en rouge, la couleur de contraste prise pour la couleur d'accent",
+    "en": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
+    "de": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
+    "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour"
+   },
+   "test": "Designs Swiss et Metro, clair et sombre : l'avion à côté du titre n'est plus rouge en Swiss et se voit sur le bandeau en Metro. Dis-moi si d'autres éléments de ces deux designs te paraissent encore pris pour une alerte.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T18:10:45Z"
   },
   {
    "id": "SOG-0277",
