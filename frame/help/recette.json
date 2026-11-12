@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 125,
+  "tests": 127,
   "verdicts": 60
  },
  "apps": [
@@ -1793,6 +1793,34 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T15:03:28Z"
+  },
+  {
+   "id": "SOG-0250",
+   "app": "pilote",
+   "title": {
+    "fr": "Compte rendu : le relevé par les journaux ne trouve aucun vol (il compare l'immatriculation)",
+    "en": "Report: the reading from the logs finds no flight (it compares the registration)",
+    "de": "Report: the reading from the logs finds no flight (it compares the registration)",
+    "es": "Report: the reading from the logs finds no flight (it compares the registration)"
+   },
+   "test": "Compte rendu : relève un vol depuis les journaux avec l'immatriculation de ta livrée X-Plane (différente de celle du compte rendu). Le vol qui part du bon terrain, arrive au bon terrain et tombe dans les heures doit être proposé ; s'il y en a plusieurs, la liste te laisse choisir.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:15:05Z"
+  },
+  {
+   "id": "SOG-0252",
+   "app": "pilote",
+   "title": {
+    "fr": "Taxiways : illisibles — fusionner les points identiques au même endroit, corriger le niveau de zoom (« à traiter pour ce cycle »)",
+    "en": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
+    "de": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
+    "es": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level"
+   },
+   "test": "Carte, sur un grand terrain (LFBD, LFPO) au zoom de ta capture : les noms des voies de circulation sont des cartouches lisibles, un par voie, sans doublon à quelques mètres ; en reculant ils se raréfient puis disparaissent ; le nom d'une voie passe devant celui d'une route.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:11:24Z"
   },
   {
    "id": "SOG-0260",

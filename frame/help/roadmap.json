@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8d22356",
-  "fiches": 273,
+  "organisation": "22ecd78",
+  "fiches": 278,
   "untranslated": 0,
   "priorities": 243
  },
@@ -984,11 +984,12 @@
     {
      "id": "SOG-0252",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Taxiways : illisibles — fusionner les points identiques au même endroit, corriger le niveau de zoom (« à traiter pour ce cycle »)",
      "en": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
      "de": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
-     "es": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level"
+     "es": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
+     "test": true
     },
     {
      "id": "SOG-0253",
@@ -1143,11 +1144,12 @@
     {
      "id": "SOG-0250",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Compte rendu : le relevé par les journaux ne trouve aucun vol (il compare l'immatriculation)",
      "en": "Report: the reading from the logs finds no flight (it compares the registration)",
      "de": "Report: the reading from the logs finds no flight (it compares the registration)",
-     "es": "Report: the reading from the logs finds no flight (it compares the registration)"
+     "es": "Report: the reading from the logs finds no flight (it compares the registration)",
+     "test": true
     }
    ]
   },
@@ -1180,6 +1182,27 @@
      "de": "Farbtöne, Schrift, wiederholte Regeln als Tokens (Wahl des Nutzers)",
      "es": "Tonos, fuente, reglas repetidas a promover en tokens (elección del usuario)",
      "rank": 39
+    }
+   ]
+  },
+  {
+   "id": "pilote-designs",
+   "app": "pilote",
+   "label": {
+    "fr": "Designs",
+    "en": "Designs",
+    "de": "Designs",
+    "es": "Designs"
+   },
+   "items": [
+    {
+     "id": "SOG-0276",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Designs Swiss et Metro : l'avion du titre en rouge, la couleur de contraste prise pour la couleur d'accent",
+     "en": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
+     "de": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
+     "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour"
     }
    ]
   },
@@ -2630,6 +2653,15 @@
      "en": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
      "de": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
      "es": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do"
+    },
+    {
+     "id": "SOG-0274",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Cadre : la barre de gauche se réduit aux icônes avant de basculer en mode téléphone",
+     "en": "Frame: the left bar shrinks to its icons before switching to phone mode",
+     "de": "Frame: the left bar shrinks to its icons before switching to phone mode",
+     "es": "Frame: the left bar shrinks to its icons before switching to phone mode"
     }
    ]
   },
@@ -2703,6 +2735,36 @@
      "en": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
      "de": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
      "es": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards"
+    },
+    {
+     "id": "SOG-0275",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Aide › À propos : les licences s'ouvrent en texte brut (pas d'afficheur pour LICENSE.md)",
+     "en": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
+     "de": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
+     "es": "Help › About: the licences open as raw text (no viewer for LICENSE.md)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-publication",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; publication",
+    "en": "Cadre ; publication",
+    "de": "Cadre ; publication",
+    "es": "Cadre ; publication"
+   },
+   "items": [
+    {
+     "id": "SOG-0278",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "La V3 devient la version par défaut ; toutes les pages V2 restent accessibles depuis la V3",
+     "en": "V3 becomes the default version; every V2 page stays reachable from V3",
+     "de": "V3 becomes the default version; every V2 page stays reachable from V3",
+     "es": "V3 becomes the default version; every V2 page stays reachable from V3"
     }
    ]
   },
@@ -3890,6 +3952,27 @@
      "es": "Una nueva carretilla de conflictos de sincronización estando el usuario solo",
      "milestone": "6.0.0-alpha.6",
      "rank": 242
+    }
+   ]
+  },
+  {
+   "id": "maintenance-securite-reglages",
+   "app": "maintenance",
+   "label": {
+    "fr": "Sécurité ; Réglages",
+    "en": "Sécurité ; Réglages",
+    "de": "Sécurité ; Réglages",
+    "es": "Sécurité ; Réglages"
+   },
+   "items": [
+    {
+     "id": "SOG-0277",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Jetons : prévenir avant l'expiration (les jetons envoyés aux pilotes et le sien)",
+     "en": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
+     "de": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
+     "es": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)"
     }
    ]
   },
