@@ -233,6 +233,8 @@ def build(org, previous):
     for fid, pr in prio.items():
         if pr.get('milestone') in known_ms:
             by_id[fid] = pr['milestone']
+        elif pr.get('milestone') == '':      # the user took the card out of every milestone (Backlog column, SOG-0256)
+            by_id.pop(fid, None)
     for m in milestones:
         m['items'] = [fid for fid in m['items'] if by_id.get(fid) == m['id']] + \
             [fid for fid, ms in by_id.items() if ms == m['id'] and fid not in m['items']]
