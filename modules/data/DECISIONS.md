@@ -585,3 +585,26 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   answers `unrecognised` for any PDF except `ENR-5-2.pdf` and pdf.js + `AarTracks.parseEnr57` are not wired in V3: launcher gap
   routed to AeroDB. NAT routes, Publier, cycle suivant, « quand ça change », « vu, pas encore lu », « Ajouter à ma couverture »
   are lot C.
+- **12 Nov 2026 — SOG-0262, lots D1 to D4: the redesigned screen, one push** (the user: « effet tunnel nécessaire », « le placement
+  retenu est celui de la maquette »; the validated mockup `modules/data/maquette/` is the visual contract, the fiche the content):
+  D1 behaviours — map zoom / pan / pinch restored (`mapview.js`, `touch-action: pan-y`: one finger scrolls the page, two fingers
+  pan and pinch, Ctrl + wheel), « Mettre à jour ce pays » = progress in place then the country's one-line bilan (chain pickup →
+  download → build, no question), THE busy card (SOG-0245) on every « busy » exit, the thread of the last operation of THIS
+  country kept on the sheet (a failed step stays with its reason and « Réessayer »; never a floating note alone; the reason
+  why the country stays not up to date), to-do lines carry their gesture (« pris par le lanceur »), computed / local sources
+  (MORA, X-Plane…) never a to-do line (they live under « Quand ça change » and as a fact on the sheet), four tick signs
+  (✓ done, ○ to do, ✗ failure only, — not applicable). D2 form — header with title + bar + the one button + its sentence, small-caps
+  headings, map left, sheet as a sticky card on the right, groups as a two-column grid with a blue open panel and tiles, framed
+  folded « À faire ce mois-ci · n ». D3 — the thread from `base/last` (survives a reload), « Quand ça change » from
+  `base/cycle.local`, `natEnsure` busy = the card. D4 — every other set is ONE folded line with its state (nothing unfolded by
+  default); ONE « Tout mettre à jour (n) », in the header, that does everything (the base, then the other sets that have
+  something to do, the chain's single question and single publication; « Seulement la base (n) » limits it; no second card with
+  the same name); the map ≥ 320 px at 1280×800 with the folded to-do line and the first row of groups on screen; an open group
+  frames the map on it (overseas territories out of the frame, `mainBox`); groups with something to do first; the three cells
+  of a country = short word, the long detail on a full-width line under them; Shift + click / Shift + drag / two fingers held half
+  a second select several countries (`select.js`) with a banner « Ajouter à ma couverture (n) » / « Mettre à jour (n) » /
+  « Annuler »; the two-column layout uses a container query on the screen's own width (the frame's icon rail). Known limits:
+  « n faits sur m » counts the base's sources only (base/cycle does not describe the other sets); the sub-title zone names
+  (`partNames`) and « POURQUOI À LA MAIN » (`steps.why`) need two catalogue / aerodb fields that do not exist yet (nothing is
+  shown without them); the coverage frame at opening includes overseas territories of fr / gb; the container-query layout was not
+  checked against the real frame rail (this worktree was behind).
