@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7176123",
+  "organisation": "2ca4e93",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -1982,7 +1982,8 @@
      "de": "Missionen sind gesammelt in data/ eingetroffen: Das Register folgt den Dateien nicht",
      "es": "Misiones llegadas en masa a data/: el registro no sigue los archivos",
      "milestone": "6.0.0-alpha.4",
-     "rank": 77
+     "rank": 77,
+     "test": true
     },
     {
      "id": "SOG-0084",

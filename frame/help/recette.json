@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 139,
+  "tests": 140,
   "verdicts": 60
  },
  "apps": [
@@ -13,6 +13,20 @@
   "stats"
  ],
  "tests": [
+  {
+   "id": "SOG-0036",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions arrivées en masse dans data/ : le registre ne suit pas les fichiers",
+    "en": "Missions arrived in bulk in data/: the register does not follow the files",
+    "de": "Missionen sind gesammelt in data/ eingetroffen: Das Register folgt den Dateien nicht",
+    "es": "Misiones llegadas en masa a data/: el registro no sigue los archivos"
+   },
+   "test": "Recharge la page. Compagnie › Missions, bouton « Registre » : chaque mission a sa ligne et l'état de son fichier ; celles du dépôt qui manquent au registre sont dites « pas dans le registre ». « Mettre à jour le registre » montre d'abord ce qu'il va faire (à ajouter, en double, lignes sans fichier), puis « Écrire le registre ». « Corriger » change le titre ou la série d'une ligne ; « Retirer du registre » demande confirmation et garde le fichier.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T16:08:00Z"
+  },
   {
    "id": "SOG-0041",
    "app": "compagnie",
@@ -2025,5 +2039,21 @@
    "delivered": "2026-11-12T15:20:40Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0036",
+   "fiche": "SOG-0036",
+   "app": "compagnie",
+   "question": "Registre des missions : quelle série donner à une mission ajoutée depuis son fichier ?",
+   "context": "« Mettre à jour le registre » ajoute les missions du dépôt qui n'y sont pas. Le numéro se tire de l'identifiant (A-001A → 1), mais la série (au sens « famille / série ») ne se déduit pas du fichier : aujourd'hui elle est laissée vide, à remplir par « Corriger ».",
+   "options": [
+    "La laisser vide et la dire « série à compléter » dans la liste, avec un compteur",
+    "La tirer de la lettre de l'identifiant (A-001A → série A) quand la famille a une lettre",
+    "La demander au moment d'écrire le registre, pour chaque mission ajoutée"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 1
+  }
+ ]
 }
