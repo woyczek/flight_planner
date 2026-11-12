@@ -46,11 +46,16 @@ import {
   setPackTab
 } from './packs.js';
 import {
-  highlightZones
-} from './zonemap.js';
+  closeSheet,
+  CW_STYLE,
+  cwInit,
+  highlightZones,
+  hoverZone,
+  openCountry,
+  toggleGroup,
+  toggleWorld
+} from './countries.js';
 import {
-  selectNone,
-  selectStale,
   startUpdate
 } from './update.js';
 import {
@@ -116,6 +121,7 @@ export const meta = {
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
+    'model_countries.js', 'countries.js',
     '../../frame/lib/plural.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
@@ -176,6 +182,13 @@ function onClick(e) {
     const p = (S.d?.packs || []).find(x => x.id === up.dataset.pack);
     return up.disabled || !p ? undefined : startUpdate(M.packState(p, S.d.zones, S.d.cov.ids).inCoverage);
   }
+  const oc = e.target.closest?.(
+    '[data-act="open-country"]'); // un pays de la carte, d'un paquet ou de la liste de la phrase d'état : sa fiche (SOG-0262)
+  if (oc) return openCountry(oc);
+  const gt = e.target.closest?.('[data-act="grp-toggle"]');
+  if (gt) return toggleGroup(gt.dataset.gid);
+  if (e.target.closest?.('[data-act="sheet-close"]')) return closeSheet();
+  if (e.target.closest?.('[data-act="world-toggle"]')) return toggleWorld();
   const zf = e.target.closest?.('[data-act="zone-filter"]');
   if (zf) return setZoneFilter(zf.dataset.filter); // un nombre de la phrase d'état : ses zones se déplient sur place
   const zw = e.target.closest?.('[data-act="zone-why"]');
@@ -203,13 +216,29 @@ function onClick(e) {
   if (v.dataset.verb === 'update') return startUpdate();
 
   if (v.dataset.verb === 'world-build') return startWorld();
-  if (v.dataset.verb === 'select-stale') return selectStale();
-  if (v.dataset.verb === 'select-none') return selectNone();
   if (v.dataset.verb === 'route-import') return startRoute();
   if (v.dataset.verb === 'route-yes' || v.dataset.verb === 'route-no') return answerRoute(v.dataset.verb === 'route-yes');
   const op = opOf(v);
   if (op) startOp(...op);
   else if (v.dataset.verb === 'publish') startPublish();
+}
+/** Le pays sous le pointeur (un chemin de la carte ou un pays d'un paquet), ou null. */
+const zoneEl = e => e.target.closest?.('[data-hz]');
+/** Le survol (souris) d'un pays, sur la carte ou dans la liste d'un paquet : il se remplit seul, les autres gardent leur bordure (SOG-0262). */
+function onZoneOver(e) {
+  if (e.pointerType === 'touch') return;
+  const z = zoneEl(e);
+  if (z) hoverZone(z.dataset.hz);
+}
+
+function onZoneOut(e) {
+  if (e.pointerType === 'touch') return;
+  const z = zoneEl(e);
+  if (z && !z.contains(e.relatedTarget)) hoverZone('');
+}
+/** « Échap » referme la fiche d'un pays. */
+function onKey(e) {
+  if (e.key === 'Escape' && S?.cw?.sheet && !e.defaultPrevented) closeSheet();
 }
 /** La rangée de paquet sous le pointeur (avec ses zones), ou null. */
 const packRow = e => e.target.closest?.('[data-pack][data-zones]');
@@ -272,8 +301,8 @@ function onChange(e) {
   if (!(t instanceof HTMLInputElement) || frozen()) return;
   if (t.dataset.certify !== undefined) return setCertified(t
     .checked); // la coche unique « usage personnel » (SOG-0162) : un réglage du poste, retenu
-  const set = t.dataset.buildZone ? S.ticked : t.dataset.item ? S.picked : null,
-    id = t.dataset.buildZone || t.dataset.item;
+  const set = t.dataset.item ? S.picked : null,
+    id = t.dataset.item;
   if (!set) return;
   if (t.checked) set.add(id);
   else set.delete(id);
@@ -328,7 +357,8 @@ export async function mount(el, ctx) {
     focus: null,
     stops: [],
     again: 0,
-    ticked: null, // zones cochées pour la construction (toutes à la première lecture)
+    ticked: null, // « toute la couverture » (SOG-0262 : plus aucune sélection à la main ; les verbes de la base la lisent)
+    cw: cwInit(), // la carte du monde, les paquets et la fiche d'un pays (countries.js) : survol, paquet ouvert, fiche ouverte, vue, lectures du lanceur
     certified: false, // sources sous licence personnelle cochées : celles mémorisées sur ce poste (cache/data/personal.json), aucune la première fois
     status: null, // l'état par zone que le lanceur a dit (base/status, M.statusOf) : { current, parserVersion, zones: { id: { state, reasons, buildable } } } ; null : jamais lu
     statusP: null, // la lecture en cours (une seule à la fois)
@@ -388,7 +418,7 @@ export async function mount(el, ctx) {
     move: null, // « Ranger les sources brutes » (SOG-0030) : { undo, phase: 'planning' | 'asking' | 'running' | null, kind: 'asking' | 'nothing' | 'done' | 'refused', view, why }
     timer: 0
   });
-  el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  el.innerHTML = `<style>${STYLE}${CW_STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
   // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
   S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);
@@ -400,6 +430,9 @@ export async function mount(el, ctx) {
   S.body.addEventListener('click', onClick);
   S.body.addEventListener('pointerover', onPackOver);
   S.body.addEventListener('pointerout', onPackOut);
+  S.body.addEventListener('pointerover', onZoneOver);
+  S.body.addEventListener('pointerout', onZoneOut);
+  S.body.addEventListener('keydown', onKey);
   S.body.addEventListener('pointerdown', onPackDown);
   S.body.addEventListener('change', onChange);
   S.body.addEventListener('input', onInput);

@@ -1,19 +1,17 @@
-// V3 data — dessine la carte des zones à cocher (SPEC § 5.5, § 11) sur le socle de carte (modules/maps/lib/map_base.js) : le cadre de la carte, la carte MapLibre qui vit dans un hôte à elle, les zones remplies de la teinte de leur état, une zone cochée ou décochée dans la sélection du module. N'écrit rien
-// d'autre que cette sélection et ne lit jamais la liste dessinée.
+// V3 data — dessine la carte des États à cocher du panneau des procédures (SPEC § 5.5, § 11) sur le socle de carte (modules/maps/lib/map_base.js) : le cadre de la carte, la carte MapLibre qui vit dans un hôte à elle, les États remplis de la teinte de leur état, un État coché ou décoché dans la sélection du module.
+// La carte de la base n'est plus ici : c'est la carte du monde de countries.js (SOG-0262). N'écrit rien d'autre que cette sélection et ne lit jamais la liste dessinée.
 import * as M from './model.js';
 import {
   TX
 } from './texts.js';
 import {
   ask,
-  count,
   esc,
   frozen,
   S,
   tt
 } from './state.js';
 import {
-  buildZones,
   procList,
   renderBuild
 } from './panels.js';
@@ -28,7 +26,7 @@ as MB from '../maps/lib/map_base.js?v=0'; // pointsLayer et COVER_ZOOM (BUGS SOG
 
 /** Les contours des zones, demandés à `ctx.aerodb.zoneOutlines()` seul (jamais par adresse) au premier dessin d'un panneau avec carte, une fois ; sans réponse ou en
  *  échec : la liste seule, sans ligne d'erreur. Redessine quand ils arrivent. */
-function loadOutlines() {
+export function loadOutlines() {
   if (S.outlines !== null) return;
   S.outlines = 'loading';
   const me = S;
@@ -57,50 +55,23 @@ function outlineOf(kind, id) {
 }
 /** Les éléments que la carte dessine : ceux que la liste du panneau propose (zones de la couverture, États en bloc), avec leur contour. */
 function mapEntries(kind) {
-  const ids = kind === 'base' ? baseZoneIds() : procList().map(i => i.id);
-  return ids.map(id => outlineOf(kind, id)).filter(Boolean);
+  return procList().map(i => outlineOf(kind, i.id)).filter(Boolean);
 }
-/** Les zones que la carte de la base dessine : celles de la couverture, et aussi toutes celles que la suite connaît (zones d'aerodb), dans l'ordre de leur nom : une zone hors de la
- *  couverture est grise (« hors couverture ») et un toucher l'ajoute (SOG-0070). Sans la liste des zones : la couverture seule. */
-function baseZoneIds() {
-  const cov = buildZones().ids,
-    zones = S.d.zones;
-  return zones ? M.orderZones([...new Set([...cov, ...zones.map(z => z.id)])], zones) : cov;
-}
-/** Le cadre ([ouest, sud, est, nord]) des zones de la couverture (la carte de la base cadre ce que le poste tient, pas le monde que ses zones connues dessinent) ; null pour l'autre carte
- *  ou sans zone de la couverture. */
-function activeBounds(kind) {
-  if (kind !== 'base') return null;
-  const cov = new Set(buildZones().ids),
-    boxes = mapEntries(kind).filter(e => cov.has(e.id)).map(e => e.box);
-  return boxes.length ? boxes.reduce((b, x) => [Math.min(b[0], x[0]), Math.min(b[1], x[1]), Math.max(b[2], x[2]), Math.max(b[3], x[3])]) :
-    null;
-}
-/** La teinte d'un élément : hors couverture, en cours (une opération du panneau le traite), à reconstruire (rien de publié ou cycle dépassé), à jour. */
+/** La teinte d'un élément : hors couverture, à reconstruire (rien de publié ou cycle dépassé), à jour, d'après le cycle de procédures en vigueur. */
 function mapToneOf(kind, id) {
-  const zone = kind === 'base' ? id : M.PROC_ZONES[id]?.[0],
-    pub = S.d.pub,
-    // la base : publiée si la zone a un cycle en vigueur, daté ou non (SOG-0026 : les États-Unis et le Canada n'ont pas de cycle daté, ils ne sont pas « dépassés ») ; les procédures : le cycle de procédures
-    b = kind === 'base' ? M.baseOf(pub?.base, [zone]) : null,
-    cycle = b ? b.cycle : pub?.proc?.inForce || null;
-  // la base : l'état du lanceur (base/status) quand il est connu pour une zone de la couverture (vert, orange, gris, rouge ; bleu pendant que la page la traite), sinon la teinte de la publication
-  if (kind === 'base' && S.packHl?.has(id)) return 'accent'; // la zone d'un paquet survolé ou appuyé (SOG-0147)
-  const ds = kind === 'base' && S.d.cov.ids.includes(zone) ? M.drawnState(S.status, zone, !!S.run && S.run.set === kind && S.run.verb !==
-    'purge' && S.ids.includes(id)) : null;
-  if (ds) return M.STATE_TONE[ds];
-  if (kind === 'base' && S.status && S.d.cov.ids.includes(zone))
-    return 'warn'; // l'état est lu et ne dit rien de cette zone : « à faire » (ambre), jamais une quatrième teinte
+  const zone = M.PROC_ZONES[id]?.[0],
+    cycle = S.d.pub?.proc?.inForce || null;
   return M.mapTone({
     inCoverage: S.d.cov.ids.includes(zone),
     running: !!S.run && S.run.set === kind && S.ids.includes(id),
-    published: b ? b.published > 0 : !!cycle,
+    published: !!cycle,
     stale: !!cycle && M.staleLevel(S.airac, cycle, S.now) !== null
   });
 }
 /** Les éléments de la carte d'un panneau avec ce que zoneFeatures en fait : la teinte de l'état (mapToneOf) et la case cochée de la MÊME sélection que la liste
  *  (S.ticked pour la base, S.picked pour les États). */
 function featureEntries(kind) {
-  const sel = kind === 'base' ? S.ticked : S.picked;
+  const sel = S.picked;
   return mapEntries(kind).map(e => ({
     ...e,
     tone: mapToneOf(kind, e.id),
@@ -119,9 +90,8 @@ export function zoneMapHtml(kind) {
   const entries = mapEntries(kind);
   if (!entries.length) return '';
   return `<div class="d-map" data-zone-map="${kind}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}"><div data-zone-slot></div>${kind === 'proc' ? '<p class="f-muted" data-point-info role="status"></p>' : ''}
-    ${kind === 'base' ? `<p class="f-muted" data-rect-hint>${esc(tt(TX.upd.rectHint))}</p>` : ''}
     <p class="d-map-row"><button type="button" data-act="map-recenter">${esc(tt(TX.mapRecenter))}</button></p>
-    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${(kind === 'base' ? ['ok', 'warn', 'err'] : ['ok', 'warn', 'err', 'accent', 'muted']).map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(kind === 'base' ? TX.mapLegendBase[t] : TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
+    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'err', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
 }
 /** Une couleur du design (un jeton --sog-…) résolue en rgb(), la seule forme que MapLibre lit (il ne lit pas les variables CSS). */
 function token(name) {
@@ -214,155 +184,6 @@ function startPoints(kind, m) {
   m.map.on('moveend', () => loadPoints(kind));
   loadPoints(kind);
 }
-/** Le rectangle de sélection de la carte de la base (SOG-0071) : Maj + glisser à la souris, ou deux doigts posés une demi-seconde sur un écran tactile (le rectangle va d'un doigt à l'autre). Il coche les zones
- *  de la COUVERTURE dont le cadre le touche ; le nombre se dit pendant le geste, avant le relâchement (« 14 pays »). Une zone hors couverture n'est jamais ajoutée par un rectangle. */
-const HOLD_MS = 400;
-const SLOP_PX = 14;
-/** Les zones de la couverture que le rectangle d'écran (en pixels de l'hôte) touche. */
-function rectZones(m, r) {
-  const sw = m.map.unproject([Math.min(r.x0, r.x1), Math.max(r.y0, r.y1)]),
-    ne = m.map.unproject([Math.max(r.x0, r.x1), Math.min(r.y0, r.y1)]),
-    boxes = Object.fromEntries(mapEntries('base').map(e => [e.id, e.box]));
-  return M.zonesTouching(boxes, [sw.lng, sw.lat, ne.lng, ne.lat], buildZones().ids);
-}
-/** Pose les écouteurs du rectangle sur l'hôte de la carte de la base (une fois par carte) : la boîte et son nombre, le geste souris, le geste à deux doigts. */
-function installRect(m) {
-  if (m.rect) return;
-  const map = m.map,
-    host = m.host,
-    box = Object.assign(document.createElement('div'), {
-      className: 'd-rect',
-      hidden: true
-    }),
-    label = Object.assign(document.createElement('span'), {
-      className: 'd-rect-count'
-    }),
-    r = {
-      on: false,
-      mode: '',
-      x0: 0,
-      y0: 0,
-      x1: 0,
-      y1: 0,
-      ids: [],
-      touches: new Map(),
-      timer: 0,
-      was: null
-    };
-  box.dataset.rect = '';
-  label.dataset.rectCount = '';
-  box.append(label);
-  host.append(box);
-  m.rect = r;
-  map.boxZoom?.disable(); // Maj + glisser est le rectangle de la page, pas le zoom sur un cadre
-  const rel = e => {
-    const b = host.getBoundingClientRect();
-    return [e.clientX - b.left, e.clientY - b.top];
-  };
-  const draw = () => {
-    r.ids = rectZones(m, r);
-    box.style.left = `${Math.min(r.x0, r.x1)}px`;
-    box.style.top = `${Math.min(r.y0, r.y1)}px`;
-    box.style.width = `${Math.abs(r.x1 - r.x0)}px`;
-    box.style.height = `${Math.abs(r.y1 - r.y0)}px`;
-    label.textContent = count('country', r.ids.length);
-    box.hidden = false;
-  };
-  const start = (mode, x, y) => {
-    r.on = true;
-    r.mode = mode;
-    r.x0 = r.x1 = x;
-    r.y0 = r.y1 = y;
-    draw();
-  };
-  const end = commit => {
-    clearTimeout(r.timer);
-    if (r.was) { // les gestes de la carte rendus tels qu'ils étaient
-      if (r.was.pan) map.dragPan.enable();
-      if (r.was.zoom) map.touchZoomRotate.enable();
-      r.was = null;
-    }
-    const ids = r.on && commit && !frozen() ? r.ids : [];
-    r.on = false;
-    r.mode = '';
-    r.touches.clear();
-    box.hidden = true;
-    if (ids.length) {
-      for (const id of ids) S.ticked?.add(id);
-      renderBuild();
-    }
-  };
-  host.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse') {
-      if (e.button !== 0 || !e.shiftKey || frozen()) return;
-      e.preventDefault(); // pas d'évènement souris pour la carte : elle ne déplace rien
-      e.stopPropagation();
-      const [x, y] = rel(e);
-      start('mouse', x, y);
-      return;
-    }
-    if (e.pointerType !== 'touch' || frozen()) return;
-    const [x, y] = rel(e);
-    r.touches.set(e.pointerId, {
-      x,
-      y,
-      x0: x,
-      y0: y
-    });
-    if (r.touches.size === 2 && !r.on) {
-      clearTimeout(r.timer);
-      r.timer = setTimeout(() => {
-        const [a, b] = [...r.touches.values()];
-        if (r.on || r.touches.size !== 2 || !a || !b || [a, b].some(t => Math.hypot(t.x - t.x0, t.y - t.y0) > SLOP_PX)) return;
-        r.was = {
-          pan: map.dragPan.isEnabled(),
-          zoom: map.touchZoomRotate.isEnabled()
-        };
-        map.dragPan.disable(); // les deux doigts dessinent le rectangle : ni déplacement ni pincement de la carte
-        map.touchZoomRotate.disable();
-        start('touch', a.x, a.y);
-        r.x1 = b.x;
-        r.y1 = b.y;
-        draw();
-      }, HOLD_MS);
-    }
-  }, true);
-  const move = e => {
-    if (e.pointerType === 'touch') {
-      const t = r.touches.get(e.pointerId);
-      if (!t) return;
-      [t.x, t.y] = rel(e);
-      if (r.on && r.mode === 'touch') {
-        const [a, b] = [...r.touches.values()];
-        if (a && b) {
-          r.x0 = a.x;
-          r.y0 = a.y;
-          r.x1 = b.x;
-          r.y1 = b.y;
-          draw();
-        }
-      } else if (Math.hypot(t.x - t.x0, t.y - t.y0) > SLOP_PX) clearTimeout(r.timer); // un pincement ordinaire : pas de rectangle
-    } else if (r.on && r.mode === 'mouse') {
-      [r.x1, r.y1] = rel(e);
-      draw();
-    }
-  };
-  window.addEventListener('pointermove', move);
-  const up = e => {
-    if (e.pointerType === 'touch') {
-      r.touches.delete(e.pointerId);
-      if (r.on && r.mode === 'touch') end(e.type === 'pointerup');
-      else if (r.touches.size < 2) clearTimeout(r.timer);
-    } else if (r.on && r.mode === 'mouse') end(e.type === 'pointerup');
-  };
-  window.addEventListener('pointerup', up);
-  window.addEventListener('pointercancel', up);
-  m.rectOff = () => { // au retrait de la carte
-    window.removeEventListener('pointermove', move);
-    window.removeEventListener('pointerup', up);
-    window.removeEventListener('pointercancel', up);
-  };
-}
 /** Démarre la carte d'un panneau dans son hôte (le socle : MapLibre à la demande, tuiles, abandon) puis y pose les zones et cadre la vue ; sans carte (hors ligne, pas de
  *  WebGL, MapLibre absent, délai) : le panneau est redessiné sans carte, la liste seule. Une carte déjà en route n'est pas redémarrée. */
 function startMap(kind, m) {
@@ -395,8 +216,7 @@ function startMap(kind, m) {
       onTap: id => toggleZone(kind, id)
     });
     mapSize(map, m.host);
-    m.layer.fit(24, activeBounds(kind));
-    if (kind === 'base') installRect(m); // le rectangle de sélection (SOG-0071)
+    m.layer.fit(24);
     if (kind === 'proc') startPoints(kind, m);
   });
 }
@@ -465,14 +285,13 @@ export function resizeMaps() {
 }
 /** « Recentrer » : la vue revient au premier cadre, celui de toutes les zones du panneau (zonesLayer.fit, sans cadre donné). */
 export function recenterMap(kind) {
-  S.maps[kind]?.layer?.fit(24, activeBounds(kind));
+  S.maps[kind]?.layer?.fit(24);
 }
 /** Retire les cartes MapLibre du module (au démontage) : couches du socle, puis la carte et son contexte WebGL. */
 export function destroyMaps() {
   for (const m of Object.values(S?.maps || {})) {
     try {
       m.io?.disconnect();
-      m.rectOff?.();
       m.points?.remove();
       m.layer?.remove();
       m.map?.remove();
@@ -482,27 +301,10 @@ export function destroyMaps() {
   }
   S.maps = {};
 }
-/** Coche ou décoche, dans la sélection du module (S.ticked pour la base, S.picked pour les États), l'élément d'une zone de la carte, puis redessine les panneaux : la carte
- *  et la liste se lisent toutes deux de cette sélection, jamais l'une de l'autre. Sans effet pendant une marche, ou pour un élément que la liste ne propose pas. */
+/** Coche ou décoche, dans la sélection du module (S.picked), l'État d'une zone de la carte, puis redessine les panneaux : la carte et la liste se lisent toutes deux de cette sélection, jamais l'une de l'autre. Sans effet pendant une marche, ou pour un État que la liste ne propose pas. */
 function toggleZone(kind, id) {
-  if (frozen() || !S.d) return;
-  // une zone connue hors de la couverture : un toucher l'ajoute (cochée), comme « Ajouter un pays » (SOG-0070) ; une zone de la couverture se coche ou se décoche seulement, jamais une purge
-  if (kind === 'base' && !buildZones().ids.includes(id)) return S.addZone?.(id);
-  const set = kind === 'base' && buildZones().ids.includes(id) ? S.ticked : kind === 'proc' && procList().some(i => i.id === id) ? S
-    .picked : null;
-  if (!set) return;
-  if (set.has(id)) set.delete(id);
-  else set.add(id);
+  if (frozen() || !S.d || kind !== 'proc' || !procList().some(i => i.id === id)) return;
+  if (S.picked.has(id)) S.picked.delete(id);
+  else S.picked.add(id);
   renderBuild();
-}
-/** Surligne sur la carte de la base les zones d'un paquet (survol, appui) ; `ids` vide : plus rien. Seule la carte est redessinée, jamais le panneau. */
-export function highlightZones(ids) {
-  const set = new Set(ids || []);
-  if (set.size === (S.packHl?.size || 0) && [...set].every(z => S.packHl?.has(z))) return;
-  S.packHl = set;
-  const m = S.maps?.base;
-  if (!m?.map || !m.layer) return;
-  const entries = featureEntries('base');
-  m.sig = signature(entries);
-  m.layer.update(M.zoneFeatures(entries), mapColors());
 }

@@ -284,7 +284,6 @@ export const TX = {
   buildTitle: ['Mettre à jour la base', 'Update the base', 'Basis aktualisieren',
     'Actualizar la base'
   ], // « Mettre à jour » est l'action principale du panneau (SOG-0071 temps 3), le titre le dit (SOG-0168)
-  zonesTitle: ['Zones de la couverture ({n})', 'Zones of the coverage ({n})', 'Zonen der Abdeckung ({n})', 'Zonas de la cobertura ({n})'],
   buildZones: ['Zones concernées', 'Zones affected', 'Betroffene Zonen', 'Zonas afectadas'],
   personalTitle: ['Sources sous licence personnelle', 'Personal-licence sources', 'Quellen mit persönlicher Lizenz',
     'Fuentes con licencia personal'
@@ -332,11 +331,6 @@ export const TX = {
     building: ['En cours', 'Running', 'Läuft', 'En curso']
   },
   // ce que compte le nombre de « Zones de la couverture (n) » (SOG-0228) : les zones que la base couvre sur ce poste, sur celles que la suite connaît
-  zonesNote: ['Les zones que la base couvre sur ce poste : {n} sur les {m} que la suite connaît.',
-    'The zones the base covers on this workstation: {n} of the {m} the suite knows.',
-    'Die Zonen, die die Basis auf diesem Rechner abdeckt: {n} von den {m}, die die Suite kennt.',
-    'Las zonas que la base cubre en este equipo: {n} de las {m} que conoce la suite.'
-  ],
   bal: {
     upToDate: [
       ['{n} à jour', '{n} up to date', '{n} aktuell', '{n} al día'],
@@ -453,7 +447,9 @@ export const TX = {
       'Marque «Certifico que uso los datos para mi uso personal» (al final de la lista) para que se lea la fuente {source}.'
     ],
     // un code que la page ne connaît pas : le code du lanceur, jamais « raison non reconnue »
-    unknown: ['Raison du lanceur : {code}', 'Reason from the launcher – {code}', 'Grund des Starters: {code}', 'Motivo del lanzador: {code}']
+    unknown: ['Raison du lanceur : {code}', 'Reason from the launcher – {code}', 'Grund des Starters: {code}',
+      'Motivo del lanzador: {code}'
+    ]
   },
   // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
   upd: {
@@ -461,25 +457,17 @@ export const TX = {
     updatePack: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
     // le bouton de la tête du panneau : tout ce que la base couvre, ou la sélection quand elle est partielle ; n : les zones à reconstruire, en échec ou sans état
     updateN: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
-    updateSel: ['Mettre à jour la sélection ({n})', 'Update the selection ({n})', 'Auswahl aktualisieren ({n})',
-      'Actualizar la selección ({n})'
-    ],
-    updateSelNo: ['Mettre à jour la sélection', 'Update the selection', 'Auswahl aktualisieren', 'Actualizar la selección'],
     // sous le bouton : ce qu'il va faire, ce qu'il saute, ce qu'il laisse à l'utilisateur
     doLine: ['Ce que fait ce bouton : {l}.', 'What this button does: {l}.', 'Was diese Schaltfläche tut: {l}.',
       'Lo que hace este botón: {l}.'
     ],
     doDl: ['télécharger {z}', 'download {z}', '{z} herunterladen', 'descargar {z}'],
     doBuild: ['reconstruire {z}', 'rebuild {z}', '{z} neu bauen', 'reconstruir {z}'],
-    skipNote: ['Ignoré : {z} déjà à jour.', 'Skipped: {z} already up to date.', 'Übersprungen: {z} bereits aktuell.',
-      'Omitido: {z} ya al día.'
-    ],
     waitNote: ['Pas dans cette mise à jour : {z}.', 'Not in this update: {z}.', 'Nicht in dieser Aktualisierung: {z}.',
       'No entra en esta actualización: {z}.'
     ],
     more: ['Détail', 'Detail', 'Details', 'Detalle'],
     recompute: ['Tout recalculer', 'Rebuild all', 'Alles neu berechnen', 'Recalcular todo'],
-    selStale: ['Seulement les périmés', 'Only the stale ones', 'Nur die veralteten', 'Solo las caducadas'],
     retry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
     // la ligne d'avant le départ (SOG-0180) : ce que « Mettre à jour » va faire, chaque part dite seulement si elle n'est pas vide
     planDl: ['{z} à télécharger', '{z} to download', '{z} herunterzuladen', '{z} por descargar'],
@@ -489,12 +477,6 @@ export const TX = {
     planTick: ['{z} en attente de la coche d’usage personnel', '{z} waiting for the personal-use tick',
       '{z} mit ausstehendem Häkchen für den persönlichen Gebrauch',
       '{z} a la espera de la casilla de uso personal'
-    ],
-    selNone: ['Tout désélectionner', 'Deselect all', 'Alles abwählen', 'Deseleccionar todo'],
-    selLine: ['Sélection : {z}', 'Selection: {z}', 'Auswahl: {z}', 'Selección: {z}'],
-    selNothing: ['Aucune zone cochée', 'No zone ticked', 'Keine Zone angekreuzt', 'Ninguna zona marcada'],
-    noStale: ['Aucune zone périmée : la sélection reste telle quelle.', 'No stale zone: the selection stays as it is.',
-      'Keine veraltete Zone: die Auswahl bleibt unverändert.', 'Ninguna zona caducada: la selección se queda como está.'
     ],
     none: ['Rien à reconstruire : les {n} cochées sont à jour',
       'Nothing to rebuild: the {n} ticked are up to date',
@@ -518,8 +500,10 @@ export const TX = {
     waiting: ['{n} ne se construisent pas encore : {z}', '{n} cannot be built yet: {z}', '{n} lassen sich noch nicht bauen: {z}',
       '{n} aún no se pueden construir: {z}'
     ],
-    zoneLink: ['{z} : prête à être mise à jour — touchez « Mettre à jour ».', '{z}: ready to update — touch “Update”.',
-      '{z}: bereit zur Aktualisierung — „Aktualisieren“ antippen.', '{z}: lista para actualizar — toque «Actualizar».'
+    zoneLink: ['{z} : voici sa fiche ; « Mettre à jour » est dans la barre d’état.',
+      '{z}: here is its sheet; “Update” is in the state bar.',
+      '{z}: hier ist sein Blatt; „Aktualisieren“ steht in der Statusleiste.',
+      '{z}: aquí está su ficha; «Actualizar» está en la barra de estado.'
     ],
     zoneLinkOut: ['{z} n’est pas dans la couverture : ajoutez-la d’abord (« Ajouter un pays »).',
       '{z} is not in the coverage: add it first (“Add a country”).',
@@ -532,16 +516,164 @@ export const TX = {
     whyCycle: ['cycle publié {p}, source {t}', 'published cycle {p}, source {t}', 'veröffentlichter Zyklus {p}, Quelle {t}',
       'ciclo publicado {p}, fuente {t}'
     ],
-    rectHint: [
-      'Maj + glisser (ordinateur), ou deux doigts posés une demi-seconde (téléphone) : un rectangle coche les zones qu’il touche.',
-      'Shift + drag (computer), or two fingers held for half a second (phone): a rectangle ticks the zones it touches.',
-      'Umschalt + Ziehen (Computer) oder zwei Finger eine halbe Sekunde halten (Telefon): Ein Rechteck kreuzt die Zonen an, die es berührt.',
-      'Mayús + arrastrar (ordenador), o dos dedos apoyados medio segundo (teléfono): un rectángulo marca las zonas que toca.'
-    ]
   },
   // les paquets de pays (packs.js, SOG-0065)
+  // la carte du monde, les paquets de pays et la fiche d'un pays (SOG-0262, lot A)
+  cw: {
+    mapLabel: ['Carte de votre couverture : touchez un pays pour ouvrir sa fiche',
+      'Map of your coverage: tap a country to open its sheet',
+      'Karte Ihrer Abdeckung: tippen Sie auf ein Land, um sein Blatt zu öffnen',
+      'Mapa de su cobertura: toque un país para abrir su ficha'
+    ],
+    world: ['Voir le monde entier', 'See the whole world', 'Ganze Welt anzeigen', 'Ver el mundo entero'],
+    mine: ['Revenir à ma couverture', 'Back to my coverage', 'Zurück zu meiner Abdeckung', 'Volver a mi cobertura'],
+    hatch: ['hachuré : procédures disponibles', 'hatched: procedures available', 'schraffiert: Verfahren verfügbar',
+      'rayado: procedimientos disponibles'
+    ],
+    border: ['bordure bleue : le paquet ouvert', 'blue border: the open pack', 'blauer Rand: das geöffnete Paket',
+      'borde azul: el paquete abierto'
+    ],
+    outside: ['hors de votre couverture', 'outside your coverage', 'außerhalb Ihrer Abdeckung', 'fuera de su cobertura'],
+    groupsTitle: ['Paquets de pays', 'Country packs', 'Länderpakete', 'Paquetes de países'],
+    groupsHint: ['Un paquet réunit des pays voisins : ouvrez-en un pour voir ses pays, ouvrir leur fiche ou le mettre à jour.',
+      'A pack gathers neighbouring countries: open one to see its countries, open their sheet or update it.',
+      'Ein Paket fasst benachbarte Länder zusammen: öffnen Sie eines, um seine Länder zu sehen, ihr Blatt zu öffnen oder es zu aktualisieren.',
+      'Un paquete reúne países vecinos: abra uno para ver sus países, abrir su ficha o actualizarlo.'
+    ],
+    sumOk: ['{n} sur {m} à jour', '{n} of {m} up to date', '{n} von {m} aktuell', '{n} de {m} al día'],
+    sumTodo: ['{n} à faire', '{n} to do', '{n} zu tun', '{n} por hacer'],
+    sumErr: ['{n} en échec', '{n} failed', '{n} fehlgeschlagen', '{n} fallidas'],
+    sumNone: ['{n} sans état', '{n} without a state', '{n} ohne Zustand', '{n} sin estado'],
+    sumOut: ['{n} hors de votre couverture', '{n} outside your coverage', '{n} außerhalb Ihrer Abdeckung', '{n} fuera de su cobertura'],
+    sumNoCov: ['aucun pays dans votre couverture', 'no country in your coverage', 'kein Land in Ihrer Abdeckung',
+      'ningún país en su cobertura'
+    ],
+    sumUnread: ['{m} dans votre couverture, état non lu', '{m} in your coverage, state not read',
+      '{m} in Ihrer Abdeckung, Zustand nicht gelesen',
+      '{m} en su cobertura, estado sin leer'
+    ],
+    word: {
+      ok: ['à jour', 'up to date', 'aktuell', 'al día'],
+      warn: ['à faire', 'to do', 'zu tun', 'por hacer'],
+      err: ['en échec', 'failed', 'fehlgeschlagen', 'fallida'],
+      muted: ['hors couverture', 'outside the coverage', 'außerhalb der Abdeckung', 'fuera de la cobertura'],
+      none: ['état inconnu', 'state unknown', 'Zustand unbekannt', 'estado desconocido']
+    },
+    openSheet: ['Ouvrir la fiche : {c}', 'Open the sheet: {c}', 'Blatt öffnen: {c}', 'Abrir la ficha: {c}'],
+    back: ['← Retour', '← Back', '← Zurück', '← Atrás'],
+    sheetLabel: ['Fiche du pays : {c}', 'Country sheet: {c}', 'Länderblatt: {c}', 'Ficha del país: {c}'],
+    builtCycleAt: ['Construit au cycle {c}, le {d}', 'Built at cycle {c}, on {d}', 'Erstellt im Zyklus {c}, am {d}',
+      'Construido en el ciclo {c}, el {d}'
+    ],
+    builtCycle: ['Construit au cycle {c}', 'Built at cycle {c}', 'Erstellt im Zyklus {c}', 'Construido en el ciclo {c}'],
+    builtAt: ['Construit le {d}', 'Built on {d}', 'Erstellt am {d}', 'Construido el {d}'],
+    builtNever: ['Jamais construit sur ce poste', 'Never built on this workstation', 'Auf diesem Rechner nie erstellt',
+      'Nunca construido en este equipo'
+    ],
+    notInCoverage: ['{c} n’est pas dans votre couverture : rien n’y est téléchargé ni construit sur ce poste.',
+      '{c} is not in your coverage: nothing is downloaded or built for it on this workstation.',
+      '{c} ist nicht in Ihrer Abdeckung: dafür wird auf diesem Rechner nichts heruntergeladen oder erstellt.',
+      '{c} no está en su cobertura: no se descarga ni se construye nada para él en este equipo.'
+    ],
+    procYes: ['Procédures : oui ({s})', 'Procedures: yes ({s})', 'Verfahren: ja ({s})', 'Procedimientos: sí ({s})'],
+    procNo: ['Procédures : non', 'Procedures: no', 'Verfahren: nein', 'Procedimientos: no'],
+    procSource: {
+      cifp: ['CIFP', 'CIFP', 'CIFP', 'CIFP'],
+      eaip: ['eAIP', 'eAIP', 'eAIP', 'eAIP'],
+      'ead-basic': ['EAD', 'EAD', 'EAD', 'EAD']
+    },
+    sourcesTitle: ['Sources de ce pays', 'Sources of this country', 'Quellen dieses Landes', 'Fuentes de este país'],
+    noSources: ['Aucune source de fichier n’est connue pour ce pays.', 'No file source is known for this country.',
+      'Für dieses Land ist keine Dateiquelle bekannt.', 'No se conoce ninguna fuente de archivos para este país.'
+    ],
+    regime: {
+      auto: ['Prise seule par le lanceur : rien à déposer.', 'Taken by the launcher alone: nothing to drop.',
+        'Vom Starter allein geholt: nichts abzulegen.', 'La toma el lanzador solo: nada que depositar.'
+      ],
+      hand: ['À prendre à la main sur le site de la source.', 'To take by hand on the source’s site.',
+        'Von Hand auf der Seite der Quelle zu holen.', 'Para tomar a mano en el sitio de la fuente.'
+      ],
+      local: ['Calculée ou lue sur ce poste : rien à déposer.', 'Computed or read on this workstation: nothing to drop.',
+        'Auf diesem Rechner berechnet oder gelesen: nichts abzulegen.', 'Calculada o leída en este equipo: nada que depositar.'
+      ]
+    },
+    tick: {
+      dlTick: ['téléchargé', 'downloaded', 'heruntergeladen', 'descargado'],
+      buildTick: ['construit', 'built', 'erstellt', 'construido'],
+      pubTick: ['publié', 'published', 'veröffentlicht', 'publicado']
+    },
+    on: ['le {d}', 'on {d}', 'am {d}', 'el {d}'],
+    edition: ['édition {e}', 'edition {e}', 'Ausgabe {e}', 'edición {e}'],
+    cycleOf: ['cycle {c}', 'cycle {c}', 'Zyklus {c}', 'ciclo {c}'],
+    dlLate: ['fichier du cycle {c}, plus ancien que le cycle en vigueur', 'file of cycle {c}, older than the cycle in force',
+      'Datei des Zyklus {c}, älter als der gültige Zyklus', 'archivo del ciclo {c}, más antiguo que el ciclo vigente'
+    ],
+    dlMissing: ['aucun fichier', 'no file', 'keine Datei', 'ningún archivo'],
+    dlWaiting: ['un fichier attend dans Téléchargements', 'a file waits in Downloads', 'eine Datei wartet in Downloads',
+      'un archivo espera en Descargas'
+    ],
+    dlNone: ['rien à télécharger', 'nothing to download', 'nichts herunterzuladen', 'nada que descargar'],
+    dlUnread: ['non lu', 'not read', 'nicht gelesen', 'sin leer'],
+    dlNot: ['pas encore téléchargé', 'not downloaded yet', 'noch nicht heruntergeladen', 'aún no descargado'],
+    why: {
+      'older-than-cycle': ['plus ancien que le cycle en vigueur', 'older than the cycle in force', 'älter als der gültige Zyklus',
+        'más antiguo que el ciclo vigente'
+      ],
+      'newer-in-downloads': ['un fichier du cycle en vigueur attend dans Téléchargements',
+        'a file of the cycle in force waits in Downloads',
+        'eine Datei des gültigen Zyklus wartet in Downloads', 'un archivo del ciclo vigente espera en Descargas'
+      ],
+      'no-file': ['aucun fichier pris', 'no file taken', 'keine Datei übernommen', 'ningún archivo tomado'],
+      'not-downloaded': ['pas encore téléchargé', 'not downloaded yet', 'noch nicht heruntergeladen', 'aún no descargado']
+    },
+    buildNot: ['pas à jour : {r}', 'not up to date: {r}', 'nicht aktuell: {r}', 'no está al día: {r}'],
+    pubNo: ['pas encore envoyé au dépôt des données', 'not sent to the data repository yet', 'noch nicht an das Datenarchiv gesendet',
+      'aún no enviado al repositorio de datos'
+    ],
+    pubUnbuilt: ['rien à publier : jamais construit', 'nothing to publish: never built', 'nichts zu veröffentlichen: nie erstellt',
+      'nada que publicar: nunca construido'
+    ],
+    inventory: ['Fichiers à prendre', 'Files to take', 'Zu holende Dateien', 'Archivos por tomar'],
+    where: ['Où le trouver : {l}', 'Where to find it: {l}', 'Wo zu finden: {l}', 'Dónde encontrarlo: {l}'],
+    wherePath: ['Chemin : {p}', 'Path: {p}', 'Pfad: {p}', 'Ruta: {p}'],
+    pageLink: ['la page de la source', 'the source’s page', 'die Seite der Quelle', 'la página de la fuente'],
+    fileLink: ['le lien du fichier', 'the file’s link', 'der Link der Datei', 'el enlace del archivo'],
+    unavailableTitle: ['Indisponibles chez leur éditeur', 'Unavailable at their publisher', 'Beim Herausgeber nicht verfügbar',
+      'No disponibles en su editor'
+    ],
+    unavailable: ['Indisponible chez son éditeur depuis {d}.', 'Unavailable at its publisher since {d}.',
+      'Beim Herausgeber seit {d} nicht verfügbar.', 'No disponible en su editor desde {d}.'
+    ],
+    pathCheck: ['chemin à vérifier', 'path to check', 'Pfad zu prüfen', 'ruta por verificar'],
+    noReader: ['Fichiers à déposer à la main que la suite ne lit pas encore : {s}.',
+      'Files to drop by hand that the suite does not read yet: {s}.',
+      'Von Hand abzulegende Dateien, die die Suite noch nicht liest: {s}.',
+      'Archivos que se depositan a mano y que la suite aún no lee: {s}.'
+    ],
+    homeLink: ['accueil du site', 'the site’s front page', 'Startseite der Seite', 'portada del sitio'],
+    name: ['Fichier attendu : {n}', 'Expected file: {n}', 'Erwartete Datei: {n}', 'Archivo esperado: {n}'],
+    seen: ['vu dans Téléchargements', 'seen in Downloads', 'in Downloads gesehen', 'visto en Descargas'],
+    missing: ['manquant', 'missing', 'fehlt', 'falta'],
+    inDlUnread: ['Le contenu de Téléchargements n’a pas encore été lu : on ne sait pas si ce fichier y est.',
+      'The content of Downloads has not been read yet: it is not known whether this file is there.',
+      'Der Inhalt von Downloads wurde noch nicht gelesen: es ist nicht bekannt, ob diese Datei dort liegt.',
+      'El contenido de Descargas aún no se ha leído: no se sabe si este archivo está allí.'
+    ],
+    cycleState: {
+      loading: ['Lecture de Téléchargements…', 'Reading Downloads…', 'Downloads wird gelesen…', 'Leyendo Descargas…'],
+      busy: ['Téléchargements n’a pas pu être lu : une autre opération est en cours.',
+        'Downloads could not be read: another operation is running.',
+        'Downloads konnte nicht gelesen werden: ein anderer Vorgang läuft.', 'No se pudo leer Descargas: otra operación está en curso.'
+      ],
+      unread: ['Téléchargements n’a pas pu être lu.', 'Downloads could not be read.', 'Downloads konnte nicht gelesen werden.',
+        'No se pudo leer Descargas.'
+      ]
+    }
+  },
   packs: {
-    title: ['Paquets de pays', 'Country packs', 'Länderpakete', 'Paquetes de países'],
+    title: ['Ajouter ou retirer des pays par paquet', 'Add or remove countries by pack', 'Länder paketweise hinzufügen oder entfernen',
+      'Añadir o quitar países por paquete'
+    ],
     regions: ['Régions', 'Regions', 'Regionen', 'Regiones'],
     themes: ['Thèmes', 'Themes', 'Themen', 'Temas'],
     themesHint: ['Cochez un pays pour l’ajouter à la couverture ; décochez-le pour l’en retirer (rien n’est purgé).',

@@ -1,12 +1,11 @@
-// V3 data — « Mettre à jour » et les gestes de sélection de la base (SPEC § 5.8, § 5.9, V3_SPECIFICATION § 10.44, SOG-0071) : le verbe qui télécharge puis ne reconstruit que les zones que le LANCEUR dit pas à jour (base/status) et constructibles, « Seulement les périmés »,
-// « Tout désélectionner » et la ligne de ce que la sélection pèse. La sélection reste dans l'état de la page (S.ticked) : rien n'en est écrit dans data/ avant un verbe.
+// V3 data — « Mettre à jour » de la base (SPEC § 5.8, § 5.9, V3_SPECIFICATION § 10.44, SOG-0071) : le verbe qui télécharge puis ne reconstruit que les zones que le LANCEUR dit pas à jour (base/status) et constructibles. Il agit sur toute la couverture, ou sur les pays d'un paquet
+// ou d'un pays à réessayer : il n'y a plus de sélection à la main (SOG-0262 ; S.ticked n'est plus que « toute la couverture »).
 import * as M from './model.js';
 import {
   TX
 } from './texts.js';
 import {
   count,
-  frozen,
   lang,
   li,
   S,
@@ -28,14 +27,16 @@ import {
   reasonText,
   statusKnown
 } from './status.js';
+import {
+  openCountryById
+} from './countries.js';
 
-/** Ce que « Mettre à jour » prend : { ids, partial, known, counts, plan, todo, n }. La sélection est PARTIELLE quand des zones sont cochées et moins que toute la couverture (0 < cochées < couverture) : le bouton n'agit alors que sur les cochées ; sinon (rien de coché, ou tout coché : le défaut), sur TOUTE la couverture.
+/** Ce que « Mettre à jour » prend : { ids, partial, known, counts, plan, todo, n } — toute la couverture (`partial` reste faux : plus de sélection partielle).
  *  `counts` : le bilan des zones prises (M.balanceOf) et `plan` ce que le bouton va faire (M.downloadPlan), tous deux null sans état du lanceur ; `todo` : les zones que le bouton traite (à télécharger ou à reconstruire : celles à reconstruire, en échec ou sans état ; une zone qui attend un fichier déposé à la main n'en est pas) ; `n` : leur nombre, null sans état du lanceur. */
 export function updateScope() {
   const {
-    ids,
-    ticked
-  } = buildZones(), partial = ticked.length > 0 && ticked.length < ids.length, scope = partial ? ticked : ids,
+    ids
+  } = buildZones(), partial = false, scope = ids,
     known = !!S.status && statusKnown(),
     counts = known ? M.balanceOf(S.status, scope) : null,
     plan = known ? M.downloadPlan(S.status, scope) : null,
@@ -62,33 +63,6 @@ export function updateGate(ids = null) {
 export function sizeText(ids) {
   const s = M.sizeKb(ids, S.d?.zones);
   return s.known ? `${M.fmtBytes(s.kb * 1024, lang())}${s.known < s.total ? '+' : ''}` : '';
-}
-/** La ligne de ce que pèse la sélection : « Sélection : 14 zones · 78,0 Mo » (le nombre et la taille se disent avant tout verbe) ; vide sans zone cochée. */
-export function selectionLine() {
-  const ids = buildZones().ticked;
-  if (!ids.length) return tt(TX.upd.selNothing);
-  const size = sizeText(ids);
-  return tt(TX.upd.selLine, {
-    z: count('zone', ids.length)
-  }) + (size ? ` · ${size}` : '');
-}
-/** « Seulement les périmés » : lit l'état des zones de la couverture au lanceur, puis la sélection devient les zones qui ne sont pas à jour et que la construction peut traiter ; aucune : on le dit, la sélection reste ; l'état illisible : on le dit aussi. */
-export async function selectStale() {
-  if (frozen() || !S.d || !statusKnown()) return;
-  const me = S,
-    st = await fetchStatus(buildZones().ids);
-  if (S !== me) return;
-  if (!st) return S.ctx.notify(tt(TX.upd.noStatus), 'err');
-  const stale = M.updatePlan(st, buildZones().ids).build;
-  if (!stale.length) return S.ctx.notify(tt(TX.upd.noStale), 'ok');
-  S.ticked = new Set(stale.map(s => s.zone));
-  renderBuild();
-}
-/** « Tout désélectionner » : aucune zone cochée. */
-export function selectNone() {
-  if (frozen() || !S.d) return;
-  S.ticked = new Set();
-  renderBuild();
 }
 /** Les raisons de la construction en texte : regroupées par raison quand elles sont communes à plusieurs zones (« 45 zones : construites avec un ancien analyseur (v21, actuel v22) »), sinon zone par zone (« France : jamais construite »). */
 function whyText(build) {
@@ -204,23 +178,23 @@ export async function startUpdate(zones = null) {
     ids
   }), ids), true);
 }
-/** Le lien `#data?zone=<id>` (SOG-0143 : « cette zone est à reconstruire ») : à demander avant le premier dessin ; il ouvre le groupe de la base et, si la zone est dans la couverture, la sélection devient cette zone seule. Une seule fois par montage. */
+/** Le lien `#data?zone=<id>` (SOG-0143 : « cette zone est à reconstruire ») : à demander avant le premier dessin ; il ouvre le groupe de la base et la fiche de la zone. Une seule fois par montage. */
 export function wantZone() {
   const z = S.ctx.query?.zone;
   if (S.zoneAsked || typeof z !== 'string' || !/^[a-z0-9]{2,8}$/.test(z)) return;
   S.zoneAsked = true;
   S.zoneLink = z;
   S.manual.base = true;
-  if (S.d.cov.ids.includes(z)) S.ticked = new Set([z]);
+  if ((S.d.zones || []).some(x => x.id === z)) openCountryById(z); // une zone que la suite connaît : sa fiche s'ouvre
 }
-/** Après ce dessin : amène à « Mettre à jour » (la zone cochée), ou dit que la zone n'est pas dans la couverture et amène à « Ajouter un pays ». Une seule fois. */
+/** Après ce dessin : amène à la fiche de la zone (ou à « Ajouter un pays » si elle n'est pas dans la couverture) et le dit. Une seule fois. */
 export function showZone() {
   const z = S.zoneLink;
   if (!z) return;
   S.zoneLink = null;
   const name = M.zoneName(S.d.zones, z, li()),
     inCov = S.d.cov.ids.includes(z),
-    el = inCov ? S.body?.querySelector('[data-build] [data-verb="update"]') : S.body?.querySelector('[data-coverage]');
+    el = inCov ? S.body?.querySelector('[data-sheet]') : S.body?.querySelector('[data-coverage]');
   el?.scrollIntoView({
     block: 'center'
   });

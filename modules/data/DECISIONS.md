@@ -557,3 +557,16 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   row says « pourquoi ? » with a chevron and a tap redraws only that row (scroll kept, SOG-0261); the busy sentence is said once
   (the card, not the grey line under the button). Case L87 on the real base/status shape (75 zones). SOG-0260 point 5
   (edition of a State not following the cycle) is the launcher's, done by AeroDB.
+- **12 Nov 2026 — SOG-0262, lot A: the map, the country groups and the country sheet REPLACE the flat list** (the user: « la carte
+  du monde est l'entrée »; no switch, no duplicate screen): page order = state bar (one button, the whole coverage) → the MAP
+  (country outlines, framed on the coverage, three states + hatch for procedures from `procSources`, blue border for the open
+  group, hover fills one country; no dots) → the groups (the packs, always visible, summarised state, one open at a time, the
+  group's « Mettre à jour ») → the rest of the old panel. The sheet (`countries.js`, `model_countries.js`; right of the map at
+  ≥ 900 px, full screen with « ← Retour » on a phone): state and build date, per source the three ticks (téléchargé · construit ·
+  publié: date, edition; « publié » omitted when `publish.state` is unknown), the inventory of hand-taken files in three beats
+  (what / where / name, from the catalogue `what`, `where`, `link`, `verified` — « chemin à vérifier » when not verified — seen in
+  Downloads / missing, from `base/cycle { zone }` K182), sources unavailable at their publisher set apart. Removed: « Zones de la
+  couverture » and its checkboxes, « Seulement les périmés », « Tout désélectionner », the selection line, the rectangle
+  selection on the map (the selection concept is gone: the top button acts on the whole coverage). Cases removed with their
+  subject: L30, L37, L38, L39, L52. Known limits: the « construit » and « publié » ticks are zone-wide and repeat per source;
+  gestures of the sheet (« Mettre à jour ce pays », pick/choose) are lot B (today `zoneActionHtml` is shown inside the sheet).

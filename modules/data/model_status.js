@@ -59,7 +59,47 @@ function downloadOf(d) {
     sources: d.sources !== null && typeof d.sources === 'object' && !Array.isArray(d.sources) ? Math.min(Object.keys(d.sources).length,
       99) : null, // le nombre de sources que base/fetch télécharge pour cette zone (0 : rien à télécharger)
     cycle: day(d.cycle),
-    at: typeof d.at === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(d.at) ? d.at.slice(0, 30) : null
+    at: typeof d.at === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(d.at) ? d.at.slice(0, 30) : null,
+    list: sourceList(d.sources) // chaque source téléchargée du pays : { présente, date } (la fiche du pays, SOG-0262)
+  };
+}
+/** Les sources téléchargées d'une zone (`download.sources` : { id: { present, at } }), douze au plus : { id: { present, at } } ; {} sans. */
+function sourceList(o) {
+  const out = {};
+  if (o === null || typeof o !== 'object' || Array.isArray(o)) return out;
+  for (const [id, v] of Object.entries(o).slice(0, 12)) {
+    if (!/^[a-z0-9_]{2,24}$/.test(id) || v === null || typeof v !== 'object') continue;
+    out[id] = {
+      present: v.present === true,
+      at: typeof v.at === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v.at) ? v.at.slice(0, 30) : null
+    };
+  }
+  return out;
+}
+/** La publication d'une zone (base/status `publish`, SOG-0258) : { state: 'published' | 'unpublished' | 'unknown', at } ; null quand le lanceur ne la dit pas (pas de construction validée). */
+function publishOf(p) {
+  if (p === null || typeof p !== 'object' || !['published', 'unpublished', 'unknown'].includes(p.state)) return null;
+  return {
+    state: p.state,
+    at: typeof p.at === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(p.at) ? p.at.slice(0, 30) : null
+  };
+}
+/** L'état d'une zone lu (celui de base/status, ou le `state` de la vue par zone de base/cycle : ses raisons peuvent y être de simples codes) : { state, reasons, notices, buildable, builtCycle, expectedCycle, builtAt, publish, download } ; null si l'état est hors règle. */
+export function zoneStateOf(z) {
+  if (z === null || typeof z !== 'object' || !ZONE_STATES.includes(z.state)) return null;
+  const rs = x => typeof x === 'string' ? {
+    code: x
+  } : x;
+  return {
+    state: z.state,
+    reasons: (Array.isArray(z.reasons) ? z.reasons : []).slice(0, 8).map(x => reasonOf(rs(x))),
+    notices: (Array.isArray(z.notices) ? z.notices : []).map(rs).filter(n => NOTICE_CODES.includes(n?.code)).slice(0, 4).map(reasonOf),
+    buildable: z.buildable === true,
+    builtCycle: day(z.builtCycle),
+    expectedCycle: day(z.expectedCycle),
+    builtAt: typeof z.builtAt === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(z.builtAt) ? z.builtAt.slice(0, 30) : null,
+    publish: publishOf(z.publish),
+    download: downloadOf(z.download)
   };
 }
 /** La réponse de base/status lue : { current, parserVersion, zones: { id: { state, reasons: [raison], buildable, builtCycle, expectedCycle } } } ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). Une zone dont l'identifiant ou l'état est hors règle est écartée. */
@@ -68,16 +108,8 @@ export function statusOf(final) {
   if (!r || r.ok === false || r.zones === null || typeof r.zones !== 'object' || Array.isArray(r.zones)) return null;
   const zones = {};
   for (const [id, z] of Object.entries(r.zones).slice(0, 300)) {
-    if (!ID.test(id) || z === null || typeof z !== 'object' || !ZONE_STATES.includes(z.state)) continue;
-    zones[id] = {
-      state: z.state,
-      reasons: (Array.isArray(z.reasons) ? z.reasons : []).slice(0, 8).map(reasonOf),
-      notices: (Array.isArray(z.notices) ? z.notices : []).filter(n => NOTICE_CODES.includes(n?.code)).slice(0, 4).map(reasonOf),
-      buildable: z.buildable === true,
-      builtCycle: day(z.builtCycle),
-      expectedCycle: day(z.expectedCycle),
-      download: downloadOf(z.download)
-    };
+    const one = ID.test(id) ? zoneStateOf(z) : null;
+    if (one) zones[id] = one;
   }
   return {
     current: day(r.current),

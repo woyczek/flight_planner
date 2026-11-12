@@ -1,0 +1,210 @@
+// V3 data — le calcul pur de la carte du monde, des paquets de pays et de la fiche d'un pays (SOG-0262, lot A) : le dessin des contours en SVG (projection, cadre de la couverture, chemins), le bilan d'un paquet, la lecture fermée de base/cycle (la liste du cycle, SOG-0259) et
+// ce que la fiche en tire (les sources d'un pays, les fichiers attendus et ceux vus dans Téléchargements). Pur : ni page, ni lanceur, ni stockage ; tout ce que le lanceur ou le catalogue répond est une entrée non fiable (textes bornés, listes fermées, nombres entiers).
+import {
+  STATE_TONE,
+  drawnState,
+  zoneStateOf
+} from './model_status.js';
+
+const ZONE = /^[a-z0-9_-]{2,12}$/;
+const SRC = /^[a-z0-9_]{2,24}$/;
+const DAY = /^\d{4}-\d{2}-\d{2}/;
+const WORLD = Object.freeze([-180, -58, 180, 80]);
+/** Un texte court sans caractère de commande ; '' sinon. */
+const text = (v, n = 120) => typeof v === 'string' ? v.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, n) : '';
+/** Un entier fini ≥ 0 borné à un milliard, sinon 0. */
+const int = v => Number.isFinite(v) ? Math.max(0, Math.min(Math.trunc(v), 1e9)) : 0;
+/** Une date « AAAA-MM-JJ », sinon ''. */
+const day = v => typeof v === 'string' && DAY.test(v) ? v.slice(0, 10) : '';
+/** Un instant ISO UTC, sinon null. */
+const stamp = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v) ? v.slice(0, 30) : null;
+
+// ------------------------------------------------------------------------------------------------ la carte
+/** L'ordonnée d'une latitude en projection de Mercator, en degrés (la latitude est bornée : ni pôle, ni Antarctique). */
+export const mercY = lat => Math.log(Math.tan(Math.PI / 4 + Math.max(-58, Math.min(84, lat)) * Math.PI / 360)) * 180 / Math.PI;
+/** Un nombre de coordonnée au centième de degré, écrit court. */
+const num = v => String(Math.round(v * 100) / 100);
+/** Les anneaux d'une zone en un chemin SVG (x = longitude, y = −Mercator de la latitude) ; sans anneau lisible, le rectangle de son cadre `box` ; '' sans rien. */
+export function pathOf(rings, box) {
+  const list = (Array.isArray(rings) ? rings : []).filter(r => Array.isArray(r) && r.length > 2);
+  const d = list.map(r => `M${r.filter(p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])).map(p => `${num(p[0])},${num(-mercY(p[1]))}`).join('L')}Z`).join('');
+  if (d) return d;
+  if (!Array.isArray(box) || box.length !== 4 || !box.every(Number.isFinite)) return '';
+  const [w, s, e, n] = box;
+  return `M${num(w)},${num(-mercY(n))}L${num(e)},${num(-mercY(n))}L${num(e)},${num(-mercY(s))}L${num(w)},${num(-mercY(s))}Z`;
+}
+/** Le cadre de la vue [x, y, largeur, hauteur] (unités du chemin) qui contient des cadres [ouest, sud, est, nord] avec une marge (8 % de chaque côté, 6° au moins) ; null sans cadre lisible. */
+export function frameOf(boxes) {
+  const ok = (boxes || []).filter(b => Array.isArray(b) && b.length === 4 && b.every(Number.isFinite));
+  if (!ok.length) return null;
+  const w = Math.min(...ok.map(b => b[0])),
+    e = Math.max(...ok.map(b => b[2])),
+    s = Math.min(...ok.map(b => b[1])),
+    n = Math.max(...ok.map(b => b[3])),
+    top = -mercY(n),
+    bottom = -mercY(s),
+    mx = Math.max((e - w) * .08, 6),
+    my = Math.max((bottom - top) * .08, 6);
+  return [w - mx, top - my, e - w + 2 * mx, bottom - top + 2 * my].map(v => Math.round(v * 100) / 100);
+}
+/** Le cadre du monde entier (le même pour tous : « Voir le monde entier »). */
+export const worldFrame = () => frameOf([WORLD]);
+/** La teinte d'un pays sur la carte : 'muted' (hors de la couverture), la teinte de l'état du lanceur (vert, ambre, rouge ; « en cours » dit ambre : la marche se lit dans la barre d'état), ambre quand l'état est lu et ne dit rien de ce pays ; null quand l'état n'est pas lu
+ *  (l'appelant donne alors la teinte de la publication). */
+export function toneOf(status, id, inCoverage, running) {
+  if (!inCoverage) return 'muted';
+  const ds = drawnState(status, id, running);
+  if (ds) return STATE_TONE[ds] === 'accent' ? 'warn' : STATE_TONE[ds];
+  return status ? 'warn' : null;
+}
+/** Le bilan d'un paquet : { known (ses pays), inCov, ok (à jour), warn (à faire), err (en échec), none (sans état lu), out (hors de la couverture) } ; `tone(id)` est la teinte d'un pays (toneOf). */
+export function tally(known, covIds, tone) {
+  const cov = new Set(covIds || []),
+    out = {
+      known: known.length,
+      inCov: 0,
+      ok: 0,
+      warn: 0,
+      err: 0,
+      none: 0,
+      out: 0
+    };
+  for (const id of known) {
+    if (!cov.has(id)) {
+      out.out++;
+      continue;
+    }
+    out.inCov++;
+    const t = tone(id);
+    out[t === 'ok' || t === 'warn' || t === 'err' ? t : 'none']++;
+  }
+  return out;
+}
+/** Les pays qui ont des procédures d'après les lignes de base/coverage (`procSources` non vide) : { zone: [sources] } ; {} sans ligne. */
+export function procZonesOf(rows) {
+  const out = {};
+  for (const r of rows || [])
+    if (r?.procSources?.length) out[r.zone] = r.procSources;
+  return out;
+}
+
+// ------------------------------------------------------------------------------------------------ base/cycle
+const REGIMES = ['auto', 'hand', 'local'];
+const DL_STATES = ['done', 'late', 'missing', 'waiting', 'n/a', 'unavailable'];
+const WHYS = ['older-than-cycle', 'newer-in-downloads', 'no-file', 'not-downloaded', 'unavailable-at-publisher'];
+/** Les textes d'une liste, bornés (n au plus, de longueur m). */
+const texts = (a, n, m = 120) => (Array.isArray(a) ? a : []).slice(0, n).map(x => text(x, m)).filter(Boolean);
+/** Une source de la liste du cycle lue : { id, label[4], regime, personal, zones (identifiants, ou null : une source commune), download { state, cycle, at, edition }, build { zones, upToDate }, publish { published, unpublished, unknown }, why, hand { link, expected, inDownloads } | null }. */
+function itemOf(it) {
+  if (it === null || typeof it !== 'object' || typeof it.id !== 'string' || !SRC.test(it.id)) return null;
+  const dl = it.steps?.download,
+    h = it.hand;
+  return {
+    id: it.id,
+    label: [0, 1, 2, 3].map(i => text(it.label?.[i], 80) || text(it.label?.[0], 80)),
+    regime: REGIMES.includes(it.regime) ? it.regime : '',
+    personal: it.personal === true,
+    unavailable: it.unavailable !== null && typeof it.unavailable === 'object' ? {
+      since: text(it.unavailable.since, 10)
+    } : null, // la source n'est plus offerte par son éditeur (K183) : dite à part, ni en retard ni à faire
+    zones: Array.isArray(it.zones) ? it.zones.filter(z => typeof z === 'string' && ZONE.test(z)).slice(0, 200) : null,
+    download: {
+      state: DL_STATES.includes(dl?.state) ? dl.state : '',
+      cycle: day(dl?.cycle),
+      at: stamp(dl?.at),
+      edition: text(dl?.edition, 40)
+    },
+    build: {
+      zones: int(it.steps?.build?.zones),
+      upToDate: int(it.steps?.build?.upToDate)
+    },
+    publish: {
+      published: int(it.steps?.publish?.published),
+      unpublished: int(it.steps?.publish?.unpublished),
+      unknown: int(it.steps?.publish?.unknown)
+    },
+    why: WHYS.includes(it.why) ? it.why : '',
+    hand: h !== null && typeof h === 'object' ? {
+      link: text(h.link, 300),
+      expected: texts(h.expected, 12),
+      inDownloads: texts(h.inDownloads, 30)
+    } : null
+  };
+}
+/** Une liste d'identifiants de source, bornée. */
+const srcIds = a => [...new Set((Array.isArray(a) ? a : []).filter(x => typeof x === 'string' && SRC.test(x)))].slice(0, 12);
+/** La vue par zone de base/cycle `{ zone }` (K182) lue : { zone, known, inCoverage, state (l'état de la zone, comme base/status, ou null), sources (les sources qui nourrissent CE pays, chacune avec ses trois étapes pour lui seul : { id: source }), order (leurs identifiants dans l'ordre reçu),
+ *  addWillAsk { sources, auto, hand: [{ id, expected }], personal, noReader } } ; null sans vue lisible. */
+function zoneViewOf(v) {
+  if (v === null || typeof v !== 'object' || typeof v.zone !== 'string' || !ZONE.test(v.zone)) return null;
+  const sources = {},
+    order = [];
+  for (const it of (Array.isArray(v.sources) ? v.sources : []).slice(0, 24)) {
+    const x = itemOf(it);
+    if (x && !Object.hasOwn(sources, x.id)) {
+      sources[x.id] = x;
+      order.push(x.id);
+    }
+  }
+  const a = v.addWillAsk !== null && typeof v.addWillAsk === 'object' ? v.addWillAsk : {};
+  return {
+    zone: v.zone,
+    known: v.known !== false,
+    inCoverage: v.inCoverage === true,
+    state: zoneStateOf(v.state),
+    sources,
+    order,
+    addWillAsk: {
+      sources: srcIds(a.sources),
+      auto: srcIds(a.auto),
+      hand: (Array.isArray(a.hand) ? a.hand : []).slice(0, 12).filter(h => h && typeof h.id === 'string' && SRC.test(h.id)).map(h => ({
+        id: h.id,
+        expected: texts(h.expected, 12)
+      })),
+      personal: srcIds(a.personal),
+      noReader: srcIds(a.noReader)
+    }
+  };
+}
+/** La fin d'un travail base/cycle lue : { inForce, next, items: { id: source }, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
+export function cycleRead(final) {
+  const r = final?.state === 'done' && final.result !== null && typeof final.result === 'object' ? final.result : null;
+  if (!r || r.ok === false || (!Array.isArray(r.items) && (r.zoneView === null || typeof r.zoneView !== 'object'))) return null;
+  const items = {};
+  for (const it of (Array.isArray(r.items) ? r.items : []).slice(0, 120)) {
+    const x = itemOf(it);
+    if (x && !Object.hasOwn(items, x.id)) items[x.id] = x;
+  }
+  return {
+    inForce: text(r.cycle?.ids?.inForce, 8) || day(r.cycle?.inForce),
+    next: text(r.cycle?.ids?.next, 8) || day(r.cycle?.next),
+    items,
+    zoneView: zoneViewOf(r.zoneView)
+  };
+}
+
+// ------------------------------------------------------------------------------------------------ la fiche d'un pays
+/** Les sources qui nourrissent un pays, dans l'ordre : celles que le catalogue lui attribue (zone nommée, source utilisée ou envisagée du groupe « base »), celles que le lanceur dit qu'il télécharge pour lui (`download.sources` de base/status), celles de la liste du cycle qui le nomment. Un identifiant, une fois. */
+export function sourcesOfZone(zone, cat, status, cycle) {
+  const ids = [],
+    add = id => {
+      if (typeof id === 'string' && SRC.test(id) && !ids.includes(id)) ids.push(id);
+    };
+  if (cycle?.zoneView?.zone === zone && cycle.zoneView.order.length) return cycle.zoneView.order.slice(0,
+    12); // le lanceur dit lui-même lesquelles nourrissent ce pays
+  for (const s of cat?.SOURCES || [])
+    if (s?.group === 'base' && s.status !== 'abandoned' && Array.isArray(s.zones) && s.zones.includes(zone)) add(s.id);
+  const dl = Object.hasOwn(status?.zones || {}, zone) ? status.zones[zone].download?.list : null;
+  for (const id of Object.keys(dl || {})) add(id);
+  for (const it of Object.values(cycle?.items || {}))
+    if (Array.isArray(it.zones) && it.zones.includes(zone)) add(it.id);
+  return ids.slice(0, 12);
+}
+/** Un nom de fichier du catalogue (« export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip », « EK_ENR_3_2*.pdf ») en expression : « <…> » et « * » valent n'importe quoi, le reste tel quel, sans tenir compte de la casse. */
+export function fileRegex(pattern) {
+  const body = String(pattern ?? '').split(/(<[^>]*>|\*)/).map(p => /^<[^>]*>$|^\*$/.test(p) ? '.*' : p.replace(/[.+?^${}()|[\]\\]/g,
+    '\\$&')).join('');
+  return new RegExp(`^${body}$`, 'i');
+}
+/** Le fichier de ce nom attendu est-il dans la liste des noms vus dans Téléchargements ? */
+export const fileSeen = (pattern, names) => (names || []).some(n => fileRegex(pattern).test(n));

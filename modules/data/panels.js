@@ -35,10 +35,12 @@ import {
   updateAllInner
 } from './chain.js';
 import {
-  selectionLine,
   updateGate,
   updateScope
 } from './update.js';
+import {
+  countriesHtml
+} from './countries.js';
 import {
   statusKnown,
   zoneStateHtml,
@@ -659,9 +661,9 @@ function verbsHtml(gate, panel, pk) {
   return `<div class="d-verbs" data-verbs-row>${miss ? pick + pickWhy : ''}
     <details class="d-moreverbs" data-verbs-more${S.verbsOpen ? ' open' : ''}><summary>${esc(tt(TX.upd.more))}</summary><div class="d-verbs">${dl}${miss ? '' : pick}${rebuild}${purge}</div>${miss ? '' : pickWhy}</details></div>`;
 }
-/** Ce qu'il y a dans la ligne d'une zone de la base (la même dans la liste de la couverture et dans la liste dépliée de la phrase d'état) : sa case (la sélection est UNE : S.ticked), son nom, son état et ce qu'elle propose. */
-export function zoneRowInner(z, busy) {
-  return `${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}${zoneActionHtml(z)}`;
+/** Ce qu'il y a dans la ligne d'une zone dans la liste dépliée de la phrase d'état : son nom (un bouton qui ouvre sa fiche), son état et ce qu'elle propose. */
+export function zoneRowInner(z) {
+  return `<span class="d-opt"><button type="button" class="d-link d-zname" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}">${esc(M.zoneName(S.d.zones, z, li()))}</button></span>${zoneStateHtml(z)}${zoneActionHtml(z)}`;
 }
 /** Pourquoi l'état de la base n'est pas dit : le lanceur manque, il ne connaît pas base/status, ou l'état n'est pas encore lu. */
 function stateWhy() {
@@ -676,7 +678,6 @@ function stateHeadHtml() {
       d: M.dateText(head.date, lang())
     }) : '',
     groups = balance().groups,
-    busy = frozen(),
     z = n => count('zone', n),
     bal = (k, n) => tt(TX.bal[k][n === 1 ? 0 : 1], {
       n: z(n)
@@ -686,7 +687,7 @@ function stateHeadHtml() {
       r: stateWhy()
     })) : parts.length ? `${esc(tt(TX.stateBase))} ${parts.map(k => `<button type="button" data-act="zone-filter" data-filter="${k}" aria-expanded="${S.zoneFilter === k}">${esc(bal(k, groups[k].length))}</button>`).join(' · ')}.` : esc(tt(TX.stateEmpty)),
     open = groups && S.zoneFilter && groups[S.zoneFilter]?.length ? S.zoneFilter : null;
-  const list = open ? `<ul class="d-statezones" data-state-zones data-state-open="${open}">${groups[open].map(id => `<li class="d-zrow" data-zone-row="${esc(id)}">${zoneRowInner(id, busy)}</li>`).join('')}</ul>` : '';
+  const list = open ? `<ul class="d-statezones" data-state-zones data-state-open="${open}">${groups[open].map(id => `<li class="d-zrow" data-zone-row="${esc(id)}">${zoneRowInner(id)}</li>`).join('')}</ul>` : '';
   const sc = updateScope(),
     gate = updateGate(),
     miss = missingList().length > 0; // un cycle manuel manque : la prise du fichier est le primaire, pas « Mettre à jour »
@@ -694,7 +695,7 @@ function stateHeadHtml() {
   const lone = sc.counts ? ['rebuild', 'failed', 'waiting', 'personal', 'unknown'].reduce((n, k) => n + sc.counts[k].length, 0) : 0,
     reason = greyOnce(gate.reason, 'base');
   const action = sc.known && sc.n === 0 ? lone ? `<p class="f-muted" data-hand-alone>${esc(tt(TX.handAlone[lone === 1 ? 0 : 1], { z: z(lone) }))}</p>` : `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
-    `<p class="d-verbs" data-update-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(sc.known ? tt(sc.partial ? TX.upd.updateSel : TX.upd.updateN, { n: sc.n }) : tt(sc.partial ? TX.upd.updateSelNo : TX.upd.update))}</button></p>${reason ? `<p class="f-muted" data-update-reason="${esc(gate.reason)}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`;
+    `<p class="d-verbs" data-update-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(sc.known ? tt(TX.upd.updateN, { n: sc.n }) : tt(TX.upd.update))}</button></p>${reason ? `<p class="f-muted" data-update-reason="${esc(gate.reason)}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`;
   const dl = sc.plan?.fetch.length || 0,
     bd = sc.plan?.build.length || 0,
     doing = [dl ? tt(TX.upd.doDl, {
@@ -706,9 +707,7 @@ function stateHeadHtml() {
     left = sc.counts ? sc.counts.waiting.filter(id => !sc.todo.includes(id)) :
   [], // les zones qui attendent un fichier et que le bouton ne traite pas : à la main de l'utilisateur
     leftTick = sc.counts ? sc.counts.personal.filter(id => !sc.todo.includes(id)) : [], // celles qui attendent la coche d'usage personnel
-    notes = sc.counts ? [sc.partial && sc.counts.upToDate.length ? tt(TX.upd.skipNote, {
-      z: z(sc.counts.upToDate.length)
-    }) : '', left.length || leftTick.length ? tt(TX.upd.waitNote, {
+    notes = sc.counts ? [left.length || leftTick.length ? tt(TX.upd.waitNote, {
       z: [left.length ? bal('waiting', left.length) : '', leftTick.length ? bal('personal', leftTick.length) : ''].filter(Boolean).join(
         ' · ')
     }) : ''].filter(Boolean) : [];
@@ -720,17 +719,8 @@ function stateHeadHtml() {
  *  vigueur (points VFR), le champ des types OACI (appareils). */
 function choiceHtml(set, busy) {
   if (set === 'base') {
-    const {
-      ids,
-      ticked
-    } = buildZones(),
-      pers = M.personalSources(ticked);
-    return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
-    <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
-    ${packsHtml()}
-    <h4 data-zones-title>${esc(tt(TX.zonesTitle, { n: ids.length }))}</h4>
-    ${Array.isArray(S.d.zones) && S.d.zones.length ? `<p class="f-muted" data-zones-note>${esc(tt(TX.zonesNote, { n: ids.length, m: S.d.zones.length }))}</p>` : ''}
-    <div class="d-opts" data-build-zones>${ids.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${zoneRowInner(z, busy)}</div>`).join('')}</div>
+    const pers = M.personalSources(buildZones().ticked);
+    return `<div class="d-choice">${packsHtml()}
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>
       <label class="d-opt"><input type="checkbox" data-certify${S.certified ? ' checked' : ''}${busy ? ' disabled' : ''}><span><b>${esc(tt(TX.certify))}</b></span></label>
       <p class="f-muted">${esc(tt(TX.certifyHint))} <a href="#sources" data-licences-link>${esc(tt(TX.licencesLink))}</a></p>
@@ -792,9 +782,8 @@ function setInner(panel) {
     pk = panel === M.PICKUP.set ? gateOf(panel, sel.ids.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb] :
     null; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
   return `<h2>${esc(tt(ui.title))}</h2>
-    ${panel === 'base' ? stateHeadHtml() : ''}
-    <h3>${esc(tt(ui.items))}</h3>
-    ${spec.map ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
+    ${panel === 'base' ? stateHeadHtml() + countriesHtml() : `<h3>${esc(tt(ui.items))}</h3>`}
+    ${spec.map && panel !== 'base' ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
     ${verbsHtml(gate, panel, pk)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
     ${panel === 'base' ? missingHtml() : ''}
@@ -817,17 +806,21 @@ export function panelsHtml(group) {
 function redrawPanel(box) {
   const a = box.contains(document.activeElement) ? document.activeElement : null,
     q = (attr, v) => `[${attr}="${CSS.escape(v)}"]`,
-    sel = a ? a.dataset.buildZone ? (a.closest('[data-state-zones]') ? '[data-state-zones] ' : '[data-build-zones] ') + q('data-build-zone',
-      a.dataset.buildZone) :
+    sel = a ? a.dataset.act === 'sheet-close' ? '[data-sheet] [data-act="sheet-close"]' : a.dataset.act === 'grp-toggle' ? q('data-gid', a
+      .dataset.gid) + '[data-act="grp-toggle"]' : a.dataset.act === 'open-country' && a.closest('[data-cw-groups]') ? '[data-cw-groups] ' +
+    q('data-zone', a.dataset.zone) + '[data-act="open-country"]' :
+    a.dataset.act === 'world-toggle' ? '[data-act="world-toggle"]' :
     a.dataset.certify !== undefined ? '[data-certify]' : a.dataset
     .item ? q('data-item', a.dataset.item) : a.dataset.f ? q('data-f', a.dataset.f) : a.dataset.verb ? q('data-verb', a.dataset.verb) : '' :
     '',
     from = a?.selectionStart ?? null,
     to = a?.selectionEnd ?? null;
-  const inner = [...box.querySelectorAll('[data-build-zones]')].map(e => [e.scrollTop]);
+  const inner = [...box.querySelectorAll('[data-sheet]')].map(e => [e
+    .scrollTop
+  ]); // la fiche d'un pays défile en elle-même : elle garde sa place à chaque redessin
   keepScroll(S.body, () => {
     box.innerHTML = box.matches('[data-update-all]') ? updateAllInner() : setInner(panelId(box));
-    box.querySelectorAll('[data-build-zones]').forEach((e, i) => {
+    box.querySelectorAll('[data-sheet]').forEach((e, i) => {
       if (inner[i]) e.scrollTop = inner[i][0];
     });
     syncPackSwitches(box);

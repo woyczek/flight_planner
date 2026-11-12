@@ -77,6 +77,36 @@ export async function openCovTable(again = false) {
   const L = S?.ctx?.launcher;
   if (!L || gate() || (S.cov && !again)) return;
   const me = S;
+  if (!again && S.cw?.procP) {
+    S.cov = { // la carte du monde lit base/coverage à cet instant (la hachure des procédures) : le tableau attend sa lecture au lieu d'en lancer une seconde
+      open: true,
+      state: 'loading',
+      rows: null,
+      sort: {
+        key: 'zone',
+        dir: 'asc'
+      },
+      openRows: new Set()
+    };
+    redraw();
+    await S.cw.procP;
+    if (S !== me || !S.cov) return;
+  }
+  const pre = !again && S.cw?.procRows;
+  if (pre) {
+    S.cw.procRows = null;
+    S.cov = {
+      open: true,
+      state: 'ready',
+      rows: pre,
+      sort: {
+        key: 'zone',
+        dir: 'asc'
+      },
+      openRows: new Set()
+    };
+    return redraw();
+  }
   S.cov = {
     open: true,
     state: 'loading',

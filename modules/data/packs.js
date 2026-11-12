@@ -39,7 +39,7 @@ function notesHtml(p, st) {
 /** Les zones d'un paquet que la suite connaît, en attribut de la rangée : la surbrillance de la carte les lit (survol ou appui). */
 const zonesAttr = st => ` data-zones="${esc(st.known.join(','))}"`;
 /** Le « Mettre à jour (n) » d'un paquet (SOG-0188) : le parcours de mise à jour sur les seuls pays du paquet qui sont dans la couverture (n), sans toucher à la sélection ; absent quand aucun pays du paquet n'y est ; grisé pour la raison du geste (une opération en cours, pas de lanceur, verbe inconnu). */
-function packUpdateHtml(p, st) {
+export function packUpdateHtml(p, st) {
   if (!st.inCoverage.length) return '';
   const off = frozen() || updateGate(st.inCoverage).disabled ? ' disabled' : '';
   return `<button type="button" class="d-link" data-act="update-pack" data-pack="${esc(p.id)}"${off}>${esc(tt(TX.upd.updatePack, { n: st.inCoverage.length }))}</button>`;
@@ -51,7 +51,7 @@ function regionRow(p) {
   if (p.empty || !p.zones.length) return `<li data-pack="${esc(p.id)}" data-empty><b>${esc(nameOf(p))}</b> <span class="f-muted" data-pack-empty>${esc(emptyText(p))}</span></li>`;
   const all = st.known.length > 0 && !st.toAdd.length,
     some = st.inCoverage.length > 0 && st.toAdd.length > 0;
-  const line = `<label class="d-opt d-switch"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${frozen() ? ' disabled' : ''} aria-label="${esc(nameOf(p))}"></label><span class="d-packname"><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc([count('country', st.known.length), sizeOf(st)].filter(Boolean).join(' · '))}${some ? ` · ${esc(tt(TX.packs.some, { n: st.inCoverage.length }))}` : ''}</span></span>${packUpdateHtml(p, st)}`;
+  const line = `<label class="d-opt d-switch"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${frozen() ? ' disabled' : ''} aria-label="${esc(nameOf(p))}"></label><span class="d-packname"><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc([count('country', st.known.length), sizeOf(st)].filter(Boolean).join(' · '))}${some ? ` · ${esc(tt(TX.packs.some, { n: st.inCoverage.length }))}` : ''}</span></span>`;
   return `<li data-pack="${esc(p.id)}" data-kind="region"${zonesAttr(st)}>${countriesHtml(p, st, line)}${notesHtml(p, st)}</li>`;
 }
 /** Le pli « Pays (n) » d'une rangée régionale (SOG-0186), replié par défaut : les pays du paquet dans la même grille que la liste des zones, une case chacun (cochée = déjà dans la couverture) ; cocher ajoute ce pays seul, décocher le retire après la
@@ -73,7 +73,7 @@ function themeRow(p) {
     some = st.inCoverage.length > 0 && st.toAdd.length > 0,
     off = frozen() ? ' disabled' : '';
   return `<li data-pack="${esc(p.id)}" data-kind="theme"${zonesAttr(st)}><details class="d-pack" data-pack-theme="${esc(p.id)}"${S.packOpen.has(p.id) ? ' open' : ''}>
-    <summary><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc(tt(TX.packs.themeCount, { n: count('country', st.known.length), m: st.toAdd.length }))}</span>${packUpdateHtml(p, st)}</summary>
+    <summary><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc(tt(TX.packs.themeCount, { n: count('country', st.known.length), m: st.toAdd.length }))}</span></summary>
     <div class="d-opts" data-pack-zones>
       <div class="d-zrow"><label class="d-opt"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${off}><span><b>${esc(tt(TX.packs.themeAll))}</b></span></label></div>
       ${st.known.map(z => `<div class="d-zrow" data-pack-zone-row="${esc(z)}"><label class="d-opt"><input type="checkbox" data-pack-cov="${esc(z)}"${cov.has(z) ? ' checked' : ''}${off}><span>${esc(M.zoneName(S.d.zones, z, li()))}</span></label></div>`).join('')}

@@ -70,6 +70,10 @@ import {
 import {
   inventoryHtml
 } from './inventory.js';
+import {
+  afterDraw,
+  forgetReads
+} from './countries.js';
 
 // couleur d'un État → data-kind du point du cadre (.f-dot) ; statut d'une source du catalogue → data-kind du badge (.f-badge)
 const LEVEL_KIND = {
@@ -244,7 +248,10 @@ export async function readVerbs() {
 export async function load(fresh = false) {
   // après une construction ou une publication : la liste des zones publiées qu'aerodb garde en mémoire est périmée (les fichiers ont changé sous lui, le
   // lecteur ne le dit qu'à sa prochaine passe) : refresh() la fait relire à la question qui suit (SOG-0072 : « il faut ctrl-maj-F5 pour voir le pays vert »)
-  if (fresh) S.ctx.aerodb?.refresh?.();
+  if (fresh) {
+    S.ctx.aerodb?.refresh?.();
+    forgetReads(); // les fichiers ont bougé : la liste du cycle et les procédures se relisent
+  }
   const me = S,
     [cat, pub, zones, byState, stored, kept, routeMem, packsRaw] = await Promise.all([ask('sources'), ask('publication'), ask(
         'zones'), ask(
@@ -276,8 +283,8 @@ export async function load(fresh = false) {
     cov,
     packs: M.packsOf(packsRaw) // les paquets de pays d'aerodb (packs()), [] sans lui : le bloc n'est alors pas dessiné (SOG-0065)
   };
-  // les zones à construire : toutes celles de la couverture à la première lecture (choix de l'utilisateur gardés ensuite)
-  S.ticked ||= new Set(cov.ids);
+  // les zones à construire : toute la couverture (plus aucune sélection à la main : SOG-0262)
+  S.ticked = new Set(cov.ids);
   if (fresh || !S
     .statusAsked
   ) { // l'état par zone du lanceur : à l'ouverture, puis après chaque opération réelle (le pays orange passe au vert sur sa réponse, SOG-0072)
@@ -320,6 +327,7 @@ function render() {
   syncPackSwitches(S
     .body); // « à moitié » ne s'écrit pas en HTML : posé après chaque dessin, aussi celui d'un pays coché dans un paquet (SOG-0186)
   attachMaps(); // les panneaux sont neufs : les cartes MapLibre reprennent la place de leur emplacement
+  afterDraw(); // les procédures par pays (la hachure) et, fiche ouverte, la liste du cycle : lues une fois
 }
 /** En-tête : le cycle AIRAC en vigueur avec ses dates et le prochain, puis le lanceur du poste. */
 function headHtml() {

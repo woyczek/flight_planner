@@ -289,7 +289,9 @@ def _stub(cfg):
       if (e.fetch?.pick) return;
       e.fetch = { how: 'launcher', provider: 'navpt', pick: { glob: '*.zip|*.iso', name: 'EAIP ISO.zip' } };
       e.steps = { page: { url: 'https://www.nav.pt/ais', home: 'https://www.nav.pt/' }, files: [{ name: 'AIP Portugal (eAIP hors ligne)', gives: ['L\u2019AIP du Portugal hors ligne', 'The Portuguese AIP offline', 'Der portugiesische AIP offline', 'El AIP de Portugal sin conexi\u00f3n'] }] } };
-    const s = A.sources; A.sources = async () => { const r = await s.call(A); navpt(r); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
+    // the catalogue of aerodb 5cc4e909b: stepsOf(id).files[] carries { file, link?, what[4], where[4], verified } and AeroCatalogue.PATH_TO_CHECK; a case gives its own steps (cfg.stepsOf: { id: steps }) so the suite does not depend on the catalogue's links
+    const steps = r => { if (!cfg.stepsOf) return; const so = r.stepsOf; r.stepsOf = (id, cy) => cfg.stepsOf[id] || so.call(r, id, cy); if (cfg.pathCheck) r.PATH_TO_CHECK = cfg.pathCheck };
+    const s = A.sources; A.sources = async () => { const r = await s.call(A); navpt(r); steps(r); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
     const on = A.on; A.on = function (ev, fn) { const un = on.call(A, ev, fn); if (ev === 'change') window.__stub.fns.add(fn); return () => { window.__stub.fns.delete(fn); un() } };
     return A };
   Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab },
@@ -375,8 +377,8 @@ def l2(c):
     c.eq(g['weather']['states'], {'world': 'absent'}, 'the weather rows from the catalogue have no state; the only one is the world synoptic row (SOG-0138), made on the workstation: absent until published', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons'] - c.count('[data-act=update-pack]')], [['download:off', 'build:off', 'purge:off', 'publish:off'], 9],
-         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 9 buttons count Mettre à jour, the two country-pack tabs, the world synoptic row « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071) and the two selection gestures (the « Mettre à jour (n) » of the packs, SOG-0188, are counted apart)', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons'] - c.count('[data-act=update-pack]') - c.count('[data-act=grp-toggle]')], [['download:off', 'build:off', 'purge:off', 'publish:off'], 7],
+         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 7 buttons count Mettre à jour, the two country-pack tabs and the world synoptic row « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071); the two selection gestures are gone (SOG-0262: no selection), the pack lines of the new list and their « Mettre à jour (n) » (SOG-0188) are counted apart', what='verbs / buttons')
     c.eq([c.attr('[data-publish] [data-reason]', 'data-reason'), norm(c.text('[data-publish] [data-reason]'))], ['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))],
          'Publier is grey for the same reason, written once', what='publish reason')
     c.eq(c.count('[data-group=base] > [data-build] + [data-publish]'), 1, 'the Publier panel follows the Construire panel', what='panel order')
@@ -390,7 +392,8 @@ def l2(c):
       btn: Math.round(b.querySelector('[data-verb=build]').getBoundingClientRect().height), first: b === document.querySelector('[data-group=base]').children[1],
       journal: (j => j && { open: j.open, h: Math.round(j.querySelector('summary').getBoundingClientRect().height), last: j === document.querySelector('[data-module=data] [data-body]').lastElementChild })(document.querySelector('[data-journal]')) } }""")
     c.ok(panel and panel['first'], panel, 'the build panel is the first thing in the content of the base group')
-    c.eq(panel['zones'], [[z, True] for z in ('ca', 'es', 'fr', 'gb', 'us')], 'the zones of the coverage, all ticked by default', what='build zones')
+    c.eq(panel['zones'], [], 'no zone to tick any more (SOG-0262: the verbs of the base act on the whole coverage)', what='build zones')
+    c.eq(c.text('[data-coverage] [data-zones]').count(','), 4, 'the five zones of the coverage are written once, in the coverage card', what='coverage line')
     c.eq(panel['personal'], [['enaire', 'nats', 'xplane'], False], 'the three personal-licence sources are listed (every zone ticked feeds them), ONE certification box, unticked', what='personal sources')
     c.eq([norm(x) for x in panel['lines']], [norm(tx(TX, 'licence', lang, after='personalLine: {'))] * 2 + [norm(tx(TX, 'xplane', lang, after='personalLine: {'))],
          'the personal-use line, the X-Plane variant for X-Plane', what='personal lines')
@@ -639,7 +642,7 @@ def _zs(state, done=0, total=0, **extra):
     return {'state': state, 'done': done, 'total': total, **extra}
 
 
-def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None, busy_running=None):
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None, busy_running=None, cycle=None):
     """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
     after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
     POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
@@ -649,11 +652,12 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
     launcher, 404); `st['inventory_calls']` counts the reads.  `personal`: the file of the launcher that holds the personal-use tick (`{'certified', 'at'}`; None = an older launcher, 404); `st['personal_posts']` records the bodies posted, `st['personal_refuse']` makes the next POST fail (500).
     `busy_running`: the running operation a « busy » refusal names (SOG-0245; AeroDB's `running`, see _running); the dict is LIVE (the test changes its vitals), GET regen/job?id=<its id> answers it as a running view
     (`st['gets']` records the reads), POST regen/job/cancel flips its `cancelling`, POST regen/job/release is recorded in `st['releases']` and answers 200 (or 409 `alive` while `st['release_alive']`).  The 409 itself is
-    the test's `start=(409, {'reason': 'busy', 'job': id, 'running': busy_running})`."""
+    the test's `start=(409, {'reason': 'busy', 'job': id, 'running': busy_running})`.  `cycle` (SOG-0262): the RESULT of the read-only job base/cycle (a dict, or a function of its args `{zone, personal}`; None = the verb answers nothing);
+    every such read is recorded in `st['posts']` (verb `cycle`)."""
     st = {'status': None, 'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
           'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
           'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0,
-          'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False}
+          'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False, 'cycle': cycle}
 
     def handler(route):
         req = route.request
@@ -718,6 +722,11 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 code, body = st['start']
                 if code == 409 and busy_view:
                     st['current'] = busy_view
+            elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'cycle' and st.get('cycle') is not None:
+                res = st['cycle']
+                if callable(res):   # the answer depends on the zone asked for (the view per zone, K182)
+                    res = res(st['posts'][-1].get('args') or {})
+                body = {'id': 'jcy', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': res, 'zones': {}}
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st.get('status') is not None:
                 res = st['status']
                 if callable(res):   # the answer depends on what was asked (args: zones, personal), like the real launcher's
@@ -743,11 +752,62 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
     return st
 
 
+# the numbers of the state sentence: [[filter, n], ...] in the order it says them (SOG-0262: the lower list with a pill per zone is gone; this sentence and the sheets are where the states are read)
+_SENTENCE_JS = "[...document.querySelectorAll('[data-state-sentence] [data-filter]')].map(b => [b.dataset.filter, parseInt(b.textContent, 10)])"
+# the number of zones the state sentence says up to date, as a wait expression (% n)
+_SENT_UPTO = "(() => { const b = document.querySelector('[data-state-sentence] [data-filter=upToDate]'); return !!b && parseInt(b.textContent, 10) === %d })()"
+
+
+def _ready(c, n, timeout=10000):
+    """Waits until the state sentence counts `n` zones (the launcher's state of the coverage has been read)."""
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === %d" % n, timeout=timeout, what=f'the state of the {n} zones')
+
+
+def _unfold(c, zone):
+    """Unfolds, under the state sentence, the list that holds `zone` (the number that counts it): its line — name, state and the buttons of its file — is then on the screen (SOG-0262: the lower list with a line per zone is gone).
+    Retried for a few seconds: the zone changes list when the launcher's state changes."""
+    for _ in range(25):
+        for key, _n in c.js(_SENTENCE_JS):
+            sel = f'[data-state-sentence] [data-filter={key}]'
+            if c.js(f"(document.querySelector('{sel}') || {{ getAttribute: () => 'true' }}).getAttribute('aria-expanded')") != 'true':
+                c.tap(sel)
+                c.wait(120)
+            if c.count(f'[data-state-zones] [data-zone-row={zone}]'):
+                return
+        c.wait(300)
+    raise Fail(f'the zone {zone} is in no list of the state sentence', 'a line to act on')
+
+
+def _pills(c):
+    """{ zone: state } read from the lists that the numbers of the state sentence unfold, one number after the other (a zone without a state has None): SOG-0262 removed the lower list with a pill per zone."""
+    out = {}
+    for key in [k for k, _n in c.js(_SENTENCE_JS)]:
+        sel = f'[data-state-sentence] [data-filter={key}]'
+        c.tap(sel)
+        c.until(f"document.querySelector('{sel}').getAttribute('aria-expanded') === 'true' && !!document.querySelector('[data-state-zones]')", what=f'the zones of {key}')
+        out.update(c.js("Object.fromEntries([...document.querySelectorAll('[data-state-zones] [data-zone-row]')].map(r => [r.dataset.zoneRow, (r.querySelector('[data-zstate]') || { dataset: {} }).dataset.zstate || null]))"))
+        c.tap(sel)
+        c.until(f"document.querySelector('{sel}')?.getAttribute('aria-expanded') !== 'true'", what=f'{key} folds again')
+    return out
+
+
 def _untick(c, *zones):
-    """Unticks zones of the build panel (a tap on the checkbox)."""
-    for z in zones:
-        c.tap(f'[data-build-zone="{z}"]')
+    """Takes zones out of the coverage (SOG-0262: there is no selection any more, the verbs of the base act on the whole coverage; a pack switched off does the same with a question): the module's own
+    removeZones, so the build / download / purge that follow concern the zones that remain.  Nothing is purged."""
+    c.js("async (z) => (await import('/modules/data/screen.js')).removeZones(z)", list(zones))
     c.wait(150)
+
+
+def _cov_count(c):
+    """The number of zones of the coverage, from the line of the coverage card (the names are separated by commas)."""
+    return c.text('[data-coverage] [data-zones]').count(',') + 1
+
+
+def _readd(c, *zones):
+    """Puts zones back into the coverage through « Ajouter un pays » (the select of the coverage card), one after the other."""
+    for z in zones:
+        c.page.select_option('[data-add-zone]', z)
+        c.wait(150)
 
 
 def _notes_with(c, text):
@@ -794,8 +854,7 @@ def l7(c):
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]'))],
          [True, 'no-zone', norm(_trow('no-zone', lang, 'greyReason: {'))], 'no zone ticked: grey, « Cochez au moins une zone » written once', what='no zone')
     c.eq(c.count('[data-certify]') + c.count('[data-personal-row]'), 0, 'no zone, no personal source to offer', what='personal sources')
-    c.tap('[data-build-zone="fr"]')
-    c.tap('[data-build-zone="gb"]')
+    _readd(c, 'fr', 'gb')
     c.eq([c.js("[...document.querySelectorAll('[data-personal-row]')].map(r => r.dataset.personalRow)"), c.js("document.querySelector('[data-certify]').checked")], [['nats', 'xplane'], False],
          'France and the UK feed NATS and X-Plane (not ENAIRE): listed, the one box unticked', what='personal sources')
     # the box ticked: X-Plane (read on this workstation only) is listed with its mention, and nothing tells the user to untick it (SOG-0162: there is no box to untick)
@@ -1339,8 +1398,9 @@ def l13(c):
     c.ok(len(opts) >= 2, opts, 'the known zones are offered under « Ajouter un pays »')
     z = opts[0]
     c.js("(z) => { const s = document.querySelector('[data-add-zone]'); s.value = z; s.dispatchEvent(new Event('change', { bubbles: true })) }", z)
-    c.until("!!document.querySelector('[data-build-zone]')", what='the zone added is offered to Construire')
-    c.eq(c.js("[...document.querySelectorAll('[data-build-zone]')].map(e => e.dataset.buildZone + (e.checked ? ':on' : ''))"), [z + ':on'], 'the zone added is ticked', what='zones to build')
+    c.until("(z) => ![...document.querySelectorAll('[data-add-zone] option')].some(o => o.value === z)", z, what='the zone added leaves the select')
+    zname = next(x['names'][{'fr': 0, 'en': 1, 'de': 2, 'es': 3}[c.lang]] for x in cfg['zones'] if x['id'] == z)
+    c.ok(norm(zname) in norm(c.text('[data-coverage] [data-zones]')), c.text('[data-coverage] [data-zones]'), 'the zone added is in the coverage line (SOG-0262: it is part of what the verbs of the base act on)')
     c.ok(c.js("(z) => ![...document.querySelectorAll('[data-add-zone] option')].some(o => o.value === z)", z), 'still offered', 'a zone of the coverage is no longer offered')
     stored = c.js("async () => (await window.FrameData.adapter({ id: 'probe', reads: ['cache/data/'] }).get('cache/data/coverage.json'))?.zones || null")
     c.eq(stored, [z], 'the coverage is written at once (cache/data/coverage.json)', what='coverage.json')
@@ -1560,8 +1620,7 @@ def l15(c):
     _untick(c, 'ca', 'es', 'us', 'fr', 'gb')
     c.eq([_verbs(c), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]')), c.count('[data-build] [data-reason]')],
          [['download:off', 'build:off', 'purge:off'], 'no-zone', norm(_trow('no-zone', lang, 'greyReason: {')), 1], 'no zone ticked: the three are grey, one reason', what='no zone')
-    c.tap('[data-build-zone="fr"]')
-    c.tap('[data-build-zone="gb"]')
+    _readd(c, 'fr', 'gb')
     c.eq(_verbs(c), ['download', 'build', 'purge'], 'live with a launcher and zones ticked', what='verbs')
     _screen_ok(c, 'before the download')
     # ---- B: Télécharger: the body, the lines per zone and per source, the end
@@ -1619,7 +1678,7 @@ def l15(c):
     # ---- C: ENAIRE only when ticked; nothing to fetch says so
     st['views'] = [_fview({}, state='error', jid='j2', done=0, total=0, result={'ok': False, 'fetched': [], 'unchanged': [], 'failed': [], 'manual': [], 'outside_sync': 0, 'warnings': [], 'reason': 'nothing-to-fetch'})]
     st['i'], st['start'] = 0, (200, {'job': 'j2'})
-    c.tap('[data-build-zone="es"]')
+    _readd(c, 'es')
     c.tap('[data-certify]')
     c.tap('[data-verb=download]')
     c.until("!!document.querySelector('[data-build-result][data-result=nothing]')", timeout=10000, what='nothing to download is said')
@@ -2658,7 +2717,8 @@ def l18(c):
     c.page.reload(wait_until='load')
     _head(c)
     _all_open(c)
-    c.eq(norm(c.text('[data-update-all] [data-verb=all]')), norm(T('updateAllN').replace('{n}', n_sets(2))), 'two sets: the base (all its zones ticked) and the VAC points', what='button 2')
+    _readd(c, 'ca', 'es', 'us')      # the coverage written by the earlier gestures (fr, gb) outlives the reload: the five zones are put back
+    c.eq(norm(c.text('[data-update-all] [data-verb=all]')), norm(T('updateAllN').replace('{n}', n_sets(2))), 'two sets: the base (all its zones) and the VAC points', what='button 2')
     c.tap('[data-update-all] [data-verb=all]')
     q = _ask_text(c)
     names_all = ', '.join(z['names'][li] for z in cfg['zones'] if z['id'] in ('ca', 'es', 'fr', 'gb', 'us'))
@@ -3015,7 +3075,7 @@ def _zfeat(c, kind, zone):
     return c.js(_ZFEAT_JS, [kind, *_ZC[zone]])
 
 
-@case('L20', 'Données: the map of the zones to tick, on the shared map base (one selection with the list, tap and drag, Recentrer, tokens, no base → the list alone, frozen, listener and maps removed)',
+@case('L20', 'Données: the map of the States to tick on the shared map base (tone, tap, Recentrer, listener and maps removed) and the pure functions of the map; the base panel has no MapLibre map any more (SOG-0262: the world map is an SVG, L88); a failing zoneOutlines draws no world map',
       'L', tags=('data',), langs4=True, designs=('standard',),
       rule='modules/data/SPEC 5.5 (the map of the zones: the shared base, a tap ticks, a drag ticks nothing, Recentrer, no map without the base); ergonomics: one writer, never colour alone')
 def l20(c):
@@ -3034,7 +3094,7 @@ def l20(c):
     c.eq([west, frame], [181, [[0, 0], [4, 0], [4, 2], [0, 2], [0, 0]]], 'the rings of a feature are unwrapped; a zone without ring is its frame', what='zoneFeatures rings')
     c.eq([r['nothing'], r['gone'], r['zones']], [[[], 'FeatureCollection'], [False] * 5, [{'LF': ['fr'], 'K': ['us']}]],
          'nothing gives an empty collection; the 44 px rule, the SVG projection and our own frame are gone (the base frames the view); the States draw France and the United States', what='constants')
-    # ---- B: the screen with the stubbed outlines and a style with nothing but a background
+    # ---- B: the screen with the stubbed outlines and a style with nothing but a background: the base panel has NO MapLibre map any more (the world map of the base is an SVG, L88); the States map of the Procédures panel keeps the shared base
     mode = {'style': 'ok'}
 
     def style_route(route):
@@ -3049,89 +3109,17 @@ def l20(c):
     c.page.add_init_script(_ZHOOK_JS)
     _open(c, cfg)
     c.page.add_init_script(_FAILOUT_JS)
-    c.page.add_init_script(_REALUS_JS)
     _all_open(c)
-    names = {z: _ZONE_NAMES[z][li] for z in _ZONE_NAMES}
-    list_ids = c.js("[...document.querySelectorAll('[data-build-zone]')].map(i => i.dataset.buildZone)")
-    c.eq(list_ids, ['ca', 'es', 'fr', 'gb', 'us'], 'the list is what it was: every zone of the coverage', what='list')
-    _zmap_ready(c, 'base')
-    c.eq([c.count('[data-zone-map=base] svg'), c.count('[data-map-zone]'), c.count('[data-zone-map=base] [data-zone-slot]'), c.count('[data-zone-map=base] .d-map-host')], [0, 0, 0, 1],
-         'no SVG any more: the slot holds the persistent host of the shared base\'s map', what='frame')
-    c.eq(norm(c.text('[data-zone-map=base] [data-act=map-recenter]')), norm(T('mapRecenter')), 'the button is « Recentrer » in the language of the run', what='recenter text')
-    host = c.js("(() => { const h = document.querySelector('[data-zone-map=base] .d-map-host').getBoundingClientRect(); return [Math.round(h.width), Math.round(h.height), innerHeight, innerWidth] })()")
-    c.ok(host[1] >= 259 and abs(host[1] - max(260, 0.45 * host[2])) <= 2, host, 'the host is about 45 % of the view\'s height, 260 px at least')
-    grid = c.js("(() => { const g = document.querySelector('[data-build] .d-mapgrid'), a = g.children[0].getBoundingClientRect(), b = g.children[1].getBoundingClientRect(); return [a.top < b.top, a.left < b.left] })()")
-    if host[3] >= 1024:
-        c.eq(grid[1], True, 'from 1024 px wide the map sits beside the list, map first', what='side by side')
-    else:
-        c.eq(grid[0], True, 'on a phone the map is above the list', what='stacked')
-    legend = norm(c.text('[data-zone-map=base] [data-zone-legend]'))
-    c.ok(all(norm(T(t, 'mapLegendBase: {')) in legend for t in ('ok', 'warn', 'err')) and norm(T('mapLegendNote')) in legend and norm(T('mapLegendApprox')) in legend, legend,
-         'the one-line legend of the base names its three states in words (à jour, à faire, en échec: SOG-0260), says what ticked looks like, and (the zone without ring) the dashed outline')
-    # the colours handed to the base are the frame's tokens (a fill expression: ok, warn, err → accent, muted, then the accent for any other tone)
-    c.eq(c.js("""() => { const probe = t => { const s = document.createElement('span'); s.style.color = 'var(--sog-' + t + ')'; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v };
-        const e = window.__zm.base.getPaintProperty('%s', 'fill-color'); return [e[3] === probe('ok'), e[5] === probe('warn'), e[9] === probe('muted'), e[10] === probe('accent')] }""" % _ZFILL),
-         [True, True, True, True], 'ok, warn and muted are the frame\'s tokens; the accent (a zone an operation works on) is the colour of any other tone', what='tokens')
-    # the first view frames every zone of the panel
-    b = c.js("(() => { const m = window.__zm.base, b = m.getBounds(); return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()] })()")
-    c.ok(b[0] <= -12 and b[2] >= 24 and b[1] <= 43 and b[3] >= 47, b, 'the first view holds every zone of the panel (-12 … 24 east, 43 … 47 north)')
-    # states in the base's features: France is one cycle behind (warn) and ticked, the US has no ring (approximate), Spain is up to date
-    c.eq([_zfeat(c, 'base', 'fr'), _zfeat(c, 'base', 'gb'), _zfeat(c, 'base', 'us')],
-         [{'id': 'fr', 'tone': 'warn', 'picked': True, 'approx': False}, {'id': 'gb', 'tone': 'ok', 'picked': True, 'approx': False}, {'id': 'us', 'tone': 'ok', 'picked': True, 'approx': True}],
-         'the tone of each state, ticked as the list is, the dashed outline for the zone without ring', what='features')
-    # ---- C: a tap on a polygon ticks the zone, the list follows (one selection); a drag ticks nothing; Recentrer frames the zones again
-    first = c.js(_ZVIEW_JS, 'base')
-    _ztap(c, 'base', 'fr')
-    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), _zfeat(c, 'base', 'fr')['picked']], [False, False],
-         'a tap on the polygon unticks the zone: the list\'s box and the map\'s feature follow the same state', what='tap off')
-    _ztap(c, 'base', 'fr')
-    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), _zfeat(c, 'base', 'fr')['picked']], [True, True], 'and back', what='tap on')
-    c.tap('[data-build-zone=gb]')
-    c.until(f"(() => {{ const m = window.__zm.base, p = m.project([{_ZC['gb'][0]}, {_ZC['gb'][1]}]); return m.queryRenderedFeatures([p.x, p.y], {{ layers: ['{_ZFILL}'] }})[0]?.properties.picked === false }})()",
-            timeout=5000, what='the list changes the selection: the map follows')
-    c.tap('[data-build-zone=gb]')
-    c.until(f"(() => {{ const m = window.__zm.base, p = m.project([{_ZC['gb'][0]}, {_ZC['gb'][1]}]); return m.queryRenderedFeatures([p.x, p.y], {{ layers: ['{_ZFILL}'] }})[0]?.properties.picked === true }})()",
-            timeout=5000, what='and the list ticks it again')
-    # a drag (mouse down, move, up) moves the map and ticks nothing
-    x, y = _zpoint(c, 'base', 'fr')
-    m = c.page.mouse
-    m.move(x, y)
-    m.down()
-    for i in range(1, 11):
-        m.move(x + 8 * i, y + 3 * i)
-        c.wait(25)
-    m.up()
-    c.wait(400)
-    moved = c.js(_ZVIEW_JS, 'base')
-    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), moved != first], [True, True], 'a drag pans the map and ticks nothing', what='drag')
-    c.tap('[data-zone-map=base] [data-act=map-recenter]')
-    c.wait(400)
-    c.eq(c.js(_ZVIEW_JS, 'base'), first, '« Recentrer » brings the view back to the first frame', what='recenter')
-    c.eq(c.js("document.querySelectorAll('[data-zone-map=base] .d-map-host').length"), 1, 'still one host, whatever the number of redraws', what='one host')
-    # a zone without ring (the US here) is a tappable polygon too
-    _ztap(c, 'base', 'es')
-    c.eq(c.js("document.querySelector('[data-build-zone=es]').checked"), False, 'Spain unticked by a tap', what='es off')
-    _ztap(c, 'base', 'es')
-    # ---- D: the States map (France and the United States)
+    c.until("!!document.querySelector('[data-world-map]')", timeout=10000, what='the world map of the base is drawn')
+    c.eq([c.count('[data-zone-map=base]'), c.count('[data-build-zone]'), c.count('[data-world-map] .maplibregl-canvas'), c.count('[data-wmap]')], [0, 0, 0, 1],
+         'the base panel has no MapLibre map and no list of zones to tick any more: its map is the SVG world map (L88)', what='base map')
+    # ---- D: the States map (France and the United States), on the shared base: tone, tap, legend
     _zmap_ready(c, 'proc')
     c.eq([_zfeat(c, 'proc', 'fr')['id'], _zfeat(c, 'proc', 'us')['id'], _zfeat(c, 'proc', 'us')['picked']], ['LF', 'K', False], 'the States with a bulk source, none ticked', what='proc features')
     _ztap(c, 'proc', 'us')
     c.eq([c.js("document.querySelector('[data-set-panel=proc] [data-item=K]').checked"), c.js("document.querySelector('[data-set-panel=proc] [data-item=LF]').checked"), _zfeat(c, 'proc', 'us')['picked']],
          [True, False, True], 'a tap on the United States ticks the State K in the panel\'s selection', what='proc tap')
-    # ---- E: a running operation freezes the map as it freezes the list
-    st = _launcher(c, [_view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'es': _zs('waiting')})], verbs=BASE3)
-    c.page.reload(wait_until='load')
-    _head(c)
-    _all_open(c)
-    _zmap_ready(c, 'base')
-    _untick(c, 'ca', 'gb', 'us')
-    c.tap('[data-build] [data-verb=build]')
-    c.until("!!document.querySelector('[data-build] [data-running]')", what='a build runs')
-    c.until(f"(() => {{ const m = window.__zm.base, p = m.project([{_ZC['fr'][0]}, {_ZC['fr'][1]}]); return m.queryRenderedFeatures([p.x, p.y], {{ layers: ['{_ZFILL}'] }})[0]?.properties.tone === 'accent' }})()",
-            timeout=8000, what='the running zone takes the accent tone')
-    before = c.js("document.querySelector('[data-build-zone=es]').checked")
-    _ztap(c, 'base', 'es')
-    c.eq(c.js("document.querySelector('[data-build-zone=es]').checked"), before, 'a tap while it runs changes nothing', what='tap frozen')
+    c.eq(norm(c.text('[data-zone-map=proc] [data-act=map-recenter]')), norm(T('mapRecenter')), 'the button is « Recentrer » in the language of the run', what='recenter text')
     # ---- F: the listener is there once and goes with the module, and so do the maps
     c.eq(c.js('window.__mapResize'), 1, 'one resize listener while the module is mounted', what='listener')
     removed = c.js('window.__zmRemoved')
@@ -3140,39 +3128,16 @@ def l20(c):
     c.ok(other is not None, ids, 'the Maintenance rail has another entry to leave the module')
     c.js("(h) => { location.hash = '#' + h }", other)
     c.until("!document.querySelector('[data-module=data]')", timeout=8000, what='the module is unmounted')
-    c.eq([c.js('window.__mapResize'), c.js('window.__zmRemoved') - removed, c.count('.maplibregl-canvas')], [0, 1, 0], 'the listener is removed at unmount, and the map that was started (the base one; the States map starts only when its group is open, SOG-0164) is removed with its canvas', what='listener removed')
-    # ---- G2: a real outline for the same zone: not approximate, no legend item
-    c.page.evaluate("sessionStorage.setItem('__realUs', '1')")
-    c.open('data', docs=LEVEL3, wait=False, app='maintenance')
-    _head(c)
-    _all_open(c)
-    _zmap_ready(c, 'base')
-    c.eq([_zfeat(c, 'base', 'us')['approx'], norm(T('mapLegendApprox')) in norm(c.text('[data-zone-legend]'))], [False, False], 'a ring that is not the frame: solid outline, no « contour approximatif », no legend item', what='real outline')
-    # ---- G: the base does not come (the style is refused): the list alone, no error line
-    mode['style'] = 'refused'
-    c.page.evaluate("sessionStorage.removeItem('__realUs')")
-    c.open('data', docs=LEVEL3, wait=False, app='maintenance')
-    _head(c)
-    _all_open(c)
-    for _ in range(20):   # each map tries to start when it comes into the screen: the frames still there are brought in turn
-        c.js("document.querySelector('[data-zone-map]')?.scrollIntoView({ block: 'center' })")
-        c.wait(300)
-        if not c.count('[data-zone-map]'):
-            break
-    c.until("!document.querySelector('[data-zone-map]') && !!window.__stub && window.__stub.calls.zoneOutlines >= 1", timeout=20000, what='no map when the base does not come')
-    c.eq([c.count('[data-zone-map]'), c.count('.maplibregl-canvas'), c.count('[data-build-zone]'), c.count('[data-error]'), c.count('[data-zone-legend]')], [0, 0, 5, 0, 0],
-         'the style is refused: no map, no legend, the list is all there is, no error line', what='no base')
-    # ---- H: a failing zoneOutlines: the list alone, no error line
-    mode['style'] = 'ok'
+    c.eq([c.js('window.__mapResize'), c.js('window.__zmRemoved') - removed, c.count('.maplibregl-canvas')], [0, 1, 0], 'the listener is removed at unmount, and the map that was started (the States one) with it', what='unmount')
+    # ---- H: a failing zoneOutlines: no world map, the rest of the panel is there, no error line
     c.page.evaluate("sessionStorage.setItem('__failOutlines', '1')")
     c.open('data', docs=LEVEL3, wait=False, app='maintenance')   # back on the module (the init scripts stay), now with a failing zoneOutlines
     _head(c)
     _all_open(c)
     c.wait(800)
-    c.eq([c.count('[data-zone-map]'), c.count('[data-build-zone]'), c.count('[data-error]'), c.js('window.__stub.calls.zoneOutlines >= 1')], [0, 5, 0, True],
-         'zoneOutlines throws: no map, the list is all there is, no error line', what='failure')
+    c.eq([c.count('[data-world-map]'), c.count('[data-error]'), c.js('window.__stub.calls.zoneOutlines >= 1'), c.count('[data-state-head]')], [0, 0, True, 1],
+         'zoneOutlines throws: no world map, the state bar is all there is above, no error line', what='failure')
     c.check_errors()
-
 
 
 # ------------------------------------------------------------------------------------------------------ L21 .. L23
@@ -3734,40 +3699,6 @@ def l29(c):
     c.check_errors()
 
 
-@case('L30', 'Données: a tap on a country of the map toggles it, an inactive one too (added to the coverage and ticked; an active one is only unticked, never purged)', 'L', tags=('data',), langs4=True,
-      designs=('standard',), screens=False, night=False,
-      rule='SOG-0070: the map of the base draws every zone the suite knows (grey when outside the coverage); a tap on an inactive one adds it like « Ajouter un pays » (written, ticked), a tap on an active one unticks it (the coverage keeps it), the same gesture everywhere on the map, at once')
-def l30(c):
-    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
-    cfg, _ = _fixture()
-    cfg['outlines'] = _outlines()
-    cfg['outlines']['de'] = {'name': ['Allemagne', 'Germany', 'Deutschland', 'Alemania'], 'rings': [[[24, 45], [36, 45], [36, 46], [24, 47], [24, 45]]], 'box': [24, 45, 36, 47]}
-    _ZC['de'] = [30, 45.6]
-    c.page.add_init_script(_ZHOOK_JS)
-    _open(c, cfg)
-    _all_open(c)
-    _zmap_ready(c, 'base')
-    c.js("window.__zm.base.fitBounds([-14, 42, 38, 48], { animate: false, padding: 10 })")  # the first view frames the coverage; Germany is just beyond its edge
-    c.wait(500)
-    c.eq(c.count('[data-build-zone="de"]'), 0, 'Germany is known to the suite but not in the coverage: no line in the list', what='not in list')
-    f = _zfeat(c, 'base', 'de')
-    c.eq((f or {}).get('id'), 'de', 'the map draws it all the same', what='drawn')
-    c.eq((f or {}).get('tone'), 'muted', 'grey: outside the coverage', what='muted')
-    # ---- a tap on the inactive country adds it, ticked, written, at once
-    _ztap(c, 'base', 'de')
-    c.until("!!document.querySelector('[data-build-zone=\"de\"]')", timeout=6000, what='the list has Germany')
-    c.eq((c.js("document.querySelector('[data-build-zone=\"de\"]').checked"), _zfeat(c, 'base', 'de')['picked']), (True, True), 'added and ticked: the list and the map agree', what='added')
-    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'de' in (d.get('zones') or [])), what='the coverage written with Germany')
-    c.ok('fr' in doc['zones'] and 'de' in doc['zones'], doc['zones'], 'the coverage keeps the others and now has Germany')
-    # ---- a tap on an active country unticks it; the coverage keeps it (no purge)
-    _ztap(c, 'base', 'de')
-    c.eq((c.js("document.querySelector('[data-build-zone=\"de\"]').checked"), _zfeat(c, 'base', 'de')['picked']), (False, False), 'a second tap unticks it: the same gesture on every country', what='unticked')
-    _ztap(c, 'base', 'fr')
-    c.eq((c.js("document.querySelector('[data-build-zone=fr]').checked"), c.count('[data-build-zone=fr]')), (False, 1), 'an active country is unticked, never removed from the list', what='fr')
-    c.ok('fr' in c.doc('cache/data/coverage.json')['zones'] and 'de' in c.doc('cache/data/coverage.json')['zones'], c.doc('cache/data/coverage.json'), 'the coverage still holds both: a tap never purges')
-    c.check_errors()
-
-
 @case('L31', 'Données: after Construire the screen reads the published state again without a reload (aerodb keeps its list of published zones: refresh() first), so the orange zone turns green', 'L', tags=('data',),
       designs=('standard',), screens=False, night=False,
       rule='SOG-0072: « après avoir recalculé, toujours un pays orange, il faut ctrl-maj-F5 » — the end of a real build (and of a publication, and of the chain) asks aerodb to forget its memorised list of zones (refresh()) before the screen reads publication() again')
@@ -3913,7 +3844,6 @@ def l83(c):
     z = lambda n: _zones_text(lang, n)
     BT = lambda k, n: _trow(k, lang, after='  bal: {', row=0 if _one(lang, n) else 1).replace('{n}', z(n))
     UT = lambda k: _UT(k, lang)
-    ticked = lambda: sorted(set(_ticked(c)))   # the zones ticked (a zone unfolded in the sentence shows its tick twice: one selection, two places)
     fetched = _view('done', step='Terminé', result={'fetched': ['fr'], 'unchanged': [], 'failed': [], 'manual': []})
     running = _view('running', step='Construction', done=1, total=5, zones={'ca': _zs('built', 4, 4), 'es': _zs('building', 1, 4)})
     partial = _view('done', step='Terminé', jid='j2', zones={'fr': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['fr'], 'failed': [{'zone': 'es', 'error': 'invalid-output'}], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'reason': 'partial'})
@@ -3943,16 +3873,15 @@ def l83(c):
     doing = lambda dl, bd: UT('doLine').replace('{l}', ', '.join([UT('doDl').replace('{z}', z(dl))] + ([UT('doBuild').replace('{z}', z(bd))] if bd else [])))
     c.eq(norm(c.text('[data-update-plan]')), norm(doing(3, 2)), 'under it one line says what it will do: download three zones, rebuild two (« Publier » stays its own step)', what='plan')
     c.eq(norm(c.text('[data-update-notes]')), norm(UT('waitNote').replace('{z}', BT('waiting', 1))), 'and that the zone that waits for a file is left to the user', what='notes')
-    # ---- a number unfolds its zones in place: same rows as the list below, nothing ticked, no scroll, the lower list stays whole
-    ticked0 = ticked()
+    # ---- a number unfolds its zones in place, no scroll
     y0 = top()
     c.tap('[data-state-sentence] [data-filter=failed]')
     c.until("!!document.querySelector('[data-state-zones]')", timeout=4000, what='the failed zones unfold')
     c.eq([c.js("document.querySelector('[data-state-zones]').dataset.stateOpen"), rows('[data-state-zones]'), c.js("document.querySelector('[data-state-sentence] [data-filter=failed]').getAttribute('aria-expanded')")], ['failed', ['es'], 'true'], 'the number of failures unfolds the failed zone, and says it is open', what='unfold failed')
     c.eq(c.js("document.querySelector('[data-state-sentence]').nextElementSibling === document.querySelector('[data-state-zones]')"), True, 'right below the sentence', what='in place')
     c.eq(c.count('[data-state-zones] [data-zone-row=es] [data-zstate=failed]'), 1, 'the row is the one of the list below: name, state pill', what='row state')
-    c.eq([norm(c.text('[data-state-zones] [data-zone-row=es] [data-verb=retry-zone]')), c.count('[data-state-zones] [data-zone-row=es] [data-build-zone]')], [norm(UT('retry')), 1], 'with its « Réessayer » and its tick', what='row actions')
-    c.eq([ticked() == ticked0, abs(top() - y0) <= 1, len(rows('[data-build-zones]'))], [True, True, 5], 'nothing was ticked, the page did not move, the lower list still shows its five zones', what='no side effect')
+    c.eq(norm(c.text('[data-state-zones] [data-zone-row=es] [data-verb=retry-zone]')), norm(UT('retry')), 'with its « Réessayer » (no tick: SOG-0262)', what='row actions')
+    c.eq(abs(top() - y0) <= 1, True, 'the page did not move', what='no side effect')
     c.tap('[data-state-sentence] [data-filter=waiting]')
     c.until("document.querySelector('[data-state-zones]')?.dataset.stateOpen === 'waiting'", timeout=4000, what='the waiting zones unfold')
     c.eq([rows('[data-state-zones]'), c.count('[data-state-zones] [data-zone-row=gb] [data-verb=pickup]'), c.count('[data-state-zones] [data-zone-row=gb] [data-act=zone-upload]'), c.count('[data-state-zones]')], [['gb'], 1, 1, 1], 'another number replaces it: the zone that waits for a file, with « Prendre le fichier » and « Choisir le fichier… »', what='unfold waiting')
@@ -3962,25 +3891,9 @@ def l83(c):
     c.tap('[data-state-sentence] [data-filter=rebuild]')
     c.until("document.querySelector('[data-state-zones]')?.dataset.stateOpen === 'rebuild'", timeout=4000, what='the zones to rebuild unfold')
     c.eq(rows('[data-state-zones]'), ['fr'], 'to rebuild: France', what='unfold rebuild')
-    # ---- one selection, two places: unticking in the unfolded list unticks the list below, and the scope becomes « la sélection »
-    c.tap('[data-state-zones] [data-build-zone=fr]')
-    c.eq([ticked(), c.js("document.querySelector('[data-build-zones] [data-build-zone=fr]').checked")], [['ca', 'es', 'gb', 'us'], False], 'the tick of the unfolded row is the tick of the list below (one state)', what='one state')
-    c.eq(norm(c.text('[data-verb=update]')), norm(UT('updateSel').replace('{n}', '2')), 'a partial selection: the button says « la sélection » and counts its own zones (the failed one and the one without state)', what='label partial')
-    c.eq(norm(c.text('[data-update-plan]')), norm(doing(2, 1)), 'and its plan is that of the selection alone', what='plan partial')
-    c.eq(norm(c.text('[data-update-notes]')), norm(UT('skipNote').replace('{z}', z(1)) + ' ' + UT('waitNote').replace('{z}', BT('waiting', 1))), 'a zone already up to date inside the selection is said to be skipped, and the one that waits for a file is left out', what='notes partial')
     c.tap('[data-state-sentence] [data-filter=rebuild]')
     c.until("!document.querySelector('[data-state-zones]')", timeout=4000, what='the same number folds it again')
-    # ---- the partial selection acts on the ticked zones only; nothing ticked is the whole coverage (not a grey button)
-    n0 = len(st['posts'])
-    c.tap('[data-build] [data-verb=update]')
-    _ask_text(c)
-    c.eq([sorted(p['args']['zones']) for p in st['posts'][n0:] if p['verb'] == 'status'][0], ['ca', 'es', 'gb', 'us'], 'the selection: the state is read for the ticked zones alone', what='status partial')
-    c.eq(sorted(_posts(st, 'fetch')[-1]['args']['zones']), ['es', 'us'], 'and the download is that of the ticked zones that are not up to date (never France, never the zone that waits)', what='fetch partial')
-    c.tap('.f-modal [data-no]')
-    c.until("!document.querySelector('.f-modal') && !document.querySelector('[data-build] [data-verb=update]').disabled", timeout=6000, what='the question is closed')
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=4000, what='nothing ticked')
-    c.eq([norm(c.text('[data-verb=update]')), c.js("document.querySelector('[data-build] [data-verb=update]').disabled")], [norm(UT('updateN').replace('{n}', '3')), False], 'nothing ticked: the whole coverage, the button is live (it used to be grey)', what='label none')
+    c.eq([norm(c.text('[data-verb=update]')), c.js("document.querySelector('[data-build] [data-verb=update]').disabled")], [norm(UT('updateN').replace('{n}', '3')), False], 'the whole coverage, the button is live', what='label none')
     st['views'], st['i'] = [fetched], 0
     n0 = len(st['posts'])
     c.tap('[data-build] [data-verb=update]')
@@ -3990,12 +3903,12 @@ def l83(c):
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", timeout=6000, what='the question is closed')
     # ---- the progress and the bilan are in the head block, under the button; the sentence stays while it works
-    c.tap('[data-build-zones] [data-build-zone=es]')
+    _untick(c, 'ca', 'fr', 'gb', 'us')      # the coverage is Spain alone: « Tout recalculer » builds it
     st['views'], st['i'], st['start'] = [running], 0, (200, {'job': 'j2'})
     c.js("document.querySelector('[data-verbs-more]').open = true")
     c.tap('[data-build] [data-verb=build]')
     c.until("!!document.querySelector('[data-build] [data-running]')", timeout=10000, what='the progress')
-    c.eq([c.count('[data-build] [data-running]'), c.js("!!document.querySelector('[data-build] [data-running]').closest('[data-state-head]')"), c.count('[data-state-sentence] [data-filter]')], [1, True, 5], 'while it works the progress is in the head block, under the button, and the sentence stays', what='progress')
+    c.eq([c.count('[data-build] [data-running]'), c.js("!!document.querySelector('[data-build] [data-running]').closest('[data-state-head]')"), c.count('[data-state-sentence] [data-filter]')], [1, True, 1], 'while it works the progress is in the head block, under the button, and the sentence stays (one zone in the coverage here: one number)', what='progress')
     st['views'], st['i'] = [partial], 0
     st['status'] = mixed
     c.until("!!document.querySelector('[data-build] [data-build-result]')", timeout=12000, what='the bilan')
@@ -4013,6 +3926,7 @@ def l83(c):
     c.page.reload()
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen again')
     c.settle()
+    _readd(c, 'ca', 'fr', 'gb', 'us')      # the coverage written by the gestures above (Spain) outlives the reload
     c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1", timeout=10000, what='the sentence with its one number')
     c.eq([keys(), c.count('[data-build] [data-verb=update]'), norm(c.text('[data-all-fresh]'))], [['upToDate'], 0, norm(_trow('allFresh', lang))], 'everything up to date: one number, no button, « Tout est à jour. »', what='all fresh')
     c.eq(norm(c.text('[data-state-sentence]')).endswith(norm(_trow('stateBase', lang) + ' ' + BT('upToDate', 5) + '.')), True, 'the sentence says the five zones are up to date', what='sentence fresh')
@@ -4050,12 +3964,11 @@ def l84(c):
     c.context.route(re.compile(r'/__setup/base/upload'), lambda route: route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body'])))
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=8000, what='the six pills')
-    row = '[data-build-zones] [data-zone-row=pt]'
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) >= 6", timeout=8000, what='the six pills')
+    row = '[data-state-zones] [data-zone-row=pt]'
     lines = lambda: [norm(x) for x in c.js(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].map(p => p.textContent)")]
     # ---- his gesture: nothing ticked but Portugal, the fold « Plus » open, « Prendre le fichier téléchargé »
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.tap('[data-build-zones] [data-build-zone=pt]')
+    _unfold(c, 'pt')
     c.js("document.querySelector('[data-verbs-more]').open = true")
     c.eq([c.count(f'{row} [data-verb=pickup]'), c.count(f'{row} [data-act=zone-upload]'), c.count(f'{row} [data-zone-msg]')], [1, 1, 0], 'the line of the zone says what it waits for, offers the pickup and « Choisir le fichier… », and has no message yet', what='line before')
     c.tap('[data-build] [data-verbs-more] [data-verb=pickup]')
@@ -4069,7 +3982,7 @@ def l84(c):
     c.wait(500)
     c.eq(lines(), [norm(nothing), norm(miss)], 'once the notification is gone the line still says it', what='message stays')
     # ---- « Choisir le fichier… » with a file the launcher does not recognise: the refusal is written on the line, with the file that was received
-    c.until("!document.querySelector('[data-build-zones] [data-zone-row=pt] [data-act=zone-upload]').disabled", timeout=8000, what='the buttons are free again')
+    c.until("!document.querySelector('[data-state-zones] [data-zone-row=pt] [data-act=zone-upload]').disabled", timeout=8000, what='the buttons are free again')
     with c.page.expect_file_chooser() as fc:
         c.js(f"document.querySelector('{row} [data-act=zone-upload]').click()")
     fc.value.set_files({'name': 'AIP_PT.iso', 'mimeType': 'application/x-iso9660-image', 'buffer': b'CD001' + b'x' * 995})
@@ -4092,7 +4005,9 @@ def l84(c):
     c.page.reload(wait_until='load')
     _head(c)
     _all_open(c)
-    c.until("!!document.querySelector('[data-build-zones] [data-zone-row=pt] [data-verb=pickup]')", timeout=10000, what='the line of Portugal')
+    _ready(c, 6)
+    _unfold(c, 'pt')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=pt] [data-verb=pickup]')", timeout=10000, what='the line of Portugal')
     grey = norm(_trow('unknown-verb', lang, after='  greyReason: {'))
     c.eq([c.js(f"document.querySelector('{row} [data-verb=pickup]').disabled"), norm(c.text(f'{row} [data-zone-grey]')), c.js("document.querySelector('[data-build] [data-verbs-more] [data-verb=pickup]').disabled"),
           norm(c.text('[data-build] [data-verbs-more] [data-pickup-reason]'))], [True, grey, True, grey], 'the pickup is grey: its reason is written next to it, on the line and in the fold', what='grey reason')
@@ -4104,9 +4019,8 @@ def l84(c):
     c.page.reload(wait_until='load')
     _head(c)
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=8000, what='the six pills')
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.tap('[data-build-zones] [data-build-zone=pt]')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) >= 6", timeout=8000, what='the six pills')
+    _unfold(c, 'pt')
     c.js("document.querySelector('[data-verbs-more]').open = true")
     c.eq([c.count(f'{row} [data-zone-action]'), c.count(f'{row} [data-act=zone-upload]')], [0, 0], 'a zone to rebuild whose file nothing says is waiting has no action on its line', what='plain line')
     c.tap('[data-build] [data-verbs-more] [data-verb=pickup]')
@@ -4274,12 +4188,10 @@ def l36(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the state of the five zones, read at the opening')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the state of the five zones, read at the opening')
     labels = c.js("[...document.querySelectorAll('[data-build] .d-verbs:not([data-select-row]) button')].map(b => [b.dataset.verb, b.textContent.trim()])")
     c.eq([[v for v, _l in labels if v != 'pickup'], dict(labels)['update'], dict(labels)['build']], [['update', 'download', 'build', 'purge'], norm(_UT('updateN', lang).replace('{n}', '1')), norm(_UT('recompute', lang))],
          'Mettre à jour (1: France) in the head block, then the verbs row: Télécharger, Tout recalculer (today\u2019s build), Purger', what='verbs')
-    total = sum(_KB.values())
-    c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 5)) + ' · ' + _bytes(c, total)), 'the selection says its count and its size before any verb', what='selection line')
     n0 = len(st['posts'])
     # ---- Mettre à jour: the fetch, the state, then ONE question that names France (the launcher says: source newer), the reason, the size
     c.tap('[data-build] [data-verb=update]')
@@ -4298,17 +4210,17 @@ def l36(c):
     c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
     c.eq({k: _posts(st, 'build')[0][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'build', 'args': {'zones': ['fr'], 'personal': []}}, 'only the zone the launcher called stale is built', what='build body')
     for _ in range(40):   # the state is read again at the end of the build: no reload
-        if c.js("[...document.querySelectorAll('[data-zstate]')].map(b => b.dataset.zstate).join() === 'up-to-date,up-to-date,up-to-date,up-to-date,up-to-date'"):
+        if c.js(_SENTENCE_JS) == [['upToDate', 5]]:
             break
         c.wait(200)
-    c.eq(c.js("[...document.querySelectorAll('[data-zstate]')].map(b => b.dataset.zstate)"), ['up-to-date'] * 5, 'after the build the state is read again from the launcher: every zone is up to date', what='state after')
+    c.eq(c.js(_SENTENCE_JS), [['upToDate', 5]], 'after the build the state is read again from the launcher: every zone is up to date (the numbers of the state sentence)', what='state after')
     # ---- nothing to do: the download, a sentence, no question, no build.  The screen says « Tout est à jour. » (no button) once every zone is up to date, so the page is
     # opened again on a state where France is stale; the launcher then says « up to date » at its second reading (the download made it so)
     st['status'] = _FR_STALE()
     c.page.reload()
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen again')
     c.settle()
-    c.until("document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-build] [data-verb=update]')", timeout=8000, what='the state of the five zones and the button')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5 && !!document.querySelector('[data-build] [data-verb=update]')", timeout=8000, what='the state of the five zones and the button')
     seq = {'n': 0}
 
     def after_download(args):
@@ -4340,49 +4252,11 @@ def l36(c):
 _ticked = lambda c: c.js("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).map(i => i.dataset.buildZone)")
 
 
-@case('L37', 'Données: « Seulement les périmés » (the zones the launcher says are not up to date and buildable), « Tout désélectionner », the selection line; no job is started by a gesture except the state read', 'L', tags=('data',), langs4=True,
-      designs=('standard',), screens=False, night=False,
-      rule='SOG-0071: the selection gestures — only the stale ones (read from base/status), deselect all; the selection stays in the page\u2019s state and is written nowhere before a verb')
-def l37(c):
-    lang = c.lang
-    st = _launcher(c, [], verbs=_VERBS)
-    st['status'] = _FR_STALE()
-    cfg, _ = _fixture()
-    _open(c, _sized(cfg))
-    _all_open(c)
-    c.eq(_ticked(c), ['ca', 'es', 'fr', 'gb', 'us'], 'every zone of the coverage is ticked at the first opening', what='first selection')
-    # ---- only the stale ones: the launcher says France
-    c.tap('[data-select-row] [data-verb=select-stale]')
-    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 1", timeout=6000, what='the selection became the stale zones')
-    c.eq(_ticked(c), ['fr'], 'only France, the zone the launcher calls stale, stays ticked', what='stale only')
-    c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 1)) + ' · ' + _bytes(c, _KB['fr'])), 'the line follows: one zone and its size', what='line')
-    # ---- deselect all
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=6000, what='nothing ticked')
-    c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selNothing', lang)), 'the line says so', what='nothing line')
-    c.eq([c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), c.js("document.querySelector('[data-build] [data-verb=build]').disabled")], [False, True], 'nothing ticked: « Mettre à jour » takes the whole coverage and stays live, « Tout recalculer » has no zone and is grey', what='verbs grey')
-    # ---- a zone that waits for a file of Downloads is not buildable: « only the stale ones » leaves it out; nothing buildable: said, the selection stays
-    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'us': _zst('up-to-date'),
-                            'gb': _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)})
-    c.tap('[data-build-zone="gb"]')
-    c.tap('[data-select-row] [data-verb=select-stale]')
-    said = norm(_UT('noStale', lang))
-    for _ in range(40):
-        if _notes_with(c, said):
-            break
-        c.wait(250)
-    c.ok(bool(_notes_with(c, said)), None, 'nothing buildable is stale: said')
-    c.eq(_ticked(c), ['gb'], 'and the selection stays as it was', what='kept')
-    c.eq(set(p['verb'] for p in st['posts']), {'status'}, 'the gestures started no job: the only calls read the state', what='posts')
-    c.check_errors()
-
-
 @case('L40', 'Données: the state of each zone is drawn from the launcher\u2019s answer (green, orange with its reason on touch, grey, red; blue while the page builds it), on the list and on the map; the orange country turns green on the answer after a build', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=False, night=False,
       rule='SOG-0071 time 2 / SOG-0072: base/status per zone — up-to-date, stale(reason), never-built, failed — with the reason codes translated in four languages; after a build the state is read again and the orange zone turns green without a reload')
 def l40(c):
     lang = c.lang
-    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
     built = _view('done', step='Terminé', jid='j2', zones={'fr': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['fr'], 'failed': [], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})
     st = _launcher(c, [built], verbs=_VERBS)
     parser_old = {'code': 'parser-old', 'built': 22, 'current': 23}
@@ -4390,15 +4264,17 @@ def l40(c):
                             'us': _zst('stale', {'code': 'inputs-changed', 'count': 2, 'names': ['a.json', 'b.json']})})
     cfg, _ = _fixture()
     cfg['outlines'] = _outlines()
-    c.page.add_init_script(_ZHOOK_JS)
     _open(c, _sized(cfg))
     _all_open(c)
-    _zmap_ready(c, 'base')
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
-    pills = lambda: c.js("Object.fromEntries([...document.querySelectorAll('[data-zone-row]')].map(r => [r.dataset.zoneRow, r.querySelector('[data-zstate]').dataset.zstate]))")
-    c.eq(pills(), {'ca': 'up-to-date', 'es': 'never-built', 'fr': 'stale', 'gb': 'failed', 'us': 'stale'}, 'every zone says the state the launcher gave', what='pills')
+    c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length === 4", timeout=15000, what='the world map')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
+    c.eq(_pills(c), {'ca': 'up-to-date', 'es': 'never-built', 'fr': 'stale', 'gb': 'failed', 'us': 'stale'}, 'every zone says the state the launcher gave (read from the lists the numbers of the sentence unfold)', what='pills')
     zs = lambda z: _trow(z, lang, after='  zst: {')
+    c.tap('[data-state-sentence] [data-filter=upToDate]')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=ca] [data-zstate]')", what='the zones up to date')
     c.eq(norm(c.text('[data-zone-row=ca] [data-zstate]')), norm(zs('up-to-date')), 'worded in the language of the run', what='pill text')
+    c.tap('[data-state-sentence] [data-filter=rebuild]')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=fr] [data-act=zone-why]')", what='the zones to rebuild')
     # the reason on touch: nothing is said until the pill is touched; the codes are translated, the parameters filled
     c.eq(c.count('[data-zone-why]'), 0, 'the reasons stay folded', what='folded')
     c.tap('[data-zone-row=fr] [data-act=zone-why]')
@@ -4411,11 +4287,11 @@ def l40(c):
     c.tap('[data-zone-row=fr] [data-act=zone-why]')
     c.until("!document.querySelector('[data-zone-why=fr]')", timeout=4000, what='a second touch folds the reasons')
     # the map: the same states as tones (green, orange, grey, red)
-    tone = lambda z: (_zfeat(c, 'base', z) or {}).get('tone')
+    tone = lambda z: c.js(f"(document.querySelector('[data-wmap] path[data-zone={z}]') || {{ dataset: {{}} }}).dataset.tone")
     c.eq({z: tone(z) for z in ('fr', 'gb', 'es', 'us')}, {'fr': 'warn', 'gb': 'err', 'es': 'warn', 'us': 'warn'}, 'the map draws the same states in three tones (SOG-0260): a zone to do or never built is amber, a failed one red', what='tones')
     # ---- a build: blue while the page builds it, and the orange country turns green on the launcher\u2019s answer (SOG-0072)
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.tap('[data-build-zone="fr"]')
+    _untick(c, 'ca', 'es', 'gb', 'us')      # the coverage is France alone: « Tout recalculer » builds it (the list of the zones to rebuild is still unfolded)
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=fr]')", what='France is listed to rebuild')
     st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('never-built', {'code': 'never-built'}), 'fr': _zst('up-to-date'), 'gb': _zst('failed', {'code': 'failed', 'error': 'invalid-output'}),
                             'us': _zst('stale', {'code': 'inputs-changed', 'count': 2, 'names': ['a.json', 'b.json']})})
     st['views'] = [_view(step='Zone fr', done=0, total=1, zones={'fr': _zs('building', 1, 4)})] * 3 + [built]
@@ -4427,8 +4303,8 @@ def l40(c):
         c.wait(150)
     c.eq(c.js("document.querySelector('[data-zone-row=fr] [data-zstate]')?.dataset.zstate"), 'building', 'while the page builds the zone its pill is « en cours »', what='building')
     c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
-    c.until("document.querySelector('[data-zone-row=fr] [data-zstate]').dataset.zstate === 'up-to-date'", timeout=8000, what='the orange country is green on the launcher\u2019s answer')
-    c.until(f"(() => {{ const m = window.__zm.base, p = m.project({json.dumps(_ZC['fr'])}); const f = m.queryRenderedFeatures([p.x, p.y], {{ layers: ['{_ZFILL}'] }})[0]; return !!f && f.properties.tone === 'ok' }})()", timeout=8000, what='and so is its polygon on the map')
+    c.until("document.querySelector('[data-wmap] path[data-zone=fr]').dataset.tone === 'ok'", timeout=8000, what='the orange country is green on the map on the launcher\u2019s answer')
+    c.eq(_pills(c), {'fr': 'up-to-date'}, 'and its pill says up to date', what='pill after')
     c.check_errors()
 
 
@@ -4450,7 +4326,7 @@ def l41(c):
         cfg['publication']['base'][z] = cfg['publication']['base']['ca']
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 16", timeout=10000, what='the state of the sixteen zones')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 16", timeout=10000, what='the state of the sixteen zones')
     n0 = len(st['posts'])
     c.tap('[data-build] [data-verb=update]')
     q = _ask_text(c)
@@ -4493,7 +4369,7 @@ def l42(c):
     c.check_errors()
 
 
-@case('L43', 'Données: a launcher that does not know base/status keeps « Mettre à jour » and « Seulement les périmés » without an answer: grey with its reason, nothing sent, no pill', 'L', tags=('data',),
+@case('L43', 'Données: a launcher that does not know base/status keeps « Mettre à jour » without an answer: grey with its reason, nothing sent, no pill', 'L', tags=('data',),
       designs=('standard',), screens=False, night=False,
       rule='SOG-0071 time 2: the verb is read from regen/verbs like the others; an old launcher greys « Mettre à jour » (« ne connaît pas encore cette opération »); « Tout recalculer » (base/build) stays live')
 def l43(c):
@@ -4504,7 +4380,7 @@ def l43(c):
     c.wait(500)
     c.eq([c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), c.js("document.querySelector('[data-build] [data-verb=build]').disabled"), c.count('[data-zstate]')], [True, False, 0],
          'Mettre à jour is grey, Tout recalculer is live, no pill is drawn', what='old launcher')
-    c.eq(c.js("document.querySelector('[data-verb=select-stale]').disabled"), True, '« Seulement les périmés » is grey: it has no state to read', what='select-stale grey')
+    c.eq([c.count('[data-verb=select-stale]'), c.count('[data-state-sentence] [data-filter]')], [0, 0], 'no selection gesture any more (SOG-0262), and the sentence has no number to unfold without a state', what='no select-stale')
     c.wait(400)
     c.eq(len(st['posts']), 0, 'nothing is sent', what='posts')
     c.check_errors()
@@ -4563,17 +4439,13 @@ def l44(c):
     cov0 = c.doc('cache/data/coverage.json')
     c.eq(c.js("[...document.querySelectorAll('[data-pack=iles] [data-pack-cov]')].map(i => [i.dataset.packCov, i.checked])"), [['gb', True], ['jp', False], ['es', True]], 'a tick per country: in the coverage or not (gb and es are, jp is not)', what='ticks')
     c.eq(c.count('[data-pack=iles] button:not([data-act=update-pack])'), 0, 'no button in a row of a theme but « Mettre à jour (n) » (SOG-0188)', what='no button')
-    geo = c.js("""() => { const r = e => e.getBoundingClientRect(), a = document.querySelector('[data-pack=iles] [data-pack-cov=gb]'), b = document.querySelector('[data-build-zone=gb]');
-      return { dx: Math.abs(r(a).left - r(b).left), dh: Math.abs(r(a.closest('.d-zrow')).height - r(b.closest('.d-zrow')).height) } }""")
-    c.ok(abs(geo['dx'] - 24) <= 1 and geo['dh'] <= 1, geo, 'the ticks of a theme are in the grid of the zones list (same row height), one step in from their switch and from the list')
-    c.eq(norm(c.text('[data-zones-title]')), norm(_trow('zonesTitle', lang).replace('{n}', '5')), 'the zones list has its own title with its count, so a country of a theme and of the coverage are not one list', what='zones title')
     # the unfolded theme shows its switch and its countries in full, and the zones list follows it without overlap; a list row is 32 px with a fine pointer (mouse), 44 px with a finger (SOG-0168)
-    g = c.js("""() => { const r = e => e.getBoundingClientRect(), rows = [...document.querySelectorAll('[data-pack=iles] .d-zrow')], last = r(rows[rows.length - 1]), zones = r(document.querySelector('[data-build-zones]')),
-      box = r(document.querySelector('[data-packs]')), clipped = rows.filter(x => { for (let p = x.parentElement; p && p !== document.body; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflowY) && r(x).bottom > r(p).bottom + 1 && p.clientHeight < p.scrollHeight) return true } return false }).length;
-      return { n: rows.length, clipped, overlap: last.bottom > zones.top + 1, inside: last.bottom <= box.bottom + 1, hs: rows.map(x => Math.round(r(x).height)), zh: [...document.querySelectorAll('[data-build-zones] .d-zrow')].map(x => Math.round(r(x).height)) } }""")
-    c.ok(g['n'] == 4 and g['clipped'] == 0 and not g['overlap'] and g['inside'], g, 'the unfolded theme shows its switch and its three countries in full; the zones list starts after it')
+    g = c.js("""() => { const r = e => e.getBoundingClientRect(), rows = [...document.querySelectorAll('[data-pack=iles] .d-zrow')], last = r(rows[rows.length - 1]),
+      box = r(document.querySelector('[data-packs]')), clipped = rows.filter(x => { for (let p = x.parentElement; p && p !== document.body; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflowY) && r(x).bottom > r(p).bottom + 1) return true } return false }).length;
+      return { n: rows.length, clipped, inside: last.bottom <= box.bottom + 1, hs: rows.map(x => Math.round(r(x).height)) } }""")
+    c.ok(g['n'] == 4 and g['clipped'] == 0 and g['inside'], g, 'the unfolded theme shows its switch and its three countries in full')
     want = 44 if c.phone else 32
-    c.ok(all(h <= want + 1 and h >= want - 1 for h in g['hs'] + g['zh']), g, f'every list row is {want} px ({"a finger" if c.phone else "a fine pointer"}): the theme rows and the zones list alike')
+    c.ok(all(h <= want + 1 and h >= want - 1 for h in g['hs']), g, f'every list row is {want} px ({"a finger" if c.phone else "a fine pointer"}): the theme rows')
     if c.width in (390, 1280):
         c.shot(f'L44_themes_{c.width}_{lang}.png')
     c.tap('[data-pack=iles] [data-pack-cov=jp]')
@@ -4596,7 +4468,6 @@ def l44(c):
     c.tap('[data-pack-switch=ouest]')
     doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'it' in (d.get('zones') or []) and 'de' in (d.get('zones') or [])), what='de and it added')
     c.eq([len(doc['zones']), len(set(doc['zones']))], [8, 8], 'eight distinct zones: nothing was duplicated', what='no duplicate')
-    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).map(i => i.dataset.buildZone).includes('it')", timeout=6000, what='the added zones are ticked')
     c.eq([c.js("document.querySelector('[data-pack-switch=ouest]').checked"), c.js("document.querySelector('[data-pack-switch=ouest]').indeterminate")], [True, False], 'the whole pack is in the coverage: the switch is on', what='all in')
     c.eq(c.js("document.querySelector('[data-pack-switch=asie]').checked"), True, 'Asia (jp, de) is complete too: on', what='asie')
     c.eq(c.js("window.__stub.calls.zones ? 1 : 0"), 1, 'the screen read zones()', what='sanity')
@@ -4660,7 +4531,7 @@ def l49(c):
         cfg['publication']['base'][z] = cfg['publication']['base']['ca']
     _open(c, cfg)
     _all_open(c)
-    c.eq(len(_ticked(c)), 78, 'the user\u2019s case: seventy-eight zones ticked', what='78 ticked')
+    c.eq(_cov_count(c), 78, 'the user\u2019s case: seventy-eight zones ticked', what='78 ticked')
     c.tap('[data-build] [data-verb=build]')
     for _ in range(60):
         if len(_posts(st, 'build')) >= 2:
@@ -4671,15 +4542,14 @@ def l49(c):
     c.eq(sorted(posts[0]['args']['zones'] + posts[1]['args']['zones']), sorted(['ca', 'es', 'fr', 'gb', 'us'] + extra), 'together they are the whole selection, none twice', what='whole selection')
     c.until('document.querySelector("[data-build-result]")', timeout=15000, what='the end')
     # ---- a 400 of the launcher: its reason is relayed
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.tap('[data-build-zone="fr"]')
+    _untick(c, *[z for z in ['ca', 'es', 'gb', 'us'] + extra])      # the coverage is France alone
     st['start'] = (400, {'message': 'zones: 1 to 60, no duplicate'})
     c.tap('[data-build] [data-verb=build]')
     c.until('document.querySelector("[data-build-result][data-refusal=bad-args]")', timeout=10000, what='the refusal')
     said = norm(c.text('[data-build-result][data-refusal=bad-args]'))
     c.ok('zones: 1 to 60' in said and norm(_trow('refusedWhy', lang).split('{m}')[0]) in said, said, 'the refusal gives the launcher\u2019s own reason after the usual sentence')
 
-@case('L48', 'Données: the new reasons of base/status (index-orphan, source-unbuilt, source-unread, source-missing) are written in four languages, the notice « no-points » does not make a zone stale; #data?zone=<id> ticks that zone and leads to « Mettre à jour »', 'L', tags=('data',), langs4=True,
+@case('L48', 'Données: the new reasons of base/status (index-orphan, source-unbuilt, source-unread, source-missing) are written in four languages, the notice « no-points » does not make a zone stale; #data?zone=<id> opens the sheet of that zone', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=False, night=False,
       rule='SOG-0143 (AeroDB c849f397c): four more reasons with their sentences, a notice per zone that is not a reason (no-points: the zone is up to date and says why a point is unknown); the link #data?zone=<id> opens the base, ticks only that zone and brings « Mettre à jour » on screen (a zone outside the coverage is said)')
 def l48(c):
@@ -4695,32 +4565,40 @@ def l48(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
-    for z in ('fr', 'es', 'gb', 'ca'):
-        c.tap(f'[data-zone-row={z}] [data-act=zone-why]')
-    c.until("document.querySelectorAll('[data-zone-why]').length === 4", timeout=4000, what='the four reasons')
-    why = lambda z: norm(c.text(f'[data-zone-why={z}]'))
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
+    whys = {}
+    for z, key in (('fr', 'rebuild'), ('ca', 'rebuild'), ('es', 'personal'), ('gb', 'waiting')):   # the zones are read from the lists the numbers of the sentence unfold (SOG-0262)
+        f = f'[data-state-sentence] [data-filter={key}]'
+        if c.js(f"document.querySelector('{f}').getAttribute('aria-expanded')") != 'true':
+            c.tap(f)
+        c.until(f"!!document.querySelector('[data-state-zones] [data-zone-row={z}] [data-act=zone-why]')", what=f'the line of {z}')
+        c.tap(f'[data-state-zones] [data-zone-row={z}] [data-act=zone-why]')
+        c.until(f"!!document.querySelector('[data-zone-why={z}]')", timeout=4000, what=f'the reason of {z}')
+        whys[z] = norm(c.text(f'[data-zone-why={z}]'))
+    why = lambda z: whys[z]
     c.ok(norm(ZR('source-unbuilt').split('{source}')[0]) in why('fr') and norm(ZR('source-unbuilt').split('{source}')[1]) in why('fr'), why('fr'), 'source-unbuilt: « built without points or airways, the SIA file is there »')
     c.ok(norm(ZR('source-unread').split('{source}')[1]) in why('es'), why('es'), 'source-unread: the file is there but the « personal » box does not declare it: rebuild with the box ticked')
     c.ok(norm(ZR('source-missing').split('{source}')[1]) in why('gb'), why('gb'), 'source-missing: the file is missing')
     c.ok('3' in why('ca') and norm(ZR('index-orphan').split('{cycle}')[0]) in why('ca'), why('ca'), 'index-orphan: the cycle and the number of absent files')
+    c.tap('[data-state-sentence] [data-filter=upToDate]')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=us] [data-zstate]')", what='the zones up to date')
     c.eq(c.js("document.querySelector('[data-zone-row=us] [data-zstate]').dataset.zstate"), 'up-to-date', 'a zone with a notice is up to date: the notice is not a reason', what='notice zone')
     c.eq(norm(c.text('[data-zone-notice=us]')), norm(ZR('no-points')), 'the notice says why a point may be unknown (openAIP carries none)', what='notice')
-    # ---- the link #data?zone=fr: only France ticked, « Mettre à jour » on screen, a sentence
+    # ---- the link #data?zone=fr (SOG-0262): the sheet of that zone opens, on screen, and a sentence says so
     c.open('data?zone=fr', docs=LEVEL3, wait=False, app='maintenance')
-    c.until("!!document.querySelector('[data-module=data] [data-build-zone=fr]')", timeout=20000, what='the base panel')
+    c.until("!!document.querySelector('[data-module=data] [data-sheet=fr]')", timeout=20000, what='the sheet of France')
     c.settle()
-    c.eq([_ticked(c), c.js("(() => { const b = document.querySelector('[data-build] [data-verb=update]').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight })()")], [['fr'], True], 'the selection is that zone alone and « Mettre à jour » is on screen', what='zone link')
+    c.eq([c.count('[data-sheet]'), c.js("(() => { const b = document.querySelector('[data-sheet]').getBoundingClientRect(); return b.top < innerHeight && b.bottom > 0 })()")], [1, True], 'the sheet of that zone alone is open and on screen', what='sheet')
     said = norm(_UT('zoneLink', lang).split('{z}')[1])
     for _ in range(30):
         if _notes_with(c, said):
             break
         c.wait(200)
-    c.ok(bool(_notes_with(c, said)), None, 'a sentence says the zone is ready to update')
+    c.ok(bool(_notes_with(c, said)), None, 'a sentence says the sheet of the zone is open')
     c.open('data?zone=zz', docs=LEVEL3, wait=False, app='maintenance')
-    c.until("!!document.querySelector('[data-module=data] [data-build-zone=fr]')", timeout=20000, what='the base panel again')
+    c.until("!!document.querySelector('[data-module=data] [data-state-head]')", timeout=20000, what='the base panel again')
     c.settle()
-    c.eq(len(_ticked(c)), 5, 'an unknown zone changes nothing: the selection is the coverage', what='unknown')
+    c.eq([c.count('[data-sheet]'), len(_notes_with(c, norm(_UT('zoneLinkOut', lang).split('{z}')[1])))], [0, 1], 'an unknown zone changes nothing: no sheet, and a sentence says it is not in the coverage', what='unknown')
     c.check_errors()
 
 
@@ -4791,74 +4669,33 @@ def l51(c):
     c.check_errors()
 
 
-@case('L52', 'Données: the build panel with many countries — wide: the map on the left and ONE list on the right (a zone per aligned line, its state as a dot and a short word, no framed pill); phone: the list under the map, one column; every line is 44 px', 'L', tags=('data',), langs4=True,
-      designs=('standard',), night=False,
-      rule='SOG-0146: the list of the zones was two uneven columns with 44 px pills and a large empty area right of the map; now two cells only (map, choice), the list aligned, the state a dot and a word, the reasons on touch as before')
-def l52(c):
-    lang = c.lang
-    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
-    st = _launcher(c, [], verbs=_VERBS)
-    st['status'] = _FR_STALE()
-    cfg, _ = _fixture()
-    cfg['outlines'] = _outlines()
-    for i in range(30):
-        z = f'q{i:02d}'
-        cfg['zones'].append({'id': z, 'names': [f'Pays {i}'] * 4, 'frames': [], 'published': True})
-        cfg['publication']['base'][z] = cfg['publication']['base']['ca']
-    c.page.add_init_script(_ZHOOK_JS)
-    _open(c, _sized(cfg))
-    _all_open(c)
-    _zmap_ready(c, 'base')
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the states')
-    c.js("document.querySelector('.d-mapgrid').scrollIntoView({block:'start'})")
-    c.wait(500)
-    g = c.js("""() => { const r = e => { const b = e.getBoundingClientRect(); return { l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom), w: Math.round(b.width), h: Math.round(b.height) } };
-      const map = r(document.querySelector('.d-mapgrid [data-zone-map]')), list = r(document.querySelector('.d-choice')), rows = [...document.querySelectorAll('[data-build-zones] .d-zrow')].map(r), sts = [...document.querySelectorAll('[data-build-zones] .d-zrow .d-st')].map(r);
-      return { map, list, items: document.querySelector('.d-mapgrid').children.length, rows: rows.length, minH: Math.min(...rows.map(x => x.h)), lefts: [...new Set(rows.map(x => x.l))].length, stRights: [...new Set(sts.map(x => x.r))].length,
-        framed: document.querySelectorAll('.d-zrow .f-badge').length, sw: document.documentElement.scrollWidth, iw: innerWidth } }""")
-    c.eq([g['items'], g['framed']], [2, 0], 'two cells only (the map, the choice) and no framed pill on the lines', what='structure')
-    c.eq([g['lefts'], g['stRights']], [1, 1], 'every line starts at the same place and every state ends at the same place: aligned', what='aligned')
-    c.ge(g['minH'], 43.5 if c.phone else 31, 'every line is 44 px for a finger (the whole line is the target), 32 px for a fine pointer', what='line height')
-    c.le(g['sw'], g['iw'], 'no horizontal scroll', what='scroll')
-    if c.width >= 1024:
-        c.ok(g['list']['l'] >= g['map']['r'] - 1 and g['list']['t'] <= g['map']['t'] + 40, g, 'wide: the list is on the right of the map, at its top')
-    else:
-        c.ok(g['list']['t'] >= g['map']['b'] - 1, g, 'phone: the list is under the map, one column')
-    c.shot(f'L52_{c.width}_{lang}.png')
-    c.tap('[data-zone-row=fr] [data-act=zone-why]')
-    c.until("!!document.querySelector('[data-zone-why=fr]')", timeout=4000, what='the reasons on touch')
-    c.check_errors()
-
-
 @case('L53', 'Données: a pack is a switch « the whole pack in the coverage »: off removes its zones after a question that names them (unticked, nothing purged); hovering or pressing a row highlights its zones on the map', 'L', tags=('data',), langs4=True,
       designs=('standard',), night=False,
       rule='SOG-0147 (V3_SPECIFICATION § 10.42): packs could be added but not removed and did not show what they cover; one row = one switch (on: adds, off: removes all its zones from the coverage, with a confirmation naming what is unticked, never purged), hover (mouse) or press (touch) lights the zones of the row on the map')
 def l53(c):
     lang = c.lang
     PT = lambda key: _trow(key, lang, after='  packs: {')
-    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
     st = _launcher(c, [], verbs=_VERBS)
     st['status'] = _ALL_OK()
     cfg = _packs_cfg()
     cfg['outlines'] = _outlines()
-    c.page.add_init_script(_ZHOOK_JS)
     _open(c, cfg)
     _all_open(c)
-    _zmap_ready(c, 'base')
+    c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length === 4", timeout=15000, what='the world map')
     c.until("!!document.querySelector('[data-pack-switch=ouest]')", timeout=8000, what='the switches')
     c.js("document.querySelector('[data-packs-fold]').open = true")   # « Paquets de pays » is folded when the screen opens (SOG-0228)
-    tone = lambda z: (_zfeat(c, 'base', z) or {}).get('tone')
+    hl = lambda z: c.js(f"document.querySelector('[data-wmap] path[data-zone={z}]').hasAttribute('data-hl')")   # the zones of a pack lit on the world map: the accent border (data-hl)
+    tone = lambda z: c.js(f"document.querySelector('[data-wmap] path[data-zone={z}]').dataset.tone")
     def tapsw():   # nothing floating may cover the switch (a note, the tab bar): notes closed, the pack scrolled to the middle
         c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click())")
         c.until("!document.querySelector('.f-modal')", timeout=8000, what='no question left on the screen (it locks the page scroll while it closes)')
         c.until("(() => { const f = document.querySelector('[data-packs-fold]'); if (!f.open) f.open = true; const e = document.querySelector('[data-pack-switch=ouest]'); e.scrollIntoView({ block: 'center' }); const b = e.getBoundingClientRect(); return b.top >= 0 && b.bottom <= window.innerHeight && document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2) === e })()", timeout=8000, what='the switch is in view and uncovered (the page can still be settling: scrolled again until it is)')
         c.tap('[data-pack-switch=ouest]')
-    # ---- the packs are beside the map, with the list (wide) or under it (phone): the same cell as the list
-    c.eq(c.js("!!document.querySelector('.d-choice [data-packs]')"), True, 'the packs are in the choice, beside the map and with the list', what='in choice')
+    # ---- the fold « Ajouter ou retirer des pays par paquet » is under the list of the packs, in the choice of the base panel
+    c.eq(c.js("!!document.querySelector('.d-choice [data-packs]')"), True, 'the packs fold is in the choice of the base panel', what='in choice')
     # ---- hover (mouse): the zones of the row light up, then go back
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the states are drawn (the colours settle)')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the states are drawn (the colours settle)')
     c.wait(400)
-    base_fr = tone('fr')
     c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click())")   # a floating note must not cover the row
     c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
     if c.width >= 700:   # the row is hovered only there
@@ -4867,17 +4704,17 @@ def l53(c):
     if c.width >= 700:   # the hover is the gesture of a mouse (wide screens); at 390 the gesture is the press below (a forced hover there proved nothing: 2 failures out of 6)
         c.page.hover('[data-pack=ouest] .d-packname')
         c.wait(400)
-        c.eq([tone('fr'), tone('gb')], ['accent', 'accent'], 'hovering Western Europe lights fr and gb on the map', what='hover')
+        c.eq([hl('fr'), hl('gb'), hl('es')], [True, True, False], 'hovering Western Europe lights fr and gb on the map (their border), not Spain', what='hover')
         c.page.mouse.move(5, 5)
         c.wait(400)
-        c.eq(tone('fr'), base_fr, 'leaving the row puts the colours back', what='leave')
+        c.eq(hl('fr'), False, 'leaving the row puts the colours back', what='leave')
     # ---- press (touch): the zones stay lit until the next press elsewhere
     c.js("document.querySelector('[data-pack=ouest]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', pointerId: 7 }))")
     c.wait(400)
-    c.eq(tone('fr'), 'accent', 'a touch press lights the zones and keeps them lit', what='press')
+    c.eq(hl('fr'), True, 'a touch press lights the zones and keeps them lit', what='press')
     c.js("document.querySelector('.d-choice').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', pointerId: 7 }))")
     c.wait(400)
-    c.eq(tone('fr'), base_fr, 'a press elsewhere puts the colours back', what='press elsewhere')
+    c.eq(hl('fr'), False, 'a press elsewhere puts the colours back', what='press elsewhere')
     # ---- off: the question names the zones, No keeps everything
     c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
     tapsw()   # half on → on: adds de and it
@@ -4897,7 +4734,8 @@ def l53(c):
     c.page.click('.f-modal [data-ok]')
     doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d) and 'fr' not in d.get('zones', []) and 'gb' not in d.get('zones', []), what='the pack leaves the coverage')
     c.ok(all(z in doc['zones'] for z in ('ca', 'es', 'us')), doc, 'the other zones stay')
-    c.eq(c.count('[data-build-zone=fr]') + c.count('[data-build-zone=de]'), 0, 'its zones are gone from the list (and so from the selection)', what='list')
+    c.until("document.querySelector('[data-wmap] path[data-zone=fr]').dataset.tone === 'muted'", timeout=6000, what='France is outside the coverage on the map')
+    c.eq([tone('fr'), tone('gb')], ['muted', 'muted'], 'its zones are outside the coverage on the map (grey)', what='map')
     c.eq([p['verb'] for p in st['posts'] if p.get('verb') == 'purge'], [], 'nothing is purged: no launcher job', what='no purge')
     c.eq(c.js("document.querySelector('[data-pack-switch=ouest]').checked"), False, 'the switch is off', what='off')
     if c.width == 390:
@@ -4941,119 +4779,6 @@ def l55(c):
     c.check_errors()
 
 
-def _rect_open(c):
-    """The Données screen with the base map drawn (flat zones side by side: gb, es west of 0°, fr, us east), everything deselected."""
-    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
-    cfg, _ = _fixture()
-    cfg['outlines'] = _outlines()
-    st = _launcher(c, [], verbs=_VERBS)   # the selection gestures are grey without a launcher (read only, A36)
-    st['status'] = _status({z: _zst('up-to-date') for z in ('ca', 'es', 'fr', 'gb', 'us')})   # the base/status job the page asks for at the opening must be answered
-    c.page.add_init_script(_ZHOOK_JS)
-    _open(c, _sized(cfg))
-    _all_open(c)
-    _zmap_ready(c, 'base')
-    c.wait(800)   # the launcher and the coverage settle (a late read must not tick everything again)
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=6000, what='nothing ticked')
-
-
-def _rect_xy(c, lon, lat):
-    """Page coordinates of a geographic point on the base map."""
-    return c.js(_ZXY_JS, ['base', lon, lat])
-
-
-@case('L38', 'Données: Shift + drag on the map ticks the zones whose frame touches the rectangle; the count is said before the release; a plain drag ticks nothing', 'L', tags=('data',), langs4=True,
-      designs=('standard',), screens=False, night=False,
-      rule='SOG-0071 time 1 (V3_SPECIFICATION § 10.44): a rectangle on the map (Shift + drag on a screen) ticks the zones of the coverage whose frame touches it, with the count said before the release (« 14 pays »)')
-def l38(c):
-    lang = c.lang
-    _rect_open(c)
-    c.js("document.querySelector('[data-zone-map=base] .d-map-host').scrollIntoView({ block: 'center' })")
-    c.wait(250)
-    c.eq(c.count('[data-rect-hint]'), 1, 'the gesture is explained under the map', what='hint')
-    # a plain drag pans the map and ticks nothing
-    x0, y0 = _rect_xy(c, -10, 44)
-    x1, y1 = _rect_xy(c, 4, 46)
-    c.page.mouse.move(x0, y0)
-    c.page.mouse.down()
-    c.page.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, steps=4)
-    c.page.mouse.up()
-    c.wait(200)
-    c.eq([_ticked(c), c.count('[data-rect]:not([hidden])')], [[], 0], 'a plain drag ticks nothing and draws no rectangle', what='plain drag')
-    # Shift + drag: gb, es and fr are touched (not us), the count is there while the button is still down
-    x0, y0 = _rect_xy(c, -10, 44)
-    x1, y1 = _rect_xy(c, 4, 46)
-    c.page.keyboard.down('Shift')
-    c.page.mouse.move(x0, y0)
-    c.page.mouse.down()
-    c.page.mouse.move(x1, y1, steps=6)
-    c.until("!!document.querySelector('[data-rect]:not([hidden])')", timeout=4000, what='the rectangle is drawn')
-    want = {'fr': '3 pays', 'en': '3 countries', 'de': '3 Länder', 'es': '3 países'}[lang]
-    for _ in range(20):   # the drag is made of several moves: the count settles on the last one
-        if norm(c.text('[data-rect-count]')) == want:
-            break
-        c.wait(150)
-    c.eq(norm(c.text('[data-rect-count]')), want, 'the count is said before the release', what='live count')
-    c.eq(_ticked(c), [], 'nothing is ticked before the release', what='before release')
-    if c.width == 390:
-        c.shot(f'L38_rect_{c.width}_{lang}.png')
-    c.page.mouse.up()
-    c.page.keyboard.up('Shift')
-    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 3", timeout=6000, what='the zones are ticked at the release')
-    c.eq([_ticked(c), c.count('[data-rect]:not([hidden])')], [['es', 'fr', 'gb'], 0], 'the three zones the rectangle touches are ticked, the rectangle is gone', what='after release')
-    c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 3)) + ' · ' + _bytes(c, _KB['es'] + _KB['fr'] + _KB['gb'])), 'the selection line follows', what='line')
-    # a second rectangle adds to the selection (it does not replace it)
-    c.tap('[data-zone-map=base] [data-act=map-recenter]')   # the plain drag above panned the map
-    c.wait(500)
-    x0, y0 = _rect_xy(c, 14, 45.5)
-    x1, y1 = _rect_xy(c, 22, 46.5)
-    c.page.keyboard.down('Shift')
-    c.page.mouse.move(x0, y0)
-    c.page.mouse.down()
-    c.page.mouse.move(x1, y1, steps=5)
-    c.page.mouse.up()
-    c.page.keyboard.up('Shift')
-    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 4", timeout=6000, what='us is added')
-    c.eq(_ticked(c), ['es', 'fr', 'gb', 'us'], 'a second rectangle adds to the selection', what='added')
-    c.check_errors()
-
-
-@case('L39', 'Données: two fingers held half a second on the map draw the rectangle between them (phone), the count is said before the lift; an ordinary pinch draws nothing', 'L', tags=('data',), langs4=True,
-      designs=('standard',), screens=False, night=False,
-      rule='SOG-0071 time 1: the rectangle on a phone is a two-finger hold; fingers that move at once are a pinch of the map (nothing drawn)')
-def l39(c):
-    lang = c.lang
-    _rect_open(c)
-    c.js("document.querySelector('[data-zone-map=base] .d-map-host').scrollIntoView({ block: 'center' })")
-    c.wait(250)
-    host = "document.querySelector('[data-zone-map=base] .d-map-host')"
-    ev = lambda kind, pid, x, y: c.js(f"([k, id, x, y]) => {host}.dispatchEvent(new PointerEvent('pointer' + k, {{ bubbles: true, cancelable: true, pointerType: 'touch', pointerId: id, isPrimary: id === 1, clientX: x, clientY: y }}))", [kind, pid, x, y])
-    x0, y0 = _rect_xy(c, -10, 44)
-    x1, y1 = _rect_xy(c, 4, 46)
-    # a pinch: the fingers move before the half second: nothing is drawn
-    ev('down', 1, x0, y0)
-    ev('down', 2, x1, y1)
-    c.js("([id, x, y]) => window.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'touch', pointerId: id, clientX: x, clientY: y }))", [1, x0 - 40, y0])
-    c.wait(700)
-    c.eq(c.count('[data-rect]:not([hidden])'), 0, 'fingers that move at once are a pinch: no rectangle', what='pinch')
-    for pid in (1, 2):
-        c.js("([id]) => window.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', pointerId: id }))", [pid])
-    # the hold: two fingers still for half a second
-    ev('down', 1, x0, y0)
-    ev('down', 2, x1, y1)
-    c.until("!!document.querySelector('[data-rect]:not([hidden])')", timeout=3000, what='the rectangle after the hold')
-    want = {'fr': '3 pays', 'en': '3 countries', 'de': '3 Länder', 'es': '3 países'}[lang]
-    c.eq(norm(c.text('[data-rect-count]')), want, 'the count is said while the fingers are down', what='live count')
-    c.eq(_ticked(c), [], 'nothing ticked before the lift', what='before lift')
-    if c.width == 390:
-        c.shot(f'L39_rect_{c.width}_{lang}.png')
-    c.js("([id]) => window.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', pointerId: id }))", [2])
-    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 3", timeout=6000, what='ticked at the lift')
-    c.eq([_ticked(c), c.count('[data-rect]:not([hidden])')], [['es', 'fr', 'gb'], 0], 'the zones touched are ticked at the lift', what='after lift')
-    c.js("([id]) => window.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', pointerId: id }))", [1])
-    c.check_errors()
-
-
 @case('L56', 'Données: in the base panel only « Mettre à jour » is in view and primary, the other verbs are under a folded « Plus »; « Purger » on more than 60 zones is cut into runs of 60, one plan per run, ONE question that sums them', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=False, night=False,
       rule='SOG-0071 time 3 (rule 13: one primary per screen): the verbs row of the base panel shows « Mettre à jour » alone (primary); « Télécharger », « Prendre le fichier », « Tout recalculer » and « Purger » go under « Plus »; base/purge takes 1 to 60 zones like the others: one plan (dry) per run, then ONE question with the sum, then the real purges run by run')
@@ -5081,7 +4806,7 @@ def l56(c):
     if c.width == 390:
         c.shot(f'L56_verbs_{c.width}_{lang}.png')
     # ---- the user's case: 78 zones ticked, « Purger » (under « Plus ») plans the runs one after the other
-    c.eq(len(_ticked(c)), 78, 'seventy-eight zones ticked', what='78 ticked')
+    c.eq(_cov_count(c), 78, 'seventy-eight zones ticked', what='78 ticked')
     c.tap('[data-build] [data-verb=purge]')
     q = _ask_text(c)
     posts = _posts(st, 'purge')
@@ -5165,7 +4890,7 @@ def l58(c):
     st['status'] = _status({'gb': _zst('stale', {'code': 'source-unbuilt', 'source': 'nats'}), 'fr': _zst('up-to-date'), 'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'us': _zst('up-to-date')})
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=10000, what='the state of the five zones')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=10000, what='the state of the five zones')
     lines = lambda: [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")]
     # ---- A: the box does not declare NATS: the plan carries personal: [], the end says « already taken » and « there but not read », never « Rien à prendre »
     st['start'] = (200, {'job': 'k1'})
@@ -5242,7 +4967,7 @@ def l59(c):
     c.check_errors()
 
 
-@case('L60', 'Données: the opening is usable at once (SOG-0164): the zones are drawn while the state of data/ (sync-status, slow on 10 000 files) is still being read, its line says « reading » in a reserved place; the map library and the tiles do not start before the map comes into the screen', 'L', tags=('data',),
+@case('L60', 'Données: the opening is usable at once (SOG-0164): the zones are drawn while the state of data/ (sync-status, slow on 10 000 files) is still being read, its line says « reading » in a reserved place; the world map is an SVG (no library, no tile); the States map starts only when it comes into the screen', 'L', tags=('data',),
       designs=('standard',), screens=True, phone=False, night=False,
       rule='SOG-0164 (the user: the page must be usable in under one second): the first draw no longer waits for GET sync-status; MapLibre (about 1 MB) and its tiles are asked for when the zones map is near the screen, not at the opening')
 def l60(c):
@@ -5260,23 +4985,24 @@ def l60(c):
     c.page.add_init_script("""(() => { window.__sh = []; try { new PerformanceObserver(l => { for (const e of l.getEntries()) { if (!e.hadRecentInput) window.__sh.push([Math.round(e.startTime), +e.value.toFixed(3), (e.sources || []).map(x => { const n = x.node && (x.node.nodeType === 1 ? x.node : x.node.parentElement); return n ? (n.dataset.set || n.dataset.group || n.className || n.nodeName) : '?' }).slice(0, 3)]) } }).observe({ type: 'layout-shift', buffered: true }) } catch (e) {} })()""")
     c.page.add_init_script(_ZHOOK_JS)
     _open(c, _sized(cfg))
-    state = c.js("""() => ({ zones: document.querySelectorAll('[data-build-zone]').length, pending: window.__ss, reading: !!document.querySelector('[data-publish-state=reading]'), readingText: document.querySelector('[data-publish-state=reading]')?.textContent.replace(/\s+/g, ' ').trim() || '', unread: !!document.querySelector('[data-publish-state=unread]'),
-      lib: performance.getEntriesByType('resource').some(e => /maplibre|openfreemap/.test(e.name)), top: Math.round(document.querySelector('[data-zone-map=base]').getBoundingClientRect().top), ih: innerHeight })""")
-    c.ok(state['zones'] == 5 and state['pending'] > 0, state, 'the five zones are drawn while sync-status is still being read')
+    state = c.js("""() => ({ zones: document.querySelectorAll('[data-wmap] path[data-zone]').length, pending: window.__ss, reading: !!document.querySelector('[data-publish-state=reading]'), readingText: document.querySelector('[data-publish-state=reading]')?.textContent.replace(/\s+/g, ' ').trim() || '', unread: !!document.querySelector('[data-publish-state=unread]'),
+      lib: performance.getEntriesByType('resource').some(e => /maplibre|openfreemap/.test(e.name)), ih: innerHeight })""")
+    c.ok(state['zones'] == 4 and state['pending'] > 0, state, 'the world map (its four zones) is drawn while sync-status is still being read')
     c.ok(state['reading'] and not state['unread'], state, 'the Publier line says « reading », never « could not be read » while it waits')
-    c.ok(state['top'] > state['ih'] + 400 and not state['lib'], state, 'the map is far below the first screen and neither MapLibre nor a tile was asked for')
+    c.ok(not state['lib'], state, 'the world map is an SVG: neither MapLibre nor a tile was asked for (the States map, far below, starts only when it comes into the screen)')
     c.eq(norm(state['readingText']), norm(_trow('pubReading', lang)), 'worded in the language of the run', what='reading text')
     # the answer comes: the line is replaced by the real state
     c.until("!document.querySelector('[data-publish-state=reading]') && !!document.querySelector('[data-publish-state=changes]')", timeout=10000, what='the state of data/ arrives')
     sh = c.js('window.__sh')
     c.ok(sum(x[1] for x in sh if x[0] > 600) < 0.1, sh, 'the arrival of the state of data/ moves nothing noticeable (layout shift under 0.1, rule 22)')
-    # the map comes into the screen: now the library is asked for, and the map is drawn
+    # the States map (Procédures panel) comes into the screen: now the library is asked for, and the map is drawn
+    _all_open(c)
     for _ in range(20):   # the reader scrolls down to the map (the page settles under his finger: the gesture is repeated until the map is there)
-        c.js("document.querySelector('[data-zone-map=base]')?.scrollIntoView({ block: 'center' })")
-        if c.count('[data-zone-map=base] .d-map-host .maplibregl-canvas'):
+        c.js("document.querySelector('[data-zone-map=proc]')?.scrollIntoView({ block: 'center' })")
+        if c.count('[data-zone-map=proc] .d-map-host .maplibregl-canvas'):
             break
         c.wait(500)
-    c.until("!!document.querySelector('[data-zone-map=base] .d-map-host .maplibregl-canvas')", timeout=10000, what='the map is drawn once it is in the screen')
+    c.until("!!document.querySelector('[data-zone-map=proc] .d-map-host .maplibregl-canvas')", timeout=10000, what='the States map is drawn once it is in the screen')
     c.ok(c.js("performance.getEntriesByType('resource').some(e => /maplibre/.test(e.name))"), None, 'MapLibre was asked for when the map came near')
     c.check_errors()
 
@@ -5301,7 +5027,7 @@ def l62(c):
     one = r"'((?:[^'\\]|\\.)*)'"
     unq = lambda x: re.sub(r"\\(.)", r"\1", x)
     # the buttons (and the boxes) of the screen: the keys whose 4 strings are a label; every occurrence of a key counts
-    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'selStale', 'selNone', 'certify', 'licencesLink', 'retry', 'choose']   # « Choisir le fichier… » (SOG-0199: the button on the line of a zone that waits for a file or whose download was refused)
+    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'certify', 'licencesLink', 'retry', 'choose']   # « Choisir le fichier… » (SOG-0199: the button on the line of a zone that waits for a file or whose download was refused)
     allowed = set()
     for k in labels:
         for m in re.finditer(r"^\s*" + k + r": \[\s*" + one + r",\s*" + one + r",\s*" + one + r",\s*" + one, src, re.M):
@@ -5333,24 +5059,31 @@ def l63(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=8000, what='the five pills and the numbers of the sentence')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=8000, what='the five pills and the numbers of the sentence')
     nums = lambda: c.js("[...document.querySelectorAll('[data-state-sentence] button[data-filter]')].filter(b => b.dataset.filter).map(b => [b.dataset.filter, +b.textContent.match(/\\d+/)[0]])")
     c.eq(nums(), [['upToDate', 2], ['rebuild', 1], ['failed', 1], ['waiting', 1]], 'the numbers of the sentence: two up to date, one to rebuild, one failed, one waiting for a file (nothing without a state)', what='balance')
     c.eq(c.count('[data-state-sentence]'), 1, 'one sentence', what='one sentence')
     shown = lambda: c.js("[...document.querySelectorAll('[data-state-zones] [data-zone-row]')].map(r => r.dataset.zoneRow)")
-    c.eq(c.count('[data-build-zones] [data-zone-row]'), 5, 'the whole list of the coverage is shown, always', what='all')
-    # ---- a number unfolds its lines in place (the list of the coverage below stays whole)
+    c.eq(c.count('[data-build-zones]') + c.count('[data-state-zones]'), 0, 'nothing is unfolded at the start, and there is no list of the whole coverage under the sentence any more (SOG-0262)', what='folded')
+    # ---- a number unfolds its lines in place
     c.tap('[data-state-sentence] [data-filter=failed]')
     c.until("document.querySelectorAll('[data-state-zones] [data-zone-row]').length === 1", timeout=4000, what='only the failed line')
     c.eq(shown(), ['es'], 'the number of failures unfolds the failed zone alone', what='failed only')
-    c.eq([c.js("document.querySelector('[data-state-sentence] [data-filter=failed]').getAttribute('aria-expanded')"), c.count('[data-build-zones] [data-zone-row]')], ['true', 5], 'and says it is open; the list below is not filtered', what='expanded')
+    c.eq(c.js("document.querySelector('[data-state-sentence] [data-filter=failed]').getAttribute('aria-expanded')"), 'true', 'and says it is open', what='expanded')
     c.tap('[data-state-sentence] [data-filter=waiting]')
     c.until("document.querySelectorAll('[data-state-zones] [data-zone-row]').length === 1 && !!document.querySelector('[data-state-zones] [data-zone-row=gb]')", timeout=4000, what='the waiting line')
     c.tap('[data-state-sentence] [data-filter=waiting]')
     c.until("!document.querySelector('[data-state-zones]')", timeout=4000, what='the same number folds it')
     # ---- the actions are on the lines of their zones, and only there
-    c.eq(c.js("[...document.querySelectorAll('[data-zone-action]')].map(p => [p.dataset.zoneAction, [...p.querySelectorAll('button[data-verb]')].map(b => b.dataset.verb)])"), [['es', ['retry-zone']], ['gb', ['pickup']]], '« Réessayer » on the failed zone, « Prendre le fichier » on the waiting one, nothing on the others', what='actions')
-    c.eq([norm(c.text('[data-zone-row=es] [data-verb=retry-zone]')), norm(c.text('[data-zone-row=gb] [data-verb=pickup]'))], [norm(_UT('retry', lang)), norm(_trow('pickup', lang))], 'worded in the language of the run (the same name as the button of the screen)', what='labels')
+    acts = lambda: c.js("[...document.querySelectorAll('[data-zone-action]')].map(p => [p.dataset.zoneAction, [...p.querySelectorAll('button[data-verb]')].map(b => b.dataset.verb)])")
+    c.tap('[data-state-sentence] [data-filter=failed]')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=es]')", timeout=4000, what='the failed line')
+    c.eq(acts(), [['es', ['retry-zone']]], '« Réessayer » on the failed zone, only there', what='actions failed')
+    c.eq(norm(c.text('[data-zone-row=es] [data-verb=retry-zone]')), norm(_UT('retry', lang)), 'worded in the language of the run', what='retry label')
+    c.tap('[data-state-sentence] [data-filter=waiting]')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=gb]')", timeout=4000, what='the waiting line')
+    c.eq(acts(), [['gb', ['pickup']]], '« Prendre le fichier » on the waiting zone, nothing on the others', what='actions waiting')
+    c.eq(norm(c.text('[data-zone-row=gb] [data-verb=pickup]')), norm(_trow('pickup', lang)), 'worded in the language of the run (the same name as the button of the screen)', what='pickup label')
     c.ok('x.zip' in c.text('[data-zone-row=gb] [data-zone-action]') or c.text('[data-zone-row=gb] [data-zone-action]').strip() != '', None, 'the waiting zone says what it waits for on its own line')
     c.shot(f"L63_standard_{c.page.viewport_size['width']}_delivered.png")   # the delivered state, read by the ergonomist
     # ---- « Prendre le fichier » on the line: the plan of THAT zone
@@ -5364,6 +5097,8 @@ def l63(c):
     # ---- « Réessayer »: the build of that zone alone
     c.until("!document.querySelector('[data-build] [data-verb=update]').disabled", timeout=15000, what='the buttons free again')
     st['views'], st['i'] = [ok], 0
+    c.tap('[data-state-sentence] [data-filter=failed]')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=es] [data-verb=retry-zone]')", timeout=4000, what='the failed line again')
     c.tap('[data-zone-row=es] [data-verb=retry-zone]')
     for _ in range(40):
         if _posts(st, 'build'):
@@ -5386,7 +5121,7 @@ def l64(c):
         cfg['publication']['base'][z] = cfg['publication']['base']['ca']
     _open(c, cfg)
     _all_open(c)
-    c.eq(len(_ticked(c)), 78, 'seventy-eight zones ticked: two runs', what='78 ticked')
+    c.eq(_cov_count(c), 78, 'seventy-eight zones ticked: two runs', what='78 ticked')
     c.tap('[data-build] [data-verb=build]')
     for _ in range(60):
         if len(_posts(st, 'build')) >= 2:
@@ -5414,7 +5149,7 @@ def l65(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
     c.tap('[data-build] [data-verb=update]')
     q = _ask_text(c)
     c.ok(len(q['text']) > 0, q, 'a download that half failed: the update goes on, the question asks about the zones to rebuild (the zones are independent)')
@@ -5439,8 +5174,7 @@ def l66(c):
     # SOG-0186 refused at 17:25 (« mettre le chevron d'ouverture sur la ligne même, et réduire le bouton ») : the chevron IS the line of the pack — the summary holds the switch, the name and the counts; « Mettre à jour (n) » is a discreet link at its right, in that line
     c.eq(c.count(fold('asie') + ' > summary [data-pack-switch=asie]'), 1, 'the switch of the pack is in the summary: the chevron is on the line itself', what='switch')
     c.ok(c.js("document.querySelector('[data-pack=asie] [data-pack-switch=asie]').getAttribute('aria-label')") in c.text(fold('asie') + ' > summary') and '2' in c.text(fold('asie') + ' > summary'), c.text(fold('asie') + ' > summary'), 'the summary says the name and the counts of the pack, not a line of its own « Pays (2) »')
-    g0 = c.js("() => { const r = e => e.getBoundingClientRect(), s = document.querySelector('[data-pack=ouest] details[data-pack-fold] > summary'), u = s.querySelector('[data-act=update-pack]'); return u ? { h: Math.round(r(s).height), right: Math.round(r(s).right - r(u).right), small: getComputedStyle(u).textDecorationLine, bg: getComputedStyle(u).backgroundColor } : null }")
-    c.ok(g0 is not None and g0['right'] <= 24 and (g0['h'] <= 60 or c.width < 700) and g0['bg'] == 'rgba(0, 0, 0, 0)', g0, '« Mettre à jour (n) » is a discreet link (no filled button) at the right of the pack line, which stays one line high from 700 px (it wraps below that)')
+    c.eq(c.count(fold('ouest') + ' > summary [data-act=update-pack]'), 0, '« Mettre à jour (n) » is no longer in this fold (SOG-0262: it is on the line of the pack in the list of the packs, L68)', what='no update link here')
     c.tap(fold('asie') + ' > summary')
     c.wait(300)
     cov0 = c.doc('cache/data/coverage.json')
@@ -5462,7 +5196,7 @@ def l66(c):
     c.check_errors()
 
 
-@case('L67', 'Données: the coverage table by country (SOG-0174): read from the launcher (base/coverage) only when the block is opened, seven columns at most (country, points, airways, airspaces, FIR, procedures, ground: a number or « non »), sortable, a country unfolds to its sources and their licence; what the launcher answers is untrusted', 'L', tags=('data',), langs4=True,
+@case('L67', 'Données: the coverage table by country (SOG-0174): read from the launcher (base/coverage: once at the opening, shared with the hatch of the world map), seven columns at most (country, points, airways, airspaces, FIR, procedures, ground: a number or « non »), sortable, a country unfolds to its sources and their licence; what the launcher answers is untrusted', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=True, night=False,
       rule='SOG-0174 (the user: « des données aéro pour TOUS les pays »; the ergonomist: one row per country, columns points / airways / airspaces / FIR / procedures / ground, source and licence, sortable, seven columns at most on screen, the rest in the detail of the row): the block is folded and reads nothing until opened; the answer is bounded (zone ids, closed list of source ids, integers); a refused or unreadable answer is said with « Relire »')
 def l67(c):
@@ -5481,9 +5215,9 @@ def l67(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the opening is over')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the opening is over')
     c.eq(c.js("document.querySelector('[data-covtable]').open"), False, 'the block is folded', what='folded')
-    c.eq(len(_posts(st, 'coverage')), 0, 'nothing is read until it is opened', what='no read')
+    c.eq(len(_posts(st, 'coverage')), 1, 'the block reads nothing itself until it is opened; the world map read base/coverage once at the opening for its hatch (procSources, SOG-0264)', what='one read by the map')
     c.eq(norm(c.text('[data-covtable] > summary')), norm(T('title')), 'named in the language of the run', what='title')
     c.js("document.querySelector('[data-covtable]').open = true")
     c.until("document.querySelectorAll('[data-cov-zone]').length === 3", timeout=10000, what='the table')
@@ -5529,7 +5263,7 @@ def l67(c):
     c.check_errors()
 
 
-@case('L68', 'Données: a pack that has countries in the coverage carries « Mettre à jour (n) »: the update path on those countries only, the ticked selection untouched, at most one question (SOG-0188)', 'L', tags=('data',), langs4=True,
+@case('L68', 'Données: a pack that has countries in the coverage carries « Mettre à jour (n) »: the update path on those countries only, the coverage untouched, at most one question (SOG-0188)', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=True, night=False,
       rule='SOG-0188 (the user: « pour rafraîchir europe de l\u2019ouest, on déselectionne tous les pays, on clique europe de l\u2019ouest, une popup nous prévient qu\u2019on accepte, et on resélectionne… »): the row of a pack with countries in the coverage has « Mettre à jour (n) »; it runs fetch, state, then the one question about the zones to rebuild, on the pack\u2019s countries in the coverage only, without touching what is ticked')
 def l68(c):
@@ -5541,25 +5275,33 @@ def l68(c):
     cfg = _packs_cfg()
     _open(c, cfg)
     _all_open(c)
-    c.until("!!document.querySelector('[data-packs]') && document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the packs and the states')
-    c.js("document.querySelector('[data-packs-fold]').open = true")   # « Paquets de pays » is folded when the screen opens (SOG-0228)
-    btn = lambda p: f'[data-pack={p}] [data-act=update-pack]'
-    c.eq([c.count(btn('ouest')), c.count(btn('asie')), c.count(btn('antarctique'))], [1, 0, 0], 'a button on the pack that has countries in the coverage (fr, gb), none on one that has none (jp, de) nor on an empty one', what='buttons')
+    c.until("!!document.querySelector('[data-packs]') && [...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the packs and the states')
+    # SOG-0262: « Mettre à jour (n) » is on the line of the pack in the list of the packs, shown when the pack is opened (one at a time)
+    btn = lambda p: f'[data-group-id={p}] [data-act=update-pack]'
+
+    def open_pack(p):
+        if c.js(f"document.querySelector('[data-group-id={p}] [data-act=grp-toggle]').getAttribute('aria-expanded')") != 'true':
+            c.tap(f'[data-group-id={p}] [data-act=grp-toggle]')
+        c.until(f"!!document.querySelector('[data-group-id={p}] [data-group-body]')", what=f'the pack {p} is open')
+    open_pack('ouest')
+    c.eq(c.count(btn('ouest')), 1, 'a button on the pack that has countries in the coverage (fr, gb)', what='button ouest')
+    open_pack('asie')
+    c.eq([c.count(btn('asie')), c.count(btn('ouest')), c.count('[data-group-id=antarctique]')], [0, 0, 0], 'none on a pack that has none in the coverage (jp, de); one pack open at a time; an empty pack is not listed', what='buttons')
+    open_pack('ouest')
     c.eq(norm(c.text(btn('ouest'))), norm(UP('updatePack').replace('{n}', '2')), 'it says how many countries it will update: « Mettre à jour (2) »', what='label')
-    ticked = lambda: c.js("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).map(i => i.dataset.buildZone)")
-    before = ticked()
+    before = _cov_count(c)
     n0 = len(st['posts'])
     c.tap(btn('ouest'))
     q = _ask_text(c)
     posts = st['posts'][n0:]
     c.eq([[p['verb'], sorted(p['args']['zones'])] for p in posts if p['verb'] == 'fetch'], [['fetch', ['fr']]], 'the download concerns the countries of the pack that are in the coverage and not up to date, no other (SOG-0180)', what='fetch zones')
     c.ok('fr' in norm(q['text']).lower() or len(q['text']) > 0, q['text'][:200], 'ONE question follows, about the zones to rebuild')
-    c.eq(ticked(), before, 'the ticked selection did not move', what='selection kept')
+    c.eq(_cov_count(c), before, 'the coverage did not move', what='coverage kept')
     c.eq(c.count('.f-modal'), 1, 'one question', what='one question')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", timeout=6000, what='the window closes')
     c.eq([p['verb'] for p in st['posts'][n0:] if p['verb'] == 'build'], [], 'No: nothing is built', what='no build')
-    c.eq(ticked(), before, 'and the selection is still the same', what='selection kept after No')
+    c.eq(_cov_count(c), before, 'and the coverage is still the same', what='coverage kept after No')
     c.shot(f"L68_standard_{c.page.viewport_size['width']}_{lang}_delivered.png")
     c.check_errors()
 
@@ -5578,7 +5320,7 @@ def l69(c):
                             'gb': _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)})
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
     # ---- SOG-0191: the VAC row
     c.eq(_open_and_state(c, 'vac'), 'partial', 'the row is « partial », not « ok » nor only « out of date »', what='state')
     text = norm(c.js("document.querySelector('[data-set=vac]').textContent"))
@@ -5589,6 +5331,7 @@ def l69(c):
     # ---- SOG-0189: the step-by-step on the line of the zone that waits for a file
     steps = c.js("() => { const s = AeroCatalogue.stepsOf('nats', '2026-11-26'); return s && { page: s.page, files: s.files.map(f => ({ name: f.name, url: f.url || '' })) } }")
     c.ok(steps and steps['files'], steps, 'the catalogue has a step-by-step for NATS')
+    _unfold(c, 'gb')
     box = '[data-zone-row=gb] [data-pickup-steps]'
     c.until(f"!!document.querySelector('{box}')", timeout=6000, what='the step-by-step on the line of the United Kingdom')
     links = c.js(f"[...document.querySelectorAll('{box} a')].map(a => [a.getAttribute('href'), a.target, a.rel])")
@@ -5630,6 +5373,8 @@ def l70(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
+    _ready(c, 5)
+    _unfold(c, 'gb')
     btn = '[data-zone-row=gb] [data-act=zone-upload]'
     c.until(f"!!document.querySelector('{btn}')", timeout=8000, what='the button on the line of the waiting zone')
     c.eq([norm(c.text(btn)), c.count('[data-zone-row=fr] [data-act=zone-upload]'), c.js(f"document.querySelector('{btn}').disabled")], [norm(UP('choose')), 0, False], 'named in the language of the run, on the waiting zone only, live', what='button')
@@ -5727,7 +5472,7 @@ def l71(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
     c.tap('[data-build] [data-verb=update]')
     q = _ask_text(c)
     c.ok(len(q['text']) > 0 and 'France' in q['text'] if lang == 'fr' else len(q['text']) > 0, q, 'the download of one zone failed (403): the update goes on, the question names the zone to rebuild')
@@ -5736,6 +5481,8 @@ def l71(c):
     two = norm(_trow('fetchFails', lang, after='  fetchChanged: [', row=1).replace('{n}', '2'))
     c.ok(bool(_notes_with(c, two)), two, 'the bilan of the download counts two zones that failed (gb, us), not three sources')
     c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", timeout=6000, what='the question closes')
+    _unfold(c, 'us')
     c.until("!!document.querySelector('[data-zone-action=us][data-fetch-failed]')", timeout=8000, what='the failed zone says why on its line')
     why = norm(c.text('[data-zone-action=us][data-fetch-failed] .f-muted'))
     c.ok('faa' in why.lower() and '403' in why and norm(_trow('refused', lang, after='  fetchError: {').split('{src}')[1].split('({s})')[0]) in why, why, 'the line of the zone names the source and what it answered: « FAA : download refused (403) », not a bare « HTTP answer »')
@@ -5777,7 +5524,7 @@ def l72(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
     fetches = lambda: [sorted(p['args']['zones']) for p in _posts(st, 'fetch')]
     # ---- a first update: only the zone whose download is not done is downloaded; the line before the start says what is going to be done
     n0 = len(st['posts'])
@@ -5830,8 +5577,8 @@ def l73(c):
     st['status'] = _status(zones)
     _open(c, _sized(cfg))
     _all_open(c)
-    c.eq(len(_ticked(c)), 78, 'the coverage of 78 zones is ticked', what='78 ticked')
-    c.until("document.querySelectorAll('[data-zstate]').length === 78", timeout=15000, what='the state of the 78 zones, read at the opening (60 then 18)')
+    c.eq(_cov_count(c), 78, 'the coverage of 78 zones is ticked', what='78 ticked')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 78", timeout=15000, what='the state of the 78 zones, read at the opening (60 then 18)')
     n0 = len(st['posts'])
     c.tap('[data-build] [data-verb=update]')
     q = _ask_text(c)
@@ -5864,8 +5611,9 @@ def l74(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
     c.tap('[data-build] [data-verb=update]')
+    _unfold(c, 'us')
     btn = '[data-zone-action=us] [data-act=zone-upload]'
     c.until(f"!!document.querySelector('{btn}') && !document.querySelector('{btn}').disabled", timeout=8000, what='« Choisir le fichier… » on the line of the refused zone')
     fetches = lambda: [sorted(p['args']['zones']) for p in _posts(st, 'fetch')]
@@ -5924,15 +5672,16 @@ def l75(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
-    states = lambda: c.js("[...document.querySelectorAll('[data-zstate]')].map(e => e.dataset.zstate)")
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
+    states = lambda: list(_pills(c).values())
     asked = lambda: [p['args'].get('personal') for p in st['posts'] if p['verb'] == 'status']
     c.eq(asked()[0], [], 'the box is not ticked: the opening asks the state with no personal source', what='personal unticked')
     c.ok('stale' in states(), states(), 'and Spain, built with ENAIRE, is said stale (the launcher cannot read the personal file)')
     # ---- the box ticked: the same sources as the build, the state is read again, Spain is up to date
     n = len(st['posts'])
     c.tap('[data-certify]')
-    c.until("[...document.querySelectorAll('[data-zstate]')].filter(e => e.closest('[data-zone-row]').dataset.zoneRow !== 'gb').every(e => e.dataset.zstate === 'up-to-date')", timeout=8000, what='every zone but Great Britain up to date once the state is read with the personal sources')
+    c.until(_SENT_UPTO % 4, timeout=8000, what='every zone but Great Britain up to date once the state is read with the personal sources')
+    c.eq({z: v for z, v in _pills(c).items() if v != 'up-to-date'}, {'gb': 'stale'}, 'only Great Britain is left to rebuild', what='pills')
     ask2 = [p['args'].get('personal') for p in st['posts'][n:] if p['verb'] == 'status']
     c.ok(bool(ask2) and 'enaire' in ask2[-1], ask2, 'the state was read again with the personal sources the build would send (ENAIRE)')
     if c.width in (390, 1280):
@@ -5961,28 +5710,22 @@ def l76(c):
     cfg = _packs_cfg()
     _open(c, cfg)
     _all_open(c)
-    c.until("!!document.querySelector('[data-packs-fold]') && document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=10000, what='the packs fold, the pills and the numbers of the sentence')
+    c.until("!!document.querySelector('[data-packs-fold]') && [...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=10000, what='the packs fold, the pills and the numbers of the sentence')
     # ---- (a) the packs are folded at the opening; opened by hand, they stay so
     c.eq(c.js("document.querySelector('[data-packs-fold]').open"), False, '« Paquets de pays » is folded when the screen opens', what='packs folded')
     c.eq(norm(c.text('[data-packs-fold] > summary')), norm(_trow('title', lang, after='  packs: {')), 'its summary is its title', what='packs summary')
     c.js("document.querySelector('[data-packs-fold]').open = true")
-    c.tap('[data-build-zone=ca]')
+    c.tap('[data-state-sentence] [data-filter=rebuild]')      # a redraw of the panel
     c.eq(c.js("document.querySelector('[data-packs-fold]').open"), True, 'opened by hand: kept across a redraw', what='packs kept open')
-    c.tap('[data-build-zone=ca]')
+    c.tap('[data-state-sentence] [data-filter=rebuild]')
     c.js("document.querySelector('[data-packs-fold]').open = false")
-    # ---- (c) what the number of « Zones de la couverture (n) » counts
-    n_zones = c.js("document.querySelectorAll('[data-build-zone]').length")
-    m_zones = len(cfg['zones'])
-    c.eq(norm(c.text('[data-zones-note]')), norm(_trow('zonesNote', lang).replace('{n}', str(n_zones)).replace('{m}', str(m_zones))), 'a line says what the number counts: the zones the base covers on this workstation, of those the suite knows', what='zones note')
+    c.eq(c.count('[data-zones-note]') + c.count('[data-zones-title]'), 0, 'the list « Zones de la couverture (n) » and its note are gone (SOG-0262: the coverage is the map and the packs)', what='no zones note')
     # ---- (b) a tap on « n à reconstruire » (lot 1 of the redesign): the zones unfold in place under the sentence; nothing is ticked, the page does not move, the list below stays whole
-    c.js("document.querySelector('[data-build-zone=fr]').click()")   # untick one: the tap must not tick it back (the selection is the pilot's)
-    ticked = lambda: sorted(set(_ticked(c)))
-    t0 = ticked()
     y0 = c.js("Math.round(document.querySelector('[data-state-sentence]').getBoundingClientRect().top + window.scrollY)")
     c.tap('[data-state-sentence] [data-filter=rebuild]')
     c.until("document.querySelectorAll('[data-state-zones] [data-zone-row]').length === 3", timeout=6000, what='the three zones to rebuild unfold')
-    c.eq(c.js("[...document.querySelectorAll('[data-state-zones] [data-zone-row]')].map(r => [r.dataset.zoneRow, r.querySelector('[data-build-zone]').checked])"), [['fr', False], ['gb', True], ['us', True]], 'the zones to rebuild are listed under the sentence with the ticks they already had (France was unticked: it stays so)', what='ticked')
-    c.eq([ticked() == t0, c.count('[data-build-zones] [data-zone-row]'), c.count('[data-filter-line]'), abs(c.js("Math.round(document.querySelector('[data-state-sentence]').getBoundingClientRect().top + window.scrollY)") - y0) <= 1], [True, 5, 0, True], 'nothing was ticked, the list of the coverage is whole, no line to follow, the page did not scroll', what='no side effect')
+    c.eq(c.js("[...document.querySelectorAll('[data-state-zones] [data-zone-row]')].map(r => r.dataset.zoneRow)"), ['fr', 'gb', 'us'], 'the zones to rebuild are listed under the sentence', what='zones listed')
+    c.eq([c.count('[data-build-zones]'), c.count('[data-filter-line]'), abs(c.js("Math.round(document.querySelector('[data-state-sentence]').getBoundingClientRect().top + window.scrollY)") - y0) <= 1], [0, 0, True], 'no lower list, no line to follow, the page did not scroll', what='no side effect')
     if c.width in (390, 1280):
         c.shot(f'L76_standard_{c.width}_{lang}_delivered.png')
     c.tap('[data-state-sentence] [data-filter=rebuild]')
@@ -6080,7 +5823,7 @@ def l79(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 3", timeout=8000, what='the three states given')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the states read (three given, two without a state)')
     c.tap('[data-build] [data-verb=update]')
     head = norm(_trow('none', lang, after='  upd: {').split('{n}')[0])
     for _ in range(30):
@@ -6127,8 +5870,9 @@ def l81(c):
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the five pills')
     c.tap('[data-build] [data-verb=update]')
+    _unfold(c, 'us')
     btn = '[data-zone-action=us] [data-act=zone-upload]'
     c.until(f"!!document.querySelector('{btn}') && !document.querySelector('{btn}').disabled", timeout=8000, what='« Choisir le fichier… » on the refused zone')
     running = _fview({'us': _fz('fetching', 1, 3, {'faa': {'state': 'downloaded', 'files': 3, 'bytes': 900}})}, state='running', step='Téléchargement', done=0, total=1)
@@ -6262,10 +6006,9 @@ def l85(c):
     c.page.reload(wait_until='load')
     _head(c)
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=8000, what='the six pills')
-    row = '[data-build-zones] [data-zone-row=pt]'
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.tap('[data-build-zones] [data-build-zone=pt]')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) >= 6", timeout=8000, what='the six pills')
+    row = '[data-state-zones] [data-zone-row=pt]'
+    _unfold(c, 'pt')
     with c.page.expect_file_chooser() as fc:
         c.js(f"document.querySelector('{row} [data-act=zone-upload]').click()")
     fc.value.set_files({'name': 'AIP_PT.zip', 'mimeType': 'application/zip', 'buffer': b'PK' + b'x' * 998})
@@ -6301,9 +6044,10 @@ def l86(c):
     c.context.route(re.compile(r'/__setup/base/upload'), lambda route: route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body'])))
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=8000, what='the six pills')
-    row = '[data-build-zones] [data-zone-row=pt]'
-    fr = '[data-build-zones] [data-zone-row=fr]'
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) >= 6", timeout=8000, what='the six pills')
+    _unfold(c, 'pt')
+    row = '[data-state-zones] [data-zone-row=pt]'
+    fr = '[data-state-zones] [data-zone-row=fr]'
     lines = lambda: [norm(x) for x in c.js(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].map(p => p.textContent)")]
     quiet = lambda: c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
 
@@ -6317,7 +6061,8 @@ def l86(c):
         c.page.reload(wait_until='load')
         _head(c)
         _all_open(c)
-        c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=10000, what='the six pills')
+        c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) >= 6", timeout=10000, what='the six pills')
+        _unfold(c, 'pt')
     # ---- 1. from the start: « Choisir le fichier… » alone, with the step-by-step; France (an ordinary stale line) still has no action
     c.eq([c.count(f'{row} [data-zone-action]'), c.count(f'{row} [data-act=zone-upload]'), c.count(f'{row} [data-verb=pickup]'), c.count(f'{row} [data-zone-alt]'), c.count(f'{row} [data-zone-msg]')], [1, 1, 0, 0, 0],
          'Portugal, to rebuild, nothing seen in Downloads: its line offers « Choisir le fichier… » from the start, and nothing else (no pickup, no link, no message)', what='line at once')
@@ -6325,7 +6070,7 @@ def l86(c):
     c.eq(c.count(f'{fr} [data-zone-action]'), 0, 'France, an ordinary stale line, has no action on it (the early offer is for the sources that carry fetch.pick)', what='France plain')
     steps = c.js(f"(() => {{ const o = document.querySelector('{row} [data-pickup-steps=pt]'); return o ? [[...o.querySelectorAll('[data-step-page] a')].map(a => a.getAttribute('href')), o.querySelectorAll('[data-step-file]').length, o.querySelector('[data-step-then]').textContent] : null }})()")
     c.eq([steps[0], steps[1], norm(steps[2])] if steps else None,
-         [['https://www.nav.pt/ais', 'https://www.nav.pt/'], 1, norm(ST('thenChoose'))], 'its step-by-step: the page of NAV Portugal and its home, the file to take, and the last step is « Choisir le fichier… » (no pickup button to touch)', what='steps')
+         [c.js("(() => { const s = window.AeroCatalogue.stepsOf('navpt'); return [s.page.url, s.page.home] })()"), 1, norm(ST('thenChoose'))], 'its step-by-step: the page of NAV Portugal and its home, the file to take, and the last step is « Choisir le fichier… » (no pickup button to touch)', what='steps')
     # ---- 2. a file SEEN in Downloads (the launcher's status says it): the pickup is the one gesture, another file is a link under it
     st['status'] = _status({'ca': ok(), 'es': ok(), 'fr': _zst('stale', _NEWER), 'gb': ok(), 'us': ok(), 'pt': _zst('stale', seen, buildable=False)})
     reopen()
@@ -6404,7 +6149,9 @@ def l86(c):
     quiet()
     ed = _date_text(datetime.date(2026, 12, 24), lang)
     c.eq(lines(), [norm(ZM('edition').replace('{d}', ed) + ' (EAIP_PORTUGAL)'), norm(ZM('future').replace('{d}', ed))], 'an edition to come: its date, and « il sera pris le <date> » (the launcher said future)', what='future lines')
-    c.until("document.querySelector('[data-build-zones] [data-zone-row=pt] [data-zstate]').dataset.zstate === 'up-to-date'", timeout=8000, what='the zone is up to date')
+    c.until(_SENT_UPTO % 5, timeout=8000, what='the launcher says the zone is up to date again (five up to date, France still stale)')
+    _unfold(c, 'pt')
+    c.until("document.querySelector('[data-state-zones] [data-zone-row=pt] [data-zstate]').dataset.zstate === 'up-to-date'", timeout=8000, what='the zone is up to date')
     c.eq([c.count(f'{row} [data-zone-action]'), c.count(f'{row} [data-act=zone-upload]'), len(lines())], [0, 0, 2], 'up to date: no button, and the line of the edition stays', what='up to date')
     c.check_errors()
 
@@ -6424,7 +6171,7 @@ _L87_JS = r"""async (codes) => {
 def _l87_ready(c, st=None, tag=''):
     """After a reload: the 75 zones have their state and the sentence is drawn (what is missing is said)."""
     try:
-        c.until("document.querySelectorAll('[data-zstate]').length >= 75 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=20000, what='the state of the 75 zones')
+        c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) >= 75 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=20000, what='the state of the 75 zones')
     except Fail:
         raise Fail(f'the 75 zones have no state ({tag}): ' + json.dumps([[p['verb'] for p in (st or {'posts': []})['posts']][-6:], (st or {}).get('verbs_calls'), c.errors[:2]]) + json.dumps(c.js("() => [document.querySelectorAll('[data-zstate]').length, !!document.querySelector('[data-state-sentence]'), (document.querySelector('[data-state-head]') || {}).innerText]")), 'the state is read') from None
 
@@ -6480,12 +6227,11 @@ def l87(c):
     def style_route(route):
         route.fulfill(status=200, content_type='application/json', body=_ZSTYLE)
     c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), style_route)
-    c.page.add_init_script(_ZHOOK_JS)
     _open(c, _sized(cfg))
     _all_open(c)
-    c.until("document.querySelectorAll('[data-zstate]').length >= 75", timeout=20000, what='the state of the 75 zones, read at the opening (60 then 15)')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) >= 75", timeout=20000, what='the state of the 75 zones, read at the opening (60 then 15)')
     c.until("!!document.querySelector('[data-state-sentence] [data-filter]')", timeout=10000, what='the sentence')
-    row = lambda zid: f'[data-build-zones] [data-zone-row={zid}]'
+    row = lambda zid: f'[data-state-zones] [data-zone-row={zid}]'
     # ---- 1. the sentence says the right counts, in its order; « Tout est à jour. » is NOT there next to « à faire »
     cycle = c.text('[data-cycle-now]').strip()
     pat = re.escape(_trow('cycleDates', lang)).replace(re.escape('{a}'), '(?P<a>.+?)').replace(re.escape('{b}'), '(?P<b>.+?)')
@@ -6497,12 +6243,13 @@ def l87(c):
     c.eq(norm(c.text('[data-verb=update]')), norm(UT('updateN').replace('{n}', '10')), 'the button counts what it treats: 9 to rebuild + 1 failed (never the zones that wait for the user)', what='label')
     c.eq(norm(c.text('[data-update-notes]')), norm(UT('waitNote').replace('{z}', BT('waiting', 2) + ' · ' + BT('personal', 3))), 'and the note under it says what it leaves to the user: the files, and the tick', what='notes')
     # ---- 2. the notices are information: Afghanistan is green « À jour » on its row, its line is muted and neutral, it is counted up to date, no file button
-    zst = lambda zid: c.js("(id) => { const e = document.querySelector('[data-build-zones] [data-zone-row=' + id + '] [data-zstate]'); return e ? [e.dataset.zstate, e.textContent.trim(), e.querySelector('.f-dot')?.dataset.kind, e.tagName] : null }", zid)
+    _unfold(c, 'af')     # the zones up to date: their notices are under them (SOG-0262: the lower list is gone, the numbers of the sentence unfold the zones)
+    zst = lambda zid: c.js("(id) => { const e = document.querySelector('[data-state-zones] [data-zone-row=' + id + '] [data-zstate]'); return e ? [e.dataset.zstate, e.textContent.trim(), e.querySelector('.f-dot')?.dataset.kind, e.tagName] : null }", zid)
     c.eq(zst('af'), ['up-to-date', norm(_trow('up-to-date', lang, after='  zst: {')), 'ok', 'SPAN'], 'Afghanistan: green « À jour », a plain label (nothing to open)', what='af pill')
     c.eq([[norm(t) for t in c.js(f"[...document.querySelectorAll('{row('af')} [data-zone-notice]')].map(p => p.textContent)")], c.js(f"(() => {{ const p = document.querySelector('{row('af')} [data-zone-notice]'); return [p.classList.contains('f-muted'), p.hasAttribute('data-level'), p.className.includes('warn') || p.className.includes('err')] }})()")],
          [[norm(ZR('no-points'))], [True, False, False]], 'its information line: muted, no state colour', what='af notice')
     c.eq([c.count(f"{row('af')} [data-zone-action]"), c.count(f"{row('af')} [data-verb=pickup]"), c.count(f"{row('af')} [data-act=zone-upload]")], [0, 0, 0], 'and no file to take for Afghanistan', what='af no file')
-    c.eq([c.count('[data-build-zones] [data-zone-notice]'), c.count('[data-state-sentence] [data-filter=failed]')], [10, 1], 'ten notices (never counted: the 60 up to date are 60)', what='notices')
+    c.eq([c.count('[data-state-zones] [data-zone-notice]'), c.count('[data-state-sentence] [data-filter=failed]')], [10, 1], 'ten notices (never counted: the 60 up to date are 60)', what='notices')
     # ---- 3. the 13 reasons have a text, an unknown code is said with its code (bounded, never as markup), the closed list is the 13
     r = c.js(_L87_JS, _L87_CODES)
     c.eq(r['closed'], sorted(_L87_CODES), 'the closed list of reason codes the page reads is the launcher’s thirteen', what='closed list')
@@ -6514,20 +6261,24 @@ def l87(c):
     c.eq([norm(_trow('unknown', lang, after='  zr: {')).find('{code}') >= 0, 'unrecognised' in norm(r['unknown']).lower() or 'non reconnue' in norm(r['unknown']).lower()], [True, False], 'the text of the unknown reason carries the code', what='unknown row')
     c.eq(r['tones'], {'up-to-date': 'ok', 'stale': 'warn', 'never-built': 'warn', 'failed': 'err', 'building': 'accent'}, 'the tones of the zones are the three states (green, amber, red) and the blue of the page at work: no brown, no grey state', what='tones')
     # in the screen: the unknown code of a row, and the hostile one not as markup
-    c.js("document.querySelector('[data-build-zones] [data-zone-row=q63] [data-act=zone-why]').scrollIntoView({ block: 'center' })")
+    _unfold(c, 'q63')
+    c.js("document.querySelector('[data-state-zones] [data-zone-row=q63] [data-act=zone-why]').scrollIntoView({ block: 'center' })")
     c.tap(f"{row('q63')} [data-act=zone-why]")
     c.until(f"!!document.querySelector('{row('q63')} [data-zone-why]')", timeout=4000, what='the reason of q63 opens')
     c.eq(norm(c.text(f"{row('q63')} [data-zone-why]")), norm(unknown('zz-new_code')), 'the zone with a code the page does not know says the code', what='q63 why')
     c.tap(f"{row('q63')} [data-act=zone-why]")
+    _unfold(c, 'q64')
     c.js(f"document.querySelector('{row('q64')} [data-act=zone-why]').scrollIntoView({{ block: 'center' }})")
     c.tap(f"{row('q64')} [data-act=zone-why]")
     c.until(f"!!document.querySelector('{row('q64')} [data-zone-why]')", timeout=4000, what='the reason of q64 opens')
     c.eq([norm(c.text(f"{row('q64')} [data-zone-why]")), c.count(f"{row('q64')} [data-zone-why] b")], [norm(unknown(shown_hostile)), 0], 'a hostile code is cut and escaped: no element comes out of it', what='q64 why')
     c.tap(f"{row('q64')} [data-act=zone-why]")
     # ---- 4. the file buttons: only on the zones that wait for a file; the zones that wait for the tick have none and say what to tick, with a link to the box
-    hand = c.js("[...document.querySelectorAll('[data-build-zones] [data-zone-row]')].filter(r => r.querySelector('[data-verb=pickup], [data-act=zone-upload]')).map(r => r.dataset.zoneRow)")
+    _unfold(c, 'gb')
+    hand = c.js("[...document.querySelectorAll('[data-state-zones] [data-zone-row]')].filter(r => r.querySelector('[data-verb=pickup], [data-act=zone-upload]')).map(r => r.dataset.zoneRow)")
     c.eq(hand, ['gb', 'us'], 'the file buttons (« Prendre le fichier téléchargé », « Choisir le fichier… ») are on the two zones that wait for a file (pickup-waiting, source-missing) and nowhere else', what='file buttons')
     short = lambda s: re.sub(r'\s*\(.*\)\s*$', '', s)
+    _unfold(c, 'pt')
     for zid in ('pt', 'ie', 'se'):
         line = norm(c.text(f"{row(zid)} [data-personal-wait] .f-muted"))
         pre = norm(ZR('personal-undeclared').replace('{c}', certify).split('{source}')[0])
@@ -6537,30 +6288,27 @@ def l87(c):
              [1, norm(_trow('toCertify', lang)), 0, 0, 0], f'{zid}: a link to the box, no file button (Portugal included, though its file is chosen by hand)', what=f'{zid} line')
     c.ok('NAV Portugal' in c.text(f"{row('pt')} [data-personal-wait]"), c.text(f"{row('pt')} [data-personal-wait]"), 'Portugal names its source')
     c.eq(norm(c.text(f"{row('pt')} [data-zone-why]")) if c.count(f"{row('pt')} [data-zone-why]") else '', '', 'the reason line of Portugal is not open on its own', what='pt why closed')
-    c.tap('[data-state-sentence] [data-filter=personal]')
-    c.until("document.querySelector('[data-state-zones]')?.dataset.stateOpen === 'personal'", timeout=4000, what='the personal part unfolds')
     c.eq(sorted(c.js("[...document.querySelectorAll('[data-state-zones] [data-zone-row]')].map(r => r.dataset.zoneRow)")), ['ie', 'pt', 'se'], 'it unfolds its three zones in place, like the others', what='unfold personal')
-    c.tap('[data-state-sentence] [data-filter=personal]')
-    c.until("!document.querySelector('[data-state-zones]')", timeout=4000, what='and folds')
     c.tap(f"{row('pt')} [data-act=zone-certify]")
     c.until("document.activeElement?.matches('[data-certify]')", timeout=4000, what='the link brings the box to the focus')
     box = c.js("(() => { const r = document.querySelector('[data-certify]').getBoundingClientRect(); return [r.top >= 0, r.bottom <= window.innerHeight] })()")
     c.eq(box, [True, True], 'and into view', what='box in view')
     # ---- 5. the legend of the map: three states, the colours follow it
-    _zmap_ready(c, 'base')
-    leg = c.js("(() => { const p = document.querySelector('[data-zone-map=base] [data-zone-legend]'); return [[...p.querySelectorAll('.d-sw')].map(s => s.dataset.tone), p.textContent] })()")
+    c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length === 4", timeout=15000, what='the world map')
+    leg = c.js("(() => { const p = document.querySelector('[data-cw-legend]'); return [[...p.querySelectorAll('.d-sw[data-tone]')].map(s => s.dataset.tone), p.textContent] })()")
     L = lambda k: _trow(k, lang, after='mapLegendBase: {')
-    c.eq(leg[0], ['ok', 'warn', 'err'], 'the legend has three swatches: green, amber, red', what='swatches')
-    c.ok(all(norm(L(k)) in norm(leg[1]) for k in ('ok', 'warn', 'err')) and norm(_trow('mapLegendNote', lang)) in norm(leg[1]), leg[1], 'it says them in words: à jour, à faire, en échec (and what ticked looks like)')
-    c.ok(norm(_trow('accent', lang, after='mapTone: {')) not in norm(leg[1]) and norm(_trow('muted', lang, after='mapTone: {')) not in norm(leg[1]), leg[1], 'no fourth state in the legend (not « en cours », not « jamais construite »)')
-    tones = {zid: _zfeat(c, 'base', zid)['tone'] for zid in ('fr', 'gb', 'us', 'es')}
+    c.eq(leg[0], ['ok', 'warn', 'err', 'muted'], 'the legend has the three states (green, amber, red) and the grey of the zones outside the coverage', what='swatches')
+    c.ok(all(norm(L(k)) in norm(leg[1]) for k in ('ok', 'warn', 'err')) and norm(_trow('hatch', lang, after='  cw: {')) in norm(leg[1]), leg[1], 'it says them in words: à jour, à faire, en échec (and the hatch of the procedures)')
+    c.ok(norm(_trow('accent', lang, after='mapTone: {')) not in norm(leg[1]), leg[1], 'no fourth state in the legend (not « en cours »)')
+    tones = {zid: c.js(f"document.querySelector('[data-wmap] path[data-zone={zid}]').dataset.tone") for zid in ('fr', 'gb', 'us', 'es')}
     c.eq(tones, {'fr': 'ok', 'gb': 'warn', 'us': 'warn', 'es': 'err'}, 'on the map: up to date green, a zone that waits for a file amber, the failed one red', what='map tones')
     # ---- 6. SOG-0261: the « pourquoi ? » of a row says it opens something, keeps the scroll, folds on the second tap
+    _unfold(c, 'q60')
     hint = f"{row('q60')} button.d-st [data-why-hint]"
     c.js(f"document.querySelector('{row('q60')}').scrollIntoView({{ block: 'center' }})")
     c.wait(300)
     c.eq([norm(c.text(hint)), c.count(f'{hint} .d-chev'), c.attr(f"{row('q60')} button.d-st", 'aria-expanded')], [norm(_trow('whyHint', lang)), 1, 'false'], 'the dotted state word says « pourquoi ? » with a chevron, and that it is closed', what='hint')
-    pos = lambda: c.js("() => [Math.round(window.scrollY), Math.round(document.querySelector('[data-build-zones]').scrollTop)]")
+    pos = lambda: c.js("() => [Math.round(window.scrollY), 0]")
     y0 = pos()
     c.ok(y0[0] > 300 or y0[1] > 100, y0, 'the list is scrolled down (page or its own frame) before the tap: a real case, not a row at the top')
     c.tap(f"{row('q60')} button.d-st")
@@ -6581,6 +6329,7 @@ def l87(c):
     if c.width in (390, 1280):
         c.js("document.querySelector('[data-state-head]').scrollIntoView({ block: 'start' }); window.scrollBy(0, -90)")
         c.shot(f'L87_{c.width}_{lang}_delivered.png')
+        _unfold(c, 'pt')
         c.js(f"document.querySelector('{row('pt')}').scrollIntoView({{ block: 'center' }})")
         c.shot(f'L87_{c.width}_{lang}_personal.png')
     # ---- 7. only zones that wait for the user are left: the sentence says what they wait for, never « Tout est à jour. » next to it
@@ -6599,7 +6348,8 @@ def l87(c):
     _l87_ready(c, st, 'all fresh')
     c.eq([keys(), c.count('[data-all-fresh]'), c.count('[data-hand-alone]'), c.count('[data-build] [data-verb=update]'), norm(c.text('[data-all-fresh]'))], [['upToDate'], 1, 0, 0, norm(_trow('allFresh', lang))],
          'everything up to date (the notices do not count): « Tout est à jour. », nothing else, no button', what='all fresh')
-    c.eq(c.count('[data-build-zones] [data-zone-notice]'), 10, 'the information lines stay under their zones', what='notices stay')
+    _unfold(c, 'af')
+    c.eq(c.count('[data-state-zones] [data-zone-notice]'), 10, 'the information lines stay under their zones', what='notices stay')
     # ---- 8. the busy sentence is said ONCE: by the card, not again under the button
     st['status'] = mixed
     c.page.reload(wait_until='load')
@@ -6608,8 +6358,7 @@ def l87(c):
     _l87_ready(c, st, 'busy')
     st['start'] = (409, {'reason': 'busy', 'job': 'o1', 'running': R})      # the status is read; now every start is refused: an operation runs
     busy = norm(_trow('busy', lang, after='  greyReason: {'))
-    c.tap('[data-select-row] [data-verb=select-none]')
-    c.tap('[data-build-zones] [data-build-zone=ca]')      # one zone ticked: « Tout recalculer » is one run (more than 60 are cut into several)
+    _untick(c, *[z for z in ALL if z != 'ca'])      # the coverage is Canada alone: « Tout recalculer » is one run (more than 60 are cut into several)
     c.tap('[data-verb=build]')
     c.until("!!document.querySelector('[data-build] [data-busy-card]')", timeout=8000, what='the card of the running operation')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -6619,4 +6368,227 @@ def l87(c):
     if c.width in (390, 1280):
         c.js("document.querySelector('[data-build] [data-busy-card]').scrollIntoView({ block: 'center' })")
         c.shot(f'L87_{c.width}_{lang}_busy.png')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L88
+_L88_RECTS = {'es': [-9, 36, 3, 43], 'fr': [-5, 43, 8, 51], 'gb': [-8, 50, 2, 59], 'de': [6, 47, 15, 55], 'it': [7, 37, 18, 47], 'ca': [-125, 49, -60, 60], 'us': [-124, 25, -67, 49], 'jp': [130, 31, 145, 45]}
+_L88_NAMES = {'es': ['Espagne', 'Spain', 'Spanien', 'España'], 'fr': ['France', 'France', 'Frankreich', 'Francia'], 'gb': ['Royaume-Uni', 'United Kingdom', 'Vereinigtes Königreich', 'Reino Unido'],
+              'de': ['Allemagne', 'Germany', 'Deutschland', 'Alemania'], 'it': ['Italie', 'Italy', 'Italien', 'Italia'], 'ca': ['Canada', 'Canada', 'Kanada', 'Canadá'],
+              'us': ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos'], 'jp': ['Japon', 'Japan', 'Japan', 'Japón']}
+_L88_NOREADER = 'naviair'
+
+
+def _l88_outlines():
+    """The stubbed zoneOutlines(): a ring (a rectangle with a notch, so it is not only its frame) per zone, but the United States (the frame alone: dashed)."""
+    out = {}
+    for z, (w, s, e, n) in _L88_RECTS.items():
+        out[z] = {'name': _L88_NAMES[z], 'box': [w, s, e, n], 'rings': [] if z == 'us' else [[[w, s], [e, s], [e, n], [(w + e) / 2, n - 1], [w, n], [w, s]]]}
+    return out
+
+
+def _l88_steps(x4):
+    """What the catalogue of aerodb 5cc4e909b gives for the SIA (stepsOf): two files, the second one's path to check; the links are the suite's own (never the real ones)."""
+    return {'sia': {'id': 'sia', 'page': {'url': 'https://sia.example/page-du-cycle', 'home': 'https://sia.example/'}, 'files': [
+        {'name': 'export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip', 'file': 'export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip', 'gives': x4('gives one'), 'what': x4('what one'),
+         'where': x4('SIA › Produits › Données AIM › XML'), 'verified': True},
+        {'name': 'ENR 3.2.pdf', 'file': 'ENR 3.2.pdf', 'link': 'https://sia.example/enr32', 'gives': x4('gives two'), 'what': x4('what two'), 'where': x4('SIA › AIP › ENR › ENR 3.2'), 'verified': False}]},
+            # a source its publisher no longer offers (AeroDB 48cc3811c): stepsOf(id).unavailable = { since, note[4] }
+            'dircam': {'id': 'dircam', 'page': {'url': 'https://dircam.example/page', 'home': 'https://dircam.example/'}, 'files': [], 'unavailable': {'since': '2025-11', 'note': x4('unavailable note')}}}
+
+
+def _l88_cycle(args):
+    """The result of base/cycle { zone } as AeroDB's K182 gives it: the SIA (by hand) and openAIP (by the launcher) for France; Germany is outside the coverage and its Naviair-like source has no reader."""
+    zone = args.get('zone')
+    sia = {'id': 'sia', 'label': ['SIA France', 'SIA France', 'SIA Frankreich', 'SIA Francia'], 'regime': 'hand', 'personal': False, 'zoneCount': 1, 'zones': ['fr'],
+           'steps': {'download': {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z', 'edition': 'AIRAC 2611'}, 'build': {'zones': 1, 'upToDate': 0}, 'publish': {'published': 0, 'unpublished': 1, 'unknown': 0}},
+           'hand': {'link': 'https://sia.example/page-du-cycle', 'expected': ['export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip', 'ENR 3.2.pdf'], 'inDownloads': ['export_xml_bd_sia_2026-10-29-v01.zip']}}
+    oaip = {'id': 'openaip', 'label': ['openAIP <img src=x onerror=window.__pwn=1>', 'openAIP', 'openAIP', 'openAIP'], 'regime': 'auto', 'personal': False, 'zoneCount': 70,
+            'steps': {'download': {'state': 'late', 'cycle': '2026-10-01', 'at': '2026-10-05T08:00:00Z'}, 'build': {'zones': 1, 'upToDate': 1}, 'publish': {'published': 1, 'unpublished': 0, 'unknown': 0}}, 'why': 'older-than-cycle'}
+    dircam = {'id': 'dircam', 'label': ['DIRCAM', 'DIRCAM', 'DIRCAM', 'DIRCAM'], 'regime': 'hand', 'personal': False, 'zoneCount': 1, 'zones': ['fr'], 'unavailable': {'since': '2025-11'},
+              'steps': {'download': {'state': 'unavailable'}, 'build': {'zones': 1, 'upToDate': 0}, 'publish': {'published': 0, 'unpublished': 0, 'unknown': 1}}, 'why': 'unavailable-at-publisher',
+              'hand': {'link': 'https://dircam.example/page', 'expected': ['MIAM_OACI_ENR 5.7.pdf'], 'inDownloads': []}}
+    views = {'fr': {'zone': 'fr', 'known': True, 'inCoverage': True, 'sources': [sia, oaip, dircam],
+                    'state': {'state': 'stale', 'builtCycle': '2026-10-01', 'builtAt': '2026-10-05T10:00:00Z', 'expectedCycle': '2026-10-29', 'publish': {'state': 'unpublished', 'commit': 'abc', 'at': '2026-10-05T11:00:00Z'}, 'notices': [], 'reasons': ['source-newer']},
+                    'addWillAsk': {'sources': ['sia', 'openaip'], 'auto': ['openaip'], 'hand': [{'id': 'sia', 'expected': ['export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip']}], 'personal': [], 'noReader': []}},
+             'de': {'zone': 'de', 'known': True, 'inCoverage': False, 'sources': [{**oaip, 'steps': {'download': {'state': 'missing'}, 'build': {'zones': 1, 'upToDate': 0}, 'publish': {'published': 0, 'unpublished': 0, 'unknown': 1}}, 'why': 'not-downloaded'}], 'state': None,
+                    'addWillAsk': {'sources': ['openaip'], 'auto': ['openaip'], 'hand': [], 'personal': [], 'noReader': [_L88_NOREADER]}}}
+    return {'ok': True, 'cycle': {'inForce': '2026-10-29', 'next': '2026-11-26', 'ids': {'inForce': '2611', 'next': '2612'}}, 'items': [], 'next': {'cycle': '2026-11-26', 'items': []}, 'unread': [],
+            **({'zoneView': views[zone]} if zone in views else {})}
+
+
+@case('L88', 'Données: the world map, the country packs and the country sheet replace the flat list of zones (SOG-0262, lot A) — the page order, the map framed on the coverage with its outlines, three states, hatch for procedures, a blue border for the open pack, the hovered country alone in solid; packs with their summarised state, one open at a time; the sheet (right of the map, full screen on a phone) with its ticks and its inventory in three beats; no selection left',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 (the user: « faire disparaître la liste totale des pays, et remplacer par les paquets de pays »; « non aux pastilles, on reste sur les contours de pays actuels »; sheet « à droite, c\'est très bien. sur téléphone, full screen »; each file in three beats: what it is, where to find it, its name): the base panel reads, top to bottom, the state bar, the map, the packs; the flat list, « Seulement les périmés », « Tout désélectionner » and the ticks are gone; a tap on a country opens its sheet; K182 (base/cycle { zone }) feeds the sheet, read once per opened sheet')
+def l88(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    CW = lambda k, row=0: _trow(k, lang, after='  cw: {', row=row)
+    x4 = lambda s: [f'{s} fr', f'{s} en', f'{s} de', f'{s} es']
+    cfg, _ = _fixture()
+    cfg['outlines'] = _l88_outlines()
+    cfg['stepsOf'] = _l88_steps(x4)
+    cfg['pathCheck'] = ['chemin à vérifier', 'path to check', 'Pfad zu prüfen', 'ruta por verificar']
+    for z, names, kb in [('it', _L88_NAMES['it'], 4000), ('jp', _L88_NAMES['jp'], 6000)]:
+        cfg['zones'].append({'id': z, 'names': names, 'frames': [], 'published': False, 'publishedKb': kb})
+    for z in cfg['zones']:
+        z['names'] = _L88_NAMES.get(z['id'], z['names'])
+    cfg['packs'] = {'generated': '2026-11-12', 'source': 'test', 'regions': [
+        {'id': 'ouest', 'names': ['Europe de l’Ouest', 'Western Europe', 'Westeuropa', 'Europa occidental'], 'zones': ['fr', 'gb', 'es', 'de', 'it']},
+        {'id': 'amerique', 'names': ['Amérique du Nord', 'North America', 'Nordamerika', 'Norteamérica'], 'zones': ['ca', 'us']},
+        {'id': 'asie', 'names': ['Asie', 'Asia', 'Asien', 'Asia'], 'zones': ['jp']}], 'themes': []}
+    cov_view = _view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': {
+        'fr': {'cycle': '2026-10-29', 'counts': {}, 'procedures': 9, 'sources': {}, 'procSources': ['eaip']}, 'us': {'cycle': '2026-10-29', 'counts': {}, 'procedures': 3069, 'sources': {}, 'procSources': ['cifp']},
+        'gb': {'cycle': '2026-10-29', 'counts': {}, 'procedures': 0, 'sources': {}, 'procSources': []}}})
+    st = _launcher(c, [cov_view], verbs=_VERBS + ['base/coverage', 'base/cycle'], cycle=_l88_cycle)
+    zs = {'ca': {**_zst('up-to-date'), 'builtAt': '2026-11-01T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-11-01T12:00:00Z'}},
+          'es': {**_zst('up-to-date'), 'builtAt': '2026-11-01T10:00:00Z', 'publish': {'state': 'unknown', 'reason': 'no-repo'}},
+          'fr': {**_zst('stale', _NEWER), 'builtAt': '2026-10-05T10:00:00Z', 'builtCycle': '2026-10-01', 'publish': {'state': 'unpublished', 'at': '2026-10-05T11:00:00Z'}},
+          'gb': _zst('failed', {'code': 'failed', 'error': 'x'}), 'us': {**_zst('up-to-date'), 'builtAt': '2026-11-01T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-11-01T12:00:00Z'}}}
+    st['status'] = _status(zs)
+    _open(c, cfg)
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length === 8 && !!document.querySelector('[data-cw-groups]') && document.querySelectorAll('.d-wh').length === 2", timeout=15000, what='the map, the packs and the hatch')
+    c.until("document.querySelector('[data-wmap] path[data-zone=fr]').dataset.tone === 'warn'", timeout=8000, what='the states are on the map')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    # ---- 1. the page order, and what is gone
+    pos = c.js("""(() => { const q = s => document.querySelector(s), before = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return [before('[data-state-head]', '[data-world-map]'), before('[data-world-map]', '[data-cw-groups]'), before('[data-cw-groups]', '[data-packs-fold]'), before('[data-cw-groups]', '[data-publish]')] })()""")
+    c.eq(pos, [True, True, True, True], 'the page order: the state bar, the map, the packs, then the rest of the base panel (the fold to add or remove countries, Publier)', what='page order')
+    c.eq([c.count(s) for s in ('[data-build-zone]', '[data-select-row]', '[data-selection-line]', '[data-build-zones]', '[data-zones-title]', '[data-verb=select-stale]', '[data-verb=select-none]', '[data-zone-map=base]')], [0] * 8,
+         'the flat list of the zones, its ticks, « Seulement les périmés », « Tout désélectionner », the selection line and the old map are gone', what='old UI gone')
+    # ---- 2. the map: the outlines of the countries (no pastille), framed on the coverage, three states and the hatch
+    m = c.js("""(() => { const s = document.querySelector('[data-wmap]'), vb = s.getAttribute('viewBox').split(' ').map(Number), p = id => document.querySelector(`[data-wmap] path[data-zone=${id}]`);
+      return { vb, paths: [...s.querySelectorAll('path[data-zone]')].map(e => e.dataset.zone).sort(), shapes: s.querySelectorAll('circle, ellipse').length, tones: ['fr', 'gb', 'es', 'us', 'de', 'jp'].map(z => p(z).dataset.tone),
+        approx: ['us', 'fr'].map(z => p(z).hasAttribute('data-approx')), hatch: [...s.querySelectorAll('.d-wh')].map(e => e.dataset.proc).sort(), fill: getComputedStyle(s.querySelector('.d-wh')).fill, w: s.getBoundingClientRect().width, win: window.innerWidth } })()""")
+    c.eq(m['paths'], ['ca', 'de', 'es', 'fr', 'gb', 'it', 'jp', 'us'], 'a path per country the suite knows (outlines, one each)', what='paths')
+    c.eq(m['shapes'], 0, 'no pastille: only the outlines', what='no dots')
+    c.eq(m['tones'], ['warn', 'err', 'ok', 'ok', 'muted', 'muted'], 'the state of the launcher per country (to do, failed, up to date) and grey outside the coverage', what='tones')
+    c.eq(m['approx'], [True, False], 'a country known by its frame only is dashed, one with an outline is not', what='approx')
+    c.eq(m['hatch'], ['fr', 'us'], 'the hatch on the countries with procedures (procSources of base/coverage: eAIP, CIFP), not on one whose list is empty', what='hatch')
+    c.ok(m['fill'].startswith('url('), m['fill'], 'the hatch is a pattern fill')
+    c.ok(m['vb'][0] + m['vb'][2] < 100 and m['vb'][0] <= -125 and m['vb'][2] > 150, m['vb'], 'framed on the coverage (Spain to Canada and the United States), not on the world: Japan is out of the frame')
+    c.le(m['w'], m['win'], 'the map fits the width', what='map width')
+    legend = norm(c.text('[data-cw-legend]'))
+    for word in [_trow(k, lang, after='  mapLegendBase: {') for k in ('ok', 'warn', 'err')] + [CW('outside'), CW('hatch'), CW('border')]:
+        c.ok(norm(word) in legend, legend, f'the legend says « {word} »')
+    c.tap('[data-act=world-toggle]')
+    c.until("(() => { const v = document.querySelector('[data-wmap]').getAttribute('viewBox').split(' ').map(Number); return v[0] + v[2] > 140 })()", timeout=4000, what='the whole world is framed')
+    c.eq(norm(c.text('[data-act=world-toggle]')), norm(CW('mine')), 'the button now says how to come back', what='world button')
+    c.tap('[data-act=world-toggle]')
+    c.until("document.querySelector('[data-wmap]').getAttribute('viewBox').split(' ').map(Number).reduce((a, b, i) => i === 2 ? b : a, 0) < 250", timeout=4000, what='the coverage again')
+    # ---- 3. the packs: one line each with its summarised state, one open at a time
+    c.eq(c.count('[data-group-id]'), 3, 'three packs, always visible (not a folded block)', what='groups')
+    c.eq(c.js("document.querySelector('[data-cw-groups]').closest('details:not(.f-group)')"), None, 'the list of the packs is not inside a fold', what='no fold')
+    sum = lambda g: norm(c.text(f'[data-group-id={g}] [data-group-sum]'))
+    z = lambda n: n
+    ouest = ' · '.join([CW('sumOk').replace('{n}', '1').replace('{m}', '3'), CW('sumTodo').replace('{n}', '1'), CW('sumErr').replace('{n}', '1'), CW('sumOut').replace('{n}', '2')])
+    c.eq(sum('ouest'), norm(_agree(ouest, lang)), 'Western Europe: 1 of its 3 countries in the coverage up to date, one to do, one failed, two outside the coverage', what='summary ouest')
+    c.eq(sum('amerique'), norm(CW('sumOk').replace('{n}', '2').replace('{m}', '2')), 'North America: 2 of 2 up to date', what='summary amerique')
+    c.eq(sum('asie'), norm(CW('sumNoCov') + ' · ' + CW('sumOut').replace('{n}', '1')), 'Asia: no country in the coverage, its one country outside it', what='summary asie')
+    c.eq(c.count('[data-group-body]'), 0, 'none is open at the start', what='closed')
+    c.tap('[data-group-id=ouest] [data-act=grp-toggle]')
+    c.until("document.querySelectorAll('[data-group-body]').length === 1", timeout=4000, what='the pack opens')
+    c.eq(c.js("[...document.querySelectorAll('[data-group-body] [data-act=open-country]')].map(b => b.dataset.zone)"), ['fr', 'gb', 'es', 'de', 'it'], 'its countries, each one a button', what='countries')
+    c.eq(c.js("document.querySelector('[data-group-id=ouest] [data-act=grp-toggle]').getAttribute('aria-expanded')"), 'true', 'the line says it is open', what='expanded')
+    word = lambda t: _trow(t, lang, after='    word: {')
+    c.eq(norm(c.text('[data-group-body] [data-zone=fr]')), norm(c.js("document.querySelector('[data-group-body] [data-zone=fr] span').textContent") + ' ' + word('warn')), 'a country line: its name and its state in a word', what='country line')
+    accent = c.js("(() => { const i = document.createElement('i'); i.style.color = 'var(--sog-accent)'; document.body.append(i); const v = getComputedStyle(i).color; i.remove(); return v })()")
+    br = c.js("['fr', 'gb', 'es', 'de', 'it', 'ca'].map(z => { const p = document.querySelector(`[data-wmap] path[data-zone=${z}]`), s = getComputedStyle(p); return [s.stroke, s.fill, p.hasAttribute('data-grp')] })")
+    c.eq([b[0] for b in br[:5]], [accent] * 5, 'the open pack: a blue border (the accent) on all its countries', what='blue border')
+    c.ok(br[5][0] != accent and not br[5][2], br[5], 'another pack\'s country has none')
+    c.ok(all(b[1] != 'none' for b in br), br, 'the border is not a fill: the fill stays the tint of the state')
+    c.tap('[data-group-id=amerique] [data-act=grp-toggle]')
+    c.until("document.querySelectorAll('[data-group-body]').length === 1 && !!document.querySelector('[data-group-id=amerique] [data-group-body]')", timeout=4000, what='the other pack opens')
+    c.eq([c.count('[data-group-id=ouest] [data-group-body]'), c.js("document.querySelectorAll('[data-wmap] [data-grp]').length")], [0, 2], 'ONE pack open at a time: the first closed, only Canada and the United States are bordered now', what='one at a time')
+    # hover: the country alone in solid, the others keep their border
+    c.page.hover('[data-group-body] [data-zone=ca]')
+    c.until("!!document.querySelector('[data-wmap] path[data-zone=ca][data-hover]')", timeout=3000, what='the hovered country is marked')
+    op = c.js("['ca', 'us', 'fr'].map(z => getComputedStyle(document.querySelector(`[data-wmap] path[data-zone=${z}]`)).fillOpacity)")
+    c.eq([float(op[0]), float(op[1]) < 1, float(op[2]) < 1], [1.0, True, True], 'the hovered country is filled solid, alone', what='hover fill')
+    c.eq(c.js("getComputedStyle(document.querySelector('[data-wmap] path[data-zone=us]')).stroke"), accent, 'the others of the open pack keep their blue border', what='border kept')
+    c.page.mouse.move(2, 2)
+    c.until("!document.querySelector('[data-wmap] [data-hover]')", timeout=3000, what='the hover ends')
+    c.page.hover('[data-wmap] path[data-zone=us]')
+    c.until("!!document.querySelector('[data-group-body] [data-zone=us][data-hover]')", timeout=3000, what='the hover on the map marks the line of the pack too')
+    c.page.mouse.move(2, 2)
+    # the pack's own « Mettre à jour » (SOG-0188) still works: its countries of the coverage only
+    n0 = len(st['posts'])
+    c.tap('[data-group-id=amerique] [data-act=update-pack]')
+    c.until("document.querySelector('.f-modal') || true", timeout=6000)
+    c.wait(600)
+    c.eq([sorted(p['args'].get('zones', [])) for p in st['posts'][n0:] if p['verb'] == 'status'][:1], [['ca', 'us']], 'the pack\'s update reads the state of ITS countries of the coverage', what='pack update')
+    if c.count('.f-modal'):
+        c.tap('.f-modal [data-no]')
+        c.until("!document.querySelector('.f-modal')", timeout=6000, what='the question closes')
+    # ---- 4. the sheet: wide, to the right of the map; phone, the whole screen with a back button
+    c.tap('[data-group-id=amerique] [data-act=grp-toggle]')
+    c.until("document.querySelectorAll('[data-group-body]').length === 0", timeout=4000, what='the pack closes')
+    c.js("document.querySelector('[data-wmap]').scrollIntoView({ block: 'center' })")
+    c.wait(200)
+    n1 = len([p for p in st['posts'] if p['verb'] == 'cycle'])
+    c.eq(n1, 0, 'nothing of the cycle is read until a sheet is opened', what='lazy')
+    c.tap('[data-wmap] path[data-zone=fr]')
+    c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-source=sia] [data-file-state]')", timeout=10000, what='the sheet of France with its inventory')
+    cyc = [p for p in st['posts'] if p['verb'] == 'cycle']
+    c.eq([[p['set'], p['args'].get('zone')] for p in cyc], [['base', 'fr']], 'one read of the view per zone for the opened sheet (K182)', what='one read')
+    geo = c.js("""(() => { const m = document.querySelector('[data-wmap]').getBoundingClientRect(), s = document.querySelector('[data-sheet]').getBoundingClientRect(), ps = getComputedStyle(document.querySelector('[data-sheet]')).position;
+      return { map: [m.left, m.right, m.top], sheet: [s.left, s.right, s.top, s.width, s.height], pos: ps, iw: window.innerWidth, ih: window.innerHeight } })()""")
+    if c.width >= 900:
+        c.ok(geo['sheet'][0] >= geo['map'][1] - 1 and geo['pos'] != 'fixed', geo, 'wide: the sheet is to the RIGHT of the map')
+    else:
+        c.ok(geo['pos'] == 'fixed' and abs(geo['sheet'][3] - geo['iw']) <= 1 and abs(geo['sheet'][4] - geo['ih']) <= 1, geo, 'phone: the sheet is the whole screen')
+    c.eq(c.js("document.activeElement && document.activeElement.dataset.act"), 'sheet-close', 'the focus goes to « Retour »', what='focus in')
+    c.eq(norm(c.text('[data-sheet] [data-act=sheet-close]')), norm(CW('back')), 'a back button, in the language of the run', what='back')
+    # content: name, state, built, procedures, ticks, inventory
+    c.eq(norm(c.text('[data-sheet-name]')), norm(_L88_NAMES['fr'][li]), 'the name of the country', what='name')
+    c.eq(c.js("document.querySelector('[data-sheet] [data-zstate]').dataset.zstate"), 'stale', 'its state', what='state')
+    built = norm(c.text('[data-sheet-built]'))
+    c.ok(_date_text(datetime.date(2026, 10, 5), lang) in built and '2610' in built, built, 'built: the cycle and the date of the last build')
+    c.ok('eAIP' in c.text('[data-sheet-proc]'), c.text('[data-sheet-proc]'), 'procedures: yes, from the eAIP (procSources)')
+    c.eq(c.js("[...document.querySelectorAll('[data-sheet] [data-sheet-source]:not([data-unavailable])')].map(e => e.dataset.sheetSource)"), ['sia', 'openaip'], 'the sources that feed France, in the order the launcher gives', what='sources')
+    gone = c.js("(() => { const e = document.querySelector('[data-sheet] [data-sheet-source][data-unavailable]'); return e ? [e.dataset.sheetSource, e.textContent.replace(/\s+/g, ' '), e.querySelectorAll('[data-tick], [data-inventory]').length, document.querySelector('[data-unavailable-title]').compareDocumentPosition(e) & 4] : null })()")
+    c.ok(gone and gone[0] == 'dircam' and f'unavailable note {lang}' in gone[1] and '2025-11' in gone[1] and gone[2] == 0 and gone[3] == 4, gone, 'a source its publisher no longer offers is said APART, under its own title, with the note of the catalogue and since when: no tick, no inventory, neither « en retard » nor « à faire »')
+    tk = lambda src, key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-source={src}] [data-tick={key}]'); return e ? [e.dataset.ok, e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
+    d1 = tk('sia', 'download')
+    c.ok(d1[0] == 'yes' and _date_text(datetime.date(2026, 11, 2), lang) in d1[1] and 'AIRAC 2611' in d1[1], d1, 'SIA downloaded: ticked with the date and the edition the launcher gives')
+    b1 = tk('sia', 'build')
+    c.eq(b1[0], 'no', 'SIA built: not up to date, the reason is said', what='build tick')
+    p1 = tk('sia', 'publish')
+    c.ok(p1[0] == 'no' and norm(CW('pubNo')) in norm(p1[1]), p1, 'published: no, not sent yet, said in words')
+    o1 = tk('openaip', 'download')
+    c.ok(o1[0] == 'no' and norm(_trow('older-than-cycle', lang, after='    why: {')) in norm(o1[1]), o1, 'a file older than the cycle in force: a reason in words, not a tick')
+    c.eq(c.count('[data-sheet] img'), 0, 'the launcher\'s label is escaped (no element, nothing runs)', what='escaped')
+    c.eq(c.js('window.__pwn === undefined'), True, 'nothing ran', what='no pwn')
+    inv = c.js("""[...document.querySelectorAll('[data-sheet-source=sia] [data-file]')].map(f => ({ what: f.querySelector('[data-file-what]').textContent, path: (f.querySelector('[data-file-path]') || {}).textContent || '', check: !!f.querySelector('[data-path-check]'),
+      links: [...f.querySelectorAll('a')].map(a => a.getAttribute('href')), name: f.querySelector('code').textContent, state: f.querySelector('[data-file-state]').dataset.fileState }))""")
+    c.eq([i['what'] for i in inv], [f'what one {lang}', f'what two {lang}'], 'beat one: what each file is, in a pilot\'s words (the catalogue\'s `what`)', what='what')
+    c.ok(f'SIA › Produits › Données AIM › XML {lang}' in inv[0]['path'] and f'SIA › AIP › ENR › ENR 3.2 {lang}' in inv[1]['path'], inv, 'beat two: where to find it, rubric by rubric')
+    c.eq([i['check'] for i in inv], [False, True], 'a path not verified says « chemin à vérifier » next to it, a verified one does not', what='path to check')
+    c.eq([i['links'] for i in inv], [['https://sia.example/page-du-cycle'], ['https://sia.example/enr32']], 'the link of the page of the source, or of that very file when the catalogue gives one — never an invented one', what='links')
+    c.eq([i['name'] for i in inv], ['export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip', 'ENR 3.2.pdf'], 'beat three: the name of the file expected', what='names')
+    c.eq([i['state'] for i in inv], ['seen', 'missing'], 'seen in Downloads (a name that fits the pattern, whatever its case) / missing', what='seen / missing')
+    c.eq(c.count('[data-sheet] [data-sheet-source=openaip] [data-inventory]'), 0, 'a source the launcher takes alone has no inventory', what='no inventory for auto')
+    c.eq(c.count('[data-sheet] [data-sheet-actions]'), 1, 'the file buttons of the line of a zone are still reachable inside the sheet', what='actions')
+    c.eq(c.count('[data-sheet] button[data-act=sheet-close], [data-sheet] [data-verb=update]'), 1, 'and no other gesture in lot A: only « Retour »', what='no gestures')
+    if c.width in (390, 1280):
+        c.shot(f'L88_{c.width}_{lang}_delivered_sheet.png')
+    # close: the sheet goes, the focus returns to the opener
+    c.tap('[data-sheet] [data-act=sheet-close]')
+    c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='the sheet closes')
+    c.eq(c.js("(document.activeElement.dataset || {}).zone + '|' + document.activeElement.tagName.toLowerCase()"), 'fr|path', 'the focus returns to the country that opened it', what='focus back')
+    # a country outside the coverage opens a sheet too: it says so; Germany has a source with no reader
+    c.tap('[data-group-id=ouest] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-zone=de]')
+    c.until("!!document.querySelector('[data-sheet=de] [data-sheet-noreader]')", timeout=10000, what='the sheet of Germany')
+    c.eq([c.count('[data-sheet] [data-sheet-out]'), c.count('[data-sheet] [data-tick]'), c.count('[data-sheet] [data-sheet-actions]')], [1, 0, 0], 'outside the coverage: it says so, no tick, no gesture', what='outside')
+    c.key('Escape')
+    c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='Escape closes the sheet')
+    c.eq(c.js("(document.activeElement.dataset || {}).zone"), 'de', 'and the focus returns to the line that opened it', what='focus back (line)')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth"), True, 'no horizontal scroll', what='no sideways scroll')
+    # screens: the map and the packs (one open), then the sheet above
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js("document.querySelector('[data-world-map]').scrollIntoView({ block: 'start' })")
+    if c.width in (390, 1280):
+        c.shot(f'L88_{c.width}_{lang}_delivered.png')
     c.check_errors()

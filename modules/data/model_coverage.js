@@ -31,6 +31,8 @@ export function coverageOf(final) {
       counts,
       procedures: int(z.procedures),
       ground: int(z.ground),
+      procSources: (Array.isArray(z.procSources) ? z.procSources : []).filter(x => typeof x === 'string' && /^[a-z0-9-]{2,20}$/.test(x))
+        .slice(0, 6), // d'où viennent ses procédures : [] sans (SOG-0264)
       declared: sources(z.sources?.declared),
       present: sources(z.sources?.present),
       has: Object.fromEntries(HAS.map(k => [k, z.has?.[k] === true]))
