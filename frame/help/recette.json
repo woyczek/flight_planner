@@ -1744,20 +1744,5 @@
    "state": "known"
   }
  ],
- "decisions": [
-  {
-   "id": "Q-0022",
-   "fiche": "SOG-0240",
-   "app": "maintenance",
-   "question": "Naviair (Danemark), réponse à ta question « le téléchargement dans downloads est mauvais ? » : les fichiers de tes Téléchargements sont l'AIP du CANADA, pas du Danemark.",
-   "context": "AeroDB les a ouverts : enreng29-october-2026.pdf et adeng29-october-2026.pdf sont « AIP CANADA » de NAV CANADA (« eng » = English). Pour le Danemark il faut ceux de aim.naviair.dk : EK_ENR_3_x (voies), EK_ENR_4_1 (balises), EK_ENR_4_4 (points), du cycle en vigueur, dans Téléchargements.",
-   "options": [
-    "Je télécharge ceux de Naviair",
-    "Plus tard",
-    "On laisse le Danemark pour l'instant"
-   ],
-   "since": "2026-11-11",
-   "state": "todo"
-  }
- ]
+ "decisions": []
 }

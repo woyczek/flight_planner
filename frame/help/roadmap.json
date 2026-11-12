@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f36e2c8",
-  "fiches": 258,
+  "organisation": "63f8bdd",
+  "fiches": 259,
   "untranslated": 0,
   "priorities": 243
  },
@@ -3130,6 +3130,15 @@
      "en": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
      "de": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
      "es": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own"
+    },
+    {
+     "id": "SOG-0259",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Données : la liste de tout ce qu'il faut rafraîchir à chaque cycle, cochée par l'outil quand c'est fait",
+     "en": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
+     "de": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
+     "es": "Data: the list of everything to refresh at each cycle, ticked by the tool when done"
     }
    ]
   },
