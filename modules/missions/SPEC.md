@@ -240,3 +240,6 @@ rule of § 10.32, no category exists yet).
 3. The two design primitives `envelope()` / `book()` with the plain skin, then the textured skins per design.
 4. The usage "équipier" (frame) and the Map's drawing of a mission (points, zones, RDV).
 5. The crew's rendezvous in the assignment (after the CPCO decides its shape).
+
+- **Time on area** (CONCEPTION 11/11 § 1 bis / ter): `readMission` reads on each point a key containing on_task, on_station, on_zone,
+  hold, loiter or orbit (`hold: { min, max }`, `holdKey`); the other duration keys go to `holdUnread`; `missionFlight` passes both.

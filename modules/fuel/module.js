@@ -276,6 +276,15 @@ const TX = {
   ],
   // le bloc « Aides radio » de l'étape Départ (SOG-0200)
   aidsTitle: ['Aides radio', 'Radio aids', 'Funknavigationshilfen', 'Radioayudas'],
+  // le temps sur zone par point (CONCEPTION 11/11 § 1 bis)
+  holdField: ['Sur zone à {id} (min)', 'Time on area at {id} (min)', 'Zeit im Gebiet bei {id} (min)', 'Tiempo en zona en {id} (min)'],
+  holdLine: ['Sur zone · {id} · {n} min', 'On area · {id} · {n} min', 'Im Gebiet · {id} · {n} min', 'En zona · {id} · {n} min'],
+  holdLineRange: ['Sur zone · {id} · {min} à {max} min, {n} comptées', 'On area · {id} · {min} to {max} min, {n} counted',
+    'Im Gebiet · {id} · {min} bis {max} min, {n} gezählt', 'En zona · {id} · {min} a {max} min, {n} contados'
+  ],
+  holdUnread: ['Mission : durée non lue — {l}.', 'Mission: duration not read — {l}.', 'Mission: Dauer nicht gelesen — {l}.',
+    'Misión: duración no leída — {l}.'
+  ],
   // Q-0019 : un direct au compas plus long de 2 % que son grand cercle
   rhumbLong: ['{a} → {b} : {r} NM au compas, {g} par le grand cercle (+{p} %) : ajoutez des points intermédiaires.',
     '{a} → {b}: {r} NM by compass, {g} by the great circle (+{p} %): add intermediate points.',
@@ -1593,7 +1602,8 @@ function compute() {
       reserveMin: +S.settings.reserveMin,
       contingencyPct: +S.settings.contingencyPct,
       climbLaw: perf ? L.tripLaw(perf, goal, o) : null,
-      steps: fp ? pathSteps(fp, distanceNm) : routeSteps(f.route, distanceNm)
+      steps: fp ? pathSteps(fp, distanceNm) : routeSteps(f.route, distanceNm),
+      holds: holdsOf(f.route, levelFt) // le temps sur zone par point (§ 1 bis)
     },
     q = distanceNm > 0 ? altnAdd(M.quote(qIn), qIn, sheet, levelFt) : null,
     D = perf && q ? L.requoteSeries(L.decisionSeries(perf, {
@@ -1890,6 +1900,8 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-ptlock svg{width:1em;height:1em;vertical-align:-.15em;margin-right:.2em}
 [data-module="fuel"] .f-card .fu-pt input[data-k]{width:4.2em;flex:none;text-align:center}
 [data-module="fuel"] .fu-ptgap{width:4.2em;flex:none}
+[data-module="fuel"] .fu-ptid .fu-pthl{display:flex;align-items:center;gap:.3em;margin-top:2px;font-size:.9em}
+[data-module="fuel"] .f-card .fu-pt .fu-ptid input.fu-pthold{width:3.6em;min-height:32px;text-align:center} /* le temps sur zone d'un point (§ 1 bis) */
 [data-module="fuel"] .fu-pt button{flex:none;min-width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 [data-module="fuel"] .fu-addpt{flex-wrap:nowrap}
 [data-module="fuel"] .fu-addpt input{flex:1;min-width:0}
@@ -2110,6 +2122,14 @@ function onPlanInput(e) {
     case 'pcon': { // un niveau imposé sur un point de procédure (SOG-0003), posé à la sortie du champ
       if (e.type !== 'change') return;
       return setConstraint(e.target);
+    }
+    case 'pthold': { // le temps sur zone d'un point (§ 1 bis) : les minutes comptées ; vide, plus rien
+      const p = r.points?.[+e.target.dataset.i];
+      if (!p || e.type !== 'change') return;
+      setHold(r, p.id, num(v));
+      saveFlight();
+      renderPts();
+      return refresh();
     }
     case 'ptalt': {
       const p = r.points?.[+e.target.dataset.i];
@@ -3943,7 +3963,7 @@ function renderPts() {
       lock = p.lock === 'mission', // SOG-0193 L3 : ni monté, ni descendu, ni retiré
       off = lock ? ` disabled title="${esc(tt(TX.ptLocked, { id: p.mission || p.id }))}"` : '',
       bad = rc ? rc.find(g => g.state === 'error' && g.to === String(p.id || '').toUpperCase()) : null;
-    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}"${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small>${lock ? `<small class="fu-ptlock" data-lock>${svg('pin')} ${esc(tt(TX.ptLock, { id: p.mission || p.id }))}</small>` : ''}</span>
+    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}"${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small>${lock ? `<small class="fu-ptlock" data-lock>${svg('pin')} ${esc(tt(TX.ptLock, { id: p.mission || p.id }))}</small>` : ''}${mid ? holdField(p, i) : ''}</span>
       ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
       <button type="button" data-do="ptup" data-i="${i}" ${i && !lock ? '' : 'disabled'}${off} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 && !lock ? '' : 'disabled'}${off} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}"${off} aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>${after}${unRows(i)}`;
   }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
@@ -5019,6 +5039,14 @@ async function applyMission(id) {
     } : null].filter(Boolean),
     manual: false,
     from: 'route',
+    // le temps sur zone que la mission donne à ses points (§ 1 bis) : le maximum compté, modifiable par le pilote
+    holds: Object.fromEntries(points.filter(p => p.hold).slice(0, 40).map(p => [RT.icaoCoord(p.lat, p.lon), {
+      min: p.hold.min,
+      max: p.hold.max,
+      count: p.hold.max,
+      name: String(p.id || '').slice(0,
+        40) // le nom du point dans la mission (« PT1 »), dit au devis plutôt que ses coordonnées
+    }])),
     // SOG-0193 L3 : les points imposés, par leur mot du texte (coordonnées à la minute), gardés à chaque relecture de la route
     locks: points.filter(p => p.lock === 'mission').slice(0, 60).map(p => ({
       id: RT.icaoCoord(p.lat, p.lon),
@@ -5060,6 +5088,10 @@ async function applyMission(id) {
     arr: arr || '?',
     n: points.length
   }), 'ok');
+  // § 1 ter : une clé de durée que la règle ne reconnaît pas est dite, une fois (rien ne tombe en silence)
+  if (mf.holdUnread?.length) ctx.notify(tt(TX.holdUnread, {
+    l: mf.holdUnread.slice(0, 6).join(', ')
+  }), 'warn');
   saveFlight();
   renderPlan();
   resolveRoute();
@@ -5352,6 +5384,7 @@ function refresh() {
   const det = $('[data-details]');
   if ($('[data-fold="details"]').open) det.innerHTML = q?.hasFuel ? `<table class="f-table"><tbody>
       ${[[TX.taxi, q.taxi], [TX.climb, q.climb], [TX.cruise, q.cruise], ...(q.steps ? [[TX.steps, q.steps]] : []), [TX.descent, q.descent]].map(([l, p]) => `<tr><td>${esc(tt(l))}</td><td class="f-num">${p?.min != null ? hmm(p.min) : ''}</td><td class="f-num">${p?.nm != null ? esc(distTxt(p.nm)) : ''}</td><td class="f-num">${esc(fuelTxt(p?.fuel ?? p, unit))}</td></tr>`).join('')}
+      ${(q.holds || []).map(h => `<tr data-holdrow="${esc(h.id)}"><td>${esc(tt(h.min !== h.max ? TX.holdLineRange : TX.holdLine, { id: h.id, min: h.min, max: h.max, n: h.count }))}</td><td class="f-num">${hmm(h.count)}</td><td></td><td class="f-num">${esc(fuelTxt(h.fuel, unit))}</td></tr>`).join('')}
       <tr><td><b>${esc(tt(TX.trip))}</b></td><td class="f-num">${hmm(q.minutes)}</td><td></td><td class="f-num"><b>${esc(fuelTxt(q.trip, unit))}</b></td></tr>
       <tr><td>${esc(tt(TX.contingency))}</td><td></td><td></td><td class="f-num">${esc(fuelTxt(q.contingency, unit))}</td></tr>
       ${altnRow(q, unit)}
@@ -6377,4 +6410,50 @@ function rhumbWarn(r) {
   const text = lines.join(' ');
   box.hidden = !text;
   if (box.textContent !== text) box.textContent = text;
+}
+
+// ---------------------------------------------------------------- le temps sur zone par point (CONCEPTION 11/11 § 1 bis, § 1 ter)
+// L'utilisateur : un champ, oui ; « (fourchette. entre 5 et 40 mn, par ex.) » ; plusieurs zones dès la première version. Le vol garde
+// route.holds { mot du point → { min, max, count } } (posé par la mission, modifiable sur tout point) ; le devis compte `count` (le
+// maximum d'une fourchette par défaut) et le dit, une ligne par point.
+/** Les temps sur zone de la route pour le devis : [{ id, min, max, count, ft }] (le niveau du point, sinon celui du vol). */
+function holdsOf(r, levelFt) {
+  const H = r?.holds && typeof r.holds === 'object' ? r.holds : {},
+    pts = r?.points || [];
+  return Object.entries(H).slice(0, 40).map(([id, h]) => {
+    const p = pts.find(x => String(x?.id || '').toUpperCase() === id);
+    return p && +h?.count > 0 ? {
+      id: String(h.name || p.mission || id).slice(0, 40),
+      min: +h.min > 0 ? Math.min(600, +h.min) : +h.count,
+      max: +h.max > 0 ? Math.min(600, +h.max) : +h.count,
+      count: Math.min(600, Math.round(+h.count)),
+      ft: +p.alt_ft > 0 ? +p.alt_ft : levelFt
+    } : null;
+  }).filter(Boolean);
+}
+/** Pose (ou retire, sans valeur) le temps sur zone compté d'un point ; la fourchette de la mission est gardée. */
+function setHold(r, id, minutes) {
+  const k = String(id || '').toUpperCase();
+  if (!k) return;
+  const H = r.holds && typeof r.holds === 'object' ? {
+      ...r.holds
+    } : {},
+    was = H[k] || null,
+    n = Number.isFinite(minutes) && minutes > 0 ? Math.min(600, Math.round(minutes)) : 0;
+  if (!n) delete H[k];
+  else H[k] = {
+    min: was?.min ?? n,
+    max: was?.max ?? n,
+    count: n,
+    ...(was?.name ? {
+      name: was.name
+    } : {})
+  };
+  r.holds = H;
+}
+/** Le champ « Sur zone (min) » d'un point de la liste : les minutes comptées, la fourchette de la mission en indication. */
+function holdField(p, i) {
+  const h = S.flight.route?.holds?.[String(p.id || '').toUpperCase()],
+    name = h?.name || p.mission || p.id;
+  return `<label class="fu-pthl" title="${esc(tt(TX.holdField, { id: name }))}"><span aria-hidden="true">⏱</span><input class="fu-pthold" data-k="pthold" data-i="${i}" inputmode="numeric" maxlength="3" value="${+h?.count > 0 ? Math.round(+h.count) : ''}" placeholder="${h && h.min !== h.max ? `${h.min}–${h.max}` : '—'}" aria-label="${esc(tt(TX.holdField, { id: name }))}"><span class="f-muted">min${h && h.min !== h.max ? ` (${h.min}–${h.max})` : ''}</span></label>`;
 }

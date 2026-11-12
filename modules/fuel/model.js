@@ -319,6 +319,7 @@
       taxiMin = 0,
       reserveMin = 0,
       contingencyPct = 0,
+      holds = [], // le temps sur zone par point (CONCEPTION 11/11 § 1 bis) : [{ id, min, max, count (minutes comptées), ft }]
       climbLaw = null,
       takeoffMass = 0,
       mtowKg = 0,
@@ -444,11 +445,28 @@
       cHi = cruiseFuelFor(high),
       reserve = phaseFuel(+reserveMin || 0, sheet.reserveFuelFlowPerHour || cruiseFF * .65),
       cont = (+contingencyPct || 0) / 100,
-      trip = climbFuel + cNom + stepFuel + descentFuel,
+      // temps sur zone : au débit d'attente de la fiche s'il existe, sinon à la croisière du niveau du point (le modèle, sinon la source) ;
+      // dans l'étape, donc avant la contingence (§ 1 bis : « la somme entre dans le bloc avant la contingence »)
+      holdRows = (Array.isArray(holds) ? holds : []).filter(h => +h?.count > 0).slice(0, 40).map(h => {
+        const ft = +h.ft > 0 ? +h.ft : alt,
+          pc = perf && ft > 0 ? perf.cruise(ft, 'normal') : null,
+          ff = +sheet.holding?.fuelFlowPerHour > 0 ? +sheet.holding.fuelFlowPerHour : pc?.ok ? pc.ff : cruiseFF;
+        return {
+          id: String(h.id || ''),
+          min: +h.min > 0 ? +h.min : +h.count,
+          max: +h.max > 0 ? +h.max : +h.count,
+          count: +h.count,
+          ft,
+          fuel: phaseFuel(+h.count, ff)
+        };
+      }),
+      holdFuel = holdRows.reduce((t, h) => t + h.fuel, 0),
+      holdMin = holdRows.reduce((t, h) => t + h.count, 0),
+      trip = climbFuel + cNom + stepFuel + descentFuel + holdFuel,
       contingency = trip * cont,
       block = taxiFuel + trip + contingency + reserve,
-      bLo = taxiFuel + (climbFuel + cLo + stepFuel + descentFuel) * (1 + cont) + reserve,
-      bHi = taxiFuel + (climbFuel + cHi + stepFuel + descentFuel) * (1 + cont) + reserve,
+      bLo = taxiFuel + (climbFuel + cLo + stepFuel + descentFuel + holdFuel) * (1 + cont) + reserve,
+      bHi = taxiFuel + (climbFuel + cHi + stepFuel + descentFuel + holdFuel) * (1 + cont) + reserve,
       cruiseMin = segs.reduce((t, g) => t + g.nm / Math.max(80, g.tas + (windKnown ? wc : 0)) * 60, 0),
       tasAlt = cruiseNm > 0 ? segs.reduce((t, g) => t + g.tas * g.nm, 0) / cruiseNm : segs[0].tas,
       ffAlt = cruiseMin > 0 ? cNom / (cruiseMin / 60) : segs[0].ff,
@@ -508,7 +526,10 @@
       block,
       blockLow: Math.min(bLo, bHi),
       blockHigh: Math.max(bLo, bHi),
-      minutes: climbMin + cruiseMin + stepMin + descentMin,
+      minutes: climbMin + cruiseMin + stepMin + descentMin + holdMin,
+      holds: holdRows, // le temps sur zone, point par point (§ 1 bis) ; holdFuel / holdMin : leurs sommes, dans trip et minutes
+      holdFuel,
+      holdMin,
       todNm,
       landingMass: tow > 0 ? tow - trip : null,
       overMtow: tow > 0 && mtow > 0 && tow > mtow

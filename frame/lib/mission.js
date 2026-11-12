@@ -170,6 +170,7 @@ export function readMission(doc) {
     type = clean(m.type);
   if (!id || !type) return null;
   const points = {},
+    unread = [], // les clés de durée non reconnues, dites à la préparation (« non lue : time_window_min sur PT2 »)
     add = (p, kind) => {
       const pid = clean(p?.id);
       if (!pid || num(p?.lat) === null || num(p?.lon) === null) return;
@@ -179,7 +180,8 @@ export function readMission(doc) {
         lat: +p.lat,
         lon: +p.lon,
         kind,
-        role: clean(p.role).slice(0, 120) // le rôle du fichier (« écopage simulé en mer ») : dit une source (SOG-0193 L3)
+        role: clean(p.role).slice(0, 120), // le rôle du fichier (« écopage simulé en mer ») : dit une source (SOG-0193 L3)
+        ...holdOf(p, pid, unread) // le temps sur zone du point (§ 1 ter) : { hold: { min, max }, holdKey }
       };
     };
   (d.turning_points || []).forEach(p => add(p, 'turn'));
@@ -217,6 +219,7 @@ export function readMission(doc) {
     destination: placeOf(d.destination),
     target: placeOf(d.target),
     points,
+    holdUnread: unread, // les clés de durée non reconnues (§ 1 ter : rien ne tombe en silence)
     routeOrder: (Array.isArray(d.route_order) ? d.route_order : []).map(x => clean(typeof x === 'object' ? x?.id : x)).filter(Boolean),
     aircraft: ac.map(a => ({
       type: clean(a.type || a.icao).split(' ')[0].toUpperCase(),
@@ -381,6 +384,60 @@ export function routeNm(mission) {
   return Math.round(nm);
 }
 
+// ---------------------------------------------------------------- le temps sur zone d'un point (CONCEPTION 11/11 § 1 bis, § 1 ter)
+// L'utilisateur : « (fourchette. entre 5 et 40 mn, par ex.) » ; « comme le reste, les champs ne sont pas canoniques ». Une clé du point est
+// reconnue si son nom contient on_task, on_station, on_zone, hold, loiter ou orbit (préfixe time_ / duration_ et unité _min, _s, _h
+// permis) ; un time… ou un duration… nu n'est pas pris. Valeur : un nombre, « 5-40 », « 5 à 40 », [5, 40] ou { min, max }, en minutes
+// de 0 à 600 ; 0 = pas de temps sur zone. La première clé reconnue gagne (les autres sont dites).
+const HOLD_KEY = /(on_task|on_station|on_zone|hold|loiter|orbit)/i,
+  DURATION_KEY = /(^|_)(time|duration|min|minutes)(_|$)/i,
+  HOLD_MAX = 600;
+/** Une durée en minutes d'une valeur et de l'unité de sa clé ; null sinon. */
+const minutesOf = (v, key) => {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && /^\s*\d+([.,]\d+)?\s*$/.test(v) ? +v.replace(',', '.') : NaN;
+  if (!Number.isFinite(n) || n < 0) return null;
+  const k = String(key).toLowerCase(),
+    m = /_s$|_sec(onds?)?$/.test(k) ? n / 60 : /_h$|_hours?$/.test(k) ? n * 60 : n;
+  return m <= HOLD_MAX ? Math.round(m) : null;
+};
+/** { min, max } d'une valeur (nombre, texte « 5-40 » / « 5 à 40 », liste, objet) ; null sans durée lisible ou à 0. */
+function holdRange(v, key) {
+  let a = null,
+    b = null;
+  if (Array.isArray(v) && v.length === 2)[a, b] = v.map(x => minutesOf(x, key));
+  else if (v && typeof v === 'object')[a, b] = [minutesOf(v.min, key), minutesOf(v.max, key)];
+  else if (typeof v === 'string' && /\d\s*(-|–|—|à|to|bis|a)\s*\d/i.test(v)) {
+    const m = /^\s*(\d+(?:[.,]\d+)?)\s*(?:-|–|—|à|to|bis|a)\s*(\d+(?:[.,]\d+)?)\s*$/i.exec(v);
+    if (m)[a, b] = [minutesOf(m[1], key), minutesOf(m[2], key)];
+  } else a = b = minutesOf(v, key);
+  if (a === null && b !== null) a = b;
+  if (b === null && a !== null) b = a;
+  if (a === null || b === null) return null;
+  if (a > b)[a, b] = [b, a];
+  return b > 0 ? {
+    min: a,
+    max: b
+  } : null;
+}
+/** Le temps sur zone d'un point du fichier : { hold, holdKey } ou {} ; les clés de durée non reconnues (ou en trop) vont dans `unread`
+ *  (« time_window_min sur PT2 »). */
+function holdOf(p, pid, unread) {
+  if (!p || typeof p !== 'object') return {};
+  let out = {};
+  for (const [k, v] of Object.entries(p).slice(0, 60)) {
+    const key = String(k);
+    if (HOLD_KEY.test(key)) {
+      const r = holdRange(v, key);
+      if (r && !out.hold) out = {
+        hold: r,
+        holdKey: key.slice(0, 40)
+      };
+      else if (r && out.hold && unread.length < 20) unread.push(`${key.slice(0, 40)} · ${pid}`);
+    } else if (DURATION_KEY.test(key) && holdRange(v, key) && unread.length < 20) unread.push(`${key.slice(0, 40)} · ${pid}`);
+  }
+  return out;
+}
+
 /** Un point que la mission impose (§ 10.47 c ; l'utilisateur : « les points de rdv, source, cible, restent imposés sur la carte ») :
  *  un rendez-vous, la cible, et un point ou une zone dont le rôle dit une source (« écopage simulé en mer », « source d'eau ») ; les
  *  tournants de transit restent ceux du pilote. */
@@ -405,6 +462,12 @@ export function missionFlight(mission, assignment = null) {
       // SOG-0193 L3 (§ 10.47 c) : un point que la mission impose — rendez-vous, cible, source — est verrouillé dans le vol
       ...(lockedPoint(p) ? {
         lock: 'mission'
+      } : {}),
+      ...(p.hold ? { // le temps sur zone du point (§ 1 bis) : une durée ou une fourchette, en minutes
+        hold: {
+          ...p.hold
+        },
+        holdKey: p.holdKey
       } : {})
     }));
   // SOG-0193 : la position de l'origine et de la destination (celle de l'origine pour un aller-retour), pour qu'un terrain que la base
@@ -430,6 +493,7 @@ export function missionFlight(mission, assignment = null) {
     levelFt: mission.cruiseLevelFt,
     speedKt: mission.cruiseSpeedKt,
     mission: mission.id,
-    category: mission.category || ''
+    category: mission.category || '',
+    holdUnread: Array.isArray(mission.holdUnread) ? mission.holdUnread.slice(0, 20) : []
   };
 }

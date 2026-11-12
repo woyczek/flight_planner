@@ -88,14 +88,19 @@ export function plan({
     pieces.push({
       a,
       b,
+      i,
       raw: (b - a) / gs * 60
     });
   }
   const rawSum = pieces.reduce((s, x) => s + x.raw, 0),
     scale = rawSum > 0 ? cruiseMin / rawSum : 0;
+  // le temps sur zone d'un point (q.holds, § 1 bis) : un morceau sans distance juste après lui ; les heures des points suivants glissent
+  const holdAt = new Map((q.holds || []).filter(h => h?.id && +h.count > 0).map(h => [String(h.id).toUpperCase(), h]));
   for (const p of pieces) {
     const dt = p.raw * scale;
     push(p.a, p.b, dt, cruiseMin > 0 ? cruiseFuel * dt / cruiseMin : 0, 'cruise');
+    const h = p.b === cum[p.i] ? holdAt.get(String(pts[p.i]?.id || '').toUpperCase()) : null;
+    if (h) push(p.b, p.b, +h.count, +h.fuel || 0, 'hold');
   }
   push(c1, D, q.descent?.min || 0, q.descent?.fuel || 0, 'descent');
   return {

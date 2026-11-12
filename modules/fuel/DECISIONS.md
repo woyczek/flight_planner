@@ -1701,3 +1701,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   « Piste probable : 31L (METAR 1546Z, vent 310/12) » with « Prendre la piste probable » (a gesture, never set by itself); the runway
   of the strongest head wind without an alert (tail or cross over the limits, the sheet's comprised); calm (under 3 kt) or variable:
   nothing said; hidden once it is the flight's. The ATIS of the flight's network comes in a second lot (survey first). F148, F149.
+- **12 Nov 2026 — time on area per point** (SOG-0193 L4, CONCEPTION 11/11 § 1 bis / ter; the user: « (fourchette. entre 5 et 40 mn,
+  par ex.) », « comme le reste, les champs ne sont pas canoniques »): read on each point of a mission (frame/lib/mission.js holdOf: a
+  key containing on_task / on_station / on_zone / hold / loiter / orbit, unit by suffix, a value or a range, 0 to 600 min; a bare
+  time… / duration… not taken, an unread duration key said once at the preparation); kept in `route.holds` { word of the point →
+  { min, max, count, name } }, the maximum counted by default, the pilot changes it on any point of the list (« ⏱ … min »), even an
+  imposed one; the quote (model.js `holds`) counts each at the sheet's holding flow, else the cruise of the point's level, inside the
+  trip (so before the contingency), one line per point in the detail (« Sur zone · PT1 · 5 à 40 min, 40 comptées »); the plan of the
+  flight (progress.js) inserts each after its point, the following times shifted. The Map's planned position (flight_time.js) does not
+  count it yet. N40.

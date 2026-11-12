@@ -1290,3 +1290,70 @@ def n26(c):
     d = c.doc('pilot/ABC/current_flight.json') or {}
     c.ok(not d.get('mission') and not (d.get('route') or {}).get('locks'), [d.get('mission'), (d.get('route') or {}).get('locks')],
          'Fuel does not write the mission back (nor its locks)')
+
+
+
+# Time on area (CONCEPTION 11/11 § 1 bis / ter): an invented mission of the shape of the user's (time_on_task_min on points), a range on
+# a turning point, a duration key the rule does not take (time_window_min)
+_HOLD_REGISTRY = """missions:
+  - { id: X-701A, family: TESTHOLD, title: Mission sur zone, folder: X_HOLD/X-701A, files: [missionX-701A.yaml] }
+"""
+_HOLD_MISSION = """mission: { id: X-701A, type: FIRE }
+title: Mission sur zone
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+aircraft: [{ type: C30J Hercules, cruise_level: FL240, cruise_speed_kt: 300 }]
+turning_points:
+  - { id: PT1, name: Lac inventé, lat: 44.8, lon: 1.2, role: recherche, time_on_task_min: "5-40" }
+  - { id: PT2, name: Transit inventé, lat: 44.6, lon: 1.4, role: transit, time_window_min: 15 }
+target: { id: TARGET, name: Cible inventée, lat: 44.2, lon: 1.8, time_on_task_min: 25 }
+route_order: [ORIGIN, PT1, PT2, TARGET, DESTINATION]
+"""
+
+
+@case('N40', 'Time on area per point: read from the mission (a range counted at its maximum), said in the quote one line per point, changed by the pilot in the list of points; an unread duration key said',
+      'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0193 L4, CONCEPTION 11/11 § 1 bis / ter (user: « (fourchette. entre 5 et 40 mn, par ex.) »; « comme le reste, les champs ne sont pas '
+      'canoniques »): keys containing on_task / on_station / on_zone / hold / loiter / orbit; the maximum of a range counted and said; the sum in the '
+      'trip (before the contingency); an invented mission; captures 390')
+def n40(c):
+    fuel = '[data-module=fuel]'
+    path = 'pilot/ABC/current_flight.json'
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _HOLD_REGISTRY], ['missions/X_HOLD/X-701A/missionX-701A.yaml', _HOLD_MISSION]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions')
+    c.go('fuel?mission=X-701A')
+    c.until("() => !!document.querySelector('.f-modal [data-ok]') || !!document.querySelector('[data-module=fuel] .fu-mchip')", timeout=15000,
+            what='the question, or the flight of the mission')
+    if c.js("!!document.querySelector('.f-modal [data-ok]')"):
+        c.tap('.f-modal [data-ok]')
+    d = c.until_doc(path, lambda d: d and d.get('mission') == 'X-701A' and len(((d.get('route') or {}).get('holds') or {})) == 2, 'the holds of the mission',
+                    timeout=12000)
+    holds = d['route']['holds']
+    c.eq(sorted((h['min'], h['max'], h['count']) for h in holds.values()), [(5, 40, 40), (25, 25, 25)], 'PT1 « 5-40 » counted at 40, TARGET 25', what='holds')
+    c.until("(w) => (window.__notes || []).some(n => n.includes(w))", 'time_window_min', timeout=5000, what='the unread duration key said (« time_window_min · PT2 »)')
+    # the quote: one line per point, the range said
+    c.until_doc(path, lambda d: d and ((d.get('quote') or {}).get('trip') or 0) > 0, 'the quote', timeout=12000)
+    c.js(f"(() => {{ const d = document.querySelector('{fuel} details[data-fold=details]'); if (d) d.open = true; d && d.dispatchEvent(new Event('toggle')) }})()")
+    c.js(f"document.querySelector('{fuel} .fu-steps [data-step=\"3\"]')?.click()")
+    c.until(f"document.querySelectorAll('{fuel} [data-holdrow]').length === 2", timeout=10000, what='two lines « Sur zone » in the detail of the quote')
+    rows = [norm(x) for x in c.js(f"[...document.querySelectorAll('{fuel} [data-holdrow]')].map(r => r.textContent)")]
+    c.ok(any('PT1' in r and '5 à 40 min, 40 comptées' in r for r in rows) and any('TARGET' in r and '25 min' in r for r in rows), rows,
+         'each point by its name in the mission, its range and what is counted')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{fuel} [data-holdrow]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'N40_quote_{c.design}_390_{c.lang}_delivered.png')
+    trip0 = c.doc(path)['quote']['trip']
+    # the pilot counts 10 min at PT1: the trip goes down
+    c.js(f"document.querySelector('{fuel} .fu-steps [data-step=\"1\"]')?.click()")
+    c.js(f"(() => {{ const d = document.querySelector('{fuel} details[data-fold=pts]'); if (d) d.open = true }})()")
+    c.until(f"document.querySelectorAll('{fuel} [data-pts] input[data-k=pthold]').length >= 3", timeout=8000, what='a time-on-area field on each middle point')
+    sel = f"{fuel} [data-pts] input[data-k=pthold][value='40']"
+    c.page.fill(sel, '10')
+    c.js(f"(() => {{ const i = [...document.querySelectorAll('{fuel} [data-pts] input[data-k=pthold]')].find(x => x.value === '10'); i.dispatchEvent(new Event('change', {{ bubbles: true }})) }})()")
+    d = c.until_doc(path, lambda d: d and any((h or {}).get('count') == 10 for h in ((d.get('route') or {}).get('holds') or {}).values()), 'PT1 counted at 10', timeout=8000)
+    c.ok([h for h in d['route']['holds'].values() if h['count'] == 10][0]['max'] == 40, d['route']['holds'], 'the range of the mission kept')
+    c.until_doc(path, lambda d: d and 0 < ((d.get('quote') or {}).get('trip') or 0) < trip0, 'the trip goes down with 30 minutes less on area', timeout=10000)
+    c.js(f"document.querySelector('{fuel} [data-pts] input[data-k=pthold]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'N40_points_{c.design}_390_{c.lang}_delivered.png')
