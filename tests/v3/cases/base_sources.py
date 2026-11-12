@@ -2454,3 +2454,52 @@ def k178(c):
     # base/status carries the keys (the state of the zones, the same source as the page)
     src = (c.root / 'tools' / 'regen' / 'base_state.py').read_text(encoding='utf-8')
     c.ok("'builtAt': (rec or {}).get('builtAt')" in src and "out[z]['publish'] = pub.get(z)" in src, 'base_state.py', 'base/status gives builtAt and publish per zone')
+
+
+@case('K179', 'base/cycle: the LIST of the cycle — every source, how it is taken, and its real state in three steps (downloaded · built · published); late is not missing; the next cycle apart; what the suite does not read yet is a line with its reason; names only, nothing opened, nothing written (SOG-0259)', 'K', static=True,
+      rule='SOG-0259 (the user: « une liste globale de tous les refreshs à faire, avec une coche de la part de l\'outil quand c\'est fait »; the ergonomics session accepted the contract, 12 Nov 2026): the read-only verb base/cycle gives { cycle: { inForce, next, ids }, items: [ { id, label, regime: auto | hand | local, zones, steps: { download: { state: done | late | missing | waiting | n/a, cycle, at }, build: { zones, upToDate }, publish: { published, unpublished, unknown } }, why, hand: { link, expected, inDownloads } } ], next: { cycle, items: [ { id, state: in-downloads | to-take | will-be-taken, files } ] }, unread: [ { id, files, reason: no-reader | format, note } ] }; `late` = taken but older than the cycle in force (UK Mil of 6 Oct), distinct from `missing`; the NEXT cycle is apart (what Downloads already holds for it, what is still to take); a file the suite does not read (AIP Canada, Naviair, openAIP XML) is a line with its reason, a name that can be of two States (EK_: Denmark OR Faroe) is said as it is; only the NAMES of the first level of the download folders are listed, no file is opened, nothing is written; the ticks are set by the tool from the real state')
+def k179(c):
+    import datetime
+    import os
+    import tempfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('base', 'cycle')]
+    c.eq([check(a) for a in ({}, {'personal': ['nats']}, {'personal': 'x'}, {'x': 1}, None)], [{'personal': []}, {'personal': ['nats']}, None, None, None], 'the verb takes personal (a list of source ids) and nothing else', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        data = _repo(DS, td, {})
+        (data / 'sia' / 'openaip').mkdir(parents=True)
+        old = datetime.datetime(2026, 10, 1).timestamp()
+        new = datetime.datetime(2026, 11, 1).timestamp()
+        (data / 'sia' / 'XML_SIA_2026-10-01.xml').write_text('<x/>', encoding='utf-8')
+        for rel, t in (('openaip/fr_apt.geojson', new), ('geojson/faa_class.geojson', old)):
+            p = data / 'sia' / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text('{}', encoding='utf-8')
+            os.utime(p, (t, t))
+        dl = td / 'dl'
+        dl.mkdir()
+        for n in ('export_xml_bd_SIA_2026-11-26-v02.zip', 'EG_AIP_DS_20261126_XML (1).zip', 'RAD_2612_v1_6.xlsx', 'eurocontrol-airac-2612-fra-points-26-nov-2026.xlsx', 'EK_ENR_3_1_en.pdf', 'EK_ENR_3_1_en (1).pdf', 'BG_ENR_4_4_en.pdf',
+                  'enreng29-october-2026.pdf', 'fr_apt.xml', 'notes.txt'):
+            (dl / n).write_bytes(b'x')
+        before = sorted(str(p.relative_to(td)) for p in td.rglob('*'))
+        ctx = {**_ctx(DS, data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 11, 12)}
+        r = fn(RJ.Job('base', 'cycle', {}), check({'personal': []}), ctx)
+        c.eq((r['ok'], r['cycle']), (True, {'inForce': '2026-10-29', 'next': '2026-11-26', 'ids': {'inForce': '2611', 'next': '2612'}}), 'the cycle in force, the next one, and their EUROCONTROL identifiers (2611 = 29 Oct, 2612 = 26 Nov)', what='cycle')
+        by = {i['id']: i for i in r['items']}
+        c.eq((by['sia']['regime'], by['sia']['steps']['download']['state'], by['sia']['steps']['download'].get('cycle'), by['sia']['why']), ('hand', 'late', '2026-10-01', 'older-than-cycle'), 'the SIA held is of 1 Oct: taken, but late (not missing), with its cycle', what='late')
+        c.eq((by['sia']['hand']['inDownloads'], by['openaip']['regime'], by['openaip']['steps']['download']['state'], by['faaclass']['steps']['download']['state']), (['export_xml_bd_SIA_2026-11-26-v02.zip'], 'auto', 'done', 'late'), 'the file of the next cycle is listed under the SIA, whose held file stays late; a source the launcher takes by itself is `auto`: openAIP of this cycle done, the FAA classes of 1 Oct late', what='auto')
+        c.eq((by['lfv']['steps']['download']['state'], by['lfv']['why']), ('missing', 'no-file'), 'a hand source with no file at all is `missing` (and its link is in `hand`)', what='missing')
+        c.ok(isinstance(by['sia']['steps']['build']['zones'], int) and set(by['sia']['steps']['publish']) == {'published', 'unpublished', 'unknown'}, str(by['sia']['steps']), 'the three steps of every line: download, build, publish (counts of the zones it feeds)')
+        nx = {i['id']: i for i in r['next']['items']}
+        c.eq((r['next']['cycle'], nx['sia']['state'], nx['sia']['files'], nx['nats']['state'], nx['eurocontrol_rad']['files'], nx['openaip']['state'], nx['lfv']['state']),
+             ('2026-11-26', 'in-downloads', ['export_xml_bd_SIA_2026-11-26-v02.zip'], 'in-downloads', ['RAD_2612_v1_6.xlsx', 'eurocontrol-airac-2612-fra-points-26-nov-2026.xlsx'], 'will-be-taken', 'to-take'),
+             'the NEXT cycle apart: what Downloads already holds for 26 Nov (by the names), what the launcher will take when it is in force, what is still to take by hand', what='next')
+        un = {u['id']: u for u in r['unread']}
+        c.eq((sorted(un), un['naviair']['files'], un['naviair']['reason'], 'Danemark OU les Féroé' in un['naviair']['note'], un['navcan_aip']['files'], un['openaip_xml']['reason']),
+             (['navcan_aip', 'naviair', 'openaip_xml'], ['BG_ENR_4_4_en.pdf', 'EK_ENR_3_1_en (1).pdf', 'EK_ENR_3_1_en.pdf'], 'no-reader', True, ['enreng29-october-2026.pdf'], 'format'),
+             'what the suite does not read yet is a line with its reason: AIP Canada, Naviair (the note says EK_ is Denmark OR Faroe), the XML of openAIP; a stray file (notes.txt) is not one', what='unread')
+        after = sorted(str(p.relative_to(td)) for p in td.rglob('*'))
+        c.eq(before, after, 'read only: nothing written, no folder created', what='read only')
+    c.ok(('base', 'cycle') in RJ.READ_ONLY, 'not read-only', 'the verb is read-only for the job slot: it does not replace the last work')
