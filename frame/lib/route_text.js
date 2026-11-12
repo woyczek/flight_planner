@@ -19,6 +19,8 @@
 //     est donné. Niveaux en /Fnnn d'après alt_ft ; coordonnées OACI pour un point sans nom utilisable. Écrit par textFromTokens
 //     en forme OACI, avec ses « DCT » (refonte § 10.33 R-F4c : un seul écrivain du texte, la Carte et Carburant).
 //   icaoCoord(lat, lon) : « 4530N00030E » (degrés et minutes).
+//   runwaysOfText(text, { dep, arr }), withRunways(text, { dep, arr, depRwy, arrRwy }) : la piste écrite après le terrain, au format
+//     des plans de vol des outils (« LFPO/07 OPAL2E … LFML/31R », SOG-0089) : lue du premier et du dernier mot, écrite depuis le choix.
 //   Coordonnées lues par tokenize : « 4530N00030E », « 45N000E », et les formes à cinq signes de l'Atlantique Nord (ARINC 424,
 //   SOG-0211) « 5520N » (55°N 020°W) et « 55N20 » (55°N 120°W), la lettre disant le quadrant (N nord-ouest, E nord-est, S sud-est,
 //   W sud-ouest).
@@ -255,6 +257,49 @@ export function withProcedures(text, o = {}) {
     entryAdded,
     next
   };
+}
+
+/** La piste d'un mot de terrain (SOG-0089) : « LFPO/07 », « LFPO/07L », « LFPO/RW07 », « LFPO/RWY07L » → « 07 », « 07L » ; '' pour le
+ *  terrain seul ; null si le mot n'est pas ce terrain, ou que sa suite n'est pas une piste (« LFPO/F280 » : un niveau ; « /37 »). */
+export function runwayOfWord(word, icao) {
+  const w = String(word || '').toUpperCase(),
+    ad = String(icao || '').toUpperCase();
+  if (!ad || w.split('/')[0] !== ad) return null;
+  if (w === ad) return '';
+  const m = /^[A-Z0-9]{2,4}\/(?:RWY?)?(\d{1,2})([LRC]?)$/.exec(w);
+  if (!m || +m[1] < 1 || +m[1] > 36) return null;
+  return `${m[1].padStart(2, '0')}${m[2]}`;
+}
+/** Les pistes que le texte écrit après le départ (premier mot) et l'arrivée (dernier mot) : { dep, arr }, chacune « 07 », '' (le terrain
+ *  sans piste) ou null (le mot n'est pas le terrain, ou ce qui suit « / » n'est pas une piste). */
+export function runwaysOfText(text, o = {}) {
+  const w = wordsOf(text).filter(x => x !== 'DCT' && !GROUP.test(
+    x)); // un groupe vitesse-niveau en tête (« N0450F350 ») ne cache pas le départ
+  return {
+    dep: w.length ? runwayOfWord(w[0], o.dep) : null,
+    arr: w.length > 1 ? runwayOfWord(w.at(-1), o.arr) : null
+  };
+}
+/** Le texte avec la piste du choix après le départ et l'arrivée (« LFPO/07 ») ; sans piste choisie, le terrain seul. Seuls le premier et
+ *  le dernier mot, quand ils sont ces terrains, sont touchés. o : { dep, arr, depRwy, arrRwy } (« 07 », « RW07L », rien). */
+export function withRunways(text, o = {}) {
+  const w = wordsOf(text),
+    rw = v => {
+      const k = runwayOfWord(`XX/${String(v || '').replace(/^RWY?/i, '')}`, 'XX');
+      return k ? `/${k}` : '';
+    },
+    first = w.findIndex(x => x !== 'DCT' && !GROUP.test(x)),
+    last = w.length - 1 - [...w].reverse().findIndex(x => x !== 'DCT' && !GROUP.test(x));
+  if (first >= 0 && runwayOfWord(w[first], o.dep) !== null) w[first] = `${String(o.dep).toUpperCase()}${rw(o.depRwy)}`;
+  if (last > first && runwayOfWord(w[last], o.arr) !== null) w[last] = `${String(o.arr).toUpperCase()}${rw(o.arrRwy)}`;
+  return w.join(' ');
+}
+
+/** Le groupe vitesse-niveau en tête du texte (« N0450F350 LFPO/07 … », l'item 15 d'un plan de vol), '' sans lui. Il n'a pas de point
+ *  auquel s'attacher : le lecteur l'ignore ; l'appelant le dit (SOG-0089). */
+export function leadingGroup(text) {
+  const w = wordsOf(text).filter(x => x !== 'DCT');
+  return w.length && GROUP.test(w[0]) ? w[0] : '';
 }
 
 /** Distance approchée (NM) entre deux points. */

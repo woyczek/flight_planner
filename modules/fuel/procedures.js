@@ -1288,7 +1288,10 @@ export function createProcedures(host) {
     return {
       recs: new Map([...d, ...a]),
       sid: by(d, 'SID'),
-      star: by(a, 'STAR')
+      star: by(a, 'STAR'),
+      // SOG-0089 : les pistes proposées de chaque terrain (leurs identifiants, ceux des listes), pour « LFPO/07 » lu du texte
+      depRwys: ads.get(String(r.dep || '').toUpperCase())?.rwys || [],
+      arrRwys: ads.get(String(r.arr || '').toUpperCase())?.rwys || []
     };
   }
 

@@ -31,7 +31,10 @@
     icaoCoord,
     formatLevel,
     withProcedures,
-    proceduresOfText
+    proceduresOfText,
+    runwaysOfText,
+    withRunways,
+    leadingGroup
   } from '../route_text.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
@@ -268,6 +271,64 @@
   qeq('formatLevel : en dessous, des pieds (espace fine), arrondis à la centaine ; une autre transition ; sans valeur', [formatLevel(3500),
     formatLevel(3449), formatLevel(6000, 7000), formatLevel(null)
   ], ['3\u202f500 ft', '3\u202f400 ft', '6\u202f000 ft', '']);
+
+  // SOG-0089 : la piste après le terrain, au format des plans de vol des outils
+  qeq('runwaysOfText : « XDEP/07 … XARR/31R », « /RW07L », « /RWY9 »', [runwaysOfText('XDEP/07 XSID2E XPT DCT XARR/31R', {
+    dep: 'XDEP',
+    arr: 'XARR'
+  }), runwaysOfText('XDEP/RW07L XPT XARR', {
+    dep: 'XDEP',
+    arr: 'XARR'
+  }), runwaysOfText('XDEP/RWY9 XPT XARR', {
+    dep: 'XDEP',
+    arr: 'XARR'
+  })], [{
+    dep: '07',
+    arr: '31R'
+  }, {
+    dep: '07L',
+    arr: ''
+  }, {
+    dep: '09',
+    arr: ''
+  }]);
+  qeq('runwaysOfText : un niveau (« /F280 »), une piste 37, un autre terrain : pas une piste', [runwaysOfText('XDEP/F280 XPT XARR/37', {
+    dep: 'XDEP',
+    arr: 'XARR'
+  }), runwaysOfText('XOTH/07 XPT XARR', {
+    dep: 'XDEP',
+    arr: 'XARR'
+  })], [{
+    dep: null,
+    arr: null
+  }, {
+    dep: null,
+    arr: ''
+  }]);
+  qeq('withRunways : la piste du choix écrite, retirée sans choix ; le reste du texte intact', [withRunways('XDEP XSID2E XPT DCT XARR', {
+    dep: 'XDEP',
+    arr: 'XARR',
+    depRwy: '07',
+    arrRwy: 'RW31R'
+  }), withRunways('XDEP/09 XPT XARR/31R', {
+    dep: 'XDEP',
+    arr: 'XARR'
+  })], ['XDEP/07 XSID2E XPT DCT XARR/31R', 'XDEP XPT XARR']);
+  qeq('un groupe vitesse-niveau en tête : dit par leadingGroup, il ne cache pas la piste du départ', [leadingGroup(
+      'N0450F350 XDEP/07 XPT XARR'),
+    leadingGroup('XDEP XPT XARR'), runwaysOfText('N0450F350 XDEP/07 XPT XARR', {
+      dep: 'XDEP',
+      arr: 'XARR'
+    }).dep, withRunways('N0450F350 XDEP XPT XARR', {
+      dep: 'XDEP',
+      arr: 'XARR',
+      depRwy: '07'
+    })
+  ], ['N0450F350', '', '07', 'N0450F350 XDEP/07 XPT XARR']);
+  qeq('tokenize : « XDEP/07 » reste le terrain XDEP (la piste n’est pas un point)', tokenize('XDEP/07 XPT XARR/31R').map(t => t.id), [
+    'XDEP', 'XPT',
+    'XARR'
+  ]);
 
   window.__bench = {
     done: true,

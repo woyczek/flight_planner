@@ -451,6 +451,22 @@ const TX = {
   diffWind: ['vent {a} → {b}', 'wind {a} → {b}', 'Wind {a} → {b}', 'viento {a} → {b}'],
   diffBlock: ['bloc {a} → {b}', 'block {a} → {b}', 'Block {a} → {b}', 'bloque {a} → {b}'],
   diffEta: ['arrivée prévue {t}', 'planned arrival {t}', 'geplante Ankunft {t}', 'llegada prevista {t}'],
+  // SOG-0089 : la piste écrite après le terrain (« LFPO/07 ») que le terrain n'a pas
+  rwyRemoved: ['Piste de {side} retirée ({ad}).', '{side} runway removed ({ad}).', '{side} entfernt ({ad}).',
+    'Pista de {side} retirada ({ad}).'
+  ],
+  rwySideDep: ['départ', 'Departure', 'Abflugpiste', 'salida'],
+  rwySideArr: ['arrivée', 'Arrival', 'Landepiste', 'llegada'],
+  groupIgnored: ['{g} : le groupe vitesse et niveau du plan de vol est ignoré ; le niveau du vol reste celui de l’étape Vol.',
+    '{g}: the speed and level group of the flight plan is ignored; the flight level stays the one of the Flight step.',
+    '{g}: Die Geschwindigkeits- und Höhengruppe des Flugplans wird ignoriert; die Flughöhe bleibt die des Schritts Flug.',
+    '{g}: el grupo de velocidad y nivel del plan de vuelo se ignora; el nivel del vuelo sigue siendo el del paso Vuelo.'
+  ],
+  rwyUnknown: ['{ad}/{rwy} : piste inconnue de ce terrain, rien n’est choisi.',
+    '{ad}/{rwy}: runway unknown at this aerodrome, nothing is chosen.',
+    '{ad}/{rwy}: Piste an diesem Flugplatz unbekannt, nichts gewählt.',
+    '{ad}/{rwy}: pista desconocida en este aeródromo, no se elige nada.'
+  ],
   // SOG-0088 : un direct vers un point sur instruction du contrôle (vol démarré ; le panneau avant d'écrire)
   directTitle: ['Direct vers un point', 'Direct to a point', 'Direkt zu einem Punkt', 'Directo a un punto'],
   directField: ['Direct vers… (nom du point)', 'Direct to… (point name)', 'Direkt zu… (Punktname)', 'Directo a… (nombre del punto)'],
@@ -1248,6 +1264,32 @@ function bearing(a, b) {
 const routeText = tokens => RT.textFromTokens(tokens, {
   dct: true
 });
+/** SOG-0089 (l'ergonome) : à l'ouverture, un texte qui ne porte pas la piste que le modèle a est refait depuis lui, avant toute frappe :
+ *  effacer « /07 » ensuite est un geste voulu (la piste est retirée). */
+function rwyTextSync() {
+  const r = S.flight?.route;
+  if (!r?.text || S.flightPending) return;
+  const t = withRwys(r.text);
+  if (sameRoute(t, r.text)) return;
+  r.text = t;
+  const ta = S.body?.querySelector('[data-k="rtext"]');
+  if (ta && document.activeElement !== ta) ta.value = t;
+  saveFlight();
+}
+/** SOG-0089 : le texte avec les pistes choisies écrites après le départ et l'arrivée (« LFPO/07 … LFML/31R »), le terrain seul sans
+ *  piste ; partout où Carburant écrit le texte (normalisation, « Auto », points changés, procédures), pour qu'aucune réécriture ne la
+ *  perde. */
+function withRwys(text) {
+  const f = S.flight,
+    o = CF.proceduresOf(f),
+    str = v => typeof v === 'string' ? v : '';
+  return RT.withRunways(text, {
+    dep: f.route?.dep,
+    arr: f.route?.arr,
+    depRwy: str(o.dep?.rwy),
+    arrRwy: str(o.arr?.rwy)
+  });
+}
 
 // ---------------------------------------------------------------- données (vol courant, réglages, fiches)
 /** Chemin d'un document du pilote (trigramme de l'identité, ANON sans identité). */
@@ -1562,8 +1604,9 @@ function procsToText(say) {
       sidNames: [...m.sid.keys()],
       starNames: [...m.star.keys()]
     });
-  if (sameRoute(res.text, r.text)) return;
-  r.text = res.text;
+  const text = withRwys(res.text); // SOG-0089 : la piste choisie après le terrain
+  if (sameRoute(text, r.text)) return;
+  r.text = text;
   r.from = 'route';
   if (ta) ta.value = r.text;
   resolveRoute(true); // relu et normalisé (forme OACI, « DCT »), écrit, devis refait
@@ -1581,8 +1624,52 @@ function textToProcs() {
   const m = S.P?.textModel?.(),
     r = S.flight?.route;
   if (!m || !r) return;
-  const o = CF.proceduresOf(S.flight),
-    found = RT.proceduresOfText(r.text, {
+  let o = CF.proceduresOf(S.flight);
+  // SOG-0089 : « LFPO/07 » (premier mot) et « LFML/31R » (dernier) posent la piste de leur côté, d'abord (la SID suit la piste) ; une
+  // piste que le terrain n'a pas est dite, rien n'est choisi ; le terrain écrit sans la piste choisie la retire (une seule
+  // règle pour ce que porte le texte ; un texte d'avant ce lot est refait à l'ouverture : rwyTextSync)
+  const rw = RT.runwaysOfText(r.text, {
+    dep: r.dep,
+    arr: r.arr
+  });
+  let rwChanged = false;
+  // un groupe vitesse-niveau collé en tête (« N0450F350 LFPO/07 … ») : ignoré, et dit une fois par texte (jamais perdu sans un mot)
+  const g = RT.leadingGroup(r.text);
+  if (g && S.groupSaid !== r.text) {
+    S.groupSaid = r.text;
+    S.ctx.notify(tt(TX.groupIgnored, {
+      g
+    }), 'info');
+  }
+  for (const side of ['dep', 'arr']) {
+    const want = rw[side];
+    // le terrain écrit sans sa piste alors qu'une est choisie : le pilote l'a effacée (le texte la porte depuis l'ouverture) : retirée, dit
+    if (want === '' && typeof o[side]?.rwy === 'string') {
+      S.P.choose(`p-${side}-rwy`, '');
+      rwChanged = true;
+      S.ctx.notify(tt(TX.rwyRemoved, {
+        side: tt(side === 'dep' ? TX.rwySideDep : TX.rwySideArr),
+        ad: String(r[side] || '').toUpperCase()
+      }), 'info');
+      continue;
+    }
+    if (!want) continue;
+    const ids = (side === 'dep' ? m.depRwys : m.arrRwys) || [],
+      id = ids.find(x => PR.rwNum(x) === want);
+    if (!id) {
+      S.ctx.notify(tt(TX.rwyUnknown, {
+        ad: String(r[side] || '').toUpperCase(),
+        rwy: want
+      }), 'warn');
+      continue;
+    }
+    if (PR.rwNum(o[side]?.rwy) !== want) {
+      S.P.choose(`p-${side}-rwy`, id);
+      rwChanged = true;
+    }
+  }
+  if (rwChanged) o = CF.proceduresOf(S.flight);
+  const found = RT.proceduresOfText(r.text, {
       sidNames: [...m.sid.keys()],
       starNames: [...m.star.keys()]
     }),
@@ -1604,7 +1691,7 @@ function textToProcs() {
   };
   set('dep', 'sid', m.sid, found.sid);
   set('arr', 'star', m.star, found.star);
-  if (!changed) procsToText(true);
+  if (!changed && !rwChanged) procsToText(true);
 }
 /** Signature de la route (points, distance saisie à la main) : ce qui, changé après le départ, refait tout le devis. Les points des
  *  procédures choisies n'y comptent pas (depuis SOG-0012 un nom de la route que porte une procédure prend sa position : choisir ou
@@ -4150,7 +4237,7 @@ function renderPts() {
  *  refait ; la liste est redessinée sauf pendant la frappe d'un niveau (le champ garde la main). */
 function routeEdited(redraw = true) {
   const r = S.flight.route;
-  r.text = RT.textFromPoints(r.points || [], r.text || ''); // voies gardées entre deux points restés voisins
+  r.text = withRwys(RT.textFromPoints(r.points || [], r.text || '')); // voies gardées entre deux points restés voisins ; pistes (SOG-0089)
   r.from = 'points';
   const ta = S.body?.querySelector('[data-k="rtext"]');
   if (ta) ta.value = r.text;
@@ -4602,7 +4689,7 @@ function resolveRoute(normalize = true) {
     if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
     if (normalize && tokens.length && document.activeElement !== ta) {
-      r.text = routeText(tokens);
+      r.text = withRwys(routeText(tokens));
       if (ta) ta.value = r.text;
     }
     // la place de chaque nom sans position dans la liste des points (après le point qui le précède dans le texte ; un départ inconnu en
@@ -5040,7 +5127,7 @@ function writeAuto(tokens, points, gen) {
   const r = S.flight.route,
     g = gen instanceof Set ? gen : new Set(gen);
   r.points = points;
-  r.text = routeText(tokens);
+  r.text = withRwys(routeText(tokens));
   r.auto = {
     seq: tokens.filter(t => t.pt || t.keep).map(t => ({
       w: t.pt ? t.pt.id : t.keep,
@@ -6550,6 +6637,7 @@ async function completeMount(self) {
   S.refsPending = false;
   themesLoad(); // les thèmes de la compagnie, pour l'étape Vol (SOG-0202 T2)
   if (S.step === 1) atisRead(); // SOG-0090 : l'écran rouvert sur l'étape des procédures lit l'ATIS une fois
+  rwyTextSync(); // SOG-0089 : un vol d'avant ce lot (piste choisie, texte sans « /07 ») a son texte refait depuis le modèle
   if (S.directAsk) { // SOG-0088 : le direct demandé par l'adresse de la Carte, une fois le vol lu
     const q = S.directAsk;
     S.directAsk = null;

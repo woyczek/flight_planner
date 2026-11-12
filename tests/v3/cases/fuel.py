@@ -1781,12 +1781,13 @@ def f70(c):
     wait_rows(c, 'dep')
     rt = f"document.querySelector('{FUEL} [data-k=rtext]').value"
     pick_proc(c, 'p-dep-sid', 'LFRS.SID.NTS1A.RW03.NONE')
-    c.until(f"{rt} === 'LFRS NTS1A NT102 DCT LUGEN DCT NEPIX LFML'", timeout=8000,
-            what='the SID name then its exit after the departure, in ICAO form: « LFRS NTS1A NT102 DCT LUGEN DCT NEPIX LFML »')
+    # SOG-0089: NTS1A serves runway 03 only, which it sets; the chosen runway is written after its aerodrome
+    c.until(f"{rt} === 'LFRS/03 NTS1A NT102 DCT LUGEN DCT NEPIX LFML'", timeout=8000,
+            what='the runway, the SID name then its exit after the departure, in ICAO form: « LFRS/03 NTS1A NT102 DCT LUGEN DCT NEPIX LFML »')
     line = norm(row(c, 'procExitDct')).replace('{sid}', 'NTS1A').replace('{exit}', 'NT102').replace('{next}', 'LUGEN')
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() === w)", line, timeout=6000, what=f'the line « {line} »')
     pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
-    c.until(f"{rt}.endsWith('NEPIX DCT MEN01 MEN1A LFML')", timeout=8000, what='the STAR entry then its name before the arrival')
+    c.until(f"{rt}.endsWith('NEPIX DCT MEN01 MEN1A LFML/13R')", timeout=8000, what='the STAR entry then its name before the arrival (and its runway 13R)')
     pick_proc(c, 'p-arr-app', 'LFML.APP.I13R.RW13R.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
     c.settle()
@@ -2042,7 +2043,7 @@ def f77(c):
     to_step(c, 1)
     wait_rows(c, 'dep')
     rt = f"document.querySelector('{FUEL} [data-k=rtext]').value"
-    want = 'LFRS LUGEN2B LUGEN DCT NEPIX LFML'
+    want = 'LFRS/21 LUGEN2B LUGEN DCT NEPIX LFML'   # SOG-0089: the chosen runway after its aerodrome
     for n in (1, 2):
         c.js("() => { location.hash = '#maps' }")
         c.until("location.hash === '#maps'", what='the Map is open')
@@ -4743,3 +4744,63 @@ def f154(c):
     c.open('fuel?direct=NEPIX', docs=_direct_docs(started=False, actual=False))
     c.until(f"document.querySelector('{FUEL} [data-k=addpt]')?.value === 'NEPIX'", timeout=15000, what='the point in « Ajouter un point »')
     c.ok(c.js(f"document.querySelector('{FUEL} [data-block=direct]').hidden"), '', 'no direct on a flight not started')
+
+
+
+@case('F155', 'Route in the format of the flight plans of the tools: « LFRS/21 NTS2B … MEN2B LFML/31L » typed sets the runways, the SID and the '
+      'STAR; a runway chosen in the list is written after its aerodrome; a runway the aerodrome does not have is said, nothing chosen',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0089 (roadmap: « Route au format FPL avec piste et procédures (LFPO/07 OPAL2E OPALE DCT …) : lue et écrite »): the reader dropped '
+      '« /07 » without a word; the text is a view of the model (§ 10.31); seeded invented procedures (LFRS 03/21, LFML 13R/31L); captures 390 and 1 280')
+def f155(c):
+    path = 'pilot/ABC/current_flight.json'
+    words = lambda d: [x for x in str((d.get('route') or {}).get('text', '')).split() if x != 'DCT']
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        open_proc(c)
+        wait_rows(c, 'dep')
+        wait_rows(c, 'arr')
+        # no procedure in the text first: only the text can give the runways (a SID serving one runway would set it by itself)
+        _route_typed(c, 'LFRS/21 LUGEN NEPIX LFML/13R')
+        cf_doc(c, lambda d: (procs_of(d, 'dep') or {}).get('rwy') == '21' and (procs_of(d, 'arr') or {}).get('rwy') == '13R',
+               f'{w} px: runways 21 and 13R set by the text alone', timeout=12000)
+        _route_typed(c, 'LFRS/21 NTS2B LUGEN NEPIX MEN2B LFML/31L')
+        d = cf_doc(c, lambda d: (procs_of(d, 'dep') or {}).get('rwy') == '21' and (procs_of(d, 'arr') or {}).get('rwy') == '31L'
+                   and str((procs_of(d, 'dep') or {}).get('sid', '')).startswith('LFRS.SID.NTS2B') and str((procs_of(d, 'arr') or {}).get('star', '')).startswith('LFML.STAR.MEN2B'),
+                   f'{w} px: runways 21 and 31L, SID NTS2B, STAR MEN2B set by the text', timeout=12000)
+        c.until(f"(() => {{ const v = document.querySelector('{FUEL} [data-k=rtext]').value.trim().split(/\\s+/); return v[0] === 'LFRS/21' && v.at(-1) === 'LFML/31L' }})()",
+                timeout=8000, what=f'{w} px: the text keeps « LFRS/21 … LFML/31L » after its normalisation')
+        c.js(f"document.querySelector('{FUEL} [data-k=rtext]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F155_{c.design}_{w}_{c.lang}_delivered.png')
+    # a runway chosen in the list: written after its aerodrome
+    unfold(c, 'dep')
+    c.page.select_option(f'{FUEL} select[data-k="p-dep-rwy"]', '03')
+    cf_doc(c, lambda d: words(d)[:1] == ['LFRS/03'], 'the runway chosen in the list written « LFRS/03 »', timeout=10000)
+    # a runway the aerodrome does not have: said, nothing chosen
+    n0 = c.js("(window.__notes || []).length")
+    _route_typed(c, 'LFRS/09 LUGEN NEPIX LFML')
+    c.until("(n) => (window.__notes || []).slice(n).some(x => /LFRS\/09/.test(x))", n0, timeout=8000, what='« LFRS/09 : piste inconnue »')
+    c.settle()
+    c.eq((procs_of(c.doc(path), 'dep') or {}).get('rwy'), '03', 'the runway chosen stays (09 is not a runway of LFRS)', what='rwy kept')
+
+    # a pasted flight plan with its speed / level group in front: the group is said ignored, it never hides « LFRS/21 »
+    n0 = c.js("(window.__notes || []).length")
+    _route_typed(c, 'N0450F350 LFRS/21 LUGEN NEPIX LFML')
+    c.until("(n) => (window.__notes || []).slice(n).some(x => /N0450F350/.test(x))", n0, timeout=8000, what='« N0450F350 : … ignoré »')
+    cf_doc(c, lambda d: (procs_of(d, 'dep') or {}).get('rwy') == '21', 'the runway after the group read', timeout=8000)
+
+
+@case('F156', 'A flight of before the runway in the text (runway chosen, text without « /RW »): the text is redone from the model at the opening '
+      '(« LFRS/03 … »); then « /03 » erased removes the runway, said', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=False, rule='SOG-0089 (the ergonomist, 12 Nov: one rule for all the text carries, erasing « /07 » removes the runway; the text of an '
+      'old flight redone at the opening, so that erasing is a wanted gesture)')
+def f156(c):
+    words = lambda d: [x for x in str((d.get('route') or {}).get('text', '')).split() if x != 'DCT']
+    open_proc(c, procs=V2_PROCS)   # route text « LFRS LUGEN NEPIX LFML », runway 03 at LFRS and 13R at LFML chosen
+    wait_rows(c, 'dep')
+    cf_doc(c, lambda d: words(d)[:1] == ['LFRS/03'] and words(d)[-1:] == ['LFML/13R'], 'the text redone at the opening: « LFRS/03 … LFML/13R »', timeout=12000)
+    n0 = c.js("(window.__notes || []).length")
+    txt = c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value")
+    _route_typed(c, txt.replace('LFRS/03', 'LFRS'))
+    cf_doc(c, lambda d: not (procs_of(d, 'dep') or {}).get('rwy'), '« /03 » erased: the departure runway removed', timeout=8000)
+    c.until("(n) => (window.__notes || []).slice(n).some(x => /LFRS/.test(x))", n0, timeout=6000, what='« Piste de départ retirée (LFRS) »')

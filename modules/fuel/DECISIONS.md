@@ -1768,3 +1768,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   `route.directs` keeps the trace (to, from, skipped, notOverflown), read by the report. « Annuler le direct » restores the route while its
   text is unchanged. Address contract given to BUGS SOG: `#fuel?direct=<ID>[&lat=&lon=]` (Map button 05ec9e79d); a flight not started:
   the step Route, the name in « Ajouter un point ». Procedure points (STAR, approach): not in this lot. F154 (red before).
+- **12 Nov 2026 — the runway in the route text, as the tools' flight plans write it** (SOG-0089): « LFPO/07 OPAL2E OPALE DCT … LFML/31R ».
+  frame/lib/route_text.js `runwayOfWord`, `runwaysOfText`, `withRunways` (pure; « /07 », « /07L », « /RW07 », « /RWY07L »; 01 to 36; a level
+  « /F280 » is never a runway). Read: on leaving the field, the first word « DEP/RW » and the last « ARR/RW » choose the runway of their
+  side BEFORE the SID and STAR names (the SID then serves it), by the list's own path; a runway the aerodrome does not have is said
+  (« LFRS/09 : piste inconnue ») and nothing is chosen. Written: `withRwys` puts the chosen runways after the aerodromes wherever Fuel
+  writes the text (normalisation, « Auto », points edited, procedures), so that no rewrite loses them (a Map gesture comes back through the
+  normalisation). The ergonomist's answer: the aerodrome written without its runway REMOVES it (« Piste de départ retirée », one
+  rule for all the text carries); the fear of an old text without « /07 » is settled at the source: at the opening, a text that does not
+  carry the model's runway is redone from it (`rwyTextSync`), so erasing is a wanted gesture. A speed / level group in front
+  (« N0450F350 LFPO/07 … », item 15 of a flight plan) has no point to attach to: ignored and said, never hiding the aerodrome
+  (`leadingGroup`). F155 (red before: the runways set by the text alone; the group), F156 (an old flight redone, then « /03 » erased),
+  bench F69 (+5); F70 and F77 now expect « LFRS/03 … » and « LFRS/21 … ».
