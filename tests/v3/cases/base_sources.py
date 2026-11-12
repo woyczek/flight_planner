@@ -1509,6 +1509,11 @@ def k96(c):
              (True, 3, 'sog-priorities/1', ['SOG-0001', 'SOG-0002', 'SOG-0003'], {'milestone': 'alpha.5', 'rank': 1}, True, []), 'a set writes the file: the schema, the date, the entries by rank, no temporary file', what='set')
         r = run(action='get')
         c.eq((r['items'], r['dropped'], r['exists'], r['updated'] == doc['updated']), (good, 0, True, True), 'a get gives back what was set', what='get')
+        # « no milestone » (the Backlog column of the roadmap, SOG-0256): an empty milestone is a milestone-less entry, written and read back as such
+        nomile = {**good, 'SOG-0001': {'milestone': '', 'rank': 1}}
+        r = run(action='set', items=nomile)
+        c.eq((r['ok'], run(action='get')['items']['SOG-0001']), (True, {'milestone': '', 'rank': 1}), 'an empty milestone means « no milestone »: accepted, kept', what='no milestone')
+        run(action='set', items=good)
         before = f.read_bytes()
         for bad in ({'SOG-12': {'rank': 1}}, {'SOG-0001': {'milestone': 'nope'}}, {'SOG-0001': {'rank': 0}}, {'SOG-0001': {'rank': True}}, {'SOG-0001': {'rank': 1.5}}, {'SOG-0001': {}},
                     {'SOG-0001': {'rank': 100000}}, {'SOG-0001': {'rank': 1, 'x': 1}}, {'SOG-0001': {'milestone': 3}}):

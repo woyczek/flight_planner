@@ -58,7 +58,7 @@ def entry(v, stones):
         return None
     out = {}
     if 'milestone' in v:
-        if not isinstance(v['milestone'], str) or v['milestone'] not in stones:
+        if not isinstance(v['milestone'], str) or (v['milestone'] != '' and v['milestone'] not in stones):   # '' : sans jalon (la colonne Backlog de la feuille de route, SOG-0256)
             return None
         out['milestone'] = v['milestone']
     if 'rank' in v:
@@ -79,7 +79,7 @@ def clean(items, stones):
             dropped += 1
             continue
         keep = {x: v[x] for x in ('milestone', 'rank') if x in v}
-        if 'milestone' in keep and keep['milestone'] not in stones:
+        if 'milestone' in keep and keep['milestone'] != '' and keep['milestone'] not in stones:
             del keep['milestone']
         e = entry(keep, stones) if keep else None
         if e is None:

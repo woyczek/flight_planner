@@ -1158,12 +1158,9 @@ p.f-back {
 /* la vue « Priorités » (SOG-0160) : trois colonnes (une de plus, « Livrées », quand on ne masque pas les livrées), les cartes à plat ; l'étiquette du thème sur la carte ; au téléphone une colonne à la fois et les gestes monter, descendre, envoyer vers */
 .f-rm-prio {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
   gap: 12px;
   align-items: start
-}
-.f-rm-prio:has(.f-rm-pcol[data-col="done"]) {
-  grid-template-columns: repeat(4, minmax(0, 1fr))
 }
 .f-rm-pcol {
   min-width: 0;
@@ -1190,14 +1187,17 @@ p.f-back {
 }
 /* à l'ordinateur les gestes de la carte (en tête, monter, descendre) se montrent au survol et au clavier, par-dessus la carte (SOG-0257) ; jamais pendant un glissement */
 .f-rm-pcol .f-rm-item {
-  position: relative
+  position: relative;
+  padding-right: 28px;
+  min-height: 54px
 }
 .f-rm-pcol .f-rm-act {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 1px;
   position: absolute;
-  right: 4px;
-  top: 4px;
+  right: 2px;
+  top: 3px;
   opacity: 0;
   pointer-events: none
 }
@@ -1206,8 +1206,13 @@ p.f-back {
   display: none
 }
 .f-rm-pcol .f-rm-act button {
-  min-width: 26px;
-  padding: 0 4px
+  width: 22px;
+  min-width: 0;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  line-height: 1;
+  font-size: .7em
 }
 .f-rm-pcol .f-rm-item:hover .f-rm-act,
 .f-rm-pcol .f-rm-item:focus-within .f-rm-act {
@@ -1238,14 +1243,11 @@ p.f-back {
   .f-rm-pcol[data-active] {
     display: block
   }
-  .f-rm-pcol[data-col="done"] {
-    display: block;
-    margin-top: var(--sog-gap)
-  }
   .f-rm-colbar {
     display: flex
   }
   .f-rm-pcol .f-rm-act {
+    flex-direction: row;
     position: static;
     opacity: 1;
     pointer-events: auto;
@@ -1263,7 +1265,14 @@ p.f-back {
     display: none
   }
   .f-rm-pcol .f-rm-act button {
-    padding: 0 12px
+    width: auto;
+    height: auto;
+    padding: 0 12px;
+    font-size: inherit
+  }
+  .f-rm-pcol .f-rm-item {
+    padding-right: 8px;
+    min-height: 0
   }
   .f-rm-act button,
   .f-rm-act select {

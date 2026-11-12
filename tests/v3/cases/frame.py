@@ -4021,7 +4021,8 @@ def a101(c):
         c.page.reload()
         c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the screen again')
         c.until("[...document.querySelectorAll('[data-col=\"backlog\"] li[data-id]')].map(l => l.dataset.id)[0] === 'SOG-0008'", timeout=15000, what='the order read back')
-        c.eq(ids(), ['SOG-0008', 'SOG-0006', 'SOG-0007'], 'after a reload the order holds', what='reload')
+        c.eq(ids(), ['SOG-0008', 'SOG-0006'], 'after a reload the order holds', what='reload')
+        c.eq(c.js("[...document.querySelectorAll('[data-col=\"beta.1\"] li[data-id]')].map(l => l.dataset.id)"), ['SOG-0007'], 'the card sent onto beta 1 is in the column of that milestone (SOG-0256)', what='beta column')
 
         # ---- a long touch (synthetic pointer events, the touch way): a release without moving copies; a drag after the hold moves; a move before the hold is a scroll
         touch = lambda kind, sel, dx=0, dy=0, to=None: c.js("""([k, sel, dx, dy, to]) => { const el = document.querySelector(sel); const r = el.getBoundingClientRect(); const t = to ? document.querySelector(to).getBoundingClientRect() : null;
@@ -4466,7 +4467,7 @@ def _prio_fixture():
                       {'id': 'data', 'app': 'pilote', 'label': lab('Thème B', 'Theme B'), 'items': [item('planned', 13), item('planned', 14)]}]}
 
 
-@case('A114', 'The roadmap opens « Par thème »; « Priorités » is a mode you choose (kept on the device): three columns (in integration, in development, backlog), the cards flat by rank with their theme as a label; a card of theme B above a card of theme A, sent to development, held after a reload; « Par thème » is the read-only secondary view', 'A',
+@case('A114', 'The roadmap opens « Par thème »; « Priorités » is a mode you choose (kept on the device): the columns of the open milestones (alpha.5, alpha.6, beta.1) and Backlog (SOG-0256), the cards flat by rank with their theme as a label; a card of theme B above a card of theme A, sent to development, held after a reload; « Par thème » is the read-only secondary view', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0160 (the user, 10 Nov 2026, then refused: « oui, mais par thème par défaut. c’est un « mode priorités », pas un default »): the roadmap opens « Par thème »; « Priorités » is a mode the user chooses and the device keeps; that view is a flat list in three columns drawn from the milestones, a drag (a phone: Monter, Descendre, Envoyer vers…) writes the rank and the milestone in organisation/PRIORITES.json; « Par thème » keeps today’s lanes, without dragging')
 def a114(c):
@@ -4485,7 +4486,7 @@ def a114(c):
         written = lambda: json.loads(prio.read_text(encoding='utf-8'))['items'] if prio.exists() else None
         _prio_launcher(c, root)
         ids = lambda col: c.js("(k) => [...document.querySelectorAll('[data-col=\"' + k + '\"] li[data-id]')].map(l => l.dataset.id)", col)
-        cols = lambda: {k: ids(k) for k in ('integration', 'development', 'backlog')}
+        cols = lambda: {k: ids(k) for k in ('alpha.5', 'alpha.6', 'backlog')}
         views = "[...document.querySelectorAll('[data-view]')].map(b => [b.dataset.view, b.getAttribute('aria-pressed')])"
         c.open('roadmap', docs=LEVEL3)
         # ---- the default view is « Par thème » (the lanes); « Priorités » is chosen, then kept (the reload below reads it back)
@@ -4497,9 +4498,9 @@ def a114(c):
         c.eq(c.js(views), [['priorities', 'true'], ['themes', 'false']], 'two views, « Priorités » chosen', what='views')
         c.eq(norm(c.text('[data-view=priorities]')), norm(T('vPrio')), 'worded in the language of the run', what='view label')
         c.eq(c.count('[data-lane]'), 0, 'the lanes are effaced', what='no lane')
-        c.eq(cols(), {'integration': ['SOG-0015'], 'development': [], 'backlog': ['SOG-0011', 'SOG-0012', 'SOG-0013', 'SOG-0014']},
-             'the cards by milestone: the one in progress, the next one, the rest', what='columns')
-        c.eq([norm(c.js(f"document.querySelector('[data-col={k}] h3').firstChild.textContent")) for k in ('integration', 'development', 'backlog')], [norm(T('colIntegration')), norm(T('colDevelopment')), norm(T('colBacklog'))], 'the three columns, named', what='column names')
+        c.eq(cols(), {'alpha.5': ['SOG-0015'], 'alpha.6': [], 'backlog': ['SOG-0011', 'SOG-0012', 'SOG-0013', 'SOG-0014']},
+             'the cards by milestone: the one in progress, the next one, the rest (no milestone: Backlog)', what='columns')
+        c.eq([norm(c.js(f"document.querySelector('[data-col=\"{k}\"] h3').firstChild.textContent")) for k in ('alpha.5', 'alpha.6', 'backlog')], [norm('alpha.5' + ('' if lang in ('fr', 'en') else f' ({lang})')), norm('alpha.6' + ('' if lang in ('fr', 'en') else f' ({lang})')), norm(T('colBacklog'))], 'the columns are named after their milestone, then « Backlog »', what='headings')
         c.eq(norm(c.js("document.querySelector('[data-id=\"SOG-0013\"] [data-theme]').textContent")), 'Thème B' if lang == 'fr' else 'Theme B' + ('' if lang == 'en' else f' ({lang})'), 'the theme is a label on the card', what='theme tag')
         c.shot(f'A114_priorities_{c.width}_{lang}.png')
         if c.phone:
@@ -4522,18 +4523,18 @@ def a114(c):
         c.eq(ids('backlog'), ['SOG-0014', 'SOG-0011', 'SOG-0012', 'SOG-0013'], 'the theme-B card is above the theme-A cards: the themes do not block the order', what='order')
         # ---- sent to development: its milestone is written
         if c.phone:
-            c.page.select_option('[data-id="SOG-0011"] select[data-send]', 'development')
+            c.page.select_option('[data-id="SOG-0011"] select[data-send]', 'alpha.6')
         else:
             c.js("document.querySelectorAll('.f-note').forEach(n => n.remove())")
             a = c.page.locator('[data-id="SOG-0011"]').bounding_box()
-            d = c.page.locator('[data-col=development]').bounding_box()
+            d = c.page.locator('[data-col="alpha.6"]').bounding_box()
             c.page.mouse.move(a['x'] + a['width'] / 2, a['y'] + 8)
             c.page.mouse.down()
             c.page.mouse.move(a['x'] + a['width'] / 2 + 10, a['y'] + 18, steps=2)
             c.page.mouse.move(d['x'] + d['width'] / 2, d['y'] + d['height'] / 2, steps=10)
             c.page.mouse.up()
-        c.until("document.querySelector('[data-col=development] li[data-id]')", what='the card in development')
-        c.eq(cols(), {'integration': ['SOG-0015'], 'development': ['SOG-0011'], 'backlog': ['SOG-0014', 'SOG-0012', 'SOG-0013']}, 'sent to development: the next milestone’s column', what='sent')
+        c.until("document.querySelector('[data-col=\"alpha.6\"] li[data-id]')", what='the card in development')
+        c.eq(cols(), {'alpha.5': ['SOG-0015'], 'alpha.6': ['SOG-0011'], 'backlog': ['SOG-0014', 'SOG-0012', 'SOG-0013']}, 'sent to development: the next milestone’s column', what='sent')
         pri = None
         for _ in range(40):
             pri = written()
@@ -4545,8 +4546,8 @@ def a114(c):
         # ---- a reload: held (read back from the launcher's file)
         c.page.reload()
         c.until("!!document.querySelector('[data-priorities] li[data-id]')", timeout=15000, what='the screen again')
-        c.until("document.querySelector('[data-col=development] li[data-id]')", timeout=15000, what='the order read back')
-        c.eq(cols(), {'integration': ['SOG-0015'], 'development': ['SOG-0011'], 'backlog': ['SOG-0014', 'SOG-0012', 'SOG-0013']}, 'after a reload the columns hold', what='reload')
+        c.until("document.querySelector('[data-col=\"alpha.6\"] li[data-id]')", timeout=15000, what='the order read back')
+        c.eq(cols(), {'alpha.5': ['SOG-0015'], 'alpha.6': ['SOG-0011'], 'backlog': ['SOG-0014', 'SOG-0012', 'SOG-0013']}, 'after a reload the columns hold', what='reload')
         # ---- « Par thème »: today’s lanes, read only
         c.tap('[data-view=themes]')
         c.until("document.querySelectorAll('[data-lane]').length === 2", what='the lanes')
@@ -6412,13 +6413,13 @@ def a156(c):
     data_lane['items'] = [i for i in data_lane['items'] if i.get('state') == 'done']
     for n in range(100, 145):                                            # 45 cards in the backlog column
         data_lane['items'].append({'state': 'later', 'id': f'SOG-0{n}', **lab(f'Carte {n}', f'Card {n}')})
-    for n in (200, 201, 202):                                            # three in the next milestone (« development »)
+    for n in (200, 201, 202):                                            # three in the next milestone (the column alpha.6)
         data_lane['items'].append({'state': 'planned', 'id': f'SOG-0{n}', 'milestone': 'alpha.6', **lab(f'Prévue {n}', f'Planned {n}')})
     c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
     ids = lambda col: c.js(f"[...document.querySelectorAll('[data-col=\"{col}\"] li[data-id]')].map(l => l.dataset.id)")
     c.open('roadmap', docs=LEVEL3 + [['device/roadmap.json', {'col': 'backlog', 'view': 'priorities'}, 'cache']])
     c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the priorities')
-    c.eq([len(ids('backlog')), ids('development')], [45, ['SOG-0200', 'SOG-0201', 'SOG-0202']], 'a column of 45 cards and three in the next milestone', what='columns')
+    c.eq([len(ids('backlog')), ids('alpha.6')], [45, ['SOG-0200', 'SOG-0201', 'SOG-0202']], 'a column of 45 cards and three in the next milestone', what='columns')
     # ---- (3) « To the top », without dragging: the last of the 45 cards goes in front of its column
     last = ids('backlog')[-1]
     sel = f'[data-col="backlog"] li[data-id="{last}"]'
@@ -6439,24 +6440,24 @@ def a156(c):
         c.js(f"() => document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
         c.wait(200)
         a = c.page.locator(card).bounding_box()
-        dev = c.page.locator('[data-col="development"]').bounding_box()
+        dev = c.page.locator('[data-col="alpha.6"]').bounding_box()
         c.page.mouse.move(a['x'] + 40, a['y'] + 8)
         c.page.mouse.down()
         c.page.mouse.move(a['x'] + 30, a['y'] + 18, steps=2)
         y_low = min(c.js('window.innerHeight') - 100, a['y'] + 200)           # far below the three cards of the next column
         c.page.mouse.move(dev['x'] + 30, y_low, steps=8)                      # 30 px inside the neighbour column
-        c.eq(c.js("[...document.querySelectorAll('[data-col]')].filter(e => e.hasAttribute('data-dropcol')).map(e => e.dataset.col)"), ['development'], 'the neighbour column is lit as a whole as soon as the card is above it', what='lit')
+        c.eq(c.js("[...document.querySelectorAll('[data-col]')].filter(e => e.hasAttribute('data-dropcol')).map(e => e.dataset.col)"), ['alpha.6'], 'the neighbour column is lit as a whole as soon as the card is above it', what='lit')
         c.shot(f'A156_lit_{c.width}_{lang}_delivered.png')
         c.page.mouse.up()
-        c.until("document.querySelector('[data-col=\"development\"] li[data-id]').dataset.id === 'SOG-0120'", what='the card is at the head of the next column')
-        c.eq([ids('development'), 'SOG-0120' in ids('backlog')], [['SOG-0120', 'SOG-0200', 'SOG-0201', 'SOG-0202'], False], 'dropped on the column: at its head (the first), not at the end', what='head')
+        c.until("document.querySelector('[data-col=\"alpha.6\"] li[data-id]').dataset.id === 'SOG-0120'", what='the card is at the head of the next column')
+        c.eq([ids('alpha.6'), 'SOG-0120' in ids('backlog')], [['SOG-0120', 'SOG-0200', 'SOG-0201', 'SOG-0202'], False], 'dropped on the column: at its head (the first), not at the end', what='head')
         # on a card: the exact place kept
         card = '[data-col="backlog"] li[data-id]:nth-child(5)'
         moved = c.js(f"document.querySelector('{card}').dataset.id")
         c.js(f"() => document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
         c.wait(200)
         a = c.page.locator(card).bounding_box()
-        tgt = c.page.locator('[data-col="development"] li[data-id="SOG-0200"]')
+        tgt = c.page.locator('[data-col="alpha.6"] li[data-id="SOG-0200"]')
         tgt.evaluate("el => el.scrollIntoView({ block: 'center' })")
         c.wait(200)
         a = c.page.locator(card).bounding_box()
@@ -6466,8 +6467,8 @@ def a156(c):
         c.page.mouse.move(a['x'] + 30, a['y'] + 18, steps=2)
         c.page.mouse.move(b['x'] + b['width'] / 2, b['y'] + b['height'] - 4, steps=8)
         c.page.mouse.up()
-        c.until(f"document.querySelector('[data-col=\"development\"] li[data-id=\"{moved}\"]')", what='the card is in the next column')
-        c.eq(ids('development')[:3], ['SOG-0120', 'SOG-0200', moved], 'dropped on the lower half of a card: right after it (a precise place stays possible)', what='precise')
+        c.until(f"document.querySelector('[data-col=\"alpha.6\"] li[data-id=\"{moved}\"]')", what='the card is in the next column')
+        c.eq(ids('alpha.6')[:3], ['SOG-0120', 'SOG-0200', moved], 'dropped on the lower half of a card: right after it (a precise place stays possible)', what='precise')
         # ---- (4) the page scrolls while the pointer stays near the bottom edge (no move needed)
         card = '[data-col="backlog"] li[data-id]:nth-child(3)'
         c.js("() => window.scrollTo(0, 0)")
@@ -6483,6 +6484,89 @@ def a156(c):
         y1 = c.js('window.scrollY')
         c.page.mouse.up()
         c.ok(y1 > y0 + 60, (y0, y1), 'the page scrolls by itself while the pointer stays near its bottom edge, without moving')
+    c.check_errors()
+
+
+
+@case('A157', 'The roadmap priorities (SOG-0256): the columns are Delivered · In test · one per open milestone (named after it) · Backlog; « In test » = a delivered item that carries `test: true`; nothing is dropped into Delivered or In test, nothing leaves them; « Hide delivered » hides Delivered, never In test; a card sent to Backlog loses its milestone', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0256 (the user: « il n’y a qu’une colonne « en dev », j’aurai voulu « livré en-test alpha5 beta1 backlog » »): left to right Livré, En test (the generator marks `test: true` on a delivered item whose test waits for its verdict), one column per open milestone in the order of the strip (the name of the column is the milestone’s), Backlog (no milestone); Livré and En test are not filled by hand (nothing dropped, nothing taken out, no gesture on their cards); « Masquer les livrées » hides Livré, never En test; a card sent to Backlog is written without a milestone (`milestone: ""`); on a phone one column at a time, the bar lists them all')
+def a157(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    T = lambda k: tx('frame/help/roadmap.js', k, lang, after='const T = {')
+    fx = _prio_fixture()
+    fuel = fx['lanes'][0]
+    fuel['items'] += [{'state': 'done', 'id': 'SOG-0020', 'milestone': 'alpha.4', 'fr': 'Livrée', 'en': 'Delivered one', 'de': 'Delivered one (de)', 'es': 'Delivered one (es)'},
+                      {'state': 'done', 'id': 'SOG-0021', 'milestone': 'alpha.4', 'test': True, 'fr': 'En test', 'en': 'Under test', 'de': 'Under test (de)', 'es': 'Under test (es)'},
+                      {'state': 'planned', 'id': 'SOG-0022', 'milestone': 'beta.1', 'fr': 'Pour beta', 'en': 'For beta', 'de': 'For beta (de)', 'es': 'For beta (es)'}]
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'frame' / 'help').mkdir(parents=True)
+        (root / 'frame' / 'help' / 'roadmap.json').write_text(json.dumps(fx), encoding='utf-8')
+        (root / 'organisation').mkdir()
+        prio = root / 'organisation' / 'PRIORITES.json'
+        written = lambda: json.loads(prio.read_text(encoding='utf-8'))['items'] if prio.exists() else None
+        _prio_launcher(c, root)
+        keys = lambda: c.js("[...document.querySelectorAll('[data-priorities] [data-col]')].map(e => e.dataset.col)")
+        ids = lambda col: c.js("(k) => [...document.querySelectorAll('[data-col=\"' + k + '\"] li[data-id]')].map(l => l.dataset.id)", col)
+        stone_name = lambda k: norm(k + ('' if lang in ('fr', 'en') else f' ({lang})'))
+        c.open('roadmap', docs=LEVEL3 + [['device/roadmap.json', {'view': 'priorities', 'hideDone': True}, 'cache']])
+        c.until("!!document.querySelector('[data-priorities] li[data-id]')", timeout=15000, what='the priorities view')
+        # ---- « Hide delivered » (checked): Delivered is hidden, In test stays
+        c.eq(keys(), ['test', 'alpha.5', 'alpha.6', 'beta.1', 'backlog'], 'Delivered hidden: In test, one column per open milestone in the order of the strip, Backlog', what='columns hidden')
+        c.eq([ids('test'), ids('alpha.5'), ids('alpha.6'), ids('beta.1'), ids('backlog')], [['SOG-0021'], ['SOG-0015'], [], ['SOG-0022'], ['SOG-0011', 'SOG-0012', 'SOG-0013', 'SOG-0014']], 'In test carries the delivered item with `test: true`; the milestones their cards; Backlog the cards without milestone', what='cards')
+        c.eq([norm(c.js(f"document.querySelector('[data-col=\"{k}\"] h3').firstChild.textContent")) for k in ('test', 'alpha.5', 'beta.1', 'backlog')],
+             [norm(T('colTest')), stone_name('alpha.5'), stone_name('beta.1'), norm(T('colBacklog'))], 'the columns are named: In test, the milestone’s name, Backlog', what='names')
+        c.js("() => document.querySelector('input[data-hide]').click()")
+        c.until("!!document.querySelector('[data-col=done]')", what='Delivered shown')
+        c.eq(keys(), ['done', 'test', 'alpha.5', 'alpha.6', 'beta.1', 'backlog'], 'unchecked: Delivered comes first, then In test', what='columns shown')
+        c.eq([ids('done'), norm(c.js("document.querySelector('[data-col=done] h3').firstChild.textContent"))], [['SOG-0020'], norm(T('colDone'))], 'Delivered holds the delivered item without a test', what='delivered')
+        c.shot(f'A157_columns_{c.width}_{lang}_delivered.png')
+        # ---- nothing leaves Delivered / In test, nothing goes in
+        c.eq([c.count('[data-col=done] [data-up], [data-col=test] [data-up]'), c.count('[data-col=done] [data-top], [data-col=test] [data-top]'), c.count('[data-col=done][data-fixed], [data-col=test][data-fixed]')], [0, 0, 2], 'no gesture on the cards of Delivered and In test; the two columns are marked fixed', what='fixed')
+        if not c.phone:
+            def drag(src, dst_col):
+                c.js("document.querySelectorAll('.f-note').forEach(n => n.remove())")
+                c.page.locator(src).evaluate("el => el.scrollIntoView({ block: 'center' })")
+                c.wait(200)
+                a = c.page.locator(src).bounding_box()
+                c.page.mouse.move(a['x'] + 30, a['y'] + 8)
+                c.page.mouse.down()
+                c.page.mouse.move(a['x'] + 40, a['y'] + 18, steps=2)
+                d = c.page.locator(f'[data-col="{dst_col}"] h3').bounding_box()      # the heading of the column: no card under the pointer, so the drop goes to its head
+                c.page.mouse.move(d['x'] + d['width'] / 2, d['y'] + d['height'] / 2, steps=8)
+                c.page.mouse.up()
+                c.wait(500)
+            n0 = len(c.page.locator('[data-col="backlog"] li[data-id]').all())
+            drag('[data-col="backlog"] li[data-id="SOG-0012"]', 'test')
+            c.eq([ids('test'), ids('alpha.5'), len(ids('backlog'))], [['SOG-0021'], ['SOG-0015'], n0], 'a card dropped on In test goes nowhere (not into the neighbour column either)', what='nothing in test')
+            drag('[data-col="backlog"] li[data-id="SOG-0012"]', 'done')
+            c.eq(len(ids('backlog')), n0, 'a card dropped on Delivered goes nowhere', what='nothing in done')
+            drag('[data-col="test"] li[data-id="SOG-0021"]', 'alpha.5')
+            c.eq([ids('test'), ids('alpha.5')], [['SOG-0021'], ['SOG-0015']], 'a card of In test cannot be dragged out', what='nothing out')
+            c.eq(written(), None, 'none of the three gestures wrote anything', what='nothing written')
+            # ---- a card of a milestone sent to Backlog: its head, written without a milestone
+            drag('[data-col="alpha.5"] li[data-id="SOG-0015"]', 'backlog')
+            c.until("document.querySelector('[data-col=backlog] li[data-id]').dataset.id === 'SOG-0015'", what='the card is at the head of Backlog')
+            pri = None
+            for _ in range(40):
+                pri = written()
+                if pri and 'SOG-0015' in pri:
+                    break
+                c.wait(250)
+            c.eq([pri['SOG-0015'].get('milestone'), ids('alpha.5')], ['', []], 'written without a milestone (`milestone: ""`); its old column is empty', what='no milestone')
+            c.wait(2500)
+            c.page.reload()
+            c.until("!!document.querySelector('[data-priorities] li[data-id]')", timeout=15000, what='the screen again')
+            c.until("document.querySelector('[data-col=backlog] li[data-id]')?.dataset.id === 'SOG-0015'", timeout=15000, what='read back')
+            c.eq([ids('backlog')[0], ids('alpha.5')], ['SOG-0015', []], 'after a reload the card is still in Backlog (the launcher’s file says « no milestone », not the generated one)', what='reload')
+        else:
+            bar = c.js("[...document.querySelectorAll('[data-colbar] [data-col-pick]')].map(b => b.dataset.colPick)")
+            c.eq(bar, ['done', 'test', 'alpha.5', 'alpha.6', 'beta.1', 'backlog'], 'on a phone the bar lists every column; one is shown at a time', what='bar')
+            c.eq(c.count('[data-priorities] [data-col][data-active]'), 1, 'one column at a time', what='one')
     c.check_errors()
 
 

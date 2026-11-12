@@ -43,10 +43,9 @@
     // la vue « Priorités » (SOG-0160) : trois colonnes, les cartes à plat par rang
     vPrio: ['Priorités', 'Priorities', 'Prioritäten', 'Prioridades'],
     vThemes: ['Par thème', 'By theme', 'Nach Thema', 'Por tema'],
-    colIntegration: ['En intégration', 'In integration', 'In Integration', 'En integración'],
-    colDevelopment: ['En développement', 'In development', 'In Entwicklung', 'En desarrollo'],
+    colTest: ['En test', 'In test', 'Im Test', 'En prueba'],
     colBacklog: ['Backlog', 'Backlog', 'Backlog', 'Backlog'],
-    colDone: ['Livrées', 'Delivered', 'Geliefert', 'Entregadas'],
+    colDone: ['Livré', 'Delivered', 'Geliefert', 'Entregado'],
     top: ['En tête', 'To the top', 'Ganz nach oben', 'Al principio'],
     up: ['Monter', 'Move up', 'Nach oben', 'Subir'],
     down: ['Descendre', 'Move down', 'Nach unten', 'Bajar'],
@@ -86,7 +85,8 @@
       const v = m[k];
       if (!ID.test(k) || !v || typeof v !== 'object' || n >= MAX_ITEMS) continue;
       const e = {};
-      if (typeof v.milestone === 'string' && stones.includes(v.milestone)) e.milestone = v.milestone;
+      if (typeof v.milestone === 'string' && (v.milestone === '' || stones.includes(v.milestone))) e.milestone = v
+        .milestone; // '' : sans jalon (colonne Backlog)
       if (Number.isInteger(v.rank) && v.rank >= 1 && v.rank <= MAX_RANK) e.rank = v.rank;
       if (e.milestone === undefined && e.rank === undefined) continue;
       out[k] = e;
@@ -107,7 +107,8 @@
       hide: typeof s?.hideDone === 'boolean' ? s.hideDone : true,
       view: s?.view === 'priorities' ? 'priorities' :
       'themes', // la vue par défaut : par thème ; « Priorités » est un mode que l'utilisateur choisit, retenu sur l'appareil (SOG-0160)
-      col: ['integration', 'development', 'backlog'].includes(s?.col) ? s.col : 'integration', // la colonne que le téléphone montre
+      col: typeof s?.col === 'string' && /^[A-Za-z0-9._-]{1,40}$/.test(s.col) ? s.col :
+      '', // la colonne que le téléphone montre (vérifiée à l'affichage : un jalon a pu fermer)
       pri,
       // les voies repliées ou dépliées à la main (identifiant de voie → vrai si repliée) : 200 au plus, des booléens seulement
       fold: Object.fromEntries(Object.entries(s?.fold && typeof s.fold === 'object' && !Array.isArray(s.fold) ? s.fold : {}).filter(([
@@ -182,33 +183,29 @@
     const stoneOf = it => {
       const e = entOf(it);
       if (e?.milestone) return stones.find(m => m.id === e.milestone);
+      if (e?.milestone === '') return undefined; // l'utilisateur l'a mise sans jalon (Backlog)
       return stones.find(m => m.id === it.milestone || (it.id && Array.isArray(m.items) && m.items.includes(it.id)));
     };
     const rankOf = it => entOf(it)?.rank ?? Infinity;
     /** Les éléments d'une voie que l'onglet `kind` montre avec les choix en cours (un jalon choisi passe avant « masquer les livrées »). */
     const shown = (l, kind) => (l.items || []).filter(i => ORDER.includes(i.state) && kindOf(i) === kind && (!ui.ms || stoneOf(i)
-      ?.id === ui.ms) && (!ui.hide || ui.ms || i.state !== 'done'));
+      ?.id === ui.ms) && (!ui.hide || ui.ms || i.state !== 'done' || (ui.view === 'priorities' && i.test ===
+      true))); // vue Priorités : « masquer les livrées » masque Livré, jamais En test (SOG-0256) ; par thème : comme avant
     const lanesOf = () => (d.lanes || []).filter(l => !ui.app || l.app === ui.app);
     const count = kind => lanesOf().reduce((n, l) => n + shown(l, kind).length, 0);
     const current = (stones.find(m => m.state === 'doing') || stones.find(m => m.state === 'planned') || {}).id;
-    // les trois colonnes des priorités (SOG-0160) d'après les jalons : « En intégration » = le jalon en cours, « En développement » = le suivant (prévu), « Backlog » = le reste ; un jalon manque : on n'y envoie rien
-    const COLS = ['integration', 'development', 'backlog'];
-    const colStone = (() => {
-      const doing = stones.find(m => m.state === 'doing'),
-        dev = stones.find(m => m.state === 'planned' && m !== doing),
-        later = stones.find(m => m !== doing && m !== dev && m.state !== 'done');
-      return {
-        integration: doing?.id || '',
-        development: dev?.id || '',
-        backlog: later?.id || ''
-      };
-    })();
-    const colName = k => t(T['col' + k[0].toUpperCase() + k.slice(1)]);
-    /** La colonne d'un élément : livré → « Livrées » ; sinon d'après son jalon (celui du fichier ou celui que l'utilisateur lui a donné). */
+    // les colonnes des priorités (SOG-0256), de gauche à droite : « Livré », « En test » (livré, son verdict attendu : l'élément porte `test: true`), UNE PAR JALON OUVERT dans l'ordre de la frise (le nom de la colonne est celui du jalon),
+    // puis « Backlog » (sans jalon). Livré et En test ne se remplissent pas à la main : on n'y glisse rien, on n'en sort rien.
+    const FIXED = ['done', 'test'],
+      openStones = stones.filter(m => m.state !== 'done'),
+      COLS = [...openStones.map(m => m.id), 'backlog']; // les colonnes où l'on dépose
+    const colName = k => k === 'done' ? t(T.colDone) : k === 'test' ? t(T.colTest) : k === 'backlog' ? t(T.colBacklog) : t(row(stones
+      .find(m => m.id === k)?.label || k));
+    /** La colonne d'un élément : livré → « Livré » (ou « En test » s'il attend son verdict) ; sinon son jalon s'il est ouvert (celui du fichier ou celui que l'utilisateur lui a donné), sinon « Backlog ». */
     const colOf = it => {
-      if (it.state === 'done') return 'done';
+      if (it.state === 'done') return it.test === true ? 'test' : 'done';
       const m = stoneOf(it);
-      return m && m.id === colStone.integration ? 'integration' : m && m.id === colStone.development ? 'development' : 'backlog';
+      return m && openStones.includes(m) ? m.id : 'backlog';
     };
     const itemById = id => (d.lanes || []).flatMap(l => l.items || []).find(i => i.id === id);
     const byRank = (a, b) => {
@@ -223,7 +220,7 @@
       return `<li class="f-rm-item" data-state="${esc(it.state)}"${ranked ? ` data-id="${esc(it.id)}"` : ''}${dates ? ` title="${esc(dates)}"` : ''}>${it.id ? `<span class="f-rm-id">${esc(it.id)}</span> ` : ''}${esc(t(row(it)))}${m ? ` <small class="f-rm-ms">${esc(t(row(m.label || m.id)))}</small>` : ''}${ranked && ui.unsent.has(it.id) ? ` <small class="f-rm-unsent" data-unsent>${esc(t(T.unsent))}</small>` : ''}${lane ? ` <small class="f-rm-theme" data-theme>${esc(t(row(lane.label)))}</small>` : ''}${lane && ranked && it.state !== 'done' ? actions(it) : ''}</li>`;
     };
     /** Les gestes qui remplacent le glisser au téléphone : monter, descendre, envoyer vers une autre colonne. */
-    const actions = it => `<span class="f-rm-act"><button type="button" data-top title="${esc(t(T.top))}"><span aria-hidden="true">⤒</span><span class="f-rm-lab">${esc(t(T.top))}</span></button><button type="button" data-up title="${esc(t(T.up))}"><span aria-hidden="true">▲</span><span class="f-rm-lab">${esc(t(T.up))}</span></button><button type="button" data-down title="${esc(t(T.down))}"><span aria-hidden="true">▼</span><span class="f-rm-lab">${esc(t(T.down))}</span></button><select data-send aria-label="${esc(t(T.sendTo))}"><option value="">${esc(t(T.sendTo))}</option>${COLS.filter(k => k !== colOf(it) && colStone[k]).map(k => `<option value="${k}">${esc(colName(k))}</option>`).join('')}</select></span>`;
+    const actions = it => `<span class="f-rm-act"><button type="button" data-top title="${esc(t(T.top))}"><span aria-hidden="true">⤒</span><span class="f-rm-lab">${esc(t(T.top))}</span></button><button type="button" data-up title="${esc(t(T.up))}"><span aria-hidden="true">▲</span><span class="f-rm-lab">${esc(t(T.up))}</span></button><button type="button" data-down title="${esc(t(T.down))}"><span aria-hidden="true">▼</span><span class="f-rm-lab">${esc(t(T.down))}</span></button><select data-send aria-label="${esc(t(T.sendTo))}"><option value="">${esc(t(T.sendTo))}</option>${COLS.filter(k => k !== colOf(it)).map(k => `<option value="${k}">${esc(colName(k))}</option>`).join('')}</select></span>`;
     const frieze = () => !stones.length ? '' : `<ol class="f-rm-time" aria-label="${esc(t(T.time))}">${stones.map(m => `<li><button type="button" class="f-rm-btn" data-ms="${esc(m.id)}" data-state="${ORDER.includes(m.state) ? esc(m.state) : 'planned'}" aria-pressed="${ui.ms === m.id}"${m.id === current ? ` data-current aria-current="step" title="${esc(t(T.current))}"` : ''}><b>${esc(t(row(m.label || m.id)))}</b>${m.date ? ` <span class="f-muted">${esc(m.date)}</span>` : ''}</button></li>`).join('')}</ol>`;
     /** Une voie est repliée : par le choix de l'appareil (au dernier toucher), sinon d'office quand elle n'a aucune carte non livrée dans la vue courante (onglet, filtre, jalon). */
     const folds = (l, own) => Object.hasOwn(ui.fold, l.id) ? ui.fold[l.id] : own.every(i => i.state === 'done');
@@ -244,15 +241,18 @@
       return html || `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`;
     };
     const head = `<div class="f-rm-head" aria-hidden="true"><span></span>${ORDER.map(s => `<span data-state="${s}">${esc(st(s))}</span>`).join('')}</div>`;
-    /** La vue « Priorités » : les cartes à plat, par rang, dans les colonnes En intégration, En développement, Backlog (et Livrées si on ne les masque pas) ; le thème n'est qu'une étiquette de la carte. */
+    /** La vue « Priorités » : les cartes à plat, par rang, dans les colonnes Livré (si on ne le masque pas), En test, une par jalon ouvert, Backlog ; le thème n'est qu'une étiquette de la carte. */
+    /** La colonne que le téléphone montre : le choix de l'appareil s'il existe encore, sinon le jalon en cours, sinon la première colonne où l'on dépose. */
+    const shownCol = cols => cols.includes(ui.col) ? ui.col : COLS.includes(current) ? current : COLS[0];
     const prio = () => {
       const list = lanesOf().flatMap(l => shown(l, ui.kind).map(i => [i, l])).map((x, n) => [...x, n]).sort((a, b) => byRank(a[0], b[
         0]) || a[2] - b[2]);
-      const cols = [...COLS, ...(list.some(x => colOf(x[0]) === 'done') ? ['done'] : [])];
-      return `<div class="f-rm-bar f-rm-colbar" role="tablist" data-colbar>${COLS.map(k => `<button type="button" class="f-rm-btn" data-col-pick="${k}" aria-pressed="${ui.col === k}">${esc(colName(k))} (${list.filter(x => colOf(x[0]) === k).length})</button>`).join('')}</div>` +
-        `<div class="f-rm-prio" data-priorities>${cols.map(k => {
+      const cols = [...(ui.hide && !ui.ms ? [] : ['done']), 'test', ...COLS], // « masquer les livrées » masque Livré, jamais En test
+        now = shownCol(cols);
+      return `<div class="f-rm-bar f-rm-colbar" role="tablist" data-colbar>${cols.map(k => `<button type="button" class="f-rm-btn" data-col-pick="${esc(k)}" aria-pressed="${now === k}">${esc(colName(k))} (${list.filter(x => colOf(x[0]) === k).length})</button>`).join('')}</div>` +
+        `<div class="f-rm-prio" data-priorities style="--cols:${cols.length}">${cols.map(k => {
           const mine = list.filter(x => colOf(x[0]) === k);
-          return `<div class="f-rm-pcol" data-col="${k}"${ui.col === k ? ' data-active' : ''}><h3>${esc(k === 'done' ? t(T.colDone) : colName(k))} <span class="f-muted" data-col-count>(${mine.length})</span></h3><ul>${mine.map(x => card(x[0], x[1])).join('')}</ul></div>`;
+          return `<div class="f-rm-pcol" data-col="${esc(k)}"${FIXED.includes(k) ? ' data-fixed' : ''}${now === k ? ' data-active' : ''}><h3>${esc(colName(k))} <span class="f-muted" data-col-count>(${mine.length})</span></h3><ul>${mine.map(x => card(x[0], x[1])).join('')}</ul></div>`;
         }).join('')}</div>`;
     };
     const draw = focus => {
@@ -353,17 +353,18 @@
       if (!me) return;
       const ids = flat().filter(k => k !== id);
       const own = ids.filter(k => col && colOf(itemById(k)) === col);
-      let at = target ? ids.indexOf(target) + (after ? 1 : 0) : own.length ? ids.indexOf(own[own.length - 1]) + 1 : ids.length;
+      const at = target ? ids.indexOf(target) + (after ? 1 : 0) : own.length ? ids.indexOf(own[0]) : ids.length;
       if (target && ids.indexOf(target) < 0) return;
-      const ms = col && col !== colOf(me) ? colStone[col] : '';
-      if (col && col !== colOf(me) && !ms) return;
+      const into = !!col && col !== colOf(me);
+      if (into && !COLS.includes(col)) return; // Livré et En test ne reçoivent rien
+      const ms = into ? col === 'backlog' ? '' : col : undefined; // « Backlog » : sans jalon
       ids.splice(at, 0, id);
       const next = {};
       ids.slice(0, MAX_ITEMS).forEach((k, n) => {
         const it = itemById(k);
         next[k] = {
           ...(it ? entOf(it) : {}),
-          ...(k === id && ms ? {
+          ...(k === id && ms !== undefined ? {
             milestone: ms
           } : {}),
           rank: n + 1
@@ -449,7 +450,7 @@
       let best = null,
         gap = 1e9;
       for (const col of view.querySelectorAll('.f-rm-pcol[data-col]')) {
-        if (!col.getClientRects().length || col.dataset.col === 'done') continue;
+        if (!col.getClientRects().length) continue;
         const r = col.getBoundingClientRect(),
           d = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
         if (d < gap) {
@@ -457,7 +458,8 @@
           best = col;
         }
       }
-      return best && gap <= 80 ? best : null;
+      return best && gap <= 80 && !best.hasAttribute('data-fixed') ? best :
+        null; // la plus proche : si c'est Livré ou En test, rien ne tombe (et pas dans sa voisine)
     };
     /** Où tomberait la carte sous le pointeur : { el, kind: 'before' | 'after' | 'milestone' | 'column', col } ou null. Sur une carte d'une colonne : avant ou après elle (une place précise) ; ailleurs dans la colonne (hors carte) : EN TÊTE. */
     const aim = (x, y) => {
@@ -524,8 +526,8 @@
       if (!g.drag) {
         if (Math.hypot(dx, dy) <= SLOP) return;
         if (!g.armed) return clear(); // le doigt a bougé avant l'appui long : c'est un défilement
-        if (ui.view !== 'priorities' || g.li.closest('.f-rm-pcol[data-col="done"]'))
-          return clear(); // « Par thème » se lit sans glisser ; une carte livrée ne bouge pas
+        if (ui.view !== 'priorities' || g.li.closest('.f-rm-pcol[data-fixed]'))
+          return clear(); // « Par thème » se lit sans glisser ; une carte livrée ou en test ne bouge pas
         g.drag = true;
         scroller = scrollParent();
         g.tick = setInterval(autoScroll, 30);
@@ -608,7 +610,7 @@
       }
       const cp = e.target.closest?.('button[data-col-pick]');
       if (cp && view.contains(cp)) {
-        ui.col = COLS.includes(cp.dataset.colPick) ? cp.dataset.colPick : 'integration';
+        ui.col = /^[A-Za-z0-9._-]{1,40}$/.test(cp.dataset.colPick) ? cp.dataset.colPick : '';
         saveStore(c, {
           col: ui.col
         });
