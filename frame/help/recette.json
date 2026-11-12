@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 132,
+  "tests": 134,
   "verdicts": 60
  },
  "apps": [
@@ -1871,6 +1871,20 @@
    "delivered": "2026-11-12T15:21:11Z"
   },
   {
+   "id": "SOG-0257",
+   "app": "maintenance",
+   "title": {
+    "fr": "Feuille de route, vue Priorités : un déplacement latéral allume tout de suite la colonne ; plus de long glisser dans une colonne de 40 cartes",
+    "en": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
+    "de": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
+    "es": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards"
+   },
+   "test": "Feuille de route, vue « Priorités » : va au fond de la colonne Backlog, prends une carte et déplace-la de côté : la bande entière de la colonne voisine doit se teinter et une étiquette dire « → alpha.6, en tête » ; lâche : la carte est en tête de cette colonne. Sur une carte, les petits boutons « En tête », « Monter », « Descendre » la déplacent sans glisser.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:38:36Z"
+  },
+  {
    "id": "SOG-0260",
    "app": "maintenance",
    "title": {
@@ -1897,6 +1911,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T10:07:31Z"
+  },
+  {
+   "id": "SOG-0267",
+   "app": "maintenance",
+   "title": {
+    "fr": "« Module roadmap impossible à charger » : dire la cause (le lanceur ne répond plus) et ce qu'il faut faire",
+    "en": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
+    "de": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
+    "es": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do"
+   },
+   "test": "Arrête le lanceur, puis ouvre dans la page un écran pas encore visité (la feuille de route, par exemple) : une carte doit dire que le lanceur de ce poste ne répond plus et qu'il faut relancer lancer.cmd, avec « Copier le diagnostic ». Relance le lanceur : l'écran doit se charger seul.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:36:12Z"
   },
   {
    "id": "SOG-0268",

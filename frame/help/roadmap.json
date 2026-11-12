@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f6216eb",
+  "organisation": "caab3bd",
   "fiches": 279,
   "untranslated": 0,
   "priorities": 243
@@ -2653,11 +2653,12 @@
     {
      "id": "SOG-0267",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "« Module roadmap impossible à charger » : dire la cause (le lanceur ne répond plus) et ce qu'il faut faire",
      "en": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
      "de": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
-     "es": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do"
+     "es": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
+     "test": true
     },
     {
      "id": "SOG-0274",
@@ -2736,11 +2737,12 @@
     {
      "id": "SOG-0257",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Feuille de route, vue Priorités : un déplacement latéral allume tout de suite la colonne ; plus de long glisser dans une colonne de 40 cartes",
      "en": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
      "de": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
-     "es": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards"
+     "es": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
+     "test": true
     },
     {
      "id": "SOG-0275",
