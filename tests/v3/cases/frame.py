@@ -6368,6 +6368,32 @@ def a154(c):
     c.check_errors()
 
 
+@case('A155', 'The three airlines of the user, as read on his device (itf, defa « DEFA Virtual » kind sog, perso; level 4): the header list, Settings › Company and FrameData.airlines() all show the three (SOG-0235, 12 Nov: the data were right, the display was blamed)', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0235 (the user, 11 Nov evening: « toujours pas 3 compagnies, defa virtual a disparu »; the ergonomist read his device on 12 Nov: airline/index.json carries itf and defa, airline/defa/settings.json (kind sog, IVAO only) and fleet.json (no aircraft) exist, pilot/RBR/airline/perso/settings.json too, nothing pending, no conflict, level 4): with exactly that state every screen that lists the airlines lists the three, whatever the kind, the networks or an empty fleet (nothing filters DEFA out)')
+def a155(c):
+    docs = [['device/level.json', {'level': 4}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'itf', 'name': 'AIR INTER VA'}, {'code': 'defa', 'name': 'DEFA Virtual'}]}, 'document'],
+            ['airline/itf/settings.json', {'schema': 1, 'name': 'AIR INTER VA', 'kind': 'va', 'networks': {'ivao': True, 'vatsim': True}}, 'document'],
+            ['airline/itf/fleet.json', {'schema': 1, 'aircraft': [{'type': 'A320', 'registration': 'F-ITFA'}]}, 'document'],
+            ['airline/defa/settings.json', {'schema': 1, 'name': 'DEFA Virtual', 'kind': 'sog', 'networks': {'ivao': True}}, 'document'],
+            ['airline/defa/fleet.json', {'schema': 1, 'aircraft': []}, 'document'],
+            ['pilot/RBR/airline/perso/settings.json', {'schema': 1, 'name': 'Personnel'}, 'document']]
+    c.open('settings?card=company', docs=docs, wait=False)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 3", timeout=15000, what='the three lines of Settings › Company')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].map(n => n.dataset.airline)"), ['itf', 'defa', 'perso'], 'Settings › Company lists itf, defa and perso', what='settings')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].map(n => n.textContent).join('|').includes('DEFA Virtual')"), True, 'DEFA Virtual is named there', what='name')
+    c.eq(c.js("FrameData.airlines().then(l => l.map(a => a.code))"), ['itf', 'defa', 'perso'], 'FrameData.airlines() gives the three', what='data')
+    c.open('atmosphere', docs=docs, wait=False)
+    c.until("!!document.getElementById('fCo') && !document.getElementById('fCo').hidden", timeout=20000, what='the chip')
+    c.tap('#fCo')
+    c.until("!!document.querySelector('.f-tabpop [data-co]')", what='the list')
+    rows = c.js("[...document.querySelectorAll('.f-tabpop [data-co]')].map(b => [b.dataset.co, b.textContent.includes('DEFA Virtual') || b.dataset.co !== 'defa'])")
+    c.eq(rows, [['itf', True], ['defa', True], ['perso', True]], 'the list of the header: itf, defa « DEFA Virtual », perso', what='header list')
+    c.shot(f'A155_list_{c.width}_delivered.png')
+    c.check_errors()
+
+
 @case('A151', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')
