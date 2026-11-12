@@ -1281,7 +1281,9 @@ function regSumHtml(s, k, word, id, title, fam, series, from, to, warn) {
       [familyParts(fam, s.ctx.lang?.() || 'fr').short, has(series) ? cut(series, 8) : ''].filter(Boolean).join(' · '),
       from || to ? `${from || '?'} → ${to || '?'}` : ''
     ].filter(Boolean).join(' · ');
-  return `<summary><span><span class="ms-rsign" data-kind="${kind}" data-rstate="${k}" title="${esc(word)}" aria-label="${esc(word)}">${SIGN[k] && !warn ? SIGN[k] : '!'}</span><b>${esc(id)}</b> ${esc(title)}</span><span class="f-muted">${esc(second)}</span></summary>`;
+  // l'identifiant raccourci à l'AFFICHAGE seul (12 signes, entier en infobulle) : l'identité garde ses 40 signes (audit 176)
+  const shown = id.length > 12 ? `${id.slice(0, 11)}…` : id;
+  return `<summary><span><span class="ms-rsign" data-kind="${kind}" data-rstate="${k}" title="${esc(word)}" aria-label="${esc(word)}">${SIGN[k] && !warn ? SIGN[k] : '!'}</span><b title="${esc(id)}">${esc(shown)}</b> ${esc(title)}</span><span class="f-muted">${esc(second)}</span></summary>`;
 }
 
 /** Une ligne du registre : repliée, le signe d'état, l'identifiant, le titre, famille · série, origine → destination ; au dépli, l'état

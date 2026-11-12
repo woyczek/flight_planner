@@ -127,3 +127,9 @@
   `regLoad` marked the lines « ok » without reading them; they are now « notread » (sign « ? », « fichier non lu (au-delà des 500
   premiers) », listed last), the count says « 500 fichiers lus sur N », and the plan of « Mettre à jour » does not count them as lines
   without a file. N44 (red before on both; counter-test of the limit with the old module.js: 503 « ok »).
+- **13 Nov 2026 — the display may shorten, the identity never** (Sécurisation, audit 176 on 81148257a; amends the entry above):
+  `readRegistry` cut the identifier at 12 while `planOf` / `applyPlan` compare `cut(raw.id, 40)`; a line of 13 to 40 signs under a folder
+  not of the X-001A form became « ancien identifiant » (the plan rewrote its id to 12 signs) and two lines sharing their first 12 became
+  doubles (the second removed) — a bait any pilot could set. The identifier keeps 40 signs in the reader (what registry.js compares;
+  `entryOfMission` already did, Fuel's `r.id === missionId` follows the reader); the registry line shortens it to 12 for display only,
+  whole in the tooltip. N45 (red before: former [0], dup [1], the plan changed the registry).

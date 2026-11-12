@@ -279,9 +279,10 @@ export function readRegistry(doc) {
     // l'identifiant est celui que disent le dossier et le fichier de la mission (« F_FIRE/F-071 » → F-071) quand le registre garde un
     // ancien numéro (« 71 », 50 missions du poste de l'utilisateur, SOG-0212) : jamais deux identifiants pour une mission ; l'ancien
     // reste dans formerId (la recherche le trouve) ; le registre n'est pas touché
-    // les textes d'un fichier de data/ sont bornés à la lecture (audit 174) : l'identifiant à 12 signes (la forme X-001A en a 6 ; un
-    // ancien numéro « BFM-001A » ou « 71 » tient), le titre et l'opération à 120, l'origine et la destination à 80
-    const reg = clean(x.id).slice(0, 12),
+    // les textes d'un fichier de data/ sont bornés à la lecture (audit 174) : le titre et l'opération à 120, l'origine et la destination
+    // à 80 ; l'identifiant à 40, la longueur que registry.js compare (formerId, doubles) — l'IDENTITÉ n'est jamais raccourcie plus
+    // court que ce qu'on compare, sinon le plan réécrit ou supprime des lignes (audit 176) ; l'écran la raccourcit à l'affichage seul
+    const reg = clean(x.id).slice(0, 40),
       leaf = safeFolder(clean(x.folder)).split('/').pop(),
       id = MISSION_FORM.test(leaf) && leaf !== reg ? leaf : reg;
     return {

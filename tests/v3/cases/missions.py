@@ -1719,7 +1719,7 @@ _MANY_TEXTS = [['missions/mission_registry.yaml', 'schema: mission-registry\nver
     [f'missions/X_REG/{m}/mission{m}.yaml', mission_doc(m)] for m in _MANY_IDS]
 
 
-@case('N44', 'Missions › Registre, read bounded: a title of 4 000 signs is cut at 120, an identifier at 12, the operation at 120, origin and '
+@case('N44', 'Missions › Registre, read bounded: a title of 4 000 signs is cut at 120, an identifier at 40 (N45), the operation at 120, origin and '
       'destination at 80; beyond the 500 files read, a line says « fichier non lu » and the count « 500 fichiers lus sur 503 » — never « fichier là » '
       'without reading it, never « sans fichier » in the plan', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='Sécurisation, audit 174 on db091c505: the texts of a file of data/ are bounded at reading (readRegistry only folded the spaces); '
@@ -1731,7 +1731,7 @@ def n44(c):
       const [row] = MS.readRegistry({ missions: [{ id: long('X'), title: long('T'), operation: { name: long('O') }, origin: long('A'), destination: long('B') }] });
       const plan = R.planOf({ missions: [{ id: 'X-001A' }, { id: 'X-002A' }] }, new Map([[0, 'notread'], [1, 'missing']]), []);
       return { id: row.id.length, title: row.title.length, op: row.operation.length, from: row.origin.length, to: row.destination.length, noFile: plan.noFile } }""")
-    c.eq(got, {'id': 12, 'title': 120, 'op': 120, 'from': 80, 'to': 80, 'noFile': [1]},
+    c.eq(got, {'id': 40, 'title': 120, 'op': 120, 'from': 80, 'to': 80, 'noFile': [1]},
          'the texts are bounded at reading; a line not read is not « sans fichier » in the plan', what='bounds')
     reg_open(c, _MANY_TEXTS)
     c.until(f"!!document.querySelector('{R} [data-do=regmore]')", timeout=10000, what='« N autres »')
@@ -1741,4 +1741,37 @@ def n44(c):
     c.eq(n, {'ok': 500, 'notread': 3}, 'five hundred lines read and said there, the three beyond said « non lu »', what='states')
     c.ok(norm(row(c, 'regReadOf').replace('{r}', '500').replace('{n}', '503')) in norm(c.text(f'{R} [data-regcount]')), c.text(f'{R} [data-regcount]'),
          'the count says how many files were read')
+    c.js(_REG_CLEAR)
+
+
+
+@case('N45', 'Missions › Registre: the display may shorten, the identity never — two lines whose identifiers of 14 signs share their first 12 '
+      '(folders that are not of the X-001A form) are neither « ancien identifiant » nor doubles; applying the plan leaves both lines as they are; '
+      'the line on screen shortens the identifier only for display', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='Sécurisation, audit 176 on 81148257a: readRegistry cut the id at 12 while planOf / applyPlan compare cut(raw.id, 40) — the plan rewrote '
+      'the id to 12 signs and removed the second line as a double (a bait any pilot could set); the identifier keeps 40 signs in the reader')
+def n45(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    got = c.js("""async () => { const MS = await import('/frame/lib/mission.js'); const R = await import('/modules/missions/registry.js');
+      const doc = { missions: [{ id: 'ABCDEFGHIJKL01', title: 'Un', folder: 'X_CO/old1', files: ['missionold1.yaml'] },
+        { id: 'ABCDEFGHIJKL02', title: 'Deux', folder: 'X_CO/old2', files: ['missionold2.yaml'] }] };
+      const before = JSON.stringify(doc.missions);
+      const plan = R.planOf(doc, new Map([[0, 'ok'], [1, 'ok']]), []);
+      const out = R.applyPlan(doc, plan, 'T');
+      return { ids: MS.readRegistry(doc).map(r => r.id), former: plan.former, dup: plan.dup, kept: JSON.stringify(out.missions) === before,
+        long: MS.readRegistry({ missions: [{ id: 'Z'.repeat(4000) }] })[0].id.length } }""")
+    c.eq(got, {'ids': ['ABCDEFGHIJKL01', 'ABCDEFGHIJKL02'], 'former': [], 'dup': [], 'kept': True, 'long': 40},
+         'the identity keeps 40 signs: no former id, no double, the plan leaves both lines; a 4 000-sign id is cut at 40', what='identity')
+    texts = [['missions/mission_registry.yaml', 'schema: mission-registry\nversion: 1\nmissions:\n'
+              '  - { id: ABCDEFGHIJKL01, family: TESTREG, title: Un, folder: X_REG/old1, files: [missionold1.yaml] }\n'
+              '  - { id: ABCDEFGHIJKL02, family: TESTREG, title: Deux, folder: X_REG/old2, files: [missionold2.yaml] }\n'],
+             ['missions/X_REG/old1/missionold1.yaml', mission_doc('ABCDEFGHIJKL01')], ['missions/X_REG/old2/missionold2.yaml', mission_doc('ABCDEFGHIJKL02')]]
+    reg_open(c, texts)
+    c.eq(reg_states(c), {'ABCDEFGHIJKL01': 'ok', 'ABCDEFGHIJKL02': 'ok'}, 'two lines, each its own identity, neither double nor former', what='screen')
+    b = c.js(f"(() => {{ const b = document.querySelector('{R} [data-rowid=ABCDEFGHIJKL01] summary b'); return [b.textContent, b.title] }})()")
+    c.eq(b, ['ABCDEFGHIJK…', 'ABCDEFGHIJKL01'], 'the line shortens the identifier for display only, the whole of it in the tooltip', what='display')
+    c.tap(f'{R} [data-do="regplan"]')
+    c.until(f"!!document.querySelector('{R} [data-regplan]')", what='the plan')
+    c.ok(c.count(f'{R} [data-regplan] [data-plan=Dup]') == 0 and c.count(f'{R} [data-regplan] [data-plan=Former]') == 0, c.text(f'{R} [data-regplan]'),
+         'the plan proposes neither a double to remove nor an identifier to rewrite')
     c.js(_REG_CLEAR)
