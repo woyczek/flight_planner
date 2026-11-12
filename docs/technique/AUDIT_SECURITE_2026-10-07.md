@@ -1022,6 +1022,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 170 | The evening of 12 November: Fuel direct to a point (be836ed83), ATIS runway (616a86f69), flight-plan route text (9bdf17bcc, 2633fb837), route timing and diagnostic (53c265b03); glyph-name PDF decoding and the SIA parser (9ec05bd67, 72cc16492); the second push of the Data screen (c08a6dd92) | acceptable, one to harden |
 | 171 | The glyph-name digits and the radius bounded (3799bd678): the point to harden of 170 closed | acceptable |
 | 172 | The DIRCAM lot of the Data screen: one zip member read on the device and sent, the lines of the datasets to do (1eafcd087) | acceptable |
+| 173 | `current_flight.airline` written by Fuel and read by the report (a2bb9cfc4, SOG-0041): the families, the heading and the saved record follow the company of the flight taken | acceptable, one functional note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2540,6 +2541,22 @@ a failed zone, not an injection; take `/g(\d{1,3})` and bound the radius. *Note.
 **171. The glyph-name digits and the radius bounded (3799bd678) — acceptable, the point of 170 closed.** `GLYPH` reads `/g` and at most three digits not followed by another digit, so a fragment of 5,000 or 100,000 digits is left as it stands and nothing raises (the probe of 170 now passes; 200,000 glyph names still decode in 0.12 s); the radius of an RF leg is read as `\d{1,2}[.,]\d{1,3}` and kept only in ]0, 50] NM by `_radius()` (a 400-digit number, 99.9 and 0 give no radius, never `inf`), the navigation precision is bounded the same way, and a leg without radius stays in doubt. K215.
 
 **172. The DIRCAM lot of the Data screen (1eafcd087) — acceptable.** The page reads one member of the SIA zip on the device and sends only a PDF. The member name is compared exactly (`name === wanted`, no path built from the archive: a traversal look-alike or a name in a sub-folder is `no-member`), the sent name is the last element and must match `DIRCAM_PDF_NAME` (`^MIAM_OACI_ENR 5\.7(?: \(\d+\))?\.pdf$`, so no `..`, no folder, no second extension), the content must begin with `%PDF` (checked on the member before anything is sent), the size is bounded before any read (an announced size above 128 MB, or a real stream larger than the announced size, is cut: probed on scratch zips, a 200 MB deflate bomb announcing 1,000 bytes and a 300 MB announce are `too-large` in about a millisecond, two members of the same name are `corrupt`) and again by the launcher's ceiling on the blob sent. The launcher's answer is shown after `esc`: the returned name is stripped of control characters and cut to 120, the cycle must be `\d{4}-\d{2}-\d{2}`, the zone message lines go through `esc` (`zoneMsgHtml`), the Downloads name is cut to 80. The new todo lines and the remaining selectors are escaped (`esc`, `CSS.escape`).
+
+**173. `current_flight.airline` (a2bb9cfc4, SOG-0041) — acceptable, one functional note.** The field travels between devices and any pilot's
+token can write the data repository, so it is an untrusted input that picks the company whose families the report offers. *Writer.* Fuel
+copies `a.code` of its own current company only if it matches `^[a-z0-9]{2,8}$`, and only when the flight is not pending. *Reader.*
+`flightAirline(cf)` takes a string matching the same pattern, different from the current company, **and** present in the airline index
+(`FrameData.airlines()`); anything else gives `null` and the report behaves as before. The folder is built from the code alone
+(`airline/<code>/`, `airline/` for `default`, the pilot's own `pilot/<trigram>/airline/perso/` for `perso`): the pattern leaves no `/`, `.`
+or capital, so no path leaves the data folder. `settings.json` is read as an untrusted object and only its `kind` is kept, through
+`kindOf` (closed list `va | sog | perso`); the name is cut to 60 characters, then to 40 and escaped by `airlineText` / `esc`. A probe fed
+the field with `../../x`, `aaa/../bbb`, `AAA`, `zzz` (unknown), `default`, `12345`, an object and an array: eight times the heading stayed on the
+device's company, no error; `perso` shows “Personnel”. *Effect.* The worst a hostile writer obtains is a
+report whose heading and family list name another existing company, shown in the heading before the pilot saves (it is the same reach as
+writing the flight's route or aircraft). *Note (not security).* `S.flightCo` is cleared on save and replaced at each press of “Vol en
+cours”, but not when the pilot opens an already saved report afterwards: the heading and the saved record keep the report's own company
+(`S.saved` first, `prev.airline` first), yet `loadCategories` would offer the families of the earlier flight's company until the next press.
+Case G20 and N42 green; no counter-test needed.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
