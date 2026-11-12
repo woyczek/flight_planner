@@ -2618,3 +2618,29 @@ def k181(c):
         line = ((v.get('zones') or {}).get('pt') or {}).get('sources', {}).get('navpt', {})
         c.eq({k: line.get(k) for k in ('state', 'edition', 'from', 'older_than_cycle')}, {'state': 'downloaded', 'edition': '2020-01-15', 'from': 'EAIP ISO (1).zip', 'older_than_cycle': True},
              'the line of the source in the view of base/fetch carries the edition, the file NAME and the signal « older than the cycle » (the screen says them)', what='view')
+
+
+@case('K182', 'base/cycle { zone }: the view PER ZONE for the country sheet — all its sources (auto and by hand) with their three steps for THIS zone, and « what adding it will ask » (sources, files by hand, personal use, what is not read yet) (SOG-0262)', 'K', static=True,
+      rule='SOG-0262 (the redesign of the Data screen, 12 Nov 2026): the sheet of a country needs what base/cycle did not give: `zoneView` { zone, known, inCoverage, state { state, builtCycle, builtAt, expectedCycle, publish, notices, reasons[codes] }, sources: [the lines of the list, with the three steps counted for this zone alone], addWillAsk { sources, auto, hand: [{ id, expected }], personal, noReader } }; for a country outside the coverage addWillAsk says what adding it will take (the sources, the files to take by hand, the sources under personal use, and what the suite does not read yet: Denmark, Greenland, Faroe, Canada); an unknown zone is `known: false`')
+def k182(c):
+    import datetime
+    import tempfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('base', 'cycle')]
+    c.eq([check({'zone': z}) for z in ('gb', 'GB', '../x', 5)], [{'personal': [], 'zone': 'gb'}, None, None, None], 'the zone argument is a zone identifier and nothing else', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        data = _repo(DS, td, {})
+        (data / 'sia').mkdir(parents=True)
+        ctx = {**_ctx(DS, data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 12)}
+        view = lambda z, personal=(): fn(RJ.Job('base', 'cycle', {}), check({'zone': z, 'personal': list(personal)}), ctx).get('zoneView')
+        v = view('pt', ['navpt'])
+        c.eq((v['known'], v['inCoverage'], v['state']['state'], v['state']['reasons']), (True, False, 'never-built', ['never-built']), 'a country outside the coverage: known, not in the coverage, never built', what='pt')
+        ask = v['addWillAsk']
+        c.eq((ask['personal'], 'navpt' in ask['auto'], ask['hand'], ask['noReader']), (['navpt'], True, [], []), 'what adding Portugal will ask: NAV Portugal (taken by the launcher, personal use), no file by hand, nothing unread', what='ask pt')
+        v = view('gb', ['nats'])
+        by = {i['id']: i for i in v['sources']}
+        c.eq((sorted(by)[:3], by['nats']['regime'], by['nats']['hand']['expected'][:1], v['addWillAsk']['hand'][0]['id'], v['addWillAsk']['personal']), (['mora', 'nats', 'openaip'], 'hand', ['EG_AIP_DS_*_XML.zip'], 'nats', ['nats']),
+             'the United Kingdom: its sources, NATS by hand with the file pattern it expects, under personal use', what='gb')
+        c.eq([(view('dk')['addWillAsk']['noReader']), (view('ca')['addWillAsk']['noReader']), view('xx')], [['naviair'], ['navcan_aip'], {'zone': 'xx', 'known': False}], 'Denmark and Canada say what the suite does not read yet; an unknown zone is `known: false`', what='noReader')

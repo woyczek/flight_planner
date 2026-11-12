@@ -32,6 +32,7 @@ def _bs():
     return types.SimpleNamespace(**entry[0].__globals__)
 
 MAX_NAMES = 5000
+NO_READER_ZONES = {'naviair': ('dk', 'fo', 'gl'), 'navcan_aip': ('ca',)}      # les États dont des fichiers se déposent à la main et ne sont pas encore lus par la suite : la fiche d'un pays le dit (`addWillAsk.noReader`)
 EDITION_SOURCES = aero_cycles.EDITION_SOURCES      # publiés par éditions : l'édition détenue n'est jamais « en retard » du seul fait du cycle
 
 # ce que le poste voit dans Téléchargements et que la suite ne lit pas encore : (id, motifs de nom, raison, note)
@@ -59,13 +60,15 @@ def airac_id(iso):
 
 
 def check(a):
-    """{ personal?: [sources] } et rien d'autre (→ 400 si None)."""
-    if not isinstance(a, dict) or not set(a) <= {'personal'}:
+    """{ personal?: [sources], zone?: identifiant } et rien d'autre (→ 400 si None) : `zone` ajoute la vue PAR ZONE (`zoneView`)."""
+    if not isinstance(a, dict) or not set(a) <= {'personal', 'zone'}:
+        return None
+    if 'zone' in a and not (isinstance(a['zone'], str) and re.fullmatch(r'[a-z0-9_-]{2,12}', a['zone'])):
         return None
     p = a.get('personal', [])
     if not isinstance(p, list) or len(p) > 20 or not all(isinstance(x, str) and re.fullmatch(r'[a-z0-9_]{2,20}', x) for x in p):
         return None
-    return {'personal': sorted(set(p))}
+    return {'personal': sorted(set(p)), **({'zone': a['zone']} if 'zone' in a else {})}
 
 
 def _names(ctx):
@@ -122,9 +125,8 @@ def run(job, args, ctx):
             cy = _cycle_of_name(sid, m.group(1), current) if m else None
             if cy:
                 dl_cycles.setdefault(sid, set()).add(cy)
-    items = []
-    for sid, src in S.SOURCES.items():
-        zones = [z for z in zones_all if sid in S.sources_of(z)]
+    def make_item(sid, src, zones, only=None):
+        """Une ligne de la liste : la source, son régime, ses trois étapes (pour toutes les zones qu'elle nourrit, ou pour la seule zone `only`)."""
         kind = src['kind']
         regime = 'auto' if kind == 'download' else 'hand' if kind in ('manual', 'pdf') else 'local'
         common = sid in S.COMMON
@@ -135,7 +137,7 @@ def run(job, args, ctx):
             p = z.get('publish')
             if p:
                 pub[p['state']] = pub.get(p['state'], 0) + 1
-        ats = [t for (z, s), t in latest.items() if s == sid]
+        ats = [t for (z, s), t in latest.items() if s == sid and (only is None or z == only)]
         at = max(ats) if ats else None
         held = (cycles.get(sid) or {}).get('cycle') if sid in aero_cycles.CYCLED else None
         files_in_dl = []
@@ -164,7 +166,8 @@ def run(job, args, ctx):
             item['why'] = why
         if hand:
             item['hand'] = hand
-        items.append(item)
+        return item
+    items = [make_item(sid, src, [z for z in zones_all if sid in S.sources_of(z)]) for sid, src in S.SOURCES.items()]
     # le cycle suivant : ce que le poste a déjà reçu pour lui (par les noms), ce qui reste à prendre
     nxt_files = {}
     for sid, rx in NEXT_NAMES:
@@ -187,7 +190,24 @@ def run(job, args, ctx):
         seen = [n for n in names if any(fnmatch.fnmatchcase(n.lower(), p.lower()) for p in pats)]
         if seen:
             unread.append({'id': uid, 'files': seen[:40], 'reason': reason, 'note': note})
-    return {'ok': True, 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
+    zone_view = None
+    if args.get('zone'):
+        zid = args['zone']
+        if zid not in set(B.zone_ids()):
+            zone_view = {'zone': zid, 'known': False}
+        else:
+            zs = states.get(zid) or base_state.zone_states(data, [zid], args['personal'], ctx).get(zid)
+            srcs = [make_item(sid, S.SOURCES[sid], [zid], zid) for sid in S.sources_of(zid)]
+            for it in srcs:
+                it['steps']['build'] = {'zones': 1, 'upToDate': 1 if zs and zs['state'] == 'up-to-date' else 0}
+                it['steps']['publish'] = {'published': 0, 'unpublished': 0, 'unknown': 0, **({zs['publish']['state']: 1} if zs and zs.get('publish') else {})}
+            zone_view = {'zone': zid, 'known': True, 'inCoverage': zid in zones_all,
+                         'state': {k: zs.get(k) for k in ('state', 'builtCycle', 'builtAt', 'expectedCycle', 'publish', 'notices')} | {'reasons': [r['code'] for r in zs['reasons']]} if zs else None,
+                         'sources': srcs,
+                         'addWillAsk': {'sources': [i['id'] for i in srcs], 'auto': [i['id'] for i in srcs if i['regime'] == 'auto'],
+                                        'hand': [{'id': i['id'], 'expected': (i.get('hand') or {}).get('expected', [])} for i in srcs if i['regime'] == 'hand'],
+                                        'personal': [i['id'] for i in srcs if i['personal'] == 'licence'], 'noReader': [u for u, zl in NO_READER_ZONES.items() if zid in zl]}}
+    return {'ok': True, **({'zoneView': zone_view} if zone_view else {}), 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
 
 
 VERBS = {('base', 'cycle'): (run, check)}
