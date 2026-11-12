@@ -32,6 +32,8 @@ Las misiones de la compañía, en la aplicación Compañía: las del repositorio
 
 <a id="missions-airline"></a>**Cambiar de compañía.** En la ficha de una misión, «Compañía: … · Cambiar» propone las compañías y «Personal»; la frase «… pasa de … a …» se dice antes de «Escribir». En la lista, «Asignar a una compañía…» toma las misiones mostradas (alcance, familia, búsqueda), cada una marcada: la pantalla dice cuántas cambian y cuáles son ilegibles (se dejan tal cual) antes de escribir. Al añadir desde un YAML, «Añadir estas misiones a» elige su compañía. Solo cambia el campo `airline` del archivo.
 
+<a id="missions-registry"></a>**El registro.** «Registro», junto a «Sortear» (o la dirección `#missions?view=registry`), muestra una línea por misión tal como la escribe el registro `missions/mission_registry.yaml`, con el estado de su archivo: presente, ausente, ilegible o ruta rechazada; y las misiones del depósito que el registro no conoce. «Actualizar el registro» dice primero lo que haría (misiones por añadir, líneas sin archivo legible, identificadores duplicados, identificadores anteriores) y, con «Escribir el registro», añade las misiones del depósito, conserva una sola línea por identificador y sustituye un identificador anterior por el de la carpeta; una línea sin archivo legible se conserva (quizá el archivo aún no ha llegado). «Corregir» cambia el título, la serie, el número o la operación de una línea; «Quitar del registro» la elimina, el archivo de la misión permanece en el depósito. Un registro ilegible nunca se reescribe; uno ausente se crea a partir de los archivos.
+
 ## Bueno saber
 
 - El módulo lee las misiones y nunca las modifica; se escriben en el CPCO.

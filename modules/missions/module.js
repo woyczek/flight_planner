@@ -7,6 +7,7 @@
 import * as MS from '../../frame/lib/mission.js';
 import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des YAML avant toute écriture (SOG-0212 b)
 import * as MOVE from './move.js';
+import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
 import *
 as MT from '../../frame/lib/mission_themes.js'; // le thème d'une ancienne catégorie (SOG-0202 T2) // changer la compagnie d'une mission : le champ airline retouché dans le texte (SOG-0223)
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
@@ -20,7 +21,8 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js',
+  files: ['add.js', 'move.js', 'registry.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js',
+    '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
   reads: ['missions/', 'cr/',
@@ -54,6 +56,8 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-fam{display:block;font-size:.72em;margin-top:.15em} /* la famille sous le titre de la fiche : « SAR · Récupération de personnel » (SOG-0187) */ /* le sigle en gras, le nom long en clair (SOG-0179) */
 [data-module="missions"] .ms-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:.2em 0 .4em} /* le résumé, deux lignes au plus avec « … » (SOG-0051) */
 [data-module="missions"] .ms-lines li{margin:.15em 0}
+[data-module="missions"] .ms-rrow{display:block;border-top:1px solid var(--sog-border);padding:.5em 0} /* une ligne du registre : ses informations l'une sous l'autre, sur toute la largeur (SOG-0021) */
+[data-module="missions"] .ms-rrow>span{display:block;margin:.15em 0}
 [data-module="missions"] .ms-route{border-collapse:collapse;width:100%}
 [data-module="missions"] .ms-route td{padding:.2em .4em;border-bottom:1px solid var(--sog-border);vertical-align:top}
 [data-module="missions"] .ms-sec{border-top:1px solid var(--sog-border)} /* une section du détail : un filet, pas une carte dans la carte */
@@ -278,7 +282,80 @@ const TX = {
   ],
   regUnreadable: ['Registre des missions illisible ({e}).', 'Mission registry unreadable ({e}).', 'Missionsregister unlesbar ({e}).',
     'Registro de misiones ilegible ({e}).'
-  ]
+  ],
+  // « Registre des missions » (SOG-0021) : une ligne par mission du registre, son fichier, la mise à jour, la correction à la main
+  reg: ['Registre', 'Registry', 'Register', 'Registro'],
+  regTitle: ['Registre des missions', 'Mission registry', 'Missionsregister', 'Registro de misiones'],
+  regHint: [
+    'Une ligne par mission telle que le registre l’écrit, avec l’état de son fichier. Le registre est la liste des missions de la compagnie ; « Mettre à jour » le remet d’accord avec les fichiers du dépôt.',
+    'One line per mission as the registry writes it, with the state of its file. The registry is the airline’s list of missions; “Update” brings it back in line with the files of the repository.',
+    'Eine Zeile je Mission, wie das Register sie schreibt, mit dem Zustand ihrer Datei. Das Register ist die Missionsliste der Gesellschaft; „Aktualisieren“ gleicht es mit den Dateien des Depots ab.',
+    'Una línea por misión tal como la escribe el registro, con el estado de su archivo. El registro es la lista de misiones de la compañía; «Actualizar» lo pone de acuerdo con los archivos del depósito.'
+  ],
+  regCount: ['{n} ligne(s) dans le registre', '{n} line(s) in the registry', '{n} Zeile(n) im Register', '{n} línea(s) en el registro'],
+  regUnlisted: ['{n} mission(s) du dépôt que le registre ne connaît pas',
+    '{n} mission(s) in the repository that the registry does not know',
+    '{n} Mission(en) im Depot, die das Register nicht kennt', '{n} misión(es) del depósito que el registro no conoce'
+  ],
+  regChecking: ['Lecture des fichiers…', 'Reading the files…', 'Dateien werden gelesen…', 'Leyendo los archivos…'],
+  regOk: ['fichier là', 'file there', 'Datei da', 'archivo presente'],
+  regMissing: ['fichier manquant', 'file missing', 'Datei fehlt', 'archivo ausente'],
+  regUnread: ['fichier illisible', 'file unreadable', 'Datei unlesbar', 'archivo ilegible'],
+  regRefused: ['chemin refusé', 'path refused', 'Pfad abgelehnt', 'ruta rechazada'],
+  regNotYet: ['pas dans le registre', 'not in the registry', 'nicht im Register', 'no está en el registro'],
+  regDup: ['identifiant en double', 'duplicate identifier', 'doppelte Kennung', 'identificador duplicado'],
+  regFormer: ['ancien identifiant : {f}', 'former identifier: {f}', 'frühere Kennung: {f}', 'identificador anterior: {f}'],
+  regUpdate: ['Mettre à jour le registre', 'Update the registry', 'Register aktualisieren', 'Actualizar el registro'],
+  regPlanHead: ['Mettre à jour le registre ferait ceci :', 'Updating the registry would do this:',
+    'Die Aktualisierung würde Folgendes tun:',
+    'Actualizar el registro haría esto:'
+  ],
+  regPlanAdd: ['{n} mission(s) à ajouter', '{n} mission(s) to add', '{n} Mission(en) hinzuzufügen', '{n} misión(es) por añadir'],
+  regPlanNoFile: ['{n} ligne(s) sans fichier lisible : gardées (à retirer à la main)',
+    '{n} line(s) without a readable file: kept (remove by hand)', '{n} Zeile(n) ohne lesbare Datei: bleiben (von Hand entfernen)',
+    '{n} línea(s) sin archivo legible: se conservan (retirar a mano)'
+  ],
+  regPlanDup: ['{n} identifiant(s) en double : une seule ligne gardée', '{n} duplicate identifier(s): only one line kept',
+    '{n} doppelte Kennung(en): nur eine Zeile bleibt', '{n} identificador(es) duplicado(s): se conserva una sola línea'
+  ],
+  regPlanFormer: ['{n} ancien(s) identifiant(s) remplacé(s) par celui du dossier', '{n} former identifier(s) replaced by the folder’s',
+    '{n} frühere Kennung(en) durch die des Ordners ersetzt', '{n} identificador(es) anterior(es) sustituido(s) por el de la carpeta'
+  ],
+  regPlanNothing: ['Le registre est déjà d’accord avec les fichiers.', 'The registry already matches the files.',
+    'Das Register stimmt bereits mit den Dateien überein.', 'El registro ya coincide con los archivos.'
+  ],
+  regWrite: ['Écrire le registre', 'Write the registry', 'Register schreiben', 'Escribir el registro'],
+  regWritten: ['Registre mis à jour : il part à la prochaine synchronisation.',
+    'Registry updated: it leaves at the next synchronisation.',
+    'Register aktualisiert: es geht bei der nächsten Synchronisierung.', 'Registro actualizado: sale en la próxima sincronización.'
+  ],
+  regFailed: ['Registre non écrit : {e}', 'Registry not written: {e}', 'Register nicht geschrieben: {e}', 'Registro no escrito: {e}'],
+  regStale: ['Le registre a changé entre-temps : il est relu, recommencez.',
+    'The registry changed meanwhile: it is read again, try again.',
+    'Das Register hat sich inzwischen geändert: es wird neu gelesen, bitte erneut versuchen.',
+    'El registro cambió entretanto: se vuelve a leer, inténtelo de nuevo.'
+  ],
+  regEdit: ['Corriger', 'Edit', 'Bearbeiten', 'Corregir'],
+  regTitleF: ['Titre', 'Title', 'Titel', 'Título'],
+  regSeries: ['Série', 'Series', 'Serie', 'Serie'],
+  regNumber: ['Numéro', 'Number', 'Nummer', 'Número'],
+  regOperation: ['Opération', 'Operation', 'Operation', 'Operación'],
+  regSave: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
+  regBadNumber: ['Série et numéro : un nombre entier, ou rien.', 'Series and number: a whole number, or nothing.',
+    'Serie und Nummer: eine ganze Zahl oder nichts.', 'Serie y número: un número entero, o nada.'
+  ],
+  regRemove: ['Retirer du registre', 'Remove from the registry', 'Aus dem Register entfernen', 'Quitar del registro'],
+  regRemoveAsk: ['Retirer {id} du registre ? Le fichier de la mission reste dans le dépôt.',
+    'Remove {id} from the registry? The mission file stays in the repository.',
+    '{id} aus dem Register entfernen? Die Missionsdatei bleibt im Depot.',
+    '¿Quitar {id} del registro? El archivo de la misión permanece en el depósito.'
+  ],
+  regRemoved: ['{id} retirée du registre ; son fichier reste dans le dépôt.',
+    '{id} removed from the registry; its file stays in the repository.',
+    '{id} aus dem Register entfernt; die Datei bleibt im Depot.', '{id} quitada del registro; su archivo permanece en el depósito.'
+  ],
+  regSearch: ['Chercher dans le registre', 'Search the registry', 'Im Register suchen', 'Buscar en el registro'],
+  regNone: ['Aucune ligne.', 'No line.', 'Keine Zeile.', 'Ninguna línea.']
 };
 
 let S = null;
@@ -374,7 +451,7 @@ export async function mount(el, ctx) {
     s.category = '';
     s.scope = 'mine';
     s.all = false;
-    if (!s.open) draw(s);
+    if (!s.open && !s.reg) draw(s);
   };
   window.addEventListener('frame-data-airline', s.onAirline);
   // le retour du navigateur (même adresse : popstate sans hashchange, le module n'est pas remonté) : le détail revient à la première
@@ -387,6 +464,7 @@ export async function mount(el, ctx) {
   };
   window.addEventListener('popstate', s.onPop);
   draw(s);
+  if (ctx.query?.view === 'registry') regOpen(s); // l'écran Registre par l'adresse (#missions?view=registry, Compagnie › Registre)
   let got = await yamlFile(ctx, REGISTRY);
   if (S !== s) return;
   if (got.why === 'late') {
@@ -397,7 +475,7 @@ export async function mount(el, ctx) {
   }
   s.regWhy = got.why ? got : null;
   s.rows = MS.readRegistry(got.doc).filter(r => !r.organisation).sort((a, b) => b.id.localeCompare(a.id)); // les séries récentes d'abord
-  if (!s.open) draw(s);
+  if (!s.open && !s.reg) draw(s);
   await unlisted(s, got.doc);
   if (S !== s) return;
   s.flown = await flownOf(s);
@@ -431,7 +509,7 @@ async function unlisted(s, reg) {
   }
   if (!found.length) return;
   s.rows = [...s.rows, ...found].sort((a, b) => b.id.localeCompare(a.id));
-  if (!s.open) s.rows.length === found.length ? draw(s) : results(s);
+  if (!s.open && !s.reg) s.rows.length === found.length ? draw(s) : results(s);
 }
 
 /** Démonte : la compagnie n'est plus suivie. */
@@ -521,10 +599,10 @@ const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.fami
 
 /** Dessine la liste, ou la mission choisie. */
 function draw(s) {
-  s.ctx.helpAnchor?.(() => s.open ? 'missions-open' : 'missions-list');
+  s.ctx.helpAnchor?.(() => s.open ? 'missions-open' : s.reg ? 'missions-registry' : 'missions-list');
   for (const u of s.urls || []) URL.revokeObjectURL(u);
   s.urls = [];
-  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : listHtml(s)}`;
+  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : s.reg ? regHtml(s) : listHtml(s)}`;
   if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
 }
 
@@ -534,13 +612,13 @@ const day = d => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split('-').reverse().join('/'
 /** La liste : « Tirer au sort », recherche, famille, puis les résultats (resultsHtml). */
 function listHtml(s) {
   const w = s.regWhy;
-  if (!s.rows.length) return `<div class="f-card"><div class="f-row"><button type="button" data-do="add">${esc(s.tt(TX.add))}</button></div><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
+  if (!s.rows.length) return `<div class="f-card"><div class="f-row"><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button></div><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
   const families = [...new Set(s.rows.filter(r => ofAirline(s, r)).map(r => r.family).filter(Boolean))].sort(),
     // les catégories connues de la compagnie que ses missions portent, dans l'ordre de sa liste ; sans elles, pas de filtre
     held = new Set(s.rows.filter(r => ofAirline(s, r)).map(r => catOf(s, r)?.id).filter(Boolean)),
     cats = s.cats.all.filter(c => held.has(c.id)),
     lang = s.ctx.lang?.() || 'fr';
-  return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
+  return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
     ${scopeHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(familyText(f, s.ctx.lang?.() || 'fr'))}</option>`).join('')}</select></label>
@@ -576,7 +654,7 @@ function resultsHtml(s) {
 function results(s) {
   const box = s.el.querySelector('[data-results]');
   if (box) box.innerHTML = resultsHtml(s);
-  else if (!s.open) draw(s);
+  else if (!s.open && !s.reg) draw(s);
 }
 
 /** La fiche d'une mission en deux niveaux (§ 10.45, SOG-0051). Première page (sept éléments, règle 13) : titre, catégorie (et l'état
@@ -713,6 +791,17 @@ async function openMission(s, row, drawn = false) {
 
 /** Saisie : la recherche et la famille filtrent la liste. */
 function onInput(s, e) {
+  if (s.reg) {
+    // l'écran Registre : la recherche seule redessine les lignes (le champ garde son curseur)
+    if (e.target?.dataset?.k === 'rq' && e.type ===
+      'input') { // « change » (à la perte du focus) ne redessine pas : il mangerait le toucher qui la provoque
+      s.reg.q = e.target.value;
+      s.reg.all = false;
+      const box = s.el.querySelector('[data-regrows]');
+      if (box) box.innerHTML = regListHtml(s);
+    }
+    return;
+  }
   if (e.target?.dataset?.k === 'moveone' && s.open?.move) {
     s.open.move.to = e.target.value;
     return draw(s);
@@ -784,6 +873,8 @@ function onClick(s, e) {
       });
     case 'first':
       return history.back();
+    case 'regopen':
+      return regOpen(s);
     case 'add':
       s.add = {
         items: null,
@@ -815,6 +906,8 @@ function onClick(s, e) {
       return draw(s);
     case 'movewrite':
       return moveWrite(s, s.move.rows.filter(r => s.move.sel.has(r.id) && !s.move.bad.has(r.id)), s.move.to);
+    default:
+      if (b.dataset.do.startsWith('reg') && s.reg) return regClick(s, b);
   }
 }
 
@@ -1008,4 +1101,288 @@ async function addWrite(s) {
   if (done) s.ctx.notify(`${s.tt(one(s, done) ? TX.added1 : TX.added, { n: done })}${away ? ` ${s.tt(away === done && done === 1 ? TX.addedElsewhereIt : away === 1 ? TX.addedElsewhere1 : TX.addedElsewhere, { n: away })}` : ''}`, 'ok');
   s.add = null;
   draw(s);
+}
+
+/** Un texte nettoyé et borné. */
+const cut = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+
+// ---------------------------------------------------------------- « Registre des missions » (SOG-0021, CONCEPTION § 2 bis)
+const REG_READ_MAX = 500; // fichiers lus à l'ouverture de l'écran, au plus (un dépôt hors norme ne bloque pas l'écran)
+
+/** Ouvre l'écran : le registre et les fichiers du dépôt lus, l'état de chaque ligne dit au fur et à mesure. */
+async function regOpen(s) {
+  s.reg = {
+    q: '',
+    all: false,
+    doc: null,
+    why: 'loading',
+    err: '',
+    lines: [],
+    status: new Map(), // place de la ligne → 'ok' | 'missing' | 'unreadable' | 'refused' (absent : lecture en cours)
+    found: [], // [{ path, entry }] les missions du dépôt que le registre ne connaît pas
+    checking: true,
+    plan: null, // le plan montré avant d'écrire
+    edit: null // la place de la ligne en correction
+  };
+  draw(s);
+  await regLoad(s);
+}
+
+/** Lit le registre, puis chaque fichier de mission (huit à la fois) : les lignes d'abord, leur état ensuite. */
+async function regLoad(s) {
+  const r = s.reg;
+  if (!r) return;
+  const live = () => S === s && s.reg === r;
+  let got = await yamlFile(s.ctx, REGISTRY);
+  if (got.why === 'late') got = await got.later;
+  if (!live()) return;
+  r.doc = got.doc && typeof got.doc === 'object' ? got.doc : null;
+  r.why = got.why || '';
+  r.err = got.err || '';
+  r.lines = RG.entries(r.doc);
+  r.status = new Map();
+  r.found = [];
+  r.plan = null;
+  r.edit = null;
+  r.checking = true;
+  draw(s);
+  const set = new Set(await Promise.resolve().then(() => s.ctx.data.list('missions/')).catch(() => null) || []);
+  if (!live()) return;
+  const todo = [];
+  for (const e of r.lines) {
+    const p = RG.pathOf(e.row);
+    if (!p) r.status.set(e.idx, 'refused');
+    else if (!set.has(p)) r.status.set(e.idx, 'missing');
+    else todo.push(e);
+  }
+  const named = new Set(r.lines.map(e => RG.pathOf(e.row))),
+    ids = new Set(r.lines.flatMap(e => [e.row.id, e.row.formerId].filter(Boolean))),
+    extra = [...set].map(p => [p, MS.missionPath(p)]).filter(([p, w]) => w && !named.has(p) && !ids.has(w.id));
+  draw(s);
+  const jobs = [...todo.slice(0, REG_READ_MAX).map(e => ({
+    e
+  })), ...extra.slice(0, REG_READ_MAX).map(([p]) => ({
+    p
+  }))];
+  for (let i = 0; i < jobs.length; i += 8) {
+    await Promise.all(jobs.slice(i, i + 8).map(async j => {
+      const path = j.e ? RG.pathOf(j.e.row) : j.p;
+      let f = await yamlFile(s.ctx, path);
+      if (f.why === 'late') f = await f.later;
+      if (j.e) r.status.set(j.e.idx, f.why === 'missing' ? 'missing' : f.doc && MS.readMission(f.doc) ? 'ok' : 'unreadable');
+      else {
+        const entry = f.doc ? RG.entryOfMission(f.doc, path) : null;
+        if (entry && !ids.has(entry.id)) {
+          ids.add(entry.id);
+          r.found.push({
+            path,
+            entry
+          });
+        }
+      }
+    }));
+    if (!live()) return;
+  }
+  // au-delà de la limite : « à vérifier » reste vide, jamais « là » sans l'avoir lu
+  for (const e of todo.slice(REG_READ_MAX)) r.status.set(e.idx, 'ok');
+  r.checking = false;
+  draw(s);
+}
+
+/** La signature d'un document de registre (places et identifiants) : le même écran refuse d'écrire sur un registre qui a changé. */
+const regSig = doc => JSON.stringify(RG.entries(doc).map(e => [e.idx, e.row.id]));
+
+/** L'état d'une ligne pour l'œil : [clé, texte]. */
+function regState(s, idx) {
+  const k = s.reg.status.get(idx);
+  return k ? [k, s.tt(k === 'ok' ? TX.regOk : k === 'missing' ? TX.regMissing : k === 'refused' ? TX.regRefused : TX.regUnread)] : [
+    'checking', s.tt(TX.regChecking)
+  ];
+}
+
+/** Les lignes de l'écran, dans l'ordre : les missions que le registre ne connaît pas, les lignes à problème, les autres ; la recherche
+ *  filtre sur l'identifiant et le titre. */
+function regRows(s) {
+  const r = s.reg,
+    plan = RG.planOf(r.doc, r.status, r.found),
+    bad = new Set([...plan.dup, ...plan.former]),
+    q = r.q.trim().toUpperCase(),
+    hit = (id, title) => !q || `${id} ${title}`.toUpperCase().includes(q),
+    rows = [
+      ...r.found.filter(f => hit(f.entry.id, f.entry.title)).sort((a, b) => b.entry.id.localeCompare(a.entry.id)).map(f => ({
+        kind: 'found',
+        f
+      })),
+      ...r.lines.filter(e => hit(e.row.id, e.row.title)).map(e => ({
+        kind: 'line',
+        e,
+        rank: r.status.get(e.idx) === 'ok' && !bad.has(e.idx) ? 1 : 0
+      })).sort((a, b) => a.rank - b.rank)
+    ];
+  return {
+    rows,
+    plan
+  };
+}
+
+/** Une ligne du registre : l'identifiant, famille · série · numéro, titre, opération, l'état du fichier, « Corriger » / « Retirer ». */
+function regLineHtml(s, e, plan) {
+  const r = s.reg,
+    row = e.row,
+    [k, st] = regState(s, e.idx),
+    lang = s.ctx.lang?.() || 'fr',
+    badges = [`<span class="f-badge" data-kind="${k === 'ok' ? 'ok' : k === 'checking' ? 'info' : 'warn'}" data-rstate="${k}">${esc(st)}</span>`,
+      plan.dup.includes(e.idx) ? `<span class="f-badge" data-kind="warn" data-rdup>${esc(s.tt(TX.regDup))}</span>` : '',
+      plan.former.includes(e.idx) ? `<span class="f-badge" data-kind="info" data-rformer>${esc(s.tt(TX.regFormer, { f: cut(e.raw.id, 40) }))}</span>` : ''
+    ].join(' '),
+    has = v => v !== undefined && v !== null && v !== '',
+    detail = [familyText(row.family, lang), has(e.raw.series) ? `${s.tt(TX.regSeries)} ${cut(e.raw.series, 8)}` : '',
+      has(e.raw.number) ? `${s.tt(TX.regNumber)} ${cut(e.raw.number, 8)}` : '', row.operation
+    ].filter(Boolean).join(' · ');
+  return `<div class="f-item ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"><span><b>${esc(row.id)}</b> ${esc(row.title)}</span><span class="f-muted">${esc(detail)}</span>
+    <span>${badges}</span>${r.edit === e.idx ? regEditHtml(s, e) : `<span class="f-row"><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></span>`}</div>`;
+}
+
+/** Le formulaire de correction d'une ligne : titre, série, numéro, opération. */
+function regEditHtml(s, e) {
+  const f = (k, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="${k}" value="${esc(v)}" autocomplete="off"${extra}></label>`;
+  return `<div data-redit>${f('rtitle', TX.regTitleF, e.row.title, ' maxlength="200"')}${f('rseries', TX.regSeries, e.raw.series ?? '', ' inputmode="numeric" maxlength="5"')}${f('rnumber', TX.regNumber, e.raw.number ?? '', ' inputmode="numeric" maxlength="5"')}${f('rop', TX.regOperation, e.row.operation, ' maxlength="120"')}
+    <div class="f-row"><button type="button" class="primary" data-do="regsave" data-rid="${e.idx}">${esc(s.tt(TX.regSave))}</button><button type="button" data-do="regeditcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
+}
+
+/** Les lignes (sept, puis « N autres ») : redessinées seules à la frappe. */
+function regListHtml(s) {
+  const r = s.reg,
+    {
+      rows,
+      plan
+    } = regRows(s),
+    shown = r.all ? rows : rows.slice(0, ROWS),
+    item = x => x.kind === 'found' ? `<div class="f-item ms-rrow" data-rid="new" data-rowid="${esc(x.f.entry.id)}"><span><b>${esc(x.f.entry.id)}</b> ${esc(x.f.entry.title)}</span><span class="f-muted">${esc([familyText(x.f.entry.family, s.ctx.lang?.() || 'fr'), x.f.entry.operation?.name].filter(Boolean).join(' · '))}</span><span><span class="f-badge" data-kind="warn" data-rstate="notyet">${esc(s.tt(TX.regNotYet))}</span></span></div>` : regLineHtml(s, x.e, plan);
+  return `<div class="f-list" data-reglist>${rows.length ? shown.map(item).join('') : `<p class="f-muted">${esc(s.tt(TX.regNone))}</p>`}</div>
+    ${rows.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="regmore">${esc(s.tt(TX.more, { n: rows.length - shown.length }))}</button>` : ''}`;
+}
+
+/** Le plan montré avant d'écrire (CONCEPTION § 2 bis : « il montre d'abord ce qu'il ferait »). */
+function regPlanHtml(s) {
+  const p = s.reg.plan,
+    n = (key, v) => v ? `<li data-plan="${key}">${esc(s.tt(TX[`regPlan${key}`], { n: v }))}</li>` : '',
+    any = p.add.length || p.dup.length || p.former.length;
+  return `<div class="f-card" data-regplan><p><b>${esc(s.tt(TX.regPlanHead))}</b></p><ul>${n('Add', p.add.length)}${n('Dup', p.dup.length)}${n('Former', p.former.length)}${n('NoFile', p.noFile.length)}</ul>
+    ${any ? '' : `<p class="f-muted" data-plan="nothing">${esc(s.tt(TX.regPlanNothing))}</p>`}
+    <div class="f-row"><button type="button" class="primary" data-do="regwrite"${any ? '' : ' disabled'}>${esc(s.tt(TX.regWrite))}</button><button type="button" data-do="regplancancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
+}
+
+/** L'écran « Registre des missions ». */
+function regHtml(s) {
+  const r = s.reg,
+    n = r.lines.length,
+    broken = r.why === 'unreadable',
+    head = `<div class="f-card" data-pane="registry"><h2>${esc(s.tt(TX.regTitle))}</h2><p class="f-muted">${esc(s.tt(TX.regHint))}</p>
+    <div class="f-row"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button></div>`;
+  if (r.why === 'loading') return `${head}<p class="f-muted" data-why="loading">${esc(s.tt(TX.regLoading))}</p></div>`;
+  if (broken) return `${head}<p class="f-warn" data-why="unreadable">${esc(s.tt(TX.regUnreadable, { e: r.err }))}</p></div>`;
+  return `${head}${r.why === 'missing' ? `<p class="f-muted" data-why="missing">${esc(s.tt(TX.none))}</p>` : ''}
+    <p class="f-muted" data-regcount>${esc(s.tt(TX.regCount, { n }))}${r.found.length ? ` · ${esc(s.tt(TX.regUnlisted, { n: r.found.length }))}` : ''}${r.checking ? ` · ${esc(s.tt(TX.regChecking))}` : ''}</p>
+    ${r.plan ? regPlanHtml(s) : ''}
+    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.regSearch))}</span><input type="search" data-k="rq" value="${esc(r.q)}" placeholder="${esc(s.tt(TX.regSearch))}" autocomplete="off"></label>
+    <div data-regrows>${regListHtml(s)}</div></div>`;
+}
+
+/** Écrit le registre : relu d'abord (un autre pilote a pu l'écrire), la retouche faite sur ce qui vient d'être lu, refusée si la ligne
+ *  visée n'est plus la même (« stale ») ; YAML dumpé, une seule écriture ; les lignes sont relues ensuite. `change(doc)` → { doc } | { error }. */
+async function regPut(s, change, done) {
+  const r = s.reg;
+  if (!r || r.busy) return;
+  r.busy = true;
+  try {
+    if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+    let got = await yamlFile(s.ctx, REGISTRY);
+    if (got.why === 'late') got = await got.later;
+    if (S !== s || s.reg !== r) return;
+    // un registre qui ne se lit pas n'est jamais réécrit ; un registre absent se crée
+    if (got.why && got.why !== 'missing') return s.ctx.notify(s.tt(TX.regFailed, {
+      e: got.err || s.tt(TX.regUnread)
+    }), 'error');
+    const fresh = got.doc && typeof got.doc === 'object' ? got.doc : {};
+    if (r.doc && regSig(fresh) !== regSig(r.doc)) {
+      s.ctx.notify(s.tt(TX.regStale), 'warn');
+      r.busy = false;
+      return regLoad(s);
+    }
+    const out = change(fresh);
+    if (out.error === 'stale') {
+      s.ctx.notify(s.tt(TX.regStale), 'warn');
+      r.busy = false;
+      return regLoad(s);
+    }
+    if (out.error) return s.ctx.notify(s.tt(TX.regBadNumber), 'warn');
+    await s.ctx.data.put(REGISTRY, RG.withHeader(out.doc, globalThis.jsyaml), {
+      module: 'missions'
+    });
+    s.rows = MS.readRegistry(out.doc).filter(x => !x.organisation).sort((a, b) => b.id.localeCompare(a.id));
+    done?.();
+    r.busy = false;
+    await regLoad(s);
+  } catch (e) {
+    s.ctx.notify(s.tt(TX.regFailed, {
+      e: String(e?.message || e).slice(0, 120)
+    }), 'error');
+  } finally {
+    r.busy = false;
+  }
+}
+
+/** Les gestes de l'écran Registre (retourne vrai quand le geste est le sien). */
+async function regClick(s, b) {
+  const r = s.reg,
+    idx = Number.isInteger(+b.dataset.rid) ? +b.dataset.rid : -1,
+    line = r.lines.find(e => e.idx === idx);
+  switch (b.dataset.do) {
+    case 'regback':
+      s.reg = null;
+      return draw(s);
+    case 'regplan':
+      r.plan = RG.planOf(r.doc, r.status, r.found);
+      return draw(s);
+    case 'regplancancel':
+      r.plan = null;
+      return draw(s);
+    case 'regwrite': {
+      const plan = r.plan;
+      return regPut(s, doc => ({
+        doc: RG.applyPlan(doc, plan)
+      }), () => s.ctx.notify(s.tt(TX.regWritten), 'ok'));
+    }
+    case 'regmore':
+      r.all = true;
+      return draw(s);
+    case 'regedit':
+      r.edit = idx;
+      return draw(s);
+    case 'regeditcancel':
+      r.edit = null;
+      return draw(s);
+    case 'regsave': {
+      if (!line) return;
+      const v = k => s.el.querySelector(`[data-redit] [data-k=${k}]`)?.value ?? '';
+      return regPut(s, doc => RG.editEntry(doc, idx, line.row.id, {
+        title: v('rtitle'),
+        series: v('rseries'),
+        number: v('rnumber'),
+        operation: v('rop')
+      }));
+    }
+    case 'regremove': {
+      if (!line) return;
+      if (!await s.ctx.ask(s.tt(TX.regRemoveAsk, {
+          id: line.row.id
+        }), {
+          ok: s.tt(TX.regRemove)
+        })) return;
+      return regPut(s, doc => RG.removeEntry(doc, idx, line.row.id), () => s.ctx.notify(s.tt(TX.regRemoved, {
+        id: line.row.id
+      }), 'ok'));
+    }
+  }
 }

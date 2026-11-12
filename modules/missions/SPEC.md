@@ -243,3 +243,10 @@ rule of § 10.32, no category exists yet).
 
 - **Time on area** (CONCEPTION 11/11 § 1 bis / ter): `readMission` reads on each point a key containing on_task, on_station, on_zone,
   hold, loiter or orbit (`hold: { min, max }`, `holdKey`); the other duration keys go to `holdUnread`; `missionFlight` passes both.
+
+## The registry screen (12 Nov 2026, SOG-0021)
+
+`#missions?view=registry` (or the « Registre » button of the list): one line per registry mission with the state of its file (there /
+missing / unreadable / path refused), the repository missions the registry does not know, « Mettre à jour le registre » (plan first, then
+« Écrire le registre »), « Corriger » (title, series, number, operation) and « Retirer du registre » (the file stays). Pure part:
+`registry.js`. See DECISIONS (12 Nov).

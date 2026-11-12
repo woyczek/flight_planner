@@ -12,6 +12,8 @@ The airline's missions, in the Company application: those of the shared reposito
 
 <a id="missions-airline"></a>**Change airline.** On a mission’s sheet, « Airline: … · Change » offers the airlines and « Personal »; the sentence « … moves from … to … » is said before « Write ». In the list, « Assign to an airline… » takes the missions shown (scope, family, search), each ticked: the screen says how many change and which are unreadable (left as they are) before writing. When adding from YAML, « Add these missions to » chooses their airline. Only the `airline` field of the file changes.
 
+<a id="missions-registry"></a>**The registry.** « Registry », next to « Draw at random » (or the address `#missions?view=registry`), shows one line per mission as the registry `missions/mission_registry.yaml` writes it, with the state of its file: there, missing, unreadable or path refused; and the repository missions the registry does not know. « Update the registry » first says what it would do (missions to add, lines without a readable file, duplicate identifiers, former identifiers), then « Write the registry » adds the repository missions, keeps one line per identifier and replaces a former identifier by the folder's; a line without a readable file stays (the file may not have arrived yet). « Edit » changes the title, series, number or operation of a line; « Remove from the registry » takes it out, the mission file stays in the repository. An unreadable registry is never rewritten; an absent one is created from the files.
+
 ## Good to know
 
 - The module reads the missions and never changes them; they are written in the CPCO.

@@ -1357,3 +1357,220 @@ def n40(c):
     c.until_doc(path, lambda d: d and 0 < ((d.get('quote') or {}).get('trip') or 0) < trip0, 'the trip goes down with 30 minutes less on area', timeout=10000)
     c.js(f"document.querySelector('{fuel} [data-pts] input[data-k=pthold]').scrollIntoView({{block: 'center'}})")
     c.shot(f'N40_points_{c.design}_390_{c.lang}_delivered.png')
+
+# ---------------------------------------------------------------- Registre des missions (SOG-0021 / Q-0021, CONCEPTION § 2 bis)
+# invented registry: X-701A fine; X-702A its file absent; X-703A its file invalid; « 704 » an old identifier of the folder X-704A;
+# X-705A twice; X-706A a path that is refused (never taken as written) and a title that carries HTML; the repository also holds
+# X-710A and X-711A that the registry does not know
+_REG_REGISTRY = """schema: mission-registry
+version: 1
+missions:
+  - { id: X-701A, series: 7, number: 1, family: TESTREG, title: Registre un, operation: { id: X-701, name: OPERATION UN, missions: 2 }, folder: X_REG/X-701A, files: [missionX-701A.yaml], flownAt: '2026-01-01', keep: gardé }
+  - { id: X-702A, family: TESTREG, title: Registre deux, folder: X_REG/X-702A, files: [missionX-702A.yaml] }
+  - { id: X-703A, family: TESTREG, title: Registre trois, folder: X_REG/X-703A, files: [missionX-703A.yaml] }
+  - { id: '704', family: TESTREG, title: Registre quatre, folder: X_REG/X-704A, files: [missionX-704A.yaml] }
+  - { id: X-705A, family: TESTREG, title: Registre cinq, folder: X_REG/X-705A, files: [missionX-705A.yaml] }
+  - { id: X-705A, family: TESTREG, title: Registre cinq bis, folder: X_REG/X-705A, files: [missionX-705A.yaml] }
+  - { id: X-706A, family: TESTREG, title: '<img src=x onerror=window.__pwn=1>Six', folder: ../evil/X-706A, files: [missionX-706A.yaml] }
+"""
+_REG_TEXTS = [['missions/mission_registry.yaml', _REG_REGISTRY],
+              ['missions/X_REG/X-701A/missionX-701A.yaml', mission_doc('X-701A')],
+              ['missions/X_REG/X-703A/missionX-703A.yaml', 'mission: { id: X-703A, type: [\n  : : :\n'],
+              ['missions/X_REG/X-704A/missionX-704A.yaml', mission_doc('X-704A')],
+              ['missions/X_REG/X-705A/missionX-705A.yaml', mission_doc('X-705A')],
+              ['missions/X_REG/X-710A/missionX-710A.yaml', 'mission: { id: X-710A, type: TESTREG }\ntitle: Du dépôt dix\noperation: { id: X-710, name: OP DIX }\n'],
+              ['missions/X_REG/X-711A/missionX-711A.yaml', mission_doc('X-711A')]]
+# the writes of a case (queue and cache) are cleared before and after: the next case must not read a registry this one wrote
+_REG_CLEAR = """async () => { if (!(await indexedDB.databases()).some(d => d.name === 'sogFrame')) return false; const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  for (const st of ['pending', 'docs']) { if (!db.objectStoreNames.contains(st)) continue;
+    const keys = await new Promise(res => { const q = db.transaction(st).objectStore(st).getAllKeys(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) });
+    const t = db.transaction(st, 'readwrite'); for (const k of keys) if (/^missions\\/(mission_registry\\.yaml|X_REG\\/)/.test(String(k))) t.objectStore(st).delete(k);
+    await new Promise(res => { t.oncomplete = res; t.onerror = res }) }
+  db.close(); return true }"""
+R = f'{M} [data-pane=registry]'
+_REG_READ = f"!!document.querySelector('{R} [data-regcount]') && !document.querySelector('{R} [data-rstate=checking]') && !document.querySelector('{R} [data-regcount]').textContent.includes('…')"
+
+
+def reg_open(c, texts=None, target='missions', button=True):
+    """Seeds the invented registry, opens Missions, then the Registry screen (the button, or the address) and waits for every file to be read."""
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, texts or _REG_TEXTS)
+    c.open(target, wait=False, app='company')
+    if button:
+        c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+        c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+
+
+def reg_states(c):
+    """The rows of the Registry screen (every row shown): { id (a # added to a double): state }."""
+    return c.js(f"""(() => {{ const o = {{}}; for (const r of document.querySelectorAll('{R} [data-reglist] [data-rowid]')) {{
+      let k = r.dataset.rowid; while (k in o) k += '#'; o[k] = r.querySelector('[data-rstate]')?.dataset.rstate + (r.querySelector('[data-rdup]') ? '+dup' : '') + (r.querySelector('[data-rformer]') ? '+former' : '') }} return o }})()""")
+
+
+def rowp(c, key, n):
+    """A text of the module with its number agreed the way the frame does (frame/lib/plural.js: « (s) » marks resolved by {n})."""
+    one = n < 2 if c.lang == 'fr' else n == 1
+    return re.sub(r'\((s|x|es|en|n|e)\)', lambda m: '' if one else m.group(1), row(c, key).replace('{n}', str(n)))
+
+
+def reg_text(c):
+    """The text of the registry as the frame holds it (the write queue first)."""
+    return c.js(_TEXT_OF, 'missions/mission_registry.yaml') or ''
+
+
+def reg_wait_text(c, test):
+    """Waits (10 s) until the registry text satisfies `test`."""
+    for _ in range(40):
+        if test(reg_text(c)):
+            return
+        c.wait(250)
+
+
+@case('N27', 'Missions › Registre: one line per mission as the registry writes it, with the state of its file (there, missing, unreadable, path refused), the repository missions the registry does not know, doubles and old identifiers',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0021 / CONCEPTION § 2 bis: the registry managed alone — one line per mission, the only state that counts alone is « file there, '
+      'missing, or unreadable », and the repository missions the registry does not know; the registry is written by any pilot: a path is '
+      'never taken as written, a title is text (invented X-7xx missions); captures 390 and 1 280')
+def n27(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        reg_open(c)
+        c.tap(f'{R} [data-do="regmore"]')
+        got = reg_states(c)
+        c.eq(got, {'X-711A': 'notyet', 'X-710A': 'notyet', 'X-702A': 'missing', 'X-703A': 'unreadable', 'X-704A': 'ok+former', 'X-705A': 'ok+dup',
+                   'X-706A': 'refused', 'X-701A': 'ok', 'X-705A#': 'ok'}, f'{w} px: the state of each line', what='states')
+        c.eq(norm(c.text(f'{R} [data-regcount]')), norm(rowp(c, 'regCount', 7) + ' · ' + rowp(c, 'regUnlisted', 2)), f'{w} px: 7 lines, 2 not known', what='count')
+        c.eq(c.count(f'{R} img'), 0, 'a title with HTML is text', what='html')
+        c.ok(c.js('window.__pwn') is None, '', 'nothing of the title ran')
+        c.page.fill(f'{R} [data-k=rq]', 'cinq')
+        c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 2", what='the search keeps the two X-705A lines')
+        c.page.fill(f'{R} [data-k=rq]', '')
+        c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")
+        c.shot(f'N27_{c.design}_{w}_{c.lang}_delivered.png')
+        c.tap(f'{R} [data-do="regback"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=list]')", what='back to the list')
+    c.js(_REG_CLEAR)
+
+
+@case('N28', 'Missions › Registre: « Mettre à jour le registre » says first what it would do (to add, lines without a file, doubles, old identifiers), writes nothing before « Écrire », then adds the repository missions, keeps one line per identifier and keeps everything else of the registry',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='CONCEPTION § 2 bis: « il montre d\'abord ce qu\'il ferait (n missions à ajouter, n lignes sans fichier, n numéros en double), puis écrit le '
+      'registre »; a line without a readable file is kept (the file may not have arrived), never removed by the update; the other fields of a line are kept; captures 390 and 1 280')
+def n28(c):
+    import yaml
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        reg_open(c)
+        before = reg_text(c)
+        c.tap(f'{R} [data-do="regplan"]')
+        c.until(f"!!document.querySelector('{R} [data-regplan]')", what='the plan is shown')
+        got = {k: norm(c.text(f'{R} [data-plan={k}]') or '') for k in ('Add', 'Dup', 'Former', 'NoFile')}
+        want = {'Add': rowp(c, 'regPlanAdd', 2), 'Dup': rowp(c, 'regPlanDup', 1), 'Former': rowp(c, 'regPlanFormer', 1), 'NoFile': rowp(c, 'regPlanNoFile', 3)}
+        c.eq(got, {k: norm(v) for k, v in want.items()}, f'{w} px: what the update would do', what='plan')
+        c.eq(reg_text(c), before, 'nothing written before « Écrire »', what='written')
+        c.js(f"document.querySelector('{R} [data-regplan]').scrollIntoView({{block: 'start'}})")
+        c.shot(f'N28_{c.design}_{w}_{c.lang}_delivered.png')
+        c.tap(f'{R} [data-do="regwrite"]')
+        reg_wait_text(c, lambda t: 'X-710A' in t)
+        c.until(_REG_READ + f" && !document.querySelector('{R} [data-regplan]')", timeout=20000, what='written, read again')
+        d = yaml.safe_load(reg_text(c))
+        ids = [m['id'] for m in d['missions']]
+        c.eq(ids, ['X-701A', 'X-702A', 'X-703A', 'X-704A', 'X-705A', 'X-706A', 'X-710A', 'X-711A'], f'{w} px: one line per identifier, the new ones at the end', what='ids')
+        by = {m['id']: m for m in d['missions']}
+        c.eq(by['X-704A'].get('formerId'), '704', 'the old identifier is kept as formerId', what='formerId')
+        c.eq([by['X-701A'].get('keep'), str(by['X-701A'].get('flownAt')), (by['X-701A'].get('operation') or {}).get('missions')], ['gardé', '2026-01-01', 2], 'the other fields of a line are kept', what='kept')
+        c.eq([by['X-710A']['folder'], by['X-710A']['files'], (by['X-710A'].get('operation') or {}).get('name')], ['X_REG/X-710A', ['missionX-710A.yaml'], 'OP DIX'], 'an added line is read from its file', what='added')
+        c.eq(d.get('schema'), 'mission-registry', 'the registry keeps its schema', what='schema')
+        c.eq(c.count(f'{R} [data-rstate=notyet]'), 0, 'no more mission unknown to the registry', what='notyet')
+        c.tap(f'{R} [data-do="regplan"]')
+        c.until(f"!!document.querySelector('{R} [data-plan=nothing]')", what='a second update has nothing to do')
+        c.eq(c.js(f"document.querySelector('{R} [data-do=regwrite]').disabled"), True, '« Écrire » is off', what='write')
+    c.js(_REG_CLEAR)
+
+
+@case('N29', 'Missions › Registre: a line is corrected by hand (title, series, number, operation) or removed from the registry — its file stays; a number that is not a number is refused; nothing else of the registry changes',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='CONCEPTION § 2 bis: « à la main, sur une ligne : corriger le titre, la série, le numéro, l\'opération ; retirer la mission du registre (le fichier reste, dit) »')
+def n29(c):
+    import yaml
+    reg_open(c)
+    c.page.fill(f'{R} [data-k=rq]', 'X-701A')
+    c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-701A found')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] [data-do="regedit"]')
+    c.until(f"!!document.querySelector('{R} [data-redit]')", what='the form of the line')
+    c.page.fill(f'{R} [data-redit] [data-k=rtitle]', 'Titre corrigé')
+    c.page.fill(f'{R} [data-redit] [data-k=rseries]', 'abc')
+    c.tap(f'{R} [data-redit] [data-do="regsave"]')
+    c.until("(document.querySelector('#fNotes')?.textContent || '').trim().length > 0", what='a bad series is refused, said')
+    c.ok('Titre corrigé' not in reg_text(c), '', 'nothing written for a bad series')
+    c.page.fill(f'{R} [data-redit] [data-k=rseries]', '9')
+    c.page.fill(f'{R} [data-redit] [data-k=rnumber]', '12')
+    c.page.fill(f'{R} [data-redit] [data-k=rop]', 'OPERATION CORRIGÉE')
+    c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")
+    c.shot(f'N29_{c.design}_{c.width}_{c.lang}_delivered.png')
+    c.tap(f'{R} [data-redit] [data-do="regsave"]')
+    reg_wait_text(c, lambda t: 'Titre corrigé' in t)
+    d = yaml.safe_load(reg_text(c))
+    by = {m['id']: m for m in d['missions']}
+    c.eq([by['X-701A']['title'], by['X-701A']['series'], by['X-701A']['number'], by['X-701A']['operation']['name'], by['X-701A']['operation']['missions']],
+         ['Titre corrigé', 9, 12, 'OPERATION CORRIGÉE', 2], 'the four fields are corrected, the rest of the operation kept', what='edit')
+    c.eq(by['X-702A']['title'], 'Registre deux', 'the other lines are not touched', what='others')
+    # removed: the file of X-704A stays
+    c.until(_REG_READ, timeout=20000, what='read again')
+    c.page.fill(f'{R} [data-k=rq]', 'quatre')
+    c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-704A found')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] [data-do="regremove"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='asks before removing')
+    c.ok(norm(row(c, 'regRemoveAsk').replace('{id}', 'X-704A')) in norm(c.text('.f-modal') or ''), '', 'the question says the file stays')
+    c.tap('.f-modal [data-ok]')
+    reg_wait_text(c, lambda t: 'Registre quatre' not in t)
+    d = yaml.safe_load(reg_text(c))
+    c.ok('X-704A' not in [m['id'] for m in d['missions']] and '704' not in [str(m['id']) for m in d['missions']], '', 'the line is gone from the registry')
+    c.ok('X-704A' in (c.js(_TEXT_OF, 'missions/X_REG/X-704A/missionX-704A.yaml') or ''), '', 'its file stays in the repository')
+    c.js(_REG_CLEAR)
+
+
+@case('N30', 'Missions › Registre: the address #missions?view=registry opens it; a registry that cannot be read says so and is never rewritten; an absent registry is created from the files',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='CONCEPTION § 2 bis; the registry is written by any pilot: an unreadable one is not overwritten (the update is off); an absent one is built from the repository files')
+def n30(c):
+    import yaml
+    texts = [t for t in _REG_TEXTS if t[0] != 'missions/mission_registry.yaml'] + [['missions/mission_registry.yaml', 'missions: [\n  : : :\n']]
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, texts)
+    c.open('missions?view=registry', wait=False, app='company')
+    c.until(f"!!document.querySelector('{R} [data-why=unreadable]')", timeout=15000, what='the registry screen by the address, saying the registry is unreadable')
+    c.eq(c.js(f"document.querySelector('{R} [data-do=regplan]').disabled"), True, 'no update on an unreadable registry', what='plan')
+    c.eq(c.count(f'{R} [data-do=regedit]'), 0, 'no line to correct', what='edit')
+    # absent: the registry is created from the files
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, [t for t in _REG_TEXTS if t[0] != 'missions/mission_registry.yaml'])
+    c.open('missions?view=registry', wait=False, app='company')
+    c.until(_REG_READ, timeout=20000, what='read')
+    c.tap(f'{R} [data-do="regplan"]')
+    c.until(f"!!document.querySelector('{R} [data-regplan] [data-plan=Add]')", what='the plan adds the files')
+    c.tap(f'{R} [data-do="regwrite"]')
+    reg_wait_text(c, lambda t: 'X-710A' in t)
+    d = yaml.safe_load(reg_text(c))
+    c.eq(sorted(m['id'] for m in d['missions']), ['X-701A', 'X-704A', 'X-705A', 'X-710A', 'X-711A'], 'the registry is built from the repository missions', what='ids')
+    c.js(_REG_CLEAR)
+
+
+@case('N31', 'Missions › Registre, the pure part: a plan is applied to a copy; a line that is no longer the one shown is refused (stale); a mission file gives a bounded entry, a copy in versions/ none',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='modules/missions/registry.js: the registry is written by any pilot, the document read is never modified in place')
+def n31(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    got = c.js("""async () => { const R = await import('/modules/missions/registry.js'); const doc = { missions: [{ id: 'X-1A', title: 'a', folder: 'X_Q/X-1A', files: ['missionX-1A.yaml'] }, { id: 'X-1A', title: 'b' }] };
+      const before = JSON.stringify(doc); const plan = R.planOf(doc, new Map(), []);
+      const out = R.applyPlan(doc, plan, 'T'); const stale = R.editEntry(doc, 1, 'X-9Z', { title: 'x' }); const bad = R.editEntry(doc, 0, 'X-1A', { title: 'x', series: '1e3' });
+      const ok = R.editEntry(doc, 0, 'X-1A', { title: '  Nouveau   titre ', series: '', number: '4' });
+      const ent = R.entryOfMission({ mission: { id: 'X-2A', type: 'T' }, title: 'x'.repeat(500) }, 'missions/X_Q/X-2A/missionX-2A.yaml');
+      const copy = R.entryOfMission({ mission: { id: 'X-2A', type: 'T' } }, 'missions/X_Q/X-2A/versions/missionX-2A_1.yaml');
+      return { same: JSON.stringify(doc) === before, plan: plan.dup, n: out.missions.length, at: out.updatedAt, stale: stale.error, bad: bad.error, title: ok.doc.missions[0].title, number: ok.doc.missions[0].number,
+        long: ent.title.length, folder: ent.folder, copy } }""")
+    c.eq(got, {'same': True, 'plan': [1], 'n': 1, 'at': 'T', 'stale': 'stale', 'bad': 'series', 'title': 'Nouveau titre', 'number': 4, 'long': 200, 'folder': 'X_Q/X-2A', 'copy': None},
+         'plan applied to a copy, stale refused, entries bounded', what='pure')

@@ -34,6 +34,8 @@ Die Missionen der Gesellschaft, in der Anwendung Gesellschaft: die des gemeinsam
 
 <a id="missions-airline"></a>**Gesellschaft wechseln.** Auf dem Blatt einer Mission bietet „Gesellschaft: … · Ändern“ die Gesellschaften und „Persönlich“ an; der Satz „… wechselt von … zu …“ steht vor „Schreiben“. In der Liste nimmt „Einer Gesellschaft zuordnen…“ die angezeigten Missionen (Bereich, Familie, Suche), jede angekreuzt: Der Bildschirm sagt vor dem Schreiben, wie viele wechseln und welche unlesbar sind (unverändert gelassen). Beim Hinzufügen aus YAML wählt „Diese Missionen hinzufügen zu“ ihre Gesellschaft. Nur das Feld `airline` der Datei ändert sich.
 
+<a id="missions-registry"></a>**Das Register.** „Register“ neben „Zufällig ziehen“ (oder die Adresse `#missions?view=registry`) zeigt eine Zeile je Mission, wie das Register `missions/mission_registry.yaml` sie schreibt, mit dem Zustand ihrer Datei: da, fehlt, unlesbar oder Pfad abgelehnt; und die Depot-Missionen, die das Register nicht kennt. „Register aktualisieren“ sagt zuerst, was es täte (hinzuzufügende Missionen, Zeilen ohne lesbare Datei, doppelte Kennungen, frühere Kennungen); „Register schreiben“ fügt dann die Depot-Missionen hinzu, behält eine Zeile je Kennung und ersetzt eine frühere Kennung durch die des Ordners; eine Zeile ohne lesbare Datei bleibt (die Datei ist vielleicht noch nicht angekommen). „Bearbeiten“ ändert Titel, Serie, Nummer oder Operation einer Zeile; „Aus dem Register entfernen“ nimmt sie heraus, die Missionsdatei bleibt im Depot. Ein unlesbares Register wird nie überschrieben; ein fehlendes wird aus den Dateien angelegt.
+
 ## Gut zu wissen
 
 - Das Modul liest die Missionen und ändert sie nie; sie werden im CPCO geschrieben.

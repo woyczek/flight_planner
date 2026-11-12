@@ -12,6 +12,8 @@ Les missions de la compagnie, dans l'application Compagnie : celles du dépôt c
 
 <a id="missions-airline"></a>**Changer de compagnie.** Sur la fiche d’une mission, « Compagnie : … · Changer » propose les compagnies et « Personnel » ; la phrase « … passe de … à … » est dite avant « Écrire ». Dans la liste, « Attribuer à une compagnie… » prend les missions affichées (portée, famille, recherche), chacune cochée : l’écran dit combien changent et lesquelles sont illisibles (laissées telles quelles) avant d’écrire. À l’ajout depuis un YAML, « Ajouter ces missions à » choisit leur compagnie. Seul le champ `airline` du fichier change.
 
+<a id="missions-registry"></a>**Le registre.** « Registre », à côté de « Tirer au sort » (ou l'adresse `#missions?view=registry`), montre une ligne par mission telle que le registre `missions/mission_registry.yaml` l'écrit, avec l'état de son fichier : là, manquant, illisible ou chemin refusé ; et les missions du dépôt que le registre ne connaît pas. « Mettre à jour le registre » dit d'abord ce qu'il ferait (missions à ajouter, lignes sans fichier lisible, identifiants en double, anciens identifiants) puis, à « Écrire le registre », ajoute les missions du dépôt, ne garde qu'une ligne par identifiant et remplace un ancien identifiant par celui du dossier ; une ligne sans fichier lisible reste (le fichier n'est peut-être pas encore arrivé). « Corriger » change le titre, la série, le numéro ou l'opération d'une ligne ; « Retirer du registre » l'enlève, le fichier de la mission reste dans le dépôt. Un registre illisible n'est jamais réécrit ; un registre absent est créé à partir des fichiers.
+
 ## Bon à savoir
 
 - Le module lit les missions, il ne les modifie jamais ; elles s'écrivent dans le CPCO.
