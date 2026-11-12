@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "466b031",
-  "fiches": 282,
+  "organisation": "a9eefdf",
+  "fiches": 283,
   "untranslated": 0,
   "priorities": 243
  },
@@ -3688,6 +3688,15 @@
      "es": "Revisión de seguridad del 10/11: cuatro notas (URI de sqlite, exportaciones de fichas de Little Navmap, directorio de un zip enviado, relé sin plazo en el cuerpo de error)",
      "milestone": "6.0.0-alpha.6",
      "rank": 239
+    },
+    {
+     "id": "SOG-0283",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Relecture de sécurité du 12/11 au soir (ligne d'audit 170) : un durcissement prouvé dans la lecture des PDF de procédures, une note sur les durées du calcul",
+     "en": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
+     "de": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
+     "es": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings"
     }
    ]
   },
