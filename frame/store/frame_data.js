@@ -2035,6 +2035,12 @@
       remove: path => (guard(path), remove(path, {
         module: decl.id || ''
       })),
+      // SOG-0279 : envoie CES documents maintenant (le geste « Envoyer ce vol à mes appareils » : le vol en cours est retenu, il ne part pas seul) ; BORNÉ aux écritures déclarées du module : un chemin hors d'elles est refusé comme un `put`
+      sendNow: paths => {
+        const list = [].concat(paths || []).map(String);
+        list.forEach(guard);
+        return sendNow(list);
+      },
       watch,
       status,
       onStatus,

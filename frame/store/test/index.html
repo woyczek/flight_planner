@@ -1489,6 +1489,57 @@
       const dg = await FD.diagnostic();
       check('the diagnostic says it once, with the path and the module', dg.serialWrites.length === 1 && dg.serialWrites[0].path === p && ['fuel', 'maps'].includes(dg.serialWrites[0].module), dg.serialWrites);
     },
+    // ---- SOG-0279 : le geste d'un module — adapter.sendNow, borné à ses écritures déclarées
+    async 'adapter.sendNow: sends the held flight at the module\'s gesture, only paths of its declared writes'() {
+      const fl = 'pilot/TST/current_flight.json';
+      await fresh({
+        [fl]: JSON.stringify({
+          updated_at: '2026-11-12T10:00:00Z',
+          route: {
+            text: 'LFPO LFRS'
+          }
+        })
+      });
+      FD.configure({
+        transport: FD.github({
+          repo: 'test/data',
+          branch: 'main',
+          token: 'test-token',
+          api: `${location.origin}/api`
+        }),
+        identity: {
+          trigram: 'TST'
+        }
+      });
+      const fuel = FD.adapter({
+        id: 'fuel',
+        reads: ['pilot/'],
+        writes: [{
+          prefix: 'pilot/',
+          merge: 'record'
+        }]
+      });
+      await fuel.sync({
+        gesture: true
+      });
+      await fuel.put(fl, {
+        updated_at: '2026-11-12T10:30:00Z',
+        route: {
+          text: 'LFPO LFLL'
+        }
+      });
+      await fuel.sync(); // a module pass: the flight is HELD, it does not leave
+      const held = JSON.parse((await stats()).files[fl]).route.text === 'LFPO LFRS' && (await fuel.status()).held === 1;
+      const r = await fuel.sendNow(fl);
+      check('the held flight stays until the module\'s gesture; adapter.sendNow sends it', held && JSON.parse((await stats()).files[fl]).route.text === 'LFPO LFLL' && (await fuel.status()).held === 0, [held, r]);
+      let refused = '';
+      try {
+        await fuel.sendNow('missions/x.json');
+      } catch (e) {
+        refused = String(e.message);
+      }
+      check('a path outside the module\'s declared writes is refused, like a put', /may not write missions\/x.json/.test(refused), refused);
+    },
     // ---- SOG-0136 : les révisions que CE navigateur a poussées — sa propre version qui revient n'est pas un autre appareil ; un vrai autre appareil fait toujours un conflit ; un commit du lanceur entre le tirage et l'envoi n'en fait pas
     async 'own revisions: this browser\'s own earlier version coming back is no conflict; a foreign version always is; an unrelated commit between pull and send makes none'() {
       const p = 'disponibilites/TST/own.txt';
