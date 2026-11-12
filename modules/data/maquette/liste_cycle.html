@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Données : carte, groupes, fiche pays et liste du cycle (maquette)</title>
+<style>
+:root{
+  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa;
+  --ok:#1a7f37; --ok-bg:#e6f6ea; --ok-line:#9bd3a8;
+  --warn:#7d4e00; --warn-bg:#fff4d1; --warn-line:#d4a72c;
+  --bad:#b42318; --bad-bg:#ffebe9; --bad-line:#f0b4ae;
+  --accent:#0b5cad; --accent-bg:#eaf2fb;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#fff;color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px 56px}
+h1{font-size:24px;line-height:1.2;margin:0}
+h2{margin:0}
+a{color:var(--accent)}
+code{font:13px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--soft);border:1px solid var(--line);padding:1px 4px;border-radius:3px;overflow-wrap:anywhere}
+.mock{background:var(--soft);border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.mock .wrap{padding-top:8px;padding-bottom:8px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:4px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;min-height:36px;padding:0 12px;border:0;background:#fff;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:600}
+.crumb{font-size:13px;color:var(--muted);margin:16px 0 4px}
+.cycle{margin:6px 0 0;color:var(--muted);font-size:15px}
+.sum{font-size:20px;font-weight:700;margin:14px 0 8px}
+.bar{height:8px;background:#e8ebef;border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.go{margin:16px 0 0}
+.go .what{margin:8px 0 0;color:var(--muted);font-size:15px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:6px 16px;font:inherit;font-weight:600;
+  border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:4px;cursor:pointer;text-align:center;line-height:1.2}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.block{width:100%}
+.btn[disabled]{border-color:var(--line);background:var(--soft);color:#6e7781;cursor:not-allowed}
+.btn.sm{min-height:44px;padding:4px 12px;font-size:14px}
+.linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;border:0;background:none;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+.hint{font-size:14px;color:var(--muted)}
+.why{font-size:14px;color:var(--muted);margin:4px 0 0}
+
+/* états : toujours une couleur ET un mot / un signe */
+.st-g{--c:#5cc27a}.st-a{--c:#f7c548}.st-r{--c:#ef6b6b}.st-n{--c:#c4cbd2}
+.sec-h{margin:28px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.sec-h small{font-size:13px;letter-spacing:0;text-transform:none;font-weight:400}
+
+/* carte */
+.mapbar{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;justify-content:space-between;min-height:44px}
+.mapbar .mt{font-size:15px}
+.mapwrap{position:relative;border:1px solid var(--line);background:#eef3f8;height:250px;overflow:hidden}
+.mapwrap svg{display:block;width:100%;height:100%}
+.mapwrap circle[data-c]{cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 0;font-size:13px;color:var(--ink)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{display:inline-block;width:13px;height:13px;border-radius:50%;background:var(--c);border:1px solid rgba(0,0,0,.35)}
+.sw.hatch{background:repeating-linear-gradient(45deg,#fff 0 2px,#1b1f24 2px 3px)}
+.sw.blue{background:#fff;border:2px solid var(--accent)}
+
+/* groupes */
+.packs{display:grid;grid-template-columns:1fr;gap:6px}
+.pk{border:1px solid var(--line);background:#fff;min-width:0}
+.pk.open{border:2px solid var(--accent);background:var(--accent-bg)}
+.pkh{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;width:100%;min-height:52px;padding:7px 12px;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.pkh .pn{font-weight:700}
+.pkh .pc{font-size:13px;color:var(--muted)}
+.pkh .ps{flex:1 1 100%;font-size:14px}
+.pkh .ps b{font-weight:600}
+.pkh .ps .a{color:var(--warn)}.pkh .ps .r{color:var(--bad)}.pkh .ps .g{color:var(--ok)}.pkh .ps .n{color:var(--muted)}
+.pkh::after{content:"\203A";margin-left:auto;color:var(--muted);align-self:center;position:absolute;right:12px;transition:transform .15s}
+.pk{position:relative}
+.pk.open .pkh::after{transform:rotate(90deg)}
+.pkb{padding:0 10px 10px}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.chip{display:flex;flex-direction:column;justify-content:center;min-height:48px;padding:4px 8px 4px 10px;text-align:left;font:inherit;background:#fff;color:var(--ink);
+  border:1px solid var(--line);border-left:6px solid var(--c);border-radius:3px;cursor:pointer;min-width:0}
+.chip .cn{font-weight:600;font-size:14px;line-height:1.2}
+.chip .cs{font-size:12px;color:var(--muted);line-height:1.2}
+.chip.sel{outline:3px solid var(--ink);outline-offset:-1px}
+.chip .hp{display:inline-block;width:10px;height:10px;margin-right:3px;vertical-align:-1px;background:repeating-linear-gradient(45deg,#fff 0 2px,#1b1f24 2px 3px);border:1px solid #1b1f24}
+
+/* fiche pays */
+.sheet{background:#fff;border:1px solid var(--ink);box-shadow:0 -6px 18px rgba(0,0,0,.18);margin:10px 0 2px;text-align:left}
+.grab{width:44px;height:5px;background:#b6bdc5;border-radius:3px;margin:8px auto 0}
+.shead{display:flex;align-items:flex-start;gap:8px;padding:8px 12px 6px}
+.shead h2{font-size:21px;line-height:1.2}
+.shead .sub{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.shead .tt{flex:1;min-width:0}
+.x{flex:none;width:44px;height:44px;margin:-6px -8px 0 0;border:0;background:none;font:inherit;font-size:28px;line-height:1;color:var(--muted);cursor:pointer}
+.status{display:inline-block;font-size:12px;font-weight:700;line-height:1;padding:5px 6px;border-radius:3px;white-space:nowrap;margin-top:3px}
+.status.a{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.status.r{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad-line)}
+.status.g{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
+.status.n{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.sbody{padding:0 12px 12px}
+.src{border:1px solid var(--line);margin:10px 0 0;padding:10px}
+.src.todo{border-left:5px solid var(--warn-line)}
+.src.fail{border-left:5px solid #e5484d}
+.src.done{border-left:5px solid #5cc27a}
+.src .sh{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:8px}
+.src .sh b{flex:1 1 140px}
+.badge{display:inline-block;border:1px solid var(--line);background:var(--soft);color:var(--muted);font-size:12px;line-height:1;padding:4px 6px;border-radius:3px;white-space:nowrap}
+.ticks{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tk{border:1px solid var(--line);padding:6px 7px;font-size:13px;line-height:1.3;min-width:0;background:#fff}
+.tk .tl{display:block;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.tk .tv{display:block;font-weight:700;overflow-wrap:anywhere}
+.tk .te{display:block;font-size:12px;color:var(--ink);margin-top:1px}
+.tk.ok{background:var(--ok-bg);border-color:var(--ok-line)}.tk.ok .tv{color:var(--ok)}
+.tk.late,.tk.part{background:var(--warn-bg);border-color:var(--warn-line)}.tk.late .tv,.tk.part .tv{color:var(--warn)}
+.tk.miss{background:var(--bad-bg);border-color:var(--bad-line)}.tk.miss .tv{color:var(--bad)}
+.tk.wait{background:var(--soft)}.tk.wait .tv{color:var(--muted);font-weight:500}
+.nt{margin:8px 0 0;font-size:14px}
+.nt b{color:var(--warn)}
+.shared{margin:8px 0 0;padding:6px 8px;background:var(--accent-bg);border:1px solid #b6d4f2;font-size:14px}
+.inv{margin:10px 0 0;font-size:14px}
+.inv dt{margin-top:8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.inv dd{margin:2px 0 0;overflow-wrap:anywhere}
+.files{list-style:none;margin:0;padding:0}
+.files li{padding:6px 0;border-top:1px solid var(--line)}
+.files li:first-child{border-top:0}
+.files .fs{display:inline-block;font-weight:700;margin-right:4px}
+.files .seen .fs,.files .ok .fs{color:var(--ok)}
+.files .miss .fs{color:var(--bad)}
+.files small{display:block;color:var(--muted);font-size:13px}
+.gest{display:flex;flex-direction:column;gap:2px;margin-top:14px}
+.gest .row2{display:flex;flex-direction:column;gap:2px}
+.foot{margin:10px 0 0;font-size:13px;color:var(--muted)}
+
+/* liste du cycle */
+.todo-l{border:1px solid var(--line);margin:0 0 6px;border-left:5px solid var(--warn-line)}
+.todo-l.fail{border-left-color:#e5484d}
+.todo-l.done{border-left-color:#5cc27a}
+.ln{display:block;width:100%;padding:8px 36px 8px 12px;min-height:56px;text-align:left;border:0;background:none;font:inherit;color:inherit;cursor:pointer;position:relative}
+.ln::after{content:"\203A";position:absolute;right:14px;top:50%;margin-top:-12px;font-size:22px;color:var(--muted)}
+.ln .l1{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.ln .l1 b{flex:0 1 auto}
+.ln .l2{display:block;font-size:14px;margin-top:2px}
+.ln .l2 .w{color:var(--warn);font-weight:600}.ln .l2 .w.r{color:var(--bad)}
+.ln .l3{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.ln.sm{min-height:48px;padding-top:4px;padding-bottom:4px}
+.ln .l2 .w.g{color:var(--ok)}
+details.sec{border:1px solid var(--line);margin:14px 0 0;background:#fff}
+details.sec>summary{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:48px;padding:6px 12px;cursor:pointer;list-style:none;font-weight:700}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::before{content:"\203A";display:inline-block;width:16px;color:var(--muted);transition:transform .15s}
+details.sec[open]>summary::before{transform:rotate(90deg)}
+details.sec>summary .sub{flex:1 1 100%;margin-left:26px;font-weight:400;font-size:14px;color:var(--muted)}
+.secbody{padding:4px 12px 14px;border-top:1px dashed var(--line)}
+.secbody h3{margin:14px 0 6px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.item{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.item .t{font-weight:600}
+.item .d{font-size:14px;color:var(--muted)}
+.item .d b{color:var(--ok)}
+.note{margin:10px 0 0;padding:8px 10px;background:var(--soft);border:1px solid var(--line);font-size:14px}
+
+/* publier */
+.pub{border:1px solid var(--ink);margin:28px 0 0;padding:12px}
+.pub h2{font-size:18px;margin-bottom:6px}
+.pub p{margin:0 0 10px}
+.pub .lead{font-weight:700}
+.plan{margin-top:12px;padding:10px 12px;background:var(--soft);border:1px solid var(--line);font-size:14px}
+.plan ul{margin:6px 0 10px;padding-left:20px}
+.plan .acts{display:flex;flex-direction:column;gap:6px}
+[hidden]{display:none !important}
+
+.layout{display:block}
+@media (min-width:640px){
+  h1{font-size:28px}
+  .go{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+  .go .btn{min-width:240px}
+  .go .what{margin:0;flex:1 1 280px}
+  .mapwrap{height:380px}
+  .item{flex-direction:row;align-items:center;gap:6px 14px}
+  .item .tx{flex:1}
+  .plan .acts{flex-direction:row}
+}
+@media (min-width:900px){
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 430px;column-gap:28px;align-items:start;
+    grid-template-areas:"head side" "map side" "packs side" "list side" "pub side" "secs side"}
+  #head{grid-area:head}#mapbox{grid-area:map}#packs{grid-area:packs}#list{grid-area:list}#pub{grid-area:pub}#secs{grid-area:secs}
+  #side{grid-area:side;position:sticky;top:12px;align-self:start;margin-top:28px}
+  .packs{grid-template-columns:1fr 1fr}
+  .pk.open{grid-column:1 / -1}
+  .chips{grid-template-columns:repeat(3,1fr)}
+  .sheet{margin-top:0}
+  .grab{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="mock"><div class="wrap">
+  <span><b>Maquette</b> : rien n'est réel, aucun bouton n'agit.</span>
+  <span>état :</span>
+  <span class="seg" role="group" aria-label="État simulé">
+    <button type="button" data-state="cours" aria-pressed="true">en cours de cycle</button>
+    <button type="button" data-state="fait" aria-pressed="false">tout à jour</button>
+  </span>
+</div></div>
+
+<main class="wrap">
+  <div class="crumb">Maintenance › Données</div>
+  <h1>Données</h1>
+  <p class="cycle">Cycle AIRAC 2611 · en vigueur depuis le 29 octobre · prochain cycle le 26 novembre</p>
+
+  <div class="layout">
+    <div id="head"></div>
+
+    <section id="mapbox" aria-label="Carte du monde">
+      <h2 class="sec-h">La carte <small>touchez un pays, ou ouvrez un groupe plus bas</small></h2>
+      <div class="mapbar"><span class="mt" id="maptitle"></span><button class="linkbtn" type="button" id="zoombtn"></button></div>
+      <div class="mapwrap" id="map"></div>
+      <div class="legend" aria-label="Légende">
+        <span class="st-g"><i class="sw"></i> à jour</span>
+        <span class="st-a"><i class="sw"></i> à faire</span>
+        <span class="st-r"><i class="sw"></i> échec</span>
+        <span class="st-n"><i class="sw"></i> sans état</span>
+        <span><i class="sw hatch"></i> procédures disponibles</span>
+        <span><i class="sw blue"></i> groupe ouvert</span>
+      </div>
+    </section>
+
+    <section id="packs" aria-label="Groupes de pays"></section>
+
+    <aside id="side" aria-label="Fiche du pays"></aside>
+
+    <section id="list" aria-label="Liste du cycle"></section>
+
+    <section id="pub" class="pub" aria-labelledby="pubh"></section>
+
+    <div id="secs">
+      <details class="sec" id="next" open>
+        <summary>Cycle suivant (2612) <span class="badge">3 fichiers déjà là</span>
+          <span class="sub">Ce que Téléchargements contient déjà, ce qui reste à aller chercher, ce que le poste prendra seul.</span></summary>
+        <div class="secbody">
+          <h3>Déjà dans Téléchargements</h3>
+          <div class="item"><div class="tx"><div class="t">NATS : AIP du 26/11</div><div class="d"><b>✓ trouvé</b> : <code>EG_AIP_2026-11-26.zip</code> (12/11)</div></div></div>
+          <div class="item"><div class="tx"><div class="t">RAD France 2612</div><div class="d"><b>✓ trouvé</b> : <code>RAD_2612.xlsx</code> (11/11)</div></div></div>
+          <div class="item"><div class="tx"><div class="t">Points FRA 2612</div><div class="d"><b>✓ trouvé</b> : <code>FRA_points_2612.csv</code> (11/11)</div></div></div>
+          <p class="note">Rien à faire pour ces trois : la suite les prendra le 26/11, quand le cycle 2612 sera en vigueur.</p>
+          <h3>Reste à aller chercher à la main</h3>
+          <div class="item"><div class="tx"><div class="t">NAV Portugal, DIRCAM, UK Military ENR 5.2, FAA NASR</div>
+            <div class="d">Rien dans Téléchargements pour ces quatre : leurs éditions du 26/11 ne sont pas encore publiées par les sources. Elles apparaîtront dans la liste dès leur dépôt.</div></div></div>
+          <h3>Pris par le poste seul « quand il sera en vigueur »</h3>
+          <div class="item"><div class="tx"><div class="t">11 sources automatiques</div>
+            <div class="d">SIA France, ENAIRE, AirNav, LFV, NATS, DFS, skyguide, LVNL, ENAV, openAIP (espaces) et FAA classes : le 26/11, sans geste de votre part.</div></div></div>
+        </div>
+      </details>
+
+      <details class="sec" id="change">
+        <summary>Quand ça change <span class="badge">5 sources</span>
+          <span class="sub">Hors cycle : vous les actualisez quand vous le décidez.</span></summary>
+        <div class="secbody">
+          <div class="item"><div class="tx"><div class="t">X-Plane (bases du simulateur)</div><div class="d">dernière mise à jour le 28/10</div></div><button class="btn sm" type="button">Actualiser</button></div>
+          <div class="item"><div class="tx"><div class="t">Little Navmap</div><div class="d">dernière mise à jour le 12/10</div></div><button class="btn sm" type="button">Actualiser</button></div>
+          <div class="item"><div class="tx"><div class="t">openAIP (aérodromes, balises)</div><div class="d">dernière mise à jour le 03/11</div></div><button class="btn sm" type="button">Actualiser</button></div>
+          <div class="item"><div class="tx"><div class="t">GeoNames (noms de lieux)</div><div class="d">dernière mise à jour le 15/09</div></div><button class="btn sm" type="button">Actualiser</button></div>
+          <div class="item"><div class="tx"><div class="t">MORA (altitudes minimales)</div><div class="d">dernière mise à jour le 28/10</div></div><button class="btn sm" type="button">Actualiser</button></div>
+        </div>
+      </details>
+
+      <details class="sec" id="unread">
+        <summary>Vu par le poste, pas encore lu par la suite <span class="badge">3 fichiers</span>
+          <span class="sub">Présents dans Téléchargements, mais la suite ne sait pas encore les lire.</span></summary>
+        <div class="secbody">
+          <div class="item"><div class="tx"><div class="t">Navcan AIP (Canada)</div><div class="d">Pas de lecteur : le format PDF de Navcan n'est pas pris en charge.</div></div></div>
+          <div class="item"><div class="tx"><div class="t">Naviair (Danemark)</div><div class="d">Pas de lecteur : l'AIP en pages web n'est pas pris en charge.</div></div></div>
+          <div class="item"><div class="tx"><div class="t">openAIP XML</div><div class="d">Pas de lecteur : le format XML n'est pas pris en charge.</div></div></div>
+          <p class="note">Les codes <code>EK_</code> désignent le Danemark <b>ou</b> les îles Féroé.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ===================== Données simulées (état du poste au 12/11) ===================== */
+var MONTHS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function ed(d) { var p = d.split('/'), day = +p[0]; return 'édition du ' + (day === 1 ? '1er' : day) + ' ' + MONTHS[+p[1] - 1] + ' 2026'; }
+var T = function (s, v) { return { s: s, v: v }; };
+var OK = function (d) { return T('ok', d); };
+
+/* Pays : nom | code | lon | lat | procédures (1 = hachure) | base (g = couvert par openAIP, n = rien) */
+var PACKS = [
+  ["Europe de l'Ouest", 'France|FR|2.3|46.8|1|g;Espagne|ES|-3.5|40.2|1|g;Portugal|PT|-8|39.3|0|g;Royaume-Uni|GB|-2|53|1|g;Irlande|IE|-8.2|53.4|1|g;Belgique|BE|3.6|51|0|g;Luxembourg|LU|6.6|49.3|0|g;Pays-Bas|NL|5.8|52.8|1|g;Allemagne|DE|10.5|51.3|1|g;Suisse|CH|8|46.8|1|g;Autriche|AT|14.2|47.6|0|g;Italie|IT|12|42.5|1|g;Malte|MT|14.4|35.9|0|g;Andorre|AD|1.6|42.5|0|g'],
+  ['Scandinavie', 'Suède|SE|16|62|1|g;Norvège|NO|9|61|0|g;Finlande|FI|26|63|0|g;Danemark|DK|9.8|56|0|g;Islande|IS|-19|65|0|n'],
+  ['Europe centrale', 'Pologne|PL|19.5|52|0|g;Tchéquie|CZ|15.6|49.8|0|g;Slovaquie|SK|19.6|48.7|0|g;Hongrie|HU|19.2|47.2|0|g;Roumanie|RO|25|45.8|0|g;Croatie|HR|16|45.3|0|g'],
+  ['Balkans et Méditerranée est', 'Serbie|RS|20.8|44|0|g;Bulgarie|BG|25|42.7|0|g;Grèce|GR|22.3|39.4|0|g;Turquie|TR|33|39|0|g;Chypre|CY|33.2|35.1|0|n'],
+  ['Pays baltes', 'Estonie|EE|25.5|58.7|0|g;Lettonie|LV|25|56.9|0|g;Lituanie|LT|23.8|55.3|0|g'],
+  ['Russie et Ukraine', 'Russie|RU|60|60|0|n;Ukraine|UA|31|49|0|n'],
+  ['Amérique du Nord', 'États-Unis|US|-98|39|1|g;Canada|CA|-100|57|1|n;Mexique|MX|-102|24|0|g'],
+  ['Amérique centrale et Caraïbes', 'Cuba|CU|-79|21.8|0|n;Guatemala|GT|-90.4|15.5|0|n;Panama|PA|-80|8.6|0|g;Rép. dominicaine|DO|-70.3|19|0|g'],
+  ['Amérique du Sud nord', 'Colombie|CO|-73|4|0|g;Venezuela|VE|-66|7|0|n;Pérou|PE|-75|-10|0|g'],
+  ['Amérique du Sud sud', 'Brésil|BR|-53|-10|0|g;Argentine|AR|-64|-36|0|g;Chili|CL|-72|-30|0|g'],
+  ['Afrique du Nord', 'Maroc|MA|-6|32|0|g;Algérie|DZ|3|28|0|n;Tunisie|TN|9.5|34|0|g;Égypte|EG|30|27|0|g'],
+  ["Afrique de l'Ouest", 'Sénégal|SN|-14.5|14.5|0|g;Côte d’Ivoire|CI|-5.5|7.5|0|n;Nigeria|NG|8|9|0|n'],
+  ["Afrique centrale et de l'Est", 'RD Congo|CD|23|-3|0|n;Éthiopie|ET|39|8|0|n;Kenya|KE|37.8|0.5|0|g'],
+  ['Afrique australe', 'Afrique du Sud|ZA|25|-29|0|g;Namibie|NA|17|-22|0|g;Mozambique|MZ|35|-18|0|n'],
+  ['Moyen-Orient', 'Israël|IL|35|31.4|0|g;Arabie saoudite|SA|45|24|0|g;Émirats|AE|54.5|24|0|g;Iran|IR|54|32|0|n'],
+  ['Asie centrale et du Sud', 'Kazakhstan|KZ|67|48|0|n;Inde|IN|79|22|0|g;Pakistan|PK|70|30|0|n;Sri Lanka|LK|80.7|7.8|0|g'],
+  ["Asie de l'Est", 'Chine|CN|103|35|0|n;Japon|JP|138|36|1|g;Corée du Sud|KR|127.8|36.5|0|g;Mongolie|MN|103|46.5|0|n'],
+  ['Asie du Sud-Est', 'Thaïlande|TH|101|15|0|g;Vietnam|VN|107.5|16|0|n;Malaisie|MY|102|4|0|g;Indonésie|ID|113|-2|0|g'],
+  ['Océanie', 'Australie|AU|134|-25|1|g;Nouvelle-Zélande|NZ|172|-41|0|g;Papouasie|PG|144|-6|0|n'],
+  ['Atlantique et îles', 'Groenland|GL|-42|72|0|n;Îles Féroé|FO|-6.9|62|0|g;Cap-Vert|CV|-23.6|15|0|n']
+];
+var CTRY = {}, PACK_OF = {};
+PACKS.forEach(function (p) {
+  p.names = [];
+  p[1].split(';').forEach(function (s) {
+    var a = s.split('|');
+    CTRY[a[0]] = { name: a[0], code: a[1], lon: +a[2], lat: +a[3], hatch: a[4] === '1', base: a[5] };
+    PACK_OF[a[0]] = p[0]; p.names.push(a[0]);
+  });
+});
+
+/* Sources : une ligne par source.  cs = pays alimentés.  grp : hand | late | build | done */
+var ROWS = [
+  { id: 'pt', label: 'NAV Portugal (AIP ISO)', reg: 'main', grp: 'hand', cs: ['Portugal'], ticks: [T('miss', 'aucun fichier'), T('wait', 'attend le fichier'), T('wait', 'attend la construction')],
+    short: 'attend votre fichier · « AIP ISO.zip » trouvé dans Téléchargements',
+    note: 'Pas « en retard » : NAV Portugal publie par éditions, pas par cycle. Il manque seulement le premier fichier.',
+    hand: { why: 'le serveur refuse le téléchargement automatique.', link: 'https://ais.nav.pt/', files: [
+      { n: 'AIP ISO.zip', st: 'seen', note: 'vu dans Téléchargements (12/11, 48 Mo) · contient l’édition du 1er octobre 2026' },
+      { n: 'Amendement AIRAC 2611 (PDF)', st: 'miss', note: 'facultatif, rien de tel dans Téléchargements' },
+      { n: 'VAC_PT.zip (cartes d’approche)', st: 'miss', note: 'facultatif, rien de tel dans Téléchargements' }] },
+    zones: ['Portugal continental', 'Madère', 'Açores'] },
+  { id: 'dircam', label: 'DIRCAM (France militaire)', reg: 'main', grp: 'hand', cs: ['France'], ticks: [T('late', '08/10'), OK('08/10'), OK('08/10')],
+    short: 'en retard : fichier du 08/10, le cycle est du 29/10 · « dircam_2611.zip » trouvé',
+    note: '<b>En retard :</b> fichier du 08/10, le cycle est du 29/10.',
+    hand: { why: 'le site demande une connexion : le poste ne peut pas se connecter seul.', link: 'https://www.dircam.dsae.defense.gouv.fr/', files: [
+      { n: 'dircam_2611.zip', st: 'seen', note: 'vu dans Téléchargements (11/11, 12 Mo)' }] },
+    zones: ['France métropolitaine (zones militaires)'] },
+  { id: 'ukmil', label: 'UK Military AIP, ENR 5.2', reg: 'main', grp: 'hand', cs: ['Royaume-Uni'], ticks: [T('late', '06/10'), OK('06/10'), OK('06/10')],
+    short: 'en retard : fichier du 06/10, le cycle est du 29/10 · aucun fichier vu',
+    note: '<b>En retard :</b> fichier du 06/10, le cycle est du 29/10.',
+    hand: { why: 'le portail ne répond qu’à un navigateur, pas au poste.', link: 'https://www.aidu.mod.uk/aip/', files: [
+      { n: 'EG_ENR_5_2_*.pdf', st: 'miss', note: 'rien de tel dans Téléchargements' }] },
+    zones: ['Royaume-Uni (zones militaires)'] },
+  { id: 'faac', label: 'FAA : classes d’espace aérien', reg: 'auto', grp: 'late', cs: ['États-Unis'], ticks: [T('late', '01/11'), OK('02/11'), OK('03/11')],
+    short: 'en retard : fichier du 01/11, une édition plus récente existe · le poste peut le prendre seul',
+    note: '<b>En retard :</b> fichier du 01/11, une édition plus récente de la FAA est disponible.',
+    todo: 'télécharge, puis construit 1 zone', zones: ['États-Unis (classes)'] },
+  { id: 'enav', label: 'Italie : ENAV', reg: 'auto', grp: 'build', fail: true, cs: ['Italie'], ticks: [OK('29/10'), T('miss', 'échec : 4 zones sur 5'), T('part', '4 à publier')],
+    short: 'échec : Sardaigne non construite, 4 zones à publier · le poste peut reprendre seul',
+    note: '<b>Échec de construction :</b> la Sardaigne n’a pas pu être construite le 29/10. Les 4 autres zones attendent la publication.',
+    todo: 'construit 1 zone', zones: ['Italie nord', 'Italie centre', 'Italie sud', 'Sicile', 'Sardaigne'] },
+  { id: 'faan', label: 'FAA NASR (États-Unis)', reg: 'main', grp: 'done', cs: ['États-Unis'], ticks: [OK('29/10'), OK('29/10'), OK('30/10')],
+    hand: { why: 'le serveur refuse le téléchargement automatique.', link: 'https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/', files: [
+      { n: '28DaySubscription_Effective_2026-10-29.zip', st: 'ok', note: 'reçu le 29/10' }] }, zones: ['États-Unis', 'Alaska', 'Hawaï'] },
+  { id: 'sia', label: 'SIA France', reg: 'auto', grp: 'done', cs: ['France'], ticks: [OK('29/10'), OK('29/10'), OK('29/10')], zones: ['France métropolitaine', 'Corse'] },
+  { id: 'enaire', label: 'ENAIRE (Espagne)', reg: 'auto', grp: 'done', cs: ['Espagne'], ticks: [OK('29/10'), OK('29/10'), OK('29/10')], zones: ['Espagne', 'Canaries'] },
+  { id: 'airnav', label: 'AirNav (Irlande)', reg: 'auto', grp: 'done', cs: ['Irlande'], ticks: [OK('29/10'), OK('29/10'), OK('29/10')], zones: ['Irlande'] },
+  { id: 'lfv', label: 'LFV (Suède)', reg: 'auto', grp: 'done', cs: ['Suède'], ticks: [OK('29/10'), OK('30/10'), OK('30/10')], zones: ['Suède'] },
+  { id: 'nats', label: 'NATS (Royaume-Uni)', reg: 'auto', grp: 'done', cs: ['Royaume-Uni'], ticks: [OK('29/10'), OK('29/10'), OK('29/10')], zones: ['Royaume-Uni'],
+    shared: 'NATS se met à jour en touchant le Royaume-Uni : une seule source pour ce pays.' },
+  { id: 'dfs', label: 'DFS (Allemagne)', reg: 'auto', grp: 'done', cs: ['Allemagne'], ticks: [OK('29/10'), OK('29/10'), OK('29/10')], zones: ['Allemagne'] },
+  { id: 'sky', label: 'skyguide (Suisse)', reg: 'auto', grp: 'done', cs: ['Suisse'], ticks: [OK('29/10'), OK('29/10'), OK('29/10')], zones: ['Suisse'] },
+  { id: 'lvnl', label: 'LVNL (Pays-Bas)', reg: 'poste', grp: 'done', cs: ['Pays-Bas'], ticks: [OK('29/10'), OK('29/10'), OK('29/10')], zones: ['Pays-Bas'] },
+  { id: 'oaip', label: 'openAIP (espaces aériens)', reg: 'auto', grp: 'done', cs: [], ticks: [OK('05/11'), OK('05/11'), OK('05/11')], zones: ['tous les pays couverts'],
+    shared: 'openAIP se met à jour pour tous les pays à la fois, d’où que vous la touchiez.' }
+];
+var REG = { auto: 'automatique', main: 'à la main', poste: 'sur ce poste' };
+var STW = { g: 'à jour', a: 'à faire', r: 'échec', n: 'sans état' };
+var GL = { g: '✓', a: '!', r: '✗', n: '–' };
+var ICON = { ok: '✓', late: '!', part: '!', miss: '✗', wait: '–' };
+var COL = { g: '#5cc27a', a: '#f7c548', r: '#ef6b6b', n: '#c4cbd2' };
+
+/* Fonds de carte : contours très simplifiés en lon,lat */
+var LAND = [
+  '-168,66 -156,71 -125,70 -95,72 -82,69 -90,63 -94,58 -82,52 -78,56 -77,62 -66,60 -60,55 -56,50 -66,45 -70,42 -75,38 -76,35 -81,31 -80,26 -83,29 -90,29 -97,26 -97,21 -90,21 -87,21 -88,16 -83,15 -83,10 -78,8 -80,7 -85,10 -92,15 -105,20 -110,23 -114,30 -118,34 -124,40 -124,48 -130,54 -140,60 -150,60 -165,60 -166,64',
+  '-55,60 -45,60 -20,70 -20,82 -45,83 -65,80 -70,76 -55,68',
+  '-80,8 -72,12 -62,10 -52,5 -50,0 -35,-5 -38,-13 -41,-22 -48,-26 -58,-35 -65,-41 -68,-52 -72,-54 -75,-45 -73,-37 -71,-28 -70,-18 -76,-14 -81,-5 -80,0 -78,3',
+  '-5.5,36 -9,37 -9.5,39 -8.8,42 -9.2,43.2 -2,43.5 -1.5,46 -4.5,47.8 -1.5,48.7 1.5,50 3,51.2 4.5,52.8 7,53.5 8.5,55 8.2,57 10.5,57.7 10.5,56 12,55 11,54 14,54 19,54.6 21,56 24,57.2 24,59.4 30,60 23,60 21,61 21.5,64 25,65.5 22,65.8 17.5,62.5 18.5,60 16.5,57 14.5,56 12.5,56.2 11,59 8,58 5,59 5,62 10,64 14,68 20,70 28,71 40,67 44,68.5 60,69 68,73 80,73 100,77.5 113,74 130,71 150,71 170,70 180,68 180,65 176,62 165,60 156,57 156,51 150,59 143,59 137,54 141,52 140,48 132,43 129,40 129,35 126,35 125,39 121,40 122,37 119,35 122,31 121,28 117,23 110,21 108,17 109,12 105,9 102,12 100,13 100,8 103,1.5 100,3 98,8 98,16 94,17 91,22 87,21 80,15 77,8 73,17 72,21 67,24 62,25 57,26 56,27 52,27 49,30 48,29 50,26 52,24 56,26 56,24 59,22 55,17 52,16 44,13 43,16 39,21 35,28 34.5,29.5 34.8,32 35.5,34 36,36 30,36.5 27,37 26.5,40 24,40.5 23,38 22,36.5 21,37.5 20,40 19.5,42 17,43.2 15,44.5 13.5,45.6 12.3,45 12.5,44 14,42.2 16,41.8 18.5,40.2 17,39 16.5,38 15.7,38 15.8,40 14,41 12.2,42 10.5,43.5 9,44.4 7.5,43.8 6,43 3.2,43.3 3,42 0.5,40.5 -0.5,38.5 -2,36.8',
+  '-6,35.8 -10,32 -13,28 -17,21 -17,14.5 -13,9 -8,4.5 -4,5 2,6 5,6 9,4 9.5,1 9,-2 12,-6 13,-12 12,-17 15,-27 18,-32 20,-35 26,-34 32,-28 35,-24 35,-20 40,-15 40,-10 39.5,-5 41,-1 44,2 51,11.5 44,10.5 43,12.5 39,16 37,21 33,28 32.5,30 30,31 25,32 20,31 15,32.5 10,34 10.5,37 5,36.8 0,35.8 -2,35.2',
+  '44,-25 47,-25 50,-15 49,-12 44,-17',
+  '-5.5,50 1.5,51 1.7,53 0,54.5 -2,57.5 -4,58.5 -6,56 -5,54.5 -3,54 -4.5,52.5',
+  '-10,51.7 -6,52 -6,54.2 -8,55.2 -10,54',
+  '-24,65 -14,64.3 -14,66.2 -22,66.4',
+  '130,31 135,34 140,35.5 142,39.5 141.5,45 140,41 137,37 132,34.5',
+  '95,5.5 98,4 104,-2 106,-6 102,-4 97,1',
+  '109,1 117,7 119,1 116,-4 110,-3',
+  '105.5,-6.5 114.5,-8 114,-8.7 106,-7.5',
+  '120,18 122,18 124,12 126,7 122,7 120,14',
+  '114,-22 122,-18 130,-12 136,-12 137,-16 142,-11 146,-19 153,-26 151,-34 147,-39 141,-38 138,-35 134,-32 124,-34 115,-34 113,-26',
+  '173,-35 178,-38 175,-41.5 173,-39', '172.5,-41 174,-41.7 170,-46 167,-46',
+  '-85,22 -80,23 -74.2,20.2 -77.5,19.8', '-74,19.8 -68.5,19 -70,18 -74,18.3', '80,9.5 82,7 80.5,6'
+];
+
+/* ===================== État de la maquette ===================== */
+var mode = 'cours';
+var openPack = "Europe de l'Ouest", sel = 'Portugal', zoomed = true;
+var V = [];
+
+/* Vue de l'état « tout à jour » : chaque ligne non faite devient faite le 12/11 */
+function view() {
+  return ROWS.map(function (r) {
+    if (mode === 'cours' || r.grp === 'done') return r;
+    var c = JSON.parse(JSON.stringify(r));
+    c.grp = 'done'; c.fail = false; c.note = '';
+    c.ticks = [OK('12/11'), OK('12/11'), OK('12/11')];
+    if (c.hand) c.hand.files = c.hand.files.filter(function (f) { return !/facultatif/.test(f.note); }).map(function (f) { return { n: f.n, st: 'ok', note: 'reçu le 12/11' }; });
+    return c;
+  });
+}
+function srcsFor(name) {
+  var base = CTRY[name].base;
+  return V.filter(function (r) { return r.cs.indexOf(name) >= 0 || (r.id === 'oaip' && base === 'g'); });
+}
+function cstate(name) {
+  var s = srcsFor(name), c = CTRY[name];
+  if (!s.length) return 'n';
+  var own = s.filter(function (r) { return r.id !== 'oaip'; });
+  if (own.some(function (r) { return r.fail; })) return 'r';
+  if (s.some(function (r) { return r.grp !== 'done'; })) return 'a';
+  return 'g';
+}
+
+/* ===================== Carte ===================== */
+function proj(lon, lat) { return [(lon + 180) * 1000 / 360, (90 - lat) * 500 / 180]; }
+function renderMap() {
+  var box = document.getElementById('map');
+  var cw = box.clientWidth || 358, ch = box.clientHeight || 250;
+  var inPack = openPack ? PACKS.filter(function (p) { return p[0] === openPack; })[0] : null;
+  var cx = 500, cy = 235, vw = Math.max(1000, 480 * cw / ch), zoom = false;
+  if (zoomed && inPack) {
+    var xs = [], ys = [];
+    inPack.names.forEach(function (n) { var q = proj(CTRY[n].lon, CTRY[n].lat); xs.push(q[0]); ys.push(q[1]); });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys), pad = 16;
+    var w = Math.max(x1 - x0 + 2 * pad, (y1 - y0 + 2 * pad) * cw / ch, 60);
+    if (w < 900) { vw = w; cx = (x0 + x1) / 2; cy = (y0 + y1) / 2; zoom = true; }
+  }
+  var vh = vw * ch / cw, ppu = cw / vw;
+  var vb = (cx - vw / 2) + ' ' + (cy - vh / 2) + ' ' + vw + ' ' + vh;
+  var s = '<svg viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Carte du monde schématique">';
+  var hp = 3.6 / ppu;
+  s += '<defs><pattern id="hatch" patternUnits="userSpaceOnUse" width="' + hp + '" height="' + hp + '" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="' + hp + '" stroke="#1b1f24" stroke-width="' + (1.3 / ppu) + '" opacity=".7"/></pattern></defs>';
+  s += '<rect x="' + (cx - vw) + '" y="' + (cy - vh) + '" width="' + (2 * vw) + '" height="' + (2 * vh) + '" fill="#eef3f8"/>';
+  LAND.forEach(function (poly) {
+    s += '<polygon fill="#d9dee4" stroke="#c0c7cf" stroke-width="1" vector-effect="non-scaling-stroke" points="' +
+      poly.split(' ').map(function (pt) { var a = pt.split(','), q = proj(+a[0], +a[1]); return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ') + '"/>';
+  });
+  var rpx = zoom ? 10 : (cw < 500 ? 3.8 : 4.8), r = rpx / ppu, fs = 9.5 / ppu;
+  var names = Object.keys(CTRY);
+  var order = names.filter(function (n) { return !(inPack && PACK_OF[n] === openPack); }).concat(names.filter(function (n) { return inPack && PACK_OF[n] === openPack; }));
+  order.forEach(function (n) {
+    var c = CTRY[n], q = proj(c.lon, c.lat), st = cstate(n), isIn = inPack && PACK_OF[n] === openPack;
+    var dim = inPack && !isIn ? ' opacity=".4"' : '';
+    s += '<g' + dim + '>';
+    if (isIn) s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (r + 3.5 / ppu) + '" fill="#0b5cad" opacity=".28"/>';
+    s += '<circle data-c="' + n + '" cx="' + q[0] + '" cy="' + q[1] + '" r="' + r + '" fill="' + COL[st] + '" stroke="' + (isIn ? '#0b5cad' : '#6b747d') + '" stroke-width="' + (isIn ? 2.5 : 1) + '" vector-effect="non-scaling-stroke"><title>' + n + ' : ' + STW[st] + '</title></circle>';
+    if (c.hatch) s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + r + '" fill="url(#hatch)" pointer-events="none"/>';
+    if (n === sel) s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (r + 5 / ppu) + '" fill="none" stroke="#fff" stroke-width="5" vector-effect="non-scaling-stroke" pointer-events="none"/><circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (r + 5 / ppu) + '" fill="none" stroke="#1b1f24" stroke-width="2.5" vector-effect="non-scaling-stroke" pointer-events="none"/>';
+    s += '</g>';
+    if (isIn && zoom) s += '<text x="' + q[0] + '" y="' + (q[1] + fs * .35) + '" text-anchor="middle" font-size="' + fs + '" font-weight="700" fill="#111" stroke="#fff" stroke-width="1.6" vector-effect="non-scaling-stroke" paint-order="stroke" stroke-linejoin="round" pointer-events="none" font-family="system-ui,Segoe UI,Arial,sans-serif">' + c.code + '</text>';
+  });
+  s += '</svg>';
+  box.innerHTML = s;
+  document.getElementById('maptitle').innerHTML = inPack ? 'Groupe ouvert : <b>' + inPack[0] + '</b>' : '<b>Monde entier</b> · aucun groupe ouvert';
+  var zb = document.getElementById('zoombtn');
+  zb.hidden = !inPack;
+  zb.textContent = zoom ? 'Voir le monde entier' : 'Cadrer sur le groupe';
+}
+
+/* ===================== Groupes ===================== */
+function packCounts(p) {
+  var k = { g: 0, a: 0, r: 0, n: 0 };
+  p.names.forEach(function (n) { k[cstate(n)]++; });
+  return k;
+}
+function packSummary(p) {
+  var k = packCounts(p), t = [];
+  if (k.a + k.r === 0 && k.n === 0) return '<span class="g"><b>✓ tout à jour</b></span>';
+  if (k.g) t.push('<span class="g">' + k.g + ' à jour</span>');
+  if (k.a) t.push('<span class="a"><b>' + k.a + ' à faire</b></span>');
+  if (k.r) t.push('<span class="r"><b>' + k.r + ' en échec</b></span>');
+  if (k.n) t.push('<span class="n">' + k.n + ' sans état</span>');
+  return t.join(' · ');
+}
+function chip(n) {
+  var c = CTRY[n], st = cstate(n);
+  return '<button class="chip st-' + st + (n === sel ? ' sel' : '') + '" type="button" data-c="' + n + '" aria-pressed="' + (n === sel) + '"><span class="cn">' + n + '</span><span class="cs">' + GL[st] + ' ' + STW[st] + (c.hatch ? ' · <span class="hp" title="procédures disponibles"></span>proc.' : '') + '</span></button>';
+}
+function renderPacks(mobile) {
+  var list = PACKS.slice().sort(function (a, b) {
+    var ka = packCounts(a), kb = packCounts(b);
+    return ((kb.a + kb.r) > 0) - ((ka.a + ka.r) > 0);
+  });
+  var s = '<h2 class="sec-h">Les groupes de pays (' + PACKS.length + ') <small>' + Object.keys(CTRY).length + ' pays, les groupes à faire d’abord</small></h2><div class="packs">';
+  list.forEach(function (p) {
+    var o = p[0] === openPack;
+    s += '<div class="pk' + (o ? ' open' : '') + '"><button class="pkh" type="button" data-pack="' + p[0] + '" aria-expanded="' + o + '"><span class="pn">' + p[0] + '</span><span class="pc">' + p.names.length + ' pays</span><span class="ps">' + packSummary(p) + '</span></button>';
+    if (o) {
+      s += '<div class="pkb"><div class="chips">' + p.names.map(chip).join('') + '</div>';
+      if (mobile && sel && PACK_OF[sel] === p[0]) s += sheet(sel);
+      s += '</div>';
+    }
+    s += '</div>';
+  });
+  s += '</div>';
+  document.getElementById('packs').innerHTML = s;
+}
+
+/* ===================== Fiche pays ===================== */
+function tickCell(label, t) {
+  var d = /^\d\d\/\d\d$/.test(t.v) ? t.v : null;
+  return '<div class="tk ' + t.s + '"><span class="tl">' + label + '</span><span class="tv"><span aria-hidden="true">' + ICON[t.s] + '</span> ' + t.v + '</span>' + (d ? '<span class="te">' + ed(d) + '</span>' : '') + '</div>';
+}
+function srcBlock(r) {
+  var cls = r.fail ? 'fail' : r.grp === 'done' ? 'done' : 'todo';
+  var s = '<section class="src ' + cls + '"><div class="sh"><b>' + r.label + '</b><span class="badge">' + REG[r.reg] + '</span></div>';
+  s += '<div class="ticks">' + tickCell('téléchargé', r.ticks[0]) + tickCell('construit', r.ticks[1]) + tickCell('publié', r.ticks[2]) + '</div>';
+  if (r.note) s += '<p class="nt">' + r.note + '</p>';
+  if (r.shared) s += '<p class="shared"><b>Source commune.</b> ' + r.shared + '</p>';
+  if (r.hand) {
+    var f = r.hand.files, seen = f.filter(function (x) { return x.st === 'seen'; }).length, miss = f.filter(function (x) { return x.st === 'miss'; }).length;
+    s += '<dl class="inv"><dt>Pourquoi à la main</dt><dd>' + r.hand.why.charAt(0).toUpperCase() + r.hand.why.slice(1) + '</dd>' +
+      '<dt>Lien</dt><dd><a href="' + r.hand.link + '" target="_blank" rel="noopener">' + r.hand.link.replace(/^https:\/\//, '') + '</a></dd>' +
+      '<dt>Fichiers attendus' + (r.grp === 'done' ? '' : ' · ' + seen + ' vu, ' + miss + ' manque') + '</dt><dd><ul class="files">' +
+      f.map(function (x) { return '<li class="' + x.st + '"><span class="fs">' + (x.st === 'miss' ? '✗ manque' : x.st === 'seen' ? '✓ vu' : '✓ reçu') + '</span><code>' + x.n + '</code><small>' + x.note + '</small></li>'; }).join('') + '</ul></dd></dl>';
+  }
+  return s + '</section>';
+}
+function sheet(name) {
+  var c = CTRY[name], st = cstate(name), ss = srcsFor(name);
+  var zones = []; ss.forEach(function (r) { if (r.id !== 'oaip' && r.zones) zones = zones.concat(r.zones); });
+  var s = '<div class="sheet" role="region" aria-label="Fiche : ' + name + '"><div class="grab" aria-hidden="true"></div>';
+  s += '<div class="shead"><div class="tt"><h2>' + name + '</h2><p class="sub">' + c.code + ' · groupe ' + PACK_OF[name] + (zones.length ? ' · ' + zones.length + ' zone' + (zones.length > 1 ? 's' : '') + ' : ' + zones.join(', ') : '') + '</p></div><span class="status ' + st + '"><span aria-hidden="true">' + GL[st] + '</span> ' + STW[st] + '</span><button class="x" type="button" data-close="1" aria-label="Fermer la fiche">×</button></div>';
+  s += '<div class="sbody">';
+  if (!ss.length) {
+    s += '<p class="nt">Aucune source pour ce pays : rien n’est construit, donc aucun état. Les cartes de ce pays ne viennent d’aucun fichier.</p>';
+  }
+  /* d'abord ce qui reste à faire */
+  ss.slice().sort(function (a, b) { return (a.grp === 'done') - (b.grp === 'done'); }).forEach(function (r) { s += srcBlock(r); });
+  /* gestes */
+  var handTodo = ss.filter(function (r) { return r.reg === 'main' && r.grp !== 'done'; });
+  var autoTodo = ss.filter(function (r) { return r.reg !== 'main' && r.grp !== 'done' && r.id !== 'oaip'; });
+  var seenF = null;
+  handTodo.forEach(function (r) { r.hand.files.forEach(function (f) { if (f.st === 'seen' && !seenF) seenF = f; }); });
+  s += '<div class="gest">';
+  if (seenF) s += '<button class="btn primary block" type="button">Prendre le fichier téléchargé</button><p class="why" style="margin:0 0 2px">Le poste prendra « ' + seenF.n + ' » dans Téléchargements.</p><button class="linkbtn" type="button" style="align-self:flex-start">Choisir un autre fichier…</button>';
+  else if (handTodo.length) s += '<button class="btn primary block" type="button">Choisir le fichier…</button><p class="why">Rien de tel dans Téléchargements : indiquez le fichier à la main.</p>';
+  if (autoTodo.length) s += '<button class="btn block" type="button">Mettre à jour ce pays</button><p class="why">' + autoTodo.map(function (r) { return r.label + ' : ' + r.todo; }).join(' · ') + '. Ne publie pas.</p>';
+  else if (ss.length) s += '<button class="btn block" type="button" disabled>Mettre à jour ce pays</button><p class="why">Grisé : ' + (handTodo.length ? 'le poste ne peut rien faire seul ici, il attend le fichier à la main.' : 'rien à faire, tout est à jour pour ce pays.') + '</p>';
+  s += '</div><p class="foot">La publication ne se fait pas ici : un seul envoi pour tous les pays, plus bas dans la page (« Publier »).</p>';
+  return s + '</div></div>';
+}
+
+/* ===================== En-tête, liste du cycle, publier ===================== */
+function renderHead() {
+  var total = V.length, done = V.filter(function (r) { return r.grp === 'done'; }).length;
+  var auto = V.filter(function (r) { return r.grp === 'late' || r.grp === 'build'; }).length, h;
+  if (done === total) {
+    h = '<p class="sum" style="color:var(--ok)"><span aria-hidden="true">✓</span> Cycle 2611 : ' + done + ' faits sur ' + total + ' — tout est à jour, prochain cycle le 26 novembre</p><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + done + '"><i style="width:100%"></i></div>';
+  } else {
+    h = '<p class="sum">Cycle AIRAC 2611 · ' + done + ' faits sur ' + total + '</p><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + done + '"><i style="width:' + Math.round(done * 100 / total) + '%"></i></div>' +
+      '<div class="go"><button class="btn primary" type="button">Tout mettre à jour (' + auto + ')</button><p class="what">Télécharger 1 source, construire 2 zones. Les 3 lignes « à la main » attendent votre geste. La publication est une étape à part : voir « Publier ».</p></div>';
+  }
+  document.getElementById('head').innerHTML = h;
+}
+function lineBtn(r, small) {
+  var st = r.grp === 'done' ? 'g' : r.fail ? 'r' : 'a';
+  var c = r.cs[0] || 'Allemagne';
+  var tk = 'téléchargé ' + ICON[r.ticks[0].s] + ' · construit ' + ICON[r.ticks[1].s] + ' · publié ' + ICON[r.ticks[2].s];
+  var s = '<div class="todo-l ' + (r.fail ? 'fail' : r.grp === 'done' ? 'done' : '') + '"><button class="ln' + (small ? ' sm' : '') + '" type="button" data-c="' + c + '" data-focus="1"><span class="l1"><b>' + r.label + '</b><span class="badge">' + REG[r.reg] + '</span>';
+  s += '<span class="badge">' + (r.cs[0] || 'tous les pays') + '</span></span>';
+  if (small) s += '<span class="l2"><span class="w g">✓</span> ' + tk.replace(/ ✓/g, ' ✓') + ' · ' + r.ticks[2].v + '</span>';
+  else s += '<span class="l2"><span class="w' + (r.fail ? ' r' : '') + '">' + (r.fail ? '✗' : '!') + '</span> ' + r.short + '</span><span class="l3">' + tk + '</span>';
+  return s + '</button></div>';
+}
+function renderList() {
+  var undone = V.filter(function (r) { return r.grp !== 'done'; }), done = V.filter(function (r) { return r.grp === 'done'; });
+  var s = '<h2 class="sec-h">Ce qui reste à faire ce mois-ci (' + undone.length + ') <small>une ligne par source, touchez-la pour ouvrir la fiche du pays</small></h2>';
+  if (!undone.length) s += '<p class="note" style="margin:0"><b style="color:var(--ok)">✓</b> Rien à faire ce mois-ci : les trois coches sont posées sur toutes les lignes.</p>';
+  undone.forEach(function (r) { s += lineBtn(r, false); });
+  s += '<details class="sec"><summary>Déjà faits (' + done.length + ') <span class="sub">Les trois coches sont posées. Touchez une ligne pour ouvrir la fiche du pays.</span></summary><div class="secbody" style="padding:8px">' + done.map(function (r) { return lineBtn(r, true); }).join('') + '</div></details>';
+  document.getElementById('list').innerHTML = s;
+}
+function renderPub() {
+  var p = document.getElementById('pub'), n = V.filter(function (r) { return r.grp !== 'done' || r.id === 'xx'; }).length;
+  if (mode === 'fait') {
+    p.innerHTML = '<h2 id="pubh">Publier</h2><p class="lead">Un envoi emporte TOUS les commits non envoyés : les autres zones construites et vos données.</p><p>Rien à publier maintenant : tout a été envoyé le 12/11.</p><button class="btn block" type="button" disabled>Publier…</button><p class="why">Grisé : aucune zone construite n’attend.</p>';
+    return;
+  }
+  p.innerHTML = '<h2 id="pubh">Publier</h2>' +
+    '<p class="lead">Un envoi emporte TOUS les commits non envoyés : les autres zones construites et vos données.</p>' +
+    '<p>Aujourd’hui : <b>4 zones construites, pas encore publiées</b> (Italie nord, centre, sud, Sicile) et <b>2 commits de vos données</b> (journal de vol, flotte).</p>' +
+    '<button class="btn block" type="button" data-plan="1">Publier… (afficher le plan d’abord)</button>' +
+    '<p class="why">On ne publie pas une seule zone : c’est un choix. Ni « Tout mettre à jour » ni « Mettre à jour ce pays » n’envoient quoi que ce soit.</p>' +
+    '<div class="plan" id="plan" hidden><b>Plan de l’envoi</b> (rien n’est parti) :<ul><li>4 zones : Italie nord, Italie centre, Italie sud, Sicile</li><li>2 commits de vos données, en attente depuis le 10/11</li></ul><div class="acts"><button class="btn primary" type="button">Confirmer l’envoi</button><button class="btn" type="button" data-plan="0">Annuler</button></div></div>';
+}
+
+function render() {
+  V = view();
+  var mobile = window.innerWidth < 900;
+  renderHead(); renderPacks(mobile);
+  document.getElementById('side').innerHTML = (!mobile && sel) ? sheet(sel) : '';
+  renderList(); renderPub(); renderMap();
+}
+
+/* ===================== Interactions ===================== */
+function pick(name) { sel = name; openPack = PACK_OF[name]; zoomed = true; render(); }
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-c],[data-pack],[data-close],[data-state],[data-plan]');
+  if (e.target.closest('#zoombtn')) { zoomed = !zoomed; render(); return; }
+  if (!t) return;
+  if (t.dataset.c) { pick(t.dataset.c); if (t.dataset.focus) document.getElementById('mapbox').scrollIntoView({ block: 'start' }); }
+  else if (t.dataset.pack) { if (openPack === t.dataset.pack) { openPack = null; if (sel && PACK_OF[sel] === t.dataset.pack) sel = null; } else { openPack = t.dataset.pack; zoomed = true; if (sel && PACK_OF[sel] !== openPack) sel = null; } render(); }
+  else if (t.dataset.close) { sel = null; render(); }
+  else if (t.dataset.state) {
+    mode = t.dataset.state;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-state]'), function (b) { b.setAttribute('aria-pressed', b.dataset.state === mode ? 'true' : 'false'); });
+    render();
+  } else if (t.dataset.plan) { document.getElementById('plan').hidden = t.dataset.plan === '0'; }
+});
+window.addEventListener('resize', render);
+render();
+</script>
+</body>
+</html>
