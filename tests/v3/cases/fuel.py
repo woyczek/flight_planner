@@ -4511,3 +4511,38 @@ def f150(c):
         c.ok(len(dis) == 2 and all(one in norm(o[1]) for o in dis), dis, 'the two chart-only approaches listed after the coded ones, never selectable')
         c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-chartonly]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F150_{c.design}_{w}_{c.lang}_delivered.png')
+
+
+
+@case('F153', 'Display settings live on the device (cache/fuel/display.json): copied from fuel.json at the first read, without loss; a change '
+      'is written there only; fuel.json loses its display keys at its next write; the device document wins over fuel.json',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0279 (3) (V3 Frame\'s contract, frame/DECISIONS.md: displayAlt, displayDist, displaySpeed, displayUnit and wxRadiusNm move from '
+      'pilot/<tri>/fuel.json to cache/fuel/display.json; the Map reads displayAlt there, BUGS SOG a9758e03a)')
+def f153(c):
+    D, FJ = 'cache/fuel/display.json', 'pilot/ABC/fuel.json'
+    keys = ('displayUnit', 'displaySpeed', 'displayAlt', 'displayDist', 'wxRadiusNm')
+    old = {'schema': 1, 'displayUnit': 'lb', 'displayAlt': 'm', 'displayDist': 'km', 'wxRadiusNm': 20, 'displaySpeed': 'bad', 'taxiMin': 12, 'entries': {}}
+    c.open('fuel', docs=flight_docs() + [[FJ, old, 'document']])
+    wait_quote(c)
+    d = c.until_doc(D, lambda d: bool(d), 'the device document is written at the first read')
+    c.eq({k: d.get(k) for k in keys if k in d}, {'displayUnit': 'lb', 'displayAlt': 'm', 'displayDist': 'km', 'wxRadiusNm': 20},
+         'the values of fuel.json copied, none invented (a value off the list is not taken)', what='copied')
+    to_step(c, 3)
+    c.ok('lb' in norm(c.text(f'{FUEL} [data-settingssum]') or ''), c.text(f'{FUEL} [data-settingssum]'), 'the quote is in lb, as before')
+    # a change of a quote setting: fuel.json written without its display keys
+    c.js(f"document.querySelector('{FUEL} details[data-fold=settings]').open = true")
+    c.page.fill(f'{FUEL} input[data-k="taxiMin"]', '15')
+    c.page.locator(f'{FUEL} input[data-k="taxiMin"]').blur()
+    f = c.until_doc(FJ, lambda d: d and d.get('taxiMin') == 15, 'fuel.json written with the new taxi time')
+    c.eq([k for k in keys if k in f], [], 'fuel.json has no display key any more', what='fuel.json keys')
+    # a change of the fuel unit: the device document only
+    c.page.select_option(f'{FUEL} select[data-k="unit"]', 'kg')
+    d = c.until_doc(D, lambda d: d and d.get('displayUnit') == 'kg', 'the unit written on the device')
+    c.settle()
+    c.eq([k for k in keys if k in (c.doc(FJ) or {})], [], 'still nothing of the display in fuel.json', what='fuel.json after the unit')
+    # the device document wins over an old fuel.json (another device that has not migrated yet wrote it)
+    c.open('fuel', docs=flight_docs() + [[FJ, {**old, 'displayUnit': 'kg'}, 'document'], [D, {'schema': 1, 'displayUnit': 'lb'}, 'cache']])
+    wait_quote(c)
+    to_step(c, 3)
+    c.ok('lb' in norm(c.text(f'{FUEL} [data-settingssum]') or ''), c.text(f'{FUEL} [data-settingssum]'), 'the device document says lb: lb')

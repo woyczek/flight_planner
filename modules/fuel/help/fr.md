@@ -187,7 +187,7 @@ aussi, « performances à renseigner », avec « Créer dans Maintenance ». Cha
 
 Dans « Réglages du devis » : minutes de roulage et de réserve, pourcentage de contingence, et un débit de croisière
 propre à ce vol (il remplace celui de la fiche), saisi dans l'unité du devis que son libellé dit (« lb/h »). « Unités affichées » change le carburant (kg ou lb), la vitesse, les
-altitudes et les distances à l'écran ; les niveaux restent des niveaux de vol, et rien ne change dans les fiches.
+altitudes et les distances à l'écran ; les niveaux restent des niveaux de vol, et rien ne change dans les fiches. Les unités affichées et le rayon de la météo sont des réglages de cet appareil : ils ne suivent pas sur vos autres appareils (un téléphone peut afficher des km, l'ordinateur des NM).
 
 ## Cas particuliers
 

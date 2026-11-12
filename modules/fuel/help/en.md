@@ -186,7 +186,7 @@ every type used by the company (fleet, reference) that has no sheet yet is liste
 
 In “Quote settings”: taxi and reserve minutes, contingency percentage, and a cruise fuel flow for this flight only (it
 replaces the sheet's), typed in the unit of the quote that its label says ("lb/h"). “Displayed units” changes fuel (kg or lb), speed, altitudes and distances on screen; levels stay
-flight levels, and nothing changes in the sheets.
+flight levels, and nothing changes in the sheets. The displayed units and the weather radius are settings of this device: they do not follow on your other devices (a phone may show km, the computer NM).
 
 ## Special cases
 

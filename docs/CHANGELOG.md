@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: display units are a setting of the device** — moved from fuel.json to cache/fuel/display.json, copied at the first read without loss, never sent (Fuel DECISIONS, help; noreg F153; SOG-0279).
 - **Map: the contours' unit follows the device's display settings** — `displayAlt` is read from `cache/fuel/display.json` (read-only), `fuel.json` as the fallback before Fuel has run (noreg D191; Features SOG, V3 Frame SOG-0279 (3)).
 - **Flight path and .fms export: RF arcs kept whole** — every arc point stays in the path (never merged with its neighbour), the .fms v3 export writes named fixes only (Fuel DECISIONS; bench F60).
 - **`base/cycle.datasets`: the other sets of the Data screen** (SOG-0273, for the redesigned header and « Tout mettre à jour ») — one line per set: procedures (newest CIFP cycle against the cycle in force, aerodromes read by hand), world weather (GFS run and build time; old beyond 12 h), NAT tracks (end of validity of their messages), VFR points, aircraft, performance sheets (a date, no due date: `n/a`): `{ id, label[4], state: 'up-to-date' | 'todo' | 'n/a', why?: 'absent' | 'older-than-cycle' | 'old' | 'expired', at, … }`, read on the workstation without network. K207.

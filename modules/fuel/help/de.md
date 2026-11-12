@@ -199,7 +199,7 @@ das Blatt des Fluges trägt „für diesen Flug verwendet“.
 Unter „Einstellungen“ der Berechnung: Minuten für Rollen und Reserve, Prozentsatz der Zusatzmenge und ein
 Reiseflugverbrauch nur für diesen Flug (er ersetzt den des Datenblatts), in der Einheit der Berechnung eingegeben, die seine Beschriftung nennt („lb/h“). „Angezeigte Einheiten“ ändert Kraftstoff (kg
 oder lb), Geschwindigkeit, Höhen und Entfernungen am Bildschirm; Flugflächen bleiben Flugflächen, und in den
-Datenblättern ändert sich nichts.
+Datenblättern ändert sich nichts. Die angezeigten Einheiten und der Wetterradius sind Einstellungen dieses Geräts: Sie folgen nicht auf Ihre anderen Geräte (ein Telefon kann km zeigen, der Rechner NM).
 
 ## Sonderfälle
 

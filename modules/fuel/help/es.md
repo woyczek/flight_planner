@@ -192,7 +192,7 @@ regímenes, velocidades, crucero, rodaje, pista»); «completa» cuando no falta
 
 En «Ajustes del cálculo»: minutos de rodaje y de reserva, porcentaje de contingencia, y un flujo de crucero propio de
 este vuelo (sustituye al de la ficha), escrito en la unidad del cálculo que dice su etiqueta («lb/h»). «Unidades mostradas» cambia el combustible (kg o lb), la velocidad, las
-altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vuelo, y nada cambia en las fichas.
+altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vuelo, y nada cambia en las fichas. Las unidades mostradas y el radio meteorológico son ajustes de este dispositivo: no siguen en sus otros dispositivos (un teléfono puede mostrar km, el ordenador NM).
 
 ## Casos particulares
 

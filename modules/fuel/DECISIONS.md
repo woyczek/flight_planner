@@ -1730,3 +1730,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   export (frame/lib/fms.js `flownPoints`, the only writer that lists procedure points) never writes a nameless procedure point: the RF
   leg leaves by its named end point. The 1100 and .pln writers list route points only (procedures by name): unchanged. Bench of
   frame/lib/test/fms.html (F60), red before (one arc point kept, AP301 lost, a nameless position written).
+- **12 Nov 2026 — the display settings on the device** (SOG-0279 (3), V3 Frame's contract in frame/DECISIONS.md): displayUnit,
+  displaySpeed, displayAlt, displayDist and wxRadiusNm live in `cache/fuel/display.json` (a device document, never sent); at the first read
+  without that document, the valid values of `pilot/<tri>/fuel.json` are copied there (none invented: a value off the list is not taken);
+  Fuel no longer writes them to fuel.json, whose old keys disappear at its next write; each document is written only when its part
+  changed. The device document wins over an older fuel.json. The Map reads displayAlt there first (BUGS SOG a9758e03a, D191). Help: the
+  units are a setting of this device. F153 (red before).

@@ -1290,15 +1290,75 @@ async function writeFlight(s) {
   s.writing = s.flight.updated_at;
   await s.ctx.data.put(path, s.flight);
 }
-/** Écrit les réglages du devis (après un temps calme). */
+// ---------------------------------------------------------------- réglages d'affichage de l'appareil (SOG-0279 (3))
+/** Les réglages d'affichage : un réglage de l'APPAREIL (cache/fuel/display.json, jamais envoyé), plus dans pilot/<tri>/fuel.json (contrat
+ *  de V3 Frame, frame/DECISIONS.md). La Carte lit displayAlt dans ce document (BUGS SOG a9758e03a). */
+const DISPLAY_PATH = 'cache/fuel/display.json';
+/** Chaque clé d'affichage et ses valeurs permises (une valeur hors liste n'est pas reprise : la valeur par défaut s'applique). */
+const DISPLAY_KEYS = {
+  displayUnit: v => ['kg', 'lb'].includes(v),
+  displaySpeed: v => UNITS.speed.list.includes(v),
+  displayAlt: v => UNITS.alt.list.includes(v),
+  displayDist: v => UNITS.dist.list.includes(v),
+  wxRadiusNm: v => typeof v === 'number' && v >= 0 && v <= 50
+};
+/** Les clés d'affichage valides d'un document (celui de l'appareil, ou fuel.json pour la copie de la première lecture). */
+function displayOf(doc) {
+  const out = {};
+  for (const [k, ok] of Object.entries(DISPLAY_KEYS))
+    if (doc && typeof doc === 'object' && ok(doc[k])) out[k] = doc[k];
+  return out;
+}
+/** fuel.json sans ses clés d'affichage (celles qu'il porte encore disparaissent à sa prochaine écriture). */
+function withoutDisplay(doc) {
+  const out = {
+    ...(doc && typeof doc === 'object' ? doc : {})
+  };
+  for (const k of Object.keys(DISPLAY_KEYS)) delete out[k];
+  return out;
+}
+/** Les réglages d'après fuel.json et le document de l'appareil ; sans document de l'appareil, les valeurs de fuel.json y sont copiées
+ *  (une fois, sans rien inventer : seulement celles qu'il porte). */
+function settingsFrom(fuel, display) {
+  const disp = display && typeof display === 'object' ? displayOf(display) : displayOf(fuel);
+  if (!display && Object.keys(disp).length) S.ctx.data.put(DISPLAY_PATH, {
+    schema: 1,
+    ...disp,
+    updated_at: new Date().toISOString()
+  })?.catch?.(() => {});
+  return {
+    ...withoutDisplay(fuel),
+    ...disp
+  };
+}
+/** Écrit les réglages (après un temps calme) : ceux du devis dans fuel.json (le dépôt), ceux d'affichage dans le document de l'appareil ;
+ *  chacun seulement s'il a changé depuis sa dernière écriture. */
 function saveSettings() {
   clearTimeout(S.setTimer);
   const s = S;
-  s.setTimer = setTimeout(() => s.ctx.data.put(`pilot/${s.ctx.identity.trigram || 'ANON'}/fuel.json`, {
-    ...s.settings,
-    schema: 1,
-    updated_at: new Date().toISOString()
-  }), 800);
+  s.setTimer = setTimeout(() => {
+    const fuel = withoutDisplay(s.settings),
+      disp = displayOf(s.settings),
+      fk = JSON.stringify(fuel),
+      dk = JSON.stringify(disp),
+      at = new Date().toISOString();
+    if (fk !== s.savedFuel) {
+      s.savedFuel = fk;
+      s.ctx.data.put(`pilot/${s.ctx.identity.trigram || 'ANON'}/fuel.json`, {
+        ...fuel,
+        schema: 1,
+        updated_at: at
+      });
+    }
+    if (dk !== s.savedDisplay) {
+      s.savedDisplay = dk;
+      s.ctx.data.put(DISPLAY_PATH, {
+        schema: 1,
+        ...disp,
+        updated_at: at
+      });
+    }
+  }, 800);
 }
 
 // ---------------------------------------------------------------- procédures choisies et chemin du devis (§ 10.20)
@@ -5731,8 +5791,8 @@ export async function mount(el, ctx) {
   // vol courant ou les réglages jamais lus arrivent ensuite (completeMount) — en attendant « chargement… », et rien
   // n'est écrit ni calculé
   const rd = path => Promise.resolve().then(() => ctx.data.read(path)).then(r => r?.value ?? null).catch(() => null),
-    [, kept0, fuelSettings, ofp, ui, lastAcKept] = await Promise.all([loadLibs(), rd(pilotPath('current_flight.json')),
-      rd(pilotPath('fuel.json')), rd(OFP_PATH), rd(UI_PATH), rd(LAST_AC_PATH)
+    [, kept0, fuelSettings, ofp, ui, lastAcKept, display] = await Promise.all([loadLibs(), rd(pilotPath('current_flight.json')),
+      rd(pilotPath('fuel.json')), rd(OFP_PATH), rd(UI_PATH), rd(LAST_AC_PATH), rd(DISPLAY_PATH)
     ]);
   if (gone(self)) return; // démonté, ou remplacé par un autre montage, pendant les lectures
   S.refsPending = true; // registre d'aerodb et fiches pas encore là : ni devis, ni écriture du devis
@@ -5750,8 +5810,10 @@ export async function mount(el, ctx) {
     displayAlt: 'ft',
     displayDist: 'NM',
     entries: {},
-    ...(fuelSettings || {})
+    // SOG-0279 (3) : l'affichage vient du document de l'appareil ; fuel.json ne l'apporte plus qu'à la copie de la première lecture
+    ...(fuelSettings || display ? settingsFrom(fuelSettings, display) : {})
   };
+  S.display0 = display; // le document de l'appareil lu au montage (null : la copie depuis fuel.json reste à faire à son arrivée)
   S.lastAc = lastAcKept?.aircraft || null;
   if (!S.flightPending) flightDefaults(kept);
   S.ofp = ofp;
@@ -6039,9 +6101,12 @@ async function completeMount(self) {
   await readSheets();
   if (gone(self)) return;
   if (S.settingsPending) {
+    // fuel.json arrivé après le premier dessin (appareil neuf) : le devis en prend ses réglages ; l'affichage du document de l'appareil
+    // l'emporte, et la copie depuis fuel.json se fait s'il n'y en a pas encore
     S.settings = {
       ...S.settings,
-      ...(fs1 || {})
+      ...(fs1 ? settingsFrom(fs1, S.display0) : {}),
+      ...displayOf(S.display0)
     };
     S.settingsPending = false;
   }
