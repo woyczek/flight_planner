@@ -538,6 +538,8 @@ a mission type has no box to show (distance, level). “Use” also fills in the
 and the fuel at departure (the block fuel of the quote), the whole recalled in the “Prefilled from: …” line under the card’s title. Saving the report ends the started
 flight: Fuel goes back to preparation, My flights removes “In progress”, and the flight is no longer offered.
 
+**A flight of another company.** A flight prepared for a company and taken when the device has moved to another keeps its own: the heading says it, the list of families is its own, and the report is saved for it. Its family and series come from Fuel's Flight step (filled by the mission); if they were forgotten at the departure, choose them here: the report has the last word.
+
 **The other sources.** Unfold “Other sources” to take your last IVAO or VATSIM flight, your SimBrief flight plan, or a
 pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or from StatSim, a METAR. Only empty fields
 are filled; the “Prefilled from: …” line under the card’s title says where they come from. If a source gives something else for fields already entered, a button offers

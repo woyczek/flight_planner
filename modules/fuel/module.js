@@ -6829,6 +6829,10 @@ async function themesLoad() {
   if (gone(s)) return;
   s.themeDoc = doc;
   s.themeKind = kindOf(a);
+  // SOG-0041 : le vol est de la compagnie où il est préparé (le compte rendu en propose les familles) ; en mémoire, il part avec la
+  // prochaine écriture
+  const code = typeof a?.code === 'string' && /^[a-z0-9]{2,8}$/.test(a.code) ? a.code : '';
+  if (code && s.flight && !s.flightPending) s.flight.airline = code;
   themesDraw();
 }
 /** Les deux listes de l'étape Vol. */

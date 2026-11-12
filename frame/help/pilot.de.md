@@ -574,6 +574,8 @@ einer Zeile alles, was übernommen wird, auch das, wofür eine Einsatzart kein F
 der Kalkulation) aus, alles in der Zeile „Vorausgefüllt aus: …“ unter dem Kartentitel festgehalten. Das Speichern des Berichts beendet den gestarteten Flug:
 Kraftstoff kehrt zur Vorbereitung zurück, Meine Flüge entfernt „Laufend“, und der Flug wird nicht mehr vorgeschlagen.
 
+**Ein Flug einer anderen Gesellschaft.** Ein für eine Gesellschaft vorbereiteter Flug, übernommen, nachdem das Gerät zu einer anderen gewechselt hat, behält seine: Die Kopfzeile nennt sie, die Liste der Familien ist ihre, und der Bericht wird für sie gespeichert. Familie und Serie kommen aus dem Schritt Flug von Kraftstoff (von der Mission ausgefüllt); wurden sie beim Abflug vergessen, wählen Sie sie hier: Der Bericht hat das letzte Wort.
+
 **Die anderen Quellen.** Klappen Sie „Andere Quellen“ auf, um Ihren letzten IVAO- oder VATSIM-Flug, Ihren
 SimBrief-Flugplan oder einen eingefügten Text zu übernehmen: einen ICAO-Flugplan, die Seite eines Flugs aus dem
 IVAO-Tracker oder von StatSim, ein METAR. Nur leere Felder werden ausgefüllt; die Zeile „Vorausgefüllt aus: …“ unter dem Kartentitel nennt ihre Herkunft. Liefert

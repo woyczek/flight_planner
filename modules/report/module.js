@@ -468,11 +468,14 @@ async function save() {
     prev = S.path ? (await S.ctx.data.get(path)) || {} : {},
     // § 10.38 étape 1 : le CR porte le code de la compagnie courante (ctx.airline.code) ; un CR déjà enregistré garde la sienne
     code = v => typeof v === 'string' && /^[a-z0-9]{2,8}$/.test(v) ? v : '',
-    airline = code(prev.airline) || code(S.ctx.airline?.code),
+    airline = code(prev.airline) || code(S.flightCo?.code) || code(S.ctx.airline?.code), // SOG-0041 : la compagnie du vol repris
     // SOG-0181 : le nom et le genre de la compagnie au premier enregistrement, gardés ensuite (le CR ne change pas de compagnie)
     snap = prev.airline ? {
       airlineName: typeof prev.airlineName === 'string' ? prev.airlineName.slice(0, 60) : '',
       airlineKind: MC.KINDS.includes(prev.airlineKind) ? prev.airlineKind : ''
+    } : S.flightCo ? {
+      airlineName: S.flightCo.name,
+      airlineKind: S.flightCo.kind
     } : await airlineNow().then(a => ({
       airlineName: a?.name || '',
       airlineKind: a?.kind || ''
@@ -519,6 +522,7 @@ async function save() {
     }));
     S.usedStarted = '';
   }
+  S.flightCo = null; // SOG-0041 : enregistré, le CR porte sa compagnie (savedOf) ; un compte rendu suivant repart de la courante
   await S.ctx.data.put(PREFS, {
     family: m.family
   }, {
@@ -664,7 +668,7 @@ async function airlineLine() {
   const s = S,
     el = s?.body?.parentElement?.querySelector(':scope > [data-crairline]');
   if (!el) return;
-  let a = s.saved,
+  let a = s.saved || s.flightCo,
     live = false;
   if (a && !a.name) {
     const known = (await window.FrameData?.airlines?.().catch(() => null) || []).find(x => x?.code === a.code);
@@ -718,7 +722,8 @@ async function loadCategories() {
   let a = null,
     doc = null;
   try {
-    a = await window.FrameData?.airline?.();
+    // SOG-0041 : le compte rendu d'un vol repris propose les familles de la compagnie DU VOL (current_flight.airline), sinon la courante
+    a = S?.flightCo || await window.FrameData?.airline?.();
     doc = a?.root ? await S.ctx.data.get(`${a.root}categories.json`) : null;
   } catch {
     doc = null;
@@ -728,6 +733,28 @@ async function loadCategories() {
   const th = a?.root ? await Promise.resolve().then(() => S?.ctx.data.get(`${a.root}themes.json`)).catch(() => null) : null;
   if (S) S.themeIds = new Set(MT.chosenOf(th, MC.kindOf(a)));
   if (S) addedFamilies(MT.forAirline(th, MC.kindOf(a)).filter(t => t.added));
+}
+/** SOG-0041 : la compagnie du vol repris (current_flight.airline, écrit par Carburant) : { code, name, kind, root, settings } ; null
+ *  sans elle, pour un code inconnu de l'index, ou quand c'est la compagnie courante. Le dossier suit la règle du cadre (airline/<code>/,
+ *  airline/ pour default, pilot/<trigramme>/airline/perso/ pour personnel) ; son settings.json est une entrée non fiable (kindOf). */
+async function flightAirline(cf) {
+  const code = typeof cf?.airline === 'string' && /^[a-z0-9]{2,8}$/.test(cf.airline) ? cf.airline : '';
+  if (!code || code === S.ctx.airline?.code) return null;
+  const known = (await window.FrameData?.airlines?.().catch(() => null) || []).find(x => x?.code === code);
+  if (!known) return null;
+  const root = code === 'perso' ? `pilot/${S.ctx.identity.trigram || 'ANON'}/airline/perso/` : code === 'default' ? 'airline/' :
+    `airline/${code}/`,
+    settings = await Promise.resolve().then(() => S.ctx.data.get(`${root}settings.json`)).catch(() => null),
+    co = {
+      code,
+      root,
+      settings: settings && typeof settings === 'object' ? settings : null
+    };
+  return {
+    ...co,
+    name: String(known.name || code).slice(0, 60),
+    kind: MC.kindOf(co)
+  };
 }
 /** Les familles AJOUTÉES par la compagnie (Réglages, themes.json ; entrée non fiable filtrée par MT.cleanThemes : identifiant à la
  *  règle, jamais celui d'une famille de la table) sont aussi des familles du compte rendu : le formulaire commun seul, sans bloc ni
@@ -1478,6 +1505,12 @@ async function onClick(e) {
         a = cf.aircraft || {},
         r = cf.route || {};
       S.usedStarted = cf.started?.at || ''; // ce compte rendu est celui du vol démarré
+      // SOG-0041 : la compagnie du vol (une autre que la courante) : ses familles, et l'en-tête le dit
+      S.flightCo = await flightAirline(cf);
+      if (!S) return;
+      await loadCategories();
+      if (!S) return;
+      airlineLine();
       takeCategory(cf.missionCategory); // SOG-0041 : la charge que demande la catégorie de sa mission
       takeTheme(cf); // SOG-0202 T2 : le thème et le sous-thème du vol
       notOverflown(cf);

@@ -23,6 +23,7 @@
 export const FUEL_FIELDS = ['aircraft', 'route', 'level', 'wind', 'windSource', 'isaDev', 'profile', 'quote', 'weather', 'ofp',
   'started', 'planned_at', 'mission', // mission : l'id de la mission d'où vient le vol (modules/missions SPEC § 4)
   'missionCategory', // sa catégorie (SOG-0041, § 10.38), lue par la migration de mission_themes.js (fromCategory)
+  'airline', // le code de la compagnie où le vol est préparé (SOG-0041) : le compte rendu en propose les familles
   'theme',
   'series' // le thème et le sous-thème du vol (SOG-0202 T2, § 10.48) : choisis à l'étape Vol, remplis par la mission ; le compte rendu les reprend
 ];

@@ -259,3 +259,10 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
 - **12 Nov 2026 — a point not overflown after a direct** (SOG-0088 (a)): « Vol en cours » adds to the observations one line per point
   imposed by the mission that a direct from ATC skipped (`route.directs[].notOverflown`, written by Fuel): « PT4 non survolé : direct du
   contrôle vers NEPIX (18:07) », after what the pilot wrote, never twice; values bounded (a flight is an untrusted input). G19 (red before).
+- **12 Nov 2026 — the families of the flight's company** (SOG-0041, the ergonomist: the list of families follows the company OF THE FLIGHT
+  taken, not the device's current company): Fuel writes `current_flight.airline` (the code of the company where the flight is prepared,
+  `FUEL_FIELDS`); « Vol en cours » of a flight of another company reads that company (`flightAirline`: the index of the frame, its folder
+  by the frame's rule, its settings.json untrusted) for the families and the categories, the heading says it, and the report is saved for
+  it (airline, name, kind); a report started afresh goes back to the current company. G20 (red before); N42 holds the path the user
+  refused on 10 Nov end to end (mission « fret » → Fuel Famille COMMERCIAL / Série Fret → report: taken, freight in kg, the series changed
+  in the report is the one saved).

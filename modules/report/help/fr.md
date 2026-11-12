@@ -19,6 +19,8 @@ remplit aussi l'heure de mise en route (l'heure du départ dans Carburant) et le
 bloc du devis), le tout rappelé dans la ligne « Prérempli depuis : … » sous le titre de la carte. Enregistrer le compte rendu termine le vol démarré : Carburant revient en
 préparation, Mes vols retire « en cours », et le vol n'est plus proposé.
 
+**Le vol d'une autre compagnie.** Un vol préparé pour une compagnie et repris quand l'appareil est passé sur une autre garde la sienne : l'en-tête la dit, la liste des familles est la sienne, et le compte rendu est enregistré pour elle. Sa famille et sa série viennent de l'étape Vol de Carburant (remplies par la mission) ; si elles ont été oubliées au départ, choisissez-les ici : le compte rendu a le dernier mot.
+
 **Les autres sources.** Dépliez « Autres sources » pour reprendre votre dernier vol IVAO ou VATSIM, votre plan de vol
 SimBrief, ou un texte collé : un plan de vol OACI, la page d'un vol du tracker IVAO ou de StatSim, un METAR. Seuls les
 champs vides sont remplis ; la ligne « Prérempli depuis : … » sous le titre de la carte dit d'où ils viennent. Si une source donne autre chose pour des champs déjà saisis,

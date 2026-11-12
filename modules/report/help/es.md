@@ -18,6 +18,8 @@ también la hora de puesta en marcha (la hora de salida en Combustible) y el com
 bloque del cálculo), todo recordado en la línea «Rellenado desde: …» bajo el título de la tarjeta. Guardar el informe termina el vuelo iniciado: Combustible vuelve a
 la preparación, Mis vuelos quita «En curso», y el vuelo ya no se propone.
 
+**Un vuelo de otra compañía.** Un vuelo preparado para una compañía y retomado cuando el dispositivo ha pasado a otra conserva la suya: la cabecera lo dice, la lista de familias es la suya y el informe se guarda para ella. Su familia y su serie vienen del paso Vuelo de Combustible (rellenadas por la misión); si se olvidaron en la salida, elíjalas aquí: el informe tiene la última palabra.
+
 **Las otras fuentes.** Despliegue «Otras fuentes» para retomar su último vuelo IVAO o VATSIM, su plan de vuelo
 SimBrief, o un texto pegado: un plan de vuelo OACI, la página de un vuelo del tracker IVAO o de StatSim, un METAR. Solo
 se rellenan los campos vacíos; la línea «Rellenado desde: …» bajo el título de la tarjeta dice de dónde vienen. Si una fuente da otra cosa para campos ya rellenados, un

@@ -738,3 +738,34 @@ def g19(c):
     c.tap('[data-module="report"] [data-do="current"]')
     c.settle()
     c.eq(len(line()), 1, 'taken again: never twice', what='once')
+
+
+
+@case('G20', 'Report: « Vol en cours » of a flight of another company than the device\'s offers the families of the FLIGHT\'s company, and the '
+      'heading says that company; the report is saved with it', 'G', tags=('report',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0041 (the ergonomist, 12 Nov: « la liste des familles du CR suit la compagnie DU VOL repris, pas la compagnie courante de '
+      'l\'appareil »); current_flight.airline written by Fuel; invented companies (Alpha Air: Commercial and SAR; Bravo Air: HEMS)')
+def g20(c):
+    from lib import flight_docs
+    docs = flight_docs(True)
+    f = docs[1][1]
+    f.update({'airline': 'aaa', 'theme': 'COMMERCIAL', 'series': 'CARGO'})
+    docs += [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+             ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+             ['airline/aaa/themes.json', {'schema': 1, 'chosen': ['COMMERCIAL', 'SAR']}, 'document'],
+             ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document'],
+             ['airline/bbb/themes.json', {'schema': 1, 'chosen': ['HEMS']}, 'document'], ['cache/report/draft.json', {}, 'cache']]
+    c.open('report', docs=docs)
+    c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+    c.js("async () => { await window.FrameData.setAirline('bbb'); return true }")   # the device is on Bravo Air
+    c.until("!!document.querySelector('[data-module=report] [data-do=current]')", timeout=10000, what='the current-flight card')
+    c.tap('[data-module="report"] [data-do="current"]')
+    c.until("(document.querySelector('[data-module=report] select[data-family]') || {}).value === 'COMMERCIAL'", timeout=8000, what='the flight\'s family')
+    opts = lambda: c.js("[...document.querySelectorAll('[data-module=report] select[data-family] option')].map(o => o.value)")
+    c.until("[...document.querySelectorAll('[data-module=report] select[data-family] option')].some(o => o.value === 'SAR')", timeout=8000,
+            what='the families of Alpha Air (the flight\'s company), SAR among them')
+    c.ok('HEMS' not in opts() or (c.js("(document.querySelector('[data-module=report] select[data-family]') || {}).value") == 'HEMS'), opts(),
+         'not the families of Bravo Air (the device\'s)')
+    c.until("/Alpha Air/.test(document.querySelector('[data-crairline]')?.textContent || '')", timeout=6000, what='the heading says Alpha Air')
+    path = _save_report(c)
+    c.eq((c.doc(path) or {}).get('airline'), 'aaa', 'saved with the flight\'s company', what='record airline')

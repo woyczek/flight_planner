@@ -1600,3 +1600,57 @@ def n41(c):
         t = row.querySelector('b').getBoundingClientRect();
       return {{ gap: rb.left - ra.right, inner: t.left - rr.left }} }})()""")
     c.ok(m['gap'] >= 6 and m['inner'] >= 8, m, 'a space between the two buttons, the text off the edge of the card')
+
+
+
+@case('N42', 'The commercial path end to end: a mission « fret » of a commercial company → Fuel fills Famille COMMERCIAL / Série Fret → the '
+      'report takes them on « Vol en cours » with the freight in kg → a series changed in the report is the one saved (the report has the last word)',
+      'N', tags=('missions', 'fuel', 'report'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0041 refused on 10 Nov (« À quel moment, je décide de faire une mission fret, passagers… ? à quel moment le cr match ce choix ? '
+      'que faire si j\'ai oublié de choisir au départ du vol ? »): the ergonomist, 12 Nov: the path held by a case, not by a reading of the code; '
+      'invented missions and companies')
+def n42(c):
+    co = [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+          ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'], ['cache/report/draft.json', {}, 'cache']]
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _THEME_REGISTRY], ['missions/X_CO/X-601A/missionX-601A.yaml', _THEME_FRET]])
+    c.open('missions', docs=co, wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-results] [data-count]')", timeout=15000, what='the list is drawn')
+    set_airline(c, 'aaa')
+    # (1) the mission « fret » prepared: Fuel's step Flight says Famille COMMERCIAL / Série Fret
+    c.go('fuel?mission=X-601A')
+    for _ in range(40):
+        if c.js("!!document.querySelector('.f-modal [data-ok]')"):
+            c.tap('.f-modal [data-ok]')
+        if c.js("(document.querySelector('[data-module=fuel] select[data-k=series]') || {}).value") == 'CARGO':
+            break
+        c.wait(250)
+    c.eq(c.js("['theme', 'series'].map(k => (document.querySelector(`[data-module=fuel] select[data-k=${k}]`) || {}).value)"), ['COMMERCIAL', 'CARGO'],
+         'Fuel: Famille COMMERCIAL, Série Fret, filled by the mission', what='fuel')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: (d or {}).get('theme') == 'COMMERCIAL' and (d or {}).get('airline') == 'aaa',
+                'the flight written with its family and its company')
+    # (2) the report: « Vol en cours » takes the family and the series, the freight asked in kg
+    c.go('report')
+    c.until("!!document.querySelector('[data-module=report] [data-do=current]')", timeout=15000, what='the current-flight card')
+    c.tap('[data-module="report"] [data-do="current"]')
+    c.until("(document.querySelector('[data-module=report] select[data-family]') || {}).value === 'COMMERCIAL' && "
+            "(document.querySelector('[data-module=report] [data-path=series]') || {}).value === 'CARGO'", timeout=8000,
+            what='the report: COMMERCIAL / Fret taken from the flight')
+    c.until("!!document.querySelector('[data-module=report] [data-loadcard=freight] input[data-load=freightKg]')", timeout=6000, what='the freight asked, in kg')
+    c.shot(f'N42_{c.design}_{c.width}_{c.lang}_delivered.png')
+    # (3) forgotten at the departure or changed after: the report has the last word
+    c.js("""(() => { const s = document.querySelector('[data-module=report] [data-path=series]'); s.value = 'PASSENGERS';
+      s.dispatchEvent(new Event('change', { bubbles: true })) })()""")
+    c.until("!!document.querySelector('[data-module=report] [data-loadcard=passengers]')", timeout=6000, what='Passagers: the passengers asked')
+    before = set(c.doc_paths('cr/reports/'))
+    c.tap('[data-module="report"] [data-do="save"]')
+    path = None
+    for _ in range(40):
+        got = [p for p in c.doc_paths('cr/reports/') if p not in before]
+        if got:
+            path = got[0]
+            break
+        c.wait(200)
+    d = c.doc(path) if path else {}
+    c.eq([d.get('family'), d.get('series'), d.get('airline')], ['COMMERCIAL', 'PASSENGERS', 'aaa'], 'saved as the report says, for Alpha Air',
+         what='record')

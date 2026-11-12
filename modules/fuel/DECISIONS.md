@@ -1790,3 +1790,5 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (both buttons disabled and aria-busy, « Calcul en cours… » then its seconds beyond 2 s); a second tap starts nothing (`routeBusy`). The
   route engine is untouched. F157 (red before, a fake launcher delayed by 4 s). The two import lines of atis.js and direct.js, merged with
   their comments by the formatter, written apart again.
+- **12 Nov 2026 — the flight carries its company** (SOG-0041): `current_flight.airline` = the code of the company where the flight is
+  prepared (themesLoad, in memory, written with the next write); the report offers that company's families for « Vol en cours ».
