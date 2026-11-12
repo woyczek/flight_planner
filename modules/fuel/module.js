@@ -2458,6 +2458,8 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   const pf = e.target.closest('[data-do="procfetch"]');
   if (pf) return S.P.read(pf.dataset.icao); // « Lire » et « Relire » : un seul geste
+  const rp = e.target.closest('[data-do="rwyprob"]');
+  if (rp) return S.P.choose(`p-${rp.dataset.side}-rwy`, rp.dataset.rwy); // SOG-0090 : « Prendre la piste probable », un geste du pilote
   const pl = e.target.closest('[data-do="proclnm"]');
   if (pl) return S.P.readLnm(pl.dataset.icao); // « Lire depuis Little Navmap » (SOG-0210)
   const gr = e.target.closest('[data-do="groundretry"]');
@@ -5637,7 +5639,9 @@ export async function mount(el, ctx) {
       return st && st.wspd != null ? {
         dir: st.wdir,
         kt: st.wspd,
-        magVar: self.wxAd?.[icao]?.magVar
+        magVar: self.wxAd?.[icao]?.magVar,
+        at: (/\b\d{2}(\d{4})Z\b/.exec(String(st.raw || '')) || [])[1] ||
+          '' // l'heure du METAR (SOG-0090 : « piste probable (METAR 1230Z, …) »)
       } : null;
     },
     // la limite de vent de travers de la fiche de l'appareil (maxCrosswindKt), 0 sans fiche ou sans limite

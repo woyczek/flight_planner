@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the probable runway from the METAR is said** at the head of the lists, with « Prendre la piste probable », never set by itself (Fuel DECISIONS, help; noreg F148, F149; SOG-0090).
 - **Coverage: a procedure record without procedure is not « held »** (SOG-0264) — `base/coverage` leaves out of `procedures` and `procSources` a record with no procedure (Belgium EBBE: the EAD returned 25 charts, no procedure was read) and lists it per zone in `procEmpty: [ICAO]` (to repair). K194.
 - **Launcher console: time on every line, repeated lines counted** (SOG-0265) — every line written by the launcher (`say()`, the « [sortant] échec » lines) carries HH:MM:SS (workstation time); identical lines that follow each other are written once and counted (`HH:MM:SS ↑ ×14` when a different line comes); a blank line cuts the series (`tools/console_log.py`). K193.
 - **DIRCAM: the upload accepts the ENR 5.7 PDF** (SOG-0273) — a `%PDF` named `MIAM_OACI_ENR 5.7.pdf` (or its « (1) » copy) is accepted as source `dircam`, zone `fr`, kept under its canonical name; any other PDF stays refused. The launcher does not read it (no PDF reader in the standard library): the page does, as in V2 (pdf.js, `AarTracks.parseEnr57` → `miam-enr-5-7-tracks.xml`, which `file_source` already routes to `dircam`). K192.

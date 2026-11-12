@@ -358,6 +358,23 @@ export function createProcedures(host) {
    *  METAR ou sans vent dirigé (VRB : rien d'inventé, § 10.30). Axe vrai : runwayAxis de frame/lib/wind.js, la règle de la Carte
    *  (refonte § 10.33 R-F1). level : severity de frame/lib/wind.js (vert, orange, rouge ; lim : la limite de travers de
    *  la fiche de l'appareil quand elle en a une) ; why : les raisons d'un orange ou d'un rouge, pour l'infobulle. */
+  /** La piste probable d'un côté d'après son METAR (SOG-0090 ; l'utilisateur, Q-0033) : celle du plus fort vent de face, sans rouge
+   *  (arrière ou travers au-delà des limites, celle de la fiche comprise) ; null par vent calme (moins de 3 kt), variable ou sans METAR :
+   *  rien n'est dit sans preuve (§ 10.30). { r, w } */
+  function probableRwy(m) {
+    const w = m?.wind;
+    if (!w || !(+w.kt >= 3) || !Number.isFinite(+w.dir)) return null;
+    let best = null;
+    for (const r of m.rwys || []) {
+      const x = runwayWind(m, r, +host.crossLimit?.() || 0);
+      if (x && x.level !== 'alert' && x.c.head > 0 && (!best || x.c.head > best.w.c.head)) best = {
+        r,
+        w: x
+      };
+    }
+    return best;
+  }
+
   function runwayWind(m, r, lim) {
     const w = m.wind;
     if (!w) return null;
@@ -720,7 +737,7 @@ export function createProcedures(host) {
     if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
   /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
-  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p><p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
+  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div><p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p><p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
   // l'ILS de la base pour une piste d'un terrain (SOG-0176) : clé « OACI|piste » → la fiche nettoyée, null (aucun), absente tant que la
   // réponse n'est pas venue (demandée une fois)
   const aids = new Map();
@@ -816,6 +833,16 @@ export function createProcedures(host) {
     if (aid) setAid(aid, m);
     // SOG-0232 : les approches que l'AIP ne donne qu'en carte (sans table de codage : conventionnelles, ILS de LFST), chacune avec son
     // lien vers la carte (l'adresse composée par aerodb.chartOnly, jamais ici)
+    // SOG-0090 : la piste probable d'après le METAR, dite en tête des listes avec son geste ; jamais posée d'office, cachée quand elle
+    // est déjà celle du vol
+    const rp = el.querySelector('[data-r="rwyprob"]');
+    if (rp) {
+      const p = m.nodata ? null : probableRwy(m),
+        cur = CF.proceduresOf(host.flight())[side]?.rwy,
+        show = !!p && PR.rwNum(p.r.id) !== PR.rwNum(cur);
+      rp.hidden = !show;
+      setHtml(rp, show ? `<span>${esc(tt(TX.procRwyProb, { rwy: PR.rwNum(p.r.id), at: m.wind.at ? `${m.wind.at}Z` : '—', dir: String(Math.round(+m.wind.dir)).padStart(3, '0'), kt: Math.round(+m.wind.kt) }))}</span> <button type="button" class="fu-linkbtn" data-do="rwyprob" data-side="${side}" data-rwy="${esc(p.r.id)}">${esc(tt(TX.procRwyTake))}</button>` : '');
+    }
     // retouche de F139 : une approche en doute choisie, sa raison dite en clair sous la liste (pas de survol sur un téléphone)
     const dl = el.querySelector('[data-r="doubt"]');
     if (dl) {

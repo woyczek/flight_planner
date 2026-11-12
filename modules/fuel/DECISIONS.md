@@ -1697,3 +1697,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   back (N25, green on origin/v3: what stayed active is the Map's mission view, BUGS SOG). The other side was Fuel's: a flight written
   without its mission by another writer (the Map's cross) kept the chip « Mission » in Fuel until a new screen; `adoptForeignFlight` now
   draws the chip again. N26 (red before).
+- **12 Nov 2026 — the probable runway from the METAR** (SOG-0090, the user, Q-0033 / Q-0034): said at the head of the side's lists,
+  « Piste probable : 31L (METAR 1546Z, vent 310/12) » with « Prendre la piste probable » (a gesture, never set by itself); the runway
+  of the strongest head wind without an alert (tail or cross over the limits, the sheet's comprised); calm (under 3 kt) or variable:
+  nothing said; hidden once it is the flight's. The ATIS of the flight's network comes in a second lot (survey first). F148, F149.

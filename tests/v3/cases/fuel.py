@@ -4429,3 +4429,39 @@ def f147(c):
     d = c.until_doc(path, lambda d: d and ((d.get('route') or {}).get('distanceNm') or 0) > 0, 'the short direct', timeout=12000)
     c.eq(d['route']['distanceNm'], 209, 'XTPO DCT XTSB: 209 NM, as by the great circle (208.53 → 208.57)', what='short direct')
     c.eq(c.js(f"document.querySelector('{warn}')?.hidden"), True, 'no line on a short direct', what='line')
+
+
+
+@case('F148', 'Procedures: the probable runway from the METAR is SAID at the head of the lists with « Prendre la piste probable », never set by itself; calm wind: nothing',
+      'F', tags=('fuel', 'weather'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0090 (the user, Q-0033 / Q-0034): the runway of the strongest head wind without a red (tail or cross over the limits); calm or variable '
+      'wind: nothing said; captures 390 and 1 280')
+def f148(c):
+    route_metar(c, {'LFML': (310, 12)})
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        open_proc(c)
+        wait_rows(c, 'arr')
+        line = f'{FUEL} [data-proc="arr"] [data-rwyprob]'
+        c.until(f"!!document.querySelector('{line}:not([hidden])')", timeout=20000, what=f'{w} px: the probable runway said')
+        txt = norm(c.text(line) or '')
+        c.ok('31L' in txt and '310/12' in txt and norm(tx('modules/fuel/procedures_texts.js', 'procRwyTake', c.lang)) in txt, txt,
+             f'{w} px: « Piste probable : 31L (METAR …Z, vent 310/12) » and its gesture')
+        c.ok((procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr') or {}).get('rwy') != '31L', procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr'),
+             'never set by itself')
+        c.js(f"document.querySelector('{line}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F148_{c.design}_{w}_{c.lang}_delivered.png')
+    c.tap(f'{line} [data-do="rwyprob"]')
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'taken by the gesture', timeout=8000)
+    c.until(f"!!document.querySelector('{line}[hidden]')", timeout=5000, what='said no more once it is the flight\'s')
+
+
+@case('F149', 'Procedures: calm wind (under 3 kt): no probable runway said', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=False,
+      rule='SOG-0090 (the user, Q-0033: « vent calme ou variable : rien »)')
+def f149(c):
+    route_metar(c, {'LFML': (310, 2)})
+    open_proc(c)
+    wait_rows(c, 'arr')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && [...s.options].some(o => o.textContent.includes('kt')) })()",
+            timeout=20000, what='the METAR read')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-rwyprob]')?.hidden"), True, 'nothing said by a calm wind', what='probable runway')

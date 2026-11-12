@@ -59,6 +59,11 @@ export const TX = {
   ],
   // SOG-0157 : le bouton de lecture d'un État lisible à la demande (eAIP du SIA, EAD Basic)
   procReadDemand: ['Lire à la demande', 'Read on demand', 'Auf Anfrage lesen', 'Leer bajo demanda'],
+  // SOG-0090 : la piste probable d'après le METAR, dite, jamais posée d'office
+  procRwyProb: ['Piste probable : {rwy} (METAR {at}, vent {dir}/{kt})', 'Probable runway: {rwy} (METAR {at}, wind {dir}/{kt})',
+    'Wahrscheinliche Piste: {rwy} (METAR {at}, Wind {dir}/{kt})', 'Pista probable: {rwy} (METAR {at}, viento {dir}/{kt})'
+  ],
+  procRwyTake: ['Prendre la piste probable', 'Take the probable runway', 'Wahrscheinliche Piste übernehmen', 'Tomar la pista probable'],
   // SOG-0210 : « Lire depuis Little Navmap » (la base de Little Navmap de CE poste, par le lanceur ; en mémoire de la page seulement)
   procLnmRead: ['Lire depuis Little Navmap', 'Read from Little Navmap', 'Aus Little Navmap lesen', 'Leer desde Little Navmap'],
   procLnmReading: ['Lecture Little Navmap…', 'Reading Little Navmap…', 'Little Navmap wird gelesen…', 'Leyendo Little Navmap…'],
