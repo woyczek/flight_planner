@@ -2920,3 +2920,6 @@ the Map had seen in between: the same line to within the frame's own sampling.
   — both already open to the frame, no new host) are read by `ctx.net` at once and every 90 s (a check every 5 s, never a read while the layer is off); a failed feed is skipped.
 - A controller whose callsign starts with a terrain's code (`LFML_TWR`, `LFML_N_APP`, `LFML_ATIS`) is put at that terrain — the drawn aerodromes, then the flight's own — as small chips (D delivery, G ground, T tower, A approach / departure, i ATIS), blue for IVAO and orange for VATSIM
   (the design may deepen a tint for its contrast); the hover (`tipAt`) says « LFML : contrôleurs en ligne » then each position with its frequency and its network. The centres (CTR, FSS) have no position in the feeds and are not drawn. Noreg D187.
+
+## The time on station is written at its point (Fuel 1a5409afe; CONCEPTION 11/11 § 1 bis)
+- Fuel writes `route.holds` = { <point id>: { min, max, count, name } } (`count` = the minutes counted); the Map only reads it: `pointsOf` carries `hold` (minutes) to the point and the route label of the point says « NEPIX · FL270 · ⏱ 0:20 ». Nothing is written by the Map. Noreg D188.

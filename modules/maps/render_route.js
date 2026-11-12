@@ -91,7 +91,9 @@
         h = Number.isFinite(p.alt) ? p.alt : i > 0 && !end && +p.lvl?.ft > 0 ? +p.lvl.ft : NaN,
         // niveau écrit comme dans toute la suite (formatLevel de frame/lib/route_text.js, donné par l'écran)
         alt = Number.isFinite(h) ? level ? level(h) : h >= 10000 ? `FL${Math.round(h / 100)}` : `${h} ft` : '',
-        text = [p.id || p.name || '', alt].filter(Boolean).join(' · ');
+        // le temps sur zone du point (« ⏱ 0:20 », Carburant : route.holds) à la suite de son nom
+        hold = +p.hold > 0 ? `⏱ ${Math.floor(p.hold / 60)}:${String(p.hold % 60).padStart(2, '0')}` : '',
+        text = [p.id || p.name || '', alt, hold].filter(Boolean).join(' · ');
       if (!text) continue;
       const f = end ? 13 * scale : f0,
         r = {

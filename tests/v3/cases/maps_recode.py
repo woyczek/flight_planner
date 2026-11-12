@@ -5936,3 +5936,21 @@ def d_atc(c):
     cols = c.js("() => [...window.__fc]")
     c.ok(len(cols) == 2 and '#1f6fe0' in cols, str(cols), 'one tint per network (the design may deepen a tint for its contrast: two different ones)')
     c.shot('D187_{}_delivered.png'.format('standard'))
+
+
+@case('D188', 'The time on station counted at a point (Fuel’s route.holds) is written after the point’s name on the route: « NEPIX · ⏱ 0:20 »', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='Features SOG 1a5409afe (CONCEPTION 11/11 § 1 bis): `route.holds` = { <point id>: { min, max, count, name } }, written by Fuel, read by the Map; the Map writes the minutes counted after the name of the point, in the route labels')
+def d_holds(c):
+    f = flight()
+    f['route']['holds'] = {'NEPIX': {'min': 5, 'max': 40, 'count': 20, 'name': 'PT1'}}
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.js(_TEXTS_JS)
+    hook_map(c)
+    c.js("() => { window.__mpTexts = []; window.__mp.S.map.panBy([3, 3], { duration: 0 }); return true }")
+    c.wait(1800)
+    t = [norm(x) for x in c.js("window.__mpTexts || []")]
+    c.ok(any(x.startswith('NEPIX') and '⏱ 0:20' in x for x in t), str(sorted(set(t))[:14]), 'the label of NEPIX carries the time on station')
+    c.shot('D188_{}_delivered.png'.format('standard'))
