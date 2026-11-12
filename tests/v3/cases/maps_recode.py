@@ -5993,3 +5993,17 @@ def d_arcpoints(c):
       return { segs: app.length, through, dots: L.dots.length, pts: L.pts.length, namedPts: L.pts.every(q => q.src && q.src.id), names: L.names.length } }""")
     c.ok(r['through'] and r['segs'] >= 23, str(r), 'the line goes through all twenty-two arc points (a segment between each pair)')
     c.ok(r['dots'] <= 3 and r['namedPts'], str(r), 'no dot and no label on an arc point: only the named fixes')
+
+
+@case('D191', 'The contour lines’ unit follows the device’s display settings (cache/fuel/display.json), with the pilot’s fuel.json as the fallback on a device where Fuel has not run yet', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='Features SOG / V3 Frame (SOG-0279 (3)): displayAlt, displayDist, displaySpeed, displayUnit and wxRadiusNm move from pilot/<tri>/fuel.json to cache/fuel/display.json (a device setting, never sent); the Map reads displayAlt there for the contours’ equidistance; without it, fuel.json')
+def d_displayalt(c):
+    c.open('maps', flight=True, docs=[['cache/fuel/display.json', {'schema': 1, 'displayAlt': 'm', 'updated_at': '2026-11-12T10:00:00Z'}, 'cache']])
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && window.__mp.S.altUnit !== undefined", timeout=15000, what='the settings are read')
+    c.eq(c.js("() => window.__mp.S.altUnit"), 'm', 'the device’s display document says metres', what='altUnit')
+    c.open('maps', flight=True, docs=[[f'pilot/{TRI}/fuel.json', {'displayAlt': 'm'}, 'document']])
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && window.__mp.S.altUnit !== undefined", timeout=15000, what='the settings are read')
+    c.eq(c.js("() => window.__mp.S.altUnit"), 'm', 'no display document yet: fuel.json is the fallback', what='altUnit fallback')

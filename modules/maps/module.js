@@ -123,7 +123,7 @@ export const meta = {
   reads: ['pilot/', {
     prefix: 'missions/',
     policy: 'reference'
-  }, 'cache/maps/', 'airline/'],
+  }, 'cache/maps/', 'cache/fuel/display.json', 'airline/'],
   // SPEC § 2.2 : réglages de l'appareil, vol courant modifié sur la carte, seuils de la compagnie (page de réglage)
   writes: [{
     prefix: 'cache/maps/',

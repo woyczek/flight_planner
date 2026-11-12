@@ -2933,3 +2933,6 @@ the Map had seen in between: the same line to within the frame's own sampling.
 ## The arc points of an RF leg (AeroDB, SOG-0248; contract frame/aerodb/INTEGRATION.md « RF arcs: what the consumers must use »)
 - A procedure's points can contain **arc points** `{ arc: true, id: null, leg: 'RF', lat, lon }` (twenty or more between the previous point and the RF end). Checked in the Map: (1) the line goes through every positioned point of the path in flight order (`expandedPath`, `flownPath` of `frame/lib`: arcs included, the along-track distances follow them) —
   no straight line across an arc; (2) `procs.js layout` makes no dot and no label for an arc point (`p.arc === true`; the RF end point keeps its `arc` object and its centre) and nothing hovers or snaps on it; (3) nothing in the Map keys on an id for the line (the airway blocks of the profile skip an empty id). Noreg D190.
+
+## The altitude unit of the contours comes from the device's display settings (Features SOG; V3 Frame SOG-0279 (3))
+- `displayAlt`, `displayDist`, `displaySpeed`, `displayUnit`, `wxRadiusNm` move from `pilot/<tri>/fuel.json` to `cache/fuel/display.json` (a device setting, never sent). The Map reads `displayAlt` there (`readSettings`, `meta.reads` gains the document, read-only) and falls back on `fuel.json` on a device where Fuel has not run. Noreg D191.

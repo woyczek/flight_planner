@@ -345,7 +345,10 @@ export async function readSettings() {
   // seuil de zoom des vecteurs de piste (V3 § 10.30 ; Réglages › Administration ; frame/settings/INTEGRATION.md § 4)
   const z = P?.runwayZoom;
   S.runwayZoom = Number.isInteger(z) && z >= 8 && z <= 16 ? z : RUNWAY_ZOOM;
-  S.altUnit = F?.displayAlt === 'm' ? 'm' : 'ft';
+  // l'unité d'altitude : le réglage d'affichage de l'appareil (cache/fuel/display.json, lecture seule), sinon celui du pilote (fuel.json) sur un appareil où Carburant n'a pas encore tourné
+  const D = await S.ctx.data.get('cache/fuel/display.json').catch(() => null);
+  if (!S) return;
+  S.altUnit = (D?.displayAlt ?? F?.displayAlt) === 'm' ? 'm' : 'ft';
 }
 /** Réglages de l'écran gardés sur cet appareil (cache/maps/ui.json) : mode et couches par mode (seulement ce qui diffère des
  *  valeurs de départ, SPEC § 6.7). */
