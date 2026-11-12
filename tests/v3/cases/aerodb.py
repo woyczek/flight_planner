@@ -8768,3 +8768,23 @@ def k212(c):
          'all 23 leg rows read; each transition starts with its initial fix (GTQ was lost) and ends on IST23', what='groups')
     last = [(q['legs'][-1]['id'], q['legs'][-1]['crs'], q['legs'][-1]['nm'], q['legs'][-1].get('turn')) for q in g]
     c.eq(last, [('IST23', 156, 5.0, None)] * 5, 'the IST23 legs, including the ones printed « 5- » and « -5 »: course 156, distance 5, no turn', what='ist23')
+
+
+@case('K214', 'LFST SID RNAV RWY 23 (SOG-0248 leftovers): « CF LUPEN - 212 214.0 - - - - 1.0 » lost one dash; the magnetic and the true course go together (both printed or both empty), so the course is not shifted a column and the row is read: STR 1Z is whole', 'K', static=True,
+      rule='Ergonomist 12 Nov 2026 (evening): LFST SID 23 STR 1Z was « à vérifier (non lu) ». Rows: the public AIP page AD_2_LFST_DATA_SID_RWY23_RNAV_CODE_01 (AMDT 08/26, cycle 29 Oct 2026). The row had two readings that fit the column types (212 as magnetic course, or as nothing with 212 / 214.0 as true course / distance); the page never prints one course without the other.')
+def k214(c):
+    rows = [
+        'AD 2 LFST DATA SID RWY23 RNAV CODE 01AIP', '06 AUG 2026FRANCE', 'STRASBOURG ENTZHEIM', 'SID RNAV RWY 23 - SID RNAV RWY 21 BADEN et / and LAHR', 'STRASBOURG SID RNAV RWY 23 - SID RNAV RWY 21 BADEN et / and LAHR',
+        'RMK MAG GNSS only VAR 2020 2.5°E REF NAVAID : STR',
+        'Procedure Identification Path Terminator Waypoint Identification Fly Over Direction MAG(°) Direction True(°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)',
+        'POGOL 8Z', '- CF STR Yes 226 228.6 - - - - - 1.0', '- TF OBORN - 258 260.1 15.0 - FL090 - - 1.0', '- TF POGOL - 257 259.7 20.7 - - - - 1.0',
+        'STR 1Z', '- CA - - 210 211.8 - - 900 - - 1.0', '- CF LUPEN - 212 214.0 - - - - 1.0', '- TF STR - 301 303.3 7.7 R - - - 1.0',
+        'STR 1X', '- CA - - 206 208.3 - - 1000 - - 1.0', '- CF TL053 Yes 206 208.3 - - - - - 1.0', '- DF TL054 - - - - L - - 220 1.0', '- TF LHR - 335 337.4 4.9 - - - - 1.0',
+        '- TF LUPEN - 326 329.1 6.0 - - - - 1.0', '- TF STR - 301 303.3 7.7 L - - - 1.0']
+    t = _sia(rows)
+    g = {q['label']: q for q in t['groups']}
+    c.eq((t['rows'], t['read'], sorted(g), [q.get('lost') for q in t['groups']]), (12, 12, ['POGOL 8Z', 'STR 1X', 'STR 1Z'], [0, 0, 0]),
+         'all 12 leg rows read, no row lost', what='read')
+    z = g['STR 1Z']['legs']
+    c.eq([(x['leg'], x.get('id'), x.get('crs'), x.get('nm')) for x in z], [('CA', None, 210, None), ('CF', 'LUPEN', 212, None), ('TF', 'STR', 301, 7.7)],
+         'STR 1Z: climb on 210, to LUPEN on 212, then STR on 301 for 7.7 NM; the course of the CF stays the course (not a distance)', what='STR 1Z')

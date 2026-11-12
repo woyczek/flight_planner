@@ -346,6 +346,8 @@ def _fit(c, want, rnp, leg):
     """Cellules d'une ligne qui en a de MOINS qu'il n'en faut (la page a perdu un tiret) : la disposition (_arrangements) si UNE SEULE convient, None sinon (aucune, ou plusieurs : la ligne n'est
     pas lue entière, jamais devinée)."""
     seen = _arrangements(c, want, rnp, leg)
+    if len(seen) > 1:           # le cap magnétique et le cap vrai vont ensemble : tous deux imprimés ou tous deux « - » (LFST SID 23, « CF LUPEN - 212 214.0 - - - - 1.0 » : un tiret perdu, les caps ne peuvent pas être décalés d'une colonne)
+        seen = [a for a in seen if (a[2] is None) == (a[3] is None)] or seen
     if rnp and len(seen) > 1:   # pages d'APPROCHE seulement (les départs de LFPG gardent leur garde-fou, K25) : une altitude imprimée en clair sous 500 ft n'existe pas dans ces tables (voir _fit_geometry) : « - - 185 » après la distance est le tiret de la précision perdu, 185 est la vitesse, jamais un maxi de 185 ft (LFBD RNP AR Y 05)
         seen = [a for a in seen if all(a[i] is None or (alt_ft(a[i]) or 0) >= 500 for i in (6, 7))]
     return seen[0] if len(seen) == 1 else None

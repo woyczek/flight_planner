@@ -313,10 +313,10 @@
     unavailable: {
       since: '2025-11',
       note: [
-        'le site de l\'AIP militaire britannique est cassé depuis environ un an (dit l\'utilisateur) : rien à faire tant que l\'éditeur ne publie pas',
-        'the UK military AIP site has been broken for about a year (user\'s word): nothing to do until the publisher publishes again',
-        'die Seite der britischen Militär-AIP ist seit etwa einem Jahr gestört (Aussage des Nutzers): nichts zu tun, bis der Herausgeber wieder veröffentlicht',
-        'el sitio de la AIP militar británica está roto desde hace casi un año (dicho por el usuario): nada que hacer hasta que el editor vuelva a publicar'
+        'le site de l\'AIP militaire britannique est cassé depuis environ un an (dit l\'utilisateur) : rien à faire tant que l\'éditeur ne publie pas. Ce qui manque : les zones de l\'AIP militaire (vol à basse altitude, zones tactiques, entraînement naval) ; les zones d\'exercice et d\'entraînement de l\'AIP civil sont déjà couvertes par le jeu NATS',
+        'the UK military AIP site has been broken for about a year (user\'s word): nothing to do until the publisher publishes again. What is missing: the zones of the military AIP (low flying, tactical areas, naval training); the exercise and training areas of the civil AIP are already covered by the NATS set',
+        'die Seite der britischen Militär-AIP ist seit etwa einem Jahr gestört (Aussage des Nutzers): nichts zu tun, bis der Herausgeber wieder veröffentlicht. Es fehlen: die Gebiete der Militär-AIP (Tiefflug, taktische Gebiete, Marineausbildung); die Übungs- und Ausbildungsgebiete der zivilen AIP sind durch den NATS-Datensatz bereits abgedeckt',
+        'el sitio de la AIP militar británica está roto desde hace casi un año (dicho por el usuario): nada que hacer hasta que el editor vuelva a publicar. Falta: las zonas de la AIP militar (vuelo a baja altura, zonas tácticas, entrenamiento naval); las zonas de ejercicio y entrenamiento de la AIP civil ya están cubiertas por el conjunto NATS'
       ]
     },
     steps: {

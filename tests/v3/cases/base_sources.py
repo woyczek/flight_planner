@@ -2849,3 +2849,14 @@ def k207(c):
         old = fn(RJ.Job('base', 'cycle', {}), check({}), {**ctx, 'today': datetime.date(2026, 11, 27)})['datasets']
         o = {d['id']: d for d in old}
         c.eq((o['weather']['state'], o['weather']['why'], o['procedures']['state'], o['procedures']['why']), ('todo', 'old', 'todo', 'older-than-cycle'), 'weather built a day ago is old; the CIFP cycle of 29 Oct while the 26 Nov cycle is in force (nothing read by hand): procedures todo / older-than-cycle', what='late')
+
+
+@case('K213', 'UK Mil stays « indisponible chez l\'éditeur » and the catalogue says what that costs, in four languages (SOG-0273 point 5): what is missing = the zones of the MILITARY AIP (low flying, tactical areas, naval training); what is already covered by the NATS set = the exercise and training areas of the CIVIL AIP', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist 12 Nov 2026 (evening): measured on the cycle of 29 Oct 2026, none of the 56 areas of the military ENR 5.2 (26 low-flying areas, 30 tactical areas by levels, 1 naval training area) is in the NATS set (0/56 by designator, 0/56 by name, 5/56 by outline at 0.7 and over, all coincidences with FIR / TMA / R), while the NATS set carries the AIAA, MTA, AARA and TRA of the civil AIP. No reader of the civil PDF. The four texts say both halves and name the NATS set.')
+def k213(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/catalogue.html', wait_until='load')
+    n = c.js("() => AeroCatalogue.stepsOf('ukmil', '2612').unavailable.note")
+    want = [('AIP militaire', 'AIP civil'), ('military AIP', 'civil AIP'), ('Militär-AIP', 'zivilen AIP'), ('AIP militar', 'AIP civil')]
+    c.eq([len(n)] + [all(w in t for w in ws) and 'NATS' in t for t, ws in zip(n, want)], [4, True, True, True, True],
+         'the four notes name the military AIP as what is missing and the civil AIP as what NATS already covers', what='texts')
+    c.eq(len({t for t in n}), 4, 'four distinct texts (no language left in another)', what='distinct')
