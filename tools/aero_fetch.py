@@ -410,26 +410,78 @@ def airnav(data):
     return [{'name': name, 'bytes': len(body), 'features': n + m, 'edition': issue, 'unchanged': not changed}], []
 
 
-def eaip_tables(data, key):
-    """Un eAIP à tableaux d'Annexe 15 (tools/eaip_annexe15.py, profil `key`) : l'ENR 4.4 lu d'abord (sa date d'entrée en vigueur, dans son titre, est l'édition) ; si l'édition est déjà là, rien d'autre n'est lu ; sinon les
-    pages de routes, puis le GeoJSON écrit dans zones/<zone>/ sous la date de l'édition (son cycle) ; les éditions précédentes du même jeu sont retirées. Les adresses sont celles du profil (hôte et base fixes), jamais celles d'une page."""
+def eaip_manual(prof, downloads):
+    """Les eAIP PRIS À LA MAIN que le lanceur trouve pour ce profil, dans les dossiers qu'il connaît (`downloads()` : data/local/upload/, Téléchargements…) — jamais un chemin venu de la page : un zip qui porte une ISO ou le dossier de l'eAIP
+    (quel que soit son nom de Windows : « EAIP ISO (1).zip »), une image .iso, un dossier extrait (eAIP/html/eAIP/ à son premier niveau). Rend ([(édition, date du fichier, nom, (page ENR 4.4, pages de routes))], [refus en clair]) :
+    un candidat qui ressemble à un eAIP mais n'est pas celui du profil, ou qui ne se lit pas, est un refus DIT (« ISO illisible : … »), pas un silence ; ce qui n'y ressemble pas (un autre zip) n'est pas regardé."""
+    import zipfile
+    import eaip_annexe15 as core
+    found, refused, seen = [], [], 0
+    for folder in (downloads() if callable(downloads) else []):
+        try:
+            names = sorted(os.listdir(folder))
+        except OSError:
+            continue
+        for n in names:
+            p = os.path.join(folder, n)
+            low = n.lower()
+            looks = False
+            try:
+                if os.path.isdir(p) and not os.path.islink(p):
+                    looks = os.path.isdir(os.path.join(p, 'eAIP', 'html', 'eAIP')) or os.path.isdir(os.path.join(p, 'html', 'eAIP'))
+                elif low.endswith('.iso') and os.path.isfile(p):
+                    looks = True
+                elif low.endswith('.zip') and os.path.isfile(p) and os.path.getsize(p) <= core.PKG_MAX_BYTES:
+                    with zipfile.ZipFile(p) as zf:
+                        infos = zf.infolist()
+                        looks = (len(infos) <= 2 and any(i.filename.lower().endswith('.iso') for i in infos)) or any('eaip/html/eaip' in i.filename.replace('\\', '/').lower() for i in infos[:5000])
+            except (OSError, zipfile.BadZipFile, ValueError):
+                continue
+            if not looks:
+                continue
+            seen += 1
+            if seen > 40:
+                break
+            try:
+                page44, routes, issue = core.read_package(prof, p)
+                found.append((issue, os.path.getmtime(p), n, (page44, routes)))
+            except (ValueError, OSError) as e:
+                refused.append(f'{n} : {e}')
+    return found, refused
+
+
+def eaip_tables(data, key, downloads=None):
+    """Un eAIP à tableaux d'Annexe 15 (tools/eaip_annexe15.py, profil `key`). D'abord le fichier PRIS À LA MAIN (zip, ISO, dossier : voir eaip_manual), la plus récente des éditions déjà EN VIGUEUR (sinon la plus proche à venir, dite) ; à défaut, le site : l'ENR 4.4
+    lu d'abord (sa date d'entrée en vigueur, dans son titre, est l'édition) ; si l'édition est déjà là, rien d'autre n'est lu ; sinon les pages de routes. Le GeoJSON est écrit dans zones/<zone>/ sous la date de l'édition (son cycle), les éditions précédentes
+    du même jeu sont retirées. Les adresses du site sont celles du profil (hôte et base fixes), jamais celles d'une page. Un fichier pris à la main dont une route n'est pas nommée dans l'édition est dit (`skipped`)."""
+    import datetime
     import eaip_annexe15 as core
     prof = core.PROFILES[key]
     label = prof['label'].split(' (')[0]
     folder = os.path.join(data, 'sia', 'zones', prof['zone'])
     out_re = core.out_re(prof)
-    try:
-        p44 = get(core.page_url(prof, prof['points'])).decode('utf-8', 'replace')
-        issue = core.issue_of_title(p44)
-        if not issue:
-            return [], [f'{label} : date d’entrée en vigueur introuvable dans le titre de l’ENR 4.4 (page changée ?)']
-        name = core.out_name(prof['name'], issue)
-        path = os.path.join(folder, name)
-        if os.path.exists(path):  # l'édition en vigueur est déjà là : rien d'autre à lire
-            return [{'name': name, 'bytes': os.path.getsize(path), 'edition': issue, 'unchanged': True}], []
-        routes = [get(core.page_url(prof, n)).decode('utf-8', 'replace') for n in prof['routes']]
-    except (OSError, ValueError) as e:
-        return [], [f'{label} : {e}']
+    manual, refused = eaip_manual(prof, downloads)
+    p44, routes, issue, how = None, None, None, ''
+    if manual:
+        today = datetime.date.today().isoformat()
+        inforce = sorted((m for m in manual if m[0] <= today), key=lambda m: (m[0], m[1]))
+        pick = inforce[-1] if inforce else sorted(manual, key=lambda m: (m[0], m[1]))[0]
+        issue, how, (p44, routes) = pick[0], pick[2], pick[3]
+    if p44 is None:
+        try:
+            p44 = get(core.page_url(prof, prof['points'])).decode('utf-8', 'replace')
+            issue = core.issue_of_title(p44)
+            if not issue:
+                return [], [f'{label} : date d’entrée en vigueur introuvable dans le titre de l’ENR 4.4 (page changée ?)'] + [f'fichier non pris : {r}' for r in refused]
+            if os.path.exists(os.path.join(folder, core.out_name(prof['name'], issue))):  # l'édition en vigueur est déjà là : rien d'autre à lire
+                name = core.out_name(prof['name'], issue)
+                return [{'name': name, 'bytes': os.path.getsize(os.path.join(folder, name)), 'edition': issue, 'unchanged': True}], []
+            routes = [get(core.page_url(prof, n)).decode('utf-8', 'replace') for n in prof['routes']]
+        except (OSError, ValueError) as e:
+            hint = f' ; ou prendre le fichier à la main : le zip ou l’image ISO de l’AIP, ou son dossier extrait, dans Téléchargements ou par « Choisir le fichier… »'
+            return [], [f'{label} : {e}{hint}'] + [f'fichier non pris : {r}' for r in refused]
+    name = core.out_name(prof['name'], issue)
+    path = os.path.join(folder, name)
     try:
         g, n, m = core.convert_tables(prof, p44, routes, issue)
     except ValueError as e:
@@ -443,12 +495,21 @@ def eaip_tables(data, key):
                 os.remove(safe_path(folder, old, out_re))
             except ValueError:
                 pass
-    return [{'name': name, 'bytes': len(body), 'features': n + m, 'edition': issue, 'unchanged': not changed}], []
+    entry = {'name': name, 'bytes': len(body), 'features': n + m, 'edition': issue, 'unchanged': not changed}
+    if how:
+        entry['from'] = how          # pris à la main : le nom du fichier ou du dossier (jamais un chemin)
+        if issue > datetime.date.today().isoformat():
+            entry['future'] = True   # édition pas encore en vigueur : seule celle-là était là
+    if g.get('skipped'):
+        entry['skipped'] = g['skipped']
+    if refused:
+        entry['refused'] = refused[:5]      # des fichiers qui ressemblaient à un eAIP et n'ont pas été pris, dits en clair (la source n'échoue pas pour autant)
+    return [entry], []
 
 
-def navpt(data):
-    """eAIP du Portugal (NAV Portugal) : ENR 4.4, ENR 3.1 et ENR 3.3 (tools/eaip_annexe15.py, profil pt)."""
-    return eaip_tables(data, 'pt')
+def navpt(data, downloads=None):
+    """eAIP du Portugal (NAV Portugal) : ENR 4.4, ENR 3.1 et ENR 3.3 (tools/eaip_annexe15.py, profil pt), pris à la main (zip, ISO, dossier) ou sur le site."""
+    return eaip_tables(data, 'pt', downloads)
 
 
 def unchanged_outputs(folder, pdf, outputs):

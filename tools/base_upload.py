@@ -27,7 +27,7 @@ CHUNK = 1024 * 1024
 MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
 CD_MAX = 64 * 1024 * 1024               # un annuaire de plus de 64 Mo : idem (ZipFile le charge entier en mémoire avant tout autre contrôle)
 FOLDER = ('local', 'upload')
-EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad']       # les sources que base/pickup prend (dites avec `unrecognised`)
+EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt']       # les sources que base/pickup prend (dites avec `unrecognised`)
 REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
 STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'busy': 409, 'merge-pending': 409, 'disk': 507, 'refused': 403}
 NATS_MEMBER = re.compile(r'^EG_(AIP|OBS|UAS)_.*?(\d{8})\.xml\Z', re.I | re.A)
@@ -95,6 +95,21 @@ def _directory(path):
         return count, cd
 
 
+def _eaip_package(path, names, kind):
+    """Un eAIP pris à la main (SOG-0244) reconnu par son CONTENU : un zip qui porte une image ISO ou le dossier de l'eAIP (kind 'zip', `names` : ses membres), ou une image ISO seule (kind 'iso'). Rend { source: 'navpt', zone: 'pt', name, cycle (l'édition lue dans le titre des pages) }
+    ou None si ce n'est pas un paquet d'eAIP ; lève Refused avec la raison EN CLAIR si c'en est un qui n'est pas celui du Portugal ou qui ne se lit pas (« ISO illisible : … »). Rien n'est extrait : tools/eaip_annexe15.read_package lit les pages par leur titre."""
+    import eaip_annexe15 as core
+    if kind == 'zip':
+        low = [n.replace('\\', '/').lower() for n in names]
+        if not (any(n.endswith('.iso') for n in low) or any('eaip/html/eaip' in n for n in low)):
+            return None
+    try:
+        page44, routes, issue = core.read_package(core.PROFILES['pt'], path)
+    except ValueError as e:
+        raise Refused('unrecognised', f'eAIP pris à la main non reconnu : {e}', EXPECTED) from None
+    return {'source': 'navpt', 'zone': 'pt', 'name': 'navpt_eaip.zip' if kind == 'zip' else 'navpt_eaip.iso', 'cycle': issue}
+
+
 def recognise(path, hint=''):
     """Ce que le CONTENU du fichier dit : { source, zone, name (le nom canonique que base/pickup retrouve), cycle } ; lève Refused (type, unrecognised). Un zip : la liste de ses membres seulement."""
     with open(path, 'rb') as f:
@@ -112,6 +127,9 @@ def recognise(path, hint=''):
             if len(infos) > MAX_MEMBERS:
                 raise Refused('unrecognised', 'trop de membres', EXPECTED)
             names = set(infos)
+            pkg = _eaip_package(path, [i for i in infos], 'zip')
+            if pkg:
+                return pkg
             try:
                 import lfv_eaip
                 if lfv_eaip.COVER in names and lfv_eaip.ENR44 in names:
@@ -137,6 +155,12 @@ def recognise(path, hint=''):
                 kind, date = sorted(nats, key=lambda x: x[1])[-1]
                 return {'source': 'nats', 'zone': 'gb', 'name': f'EG_{kind}_DS_{date.replace("-", "")}_XML.zip', 'cycle': date}
         raise Refused('unrecognised', 'le contenu de ce zip ne ressemble à aucune source attendue', EXPECTED)
+    if os.path.getsize(path) > 0x8006:          # une image ISO seule (SOG-0244) : « CD001 » au secteur 16, ce que ni le zip ni le JSON ni le PDF ne disent
+        with open(path, 'rb') as f:
+            f.seek(0x8000)
+            vd = f.read(8)
+        if vd[1:6] == b'CD001':
+            return _eaip_package(path, [], 'iso')
     first = head.lstrip()[:1]
     if first in (b'{', b'['):
         m = OPENAIP_NAME.match(hint or '')

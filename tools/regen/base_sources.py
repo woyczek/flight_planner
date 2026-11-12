@@ -397,7 +397,7 @@ def sia_rels(data):
     return out
 
 
-def _fetch_source(job, data, zone, source, absent=None, known=frozenset()):
+def _fetch_source(job, data, zone, source, absent=None, known=frozenset(), downloads=None):
     """Télécharge UNE source d'UNE zone par les fonctions d'aero_fetch (couche par couche pour openaip et faa : l'annulation passe entre deux couches). Rend (entrée de la vue |
     None si annulé avant le moindre résultat, fichiers rendus par aero_fetch, échecs [classify], chemins modifiés relatifs à data/, annulé)."""
     s = SOURCES[source]
@@ -438,7 +438,7 @@ def _fetch_source(job, data, zone, source, absent=None, known=frozenset()):
         call(aero_fetch.enaire, data)
         removed = [f"{FOLDERS['enaire']}/{n}" for n in sorted(before - _names(folder))]  # les amendements précédents que enaire() retire
     else:
-        call(getattr(aero_fetch, p), data)
+        call(getattr(aero_fetch, p), data, **({'downloads': downloads} if p == 'navpt' else {}))      # navpt : prend aussi le fichier pris à la main dans les dossiers du lanceur (SOG-0244)
     if not files and not errors:
         if cancelled:
             return None, files, errors, [], True
@@ -502,7 +502,7 @@ def fetch(job, args, ctx):
             if job.cancelled():
                 cancelled = True
                 break
-            entry, files, errors, mods, c = _fetch_source(job, data, z, s, absent=absent, known=known)
+            entry, files, errors, mods, c = _fetch_source(job, data, z, s, absent=absent, known=known, downloads=ctx.get('downloads'))
             cancelled = cancelled or c
             if entry is None:
                 break

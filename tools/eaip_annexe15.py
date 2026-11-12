@@ -7,6 +7,7 @@ la Suède, les classes des tableaux du Portugal…) reste dans le profil de cet 
 rendent les mêmes objets, les mêmes fichiers. Bibliothèque standard seulement."""
 import datetime
 import html as htmllib
+import os
 import re
 
 MONTHS = {m: i + 1 for i, m in enumerate(('JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'))}
@@ -137,26 +138,31 @@ def point_id(name):
     return t if _NAMECODE.fullmatch(t) else ''
 
 
-def parse_routes(page):
+def parse_routes(page, stats=None):
     """Les tronçons des routes d'une page ENR 3.x à blocs : [{ route, a: { id, lat, lon }, b: { id, lat, lon }, lower, upper, nm, trk }]. Un bloc : la ligne du désignateur (`Route-designator`), puis pour chaque point
     sa ligne (`Significant-point-description` et les coordonnées), puis la ligne du tronçon qui part de lui (cap, distance « 24.7 NM », limites en deux lignes superposées `Upper` / `Lower`). Un tronçon dont un point
-    est illisible n'est pas rendu ; une limite absente est null."""
+    est illisible n'est pas rendu ; une limite absente est null. `stats` (un dict) reçoit `unnamed` : le nombre de blocs dont le désignateur de route est VIDE dans la page (l'édition du 26 nov. 2026 du Portugal l'est : la route n'est pas nommée, ses tronçons
+    ne sont pas rendus, jamais devinés)."""
     out, route, prev, pend = [], None, None, None
     for kind, chunk in table_rows(page):
         if kind == '1' and 'Route-designator' in chunk:
             m = re.search(r'[A-Z]{1,2}\d{1,4}[A-Z]?', text_of(chunk))
             route, prev, pend = (m.group(0) if m else None), None, None
-        elif kind == '2' and 'Significant-point-description' in chunk and route:
-            nm = re.search(r'Significant-point-description[^>]*>(.*?)</span>', chunk, re.S)
-            m = _COORDS.search(text_of(chunk))
+            if not m and stats is not None:
+                stats['unnamed'] = stats.get('unnamed', 0) + 1
+        elif kind == '2' and route:
+            cells = cells_of(chunk)       # une ligne de point : un signe (▲ ∆), le nom, les coordonnées (par les cellules, pas par les classes : l'édition du 26 nov. 2026 écrit « ~frameAPSHiddenRow » au lieu de « Significant-point-description »)
+            m = _COORDS.search(cells[2]) if len(cells) >= 3 else None
             la, lo = (dms(m.group(1)), dms(m.group(2))) if m else (None, None)
-            pid = point_id(text_of(nm.group(1))) if nm else ''
+            pid = point_id(cells[1]) if len(cells) >= 3 and m else ''
+            if not m:
+                continue          # une ligne d'en-tête de colonnes : ni point, ni coupure de la route
             pt = {'id': pid, 'lat': la, 'lon': lo} if pid and la is not None and lo is not None else None
             if pt and prev and pend:
                 out.append({'route': route, 'a': prev, 'b': pt, 'lower': pend.get('lower'), 'upper': pend.get('upper'), 'nm': pend.get('nm'), 'trk': pend.get('trk')})
             prev, pend = pt, None
         elif kind == '3' and prev is not None and ('UpperAndLower' in chunk or 'RouteTemplate' in chunk):
-            pairs = [(text_of(u), text_of(l)) for u, l in re.findall(r'class="Upper"[^>]*>(.*?)</td>.*?class="Lower"[^>]*>(.*?)</td>', chunk, re.S)]
+            pairs = [(text_of(u).rstrip(' /'), text_of(l).rstrip(' /')) for u, l in re.findall(r'class="Upper"[^>]*>(.*?)</td>.*?class="Lower"[^>]*>(.*?)</td>', chunk, re.S)]
             lim = next(((level_ft(u), level_ft(l)) for u, l in pairs if level_ft(u) is not None and level_ft(l) is not None), (None, None))
             trk = next((int(re.match(r'\d+', u).group(0)) for u, l in pairs if re.fullmatch(r'\d{1,3}', u)), None)
             dist = re.search(r'([\d.]+)\s*NM', text_of(chunk))
@@ -171,7 +177,8 @@ def convert_tables(profile, points_page, route_pages, issue):
     points = parse_points(points_page)
     if not points:
         raise ValueError('aucun point lu dans l’ENR 4.4 (mise en page changée ?)')
-    segments = [s for page in route_pages for s in parse_routes(page)]
+    stats = {}
+    segments = [s for page in route_pages for s in parse_routes(page, stats)]
     if route_pages and not segments and not profile.get('routes_nil_ok'):
         raise ValueError('aucun tronçon lu dans l’ENR 3 (mise en page changée ?)')
     known = {p['id'] for p in points}
@@ -182,14 +189,18 @@ def convert_tables(profile, points_page, route_pages, issue):
                 points.append({'id': p['id'], 'lat': p['lat'], 'lon': p['lon'], 'remarks': ''})
     if len(points) > MAX_POINTS or len(segments) > MAX_SEGMENTS:
         raise ValueError('trop d’objets : ce ne sont pas les pages attendues')
-    return to_geojson(profile['name'], profile['label'], points, segments, issue, extra=('nm', 'trk')), len(points), len(segments)
+    g = to_geojson(profile['name'], profile['label'], points, segments, issue, extra=('nm', 'trk'))
+    if stats.get('unnamed'):
+        g['skipped'] = {'routes_without_name': stats['unnamed']}      # dit au résultat (aero_fetch) : des routes que la page ne nomme pas ne sont pas lues
+    return g, len(points), len(segments)
 
 
 # les États à tableaux : le profil dit où sont les pages (adresse fixe, hôte contrôlé) et comment s'appelle le fichier écrit (sa date est son cycle AIRAC : tools/aero_cycles.py)
 PROFILES = {
     'pt': {'zone': 'pt', 'source': 'navpt', 'name': 'navpt_pt_enr', 'label': 'NAV Portugal eAIP (ENR 4.4, ENR 3.1, ENR 3.3)', 'host': 'ais.nav.pt',
            'base': 'https://ais.nav.pt/wp-content/uploads/AIS_Files/eAIP_Current/eAIP_Online/eAIP/html/eAIP/',
-           'points': 'LP-ENR-4.4-en-PT.html', 'routes': ('LP-ENR-3.1-en-PT.html', 'LP-ENR-3.3-en-PT.html')},
+           'points': 'LP-ENR-4.4-en-PT.html', 'routes': ('LP-ENR-3.1-en-PT.html', 'LP-ENR-3.3-en-PT.html'),
+           'title': 'AIP for PORTUGAL', 'points_section': 'ENR-4.4', 'routes_sections': ('ENR-3.1', 'ENR-3.3')},
 }
 
 
@@ -203,3 +214,151 @@ def page_url(profile, name):
     if name != profile['points'] and name not in profile['routes']:
         raise ValueError(f'page refusée : {name!r}')
     return profile['base'] + name
+
+
+# ----------------------------------------------------------------------------------------------------------------------- l'eAIP pris à la main : un zip qui porte une ISO, une ISO, un zip du dossier, le dossier extrait (SOG-0244)
+# Les pages sont retrouvées par leur TITRE (« AIP for PORTUGAL … (section ENR-4.4) valid from 26 NOV 2026 »), jamais par leur nom : l'ISO du Portugal est de niveau 1 (noms 8.3 : « LP_ENR31.HTM ») et un zip ou un dossier de Windows
+# peut porter n'importe quel nom. Un fichier d'un tel paquet est une ENTRÉE NON FIABLE : tout est borné et chaque refus dit sa raison en clair (ValueError).
+PKG_MAX_BYTES = 1536 * 1024 * 1024      # un paquet (zip ou ISO) plus gros : refusé avant d'être ouvert
+PKG_MAX_FILES = 8000                    # fichiers regardés dans un dossier ou un zip
+PAGE_MAX = 8 * 1024 * 1024              # une page d'eAIP : 0,5 Mo (ENR 3.3) ; au-delà, ce n'est pas la page attendue
+HEAD = 4096
+_TITLE = re.compile(r'<title>(.*?)</title>', re.I | re.S)
+_SECTION = re.compile(r'\(section (ENR-\d+(?:\.\d+)?)\)', re.I)
+
+
+def _is_enr_page(path):
+    low = path.replace('\\', '/').lower()
+    name = low.rsplit('/', 1)[-1]
+    return 'eaip/html/eaip' in low and 'enr' in name and name.endswith(('.htm', '.html'))
+
+
+def pages_of_dir(root):
+    """{ chemin : lecteur(limite) → octets } des pages ENR d'un dossier extrait (eAIP/html/eAIP/…), bornés (profondeur, nombre de fichiers) ; ni lien suivi, ni fichier hors du dossier."""
+    out, count = {}, 0
+    root = os.path.realpath(root)
+    for dp, dn, fn in os.walk(root, followlinks=False):
+        if dp[len(root):].count(os.sep) > 8:
+            dn[:] = []
+            continue
+        dn[:] = [d for d in dn if not os.path.islink(os.path.join(dp, d))]
+        for n in fn:
+            count += 1
+            if count > PKG_MAX_FILES:
+                raise ValueError('trop de fichiers dans le dossier : ce n’est pas un eAIP')
+            p = os.path.join(dp, n)
+            if _is_enr_page(p) and not os.path.islink(p):
+                out[p] = (lambda limit, p=p: _read_file(p, limit))
+    return out
+
+
+def _read_file(p, n):
+    """Les n premiers octets d'une page d'un dossier ; ValueError si la page dépasse PAGE_MAX."""
+    if os.path.getsize(p) > PAGE_MAX:
+        raise ValueError('page trop grande')
+    with open(p, 'rb') as f:
+        return f.read(n)
+
+
+def pages_of_zip(zf):
+    """Pages ENR d'un zip qui porte le dossier de l'eAIP (eAIP/html/eAIP/…), sans extraire : { nom du membre : lecteur(limite) }."""
+    out = {}
+    infos = zf.infolist()
+    if len(infos) > PKG_MAX_FILES * 4:
+        raise ValueError('trop de fichiers dans le zip : ce n’est pas un eAIP')
+    for i in infos:
+        if not i.is_dir() and _is_enr_page(i.filename):
+            out[i.filename] = (lambda limit, i=i: _read_member(zf, i, limit))
+    return out
+
+
+def _read_member(zf, info, n):
+    if info.file_size > PAGE_MAX:
+        raise ValueError('page trop grande')
+    with zf.open(info) as f:
+        return f.read(n)
+
+
+def _too_big():
+    raise ValueError('page trop grande')
+
+
+def pages_of_iso(iso):
+    """Pages ENR d'une image ISO 9660 (tools/iso9660.py), sans la monter : { chemin dans l'image : lecteur(limite) }."""
+    out = {}
+    for path, entry in iso.walk().items():
+        if _is_enr_page(path):
+            out[path] = (lambda n, e=entry: iso.read((e[0], min(e[1], n)), PAGE_MAX) if e[1] <= PAGE_MAX else _too_big())
+    return out
+
+
+def sections_of(pages, profile):
+    """(page de l'ENR 4.4, [pages des routes], édition AAAA-MM-JJ) d'un jeu de pages : celles dont le TITRE porte le nom de l'AIP du profil (« AIP for PORTUGAL ») et la section voulue. ValueError (en clair) si l'ENR 4.4 ou les routes manquent."""
+    want = {profile['points_section']: 'points', **{s: 'routes' for s in profile['routes_sections']}}
+    got, issue, seen = {}, None, 0
+    for path, read in sorted(pages.items()):
+        head = read(HEAD)[:HEAD].decode('utf-8', 'replace')
+        m = _TITLE.search(head)
+        if not m or profile['title'].lower() not in m.group(1).lower():
+            continue
+        seen += 1
+        sec = _SECTION.search(m.group(1))
+        key = sec.group(1).upper() if sec else ''
+        if key in want and key not in got:
+            got[key] = read(PAGE_MAX).decode('utf-8', 'replace')      # la page entière (bornée par PAGE_MAX)
+            issue = issue or issue_of_title(got[key])
+    if not seen:
+        raise ValueError(f'aucune page de « {profile["title"]} » : ce n’est pas cet eAIP')
+    if profile['points_section'] not in got:
+        raise ValueError(f'la page {profile["points_section"].replace("-", " ")} de « {profile["title"]} » manque dans ce fichier')
+    routes = [got[s] for s in profile['routes_sections'] if s in got]
+    if not routes:
+        raise ValueError('aucune page de routes (ENR 3) dans ce fichier')
+    if not issue:
+        raise ValueError('date d’entrée en vigueur introuvable dans le titre des pages')
+    return got[profile['points_section']], routes, issue
+
+
+def read_package(profile, path):
+    """Lit un eAIP pris à la main : `path` est un zip (qui porte une ISO, ou le dossier de l'eAIP), une ISO, ou un dossier extrait. Rend (page ENR 4.4, [pages de routes], édition) ; ValueError dit POURQUOI en clair (« ISO illisible : … »,
+    « aucune page de … », « zip illisible »…). Ne lit que ce que le profil attend ; jamais d'exécution ; tout est borné."""
+    import zipfile
+    import iso9660
+    try:
+        if os.path.isdir(path):
+            return sections_of(pages_of_dir(path), profile)
+        size = os.path.getsize(path)
+        if size > PKG_MAX_BYTES:
+            raise ValueError(f'fichier de plus de {PKG_MAX_BYTES // 1048576} Mo')
+        with open(path, 'rb') as f:
+            head = f.read(4)
+        if head[:4] == b'PK\x03\x04':
+            try:
+                zf = zipfile.ZipFile(path)
+            except (zipfile.BadZipFile, OSError) as e:
+                raise ValueError(f'zip illisible : {e}') from None
+            with zf:
+                isos = [i for i in zf.infolist() if not i.is_dir() and i.filename.lower().endswith('.iso')]
+                if len(isos) == 1 and isos[0].file_size <= PKG_MAX_BYTES:
+                    try:
+                        iso = iso9660.Iso(zf.open(isos[0]), isos[0].file_size)
+                        return sections_of(pages_of_iso(iso), profile)
+                    except iso9660.IsoError as e:
+                        raise ValueError(f'ISO illisible : {e}') from None
+                if len(isos) > 1:
+                    raise ValueError('plusieurs images ISO dans le zip')
+                return sections_of(pages_of_zip(zf), profile)
+        with open(path, 'rb') as f:
+            f.seek(0x8000)
+            vd = f.read(8)
+        if iso9660.looks_like_iso(vd):
+            try:
+                with open(path, 'rb') as f:
+                    return sections_of(pages_of_iso(iso9660.Iso(f, size)), profile)
+            except iso9660.IsoError as e:
+                raise ValueError(f'ISO illisible : {e}') from None
+        if path.lower().endswith('.iso'):
+            raise ValueError('ISO illisible : pas une image ISO 9660 (signature CD001 absente)')
+        raise ValueError('ni zip, ni image ISO, ni dossier')
+    except OSError as e:
+        raise ValueError(f'lecture impossible : {e}') from None

@@ -2156,3 +2156,169 @@ def k174(c):
     c.ok("navpt: {" in z and "pt: ['navpt']" in z and "provider: 'navpt'" in z and "personal: 'licence'" in z[z.index('navpt: {'):z.index('navpt: {') + 1800], 'aero_zones.js', 'the catalogue of the page holds the source, its zone and its personal licence (K52 compares the launcher’s mirror)')
     cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
     c.ok("id: 'navpt'" in cat and 'NAV Portugal' in cat and 'GEN 0.1' in cat, 'catalogue.js', 'Sources and licences: the line of NAV Portugal says what the publisher states')
+
+
+def _iso_image(tree, label='EAIP_PORTUGAL'):
+    """Une image ISO 9660 NIVEAU 1 fabriquée (noms 8.3 en majuscules, un secteur par dossier) pour les essais : tree = { nom: octets | { sous-dossier } }. Jamais un fichier de l'utilisateur."""
+    import struct
+    SEC = 2048
+    dirs, files = [], []
+
+    def collect(t, path):
+        dirs.append((path, t))
+        for n, v in sorted(t.items()):
+            if isinstance(v, dict):
+                collect(v, path + (n,))
+            else:
+                files.append((path + (n,), v))
+    collect(tree, ())
+    dext = {p: 18 + i for i, (p, _) in enumerate(dirs)}
+    nxt, fext = 18 + len(dirs), {}
+    for p, v in files:
+        fext[p] = nxt
+        nxt += max(1, -(-len(v) // SEC))
+
+    def rec(name, ext, size, isdir):
+        nb = name if isinstance(name, bytes) else name.encode('ascii')
+        n = 33 + len(nb) + (1 if len(nb) % 2 == 0 else 0)
+        return (bytes([n, 0]) + struct.pack('<I', ext) + struct.pack('>I', ext) + struct.pack('<I', size) + struct.pack('>I', size) + bytes(7) + bytes([2 if isdir else 0, 0, 0])
+                + struct.pack('<H', 1) + struct.pack('>H', 1) + bytes([len(nb)]) + nb + b'\x00' * (n - 33 - len(nb)))
+    img = bytearray(nxt * SEC)
+    root = rec(b'\x00', dext[()], SEC, True)
+    pvd = bytearray(SEC)
+    pvd[0:7] = b'\x01CD001\x01'
+    pvd[40:72] = label.encode().ljust(32)
+    pvd[80:88] = struct.pack('<I', nxt) + struct.pack('>I', nxt)
+    pvd[156:156 + len(root)] = root
+    img[16 * SEC:17 * SEC] = pvd
+    img[17 * SEC:17 * SEC + 7] = b'\xffCD001\x01'
+    for p, t in dirs:
+        parent = p[:-1] if p else ()
+        data = rec(b'\x00', dext[p], SEC, True) + rec(b'\x01', dext[parent], SEC, True)
+        for n, v in sorted(t.items()):
+            if isinstance(v, dict):
+                data += rec(n + '', dext[p + (n,)], SEC, True)
+            else:
+                data += rec(n + ';1', fext[p + (n,)], len(v), False)
+        img[dext[p] * SEC:dext[p] * SEC + len(data)] = data
+    for p, v in files:
+        img[fext[p] * SEC:fext[p] * SEC + len(v)] = v
+    return bytes(img)
+
+
+@case('K176', 'An eAIP taken by hand is read by its CONTENT: a zip carrying an ISO (any Windows name), the ISO alone, a zip of the folder or the extracted folder; the ISO is read in pure Python (ISO 9660 level 1, 8.3 names, pages found by their title); every refusal says why (SOG-0244)', 'K', static=True,
+      rule='SOG-0244 (the user, 11 Nov: « je télécharge l\'AIP (une iso) du portugal… ça ne marche pas, et je ne peux pas savoir ce qui ne va pas, ni passer le fichier que je viens de télécharger… sais-tu lire les ISOs ? »): the file of NAV Portugal is a zip with ONE member, an ISO 9660 level 1 image (names cut to 8.3 : LP_ENR31.HTM) of the site; tools/iso9660.py reads it in pure Python, read-only and bounded; tools/eaip_annexe15.py finds the pages by the title (« AIP for PORTUGAL … (section ENR-4.4) valid from … ») in a zip carrying an ISO, an ISO, a zip carrying the folder, the folder; « Choisir le fichier… » recognises these by content (source navpt, name navpt_eaip.zip / navpt_eaip.iso) and a refusal says why (« ISO illisible : … », « aucune page de « AIP for PORTUGAL » »); « Mettre à jour » takes the file in the launcher\'s folders (the latest edition IN FORCE, else the nearest to come, said) before the site. The ISO here is built by the case, the pages are reduced extracts: never a file of the user')
+def k176(c):
+    import io
+    import json
+    import os
+    import sys
+    import tempfile
+    import zipfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    import importlib
+    ISO = importlib.import_module('iso9660')
+    E = importlib.import_module('eaip_annexe15')
+    BU = importlib.import_module('base_upload')
+    RJ, BS, AF, DS = _mods()
+    fx = c.root / 'frame' / 'aerodb' / 'test' / 'fixtures' / 'eaip_pt'
+    p44 = (fx / 'LP-ENR-4.4-extract.html').read_text(encoding='utf-8')
+    p33 = (fx / 'LP-ENR-3.3-extract.html').read_text(encoding='utf-8')
+    edition = lambda t, d: t.replace('valid from 01 OCT 2026', f'valid from {d}')
+    p31 = p33.replace('section ENR-3.3', 'section ENR-3.1')
+    other = '<html><head><title>AIP for GERMANY (section ENR-4.4)valid from 01 OCT 2026</title></head><body></body></html>'
+    pages = lambda d: {'LP_ENR31.HTM': edition(p44, d).encode(), 'LP_ENR22.HTM': edition(p31, d).encode(), 'LP_ENR24.HTM': edition(p33, d).encode(), 'LP_ENR32.HTM': other.encode()}
+    tree = lambda d: {'EAIP': {'HTML': {'EAIP': pages(d)}}, 'INDEX.HTM': b'<html/>'}
+    # 1. the reader of images
+    img = _iso_image(tree('15 JAN 2020'))
+    iso = ISO.Iso(io.BytesIO(img))
+    walk = iso.walk()
+    c.eq((iso.label, iso.joliet, sorted(walk)[:3], len(walk)), ('EAIP_PORTUGAL', False, ['EAIP/HTML/EAIP/LP_ENR22.HTM', 'EAIP/HTML/EAIP/LP_ENR24.HTM', 'EAIP/HTML/EAIP/LP_ENR31.HTM'], 5), 'the image is read in pure Python: its label, level-1 names (the « ;1 » dropped), its five files', what='walk')
+    c.eq(iso.read(walk['EAIP/HTML/EAIP/LP_ENR31.HTM'])[:6], b'<!-- E', 'and a file of it', what='read')
+
+    def refused(fn, *a):
+        try:
+            fn(*a)
+            return 'read'
+        except ValueError as e:                     # ISO.IsoError is a ValueError
+            return str(e)
+    c.eq([refused(ISO.Iso, io.BytesIO(b'x' * 70000)), refused(lambda: ISO.Iso(io.BytesIO(img[:20 * 2048])).walk())], ['pas une image ISO 9660 (signature CD001 absente)', 'extent hors de l’image'], 'garbage and a cut image are refused, said', what='refused iso')
+    old = ISO.MAX_ENTRIES
+    ISO.MAX_ENTRIES = 3
+    try:
+        c.eq(refused(ISO.Iso(io.BytesIO(img)).walk), 'trop d’entrées dans l’image', 'too many entries: refused (bounded)', what='bounded')
+    finally:
+        ISO.MAX_ENTRIES = old
+    # 2. the four forms, the same pages found by their TITLE (the names are mangled, the decoy page of another AIP is ignored)
+    prof = E.PROFILES['pt']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        (td / 'a.iso').write_bytes(img)
+        with zipfile.ZipFile(td / 'AIP ISO (1).zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('EAIP_PORTUGAL.ISO', img)
+        with zipfile.ZipFile(td / 'dossier.zip', 'w') as z:
+            for n, b in pages('15 JAN 2020').items():
+                z.writestr(f'AIP/eAIP/html/eAIP/{n}', b)
+        folder = td / 'aip portugal 2611'
+        (folder / 'eAIP' / 'html' / 'eAIP').mkdir(parents=True)
+        for n, b in pages('15 JAN 2020').items():
+            (folder / 'eAIP' / 'html' / 'eAIP' / n.replace('LP_ENR31.HTM', 'LP-ENR-4.4-en-PT.html')).write_bytes(b)
+        got = {}
+        for what, p in (('iso', td / 'a.iso'), ('zip+iso', td / 'AIP ISO (1).zip'), ('zip+folder', td / 'dossier.zip'), ('folder', folder)):
+            a, b, issue = E.read_package(prof, str(p))
+            g, n, m = E.convert_tables(prof, a, b, issue)
+            got[what] = (issue, n, m)
+        c.eq(got, {k: ('2020-01-15', 6, 4) for k in ('iso', 'zip+iso', 'zip+folder', 'folder')}, 'an ISO, a zip carrying an ISO (any name), a zip carrying the folder, the extracted folder: the same edition, six points, four legs (the route of the extract is in both ENR 3 pages)', what='forms')
+        # 3. every refusal says why
+        (td / 'junk.bin').write_bytes(b'x' * 100)
+        with zipfile.ZipFile(td / 'de.zip', 'w') as z:
+            z.writestr('X.ISO', _iso_image({'EAIP': {'HTML': {'EAIP': {'LP_ENR31.HTM': other.encode()}}}}))
+        with zipfile.ZipFile(td / 'two.zip', 'w') as z:
+            z.writestr('A.ISO', img)
+            z.writestr('B.ISO', img)
+        (td / 'cut.iso').write_bytes(img[:22 * 2048])
+        why = {n: refused(E.read_package, prof, str(td / n)) for n in ('junk.bin', 'de.zip', 'two.zip', 'cut.iso')}
+        c.ok(why['junk.bin'] == 'ni zip, ni image ISO, ni dossier' and why['two.zip'] == 'plusieurs images ISO dans le zip' and why['cut.iso'].startswith('ISO illisible') and 'AIP for PORTUGAL' in why['de.zip'], str(why),
+             'a junk file, a zip with two images, a cut image, the AIP of another State: each refused with its reason in clear')
+        # 4. « Choisir le fichier… » recognises them by content
+        rec = {n: BU.recognise(str(td / n), n) for n in ('a.iso', 'AIP ISO (1).zip', 'dossier.zip')}
+        c.eq({n: (r['source'], r['zone'], r['name'], r['cycle']) for n, r in rec.items()}, {'a.iso': ('navpt', 'pt', 'navpt_eaip.iso', '2020-01-15'), 'AIP ISO (1).zip': ('navpt', 'pt', 'navpt_eaip.zip', '2020-01-15'), 'dossier.zip': ('navpt', 'pt', 'navpt_eaip.zip', '2020-01-15')},
+             'the file chosen by hand is recognised by its content, whatever its name: the source navpt, the zone pt, its canonical name, its edition', what='recognise')
+        try:
+            BU.recognise(str(td / 'de.zip'), 'de.zip')
+            got = 'recognised'
+        except BU.Refused as e:
+            got = (e.reason, 'AIP for PORTUGAL' in e.message)
+        c.eq(got, ('unrecognised', True), 'the ISO of another AIP: refused, with the reason (no page of « AIP for PORTUGAL »)', what='refused upload')
+        c.ok('navpt' in BU.EXPECTED, str(BU.EXPECTED), 'and the source is in the closed list of the expected ones')
+        # 5. « Mettre à jour » takes the file in the launcher's folders before the site: the latest edition in force, else the nearest to come
+        data = td / 'data'
+        (data / 'sia' / 'zones' / 'pt').mkdir(parents=True)
+        dl = td / 'dl'
+        dl.mkdir()
+        with zipfile.ZipFile(dl / 'AIP ISO.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('EAIP_PORTUGAL.ISO', _iso_image(tree('15 JAN 2020')))
+        with zipfile.ZipFile(dl / 'AIP ISO (1).zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('EAIP_PORTUGAL.ISO', _iso_image(tree('26 NOV 2099')))
+        with zipfile.ZipFile(dl / 'EG_AIP_DS_20261001_XML.zip', 'w') as z:
+            z.writestr('EG_AIP_DS_20261001.xml', '<x/>')
+        (dl / 'broken.iso').write_bytes(b'\x00' * 40000)
+        net = _Net(AF, {})
+        with net:
+            out, err = AF.navpt(str(data), downloads=lambda: [str(dl)])
+        c.eq((err, [(f['name'], f['edition'], f['from'], f.get('future'), f['features']) for f in out], net.calls), ([], [('navpt_pt_enr_20200115.geojson', '2020-01-15', 'AIP ISO.zip', None, 10)], []),
+             'two zips in Downloads: the edition IN FORCE is taken (not the one of 2099 that is not yet), no call to the site, the other zip (not an eAIP) is not looked at', what='fetch')
+        c.ok(any('broken.iso' in r for r in out[0].get('refused', [])) and 'ISO illisible' in ' '.join(out[0].get('refused', [])), str(out[0].get('refused')), 'an image that does not read is said in the result, in clear, and the source does not fail for it')
+        os.remove(dl / 'AIP ISO.zip')
+        os.remove(data / 'sia' / 'zones' / 'pt' / 'navpt_pt_enr_20200115.geojson')
+        with net:
+            out, err = AF.navpt(str(data), downloads=lambda: [str(dl)])
+        c.eq((err, out[0]['edition'], out[0].get('future'), out[0]['from']), ([], '2099-11-26', True, 'AIP ISO (1).zip'), 'only an edition to come: it is taken and said (future)', what='future')
+        c.eq(sorted(os.listdir(data / 'sia' / 'zones' / 'pt')), ['navpt_pt_enr_20991126.geojson'], 'one file in the zone, named by its edition', what='folder')
+    # 6. a route that the page does not name is said, never guessed (the edition of 26 Nov 2026 of the real site has 73 of them)
+    unnamed = p33.replace('A44<br>(RNAV 5)', '')
+    st = {}
+    c.eq((E.parse_routes(unnamed, st), st), ([], {'unnamed': 1}), 'a route block with an empty designator: its legs are not read, counted', what='unnamed')
+    g, n, m = E.convert_tables(prof, p44, [p33, unnamed], '2026-10-01')
+    c.eq((m, g.get('skipped')), (2, {'routes_without_name': 1}), 'and the result says it (skipped)', what='skipped')

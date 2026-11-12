@@ -7061,7 +7061,7 @@ def k146(c):
             st, r = up(b'%PDF-1.4 fake', 'ENR-5-2 (1).pdf')
             c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'ukmil', 'ENR-5-2.pdf', 'gb'), 'the UK military AIP ENR 5.2 (the server cuts the launcher TLS connection): a PDF with its own name', what='ukmil')
             st, r = up(zipped({'readme.txt': 'hello'}), 'a.zip')
-            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
+            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
             st, r = up(bytes([0, 1, 2]) + b'garbage', 'a.bin')
             c.eq((st, r.get('reason')), (415, 'type'), 'bytes that are no zip, JSON, PDF or XML: type', what='type')
             st, r = up(b'', 'a.zip', {'Content-Length': '0'})
