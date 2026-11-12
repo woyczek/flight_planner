@@ -2905,3 +2905,7 @@ the Map had seen in between: the same line to within the frame's own sampling.
   by area (objects ∝ width²), to be adjusted on the user's real base.
 - **Noreg** D182 (900 NM view: whole view read and Complexity −2 said; slider touched: it stays; ticking again: the user's step; untick / tick untouched: the earlier step back; a far space read unticked and not ticked, with the empty-view note; a world view: the
   box forced with its reason, free again zoomed in), D75 (the continent view is now 3 000 NM wide or more).
+
+## A taxiway under the pointer is highlighted and its row comes into view (SOG-0254; the user: « TWY : zone cliquable devrait se surligner au survol, et se positionner dans la liste (volet du bas) »)
+- `groundHover` (ground.js), called by `hoverMap` (tips.js): the ground element under the pointer (`groundAt`, the same hit test as the tap) becomes `ground.hover`; a taxiway is drawn wide and light (7 px halo, 5 px accent at .55) under its line, a stand or a hold gets a ring;
+  when the ground list is open its row is marked (`data-hover`, a light background and outline) and scrolled into view (`block: nearest`); nothing under the pointer clears both; written only when the element changes. The tap keeps the strong highlight (`ground.hl`). Noreg D185.

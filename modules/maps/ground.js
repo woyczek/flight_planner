@@ -286,7 +286,8 @@ export function groundLayout(toC, zReal, W, H) {
       });
     }
   }
-  const hl = g.hl;
+  const hl = g.hl,
+    hv = g.hover && g.hover !== hl ? g.hover : null; // survolé (pas déjà choisi)
   return {
     shown,
     paint(c, pl) {
@@ -302,6 +303,22 @@ export function groundLayout(toC, zReal, W, H) {
           c.globalAlpha = grpOf(s.it) === hl ? 1 : .85;
           c.fillRect(p.x - 2, p.y - 2, 4, 4);
           c.globalAlpha = 1;
+        }
+      // l'élément survolé : un trait large et clair sous le trait (une voie), un anneau (un poste, une attente)
+      if (hv)
+        for (const h of shown.filter(s => grpOf(s.it) === hv)) {
+          if (h.it.kind === 'twy' || h.pts.length > 1) {
+            stroke(c, h.pts, 7, halo);
+            c.globalAlpha = .55;
+            stroke(c, h.pts, 5, S.theme.accent);
+            c.globalAlpha = 1;
+          } else {
+            c.strokeStyle = S.theme.accent;
+            c.lineWidth = 2;
+            c.beginPath();
+            c.arc(h.pts[0].x, h.pts[0].y, 7, 0, Math.PI * 2);
+            c.stroke();
+          }
         }
       // la voie surlignée sous ses noms (vu sur téléphone : le trait épais cachait « L1 » dessiné avant lui)
       for (const h of shown.filter(s => s.it.kind === 'twy' && grpOf(s.it) === hl)) {
@@ -500,6 +517,20 @@ export function groundAt(x, y) {
   }
   return best;
 }
+/** Survol de la carte en (x, y) : l'élément du sol dessous (une voie, un poste, une attente…) se surligne sur la carte et sa ligne se place sous les yeux dans la liste du volet du bas quand elle est ouverte
+ *  (SOG-0254) ; plus rien dessous, plus de surlignage. Écrit seulement si l'élément change. */
+export function groundHover(x, y) {
+  const g = G();
+  if (!g.icao) return;
+  const id = groundAt(x, y) || null;
+  if (id === (g.hover || null)) return;
+  g.hover = id;
+  for (const b of S.dbodyEl?.querySelectorAll('.mp-gd-row') || []) setData(b, 'hover', b.dataset.id === id ? '1' : '0');
+  if (id && S.dpanel === 'ground') S.dbodyEl?.querySelector(`.mp-gd-row[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({
+    block: 'nearest'
+  });
+  schedule();
+}
 /** Un toucher sur la carte : l'élément du sol touché ouvre sa ligne dans le panneau (vrai), sinon rien (faux). */
 export function groundTap(x, y) {
   const id = groundAt(x, y);
@@ -544,7 +575,7 @@ const notDrawn = r => {
   const d = (r.ids || [r.id]).filter(i => G().drawn.has(i));
   return d.length > 0 && d.every(i => G().drawn.get(i) === false);
 };
-const rowHtml = r => `<button type="button" class="mp-gd-row" data-id="${esc(r.id)}" data-kind="${r.kind}" data-hl="${G().hl === r.id ? 1 : 0}" data-drawn="${notDrawn(r) ? 0 : 1}"><span class="mp-gd-k">${esc(r.kind === 'rwy' ? tt(TX.gRunway) : kindText(r.kind))}</span><b>${esc(r.name)}</b><span class="mp-gd-no">${esc(tt(TX.gNotDrawn))}</span></button>`;
+const rowHtml = r => `<button type="button" class="mp-gd-row" data-id="${esc(r.id)}" data-kind="${r.kind}" data-hl="${G().hl === r.id ? 1 : 0}" data-hover="${G().hover === r.id ? 1 : 0}" data-drawn="${notDrawn(r) ? 0 : 1}"><span class="mp-gd-k">${esc(r.kind === 'rwy' ? tt(TX.gRunway) : kindText(r.kind))}</span><b>${esc(r.name)}</b><span class="mp-gd-no">${esc(tt(TX.gNotDrawn))}</span></button>`;
 /** Pas de fichier du sol : il se lit avec les procédures du terrain (SOG-0135), un seul geste, dans Carburant : la phrase et le lien. */
 const noneHtml = icao => {
   const st = G().st.get(icao);

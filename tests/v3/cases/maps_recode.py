@@ -5855,3 +5855,30 @@ def d_corrbox(c):
     c.until("() => !window.__mp.S.corrForced", timeout=10000, what='zoomed in: the box is free again')
     sf = c.js(state)
     c.ok(not sf['disabled'] and not sf['why'] and not sf['checked'], str(sf), 'free again, as the user left it (unticked), the reason gone')
+
+
+@case('D185', 'Ground: a taxiway under the pointer is highlighted on the map and its row comes under the eyes in the list of the bottom panel; nothing under the pointer, nothing highlighted', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0254 (the user: « TWY : zone cliquable devrait se surligner au survol, et se positionner dans la liste (volet du bas) »): a hover on a taxiway (a stand, a hold) draws it wide and light under its line and marks its row in the ground list (data-hover), scrolled into view; the pointer leaving it clears both')
+def d_gdhover(c):
+    _ground_open(c)
+    _ground_at(c, 16, 1500, _PARK_AT)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => window.__mp.S.dpanel === 'ground' && document.querySelectorAll('.mp-gd-row').length > 10", timeout=8000, what='the ground list is open')
+    c.js("""() => { window.__w7 = 0; const o = CanvasRenderingContext2D.prototype.stroke; if (!o.__hv) { CanvasRenderingContext2D.prototype.stroke = function () { if (this.lineWidth === 5 && this.globalAlpha < .6) window.__w7++; return o.apply(this, arguments) }; CanvasRenderingContext2D.prototype.stroke.__hv = true } return true }""")
+    pos = c.js("""() => { const g = window.__mp.S.ground, r = window.__mp.S.box.getBoundingClientRect(), h = g.hits.filter(x => x.pts && x.pts.length > 1 && x.grp.startsWith('g:twy:'))
+      .map(x => ({ grp: x.grp, p: x.pts[Math.floor(x.pts.length / 2)] })).find(x => x.p.x > 20 && x.p.x < r.width - 20 && x.p.y > 20 && x.p.y < r.height - 20); return h && { grp: h.grp, x: h.p.x, y: h.p.y } }""")
+    c.ok(pos is not None, str(pos), 'a taxiway is in the view')
+    c.js("async ([x, y]) => { (await import('/modules/maps/tips.js')).hoverMap(x, y); return true }", [pos['x'], pos['y']])
+    c.until("() => window.__mp.S.ground.hover", timeout=4000, what='the taxiway under the pointer is the hovered one')
+    c.eq(c.js("() => window.__mp.S.ground.hover"), pos['grp'], 'the hovered element is the taxiway under the pointer', what='hover')
+    row = c.js("(g) => { const b = document.querySelector(`.mp-gd-row[data-id=\"${CSS.escape(g)}\"]`); if (!b) return null; const r = b.getBoundingClientRect(), p = document.querySelector('.mp-dbody').getBoundingClientRect(); return { hover: b.dataset.hover, inView: r.bottom > p.top && r.top < p.bottom } }", pos['grp'])
+    c.ok(row and row['hover'] == '1' and row['inView'], str(row), 'its row is marked in the list and in view')
+    c.wait(500)
+    c.ok(c.js("() => window.__w7") > 0, str(c.js("() => window.__w7")), 'the line is drawn wide and light on the map')
+    c.shot('D185_{}_delivered.png'.format('standard'))
+    c.js("async () => { (await import('/modules/maps/tips.js')).hoverMap(1, 1); return true }")
+    c.until("() => !window.__mp.S.ground.hover", timeout=4000, what='nothing under the pointer: nothing highlighted')
+    c.eq(c.js("() => document.querySelectorAll('.mp-gd-row[data-hover=\"1\"]').length"), 0, 'no row marked', what='rows')

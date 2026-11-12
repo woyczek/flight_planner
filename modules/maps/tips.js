@@ -47,7 +47,8 @@ import {
   chooseHover
 } from './choose.js';
 import {
-  groundTap
+  groundTap,
+  groundHover
 } from './ground.js';
 import {
   adAt,
@@ -217,6 +218,8 @@ export function llAt(x, y) {
 export function hoverMap(x, y) {
   if (S.choose) return chooseHover(x, y); // mode choix : seul ce qu'on peut choisir réagit
   altsHover(x, y); // un itinéraire proposé survolé est surligné (SOG-0134)
+  if (!onMission()) groundHover(x,
+    y); // une voie (un poste, une attente) survolée est surlignée et sa ligne se place dans la liste du volet (SOG-0254)
   const t = tipAt(x, y),
     ad = t || onMission() ? null : adAt(x, y);
   previewAd(ad?.icao || null);

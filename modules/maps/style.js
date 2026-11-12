@@ -249,6 +249,7 @@ export const STYLE = `
 [data-module="maps"] .mp-gd-list{display:flex;flex-direction:column}
 [data-module="maps"] .mp-gd-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;min-height:34px;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);background:none;color:var(--sog-fg);font:inherit;text-align:left;cursor:pointer}
 @media (pointer:coarse){[data-module="maps"] .mp-gd-row{min-height:44px}}
+[data-module="maps"] .mp-gd-row[data-hover="1"]{background:color-mix(in srgb,var(--sog-accent) 8%,var(--sog-surface));outline:1px solid color-mix(in srgb,var(--sog-accent) 45%,transparent)}
 [data-module="maps"] .mp-gd-row[data-hl="1"]{background:color-mix(in srgb,var(--sog-accent) 14%,var(--sog-surface))}
 [data-module="maps"] .mp-gd-k{color:var(--sog-muted);min-width:5.5em}
 [data-module="maps"] .mp-gd-no{display:none;margin-left:auto;color:var(--sog-muted);font-size:11px}
