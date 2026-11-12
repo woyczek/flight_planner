@@ -5815,6 +5815,8 @@ export async function mount(el, ctx) {
       pend = CF.changesOf(S.base, S.flight);
     S.flight = flightOf(pend ? CF.applyChanges(f, pend) : f);
     S.base = CF.routeBase(f);
+    if (!S.flightPending)
+      mChipDraw(); // SOG-0251 : la mission quittée ailleurs (la croix de la Carte) : la puce suit, quel que soit le chemin
     if (pend) saveFlight();
     if (S.flightLate) { // le vol enregistré arrive après l'attente bornée (flightArrives) : la ligne d'attente s'efface
       S.flightLate = false;
