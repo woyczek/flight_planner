@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a0dd241",
-  "fiches": 279,
+  "organisation": "7176123",
+  "fiches": 280,
   "untranslated": 0,
   "priorities": 243
  },
@@ -746,12 +746,13 @@
     {
      "id": "SOG-0094",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Contrôleurs VATSIM et IVAO actifs sur la Carte, une teinte par réseau",
      "en": "Active VATSIM and IVAO controllers on the Map, one hue per network",
      "de": "Aktive VATSIM- und IVAO-Lotsen auf der Karte, eine Farbe je Netz",
      "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red",
-     "rank": 13
+     "rank": 13,
+     "test": true
     },
     {
      "id": "SOG-0067",
@@ -786,12 +787,13 @@
     {
      "id": "SOG-0095",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Trace de la route : un tronçon DCT en pointillé, un tronçon de voie aérienne en trait plein avec le cartouche de la voie (demande du 1/11, après le 6/11)",
      "en": "Route trace: a DCT leg dotted, an airway leg solid with the airway's cartouche (request of 1 Nov, after 6 Nov)",
      "de": "Routenspur: ein DCT-Abschnitt gepunktet, ein Luftstraßen-Abschnitt durchgezogen mit der Kartusche der Luftstraße (Wunsch vom 1.11., nach dem 6.11.)",
      "es": "Traza de la ruta: un tramo DCT punteado, un tramo de aerovía continuo con el cartucho de la aerovía (petición del 1/11, después del 6/11)",
-     "rank": 29
+     "rank": 29,
+     "test": true
     },
     {
      "id": "SOG-0093",
@@ -1007,11 +1009,12 @@
     {
      "id": "SOG-0254",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Taxiways : la voie se surligne au survol et se place dans la liste du volet du bas",
      "en": "Taxiways: the way highlights on hover and is located in the bottom list",
      "de": "Taxiways: the way highlights on hover and is located in the bottom list",
-     "es": "Taxiways: the way highlights on hover and is located in the bottom list"
+     "es": "Taxiways: the way highlights on hover and is located in the bottom list",
+     "test": true
     }
    ]
   },
@@ -3651,6 +3654,27 @@
    ]
   },
   {
+   "id": "maintenance-lanceur-securite",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; sécurité",
+    "en": "Lanceur ; sécurité",
+    "de": "Lanceur ; sécurité",
+    "es": "Lanceur ; sécurité"
+   },
+   "items": [
+    {
+     "id": "SOG-0280",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Relecture de sécurité du 12/11 (ligne d'audit 165) : deux défauts prouvés dans la prise de fichiers à la main, un durcissement",
+     "en": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening",
+     "de": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening",
+     "es": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening"
+    }
+   ]
+  },
+  {
    "id": "maintenance-maintenance",
    "app": "maintenance",
    "label": {
@@ -3999,7 +4023,7 @@
     {
      "id": "SOG-0277",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Jetons : prévenir avant l'expiration (les jetons envoyés aux pilotes et le sien)",
      "en": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
      "de": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
