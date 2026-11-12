@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **`AeroDb.approachSummary(icao)`: « aucune approche » only when the AIP publishes none** (SOG-0248) — `{ coded, chartOnly, published, none, sia }`: the coded approaches (by name and runway, transitions counted once, doubt included), the « carte seulement dans l'AIP » charts of `chartOnly()`, `published` (at least one of them) and `none` (an SIA aerodrome with neither: the only case where « aucune approche » may be said; never true outside the SIA). K163.
 - **Procedures: the FAF / IF labels of Bordeaux, Strasbourg and Nantes are read** (SOG-0203, SOG-0248) — the DATA pages print « FAF LOC + DME RWY 23 », « FAP/FAF RWY 05 », « FAP/FAF RWY03 » and « IF RWY 05 »: the final-approach and initial points of the ILS/LOC runways (the final-only ILS record, FAF → threshold) were never produced for LFBD, LFST, LFRS; VOR rows stay out. K197.
 - **Map: the time on station is written at its point** — « NEPIX · ⏱ 0:20 » from Fuel's `route.holds` (maps DECISIONS; noreg D188).
 - **Fuel: time on area per point** — read from the mission (a range counted at its maximum), changed on any point, one line per point in the quote, the following times shifted (Fuel DECISIONS, help, missions SPEC; noreg N40; SOG-0193).

@@ -7569,7 +7569,7 @@ def k163(c):
         { id: 'LFST.APP.RNPRWY23.RW23', icao: 'LFST', kind: 'APP', name: 'RNP RWY 23', runways: ['23'], transition: null, points: [pt('C', 48.6, 7.8), pt('D', 48.5, 7.7)], source: { kind: 'eaip', file: 'AD_2_LFST_DATA_RWY23_FNA_RNP_CODE.pdf' }, status: 'check' }] };
       const files = { 'proc/manual/LFST.json': file, 'proc/manual/index.json': { schema: 1, aerodromes: { LFST: { SID: 0, STAR: 0, APP: 2, status: 'check' } } } };
       const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse('2026-11-10T12:00:00Z') });
-      return { only: await db.chartOnly('LFST'), none: await db.chartOnly('LFXX'), foreign: await db.chartOnly('EGLL'), bad: await db.chartOnly('x'), star: await db.chartOnly('LFST', { kind: 'STAR' }), sid: await db.chartOnly('LFST', { kind: 'SID' }), other: await db.chartOnly('LFST', { kind: 'DATA' }), base };
+      return { summary: await db.approachSummary('LFST'), nosum: await db.approachSummary('LFXX'), foreignsum: await db.approachSummary('EGLL'), badsum: await db.approachSummary('x'), only: await db.chartOnly('LFST'), none: await db.chartOnly('LFXX'), foreign: await db.chartOnly('EGLL'), bad: await db.chartOnly('x'), star: await db.chartOnly('LFST', { kind: 'STAR' }), sid: await db.chartOnly('LFST', { kind: 'SID' }), other: await db.chartOnly('LFST', { kind: 'DATA' }), base };
     }""")
     base = r['base']
     c.eq(r['only'], [
@@ -7578,6 +7578,9 @@ def k163(c):
         {'name': 'ILS CAT123 LOC RWY 23', 'runway': '23', 'url': base + 'Cartes/LFST/AD_2_LFST_IAC_RWY23_FNA_ILS_CAT123_LOC.pdf'}],
          'the three IAC charts with no approach record (the RNP charts are carried by the two records, one of them in doubt; the aerodrome chart and the DATA page are not approach charts), name, runway and address composed from the file', what='only')
     c.eq((r['none'], r['foreign'], r['bad']), ([], [], []), 'an aerodrome without file, a foreign aerodrome, a bad code: nothing', what='empty')
+    c.eq((r['summary'], r['foreignsum'], r['badsum']), ({'coded': 2, 'chartOnly': 3, 'published': True, 'none': False, 'sia': True}, {'coded': 0, 'chartOnly': 0, 'published': False, 'none': False, 'sia': False}, {'coded': 0, 'chartOnly': 0, 'published': False, 'none': False, 'sia': False}),
+         'approachSummary (SOG-0248): 2 coded approaches + 3 « carte seulement » = published, « aucune approche » false; a foreign aerodrome or a bad code: never « none » (the charts of a non-SIA terrain are not listed)', what='summary')
+    c.eq(r['nosum'], {'coded': 0, 'chartOnly': 0, 'published': False, 'none': True, 'sia': True}, 'an SIA aerodrome with neither coded approach nor chart (no file here): `none` true — the only case where « aucune approche » may be said', what='none')
     c.eq(([x['name'] for x in r['star']], [x['url'].split('/')[-1] for x in r['star']], [x['name'] for x in r['sid']], r['other']), (['STAR CONV RWY 05'], ['AD_2_LFST_STAR_RWY05_CONV.pdf'], ['SID CONV RWY 23'], []),
          'kind STAR / SID: the conventional charts only (the AIP codes the RNAV procedures, never a CONV chart); another kind: nothing', what='star sid')
 

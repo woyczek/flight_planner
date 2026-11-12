@@ -2631,6 +2631,31 @@
             };
           }).sort((a, b) => (a.runway < b.runway ? -1 : a.runway > b.runway ? 1 : a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
       },
+      /** Les approches PUBLIÉES d'un terrain, d'un coup (SOG-0248) : `{ coded, chartOnly, published, none, sia }` : `coded` approches lues (par nom et piste, transitions comptées une fois, celles en doute comprises), `chartOnly` cartes sans fiche (chartOnly()), `published` : l'AIP en
+       *  publie au moins une, `none` : l'AIP n'en publie AUCUNE (jamais vrai hors SIA, dont les cartes ne sont pas listées : `sia` faux). « Aucune approche » ne se dit que quand `none` est vrai ; sinon la liste des approches codées PLUS les lignes « carte seulement dans l'AIP » de chartOnly(). */
+      async approachSummary(icao) {
+        const k = String(icao || '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(k)) return {
+          coded: 0,
+          chartOnly: 0,
+          published: false,
+          none: false,
+          sia: false
+        };
+        await api.sources().catch(() => null);
+        const sia = !!window.AeroCatalogue?.siaRegionOf?.(k),
+          [only, procs] = await Promise.all([api.chartOnly(k).catch(() => []), api.procedures(k, {
+            doubt: true
+          }).catch(() => [])]),
+          coded = new Set(procs.filter(p => p.kind === 'APP').map(p => `${String(p.name || '').toUpperCase()}|${(p.runways || []).join('/')}`)).size;
+        return {
+          coded,
+          chartOnly: only.length,
+          published: coded + only.length > 0,
+          none: sia && coded + only.length === 0,
+          sia
+        };
+      },
       async sources() {
         await loadOwn('airac.js', 'AeroAirac');
         await loadOwn('catalogue.js', 'AeroCatalogue');
