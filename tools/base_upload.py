@@ -175,6 +175,9 @@ def recognise(path, hint='', today=None):
         if not m:
             raise Refused('unrecognised', 'un JSON dont le nom n’est pas « <pays>_<asp|apt|nav|rpp>.geojson » : pas un export d’openAIP', EXPECTED)
         return {'source': 'openaip', 'zone': m.group('cc').lower(), 'name': f'{m.group("cc").lower()}_{m.group("layer").lower()}.{m.group("ext").lower()}', 'cycle': None}
+    import registry_fr
+    if head[:4] not in (b'PK', b'%PDF') and registry_fr.sniff(open(path, 'rb').read(4096)):          # SOG-0270 : l'export du registre français des immatriculations, reconnu par son EN-TÊTE ; le fichier d'origine n'est jamais gardé : seul son dérivé à cinq colonnes l'est (data/local/registry/)
+        return {'source': 'registry_fr', 'zone': '', 'name': registry_fr.OUT_NAME, 'cycle': None, 'derive': True}
     if head[:4] == b'%PDF' and re.fullmatch(r'MIAM_OACI_ENR 5\.7(?: \(\d+\))?\.pdf', hint or '', re.I):      # SOG-0273 : l'ENR 5.7 du MIAM (CD DIRCAM du SIA, sorti du zip par la page) : gardé tel quel ; c'est la PAGE qui le lit (pdf.js → miam-enr-5-7-tracks.xml), le lanceur n'a pas de lecteur de PDF
         return {'source': 'dircam', 'zone': 'fr', 'name': 'MIAM_OACI_ENR 5.7.pdf', 'cycle': None}
     if head[:4] == b'%PDF' and re.fullmatch(r'ENR-5-2(?: \(\d+\))?\.pdf', hint or ''):         # l'ENR 5.2 de l'AIP militaire britannique (SOG-0234 : le serveur coupe la connexion TLS du lanceur)
@@ -270,6 +273,16 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
                 return no('type', str(e)[:120])
             _drop(tmp)
             return 200, {'ok': True, 'source': info['source'], 'zone': info['zone'], 'name': done[0], 'names': done, 'kind': info.get('kind', ''), 'size': got, 'replaced': True, 'sha256': h.hexdigest()}
+        if info.get('derive'):                              # le registre : dérivé à cinq colonnes, l'original (tiers : propriétaires, adresses) est supprimé aussitôt, jamais gardé, jamais dit
+            import registry_fr
+            try:
+                res = registry_fr.derive(tmp, os.path.join(base, 'local', 'registry'))
+            except registry_fr.RegistryError as e:
+                _drop(tmp)
+                return no('too-large' if e.code == 'size' else 'unrecognised', f'registre non lu ({e.code})', EXPECTED)
+            finally:
+                _drop(tmp)
+            return 200, {'ok': True, 'source': 'registry_fr', 'zone': '', 'name': registry_fr.OUT_NAME, 'rows': res['rows'], 'skipped': res['skipped'], 'date': res['date'], 'size': got, 'replaced': True, 'sha256': h.hexdigest()}
         dest = os.path.join(folder, info['name'])
         digest = h.hexdigest()
         replaced = True

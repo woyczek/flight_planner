@@ -7058,6 +7058,11 @@ def k146(c):
             c.eq((st, r.get('source'), r.get('kind'), r.get('name')), (200, 'eurocontrol_rad', 'rad', 'RAD_2611_v1_0.xlsx'), 'an EUROCONTROL RAD workbook under its own name (SOG-0237): kept under that name for route/import-rad', what='rad')
             st, r = up(book, 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx')
             c.eq((st, r.get('source'), r.get('kind'), r.get('name')), (200, 'eurocontrol_rad', 'fra', 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx'), 'and the FRA points workbook', what='fra points')
+            reg = b'IMMATRICULATION;CONSTRUCTEUR;MODELE;NUMERO_SERIE;AERODROME_ATTACHE;PROPRIETAIRE\nF-BHHH;CESSNA;172 N;1;PARIS;CANARYOWNER\n'
+            st, r = up(reg, 'export (1).csv')
+            c.eq((st, r.get('source'), r.get('rows'), 'CANARYOWNER' in json.dumps(r)), (200, 'registry_fr', 1, False), 'the registry export (SOG-0270): recognised by its header, derived, the answer carries the row count and nothing of the file', what='registry')
+            c.eq(((data / 'local' / 'registry' / 'fr_immat.json').is_file(), 'CANARYOWNER' in (data / 'local' / 'registry' / 'fr_immat.json').read_text(encoding='utf-8'), [p.name for p in folder.iterdir() if p.suffix.lower() == '.csv' or p.name.startswith('.recv-')]), (True, False, []),
+                 'the derived file exists without the owner; the original CSV and the temporary file are NOT kept in the upload folder', what='not kept')
             c.eq(up(book, 'tableau.xlsx')[1].get('reason'), 'unrecognised', 'a workbook under another name: not taken (the pickup looks for the names above)', what='xlsx name')
             st, r = up(b'%PDF-1.4 fake', 'ENR-5-2 (1).pdf')
             c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'ukmil', 'ENR-5-2.pdf', 'gb'), 'the UK military AIP ENR 5.2 (the server cuts the launcher TLS connection): a PDF with its own name', what='ukmil')
@@ -7091,7 +7096,7 @@ def k146(c):
             sg.getresponse().read()
             c.eq(sorted(x.name for x in folder.iterdir()), ['29_Oct_2026_FIX_CSV.zip', 'AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'ENR-5-2.pdf', 'RAD_2611_v1_0.xlsx', 'de_apt.geojson', 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx', 'export_xml_bd_SIA_2026-10-29.zip'],
                  'only the recognised files are in data/local/upload/: no temporary file left, nothing refused kept', what='folder')
-            stray = [str(x) for x in data.rglob('*') if x.is_file() and 'upload' not in x.parts and x.name not in ('data_tree.js', '.defa_instance')]
+            stray = [str(x) for x in data.rglob('*') if x.is_file() and 'upload' not in x.parts and x.name not in ('data_tree.js', '.defa_instance', 'fr_immat.json')]
             c.ok(not stray, str(stray[:6]), 'nothing is written elsewhere in data/')
         finally:
             p.terminate()
@@ -8493,3 +8498,96 @@ def k201(c):
     }""")
     c.eq((r['radius'], r['sweep'], r['arc'], r['n'], r['gaps'], r['badGaps'], r['none']), (2.761, 179, 8.614, 35, 0, 2, [None, None]), 'the same arc as proc_arc.py: radius 2.761 NM, 179° (8.614 NM), 35 intermediate points, no gap; a radius and an arc length that do not fit: two gaps; a missing centre or a bad turn: null', what='arc')
     c.ok(r['reasons'] is None or (len(r['reasons']) == 4 and r['reasons'][0].startswith('branche en arc RF')), str(r['reasons']), 'the reason in four languages (the page of the test may not load the catalogue)')
+
+
+@case('K202', 'French aircraft registry (SOG-0270, Sécurisation rules): only the five whitelisted columns are kept, found by their header NAME; the original is never kept; no owner name or address anywhere (derived file, answer, error, upload answer); bounds refuse; `aircraft/registry` finds a type from a registration and registrations of a type', 'K', static=True,
+      rule='SOG-0270 (12 Nov 2026) with the review of Sécurisation: the registry export has 13 columns, 8 of them third parties (owner, tenant, mortgage creditor, seizing person, and their addresses). tools/registry_fr.py keeps IMMATRICULATION, CONSTRUCTEUR, MODELE, NUMERO_SERIE, AERODROME_ATTACHE by header name, in data/local/registry/fr_immat.json (never in the data repository); the original is not kept (upload: the temporary file is dropped at once); refusals say a code, never a line; bounds: 40 MB, 300 000 rows, 4 096 characters per physical line, 80 per field, a registration shape. The verb `aircraft/registry` is read-only: { reg } gives the type of a registration, { type: « cessna 172 » } the registrations of a type. A fake file with a canary owner name and address is used: the canary must be found NOWHERE.')
+def k202(c):
+    import io
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    RJ = _regen()
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import registry_fr
+    head = 'IMMATRICULATION;CONSTRUCTEUR;MODELE;NUMERO_SERIE;AERODROME_ATTACHE;PROPRIETAIRE;ADRESSE_PROPRIETAIRE;LOCATAIRE;ADRESSE_LOCATAIRE;CREANCIER_HYPOTHEQUE;ADRESSE_CREANCIER;PERSONNE_SAISISSANTE;ADRESSE_PERSONNE_SAISISSANTE'
+    canary = 'CANARYDUPONT'
+    lines = [head,
+             f'F-BHHH;CESSNA;172 N;17270001;PARIS-SACLAY;{canary} JEAN;12 RUE {canary};;;;;;',
+             f'F-GXES;ROBIN AVIATION;DR 400/140B;2345;;{canary} SARL;{canary} ZA;{canary} LOC;x;;;;',
+             f'F-HTOO;SOCATA;TB 20;77;TOUSSUS;{canary};adr;;;;;;',
+             f'XX;BAD;ROW;1;;{canary};;;;;;;',
+             f'F-BHHH;CESSNA;172 N;17270001;PARIS-SACLAY;{canary} AUTRE;adr;;;;;;']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        src = td / 'export.csv'
+        src.write_bytes(('﻿' + '\n'.join(lines) + '\n').encode('utf-8'))
+        out = td / 'data' / 'local' / 'registry'
+        c.eq((registry_fr.sniff(src.read_bytes()[:4096]), registry_fr.sniff(b'a,b,c\n1,2,3\n'), registry_fr.sniff(b'PK\x03\x04')), (True, False, False), 'the file is recognised by its header, not by its name', what='sniff')
+        res = registry_fr.derive(str(src), str(out), today=1794000000)
+        doc = json.loads((out / 'fr_immat.json').read_text(encoding='utf-8'))
+        c.eq((res['rows'], res['skipped'], doc['columns'], doc['rows'][0]), (3, 1, list(registry_fr.WHITELIST), ['F-BHHH', 'CESSNA', '172 N', '17270001', 'PARIS-SACLAY']),
+             'three distinct aircraft kept (the duplicate registration line with another owner is one row; the badly formed registration is counted, not kept); five columns only, by header name', what='derive')
+        c.ok(canary not in (out / 'fr_immat.json').read_text(encoding='utf-8') and canary not in json.dumps(res), 'canary', 'no owner name or address in the derived file nor in the answer')
+        c.eq(sorted(p.name for p in td.rglob('*') if p.is_file()), ['export.csv', 'fr_immat.json'], 'only the derived file is written (the test keeps its own fake source: the upload drops it)', what='files')
+        # the verb
+        fn, check = RJ.REGISTRY[('aircraft', 'registry')]
+        ctx = {'data': str(td / 'data')}
+        run = lambda **a: fn(RJ.Job('aircraft', 'registry', {}), check(a), ctx)
+        r = run(reg='fbhhh')
+        t = run(type='cessna 172')
+        e = run(type='robin')
+        c.eq(([(x['reg'], x['maker'], x['model'], x['base']) for x in r['rows']], r['source'], [x['reg'] for x in t['rows']], [x['reg'] for x in e['rows']], 'owner' in json.dumps(r).lower() or canary in json.dumps([r, t, e])),
+             ([('F-BHHH', 'CESSNA', '172 N', 'PARIS-SACLAY')], registry_fr.CREDIT, ['F-BHHH'], ['F-GXES'], False), 'a registration (with or without the dash) gives its type; a type gives its registrations; the answer carries the credit and no third party', what='lookup')
+        c.eq((check({}), check({'reg': 'x'}), check({'reg': 'F-BHHH', 'owner': 1}), check({'type': 'cessna', 'limit': 999}), check({'reg': 'F-BHHH'})), (None, None, None, None, {'reg': 'F-BHHH', 'limit': 50}), 'strict arguments: reg or type, nothing else, a bounded limit', what='check')
+        none = fn(RJ.Job('aircraft', 'registry', {}), check({'reg': 'F-BHHH'}), {'data': str(td / 'other')})
+        c.eq((none['rows'], none.get('absent')), ([], True), 'no registry on the workstation: empty and said', what='absent')
+        # bounds and refusals: a code, never a line
+        long = td / 'long.csv'
+        long.write_text(head + '\n' + 'F-AAAA;X;' + 'M' * 5000 + canary + ';1;\n', encoding='utf-8')
+        nohead = td / 'nohead.csv'
+        nohead.write_text(f'A;B;C\n1;2;{canary}\n', encoding='utf-8')
+        codes = []
+        for f in (long, nohead, td / 'missing.csv'):
+            try:
+                registry_fr.derive(str(f), str(out))
+                codes.append('derived')
+            except registry_fr.RegistryError as ex:
+                codes.append((ex.code, canary in str(ex)))
+        c.eq(codes, [('line', False), ('headers', False), ('read', False)], 'a line over 4 096 characters, a file without the registry header, a missing file: refused with a code, never a content of the file', what='refusals')
+
+
+@case('K203', 'The upload recognises the registry export by its header (whatever its name), says it will be DERIVED (never kept), and `base/cycle.local` lists the derived registry with its date (SOG-0270)', 'K', static=True,
+      rule='SOG-0270: the user drops `export.csv` (or « export (1).csv »); the upload recognises it by the header (IMMATRICULATION; CONSTRUCTEUR; MODELE…) and answers source `registry_fr` with `derive` — the handler derives the five-column file into data/local/registry/ and drops the original at once (the answer carries the row count, never a row). A CSV without the header is refused as any other unknown file. `base/cycle.local` gets the line « Registre français des immatriculations (DGAC) » with the date of the derived file.')
+def k203(c):
+    import datetime
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    RJ = _regen()
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import base_upload
+    import registry_fr
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        ok = td / 'a.csv'
+        ok.write_text('IMMATRICULATION;CONSTRUCTEUR;MODELE;NUMERO_SERIE;AERODROME_ATTACHE;PROPRIETAIRE\nF-BHHH;CESSNA;172;1;X;Y\n', encoding='utf-8')
+        r = base_upload.recognise(str(ok), 'export (1).csv')
+        c.eq((r['source'], r.get('derive'), r['name']), ('registry_fr', True, registry_fr.OUT_NAME), 'recognised by its header: derived, not kept', what='recognise')
+        bad = td / 'b.csv'
+        bad.write_text('A;B;C\n1;2;3\n', encoding='utf-8')
+        try:
+            base_upload.recognise(str(bad), 'export.csv')
+            other = 'recognised'
+        except base_upload.Refused as e:
+            other = e.reason
+        c.ok(other != 'recognised' and other != 'registry_fr', other, 'a CSV without the registry header is refused like any unknown file')
+        data = td / 'data'
+        (data / 'sia').mkdir(parents=True)
+        registry_fr.derive(str(ok), str(data / 'local' / 'registry'))
+        fn, check = RJ.REGISTRY[('base', 'cycle')]
+        res = fn(RJ.Job('base', 'cycle', {}), check({}), {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 12)})
+        loc = [x for x in res['local'] if x['id'] == 'registry_fr']
+        c.eq((len(loc), loc and len(loc[0]['label']), loc and bool(loc[0]['at'])), (1, 4, True), 'base/cycle.local lists the registry with its date', what='local')

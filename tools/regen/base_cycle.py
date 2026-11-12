@@ -178,6 +178,13 @@ def run(job, args, ctx):
     items = [make_item(sid, src, [z for z in zones_all if sid in S.sources_of(z)]) for sid, src in S.SOURCES.items()]
     local = [{'id': it['id'], 'label': it['label'], 'at': it['steps']['download']['at'], 'personal': it['personal'], 'zoneCount': it['zoneCount']} for it in items if it['regime'] == 'local']      # SOG-0273 / 12 Nov : les sources calculées ou lues sur ce poste (MORA, X-Plane…) ne sont pas des choses « à faire » : « quand ça change », avec leur date
     items = [it for it in items if it['regime'] != 'local']
+    try:                                    # SOG-0270 : le registre français des immatriculations (dérivé à cinq colonnes, ce poste seulement) : une ligne « quand ça change », avec la date du fichier pris
+        rp = os.path.join(str(data), 'local', 'registry', 'fr_immat.json')
+        if os.path.isfile(rp):
+            local.append({'id': 'registry_fr', 'label': ['Registre français des immatriculations (DGAC)', 'French aircraft registry (DGAC)', 'Französisches Luftfahrzeugregister (DGAC)', 'Registro francés de matrículas (DGAC)'],
+                          'at': iso(os.path.getmtime(rp)), 'personal': '', 'zoneCount': 0})
+    except OSError:
+        pass
     # le cycle suivant : ce que le poste a déjà reçu pour lui (par les noms), ce qui reste à prendre
     nxt_files = {}
     for sid, rx in NEXT_NAMES:
