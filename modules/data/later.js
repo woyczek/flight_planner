@@ -34,7 +34,8 @@ import {
   startOp
 } from './follow.js';
 import {
-  busyCardHtml
+  busyCardHtml,
+  showBusy
 } from './busy.js';
 
 /** L'état propre à ces blocs, créé avec celui de la carte : les plis ouverts à la main (retenus d'un dessin à l'autre) et la lecture des routes NAT. */
@@ -44,7 +45,8 @@ export const lcInit = () => ({
     phase: 'idle',
     state: null,
     refreshed: false,
-    failed: false
+    failed: false,
+    busy: false // natEnsure a répondu « le lanceur fait déjà autre chose » (K186) : la carte de cette opération est à la ligne des routes NAT
   }
 });
 /** Ce que la liste du cycle a donné (lue) : null tant qu'elle ne l'est pas. */
@@ -100,6 +102,8 @@ const CHANGE = Object.freeze([{
   cyc: '',
   act: 'nat'
 }]);
+/** La source calculée ou lue sur ce poste que base/cycle dit à part (`local`, K185 : MORA, X-Plane…) : { id, label[4], at, personal, zoneCount } ; null sans. C'est LA source de ces lignes (model_countries.js ramène à la même forme un lanceur qui les laisse encore dans `items`). */
+const localOf = (id, data) => data?.local?.find(x => x.id === id) || null;
 /** La date de la dernière prise d'une source (celle de la liste du cycle : le jour du fichier, à défaut le jour de son cycle) ; '' sans. */
 function lastOf(cyc, data) {
   const d = cyc ? data?.items?.[cyc]?.download : null;
@@ -124,24 +128,31 @@ export function natText() {
 /** Une ligne de « Quand ça change » : son nom, sa dernière date (ou la validité des routes NAT), la note de ce que fait son geste, le geste (gris pour sa raison, écrite une fois sous la liste). */
 function changeLine(c, data, grey) {
   const name = tt(TX.lc.changeName[c.id]),
-    last = c.act === 'nat' ? natText() : lastOf(c.cyc, data),
-    shown = c.act === 'nat' ? last : last ? tt(TX.lc.changeLast, {
+    loc = c.act === 'nat' ? null : localOf(c.id, data), // calculée sur ce poste : « calculée le … » et pour combien de pays
+    last = c.act === 'nat' ? natText() : loc ? (loc.at ? dateOf(loc.at) : '') : lastOf(c.cyc, data),
+    shown = c.act === 'nat' ? last : last ? tt(loc ? TX.d3.changeComputed : TX.lc.changeLast, {
       d: last
     }) : tt(TX.lc.changeNoDate),
     note = M.own(TX.lc.changeNote, c.id) || (c.act === 'build' || c.act === 'fetch' ? TX.lc.changeNote[c.act] : null),
     gate = c.act === 'build' || c.act === 'fetch' ? gateOf('base', S.ticked?.size || 0, [c.act]).verbs[c.act] : null;
   if (gate?.disabled && gate.reason) grey.add(gate.reason);
-  return `<li class="d-chg" data-change="${esc(c.id)}"><p><b>${esc(name)}</b> <span class="f-muted" data-change-last>${esc(shown)}</span></p>${note ? `<p class="f-muted" data-change-note>${esc(tt(note))}</p>` : ''}${gate ? `<p class="d-verbs"><button type="button" data-act="change-act" data-change="${esc(c.id)}" data-kind="${c.act}"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.lc.changeAct[c.act]))}</button></p>` : ''}</li>`;
+  return `<li class="d-chg" data-change="${esc(c.id)}"><p><b>${esc(name)}</b> <span class="f-muted" data-change-last>${esc(shown)}</span>${loc?.zoneCount > 0 ? ` <span class="f-muted" data-change-zones>${esc(tt(TX.d3.changeZones, { z: count('country', loc.zoneCount) }))}</span>` : ''}</p>${c.act === 'nat' && S.cw.lc.nat.busy ? busyCardHtml('base', 'later') : ''}${note ? `<p class="f-muted" data-change-note>${esc(tt(note))}</p>` : ''}${gate ? `<p class="d-verbs"><button type="button" data-act="change-act" data-change="${esc(c.id)}" data-kind="${c.act}"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.lc.changeAct[c.act]))}</button></p>` : ''}</li>`;
 }
-/** « Quand ça change » : les six lignes ; toujours dessiné avec le catalogue (les routes NAT se lisent sans le lanceur de la liste du cycle). */
+/** Une source calculée sur ce poste que la page n'a pas dans ses six lignes (`local` en dit plus que CHANGE) : son nom dit par le lanceur (dans la langue), sa date, le nombre de pays ; aucun geste. */
+function extraLine(l) {
+  const at = l.at ? dateOf(l.at) : '';
+  return `<li class="d-chg" data-change="${esc(l.id)}" data-change-extra><p><b>${esc(l.label[li()])}</b> <span class="f-muted" data-change-last>${esc(at ? tt(TX.d3.changeComputed, { d: at }) : tt(TX.lc.changeNoDate))}</span>${l.zoneCount > 0 ? ` <span class="f-muted" data-change-zones>${esc(tt(TX.d3.changeZones, { z: count('country', l.zoneCount) }))}</span>` : ''}</p></li>`;
+}
+/** « Quand ça change » : les six lignes (et celles des autres sources calculées sur ce poste que le lanceur dit) ; toujours dessiné avec le catalogue (les routes NAT se lisent sans le lanceur de la liste du cycle). */
 function changeHtml() {
   if (!S.d?.cat) return '';
   const data = cycleData(),
     grey = new Set(),
-    lines = CHANGE.map(c => changeLine(c, data, grey)).join(''),
+    extra = (data?.local || []).filter(l => !CHANGE.some(c => c.id === l.id)),
+    lines = CHANGE.map(c => changeLine(c, data, grey)).join('') + extra.map(extraLine).join(''),
     why = [...grey].find(r => greyOnce(r, 'base'));
-  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`, tt(TX.d2.pillSources, {
-    n: CHANGE.length
+  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${S.cw.lc.nat.busy ? '' : busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`, tt(TX.d2.pillSources, {
+    n: CHANGE.length + extra.length
   }));
 }
 /** Le geste d'une ligne : « Recalculer » (la construction de la base de la couverture) ou « Télécharger de nouveau » (le téléchargement des sources automatiques) : les verbes de la base que l'écran a déjà, avec leur question et leur marche. */
@@ -188,6 +199,7 @@ export async function natOpen() {
   n.refreshed = false;
   n.failed = false;
   n.deferred = false;
+  n.busy = false;
   if (typeof ab?.natState !== 'function') {
     n.phase = 'ready';
     n.state = null;
@@ -219,6 +231,16 @@ export async function natOpen() {
       n.state = e;
       n.refreshed = e.refreshed === true && e.ok !== false;
       n.failed = e.refreshed === true && e.ok === false;
+      // le lanceur fait déjà autre chose (K186) : pas un échec ; la carte de cette opération est à la ligne des routes NAT, la reprise repart à sa fin
+      if (e.busy === true) {
+        const running = M.runningOf(e.running);
+        n.busy = !!running;
+        n.deferred = true;
+        n.refreshed = false;
+        n.failed = false;
+        n.phase = 'ready';
+        if (running) return showBusy(running, 'base', 'later');
+      }
     }
   }
   n.phase = 'ready';

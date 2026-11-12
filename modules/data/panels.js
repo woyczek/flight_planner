@@ -713,8 +713,10 @@ function stateHeadHtml() {
   // « Tout est à jour. » seulement quand rien n'est à reconstruire, en échec, attendu de l'utilisateur ou sans état dans la portée ; sinon, sans zone que le bouton traite, ce que les zones attendent : jamais deux phrases qui se contredisent
   const lone = sc.counts ? ['rebuild', 'failed', 'waiting', 'personal', 'unknown'].reduce((n, k) => n + sc.counts[k].length, 0) : 0,
     reason = greyOnce(gate.reason, 'base');
-  const action = sc.known && sc.n === 0 ? lone ? `<p class="f-muted" data-hand-alone>${esc(tt(TX.handAlone[lone === 1 ? 0 : 1], { z: z(lone) }))}</p>` : `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
-    `<p class="d-verbs" data-update-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(sc.known ? tt(TX.upd.updateN, { n: sc.n }) : tt(TX.upd.update))}</button></p>${reason ? `<p class="f-muted" data-update-reason="${esc(gate.reason)}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`;
+  const none = sc.known && sc.n === 0,
+    action = none ? lone ? `<p class="f-muted" data-hand-alone>${esc(tt(TX.handAlone[lone === 1 ? 0 : 1], { z: z(lone) }))}</p>` : `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
+    `<p class="d-verbs" data-update-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(sc.known ? tt(TX.upd.updateN, { n: sc.n }) : tt(TX.upd.update))}</button></p>`,
+    why = !none && reason ? `<p class="f-muted" data-update-reason="${esc(gate.reason)}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''; // sous le bouton et sa phrase, dans l'ordre du clavier comme dans celui de l'écran
   const dl = sc.plan?.fetch.length || 0,
     bd = sc.plan?.build.length || 0,
     doing = [dl ? tt(TX.upd.doDl, {
@@ -733,7 +735,7 @@ function stateHeadHtml() {
   // la forme de la maquette validée (lot D2) : le titre du cycle et sa barre d'avancement, la légende en une ligne (la phrase d'état, ses nombres restent des boutons), puis le bouton avec, à côté, ce qu'il fait
   const what = [plan, notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : ''].join('');
   return `<div class="d-statehead" data-state-head>${cycleBarHtml()}<p class="d-cap" data-state-sentence>${[esc(cyc), tail].filter(Boolean).join(' ')}</p>${list}
-    <div class="d-go">${action}${what ? `<div class="d-what">${what}</div>` : ''}</div>
+    <div class="d-go">${action}${what ? `<div class="d-what">${what}</div>` : ''}${why}</div>
     ${opAreaHtml('base', 'head')}</div>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en

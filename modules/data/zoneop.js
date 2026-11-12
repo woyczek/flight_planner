@@ -14,6 +14,7 @@ import {
   tt
 } from './state.js';
 import {
+  fmtDayZ,
   fmtZ
 } from '../../frame/lib/time.js';
 import {
@@ -44,8 +45,40 @@ const WORD = {
   download: () => TX.zx.thWDl,
   build: () => TX.zx.thWBuild
 };
-/** L'heure d'une étape, en UTC (« 14:20Z »), comme celle de la carte de l'opération en cours. */
-const timeOf = ms => fmtZ(new Date(ms));
+/** L'heure d'une étape, en UTC (« 14:20Z »), comme celle de la carte de l'opération en cours ; avec le jour et le mois (« 11/11 14:20Z ») quand ce n'est pas aujourd'hui (le fil lu dans le journal du lanceur peut dater d'avant). */
+const timeOf = ms => new Date(ms).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) ? fmtZ(new Date(ms)) : fmtDayZ(
+  new Date(ms));
+/** Le fil de la dernière opération de ce pays d'après le journal du lanceur (base/last, K191 : il survit au rechargement de la page) : le même objet que celui que la page tient en mémoire ; null sans opération de ce pays dans le journal ou sans journal lu. */
+function journalThread(zone) {
+  const lt = S.cw?.last?.data ? M.lastThread(S.cw.last.data, zone) : null;
+  if (!lt) return null;
+  return {
+    zone,
+    gid: -1,
+    state: 'done',
+    t0: lt.at,
+    at: lt.at,
+    fixed: null,
+    journal: true,
+    steps: lt.steps.map(s => ({
+      k: s.k,
+      st: s.st,
+      at: s.at,
+      why: s.st === 'fail' ? whyOf(s.k, s.v) : ''
+    }))
+  };
+}
+/** Un fil du journal doit dépasser celui de la mémoire d'au moins ceci (ms) pour le remplacer : les horloges du lanceur et de la page peuvent différer. */
+const SKEW = 60e3;
+/** Le fil à dire pour ce pays : celui que la page tient (le geste de la fiche, ou la fin d'un travail suivi ici), fusionné avec le journal du lanceur : le plus récent des deux ; sans fil en mémoire (page rechargée), celui du journal. */
+export function threadOf(zone) {
+  const mem = S.cw?.thread.get(zone),
+    jr = journalThread(zone);
+  if (!jr) return mem || null;
+  if (!mem || mem.state === 'running') return mem || jr;
+  const memAt = Math.max(mem.t0 || 0, ...mem.steps.map(s => s.at || 0));
+  return jr.at > memAt + SKEW ? jr : mem;
+}
 /** Un fil neuf pour un pays : le numéro du geste (S.gid), l'état ('running' tant que le geste de la fiche tourne, 'done' sinon : l'état affiché se déduit des étapes), les étapes. */
 function newThread(zone, state, keys = []) {
   const t = {
@@ -185,10 +218,10 @@ function bilanOf(t) {
 }
 /** Le fil de la dernière opération de CE pays : le titre, les étapes (avec « Réessayer » sur la dernière en échec), le bilan en une ligne ; '' sans fil ou pendant le geste de la fiche (l'avancement est alors à la place du bouton). */
 export function threadHtml(zone) {
-  const t = S.cw?.thread.get(zone);
+  const t = threadOf(zone);
   if (!t || (S.zop?.zone === zone)) return '';
   const b = bilanOf(t);
-  return `<div class="d-thread" data-sheet-thread data-thread-state="${stateOf(t)}"><p class="d-thr-h"><b>${esc(tt(TX.zx.thTitle))}</b></p>${t.steps.length ? stepsHtml(t) : ''}
+  return `<div class="d-thread" data-sheet-thread data-thread-state="${stateOf(t)}"${t.journal ? ' data-thread-from="journal"' : ''}><p class="d-thr-h"><b>${esc(tt(TX.zx.thTitle))}</b></p>${t.steps.length ? stepsHtml(t) : ''}
     <p class="${b.level === 'ok' ? 'f-ok' : b.level === 'err' ? 'f-warn' : 'f-muted'}" data-thread-bilan data-level="${b.level}">${esc(b.text)}</p></div>`;
 }
 /** Le geste de la fiche (ou un travail de la base qui compte ce pays) est-il en cours ? */

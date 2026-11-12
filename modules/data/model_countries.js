@@ -197,7 +197,20 @@ export function unreadOf(a) {
     });
   return out;
 }
-/** La fin d'un travail base/cycle lue : { inForce, inForceDate, next, items: { id: source }, order, unavailable, later, unread, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
+/** Les sources calculées ou lues sur ce poste (MORA, X-Plane…) lues : [{ id, label[4], at (instant ISO UTC de leur dernier fichier, ou null), personal, zoneCount }] ; bornée. */
+export function localOf(a) {
+  const out = [];
+  for (const it of (Array.isArray(a) ? a : []).slice(0, 24))
+    if (it !== null && typeof it === 'object' && typeof it.id === 'string' && SRC.test(it.id) && !out.some(x => x.id === it.id)) out.push({
+      id: it.id,
+      label: [0, 1, 2, 3].map(i => text(it.label?.[i], 80) || text(it.label?.[0], 80) || it.id),
+      at: stamp(it.at),
+      personal: it.personal === true || it.personal === 'licence',
+      zoneCount: int(it.zoneCount)
+    });
+  return out;
+}
+/** La fin d'un travail base/cycle lue : { inForce, inForceDate, next, items: { id: source }, order, unavailable, later, unread, local, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
 export function cycleRead(final) {
   const r = final?.state === 'done' && final.result !== null && typeof final.result === 'object' ? final.result : null;
   if (!r || r.ok === false || (!Array.isArray(r.items) && (r.zoneView === null || typeof r.zoneView !== 'object'))) return null;
@@ -210,6 +223,14 @@ export function cycleRead(final) {
       order.push(x.id);
     }
   }
+  // les sources calculées sur ce poste : le lanceur les dit à part (`local`, K185) ; un lanceur qui les laisse encore dans `items` (régime « local ») est ramené à la même forme : `local` est LA source de « Quand ça change » et de la fiche
+  const local = Array.isArray(r.local) ? localOf(r.local) : localOf(Object.values(items).filter(it => it.regime === 'local').map(it => ({
+    id: it.id,
+    label: it.label,
+    at: it.download.at,
+    personal: it.personal,
+    zoneCount: it.build.zones
+  })));
   return {
     inForce: text(r.cycle?.ids?.inForce, 8) || day(r.cycle?.inForce),
     inForceDate: day(r.cycle?.inForce),
@@ -220,6 +241,7 @@ export function cycleRead(final) {
     later: laterOf(r.next, r.cycle
       ?.ids), // le cycle suivant : ce que Téléchargements a déjà, ce qui reste à la main, ce que le poste prendra seul
     unread: unreadOf(r.unread), // vu dans Téléchargements, pas encore lu par la suite
+    local,
     zoneView: zoneViewOf(r.zoneView)
   };
 }

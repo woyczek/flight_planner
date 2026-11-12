@@ -124,8 +124,8 @@ export function updateAllInner() {
     gate = chainGate(plan),
     n = S.chain ? S.chain.runs.length : plan.runs.length,
     stale = ['base', 'proc'].filter(g => S.attn?.[g]).map(g => `<p class="f-warn" data-stale="${g}">${esc(tt(TX.staleCycle, { x: S.attn[g], y: S.cycleId }) + (g === 'base' ? staleBy() : ''))}</p>`).join('');
-  return `<h2>${esc(tt(TX.updateAll))}</h2>${stale}
-    <p class="d-verbs"><button type="button" class="primary" data-verb="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.updateAllN, { n: count('set', n) }))}${attnDot(S.attn?.base || S.attn?.proc, S.attn?.base ? staleBy() : '')}</button></p>
+  return `<h2>${esc(tt(TX.d3.allSetsTitle))}</h2><p class="f-muted" data-update-all-caption>${esc(tt(TX.d3.allSetsCaption))}</p>${stale}
+    <p class="d-verbs"><button type="button" class="primary" data-verb="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.d3.allSetsButton, { n }))}${attnDot(S.attn?.base || S.attn?.proc, S.attn?.base ? staleBy() : '')}</button></p>
     ${gate.reason ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
     ${busyCardHtml('base', 'chain')}${chainHtml()}`;
 }

@@ -230,10 +230,8 @@ export const STYLE = `
 [data-module="data"] .d-journal summary{min-height:var(--sog-touch);display:flex;align-items:center}
 [data-module="data"] .d-ops{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 [data-module="data"] .d-ops li{overflow-wrap:anywhere}
-/* l'ordre vu de l'écran (la maquette validée, lot D2) : le cycle, puis la base (la carte, les groupes, « Publier »), puis la couverture, « Tout mettre à jour » et les autres jeux */
+/* l'ordre vu de l'écran (la maquette validée, lot D2) : le cycle, puis la base (la carte, les groupes, « Publier »), puis la couverture, « Tout mettre à jour » et les autres jeux ; le code suit le même ordre (lot D3 : la tabulation du clavier aussi, plus de propriété CSS « order ») */
 [data-module="data"] [data-body]{display:flex;flex-direction:column;min-width:0}
-[data-module="data"] [data-body]>[data-data-head]{order:-2}
-[data-module="data"] [data-body]>details.f-group[data-group="base"]{order:-1}
 `;
 /** Les opérations que le lanceur connaît (GET regen/verbs), lues une fois au montage : M.knownVerbs de sa réponse ; sans lanceur, sans réponse, sur
  *  un 404 ou un refus : celles d'un lanceur ancien (base/fetch, base/build, base/purge). Ne lève jamais. */
@@ -562,22 +560,29 @@ function rowHtml(r) {
     <summary><span class="d-sum"><b>${name}</b><span class="f-muted">${esc(metaText(r))}</span></span>${pill}</summary>${detailHtml(r, src)}</details>`;
 }
 /** Les quatre groupes : repliés sauf ceux qui portent une ligne à regarder ; sept lignes visibles au plus, le reste (et les jeux
- *  envisagés ou écartés) sous « n autres jeux ». */
+ *  envisagés ou écartés) sous « n autres jeux ». Rend { base (le groupe de la base, que l'écran montre juste sous l'en-tête), rest (l'erreur éventuelle, puis les autres groupes) } : le code suit l'ordre vu de l'écran, le clavier aussi (SOG-0262, lot D3). */
 function groupsHtml() {
   const {
     cat,
     pub,
     cov
   } = S.d;
-  if (!cat || !S.airac) return `<p class="f-warn" data-error="catalogue">${esc(tt(TX.catError))}</p>`;
-  const groups = S.groups;
-  return `${pub ? '' : `<p class="f-warn" data-error="publication">${esc(tt(TX.pubError))}</p>`}${groups.map(g => {
-    const open = g.id in S.manual ? S.manual[g.id] : g.attention;
-    return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
+  if (!cat || !S.airac) return {
+    base: '',
+    rest: `<p class="f-warn" data-error="catalogue">${esc(tt(TX.catError))}</p>`
+  };
+  const groups = S.groups,
+    one = g => {
+      const open = g.id in S.manual ? S.manual[g.id] : g.attention;
+      return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
       ${panelsHtml(g.id)}
       ${g.rows.map(rowHtml).join('') || (g.more.length || g.id === 'proc' || g.id === 'weather' ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}${g.id === 'proc' ? routeRowHtml() : g.id === 'weather' ? worldRowHtml() : ''}
       ${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}</details>`;
-  }).join('')}`;
+    };
+  return {
+    base: groups.filter(g => g.id === 'base').map(one).join(''),
+    rest: `${pub ? '' : `<p class="f-warn" data-error="publication">${esc(tt(TX.pubError))}</p>`}${groups.filter(g => g.id !== 'base').map(one).join('')}`
+  };
 }
 /** L'écran : l'en-tête, la couverture, « Tout mettre à jour », les groupes, le journal. */
 function renderBody() {
@@ -596,7 +601,8 @@ function renderBody() {
     .groups); // les groupes dont le cycle publié est dépassé : le point d'attention de « Construire » et de « Tout mettre à jour »
   const myCov = S.body.querySelector('details.d-mycov');
   if (myCov) S.myCovOpen = myCov.open; // « Ma couverture » ouvert à l'instant : l'événement toggle n'est peut-être pas encore passé
-  S.body.innerHTML = `<input type="file" data-upload-input hidden tabindex="-1" aria-hidden="true">${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
+  const grp = groupsHtml();
+  S.body.innerHTML = `<input type="file" data-upload-input hidden tabindex="-1" aria-hidden="true">${headHtml()}${grp.base}${coverageHtml()}${updateAllHtml()}${grp.rest}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
 }
 /** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */
 const wordOf = (map, key) => tt(M.own(map, key) || [key, key, key, key]);

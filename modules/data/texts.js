@@ -2597,5 +2597,23 @@ export const TX = {
     ],
     pillHere: ['déjà là', 'already here', 'schon da', 'ya está'],
     pillSources: ['{n} sources', '{n} sources', '{n} Quellen', '{n} fuentes']
+  },
+  // lot D3 (SOG-0262) : le journal du lanceur, les sources calculées sur ce poste, les deux « Tout mettre à jour »
+  d3: {
+    // « Quand ça change » : une source calculée sur ce poste (MORA, X-Plane…) dit sa date et pour combien de pays
+    changeComputed: ['calculée le {d}', 'computed on {d}', 'berechnet am {d}', 'calculada el {d}'],
+    changeZones: ['pour {z}', 'for {z}', 'für {z}', 'para {z}'],
+    // la carte « Tout mettre à jour » des jeux (la chaîne), distincte du bouton de la base au-dessus
+    allSetsTitle: ['Tout mettre à jour · tous les jeux', 'Update all · every data set', 'Alles aktualisieren · alle Datensätze',
+      'Actualizar todo · todos los conjuntos'
+    ],
+    allSetsButton: ['Tout mettre à jour · tous les jeux ({n})', 'Update all · every data set ({n})',
+      'Alles aktualisieren · alle Datensätze ({n})', 'Actualizar todo · todos los conjuntos ({n})'
+    ],
+    allSetsCaption: ['Fait aussi les procédures, les aéronefs et les points VFR, en plus de la base.',
+      'Also does the procedures, the aircraft and the VFR points, besides the base.',
+      'Aktualisiert auch die Verfahren, die Luftfahrzeuge und die VFR-Punkte, zusätzlich zur Basis.',
+      'Hace también los procedimientos, las aeronaves y los puntos VFR, además de la base.'
+    ]
   }
 };

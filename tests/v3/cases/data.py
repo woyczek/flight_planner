@@ -281,7 +281,7 @@ def _stub(cfg):
     A.publication = async () => { const k = window.__stub.calls = window.__stub.calls || {}; k.publication = (k.publication || 0) + 1; if (window.__stub.fail.includes('publication')) throw new Error('stub: publication');
       return window.__stub.memo ? (window.__stub.memoPub ||= JSON.parse(JSON.stringify(window.__stub.publication))) : window.__stub.publication };
     A.refresh = () => { const k = window.__stub.calls = window.__stub.calls || {}; k.refresh = (k.refresh || 0) + 1; window.__stub.memoPub = null };
-    if (cfg.nat) { const cnt = n => { const k = window.__stub.calls = window.__stub.calls || {}; k[n] = (k[n] || 0) + 1 }; A.natState = async () => { cnt('natState'); return window.__stub.nat.state }; A.natEnsure = async () => { cnt('natEnsure'); const n = window.__stub.nat; if (n.ensure && n.ok !== false) n.state = n.ensure; return { ...n.state, refreshed: true, ok: n.ok !== false } } }   // the NAT tracks of aerodb (SOG-0263): natState() says the validity, natEnsure() takes them again
+    if (cfg.nat) { const cnt = n => { const k = window.__stub.calls = window.__stub.calls || {}; k[n] = (k[n] || 0) + 1 }; A.natState = async () => { cnt('natState'); return window.__stub.nat.state }; A.natEnsure = async () => { cnt('natEnsure'); const n = window.__stub.nat; if (n.busy) return { ...n.state, refreshed: false, busy: true, running: n.running }; if (n.ensure && n.ok !== false) n.state = n.ensure; return { ...n.state, refreshed: true, ok: n.ok !== false } } }   // the NAT tracks of aerodb (SOG-0263): natState() says the validity, natEnsure() takes them again
     if (cfg.packs) A.packs = async () => cfg.packs;   // the country packs of aerodb (packs(), SOG-0065): absent unless the case gives them
     A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states'); if (!cfg.realOutlines) A.zoneOutlines = ok('zoneOutlines', 'outlines');
     // Portugal's catalogue entry (SOG-0244): 'pick' = the source the user takes by hand from the start (fetch.pick + its step-by-step), 'nopick' = an ordinary downloaded source (the cases of the plain line)
@@ -645,7 +645,7 @@ def _zs(state, done=0, total=0, **extra):
     return {'state': state, 'done': done, 'total': total, **extra}
 
 
-def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None, busy_running=None, cycle=None, publish=None):
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None, busy_running=None, cycle=None, publish=None, last_results=None):
     """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
     after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
     POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
@@ -656,11 +656,11 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
     `busy_running`: the running operation a « busy » refusal names (SOG-0245; AeroDB's `running`, see _running); the dict is LIVE (the test changes its vitals), GET regen/job?id=<its id> answers it as a running view
     (`st['gets']` records the reads), POST regen/job/cancel flips its `cancelling`, POST regen/job/release is recorded in `st['releases']` and answers 200 (or 409 `alive` while `st['release_alive']`).  The 409 itself is
     the test's `start=(409, {'reason': 'busy', 'job': id, 'running': busy_running})`.  `cycle` (SOG-0262): the RESULT of the read-only job base/cycle (a dict, or a function of its args `{zone, personal}`; None = the verb answers nothing);
-    every such read is recorded in `st['posts']` (verb `cycle`)."""
+    every such read is recorded in `st['posts']` (verb `cycle`).  `last_results` (SOG-0262, lot D3): the RESULT of the read-only job base/last (K191: the journal of the last pickup / fetch / build / update; a dict or a function of its args; None = the verb answers nothing)."""
     st = {'status': None, 'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
           'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
           'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0,
-          'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False, 'cycle': cycle, 'publish': publish}
+          'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False, 'cycle': cycle, 'publish': publish, 'last_results': last_results}
 
     def handler(route):
         req = route.request
@@ -730,6 +730,11 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 if callable(res):   # the answer depends on the zone asked for (the view per zone, K182)
                     res = res(st['posts'][-1].get('args') or {})
                 body = {'id': 'jcy', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': res, 'zones': {}}
+            elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'last' and st.get('last_results') is not None:
+                res = st['last_results']   # the journal of the launcher (K191), LIVE: the test changes what the launcher «remembers»
+                if callable(res):
+                    res = res(st['posts'][-1].get('args') or {})
+                body = {'id': 'jla', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': res, 'zones': {}}
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'publish' and st.get('publish') is not None:
                 res = st['publish']   # `publish` (SOG-0262, lot C): the RESULT of base/publish, a dict or a function of its args `{zone, dry}` (the plan, then the real run)
                 if callable(res):
@@ -2607,14 +2612,14 @@ def l18(c):
     _all_open(c)
     # ---- A: the card, the count of sets, the attention mark of a published cycle gone by (fr is one cycle behind)
     c.eq([norm(c.text('[data-update-all] [data-verb=all]')), c.js("document.querySelector('[data-update-all] [data-verb=all]').disabled")],
-         [norm(T('updateAllN').replace('{n}', n_sets(3))), False], 'the button, with the count of sets it will touch: base (all zones ticked), VAC points, aircraft (the fleet); no State ticked yet', what='button 3')
+         [norm(_trow('allSetsButton', lang, after='  d3: {').replace('{n}', '3')), False], 'the button, with the count of sets it will touch: base (all zones ticked), VAC points, aircraft (the fleet); no State ticked yet', what='button 3')
     c.tap('[data-set-panel=proc] [data-item=K]')
     c.tap('[data-set-panel=proc] [data-item=LF]')
     _untick(c, 'ca', 'es', 'us')
     c.eq([norm(c.text('[data-update-all] [data-verb=all]')), c.js("document.querySelector('[data-update-all] [data-verb=all]').disabled")],
-         [norm(T('updateAllN').replace('{n}', n_sets(4))), False], 'four sets once the States are ticked', what='button 4')
-    c.eq(c.js("(() => { const a = document.querySelector('[data-update-all]'), g = document.querySelector('details.f-group'); return !!(a.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING) })()"), True,
-         'the card sits above the groups', what='position')
+         [norm(_trow('allSetsButton', lang, after='  d3: {').replace('{n}', '4')), False], 'four sets once the States are ticked', what='button 4')
+    c.eq(c.js("(() => { const a = document.querySelector('[data-update-all]'), g = document.querySelector('details.f-group:not([data-group=base])'); return !!(a.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING) })()"), True,
+         'the card sits above the other groups (the base group, which the screen shows under the cycle header, comes before it: lot D3)', what='position')
     c.eq([c.count('[data-build] [data-verb=build] [data-attn]'), c.count('[data-update-all] [data-verb=all] [data-attn]'), c.count('[data-set-panel=proc] [data-verb=build] [data-attn]')], [1, 1, 0],
          'the attention mark on the base\'s Construire and on « Tout mettre à jour » (fr published one cycle behind); none on the procedures', what='attention')
     c.eq(norm(c.text('[data-update-all] [data-stale=base]')), norm(T('staleCycle').replace('{x}', _name(prev)).replace('{y}', _name(cur))), 'cycle X out of date, to rebuild for Y, in words', what='stale line')
@@ -2733,7 +2738,7 @@ def l18(c):
     _head(c)
     _all_open(c)
     _readd(c, 'ca', 'es', 'us')      # the coverage written by the earlier gestures (fr, gb) outlives the reload: the five zones are put back
-    c.eq(norm(c.text('[data-update-all] [data-verb=all]')), norm(T('updateAllN').replace('{n}', n_sets(2))), 'two sets: the base (all its zones) and the VAC points', what='button 2')
+    c.eq(norm(c.text('[data-update-all] [data-verb=all]')), norm(_trow('allSetsButton', lang, after='  d3: {').replace('{n}', '2')), 'two sets: the base (all its zones) and the VAC points', what='button 2')
     c.tap('[data-update-all] [data-verb=all]')
     q = _ask_text(c)
     names_all = ', '.join(z['names'][li] for z in cfg['zones'] if z['id'] in ('ca', 'es', 'fr', 'gb', 'us'))
@@ -6674,7 +6679,17 @@ def _l89_cycle(world):
         enaire = _l89_item('enaire', 'auto', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'}, (1, 1), (1, 0, 0), ['es'])
         ukmil = _l89_item('ukmil', 'hand', {'state': 'unavailable'}, (1, 0), (0, 0, 1), ['gb'], 'unavailable-at-publisher', {'link': 'https://ukmil.example/', 'expected': ['ENR-5-2.pdf'], 'inDownloads': []}, None, {'since': '2025-11'})
         items = [mora, openaip, enaire, dircam] if world.get('done') else [mora, faa, navcan, xplane, lfv, openaip, nats, enaire, sia, dircam, ukmil]
-        res = {'ok': True, 'cycle': {'inForce': '2026-10-29', 'next': '2026-11-26', 'ids': {'inForce': '2611', 'next': '2612'}}, 'items': items, 'unavailable': ['ukmil'], 'next': world.get('next', {'cycle': '2026-11-26', 'items': []}), 'unread': world.get('unread', [])}   # world['next'] / world['unread']: the cycle after and what is seen but not read (lot C)
+        local = None
+        if world.get('local'):   # K185 (lot D3): the sources computed on this workstation are OUT of `items`, said apart under `local`
+            items = [it for it in items if it['regime'] != 'local']
+            inj = '<img src=x onerror=window.__pwn=1>'
+            local = [{'id': 'mora', 'label': _L89_LABEL('MORA'), 'at': '2026-11-05T08:00:00Z', 'personal': False, 'zoneCount': 5},
+                     {'id': 'xplane', 'label': _L89_LABEL('X-Plane'), 'at': None, 'personal': False, 'zoneCount': 3},
+                     {'id': 'gebco', 'label': [f'GEBCO {l} {inj}' for l in ('fr', 'en', 'de', 'es')], 'at': '2026-10-20T09:00:00Z', 'personal': True, 'zoneCount': 0}]
+        res = {'ok': True, 'cycle': {'inForce': '2026-10-29', 'next': '2026-11-26', 'ids': {'inForce': '2611', 'next': '2612'}}, 'items': items, 'unavailable': ['ukmil'], 'next': world.get('next', {'cycle': '2026-11-26', 'items': []}), 'unread': world.get('unread', [])}
+        if local is not None:
+            res['local'] = local
+        # world['next'] / world['unread']: the cycle after and what is seen but not read (lot C)
         zone = args.get('zone')
         by = {'fr': [sia, dircam, openaip], 'gb': [nats, ukmil, openaip] + ([mora] if world.get('mora') else []), 'es': [enaire, openaip], 'ca': [navcan, openaip], 'us': [faa, openaip]}
         if zone in by:
@@ -6686,7 +6701,7 @@ def _l89_cycle(world):
     return answer
 
 
-def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_running=None, busy_view=None, publish=None, nat=None, my_coverage=True, extra=None):
+def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_running=None, busy_view=None, publish=None, nat=None, my_coverage=True, extra=None, last_results=None):
     """The Données screen on the fake launcher of lot B: the map and the packs of L88, the fake `base/cycle` (_l89_cycle), the state of five countries (France waits for a file seen in Downloads, the United Kingdom is stale and buildable,
     the others are up to date) read from the LIVE `world['zs']`; the stubbed catalogue says the SIA's two files and shelves UK Mil.  Returns (st, x4)."""
     x4 = lambda s: [f'{s} fr', f'{s} en', f'{s} de', f'{s} es']
@@ -6705,7 +6720,7 @@ def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_r
         cfg['nat'] = nat   # the stub of aerodb answers natState() / natEnsure() from window.__stub.nat (lot C)
     if extra:
         extra(cfg)
-    st = _launcher(c, [], verbs=_VERBS + list(verbs), cycle=_l89_cycle(world), busy_running=busy_running, busy_view=busy_view, publish=publish)
+    st = _launcher(c, [], verbs=_VERBS + list(verbs), cycle=_l89_cycle(world), busy_running=busy_running, busy_view=busy_view, publish=publish, last_results=last_results)
     world.setdefault('zs', {'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'us': _zst('up-to-date'),
                             'fr': _zst('stale', {'code': 'pickup-waiting', 'source': 'sia', 'cycle': '2026-11-26', 'zip': 'export_xml_bd_sia_2026-10-29-v01.zip'}, buildable=False), 'gb': _zst('stale', _NEWER)})
     if status:
@@ -8014,4 +8029,194 @@ def l102(c):
             c.wait(200)
             c.page.screenshot(path=str(shots_dir / 'L102_1280_fr_view.png'))
             _l102_compare(shots_dir)
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L103 .. L106 (SOG-0262, lot D3: the three contracts of AeroDB K185 / K186 / K191)
+_L103_TIME = r'(?:\d{2}/\d{2} )?\d{2}:\d{2}Z'
+
+
+def _l103_entry(result, ago, state='done', zones=('gb',)):
+    """One entry of the journal of the launcher (base/last, K191): the end of the last job of a verb, `ago` seconds ago."""
+    return {'job': 'jl', 'state': state, 'ended': int(time.time()) - ago, 'ok': result.get('ok') is not False, 'reason': None, 'args': {'zones': list(zones), 'personal': []}, 'result': result}
+
+
+def _l103_journal(kind='chain'):
+    """The journal of the launcher for the United Kingdom: 'chain' = the file taken, downloaded, built (nothing changed); 'built' = downloaded and built; 'failed' = the download refused by the site."""
+    pick = _l103_entry({'ok': True, 'dry': False, 'taken': [{'zone': 'gb', 'source': 'nats', 'zip': 'EG_AIP_DS.zip', 'files': ['EG_ENR.xml'], 'bytes': 1000}], 'missing': [], 'failed': []}, 300)
+    fetch = _l103_entry({'ok': True, 'fetched': ['gb'], 'unchanged': [], 'failed': [], 'manual': []}, 240 if kind == 'chain' else 60)
+    if kind == 'failed':
+        return {'ok': True, 'results': {'base/fetch': _l103_entry({'ok': False, 'fetched': [], 'unchanged': [], 'failed': [{'zone': 'gb', 'source': 'nats', 'error': 'http', 'status': 404}], 'manual': []}, 120)}}
+    if kind == 'built':
+        return {'ok': True, 'results': {'base/fetch': fetch, 'base/build': _l103_entry({'ok': True, 'built': ['gb'], 'failed': [], 'commits': []}, 30)}}
+    return {'ok': True, 'results': {'base/pickup': pick, 'base/fetch': fetch, 'base/build': _l103_entry({'ok': True, 'built': [], 'failed': [], 'commits': []}, 180)}}
+
+
+@case('L103', 'Données: the thread of the last operation of a country comes from the launcher\'s journal (base/last, SOG-0262 lot D3) and SURVIVES A PAGE RELOAD — « pris à … ✓ · téléchargé ✓ · construit ✓ rien n\'a changé » step by step, a failed step with its reason and « Réessayer », why the country stays « pas à jour »; read once at the opening and again after each operation; a launcher without the verb keeps the in-memory thread',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D3 + K191 (the ergonomist: « le fil de la dernière opération survit au rechargement »): the sheet builds its thread from base/last filtered on the country (arguments or result name it) and merges it with the operation the page itself ran (the most recent of the two); the journal is read through the screen lane (serial), once when the screen opens and after each operation end; a launcher that does not list base/last is not asked and the thread stays the in-memory one; the launcher\'s texts are bounded and escaped')
+def l103(c):
+    lang = c.lang
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    world = _l97_world()
+    world['last'] = {'ok': True, 'results': {}}   # the launcher has done nothing yet
+    st, _x4 = _l89_open(c, world, verbs=('base/pickup', 'base/cycle', 'base/last'), last_results=lambda a: world['last'])
+    reads = lambda: [p for p in st['posts'] if p['verb'] == 'last']
+    c.eq([len(reads()), (reads() or [{'args': None}])[0]['args']], [1, {}], 'the journal of the launcher is read ONCE when the screen opens (no argument), through the screen lane like the other reads', what='one read at the opening')
+    steps = lambda: c.js("[...document.querySelectorAll('[data-sheet=gb] [data-thread-step]')].map(s => [s.dataset.threadStep, s.dataset.ok, s.querySelector('[data-thread-text]').textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])")
+    # ---- 1. the sheet of the United Kingdom runs « Mettre à jour ce pays »: the page keeps its own thread; the launcher's journal now holds the same two operations
+    _l89_sheet(c, 'gb')
+    c.eq(c.count('[data-sheet=gb] [data-sheet-thread]'), 0, 'nothing was done to this country yet: no thread', what='no thread yet')
+    world['last'] = _l103_journal('built')
+    n_reads = len(reads())
+    _l97_run(c, st, world, [_l97_dl('done', jid='f1'), _l97_build('done', jid='b1')])
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=30000, what='the thread of the update')
+    c.eq([[k, ok] for k, ok, _t in steps()], [['download', 'yes'], ['build', 'yes']], 'the page\'s own thread: downloaded, built', what='memory thread')
+    for _ in range(40):
+        if len(reads()) > n_reads:
+            break
+        c.wait(250)
+    c.ge(len(reads()), n_reads + 1, 'the journal is read again after the operation ends', what='re-read at the end')
+    # ---- 2. the page is reloaded: the memory is gone, the sheet still tells the last operation of the country (RED before: the thread vanished)
+    _l98_fresh(c, st)
+    c.ge(len(reads()), n_reads + 2, 'the reloaded screen reads the journal again', what='read after reload')
+    _l89_sheet(c, 'gb')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]')", timeout=15000, what='the thread from the journal after the reload')
+    c.eq([c.attr('[data-sheet=gb] [data-sheet-thread]', 'data-thread-from'), [[k, ok] for k, ok, _t in steps()], c.attr('[data-sheet=gb] [data-thread-bilan]', 'data-level')], ['journal', [['download', 'yes'], ['build', 'yes']], 'ok'],
+         'after the reload the sheet still shows the last operation of the country (from the launcher\'s journal): downloaded, built, and the country is up to date', what='reloaded thread')
+    t = steps()
+    c.ok(re.fullmatch(_rx(ZX('thDl'), lang, t=_L103_TIME), norm(t[0][2])) and re.fullmatch(_rx(ZX('thBuild'), lang, t=_L103_TIME), norm(t[1][2])), t, 'each step says what it did and at what time')
+    _l89_sheet(c, 'fr')
+    c.eq(c.count('[data-sheet=fr] [data-sheet-thread]'), 0, 'the journal entries name the United Kingdom only: the sheet of France shows nothing', what='only its country')
+    # ---- 3. the whole chain and why the country stays « pas à jour »: taken at, downloaded at, built at — nothing changed
+    world['last'] = _l103_journal('chain')
+    world['zs']['gb'] = _zst('stale', _NEWER)
+    st['status'] = lambda args: _status(world['zs'])
+    _l98_fresh(c, st)
+    _l89_sheet(c, 'gb')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]')", timeout=15000, what='the thread from the journal')
+    t = steps()
+    c.eq([[k, ok] for k, ok, _t in t], [['pick', 'yes'], ['download', 'yes'], ['build', 'yes']], 'the three steps of the last operation: taken, downloaded, built', what='chain steps')
+    c.ok(re.fullmatch(_rx(ZX('thPick'), lang, t=_L103_TIME), norm(t[0][2])) and re.fullmatch(_rx(ZX('thDl'), lang, t=_L103_TIME), norm(t[1][2])) and re.fullmatch(_rx(ZX('thBuildSame'), lang, t=_L103_TIME), norm(t[2][2])), t,
+         '« pris à … · téléchargé à … · construit à … : rien n\'a changé »')
+    mid = norm(_trow('source-newer', lang, after="'source-newer'").split('{cycle}')[1].split('{built}')[0]).strip()
+    bilan = norm(c.text('[data-sheet=gb] [data-thread-bilan]'))
+    c.ok(c.attr('[data-sheet=gb] [data-thread-bilan]', 'data-level') == 'warn' and mid in bilan, bilan, 'the country is still not up to date and the sheet says WHY, in the launcher\'s words')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-sheet=gb] [data-sheet-thread]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L103_{c.width}_{lang}_delivered.png')
+    # ---- 4. a failed step stays with its reason and « Réessayer » (after a reload too); the retry chains the rest
+    world['last'] = _l103_journal('failed')
+    _l98_fresh(c, st)
+    _l89_sheet(c, 'gb')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread]')", timeout=15000, what='the failed thread from the journal')
+    t = steps()
+    c.eq([[k, ok] for k, ok, _t in t], [['download', 'no'], ['build', 'todo']], 'the download FAILED (red, with its reason), the build was not reached (neutral)', what='failed steps')
+    c.ok(norm(t[0][2]).startswith(norm(ZX('thWDl'))) and '404' in t[0][2], t[0][2], 'the failed step keeps the launcher\'s reason (the status 404)')
+    c.eq([c.attr('[data-sheet=gb] [data-sheet-thread]', 'data-thread-state'), c.attr('[data-sheet=gb] [data-thread-bilan]', 'data-level'), c.count('[data-sheet=gb] [data-act=zop-retry]')], ['failed', 'err', 1], 'the bilan is a failure with « Réessayer » on the failed step', what='failed bilan')
+    world['last'] = _l103_journal('built')
+    world['zs']['gb'] = _zst('stale', _NEWER)
+    _l97_run_retry = [_l97_dl('done', jid='f2'), _l97_build('done', jid='b2')]
+    st['views'], st['i'] = _l97_run_retry, 0
+    st['start'] = (200, {'job': 'j1'})
+    n0 = len([p for p in st['posts'] if p['verb'] == 'build'])
+    st['status'] = lambda args: _status({**world['zs'], 'gb': _zst('up-to-date') if len([p for p in st['posts'] if p['verb'] == 'build']) > n0 else world['zs']['gb']})
+    c.tap('[data-sheet=gb] [data-act=zop-retry]')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-thread][data-thread-state=done]') && !document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=30000, what='the thread of the retry')
+    c.eq([[k, ok] for k, ok, _t in steps()], [['download', 'yes'], ['build', 'yes']], 'the retry of a step read from the journal chains the rest and succeeds', what='retry thread')
+    # ---- 5. a launcher that does not list base/last: not asked, the in-memory thread is all there is (nothing breaks)
+    st['verbs'] = _VERBS + ['base/pickup', 'base/cycle']
+    n1 = len(reads())
+    _l98_fresh(c, st)
+    _l89_sheet(c, 'gb')
+    c.wait(600)
+    c.eq([len(reads()) - n1, c.count('[data-sheet=gb] [data-sheet-thread]')], [0, 0], 'a launcher without the verb is not asked, and a reloaded page has no thread to show (graceful)', what='no verb')
+    c.check_errors()
+
+
+@case('L104', 'Données: the computed sources come from base/cycle `local` (SOG-0262 lot D3, K185) — « Quand ça change » reads their label, their last date and their number of countries from it (« calculée le 5/11/2026 · pour 5 pays »), any other computed source it names gets its line, the sheet of a country states them as facts, the list of the month still counts the same sources',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D3 + K185: the launcher no longer returns MORA / X-Plane in `items` but under `local: [{ id, label[4], at, personal, zoneCount }]`; the screen reads `local` (a launcher that still puts them in `items` is brought to the same form, the screen-side filter of the list of the month stays harmless); the to-do count (done among counted) does not change; the launcher\'s label is bounded and escaped')
+def l104(c):
+    lang = c.lang
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    D3 = lambda k: _trow(k, lang, after='  d3: {')
+    CWB = lambda k: _trow(k, lang, after='  cwb: {')
+    LC = lambda k: _trow(k, lang, after='  lc: {')
+    world = {'sia_seen': True, 'local': True, 'mora': True}
+    st, _x4 = _l89_open(c, world, nat={'state': {'present': True, 'count': 17, 'from': '2026-11-12T07:00:00Z', 'validUntil': '2026-11-12T19:00:00Z', 'expired': False, 'current': 12}})
+    c.js("(d => { if (d) d.open = true })(document.querySelector('details[data-todo]'))")
+    c.eq(norm(c.text('[data-todo-head]')), norm(CWB('todoHead').replace('{c}', '2611').replace('{n}', '3').replace('{m}', '8')), 'the list of the month counts the same eight sources, 3 done (the computed ones are not in `items` any more and were never counted)', what='todo count')
+    c.eq(c.count('[data-todo-item=xplane], [data-todo-item=mora]'), 0, 'no line for a computed source', what='no computed line')
+    # ---- « Quand ça change »: label, last date and number of countries come from `local`
+    c.tap('[data-lc-fold=change] > summary')
+    c.until("document.querySelector('[data-lc-fold=change]').open", timeout=3000, what='the fold opens')
+    c.eq(c.js("[...document.querySelectorAll('[data-change-list] > li')].map(l => l.dataset.change)"), ['xplane', 'lnm', 'openaip', 'geonames', 'mora', 'nat', 'gebco'], 'the six lines, then the other computed source the launcher names (gebco)', what='lines')
+    z = lambda n: _trow('country', lang, after='  unit: {', row=0 if n <= 1 else 1)
+    last = lambda i: norm(c.text(f'[data-change={i}] [data-change-last]'))
+    c.eq([last('mora'), last('xplane'), last('gebco')],
+         [norm(D3('changeComputed').replace('{d}', _date_text(datetime.date(2026, 11, 5), lang))), norm(LC('changeNoDate')), norm(D3('changeComputed').replace('{d}', _date_text(datetime.date(2026, 10, 20), lang)))],
+         'MORA: computed on its date (from `local`), X-Plane: no date, the extra source: its own date', what='dates')
+    c.eq([norm(c.text('[data-change=mora] [data-change-zones]')), norm(c.text('[data-change=xplane] [data-change-zones]')), c.count('[data-change=gebco] [data-change-zones]')],
+         [norm(D3('changeZones').replace('{z}', f"5 {z(5)}")), norm(D3('changeZones').replace('{z}', f"3 {z(3)}")), 0], 'for how many countries (zoneCount), nothing said for none', what='zones')
+    c.eq(norm(c.text('[data-change=gebco] b')).startswith('GEBCO'), True, 'the extra line carries the label the launcher gives in the language of the app', what='extra label')
+    c.eq([c.count('[data-lc-fold=change] img'), c.js('window.__pwn === undefined'), c.count('[data-change=gebco] button, [data-change=gebco] a')], [0, True, 0], 'the launcher\'s label is escaped (nothing is injected) and the extra line is no action', what='escaped')
+    c.eq(norm(c.text('[data-lc-fold=change] [data-lc-pill]')), norm(_trow('pillSources', lang, after='  d2: {').replace('{n}', '7')), 'the pill counts the seven lines', what='pill')
+    # ---- the sheet of a country that has a computed source: a fact, with the date of `local` when its own file carries none
+    _l89_sheet(c, 'gb')
+    fact = norm(c.text('[data-sheet=gb] [data-computed-fact]'))
+    c.ok(_date_text(datetime.date(2026, 11, 5), lang) in fact and norm(ZX('computedHere').replace('{s}', '')) not in fact, fact, 'the sheet says it as a fact: « MORA : calculée le … » with the date from `local`')
+    c.eq(c.count('[data-sheet=gb] [data-sheet-source=mora] [data-tick=download]'), 0, 'a computed source has no « téléchargé » tick', what='no tick')
+    c.check_errors()
+
+
+@case('L105', 'Données: natEnsure answering « busy » (the launcher already runs another operation, SOG-0262 lot D3, K186) shows THE busy card at the NAT line — which operation, since when, where it is, Voir / Arrêter — never the bare sentence; it is no failure, the line says it will be taken again at its end',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D3 + K186: `AeroDb.natEnsure()` returns `busy: true` + `running` (the 409 of the launcher) when the launcher is busy: refreshed false, no failure counted; the screen draws the card of that operation (busy.js, S.at) at the NAT line with that `running`; one card on the page, no « autre opération » sentence alone')
+def l105(c):
+    lang = c.lang
+    B = lambda key: _trow(key, lang, after='  busy: {')
+    ZX = lambda k: _trow(k, lang, after='  zx: {')
+    name = f"{_trow('proc', lang, after='  groups: {')} · {_trow('fetch', lang, after='Ruta (RAD, FRA)')}"
+    R = _running()
+    RV = {**_fview({}, state='running', step='Lecture des sources', jid='o1', verb='fetch'), 'set': 'proc'}
+    expired = {'present': True, 'count': 17, 'from': '2026-11-09T07:00:00Z', 'validUntil': '2026-11-10T19:00:00Z', 'expired': True, 'current': 0}
+    world = _l93_world()
+    st, _x4 = _l89_open(c, world, busy_running=R, busy_view=RV, verbs=('base/pickup', 'base/cycle', 'base/publish'), publish=lambda a: world['plan'] if a.get('dry', True) else world['real'],
+                        nat={'state': expired, 'busy': True, 'running': R}, my_coverage=False)
+    c.eq(c.count('[data-busy-card]'), 0, 'nothing runs on the page: no card before the NAT tracks are read', what='no card yet')
+    c.tap('[data-lc-fold=change] > summary')
+    c.until("!!document.querySelector('[data-change=nat] [data-busy-card]')", timeout=12000, what='the card at the NAT line')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.eq([c.count('[data-change=nat] [data-busy-card]'), c.count('[data-busy-card]'), c.count('[data-other]'), c.count('[data-refusal=busy]'), (c.js('window.__stub.calls') or {}).get('natEnsure', 0)], [1, 1, 0, 0, 1],
+         'natEnsure said busy: ONE card, at the NAT line, no bare sentence, natEnsure asked once', what='card at the nat line')
+    c.eq(norm(c.text('[data-change=nat] [data-busy-name]')), norm(B('title').replace('{n}', name)), 'the card names the operation of the launcher\'s `running` (the card of SOG-0245)', what='card name')
+    c.eq(c.js("[...document.querySelectorAll('[data-change=nat] [data-busy-act]')].map(b => b.dataset.busyAct)"), ['see', 'stop', 'hide'], 'Voir and Arrêter (Masquer for the card alone)', what='card buttons')
+    c.eq(norm(ZX('natDeferred')) in norm(c.text('[data-change=nat]')), True, 'it is no failure: the line says the tracks will be taken again at the end of that operation', what='deferred line')
+    c.eq(c.count('[data-change=nat] [data-change-last]'), 1, 'the validity of the tracks is still said on the line', what='validity')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-change=nat]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L105_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('L106', 'Données: the two « Tout mettre à jour » are told apart and the page follows its own order (SOG-0262 lot D3) — the older card of the data sets is « Tout mettre à jour · tous les jeux » with a line saying it also does the procedures, the aircraft and the VFR points; the base group sits right under the cycle header in the code (the keyboard goes where the eye goes) and no CSS `order` is left on the page body',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 D3: the label « Tout mettre à jour » existed twice (the button of the base header and the older chain card); only the chain card is renamed (title and button, data-attributes kept) with a one-line caption; the D2 layout used CSS `order` to put the base group under the header, so the Tab order differed from the visual order: the DOM now follows the visual order')
+def l106(c):
+    lang = c.lang
+    D3 = lambda k: _trow(k, lang, after='  d3: {')
+    world = {'sia_seen': True}
+    st, _x4 = _l89_open(c, world)
+    head = norm(c.text('[data-state-head] [data-verb=update]'))
+    chain = norm(c.text('[data-update-all] [data-verb=all]'))
+    c.ok(re.fullmatch(_rx(D3('allSetsButton'), lang, n=r'\d+'), chain) is not None and head != chain and not chain.startswith(head), (head, chain), 'the chain card\'s button is « Tout mettre à jour · tous les jeux (n) », not the label of the base header button')
+    c.eq([norm(c.text('[data-update-all] h2')), norm(c.text('[data-update-all] [data-update-all-caption]'))], [norm(D3('allSetsTitle')), norm(D3('allSetsCaption'))], 'the card\'s title and its one-line caption (procedures, aircraft, VFR points)', what='title and caption')
+    c.eq(c.js("(() => { const q = s => document.querySelector(s); return !!(q('[data-update-all] h2').compareDocumentPosition(q('[data-update-all-caption]')) & 4) && !!(q('[data-update-all-caption]').compareDocumentPosition(q('[data-update-all] [data-verb=all]')) & 4) })()"), True, 'title, caption, button in that order', what='card order')
+    order = c.js("""(() => { const q = s => document.querySelector(s), before = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return [before('[data-data-head]', 'details.f-group[data-group=base]'), before('details.f-group[data-group=base]', '[data-coverage]'), before('[data-coverage]', '[data-update-all]'), before('[data-update-all]', 'details.f-group[data-group=proc]')] })()""")
+    c.eq(order, [True] * 4, 'the code order is the visual one: cycle header, base group, coverage, the data sets card, the other groups', what='dom order')
+    c.eq([c.js("[...document.querySelector('[data-body]').children].filter(e => getComputedStyle(e).order !== '0').map(e => e.tagName)"), c.js("[...document.querySelectorAll('[data-state-head] *')].filter(e => getComputedStyle(e).order !== '0').length")], [[], 0],
+         'no CSS `order` left on the page body nor in the cycle header: Tab follows the screen', what='no css order')
     c.check_errors()

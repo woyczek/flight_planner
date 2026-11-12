@@ -100,6 +100,7 @@ export const cwInit = () => ({
   pathsFor: null,
   cycle: null,
   todo: null,
+  last: null, // le journal du lanceur (base/last) : { state ('loading' | 'ready' | 'busy' | 'unread' | 'none'), data (M.lastOf), dirty } : le fil de la dernière opération d'un pays y est lu
   proc: null
 });
 /** Les paquets régionaux lisibles, ceux qui ont au moins un pays connu de la suite : [{ pack, known, state }]. */
@@ -456,22 +457,27 @@ function handHtml(sid, zone, z, item, cy, msg) {
   return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="seen"><p class="d-zact"><span class="f-muted" data-hand-seen>${esc(tt(TX.cwb.seenLine))}</span> <button type="button" class="primary" data-verb="pickup" data-zones="${esc(zone)}" data-source="${esc(sid)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-hand-grey data-grey="${esc(grey)}">${esc(tt(grey === 'busy' && progressHere() ? TX.zx.greyBusy : TX.greyReason[grey]))}</span>` : ''}</p>
     <p class="d-zact d-zalt" data-hand-alt="${esc(sid)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
 }
-/** Une source calculée sur ce poste (MORA, X-Plane…) : un FAIT du pays (« MORA : calculée le 5 oct. »), jamais une ligne à faire ni une coche « téléchargé ». */
-function computedHtml(name, item, z) {
-  const at = item?.download?.at || z?.builtAt || '';
+/** La source calculée sur ce poste que base/cycle dit à part (`local`, K185) : { id, label[4], at, personal, zoneCount } ; null sans. */
+const localSource = (cy, id) => cy.data?.local?.find(x => x.id === id) || null;
+/** Une source calculée sur ce poste (MORA, X-Plane…) : un FAIT du pays (« MORA : calculée le 5 oct. »), jamais une ligne à faire ni une coche « téléchargé ». La date : celle de son fichier dans la fiche du pays, à défaut celle de `local`, à défaut la construction du pays. */
+function computedHtml(name, item, z, loc) {
+  const at = item?.download?.at || loc?.at || z?.builtAt || '';
   return `<p class="f-muted" data-computed-fact>${esc(at ? tt(TX.zx.computed, { s: name, d: dateOf(at) }) : tt(TX.zx.computedHere, { s: name }))}</p>`;
 }
 /** Une source du pays : son nom, son régime, sa coche « téléchargé » (dans la couverture seulement ; « construit » et « publié » sont des faits du PAYS, en tête de la fiche) et, pour un fichier pris à la main, l'inventaire puis ses gestes. */
 function sourceHtml(id, zone, z, inCov, msg) {
   const cy = cycleOf(zone),
+    loc = cy.state === 'ready' ? localSource(cy, id) : null,
     item = cy.state === 'ready' ? cy.zv?.sources[id] || cy.data.items[id] || null : null,
-    reg = regimeOf(id, item),
-    name = (catSource(id)?.n?.[li()] || item?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
+    reg = regimeOf(id, item || (loc ? {
+      regime: 'local'
+    } : null)),
+    name = (catSource(id)?.n?.[li()] || item?.label?.[li()] || loc?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
   const ds = item?.download?.state,
     tone = ds === 'done' ? 'ok' : ds === 'failed' ? 'err' : !ds || ds === 'n/a' || ds === 'unavailable' ? 'muted' :
     'warn'; // la couleur du bord gauche du bloc : l'état de CETTE source
   return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="${tone}"${reg ? ` data-regime="${reg}"` : ''}><div class="d-srch"><h4>${esc(name)}</h4>${reg ? `<p class="f-muted d-regbadge" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}</div>
-    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z) : ''}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}</section>`;
+    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}</section>`;
 }
 /** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
  *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
@@ -748,6 +754,47 @@ export async function wantCycle(zone) {
   };
   renderBuild();
 }
+/** Lit, sans écrire, le journal du lanceur (base/last, K191) : la dernière opération de la prise, du téléchargement, de la construction et de la mise à jour, qui survit au rechargement de la page ; la fiche d'un pays en tire le fil de sa dernière opération (zoneop.js : threadOf).
+ *  Lue une fois à l'ouverture de l'écran et après chaque fin d'opération, par la file de l'écran (serial) comme les autres lectures ; un lanceur qui n'a pas le verbe n'est pas interrogé (le fil reste celui que la page tient en mémoire). L'ancienne lecture reste affichée pendant la relecture. Ne lève jamais. */
+export async function wantLast() {
+  const L = S?.ctx?.launcher,
+    c = S?.cw?.last;
+  if (c && (c.reading || (!c.dirty && (c.state === 'loading' || c.state === 'ready' || c.state === 'none')))) return;
+  if (!L || !S.known?.includes('base/last')) {
+    S.cw.last = {
+      state: 'none'
+    };
+    return;
+  }
+  const me = S,
+    keep = c && c.state === 'ready' ? c.data : null,
+    mine = S.cw.last = keep ? {
+      state: 'ready',
+      data: keep,
+      reading: true
+    } : {
+      state: 'loading',
+      reading: true
+    };
+  if (S.statusP) await S.statusP.catch(() => null);
+  if (S !== me) return;
+  const final = await readJob('last', {});
+  if (S !== me || S.cw.last !== mine) return;
+  const data = M.lastOf(final);
+  S.cw.last = data ? {
+    state: 'ready',
+    data
+  } : final?.status === 409 ? keep ? {
+    state: 'ready',
+    data: keep,
+    dirty: true
+  } : {
+    state: 'busy'
+  } : {
+    state: 'unread'
+  };
+  renderBuild();
+}
 /** Un travail du lanceur en lecture seule (le verbe `base/<verb>`), passé à la file de l'écran ; refusé (`{ status: 409 }`, sans appel) quand une opération tourne à l'instant du départ ; null si le lanceur n'a pas répondu. Ne lève jamais. */
 async function readJob(verb, args) {
   const L = S?.ctx?.launcher;
@@ -855,6 +902,7 @@ export function afterDraw() {
   if (!S?.cw) return;
   wantProc();
   wantTodo();
+  wantLast();
   wantPlan(); // ce que « Publier » emporterait (base/publish à blanc)
   if (S.cw.sheet) wantCycle(S.cw.sheet);
 }
@@ -863,6 +911,7 @@ export function forgetReads(all = true, status = false) {
   if (!S?.cw) return;
   if (S.cw.cycle) S.cw.cycle.dirty = true;
   if (S.cw.todo) S.cw.todo.dirty = true;
+  if (S.cw.last) S.cw.last.dirty = true;
   forgetPlan();
   if (all && S.cw.proc?.state !== 'loading') S.cw.proc = null;
   if (status) S.cw.statusDirty =
@@ -878,6 +927,7 @@ export function readsIdle() {
   }
   if (c.sheet && (c.cycle?.dirty || c.cycle?.state === 'busy')) wantCycle(c.sheet);
   if (c.todo?.dirty || c.todo?.state === 'busy') wantTodo();
+  if (c.last?.dirty || c.last?.state === 'busy') wantLast();
   if (c.lc?.nat?.deferred && c.lc.open.change)
     natOpen(); // la reprise des routes NAT, reportée pour cause d'opération en cours, repart quand l'écran est libre
   wantPlan(); // le plan de « Publier » : lu dès que l'état des zones l'est, relu quand il est « à relire »
@@ -897,9 +947,9 @@ export const CW_STYLE = `
 [data-module="data"] .d-cap button[aria-expanded="true"]{font-weight:700;outline:0}
 [data-module="data"] .d-go{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin:8px 0}
 [data-module="data"] .d-go>.d-verbs{margin:0}
-[data-module="data"] .d-go>[data-update-reason]{order:3;flex:1 1 100%;margin:0}
+[data-module="data"] .d-go>[data-update-reason]{flex:1 1 100%;margin:0}
 [data-module="data"] .d-go [data-verb="update"]{min-width:230px;font-weight:600}
-[data-module="data"] .d-what{flex:1 1 260px;min-width:0;order:2}
+[data-module="data"] .d-what{flex:1 1 260px;min-width:0}
 [data-module="data"] .d-what p{margin:2px 0}
 /* la page : une colonne ; en large, deux (la fiche d'un pays est une carte collante à droite, tout le reste à gauche) */
 [data-module="data"] .d-page{min-width:0}
