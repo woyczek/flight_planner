@@ -2134,6 +2134,21 @@
    "since": "2026-11-12",
    "state": "todo",
    "recommended": 2
+  },
+  {
+   "id": "Q-0038",
+   "fiche": "SOG-0090",
+   "app": "pilote",
+   "question": "Piste en service d'après l'ATIS d'un réseau : quel réseau regarder pour un vol ?",
+   "context": "Les deux réseaux publient l'ATIS des terrains tenus (la lettre, la piste en service). Carburant la dira au-dessus de la piste probable du METAR, avec « Prendre la piste de l'ATIS », jamais posée d'office. Reste à savoir lequel des deux réseaux lire.",
+   "options": [
+    "Ceux de la compagnie du vol (ses réglages : IVAO, VATSIM, hors ligne) ; une ligne par réseau qui a une ATIS",
+    "Celui de mon identité (mon VID IVAO ou mon CID VATSIM), quelle que soit la compagnie",
+    "Un choix dans le vol (IVAO / VATSIM / hors ligne), retenu d'un vol à l'autre"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }
