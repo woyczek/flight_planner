@@ -2235,6 +2235,10 @@ export const TX = {
         'Vom Starter erhalten: {name} ({b}), unverändert abgelegt.',
         'Recibido por el lanzador: {name} ({b}), guardado tal cual.'
       ],
+      // la ligne du fichier attendu, une fois que le lanceur l'a reçu (sous « Fichier : … — ✓ »)
+      recvLine: ['reçu : {name} ({b}) le {d}', 'received: {name} ({b}) on {d}', 'erhalten: {name} ({b}) am {d}',
+        'recibido: {name} ({b}) el {d}'
+      ],
       receivedSame: ['{name} ({b}) était déjà là, identique : rien n’est réécrit.',
         '{name} ({b}) was already there, identical: nothing is rewritten.',
         '{name} ({b}) war schon da, identisch: nichts wird neu geschrieben.',

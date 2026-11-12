@@ -341,6 +341,12 @@ async function sendFile(zone, file, source, note) {
         edition: out.cycle
       }, origin);
     out.text = got;
+    S.cw?.recv.set(
+      `${zone}/${source}`, { // la ligne du fichier attendu dit « reçu » (nom posé par le lanceur, taille, jour) jusqu'à la lecture suivante du pays
+        name: out.file || name,
+        size: file.size,
+        at: new Date().toISOString()
+      });
     S.zoneMsg.set(zone, {
       level: m?.level || 'ok',
       kind: 'hand',

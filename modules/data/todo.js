@@ -119,6 +119,7 @@ function publishStep(it) {
 /** Une raison de bouton gris écrite à côté de lui (jamais un bouton gris seul) ; '' quand la carte de l'opération en cours, dans ce bloc, la dit déjà. */
 function greyNote(reason) {
   if (!reason || reason === 'busy' && busyCardHtml('base', 'todo')) return '';
+  if (reason === 'no-state') return ` <span class="f-muted" data-grey="no-state"><button type="button" class="d-link" data-act="focus-states">${esc(tt(TX.greyReason['no-state']))}</button></span>`; // « Cochez au moins un État » : le lien qui mène à la case
   return ` <span class="f-muted" data-grey="${esc(reason)}">${esc(reason === 'busy' ? tt(TX.zx.greyBusy) : M.own(TX.greyReason, reason) ? tt(TX.greyReason[reason]) : M.own(TX.pubReason, reason) ? publishReason(reason) : tt(TX.greyReason.busy))}</span>`;
 }
 /** Le geste d'une ligne : celui qui fait CE travail. { html, n } — une source prise à la main : « Prendre le fichier » quand un fichier est vu dans Téléchargements, sinon « Choisir le fichier… » (pour son premier pays de la couverture) ; une source que le lanceur prend ou calcule : « Mettre à jour (n pays) »
@@ -305,7 +306,7 @@ export function todoHtml() {
   const sc = updateScope(),
     gate = updateGate(),
     all = r.todo.length && (!sc.known || sc.n > 0) ? `<p class="d-verbs" data-todo-all><button type="button" class="primary" data-todo-act="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.zx.tdAll, { n: sc.known ? sc.n : r.todo.length }))}</button>${gate.disabled ? greyNote(gate.reason) : ''}</p>` : '';
-  return `<details class="d-todo" data-todo data-todo-state="ready"${open}${t.dirty || t.reading ? ' aria-busy="true"' : ''}>${marker(nTodo)}<h3 class="d-sh">${esc(tt(TX.cwb.todoTitle))} (${nTodo}) <small>${esc(tt(TX.d2.tdHelp))}</small></h3>
+  return `<details class="d-todo" data-todo data-todo-state="ready"${open}${t.dirty || t.reading ? ' aria-busy="true"' : ''}>${marker(nTodo)}<p class="f-muted d-todo-help" data-todo-help>${esc(tt(TX.d2.tdHelp))}</p>
     ${all}
     ${nTodo ? `<ul class="d-todo-l" data-todo-list>${r.todo.map(x => lineHtml(x.item, x.kind, t.data)).join('')}${ds.todo.map(d => datasetLineHtml(d, true)).join('')}</ul>` : `<p class="f-ok" data-todo-all>${esc(tt(TX.cwb.todoAll))}</p>`}
     ${opAreaHtml('base', 'todo')}

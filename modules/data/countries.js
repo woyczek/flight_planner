@@ -110,6 +110,7 @@ export const cwInit = () => ({
   legend: false,
   doneOpen: false,
   hand: new Map(),
+  recv: new Map(), // les fichiers que le lanceur vient de recevoir par « Choisir le fichier… » : « zone/source » → { name, size, at } ; la ligne du fichier dit « reçu » jusqu'à ce que la lecture suivante du pays dise autre chose (le fichier n'y est plus vu)
   paths: new Map(),
   pathsFor: null,
   cycle: null,
@@ -491,8 +492,9 @@ function filesOf(id, item) {
   };
 }
 /** L'inventaire des fichiers d'une source prise à la main, UNE fiche de trois lignes par fichier : ce que c'est en mots de pilote (le titre), « Où : … — <lien> (chemin à vérifier) », « Fichier : <nom> — vu dans Téléchargements / manquant » (le lanceur dit ce qu'il y voit). */
-function inventoryHtml(id, item, cy) {
+function inventoryHtml(id, item, cy, zone = '') {
   const T = TX.cw,
+    got = S.cw.recv.get(`${zone}/${id}`) || null, // ce que le lanceur a reçu de cette source à l'instant
     {
       steps,
       files
@@ -500,15 +502,17 @@ function inventoryHtml(id, item, cy) {
     hand = item?.hand || null,
     ready = cy.state === 'ready' && !!hand;
   if (!files.length) return '';
-  const nSeen = ready ? files.filter(f => M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(String(f.file || f.name), hand.inDownloads))
-    .length : 0;
-  return `<div data-inventory="${esc(id)}"><p class="d-invh d-sh d-sh2"><b>${esc(tt(T.inventory))}</b>${ready ? ` <small data-inventory-count>${esc(tt(TX.d2.invSeen, { n: nSeen }))} · ${esc(tt(TX.d2.invMiss, { n: files.length - nSeen }))}</small>` : ''}</p>${!ready ? `<p class="f-muted" data-inventory-state="${esc(cy.state || 'none')}">${esc(tt(M.own(T.cycleState, cy.state) || T.inDlUnread))}</p>` : ''}<ul class="d-inv">${files.map(f => {
+  const isGot = f => !!got && got.name === f.name,
+    nSeen = files.filter(f => isGot(f) || ready && (M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(String(f.file || f.name), hand
+      .inDownloads))).length;
+  return `<div data-inventory="${esc(id)}"><p class="d-invh d-sh d-sh2"><b>${esc(tt(T.inventory))}</b>${ready || nSeen ? ` <small data-inventory-count>${esc(tt(TX.d2.invSeen, { n: nSeen }))} · ${esc(tt(TX.d2.invMiss, { n: files.length - nSeen }))}</small>` : ''}</p>${!ready ? `<p class="f-muted" data-inventory-state="${esc(cy.state || 'none')}">${esc(tt(M.own(T.cycleState, cy.state) || T.inDlUnread))}</p>` : ''}<ul class="d-inv">${files.map(f => {
     const shown = String(f.file || f.name),
-      seen = ready ? M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(shown, hand.inDownloads) : null,
+      recv = isGot(f),
+      seen = recv ? true : ready ? M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(shown, hand.inDownloads) : null,
       what = Array.isArray(f.what) ? f.what : f.gives;
     return `<li data-file="${esc(f.name)}"${seen === null ? '' : ` data-seen="${seen}"`}>${Array.isArray(what) ? `<b data-file-what>${esc(String(what[li()] ?? what[0] ?? ''))}</b>` : ''}
       ${whereHtml(f, steps, hand)}
-      <span class="d-fl" data-file-name>${esc(tt(T.name, { n: '\u0001' })).replace('\u0001', () => `<code>${esc(shown)}</code>`)}${seen === null ? '' : ` — <span class="d-fs" data-file-state="${seen ? 'seen' : 'missing'}">${seen ? '✓' : '○'} ${esc(tt(seen ? T.seen : T.missing))}</span>`}</span></li>`;
+      <span class="d-fl" data-file-name>${esc(tt(T.name, { n: '\u0001' })).replace('\u0001', () => `<code>${esc(shown)}</code>`)}${seen === null ? '' : ` — <span class="d-fs" data-file-state="${recv ? 'received' : seen ? 'seen' : 'missing'}">${seen ? '✓' : '○'} ${esc(recv ? tt(TX.cwb.zip.recvLine, { name: got.name, b: M.fmtBytes(got.size, lang()), d: dateOf(got.at) }) : tt(seen ? T.seen : T.missing))}</span>`}</span></li>`;
   }).join('')}</ul></div>`;
 }
 /** Le régime d'une source : celui de la liste du cycle, à défaut celui que le catalogue dit (un fichier pris à la main, lu sur ce poste, pris par le lanceur) ; '' sans. */
@@ -587,7 +591,7 @@ function sourceHtml(id, zone, z, inCov, msg) {
     tone = ds === 'done' ? 'ok' : ds === 'failed' ? 'err' : !ds || ds === 'n/a' || ds === 'unavailable' ? 'muted' :
     'warn'; // la couleur du bord gauche du bloc : l'état de CETTE source
   return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="${tone}"${reg ? ` data-regime="${reg}"` : ''}><div class="d-srch"><h4>${esc(name)}</h4>${reg ? `<p class="f-muted d-regbadge" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}</div>
-    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${M.isComputed(reg) ? '' : handWhyHtml(id)}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}</section>`;
+    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${M.isComputed(reg) ? '' : handWhyHtml(id)}${reg === 'hand' ? inventoryHtml(id, item, cy, zone) : ''}${reg === 'hand' ? handHtml(id, zone, z, item, cy, msg) : ''}</section>`;
 }
 /** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
  *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
@@ -690,8 +694,7 @@ function sheetHtml() {
       g: gp.names[li()] || gp.names[0]
     }) : '', partsText(id)].filter(Boolean).join(' \u00b7 '),
     facts = inCov ? [buildFact(id, z), publishFact(z)].filter(Boolean) : [],
-    tn = tone(id),
-    gest = hands.map(s => handHtml(s, id, z, split.find(x => x.id === s)?.item, cy, s === msgSrc)).join('');
+    tn = tone(id);
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">
     <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(tn)}" data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, tn) || ''}</b> ${esc(word(tn))}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
     ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div><ul class="d-ticks d-facts d-cells" data-sheet-facts>${facts.map(f => f.li).join('')}</ul></div>${facts.some(f => f.note) ? `<div class="d-cellnotes" data-cell-notes>${facts.map(f => f.note).join('')}</div>` : ''}` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
@@ -701,7 +704,7 @@ function sheetHtml() {
     ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? failedHtml(id) : ''}${inCov && progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny) : ''}
     <h4 class="d-sh">${esc(tt(T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
     ${inCov ? sheetPublishHtml(id, z) : ''}
-    ${gest ? `<div class="d-gest" data-sheet-gestures>${gest}</div>` : ''}${inCov && !progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny) : ''}
+    ${inCov && !progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny) : ''}
     ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}${inCov ? removeHtml(id) : ''}</section>`;
 }
 /** Le bloc de la base sous la barre d'état : la carte (et la fiche à sa droite quand un pays est ouvert, en large), puis « ce qui reste à faire ce mois-ci », puis les paquets. */
@@ -871,6 +874,13 @@ export async function wantCycle(zone) {
     zone,
     state: 'unread'
   };
+  if (data)
+    for (const k of [...S.cw.recv.keys()]) { // la lecture du pays fait foi : un fichier reçu qu'elle ne voit plus n'est plus dit « reçu »
+      const [z, src] = k.split('/'),
+        r = S.cw.recv.get(k),
+        it = z === zone ? data.zoneView?.sources?.[src] || data.items?.[src] : null;
+      if (z === zone && !M.fileSeen(r.name, it?.hand?.inDownloads)) S.cw.recv.delete(k);
+    }
   renderBuild();
 }
 /** Lit, sans écrire, le journal du lanceur (base/last, K191) : la dernière opération de la prise, du téléchargement, de la construction et de la mise à jour, qui survit au rechargement de la page ; la fiche d'un pays en tire le fil de sa dernière opération (zoneop.js : threadOf).
@@ -1135,7 +1145,8 @@ export const CW_STYLE = `
 [data-module="data"] [data-sum-tone=warn]{color:var(--sog-warn);font-weight:600}
 [data-module="data"] [data-sum-tone=err]{color:var(--sog-err);font-weight:600}
 [data-module="data"] [data-sum-tone=muted]{color:var(--sog-muted)}
-[data-module="data"] .d-gh[aria-expanded=true] .d-chev{transform:rotate(180deg)}
+[data-module="data"] .d-gh .d-chev{order:-1;flex:none;width:7px;height:7px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);margin:0 4px 0 2px}
+[data-module="data"] .d-gh[aria-expanded=true] .d-chev{transform:rotate(45deg)}
 [data-module="data"] .d-gb{padding:0 10px 10px}
 [data-module="data"] .d-gc{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 [data-module="data"] .d-gcb{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;width:100%;height:100%;min-height:48px;padding:4px 8px 4px 10px;background:var(--sog-surface);border:1px solid var(--sog-border);border-left:6px solid var(--d-c,var(--sog-muted));border-radius:var(--sog-radius-s);color:inherit;font:inherit;text-align:left;cursor:pointer;min-width:0}
@@ -1211,11 +1222,10 @@ export const CW_STYLE = `
 [data-module="data"] .d-fs{white-space:normal;font-weight:700}
 [data-module="data"] .d-fs[data-file-state=seen]{color:var(--sog-ok)}
 [data-module="data"] .d-fs[data-file-state=missing]{color:var(--sog-muted)}
-[data-module="data"] .d-gest{display:grid;gap:2px;margin-top:14px}
-[data-module="data"] .d-gest .d-hand{margin:0}
-[data-module="data"] .d-gest .d-zact{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin:0 0 4px}
-[data-module="data"] .d-gest button:not(.d-link),[data-module="data"] [data-sheet-update] button:not(.d-link){width:100%}
-[data-module="data"] .d-gest .d-link,[data-module="data"] [data-sheet-update] .d-link{align-self:flex-start}
+[data-module="data"] .d-src .d-hand{margin:8px 0 0}
+[data-module="data"] .d-src .d-zact{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin:0 0 4px}
+[data-module="data"] .d-src .d-hand button:not(.d-link),[data-module="data"] [data-sheet-update] button:not(.d-link){width:100%}
+[data-module="data"] .d-src .d-hand .d-link,[data-module="data"] [data-sheet-update] .d-link{align-self:flex-start}
 [data-module="data"] .d-facts{margin:0}
 [data-module="data"] .d-hand{margin-top:6px}
 [data-module="data"] .d-zalt{margin:2px 0}

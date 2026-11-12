@@ -260,6 +260,7 @@ export const STYLE = `
 }
 [data-module="data"] details.d-fold[open]>summary{border-bottom:1px solid var(--sog-border);margin-bottom:8px}
 [data-module="data"] details.d-fold[open]>summary>.d-chev{transform:rotate(180deg)}
+[data-module="data"] details>summary>.d-chev{display:none}
 [data-module="data"] details.d-fold>[data-set-panel],[data-module="data"] details.d-fold>.f-card{margin-bottom:var(--sog-gap)}
 [data-module="data"] .d-gp[data-nocov]{opacity:.6}
 [data-module="data"] .d-wz[data-sel]{stroke:var(--sog-text,currentColor);stroke-width:3px;stroke-dasharray:6 3;fill-opacity:.55}

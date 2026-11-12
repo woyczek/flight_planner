@@ -28,6 +28,7 @@ import {
   STYLE
 } from './screen.js';
 import {
+  focusStates,
   panelId,
   renderBuild
 } from './panels.js';
@@ -264,6 +265,8 @@ function onClick(e) {
     if (ac.dataset.act === 'change-act') return changeAct(ac.dataset.kind);
     return /^[a-z0-9_-]{2,12}$/.test(ac.dataset.zone || '') ? startPublish(false, ac.dataset.zone) : undefined;
   }
+  if (e.target.closest?.('[data-act="focus-states"]'))
+    return focusStates(); // « Cochez au moins un État » (un geste grisé) : le lien qui mène aux États des procédures
   if (e.target.closest?.('[data-act="legend-more"]')) return toggleLegend();
   if (e.target.closest?.('[data-act="todo-done"]'))
     return toggleDone(); // le pli « Déjà faits » : son état est retenu (le toggle natif suit)

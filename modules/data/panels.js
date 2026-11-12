@@ -876,6 +876,18 @@ export function openGroup(set, verb) {
   const g = S.body?.querySelector(`details.f-group[data-group="${CSS.escape(id)}"]`);
   if (g) g.open = true;
 }
+/** Amène aux États des procédures (le pli « Procédures », ouvert) et donne le focus à la première case à cocher ; le lien « Cochez au moins un État » d'un geste grisé y mène. Rien si le pli n'est pas dessiné. */
+export function focusStates() {
+  openGroup('proc', 'fetch');
+  const fold = S.body?.querySelector('details.f-group[data-group="proc"]');
+  if (!fold) return;
+  fold.scrollIntoView({
+    block: 'start'
+  });
+  fold.querySelector('input[data-item]')?.focus({
+    preventScroll: true
+  });
+}
 /** Le motif d'un échec de prise : sa phrase pour les codes connus (rien d'utile dans le zip, zip illisible, chemin refusé), « zip de plus de 500 Mo » pour le
  *  message de taille du lanceur, sinon le texte tel que le lanceur le donne. */
 function pickupWhy(error) {

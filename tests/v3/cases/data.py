@@ -6654,8 +6654,10 @@ def _l89_cycle(world):
         nats = _l89_item('nats', 'hand', {'state': 'late', 'cycle': '2026-10-01', 'at': '2026-10-05T08:00:00Z'}, (1, 0), (0, 0, 1), ['gb'], 'older-than-cycle',
                          {'link': 'https://nats.example/aip', 'expected': ['EG_AIP_DS_<AAAAMMJJ>_XML.zip'], 'inDownloads': []})
         lfv = _l89_item('lfv', 'hand', {'state': 'missing'}, (1, 0), (0, 1, 0), ['se'], 'no-file', {'link': 'https://lfv.example/', 'expected': ['AIP_OFFLINE.zip'], 'inDownloads': []})
-        dircam = _l89_item('dircam', 'hand', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'}, (1, 1), (1, 0, 0), ['fr'], None,
-                           {'link': 'https://sia.example/info_dircam', 'expected': ['MIAM_OACI_ENR 5.7.pdf'], 'inDownloads': []})
+        story = world.get('dircam_story')   # L119: a coherent story for DIRCAM - nothing taken (« missing », the file not seen) until the launcher has received the PDF, then taken (« done », the file seen in the upload folder)
+        have = not story or world.get('dircam_in')
+        dircam = _l89_item('dircam', 'hand', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'} if have else {'state': 'missing'}, (1, 1 if have else 0), (1, 0, 0) if have else (0, 1, 0), ['fr'], None if have else 'no-file',
+                           {'link': 'https://sia.example/info_dircam', 'expected': ['MIAM_OACI_ENR 5.7.pdf'], 'inDownloads': ['MIAM_OACI_ENR 5.7.pdf'] if story and have else []})
         mora = _l89_item('mora', 'local', {'state': 'n/a'}, (5, 5), (5, 0, 0))
         faa = _l89_item('faa', 'auto', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'}, (1, 1), (0, 1, 0), ['us'])
         navcan = _l89_item('navcan', 'auto', {'state': 'missing'}, (1, 0), (0, 1, 0), ['ca'], 'not-downloaded')
@@ -6876,7 +6878,7 @@ def l90(c):
     c.eq(pos, [True] * 4, 'the page order: state bar, the map, what is left to do, the packs, the rest', what='page order')
     head = norm(c.text('[data-todo-head]'))
     c.eq(head, norm(CWB('todoHead').replace('{c}', '2611').replace('{n}', '3').replace('{m}', '8')), 'the header counts the sources done among the eight counted (the one the publisher no longer offers and the two computed here, MORA and X-Plane, are not counted: lot D1)', what='head')
-    c.ok(norm(c.text('[data-todo] h3')).startswith(norm(CWB('todoTitle'))), norm(c.text('[data-todo] h3')), 'the block has its title (then its count and its help, on the same line: lot D2)')
+    c.eq([c.count('[data-todo] h3'), norm(c.text('[data-todo] [data-todo-help]'))], [0, norm(_trow('tdHelp', lang, after='  d2: {'))], 'the block has no sub-heading that repeats the header of the fold (« Ce qui reste à faire ce mois-ci · n »): only the hint under it', what='no sub-heading')
     # ---- 2. one line per source not done, sorted: waits for your hand (launcher order), late, to build, to publish
     ids = c.js("[...document.querySelectorAll('[data-todo-list] > [data-todo-item]')].map(l => [l.dataset.todoItem, l.dataset.todoKind])")
     c.eq(ids, [['lfv', 'hand'], ['nats', 'hand'], ['sia', 'hand'], ['navcan', 'late'], ['faa', 'publish']], 'five lines, sorted: your hand, late, to publish (X-Plane, computed on this workstation, is no longer a line: lot D1)', what='sorted')
@@ -7083,7 +7085,7 @@ def l92(c):
 def l119(c):
     import hashlib
     lang = c.lang
-    world = {'sia_seen': False}
+    world = {'sia_seen': False, 'dircam_story': True}
     x4 = lambda s: [f'{s} fr', f'{s} en', f'{s} de', f'{s} es']
     steps = {'id': 'dircam', 'page': {'url': 'https://sia.example/info_dircam', 'home': 'https://sia.example/'}, 'files': [
         {'name': 'MIAM_OACI_ENR 5.7.pdf', 'file': 'info_aero_dircam.zip', 'link': 'https://sia.example/info_dircam', 'gives': x4('gives'), 'what': x4('what'), 'where': x4('SIA › info_dircam'), 'verified': True}]}
@@ -7094,6 +7096,8 @@ def l119(c):
     def upload(route):
         req = route.request
         sent.append({'headers': {k.lower(): v for k, v in req.headers.items()}, 'body': req.post_data_buffer or b''})
+        if answer['status'] == 200:
+            world['dircam_in'] = True   # the launcher keeps the PDF in data/local/upload/, which base/cycle lists like Downloads
         route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body']))
     c.context.route(re.compile(r'/__setup/base/upload'), upload)
     CWB = lambda k: _trow(k, lang, after='    zip: {')
@@ -7120,6 +7124,10 @@ def l119(c):
     # ---- the hint says which file to choose (the catalogue\'s `file`, never an invented name) and what leaves the device
     want = norm(CWB('hint').replace('{f}', ' (info_aero_dircam.zip)').replace('{p}', canon))
     c.eq(norm(c.text(f'{block} [data-choose-hint=dircam]')), want, 'under « Choisir le fichier… »: the SIA archive (named by the catalogue), read on this device, only the PDF of the ENR 5.7 is sent', what='hint')
+    # ---- the gestures of a source are INSIDE its card (no stack at the bottom of the sheet); the file line agrees with the tick (nothing taken yet: « manquant » beside « à faire »)
+    c.eq([c.count('[data-sheet-gestures]'), c.count('[data-sheet-source=dircam] [data-hand=dircam] [data-act=zone-upload]'), c.count('[data-sheet-source=sia] [data-hand=sia]'), c.count('[data-sheet=fr] [data-hand]')], [0, 1, 1, 2],
+         'each hand-taken source carries its own gestures in its card; nothing detached', what='in the card')
+    c.eq(c.js("[...document.querySelectorAll('[data-sheet-source=dircam] [data-file-state]')].map(e => e.dataset.fileState)"), ['missing'], 'before the upload: the expected file is « manquant », as the tick says (nothing taken)', what='before')
     # ---- the archive: ONE upload, the member only, in the launcher\'s shape
     answer.update(status=200, body=ok_body(True))
     n = pick('info_aero_dircam.zip', archive)
@@ -7135,6 +7143,11 @@ def l119(c):
     notes = norm(c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ')"))
     c.ok(done_tail and done_tail not in notes and done_tail not in msg(), (done_tail, notes), 'nothing says « the pickup follows »: no pickup is started for this PDF')
     c.eq(c.count(f'{block} [data-uploading]'), 0, 'the progress is gone', what='progress')
+    # the file line follows the upload: « ✓ reçu : MIAM_OACI_ENR 5.7.pdf (size) le date », never « manquant » beside a « Téléchargé ✓ »
+    c.wait(1500)   # the read of the country that follows the upload lists the file: the line stays « reçu »
+    fl = c.js("[...document.querySelectorAll('[data-sheet-source=dircam] [data-file-state]')].map(e => [e.dataset.fileState, e.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.ok(len(fl) == 1 and fl[0][0] == 'received' and canon in fl[0][1] and fl[0][1].startswith('✓'), fl, 'after the upload the expected file says « ✓ reçu : name (size) le date »')
+    c.eq([c.count('[data-sheet-source=dircam] [data-file-state=missing]'), c.count('[data-sheet-source=dircam] .d-cells1 > li[data-ok=yes]')], [0, 1], 'and « Téléchargé ✓ » agrees with it: no « manquant » beside it', what='coherent')
     # ---- the same file again: already there
     answer.update(status=200, body=ok_body(False))
     pick('info_aero_dircam.zip', archive)
@@ -7144,7 +7157,7 @@ def l119(c):
     c.ok(re.search(rx, msg()) is not None, (msg(), rx), 'the same file is said « already there, nothing rewritten »')
     # the capture: the sheet of France, the DIRCAM line after an upload (the file chosen, what the launcher received, « already there »)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    _tall_shot(c, f'L119_{c.width}_{lang}_sheet.png', block, 1000 if c.width > 800 else 1100, 'end')
+    _tall_shot(c, f'L119_{c.width}_{lang}_sheet.png', '[data-sheet=fr] [data-sheet-source=dircam]', 1000 if c.width > 800 else 1300, 'end')
     # ---- a PDF as it is, under the name of a second download: sent as it is
     answer.update(status=200, body=ok_body(True))
     n = pick('miam_oaci_enr 5.7 (2).pdf', pdf)
@@ -8096,10 +8109,12 @@ def l102(c):
     c.ok(c.js("getComputedStyle(document.querySelector('[data-sheet-source=navpt] .d-cells1 > li > b, [data-sheet] .d-cells1 > li > b')).textTransform") == 'uppercase', 'caps', 'the word of a step is in small capitals')
     c.ok(c.js("[...document.querySelectorAll('[data-sheet] .d-sh')].every(h => getComputedStyle(h).textTransform === 'uppercase')"), 'caps', '« Fichiers à prendre · 1 vu, 0 manque » is in small capitals, with its counts')
     c.ok(c.count('[data-sheet] [data-inventory-count]') >= 1, 'count', 'the count of the files is on the heading')
-    g, last = rect('[data-sheet-gestures]'), rect('[data-sheet] [data-sheet-source]:last-of-type')
-    c.ok(g['t'] >= last['b'] - 1, (g, last), 'the buttons are at the BOTTOM of the sheet, under the sources')
-    pb = rect('[data-sheet-gestures] button.primary')
-    c.ok(pb['w'] >= (sh['w'] - 40) * 0.9, (pb, sh), 'the primary button is on the full width')
+    card, pb = rect('[data-sheet] [data-sheet-source=navpt]'), rect('[data-sheet] [data-sheet-source=navpt] [data-hand] button.primary')
+    c.eq(c.count('[data-sheet-gestures]'), 0, 'no stack of buttons detached at the bottom of the sheet', what='no stack')
+    c.ok(card['t'] <= pb['t'] and pb['b'] <= card['b'] + 1, (card, pb), 'the gestures of a source are INSIDE its card (« Prendre le fichier téléchargé » under the expected files)')
+    up, last = rect('[data-sheet] [data-sheet-update]'), rect('[data-sheet] [data-sheet-source]:last-of-type')
+    c.ok(up['t'] >= last['b'] - 1, (up, last), '« Mettre à jour ce pays » stays at the BOTTOM of the sheet, under the sources')
+    c.ok(pb['w'] >= (card['w'] - 40) * 0.9, (pb, card), 'the primary button is on the full width of its card')
     if wide:
         c.ok(sh['l'] > mp['r'] and c.js("getComputedStyle(document.querySelector('[data-sheet]')).position") == 'sticky', sh, 'the sheet is a card at the RIGHT, sticky')
         y0 = c.js("window.scrollY")
@@ -8698,9 +8713,18 @@ def l120(c):
     c.ok(want in proc, (proc, want), 'the folded line of the procedures says « cycle 2610 · 1 200 terrains CIFP · 30 terrains eAIP » (numbers formatted for the language)')
     wx = norm(c.text('[data-body] > details.f-group[data-group=weather] .d-fstate'))
     c.ok(re.search(_l120_tpl(_trow('natExpired', lang, after='  d6: {')), wx) is not None, wx, 'the weather fold names the expired NAT tracks and the date they ended')
+    # ONE fold sign, the chevron on the LEFT: the right-hand triangle of the folds (the block, the sets, the blocks under the packs) is gone; the packs carry their chevron on the left too
+    c.eq(c.js("[...document.querySelectorAll('details > summary > .d-chev')].every(e => getComputedStyle(e).display === 'none') && document.querySelectorAll('details > summary > .d-chev').length > 4"), True, 'the folds (the block, the other sets, the blocks under the packs) show only the chevron on the left, the one of the frame', what='one sign')
+    c.eq(c.js("[...document.querySelectorAll('details > summary')].every(s => getComputedStyle(s, '::before').content !== 'none')"), True, 'which is drawn for each of them', what='left chevron')
+    c.eq(c.js("(h => !!h && h.querySelector('.d-chev').getBoundingClientRect().left < h.querySelector('b').getBoundingClientRect().left)(document.querySelector('.d-gh'))"), True, 'a pack has its chevron on the left of its name, not a triangle on the right', what='pack chevron')
+    # the greyed « Relire les procédures » says where to tick: its reason is a link that opens the Procédures fold and focuses its first State
+    c.eq(norm(c.text('[data-todo-dataset=procedures] [data-act=focus-states]')), norm(_trow('no-state', lang, after='  greyReason: {')), 'the reason of the greyed gesture is a LINK (« Cochez au moins un État »)', what='link')
+    c.tap('[data-todo-dataset=procedures] [data-act=focus-states]')
+    c.until("document.querySelector('details.f-group[data-group=proc]').open && document.activeElement && document.activeElement.matches('input[data-item]')", timeout=4000, what='the Procédures fold opens and its first State has the focus')
+    c.js("document.querySelector('details.f-group[data-group=proc]').open = false")
     # the capture: the block unfolded (the sources and the sets to do, with their gestures and reasons)
     c.js("document.querySelector('[data-todo-done]').open = false; document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    _tall_shot(c, f'L120_{c.width}_{lang}_todo.png', '[data-todo]', 1150 if c.width > 800 else 1900)
+    _tall_shot(c, f'L120_{c.width}_{lang}_todo.png', '[data-todo]', 1350 if c.width > 800 else 1900)
     c.check_errors()
 
 
