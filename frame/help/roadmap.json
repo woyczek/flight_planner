@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6c562de",
+  "organisation": "200e9a8",
   "fiches": 287,
   "untranslated": 0,
   "priorities": 243
@@ -3855,11 +3855,12 @@
     {
      "id": "SOG-0285",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Écran Données, la carte : pas de molette au-dessus des pays, Maj + clic ne surligne pas les pays choisis, survoler un paquet devrait montrer son périmètre",
      "en": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
      "de": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
-     "es": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter"
+     "es": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
+     "test": true
     }
    ]
   },
@@ -3955,12 +3956,13 @@
     {
      "id": "SOG-0118",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
      "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
      "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
      "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)",
-     "rank": 72
+     "rank": 72,
+     "test": true
     },
     {
      "id": "SOG-0122",

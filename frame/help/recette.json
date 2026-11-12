@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 160,
+  "tests": 162,
   "verdicts": 59
  },
  "apps": [
@@ -360,6 +360,19 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T22:43:16Z"
+  },
+  {
+   "id": "SOG-0118",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
+    "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
+    "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
+    "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)"
+   },
+   "test": "Réglages › Administration : la liste du zoom des seuils de piste (8 à 16, 11 par défaut). Choisis 13 : sur la Carte, les seuils de piste ne se dessinent qu'à partir du zoom 13. Remets 11.",
+   "since": "2026-11-12",
+   "state": "todo"
   },
   {
    "id": "SOG-0125",
@@ -2344,6 +2357,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T20:24:37Z"
+  },
+  {
+   "id": "SOG-0285",
+   "app": "maintenance",
+   "title": {
+    "fr": "Écran Données, la carte : pas de molette au-dessus des pays, Maj + clic ne surligne pas les pays choisis, survoler un paquet devrait montrer son périmètre",
+    "en": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
+    "de": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
+    "es": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter"
+   },
+   "test": "Recharge la page. Maintenance › Données. (1) Pointeur au-dessus d'un pays, puis de la mer : la molette zoome la carte et la page ne défile pas ; arrivé au bout du zoom, la page défile. (2) Maj + clic sur deux pays : ils restent pleins et entourés de bleu ; sous la carte, le bandeau dit « 2 pays » avec leurs noms, « Mettre à jour (2) » et « Annuler ». (3) Survole un paquet de la grille : son périmètre s'entoure de bleu sur la carte, sans que la carte bouge ; il s'efface quand tu quittes le paquet.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T22:46:31Z"
   }
  ],
  "decisions": [
