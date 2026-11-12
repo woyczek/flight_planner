@@ -378,6 +378,47 @@
       busy: true
     }).c.forModule(DECL).job('regen/job', {});
     ck('job : un travail déjà en cours (409) → refus rendu', busy.ok === false && busy.status === 409);
+    // SOG-0279 : le cadre envoie ce qui attend AVANT de lancer un travail (qui lit data/) ; un envoi qui échoue ne bloque pas le travail
+    {
+      const order = [],
+        m2 = mk(),
+        f0 = m2.f.fetch;
+      const c2 = launcherClient({
+        root: ROOT,
+        info: {
+          host: 'pc',
+          data: true,
+          dataGit: true,
+          lan: false
+        },
+        fetch: (...a) => {
+          order.push(String(a[0]).includes('regen/job') ? 'job' : 'other');
+          return f0(...a);
+        },
+        before: async () => {
+          order.push('before');
+        },
+        poll: 5
+      });
+      await c2.forModule(DECL).job('regen/job', {});
+      ck('job : `before` est appelé et attendu AVANT le premier appel du travail (le cadre y envoie ce qui attend)', order[0] === 'before' && order.includes('job'), J(order));
+      const c3 = launcherClient({
+        root: ROOT,
+        info: {
+          host: 'pc',
+          data: true,
+          dataGit: true,
+          lan: false
+        },
+        fetch: mk().f.fetch,
+        before: async () => {
+          throw new Error('send failed');
+        },
+        poll: 5
+      });
+      const r3 = await c3.forModule(DECL).job('regen/job', {});
+      ck('job : un `before` qui échoue ne bloque pas le travail (il part avec ce que data/ porte)', r3.ok !== false || r3.state === 'done', J(r3));
+    }
     ck('job : route non déclarée refusée', (await M.job('secrets', {})).refused === true);
     // l'annulation fait partie du protocole : déclarer « regen/job » permet « regen/job/cancel », rien d'autre en plus
     const Mj = S.c.forModule({

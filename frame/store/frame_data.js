@@ -483,13 +483,17 @@
       syncing: !!syncing,
       lastSync: s?.lastSync || '',
       lastError: lastError || s?.lastError || '',
-      pending: pend.length,
-      // écritures en attente : chemin, module qui l'a faite, date, suppression ou non (les plus récentes d'abord)
+      // SOG-0279 : `pending` ne compte que ce qui part avec l'envoi groupé ; `held`, le vol en cours retenu jusqu'à son geste ; `nextSendAt` : l'instant de l'envoi groupé (0 : rien d'armé)
+      pending: pend.filter(p => !isHeld(p.path)).length,
+      held: pend.filter(p => isHeld(p.path)).length,
+      nextSendAt: groupAt,
+      // écritures en attente : chemin, module qui l'a faite, date, suppression ou non, retenue ou non (les plus récentes d'abord)
       queue: pend.map(p => ({
         path: p.path,
         module: p.module || '',
         at: p.at,
-        deletion: p.text === null
+        deletion: p.text === null,
+        held: isHeld(p.path)
       })).sort((a, b) => String(b.at).localeCompare(String(a.at))),
       conflicts: (await idb('conflicts', 'getAll').catch(() => [])).filter(c => !c.seen).length
     };
@@ -710,21 +714,25 @@
     if (!opts.quiet && holdSerial(path, value, opts.module || '')) return;
     changed([path]);
     emitStatus();
-    if (!opts.quiet) soon();
+    if (!opts.quiet) soon(path);
   }
   // ---- garde des écritures (SOG-0209 : pilot/…/current_flight.json réécrit toutes les 4 à 6 s, deux modules qui se répondent, une synchronisation à chaque fois)
   //   1. sameAsKept : un `put` dont le contenu — hors updated_at / updatedAt de premier niveau — est celui qui est gardé ne fait rien ;
   //   2. holdSerial : un chemin que des écritures SANS geste récent (navigator.userActivation) font revenir à un contenu déjà écrit dans la fenêtre
   //      (revisits fois), ou écrit plus de plain fois, est « en série » : la dernière écriture reste en file, mais l'événement et la synchronisation
   //      ne partent qu'une fois par fenêtre, tant que la série dure (une fenêtre sans écriture la termine) ; dit une fois dans le diagnostic.
-  //   Ce qui existait déjà : une file par chemin (une écriture en remplace une autre) et, au poste avec lanceur, un délai de 2 s après la dernière écriture
-  //   (soon) : des écritures rapprochées partent en UN passage ; des écritures espacées de 4 à 6 s en faisaient un chacune.
+  //   Ce qui existait déjà : une file par chemin (une écriture en remplace une autre). Au poste avec lanceur, l'envoi est GROUPÉ (SOG-0279) : la minuterie part du PREMIER changement en attente et n'est pas rearmée par
+  //   les suivants (group : cinq minutes au plus) ; tout ce qui a changé part alors en UN commit (avant, 2 s après la dernière écriture : un commit par pause de frappe, 335 le 10 novembre 2026).
   const guard = {
     revisits: 2,
     plain: 15,
     window: 30000,
-    soon: 2000
+    group: 5 * 60e3
   };
+  // SOG-0279 : trois classes de document, par chemin. DONNÉES (tout sauf ce qui suit) : écrites tout de suite, envoyées en groupe ; RETENU (le vol en cours) : écrit tout de suite, JAMAIS envoyé par un envoi
+  // automatique, seulement par son geste (sendNow) ou « Synchroniser » ; APPAREIL (policy cache, device/) : jamais envoyé. Le choix du vol en cours est de l'utilisateur (Q-0035 : sur un geste, pas à chaque retouche).
+  const HELD = /^pilot\/[^/]+\/current_flight\.json$/,
+    isHeld = path => HELD.test(String(path || ''));
   const serialState = new Map(),
     serialSeen = new Map();
   // un geste récent de l'utilisateur : navigator.userActivation quand le navigateur l'a (Chrome, Firefox 120, Safari 16.4), sinon le dernier appui ou la dernière touche vus ici (5 s) ;
@@ -808,18 +816,29 @@
     g.timer = setTimeout(() => releaseSerial(path), guard.window);
     changed([path]);
     emitStatus();
-    soon();
+    soon(path);
   }
   // transport local au poste (le lanceur et son data/, T.quick) : une écriture part 2 s après la dernière, sans attendre
   // le passage de fond ; l'échange git (T.exchange) garde son rythme (passage « write » : sans échange) ; une écriture
   // fréquente et sans enjeu (opts.quiet : la position réelle d'un vol, toutes les 10 s) attend le passage de fond
-  let soonTimer = null;
-  const soon = () => {
-    if (!cfg.transport?.quick) return;
-    clearTimeout(soonTimer);
-    soonTimer = setTimeout(() => sync({
-      reason: 'write'
-    }), guard.soon);
+  let groupTimer = 0,
+    groupAt = 0;
+  /** Arme l'envoi groupé au PREMIER changement en attente (pas de réarmement : cinq minutes au plus après lui) ; un document retenu (le vol en cours) ne l'arme pas. */
+  const soon = path => {
+    if (!cfg.transport?.quick || (path && isHeld(path)) || groupTimer) return;
+    groupAt = Date.now() + guard.group;
+    groupTimer = setTimeout(() => {
+      groupTimer = 0;
+      groupAt = 0;
+      sync({
+        reason: 'write'
+      });
+    }, guard.group);
+  };
+  const disarmGroup = () => {
+    clearTimeout(groupTimer);
+    groupTimer = 0;
+    groupAt = 0;
   };
   /** Supprime un fichier (suppression envoyée à la prochaine synchronisation ; document en cache : effacé ici). */
   async function remove(path, opts = {}) {
@@ -846,7 +865,7 @@
     });
     changed([path]);
     emitStatus();
-    soon();
+    soon(path);
   }
 
   // ---------------------------------------------------------------- lecture d'un fichier absent du cache
@@ -1076,11 +1095,12 @@
   /** Synchronise (un seul passage à la fois dans tous les onglets : Web Locks) : tirer puis pousser la file en un
    *  commit. Retour : { ok, pulled, pushed, conflicts, error }. */
   function sync({
-    reason = 'manual'
+    reason = 'manual',
+    include = null
   } = {}) {
     if (syncing) return syncing;
     const lock = fn => navigator.locks?.request ? navigator.locks.request('sog-frame-sync', fn) : fn();
-    syncing = lock(() => run(reason)).finally(() => {
+    syncing = lock(() => run(reason, include)).finally(() => {
       syncing = null;
       emitStatus();
     });
@@ -1105,7 +1125,7 @@
       trimmed = false; // le magasin n'a pas répondu : au passage suivant
     }
   }
-  async function run(reason) {
+  async function run(reason, include = null) {
     void trimConflicts();
     const T = cfg.transport,
       result = {
@@ -1144,7 +1164,8 @@
         const pulled = await pull(T, head);
         result.pulled.push(...pulled.paths);
         result.conflicts += pulled.conflicts;
-        const pend = await idb('pending', 'getAll');
+        // le vol en cours (classe RETENU) ne part que sur « Synchroniser » ou son geste (SOG-0279) ; tout le reste part, en un seul commit
+        const pend = (await idb('pending', 'getAll')).filter(p => !isHeld(p.path) || reason === 'manual' || include?.has(p.path));
         if (!pend.length || !who) {
           result.ok = true;
           result.held = who ? 0 : pend.length;
@@ -1318,6 +1339,8 @@
   /** Fin d'un passage : état gardé (dernière synchro réussie, erreur, ce qui a été envoyé), observateurs prévenus. */
   async function done(r, sent = []) {
     lastError = r.error;
+    // plus rien d'ordinaire en attente : la minuterie du groupe s'éteint (un passage qui a tout envoyé n'est pas suivi d'un autre)
+    if (r.ok && !(await idb('pending', 'getAll')).some(p => !isHeld(p.path))) disarmGroup();
     // ce qui vient de partir (lastPushed) : la liste du passage qui a tenté un envoi ; un passage qui n'en tente pas la laisse
     if (sent.length) await setMeta('lastPushed', {
       at: new Date().toISOString(),
@@ -1479,6 +1502,33 @@
     const s = await status();
     return s.pending > 0 || !s.lastSync || Date.now() - Date.parse(s.lastSync) > (cfg.every || EVERY);
   }
+  /** La page se cache ou se ferme : ce qui attend part tout de suite (un envoi au mieux ; la file est durable, rien n'est perdu s'il ne part pas). */
+  async function leaving() {
+    if (!remote() || !(await idb('pending', 'getAll').catch(() => [])).some(p => !isHeld(p.path))) return;
+    sync({
+      reason: 'write'
+    }).catch(() => {});
+  }
+  /** Envoie TOUT ce qui attend avant qu'un travail du lanceur lise data/ (SOG-0279 : le travail ne doit pas lire une copie vieille de cinq minutes) ; rend le passage terminé, jamais d'exception. */
+  async function sendPending() {
+    try {
+      await syncing?.catch(() => {});
+      if (!remote() || !(await idb('pending', 'getAll').catch(() => [])).some(p => !isHeld(p.path))) return null;
+      return await sync({
+        reason: 'write'
+      });
+    } catch {
+      return null;
+    }
+  }
+  /** Envoie ce vol (ou ces chemins retenus) maintenant : son geste (« Envoyer ce vol à mes appareils »). */
+  async function sendNow(paths) {
+    await syncing?.catch(() => {});
+    return sync({
+      reason: 'send',
+      include: new Set([].concat(paths || []).map(String))
+    });
+  }
   /** Réveil (page de nouveau visible, reprise du cache de navigation) : état rediffusé, passage s'il est dû. */
   async function wake() {
     emitStatus(false);
@@ -1502,7 +1552,9 @@
     window.addEventListener('online', tick);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') wake();
+      else void leaving();
     });
+    window.addEventListener('pagehide', () => void leaving());
     window.addEventListener('pageshow', e => {
       if (e.persisted) wake();
     });
@@ -2085,6 +2137,9 @@
     setAirline,
     isNewer, // la fiche a est plus récente que b, par l'instant de updated_at / updatedAt (la seule règle de comparaison des dates)
     sync,
+    sendPending,
+    sendNow,
+    isHeld,
     status,
     onStatus,
     conflicts,

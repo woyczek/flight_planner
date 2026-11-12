@@ -6674,6 +6674,59 @@ def a159(c):
     c.check_errors()
 
 
+
+@case('A160', 'The status chip says what waits and when it leaves (« 1 change to send · in 5 min »), a click sends it at once, the current flight is held apart (SOG-0279)', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0279 (the user: « on n’écrit pas 10 commits. un seul, toutes les 5 mn. ou sur demande de synchro »): with the workstation launcher the writes are sent GROUPED — the timer starts at the first change that waits, five minutes at most — and the status chip says what waits and when (« n modifications à envoyer · dans k min »; a click on the chip sends it at once, « Synchroniser »); the current flight (pilot/<tri>/current_flight.json) is HELD: written at once, never sent by the grouped send, said in the tooltip; nothing is sent while the writes only pile up')
+def a160(c):
+    lang = c.lang
+    W = {'fr': '1 modification à envoyer · dans 5 min', 'en': '1 change to send · in 5 min', 'de': '1 Änderung zu senden · in 5 Min.', 'es': '1 cambio por enviar · en 5 min'}
+    HELD = {'fr': 'Vol en cours : sur cet appareil', 'en': 'Current flight: on this device', 'de': 'Aktueller Flug: auf diesem Gerät', 'es': 'Vuelo en curso: en este dispositivo'}
+    posts = []
+    c.context.route(re.compile(r'/__setup/changes'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({'head': 'h1', 'tree': {}})))
+    c.context.route(re.compile(r'/__setup/batch'), lambda r: (posts.append(json.loads(r.request.post_data or '{}')), r.fulfill(status=200, content_type='application/json', body=json.dumps({'head': f'h{len(posts) + 1}'})))[1])
+    c.open('fuel', docs=LEVEL3, wait=False)
+    c.until("!!(window.FrameData && FrameData.launcher && document.getElementById('fSync'))", timeout=20000, what='the frame')
+    c.wait(1500)
+    # the workstation transport (a launcher that answers): the grouped send
+    c.js("""() => { FrameData.configure({ transport: { ...FrameData.launcher({}), quick: true }, identity: { trigram: 'TST' } });
+      window.__reg = FrameData.adapter({ id: 'missions', reads: ['missions/', 'pilot/'], writes: [{ prefix: 'missions/', merge: 'record' }, { prefix: 'pilot/', merge: 'record' }] }) }""")
+    c.js("() => window.__reg.put('missions/a.json', { updated_at: '2026-11-12T10:00:00Z', n: 1 })")
+    c.js("() => window.__reg.put('pilot/TST/current_flight.json', { updated_at: '2026-11-12T10:01:00Z', route: { text: 'LFPO LFRS' } })")
+    c.until("document.querySelector('#fSync .f-lbl').textContent.includes('5')", what='the chip says what waits and when')
+    c.eq(norm(c.text('#fSync .f-lbl')), norm(W[lang]), 'the chip: one change to send (the held flight is not counted), in five minutes', what='label')
+    c.ok(norm(HELD[lang]) in norm(c.js("document.getElementById('fSync').title")), None, 'the tooltip says the current flight stays on the device')
+    c.eq(len(posts), 0, 'nothing was sent while the writes pile up (the old 2-second send made a commit now)', what='no commit')
+    c.shot(f'A160_chip_{c.width}_{lang}_delivered.png')
+    if not c.phone:   # on a phone the chip is not in the header (its state is in Settings)
+        # a click on the chip sends it at once: one commit, the flight stays
+        c.tap('#fSync')
+        for _ in range(40):
+            if posts:
+                break
+            c.wait(150)
+        c.eq([len(posts), sorted(ch['path'] for ch in posts[0]['changes'])] if posts else None, [1, ['missions/a.json', 'pilot/TST/current_flight.json']], 'the click is « Synchronize »: one commit, with the flight too (the gesture sends it)', what='click')
+    c.check_errors()
+
+
+@case('A161', 'Company: a « Registry » entry beside « Missions » (the same module, #missions?view=registry), only the one of the address marked (Features SOG: the missions register)', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='Features SOG (the register screen of the missions is #missions?view=registry): the Company application carries an entry « Registre / Registry / Register / Registro » that opens the missions module on its register view, like « Fiches » of Maintenance for the sheets; two entries of one module are told apart by the view of the address (only one is marked); on a phone the register is a view of the Missions tab')
+def a161(c):
+    lang = c.lang
+    W = {'fr': 'Registre', 'en': 'Registry', 'de': 'Register', 'es': 'Registro'}
+    c.open('missions', app='company', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('#fMenu a[data-id=missions]')", timeout=20000, what='the Company bar')
+    rows = c.js("[...document.querySelectorAll('#fMenu a[data-id=missions]')].map(a => [a.getAttribute('href'), a.title, a.hasAttribute('aria-current')])")
+    c.eq([[r[0], norm(r[1])] for r in rows], [['#missions', norm({'fr': 'Missions', 'en': 'Missions', 'de': 'Missionen', 'es': 'Misiones'}[lang])], ['#missions?view=registry', norm(W[lang])]], 'two entries of the missions module: Missions, then Registry (with its view)', what='entries')
+    c.eq([r[2] for r in rows], [True, False], 'at #missions only Missions is marked', what='mark missions')
+    c.js("() => { location.hash = '#missions?view=registry' }")
+    c.until("document.querySelectorAll('#fMenu a[data-id=missions]')[1].hasAttribute('aria-current')", what='the registry entry marked')
+    rows = c.js("[...document.querySelectorAll('#fMenu a[data-id=missions]')].map(a => a.hasAttribute('aria-current'))")
+    c.eq(rows, [False, True], 'at #missions?view=registry only Registry is marked', what='mark registry')
+    c.check_errors()
+
+
 @case('A151', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')

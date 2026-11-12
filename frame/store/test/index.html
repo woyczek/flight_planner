@@ -394,7 +394,9 @@
           })
         }
       });
-      const r = await v.sync(),
+      const r = await v.sync({
+          gesture: true
+        }), // le vol en cours est RETENU (SOG-0279) : il ne part que sur un geste
         got = JSON.parse((await stats()).files[p]),
         cs = await FD.conflicts();
       check('one conflict, the newest file kept whole: the route of the newest and the profile it came with', r.conflicts === 1 && got
@@ -1373,7 +1375,7 @@
         },
         updated_at: '2026-11-10T14:41:00Z'
       });
-      check('a real change is written and announced', (await v.status()).pending === 1 && events.length === 1, [await v.status(), events]);
+      check('a real change is written and announced', (await v.status()).held === 1 && events.length === 1, [await v.status(), events]);
       await v.put(p, {
         ...base,
         profile: {
@@ -1382,7 +1384,7 @@
         },
         updated_at: '2026-11-10T14:41:09Z'
       });
-      check('the same change again (only the stamp differs) compares with the queue: nothing more', (await v.status()).pending === 1 && events.length === 1, events);
+      check('the same change again (only the stamp differs) compares with the queue: nothing more', (await v.status()).held === 1 && events.length === 1, events);
       await v.put(p, {
         ...base,
         profile: {
@@ -1449,7 +1451,7 @@
       };
       Object.assign(FD.guard, {
         window: 900,
-        soon: 60
+        group: 60
       });
       const events = [];
       fuel.watch('pilot/', e => events.push(Date.now()));
@@ -1475,7 +1477,10 @@
         await new Promise(r => setTimeout(r, 150));
       }
       const during = events.length;
-      await new Promise(r => setTimeout(r, 2200)); // the windows close, the last write is announced and synchronised
+      await new Promise(r => setTimeout(r, 2200)); // the windows close, the last write is announced
+      await fuel.sync({
+        gesture: true
+      }); // the flight is HELD (SOG-0279): its gesture sends the last write
       const commits = (await stats()).commits.length - c0;
       Object.assign(FD.guard, was);
       check('without the guard: 14 events; with it, far fewer while the series lasts (three before it is seen, then one per window)', during <= 7, [during, events.length]);
@@ -1483,6 +1488,89 @@
       check('synchronisations: the three before the series is seen, then one per window (without the guard: one per write, 14)', commits >= 1 && commits <= 7, commits);
       const dg = await FD.diagnostic();
       check('the diagnostic says it once, with the path and the module', dg.serialWrites.length === 1 && dg.serialWrites[0].path === p && ['fuel', 'maps'].includes(dg.serialWrites[0].module), dg.serialWrites);
+    },
+    // ---- SOG-0279 : l'envoi groupé — dix écritures en peu de temps : aucun commit, puis UN seul ; le vol en cours retenu jusqu'à son geste
+    async 'grouped send: ten writes make no commit, then one; the flight is held until its gesture; before a launcher job what waits is sent'() {
+      const fl = 'pilot/TST/current_flight.json';
+      const d = await fresh({
+        [fl]: JSON.stringify({
+          updated_at: '2026-11-12T10:00:00Z',
+          route: {
+            text: 'LFPO LFRS'
+          }
+        })
+      });
+      FD.configure({
+        transport: {
+          ...FD.github({
+            repo: 'test/data',
+            branch: 'main',
+            token: 'test-token',
+            api: `${location.origin}/api`
+          }),
+          quick: true
+        },
+        identity: {
+          trigram: 'TST'
+        }
+      });
+      const reg = FD.adapter({
+        id: 'missions',
+        reads: ['missions/', 'pilot/'],
+        writes: [{
+          prefix: 'missions/',
+          merge: 'record'
+        }, {
+          prefix: 'pilot/',
+          merge: 'record'
+        }]
+      });
+      await reg.sync({
+        gesture: true
+      });
+      const was = {
+        ...FD.guard
+      };
+      Object.assign(FD.guard, {
+        group: 700
+      });
+      const c0 = (await stats()).commits.length;
+      for (let i = 0; i < 10; i++) {
+        await reg.put(`missions/m${i}.json`, {
+          updated_at: `2026-11-12T10:0${i}:00Z`,
+          n: i
+        });
+        await new Promise(r => setTimeout(r, 40));
+      }
+      await reg.put(fl, {
+        updated_at: '2026-11-12T10:30:00Z',
+        route: {
+          text: 'LFPO LFLL'
+        }
+      });
+      await new Promise(r => setTimeout(r, 200));
+      const early = (await stats()).commits.length - c0,
+        st = await FD.status();
+      check('ten writes in a moment: no commit yet (the old 2-second send made one)', early === 0, early);
+      check('the status says what waits (ten, and the held flight apart) and when the group leaves', st.pending === 10 && st.held === 1 && st.nextSendAt > Date.now(), st);
+      await new Promise(r => setTimeout(r, 900)); // the timer of the first change fires
+      const after = (await stats()).commits.length - c0,
+        files = (await stats()).files;
+      check('then ONE commit for everything that changed', after === 1 && Object.keys(files).filter(k => k.startsWith('missions/m')).length === 10, [after, Object.keys(files).filter(k => k.startsWith('missions/')).length]);
+      check('the flight did not leave with it (held until its gesture)', JSON.parse(files[fl]).route.text === 'LFPO LFRS' && (await FD.status()).held === 1, [files[fl], await FD.status()]);
+      // the gesture of the flight sends it, alone
+      const g = await FD.sendNow(fl);
+      const sent = (await stats()).commits.length - c0;
+      check('« Send this flight »: it leaves, in one more commit', sent === 2 && JSON.parse((await stats()).files[fl]).route.text === 'LFPO LFLL' && (await FD.status()).held === 0, [sent, g]);
+      // before a launcher job: what waits is sent first
+      await reg.put('missions/late.json', {
+        updated_at: '2026-11-12T11:00:00Z',
+        n: 99
+      });
+      const c1 = (await stats()).commits.length;
+      await FD.sendPending();
+      check('sendPending() sends what waits at once (a job that reads data/ must not read a copy five minutes old)', (await stats()).commits.length === c1 + 1 && !!(await stats()).files['missions/late.json'] && (await FD.status()).pending === 0, await stats());
+      Object.assign(FD.guard, was);
     },
     // ---- SOG-0235 : airline/index.json servi sans DEFA — un document plus ancien que l'arbre de l'appareil
     async 'stale copy: a read that finishes after a pass never overwrites the newer copy the pass wrote'() {
@@ -1684,7 +1772,7 @@
       };
       Object.assign(FD.guard, {
         window: 900,
-        soon: 60
+        group: 60
       });
       Object.defineProperty(navigator, 'userActivation', {
         configurable: true,

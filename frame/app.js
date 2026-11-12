@@ -255,6 +255,12 @@
       label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
       icon: 'target'
     }, {
+      // le registre des missions (SOG-0231 : Features SOG) : le module des missions, ouvert à sa vue Registre (#missions?view=registry)
+      id: 'missions',
+      label: ['Registre', 'Registry', 'Register', 'Registro'],
+      icon: 'list',
+      query: 'view=registry'
+    }, {
       // la flotte de la compagnie courante (SOG-0231, « 2 entrées » de Compagnie) : le module des appareils, ouvert à sa seule vue Flotte
       id: 'aircraft',
       label: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
@@ -265,7 +271,14 @@
       id: 'missions',
       label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
       icon: 'target',
-      modules: ['missions']
+      modules: ['missions'],
+      views: [{
+        id: 'registry',
+        module: 'missions',
+        query: 'view=registry',
+        label: ['Registre', 'Registry', 'Register', 'Registro'],
+        icon: 'list'
+      }]
     }, {
       id: 'fleet',
       label: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
@@ -416,6 +429,18 @@
       ok: ['À jour', 'Up to date', 'Aktuell', 'Al día'],
       ago: ['à jour, il y a {d}', 'up to date, {d} ago', 'aktuell, vor {d}', 'al día, hace {d}'],
       pending: ['{n} en attente', '{n} pending', '{n} ausstehend', '{n} pendiente(s)'],
+      // l'envoi groupé (SOG-0279) : ce qui attend et quand ça part ; un clic l'envoie tout de suite
+      pendingIn: ['{n} modification(s) à envoyer · dans {m} min', '{n} change(s) to send · in {m} min',
+        '{n} Änderung(en) zu senden · in {m} Min.', '{n} cambio(s) por enviar · en {m} min'
+      ],
+      pendingSoon: ['{n} modification(s) à envoyer · dans un instant', '{n} change(s) to send · in a moment',
+        '{n} Änderung(en) zu senden · gleich', '{n} cambio(s) por enviar · en un momento'
+      ],
+      heldNote: ['Vol en cours : sur cet appareil (envoyé par « Envoyer ce vol »)',
+        'Current flight: on this device (sent by “Send this flight”)',
+        'Aktueller Flug: auf diesem Gerät (gesendet mit „Diesen Flug senden“)',
+        'Vuelo en curso: en este dispositivo (se envía con «Enviar este vuelo»)'
+      ],
       syncing: ['Synchronisation…', 'Syncing…', 'Synchronisiere…', 'Sincronizando…'],
       offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión'],
       // le lanceur du poste ne répond plus (le réseau n'y est pour rien) : dit comme cela, pas « hors ligne » (SOG-0208)
@@ -1277,7 +1302,8 @@
         root: ROOT,
         info: launcherHere,
         fetch: launcherFetch,
-        onLost: () => setLauncherDown(true)
+        onLost: () => setLauncherDown(true),
+        before: () => FD.sendPending?.() // un travail du lanceur lit data/ : ce qui attend part d'abord (SOG-0279)
       });
     }
     return lcClient;
@@ -2806,9 +2832,18 @@
     if (s.transport === 'local') return ['local', t(T.sync.local)];
     if (!s.online || s.lastError === 'offline') return ['offline', s.pending ? `${t(T.sync.offline)} · ${t(T.sync.pending, { n: s.pending })}` : t(T.sync.offline)];
     if (s.lastError) return ['error', t(T.sync.error)];
-    if (s.pending) return ['pending', t(T.sync.pending, {
-      n: s.pending
-    })];
+    if (s.pending) {
+      // l'envoi groupé arme une minuterie au premier changement : « n modifications à envoyer · dans k min » (jamais « le pilote se demande si c'est parti »)
+      const left = s.nextSendAt ? Math.ceil((s.nextSendAt - Date.now()) / 6e4) : 0;
+      return ['pending', s.nextSendAt ? left > 0 ? t(T.sync.pendingIn, {
+        n: s.pending,
+        m: String(left)
+      }) : t(T.sync.pendingSoon, {
+        n: s.pending
+      }) : t(T.sync.pending, {
+        n: s.pending
+      })];
+    }
     return ['ok', s.lastSync ? t(T.sync.ago, {
       d: ago(s.lastSync)
     }) : t(T.sync.ok)];
@@ -2831,17 +2866,25 @@
       n: s.pending,
       e: s.lastError ? ` — ${errText(s.lastError)}` : ''
     }) + queue;
-    const key = JSON.stringify([state, label, title]);
+    const heldNote = s.held ? `\n${t(T.sync.heldNote)}` : '';
+    const key = JSON.stringify([state, label, title + heldNote]);
+    // le compte à rebours de l'envoi groupé se redessine chaque quinzaine de secondes tant qu'il est armé
+    if (s.nextSendAt && s.pending && !syncCountdown) syncCountdown = setInterval(() => FD.status().then(paintSync).catch(() => {}), 15e3);
+    else if ((!s.nextSendAt || !s.pending) && syncCountdown) {
+      clearInterval(syncCountdown);
+      syncCountdown = 0;
+    }
     if (key === lastSyncState) return;
     lastSyncState = key;
     const b = $('fSync');
     b.dataset.state = state;
-    b.title = title;
+    b.title = title + heldNote;
     b.setAttribute('aria-label', label);
     b.querySelector('.f-lbl').textContent = label;
     fitStale(); // le texte de la synchronisation a changé : le cartouche se remet à sa taille
   }
-  let rewrittenSaid = false;
+  let rewrittenSaid = false,
+    syncCountdown = 0;
   /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
   async function syncNow(quiet = false) {
     const r = await FD.sync();
@@ -3095,7 +3138,8 @@
   let levelsP = null; // relevé des niveaux en cours (readLevels)
   let menuKey = '',
     menuActive = '',
-    menuScreen = '';
+    menuScreen = '',
+    menuView = ''; // la vue demandée par l'adresse (?view=…) : sépare deux entrées d'un même module (Missions, Registre)
   /** Modules du menu au niveau de l'appareil (meta.level ≤ niveau) ; un module au niveau encore inconnu est montré. */
   const visibleModules = () => APP.modules.filter(m => (moduleLevel[m.id] ?? 1) <= level);
   /** Niveau (meta.level) et vue fixe (meta.fixed) déclarés par chaque module, puis menu et barre redessinés ; module
@@ -3128,7 +3172,7 @@
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
       // liens de l'application (écran du cadre « #… » ou page de la suite, dans le même onglet) après ses modules
-      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}${m.query ? `?${esc(m.query)}` : ''}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}" title="${esc(t(m.label))}">${icon(m.icon)}<span class="f-nav-lab">${esc(t(m.label))}</span></a></li>`).join('') +
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}${m.query ? `?${esc(m.query)}` : ''}" data-id="${esc(m.id)}" data-view="${esc(new URLSearchParams(m.query || '').get('view') || '')}" data-landmark="${esc(m.id)}" title="${esc(t(m.label))}">${icon(m.icon)}<span class="f-nav-lab">${esc(t(m.label))}</span></a></li>`).join('') +
         links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings" title="${esc(t(l.label))}">${icon(l.icon)}<span class="f-nav-lab">${esc(t(l.label))}</span></a></li>`).join('') +
         // les pages de la V2 : toujours la dernière entrée, séparée par un filet, teinte atténuée (frame.css .f-legacy)
         `<li class="f-legacy"><a href="#legacy" data-link="legacy" data-landmark="settings" title="${esc(t(LEGACY.label))}">${icon('file')}<span class="f-nav-lab">${esc(t(LEGACY.label))}</span></a></li>`;
@@ -3136,8 +3180,10 @@
     // une seule entrée marquée, comme dans la barre : le lien de l'écran du cadre ouvert (Administration, Aide), ou le module
     const scr = shownScreen(active, screen) ? screenBase(screen) : '';
     for (const a of ul.querySelectorAll('a')) {
-      const on = scr ? !!a.dataset.link && (a.getAttribute('href') || '').replace(/^#/, '').split('?')[0] === scr : a.dataset.id ===
-        active;
+      // deux entrées d'un même module (une vue de lui : Missions et Registre) : la vue de l'adresse départage ; un module à une seule entrée n'a pas besoin de vue
+      const twins = !scr && a.dataset.id && ul.querySelectorAll(`a[data-id="${CSS.escape(a.dataset.id)}"]`).length > 1,
+        on = scr ? !!a.dataset.link && (a.getAttribute('href') || '').replace(/^#/, '').split('?')[0] === scr : a.dataset.id === active &&
+        (!twins || (a.dataset.view || '') === menuView);
       if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
         'aria-current');
     }
@@ -3484,6 +3530,7 @@
     const view = $('fView');
     dropOverlays();
     view.replaceChildren();
+    menuView = String(h.query?.view || '');
     renderMenu(id, id);
     paintPaneButton(null);
     if (DOCS.includes(id) || ROUTES[id]) paintFixed(''); // un écran du cadre défile comme une page

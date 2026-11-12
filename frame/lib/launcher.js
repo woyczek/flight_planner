@@ -88,6 +88,8 @@ export function launcherClient({
   fetch: get = (...a) => fetch(...a),
   xhr: newXhr = () => new XMLHttpRequest(),
   onLost = () => {}, // un envoi qui échoue par le réseau (le lanceur ne répond plus) : le cadre le marque (SOG-0208)
+  before =
+  null, // SOG-0279 : appelé (et attendu) avant de lancer un travail du lanceur, qui lit data/ : le cadre y envoie ce qui attend, pour que le travail ne lise pas une copie vieille de cinq minutes
   poll = 1000
 }) {
   async function request(route, {
@@ -224,6 +226,8 @@ export function launcherClient({
     async function job(route, body, opts = {}) {
       const r = routeOf(route);
       if (!r || !under(r, routes)) return refuse(route);
+      if (typeof before === 'function') await Promise.resolve(before(r)).catch(
+        () => {}); // un envoi qui échoue ne bloque pas le travail : il part avec ce que data/ porte
       const who = String(author() || ''),
         s = await call(r, body && typeof body === 'object' && !Array.isArray(body) ? {
           ...body,
