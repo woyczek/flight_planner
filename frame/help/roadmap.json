@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "65d19e7",
+  "organisation": "6777191",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -2654,11 +2654,12 @@
     {
      "id": "SOG-0249",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Anciennes pages (V2) : il manque le parser des performances de carburant",
      "en": "Old pages (V2): the fuel performance parser is missing",
      "de": "Old pages (V2): the fuel performance parser is missing",
-     "es": "Old pages (V2): the fuel performance parser is missing"
+     "es": "Old pages (V2): the fuel performance parser is missing",
+     "test": true
     },
     {
      "id": "SOG-0267",

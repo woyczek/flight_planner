@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 147,
+  "tests": 148,
   "verdicts": 59
  },
  "apps": [
@@ -1914,6 +1914,20 @@
    "delivered": "2026-11-12T16:30:00Z"
   },
   {
+   "id": "SOG-0249",
+   "app": "maintenance",
+   "title": {
+    "fr": "Anciennes pages (V2) : il manque le parser des performances de carburant",
+    "en": "Old pages (V2): the fuel performance parser is missing",
+    "de": "Old pages (V2): the fuel performance parser is missing",
+    "es": "Old pages (V2): the fuel performance parser is missing"
+   },
+   "test": "Recharge la page. « Anciennes pages (V2) » : le parser des performances de carburant est dans le groupe Carburant ; l'aide de la V2, l'original des pélicandromes et les comptes rendus par famille de mission y sont aussi. Dis-moi s'il manque encore une page V2.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T17:50:42Z"
+  },
+  {
    "id": "SOG-0250",
    "app": "pilote",
    "title": {
@@ -2193,6 +2207,21 @@
     "Ceux de la compagnie du vol (ses réglages : IVAO, VATSIM, hors ligne) ; une ligne par réseau qui a une ATIS",
     "Celui de mon identité (mon VID IVAO ou mon CID VATSIM), quelle que soit la compagnie",
     "Un choix dans le vol (IVAO / VATSIM / hors ligne), retenu d'un vol à l'autre"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0039",
+   "fiche": "SOG-0278",
+   "app": "maintenance",
+   "question": "V3 par défaut sur le site publié : aujourd'hui la V2 est à la racine du site et la V3 sous /v3/. Que fait-on de la racine ?",
+   "context": "Ton téléphone ouvre la V3 à l'adresse …/v3/ : déplacer la V3 changerait cette adresse (application installée, cache). Le lanceur, lui, ouvre déjà la V3. Je ne touche pas à la publication sans ton mot.",
+   "options": [
+    "La racine renvoie vers /v3/ ; la V3 garde son adresse ; les pages V2 gardent les leurs et restent ouvertes depuis « Anciennes pages (V2) »",
+    "La V3 passe à la racine et la V2 sous /v2/ (les adresses changent : téléphone à réinstaller)",
+    "Ne rien changer au site publié pour l'instant"
    ],
    "since": "2026-11-12",
    "state": "todo",
