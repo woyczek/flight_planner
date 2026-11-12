@@ -19,6 +19,7 @@ import sys
 import time
 import types
 import zipfile
+import zip_guard
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(TOOLS)
@@ -172,7 +173,7 @@ def waiting_pickups(data, zones, ctx, held):
         zp = S._latest(dirs, S.PICKUP['sia']['zip'])
         if zp:
             try:
-                with zipfile.ZipFile(zp) as zf:
+                with zip_guard.open_zip(zp) as zf:
                     cycles = [c[1] for i in regen_jobs.zip_check(zf) if not i.is_dir() and (c := aero_cycles.cycled(i.filename.replace('\\', '/').rsplit('/', 1)[-1]))]
             except (zipfile.BadZipFile, OSError, ValueError, regen_jobs.TooLarge):
                 cycles = []

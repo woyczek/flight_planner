@@ -8267,3 +8267,50 @@ def k194(c):
         z = fn(RJ.Job('base', 'coverage', {}), {}, {'data': data})['zones']
         c.eq((z['be']['procedures'], z['be']['has']['procedures'], z['be']['procEmpty'], z['be']['procSources']), (0, False, ['EBBE'], []), 'Belgium: a record with no procedure is not « held »: 0, no hatching, listed in procEmpty', what='empty')
         c.eq((z['ie']['procedures'], z['ie']['procEmpty'], z['ie']['procSources']), (1, [], ['ead-basic']), 'Ireland: the record with a procedure still counts, with its source', what='held')
+
+
+@case('K195', 'Zips we did not write are opened through ONE guard that reads the end-of-directory record before building the directory (SOG-0273 review): a zip of more than MAX_MEMBERS entries in a scanned folder is ignored/refused without being opened; an FRA archive that would make more than 6 files be taken is refused', 'K', static=True,
+      rule='Sécurisation review 12 Nov 2026 (proved on aero_fetch.eaip_manual): `zipfile.ZipFile` builds the whole directory in memory before any check (250 000 entries: 138 MB; a trapped 1.5 GB zip with tens of millions: several GB); every .zip of Downloads up to 1.5 GB was opened by name-blind scans (eaip_manual, eaip_annexe15.read_package, the pickups, base_state). `tools/zip_guard.open_zip` applies the entry count and directory size of the end record (zip64 included) before opening; all those openings now go through it. And the FRA archive branch had no ceiling on `take`: 500 distinct names of the cycle in force were 500 files of up to 32 MB each; now more than 6 is refused (`unrecognised`).')
+def k195(c):
+    import io
+    import sys
+    import tempfile
+    import zipfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    import aero_fetch
+    import base_upload
+    import eaip_annexe15 as core
+    import zip_guard
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        big = td / 'big.zip'
+        with zipfile.ZipFile(big, 'w', zipfile.ZIP_STORED, allowZip64=True) as z:
+            for i in range(zip_guard.MAX_MEMBERS + 1):
+                z.writestr(f'x{i}', b'')
+        small = td / 'small.zip'
+        with zipfile.ZipFile(small, 'w') as z:
+            z.writestr('a.txt', 'x')
+        try:
+            zip_guard.open_zip(str(big))
+            said = 'opened'
+        except zipfile.BadZipFile as e:
+            said = str(e)
+        c.eq((said, zip_guard.directory(str(big))[0], len(zip_guard.open_zip(str(small)).namelist())), ('trop de membres', zip_guard.MAX_MEMBERS + 1, 1), 'the directory count is read from the end record: more than MAX_MEMBERS is refused before the directory is built; a small zip opens', what='guard')
+        dl = td / 'dl'
+        dl.mkdir()
+        (dl / 'EAIP ISO.zip').write_bytes(big.read_bytes())
+        found, refused = aero_fetch.eaip_manual(core.PROFILES['pt'], lambda: [str(dl)])
+        c.ok(found == [] and not any('Traceback' in r for r in refused), str((found, refused)), 'an eAIP scan of a folder holding such a zip: nothing found, no exception, the zip is said refused or ignored')
+        # FRA archive: more than 6 workbooks of the cycle in force
+        fra = td / 'fra.zip'
+        with zipfile.ZipFile(fra, 'w') as z:
+            for i in range(500):
+                z.writestr(f'eurocontrol-airac-2611-fra-points-{i}.xlsx', 'x')
+        import datetime
+        try:
+            base_upload.recognise(str(fra), 'download.zip', today=datetime.date(2026, 11, 12))
+            r = 'taken'
+        except base_upload.Refused as e:
+            r = e.reason
+        c.eq(r, 'unrecognised', '500 workbooks of the cycle in force: refused (a real archive carries one or two)', what='fra cap')

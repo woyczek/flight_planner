@@ -37,6 +37,7 @@ SUB_NAME = re.compile(r'^28DaySubscription_Effective_(\d{4}-\d{2}-\d{2})(?: \(\d
 INNER_MEMBER = re.compile(r'^CSV_Data/\d{2}_[A-Z][a-z]{2}_\d{4}_CSV\.zip\Z', re.A)      # son zip de jeux CSV (tools/faa_nasr.py INNER_MEMBER)
 NASR_MEMBER = {'FIX': 'FIX_BASE.csv', 'AWY': 'AWY_SEG_ALT.csv', 'NAV': 'NAV_BASE.csv'}
 FRA_MEMBER = re.compile(r'^(?:.*/)?(eurocontrol-airac-(\d{4})-fra-points-[A-Za-z0-9-]+\.xlsx)\Z', re.I | re.A)      # SOG-0273 : un zip de classeurs FRA (l'historique des cycles, 41 classeurs) : seuls ceux du cycle en vigueur et du suivant sont pris, sur place
+FRA_TAKE_MAX = 6                   # classeurs pris au plus dans une archive FRA
 TAKE_MAX = 32 * 1024 * 1024        # un classeur pris dans une archive : 1,6 Mo aujourd'hui
 RAD_NAME = re.compile(r'^RAD_\d{4}_v[\d_]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)      # tools/route_engine/import_books.py RAD_NAME / FRA_NAME : les classeurs d'EUROCONTROL, sous leur nom d'origine
 FRA_NAME = re.compile(r'^eurocontrol-airac-\d{4}-fra-points-[A-Za-z0-9-]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)
@@ -68,35 +69,9 @@ def _date_ok(text):
 
 
 def _directory(path):
-    """(nombre d'entrées, taille de l'annuaire en octets) lus dans l'enregistrement de fin du zip — les derniers octets du fichier, zip64 compris — SANS construire l'annuaire (zipfile.ZipFile le charge entier avant tout contrôle) ; None si l'enregistrement est introuvable (ZipFile dira BadZipFile)."""
-    with open(path, 'rb') as f:
-        f.seek(0, os.SEEK_END)
-        size = f.tell()
-        back = min(size, 22 + 65535)
-        f.seek(size - back)
-        tail = f.read(back)
-        i = tail.rfind(b'PK\x05\x06')
-        if i < 0 or len(tail) - i < 22:
-            return None
-        count, cd = struct.unpack('<HI', tail[i + 10:i + 16])
-        at = size - back + i                      # la place de l'enregistrement de fin dans le fichier
-        if at >= 20 + 56:
-            f.seek(at - 20)
-            loc = f.read(20)
-            if loc[:4] == b'PK\x06\x07':          # un localisateur zip64 le précède : le vrai nombre et la vraie taille sont dans l'enregistrement zip64 qu'il désigne (zipfile le suit : des « données étendues » peuvent s'intercaler avant lui)
-                reloff = struct.unpack('<Q', loc[8:16])[0] if len(loc) == 20 else -1
-                found = None
-                for pos in {reloff, at - 20 - 56}:       # le décalage du localisateur ET la place fixe (juste avant lui) : selon la version de Python, zipfile suit l'un ou l'autre ; on retient le plus grand des deux
-                    if 0 <= pos <= at - 20 - 56:
-                        f.seek(pos)
-                        rec = f.read(56)
-                        if len(rec) == 56 and rec[:4] == b'PK\x06\x06':
-                            got = struct.unpack('<QQ', rec[32:48])
-                            found = got if not found else (max(found[0], got[0]), max(found[1], got[1]))
-                if not found:
-                    return MAX_MEMBERS + 1, CD_MAX + 1      # un zip64 dont l'enregistrement ne se trouve nulle part : refusé sans l'ouvrir
-                count, cd = found
-        return count, cd
+    """Voir zip_guard.directory (le même contrôle, partagé avec les zips des dossiers scannés)."""
+    import zip_guard
+    return zip_guard.directory(path)
 
 
 def _eaip_package(path, names, kind):
@@ -174,6 +149,8 @@ def recognise(path, hint='', today=None):
             if len(fra) >= 2 and '[Content_Types].xml' not in names:       # une archive de classeurs FRA : ceux du cycle en vigueur et du suivant, reconnus par leur nom de membre
                 ids = _airac_ids(today)
                 take = [(n, base) for n, base, cid in fra if cid in ids]
+                if len(take) > FRA_TAKE_MAX:          # Sécurisation (12/11) : une vraie archive en porte un ou deux par cycle ; 500 noms du cycle = 500 fichiers de 32 Mo posés : refusé
+                    raise Refused('unrecognised', f'trop de classeurs FRA du cycle dans cette archive ({len(take)} : une archive en porte un ou deux par cycle)', EXPECTED)
                 if not take:
                     raise Refused('unrecognised', f'aucun classeur FRA du cycle en vigueur ({ids[0]}) ni du suivant ({ids[1]}) dans cette archive', EXPECTED)
                 return {'source': 'eurocontrol_rad', 'kind': 'fra', 'zone': '', 'name': take[0][1], 'cycle': None, 'take': take}

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Security review (12 Nov): zips we did not write, FRA archive ceiling, ISO pages** — `tools/zip_guard.py`: `open_zip(path)` reads the entry count and directory size of the end record (zip64 included) BEFORE `zipfile.ZipFile` builds the directory in memory, and refuses (`BadZipFile`) more than 200,000 entries or a 64 MB directory; the eAIP scan of Downloads, `read_package`, the pickups, `base_state`, the LFV and NASR readers all open zips through it. The FRA archive branch of the upload takes at most 6 workbooks (more: `unrecognised`). The ISO path takes at most 2,000 ENR pages and 32,000 files. K195.
 - **Map: a direct leg is dotted, a leg on an airway is solid with the airway's sign** — from the flight's `via` (maps DECISIONS; noreg D186; SOG-0095).
 - **Map: a taxiway is highlighted under the pointer and its row comes into view in the ground list** — a taxiway wide and light on the map, a stand or a hold ringed, its row marked and scrolled into view in the bottom panel (maps DECISIONS; noreg D185; SOG-0254).
 - **Fuel: the probable runway from the METAR is said** at the head of the lists, with « Prendre la piste probable », never set by itself (Fuel DECISIONS, help; noreg F148, F149; SOG-0090).

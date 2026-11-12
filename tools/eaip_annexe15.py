@@ -220,6 +220,7 @@ def page_url(profile, name):
 # Les pages sont retrouvées par leur TITRE (« AIP for PORTUGAL … (section ENR-4.4) valid from 26 NOV 2026 »), jamais par leur nom : l'ISO du Portugal est de niveau 1 (noms 8.3 : « LP_ENR31.HTM ») et un zip ou un dossier de Windows
 # peut porter n'importe quel nom. Un fichier d'un tel paquet est une ENTRÉE NON FIABLE : tout est borné et chaque refus dit sa raison en clair (ValueError).
 PKG_MAX_BYTES = 1536 * 1024 * 1024      # un paquet (zip ou ISO) plus gros : refusé avant d'être ouvert
+ISO_MAX_PAGES = 2000                    # pages ENR prises dans une image ISO (Sécurisation 12/11 : le chemin ISO n'avait pas le plafond du zip et du dossier ; chaque lecture d'un membre déflaté relance la décompression)
 PKG_MAX_FILES = 8000                    # fichiers regardés dans un dossier ou un zip
 PAGE_MAX = 8 * 1024 * 1024              # une page d'eAIP : 0,5 Mo (ENR 3.3) ; au-delà, ce n'est pas la page attendue
 HEAD = 4096
@@ -290,8 +291,13 @@ def _too_big():
 def pages_of_iso(iso):
     """Pages ENR d'une image ISO 9660 (tools/iso9660.py), sans la monter : { chemin dans l'image : lecteur(limite) }."""
     out = {}
-    for path, entry in iso.walk().items():
+    walked = iso.walk()
+    if len(walked) > PKG_MAX_FILES * 4:
+        raise ValueError('image ISO refusée : trop de fichiers')
+    for path, entry in walked.items():
         if _is_enr_page(path):
+            if len(out) >= ISO_MAX_PAGES:
+                raise ValueError('image ISO refusée : trop de pages ENR')
             out[path] = (lambda n, e=entry: iso.read((e[0], min(e[1], n)), PAGE_MAX) if e[1] <= PAGE_MAX else _too_big())
     return out
 
@@ -327,6 +333,7 @@ def read_package(profile, path):
     """Lit un eAIP pris à la main : `path` est un zip (qui porte une ISO, ou le dossier de l'eAIP), une ISO, ou un dossier extrait. Rend (page ENR 4.4, [pages de routes], édition) ; ValueError dit POURQUOI en clair (« ISO illisible : … »,
     « aucune page de … », « zip illisible »…). Ne lit que ce que le profil attend ; jamais d'exécution ; tout est borné."""
     import zipfile
+    import zip_guard
     import iso9660
     try:
         if os.path.isdir(path):
@@ -338,7 +345,7 @@ def read_package(profile, path):
             head = f.read(4)
         if head[:4] == b'PK\x03\x04':
             try:
-                zf = zipfile.ZipFile(path)
+                zf = zip_guard.open_zip(path)
             except (zipfile.BadZipFile, OSError) as e:
                 raise ValueError(f'zip illisible : {e}') from None
             with zf:

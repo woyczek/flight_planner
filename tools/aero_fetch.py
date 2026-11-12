@@ -414,6 +414,7 @@ def eaip_candidates(prof, downloads):
     """Les eAIP pris à la main qui SE PRÉSENTENT dans les dossiers du lanceur, sans rien lire de leur contenu : [(chemin, nom, date du fichier)] — un zip qui porte une ISO ou le dossier de l'eAIP, une image .iso, un dossier avec `eAIP/html/eAIP/` ; au plus 40.
     C'est ce que base/status regarde pour dire « un fichier attend dans Téléchargements » (pickup-waiting) ; eaip_manual les lit."""
     import zipfile
+    import zip_guard
     import eaip_annexe15 as core
     out = []
     for folder in (downloads() if callable(downloads) else []):
@@ -431,7 +432,7 @@ def eaip_candidates(prof, downloads):
                 elif low.endswith('.iso') and os.path.isfile(p):
                     looks = True
                 elif low.endswith('.zip') and os.path.isfile(p) and os.path.getsize(p) <= core.PKG_MAX_BYTES:
-                    with zipfile.ZipFile(p) as zf:
+                    with zip_guard.open_zip(p) as zf:
                         infos = zf.infolist()
                         looks = (len(infos) <= 2 and any(i.filename.lower().endswith('.iso') for i in infos)) or any('eaip/html/eaip' in i.filename.replace('\\', '/').lower() for i in infos[:5000])
                 if looks:

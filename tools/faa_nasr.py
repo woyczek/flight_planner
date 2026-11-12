@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import zipfile
+import zip_guard
 
 PAGE = 'https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/'
 HOST = 'nfdc.faa.gov'
@@ -61,7 +62,7 @@ def sub_blobs(path):
     """Les trois jeux CSV d'un abonnement complet déposé : le zip CSV_Data/<JJ>_<Mon>_<AAAA>_CSV.zip est lu SUR PLACE (l'annuaire du gros zip, puis ce seul membre) et rendu trois fois : [FIX, AWY, NAV] au sens de
     convert() (chaque zip porte ses trois fichiers). ValueError, avec la raison, si le fichier n'est pas un abonnement NASR."""
     try:
-        with zipfile.ZipFile(path) as z:
+        with zip_guard.open_zip(path) as z:
             members = [i for i in z.infolist() if INNER_MEMBER.fullmatch(i.filename)]
             if len(members) != 1:
                 raise ValueError('abonnement NASR non reconnu : pas de zip CSV_Data/<jour>_<mois>_<année>_CSV.zip')

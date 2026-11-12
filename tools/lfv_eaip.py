@@ -20,6 +20,7 @@ import os
 import re
 import sys
 import zipfile
+import zip_guard
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import eaip_annexe15 as core  # noqa: E402  (le noyau commun : dms, level_ft, GeoJSON, nom de fichier)
@@ -120,7 +121,7 @@ def read_member(z, name):
 def convert(path):
     """(GeoJSON, date de l'édition, nombre de points, nombre de tronçons, nombre de routes) d'après l'archive LFV ; lève ValueError si ce n'est pas l'AIP de la Suède (page de couverture, ENR 4.4 absents) ou si une page
     ne donne rien (mise en page changée) ou trop de choses."""
-    with zipfile.ZipFile(path) as z:
+    with zip_guard.open_zip(path) as z:
         names = set(z.namelist())
         if COVER not in names or ENR44 not in names:
             raise ValueError('ce n’est pas l’eAIP hors ligne de LFV (page de couverture ou ENR 4.4 absents)')

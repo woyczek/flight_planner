@@ -47,6 +47,7 @@ import subprocess
 import sys
 import time
 import zipfile
+import zip_guard
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(TOOLS)
@@ -1078,7 +1079,7 @@ def pickup(job, args, ctx):
                 continue
             if os.path.getsize(zp) > PICKUP_MAX:
                 raise regen_jobs.TooLarge(f'zip over {PICKUP_MAX // 1048576} MB')
-            with zipfile.ZipFile(zp) as zf:
+            with zip_guard.open_zip(zp) as zf:
                 infos = regen_jobs.zip_check(zf)  # taille décompressée plafonnée avant toute lecture
                 pick = {}
                 for i in infos:
