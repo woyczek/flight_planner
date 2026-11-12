@@ -18,7 +18,7 @@
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
   //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
-  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedure(id), runways(oaci), procedureStats(), procedureIndex(), coverage(oaci), coverageByState(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
+  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), natState(), natEnsure(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedure(id), runways(oaci), procedureStats(), procedureIndex(), coverage(oaci), coverageByState(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
   //   find(texte, n), coords(ident),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
   //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
@@ -453,7 +453,11 @@
     // une promesse sans fin (31 oct. 2026 : une part lue sous charge pouvait rester pendante, aléa D86 / D87)
     readWait = 10e3
   } = {}) {
-    const loaded = new Map(), // zone → { id, cycle, split, base | data, parts, reads, idx } ; chargée une fois
+    const natRefresh = {
+        p: null,
+        failedAt: -Infinity
+      }, // routes NAT reprises à la demande (SOG-0263) : un travail à la fois, pas deux essais à moins de 5 minutes
+      loaded = new Map(), // zone → { id, cycle, split, base | data, parts, reads, idx } ; chargée une fois
       loading = new Map(), // zone → promesse de chargement
       missing = new Set(), // zones sans fichier publié (sondées en vain)
       listeners = new Set(),
@@ -2664,6 +2668,74 @@
       async nat() {
         const z = await loadZone('nat');
         return (z && (await part(z, 'meta')).natTracks) || null;
+      },
+      /** Validité des tracks NAT prises (SOG-0263), sans rien demander au réseau : { present, count, from, validUntil (ISO UTC, la fin de validité la plus tardive), expired (vrai : aucune n'est plus valide ; null : validité inconnue),
+       *  current (nombre de tracks valides maintenant) } : la ligne des routes NAT dit « valides jusqu'à 19 h 00Z » ou « périmées ». */
+      async natState() {
+        const ts = (await api.nat())?.tracks || [],
+          t = now(),
+          ms = x => {
+            const v = Date.parse(x);
+            return Number.isFinite(v) ? v : null;
+          };
+        if (!ts.length) return {
+          present: false,
+          count: 0,
+          from: null,
+          validUntil: null,
+          expired: null,
+          current: 0
+        };
+        const ends = ts.map(x => ms(x.to)).filter(v => v !== null),
+          starts = ts.map(x => ms(x.from)).filter(v => v !== null);
+        return {
+          present: true,
+          count: ts.length,
+          from: starts.length ? new Date(Math.min(...starts)).toISOString() : null,
+          validUntil: ends.length ? new Date(Math.max(...ends)).toISOString() : null,
+          expired: ends.length ? Math.max(...ends) < t : null,
+          current: ts.filter(x => (ms(x.to) ?? Infinity) >= t && (ms(x.from) ?? -Infinity) <= t).length
+        };
+      },
+      /** Les routes NAT valides, reprises à la demande (SOG-0263) : si celles que l'on détient sont périmées (ou absentes) et que le lanceur est là (poste du pilote, pas de paire), il les reprend — téléchargement puis construction de la zone « nat »,
+       *  UN seul travail à la fois, pas deux essais à moins de 5 minutes — puis l'état est relu. Aucun minuteur : on l'appelle quand la couche NAT est affichée ou quand la ligne est ouverte. Rend l'état de natState() avec `refreshed` (une reprise a eu lieu)
+       *  et `ok` (elle a abouti ; absent si rien n'a été demandé). */
+      async natEnsure() {
+        const s0 = await api.natState();
+        if (s0.expired === false || typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan || natRefresh
+          .p || now() - natRefresh.failedAt < 300000)
+          return {
+            ...s0,
+            refreshed: false
+          };
+        natRefresh.p = (async () => {
+          try {
+            const res = (await launcher.job('regen/job', {
+              set: 'base',
+              verb: 'update',
+              args: {
+                zones: ['nat'],
+                personal: [],
+                fetch: true
+              }
+            }))?.result;
+            if (res?.ok === false) throw new Error('nat refresh failed');
+            return true;
+          } catch {
+            natRefresh.failedAt = now();
+            return false;
+          } finally {
+            natRefresh.p = null;
+          }
+        })();
+        const ok = await natRefresh.p;
+        loaded.delete('nat');
+        missing.delete('nat');
+        return {
+          ...(await api.natState()),
+          refreshed: true,
+          ok
+        };
       },
       /** Axes AAR prêts à dessiner (aar.js : hippodromes, branches des axes lourds) des zones ouvertes ; refaits seulement
        *  quand les XML des zones ouvertes changent. */

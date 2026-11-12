@@ -2677,3 +2677,28 @@ def k185(c):
     c.eq((j['page'], j['files']), ('https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/2026-11-26/',
                                    [['28DaySubscription_Effective_<AAAA-MM-JJ>.zip', 'https://nfdc.faa.gov/webContent/28DaySub/28DaySubscription_Effective_2026-11-26.zip', True]]),
          'the FAA: ONE file, the full subscription of the cycle; its page and its address are those of the cycle', what='faa')
+
+
+@case('K187', 'NAT routes on demand, launcher side (SOG-0263): base/update { zones: [nat], fetch: true } downloads the NAT message and builds the nat zone — the verb natEnsure() asks for; the tracks keep the validity (from, to) of their message', 'K', static=True,
+      rule='SOG-0263 (12 Nov 2026): the page asks the launcher for base/update on the nat zone when the routes it holds are expired (AeroDb.natEnsure, K186). This case checks the launcher side: the arguments are admitted (zones [nat], personal [], fetch), the NAT message is downloaded, nat_tracks.json is written with the validity of the message (from, to per track), the nat zone is handed to the build; nothing else is fetched (no other zone, no cycle file).')
+def k187(c):
+    RJ, BS, AF, DS = _mods()
+    update, check_u = RJ.REGISTRY[('base', 'update')]
+    msg = json.dumps([{'transaction_type': 'NAT_TRACK', 'icao_id': 'EGGX', 'notam_number_formatted': 'EGGX1112/26', 'part_no': 1, 'start_datetime': '2026-11-12T11:30:00Z', 'end_datetime': '2026-11-12T19:00:00Z',
+                       'condition_message': 'A ALPHA BRAVO 50/20\nEAST LVLS 350 360\nWEST LVLS NIL\nNAR NIL\n'}]).encode()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td, {})
+        ctx = _ctx(DS, data)
+        asked = []
+        ctx['build'] = lambda job, a, cx: (asked.append(list(a['zones'])), {'ok': True, 'built': list(a['zones']), 'failed': []})[1]
+        net = _Net(AF, {'datanat/nat.json': msg})
+        arg = check_u({'zones': ['nat'], 'personal': [], 'fetch': True})
+        c.ok(arg is not None, str(arg), 'the arguments of natEnsure() are admitted by base/update')
+        with net:
+            res = update(RJ.Job('base', 'update', {}), arg, ctx)
+        f = (res.get('fetched') or {})
+        doc = json.loads((data / 'sia' / 'zones' / 'nat' / 'nat_tracks.json').read_text(encoding='utf-8'))
+        t = doc['tracks'][0]
+        c.eq((f.get('ok'), f.get('fetched'), len(doc['tracks']), t['from'], t['to']), (True, ['nat'], 1, '2026-11-12T11:30:00Z', '2026-11-12T19:00:00Z'), 'the NAT message is taken; the track keeps the validity of its message', what='fetch')
+        c.eq((asked, res.get('built')), ([['nat']], ['nat']), 'the nat zone, and only it, is handed to the build', what='build')
+        c.ok(all('datanat' in u or 'nat' in u.lower() for u, _ in net.calls), str([u for u, _ in net.calls]), 'nothing else was downloaded')

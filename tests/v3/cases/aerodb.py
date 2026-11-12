@@ -8111,3 +8111,52 @@ def k184(c):
         # the cleanup counts a subscription as one complete set
         g2, _ = upload_cleanup._groups(['28DaySubscription_Effective_2026-11-26.zip', '29_Oct_2026_FIX_CSV.zip'], 'us')
         c.eq({k: [(cy, ns) for cy, ns in v] for k, v in g2.items()}, {'nasr': [('2026-11-26', ['28DaySubscription_Effective_2026-11-26.zip'])]}, 'the cleanup: a subscription is a complete set; one set alone (FIX only) never enters the count', what='cleanup')
+
+
+@case('K186', 'NAT routes (SOG-0263): natState() says their validity (until when, expired or not, how many are valid now) without asking the network; natEnsure() takes them again ON DEMAND when expired — one job, no timer, nothing on a paired workstation, no new try within 5 minutes after a failure', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0263 (12 Nov 2026): the NAT tracks change twice a day; the launcher took them only on « Mettre à jour » and the file of the workstation was two days old; the row had an « Ouvrir » that showed raw JSON. Decision of the ergonomist: no timer in the launcher; the routes are taken again when needed (layer shown, row opened) if their validity is past; the row says « valid until … » or « expired ». natState() reads the validity of each track (from, to) in the zone already open; natEnsure() asks the launcher for base/update { zones: [nat], fetch } once, then reads again. The A → B computation does not read the NAT tracks (checked 12 Nov): only the layers of the Map show them.')
+def k186(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const old = [{ id: 'A', route: ['61/20'], from: '2026-11-10T11:30:00Z', to: '2026-11-10T19:00:00Z' }, { id: 'B', route: ['62/20'], from: '2026-11-10T11:30:00Z', to: '2026-11-10T19:00:00Z' }];
+      const fresh = [{ id: 'C', route: ['61/20'], from: '2026-11-12T11:30:00Z', to: '2026-11-12T19:00:00Z' }];
+      const mk = (launcher, at, start = old) => {
+        let tracks = start;
+        const reader = { read: async p => /\/nat\/[^/]+\/meta\.json$/.test(p) ? { value: { data: { natTracks: { tracks } } }, rev: String(tracks.length) + tracks[0].id } : null, list: async () => ['sia/base/nat/2026-10-29/meta.json'], watch: () => () => {} };
+        const t = { v: Date.parse(at) };
+        const db = AeroDB.create({ reader, launcher: launcher && launcher(() => { tracks = fresh; }), lnmperf: false, now: () => t.v });
+        return { db, t };
+      };
+      const calls = [];
+      const local = (swap, fail) => ({ info: () => ({ launcher: true }), job: async (route, body) => { calls.push(JSON.stringify(body)); if (fail) throw new Error('down'); swap(); return { result: { ok: true } }; } });
+      const out = {};
+      let m = mk(null, '2026-11-12T12:00:00Z');
+      out.expired = await m.db.natState();
+      m = mk(null, '2026-11-10T15:00:00Z');
+      out.valid = await m.db.natState();
+      out.validEnsure = (await mk(local, '2026-11-10T15:00:00Z').db.natEnsure()).refreshed;
+      out.callsAfterValid = calls.length;
+      m = mk(local, '2026-11-12T12:00:00Z');
+      const [e1, e2] = await Promise.all([m.db.natEnsure(), m.db.natEnsure()]);
+      out.ensure = { refreshed: e1.refreshed, ok: e1.ok, expired: e1.expired, count: e1.count, validUntil: e1.validUntil, second: e2.refreshed };
+      out.calls = calls.slice();
+      calls.length = 0;
+      out.paired = (await mk(() => ({ info: () => ({ lan: true }), job: async () => { calls.push('x'); return {}; } }), '2026-11-12T12:00:00Z').db.natEnsure()).refreshed;
+      out.pairedCalls = calls.length;
+      calls.length = 0;
+      m = mk(f => local(f, true), '2026-11-12T12:00:00Z');
+      const f1 = await m.db.natEnsure();
+      m.t.v += 60e3;
+      const f2 = await m.db.natEnsure();
+      m.t.v += 301e3;
+      const f3 = await m.db.natEnsure();
+      out.fail = { first: [f1.refreshed, f1.ok], second: f2.refreshed, third: f3.refreshed, calls: calls.length };
+      return out;
+    }""")
+    c.eq((r['expired']['present'], r['expired']['expired'], r['expired']['count'], r['expired']['current'], r['expired']['validUntil']), (True, True, 2, 0, '2026-11-10T19:00:00.000Z'), 'two days later: the routes are expired, 0 valid, until when they were', what='expired')
+    c.eq((r['valid']['expired'], r['valid']['current'], r['valid']['from']), (False, 2, '2026-11-10T11:30:00.000Z'), 'inside their validity: not expired, both valid now', what='valid')
+    c.eq((r['validEnsure'], r['callsAfterValid']), (False, 0), 'valid routes: natEnsure asks nothing', what='no call')
+    c.eq((r['ensure'], len(r['calls']), r['calls'][0]), ({'refreshed': True, 'ok': True, 'expired': False, 'count': 1, 'validUntil': '2026-11-12T19:00:00.000Z', 'second': False}, 1, '{"set":"base","verb":"update","args":{"zones":["nat"],"personal":[],"fetch":true}}'),
+         'expired: ONE job (two simultaneous calls share it), base/update on the nat zone, then the new routes are read', what='refresh')
+    c.eq((r['paired'], r['pairedCalls']), (False, 0), 'a paired workstation (not the launcher\'s own): nothing is asked', what='paired')
+    c.eq(r['fail'], {'first': [True, False], 'second': False, 'third': True, 'calls': 2}, 'a failure is said (ok false); no new try within 5 minutes; after that, one more', what='failure')
