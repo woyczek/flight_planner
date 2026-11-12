@@ -6055,5 +6055,7 @@ def d_direct(c):
     a = xy(c, 44.9, 2.4)
     c.page.mouse.click(*a)
     c.until("() => !window.__mp.S.cardEl.hidden && !!window.__mp.S.cardEl.querySelector('[data-direct=\"NEPIX\"]')", timeout=6000, what='the card of the route point NEPIX has the button')
+    # Fuel takes `direct`, `lat` and `lon` once and removes them from the address (replaceState, no hashchange): the addresses gone through are noted, not the last one
+    c.js("() => { window.__hashes = []; addEventListener('hashchange', () => window.__hashes.push(location.hash)); return true }")
     c.tap('.mp-pcard [data-direct]')
-    c.until("() => location.hash.startsWith('#fuel?direct=NEPIX&lat=44.90000&lon=2.40000')", timeout=8000, what='the click composes Fuel’s address and goes there')
+    c.until("() => (window.__hashes || []).some(h => h.startsWith('#fuel?direct=NEPIX&lat=44.90000&lon=2.40000'))", timeout=8000, what='the click composes Fuel’s address and goes there')
