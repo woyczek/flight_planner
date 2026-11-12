@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 134,
+  "tests": 136,
   "verdicts": 60
  },
  "apps": [
@@ -242,6 +242,20 @@
    "state": "ok",
    "delivered": "2026-11-09T16:57:23Z",
    "at": "2026-11-10T09:06:49Z"
+  },
+  {
+   "id": "SOG-0090",
+   "app": "pilote",
+   "title": {
+    "fr": "Piste en service ou probable d'après le METAR du départ et de l'arrivée",
+    "en": "Runway in use or probable from the departure and arrival METAR",
+    "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
+    "es": "Pista en uso o probable según el METAR de salida y llegada"
+   },
+   "test": "Recharge la page. Carburant, section Procédures d'un terrain dont le METAR donne un vent net : au-dessus du choix de la piste, « Piste probable : … (METAR …, vent …) » et « Prendre la piste probable ». La piste n'est pas choisie à ta place ; le lien la prend. Par vent calme ou variable, rien n'est proposé.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:49:39Z"
   },
   {
    "id": "SOG-0125",
@@ -1911,6 +1925,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T10:07:31Z"
+  },
+  {
+   "id": "SOG-0265",
+   "app": "maintenance",
+   "title": {
+    "fr": "Lanceur : les lignes de son journal n'ont pas d'heure",
+    "en": "Launcher: the lines of its log carry no time",
+    "de": "Launcher: the lines of its log carry no time",
+    "es": "Launcher: the lines of its log carry no time"
+   },
+   "test": "Relance le lanceur et regarde sa fenêtre : chaque ligne porte l'heure (HH:MM:SS), et une rafale de lignes identiques (« [sortant] échec … ») tient en une ligne suivie de « ↑ ×n ».",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T15:45:24Z"
   },
   {
    "id": "SOG-0267",

@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "caab3bd",
+  "organisation": "a0dd241",
   "fiches": 279,
   "untranslated": 0,
   "priorities": 243
@@ -580,13 +580,14 @@
     {
      "id": "SOG-0090",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Piste en service ou probable d'après le METAR du départ et de l'arrivée",
      "en": "Runway in use or probable from the departure and arrival METAR",
      "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
      "es": "Pista en uso o probable según el METAR de salida y llegada",
      "milestone": "6.0.0-alpha.6",
-     "rank": 237
+     "rank": 237,
+     "test": true
     },
     {
      "id": "SOG-0247",
@@ -3594,11 +3595,12 @@
     {
      "id": "SOG-0265",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Lanceur : les lignes de son journal n'ont pas d'heure",
      "en": "Launcher: the lines of its log carry no time",
      "de": "Launcher: the lines of its log carry no time",
-     "es": "Launcher: the lines of its log carry no time"
+     "es": "Launcher: the lines of its log carry no time",
+     "test": true
     }
    ]
   },
