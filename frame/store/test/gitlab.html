@@ -444,6 +444,22 @@
       G.st.offline = false;
       ck('publish : hors ligne → { ok: false, offline, at }', po.ok === false && po.offline === true && po.at === 0, JSON.stringify(
         po));
+      // un arbre de plus de dix mille fichiers (le dépôt des données de l'utilisateur en compte 10 441, le 12 nov. 2026) : lu en entier, page par page, rien de tronqué (SOG-0235, téléphone sans lanceur)
+      {
+        const big = {};
+        for (let i = 0; i < 10441; i++) big[`sia/base/fr/${String(i).padStart(5, '0')}.json`] = `[${i}]`;
+        big['airline/index.json'] = '{"airlines":[{"code":"itf"},{"code":"defa"}]}';
+        big['airline/defa/settings.json'] = '{"name":"DEFA Virtual"}';
+        big['airline/defa/fleet.json'] = '{"aircraft":[]}';
+        G.reset(big);
+        G.st.perPage = 100;
+        const h = await T.head(),
+          bt = await T.tree(h);
+        ck('tree : 10 444 fichiers lus en entier, page par page (rien de tronqué, DEFA présente)', Object.keys(bt).length === 10444 && !!bt['airline/defa/settings.json'] && !!bt['airline/defa/fleet.json'] && !!bt['airline/index.json'],
+          Object.keys(bt).length);
+        ck('tree : ce que la lecture a rendu est dit (pages, entrées, fichiers), pour le diagnostic', T.lastTree?.pages === 105 && T.lastTree?.blobs === 10444 && T.lastTree?.entries === 10445, JSON.stringify(T.lastTree));
+        G.st.perPage = 2;
+      }
     } catch (x) {
       ck('exception du banc', false, x?.stack || x);
     }

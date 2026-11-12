@@ -1508,6 +1508,33 @@
     });
   }
 
+  /** Les compagnies vues par l'appareil, pour le diagnostic : { index: { inTree, treeRev, docRev, pending, stale, codes }, files: { code: { settings, fleet } } }. */
+  async function airlineDiagnostic(remote, tree) {
+    const T = tree || {},
+      doc = await idb('docs', 'get', 'airline/index.json').catch(() => null),
+      pend = await idb('pending', 'get', 'airline/index.json').catch(() => null);
+    let codes = [];
+    try {
+      codes = (JSON.parse(doc?.text || 'null')?.airlines || []).map(a => String(a?.code || '')).filter(c => AIRLINE_CODE.test(c)).slice(
+        0, 20);
+    } catch {
+      codes = [];
+    }
+    return {
+      index: {
+        inTree: !!T['airline/index.json'],
+        treeRev: String(T['airline/index.json'] || '').slice(0, 12),
+        docRev: String(doc?.rev || '').slice(0, 12),
+        pending: !!pend,
+        stale: !!doc && !!T['airline/index.json'] && doc.rev !== T['airline/index.json'] && !pend,
+        codes
+      },
+      files: Object.fromEntries(codes.map(c => [c, {
+        settings: !!T[`airline/${c}/settings.json`],
+        fleet: !!T[`airline/${c}/fleet.json`]
+      }]))
+    };
+  }
   // ---------------------------------------------------------------- diagnostic (Réglages › Diagnostic, à copier)
   /** État de la couche pour un rapport : transport, état, arbre du dépôt gardé (tête, date, nombre de fichiers, comparé
    *  ou non à la tête dans cette page), chemins « reference » connus de l'arbre et gardés dans le cache, dernière
@@ -1534,6 +1561,11 @@
         cached: docs.filter(d => d.policy === 'reference').length
       },
       lastReadError,
+      // ce que la dernière lecture de l'arbre du dépôt a rendu (pages, entrées, fichiers) : un arbre lu en entier ? (SOG-0235, téléphone sans lanceur)
+      treeRead: cfg.transport?.lastTree || null,
+      // les compagnies telles que CET appareil les voit (SOG-0235) : l'index dans l'arbre gardé et dans le document gardé (révisions, écriture en attente, copie plus ancienne que l'arbre), les codes qu'il cite, et, pour
+      // chacun, ses deux fichiers dans l'arbre ; jamais le contenu
+      airlines: await airlineDiagnostic(remote, tree),
       // chemins écrits en série depuis le chargement (SOG-0209) : « écritures en série de <chemin> par <module> », dits une fois
       serialWrites: [...serialSeen.values()],
       // les conflits gardés, sans contenu : quel fichier, quand, de quel côté, vu ou non (dix derniers ; SOG-0136 : « 3 conflits », quels fichiers, à quelle heure)

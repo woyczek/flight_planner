@@ -6385,6 +6385,9 @@ def a155(c):
     c.eq(c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].map(n => n.dataset.airline)"), ['itf', 'defa', 'perso'], 'Settings › Company lists itf, defa and perso', what='settings')
     c.eq(c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].map(n => n.textContent).join('|').includes('DEFA Virtual')"), True, 'DEFA Virtual is named there', what='name')
     c.eq(c.js("FrameData.airlines().then(l => l.map(a => a.code))"), ['itf', 'defa', 'perso'], 'FrameData.airlines() gives the three', what='data')
+    # the diagnostic of the device says what it sees of the airlines (the phone without a launcher: « Copy the diagnostic » settles where DEFA is lost): the index (in the tree? the kept document? stale?), the codes it cites, their two files in the tree; never a content
+    dg = c.js("FrameData.diagnostic().then(d => d.airlines)")
+    c.eq([sorted(dg['index']), dg['index']['codes'], sorted(dg['files']), sorted(dg['files']['defa'])], [['codes', 'docRev', 'inTree', 'pending', 'stale', 'treeRev'], ['itf', 'defa'], ['defa', 'itf'], ['fleet', 'settings']], 'the diagnostic carries the airlines block: the index and, for each airline, its files in the tree', what='diagnostic')
     c.open('atmosphere', docs=docs, wait=False)
     c.until("!!document.getElementById('fCo') && !document.getElementById('fCo').hidden", timeout=20000, what='the chip')
     c.tap('#fCo')

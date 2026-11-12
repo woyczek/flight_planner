@@ -127,17 +127,27 @@
         };
         const out = {};
         let url = `${project}/repository/tree?ref=${encodeURIComponent(commit)}&recursive=true&per_page=100&pagination=keyset`,
-          pages = 0;
+          pages = 0,
+          entries = 0;
         while (url) {
           if (++pages > 2000) throw new Error('GitLab tree: too many pages');
           const r = await call(url);
-          for (const x of await r.json())
+          for (const x of await r.json()) {
+            entries++;
             if (x.type === 'blob') out[x.path] = x.id;
+          }
           const next = /<([^>]+)>\s*;\s*rel="next"/.exec(r.headers.get('Link') || '');
           // le lien suivant doit rester sur l'API de cette instance (jamais ailleurs avec le jeton)
           url = next && next[1].startsWith(`${api}/`) ? next[1] : '';
         }
         treeOf.set(commit, out);
+        self.lastTree = { // ce que la dernière lecture de l'arbre a rendu : dit dans le diagnostic (SOG-0235 : un arbre lu en entier ?)
+          commit: String(commit).slice(0, 12),
+          pages,
+          entries,
+          blobs: Object.keys(out).length,
+          at: new Date().toISOString()
+        };
         return {
           ...out
         };
