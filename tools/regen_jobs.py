@@ -233,7 +233,7 @@ SOURCE_PART = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$')     # un nom de 
 # la raison d'un refus d'arguments (400), dans ses mots : chaque jeu exporte EXPLAIN = { (jeu, verbe): fonction(args) → { reason, message, ...paramètres } | None } ; load_verbs les réunit ici (SOG-0144)
 EXPLAIN = {}
 # les verbes qui ne font que lire : leur travail ne remplace pas le dernier travail qui a écrit (Jobs.work, tools/.regen_last.json › work)
-READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('base', 'cycle'), ('route', 'compute'), ('route', 'fra-points'), ('ground', 'state'), ('stats', 'output'), ('proc', 'lnm')}
+READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('base', 'cycle'), ('base', 'last'), ('route', 'compute'), ('route', 'fra-points'), ('ground', 'state'), ('stats', 'output'), ('proc', 'lnm')}
 # SOG-0206 : la page lit seule, en fond, la couche sol d'un terrain (ground/fetch, ~30 s) dès qu'elle a lu ses procédures ; le contrôle de route que le pilote lance à ce moment-là
 # était refusé (409 « a job is already running ») et l'écran disait « n'a pas répondu ». Un travail de SIDE (le calcul et le contrôle de route, qui ne font que lire la base et les
 # procédures) part donc à côté d'un travail de BACKGROUND (qui n'écrit que proc/ground/, jamais ce que le calcul lit) : un seul à côté à la fois, jamais à côté d'un autre travail.
@@ -387,6 +387,55 @@ class Jobs:
                 job.data['ended'] = job.data['ended'] or int(time.time())
         with self.lock:
             self._save()
+        self._remember(job)
+
+    LAST_VERBS = {('base', 'pickup'), ('base', 'fetch'), ('base', 'build'), ('base', 'update')}
+    LAST_LIST, LAST_TEXT, LAST_DEPTH = 50, 300, 6
+
+    def _trim(self, v, depth=0):
+        """Un résultat borné pour le journal persistant : listes à LAST_LIST éléments, textes nettoyés (secrets, chemins) et courts, clés privées (_…) retirées, profondeur bornée."""
+        if depth > self.LAST_DEPTH:
+            return None
+        if isinstance(v, dict):
+            return {str(k)[:60]: self._trim(x, depth + 1) for k, x in list(v.items())[:200] if not str(k).startswith('_')}
+        if isinstance(v, (list, tuple)):
+            return [self._trim(x, depth + 1) for x in v[:self.LAST_LIST]] + ([{'more': len(v) - self.LAST_LIST}] if len(v) > self.LAST_LIST else [])
+        if isinstance(v, str):
+            t = clean_error(v, self.ctx)
+            data = str(self.ctx.get('data') or '')
+            if data:
+                t = t.replace(data, 'data').replace(data.replace('/', chr(92)), 'data')
+            return t[:self.LAST_TEXT]
+        return v if isinstance(v, (int, float, bool)) or v is None else str(v)[:60]
+
+    def _remember(self, job):
+        """SOG-0265 / journal persistant : le DERNIER résultat de pickup, fetch, build et update, gardé dans data/local/last_results.json (jamais commité), pour que l'écran dise le fil de la dernière opération
+        même après une autre opération ou un redémarrage. Ne lève jamais : un journal qui ne s'écrit pas ne gêne pas le travail."""
+        try:
+            key = (job.data.get('set'), job.data.get('verb'))
+            data = self.ctx.get('data')
+            if key not in self.LAST_VERBS or not data or job.released:
+                return
+            folder = os.path.join(str(data), 'local')
+            os.makedirs(folder, exist_ok=True)
+            path = os.path.join(folder, 'last_results.json')
+            try:
+                with open(path, encoding='utf-8') as f:
+                    doc = json.load(f)
+                if not isinstance(doc, dict):
+                    doc = {}
+            except (OSError, ValueError):
+                doc = {}
+            res = job.data.get('result')
+            doc[f'{key[0]}/{key[1]}'] = {'job': job.id, 'state': job.data.get('state'), 'ended': job.data.get('ended'),
+                                         'ok': res.get('ok') if isinstance(res, dict) else None, 'reason': res.get('reason') if isinstance(res, dict) else None,
+                                         'args': self._trim(job.data.get('args')), 'result': self._trim(res)}
+            tmp = path + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(doc, f, ensure_ascii=False, indent=1)
+            os.replace(tmp, path)
+        except Exception:
+            pass
 
     def _give_back(self, job):
         """Le délai minimal (MIN_GAP) ne compte que les travaux qui ont atteint le réseau : un verbe qui a échoué avant de l'avoir fait rend { reached: False }, et le départ qu'il avait posé est retiré (SOG-0138 : « prochain essai dans 578 s » après un échec immédiat). Jamais un départ plus récent."""

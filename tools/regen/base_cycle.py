@@ -15,6 +15,7 @@
 Les coches sont posées par l'outil seul, d'après l'état réel (base_state, git, les dates des fichiers) ; rien n'est supposé."""
 import datetime
 import fnmatch
+import json
 import os
 import re
 import sys
@@ -219,4 +220,19 @@ def run(job, args, ctx):
     return {'ok': True, **({'zoneView': zone_view} if zone_view else {}), 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'unavailable': [it['id'] for it in items if it['id'] in UNAVAILABLE], 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
 
 
-VERBS = {('base', 'cycle'): (run, check)}
+def check_last(a):
+    """base/last : aucun argument (→ 400 si autre chose)."""
+    return {} if a in (None, {}) else None
+
+
+def last(job, args, ctx):
+    """base/last (lecture seule) : le dernier résultat de pickup, fetch, build et update, tel que le lanceur l'a gardé (data/local/last_results.json) : { ok, results: { 'base/pickup': { job, state, ended, ok, reason, args, result }, … } } ; { ok, results: {} } sans journal."""
+    try:
+        with open(os.path.join(str(ctx['data']), 'local', 'last_results.json'), encoding='utf-8') as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        doc = {}
+    return {'ok': True, 'results': {k: v for k, v in doc.items() if k in ('base/pickup', 'base/fetch', 'base/build', 'base/update') and isinstance(v, dict)} if isinstance(doc, dict) else {}}
+
+
+VERBS = {('base', 'cycle'): (run, check), ('base', 'last'): (last, check_last)}

@@ -2746,3 +2746,36 @@ def k190(c):
         c.eq((res['ok'], res['failed'], [(u['zone'], u['source'], u['since']) for u in res.get('unavailable', [])]), (True, [], [('gb', 'ukmil', '2025-11')]), 'UK Mil cut by the server: said apart, not a failure; the operation is ok', what='apart')
         line = (job.view().get('zones', {}).get('gb', {}).get('sources', {}) if hasattr(job, 'view') else {}).get('ukmil', {})
         c.ok(not line or line.get('state') == 'unavailable', str(line), 'its line says unavailable')
+
+
+@case('K191', 'Persistent journal: the LAST result of pickup, fetch, build and update is kept in data/local/last_results.json when the job ends (lists capped, texts cleaned, no path of the workstation), and base/last (read-only) gives it back (SOG-0265)', 'K', static=True,
+      rule='Ergonomist (12 Nov 2026): the launcher keeps ONE job in memory; the result of the previous pickup / fetch was lost as soon as another operation ran or the launcher restarted, and the country sheet could not say « le fil de la dernière opération ». Each job of the four verbs now writes its result under its verb in data/local/last_results.json (never committed): state, end, ok, reason, args and the result trimmed (50 items per list, 300 characters per text, secrets cleaned, the data folder path replaced by « data », keys starting with « _ » dropped). `base/last` reads it (no argument, read-only). Nothing is written for the other verbs, and a journal that cannot be written never stops the job.')
+def k191(c):
+    import time
+    RJ, BS, AF, DS = _mods()
+    last, check_l = RJ.REGISTRY[('base', 'last')]
+    c.eq((check_l({}), check_l({'x': 1}), ('base', 'last') in RJ.READ_ONLY), ({}, None, True), 'no argument; read-only', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td, {})
+        ctx = _ctx(DS, data)
+        c.eq(last(RJ.Job('base', 'last', {}), {}, ctx), {'ok': True, 'results': {}}, 'no journal yet: empty', what='empty')
+        jobs = RJ.Jobs(RJ.REGISTRY, ctx, min_gap={})
+        geo = json.dumps({'type': 'FeatureCollection', 'features': []}).encode()
+        with _Net(AF, {'de_': ('http', 404)}):
+            s = jobs.start('base', 'fetch', {'zones': ['de'], 'personal': []})
+            end = time.time() + 60
+            v = jobs.view(s['job'])
+            while v.get('state') == 'running' and time.time() < end:
+                time.sleep(0.1)
+                v = jobs.view(s['job'])
+        time.sleep(0.2)
+        doc = json.loads((data / 'local' / 'last_results.json').read_text(encoding='utf-8'))
+        c.eq((sorted(doc), doc['base/fetch']['state'], doc['base/fetch']['job'] == s['job'], 'result' in doc['base/fetch']), (['base/fetch'], 'done', True, True), 'the fetch left its result under its verb', what='written')
+        # the trim: caps, paths, private keys
+        big = {'failed': [{'zone': f'z{i}', 'message': 'texte du lanceur ' * 60 + str(data)} for i in range(80)], '_points': [1, 2, 3], 'ok': False}
+        t = jobs._trim(big)
+        c.eq((len(t['failed']), t['failed'][-1], len(t['failed'][0]['message']), '_points' in t, str(data) in json.dumps(t)), (51, {'more': 30}, 300, False, False), 'lists capped at 50 (the rest counted), texts at 300, private keys and the data path gone', what='trim')
+        got = last(RJ.Job('base', 'last', {}), {}, ctx)
+        c.eq(sorted(got['results']), ['base/fetch'], 'base/last gives the journal back', what='read')
+        (data / 'local' / 'last_results.json').write_text('{broken', encoding='utf-8')
+        c.eq(last(RJ.Job('base', 'last', {}), {}, ctx), {'ok': True, 'results': {}}, 'a broken journal: empty, no error', what='broken')
