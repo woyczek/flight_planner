@@ -122,6 +122,18 @@
       },
       files: [{
         name: 'export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip',
+        what: ['la base XML du SIA (AIXM 4.5) du cycle',
+          'the SIA XML base (AIXM 4.5) of the cycle',
+          'die XML-Basis des SIA (AIXM 4.5) des Zyklus',
+          'la base XML del SIA (AIXM 4.5) del ciclo'
+        ],
+        where: [
+          'SIA › Produits numériques en libre disposition › Données AIM › Données aéronautiques XML AIRAC <mm>/<aa> › « Ajouter au panier », puis valider le panier',
+          'SIA › Produits numériques en libre disposition › Données AIM › Données aéronautiques XML AIRAC <mm>/<yy> › "Ajouter au panier" (add to basket), then check out the basket',
+          'SIA › Produits numériques en libre disposition › Données AIM › Données aéronautiques XML AIRAC <MM>/<JJ> › „Ajouter au panier“ (in den Warenkorb), dann den Warenkorb abschließen',
+          'SIA › Produits numériques en libre disposition › Données AIM › Données aéronautiques XML AIRAC <mm>/<aa> › « Ajouter au panier » (añadir a la cesta) y validar la cesta'
+        ],
+        verified: true,
         gives: ['XML SIA + AIXM 4.5 : toute la base de la France (espaces, terrains, balises, points, voies, obstacles)',
           'XML SIA + AIXM 4.5: the whole base of France (airspaces, aerodromes, navaids, points, airways, obstacles)',
           'XML SIA + AIXM 4.5: die ganze Basis Frankreichs (Lufträume, Flugplätze, Funkfeuer, Punkte, Luftstraßen, Hindernisse)',
@@ -236,6 +248,17 @@
       },
       files: [{
         name: 'MIAM_OACI_ENR 5.7.pdf',
+        what: ['l\'ENR 5.7 de l\'AIP militaire français',
+          'ENR 5.7 of the French military AIP',
+          'ENR 5.7 der französischen Militär-AIP',
+          'ENR 5.7 de la AIP militar francesa'
+        ],
+        where: ['DIRCAM › AIP militaire (MIAM OACI) › ENR › ENR 5.7',
+          'DIRCAM › Military AIP (MIAM OACI) › ENR › ENR 5.7',
+          'DIRCAM › Militär-AIP (MIAM OACI) › ENR › ENR 5.7',
+          'DIRCAM › AIP militar (MIAM OACI) › ENR › ENR 5.7'
+        ],
+        verified: false,
         url: 'https://www.dircam.dsae.defense.gouv.fr/images/Stories/Doc/MIAM_OACI/MIAM_OACI_ENR%205.7.pdf',
         gives: ['ENR 5.7 · axes de ravitaillement en vol de la France', 'ENR 5.7 · air-to-air refuelling tracks of France',
           'ENR 5.7 · Luftbetankungsstrecken Frankreichs', 'ENR 5.7 · ejes de reabastecimiento en vuelo de Francia'
@@ -280,6 +303,17 @@
       },
       files: [{
         name: 'ENR-5-2.pdf',
+        what: ['l\'ENR 5.2 de l\'AIP militaire britannique (zones d\'exercice et d\'entraînement)',
+          'ENR 5.2 of the UK military AIP (exercise and training areas)',
+          'ENR 5.2 der britischen Militär-AIP (Übungs- und Ausbildungsgebiete)',
+          'ENR 5.2 de la AIP militar británica (zonas de ejercicio y entrenamiento)'
+        ],
+        where: ['UK Mil AIP (AIDU) › AIP › Volumes › ENR › ENR 5.2',
+          'UK Mil AIP (AIDU) › AIP › Volumes › ENR › ENR 5.2',
+          'UK Mil AIP (AIDU) › AIP › Volumes › ENR › ENR 5.2',
+          'UK Mil AIP (AIDU) › AIP › Volumes › ENR › ENR 5.2'
+        ],
+        verified: false,
         url: 'https://www.aidu.mod.uk/aip/pdf/enr/ENR-5-2.pdf',
         gives: [
           'ENR 5.2 · zones de ravitaillement en vol et zones militaires du Royaume-Uni (le lanceur le lit seul ; si le serveur coupe sa connexion, ce fichier se prend à la main)',
@@ -324,11 +358,23 @@
     // SOG-0262 : le DAH que le lanceur lit seul, et les fichiers de l'AIP Canada que l'utilisateur dépose et que la suite ne lit pas encore (Q-0023)
     steps: {
       page: {
-        url: 'https://www.navcanada.ca/',
+        url: 'https://www.navcanada.ca/en/aeronautical-information/operational-guides.aspx',
         home: 'https://www.navcanada.ca/'
       },
       files: [{
         name: 'dah<AAAAMMJJ>.pdf',
+        what: ['le Designated Airspace Handbook (DAH) en vigueur',
+          'the Designated Airspace Handbook (DAH) in force',
+          'das gültige Designated Airspace Handbook (DAH)',
+          'el Designated Airspace Handbook (DAH) en vigor'
+        ],
+        where: [
+          'NAV CANADA › Aeronautical Information › Operational Guides › Canadian Airport Charts and Designated Airspace Handbook › Designated Airspace Handbook › « Download current issue »',
+          'NAV CANADA › Aeronautical Information › Operational Guides › Canadian Airport Charts and Designated Airspace Handbook › Designated Airspace Handbook › "Download current issue"',
+          'NAV CANADA › Aeronautical Information › Operational Guides › Canadian Airport Charts and Designated Airspace Handbook › Designated Airspace Handbook › „Download current issue“',
+          'NAV CANADA › Aeronautical Information › Operational Guides › Canadian Airport Charts and Designated Airspace Handbook › Designated Airspace Handbook › « Download current issue »'
+        ],
+        verified: true,
         gives: ['DAH · le Designated Airspace Handbook du Canada (le lanceur le lit seul : espaces désignés)',
           'DAH · the Designated Airspace Handbook of Canada (the launcher reads it by itself: designated airspace)',
           'DAH · das Designated Airspace Handbook Kanadas (der Launcher liest es selbst: ausgewiesene Lufträume)',
@@ -336,6 +382,18 @@
         ]
       }, {
         name: 'enreng<JJ>-<mois>-<AAAA>.pdf',
+        link: 'https://www.navcanada.ca/en/aeronautical-information/aip-canada.aspx',
+        what: ['l\'AIP Canada, partie 2 (En route), en anglais',
+          'AIP Canada, Part 2 (Enroute), in English',
+          'AIP Canada, Teil 2 (Enroute), auf Englisch',
+          'AIP Canadá, parte 2 (En ruta), en inglés'
+        ],
+        where: ['NAV CANADA › Aeronautical Information › AIP Canada › Part 2 Enroute',
+          'NAV CANADA › Aeronautical Information › AIP Canada › Part 2 Enroute',
+          'NAV CANADA › Aeronautical Information › AIP Canada › Part 2 Enroute',
+          'NAV CANADA › Aeronautical Information › AIP Canada › Part 2 Enroute'
+        ],
+        verified: true,
         gives: [
           'AIP Canada, partie 2 (ENR) : routes (ENR 3.1, 3.2) et points (ENR 4.4) ; déposé à la main, PAS ENCORE LU par la suite (décision de l’utilisateur à venir)',
           'AIP Canada, part 2 (ENR): routes (ENR 3.1, 3.2) and points (ENR 4.4); taken by hand, NOT READ YET by the suite (the user’s decision is pending)',
@@ -344,6 +402,18 @@
         ]
       }, {
         name: 'adeng<JJ>-<mois>-<AAAA>.pdf',
+        link: 'https://www.navcanada.ca/en/aeronautical-information/aip-canada.aspx',
+        what: ['l\'AIP Canada, partie 3 (Aérodromes), en anglais',
+          'AIP Canada, Part 3 (Aerodrome), in English',
+          'AIP Canada, Teil 3 (Aerodrome), auf Englisch',
+          'AIP Canadá, parte 3 (Aeródromos), en inglés'
+        ],
+        where: ['NAV CANADA › Aeronautical Information › AIP Canada › Part 3 Aerodrome',
+          'NAV CANADA › Aeronautical Information › AIP Canada › Part 3 Aerodrome',
+          'NAV CANADA › Aeronautical Information › AIP Canada › Part 3 Aerodrome',
+          'NAV CANADA › Aeronautical Information › AIP Canada › Part 3 Aerodrome'
+        ],
+        verified: true,
         gives: ['AIP Canada, partie 3 (AD) : aérodromes ; déposé à la main, pas encore lu',
           'AIP Canada, part 3 (AD): aerodromes; taken by hand, not read yet',
           'AIP Kanada, Teil 3 (AD): Flugplätze; von Hand abgelegt, noch nicht gelesen',
@@ -518,11 +588,25 @@
     },
     steps: {
       page: {
-        url: 'https://www.nav.pt/ais',
-        home: 'https://www.nav.pt/'
+        url: 'https://ais.nav.pt/eaip-downloads-en/',
+        home: 'https://ais.nav.pt/'
       },
       files: [{
         name: 'AIP Portugal (eAIP hors ligne : un zip qui porte une ISO, l’ISO ou son dossier extrait)',
+        url: 'https://ais.nav.pt/wp-content/uploads/AIS_Files/eAIP_Current/EAIP%20ISO.zip',
+        file: 'EAIP ISO.zip',
+        what: ['l\'eAIP du Portugal hors ligne : le disque ISO complet',
+          'the offline eAIP of Portugal: the complete ISO disk',
+          'die Offline-eAIP Portugals: die komplette ISO-Disk',
+          'la eAIP de Portugal sin conexión: el disco ISO completo'
+        ],
+        where: [
+          'NAV Portugal AIS (ais.nav.pt) › AIS PRODUCTS › eAIP › eAIP downloads › Publications In Force › « eAIP - ISO Disk (complete eAIP) » (le cycle suivant : Future Publications)',
+          'NAV Portugal AIS (ais.nav.pt) › AIS PRODUCTS › eAIP › eAIP downloads › Publications In Force › "eAIP - ISO Disk (complete eAIP)" (the next cycle: Future Publications)',
+          'NAV Portugal AIS (ais.nav.pt) › AIS PRODUCTS › eAIP › eAIP downloads › Publications In Force › „eAIP - ISO Disk (complete eAIP)“ (der nächste Zyklus: Future Publications)',
+          'NAV Portugal AIS (ais.nav.pt) › AIS PRODUCTS › eAIP › eAIP downloads › Publications In Force › « eAIP - ISO Disk (complete eAIP) » (el ciclo siguiente: Future Publications)'
+        ],
+        verified: true,
         gives: [
           'L’AIP du Portugal hors ligne : points désignés (ENR 4.4) et routes (ENR 3.1, 3.3) ; le lanceur lit le site quand il peut, ce fichier quand le site ne suffit pas ; le nom importe peu : il est reconnu par son contenu.',
           'The Portuguese AIP offline: designated points (ENR 4.4) and routes (ENR 3.1, 3.3); the launcher reads the site when it can, this file when the site is not enough; the name does not matter: it is recognised by its content.',
@@ -569,6 +653,17 @@
       },
       files: [{
         name: '<JJ>_<Mon>_<AAAA>_FIX_CSV.zip',
+        what: ['les points de report américains (FIX), jeu CSV',
+          'the US reporting points (FIX), CSV set',
+          'die US-Meldepunkte (FIX), CSV-Satz',
+          'los puntos de notificación de EE. UU. (FIX), juego CSV'
+        ],
+        where: ['FAA › NASR Subscription › le cycle en vigueur › CSV Data (dossier CSV_Data)',
+          'FAA › NASR Subscription › the cycle in force › CSV Data (folder CSV_Data)',
+          'FAA › NASR Subscription › der gültige Zyklus › CSV Data (Ordner CSV_Data)',
+          'FAA › NASR Subscription › el ciclo en vigor › CSV Data (carpeta CSV_Data)'
+        ],
+        verified: false,
         gives: [
           'NASR · points de report (FIX) des États-Unis, un jeu CSV du cycle (le lanceur le lit seul ; la FAA le refuse parfois : ce jeu se prend à la main)',
           'NASR · reporting points (FIX) of the United States, one CSV set of the cycle (the launcher reads it by itself; the FAA sometimes refuses it: take this set by hand)',
@@ -577,6 +672,17 @@
         ]
       }, {
         name: '<JJ>_<Mon>_<AAAA>_AWY_CSV.zip',
+        what: ['les routes aériennes américaines (AWY), jeu CSV',
+          'the US airways (AWY), CSV set',
+          'die US-Luftstraßen (AWY), CSV-Satz',
+          'las aerovías de EE. UU. (AWY), juego CSV'
+        ],
+        where: ['FAA › NASR Subscription › le cycle en vigueur › CSV Data (dossier CSV_Data)',
+          'FAA › NASR Subscription › the cycle in force › CSV Data (folder CSV_Data)',
+          'FAA › NASR Subscription › der gültige Zyklus › CSV Data (Ordner CSV_Data)',
+          'FAA › NASR Subscription › el ciclo en vigor › CSV Data (carpeta CSV_Data)'
+        ],
+        verified: false,
         gives: ['NASR · routes aériennes (AWY) des États-Unis, le deuxième jeu CSV du cycle',
           'NASR · airways (AWY) of the United States, the second CSV set of the cycle',
           'NASR · Luftstraßen (AWY) der USA, der zweite CSV-Satz des Zyklus',
@@ -584,6 +690,17 @@
         ]
       }, {
         name: '<JJ>_<Mon>_<AAAA>_NAV_CSV.zip',
+        what: ['les aides radio américaines (NAV), jeu CSV',
+          'the US navaids (NAV), CSV set',
+          'die US-Funknavigationshilfen (NAV), CSV-Satz',
+          'las radioayudas de EE. UU. (NAV), juego CSV'
+        ],
+        where: ['FAA › NASR Subscription › le cycle en vigueur › CSV Data (dossier CSV_Data)',
+          'FAA › NASR Subscription › the cycle in force › CSV Data (folder CSV_Data)',
+          'FAA › NASR Subscription › der gültige Zyklus › CSV Data (Ordner CSV_Data)',
+          'FAA › NASR Subscription › el ciclo en vigor › CSV Data (carpeta CSV_Data)'
+        ],
+        verified: false,
         gives: ['NASR · aides radio (NAV) des États-Unis, le troisième jeu CSV du cycle (les trois sont nécessaires)',
           'NASR · navaids (NAV) of the United States, the third CSV set of the cycle (all three are needed)',
           'NASR · Funknavigationshilfen (NAV) der USA, der dritte CSV-Satz des Zyklus (alle drei sind nötig)',
@@ -628,6 +745,18 @@
       },
       files: [{
         name: 'EG_AIP_DS_<AAAAMMJJ>_XML.zip',
+        what: ['le jeu de données de l\'AIP du Royaume-Uni (XML)',
+          'the UK AIP dataset (XML)',
+          'der AIP-Datensatz des Vereinigten Königreichs (XML)',
+          'el conjunto de datos de la AIP del Reino Unido (XML)'
+        ],
+        where: [
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UK ICAO AIP Dataset › l\'icône « XML » de la ligne du cycle (pas KML)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UK ICAO AIP Dataset › the "XML" icon on the cycle row (not KML)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UK ICAO AIP Dataset › das „XML“-Symbol der Zeile des Zyklus (nicht KML)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UK ICAO AIP Dataset › el icono « XML » de la fila del ciclo (no KML)'
+        ],
+        verified: true,
         gives: ['AIP · points, routes, balises, espaces et terrains du Royaume-Uni (zone gb)',
           'AIP · points, routes, navaids, airspaces and aerodromes of the United Kingdom (zone gb)',
           'AIP · Punkte, Strecken, Funkfeuer, Lufträume und Flugplätze des Vereinigten Königreichs (Zone gb)',
@@ -635,11 +764,36 @@
         ]
       }, {
         name: 'EG_OBS_DS_AREA1_FULL_<AAAAMMJJ>_XML.zip',
+        what: ['le jeu des obstacles du Royaume-Uni, zone 1 (XML)',
+          'the UK obstacle dataset, Area 1 (XML)',
+          'der Hindernisdatensatz des Vereinigten Königreichs, Gebiet 1 (XML)',
+          'el conjunto de obstáculos del Reino Unido, zona 1 (XML)'
+        ],
+        where: [
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UK ICAO Obstacle Dataset Area 1 › l\'icône « XML » (pas XLS)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UK ICAO Obstacle Dataset Area 1 › the "XML" icon (not XLS)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UK ICAO Obstacle Dataset Area 1 › das „XML“-Symbol (nicht XLS)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UK ICAO Obstacle Dataset Area 1 › el icono « XML » (no XLS)'
+        ],
+        verified: true,
         gives: ['Obstacles du Royaume-Uni', 'Obstacles of the United Kingdom', 'Hindernisse des Vereinigten Königreichs',
           'Obstáculos del Reino Unido'
         ]
       }, {
         name: 'EG_UAS_…_XML.zip',
+        file: 'EG_UAS_FR_DS_AREA1_FULL_<AAAAMMJJ>_XML.zip',
+        what: ['les restrictions de vol des drones, zone 1 (XML)',
+          'the UAS flight restrictions, Area 1 (XML)',
+          'die UAS-Flugbeschränkungen, Gebiet 1 (XML)',
+          'las restricciones de vuelo de drones, zona 1 (XML)'
+        ],
+        where: [
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UAS Flight Restrictions › l\'icône « XML » de la ligne du cycle (pas KML)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UAS Flight Restrictions › the "XML" icon on the cycle row (not KML)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UAS Flight Restrictions › das „XML“-Symbol der Zeile des Zyklus (nicht KML)',
+          'NATS (EAD) › Publications › Digital datasets › Regular Datasets › UAS Flight Restrictions › el icono « XML » de la fila del ciclo (no KML)'
+        ],
+        verified: true,
         gives: ['Zones UAS (drones) du Royaume-Uni', 'UAS (drone) zones of the United Kingdom',
           'UAS-Zonen (Drohnen) des Vereinigten Königreichs', 'Zonas UAS (drones) del Reino Unido'
         ]
@@ -685,6 +839,18 @@
       },
       files: [{
         name: 'AIP_OFFLINE.zip',
+        link: 'https://aro.lfv.se/Editorial/View/ZIP',
+        what: ['l\'AIP de Suède hors ligne (« IAIP.zip » sur la page)',
+          'the offline AIP of Sweden ("IAIP.zip" on the page)',
+          'die Offline-AIP Schwedens („IAIP.zip“ auf der Seite)',
+          'la AIP de Suecia sin conexión (« IAIP.zip » en la página)'
+        ],
+        where: ['LFV AROWeb › AIS › AIP › AIP Offline › le lien « IAIP.zip » (le fichier se nomme AIP_OFFLINE.zip)',
+          'LFV AROWeb › AIS › AIP › AIP Offline › the "IAIP.zip" link (the file is named AIP_OFFLINE.zip)',
+          'LFV AROWeb › AIS › AIP › AIP Offline › der Link „IAIP.zip“ (die Datei heißt AIP_OFFLINE.zip)',
+          'LFV AROWeb › AIS › AIP › AIP Offline › el enlace « IAIP.zip » (el archivo se llama AIP_OFFLINE.zip)'
+        ],
+        verified: true,
         url: 'https://aro.lfv.se/Content/eaip/AIP_OFFLINE.zip',
         gives: ['eAIP de la Suède hors ligne (environ 1 Go) · ENR 4.4 points désignés et ENR 3.2 routes RNAV (zone se)',
           'Sweden eAIP offline (about 1 GB) · ENR 4.4 designated points and ENR 3.2 RNAV routes (zone se)',
@@ -748,6 +914,18 @@
       },
       files: [{
         name: 'EK_ENR_3_1_en.pdf',
+        what: ['Le Danemark — les routes conventionnelles (ENR 3.1)',
+          'Denmark — the conventional routes (ENR 3.1)',
+          'Dänemark — die konventionellen Strecken (ENR 3.1)',
+          'Dinamarca — las rutas convencionales (ENR 3.1)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes'
+        ],
+        verified: true,
         gives: [
           'Danemark · ENR 3.1 routes conventionnelles (AIP Denmark). Le préfixe EK_ sert le Danemark ET les îles Féroé : la page a deux AIP, les noms sont les mêmes, le navigateur ajoute « (1) » au second',
           'Denmark · ENR 3.1 conventional routes (AIP Denmark). The prefix EK_ serves Denmark AND the Faroe Islands: the page has two AIPs, the names are the same, the browser adds « (1) » to the second',
@@ -756,6 +934,18 @@
         ]
       }, {
         name: 'EK_ENR_3_2_en.pdf',
+        what: ['Le Danemark — les routes RNAV (ENR 3.2)',
+          'Denmark — the RNAV routes (ENR 3.2)',
+          'Dänemark — die RNAV-Strecken (ENR 3.2)',
+          'Dinamarca — las rutas RNAV (ENR 3.2)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.2 Area Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.2 Area Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.2 Area Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.2 Area Navigation Routes'
+        ],
+        verified: true,
         url: 'https://aim.naviair.dk/media/files/mmsbfi0p2t1/EK_ENR_3_2_en.pdf',
         gives: [
           'Danemark · ENR 3.2 routes RNAV (36 pages) — le lien direct est celui d’une édition passée : la page liste le fichier du cycle',
@@ -765,6 +955,18 @@
         ]
       }, {
         name: 'EK_ENR_3_3_en.pdf',
+        what: ['Le Danemark — les autres routes (ENR 3.3)',
+          'Denmark — the other routes (ENR 3.3)',
+          'Dänemark — die sonstigen Strecken (ENR 3.3)',
+          'Dinamarca — las otras rutas (ENR 3.3)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.3 Other Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.3 Other Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.3 Other Routes',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.3 Other Routes'
+        ],
+        verified: true,
         gives: ['Danemark · ENR 3.3 autres routes',
           'Denmark · ENR 3.3 other routes',
           'Dänemark · ENR 3.3 andere Strecken',
@@ -772,6 +974,18 @@
         ]
       }, {
         name: 'EK_ENR_3_4_en.pdf',
+        what: ['Le Danemark — les circuits d\'attente en route (ENR 3.4)',
+          'Denmark — the en-route holdings (ENR 3.4)',
+          'Dänemark — die Streckenwarteschleifen (ENR 3.4)',
+          'Dinamarca — las esperas en ruta (ENR 3.4)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.4 En-Route Holding',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.4 En-Route Holding',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.4 En-Route Holding',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.4 En-Route Holding'
+        ],
+        verified: true,
         gives: ['Danemark · ENR 3.4 attentes en route',
           'Denmark · ENR 3.4 en-route holding',
           'Dänemark · ENR 3.4 Warteverfahren auf der Strecke',
@@ -779,6 +993,18 @@
         ]
       }, {
         name: 'EK_ENR_4_1_en.pdf',
+        what: ['Le Danemark — les aides radio en route (ENR 4.1)',
+          'Denmark — the en-route radio navigation aids (ENR 4.1)',
+          'Dänemark — die Funknavigationsanlagen auf der Strecke (ENR 4.1)',
+          'Dinamarca — las radioayudas en ruta (ENR 4.1)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.1 Radio Navigation Aids - En Route',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.1 Radio Navigation Aids - En Route',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.1 Radio Navigation Aids - En Route',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.1 Radio Navigation Aids - En Route'
+        ],
+        verified: true,
         gives: [
           'Danemark · ENR 4.1 aides radio — ATTENTION : un fichier de ce nom peut être celui des îles Féroé (le contenu le dit : « AIP FAEROE ISLANDS ») ; celui du Danemark est à reprendre sur la page « AIP Denmark »',
           'Denmark · ENR 4.1 radio navigation aids — CAUTION: a file of this name can be the Faroe Islands’ (the content says so: « AIP FAEROE ISLANDS »); the Danish one is to be taken again on the « AIP Denmark » page',
@@ -787,6 +1013,18 @@
         ]
       }, {
         name: 'EK_ENR_4_4_en.pdf',
+        what: ['Le Danemark — les désignateurs de points significatifs (ENR 4.4)',
+          'Denmark — the designators for significant points (ENR 4.4)',
+          'Dänemark — die Bezeichner signifikanter Punkte (ENR 4.4)',
+          'Dinamarca — los designadores de puntos significativos (ENR 4.4)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.4 Designators for Significant Points',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.4 Designators for Significant Points',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.4 Designators for Significant Points',
+          'Naviair AIM (aim.naviair.dk) › 01. AIP Danmark › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.4 Designators for Significant Points'
+        ],
+        verified: true,
         gives: ['Danemark · ENR 4.4 points désignés (10 pages)',
           'Denmark · ENR 4.4 designated points (10 pages)',
           'Dänemark · ENR 4.4 benannte Punkte (10 Seiten)',
@@ -794,6 +1032,18 @@
         ]
       }, {
         name: 'BG_ENR_3_1_en.pdf',
+        what: ['Le Groenland — les routes conventionnelles (ENR 3.1)',
+          'Greenland — the conventional routes (ENR 3.1)',
+          'Grönland — die konventionellen Strecken (ENR 3.1)',
+          'Groenlandia — las rutas convencionales (ENR 3.1)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes'
+        ],
+        verified: true,
         gives: ['Groenland (AIP Greenland) · ENR 3.1 routes conventionnelles',
           'Greenland (AIP Greenland) · ENR 3.1 conventional routes',
           'Grönland (AIP Greenland) · ENR 3.1 konventionelle Strecken',
@@ -801,6 +1051,18 @@
         ]
       }, {
         name: 'BG_ENR_3_2_en.pdf',
+        what: ['Le Groenland — les routes RNAV (ENR 3.2)',
+          'Greenland — the RNAV routes (ENR 3.2)',
+          'Grönland — die RNAV-Strecken (ENR 3.2)',
+          'Groenlandia — las rutas RNAV (ENR 3.2)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.2 Area Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.2 Area Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.2 Area Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.2 Area Navigation Routes'
+        ],
+        verified: true,
         gives: ['Groenland · ENR 3.2 routes RNAV',
           'Greenland · ENR 3.2 RNAV routes',
           'Grönland · ENR 3.2 RNAV-Strecken',
@@ -808,6 +1070,18 @@
         ]
       }, {
         name: 'BG_ENR_4_1_en.pdf',
+        what: ['Le Groenland — les aides radio en route (ENR 4.1)',
+          'Greenland — the en-route radio navigation aids (ENR 4.1)',
+          'Grönland — die Funknavigationsanlagen auf der Strecke (ENR 4.1)',
+          'Groenlandia — las radioayudas en ruta (ENR 4.1)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.1 Radio Navigation Aids - En Route',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.1 Radio Navigation Aids - En Route',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.1 Radio Navigation Aids - En Route',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.1 Radio Navigation Aids - En Route'
+        ],
+        verified: true,
         gives: ['Groenland · ENR 4.1 aides radio',
           'Greenland · ENR 4.1 radio navigation aids',
           'Grönland · ENR 4.1 Funknavigationshilfen',
@@ -815,6 +1089,18 @@
         ]
       }, {
         name: 'BG_ENR_4_4_en.pdf',
+        what: ['Le Groenland — les désignateurs de points significatifs (ENR 4.4)',
+          'Greenland — the designators for significant points (ENR 4.4)',
+          'Grönland — die Bezeichner signifikanter Punkte (ENR 4.4)',
+          'Groenlandia — los designadores de puntos significativos (ENR 4.4)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.4 Designators for Significant Points',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.4 Designators for Significant Points',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.4 Designators for Significant Points',
+          'Naviair AIM (aim.naviair.dk) › 04. AIP Grønland › AIP PART 2 - EN ROUTE (ENR) › ENR 4 RADIO NAVIGATION AIDS SYSTEMS › ENR 4.4 Designators for Significant Points'
+        ],
+        verified: true,
         gives: ['Groenland · ENR 4.4 points désignés',
           'Greenland · ENR 4.4 designated points',
           'Grönland · ENR 4.4 benannte Punkte',
@@ -822,6 +1108,18 @@
         ]
       }, {
         name: 'EK_ENR_3_1_en.pdf',
+        what: ['Les îles Féroé — les routes conventionnelles (ENR 3.1)',
+          'the Faroe Islands — the conventional routes (ENR 3.1)',
+          'die Färöer — die konventionellen Strecken (ENR 3.1)',
+          'las islas Feroe — las rutas convencionales (ENR 3.1)'
+        ],
+        where: [
+          'Naviair AIM (aim.naviair.dk) › 03. AIP Færøerne › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 03. AIP Færøerne › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 03. AIP Færøerne › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes',
+          'Naviair AIM (aim.naviair.dk) › 03. AIP Færøerne › AIP PART 2 - EN ROUTE (ENR) › ENR 3 ATS ROUTES › ENR 3.1 Conventional Navigation Routes'
+        ],
+        verified: true,
         gives: [
           'Îles Féroé (AIP Faroe Islands) · ENR 3.1, 4.1 et 4.4 : mêmes noms EK_ENR_3_1_en.pdf, EK_ENR_4_1_en.pdf, EK_ENR_4_4_en.pdf, pages « NIL » pour les routes et les points ; 4.1 : les stations',
           'Faroe Islands (AIP Faroe Islands) · ENR 3.1, 4.1 and 4.4: the same names EK_ENR_3_1_en.pdf, EK_ENR_4_1_en.pdf, EK_ENR_4_4_en.pdf, « NIL » pages for routes and points; 4.1: the stations',
@@ -903,6 +1201,17 @@
       },
       files: [{
         name: 'AD-2.<OACI>.pdf',
+        what: ['la carte VAC de l\'aérodrome (AD 2)',
+          'the VAC chart of the aerodrome (AD 2)',
+          'die VAC-Karte des Flugplatzes (AD 2)',
+          'la carta VAC del aeródromo (AD 2)'
+        ],
+        where: ['SIA › Produits numériques en libre disposition › eAIP › Atlas VAC › <OACI>',
+          'SIA › Produits numériques en libre disposition › eAIP › Atlas VAC › <ICAO>',
+          'SIA › Produits numériques en libre disposition › eAIP › Atlas VAC › <ICAO>',
+          'SIA › Produits numériques en libre disposition › eAIP › Atlas VAC › <OACI>'
+        ],
+        verified: false,
         gives: ['Une carte VAC par terrain (exemple : AD-2.LFBD.pdf) · points de report VFR et leurs séquences',
           'One VAC chart per aerodrome (example: AD-2.LFBD.pdf) · VFR reporting points and their sequences',
           'Eine VAC-Karte je Flugplatz (Beispiel: AD-2.LFBD.pdf) · VFR-Meldepunkte und ihre Abfolgen',
@@ -1159,6 +1468,18 @@
       },
       files: [{
         name: 'RAD_<cycle>_v….xlsx',
+        what: ['le classeur RAD du cycle (restrictions de la navigation en route)',
+          'the RAD workbook of the cycle (en-route restrictions)',
+          'die RAD-Arbeitsmappe des Zyklus (Streckenbeschränkungen)',
+          'el libro RAD del ciclo (restricciones en ruta)'
+        ],
+        where: [
+          'EUROCONTROL Network Manager › RAD › RAD updates › AIRAC <cycle> › « Latest Version » (le cycle suivant : AIRAC+1)',
+          'EUROCONTROL Network Manager › RAD › RAD updates › AIRAC <cycle> › "Latest Version" (the next cycle: AIRAC+1)',
+          'EUROCONTROL Network Manager › RAD › RAD updates › AIRAC <cycle> › „Latest Version“ (der nächste Zyklus: AIRAC+1)',
+          'EUROCONTROL Network Manager › RAD › RAD updates › AIRAC <cycle> › « Latest Version » (el ciclo siguiente: AIRAC+1)'
+        ],
+        verified: true,
         gives: ['Le RAD (Rolling RAD Document) : interdictions et conditions de route, un classeur par cycle',
           'The RAD (Rolling RAD Document): route restrictions and conditions, one workbook per cycle',
           'Das RAD (Rolling RAD Document): Streckeneinschränkungen und -bedingungen, eine Arbeitsmappe je Zyklus',
@@ -1166,6 +1487,18 @@
         ]
       }, {
         name: 'eurocontrol-airac-<cycle>-fra-points-….xlsx',
+        what: ['la liste des points FRA (espace à route libre) du cycle',
+          'the FRA (Free Route Airspace) points list of the cycle',
+          'die FRA-Punktliste (Free Route Airspace) des Zyklus',
+          'la lista de puntos FRA (espacio de ruta libre) del ciclo'
+        ],
+        where: [
+          'EUROCONTROL Network Manager › RAD › Additional Documentation › Free Route Airspace (FRA) › [More info] › « FRA Points List for the ECAC and neighbouring States » › Follow (page eurocontrol.int)',
+          'EUROCONTROL Network Manager › RAD › Additional Documentation › Free Route Airspace (FRA) › [More info] › "FRA Points List for the ECAC and neighbouring States" › Follow (page on eurocontrol.int)',
+          'EUROCONTROL Network Manager › RAD › Additional Documentation › Free Route Airspace (FRA) › [More info] › „FRA Points List for the ECAC and neighbouring States“ › Follow (Seite auf eurocontrol.int)',
+          'EUROCONTROL Network Manager › RAD › Additional Documentation › Free Route Airspace (FRA) › [More info] › « FRA Points List for the ECAC and neighbouring States » › Follow (página en eurocontrol.int)'
+        ],
+        verified: false,
         gives: ['Les points significatifs FRA : rôles entrée / sortie / intermédiaire, niveaux, horaires',
           'The FRA significant points: entry / exit / intermediate roles, levels, times',
           'Die signifikanten FRA-Punkte: Rollen Eintritt / Austritt / Zwischenpunkt, Ebenen, Zeiten',
@@ -1522,10 +1855,13 @@
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;
   /** Adresse d'une source pour un cycle (« 2610 », date ou rien : le cycle en vigueur). */
+  /** Le mot que l'écran pose à côté d'un chemin dont `verified` est faux (le site n'a pas pu être lu : ni contourné ni deviné). */
+  const PATH_TO_CHECK = ['chemin à vérifier', 'path to check', 'Pfad zu prüfen', 'ruta por verificar'];
   const urlOf = (s, cycle) => typeof s.url === 'function' ? s.url(cycle || A.cycleOf().id) : s.url;
   /** SOG-0189 : le pas-à-pas d'une source que l'utilisateur dépose lui-même, ou null (une source que le lanceur télécharge n'en a pas) :
    *  { id, page: { url (le lien DIRECT de la page où est le fichier, résolu pour le cycle), home (la page d'accueil du site : le repli si le lien direct ne répond plus) },
-   *  files: [{ name (le nom exact du fichier à prendre ; <…> : la partie qui change), url? (le lien direct du fichier lui-même, s'il y en a un), gives [4] (ce qu'il apporte) }] }.
+   *  files: [{ name (le nom exact du fichier à prendre ; <…> : la partie qui change), file (le nom attendu : `name`, sauf quand celui-ci décrit plus qu'il ne nomme), url? (le lien direct du fichier lui-même, s'il y en a un), link? (le lien de LA page de ce fichier quand elle n'est pas celle de la source), gives [4] (ce qu'il apporte),
+   *  what [4] (comment le pilote le nomme : « l'ISO de l'eAIP »), where [4] (le chemin sur le site, rubrique par rubrique), verified (vrai : le chemin a été suivi sur le site ; faux : « à vérifier » — le site a refusé ou n'a pas répondu, jamais contourné) }] }.
    *  Le troisième pas (« Prendre le fichier téléchargé ») est le bouton de la page : il n'est pas ici. Données seules : aucun contrôle de lien (la page dit un lien mort et propose `home`). */
   function stepsOf(id, cycle) {
     const s = byId(id),
@@ -1539,10 +1875,19 @@
       },
       files: st.files.map(f => ({
         name: f.name,
+        file: f.file || f.name,
         ...(f.url ? {
           url: f.url
         } : {}),
-        gives: f.gives.slice()
+        ...(f.link ? {
+          link: f.link
+        } : {}),
+        gives: f.gives.slice(),
+        ...(f.what ? {
+          what: f.what.slice(),
+          where: f.where.slice(),
+          verified: f.verified === true
+        } : {})
       }))
     };
   }
@@ -1558,6 +1903,7 @@
     byId,
     urlOf,
     stepsOf,
+    PATH_TO_CHECK,
     eaipBase,
     SIA_REGIONS,
     siaRegionOf,

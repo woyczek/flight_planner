@@ -6671,10 +6671,10 @@ def k141(c):
     c.eq((st['lfv']['page']['url'], st['lfv']['files'][0]['name'], st['lfv']['files'][0]['url']), ('https://www.aro.lfv.se/content/eaip/default_offline.html', 'AIP_OFFLINE.zip', 'https://aro.lfv.se/Content/eaip/AIP_OFFLINE.zip'),
          'Sweden: the user’s two links to the letter (the offline eAIP page and the direct download) and the file name the pickup looks for', what='lfv links')
     c.eq((st['naviair']['page']['url'], [(f['name'], f.get('url')) for f in st['naviair']['files']], r['naviair']), (
-        'https://aim.naviair.dk/en/', [('EK_ENR_3_2_en.pdf', 'https://aim.naviair.dk/media/files/mmsbfi0p2t1/EK_ENR_3_2_en.pdf'), ('EK_ENR_2_1_en.pdf', None),
-                                      ('EK_AD_2_EKOD_RNP_RWY_24_2_en.pdf', 'https://aim.naviair.dk/media/files/sup1b1iyaxv/EK_AD_2_EKOD_RNP_RWY_24_2_en.pdf')],
-        {'status': 'candidate', 'zones': ['dk'], 'localOnly': True, 'publish': False, 'build': 'none', 'lic': True}),
-        'Denmark: the user’s links to the letter, the source is a candidate (« à déposer ; lecture à venir »): local only, nothing published, no build, the licence line cites GEN 0.1 § 6 in four languages', what='naviair')
+        'https://aim.naviair.dk/en/', [(n, 'https://aim.naviair.dk/media/files/mmsbfi0p2t1/EK_ENR_3_2_en.pdf' if n == 'EK_ENR_3_2_en.pdf' else None) for n in (
+            'EK_ENR_3_1_en.pdf', 'EK_ENR_3_2_en.pdf', 'EK_ENR_3_3_en.pdf', 'EK_ENR_3_4_en.pdf', 'EK_ENR_4_1_en.pdf', 'EK_ENR_4_4_en.pdf', 'BG_ENR_3_1_en.pdf', 'BG_ENR_3_2_en.pdf', 'BG_ENR_4_1_en.pdf', 'BG_ENR_4_4_en.pdf', 'EK_ENR_3_1_en.pdf')],
+        {'status': 'candidate', 'zones': ['dk', 'fo', 'gl'], 'localOnly': True, 'publish': False, 'build': 'none', 'lic': True}),
+        'Denmark, Greenland and the Faroe Islands (SOG-0262): the ENR files of the three AIPs (EK_ for Denmark and the Faroe Islands, BG_ for Greenland), the source is a candidate (« à déposer ; lecture à venir »): local only, nothing published, no build, the licence line cites GEN 0.1 § 6 in four languages', what='naviair')
     c.eq(sorted(f['name'] for f in st['nats']['files']), ['EG_AIP_DS_<AAAAMMJJ>_XML.zip', 'EG_OBS_DS_AREA1_FULL_<AAAAMMJJ>_XML.zip', 'EG_UAS_…_XML.zip'], 'NATS: the three sets the pickup takes, each named', what='nats files')
     c.eq(st['sia']['page']['url'], 'https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/donnees-aeronautiques-xml-airac-10-26.html', 'SIA: the page of the cycle asked for, resolved at the source (not a front page)', what='sia cycle')
 
@@ -8021,3 +8021,36 @@ def k175(c):
     finally:
         L.REGEN = kept
         gate.set()
+
+
+@case('K183', 'Each file taken by hand says in the pilot\'s words WHAT it is, WHERE to find it on the site (rubric by rubric, or the link of its own page) and the FILE name expected, in four languages; a path the site did not let us follow is marked « à vérifier » and never guessed (SOG-0262)', 'K',
+      rule='SOG-0262 (12 Nov 2026, redesign of the Data screen): the catalogue gave the file name and what it brings, not how to reach it. Now every file of a source taken by hand carries `what` [4], `where` [4], `file` and `verified`; stepsOf passes them. The paths were followed on the sites, read-only: Naviair (Denmark, Faroe, Greenland, ENR 3 and 4), NAV CANADA (DAH, AIP Canada), NAV Portugal (eAIP downloads), LFV (AIP Offline), NATS (Regular Datasets), EUROCONTROL RAD, SIA (the page of the cycle). What a site refused or did not answer (FAA 403, UK Mil, the FRA points file, the DIRCAM and VAC paths) is `verified: false`: the screen says « à vérifier » (AeroCatalogue.PATH_TO_CHECK). The two « EK_ENR_3_1_en.pdf » (Denmark and the Faroe Islands) differ by their path only.')
+def k183(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/catalogue.html', wait_until='load')
+    r = c.js("""() => { const C = AeroCatalogue; const o = {};
+      for (const s of C.SOURCES) { const st = C.stepsOf(s.id, '2611'); if (st) o[s.id] = st.files; }
+      return { steps: o, check: C.PATH_TO_CHECK }; }""")
+    bad, unverified = [], []
+    four = lambda a: isinstance(a, list) and len(a) == 4 and all(isinstance(t, str) and len(t.strip()) > 6 for t in a)
+    for sid, files in r['steps'].items():
+        for f in files:
+            tag = f'{sid}:{f["name"]}'
+            if not (four(f.get('what')) and four(f.get('where'))):
+                bad.append(tag + ' what/where')
+            if not (isinstance(f.get('file'), str) and f['file'].strip()):
+                bad.append(tag + ' file')
+            if not isinstance(f.get('verified'), bool):
+                bad.append(tag + ' verified')
+            elif not f['verified']:
+                unverified.append(tag)
+            if f.get('where') and not all(' › ' in w or w.startswith('http') for w in f['where']):
+                bad.append(tag + ' where is not a path')
+    c.ok(not bad and len(r['steps']) >= 10, str(bad) + ' ' + str(sorted(r['steps'])), 'every file taken by hand has what, where (a path) and file in four languages, and says if its path was followed')
+    c.eq(sorted(unverified), sorted(['dircam:MIAM_OACI_ENR 5.7.pdf', 'ukmil:ENR-5-2.pdf', 'adds:<JJ>_<Mon>_<AAAA>_FIX_CSV.zip', 'adds:<JJ>_<Mon>_<AAAA>_AWY_CSV.zip', 'adds:<JJ>_<Mon>_<AAAA>_NAV_CSV.zip', 'vac:AD-2.<OACI>.pdf', 'eurocontrol_rad:eurocontrol-airac-<cycle>-fra-points-….xlsx']),
+         'the paths the sites did not let us follow (FAA, UK Mil, DIRCAM, VAC, the FRA points file) are marked « à vérifier »: nothing else, and nothing guessed', what='unverified')
+    nv = r['steps']['naviair']
+    ek = [f for f in nv if f['file'] == 'EK_ENR_3_1_en.pdf']
+    c.eq([('01. AIP Danmark' in f['where'][1], '03. AIP Færøerne' in f['where'][1]) for f in ek], [(True, False), (False, True)], 'the two « EK » of Naviair (Denmark and the Faroe Islands) bear the same name and are told apart by their path', what='EK')
+    c.eq([f['file'] for f in nv if f['file'].startswith('BG_')], ['BG_ENR_3_1_en.pdf', 'BG_ENR_3_2_en.pdf', 'BG_ENR_4_1_en.pdf', 'BG_ENR_4_4_en.pdf'], 'Greenland: the BG files, under « 04. AIP Grønland »', what='BG')
+    c.eq(r['check'][0], 'chemin à vérifier', 'the word of the screen for a path to check, in four languages', what='check')
+    c.eq(len(r['check']), 4, 'four languages', what='check4')
