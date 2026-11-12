@@ -254,7 +254,8 @@ def zone_states(data, zones, personal, ctx):
                 reasons.append({'code': 'source-newer', 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own, 'built': built})
             elif own and own < current:
                 reasons.append({'code': 'source-old', 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own, 'current': current})
-            undeclared = [x for x in aero_cycles.PERSONAL_CYCLED if rec and x in (rec.get('personal') or []) and x not in personal]
+            feeding = set(S.sources_of(z)) if S else set(aero_cycles.PERSONAL_CYCLED)      # SOG-0260 : l'enregistrement garde les sources déclarées à la construction (liste globale) : seules celles qui NOURRISSENT la zone comptent
+            undeclared = [x for x in aero_cycles.PERSONAL_CYCLED if rec and x in (rec.get('personal') or []) and x not in personal and x in feeding]
             for x in undeclared:                # SOG-0226 : construite avec une source sous licence personnelle que la case « personnel » ne déclare plus : le dit en code, pas par le nom d'un de ses fichiers
                 reasons.append({'code': 'personal-undeclared', 'source': x})
             if rec and isinstance(rec.get('inputs'), dict) and not rec.get('failed'):

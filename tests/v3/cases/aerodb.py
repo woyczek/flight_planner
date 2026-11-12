@@ -6551,7 +6551,7 @@ def k137(c):
             w(os.path.join(cyc, kind + '.json'), {'schema': 2, 'data': rows})
         w(os.path.join(cyc, 'meta.json'), {'schema': 2, 'parserVersion': 26, 'data': {}})
         w(os.path.join(data, 'sia', 'base', 'index.json'), {'schema': 2, 'zones': {'se': {'cycle': '2026-10-29', 'prefixes': ['ES']}, 'xx': {'cycle': '2026-10-29', 'prefixes': ['XX']}}})
-        w(os.path.join(data, 'proc', 'manual', 'ESSA.json'), {'procedures': []})
+        w(os.path.join(data, 'proc', 'manual', 'ESSA.json'), {'procedures': [{'id': 'p', 'source': {'kind': 'ead-basic'}}]})
         w(os.path.join(data, 'proc', 'manual', 'LFPO.json'), {'procedures': []})
         w(os.path.join(data, 'proc', 'ground', 'ESSB.json'), {'items': []})
         w(os.path.join(data, 'sia', 'openaip', 'se_asp.geojson'), {'type': 'FeatureCollection', 'features': []})
@@ -6563,6 +6563,7 @@ def k137(c):
         c.eq((se['procedures'], se['ground'], se['has']), (1, 1, {'points': False, 'navaids': True, 'airways': False, 'airspaces': True, 'fir': True, 'procedures': True, 'ground': True}),
              'the procedures and ground layers held for the aerodromes of the zone only (ES…: ESSA and ESSB, not LFPO); yes / no per column: no point, no airway for Sweden', what='has')
         c.eq((se['sources']['present'], 'lfv' in se['sources']['declared']), (['openaip'], True), 'the sources present in data/sia (openAIP) and those declared (LFV among them, not yet present)', what='sources')
+        c.eq((se['procSources'], z['xx']['procSources']), (['ead-basic'], []), 'SOG-0264: where the procedures of the zone come from (the kind of the records of its held aerodromes: eaip, cifp, ead-basic), [] when none: the screen marks the zone and says the source', what='procSources')
         c.eq((z['xx']['counts']['points'], z['xx']['has']['procedures'], z['xx']['cycle']), (0, False, '2026-10-29'), 'a zone without files: counts at 0, nothing invented', what='empty')
         c.ok(not os.path.exists(os.path.join(data, 'local')), 'no data/local', 'nothing is written')
 

@@ -4,6 +4,7 @@
   { ok, current, zones: { <zone>: { cycle, parserVersion, counts: { aerodromes, navaids, points, airways, airspaces, fir, vrp }, procedures, ground, sources: { declared: [ids], present: [ids] }, has: { points, airways, airspaces, fir, procedures, ground } } } }
   · `counts` : le nombre d'enregistrements de chaque sorte du dernier cycle publié de la zone (`fir` : les espaces de type FIR ou UIR) ;
   · `procedures` : le nombre de terrains de la zone dont le dossier détient des procédures (data/proc/manual/<OACI>.json et les index proc/<cycle>/index.json), d'après les préfixes OACI de la zone ;
+  · `procSources` : d'où viennent ces procédures (SOG-0264) : les sortes de source (`eaip` : l'eAIP du SIA, `cifp` : la FAA, `ead-basic` : l'EAD d'EUROCONTROL) des enregistrements d'un à trois terrains détenus de la zone ; [] sans procédure (les fiches de Little Navmap, gardées en mémoire de la page, n'y sont pas) ;
   · `ground` : le nombre de terrains de la zone dont la couche sol (data/proc/ground/<OACI>.json) est détenue ;
   · `sources.declared` : les sources que la suite déclare pour la zone (base_sources.sources_of) ; `present` : celles dont un fichier est dans data/sia/ (file_source) ;
   · `has` : oui / non par colonne du tableau (au moins un enregistrement : points, navaids, airways, airspaces, fir, procedures, ground) — la page y ajoute la source et la licence de son catalogue (frame/aerodb/catalogue.js) ; la licence n'est pas ici.
@@ -50,6 +51,36 @@ def _icaos(folder):
         return {n[:-5] for n in os.listdir(folder) if n.endswith('.json') and ICAO.match(n[:-5])}
     except OSError:
         return set()
+
+
+def _kinds(data, icaos):
+    """Les sortes de source (`source.kind` : eaip, cifp, ead-basic…) des procédures de ces terrains, lues dans UN à trois de leurs fichiers (data/proc/manual/<OACI>.json, puis le dernier cycle proc/<cycle>/<OACI>.json) : jamais tous (SOG-0264)."""
+    out = set()
+    try:
+        cycles = sorted((c for c in os.listdir(os.path.join(data, 'proc')) if CYCLE.match(c)), reverse=True)
+    except OSError:
+        cycles = []
+    for icao in sorted(icaos)[:3]:
+        for folder in [os.path.join(data, 'proc', 'manual')] + [os.path.join(data, 'proc', c) for c in cycles[:1]]:
+            for r in (_read_records(os.path.join(folder, icao + '.json')))[:2]:
+                k = (r.get('source') or {}).get('kind') if isinstance(r, dict) and isinstance(r.get('source'), dict) else None
+                if isinstance(k, str) and re.fullmatch(r'[a-z0-9-]{2,20}', k):
+                    out.add(k)
+            if out:
+                break
+    return sorted(out)
+
+
+def _read_records(path):
+    try:
+        if os.path.getsize(path) > MAX_BYTES:
+            return []
+        with open(path, encoding='utf-8') as f:
+            d = json.load(f)
+        r = d.get('procedures') if isinstance(d, dict) else None
+        return r if isinstance(r, list) else []
+    except (OSError, ValueError):
+        return []
 
 
 def coverage(job, args, ctx):
@@ -99,6 +130,7 @@ def coverage(job, args, ctx):
             except (OSError, ValueError):
                 meta = {}
         zones[zone] = {'cycle': cycle or None, 'parserVersion': meta.get('parserVersion') if isinstance(meta, dict) else None, 'counts': counts, 'procedures': mine(held_proc), 'ground': mine(held_ground),
+                       'procSources': _kinds(data, [k for k in held_proc if prefixes and k.startswith(prefixes)]),
                        'sources': {'declared': list(S.sources_of(zone)) if S else [], 'present': sorted(present.get(zone, ()))},
                        'has': {'points': counts['points'] > 0, 'navaids': counts['navaids'] > 0, 'airways': counts['airways'] > 0, 'airspaces': counts['airspaces'] > 0, 'fir': counts['fir'] > 0,
                                'procedures': mine(held_proc) > 0, 'ground': mine(held_ground) > 0}}

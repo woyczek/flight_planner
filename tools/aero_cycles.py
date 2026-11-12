@@ -91,9 +91,13 @@ def report(rels, today=None, root=None):
         hit = cycled(rel, root, today)
         if hit and (best[hit[0]] is None or hit[1] > best[hit[0]]):
             best[hit[0]] = hit[1]
+    for s in EDITION_SOURCES:
+        if best.get(s) and best[s] < current:
+            best[s] = current      # une édition d'État en vigueur n'est pas un cycle passé : rien de plus récent n'est connu ici
     return {s: {'cycle': c, 'current': current, 'stale': bool(c and c < current)} for s, c in best.items()}
 
 
+EDITION_SOURCES = ('navpt',)      # les sources publiées par ÉDITIONS, pas à chaque AIRAC (NAV Portugal : « valid from 01 OCT 2026 » reste en vigueur jusqu'à l'édition suivante) : l'édition détenue, déjà en vigueur, vaut le cycle en vigueur (SOG-0260)
 PERSONAL_CYCLED = ('nats', 'enaire', 'airnav', 'lfv', 'navpt')    # les sources datées sous licence d'usage personnel : lues seulement si la case « personnel » les déclare (shared/aero_zones.js, personal: 'licence' ; base/build, argument personal)
 
 

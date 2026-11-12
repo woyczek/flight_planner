@@ -32,7 +32,7 @@ def _bs():
     return types.SimpleNamespace(**entry[0].__globals__)
 
 MAX_NAMES = 5000
-EDITION_SOURCES = ('navpt',)      # publiés par éditions, pas à chaque AIRAC (NAV Portugal : « valid from 01 OCT 2026 » reste en vigueur jusqu'à l'édition suivante) : l'édition détenue n'est jamais « en retard » du seul fait du cycle
+EDITION_SOURCES = aero_cycles.EDITION_SOURCES      # publiés par éditions : l'édition détenue n'est jamais « en retard » du seul fait du cycle
 
 # ce que le poste voit dans Téléchargements et que la suite ne lit pas encore : (id, motifs de nom, raison, note)
 UNREAD = (

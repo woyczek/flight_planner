@@ -2503,3 +2503,52 @@ def k179(c):
         after = sorted(str(p.relative_to(td)) for p in td.rglob('*'))
         c.eq(before, after, 'read only: nothing written, no folder created', what='read only')
     c.ok(('base', 'cycle') in RJ.READ_ONLY, 'not read-only', 'the verb is read-only for the job slot: it does not replace the last work')
+
+
+@case('K180', 'base/status never says « personal-undeclared » for a source that does not feed the zone, and an edition in force of a State that publishes by editions is not a past cycle (SOG-0260: the screen said « 69 zones attendent un fichier » and « NAV Portugal 2610 : cycle passé » for a base all built at 29 Oct)', 'K', static=True,
+      rule='SOG-0260 (the screen of 12 Nov 9:57 against the launcher: 83 zones built and published, « 4 à jour · 2 à reconstruire · 69 attendent un fichier »): (1) the record of a build keeps the personal sources DECLARED at that build (a global list: airnav, enaire, lfv, nats…), and base/status flagged `personal-undeclared` for each of them in EVERY zone, even Afghanistan, which none of them feeds: with a page that does not declare them, all the zones came back `stale`, not buildable (« attendent un fichier »); the code is now given only for a source that feeds the zone (the sources of the catalogue for that zone). (2) NAV Portugal publishes by editions (« valid from 01 OCT 2026 » stays in force until the next one), not at each AIRAC: its file dated 1 Oct was a cycle older than the cycle in force (29 Oct), so the zone was `source-old` (« cycle passé, téléchargez le cycle 2611 »); the cycle of an edition-based source is the cycle in force when its edition is already in force (aero_cycles.EDITION_SOURCES)')
+def k180(c):
+    import datetime
+    import json
+    import tempfile
+    import types
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    import aero_cycles as C
+    BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        parser = ST.parser_version()
+
+        def built(zone, cycle, personal, files=()):
+            d = data / 'sia' / 'base' / zone / cycle
+            d.mkdir(parents=True)
+            (d / 'meta.json').write_text(json.dumps({'schema': 2, 'zone': zone, 'cycle': cycle, 'kind': 'meta', 'parserVersion': parser, 'data': {}}), encoding='utf-8')
+            for k in BA.KINDS:
+                if k != 'meta':
+                    (d / f'{k}.json').write_text('{"data": [1]}' if k == 'points' else '{}', encoding='utf-8')
+            ST.write_record(data, zone, cycle=cycle, builtAt='2026-10-30T10:00:00Z', parserVersion=parser, personal=personal, inputs=ST.signature(ST.inputs_of(str(data), zone, set(personal))))
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
+        (data / 'sia' / 'zones' / 'gb' / 'EG_AIP_DS_FULL_20261029.xml').write_text('<x/>', encoding='utf-8')
+        (data / 'sia' / 'zones' / 'pt').mkdir(parents=True)
+        (data / 'sia' / 'zones' / 'pt' / 'navpt_pt_enr_20261001.geojson').write_text('{}', encoding='utf-8')
+        # the records list the sources declared at build time, whatever feeds the zone (af is fed by none of them)
+        decl = ['airnav', 'enaire', 'lfv', 'nats', 'navpt']
+        built('af', '2026-10-29', decl)
+        built('gb', '2026-10-29', decl)
+        built('pt', '2026-10-29', decl)
+        ctx = {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 12)}
+        run = lambda zones, personal: status(RJ.Job('base', 'status', {}), check_s({'zones': zones, 'personal': personal}), ctx)['zones']
+        z = run(['af', 'gb', 'pt'], [])
+        c.eq(([x['code'] for x in z['af']['reasons']], z['af']['state']), ([], 'up-to-date'), 'Afghanistan, fed by none of the personal sources, is up to date for a page that declares none of them (it was stale, not buildable: « attend un fichier »)', what='af')
+        c.eq(sorted({x['source'] for x in z['gb']['reasons'] if x['code'] == 'personal-undeclared'}), ['nats'], 'the United Kingdom, fed by NATS, still says so for NATS only (not for ENAIRE, AirNav, LFV)', what='gb')
+        c.eq(sorted({x['source'] for x in z['pt']['reasons'] if x['code'] == 'personal-undeclared'}), ['navpt'], 'Portugal likewise for NAV Portugal only', what='pt')
+        # an edition in force of a State that publishes by editions is not a past cycle
+        rep = C.report(['zones/pt/navpt_pt_enr_20261001.geojson', 'zones/gb/EG_AIP_DS_FULL_20261029.xml'], datetime.date(2026, 11, 12))
+        c.eq((rep['navpt']['cycle'], rep['navpt']['stale'], rep['nats']['cycle']), ('2026-10-29', False, '2026-10-29'), 'the edition of 1 Oct of NAV Portugal, in force, counts as the cycle in force (29 Oct): not stale', what='edition')
+        rep2 = C.report(['zones/pt/navpt_pt_enr_20261126.geojson'], datetime.date(2026, 11, 12))
+        c.eq((rep2['navpt']['cycle'], rep2['navpt']['stale']), ('2026-11-26', False), 'an edition to come keeps its own cycle', what='future edition')
+        z = run(['pt'], ['navpt'])
+        c.eq([x['code'] for x in z['pt']['reasons'] if x['code'] in ('source-old', 'source-newer')], [], 'and base/status no longer says « source-old » (« cycle passé ») for the edition in force', what='no source-old')
