@@ -8679,3 +8679,92 @@ def k206(c):
     c.eq((r['ptFr'], r['parts']['fr'], r['parts']['de'], r['parts']['xx'], len(r['parts']['pt']), len(r['parts']['es']), len(r['parts']['us']), len(r['parts']['no'])), (['continent', 'Madère', 'Açores'], None, None, None, 3, 2, 3, 4),
          'PT: continent, Madère, Açores; a zone in one piece or with unnamed parts (DE, FR with its overseas, an unknown code): null', what='parts')
     c.ok(all(len(n) == 4 for z in ('pt', 'es', 'us', 'no') for n in r['parts'][z]) and r['mutate'] == 'continent', str(r['mutate']), 'each part name in four languages; the table cannot be modified from outside (copies)')
+
+
+HDR_LFBD = 'Leg Path Waypoint Fly Direction Direction Distance Turn MNM Altitude MAX Altitude MAX IAS Vertical angle Navigation Accuracy (NM)'
+
+
+def _sia(rows):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    return importlib.import_module('proc_sia').parse_code_table(rows)
+
+
+@case('K210', 'LFBD RNP A VPT RWY 05 (SOG-0248 leftovers): the page whose font gives GLYPH NAMES (« /g50/g46/g48 » for RNP) is decoded; the RF centre printed ALONE on its line (« Center CD051 » then the end point and the cells on the next line) and the radius on two lines (« Radius » / « 2,20NM ») are one RF leg; the second initial fix printed « TF » with no course or distance is an IF (one group per transition, none glued to the first)', 'K', static=True,
+      rule='Ergonomist 12 Nov 2026 (survey leftovers of SOG-0248): LFBD RNP A VPT 05 was « disposition non reconnue ». Rows: the public AIP page AD_2_LFBD_DATA_RWY05_RNP_A_VPT_CODE (25 Jan 2024 amendment, cycle 29 Oct 2026). Glyph names: the font has no character table, pypdf gives « /gNN », NN + 32 is the ASCII code (« /g1 » a space, « /g136 » the degree sign); a name outside the set is left as is, nothing is guessed.')
+def k210(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    PP = importlib.import_module('proc_pdf')
+    c.eq((PP._glyphs('/g50/g46/g48/g1/g33/g1/g50/g55/g57/g1/g16/g21'), PP._glyphs('/g13'), PP._glyphs('/g18/g16/g18/g16 Yes'), PP._glyphs('/g50/g46/g48/g200'), PP._glyphs('AIP AD 2 LFBD'), PP._glyphs('Threshold elevation /g18/g16')),
+         ('RNP A RWY 05', '-', '2020 Yes', 'RNP/g200', 'AIP AD 2 LFBD', 'Threshold elevation /g18/g16'),
+         'glyph names of a fragment (RNP A RWY 05, « - ») are decoded; a name outside the set (/g200) stays as printed, a fragment that is mostly ordinary text and ordinary text itself are left as they are', what='glyphs')
+    rows = [
+        'AIP AD 2 LFBD DATA RWY05 RNP A VPT CODE', 'FRANCE 25 JAN 24', 'BORDEAUX MERIGNAC', 'PRECODING RNP A VPT RWY 05', 'RNP A RWY 05 (VPT)',
+        'RMK - MAG VAR 2020 0.3°E REF NAVAID : -', HDR_LFBD,
+        'HLDG - VAGNA Yes 225 225.0 4.6 L 5000 FL120 220 - -', 'HLDG - ETPAR Yes 165 165.0 4.6 L 5000 FL120 220 - -',
+        'IF VAGNA - - - - - - - - - -', 'TF BD057 - 277 276.8 10.9 - - - - - 1.0', 'INA TF BD05R - 223 223.5 11.0 - - - 220 - 1.0', 'VAGNA TF BOCEP - 210 210.2 4.1 - 5000 - - - 1.0',
+        'TF BD05S - 210 210.2 2.9 - 4000 5000 210 - 1.0', 'TF FD05A - 193 193.1 3.2 - 4000 4000 185 - 1.0', 'TF ETPAR - - - - - - - 220 - -',
+        'INA TF BOCEP - 173 173.4 16.4 - 5000 - - - 1.0', 'ETPAR', 'TF BD05S - 210 210.2 2.9 - 4000 5000 210 - 1.0', 'TF FD05A - 193 193.1 3.2 - 4000 4000 185 - 1.0',
+        'IF FD05A - - - - - 4000 4000 185 - -', 'TF BD05B - 193 193.0 1.2 - - - 185 -3.40 /49 -', 'RF', 'Center CD051', 'BD05C - - - 5.7 L - - 185 -3.40 /49 -', 'Radius', '2,20NM',
+        'VISUAL', 'and TF RW05 Yes 045 045.4 3.6 - - - - -3.40 /49 -', 'Missed TF BD050 - 045 045.5 3.1 - - - 200 - 1.0', 'Approach', 'RF', 'Center CD052', 'BD05D - - - 3.8 L - 4000 200 - 1.0',
+        'Radius', '3,00NM', 'TF ETPAR - 333 333.7 19.0 - - 4000 220 - 1.0', 'HM ETPAR Yes 165 165.0 4.6 L - 4000 220 - -', 'AMDT 01/24 © SIA']
+    t = _sia(rows)
+    g = t['groups']
+    rf = [x for q in g for x in q['legs'] if x['leg'] == 'RF']
+    c.eq((t['rows'], t['read'], [q['label'] for q in g], [len(q['legs']) for q in g], [q.get('lost') for q in g]),
+         (18, 18, ['INA VAGNA', 'INA ETPAR', 'APCH'], [6, 4, 8], [0, 0, 0]),
+         'all 18 leg rows read (the two RF legs were lost), three groups: the VAGNA transition (IF + 4), the ETPAR transition (the « TF ETPAR » with no course or distance opens its own group as an IF) and the approach', what='groups')
+    c.eq(([(x['id'], x['center'], x['radius'], x['nm'], x['turn'], x.get('vpa'), x.get('kt')) for x in rf], g[1]['legs'][0]['leg']),
+         ([('BD05C', 'CD051', 2.2, 5.7, 'L', -3.4, 185), ('BD05D', 'CD052', 3.0, 3.8, 'L', None, 200)], 'IF'),
+         'the two RF legs: end point, centre on its own line, radius from « 2,20NM » (comma, glued NM) over two lines, left turn, vertical angle', what='rf')
+
+
+@case('K211', 'LFBD RNP AR Y RWY 05 (SOG-0248 leftovers): « IF V A G N A » is the point VAGNA (« VA » is a path terminator, but after the terminator already read the letters spell ONE point); a row that lost one dash (« - - 185 » for turn / minimum / maximum / speed) is restored because an altitude under 500 ft does not exist in these tables, so 185 is the speed; the radius « Radius 2,20NM » on one line is read', 'K', static=True,
+      rule='Ergonomist 12 Nov 2026 (survey leftovers of SOG-0248): LFBD RNP AR Y 05 gave « 12 cellules au lieu de 11 » for its initial fix and dropped BD05B. Rows: the public AIP page AD_2_LFBD_DATA_RWY05_RNP_AR_Y_CODE (16 May 2024 amendment, cycle 29 Oct 2026). An AR approach (authorization required) is read like the others; its RF arcs follow the RF rules (K200).')
+def k211(c):
+    rows = [
+        'AIP AD 2 LFBD DATA RWY05 RNP AR Y CODE', 'FRANCE 16 MAY 24', 'BORDEAUX MERIGNAC', 'PRECODING RNP AR Y RWY 05', 'RNP Y RWY 05 (AR)',
+        'RMK Authorization required REF NAVAID : -MAG VAR 2020 0.3°E', HDR_LFBD,
+        '- VAGNA Yes 225 225.0 4.6 L 5000 FL120 220 - -', 'HLDG', '- ETPAR Yes 165 165.0 4.6 L 5000 FL120 220 - -',
+        'IF V A G N A - - - - -- -- - -', 'TF BD057 - 277 276.8 10.9 - - - - - 1.0', 'INA', 'TF BD05R - 223 223.5 11.0 - - - 220 - 1.0', 'VAGNA',
+        'TF BOCEP - 210 210.2 4.1 - 5000 - 220 -1 . 0', 'TF ID05Y - 210 210.2 2.9 - 4000 5000 - - 1.0', 'IF ETPAR - - - - - - - 220 - -', 'INA',
+        'TF BOCEP - 173 173.4 16.4 - 5000 - - - 1.0', 'ETPAR', 'TF ID05Y - 210 210.2 2.9 - 4000 5000 - - 1.0', 'IF ID05Y - - - - - 4000 5000 - - -',
+        'TF FD05Y - 193 193.1 3.2 - 4000 4000 - - 1.0', 'TF BD05B - 193 193.0 1.2 - - 185 -3.40 /49 0.3', 'RF', 'Center CD051 BD05C - - - 5.7 L - - 185 -3.40 /49 0.3', 'Radius 2,20NM',
+        'APCH TF RW05 Yes 045 045.4 3.6 - - - - -3.40 /49 0.3', 'TF BD050 - 045 045.5 3.1 - - - 200 - 1.0', 'RF', 'Center CD052 BD05D - - - 3.8 L - 4000 200 - 1.0', 'Radius 3,00NM',
+        'TF ETPAR - 333 333.7 19.0 - - 4000 220 - 1.0', 'HM ETPAR Yes 165 165.0 4.6 L - 4000 220 - -', 'AMDT 05/24 © SIA']
+    t = _sia(rows)
+    g = t['groups']
+    c.eq((t['rows'], t['read'], [q['label'] for q in g], [q['legs'][0]['id'] for q in g], [q.get('lost') for q in g]),
+         (17, 17, ['INA VAGNA', 'INA ETPAR', 'APCH'], ['VAGNA', 'ETPAR', 'ID05Y'], [0, 0, 0]),
+         'all 17 leg rows read, no row lost: the initial fix is VAGNA (not « VA » + « GNA »), three groups', what='groups')
+    b = next(x for x in g[2]['legs'] if x['id'] == 'BD05B')
+    rf = [(x['id'], x['center'], x['radius'], x['nm'], x['turn'], x.get('rnp')) for x in g[2]['legs'] if x['leg'] == 'RF']
+    c.eq(((b['crs'], b['nm'], b['kt'], b['vpa'], b['rnp'], b.get('alt')), rf),
+         ((193, 1.2, 185, -3.4, 0.3, None), [('BD05C', 'CD051', 2.2, 5.7, 'L', 0.3), ('BD05D', 'CD052', 3.0, 3.8, 'L', 1.0)]),
+         'BD05B (a dash lost): 185 is the speed, no altitude; the RF legs with centre and radius from « Radius 2,20NM »', what='row')
+
+
+@case('K212', 'LFST INA RNAV RWY 23 (SOG-0248 leftovers): « IF G TQ » is the point GTQ (the first letter split off); the distance glued to the empty turn cell, « 5- » or « -5 » after the true course, is the distance 5 and a turn left empty; the five transitions (GTQ, BERUG, SOREM, STS26, LUPEN) are read whole', 'K', static=True,
+      rule='Ergonomist 12 Nov 2026 (survey leftovers of SOG-0248): LFST INA RNAV 23 had its first transition without initial fix (« 12 cellules au lieu de 11 ») and two of the final IST23 rows dropped. Rows: the public AIP page AD_2_LFST_DATA_RWY23_INA_RNAV_CODE (28 Nov 2024 amendment, cycle 29 Oct 2026).')
+def k212(c):
+    rows = [
+        'AIP AD 2 LFST DA T A RWY23 INA RNAV CODE', 'FRANCE 28 NOV 2 4', 'STRASBOURG ENTZHEIM', 'PRECODING INA RNAV (GNSS) RWY 23', 'AMDT 12 /2 4 © SIA',
+        'INA RN AV GTQ / BERUG / SOREM / LUPEN RWY 23', 'RMK GNSS only MAG VAR 2020 2.5°E REF NAVAID :', HDR_LFBD,
+        '- STB40 - ---- - - -- -', 'HLDG', '- STS40 - -- -- - - -- -', 'IF G TQ - -- -- FL140 FL220 250 - -', 'TF STG48 - 109 111.2 16 - FL110 FL170 250 - 1.0',
+        'INA GTQ TF SAV - 109 111.5 15.2 - FL080 FL120 250 - 1.0', 'TF STA17 - 095 97.6 15.4 - 4500 6500 220 - 1.0', 'TF IST23 - 156 158.9 5 - 3500 4500 190 - 1.0',
+        'IF BERUG - -- -- FL120 FL200 250 - -', 'TF STB40 - 074 076.5 13.3 - FL120 FL150 250 - 1.0', 'INA BERUG TF STB28 - 074 076.6 12 - FL080 FL110 250 - 1.0',
+        'TF STA17 - 074 076.9 11.4 - 4500 6500 220 - 1.0', 'TF IST23 - 156 158.9 5 - 3500 4500 190 - 1.0', 'IF SOREM - - - - - FL140 FL200 250 - -',
+        'TF STS40 - 059 061.6 12.8 - FL120 FL150 250 - 1.0', 'INA SOREM TF STS26 - 059 061.7 13.7 - 7000 FL100 250 - 1.0', 'TF STA17 - 059 061.5 10.3 - 4500 6500 220 - 1.0',
+        'TF IST23 - 156 158.9 5- 3500 4500 190 - 1.0', 'IF STS26 - - - - - 3500 4500 220 - -', 'INA STS26 TF STA17 - 059 061.5 10.3 - 3500 4500 220 - 1.0',
+        'TF IST23 - 156 158.9 5 - 3500 4500 190 - 1.0', 'IF LUPEN -- - -- FL120 FL170 250 - -', 'TF ST420 - 301 303.3 7.7 - FL100 FL140 250 - 1.0',
+        'INA LUPEN TF STS26 - 005 007.2 10.6 - 7000 FL100 250 - 1.0', 'TF STA17 - 059 061.5 10.3 - 4500 6500 220 - 1.0', 'TF IST23 - 156 158.9 -5 3500 4500 190 - 1.0']
+    t = _sia(rows)
+    g = t['groups']
+    c.eq((t['rows'], t['read'], [q['label'] for q in g], [q['legs'][0]['id'] for q in g], [len(q['legs']) for q in g], [q.get('lost') for q in g]),
+         (23, 23, ['INA GTQ', 'INA BERUG', 'INA SOREM', 'INA STS26', 'INA LUPEN'], ['GTQ', 'BERUG', 'SOREM', 'STS26', 'LUPEN'], [5, 5, 5, 3, 5], [0, 0, 0, 0, 0]),
+         'all 23 leg rows read; each transition starts with its initial fix (GTQ was lost) and ends on IST23', what='groups')
+    last = [(q['legs'][-1]['id'], q['legs'][-1]['crs'], q['legs'][-1]['nm'], q['legs'][-1].get('turn')) for q in g]
+    c.eq(last, [('IST23', 156, 5.0, None)] * 5, 'the IST23 legs, including the ones printed « 5- » and « -5 »: course 156, distance 5, no turn', what='ist23')

@@ -142,12 +142,12 @@ def _title(rows):
 LANE = re.compile(r'^RWY ?(\d{2}[LRC]?)(?: -)? (\d{1,3}) (\d{1,3}\.\d)$')       # « RWY14R 141 142.9 » : en-tête de piste d'un départ à plusieurs pistes (cap magnétique et vrai de la piste) ; « RWY09L - 087 088.4 » (LFPG) : la colonne de l'identifiant de procédure, vide, imprime un tiret
 
 
-def _spelled(run):
+def _spelled(run, after_pt=False):
     """Mot(s) recomposé(s) d'une suite de caractères que l'extracteur a espacés un à un (« D F P O 2 0 4 Y e s » → DF PO204 Yes ; « F L 1 1 0 F L 1 1 0 2 5 0 » → FL110 FL110 250)."""
     if len(run) > 1 and run[0] in 'LR' and (run[1].isdigit() or run.startswith(('LFL', 'RFL'))):        # le sens du virage collé au nombre qui suit
         return [run[0]] + _spelled(run[1:])
     m = re.fullmatch(r'([A-Z]{2})([A-Z0-9]{2,6}?)(Yes)?', run)
-    if m and m.group(1) in PATH_TERMINATORS:
+    if m and m.group(1) in PATH_TERMINATORS and not after_pt:        # après un terminateur déjà lu (« IF V A G N A »), la suite est UN point : « VA » de VAGNA n'est pas le terminateur VA
         return [m.group(1), m.group(2)] + (['Yes'] if m.group(3) else [])
     if 'FL' in run and re.fullmatch(r'(?:FL\d{3}|\d+(?:\.\d+)?)+', run):
         return re.findall(r'FL\d{3}|\d+(?:\.\d+)?', run)
@@ -221,6 +221,9 @@ def _rejoin_cells(out):
     return res
 
 
+DASHES_ONLY = frozenset(('-', '--', '---', '----'))
+
+
 def norm_tokens(row, split=False):
     """Mots d'une ligne de tableau, remis en forme avant lecture : lettres et chiffres espacés un à un recomposés (« Y e s », « 1 . 0 », « D F P O 2 0 4 »), « FL 070 » → FL070,
     terminateur collé à des tirets (« F M-- » → FM --) ou virage collé à des tirets (« L- », « ---L »), virgule décimale → point (« 198,4 » → 198.4), colonne « Nav Spec » remise en fin de ligne
@@ -253,11 +256,15 @@ def norm_tokens(row, split=False):
             out.append('F' + t[i + 1])
             i += 2
             continue
+        if out and out[-1] in PATH_TERMINATORS and re.fullmatch(r'[A-Z]', w) and i + 2 < len(t) and re.fullmatch(r'[A-Z][A-Z0-9]{1,4}', t[i + 1]) and t[i + 2] in DASHES_ONLY:       # « IF G TQ - -- -- » : l'identifiant du point coupé après sa première lettre (LFST INA RNAV 23, GTQ) ; seulement juste après le terminateur, suivi des cellules vides
+            out.append(w + t[i + 1])
+            i += 2
+            continue
         j = i
         while j < len(t) and re.fullmatch(r'[A-Za-z0-9.,]', t[j]):
             j += 1
         if j - i >= 2:
-            out += _spelled(''.join(t[i:j]))
+            out += _spelled(''.join(t[i:j]), bool(out) and out[-1] in PATH_TERMINATORS)
             i = j
             continue
         out.append(w)
@@ -268,6 +275,10 @@ def norm_tokens(row, split=False):
         m = re.fullmatch(r'([A-Z]{2})(-+)', w)
         if res and res[-1] in PATH_TERMINATORS and re.fullmatch(r'[A-Z]{2}', w) and n + 1 < len(out) and re.fullmatch(r'\d{3}', out[n + 1]):
             res.append(w)                  # point dont le nom est coupé en deux par la page (« PB 096 », « FF 305 » → PB096, FF305) : rejoint ci-dessous
+            continue
+        m2 = re.fullmatch(r'(\d{1,2}(?:\.\d)?)-|-(\d{1,2}(?:\.\d)?)', w)
+        if m2 and res and re.fullmatch(r'\d{3}\.\d', res[-1]):         # « 158.9 5- » ou « 158.9 -5 » : la distance et la cellule vide du virage collées dans un seul mot, dans un sens ou dans l'autre (LFST INA RNAV 23) ; après un cap vrai seulement
+            res += [m2.group(1) or m2.group(2), '-']
             continue
         if res and re.fullmatch(r'[A-Z]{2}', res[-1]) and n > 1 and res[-2] in PATH_TERMINATORS and re.fullmatch(r'\d{3}', w):
             res[-1] += w
@@ -335,6 +346,8 @@ def _fit(c, want, rnp, leg):
     """Cellules d'une ligne qui en a de MOINS qu'il n'en faut (la page a perdu un tiret) : la disposition (_arrangements) si UNE SEULE convient, None sinon (aucune, ou plusieurs : la ligne n'est
     pas lue entière, jamais devinée)."""
     seen = _arrangements(c, want, rnp, leg)
+    if rnp and len(seen) > 1:   # pages d'APPROCHE seulement (les départs de LFPG gardent leur garde-fou, K25) : une altitude imprimée en clair sous 500 ft n'existe pas dans ces tables (voir _fit_geometry) : « - - 185 » après la distance est le tiret de la précision perdu, 185 est la vitesse, jamais un maxi de 185 ft (LFBD RNP AR Y 05)
+        seen = [a for a in seen if all(a[i] is None or (alt_ft(a[i]) or 0) >= 500 for i in (6, 7))]
     return seen[0] if len(seen) == 1 else None
 
 
@@ -621,12 +634,41 @@ def parse_code_table(rows):
             cur['lost'] = cur.get('lost', 0) + 1
         else:
             lost += 1
-    last_rf = None
+    last_rf = rf_center = None
+    want_radius = False
     for r in rows[start + 1:]:
         t = norm_tokens(r, split=rnp)
         if not t:
             continue
         if rnp and t == ['RF']:                                         # SOG-0248 : la branche en arc (RF) s'imprime sur TROIS lignes : « RF », puis « Center ST400 ST425 … » (centre, point de fin, puis les cellules d'un tronçon), puis « Radius 2.76 NM »
+            continue
+        if rnp and t[0] == 'Center' and len(t) == 2 and re.fullmatch(r'[A-Z][A-Z0-9]{1,5}', t[1]):       # LFBD RNP A VPT : le centre SEUL sur sa ligne, le point de fin et les cellules sur la suivante (« BD05C - - - 5.7 L … »), le rayon sur deux lignes (« Radius » puis « 2,20NM »)
+            rf_center = t[1]
+            continue
+        if rnp and rf_center is not None and re.fullmatch(r'[A-Z][A-Z0-9]{1,5}', t[0]):
+            centre, rf_center = rf_center, None
+            leg = _leg(['RF', t[0]] + t[1:], True, warnings.append)
+            seen += 1
+            if leg:
+                leg['center'] = centre
+                read += 1
+                place(leg, '', None)
+                last_rf = leg
+            else:
+                miss()
+            continue
+        if rnp and t[0] == 'Radius' and len(t) == 2 and last_rf is not None and re.fullmatch(r'\d+[.,]\d+(?:NM)?', t[1]):       # « Radius 2,20NM » : virgule décimale et NM collé
+            last_rf['radius'] = float(t[1].replace(',', '.').replace('NM', ''))
+            last_rf = None
+            continue
+        if rnp and t == ['Radius'] and last_rf is not None:
+            want_radius = True
+            continue
+        if rnp and want_radius and len(t) == 1 and re.fullmatch(r'\d+[.,]\d+(?:NM)?', t[0]):
+            want_radius = False
+            if last_rf is not None:
+                last_rf['radius'] = float(t[0].replace(',', '.').replace('NM', ''))
+                last_rf = None
             continue
         if rnp and t[0] == 'Center' and len(t) >= 3:
             leg = _leg(['RF', t[2]] + t[3:], True, warnings.append)
@@ -728,6 +770,9 @@ def parse_code_table(rows):
             if not leg:
                 miss()
                 continue
+            if rnp and leg['leg'] == 'TF' and cur is not None and cur['legs'] and all(leg.get(x) is None for x in ('crs', 'nm', 'turn', 'over', 'vpa')):
+                leg['leg'] = 'IF'            # LFBD RNP A VPT : le second point initial (ETPAR) est imprimé « TF » avec toutes ses cellules de route à « - » ; un TF sans cap ni distance ne dit aucune route, c'est un point initial (il ouvre un groupe, il ne prolonge pas le précédent)
+                warnings.append(f'point initial {leg["id"]} imprimé « TF » (ni cap ni distance), lu comme IF: {r}')
             read += 1
             place(leg, label, rw)
         elif not rnp and STAR_TITLE.fullmatch(re.sub(r'^[←→↑↓↗↘➔➜►▶]+\s*', '', r)):         # intitulé d'une STAR : « ENORI 9W », suivi entre parenthèses de l'espace aérien du point d'entrée et des conditions d'emploi (LFPG)

@@ -42,6 +42,26 @@ def _unshift(text):
     return ''.join(chr(ord(ch) + 29) if 0x13 <= ord(ch) <= 0x64 else ch for ch in text)
 
 
+GLYPH = re.compile(r'/g(\d+)')
+
+
+def _glyphs(text):
+    """Police sans table de caractères (la page « RNP A VPT » de LFBD) : pypdf rend les NOMS DE GLYPHES (« /g50/g46/g48 ») au lieu du texte. Le jeu est celui de l'ASCII décalé de −32 (« /g50 » = R, « /g16 » = 0, « /g13 » = −,
+    « /g14 » = ., « /g1 » = espace, « /g136 » = °). Un fragment dont les noms de glyphes couvrent ≥ 60 % des caractères est décodé ; un nom hors du jeu (au-delà de /g94, hors « /g136 ») reste tel quel : rien n'est deviné."""
+    found = GLYPH.findall(text)
+    if not found or sum(len(g) + 2 for g in found) < 0.6 * len(text) or (len(found) < 3 and GLYPH.sub('', text).strip()):
+        return text
+
+    def one(m):
+        n = int(m.group(1))
+        if n == 1:
+            return ' '
+        if n == 136:
+            return '°'
+        return chr(n + 32) if 2 <= n <= 94 else m.group(0)
+    return GLYPH.sub(one, text)
+
+
 def pdf_pages(path, timeout=None):
     """Lignes de TOUTES les pages d'un PDF : liste (une par page) de listes de lignes ; une page illisible donne [] (rien n'est deviné).
     Lu dans un processus séparé, au plus PDF_TIMEOUT s (limited) : PdfTimeout sinon."""
@@ -70,7 +90,7 @@ def rows_from_pdf(path, page=0, reader=None):
             frags.append((r, c, len(frags), text))
     page.extract_text(visitor_text=visit)
     # caractères de police illisibles (contrôle, zone privée): effacés
-    frags = [(r, c, i, re.sub(r'[\x00-\x1f-]', ' ', _unshift(t[1]) if (t[0] in fonts or _shifted(t[1])) else t[1])) for r, c, i, t in frags]
+    frags = [(r, c, i, _glyphs(t[1]) if GLYPH.search(t[1]) else re.sub(r'[\x00-\x1f-]', ' ', _unshift(t[1]) if (t[0] in fonts or _shifted(t[1])) else t[1])) for r, c, i, t in frags]
     rows = []
     for y, x, i, t in sorted(frags, key=lambda f: (f[0], f[1], f[2])):
         if rows and abs(rows[-1][0] - y) <= 2.5:
