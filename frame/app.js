@@ -82,8 +82,11 @@
   // navigateur la donne, doit être celle d'un paysage. Jamais avec un pointeur précis qui survole (souris, pavé tactile) : une
   // fenêtre d'ordinateur plus large que haute garde le rail à libellés et son design (30 oct. : sans cela, en élargissant une
   // fenêtre, on passait téléphone → ordinateur → rail d'icônes sans Aqua → ordinateur).
-  const fineQ = matchMedia('(pointer: fine) and (hover: hover)'),
-    landNow = () => innerWidth > innerHeight && innerWidth < 1024 && !fineQ.matches && !/^portrait/.test(screen.orientation?.type || '');
+  // SOG-0274 (the ergonomist, 12 Nov): « phone turned » is a window wider than high AND of a PHONE's height (500 px at most), not the width alone: a touch window of 900 × 700 has the 56 px icon rail and the full content width; the phone mode starts at 760 px wide as before
+  const LAND_MAX_H = 500,
+    fineQ = matchMedia('(pointer: fine) and (hover: hover)'),
+    landNow = () => innerWidth > innerHeight && innerWidth < 1024 && innerHeight <= LAND_MAX_H && !fineQ.matches && !/^portrait/.test(
+      screen.orientation?.type || '');
 
   function paintLand() {
     const h = document.documentElement,

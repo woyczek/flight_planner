@@ -459,8 +459,8 @@ stays supported by the code but no tab uses it today.
   about it reaches a module: `ctx.tab` is all it knows. On a screen the rail lists the modules.
 - **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel, `'weather'` for atmosphere), `null` if none. For a
   module that wants to know its group; it never opens or changes a tab.
-- **Landscape on a phone (`html.f-land`)**: when the window is wider than high **and** under 1024 px (a phone or a small
-  tablet turned; Safari does not honour the manifest's portrait lock), **without a precise pointer that hovers** (a computer's
+- **Landscape on a phone (`html.f-land`)**: when the window is wider than high, under 1024 px **and no higher than 500 px** (a phone turned: SOG-0274, 12 Nov 2026; a touch window of 900 × 700 is no longer one and has the 56 px icon rail of the left bar; a small
+  tablet turned in landscape is not either; Safari does not honour the manifest's portrait lock), **without a precise pointer that hovers** (a computer's
   window wider than high keeps the computer's rail, 30 Oct 2026), the frame sets `<html class="f-land">` (and
   removes it, one write when the value changes, on `resize` / `orientationchange`; `frame-orientation` is fired on
   `window` after, `detail: { land }`). The bottom bar then becomes a **rail of icons at the left edge**: `--f-rail-w`

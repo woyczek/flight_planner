@@ -407,7 +407,7 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
     siblings; a module's own tabs (Fuel's Plan / Sheets) stay inside it. On a screen the rail lists the modules as before and
     nothing else is drawn.
   - **Landscape on a phone** (24 Oct 2026, 17:45, `docs/technique/V3_SPECIFICATION.md` § 7.1 rule 7, `frame/INTEGRATION.md`
-    § 9.1): `<html class="f-land">` is set by the frame when the window is wider than high and under 1024 px (one write when
+    § 9.1): `<html class="f-land">` is set by the frame when the window is wider than high, under 1024 px and no higher than 500 px (a phone's height: SOG-0274; one write when
     the value changes, on `resize` and `orientationchange`; `frame-orientation` fired after; the screen's orientation must
     not be portrait, so an on-screen keyboard does not flip a portrait phone). The bar becomes a **rail of icons at the left
     edge** (`--f-rail-w`, 44 px, full height under the header, no label: the label is the `aria-label`; the same popover on a

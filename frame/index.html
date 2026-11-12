@@ -15,7 +15,7 @@ try {
 // paysage sur un téléphone (même règle que landNow() de frame/app.js, qui la tient ensuite à jour) : la mise en page du rail et de la
 // colonne est juste dès le premier affichage ; jamais avec une souris (une fenêtre d'ordinateur garde le rail à libellés)
 try {
-  if (innerWidth > innerHeight && innerWidth < 1024 && !matchMedia('(pointer: fine) and (hover: hover)').matches && !/^portrait/.test(screen
+  if (innerWidth > innerHeight && innerWidth < 1024 && innerHeight <= 500 && !matchMedia('(pointer: fine) and (hover: hover)').matches && !/^portrait/.test(screen
       .orientation?.type || '')) document.documentElement.classList.add('f-land')
   // ordinateur (frame/app.js, paintDesk) : la mise en page de l'ordinateur (rail à libellés), et son design (Aqua), dès le premier
   // affichage

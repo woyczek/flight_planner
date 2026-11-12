@@ -6727,6 +6727,26 @@ def a161(c):
     c.check_errors()
 
 
+
+@case('A162', 'A touch window is a « phone turned » only at a phone’s height: 900 × 700 has the 56 px icon rail and the content in full width, 844 × 390 is the phone turned (its own rail of tabs), 760 × 900 is the phone mode (SOG-0274)', 'A',
+      screens=False, night=False,
+      rule='SOG-0274 (the ergonomist, 12 Nov): html.f-land = wider than high AND under 1024 px AND no higher than 500 px; before it was the width alone, so a touch window wider than high under 1024 px never had the icon rail of the left bar; now 900 × 700 → the 56 px rail (f-desk, #fNav shown, no f-land), 844 × 390 → f-land (#fNav hidden, the rail of tabs), 760 × 900 → the phone mode (neither; the bar at the bottom)')
+def a162(c):
+    PROBE = "(() => { const h = document.documentElement, n = document.getElementById('fNav'), v = document.querySelector('.f-view'), t = document.getElementById('fTabs'); return { land: h.classList.contains('f-land'), desk: h.classList.contains('f-desk'), nav: getComputedStyle(n).display !== 'none' ? Math.round(n.getBoundingClientRect().width) : 0, tabs: getComputedStyle(t).display !== 'none', left: Math.round(v.getBoundingClientRect().left), scrollW: document.documentElement.scrollWidth, innerW: window.innerWidth } })()"
+    seen = {}
+    for w, h in ((900, 700), (844, 390), (760, 900)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open('fuel', docs=LEVEL3, wait=False)
+        c.until("!!document.querySelectorAll('#fMenu a').length", timeout=20000, what=f'{w} x {h}: the bar')
+        c.wait(500)
+        seen[(w, h)] = c.js(PROBE)
+    a, b, p = seen[(900, 700)], seen[(844, 390)], seen[(760, 900)]
+    c.eq([a['land'], a['desk'], a['nav'], a['tabs'], a['left'] - a['nav'] <= 1, a['scrollW'] <= a['innerW']], [False, True, 88 if c.design == 'material' else 56, False, True, True], '900 x 700 (touch): not a phone turned, the 56 px icon rail (Material: its own 88 px), the content right after it, no horizontal scroll', what='900x700')
+    c.eq([b['land'], b['desk'], b['nav'], b['tabs']], [True, False, 0, True], '844 x 390: the phone turned (its own rail of tabs, the left bar gone)', what='844x390')
+    c.eq([p['land'], p['desk'], p['nav'], p['tabs']], [False, False, 0, True], '760 x 900: the phone mode (the bar at the bottom, the left bar gone)', what='760x900')
+    c.check_errors()
+
+
 @case('A151', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')
