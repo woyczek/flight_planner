@@ -447,6 +447,34 @@ const TX = {
   diffWind: ['vent {a} → {b}', 'wind {a} → {b}', 'Wind {a} → {b}', 'viento {a} → {b}'],
   diffBlock: ['bloc {a} → {b}', 'block {a} → {b}', 'Block {a} → {b}', 'bloque {a} → {b}'],
   diffEta: ['arrivée prévue {t}', 'planned arrival {t}', 'geplante Ankunft {t}', 'llegada prevista {t}'],
+  // SOG-0279 : le vol en cours est RETENU sur l'appareil (jamais envoyé par l'envoi groupé) ; il part par ce geste ou « Synchroniser »
+  sendHeld: ['Ce vol est enregistré sur cet appareil ; vos autres appareils ne le reçoivent qu’à son envoi.',
+    'This flight is saved on this device; your other devices receive it only when you send it.',
+    'Dieser Flug ist auf diesem Gerät gespeichert; Ihre anderen Geräte erhalten ihn erst, wenn Sie ihn senden.',
+    'Este vuelo está guardado en este dispositivo; sus otros dispositivos solo lo reciben cuando lo envía.'
+  ],
+  sendBtn: ['Envoyer ce vol à mes appareils', 'Send this flight to my devices', 'Diesen Flug an meine Geräte senden',
+    'Enviar este vuelo a mis dispositivos'
+  ],
+  sending: ['Envoi…', 'Sending…', 'Wird gesendet…', 'Enviando…'],
+  sentAt: ['Vol envoyé à vos appareils à {t}.', 'Flight sent to your devices at {t}.', 'Flug um {t} an Ihre Geräte gesendet.',
+    'Vuelo enviado a sus dispositivos a las {t}.'
+  ],
+  sendOffline: ['Pas encore envoyé : hors ligne. Le vol reste sur cet appareil ; renvoyez-le quand le réseau revient.',
+    'Not sent yet: offline. The flight stays on this device; send it again when the network is back.',
+    'Noch nicht gesendet: offline. Der Flug bleibt auf diesem Gerät; senden Sie ihn erneut, wenn das Netz zurück ist.',
+    'Aún no enviado: sin conexión. El vuelo queda en este dispositivo; vuelva a enviarlo cuando vuelva la red.'
+  ],
+  sendLocal: ['Aucun dépôt réglé sur cet appareil : le vol y reste (rien ne part vers vos autres appareils).',
+    'No repository set on this device: the flight stays here (nothing leaves for your other devices).',
+    'Kein Repository auf diesem Gerät eingerichtet: Der Flug bleibt hier (nichts geht an Ihre anderen Geräte).',
+    'Ningún repositorio configurado en este dispositivo: el vuelo se queda aquí (nada sale hacia sus otros dispositivos).'
+  ],
+  sendFail: ['Le vol n’est pas parti : il reste sur cet appareil. Réessayez quand le réseau revient.',
+    'The flight did not leave: it stays on this device. Try again when the network is back.',
+    'Der Flug wurde nicht gesendet: Er bleibt auf diesem Gerät. Versuchen Sie es erneut, wenn das Netz zurück ist.',
+    'El vuelo no salió: queda en este dispositivo. Vuelva a intentarlo cuando vuelva la red.'
+  ],
   startHint: ['La carte s’ouvre sur ce vol ; le compte rendu le reprendra.',
     'The map opens on this flight; the report will take it up.',
     'Die Karte öffnet sich mit diesem Flug; der Bericht übernimmt ihn.',
@@ -2085,7 +2113,8 @@ function renderPlanBody() {
   ${sec(4, `<div class="f-card" data-block="summary"><h2>${esc(tt(TX.stepNames[4]))}</h2><div data-sum></div>
       <div class="f-row" data-startrow></div>
       <p class="fu-startnote" data-startnote aria-live="polite"></p>
-      <p class="f-muted">${esc(tt(TX.startHint))}</p></div>
+      <p class="f-muted">${esc(tt(TX.startHint))}</p>
+      <div class="fu-send" data-send hidden aria-live="polite"></div></div>
     <div class="f-card" data-block="aids"><h2>${esc(tt(TX.aidsTitle))}</h2><div data-aids></div></div>
     <div class="f-card fu-hide" data-block="procs"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="start"></div></div>
     <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>
@@ -2571,6 +2600,7 @@ function onPlanClick(e) {
   if (pfold && (pfold.matches('button') || !e.target.closest('button, a'))) return S.P.fold(pfold.dataset.side);
   const fm = e.target.closest('[data-do="fms"]');
   if (fm) return fm.disabled ? undefined : exportFms(fm.dataset.fms);
+  if (e.target.closest('[data-do="sendflight"]')) return sendFlight();
   if (e.target.closest('[data-do="start"]')) return startFlight();
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
@@ -5907,6 +5937,12 @@ export async function mount(el, ctx) {
     if (S.view === 'sheets') keepScroll(S.body, renderSheets);
     else if (S.view === 'plan') refresh();
   }));
+  // SOG-0279 : l'état de la couche de données (le vol retenu ou parti) suit le bouton « Envoyer ce vol à mes appareils »
+  if (typeof ctx.data.onStatus === 'function') S.stops.push(ctx.data.onStatus(st => {
+    if (gone(self)) return;
+    S.fdStatus = st;
+    sendDraw();
+  }));
   S.stops.push(ctx.data.watch(pilotPath('current_flight.json'), async () => {
     if (gone(self)) return;
     const f = await ctx.data.get(pilotPath('current_flight.json'));
@@ -6047,6 +6083,48 @@ function waitLine() {
   p.hidden = !kind;
   p.innerHTML = kind === 'wait' ? esc(tt(TX.waitFlight)) : kind === 'late' ?
     `${esc(tt(TX.lateFlight))} <a href="#settings">${esc(tt(TX.syncLink))}</a>` : '';
+}
+
+// ---------------------------------------------------------------- « Envoyer ce vol à mes appareils » (SOG-0279)
+/** Le vol en cours est-il retenu sur l'appareil (écrit, pas encore envoyé) ? D'après le dernier état de la couche (queue[].held). */
+const flightHeld = () => (S?.fdStatus?.queue || []).some(q => q?.held && q.path === pilotPath('current_flight.json'));
+/** La ligne du geste, dans le résumé : le vol retenu (le dire, et le bouton), en cours d'envoi, ou parti (« envoyé à 17:52 ») ;
+ *  masquée sans couche qui envoie (pas de sendNow) ou sans vol retenu ni envoi de la séance. */
+function sendDraw() {
+  const box = S?.body?.querySelector('[data-send]');
+  if (!box) return;
+  const can = typeof S.ctx.data.sendNow === 'function',
+    held = can && flightHeld(),
+    html = S.sending ? `<button type="button" data-do="sendflight" disabled>${esc(tt(TX.sending))}</button>` : held ?
+    `<p class="f-muted" data-sendsays>${esc(tt(TX.sendHeld))}</p><button type="button" data-do="sendflight">${esc(tt(TX.sendBtn))}</button>` :
+    S.sentAt ? `<p class="f-muted" data-sent>${esc(tt(TX.sentAt, { t: S.sentAt }))}</p>` : '';
+  box.hidden = !html;
+  if (box.__html !== html) box.innerHTML = box.__html = html;
+}
+/** Le geste : le vol part maintenant par l'ADAPTATEUR du module (ctx.data.sendNow, V3 Frame 03a8c1813 : borné aux écritures déclarées,
+ *  jamais window.FrameData) ; « envoyé » seulement s'il est parti (pushed) et n'est plus retenu ; sinon la raison dite : hors ligne, pas
+ *  de dépôt sur l'appareil (transport local : rien ne part), ou l'échec, jamais en silence. */
+async function sendFlight() {
+  const D = S.ctx.data,
+    s = S;
+  if (typeof D.sendNow !== 'function' || s.sending) return;
+  s.sending = true;
+  sendDraw();
+  let r = null;
+  try {
+    r = await D.sendNow(pilotPath('current_flight.json'));
+    s.fdStatus = await D.status?.() || s.fdStatus;
+  } catch {
+    r = null;
+  }
+  if (S !== s) return;
+  s.sending = false;
+  if (r?.ok === true && +r.pushed > 0 && !flightHeld()) s.sentAt = new Date().toLocaleTimeString(s.ctx.lang?.() || 'fr', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  else s.ctx.notify(tt(r?.error === 'offline' ? TX.sendOffline : r?.ok === true ? TX.sendLocal : TX.sendFail), 'warn');
+  sendDraw();
 }
 
 /** Lecture qui attend le réseau, bornée : null au-delà de ms (late() appelé), la valeur sinon. */

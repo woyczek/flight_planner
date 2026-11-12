@@ -151,6 +151,8 @@ meteorológico, unidades, consumo de este vuelo) son el primer desplegable del p
 
 <a id="fuel-step-5"></a>**5 Salida.** Un resumen de una página: la aeronave, la ruta tal como se presentará, el nivel (y sus escalones), el
 
+**Enviar este vuelo a mis dispositivos.** El vuelo en curso se guarda al momento en este dispositivo, pero no sale con el envío agrupado de los datos (cada cinco minutos como mucho): sus otros dispositivos (teléfono, tableta) solo lo reciben cuando lo envía. Mientras espera, el resumen lo dice y ofrece «Enviar este vuelo a mis dispositivos»; sale enseguida, y la línea dice «Vuelo enviado a sus dispositivos a las 17:52». «Sincronizar» también lo envía. Si no sale (sin conexión), una nota lo dice: queda en este dispositivo.
+
 **Radioayudas.** Bajo el resumen, «Radioayudas» da de un vistazo el ILS de la aproximación elegida (pista, indicativo, frecuencia, eje, DME) y luego, plegados, los VOR / DME de la ruta en el orden del vuelo, cada uno con su frecuencia y el tramo donde sirve. Nada se inventa: sin ayuda en la base, la tarjeta lo dice.
 viento y su fuente, el combustible de bloque. «Iniciar el vuelo» lanza el plan de vuelo (puesta en marcha, retroceso,
 rodaje…). La preparación puede tener varios días: por eso empieza rehaciéndolo todo a la hora real — la fecha del vuelo

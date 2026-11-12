@@ -4546,3 +4546,39 @@ def f153(c):
     wait_quote(c)
     to_step(c, 3)
     c.ok('lb' in norm(c.text(f'{FUEL} [data-settingssum]') or ''), c.text(f'{FUEL} [data-settingssum]'), 'the device document says lb: lb')
+
+@case('F151', 'Departure step: the flight held on this device says so and offers « Envoyer ce vol à mes appareils »; the gesture sends it at once '
+      '(one commit with the flight), then « Vol envoyé à vos appareils à … »',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0279 (the user: one grouped send every five minutes, the current flight kept on the device until its gesture; V3 Frame 6286277f6: '
+      'FrameData.sendNow, the held class); a fake launcher transport (/__setup/changes and /__setup/batch answered here, never a real one); captures 390 and 1 280')
+def f151(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        posts = []
+        c.context.route(re.compile(r'/__setup/changes'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({'head': 'h1', 'tree': {}})))
+        c.context.route(re.compile(r'/__setup/batch'), lambda r: (posts.append(json.loads(r.request.post_data or '{}')),
+                                                                  r.fulfill(status=200, content_type='application/json', body=json.dumps({'head': f'h{len(posts) + 1}'}))))
+        c.open('fuel', docs=flight_docs())
+        wait_quote(c)
+        # the workstation transport (a launcher that answers): writes are grouped, the current flight is HELD
+        c.js("""() => { FrameData.configure({ transport: { ...FrameData.launcher({}), quick: true }, identity: { trigram: 'ABC' } });
+          window.__w = FrameData.adapter({ id: 'testwriter', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] }) }""")
+        f = c.doc('pilot/ABC/current_flight.json') or {}
+        c.js("(d) => window.__w.put('pilot/ABC/current_flight.json', d)", {**f, 'updated_at': '2026-11-12T18:00:00Z'})
+        to_step(c, 4)
+        c.until(f"!!document.querySelector('{FUEL} [data-send]:not([hidden]) [data-do=sendflight]:not([disabled])')", timeout=10000,
+                what=f'{w} px: the flight held, its gesture offered')
+        c.eq(norm(c.text(f'{FUEL} [data-sendsays]') or ''), norm(tx(F, 'sendHeld', c.lang)), 'said: on this device until it is sent', what='held line')
+        c.eq(norm(c.text(f'{FUEL} [data-do=sendflight]') or ''), norm(tx(F, 'sendBtn', c.lang)), '« Envoyer ce vol à mes appareils »', what='button')
+        c.eq(len(posts), 0, 'nothing sent before the gesture (the flight is held)', what='no commit')
+        c.js(f"document.querySelector('{FUEL} [data-send]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F151_{c.design}_{w}_{c.lang}_delivered.png')
+        c.tap(f'{FUEL} [data-do="sendflight"]')
+        c.until(f"!!document.querySelector('{FUEL} [data-send] [data-sent]')", timeout=10000, what=f'{w} px: « Vol envoyé à vos appareils à … »')
+        paths = sorted({ch['path'] for p in posts for ch in p.get('changes', [])})
+        c.ok(len(posts) == 1 and 'pilot/ABC/current_flight.json' in paths, [len(posts), paths], 'one commit, with the flight')
+        c.ok(norm(tx(F, 'sentAt', c.lang).split('{t}')[0]) in norm(c.text(f'{FUEL} [data-sent]') or ''), c.text(f'{FUEL} [data-sent]'), 'the line says it left, and when')
+        c.ok(not c.js(f"!!document.querySelector('{FUEL} [data-do=sendflight]')"), '', 'no button once the flight left')
+        c.context.unroute(re.compile(r'/__setup/changes'))
+        c.context.unroute(re.compile(r'/__setup/batch'))

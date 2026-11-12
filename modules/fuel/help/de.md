@@ -155,6 +155,8 @@ Reserve, Zusatzmenge, Wetterkorridor, Einheiten, Verbrauch dieses Flugs) sind de
 
 <a id="fuel-step-5"></a>**5 Abflug.** Eine Zusammenfassung auf einer Seite: das Luftfahrzeug, die Route, wie sie aufgegeben wird, die Flugfläche
 
+**Diesen Flug an meine Geräte senden.** Der aktuelle Flug wird sofort auf diesem Gerät gespeichert, geht aber nicht mit dem gebündelten Senden der Daten hinaus (höchstens alle fünf Minuten): Ihre anderen Geräte (Telefon, Tablet) erhalten ihn erst, wenn Sie ihn senden. Solange er wartet, sagt es die Zusammenfassung und bietet „Diesen Flug an meine Geräte senden“ an; er geht sofort hinaus, und die Zeile sagt „Flug um 17:52 an Ihre Geräte gesendet“. „Synchronisieren“ sendet ihn ebenfalls. Geht er nicht hinaus (offline), sagt es ein Hinweis: Er bleibt auf diesem Gerät.
+
 **Funknavigationshilfen.** Unter der Zusammenfassung zeigt „Funknavigationshilfen“ auf einen Blick das ILS des gewählten Anflugs (Piste, Kennung, Frequenz, Kurs, DME), dann, eingeklappt, die VOR / DME der Route in der Reihenfolge des Flugs, jedes mit seiner Frequenz und dem Abschnitt, auf dem es dient. Nichts wird erfunden: ohne Hilfe in der Basis sagt es die Karte.
 (und ihre Stufen), der Wind und seine Quelle, der Blockkraftstoff. „Flug starten“ startet den Flugplan (Anlassen,
 Zurückstoßen, Rollen…). Die Vorbereitung kann mehrere Tage alt sein: Deshalb wird zuerst alles auf die tatsächliche

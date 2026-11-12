@@ -1736,3 +1736,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   Fuel no longer writes them to fuel.json, whose old keys disappear at its next write; each document is written only when its part
   changed. The device document wins over an older fuel.json. The Map reads displayAlt there first (BUGS SOG a9758e03a, D191). Help: the
   units are a setting of this device. F153 (red before).
+
+- **12 Nov 2026 — « Envoyer ce vol à mes appareils »** (SOG-0279 (2); V3 Frame 6286277f6: the current flight is HELD on the device, never
+  sent by the grouped send nor the background pass; `FrameData.sendNow(path)`): in the summary of the step Departure, while the flight is
+  held (`ctx.data.onStatus`, `queue[].held` on `pilot/<tri>/current_flight.json`), one line « Ce vol est enregistré sur cet appareil… » and
+  the button (secondary: « Démarrer le vol » stays the primary gesture); the gesture sends it at once, succeeds only if the flight is no
+  longer held after the pass, then « Vol envoyé à vos appareils à 17:52 »; a failure says so in a note (the flight stays on the device).
+  Without a layer that sends (no `sendNow`), nothing is shown. Through the module's adapter (`ctx.data.sendNow`, V3 Frame 03a8c1813,
+  bounded to the declared writes; the ergonomist: never `window.FrameData` for a send). The result said: sent (pushed), « pas encore :
+  hors ligne », « aucun dépôt réglé » (local transport: nothing leaves). F151 (red before, fake launcher
+  transport: no commit before the gesture, one commit with the flight).

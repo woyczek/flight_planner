@@ -144,6 +144,8 @@ qui lui manque (terrain, type d'aéronef). Rien n'est envoyé qui ne soit déjà
 
 <a id="fuel-step-5"></a>**5 Départ.** Un récapitulatif d'une page : l'aéronef, la route telle qu'elle sera déposée, le niveau (et ses
 
+**Envoyer ce vol à mes appareils.** Le vol en cours est enregistré tout de suite sur cet appareil, mais il ne part pas avec l'envoi groupé des données (toutes les cinq minutes au plus) : vos autres appareils (téléphone, tablette) ne le reçoivent qu'à son envoi. Tant qu'il attend, le résumé le dit et propose « Envoyer ce vol à mes appareils » ; il part aussitôt, et la ligne dit « Vol envoyé à vos appareils à 17:52 ». « Synchroniser » l'envoie aussi. S'il ne part pas (hors ligne), une note le dit : il reste sur cet appareil.
+
 **Aides radio.** Sous le résumé, « Aides radio » donne d'un coup d'œil l'ILS de l'approche choisie (piste, indicatif, fréquence, axe, DME), puis, replié, les VOR / DME de la route dans l'ordre du vol, chacun avec sa fréquence et le tronçon où il sert. Rien n'est inventé : sans aide dans la base, la carte le dit.
 paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » lance le plan de vol (mise en route,
 repoussage, roulage…). La préparation peut dater de plusieurs jours : il commence donc par tout refaire à l'heure

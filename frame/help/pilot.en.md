@@ -198,6 +198,8 @@ fold of the Result step, folded, its title saying the fuel unit ("Quote settings
 
 <a id="fuel-step-5"></a>**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
 
+**Send this flight to my devices.** The current flight is saved at once on this device, but it does not leave with the grouped send of the data (every five minutes at most): your other devices (phone, tablet) receive it only when you send it. While it waits, the summary says so and offers "Send this flight to my devices"; it leaves at once, and the line says "Flight sent to your devices at 17:52". "Synchronise" sends it too. If it does not leave (offline), a note says so: it stays on this device.
+
 **Radio aids.** Under the summary, "Radio aids" gives at a glance the ILS of the chosen approach (runway, ident, frequency, course, DME), then, folded, the VOR / DME of the route in the order of the flight, each with its frequency and the leg it serves. Nothing is invented: without an aid in the base, the card says so.
 and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
 may date back several days: so it begins by redoing everything at the real time — the flight date returns to now, the
