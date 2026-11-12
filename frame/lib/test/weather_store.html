@@ -343,6 +343,37 @@
       cacheOnly: true
     });
     ck('cacheOnly : il manque → null, aucun appel', c2 === null && S.net.forecasts().length === 3);
+    // SOG-0092 : cacheOnly ne demande jamais même l'heure du run (meta.json) ; un run inconnu → validité « aveugle » de 30 min
+    const SC = mk();
+    const cg0 = await SC.w.grid([{
+      lat: 47.07,
+      lon: -1.6
+    }], when, ['temperature_2m'], {
+      model: 'meteofrance_seamless',
+      cacheOnly: true
+    });
+    ck('cacheOnly (grid), run inconnu, réserve vide : null et AUCUN appel sortant (pas même meta.json)', cg0 === null && SC.net.calls
+      .length === 0, JSON
+      .stringify(SC.net.calls));
+    await SC.w.grid([{
+      lat: 47.07,
+      lon: -1.6
+    }], when, ['temperature_2m'], {
+      model: 'meteofrance_seamless'
+    });
+    // la réserve est chaude mais le processus neuf (rien en mémoire) : cacheOnly sert la réserve, sans appel
+    const SC2 = mk({}, {
+      data: SC.data
+    });
+    const cg1 = await SC2.w.grid([{
+      lat: 47.07,
+      lon: -1.6
+    }], when, ['temperature_2m'], {
+      model: 'meteofrance_seamless',
+      cacheOnly: true
+    });
+    ck('cacheOnly (grid), processus neuf et réserve chaude : rendu sans aucun appel', !!cg1 && SC2.net.calls.length === 0, JSON.stringify(
+      SC2.net.calls));
 
     // grid : variables manquantes seulement
     const g1 = await S.w.grid([{
@@ -623,18 +654,25 @@
       const S2 = mk({
         delay: 30
       });
-      const got = await Promise.allSettled([S2.w.aloft(shift(route, 0), when), S2.w.aloft(shift(route, 3), when), S2.w.aloft(shift(route, 6), when), S2.w.grid(shift(route, 9), when, ['temperature_2m'])]);
-      ck('quatre demandeurs en même temps : un seul appel Open-Meteo en vol à la fois, tous servis', S2.net.stats.max === 1 && got.every(r => r.status === 'fulfilled') && S2.net.forecasts().length >= 4, JSON.stringify([S2.net.stats, got.map(r => r.status), S2.net.forecasts().length]));
+      const got = await Promise.allSettled([S2.w.aloft(shift(route, 0), when), S2.w.aloft(shift(route, 3), when), S2.w.aloft(shift(route,
+        6), when), S2.w.grid(shift(route, 9), when, ['temperature_2m'])]);
+      ck('quatre demandeurs en même temps : un seul appel Open-Meteo en vol à la fois, tous servis', S2.net.stats.max === 1 && got.every(
+        r => r.status === 'fulfilled') && S2.net.forecasts().length >= 4, JSON.stringify([S2.net.stats, got.map(r => r.status), S2.net
+        .forecasts().length
+      ]));
       // un 429 : pause d'une minute, aucun appel pendant elle, rien dépensé, jamais une relance
       const t0 = clock.t;
       const S3 = mk({
         r429: 1
       });
       const e1 = await S3.w.aloft(shift(route, 12), when).then(() => null, e => e);
-      ck('un 429 : l’erreur du serveur est rendue (status 429), un seul appel parti', e1?.status === 429 && !e1.paused && S3.net.forecasts().length === 1, JSON.stringify([e1?.status, S3.net.forecasts().length]));
+      ck('un 429 : l’erreur du serveur est rendue (status 429), un seul appel parti', e1?.status === 429 && !e1.paused && S3.net.forecasts()
+        .length === 1, JSON.stringify([e1?.status, S3.net.forecasts().length]));
       const spent1 = S3.spend.length;
       const e2 = await S3.w.aloft(shift(route, 15), when).then(() => null, e => e);
-      ck('pendant la pause : aucun appel, une erreur 429 marquée `paused` tout de suite, rien dépensé, jamais une relance', e2?.paused === true && e2.status === 429 && e2.wait >= 1 && e2.wait <= 60 && S3.net.forecasts().length === 1 && S3.spend.length === spent1, JSON.stringify([e2?.paused, e2?.wait, S3.net.forecasts().length, S3.spend.length - spent1]));
+      ck('pendant la pause : aucun appel, une erreur 429 marquée `paused` tout de suite, rien dépensé, jamais une relance', e2?.paused ===
+        true && e2.status === 429 && e2.wait >= 1 && e2.wait <= 60 && S3.net.forecasts().length === 1 && S3.spend.length === spent1, JSON
+        .stringify([e2?.paused, e2?.wait, S3.net.forecasts().length, S3.spend.length - spent1]));
       clock.t = t0 + 61e3;
       const ok3 = await S3.w.aloft(shift(route, 15), when).then(r => r, () => null);
       ck('une minute après : la file repart', !!ok3 && S3.net.forecasts().length === 2, S3.net.forecasts().length);
@@ -647,7 +685,8 @@
       await S4.w.aloft(shift(route, 18), when).catch(() => null);
       clock.t = t0 + 61e3;
       const e4 = await S4.w.aloft(shift(route, 21), when).then(() => null, e => e);
-      ck('Retry-After de 120 s : encore en pause après 61 s', e4?.paused === true && e4.wait > 50 && S4.net.forecasts().length === 1, JSON.stringify([e4?.paused, e4?.wait, S4.net.forecasts().length]));
+      ck('Retry-After de 120 s : encore en pause après 61 s', e4?.paused === true && e4.wait > 50 && S4.net.forecasts().length === 1, JSON
+        .stringify([e4?.paused, e4?.wait, S4.net.forecasts().length]));
       clock.t = t0 + 121e3;
       const ok4 = await S4.w.aloft(shift(route, 21), when).then(r => r, () => null);
       ck('et repart après ce délai', !!ok4 && S4.net.forecasts().length === 2, S4.net.forecasts().length);

@@ -1053,7 +1053,7 @@ fuel's own request stay (dated debt, SPEC § 4).
 | `run(model)` | the model's last run (Unix seconds) or null; read from Open-Meteo's static metadata, kept 10 min, not counted. A "seamless" model has no metadata of its own: the run is the one of the model that carries its pressure levels and gives its short name — `meteofrance_arpege_europe` for Météo-France ("ARPEGE"; not AROME HD, run every 3 h, surface only), `dwd_icon` for ICON, `ncep_gfs025` for GFS. The run shown with `aloft` is therefore the one of the winds and temperatures aloft |
 | `spentToday()` | the weighted calls of the UTC day on this device |
 
-`opts` of `aloft` and `grid`: `model` (an Open-Meteo `models` id, to force one), `cacheOnly` (nothing is asked: null when
+`opts` of `aloft` and `grid`: `model` (an Open-Meteo `models` id, to force one), `cacheOnly` (nothing is asked, not even the run time of the model: the one already known, else the blind 30 min validity; null when
 something is missing — draw at once from the device, then ask), `stale()` (true when the answer is no longer wanted: a
 wait for the minute limit stops), `onWait(seconds)` (said to the pilot while waiting); `grid` also takes `days` and
 `from` (ms, the first day when it is past — a flight dated before today, read from its departure's day, 92 days back

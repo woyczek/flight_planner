@@ -397,7 +397,8 @@ export function weatherStore({
     onWait
   }) {
     prune().catch(() => {});
-    const curRun = await run(model),
+    // SOG-0092 : cacheOnly ne sort JAMAIS — l'heure du run n'est pas demandée à Open-Meteo (meta.json) : celle qui est connue (mémoire, puis réserve), sinon inconnue → la validité « aveugle » de 30 min de fresh()
+    const curRun = cacheOnly ? await knownRun(model) : await run(model),
       size = cellSize(model),
       dayList = dayListOf(days, from),
       cells = cellsOf(places, size),
