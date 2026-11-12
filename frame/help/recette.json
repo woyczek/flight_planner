@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 141,
+  "tests": 142,
   "verdicts": 59
  },
  "apps": [
@@ -270,6 +270,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T15:49:39Z"
+  },
+  {
+   "id": "SOG-0093",
+   "app": "pilote",
+   "title": {
+    "fr": "Virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée",
+    "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
+    "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
+    "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada"
+   },
+   "test": "Carte, une procédure (départ, arrivée ou approche) qui fait un virage de plus de 90° : le coin doit être tracé en arc, pas en angle vif. Aucune capture n'a pu en être faite : dis-moi sur quelle procédure tu l'as vu et si le rayon te paraît juste.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T16:15:54Z"
   },
   {
    "id": "SOG-0094",
@@ -1888,7 +1902,7 @@
     "de": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
     "es": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)"
    },
-   "test": "Relance le lanceur, puis dans Carburant « Relire » les procédures de LFBD, LFST et LFRS. Attendu : LFBD gagne la finale des ILS 23 et 29 ; LFST celle des ILS 05 et 23 (ses RNP 05 / 23 restent « à vérifier » pour l'instant) ; LFRS gagne ses huit départs nommés de la piste 21 (ANG 4S, BALNI 4S…), la finale de l'ILS 03 et la RNP 03. Dis-moi ce que tu obtiens terrain par terrain.",
+   "test": "Relance le lanceur, puis dans Carburant « Relire » les procédures de LFBD, LFST et LFRS. Attendu : LFBD gagne la finale des ILS 23 et 29 ; LFST celle des ILS 05 et 23 (ses RNP 05 / 23 restent « à vérifier » pour l'instant) ; LFRS gagne ses huit départs nommés de la piste 21 (ANG 4S, BALNI 4S…), la finale de l'ILS 03 et la RNP 03. Dis-moi ce que tu obtiens terrain par terrain. Sous le choix de l'approche, chaque ILS, LOC ou VOR qui n'a qu'une carte doit apparaître en « … — carte seulement dans l'AIP » avec le lien vers sa carte.",
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T16:13:46Z"

@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2658cca",
+  "organisation": "f9d6702",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -449,7 +449,7 @@
     {
      "id": "SOG-0088",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Direct vers un point sur instruction du contrôle : chercher le point, reprendre le reste du vol",
      "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
      "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
@@ -798,12 +798,13 @@
     {
      "id": "SOG-0093",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée",
      "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
      "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
      "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada",
-     "rank": 31
+     "rank": 31,
+     "test": true
     },
     {
      "id": "SOG-0139",
