@@ -168,14 +168,15 @@ def _drop(path):
 def receive(rfile, length, hint, data, busy=None, merge_pending=None):
     """Reçoit `length` octets de rfile, les reconnaît, les pose sous data/local/upload/. Rend (statut HTTP, corps JSON) ; `close` dans le corps (clé « _close ») : le lanceur coupe la connexion (un refus avant lecture du corps).
     busy() : un travail du lanceur tourne ; merge_pending() : une fusion interrompue attend dans data/."""
-    def no(reason, message='', expected=None, close=False):
-        return STATUS[reason], {'ok': False, 'reason': reason, 'message': message or reason, **({'expected': list(expected)} if expected else {}), **({'_close': True} if close else {})}
+    def no(reason, message='', expected=None, close=False, running=None):
+        return STATUS[reason], {'ok': False, 'reason': reason, 'message': message or reason, **({'expected': list(expected)} if expected else {}), **({'running': running} if running else {}), **({'_close': True} if close else {})}
     if not isinstance(length, int) or length <= 0:
         return no('empty', 'fichier vide', close=True)
     if length > MAX_BYTES:
         return no('too-large', f'plus de {MAX_BYTES // (1024 * 1024)} Mo', close=True)
-    if busy and busy():
-        return no('busy', 'un travail du poste tourne : réessayez à sa fin', close=True)
+    running = busy() if busy else None
+    if running:
+        return no('busy', 'un travail du poste tourne : réessayez à sa fin', close=True, running=running if isinstance(running, dict) else None)      # SOG-0245 : quel travail (nom, départ, étape, signes de vie), que l'écran dit et sait arrêter
     if merge_pending and merge_pending():
         return no('merge-pending', 'une fusion interrompue attend dans data/ : « Synchroniser » la règle', close=True)
     folder = os.path.join(data, *FOLDER)

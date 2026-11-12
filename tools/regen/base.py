@@ -660,6 +660,8 @@ def build(job, args, ctx):
         try:
             # environnement réduit (regen_jobs.child_env) : le navigateur ne reçoit pas les identifiants du lanceur ; lié au lanceur : il ne lui survit pas (launch_browser, SOG-0038)
             proc = launch_browser(cmd + browser_args(profile, netloc, f'{origin}/{PAGE}#job={job.id}'), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace')
+            if hasattr(job, 'track'):
+                job.track(proc)      # déclaré : un travail libéré (SOG-0245) arrête le navigateur
         except (OSError, ValueError) as e:
             for z in zones:
                 update(z, state='failed', error='browser-failed', message=str(e)[:200])

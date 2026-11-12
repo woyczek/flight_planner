@@ -186,7 +186,7 @@ def run(job, args, ctx):
         cmd += ['--keep', 'file:///' + dest.replace('\\', '/').lstrip('/') + '/']      # la publication d'avant : même run de GFS → rien n'est redemandé à la NOAA
     job.step('synoptique monde : lecture de GFS (NOAA)', 0, 1, 'étapes')
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), cwd=work)
+        proc = job.track(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), cwd=work))      # déclaré : un travail libéré (SOG-0245) l'arrête
         lines, seen, end = [], [], t0 + ctx.get('timeout', TIMEOUT)
         reader = threading.Thread(target=_read_lines, args=(proc, job, lines, seen), daemon=True)      # l'avancement (« @etape k/n », une ligne par échéance) monte au fur et à mesure ; lire la sortie en continu évite aussi qu'un tube plein ne fige l'outil
         reader.start()

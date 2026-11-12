@@ -148,6 +148,11 @@ class Job:
         self._inbox, self._given, self._cv = {}, set(), threading.Condition()
         self._offer, self._claimed = None, False
         self.gap = None  # (verbe, départ d'avant, départ de ce travail) : voir Jobs._give_back
+        self.seen = time.time()   # le dernier signe de vie du travail (une étape, une ligne de journal, un battement) : Jobs.vitals dit s'il est vivant, silencieux ou bloqué (SOG-0245)
+        self.thread = None        # le fil qui exécute le verbe (Jobs.start)
+        self.procs = []           # les processus que le verbe a lancés et déclarés (track) : un travail libéré les arrête
+        self.released = False     # libéré par le lanceur (Jobs.release) : ce que le fil abandonné écrira ensuite est perdu
+        self.cancel_at = None     # l'heure de la demande d'arrêt, si elle a été faite
 
     def offer(self, payload=None):
         """Le verbe ouvre la réclamation du jeton par sa page sans fenêtre (POST /__setup/regen/job/claim), avec ce qu'elle
@@ -186,7 +191,18 @@ class Job:
                 self._cv.wait(0.5 if end is None else max(0.01, min(0.5, end - time.time())))
             return self._inbox.pop(zone)
 
+    def beat(self):
+        """Un signe de vie sans rien d'autre : un verbe qui attend longtemps (réseau, processus) le donne de temps en temps."""
+        self.seen = time.time()
+
+    def track(self, proc):
+        """Déclare un processus lancé par le verbe (subprocess.Popen) : Jobs.release l'arrête si le travail est libéré ; rend le processus."""
+        self.procs.append(proc)
+        self.seen = time.time()
+        return proc
+
     def step(self, text, done=None, total=None, unit=None):
+        self.seen = time.time()
         self.data['step'] = self.clean(str(text))[:200]
         if done is not None:
             self.data['done'] = done
@@ -196,6 +212,7 @@ class Job:
             self.data['unit'] = unit
 
     def log(self, line):
+        self.seen = time.time()
         lg = self.data['log']
         lg.append(self.clean(str(line))[:500])  # un verbe ne peut pas y laisser un identifiant, même par mégarde
         del lg[:-LOG_MAX]
@@ -207,6 +224,8 @@ class Job:
         return {**self.data, 'log': list(self.data['log'])}
 
 
+QUIET_S = 120    # secondes sans signe de vie avant qu'un travail soit dit silencieux (SOG-0245)
+STALE_S = 300    # secondes sans signe de vie avant qu'il soit dit « ne répond plus » : le lanceur peut alors le libérer (Jobs.release)
 # délai minimal entre deux départs d'un même verbe, en secondes : chaque jeu exporte le sien (tools/regen/<jeu>.py, MIN_GAP ; load_verbs les réunit ici) ; celui d'EAD Basic
 # (30 s, tools/regen/proc.py) fait partie de ses conditions : un terrain par geste, jamais en masse (EAD_BASIC.md § 1)
 MIN_GAP = {}
@@ -245,7 +264,9 @@ class Jobs:
     """Un travail à la fois ; REGISTRY : (jeu, verbe) → (fonction(job, args, ctx) → résultat, contrôle(args) → args | None) ;
     MIN_GAP : délai minimal entre deux départs d'un verbe (refus 'too-soon', 429, avec `wait` en secondes)."""
 
-    def __init__(self, registry, ctx=None, min_gap=None, store=None):
+    def __init__(self, registry, ctx=None, min_gap=None, store=None, quiet_s=None, stale_s=None):
+        self.quiet_s = QUIET_S if quiet_s is None else quiet_s      # sans signe de vie depuis tant de secondes : « silencieux »
+        self.stale_s = STALE_S if stale_s is None else stale_s      # depuis tant de secondes : « ne répond plus » (libérable)
         self.registry = dict(registry)
         self.ctx = ctx or {}
         self.lock = threading.Lock()
@@ -322,7 +343,7 @@ class Jobs:
                 if key in SIDE and (self.cur.data.get('set'), self.cur.data.get('verb')) in BACKGROUND and not (self.side and self.side.data['state'] == 'running'):
                     side = True       # à côté de la lecture de fond, jamais à côté d'un autre travail
                 else:
-                    return {'ok': False, 'status': 409, 'reason': 'busy', 'message': 'a job is already running', 'job': self.cur.id}
+                    return {'ok': False, 'status': 409, 'reason': 'busy', 'message': 'a job is already running', 'job': self.cur.id, 'running': self._summary(self.cur)}
             gap, now = self.min_gap.get(key), time.time()
             if gap and key in self.last and now - self.last[key] < gap:
                 wait = max(1, int(gap - (now - self.last[key]) + 0.999))
@@ -336,16 +357,21 @@ class Jobs:
             else:
                 self.cur = job
             self._save()
-        threading.Thread(target=self._run, args=(job, fn, a), daemon=True).start()
+        job.thread = threading.Thread(target=self._run, args=(job, fn, a), daemon=True)
+        job.thread.start()
         return {'ok': True, 'job': job.id}
 
     def _run(self, job, fn, a):
         try:
             try:
                 res = fn(job, a, self.ctx)
+                if job.released:       # libéré (Jobs.release) pendant qu'il tournait : ce qu'il rend maintenant est perdu
+                    return
                 job.data['state'] = 'cancelled' if job.cancelled() else 'done'
                 job.data['result'] = res
             except Exception as e:  # le travail s'arrête, le lanceur continue : l'erreur est dite à la page, nettoyée
+                if job.released:
+                    return
                 msg = clean_error(e, self.ctx)
                 job.log(f'error: {msg}')
                 job.data['state'] = 'error'
@@ -392,9 +418,11 @@ class Jobs:
         with self.lock:
             j, s = self.cur, self.side
         v = j.view() if j else self.kept  # sans travail dans ce lancement : celui du précédent (« interrupted » s'il courait)
+        if j and v and v.get('state') == 'running':
+            v = {**v, **self.vitals(j)}      # SOG-0245 : le travail en cours dit s'il est vivant (seen, silent, alive, cancelling)
         if id_:
             if s and s.id == id_ and not (v and v.get('id') == id_):
-                return s.view()
+                return {**s.view(), **(self.vitals(s) if s.data['state'] == 'running' else {})}
             return v if v and v.get('id') == id_ else {'ok': False, 'status': 410, 'message': 'no such job'}
         return {'job': v}
 
@@ -406,7 +434,59 @@ class Jobs:
         if not j or j.id != id_:
             return {'ok': False, 'status': 410, 'message': 'no such job'}
         j._cancel.set()
+        j.cancel_at = j.cancel_at or time.time()
         return {'ok': True, 'job': j.id}
+
+    def vitals(self, j, now=None):
+        """Les signes de vie d'un travail : { seen (dernier signe, s), silent (secondes depuis), alive : 'alive' | 'quiet' | 'stuck' | 'gone' (le fil n'est plus là), cancelling (l'arrêt est demandé) } (SOG-0245)."""
+        now = now or time.time()
+        age = max(0.0, now - j.seen)
+        silent = int(age)
+        gone = j.thread is not None and not j.thread.is_alive() and j.data['state'] == 'running'
+        alive = 'gone' if gone else 'stuck' if age >= self.stale_s else 'quiet' if age >= self.quiet_s else 'alive'
+        return {'seen': int(j.seen), 'silent': silent, 'alive': alive, 'cancelling': j.cancel_at is not None and not j.released}
+
+    def _summary(self, j):
+        """Ce que dit un refus « occupé » du travail qui tient la place : son identité, ses arguments utiles (zones, terrain), son départ, son étape et son avancement, ses signes de vie."""
+        args = j.data.get('args') if isinstance(j.data.get('args'), dict) else {}
+        keep = {k: (v[:12] if isinstance(v, list) else v) for k, v in args.items() if k in ('zones', 'icao', 'action') and isinstance(v, (list, str, bool))}
+        d = j.data
+        return {'id': j.id, 'set': d['set'], 'verb': d['verb'], 'args': keep, 'started': d['started'], 'step': d['step'], 'done': d['done'], 'total': d['total'], 'unit': d['unit'], **self.vitals(j)}
+
+    def running(self):
+        """Le travail qui tient la place (voir _summary), ou None."""
+        with self.lock:
+            j = self.cur
+            return self._summary(j) if j and j.data['state'] == 'running' else None
+
+    def release(self, id_):
+        """Libère la place d'un travail qui ne répond plus (SOG-0245) : seulement s'il est « stuck » ou si son fil n'est plus là ; le lanceur arrête les processus que le travail a déclarés (Job.track), le travail se termine
+        « cancelled » avec la raison `released`, et ce que son fil abandonné écrira plus tard est perdu. Un travail qui a donné signe de vie : 409 `alive` (l'annuler d'abord : cancel)."""
+        with self.lock:
+            j = self.cur
+            if self.side and self.side.id == id_:
+                j = self.side
+            if not j or j.id != id_:
+                return {'ok': False, 'status': 410, 'message': 'no such job'}
+            if j.data['state'] != 'running':
+                return {'ok': False, 'status': 409, 'reason': 'not-running', 'message': 'the job is not running'}
+            v = self.vitals(j)
+            if v['alive'] not in ('stuck', 'gone'):
+                return {'ok': False, 'status': 409, 'reason': 'alive', 'message': 'the job gave a sign of life: cancel it first', 'silent': v['silent']}
+            j.released = True
+            j._cancel.set()
+            procs = list(j.procs)
+            j.data['state'] = 'cancelled'
+            j.data['result'] = {'ok': False, 'reason': 'released', 'silent': v['silent']}
+            j.data['ended'] = int(time.time())
+            self._save()
+        for p in procs:        # hors verrou : un processus de plus que le travail a lancé et que le lanceur arrête
+            try:
+                if p.poll() is None:
+                    p.kill()
+            except (OSError, ValueError, AttributeError):
+                pass
+        return {'ok': True, 'job': j.id, 'released': True}
 
     def claim(self, id_):
         """Le jeton du travail en cours et ce que son verbe a offert, remis UNE fois : 409 si ce n'est pas le travail qui

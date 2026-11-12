@@ -7936,3 +7936,85 @@ def k173(c):
         c.eq(fn(RJ.Job('proc', 'lnm', {}), asked, ctx).get('reason'), 'not-personal', 'proc/lnm: `personal: true` from the page without the tick of the launcher: refused', what='verb refuses')
         PU.write(td, True)
         c.eq(fn(RJ.Job('proc', 'lnm', {}), check({'icao': 'KDEN'}), ctx).get('reason'), 'no-lnm', 'with the tick of the launcher the verb goes on (here: no database), whatever the page says', what='verb goes on')
+
+
+@case('K175', 'A « busy » refusal says WHICH operation runs (its name, start, step, progress, last sign of life); one can stop it, and a silent one is released by the launcher, which checks that nothing runs (SOG-0245)', 'K', static=True,
+      rule='SOG-0245 (the user, 11 Nov evening: « une autre opération est en cours : on ne sait pas quoi, on ne peut pas l\'arrêter ; s\'il reste un lock, on ne peut pas l\'enlever ; on devrait pouvoir retourner sur l\'appli en cours, horodatage, pourcentage, et est-elle toujours vivante »): the launcher knows what it does. Every refusal « busy » (a job start, the upload of a file) carries `running` { id, set, verb, args (zones, icao), started, step, done, total, unit, seen, silent, alive: alive | quiet | stuck, cancelling }; `alive` falls to `quiet` after QUIET_S without a sign (a step, a log line, a beat) and to `stuck` after STALE_S; POST /__setup/regen/job/release { id } frees the slot only for a `stuck` job (or one whose thread is gone): the processes it tracked are killed, it ends cancelled with reason `released`, and what the abandoned thread writes later is dropped. A job that is alive is refused (409 `alive`)')
+def k175(c):
+    import importlib
+    import io
+    import json
+    import sys
+    import threading
+    import time
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ = importlib.import_module('regen_jobs')
+    BU = importlib.import_module('base_upload')
+    L = importlib.import_module('launch')
+    gate, saw = threading.Event(), []
+
+    def slow(job, a, ctx):
+        job.step('lecture de la zone fr', 3, 12, 'zones')
+        gate.wait(30)
+        saw.append('finished')
+        return {'ok': True, 'late': True}
+
+    def quick(job, a, ctx):
+        return {'ok': True}
+    ok = lambda a: dict(a) if isinstance(a, dict) else None
+    reg = {('t', 'slow'): (slow, ok), ('t', 'quick'): (quick, ok)}
+    jobs = RJ.Jobs(reg, {}, min_gap={}, quiet_s=0.4, stale_s=1.0)
+    s = jobs.start('t', 'slow', {'zones': ['fr', 'gb']})
+    time.sleep(0.15)
+    b = jobs.start('t', 'quick', {})
+    r = b.get('running') or {}
+    c.eq((b.get('status'), b.get('reason'), r.get('id') == s.get('job'), r.get('set'), r.get('verb'), r.get('step'), (r.get('done'), r.get('total'), r.get('unit')), r.get('alive'), r.get('args')),
+         (409, 'busy', True, 't', 'slow', 'lecture de la zone fr', (3, 12, 'zones'), 'alive', {'zones': ['fr', 'gb']}),
+         'a second start is refused with the operation that runs: its id, name, step, progress and that it is alive', what='busy running')
+    c.ok(isinstance(r.get('started'), int) and isinstance(r.get('seen'), int) and r.get('silent') == 0, str(r), 'with its start, its last sign and the silence since')
+    bad = jobs.release(s['job'])
+    c.eq((bad.get('ok'), bad.get('status'), bad.get('reason')), (False, 409, 'alive'), 'a job that gave a sign is not released: 409 alive', what='alive')
+    time.sleep(0.6)
+    c.eq((jobs.running() or {}).get('alive'), 'quiet', 'without a sign for a while: quiet', what='quiet')
+    time.sleep(0.7)
+    c.eq((jobs.running() or {}).get('alive'), 'stuck', 'without a sign for much longer: stuck (« ne répond plus »)', what='stuck')
+    c.eq((jobs.release('nope') or {}).get('status'), 410, 'a release of another job: 410', what='unknown')
+    old = jobs.cur
+    rel = jobs.release(s['job'])
+    c.eq((rel.get('ok'), jobs.view(s['job']).get('state'), (jobs.view(s['job']).get('result') or {}).get('reason')), (True, 'cancelled', 'released'), 'a stuck job is released: it ends cancelled, reason released', what='released')
+    n = jobs.start('t', 'quick', {})
+    c.eq(n.get('ok'), True, 'and the slot is free: a new job starts', what='free')
+    gate.set()
+    time.sleep(0.4)
+    c.eq((saw, (old.data.get('result') or {}).get('reason')), (['finished'], 'released'), 'what the abandoned thread ends with later does not overwrite the release', what='zombie')
+    # the upload says it too
+    code, out = BU.receive(io.BytesIO(b''), 10, 'x.zip', '.', busy=lambda: {'id': 'abc', 'set': 'base', 'verb': 'build', 'alive': 'alive'})
+    c.eq((code, out.get('reason'), (out.get('running') or {}).get('verb')), (409, 'busy', 'build'), 'the refusal of an uploaded file carries the operation that runs', what='upload')
+    # the route: release is a verb of the same route as cancel (this workstation only)
+    seen = []
+
+    class Fake:
+        def __init__(self, lan):
+            self.lan = lan
+
+        def _lan(self):
+            return self.lan
+
+        def _json(self, out, code=200):
+            seen.append((code, out))
+    jobs2 = RJ.Jobs(reg, {}, min_gap={}, quiet_s=0.1, stale_s=0.2)
+    kept = L.REGEN
+    L.REGEN = jobs2
+    try:
+        gate.clear()
+        t = jobs2.start('t', 'slow', {})
+        post = lambda path, body, lan=False: (L.Setup._post_regen_job(Fake(lan), path, json.dumps(body).encode()), seen[-1])[1]
+        c.eq(post('/__setup/regen/job/release', {'id': t['job']}, lan=True)[0], 403, 'a device of the local network: 403', what='lan')
+        c.eq(post('/__setup/regen/job/release', {'id': t['job']})[0], 409, 'a live job: 409', what='route alive')
+        time.sleep(0.5)
+        code, out = post('/__setup/regen/job/release', {'id': t['job']})
+        c.eq((code, out.get('ok')), (200, True), 'a silent one: released by the route', what='route released')
+        c.ok('/__setup/regen/job/release' in {p for (m, p) in L.ROUTES}, 'route missing', 'the route is declared')
+    finally:
+        L.REGEN = kept
+        gate.set()

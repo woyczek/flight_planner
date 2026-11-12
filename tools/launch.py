@@ -1626,7 +1626,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             a = {}
         return self._json(site_allow(str(a.get('url') or '')) if path.endswith('allow') else site_remove(str(a.get('url') or '')))
 
-    @route('POST', '/__setup/regen/job', '/__setup/regen/job/cancel', public='poste')
+    @route('POST', '/__setup/regen/job', '/__setup/regen/job/cancel', '/__setup/regen/job/release', public='poste')
     def _post_regen_job(self, path, body):
         # travaux du module Données : jeu et verbe d'une liste fixe, arguments contrôlés (tools/regen_jobs.py)
         if self._lan():
@@ -1636,8 +1636,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         except ValueError:
             return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
         a = a if isinstance(a, dict) else {}
-        v = regen().cancel(str(a.get('id') or '')[:40]) if path.endswith('/cancel') else regen().start(
-            a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
+        if path.endswith('/cancel'):
+            v = regen().cancel(str(a.get('id') or '')[:40])
+        elif path.endswith('/release'):       # SOG-0245 : un travail qui ne répond plus (Jobs.release : le lanceur vérifie, arrête ses processus, libère la place)
+            v = regen().release(str(a.get('id') or '')[:40])
+        else:
+            v = regen().start(a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
     @route('GET', '/__setup/personal', public='poste')
@@ -1682,8 +1686,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             size = int(self.headers.get('Content-Length') or 0)
         except ValueError:
             size = 0
-        job = ((REGEN.view() or {}).get('job') or {}) if REGEN is not None else {}
-        code, out = base_upload.receive(self.rfile, size, self.headers.get('X-SOG-Name', ''), DATA, busy=lambda: job.get('state') == 'running',
+        code, out = base_upload.receive(self.rfile, size, self.headers.get('X-SOG-Name', ''), DATA, busy=lambda: (REGEN.running() or None) if REGEN is not None else None,
                                         merge_pending=lambda: regen_jobs.merge_pending({'data': DATA}))
         if out.pop('_close', False):
             self.close_connection = True       # le corps n'a pas été lu : cette connexion ne sert plus
