@@ -100,7 +100,9 @@ const TX = {
   ],
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   count: ['{n} aéronefs', '{n} aircraft', '{n} Luftfahrzeuge', '{n} aeronaves'],
-  count1: ['1 aéronef', '1 aircraft', '1 Luftfahrzeug', '1 aeronave'], // au singulier (« 1 aéronefs », relu par l'ergonome)
+  count1: ['{n} aéronef', '{n} aircraft', '{n} Luftfahrzeug',
+    '{n} aeronave'
+  ], // au singulier : 0 et 1 en français, 1 ailleurs (countText)
   out: ['hors service', 'out of service', 'außer Dienst', 'fuera de servicio'],
   identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
   operation: ['En vol', 'In flight', 'Im Flug',
@@ -383,13 +385,23 @@ function noHitActions(s) {
   const url = `https://rzjets.net/aircraft/?registry=${encodeURIComponent(reg.replace(/-/g, ''))}`;
   return `<div class="f-row ac-nohit"><button type="button" class="primary" data-do="addq" data-newreg="${esc(reg)}">${esc(s.tt(TX.createReg, { reg }))}</button><a class="f-linkbtn" data-rzjets href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.tt(TX.searchRzHint))}">${esc(s.tt(TX.searchRz))}</a></div>`;
 }
+/** « 1 aéronef », « 0 aéronef », « 2 aéronefs » : le nombre et son nom, au singulier pour 0 et 1 en français, pour 1 seulement en
+ *  anglais, en allemand et en espagnol (jamais « 0 aéronefs »). */
+function countText(s, n) {
+  const fr = (s.ctx.lang?.() || 'fr') === 'fr';
+  return (fr ? n < 2 : n === 1) ? s.tt(TX.count1, {
+    n
+  }) : s.tt(TX.count, {
+    n
+  });
+}
 /** La liste : recherche, « Ajouter », sept lignes puis « N autres ». */
 function listHtml(s) {
   const all = listOf(s),
     hits = all.filter(a => FL.matches(a, s.q)),
     shown = s.all ? hits : hits.slice(0, ROWS),
     row = a => `<button type="button" class="f-item ac-row" data-reg="${esc(a.registration)}"><span><b>${esc(a.registration)}</b> ${esc(a.type || '')}${a.variant ? ` <span class="f-muted">${esc(a.variant)}</span>` : ''}</span><span class="f-muted">${esc([(a.callsigns || []).join(' '), a.base].filter(Boolean).join(' · '))}${a.operational === false ? ` <span class="f-badge" data-kind="warn">${esc(s.tt(TX.out))}</span>` : ''}</span></button>`;
-  return `<div class="f-card" data-pane="fleet"><div class="f-row ac-head"><b data-fleetof>${esc(s.co ? s.tt(TX.fleetOf, { a: s.co }) : s.tt(TX.fleet))}</b> <span class="f-muted" data-count>${esc((all.length === 1 ? s.tt(TX.count1) : s.tt(TX.count, { n: all.length })))}</span><button type="button" class="primary" data-do="add">${esc(s.tt(TX.add))}</button></div>
+  return `<div class="f-card" data-pane="fleet"><div class="f-row ac-head"><b data-fleetof>${esc(s.co ? s.tt(TX.fleetOf, { a: s.co }) : s.tt(TX.fleet))}</b> <span class="f-muted" data-count>${esc(countText(s, all.length))}</span><button type="button" class="primary" data-do="add">${esc(s.tt(TX.add))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"></label>
     <div class="f-list" data-list>${!all.length ? `<p class="f-muted">${esc(s.tt(TX.none))}</p>${noHitActions(s)}` : !hits.length ? `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>${noHitActions(s)}` : shown.map(row).join('')}</div>
     ${hits.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="more">${esc(s.tt(TX.more, { n: hits.length - shown.length }))}</button>` : ''}</div>`;

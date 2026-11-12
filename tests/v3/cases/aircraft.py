@@ -1208,3 +1208,16 @@ def m43(c):
         c.tap(f'{M} [data-do="addq"]')
         c.until(f"!!document.querySelector('{M} [data-pane=edit]')", timeout=5000, what='the new aircraft')
         c.eq(c.js(f"document.querySelector('{M} [data-f=registration]').value"), 'F-BHHH', 'the registration filled', what='registration')
+
+
+
+@case('M44', 'Fleet count: « 0 aéronef », « 1 aéronef », « 2 aéronefs » in French; « 0 aircraft », « 1 aircraft » elsewhere by each language\'s rule',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='the user\'s recette of 12 Nov (« 0 aéronefs » seen on the Fleet; the ergonomist: 0 and 1 singular in French, check the rule in the four '
+      'languages)')
+def m44(c):
+    c.open('aircraft', app='maintenance')
+    c.until(f"!!document.querySelector('{M} [data-count]')", timeout=15000, what='the fleet count')
+    got = norm(c.text(f'{M} [data-count]') or '')
+    want = {'fr': '0 aéronef', 'en': '0 aircraft', 'de': '0 Luftfahrzeuge', 'es': '0 aeronaves'}[c.lang]
+    c.eq(got, want, 'an empty fleet said by the rule of the language (French: 0 is singular)', what='count')
