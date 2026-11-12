@@ -5954,3 +5954,24 @@ def d_holds(c):
     t = [norm(x) for x in c.js("window.__mpTexts || []")]
     c.ok(any(x.startswith('NEPIX (PT1)') and '⏱ 0:20' in x for x in t), str(sorted(set(t))[:14]), 'the label of NEPIX carries the mission’s name of the point and the time on station')
     c.shot('D188_{}_delivered.png'.format('standard'))
+
+
+@case('D189', 'A turn of more than 90° of a procedure is an arc tangent to its two legs, the radius from the indicated speed (V / 62.8 NM, the point’s speed or the phase’s), shrunk to fit; a turn of 90° or less, the route and the missed approach keep their corner', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0093 (roadmap of the Map): « virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée »; roundTurns in procs.js on the legs of the layout: a fly-by arc between the tangent points, the corner replaced, never on the route, the missed approach, a dash or an arc already given')
+def d_turns(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const P = await import('/modules/maps/procs.js'), toC = (la, lo) => ({ x: lo * 1000, y: -la * 1000 }),
+      mk = (la, lo, kt) => ({ ...toC(la, lo), lat: la, lon: lo, src: { kt } }), A = mk(0, 0), V = mk(0, 0.2, 190), B = mk(0.1, 0.1);
+      const hair = [{ a: A, b: V, o: 'sid', dash: false }, { a: V, b: B, o: 'sid', dash: false }];
+      P.roundTurns(hair, toC);
+      const V2 = mk(0, 0.2), C = mk(0.2, 0.3), right = [{ a: A, b: V2, o: 'sid', dash: false }, { a: V2, b: C, o: 'sid', dash: false }];
+      P.roundTurns(right, toC);
+      const route = [{ a: A, b: mk(0, 0.2), o: 'route', dash: false }, { a: mk(0, 0.2), b: mk(0.1, 0.1), o: 'route', dash: false }]; P.roundTurns(route, toC);
+      const missed = [{ a: A, b: mk(0, 0.2), o: 'missed', dash: false }, { a: mk(0, 0.2), b: mk(0.1, 0.1), o: 'missed', dash: false }]; P.roundTurns(missed, toC);
+      const arc = hair[1], g = hair.length === 3 ? hair[1] : null, ctr = g && g.arc.c, rr = g && Math.hypot(g.a.x - ctr.x, g.a.y - ctr.y), r2 = g && Math.hypot(g.b.x - ctr.x, g.b.y - ctr.y);
+      return { hair: hair.length, rr: g && Math.round(rr * 10) / 10, same: g && Math.abs(rr - r2) < .01, turn: g && g.arc.turn, tangentLen: g && Math.round(Math.hypot(hair[0].b.x - 200, hair[0].b.y) * 10) / 10, small: right.length, route: route.length, missed: missed.length } }""")
+    c.ok(r['hair'] == 3 and r['same'] and r['turn'] in ('L', 'R'), str(r), 'a hairpin (135°) is cut at its tangent points and joined by an arc')
+    c.ok(r['rr'] > 3 and abs(r['tangentLen'] - r['rr'] * 2.414) < 1, str(r), 'the arc’s radius and the tangent length agree (t = r tan(δ/2)); the radius was shrunk to fit the legs')
+    c.eq([r['small'], r['route'], r['missed']], [2, 2, 2], 'a turn under 90° (here 45°), the route and the missed approach keep their corner', what=str(r))

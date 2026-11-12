@@ -2924,3 +2924,8 @@ the Map had seen in between: the same line to within the frame's own sampling.
 ## The time on station is written at its point (Fuel 1a5409afe; CONCEPTION 11/11 § 1 bis)
 - Fuel writes `route.holds` = { <point id>: { min, max, count, name } } (`count` = the minutes counted); the Map only reads it: `pointsOf` carries `hold` (minutes) to the point and the route label of the point says « NEPIX · FL270 · ⏱ 0:20 ». Nothing is written by the Map. Noreg D188.
 - The mission's name of the point (`route.holds[id].name`, « PT1 ») goes in the label too: alone when the id is a coordinate word, else « NEPIX (PT1) · ⏱ 0:20 ». The position forecast counting the wait is Fuel's (`frame/lib/flight_time.js`, `legTimes`).
+
+## Turns of more than 90° of a procedure, an arc from the indicated speed (SOG-0093, roadmap of the Map)
+- `roundTurns` (procs.js), called by `layout` on its legs: at the corner of two consecutive legs of the same procedure (SID, STAR, approach, transition) turning by more than 90°, the corner is replaced by an arc tangent to both (a fly-by turn) of
+  radius r = V / 62.8 NM (rate-one turn, 3 °/s), V the point's speed restriction (at most 220 kt) or the phase's default (SID 190, STAR 220, approach 170, transition 200 kt); r is shrunk so that the tangent length r·tan(δ/2) fits in 48 % of the
+  shorter leg (a reversal counts as 170° at most); under 3 px the corner stays. Never the route, the missed approach, a dashed leg or a leg that already has its arc (RF). Noreg D189 (a 135° hairpin, a 45° turn, the route, the missed approach).

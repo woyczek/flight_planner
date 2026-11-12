@@ -276,6 +276,7 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     for (const s of segs)
       if (s.o === 'app') s.dash = true;
   }
+  roundTurns(segs, toC); // les virages de plus de 90° à rayon constant (SOG-0093)
   for (const [origin, rec, id, key] of [
       ['sid', P.sid || P.sidTrans, f.dep?.sid || f.dep?.trans, P.sid ? null : 'trans'],
       ['star', P.star || P.starTrans, f.arr?.star || f.arr?.trans, P.star ? null : 'trans'],
@@ -387,6 +388,78 @@ function drawLines(ctx, lines, r, col) {
       }))
     }))
   });
+}
+/** Vitesse indiquée (kt) d'un virage quand le point n'en porte pas : par phase de la procédure. */
+const TURN_KT = {
+  sid: 190,
+  star: 220,
+  app: 170,
+  trans: 200
+};
+/** Les virages de plus de 90° d'une procédure (une épingle, un retournement) tracés à rayon constant selon la vitesse indiquée : le coin de deux tronçons consécutifs est remplacé par un arc
+ *  tangent aux deux (virage « fly-by »), de rayon r = V / 62,8 NM (virage de taux 1, 3 °/s) avec V la contrainte de vitesse du point (≤ 220 kt) ou la vitesse de la phase ; le rayon est réduit pour
+ *  que l'arc tienne dans la moitié du plus court des deux tronçons ; en dessous de 3 px, ou sous 90°, le coin reste un coin. Tronçons d'une même procédure seulement (jamais la route, ni
+ *  l'approche interrompue, ni un tireté, ni un arc déjà donné : SOG-0093). segs est modifié en place. */
+export function roundTurns(segs, toC) {
+  const out = [];
+  for (let i = 0; i < segs.length; i++) {
+    const s1 = segs[i],
+      s2 = segs[i + 1];
+    out.push(s1);
+    if (!s2 || s1.arc || s2.arc || s1.dash || s2.dash || !s1.o || s1.o === 'route' || s1.o === 'missed' || s1.o !== s2.o || Math.hypot(s1.b
+        .x - s2.a.x, s1.b.y - s2.a.y) > .5) continue;
+    const v = s1.b,
+      l1 = Math.hypot(v.x - s1.a.x, v.y - s1.a.y),
+      l2 = Math.hypot(s2.b.x - v.x, s2.b.y - v.y);
+    if (l1 < 6 || l2 < 6) continue;
+    const d1 = [(v.x - s1.a.x) / l1, (v.y - s1.a.y) / l1],
+      d2 = [(s2.b.x - v.x) / l2, (s2.b.y - v.y) / l2],
+      delta = Math.min(Math.acos(Math.max(-1, Math.min(1, d1[0] * d2[0] + d1[1] * d2[1]))), 170 * Math.PI / 180);
+    if (delta <= Math.PI / 2 + .01) continue;
+    const kt = Math.min(220, num(v.src?.kt) && +v.src.kt > 0 ? +v.src.kt : TURN_KT[s1.o] || 190),
+      a = Number.isFinite(v.lat) ? toC(v.lat, v.lon) : null,
+      b = Number.isFinite(v.lat) ? toC(v.lat + 1 / 60, v.lon) : null,
+      pxNm = a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+    if (!(pxNm > 0)) continue;
+    let r = kt / 62.8 * pxNm;
+    const tan = Math.tan(delta / 2),
+      tMax = .48 * Math.min(l1, l2);
+    if (r * tan > tMax) r = tMax / tan;
+    if (r < 3) continue;
+    const t = r * tan,
+      right = d1[0] * d2[1] - d1[1] * d2[0] > 0, // sur l'écran (y vers le bas) : un virage à droite tourne dans le sens des aiguilles
+      p1 = {
+        x: v.x - d1[0] * t,
+        y: v.y - d1[1] * t,
+        src: v.src
+      },
+      p2 = {
+        x: v.x + d2[0] * t,
+        y: v.y + d2[1] * t,
+        src: v.src
+      },
+      c = right ? {
+        x: p1.x - d1[1] * r,
+        y: p1.y + d1[0] * r
+      } : {
+        x: p1.x + d1[1] * r,
+        y: p1.y - d1[0] * r
+      };
+    s1.b = p1;
+    s2.a = p2;
+    out.push({
+      a: p1,
+      b: p2,
+      dash: false,
+      o: s1.o,
+      arc: {
+        c,
+        turn: right ? 'R' : 'L'
+      }
+    });
+  }
+  segs.splice(0, segs.length, ...out);
+  return segs;
 }
 /** Dessine la mise en page L (layout) par-dessus la route : traits (liseré du fond puis la teinte de la procédure), points,
  *  libellés. */
