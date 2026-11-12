@@ -8336,3 +8336,18 @@ def k195(c):
         finally:
             core.ISO_MAX_SECONDS = 90
         c.ok('lecture plus longue' in bound, bound, 'an ISO read past the total time bound stops and says so')
+
+
+@case('K197', 'FAF / IF labels of the DATA pages (SOG-0203, SOG-0248): « FAF LOC + DME RWY 23 » (Bordeaux), « FAP/FAF RWY 05 » and « FAP/FAF RWY03 » (Strasbourg, Nantes) give the final-approach point of an ILS/LOC runway, « IF RWY 05 » its initial point; VOR rows never do', 'K', static=True,
+      rule='AeroDB survey 12 Nov 2026 (the user: « aucune ils, aucune vor, aucune loc » on LFBD, LFST, LFRS): the DATA_02 pages print the FAF with other labels than the two the reader knew (« FAF LOC RWY nn », « FAP/FAF ILS/LOC nn »), so the ILS final-only record (FAF → threshold) was never produced. Real labels read from the cached pages of the 29 Oct 2026 cycle: LFBD « FAF LOC + DME RWY 23 / 29 », LFST « FAP/FAF RWY 05 / 23 » and « IF RWY 05 / 23 », LFRS « FAP/FAF RWY03 » (no space). The VOR rows (« FAF VOR/DME RWY 05 », « FAF VOR RWY21 ») stay out: the VOR approaches have no coding here.')
+def k197(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    P = importlib.import_module('proc_sia')
+    n, w = "44°45'29.3'' N 000°48'28.9'' W", "48°23'03.1'' N 007°21'55.6'' E"
+    rows = [f'FAF VOR/DME RWY 05 {n} X X', f"FAF LOC + DME RWY 23 44°56'28.0'' N 000°33'14.7'' W X X", f"FAF LOC + DME RWY 29 44°47'01.8'' N 000°30'11.6'' W X X", f'FAP/FAF RWY 05 {w} XX', f"FAP/FAF RWY03 47°00'29.5'' N 001°43'14.9'' W XX",
+            f"FAF VOR RWY21 47°16'31.6'' N 001°28'15.8'' W XX", f"FAF LOC RWY 06 48°37'50.4'' N 002°03'57.2'' E", f"FAP/FAF ILS/LOC 17L 45°40'10.0'' N 005°00'00.0'' E",
+            f"IF RWY 05 48°20'25.8'' N 007°17'24.0'' E XX", f"IF VOR RWY 23 48°40'09.5'' N 007°51'13.0'' E XX", f"IF ILS/LOC RWY 07 48°40'05.1'' N 002°04'58.4'' E"]
+    c.eq((sorted(P.parse_faf(rows)), sorted(P.parse_if(rows))), (['03', '05', '06', '17L', '23', '29'], ['05', '07']),
+         'the FAF of the ILS/LOC runways under the four wordings (05 from « FAP/FAF RWY 05 », 03 without space, 23/29 « LOC + DME »), the two old wordings still read; no VOR runway (21 and the VOR 05 row); the IF of « IF RWY 05 » and the old « IF ILS/LOC », not the VOR one', what='rows')

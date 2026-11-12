@@ -55,7 +55,7 @@ def parse_data01(rows):
     return out
 
 
-FAF_ROW = re.compile(r'^(?:FAF LOC RWY|FAP/FAF ILS/LOC) (\d{2}[LRC]?)\s+(.*)$')       # « FAF LOC RWY 06 … » (Orly) ou « FAP/FAF ILS/LOC 17L … » (Lyon)
+FAF_ROW = re.compile(r'^(?:FAF (?:ILS/LOC|ILS|LOC)(?: ?\+ ?DME)?|FAP/FAF(?: ILS/LOC)?) ?(?:RWY ?)?(\d{2}[LRC]?)\s+(.*)$')       # « FAF LOC RWY 06 … » (Orly), « FAP/FAF ILS/LOC 17L … » (Lyon), « FAF LOC + DME RWY 23 … » (Bordeaux), « FAP/FAF RWY 05 … » et « FAP/FAF RWY03 … » (Strasbourg, Nantes) ; jamais « FAF VOR… » (SOG-0203)
 
 
 def parse_faf(rows):
@@ -70,7 +70,7 @@ def parse_faf(rows):
     return out
 
 
-IF_ROW = re.compile(r'^IF (?:ILS/LOC|ILS|LOC)(?: RNP)? RWY (\d{2}[LRC]?)\s+(\d.*)$')
+IF_ROW = re.compile(r'^IF (?:(?:ILS/LOC|ILS|LOC)(?: RNP)? )?RWY ?(\d{2}[LRC]?)\s+(\d.*)$')       # « IF ILS/LOC RWY 07 … » ; « IF RWY 05 … » (Strasbourg : la page DATA ne dit pas ILS) — jamais « IF VOR … » 
 
 
 def parse_if(rows):
