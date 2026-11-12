@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c9e639d",
+  "organisation": "ac0494b",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -3360,11 +3360,12 @@
     {
      "id": "SOG-0262",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : la carte du monde et les paquets de pays comme entrée ; la liste des 75 pays disparaît ; une fiche par pays avec l'inventaire exact de ses fichiers",
      "en": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
      "de": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
-     "es": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files"
+     "es": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
+     "test": true
     },
     {
      "id": "SOG-0264",
