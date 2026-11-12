@@ -37,7 +37,7 @@ SUB_NAME = re.compile(r'^28DaySubscription_Effective_(\d{4}-\d{2}-\d{2})(?: \(\d
 INNER_MEMBER = re.compile(r'^CSV_Data/\d{2}_[A-Z][a-z]{2}_\d{4}_CSV\.zip\Z', re.A)      # son zip de jeux CSV (tools/faa_nasr.py INNER_MEMBER)
 NASR_MEMBER = {'FIX': 'FIX_BASE.csv', 'AWY': 'AWY_SEG_ALT.csv', 'NAV': 'NAV_BASE.csv'}
 FRA_MEMBER = re.compile(r'^(?:.*/)?(eurocontrol-airac-(\d{4})-fra-points-[A-Za-z0-9-]+\.xlsx)\Z', re.I | re.A)      # SOG-0273 : un zip de classeurs FRA (l'historique des cycles, 41 classeurs) : seuls ceux du cycle en vigueur et du suivant sont pris, sur place
-FRA_TAKE_MAX = 6                   # classeurs pris au plus dans une archive FRA
+FRA_TAKE_MAX = 2                   # classeurs pris au plus dans une archive FRA : le cycle en vigueur et le suivant (décision de l'ergonome, 12/11) ; chacun borné à TAKE_MAX octets décompressés
 TAKE_MAX = 32 * 1024 * 1024        # un classeur pris dans une archive : 1,6 Mo aujourd'hui
 RAD_NAME = re.compile(r'^RAD_\d{4}_v[\d_]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)      # tools/route_engine/import_books.py RAD_NAME / FRA_NAME : les classeurs d'EUROCONTROL, sous leur nom d'origine
 FRA_NAME = re.compile(r'^eurocontrol-airac-\d{4}-fra-points-[A-Za-z0-9-]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)
@@ -149,8 +149,8 @@ def recognise(path, hint='', today=None):
             if len(fra) >= 2 and '[Content_Types].xml' not in names:       # une archive de classeurs FRA : ceux du cycle en vigueur et du suivant, reconnus par leur nom de membre
                 ids = _airac_ids(today)
                 take = [(n, base) for n, base, cid in fra if cid in ids]
-                if len(take) > FRA_TAKE_MAX:          # Sécurisation (12/11) : une vraie archive en porte un ou deux par cycle ; 500 noms du cycle = 500 fichiers de 32 Mo posés : refusé
-                    raise Refused('unrecognised', f'trop de classeurs FRA du cycle dans cette archive ({len(take)} : une archive en porte un ou deux par cycle)', EXPECTED)
+                if len(take) > FRA_TAKE_MAX:          # Sécurisation (12/11) : une vraie archive en porte UN par cycle ; plus de deux = refusé, en le disant
+                    raise Refused('unrecognised', f'trop de classeurs FRA du cycle dans cette archive ({len(take)} : une archive en porte un par cycle : le cycle en vigueur et le suivant, deux au plus)', EXPECTED)
                 if not take:
                     raise Refused('unrecognised', f'aucun classeur FRA du cycle en vigueur ({ids[0]}) ni du suivant ({ids[1]}) dans cette archive', EXPECTED)
                 return {'source': 'eurocontrol_rad', 'kind': 'fra', 'zone': '', 'name': take[0][1], 'cycle': None, 'take': take}

@@ -9,6 +9,7 @@ import datetime
 import html as htmllib
 import os
 import re
+import time
 
 MONTHS = {m: i + 1 for i, m in enumerate(('JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'))}
 
@@ -220,6 +221,7 @@ def page_url(profile, name):
 # Les pages sont retrouvées par leur TITRE (« AIP for PORTUGAL … (section ENR-4.4) valid from 26 NOV 2026 »), jamais par leur nom : l'ISO du Portugal est de niveau 1 (noms 8.3 : « LP_ENR31.HTM ») et un zip ou un dossier de Windows
 # peut porter n'importe quel nom. Un fichier d'un tel paquet est une ENTRÉE NON FIABLE : tout est borné et chaque refus dit sa raison en clair (ValueError).
 PKG_MAX_BYTES = 1536 * 1024 * 1024      # un paquet (zip ou ISO) plus gros : refusé avant d'être ouvert
+ISO_MAX_SECONDS = 90                   # temps total de lecture des pages d'une image ISO (sous le verrou « occupé ») : au-delà, refusé en le disant
 ISO_MAX_PAGES = 2000                    # pages ENR prises dans une image ISO (Sécurisation 12/11 : le chemin ISO n'avait pas le plafond du zip et du dossier ; chaque lecture d'un membre déflaté relance la décompression)
 PKG_MAX_FILES = 8000                    # fichiers regardés dans un dossier ou un zip
 PAGE_MAX = 8 * 1024 * 1024              # une page d'eAIP : 0,5 Mo (ENR 3.3) ; au-delà, ce n'est pas la page attendue
@@ -288,9 +290,17 @@ def _too_big():
     raise ValueError('page trop grande')
 
 
+def _iso_read(iso, e, n, t0):
+    """Une page de l'image, sous le plafond de temps total (ISO_MAX_SECONDS) : la borne qui joue est DITE (ValueError), jamais un silence."""
+    if time.monotonic() - t0 > ISO_MAX_SECONDS:
+        raise ValueError(f'image ISO refusée : lecture plus longue que {ISO_MAX_SECONDS} s')
+    return iso.read((e[0], min(e[1], n)), PAGE_MAX) if e[1] <= PAGE_MAX else _too_big()
+
+
 def pages_of_iso(iso):
     """Pages ENR d'une image ISO 9660 (tools/iso9660.py), sans la monter : { chemin dans l'image : lecteur(limite) }."""
     out = {}
+    t0 = time.monotonic()
     walked = iso.walk()
     if len(walked) > PKG_MAX_FILES * 4:
         raise ValueError('image ISO refusée : trop de fichiers')
@@ -298,7 +308,7 @@ def pages_of_iso(iso):
         if _is_enr_page(path):
             if len(out) >= ISO_MAX_PAGES:
                 raise ValueError('image ISO refusée : trop de pages ENR')
-            out[path] = (lambda n, e=entry: iso.read((e[0], min(e[1], n)), PAGE_MAX) if e[1] <= PAGE_MAX else _too_big())
+            out[path] = (lambda n, e=entry: _iso_read(iso, e, n, t0))
     return out
 
 

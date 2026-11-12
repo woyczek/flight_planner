@@ -8313,4 +8313,26 @@ def k195(c):
             r = 'taken'
         except base_upload.Refused as e:
             r = e.reason
-        c.eq(r, 'unrecognised', '500 workbooks of the cycle in force: refused (a real archive carries one or two)', what='fra cap')
+        c.eq(r, 'unrecognised', '500 workbooks of the cycle in force: refused (a real archive carries one per cycle)', what='fra cap')
+        two = td / 'two.zip'
+        with zipfile.ZipFile(two, 'w') as z:
+            for n in ('eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx', 'eurocontrol-airac-2612-fra-points-26-nov-2026.xlsx', 'eurocontrol-airac-2610-fra-points-01oct2026.xlsx'):
+                z.writestr(n, 'x')
+        r2 = base_upload.recognise(str(two), 'download.zip', today=datetime.date(2026, 11, 12))
+        c.eq(sorted(b for _, b in r2['take']), ['eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx', 'eurocontrol-airac-2612-fra-points-26-nov-2026.xlsx'], 'the cycle in force and the next: two members, no more', what='two')
+        # ISO: the total reading time is bounded and the bound is SAID
+        class _Iso:
+            def walk(self):
+                return {'EAIP/HTML/EAIP/LP_ENR31.HTM': (0, 10)}
+            def read(self, e, limit):
+                return b'x'
+        core.ISO_MAX_SECONDS = -1
+        try:
+            pages = core.pages_of_iso(_Iso())
+            next(iter(pages.values()))(100)
+            bound = 'no bound'
+        except ValueError as e:
+            bound = str(e)
+        finally:
+            core.ISO_MAX_SECONDS = 90
+        c.ok('lecture plus longue' in bound, bound, 'an ISO read past the total time bound stops and says so')
