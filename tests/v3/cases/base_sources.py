@@ -2785,3 +2785,28 @@ def k191(c):
         c.eq(sorted(got['results']), ['base/fetch'], 'base/last gives the journal back', what='read')
         (data / 'local' / 'last_results.json').write_text('{broken', encoding='utf-8')
         c.eq(last(RJ.Job('base', 'last', {}), {}, ctx), {'ok': True, 'results': {}}, 'a broken journal: empty, no error', what='broken')
+
+
+@case('K196', 'proc/eaip-fetch: « no procedure could be read » no longer loses the RUNWAYS (LFOE, SOG-0203): the aerodrome file is written without procedure (runways, charts, counts) and the job still says the failure, with `runwaysKept`', 'K', static=True,
+      rule='Ergonomist / AeroDB survey 12 Nov 2026 (LFOE: « 0 page lue sur 2 », « aucune procédure lue », not even the runways): when no procedure was read the job returned failed and wrote NOTHING, so the runways read from the AD 2.12 page were lost with it and the base had no file for the aerodrome (EBBE-like records are « procEmpty », K194). Now a document that carries runways is installed with `procedures: []` (the file of the aerodrome: runways, charts, pages, formats, warnings; the index entry with zero counts); the result stays `ok: false, reason: failed` with the same message and adds `runwaysKept: true`.')
+def k196(c):
+    import types as _t
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('proc', 'eaip-fetch')]
+    G = fn.__globals__
+    old = G['SOURCES']['eaip']['read']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td, {})
+        ctx = {**_ctx(DS, data)}
+        doc = {'schema': 1, 'icao': 'LFOE', 'cycle': '2026-10-29', 'procedures': [], 'runways': [{'id': '04', 'length': 3001}, {'id': '22', 'length': 3001}], 'charts': {'items': [{'path': 'Cartes/LFOE/x.pdf', 'kind': 'IAC'}]}, 'warnings': [], 'formats': []}
+        G['SOURCES']['eaip']['read'] = lambda env: {'docs': [doc], 'warnings': [], 'formats': [], 'dropped': []}
+        try:
+            res = fn(RJ.Job('proc', 'eaip-fetch', {}), check({'icao': 'LFOE'}), ctx)
+        finally:
+            G['SOURCES']['eaip']['read'] = old
+        f = data / 'proc' / 'manual' / 'LFOE.json'
+        rec = json.loads(f.read_text(encoding='utf-8')) if f.is_file() else {}
+        c.eq((res.get('ok'), res.get('reason'), res.get('runwaysKept'), [r['id'] for r in rec.get('runways', [])], rec.get('procedures')), (False, 'failed', True, ['04', '22'], []),
+             'no procedure read: still the failure, but the aerodrome file exists with its runways and no procedure', what='kept')
+        idx = json.loads((data / 'proc' / 'manual' / 'index.json').read_text(encoding='utf-8'))['aerodromes']['LFOE']
+        c.eq((idx['SID'], idx['STAR'], idx['APP']), (0, 0, 0), 'the index entry says zero procedures (the coverage lists it as procEmpty, K194)', what='index')

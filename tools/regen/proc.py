@@ -233,7 +233,18 @@ def fetch(name):
             stats = count(0)                               # sans procédure installée ; remplacé par le compte final en cas de succès
             if not todo:
                 job.log(env.clean(_summary(stats)))
-                return env.failed(_nothing_read(formats, stats) if src['detailed_failure'] else 'no procedure could be read for this aerodrome', warnings, stats)
+                kept = False
+                for d in got['docs']:                      # LFOE (12/11) : « aucune procédure lue » ne perd plus les PISTES : la page AD 2.12 les a rendues, le fichier du terrain est écrit sans procédure (cartes, pistes, comptes) ; le travail dit toujours l'échec
+                    if d.get('icao') == icao and d.get('runways') and not any(p.get('icao') != icao for p in d.get('procedures') or []):
+                        try:
+                            proc_manual.install({**d, 'procedures': []}, os.path.join(data, 'proc'), replace=False, replace_source=src['replace_source'])
+                            kept = True
+                        except (SystemExit, OSError, ValueError):
+                            pass
+                if kept:
+                    job.log(f'{icao}: aucune procédure lue ; les pistes de l’AIP sont gardées dans le fichier du terrain')
+                res = env.failed(_nothing_read(formats, stats) if src['detailed_failure'] else 'no procedure could be read for this aerodrome', warnings, stats)
+                return {**res, 'runwaysKept': True} if kept else res
             if src['screen']:
                 refused = []
                 for k, d in enumerate(todo):               # ce que fait proc_manual.main() avant d'installer : le fichier, puis chaque procédure (une lecture à la main qui échoue est refusée seule)
