@@ -8525,7 +8525,9 @@ def k202(c):
         src.write_bytes(('﻿' + '\n'.join(lines) + '\n').encode('utf-8'))
         out = td / 'data' / 'local' / 'registry'
         c.eq((registry_fr.sniff(src.read_bytes()[:4096]), registry_fr.sniff(b'a,b,c\n1,2,3\n'), registry_fr.sniff(b'PK\x03\x04')), (True, False, False), 'the file is recognised by its header, not by its name', what='sniff')
+        registry_fr.MIN_MAKER = 1             # this fixture has one aircraft per maker: the threshold is tested in K205
         res = registry_fr.derive(str(src), str(out), today=1794000000)
+        registry_fr.MIN_MAKER = 5
         doc = json.loads((out / 'fr_immat.json').read_text(encoding='utf-8'))
         c.eq((res['rows'], res['skipped'], doc['columns'], doc['rows'][0]), (3, 1, list(registry_fr.WHITELIST), ['F-BHHH', 'CESSNA', '172 N', '17270001', 'PARIS-SACLAY']),
              'three distinct aircraft kept (the duplicate registration line with another owner is one row; the badly formed registration is counted, not kept); five columns only, by header name', what='derive')
@@ -8625,3 +8627,39 @@ def k204(c):
     c.eq((r['noCentre']['status'], r['noCentre']['doubt'], r['noCentre']['arcs'], r['noCentre']['inDefault']), ('doubt', 'rf-arc', 0, False), 'centre that does not resolve: still in doubt `rf-arc`, no arc point, no chord, hidden from the default list', what='no centre')
     c.eq((r['badRadius']['status'], r['badRadius']['arcs'] >= 20, r['badRadius']['gaps'] >= 1, r['badRadius']['inDefault']), ('doubt', True, True, False), 'a printed radius that does not fit the positions: the arc is drawn but the gaps are said (arcGaps) and the procedure stays in doubt', what='gap')
     c.eq((r['fixes'], r['pathLen'] == r['total'], r['nullIds']), (['ST420', 'ST430', 'STS26'], True, False), 'fixesOf: only the named fixes (never an arc point, never an id null); pathOf: every positioned point, arcs included', what='consumers')
+
+
+@case('K205', 'Registry: a CONSTRUCTEUR shared by fewer than 5 aircraft is left EMPTY (amateur builders are persons: « NOM PRÉNOM »), never written nor answered; a duplicated whitelisted header is refused (SOG-0270, Sécurisation review of 7c6ec44ae)', 'K', static=True,
+      rule='Sécurisation 12 Nov 2026 (proved on the real export, counts only): 2 276 rows carry a CONSTRUCTEUR value that appears once; of 14 sampled values in two or three words nearly all are « SURNAME FIRSTNAME » (amateur builders): personal names in a whitelisted column. k-anonymity on the content: a maker is kept only when at least MIN_MAKER = 5 distinct aircraft of the file carry it (counted before writing), else empty (« constructeur non précisé »): 462 makers and 38 910 of 43 260 rows keep theirs on the real file. A header where a whitelisted name appears twice is refused (`headers`): `index` would take the first, a third-party column renamed before the real one would pass. The case: 5 CESSNA + 1 « DUPONT JEAN »: the derived file and the verb have CESSNA, never DUPONT; red without the threshold.')
+def k205(c):
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    RJ = _regen()
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import registry_fr
+    head = 'IMMATRICULATION;CONSTRUCTEUR;MODELE;NUMERO_SERIE;AERODROME_ATTACHE;PROPRIETAIRE'
+    rows = [f'F-GA{n}{n};CESSNA;172 N;{n};X;P' for n in 'ABCDE'] + ['F-PZZZ;DUPONT JEAN;MON AVION 1;9;Y;P', 'F-PYYY;DUPONT JEAN;MON AVION 1;10;Y;P']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        src = td / 'export.csv'
+        src.write_text('\n'.join([head] + rows) + '\n', encoding='utf-8')
+        out = td / 'data' / 'local' / 'registry'
+        res = registry_fr.derive(str(src), str(out))
+        raw = (out / 'fr_immat.json').read_text(encoding='utf-8')
+        doc = json.loads(raw)
+        c.eq((res['rows'], res['makerBlanked'], sorted({r[1] for r in doc['rows']}), 'DUPONT' in raw), (7, 2, ['', 'CESSNA'], False), '5 CESSNA kept, the two « DUPONT JEAN » rows keep their registration and model but an EMPTY maker: the name is nowhere in the derived file', what='threshold')
+        fn, check = RJ.REGISTRY[('aircraft', 'registry')]
+        ctx = {'data': str(td / 'data')}
+        r = fn(RJ.Job('aircraft', 'registry', {}), check({'reg': 'F-PZZZ'}), ctx)
+        t = fn(RJ.Job('aircraft', 'registry', {}), check({'type': 'cessna'}), ctx)
+        c.eq(([(x['reg'], x['maker'], x['model']) for x in r['rows']], len(t['rows']), 'DUPONT' in json.dumps([r, t])), ([('F-PZZZ', '', 'MON AVION 1')], 5, False), 'the verb: the amateur-built aircraft is found by registration with no maker; the type search « cessna » finds the five; no name in any answer', what='verb')
+        dup = td / 'dup.csv'
+        dup.write_text('IMMATRICULATION;CONSTRUCTEUR;MODELE;NUMERO_SERIE;AERODROME_ATTACHE;MODELE\nF-AAAA;X;Y;1;Z;TIERS\n', encoding='utf-8')
+        try:
+            registry_fr.derive(str(dup), str(out))
+            code = 'derived'
+        except registry_fr.RegistryError as e:
+            code = e.code
+        c.eq(code, 'headers', 'a whitelisted header name present twice: refused (code only)', what='duplicate header')

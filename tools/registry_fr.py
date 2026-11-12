@@ -18,6 +18,7 @@ MAX_BYTES = 40 * 1024 * 1024        # le fichier fait 3,7 Mo (43 260 lignes)
 MAX_ROWS = 300000
 MAX_LINE = 4096                      # une ligne physique plus longue : refusé (guillemets non fermés, fichier piégé)
 MAX_FIELD = 80
+MIN_MAKER = 5                         # k-anonymat (Sécurisation, 12 nov. 2026) : la colonne CONSTRUCTEUR de constructeurs AMATEURS porte des NOMS DE PERSONNES PHYSIQUES (« NOM PRÉNOM ») : un constructeur n'est gardé que s'il est partagé par au moins 5 aéronefs du fichier, sinon il est laissé VIDE (l'écran dit « constructeur non précisé »)
 REG = re.compile(r'[A-Z0-9]{1,2}-[A-Z0-9]{2,6}|[A-Z0-9]{4,8}')      # « F-BHHH », « HB-ABC », « N12345 »
 OUT_NAME = 'fr_immat.json'
 CREDIT = 'Registre français des immatriculations, DGAC'
@@ -72,6 +73,8 @@ def derive(src, out_dir, today=None):
             if not header:
                 raise RegistryError('empty')
             names = [_clean(h).upper() for h in header]
+            if any(names.count(k) > 1 for k in WHITELIST):          # un nom de la liste blanche en double : refusé (« index » prendrait le premier : une colonne de tiers renommée avant la vraie y passerait)
+                raise RegistryError('headers')
             idx = {k: names.index(k) for k in WHITELIST if k in names}
             if 'IMMATRICULATION' not in idx or 'MODELE' not in idx or 'CONSTRUCTEUR' not in idx:
                 raise RegistryError('headers')
@@ -94,6 +97,14 @@ def derive(src, out_dir, today=None):
         raise RegistryError('read') from None
     if not rows:
         raise RegistryError('empty')
+    makers = {}
+    for r in rows:                                    # un passage de comptage AVANT d'écrire : aéronefs (immatriculations distinctes) par constructeur
+        makers.setdefault(r[1], set()).add(r[0])
+    blanked = 0
+    for r in rows:
+        if r[1] and len(makers[r[1]]) < MIN_MAKER:
+            r[1] = ''
+            blanked += 1
     date = time.strftime('%Y-%m-%d', time.localtime(today if today is not None else os.path.getmtime(src)))
     doc = {'schema': 1, 'source': CREDIT, 'date': date, 'columns': list(WHITELIST), 'rows': rows}
     os.makedirs(out_dir, exist_ok=True)
@@ -102,7 +113,7 @@ def derive(src, out_dir, today=None):
     with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
     os.replace(tmp, path)
-    return {'rows': len(rows), 'skipped': skipped, 'date': date, 'size': size}
+    return {'rows': len(rows), 'skipped': skipped, 'makerBlanked': blanked, 'date': date, 'size': size}
 
 
 _cache = {}
