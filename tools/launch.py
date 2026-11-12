@@ -1638,8 +1638,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         a = a if isinstance(a, dict) else {}
         if path.endswith('/cancel'):
             v = regen().cancel(str(a.get('id') or '')[:40])
-        elif path.endswith('/release'):       # SOG-0245 : un travail qui ne répond plus (Jobs.release : le lanceur vérifie, arrête ses processus, libère la place)
-            v = regen().release(str(a.get('id') or '')[:40])
+        elif path.endswith('/release'):       # SOG-0245 : un travail qui ne répond plus (Jobs.release_job : le lanceur vérifie, arrête ses processus, libère la place)
+            v = regen().release_job(str(a.get('id') or '')[:40])
         else:
             v = regen().start(a.get('set'), a.get('verb'), a.get('args'), a.get('author') or '')
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)

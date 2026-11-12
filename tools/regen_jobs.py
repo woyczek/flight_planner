@@ -151,7 +151,7 @@ class Job:
         self.seen = time.time()   # le dernier signe de vie du travail (une étape, une ligne de journal, un battement) : Jobs.vitals dit s'il est vivant, silencieux ou bloqué (SOG-0245)
         self.thread = None        # le fil qui exécute le verbe (Jobs.start)
         self.procs = []           # les processus que le verbe a lancés et déclarés (track) : un travail libéré les arrête
-        self.released = False     # libéré par le lanceur (Jobs.release) : ce que le fil abandonné écrira ensuite est perdu
+        self.released = False     # libéré par le lanceur (Jobs.release_job) : ce que le fil abandonné écrira ensuite est perdu
         self.cancel_at = None     # l'heure de la demande d'arrêt, si elle a été faite
 
     def offer(self, payload=None):
@@ -196,7 +196,7 @@ class Job:
         self.seen = time.time()
 
     def track(self, proc):
-        """Déclare un processus lancé par le verbe (subprocess.Popen) : Jobs.release l'arrête si le travail est libéré ; rend le processus."""
+        """Déclare un processus lancé par le verbe (subprocess.Popen) : Jobs.release_job l'arrête si le travail est libéré ; rend le processus."""
         self.procs.append(proc)
         self.seen = time.time()
         return proc
@@ -225,7 +225,7 @@ class Job:
 
 
 QUIET_S = 120    # secondes sans signe de vie avant qu'un travail soit dit silencieux (SOG-0245)
-STALE_S = 300    # secondes sans signe de vie avant qu'il soit dit « ne répond plus » : le lanceur peut alors le libérer (Jobs.release)
+STALE_S = 300    # secondes sans signe de vie avant qu'il soit dit « ne répond plus » : le lanceur peut alors le libérer (Jobs.release_job)
 # délai minimal entre deux départs d'un même verbe, en secondes : chaque jeu exporte le sien (tools/regen/<jeu>.py, MIN_GAP ; load_verbs les réunit ici) ; celui d'EAD Basic
 # (30 s, tools/regen/proc.py) fait partie de ses conditions : un terrain par geste, jamais en masse (EAD_BASIC.md § 1)
 MIN_GAP = {}
@@ -365,7 +365,7 @@ class Jobs:
         try:
             try:
                 res = fn(job, a, self.ctx)
-                if job.released:       # libéré (Jobs.release) pendant qu'il tournait : ce qu'il rend maintenant est perdu
+                if job.released:       # libéré (Jobs.release_job) pendant qu'il tournait : ce qu'il rend maintenant est perdu
                     return
                 job.data['state'] = 'cancelled' if job.cancelled() else 'done'
                 job.data['result'] = res
@@ -459,7 +459,7 @@ class Jobs:
             j = self.cur
             return self._summary(j) if j and j.data['state'] == 'running' else None
 
-    def release(self, id_):
+    def release_job(self, id_):
         """Libère la place d'un travail qui ne répond plus (SOG-0245) : seulement s'il est « stuck » ou si son fil n'est plus là ; le lanceur arrête les processus que le travail a déclarés (Job.track), le travail se termine
         « cancelled » avec la raison `released`, et ce que son fil abandonné écrira plus tard est perdu. Un travail qui a donné signe de vie : 409 `alive` (l'annuler d'abord : cancel)."""
         with self.lock:

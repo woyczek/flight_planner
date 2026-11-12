@@ -7975,15 +7975,15 @@ def k175(c):
          (409, 'busy', True, 't', 'slow', 'lecture de la zone fr', (3, 12, 'zones'), 'alive', {'zones': ['fr', 'gb']}),
          'a second start is refused with the operation that runs: its id, name, step, progress and that it is alive', what='busy running')
     c.ok(isinstance(r.get('started'), int) and isinstance(r.get('seen'), int) and r.get('silent') == 0, str(r), 'with its start, its last sign and the silence since')
-    bad = jobs.release(s['job'])
+    bad = jobs.release_job(s['job'])
     c.eq((bad.get('ok'), bad.get('status'), bad.get('reason')), (False, 409, 'alive'), 'a job that gave a sign is not released: 409 alive', what='alive')
     time.sleep(0.6)
     c.eq((jobs.running() or {}).get('alive'), 'quiet', 'without a sign for a while: quiet', what='quiet')
     time.sleep(0.7)
     c.eq((jobs.running() or {}).get('alive'), 'stuck', 'without a sign for much longer: stuck (« ne répond plus »)', what='stuck')
-    c.eq((jobs.release('nope') or {}).get('status'), 410, 'a release of another job: 410', what='unknown')
+    c.eq((jobs.release_job('nope') or {}).get('status'), 410, 'a release of another job: 410', what='unknown')
     old = jobs.cur
-    rel = jobs.release(s['job'])
+    rel = jobs.release_job(s['job'])
     c.eq((rel.get('ok'), jobs.view(s['job']).get('state'), (jobs.view(s['job']).get('result') or {}).get('reason')), (True, 'cancelled', 'released'), 'a stuck job is released: it ends cancelled, reason released', what='released')
     n = jobs.start('t', 'quick', {})
     c.eq(n.get('ok'), True, 'and the slot is free: a new job starts', what='free')
