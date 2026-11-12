@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "383a645",
+  "organisation": "55eaf43",
   "fiches": 284,
   "untranslated": 0,
   "priorities": 243
@@ -2808,11 +2808,12 @@
     {
      "id": "SOG-0284",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Barre du bas et rail : l'onglet actif est une pastille vide quand son icône n'a pas de variante pleine (Maintenance : Données, Fiches)",
      "en": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
      "de": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
-     "es": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)"
+     "es": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
+     "test": true
     }
    ]
   },
