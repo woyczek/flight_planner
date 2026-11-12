@@ -5929,8 +5929,9 @@ def d_atc(c):
     c.until("() => (window.__mp.S.atcHits || []).some(h => h.icao === 'LFML')", timeout=10000, what='the chips of LFML are drawn')
     h = c.js("() => { const q = window.__mp.S.atcHits.find(h => h.icao === 'LFML'); return { x: q.x + q.w / 2, y: q.y + q.h / 2, n: q.items.length, nets: [...new Set(q.items.map(i => i.net))].sort() } }")
     c.eq(h['nets'], ['ivao', 'vatsim'], 'LFML has controllers of both networks', what=str(h))
-    tip = c.js("async ([x, y]) => (await import('/modules/maps/tips.js')).tipAt(x, y)", [h['x'], h['y']])
-    c.ok(tip and 'LFML' in tip[0] and 'IVAO' in tip[1] and 'VATSIM' in tip[1] and '118.700' in tip[1], str(tip), 'the hover says the positions, the frequencies and the networks')
+    # a TOUCH on the chips (a phone has no hover): the bubble says the positions, the frequencies and the networks; clicked again if a redraw moved the chip meanwhile
+    chip = """() => { const S = window.__mp.S, q = (S.atcHits || []).find(h => h.icao === 'LFML'), r = S.box.getBoundingClientRect(); return q ? { x: r.left + q.x + q.w / 2, y: r.top + q.y + q.h / 2 } : { x: r.left + 5, y: r.top + 5 } }"""
+    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && /VATSIM/.test(t.textContent) && /IVAO/.test(t.textContent) && /118[.]700/.test(t.textContent) }", 'the touch on the chips opens the bubble: the positions, the frequencies and the networks')
     c.js("() => { window.__mp.S.map.panBy([2, 2], { duration: 0 }); return true }")
     c.wait(1200)
     cols = c.js("() => [...window.__fc]")
