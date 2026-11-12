@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "406d129",
+  "organisation": "d593a88",
   "fiches": 267,
   "untranslated": 0,
   "priorities": 243
@@ -3010,8 +3010,7 @@
      "en": "Data, country packs: choose one country inside a pack (folded list)",
      "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
      "es": "Datos, paquetes de países: elegir un país dentro de un paquete (lista plegada)",
-     "rank": 215,
-     "test": true
+     "rank": 215
     },
     {
      "id": "SOG-0188",

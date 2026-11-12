@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
   "tests": 120,
-  "verdicts": 59
+  "verdicts": 60
  },
  "apps": [
   "pilote",
@@ -1017,13 +1017,10 @@
    },
    "test": "Maintenance › Données › « Paquets de pays » : le chevron qui ouvre les pays d'un paquet est sur la ligne du paquet (pas une ligne de plus) ; « Mettre à jour (n) » est un petit lien au bout de la ligne, plus un gros bouton ; ouvert, le paquet liste ses pays avec une case chacun.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T17:19:45Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "non. mettre le chevron d’ouverture sur la ligne même, et réduire le bouton, voire le remplacer par une url !",
-    "at": "2026-11-10T16:25:20Z"
-   }
+   "comment": "presque. vu que le paquet de pays est surligné au survol, surligner le pays individuel quand on le survole (et, soit désurligner les autres, soit surligner différemment, par ex. juste la bordure -> à trancher).",
+   "at": "2026-11-12T09:24:02Z"
   },
   {
    "id": "SOG-0187",
@@ -1744,5 +1741,80 @@
    "state": "known"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0026",
+   "fiche": "SOG-0262",
+   "app": "maintenance",
+   "question": "Maquette de l'écran Données (carte du monde, groupes de pays, fiche d'un pays, liste du cycle) : on part là-dessus ?",
+   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte. La carte est l'entrée, la liste à plat des 75 pays disparaît, on n'agit que dans la fiche d'un pays (trois coches, inventaire exact des fichiers), « Publier » dit d'abord ce qui part avec.",
+   "options": [
+    "Oui, on code ce dessin",
+    "Oui, avec des corrections (je les écris)",
+    "Non, ce n'est pas ça (je dis pourquoi)"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0027",
+   "fiche": "SOG-0262",
+   "app": "maintenance",
+   "question": "Où mettre « Ce qui reste à faire ce mois-ci » : tout en haut, avant la carte, ou sous les groupes de pays comme dans la maquette ?",
+   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte. C'est la réponse à ta question du matin (« autres téléchargements pour moi ? »). Dans la maquette elle est sous les vingt groupes, donc loin.",
+   "options": [
+    "Tout en haut, juste sous la barre d'état ; la carte et les groupes ensuite",
+    "Sous les groupes, comme dans la maquette",
+    "À côté de la carte, à la place des groupes, qui passent dessous"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0028",
+   "fiche": "SOG-0262",
+   "app": "maintenance",
+   "question": "Au téléphone, la fiche d'un pays s'ouvre comment ?",
+   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte. En large elle tient à droite de la carte. Au téléphone il n'y a pas la place.",
+   "options": [
+    "En plein écran, avec un retour vers la carte",
+    "Dans la page, dépliée sous le pays touché"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0029",
+   "fiche": "SOG-0262",
+   "app": "maintenance",
+   "question": "La carte s'ouvre cadrée sur quoi ?",
+   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte.",
+   "options": [
+    "Sur le monde ; ouvrir un groupe zoome dessus",
+    "Sur le dernier groupe ouvert",
+    "Sur ma couverture (les pays que j'ai)"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 2
+  },
+  {
+   "id": "Q-0030",
+   "fiche": "SOG-0262",
+   "app": "maintenance",
+   "question": "Un pays gris, hors de ta couverture : que propose sa fiche ?",
+   "context": "Maquette de l'écran Données refondu : E:\\DEFA\\modules\\data\\maquette\\liste_cycle_1280.png (et _390, _monde) ; page statique liste_cycle.html. Les données y sont inventées (fichiers, dates, l'échec de l'Italie) : seul le dessin compte.",
+   "options": [
+    "« Ajouter à ma couverture », avec ce que cela demandera (sources, fichiers)",
+    "Rien : la couverture se règle ailleurs",
+    "Seulement dire ce qui existe pour ce pays, sans bouton"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }
