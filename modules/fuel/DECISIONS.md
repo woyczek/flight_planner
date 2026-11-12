@@ -1792,3 +1792,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   their comments by the formatter, written apart again.
 - **12 Nov 2026 — the flight carries its company** (SOG-0041): `current_flight.airline` = the code of the company where the flight is
   prepared (themesLoad, in memory, written with the next write); the report offers that company's families for « Vol en cours ».
+- **12 Nov 2026 — the route of the timing, bounded** (SOG-0283, Sécurisation audit 170 on 53c265b03): the flight is written by any device;
+  `cache/fuel/route_timing.json` and « Copier le diagnostic » keep of the departure and the arrival only a recognised code (letters and
+  digits, 2 to 12, the rule of a point's name of the direct), else « ? ». F159 (a departure of 4 000 signs: « ? »). And the example above the
+  route field and in the help shows the runways (« LFBO/32L TOU UN460 NTS/F280 LFRN/28 », SOG-0089 retouche).

@@ -204,10 +204,10 @@ const TX = {
   dep: ['Départ', 'Departure', 'Abflug', 'Salida'],
   arr: ['Arrivée', 'Arrival', 'Ankunft', 'Llegada'],
   altn: ['Dégagement', 'Alternate', 'Ausweich', 'Alternativo'],
-  routeText: ['Route (points, voies, niveaux : LFBO TOU UN460 NTS/F280 LFRN)',
-    'Route (points, airways, levels: LFBO TOU UN460 NTS/F280 LFRN)',
-    'Route (Punkte, Luftstraßen, Flugflächen: LFBO TOU UN460 NTS/F280 LFRN)',
-    'Ruta (puntos, aerovías, niveles: LFBO TOU UN460 NTS/F280 LFRN)'
+  routeText: ['Route (points, voies, niveaux : LFBO/32L TOU UN460 NTS/F280 LFRN/28)',
+    'Route (points, airways, levels: LFBO/32L TOU UN460 NTS/F280 LFRN/28)',
+    'Route (Punkte, Luftstraßen, Flugflächen: LFBO/32L TOU UN460 NTS/F280 LFRN/28)',
+    'Ruta (puntos, aerovías, niveles: LFBO/32L TOU UN460 NTS/F280 LFRN/28)'
   ],
   rinfo: ['{d} · route vraie {t}° · {s}', '{d} · true track {t}° · {s}', '{d} · rechtweisender Kurs {t}° · {s}',
     '{d} · rumbo verdadero {t}° · {s}'
@@ -3732,6 +3732,13 @@ async function routeAskRun(s, act, r, o, box, retry) {
 // sans route ni adresse au-delà de départ → arrivée. Au-delà de 3 s, la ligne le dit en clair, avec « Copier le diagnostic ».
 const ROUTE_TIMING = 'cache/fuel/route_timing.json',
   SLOW_MS = 3000;
+/** SOG-0283 (Sécurisation, audit 170) : le vol est écrit par n'importe quel appareil ; du départ et de l'arrivée, seul un indicatif reconnu
+ *  (lettres et chiffres, 12 signes au plus, la règle du nom d'un point du direct) entre dans le document de l'appareil et le diagnostic ;
+ *  sinon « ? ». */
+const codeOrQ = v => {
+  const t = String(v ?? '').trim().toUpperCase();
+  return /^[A-Z0-9]{2,12}$/.test(t) ? t : '?';
+};
 /** L'attente visible dès l'appui : les deux boutons occupés, « Calcul en cours… » puis ses secondes au-delà de 2 s ; libérés à la fin. */
 function routeBusy(s, on, act = '') {
   s.routeBusy = on;
@@ -3745,8 +3752,8 @@ function routeBusy(s, on, act = '') {
     act,
     t0: performance.now(),
     at: new Date().toISOString(),
-    dep: String(s.flight.route?.dep || ''),
-    arr: String(s.flight.route?.arr || '')
+    dep: codeOrQ(s.flight.route?.dep),
+    arr: codeOrQ(s.flight.route?.arr)
   };
   const line = s.body?.querySelector('[data-rtime]');
   if (line) line.hidden = true;

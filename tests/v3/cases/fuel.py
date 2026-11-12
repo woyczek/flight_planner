@@ -4883,3 +4883,21 @@ def f158(c):
     c.wait(3000)
     c.eq(c.js(f"{rt}.value"), typed, 'the text being typed is not replaced', what='typed')
     c.ok(c.js(f"document.activeElement === {rt}"), '', 'the field kept the focus')
+
+
+
+@case('F159', 'Route timing: a departure that is not a code (a flight written by another device: 4 000 signs) is kept as « ? » on the device',
+      'F', tags=('fuel', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0283 (Sécurisation, audit 170 on 53c265b03): only a recognised code (letters and digits, 12 at most) enters cache/fuel/route_timing.json')
+def f159(c):
+    st = _route_launcher(c, ['route/compute'])
+    docs = proc_docs() + proc_flight(None)
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route']['dep'] = '<b>' + 'X' * 4000
+    c.open('fuel', docs=docs, airfields=True)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    d = c.until_doc('cache/fuel/route_timing.json', lambda d: bool(d and d.get('route')), 'the durations kept on the device', timeout=15000)
+    c.eq(d['route'], '? → LFML', 'the hostile departure kept as « ? »', what='route')
