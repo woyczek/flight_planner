@@ -93,6 +93,12 @@ def coverage(job, args, ctx):
     except (OSError, ValueError):
         index = {}
     held_proc = _icaos(os.path.join(data, 'proc', 'manual'))
+    empty_proc = set()
+    for icao in sorted(held_proc):      # un enregistrement SANS procédure (EBBE : l'EAD a rendu des cartes, aucune procédure lue) n'est pas « des procédures détenues » : dit à part (`procEmpty`), à réparer
+        recs = _read_records(os.path.join(data, 'proc', 'manual', icao + '.json'))
+        if recs == [] or all(not (isinstance(r, dict) and r) for r in recs):
+            empty_proc.add(icao)
+    held_proc -= empty_proc
     try:
         for c in os.listdir(os.path.join(data, 'proc')):
             if CYCLE.match(c):
@@ -130,6 +136,7 @@ def coverage(job, args, ctx):
             except (OSError, ValueError):
                 meta = {}
         zones[zone] = {'cycle': cycle or None, 'parserVersion': meta.get('parserVersion') if isinstance(meta, dict) else None, 'counts': counts, 'procedures': mine(held_proc), 'ground': mine(held_ground),
+                       'procEmpty': sorted(k for k in empty_proc if prefixes and k.startswith(prefixes)),
                        'procSources': _kinds(data, [k for k in held_proc if prefixes and k.startswith(prefixes)]),
                        'sources': {'declared': list(S.sources_of(zone)) if S else [], 'present': sorted(present.get(zone, ()))},
                        'has': {'points': counts['points'] > 0, 'navaids': counts['navaids'] > 0, 'airways': counts['airways'] > 0, 'airspaces': counts['airspaces'] > 0, 'fir': counts['fir'] > 0,

@@ -8248,3 +8248,22 @@ def k193(c):
     blank = console_log.emit('', out, now=t + 30)
     again = console_log.emit('gb : construite', out, now=t + 31)
     c.eq((blank, again), ([''], ['14:20:46 gb : construite']), 'a blank line passes as it is and cuts the series: the same text after it is written again', what='blank')
+
+
+@case('K194', 'base/coverage: a procedure record WITHOUT any procedure (Belgium EBBE: the EAD returned charts, no procedure was read) is not « procedures held »: the zone says 0, `has.procedures` false and `procEmpty` lists the aerodrome, to repair (SOG-0264)', 'K',  static=True,
+      rule='SOG-0264 (12 Nov 2026, AeroDB\'s answer to the coverage map): « Belgique (EBBE) et Géorgie : des enregistrements sans source écrite (à réparer) ». data/proc/manual/EBBE.json holds 25 documents and `procedures: []`: counted as « procedures held » it painted the hatching on Belgium with no source to say. A record without a procedure is now left out of `procedures` and `procSources` and listed apart in `procEmpty` per zone.')
+def k194(c):
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    fn, check = RJ.REGISTRY[('base', 'coverage')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        w = lambda path, obj: (os.makedirs(os.path.dirname(path), exist_ok=True), open(path, 'w', encoding='utf-8').write(json.dumps(obj)))
+        w(os.path.join(data, 'sia', 'base', 'index.json'), {'schema': 2, 'zones': {'be': {'cycle': '2026-10-01', 'prefixes': ['EB']}, 'ie': {'cycle': '2026-10-29', 'prefixes': ['EI']}}})
+        w(os.path.join(data, 'proc', 'manual', 'EBBE.json'), {'procedures': [], 'documents': [{'name': 'x.pdf'}]})
+        w(os.path.join(data, 'proc', 'manual', 'EIDW.json'), {'procedures': [{'id': 'p', 'source': {'kind': 'ead-basic'}}]})
+        z = fn(RJ.Job('base', 'coverage', {}), {}, {'data': data})['zones']
+        c.eq((z['be']['procedures'], z['be']['has']['procedures'], z['be']['procEmpty'], z['be']['procSources']), (0, False, ['EBBE'], []), 'Belgium: a record with no procedure is not « held »: 0, no hatching, listed in procEmpty', what='empty')
+        c.eq((z['ie']['procedures'], z['ie']['procEmpty'], z['ie']['procSources']), (1, [], ['ead-basic']), 'Ireland: the record with a procedure still counts, with its source', what='held')
