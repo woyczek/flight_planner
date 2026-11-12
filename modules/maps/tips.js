@@ -430,13 +430,72 @@ function windsPicked(list, toC, W, H) {
   }
   if (seen.length >= WIND_MIN || at.length < 2) return seen;
   // trop peu : des vents interpolés entre deux voisins lus, dans les paires qui touchent la vue
-  const pairs = [];
+  let pairs = [];
   for (let i = 0; i + 1 < at.length; i++) {
     const a = at[i],
       b = at[i + 1];
-    if ((inV(a) || inV(b)) && !a.w.gap && !b.w.gap && Number.isFinite(+a.w.kt) && Number.isFinite(+b.w.kt) && Math.hypot(+a.w.lat - +b.w
+    if (!a.w.gap && !b.w.gap && Number.isFinite(+a.w.kt) && Number.isFinite(+b.w.kt) && Math.hypot(+a.w.lat - +b.w
         .lat, (+a.w.lon - +b.w.lon) * Math.cos(+a.w.lat * Math.PI / 180)) * 60 < 400) pairs.push([a, b]);
   }
+  if (!pairs.length) return seen;
+  // la route à l'écran (le trait : la suite de ses points, droite entre deux d'entre eux) : les vents interpolés entre deux lus la suivent, tronçon par tronçon, et ne coupent jamais un coude
+  // (SOG-0243, LFPO → SFD via MOPAR KOLIV VEPET PETAX : les barbules allaient droit de KOLIV à PETAX en ignorant VEPET)
+  const pl = (S.marksPts || []).map(p => toC(p.lat, p.lon)),
+    cum = pl.reduce((acc, q, i) => (acc.push(i ? acc[i - 1] + Math.hypot(q.x - pl[i - 1].x, q.y - pl[i - 1].y) : 0), acc), []),
+    // la place d'un point sur le trait : son abscisse (px) et son écart (px)
+    onLine = c => {
+      let best = null;
+      for (let i = 1; i < pl.length; i++) {
+        const a = pl[i - 1],
+          b = pl[i],
+          dx = b.x - a.x,
+          dy = b.y - a.y,
+          l2 = dx * dx + dy * dy,
+          t = l2 ? Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.y - a.y) * dy) / l2)) : 0,
+          d = Math.hypot(c.x - a.x - t * dx, c.y - a.y - t * dy);
+        if (!best || d < best.d) best = {
+          d,
+          s: cum[i - 1] + t * Math.sqrt(l2)
+        };
+      }
+      return best;
+    },
+    // le point du trait à l'abscisse s
+    lineAt = sv => {
+      let i = 1;
+      while (i < pl.length - 1 && cum[i] < sv) i++;
+      const a = pl[i - 1],
+        b = pl[i],
+        len = cum[i] - cum[i - 1],
+        t = len ? Math.max(0, Math.min(1, (sv - cum[i - 1]) / len)) : 0;
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t
+      };
+    };
+  for (const pr of pairs) {
+    const [a, b] = pr;
+    if (pl.length < 2) {
+      pr.arc = null;
+      continue;
+    }
+    const la = onLine(a.c),
+      lb = onLine(b.c);
+    pr.arc = la.d <= 8 && lb.d <= 8 ? {
+      sa: la.s,
+      sb: lb.s
+    } : false; // un lieu hors du trait : pas de vent inventé entre eux
+  }
+  // les paires dont le trait entre les deux lieux touche la vue (même si leurs deux lieux sont hors d'elle : le trait en traverse un morceau)
+  pairs = pairs.filter(pr => {
+    if (pr.arc === false) return false;
+    if (!pr.arc) return inV(pr[0]) || inV(pr[1]);
+    for (let m = 0; m <= 40; m++)
+      if (inV({
+          c: lineAt(pr.arc.sa + (pr.arc.sb - pr.arc.sa) * m / 40)
+        })) return true;
+    return false;
+  });
   if (!pairs.length) return seen;
   const uv = w => {
       const r = +w.dirDeg * Math.PI / 180;
@@ -445,23 +504,27 @@ function windsPicked(list, toC, W, H) {
     // les barbules à insérer à un pas de `step` px sur chaque paire ; celles qui tombent hors de la vue ne comptent pas (deux essais : le pas est corrigé de ce qui est vu)
     build = step => {
       const out = [...seen];
-      for (const [a, b] of pairs) {
+      for (const pr of pairs) {
+        const [a, b] = pr;
+        if (pr.arc === false) continue;
         const ua = uv(a.w),
           ub = uv(b.w),
-          k = Math.min(200, Math.floor(Math.hypot(a.c.x - b.c.x, a.c.y - b.c.y) / step) - 1);
+          k = Math.min(200, Math.floor((pr.arc ? Math.abs(pr.arc.sb - pr.arc.sa) : Math.hypot(a.c.x - b.c.x, a.c.y - b.c.y)) / step) - 1);
         for (let m = 1; m <= k; m++) {
           const f = m / (k + 1),
             u1 = ua[0] + (ub[0] - ua[0]) * f,
             v1 = ua[1] + (ub[1] - ua[1]) * f,
+            ll = pr.arc ? null : MapsRender.rhumbAt(a.w, b.w, f),
+            c = pr.arc ? lineAt(pr.arc.sa + (pr.arc.sb - pr.arc.sa) * f) : toC(ll.lat, ll
+              .lon), // sur le trait, tronçon par tronçon, entre les deux lieux lus (SOG-0243)
             w = {
               ...a.w,
-              ...MapsRender.rhumbAt(a.w, b.w, f), // sur la loxodromie entre les deux lieux lus (SOG-0243)
+              ...(ll || llAt(c.x, c.y)),
               dirDeg: (Math.atan2(-u1, -v1) * 180 / Math.PI + 360) % 360,
               kt: Math.hypot(u1, v1),
               tempC: Number.isFinite(+a.w.tempC) && Number.isFinite(+b.w.tempC) ? +a.w.tempC + (+b.w.tempC - +a.w.tempC) * f : null,
               between: true
-            },
-            c = toC(w.lat, w.lon);
+            };
           if (inV({
               c
             })) out.push({

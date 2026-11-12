@@ -2857,3 +2857,10 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - Fuel's quote counts each direct leg by compass (`route.distanceNm` = the sum of `rhumbNm`: KDEN DCT LFST 4 849 NM, not 4 401). The Map's distances follow it: `MapsRender.distances` (the marks' labels and
   positions, the edit's written `distanceNm`, the progress) and the profile library's leg lengths (`legDist`, hence the profile's axis, TOC / TOD, cursor) use `rhumbNm` (a copy of `frame/lib/geo.js`, compared by
   the bench). One radius for every distance: 3 440,065 NM = 6 371 000 m / 1 852. The dotted great circle keeps its own great-circle length in its hover (the comparison). Noreg D174 (4 849 NM).
+
+## Barbs between two read winds follow the line, leg by leg (SOG-0243 refused on 11 Nov 22:19; the user: LFPO → SFD via MOPAR KOLIV VEPET PETAX, « barbules mal ficelées »)
+- **Cause**: Fuel had written winds on KOLIV and PETAX only (none on VEPET); the barbs completed between two read winds that are neighbours in the list were put on the straight chord KOLIV → PETAX,
+  ignoring VEPET and the elbow (the chord was the rhumb line of the two places, not the route).
+- **Rule**: a wind interpolated between two read ones is put on the **drawn route** (`S.marksPts`, the line: straight between two of its points on the map), at the abscissa between the two places measured
+  along it, so it never cuts an elbow; a read place that is not on the line (8 px) gets no wind invented beside it; a pair whose stretch of line crosses the view counts even when both read places are outside it.
+- **Noreg** D176 (that route, 1 280 px, three zooms: every barb less than 2 px from the line through VEPET), red before (102 px).

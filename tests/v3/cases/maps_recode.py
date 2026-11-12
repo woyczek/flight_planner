@@ -5589,7 +5589,7 @@ def d_barbgap(c):
               const on = hs.filter(h => marks.some(q => Math.hypot(q.x - h.x, q.y - h.y) < 7)).length;
               // the labels of the marks (« 500 », « 1000 »…) are written after the last barb stroke of the drawing, with their halo
               const o = window.__ord, lastBarb = o.map((e, i) => e[0] === 's' && (Math.abs(e[1] - 1.8) < .01 || e[1] === 5) ? i : -1).reduce((a, b) => Math.max(a, b), -1),
-                lastLabel = o.map((e, i) => e[0] === 't' && /^\d{3,4}$/.test(e[1]) ? i : -1).reduce((a, b) => Math.max(a, b), -1);
+                lastLabel = o.map((e, i) => e[0] === 't' && /^[0-9]{3,4}$/.test(e[1]) ? i : -1).reduce((a, b) => Math.max(a, b), -1);
               return { n: hs.length, min: Math.round(min), on, marks: marks.length, lastBarb, lastLabel } }""")
             c.ok(r['n'] >= 3 and (r['n'] < 2 or r['min'] >= 29.9), f'{w} px, zoom {z}: {r}', 'barbs are in the view and none is closer than 30 px to another')
             c.eq(r['on'], 0, f'{w} px, zoom {z}: no barb on a distance mark', what=str(r))
@@ -5597,3 +5597,31 @@ def d_barbgap(c):
         c.js("([z, mid]) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat + 4], zoom: z }); return true }", [3.5, mid])
         c.wait(1800)
         c.shot(f'D175_{c.design}_{w}_delivered.png')
+
+
+@case('D176', 'Wind barbs follow the route leg by leg: on LFPO → … via MOPAR KOLIV VEPET PETAX the barbs between the two read winds on either side of VEPET go through VEPET (less than 2 px from the line), never straight across the elbow', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0243 refused (the user, 11 Nov 22:19, LFPO → SFD via MOPAR KOLIV VEPET PETAX computed by the IFPS calculator: « barbules mal ficelées »): the winds Fuel wrote were on KOLIV and PETAX only (none on VEPET); the barbs between two read winds that are neighbours in the list were interpolated along the straight chord KOLIV → PETAX, ignoring VEPET and the elbow; they follow the drawn line now (the route as the line draws it, leg by leg) and are not invented between two places that are not on it')
+def d_barbelbow(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    pts = [('LFPO', 48.7233, 2.3794, True), ('MOPAR', 48.95, 2.72, True), ('KOLIV', 49.55, 2.40, True), ('VEPET', 50.30, 2.55, False), ('PETAX', 50.75, 1.35, True), ('EGKB', 51.33, 0.03, True)]
+    wind = {'dirDeg': 333, 'kt': 38, 'tempC': -20, 'levelFt': 17000, 'at': '2026-11-11T21:57:00Z'}
+    f = flight()
+    f['route'] = {'text': 'LFPO MOPAR KOLIV VEPET PETAX EGKB', 'dep': 'LFPO', 'arr': 'EGKB',
+                  'points': [{'id': i, 'lat': la, 'lon': lo, **({'wind': wind} if w else {})} for i, la, lo, w in pts]}
+    f['level'] = {'ft': 17000}
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    for z in (7, 8, 9):
+        c.js("([z]) => { window.__mpMap.jumpTo({ center: [2.55, 50.2], zoom: z }); return true }", [z])
+        c.wait(1800)
+        r = c.js("""() => { const S = window.__mp.S, m = window.__mpMap, box = S.box.getBoundingClientRect(), line = S.marksPts.map(p => m.project([p.lon, p.lat])),
+          dist = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
+          const hs = (S.windHits || []).filter(h => h.x >= 0 && h.x <= box.width && h.y >= 0 && h.y <= box.height), v = line[3];
+          let worst = 0; for (const h of hs) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.x, y: h.y }, line[i - 1], line[i])); worst = Math.max(worst, best) }
+          return { n: hs.length, worst: Math.round(worst * 10) / 10, nearVepet: hs.filter(h => Math.hypot(h.x - v.x, h.y - v.y) < 90).length } }""")
+        c.ok(r['n'] >= 3, f'zoom {z}: {r}', 'barbs are in the view')
+        c.ok(r['worst'] < 2, f'zoom {z}: {r}', 'every barb is less than 2 px from the line (the route, leg by leg, through VEPET)')
+    c.shot(f'D176_{c.design}_delivered.png')
