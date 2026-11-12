@@ -1583,3 +1583,20 @@ def n31(c):
         long: ent.title.length, folder: ent.folder, copy } }""")
     c.eq(got, {'same': True, 'plan': [1], 'n': 1, 'at': 'T', 'stale': 'stale', 'bad': 'series', 'title': 'Nouveau titre', 'number': 4, 'long': 200, 'folder': 'X_Q/X-2A', 'copy': None},
          'plan applied to a copy, stale refused, entries bounded', what='pure')
+
+
+
+@case('N41', 'Registry: the buttons of a line do not touch each other and the text keeps the inner margin of the suite\'s cards',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='the ergonomist on N28 at 390 (12 Nov): « Corriger » and « Retirer du registre » stuck together, the text of the lines at the edge of the card')
+def n41(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, TEXTS)
+    c.open('missions', docs=docs(), wait=False, app='company')
+    c.go('missions?view=registry')
+    c.until(f"document.querySelectorAll('{M} .ms-rrow button').length >= 2", timeout=15000, what='a line of the registry with its buttons')
+    m = c.js(f"""(() => {{ const row = [...document.querySelectorAll('{M} .ms-rrow')].find(r => r.querySelectorAll('button').length >= 2);
+      const [a, b] = row.querySelectorAll('button'), ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), rr = row.getBoundingClientRect(),
+        t = row.querySelector('b').getBoundingClientRect();
+      return {{ gap: rb.left - ra.right, inner: t.left - rr.left }} }})()""")
+    c.ok(m['gap'] >= 6 and m['inner'] >= 8, m, 'a space between the two buttons, the text off the edge of the card')

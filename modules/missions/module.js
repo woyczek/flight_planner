@@ -56,7 +56,8 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-fam{display:block;font-size:.72em;margin-top:.15em} /* la famille sous le titre de la fiche : « SAR · Récupération de personnel » (SOG-0187) */ /* le sigle en gras, le nom long en clair (SOG-0179) */
 [data-module="missions"] .ms-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:.2em 0 .4em} /* le résumé, deux lignes au plus avec « … » (SOG-0051) */
 [data-module="missions"] .ms-lines li{margin:.15em 0}
-[data-module="missions"] .ms-rrow{display:block;border-top:1px solid var(--sog-border);padding:.5em 0} /* une ligne du registre : ses informations l'une sous l'autre, sur toute la largeur (SOG-0021) */
+[data-module="missions"] .ms-rrow{display:block;border-top:1px solid var(--sog-border);padding:.6em .75em}
+[data-module="missions"] .ms-rrow button + button{margin-left:.5em} /* « Corriger » et « Retirer du registre » ne se touchent pas (retouche de N28) */ /* une ligne du registre : ses informations l'une sous l'autre, sur toute la largeur (SOG-0021) */
 [data-module="missions"] .ms-rrow>span{display:block;margin:.15em 0}
 [data-module="missions"] .ms-route{border-collapse:collapse;width:100%}
 [data-module="missions"] .ms-route td{padding:.2em .4em;border-bottom:1px solid var(--sog-border);vertical-align:top}
