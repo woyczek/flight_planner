@@ -3889,14 +3889,17 @@ def f135(c):
         c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
         c.tap(f'{FUEL} [data-do="rcompute"]')
         c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", timeout=8000, what='three routes')
-        before = (c.doc('pilot/ABC/current_flight.json') or {}).get('route', {}).get('text', '')
+        # the words of the route, without « DCT »: opening a flight reads and normalises its route (ICAO form « … DCT … ») and writes it
+        # at about 2 s, before or after this read (the ergonomist, 12 Nov: F135 red one run in three); a tap that takes would change the WORDS
+        words = lambda: [x for x in str((c.doc('pilot/ABC/current_flight.json') or {}).get('route', {}).get('text', '')).split() if x != 'DCT']
+        before = words()
         c.tap(f'{FUEL} [data-altlist] [data-alt="2"] [data-altname]')
         c.until(f"!!document.querySelector('{FUEL} [data-altlist] [data-alt=\"2\"][data-shown]')", what=f'{w} px: the tapped row is shown')
         c.ok(c.js(f"!!document.querySelector('{FUEL} [data-alt=\"2\"] details[data-faults][open], {FUEL} [data-alt=\"2\"] details[data-sections][open]')"), '',
              f'{w} px: its detail unfolded')
         c.until(f"({_ALTS_LAST} || {{}}).shown === 2", what='shown to the Map')
         c.settle()
-        c.eq((c.doc('pilot/ABC/current_flight.json') or {}).get('route', {}).get('text', ''), before, f'{w} px: a tap does not take', what='not taken')
+        c.eq(words(), before, f'{w} px: a tap does not take', what='not taken')
         c.eq(norm(c.text(f'{FUEL} [data-alt="2"] [data-do=rtake]')), norm(row(c, 'rTake')), 'its button says « Choisir »', what='button')
         c.shot(f'F135_{c.design}_{w}_{c.lang}.png')
         c.tap(f'{FUEL} [data-alt="2"] [data-do="rtake"]')
@@ -4856,3 +4859,27 @@ def f157(c):
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", timeout=15000, what='three routes')
     c.settle()
     c.ok(c.js(f"document.querySelector('{FUEL} [data-rtime]').hidden"), '', 'under 3 s: nothing said')
+
+
+
+@case('F158', 'The route text of a flight of before the runway in the text is redone at the opening, before its first draw (« LFRS/03 … »); a '
+      'text being typed in the field is never replaced', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0089, the ergonomist (12 Nov): ONE rewrite, synchronous with the opening (before the first draw of the step Route), never while '
+      'the field has the focus or an unsaved entry, never a write of the flight of its own')
+def f158(c):
+    rt = f"document.querySelector('{FUEL} [data-k=rtext]')"
+    # the FIRST text the field shows, from the page load (a watch at each frame, installed before the opening)
+    c.page.add_init_script("""(() => { const look = () => { const e = document.querySelector('[data-module=fuel] [data-k=rtext]');
+      if (e && e.value && !window.__firstRt) window.__firstRt = e.value; if (!window.__firstRt) requestAnimationFrame(look) }; look() })()""")
+    open_proc(c, procs=V2_PROCS)   # route text « LFRS LUGEN NEPIX LFML », runways 03 and 13R chosen: a flight of before
+    first = c.js("window.__firstRt || ''")
+    c.ok(first.split()[:1] == ['LFRS/03'] and first.split()[-1:] == ['LFML/13R'], first,
+         'the FIRST text the field shows is already « LFRS/03 … LFML/13R » (never changed under the pilot\'s eyes a second later)')
+    # typing in the field (focus, no exit): the text stays what the pilot types, whatever the screen reads or computes meanwhile
+    c.page.locator(f'{FUEL} [data-k="rtext"]').click()
+    c.page.keyboard.press('End')
+    c.page.keyboard.type(' ')
+    typed = c.js(f"{rt}.value")
+    c.wait(3000)
+    c.eq(c.js(f"{rt}.value"), typed, 'the text being typed is not replaced', what='typed')
+    c.ok(c.js(f"document.activeElement === {rt}"), '', 'the field kept the focus')

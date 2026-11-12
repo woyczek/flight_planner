@@ -1288,16 +1288,17 @@ const routeText = tokens => RT.textFromTokens(tokens, {
   dct: true
 });
 /** SOG-0089 (l'ergonome) : à l'ouverture, un texte qui ne porte pas la piste que le modèle a est refait depuis lui, avant toute frappe :
- *  effacer « /07 » ensuite est un geste voulu (la piste est retirée). */
+ *  effacer « /07 » ensuite est un geste voulu (la piste est retirée). UNE réécriture, synchrone avec la lecture du vol (avant le premier
+ *  dessin de l'étape Route : le champ n'existe pas encore), en mémoire seulement : elle n'écrit pas le vol à elle seule (elle part avec la
+ *  prochaine écriture d'un geste) ; jamais quand le champ a le focus. */
 function rwyTextSync() {
-  const r = S.flight?.route;
-  if (!r?.text || S.flightPending) return;
+  const r = S.flight?.route,
+    ta = S.body?.querySelector('[data-k="rtext"]');
+  if (!r?.text || S.flightPending || (ta && document.activeElement === ta)) return;
   const t = withRwys(r.text);
   if (sameRoute(t, r.text)) return;
   r.text = t;
-  const ta = S.body?.querySelector('[data-k="rtext"]');
-  if (ta && document.activeElement !== ta) ta.value = t;
-  saveFlight();
+  if (ta) ta.value = t;
 }
 /** SOG-0089 : le texte avec les pistes choisies écrites après le départ et l'arrivée (« LFPO/07 … LFML/31R »), le terrain seul sans
  *  piste ; partout où Carburant écrit le texte (normalisation, « Auto », points changés, procédures), pour qu'aucune réécriture ne la
@@ -6124,6 +6125,7 @@ export async function mount(el, ctx) {
   const kept = kept0 || {};
   S.flight = flightOf(kept);
   S.base = CF.routeBase(kept); // ce que l'enregistrement dit de la route et du niveau (R-F4 : on n'écrit que ce qui en diffère)
+  rwyTextSync(); // SOG-0089 : le texte d'un vol d'avant ce lot refait depuis le modèle, avant le premier dessin, en mémoire
   S.settings = {
     taxiMin: 10,
     reserveMin: 30,
@@ -6729,6 +6731,7 @@ async function flightArrives(self, job) {
   if (!S.flightSeen) {
     S.flight = flightOf(kept);
     S.base = CF.routeBase(kept);
+    rwyTextSync(); // SOG-0089 : le vol arrivé tard, refait avant son dessin
   }
   flightDefaults(kept || {});
   S.flightPending = false;
@@ -6776,7 +6779,6 @@ async function completeMount(self) {
   S.refsPending = false;
   themesLoad(); // les thèmes de la compagnie, pour l'étape Vol (SOG-0202 T2)
   if (S.step === 1) atisRead(); // SOG-0090 : l'écran rouvert sur l'étape des procédures lit l'ATIS une fois
-  rwyTextSync(); // SOG-0089 : un vol d'avant ce lot (piste choisie, texte sans « /07 ») a son texte refait depuis le modèle
   if (S.directAsk) { // SOG-0088 : le direct demandé par l'adresse de la Carte, une fois le vol lu
     const q = S.directAsk;
     S.directAsk = null;

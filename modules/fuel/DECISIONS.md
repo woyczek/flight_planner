@@ -1776,7 +1776,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   writes the text (normalisation, « Auto », points edited, procedures), so that no rewrite loses them (a Map gesture comes back through the
   normalisation). The ergonomist's answer: the aerodrome written without its runway REMOVES it (« Piste de départ retirée », one
   rule for all the text carries); the fear of an old text without « /07 » is settled at the source: at the opening, a text that does not
-  carry the model's runway is redone from it (`rwyTextSync`), so erasing is a wanted gesture. A speed / level group in front
+  carry the model's runway is redone from it (`rwyTextSync`), so erasing is a wanted gesture. The ergonomist's rule (12 Nov, F135 red one run in three): ONE rewrite, synchronous with the reading of the flight (before the first draw of the step Route), never with the field focused, in memory only (no write of the flight of its own: it leaves with the next write). Measured on that occasion: opening a flight already writes it, before this lot (the profile at 0.4 s, the winds aloft, the route read and normalised in ICAO form « … DCT … » at about 2 s): F135 compares the words without « DCT »; F158 holds the rule. A speed / level group in front
   (« N0450F350 LFPO/07 … », item 15 of a flight plan) has no point to attach to: ignored and said, never hiding the aerodrome
   (`leadingGroup`). F155 (red before: the runways set by the text alone; the group), F156 (an old flight redone, then « /03 » erased),
   bench F69 (+5); F70 and F77 now expect « LFRS/03 … » and « LFRS/21 … ».
