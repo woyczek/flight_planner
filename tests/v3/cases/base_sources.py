@@ -2663,17 +2663,17 @@ def k185(c):
         ctx = {**_ctx(DS, data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 12)}
         r = fn(RJ.Job('base', 'cycle', {}), check({}), ctx)
     by = {i['id']: i for i in r['items']}
-    c.eq(r['unavailable'], ['dircam', 'ukmil'], 'the shelved sources, apart', what='list')
-    c.eq([(by[k]['steps']['download']['state'], by[k]['why'], by[k]['unavailable']) for k in ('dircam', 'ukmil')], [('unavailable', 'unavailable-at-publisher', {'since': '2025-11'})] * 2, 'never « late », never « missing »: unavailable, and since when', what='state')
+    c.eq(r['unavailable'], ['ukmil'], 'the shelved source (UK Mil only: DIRCAM is read from the SIA CD), apart', what='list')
+    c.eq([(by[k]['steps']['download']['state'], by[k]['why'], by[k]['unavailable']) for k in ('ukmil',)], [('unavailable', 'unavailable-at-publisher', {'since': '2025-11'})], 'never « late », never « missing »: unavailable, and since when', what='state')
     nx = {i['id']: i['state'] for i in r['next']['items']}
-    c.eq((nx.get('dircam'), nx.get('ukmil'), nx.get('sia')), ('unavailable', 'unavailable', 'to-take'), 'the next cycle: nothing to take for them, the others unchanged', what='next')
-    c.eq(BC['UNAVAILABLE'], {'dircam': '2025-11', 'ukmil': '2025-11'}, 'the launcher side of the list (K183 and the catalogue say the same)', what='py')
+    c.eq((nx.get('ukmil'), nx.get('sia')), ('unavailable', 'to-take'), 'the next cycle: nothing to take for them, the others unchanged', what='next')
+    c.eq(BC['UNAVAILABLE'], {'ukmil': '2025-11'}, 'the launcher side of the list (K183 and the catalogue say the same)', what='py')
     c.page.goto(f'{c.base}/frame/aerodb/test/catalogue.html', wait_until='load')
     j = c.js("""() => { const C = AeroCatalogue, o = {};
       for (const id of ['dircam', 'ukmil', 'sia']) { const s = C.stepsOf(id, '2612'); o[id] = s && s.unavailable ? { since: s.unavailable.since, n4: s.unavailable.note.length === 4 } : null; }
       const f = C.stepsOf('adds', '2612');
       return { o, page: f.page.url, files: f.files.map(x => [x.name, x.url, x.verified]) }; }""")
-    c.eq(j['o'], {'dircam': {'since': '2025-11', 'n4': True}, 'ukmil': {'since': '2025-11', 'n4': True}, 'sia': None}, 'the catalogue says the same: unavailable { since, note ×4 } on DIRCAM and UK Mil only', what='catalogue')
+    c.eq(j['o'], {'dircam': None, 'ukmil': {'since': '2025-11', 'n4': True}, 'sia': None}, 'the catalogue says the same: unavailable { since, note ×4 } on UK Mil only', what='catalogue')
     c.eq((j['page'], j['files']), ('https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/2026-11-26/',
                                    [['28DaySubscription_Effective_<AAAA-MM-JJ>.zip', 'https://nfdc.faa.gov/webContent/28DaySub/28DaySubscription_Effective_2026-11-26.zip', True]]),
          'the FAA: ONE file, the full subscription of the cycle; its page and its address are those of the cycle', what='faa')

@@ -8160,3 +8160,37 @@ def k186(c):
          'expired: ONE job (two simultaneous calls share it), base/update on the nat zone, then the new routes are read', what='refresh')
     c.eq((r['paired'], r['pairedCalls']), (False, 0), 'a paired workstation (not the launcher\'s own): nothing is asked', what='paired')
     c.eq(r['fail'], {'first': [True, False], 'second': False, 'third': True, 'calls': 2}, 'a failure is said (ok false); no new try within 5 minutes; after that, one more', what='failure')
+
+
+@case('K188', 'A zip of FRA points workbooks (the 41-workbook history of EUROCONTROL, SOG-0273) is recognised by the names of its members; only the workbooks of the cycle in force and of the next one are taken (the others stay in the archive); an archive with none of them is refused with its reason', 'K', static=True,
+      rule='SOG-0273 (12 Nov 2026, the user dropped « download_11487.zip »: 41 FRA points workbooks, 12 months): the upload takes from it the workbook of the cycle in force (2611) and of the next (2612) — the ones the route computation and `base/cycle` (next) need — posts them under their own names (what route/import-rad reads) and keeps nothing else, not even the archive. A workbook alone (it carries [Content_Types].xml) is still the case of the single-workbook branch.')
+def k188(c):
+    import datetime
+    import io
+    import sys
+    import tempfile
+    import zipfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    import base_upload
+
+    def zipped(names):
+        b = io.BytesIO()
+        with zipfile.ZipFile(b, 'w', zipfile.ZIP_DEFLATED) as z:
+            for n in names:
+                z.writestr(n, 'x')
+        return b.getvalue()
+    today = datetime.date(2026, 11, 12)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        p = Path(td) / 'a.zip'
+        p.write_bytes(zipped(['eurocontrol-airac-2612-fra-points-26-nov-2026.xlsx', 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx', 'eurocontrol-airac-2610-fra-points-01oct2026.xlsx', 'eurocontrol-airac-2606-fra-points-09-july-2026.xlsx', 'readme.txt']))
+        r = base_upload.recognise(str(p), 'download_11487 (1).zip', today=today)
+        c.eq((r['source'], r['kind'], sorted(b for _, b in r['take'])), ('eurocontrol_rad', 'fra', ['eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx', 'eurocontrol-airac-2612-fra-points-26-nov-2026.xlsx']),
+             'the cycle in force (2611) and the next (2612) are taken; 2610 and 2606 stay in the archive', what='take')
+        p.write_bytes(zipped(['eurocontrol-airac-2610-fra-points-01oct2026.xlsx', 'eurocontrol-airac-2609-fra-points-03-sept-2026.xlsx']))
+        try:
+            base_upload.recognise(str(p), 'old.zip', today=today)
+            said = ''
+        except base_upload.Refused as e:
+            said = e.message
+        c.ok('2611' in said and '2612' in said, said, 'an archive of past cycles only: refused, with the two cycles it wanted')

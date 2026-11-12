@@ -33,7 +33,7 @@ def _bs():
     return types.SimpleNamespace(**entry[0].__globals__)
 
 MAX_NAMES = 5000
-UNAVAILABLE = {'dircam': '2025-11', 'ukmil': '2025-11'}      # SOG-0273 : les sources « indisponibles chez l'éditeur » (le site ne répond plus depuis environ un an, dit l'utilisateur) : le catalogue (`unavailable`) dit la même chose, K185 les compare
+UNAVAILABLE = {'ukmil': '2025-11'}      # SOG-0273 : les sources « indisponibles chez l'éditeur » (le site ne répond plus depuis environ un an, dit l'utilisateur) : le catalogue (`unavailable`) dit la même chose, K185 les compare
 NO_READER_ZONES = {'naviair': ('dk', 'fo', 'gl'), 'navcan_aip': ('ca',)}      # les États dont des fichiers se déposent à la main et ne sont pas encore lus par la suite : la fiche d'un pays le dit (`addWillAsk.noReader`)
 EDITION_SOURCES = aero_cycles.EDITION_SOURCES      # publiés par éditions : l'édition détenue n'est jamais « en retard » du seul fait du cycle
 
@@ -41,6 +41,7 @@ EDITION_SOURCES = aero_cycles.EDITION_SOURCES      # publiés par éditions : l'
 UNREAD = (
     ('navcan_aip', ('enreng*-*-*.pdf', 'adeng*-*-*.pdf', 'complete-version-of-published-sups.pdf'), 'no-reader', 'AIP Canada (NAV CANADA), ENR / AD / SUP : pas encore lu par la suite'),
     ('naviair', ('EK_ENR_*.pdf', 'BG_ENR_*.pdf', 'EK_AD_*.pdf', 'BG_AD_*.pdf'), 'no-reader', 'AIP Naviair : EK_ = le Danemark OU les Féroé (le contenu le dit), BG_ = le Groenland ; pas encore lu par la suite'),
+    ('aip_fr_datasets', ('ObstaclesDataZone1MFRANCE_*.xlsx', 'AD.2.10_MIL*.zip', 'LF_Amdt_*_AIP_en.pdf'), 'no-reader', 'AIP de France, éditions du SIA : Dataset ENR 5.4 (obstacles), Dataset AD 2.10 MIL (obstacles des terrains militaires), AIP AMDT en PDF : pas encore lus par la suite (la base se construit sur l’export XML du SIA)'),
     ('openaip_xml', ('??_apt.xml', '??_asp.xml', '??_nav.xml', '??_rpp.xml', '??_hot.xml'), 'format', 'exports openAIP au format XML 1.1 : la suite lit le GeoJSON (le lanceur le prend seul)'),
 )
 # les fichiers que le poste prend et qui se reconnaissent par le nom, pour le cycle suivant : (id, motif de nom → date ou identifiant du cycle)

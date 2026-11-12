@@ -241,15 +241,6 @@
   }, {
     id: 'dircam',
     group: 'base',
-    unavailable: {
-      since: '2025-11',
-      note: [
-        'le site de la DIRCAM ne répond plus depuis environ un an (dit l\'utilisateur) : le fichier se prend dans le disque DIRCAM du SIA',
-        'the DIRCAM site has not answered for about a year (user\'s word): the file is taken from the DIRCAM disk on the SIA site',
-        'die DIRCAM-Seite antwortet seit etwa einem Jahr nicht mehr (Aussage des Nutzers): die Datei kommt von der DIRCAM-Disk auf der SIA-Seite',
-        'el sitio de la DIRCAM no responde desde hace casi un año (dicho por el usuario): el archivo se toma del disco DIRCAM del SIA'
-      ]
-    },
     steps: {
       page: {
         url: 'https://www.dircam.dsae.defense.gouv.fr/fr/milaip',
@@ -257,17 +248,18 @@
       },
       files: [{
         name: 'MIAM_OACI_ENR 5.7.pdf',
-        what: ['l\'ENR 5.7 de l\'AIP militaire français',
-          'ENR 5.7 of the French military AIP',
-          'ENR 5.7 der französischen Militär-AIP',
-          'ENR 5.7 de la AIP militar francesa'
-        ],
+        file: 'info_aero_dircam.zip',
         link: 'https://www.sia.aviation-civile.gouv.fr/info_dircam',
+        what: ['l\'ENR 5.7 du MIAM, dans le CD DIRCAM du SIA',
+          'ENR 5.7 of the MIAM, in the DIRCAM CD of the SIA site',
+          'die ENR 5.7 des MIAM, auf der DIRCAM-CD der SIA-Seite',
+          'la ENR 5.7 del MIAM, en el CD DIRCAM del SIA'
+        ],
         where: [
-          'SIA › info_dircam › info_aero_dircam.zip (le disque DIRCAM, 1,3 Go) › PDF › MIAM › MIAM_OACI_ENR 5.7.pdf (à sortir du zip)',
-          'SIA › info_dircam › info_aero_dircam.zip (the DIRCAM disk, 1.3 GB) › PDF › MIAM › MIAM_OACI_ENR 5.7.pdf (to take out of the zip)',
-          'SIA › info_dircam › info_aero_dircam.zip (die DIRCAM-Disk, 1,3 GB) › PDF › MIAM › MIAM_OACI_ENR 5.7.pdf (aus dem Zip zu nehmen)',
-          'SIA › info_dircam › info_aero_dircam.zip (el disco DIRCAM, 1,3 GB) › PDF › MIAM › MIAM_OACI_ENR 5.7.pdf (para sacar del zip)'
+          'SIA › info_dircam › info_aero_dircam.zip (le CD DIRCAM, 1,3 Go) : l\'ENR 5.7 y est lue en place (PDF/MIAM/MIAM_OACI_ENR 5.7.pdf), rien à extraire',
+          'SIA › info_dircam › info_aero_dircam.zip (the DIRCAM CD, 1.3 GB): the ENR 5.7 is read in place (PDF/MIAM/MIAM_OACI_ENR 5.7.pdf), nothing to extract',
+          'SIA › info_dircam › info_aero_dircam.zip (die DIRCAM-CD, 1,3 GB): die ENR 5.7 wird dort an Ort und Stelle gelesen (PDF/MIAM/MIAM_OACI_ENR 5.7.pdf), nichts zu entpacken',
+          'SIA › info_dircam › info_aero_dircam.zip (el CD DIRCAM, 1,3 GB): la ENR 5.7 se lee en el sitio (PDF/MIAM/MIAM_OACI_ENR 5.7.pdf), nada que extraer'
         ],
         verified: true,
         url: 'https://www.dircam.dsae.defense.gouv.fr/images/Stories/Doc/MIAM_OACI/MIAM_OACI_ENR%205.7.pdf',

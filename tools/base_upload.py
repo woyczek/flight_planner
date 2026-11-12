@@ -36,6 +36,8 @@ NASR_NAME = re.compile(r'^(\d{2})_([A-Z][a-z]{2})_(\d{4})_(FIX|AWY|NAV)_CSV(?: \
 SUB_NAME = re.compile(r'^28DaySubscription_Effective_(\d{4}-\d{2}-\d{2})(?: \(\d+\))?\.zip\Z', re.A)      # SOG-0273 : l'abonnement NASR complet (tools/faa_nasr.py SUB_NAME, le même motif)
 INNER_MEMBER = re.compile(r'^CSV_Data/\d{2}_[A-Z][a-z]{2}_\d{4}_CSV\.zip\Z', re.A)      # son zip de jeux CSV (tools/faa_nasr.py INNER_MEMBER)
 NASR_MEMBER = {'FIX': 'FIX_BASE.csv', 'AWY': 'AWY_SEG_ALT.csv', 'NAV': 'NAV_BASE.csv'}
+FRA_MEMBER = re.compile(r'^(?:.*/)?(eurocontrol-airac-(\d{4})-fra-points-[A-Za-z0-9-]+\.xlsx)\Z', re.I | re.A)      # SOG-0273 : un zip de classeurs FRA (l'historique des cycles, 41 classeurs) : seuls ceux du cycle en vigueur et du suivant sont pris, sur place
+TAKE_MAX = 32 * 1024 * 1024        # un classeur pris dans une archive : 1,6 Mo aujourd'hui
 RAD_NAME = re.compile(r'^RAD_\d{4}_v[\d_]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)      # tools/route_engine/import_books.py RAD_NAME / FRA_NAME : les classeurs d'EUROCONTROL, sous leur nom d'origine
 FRA_NAME = re.compile(r'^eurocontrol-airac-\d{4}-fra-points-[A-Za-z0-9-]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)
 OPENAIP_NAME = re.compile(r'^(?P<cc>[a-z]{2})_(?P<layer>asp|apt|nav|rpp)(?: \(\d+\))?\.(?P<ext>geojson|json)\Z', re.A | re.I)    # base_sources.OPENAIP_FILE, sans « hot » ni xml (pas lus)
@@ -112,7 +114,22 @@ def _eaip_package(path, names, kind):
     return {'source': 'navpt', 'zone': 'pt', 'name': 'navpt_eaip.zip' if kind == 'zip' else 'navpt_eaip.iso', 'cycle': issue}
 
 
-def recognise(path, hint=''):
+def _airac_ids(today=None):
+    """Les identifiants EUROCONTROL du cycle en vigueur et du suivant (« 2611 », « 2612 » : année sur deux chiffres, numéro du cycle)."""
+    import datetime
+    import aero_cycles
+    today = today or datetime.date.today()
+    out = []
+    for iso in (aero_cycles.airac_start(today), aero_cycles.airac_start(today + datetime.timedelta(days=28))):
+        d = datetime.date.fromisoformat(iso)
+        first = datetime.date.fromisoformat(aero_cycles.airac_start(datetime.date(d.year, 1, 1)))
+        if first.year < d.year:
+            first += datetime.timedelta(days=28)
+        out.append(f'{d.year % 100:02d}{(d - first).days // 28 + 1:02d}')
+    return out
+
+
+def recognise(path, hint='', today=None):
     """Ce que le CONTENU du fichier dit : { source, zone, name (le nom canonique que base/pickup retrouve), cycle } ; lève Refused (type, unrecognised). Un zip : la liste de ses membres seulement."""
     with open(path, 'rb') as f:
         head = f.read(8)
@@ -153,6 +170,13 @@ def recognise(path, hint=''):
             book = 'rad' if RAD_NAME.match(hint or '') else 'fra' if FRA_NAME.match(hint or '') else ''
             if book and '[Content_Types].xml' in names and 'xl/workbook.xml' in names:          # SOG-0237 : un classeur d'EUROCONTROL (RAD, points FRA) : posé sous son nom d'origine, que route/import-rad lit comme Téléchargements
                 return {'source': 'eurocontrol_rad', 'kind': book, 'zone': '', 'name': re.sub(r' \(\d+\)(?=\.xlsx$)', '', hint, flags=re.I), 'cycle': None}
+            fra = [(n, m.group(1), m.group(2)) for n in names if (m := FRA_MEMBER.match(n))]
+            if len(fra) >= 2 and '[Content_Types].xml' not in names:       # une archive de classeurs FRA : ceux du cycle en vigueur et du suivant, reconnus par leur nom de membre
+                ids = _airac_ids(today)
+                take = [(n, base) for n, base, cid in fra if cid in ids]
+                if not take:
+                    raise Refused('unrecognised', f'aucun classeur FRA du cycle en vigueur ({ids[0]}) ni du suivant ({ids[1]}) dans cette archive', EXPECTED)
+                return {'source': 'eurocontrol_rad', 'kind': 'fra', 'zone': '', 'name': take[0][1], 'cycle': None, 'take': take}
             sia = sorted(m.group(1) for n in names if (m := SIA_MEMBER.match(n)))
             if sia:
                 return {'source': 'sia', 'zone': 'fr', 'name': f'export_xml_bd_SIA_{sia[-1]}.zip', 'cycle': sia[-1]}
@@ -245,6 +269,28 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
         except (OSError, ValueError, zipfile.BadZipFile) as e:
             _drop(tmp)
             return no('type', str(e)[:120])
+        if info.get('take'):                               # une archive dont on ne prend que des membres (SOG-0273) : ils sont posés sous leur nom, l'archive n'est pas gardée
+            try:
+                with zipfile.ZipFile(tmp) as z:
+                    done = []
+                    for member, base in info['take']:
+                        zi = z.getinfo(member)
+                        if zi.file_size > TAKE_MAX:
+                            raise Refused('unrecognised', f'{base} : trop gros pour un classeur', EXPECTED)
+                        body = z.read(member)
+                        part = os.path.join(folder, f'.recv-{secrets.token_hex(6)}.part')
+                        with open(part, 'wb') as out:
+                            out.write(body)
+                        os.replace(part, os.path.join(folder, base))
+                        done.append(base)
+            except Refused as r:
+                _drop(tmp)
+                return no(r.reason, r.message, r.expected, close=False)
+            except (OSError, ValueError, KeyError, zipfile.BadZipFile) as e:
+                _drop(tmp)
+                return no('type', str(e)[:120])
+            _drop(tmp)
+            return 200, {'ok': True, 'source': info['source'], 'zone': info['zone'], 'name': done[0], 'names': done, 'kind': info.get('kind', ''), 'size': got, 'replaced': True, 'sha256': h.hexdigest()}
         dest = os.path.join(folder, info['name'])
         digest = h.hexdigest()
         replaced = True
