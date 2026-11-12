@@ -31,6 +31,9 @@ import {
   COVER_ZOOM
 } from './lib/map_base.js';
 import {
+  drawAtc
+} from './atc.js';
+import {
   layersNow,
   detailShift,
   fillLayers
@@ -224,7 +227,7 @@ function blank() {
   S.lightSrc = null;
   S.lightPaths = null;
   S.frame = null;
-  for (const k of ['awHits', 'zoneHits', 'adHits', 'navHits', 'vrpHits', 'altHits', 'windHits', 'vfrHits']) S[k] = [];
+  for (const k of ['awHits', 'zoneHits', 'adHits', 'navHits', 'vrpHits', 'altHits', 'windHits', 'vfrHits', 'atcHits']) S[k] = [];
 }
 /** Le dessin léger (light.js) à la vue de la carte, gardé comme image à recopier jusqu'au suivant ; les chemins refaits seulement
  *  quand les listes du dernier dessin complet ont changé (mesure à part : maps:light:paths). */
@@ -793,6 +796,7 @@ function draw() {
     status();
   }
   S.windHits = !mission && !pick && !world && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
+  S.atcHits = !mission && !pick && L.atc ? drawAtc(ctx, toC) : []; // les contrôleurs en ligne, une teinte par réseau (SOG-0094)
   if (S.windHits
     .length) { // les points de repère et les libellés de la route se lisent : redessinés par-dessus les barbules, avec leur halo (SOG-0243)
     const col = MapsRender.palette(!!S.theme?.dark).route;

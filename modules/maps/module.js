@@ -61,6 +61,9 @@ import {
   watchTheme
 } from './screen.js';
 import {
+  atcStart
+} from './atc.js';
+import {
   makeSheet,
   sheetEvents,
   escapeKey,
@@ -133,7 +136,8 @@ export const meta = {
     merge: 'record'
   }],
   // gardés à l'installation (hors ligne dès la première visite)
-  files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'alts.js?v=0', 'canvas_scale.js?v=0',
+  files: ['atc.js?v=0', 'state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'alts.js?v=0',
+    'canvas_scale.js?v=0',
     'data.js?v=0',
     'layers.js?v=0',
     'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'ground.js?v=0', 'coverage.js?v=0', 'tips.js?v=0',
@@ -378,6 +382,7 @@ export async function mount(el, ctx) {
     watchFlight()
   ); // la fenêtre d'un vol suit le vol même quand une carte fournie y est déjà montrée (le choix peut venir avant la fin du montage, SOG-0251)
   S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
+  S.stops.push(atcStart()); // les contrôleurs en ligne IVAO / VATSIM, lus tant que leur couche est allumée (SOG-0094)
   S.stops.push(lvEvents()); // la fiche d'un espace de la liste (SOG-0163)
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte

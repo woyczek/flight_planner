@@ -260,6 +260,11 @@ export const TX = {
   corrEmpty: ['Rien autour du vol dans cette vue : décochez « Autour du vol seulement » pour tout voir.', 'Nothing around the flight in this view: untick “Around the flight only” to see everything.',
     'Nichts rund um den Flug in dieser Ansicht: „Nur rund um den Flug“ abwählen, um alles zu sehen.', 'Nada alrededor del vuelo en esta vista: desmarque «Solo alrededor del vuelo» para verlo todo.'
   ],
+  atcTitle: ['{a} : contrôleurs en ligne', '{a}: online controllers', '{a}: Lotsen online', '{a}: controladores en línea'],
+  atcNet: {
+    ivao: ['IVAO', 'IVAO', 'IVAO', 'IVAO'],
+    vatsim: ['VATSIM', 'VATSIM', 'VATSIM', 'VATSIM']
+  },
   natValid: ['Routes NAT : valides jusqu’au {d}.', 'NAT tracks: valid until {d}.', 'NAT-Tracks: gültig bis {d}.', 'Rutas NAT: válidas hasta el {d}.'],
   natExpired: ['Routes NAT : périmées (le lanceur les relit dès qu’il le peut).', 'NAT tracks: out of date (the launcher reads them again as soon as it can).',
     'NAT-Tracks: veraltet (der Launcher liest sie neu, sobald er kann).', 'Rutas NAT: caducadas (el lanzador las vuelve a leer en cuanto pueda).'
@@ -306,6 +311,7 @@ export const TX = {
     ],
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
     wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura'],
+    atc: ['Contrôleurs en ligne (IVAO / VATSIM)', 'Online controllers (IVAO / VATSIM)', 'Online-Lotsen (IVAO / VATSIM)', 'Controladores en línea (IVAO / VATSIM)'],
     contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
     cov: ['Couverture', 'Coverage', 'Abdeckung', 'Cobertura'],
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios'],

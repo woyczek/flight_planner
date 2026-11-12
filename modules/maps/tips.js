@@ -47,6 +47,9 @@ import {
   chooseHover
 } from './choose.js';
 import {
+  atcAt
+} from './atc.js';
+import {
   groundTap,
   groundHover
 } from './ground.js';
@@ -157,6 +160,8 @@ function alsoTip(a, ll) {
 export function tipAt(x, y, lat = null, lon = null, tap = false) {
   const w = windAt(x, y);
   if (w) return windLines(w);
+  const at = atcAt(x, y);
+  if (at) return at; // les contrôleurs d'un terrain : positions, fréquences, réseaux (SOG-0094)
   const vp = (S.vfrHits || []).find(h => Math.hypot(h.x - x, h.y - y) <= 9)?.p;
   if (vp) return [
     [vp.code, vp.name].filter(Boolean).join(' '), [vp.vacCode && vp.vacCode !== vp.code ? tt(TX.vfrVacCode, {

@@ -5904,3 +5904,35 @@ def d_dctline(c):
     c.ok(r['dash'] >= 2, str(r['dash']), 'the direct legs (LFRS → LUGEN, NEPIX → LFML) are drawn dotted: a dash pattern is set for each, twice per drawing (the edge, then the line)')
     c.ok('UN10' in r['texts'], str(sorted(set(r['texts']))[:12]), 'the airway’s name is written on its leg')
     c.shot('D186_{}_delivered.png'.format('standard'))
+
+
+@case('D187', 'Online controllers on the Map: nothing is read before the layer is on; then IVAO and VATSIM controllers are small tinted chips at their aerodrome (one tint per network), their hover says the position, the frequency and the network', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0094 (roadmap of the Map: « contrôleurs VATSIM et IVAO actifs sur la Carte, une teinte par réseau »): the public feeds (api.ivao.aero whazzup, data.vatsim.net) are already open to the frame; a controller whose callsign starts with a terrain’s code (LFML_TWR, LFML_ATIS, LFML_N_APP) is put at that terrain, D G T A i chips, blue for IVAO, orange for VATSIM; the layer is off by default and nothing is asked while it is off')
+def d_atc(c):
+    c.open('maps', flight=True, airfields=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""() => { const S = window.__mp.S; window.__atc = { calls: [] }; const ok = j => ({ ok: true, headers: { get: () => null }, json: async () => j });
+      S.ctx = { ...S.ctx, net: { ...S.ctx.net, fetch: async url => { window.__atc.calls.push(String(url));
+        if (/ivao/.test(url)) return ok({ clients: { atcs: [{ callsign: 'LFML_TWR', atcSession: { frequency: 118.7 } }, { callsign: 'LFML_ATIS', atcSession: { frequency: 136.0 } }, { callsign: 'LFFF_CTR', atcSession: { frequency: 125.1 } }] } });
+        return ok({ controllers: [{ callsign: 'LFML_N_APP', frequency: '119.250', facility: 5 }, { callsign: 'LFRS_TWR', frequency: '118.350', facility: 4 }], atis: [] }) } } }; return true }""")
+    c.wait(6500)
+    c.eq(c.js("() => window.__atc.calls.length"), 0, 'nothing is read while the layer is off', what='calls')
+    c.tap('[data-mp="layers"]')
+    c.until("() => window.__t.shown(document.querySelector('.mp-dbody input[data-layer=atc]'))", timeout=8000, what='the Layers content has the controllers box')
+    c.tap('.mp-dbody input[data-layer="atc"]')
+    c.until("() => (window.__mp.S.atc && window.__mp.S.atc.list.length) >= 4", timeout=12000, what='the two feeds are read: four controllers at aerodromes (the centre has no position)')
+    c.eq(sorted(set(u.split('/')[2] for u in c.js("() => window.__atc.calls"))), ['api.ivao.aero', 'data.vatsim.net'], 'the two public feeds, no other host', what='hosts')
+    c.js("""() => { window.__fc = new Set(); const r = CanvasRenderingContext2D.prototype.fillRect; CanvasRenderingContext2D.prototype.fillRect = function (x, y, w, h) { if (w === 13 && h === 13) window.__fc.add(String(this.fillStyle)); return r.apply(this, arguments) }; return true }""")
+    c.js("() => { window.__mpMap.jumpTo({ center: [5.215, 43.4367], zoom: 10 }); return true }")
+    c.until("() => (window.__mp.S.atcHits || []).some(h => h.icao === 'LFML')", timeout=10000, what='the chips of LFML are drawn')
+    h = c.js("() => { const q = window.__mp.S.atcHits.find(h => h.icao === 'LFML'); return { x: q.x + q.w / 2, y: q.y + q.h / 2, n: q.items.length, nets: [...new Set(q.items.map(i => i.net))].sort() } }")
+    c.eq(h['nets'], ['ivao', 'vatsim'], 'LFML has controllers of both networks', what=str(h))
+    tip = c.js("async ([x, y]) => (await import('/modules/maps/tips.js')).tipAt(x, y)", [h['x'], h['y']])
+    c.ok(tip and 'LFML' in tip[0] and 'IVAO' in tip[1] and 'VATSIM' in tip[1] and '118.700' in tip[1], str(tip), 'the hover says the positions, the frequencies and the networks')
+    c.js("() => { window.__mp.S.map.panBy([2, 2], { duration: 0 }); return true }")
+    c.wait(1200)
+    cols = c.js("() => [...window.__fc]")
+    c.ok(len(cols) == 2 and '#1f6fe0' in cols, str(cols), 'one tint per network (the design may deepen a tint for its contrast: two different ones)')
+    c.shot('D187_{}_delivered.png'.format('standard'))

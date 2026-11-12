@@ -272,7 +272,7 @@ const AS_GROUPS = {
 };
 /** Cases du contenu Couches, dans l'ordre de la SPEC § 6.7 (« Autour de la route seulement » en dernier). */
 const LAYER_KEYS = ['asTma', 'asDrp', 'asFir', 'asOther', 'zoneLabels', 'awLow', 'awHigh', 'awLabels', 'navaids', 'fixes', 'vrp',
-  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'contours', 'cov', 'corridor'
+  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'atc', 'contours', 'cov', 'corridor'
 ];
 /** Couche du contenu Couches qui commande chaque ligne de la page de réglage (une famille d'espaces : une seule case). */
 export const LAYER_OF = {
@@ -328,6 +328,7 @@ export function layerDefaults(B) {
     // axes AAR et tracks NAT : d'origine en CAM seulement
     aar: B.id === 'v3-cam',
     nat: B.id === 'v3-cam',
+    atc: false, // les contrôleurs en ligne IVAO / VATSIM : éteints d'origine (SOG-0094)
     wind: true,
     // couche « Couverture » (ce que l'appareil sait donner des procédures de chaque terrain, coverage.js) : éteinte d'origine,
     // allumée par sa case seulement (V3 § 10.22, § 10.29 h)

@@ -2914,3 +2914,9 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - The points of the flight carry `via` (the airway before the point, written by Fuel from the text: `frame/lib/route_text.js`); `pointsOf` keeps it (an airway-shaped id only), the path keeps it from the record. In `render_route.js` a leg between two
   route points with no `via` is **direct** and drawn dotted (a dash of 9–11 px, a gap of 7–8, square ends, edge and line alike); a leg with `via` is solid and carries, at its middle when it is at least 90 px long on the screen, a small sign
   with the airway's name (paper ground, the route's colour, bold), its place asked like the other route labels (rank `route`); what comes from a procedure (SID, STAR, approach) stays solid. The light drawing of a gesture stays solid. Noreg D186.
+
+## Online controllers of IVAO and VATSIM on the Map, one tint per network (SOG-0094, roadmap of the Map)
+- New layer « Contrôleurs en ligne (IVAO / VATSIM) » (`atc`, off by default; Layers, after the winds) and `modules/maps/atc.js`. Nothing is read while it is off; on, the two public feeds (`api.ivao.aero/v2/tracker/whazzup`, `data.vatsim.net/v3/vatsim-data.json`
+  — both already open to the frame, no new host) are read by `ctx.net` at once and every 90 s (a check every 5 s, never a read while the layer is off); a failed feed is skipped.
+- A controller whose callsign starts with a terrain's code (`LFML_TWR`, `LFML_N_APP`, `LFML_ATIS`) is put at that terrain — the drawn aerodromes, then the flight's own — as small chips (D delivery, G ground, T tower, A approach / departure, i ATIS), blue for IVAO and orange for VATSIM
+  (the design may deepen a tint for its contrast); the hover (`tipAt`) says « LFML : contrôleurs en ligne » then each position with its frequency and its network. The centres (CTR, FSS) have no position in the feeds and are not drawn. Noreg D187.

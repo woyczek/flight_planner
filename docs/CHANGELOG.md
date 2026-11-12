@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the online controllers of IVAO and VATSIM, one tint per network** — a new layer (off by default) puts the controllers of the public feeds at their aerodrome as small chips (D G T A i), the hover says the position, the frequency and the network; nothing is read while it is off (maps DECISIONS; noreg D187; SOG-0094).
 - **Security review, second pass** — the FRA archive takes TWO workbooks at most (cycle in force and next); an ISO is read for 90 s at most, the bound that plays is said. K195, DECISIONS.
 - **Security review (12 Nov): zips we did not write, FRA archive ceiling, ISO pages** — `tools/zip_guard.py`: `open_zip(path)` reads the entry count and directory size of the end record (zip64 included) BEFORE `zipfile.ZipFile` builds the directory in memory, and refuses (`BadZipFile`) more than 200,000 entries or a 64 MB directory; the eAIP scan of Downloads, `read_package`, the pickups, `base_state`, the LFV and NASR readers all open zips through it. The FRA archive branch of the upload takes at most 6 workbooks (more: `unrecognised`). The ISO path takes at most 600 ENR pages and 32,000 files. K195.
 - **Map: a direct leg is dotted, a leg on an airway is solid with the airway's sign** — from the flight's `via` (maps DECISIONS; noreg D186; SOG-0095).
