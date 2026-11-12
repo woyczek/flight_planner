@@ -109,6 +109,12 @@ function waitingText(waiting) {
     z: waiting.map(w => `${M.zoneName(S.d.zones, w.zone, li())} : ${w.reasons[0] ? reasonText(w.reasons[0]) : ''}`).join(' ; ')
   });
 }
+/** Les zones qui attendent la coche d'usage personnel (rien à télécharger ni à reconstruire) en une phrase ; '' sans. */
+function personalText(personal) {
+  return personal.length ? tt(TX.bal.personal[personal.length === 1 ? 0 : 1], {
+    n: count('zone', personal.length)
+  }) + '.' : '';
+}
 /** La ligne d'avant le départ : « 3 zones à télécharger, 5 zones à reconstruire, 52 zones déjà à jour » (les parts vides ne sont pas dites). */
 export function planText(dp) {
   const z = n => count('zone', n);
@@ -116,7 +122,8 @@ export function planText(dp) {
     [dp.fetch, TX.upd.planDl],
     [dp.build, TX.upd.planBuild],
     [dp.upToDate, TX.upd.planOk],
-    [dp.waiting, TX.upd.planWait]
+    [dp.waiting, TX.upd.planWait],
+    [dp.personal, TX.upd.planTick]
   ].filter(([l]) => l.length).map(([l, t]) => tt(t, {
     z: z(l.length)
   })).join(', ');
@@ -168,9 +175,10 @@ export async function startUpdate(zones = null) {
     return S.ctx.notify(!plan ? tt(TX.upd.noStatus) : [plan.upToDate || !plan.unknown ? tt(TX.upd
       .none, { // le nombre dit est celui des zones que le lanceur a dites à jour (jamais toutes les cochées)
         n: count('zone', plan.upToDate)
-      }) : '', plan.waiting.length ? waitingText(plan.waiting) : '', plan.unknown ? tt(TX.upd.noState, {
-      n: count('zone', plan.unknown)
-    }) : ''].filter(Boolean).join(' '), plan ? plan.unknown ? 'warn' : 'ok' : 'err');
+      }) : '', plan.waiting.length ? waitingText(plan.waiting) : '', personalText(plan.personal), plan.unknown ? tt(TX.upd
+      .noState, {
+        n: count('zone', plan.unknown)
+      }) : ''].filter(Boolean).join(' '), plan ? plan.unknown ? 'warn' : 'ok' : 'err');
   }
   const ids = plan.build.map(b => b.zone);
   S.asking = true; // une opération à la fois : les boutons restent gris pendant la question

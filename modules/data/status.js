@@ -8,6 +8,7 @@ import {
   busyNow,
   catSource,
   esc,
+  frozen,
   kind,
   lang,
   li,
@@ -23,9 +24,11 @@ import {
 import {
   buildZones,
   gateOf,
+  greyOnce,
   personalPicked,
   renderBuild,
-  sourcesWhy
+  sourcesWhy,
+  zoneRowInner
 } from './panels.js';
 
 /** Le verbe base/status est-il connu du lanceur de ce poste (regen/verbs) ? Sans lui, aucune zone n'a d'état dessiné et « Mettre à jour » reste grisé. */
@@ -93,10 +96,11 @@ export function refreshStatus(ids) {
 const dateOf = v => !v ? '' : typeof v === 'number' ? String(v) : M.dateText(v, lang()) || v;
 /** Le nom d'une source datée dans une raison : celui du catalogue sans sa parenthèse, à défaut son identifiant en majuscules. */
 const sourceName = id => (catSource(id)?.n?.[li()] || String(id || '').toUpperCase()).replace(/\s*\(.*\)\s*$/, '');
-/** La phrase d'une raison, dans la langue de l'appli (TX.zr) ; un code inconnu dit seulement qu'il l'est. */
+/** La phrase d'une raison, dans la langue de l'appli (TX.zr) ; un code que la page ne connaît pas est dit avec son code (« Raison du lanceur : … »), jamais « non reconnue ». */
 export function reasonText(r) {
   const row = M.own(TX.zr, r.code) || TX.zr.unknown;
   return tt(row, {
+    code: r.raw || '?',
     set: r.set,
     cycle: dateOf(r.cycle),
     built: dateOf(r.built),
@@ -113,8 +117,12 @@ export function zoneState(id) {
   const running = !!S.run && S.run.set === 'base' && S.run.verb !== 'purge' && S.ids.includes(id);
   return M.drawnState(S.status, id, running);
 }
-/** Les raisons d'une zone, une phrase chacune. */
-export const zoneReasons = id => (S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].reasons : []).map(reasonText);
+/** Les raisons d'une zone, une phrase chacune ; « source lue seulement avec la coche » d'une source déjà nommée par « cochez… » ne le redit pas. */
+export function zoneReasons(id) {
+  const rs = S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].reasons : [],
+    said = new Set(rs.filter(r => r.code === 'personal-undeclared').map(r => r.source));
+  return rs.filter(r => !(r.code === 'source-unread' && said.has(r.source))).map(reasonText);
+}
 /** Les avis d'une zone (jamais une raison d'être périmée) : « Zone sans points ni voies : la source ne les porte pas (openAIP) » ; une phrase chacun. */
 export const zoneNotices = id => (S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].notices || [] : []).map(
   reasonText);
@@ -131,12 +139,12 @@ export function zoneStateHtml(id) {
     open = S.whyOpen.has(id) && reasons.length,
     label = tt(TX.zst[st]);
   const dot = `<i class="f-dot" aria-hidden="true"${kind(level)}></i>`;
-  return `${reasons.length ? `<button type="button" class="d-st" data-act="zone-why" data-zone="${esc(id)}" data-zstate="${esc(st)}" aria-expanded="${open ? 'true' : 'false'}">${dot}${esc(label)}</button>` :
+  return `${reasons.length ? `<button type="button" class="d-st" data-act="zone-why" data-zone="${esc(id)}" data-zstate="${esc(st)}" aria-expanded="${open ? 'true' : 'false'}">${dot}${esc(label)}<span class="d-whyhint" data-why-hint>${esc(tt(TX.whyHint))}<i class="d-chev" aria-hidden="true"></i></span></button>` :
     `<span class="d-st" data-zstate="${esc(st)}">${dot}${esc(label)}</span>`}
     ${open ? `<p class="f-muted d-zwhy" data-zone-why="${esc(id)}">${esc(reasons.join(' ; '))}</p>` : ''}${zoneNotices(id).map(n => `<p class="f-muted d-zwhy" data-zone-notice="${esc(id)}">${esc(n)}</p>`).join('')}`;
 }
-/** Les genres du bilan, dans l'ordre où la phrase d'état les dit : à jour, à reconstruire, en échec, attendent un fichier, sans état. */
-export const ZONE_KEYS = ['upToDate', 'rebuild', 'failed', 'waiting', 'unknown'];
+/** Les genres du bilan, dans l'ordre où la phrase d'état les dit : à jour, à reconstruire, en échec, attendent un fichier, attendent la coche d'usage personnel, sans état. */
+export const ZONE_KEYS = ['upToDate', 'rebuild', 'failed', 'waiting', 'personal', 'unknown'];
 /** Le bilan des zones de la couverture d'après l'état du lanceur (SOG-0180) : { groups } — les identifiants par genre (ZONE_KEYS), dans l'ordre de la couverture ; null sans état connu (la phrase d'état le dit). Le genre ouvert qui se vide se referme.
  *  Une zone sans état du lanceur est comptée « sans état » : jamais cachée. */
 export function balance() {
@@ -188,8 +196,26 @@ function pickHtml(id, z, st, msg, main = 'data-zone-action') {
     choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>`;
   if (!seen) return `<p class="d-zact" ${main}="${esc(id)}" data-waiting data-pick><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> ${choose('', TX.up.choose)}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z, true)}`;
   const off = busy || g.disabled,
-    grey = busy ? 'busy' : g.reason; // un bouton gris dit pourquoi, à côté de lui
+    grey = greyOnce(busy ? 'busy' : g.reason,
+      'base'); // un bouton gris dit pourquoi, à côté de lui (la carte de l'opération en cours le dit déjà : pas deux fois)
   return `<p class="d-zact" ${main}="${esc(id)}" data-waiting data-pick data-seen><span class="f-muted">${esc(tt(TX.zm.seen, { zip: seen.zip }))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p><p class="d-zact d-zalt" data-zone-alt="${esc(id)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
+}
+/** La ligne d'une zone qu'aucune construction ne traite faute de la coche d'usage personnel : ce que la coche ouvre (la source nommée) et le lien qui y mène — aucun fichier à prendre ni à choisir (la source est là). */
+function personalHtml(id, z) {
+  const names = [...new Set(z.reasons.filter(M.isPersonalReason).map(r => sourceName(r.source)).filter(Boolean))],
+    line = tt(TX.zr['personal-undeclared'], {
+      source: names.join(', ') || '…'
+    });
+  return `<p class="d-zact" data-zone-action="${esc(id)}" data-personal-wait><span class="f-muted">${esc(line)}</span> <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button></p>`;
+}
+/** Amène à la case « Je certifie utiliser les données pour mon usage personnel » (en bas de la liste) et lui donne le focus ; rien si elle n'est pas dessinée (aucune zone cochée ne porte de source personnelle). */
+export function focusCertify() {
+  const box = S.body?.querySelector('[data-certify]');
+  if (!box) return;
+  box.scrollIntoView({
+    block: 'center'
+  });
+  box.focus();
 }
 /** Ce qu'une zone dit et propose SUR sa ligne (SOG-0180) : une zone qui attend un fichier que seul l'utilisateur dépose le dit (sa première raison) avec « Prendre le fichier » (la prise lance ensuite la construction de la zone) ; une zone en échec a « Réessayer » (la construction de cette zone seule) ;
  *  rien pour les autres. Les boutons sont gris pendant une opération. */
@@ -216,22 +242,33 @@ export function zoneActionHtml(id) {
   }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button>${nasr ? ` <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>` : ''}</p>${msg}${nasr ? `<p class="f-muted" data-nasr-hint>${tt(TX.up.nasr, { l: linkHtml(NASR_URL, tt(TX.up.nasrPage)) })}</p>${uploadHtml(id)}` : ''}`;
   if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>${msg}`;
   // la zone attend un fichier, ou une prise ou un envoi vient de lui dire ce qui manque : « Choisir le fichier… » reste sur sa ligne
-  const byHand = !z.buildable || !!msg || !!
+  if ((st === 'stale' || st === 'never-built') && !z.buildable && !msg && M.waitKind(z) === 'personal') return personalHtml(id,
+    z); // la coche manque : ni « Prendre le fichier » ni « Choisir le fichier… »
+  // seule une raison de la main de l'utilisateur sur un fichier (prendre, choisir) offre ces deux boutons : une raison inconnue ou une coche manquante n'en a pas
+  const byHand = z.reasons.some(M.isHandReason) || !!msg || !!
     pick; // une source à `fetch.pick` (le Portugal) offre le fichier choisi à la main d'emblée (SOG-0244)
   if ((st === 'stale' || st === 'never-built') && byHand) {
     if (pick) return pickHtml(id, z, st, msg);
     const g = gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb],
       off = busy || g.disabled,
-      grey = busy ? 'busy' : g.reason; // un bouton gris dit pourquoi, à côté de lui
+      grey = greyOnce(busy ? 'busy' : g.reason,
+        'base'); // un bouton gris dit pourquoi, à côté de lui (la carte de l'opération en cours le dit déjà : pas deux fois)
     return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button> <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
   }
   return st === 'up-to-date' && S.zoneMsg.get(id)?.kind === 'hand' ? msg :
     ''; // l'édition lue d'un fichier pris à la main reste dite quand la zone est à jour
 }
-/** Le toucher d'une pastille : ouvre ou ferme les raisons de la zone. */
+/** Le toucher d'une pastille : ouvre ou ferme les raisons de la zone (SOG-0261). Seules les lignes de CETTE zone sont redessinées (dans la liste et dans le nombre déplié de la phrase) : la liste, qui défile dans son cadre sur grand écran, garde sa position, et la pastille
+ *  garde le focus. Sans ligne dessinée : le redessin des panneaux. */
 export function toggleWhy(id) {
   if (!id) return;
   if (S.whyOpen.has(id)) S.whyOpen.delete(id);
   else S.whyOpen.add(id);
-  renderBuild();
+  const rows = [...(S.body?.querySelectorAll('[data-zone-row]') || [])].filter(r => r.dataset.zoneRow === id);
+  if (!rows.length || !S.d) return renderBuild();
+  const had = rows.find(r => r.contains(document.activeElement) && document.activeElement.matches('[data-act="zone-why"]'));
+  for (const r of rows) r.innerHTML = zoneRowInner(id, frozen());
+  had?.querySelector('[data-act="zone-why"]')?.focus({
+    preventScroll: true
+  });
 }

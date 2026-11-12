@@ -7,8 +7,21 @@ export const ZONE_STATES = Object.freeze(['up-to-date', 'stale', 'never-built', 
 /** Les avis (information qui ne rend pas la zone périmée) que la page sait dire. */
 export const NOTICE_CODES = Object.freeze(['no-points']);
 export const REASON_CODES = Object.freeze(['never-built', 'failed', 'pickup-waiting', 'source-newer', 'inputs-changed', 'parser-old',
-  'files-missing', 'source-old', 'index-orphan', 'source-unbuilt', 'source-unread', 'source-missing'
+  'files-missing', 'source-old', 'index-orphan', 'source-unbuilt', 'source-unread', 'source-missing', 'personal-undeclared'
 ]);
+/** Les raisons qui attendent un geste de l'utilisateur sur un FICHIER (le prendre dans Téléchargements, le choisir) : seules elles donnent « Prendre le fichier téléchargé » et « Choisir le fichier… » sur la ligne de la zone. */
+export const HAND_CODES = Object.freeze(['pickup-waiting', 'source-missing', 'source-old']);
+/** Les raisons qui attendent la coche « Je certifie utiliser les données pour mon usage personnel » : la source est là (ou déclarée) mais la page ne la déclare pas au lanceur. Aucun fichier à donner. */
+export const PERSONAL_CODES = Object.freeze(['personal-undeclared', 'source-unread']);
+/** Une raison de la main de l'utilisateur sur un fichier ? */
+export const isHandReason = r => HAND_CODES.includes(r?.code);
+/** Une raison qui attend la coche d'usage personnel ? */
+export const isPersonalReason = r => PERSONAL_CODES.includes(r?.code);
+/** Ce qu'attend une zone qu'aucune construction ne traite : 'hand' (un fichier à prendre ou à choisir), 'personal' (la coche d'usage personnel), null (rien de reconnu : un code du lanceur que la page ne connaît pas). */
+export function waitKind(z) {
+  const rs = Array.isArray(z?.reasons) ? z.reasons : [];
+  return rs.some(isHandReason) ? 'hand' : rs.some(isPersonalReason) ? 'personal' : null;
+}
 const ID = /^[a-z0-9]{2,8}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}/;
 /** Un texte court sans caractère de commande ; '' sinon. */
@@ -24,6 +37,9 @@ function reasonOf(r) {
     num = v => int(v);
   return {
     code,
+    raw: typeof r?.code === 'string' ? r.code.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) :
+    '', // le code tel que le lanceur le donne, borné : dit quand la page ne le connaît pas
+    why: text(r?.why, 20),
     source: text(r?.source, 20),
     set: text(r?.set, 20),
     cycle: day(r?.cycle),
@@ -74,25 +90,26 @@ export function drawnState(status, id, running) {
   if (running) return 'building';
   return Object.hasOwn(status?.zones || {}, id) ? status.zones[id].state : null;
 }
-/** La teinte de la carte pour un état dessiné : vert (à jour), orange (à reconstruire), gris (jamais construite), rouge (en échec), bleu (en cours). */
+/** La teinte de la carte pour un état dessiné : trois états lisibles sans légende — vert (à jour), ambre (à faire : reconstruire, fichier ou coche attendus, jamais construite), rouge (en échec) — et le bleu d'une zone que la page traite. */
 export const STATE_TONE = Object.freeze({
   'up-to-date': 'ok',
   stale: 'warn',
-  'never-built': 'muted',
+  'never-built': 'warn',
   failed: 'err',
   building: 'accent'
 });
-/** Le plan de « Mettre à jour » sur une sélection d'après l'état : { build: [{ zone, reasons }] (pas à jour ET constructibles), waiting: [{ zone, reasons }] (pas à jour mais en attente d'un fichier : rien à construire), upToDate, unknown (sans état) }. */
+/** Le plan de « Mettre à jour » sur une sélection d'après l'état : { build: [{ zone, reasons }] (pas à jour ET constructibles), waiting: [{ zone, reasons }] (pas à jour mais en attente d'un fichier : rien à construire), personal: [{ zone, reasons }] (en attente de la coche d'usage personnel), upToDate, unknown (sans état) }. */
 export function updatePlan(status, ids) {
   const build = [],
-    waiting = [];
+    waiting = [],
+    personal = [];
   let upToDate = 0,
     unknown = 0;
   for (const zone of ids || []) {
     const z = Object.hasOwn(status?.zones || {}, zone) ? status.zones[zone] : null;
     if (!z) unknown++;
     else if (z.state === 'up-to-date') upToDate++;
-    else(z.buildable ? build : waiting).push({
+    else(z.buildable ? build : waitKind(z) === 'personal' ? personal : waiting).push({
       zone,
       reasons: z.reasons
     });
@@ -100,11 +117,12 @@ export function updatePlan(status, ids) {
   return {
     build,
     waiting,
+    personal,
     upToDate,
     unknown
   };
 }
-/** Ce que « Mettre à jour » fait d'une sélection d'après l'état lu AVANT de rien télécharger (SOG-0180) : { upToDate: [ids] sautées, fetch: [ids] à télécharger, build: [ids] à reconstruire (celles à télécharger en font partie, les zones qui attendent un fichier non), waiting: [ids] qui attendent un fichier déposé à la main, unknown }.
+/** Ce que « Mettre à jour » fait d'une sélection d'après l'état lu AVANT de rien télécharger (SOG-0180) : { upToDate: [ids] sautées, fetch: [ids] à télécharger, build: [ids] à reconstruire (celles à télécharger en font partie, les zones qui attendent un fichier non), waiting: [ids] qui attendent un fichier déposé à la main, personal: [ids] qui attendent la coche d'usage personnel (rien à télécharger), unknown }.
  *  Une zone dont les sources du cycle sont déjà là (`download.done`) n'est pas téléchargée de nouveau : sa construction seule ; une zone dont le lanceur ne dit rien du téléchargement est téléchargée. */
 export function downloadPlan(status, ids) {
   const out = {
@@ -112,6 +130,7 @@ export function downloadPlan(status, ids) {
     fetch: [],
     build: [],
     waiting: [],
+    personal: [],
     unknown: []
   };
   for (const id of ids || []) {
@@ -121,6 +140,8 @@ export function downloadPlan(status, ids) {
       out.fetch.push(id);
     } else if (z.state === 'up-to-date') out.upToDate.push(id);
     else if (z.reasons.some(r => r.code === 'pickup-waiting')) out.waiting.push(id);
+    else if (!z.buildable && waitKind(z) === 'personal') out.personal.push(
+      id); // la coche d'usage personnel manque : rien à télécharger, rien à construire
     else if (z.download && (z.download.done || z.download.sources === 0))(z.buildable ? out.build : out.waiting).push(
       id); // les sources du cycle sont là : la construction seule, ou, si elle n'est pas possible, un fichier à déposer
     else {
@@ -147,14 +168,16 @@ export function groupReasons(items) {
   }
   return groups;
 }
-/** Le bilan d'une liste de zones d'après l'état du lanceur (SOG-0180) : { upToDate, rebuild, failed, waiting, unknown } en listes d'identifiants. `waiting` : pas à jour et pas constructible (un fichier que seul l'utilisateur dépose) ;
- *  `rebuild` : pas à jour et constructible ; `failed` : la dernière construction a échoué. */
+/** Le bilan d'une liste de zones d'après l'état du lanceur (SOG-0180) : { upToDate, rebuild, failed, waiting, personal, unknown } en listes d'identifiants. `waiting` : pas à jour, pas constructible, et un FICHIER que seul l'utilisateur donne
+ *  (prendre, choisir) ; `personal` : pas constructible faute de la coche d'usage personnel (aucun fichier à donner) ; `rebuild` : pas à jour et constructible ; `failed` : la dernière construction a échoué ;
+ *  `unknown` : sans état du lanceur, ou pas constructible pour une raison que la page ne reconnaît pas (jamais cachée, jamais dite « fichier »). */
 export function balanceOf(status, ids) {
   const out = {
     upToDate: [],
     rebuild: [],
     failed: [],
     waiting: [],
+    personal: [],
     unknown: []
   };
   for (const id of ids || []) {
@@ -162,7 +185,11 @@ export function balanceOf(status, ids) {
     if (!z) out.unknown.push(id);
     else if (z.state === 'up-to-date') out.upToDate.push(id);
     else if (z.state === 'failed') out.failed.push(id);
-    else(z.buildable ? out.rebuild : out.waiting).push(id);
+    else if (z.buildable) out.rebuild.push(id);
+    else {
+      const k = waitKind(z);
+      out[k === 'hand' ? 'waiting' : k === 'personal' ? 'personal' : 'unknown'].push(id);
+    }
   }
   return out;
 }

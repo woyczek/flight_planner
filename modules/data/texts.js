@@ -354,6 +354,17 @@ export const TX = {
       ['{n} attend un fichier', '{n} waits for a file', '{n} wartet auf eine Datei', '{n} espera un archivo'],
       ['{n} attendent un fichier', '{n} wait for a file', '{n} warten auf eine Datei', '{n} esperan un archivo']
     ],
+    // les zones dont la source personnelle n'est pas lue faute de la coche « usage personnel » : aucun fichier à donner
+    personal: [
+      ['{n} attend la coche d’usage personnel', '{n} waits for the personal-use tick',
+        '{n} wartet auf das Häkchen für den persönlichen Gebrauch',
+        '{n} espera la casilla de uso personal'
+      ],
+      ['{n} attendent la coche d’usage personnel', '{n} wait for the personal-use tick',
+        '{n} warten auf das Häkchen für den persönlichen Gebrauch',
+        '{n} esperan la casilla de uso personal'
+      ]
+    ],
     unknown: [
       ['{n} sans état', '{n} without a state', '{n} ohne Zustand', '{n} sin estado'],
       ['{n} sans état', '{n} without a state', '{n} ohne Zustand', '{n} sin estado']
@@ -372,6 +383,19 @@ export const TX = {
   ],
   stateUnread: ['il n’a pas encore été lu', 'it has not been read yet', 'er wurde noch nicht gelesen', 'aún no se ha leído'],
   allFresh: ['Tout est à jour.', 'Everything is up to date.', 'Alles ist aktuell.', 'Todo está al día.'],
+  // « Mettre à jour » n'a rien à faire seul mais des zones attendent l'utilisateur : dit à la place de « Tout est à jour. » (jamais les deux)
+  handAlone: [
+    ['Rien à mettre à jour seul : {z} attend votre main.', 'Nothing to update on its own: {z} waits for you.',
+      'Nichts zu aktualisieren, was von selbst ginge: {z} wartet auf Sie.', 'Nada que actualizar por sí solo: {z} espera su mano.'
+    ],
+    ['Rien à mettre à jour seul : {z} attendent votre main.', 'Nothing to update on its own: {z} wait for you.',
+      'Nichts zu aktualisieren, was von selbst ginge: {z} warten auf Sie.', 'Nada que actualizar por sí solo: {z} esperan su mano.'
+    ]
+  ],
+  // le toucher de la pastille d'une zone ouvre ses raisons : un mot et un chevron le disent
+  whyHint: ['pourquoi ?', 'why?', 'warum?', '¿por qué?'],
+  // la ligne d'une zone qui attend la coche d'usage personnel : le lien qui y mène
+  toCertify: ['Aller à la coche', 'Go to the tick', 'Zum Häkchen', 'Ir a la casilla'],
   zr: {
     'never-built': ['Jamais construite', 'Never built', 'Noch nie erstellt', 'Nunca construida'],
     failed: ['Dernière construction en échec', 'Last build failed', 'Letzter Build fehlgeschlagen', 'La última construcción falló'],
@@ -422,7 +446,14 @@ export const TX = {
       'Zone ohne Punkte und Strecken: die Quelle enthält sie nicht (openAIP)',
       'Zona sin puntos ni aerovías: la fuente no los incluye (openAIP)'
     ],
-    unknown: ['Raison non reconnue', 'Unrecognised reason', 'Unbekannter Grund', 'Motivo no reconocido']
+    'personal-undeclared': [
+      'Cochez « Je certifie utiliser les données pour mon usage personnel » (en bas de la liste) pour que la source {source} soit lue.',
+      'Tick “I certify that I use the data for my personal use” (at the bottom of the list) so that the {source} source is read.',
+      'Kreuzen Sie „Ich bestätige, die Daten für meinen persönlichen Gebrauch zu nutzen“ (unten in der Liste) an, damit die Quelle {source} gelesen wird.',
+      'Marque «Certifico que uso los datos para mi uso personal» (al final de la lista) para que se lea la fuente {source}.'
+    ],
+    // un code que la page ne connaît pas : le code du lanceur, jamais « raison non reconnue »
+    unknown: ['Raison du lanceur : {code}', 'Reason from the launcher – {code}', 'Grund des Starters: {code}', 'Motivo del lanzador: {code}']
   },
   // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
   upd: {
@@ -455,6 +486,10 @@ export const TX = {
     planBuild: ['{z} à reconstruire', '{z} to rebuild', '{z} neu zu erstellen', '{z} por reconstruir'],
     planOk: ['{z} déjà à jour', '{z} already up to date', '{z} bereits aktuell', '{z} ya al día'],
     planWait: ['{z} en attente d’un fichier', '{z} waiting for a file', '{z} mit ausstehender Datei', '{z} a la espera de un archivo'],
+    planTick: ['{z} en attente de la coche d’usage personnel', '{z} waiting for the personal-use tick',
+      '{z} mit ausstehendem Häkchen für den persönlichen Gebrauch',
+      '{z} a la espera de la casilla de uso personal'
+    ],
     selNone: ['Tout désélectionner', 'Deselect all', 'Alles abwählen', 'Deseleccionar todo'],
     selLine: ['Sélection : {z}', 'Selection: {z}', 'Auswahl: {z}', 'Selección: {z}'],
     selNothing: ['Aucune zone cochée', 'No zone ticked', 'Keine Zone angekreuzt', 'Ninguna zona marcada'],
@@ -1414,6 +1449,12 @@ export const TX = {
     'punteado: contorno aproximado'
   ],
   mapLegend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
+  // la légende de la carte de la base : trois états, lisibles sans rien lire d'autre (à faire = reconstruire, fichier attendu, coche attendue, sans état)
+  mapLegendBase: {
+    ok: ['à jour', 'up to date', 'aktuell', 'al día'],
+    warn: ['à faire', 'to do', 'zu tun', 'por hacer'],
+    err: ['en échec', 'failed', 'fehlgeschlagen', 'fallida']
+  },
   mapLegendNote: [
     'Trait épais et teinte pleine : zone cochée ; touchez une zone pour la cocher ou la décocher (une zone grise s’ajoute d’un toucher), déplacez et pincez la carte pour la voir de plus près.',
     'Thick outline and solid tint: zone ticked; tap a zone to tick or untick it (a grey zone is added by a tap), drag and pinch the map to see it closer.',

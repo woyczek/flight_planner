@@ -88,6 +88,8 @@ function mapToneOf(kind, id) {
   const ds = kind === 'base' && S.d.cov.ids.includes(zone) ? M.drawnState(S.status, zone, !!S.run && S.run.set === kind && S.run.verb !==
     'purge' && S.ids.includes(id)) : null;
   if (ds) return M.STATE_TONE[ds];
+  if (kind === 'base' && S.status && S.d.cov.ids.includes(zone))
+    return 'warn'; // l'état est lu et ne dit rien de cette zone : « à faire » (ambre), jamais une quatrième teinte
   return M.mapTone({
     inCoverage: S.d.cov.ids.includes(zone),
     running: !!S.run && S.run.set === kind && S.ids.includes(id),
@@ -119,7 +121,7 @@ export function zoneMapHtml(kind) {
   return `<div class="d-map" data-zone-map="${kind}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}"><div data-zone-slot></div>${kind === 'proc' ? '<p class="f-muted" data-point-info role="status"></p>' : ''}
     ${kind === 'base' ? `<p class="f-muted" data-rect-hint>${esc(tt(TX.upd.rectHint))}</p>` : ''}
     <p class="d-map-row"><button type="button" data-act="map-recenter">${esc(tt(TX.mapRecenter))}</button></p>
-    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'err', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
+    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${(kind === 'base' ? ['ok', 'warn', 'err'] : ['ok', 'warn', 'err', 'accent', 'muted']).map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(kind === 'base' ? TX.mapLegendBase[t] : TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
 }
 /** Une couleur du design (un jeton --sog-…) résolue en rgb(), la seule forme que MapLibre lit (il ne lit pas les variables CSS). */
 function token(name) {

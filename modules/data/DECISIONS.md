@@ -547,3 +547,13 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   (upload `cycle`), `older_than_cycle`, `future`, `skipped.routes_without_name` and each refused file (`refused`), from the
   K177 shape. Open on the launcher side: `base_sources._fetch_source` does not yet copy edition / from / future /
   older_than_cycle / skipped / refused into the `base/fetch` view, and `base/status` emits no `pickup-waiting` for navpt yet.
+- **12 Nov 2026 — SOG-0260 / SOG-0261 (screen side; the launcher side is AeroDB ba44d2e2d)**: the screen no longer lies.
+  « Tout est à jour. » only when nothing is left (rebuild, failed, waiting, personal, unknown) — else « Rien à mettre à jour
+  seul : n zones attendent votre main » (`data-hand-alone`); `notices[]` are an information line, never counted nor coloured;
+  the 13 reason codes of the launcher are all texted, an unknown one shown as « Raison du lanceur : <code> » (never « non
+  reconnue »); file buttons only on a hand-taken reason (pickup-waiting, source-missing, source-old, `fetch.pick`);
+  personal-undeclared / source-unread{personal} get « Cochez « Je certifie… » » with a link to the box and their own part in the
+  sentence (`personal`, « attendent la coche »); the map legend has three states (à jour, à faire, en échec); the state word of a
+  row says « pourquoi ? » with a chevron and a tap redraws only that row (scroll kept, SOG-0261); the busy sentence is said once
+  (the card, not the grey line under the button). Case L87 on the real base/status shape (75 zones). SOG-0260 point 5
+  (edition of a State not following the cycle) is the launcher's, done by AeroDB.

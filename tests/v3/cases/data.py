@@ -3066,8 +3066,8 @@ def l20(c):
     else:
         c.eq(grid[0], True, 'on a phone the map is above the list', what='stacked')
     legend = norm(c.text('[data-zone-map=base] [data-zone-legend]'))
-    c.ok(all(norm(tone(t)) in legend for t in ('ok', 'warn', 'accent', 'muted')) and norm(T('mapLegendNote')) in legend and norm(T('mapLegendApprox')) in legend, legend,
-         'the one-line legend names each tone in words, says what ticked looks like, and (the zone without ring) the dashed outline')
+    c.ok(all(norm(T(t, 'mapLegendBase: {')) in legend for t in ('ok', 'warn', 'err')) and norm(T('mapLegendNote')) in legend and norm(T('mapLegendApprox')) in legend, legend,
+         'the one-line legend of the base names its three states in words (à jour, à faire, en échec: SOG-0260), says what ticked looks like, and (the zone without ring) the dashed outline')
     # the colours handed to the base are the frame's tokens (a fill expression: ok, warn, err → accent, muted, then the accent for any other tone)
     c.eq(c.js("""() => { const probe = t => { const s = document.createElement('span'); s.style.color = 'var(--sog-' + t + ')'; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v };
         const e = window.__zm.base.getPaintProperty('%s', 'fill-color'); return [e[3] === probe('ok'), e[5] === probe('warn'), e[9] === probe('muted'), e[10] === probe('accent')] }""" % _ZFILL),
@@ -4412,7 +4412,7 @@ def l40(c):
     c.until("!document.querySelector('[data-zone-why=fr]')", timeout=4000, what='a second touch folds the reasons')
     # the map: the same states as tones (green, orange, grey, red)
     tone = lambda z: (_zfeat(c, 'base', z) or {}).get('tone')
-    c.eq({z: tone(z) for z in ('fr', 'gb', 'es', 'us')}, {'fr': 'warn', 'gb': 'err', 'es': 'muted', 'us': 'warn'}, 'the map draws the same states: orange, red, grey', what='tones')
+    c.eq({z: tone(z) for z in ('fr', 'gb', 'es', 'us')}, {'fr': 'warn', 'gb': 'err', 'es': 'warn', 'us': 'warn'}, 'the map draws the same states in three tones (SOG-0260): a zone to do or never built is amber, a failed one red', what='tones')
     # ---- a build: blue while the page builds it, and the orange country turns green on the launcher\u2019s answer (SOG-0072)
     c.tap('[data-select-row] [data-verb=select-none]')
     c.tap('[data-build-zone="fr"]')
@@ -6406,4 +6406,217 @@ def l86(c):
     c.eq(lines(), [norm(ZM('edition').replace('{d}', ed) + ' (EAIP_PORTUGAL)'), norm(ZM('future').replace('{d}', ed))], 'an edition to come: its date, and « il sera pris le <date> » (the launcher said future)', what='future lines')
     c.until("document.querySelector('[data-build-zones] [data-zone-row=pt] [data-zstate]').dataset.zstate === 'up-to-date'", timeout=8000, what='the zone is up to date')
     c.eq([c.count(f'{row} [data-zone-action]'), c.count(f'{row} [data-act=zone-upload]'), len(lines())], [0, 0, 2], 'up to date: no button, and the line of the edition stays', what='up to date')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L87
+_L87_CODES = ['index-orphan', 'never-built', 'failed', 'pickup-waiting', 'source-newer', 'personal-undeclared', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing', 'source-unread',
+              'source-missing', 'source-old']
+_L87_JS = r"""async (codes) => {
+  const S = await import('/modules/data/status.js'), M = await import('/modules/data/model.js');
+  const extra = { source: 'nats', set: 'AIP', cycle: '2026-11-26', built: 23, current: 28, count: 2, names: ['a', 'b'], zip: 'x.zip', error: 'invalid-output', why: 'personal' };
+  const one = code => M.statusOf({ state: 'done', result: { ok: true, zones: { aa: { state: 'stale', reasons: [{ code, ...extra }], buildable: true } } } }).zones.aa.reasons[0];
+  return { closed: [...M.REASON_CODES].sort(), texts: codes.map(code => { const r = one(code); return [code, r.code, S.reasonText(r)] }), unknown: S.reasonText(one('zz-new_code')),
+    hostile: S.reasonText(one('ZZ<b>X</b>-' + 'a'.repeat(60))), none: S.reasonText(one(null)), tones: M.STATE_TONE }
+}"""
+
+
+def _l87_ready(c, st=None, tag=''):
+    """After a reload: the 75 zones have their state and the sentence is drawn (what is missing is said)."""
+    try:
+        c.until("document.querySelectorAll('[data-zstate]').length >= 75 && !!document.querySelector('[data-state-sentence] [data-filter]')", timeout=20000, what='the state of the 75 zones')
+    except Fail:
+        raise Fail(f'the 75 zones have no state ({tag}): ' + json.dumps([[p['verb'] for p in (st or {'posts': []})['posts']][-6:], (st or {}).get('verbs_calls'), c.errors[:2]]) + json.dumps(c.js("() => [document.querySelectorAll('[data-zstate]').length, !!document.querySelector('[data-state-sentence]'), (document.querySelector('[data-state-head]') || {}).innerText]")), 'the state is read') from None
+
+
+@case('L87', 'Données: the base panel does not lie (SOG-0260) — « Tout est à jour. » only when nothing is left, the notices are information, the 13 reasons are worded, the file buttons are for the zones that wait for a file, the zones that wait for the personal-use tick say so, a three-state legend, « pourquoi ? » keeps the scroll, the busy sentence is said once (SOG-0261, L85)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0260 (the user: « 4 zones à jour · 2 à reconstruire · 69 attendent un fichier » and, in green, « Tout est à jour. »; every country « À reconstruire » + « Raison non reconnue » + « Prendre le fichier téléchargé »): the screen says what the launcher says — the all-fresh sentence needs nothing left to rebuild, fail, wait for or be unknown; `notices[]` are information (never a reason, never counted, no state colour); every code of the closed list has a text, an unknown one is said with its code; a file button only where a file is expected (pickup-waiting, source-missing, source-old), the personal-use tick is its own part of the sentence with a link to the box; the map legend has three states; SOG-0261: the « pourquoi ? » of a row keeps the scroll; L85 follow-up: the busy sentence is said once')
+def l87(c):
+    lang = c.lang
+    z = lambda n: _zones_text(lang, n)
+    BT = lambda k, n: _trow(k, lang, after='  bal: {', row=0 if _one(lang, n) else 1).replace('{n}', z(n))
+    UT = lambda k: _UT(k, lang)
+    ZR = lambda k: _trow(k, lang, after='  zr: {')
+    certify = _trow('certify', lang, after='  personalTitle:')
+    unknown = lambda code: ZR('unknown').replace('{code}', code)
+    keys = lambda: c.js("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].map(b => b.dataset.filter)")
+    # ---- the coverage of the user's screen, with AeroDB's real shapes: 75 zones, 60 up to date (ten of them with the « no points » notice), 9 to rebuild (7 parser-old, 2 with a code the page does not know), 1 failed,
+    #      2 that wait for a file, 3 that wait for the personal-use tick (the launcher says it twice: personal-undeclared AND source-unread)
+    cfg, _ = _fixture()
+    cfg['navpt'] = 'pick'        # Portugal is the hard case: a source taken by hand, which must still NOT offer a file when the tick is what it waits for
+    cfg['outlines'] = _outlines()
+    extra = [f'q{i:02d}' for i in range(66)]
+    for zid, names in [('af', ['Afghanistan'] * 4), ('pt', ['Portugal'] * 4), ('ie', ['Irlande', 'Ireland', 'Irland', 'Irlanda']), ('se', ['Suède', 'Sweden', 'Schweden', 'Suecia'])]:
+        cfg['zones'].append({'id': zid, 'names': names, 'frames': [], 'published': True})
+        cfg['publication']['base'][zid] = cfg['publication']['base']['ca']
+    for zid in extra:
+        cfg['zones'].append({'id': zid, 'names': [f'Zone {zid[1:]}'] * 4, 'frames': [], 'published': True})
+        cfg['publication']['base'][zid] = cfg['publication']['base']['ca']
+    ALL = ['ca', 'es', 'fr', 'gb', 'us', 'af', 'pt', 'ie', 'se'] + extra
+    notice = {'code': 'no-points', 'source': 'openaip'}
+    HOSTILE = 'ZZ<b>X</b>-' + 'a' * 60
+    shown_hostile = re.sub(r'[^a-z0-9_-]', '', HOSTILE.lower())[:40]
+    old = {'code': 'parser-old', 'built': 23, 'current': 28}
+    undeclared = lambda s: {'code': 'personal-undeclared', 'source': s}
+    unread = lambda s: {'code': 'source-unread', 'source': s, 'why': 'personal'}
+
+    def full(**over):
+        """The status of the 75 zones: every one up to date (the notices on Afghanistan and nine more), but those of `over`."""
+        zs = {zid: {**_ZDL(_zst('up-to-date'), True), 'notices': [notice] if zid == 'af' or zid in extra[:9] else [], 'publish': {'state': 'published'}} for zid in ALL}
+        zs.update(over)
+        return _status(zs)
+    WAIT = {'gb': _ZDL(_zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False), True),
+            'us': _ZDL(_zst('stale', {'code': 'source-missing', 'source': 'faa'}, buildable=False), True)}
+    PERS = {'pt': _ZDL(_zst('stale', undeclared('navpt'), unread('navpt'), buildable=False), True), 'ie': _ZDL(_zst('stale', undeclared('airnav'), buildable=False), True),
+            'se': _ZDL(_zst('stale', undeclared('lfv'), unread('lfv'), buildable=False), True)}
+    REBUILD = {**{zid: _ZDL(_zst('stale', old), True) for zid in extra[56:63]}, 'q63': _ZDL(_zst('stale', {'code': 'zz-new_code'}), True), 'q64': _ZDL(_zst('stale', {'code': HOSTILE}), True)}
+    mixed = full(es=_ZDL(_zst('failed', {'code': 'failed', 'error': 'invalid-output'}), True), **WAIT, **PERS, **REBUILD)
+    R = _running()
+    st = _launcher(c, [_view('done', step='Terminé')], verbs=_VERBS + ['base/pickup'], busy_running=R)
+    st['by_args'] = True
+    st['status'] = mixed
+
+    def style_route(route):
+        route.fulfill(status=200, content_type='application/json', body=_ZSTYLE)
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), style_route)
+    c.page.add_init_script(_ZHOOK_JS)
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length >= 75", timeout=20000, what='the state of the 75 zones, read at the opening (60 then 15)')
+    c.until("!!document.querySelector('[data-state-sentence] [data-filter]')", timeout=10000, what='the sentence')
+    row = lambda zid: f'[data-build-zones] [data-zone-row={zid}]'
+    # ---- 1. the sentence says the right counts, in its order; « Tout est à jour. » is NOT there next to « à faire »
+    cycle = c.text('[data-cycle-now]').strip()
+    pat = re.escape(_trow('cycleDates', lang)).replace(re.escape('{a}'), '(?P<a>.+?)').replace(re.escape('{b}'), '(?P<b>.+?)')
+    date = re.fullmatch(pat, norm(c.text('[data-cycle-dates]')).split(' · ')[0]).group('a')
+    want = _trow('stateCycle', lang).replace('{c}', cycle).replace('{d}', date) + ' ' + _trow('stateBase', lang) + ' ' + ' · '.join(BT(k, n) for k, n in [('upToDate', 60), ('rebuild', 9), ('failed', 1), ('waiting', 2), ('personal', 3)]) + '.'
+    c.eq(norm(c.text('[data-state-sentence]')), norm(want), 'the sentence of the user’s coverage: 60 up to date, 9 to rebuild, 1 failed, 2 that wait for a file, 3 that wait for the personal-use tick (its own part; nothing without a state)', what='sentence')
+    c.eq(keys(), ['upToDate', 'rebuild', 'failed', 'waiting', 'personal'], 'the parts are the buttons of the sentence, the personal-use tick between the files and the unknown', what='keys')
+    c.eq([c.count('[data-all-fresh]'), c.count('[data-hand-alone]'), c.count('[data-build] [data-verb=update]')], [0, 0, 1], 'zones are left to rebuild: no « Tout est à jour. », the button is there', what='no all-fresh')
+    c.eq(norm(c.text('[data-verb=update]')), norm(UT('updateN').replace('{n}', '10')), 'the button counts what it treats: 9 to rebuild + 1 failed (never the zones that wait for the user)', what='label')
+    c.eq(norm(c.text('[data-update-notes]')), norm(UT('waitNote').replace('{z}', BT('waiting', 2) + ' · ' + BT('personal', 3))), 'and the note under it says what it leaves to the user: the files, and the tick', what='notes')
+    # ---- 2. the notices are information: Afghanistan is green « À jour » on its row, its line is muted and neutral, it is counted up to date, no file button
+    zst = lambda zid: c.js("(id) => { const e = document.querySelector('[data-build-zones] [data-zone-row=' + id + '] [data-zstate]'); return e ? [e.dataset.zstate, e.textContent.trim(), e.querySelector('.f-dot')?.dataset.kind, e.tagName] : null }", zid)
+    c.eq(zst('af'), ['up-to-date', norm(_trow('up-to-date', lang, after='  zst: {')), 'ok', 'SPAN'], 'Afghanistan: green « À jour », a plain label (nothing to open)', what='af pill')
+    c.eq([[norm(t) for t in c.js(f"[...document.querySelectorAll('{row('af')} [data-zone-notice]')].map(p => p.textContent)")], c.js(f"(() => {{ const p = document.querySelector('{row('af')} [data-zone-notice]'); return [p.classList.contains('f-muted'), p.hasAttribute('data-level'), p.className.includes('warn') || p.className.includes('err')] }})()")],
+         [[norm(ZR('no-points'))], [True, False, False]], 'its information line: muted, no state colour', what='af notice')
+    c.eq([c.count(f"{row('af')} [data-zone-action]"), c.count(f"{row('af')} [data-verb=pickup]"), c.count(f"{row('af')} [data-act=zone-upload]")], [0, 0, 0], 'and no file to take for Afghanistan', what='af no file')
+    c.eq([c.count('[data-build-zones] [data-zone-notice]'), c.count('[data-state-sentence] [data-filter=failed]')], [10, 1], 'ten notices (never counted: the 60 up to date are 60)', what='notices')
+    # ---- 3. the 13 reasons have a text, an unknown code is said with its code (bounded, never as markup), the closed list is the 13
+    r = c.js(_L87_JS, _L87_CODES)
+    c.eq(r['closed'], sorted(_L87_CODES), 'the closed list of reason codes the page reads is the launcher’s thirteen', what='closed list')
+    bad = [t for t in r['texts'] if t[0] != t[1] or len(t[2]) < 8 or '{' in t[2] or 'undefined' in t[2] or t[2] == ZR('unknown')]
+    c.ok(not bad, bad, 'each of the 13 codes is read as itself and has its own text in the language of the run (no placeholder left, never the unknown one)')
+    c.eq(len({t[2] for t in r['texts']}), 13, 'thirteen different sentences', what='distinct')
+    c.eq([norm(r['unknown']), norm(r['hostile']), norm(r['none'])], [norm(unknown('zz-new_code')), norm(unknown(shown_hostile)), norm(unknown('?'))],
+         'an unknown code is said with its code (« Raison du lanceur : … »), cut to [a-z0-9_-] and 40 characters; never « Raison non reconnue »', what='unknown')
+    c.eq([norm(_trow('unknown', lang, after='  zr: {')).find('{code}') >= 0, 'unrecognised' in norm(r['unknown']).lower() or 'non reconnue' in norm(r['unknown']).lower()], [True, False], 'the text of the unknown reason carries the code', what='unknown row')
+    c.eq(r['tones'], {'up-to-date': 'ok', 'stale': 'warn', 'never-built': 'warn', 'failed': 'err', 'building': 'accent'}, 'the tones of the zones are the three states (green, amber, red) and the blue of the page at work: no brown, no grey state', what='tones')
+    # in the screen: the unknown code of a row, and the hostile one not as markup
+    c.js("document.querySelector('[data-build-zones] [data-zone-row=q63] [data-act=zone-why]').scrollIntoView({ block: 'center' })")
+    c.tap(f"{row('q63')} [data-act=zone-why]")
+    c.until(f"!!document.querySelector('{row('q63')} [data-zone-why]')", timeout=4000, what='the reason of q63 opens')
+    c.eq(norm(c.text(f"{row('q63')} [data-zone-why]")), norm(unknown('zz-new_code')), 'the zone with a code the page does not know says the code', what='q63 why')
+    c.tap(f"{row('q63')} [data-act=zone-why]")
+    c.js(f"document.querySelector('{row('q64')} [data-act=zone-why]').scrollIntoView({{ block: 'center' }})")
+    c.tap(f"{row('q64')} [data-act=zone-why]")
+    c.until(f"!!document.querySelector('{row('q64')} [data-zone-why]')", timeout=4000, what='the reason of q64 opens')
+    c.eq([norm(c.text(f"{row('q64')} [data-zone-why]")), c.count(f"{row('q64')} [data-zone-why] b")], [norm(unknown(shown_hostile)), 0], 'a hostile code is cut and escaped: no element comes out of it', what='q64 why')
+    c.tap(f"{row('q64')} [data-act=zone-why]")
+    # ---- 4. the file buttons: only on the zones that wait for a file; the zones that wait for the tick have none and say what to tick, with a link to the box
+    hand = c.js("[...document.querySelectorAll('[data-build-zones] [data-zone-row]')].filter(r => r.querySelector('[data-verb=pickup], [data-act=zone-upload]')).map(r => r.dataset.zoneRow)")
+    c.eq(hand, ['gb', 'us'], 'the file buttons (« Prendre le fichier téléchargé », « Choisir le fichier… ») are on the two zones that wait for a file (pickup-waiting, source-missing) and nowhere else', what='file buttons')
+    short = lambda s: re.sub(r'\s*\(.*\)\s*$', '', s)
+    for zid in ('pt', 'ie', 'se'):
+        line = norm(c.text(f"{row(zid)} [data-personal-wait] .f-muted"))
+        pre = norm(ZR('personal-undeclared').replace('{c}', certify).split('{source}')[0])
+        post = norm(ZR('personal-undeclared').replace('{c}', certify).split('{source}')[1])
+        c.ok(line.startswith(pre) and line.endswith(post), line, f'{zid}: « Cochez « {certify} » (en bas de la liste) pour que la source … soit lue. »')
+        c.eq([c.count(f"{row(zid)} [data-act=zone-certify]"), norm(c.text(f"{row(zid)} [data-act=zone-certify]")), c.count(f"{row(zid)} [data-verb=pickup]"), c.count(f"{row(zid)} [data-act=zone-upload]"), c.count(f"{row(zid)} [data-pick]")],
+             [1, norm(_trow('toCertify', lang)), 0, 0, 0], f'{zid}: a link to the box, no file button (Portugal included, though its file is chosen by hand)', what=f'{zid} line')
+    c.ok('NAV Portugal' in c.text(f"{row('pt')} [data-personal-wait]"), c.text(f"{row('pt')} [data-personal-wait]"), 'Portugal names its source')
+    c.eq(norm(c.text(f"{row('pt')} [data-zone-why]")) if c.count(f"{row('pt')} [data-zone-why]") else '', '', 'the reason line of Portugal is not open on its own', what='pt why closed')
+    c.tap('[data-state-sentence] [data-filter=personal]')
+    c.until("document.querySelector('[data-state-zones]')?.dataset.stateOpen === 'personal'", timeout=4000, what='the personal part unfolds')
+    c.eq(sorted(c.js("[...document.querySelectorAll('[data-state-zones] [data-zone-row]')].map(r => r.dataset.zoneRow)")), ['ie', 'pt', 'se'], 'it unfolds its three zones in place, like the others', what='unfold personal')
+    c.tap('[data-state-sentence] [data-filter=personal]')
+    c.until("!document.querySelector('[data-state-zones]')", timeout=4000, what='and folds')
+    c.tap(f"{row('pt')} [data-act=zone-certify]")
+    c.until("document.activeElement?.matches('[data-certify]')", timeout=4000, what='the link brings the box to the focus')
+    box = c.js("(() => { const r = document.querySelector('[data-certify]').getBoundingClientRect(); return [r.top >= 0, r.bottom <= window.innerHeight] })()")
+    c.eq(box, [True, True], 'and into view', what='box in view')
+    # ---- 5. the legend of the map: three states, the colours follow it
+    _zmap_ready(c, 'base')
+    leg = c.js("(() => { const p = document.querySelector('[data-zone-map=base] [data-zone-legend]'); return [[...p.querySelectorAll('.d-sw')].map(s => s.dataset.tone), p.textContent] })()")
+    L = lambda k: _trow(k, lang, after='mapLegendBase: {')
+    c.eq(leg[0], ['ok', 'warn', 'err'], 'the legend has three swatches: green, amber, red', what='swatches')
+    c.ok(all(norm(L(k)) in norm(leg[1]) for k in ('ok', 'warn', 'err')) and norm(_trow('mapLegendNote', lang)) in norm(leg[1]), leg[1], 'it says them in words: à jour, à faire, en échec (and what ticked looks like)')
+    c.ok(norm(_trow('accent', lang, after='mapTone: {')) not in norm(leg[1]) and norm(_trow('muted', lang, after='mapTone: {')) not in norm(leg[1]), leg[1], 'no fourth state in the legend (not « en cours », not « jamais construite »)')
+    tones = {zid: _zfeat(c, 'base', zid)['tone'] for zid in ('fr', 'gb', 'us', 'es')}
+    c.eq(tones, {'fr': 'ok', 'gb': 'warn', 'us': 'warn', 'es': 'err'}, 'on the map: up to date green, a zone that waits for a file amber, the failed one red', what='map tones')
+    # ---- 6. SOG-0261: the « pourquoi ? » of a row says it opens something, keeps the scroll, folds on the second tap
+    hint = f"{row('q60')} button.d-st [data-why-hint]"
+    c.js(f"document.querySelector('{row('q60')}').scrollIntoView({{ block: 'center' }})")
+    c.wait(300)
+    c.eq([norm(c.text(hint)), c.count(f'{hint} .d-chev'), c.attr(f"{row('q60')} button.d-st", 'aria-expanded')], [norm(_trow('whyHint', lang)), 1, 'false'], 'the dotted state word says « pourquoi ? » with a chevron, and that it is closed', what='hint')
+    pos = lambda: c.js("() => [Math.round(window.scrollY), Math.round(document.querySelector('[data-build-zones]').scrollTop)]")
+    y0 = pos()
+    c.ok(y0[0] > 300 or y0[1] > 100, y0, 'the list is scrolled down (page or its own frame) before the tap: a real case, not a row at the top')
+    c.tap(f"{row('q60')} button.d-st")
+    c.until(f"!!document.querySelector('{row('q60')} [data-zone-why]')", timeout=4000, what='the reason opens')
+    c.wait(300)
+    y1 = pos()
+    c.ok(abs(y1[0] - y0[0]) <= 2 and abs(y1[1] - y0[1]) <= 2, [y0, y1], 'the tap on the state word does not move the scroll (page and list within 2 px)')
+    c.eq([c.attr(f"{row('q60')} button.d-st", 'aria-expanded'), norm(c.text(f"{row('q60')} [data-zone-why]"))], ['true', norm(ZR('parser-old').replace('{built}', '23').replace('{current}', '28'))], 'aria-expanded is true and the reason is said', what='open')
+    c.eq(c.js("document.activeElement?.matches('[data-act=zone-why]')"), True, 'the word keeps the focus', what='focus')
+    c.tap(f"{row('q60')} button.d-st")
+    c.until(f"!document.querySelector('{row('q60')} [data-zone-why]')", timeout=4000, what='the second tap folds it')
+    c.wait(300)
+    y2 = pos()
+    c.ok(abs(y2[0] - y0[0]) <= 2 and abs(y2[1] - y0[1]) <= 2, [y0, y2], 'folding does not move it either')
+    c.eq(c.attr(f"{row('q60')} button.d-st", 'aria-expanded'), 'false', 'closed again', what='folded')
+    # ---- the delivered state, read by the ergonomist
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-state-head]').scrollIntoView({ block: 'start' }); window.scrollBy(0, -90)")
+        c.shot(f'L87_{c.width}_{lang}_delivered.png')
+        c.js(f"document.querySelector('{row('pt')}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L87_{c.width}_{lang}_personal.png')
+    # ---- 7. only zones that wait for the user are left: the sentence says what they wait for, never « Tout est à jour. » next to it
+    st['status'] = full(**PERS)
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    _l87_ready(c, st, 'personal only')
+    c.eq(keys(), ['upToDate', 'personal'], 'only the zones that wait for the tick are left', what='keys personal')
+    c.eq([c.count('[data-all-fresh]'), c.count('[data-build] [data-verb=update]'), norm(c.text('[data-hand-alone]'))], [0, 0, norm(_trow('handAlone', lang, row=0 if _one(lang, 3) else 1).replace('{z}', z(3)))],
+         'nothing to rebuild but three zones that wait: no « Tout est à jour. », no empty button, the sentence says what they wait for', what='hand alone')
+    st['status'] = full()
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    _l87_ready(c, st, 'all fresh')
+    c.eq([keys(), c.count('[data-all-fresh]'), c.count('[data-hand-alone]'), c.count('[data-build] [data-verb=update]'), norm(c.text('[data-all-fresh]'))], [['upToDate'], 1, 0, 0, norm(_trow('allFresh', lang))],
+         'everything up to date (the notices do not count): « Tout est à jour. », nothing else, no button', what='all fresh')
+    c.eq(c.count('[data-build-zones] [data-zone-notice]'), 10, 'the information lines stay under their zones', what='notices stay')
+    # ---- 8. the busy sentence is said ONCE: by the card, not again under the button
+    st['status'] = mixed
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    _l87_ready(c, st, 'busy')
+    st['start'] = (409, {'reason': 'busy', 'job': 'o1', 'running': R})      # the status is read; now every start is refused: an operation runs
+    busy = norm(_trow('busy', lang, after='  greyReason: {'))
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.tap('[data-build-zones] [data-build-zone=ca]')      # one zone ticked: « Tout recalculer » is one run (more than 60 are cut into several)
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build] [data-busy-card]')", timeout=8000, what='the card of the running operation')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.eq([c.count('[data-build] [data-busy-card]'), norm(c.text('[data-build]')).count(busy)], [1, 1], 'the busy sentence is said once on the base panel: the card’s title', what='said once')
+    c.eq([c.count('[data-build] [data-update-reason]'), c.count('[data-build] [data-pickup-reason]'), c.count('[data-build] [data-reason]'), c.count('[data-build] [data-zone-grey]')], [0, 0, 0, 0],
+         'no grey-reason line under the update button, in the fold, under the buttons or on a zone line', what='no grey line')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-build] [data-busy-card]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L87_{c.width}_{lang}_busy.png')
     c.check_errors()

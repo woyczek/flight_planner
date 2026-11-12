@@ -639,6 +639,8 @@ export function selection(set) {
     bad: p.bad
   };
 }
+/** La raison grise « une autre opération est en cours » : la carte de l'opération la dit déjà (son titre) quand elle est à l'écran du panneau ; jamais deux fois. null alors, sinon la raison telle quelle. */
+export const greyOnce = (reason, panel) => reason === 'busy' && busyCardHtml(panel) ? null : reason;
 /** Les boutons Télécharger · Construire · Purger d'un panneau (gris pour la raison de M.setGate) ; pour la base, entre Télécharger et Construire, « Prendre le fichier téléchargé » (`pk` : l'état de
  *  son verbe base/pickup, grisé pour sa propre raison). */
 function verbsHtml(gate, panel, pk) {
@@ -648,7 +650,7 @@ function verbsHtml(gate, panel, pk) {
   const base = panel === 'base';
   const dl = `<button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>`,
     pick = pk ? `<button type="button"${miss ? ' class="primary"' : ''} data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>` : '',
-    pickWhy = pk?.disabled && pk.reason ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason[pk.reason]))}</p>` : '', // le bouton est gris : sa raison est écrite à côté de lui
+    pickWhy = pk?.disabled && greyOnce(pk.reason, panel) ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason[pk.reason]))}</p>` : '', // le bouton est gris : sa raison est écrite à côté de lui
     rebuild = `<button type="button"${miss || base ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(base ? TX.upd.recompute : TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>`,
     purge = `<button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button>`;
   if (!base) return `<p class="d-verbs">${dl}\n      ${pick}${rebuild}\n      ${purge}</p>`;
@@ -658,7 +660,7 @@ function verbsHtml(gate, panel, pk) {
     <details class="d-moreverbs" data-verbs-more${S.verbsOpen ? ' open' : ''}><summary>${esc(tt(TX.upd.more))}</summary><div class="d-verbs">${dl}${miss ? '' : pick}${rebuild}${purge}</div>${miss ? '' : pickWhy}</details></div>`;
 }
 /** Ce qu'il y a dans la ligne d'une zone de la base (la même dans la liste de la couverture et dans la liste dépliée de la phrase d'état) : sa case (la sélection est UNE : S.ticked), son nom, son état et ce qu'elle propose. */
-function zoneRowInner(z, busy) {
+export function zoneRowInner(z, busy) {
   return `${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}${zoneActionHtml(z)}`;
 }
 /** Pourquoi l'état de la base n'est pas dit : le lanceur manque, il ne connaît pas base/status, ou l'état n'est pas encore lu. */
@@ -688,8 +690,11 @@ function stateHeadHtml() {
   const sc = updateScope(),
     gate = updateGate(),
     miss = missingList().length > 0; // un cycle manuel manque : la prise du fichier est le primaire, pas « Mettre à jour »
-  const action = sc.known && sc.n === 0 ? `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
-    `<p class="d-verbs" data-update-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(sc.known ? tt(sc.partial ? TX.upd.updateSel : TX.upd.updateN, { n: sc.n }) : tt(sc.partial ? TX.upd.updateSelNo : TX.upd.update))}</button></p>${gate.reason ? `<p class="f-muted" data-update-reason="${esc(gate.reason)}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`;
+  // « Tout est à jour. » seulement quand rien n'est à reconstruire, en échec, attendu de l'utilisateur ou sans état dans la portée ; sinon, sans zone que le bouton traite, ce que les zones attendent : jamais deux phrases qui se contredisent
+  const lone = sc.counts ? ['rebuild', 'failed', 'waiting', 'personal', 'unknown'].reduce((n, k) => n + sc.counts[k].length, 0) : 0,
+    reason = greyOnce(gate.reason, 'base');
+  const action = sc.known && sc.n === 0 ? lone ? `<p class="f-muted" data-hand-alone>${esc(tt(TX.handAlone[lone === 1 ? 0 : 1], { z: z(lone) }))}</p>` : `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
+    `<p class="d-verbs" data-update-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(sc.known ? tt(sc.partial ? TX.upd.updateSel : TX.upd.updateN, { n: sc.n }) : tt(sc.partial ? TX.upd.updateSelNo : TX.upd.update))}</button></p>${reason ? `<p class="f-muted" data-update-reason="${esc(gate.reason)}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}`;
   const dl = sc.plan?.fetch.length || 0,
     bd = sc.plan?.build.length || 0,
     doing = [dl ? tt(TX.upd.doDl, {
@@ -700,10 +705,12 @@ function stateHeadHtml() {
     plan = sc.n > 0 && doing.length ? `<p class="f-muted" data-update-plan>${esc(tt(TX.upd.doLine, { l: doing.join(', ') }))}</p>` : '',
     left = sc.counts ? sc.counts.waiting.filter(id => !sc.todo.includes(id)) :
   [], // les zones qui attendent un fichier et que le bouton ne traite pas : à la main de l'utilisateur
+    leftTick = sc.counts ? sc.counts.personal.filter(id => !sc.todo.includes(id)) : [], // celles qui attendent la coche d'usage personnel
     notes = sc.counts ? [sc.partial && sc.counts.upToDate.length ? tt(TX.upd.skipNote, {
       z: z(sc.counts.upToDate.length)
-    }) : '', left.length ? tt(TX.upd.waitNote, {
-      z: bal('waiting', left.length)
+    }) : '', left.length || leftTick.length ? tt(TX.upd.waitNote, {
+      z: [left.length ? bal('waiting', left.length) : '', leftTick.length ? bal('personal', leftTick.length) : ''].filter(Boolean).join(
+        ' · ')
     }) : ''].filter(Boolean) : [];
   return `<div class="d-statehead" data-state-head><p data-state-sentence>${[esc(cyc), tail].filter(Boolean).join(' ')}</p>${list}
     ${action}${plan}${notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : ''}
@@ -771,7 +778,7 @@ export const panelId = box => box.dataset.setPanel || 'base';
 function setInner(panel) {
   if (panel === 'sheets') {
     const gate = gateOf(M.SHEETS.set, undefined, [M.SHEETS.verb]),
-      why = gate.reason ? tt(TX.greyReason[gate.reason]) : '';
+      why = greyOnce(gate.reason, 'sheets') ? tt(TX.greyReason[gate.reason]) : '';
     return `<h2>${esc(tt(TX.setTitle.sheets))}</h2>
       <p class="d-verbs"><button type="button" class="primary" data-verb="publish-sheets"${gate.verbs[M.SHEETS.verb].disabled ? ' disabled' : ''}>${esc(tt(TX.publish))}</button></p>
       ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
@@ -781,7 +788,7 @@ function setInner(panel) {
     ui = PANEL_UI[panel],
     sel = selection(panel),
     gate = gateOf(panel, spec.free ? undefined : sel.ids.length),
-    why = gate.reason ? tt(TX.greyReason[gate.reason]) : '',
+    why = greyOnce(gate.reason, panel) ? tt(TX.greyReason[gate.reason]) : '',
     pk = panel === M.PICKUP.set ? gateOf(panel, sel.ids.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb] :
     null; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
   return `<h2>${esc(tt(ui.title))}</h2>
@@ -817,8 +824,12 @@ function redrawPanel(box) {
     '',
     from = a?.selectionStart ?? null,
     to = a?.selectionEnd ?? null;
+  const inner = [...box.querySelectorAll('[data-build-zones]')].map(e => [e.scrollTop]);
   keepScroll(S.body, () => {
     box.innerHTML = box.matches('[data-update-all]') ? updateAllInner() : setInner(panelId(box));
+    box.querySelectorAll('[data-build-zones]').forEach((e, i) => {
+      if (inner[i]) e.scrollTop = inner[i][0];
+    });
     syncPackSwitches(box);
     attachMaps(box); // la carte MapLibre survit au redessin : son hôte reprend la place de l'emplacement
     const el = sel && box.querySelector(sel);

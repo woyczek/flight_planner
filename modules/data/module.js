@@ -32,6 +32,7 @@ import {
   renderBuild
 } from './panels.js';
 import {
+  focusCertify,
   refreshStatus,
   toggleWhy
 } from './status.js';
@@ -179,6 +180,8 @@ function onClick(e) {
   if (zf) return setZoneFilter(zf.dataset.filter); // un nombre de la phrase d'état : ses zones se déplient sur place
   const zw = e.target.closest?.('[data-act="zone-why"]');
   if (zw) return toggleWhy(zw.dataset.zone); // la pastille d'une zone : ses raisons (SOG-0071)
+  if (e.target.closest?.('[data-act="zone-certify"]'))
+    return focusCertify(); // la ligne d'une zone qui attend la coche d'usage personnel : le lien qui y mène
   const rc = e.target.closest?.('[data-act="map-recenter"]');
   if (rc) return recenterMap(rc.closest('[data-zone-map]')?.dataset.zoneMap);
   const g = e.target.closest?.('details.f-group > summary')?.parentElement;
