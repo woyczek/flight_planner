@@ -1252,7 +1252,7 @@
   // Entrées : REPOSITORY_TREE.sidebar si présent, sinon la liste ci-dessous ; seules les pages déclarées sont retenues.
   {
     // liste de secours (repository_tree sans clé sidebar) : même ordre, pilote d'abord, puis le Centre
-    const items = cfg.sidebar || [{
+    const items = (cfg.sidebar || [{
         icon: "send",
         path: "apps/pilot/mes_missions.html",
         label: ["Mes missions", "My missions", "Meine Missionen", "Mis misiones"]
@@ -1316,7 +1316,13 @@
         path: "apps/aide/aide.html",
         label: ["Aide", "Help", "Hilfe", "Ayuda"]
       }
-    ];
+    ]).concat([{
+      // retour à la V3 (SOG-0278 : « on bascule en V3 par défaut, les pages V2 sont toutes accessibles de la V3 » : le sens inverse), sur toutes les pages V2 d'un coup, que la colonne
+      // vienne de la configuration du dépôt ou de la liste par défaut
+      icon: "plane",
+      v3: true,
+      label: ["Retour à la V3", "Back to V3", "Zurück zur V3", "Volver a la V3"]
+    }]);
     // libellés du menu : aussi pour les titres de page qui les reprennent (« Paramètres ») — couche de traduction
     // (content_i18n.js, chargée après ce script), inscrits une fois par page
     if (!window.__navI18n) {
@@ -1327,6 +1333,19 @@
         once: true
       });
     }
+    // la V3 : `frame/` à la racine du dépôt (le lanceur, la branche V3) ; sur le site publié la V2 est à la racine et la V3 sous `v3/` (pages.yml) : le chemin se
+    // résout à partir de la racine de CE script (jamais d'adresse en dur) ; la présence de `frame/` est vérifiée, sinon `v3/frame/`
+    const v3Url = new URL("frame/index.html", root);
+    fetch(new URL("frame/manifest.webmanifest", root), {
+      method: "HEAD"
+    }).then(r => {
+      if (!r.ok) throw new Error("no frame");
+    }).catch(() => {
+      v3Url.pathname = new URL("v3/frame/index.html", root).pathname;
+      document.querySelectorAll("[data-v3-return]").forEach(a => {
+        a.href = v3Url.href;
+      });
+    });
     const known = new Set(cfg.pages.map(p => p.path)),
       current = page?.path || "";
     // entrée à onglets (tabs : id d'un groupe de repository_tree.tabs) : la page courante si elle en est, sinon la
@@ -1395,6 +1414,9 @@
           e.stopPropagation();
           document.querySelector(".repo-menu-button")?.click();
         };
+      } else if (it.v3) {
+        a.href = v3Url.href;
+        a.dataset.v3Return = "1";
       } else a.href = new URL(it.path, root).href;
       // Aide : ouverte au chapitre de la page d'où l'on vient (apps/aide/aide.js, ?from=)
       if (it.path === "apps/aide/aide.html" && current && current !== it.path) a.href += `?from=${encodeURIComponent(current)}`;

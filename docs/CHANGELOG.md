@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **V2 pages: a « Back to V3 » entry in their navigation** — one entry in `shared/repository_nav.js` serves every V2 page; the address is built from the script's own root (`frame/index.html` at the root of the repository, `v3/frame/index.html` on the published site where the V2 is at the root, checked by the manifest), never a host in the code (noreg K209; SOG-0278).
 - **Fuel: the runway in use from the ATIS** — the ATIS of the company's networks (IVAO, VATSIM) says the runway, letter and time above the METAR line, with « Prendre la piste de l'ATIS »; a closed list of phrasings, nothing when in doubt (Fuel DECISIONS, help; noreg F152; SOG-0090).
 - **Fuel: « Envoyer ce vol à mes appareils »** — the current flight held on the device is said in the Departure summary and sent at once by its gesture, then « envoyé à … » (Fuel DECISIONS, help; noreg F151; SOG-0279).
 - **Fuel: display units are a setting of the device** — moved from fuel.json to cache/fuel/display.json, copied at the first read without loss, never sent (Fuel DECISIONS, help; noreg F153; SOG-0279).

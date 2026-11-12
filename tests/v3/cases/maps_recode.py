@@ -6007,3 +6007,25 @@ def d_displayalt(c):
     c.js(_STATE_JS)
     c.until("() => !!window.__mp.S && window.__mp.S.altUnit !== undefined", timeout=15000, what='the settings are read')
     c.eq(c.js("() => window.__mp.S.altUnit"), 'm', 'no display document yet: fuel.json is the fallback', what='altUnit fallback')
+
+
+@case('K209', 'Every V2 page has a link back to the V3 in its navigation, resolved from the page’s own depth: from three pages (two depths: apps/x and apps/x/y) it leads to the V3 frame', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0278 (the user: « on bascule en v3 par défaut; les pages v2 sont toutes accessibles de la v3 »; V3 Frame delivered the way V3 → V2, K208): the other way, an entry « Back to V3 » in shared/repository_nav.js (the V2 navigation), so every V2 page has it; the address is built from the root of the navigation script (never a host written in the code): frame/ at the root of the repository (the launcher), v3/frame/ on the published site where the V2 is at the root')
+def d_v3return(c):
+    for page in ('apps/aide/aide.html', 'apps/settings/profil.html', 'apps/cr/AIRBORNE/airborne_cr.html'):
+        c.page.goto(c.base + '/' + page, wait_until='load')
+        c.until("() => !!document.querySelector('[data-v3-return]')", timeout=15000, what=page + ': the navigation carries the link back to the V3')
+        href = c.js("() => document.querySelector('[data-v3-return]').href")
+        c.ok(href.startswith(c.base) and href.endswith('/frame/index.html'), href, page + ': the link points to the V3 frame from this depth')
+        c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders (their own repositories) are not in the test tree: the V2 pages ask for their indexes
+        st = c.js("async (h) => (await fetch(h, { method: 'HEAD' })).status", href)
+        c.eq(st, 200, page + ': the address answers', what=href)
+    # the published site: the V2 is at the root, the V3 under v3/ (no frame/ at the root): the same link, resolved to v3/frame/
+    c.page.route('**/frame/manifest.webmanifest', lambda r: r.fulfill(status=404, body=''))
+    c.page.goto(c.base + '/apps/aide/aide.html', wait_until='load')
+    c.until("() => !!document.querySelector('[data-v3-return]') && /v3[/]frame[/]index[.]html$/.test(document.querySelector('[data-v3-return]').href)", timeout=15000, what='without frame/ at the root, the link goes to v3/frame/')
+    c.shot('K209_standard_delivered.png')
+    c.page.unroute('**/frame/manifest.webmanifest')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
+
