@@ -2957,3 +2957,39 @@ The user: « defa disparue sur TÉLÉPHONE, via pages.github ». The data reposi
 4. **A155 replayed without the launcher**: the transport bench A38 plays the GitLab provider with no launcher and a paginated tree (above); A155 plays the screens on the exact data.
 - **New in the diagnostic** (« Copy the diagnostic », Settings › About, from the phone): `treeRead` (the last read of the tree: commit, pages, entries, files, time) and `airlines` — the index in the kept tree and in the kept document (revisions, pending write, **stale** = the copy is older than the tree), the codes it cites, and, for each, whether its `settings.json` and `fleet.json` are in the tree; never a content. With it a phone that loses DEFA says in one reading whether the tree lacks the files, the index lacks the code, the kept copy is older than the tree, or the tree was read in part.
 - Noreg A38 (large tree), A155 (the diagnostic's airlines block).
+
+## 12 November 2026 — SOG-0279, survey and contract: what is written, what triggers a commit, the cadence (no code yet)
+
+The user: « on n'écrit pas 10 commits. un seul, toutes les 5 mn. ou sur demande de synchro. on n'écrit que les modifications (flotte, base, etc.). pourquoi aller écrire le FPL ? ou le statut de la page en affichage ? Ou même, les settings d'affichage ». His answer on Q-0035: **the current flight stays synchronisable, but only on a gesture (« Send this flight to my devices ») and in the grouped send; never at each touch-up again.**
+
+**1. What is written, by whom, how often** (read in the code and in the data repository, 9 to 12 November: 527 commits, 340 of them `pilot/RBR/current_flight.json`, 335 on 10 November alone)
+
+| document | content | writer | rhythm | today |
+|---|---|---|---|---|
+| `pilot/<tri>/current_flight.json` | the flight (route, level, aircraft, quote, winds, derived sections, progress): **data of the work in progress** | Fuel (`saveFlight`: 35 call sites, 300 ms debounce, merged by `FUEL_FIELDS`), Map (the real position, `quiet`, every 10 s while flying), Report (resets `started` / `progress` when the report of a flight is saved) | every touch-up of route, level, aircraft, quote, date, mission; position every 10 s | synced, one commit per quiet 2 s |
+| `pilot/<tri>/fuel.json` | quote settings (`taxiMin`, `reserveMin`, `contingencyPct`, `isaDev`, `goal`, `entries`) **and display settings** (`displayAlt`, `displayDist`, `displaySpeed`, `displayUnit`, `wxRadiusNm`) | Fuel (`saveSettings`, 10 call sites, deferred) | a setting changed | synced, one commit per quiet 2 s |
+| `pilot/<tri>/site_log.json`, `pilot/<tri>/hello.json` | the pilot's site log; the hello module's test record | Website, Hello | on use | synced |
+| `pilot/<tri>/airline/perso/settings.json`, `fleet.json` | the pilot's personal airline | Settings › Company, Aircraft | a gesture | synced (rare) |
+| `pilot/handoff.json` | the hand-over between Report and Flight log | Report, Flight log | a gesture | `cache` policy: never sent |
+| `airline/<code>/…`, `airline/index.json` | the airlines and their fleets | Settings, Aircraft | a gesture | synced (rare) |
+| `missions/…`, `cr/reports/…` | missions, reports | Missions, Report | a gesture | synced |
+| `cache/<module>/…` (Fuel `ui.json`, `last_aircraft.json`, `last_ofp.json`, `route_alts.json`; the caches of Map, Weather, Data, Report, Flight log) | screen state, last choices, proposals | the modules | any | **`cache` policy: on the device, never sent** (already right) |
+| `device/*.json` (level, design, layout, help, roadmap, recette, airline choice…) | the device's own choices | the frame | a gesture | device only (already right) |
+
+**2. What triggers a commit and a send today**
+- **Page side**: every `put` stores the write in the device's pending queue at once (IndexedDB: durable). The launcher transport is declared `quick: true`: `soon()` then runs a pass `{ reason: 'write' }` **2 seconds after the last write** (`guard.soon`), which posts the pending writes in one `__setup/batch` call.
+- **Launcher side**: `__setup/batch` writes the files into `data/` **and commits them** (« RBR : n fichier(s) — paths »): **one commit per batch, i.e. one per quiet 2 seconds of typing**, hence the hundreds of commits of 10 November.
+- **The exchange with the remote repository** (pull, merge, push: `__setup/sync`) is separate and slow: every 10 minutes in the background (`EVERY`), on « Synchronize » (a gesture), at start and when the network returns. It is not what multiplies the commits.
+- The launcher's own jobs commit their outputs separately (« Procédures LFRS lues… »): not touched here.
+
+**3. Contract proposed** (decided by the user: Q-0035 and his words above)
+- **Three classes of document**, by path, **in the frame** (no change in the declarations of the modules: one table in `frame_data.js`):
+  1. **Data** (`airline/`, `missions/`, `cr/reports/`, `pilot/<tri>/` except the two below, `sia/`…): written locally at once; sent **grouped**.
+  2. **Held** (`pilot/<tri>/current_flight.json`): written locally at once (every module sees it at once: the pending copy is served first), **never sent by the automatic send**; sent by its own gesture « Send this flight to my devices » (`FrameData.sendNow(path)`) and by « Synchronize ».
+  3. **Device** (`cache/…`, `device/…`, and the **display settings** moved out of `fuel.json`): never sent (the `cache` policy that exists).
+- **Cadence of the grouped send**: the timer starts at the **first** pending change (no longer reset by each write) and fires **five minutes at most** later; it also fires on « Synchronize », when the page is hidden or closed (`visibilitychange` to hidden, `pagehide`: a best-effort send, the queue being durable nothing is lost if it does not leave) and at the next opening. **One commit for everything that changed.** The 2-second `soon()` goes. The pull still runs every ten minutes; a gesture still pulls and pushes at once.
+- **Migration without loss**: `displayAlt`, `displayDist`, `displaySpeed`, `displayUnit` and `wxRadiusNm` move from `pilot/<tri>/fuel.json` to `cache/fuel/display.json`: at its first read the device copies the values it finds in `fuel.json` when the device document is absent; Fuel then no longer writes them to `fuel.json`; the keys already in the repository are left and disappear at the next write of `fuel.json` (which is then smaller). No value is lost, none is invented. (Fuel's side: Features SOG, one declaration and the order of reading.)
+- **The held flight, three behaviours** (the user chose the gesture; the other two are one table entry each): (a) **gesture only** (chosen); (b) automatic with the grouped send, every five minutes; (c) never (device only).
+- **What it costs**: the file in `data/` is up to five minutes older than the device's copy (nothing else reads `data/pilot/<tri>/current_flight.json` from the disk in the suite: no launcher job, no V2 page); a phone sees the flight only after the gesture; a crash loses nothing (the queue is on the device).
+- **Order of work** (not started): (1) the table, the grouped timer and the held class in `frame_data.js`, with the test bench and a noreg case (ten writes in a minute: no commit, then one on the timer or on the gesture); (2) `sendNow` and the Fuel gesture (Features SOG); (3) the migration of the display settings (Fuel); (4) the guard of SOG-0136 (the revisions this browser pushed), still useful afterwards.
+- **The launcher between the pull and the send** (SOG-0136, point 4): when the launcher commits into the local repository between the page's pull and its send (a procedures job, 14 s before in the 11 November case), `T.commit` refuses (« the branch moved »), the page pulls again and pushes again: the existing loop. It must not make a conflict on a file the launcher did not touch (the remote revision equals the base): the case will be written with the SOG-0136 lot.
