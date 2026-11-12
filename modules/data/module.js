@@ -52,9 +52,14 @@ import {
   highlightZones,
   hoverZone,
   openCountry,
+  toggleDone,
   toggleGroup,
+  toggleLegend,
   toggleWorld
 } from './countries.js';
+import {
+  TODO_STYLE
+} from './todo.js';
 import {
   startUpdate
 } from './update.js';
@@ -121,7 +126,7 @@ export const meta = {
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
-    'model_countries.js', 'countries.js',
+    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'zipmember.js',
     '../../frame/lib/plural.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
@@ -175,7 +180,7 @@ function onClick(e) {
     e); // le tableau de couverture (SOG-0174)
   const uc = e.target.closest?.(
     '[data-act="zone-upload"], [data-act="upload-cancel"]'); // « Choisir le fichier… » et « Annuler » de la ligne d'une zone (SOG-0199)
-  if (uc) return uc.dataset.act === 'upload-cancel' ? cancelUpload() : chooseFile(uc.dataset.zone);
+  if (uc) return uc.dataset.act === 'upload-cancel' ? cancelUpload() : chooseFile(uc.dataset.zone, uc.dataset.source);
   const up = e.target.closest?.(
     '[data-act="update-pack"]'); // « Mettre à jour (n) » d'un paquet (SOG-0188) : ses seuls pays de la couverture
   if (up) {
@@ -185,6 +190,13 @@ function onClick(e) {
   const oc = e.target.closest?.(
     '[data-act="open-country"]'); // un pays de la carte, d'un paquet ou de la liste de la phrase d'état : sa fiche (SOG-0262)
   if (oc) return openCountry(oc);
+  const su = e.target.closest?.(
+    '[data-act="sheet-update"]'
+  ); // « Mettre à jour ce pays » : le même chemin que le bouton d'un paquet, pour ce pays seul (SOG-0262, lot B)
+  if (su) return su.disabled || !/^[a-z0-9_-]{2,12}$/.test(su.dataset.zone || '') ? undefined : startUpdate([su.dataset.zone]);
+  if (e.target.closest?.('[data-act="legend-more"]')) return toggleLegend();
+  if (e.target.closest?.('[data-act="todo-done"]'))
+    return toggleDone(); // le pli « Déjà faits » : son état est retenu (le toggle natif suit)
   const gt = e.target.closest?.('[data-act="grp-toggle"]');
   if (gt) return toggleGroup(gt.dataset.gid);
   if (e.target.closest?.('[data-act="sheet-close"]')) return closeSheet();
@@ -209,7 +221,11 @@ function onClick(e) {
   if (v.dataset.verb === 'retry-fetch') return /^[a-z0-9]{2,8}$/.test(v.dataset.zone || '') ? startUpdate([v.dataset.zone]) :
     undefined; // « Réessayer » sur la ligne d'une zone dont le téléchargement a échoué (SOG-0180) : son téléchargement seul, puis sa construction
   if (v.dataset.verb === 'retry-zone') return retryZone(v.dataset.zone); // « Réessayer » sur la ligne d'une zone en échec (SOG-0180)
-  if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') return startPickup(v.dataset.zones);
+  if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') {
+    if (v.dataset.source && S.cw) S.cw.hand.set(v.dataset.zones, v.dataset
+      .source); // la source du dernier geste de fichier garde son message sur la fiche
+    return startPickup(v.dataset.zones);
+  }
   if (v.dataset.verb === 'stop-chain') return stopChain();
   if (v.dataset.verb === 'chain-retry') return /^[a-z]{2,10}$/.test(v.dataset.set || '') ? retryChain(v.dataset.set) :
     undefined; // « Réessayer » sur un jeu en échec de la fin de la chaîne (SOG-0239)
@@ -296,7 +312,7 @@ function onChange(e) {
       '[data-upload-input]')) { // le fichier choisi (SOG-0199) : envoyé au lanceur, le champ est vidé pour pouvoir choisir le même
     const f = t.files?.[0];
     t.value = '';
-    return f ? startUpload(S.uploadZone, f) : undefined;
+    return f ? startUpload(S.uploadZone, f, S.uploadSource) : undefined;
   }
   if (!(t instanceof HTMLInputElement) || frozen()) return;
   if (t.dataset.certify !== undefined) return setCertified(t
@@ -418,7 +434,7 @@ export async function mount(el, ctx) {
     move: null, // « Ranger les sources brutes » (SOG-0030) : { undo, phase: 'planning' | 'asking' | 'running' | null, kind: 'asking' | 'nothing' | 'done' | 'refused', view, why }
     timer: 0
   });
-  el.innerHTML = `<style>${STYLE}${CW_STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  el.innerHTML = `<style>${STYLE}${CW_STYLE}${TODO_STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
   // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
   S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);

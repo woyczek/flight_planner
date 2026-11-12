@@ -342,7 +342,7 @@ def l2(c):
     doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and d.get('zones')), what='the coverage is written at the first opening')
     c.eq(doc['zones'], ['ca', 'es', 'fr', 'gb', 'us'], 'every published zone is in the coverage at the first opening', what='coverage.json')
     # the States: seven lines, the rest under the fold, green / orange / red
-    lines = c.js("[...document.querySelectorAll('[data-coverage] ul[data-states] > li')].map(li => [li.dataset.level, li.dataset.reason, li.textContent.replace(/\\s+/g, ' ').trim()])")
+    lines = c.js("[...document.querySelectorAll('[data-coverage] ul[data-states] > li')].map(li => [li.dataset.level, li.dataset.reason, li.textContent.replace(/\s+/g, ' ').trim()])")
     c.eq(len(lines), 7, 'seven State lines visible', what='State lines')
     c.eq([x[0] for x in lines], ['green', 'orange', 'orange', 'red', 'red', 'red', 'red'], 'green first, then orange, then red', what='colour order')
     c.ok(all(x[2].startswith(f'held-{lang}') or x[1] != 'held' for x in lines), f'{lines[0]}', 'the reason label (text, not colour alone) leads every line')
@@ -482,7 +482,7 @@ def l5(c):
     cfg, _ = _fixture(pv=None, shape=False)
     c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")  # le module d'exemple : un autre module de Maintenance où aller
     _open(c, cfg)
-    lines = c.js("[...document.querySelectorAll('[data-coverage] ul[data-states] > li')].map(li => [li.dataset.reason, li.textContent.replace(/\\s+/g, ' ').trim()])")
+    lines = c.js("[...document.querySelectorAll('[data-coverage] ul[data-states] > li')].map(li => [li.dataset.reason, li.textContent.replace(/\s+/g, ' ').trim()])")
     c.ok(lines and 'EG, LF' in lines[0][1], lines[:1], 'without names the line shows the prefixes (EG, LF), without (n aerodromes)')
     c.eq(c.count('[data-set][data-state="parser"]'), 0, 'without the parser constant no row is ever "old parser" (the UK zone is at version 18)', what='parser pills')
     c.eq(c.count('[data-set]:not([data-set=route]):not([data-set=world])[data-state]'), c.count('[data-set][data-state="ok"], [data-set][data-state="stale-cycle"], [data-set][data-state="stale-age"]'),
@@ -911,7 +911,7 @@ def l7(c):
     c.eq([e['set'], e['verb'], e['zones'], e['result'], e['built'], e['failed']], ['base', 'build', ['fr', 'gb'], 'partial', ['fr'], [{'zone': 'gb', 'error': 'invalid-output'}]],
          'the journal entry: set, verb, zones, result, built, failed', what='journal entry')
     c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z', e['at']) and isinstance(e['seconds'], int), e, 'UTC ISO time and whole seconds')
-    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.result, o.textContent.replace(/\s+/g, ' ').trim()])")
     c.eq(len(ops), 1, 'one entry in the journal fold', what='journal entries')
     c.ok(re.search(r'\d{2}:\d{2}Z', ops[0][1]) and norm(_trow('build', lang, 'opVerb: {')) in norm(ops[0][1]) and norm(_trow('partial', lang, 'opResult: {')) in norm(ops[0][1]), ops[0], 'time with Z, the verb, the result')
     _screen_ok(c, 'at the end')
@@ -934,7 +934,7 @@ def l7(c):
     nm = {'fr': ('SIA France', 'France'), 'en': ('SIA France', 'France'), 'de': ('SIA Frankreich', 'Frankreich'), 'es': ('SIA Francia', 'Francia')}[lang]
     gb_name = {'fr': 'Royaume-Uni', 'en': 'United Kingdom', 'de': 'Vereinigtes Königreich', 'es': 'Reino Unido'}[lang]
     items = f'{nm[0]} {_name(_p)} ({nm[1]}), NATS UK {_name(_p)} ({gb_name})'
-    got = c.js("[...document.querySelectorAll('[data-build-result] [data-blocking]')].map(p => [p.textContent.replace(/\\s+/g, ' ').trim(), [...p.querySelectorAll('a')].map(a => [a.href, a.title])])")
+    got = c.js("[...document.querySelectorAll('[data-build-result] [data-blocking]')].map(p => [p.textContent.replace(/\s+/g, ' ').trim(), [...p.querySelectorAll('a')].map(a => [a.href, a.title])])")
     sia_url = c.js("(d) => window.AeroCatalogue.byId('sia').url(d)", _cur_day)
     c.eq(got, [[norm(_trow('srcBlocking', lang).replace('{a}', items).replace('{n}', _name(_c))), [[sia_url, f'export_xml_bd_SIA_{_cur_day}-v<nn>.zip'],
                  ['https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/', 'EG_…_DS_…_XML.zip']]]],
@@ -1211,7 +1211,7 @@ def _pub_open(c, st_sync, gesture=True, result=None, delay=0, launcher=None, hol
 
 def _publish_state(c):
     """What the Publier panel shows: the button, the reason, the lines."""
-    return c.js("""() => { const b = document.querySelector('[data-publish]'); const t = e => e ? e.textContent.replace(/\\s+/g, ' ').trim() : null;
+    return c.js("""() => { const b = document.querySelector('[data-publish]'); const t = e => e ? e.textContent.replace(/\s+/g, ' ').trim() : null;
       return { disabled: b.querySelector('[data-verb=publish]').disabled, reason: b.querySelector('[data-reason]')?.dataset.reason || null, reasonText: t(b.querySelector('[data-reason]')),
         reasons: b.querySelectorAll('[data-reason]').length, state: t(b.querySelector('[data-publish-state]')), merge: t(b.querySelector('[data-publish-merge]')), last: t(b.querySelector('[data-publish-last]')),
         running: !!b.querySelector('[data-publishing]'), result: b.querySelector('[data-publish-result]')?.dataset.result || null,
@@ -1223,10 +1223,10 @@ def _publish_state(c):
 def _ask_text(c):
     """The question of the frame's window: { text, ok, no } (the texts of the two buttons)."""
     c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question is asked')
-    return c.js("""() => ({ text: document.querySelector('.f-modal p').textContent.replace(/\\s+/g, ' ').trim(), ok: document.querySelector('.f-modal [data-ok]').textContent.trim(),
+    return c.js("""() => ({ text: document.querySelector('.f-modal p').textContent.replace(/\s+/g, ' ').trim(), ok: document.querySelector('.f-modal [data-ok]').textContent.trim(),
       no: !!document.querySelector('.f-modal [data-no]'),
-      sections: [...document.querySelectorAll('.f-modal [data-ask-section]')].map(g => [g.dataset.askSection, g.querySelector('h4').textContent.replace(/\\s+/g, ' ').trim(), [...g.querySelectorAll('li')].map(li => li.textContent.replace(/\\s+/g, ' ').trim())]),
-      note: (document.querySelector('.f-modal > div > p.f-muted') || { textContent: '' }).textContent.replace(/\\s+/g, ' ').trim() })""")
+      sections: [...document.querySelectorAll('.f-modal [data-ask-section]')].map(g => [g.dataset.askSection, g.querySelector('h4').textContent.replace(/\s+/g, ' ').trim(), [...g.querySelectorAll('li')].map(li => li.textContent.replace(/\s+/g, ' ').trim())]),
+      note: (document.querySelector('.f-modal > div > p.f-muted') || { textContent: '' }).textContent.replace(/\s+/g, ' ').trim() })""")
 
 
 @case('L12', 'Données: Publier against a fake launcher and a fake frame sync (state, one question, the gesture, result, notification, journal, grey reasons)', 'L',
@@ -1293,7 +1293,7 @@ def l12(c):
     e = doc['ops'][-1]
     c.eq([e['set'], e['verb'], e['result'], e['committed'], e['received'], e['held'], e['conflicts']], ['base', 'publish', 'done', 3, 1, 0, 0], 'the journal entry', what='journal entry')
     c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z', e['at']), e['at'], 'UTC ISO time')
-    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\s+/g, ' ').trim()])")
     c.ok(len(ops) == 1 and ops[0][0] == 'publish' and re.search(r'\d{2}:\d{2}Z', ops[0][2]) and f'3 {fl[1]}' in ops[0][2], ops, 'the journal line says the verb, the time and the files')
     _pub_ok(c, 'after')
 
@@ -1656,7 +1656,7 @@ def l15(c):
     outside = _trow('fetchOutside', lang, row=1).replace('{n}', '3')
     c.eq(norm(c.text('[data-build-result] [data-outside]')), norm(outside), 'files outside the synchronised data: said (3)', what='outside')
     c.eq(norm(c.text('[data-build-result] [data-manual-hint]')), norm(_trow('fetchManual', lang)), '« à déposer à la main »', what='manual hint')
-    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\\s+/g, ' ').trim(), li.querySelector('a')?.getAttribute('href') || null, li.querySelector('a')?.rel || null])")
+    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\s+/g, ' ').trim(), li.querySelector('a')?.getAttribute('href') || null, li.querySelector('a')?.rel || null])")
     c.eq(items, [['fr:sia', norm(f"{fr_name} : {man_names['sia'][li]}"), 'https://www.sia.example/aip', 'noopener noreferrer'],
                  ['gb:nats', norm(f"{gb_name} : {man_names['nats'][li]}"), None, None], ['gb:z', norm(f"{gb_name} : {man_names['z'][li]}"), None, None]],
          'the manual sources by name in the language: a link only for the https:// address, the http:// and javascript: ones are names alone', what='manual sources')
@@ -1672,7 +1672,7 @@ def l15(c):
     e = doc['ops'][-1]
     c.eq([e['set'], e['verb'], e['zones'], e['result'], e['fetched'], e['unchanged'], e['failed']],
          ['base', 'download', ['fr', 'gb'], 'partial', ['fr'], [], [{'zone': 'gb', 'source': 'ukmil', 'error': 'http', 'status': 404}]], 'the journal entry of the download', what='journal entry')
-    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.dataset.result, o.textContent.replace(/\s+/g, ' ').trim()])")
     c.ok(len(ops) == 1 and ops[0][0] == 'download' and norm(_trow('download', lang, 'opVerb: {')) in norm(ops[0][2]), ops, 'the journal line says the verb')
     _screen_ok(c, 'at the end of the download')
     # ---- C: ENAIRE only when ticked; nothing to fetch says so
@@ -1732,7 +1732,7 @@ def l15(c):
     c.until("!!document.querySelector('[data-build-result][data-op=purge][data-result=done]')", timeout=10000, what='the end of the purge')
     done = _trow('purgeDone', lang).replace('{n}', f'15 {FILES[lang][1]}').replace('{s}', _size(14994636, lang))
     c.eq(norm(c.text('[data-build-result] b')), norm(done), 'the end: « Purgé : 15 fichiers, 14,3 Mo »', what='summary')
-    c.eq(c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent.replace(/\\s+/g, ' ').trim())"),
+    c.eq(c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent.replace(/\s+/g, ' ').trim())"),
          [norm(_trow('purgeShared', lang)), norm(_trow('purgeKept', lang, row=1).replace('{n}', '2')), norm(_trow('purgeUnsafe', lang, row=0).replace('{n}', '1'))],
          'the sentences of the warnings: SIA shared, files kept, one path refused and left in place', what='warning lines')
     es_name = c.text('[data-build-result] [data-zone-state=es] b')
@@ -2247,7 +2247,7 @@ def l17(c):
     e = doc['ops'][-1]
     c.eq([e['set'], e['verb'], e['items'], e['result'], e['built'], e['failed']], ['proc', 'build', ORDER, 'partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]],
          'the journal entry carries set and verb, the States under `items`', what='journal entry')
-    op = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opSet, o.dataset.opVerb, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    op = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opSet, o.dataset.opVerb, o.textContent.replace(/\s+/g, ' ').trim()])")
     c.ok(len(op) == 1 and op[0][:2] == ['proc', 'build'] and norm(label('proc')) in norm(op[0][2]) and name('K') in op[0][2], op, 'the journal line says the set, the verb and the States')
     # ---- B: purge: dry first, ONE question with the plan, the real run says dry false; nothing committed is said in the help
     rem0 = {'K': {'files': 3, 'bytes': 1024}, 'LF': {'files': 2, 'bytes': 2048}}
@@ -2488,7 +2488,7 @@ def l17(c):
     c.tap('.f-modal [data-ok]')
     c.until("!!document.querySelector('[data-set-panel=vfr] [data-build-result][data-op=purge]')", timeout=10000, what='the purge ends')
     c.eq(st3['posts'][-1]['args'], {'dry': False}, 'the real run says dry false', what='vfr real purge')
-    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.js("[...document.querySelectorAll('[data-set-panel=vfr] [data-build-result] [data-line]')].map(p => p.textContent.replace(/\\s+/g, ' ').trim())")],
+    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.js("[...document.querySelectorAll('[data-set-panel=vfr] [data-build-result] [data-line]')].map(p => p.textContent.replace(/\s+/g, ' ').trim())")],
          [norm(T('purgeDone').replace('{n}', f'6 {FILES[lang][1]}').replace('{s}', _size(3072, lang))), [norm(_trow('purgeUnsafe', lang, row=1).replace('{n}', '2'))]],
          'the end, and « 2 chemins refusés, laissés en place »', what='vfr purge end')
     # a State read by EAD one aerodrome at a time: the launcher's error is a sentence, never a bulk read
@@ -2840,7 +2840,7 @@ def l19(c):
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('verb') == 'pickup' for o in d.get('ops', []))), what='the pickup is journaled')
     pks = [o for o in doc['ops'] if o['verb'] == 'pickup']
     c.eq([[o['set'], o['zones'], o['result'], o['files'], o['bytes'], o['failed']] for o in pks], [['base', ['fr'], 'done', 3, 5242880, []]], 'ONE journal entry: the real run only', what='journal')
-    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.textContent.replace(/\\s+/g, ' ').trim()])")
+    ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.textContent.replace(/\s+/g, ' ').trim()])")
     c.ok(any(o[0] == 'pickup' and norm(T('pickup', 'opVerb: {')) in norm(o[1]) for o in ops), ops, 'the journal line says the verb')
     _screen_ok(c, 'at the end')
     # ---- D: nothing in Downloads: no question, the missing files said with their pattern
@@ -2878,7 +2878,7 @@ def l19(c):
     st['views'], st['i'], st['start'] = [fend], 0, (200, {'job': 'f1'})
     c.tap('[data-build] [data-verb=download]')
     c.until("!!document.querySelector('[data-build-result][data-op=fetch]')", timeout=10000, what='the download ends')
-    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\\s+/g, ' ').trim()])")
+    items = c.js("[...document.querySelectorAll('[data-build-result] [data-manual-list] li')].map(li => [li.dataset.manual, li.textContent.replace(/\s+/g, ' ').trim()])")
     c.eq([i[0] for i in items], ['fr:sia', 'gb:nats', 'fr:dircam'], 'the three manual sources', what='manual')
     c.eq(['export_xml_bd_SIA_*.zip' in items[0][1], 'EG_*_DS_*_XML.zip' in items[1][1], '*' in items[2][1]], [True, True, False], 'the expected name is shown for the sources the launcher can take, not for the others', what='expected')
     rb = "[data-build-result] [data-verb=pickup]"
@@ -3998,7 +3998,7 @@ def l84(c):
     st['start'] = (429, {'ok': False, 'reason': 'too-early'})
     c.until(f"!document.querySelector('{row} [data-verb=pickup]').disabled", timeout=8000, what='the pickup is free')
     c.tap(f'{row} [data-verb=pickup]')
-    c.until(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].every(p => !p.textContent.includes('AIP_PT.iso'))", timeout=8000, what='the refusal replaces the message of the upload')
+    c.until(f"document.querySelectorAll('{row} [data-zone-msg] [data-line]').length > 0 && [...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].every(p => !p.textContent.includes('AIP_PT.iso'))", timeout=8000, what='the refusal replaces the message of the upload')
     c.ok(len(lines()) == 1 and len(lines()[0]) > 0, lines(), 'a pickup refused at the start says its reason on the line (one sentence)')
     # ---- a launcher that does not know base/pickup: the button is grey on the line AND in the fold, each with its reason next to it
     st['verbs'], st['start'] = _VERBS, (200, {'job': 'j1'})
@@ -4430,7 +4430,7 @@ def l44(c):
     c.eq(norm(c.text('[data-pack=antarctique] [data-pack-empty]')), norm(_trow('no-zone-no-source', lang, after='emptyWhy: {')), 'and says why', what='empty reason')
     # ---- SOG-0165: regions and themes in ONE block with two tabs; a theme is a grid of ticks (box, name, state) like the zones list, no button in a row
     c.eq(c.js("[...document.querySelectorAll('[data-pack-tabs] button')].map(b => [b.dataset.packTab, b.getAttribute('aria-pressed')])"), [['regions', 'true'], ['themes', 'false']], 'one block, two tabs: Régions first', what='tabs')
-    c.eq(c.js("[...document.querySelectorAll('[data-pack-tabs] button')].map(b => b.textContent.replace(/\\s+/g, ' ').trim())"), [norm(PT('regions')) + ' (3)', norm(PT('themes')) + ' (1)'], 'named in the language of the run, with their counts', what='tab names')
+    c.eq(c.js("[...document.querySelectorAll('[data-pack-tabs] button')].map(b => b.textContent.replace(/\s+/g, ' ').trim())"), [norm(PT('regions')) + ' (3)', norm(PT('themes')) + ' (1)'], 'named in the language of the run, with their counts', what='tab names')
     c.eq(c.js("document.querySelector('[data-pack-themes-box]').hidden"), True, 'the themes are behind their tab', what='hidden themes')
     c.tap('[data-pack-tab=themes]')
     c.eq([c.js("document.querySelector('[data-pack-regions]').hidden"), c.js("document.querySelector('[data-pack-themes-box]').hidden")], [True, False], 'the Thèmes tab shows the themes and hides the regions', what='tab switch')
@@ -5491,7 +5491,8 @@ def l71(c):
     UP = lambda key: _trow(key, lang, after='  up: {')
     c.eq([c.count('[data-zone-action=us] [data-act=zone-upload]'), norm(c.text('[data-zone-action=us] [data-act=zone-upload]')), c.count('[data-zone-action=gb] [data-act=zone-upload]')],
          [1, norm(UP('choose')), 0], '« Choisir le fichier… » on the line of the zone whose FAA download was refused, not on the other failed zone', what='choose file')
-    c.eq(c.js("[...document.querySelectorAll('[data-nasr-hint] a')].map(a => a.getAttribute('href'))"), ['https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/'], 'with the direct link of the NASR subscription page', what='nasr link')
+    c.eq(c.js(r"""[...document.querySelectorAll('[data-nasr-hint] a')].map(a => a.getAttribute('href').replace(/\d{4}-\d{2}-\d{2}\/$/, ''))"""), ['https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/'], 'with the link of the NASR page of the cycle (the catalogue gives it, dated)', what='nasr link')
+    c.eq(c.js("document.querySelector('[data-nasr-hint] code').textContent.startsWith('28DaySubscription_Effective_')"), True, 'and says the ONE file of the subscription (not three sets)', what='nasr one file')
     zl = norm(c.text('[data-zone-state=us]'))
     c.ok('403' in zl and 'faa' in zl.lower(), zl, 'the result of the download says the same for the zone')
     if c.width in (390, 1280):
@@ -6138,6 +6139,7 @@ def l86(c):
         c.wait(300)
         c.shot(f'L86_{c.width}_{lang}_delivered.png')
     # ---- 6. an edition still to come: said with its date; the zone is up to date again and the line stays
+    c.wait(3500)   # the reads that follow the first download (state of the countries, list of the month) are over: the fake launcher’s state below is not read by a late one
     entry2 = {'state': 'downloaded', 'files': 1, 'bytes': 120000, 'edition': '2026-12-24', 'from': 'EAIP_PORTUGAL', 'future': True}
     done2 = _fview({'pt': _fz('done', 1, 1, {'navpt': entry2})}, state='done', step='Terminé', done=1, total=1, jid='jg', args={'zones': ['pt'], 'personal': ['navpt']},
                    result={'ok': True, 'fetched': ['pt'], 'unchanged': [], 'failed': []})
@@ -6298,7 +6300,10 @@ def l87(c):
     leg = c.js("(() => { const p = document.querySelector('[data-cw-legend]'); return [[...p.querySelectorAll('.d-sw[data-tone]')].map(s => s.dataset.tone), p.textContent] })()")
     L = lambda k: _trow(k, lang, after='mapLegendBase: {')
     c.eq(leg[0], ['ok', 'warn', 'err', 'muted'], 'the legend has the three states (green, amber, red) and the grey of the zones outside the coverage', what='swatches')
-    c.ok(all(norm(L(k)) in norm(leg[1]) for k in ('ok', 'warn', 'err')) and norm(_trow('hatch', lang, after='  cw: {')) in norm(leg[1]), leg[1], 'it says them in words: à jour, à faire, en échec (and the hatch of the procedures)')
+    c.ok(all(norm(L(k)) in norm(leg[1]) for k in ('ok', 'warn', 'err')), leg[1], 'it says them in words: à jour, à faire, en échec')
+    c.tap('[data-act=legend-more]')
+    c.until("!!document.querySelector('[data-cw-legend-more]')", timeout=3000, what='the second line of the legend')
+    c.ok(norm(_trow('hatch', lang, after='  cw: {')) in norm(c.text('[data-cw-legend-more]')), c.text('[data-cw-legend-more]'), 'the hatch of the procedures is said behind the « ? »')
     c.ok(norm(_trow('accent', lang, after='mapTone: {')) not in norm(leg[1]), leg[1], 'no fourth state in the legend (not « en cours »)')
     tones = {zid: c.js(f"document.querySelector('[data-wmap] path[data-zone={zid}]').dataset.tone") for zid in ('fr', 'gb', 'us', 'es')}
     c.eq(tones, {'fr': 'ok', 'gb': 'warn', 'us': 'warn', 'es': 'err'}, 'on the map: up to date green, a zone that waits for a file amber, the failed one red', what='map tones')
@@ -6470,8 +6475,17 @@ def l88(c):
     c.ok(m['vb'][0] + m['vb'][2] < 100 and m['vb'][0] <= -125 and m['vb'][2] > 150, m['vb'], 'framed on the coverage (Spain to Canada and the United States), not on the world: Japan is out of the frame')
     c.le(m['w'], m['win'], 'the map fits the width', what='map width')
     legend = norm(c.text('[data-cw-legend]'))
-    for word in [_trow(k, lang, after='  mapLegendBase: {') for k in ('ok', 'warn', 'err')] + [CW('outside'), CW('hatch'), CW('border')]:
+    for word in [_trow(k, lang, after='  mapLegendBase: {') for k in ('ok', 'warn', 'err')] + [CW('outside')]:
         c.ok(norm(word) in legend, legend, f'the legend says « {word} »')
+    c.eq(c.count('[data-cw-legend-more]'), 0, 'the three states and « outside » are on the line: the hatch, the border and the dashes are behind a « ? »', what='legend short')
+    c.tap('[data-act=legend-more]')
+    c.until("!!document.querySelector('[data-cw-legend-more]')", timeout=3000, what='the second line of the legend')
+    more = norm(c.text('[data-cw-legend-more]'))
+    for word in (CW('hatch'), CW('border'), _trow('mapLegendApprox', lang)):
+        c.ok(norm(word) in more, more, f'behind the « ? »: « {word} »')
+    c.eq(c.attr('[data-act=legend-more]', 'aria-expanded'), 'true', 'the toggle says it is open', what='legend expanded')
+    c.tap('[data-act=legend-more]')
+    c.until("!document.querySelector('[data-cw-legend-more]')", timeout=3000, what='the second line folds')
     c.tap('[data-act=world-toggle]')
     c.until("(() => { const v = document.querySelector('[data-wmap]').getAttribute('viewBox').split(' ').map(Number); return v[0] + v[2] > 140 })()", timeout=4000, what='the whole world is framed')
     c.eq(norm(c.text('[data-act=world-toggle]')), norm(CW('mine')), 'the button now says how to come back', what='world button')
@@ -6526,11 +6540,11 @@ def l88(c):
     c.until("document.querySelectorAll('[data-group-body]').length === 0", timeout=4000, what='the pack closes')
     c.js("document.querySelector('[data-wmap]').scrollIntoView({ block: 'center' })")
     c.wait(200)
-    n1 = len([p for p in st['posts'] if p['verb'] == 'cycle'])
-    c.eq(n1, 0, 'nothing of the cycle is read until a sheet is opened', what='lazy')
+    zone_reads = lambda: [p for p in st['posts'] if p['verb'] == 'cycle' and p['args'].get('zone')]
+    c.eq([len(zone_reads()), len([p for p in st['posts'] if p['verb'] == 'cycle' and not p['args'].get('zone')])], [0, 1], 'the view of a country is not read until its sheet is opened; the list of the month is read once at the opening', what='lazy')
     c.tap('[data-wmap] path[data-zone=fr]')
     c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-source=sia] [data-file-state]')", timeout=10000, what='the sheet of France with its inventory')
-    cyc = [p for p in st['posts'] if p['verb'] == 'cycle']
+    cyc = zone_reads()
     c.eq([[p['set'], p['args'].get('zone')] for p in cyc], [['base', 'fr']], 'one read of the view per zone for the opened sheet (K182)', what='one read')
     geo = c.js("""(() => { const m = document.querySelector('[data-wmap]').getBoundingClientRect(), s = document.querySelector('[data-sheet]').getBoundingClientRect(), ps = getComputedStyle(document.querySelector('[data-sheet]')).position;
       return { map: [m.left, m.right, m.top], sheet: [s.left, s.right, s.top, s.width, s.height], pos: ps, iw: window.innerWidth, ih: window.innerHeight } })()""")
@@ -6539,29 +6553,41 @@ def l88(c):
     else:
         c.ok(geo['pos'] == 'fixed' and abs(geo['sheet'][3] - geo['iw']) <= 1 and abs(geo['sheet'][4] - geo['ih']) <= 1, geo, 'phone: the sheet is the whole screen')
     c.eq(c.js("document.activeElement && document.activeElement.dataset.act"), 'sheet-close', 'the focus goes to « Retour »', what='focus in')
-    c.eq(norm(c.text('[data-sheet] [data-act=sheet-close]')), norm(CW('back')), 'a back button, in the language of the run', what='back')
+    close = c.js("""(() => { const v = e => !!e && e.offsetParent !== null, b = document.querySelector('[data-sheet] .d-back'), x = document.querySelector('[data-sheet] .d-x');
+      return { back: v(b), cross: v(x), backText: b.textContent.trim(), crossLabel: x.getAttribute('aria-label'), r: x.getBoundingClientRect().right, sr: document.querySelector('[data-sheet]').getBoundingClientRect().right } })()""")
+    if c.width >= 900:
+        c.ok(close['cross'] and not close['back'] and close['crossLabel'] == _trow('close', lang, after='  cwb: {') and close['sr'] - close['r'] < 24, close, 'wide: a « Fermer » cross at the top right of the panel, no « Retour »')
+    else:
+        c.ok(close['back'] and not close['cross'] and norm(close['backText']) == norm(CW('back')), close, 'phone: « ← Retour » (the sheet is the whole screen), no cross')
     # content: name, state, built, procedures, ticks, inventory
     c.eq(norm(c.text('[data-sheet-name]')), norm(_L88_NAMES['fr'][li]), 'the name of the country', what='name')
     c.eq(c.js("document.querySelector('[data-sheet] [data-zstate]').dataset.zstate"), 'stale', 'its state', what='state')
-    built = norm(c.text('[data-sheet-built]'))
-    c.ok(_date_text(datetime.date(2026, 10, 5), lang) in built and '2610' in built, built, 'built: the cycle and the date of the last build')
+    facts = lambda key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-facts] [data-tick={key}]'); return e ? [e.dataset.ok, e.textContent.replace(/[\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
+    built = facts('build')
+    c.ok(built[0] == 'no' and _date_text(datetime.date(2026, 10, 5), lang) in built[1] and '2610' in built[1], built, 'built (a fact of the COUNTRY, once, at the top): not up to date, the reason, then the date and the cycle of the last build')
     c.ok('eAIP' in c.text('[data-sheet-proc]'), c.text('[data-sheet-proc]'), 'procedures: yes, from the eAIP (procSources)')
     c.eq(c.js("[...document.querySelectorAll('[data-sheet] [data-sheet-source]:not([data-unavailable])')].map(e => e.dataset.sheetSource)"), ['sia', 'openaip'], 'the sources that feed France, in the order the launcher gives', what='sources')
     gone = c.js("(() => { const e = document.querySelector('[data-sheet] [data-sheet-source][data-unavailable]'); return e ? [e.dataset.sheetSource, e.textContent.replace(/\s+/g, ' '), e.querySelectorAll('[data-tick], [data-inventory]').length, document.querySelector('[data-unavailable-title]').compareDocumentPosition(e) & 4] : null })()")
     c.ok(gone and gone[0] == 'dircam' and f'unavailable note {lang}' in gone[1] and '2025-11' in gone[1] and gone[2] == 0 and gone[3] == 4, gone, 'a source its publisher no longer offers is said APART, under its own title, with the note of the catalogue and since when: no tick, no inventory, neither « en retard » nor « à faire »')
-    tk = lambda src, key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-source={src}] [data-tick={key}]'); return e ? [e.dataset.ok, e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
+    tk = lambda src, key: c.js(f"(() => {{ const e = document.querySelector('[data-sheet-source={src}] [data-tick={key}]'); return e ? [e.dataset.ok, e.textContent.replace(/[\s\\u00a0\\u202f]+/g, ' ').trim()] : null }})()")
+    c.eq(c.count('[data-sheet-source] [data-tick=build], [data-sheet-source] [data-tick=publish]'), 0, 'under each source ONLY « téléchargé »: « construit » and « publié » are facts of the country, never repeated per source (no more « construit : pas à jour : Source SIA… » under openAIP)', what='no per-source build tick')
     d1 = tk('sia', 'download')
     c.ok(d1[0] == 'yes' and _date_text(datetime.date(2026, 11, 2), lang) in d1[1] and 'AIRAC 2611' in d1[1], d1, 'SIA downloaded: ticked with the date and the edition the launcher gives')
-    b1 = tk('sia', 'build')
-    c.eq(b1[0], 'no', 'SIA built: not up to date, the reason is said', what='build tick')
-    p1 = tk('sia', 'publish')
-    c.ok(p1[0] == 'no' and norm(CW('pubNo')) in norm(p1[1]), p1, 'published: no, not sent yet, said in words')
+    p1 = facts('publish')
+    c.ok(p1[0] == 'no' and norm(CW('pubNo')) in norm(p1[1]), p1, 'published (a fact of the country): no, not sent yet, said in words')
     o1 = tk('openaip', 'download')
     c.ok(o1[0] == 'no' and norm(_trow('older-than-cycle', lang, after='    why: {')) in norm(o1[1]), o1, 'a file older than the cycle in force: a reason in words, not a tick')
     c.eq(c.count('[data-sheet] img'), 0, 'the launcher\'s label is escaped (no element, nothing runs)', what='escaped')
     c.eq(c.js('window.__pwn === undefined'), True, 'nothing ran', what='no pwn')
     inv = c.js("""[...document.querySelectorAll('[data-sheet-source=sia] [data-file]')].map(f => ({ what: f.querySelector('[data-file-what]').textContent, path: (f.querySelector('[data-file-path]') || {}).textContent || '', check: !!f.querySelector('[data-path-check]'),
-      links: [...f.querySelectorAll('a')].map(a => a.getAttribute('href')), name: f.querySelector('code').textContent, state: f.querySelector('[data-file-state]').dataset.fileState }))""")
+      checkLast: !!f.querySelector('[data-file-where] > [data-path-check]:last-child'), links: [...f.querySelectorAll('a')].map(a => a.getAttribute('href')), linkText: [...f.querySelectorAll('a')].map(a => a.textContent.trim()),
+      lines: [...f.children].map(e => e.matches('[data-file-what]') ? 'what' : e.matches('[data-file-where]') ? 'where' : e.matches('[data-file-name]') ? 'file' : '?'), where: (f.querySelector('[data-file-where]') || {}).textContent || '',
+      fileLine: (f.querySelector('[data-file-name]') || {}).textContent || '', name: f.querySelector('code').textContent, state: f.querySelector('[data-file-state]').dataset.fileState }))""")
+    c.eq([i['lines'] for i in inv], [['what', 'where', 'file']] * 2, 'one file = three lines, in this order: what it is, « Où : … », « Fichier : … »', what='three lines')
+    c.ok(all(norm(i['where']).startswith(norm(_trow('wherePath', lang, after='  cw: {').split('{p}')[0])) for i in inv), [i['where'] for i in inv], 'the « Où » line starts with its label and carries the path')
+    c.eq([i['linkText'] for i in inv], [[_trow('pageLink', lang, after='  cw: {')]] * 2, 'ONE link per file, one single label that says what it opens (a page)', what='link label')
+    c.eq([i['checkLast'] for i in inv], [False, True], '« chemin à vérifier » closes the « Où » line (only when the path is not verified)', what='check at the end')
+    c.ok(all(norm(i['fileLine']).startswith(norm(_trow('name', lang, after='  cw: {').split('{n}')[0])) for i in inv), [i['fileLine'] for i in inv], 'the file line starts with « Fichier : » and ends with its state')
     c.eq([i['what'] for i in inv], [f'what one {lang}', f'what two {lang}'], 'beat one: what each file is, in a pilot\'s words (the catalogue\'s `what`)', what='what')
     c.ok(f'SIA › Produits › Données AIM › XML {lang}' in inv[0]['path'] and f'SIA › AIP › ENR › ENR 3.2 {lang}' in inv[1]['path'], inv, 'beat two: where to find it, rubric by rubric')
     c.eq([i['check'] for i in inv], [False, True], 'a path not verified says « chemin à vérifier » next to it, a verified one does not', what='path to check')
@@ -6569,19 +6595,18 @@ def l88(c):
     c.eq([i['name'] for i in inv], ['export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip', 'ENR 3.2.pdf'], 'beat three: the name of the file expected', what='names')
     c.eq([i['state'] for i in inv], ['seen', 'missing'], 'seen in Downloads (a name that fits the pattern, whatever its case) / missing', what='seen / missing')
     c.eq(c.count('[data-sheet] [data-sheet-source=openaip] [data-inventory]'), 0, 'a source the launcher takes alone has no inventory', what='no inventory for auto')
-    c.eq(c.count('[data-sheet] [data-sheet-actions]'), 1, 'the file buttons of the line of a zone are still reachable inside the sheet', what='actions')
-    c.eq(c.count('[data-sheet] button[data-act=sheet-close], [data-sheet] [data-verb=update]'), 1, 'and no other gesture in lot A: only « Retour »', what='no gestures')
+    c.eq([c.count('[data-sheet] [data-sheet-actions]'), c.count('[data-sheet] [data-sheet-update]')], [0, 1], 'the temporary buttons of the line of a zone are gone from the sheet: the gestures of lot B are there (L89)', what='gestures')
     if c.width in (390, 1280):
         c.shot(f'L88_{c.width}_{lang}_delivered_sheet.png')
     # close: the sheet goes, the focus returns to the opener
-    c.tap('[data-sheet] [data-act=sheet-close]')
+    c.tap('[data-sheet] [data-act=sheet-close]:visible')
     c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='the sheet closes')
     c.eq(c.js("(document.activeElement.dataset || {}).zone + '|' + document.activeElement.tagName.toLowerCase()"), 'fr|path', 'the focus returns to the country that opened it', what='focus back')
     # a country outside the coverage opens a sheet too: it says so; Germany has a source with no reader
     c.tap('[data-group-id=ouest] [data-act=grp-toggle]')
     c.tap('[data-group-body] [data-zone=de]')
     c.until("!!document.querySelector('[data-sheet=de] [data-sheet-noreader]')", timeout=10000, what='the sheet of Germany')
-    c.eq([c.count('[data-sheet] [data-sheet-out]'), c.count('[data-sheet] [data-tick]'), c.count('[data-sheet] [data-sheet-actions]')], [1, 0, 0], 'outside the coverage: it says so, no tick, no gesture', what='outside')
+    c.eq([c.count('[data-sheet] [data-sheet-out]'), c.count('[data-sheet] [data-tick]'), c.count('[data-sheet] [data-sheet-update], [data-sheet] [data-hand]')], [1, 0, 0], 'outside the coverage: it says so, no tick, no gesture', what='outside')
     c.key('Escape')
     c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='Escape closes the sheet')
     c.eq(c.js("(document.activeElement.dataset || {}).zone"), 'de', 'and the focus returns to the line that opened it', what='focus back (line)')
@@ -6591,4 +6616,430 @@ def l88(c):
     c.js("document.querySelector('[data-world-map]').scrollIntoView({ block: 'start' })")
     if c.width in (390, 1280):
         c.shot(f'L88_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L89 .. L92 (SOG-0262, lot B)
+_L89_LABEL = lambda i: [f'{i} fr', f'{i} en', f'{i} de', f'{i} es']
+
+
+def _l89_item(i, reg, dl, build=(1, 1), pub=(1, 0, 0), zones=None, why=None, hand=None, label=None, unavailable=None):
+    """One source of the list of the cycle as AeroDB's K179 gives it: { id, label[4], regime, steps: { download, build, publish }, zones?, why?, hand?, unavailable? }."""
+    it = {'id': i, 'label': label or _L89_LABEL(i), 'regime': reg, 'personal': False, 'zoneCount': len(zones) if zones else 70,
+          'steps': {'download': dl, 'build': {'zones': build[0], 'upToDate': build[1]}, 'publish': {'published': pub[0], 'unpublished': pub[1], 'unknown': pub[2]}}}
+    if zones is not None:
+        it['zones'] = zones
+    if why:
+        it['why'] = why
+    if hand is not None:
+        it['hand'] = hand
+    if unavailable:
+        it['unavailable'] = unavailable
+    return it
+
+
+def _l89_cycle(world):
+    """base/cycle from a LIVE `world` (the test flips `sia_seen` between steps): ten sources counted + one the publisher no longer offers; with `zone`, the view of that country (K182)."""
+    def answer(args):
+        seen = world['sia_seen']
+        sia = _l89_item('sia', 'hand', {'state': 'waiting' if seen else 'missing'}, (1, 0), (0, 1, 0), ['fr'], 'newer-in-downloads' if seen else 'no-file',
+                        {'link': 'https://sia.example/page-du-cycle', 'expected': ['export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip', 'ENR 3.2.pdf'], 'inDownloads': ['export_xml_bd_sia_2026-10-29-v01.zip'] if seen else []})
+        nats = _l89_item('nats', 'hand', {'state': 'late', 'cycle': '2026-10-01', 'at': '2026-10-05T08:00:00Z'}, (1, 0), (0, 0, 1), ['gb'], 'older-than-cycle',
+                         {'link': 'https://nats.example/aip', 'expected': ['EG_AIP_DS_<AAAAMMJJ>_XML.zip'], 'inDownloads': []})
+        lfv = _l89_item('lfv', 'hand', {'state': 'missing'}, (1, 0), (0, 1, 0), ['se'], 'no-file', {'link': 'https://lfv.example/', 'expected': ['AIP_OFFLINE.zip'], 'inDownloads': []})
+        dircam = _l89_item('dircam', 'hand', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'}, (1, 1), (1, 0, 0), ['fr'], None,
+                           {'link': 'https://sia.example/info_dircam', 'expected': ['MIAM_OACI_ENR 5.7.pdf'], 'inDownloads': []})
+        mora = _l89_item('mora', 'local', {'state': 'n/a'}, (5, 5), (5, 0, 0))
+        faa = _l89_item('faa', 'auto', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'}, (1, 1), (0, 1, 0), ['us'])
+        navcan = _l89_item('navcan', 'auto', {'state': 'missing'}, (1, 0), (0, 1, 0), ['ca'], 'not-downloaded')
+        xplane = _l89_item('xplane', 'local', {'state': 'n/a'}, (5, 3), (3, 2, 0), None, None, None, ['X-Plane <img src=x onerror=window.__pwn=1>', 'X-Plane', 'X-Plane', 'X-Plane'])
+        openaip = _l89_item('openaip', 'auto', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'}, (5, 5), (5, 0, 0))
+        enaire = _l89_item('enaire', 'auto', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'}, (1, 1), (1, 0, 0), ['es'])
+        ukmil = _l89_item('ukmil', 'hand', {'state': 'unavailable'}, (1, 0), (0, 0, 1), ['gb'], 'unavailable-at-publisher', {'link': 'https://ukmil.example/', 'expected': ['ENR-5-2.pdf'], 'inDownloads': []}, None, {'since': '2025-11'})
+        items = [mora, openaip, enaire, dircam] if world.get('done') else [mora, faa, navcan, xplane, lfv, openaip, nats, enaire, sia, dircam, ukmil]
+        res = {'ok': True, 'cycle': {'inForce': '2026-10-29', 'next': '2026-11-26', 'ids': {'inForce': '2611', 'next': '2612'}}, 'items': items, 'unavailable': ['ukmil'], 'next': {'cycle': '2026-11-26', 'items': []}, 'unread': []}
+        zone = args.get('zone')
+        by = {'fr': [sia, dircam, openaip], 'gb': [nats, ukmil, openaip], 'es': [enaire, openaip], 'ca': [navcan, openaip], 'us': [faa, openaip]}
+        if zone in by:
+            res['zoneView'] = {'zone': zone, 'known': True, 'inCoverage': True, 'sources': by[zone], 'state': None, 'addWillAsk': {'sources': [], 'auto': [], 'hand': [], 'personal': [], 'noReader': []}}
+        return res
+    return answer
+
+
+def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_running=None, busy_view=None):
+    """The Données screen on the fake launcher of lot B: the map and the packs of L88, the fake `base/cycle` (_l89_cycle), the state of five countries (France waits for a file seen in Downloads, the United Kingdom is stale and buildable,
+    the others are up to date) read from the LIVE `world['zs']`; the stubbed catalogue says the SIA's two files and shelves UK Mil.  Returns (st, x4)."""
+    x4 = lambda s: [f'{s} fr', f'{s} en', f'{s} de', f'{s} es']
+    cfg, _ = _fixture()
+    cfg['outlines'] = _l88_outlines()
+    cfg['stepsOf'] = {'sia': _l88_steps(x4)['sia'], 'ukmil': {'id': 'ukmil', 'page': {'url': 'https://ukmil.example/', 'home': 'https://ukmil.example/'}, 'files': [], 'unavailable': {'since': '2025-11', 'note': x4('unavailable note')}}}
+    cfg['pathCheck'] = ['chemin à vérifier', 'path to check', 'Pfad zu prüfen', 'ruta por verificar']
+    for z, names, kb in [('it', _L88_NAMES['it'], 4000), ('jp', _L88_NAMES['jp'], 6000)]:
+        cfg['zones'].append({'id': z, 'names': names, 'frames': [], 'published': False, 'publishedKb': kb})
+    for z in cfg['zones']:
+        z['names'] = _L88_NAMES.get(z['id'], z['names'])
+    cfg['packs'] = {'generated': '2026-11-12', 'source': 'test', 'regions': [
+        {'id': 'ouest', 'names': ['Europe de l’Ouest', 'Western Europe', 'Westeuropa', 'Europa occidental'], 'zones': ['fr', 'gb', 'es', 'de', 'it']},
+        {'id': 'amerique', 'names': ['Amérique du Nord', 'North America', 'Nordamerika', 'Norteamérica'], 'zones': ['ca', 'us']}], 'themes': []}
+    st = _launcher(c, [], verbs=_VERBS + list(verbs), cycle=_l89_cycle(world), busy_running=busy_running, busy_view=busy_view)
+    world.setdefault('zs', {'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'us': _zst('up-to-date'),
+                            'fr': _zst('stale', {'code': 'pickup-waiting', 'source': 'sia', 'cycle': '2026-11-26', 'zip': 'export_xml_bd_sia_2026-10-29-v01.zip'}, buildable=False), 'gb': _zst('stale', _NEWER)})
+    if status:
+        st['status'] = lambda args: _status(world['zs'])
+    _open(c, cfg)
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length === 8 && !!document.querySelector('[data-todo-state=ready]')", timeout=20000, what='the map and the list of the month')
+    _ready(c, 5)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    return st, x4
+
+
+def _l89_sheet(c, zone):
+    """Opens the sheet of `zone` from the map (a sheet already open is closed first: on a phone it covers the map)."""
+    if c.count('[data-sheet]'):
+        c.tap('[data-sheet] [data-act=sheet-close]:visible')
+        c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='the sheet closes')
+    c.tap(f'[data-wmap] path[data-zone={zone}]')
+    c.until(f"!!document.querySelector('[data-sheet={zone}] [data-sheet-source]')", timeout=10000, what=f'the sheet of {zone}')
+    c.until(f"!!document.querySelector('[data-sheet={zone}] [data-inventory-state]') === false || !document.querySelector('[data-sheet={zone}] [data-inventory-state=loading]')", timeout=8000, what='the view of the country is read')
+
+
+def _l89_reads(st, zone=None):
+    """The reads of base/cycle so far: those of one country (`zone`), or the list of the month (zone None)."""
+    return [p for p in st['posts'] if p['verb'] == 'cycle' and (p['args'].get('zone') == zone)]
+
+
+@case('L89', 'Données: the gestures of the country sheet (SOG-0262, lot B) — « Mettre à jour ce pays » is the update of ONE country (what it does said under it, grey with its reason), « Prendre le fichier téléchargé » is the primary gesture when a file is seen in Downloads with « Choisir un autre fichier… » as a link under it, « Choisir le fichier… » alone when nothing is seen, the per-file state is re-read after each gesture, the card of the running operation shows on the sheet',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 (the user: « transférer les boutons « prendre le fichier téléchargé » et « choisir le fichier » »; the ergonomist: the sheet is the only place where one acts; one purpose, never two stacked equal buttons; a grey button writes why): the sheet carries startUpdate([zone]) (fetch of what is missing, then the build of that country only), the pickup of that country, the chooser of a file of that source; the lists of Downloads are re-read after each gesture; the busy card is on the sheet')
+def l89(c):
+    lang = c.lang
+    CWB = lambda k, row=0: _trow(k, lang, after='  cwb: {', row=row)
+    UP = lambda k: _trow(k, lang, after='  up: {')
+    PICK = norm(_trow('pickup', lang))
+    world = {'sia_seen': True}
+    R = _running()   # the Procédures download of two States (an operation the Données screen does not adopt: its card shows)
+    RV = {**_fview({}, state='running', step='Lecture des sources', jid='o1', verb='fetch'), 'set': 'proc'}
+    st, _x4 = _l89_open(c, world, busy_running=R, busy_view=RV)
+    st['upload_posts'] = []
+    answer = {'status': 422, 'body': {'ok': False, 'reason': 'unrecognised', 'message': 'not an SIA export', 'expected': ['sia', 'nats']}}
+    c.context.route(re.compile(r'/__setup/base/upload'), lambda route: (st['upload_posts'].append({k.lower(): v for k, v in route.request.headers.items()}), route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body']))))
+    cls = lambda sel: c.js(f"(document.querySelector('{sel}') || {{ className: '' }}).className")
+    # ---- 1. « Mettre à jour ce pays »: the United Kingdom is stale and buildable: live, primary (no file is seen there), it says what it will do
+    _l89_sheet(c, 'gb')
+    btn = '[data-sheet=gb] [data-act=sheet-update]'
+    want = norm(CWB('doLine').replace('{l}', CWB('doDl') + ', ' + CWB('doBuild')))
+    c.eq([norm(c.text(btn)), c.js(f"document.querySelector('{btn}').disabled"), 'primary' in cls(btn), norm(c.text('[data-sheet=gb] [data-sheet-update-plan]'))], [norm(CWB('update')), False, True, want],
+         '« Mettre à jour ce pays », live and primary, with the line that says what it does (download what is missing, rebuild the country)', what='update button gb')
+    # a source taken by hand with NO file seen: « Choisir le fichier… » ALONE (no pickup, no second equal button)
+    hand = '[data-sheet=gb] [data-hand=nats]'
+    c.eq([c.attr(hand, 'data-hand-state'), c.count(f'{hand} button'), norm(c.text(f'{hand} [data-act=zone-upload]')), c.count(f'{hand} [data-verb=pickup]'), c.attr(f'{hand} [data-act=zone-upload]', 'data-source')],
+         ['none', 1, norm(UP('choose')), 0, 'nats'], 'nothing seen in Downloads: « Choisir le fichier… » alone, on the line of its source', what='choose alone')
+    n0 = len(st['posts'])
+    st['views'] = [_fview({'gb': _fz('fetched', 1, 1)}, state='done', step='Terminé', result={'fetched': ['gb'], 'unchanged': [], 'failed': [], 'manual': []}, jid='f1', args={'zones': ['gb']})]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'f1'})
+    c.tap(btn)
+    c.until("!!document.querySelector('.f-modal')", timeout=15000, what='the question of the update')
+    mine = st['posts'][n0:]
+    c.eq([[sorted(p['args'].get('zones', [])), p['verb']] for p in mine if p['verb'] in ('status', 'fetch', 'build')][:2], [[['gb'], 'status'], [['gb'], 'fetch']],
+         'the same path as the pack and the top button, for ONE country: its state is read, then ONLY its download is posted', what='posts')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", timeout=6000, what='the question closes')
+    c.eq([p for p in st['posts'][n0:] if p['verb'] == 'build'], [], 'No: nothing is built', what='no build')
+    for _ in range(40):
+        if len(_l89_reads(st)) >= 2:
+            break
+        c.wait(250)
+    c.ge(len(_l89_reads(st)), 2, 'the list of the month is read again when the operation ends', what='todo re-read')
+    # ---- 2. grey, with the reason written: up to date / waits for a file seen in Downloads
+    _l89_sheet(c, 'es')
+    r = c.js("(() => { const b = document.querySelector('[data-sheet=es] [data-act=sheet-update]'), w = document.querySelector('[data-sheet=es] [data-sheet-update-reason]'); return [b.disabled, w && w.dataset.sheetUpdateReason, w && w.textContent.trim()] })()")
+    c.eq([r[0], r[1], norm(r[2])], [True, 'up-to-date', norm(CWB('upToDate'))], 'up to date: the button is grey and says why', what='grey up to date')
+    _l89_sheet(c, 'fr')
+    r = c.js("(() => { const b = document.querySelector('[data-sheet=fr] [data-act=sheet-update]'), w = document.querySelector('[data-sheet=fr] [data-sheet-update-reason]'); return [b.disabled, w && w.dataset.sheetUpdateReason, w && w.textContent.trim(), b.className] })()")
+    c.eq([r[0], r[1], norm(r[2]), 'primary' in r[3]], [True, 'waits-file', norm(CWB('waitsFile')), False], 'a country that waits for a file: grey, « prenez-le d’abord », and no longer the primary button', what='grey waits')
+    # ---- 3. a file SEEN in Downloads: « Prendre le fichier téléchargé » is THE primary gesture, « Choisir un autre fichier… » a link under it
+    hand = '[data-sheet=fr] [data-hand=sia]'
+    c.eq([c.attr(hand, 'data-hand-state'), norm(c.text(f'{hand} [data-verb=pickup]')), 'primary' in cls(f'{hand} [data-verb=pickup]'), c.attr(f'{hand} [data-verb=pickup]', 'data-zones'),
+          norm(c.text(f'{hand} [data-hand-alt] [data-act=zone-upload]')), 'd-link' in cls(f'{hand} [data-hand-alt] [data-act=zone-upload]')],
+         ['seen', PICK, True, 'fr', norm(UP('chooseOther')), True], 'a file seen: « Prendre le fichier téléchargé » (primary, for that country) with « Choisir un autre fichier… » as a link under it', what='seen')
+    c.eq(c.js("document.querySelectorAll('[data-sheet=fr] button.primary').length"), 1, 'ONE primary gesture in the sheet, never two equal buttons stacked', what='one primary')
+    c.eq([c.attr('[data-sheet=fr] [data-hand=dircam]', 'data-hand-state'), c.count('[data-sheet=fr] [data-hand=dircam] button')], ['none', 1], 'the DIRCAM line, nothing seen: its « Choisir le fichier… » alone', what='dircam line')
+    seen0 = c.js("[...document.querySelectorAll('[data-sheet=fr] [data-sheet-source=sia] [data-file-state]')].map(f => f.dataset.fileState)")
+    c.eq(seen0, ['seen', 'missing'], 'the files: one seen, one missing', what='files before')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-sheet=fr]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L89_{c.width}_{lang}_delivered.png')
+    # the pickup: the plan for THIS country only; the file is then no longer in Downloads: the per-file state and the gesture follow (the lists are re-read after the gesture)
+    world['sia_seen'] = False
+    world['zs']['fr'] = _zst('stale', _NEWER)
+    st['views'] = [_pk_plan([], [{'zone': 'fr', 'source': 'sia', 'expected': 'export_xml_bd_SIA_*.zip'}], [], jid='k1', zones=('fr',))]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'k1'})
+    z0 = len(_l89_reads(st, 'fr'))
+    c.tap(f'{hand} [data-verb=pickup]')
+    for _ in range(40):
+        if [p for p in st['posts'] if p['verb'] == 'pickup']:
+            break
+        c.wait(250)
+    pk = [p for p in st['posts'] if p['verb'] == 'pickup']
+    c.eq([[p['args'].get('zones'), p['args'].get('dry')] for p in pk[:1]], [[['fr'], True]], 'the pickup plan of that country only (dry sent)', what='pickup post')
+    c.until("document.querySelector('[data-sheet=fr] [data-hand=sia]')?.dataset.handState === 'none'", timeout=15000, what='the gesture follows what Downloads now holds')
+    c.eq(c.js("[...document.querySelectorAll('[data-sheet=fr] [data-sheet-source=sia] [data-file-state]')].map(f => f.dataset.fileState)"), ['missing', 'missing'], 'after the gesture the per-file state is re-read: nothing is seen any more, both files « manquant »', what='files after')
+    c.ge(len(_l89_reads(st, 'fr')), z0 + 1, 'the view of the country was read again after the gesture', what='re-read fr')
+    c.eq([c.count('[data-sheet=fr] [data-sheet-source=sia] [data-zone-msg]'), c.count('[data-sheet=fr] [data-sheet-source=dircam] [data-zone-msg]')], [1, 0], 'what the pickup found and did not find is written on the source block of the sheet (SOG-0244)', what='message on the source')
+    # ---- 4. « Choisir le fichier… »: the chooser, the bytes as they are, what the launcher refused is said on the same block, the lists are re-read
+    z1 = len(_l89_reads(st, 'fr'))
+    with c.page.expect_file_chooser() as fc:
+        c.js("document.querySelector('[data-sheet=fr] [data-sheet-source=sia] [data-act=zone-upload]').click()")
+    fc.value.set_files({'name': 'not sia é.zip', 'mimeType': 'application/zip', 'buffer': b'PK\x03\x04' + b'x' * 60})
+    for _ in range(40):
+        if st['upload_posts']:
+            break
+        c.wait(250)
+    c.eq(st['upload_posts'][0].get('x-sog-name'), urllib.parse.quote('not sia é.zip', safe="-_.!~*'()"), 'the chosen file is sent as it is, its name only a hint', what='upload name')
+    c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-source=sia] [data-zone-msg][data-level=err]')", timeout=10000, what='the refusal on the source block')
+    c.ok('not sia' in c.text('[data-sheet=fr] [data-sheet-source=sia] [data-zone-msg]'), c.text('[data-sheet=fr] [data-sheet-source=sia] [data-zone-msg]'), 'the refusal names the chosen file')
+    for _ in range(40):
+        if len(_l89_reads(st, 'fr')) >= z1 + 1:
+            break
+        c.wait(250)
+    c.ge(len(_l89_reads(st, 'fr')), z1 + 1, 'after the upload the view of the country is read again', what='re-read after upload')
+    # ---- 5. the card of the running operation, on the sheet, when the gesture of the sheet is refused busy
+    world['sia_seen'] = True
+    world['zs']['fr'] = _zst('stale', {'code': 'pickup-waiting', 'source': 'sia', 'cycle': '2026-11-26', 'zip': 'export_xml_bd_sia_2026-10-29-v01.zip'}, buildable=False)
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length === 8 && !!document.querySelector('[data-todo-state=ready]')", timeout=20000, what='the screen again')
+    _ready(c, 5)
+    _l89_sheet(c, 'fr')
+    st['start'] = (409, {'reason': 'busy', 'job': 'o1', 'running': R})
+    c.tap('[data-sheet=fr] [data-hand=sia] [data-verb=pickup]')
+    c.until("!!document.querySelector('[data-sheet] [data-busy-card]')", timeout=10000, what='the card on the sheet')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    busy = norm(_trow('busy', lang, after='  greyReason: {'))
+    c.eq([c.count('[data-sheet] [data-busy-card]'), c.count('[data-state-head] [data-busy-card]'), c.count('[data-sheet] [data-sheet-update-reason=busy]')], [1, 0, 0],
+         'the card of the running operation is on the sheet (not twice, the state bar does not repeat it) and the grey button does not repeat the sentence', what='busy card')
+    c.eq([c.js("document.querySelector('[data-sheet=fr] [data-hand=sia] [data-verb=pickup]').disabled"), c.js("document.querySelector('[data-sheet=fr] [data-hand=dircam] [data-act=zone-upload]').disabled")], [True, True],
+         'while it runs the gestures of the sheet are grey', what='grey while busy')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-sheet] [data-busy-card]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L89_{c.width}_{lang}_busy.png')
+    c.check_errors()
+
+
+@case('L90', 'Données: « Ce qui reste à faire ce mois-ci » (SOG-0262, lot B) — under the map and before the packs, fed by base/cycle (read at the opening and after each operation): « Cycle AIRAC 2611 : 4 faits sur 10 », one line per source not done sorted (your hand, late, to build, to publish) with its regime and the three ticks set by the tool, each line leading to the sheet of its country, the done ones folded, the sources the publisher no longer offers apart and not counted',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 + SOG-0259 (the user: « la liste du cycle cochée par l\'outil »): the list of the cycle is the same data seen flat; the page reads state bar, map, what is left to do, the packs, the rest; a line is a source with its label (4 languages), regime badge, ticks téléchargé / construit / publié (date or reason in words), and a button to the sheet; `unavailable` sources are neither « en retard » nor « à faire » and are not counted')
+def l90(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    CWB = lambda k, row=0: _trow(k, lang, after='  cwb: {', row=row)
+    CW = lambda k, row=0: _trow(k, lang, after='  cw: {', row=row)
+    world = {'sia_seen': True}
+    st, _x4 = _l89_open(c, world)
+    # ---- 1. one read of the list of the month at the opening (no zone), and the page order
+    c.eq([len(_l89_reads(st)), len(_l89_reads(st, 'fr'))], [1, 0], 'the list of the month is read once at the opening (base/cycle, no zone)', what='one read')
+    pos = c.js("""(() => { const q = s => document.querySelector(s), before = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return [before('[data-state-head]', '[data-world-map]'), before('[data-world-map]', '[data-todo]'), before('[data-todo]', '[data-cw-groups]'), before('[data-cw-groups]', '[data-publish]')] })()""")
+    c.eq(pos, [True] * 4, 'the page order: state bar, the map, what is left to do, the packs, the rest', what='page order')
+    head = norm(c.text('[data-todo-head]'))
+    c.eq(head, norm(CWB('todoHead').replace('{c}', '2611').replace('{n}', '4').replace('{m}', '10')), 'the header counts the sources done among the ten counted (the one the publisher no longer offers is not counted)', what='head')
+    c.eq(norm(c.text('[data-todo] h3')), norm(CWB('todoTitle')), 'the block has its title', what='title')
+    # ---- 2. one line per source not done, sorted: waits for your hand (launcher order), late, to build, to publish
+    ids = c.js("[...document.querySelectorAll('[data-todo-list] > [data-todo-item]')].map(l => [l.dataset.todoItem, l.dataset.todoKind])")
+    c.eq(ids, [['lfv', 'hand'], ['nats', 'hand'], ['sia', 'hand'], ['navcan', 'late'], ['xplane', 'build'], ['faa', 'publish']], 'six lines, sorted: your hand, late, to build, to publish', what='sorted')
+    c.eq(c.count('[data-todo-list] [data-todo-item=openaip], [data-todo-list] [data-todo-item=mora], [data-todo-list] [data-todo-item=ukmil]'), 0, 'a source that is done (or shelved) has no line in the list', what='no done line')
+    line = lambda i: c.js(f"""(() => {{ const l = document.querySelector('[data-todo-list] [data-todo-item={i}]'), t = k => {{ const e = l.querySelector('[data-tick=' + k + ']'); return [e.dataset.ok, e.textContent.replace(/[\\s\\\u00a0\\\u202f]+/g, ' ').trim()] }};
+      return {{ label: l.querySelector('[data-todo-label]').textContent, badge: l.querySelector('[data-regime-badge]').dataset.regimeBadge, badgeText: l.querySelector('[data-regime-badge]').textContent, kind: l.querySelector('[data-kind-word]').textContent,
+        ticks: [t('download'), t('build'), t('publish')], go: [...l.querySelectorAll('[data-act=open-country]')].map(b => b.dataset.zone) }} }})()""")
+    kind = lambda k: norm(_trow(k, lang, after='    kind: {'))
+    badge = lambda k: norm(_trow(k, lang, after='    badge: {'))
+    nats = line('nats')
+    c.eq([nats['label'], nats['badge'], norm(nats['badgeText']), norm(nats['kind'])], [f'nats {["fr", "en", "de", "es"][li]}', 'hand', badge('hand'), kind('hand')], 'a line: the label of the source in the language of the run, its regime, where it stands', what='nats head')
+    late = norm(CWB('dlLateDates').replace('{f}', _date_text(datetime.date(2026, 10, 1), lang)).replace('{c}', _date_text(datetime.date(2026, 10, 29), lang)))
+    c.eq([nats['ticks'][0][0], norm(nats['ticks'][0][1])], ['no', norm(f"✗ {_trow('dlTick', lang, after='    tick: {')} : {late}")], 'téléchargé: a file older than the cycle says it in dates (« en retard : fichier du 1 oct., le cycle est du 29 oct. »)', what='late reason')
+    c.eq([t[0] for t in nats['ticks']], ['no', 'no', 'na'], 'the three ticks set by the tool: not downloaded in time, not built, publication not read', what='nats ticks')
+    sia = line('sia')
+    c.ok(norm(_trow('newer-in-downloads', lang, after='    why: {')) in norm(sia['ticks'][0][1]) or norm(CW('dlWaiting')) in norm(sia['ticks'][0][1]), sia['ticks'][0][1], 'a file of the cycle waits in Downloads: said in words')
+    c.eq(norm(line('navcan')['ticks'][0][1].split(':', 1)[1]), norm(_trow('not-downloaded', lang, after='    why: {')), 'a source the launcher takes and has not taken: « pas encore téléchargé »', what='not downloaded')
+    c.eq([line('navcan')['kind'].strip() == kind('late'), line('navcan')['badge']], [True, 'auto'], 'late, automatic', what='navcan')
+    xp = line('xplane')
+    c.eq([xp['badge'], norm(xp['badgeText']), [t[0] for t in xp['ticks']], norm(xp['ticks'][1][1].split(':', 1)[1])], ['local', badge('local'), ['na', 'no', 'no'], norm(CWB('buildCount').replace('{u}', '3').replace('{n}', '5'))], 'built from this source: 3 of 5 countries up to date; nothing to download', what='xplane')
+    c.eq(c.count('[data-todo] img') + c.count('[data-todo] [data-todo-item=xplane] b img'), 0, 'a label from the launcher is escaped (nothing is injected)', what='escaped')
+    c.eq(c.js('window.__pwn === undefined'), True, 'nothing ran', what='no pwn')
+    fa = line('faa')
+    c.eq([t[0] for t in fa['ticks']], ['yes', 'yes', 'no'], 'faa: downloaded and built, not published yet', what='faa ticks')
+    # ---- 3. a line leads to the sheet of its country (a button), sources of no country of the coverage have none
+    c.eq([nats['go'], sia['go'], line('lfv')['go'], line('xplane')['go']], [['gb'], ['fr'], [], []], 'the button of a line opens the sheet of the first country of the source in the coverage; Sweden (not in the coverage) and a source common to all countries have none', what='go')
+    # ---- 4. the folded ones and the shelved ones
+    c.eq([c.attr('[data-todo-done]', 'open'), norm(c.text('[data-todo-done] summary'))], [None, norm(CWB('todoDone').replace('{n}', '4'))], 'the done ones are folded under « Déjà faits (4) »', what='done fold')
+    c.tap('[data-todo-done] summary')
+    c.until("document.querySelector('[data-todo-done]').open", timeout=3000, what='the fold opens')
+    c.eq(c.js("[...document.querySelectorAll('[data-todo-done] [data-todo-item]')].map(l => l.dataset.todoItem).sort()"), ['dircam', 'enaire', 'mora', 'openaip'], 'the four done sources', what='done list')
+    gone = c.js("""(() => { const g = document.querySelector('[data-todo-gone] [data-todo-unavailable=ukmil]'), t = document.querySelector('[data-todo-unavailable-title]');
+      return g ? [g.textContent.replace(/\s+/g, ' '), !!(t.compareDocumentPosition(g) & 4), g.querySelectorAll('[data-tick]').length, document.querySelector('[data-todo-list] [data-todo-item=ukmil]') !== null] : null })()""")
+    c.ok(gone and f'unavailable note {lang}' in gone[0] and '2025-11' in gone[0] and gone[1] and gone[2] == 0 and not gone[3], gone, 'UK Mil is shelved APART under its muted title with the note of the catalogue: no tick, not « late », not in the list')
+    # ---- 5. the button leads to the sheet
+    c.tap('[data-todo-list] [data-todo-item=nats] [data-act=open-country]')
+    c.until("!!document.querySelector('[data-sheet=gb]')", timeout=8000, what='the sheet of the United Kingdom')
+    c.eq(c.count('[data-sheet=gb]'), 1, 'the line of the list opens the sheet of its country', what='leads to the sheet')
+    c.tap('[data-sheet] [data-act=sheet-close]:visible')
+    c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='the sheet closes')
+    c.eq(c.js("(document.activeElement.closest && document.activeElement.closest('[data-todo]') !== null) && document.activeElement.dataset.zone"), 'gb', 'and the focus comes back to the line that opened it', what='focus back')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth"), True, 'no horizontal scroll', what='no sideways scroll')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-todo]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L90_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('L91', 'Données: the ergonomist\'s retouches of lot A (SOG-0262) — the map is bounded at a wide width so the first packs are on the first screen, the texts no longer speak of a selection that is gone, the « Fermer » cross at a wide width and « ← Retour » on a phone',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='ergonomist 12/11: at 1280×800 the groups fell below the fold: the map is bounded (≈ 45 % of the visible height) without a sheet, nothing changes with one open; « Rien à reconstruire : les 2 zones cochées sont à jour » spoke of ticked zones that no longer exist; the texts that still say ticked / selection refer to the box « Je certifie… », the coverage fold or the States of the Procédures')
+def l91(c):
+    lang = c.lang
+    world = {'sia_seen': True, 'done': True}   # nothing left to do this month: the block under the map is short, so the first packs can be on the first screen
+    _st, _x4 = _l89_open(c, world)
+    c.wait(1500)   # the reads that follow the opening (list of the month, state of the countries) have redrawn the page
+    m = c.js("""(() => { document.querySelector('[data-world-map]').scrollIntoView({ block: 'start', behavior: 'instant' }); const q = s => document.querySelector(s).getBoundingClientRect(), svg = document.querySelector('[data-wmap]'), g = document.querySelector('[data-group-id]');
+      return { map: q('[data-wmap]').height, mtop: q('[data-wmap]').top, ttop: q('[data-todo]').top, ih: window.innerHeight, gtop: g.getBoundingClientRect().top, max: getComputedStyle(svg).maxHeight, w: q('[data-wmap]').width } })()""")
+    if c.width >= 900:
+        c.le(m['map'], m['ih'] * 0.46, 'wide, no sheet: the map is bounded to about 45 % of the visible height', what='map height')
+        c.ok(m['gtop'] < m['ih'], m, 'and, the map being at the top of the screen, the first pack is on the first screen without scrolling')
+        _l89_sheet(c, 'fr')
+        o = c.js("getComputedStyle(document.querySelector('[data-wmap]')).maxHeight")
+        c.ok(o != m['max'], (o, m['max']), 'with a sheet open the bound is not the same (nothing changes: the map keeps its larger frame)')
+    else:
+        c.ok(m['map'] <= m['ih'] * 0.72, m, 'phone: the map keeps its own bound (70 % of the height)')
+    # ---- the texts: every text of the module that says ticked / selection refers to what still exists
+    hits = c.js("""async () => { const { TX } = await import('/modules/data/texts.js'), re = /coch|s[ée]lection|ticked|untick|selection|selected|angekreuzt|abgekreuzt|ausgewählt|auswahl|marcad|desmarc|selecci/i, out = [];
+      (function walk(o, p) { if (Array.isArray(o) && o.length === 4 && typeof o[0] === 'string') { if (o.some(s => re.test(s))) out.push(p); return } if (o && typeof o === 'object') for (const k of Object.keys(o)) walk(o[k], p ? p + '.' + k : k) })(TX, '');
+      return out }""")
+    allowed = ('up.tick', 'certifyHint', 'tickOnStation', 'tickRefused', 'bal.personal', 'toCertify', 'zr.', 'upd.planTick', 'packs.', 'personalKept', 'greyReason.no-set', 'greyReason.no-state', 'zoneMap.', 'mapLegendNote',
+               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick')
+    c.eq([h for h in hits if not h.startswith(allowed)], [], 'only the texts about the « Je certifie… » box, the coverage fold, the States of the Procédures and the proc map still say ticked / selection', what='selection texts')
+    t = c.js("""async () => { const { TX } = await import('/modules/data/texts.js'); return [TX.upd.none, TX.upd.ask, TX.advice.partial, TX.advice.interrupted, TX.greyReason['no-zone']] }""")
+    c.ok(all(not re.search(r'coch|ticked|angekreuzt|marcad', ' '.join(row), re.I) for row in t), t, '« Rien à reconstruire : ces n sont à jour », the question, the advice and « no zone » no longer say ticked')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.shot(f'L91_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+def _l92_zip(members, zip64=False, method=0):
+    """A zip written by hand (so that the cases control every field): `members` = [(name, bytes)]; the first one is a plain stored file, the LAST is the member under test, deflated when `method` is 8; `zip64` writes the sizes and the offset in the zip64 extra and the zip64 end records."""
+    import struct
+    import zlib
+    out, cen = b'', b''
+    for i, (name, data) in enumerate(members):
+        n = name.encode()
+        m = method if i == len(members) - 1 else 0
+        comp = data
+        if m == 8:
+            co = zlib.compressobj(6, zlib.DEFLATED, -15)
+            comp = co.compress(data) + co.flush()
+        crc = zlib.crc32(data) & 0xffffffff
+        off = len(out)
+        out += struct.pack('<IHHHHHIIIHH', 0x04034b50, 20, 0, m, 0, 0x21, crc, len(comp), len(data), len(n), 0) + n + comp
+        if zip64:
+            extra = struct.pack('<HHQQQ', 1, 24, len(data), len(comp), off)
+            cen += struct.pack('<IHHHHHHIIIHHHHHII', 0x02014b50, 20, 20, 0, m, 0, 0x21, crc, 0xffffffff, 0xffffffff, len(n), len(extra), 0, 0, 0, 0, 0xffffffff) + n + extra
+        else:
+            cen += struct.pack('<IHHHHHHIIIHHHHHII', 0x02014b50, 20, 20, 0, m, 0, 0x21, crc, len(comp), len(data), len(n), 0, 0, 0, 0, 0, off) + n
+    cd = len(out)
+    out += cen
+    if zip64:
+        rec = len(out)
+        out += struct.pack('<IQHHIIQQQQ', 0x06064b50, 44, 45, 45, 0, 0, len(members), len(members), len(cen), cd)
+        out += struct.pack('<IIQI', 0x07064b50, 0, rec, 1)
+        out += struct.pack('<IHHHHIIH', 0x06054b50, 0, 0, 0xffff, 0xffff, 0xffffffff, 0xffffffff, 0)
+    else:
+        out += struct.pack('<IHHHHIIH', 0x06054b50, 0, 0, len(members), len(members), len(cen), cd, 0)
+    return out
+
+
+@case('L92', 'Données: « Choisir le fichier… » on the DIRCAM line reads the ENR 5.7 PDF in the SIA archive WITHOUT loading it (SOG-0262, lot B) — the end of the central directory (zip64 too), the one member, stored or deflated, recognised by that member whatever the archive is named; the PDF only is sent, never the archive; a wrong member, a truncated, hostile or encrypted archive is refused in words and nothing is sent',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=False, night=False,
+      rule='ergonomist 12/11 (decision DIRCAM): info_aero_dircam.zip weighs 1.3 GB and the ENR 5.7 is one member (PDF/MIAM/MIAM_OACI_ENR 5.7.pdf); the page slices the File (central directory, local entry) and inflates with DecompressionStream(\'deflate-raw\'); bounded entries / sizes, CRC checked, a bomb cut at the announced size; the launcher of this workstation does not take the PDF yet (its refusal is said as it is)')
+def l92(c):
+    import struct
+    import zlib
+    lang = c.lang
+    world = {'sia_seen': False}
+    st, _x4 = _l89_open(c, world)
+    sent = []
+    answer = {'status': 422, 'body': {'ok': False, 'reason': 'unrecognised', 'message': 'not taken yet', 'expected': ['sia', 'nats']}}
+
+    def upload(route):
+        req = route.request
+        sent.append({'headers': {k.lower(): v for k, v in req.headers.items()}, 'body': req.post_data_buffer or b''})
+        route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body']))
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)
+    CWB = lambda k: _trow(k, lang, after='    zip: {')
+    member = 'PDF/MIAM/MIAM_OACI_ENR 5.7.pdf'
+    pdf = b'%PDF-1.4\n' + bytes(range(256)) * 40 + b'\n%%EOF\n'
+    _l89_sheet(c, 'fr')
+    sel = '[data-sheet=fr] [data-hand=dircam] [data-act=zone-upload]'
+    c.eq(c.attr(sel, 'data-source'), 'dircam', 'the DIRCAM line asks for its own source', what='source')
+
+    def pick(name, data):
+        before = len(sent)
+        with c.page.expect_file_chooser() as fc:
+            c.js(f"document.querySelector('{sel}').click()")
+        fc.value.set_files({'name': name, 'mimeType': 'application/zip', 'buffer': data})
+        c.wait(1200)
+        return len(sent) - before
+
+    msg = lambda: norm(c.js("(document.querySelector('[data-sheet=fr] [data-hand=dircam] [data-zone-msg]') || { textContent: '' }).textContent"))
+    # ---- recognised by the member, whatever the archive is named: stored, deflated, zip64, with other members before it
+    for what, data in [('stored', _l92_zip([('readme.txt', b'x' * 50), ('PDF/other.pdf', b'%PDF-other'), (member, pdf)])),
+                       ('deflated', _l92_zip([('readme.txt', b'x' * 50), (member, pdf)], method=8)),
+                       ('zip64', _l92_zip([('readme.txt', b'x' * 50), (member, pdf)], zip64=True)),
+                       ('zip64 deflated', _l92_zip([('readme.txt', b'x' * 50), (member, pdf)], zip64=True, method=8))]:
+        n = pick(f'anything é {what}.zip', data)
+        c.eq(n, 1, f'{what}: one upload, and it is the PDF member, not the archive', what=f'{what} sent')
+        c.eq([sent[-1]['body'] == pdf, urllib.parse.unquote(sent[-1]['headers'].get('x-sog-name', ''))], [True, 'MIAM_OACI_ENR 5.7.pdf'], f'{what}: the bytes of the member as they are (CRC checked) under the name of the member', what=f'{what} body')
+        c.until(f"!!document.querySelector('[data-sheet=fr] [data-hand=dircam] [data-zone-msg]')", timeout=6000, what='the launcher\'s answer on the DIRCAM block')
+        c.ok(norm(CWB('launcher')) in msg(), msg(), f'{what}: the launcher does not take the PDF yet: its refusal and that fact are said')
+    # ---- a plain PDF is sent as it is
+    n = pick('MIAM ENR 5.7 copy.pdf', pdf)
+    c.eq([n, sent[-1]['body'] == pdf, urllib.parse.unquote(sent[-1]['headers'].get('x-sog-name', ''))], [1, True, 'MIAM ENR 5.7 copy.pdf'], 'a PDF chosen directly is sent as it is', what='plain pdf')
+    # ---- refusals in words, nothing sent
+    good = _l92_zip([('readme.txt', b'x' * 50), (member, pdf)])
+    bomb = bytearray(_l92_zip([(member, b'\0' * 200000)], method=8))
+    ci = bytes(bomb).index(struct.pack('<I', 0x02014b50))
+    struct.pack_into('<I', bomb, ci + 24, 100)         # the central directory announces 100 bytes: the stream inflates to 200 000
+    badcrc = bytearray(good)
+    struct.pack_into('<I', badcrc, bytes(badcrc).rindex(struct.pack('<I', 0x02014b50)) + 16, 0xdeadbeef)
+    crypt = bytearray(good)
+    struct.pack_into('<H', crypt, bytes(crypt).rindex(struct.pack('<I', 0x02014b50)) + 8, 1)
+    huge = bytearray(good)
+    struct.pack_into('<I', huge, bytes(huge).rindex(struct.pack('<I', 0x02014b50)) + 24, 0x7fffffff)
+    cases = [('no member', _l92_zip([('readme.txt', b'x' * 50), ('PDF/MIAM/other.pdf', pdf)]), 'no-member'),
+             ('truncated', good[:len(good) // 2], 'truncated'),
+             ('not a zip', b'hello, this is only text ' * 20, 'not-zip'),
+             ('bomb', bytes(bomb), 'too-large'),
+             ('bad crc', bytes(badcrc), 'corrupt'),
+             ('encrypted', bytes(crypt), 'unsupported'),
+             ('huge announced', bytes(huge), 'too-large'),
+             ('garbage directory', good[:-22] + struct.pack('<IHHHHIIH', 0x06054b50, 0, 0, 2, 2, 4000, 10, 0), 'corrupt')]
+    for what, data, code in cases:
+        n = pick(f'{what}.zip', data)
+        c.eq(n, 0, f'{what}: nothing is sent', what=f'{what} sent')
+        c.until("!!document.querySelector('[data-sheet=fr] [data-hand=dircam] [data-zone-msg][data-level=err]')", timeout=6000, what=f'{what}: the refusal on the DIRCAM block')
+        want = norm(CWB(code).replace('{m}', member))
+        c.ok(want in msg(), (msg(), want), f'{what}: said in words ({code})')
+    # ---- the generic chooser of another source is NOT touched: a zip goes to the launcher as it is
+    sel2 = '[data-sheet=fr] [data-sheet-source=sia] [data-act=zone-upload]'
+    before = len(sent)
+    with c.page.expect_file_chooser() as fc:
+        c.js(f"document.querySelector('{sel2}').click()")
+    fc.value.set_files({'name': 'export.zip', 'mimeType': 'application/zip', 'buffer': good})
+    c.wait(1200)
+    c.eq([len(sent) - before, sent[-1]['body'] == good], [1, True], 'another source\'s chooser sends the file as it is (the launcher recognises it by its content)', what='other source')
     c.check_errors()

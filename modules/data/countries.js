@@ -1,6 +1,7 @@
-// V3 data — la carte du monde, les paquets de pays et la fiche d'un pays (SOG-0262, lot A) : l'entrée de la base. La carte dessine les contours des pays (ceux d'aerodb : ctx.aerodb.zoneOutlines) en SVG, cadrée sur la couverture ; les paquets sont la liste principale,
-// chacun avec son état résumé, un seul ouvert à la fois ; un toucher sur un pays (de la carte ou d'un paquet) ouvre sa fiche (à droite de la carte en large, en plein écran au téléphone), en lecture : les coches posées par l'outil, l'inventaire des fichiers de chaque
-// source. Les gestes de la fiche viennent au lot B. Rien ici n'écrit dans data/ ; les deux lectures du lanceur (base/cycle, base/coverage) sont des travaux en lecture seule, lancés à la demande.
+// V3 data — la carte du monde, les paquets de pays et la fiche d'un pays (SOG-0262) : l'entrée de la base. La carte dessine les contours des pays (ceux d'aerodb : ctx.aerodb.zoneOutlines) en SVG, cadrée sur la couverture ; les paquets sont la liste principale,
+// chacun avec son état résumé, un seul ouvert à la fois ; un toucher sur un pays (de la carte ou d'un paquet) ouvre sa fiche (à droite de la carte en large, en plein écran au téléphone). Lot A : la fiche se lit (les faits du pays — construit, publié —, puis pour chaque
+// source son « téléchargé » et l'inventaire de ses fichiers). Lot B : la fiche est l'endroit où l'on agit — « Mettre à jour ce pays », « Prendre le fichier téléchargé » (geste principal quand un fichier est vu dans Téléchargements) et « Choisir le fichier… » —, et « ce qui reste à faire
+// ce mois-ci » (todo.js) se lit sous la carte. Rien ici n'écrit dans data/ ; les lectures du lanceur (base/cycle, base/coverage) sont des travaux en lecture seule, passés l'un après l'autre (state.js : serial), à l'ouverture et après chaque opération.
 import * as M from './model.js';
 import {
   TX
@@ -12,18 +13,26 @@ import {
   kind,
   lang,
   li,
+  pickSource,
   ROUTE,
   S,
+  serial,
   tt
 } from './state.js';
 import {
   buildZones,
+  gateOf,
+  greyOnce,
+  opAreaHtml,
   personalPicked,
-  renderBuild
+  renderBuild,
+  sourcesWhy
 } from './panels.js';
 import {
+  nasrHint,
+  refreshStatus,
   statusKnown,
-  zoneActionHtml,
+  zoneMsgHtml,
   zoneReasons,
   zoneStateHtml
 } from './status.js';
@@ -33,17 +42,31 @@ import {
 import {
   packUpdateHtml
 } from './packs.js';
+import {
+  updateGate
+} from './update.js';
+import {
+  uploadHtml,
+  uploadOff
+} from './upload.js';
+import {
+  todoHtml
+} from './todo.js';
 
-/** L'état propre à cet écran, créé au montage : le pays survolé, le paquet ouvert, la fiche ouverte (et d'où), la vue du monde, les chemins SVG gardés, les deux lectures du lanceur. */
+/** L'état propre à cet écran, créé au montage : le pays survolé, le paquet ouvert, la fiche ouverte (et d'où), la vue du monde, la légende dépliée, les chemins SVG gardés, les lectures du lanceur (la liste du cycle d'un pays, celle de tout le cycle, les procédures), la source du dernier geste de fichier de chaque pays. */
 export const cwInit = () => ({
   hover: null,
   grp: null,
   sheet: null,
   opener: '',
   world: false,
+  legend: false,
+  doneOpen: false,
+  hand: new Map(),
   paths: new Map(),
   pathsFor: null,
   cycle: null,
+  todo: null,
   proc: null
 });
 /** Les paquets régionaux lisibles, ceux qui ont au moins un pays connu de la suite : [{ pack, known, state }]. */
@@ -56,7 +79,7 @@ function packList() {
   })).filter(x => x.state.known.length);
 }
 /** Le nom d'un pays dans la langue : celui de zones() d'aerodb, à défaut celui de son contour, à défaut son identifiant. */
-function nameOf(id) {
+export function nameOf(id) {
   const z = (S.d?.zones || []).find(x => x.id === id);
   return z ? M.zoneName(S.d.zones, id, li()) : M.own(S.outlines, id)?.name?.[li()] || id;
 }
@@ -132,7 +155,8 @@ function mapHtml() {
   const hatch = list.filter(p => procs[p.id]).map(p => `<path class="d-wh" d="${p.d}" data-proc="${esc(p.id)}"></path>`).join('');
   const sw = t => `<span class="d-sw" data-tone="${t}"></span>`;
   return `<div class="d-wmapbox" data-world-map><svg class="d-wmap" data-wmap viewBox="${frame.join(' ')}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${(frame[2] / frame[3]).toFixed(3)}" role="group" aria-label="${esc(tt(TX.cw.mapLabel))}"><defs><pattern id="d-hatch" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${cell.toFixed(2)}" stroke="currentColor" stroke-width="${(cell * .3).toFixed(2)}"></line></pattern></defs><g data-wz>${paths}</g><g class="d-whg" data-wh>${hatch}</g></svg>
-    <p class="f-muted" data-cw-legend>${esc(tt(TX.mapLegend))} : ${['ok', 'warn', 'err'].map(t => `${sw(t)}${esc(tt(TX.mapLegendBase[t]))}`).join(' · ')} · ${sw('muted')}${esc(tt(TX.cw.outside))} · <span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}</p>
+    <p class="d-lgd" data-cw-legend><span>${esc(tt(TX.mapLegend))} : ${['ok', 'warn', 'err'].map(t => `${sw(t)}${esc(tt(TX.mapLegendBase[t]))}`).join(' · ')} · ${sw('muted')}${esc(tt(TX.cw.outside))}</span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
+    ${S.cw.legend ? `<p class="f-muted" data-cw-legend-more><span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}</p>` : ''}
     <p class="d-map-row"><button type="button" data-act="world-toggle" aria-pressed="${S.cw.world}">${esc(tt(S.cw.world ? TX.cw.mine : TX.cw.world))}</button></p></div>`;
 }
 /** Le nom d'une origine de procédures (CIFP, eAIP, EAD) ; le code tel quel pour une autre. */
@@ -187,13 +211,13 @@ function groupsHtml() {
 /** Un lien https en texte sûr (nouvel onglet, sans référent) ; sans adresse en https, le libellé seul. */
 const link = (url, label) => M.isHttps(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
 /** La date (AAAA-MM-JJ) d'un instant ISO, écrite dans la langue ; '' sans. */
-const dateOf = iso => iso ? M.dateText(String(iso).slice(0, 10), lang()) : '';
+export const dateOf = iso => iso ? M.dateText(String(iso).slice(0, 10), lang()) : '';
 /** Une coche posée par l'outil : la marque (jamais la couleur seule), son nom, ce qu'elle dit. `ok` : 'yes' | 'no' | 'na'. */
-function tickHtml(key, ok, detail) {
+export function tickHtml(key, ok, detail) {
   return `<li data-tick="${key}" data-ok="${ok}"><span class="d-tk" aria-hidden="true">${ok === 'yes' ? '✓' : ok === 'no' ? '✗' : '–'}</span> <b>${esc(tt(TX.cw.tick[{ download: 'dlTick', build: 'buildTick', publish: 'pubTick' }[key]]))}</b> : <span data-tick-text>${esc(detail)}</span></li>`;
 }
 /** La coche « téléchargé » d'une source pour ce pays : d'abord la liste du cycle (l'état du fichier, sa date, son édition), à défaut ce que base/status dit des sources que le lanceur télécharge, sinon « non lu ». */
-function downloadTick(id, item, z) {
+export function downloadTick(id, item, z) {
   const T = TX.cw,
     d = item?.download;
   if (d?.state) {
@@ -217,16 +241,24 @@ function downloadTick(id, item, z) {
   }) : '—') : tickHtml('download', 'no', tt(T.dlNot));
   return tickHtml('download', 'na', tt(T.dlUnread));
 }
-/** La coche « construit » du pays : celle de son état (à jour : la date de sa dernière construction), sinon pourquoi pas. */
+/** Le détail d'une construction : la date et le cycle (« le 5 oct. · cycle 2610 ») ; '' quand le pays n'a jamais été construit sur ce poste. */
+function builtDetail(z) {
+  const T = TX.cw;
+  return [z?.builtAt ? tt(T.on, {
+    d: dateOf(z.builtAt)
+  }) : '', z?.builtCycle && S.airac ? tt(T.cycleOf, {
+    c: M.cycleName(S.airac, z.builtCycle)
+  }) : ''].filter(Boolean).join(' · ');
+}
+/** La coche « construit » du PAYS (un fait du pays, dite une fois en tête de la fiche, jamais sous chaque source) : à jour, la date et le cycle de sa construction ; sinon pourquoi pas, puis la dernière construction. */
 function buildTick(id, z) {
   const T = TX.cw;
   if (!z) return tickHtml('build', 'na', tt(T.dlUnread));
-  if (z.state === 'up-to-date') return tickHtml('build', 'yes', z.builtAt ? tt(T.on, {
-    d: dateOf(z.builtAt)
-  }) + (z.builtCycle && S.airac ? ` · ${tt(T.cycleOf, { c: M.cycleName(S.airac, z.builtCycle) })}` : '') : '—');
+  const last = builtDetail(z);
+  if (z.state === 'up-to-date') return tickHtml('build', 'yes', last || '—');
   return tickHtml('build', 'no', tt(T.buildNot, {
     r: zoneReasons(id)[0] || tt(TX.zst[z.state])
-  }));
+  }) + (last ? ` · ${tt(T.buildLast, { b: last })}` : ''));
 }
 /** La coche « publié » : seulement quand le lanceur le dit (publié, pas encore envoyé) ; un état inconnu ne dit rien. */
 function publishTick(z) {
@@ -249,29 +281,39 @@ function cycleOf(id) {
     zv: null
   };
 }
-/** Où trouver un fichier, en trois temps : le chemin rubrique par rubrique que dit le catalogue (`where`, « › » entre les rubriques ; « chemin à vérifier » à côté quand `verified` est faux), puis le lien de CE fichier (`link`, ou `url` quand il en a un), sinon celui de la page de la source (l'accueil du site en
- *  repli). Jamais une adresse inventée : seulement ce que le catalogue ou le lanceur donne. */
+/** Où trouver un fichier, une seule ligne : « Où : <chemin rubrique par rubrique> — <lien> », puis « (chemin à vérifier) » en fin de ligne quand le catalogue ne l'a pas vérifié. UN seul lien, dont le mot dit ce que l'adresse ouvre : « télécharger le fichier » quand c'est le fichier lui-même
+ *  (`url`, sans `link`), « ouvrir la page » sinon (la page de CE fichier `link`, à défaut celle de la source, à défaut l'accueil du site). Jamais une adresse inventée : seulement ce que le catalogue ou le lanceur donne. */
 function whereHtml(f, steps, hand) {
   const T = TX.cw,
-    page = steps?.page?.url || hand?.link || '',
-    home = steps?.page?.home || '',
     path = Array.isArray(f.where) ? String(f.where[li()] ?? f.where[0] ?? '').slice(0, 400) : '',
     check = path && f.verified === false ? (S.d?.cat?.PATH_TO_CHECK?.[li()] || tt(T.pathCheck)) : '',
-    links = [f.link ? link(f.link, tt(T.fileLink)) : '', !f.link && f.url ? link(f.url, tt(T.fileLink)) : '', !f.link && !f.url && page ?
-      link(page, tt(T.pageLink)) :
-      '', !f.link && !f.url && !page && home ? link(home, tt(T.homeLink)) : ''
-    ].filter(Boolean);
-  return `${path ? `<span data-file-path>${esc(tt(T.wherePath, { p: path }))}${check ? ` <em data-path-check>(${esc(check)})</em>` : ''}</span>` : ''}${links.length ? ` <span data-file-where>${esc(tt(T.where, { l: '\u0001' })).replace('\u0001', () => links.join(' · '))}</span>` : ''}`;
+    href = [f.link, f.url, steps?.page?.url, hand?.link, steps?.page?.home].find(M.isHttps),
+    a = href ? link(href, tt(href === f.url && href !== f.link ? T.fileLink : T.pageLink)) : '';
+  if (!path && !a) return '';
+  const body = [path ? `<span data-file-path>${esc(path)}</span>` : '', a ? `<span data-file-link>${a}</span>` : ''].filter(Boolean).join(' — ');
+  return `<span class="d-fl" data-file-where>${esc(tt(T.wherePath, { p: '\u0001' })).replace('\u0001', () => body)}${check ? ` <em data-path-check>(${esc(check)})</em>` : ''}</span>`;
 }
-/** L'inventaire des fichiers d'une source prise à la main, trois temps pour chacun : ce que c'est en mots de pilote (`what`, à défaut `gives`), où le trouver, le nom attendu ; et « vu dans Téléchargements » ou « manquant » quand le lanceur a dit ce qu'il y voit. */
+/** L'identifiant de la source dans le catalogue d'aerodb (le NASR de la FAA s'y nomme `adds`, le lanceur le dit `faa`). */
+const catId = id => id === 'faa' ? 'adds' : id;
+/** Les fichiers à prendre d'une source à la main : ceux du catalogue (`stepsOf`), à défaut les noms que le lanceur attend ; huit au plus. */
+function filesOf(id, item) {
+  const stepsOf = typeof S.d?.cat?.stepsOf === 'function' ? S.d.cat.stepsOf : null,
+    steps = stepsOf ? stepsOf(catId(id), S.cycleId) : null;
+  return {
+    steps,
+    files: (steps && Array.isArray(steps.files) && steps.files.length ? steps.files : (item?.hand?.expected || []).map(name => ({
+      name
+    }))).slice(0, 8)
+  };
+}
+/** L'inventaire des fichiers d'une source prise à la main, UNE fiche de trois lignes par fichier : ce que c'est en mots de pilote (le titre), « Où : … — <lien> (chemin à vérifier) », « Fichier : <nom> — vu dans Téléchargements / manquant » (le lanceur dit ce qu'il y voit). */
 function inventoryHtml(id, item, cy) {
   const T = TX.cw,
-    stepsOf = typeof S.d?.cat?.stepsOf === 'function' ? S.d.cat.stepsOf : null,
-    steps = stepsOf ? stepsOf(id, S.cycleId) : null,
+    {
+      steps,
+      files
+    } = filesOf(id, item),
     hand = item?.hand || null,
-    files = (steps && Array.isArray(steps.files) && steps.files.length ? steps.files : (hand?.expected || []).map(name => ({
-      name
-    }))).slice(0, 8),
     ready = cy.state === 'ready' && !!hand;
   if (!files.length) return '';
   return `<div data-inventory="${esc(id)}"><p class="d-invh"><b>${esc(tt(T.inventory))}</b></p>${!ready ? `<p class="f-muted" data-inventory-state="${esc(cy.state || 'none')}">${esc(tt(M.own(T.cycleState, cy.state) || T.inDlUnread))}</p>` : ''}<ul class="d-inv">${files.map(f => {
@@ -279,18 +321,18 @@ function inventoryHtml(id, item, cy) {
       seen = ready ? M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(shown, hand.inDownloads) : null,
       what = Array.isArray(f.what) ? f.what : f.gives;
     return `<li data-file="${esc(f.name)}"${seen === null ? '' : ` data-seen="${seen}"`}>${Array.isArray(what) ? `<b data-file-what>${esc(String(what[li()] ?? what[0] ?? ''))}</b>` : ''}
-      <span class="d-fl">${whereHtml(f, steps, hand)}</span>
-      <span class="d-fl" data-file-name>${esc(tt(T.name, { n: '\u0001' })).replace('\u0001', () => `<code>${esc(shown)}</code>`)}${seen === null ? '' : ` <span class="d-fs" data-file-state="${seen ? 'seen' : 'missing'}">${seen ? '✓' : '✗'} ${esc(tt(seen ? T.seen : T.missing))}</span>`}</span></li>`;
+      ${whereHtml(f, steps, hand)}
+      <span class="d-fl" data-file-name>${esc(tt(T.name, { n: '\u0001' })).replace('\u0001', () => `<code>${esc(shown)}</code>`)}${seen === null ? '' : ` — <span class="d-fs" data-file-state="${seen ? 'seen' : 'missing'}">${seen ? '✓' : '✗'} ${esc(tt(seen ? T.seen : T.missing))}</span>`}</span></li>`;
   }).join('')}</ul></div>`;
 }
 /** Le régime d'une source : celui de la liste du cycle, à défaut celui que le catalogue dit (un fichier pris à la main, lu sur ce poste, pris par le lanceur) ; '' sans. */
-function regimeOf(id, item) {
+export function regimeOf(id, item) {
   if (item?.regime) return item.regime;
   const s = catSource(id);
   return !s ? '' : (s.fetch?.how === 'pick' || s.fetch?.pick) ? 'hand' : s.localOnly ? 'local' : s.fetch ? 'auto' : '';
 }
 /** La source n'est-elle plus offerte par son éditeur ? { since, note } d'après la liste du cycle (`unavailable`, ou l'état `unavailable` du téléchargement) et le catalogue (`stepsOf(id).unavailable`) ; null sinon. Rien n'est inventé : la note est celle du catalogue. */
-function unavailableOf(id, item) {
+export function unavailableOf(id, item) {
   const stepsOf = typeof S.d?.cat?.stepsOf === 'function' ? S.d.cat.stepsOf : null,
     cat = stepsOf ? stepsOf(id, S.cycleId)?.unavailable : null;
   if (!item?.unavailable && item?.download?.state !== 'unavailable' && !cat) return null;
@@ -306,16 +348,63 @@ function unavailableHtml(id, item, un) {
   const name = (catSource(id)?.n?.[li()] || item?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
   return `<section class="d-src" data-sheet-source="${esc(id)}" data-unavailable><h4>${esc(name)}</h4><p class="f-muted" data-unavailable-line>${esc(tt(TX.cw.unavailable, { d: un.since || '?' }))}${un.note ? ` ${esc(un.note)}` : ''}</p></section>`;
 }
-/** Une source du pays : son nom, son régime, ses trois coches (dans la couverture seulement) et, pour un fichier pris à la main, l'inventaire. */
-function sourceHtml(id, zone, z, inCov) {
+/** Un fichier de cette source est-il VU dans Téléchargements ? La liste du cycle (`hand.inDownloads` non vide) ou le statut du lanceur (`pickup-waiting` avec son zip) le dit. */
+function handSeen(sid, z, item, cy) {
+  return (cy.state === 'ready' && !!item?.hand?.inDownloads?.length) || (z?.reasons || []).some(r => r.code === 'pickup-waiting' && !!r
+    .zip && (!r.source || r.source === sid));
+}
+/** Les gestes d'une source prise à la main, UN seul but : un fichier vu dans Téléchargements — « Prendre le fichier téléchargé » est le geste principal (il lance la prise de ce pays) et « Choisir un autre fichier… » un lien dessous ; rien de vu — « Choisir le fichier… » seul.
+ *  Le bouton de choix dit sa source (`data-source`) : la ligne DIRCAM lit l'ENR 5.7 dans l'archive du SIA (upload.js). `msg` : l'avancement de l'envoi et ce que le dernier geste a dit (reçu, manquant, refusé) restent sur le bloc de la source du dernier geste. */
+function handHtml(sid, zone, z, item, cy, msg) {
+  const busy = busyNow(),
+    seen = handSeen(sid, z, item, cy),
+    choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(zone)}" data-source="${esc(sid)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>`;
+  if (!seen) return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="none"><p class="d-zact">${choose('', TX.up.choose)}</p>${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
+  const g = gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb],
+    off = busy || g.disabled,
+    grey = greyOnce(busy ? 'busy' : g.reason,
+      'base'); // un bouton gris dit pourquoi, à côté de lui (la carte de l'opération en cours le dit déjà : pas deux fois)
+  return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="seen"><p class="d-zact"><span class="f-muted" data-hand-seen>${esc(tt(TX.cwb.seenLine))}</span> <button type="button" class="primary" data-verb="pickup" data-zones="${esc(zone)}" data-source="${esc(sid)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-hand-grey>${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p>
+    <p class="d-zact d-zalt" data-hand-alt="${esc(sid)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
+}
+/** Une source du pays : son nom, son régime, sa coche « téléchargé » (dans la couverture seulement ; « construit » et « publié » sont des faits du PAYS, en tête de la fiche) et, pour un fichier pris à la main, l'inventaire puis ses gestes. */
+function sourceHtml(id, zone, z, inCov, msg) {
   const cy = cycleOf(zone),
     item = cy.state === 'ready' ? cy.zv?.sources[id] || cy.data.items[id] || null : null,
     reg = regimeOf(id, item),
     name = (catSource(id)?.n?.[li()] || item?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
   return `<section class="d-src" data-sheet-source="${esc(id)}"${reg ? ` data-regime="${reg}"` : ''}><h4>${esc(name)}</h4>${reg ? `<p class="f-muted" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}
-    ${inCov ? `<ul class="d-ticks">${downloadTick(id, item, z)}${buildTick(zone, z)}${publishTick(z)}</ul>` : ''}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}</section>`;
+    ${inCov ? `<ul class="d-ticks">${downloadTick(id, item, z)}</ul>` : ''}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}${inCov && reg === 'hand' ? handHtml(id, zone, z, item, cy, msg) : ''}</section>`;
 }
-/** La fiche d'un pays (lecture) : son nom et son état, quand il a été construit, ses procédures, ses sources avec leurs coches et leur inventaire, et — dans la couverture — les boutons de fichier de sa ligne d'autrefois ; '' sans pays ouvert. */
+/** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
+ *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
+function updateBlockHtml(id, primary) {
+  const T = TX.cwb,
+    gate = updateGate([id]),
+    plan = S.status && statusKnown() ? M.downloadPlan(S.status, [id]) : null;
+  let off = gate.disabled,
+    why = gate.disabled && greyOnce(gate.reason, 'base') ? [gate.reason, tt(TX.greyReason[gate.reason])] : null,
+    line = '',
+    tick = false;
+  if (!off && plan) {
+    if (plan.upToDate.includes(id))[off, why] = [true, ['up-to-date', tt(T.upToDate)]];
+    else if (plan.waiting.includes(id))[off, why] = [true, ['waits-file', tt(T.waitsFile)]];
+    else if (plan.personal.includes(id))[off, why, tick] = [true, ['waits-tick', tt(T.waitsTick)], true];
+    else line = tt(T.doLine, {
+      l: [plan.fetch.includes(id) ? tt(T.doDl) : '', plan.build.includes(id) ? tt(T.doBuild) : ''].filter(Boolean).join(', ')
+    });
+  }
+  return `<div class="d-upd" data-sheet-update><p class="d-verbs"><button type="button"${primary ? ' class="primary"' : ''} data-act="sheet-update" data-zone="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(T.update))}</button></p>${line ? `<p class="f-muted" data-sheet-update-plan>${esc(line)}</p>` : ''}${why ? `<p class="f-muted" data-sheet-update-reason="${esc(why[0])}">${esc(why[1])}${tick ? ` <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button>` : ''}</p>` : ''}</div>`;
+}
+/** Le téléchargement de ce pays qui vient d'échouer (la fin de « Mettre à jour » le dit) : ce que le site a répondu ; le fichier choisi à la main reste le chemin (la FAA : l'abonnement du cycle, UN fichier). '' sans échec. */
+function failedHtml(id) {
+  const ff = S.result?.set === 'base' && S.result.verb === 'fetch' ? (S.result.out?.failed || []).filter(f => f.zone === id) : [];
+  if (!ff.length) return '';
+  const nasr = ff.some(f => f.source === 'faa' || f.source === 'faaclass');
+  return `<div class="d-src" data-sheet-failed><p class="f-warn">${esc(tt(TX.cwb.failedLine, { r: sourcesWhy(ff.map(f => ({ source: f.source, code: f.error, status: f.status ?? null }))) }))}</p>${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>` : ''}${nasr || pickSource(id) ? `<p class="d-zact"><button type="button" data-act="zone-upload" data-zone="${esc(id)}" data-source=""${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button></p>` : ''}</div>`;
+}
+/** La fiche d'un pays : son nom et son état ; les FAITS du pays (construit, publié : une seule fois, jamais sous chaque source) ; « Mettre à jour ce pays » ; la carte de l'opération en cours quand le geste a été refusé et la marche ; ses procédures ; ses sources avec leur « téléchargé »,
+ *  l'inventaire de leurs fichiers et leurs gestes de fichier. Un « Fermer » en croix en large, « ← Retour » au téléphone (plein écran) ; '' sans pays ouvert. */
 function sheetHtml() {
   const id = S.cw.sheet;
   if (!id) return '';
@@ -338,35 +427,35 @@ function sheetHtml() {
     avail = split.filter(x => !x.un).map(x => x.id), // les sources indisponibles chez leur éditeur sont dites à part
     gone = split.filter(x => x.un),
     noReader = (cy.zv?.addWillAsk.noReader || []).map(x => (catSource(x)?.n?.[li()] || x).replace(/\s*\(.*\)\s*$/, '')),
-    built = z?.builtAt && z.builtCycle && S.airac ? tt(T.builtCycleAt, {
-      c: M.cycleName(S.airac, z.builtCycle),
-      d: dateOf(z.builtAt)
-    }) : z?.builtAt ? tt(T.builtAt, {
-      d: dateOf(z.builtAt)
-    }) : z?.builtCycle && S.airac ? tt(T.builtCycle, {
-      c: M.cycleName(S.airac, z.builtCycle)
-    }) : tt(T.builtNever);
+    hands = avail.filter(s => regimeOf(s, split.find(x => x.id === s)?.item) === 'hand'),
+    msgSrc = inCov && hands.length ? hands.includes(S.cw.hand.get(id)) ? S.cw.hand.get(id) : hands[0] :
+    null, // la source du dernier geste de fichier garde l'avancement et le message
+    seenAny = inCov && hands.some(s => handSeen(s, z, split.find(x => x.id === s)?.item, cy)),
+    op = opAreaHtml('base').trim();
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">
-    <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><h3 data-sheet-name>${esc(name)}</h3></header>
-    ${inCov ? `<div class="d-sheetst" data-sheet-state>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tone(id)))}</span>`}</div><p class="f-muted" data-sheet-built>${esc(built)}</p>` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
+    <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><h3 data-sheet-name>${esc(name)}</h3><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">✕</span></button></header>
+    ${inCov ? `<div class="d-sheetst" data-sheet-state>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tone(id)))}</span>`}</div><ul class="d-ticks d-facts" data-sheet-facts>${buildTick(id, z)}${publishTick(z)}</ul>` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
     ${S.cw.proc?.state === 'ready' ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
     ${noReader.length ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
-    <h4>${esc(tt(T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => sourceHtml(s, id, z, inCov)).join('')}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
-    ${inCov ? `<div data-sheet-actions>${zoneActionHtml(id)}</div>` : ''}</section>`;
+    ${inCov ? updateBlockHtml(id, !seenAny) : ''}${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? failedHtml(id) : ''}
+    <h4>${esc(tt(T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
+    ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}</section>`;
 }
-/** Le bloc de la base sous la barre d'état : la carte (et la fiche à sa droite quand un pays est ouvert, en large), puis les paquets. */
+/** Le bloc de la base sous la barre d'état : la carte (et la fiche à sa droite quand un pays est ouvert, en large), puis « ce qui reste à faire ce mois-ci », puis les paquets. */
 export function countriesHtml() {
   if (!S.cw || !S.d) return '';
   const map = mapHtml(),
     sheet = sheetHtml(),
+    todo = todoHtml(),
     groups = groupsHtml();
-  if (!map && !sheet && !groups) return '';
-  return `<div class="d-cw" data-countries><div class="d-cwtop"${sheet ? ' data-sheet-open' : ''}>${map ? `<div class="d-cwmap">${map}</div>` : ''}${sheet}</div>${groups}</div>`;
+  if (!map && !sheet && !groups && !todo) return '';
+  return `<div class="d-cw" data-countries><div class="d-cwtop"${sheet ? ' data-sheet-open' : ''}>${map ? `<div class="d-cwmap">${map}</div>` : ''}${sheet}</div>${todo}${groups}</div>`;
 }
 /** Le sélecteur qui retrouve l'élément touché après un redessin (le focus lui revient à la fermeture de la fiche). */
 function selectorOf(el, zone) {
   const z = CSS.escape(zone);
-  return el.closest('[data-wmap]') ? `[data-wmap] [data-zone="${z}"]` : el.closest('[data-cw-groups]') ? `[data-cw-groups] [data-act="open-country"][data-zone="${z}"]` : `[data-act="open-country"][data-zone="${z}"]`;
+  return el.closest('[data-wmap]') ? `[data-wmap] [data-zone="${z}"]` : el.closest('[data-todo]') ? `[data-todo] [data-act="open-country"][data-zone="${z}"]` : el.closest('[data-cw-groups]') ? `[data-cw-groups] [data-act="open-country"][data-zone="${z}"]` :
+    `[data-act="open-country"][data-zone="${z}"]`;
 }
 /** Ouvre la fiche d'un pays (toucher sur la carte, dans un paquet ou dans la liste de la phrase d'état) ; sans pays connu, rien. Le focus passe au bouton « Retour ». */
 export function openCountry(el) {
@@ -376,9 +465,13 @@ export function openCountry(el) {
   S.cw.sheet = id;
   wantCycle(id);
   renderBuild();
-  S.body?.querySelector('[data-sheet] [data-act="sheet-close"]')?.focus({
+  closeControl()?.focus({
     preventScroll: true
   });
+}
+/** Le contrôle de fermeture visible de la fiche : la croix « Fermer » en large, « ← Retour » au téléphone (l'autre est masqué par la mise en page). */
+function closeControl() {
+  return [...(S.body?.querySelectorAll('[data-sheet] [data-act="sheet-close"]') || [])].find(b => b.offsetParent !== null) || null;
 }
 /** Ouvre la fiche d'un pays par son identifiant (le lien #data?zone=<id>), sans élément touché. */
 export function openCountryById(id) {
@@ -408,6 +501,15 @@ export function toggleWorld() {
   S.cw.world = !S.cw.world;
   renderBuild();
 }
+/** Le « ? » de la légende : la seconde ligne (hachure, bordure, pointillé) se montre ou se cache. */
+export function toggleLegend() {
+  S.cw.legend = !S.cw.legend;
+  renderBuild();
+}
+/** Le pli « Déjà faits » de « ce qui reste à faire » : son état est retenu d'un dessin à l'autre. */
+export function toggleDone() {
+  S.cw.doneOpen = !S.cw.doneOpen;
+}
 /** Le pays survolé (souris) : il se remplit seul sur la carte et dans son paquet, les autres gardent leur bordure ; `id` vide : plus rien. Seuls les attributs bougent, rien n'est redessiné. */
 export function hoverZone(id) {
   if (!S?.cw || S.cw.hover === (id || null)) return;
@@ -427,12 +529,13 @@ export function highlightZones(ids) {
   for (const el of S.body?.querySelectorAll('[data-wmap] [data-hl]') || []) el.removeAttribute('data-hl');
   for (const z of set) S.body?.querySelector(`[data-wmap] [data-zone="${CSS.escape(z)}"]`)?.setAttribute('data-hl', '');
 }
-/** Lit une fois par fiche ouverte, sans écrire, la vue du lanceur sur ce pays (base/cycle `{ zone }` : toutes ses sources avec leurs trois étapes, Téléchargements, ce qu'ajouter le pays demandera) : jamais avant l'ouverture, jamais pour un lanceur qui ne connaît pas le verbe ; refusé tant qu'un autre
- *  travail tourne (« occupé », relu à la prochaine ouverture). Ne lève jamais. */
+/** Lit une fois par fiche ouverte (et après chaque opération), sans écrire, la vue du lanceur sur ce pays (base/cycle `{ zone }` : toutes ses sources avec leurs trois étapes, Téléchargements, ce qu'ajouter le pays demandera) : jamais avant l'ouverture, jamais pour un lanceur qui ne
+ *  connaît pas le verbe ; refusée tant qu'un autre travail tourne (« occupée », relue dès que l'écran est libre). Pendant la relecture d'une fiche déjà lue, l'ancienne lecture reste affichée (les états « vu » / « manquant » ne clignotent pas). Ne lève jamais. */
 export async function wantCycle(zone) {
   const L = S?.ctx?.launcher,
     c = S?.cw?.cycle;
-  if (!zone || (c && c.zone === zone && (c.state === 'loading' || c.state === 'ready' || c.state === 'none'))) return;
+  if (!zone || (c && c.zone === zone && (c.reading || (!c.dirty && (c.state === 'loading' || c.state === 'ready' || c.state ===
+      'none'))))) return;
   if (!L || !S.known?.includes('base/cycle')) {
     S.cw.cycle = {
       zone,
@@ -440,45 +543,102 @@ export async function wantCycle(zone) {
     };
     return;
   }
-  const me = S;
-  S.cw.cycle = {
-    zone,
-    state: 'loading'
-  };
+  const me = S,
+    keep = c && c.zone === zone && c.state === 'ready' ? c.data : null,
+    mine = S.cw.cycle = keep ? {
+      zone,
+      state: 'ready',
+      data: keep,
+      reading: true
+    } : {
+      zone,
+      state: 'loading',
+      reading: true
+    };
   if (S.statusP) await S.statusP.catch(() => null);
   if (S !== me) return;
-  if (busyNow()) {
-    S.cw.cycle = {
-      zone,
-      state: 'busy'
-    };
-    return renderBuild();
-  }
-  let final = null;
-  try {
-    final = await L.job(ROUTE, {
-      set: 'base',
-      verb: 'cycle',
-      args: {
-        zone,
-        personal: personalPicked(buildZones().ids)
-      }
-    }, {
-      onProgress: () => {},
-      signal: new AbortController().signal
-    });
-  } catch {
-    final = null;
-  }
-  if (S !== me || S.cw.cycle?.zone !== zone) return; // un autre pays a été ouvert pendant la lecture : sa lecture est la sienne
+  const final = await readJob('cycle', {
+    zone,
+    personal: personalPicked(buildZones().ids)
+  });
+  if (S !== me || S.cw.cycle !== mine) return; // un autre pays a été ouvert pendant la lecture : sa lecture est la sienne
   const data = M.cycleRead(final);
   S.cw.cycle = data ? {
     zone,
     state: 'ready',
     data
+  } : final?.status === 409 ? keep ? {
+    zone,
+    state: 'ready',
+    data: keep,
+    dirty: true
   } : {
     zone,
-    state: final?.status === 409 ? 'busy' : 'unread'
+    state: 'busy'
+  } : {
+    zone,
+    state: 'unread'
+  };
+  renderBuild();
+}
+/** Un travail du lanceur en lecture seule (le verbe `base/<verb>`), passé à la file de l'écran ; refusé (`{ status: 409 }`, sans appel) quand une opération tourne à l'instant du départ ; null si le lanceur n'a pas répondu. Ne lève jamais. */
+async function readJob(verb, args) {
+  const L = S?.ctx?.launcher;
+  try {
+    return await serial(() => busyNow() ? {
+      status: 409
+    } : L.job(ROUTE, {
+      set: 'base',
+      verb,
+      args
+    }, {
+      onProgress: () => {},
+      signal: new AbortController().signal
+    }));
+  } catch {
+    return null;
+  }
+}
+/** Lit « ce qui reste à faire ce mois-ci » : la liste du cycle (base/cycle sans pays) lue une fois à l'ouverture de l'écran, puis après chaque opération ; sans lanceur ni verbe, rien n'est lu (le bloc n'est pas dessiné). L'ancienne liste reste affichée pendant la relecture. Ne lève jamais. */
+export async function wantTodo() {
+  const L = S?.ctx?.launcher,
+    c = S?.cw?.todo;
+  if (c && (c.reading || (!c.dirty && (c.state === 'loading' || c.state === 'ready' || c.state === 'none')))) return;
+  if (!L || !S.known?.includes('base/cycle')) {
+    S.cw.todo = {
+      state: 'none'
+    };
+    return;
+  }
+  const me = S,
+    keep = c && c.state === 'ready' ? c.data : null,
+    mine = S.cw.todo = keep ? {
+      state: 'ready',
+      data: keep,
+      reading: true
+    } : {
+      state: 'loading',
+      reading: true
+    };
+  if (!keep) renderBuild();
+  if (S.statusP) await S.statusP.catch(() => null);
+  if (S !== me) return;
+  const final = await readJob('cycle', {
+    personal: personalPicked(buildZones().ids)
+  });
+  if (S !== me || S.cw.todo !== mine) return;
+  const data = M.cycleRead(final);
+  S.cw.todo = data ? {
+    state: 'ready',
+    data
+  } : final?.status === 409 ? keep ? {
+    state: 'ready',
+    data: keep,
+    dirty: true
+  } : {
+    state: 'busy'
+  } : {
+    state: 'unread'
   };
   renderBuild();
 }
@@ -509,21 +669,9 @@ export async function wantProc() {
       cw.proc = null;
       return;
     }
-    let final = null;
-    try {
-      final = await L.job(ROUTE, {
-        set: 'base',
-        verb: 'coverage',
-        args: {}
-      }, {
-        onProgress: () => {},
-        signal: new AbortController().signal
-      });
-    } catch {
-      final = null;
-    }
+    const final = await readJob('coverage', {});
     if (S !== me) return;
-    const rows = M.coverageOf(final);
+    const rows = final?.status === 409 ? null : M.coverageOf(final);
     cw.proc = {
       state: rows ? 'ready' : 'unread',
       zones: rows ? M.procZonesOf(rows) : {}
@@ -535,17 +683,32 @@ export async function wantProc() {
     cw.procP = null;
   }
 }
-/** Ce qui se lit après un dessin complet de l'écran : les procédures par pays (la hachure) et, si une fiche est ouverte, la liste du cycle. */
+/** Ce qui se lit après un dessin complet de l'écran : les procédures par pays (la hachure), la liste du cycle (« ce qui reste à faire ») et, si une fiche est ouverte, la vue de son pays. */
 export function afterDraw() {
   if (!S?.cw) return;
   wantProc();
+  wantTodo();
   if (S.cw.sheet) wantCycle(S.cw.sheet);
 }
-/** Les lectures de la fiche sont à refaire (une opération vient de finir : les fichiers ont bougé). */
-export function forgetReads() {
+/** Les lectures à refaire (une opération vient de finir, un fichier a été envoyé : les fichiers ont bougé). La liste du cycle et la vue du pays ouvert sont marquées « à relire » (elles restent affichées jusqu'à la réponse) ; `all` : les procédures aussi (après un rechargement des données). */
+export function forgetReads(all = true, status = false) {
   if (!S?.cw) return;
-  S.cw.cycle = null;
-  if (S.cw.proc?.state !== 'loading') S.cw.proc = null;
+  if (S.cw.cycle) S.cw.cycle.dirty = true;
+  if (S.cw.todo) S.cw.todo.dirty = true;
+  if (all && S.cw.proc?.state !== 'loading') S.cw.proc = null;
+  if (status) S.cw.statusDirty =
+    true; // un fichier a bougé sans rechargement des données (une prise, un envoi, un plan) : l'état des pays se relit aussi
+}
+/** Quand l'écran est libre (aucune opération) : relit ce qui est « à relire » ou qu'une opération avait refusé — appelée à chaque redessin des panneaux, ne relit jamais une lecture qui a échoué (pas de boucle). */
+export function readsIdle() {
+  const c = S?.cw;
+  if (!c || !S.d || busyNow()) return;
+  if (c.statusDirty) {
+    c.statusDirty = false;
+    refreshStatus(S.d.cov.ids); // les lectures qui suivent attendent celle-ci (S.statusP)
+  }
+  if (c.sheet && (c.cycle?.dirty || c.cycle?.state === 'busy')) wantCycle(c.sheet);
+  if (c.todo?.dirty || c.todo?.state === 'busy') wantTodo();
 }
 /** La mise en page propre à la carte, aux paquets et à la fiche (à côté de STYLE, jetons du cadre). En large la fiche est à droite de la carte ; au téléphone elle recouvre l'écran (position fixe, son propre défilement). */
 export const CW_STYLE = `
@@ -598,11 +761,23 @@ export const CW_STYLE = `
 [data-module="data"] .d-fl code{overflow-wrap:anywhere}
 [data-module="data"] .d-fs[data-file-state=seen]{color:var(--sog-ok)}
 [data-module="data"] .d-fs[data-file-state=missing]{color:var(--sog-err)}
+[data-module="data"] .d-lgd{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:6px 0 0}
+[data-module="data"] .d-lg{min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0}
+[data-module="data"] .d-x{margin-left:auto;min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0;display:none}
+[data-module="data"] .d-facts{margin:6px 0}
+[data-module="data"] .d-hand{margin-top:6px}
+[data-module="data"] .d-zalt{margin:2px 0}
+[data-module="data"] .d-upd{margin:8px 0}
+[data-module="data"] .d-upd p{margin:4px 0}
+[data-module="data"] .d-fs{white-space:normal}
 @media (min-width:900px){
+[data-module="data"] .d-back{display:none}
+[data-module="data"] .d-x{display:inline-flex;align-items:center;justify-content:center}
+[data-module="data"] .d-cwtop:not([data-sheet-open]) .d-wmap{max-height:45vh}
 [data-module="data"] .d-cwtop[data-sheet-open]{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
 [data-module="data"] .d-cwtop[data-sheet-open] .d-sheet{position:sticky;top:8px;max-height:calc(100vh - 24px);overflow:auto}
 }
 @media (max-width:899px){
-[data-module="data"] .d-sheet{position:fixed;inset:0;z-index:100;overflow:auto;overscroll-behavior:contain;padding:16px;border:0;background:var(--sog-bg,var(--sog-surface))}
+[data-module="data"] .d-sheet{position:fixed;inset:0;z-index:15;overflow:auto;overscroll-behavior:contain;padding:16px;border:0;background:var(--sog-bg,var(--sog-surface))}
 }
 `;

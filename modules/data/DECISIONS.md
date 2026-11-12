@@ -570,3 +570,18 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   selection on the map (the selection concept is gone: the top button acts on the whole coverage). Cases removed with their
   subject: L30, L37, L38, L39, L52. Known limits: the « construit » and « publié » ticks are zone-wide and repeat per source;
   gestures of the sheet (« Mettre à jour ce pays », pick/choose) are lot B (today `zoneActionHtml` is shown inside the sheet).
+- **12 Nov 2026 — SOG-0262, lot B: the gestures of the country sheet and « ce qui reste à faire »** (+ the ergonomist's retouches
+  of lot A): the sheet is where one acts — « Mettre à jour ce pays » (`startUpdate([zone])`, the line under it says what it will
+  do, grey with its reason written), for a hand-taken source « Prendre le fichier téléchargé » primary when a file is seen
+  (`hand.inDownloads` / `pickup-waiting`) with « Choisir un autre fichier… » as a link under it, « Choisir le fichier… » alone
+  when nothing is seen; per-file vu / manquant re-read after each gesture; the SOG-0245 card on the sheet. `todo.js` /
+  `model_todo.js`: « Cycle AIRAC 2611 : n faits sur m » from `base/cycle`, one line per undone source (regime badge, three ticks,
+  a button to the country sheet), done ones folded, `unavailable` apart and not counted. Retouches: « construit » / « publié »
+  are facts of the country (once, at the top), a file = three lines (what / Où … + one link label / Fichier … vu|manquant),
+  « Fermer » at wide width and « ← Retour » on the phone, the map bounded to 45vh at wide width, the legend on one line with the
+  rest behind a « ? », selection wording removed. Reads of the launcher go through `serial()` (one job at a time). DIRCAM:
+  `zipmember.js` reads the single member `PDF/MIAM/MIAM_OACI_ENR 5.7.pdf` of the SIA zip by `File.slice` (central directory,
+  zip64, stored or `deflate-raw`, CRC checked, bounded) and uploads only that PDF; the launcher (`tools/base_upload.py`)
+  answers `unrecognised` for any PDF except `ENR-5-2.pdf` and pdf.js + `AarTracks.parseEnr57` are not wired in V3: launcher gap
+  routed to AeroDB. NAT routes, Publier, cycle suivant, « quand ça change », « vu, pas encore lu », « Ajouter à ma couverture »
+  are lot C.

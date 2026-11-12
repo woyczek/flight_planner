@@ -166,19 +166,26 @@ function zoneViewOf(v) {
     }
   };
 }
-/** La fin d'un travail base/cycle lue : { inForce, next, items: { id: source }, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
+/** La fin d'un travail base/cycle lue : { inForce, inForceDate, next, items: { id: source }, order, unavailable, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
 export function cycleRead(final) {
   const r = final?.state === 'done' && final.result !== null && typeof final.result === 'object' ? final.result : null;
   if (!r || r.ok === false || (!Array.isArray(r.items) && (r.zoneView === null || typeof r.zoneView !== 'object'))) return null;
-  const items = {};
+  const items = {},
+    order = [];
   for (const it of (Array.isArray(r.items) ? r.items : []).slice(0, 120)) {
     const x = itemOf(it);
-    if (x && !Object.hasOwn(items, x.id)) items[x.id] = x;
+    if (x && !Object.hasOwn(items, x.id)) {
+      items[x.id] = x;
+      order.push(x.id);
+    }
   }
   return {
     inForce: text(r.cycle?.ids?.inForce, 8) || day(r.cycle?.inForce),
+    inForceDate: day(r.cycle?.inForce),
     next: text(r.cycle?.ids?.next, 8) || day(r.cycle?.next),
     items,
+    order, // les identifiants des sources dans l'ordre reçu (la liste « ce qui reste à faire » les trie)
+    unavailable: srcIds(r.unavailable), // les sources que leur éditeur n'offre plus (K183) : dites à part
     zoneView: zoneViewOf(r.zoneView)
   };
 }

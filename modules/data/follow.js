@@ -12,12 +12,16 @@ import {
   refusedText,
   ROUTE,
   S,
+  serial,
   tt
 } from './state.js';
 import {
   journalWrite,
   load
 } from './screen.js';
+import {
+  forgetReads
+} from './countries.js';
 import {
   buildZones,
   fetchSummary,
@@ -105,6 +109,9 @@ async function endRun(me, final, live) {
   S.other = null;
   S.busy = null;
   S.view = final;
+  forgetReads(false, verb === M.PICKUP.verb ||
+    dry
+  ); // les fichiers ont peut-être bougé (une prise, un téléchargement, une construction) : la liste du cycle et la fiche ouverte se relisent dès que l'écran est libre
   if (dry && !live) return renderBuild(); // le plan terminé avant l'ouverture : il n'est plus à poser
   if (dry && verb === 'purge' && set === 'base' && S
     .planSink) { // la purge de plus de 60 zones : le plan de cette tranche est gardé, la question vient une fois tous les plans lus
@@ -456,14 +463,15 @@ export async function launch(set, verb, args, ids, dry = false, plain = null) {
     ctrl = new AbortController();
   beginRun(ids, ctrl, set, verb, dry, plain);
   renderBuild();
-  return S.ctx.launcher.job(ROUTE, {
-    set,
-    verb,
-    args
-  }, {
-    onProgress: v => onView(me, v, ctrl),
-    signal: ctrl.signal
-  });
+  return serial(() => S.ctx.launcher.job(
+    ROUTE, { // à la file de l'écran : les lectures du lanceur (état, liste du cycle) ne partent pas en même temps (il ne tient qu'un travail à la fois)
+      set,
+      verb,
+      args
+    }, {
+      onProgress: v => onView(me, v, ctrl),
+      signal: ctrl.signal
+    }));
 }
 /** Un geste sur un panneau : « Télécharger » (fetch), « Construire » (build) ou « Purger » (purge, d'abord le plan à blanc dont la fin pose la
  *  question) d'un jeu, ou « Publier » les fiches (aircraft/publish, plan à blanc puis la copie). Rien ne part si le bouton est gris ; des types

@@ -15,6 +15,7 @@ import {
   pickSource,
   ROUTE,
   S,
+  serial,
   tt
 } from './state.js';
 import {
@@ -51,7 +52,7 @@ export function fetchStatus(ids) {
     let st = null;
     try {
       for (const zones of parts) {
-        const part = M.statusOf(await S.ctx.launcher.job(ROUTE, {
+        const part = M.statusOf(await serial(() => S.ctx.launcher.job(ROUTE, {
           set: 'base',
           verb: 'status',
           // `personal` : exactement ce que la construction envoie (la coche unique « Je certifie… » cochée : les sources personnelles de ces zones ; décochée : aucune) — sans lui une zone construite avec LFV, NATS, ENAIRE ou AirNav se disait « à reconstruire » pour toujours (inputs-changed)
@@ -62,7 +63,7 @@ export function fetchStatus(ids) {
         }, {
           onProgress: () => {},
           signal: new AbortController().signal
-        }));
+        })));
         if (!part) {
           st = null;
           break;
@@ -165,6 +166,16 @@ export function setZoneFilter(key) {
 }
 /** La page des abonnements du NASR de la FAA (le lien direct des trois jeux : FIX, AWY, NAV). */
 const NASR_URL = 'https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/';
+/** La phrase de la FAA qui refuse le téléchargement : l'abonnement du cycle est UN fichier (`28DaySubscription_Effective_<date>.zip`) ; sa page et son nom sont ceux du catalogue (`stepsOf('adds', cycle)`), la page des abonnements en repli. */
+export function nasrHint() {
+  const st = typeof S.d?.cat?.stepsOf === 'function' ? S.d.cat.stepsOf('adds', S.cycleId || undefined) : null,
+    file = String(st?.files?.[0]?.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 80) ||
+    '28DaySubscription_Effective_<AAAA-MM-JJ>.zip';
+  return tt(TX.up.nasr, {
+    f: '',
+    l: linkHtml(st?.page?.url || NASR_URL, tt(TX.up.nasrPage))
+  }).replace('', () => `<code>${esc(file)}</code>`);
+}
 /** Un lien https en texte sûr : `<a>` ouvert dans un autre onglet seulement si l'adresse est en https:// (sinon le texte seul). */
 const linkHtml = (url, label) => M.isHttps(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
 /** Le pas-à-pas d'une source que l'on dépose soi-même (SOG-0189, `AeroCatalogue.stepsOf`) sur la ligne de la zone qui l'attend : ① le lien DIRECT de la page (et, si elle ne répond plus, l'accueil du site), ② chaque fichier à prendre (son nom exact, son lien direct s'il en a un, ce qu'il apporte), ③ le bouton de la ligne ; '' sans pas-à-pas (une source que le lanceur télécharge) ou sans le catalogue. */
@@ -183,7 +194,7 @@ function stepsHtml(id, z, choose = false) {
   return `<ol class="d-zsteps" data-pickup-steps="${esc(id)}"><li data-step-page>${tt(T.page, { l: linkHtml(steps.page?.url, tt(T.pageName)) })}${steps.page?.home ? ` <span class="f-muted">${tt(T.home, { l: linkHtml(steps.page.home, tt(T.homeName)) })}</span>` : ''}</li>${files}<li data-step-then>${esc(tt(choose ? T.thenChoose : T.then))}</li></ol>`;
 }
 /** Ce que la dernière prise ou le dernier envoi de fichier a dit de cette zone, écrit sur sa ligne tant qu'une autre tentative ne l'a pas remplacé (une notification s'efface) : ce qui a été reçu, ce qui manque ou a été refusé ; '' sans message. */
-function zoneMsgHtml(id) {
+export function zoneMsgHtml(id) {
   const m = S.zoneMsg.get(id);
   return m ? `<div class="f-muted d-zmsg" data-zone-msg="${esc(id)}" data-level="${esc(m.level)}"${m.kind ? ` data-kind="${esc(m.kind)}"` : ''}>${m.lines.map(l => `<p data-line>${esc(l)}</p>`).join('')}</div>` : '';
 }
@@ -239,7 +250,7 @@ export function zoneActionHtml(id) {
     source: f.source,
     code: f.error,
     status: f.status ?? null
-  }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button>${nasr ? ` <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>` : ''}</p>${msg}${nasr ? `<p class="f-muted" data-nasr-hint>${tt(TX.up.nasr, { l: linkHtml(NASR_URL, tt(TX.up.nasrPage)) })}</p>${uploadHtml(id)}` : ''}`;
+  }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button>${nasr ? ` <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>` : ''}</p>${msg}${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>${uploadHtml(id)}` : ''}`;
   if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>${msg}`;
   // la zone attend un fichier, ou une prise ou un envoi vient de lui dire ce qui manque : « Choisir le fichier… » reste sur sa ligne
   if ((st === 'stale' || st === 'never-built') && !z.buildable && !msg && M.waitKind(z) === 'personal') return personalHtml(id,

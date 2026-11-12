@@ -167,10 +167,10 @@ export const TX = {
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     // la FAA refuse le téléchargement automatique (HTTP 403) : le repli par fichiers choisis à la main (SOG-0180 ; les trois jeux du NASR, que le lanceur reconnaît)
     nasr: [
-      'La FAA refuse le téléchargement automatique : prenez les trois jeux du cycle (FIX, AWY, NAV) sur {l}, puis « Choisir le fichier… » pour chacun.',
-      'The FAA refuses the automatic download: take the three sets of the cycle (FIX, AWY, NAV) from {l}, then “Choose the file…” for each.',
-      'Die FAA verweigert das automatische Herunterladen: holen Sie die drei Datensätze des Zyklus (FIX, AWY, NAV) von {l}, dann für jeden „Datei wählen…“.',
-      'La FAA rechaza la descarga automática: tome los tres conjuntos del ciclo (FIX, AWY, NAV) de {l}, luego «Elegir el archivo…» para cada uno.'
+      'La FAA refuse le téléchargement automatique : prenez l’abonnement du cycle ({f}) sur {l}, puis « Choisir le fichier… ».',
+      'The FAA refuses the automatic download: take the subscription of the cycle ({f}) from {l}, then “Choose the file…”.',
+      'Die FAA verweigert das automatische Herunterladen: holen Sie das Abonnement des Zyklus ({f}) von {l}, dann „Datei wählen…“.',
+      'La FAA rechaza la descarga automática: tome la suscripción del ciclo ({f}) de {l}, luego «Elegir el archivo…».'
     ],
     nasrWait: ['NASR de la FAA : reçu {h}, il manque {m}.', 'FAA NASR: received {h}, {m} still missing.',
       'NASR der FAA: erhalten {h}, es fehlt {m}.', 'NASR de la FAA: recibido {h}, falta {m}.'
@@ -478,18 +478,19 @@ export const TX = {
       '{z} mit ausstehendem Häkchen für den persönlichen Gebrauch',
       '{z} a la espera de la casilla de uso personal'
     ],
-    none: ['Rien à reconstruire : les {n} cochées sont à jour',
-      'Nothing to rebuild: the {n} ticked are up to date',
-      'Nichts neu zu bauen: die {n} angekreuzten sind aktuell',
-      'Nada que reconstruir: las {n} marcadas están al día'
+    none: ['Rien à reconstruire : ces {n} sont à jour',
+      'Nothing to rebuild: these {n} are up to date',
+      'Nichts neu zu bauen: diese {n} sind aktuell',
+      'Nada que reconstruir: estas {n} están al día'
     ],
-    // des zones cochées dont le lanceur n'a donné aucun état : ni à jour ni périmées, dites à part (jamais comptées à jour)
+    // des zones dont le lanceur n'a donné aucun état : ni à jour ni périmées, dites à part (jamais comptées à jour)
     noState: ['{n} sans état donné par le lanceur.', '{n} without a state from the launcher.', '{n} ohne Zustand vom Starter.',
       '{n} sin estado dado por el lanzador.'
     ],
-    ask: ['Mettre à jour : reconstruire {n} des {t} zones cochées ({s}). {l}', 'Update: rebuild {n} of the {t} ticked zones ({s}). {l}',
-      'Aktualisieren: {n} der {t} angekreuzten Zonen neu bauen ({s}). {l}',
-      'Actualizar: reconstruir {n} de las {t} zonas marcadas ({s}). {l}'
+    ask: ['Mettre à jour : reconstruire {n} des {t} zones concernées ({s}). {l}',
+      'Update: rebuild {n} of the {t} zones concerned ({s}). {l}',
+      'Aktualisieren: {n} der {t} betroffenen Zonen neu bauen ({s}). {l}',
+      'Actualizar: reconstruir {n} de las {t} zonas afectadas ({s}). {l}'
     ],
     noStatus: ['L’état des zones n’a pas pu être lu au lanceur : rien n’est reconstruit.',
       'The state of the zones could not be read from the launcher: nothing is rebuilt.',
@@ -627,6 +628,7 @@ export const TX = {
       'not-downloaded': ['pas encore téléchargé', 'not downloaded yet', 'noch nicht heruntergeladen', 'aún no descargado']
     },
     buildNot: ['pas à jour : {r}', 'not up to date: {r}', 'nicht aktuell: {r}', 'no está al día: {r}'],
+    buildLast: ['dernière construction : {b}', 'last build: {b}', 'letzter Aufbau: {b}', 'última construcción: {b}'],
     pubNo: ['pas encore envoyé au dépôt des données', 'not sent to the data repository yet', 'noch nicht an das Datenarchiv gesendet',
       'aún no enviado al repositorio de datos'
     ],
@@ -634,10 +636,10 @@ export const TX = {
       'nada que publicar: nunca construido'
     ],
     inventory: ['Fichiers à prendre', 'Files to take', 'Zu holende Dateien', 'Archivos por tomar'],
-    where: ['Où le trouver : {l}', 'Where to find it: {l}', 'Wo zu finden: {l}', 'Dónde encontrarlo: {l}'],
-    wherePath: ['Chemin : {p}', 'Path: {p}', 'Pfad: {p}', 'Ruta: {p}'],
-    pageLink: ['la page de la source', 'the source’s page', 'die Seite der Quelle', 'la página de la fuente'],
-    fileLink: ['le lien du fichier', 'the file’s link', 'der Link der Datei', 'el enlace del archivo'],
+    // une ligne « Où » : le chemin rubrique par rubrique, puis UN lien dont le mot dit ce qu'il ouvre (une page, ou le fichier lui-même)
+    wherePath: ['Où : {p}', 'Where: {p}', 'Wo: {p}', 'Dónde: {p}'],
+    pageLink: ['ouvrir la page', 'open the page', 'Seite öffnen', 'abrir la página'],
+    fileLink: ['télécharger le fichier', 'download the file', 'Datei herunterladen', 'descargar el archivo'],
     unavailableTitle: ['Indisponibles chez leur éditeur', 'Unavailable at their publisher', 'Beim Herausgeber nicht verfügbar',
       'No disponibles en su editor'
     ],
@@ -650,8 +652,7 @@ export const TX = {
       'Von Hand abzulegende Dateien, die die Suite noch nicht liest: {s}.',
       'Archivos que se depositan a mano y que la suite aún no lee: {s}.'
     ],
-    homeLink: ['accueil du site', 'the site’s front page', 'Startseite der Seite', 'portada del sitio'],
-    name: ['Fichier attendu : {n}', 'Expected file: {n}', 'Erwartete Datei: {n}', 'Archivo esperado: {n}'],
+    name: ['Fichier : {n}', 'File: {n}', 'Datei: {n}', 'Archivo: {n}'],
     seen: ['vu dans Téléchargements', 'seen in Downloads', 'in Downloads gesehen', 'visto en Descargas'],
     missing: ['manquant', 'missing', 'fehlt', 'falta'],
     inDlUnread: ['Le contenu de Téléchargements n’a pas encore été lu : on ne sait pas si ce fichier y est.',
@@ -880,9 +881,13 @@ export const TX = {
     busy: ['Une autre opération est en cours', 'Another operation is running', 'Ein anderer Vorgang läuft',
       'Hay otra operación en curso'
     ],
-    'no-zone': ['Cochez au moins une zone', 'Tick at least one zone', 'Mindestens eine Zone ankreuzen', 'Marque al menos una zona'],
-    'no-set': ['Rien à mettre à jour : cochez des zones ou des États', 'Nothing to update: tick some zones or States',
-      'Nichts zu aktualisieren: Zonen oder Staaten ankreuzen', 'Nada que actualizar: marque zonas o Estados'
+    'no-zone': ['Aucun pays dans votre couverture : ajoutez-en un', 'No country in your coverage: add one',
+      'Kein Land in Ihrer Abdeckung: fügen Sie eines hinzu', 'Ningún país en su cobertura: añada uno'
+    ],
+    'no-set': ['Rien à mettre à jour : ajoutez des pays à la couverture ou cochez des États',
+      'Nothing to update: add countries to the coverage or tick some States',
+      'Nichts zu aktualisieren: Länder zur Abdeckung hinzufügen oder Staaten ankreuzen',
+      'Nada que actualizar: añada países a la cobertura o marque Estados'
     ],
     'bad-codes': ['types OACI refusés', 'ICAO types refused', 'ICAO-Muster abgelehnt', 'tipos OACI rechazados'],
     'no-state': ['Cochez au moins un État', 'Tick at least one State', 'Mindestens einen Staat ankreuzen', 'Marque al menos un Estado'],
@@ -958,10 +963,10 @@ export const TX = {
   ],
   advice: {
     partial: [
-      'Les zones construites sont gardées ; décochez-les et relancez pour retenter les autres (le motif est écrit à chaque ligne).',
-      'The zones built are kept; untick them and start again to retry the others (the reason is written on each line).',
-      'Die erstellten Zonen bleiben erhalten; wählen Sie sie ab und starten Sie neu, um die übrigen zu wiederholen (der Grund steht in jeder Zeile).',
-      'Las zonas construidas se conservan; desmárquelas y vuelva a empezar para reintentar las demás (el motivo está en cada línea).'
+      'Les zones construites sont gardées ; relancez pour retenter les autres (le motif est écrit à chaque ligne).',
+      'The zones built are kept; start again to retry the others (the reason is written on each line).',
+      'Die erstellten Zonen bleiben erhalten; starten Sie neu, um die übrigen zu wiederholen (der Grund steht in jeder Zeile).',
+      'Las zonas construidas se conservan; vuelva a empezar para reintentar las demás (el motivo está en cada línea).'
     ],
     failed: ['Aucune zone n’a été construite : lisez le motif de chaque ligne, puis relancez.',
       'No zone was built: read the reason on each line, then start again.',
@@ -973,10 +978,10 @@ export const TX = {
       'Bereits erstellte Zonen bleiben erhalten; starten Sie neu, um die übrigen zu erstellen.',
       'Las zonas ya construidas se conservan; vuelva a empezar para construir las demás.'
     ],
-    interrupted: ['Relancez la construction : les zones déjà construites sont gardées, vous pouvez les décocher.',
-      'Start the build again: the zones already built are kept, you can untick them.',
-      'Starten Sie den Aufbau neu: bereits erstellte Zonen bleiben erhalten, Sie können sie abwählen.',
-      'Vuelva a lanzar la construcción: las zonas ya construidas se conservan, puede desmarcarlas.'
+    interrupted: ['Relancez la construction : les zones déjà construites sont gardées.',
+      'Start the build again: the zones already built are kept.',
+      'Starten Sie den Aufbau neu: bereits erstellte Zonen bleiben erhalten.',
+      'Vuelva a lanzar la construcción: las zonas ya construidas se conservan.'
     ]
   },
   // un départ refusé par le lanceur
@@ -1558,9 +1563,8 @@ export const TX = {
     'Assistenten der Ersteinrichtung öffnen (Seite der alten Version)',
     'Abrir el asistente de primera instalación (página de la versión antigua)'
   ],
-  // la carte des zones à cocher (même sélection que la liste) : son nom, ce que dit chaque teinte, la légende
+  // la carte des États à cocher (procédures) : son nom, ce que dit chaque teinte, la légende
   zoneMap: {
-    base: ['Carte des zones à cocher', 'Map of the zones to tick', 'Karte der anzukreuzenden Zonen', 'Mapa de las zonas por marcar'],
     proc: ['Carte des États à cocher', 'Map of the States to tick', 'Karte der anzukreuzenden Staaten', 'Mapa de los Estados por marcar']
   },
   mapTone: {
@@ -2093,6 +2097,130 @@ export const TX = {
       status: ['Relever l’état', 'Read the state', 'Zustand erfassen', 'Leer el estado'],
       world: ['Prévision mondiale', 'World forecast', 'Weltweite Vorhersage', 'Pronóstico mundial'],
       'import-rad': ['Importer', 'Import', 'Importieren', 'Importar']
+    }
+  },
+  // le lot B de SOG-0262 : les gestes de la fiche d'un pays, « ce qui reste à faire ce mois-ci », la fermeture de la fiche, la légende repliée, la lecture d'une archive DIRCAM
+  cwb: {
+    close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    legendMore: ['Autres signes de la carte', 'Other signs of the map', 'Weitere Zeichen der Karte', 'Otros signos del mapa'],
+    update: ['Mettre à jour ce pays', 'Update this country', 'Dieses Land aktualisieren', 'Actualizar este país'],
+    doLine: ['Ce que fait ce bouton : {l}.', 'What this button does: {l}.', 'Was diese Schaltfläche tut: {l}.',
+      'Lo que hace este botón: {l}.'
+    ],
+    doDl: ['télécharger ce qui manque', 'download what is missing', 'Fehlendes herunterladen', 'descargar lo que falta'],
+    doBuild: ['reconstruire ce pays', 'rebuild this country', 'dieses Land neu bauen', 'reconstruir este país'],
+    upToDate: ['Ce pays est à jour : rien à faire.', 'This country is up to date: nothing to do.',
+      'Dieses Land ist aktuell: nichts zu tun.',
+      'Este país está al día: nada que hacer.'
+    ],
+    waitsFile: ['Ce pays attend un fichier : prenez-le d’abord.', 'This country waits for a file: take it first.',
+      'Dieses Land wartet auf eine Datei: holen Sie sie zuerst.', 'Este país espera un archivo: tómelo primero.'
+    ],
+    waitsTick: ['Ce pays attend la coche d’usage personnel : cochez-la d’abord.',
+      'This country waits for the personal-use tick: tick it first.',
+      'Dieses Land wartet auf das Häkchen für den persönlichen Gebrauch: kreuzen Sie es zuerst an.',
+      'Este país espera la casilla de uso personal: márquela primero.'
+    ],
+    // les gestes d'un fichier pris à la main
+    seenLine: ['Un fichier de cette source attend dans Téléchargements.', 'A file of this source waits in Downloads.',
+      'Eine Datei dieser Quelle wartet in Downloads.', 'Un archivo de esta fuente espera en Descargas.'
+    ],
+    failedLine: ['Le téléchargement de cette source a échoué : {r}', 'The download of this source failed: {r}',
+      'Das Herunterladen dieser Quelle ist fehlgeschlagen: {r}', 'La descarga de esta fuente falló: {r}'
+    ],
+    // « ce qui reste à faire ce mois-ci » : sous la carte, avant les paquets
+    todoTitle: ['Ce qui reste à faire ce mois-ci', 'What is left to do this month', 'Was diesen Monat noch zu tun ist',
+      'Lo que queda por hacer este mes'
+    ],
+    todoHead: ['Cycle AIRAC {c} : {n} faits sur {m}', 'AIRAC cycle {c}: {n} of {m} done', 'AIRAC-Zyklus {c}: {n} von {m} erledigt',
+      'Ciclo AIRAC {c}: {n} de {m} hechos'
+    ],
+    todoAll: ['Tout est fait pour ce cycle.', 'Everything is done for this cycle.', 'Für diesen Zyklus ist alles erledigt.',
+      'Todo está hecho para este ciclo.'
+    ],
+    todoLoading: ['Lecture de la liste du cycle…', 'Reading the list of the cycle…', 'Die Liste des Zyklus wird gelesen…',
+      'Leyendo la lista del ciclo…'
+    ],
+    todoBusy: ['La liste du cycle sera lue quand l’opération en cours aura fini.',
+      'The list of the cycle will be read when the running operation ends.',
+      'Die Liste des Zyklus wird gelesen, wenn der laufende Vorgang beendet ist.',
+      'La lista del ciclo se leerá cuando termine la operación en curso.'
+    ],
+    todoUnread: ['La liste du cycle n’a pas pu être lue.', 'The list of the cycle could not be read.',
+      'Die Liste des Zyklus konnte nicht gelesen werden.',
+      'No se pudo leer la lista del ciclo.'
+    ],
+    todoDone: ['Déjà faits ({n})', 'Already done ({n})', 'Schon erledigt ({n})', 'Ya hechos ({n})'],
+    kind: {
+      hand: ['attend votre main', 'waits for your hand', 'wartet auf Ihre Hand', 'espera su mano'],
+      late: ['en retard', 'late', 'verspätet', 'atrasado'],
+      build: ['à construire', 'to build', 'zu erstellen', 'por construir'],
+      publish: ['à publier', 'to publish', 'zu veröffentlichen', 'por publicar'],
+      done: ['fait', 'done', 'erledigt', 'hecho']
+    },
+    badge: {
+      auto: ['automatique', 'automatic', 'automatisch', 'automático'],
+      hand: ['à la main', 'by hand', 'von Hand', 'a mano'],
+      local: ['sur ce poste', 'on this workstation', 'auf diesem Rechner', 'en este equipo']
+    },
+    dlLateDates: ['en retard : fichier du {f}, le cycle est du {c}', 'late: file of {f}, the cycle is of {c}',
+      'verspätet: Datei vom {f}, der Zyklus ist vom {c}', 'atrasado: archivo del {f}, el ciclo es del {c}'
+    ],
+    buildCount: ['{u} sur {n} à jour', '{u} of {n} up to date', '{u} von {n} aktuell', '{u} de {n} al día'],
+    pubSent: ['{p} envoyé(s)', '{p} sent', '{p} gesendet', '{p} enviado(s)'],
+    pubTodo: ['{u} pas encore envoyé(s)', '{u} not sent yet', '{u} noch nicht gesendet', '{u} aún sin enviar'],
+    pubUnknown: ['pas lu', 'not read', 'nicht gelesen', 'sin leer'],
+    pubNone: ['rien à publier', 'nothing to publish', 'nichts zu veröffentlichen', 'nada que publicar'],
+    buildNone: ['aucun pays construit d’après cette source', 'no country built from this source', 'kein Land aus dieser Quelle erstellt',
+      'ningún país construido con esta fuente'
+    ],
+    // la lecture d'une archive zip choisie sur la ligne DIRCAM : seul le membre de l'ENR 5.7 est lu et envoyé, jamais l'archive
+    zip: {
+      'not-zip': ['Ce fichier n’est ni l’ENR 5.7 en PDF, ni une archive zip : rien n’a été envoyé.',
+        'This file is neither the ENR 5.7 PDF nor a zip archive: nothing was sent.',
+        'Diese Datei ist weder die ENR 5.7 als PDF noch ein Zip-Archiv: nichts wurde gesendet.',
+        'Este archivo no es ni la ENR 5.7 en PDF ni un archivo zip: no se envió nada.'
+      ],
+      truncated: ['Cette archive est tronquée (téléchargement interrompu ?) : rien n’a été envoyé.',
+        'This archive is truncated (interrupted download?): nothing was sent.',
+        'Dieses Archiv ist abgeschnitten (Download unterbrochen?): nichts wurde gesendet.',
+        'Este archivo está truncado (¿descarga interrumpida?): no se envió nada.'
+      ],
+      unsupported: [
+        'Cette archive est chiffrée, en plusieurs volumes ou compressée d’une façon que le navigateur ne lit pas : rien n’a été envoyé.',
+        'This archive is encrypted, in several volumes or compressed in a way the browser cannot read: nothing was sent.',
+        'Dieses Archiv ist verschlüsselt, mehrteilig oder auf eine Weise komprimiert, die der Browser nicht lesen kann: nichts wurde gesendet.',
+        'Este archivo está cifrado, en varios volúmenes o comprimido de una forma que el navegador no lee: no se envió nada.'
+      ],
+      'too-large': [
+        'Cette archive annonce des tailles que l’écran refuse (plus de 128 Mo pour le PDF, ou un répertoire démesuré) : rien n’a été envoyé.',
+        'This archive announces sizes the screen refuses (more than 128 MB for the PDF, or an oversized directory): nothing was sent.',
+        'Dieses Archiv meldet Größen, die der Bildschirm ablehnt (mehr als 128 MB für das PDF oder ein überdimensioniertes Verzeichnis): nichts wurde gesendet.',
+        'Este archivo anuncia tamaños que la pantalla rechaza (más de 128 MB para el PDF o un directorio desmesurado): no se envió nada.'
+      ],
+      'no-member': ['Cette archive ne contient pas l’ENR 5.7 du MIAM ({m}) : ce n’est pas le CD DIRCAM du SIA. Rien n’a été envoyé.',
+        'This archive does not contain the MIAM ENR 5.7 ({m}): it is not the DIRCAM CD of the SIA. Nothing was sent.',
+        'Dieses Archiv enthält die ENR 5.7 des MIAM nicht ({m}): es ist nicht die DIRCAM-CD der SIA. Nichts wurde gesendet.',
+        'Este archivo no contiene la ENR 5.7 del MIAM ({m}): no es el CD DIRCAM del SIA. No se envió nada.'
+      ],
+      corrupt: ['Cette archive est illisible ou incohérente : rien n’a été envoyé.',
+        'This archive is unreadable or inconsistent: nothing was sent.',
+        'Dieses Archiv ist unlesbar oder inkonsistent: nichts wurde gesendet.',
+        'Este archivo es ilegible o incoherente: no se envió nada.'
+      ],
+      reading: ['Lecture de l’archive {name}…', 'Reading the archive {name}…', 'Archiv {name} wird gelesen…',
+        'Leyendo el archivo {name}…'
+      ],
+      sending: ['Le PDF de l’ENR 5.7 a été extrait de {name} (l’archive elle-même n’est pas envoyée).',
+        'The ENR 5.7 PDF was taken out of {name} (the archive itself is not sent).',
+        'Die ENR 5.7 als PDF wurde aus {name} entnommen (das Archiv selbst wird nicht gesendet).',
+        'El PDF de la ENR 5.7 se extrajo de {name} (el archivo en sí no se envía).'
+      ],
+      launcher: ['Le lanceur de ce poste ne prend pas encore ce PDF : il faut l’en instruire (la lecture de l’ENR 5.7 reste à brancher).',
+        'This workstation’s launcher does not take this PDF yet: it has to be taught (reading the ENR 5.7 is still to be wired).',
+        'Der Starter dieses Rechners nimmt dieses PDF noch nicht an: er muss es lernen (das Lesen der ENR 5.7 ist noch anzuschließen).',
+        'El lanzador de este equipo aún no toma este PDF: hay que enseñárselo (la lectura de la ENR 5.7 aún está por conectar).'
+      ]
     }
   }
 };

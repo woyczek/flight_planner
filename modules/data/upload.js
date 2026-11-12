@@ -28,6 +28,14 @@ import {
 import {
   showBusy
 } from './busy.js';
+import {
+  DIRCAM_MEMBER,
+  readMember,
+  ZipError
+} from './zipmember.js';
+import {
+  forgetReads
+} from './countries.js';
 
 const ROUTE_UPLOAD = 'base/upload';
 const MAX_BYTES = 1.5 * 1024 ** 3; // le plafond du lanceur : au-delà, rien n'est envoyé
@@ -39,10 +47,13 @@ const nameOfSource = id => (catSource(id)?.n?.[li()] || String(id).toUpperCase()
 
 /** Le bouton « Choisir le fichier… » de la ligne d'une zone peut-il partir ? Un lanceur, aucune autre opération, aucun envoi en cours. */
 export const uploadOff = () => !S.ctx.launcher || busyNow() || !!S.upload;
-/** Le geste du bouton : le sélecteur du système s'ouvre (le champ caché de l'écran), la zone est retenue. */
-export function chooseFile(zone) {
+/** Le geste du bouton : le sélecteur du système s'ouvre (le champ caché de l'écran), la zone est retenue, et la source de la ligne qui l'a demandé (`source` : « dircam » lit l'ENR 5.7 dans l'archive du SIA ; vide : le lanceur reconnaît le fichier à son contenu).
+ *  La source du dernier geste garde l'avancement et le message sur la fiche du pays. */
+export function chooseFile(zone, source = '') {
   if (uploadOff() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
   S.uploadZone = zone;
+  S.uploadSource = /^[a-z0-9_]{2,24}$/.test(source || '') ? source : '';
+  if (S.uploadSource) S.cw?.hand.set(zone, S.uploadSource);
   S.body?.querySelector('[data-upload-input]')?.click();
 }
 /** La ligne d'un envoi en cours sur la ligne de sa zone : le nom, le pourcentage, une barre et « Annuler » ; '' pour une autre zone. */
@@ -190,12 +201,83 @@ async function pickTaken(out, zone, name, src) {
   renderBuild();
   await fetchThenBuild(zone, true);
 }
-/** Envoie le fichier choisi : un seul à la fois, l'avancement sur la ligne de la zone, la fin en une notification ; un envoi réussi enchaîne la construction de la zone reconnue (celle de la ligne à défaut). */
-export async function startUpload(zone, file) {
+/** Ce que la ligne DIRCAM envoie : le PDF de l'ENR 5.7, jamais l'archive du SIA (1,3 Go). Un PDF choisi tel quel part tel quel ; une archive zip est lue sans être chargée (zipmember.js : le seul membre PDF/MIAM/MIAM_OACI_ENR 5.7.pdf, reconnu à ce membre quel que soit le nom de l'archive) ;
+ *  tout le reste, ou une archive illisible, est refusé en mots (`ZipError.code`). Rend { blob, name, fromZip }. */
+async function dircamTake(file, signal) {
+  const head = new Uint8Array(await file.slice(0, 5).arrayBuffer()),
+    is = t => [...t].every((c, i) => head[i] === c.charCodeAt(0));
+  if (is('%PDF')) return {
+    blob: file,
+    name: String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) || 'ENR-5-7.pdf',
+    fromZip: false
+  };
+  if (!is('PK')) throw new ZipError('not-zip');
+  const m = await readMember(file, DIRCAM_MEMBER, signal);
+  return {
+    ...m,
+    fromZip: true
+  };
+}
+/** Envoie le fichier choisi : un seul à la fois, l'avancement sur la ligne de sa zone, la fin en une notification ; un envoi réussi enchaîne la construction de la zone reconnue (celle de la ligne à défaut). `source` : la ligne qui a demandé le fichier — « dircam » : le PDF de l'ENR 5.7 est lu dans
+ *  l'archive du SIA et seul ce PDF est envoyé (le lanceur de ce poste ne le prend pas encore : son refus est dit tel quel). */
+export async function startUpload(zone, file, source = '') {
+  const me = S,
+    note = {
+      chained: false
+    };
+  try {
+    await sendFile(zone, file, source, note);
+  } finally {
+    if (S === me) {
+      forgetReads(false, !note
+        .chained
+      ); // un fichier est arrivé (ou refusé) : la fiche et la liste du cycle relisent Téléchargements dès que l'écran est libre ; l'état des pays aussi, sauf quand un travail suit l'envoi (sa fin le relit)
+      renderBuild();
+    }
+  }
+}
+/** L'envoi lui-même et ce qui le suit (la prise, la construction) : voir startUpload ; `note.chained` : un travail du lanceur suit l'envoi. */
+async function sendFile(zone, file, source, note) {
   const me = S;
   if (!file || uploadOff() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
-  const name = String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) || '?';
-  if (file.size > MAX_BYTES) {
+  let name = String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) || '?';
+  const dircam = source === 'dircam';
+  if (dircam && file.size > 0) { // l'archive du SIA se lit en place : sa taille n'est pas celle de l'envoi
+    S.zoneMsg.delete(zone);
+    const ctrl = new AbortController();
+    S.upload = {
+      zone,
+      name,
+      loaded: 0,
+      total: 0,
+      ctrl,
+      reading: true
+    };
+    S.cw?.hand.set(zone, source);
+    renderBuild();
+    let got = null,
+      code = '';
+    try {
+      got = await dircamTake(file, ctrl.signal);
+    } catch (e) {
+      code = e instanceof ZipError ? e.code : 'corrupt';
+    }
+    if (S !== me) return;
+    S.upload = null;
+    if (!got) {
+      const text = tt(TX.cwb.zip[code] || TX.cwb.zip.corrupt, {
+        m: DIRCAM_MEMBER
+      });
+      sayOnLine(zone, name, text);
+      return S.ctx.notify(text, 'err');
+    }
+    if (got.fromZip) S.ctx.notify(tt(TX.cwb.zip.sending, {
+      name
+    }), 'info');
+    file = got.blob;
+    name = got.name;
+  }
+  if (!dircam && file.size > MAX_BYTES) {
     sayOnLine(zone, name, tt(TX.up.why['too-large']));
     return S.ctx.notify(tt(TX.up.why['too-large']), 'err');
   }
@@ -226,13 +308,16 @@ export async function startUpload(zone, file) {
   if (S !== me) return;
   S.upload = null;
   const out = outcome(r);
+  if (dircam && out.kind === 'fail' && (r?.reason || r?.body?.reason) === 'unrecognised') out.detail = tt(TX.cwb.zip
+    .launcher); // le lanceur ne prend pas encore ce PDF : on le dit en mots
   if (out.kind === 'fail') sayOnLine(zone, name, out.text, out.detail);
   else renderBuild();
   if (out.running) showBusy(out.running,
     'base'); // la carte de l'opération en cours, dans le panneau de la base, avec Voir / Arrêter / Libérer
   S.ctx.notify(out.text, out.kind === 'fail' ? 'err' : 'ok');
   // le fichier est rangé là où « Prendre le fichier téléchargé » lit (data/local/upload/) : le parcours normal suit — le plan, la prise, puis la construction de la zone reconnue
-  if (out.kind === 'fail') return;
+  note.chained = out.kind !== 'fail' && !dircam;
+  if (out.kind === 'fail' || dircam) return; // le PDF de l'ENR 5.7 est lu par la page, pas pris par le lanceur : rien ne suit ici
   const own = pickSource(out.zone || zone);
   if (own && out.source === own.id) return pickTaken(out, out.zone || zone, name,
     own); // une source choisie à la main d'emblée (Portugal) : c'est le téléchargement de la zone qui lit le fichier

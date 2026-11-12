@@ -39,7 +39,8 @@ import {
   updateScope
 } from './update.js';
 import {
-  countriesHtml
+  countriesHtml,
+  readsIdle
 } from './countries.js';
 import {
   statusKnown,
@@ -595,11 +596,11 @@ function resultHtml(panel = 'base', carded = false) {
     ${rows.length ? `<ul class="d-zl">${rows.map(z => zoneLineHtml(z, 'build', set)).join('')}</ul>` : ''}</div>`;
 }
 /** Ce que dit un panneau sous ses boutons : une autre opération du lanceur, puis la marche (si c'est son jeu qui tourne) ou la dernière fin. */
-function opAreaHtml(panel) {
+export function opAreaHtml(panel, skipCard = false) {
   const here = S.run && M.panelOf(S.run.set, S.run.verb) === panel,
     card = busyCardHtml(panel); // la carte de l'opération qui tourne remplace la phrase nue « une autre opération est en cours » (SOG-0245)
-  return `${card || (S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : '')}
-    ${here ? runningHtml() : S.run ? '' : resultHtml(panel, !!card)}`;
+  return `${skipCard ? '' : card || (S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : '')}
+    ${skipCard ? '' : here ? runningHtml() : S.run ? '' : resultHtml(panel, !!card)}`;
 }
 /** Les États proposés aux procédures : verts et oranges de coverageByState(), dans l'ordre de leurs noms. */
 export function procList() {
@@ -713,7 +714,7 @@ function stateHeadHtml() {
     }) : ''].filter(Boolean) : [];
   return `<div class="d-statehead" data-state-head><p data-state-sentence>${[esc(cyc), tail].filter(Boolean).join(' ')}</p>${list}
     ${action}${plan}${notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : ''}
-    ${opAreaHtml('base')}</div>`;
+    ${opAreaHtml('base', !!S.cw?.sheet)}</div>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
  *  vigueur (points VFR), le champ des types OACI (appareils). */
@@ -806,7 +807,7 @@ export function panelsHtml(group) {
 function redrawPanel(box) {
   const a = box.contains(document.activeElement) ? document.activeElement : null,
     q = (attr, v) => `[${attr}="${CSS.escape(v)}"]`,
-    sel = a ? a.dataset.act === 'sheet-close' ? '[data-sheet] [data-act="sheet-close"]' : a.dataset.act === 'grp-toggle' ? q('data-gid', a
+    sel = a ? a.dataset.act === 'sheet-close' ? `[data-sheet] ${a.classList.contains('d-x') ? '.d-x' : '.d-back'}[data-act="sheet-close"]` : a.dataset.act === 'grp-toggle' ? q('data-gid', a
       .dataset.gid) + '[data-act="grp-toggle"]' : a.dataset.act === 'open-country' && a.closest('[data-cw-groups]') ? '[data-cw-groups] ' +
     q('data-zone', a.dataset.zone) + '[data-act="open-country"]' :
     a.dataset.act === 'world-toggle' ? '[data-act="world-toggle"]' :
@@ -839,6 +840,7 @@ export function renderBuild() {
   renderPublish(); // le bouton « Publier » suit la construction (et l'inverse) : un seul point de redessin pour tous les panneaux
   if (!S?.body || !S.d) return;
   for (const box of S.body.querySelectorAll('[data-build], [data-set-panel], [data-update-all]')) redrawPanel(box);
+  readsIdle(); // l'écran est libre : ce qui était « à relire » (la liste du cycle, la fiche ouverte) se relit
 }
 /** Ouvre le groupe d'un panneau (une marche ou un résultat s'y montre) sans attendre un toucher. */
 export function openGroup(set, verb) {

@@ -66,6 +66,12 @@ export function pickSource(zone) {
   return Array.isArray(list) ? list.find(s => s?.fetch?.pick && typeof s.fetch.pick === 'object' && Array.isArray(s.zones) && s.zones
     .includes(zone)) : undefined;
 }
+/** Passe `fn` (un travail du lanceur en lecture : l'état, les procédures, la liste du cycle) à la file de l'écran : le lanceur ne tient qu'UN travail à la fois, deux lectures lancées ensemble s'en refuseraient une (409). `fn` part quand la précédente a fini, qu'elle ait réussi ou non ; rend sa réponse. */
+export function serial(fn) {
+  const run = (S.lane || Promise.resolve()).then(() => fn());
+  S.lane = run.catch(() => null);
+  return run;
+}
 /** Remplace l'état de l'écran monté (`S`) : le seul endroit où `S` change de valeur (au montage, puis `null` au démontage) ; les autres fichiers lisent `S` (une liaison vivante) et écrivent ses champs. */
 export function setState(v) {
   S = v;
