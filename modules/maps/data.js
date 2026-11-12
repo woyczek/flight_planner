@@ -103,6 +103,10 @@ export function pointsOf(f) {
       id: p.id || '',
       lat: +p.lat,
       lon: +p.lon,
+      ...(i > 0 && typeof p.via === 'string' && /^[A-Z]{1,2}\d{1,4}[A-Z]?$/i.test(p.via) ? {
+        via: p.via
+          .toUpperCase() // la voie aérienne qui mène à ce point (le tronçon d'avant, SOG-0095) ; sans elle, le tronçon est direct
+      } : {}),
       ...(i > 0 && i < raw.length - 1 && p.alt_ft != null && +p.alt_ft > 0 ? {
         lvl: {
           ft: +p.alt_ft

@@ -5882,3 +5882,25 @@ def d_gdhover(c):
     c.js("async () => { (await import('/modules/maps/tips.js')).hoverMap(1, 1); return true }")
     c.until("() => !window.__mp.S.ground.hover", timeout=4000, what='nothing under the pointer: nothing highlighted')
     c.eq(c.js("() => document.querySelectorAll('.mp-gd-row[data-hover=\"1\"]').length"), 0, 'no row marked', what='rows')
+
+
+@case('D186', 'The route: a direct leg (no airway) is dotted, a leg flown on an airway is solid with the airway’s name on a small sign at its middle', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0095 (roadmap of the Map, the user’s request of 1 Nov): « tronçon DCT en pointillé, un tronçon de voie aérienne en trait plein avec le cartouche de la voie »; the points of the flight carry `via` (the airway before the point, written by Fuel from the text); the legs between route points without it are direct; what comes from a procedure stays solid')
+def d_dctline(c):
+    f = flight()
+    pts = f['route']['points']
+    pts[2] = dict(pts[2], via='UN10')
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.js("""() => { window.__dt = { dash: 0, solid: 0, texts: [] }; const sd = CanvasRenderingContext2D.prototype.setLineDash, ft = CanvasRenderingContext2D.prototype.fillText;
+      if (!sd.__dt) { CanvasRenderingContext2D.prototype.setLineDash = function (a) { if (a && a.length === 2 && a[0] >= 9 && a[1] >= 7) window.__dt.dash++; return sd.apply(this, arguments) }; CanvasRenderingContext2D.prototype.setLineDash.__dt = true;
+        CanvasRenderingContext2D.prototype.fillText = function (t) { window.__dt.texts.push(String(t)); return ft.apply(this, arguments) } } return true }""")
+    hook_map(c)
+    c.js("() => { window.__dt = { dash: 0, texts: [] }; window.__mp.S.map.panBy([3, 3], { duration: 0 }); return true }")
+    c.wait(1800)
+    r = c.js("() => window.__dt")
+    c.ok(r['dash'] >= 2, str(r['dash']), 'the direct legs (LFRS → LUGEN, NEPIX → LFML) are drawn dotted: a dash pattern is set for each, twice per drawing (the edge, then the line)')
+    c.ok('UN10' in r['texts'], str(sorted(set(r['texts']))[:12]), 'the airway’s name is written on its leg')
+    c.shot('D186_{}_delivered.png'.format('standard'))

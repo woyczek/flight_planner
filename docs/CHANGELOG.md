@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a direct leg is dotted, a leg on an airway is solid with the airway's sign** — from the flight's `via` (maps DECISIONS; noreg D186; SOG-0095).
 - **Map: a taxiway is highlighted under the pointer and its row comes into view in the ground list** — a taxiway wide and light on the map, a stand or a hold ringed, its row marked and scrolled into view in the bottom panel (maps DECISIONS; noreg D185; SOG-0254).
 - **Fuel: the probable runway from the METAR is said** at the head of the lists, with « Prendre la piste probable », never set by itself (Fuel DECISIONS, help; noreg F148, F149; SOG-0090).
 - **Coverage: a procedure record without procedure is not « held »** (SOG-0264) — `base/coverage` leaves out of `procedures` and `procSources` a record with no procedure (Belgium EBBE: the EAD returned 25 charts, no procedure was read) and lists it per zone in `procEmpty: [ICAO]` (to repair). K194.

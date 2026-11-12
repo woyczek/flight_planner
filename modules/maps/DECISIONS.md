@@ -2909,3 +2909,8 @@ the Map had seen in between: the same line to within the frame's own sampling.
 ## A taxiway under the pointer is highlighted and its row comes into view (SOG-0254; the user: « TWY : zone cliquable devrait se surligner au survol, et se positionner dans la liste (volet du bas) »)
 - `groundHover` (ground.js), called by `hoverMap` (tips.js): the ground element under the pointer (`groundAt`, the same hit test as the tap) becomes `ground.hover`; a taxiway is drawn wide and light (7 px halo, 5 px accent at .55) under its line, a stand or a hold gets a ring;
   when the ground list is open its row is marked (`data-hover`, a light background and outline) and scrolled into view (`block: nearest`); nothing under the pointer clears both; written only when the element changes. The tap keeps the strong highlight (`ground.hl`). Noreg D185.
+
+## The route line: direct legs dotted, airway legs solid with the airway's sign (SOG-0095; roadmap of the Map, the user's request of 1 Nov)
+- The points of the flight carry `via` (the airway before the point, written by Fuel from the text: `frame/lib/route_text.js`); `pointsOf` keeps it (an airway-shaped id only), the path keeps it from the record. In `render_route.js` a leg between two
+  route points with no `via` is **direct** and drawn dotted (a dash of 9–11 px, a gap of 7–8, square ends, edge and line alike); a leg with `via` is solid and carries, at its middle when it is at least 90 px long on the screen, a small sign
+  with the airway's name (paper ground, the route's colour, bold), its place asked like the other route labels (rank `route`); what comes from a procedure (SID, STAR, approach) stays solid. The light drawing of a gesture stays solid. Noreg D186.

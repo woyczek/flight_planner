@@ -157,6 +157,42 @@
         });
       }
     }
+    // le cartouche d'une voie aérienne au milieu de son tronçon (assez long à l'écran), sa place demandée comme celle des autres libellés de la route (SOG-0095)
+    for (let i = 1; i < pts.length; i++) {
+      const b = pts[i],
+        a = pts[i - 1];
+      if (!b.via) continue;
+      const qa = toC(a.lat, a.lon),
+        qb = toC(b.lat, b.lon),
+        len = Math.hypot(qb.x - qa.x, qb.y - qa.y);
+      if (len < 90 * scale) continue;
+      const m = {
+          x: (qa.x + qb.x) / 2,
+          y: (qa.y + qb.y) / 2
+        },
+        w = b.via.length * 7.5 * scale + 8,
+        h = 15 * scale;
+      R.kit.ask(pl, {
+        layer: 'routeLabels',
+        rank: 'route',
+        key: `via:${b.via}@${Math.round(m.x)},${Math.round(m.y)}`,
+        anchor: m,
+        boxes: [{
+          x0: m.x - w / 2,
+          y0: m.y - h / 2,
+          x1: m.x + w / 2,
+          y1: m.y + h / 2
+        }],
+        paint: () => out.push({
+          text: b.via,
+          x: m.x,
+          y: m.y,
+          size: 11 * scale,
+          align: 'center',
+          box: true
+        })
+      });
+    }
     const f = f0;
     for (const m of mk) {
       const q = toC(m.lat, m.lon),
@@ -199,16 +235,41 @@
     ctx.lineCap = 'round';
     // lines : les suites de points que la route trace (la SID et la STAR choisies dessinent leurs propres tronçons) ; sans elles,
     // tous les points de la route
-    const line = () => {
-      for (const run of lines || [pts]) {
-        ctx.beginPath();
-        run.forEach((p, i) => {
-          const q = toC(p.lat, p.lon);
-          i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-        });
-        ctx.stroke();
-      }
-    };
+    // un tronçon direct (DCT : entre deux points de la route, sans voie aérienne qui y mène) en pointillé, un tronçon de voie aérienne en trait plein (son cartouche est écrit sur lui) ;
+    // ce qui vient d'une procédure reste plein (SOG-0095)
+    const direct = (a, b) => (a.origin || 'route') === 'route' && (b.origin || 'route') === 'route' && !b.via,
+      dash = [Math.max(9, 11 * scale), Math.max(7, 8 * scale)],
+      line = () => {
+        for (const run of lines || [pts]) {
+          let seg = [],
+            dotted = null;
+          const flush = () => {
+            if (seg.length < 2) return;
+            ctx.setLineDash(dotted ? dash : []);
+            ctx.lineCap = dotted ? 'butt' : 'round';
+            ctx.beginPath();
+            seg.forEach((p, i) => {
+              const q = toC(p.lat, p.lon);
+              i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+            });
+            ctx.stroke();
+          };
+          run.forEach((p, i) => {
+            if (!i) return void(seg = [p]);
+            const d = direct(run[i - 1], p);
+            if (dotted === null) dotted = d;
+            if (d !== dotted) {
+              flush();
+              seg = [run[i - 1]];
+              dotted = d;
+            }
+            seg.push(p);
+          });
+          flush();
+        }
+        ctx.setLineDash([]);
+        ctx.lineCap = 'round';
+      };
     // liseré du fond (détache la route des voies et des limites qu'elle croise), puis le trait : le plus épais de la carte
     ctx.strokeStyle = env.theme.bg;
     ctx.lineWidth = Math.max(5, 7.5 * scale);
@@ -236,7 +297,24 @@
       ctx.lineWidth = Math.max(1.5, (end ? 2.5 : 2) * scale);
       ctx.stroke();
     }
-    for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, l.color || color, l.align);
+    for (const l of labels) {
+      if (l.box) { // le cartouche d'une voie aérienne, posé sur son tronçon : un petit panneau (papier, trait de la route, nom)
+        ctx.save();
+        ctx.font = `700 ${l.size}px Arial,sans-serif`;
+        const w = ctx.measureText(l.text).width + 8,
+          h = l.size + 6;
+        ctx.fillStyle = env.theme.bg;
+        ctx.fillRect(l.x - w / 2, l.y - h / 2, w, h);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = color;
+        ctx.strokeRect(l.x - w / 2 + .75, l.y - h / 2 + .75, w - 1.5, h - 1.5);
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(l.text, l.x, l.y + .5);
+        ctx.restore();
+      } else halo(ctx, l.text, l.x, l.y, l.size, l.color || color, l.align);
+    }
     ctx.restore();
   }
 
