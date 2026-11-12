@@ -187,15 +187,17 @@ export function todoGesture(btn) {
 export function cycleBarHtml() {
   const t = S.cw?.todo,
     r = t?.state === 'ready' ? M.todoOf(t.data, it => M.isComputed(regimeOf(it.id, it))) : null;
-  if (!r || !r.total) return S.cycleId ? `<p class="d-title" data-cycle-title>${esc(tt(TX.cycle, { c: S.cycleId }))}</p>` : '';
+  const c = r ? M.cycleCount(r, t.data) :
+    null; // les sources de la base, plus un par autre jeu que le lanceur dit (procédures, points VFR, aéronefs, météo…)
+  if (!r || !c.total) return S.cycleId ? `<p class="d-title" data-cycle-title>${esc(tt(TX.cycle, { c: S.cycleId }))}</p>` : '';
   const title = tt(TX.cwb.todoHead, {
       c: r.cycle || '?',
-      n: r.done.length,
-      m: r.total
+      n: c.done,
+      m: c.total
     }),
-    pct = Math.max(0, Math.min(100, Math.round(r.done.length * 100 / r.total)));
-  return `<p class="d-title${r.done.length === r.total ? ' d-title-ok' : ''}" data-cycle-title data-todo-head>${esc(title)}</p>
-    <div class="d-cbar" role="progressbar" aria-valuemin="0" aria-valuemax="${r.total}" aria-valuenow="${r.done.length}" aria-label="${esc(title)}" data-cycle-bar><i style="width:${pct}%"></i></div>`;
+    pct = Math.max(0, Math.min(100, Math.round(c.done * 100 / c.total)));
+  return `<p class="d-title${c.done === c.total ? ' d-title-ok' : ''}" data-cycle-title data-todo-head>${esc(title)}</p>
+    <div class="d-cbar" role="progressbar" aria-valuemin="0" aria-valuemax="${c.total}" aria-valuenow="${c.done}" aria-label="${esc(title)}" data-cycle-bar><i style="width:${pct}%"></i></div>`;
 }
 /** Le bloc « À faire ce mois-ci » ; '' sans lanceur (ou sans le verbe base/cycle), ou quand la liste ne compte aucune source. Replié d'origine sous son repère « À faire ce mois-ci · n » ; pendant la première lecture, une ligne le dit ; une lecture qui a échoué ou refusée (opération en cours) aussi. */
 export function todoHtml() {

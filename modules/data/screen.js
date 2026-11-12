@@ -73,7 +73,8 @@ import {
 } from './inventory.js';
 import {
   afterDraw,
-  forgetReads
+  forgetReads,
+  shortDate
 } from './countries.js';
 
 // couleur d'un État → data-kind du point du cadre (.f-dot) ; statut d'une source du catalogue → data-kind du badge (.f-badge)
@@ -566,6 +567,66 @@ function foldWord(st) {
     n: st.n
   }) : st.k === 'unknown' ? tt(TX.d4.stUnknown) : '';
 }
+const DS_WHY_KEY = Object.freeze({
+  absent: 'dsWhyAbsent',
+  'older-than-cycle': 'dsWhyOlder',
+  old: 'dsWhyOld',
+  expired: 'dsWhyExpired'
+});
+/** Ce que dit la ligne repliée d'un jeu : { k ('ok' | 'todo' | 'unknown' | 'none'), word, why } — le mot d'état et la raison en mots (« à faire — plus ancien que le cycle · le 05/10 ») quand le lanceur dit le jeu (`datasets` de base/cycle) ; sinon l'état tiré de la publication (foldWord). Un jeu à faire dit sa raison ;
+ *  la publication à regarder (« n à faire ») reste dite quand le jeu est à jour ; plusieurs jeux à faire sous un pli : leur nombre. */
+function foldView(id, st) {
+  const data = S.cw?.todo?.state === 'ready' ? S.cw.todo.data : null,
+    f = M.foldDataset(data, id);
+  if (!f) return {
+    k: st.k,
+    word: foldWord(st),
+    why: ''
+  };
+  const d = f.ds,
+    at = d.at ? ` · ${tt(TX.cw.on, { d: shortDate(d.at) })}` : '';
+  if (f.k === 'todo') {
+    const w = Object.hasOwn(DS_WHY_KEY, d.why) ? tt(TX.d5[DS_WHY_KEY[d.why]]) : '',
+      named = f.secondary ? ` (${d.label[li()]})` : '';
+    return {
+      k: 'todo',
+      word: f.n > 1 ? tt(TX.d4.stTodo, {
+        n: f.n
+      }) : `${tt(w ? TX.d5.dsTodo : TX.d5.dsTodoPlain, { w: w + named })}${at}`,
+      why: f.n > 1 ? '' : d.why
+    };
+  }
+  if (st.k === 'todo' || st.k === 'unknown') return {
+    k: st.k,
+    word: foldWord(st),
+    why: ''
+  };
+  return {
+    k: 'ok',
+    word: `${tt(d.state === 'n/a' ? TX.d5.dsNa : TX.d4.stOk)}${at}`,
+    why: ''
+  };
+}
+/** Le mot d'état d'un pli en balise (le mot, son ton, la raison) ; '' sans mot. */
+const foldSpan = v => v.word ? ` <span class="d-fstate" data-fold-state="${v.k}"${v.why ? ` data-fold-why="${esc(v.why)}"` : ''}>${esc(v.word)}</span>` : '';
+/** L'état tiré de la publication d'un pli de jeu (procédures, points VFR, aéronefs, météo) : celui que foldView complète de ce que le lanceur dit du jeu. */
+function foldRowsState(id) {
+  const g = (S.groups || []).find(x => x.id === id);
+  return id === 'vfr' ? setStateOf('vfr') : rowsState(g ? [...g.rows, ...g.more] : []);
+}
+/** Redit l'état des plis des jeux sur place, sans redessiner l'écran : la liste du cycle (`datasets`) arrive après le premier dessin, ou change après une opération. */
+export function refreshFoldStates() {
+  if (!S?.body || !S.groups) return;
+  for (const id of ['proc', 'vfr', 'aircraft', 'weather']) {
+    const sum = S.body.querySelector(`details.d-fold[data-group="${id}"] > summary`),
+      first = sum?.querySelector(':scope > span');
+    if (!first) continue;
+    const v = foldView(id, foldRowsState(id));
+    sum.querySelector(':scope > .d-fstate')?.remove();
+    first.insertAdjacentHTML('afterend', foldSpan(v));
+    sum.querySelector(':scope > [data-attn]')?.toggleAttribute('hidden', v.k !== 'todo');
+  }
+}
 /** Les autres jeux de l'écran : UNE ligne repliée chacun, avec son état (« Procédures · à jour », « Aéronefs · 1 à faire »…) ; rien n'est ouvert d'origine, l'ouverture à la main est gardée. Ouvert, le pli montre le panneau du jeu comme avant. Rend { base (le bloc de la base, que l'écran montre juste sous l'en-tête), rest (l'erreur éventuelle, puis les plis) } : le code suit l'ordre vu de l'écran, le clavier aussi (SOG-0262, lot D3). */
 function groupsHtml() {
   const {
@@ -581,8 +642,8 @@ function groupsHtml() {
     body = g => g ? `${g.rows.map(rowHtml).join('')}${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}` : '',
     fold = (id, title, st, inner) => {
       const open = id in S.manual ? S.manual[id] : false,
-        word = foldWord(st);
-      return `<details class="f-group d-fold" data-group="${id}"${open ? ' open' : ''}><summary><span>${esc(title)}</span>${word ? ` <span class="d-fstate" data-fold-state="${st.k}">${esc(word)}</span>` : ''}<i class="f-status-dot" data-attn${st.k === 'todo' ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i><i class="d-chev" aria-hidden="true"></i></summary>${inner}</details>`;
+        v = foldView(id, st);
+      return `<details class="f-group d-fold" data-group="${id}"${open ? ' open' : ''}><summary><span>${esc(title)}</span>${foldSpan(v)}<i class="f-status-dot" data-attn${v.k === 'todo' ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i><i class="d-chev" aria-hidden="true"></i></summary>${inner}</details>`;
     },
     proc = gid('proc'),
     air = gid('aircraft'),

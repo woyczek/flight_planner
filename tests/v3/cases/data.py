@@ -7863,7 +7863,7 @@ def _l102_cycle(world, labels):
     return answer
 
 
-def _l102_open(c, tweak=None):
+def _l102_open(c, tweak=None, wrap=None):
     """The Données screen of the capture: real outlines, real names, real packs, real catalogue; invented states."""
     labels = _l102_labels()
     geo, packs, cover = _l102_world()
@@ -7879,7 +7879,7 @@ def _l102_open(c, tweak=None):
         world['zs'][z] = {**_zst('stale', _NEWER), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}}
     world['zs']['it'] = {**_zst('failed', {'code': 'failed', 'error': 'x'}), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'unpublished', 'at': '2026-10-29T11:00:00Z'}}
     procs = {z: {'cycle': '2026-10-29', 'counts': {}, 'procedures': 9, 'sources': {}, 'procSources': ['eaip']} for z in ('fr', 'es', 'gb', 'ie', 'nl', 'de', 'ch', 'it')}
-    st = _launcher(c, [_view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': procs})], verbs=_VERBS + ['base/pickup', 'base/cycle', 'base/coverage'], cycle=_l102_cycle(world, labels))
+    st = _launcher(c, [_view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': procs})], verbs=_VERBS + ['base/pickup', 'base/cycle', 'base/coverage'], cycle=(wrap or (lambda a: a))(_l102_cycle(world, labels)))
     st['status'] = lambda args: _status(world['zs'])
     if tweak:
         tweak(cfg)   # D4: a case adds its own sub-zone names or catalogue steps
@@ -8325,23 +8325,13 @@ def l110(c):
     c.check_errors()
 
 
-def _l111_tweak(cfg):
-    """Names for the parts of the Portugal territory and a « why by hand » for NAV Portugal only (the real catalogue carries neither: the screen must show them only when it is told)."""
-    for z in cfg['zones']:
-        if z['id'] == 'pt':
-            z['partNames'] = [['continent', 'mainland', 'Festland', 'continente'], ['Madère', 'Madeira', 'Madeira', 'Madeira'], ['Açores', 'Azores', 'Azoren', 'Azores']]
-    four = lambda t: [t, t, t, t]
-    cfg['stepsOf'] = {'navpt': {'page': {'url': 'https://ais.nav.pt/eaip-downloads-en/', 'home': 'https://ais.nav.pt/'},
-                                'files': [{'name': 'EAIP ISO.zip', 'file': 'EAIP ISO.zip', 'what': four('the eAIP of Portugal'), 'where': four('NAV Portugal > eAIP'), 'verified': True}],
-                                'why': ['Le serveur refuse le téléchargement automatique.', 'The server refuses the automatic download.', 'Der Server lehnt den automatischen Download ab.', 'El servidor rechaza la descarga automática.']}}
-
-
-@case('L111', 'Données: the country sheet is readable (SOG-0262 lot D4, items 5 and 6) — the three cells carry the SHORT word (« à faire », « à jour », « le 05/10 »), the long detail is a full-width line UNDER the cells (not crammed in a narrow cell), the sub-title says the zones when aerodb names them (« PT · groupe Europe du Sud · 3 zones : continent, Madère, Açores ») and the « Pourquoi à la main » block exists ONLY where the catalogue says it',
+@case('L111', 'Données: the country sheet is readable (SOG-0262 lots D4 and D5, items 5 and 6) — the three cells carry the SHORT word (« à faire », « à jour », « le 05/10 »), the long detail is a full-width line UNDER the cells (not crammed in a narrow cell), the sub-title says the zones when the catalogue names them (AeroCatalogue.partNamesOf: « PT · groupe Europe du Sud · 3 zones : continent, Madère, Açores ») and the « Pourquoi à la main » block exists ONLY on a source whose catalogue entry carries a reason (steps.why), in the language of the screen',
       'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
-      rule='SOG-0262 D4 items 5 and 6 (the mockup\'s cells hold one word; a whole sentence in a 105 px cell was unreadable, also at 390); never an invented text: the sub-zone names come from `zones()[i].partNames` and the reason from the catalogue `steps.why`, both absent today in the real data')
+      rule='SOG-0262 D4 items 5 and 6 (the mockup\'s cells hold one word; a whole sentence in a 105 px cell was unreadable, also at 390), D5 (frame/aerodb/INTEGRATION.md « steps.why and partNamesOf », K206): never an invented text: the sub-zone names come from `AeroCatalogue.partNamesOf(zone)` (null = no sub-title) and the reason from `AeroCatalogue.stepsOf(id).why` (absent = no block); both are READ from the real catalogue of the page, nothing is hard-coded here')
 def l111(c):
     lang = c.lang
-    _l102_open(c, _l111_tweak)
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    _l102_open(c)
     c.tap('[data-group-id=europe-south] [data-act=grp-toggle]')
     c.until("document.querySelector('[data-group-id=europe-south]').dataset.open === 'true'", timeout=4000, what='the group opens')
     c.tap('[data-group-body] [data-zone=pt]')
@@ -8356,18 +8346,163 @@ def l111(c):
     c.ok(notes is not None and notes['t'] >= cl['b'] - 1 and notes['w'] >= sh['w'] - 48, (cl, notes, sh), 'the long detail is on its own line under the cells, on the full width of the sheet')
     note = norm(c.text('[data-sheet] [data-cell-note=build]'))
     c.ok(len(note) > 40 and note not in norm(build[2]), note, 'the long sentence (why the country is not up to date, the last build) is there, outside the cell')
+    # the sub-title: the parts of Portugal as the REAL catalogue names them (partNamesOf), in the language of the screen
+    parts = c.js(f"(AeroCatalogue.partNamesOf('pt') || []).map(n => n[{li}])")
+    c.ok(len(parts) == 3 and all(parts), parts, 'the catalogue names three parts of Portugal (read from AeroCatalogue.partNamesOf, not written here)')
     sub = norm(c.text('[data-sheet-sub]'))
-    names = {'fr': 'continent, Madère, Açores', 'en': 'mainland, Madeira, Azores', 'de': 'Festland, Madeira, Azoren', 'es': 'continente, Madeira, Azores'}[lang]
-    c.ok(sub.endswith(_D4('subZones', lang).replace('{n}', '3').replace('{z}', names)) and sub.startswith('PT'), sub, 'the sub-title says the zones: « PT · groupe … · 3 zones : continent, Madère, Açores »')
-    why = c.js("[...document.querySelectorAll('[data-sheet] [data-hand-why]')].map(e => [e.closest('[data-sheet-source]').dataset.sheetSource, e.textContent.replace(/\\s+/g, ' ').trim()])")
-    c.ok(len(why) == 1 and why[0][0] == 'navpt' and why[0][1].lower().startswith(_D4('whyHand', lang).lower()), why, '« Pourquoi à la main » is on NAV Portugal, the one source whose catalogue entry says why, with the words of the catalogue')
-    c.eq(c.js("getComputedStyle(document.querySelector('[data-sheet] [data-hand-why] b')).textTransform"), 'uppercase', 'in small capitals', what='caps')
-    # a country whose hand-taken source has no reason in the catalogue: no block (nothing invented)
-    c.js("window.location.hash = '#data?zone=fr'")
-    c.js("(async () => (await import('/modules/data/countries.js')).openCountryById('fr'))()")
-    c.js("(async () => (await import('/modules/data/panels.js')).renderBuild())()")
-    c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-source]')", timeout=10000, what='the sheet of France')
-    c.eq(c.count('[data-sheet=fr] [data-hand-why]'), 0, 'no « Pourquoi à la main » where the catalogue does not say it (DIRCAM): never invented', what='no why for dircam')
+    c.ok(sub.endswith(_D4('subZones', lang).replace('{n}', str(len(parts))).replace('{z}', norm(', '.join(parts)))) and sub.startswith('PT'), sub, 'the sub-title says the zones: « PT · groupe … · 3 zones : continent, Madère, Açores »')
+
+    def why_blocks():
+        """[[launcher id, the reason shown or None, the reason of the catalogue in this language or None]] for every source block of the open sheet."""
+        return c.js(f"""[...document.querySelectorAll('[data-sheet] [data-sheet-source]:not([data-unavailable])')].map(b => {{
+          const id = b.dataset.sheetSource, w = AeroCatalogue.stepsOf(id === 'faa' ? 'adds' : id)?.why, e = b.querySelector('[data-hand-why]');
+          return [id, e ? e.textContent.replace(/\\s+/g, ' ').trim() : null, w ? w[{li}] : null, e ? e.querySelector('b').textContent.trim() : null] }})""")
+
+    def check(zone, what):
+        got = why_blocks()
+        c.ok(len(got) >= 1, got, f'{what}: the sheet lists its sources')
+        for sid, shown, known, label in got:
+            c.ok((shown is not None) == (known is not None), (zone, sid, shown, known), f'{what}: {sid} shows « Pourquoi à la main » exactly when its catalogue entry carries a reason (never invented)')
+            if shown is not None:
+                c.ok(norm(label).lower() == _D4('whyHand', lang).lower() and norm(shown).endswith(norm(known)), (sid, shown, known), f'{what}: {sid} says the reason of the catalogue, in the language of the screen')
+        return got
+
+    pt = check('pt', 'Portugal')
+    c.ok(any(x[0] == 'navpt' and x[1] for x in pt), pt, 'NAV Portugal says why it is taken by hand')
+
+    def open_sheet(zone):
+        c.js(f"window.location.hash = '#data?zone={zone}'")
+        c.js(f"(async () => (await import('/modules/data/countries.js')).openCountryById('{zone}'))()")
+        c.js("(async () => (await import('/modules/data/panels.js')).renderBuild())()")
+        c.until(f"!!document.querySelector('[data-sheet={zone}] [data-sheet-source]')", timeout=10000, what=f'the sheet of {zone}')
+
+    # France: the SIA and DIRCAM both carry a known reason in the catalogue (AeroDB 6e27a6a8a): both are said, in the four languages
+    open_sheet('fr')
+    fr = check('fr', 'France')
+    said = {x[0]: x for x in fr}
+    c.ok(all(k in said and said[k][1] and said[k][2] for k in ('sia', 'dircam')), fr, 'the SIA and DIRCAM each say why they are taken by hand (the catalogue gives it; read from it, not written here)')
+    # a country whose sources have no reason: no block at all (the first one found in the catalogue that says nothing)
+    nowhy = c.js("(AeroCatalogue.SOURCES.filter(s => s.group === 'base' && s.id !== 'adds' && !AeroCatalogue.stepsOf(s.id)?.why && Array.isArray(s.zones) && ['gb', 'de', 'es', 'ie', 'se', 'ch', 'nl'].some(z => s.zones.includes(z))).map(s => s.id))")
+    c.ok(len(nowhy) >= 1, nowhy, 'the catalogue has base sources without a known reason (NATS, LFV...)')
+    open_sheet('gb')
+    gb = check('gb', 'United Kingdom')
+    c.ok(any(x[0] == 'nats' and x[1] is None for x in gb), gb, 'NATS has no known reason: no « Pourquoi à la main » on its block')
+    c.check_errors()
+
+
+# D5 (SOG-0262, frame/aerodb/INTEGRATION.md « base/cycle.datasets », K207): the other sets as the launcher says them (tools/regen/base_cycle.py datasets()); labels, states and reasons mimic the real answer
+_L116_LABEL = {'procedures': ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'], 'weather': ['Météo du monde (synoptique)', 'World weather (synoptic)', 'Weltwetter (Synoptik)', 'Meteorología mundial (sinóptico)'],
+               'nat': ['Routes NAT du jour', 'Today’s NAT tracks', 'NAT-Tracks des Tages', 'Tracks NAT del día'], 'vfr': ['Points VFR', 'VFR points', 'VFR-Punkte', 'Puntos VFR'],
+               'aircraft': ['Aéronefs (types, performances)', 'Aircraft (types, performance)', 'Luftfahrzeuge (Typen, Leistung)', 'Aeronaves (tipos, rendimiento)'],
+               'sheets': ['Fiches de performances', 'Performance sheets', 'Leistungsblätter', 'Fichas de rendimiento']}
+
+
+def _l116_ds(i, state, why=None, at=None, **extra):
+    """One row of base/cycle.datasets: { id, label[4], state, why?, at, ... }."""
+    return {'id': i, 'label': _L116_LABEL[i], 'state': state, **({'why': why} if why else {}), 'at': at, **extra}
+
+
+_L116_DATASETS = [_l116_ds('procedures', 'todo', 'older-than-cycle', '2026-10-05T10:00:00Z', cycle='2026-10-01', counts={'cifp': 1200, 'eaip': 30}),
+                  _l116_ds('weather', 'up-to-date', None, '2026-11-12T06:30:00Z', run='2026-11-12T06:00Z'),
+                  _l116_ds('nat', 'todo', 'expired', '2026-11-11T18:00:00Z', validUntil='2026-11-12T05:00:00Z'),
+                  _l116_ds('vfr', 'n/a', None, '2026-10-20T08:00:00Z', counts={'aerodromes': 400}),
+                  _l116_ds('aircraft', 'n/a', None, '2026-09-30T08:00:00Z'),
+                  _l116_ds('sheets', 'todo', 'absent', None)]
+_L116_SHORT = {'fr': {'2026-10-05': '05/10', '2026-11-11': '11/11', '2026-10-20': '20/10', '2026-09-30': '30/09'},
+               'en': {'2026-10-05': '05/10', '2026-11-11': '11/11', '2026-10-20': '20/10', '2026-09-30': '30/09'},
+               'de': {'2026-10-05': '05.10.', '2026-11-11': '11.11.', '2026-10-20': '20.10.', '2026-09-30': '30.09.'},
+               'es': {'2026-10-05': '5/10', '2026-11-11': '11/11', '2026-10-20': '20/10', '2026-09-30': '30/09'}}
+
+
+def _l116_wrap(datasets, local=None):
+    """Adds `datasets` (and the registry line of `local`) to what the fake base/cycle answers."""
+    def wrap(answer):
+        def go(args):
+            res = answer(args)
+            if datasets is not None:
+                res['datasets'] = datasets
+            if local:
+                res['local'] = [*res.get('local', []), *local]
+            return res
+        return go
+    return wrap
+
+
+@case('L116', 'Données: the other sets say their state and the reason in words, and the header counts them — base/cycle.datasets (SOG-0262 lot D5, K207): « Procédures · à faire — plus ancien que le cycle · le 05/10 », « Aéronefs (…) · sans échéance » counted as done, and « Cycle AIRAC 2611 · n faits sur m » counts the base sources plus ONE per other set',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='frame/aerodb/INTEGRATION.md « base/cycle.datasets » (12 Nov 2026, K207): { id, label[4], state: up-to-date | todo | n/a, why?: absent | older-than-cycle | old | expired, at }; n/a = exists with no due date = DONE in « n done on m »; a launcher without `datasets` keeps the count of the base alone (the other L cases)')
+def l116(c):
+    lang = c.lang
+    _l102_open(c, wrap=_l116_wrap(_L116_DATASETS))
+    c.until("!!document.querySelector('[data-body] > details.f-group[data-group=proc] [data-fold-why]')", timeout=8000, what='the folded line of the procedures says why')
+    CW = lambda k: norm(_trow(k, lang, after='  cwb: {'))
+    D5 = lambda k: norm(_trow(k, lang, after='  d5: {'))
+    on = lambda d: norm(_trow('on', lang, after='  cw: {')).replace('{d}', _L116_SHORT[lang][d])
+    lab = lambda i: _L116_LABEL[i][{'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]]
+    todo = lambda w: D5('dsTodo').replace('{w}', w)
+    named = lambda why, i: D5(why) + f' ({lab(i)})'
+    line = lambda g: c.js(f"(e => e ? [e.dataset.foldState, e.dataset.foldWhy || '', e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-body] > details.f-group[data-group={g}] .d-fstate'))")
+    got = {g: line(g) for g in ('proc', 'vfr', 'aircraft', 'weather')}
+    exp = {'proc': ['todo', 'older-than-cycle', f"{todo(D5('dsWhyOlder'))} · {on('2026-10-05')}"],
+           'weather': ['todo', 'expired', f"{todo(named('dsWhyExpired', 'nat'))} · {on('2026-11-11')}"],
+           'aircraft': ['todo', 'absent', todo(named('dsWhyAbsent', 'sheets'))]}
+    what = {'proc': 'Procédures: « à faire — plus ancien que le cycle · le 05/10 »', 'weather': 'the weather fold names the set to do when it is not its main one: « à faire — expiré (Routes NAT du jour) · le 11/11 »',
+            'aircraft': 'the aircraft fold names the performance sheets: « à faire — absent (Fiches de performances) », no date (the launcher has none)'}
+    for g, e in exp.items():
+        c.eq([got[g][0], got[g][1], norm(got[g][2])], [e[0], e[1], norm(e[2])], what[g], what=f'fold {g}')
+    # VFR: no due date: counted done; the line says « sans échéance » and the date of the file (unless the publication of the rows asks for something)
+    vfr = got['vfr']
+    c.ok(vfr is not None and vfr[1] == '' and (vfr[0] == 'todo' or D5('dsNa') in norm(vfr[2]) and on('2026-10-20') in norm(vfr[2])), vfr, 'VFR points: « sans échéance · le 20/10 » (n/a counts as done), unless the publication of its rows has something to do')
+    # the header: the base sources plus one per other set; n/a and up to date count as done
+    head = norm(c.text('[data-todo-head]'))
+    nb = re.search(r'(\d+)\D+(\d+)\D*$', head)
+    c.ok(nb and int(nb.group(2)) == 9 + 6 and int(nb.group(1)) == 5 + 3, head, 'the header counts the nine sources of the base plus the six other sets, and as done the five sources and the three sets that are up to date or without a due date: 8 on 15')
+    exp_head = CW('todoHead').replace('{c}', '2611').replace('{n}', '8').replace('{m}', '15')
+    c.eq(head, exp_head, 'the header sentence: « Cycle AIRAC 2611 · 8 faits sur 15 »', what='header')
+    c.eq([c.attr('[data-cycle-bar]', 'aria-valuenow'), c.attr('[data-cycle-bar]', 'aria-valuemax')], ['8', '15'], 'the progress bar says the same count', what='bar')
+    c.check_errors()
+
+
+@case('L117', 'Données: what the launcher says in base/cycle.datasets is untrusted — a state out of the closed list drops the row, a reason outside the list is not shown, labels are bounded and escaped, and a launcher without `datasets` keeps the count of the base alone (SOG-0262 lot D5)',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=True, night=False,
+      rule='frame/aerodb/INTEGRATION.md « base/cycle.datasets »; the page parses defensively (model_countries.js datasetsOf): closed list of states and reasons, bounded strings, esc()')
+def l117(c):
+    evil = [{'id': 'procedures', 'label': ['<img src=x onerror=window.__pwn=1>' + 'x' * 400, 'P', 'P', 'P'], 'state': 'todo', 'why': '<b>nope</b>', 'at': '2026-10-05T10:00:00Z'},
+            {'id': 'weather', 'label': ['W'] * 4, 'state': 'exploded', 'why': 'absent', 'at': None},
+            {'id': 'nat', 'label': ['N'] * 4, 'state': 'up-to-date', 'why': 'expired', 'at': 'not a date'},
+            {'id': '../evil', 'label': ['E'] * 4, 'state': 'todo'}, 'string', None, {'id': 'vfr', 'state': 'n/a', 'at': None, 'label': 'nope', 'counts': {'aerodromes': '9<script>'}}]
+    _l102_open(c, wrap=_l116_wrap(evil))
+    c.until("!!document.querySelector('[data-body] > details.f-group[data-group=proc] .d-fstate')", timeout=8000, what='the folded line of the procedures')
+    proc = c.js("(e => [e.dataset.foldState, e.dataset.foldWhy || '', e.textContent.length, e.innerHTML.includes('<img')])(document.querySelector('[data-body] > details.f-group[data-group=proc] .d-fstate'))")
+    c.eq(proc[:2] + [proc[3]], ['todo', '', False], 'a reason outside the closed list is not shown as one (« à faire » alone), the word is plain text', what='proc line')
+    c.ok(proc[2] < 80, proc, 'the line stays short')
+    c.eq(c.js("window.__pwn === undefined && !document.querySelector('[data-body] img[src=x]')"), True, 'nothing a launcher sends runs or becomes markup', what='no pwn')
+    weather = c.js("document.querySelector('[data-body] > details.f-group[data-group=weather] .d-fstate')?.dataset.foldState || null")
+    c.ok(weather in (None, 'ok', 'todo', 'unknown'), weather, 'a set whose state is out of the list is dropped (the line is the one of the rows, or none)')
+    head = norm(c.text('[data-todo-head]'))
+    nb = re.search(r'(\d+)\D+(\d+)\D*$', head)
+    # kept rows: procedures (todo), nat (up-to-date; its reason is dropped), vfr (n/a): 3 sets; weather, the odd ids and the non-objects are dropped
+    c.ok(nb and int(nb.group(2)) == 9 + 3 and int(nb.group(1)) == 5 + 2, head, 'only the three readable sets are counted: 9 + 3 on the total, 5 + 2 done')
+    c.check_errors()
+
+
+@case('L118', 'Données: « Quand ça change » says the French aircraft registry the launcher keeps (base/cycle.local `registry_fr`, SOG-0270 / K203): its name in the language of the screen, the date of the file, no button (SOG-0262 lot D5)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='frame/aerodb/INTEGRATION.md « base/cycle.local » (K203): { id: registry_fr, label[4], at, personal, zoneCount: 0 } when data/local/registry/fr_immat.json exists; one more line under « Quand ça change », a gesture only when a verb exists (none today)')
+def l118(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    reg = {'id': 'registry_fr', 'label': ['Registre français des immatriculations (DGAC)', 'French aircraft registry (DGAC)', 'Französisches Luftfahrzeugregister (DGAC)', 'Registro francés de matrículas (DGAC)'],
+           'at': '2026-10-05T10:00:00Z', 'personal': '', 'zoneCount': 0}
+    _l102_open(c, wrap=_l116_wrap(None, [reg]))
+    c.js("document.querySelector('[data-lc-fold=change]').open = true")
+    c.until("!!document.querySelector('[data-change=registry_fr]')", timeout=8000, what='the line of the registry')
+    row = c.js("(e => [e.querySelector('b').textContent.trim(), e.querySelector('[data-change-last]').textContent.trim(), e.querySelectorAll('button').length, e.hasAttribute('data-change-extra')])(document.querySelector('[data-change=registry_fr]'))")
+    c.eq(row[0], reg['label'][li], 'the name of the registry, in the language of the screen (the launcher says it)', what='label')
+    day = c.js(f"import('/modules/data/model.js').then(M => M.dateText('2026-10-05', '{lang}'))")
+    c.ok(day and norm(day) in norm(row[1]), (day, row), 'the date of the file is said (the 5th of October, written as everywhere on the screen)')
+    c.eq(row[2], 0, 'no button: no verb takes the registry again', what='no button')
+    c.eq(c.count('[data-change-list] [data-change=registry_fr]'), 1, 'one line, in the list « Quand ça change »', what='one line')
     c.check_errors()
 
 

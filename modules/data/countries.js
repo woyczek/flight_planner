@@ -76,6 +76,7 @@ import {
 } from './publish.js';
 import {
   addZones,
+  refreshFoldStates,
   removeZones
 } from './screen.js';
 import {
@@ -329,7 +330,7 @@ export function tickHtml(key, ok, detail) {
   return `<li data-tick="${key}" data-ok="${sign}"><span class="d-tk" aria-hidden="true">${M.SIGN[sign]}</span> <b>${esc(tt(TX.cw.tick[{ download: 'dlTick', build: 'buildTick', publish: 'pubTick' }[key]]))}</b> <span class="d-tkw" data-tick-word>(${esc(word)})</span> : <span data-tick-text>${esc(detail)}</span></li>`;
 }
 /** Une date « jj/mm » (« 05/10 ») : le mot court d'une cellule de la fiche ; '' sans date lisible. */
-function shortDate(iso) {
+export function shortDate(iso) {
   const d = new Date(iso);
   return !iso || Number.isNaN(+d) ? '' : new Intl.DateTimeFormat(lang() === 'en' ? 'en-GB' : String(lang()), {
     day: '2-digit',
@@ -374,10 +375,10 @@ function publishFact(z) {
     d: shortDate(p.at)
   }) : '', '') : factCell('publish', 'todo', word('twTodo'), '', tt(TX.cw.pubNo));
 }
-/** Les parties du territoire d'un pays quand aerodb les NOMME (`partNames` : [[fr, en, de, es], …] de zones()) : « 3 zones : continent, Madère, Açores » ; '' sans noms (rien n'est inventé : les cadres d'aerodb n'ont pas de nom). */
+/** Les parties du territoire d'un pays quand aerodb les NOMME (`AeroCatalogue.partNamesOf(zone)` : [[fr, en, de, es], …] dans l'ordre d'affichage, ou null) : « 3 zones : continent, Madère, Açores » ; '' sans noms (rien n'est inventé : un pays d'un seul tenant, ou dont les parties ne sont pas nommées, n'a pas de sous-titre de zones). */
 function partsText(id) {
-  const z = (S.d?.zones || []).find(x => x.id === id),
-    names = (Array.isArray(z?.partNames) ? z.partNames : []).slice(0, 12).map(n => Array.isArray(n) ? String(n[li()] ?? n[0] ?? '').replace(
+  const parts = typeof S.d?.cat?.partNamesOf === 'function' ? S.d.cat.partNamesOf(id) : null,
+    names = (Array.isArray(parts) ? parts : []).slice(0, 12).map(n => Array.isArray(n) ? String(n[li()] ?? n[0] ?? '').replace(
       /[\p{Cc}]/gu, ' ').trim().slice(0, 40) : '').filter(Boolean);
   return names.length > 1 ? tt(TX.d4.subZones, {
     n: names.length,
@@ -546,7 +547,7 @@ function sourceHtml(id, zone, z, inCov, msg) {
     tone = ds === 'done' ? 'ok' : ds === 'failed' ? 'err' : !ds || ds === 'n/a' || ds === 'unavailable' ? 'muted' :
     'warn'; // la couleur du bord gauche du bloc : l'état de CETTE source
   return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="${tone}"${reg ? ` data-regime="${reg}"` : ''}><div class="d-srch"><h4>${esc(name)}</h4>${reg ? `<p class="f-muted d-regbadge" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}</div>
-    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${reg === 'hand' ? handWhyHtml(id) + inventoryHtml(id, item, cy) : ''}</section>`;
+    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${M.isComputed(reg) ? '' : handWhyHtml(id)}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}</section>`;
 }
 /** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
  *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
@@ -941,6 +942,7 @@ export async function wantTodo() {
     state: 'unread'
   };
   renderBuild();
+  refreshFoldStates(); // les plis des autres jeux disent ce que la liste du cycle vient d'en lire (`datasets`)
 }
 /** Lit une fois, sans écrire, d'où viennent les procédures de chaque pays (base/coverage : `procSources`, SOG-0264) pour la hachure de la carte ; pas de lecture sans lanceur ni sans le verbe, ni pendant un autre travail (relue au prochain dessin). Ne lève jamais. */
 export async function wantProc() {

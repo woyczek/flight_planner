@@ -53,7 +53,14 @@ const skipWhy = (key, sel) => key === 'bad-codes' ? tt(TX.codesBad, {
 }) : key === 'up-to-date' ? tt(TX.d4.setOk) : tt(TX.greyReason[key]);
 /** L'état d'un jeu d'après ce que la page lit de sa publication (lignes des groupes du catalogue) : { k: 'ok' | 'todo' | 'unknown' | 'none', n (lignes à regarder) } ; 'none' : le jeu n'a aucune ligne suivie. Sert au pli de l'écran (« Procédures · à jour ») et à ce que « Tout mettre à jour » lance. */
 export function setStateOf(set) {
-  return rowsState((S.groups || []).flatMap(g => [...g.rows, ...g.more]).filter(r => r.kind === set));
+  const st = rowsState((S.groups || []).flatMap(g => [...g.rows, ...g.more]).filter(r => r.kind === set)),
+    f = M.foldDataset(S.cw?.todo?.state === 'ready' ? S.cw.todo.data : null,
+      set
+    ); // le lanceur dit lui-même qu'un jeu est à faire (absent, plus ancien que le cycle, périmé) : « Tout mettre à jour » ne le laisse pas de côté
+  return f?.k === 'todo' ? {
+    k: 'todo',
+    n: st.n || f.n
+  } : st;
 }
 /** L'état d'une liste de lignes de jeux (les lignes utilisées dont la publication est suivie) : { k: 'ok' | 'todo' | 'unknown' | 'none', n }. */
 export function rowsState(all) {

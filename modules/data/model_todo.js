@@ -60,6 +60,35 @@ export function todoOf(data, skip = null) {
   out.todo = TODO_KINDS.flatMap(k => out.todo.filter(x => x.kind === k)); // tri stable par genre
   return out;
 }
+/** Les jeux que le lanceur dit (`datasets`, K207) rangés sous le pli de l'écran qui les montre : l'identifiant du pli → les jeux, le premier est le jeu principal du pli. */
+export const DATASET_FOLD = Object.freeze({
+  proc: Object.freeze(['procedures']),
+  vfr: Object.freeze(['vfr']),
+  aircraft: Object.freeze(['aircraft', 'sheets']),
+  weather: Object.freeze(['weather', 'nat'])
+});
+/** Le compte du cycle : les sources de la base comptées par todoOf, plus UN par autre jeu que le lanceur dit (`data.datasets`) ; `n/a` (« existe, sans échéance ») compte fait. Sans `datasets`, le compte de la base seule. { done, total }. */
+export function cycleCount(r, data) {
+  const ds = data?.datasets || [];
+  return {
+    done: r.done.length + ds.filter(d => d.state !== 'todo').length,
+    total: r.total + ds.length
+  };
+}
+/** Ce que les jeux disent d'un pli de l'écran : { k: 'todo' | 'ok', n (jeux à faire), ds (le jeu à dire : le premier à faire, sinon le principal), secondary (ce jeu n'est pas le principal du pli) } ; null quand le lanceur n'en dit aucun (l'écran garde alors l'état tiré de la publication). */
+export function foldDataset(data, fold) {
+  const ids = Object.hasOwn(DATASET_FOLD, fold) ? DATASET_FOLD[fold] : null,
+    mine = ids ? ids.map(id => (data?.datasets || []).find(d => d.id === id)).filter(Boolean) : [];
+  if (!mine.length) return null;
+  const todo = mine.filter(d => d.state === 'todo'),
+    ds = todo[0] || mine[0];
+  return {
+    k: todo.length ? 'todo' : 'ok',
+    n: todo.length,
+    ds,
+    secondary: ds.id !== ids[0]
+  };
+}
 /** Les pays vers lesquels une source mène : ceux de la liste du cycle qui sont dans la couverture, à défaut ceux que le catalogue lui attribue, dans la couverture ; [] sans (une source commune à tous les pays). Cinq au plus. */
 export function zonesOfItem(it, covIds, catZones, max = 5) {
   const cov = new Set(covIds || []),

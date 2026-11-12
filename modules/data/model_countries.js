@@ -236,7 +236,35 @@ export function localOf(a) {
     });
   return out;
 }
-/** La fin d'un travail base/cycle lue : { inForce, inForceDate, next, items: { id: source }, order, unavailable, later, unread, local, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
+const DS_STATES = ['up-to-date', 'todo', 'n/a'];
+const DS_WHYS = ['absent', 'older-than-cycle', 'old', 'expired'];
+/** Les AUTRES jeux de l'écran (`datasets` de base/cycle, K207) lus : [{ id, label[4], state ('up-to-date' | 'todo' | 'n/a' : « existe, sans échéance », compté fait), why ('absent' | 'older-than-cycle' | 'old' | 'expired', seulement avec `todo`, sinon ''), at (instant ISO UTC du fichier, ou null),
+ *  cycle, run, validUntil, counts { cifp, eaip, aerodromes } (entiers) }] ; un état hors de la liste fermée écarte la ligne ; [] sans rien de lisible (un lanceur sans `datasets` : l'écran garde le compte de la base seule). */
+export function datasetsOf(a) {
+  const out = [];
+  for (const it of (Array.isArray(a) ? a : []).slice(0, 24))
+    if (it !== null && typeof it === 'object' && typeof it.id === 'string' && SRC.test(it.id) && DS_STATES.includes(it.state) && !out.some(
+        x => x.id === it.id)) {
+      const c = it.counts !== null && typeof it.counts === 'object' ? it.counts : {};
+      out.push({
+        id: it.id,
+        label: [0, 1, 2, 3].map(i => text(it.label?.[i], 80) || text(it.label?.[0], 80) || it.id),
+        state: it.state,
+        why: it.state === 'todo' && DS_WHYS.includes(it.why) ? it.why : '',
+        at: stamp(it.at),
+        cycle: day(it.cycle),
+        run: text(it.run, 40),
+        validUntil: stamp(it.validUntil),
+        counts: {
+          cifp: int(c.cifp),
+          eaip: int(c.eaip),
+          aerodromes: int(c.aerodromes)
+        }
+      });
+    }
+  return out;
+}
+/** La fin d'un travail base/cycle lue : { inForce, inForceDate, next, items: { id: source }, order, unavailable, later, unread, local, datasets, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
 export function cycleRead(final) {
   const r = final?.state === 'done' && final.result !== null && typeof final.result === 'object' ? final.result : null;
   if (!r || r.ok === false || (!Array.isArray(r.items) && (r.zoneView === null || typeof r.zoneView !== 'object'))) return null;
@@ -268,6 +296,9 @@ export function cycleRead(final) {
       ?.ids), // le cycle suivant : ce que Téléchargements a déjà, ce qui reste à la main, ce que le poste prendra seul
     unread: unreadOf(r.unread), // vu dans Téléchargements, pas encore lu par la suite
     local,
+    datasets: datasetsOf(r
+      .datasets
+    ), // les autres jeux (procédures, points VFR, aéronefs, météo…) : leur état, pour les plis de l'écran et le compte « n faits sur m »
     zoneView: zoneViewOf(r.zoneView)
   };
 }

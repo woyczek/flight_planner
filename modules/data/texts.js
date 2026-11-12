@@ -2649,5 +2649,15 @@ export const TX = {
     cellOk: ['à jour', 'up to date', 'aktuell', 'al día'],
     subZones: ['{n} zones : {z}', '{n} zones: {z}', '{n} Zonen: {z}', '{n} zonas: {z}'],
     whyHand: ['Pourquoi à la main', 'Why by hand', 'Warum von Hand', 'Por qué a mano']
+  },
+  // lot D5 (SOG-0262) : les autres jeux que le lanceur dit lui-même (`datasets` de base/cycle) — la ligne repliée de chaque jeu dit son état et la raison en mots
+  d5: {
+    dsTodo: ['à faire — {w}', 'to do — {w}', 'zu tun — {w}', 'por hacer — {w}'],
+    dsTodoPlain: ['à faire', 'to do', 'zu tun', 'por hacer'],
+    dsNa: ['sans échéance', 'no due date', 'ohne Fälligkeit', 'sin vencimiento'],
+    dsWhyAbsent: ['absent', 'missing', 'fehlt', 'ausente'],
+    dsWhyOlder: ['plus ancien que le cycle', 'older than the cycle', 'älter als der Zyklus', 'más antiguo que el ciclo'],
+    dsWhyOld: ['périmé', 'out of date', 'veraltet', 'desactualizado'],
+    dsWhyExpired: ['expiré', 'expired', 'abgelaufen', 'vencido']
   }
 };

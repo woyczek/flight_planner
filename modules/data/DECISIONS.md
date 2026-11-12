@@ -608,3 +608,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   (`partNames`) and « POURQUOI À LA MAIN » (`steps.why`) need two catalogue / aerodb fields that do not exist yet (nothing is
   shown without them); the coverage frame at opening includes overseas territories of fr / gb; the container-query layout was not
   checked against the real frame rail (this worktree was behind).
+- **12 Nov 2026 — SOG-0262, D5: three AeroDB contracts on the redesigned screen**: `base/cycle.datasets` (K206) feeds the folded
+  lines of the other sets (« à faire — plus ancien que le cycle · le 05/10 », `n/a` = no deadline = done) and the header count
+  « n faits sur m » (base sources + one per set); `AeroCatalogue.partNamesOf(zone)` gives the sheet sub-title zones
+  (« PT · paquet Europe du Sud · 3 zones : continent, Madère, Açores »); `stepsOf(id).why` gives the « POURQUOI À LA MAIN »
+  block, shown for any source whose catalogue entry has a `why` (no key = no block, nothing invented); `registry_fr` of
+  `base/cycle.local` is one more generic line under « Quand ça change ». Case L111 was stale (DIRCAM has a known reason since
+  AeroDB 6e27a6a8a): it reads the real catalogue now. Not done: the datasets are not counted in the « À faire ce mois-ci » list
+  itself; their `counts` / `run` / `cycle` / `validUntil` fields are parsed and shown nowhere.
