@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 120,
+  "tests": 122,
   "verdicts": 60
  },
  "apps": [
@@ -1739,6 +1739,34 @@
    "test": "Carte, KDEN DCT LFST avec les vents chargés : le trait du vol est droit sur la carte, les barbules (espacées) et les repères de distance sont posés dessus, le grand cercle est en pointillé fin à côté. Carburant, même route : la distance est celle du compas (4 849 NM) et une ligne sous la route dit « … 4 849 NM au compas, 4 401 par le grand cercle (+10 %) : ajoutez des points intermédiaires » ; « Calculer A → B » pose les points et la ligne disparaît. LFPO DCT LFST : rien ne change (209 NM).",
    "since": "2026-11-11",
    "state": "known"
+  },
+  {
+   "id": "SOG-0244",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT : un fichier pris à la main n'est ni reconnu ni choisissable (AIP du Portugal : une ISO dans un zip), et l'écran ne dit pas pourquoi",
+    "en": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
+    "de": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
+    "es": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why"
+   },
+   "test": "Relance le lanceur. Maintenance › Données, ligne du Portugal : elle doit dire qu'un fichier est trouvé dans Téléchargements et offrir « Prendre le fichier téléchargé » (et le lien « Choisir un autre fichier… »). Touche le bouton : la ligne doit dire l'édition lue (1er octobre 2026) et le Portugal se construire. Puis « Choisir un autre fichier… » avec « EAIP ISO (1).zip » : la ligne doit dire que c'est une édition à venir (26 novembre), pas un refus muet. Essaie enfin un fichier quelconque : la raison du refus doit rester écrite sur la ligne.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T09:43:53Z"
+  },
+  {
+   "id": "SOG-0245",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT : « une autre opération est en cours » — on ne sait pas laquelle, on ne peut ni la voir ni l'arrêter, un verrou resté ne s'enlève pas",
+    "en": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
+    "de": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
+    "es": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed"
+   },
+   "test": "Relance le lanceur. Lance une mise à jour longue dans Maintenance › Données (une construction), puis tente un autre geste (prendre un fichier, une autre mise à jour) : au lieu de « une autre opération est en cours », une carte doit dire laquelle, depuis quand, son étape et son avancement, avec « Voir » et « Arrêter ». « Arrêter » doit l'arrêter. « Libérer » n'apparaît que si elle ne répond plus depuis cinq minutes.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T09:33:08Z"
   }
  ],
  "decisions": [

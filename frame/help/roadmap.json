@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d593a88",
+  "organisation": "7dda2d3",
   "fiches": 267,
   "untranslated": 0,
   "priorities": 243
@@ -3124,11 +3124,12 @@
     {
      "id": "SOG-0244",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "BLOQUANT : un fichier pris à la main n'est ni reconnu ni choisissable (AIP du Portugal : une ISO dans un zip), et l'écran ne dit pas pourquoi",
      "en": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
      "de": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
-     "es": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why"
+     "es": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
+     "test": true
     },
     {
      "id": "SOG-0258",
@@ -3243,11 +3244,12 @@
     {
      "id": "SOG-0245",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "BLOQUANT : « une autre opération est en cours » — on ne sait pas laquelle, on ne peut ni la voir ni l'arrêter, un verrou resté ne s'enlève pas",
      "en": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
      "de": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
-     "es": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed"
+     "es": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
+     "test": true
     }
    ]
   },
