@@ -1796,3 +1796,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   `cache/fuel/route_timing.json` and « Copier le diagnostic » keep of the departure and the arrival only a recognised code (letters and
   digits, 2 to 12, the rule of a point's name of the direct), else « ? ». F159 (a departure of 4 000 signs: « ? »). And the example above the
   route field and in the help shows the runways (« LFBO/32L TOU UN460 NTS/F280 LFRN/28 », SOG-0089 retouche).
+- **12 Nov 2026 — the wind of the quote, leg by leg** (SOG-0281, the ergonomist's GO): the quote counted ONE wind component on the course
+  from the first point to the last (route.trackDeg); a dog-legged route got a wrong time. Now `FuelModel.groundSpeed(tas, course, from,
+  speed)` is the ONE function for the ground speed of a leg, read by the quote and by the plan of progression: the FULL wind triangle
+  (gs = TAS·cos(drift) − head component, sin(drift) = crosswind / TAS; 80 kt at least) — the plan, which used the component on the axis
+  only, gains the drift by the same function. `FuelModel.cruisePieces(segs, legs, fallback)` cuts the cruise by level AND by leg; the legs
+  (`quoteLegs`: the path of the plan, its rhumb course per leg, scaled to the quote's distance) carry the leg's wind = the vector mean of
+  its two ends when read (`legWindsOf`, shared with the plan), else the flight's wind. Without a known wind anywhere, the ± range on the
+  single course stays. Climb and descent unchanged. The result bar says « vent par tronçon »; the difference with the old count is not
+  shown. `q.wc` becomes the equivalent component (mean ground speed minus TAS) for what reads it. F160 (red before; the plan's arrival
+  time equals the quote's flight time).

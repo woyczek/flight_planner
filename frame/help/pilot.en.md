@@ -136,7 +136,7 @@ route field ready for typing.
 **An aerodrome is never a point of the route.** If the route text still starts with the old departure after a change of aerodrome (or ends with the old arrival), that aerodrome is not listed, not routed by "Auto", not written back: the flight always leaves from its departure. Another aerodrome in the middle of the route stays (a VFR route may pass one). In the list of points, a route name no database knows stays at its place, without position, with its reason ("unknown to the database", or "no published point around EIDW" when the zone is missing): the list shows the whole route, never less.
 
 <a id="fuel-step-3"></a>**3 Weather.** The wind (direction and speed) and the ISA deviation. Without a direction, or without any wind, the block
-fuel is given as a range. “Read the aerodromes’ weather” shows the departure, the arrival, the alternate and the
+fuel is given as a range. The wind is counted leg by leg, on the course of each (the wind forecast at its two ends when read, else the flight's), with the drift: a strong crosswind slows too; the result bar says « wind leg by leg ». “Read the aerodromes’ weather” shows the departure, the arrival, the alternate and the
 airfields along the route: all those within 10 NM on either side of the route (radius adjustable in the quote settings)
 that have a METAR or a TAF; the others are ignored. Each airfield gives its distance from the departure (the alternate,
 from the arrival); beyond two, the intermediate airfields are folded away below the departure, the arrival and the

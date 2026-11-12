@@ -139,7 +139,7 @@ campo de la ruta listo para escribir.
 **Un aeródromo nunca es un punto de la ruta.** Si el texto de la ruta empieza todavía por la antigua salida tras un cambio de aeródromo (o termina con la antigua llegada), ese aeródromo no se lista, «Auto» no lo enruta ni se vuelve a escribir: el vuelo sale siempre de su salida. Otro aeródromo en medio de la ruta se queda (una ruta VFR puede pasar por uno). En la lista de puntos, un nombre de la ruta que ninguna base conoce se queda en su sitio, sin posición, con su motivo («desconocido en la base», o «ningún punto publicado alrededor de EIDW» cuando falta la zona): la lista muestra toda la ruta, nunca menos.
 
 <a id="fuel-step-3"></a>**3 Meteorología.** El viento (dirección e intensidad) y la desviación ISA. Sin dirección, o sin viento alguno, el
-combustible de bloque se da como horquilla. «Leer la meteorología de los aeródromos» muestra la salida, la llegada, el
+combustible de bloque se da como horquilla. El viento se cuenta tramo a tramo, con el rumbo de cada uno (el viento previsto en sus dos extremos cuando se ha leído, si no el del vuelo), con la deriva: un fuerte viento cruzado también frena; la barra de resultado dice «viento por tramo». «Leer la meteorología de los aeródromos» muestra la salida, la llegada, el
 alternativo y los aeródromos a lo largo de la ruta: todos los que están a menos de 10 NM a cada lado de la ruta (radio
 ajustable en los ajustes del cálculo) y tienen un METAR o un TAF; los demás se ignoran. Cada aeródromo indica su
 distancia desde la salida (el alternativo, desde la llegada); si son más de dos, los aeródromos intermedios quedan

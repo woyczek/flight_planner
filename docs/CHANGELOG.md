@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the quote counts the wind leg by leg** — each leg on its course with its wind and the full wind triangle (drift comprised), one function shared with the plan of progression; « vent par tronçon » said (Fuel DECISIONS, help; noreg F160; SOG-0281).
 - **Fuel: the route timing keeps only a recognised code** — a departure or arrival that is not one is kept as « ? » on the device and in the diagnostic (Fuel DECISIONS; noreg F159; SOG-0283).
 - **Report: a flight of another company keeps its own** — the families offered, the heading and the saved report follow the company of the flight taken; the commercial path (mission → Fuel → report) held by a case (Report and Fuel DECISIONS, help; noreg G20, N42; SOG-0041).
 - **Procedures: no non-finite number leaves the reader (SOG-0283)** — beyond the glyph and radius bounds, the distance, the vertical angle, the accuracy and the RNAV accuracy of a leg take one to three integer digits (a 400-digit cell gave `inf` / `-inf` in the leg); the aerodrome file of the proc/build job is written with `allow_nan=False`: a document that would carry « Infinity » is not written and the aerodrome is said in the job log (K216).

@@ -145,7 +145,7 @@ auf der Karte führt zu diesem Schritt zurück, das Routenfeld bereit zur Eingab
 **Ein Flugplatz ist nie ein Punkt der Route.** Beginnt der Routentext nach einem Flugplatzwechsel noch mit dem alten Abflugplatz (oder endet er mit der alten Ankunft), wird dieser Flugplatz weder aufgeführt noch von „Auto“ geroutet noch zurückgeschrieben: der Flug startet immer an seinem Abflugplatz. Ein anderer Flugplatz mitten in der Route bleibt (eine VFR-Route kann einen passieren). In der Punkteliste bleibt ein Name der Route, den keine Datenbank kennt, an seiner Stelle, ohne Position, mit seinem Grund („der Datenbank unbekannt“ oder „kein veröffentlichter Punkt um EIDW“, wenn die Zone fehlt): die Liste zeigt die ganze Route, nie weniger.
 
 <a id="fuel-step-3"></a>**3 Wetter.** Der Wind (Richtung und Stärke) und die ISA-Abweichung. Ohne Richtung oder ganz ohne Wind wird der
-Blockkraftstoff als Spanne angegeben. „Flugplatzwetter lesen“ zeigt Abflug, Ankunft, Ausweichflugplatz und die
+Blockkraftstoff als Spanne angegeben. Der Wind wird Abschnitt für Abschnitt gerechnet, auf dem Kurs jedes Abschnitts (der an seinen beiden Enden vorhergesagte Wind, sonst der des Flugs), mit dem Luvwinkel: Starker Seitenwind bremst ebenfalls; die Ergebniszeile sagt „Wind je Abschnitt“. „Flugplatzwetter lesen“ zeigt Abflug, Ankunft, Ausweichflugplatz und die
 Flugplätze entlang der Route: alle, die weniger als 10 NM beiderseits der Route liegen (Radius in den Einstellungen der
 Berechnung einstellbar) und ein METAR oder eine TAF haben; die anderen werden übergangen. Jeder Flugplatz nennt seine
 Entfernung vom Abflug (der Ausweichflugplatz: von der Ankunft); sind es mehr als zwei, werden die Zwischenflugplätze

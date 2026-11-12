@@ -38,7 +38,10 @@ export function plan({
   q,
   legWinds = [],
   wind = null,
-  windComponent = () => 0
+  windComponent = () => 0,
+  // SOG-0281 : la vitesse sol d'un tronçon, celle du devis (FuelModel.groundSpeed, triangle des vitesses complet) ; sans elle, l'ancienne
+  // composante sur l'axe
+  groundSpeed = null
 }) {
   const pts = (points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
   if (!q?.hasFuel || pts.length < 2) return null;
@@ -83,8 +86,9 @@ export function plan({
         dirDeg: +wind.dirDeg,
         kt: +wind.speedKt
       } : null),
-      wc = w ? windComponent(rhumbCourse(pts[i - 1], pts[i]), w.dirDeg, w.kt) : 0, // le cap constant du tronçon (Q-0019)
-      gs = Math.max(80, tas + wc);
+      crs = rhumbCourse(pts[i - 1], pts[i]), // le cap constant du tronçon (Q-0019)
+      gs = typeof groundSpeed === 'function' ? groundSpeed(tas, crs, w ? w.dirDeg : null, w ? w.kt : null) : Math.max(80, tas + (w ?
+        windComponent(crs, w.dirDeg, w.kt) : 0));
     pieces.push({
       a,
       b,

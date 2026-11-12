@@ -808,6 +808,7 @@ const TX = {
   // la distance du début de descente AVANT l'arrivée : une autre grandeur que la distance de la route (le libellé le dit)
   todS: ['TOD avant l’arrivée', 'TOD before arrival', 'TOD vor Ankunft', 'TOD antes de la llegada'],
   windRangeS: ['vent inconnu', 'unknown wind', 'Wind unbekannt', 'viento desconocido'],
+  windByLeg: ['vent par tronçon', 'wind leg by leg', 'Wind je Abschnitt', 'viento por tramo'], // SOG-0281
   noFuel: ['Aucun débit connu : pas de devis.', 'No fuel flow known: no quote.', 'Kein Verbrauch bekannt: keine Berechnung.',
     'Ningún consumo conocido: sin cálculo.'
   ],
@@ -1861,7 +1862,8 @@ function compute() {
       contingencyPct: +S.settings.contingencyPct,
       climbLaw: perf ? L.tripLaw(perf, goal, o) : null,
       steps: fp ? pathSteps(fp, distanceNm) : routeSteps(f.route, distanceNm),
-      holds: holdsOf(f.route, levelFt) // le temps sur zone par point (§ 1 bis)
+      holds: holdsOf(f.route, levelFt), // le temps sur zone par point (§ 1 bis)
+      legs: quoteLegs(distanceNm) // SOG-0281 : le vent tronçon par tronçon
     },
     q = distanceNm > 0 ? altnAdd(M.quote(qIn), qIn, sheet, levelFt) : null,
     D = perf && q ? L.requoteSeries(L.decisionSeries(perf, {
@@ -3128,7 +3130,7 @@ function resultContext(q, range, short) {
       return short && i && /^FL\d+$/.test(t) ? t.slice(2) : t;
     }).join(short ? '→' : ' → '),
     wind = range ? tt(short ? TX.windRangeS : TX.windRange) : windShort(short);
-  return `${tt(short ? TX.blockS : TX.block)} · ${fl}${unitOf('alt') !== 'ft' ? ` (${altTxt(q.levelFt)})` : ''}${q.approx ? ` · ${tt(TX.approx)}` : ''}${wind ? ` · ${wind}` : ''}`;
+  return `${tt(short ? TX.blockS : TX.block)} · ${fl}${unitOf('alt') !== 'ft' ? ` (${altTxt(q.levelFt)})` : ''}${q.approx ? ` · ${tt(TX.approx)}` : ''}${wind ? ` · ${wind}` : ''}${q.cruise?.byLeg ? ` · ${tt(TX.windByLeg)}` : ''}`;
 }
 /** Profil réel au départ (premier lieu de lecture) : température par altitude pression, atmosphère type en tirets,
  *  inversions surlignées, niveau planifié ; lignes de lecture (température, écart ISA et altitude-densité au niveau,
@@ -4620,28 +4622,53 @@ function progressPlan(C) {
       nm
     } = progPath(); // le chemin volé quand des procédures sont choisies (sa longueur), sinon la route
   if (!C?.q?.hasFuel || pts.length < 2) return null;
-  // vent de chaque tronçon : moyenne vectorielle des vents prévus à ses deux bouts (prévision en altitude), sinon celui du devis
-  const vec = w => [w.kt * Math.sin(w.dirDeg * Math.PI / 180), w.kt * Math.cos(w.dirDeg * Math.PI / 180)],
-    legWinds = pts.slice(1).map((p, i) => {
-      const a = pts[i].wind,
-        b = p.wind;
-      if (!a || !b) return null;
-      const x = (vec(a)[0] + vec(b)[0]) / 2,
-        y = (vec(a)[1] + vec(b)[1]) / 2;
-      return {
-        dirDeg: (Math.atan2(x, y) * 180 / Math.PI + 360) % 360,
-        kt: Math.hypot(x, y)
-      };
-    });
   return PG.plan({
     points: pts,
     distanceNm: nm,
     taxiMin: +S.settings.taxiMin || 0,
     q: C.q,
-    legWinds,
+    legWinds: legWindsOf(pts),
     wind: f.wind,
-    windComponent: window.FuelModel.windComponent
+    windComponent: window.FuelModel.windComponent,
+    groundSpeed: window.FuelModel.groundSpeed // SOG-0281 : la même vitesse sol que le devis
   });
+}
+/** Le vent de chaque tronçon : moyenne vectorielle des vents prévus à ses deux bouts (prévision en altitude, points[].wind), sinon null
+ *  (le tronçon prend le vent du vol). Lu par le devis et par le plan (SOG-0281). */
+function legWindsOf(pts) {
+  const vec = w => [w.kt * Math.sin(w.dirDeg * Math.PI / 180), w.kt * Math.cos(w.dirDeg * Math.PI / 180)],
+    ok = w => w && Number.isFinite(+w.kt) && Number.isFinite(+w.dirDeg);
+  return pts.slice(1).map((p, i) => {
+    const a = pts[i].wind,
+      b = p.wind;
+    if (!ok(a) || !ok(b)) return null;
+    const x = (vec(a)[0] + vec(b)[0]) / 2,
+      y = (vec(a)[1] + vec(b)[1]) / 2;
+    return {
+      dirDeg: (Math.atan2(x, y) * 180 / Math.PI + 360) % 360,
+      kt: Math.hypot(x, y)
+    };
+  });
+}
+/** Les tronçons du chemin pour le devis (SOG-0281) : [{ nm0, nm1, course (loxodromie), wind }] ramenés à la distance du devis D ; null sans
+ *  deux points placés. Le même chemin et les mêmes vents que le plan de progression (progPath, legWindsOf). */
+function quoteLegs(D) {
+  const P = (progPath().pts || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
+  if (P.length < 2 || !(D > 0)) return null;
+  const raw = [0];
+  for (let i = 1; i < P.length; i++) raw.push(raw[i - 1] + rhumbNm(P[i - 1], P[i]));
+  const k = raw.at(-1) > 0 ? D / raw.at(-1) : 0;
+  if (!k) return null;
+  const W = legWindsOf(P);
+  return P.slice(1).map((p, i) => ({
+    nm0: raw[i] * k,
+    nm1: raw[i + 1] * k,
+    course: rhumbCourse(P[i], p),
+    wind: W[i] ? {
+      dirDeg: W[i].dirDeg,
+      speedKt: W[i].kt
+    } : null
+  }));
 }
 /** current_flight.progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta: [{ id, at }], fuelRemainingKg,
  *  remainingNm, phase } ; null sans vol démarré. Écrit quand il change (chaque minute pendant le vol). force : écrit

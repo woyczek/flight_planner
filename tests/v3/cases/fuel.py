@@ -4901,3 +4901,32 @@ def f159(c):
     c.tap(f'{FUEL} [data-do="rcompute"]')
     d = c.until_doc('cache/fuel/route_timing.json', lambda d: bool(d and d.get('route')), 'the durations kept on the device', timeout=15000)
     c.eq(d['route'], '? → LFML', 'the hostile departure kept as « ? »', what='route')
+
+
+
+@case('F160', 'Quote: the wind counted leg by leg on a dog-legged route (full wind triangle: a strong crosswind slows too), said « vent par '
+      'tronçon »; the cruise time of the quote is the sum of the plan\'s, to the same rounding', 'F', tags=('fuel', 'weather'), designs=('standard',),
+      screens=False, langs4=True,
+      rule='SOG-0281 (the ergonomist\'s GO, 12 Nov): ONE function for the time of a leg read by the quote and the plan; the full triangle; the '
+      'rhumb course of each leg; the leg\'s wind = its ends\' when read, else the flight\'s; an invented dog-legged route LFRS → 48°N 3°E → LFML, '
+      'a typed wind 345°/60 kt (across the first branch, behind the second)')
+def f160(c):
+    path = 'pilot/ABC/current_flight.json'
+    docs = flight_docs()
+    f = docs[1][1]
+    r = f['route']
+    r['text'] = 'LFRS 4800N00300E LFML'
+    r['points'] = [r['points'][0], {'id': '4800N00300E', 'lat': 48.0, 'lon': 3.0}, r['points'][-1]]
+    r.pop('distanceNm', None)
+    f['wind'] = {'dirDeg': 345, 'speedKt': 60}
+    f['windSource'] = {'kind': 'typed'}
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    word = norm(tx(F, 'windByLeg', c.lang))
+    c.until(f"(w) => (document.querySelector('{FUEL} [data-block=result]')?.title || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w) || "
+            f"[...document.querySelectorAll('{FUEL} [data-block=result] *')].some(e => (e.title || e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))",
+            word, timeout=12000, what='the quote says « vent par tronçon »')
+    d = c.until_doc(path, lambda d: bool(((d or {}).get('quote') or {}).get('legs')), 'the quote written with the plan\'s times', timeout=12000)
+    q = d['quote']
+    c.ok(abs(q['legs'][-1]['min'] - q['minutes']) <= 0.6, [q['legs'][-1], q['minutes']],
+         'the time at the arrival in the plan equals the quote\'s flight time (the same legs, the same ground speed)')

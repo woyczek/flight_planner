@@ -136,7 +136,7 @@ ce pas, le champ de la route prêt à la frappe.
 **Un terrain n'est jamais un point de la route.** Si le texte de la route commence encore par l'ancien départ après un changement de terrain (ou finit par l'ancienne arrivée), ce terrain n'est ni listé, ni routé par « Auto », ni réécrit : le vol part toujours de son départ. Un autre terrain au milieu de la route reste (une route VFR peut en passer un). Dans la liste des points, un nom de la route qu'aucune base ne connaît reste à sa place, sans position, avec sa raison (« inconnu de la base », ou « aucun point publié autour de EIDW » quand la zone manque) : la liste montre toute la route, jamais moins.
 
 <a id="fuel-step-3"></a>**3 Météo.** Le vent (direction et force) et l'écart ISA. Sans direction, ou sans vent du tout, le carburant bloc est
-donné en fourchette. « Lire la météo des terrains » affiche le départ, l'arrivée, le dégagement et
+donné en fourchette. Le vent est compté tronçon par tronçon, au cap de chacun (le vent prévu à ses deux bouts quand il est lu, sinon celui du vol), avec la dérive : un fort vent de travers ralentit aussi ; la barre de résultat le dit « vent par tronçon ». « Lire la météo des terrains » affiche le départ, l'arrivée, le dégagement et
 les terrains le long de la route : tous ceux à moins de 10 NM de part et d'autre de la route (rayon réglable dans les
 réglages du devis) qui ont un METAR ou un TAF ; les autres sont ignorés. Chaque terrain dit sa distance depuis le
 départ (le dégagement, depuis l'arrivée) ; au-delà de deux, les terrains intermédiaires sont repliés sous le départ,

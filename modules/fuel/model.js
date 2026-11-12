@@ -55,6 +55,47 @@
   const convertDist = (value, from, to) => convertUnit('dist', value, from, to);
   /** Composante de vent sur la route (kt ; positive = arrière) : route vraie, direction d'où vient le vent, vitesse. */
   const windComponent = (track, from, speed) => speed * Math.cos((from - track) * Math.PI / 180) * -1;
+  /** Vitesse sol d'un tronçon (kt), le triangle des vitesses COMPLET (SOG-0281) : la dérive (sin = travers / TAS) réduit la part de la TAS
+   *  portée sur la route, la composante de face la retranche ; 80 kt au moins (la règle du devis). course : route vraie du tronçon (sa
+   *  loxodromie) ; from, speed : le vent (d'où il vient, kt) ; sans vent : la TAS. La SEULE fonction du temps d'un tronçon : le devis et
+   *  le plan de progression la lisent. */
+  const groundSpeed = (tas, course, from, speed) => {
+    const t = +tas || 0;
+    if (!(t > 0)) return 80;
+    if (from === null || from === undefined || speed === null || speed === undefined || !Number.isFinite(+from) || !Number.isFinite(+
+        speed))
+      return Math.max(80, t);
+    const r = (+from - +course) * Math.PI / 180,
+      head = +speed * Math.cos(r),
+      s = Math.max(-1, Math.min(1, +speed * Math.sin(r) / t));
+    return Math.max(80, t * Math.cos(Math.asin(s)) - head);
+  };
+  /** La croisière découpée par niveau et par tronçon (SOG-0281) : segs [{ nm0, nm1, tas, ff }] (les portions de croisière à leur niveau),
+   *  legs [{ nm0, nm1, course, wind: { dirDeg, speedKt } | null }] (les tronçons du chemin, sur la même échelle de distance), fallback : le
+   *  vent du vol (un tronçon sans vent lu le prend ; sans lui, sans vent). → [{ nm0, nm1, leg, tas, gs, min, fuel }] dans l'ordre. */
+  function cruisePieces(segs, legs, fallback = null) {
+    const ok = w => w && Number.isFinite(+w.dirDeg) && Number.isFinite(+w.speedKt),
+      out = [];
+    for (const g of segs || [])
+      for (let i = 0; i < (legs || []).length; i++) {
+        const L = legs[i],
+          a = Math.max(+g.nm0, +L.nm0),
+          b = Math.min(+g.nm1, +L.nm1);
+        if (!(b > a)) continue;
+        const w = ok(L.wind) ? L.wind : ok(fallback) ? fallback : null,
+          gs = groundSpeed(g.tas, +L.course || 0, w ? +w.dirDeg : null, w ? +w.speedKt : null);
+        out.push({
+          nm0: a,
+          nm1: b,
+          leg: i,
+          tas: g.tas,
+          gs,
+          min: (b - a) / gs * 60,
+          fuel: (b - a) / gs * (g.ff || 0)
+        });
+      }
+    return out.sort((x, y) => x.nm0 - y.nm0);
+  }
   /** Vrai si v est un nombre fini non vide (chaîne numérique acceptée). */
   const finite = v => v !== null && v !== undefined && String(v).trim() !== '' && Number.isFinite(Number(v));
 
@@ -323,7 +364,9 @@
       climbLaw = null,
       takeoffMass = 0,
       mtowKg = 0,
-      steps = null
+      steps = null,
+      // SOG-0281 : les tronçons du chemin [{ nm0, nm1, course, wind }] sur l'échelle de distanceNm ; sans eux, un seul cap (trackDeg)
+      legs = null
     } = input || {};
     if (!sheet) return null;
     const D = +distanceNm || 0,
@@ -423,10 +466,14 @@
     const segs = levels.map((l, i) => {
       const end = levels[i + 1]?.nm ?? D,
         pc = perf ? perf.cruise(l.ft, 'normal') : null,
-        used = (i ? trans[i - 1].nm : climbNm) + (i === levels.length - 1 ? descentNm : 0);
+        used = (i ? trans[i - 1].nm : climbNm) + (i === levels.length - 1 ? descentNm : 0),
+        // SOG-0281 : la portion de croisière de ce niveau sur l'axe des distances (pour la découper par tronçon)
+        nm0 = l.nm + (i ? trans[i - 1].nm : climbNm);
       return {
         ft: l.ft,
         nm: Math.max(0, end - l.nm - used),
+        nm0,
+        nm1: Math.max(nm0, end - (i === levels.length - 1 ? descentNm : 0)),
         tas: pc?.ok ? pc.tas : tas,
         ff: pc?.ok ? pc.ff : cruiseFF
       };
@@ -440,9 +487,15 @@
       cruiseNm = segs.reduce((t, g) => t + g.nm, 0);
     /** Carburant de croisière avec une composante de vent w (vitesse sol de 80 kt au moins), tronçon par tronçon. */
     const cruiseFuelFor = w => segs.reduce((t, g) => t + g.nm / Math.max(80, g.tas + w) * g.ff, 0);
-    const cNom = cruiseFuelFor(windKnown ? wc : 0),
-      cLo = cruiseFuelFor(low),
-      cHi = cruiseFuelFor(high),
+    // SOG-0281 : avec les tronçons du chemin et un vent connu (le vol, ou un tronçon), la croisière par niveau ET par tronçon, au triangle
+    // des vitesses ; sans vent connu nulle part, la fourchette ± sur le cap unique reste
+    const legList = Array.isArray(legs) ? legs.filter(l => l && finite(l.nm0) && finite(l.nm1) && +l.nm1 > +l.nm0) : [],
+      legWind = legList.some(l => l.wind && finite(l.wind.dirDeg) && finite(l.wind.speedKt)),
+      byLeg = legList.length > 0 && (windKnown || legWind),
+      pieces = byLeg ? cruisePieces(segs, legList, windKnown ? wind : null) : null;
+    const cNom = byLeg ? pieces.reduce((t, p) => t + p.fuel, 0) : cruiseFuelFor(windKnown ? wc : 0),
+      cLo = byLeg ? cNom : cruiseFuelFor(low),
+      cHi = byLeg ? cNom : cruiseFuelFor(high),
       reserve = phaseFuel(+reserveMin || 0, sheet.reserveFuelFlowPerHour || cruiseFF * .65),
       cont = (+contingencyPct || 0) / 100,
       // temps sur zone : au débit d'attente de la fiche s'il existe, sinon à la croisière du niveau du point (le modèle, sinon la source) ;
@@ -467,7 +520,11 @@
       block = taxiFuel + trip + contingency + reserve,
       bLo = taxiFuel + (climbFuel + cLo + stepFuel + descentFuel + holdFuel) * (1 + cont) + reserve,
       bHi = taxiFuel + (climbFuel + cHi + stepFuel + descentFuel + holdFuel) * (1 + cont) + reserve,
-      cruiseMin = segs.reduce((t, g) => t + g.nm / Math.max(80, g.tas + (windKnown ? wc : 0)) * 60, 0),
+      cruiseMin = byLeg ? pieces.reduce((t, p) => t + p.min, 0) : segs.reduce((t, g) => t + g.nm / Math.max(80, g.tas + (windKnown ? wc :
+          0)) *
+        60, 0),
+      // la composante équivalente du vent par tronçon (vitesse sol moyenne pondérée par la distance, moins la TAS) : pour ce qui la lit
+      wcLeg = byLeg && cruiseNm > 0 ? pieces.reduce((t, p) => t + (p.gs - p.tas) * (p.nm1 - p.nm0), 0) / cruiseNm : 0,
       tasAlt = cruiseNm > 0 ? segs.reduce((t, g) => t + g.tas * g.nm, 0) / cruiseNm : segs[0].tas,
       ffAlt = cruiseMin > 0 ? cNom / (cruiseMin / 60) : segs[0].ff,
       todNm = endFt / (sheet.tod?.gradientFtPerNm || 300) + (sheet.tod?.bufferNm || 0);
@@ -476,8 +533,8 @@
     return {
       hasFuel,
       approx: !!src.approx,
-      windKnown,
-      wc: windKnown ? wc : 0,
+      windKnown: windKnown || byLeg,
+      wc: byLeg ? wcLeg : windKnown ? wc : 0,
       low,
       high,
       levelFt: alt,
@@ -501,7 +558,9 @@
         fuel: cNom,
         fuelLow: cLo,
         fuelHigh: cHi,
-        map: cruisePhase.map ? cruisePhase : null
+        map: cruisePhase.map ? cruisePhase : null,
+        byLeg, // SOG-0281 : le vent compté tronçon par tronçon
+        pieces // [{ nm0, nm1, leg, tas, gs, min, fuel }] ou null
       },
       steps: trans.length ? {
         min: stepMin,
@@ -547,6 +606,8 @@
     convertAlt,
     convertDist,
     windComponent,
+    groundSpeed,
+    cruisePieces,
     finite,
     normalizeSheet,
     interpRange,
