@@ -1797,5 +1797,22 @@
    "delivered": "2026-11-12T10:07:31Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0032",
+   "fiche": "SOG-0262",
+   "app": "maintenance",
+   "question": "Écran Données : où placer la carte, les paquets de pays et « ce qui reste à faire » pour que le survol marche ?",
+   "context": "Ton défaut : les paquets sont loin sous la carte, on ne peut plus survoler un pays en voyant la carte. Tu as proposé quatre dispositions ; ma contre-proposition en combine trois. Au téléphone dans tous les cas : la carte reste en haut, réduite, le reste défile dessous, la fiche d'un pays en plein écran.",
+   "options": [
+    "Ma contre-proposition : carte à GAUCHE, fixe ; à droite une colonne qui défile — « À faire ce mois-ci (n) » replié avec son marqueur, puis les paquets ; le pays",
+    "La même, mais la carte fixe à DROITE et la colonne à gauche",
+    "La carte fixe en haut sur toute la largeur, sous la bannière ; tout le reste défile dessous",
+    "Autre chose (je l'écris)"
+   ],
+   "since": "2026-11-12",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }
