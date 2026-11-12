@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 152,
+  "tests": 156,
   "verdicts": 59
  },
  "apps": [
@@ -2026,6 +2026,34 @@
    "delivered": "2026-11-12T15:38:36Z"
   },
   {
+   "id": "SOG-0258",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : télécharger, intégrer et publier se font zone par zone, chaque étape dite et faisable séparément",
+    "en": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
+    "de": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
+    "es": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own"
+   },
+   "test": "Maintenance › Données, la fiche d'un pays (le Portugal, le Royaume-Uni) : ses trois étapes sont dites séparément — téléchargée, construite, publiée — avec leur date ; « Publier » montre d'abord ce qui partira, pour ce pays seulement. Dis-moi si une étape manque ou ne peut pas se faire seule.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T18:28:56Z"
+  },
+  {
+   "id": "SOG-0259",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la liste de tout ce qu'il faut rafraîchir à chaque cycle, cochée par l'outil quand c'est fait",
+    "en": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
+    "de": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
+    "es": "Data: the list of everything to refresh at each cycle, ticked by the tool when done"
+   },
+   "test": "Maintenance › Données : déplie « À faire ce mois-ci ». La liste porte tout ce qui reste pour le cycle, chaque ligne avec son geste (prendre un fichier, mettre à jour) ; une ligne faite est cochée par l'outil et le décompte de l'en-tête baisse. Dis-moi ce qui manque à ton rafraîchissement mensuel.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T18:28:56Z"
+  },
+  {
    "id": "SOG-0260",
    "app": "maintenance",
    "title": {
@@ -2066,6 +2094,34 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T18:50:42Z"
+  },
+  {
+   "id": "SOG-0263",
+   "app": "maintenance",
+   "title": {
+    "fr": "Routes NAT du jour : « Ouvrir » affiche un JSON ; les prendre seul ; servent-elles au calcul d'une route transatlantique ?",
+    "en": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
+    "de": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
+    "es": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?"
+   },
+   "test": "Maintenance › Données, « Quand ça change » : la ligne des routes NAT dit jusqu'à quand elles valent, sans bouton « Ouvrir » ; sur la Carte, la couche NAT dit « valides jusqu'au … » ou « périmées » et les reprend une fois quand tu l'affiches.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T17:58:55Z"
+  },
+  {
+   "id": "SOG-0264",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la carte de couverture de retour dans « Couverture », avec une marque pour les procédures disponibles",
+    "en": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
+    "de": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
+    "es": "Data: the coverage map back in “Coverage”, with a mark for the available procedures"
+   },
+   "test": "Maintenance › Données : la carte du monde montre ta couverture (pays couverts, à faire, hors couverture) et marque les pays dont tu as les procédures ; la Belgique (enregistrement sans procédure) n'est pas marquée.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T18:28:56Z"
   },
   {
    "id": "SOG-0265",
