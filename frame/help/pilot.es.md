@@ -400,6 +400,8 @@ Las barbas se leen de la misma previsión que el corte meteorológico (no se pid
 nivel, nuevo ascenso o descenso, con el final del ascenso y el inicio del descenso calculados de nuevo. Los puntos de
 giro de la ruta también se marcan en el perfil.
 
+**La capa « Meteo (viento, nubes) ».** Apagada al principio; su casilla está en « Capas ». Dibuja, en todo el mapa, el viento y las nubes al nivel del vuelo y a la hora en que está a mitad de ruta, según la previsión que Meteo ha guardado para ese vuelo; una línea fina rodea la zona que cubre esa previsión: más allá, el mapa no tiene dato y no lo sustituye por otro. El mapa no pide nada a la red: lee lo que Meteo (o Combustible) ya ha leído. Sin previsión guardada, la línea bajo la casilla lo dice y lleva a Meteo, que la carga. Sin precipitaciones: Meteo no guarda ninguna para una zona. Solo existe en el mapa base (no en el fondo liso) y para un vuelo de al menos dos puntos con un nivel.
+
 **Ascenso y descenso.** Los rombos violetas marcan el final del ascenso (TOC) y el inicio del descenso (TOD), tanto en
 el mapa como en el perfil. Vienen del cálculo de Combustible; sin él, el mapa los estima con regímenes de ascenso y de
 descenso habituales. Cuando falta sitio, el mapa escribe primero el nombre del aeródromo, luego los números de pista,

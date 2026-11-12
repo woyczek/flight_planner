@@ -33,6 +33,9 @@ import {
   hideTips
 } from './tips.js';
 import {
+  wxNote
+} from './wx.js';
+import {
   openData,
   endData,
   dataHead
@@ -272,7 +275,7 @@ const AS_GROUPS = {
 };
 /** Cases du contenu Couches, dans l'ordre de la SPEC § 6.7 (« Autour de la route seulement » en dernier). */
 const LAYER_KEYS = ['asTma', 'asDrp', 'asFir', 'asOther', 'zoneLabels', 'awLow', 'awHigh', 'awLabels', 'navaids', 'fixes', 'vrp',
-  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'atc', 'contours', 'cov', 'corridor'
+  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'wx', 'atc', 'contours', 'cov', 'corridor'
 ];
 /** Couche du contenu Couches qui commande chaque ligne de la page de réglage (une famille d'espaces : une seule case). */
 export const LAYER_OF = {
@@ -328,6 +331,7 @@ export function layerDefaults(B) {
     // axes AAR et tracks NAT : d'origine en CAM seulement
     aar: B.id === 'v3-cam',
     nat: B.id === 'v3-cam',
+    wx: false, // la météo du vol (vent, nuages) lue dans la réserve de Météo : éteinte d'origine (SOG-0092)
     atc: false, // les contrôleurs en ligne IVAO / VATSIM : éteints d'origine (SOG-0094)
     wind: true,
     // couche « Couverture » (ce que l'appareil sait donner des procédures de chaque terrain, coverage.js) : éteinte d'origine,
@@ -451,7 +455,7 @@ export function layersHtml(ctx) {
 <div class="mp-layer-cx"><label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span></div>
 <div class="mp-layer-set">
-${LAYER_KEYS.filter(k => k !== 'corridor' && (k !== 'cov' || covAvail())).map(k => `<label><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
+${LAYER_KEYS.filter(k => k !== 'corridor' && (k !== 'cov' || covAvail())).map(k => `<label><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>${k === 'wx' ? '<small class="mp-wx-note f-muted" hidden></small>' : ''}`).join('')}
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div></div>`;
 }
 /** Cases et curseur du contenu selon les couches du mode ; écrits seulement s'ils changent. */
@@ -482,6 +486,7 @@ export function fillLayers() {
   if (why && why.hidden === !!S.corrForced) why.hidden = !S.corrForced;
   const cx = !!S.cxBefore && S.cxBefore.mode === modeKey() && detailShift() === S.cxBefore.set;
   if (note && note.hidden === cx) note.hidden = !cx;
+  wxNote(); // ce que montre la couche Météo, ou pourquoi elle ne montre rien (SOG-0092)
 }
 /** La case « Autour du vol seulement » décochée lit toute la vue : si la vue est large, la Complexité descend d'un coup au cran que sa largeur permet (un cran par doublement au-delà de 300 NM :
  *  600 NM −1, 1 200 NM −2, 2 400 NM −3, au-delà −4), jamais plus haut que ce qu'elle était ; une ligne le dit sous la case ; recochée, la Complexité d'avant revient — sauf si le curseur a été

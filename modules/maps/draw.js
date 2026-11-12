@@ -34,6 +34,9 @@ import {
   drawAtc
 } from './atc.js';
 import {
+  wxSync
+} from './wx.js';
+import {
   layersNow,
   detailShift,
   fillLayers
@@ -796,6 +799,8 @@ function draw() {
     status();
   }
   S.windHits = !mission && !pick && !world && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
+  // la couche Météo : posée, tenue à jour ou retirée selon la case (SOG-0092) ; le dessin est celui de la bibliothèque de Météo, dans son propre canevas
+  wxSync();
   S.atcHits = !mission && !pick && L.atc ? drawAtc(ctx, toC) : []; // les contrôleurs en ligne, une teinte par réseau (SOG-0094)
   if (S.windHits
     .length) { // les points de repère et les libellés de la route se lisent : redessinés par-dessus les barbules, avec leur halo (SOG-0243)

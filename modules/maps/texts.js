@@ -251,24 +251,46 @@ export const TX = {
     'R-, D-, P- und andere Lufträume außerhalb des {n}-NM-Korridors um den Flug bei diesem Zoom ausgeblendet: hineinzoomen, die Komplexität erhöhen oder „Nur rund um den Flug“ abwählen.',
     'Espacios R, D, P y otros fuera del corredor de {n} NM alrededor del vuelo ocultos a este zoom: acerque, suba la complejidad o desmarque «Solo alrededor del vuelo».'
   ],
-  corrForced: ['Vue de plus de 3 000 NM de large : seulement autour du vol — zoomez pour décocher', 'View more than 3,000 NM wide: around the flight only — zoom in to untick',
-    'Ansicht von mehr als 3 000 NM Breite: nur rund um den Flug — hineinzoomen zum Abwählen', 'Vista de más de 3 000 NM de ancho: solo alrededor del vuelo — acerque para desmarcar'
+  corrForced: ['Vue de plus de 3 000 NM de large : seulement autour du vol — zoomez pour décocher',
+    'View more than 3,000 NM wide: around the flight only — zoom in to untick',
+    'Ansicht von mehr als 3 000 NM Breite: nur rund um den Flug — hineinzoomen zum Abwählen',
+    'Vista de más de 3 000 NM de ancho: solo alrededor del vuelo — acerque para desmarcar'
   ],
-  cxReduced: ['Complexité réduite pour montrer toute la vue', 'Complexity lowered to show the whole view', 'Komplexität gesenkt, um die ganze Ansicht zu zeigen',
+  cxReduced: ['Complexité réduite pour montrer toute la vue', 'Complexity lowered to show the whole view',
+    'Komplexität gesenkt, um die ganze Ansicht zu zeigen',
     'Complejidad reducida para mostrar toda la vista'
   ],
-  corrEmpty: ['Rien autour du vol dans cette vue : décochez « Autour du vol seulement » pour tout voir.', 'Nothing around the flight in this view: untick “Around the flight only” to see everything.',
-    'Nichts rund um den Flug in dieser Ansicht: „Nur rund um den Flug“ abwählen, um alles zu sehen.', 'Nada alrededor del vuelo en esta vista: desmarque «Solo alrededor del vuelo» para verlo todo.'
+  corrEmpty: ['Rien autour du vol dans cette vue : décochez « Autour du vol seulement » pour tout voir.',
+    'Nothing around the flight in this view: untick “Around the flight only” to see everything.',
+    'Nichts rund um den Flug in dieser Ansicht: „Nur rund um den Flug“ abwählen, um alles zu sehen.',
+    'Nada alrededor del vuelo en esta vista: desmarque «Solo alrededor del vuelo» para verlo todo.'
   ],
   directTo: ['Direct vers ce point', 'Direct to this point', 'Direkt zu diesem Punkt', 'Directo a este punto'],
+  wxLayerOk: [
+    'Vent et nuages à {l}, à {t} (mi-route), d’après la prévision que Météo a gardée. Le trait fin borde la zone qu’elle couvre.',
+    'Wind and cloud at {l}, at {t} (mid-route), from the forecast Weather has kept. The thin line is the edge of the area it covers.',
+    'Wind und Wolken auf {l}, um {t} (Streckenmitte), nach der Vorhersage, die Wetter gespeichert hat. Die dünne Linie begrenzt das Gebiet, das sie abdeckt.',
+    'Viento y nubes a {l}, a las {t} (mitad de ruta), según la previsión que Meteo ha guardado. La línea fina es el borde de la zona que cubre.'
+  ],
+  wxLayerFlight: ['Il faut un vol de deux points et un niveau.', 'A flight of two points and a level is needed.',
+    'Ein Flug mit zwei Punkten und einer Flughöhe wird gebraucht.',
+    'Se necesita un vuelo de dos puntos y un nivel.'
+  ],
+  wxLayerPlain: ['Disponible sur le fond de carte, pas sur le fond uni.', 'Available on the base map, not on the plain background.',
+    'Auf der Basiskarte verfügbar, nicht auf dem einfachen Hintergrund.', 'Disponible en el mapa base, no en el fondo liso.'
+  ],
   atcTitle: ['{a} : contrôleurs en ligne', '{a}: online controllers', '{a}: Lotsen online', '{a}: controladores en línea'],
   atcNet: {
     ivao: ['IVAO', 'IVAO', 'IVAO', 'IVAO'],
     vatsim: ['VATSIM', 'VATSIM', 'VATSIM', 'VATSIM']
   },
-  natValid: ['Routes NAT : valides jusqu’au {d}.', 'NAT tracks: valid until {d}.', 'NAT-Tracks: gültig bis {d}.', 'Rutas NAT: válidas hasta el {d}.'],
-  natExpired: ['Routes NAT : périmées (le lanceur les relit dès qu’il le peut).', 'NAT tracks: out of date (the launcher reads them again as soon as it can).',
-    'NAT-Tracks: veraltet (der Launcher liest sie neu, sobald er kann).', 'Rutas NAT: caducadas (el lanzador las vuelve a leer en cuanto pueda).'
+  natValid: ['Routes NAT : valides jusqu’au {d}.', 'NAT tracks: valid until {d}.', 'NAT-Tracks: gültig bis {d}.',
+    'Rutas NAT: válidas hasta el {d}.'
+  ],
+  natExpired: ['Routes NAT : périmées (le lanceur les relit dès qu’il le peut).',
+    'NAT tracks: out of date (the launcher reads them again as soon as it can).',
+    'NAT-Tracks: veraltet (der Launcher liest sie neu, sobald er kann).',
+    'Rutas NAT: caducadas (el lanzador las vuelve a leer en cuanto pueda).'
   ],
   worldNote: [
     'Vue de plus de 3 000 NM de large : les barbules de vent sont masquées (illisibles à cette échelle) ; zoomez pour les voir.',
@@ -312,7 +334,10 @@ export const TX = {
     ],
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
     wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura'],
-    atc: ['Contrôleurs en ligne (IVAO / VATSIM)', 'Online controllers (IVAO / VATSIM)', 'Online-Lotsen (IVAO / VATSIM)', 'Controladores en línea (IVAO / VATSIM)'],
+    wx: ['Météo (vent, nuages)', 'Weather (wind, cloud)', 'Wetter (Wind, Wolken)', 'Meteo (viento, nubes)'],
+    atc: ['Contrôleurs en ligne (IVAO / VATSIM)', 'Online controllers (IVAO / VATSIM)', 'Online-Lotsen (IVAO / VATSIM)',
+      'Controladores en línea (IVAO / VATSIM)'
+    ],
     contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
     cov: ['Couverture', 'Coverage', 'Abdeckung', 'Cobertura'],
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios'],

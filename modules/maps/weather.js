@@ -53,14 +53,14 @@ export const canWeather = () => !!S?.ctx.weather?.grid && !onMission() && S.rout
 /** Identité de la coupe : la version du vol montrée (une nouvelle version refait la coupe). */
 const wxKey = () => `wx:${S.route.updated || ''}`;
 /** Points de la route comme la coupe les lit (route.points, alt_ft : niveau tenu à partir du point). */
-const wxPoints = f => (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p => ({
+export const wxPoints = f => (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p => ({
   id: String(p.id || p.name || ''),
   lat: +p.lat,
   lon: +p.lon,
   alt_ft: +p.alt_ft || 0
 }));
 /** Heure de départ (secondes) : started.at d'un vol démarré, sinon planned_at, sinon maintenant (SPEC § 9). */
-function depTime(f) {
+export function depTime(f) {
   const t = Date.parse((isStarted(f) ? f.started.at : f?.planned_at) || '');
   return Number.isFinite(t) ? t / 1000 : Math.ceil(Date.now() / 36e5) * 3600;
 }

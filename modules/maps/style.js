@@ -54,6 +54,8 @@ export const STYLE = `
 [data-module="maps"] .mp-layers .mp-picks select[hidden]{display:none}
 [data-module="maps"] .mp-layer-set,[data-module="maps"] .mp-layer-cx{display:contents}
 [data-module="maps"] .mp-layers .mp-layer-set[hidden]{display:none}
+[data-module="maps"] .mp-layers .mp-wx-note{grid-column:1/-1;margin:0 0 4px}
+[data-module="maps"] .mp-layers .mp-wx-note[hidden]{display:none}
 [data-module="maps"] .mp-layers [data-layers-reset]{grid-column:1/-1;justify-self:start;margin-top:8px}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
 [data-module="maps"] .mp-layers .mp-l-main{grid-column:1/-1;align-items:flex-start;border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px;font-weight:600}
