@@ -1411,7 +1411,10 @@
       }
       const text = await T.read(path, rev),
         pend = await idb('pending', 'get', path);
-      if (pend && pend.text !== null) {
+      // SOG-0136 : une révision que CE navigateur a poussée lui-même (les dix dernières, par chemin) n'est pas un autre appareil : sa propre version précédente qui revient — la locale gagne, sans entrée de conflit
+      const own = ((await getMeta('pushed'))?.revs?.[path] || []).includes(rev);
+      if (own && pend && pend.text !== null) await noteOwnSeen(path); // dit dans le diagnostic : combien de fois, et la dernière
+      if (pend && pend.text !== null && !own) {
         const m = mergeText(path, doc?.base ?? null, pend.text, text);
         await idb('pending', 'put', {
           ...pend,
@@ -1422,6 +1425,8 @@
           await idb('conflicts', 'add', {
             path,
             ...m.conflict,
+            lostRev: rev, // la révision de la version perdante (le diagnostic dit si elle est « étrangère » ou inconnue)
+            origin: 'foreign', // inconnue de ce navigateur : un autre appareil, une autre session, le lanceur
             at: new Date().toISOString()
           });
         }
@@ -1452,6 +1457,44 @@
   }
   /** Écritures envoyées : la copie du cache devient la version écrite (révision : empreinte git), la file se vide
    *  (sauf une écriture refaite entre-temps), l'arbre connu suit. next : nouvelle tête (transport distant). */
+  /** Les révisions que CE navigateur a poussées (SOG-0136) : { revs: { chemin: [dix dernières] } }, 200 chemins au plus ; un « distant » qui en porte une n'est pas un autre appareil. */
+  const PUSHED_REVS = 10,
+    PUSHED_PATHS = 200;
+  async function notePushedRev(path, rev) {
+    try {
+      const m = (await getMeta('pushed')) || {},
+        revs = {
+          ...(m.revs || {})
+        },
+        list = (revs[path] || []).filter(r => r !== rev);
+      list.push(rev);
+      revs[path] = list.slice(-PUSHED_REVS);
+      const keys = Object.keys(revs);
+      for (const k of keys.slice(0, Math.max(0, keys.length - PUSHED_PATHS))) delete revs[k];
+      await setMeta('pushed', {
+        ...m,
+        revs
+      });
+    } catch {
+      /* la mémoire des révisions ne bloque jamais un envoi : au pire un conflit de plus, sans perte */
+    }
+  }
+  /** Une version de ce navigateur revue comme « distante » : comptée, sans conflit (diagnostic : `ownVersions`). */
+  async function noteOwnSeen(path) {
+    try {
+      const m = (await getMeta('pushed')) || {};
+      await setMeta('pushed', {
+        ...m,
+        ownSeen: {
+          n: (m.ownSeen?.n || 0) + 1,
+          path: String(path).slice(0, 200),
+          at: new Date().toISOString()
+        }
+      });
+    } catch {
+      /* rien : un compteur de diagnostic */
+    }
+  }
   async function applyPushed(pend, next, remote) {
     const tree = {
       ...(remote?.tree || {})
@@ -1462,6 +1505,7 @@
         delete tree[p.path];
       } else {
         const rev = await gitSha(p.text);
+        await notePushedRev(p.path, rev);
         await idb('docs', 'put', {
           path: p.path,
           text: p.text,
@@ -1625,8 +1669,13 @@
         path: String(c.path || '').slice(0, 200),
         at: c.at,
         side: c.side,
-        seen: !!c.seen
+        seen: !!c.seen,
+        // SOG-0136 : la version perdante est « étrangère » (révision inconnue de ce navigateur) ; « inconnue » pour une entrée d'avant cette mémoire
+        origin: c.origin === 'foreign' ? 'foreign' : 'unknown',
+        lostRev: String(c.lostRev || '').slice(0, 12)
       })),
+      // les versions que CE navigateur avait poussées et a revues comme « distantes » (écartées sans conflit, SOG-0136) : combien, la dernière
+      ownVersions: (await getMeta('pushed').catch(() => null))?.ownSeen || null,
       failures: (await getMeta('failures'))?.list || [] // les cinq derniers échecs de synchronisation, du plus récent
     };
   }

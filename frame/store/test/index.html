@@ -1489,6 +1489,71 @@
       const dg = await FD.diagnostic();
       check('the diagnostic says it once, with the path and the module', dg.serialWrites.length === 1 && dg.serialWrites[0].path === p && ['fuel', 'maps'].includes(dg.serialWrites[0].module), dg.serialWrites);
     },
+    // ---- SOG-0136 : les révisions que CE navigateur a poussées — sa propre version qui revient n'est pas un autre appareil ; un vrai autre appareil fait toujours un conflit ; un commit du lanceur entre le tirage et l'envoi n'en fait pas
+    async 'own revisions: this browser\'s own earlier version coming back is no conflict; a foreign version always is; an unrelated commit between pull and send makes none'() {
+      const p = 'disponibilites/TST/own.txt';
+      await fresh({
+        [p]: 'v0'
+      });
+      FD.configure({
+        transport: FD.github({
+          repo: 'test/data',
+          branch: 'main',
+          token: 'test-token',
+          api: `${location.origin}/api`
+        }),
+        identity: {
+          trigram: 'TST'
+        }
+      });
+      const a = FD.adapter({
+        id: 'own',
+        reads: ['disponibilites/'],
+        writes: [{
+          prefix: 'disponibilites/',
+          merge: 'record'
+        }]
+      });
+      await a.sync();
+      await a.put(p, 'v1');
+      await a.sync();
+      await a.put(p, 'v2');
+      await a.sync(); // v1 and v2 were pushed by this browser
+      // (A) its own earlier version (v1) reappears as « remote » while a newer write waits: not another device
+      await T('write', {
+        files: {
+          [p]: 'v1'
+        }
+      });
+      await a.put(p, 'v3');
+      const r = await a.sync();
+      const cs = await FD.conflicts();
+      const dg = await FD.diagnostic();
+      check('its own earlier version coming back: no conflict, the local write wins and leaves', r.conflicts === 0 && cs.length === 0 && (await stats()).files[p] === 'v3', [r, cs.length, (await stats()).files[p]]);
+      check('the diagnostic says how many own versions were seen coming back, and the last', dg.ownVersions?.n === 1 && dg.ownVersions.path === p, dg.ownVersions);
+      // (B) a version this browser never pushed: a real other device — always a conflict, nothing lost
+      await T('write', {
+        files: {
+          [p]: 'foreign'
+        }
+      });
+      await a.put(p, 'v4');
+      const r2 = await a.sync();
+      const cs2 = await FD.conflicts();
+      const dg2 = await FD.diagnostic();
+      check('a version never pushed from here: a conflict, the lost version kept whole', r2.conflicts === 1 && cs2.length === 1 && cs2[0].lost === 'foreign' && cs2[0].kept === 'v4', [r2, cs2]);
+      check('the conflict carries the revision of the lost version and says it is foreign to this browser', cs2[0].lostRev && cs2[0].origin === 'foreign' && dg2.conflictList[0].origin === 'foreign' && dg2.conflictList[0].lostRev.length > 5, [cs2[0].lostRev, dg2.conflictList]);
+      // (C) the launcher (or anybody) commits an UNRELATED file between the page's pull and its send: pulled again, pushed again, no conflict on a file nobody touched
+      const q = 'disponibilites/TST/other.txt';
+      await a.put(q, 'o1');
+      await T('write', {
+        files: {
+          'sia/unrelated.json': '{"x":1}'
+        }
+      });
+      const r3 = await a.sync();
+      check('an unrelated commit between pull and send: the page pulls and pushes again, no conflict', r3.conflicts === 0 && r3.pushed >= 1 && (await stats()).files[q] === 'o1', [r3, (await stats()).files[q]]);
+    },
     // ---- SOG-0279 : l'envoi groupé — dix écritures en peu de temps : aucun commit, puis UN seul ; le vol en cours retenu jusqu'à son geste
     async 'grouped send: ten writes make no commit, then one; the flight is held until its gesture; before a launcher job what waits is sent'() {
       const fl = 'pilot/TST/current_flight.json';
