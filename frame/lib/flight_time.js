@@ -59,6 +59,13 @@ export function legTimes(f, opts = {}) {
   const cum = opts.path && pts.every(p => p.nm != null) ? pts.map(p => p.nm) : [0];
   for (let i = cum.length; i < pts.length; i++) cum.push(cum[i - 1] + legNm(pts[i - 1], pts[i]));
   for (const p of pts) delete p.nm;
+  // le temps sur zone de chaque point (route.holds, minutes comptées ; CONCEPTION 11/11 § 1 bis), 0 sans attente
+  const H = f?.route?.holds && typeof f.route.holds === 'object' ? f.route.holds : {},
+    hold = pts.map(p => {
+      const c = num(+H[String(p.id || '').toUpperCase()]?.count);
+      return c != null && c > 0 ? Math.min(600, c) : 0;
+    }),
+    holdSum = hold.reduce((a, b) => a + b, 0);
   const D = cum.at(-1),
     taxi = num(q.taxiMin) != null && q.taxiMin >= 0 ? q.taxiMin : TAXI_MIN,
     P = f.profile || {},
@@ -78,7 +85,8 @@ export function legTimes(f, opts = {}) {
     if (min.some(v => v == null)) min = null;
   }
   if (!min) {
-    const total = +q.minutes;
+    // sans legs : le temps du devis moins ses attentes est réparti le long de la route, puis chaque attente décale les points suivants
+    const total = +q.minutes - (num(+q.holdMin) ?? 0);
     if (!(total > 0) || !(D > 0)) return null;
     // montée et descente à leurs vitesses quand le profil les donne, la croisière au temps qui reste du devis ; sinon une
     // seule vitesse moyenne
@@ -95,12 +103,18 @@ export function legTimes(f, opts = {}) {
         if (d <= c1) return tc + (d - c0) / (vc || 1e-9);
         return total - td + (td ? (d - c1) / (D - c1) * td : 0);
       };
-    min = cum.map(at);
+    let before = 0;
+    min = cum.map((d, i) => {
+      const m = at(d) + before;
+      before += hold[i];
+      return m;
+    });
   }
   return {
     pts,
     cum,
     min,
+    hold, // minutes d'attente à chaque point (l'avion y reste avant de repartir)
     taxi,
     total: min.at(-1),
     tocNm,
@@ -123,7 +137,7 @@ export function etaOf(f, now = Date.now(), opts = {}) {
 }
 
 /** Position prévue à l'instant now : { lat, lon (dans [-180, 180[), legIndex, nmFromDep, phase ('taxi', 'climb', 'cruise',
- *  'descent', 'arrived') }, interpolée sur l'horaire le long du grand cercle de chaque tronçon ; au terrain de départ
+ *  'hold' (le temps sur zone d'un point), 'descent', 'arrived') }, interpolée sur l'horaire le long du grand cercle de chaque tronçon ; au terrain de départ
  *  pendant le roulage. null sans heure de référence ni horaire, avant la mise en route, et, comme etaOf, pour un vol non
  *  démarré dont l'arrivée est passée. */
 export function plannedPositionAt(f, now = Date.now(), opts = {}) {
@@ -157,6 +171,13 @@ export function plannedPositionAt(f, now = Date.now(), opts = {}) {
   };
   let i = 0;
   while (i < n - 2 && t >= T.min[i + 1]) i++;
-  const span = T.min[i + 1] - T.min[i];
-  return at(i, span > 0 ? Math.min(1, Math.max(0, (t - T.min[i]) / span)) : 0);
+  // le temps sur zone du point i : l'avion y reste (phase « hold »), puis repart sur le tronçon dans le temps qui reste
+  const h = T.hold?.[i] || 0,
+    start = T.min[i] + h;
+  if (h > 0 && t < start) return {
+    ...at(i, 0),
+    phase: 'hold'
+  };
+  const span = T.min[i + 1] - start;
+  return at(i, span > 0 ? Math.min(1, Math.max(0, (t - start) / span)) : 0);
 }

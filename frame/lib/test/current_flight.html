@@ -304,6 +304,45 @@
     lon: -0.45
   }), 1), JSON.stringify(op));
 
+  // temps sur zone (CONCEPTION 11/11 § 1 bis) : 20 min au point du milieu ; l'avion y reste, puis l'horaire glisse
+  const holdF = {
+      route: {
+        points: [{
+          id: 'AAA',
+          lat: 45,
+          lon: 0
+        }, {
+          id: 'MID',
+          lat: 45,
+          lon: 1
+        }, {
+          id: 'BBB',
+          lat: 45,
+          lon: 2
+        }],
+        holds: {
+          MID: {
+            min: 20,
+            max: 20,
+            count: 20
+          }
+        }
+      },
+      started: {
+        at: '2030-01-01T10:00:00Z'
+      },
+      quote: {
+        minutes: 40,
+        holdMin: 20,
+        taxiMin: 0
+      }
+    },
+    hT = legTimes(holdF),
+    hp = plannedPositionAt(holdF, min(18));
+  ck('temps sur zone : le point suivant arrive 20 min plus tard (10 + 20 + 10)', hT && near(hT.min[1], 10, .5) && near(hT.min[2], 40, .5),
+    JSON.stringify(hT?.min));
+  ck('temps sur zone : à 18 min, l\'avion est sur le point, en attente', hp && hp.phase === 'hold' && near(hp.lon, 1, 1e-6), JSON.stringify(hp));
+
   // ligne de changement de date : UHMA → PAOM
   const dl = {
       route: {

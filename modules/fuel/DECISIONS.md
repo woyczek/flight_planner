@@ -1713,3 +1713,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **12 Nov 2026 — the time on area, its line** (the ergonomist on N40_points at 390): one line of its own under the point, in one piece,
   said in words (« ⏱ Sur zone [10] min · mission : 5 à 40 »); a point without time only « ⏱ + », which opens its line; the level field
   narrower under 420 px so that an id in coordinates (11 characters) stays whole. N40 extended.
+- **12 Nov 2026 — the time on area in the frame's timetable** (frame/lib/flight_time.js, read by the Map): `legTimes` returns the hold
+  of each point (`route.holds[word].count`) and, without the quote's legs, spreads the quote's time without its holds then shifts the
+  following points; `plannedPositionAt` keeps the aircraft on the point during its hold (phase « hold »), then flies the leg in the
+  time left. The Map's progress follows with nothing to change (BUGS SOG). Bench of frame/lib/test/current_flight.html (D38), red
+  before: the aircraft moved on during the hold.
