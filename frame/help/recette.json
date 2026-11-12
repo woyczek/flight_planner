@@ -2096,8 +2096,8 @@
    "id": "Q-0037",
    "fiche": "SOG-0252",
    "app": "pilote",
-   "question": "Voies de circulation sans nom : sur Orly, 169 voies sur 213 n'ont pas de nom dans notre source (OpenStreetMap). D'où tirer les noms qui manquent ?",
-   "context": "Les panneaux sont livrés, mais une voie sans nom dans la source n'en porte pas : la carte montre beaucoup de traits gris nus, là où ta cible nomme tout. Little Navmap, sur ton poste, connaît les noms des voies (données du simulateur). La règle déjà posée pour les procédures lues de Little Navmap s'appliquerait : lecture seule, ce poste seulement, case d'usage personnel, jamais publié.",
+   "question": "Voies de circulation sans nom : sur certains terrains la source (OpenStreetMap) ne nomme pas la plupart des voies — à Strasbourg, 169 sur 213 ; à Orly, 45 sur 167. D'où tirer les noms qui manquent ?",
+   "context": "Les panneaux sont livrés, mais une voie sans nom dans la source n'en porte pas : sur un terrain comme Strasbourg la carte montre beaucoup de traits nus. (Chiffres de BUGS SOG, corrigés : il avait d'abord attribué ceux de Strasbourg à Orly.) Little Navmap, sur ton poste, connaît les noms des voies (données du simulateur). La règle posée pour les procédures lues de Little Navmap s'appliquerait : lecture seule, ce poste seulement, case d'usage personnel, jamais publié.",
    "options": [
     "Lire les noms des voies dans Little Navmap, sur ce poste seulement, avec la case d'usage personnel (comme les procédures)",
     "Rester sur OpenStreetMap : une voie sans nom n'a pas de panneau",
