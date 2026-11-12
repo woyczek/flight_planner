@@ -769,3 +769,39 @@ def g20(c):
     c.until("/Alpha Air/.test(document.querySelector('[data-crairline]')?.textContent || '')", timeout=6000, what='the heading says Alpha Air')
     path = _save_report(c)
     c.eq((c.doc(path) or {}).get('airline'), 'aaa', 'saved with the flight\'s company', what='record airline')
+
+
+
+@case('G21', 'Report: after « Vol en cours » of another company\'s flight, a saved report opened from « Mes derniers CR » offers the families of '
+      'ITS company (the one its heading says), never those of the flight taken before', 'G', tags=('report',), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0041, remark of Sécurisation (audit 173): S.flightCo was cleared only at saving or at the next « Vol en cours »; openReport kept the '
+      'families of the old flight while the heading said the report\'s company; invented companies (Alpha Air: Commercial and SAR; Bravo Air: HEMS)')
+def g21(c):
+    from lib import flight_docs
+    docs = flight_docs(True)
+    f = docs[1][1]
+    f.update({'airline': 'aaa', 'theme': 'COMMERCIAL', 'series': 'CARGO'})
+    saved = {'schema': 1, 'updated_at': '2026-11-10T10:00:00Z', 'family': 'HEMS', 'airline': 'bbb', 'airlineName': 'Bravo Air',
+             'metadata': {'date': '2026-11-10', 'missionId': 'X-901A'}}
+    docs += [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+             ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+             ['airline/aaa/themes.json', {'schema': 1, 'chosen': ['COMMERCIAL', 'SAR']}, 'document'],
+             ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document'],
+             ['airline/bbb/themes.json', {'schema': 1, 'chosen': ['HEMS']}, 'document'], ['cache/report/draft.json', {}, 'cache'],
+             ['cr/reports/2026-11-10_TST_1.json', saved, 'document']]
+    c.open('report', docs=docs)
+    c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+    c.js("async () => { await window.FrameData.setAirline('bbb'); return true }")   # the device is on Bravo Air
+    c.until("!!document.querySelector('[data-module=report] [data-do=current]')", timeout=10000, what='the current-flight card')
+    c.tap('[data-module="report"] [data-do="current"]')
+    c.until("[...document.querySelectorAll('[data-module=report] select[data-family] option')].some(o => o.value === 'SAR')", timeout=8000,
+            what='the families of Alpha Air (the flight\'s company) first')
+    c.js("(() => { const d = document.querySelector('[data-module=report] details[data-recent]'); d.open = true; return true })()")
+    c.until("!!document.querySelector('[data-module=report] [data-open=\"cr/reports/2026-11-10_TST_1.json\"]')", timeout=8000, what='the saved report listed')
+    c.tap('[data-module="report"] [data-open="cr/reports/2026-11-10_TST_1.json"]')
+    c.until("/Bravo Air/.test(document.querySelector('[data-crairline]')?.textContent || '')", timeout=6000, what='the heading says Bravo Air')
+    c.until("(document.querySelector('[data-module=report] select[data-family]') || {}).value === 'HEMS'", timeout=8000, what='the report\'s family')
+    c.wait(600)
+    opts = c.js("[...document.querySelectorAll('[data-module=report] select[data-family] option')].map(o => o.value)")
+    c.ok('SAR' not in opts and 'COMMERCIAL' not in opts, opts, 'the families of Bravo Air (the report\'s company), none of Alpha Air (the flight taken before)')

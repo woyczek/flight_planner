@@ -716,14 +716,19 @@ async function airlineLine() {
     if (S === s) airlineLine();
   };
 }
-/** Les catégories de la compagnie courante : son categories.json (FrameData.airline().root, entrée non fiable filtrée par forAirline),
- *  à défaut la base commune ; relues quand la compagnie change. */
+/** Les catégories de la compagnie que dit l'en-tête : son categories.json (entrée non fiable filtrée par forAirline), à défaut la base
+ *  commune ; relues quand la compagnie change. La compagnie : celle du compte rendu enregistré ouvert, sinon celle du vol repris, sinon
+ *  la courante (SOG-0041 ; remarque de l'audit 173 : un compte rendu rouvert après « Vol en cours » gardait les familles de ce vol). */
 async function loadCategories() {
   let a = null,
     doc = null;
   try {
-    // SOG-0041 : le compte rendu d'un vol repris propose les familles de la compagnie DU VOL (current_flight.airline), sinon la courante
-    a = S?.flightCo || await window.FrameData?.airline?.();
+    const now = () => window.FrameData?.airline?.();
+    if (S?.saved?.code) a = await airlineOfCode(S.saved.code) || (S.saved.code === S.ctx.airline?.code ? await now() : {
+      code: S.saved.code, // une compagnie que l'index ne connaît plus : la base commune, jamais les familles d'une autre
+      kind: S.saved.kind
+    });
+    else a = S?.flightCo || await now();
     doc = a?.root ? await S.ctx.data.get(`${a.root}categories.json`) : null;
   } catch {
     doc = null;
@@ -738,7 +743,12 @@ async function loadCategories() {
  *  sans elle, pour un code inconnu de l'index, ou quand c'est la compagnie courante. Le dossier suit la règle du cadre (airline/<code>/,
  *  airline/ pour default, pilot/<trigramme>/airline/perso/ pour personnel) ; son settings.json est une entrée non fiable (kindOf). */
 async function flightAirline(cf) {
-  const code = typeof cf?.airline === 'string' && /^[a-z0-9]{2,8}$/.test(cf.airline) ? cf.airline : '';
+  return airlineOfCode(cf?.airline);
+}
+/** Une compagnie de l'index par son code (le vol repris, le compte rendu ouvert) : { code, name, kind, root, settings } ; null pour un
+ *  code mal formé, inconnu de l'index, ou celui de la compagnie courante. */
+async function airlineOfCode(c) {
+  const code = typeof c === 'string' && /^[a-z0-9]{2,8}$/.test(c) ? c : '';
   if (!code || code === S.ctx.airline?.code) return null;
   const known = (await window.FrameData?.airlines?.().catch(() => null) || []).find(x => x?.code === code);
   if (!known) return null;
@@ -1313,6 +1323,9 @@ async function openReport(path) {
   S.missionSeen = true; // CR déjà enregistré : sa mission a été choisie
   S.path = path;
   S.saved = savedOf(r); // sa compagnie, enregistrée avec lui (SOG-0181)
+  S.flightCo = null; // le vol repris avant ne dit plus rien de ce compte rendu (remarque de l'audit 173)
+  await loadCategories(); // ses familles : celles de SA compagnie, que dit l'en-tête
+  if (!S) return;
   airlineLine();
   S.sources = {};
   S.step = 0;
@@ -1468,6 +1481,8 @@ async function onClick(e) {
       S.missionSeen = false;
       S.path = null;
       S.saved = null;
+      await loadCategories(); // les familles de la compagnie que dit à nouveau l'en-tête (vol repris, sinon la courante)
+      if (!S) return;
       airlineLine();
       S.sources = {};
       S.step = 0;
@@ -1589,8 +1604,8 @@ export async function mount(el, ctx) {
   S.onAirline = () => S?.body && loadCategories().then(() => S?.body && (render(), airlineLine()));
   window.addEventListener('frame-airline', S.onAirline);
   measureStatus(S); // « Mesures » : le dossier Output du poste, s'il est réglé (§ 10.37 A étape 3)
-  await loadCategories(); // les catégories de la compagnie (la charge, SOG-0041)
   if (S.path) S.saved = savedOf(await ctx.data.get(S.path).catch(() => null)); // un brouillon d'un CR enregistré : sa compagnie
+  await loadCategories(); // les catégories de la compagnie que dit l'en-tête (la charge, SOG-0041)
   airlineLine();
   // plan de vol : appels par ctx.net ; types d'appareil par aerodb (modèle, voilure tournante)
   const ac = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;

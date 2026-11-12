@@ -266,3 +266,10 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   it (airline, name, kind); a report started afresh goes back to the current company. G20 (red before); N42 holds the path the user
   refused on 10 Nov end to end (mission « fret » → Fuel Famille COMMERCIAL / Série Fret → report: taken, freight in kg, the series changed
   in the report is the one saved).
+- **13 Nov 2026 — the families follow the company the heading says** (SOG-0041, remark of Sécurisation, audit 173): `S.flightCo` (the
+  company of a flight taken by « Vol en cours ») was cleared only at saving or at the next « Vol en cours »; a saved report opened from « Mes
+  derniers CR » showed its own company in the heading but offered the families of the flight taken before. One rule now, in
+  `loadCategories`: the saved report's company (by `airlineOfCode`, the same reading as the flight's; a code the index no longer knows: the
+  common base, never another company's families), else the flight's, else the current one. `openReport` clears `S.flightCo` and reloads the
+  families; « Nouveau » reloads them; at mounting, the saved company is read before the families. G21 (red before: HEMS, SAR, COMMERCIAL
+  offered under « Bravo Air »).

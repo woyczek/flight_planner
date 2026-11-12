@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report: the families offered are always those of the company the heading says** — a saved report reopened after « Vol en cours » no longer offers the families of that flight's company (Report DECISIONS; noreg G21; SOG-0041, audit 173).
 - **Missions: the registry, one line per mission** — the V2 model: state sign, identifier, title, family · series, origin → destination; the rest when the line is unfolded; family filter at the head, sorted by series (Missions DECISIONS, help; noreg N43; SOG-0286).
 - **Weather: `cacheOnly` no longer calls Open-Meteo** — `grid` / `aloft` / `forecast` in `cacheOnly` read the known run time (memory, then reserve) instead of asking `meta.json`; an unknown run gives the 30 min blind validity. Bench A25 (SOG-0092).
 - **Towns: the GeoNames extract holds Portugal and Ireland** (SOG-0102) — `shared/carto/villes_geonames.csv` had 2 towns for Portugal and 43 for Ireland; it now has 1,025 and 567 (inhabited places of 500 inhabitants and more, the criterion of the other countries), refilled with `python tools/update_cities_geonames.py PT IE` from the GeoNames country extracts (same host as the catalogue, CC BY 4.0, already credited in LICENSE.md). 70,962 → 72,509 rows, 4.1 MB (+17 KB). Case K217 (red before: PT 2, IE 43; also: finite coordinates in range, no geonameid twice).
