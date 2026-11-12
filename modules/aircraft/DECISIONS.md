@@ -147,3 +147,7 @@
 - **12 Nov 2026 — « Propriétaire ou exploitant », « En vol »** (SOG-0268, the user: « « exploitant » et « exploitation ». qu'est-ce à
   dire ? »): the field says « Propriétaire ou exploitant » with one line (« une compagnie, un aéroclub, un particulier »), the group title
   « Exploitation » becomes « En vol », the callsigns say what they are for with an example. M42 (red before: « Exploitation »).
+- **12 Nov 2026 — « Créer F-BHHH » and « Rechercher sur rzjets.net » when the search finds nothing** (SOG-0269, SOG-0271): what was
+  typed, as a registration when it has the shape (fbhhh → F-BHHH; an N-number or a typed dash kept), opens a new aircraft with it; the
+  third-party site opens in a new tab at the registration (a link, the pilot's gesture: no launcher call, no reading of its pages, no
+  host added). The button carries `data-newreg` (a `data-reg` was taken for a row of the fleet by the click handler). M43.

@@ -90,6 +90,14 @@ const TX = {
     'Ninguna aeronave en la flota.'
   ],
   noHit: ['Aucun aéronef ne correspond.', 'No aircraft matches.', 'Kein Luftfahrzeug passt.', 'Ninguna aeronave coincide.'],
+  // SOG-0269 : « Créer F-BHHH » sous « Aucun aéronef ne correspond » ; SOG-0271 : la recherche chez un tiers, un lien qui ouvre un onglet
+  createReg: ['Créer {reg}', 'Create {reg}', '{reg} anlegen', 'Crear {reg}'],
+  searchRz: ['Rechercher sur rzjets.net', 'Search on rzjets.net', 'Auf rzjets.net suchen', 'Buscar en rzjets.net'],
+  searchRzHint: ['Ouvre le site dans un nouvel onglet ; revenez saisir le type.',
+    'Opens the site in a new tab; come back to enter the type.',
+    'Öffnet die Seite in einem neuen Tab; kommen Sie zurück, um den Typ einzugeben.',
+    'Abre el sitio en una pestaña nueva; vuelva para escribir el tipo.'
+  ],
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   count: ['{n} aéronefs', '{n} aircraft', '{n} Luftfahrzeuge', '{n} aeronaves'],
   count1: ['1 aéronef', '1 aircraft', '1 Luftfahrzeug', '1 aeronave'], // au singulier (« 1 aéronefs », relu par l'ergonome)
@@ -359,6 +367,22 @@ function draw(s) {
   } else if (s.edit) refreshEditor(s);
 }
 
+/** Ce qui a été tapé dans la recherche, mis en forme d'immatriculation quand il en a la forme (« fbhhh » → « F-BHHH ») ; '' sinon. */
+function regOfQuery(q) {
+  const t = String(q || '').trim().toUpperCase();
+  if (!/^[A-Z0-9-]{3,10}$/.test(t)) return '';
+  if (t.includes('-') || /^N\d/.test(t)) return t; // déjà écrite ainsi, ou un N américain (sans tiret)
+  return /^[A-Z]{5}$/.test(t) ? `${t[0]}-${t.slice(1)}` : t;
+}
+/** Sous « Aucun aéronef ne correspond » (SOG-0269, SOG-0271) : « Créer F-BHHH » (la fiche neuve, l'immatriculation remplie) et
+ *  « Rechercher sur rzjets.net », un lien qui ouvre le site d'un tiers dans un nouvel onglet à l'adresse de l'immatriculation (geste du
+ *  pilote ; la suite ne lit jamais ce site : ni lanceur, ni aspiration). '' sans saisie qui ait la forme d'une immatriculation. */
+function noHitActions(s) {
+  const reg = regOfQuery(s.q);
+  if (!reg) return '';
+  const url = `https://rzjets.net/aircraft/?registry=${encodeURIComponent(reg.replace(/-/g, ''))}`;
+  return `<div class="f-row ac-nohit"><button type="button" class="primary" data-do="addq" data-newreg="${esc(reg)}">${esc(s.tt(TX.createReg, { reg }))}</button><a class="f-linkbtn" data-rzjets href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.tt(TX.searchRzHint))}">${esc(s.tt(TX.searchRz))}</a></div>`;
+}
 /** La liste : recherche, « Ajouter », sept lignes puis « N autres ». */
 function listHtml(s) {
   const all = listOf(s),
@@ -367,7 +391,7 @@ function listHtml(s) {
     row = a => `<button type="button" class="f-item ac-row" data-reg="${esc(a.registration)}"><span><b>${esc(a.registration)}</b> ${esc(a.type || '')}${a.variant ? ` <span class="f-muted">${esc(a.variant)}</span>` : ''}</span><span class="f-muted">${esc([(a.callsigns || []).join(' '), a.base].filter(Boolean).join(' · '))}${a.operational === false ? ` <span class="f-badge" data-kind="warn">${esc(s.tt(TX.out))}</span>` : ''}</span></button>`;
   return `<div class="f-card" data-pane="fleet"><div class="f-row ac-head"><b data-fleetof>${esc(s.co ? s.tt(TX.fleetOf, { a: s.co }) : s.tt(TX.fleet))}</b> <span class="f-muted" data-count>${esc((all.length === 1 ? s.tt(TX.count1) : s.tt(TX.count, { n: all.length })))}</span><button type="button" class="primary" data-do="add">${esc(s.tt(TX.add))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"></label>
-    <div class="f-list" data-list>${!all.length ? `<p class="f-muted">${esc(s.tt(TX.none))}</p>` : !hits.length ? `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>` : shown.map(row).join('')}</div>
+    <div class="f-list" data-list>${!all.length ? `<p class="f-muted">${esc(s.tt(TX.none))}</p>${noHitActions(s)}` : !hits.length ? `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>${noHitActions(s)}` : shown.map(row).join('')}</div>
     ${hits.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="more">${esc(s.tt(TX.more, { n: hits.length - shown.length }))}</button>` : ''}</div>`;
 }
 
@@ -514,6 +538,15 @@ async function onClick(s, e) {
       };
       draw(s);
       return s.el.querySelector('[data-f="registration"]')?.focus();
+    case 'addq': // SOG-0269 : « Créer F-BHHH » : la fiche neuve, l'immatriculation tapée remplie
+      s.edit = {
+        was: '',
+        draft: FL.normalize({
+          registration: regOfQuery(b.dataset.newreg)
+        })
+      };
+      draw(s);
+      return s.el.querySelector('[data-f="type"]')?.focus();
     case 'more':
       s.all = true;
       return draw(s);

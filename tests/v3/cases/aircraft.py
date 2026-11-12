@@ -1183,3 +1183,28 @@ def m42(c):
         c.ok('SAMU66' in (c.text(f'{M} [data-hint="callsigns"]') or ''), c.text(f'{M} [data-hint="callsigns"]'), 'the callsigns said with an example')
         c.js(f"document.querySelector('{M} [data-f=operator]').scrollIntoView({{block: 'center'}})")
         c.shot(f'M42_{c.design}_{w}_{c.lang}_delivered.png')
+
+
+
+@case('M43', 'Fleet: « Aucun aéronef ne correspond » offers « Créer F-BHHH » (what was typed, as a registration) and « Rechercher sur rzjets.net », a link to a new tab',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0269 (user: « je tape « fbhhh » « aucun aéronef ne correspond ». on devrait aussi avoir un lien « créer » ») and SOG-0271 (a link that '
+      'opens rzjets.net in a new tab at the registration; the suite never reads that site); captures 390 and 1 280')
+def m43(c):
+    A = 'modules/aircraft/module.js'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('aircraft', app='maintenance')
+        c.until(f"!!document.querySelector('{M} input[data-k=q]')", timeout=15000, what='the fleet and its search')
+        c.page.fill(f'{M} input[data-k="q"]', 'fbhhh')
+        c.until(f"!!document.querySelector('{M} [data-do=addq]')", timeout=5000, what=f'{w} px: « Créer » under « Aucun aéronef ne correspond »')
+        c.eq(norm(c.text(f'{M} [data-do="addq"]') or ''), norm(tx(A, 'createReg', c.lang).replace('{reg}', 'F-BHHH')), 'what was typed, as a registration',
+             what='create')
+        link = c.js(f"(() => {{ const a = document.querySelector('{M} a[data-rzjets]'); return a && [a.getAttribute('href'), a.target, a.rel] }})()")
+        c.eq(link, ['https://rzjets.net/aircraft/?registry=FBHHH', '_blank', 'noopener noreferrer'], 'a link to a new tab at the registration, never read by the suite',
+             what='rzjets link')
+        c.js(f"document.querySelector('{M} [data-do=addq]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'M43_{c.design}_{w}_{c.lang}_delivered.png')
+        c.tap(f'{M} [data-do="addq"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=edit]')", timeout=5000, what='the new aircraft')
+        c.eq(c.js(f"document.querySelector('{M} [data-f=registration]').value"), 'F-BHHH', 'the registration filled', what='registration')
