@@ -143,13 +143,30 @@ async function faaSet(out, zone) {
   }), 'warn');
   await fetchThenBuild(out.zone || zone);
 }
+/** Ce que l'envoi n'a pas pu faire est écrit sur la ligne de la zone (le fichier choisi, puis le motif du lanceur) : la notification s'efface, la ligne reste jusqu'à la tentative suivante. */
+function sayOnLine(zone, name, text) {
+  S.zoneMsg.set(zone, {
+    level: 'err',
+    lines: [tt(TX.zm.chosen, {
+      name
+    }), text]
+  });
+  renderBuild();
+}
 /** Envoie le fichier choisi : un seul à la fois, l'avancement sur la ligne de la zone, la fin en une notification ; un envoi réussi enchaîne la construction de la zone reconnue (celle de la ligne à défaut). */
 export async function startUpload(zone, file) {
   const me = S;
   if (!file || uploadOff() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
   const name = String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) || '?';
-  if (file.size > MAX_BYTES) return S.ctx.notify(tt(TX.up.why['too-large']), 'err');
-  if (file.size === 0) return S.ctx.notify(tt(TX.up.why.empty), 'err');
+  if (file.size > MAX_BYTES) {
+    sayOnLine(zone, name, tt(TX.up.why['too-large']));
+    return S.ctx.notify(tt(TX.up.why['too-large']), 'err');
+  }
+  if (file.size === 0) {
+    sayOnLine(zone, name, tt(TX.up.why.empty));
+    return S.ctx.notify(tt(TX.up.why.empty), 'err');
+  }
+  S.zoneMsg.delete(zone); // une nouvelle tentative remplace ce que la ligne disait
   const ctrl = new AbortController();
   S.upload = {
     zone,
@@ -172,7 +189,8 @@ export async function startUpload(zone, file) {
   if (S !== me) return;
   S.upload = null;
   const out = outcome(r);
-  renderBuild();
+  if (out.kind === 'fail') sayOnLine(zone, name, out.text);
+  else renderBuild();
   S.ctx.notify(out.text, out.kind === 'fail' ? 'err' : 'ok');
   // le fichier est rangé là où « Prendre le fichier téléchargé » lit (data/local/upload/) : le parcours normal suit — le plan, la prise, puis la construction de la zone reconnue
   if (out.kind === 'fail') return;

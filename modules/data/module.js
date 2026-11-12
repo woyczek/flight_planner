@@ -347,6 +347,7 @@ export async function mount(el, ctx) {
     outlines: null, // les contours des zones (ctx.aerodb.zoneOutlines) : null (pas demandés), 'loading', l'objet, ou false (sans réponse : la liste seule)
     pickupBlocked: null, // les zips du plan montré que la prise réelle n'a pas lancés (nom hors de la règle) : dits à la fin
     pickupPlan: null, // le plan d'une prise montré dans la question : { zones, zips } (la prise réelle est construite de lui seul)
+    zoneMsg: new Map(), // ce qu'une prise ou un envoi de fichier n'a pas pu faire pour une zone, écrit sur SA ligne tant qu'une autre tentative ne l'a pas remplacé : identifiant de zone → { level, lines }
     maps: {}, // les cartes MapLibre des panneaux, par panneau (base, proc) : { host (persistant), map, layer, starting, sig, dark }
     mapFail: {}, // les panneaux dont le socle de carte n'a pas pu démarrer : la liste seule
     rz: 0, // l'image d'animation en attente du recalcul à la taille de la fenêtre

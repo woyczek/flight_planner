@@ -4006,6 +4006,92 @@ def l83(c):
     c.check_errors()
 
 
+@case('L84', 'Données: the line of a zone whose file is taken by hand says, on the line, why « Prendre le fichier téléchargé » or « Choisir le fichier… » got nowhere (what was received, what is missing), and the grey button says why (SOG-0244)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0244 (the user: « je désélectionne tout, je sélectionne le Portugal, j’ouvre le chevron, pour « prendre le fichier téléchargé ». Ça ne marche pas, et je ne peux pas ni savoir ce qui ne va pas, ni passer le fichier que je viens tout juste de télécharger »): on the line of a zone taken by hand « Choisir le fichier… » is always there; the reason of ANY refusal of the pickup (nothing in Downloads, a file to rename, a refused start) or of the upload (unrecognised, too large…) is written ON THE LINE — a notification fades, the line stays — with what was received and what is missing; a grey pickup button says why next to it')
+def l84(c):
+    lang = c.lang
+    T = lambda key, after=None: _trow(key, lang, after)
+    UP = lambda key: _trow(key, lang, after='  up: {')
+    ZM = lambda key: _trow(key, lang, after='  zm: {')
+    cfg, _ = _fixture()
+    cfg['zones'].append({'id': 'pt', 'names': ['Portugal', 'Portugal', 'Portugal', 'Portugal'], 'frames': [], 'published': True})
+    cfg['publication']['base']['pt'] = cfg['publication']['base']['fr']
+    waiting = {'code': 'pickup-waiting', 'source': 'navpt', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'AIP_PT.zip'}
+    # the pickup finds nothing for Portugal: the plan says « nothing found » and the file it expected
+    plan = _pk_plan(missing=[{'zone': 'pt', 'source': 'navpt', 'expected': 'AIP_PT_*.zip'}], zones=('pt',))
+    st = _launcher(c, [plan], verbs=_VERBS + ['base/pickup'])
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'gb': _zst('up-to-date'), 'us': _zst('up-to-date'),
+                            'pt': _zst('stale', waiting, buildable=False)})
+    answer = {'status': 422, 'body': {'ok': False, 'reason': 'unrecognised', 'expected': ['sia', 'nats']}}
+    c.context.route(re.compile(r'/__setup/base/upload'), lambda route: route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body'])))
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=8000, what='the six pills')
+    row = '[data-build-zones] [data-zone-row=pt]'
+    lines = lambda: [norm(x) for x in c.js(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].map(p => p.textContent)")]
+    # ---- his gesture: nothing ticked but Portugal, the fold « Plus » open, « Prendre le fichier téléchargé »
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.tap('[data-build-zones] [data-build-zone=pt]')
+    c.js("document.querySelector('[data-verbs-more]').open = true")
+    c.eq([c.count(f'{row} [data-verb=pickup]'), c.count(f'{row} [data-act=zone-upload]'), c.count(f'{row} [data-zone-msg]')], [1, 1, 0], 'the line of the zone says what it waits for, offers the pickup and « Choisir le fichier… », and has no message yet', what='line before')
+    c.tap('[data-build] [data-verbs-more] [data-verb=pickup]')
+    c.until(f"!!document.querySelector('{row} [data-zone-msg]')", timeout=8000, what='the line says why the pickup got nowhere')
+    miss = T('pickupMissing').replace('{z}', 'Portugal').replace('{s}', 'NAV Portugal').replace('{e}', 'AIP_PT_*.zip')
+    nothing = _trow('nothing', lang, after='  pickupSum: {')
+    c.eq(lines(), [norm(nothing), norm(miss)], 'on the line of Portugal: nothing to take in Downloads, and the file that is missing (what it expected)', what='pickup message')
+    c.eq([c.count(f'{row} [data-verb=pickup]'), c.count(f'{row} [data-act=zone-upload]')], [1, 1], 'and the line still offers both ways to pass the file', what='buttons stay')
+    # a notification fades: the line does not
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.wait(500)
+    c.eq(lines(), [norm(nothing), norm(miss)], 'once the notification is gone the line still says it', what='message stays')
+    # ---- « Choisir le fichier… » with a file the launcher does not recognise: the refusal is written on the line, with the file that was received
+    c.until("!document.querySelector('[data-build-zones] [data-zone-row=pt] [data-act=zone-upload]').disabled", timeout=8000, what='the buttons are free again')
+    with c.page.expect_file_chooser() as fc:
+        c.js(f"document.querySelector('{row} [data-act=zone-upload]').click()")
+    fc.value.set_files({'name': 'AIP_PT.iso', 'mimeType': 'application/x-iso9660-image', 'buffer': b'CD001' + b'x' * 995})
+    c.until(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].some(p => p.textContent.includes('AIP_PT.iso'))", timeout=8000, what='the refusal is written on the line')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    got = lines()
+    c.eq([got[0], norm(UP('unrecognised').split('{s}')[0]) in got[1] if len(got) > 1 else None, len(got)], [norm(ZM('chosen').replace('{name}', 'AIP_PT.iso')), True, 2], 'the upload refused: the line says which file was received and why the launcher did not take it (it replaces the old message)', what='upload message')
+    c.eq(c.count(f'{row} [data-verb=pickup]') + c.count(f'{row} [data-act=zone-upload]'), 2, 'the way to try again is still on the line', what='again')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{row}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'L84_{c.width}_{lang}_delivered.png')
+    # ---- a pickup refused at the start (too early): the reason is on the line too
+    st['start'] = (429, {'ok': False, 'reason': 'too-early'})
+    c.until(f"!document.querySelector('{row} [data-verb=pickup]').disabled", timeout=8000, what='the pickup is free')
+    c.tap(f'{row} [data-verb=pickup]')
+    c.until(f"[...document.querySelectorAll('{row} [data-zone-msg] [data-line]')].every(p => !p.textContent.includes('AIP_PT.iso'))", timeout=8000, what='the refusal replaces the message of the upload')
+    c.ok(len(lines()) == 1 and len(lines()[0]) > 0, lines(), 'a pickup refused at the start says its reason on the line (one sentence)')
+    # ---- a launcher that does not know base/pickup: the button is grey on the line AND in the fold, each with its reason next to it
+    st['verbs'], st['start'] = _VERBS, (200, {'job': 'j1'})
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-build-zones] [data-zone-row=pt] [data-verb=pickup]')", timeout=10000, what='the line of Portugal')
+    grey = norm(_trow('unknown-verb', lang, after='  greyReason: {'))
+    c.eq([c.js(f"document.querySelector('{row} [data-verb=pickup]').disabled"), norm(c.text(f'{row} [data-zone-grey]')), c.js("document.querySelector('[data-build] [data-verbs-more] [data-verb=pickup]').disabled"),
+          norm(c.text('[data-build] [data-verbs-more] [data-pickup-reason]'))], [True, grey, True, grey], 'the pickup is grey: its reason is written next to it, on the line and in the fold', what='grey reason')
+    c.eq(c.js(f"document.querySelector('{row} [data-act=zone-upload]').disabled"), False, '« Choisir le fichier… » stays live (it is another route of the launcher)', what='upload live')
+    # ---- the state the user saw (« à reconstruire », buildable, no file waiting): the line has nothing to offer; the pickup from the fold, which finds nothing, writes it on the line and opens « Choisir le fichier… »
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'gb': _zst('up-to-date'), 'us': _zst('up-to-date'),
+                            'pt': _zst('stale', {'code': 'source-newer', 'source': 'navpt', 'cycle': '2026-11-26', 'built': '2026-10-29'})})
+    st['verbs'], st['views'], st['i'] = _VERBS + ['base/pickup'], [_pk_plan(zones=('pt',))], 0
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length >= 6", timeout=8000, what='the six pills')
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.tap('[data-build-zones] [data-build-zone=pt]')
+    c.js("document.querySelector('[data-verbs-more]').open = true")
+    c.eq([c.count(f'{row} [data-zone-action]'), c.count(f'{row} [data-act=zone-upload]')], [0, 0], 'a zone to rebuild whose file nothing says is waiting has no action on its line', what='plain line')
+    c.tap('[data-build] [data-verbs-more] [data-verb=pickup]')
+    c.until(f"!!document.querySelector('{row} [data-zone-msg]')", timeout=8000, what='the line says why the pickup got nowhere')
+    c.eq([lines(), c.count(f'{row} [data-act=zone-upload]'), c.count(f'{row} [data-verb=pickup]')], [[norm(nothing)], 1, 1], 'the pickup found nothing: said on the line, which now offers « Choisir le fichier… » and the pickup again', what='after the first try')
+    c.check_errors()
+
+
 _RT = lambda key, lang: _trow(key, lang, after='  route: {')
 
 

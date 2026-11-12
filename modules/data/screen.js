@@ -122,6 +122,8 @@ export const STYLE = `
 [data-module="data"] .d-st{display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;min-height:var(--sog-touch);padding:0 4px;border:0;background:none;color:inherit;font:inherit;font-size:var(--sog-size-s);white-space:nowrap}
 [data-module="data"] button.d-st{cursor:pointer;text-decoration:underline dotted}
 [data-module="data"] .d-zwhy{grid-column:1/-1;margin:0 0 4px 28px}
+[data-module="data"] .d-zmsg{grid-column:1/-1;margin:0 0 4px 28px}
+[data-module="data"] .d-zmsg p{margin:2px 0}
 /* le bilan en une ligne et l'action sur la ligne d'une zone (SOG-0180) : chaque nombre est un bouton, « Prendre le fichier » et « Réessayer » sont sur la ligne de leur zone */
 [data-module="data"] details.d-covtable{margin:12px 0}
 [data-module="data"] details.d-covtable>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}

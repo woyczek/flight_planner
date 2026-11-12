@@ -643,13 +643,14 @@ function verbsHtml(gate, panel, pk) {
   const base = panel === 'base';
   const dl = `<button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>`,
     pick = pk ? `<button type="button"${miss ? ' class="primary"' : ''} data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>` : '',
+    pickWhy = pk?.disabled && pk.reason ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason[pk.reason]))}</p>` : '', // le bouton est gris : sa raison est écrite à côté de lui
     rebuild = `<button type="button"${miss || base ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(base ? TX.upd.recompute : TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>`,
     purge = `<button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button>`;
   if (!base) return `<p class="d-verbs">${dl}\n      ${pick}${rebuild}\n      ${purge}</p>`;
   // la base : « Mettre à jour » est dans la tête du panneau (stateHeadHtml), seule en vue et primaire (règle 13 : un seul primaire par écran) ; ici le reste sous « Plus », replié. Quand un cycle manuel manque, la prise du fichier, qui passe avant
   // tout, reste en vue et devient le primaire
-  return `<div class="d-verbs" data-verbs-row>${miss ? pick : ''}
-    <details class="d-moreverbs" data-verbs-more${S.verbsOpen ? ' open' : ''}><summary>${esc(tt(TX.upd.more))}</summary><div class="d-verbs">${dl}${miss ? '' : pick}${rebuild}${purge}</div></details></div>`;
+  return `<div class="d-verbs" data-verbs-row>${miss ? pick + pickWhy : ''}
+    <details class="d-moreverbs" data-verbs-more${S.verbsOpen ? ' open' : ''}><summary>${esc(tt(TX.upd.more))}</summary><div class="d-verbs">${dl}${miss ? '' : pick}${rebuild}${purge}</div>${miss ? '' : pickWhy}</details></div>`;
 }
 /** Ce qu'il y a dans la ligne d'une zone de la base (la même dans la liste de la couverture et dans la liste dépliée de la phrase d'état) : sa case (la sélection est UNE : S.ticked), son nom, son état et ce qu'elle propose. */
 function zoneRowInner(z, busy) {
@@ -784,7 +785,6 @@ function setInner(panel) {
     ${spec.map ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
     ${verbsHtml(gate, panel, pk)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
-    ${pk?.reason === 'unknown-verb' && gate.reason !== 'unknown-verb' ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason['unknown-verb']))}</p>` : ''}
     ${panel === 'base' ? missingHtml() : ''}
     ${ui.hint ? `<p class="f-muted" ${ui.hint[0]}>${esc(tt(ui.hint[1]))}</p>` : ''}
     ${panel === 'base' ? '' : opAreaHtml(panel)}`;
@@ -951,6 +951,41 @@ export function pickupSummary(out) {
     '', // la construction suit d'elle-même seulement quand tout est pris : un échec laisse l'écran à ses gestes (Relancer le plan)
     level: out.level
   };
+}
+/** Ce que la ligne d'UNE zone dit d'une prise qui n'a pas abouti pour elle : { level, lines } — le résumé quand rien n'a été pris, ce qui a été trouvé dans Téléchargements (le zip et sa taille), puis ce qui manque, est refusé ou a échoué (les mêmes phrases que le bilan) ;
+ *  null quand la zone n'a plus rien à dire (prise faite). Écrit sur la ligne de la zone : une notification s'efface, la ligne reste. */
+export function zoneMsgOf(out, zone) {
+  const mine = list => (list || []).filter(x => x.zone === zone),
+    part = {
+      ...out,
+      taken: mine(out.taken),
+      missing: mine(out.missing),
+      failed: mine(out.failed),
+      unread: mine(out.unread),
+      skipped: mine(out.skipped),
+      blocked: mine(out.blocked),
+      inPlace: mine(out.inPlace)
+    },
+    problems = pickupProblems(part);
+  if (out.kind === 'done' && !problems.length) return null;
+  const got = part.taken.map(t => tt(TX.zm.got, {
+      zip: t.zip || count('file', (t.files || []).length),
+      b: M.fmtBytes(t.size || t.bytes || 0, lang())
+    })),
+    alone = ['nothing', 'failed', 'blocked', 'interrupted', 'cancelled'].includes(out.kind) ? [pickupSummary(part).text] : [];
+  const lines = [...new Set([...alone, ...got, ...problems])];
+  return lines.length ? {
+    level: out.kind === 'failed' ? 'err' : 'warn',
+    lines
+  } : null;
+}
+/** Retient (ou efface) ce que la ligne de chaque zone dit d'une prise : `zones` les zones demandées, `out` le résultat ; la ligne se redessine avec le panneau. */
+export function setZoneMsgs(zones, out) {
+  for (const z of zones) {
+    const m = zoneMsgOf(out, z);
+    if (m) S.zoneMsg.set(z, m);
+    else S.zoneMsg.delete(z);
+  }
 }
 /** La fin d'une prise (ou « Rien à prendre » quand le plan ne trouve rien) : le résumé, le conseil, puis ce qui manque ou a échoué. */
 function pickupResultHtml(r) {

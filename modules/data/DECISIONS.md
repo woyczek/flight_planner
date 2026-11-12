@@ -520,3 +520,13 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   sentence. The old balance line and its list filter are gone. « Publier » stays its own step: the line under the button says
   « télécharger …, reconstruire … » and does NOT say « puis publier », because `startUpdate` does not publish (the build
   publishing is for a later lot). The confirmation question still says « cochées » (left for the next lot).
+- **12 Nov 2026 — SOG-0244 (screen): a hand-taken file always has its reason and its gesture ON THE LINE** (the user's blocker:
+  Portugal alone, « Prendre le fichier téléchargé », nothing said, no way to pass the file): replayed first — the pickup
+  posted its dry plan, the answer was a fading note and a bilan at the top of the panel, the row stayed bare. Now a per-zone
+  message (`S.zoneMsg`, `zoneMsgHtml`, `[data-zone-msg]`) written at the end of a pickup plan, a real run, an upload or a
+  refused start, kept until the next attempt: what was found in Downloads, what is missing or refused, the launcher's
+  reason; « Choisir le fichier… » stays on the line as soon as it carries a message or waits for a file; a grey pickup says why
+  beside it. Limits told to AeroDB: `navpt` is a launcher-download source with no steps in the catalogue and neither the
+  pickup nor the upload take an `.iso` / `AIP ISO.zip` (launcher side); no folder variant of the upload exists on the
+  page; a stale buildable row has no action before a first attempt (L63, L70 keep that; offering it earlier needs a catalogue
+  field `how: 'pick'`).

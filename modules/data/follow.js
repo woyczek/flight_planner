@@ -31,6 +31,7 @@ import {
   purgeSummary,
   renderBuild,
   selection,
+  setZoneMsgs,
   sheetsSummary,
   summary
 } from './panels.js';
@@ -211,6 +212,9 @@ async function endPickup(final, live, seconds) {
     },
     sm = pickupSummary(out);
   S.pickupBlocked = null;
+  setZoneMsgs(S.ids,
+    out
+  ); // ce qui reste à dire (un fichier encore absent, un nom à renommer) est écrit sur la ligne de chaque zone : la notification s'efface
   await finishOp('base', M.PICKUP.verb, out, live, {
     sm,
     note: [sm.text, sm.hint, ...(out.kind === 'done' ? pickupProblems(out) :
@@ -366,6 +370,11 @@ function refused(me, r) {
   const f = M.refusal(r),
     set = S.run?.set || 'base',
     verb = S.run?.verb || 'build';
+  if (set === 'base' && verb === M.PICKUP.verb)
+    for (const z of S.ids) S.zoneMsg.set(z, { // la prise refusée au départ : la raison est écrite sur la ligne de la zone
+      level: 'err',
+      lines: [refusedText(f)]
+    });
   stopTimer();
   S.run = null;
   S.result = {
@@ -591,6 +600,18 @@ async function endPickupPlan(me, final) {
       kind: 'blocked'
     } : out,
     sm = ask ? null : pickupSummary(res);
+  setZoneMsgs(S.ids, ask ? {
+      kind: 'done',
+      taken: [],
+      missing: [],
+      failed: [],
+      unread: [],
+      skipped: [],
+      blocked: [],
+      inPlace: []
+    } :
+    res
+  ); // le plan ne trouve rien ou refuse : la ligne de la zone le dit (le bilan du haut d'écran n'est pas sous les yeux) ; une question posée efface ce qu'elle remplace
   if (ask) {
     S.pickupBlocked = split.blocked;
     S.pickupPlan = {

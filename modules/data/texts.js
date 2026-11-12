@@ -1413,6 +1413,13 @@ export const TX = {
     '{z}: {n} conjuntos {s} presentes: la casilla «Certifico que uso los datos para mi uso personal» no está marcada'
   ],
   // la question du plan de « Prendre le fichier téléchargé » (SOG-0197) : trois groupes titrés, une ligne par fichier (pays · fichier · taille), jamais une parenthèse dans une parenthèse
+  // ce que la ligne d'une zone dit d'une prise ou d'un envoi de fichier qui n'a pas abouti : ce qui a été reçu (le fichier choisi, le zip trouvé), puis ce qui manque ou ce qui a été refusé
+  zm: {
+    chosen: ['Fichier choisi : {name}', 'File chosen: {name}', 'Gewählte Datei: {name}', 'Archivo elegido: {name}'],
+    got: ['Trouvé dans Téléchargements : {zip} ({b})', 'Found in Downloads: {zip} ({b})', 'In Downloads gefunden: {zip} ({b})',
+      'Encontrado en Descargas: {zip} ({b})'
+    ]
+  },
   pk: {
     title: ['Dans Téléchargements :', 'In Downloads:', 'In Downloads:', 'En Descargas:'],
     take: ['Sera pris ({n})', 'Will be taken ({n})', 'Wird übernommen ({n})', 'Se tomará ({n})'],
