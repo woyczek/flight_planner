@@ -95,11 +95,23 @@ const TX = {
   count1: ['1 aéronef', '1 aircraft', '1 Luftfahrzeug', '1 aeronave'], // au singulier (« 1 aéronefs », relu par l'ergonome)
   out: ['hors service', 'out of service', 'außer Dienst', 'fuera de servicio'],
   identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
-  operation: ['Exploitation', 'Operation', 'Betrieb', 'Operación'],
+  operation: ['En vol', 'In flight', 'Im Flug',
+    'En vuelo'
+  ], // SOG-0268 : « Exploitation » ne disait rien (et ressemblait à « Exploitant »)
   registration: ['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'],
   type: ['Type (code OACI)', 'Type (ICAO code)', 'Typ (ICAO-Code)', 'Tipo (código OACI)'],
   variant: ['Variante', 'Variant', 'Variante', 'Variante'],
-  operator: ['Exploitant', 'Operator', 'Betreiber', 'Operador'],
+  operator: ['Propriétaire ou exploitant', 'Owner or operator', 'Eigentümer oder Betreiber', 'Propietario u operador'],
+  operatorHint: ['Celui qui exploite l’aéronef : une compagnie, un aéroclub, un particulier.',
+    'Who operates the aircraft: an airline, a flying club, a private owner.',
+    'Wer das Luftfahrzeug betreibt: eine Fluggesellschaft, ein Fliegerclub, eine Privatperson.',
+    'Quien explota la aeronave: una compañía, un aeroclub, un particular.'
+  ],
+  callsignsHint: ['Les indicatifs sous lesquels cet aéronef vole (par exemple AFR1234, SAMU66) : ils servent à retrouver ses vols.',
+    'The callsigns this aircraft flies under (for example AFR1234, SAMU66): they are used to find its flights.',
+    'Die Rufzeichen, unter denen dieses Luftfahrzeug fliegt (zum Beispiel AFR1234, SAMU66): Sie dienen dazu, seine Flüge zu finden.',
+    'Los indicativos con los que vuela esta aeronave (por ejemplo AFR1234, SAMU66): sirven para encontrar sus vuelos.'
+  ],
   callsigns: ['Indicatifs (séparés par des virgules)', 'Callsigns (comma separated)', 'Rufzeichen (durch Kommas getrennt)',
     'Indicativos (separados por comas)'
   ],
@@ -368,9 +380,9 @@ function editorHtml(s) {
       ${field('registration', TX.registration, ' autocapitalize="characters" spellcheck="false"')}
       ${field('type', TX.type, ' autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ac-typesug"')}<small class="f-muted" data-typeinfo></small>
       <div class="ac-sug" id="ac-typesug" data-typesug role="listbox" aria-label="${esc(s.tt(TX.typeList))}" hidden></div>
-      ${field('variant', TX.variant)}${field('operator', TX.operator)}</fieldset>
+      ${field('variant', TX.variant)}${field('operator', TX.operator)}<small class="f-muted" data-hint="operator">${esc(s.tt(TX.operatorHint))}</small></fieldset>
     <fieldset class="ac-group"><legend>${esc(s.tt(TX.operation))}</legend>
-      ${field('callsigns', TX.callsigns, ' autocapitalize="characters" spellcheck="false"')}${field('base', TX.base)}${field('tacticalNumber', TX.tactical)}
+      ${field('callsigns', TX.callsigns, ' autocapitalize="characters" spellcheck="false"')}<small class="f-muted" data-hint="callsigns">${esc(s.tt(TX.callsignsHint))}</small>${field('base', TX.base)}${field('tacticalNumber', TX.tactical)}
       <label class="f-check"><input type="checkbox" data-f="operational"${d.operational === false ? '' : ' checked'}>${esc(s.tt(TX.operational))}</label>
       ${old?.location ? `<p class="f-muted">${esc(s.tt(TX.location, { l: old.location, d: old.locationAt ? String(old.locationAt).slice(0, 10) : '' }))}</p>` : ''}</fieldset>
     <p class="f-muted" data-changes aria-live="polite"></p>

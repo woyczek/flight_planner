@@ -1160,3 +1160,26 @@ def m41(c):
     c.ok(not bad, bad, 'no « appareil » for an aircraft in these French texts')
     c.ok(re.search(r'\baéronefs?\b', tx_row('modules/fuel/module.js', 'acNone')[0]) is not None, tx_row('modules/fuel/module.js', 'acNone')[0],
          '« Aucun aéronef : cherchez-le. »')
+
+
+
+@case('M42', 'Aircraft sheet: « Propriétaire ou exploitant » with one line that says what is expected, « En vol » instead of « Exploitation », the callsigns said with an example',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0268 (user: « « exploitant » et « exploitation ». qu\'est-ce à dire ? »): two near words for two different things, neither saying what is '
+      'expected; captures 390 and 1 280')
+def m42(c):
+    A = 'modules/aircraft/module.js'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('aircraft', app='maintenance')
+        c.until(f"!!document.querySelector('{M} [data-do=add]')", timeout=15000, what='the fleet')
+        c.tap(f'{M} [data-do="add"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=edit]')", timeout=8000, what='a new aircraft')
+        legends = [norm(x) for x in c.js(f"[...document.querySelectorAll('{M} [data-pane=edit] legend')].map(l => l.textContent)")]
+        c.ok(norm(tx(A, 'operation', c.lang)) in legends and 'Exploitation' not in legends, legends, f'{w} px: « En vol », never « Exploitation »')
+        lab = norm(c.js(f"document.querySelector('{M} [data-f=operator]').closest('label').textContent"))
+        c.ok(norm(tx(A, 'operator', c.lang)) in lab, lab, 'the field says « Propriétaire ou exploitant »')
+        c.eq(norm(c.text(f'{M} [data-hint="operator"]') or ''), norm(tx(A, 'operatorHint', c.lang)), 'one line says what is expected', what='operator hint')
+        c.ok('SAMU66' in (c.text(f'{M} [data-hint="callsigns"]') or ''), c.text(f'{M} [data-hint="callsigns"]'), 'the callsigns said with an example')
+        c.js(f"document.querySelector('{M} [data-f=operator]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'M42_{c.design}_{w}_{c.lang}_delivered.png')

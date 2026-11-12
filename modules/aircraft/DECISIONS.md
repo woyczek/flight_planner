@@ -144,3 +144,6 @@
 - **11 Nov 2026 — « aéronef », not « appareil »** (SOG-0242, the user: « aéronefs »): in French an aeroplane or a helicopter is an
   « aéronef » (the module's title « Aéronefs », « Maintenance › Aéronefs », « Aucun aéronef : cherchez-le. », the counts); « appareil »
   stays the phone, tablet or workstation (« sur cet appareil »); replaced one by one, never globally; en / de / es unchanged. M41.
+- **12 Nov 2026 — « Propriétaire ou exploitant », « En vol »** (SOG-0268, the user: « « exploitant » et « exploitation ». qu'est-ce à
+  dire ? »): the field says « Propriétaire ou exploitant » with one line (« une compagnie, un aéroclub, un particulier »), the group title
+  « Exploitation » becomes « En vol », the callsigns say what they are for with an example. M42 (red before: « Exploitation »).

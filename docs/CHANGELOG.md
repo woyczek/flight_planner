@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft: « Propriétaire ou exploitant » and « En vol »** on an aircraft's sheet, each with one line that says what is expected (aircraft DECISIONS, help; noreg M42; SOG-0268).
 - **Report: « Mesures » finds the flight by departure, arrival and times**, never by the registration (an X-Plane livery has its own) (report DECISIONS, help; noreg G18; SOG-0250).
 - **Map: taxiway names are signs** — one dark sign with light letters (the design's colours) per taxiway, the long taxiways first and fewer of them when zoomed out, two signs of the same name within 140 px merged, the sign covers a road name under it (maps DECISIONS; noreg D178; SOG-0252).
 - **Fuel: a mission left on the Map is left in Fuel at once** (the chip goes, same screen); « Nouveau vol » leaves it for good (Fuel DECISIONS; noreg N25, N26; SOG-0251).
