@@ -2,9 +2,9 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-11",
+  "at": "2026-11-12",
   "tests": 120,
-  "verdicts": 43
+  "verdicts": 59
  },
  "apps": [
   "pilote",
@@ -211,7 +211,8 @@
    },
    "test": "Carte à zoom 9 ou plus sur une voie aérienne à sens unique de France : une flèche discrète donne le sens.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-12T08:05:43Z"
   },
   {
    "id": "SOG-0079",
@@ -310,13 +311,7 @@
    },
    "test": "Carburant › Route avec la Carte à côté, « Calculer A → B » : toucher un itinéraire (dans la liste ou sur la carte) le montre : surligné des deux côtés, son détail déplié, sans le prendre ; la liste reste. Seul « Choisir » le prend. Un second « Calculer » : la carte suit en moins d'une seconde, rien du premier calcul ne reste. Les tracés : voie en trait plein avec son nom, direct en tirets, route libre en pointillé, écart aux règles en rouge.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:46:24Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "refusé. un second calcul successif n’affiche pas la carte. ah, pardon, si, mais trèèèèèès longtemps après avoir affiché les itinéraires. idem si on clique sur un itinéraire sur la carte en sidecar, ça fait disparaître leur version texte à gauche. mais les itinéraires restent. 1/ si on clique sur l’itinéraire (carte ou fuel), ça l’affiche, mais ne le choisit pas ; 2/ il faut spécifiquement le bouton « choisir » pour valider.",
-    "at": "2026-11-10T13:53:59Z"
-   }
+   "state": "known"
   },
   {
    "id": "SOG-0135",
@@ -371,13 +366,9 @@
    },
    "test": "Lanceur relancé. Météo : la première ligne du panneau dit l'état du synoptique monde ; « Construire » : à la fin, la couche GFS s'affiche tout de suite sur la carte ; plus de « prochain essai dans n s » : au pire « construit à l'instant » avec « Relire ».",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T16:54:26Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "« synoptique du monde absent », et en // une popup « synoptique construit ». encore un échec. prochain essai dans 578s !!",
-    "at": "2026-11-10T14:12:18Z"
-   }
+   "at": "2026-11-11T19:13:00Z"
   },
   {
    "id": "SOG-0139",
@@ -436,13 +427,9 @@
    },
    "test": "Lanceur relancé. Sur ta route ESSB → LEMO : PAM est placé aux Pays-Bas (Pampus), aucun point aux États-Unis ni au Maroc. Sur « LFRS PAM LFBD » : PAM n'est pas placé et c'est dit sous la route (« loin de la route » : Pampus ajoute plus de 700 NM à un trajet de 145).",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T23:06:38Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "LFRS PAM LFBD passe toujours pas les USA.",
-    "at": "2026-11-10T16:32:49Z"
-   }
+   "at": "2026-11-11T19:23:17Z"
   },
   {
    "id": "SOG-0143",
@@ -881,13 +868,9 @@
    },
    "test": "Carte, un VOR (PON, MLN, DVL) : en zoomant fort, les chiffres 0, 9, 18, 27 de la rose restent petits (ils ne grossissent plus avec le cercle).",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T16:54:26Z",
-   "previous": {
-    "verdict": "ok",
-    "comment": "presque. le texte ne doit pas grossir aussi fort (screenshots). sinon, c’est pas mal.",
-    "at": "2026-11-10T14:02:51Z"
-   }
+   "at": "2026-11-11T19:13:02Z"
   },
   {
    "id": "SOG-0176",
@@ -900,13 +883,9 @@
    },
    "test": "Carburant, un vol LFRS → LFPO, étape Procédures : à l'arrivée, choisir l'approche « ILS … RWY 24 » : sous le choix, « ILS 24 · OLO 110.9 · axe 242° · DME » ; l'arrivée repliée dit « I24 · OLO 110.9 ». Autre cas : arrivée LFLL, « ILS RWY 35L » : SAN 110.75, axe 355°. Sur la Carte, l'infobulle de l'ILS donne la même fréquence. (Une approche ILS n'est proposée que sur LFPO, LFPG, LFLL et LFBO aujourd'hui : ailleurs, pas de ligne, c'est attendu.)",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T16:33:03Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "encore faudrait-il touver un AD avec un ILS … refusé par manque de cas de test.",
-    "at": "2026-11-10T16:22:31Z"
-   }
+   "at": "2026-11-11T19:23:28Z"
   },
   {
    "id": "SOG-0177",
@@ -979,13 +958,9 @@
    },
    "test": "Compte rendu : à côté de « Compte rendu pour … », « Changer » : choisir une autre compagnie ; on reste sur le compte rendu, ce qui était saisi est toujours là. Enregistrer, puis changer la compagnie courante depuis l'en-tête : l'en-tête dit que ce compte rendu est celui d'une autre compagnie.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T17:09:05Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "presque. on peut bien choisir en sortie, mais on ne revient pas sur l’écran « CR ». On se souvient que le CR va être inscrit au registre, et que, à un moment, le registre pourra être consulté (notamment par une carte avec les trajets tracés).",
-    "at": "2026-11-10T14:59:37Z"
-   }
+   "at": "2026-11-11T19:15:38Z"
   },
   {
    "id": "SOG-0183",
@@ -1014,13 +989,7 @@
    },
    "test": "Carte d'une mission, vue « VFR topo », zoom de travail : relief ET courbes de niveau cotées ; choisir une autre carte fournie la recadre même après avoir déplacé la carte ; « Fond seul » donne le fond de la vue IFR ; sur une mission militaire, les hippodromes de ravitaillement et le RTBA restent quelle que soit la vue.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:23:20Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "peut-être… la poupup sur la carte a disparu. pardon, « ça dépend ». vérification : le relief est revenu, mais pas les courbes de niveau. autre bug ? le choix de la carte fournie est sans effet, à part un clignottement, si on a resize / déplacé la carte. « fond seul » : c’est censé être le même fond que « IFR », pas que « VFR ». on se souvient que c’est intéressant d’avoir le rtba allumé, et les hippo de ravitaillement, sur les missions militaires…",
-    "at": "2026-11-10T15:06:54Z"
-   }
+   "state": "known"
   },
   {
    "id": "SOG-0185",
@@ -1033,13 +1002,9 @@
    },
    "test": "Carte d'une mission, onglet Couches : les cases des couches sont là comme sur une carte de vol, et le titre de l'onglet ne redit plus la mission ni la carte fournie. Fiche d'un espace : elle s'ouvre sous l'onglet du profil, sans clignoter.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T16:23:19Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "ben non… cf. screenshot.",
-    "at": "2026-11-10T15:07:37Z"
-   }
+   "at": "2026-11-11T19:17:12Z"
   },
   {
    "id": "SOG-0186",
@@ -1142,13 +1107,9 @@
    },
    "test": "Carte, profil ouvert : appuyer sur un espace (sa bande « nom, limites · Fiche » apparaît), puis ouvrir le « i » de la légende, la météo, les couches ou les modes : la bande s'en va. Pareil pour l'infobulle d'un espace survolé.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T16:37:38Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "c’est aussi valable après un clic sur un airspace (screenshot)",
-    "at": "2026-11-10T15:08:35Z"
-   }
+   "at": "2026-11-11T19:17:24Z"
   },
   {
    "id": "SOG-0193",
@@ -1204,13 +1165,7 @@
    },
    "test": "Compagnie › Missions › une mission › « Préparer ce vol » : sur la carte à côté de Carburant, la fenêtre de mission porte « Carte fournie » et « Vue » ; choisir une carte fournie la montre sur place, sans quitter Carburant ; la croix rend la carte du vol.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:23:22Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "sur la vue carburant, on n’a qu’un bouton « carte de la mission » qui renvoie vers les cartes.",
-    "at": "2026-11-10T15:09:07Z"
-   }
+   "state": "known"
   },
   {
    "id": "SOG-0197",
@@ -1265,8 +1220,9 @@
    },
    "test": "Carburant, un vol avec une approche ILS choisie (LFRS → LFPO, « ILS … RWY 24 »), étape 5 Départ : un bloc « Aides radio » donne d'un coup d'œil l'ILS choisi (piste, indicatif, fréquence, axe, DME) ; les VOR et DME de la route sont repliés dessous.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-10T23:31:59Z"
+   "state": "ok",
+   "delivered": "2026-11-10T23:31:59Z",
+   "at": "2026-11-11T19:22:00Z"
   },
   {
    "id": "SOG-0201",
@@ -1307,8 +1263,7 @@
    },
    "test": "Carburant › Procédures, un terrain dont la lecture a des avertissements (LFOE) : sous la ligne du terrain, un pli dit les avertissements en texte, plus seulement leur nombre.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-10T23:37:52Z"
+   "state": "known"
   },
   {
    "id": "SOG-0204",
@@ -1335,13 +1290,9 @@
    },
    "test": "Carburant › Vol, carte à côté : changer le terrain de dégagement (par exemple de EIDW à LFRN) : le trait pointillé de la carte va au nouveau dégagement dans les deux secondes, sans aller-retour.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T16:23:24Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "rien. cf. screenshot.",
-    "at": "2026-11-10T16:01:59Z"
-   }
+   "at": "2026-11-11T19:20:17Z"
   },
   {
    "id": "SOG-0206",
@@ -1454,8 +1405,9 @@
    },
    "test": "Carte, un vol avec ses vents (LFPO → KDEN après « Charger ») : à tout zoom, la vue porte entre 40 et 80 barbules le long de la route, ni une poignée en zoom avant ni un tapis en zoom arrière. Regarde aussi si elles sont encore toutes dans le même sens au-dessus de l'Atlantique : si oui, dis-le, la cause n'est pas prouvée.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:54:25Z"
+   "state": "ok",
+   "delivered": "2026-11-10T16:54:25Z",
+   "at": "2026-11-11T21:17:08Z"
   },
   {
    "id": "SOG-0215",
@@ -1482,8 +1434,9 @@
    },
    "test": "Après relance du lanceur. Carburant › Route, KDEN → LFRS, « Calculer A → B » : la traversée suit l'orthodromie par des points en coordonnées (un tous les 10° de longitude), dits « direct (hors réseau) », au lieu d'un détour ou d'un échec.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T15:56:50Z"
+   "state": "ok",
+   "delivered": "2026-11-10T15:56:50Z",
+   "at": "2026-11-11T19:25:51Z"
   },
   {
    "id": "SOG-0218",
@@ -1538,8 +1491,9 @@
    },
    "test": "Carburant › Route : le pli « Points (n) » est fermé à l'ouverture, même si tu l'avais ouvert la fois d'avant ; les autres plis gardent leur état.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T17:48:53Z"
+   "state": "ok",
+   "delivered": "2026-11-10T17:48:53Z",
+   "at": "2026-11-11T21:19:28Z"
   },
   {
    "id": "SOG-0223",
@@ -1566,8 +1520,7 @@
    },
    "test": "Carburant avec la carte à côté : après « Calculer A → B » et le choix d'un itinéraire, plus aucun tracé d'itinéraire proposé ne reste sur la carte ; survoler une voie ou une balise affiche de nouveau son infobulle ; à l'ouverture, la carte est cadrée sur tout le vol. Si un tracé reste : l'heure, et je regarde la console.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:23:23Z"
+   "state": "known"
   },
   {
    "id": "SOG-0225",
@@ -1663,8 +1616,9 @@
    },
    "test": "Application « Compagnie » : le rail porte « Missions » et « Flotte » ; « Flotte » montre la flotte de la compagnie courante, dite en titre. Application « Maintenance » : l'entrée des appareils s'appelle « Fiches » (les fiches de types) et « Appareils » n'y figure plus ; les téléphones et postes appairés sont « Appareils connectés ». (Le registre des missions n'a pas encore d'écran : conception à valider.)",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-10T23:26:59Z"
+   "state": "ok",
+   "delivered": "2026-11-10T23:26:59Z",
+   "at": "2026-11-11T19:23:12Z"
   },
   {
    "id": "SOG-0232",
@@ -1677,8 +1631,7 @@
    },
    "test": "Lanceur relancé. Carburant, arrivée LFST, étape Procédures : la liste des approches porte aussi celles « ⚑ à vérifier » (elles étaient cachées) ; aucune n'est choisie d'office ; choisie à la main, sa raison est écrite sous la liste et elle est tracée en pointillé sur la Carte. « Carte seulement dans l'AIP : … » donne le lien des approches que l'AIP ne publie qu'en carte (conventionnelles, ILS). Côté sol : le panneau Sol dit que la source ne nomme que 13 voies sur 213.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-10T23:12:54Z"
+   "state": "known"
   },
   {
    "id": "SOG-0233",
@@ -1691,8 +1644,9 @@
    },
    "test": "Carte, route KDEN BGNN LFST : les repères de distance sont posés sur le trait du vol (droit sur la carte), jamais à côté ; en zoomant et dézoomant il y a toujours entre 5 et 12 repères dans la vue, sans disparition brutale ; le grand cercle est en pointillé fin.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-11T09:35:03Z"
+   "state": "ok",
+   "delivered": "2026-11-11T09:35:03Z",
+   "at": "2026-11-11T21:21:48Z"
   },
   {
    "id": "SOG-0234",
@@ -1719,8 +1673,7 @@
    },
    "test": "Recharger la page (Maj + F5 une fois), puis Réglages › Compagnie : DEFA Virtual est revenue dans la liste, sans rien recréer. Si elle manquait encore : dans « Créer une compagnie », taper son code : « Reprendre cette compagnie » la remet dans la liste.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-10T22:43:43Z"
+   "state": "known"
   },
   {
    "id": "SOG-0237",
@@ -1773,8 +1726,9 @@
    },
    "test": "Lanceur relancé. Aide › Recette : un second onglet « À trancher (18) ». Chaque carte pose une question avec ses réponses à cocher (celle que je propose est dite) et un champ libre ; « Répondre » l'enregistre, « Modifier » permet de changer d'avis ; les questions sans réponse sont en tête.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-11T08:31:13Z"
+   "state": "ok",
+   "delivered": "2026-11-11T08:31:13Z",
+   "at": "2026-11-11T19:22:08Z"
   },
   {
    "id": "SOG-0243",
@@ -1787,8 +1741,7 @@
    },
    "test": "Carte, KDEN DCT LFST avec les vents chargés : le trait du vol est droit sur la carte, les barbules (espacées) et les repères de distance sont posés dessus, le grand cercle est en pointillé fin à côté. Carburant, même route : la distance est celle du compas (4 849 NM) et une ligne sous la route dit « … 4 849 NM au compas, 4 401 par le grand cercle (+10 %) : ajoutez des points intermédiaires » ; « Calculer A → B » pose les points et la ligne disparaît. LFPO DCT LFST : rien ne change (209 NM).",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-11T09:31:51Z"
+   "state": "known"
   }
  ],
  "decisions": [
