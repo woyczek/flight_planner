@@ -407,6 +407,7 @@ const routeKey = () => {
 function put(raw) {
   if (!S) return;
   S.alts = altsSanitize(raw);
+  S.altsSeq = (S.altsSeq || 0) + 1; // une publication de plus : le dessin le dira une fois (maps-route-alts-drawn)
   S.altsRoute = routeKey();
   S.altsAt = Date.now();
   const sig = S.alts ? JSON.stringify(S.alts.list.map(a => a.points)) : '';

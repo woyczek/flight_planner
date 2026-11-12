@@ -6059,3 +6059,24 @@ def d_direct(c):
     c.js("() => { window.__hashes = []; addEventListener('hashchange', () => window.__hashes.push(location.hash)); return true }")
     c.tap('.mp-pcard [data-direct]')
     c.until("() => (window.__hashes || []).some(h => h.startsWith('#fuel?direct=NEPIX&lat=44.90000&lon=2.40000'))", timeout=8000, what='the click composes Fuel’s address and goes there')
+
+
+@case('D193', 'The Map says once per publication that the proposed routes are DRAWN (window event maps-route-alts-drawn { at, n }), after the rendering, not at the put', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='Features SOG (SOG-0134, F157): Fuel measures the press, the launcher’s request, the answer, the list drawn, and listens for maps-route-alts-drawn for the last part « drawing on the Map »; the detail carries nothing else (no route, no position)')
+def d_altsdrawn(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps?pane=1', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
+    c.js("() => { window.__drawn = []; window.addEventListener('maps-route-alts-drawn', e => window.__drawn.push(e.detail)); return true }")
+    c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc())
+    c.until("() => window.__drawn.length >= 1", timeout=8000, what='the drawing is announced')
+    c.js("() => { window.__mp.S.map.panBy([4, 4], { duration: 0 }); return true }")
+    c.wait(1500)
+    d = c.js("() => window.__drawn")
+    c.eq(len(d), 1, 'once for the publication, not at each drawing', what=str(d))
+    c.ok(sorted(d[0].keys()) == ['at', 'n'] and d[0]['n'] == 2 and d[0]['at'] > 0, str(d), 'the detail carries the time and the number of routes, nothing else')
+    c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc(updated_at='2026-11-09T16:41:00Z'))
+    c.until("() => window.__drawn.length >= 2", timeout=8000, what='a new publication is announced again')

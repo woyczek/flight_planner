@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: it announces that the proposed routes are drawn** — window event `maps-route-alts-drawn { at, n }`, once per non-empty publication, after the rendering (Fuel measures the delay of « Calculer A → B », F157; maps DECISIONS; noreg D193; SOG-0134).
 - **Fuel: the route in the tools' flight-plan format, runway included** — « LFPO/07 OPAL2E … LFML/31R » sets the runways and procedures; a chosen runway is written after its aerodrome, erasing it removes it; an unknown runway and a leading speed / level group are said (Fuel DECISIONS, help; noreg F155, F156, F69; SOG-0089).
 - **Fuel: a direct to a point on instruction of ATC** — from the real (or planned) position, the points skipped, distance, time and fuel said before « Appliquer »; an imposed point skipped in red with a second confirmation and kept in the report; undo; the Map's « Direct vers ce point » opens it (Fuel and report DECISIONS, help; noreg F154, G19; SOG-0088).
 - **Map: « Direct to this point »** — a button on the card of a beacon or a fix touched on the map and on the card of a route point in Edit; it only composes Fuel's address `#fuel?direct=<ID>&lat=&lon=` (Fuel proposes the direct, Apply / Cancel; the Map writes nothing; no button on a procedure point) (maps DECISIONS; noreg D192; SOG-0088, Features SOG's contract).

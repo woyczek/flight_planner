@@ -820,6 +820,17 @@ function draw() {
       y1: r.y1 - my + 2
     }));
   S.altHits = drawAlts(ctx, toC, S.routeLabelRects); // les itinéraires proposés par Carburant, sur la route (SOG-0134 a)
+  if (S.alts?.list.length && S.altHits.length && S.altsSeq !== S
+    .altsDrawnSeq
+  ) { // les tracés d'une publication non vide sont DESSINÉS : une fois par publication, Carburant en mesure le délai (SOG-0134)
+    S.altsDrawnSeq = S.altsSeq;
+    window.dispatchEvent(new CustomEvent('maps-route-alts-drawn', {
+      detail: {
+        at: Date.now(),
+        n: S.alts.list.length
+      }
+    }));
+  }
   if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
   S.toC = toC;
   if (S.edit.on) got('edit')?.drawEdit(ctx, toC);
