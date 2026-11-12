@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b9e9e23",
-  "fiches": 280,
+  "organisation": "5081fe1",
+  "fiches": 281,
   "untranslated": 0,
   "priorities": 243
  },
@@ -621,6 +621,27 @@
      "de": "A mission stays active after “New flight”, and even after its cross on the map",
      "es": "A mission stays active after “New flight”, and even after its cross on the map",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-devis",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; devis",
+    "en": "Carburant ; devis",
+    "de": "Carburant ; devis",
+    "es": "Carburant ; devis"
+   },
+   "items": [
+    {
+     "id": "SOG-0281",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Devis : le vent est compté sur le cap global du vol, pas tronçon par tronçon (temps faux sur une route coudée)",
+     "en": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
+     "de": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
+     "es": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)"
     }
    ]
   },
