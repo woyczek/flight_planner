@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "43d8d96",
-  "fiches": 283,
+  "organisation": "383a645",
+  "fiches": 284,
   "untranslated": 0,
   "priorities": 243
  },
@@ -2792,6 +2792,27 @@
      "de": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
      "es": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-designs",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; designs",
+    "en": "Cadre ; designs",
+    "de": "Cadre ; designs",
+    "es": "Cadre ; designs"
+   },
+   "items": [
+    {
+     "id": "SOG-0284",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Barre du bas et rail : l'onglet actif est une pastille vide quand son icône n'a pas de variante pleine (Maintenance : Données, Fiches)",
+     "en": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
+     "de": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
+     "es": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)"
     }
    ]
   },

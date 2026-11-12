@@ -2116,10 +2116,10 @@
     "de": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
     "es": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files"
    },
-   "test": "Relance le lanceur et recharge la page. Maintenance › Données : l'écran est celui de la maquette — l'en-tête du cycle et sa barre, un seul « Tout mettre à jour », la carte (zoom et déplacement), « À faire ce mois-ci » replié, les paquets de pays ; touche un pays : sa fiche à droite (plein écran au téléphone). Refais ton parcours du matin : le Portugal (« Prendre le fichier téléchargé », l'édition dite), « Mettre à jour ce pays » (l'avancement sur place, puis le fil de l'opération qui reste), un second geste pendant ce temps (la carte « opération en cours »), Maj + clic sur plusieurs pays (le bandeau), « Publier » (le plan d'abord). Dis-moi ce qui ne ressemble pas à la maquette et ce qui manq",
+   "test": "Relance le lanceur et recharge la page. Maintenance › Données : l'écran est celui de la maquette — l'en-tête du cycle et sa barre, un seul « Tout mettre à jour », la carte (zoom et déplacement), « À faire ce mois-ci » replié, les paquets de pays ; touche un pays : sa fiche à droite (plein écran au téléphone). Refais ton parcours du matin : le Portugal (« Prendre le fichier téléchargé », l'édition dite), « Mettre à jour ce pays » (l'avancement sur place, puis le fil de l'opération qui reste), un second geste pendant ce temps (la carte « opération en cours »), Maj + clic sur plusieurs pays (le bandeau), « Publier » (le plan d'abord). Déplie « À faire ce mois-ci » : chaque ligne (pays, fichier ",
    "since": "2026-11-12",
    "state": "todo",
-   "delivered": "2026-11-12T18:50:42Z"
+   "delivered": "2026-11-12T20:19:28Z"
   },
   {
    "id": "SOG-0263",
