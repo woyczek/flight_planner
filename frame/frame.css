@@ -719,7 +719,8 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   font-size: .85em
 }
 .f-co [data-co-meta]:empty::before {
-  content: "\a0" /* la ligne grise garde sa hauteur avant l'arrivée des détails (SOG-0218) */
+  content: "\a0"
+    /* la ligne grise garde sa hauteur avant l'arrivée des détails (SOG-0218) */
 }
 .f-co [data-co-meta] {
   grid-column: 2
@@ -776,19 +777,21 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   grid-template-columns: 1fr;
   gap: 0 24px
 }
-.f-themes > li {
+.f-themes>li {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0 8px
 }
-.f-themes > li > .f-series {
+.f-themes>li>.f-series {
   flex-basis: 100%
 }
-[data-theme-add], [data-series-add] {
+[data-theme-add],
+[data-series-add] {
   margin-top: 8px
 }
-[data-theme-add] .f-field, [data-series-add] .f-field {
+[data-theme-add] .f-field,
+[data-series-add] .f-field {
   margin: 8px 0
 }
 [data-series-add] select {
@@ -1180,8 +1183,39 @@ p.f-back {
   display: grid;
   gap: 6px
 }
-.f-rm-pcol[data-drop] {
-  outline: 2px dashed var(--sog-accent)
+.f-rm-pcol[data-drop],
+.f-rm-pcol[data-dropcol] {
+  outline: 2px dashed var(--sog-accent);
+  background: color-mix(in srgb, var(--sog-accent) 10%, var(--sog-surface))
+}
+/* à l'ordinateur les gestes de la carte (en tête, monter, descendre) se montrent au survol et au clavier, par-dessus la carte (SOG-0257) ; jamais pendant un glissement */
+.f-rm-pcol .f-rm-item {
+  position: relative
+}
+.f-rm-pcol .f-rm-act {
+  display: flex;
+  gap: 4px;
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  opacity: 0;
+  pointer-events: none
+}
+.f-rm-pcol .f-rm-act select,
+.f-rm-pcol .f-rm-act .f-rm-lab {
+  display: none
+}
+.f-rm-pcol .f-rm-act button {
+  min-width: 26px;
+  padding: 0 4px
+}
+.f-rm-pcol .f-rm-item:hover .f-rm-act,
+.f-rm-pcol .f-rm-item:focus-within .f-rm-act {
+  opacity: 1;
+  pointer-events: auto
+}
+[data-dragging] .f-rm-pcol .f-rm-act {
+  display: none
 }
 .f-rm-theme {
   color: var(--sog-muted);
@@ -1189,8 +1223,7 @@ p.f-back {
   padding: 0 4px;
   white-space: nowrap
 }
-.f-rm-colbar,
-.f-rm-act {
+.f-rm-colbar {
   display: none
 }
 @container (max-width: 760px) {
@@ -1212,11 +1245,25 @@ p.f-back {
   .f-rm-colbar {
     display: flex
   }
-  .f-rm-act {
-    display: flex;
+  .f-rm-pcol .f-rm-act {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 6px
+  }
+  .f-rm-pcol .f-rm-act select {
+    display: inline-block
+  }
+  .f-rm-pcol .f-rm-act .f-rm-lab {
+    display: inline
+  }
+  .f-rm-pcol .f-rm-act [aria-hidden] {
+    display: none
+  }
+  .f-rm-pcol .f-rm-act button {
+    padding: 0 12px
   }
   .f-rm-act button,
   .f-rm-act select {

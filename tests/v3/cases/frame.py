@@ -6394,6 +6394,98 @@ def a155(c):
     c.check_errors()
 
 
+
+@case('A156', 'The roadmap priorities (SOG-0257): the WHOLE column lights as soon as the dragged card is above it, at any height; dropped on a column (not on a card) the card goes to its HEAD; « To the top » / « Up » / « Down » on the card (at the computer too: on hover and by keyboard); a column of 45 cards: the last one brought to the top without dragging', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0257 (the user: « un déplacement latéral allume tout de suite la colonne… remonter est coûteux en temps et en énergie de souris »; on 11 Nov he sent seven cards to the next milestone: they took the ranks 237 to 243, the END of the column): (1) as soon as the dragged card is above another column, whatever the height (the column is found by the pointer’s x, even in the gap or beside a short column), the column is lit as a whole (data-dropcol) and the drop puts the card there; (2) dropped on a column (no card under the pointer) the card goes to its head, dropped on a card it keeps that exact place; (3) each card carries « En tête », « Monter », « Descendre » (a phone shows them, the computer on hover and by keyboard); (4) the page scrolls while the pointer stays near its edge')
+def a156(c):
+    lang = c.lang
+    T = lambda k: tx('frame/help/roadmap.js', k, lang, after='const T = {')
+    fx = _rm_fixture()
+    lab = lambda fr, en: {'fr': fr, 'en': en, 'de': en + ' (de)', 'es': en + ' (es)'}
+    fx['milestones'] += [{'id': 'alpha.6', 'label': lab('alpha 6', 'alpha 6'), 'date': '', 'state': 'planned', 'items': []},
+                         {'id': 'beta.1', 'label': lab('beta 1', 'beta 1'), 'date': '', 'state': 'later', 'items': []}]
+    for l in fx['lanes']:
+        if l['id'] in ('fuel', 'stat'):
+            l['items'] = [i for i in l['items'] if i.get('id')]
+    data_lane = next(l for l in fx['lanes'] if l['id'] == 'data')
+    data_lane['items'] = [i for i in data_lane['items'] if i.get('state') == 'done']
+    for n in range(100, 145):                                            # 45 cards in the backlog column
+        data_lane['items'].append({'state': 'later', 'id': f'SOG-0{n}', **lab(f'Carte {n}', f'Card {n}')})
+    for n in (200, 201, 202):                                            # three in the next milestone (« development »)
+        data_lane['items'].append({'state': 'planned', 'id': f'SOG-0{n}', 'milestone': 'alpha.6', **lab(f'Prévue {n}', f'Planned {n}')})
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    ids = lambda col: c.js(f"[...document.querySelectorAll('[data-col=\"{col}\"] li[data-id]')].map(l => l.dataset.id)")
+    c.open('roadmap', docs=LEVEL3 + [['device/roadmap.json', {'col': 'backlog', 'view': 'priorities'}, 'cache']])
+    c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the priorities')
+    c.eq([len(ids('backlog')), ids('development')], [45, ['SOG-0200', 'SOG-0201', 'SOG-0202']], 'a column of 45 cards and three in the next milestone', what='columns')
+    # ---- (3) « To the top », without dragging: the last of the 45 cards goes in front of its column
+    last = ids('backlog')[-1]
+    sel = f'[data-col="backlog"] li[data-id="{last}"]'
+    c.eq([norm(c.text(f'{sel} [data-top] .f-rm-lab')), norm(c.text(f'{sel} [data-up] .f-rm-lab')), norm(c.text(f'{sel} [data-down] .f-rm-lab'))], [norm(T('top')), norm(T('up')), norm(T('down'))], 'the card carries « To the top », « Up », « Down »', what='buttons')
+    c.js(f"() => document.querySelector('{sel}').scrollIntoView({{ block: 'center' }})")
+    if not c.phone:
+        c.page.hover(sel)
+        c.eq(c.js(f"getComputedStyle(document.querySelector('{sel} .f-rm-act')).opacity"), '1', 'at the computer the buttons show on hover', what='hover')
+        c.page.locator(f'{sel} [data-top]').focus()
+        c.eq(c.js(f"document.activeElement?.hasAttribute('data-top')"), True, 'and are reached by keyboard', what='keyboard')
+    c.shot(f'A156_top_{c.width}_{lang}_delivered.png')
+    c.tap(f'{sel} [data-top]')
+    c.until(f"document.querySelector('[data-col=\"backlog\"] li[data-id]').dataset.id === '{last}'", what='the card is at the head')
+    c.eq([ids('backlog')[0], len(ids('backlog'))], [last, 45], 'the 45th card is the first, nobody dragged', what='to the top')
+    # ---- (1)(2) a card dragged sideways into the next column, far below its cards: the whole column lights, the card goes to its head
+    if not c.phone:
+        card = '[data-col="backlog"] li[data-id="SOG-0120"]'
+        c.js(f"() => document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
+        c.wait(200)
+        a = c.page.locator(card).bounding_box()
+        dev = c.page.locator('[data-col="development"]').bounding_box()
+        c.page.mouse.move(a['x'] + 40, a['y'] + 8)
+        c.page.mouse.down()
+        c.page.mouse.move(a['x'] + 30, a['y'] + 18, steps=2)
+        y_low = min(c.js('window.innerHeight') - 100, a['y'] + 200)           # far below the three cards of the next column
+        c.page.mouse.move(dev['x'] + 30, y_low, steps=8)                      # 30 px inside the neighbour column
+        c.eq(c.js("[...document.querySelectorAll('[data-col]')].filter(e => e.hasAttribute('data-dropcol')).map(e => e.dataset.col)"), ['development'], 'the neighbour column is lit as a whole as soon as the card is above it', what='lit')
+        c.shot(f'A156_lit_{c.width}_{lang}_delivered.png')
+        c.page.mouse.up()
+        c.until("document.querySelector('[data-col=\"development\"] li[data-id]').dataset.id === 'SOG-0120'", what='the card is at the head of the next column')
+        c.eq([ids('development'), 'SOG-0120' in ids('backlog')], [['SOG-0120', 'SOG-0200', 'SOG-0201', 'SOG-0202'], False], 'dropped on the column: at its head (the first), not at the end', what='head')
+        # on a card: the exact place kept
+        card = '[data-col="backlog"] li[data-id]:nth-child(5)'
+        moved = c.js(f"document.querySelector('{card}').dataset.id")
+        c.js(f"() => document.querySelector('{card}').scrollIntoView({{ block: 'center' }})")
+        c.wait(200)
+        a = c.page.locator(card).bounding_box()
+        tgt = c.page.locator('[data-col="development"] li[data-id="SOG-0200"]')
+        tgt.evaluate("el => el.scrollIntoView({ block: 'center' })")
+        c.wait(200)
+        a = c.page.locator(card).bounding_box()
+        b = tgt.bounding_box()
+        c.page.mouse.move(a['x'] + 40, a['y'] + 8)
+        c.page.mouse.down()
+        c.page.mouse.move(a['x'] + 30, a['y'] + 18, steps=2)
+        c.page.mouse.move(b['x'] + b['width'] / 2, b['y'] + b['height'] - 4, steps=8)
+        c.page.mouse.up()
+        c.until(f"document.querySelector('[data-col=\"development\"] li[data-id=\"{moved}\"]')", what='the card is in the next column')
+        c.eq(ids('development')[:3], ['SOG-0120', 'SOG-0200', moved], 'dropped on the lower half of a card: right after it (a precise place stays possible)', what='precise')
+        # ---- (4) the page scrolls while the pointer stays near the bottom edge (no move needed)
+        card = '[data-col="backlog"] li[data-id]:nth-child(3)'
+        c.js("() => window.scrollTo(0, 0)")
+        c.wait(200)
+        a = c.page.locator(card).bounding_box()
+        c.page.mouse.move(a['x'] + 40, a['y'] + 8)
+        c.page.mouse.down()
+        c.page.mouse.move(a['x'] + 50, a['y'] + 18, steps=2)
+        h = c.js('window.innerHeight')
+        c.page.mouse.move(a['x'] + 40, h - 20, steps=4)
+        y0 = c.js('window.scrollY')
+        c.wait(900)
+        y1 = c.js('window.scrollY')
+        c.page.mouse.up()
+        c.ok(y1 > y0 + 60, (y0, y1), 'the page scrolls by itself while the pointer stays near its bottom edge, without moving')
+    c.check_errors()
+
+
 @case('A151', 'On a phone only one floating note at a time: the next waits until the previous one leaves or is closed, an error goes in front of an information; on a screen they stack as before (SOG-0131)', 'A',
       designs=('standard',), screens=True, night=False,
       rule='SOG-0131 (the user: « une seule note flottante à la fois sur un téléphone »; two notes stacked covered a third of the screen at 390 px, captures D173, L68, A142): at 390 px AppFramework.notify shows one note, queues the others (eight at most, the same key replaces its queued note) and shows the next when the shown one is closed or leaves; an error is shown at once, the information it hid waits at the head of the queue; above 760 px the notes stack')

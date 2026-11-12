@@ -47,6 +47,7 @@
     colDevelopment: ['En développement', 'In development', 'In Entwicklung', 'En desarrollo'],
     colBacklog: ['Backlog', 'Backlog', 'Backlog', 'Backlog'],
     colDone: ['Livrées', 'Delivered', 'Geliefert', 'Entregadas'],
+    top: ['En tête', 'To the top', 'Ganz nach oben', 'Al principio'],
     up: ['Monter', 'Move up', 'Nach oben', 'Subir'],
     down: ['Descendre', 'Move down', 'Nach unten', 'Bajar'],
     sendTo: ['Envoyer vers…', 'Send to…', 'Senden an…', 'Enviar a…'],
@@ -222,7 +223,7 @@
       return `<li class="f-rm-item" data-state="${esc(it.state)}"${ranked ? ` data-id="${esc(it.id)}"` : ''}${dates ? ` title="${esc(dates)}"` : ''}>${it.id ? `<span class="f-rm-id">${esc(it.id)}</span> ` : ''}${esc(t(row(it)))}${m ? ` <small class="f-rm-ms">${esc(t(row(m.label || m.id)))}</small>` : ''}${ranked && ui.unsent.has(it.id) ? ` <small class="f-rm-unsent" data-unsent>${esc(t(T.unsent))}</small>` : ''}${lane ? ` <small class="f-rm-theme" data-theme>${esc(t(row(lane.label)))}</small>` : ''}${lane && ranked && it.state !== 'done' ? actions(it) : ''}</li>`;
     };
     /** Les gestes qui remplacent le glisser au téléphone : monter, descendre, envoyer vers une autre colonne. */
-    const actions = it => `<span class="f-rm-act"><button type="button" data-up>${esc(t(T.up))}</button><button type="button" data-down>${esc(t(T.down))}</button><select data-send aria-label="${esc(t(T.sendTo))}"><option value="">${esc(t(T.sendTo))}</option>${COLS.filter(k => k !== colOf(it) && colStone[k]).map(k => `<option value="${k}">${esc(colName(k))}</option>`).join('')}</select></span>`;
+    const actions = it => `<span class="f-rm-act"><button type="button" data-top title="${esc(t(T.top))}"><span aria-hidden="true">⤒</span><span class="f-rm-lab">${esc(t(T.top))}</span></button><button type="button" data-up title="${esc(t(T.up))}"><span aria-hidden="true">▲</span><span class="f-rm-lab">${esc(t(T.up))}</span></button><button type="button" data-down title="${esc(t(T.down))}"><span aria-hidden="true">▼</span><span class="f-rm-lab">${esc(t(T.down))}</span></button><select data-send aria-label="${esc(t(T.sendTo))}"><option value="">${esc(t(T.sendTo))}</option>${COLS.filter(k => k !== colOf(it) && colStone[k]).map(k => `<option value="${k}">${esc(colName(k))}</option>`).join('')}</select></span>`;
     const frieze = () => !stones.length ? '' : `<ol class="f-rm-time" aria-label="${esc(t(T.time))}">${stones.map(m => `<li><button type="button" class="f-rm-btn" data-ms="${esc(m.id)}" data-state="${ORDER.includes(m.state) ? esc(m.state) : 'planned'}" aria-pressed="${ui.ms === m.id}"${m.id === current ? ` data-current aria-current="step" title="${esc(t(T.current))}"` : ''}><b>${esc(t(row(m.label || m.id)))}</b>${m.date ? ` <span class="f-muted">${esc(m.date)}</span>` : ''}</button></li>`).join('')}</ol>`;
     /** Une voie est repliée : par le choix de l'appareil (au dernier toucher), sinon d'office quand elle n'a aucune carte non livrée dans la vue courante (onglet, filtre, jalon). */
     const folds = (l, own) => Object.hasOwn(ui.fold, l.id) ? ui.fold[l.id] : own.every(i => i.state === 'done');
@@ -422,11 +423,13 @@
     const clear = () => {
       if (!g) return;
       clearTimeout(g.timer);
+      clearInterval(g.tick);
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
       document.removeEventListener('pointercancel', cancel);
-      for (const el of view.querySelectorAll('[data-drop],[data-armed],[data-drag]')) {
+      for (const el of view.querySelectorAll('[data-drop],[data-dropcol],[data-armed],[data-drag]')) {
         el.removeAttribute('data-drop');
+        el.removeAttribute('data-dropcol');
         el.removeAttribute('data-armed');
         el.removeAttribute('data-drag');
         el.style.transform = '';
@@ -438,7 +441,25 @@
         draw();
       }
     };
-    /** Où tomberait la carte sous le pointeur : { el, kind: 'before' | 'after' | 'milestone' } ou null. */
+    /** La colonne où tomberait la carte : celle dont l'étendue horizontale contient le pointeur, sinon la plus proche, À N'IMPORTE QUELLE HAUTEUR (SOG-0257 : un déplacement latéral de 30 px, ou le pointeur dans l'espace
+     *  entre deux colonnes, ou au-dessus de la carte la plus haute, suffit) ; une colonne qu'on ne remplit pas à la main (Livré) n'en est pas une ; null hors de la zone des colonnes. */
+    const colAt = (x, y) => {
+      const zone = view.querySelector('[data-priorities]')?.getBoundingClientRect();
+      if (!zone || y < zone.top - 40 || y > zone.bottom + 40) return null;
+      let best = null,
+        gap = 1e9;
+      for (const col of view.querySelectorAll('.f-rm-pcol[data-col]')) {
+        if (!col.getClientRects().length || col.dataset.col === 'done') continue;
+        const r = col.getBoundingClientRect(),
+          d = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+        if (d < gap) {
+          gap = d;
+          best = col;
+        }
+      }
+      return best && gap <= 80 ? best : null;
+    };
+    /** Où tomberait la carte sous le pointeur : { el, kind: 'before' | 'after' | 'milestone' | 'column', col } ou null. Sur une carte d'une colonne : avant ou après elle (une place précise) ; ailleurs dans la colonne (hors carte) : EN TÊTE. */
     const aim = (x, y) => {
       const el = document.elementFromPoint(x, y);
       const ms = el?.closest?.('button[data-ms]');
@@ -446,21 +467,54 @@
         el: ms,
         kind: 'milestone'
       };
+      const col = colAt(x, y);
+      if (!col) return null;
       const li = el?.closest?.('li.f-rm-item[data-id]');
-      if (!li || li === g.li) {
-        const col = li ? null : el?.closest?.(
-          '.f-rm-pcol[data-col]'); // une colonne (vide, ou entre deux cartes) : la carte va à sa fin
-        return col && view.contains(col) && col.dataset.col !== 'done' ? {
-          el: col,
-          kind: 'column'
-        } : null;
+      if (li && li !== g.li && col.contains(li)) {
+        const r = li.getBoundingClientRect();
+        return {
+          el: li,
+          kind: y > r.top + r.height / 2 ? 'after' : 'before',
+          col
+        };
       }
-      if (!view.contains(li) || li.closest('.f-rm-pcol[data-col="done"]')) return null;
-      const r = li.getBoundingClientRect();
       return {
-        el: li,
-        kind: y > r.top + r.height / 2 ? 'after' : 'before'
+        el: col,
+        kind: 'column',
+        col
       };
+    };
+    /** La première carte d'une colonne (hors la carte qu'on déplace) : la cible d'un dépôt « en tête ». */
+    const headOf = (col, except) => [...col.querySelectorAll('li.f-rm-item[data-id]')].find(li => li.dataset.id !== except)?.dataset
+      .id || null;
+    /** Recalcule la cible sous le dernier point connu du pointeur (aussi quand la page défile sous lui) : la colonne entière s'allume, la carte visée garde son trait. */
+    const retarget = () => {
+      for (const el of view.querySelectorAll('[data-drop],[data-dropcol]')) {
+        el.removeAttribute('data-drop');
+        el.removeAttribute('data-dropcol');
+      }
+      g.aim = aim(g.cx, g.cy);
+      if (!g.aim) return;
+      if (g.aim.kind === 'milestone') g.aim.el.dataset.drop = 'milestone';
+      else {
+        g.aim.col.dataset.dropcol = '';
+        if (g.aim.kind !== 'column') g.aim.el.dataset.drop = g.aim.kind;
+      }
+    };
+    /** Défile tant que le pointeur reste près du bord haut ou bas de la fenêtre (même immobile) : plus il s'en approche, plus c'est vite. */
+    const autoScroll = () => {
+      if (!g?.drag) return;
+      const box = scroller?.getBoundingClientRect() || {
+        top: 0,
+        bottom: window.innerHeight
+      };
+      const edge = 90,
+        up = box.top + edge - g.cy,
+        down = g.cy - (box.bottom - edge),
+        dy = up > 0 ? -Math.min(28, 4 + up / 3) : down > 0 ? Math.min(28, 4 + down / 3) : 0;
+      if (!dy) return;
+      (scroller || window).scrollBy(0, dy);
+      retarget();
     };
 
     function move(e) {
@@ -474,20 +528,14 @@
           return clear(); // « Par thème » se lit sans glisser ; une carte livrée ne bouge pas
         g.drag = true;
         scroller = scrollParent();
+        g.tick = setInterval(autoScroll, 30);
         g.li.dataset.drag = '';
         view.dataset.dragging = '';
       }
       g.li.style.transform = `translate(${dx}px, ${dy}px)`;
-      for (const el of view.querySelectorAll('[data-drop]')) el.removeAttribute('data-drop');
-      g.aim = aim(e.clientX, e.clientY);
-      if (g.aim) g.aim.el.dataset.drop = g.aim.kind;
-      // près du bord haut ou bas de l'écran qui défile (la page, ou le conteneur du cadre), il défile de lui-même
-      const box = scroller?.getBoundingClientRect() || {
-        top: 0,
-        bottom: window.innerHeight
-      };
-      if (e.clientY < box.top + 60)(scroller || window).scrollBy(0, -16);
-      else if (e.clientY > box.bottom - 60)(scroller || window).scrollBy(0, 16);
+      g.cx = e.clientX;
+      g.cy = e.clientY;
+      retarget();
     }
 
     function up(e) {
@@ -502,8 +550,9 @@
       clear();
       if (drag) {
         if (a?.kind === 'milestone') reschedule(id, a.el.dataset.ms);
-        else if (a?.kind === 'column') place(id, null, false, a.el.dataset.col);
-        else if (a) place(id, a.el.dataset.id, a.kind === 'after', a.el.closest('.f-rm-pcol[data-col]')?.dataset.col || null);
+        else if (a?.kind === 'column') place(id, headOf(a.col, id), false, a.col.dataset
+          .col); // lâchée sur la colonne : EN TÊTE (SOG-0257 ; une colonne vide : sa seule carte)
+        else if (a) place(id, a.el.dataset.id, a.kind === 'after', a.col.dataset.col);
       } else if (armed && type !== 'mouse') copy(id);
     }
 
@@ -564,6 +613,13 @@
           col: ui.col
         });
         return draw(`[data-col-pick="${ui.col}"]`);
+      }
+      const tp = e.target.closest?.('button[data-top]');
+      if (tp && view.contains(tp)) { // « En tête » : sans glisser, la carte passe devant toute sa colonne
+        const li = tp.closest('li.f-rm-item[data-id]'),
+          first = li && headOf(li.closest('.f-rm-pcol[data-col]'), li.dataset.id);
+        if (first && li.previousElementSibling) place(li.dataset.id, first, false, null);
+        return;
       }
       const mv = e.target.closest?.('button[data-up],button[data-down]');
       if (mv && view.contains(mv)) {
