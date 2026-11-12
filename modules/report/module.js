@@ -147,6 +147,9 @@ const TX = {
   takenAltn: L('dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativo {a}'),
   srcStarted: L('Vol démarré (carburant)', 'Flight started (fuel)', 'Flug gestartet (Kraftstoff)', 'Vuelo iniciado (combustible)'),
   srcQuote: L('Devis carburant', 'Fuel quote', 'Kraftstoffkalkulation', 'Cálculo de combustible'),
+  // SOG-0088 (a) : un point imposé par la mission sauté par un direct du contrôle (route.directs de Carburant)
+  notOverflown: L('{id} non survolé : direct du contrôle vers {to} ({t}).', '{id} not overflown: direct from ATC to {to} ({t}).',
+    '{id} nicht überflogen: Direkt der Flugsicherung nach {to} ({t}).', '{id} no sobrevolado: directo del control a {to} ({t}).'),
   filled: L('{n} champ(s) rempli(s) depuis {s}.', '{n} field(s) filled from {s}.', '{n} Feld(er) aus {s} ausgefüllt.',
     '{n} campo(s) rellenado(s) desde {s}.'),
   nothing: L('Rien à reprendre : les champs sont déjà remplis.', 'Nothing to take: the fields are already filled.',
@@ -1304,6 +1307,24 @@ function fill(values, source, by = {}) {
   saveDraft();
   render();
 }
+/** SOG-0088 (a) : chaque point imposé par la mission qu'un direct du contrôle a sauté (route.directs[].notOverflown, écrit par
+ *  Carburant) est dit dans les observations, ajouté à la fin de ce que le pilote y a déjà écrit, jamais deux fois. Les valeurs du vol
+ *  sont des entrées non fiables : bornées. */
+function notOverflown(cf) {
+  const lines = (Array.isArray(cf?.route?.directs) ? cf.route.directs : []).slice(-20).flatMap(d => (Array.isArray(d?.notOverflown) ? d
+    .notOverflown : []).slice(0, 20).map(id => tt(TX.notOverflown, {
+    id: String(id || '').slice(0, 40),
+    to: String(d.to || '').slice(0, 11),
+    t: d.at ? hhmmZ(d.at) : '—'
+  }))).filter(Boolean);
+  if (!lines.length) return;
+  const path = 'remarks.observations',
+    cur = String(M.get(S.m, path) || ''),
+    add = lines.filter(l => !cur.includes(l));
+  if (!add.length) return;
+  M.set(S.m, path, [cur.trim(), ...add].filter(Boolean).join('\n'));
+  S.sources[path] ||= tt(TX.current);
+}
 /** Mes derniers CR, à rouvrir pour modification. */
 async function showRecent() {
   const box = S.body.querySelector('[data-recentlist]'),
@@ -1459,6 +1480,7 @@ async function onClick(e) {
       S.usedStarted = cf.started?.at || ''; // ce compte rendu est celui du vol démarré
       takeCategory(cf.missionCategory); // SOG-0041 : la charge que demande la catégorie de sa mission
       takeTheme(cf); // SOG-0202 T2 : le thème et le sous-thème du vol
+      notOverflown(cf);
       return fill({
         'aircraft.0.registration': a.registration,
         'aircraft.0.type': a.type,

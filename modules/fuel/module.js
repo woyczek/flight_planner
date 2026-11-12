@@ -31,7 +31,9 @@ import * as RL from '../../frame/lib/route_legend.js'; // la légende commune de
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
-import * as ATIS from './atis.js'; // la piste en service d'après l'ATIS des réseaux du vol (SOG-0090, second lot)
+import * as ATIS from './atis.js';
+import *
+as DIR from './direct.js'; // un direct vers un point sur instruction du contrôle (SOG-0088), calcul pur // la piste en service d'après l'ATIS des réseaux du vol (SOG-0090, second lot)
 import {
   createProcedures,
   sideChosen,
@@ -96,7 +98,8 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre) ; ../data/model_sets.js et model_kit.js : la règle de la coche
   // « usage personnel » du module Données (SOG-0210)
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
-    'procedures_texts.js', 'atis.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js', 'suggest.js',
+    'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
+    'suggest.js',
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
@@ -448,6 +451,56 @@ const TX = {
   diffWind: ['vent {a} → {b}', 'wind {a} → {b}', 'Wind {a} → {b}', 'viento {a} → {b}'],
   diffBlock: ['bloc {a} → {b}', 'block {a} → {b}', 'Block {a} → {b}', 'bloque {a} → {b}'],
   diffEta: ['arrivée prévue {t}', 'planned arrival {t}', 'geplante Ankunft {t}', 'llegada prevista {t}'],
+  // SOG-0088 : un direct vers un point sur instruction du contrôle (vol démarré ; le panneau avant d'écrire)
+  directTitle: ['Direct vers un point', 'Direct to a point', 'Direkt zu einem Punkt', 'Directo a un punto'],
+  directField: ['Direct vers… (nom du point)', 'Direct to… (point name)', 'Direkt zu… (Punktname)', 'Directo a… (nombre del punto)'],
+  directPrep: ['Préparer le direct', 'Prepare the direct', 'Direkt vorbereiten', 'Preparar el directo'],
+  directLine: ['Direct {to} depuis {from} : {skipped} · {dnm} · ≈ {dmin} · ≈ {dfuel}',
+    'Direct {to} from {from}: {skipped} · {dnm} · ≈ {dmin} · ≈ {dfuel}',
+    'Direkt {to} ab {from}: {skipped} · {dnm} · ≈ {dmin} · ≈ {dfuel}',
+    'Directo {to} desde {from}: {skipped} · {dnm} · ≈ {dmin} · ≈ {dfuel}'
+  ],
+  directFromActual: ['votre position ({t})', 'your position ({t})', 'Ihrer Position ({t})', 'su posición ({t})'],
+  directFromPlanned: ['la position prévue', 'the planned position', 'der geplanten Position', 'la posición prevista'],
+  directFromPassed: ['le dernier point passé selon le plan ({id})', 'the last point passed according to the plan ({id})',
+    'dem laut Plan zuletzt überflogenen Punkt ({id})', 'el último punto pasado según el plan ({id})'
+  ],
+  directSkipped: ['{list} sautés', '{list} skipped', '{list} ausgelassen', '{list} omitidos'],
+  directSkipped1: ['{list} sauté', '{list} skipped', '{list} ausgelassen', '{list} omitido'],
+  directSkipped0: ['aucun point sauté', 'no point skipped', 'kein Punkt ausgelassen', 'ningún punto omitido'],
+  directLock: ['Saute {id}, imposé par la mission.', 'Skips {id}, imposed by the mission.', 'Lässt {id} aus, von der Mission vorgegeben.',
+    'Omite {id}, impuesto por la misión.'
+  ],
+  directHold: ['{id} : {n} min sur zone retirées du devis.', '{id}: {n} min on area removed from the quote.',
+    '{id}: {n} Min. im Gebiet aus der Berechnung entfernt.', '{id}: {n} min en zona retiradas del cálculo.'
+  ],
+  directResume: ['Reprendre la route à', 'Resume the route at', 'Route fortsetzen bei', 'Reanudar la ruta en'],
+  directApply: ['Appliquer le direct', 'Apply the direct', 'Direkt anwenden', 'Aplicar el directo'],
+  directCancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+  directAskLock: [
+    'Ce direct saute {list}, imposé par la mission. L’appliquer quand même ? Le compte rendu le dira (« non survolé : direct du contrôle »).',
+    'This direct skips {list}, imposed by the mission. Apply it anyway? The report will say so (“not overflown: direct from ATC”).',
+    'Dieses Direkt lässt {list} aus, von der Mission vorgegeben. Trotzdem anwenden? Der Bericht vermerkt es („nicht überflogen: Direkt der Flugsicherung“).',
+    'Este directo omite {list}, impuesto por la misión. ¿Aplicarlo de todos modos? El informe lo dirá («no sobrevolado: directo del control»).'
+  ],
+  directDone: ['Direct {to} appliqué.', 'Direct {to} applied.', 'Direkt {to} angewendet.', 'Directo {to} aplicado.'],
+  directUndo: ['Annuler le direct', 'Undo the direct', 'Direkt rückgängig machen', 'Deshacer el directo'],
+  directWhyPassed: ['{id} est déjà passé : direct refusé.', '{id} is already passed: direct refused.',
+    '{id} ist bereits überflogen: Direkt abgelehnt.',
+    '{id} ya está pasado: directo rechazado.'
+  ],
+  directWhyFar: ['{id} est plus loin que le reste de la route : direct refusé.',
+    '{id} is farther than the rest of the route: direct refused.',
+    '{id} ist weiter entfernt als der Rest der Route: Direkt abgelehnt.',
+    '{id} está más lejos que el resto de la ruta: directo rechazado.'
+  ],
+  directWhyUnknown: ['{id} : point inconnu de la base.', '{id}: point unknown to the base.', '{id}: Punkt in der Basis unbekannt.',
+    '{id}: punto desconocido en la base.'
+  ],
+  directWhyRoute: ['Pas de route à reprendre.', 'No route to resume.', 'Keine Route zum Fortsetzen.', 'No hay ruta que reanudar.'],
+  directNotStarted: ['Le vol n’est pas démarré : ajoutez {id} à la route.', 'The flight is not started: add {id} to the route.',
+    'Der Flug ist nicht gestartet: Fügen Sie {id} der Route hinzu.', 'El vuelo no ha empezado: añada {id} a la ruta.'
+  ],
   // SOG-0279 : le vol en cours est RETENU sur l'appareil (jamais envoyé par l'envoi groupé) ; il part par ce geste ou « Synchroniser »
   sendHeld: ['Ce vol est enregistré sur cet appareil ; vos autres appareils ne le reçoivent qu’à son envoi.',
     'This flight is saved on this device; your other devices receive it only when you send it.',
@@ -2117,6 +2170,7 @@ function renderPlanBody() {
       <p class="fu-startnote" data-startnote aria-live="polite"></p>
       <p class="f-muted">${esc(tt(TX.startHint))}</p>
       <div class="fu-send" data-send hidden aria-live="polite"></div></div>
+    <div class="f-card" data-block="direct" hidden><h2>${esc(tt(TX.directTitle))}</h2><div class="f-row fu-directrow"><label class="f-field">${esc(tt(TX.directField))}<input data-k="direct" list="fu-directlist" autocapitalize="characters" spellcheck="false" autocomplete="off" maxlength="11"></label><button type="button" data-do="directprep">${esc(tt(TX.directPrep))}</button></div><datalist id="fu-directlist"></datalist><div data-directpanel aria-live="polite"></div></div>
     <div class="f-card" data-block="aids"><h2>${esc(tt(TX.aidsTitle))}</h2><div data-aids></div></div>
     <div class="f-card fu-hide" data-block="procs"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="start"></div></div>
     <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>
@@ -2183,6 +2237,8 @@ function onPlanInput(e) {
   if (S.flightPending) return;
   const r = f.route ||= emptyFlight().route;
   if (k === 'theme' || k === 'series') return themeSet(k, v);
+  if (k === 'direct') return; // SOG-0088 : le champ du direct ne touche pas le vol (« Préparer le direct » le lit)
+  if (k === 'directresume') return S.direct && directPrepare(S.direct.to, null, +v); // le point où la route reprend
   switch (k) {
     case 'acsearch':
       return acResults(v);
@@ -2603,6 +2659,13 @@ function onPlanClick(e) {
   const fm = e.target.closest('[data-do="fms"]');
   if (fm) return fm.disabled ? undefined : exportFms(fm.dataset.fms);
   if (e.target.closest('[data-do="sendflight"]')) return sendFlight();
+  if (e.target.closest('[data-do="directprep"]')) return directPrepare(S.body.querySelector('[data-k="direct"]')?.value); // SOG-0088
+  if (e.target.closest('[data-do="directapply"]')) return directApply();
+  if (e.target.closest('[data-do="directcancel"]')) {
+    S.direct = null;
+    return directDraw();
+  }
+  if (e.target.closest('[data-do="directundo"]')) return directUndo();
   if (e.target.closest('[data-do="start"]')) return startFlight();
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
@@ -4111,6 +4174,7 @@ async function pointAction(act, i) {
   else if (act === 'ptdown' && i < pts.length - 1)[pts[i + 1], pts[i]] = [pts[i], pts[i + 1]];
   else if (act === 'ptdel') pts.splice(i, 1);
   else if (act === 'addpt') {
+    S.addptAsked = '';
     const inp = S.body.querySelector('[data-k="addpt"]'),
       txt = inp.value.trim().toUpperCase();
     if (!txt) return;
@@ -5432,6 +5496,7 @@ function refresh() {
     return;
   }
   S.body.querySelector('[data-block="result"]')?.removeAttribute('data-loading');
+  directDraw(); // SOG-0088 : la carte du direct suit le vol (démarré ou non, route changée)
   ensureProcs(); // les procédures choisies, lues par aerodb une fois par clé : le devis court ensuite sur leur chemin
   const C = S.C = compute(),
     {
@@ -5867,8 +5932,13 @@ export async function mount(el, ctx) {
   // « Aucune », une clé absente laisse sa famille ; § 10.23 puis § 10.30 : rwy sid star app apptrans, pas de transition SID / STAR) :
   // prises une fois, ensemble, et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
   const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'app', 'apptrans'],
-    q = ctx.consume ? ctx.consume('focus', 'mission', 'new', 'ralt', ...PROPOSAL_KEYS) : ctx.query || {},
+    q = ctx.consume ? ctx.consume('focus', 'mission', 'new', 'ralt', 'direct', 'lat', 'lon', ...PROPOSAL_KEYS) : ctx.query || {},
     asked = q.focus;
+  if (q.direct) S.directAsk = { // SOG-0088 : #fuel?direct=<ID>[&lat=&lon=], traité une fois le vol lu (completeMount)
+    direct: q.direct,
+    lat: q.lat,
+    lon: q.lon
+  };
   if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, {
     rwy: q.rwy,
     sid: q.sid,
@@ -6207,6 +6277,215 @@ async function atisRead(force = false) {
   }
 }
 
+// ---------------------------------------------------------------- un direct sur instruction du contrôle (SOG-0088)
+// Le calcul est dans direct.js (pur) ; ici l'ancre (où part le direct), le panneau avant d'écrire, l'écriture, « Annuler le direct » et
+// la trace pour le compte rendu (route.directs). L'adresse de la Carte : #fuel?direct=<ID>[&lat=&lon=] (contrat donné à BUGS SOG).
+/** D'où part le direct (réponse (c) de l'ergonome) : la position réelle de moins de deux minutes, sinon la position prévue, sinon le
+ *  dernier point passé selon le plan (le départ sans horaire). */
+function directAnchor() {
+  const f = S.flight,
+    a = f.progress?.actual,
+    t = Date.parse(a?.at || '');
+  if (a && Number.isFinite(+a.lat) && Number.isFinite(+a.lon) && Number.isFinite(t) && Date.now() - t < 120e3) return {
+    kind: 'actual',
+    lat: +a.lat,
+    lon: +a.lon,
+    at: a.at
+  };
+  const p = CF.plannedPositionAt(f, Date.now());
+  if (p && p.phase !== 'taxi' && p.phase !== 'arrived' && Number.isFinite(p.lat)) return {
+    kind: 'planned',
+    lat: p.lat,
+    lon: p.lon
+  };
+  const pts = f.route?.points || [],
+    i = p?.phase === 'arrived' ? Math.max(0, pts.length - 2) : 0;
+  return {
+    kind: 'passed',
+    index: i,
+    id: String(pts[i]?.id || '')
+  };
+}
+/** Prépare le direct vers `id` (le champ, ou l'adresse avec la position de la Carte) : le plan de direct.js, montré dans le panneau ;
+ *  rien n'est écrit. Un point hors de la route restante est cherché dans la base (ou pris à la position donnée par la Carte). */
+async function directPrepare(id, given = null, resume = null) {
+  const s = S,
+    name = String(id || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{2,11}$/.test(name) || !s.flight.started?.at) return;
+  const r = s.flight.route || {},
+    anchor = s.direct?.to === name && resume != null ? s.direct.anchor : directAnchor();
+  let target = s.direct?.to === name && s.direct.target ? s.direct.target : {
+      id: name
+    },
+    plan = DIR.planDirect(r, anchor, target, {
+      resume,
+      coord: RT.icaoCoord
+    });
+  if (!plan.ok && plan.why === 'unknown') {
+    const c = given && Number.isFinite(given.lat) && Number.isFinite(given.lon) ? given : s.ctx.aerodb ? await s.ctx.aerodb.coords(name)
+      .catch(
+        () => null) : null;
+    if (S !== s) return;
+    if (c && Number.isFinite(+c.lat) && Number.isFinite(+c.lon) && Math.abs(+c.lat) <= 90 && Math.abs(+c.lon) <= 180) {
+      target = {
+        id: name,
+        lat: +c.lat,
+        lon: +c.lon
+      };
+      plan = DIR.planDirect(r, anchor, target, {
+        resume,
+        coord: RT.icaoCoord
+      });
+    }
+  }
+  s.direct = {
+    to: name,
+    target,
+    anchor,
+    plan
+  };
+  directDraw();
+}
+/** La ligne du panneau : d'où, ce qui est sauté, et l'écart estimé (distance, temps et carburant au prorata du devis). */
+function directLine(d) {
+  const p = d.plan,
+    ids = p.skipped.map(x => x.name || x.id),
+    dnm = p.nmAfter - p.nmBefore,
+    C = S.C || {},
+    perNm = (v) => +C.nm > 0 && Number.isFinite(+v) ? +v / +C.nm : 0,
+    sign = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}`,
+    from = d.anchor.kind === 'actual' ? tt(TX.directFromActual, {
+      t: hhmmOf(d.anchor.at)
+    }) : d.anchor.kind === 'planned' ? tt(TX.directFromPlanned) : tt(TX.directFromPassed, {
+      id: d.anchor.id || '?'
+    }),
+    unit = S.C?.sheet?.unit || 'kg';
+  return tt(TX.directLine, {
+    to: d.to,
+    from,
+    skipped: ids.length ? tt(ids.length === 1 ? TX.directSkipped1 : TX.directSkipped, {
+      list: ids.join(', ')
+    }) : tt(TX.directSkipped0),
+    dnm: `${sign(dnm)}${distTxt(Math.abs(dnm))}`,
+    dmin: `${sign(dnm)}${Math.round(Math.abs(dnm) * perNm(C.q?.minutes))} min`,
+    dfuel: `${sign(dnm)}${fuelTxt(Math.abs(dnm) * perNm(C.q?.trip), unit)}`
+  });
+}
+/** La carte du direct (étape Départ, vol démarré seulement) : le champ, puis le panneau du direct préparé, ou « Annuler le direct »
+ *  tant que la route n'a pas changé depuis. */
+function directDraw() {
+  const ap = S?.body?.querySelector('[data-k="addpt"]');
+  if (ap && S.addptAsked && !ap.value) ap.value = S.addptAsked; // le nom demandé par la Carte sur un vol non démarré, redessin compris
+  const box = S?.body?.querySelector('[data-block="direct"]');
+  if (!box) return;
+  const f = S.flight,
+    started = !!f.started?.at;
+  box.hidden = !started;
+  if (!started) return;
+  const r = f.route || {},
+    dl = box.querySelector('#fu-directlist'),
+    opts = (r.points || []).slice(1).map(p => `<option value="${esc(p.id || '')}"></option>`).join('');
+  if (dl && dl.__html !== opts) dl.innerHTML = dl.__html = opts;
+  const inp = box.querySelector('[data-k="direct"]');
+  if (inp && S.direct?.to && !inp.value) inp.value = S.direct.to; // le point demandé (l'adresse de la Carte), redessin compris
+  const pane = box.querySelector('[data-directpanel]'),
+    d = S.direct,
+    undo = S.directUndo && S.directUndo.text === String(r.text || '') ? S.directUndo : null;
+  let html = '';
+  if (d && !d.plan.ok) html = `<p class="f-note" data-kind="err" data-directwhy>${esc(tt({ passed: TX.directWhyPassed, far: TX.directWhyFar, unknown: TX.directWhyUnknown, route: TX.directWhyRoute, anchor: TX.directWhyRoute }[d.plan.why] || TX.directWhyRoute, { id: d.to }))}</p>`;
+  else if (d) {
+    const p = d.plan,
+      locked = p.skipped.filter(x => x.lock),
+      holds = p.skipped.filter(x => x.hold > 0),
+      pts = r.points || [];
+    html = `<p data-directsays>${esc(directLine(d))}</p>${locked.map(x => `<p class="f-note" data-kind="err" data-directlock>${esc(tt(TX.directLock, { id: x.lock }))}</p>`).join('')}${holds.map(x => `<p class="f-muted" data-directhold>${esc(tt(TX.directHold, { id: x.name || x.id, n: x.hold }))}</p>`).join('')}${p.choices.length ? `<label class="f-field">${esc(tt(TX.directResume))}<select data-k="directresume">${p.choices.map(k => `<option value="${k}"${k === p.resume ? ' selected' : ''}>${esc(pts[k]?.id || '?')}</option>`).join('')}</select></label>` : ''}<div class="f-row"><button type="button" class="primary" data-do="directapply">${esc(tt(TX.directApply))}</button><button type="button" data-do="directcancel">${esc(tt(TX.directCancel))}</button></div>`;
+  } else if (undo) html = `<p class="f-muted" data-directdone>${esc(tt(TX.directDone, { to: undo.to }))}</p><div class="f-row"><button type="button" data-do="directundo">${esc(tt(TX.directUndo))}</button></div>`;
+  if (pane && pane.__html !== html) pane.innerHTML = pane.__html = html;
+}
+/** Applique le direct préparé : un point imposé sauté demande une seconde confirmation (réponse (a)) ; la route, ses temps sur zone et
+ *  ses verrous réécrits ; la trace pour le compte rendu (route.directs : l'heure, le point, ce qui est sauté, les points imposés non
+ *  survolés) ; « Annuler le direct » gardé tant que rien d'autre ne change. */
+async function directApply() {
+  const s = S,
+    d = s.direct;
+  if (!d?.plan?.ok) return;
+  const locked = d.plan.skipped.filter(x => x.lock);
+  if (locked.length && !(await s.ctx.ask(tt(TX.directAskLock, {
+      list: locked.map(x => x.lock).join(', ')
+    }), {
+      ok: tt(TX.directApply)
+    }))) return;
+  if (S !== s || s.direct !== d) return;
+  const r = s.flight.route ||= emptyFlight().route,
+    before = JSON.parse(JSON.stringify({
+      text: r.text ?? '',
+      points: r.points ?? [],
+      holds: r.holds ?? null,
+      locks: r.locks ?? null,
+      directs: r.directs ?? null
+    }));
+  r.locks = d.plan.locksLeft;
+  r.holds = d.plan.holdsLeft;
+  r.points = markLocks(r, d.plan.points);
+  r.directs = [...(Array.isArray(r.directs) ? r.directs : []).slice(-19), {
+    at: new Date().toISOString(),
+    to: d.to,
+    from: d.anchor.kind,
+    skipped: d.plan.skipped.map(x => x.id),
+    notOverflown: locked.map(x => x.lock)
+  }];
+  s.direct = null;
+  routeEdited();
+  s.directUndo = {
+    before,
+    to: d.to,
+    text: String(r.text || '')
+  };
+  directDraw();
+}
+/** « Annuler le direct » : la route d'avant, tant que rien d'autre n'a changé depuis (le texte est le même qu'après le direct). */
+function directUndo() {
+  const u = S.directUndo,
+    r = S.flight.route;
+  if (!u || !r || String(r.text || '') !== u.text) return;
+  for (const k of ['text', 'points', 'holds', 'locks', 'directs'])
+    if (u.before[k] === null) delete r[k];
+    else r[k] = u.before[k];
+  S.directUndo = null;
+  const ta = S.body?.querySelector('[data-k="rtext"]');
+  if (ta) ta.value = r.text;
+  routeDerived(r);
+  renderPts();
+  saveFlight();
+  refresh();
+  scheduleWx();
+  directDraw();
+}
+/** L'adresse de la Carte (#fuel?direct=<ID>[&lat=&lon=]) : un vol démarré ouvre l'étape Départ sur le panneau ; sinon l'étape Route,
+ *  le nom dans « Ajouter un point », et la ligne le dit. */
+function directAsked(q) {
+  const id = String(q?.direct || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{2,11}$/.test(id)) return;
+  const lat = q.lat != null && q.lat !== '' ? +q.lat : NaN,
+    lon = q.lon != null && q.lon !== '' ? +q.lon : NaN,
+    given = Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? {
+      lat,
+      lon
+    } : null;
+  if (!S.flight.started?.at) {
+    S.addptAsked = id; // gardé jusqu'à l'ajout d'un point (directDraw le remet après un redessin)
+    goStep(1);
+    directDraw();
+    return S.ctx.notify(tt(TX.directNotStarted, {
+      id
+    }), 'warn');
+  }
+  goStep(4);
+  const inp = S.body?.querySelector('[data-k="direct"]');
+  if (inp) inp.value = id;
+  directPrepare(id, given);
+}
+
 /** Lecture qui attend le réseau, bornée : null au-delà de ms (late() appelé), la valeur sinon. */
 function bounded(job, ms, late) {
   return Promise.race([job, new Promise(res => setTimeout(() => {
@@ -6271,6 +6550,11 @@ async function completeMount(self) {
   S.refsPending = false;
   themesLoad(); // les thèmes de la compagnie, pour l'étape Vol (SOG-0202 T2)
   if (S.step === 1) atisRead(); // SOG-0090 : l'écran rouvert sur l'étape des procédures lit l'ATIS une fois
+  if (S.directAsk) { // SOG-0088 : le direct demandé par l'adresse de la Carte, une fois le vol lu
+    const q = S.directAsk;
+    S.directAsk = null;
+    directAsked(q);
+  }
   if (S.view === 'plan') renderPlan();
   else keepScroll(S.body, renderSheets);
   // le vol encore attendu (flightArrives) : il reprendra le vol à son arrivée ; sinon la reprise, devis compris

@@ -4664,3 +4664,82 @@ def f152(c):
     c.settle()
     c.eq(st['calls'], [], 'a company offline only reads no ATIS feed', what='calls')
     c.context.unroute(re.compile(r'https://(data\.vatsim\.net|api\.ivao\.aero)/'))
+
+
+
+_PT4 = '4600N00030W'
+
+
+def _direct_docs(started=True, actual=True):
+    """The planned flight (LFRS LUGEN NEPIX LFML) with a point imposed by the mission between LUGEN and NEPIX (PT4, in coordinates, 10 min on
+    area), started, and a real position of now just after LUGEN (the frame's progress.actual, as the simulator gives it). Invented."""
+    docs = flight_docs(started)
+    f = docs[1][1]
+    r = f['route']
+    r['text'] = f'LFRS LUGEN {_PT4} NEPIX LFML'
+    r['points'].insert(2, {'id': _PT4, 'lat': 46.0, 'lon': -0.5, 'lock': 'mission', 'mission': 'PT4'})
+    r['locks'] = [{'id': _PT4, 'mid': 'PT4', 'name': 'PT4'}]
+    r['holds'] = {_PT4: {'min': 5, 'max': 40, 'count': 10, 'name': 'PT4'}}
+    if actual:
+        now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        f['progress'] = {'actual': {'at': now, 'lat': 46.45, 'lon': -1.0, 'altFt': 27000, 'gsKt': 300, 'trackDeg': 125, 'source': 'xplane'}}
+    return docs
+
+
+@case('F154', 'Direct to a point on instruction of the controller: the Map\'s address opens the panel (from the real position, the points '
+      'skipped, the imposed one in red, its time on area removed), a second confirmation for the imposed point, the route rewritten with the '
+      'trace for the report, « Annuler le direct » gives the route back; a passed point is refused; a flight not started: the point in « Ajouter »',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0088 (the ergonomist\'s GO, 12 Nov: contract #fuel?direct=<ID>[&lat&lon] given to BUGS SOG; (a) an imposed point may be skipped, '
+      'said in red, second confirmation, the report keeps « non survolé : direct du contrôle »; (b) its time on area removed and said; (c) the '
+      'real position under 2 min, else the planned one, else the last point passed; a point farther than the rest of the route refused; undo); '
+      'captures 390 and 1 280')
+def f154(c):
+    path = 'pilot/ABC/current_flight.json'
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('fuel?direct=NEPIX', docs=_direct_docs())
+        c.until(f"!!document.querySelector('{FUEL} [data-block=direct]:not([hidden]) [data-directsays]')", timeout=15000,
+                what=f'{w} px: the panel of the direct, from the address')
+        says = norm(c.text(f'{FUEL} [data-directsays]') or '')
+        frm = norm(tx(F, 'directFromActual', c.lang).split('(')[0])
+        c.ok('NEPIX' in says and frm in says and 'PT4' in says and _PT4 not in says, says, f'{w} px: « Direct NEPIX depuis votre position (…) : PT4 sauté · … » (its mission name)')
+        c.eq(c.js(f"document.querySelector('{FUEL} input[data-k=direct]').value"), 'NEPIX', 'the asked point in the field', what='field')
+        c.eq(norm(c.text(f'{FUEL} [data-directlock]') or ''), norm(tx(F, 'directLock', c.lang).replace('{id}', 'PT4')), 'the imposed point named, in red',
+             what='lock line')
+        c.ok(c.js(f"document.querySelector('{FUEL} [data-directlock]').dataset.kind") == 'err', '', 'said as an error (red)')
+        c.ok('10' in (c.text(f'{FUEL} [data-directhold]') or '') and 'PT4' in (c.text(f'{FUEL} [data-directhold]') or ''), c.text(f'{FUEL} [data-directhold]'),
+             'its 10 min on area said removed, by its name')
+        c.eq([x for x in str((c.doc(path) or {}).get('route', {}).get('text', '')).split() if x != 'DCT'], ['LFRS', 'LUGEN', _PT4, 'NEPIX', 'LFML'],
+             'nothing written before « Appliquer »', what='not yet')
+        c.js(f"document.querySelector('{FUEL} [data-block=direct]').scrollIntoView({{block: 'start'}})")
+        c.shot(f'F154_{c.design}_{w}_{c.lang}_delivered.png')
+    # apply: the second confirmation, then the route rewritten from the position, the lock and the hold gone with the point, the trace
+    c.tap(f'{FUEL} [data-do="directapply"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='the second confirmation (an imposed point skipped)')
+    c.tap('.f-modal [data-ok]')
+    d = cf_doc(c, lambda d: 'NEPIX' in str((d.get('route') or {}).get('text', '')) and _PT4 not in str((d.get('route') or {}).get('text', '')),
+               'the route rewritten', timeout=10000)
+    r = d['route']
+    ids = [p['id'] for p in r['points']]
+    c.ok(ids[:2] == ['LFRS', 'LUGEN'] and ids[-2:] == ['NEPIX', 'LFML'] and len(ids) == 5 and re.fullmatch(r'\d{4}[NS]\d{5}[EW]', ids[2]), ids,
+         'LFRS LUGEN <the position, in ICAO coordinates> NEPIX LFML')
+    c.ok(not r.get('locks') and not (r.get('holds') or {}).get(_PT4), [r.get('locks'), r.get('holds')], 'the lock and the time on area left with the point')
+    tr = (r.get('directs') or [{}])[-1]
+    c.ok(tr.get('to') == 'NEPIX' and tr.get('from') == 'actual' and tr.get('notOverflown') == ['PT4'] and tr.get('skipped') == [_PT4], tr,
+         'the trace for the report: PT4 not overflown, direct from ATC')
+    c.until(f"!!document.querySelector('{FUEL} [data-do=directundo]')", what='« Annuler le direct »')
+    c.tap(f'{FUEL} [data-do="directundo"]')
+    words = lambda d: [x for x in str((d.get('route') or {}).get('text', '')).split() if x != 'DCT']
+    cf_doc(c, lambda d: words(d) == ['LFRS', 'LUGEN', _PT4, 'NEPIX', 'LFML'] and (d.get('route') or {}).get('locks') and ((d.get('route') or {}).get('holds') or {}).get(_PT4),
+           'the route of before, its lock and its time on area back', timeout=10000)
+    # a point already passed: refused, said
+    c.page.fill(f'{FUEL} input[data-k="direct"]', 'LUGEN')
+    c.tap(f'{FUEL} [data-do="directprep"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-directwhy]')", what='the refusal')
+    c.eq(norm(c.text(f'{FUEL} [data-directwhy]') or ''), norm(tx(F, 'directWhyPassed', c.lang).replace('{id}', 'LUGEN')), 'LUGEN is already passed',
+         what='passed')
+    # a flight not started: the step Route, the name in « Ajouter un point »
+    c.open('fuel?direct=NEPIX', docs=_direct_docs(started=False, actual=False))
+    c.until(f"document.querySelector('{FUEL} [data-k=addpt]')?.value === 'NEPIX'", timeout=15000, what='the point in « Ajouter un point »')
+    c.ok(c.js(f"document.querySelector('{FUEL} [data-block=direct]').hidden"), '', 'no direct on a flight not started')

@@ -712,3 +712,29 @@ def g18(c):
         c.wait(800)
     got = c.js("[...document.querySelectorAll('[data-module=report] [data-measflight]')].map(e => e.dataset.measflight)")
     c.eq(got, ['FPM-LIVERY'], 'the flight from LFRS to LFML at the report\'s times, whatever its registration; not the one from elsewhere', what='proposed')
+
+
+
+@case('G19', 'Report: a point imposed by the mission that a direct from ATC skipped is said in the observations (« PT4 non survolé : direct du '
+      'contrôle vers NEPIX (…) »), added after what the pilot wrote, never twice',
+      'G', tags=('report',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0088 (a) (the ergonomist, 12 Nov: the mission report keeps the trace of an imposed point skipped by a direct); route.directs is '
+      'written by Fuel (F154); an invented flight')
+def g19(c):
+    from lib import flight_docs
+    docs = flight_docs(True)
+    docs[1][1]['route']['directs'] = [{'at': '2026-11-12T18:07:00Z', 'to': 'NEPIX', 'from': 'actual', 'skipped': ['4600N00030W'], 'notOverflown': ['PT4']}]
+    c.open('report', docs=docs + [['cache/report/draft.json', {'at': '2026-11-12T18:30:00Z', 'missionSeen': True,
+                                                     'mission': {'family': 'HEMS', 'remarks': {'observations': 'Vol calme.'}}}, 'cache']])
+    c.until("!!document.querySelector('[data-module=report] [data-do=current]')", timeout=10000, what='the current-flight card is offered')
+    c.tap('[data-module="report"] [data-do="current"]')
+    c.until("[...document.querySelectorAll('[data-module=report] input')].some(i => i.value === 'F-RAJA')", what='the flight prefills the form')
+    raw = lambda: c.js("document.querySelector('[data-module=report] [data-path=\"remarks.observations\"]')?.value || ''")
+    obs = lambda: norm(raw())
+    line = lambda: [x for x in raw().splitlines() if 'PT4' in x]
+    c.until("/PT4/.test(document.querySelector('[data-module=report] [data-path=\"remarks.observations\"]')?.value || '')", what='the trace in the observations')
+    c.ok(len(line()) == 1 and 'NEPIX' in line()[0] and '18:07' in line()[0], line(), 'one line: the point, the direct, its time')
+    c.ok(obs().startswith('Vol calme.'), obs(), 'after what the pilot wrote')
+    c.tap('[data-module="report"] [data-do="current"]')
+    c.settle()
+    c.eq(len(line()), 1, 'taken again: never twice', what='once')

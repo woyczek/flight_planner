@@ -256,3 +256,6 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   departure, its end within 15 NM of its arrival (aerodb positions; an aerodrome without a position does not filter), its times within
   the report's widened by one hour; several candidates are listed. G18 (red before: the flight with the report's registration from
   elsewhere proposed, the livery's flight not).
+- **12 Nov 2026 — a point not overflown after a direct** (SOG-0088 (a)): « Vol en cours » adds to the observations one line per point
+  imposed by the mission that a direct from ATC skipped (`route.directs[].notOverflown`, written by Fuel): « PT4 non survolé : direct du
+  contrôle vers NEPIX (18:07) », after what the pilot wrote, never twice; values bounded (a flight is an untrusted input). G19 (red before).

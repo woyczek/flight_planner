@@ -1757,3 +1757,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   in `flightNetworks()` only (Q-0038 pending). The feeds are reduced at reception to callsign, letter, time and lines: no name, no
   identifier of a person is kept; the text is never shown. F152 (red before): the traps of the survey (« RWY 31L RENAMED TO RWY 13R »,
   « VISUAL OPS », a RVR group, « RMK VOR ») give no runway; an offline company reads nothing.
+- **12 Nov 2026 — a direct to a point on instruction of ATC** (SOG-0088, the ergonomist's GO and answers (a) (b) (c)): modules/fuel/direct.js
+  (pure) projects the anchor on the route and says what the route becomes. Anchor: the real position (`progress.actual`) under two minutes,
+  else the planned position (`plannedPositionAt`), else the last point passed by the plan (said in the panel); a position enters the route
+  in ICAO coordinates. A target on the remaining route: the points between are skipped; off the route (the base, or the Map's lat / lon):
+  inserted, the route resumes at the first remaining point after its projection (another can be chosen). Refused: a point passed, one
+  farther than the rest of the route (« on refuse »), an unknown one. The panel (step Departure, started flight only) says the anchor,
+  the points skipped (by their mission name), ≈ distance, time and fuel (pro rata of the quote); a skipped imposed point in red and a
+  second confirmation (a); its time on area removed and said (b); its lock leaves with it (keepLocks would put it back otherwise).
+  `route.directs` keeps the trace (to, from, skipped, notOverflown), read by the report. « Annuler le direct » restores the route while its
+  text is unchanged. Address contract given to BUGS SOG: `#fuel?direct=<ID>[&lat=&lon=]` (Map button 05ec9e79d); a flight not started:
+  the step Route, the name in « Ajouter un point ». Procedure points (STAR, approach): not in this lot. F154 (red before).
