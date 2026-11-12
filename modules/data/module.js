@@ -351,6 +351,20 @@ function onPackOut(e) {
   const r = packRow(e);
   if (r && !r.contains(e.relatedTarget)) highlightZones([]);
 }
+/** Le groupe de la grille sous le pointeur (avec ses pays), ou null. */
+const groupRow = e => e.target.closest?.('.d-gp[data-zones]');
+/** Le survol (souris) d'un groupe de la grille surligne son périmètre sur la carte, sans la cadrer (le cadrage reste au clic) ; au toucher il n'y a pas de survol, rien ne change (SOG-0285). */
+function onGroupOver(e) {
+  if (e.pointerType === 'touch') return;
+  const g = groupRow(e);
+  if (g) highlightZones(g.dataset.zones.split(',').filter(Boolean));
+}
+
+function onGroupOut(e) {
+  if (e.pointerType === 'touch') return;
+  const g = groupRow(e);
+  if (g && !g.contains(e.relatedTarget)) highlightZones([]);
+}
 /** L'appui (tactile) d'une rangée surligne ses zones et les garde jusqu'au prochain appui ailleurs. */
 function onPackDown(e) {
   if (e.pointerType !== 'touch') return;
@@ -540,6 +554,8 @@ export async function mount(el, ctx) {
   S.body.addEventListener('click', onClick);
   S.body.addEventListener('pointerover', onPackOver);
   S.body.addEventListener('pointerout', onPackOut);
+  S.body.addEventListener('pointerover', onGroupOver);
+  S.body.addEventListener('pointerout', onGroupOut);
   S.body.addEventListener('pointerover', onZoneOver);
   S.body.addEventListener('pointerout', onZoneOut);
   S.body.addEventListener('keydown', onKey);

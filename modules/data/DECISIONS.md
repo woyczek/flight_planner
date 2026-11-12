@@ -626,3 +626,16 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   reason and its existing gesture (« Reprendre les routes NAT », « Refaire la météo du monde », « Relire les procédures »…), `n/a`
   has no line (counted done in the header), `up-to-date` is among the done. The folded line of a set shows its useful date
   (`validUntil`, `run`, `cycle` + `counts`). Selectors built from internal ids use `CSS.escape` (audit note, case L122).
+- **13 Nov 2026 — SOG-0285, the map of the Données screen** (the user after his trial of the redesign: « toujours pas de molette sur
+  les pays », « le shift-clic ne surligne pas les pays ? régression », « un survol sur le périmètre serait bienvenu »). (1) The
+  wheel was lost EVERYWHERE on the map, not only over a country: `mapWheel` took a plain wheel only when the page had nothing to
+  scroll (`pageScrolls`), and the real screen always scrolls, so the page scrolled under every point of the map (L96 even asserted
+  it). The map now takes the wheel wherever the pointer is on it; it gives it back to the page only when the zoom cannot go
+  further (no scroll trap: at the end of the zoom the wheel scrolls the page); with Ctrl it is always taken. (2) A picked country
+  wore a dark dashed outline, invisible at the scale of a world map, and an open-group blue rule (declared later) hid it; it now
+  wears the SAME blue as the open group (`--sog-accent`, solid, 2.6 px) and a fuller fill, declared in the same rule as `data-grp`
+  / `data-hl`; the banner under the map already says « n pays ». (3) A group of the grid carries its countries (`data-zones`,
+  validated) and the mouse hover outlines them on the map through the existing `highlightZones` (`data-hl`, the open group's blue);
+  nothing is framed (the framing stays with the click); touch has no hover (the touch handler of the old rows is not reused).
+  Cases L123 (a REAL wheel over a country, the sea and the margin, the page does not scroll; the wheel goes back to the page at the
+  end of the zoom), L124, L125; L96 adapted (a plain wheel is taken) and L113 (the mark is solid blue).

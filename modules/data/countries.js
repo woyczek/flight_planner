@@ -128,6 +128,8 @@ function packList() {
   })).filter(x => x.state.known.length);
 }
 /** La fiche ouverte voit-elle l'avancement d'un travail en place de son bouton ? */
+/** Un identifiant de pays sûr (le lanceur et le dépôt de données sont des entrées non fiables). */
+const ZONE_ID = /^[a-z0-9_-]{2,12}$/;
 const progressHere = () => !!S.cw?.sheet && progressOn(S.cw.sheet);
 /** La raison pour laquelle le choix d'un fichier est grisé : pas de lanceur, sinon une opération (la nôtre, dont l'avancement est sur la fiche, ou un envoi). */
 const uploadWhy = () => !S.ctx.launcher ? 'no-launcher' : 'busy';
@@ -312,7 +314,7 @@ function groupsHtml() {
     }) => {
       const open = S.cw.grp === pack.id,
         name = pack.names[li()] || pack.names[0];
-      return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-open="${open}"${tl.inCov ? '' : ' data-nocov'}><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><span class="d-gtitle"><b>${esc(name)}</b> <span class="f-muted d-gcount">${esc(count('country', state.known.length))}</span></span> <span class="d-gsum" data-group-sum>${groupSummaryHtml(tl)}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
+      return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-zones="${esc(state.known.filter(z => ZONE_ID.test(z)).join(','))}" data-open="${open}"${tl.inCov ? '' : ' data-nocov'}><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><span class="d-gtitle"><b>${esc(name)}</b> <span class="f-muted d-gcount">${esc(count('country', state.known.length))}</span></span> <span class="d-gsum" data-group-sum>${groupSummaryHtml(tl)}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
         <ul class="d-gc">${state.known.map(z => {
           const t = tone(z);
           return `<li><button type="button" class="d-gcb" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}" data-tone="${esc(t)}"${S.cw.hover === z ? ' data-hover' : ''}${S.cw.sheet === z ? ' aria-current="true"' : ''}><span class="d-gcn">${esc(nameOf(z))}</span> <span class="d-gw"><b aria-hidden="true">${M.own(SIGN_OF, t) || ''}</b> ${esc(word(t))}${S.cw.proc?.zones?.[z] ? ` <span class="d-gproc" data-has-proc><i class="d-sw" data-hatch aria-hidden="true"></i>${esc(tt(TX.d2.procShort))}</span>` : ''}</span></button></li>`;
@@ -1115,7 +1117,8 @@ export const CW_STYLE = `
 [data-module="data"] .d-wz[data-tone=err]{stroke:var(--sog-err);fill:var(--sog-err)}
 [data-module="data"] .d-wz[data-tone=muted]{fill-opacity:.1}
 [data-module="data"] .d-wz[data-approx]{stroke-dasharray:4 3}
-[data-module="data"] .d-wz[data-grp],[data-module="data"] .d-wz[data-hl]{stroke:var(--sog-accent);stroke-width:2.6px;stroke-dasharray:none}
+[data-module="data"] .d-wz[data-grp],[data-module="data"] .d-wz[data-hl],[data-module="data"] .d-wz[data-sel]{stroke:var(--sog-accent);stroke-width:2.6px;stroke-dasharray:none}
+[data-module="data"] .d-wz[data-sel]{fill-opacity:.7}
 [data-module="data"] .d-wz[data-hover]{fill-opacity:1}
 [data-module="data"] .d-wz:focus-visible{stroke:var(--sog-text,currentColor);stroke-width:3px}
 [data-module="data"] .d-whg{pointer-events:none;color:var(--sog-text,currentColor)}

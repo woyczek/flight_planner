@@ -7478,7 +7478,7 @@ def l96(c):
     c.ok(abs(u1[0] - u2[0]) < v1[2] * 1e-3 and abs(u1[1] - u2[1]) < v1[3] * 1e-2, (u1, u2), 'the zoom is around the pointer (not around the centre of the view): the point under it stays under it')
     c.ok(abs(v2[2] / v2[3] - v1[2] / v1[3]) < 1e-3, (v1, v2), 'the proportions of the frame are kept')
     r2 = c.js("""() => { const s = document.querySelector('[data-wmap]'), b = s.getBoundingClientRect(), d = document.scrollingElement; return [d.scrollHeight - d.clientHeight > 2, !s.dispatchEvent(new WheelEvent('wheel', { deltaY: -240, clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true, cancelable: true }))] }""")
-    c.eq(r2, [True, False], 'a plain wheel over the map (no Ctrl) is NOT taken while the page has something to scroll: the page scrolls', what='plain wheel')
+    c.eq(r2, [True, True], 'a plain wheel over the map (no Ctrl) is taken even while the page has something to scroll (SOG-0285, L123): the map zooms, the page does not scroll', what='plain wheel')
     # ---- 3. bounded: zoom out far, zoom in far, drag far
     for _ in range(14):
         c.js(_L96_WHEEL, [800, .5, .5])
@@ -8868,8 +8868,8 @@ def l113(c):
         c.page.mouse.click(*xy)
         c.page.keyboard.up('Shift')
         c.wait(120)
-    c.eq(c.js(_L113_SEL), ['fr', 'pt', 'us'], 'Shift + click picks three countries: a thick dashed outline on each', what='picked')
-    c.ok(c.js("(p => getComputedStyle(p).strokeDasharray !== 'none' && parseFloat(getComputedStyle(p).strokeWidth) >= 2.5)(document.querySelector('[data-wmap] path[data-sel]'))"), 'dash', 'the mark is a thick dashed outline')
+    c.eq(c.js(_L113_SEL), ['fr', 'pt', 'us'], 'Shift + click picks three countries: the blue outline of the open group on each (L124)', what='picked')
+    c.ok(c.js("(p => getComputedStyle(p).strokeDasharray === 'none' && parseFloat(getComputedStyle(p).strokeWidth) >= 2.5)(document.querySelector('[data-wmap] path[data-sel]'))"), 'solid', 'the mark is a thick solid outline')
     c.eq(c.js("document.querySelector('[data-sheet]')?.dataset.sheet || null"), 'pt', 'the sheet that was open stays open', what='sheet stays')
     c.eq(norm(c.text('[data-sel-bar] [data-sel-line] b')), norm(_unit_count('country', 3, lang)), 'the banner says how many are picked', what='banner count')
     c.eq(norm(c.text('[data-sel-bar] [data-act=sel-add]')), D4('selAdd').replace('{n}', '1'), '« Ajouter à ma couverture (1) » for the one outside the coverage (the United States)', what='add button')
@@ -9026,4 +9026,124 @@ def l115(c):
         c.ok(two or (pos == 'fixed' and sh['w'] >= win - 1), (win, body, pos, sh), 'otherwise the sheet is full screen, as on a phone')
         c.js("[...document.querySelectorAll('[data-sheet] [data-act=sheet-close]')].find(b => b.offsetParent)?.click()")
         c.wait(200)
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L123 .. L125 (SOG-0285: the map of the Données screen, the user's trial of 12 Nov)
+_L123_SCROLL = "() => { let t = 0; for (let n = document.querySelector('[data-wmap]'); n; n = n.parentElement) t += n.scrollTop || 0; return t + (document.scrollingElement?.scrollTop || 0) }"
+_L123_VIEW = "() => document.querySelector('[data-wmap]').getAttribute('viewBox').split(' ').map(Number)"
+
+
+@case('L123', 'Données: the wheel zooms the map wherever the pointer is on it, over the outline of a country included (SOG-0285) — a REAL wheel event (no Ctrl) over a country, over the sea and over the margin of the map; the page does not scroll; at the end of the zoom the wheel goes back to the page',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0285 (the user, twice: « toujours pas de molette sur les pays »): the plain wheel was taken only when the page had nothing to scroll (mapview.js pageScrolls), so on the real screen, which scrolls, it scrolled the page over every point of the map; the map takes the wheel wherever the pointer is on it, and gives it back to the page only when the zoom cannot go further')
+def l123(c):
+    _l113_open(c)
+    c.tap('[data-act=map-home]')
+    c.until("document.querySelector('[data-wmap]').getAttribute('viewBox') === document.querySelector('[data-wmap]').getAttribute('data-base')", timeout=4000, what='the framing of the coverage')
+    c.eq(c.js("document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight > 2"), True, 'the page has something to scroll (the real condition of the trial)', what='page scrolls')
+    pt = _l113_xy(c, -8, 39.5)
+    box = c.js("() => { const b = document.querySelector('[data-wmap]').getBoundingClientRect(); return [b.left, b.top, b.width, b.height] }")
+    spots = {'a country': pt, 'the sea': [box[0] + box[2] * .12, box[1] + box[3] * .88], 'the margin': [box[0] + 6, box[1] + 6]}
+    c.eq(c.js("([x, y]) => document.elementFromPoint(x, y)?.closest('path[data-zone]')?.dataset.zone || null", pt), 'pt', 'the first point is on the outline of Portugal', what='aim')
+    for name, xy in spots.items():
+        c.js("() => document.querySelector('[data-act=map-home]').click()")
+        c.until("document.querySelector('[data-wmap]').getAttribute('viewBox') === document.querySelector('[data-wmap]').getAttribute('data-base')", timeout=4000, what='home')
+        v0, s0 = c.js(_L123_VIEW), c.js(_L123_SCROLL)
+        c.page.mouse.move(*xy)
+        c.page.mouse.wheel(0, -240)
+        c.wait(250)
+        v1, s1 = c.js(_L123_VIEW), c.js(_L123_SCROLL)
+        c.ok(v1[2] < v0[2] - 1e-6, (name, v0, v1), f'a wheel forward over {name} zooms the map in')
+        c.eq(s1, s0, f'and the page did not scroll over {name}', what=f'no scroll over {name}')
+    # the end of the zoom: zoomed out as far as it goes, one more wheel backwards belongs to the page
+    c.page.mouse.move(*pt)
+    last = None
+    for _ in range(40):   # until the view stops changing: zoomed out as far as it goes
+        c.page.mouse.wheel(0, 600)
+        c.wait(60)
+        now = c.js(_L123_VIEW)
+        if now == last:
+            break
+        last = now
+    c.js("window.scrollTo(0, 0)")
+    c.js("document.querySelector('[data-wmap]').scrollIntoView({ block: 'center', behavior: 'instant' })")
+    c.wait(250)
+    mid = c.js("() => { const b = document.querySelector('[data-wmap]').getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2] }")
+    c.page.mouse.move(*mid)
+    c.wait(100)
+    v2, s2 = c.js(_L123_VIEW), c.js(_L123_SCROLL)
+    c.page.mouse.wheel(0, 400)
+    c.wait(400)
+    v3, s3 = c.js(_L123_VIEW), c.js(_L123_SCROLL)
+    c.ok(v3 == v2 and s3 > s2, (v2, v3, s2, s3), 'with the map zoomed out as far as it goes, the wheel scrolls the page (no trap)')
+    c.check_errors()
+
+
+_L124_HL = "() => [...document.querySelectorAll('[data-wmap] path[data-sel]')].map(p => p.dataset.zone).sort()"
+_L124_LOOK = """(ids) => ids.map(id => { const p = document.querySelector(`[data-wmap] path[data-zone="${id}"]`), s = getComputedStyle(p), o = document.querySelector('[data-wmap] path[data-grp]') ? getComputedStyle(document.querySelector('[data-wmap] path[data-grp]')) : null;
+  return { id, stroke: s.stroke, width: parseFloat(s.strokeWidth), dash: s.strokeDasharray, fill: parseFloat(s.fillOpacity), open: o ? o.stroke : null } })"""
+
+
+@case('L124', 'Données: a country picked with Shift + click stays highlighted on the map, in the blue of the open group, and the banner says how many are picked (SOG-0285, the user: « le shift-clic ne surligne pas les pays »)',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0285 (regression of lot D4): a picked country wore a dark dashed outline that disappears at the scale of a world map; it wears the blue of the open group (the same colour, solid, thick) and a fuller fill, as long as it is picked')
+def l124(c):
+    st = _l113_open(c)
+    if c.js("document.querySelector('[data-group-id=europe-south]').dataset.open") != 'true':
+        c.tap('[data-group-id=europe-south] [data-act=grp-toggle]')   # a group is open, as in the user's trial
+    c.tap('[data-act=world-toggle]')
+    c.until("document.querySelector('[data-wmap]').getAttribute('viewBox') === document.querySelector('[data-wmap]').getAttribute('data-world')", timeout=4000, what='the world is framed')
+    c.js("document.querySelector('[data-wmap]').scrollIntoView({ block: 'center', behavior: 'instant' })")
+    c.wait(300)
+    pt, fr = _l113_xy(c, -8, 39.5), _l113_xy(c, 2.5, 47)
+    for xy in (pt, fr):
+        c.page.keyboard.down('Shift')
+        c.page.mouse.click(*xy)
+        c.page.keyboard.up('Shift')
+        c.wait(150)
+    c.eq(c.js(_L124_HL), ['fr', 'pt'], 'the two countries are picked', what='picked')
+    look = c.js(_L124_LOOK, ['pt', 'fr'])
+    c.ok(all(l['stroke'] == l['open'] and l['width'] >= 2.5 and l['dash'] in ('none', '') for l in look) and look[0]['open'], look, 'a picked country wears the blue of the open group: the same colour, solid, at least 2.5 px')
+    plain, same = c.js(_L124_LOOK, ['de', 'es'])
+    c.ok(plain['stroke'] != look[0]['stroke'], (plain, look[0]), 'a country outside the open group that is not picked does not')
+    c.ok(look[0]['fill'] > same['fill'], (look[0], same), 'and a picked country of the open group is fuller than one that is not picked')
+    c.eq(c.count('[data-sel-bar]'), 1, 'the banner is there', what='banner')
+    n = c.js("document.querySelector('[data-sel-line] b').textContent")
+    c.ok(n.strip()[:1] == '2', n, 'and it says how many countries are picked (2)')
+    c.page.screenshot(path=str(ROOT / 'tests/v3/shots' / 'L124_1280_picked.png'))
+    c.check_errors()
+
+
+@case('L125', 'Données: hovering a group of the grid outlines its perimeter on the map, without framing it; leaving the group takes the outline off; on a phone nothing changes (SOG-0285, the user: « un survol sur le périmètre serait bienvenu »)',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=True, night=False,
+      rule='SOG-0285: the groups of the grid carried no hover (only the old « Ajouter ou retirer » rows did); the hover outlines the countries of the group in the blue of the open group (data-hl) and nothing else moves — the framing stays with the click; the touch has no hover')
+def l125(c):
+    _l113_open(c)
+    if c.width > 760:   # the map at the top of the window with the first row of groups under it, as the user sees it: the outline and the group are on the same screen
+        c.js("window.scrollTo(0, document.querySelector('[data-wmap]').closest('[data-world-map]').getBoundingClientRect().top + window.scrollY - 70)")
+        c.wait(250)
+    gid = c.js("""() => { const ok = g => g.dataset.open === 'false' && !g.hasAttribute('data-nocov') && g.getBoundingClientRect().bottom <= innerHeight && g.getBoundingClientRect().top > 0;
+      const gs = [...document.querySelectorAll('.d-gp[data-group-id]')]; return (['europe-north', 'europe-west'].map(i => gs.find(g => g.dataset.groupId === i)).concat(gs).find(g => g && ok(g)) || gs.find(g => g.dataset.open === 'false' && !g.hasAttribute('data-nocov')))?.dataset.groupId }""")
+    g = f'[data-group-id={gid}]'
+    zones = c.js(f"(document.querySelector('{g}').dataset.zones || '').split(',').filter(Boolean)")
+    c.ok(len(zones) >= 3, zones, 'the group row says which countries it holds (data-zones)')
+    v0 = c.js(_L123_VIEW)
+    hl = lambda: c.js("() => [...document.querySelectorAll('[data-wmap] path[data-hl]')].map(p => p.dataset.zone).sort()")
+    if c.width <= 760:
+        c.tap(f'{g} [data-act=grp-toggle]')
+        c.wait(300)
+        c.eq(hl(), [], 'on a phone a tap on a group outlines nothing more than it did (no hover)', what='no hover on a phone')
+        return c.check_errors()
+    c.page.hover(f'{g} [data-act=grp-toggle]')
+    c.wait(250)
+    got = hl()
+    drawn = c.js("(zs => zs.filter(z => document.querySelector(`[data-wmap] path[data-zone='${z}']`)).sort())", zones)
+    c.eq(got, drawn, 'hovering the group outlines every country of it that the map draws', what='outlined')
+    c.eq(c.js(_L123_VIEW), v0, 'and the map is not framed (the framing stays with the click)', what='no framing')
+    c.eq(c.js(f"document.querySelector('{g}').dataset.open"), 'false', 'the group did not open', what='still closed')
+    c.page.screenshot(path=str(ROOT / 'tests/v3/shots' / 'L125_1280_hover.png'))
+    c.page.mouse.move(5, 5)
+    c.wait(250)
+    c.eq(hl(), [], 'leaving the group takes the outline off', what='cleared')
     c.check_errors()

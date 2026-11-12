@@ -263,7 +263,6 @@ export const STYLE = `
 [data-module="data"] details>summary>.d-chev{display:none}
 [data-module="data"] details.d-fold>[data-set-panel],[data-module="data"] details.d-fold>.f-card{margin-bottom:var(--sog-gap)}
 [data-module="data"] .d-gp[data-nocov]{opacity:.6}
-[data-module="data"] .d-wz[data-sel]{stroke:var(--sog-text,currentColor);stroke-width:3px;stroke-dasharray:6 3;fill-opacity:.55}
 [data-module="data"] .d-selbar{margin:8px 0 0;padding:8px 10px;border:1px solid var(--sog-border);border-left:5px solid var(--sog-accent);background:var(--d-acc-bg)}
 [data-module="data"] .d-selbar p{margin:2px 0}
 [data-module="data"] .d-selbar .d-verbs{margin:6px 0 2px}
