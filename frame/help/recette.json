@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 156,
+  "tests": 157,
   "verdicts": 59
  },
  "apps": [
@@ -272,6 +272,20 @@
    "delivered": "2026-11-12T18:12:26Z"
   },
   {
+   "id": "SOG-0089",
+   "app": "pilote",
+   "title": {
+    "fr": "Route au format FPL avec piste et procédures (LFPO/07 OPAL2E OPALE DCT …) : lue et écrite",
+    "en": "Route in FPL form with runway and procedures (LFPO/07 OPAL2E OPALE DCT …): read and written",
+    "de": "Route im FPL-Format mit Piste und Verfahren (LFPO/07 OPAL2E OPALE DCT …): gelesen und geschrieben",
+    "es": "Ruta en formato FPL con pista y procedimientos (LFPO/07 OPAL2E OPALE DCT …): leída y escrita"
+   },
+   "test": "Recharge la page. Carburant › Route : tape « LFPO/07 OPAL2E OPALE DCT … LFML/31R » (une de tes routes, au format de tes outils) : les pistes et les procédures sont posées à l'étape Procédures. Choisis une autre piste à l'étape Procédures : le texte de la route la porte après le terrain. Efface « /07 » dans le texte : la piste de départ est retirée, et une notification le dit. Ouvre un vol d'avant ce soir qui avait une piste : le texte la montre dès l'ouverture, sans changer pendant que tu tapes.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T19:17:37Z"
+  },
+  {
    "id": "SOG-0090",
    "app": "pilote",
    "title": {
@@ -393,9 +407,15 @@
     "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
     "es": "Ruta (RAD): dibujar las rutas propuestas antes de elegir y decir cuáles son las desviaciones a las reglas"
    },
-   "test": "Carburant › Route avec la Carte à côté, « Calculer A → B » : toucher un itinéraire (dans la liste ou sur la carte) le montre : surligné des deux côtés, son détail déplié, sans le prendre ; la liste reste. Seul « Choisir » le prend. Un second « Calculer » : la carte suit en moins d'une seconde, rien du premier calcul ne reste. Les tracés : voie en trait plein avec son nom, direct en tirets, route libre en pointillé, écart aux règles en rouge.",
+   "test": "C'est une MESURE, pas encore le correctif : lanceur relancé, page rechargée. Carburant › Route avec la Carte à côté, « Calculer A → B » sur le trajet où tu as vu « instable, lent » : le bouton est occupé dès l'appui et compte les secondes ; un second appui ne lance rien. Si le calcul dépasse 3 s, une ligne sous la liste dit « Calculé en … s — dont … s chez le lanceur » : touche « Copier le diagnostic » et colle-le-moi (dans ta note ou ici). Refais-le pour un second calcul de suite. Dis-moi aussi ce qui reste « instable » : ce que tu touches, ce que tu vois.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-12T19:21:59Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "toujours pareil. instable, lent.",
+    "at": "2026-11-11T19:12:09Z"
+   }
   },
   {
    "id": "SOG-0135",

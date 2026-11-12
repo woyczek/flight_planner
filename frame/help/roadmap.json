@@ -4,8 +4,8 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4537f01",
-  "fiches": 281,
+  "organisation": "2036604",
+  "fiches": 282,
   "untranslated": 0,
   "priorities": 243
  },
@@ -460,12 +460,13 @@
     {
      "id": "SOG-0089",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Route au format FPL avec piste et procédures (LFPO/07 OPAL2E OPALE DCT …) : lue et écrite",
      "en": "Route in FPL form with runway and procedures (LFPO/07 OPAL2E OPALE DCT …): read and written",
      "de": "Route im FPL-Format mit Piste und Verfahren (LFPO/07 OPAL2E OPALE DCT …): gelesen und geschrieben",
      "es": "Ruta en formato FPL con pista y procedimientos (LFPO/07 OPAL2E OPALE DCT …): leída y escrita",
-     "rank": 17
+     "rank": 17,
+     "test": true
     },
     {
      "id": "SOG-0129",
@@ -480,12 +481,13 @@
     {
      "id": "SOG-0134",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Route (RAD) : montrer les tracés des itinéraires proposés avant de choisir, et dire quels sont les écarts aux règles",
      "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
      "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
      "es": "Ruta (RAD): dibujar las rutas propuestas antes de elegir y decir cuáles son las desviaciones a las reglas",
-     "rank": 19
+     "rank": 19,
+     "test": true
     },
     {
      "id": "SOG-0140",
@@ -2963,6 +2965,27 @@
      "es": "Un gesto que necesita el lanzador lo dice cuando el lanzador falta («Calcular A → B» sin efecto)",
      "rank": 209,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-synchronisation",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; synchronisation",
+    "en": "Carburant ; synchronisation",
+    "de": "Carburant ; synchronisation",
+    "es": "Carburant ; synchronisation"
+   },
+   "items": [
+    {
+     "id": "SOG-0282",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Ouvrir un vol l'écrit déjà, sans aucun geste (profil, vents en altitude, route normalisée)",
+     "en": "Opening a flight already writes it, with no gesture (profile, winds aloft, normalised route)",
+     "de": "Opening a flight already writes it, with no gesture (profile, winds aloft, normalised route)",
+     "es": "Opening a flight already writes it, with no gesture (profile, winds aloft, normalised route)"
     }
    ]
   },
