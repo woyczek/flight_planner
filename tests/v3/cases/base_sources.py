@@ -2552,3 +2552,69 @@ def k180(c):
         c.eq((rep2['navpt']['cycle'], rep2['navpt']['stale']), ('2026-11-26', False), 'an edition to come keeps its own cycle', what='future edition')
         z = run(['pt'], ['navpt'])
         c.eq([x['code'] for x in z['pt']['reasons'] if x['code'] in ('source-old', 'source-newer')], [], 'and base/status no longer says « source-old » (« cycle passé ») for the edition in force', what='no source-old')
+
+
+@case('K181', 'Portugal, the join with the screen (SOG-0244): the view of base/fetch carries what the screen says (edition, from, future, older_than_cycle, skipped, refused); base/status says `pickup-waiting` for navpt when a package is in Downloads, and base/pickup takes it', 'K', static=True,
+      rule='Réglages L86 (12 Nov 2026) found two gaps on the launcher side: (1) _fetch_source built the line of a source from the files rendered by the provider but kept only the counts, so `edition`, `from`, `future`, `older_than_cycle`, `skipped`, `refused` never reached the view of base/fetch (the screen can say them, it did not receive them); (2) base/status emitted `pickup-waiting` only for NATS and the SIA, so the line of Portugal offered « Choisir le fichier… » and never « Prendre le fichier téléchargé » although a recognised package (a zip carrying an ISO, an ISO, a folder) was in Downloads, and base/pickup did not know navpt. Now: the fields are on the line; the status says pickup-waiting { source: navpt, zip } for a package newer than the layer taken (names only: nothing is read); base/pickup takes it (the plan first, then the layer written under its edition), says what it could not take (unrecognised, with the reason) and what is missing')
+def k181(c):
+    import datetime
+    import io
+    import json
+    import tempfile
+    import time
+    import zipfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    fx = ROOT / 'frame' / 'aerodb' / 'test' / 'fixtures' / 'eaip_pt'
+    ed = lambda t: t.replace('valid from 01 OCT 2026', 'valid from 15 JAN 2020')
+    p44 = ed((fx / 'LP-ENR-4.4-extract.html').read_text(encoding='utf-8'))
+    p33 = ed((fx / 'LP-ENR-3.3-extract.html').read_text(encoding='utf-8'))
+    iso = _iso_image({'EAIP': {'HTML': {'EAIP': {'LP_ENR31.HTM': p44.encode(), 'LP_ENR24.HTM': p33.encode()}}}})
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+    pickup, check_p = RJ.REGISTRY[('base', 'pickup')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        data = _repo(DS, td, {})
+        dl = td / 'dl'
+        dl.mkdir()
+        with zipfile.ZipFile(dl / 'EAIP ISO (1).zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('EAIP_PORTUGAL.ISO', iso)
+        ctx = {**_ctx(DS, data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 11, 12)}
+        # 1. the status says that a package waits (names only)
+        st = status(RJ.Job('base', 'status', {}), check_s({'zones': ['pt'], 'personal': ['navpt']}), ctx)['zones']['pt']
+        wait = [r for r in st['reasons'] if r['code'] == 'pickup-waiting']
+        c.eq([(r['source'], r['zip']) for r in wait], [('navpt', 'EAIP ISO (1).zip')], 'a package recognised by its shape in Downloads and newer than the layer taken: pickup-waiting { source: navpt, zip } (the screen offers « Prendre le fichier téléchargé »)', what='waiting')
+        # 2. the pickup: the plan, then the layer written
+        plan = pickup(RJ.Job('base', 'pickup', {}), check_p({'zones': ['pt']}), ctx)
+        t = [x for x in plan['taken'] if x['source'] == 'navpt']
+        c.eq([(x['zone'], x['zip'], x['edition']) for x in t], [('pt', 'EAIP ISO (1).zip', '2020-01-15')], 'the plan of base/pickup shows the package and its edition', what='plan')
+        c.ok(not (data / 'sia' / 'zones' / 'pt').exists(), 'written', 'and writes nothing')
+        real = pickup(RJ.Job('base', 'pickup', {}), check_p({'zones': ['pt'], 'dry': False}), ctx)
+        t = [x for x in real['taken'] if x['source'] == 'navpt']
+        layer = data / 'sia' / 'zones' / 'pt' / 'navpt_pt_enr_20200115.geojson'
+        c.eq(([(x['zone'], x['zip'], x['edition'], x.get('older_than_cycle')) for x in t], layer.is_file()), ([('pt', 'EAIP ISO (1).zip', '2020-01-15', True)], True), 'the pickup takes it: the layer is written under its edition, the edition older than the cycle is said', what='taken')
+        time.sleep(0.05)
+        st = status(RJ.Job('base', 'status', {}), check_s({'zones': ['pt'], 'personal': ['navpt']}), ctx)['zones']['pt']
+        c.eq([r for r in st['reasons'] if r['code'] == 'pickup-waiting'], [], 'taken: nothing waits any more', what='not waiting')
+        # a package that is not read: said with its reason
+        (dl / 'broken.iso').write_bytes(b'\x00' * 40000)
+        (dl / 'EAIP ISO (1).zip').unlink()
+        bad = pickup(RJ.Job('base', 'pickup', {}), check_p({'zones': ['pt'], 'dry': False}), ctx)
+        c.eq([(f['source'], f['error'], 'ISO illisible' in f.get('message', ''), f['zip']) for f in bad['failed'] if f['source'] == 'navpt'], [('navpt', 'unrecognised', True, 'broken.iso')], 'an image that does not read is a failure said with its reason (and its name), not a silence', what='failed')
+        # 3. the line of the source in the view of base/fetch carries the fields
+        (data / 'sia' / 'zones' / 'pt' / 'navpt_pt_enr_20200115.geojson').unlink()
+        (dl / 'broken.iso').unlink()
+        with zipfile.ZipFile(dl / 'EAIP ISO (1).zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('EAIP_PORTUGAL.ISO', iso)
+        jobs = RJ.Jobs(RJ.REGISTRY, ctx, min_gap={})
+        net = _Net(AF, {})
+        with net:
+            s = jobs.start('base', 'fetch', {'zones': ['pt'], 'personal': ['navpt']})
+            end = time.time() + 60
+            v = jobs.view(s['job'])
+            while v.get('state') == 'running' and time.time() < end:
+                time.sleep(0.1)
+                v = jobs.view(s['job'])
+        line = ((v.get('zones') or {}).get('pt') or {}).get('sources', {}).get('navpt', {})
+        c.eq({k: line.get(k) for k in ('state', 'edition', 'from', 'older_than_cycle')}, {'state': 'downloaded', 'edition': '2020-01-15', 'from': 'EAIP ISO (1).zip', 'older_than_cycle': True},
+             'the line of the source in the view of base/fetch carries the edition, the file NAME and the signal « older than the cycle » (the screen says them)', what='view')

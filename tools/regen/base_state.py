@@ -158,6 +158,16 @@ def waiting_pickups(data, zones, ctx, held):
             for s in v['sets']:
                 if s['state'] == 'waiting':
                     out.setdefault(z, []).append({'code': 'pickup-waiting', 'source': 'nats', 'set': s['set'], 'cycle': s.get('cycle'), 'zip': s['zip']})
+    if 'pt' in zones and 'navpt' in S.sources_of('pt'):      # SOG-0244 : un eAIP du Portugal (zip qui porte une ISO, ISO, dossier) plus récent que la couche prise ; les NOMS seulement, rien n'est lu
+        try:
+            import eaip_annexe15 as core
+            cands = S.aero_fetch.eaip_candidates(core.PROFILES['pt'], ctx.get('downloads'))
+            layers = [os.path.getmtime(os.path.join(data, 'sia', 'zones', 'pt', n)) for n in os.listdir(os.path.join(data, 'sia', 'zones', 'pt')) if core.out_re(core.PROFILES['pt']).fullmatch(n)] if os.path.isdir(os.path.join(data, 'sia', 'zones', 'pt')) else []
+            newest = max(cands, key=lambda c: c[2]) if cands else None
+            if newest and (not layers or newest[2] > max(layers)):
+                out.setdefault('pt', []).append({'code': 'pickup-waiting', 'source': 'navpt', 'zip': newest[1]})
+        except (OSError, ValueError, AttributeError):
+            pass
     if 'fr' in zones:
         zp = S._latest(dirs, S.PICKUP['sia']['zip'])
         if zp:

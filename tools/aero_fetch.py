@@ -410,13 +410,12 @@ def airnav(data):
     return [{'name': name, 'bytes': len(body), 'features': n + m, 'edition': issue, 'unchanged': not changed}], []
 
 
-def eaip_manual(prof, downloads):
-    """Les eAIP PRIS À LA MAIN que le lanceur trouve pour ce profil, dans les dossiers qu'il connaît (`downloads()` : data/local/upload/, Téléchargements…) — jamais un chemin venu de la page : un zip qui porte une ISO ou le dossier de l'eAIP
-    (quel que soit son nom de Windows : « EAIP ISO (1).zip »), une image .iso, un dossier extrait (eAIP/html/eAIP/ à son premier niveau). Rend ([(édition, date du fichier, nom, (page ENR 4.4, pages de routes))], [refus en clair]) :
-    un candidat qui ressemble à un eAIP mais n'est pas celui du profil, ou qui ne se lit pas, est un refus DIT (« ISO illisible : … »), pas un silence ; ce qui n'y ressemble pas (un autre zip) n'est pas regardé."""
+def eaip_candidates(prof, downloads):
+    """Les eAIP pris à la main qui SE PRÉSENTENT dans les dossiers du lanceur, sans rien lire de leur contenu : [(chemin, nom, date du fichier)] — un zip qui porte une ISO ou le dossier de l'eAIP, une image .iso, un dossier avec `eAIP/html/eAIP/` ; au plus 40.
+    C'est ce que base/status regarde pour dire « un fichier attend dans Téléchargements » (pickup-waiting) ; eaip_manual les lit."""
     import zipfile
     import eaip_annexe15 as core
-    found, refused, seen = [], [], 0
+    out = []
     for folder in (downloads() if callable(downloads) else []):
         try:
             names = sorted(os.listdir(folder))
@@ -435,18 +434,35 @@ def eaip_manual(prof, downloads):
                     with zipfile.ZipFile(p) as zf:
                         infos = zf.infolist()
                         looks = (len(infos) <= 2 and any(i.filename.lower().endswith('.iso') for i in infos)) or any('eaip/html/eaip' in i.filename.replace('\\', '/').lower() for i in infos[:5000])
+                if looks:
+                    out.append((p, n, os.path.getmtime(p)))
             except (OSError, zipfile.BadZipFile, ValueError):
                 continue
-            if not looks:
-                continue
-            seen += 1
-            if seen > 40:
-                break
-            try:
-                page44, routes, issue = core.read_package(prof, p)
-                found.append((issue, os.path.getmtime(p), n, (page44, routes)))
-            except (ValueError, OSError) as e:
-                refused.append(f'{n} : {e}')
+            if len(out) >= 40:
+                return out
+    return out
+
+
+def eaip_pick(found):
+    """L'édition à prendre parmi les eAIP lus ([(édition, date du fichier, nom, pages…)]) : la plus récente DÉJÀ EN VIGUEUR, sinon la plus proche à venir."""
+    import datetime
+    today = datetime.date.today().isoformat()
+    inforce = sorted((m for m in found if m[0] <= today), key=lambda m: (m[0], m[1]))
+    return inforce[-1] if inforce else sorted(found, key=lambda m: (m[0], m[1]))[0]
+
+
+def eaip_manual(prof, downloads):
+    """Les eAIP PRIS À LA MAIN que le lanceur trouve pour ce profil, dans les dossiers qu'il connaît (`downloads()` : data/local/upload/, Téléchargements…) — jamais un chemin venu de la page : un zip qui porte une ISO ou le dossier de l'eAIP
+    (quel que soit son nom de Windows : « EAIP ISO (1).zip »), une image .iso, un dossier extrait (eAIP/html/eAIP/ à son premier niveau). Rend ([(édition, date du fichier, nom, (page ENR 4.4, pages de routes))], [refus en clair]) :
+    un candidat qui ressemble à un eAIP mais n'est pas celui du profil, ou qui ne se lit pas, est un refus DIT (« ISO illisible : … »), pas un silence ; ce qui n'y ressemble pas (un autre zip) n'est pas regardé."""
+    import eaip_annexe15 as core
+    found, refused = [], []
+    for p, n, mtime in eaip_candidates(prof, downloads):
+        try:
+            page44, routes, issue = core.read_package(prof, p)
+            found.append((issue, mtime, n, (page44, routes), p))
+        except (ValueError, OSError) as e:
+            refused.append(f'{n} : {e}')
     return found, refused
 
 
@@ -463,9 +479,7 @@ def eaip_tables(data, key, downloads=None):
     manual, refused = eaip_manual(prof, downloads)
     p44, routes, issue, how = None, None, None, ''
     if manual:
-        today = datetime.date.today().isoformat()
-        inforce = sorted((m for m in manual if m[0] <= today), key=lambda m: (m[0], m[1]))
-        pick = inforce[-1] if inforce else sorted(manual, key=lambda m: (m[0], m[1]))[0]
+        pick = eaip_pick(manual)
         issue, how, (p44, routes) = pick[0], pick[2], pick[3]
     if p44 is None:
         try:

@@ -451,6 +451,10 @@ def _fetch_source(job, data, zone, source, absent=None, known=frozenset(), downl
     else:
         entry = {'state': 'downloaded' if any(not f.get('unchanged') for f in files) else 'unchanged', 'files': len(files),
                  'bytes': sum(f.get('bytes', 0) for f in files)}
+    for k in ('edition', 'from', 'future', 'older_than_cycle', 'skipped', 'refused'):      # SOG-0244 : ce que l'écran dit d'un eAIP pris à la main (l'édition lue, le nom du fichier, à venir, plus ancienne que le cycle, routes sans nom, fichiers non pris)
+        v = next((f[k] for f in files if f.get(k) not in (None, False, [], {})), None)
+        if v is not None:
+            entry[k] = v
     dep = max((f['deposited'] for f in files if f.get('deposited')), default=None)
     if dep:
         entry['deposited'] = dep      # lu dans un fichier choisi à la main faute de réseau, DATÉ : « déposé le … » (jamais pris pour une lecture du jour)
@@ -961,6 +965,32 @@ class _Quiet:
         return False
 
 
+def _eaip_pickup(job, data, dirs, dry, taken, missing, failed):
+    """Le « Prendre le fichier téléchargé » du Portugal : les eAIP de Téléchargements lus par leur CONTENU (aero_fetch.eaip_manual), l'édition en vigueur prise (à blanc : montrée) et le GeoJSON écrit comme le fait base/fetch ; un fichier qui ressemble à un eAIP et ne se lit
+    pas est un échec DIT avec sa raison (`failed`, error `unrecognised`, `message`), rien trouvé est `missing`."""
+    import eaip_annexe15 as core
+    prof = core.PROFILES['pt']
+    found, refused = aero_fetch.eaip_manual(prof, lambda: dirs)
+    for r in refused:
+        name, _, why = r.partition(' : ')
+        failed.append({'zone': 'pt', 'source': 'navpt', 'error': 'unrecognised', 'zip': name, 'message': why[:200]})
+    if not found:
+        if not refused:
+            missing.append({'zone': 'pt', 'source': 'navpt', 'expected': 'zip + ISO, ISO ou dossier eAIP'})
+        return
+    pick = aero_fetch.eaip_pick(found)
+    row = {'zone': 'pt', 'source': 'navpt', 'zip': pick[2], 'size': os.path.getsize(pick[4]) if os.path.isfile(pick[4]) else 0, 'edition': pick[0], 'files': [core.out_name(prof['name'], pick[0])], 'bytes': 0}
+    if not dry:
+        files, errors = aero_fetch.navpt(data, downloads=lambda: dirs)
+        if errors or not files:
+            failed.append({'zone': 'pt', 'source': 'navpt', 'error': 'failed', 'zip': pick[2], 'message': str((errors or ['rien écrit'])[0])[:200]})
+            return
+        f = files[0]
+        row.update({'bytes': f.get('bytes', 0), 'files': [f['name']], **{k: f[k] for k in ('future', 'older_than_cycle', 'skipped') if f.get(k)}})
+    job.log(f'pt: navpt ← {pick[2]} : édition du {pick[0]}' + (' (à blanc)' if dry else ''))
+    taken.append(row)
+
+
 def pickup(job, args, ctx):
     """Verbe base/pickup : pour chaque zone, ses sources à déposer à la main que le lanceur sait prendre (PICKUP), puis les exports d'openAIP de Téléchargements. Rend
     { ok, dry, taken: [{ zone, source, zip, files: [noms], bytes }], missing: [{ zone, source, expected }], failed:
@@ -984,6 +1014,8 @@ def pickup(job, args, ctx):
                 failed.append({'zone': z, 'source': s, 'error': 'changed', 'zip': name, 'size': size})
                 held.add((z, s))
     would = {}  # zone → les fichiers que la prise pose (ou poserait, à blanc) : le cycle qui en résulte
+    if not args.get('_sets_only') and 'pt' in args['zones'] and 'navpt' in sources_of('pt') and not job.cancelled():
+        _eaip_pickup(job, data, dirs, dry, taken, missing, failed)       # NAV Portugal (SOG-0244) : un zip qui porte une ISO, une ISO ou un dossier extrait, reconnu par son contenu
     todo = [(z, s, key, set_, pat) for z in args['zones'] for s in sources_of(z) if s in PICKUP for key, set_, pat in _units(s)]
     before = {z: _in_place(data, PICKUP['nats'], 'AIP') for z in args['zones'] if 'nats' in sources_of(z)}
     for n, (z, s, key, set_, pat) in enumerate(todo):
