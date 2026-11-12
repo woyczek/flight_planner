@@ -8,6 +8,7 @@ import {
   busyNow,
   catSource,
   esc,
+  lang,
   li,
   pickSource,
   S,
@@ -30,6 +31,8 @@ import {
 } from './busy.js';
 import {
   DIRCAM_MEMBER,
+  DIRCAM_PDF_NAME,
+  DIRCAM_SOURCE,
   readMember,
   ZipError
 } from './zipmember.js';
@@ -201,25 +204,36 @@ async function pickTaken(out, zone, name, src) {
   renderBuild();
   await fetchThenBuild(zone, true);
 }
-/** Ce que la ligne DIRCAM envoie : le PDF de l'ENR 5.7, jamais l'archive du SIA (1,3 Go). Un PDF choisi tel quel part tel quel ; une archive zip est lue sans être chargée (zipmember.js : le seul membre PDF/MIAM/MIAM_OACI_ENR 5.7.pdf, reconnu à ce membre quel que soit le nom de l'archive) ;
- *  tout le reste, ou une archive illisible, est refusé en mots (`ZipError.code`). Rend { blob, name, fromZip }. */
+/** Les quatre premiers octets d'un fichier sont-ils ceux d'un PDF (`%PDF`) ? Le lanceur reconnaît l'ENR 5.7 à ce contenu ET au nom (tools/base_upload.py). */
+async function isPdf(blob) {
+  const h = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+  return h.length === 4 && [...'%PDF'].every((c, i) => h[i] === c.charCodeAt(0));
+}
+/** Ce que la ligne DIRCAM envoie : le PDF de l'ENR 5.7, jamais l'archive du SIA (1,3 Go), et seulement ce que le lanceur prend : un `%PDF` nommé `MIAM_OACI_ENR 5.7.pdf` (avec ou sans « (1) »). Un PDF choisi tel quel part tel quel s'il a ce nom ;
+ *  une archive zip est lue sans être chargée (zipmember.js : le seul membre PDF/MIAM/MIAM_OACI_ENR 5.7.pdf, reconnu à ce membre quel que soit le nom de l'archive, et dont le contenu doit être un PDF) ; tout le reste, ou une archive illisible, est refusé en mots (`ZipError.code`)
+ *  sans rien envoyer. Rend { blob, name, fromZip }. */
 async function dircamTake(file, signal) {
   const head = new Uint8Array(await file.slice(0, 5).arrayBuffer()),
     is = t => [...t].every((c, i) => head[i] === c.charCodeAt(0));
-  if (is('%PDF')) return {
-    blob: file,
-    name: String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) || 'ENR-5-7.pdf',
-    fromZip: false
-  };
+  if (is('%PDF')) {
+    const name = String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120);
+    if (!DIRCAM_PDF_NAME.test(name)) throw new ZipError('pdf-name');
+    return {
+      blob: file,
+      name,
+      fromZip: false
+    };
+  }
   if (!is('PK')) throw new ZipError('not-zip');
   const m = await readMember(file, DIRCAM_MEMBER, signal);
+  if (!await isPdf(m.blob) || !DIRCAM_PDF_NAME.test(m.name)) throw new ZipError('not-pdf');
   return {
     ...m,
     fromZip: true
   };
 }
 /** Envoie le fichier choisi : un seul à la fois, l'avancement sur la ligne de sa zone, la fin en une notification ; un envoi réussi enchaîne la construction de la zone reconnue (celle de la ligne à défaut). `source` : la ligne qui a demandé le fichier — « dircam » : le PDF de l'ENR 5.7 est lu dans
- *  l'archive du SIA et seul ce PDF est envoyé (le lanceur de ce poste ne le prend pas encore : son refus est dit tel quel). */
+ *  l'archive du SIA et seul ce PDF est envoyé, sous le nom que le lanceur reconnaît (il le garde dans data/local/upload/ : source dircam, zone fr) ; sa réponse est dite sur la ligne. */
 export async function startUpload(zone, file, source = '') {
   const me = S,
     note = {
@@ -241,7 +255,8 @@ async function sendFile(zone, file, source, note) {
   const me = S;
   if (!file || uploadOff() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
   let name = String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) || '?';
-  const dircam = source === 'dircam';
+  const dircam = source === DIRCAM_SOURCE,
+    origin = name; // le fichier que l'utilisateur a choisi (l'archive du SIA, ou le PDF), dit sur la ligne
   if (dircam && file.size > 0) { // l'archive du SIA se lit en place : sa taille n'est pas celle de l'envoi
     S.zoneMsg.delete(zone);
     const ctrl = new AbortController();
@@ -265,8 +280,9 @@ async function sendFile(zone, file, source, note) {
     if (S !== me) return;
     S.upload = null;
     if (!got) {
-      const text = tt(TX.cwb.zip[code] || TX.cwb.zip.corrupt, {
-        m: DIRCAM_MEMBER
+      const text = tt(Object.hasOwn(TX.cwb.zip, code) ? TX.cwb.zip[code] : TX.cwb.zip.corrupt, {
+        m: DIRCAM_MEMBER,
+        p: DIRCAM_MEMBER.split('/').pop()
       });
       sayOnLine(zone, name, text);
       return S.ctx.notify(text, 'err');
@@ -277,7 +293,9 @@ async function sendFile(zone, file, source, note) {
     file = got.blob;
     name = got.name;
   }
-  if (!dircam && file.size > MAX_BYTES) {
+  // le plafond du lanceur vaut aussi pour le PDF de la ligne DIRCAM (un PDF choisi tel quel) : au-delà, rien n'est envoyé
+  const tooBig = file.size > MAX_BYTES;
+  if (tooBig) {
     sayOnLine(zone, name, tt(TX.up.why['too-large']));
     return S.ctx.notify(tt(TX.up.why['too-large']), 'err');
   }
@@ -308,9 +326,30 @@ async function sendFile(zone, file, source, note) {
   if (S !== me) return;
   S.upload = null;
   const out = outcome(r);
-  if (dircam && out.kind === 'fail' && (r?.reason || r?.body?.reason) === 'unrecognised') out.detail = tt(TX.cwb.zip
-    .launcher); // le lanceur ne prend pas encore ce PDF : on le dit en mots
-  if (out.kind === 'fail') sayOnLine(zone, name, out.text, out.detail);
+  if (dircam && out.kind === 'fail' && (r?.reason || r?.body?.reason) === 'unrecognised') out.text = tt(TX.cwb.zip.refused, {
+    p: DIRCAM_MEMBER.split('/').pop()
+  }); // le lanceur ne reconnaît pas ce PDF (nom ou contenu) : en mots, sans la liste des sources de l'envoi, qui n'est pas la question ; son motif en clair suit (borné)
+  // ce que le lanceur a reçu, dit sur la ligne : le fichier choisi, le PDF posé (et son édition quand le lanceur en donne une) ; « La prise suit » serait faux ici (la lecture de l'ENR 5.7 n'est pas celle du lanceur)
+  const received = dircam && out.kind !== 'fail';
+  if (received) {
+    const b = M.fmtBytes(file.size, lang()),
+      got = tt(out.kind === 'same' ? TX.cwb.zip.receivedSame : TX.cwb.zip.received, {
+        name: out.file || name,
+        b
+      }),
+      m = handMsgOf({
+        edition: out.cycle
+      }, origin);
+    out.text = got;
+    S.zoneMsg.set(zone, {
+      level: m?.level || 'ok',
+      kind: 'hand',
+      lines: [...(m ? m.lines : [tt(TX.zm.chosen, {
+        name: origin
+      })]), got]
+    });
+  }
+  if (out.kind === 'fail') sayOnLine(zone, origin, out.text, out.detail);
   else renderBuild();
   if (out.running) showBusy(out.running,
     'base'); // la carte de l'opération en cours, dans le panneau de la base, avec Voir / Arrêter / Libérer

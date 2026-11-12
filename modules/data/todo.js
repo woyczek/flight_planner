@@ -16,17 +16,28 @@ import {
   tt
 } from './state.js';
 import {
+  datasetUseful,
   dateOf,
   downloadTick,
   nameOf,
   regimeOf,
+  shortDate,
   tickHtml,
   unavailableOf
 } from './countries.js';
 import {
   buildZones,
-  opAreaHtml
+  gateOf,
+  opAreaHtml,
+  selection
 } from './panels.js';
+import {
+  natOpen
+} from './later.js';
+import {
+  startWorld,
+  worldGate
+} from './world.js';
 import {
   reasonText,
   statusKnown
@@ -37,6 +48,7 @@ import {
   updateScope
 } from './update.js';
 import {
+  startOp,
   startPickup
 } from './follow.js';
 import {
@@ -158,6 +170,73 @@ function lineHtml(it, k, data) {
     <ul class="d-ticks d-todo-t">${downloadStep(it, data)}${buildStep(it)}${publishStep(it)}</ul>
     ${k ? `<p class="d-todo-go" data-todo-gesture>${act}${sheets.map((z, n) => `<button type="button" class="d-link${n ? '' : ' d-stretch'}" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}">${esc(tt(TX.cw.openSheet, { c: nameOf(z) }))}</button>`).join(' ')}${!act && !sheets.length ? `<span class="f-muted" data-todo-nogesture>${esc(tt(TX.zx.tdNoGesture))}</span>` : ''}</p>` : zones.length ? `<p class="d-todo-go">${zones.map((z, n) => `<button type="button" class="d-link${n ? '' : ' d-stretch'}" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}">${esc(tt(TX.cw.openSheet, { c: nameOf(z) }))}</button>`).join(' ')}</p>` : ''}</li>`;
 }
+/** Le mot de la raison d'un jeu à faire (la liste fermée de `why`) : celui de la ligne repliée du jeu (TX.d5). */
+const DS_WHY = Object.freeze({
+  absent: 'dsWhyAbsent',
+  'older-than-cycle': 'dsWhyOlder',
+  old: 'dsWhyOld',
+  expired: 'dsWhyExpired'
+});
+/** Le geste de chaque autre jeu à faire : le texte du bouton (TX.d6) ; le verbe est celui que l'écran a déjà (procédures, points VFR et aéronefs : le téléchargement de leur panneau ; météo du monde : sa construction ; routes NAT : la reprise de « Quand ça change » ; fiches : le « Publier » de leur panneau). */
+const DS_GESTURE = Object.freeze({
+  procedures: 'actProc',
+  weather: 'actWeather',
+  nat: 'actNat',
+  vfr: 'actVfr',
+  aircraft: 'actAircraft',
+  sheets: 'actSheets'
+});
+/** Le jeu du lanceur qui porte le panneau d'un autre jeu (procédures → proc, points VFR → vfr, aéronefs → aircraft, fiches → aircraft/publish). */
+const DS_SET = Object.freeze({
+  procedures: 'proc',
+  vfr: 'vfr',
+  aircraft: 'aircraft',
+  sheets: M.SHEETS.set
+});
+/** L'état du bouton d'un jeu : { off, reason } — le lanceur du poste, rien d'autre en cours ; la météo du monde, les procédures et les points VFR ont leur propre garde (un État coché pour les procédures), les routes NAT demandent aerodb.natEnsure. */
+function datasetGate(id) {
+  if (id === 'weather') {
+    const g = worldGate();
+    return {
+      off: g.disabled,
+      reason: g.reason
+    };
+  }
+  const reason = !S.ctx.launcher ? 'no-launcher' : busyNow() ? 'busy' : '';
+  if (reason) return {
+    off: true,
+    reason
+  };
+  if (id === 'nat') return typeof S.ctx.aerodb?.natEnsure === 'function' ? {
+    off: false,
+    reason: ''
+  } : {
+    off: true,
+    reason: 'unknown-verb'
+  };
+  const set = DS_SET[id],
+    verb = id === 'sheets' ? M.SHEETS.verb :
+    'fetch', // les fiches : « Publier » (aircraft/publish) ; les autres : le téléchargement de leur panneau, avec ses choix (un État coché, un cycle)
+    g = gateOf(set, id === 'sheets' || M.SETS[set]?.free ? undefined : selection(set).ids.length, [verb]).verbs[verb];
+  return {
+    off: g.disabled,
+    reason: g.disabled ? g.reason : ''
+  };
+}
+/** La ligne d'un autre jeu (`datasets` de base/cycle) dans le bloc : son nom (le lanceur le dit dans les quatre langues), « à faire » et sa RAISON en mots avec la date utile (« plus ancien que le cycle · cycle 2610 », « routes NAT périmées depuis le … ») et LE geste que l'écran a déjà pour ce jeu ;
+ *  un jeu à jour dit « fait » et sa date utile (sans geste). Tout ce que dit le lanceur a été borné par le modèle (datasetsOf) et passe par esc(). */
+function datasetLineHtml(d, todo) {
+  const label = d.label[li()] || d.id,
+    useful = datasetUseful(d),
+    word = Object.hasOwn(DS_WHY, d.why) ? tt(TX.d5[DS_WHY[d.why]]) : '',
+    why = d.why === 'expired' && useful ? useful : [word, useful].filter(Boolean).join(' · '),
+    at = d.at ? shortDate(d.at) : '',
+    act = todo && Object.hasOwn(DS_GESTURE, d.id) ? datasetGate(d.id) : null;
+  return `<li class="d-todo-i" data-todo-dataset="${esc(d.id)}" data-todo-kind="${todo ? 'dataset' : 'done'}">
+    <p class="d-todo-h"><b data-todo-label>${esc(label)}</b></p>
+    <p class="d-todo-one"><b class="d-wsign" aria-hidden="true">${todo ? '!' : '✓'}</b> <span class="d-kind" data-kind-word>${esc(tt(todo ? TX.d5.dsTodoPlain : TX.cwb.kind.done))}</span>${why || (!todo && at) ? ` — <span data-ds-why>${esc(why || tt(TX.cw.on, { d: at }))}</span>` : ''}</p>
+    ${act ? `<p class="d-todo-go" data-todo-gesture><button type="button" data-todo-act="ds" data-dataset="${esc(d.id)}"${act.off ? ' disabled' : ''}>${esc(tt(TX.d6[DS_GESTURE[d.id]]))}</button>${act.off ? greyNote(act.reason) : ''}</p>` : ''}</li>`;
+}
 /** Une source que son éditeur n'offre plus : son nom, depuis quand, la note du catalogue ; ni coche, ni « en retard », hors du compte. */
 function goneHtml(it) {
   const un = unavailableOf(it.id, it) || {
@@ -176,6 +255,13 @@ export function todoGesture(btn) {
   if (act === 'all') return startUpdate();
   if ((act === 'update' || act === 'build') && zones.length) return startUpdate(zones);
   if (act === 'publish') return startPublish();
+  if (act === 'ds') { // un autre jeu à faire : le geste que l'écran a déjà pour lui, par son identifiant (liste fermée)
+    const id = btn.dataset.dataset;
+    if (!Object.hasOwn(DS_GESTURE, id) || datasetGate(id).off) return;
+    if (id === 'weather') return startWorld();
+    if (id === 'nat') return natOpen();
+    return startOp(DS_SET[id], id === 'sheets' ? M.SHEETS.verb : 'fetch');
+  }
   if (act === 'pick' && zones.length) {
     if (S.cw && btn.dataset.source)
       for (const z of zones) S.cw.hand.set(z, btn.dataset.source);
@@ -210,15 +296,20 @@ export function todoHtml() {
     busy: TX.cwb.todoBusy
   }[t.state] || TX.cwb.todoUnread))}</p></details>`;
   const r = M.todoOf(t.data, it => M.isComputed(regimeOf(it.id, it)));
-  if (!r.total && !r.gone.length) return '';
+  const ds = M.datasetLines(t
+      .data
+    ), // les autres jeux que le lanceur dit : leurs lignes à faire et faites, comptées avec celles des sources (l'en-tête compte la même chose : M.cycleCount)
+    nTodo = r.todo.length + ds.todo.length,
+    nDone = r.done.length + ds.done.length;
+  if (!r.total && !r.gone.length && !ds.todo.length && !ds.done.length) return '';
   const sc = updateScope(),
     gate = updateGate(),
     all = r.todo.length && (!sc.known || sc.n > 0) ? `<p class="d-verbs" data-todo-all><button type="button" class="primary" data-todo-act="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.zx.tdAll, { n: sc.known ? sc.n : r.todo.length }))}</button>${gate.disabled ? greyNote(gate.reason) : ''}</p>` : '';
-  return `<details class="d-todo" data-todo data-todo-state="ready"${open}${t.dirty || t.reading ? ' aria-busy="true"' : ''}>${marker(r.todo.length)}<h3 class="d-sh">${esc(tt(TX.cwb.todoTitle))} (${r.todo.length}) <small>${esc(tt(TX.d2.tdHelp))}</small></h3>
+  return `<details class="d-todo" data-todo data-todo-state="ready"${open}${t.dirty || t.reading ? ' aria-busy="true"' : ''}>${marker(nTodo)}<h3 class="d-sh">${esc(tt(TX.cwb.todoTitle))} (${nTodo}) <small>${esc(tt(TX.d2.tdHelp))}</small></h3>
     ${all}
-    ${r.todo.length ? `<ul class="d-todo-l" data-todo-list>${r.todo.map(x => lineHtml(x.item, x.kind, t.data)).join('')}</ul>` : `<p class="f-ok" data-todo-all>${esc(tt(TX.cwb.todoAll))}</p>`}
+    ${nTodo ? `<ul class="d-todo-l" data-todo-list>${r.todo.map(x => lineHtml(x.item, x.kind, t.data)).join('')}${ds.todo.map(d => datasetLineHtml(d, true)).join('')}</ul>` : `<p class="f-ok" data-todo-all>${esc(tt(TX.cwb.todoAll))}</p>`}
     ${opAreaHtml('base', 'todo')}
-    ${r.done.length ? `<details class="d-todo-done" data-todo-done${S.cw.doneOpen ? ' open' : ''}><summary data-act="todo-done">${esc(tt(TX.cwb.todoDone, { n: r.done.length }))}</summary><ul class="d-todo-l">${r.done.map(it => lineHtml(it, null, t.data)).join('')}</ul></details>` : ''}
+    ${nDone ? `<details class="d-todo-done" data-todo-done${S.cw.doneOpen ? ' open' : ''}><summary data-act="todo-done">${esc(tt(TX.cwb.todoDone, { n: nDone }))}</summary><ul class="d-todo-l">${r.done.map(it => lineHtml(it, null, t.data)).join('')}${ds.done.map(d => datasetLineHtml(d, false)).join('')}</ul></details>` : ''}
     ${r.gone.length ? `<h4 class="f-muted" data-todo-unavailable-title>${esc(tt(TX.cw.unavailableTitle))}</h4><ul class="d-todo-l d-todo-gone" data-todo-gone>${r.gone.map(goneHtml).join('')}</ul>` : ''}</details>`;
 }
 /** La mise en page de « À faire ce mois-ci » (à côté de CW_STYLE) : un bloc encadré, replié sous son repère de la hauteur d'un doigt ; une ligne par source, les coches l'une sous l'autre au téléphone et côte à côte en large ; chaque bouton a la taille d'un doigt. */

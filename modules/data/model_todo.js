@@ -86,7 +86,17 @@ export function foldDataset(data, fold) {
     k: todo.length ? 'todo' : 'ok',
     n: todo.length,
     ds,
+    all: mine, // tous les jeux du pli : la ligne repliée dit la date utile de chacun
     secondary: ds.id !== ids[0]
+  };
+}
+/** Les autres jeux rangés comme les sources de la liste : { todo (état `todo` : une ligne avec son geste et sa raison), done (état `up-to-date` : parmi les faits) } ; un jeu `n/a` (« existe, sans échéance ») n'a pas de ligne : il compte fait dans l'en-tête (cycleCount) sans être listé.
+ *  L'en-tête « n faits sur m » et le bloc disent ainsi la même chose : m moins les lignes à faire = n. */
+export function datasetLines(data) {
+  const ds = data?.datasets || [];
+  return {
+    todo: ds.filter(d => d.state === 'todo'),
+    done: ds.filter(d => d.state === 'up-to-date')
   };
 }
 /** Les pays vers lesquels une source mène : ceux de la liste du cycle qui sont dans la couverture, à défaut ceux que le catalogue lui attribue, dans la couverture ; [] sans (une source commune à tous les pays). Cinq au plus. */

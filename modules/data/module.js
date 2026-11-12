@@ -443,7 +443,7 @@ function onToggle(e) {
 }
 /** Identifiant du groupe dont l'aide s'ouvre : le dernier touché s'il est encore ouvert, sinon le premier ouvert ; '' sans. */
 function helpGroup() {
-  const g = S?.body?.querySelector(`details.f-group[data-group="${S.focus}"][open]`) || S?.body?.querySelector('details.f-group[open]');
+  const g = S?.body?.querySelector(`details.f-group[data-group="${CSS.escape(S.focus)}"][open]`) || S?.body?.querySelector('details.f-group[open]');
   const id = g?.dataset.group || '';
   return id === 'vfr' || id === 'sources' ? 'base' : id; // les points VFR et les sources sont des plis du chapitre de la base
 }

@@ -73,6 +73,7 @@ import {
 } from './inventory.js';
 import {
   afterDraw,
+  datasetUseful,
   forgetReads,
   shortDate
 } from './countries.js';
@@ -586,7 +587,10 @@ function foldView(id, st) {
   const d = f.ds,
     at = d.at ? ` · ${tt(TX.cw.on, { d: shortDate(d.at) })}` : '';
   if (f.k === 'todo') {
-    const w = Object.hasOwn(DS_WHY_KEY, d.why) ? tt(TX.d5[DS_WHY_KEY[d.why]]) : '',
+    const u = datasetUseful(d), // la date utile du jeu (« routes NAT périmées depuis le … », « cycle 2610 · 3 069 terrains »)
+      w = d.why === 'expired' && u ? u : [Object.hasOwn(DS_WHY_KEY, d.why) ? tt(TX.d5[DS_WHY_KEY[d.why]]) : '', d.why === 'expired' ? '' :
+        u
+      ].filter(Boolean).join(' · '),
       named = f.secondary ? ` (${d.label[li()]})` : '';
     return {
       k: 'todo',
@@ -603,7 +607,7 @@ function foldView(id, st) {
   };
   return {
     k: 'ok',
-    word: `${tt(d.state === 'n/a' ? TX.d5.dsNa : TX.d4.stOk)}${at}`,
+    word: `${[tt(d.state === 'n/a' ? TX.d5.dsNa : TX.d4.stOk), ...f.all.map(datasetUseful)].filter(Boolean).join(' · ')}${at}`, // « à jour · cycle 2611 · 3 069 terrains · le 05/10 »
     why: ''
   };
 }
@@ -618,7 +622,7 @@ function foldRowsState(id) {
 export function refreshFoldStates() {
   if (!S?.body || !S.groups) return;
   for (const id of ['proc', 'vfr', 'aircraft', 'weather']) {
-    const sum = S.body.querySelector(`details.d-fold[data-group="${id}"] > summary`),
+    const sum = S.body.querySelector(`details.d-fold[data-group="${CSS.escape(id)}"] > summary`),
       first = sum?.querySelector(':scope > span');
     if (!first) continue;
     const v = foldView(id, foldRowsState(id));

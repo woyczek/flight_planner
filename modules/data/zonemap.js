@@ -136,7 +136,7 @@ function showInfo(kind, icao) {
     w: word,
     d: String(p.cov?.read_at || '').slice(0, 10) || '?'
   });
-  const line = S.body?.querySelector(`[data-zone-map="${kind}"] [data-point-info]`);
+  const line = S.body?.querySelector(`[data-zone-map="${CSS.escape(kind)}"] [data-point-info]`);
   if (line) line.textContent = m.info;
 }
 /** Lit, pour la vue de la carte des États, les terrains détenus (lecture seule de la base locale, jamais un téléchargement ni une écriture) : au-dessus de COVER_ZOOM seulement, `aerodromes({ bbox, lite })` de la vue puis

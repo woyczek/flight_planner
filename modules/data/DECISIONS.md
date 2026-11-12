@@ -616,3 +616,13 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   `base/cycle.local` is one more generic line under « Quand ça change ». Case L111 was stale (DIRCAM has a known reason since
   AeroDB 6e27a6a8a): it reads the real catalogue now. Not done: the datasets are not counted in the « À faire ce mois-ci » list
   itself; their `counts` / `run` / `cycle` / `validUntil` fields are parsed and shown nowhere.
+- **12 Nov 2026 — SOG-0262, D6: DIRCAM, the datasets in the to-do block, the dates on the folded lines**: the launcher (K192) takes the
+  DIRCAM ENR 5.7 only as a PDF (`%PDF` + name hint `MIAM_OACI_ENR 5.7.pdf`, answer `{ ok, source:'dircam', zone:'fr', name, size,
+  replaced, sha256 }`, kept as it is in `data/local/upload/`, nothing read) and not the 1.3 GB zip: the page keeps reading only the
+  member `PDF/MIAM/MIAM_OACI_ENR 5.7.pdf` of the SIA archive client-side (`zipmember.js`), refuses a member that is not a PDF or a
+  PDF with another name, and sends that PDF only; the line says what was chosen and what the launcher received, never more
+  (nothing parses the PDF into `miam-enr-5-7-tracks.xml` on this screen yet: page-side step to wire later). The header count and the
+  « À faire ce mois-ci » block now count the same thing: a dataset the launcher says `todo` is a line of the block with its
+  reason and its existing gesture (« Reprendre les routes NAT », « Refaire la météo du monde », « Relire les procédures »…), `n/a`
+  has no line (counted done in the header), `up-to-date` is among the done. The folded line of a set shows its useful date
+  (`validUntil`, `run`, `cycle` + `counts`). Selectors built from internal ids use `CSS.escape` (audit note, case L122).

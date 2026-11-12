@@ -7,6 +7,9 @@ import {
   TX
 } from './texts.js';
 import {
+  fmtDateZ
+} from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
+import {
   busyNow,
   catSource,
   count,
@@ -60,6 +63,10 @@ import {
   uploadHtml,
   uploadOff
 } from './upload.js';
+import {
+  DIRCAM_MEMBER,
+  DIRCAM_SOURCE
+} from './zipmember.js';
 import {
   todoHtml
 } from './todo.js';
@@ -338,7 +345,32 @@ export function shortDate(iso) {
     timeZone: 'UTC'
   }).format(d);
 }
-/** Une cellule d'état de la fiche (construit, publié) : le signe, le MOT court (« à faire », « à jour », « le 05/10 ») et, à part, la phrase longue qui va sur sa propre ligne, sous les trois cellules (une phrase entière ne tient pas dans une cellule étroite). Rend { li, note }. */
+/** « 2026-11-10T06:00 » (le run de la météo, tel que le lanceur le dit) écrit « 10 nov. 2026 06:00Z » ; un texte d'une autre forme est rendu tel quel (borné par le modèle). */
+const runText = run => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(run) ? `${M.dateText(run.slice(0, 10), lang())} ${run.slice(11, 16)}Z` : run;
+/** La date utile d'un jeu que le lanceur dit (`datasets`, K207), en mots : les routes NAT « valides jusqu'au … » (« périmées depuis le … » une fois finies), la météo « prévision du … » (le run), les procédures « cycle 2611 · 3 069 terrains » (le cycle de la ligne CIFP la plus récente
+ *  et les terrains lus : les nombres au format de la langue) ; '' pour un jeu qui n'en dit pas (la date de son fichier suffit). Rien n'est lu au-delà de ce que le lanceur a dit. */
+export function datasetUseful(d) {
+  const T = TX.d6,
+    unit = n => tt(TX.unit.aerodrome[n === 1 ? 0 : 1]),
+    num = n => `${n.toLocaleString(lang())} ${unit(n)}`;
+  if (d.id === 'nat' && d.validUntil) return tt(d.why === 'expired' ? T.natExpired : T.natValid, {
+    d: fmtDateZ(d.validUntil, lang())
+  });
+  if (d.id === 'weather' && d.run) return tt(T.run, {
+    d: runText(d.run)
+  });
+  if (d.id === 'procedures') {
+    const at = d.cycle ? Date.parse(`${d.cycle}T12:00:00Z`) : NaN,
+      id = S.airac && Number.isFinite(at) ? S.airac.cycleOf(at)?.id : '',
+      c = d.counts || {},
+      n = c.cifp > 0 && c.eaip > 0 ? `${num(c.cifp)} CIFP · ${num(c.eaip)} eAIP` : c.cifp > 0 ? num(c.cifp) : c.eaip > 0 ? num(c.eaip) : '';
+    return [id ? tt(T.procCycle, {
+      c: id
+    }) : d.cycle ? dateOf(d.cycle) : '', n].filter(Boolean).join(' · ');
+  }
+  return '';
+}
+/** Une cellule d'état de la fiche (construit, publié) :le signe, le MOT court (« à faire », « à jour », « le 05/10 ») et, à part, la phrase longue qui va sur sa propre ligne, sous les trois cellules (une phrase entière ne tient pas dans une cellule étroite). Rend { li, note }. */
 function factCell(key, ok, word, short, long) {
   const sign = M.SIGNS.includes(ok) ? ok : 'na',
     label = tt(TX.cw.tick[{
@@ -507,19 +539,27 @@ function handSeen(sid, z, item, cy) {
   return (cy.state === 'ready' && !!item?.hand?.inDownloads?.length) || (z?.reasons || []).some(r => r.code === 'pickup-waiting' && !!r
     .zip && (!r.source || r.source === sid));
 }
+/** Ce que la ligne DIRCAM dit du fichier à choisir, en mots : l'archive du SIA (son nom d'après le catalogue, `files[].file`, jamais un nom inventé), lue sur cet appareil, dont seul le PDF de l'ENR 5.7 part au lanceur ; '' pour toute autre source. */
+function chooseHintHtml(sid) {
+  if (sid !== DIRCAM_SOURCE) return '';
+  const f = filesOf(sid, null).files[0],
+    arc = typeof f?.file === 'string' && f.file !== f.name ? ` (${f.file.replace(/[\p{Cc}]/gu, ' ').slice(0, 80)})` : '';
+  return `<p class="f-muted" data-choose-hint="${esc(sid)}">${esc(tt(TX.cwb.zip.hint, { f: arc, p: DIRCAM_MEMBER.split('/').pop() }))}</p>`;
+}
 /** Les gestes d'une source prise à la main, UN seul but : un fichier vu dans Téléchargements — « Prendre le fichier téléchargé » est le geste principal (il lance la prise de ce pays) et « Choisir un autre fichier… » un lien dessous ; rien de vu — « Choisir le fichier… » seul.
  *  Le bouton de choix dit sa source (`data-source`) : la ligne DIRCAM lit l'ENR 5.7 dans l'archive du SIA (upload.js). `msg` : l'avancement de l'envoi et ce que le dernier geste a dit (reçu, manquant, refusé) restent sur le bloc de la source du dernier geste. */
 function handHtml(sid, zone, z, item, cy, msg) {
   const busy = busyNow(),
     seen = handSeen(sid, z, item, cy),
-    choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(zone)}" data-source="${esc(sid)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>${uploadOff() ? sheetGrey(uploadWhy()) : ''}`;
-  if (!seen) return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="none"><p class="d-zact">${choose('', TX.up.choose)}</p>${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
+    choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(zone)}" data-source="${esc(sid)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>${uploadOff() ? sheetGrey(uploadWhy()) : ''}`,
+    hint = chooseHintHtml(sid);
+  if (!seen) return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="none"><p class="d-zact">${choose('', TX.up.choose)}</p>${hint}${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
   const g = gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb],
     off = busy || g.disabled,
     grey = greyOnce(busy ? 'busy' : g.reason, 'base',
       'sheet'); // un bouton gris dit pourquoi, à côté de lui (la carte de l'opération en cours le dit déjà : pas deux fois)
   return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="seen"><p class="d-zact"><span class="f-muted" data-hand-seen>${esc(tt(TX.cwb.seenLine))}</span> <button type="button" class="primary" data-verb="pickup" data-zones="${esc(zone)}" data-source="${esc(sid)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>${off && grey ? ` <span class="f-muted" data-hand-grey data-grey="${esc(grey)}">${esc(tt(grey === 'busy' && progressHere() ? TX.zx.greyBusy : TX.greyReason[grey]))}</span>` : ''}</p>
-    <p class="d-zact d-zalt" data-hand-alt="${esc(sid)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
+    <p class="d-zact d-zalt" data-hand-alt="${esc(sid)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${hint}${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
 }
 /** La source calculée sur ce poste que base/cycle dit à part (`local`, K185) : { id, label[4], at, personal, zoneCount } ; null sans. */
 const localSource = (cy, id) => cy.data?.local?.find(x => x.id === id) || null;

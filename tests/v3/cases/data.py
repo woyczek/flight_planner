@@ -7033,10 +7033,13 @@ def l92(c):
         c.eq(n, 1, f'{what}: one upload, and it is the PDF member, not the archive', what=f'{what} sent')
         c.eq([sent[-1]['body'] == pdf, urllib.parse.unquote(sent[-1]['headers'].get('x-sog-name', ''))], [True, 'MIAM_OACI_ENR 5.7.pdf'], f'{what}: the bytes of the member as they are (CRC checked) under the name of the member', what=f'{what} body')
         c.until(f"!!document.querySelector('[data-sheet=fr] [data-hand=dircam] [data-zone-msg]')", timeout=6000, what='the launcher\'s answer on the DIRCAM block')
-        c.ok(norm(CWB('launcher')) in msg(), msg(), f'{what}: the launcher does not take the PDF yet: its refusal and that fact are said')
-    # ---- a plain PDF is sent as it is
+        c.ok(norm(CWB('refused').replace('{p}', 'MIAM_OACI_ENR 5.7.pdf')) in msg(), msg(), f'{what}: a refusal of the launcher (here « unrecognised ») is said in words, with the name it expects')
+    # ---- a plain PDF is sent as it is when it bears the name the launcher recognises (« (1) » copy of a second download included), refused in words otherwise
+    n = pick('MIAM_OACI_ENR 5.7 (1).pdf', pdf)
+    c.eq([n, sent[-1]['body'] == pdf, urllib.parse.unquote(sent[-1]['headers'].get('x-sog-name', ''))], [1, True, 'MIAM_OACI_ENR 5.7 (1).pdf'], 'a PDF chosen directly under the name of the launcher is sent as it is', what='plain pdf')
     n = pick('MIAM ENR 5.7 copy.pdf', pdf)
-    c.eq([n, sent[-1]['body'] == pdf, urllib.parse.unquote(sent[-1]['headers'].get('x-sog-name', ''))], [1, True, 'MIAM ENR 5.7 copy.pdf'], 'a PDF chosen directly is sent as it is', what='plain pdf')
+    c.eq(n, 0, 'a PDF the launcher would not recognise (its name) is not sent', what='pdf name')
+    c.ok(norm(CWB('pdf-name').replace('{p}', 'MIAM_OACI_ENR 5.7.pdf')) in msg(), msg(), 'and the refusal says why, with the name to give')
     # ---- refusals in words, nothing sent
     good = _l92_zip([('readme.txt', b'x' * 50), (member, pdf)])
     bomb = bytearray(_l92_zip([(member, b'\0' * 200000)], method=8))
@@ -7055,12 +7058,13 @@ def l92(c):
              ('bad crc', bytes(badcrc), 'corrupt'),
              ('encrypted', bytes(crypt), 'unsupported'),
              ('huge announced', bytes(huge), 'too-large'),
+             ('member is not a pdf', _l92_zip([('readme.txt', b'x' * 50), (member, b'this is not a pdf ' * 20)]), 'not-pdf'),
              ('garbage directory', good[:-22] + struct.pack('<IHHHHIIH', 0x06054b50, 0, 0, 2, 2, 4000, 10, 0), 'corrupt')]
     for what, data, code in cases:
         n = pick(f'{what}.zip', data)
         c.eq(n, 0, f'{what}: nothing is sent', what=f'{what} sent')
         c.until("!!document.querySelector('[data-sheet=fr] [data-hand=dircam] [data-zone-msg][data-level=err]')", timeout=6000, what=f'{what}: the refusal on the DIRCAM block')
-        want = norm(CWB(code).replace('{m}', member))
+        want = norm(CWB(code).replace('{m}', member).replace('{p}', 'MIAM_OACI_ENR 5.7.pdf'))
         c.ok(want in msg(), (msg(), want), f'{what}: said in words ({code})')
     # ---- the generic chooser of another source is NOT touched: a zip goes to the launcher as it is
     sel2 = '[data-sheet=fr] [data-hand=sia] [data-act=zone-upload]'
@@ -7070,6 +7074,104 @@ def l92(c):
     fc.value.set_files({'name': 'export.zip', 'mimeType': 'application/zip', 'buffer': good})
     c.wait(1200)
     c.eq([len(sent) - before, sent[-1]['body'] == good], [1, True], 'another source\'s chooser sends the file as it is (the launcher recognises it by its content)', what='other source')
+    c.check_errors()
+
+
+@case('L119', 'Données: the DIRCAM line sends ONLY the MIAM ENR 5.7 PDF, in the shape the launcher recognises (a %PDF named « MIAM_OACI_ENR 5.7.pdf »), says which file to choose, and says what the launcher answered — received (name, size), already there, or its refusal in words (SOG-0273, K192 / K188; lot B of SOG-0262)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='AeroDB f5eafe4a1 / 971fe40e6 (tools/base_upload.py, K192): the launcher takes the ENR 5.7 by its CONTENT (`%PDF`) AND its name (`MIAM_OACI_ENR 5.7.pdf`, with or without « (n) », any case), answers 200 { ok, source: \'dircam\', zone: \'fr\', name, size, replaced, sha256 } (no `cycle`: nothing is read) or { ok: false, reason, message, expected? } in a closed list; it does not take the 1.3 GB archive. The page reads the one member of `info_aero_dircam.zip` on this device and posts only that PDF under the member\'s name; a PDF chosen as it is must bear that name; the line says the file to choose (the catalogue\'s `file`), what was received (the canonical name and the size: never « La prise suit », nothing is picked up) or the refusal. DIRCAM is no longer shelved: it is read from base/cycle and the catalogue only. What the launcher says (message) is bounded and escaped.')
+def l119(c):
+    import hashlib
+    lang = c.lang
+    world = {'sia_seen': False}
+    x4 = lambda s: [f'{s} fr', f'{s} en', f'{s} de', f'{s} es']
+    steps = {'id': 'dircam', 'page': {'url': 'https://sia.example/info_dircam', 'home': 'https://sia.example/'}, 'files': [
+        {'name': 'MIAM_OACI_ENR 5.7.pdf', 'file': 'info_aero_dircam.zip', 'link': 'https://sia.example/info_dircam', 'gives': x4('gives'), 'what': x4('what'), 'where': x4('SIA › info_dircam'), 'verified': True}]}
+    st, _x4 = _l89_open(c, world, extra=lambda cfg: cfg['stepsOf'].update({'dircam': steps}))
+    sent = []
+    answer = {}
+
+    def upload(route):
+        req = route.request
+        sent.append({'headers': {k.lower(): v for k, v in req.headers.items()}, 'body': req.post_data_buffer or b''})
+        route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body']))
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)
+    CWB = lambda k: _trow(k, lang, after='    zip: {')
+    UPW = lambda k: _trow(k, lang, after='whyNone: {')
+    member = 'PDF/MIAM/MIAM_OACI_ENR 5.7.pdf'
+    canon = 'MIAM_OACI_ENR 5.7.pdf'
+    pdf = b'%PDF-1.4\n' + bytes(range(256)) * 40 + b'\n%%EOF\n'
+    archive = _l92_zip([('readme.txt', b'x' * 50), ('PDF/other.bin', bytes(range(256)) * 1200), (member, pdf)], method=8)
+    ok_body = lambda replaced: {'ok': True, 'source': 'dircam', 'zone': 'fr', 'name': canon, 'size': len(pdf), 'replaced': replaced, 'sha256': hashlib.sha256(pdf).hexdigest()}
+    _l89_sheet(c, 'fr')
+    block = '[data-sheet=fr] [data-hand=dircam]'
+    msg = lambda: norm(c.js(f"(document.querySelector('{block} [data-zone-msg]') || {{ textContent: '' }}).textContent"))
+
+    def pick(name, data):
+        before = len(sent)
+        with c.page.expect_file_chooser() as fc:
+            c.js(f"document.querySelector('{block} [data-act=zone-upload]').click()")
+        fc.value.set_files({'name': name, 'mimeType': 'application/octet-stream', 'buffer': data})
+        c.wait(1200)
+        return len(sent) - before
+    # ---- DIRCAM is no longer shelved: a source of the sheet like another, nothing hides it
+    c.eq([c.count('[data-sheet=fr] [data-sheet-source=dircam]:not([data-unavailable])'), c.count('[data-sheet=fr] [data-unavailable]'), c.count('[data-todo-unavailable=dircam]')], [1, 0, 0],
+         'DIRCAM is on the sheet as a source like another: read from the catalogue and base/cycle, not shelved apart', what='not shelved')
+    # ---- the hint says which file to choose (the catalogue\'s `file`, never an invented name) and what leaves the device
+    want = norm(CWB('hint').replace('{f}', ' (info_aero_dircam.zip)').replace('{p}', canon))
+    c.eq(norm(c.text(f'{block} [data-choose-hint=dircam]')), want, 'under « Choisir le fichier… »: the SIA archive (named by the catalogue), read on this device, only the PDF of the ENR 5.7 is sent', what='hint')
+    # ---- the archive: ONE upload, the member only, in the launcher\'s shape
+    answer.update(status=200, body=ok_body(True))
+    n = pick('info_aero_dircam.zip', archive)
+    c.eq(n, 1, 'one upload', what='count')
+    h = sent[-1]['headers']
+    c.eq([sent[-1]['body'] == pdf, sent[-1]['body'][:4], len(sent[-1]['body']) < len(archive), urllib.parse.unquote(h.get('x-sog-name', ''))], [True, b'%PDF', True, canon],
+         'the body is the member as it is (%PDF, CRC checked), far smaller than the archive, under the name the launcher recognises', what='shape')
+    c.until(f"!!document.querySelector('{block} [data-zone-msg][data-level=ok]')", timeout=6000, what='what the launcher received, said on the DIRCAM line')
+    tpl = norm(CWB('received').replace('{name}', canon))
+    rx = '.{1,24}?'.join(re.escape(p) for p in tpl.split('{b}'))
+    c.ok(re.search(rx, msg()) is not None and 'info_aero_dircam.zip' in msg(), (msg(), rx), 'the line says the file chosen, then what the launcher received (canonical name, size)')
+    done_tail = norm(_trow('done', lang, after='  up: {').split('{z}')[-1]).strip(' .,:')
+    notes = norm(c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ')"))
+    c.ok(done_tail and done_tail not in notes and done_tail not in msg(), (done_tail, notes), 'nothing says « the pickup follows »: no pickup is started for this PDF')
+    c.eq(c.count(f'{block} [data-uploading]'), 0, 'the progress is gone', what='progress')
+    # ---- the same file again: already there
+    answer.update(status=200, body=ok_body(False))
+    pick('info_aero_dircam.zip', archive)
+    c.until(f"!!document.querySelector('{block} [data-zone-msg][data-level=ok]')", timeout=6000, what='the answer « already there »')
+    tpl = norm(CWB('receivedSame').replace('{name}', canon))
+    rx = '.{1,24}?'.join(re.escape(p) for p in tpl.split('{b}'))
+    c.ok(re.search(rx, msg()) is not None, (msg(), rx), 'the same file is said « already there, nothing rewritten »')
+    # ---- a PDF as it is, under the name of a second download: sent as it is
+    answer.update(status=200, body=ok_body(True))
+    n = pick('miam_oaci_enr 5.7 (2).pdf', pdf)
+    c.eq([n, urllib.parse.unquote(sent[-1]['headers'].get('x-sog-name', ''))], [1, 'miam_oaci_enr 5.7 (2).pdf'], 'a PDF under a name the launcher recognises (« (2) », any case) is sent as it is', what='copy')
+    # ---- the refusals of the launcher, in its real shape: in words, bounded, escaped
+    evil = 'ce type de fichier (PDF, XML seul) n’est pas pris par cet envoi <img src=x onerror=window.__pwn=1> ' + 'x' * 400
+    refusals = [('unrecognised', 422, {'ok': False, 'reason': 'unrecognised', 'message': evil, 'expected': ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt']}, CWB('refused').replace('{p}', canon)),
+                ('type', 415, {'ok': False, 'reason': 'type', 'message': 'ni zip, ni JSON, ni PDF, ni XML'}, UPW('type')),
+                ('too-large', 413, {'ok': False, 'reason': 'too-large', 'message': 'plus de 1536 Mo'}, UPW('too-large')),
+                ('busy', 409, {'ok': False, 'reason': 'busy', 'message': 'un travail du poste tourne : réessayez à sa fin'}, UPW('busy')),
+                ('disk', 507, {'ok': False, 'reason': 'disk', 'message': 'disque'}, UPW('disk'))]
+    for reason, status, body, words in refusals:
+        answer.update(status=status, body=body)
+        n = pick('info_aero_dircam.zip', archive)
+        c.eq(n, 1, f'{reason}: the PDF was sent once', what=f'{reason} count')
+        c.until(f"!!document.querySelector('{block} [data-zone-msg][data-level=err]')", timeout=6000, what=f'{reason}: the refusal on the DIRCAM line')
+        c.ok(norm(words) in msg(), (msg(), norm(words)), f'{reason}: said in words')
+        c.ok('info_aero_dircam.zip' in msg(), msg(), f'{reason}: the line names the file the user chose')
+    c.eq([c.count(f'{block} img'), c.js('window.__pwn === undefined')], [0, True], 'what the launcher says is escaped (no element, nothing runs)', what='escaped')
+    c.ok(len(msg()) < 900, len(msg()), 'and bounded (240 characters of the launcher\'s message at most)')
+    # ---- nothing the launcher would refuse leaves the page: a PDF under another name, a member that is not a PDF
+    before = len(sent)
+    n = pick('ENR 5.7.pdf', pdf)
+    c.eq(n, 0, 'a PDF whose name the launcher would not recognise is not sent', what='name')
+    c.until(f"!!document.querySelector('{block} [data-zone-msg][data-level=err]')", timeout=6000, what='the refusal on the line')
+    c.ok(norm(CWB('pdf-name').replace('{p}', canon)) in msg(), msg(), 'and the line says why, with the name to give')
+    n = pick('info_aero_dircam.zip', _l92_zip([('readme.txt', b'x' * 50), (member, b'<html>not a pdf</html>' * 10)]))
+    c.eq(n, 0, 'a member that is not a PDF (no %PDF) is not sent', what='content')
+    c.ok(norm(CWB('not-pdf').replace('{p}', canon)) in msg(), msg(), 'and the line says why')
+    c.eq(len(sent) - before, 0, 'nothing was sent after the refusals of the page', what='total')
     c.check_errors()
 
 
@@ -8448,8 +8550,12 @@ def l116(c):
            'aircraft': ['todo', 'absent', todo(named('dsWhyAbsent', 'sheets'))]}
     what = {'proc': 'Procédures: « à faire — plus ancien que le cycle · le 05/10 »', 'weather': 'the weather fold names the set to do when it is not its main one: « à faire — expiré (Routes NAT du jour) · le 11/11 »',
             'aircraft': 'the aircraft fold names the performance sheets: « à faire — absent (Fiches de performances) », no date (the launcher has none)'}
+    # the useful date / counts of a set (SOG-0262, « date utile ») sit between the reason and the date of the file: the sentence is checked around them (L120 checks them in words)
     for g, e in exp.items():
-        c.eq([got[g][0], got[g][1], norm(got[g][2])], [e[0], e[1], norm(e[2])], what[g], what=f'fold {g}')
+        shown, full = norm(got[g][2]), norm(e[2])
+        pre = full if g == 'aircraft' else norm(D5('dsTodo').split('{w}')[0]) if g == 'weather' else full.split(' · ')[0]
+        tail = full if g == 'aircraft' else full.rsplit(' · ', 1)[-1]
+        c.ok(got[g][:2] == e[:2] and shown.startswith(pre) and shown.endswith(tail) and (g != 'weather' or f'({lab("nat")})' in shown), (got[g], e), what[g])
     # VFR: no due date: counted done; the line says « sans échéance » and the date of the file (unless the publication of the rows asks for something)
     vfr = got['vfr']
     c.ok(vfr is not None and vfr[1] == '' and (vfr[0] == 'todo' or D5('dsNa') in norm(vfr[2]) and on('2026-10-20') in norm(vfr[2])), vfr, 'VFR points: « sans échéance · le 20/10 » (n/a counts as done), unless the publication of its rows has something to do')
@@ -8518,6 +8624,114 @@ _L112_JS = r"""() => {
   const q = s => document.querySelector(s);
   return Object.fromEntries(Object.entries(SELS).map(([k, s]) => [k, q(s) ? ratio(q(s)) : null]));
 }"""
+
+
+def _l120_tpl(template, **given):
+    """A regex for a text of texts.js with `{x}` holes: the given values are literal, the other holes match any short text (a date written by the page)."""
+    t = norm(template)
+    for k, v in given.items():
+        t = t.replace('{' + k + '}', v)
+    return '.{1,60}?'.join(re.escape(p) for p in re.split(r'\{\w+\}', t))
+
+
+@case('L120', 'Données: « n faits sur m » and « À faire ce mois-ci » count THE SAME THING — a set the launcher says `todo` (base/cycle.datasets) is a LINE of the block with its gesture and its reason in words, a set `n/a` has no line, a set `up-to-date` is among the done ones (SOG-0262, K207)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='the header counted the base sources plus every set the launcher lists (M.cycleCount) but the block listed only the sources: « 8 faits sur 15 » with a block that shows 4 lines. Now m minus the lines of the block = n: each `todo` set (procedures older than the cycle, expired NAT tracks, absent sheets) is a line with the gesture the screen already has for it (« Relire les procédures », « Reprendre les routes NAT », « Publier les fiches ») and its reason (« plus ancien que le cycle · cycle 2610 », « routes NAT périmées depuis le … », « absent »); `n/a` (vfr, aircraft: « exists, no due date ») counts as done in the header and has no line; `up-to-date` (the weather) is in « Déjà faits ». A button the gate greys says why next to it. The folded line of a set says its useful date and counts (procedures: cycle and aerodromes read, in the locale of the language).')
+def l120(c):
+    lang = c.lang
+    _l102_open(c, wrap=_l116_wrap(_L116_DATASETS))
+    c.until("!!document.querySelector('[data-todo-list] [data-todo-dataset]')", timeout=8000, what='the sets to do are lines of the block')
+    c.js("document.querySelector('[data-todo]').open = true")
+    D6 = lambda k: norm(_trow(k, lang, after='  d6: {'))
+    D5 = lambda k: norm(_trow(k, lang, after='  d5: {'))
+    head = norm(c.text('[data-todo-head]'))
+    nb = re.search(r'(\d+)\D+(\d+)\D*$', head)
+    n, m = int(nb.group(1)), int(nb.group(2))
+    lines = c.count('[data-todo-list] > li')
+    c.eq([n, m, m - lines], [8, 15, 8], f'the header says {n} done on {m}: the block has {lines} lines to do, and m minus the lines is n (the four sources and the three sets)', what='same count')
+    c.ok(re.search(rf'\b{lines}\b', norm(c.text('[data-todo-marker]'))) is not None, c.text('[data-todo-marker]'), 'the marker of the block says the same number of lines')
+    c.eq(c.js("[...document.querySelectorAll('[data-todo-list] [data-todo-dataset]')].map(e => e.dataset.todoDataset)"), ['procedures', 'nat', 'sheets'], 'the sets to do are the lines of the block, after the sources', what='ids')
+    # the gesture of each: the one the screen already has; a greyed button says why beside it
+    for i, k in (('procedures', 'actProc'), ('nat', 'actNat'), ('sheets', 'actSheets')):
+        b = c.js(f"(e => e ? [e.textContent.trim(), e.dataset.todoAct, e.disabled] : null)(document.querySelector('[data-todo-dataset={i}] [data-todo-act=ds]'))")
+        c.ok(b is not None and norm(b[0]) == D6(k) and b[1] == 'ds', b, f'{i}: the line carries its gesture « {D6(k)} »')
+        c.ok(not b[2] or c.count(f'[data-todo-dataset={i}] [data-grey]') == 1, b, f'{i}: a greyed gesture says why beside it')
+    # the reason in words
+    why = lambda i: norm(c.text(f'[data-todo-dataset={i}] [data-ds-why]'))
+    c.ok(why('procedures').startswith(D5('dsWhyOlder')) and D6('procCycle').replace('{c}', '2610') in why('procedures'), why('procedures'), 'procedures: « plus ancien que le cycle · cycle 2610 · … » (the reason, then the cycle read)')
+    c.ok(re.fullmatch(_l120_tpl(_trow('natExpired', lang, after='  d6: {')), why('nat')) is not None, why('nat'), 'NAT tracks: « routes NAT périmées depuis le … » (the date of the end, written by the page)')
+    c.eq(why('sheets'), D5('dsWhyAbsent'), 'sheets: « absent »', what='sheets')
+    # n/a: no line anywhere in the block; up to date: among the done
+    c.eq([c.count('[data-todo] [data-todo-dataset=vfr]'), c.count('[data-todo] [data-todo-dataset=aircraft]')], [0, 0], 'a set « without due date » has no line (it counts as done in the header only)', what='n/a')
+    c.js("document.querySelector('[data-todo-done]').open = true")
+    c.eq(c.count('[data-todo-done] [data-todo-dataset=weather]'), 1, 'the weather, up to date, is among the done ones', what='done')
+    dn = re.findall(r'\d+', norm(c.text('[data-todo-done] summary')))
+    c.eq(int(dn[-1]), c.count('[data-todo-done] > ul > li'), 'and « Déjà faits (n) » counts the lines it shows', what='done count')
+    # the folded line of the procedures says its cycle and the aerodromes read, in the locale of the language
+    num = lambda v: c.js(f"({v}).toLocaleString('{lang}')")
+    proc = norm(c.text('[data-body] > details.f-group[data-group=proc] .d-fstate'))
+    unit = lambda r: norm(_trow('aerodrome', lang, after='  unit: {', row=r))
+    want = f"{D6('procCycle').replace('{c}', '2610')} · {norm(num(1200))} {unit(1)} CIFP · {norm(num(30))} {unit(1)} eAIP"
+    c.ok(want in proc, (proc, want), 'the folded line of the procedures says « cycle 2610 · 1 200 terrains CIFP · 30 terrains eAIP » (numbers formatted for the language)')
+    wx = norm(c.text('[data-body] > details.f-group[data-group=weather] .d-fstate'))
+    c.ok(re.search(_l120_tpl(_trow('natExpired', lang, after='  d6: {')), wx) is not None, wx, 'the weather fold names the expired NAT tracks and the date they ended')
+    c.check_errors()
+
+
+@case('L121', 'Données: the folded line of a set that is up to date says its useful date in words — « routes NAT valides jusqu’au … » (validUntil), « prévision du … » (the weather run), « cycle 2611 · 3 069 terrains » (the procedures) — with the numbers in the locale of the language (SOG-0262, K207)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='the folded line said « à jour · le 05/10 » (the date of the file): the useful date was read (base/cycle.datasets validUntil, run, cycle, counts) and not shown. Now the line says it, from the launcher\'s own fields only, bounded; a set that has none of these keeps the date of its file.')
+def l121(c):
+    lang = c.lang
+    ok = [_l116_ds('procedures', 'up-to-date', None, '2026-10-30T10:00:00Z', cycle='2026-10-29', counts={'cifp': 3069, 'eaip': 0}),
+          _l116_ds('weather', 'up-to-date', None, '2026-11-12T06:30:00Z', run='2026-11-12T06:00Z'),
+          _l116_ds('nat', 'up-to-date', None, '2026-11-12T08:00:00Z', validUntil='2026-11-13T19:00:00Z'),
+          _l116_ds('vfr', 'n/a', None, '2026-10-20T08:00:00Z', counts={'aerodromes': 400}),
+          _l116_ds('aircraft', 'n/a', None, '2026-09-30T08:00:00Z'),
+          _l116_ds('sheets', 'n/a', None, None)]
+    _l102_open(c, wrap=_l116_wrap(ok))
+    c.until("!!document.querySelector('[data-body] > details.f-group[data-group=proc] .d-fstate')", timeout=8000, what='the folded lines')
+    D6 = lambda k: _trow(k, lang, after='  d6: {')
+    num = c.js(f"(3069).toLocaleString('{lang}')")
+    unit = norm(_trow('aerodrome', lang, after='  unit: {', row=1))
+    line = lambda g: norm(c.text(f'[data-body] > details.f-group[data-group={g}] .d-fstate'))
+    c.ok(f"{norm(D6('procCycle')).replace('{c}', '2611')} · {norm(num)} {unit}" in line('proc'), line('proc'), 'procedures: « cycle 2611 · 3 069 terrains » (a count at 0 is not said, the number is written for the language)')
+    wx = line('weather')
+    c.ok(re.search(_l120_tpl(D6('run')), wx) is not None and re.search(_l120_tpl(D6('natValid')), wx) is not None, wx, 'weather: « prévision du … » and, for the NAT tracks of the same fold, « routes NAT valides jusqu’au … »')
+    c.ok('06:00Z' in wx and '19:00Z' in wx, wx, 'both with the hour in UTC, as the rest of the screen writes it')
+    c.ok(norm(_trow('dsNa', lang, after='  d5: {')) in line('vfr') or line('vfr').startswith(norm(_trow('stTodo', lang, after='  d4: {')).split('{n}')[0]), line('vfr'), 'a set that gives no useful date keeps its own word and the date of its file')
+    c.check_errors()
+
+
+@case('L122', 'Données: a hostile zone id (`a"]b`) in what the launcher says — the state of the countries, the list of the cycle, the view of a country — throws no selector error and does not break the sheet (selectors built from a zone id are escaped; Sécurisation audit)',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=False, night=False,
+      rule='every selector the module builds from a zone id passes it through CSS.escape (selectorOf, hoverZone, highlightZones, the progress line of an upload) and the ids a launcher says are first bounded by the model; a hostile id is dropped or inert, the sheet of a real country still opens and nothing in the console fails')
+def l122(c):
+    bad = 'a"]b'
+    world = {'sia_seen': False}
+    st, _x4 = _l89_open(c, world)
+    inner = _l89_cycle(world)
+
+    def hostile(args):
+        res = inner(args)
+        for it in res['items']:
+            it['zones'] = [*it.get('zones', []), bad]
+        zv = res.get('zoneView')
+        if zv:
+            for s in zv['sources']:
+                s['zones'] = [*s.get('zones', []), bad]
+            zv['zone'] = args.get('zone')
+        res['unread'] = [*res.get('unread', []), {'id': bad, 'files': [bad], 'reason': 'no-reader', 'note': bad}]
+        return res
+    world['zs'][bad] = _zst('stale')
+    st['cycle'] = hostile
+    st['status'] = lambda args: _status(world['zs'])
+    c.js("document.querySelector('[data-act=sheet-close]')?.click()")
+    _l89_sheet(c, 'fr')
+    c.eq(c.count('[data-sheet=fr] [data-sheet-source]') > 0, True, 'the sheet of France opens with its sources although the launcher mentions a hostile id', what='sheet')
+    n = c.js("[...document.querySelectorAll('[data-zone]')].filter(e => e.dataset.zone === 'a\"]b').length")
+    c.eq([n, c.count('[data-hz]') > 0], [0, True], 'no element carries the hostile id as a zone (the model drops it): the map and the sheet are intact', what='inert')
+    c.check_errors()
 
 
 @case('L112', 'Données: in the night tone the top of the screen is readable and no colour is written in the new rules (SOG-0262 lot D4, item 7) — the cycle title, the one-line head, the counters, the button sentence, the map legend, the folded lines with their state words, the country sheet name and its cells all keep a readable contrast (computed), and the style of the module holds only tokens of the frame',

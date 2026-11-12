@@ -873,7 +873,7 @@ export function renderBuild() {
 export function openGroup(set, verb) {
   const id = set === 'vfr' ? 'vfr' : M.groupOf(set, verb); // les points VFR ont leur pli
   S.manual[id] = true;
-  const g = S.body?.querySelector(`details.f-group[data-group="${id}"]`);
+  const g = S.body?.querySelector(`details.f-group[data-group="${CSS.escape(id)}"]`);
   if (g) g.open = true;
 }
 /** Le motif d'un échec de prise : sa phrase pour les codes connus (rien d'utile dans le zip, zip illisible, chemin refusé), « zip de plus de 500 Mo » pour le

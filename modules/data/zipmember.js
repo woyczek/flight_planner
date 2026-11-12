@@ -5,6 +5,10 @@
 
 /** L'ENR 5.7 du MIAM dans le CD DIRCAM du SIA (chemin dans l'archive, tel que le catalogue le dit). */
 export const DIRCAM_MEMBER = 'PDF/MIAM/MIAM_OACI_ENR 5.7.pdf';
+/** La source de la ligne qui lit ce membre (l'identifiant du catalogue). */
+export const DIRCAM_SOURCE = 'dircam';
+/** Le nom sous lequel le lanceur reconnaît le PDF (avec son contenu `%PDF`) : `MIAM_OACI_ENR 5.7.pdf`, avec ou sans le « (1) » d'un second téléchargement, majuscules ou non (tools/base_upload.py, K192). */
+export const DIRCAM_PDF_NAME = /^MIAM_OACI_ENR 5\.7(?: \(\d+\))?\.pdf$/i;
 /** Les bornes : membre (annoncé et réellement lu), répertoire central, nombre d'entrées, longueur d'un nom. */
 export const LIMITS = Object.freeze({
   member: 128 * 1024 * 1024,
@@ -12,8 +16,8 @@ export const LIMITS = Object.freeze({
   entries: 200000,
   name: 1024
 });
-/** Les motifs d'échec (liste fermée) : pas une archive zip, archive tronquée ou incohérente, archive en plusieurs volumes, chiffrée ou d'un mode de compression inconnu, trop grande, ou le membre n'y est pas. */
-export const ZIP_CODES = Object.freeze(['not-zip', 'truncated', 'unsupported', 'too-large', 'no-member', 'corrupt']);
+/** Les motifs d'échec (liste fermée) : pas une archive zip, archive tronquée ou incohérente, archive en plusieurs volumes, chiffrée ou d'un mode de compression inconnu, trop grande, le membre n'y est pas, il n'est pas un PDF (`not-pdf`), ou le PDF choisi tel quel n'a pas le nom que le lanceur reconnaît (`pdf-name`). */
+export const ZIP_CODES = Object.freeze(['not-zip', 'truncated', 'unsupported', 'too-large', 'no-member', 'corrupt', 'not-pdf', 'pdf-name']);
 /** Une erreur de lecture d'archive : `code` est l'un de ZIP_CODES. */
 export class ZipError extends Error {
   constructor(code) {

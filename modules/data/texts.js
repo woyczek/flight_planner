@@ -2216,10 +2216,42 @@ export const TX = {
         'Die ENR 5.7 als PDF wurde aus {name} entnommen (das Archiv selbst wird nicht gesendet).',
         'El PDF de la ENR 5.7 se extrajo de {name} (el archivo en sí no se envía).'
       ],
-      launcher: ['Le lanceur de ce poste ne prend pas encore ce PDF : il faut l’en instruire (la lecture de l’ENR 5.7 reste à brancher).',
-        'This workstation’s launcher does not take this PDF yet: it has to be taught (reading the ENR 5.7 is still to be wired).',
-        'Der Starter dieses Rechners nimmt dieses PDF noch nicht an: er muss es lernen (das Lesen der ENR 5.7 ist noch anzuschließen).',
-        'El lanzador de este equipo aún no toma este PDF: hay que enseñárselo (la lectura de la ENR 5.7 aún está por conectar).'
+      // le PDF choisi tel quel n'a pas le nom que le lanceur reconnaît (il décide par le contenu %PDF ET par le nom) : rien n'est envoyé
+      'pdf-name': [
+        'Ce PDF ne s’appelle pas {p} : le lanceur ne le reconnaîtrait pas comme l’ENR 5.7 du MIAM. Rien n’a été envoyé : choisissez l’archive du CD DIRCAM du SIA, ou le PDF sous ce nom.',
+        'This PDF is not named {p}: the launcher would not recognise it as the MIAM ENR 5.7. Nothing was sent: choose the DIRCAM CD archive of the SIA, or the PDF under that name.',
+        'Dieses PDF heißt nicht {p}: der Starter würde es nicht als ENR 5.7 des MIAM erkennen. Nichts wurde gesendet: wählen Sie das Archiv der DIRCAM-CD der SIA oder das PDF unter diesem Namen.',
+        'Este PDF no se llama {p}: el lanzador no lo reconocería como la ENR 5.7 del MIAM. No se envió nada: elija el archivo del CD DIRCAM del SIA, o el PDF con ese nombre.'
+      ],
+      // le membre de l'archive n'est pas un PDF (le lanceur le refuserait : il lit les quatre premiers octets)
+      'not-pdf': ['Le fichier {p} de cette archive n’est pas un PDF : rien n’a été envoyé.',
+        'The file {p} of this archive is not a PDF: nothing was sent.',
+        'Die Datei {p} dieses Archivs ist kein PDF: nichts wurde gesendet.',
+        'El archivo {p} de este archivo no es un PDF: no se envió nada.'
+      ],
+      // la réponse du lanceur à l'envoi : ce qu'il a posé (le nom canonique, la taille) ; « La prise suit » (TX.up.done) serait faux ici
+      received: ['Reçu par le lanceur : {name} ({b}), rangé tel quel.',
+        'Received by the launcher: {name} ({b}), stored as it is.',
+        'Vom Starter erhalten: {name} ({b}), unverändert abgelegt.',
+        'Recibido por el lanzador: {name} ({b}), guardado tal cual.'
+      ],
+      receivedSame: ['{name} ({b}) était déjà là, identique : rien n’est réécrit.',
+        '{name} ({b}) was already there, identical: nothing is rewritten.',
+        '{name} ({b}) war schon da, identisch: nichts wird neu geschrieben.',
+        '{name} ({b}) ya estaba, idéntico: no se reescribe nada.'
+      ],
+      // le lanceur ne reconnaît pas le PDF malgré le contrôle de la page (son motif en clair suit, borné)
+      refused: ['Le lanceur ne reconnaît pas ce fichier comme l’ENR 5.7 du MIAM : il attend un PDF nommé {p}.',
+        'The launcher does not recognise this file as the MIAM ENR 5.7: it expects a PDF named {p}.',
+        'Der Starter erkennt diese Datei nicht als ENR 5.7 des MIAM: er erwartet ein PDF namens {p}.',
+        'El lanzador no reconoce este archivo como la ENR 5.7 del MIAM: espera un PDF llamado {p}.'
+      ],
+      // sous « Choisir le fichier… » de la ligne DIRCAM : quel fichier choisir et ce qui part
+      hint: [
+        'Choisissez l’archive du CD DIRCAM du SIA{f}, ou le PDF {p} lui-même. Le fichier est lu sur cet appareil : seul le PDF de l’ENR 5.7 est envoyé au lanceur, jamais l’archive.',
+        'Choose the DIRCAM CD archive of the SIA{f}, or the PDF {p} itself. The file is read on this device: only the ENR 5.7 PDF is sent to the launcher, never the archive.',
+        'Wählen Sie das Archiv der DIRCAM-CD der SIA{f} oder das PDF {p} selbst. Die Datei wird auf diesem Gerät gelesen: nur das PDF der ENR 5.7 wird an den Starter gesendet, nie das Archiv.',
+        'Elija el archivo del CD DIRCAM del SIA{f}, o el propio PDF {p}. El archivo se lee en este dispositivo: solo el PDF de la ENR 5.7 se envía al lanzador, nunca el archivo.'
       ]
     }
   },
@@ -2659,5 +2691,22 @@ export const TX = {
     dsWhyOlder: ['plus ancien que le cycle', 'older than the cycle', 'älter als der Zyklus', 'más antiguo que el ciclo'],
     dsWhyOld: ['périmé', 'out of date', 'veraltet', 'desactualizado'],
     dsWhyExpired: ['expiré', 'expired', 'abgelaufen', 'vencido']
+  },
+  // les autres jeux dans « À faire ce mois-ci » (une ligne avec son geste et sa raison) et leur date utile sur la ligne repliée (SOG-0262, d'après `datasets` de base/cycle : validUntil, run, cycle, counts)
+  d6: {
+    natValid: ['routes NAT valides jusqu’au {d}', 'NAT tracks valid until {d}', 'NAT-Routen gültig bis {d}',
+      'rutas NAT válidas hasta el {d}'
+    ],
+    natExpired: ['routes NAT périmées depuis le {d}', 'NAT tracks expired since {d}', 'NAT-Routen abgelaufen seit {d}',
+      'rutas NAT caducadas desde el {d}'
+    ],
+    run: ['prévision du {d}', 'forecast of {d}', 'Vorhersage vom {d}', 'pronóstico del {d}'],
+    procCycle: ['cycle {c}', 'cycle {c}', 'Zyklus {c}', 'ciclo {c}'],
+    actProc: ['Relire les procédures', 'Read the procedures again', 'Verfahren erneut lesen', 'Volver a leer los procedimientos'],
+    actWeather: ['Refaire la météo du monde', 'Rebuild the world weather', 'Weltwetter neu erstellen', 'Rehacer el tiempo mundial'],
+    actNat: ['Reprendre les routes NAT', 'Take the NAT tracks again', 'NAT-Routen neu holen', 'Volver a tomar las rutas NAT'],
+    actVfr: ['Refaire les points VFR', 'Rebuild the VFR points', 'VFR-Punkte neu erstellen', 'Rehacer los puntos VFR'],
+    actAircraft: ['Relire les aéronefs', 'Read the aircraft again', 'Luftfahrzeuge erneut lesen', 'Volver a leer las aeronaves'],
+    actSheets: ['Publier les fiches', 'Publish the sheets', 'Leistungsblätter veröffentlichen', 'Publicar las fichas']
   }
 };
