@@ -1019,6 +1019,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 167 | The follow-ups of 166: the older zip openings through the guard, 600 ENR pages, FRA archive two workbooks, ISO reading time (72afa5864, bfce4aa0e) | acceptable |
 | 168 | The French aircraft register reader: five columns by header name, original never kept, code-only refusals (7c6ec44ae, f6f5874d9, acac33c67, bcb60f834) | one to fix, fixed (builders' names in CONSTRUCTEUR) |
 | 169 | The Data screen rebuilt (044ece8cf to 90a3d43bd: country groups, country sheet and its gestures, what is left to do, Publish with the plan first, multiple selection, `zipmember.js`, the last operation's thread from `base/last`), `sendNow` (03a8c1813), the version guard (d303565f8) | acceptable, two notes |
+| 170 | The evening of 12 November: Fuel direct to a point (be836ed83), ATIS runway (616a86f69), flight-plan route text (9bdf17bcc, 2633fb837), route timing and diagnostic (53c265b03); glyph-name PDF decoding and the SIA parser (9ec05bd67, 72cc16492); the second push of the Data screen (c08a6dd92) | acceptable, one to harden |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2516,6 +2517,23 @@ content-addressed, so it is that same content coming back; a different remote ve
 `[data-zone="${z}"]` of `countries.js` (two places) take the identifier without `CSS.escape` (the neighbouring ones use it): a hostile
 identifier would raise a selector error, not inject anything; (2) the dynamic probe is a probe, not a case: a permanent case would taint the
 fields one family at a time to keep the flows alive.
+
+**170. The evening of 12 November — acceptable, one to harden.** *Direct to a point.* `#fuel?direct=<ID>&lat=&lon=` is consumed once; the name must
+match `^[A-Z0-9]{2,11}$`, a position from the address is used only if finite and within ±90 / ±180, the plan is only shown (nothing is written
+until the pilot presses the button, with a second question when a mission point is skipped), `direct.js` is pure and every text of the panel
+goes through `esc`; `route.directs` keeps 20 entries, the report's observations are bounded (40 characters per name, 20 names). *ATIS.* Two fixed
+feeds; only the callsign, the letter, the time and the text lines of the aerodrome asked (`^[A-Z0-9]{4}$`, built into the pattern) are read, the
+text is never shown (a runway the aerodrome has, a letter, a time), an ATIS older than 90 minutes is dropped, and the result is a suggestion the
+pilot takes by a button; the six phrase patterns run in 2.5 ms at worst on adversarial texts of 4,000 characters (no catastrophic backtracking).
+*Route text.* `runwayOfWord` / `withRunways` use anchored linear patterns and touch only the first and the last word. *Timing record.*
+`cache/fuel/route_timing.json` and “Copy the diagnostic” carry milliseconds, the instant, the action and `dep → arr`: no address, no token, no
+other route data. *Data, second push.* The added interpolations go through `esc` or come from the closed lists of `datasetsOf`; no link or call
+added. *SIA / PDF parsers.* Same patterns as before (anchored, bounded). **To harden (proved).** `proc_pdf._glyphs` reads `/g(\d+)` and calls
+`int()` on the digits: a fragment with `/g` followed by more than 4,300 digits raises `ValueError` (probed: 5,000 digits), which nothing in the
+list comprehension catches, so the page's reading stops; the same family: `Radius` takes `\d+[.,]\d+` and `float()` of a 400-digit number is
+`inf`, which `json` writes as `Infinity`. Only a hostile or corrupt PDF reaches it (the user's own deposit, or an official file), and the effect is
+a failed zone, not an injection; take `/g(\d{1,3})` and bound the radius. *Note.* `route_timing` copies `route.dep` and `route.arr` as they stand
+(flight data written by any device): cut them to 12 characters.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
