@@ -223,6 +223,11 @@ function personalHtml(id, z) {
 export function focusCertify() {
   const box = S.body?.querySelector('[data-certify]');
   if (!box) return;
+  const my = box.closest('details.d-mycov');
+  if (my) {
+    my.open = true; // « Ma couverture » est repliée : la case y est
+    S.myCovOpen = true;
+  }
   box.scrollIntoView({
     block: 'center'
   });

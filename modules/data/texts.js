@@ -2222,5 +2222,225 @@ export const TX = {
         'El lanzador de este equipo aún no toma este PDF: hay que enseñárselo (la lectura de la ENR 5.7 aún está por conectar).'
       ]
     }
+  },
+  // SOG-0262, lot C : Publier (le plan d'abord), cycle suivant, quand ça change, vu par le poste pas encore lu, ma couverture, ajouter à ma couverture
+  lc: {
+    // Publier : ce qui part avec l'envoi, dit avant le bouton
+    planReading: ['Lecture de ce qui partira avec l’envoi…', 'Reading what will leave with the upload…',
+      'Es wird gelesen, was mit dem Versand geht…',
+      'Leyendo lo que saldrá con el envío…'
+    ],
+    planAll: ['Un envoi emporte TOUS les commits non envoyés : les zones construites pas encore publiées ({z}) et vos données ({f}).',
+      'One upload carries EVERY unsent commit: the built zones not published yet ({z}) and your data ({f}).',
+      'Ein Versand nimmt ALLE nicht gesendeten Commits mit: die erstellten, noch nicht veröffentlichten Zonen ({z}) und Ihre Daten ({f}).',
+      'Un envío lleva TODOS los commits sin enviar: las zonas construidas aún sin publicar ({z}) y sus datos ({f}).'
+    ],
+    planOthers: ['Un envoi emporte TOUS les commits non envoyés : les autres zones construites ({z}) et vos données ({f}).',
+      'One upload carries EVERY unsent commit: the other built zones ({z}) and your data ({f}).',
+      'Ein Versand nimmt ALLE nicht gesendeten Commits mit: die anderen erstellten Zonen ({z}) und Ihre Daten ({f}).',
+      'Un envío lleva TODOS los commits sin enviar: las demás zonas construidas ({z}) y sus datos ({f}).'
+    ],
+    planCommits: ['Commits non envoyés : {c}.', 'Unsent commits: {c}.', 'Nicht gesendete Commits: {c}.', 'Commits sin enviar: {c}.'],
+    planZones: ['Zones qui partent : {z}.', 'Zones that leave: {z}.', 'Zonen, die gesendet werden: {z}.', 'Zonas que salen: {z}.'],
+    planNothing: ['Rien à publier : tout est déjà parti.', 'Nothing to publish: everything has already left.',
+      'Nichts zu veröffentlichen: alles ist schon gesendet.', 'Nada que publicar: todo ya salió.'
+    ],
+    planTail: ['Publier vers le dépôt des données ?', 'Publish to the data repository?', 'An das Datenrepository veröffentlichen?',
+      '¿Publicar en el repositorio de datos?'
+    ],
+    publishDots: ['Publier…', 'Publish…', 'Veröffentlichen…', 'Publicar…'],
+    planReason: {
+      'bad-zone': ['Le plan de l’envoi ne peut pas être établi pour cette zone.', 'The plan of the upload cannot be made for this zone.',
+        'Der Versandplan kann für diese Zone nicht erstellt werden.', 'No se puede preparar el plan del envío para esta zona.'
+      ],
+      'no-repo': ['Le dépôt des données n’est pas installé sur ce poste : rien ne peut partir.',
+        'The data repository is not installed on this workstation: nothing can leave.',
+        'Das Datenrepository ist auf diesem Rechner nicht installiert: nichts kann gesendet werden.',
+        'El repositorio de datos no está instalado en este equipo: nada puede salir.'
+      ],
+      'no-remote': ['Le dépôt des données n’a pas de dépôt distant : rien ne peut partir.',
+        'The data repository has no remote: nothing can leave.',
+        'Das Datenrepository hat kein Remote-Repository: nichts kann gesendet werden.',
+        'El repositorio de datos no tiene remoto: nada puede salir.'
+      ],
+      'not-built': ['Cette zone n’a pas été construite sur ce poste : rien à publier pour elle.',
+        'This zone was not built on this workstation: nothing to publish for it.',
+        'Diese Zone wurde auf diesem Rechner nicht erstellt: für sie gibt es nichts zu veröffentlichen.',
+        'Esta zona no se construyó en este equipo: nada que publicar para ella.'
+      ],
+      'no-sync': ['Ce lanceur ne sait pas envoyer les données : mettez-le à jour.',
+        'This launcher cannot upload the data: update it.',
+        'Dieser Starter kann die Daten nicht senden: aktualisieren Sie ihn.',
+        'Este lanzador no sabe enviar los datos: actualícelo.'
+      ],
+      'no-author': ['Votre trigramme manque : réglez-le (Réglages › Identité), puis relancez.',
+        'Your trigram is missing: set it (Settings › Identity), then start again.',
+        'Ihr Kürzel fehlt: stellen Sie es ein (Einstellungen › Identität) und starten Sie neu.',
+        'Falta su trigrama: configúrelo (Ajustes › Identidad) y vuelva a empezar.'
+      ],
+      other: ['Le lanceur a refusé le plan de l’envoi.', 'The launcher refused the plan of the upload.',
+        'Der Starter hat den Versandplan abgelehnt.', 'El lanzador rechazó el plan del envío.'
+      ]
+    },
+    pubNoAuthor: ['Rien n’est parti : votre trigramme manque. Réglez-le (Réglages › Identité), puis relancez.',
+      'Nothing was sent: your trigram is missing. Set it (Settings › Identity), then start again.',
+      'Nichts wurde gesendet: Ihr Kürzel fehlt. Stellen Sie es ein (Einstellungen › Identität) und starten Sie neu.',
+      'No se envió nada: falta su trigrama. Configúrelo (Ajustes › Identidad) y vuelva a empezar.'
+    ],
+    pubRefusedPlan: ['Rien n’est parti. {r}', 'Nothing was sent. {r}', 'Nichts wurde gesendet. {r}', 'No se envió nada. {r}'],
+    sheetPublish: ['Publier cette zone…', 'Publish this zone…', 'Diese Zone veröffentlichen…', 'Publicar esta zona…'],
+    // Cycle suivant
+    laterTitle: ['Cycle suivant ({c})', 'Next cycle ({c})', 'Nächster Zyklus ({c})', 'Ciclo siguiente ({c})'],
+    laterTitleNo: ['Cycle suivant', 'Next cycle', 'Nächster Zyklus', 'Ciclo siguiente'],
+    laterState: {
+      'in-downloads': ['Déjà dans Téléchargements pour ce cycle', 'Already in Downloads for this cycle',
+        'Für diesen Zyklus schon in Downloads',
+        'Ya en Descargas para este ciclo'
+      ],
+      'to-take': ['Reste à aller chercher à la main', 'Still to fetch by hand', 'Noch von Hand zu holen', 'Aún por buscar a mano'],
+      'will-be-taken': ['Le poste le prendra seul quand il sera en vigueur',
+        'This workstation will take it by itself once it is in force',
+        'Der Rechner holt es selbst, sobald er gilt', 'El equipo lo tomará solo cuando esté en vigor'
+      ]
+    },
+    laterNone: ['Rien n’est annoncé pour le cycle suivant.', 'Nothing is announced for the next cycle.',
+      'Für den nächsten Zyklus ist nichts angekündigt.', 'No hay nada anunciado para el ciclo siguiente.'
+    ],
+    laterLoading: ['Lecture du cycle suivant…', 'Reading the next cycle…', 'Der nächste Zyklus wird gelesen…',
+      'Leyendo el ciclo siguiente…'
+    ],
+    // Quand ça change
+    changeTitle: ['Quand ça change', 'When it changes', 'Wenn es sich ändert', 'Cuando cambia'],
+    changeHint: ['Ce qui bouge en dehors du cycle AIRAC : à rafraîchir quand vous le décidez.',
+      'What moves outside the AIRAC cycle: refresh it when you decide.',
+      'Was sich außerhalb des AIRAC-Zyklus ändert: aktualisieren Sie es, wenn Sie es wollen.',
+      'Lo que cambia fuera del ciclo AIRAC: actualícelo cuando usted lo decida.'
+    ],
+    changeName: {
+      xplane: ['X-Plane (points et voies lus sur ce poste)', 'X-Plane (points and airways read on this workstation)',
+        'X-Plane (auf diesem Rechner gelesene Punkte und Strecken)', 'X-Plane (puntos y aerovías leídos en este equipo)'
+      ],
+      lnm: ['Little Navmap (procédures lues sur ce poste)', 'Little Navmap (procedures read on this workstation)',
+        'Little Navmap (auf diesem Rechner gelesene Verfahren)', 'Little Navmap (procedimientos leídos en este equipo)'
+      ],
+      openaip: ['openAIP', 'openAIP', 'openAIP', 'openAIP'],
+      geonames: ['GeoNames (villes)', 'GeoNames (towns)', 'GeoNames (Städte)', 'GeoNames (ciudades)'],
+      mora: ['MORA (altitudes minimales)', 'MORA (minimum altitudes)', 'MORA (Mindesthöhen)', 'MORA (altitudes mínimas)'],
+      nat: ['Routes NAT du jour', 'NAT tracks of the day', 'NAT-Routen des Tages', 'Rutas NAT del día']
+    },
+    changeLast: ['dernière prise : {d}', 'last taken: {d}', 'zuletzt geholt: {d}', 'última toma: {d}'],
+    changeNoDate: ['date non lue', 'date not read', 'Datum nicht gelesen', 'fecha sin leer'],
+    changeNote: {
+      lnm: ['lu à la demande depuis la fiche d’un aérodrome, jamais écrit dans data/',
+        'read on demand from an aerodrome sheet, never written to data/',
+        'auf Anforderung aus dem Flugplatzblatt gelesen, nie in data/ geschrieben',
+        'leído a petición desde la ficha de un aeródromo, nunca escrito en data/'
+      ],
+      geonames: ['pas de geste ici : les villes se mettent à jour avec la base', 'no gesture here: the towns are updated with the base',
+        'keine Aktion hier: die Städte werden mit der Basis aktualisiert', 'sin gesto aquí: las ciudades se actualizan con la base'
+      ],
+      build: ['refait la base de la couverture avec ce que ce poste lit',
+        'rebuilds the base of the coverage with what this workstation reads',
+        'erstellt die Basis der Abdeckung mit dem neu, was dieser Rechner liest',
+        'rehace la base de la cobertura con lo que lee este equipo'
+      ],
+      fetch: ['relance le téléchargement des sources automatiques de la couverture',
+        'restarts the download of the automatic sources of the coverage',
+        'startet das Herunterladen der automatischen Quellen der Abdeckung neu',
+        'reinicia la descarga de las fuentes automáticas de la cobertura'
+      ]
+    },
+    changeAct: {
+      build: ['Recalculer', 'Rebuild', 'Neu erstellen', 'Recalcular'],
+      fetch: ['Télécharger de nouveau', 'Download again', 'Erneut herunterladen', 'Descargar de nuevo']
+    },
+    nat: {
+      reading: ['Lecture des routes prises…', 'Reading the tracks taken…', 'Die geholten Routen werden gelesen…',
+        'Leyendo las rutas tomadas…'
+      ],
+      refreshing: ['Routes périmées : reprise en cours…', 'Tracks expired: taking them again…', 'Routen abgelaufen: werden neu geholt…',
+        'Rutas caducadas: tomándolas de nuevo…'
+      ],
+      valid: ['valides jusqu’à {d}', 'valid until {d}', 'gültig bis {d}', 'válidas hasta {d}'],
+      expired: ['périmées (valides jusqu’à {d})', 'expired (valid until {d})', 'abgelaufen (gültig bis {d})',
+        'caducadas (válidas hasta {d})'
+      ],
+      none: ['aucune route prise', 'no track taken', 'keine Route geholt', 'ninguna ruta tomada'],
+      unknown: ['validité inconnue', 'validity unknown', 'Gültigkeit unbekannt', 'validez desconocida'],
+      refreshed: ['reprises à l’instant, valides jusqu’à {d}', 'just taken again, valid until {d}', 'soeben neu geholt, gültig bis {d}',
+        'recién tomadas, válidas hasta {d}'
+      ],
+      failed: ['reprise impossible pour l’instant (nouvel essai dans quelques minutes)',
+        'could not be taken now (new try in a few minutes)',
+        'derzeit nicht möglich (neuer Versuch in einigen Minuten)', 'no se pudo tomar ahora (nuevo intento en unos minutos)'
+      ],
+      count: ['{n} routes', '{n} tracks', '{n} Routen', '{n} rutas']
+    },
+    // Vu par le poste, pas encore lu
+    unreadTitle: ['Vu par le poste, pas encore lu par la suite', 'Seen by the workstation, not read by the suite yet',
+      'Vom Rechner gesehen, von der Suite noch nicht gelesen', 'Visto por el equipo, aún sin leer por la suite'
+    ],
+    unreadHint: ['Fichiers présents dans Téléchargements que la suite ne lit pas encore : rien à faire ici.',
+      'Files in Downloads that the suite does not read yet: nothing to do here.',
+      'Dateien in Downloads, die die Suite noch nicht liest: hier ist nichts zu tun.',
+      'Archivos en Descargas que la suite aún no lee: nada que hacer aquí.'
+    ],
+    unreadNone: ['Rien de tel dans Téléchargements.', 'Nothing of the kind in Downloads.', 'Nichts dergleichen in Downloads.',
+      'Nada de eso en Descargas.'
+    ],
+    unreadName: {
+      navcan_aip: ['AIP Canada (NAV CANADA)', 'AIP Canada (NAV CANADA)', 'AIP Kanada (NAV CANADA)', 'AIP Canadá (NAV CANADA)'],
+      naviair: ['Naviair (Danemark ou Féroé)', 'Naviair (Denmark or Faroe Islands)', 'Naviair (Dänemark oder Färöer)',
+        'Naviair (Dinamarca o Feroe)'
+      ],
+      openaip_xml: ['openAIP (fichiers XML)', 'openAIP (XML files)', 'openAIP (XML-Dateien)', 'openAIP (archivos XML)'],
+      aip_fr_datasets: ['AIP France (jeux de données)', 'AIP France (datasets)', 'AIP Frankreich (Datensätze)',
+        'AIP Francia (conjuntos de datos)'
+      ]
+    },
+    unreadReason: {
+      'no-reader': ['pas de lecteur', 'no reader', 'kein Leser', 'sin lector'],
+      format: ['format non reconnu', 'format not recognised', 'Format nicht erkannt', 'formato no reconocido']
+    },
+    // Ma couverture
+    myCovTitle: ['Ma couverture', 'My coverage', 'Meine Abdeckung', 'Mi cobertura'],
+    // Ajouter à ma couverture (la fiche d'un pays hors couverture) et Retirer
+    addTitle: ['Ajouter ce pays demandera :', 'Adding this country will ask you to:', 'Dieses Land hinzuzufügen verlangt:',
+      'Añadir este país pedirá:'
+    ],
+    addAuto: ['télécharger {s} (le lanceur le fait seul)', 'download {s} (the launcher does it by itself)',
+      '{s} herunterladen (der Starter macht das selbst)', 'descargar {s} (el lanzador lo hace solo)'
+    ],
+    addHand: ['prendre à la main {s}', 'take by hand {s}', '{s} von Hand holen', 'tomar a mano {s}'],
+    addPersonal: ['cocher la case d’usage personnel pour {s}', 'tick the personal-use box for {s}',
+      'das Feld für den persönlichen Gebrauch ankreuzen für {s}', 'marcar la casilla de uso personal para {s}'
+    ],
+    addNoReader: ['{s} : déposés mais pas encore lus', '{s}: dropped but not read yet', '{s}: abgelegt, aber noch nicht gelesen',
+      '{s}: depositados pero aún sin leer'
+    ],
+    addNothing: ['rien de plus : aucun fichier à fournir', 'nothing more: no file to provide',
+      'nichts weiter: keine Datei bereitzustellen',
+      'nada más: ningún archivo que aportar'
+    ],
+    addReading: ['Lecture de ce que ce pays demandera…', 'Reading what this country will ask…',
+      'Es wird gelesen, was dieses Land verlangt…',
+      'Leyendo lo que pedirá este país…'
+    ],
+    addBtn: ['Ajouter à ma couverture', 'Add to my coverage', 'Zu meiner Abdeckung hinzufügen', 'Añadir a mi cobertura'],
+    addNote: ['Ajouter ne télécharge rien : le pays passe parmi ceux à faire.',
+      'Adding downloads nothing: the country moves to the ones still to do.',
+      'Hinzufügen lädt nichts herunter: das Land gehört dann zu denen, die noch zu tun sind.',
+      'Añadir no descarga nada: el país pasa a los que quedan por hacer.'
+    ],
+    added: ['{c} est dans votre couverture.', '{c} is in your coverage.', '{c} ist in Ihrer Abdeckung.', '{c} está en su cobertura.'],
+    removeBtn: ['Retirer de ma couverture', 'Remove from my coverage', 'Aus meiner Abdeckung entfernen', 'Quitar de mi cobertura'],
+    removeAsk: ['Retirer {c} de votre couverture ? Ses fichiers restent où ils sont : rien n’est purgé.',
+      'Remove {c} from your coverage? Its files stay where they are: nothing is purged.',
+      '{c} aus Ihrer Abdeckung entfernen? Die Dateien bleiben, wo sie sind: nichts wird gelöscht.',
+      '¿Quitar {c} de su cobertura? Sus archivos se quedan donde están: no se purga nada.'
+    ],
+    removed: ['{c} n’est plus dans votre couverture.', '{c} is no longer in your coverage.', '{c} ist nicht mehr in Ihrer Abdeckung.',
+      '{c} ya no está en su cobertura.'
+    ]
   }
 };

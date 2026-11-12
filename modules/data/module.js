@@ -46,12 +46,14 @@ import {
   setPackTab
 } from './packs.js';
 import {
+  addCountry,
   closeSheet,
   CW_STYLE,
   cwInit,
   highlightZones,
   hoverZone,
   openCountry,
+  removeCountry,
   toggleDone,
   toggleGroup,
   toggleLegend,
@@ -60,6 +62,11 @@ import {
 import {
   TODO_STYLE
 } from './todo.js';
+import {
+  changeAct,
+  LATER_STYLE,
+  toggleLc
+} from './later.js';
 import {
   startUpdate
 } from './update.js';
@@ -126,7 +133,7 @@ export const meta = {
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
-    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'zipmember.js',
+    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'zipmember.js',
     '../../frame/lib/plural.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
@@ -194,6 +201,16 @@ function onClick(e) {
     '[data-act="sheet-update"]'
   ); // « Mettre à jour ce pays » : le même chemin que le bouton d'un paquet, pour ce pays seul (SOG-0262, lot B)
   if (su) return su.disabled || !/^[a-z0-9_-]{2,12}$/.test(su.dataset.zone || '') ? undefined : startUpdate([su.dataset.zone]);
+  const ac = e.target.closest?.(
+    '[data-act="add-country"], [data-act="remove-country"], [data-act="sheet-publish"], [data-act="change-act"]'
+  ); // lot C : ajouter ou retirer un pays, publier cette zone, le geste d'une ligne de « Quand ça change »
+  if (ac) {
+    if (ac.disabled) return;
+    if (ac.dataset.act === 'add-country') return addCountry(ac.dataset.zone);
+    if (ac.dataset.act === 'remove-country') return removeCountry(ac.dataset.zone);
+    if (ac.dataset.act === 'change-act') return changeAct(ac.dataset.kind);
+    return /^[a-z0-9_-]{2,12}$/.test(ac.dataset.zone || '') ? startPublish(false, ac.dataset.zone) : undefined;
+  }
   if (e.target.closest?.('[data-act="legend-more"]')) return toggleLegend();
   if (e.target.closest?.('[data-act="todo-done"]'))
     return toggleDone(); // le pli « Déjà faits » : son état est retenu (le toggle natif suit)
@@ -343,6 +360,10 @@ function onToggle(e) {
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-moreverbs') && g.isConnected) S.verbsOpen = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-packs-fold') && g.isConnected) S.packsOpen = g
     .open; // « Paquets de pays », replié d'origine (SOG-0228)
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-mycov') && g.isConnected) S.myCovOpen = g
+    .open; // « Ma couverture » (paquets, case « Je certifie… »), repliée d'origine
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-lc') && g.isConnected) toggleLc(g.dataset.lcFold, g
+    .open); // cycle suivant, quand ça change, vu pas encore lu
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-pack') && g.isConnected) {
     const key = g.dataset.packTheme || g.dataset.packFold; // un thème, ou le pli « Pays » d'une région (SOG-0186)
     g.open ? S.packOpen.add(key) : S.packOpen.delete(key);
@@ -384,6 +405,7 @@ export async function mount(el, ctx) {
     world: worldInit(), // la ligne « Synoptique monde (GFS) » : phase, état lu, dernière fin (world.js)
     zoneAsked: false, // le lien #data?zone=<id> a été lu (update.js)
     zoneLink: null,
+    myCovOpen: false, // le pli « Ma couverture » (les paquets de pays et la case « Je certifie… »)
     packsOpen: false, // le bloc « Paquets de pays » : replié à l'ouverture (SOG-0228), l'ouverture à la main est gardée
     packTab: 'regions', // l'onglet des paquets de pays : regions | themes (SOG-0165)
     packOpen: new Set(), // les filtres thématiques dont le pli est ouvert (SOG-0065) // les zones dont la pastille montre ses raisons
@@ -434,7 +456,7 @@ export async function mount(el, ctx) {
     move: null, // « Ranger les sources brutes » (SOG-0030) : { undo, phase: 'planning' | 'asking' | 'running' | null, kind: 'asking' | 'nothing' | 'done' | 'refused', view, why }
     timer: 0
   });
-  el.innerHTML = `<style>${STYLE}${CW_STYLE}${TODO_STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
+  el.innerHTML = `<style>${STYLE}${CW_STYLE}${TODO_STYLE}${LATER_STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
   // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
   S.srTitle = () => el.querySelector(':scope > h1')?.classList.toggle('f-sr', !!ctx.titled);

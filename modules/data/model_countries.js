@@ -166,7 +166,38 @@ function zoneViewOf(v) {
     }
   };
 }
-/** La fin d'un travail base/cycle lue : { inForce, inForceDate, next, items: { id: source }, order, unavailable, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
+const LATER_STATES = ['in-downloads', 'to-take', 'will-be-taken', 'unavailable'];
+const UNREAD_REASONS = ['no-reader', 'format'];
+/** Le cycle suivant lu (K179) : { cycle (« AAAA-MM-JJ »), id (« 2612 »), items: [{ id, state, files }] } ; `state` : ce que Téléchargements a déjà (in-downloads), ce qui reste à aller chercher à la main (to-take), ce que le poste prendra seul quand il sera en vigueur (will-be-taken), ce que l'éditeur n'offre plus (unavailable) ; null sans rien de lisible. */
+export function laterOf(n, ids) {
+  if (n === null || typeof n !== 'object' || !Array.isArray(n.items)) return null;
+  const items = [];
+  for (const it of n.items.slice(0, 60))
+    if (it && typeof it.id === 'string' && SRC.test(it.id) && LATER_STATES.includes(it.state) && !items.some(x => x.id === it.id)) items
+      .push({
+        id: it.id,
+        state: it.state,
+        files: texts(it.files, 12, 160)
+      });
+  return {
+    cycle: day(n.cycle),
+    id: text(ids?.next, 8),
+    items
+  };
+}
+/** Ce que le poste voit dans Téléchargements et que la suite ne lit pas encore (K179, K188) : [{ id, files, reason ('no-reader' | 'format'), note }] ; une note est un texte du lanceur (borné). */
+export function unreadOf(a) {
+  const out = [];
+  for (const it of (Array.isArray(a) ? a : []).slice(0, 24))
+    if (it && typeof it.id === 'string' && SRC.test(it.id) && !out.some(x => x.id === it.id)) out.push({
+      id: it.id,
+      files: texts(it.files, 12, 160),
+      reason: UNREAD_REASONS.includes(it.reason) ? it.reason : 'no-reader',
+      note: text(it.note, 240)
+    });
+  return out;
+}
+/** La fin d'un travail base/cycle lue : { inForce, inForceDate, next, items: { id: source }, order, unavailable, later, unread, zoneView } (`zoneView` quand le travail a demandé un pays) ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). */
 export function cycleRead(final) {
   const r = final?.state === 'done' && final.result !== null && typeof final.result === 'object' ? final.result : null;
   if (!r || r.ok === false || (!Array.isArray(r.items) && (r.zoneView === null || typeof r.zoneView !== 'object'))) return null;
@@ -186,6 +217,9 @@ export function cycleRead(final) {
     items,
     order, // les identifiants des sources dans l'ordre reçu (la liste « ce qui reste à faire » les trie)
     unavailable: srcIds(r.unavailable), // les sources que leur éditeur n'offre plus (K183) : dites à part
+    later: laterOf(r.next, r.cycle
+      ?.ids), // le cycle suivant : ce que Téléchargements a déjà, ce qui reste à la main, ce que le poste prendra seul
+    unread: unreadOf(r.unread), // vu dans Téléchargements, pas encore lu par la suite
     zoneView: zoneViewOf(r.zoneView)
   };
 }

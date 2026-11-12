@@ -1,0 +1,238 @@
+// V3 data — les trois blocs repliés sous « Publier » (SOG-0262, lot C), dans cet ordre : « Cycle suivant » (ce que Téléchargements a déjà pour le cycle suivant, ce qui reste à aller chercher à la main, ce que le poste prendra seul quand il sera en vigueur), « Quand ça change » (ce qui bouge en dehors du cycle
+// AIRAC : X-Plane, Little Navmap, openAIP, GeoNames, MORA, les routes NAT du jour — chacun avec sa dernière date et, quand cela existe, le geste pour le rafraîchir) et « Vu par le poste, pas encore lu par la suite » (ce qui est dans Téléchargements et que la suite ne lit pas : rien à faire). Les deux
+// premiers se lisent dans la liste du cycle (base/cycle : `next`, `unread`), lue une fois à l'ouverture par countries.js — aucun appel de plus. Les routes NAT se lisent à l'ouverture du bloc « Quand ça change » : leur validité (natState) puis, si elles sont périmées, leur reprise (natEnsure :
+// un seul travail à la fois). Tout ce que dit le lanceur est une entrée non fiable : le modèle (model_countries.js) l'a borné, tout est échappé ici.
+import * as M from './model.js';
+import {
+  TX
+} from './texts.js';
+import {
+  keepScroll
+} from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
+import {
+  fmtDateZ
+} from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
+import {
+  busyNow,
+  catSource,
+  esc,
+  lang,
+  li,
+  S,
+  serial,
+  tt
+} from './state.js';
+import {
+  gateOf,
+  greyOnce
+} from './panels.js';
+import {
+  dateOf
+} from './countries.js';
+import {
+  startOp
+} from './follow.js';
+
+/** L'état propre à ces blocs, créé avec celui de la carte : les plis ouverts à la main (retenus d'un dessin à l'autre) et la lecture des routes NAT. */
+export const lcInit = () => ({
+  open: {},
+  nat: {
+    phase: 'idle',
+    state: null,
+    refreshed: false,
+    failed: false
+  }
+});
+/** Ce que la liste du cycle a donné (lue) : null tant qu'elle ne l'est pas. */
+const cycleData = () => S.cw?.todo?.state === 'ready' ? S.cw.todo.data : null;
+/** Le nom court d'une source : celui du catalogue, à défaut celui de la liste du cycle, à défaut son identifiant. */
+const srcName = (id, data) => String(catSource(id)?.n?.[li()] || data?.items?.[id]?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
+/** Un pli : son titre et son contenu ; l'état ouvert / fermé est retenu à la main. */
+const fold = (id, title, body) => `<details class="d-lc" data-lc-fold="${id}"${S.cw.lc.open[id] ? ' open' : ''}><summary>${esc(title)}</summary>${body}</details>`;
+
+// ------------------------------------------------------------------------------------------------ Cycle suivant
+/** « Cycle suivant (2612) » : trois listes — déjà dans Téléchargements (par les noms de fichiers), à aller chercher à la main, que le poste prendra seul quand il sera en vigueur — puis, à part, ce que l'éditeur n'offre plus ; '' tant que la liste du cycle n'est pas lue. */
+function nextHtml() {
+  const data = cycleData(),
+    n = data?.later;
+  if (!n) return '';
+  const line = it => `<li data-later-item="${esc(it.id)}" data-later-state="${esc(it.state)}"><b>${esc(srcName(it.id, data))}</b>${it.files.length ? ` : ${esc(it.files.join(', '))}` : ''}</li>`,
+    part = st => {
+      const list = n.items.filter(it => it.state === st);
+      return list.length ? `<h4 data-later-title="${st}">${esc(tt(TX.lc.laterState[st]))}</h4><ul class="d-lcl" data-later-list="${st}">${list.map(line).join('')}</ul>` : '';
+    },
+    gone = n.items.filter(it => it.state === 'unavailable'),
+    body = ['in-downloads', 'to-take', 'will-be-taken'].map(part).join('') + (gone.length ? `<h4 class="f-muted" data-later-gone-title>${esc(tt(TX.cw.unavailableTitle))}</h4><ul class="d-lcl" data-later-gone>${gone.map(it => `<li data-later-item="${esc(it.id)}" data-later-state="unavailable"><b>${esc(srcName(it.id, data))}</b></li>`).join('')}</ul>` : '');
+  return fold('later', n.id ? tt(TX.lc.laterTitle, {
+    c: n.id
+  }) : tt(TX.lc.laterTitleNo), body || `<p class="f-muted" data-later-none>${esc(tt(TX.lc.laterNone))}</p>`);
+}
+
+// ------------------------------------------------------------------------------------------------ Quand ça change
+/** Ce qui change en dehors du cycle, dans l'ordre de l'écran : l'identifiant, la source de la liste du cycle qui en donne la date (`cyc`) et le geste que cet écran offre déjà (`act` : 'build' = « Recalculer » la base d'après ce que ce poste lit, 'fetch' = relancer le téléchargement des sources automatiques,
+ *  'nat' = la reprise à l'ouverture du pli, null = aucun geste ici : la ligne dit sa date seule). */
+const CHANGE = Object.freeze([{
+  id: 'xplane',
+  cyc: 'xplane',
+  act: 'build'
+}, {
+  id: 'lnm',
+  cyc: '',
+  act: null
+}, {
+  id: 'openaip',
+  cyc: 'openaip',
+  act: 'fetch'
+}, {
+  id: 'geonames',
+  cyc: 'geonames',
+  act: null
+}, {
+  id: 'mora',
+  cyc: 'mora',
+  act: 'fetch'
+}, {
+  id: 'nat',
+  cyc: '',
+  act: 'nat'
+}]);
+/** La date de la dernière prise d'une source (celle de la liste du cycle : le jour du fichier, à défaut le jour de son cycle) ; '' sans. */
+function lastOf(cyc, data) {
+  const d = cyc ? data?.items?.[cyc]?.download : null;
+  return d?.at ? dateOf(d.at) : d?.cycle ? M.dateText(d.cycle, lang()) : '';
+}
+/** La phrase de la validité des routes NAT : en lecture, en reprise, « valides jusqu'à 19:00Z », « périmées », « aucune route prise », « validité inconnue » — et, après une reprise, qu'elle a eu lieu ou qu'elle a échoué. */
+export function natText() {
+  const n = S.cw.lc.nat,
+    T = TX.lc.nat;
+  if (n.phase === 'idle') return '';
+  if (n.phase === 'reading') return tt(T.reading);
+  if (n.phase === 'refreshing') return tt(T.refreshing);
+  const s = n.state;
+  if (!s) return tt(T.unknown);
+  if (!s.present) return tt(T.none) + (n.failed ? ` — ${tt(T.failed)}` : '');
+  const until = s.validUntil ? fmtDateZ(s.validUntil, lang()) : '',
+    head = s.expired === null || !until ? tt(T.unknown) : tt(s.expired ? T.expired : n.refreshed ? T.refreshed : T.valid, {
+      d: until
+    });
+  return `${head}${s.count ? ` · ${tt(T.count, { n: s.count })}` : ''}${n.failed ? ` — ${tt(T.failed)}` : ''}`;
+}
+/** Une ligne de « Quand ça change » : son nom, sa dernière date (ou la validité des routes NAT), la note de ce que fait son geste, le geste (gris pour sa raison, écrite une fois sous la liste). */
+function changeLine(c, data, grey) {
+  const name = tt(TX.lc.changeName[c.id]),
+    last = c.act === 'nat' ? natText() : lastOf(c.cyc, data),
+    shown = c.act === 'nat' ? last : last ? tt(TX.lc.changeLast, {
+      d: last
+    }) : tt(TX.lc.changeNoDate),
+    note = M.own(TX.lc.changeNote, c.id) || (c.act === 'build' || c.act === 'fetch' ? TX.lc.changeNote[c.act] : null),
+    gate = c.act === 'build' || c.act === 'fetch' ? gateOf('base', S.ticked?.size || 0, [c.act]).verbs[c.act] : null;
+  if (gate?.disabled && gate.reason) grey.add(gate.reason);
+  return `<li class="d-chg" data-change="${esc(c.id)}"><p><b>${esc(name)}</b> <span class="f-muted" data-change-last>${esc(shown)}</span></p>${note ? `<p class="f-muted" data-change-note>${esc(tt(note))}</p>` : ''}${gate ? `<p class="d-verbs"><button type="button" data-act="change-act" data-change="${esc(c.id)}" data-kind="${c.act}"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.lc.changeAct[c.act]))}</button></p>` : ''}</li>`;
+}
+/** « Quand ça change » : les six lignes ; toujours dessiné avec le catalogue (les routes NAT se lisent sans le lanceur de la liste du cycle). */
+function changeHtml() {
+  if (!S.d?.cat) return '';
+  const data = cycleData(),
+    grey = new Set(),
+    lines = CHANGE.map(c => changeLine(c, data, grey)).join(''),
+    why = [...grey].find(r => greyOnce(r, 'base'));
+  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`);
+}
+/** Le geste d'une ligne : « Recalculer » (la construction de la base de la couverture) ou « Télécharger de nouveau » (le téléchargement des sources automatiques) : les verbes de la base que l'écran a déjà, avec leur question et leur marche. */
+export function changeAct(kind) {
+  if (kind === 'build' || kind === 'fetch') startOp('base', kind);
+}
+
+// ------------------------------------------------------------------------------------------------ Vu par le poste, pas encore lu
+/** « Vu par le poste, pas encore lu par la suite » : une ligne par fichier-source vu dans Téléchargements que la suite ne lit pas — ses noms de fichiers, sa raison en mots (« pas de lecteur », « format non reconnu ») et la note du lanceur (un nom EK_ peut être du Danemark OU des Féroé). Rien n'est un geste. ''
+ *  tant que la liste n'est pas lue ou quand rien n'est dans ce cas. */
+function unreadHtml() {
+  const u = cycleData()?.unread;
+  if (!u?.length) return '';
+  const line = it => `<li data-unread="${esc(it.id)}" data-unread-reason="${esc(it.reason)}"><b>${esc(M.own(TX.lc.unreadName, it.id) ? tt(TX.lc.unreadName[it.id]) : srcName(it.id, null))}</b>${it.files.length ? ` : ${esc(it.files.join(', '))}` : ''} — <span data-unread-why>${esc(tt(TX.lc.unreadReason[it.reason]))}</span>${it.note ? `<br><span class="f-muted" data-unread-note>${esc(it.note)}</span>` : ''}</li>`;
+  return fold('unread', tt(TX.lc.unreadTitle), `<p class="f-muted">${esc(tt(TX.lc.unreadHint))}</p><ul class="d-lcl" data-unread-list>${u.map(line).join('')}</ul>`);
+}
+
+// ------------------------------------------------------------------------------------------------ l'ensemble
+/** Les trois blocs repliés, dans l'ordre : cycle suivant, quand ça change, vu par le poste pas encore lu. */
+export function laterHtml() {
+  if (!S.cw?.lc) return '';
+  return `<div class="d-later" data-later-blocks>${nextHtml()}${changeHtml()}${unreadHtml()}</div>`;
+}
+/** Redessine les trois blocs seuls (la lecture des routes NAT avance sans toucher le reste de l'écran). */
+export function renderLater() {
+  const el = S?.body?.querySelector('[data-later-blocks]');
+  if (el && S.d) keepScroll(S.body, () => {
+    el.outerHTML = laterHtml();
+  });
+}
+/** L'ouverture d'un pli : l'état est retenu ; celui de « Quand ça change » lit la validité des routes NAT et, si elles sont périmées ou absentes, les reprend (un seul travail à la fois, pas pendant une autre opération). */
+export function toggleLc(id, open) {
+  const was = !!S.cw.lc.open[id];
+  S.cw.lc.open[id] = open;
+  if (open && !was && id === 'change')
+    natOpen(); // un pli redessiné déjà ouvert rejoue l'événement toggle : seule l'ouverture à la main lit les routes
+}
+/** Lit la validité des routes NAT (aerodb.natState, rien demandé au réseau) puis, si elles ne sont plus valides, les reprend (aerodb.natEnsure : le lanceur télécharge puis construit la zone « nat ») ; chaque étape se dit dans la ligne. Ne lève jamais. */
+export async function natOpen() {
+  const n = S.cw.lc.nat,
+    ab = S.ctx.aerodb,
+    me = S;
+  if (n.phase === 'reading' || n.phase === 'refreshing') return;
+  n.refreshed = false;
+  n.failed = false;
+  if (typeof ab?.natState !== 'function') {
+    n.phase = 'ready';
+    n.state = null;
+    return renderLater();
+  }
+  n.phase = 'reading';
+  renderLater();
+  let s = null;
+  try {
+    s = await ab.natState();
+  } catch {
+    s = null;
+  }
+  if (S !== me) return;
+  n.state = s;
+  if ((!s || s.expired !== false) && typeof ab.natEnsure === 'function' && !busyNow() && S.ctx.launcher) {
+    n.phase = 'refreshing';
+    renderLater();
+    let e = null;
+    try {
+      e = await serial(() => ab.natEnsure());
+    } catch {
+      e = null;
+    }
+    if (S !== me) return;
+    if (e && typeof e === 'object') {
+      n.state = e;
+      n.refreshed = e.refreshed === true && e.ok !== false;
+      n.failed = e.refreshed === true && e.ok === false;
+    }
+  }
+  n.phase = 'ready';
+  renderLater();
+}
+/** La mise en page de ces blocs (à côté de TODO_STYLE) : chaque pli a un titre de la taille d'un doigt, ses listes sans puce, les boutons à 44 px. */
+export const LATER_STYLE = `
+[data-module="data"] .d-later{display:grid;gap:8px;margin:12px 0;min-width:0}
+[data-module="data"] details.d-lc{border:1px solid var(--sog-border);padding:0 12px}
+[data-module="data"] details.d-lc>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}
+[data-module="data"] details.d-lc[open]>summary{border-bottom:1px solid var(--sog-border);margin-bottom:8px}
+[data-module="data"] details.d-lc h4{margin:10px 0 4px}
+[data-module="data"] .d-lcl{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
+[data-module="data"] .d-lcl li{overflow-wrap:anywhere}
+[data-module="data"] .d-lcl p{margin:2px 0}
+[data-module="data"] .d-chg .d-verbs{margin:4px 0 0}
+[data-module="data"] .d-chg [data-act="change-act"]{min-height:var(--sog-touch);min-width:44px}
+[data-module="data"] details.d-mycov{margin:12px 0}
+[data-module="data"] details.d-mycov>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer}
+[data-module="data"] details.d-mycov>summary h3{margin:0}
+[data-module="data"] .d-addask{margin:8px 0}
+[data-module="data"] .d-addask ul{margin:4px 0 8px;padding-left:1.1em}
+[data-module="data"] .d-addask li{overflow-wrap:anywhere}
+[data-module="data"] .d-addask [data-act="add-country"],[data-module="data"] [data-sheet-publish] button{min-height:var(--sog-touch);min-width:44px}
+[data-module="data"] .d-remove .d-link{margin-left:0}
+`;

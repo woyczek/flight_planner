@@ -537,7 +537,7 @@ function detailHtml(r, src) {
   const fed = src.zones === '*' ? tt(TX.fedAll) : r.fed.length ? r.fed.map(id => M.zoneName(S.d.zones, id, li())).join(', ') : tt(TX
     .fedNone);
   return `<dl class="f-dl">
-    <dt>${esc(tt(TX.link))}</dt><dd>${linkHtml(src)}</dd>
+    ${src.id === 'nat' ? '' : `<dt>${esc(tt(TX.link))}</dt><dd>${linkHtml(src)}</dd>`}
     <dt>${esc(tt(TX.licence))}</dt><dd>${esc(src.lic[li()])}</dd>
     <dt>${esc(tt(TX.status))}</dt><dd>${esc(tt(TX.statuses[src.status]))}</dd>
     ${['base', 'proc'].includes(src.group) ? `<dt>${esc(tt(TX.fed))}</dt><dd>${esc(fed)}</dd>` : ''}
@@ -590,6 +590,8 @@ function renderBody() {
   }) : null;
   S.attn = M.staleGroups(S
     .groups); // les groupes dont le cycle publié est dépassé : le point d'attention de « Construire » et de « Tout mettre à jour »
+  const myCov = S.body.querySelector('details.d-mycov');
+  if (myCov) S.myCovOpen = myCov.open; // « Ma couverture » ouvert à l'instant : l'événement toggle n'est peut-être pas encore passé
   S.body.innerHTML = `<input type="file" data-upload-input hidden tabindex="-1" aria-hidden="true">${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
 }
 /** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */

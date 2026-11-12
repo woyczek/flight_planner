@@ -10,6 +10,7 @@ import {
   busyNow,
   catSource,
   esc,
+  frozen,
   kind,
   lang,
   li,
@@ -52,9 +53,23 @@ import {
 import {
   todoHtml
 } from './todo.js';
+import {
+  lcInit
+} from './later.js';
+import {
+  forgetPlan,
+  planKnown,
+  publishGate,
+  wantPlan
+} from './publish.js';
+import {
+  addZones,
+  removeZones
+} from './screen.js';
 
 /** L'état propre à cet écran, créé au montage : le pays survolé, le paquet ouvert, la fiche ouverte (et d'où), la vue du monde, la légende dépliée, les chemins SVG gardés, les lectures du lanceur (la liste du cycle d'un pays, celle de tout le cycle, les procédures), la source du dernier geste de fichier de chaque pays. */
 export const cwInit = () => ({
+  lc: lcInit(), // les blocs repliés sous « Publier » : plis ouverts et lecture des routes NAT (later.js)
   hover: null,
   grp: null,
   sheet: null,
@@ -403,6 +418,39 @@ function failedHtml(id) {
   const nasr = ff.some(f => f.source === 'faa' || f.source === 'faaclass');
   return `<div class="d-src" data-sheet-failed><p class="f-warn">${esc(tt(TX.cwb.failedLine, { r: sourcesWhy(ff.map(f => ({ source: f.source, code: f.error, status: f.status ?? null }))) }))}</p>${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>` : ''}${nasr || pickSource(id) ? `<p class="d-zact"><button type="button" data-act="zone-upload" data-zone="${esc(id)}" data-source=""${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button></p>` : ''}</div>`;
 }
+/** Le nom court d'une source (celui du catalogue, à défaut celui de la liste du cycle ou son identifiant), sans la parenthèse de ses formats. */
+const srcName = (id, cy) => String(catSource(id)?.n?.[li()] || cy.data?.items?.[id]?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
+/** « Ajouter à ma couverture » pour un pays qui n'y est pas : ce que cela demandera (base/cycle { zone } : `addWillAsk` — les sources que le lanceur télécharge seul, celles à prendre à la main avec leurs fichiers attendus, celles qui demandent la coche « Je certifie… », celles déposées et pas encore lues), puis le bouton ; ajouter n'écrit que la couverture, rien n'est téléchargé. Le bouton n'est offert que pour un pays que la suite connaît. */
+function addHtml(id, cy) {
+  const T = TX.lc,
+    w = cy.zv?.addWillAsk,
+    known = (S.d?.zones || []).some(z => z.id === id);
+  if (!w) return cy.state === 'loading' ? `<p class="f-muted" data-add-state="loading">${esc(tt(T.addReading))}</p>` : '';
+  const nm = s => srcName(s, cy),
+    li4 = (key, attr, text) => `<li data-ask="${key}"${attr}>${esc(text)}</li>`,
+    hand = w.hand.map(h => `${nm(h.id)}${h.expected.length ? ` (${h.expected.join(', ')})` : ''}`),
+    asks = [w.auto.length ? li4('auto', '', tt(T.addAuto, {
+        s: w.auto.map(nm).join(', ')
+      })) : '', hand.length ? li4('hand', '', tt(T.addHand, {
+        s: hand.join(' ; ')
+      })) : '', w.personal.length ? li4('personal', '', tt(T.addPersonal, {
+        s: w.personal.map(nm).join(', ')
+      })) : '',
+      w.noReader.length ? li4('noreader', ' data-sheet-noreader', tt(T.addNoReader, {
+        s: w.noReader.map(nm).join(', ')
+      })) : ''
+    ].filter(Boolean);
+  return `<div class="d-addask" data-add-ask><p><b>${esc(tt(T.addTitle))}</b></p><ul>${asks.join('') || li4('nothing', '', tt(T.addNothing))}</ul>${known ? `<p class="d-verbs"><button type="button" class="primary" data-act="add-country" data-zone="${esc(id)}"${frozen() ? ' disabled' : ''}>${esc(tt(T.addBtn))}</button></p><p class="f-muted">${esc(tt(T.addNote))}</p>` : ''}</div>`;
+}
+/** « Retirer de ma couverture » au pied de la fiche d'un pays de la couverture : un lien, la question d'abord (ses fichiers ne sont jamais purgés). */
+function removeHtml(id) {
+  return `<p class="d-zact d-remove" data-sheet-remove><button type="button" class="d-link" data-act="remove-country" data-zone="${esc(id)}"${frozen() ? ' disabled' : ''}>${esc(tt(TX.lc.removeBtn))}</button></p>`;
+}
+/** « Publier cette zone… » sur la fiche d'un pays construit et pas encore envoyé : ouvre le même plan, pour cette zone (le lanceur sait établir le plan) ; rien sinon. */
+function sheetPublishHtml(id, z) {
+  if (!planKnown() || z?.publish?.state !== 'unpublished') return '';
+  return `<p class="d-verbs" data-sheet-publish><button type="button" data-act="sheet-publish" data-zone="${esc(id)}"${publishGate().disabled ? ' disabled' : ''}>${esc(tt(TX.lc.sheetPublish))}</button></p>`;
+}
 /** La fiche d'un pays : son nom et son état ; les FAITS du pays (construit, publié : une seule fois, jamais sous chaque source) ; « Mettre à jour ce pays » ; la carte de l'opération en cours quand le geste a été refusé et la marche ; ses procédures ; ses sources avec leur « téléchargé »,
  *  l'inventaire de leurs fichiers et leurs gestes de fichier. Un « Fermer » en croix en large, « ← Retour » au téléphone (plein écran) ; '' sans pays ouvert. */
 function sheetHtml() {
@@ -436,10 +484,11 @@ function sheetHtml() {
     <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><h3 data-sheet-name>${esc(name)}</h3><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">✕</span></button></header>
     ${inCov ? `<div class="d-sheetst" data-sheet-state>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tone(id)))}</span>`}</div><ul class="d-ticks d-facts" data-sheet-facts>${buildTick(id, z)}${publishTick(z)}</ul>` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
     ${S.cw.proc?.state === 'ready' ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
-    ${noReader.length ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
-    ${inCov ? updateBlockHtml(id, !seenAny) : ''}${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? failedHtml(id) : ''}
+    ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
+    ${inCov ? '' : addHtml(id, cy)}
+    ${inCov ? updateBlockHtml(id, !seenAny) : ''}${inCov ? sheetPublishHtml(id, z) : ''}${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? failedHtml(id) : ''}
     <h4>${esc(tt(T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
-    ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}</section>`;
+    ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}${inCov ? removeHtml(id) : ''}</section>`;
 }
 /** Le bloc de la base sous la barre d'état : la carte (et la fiche à sa droite quand un pays est ouvert, en large), puis « ce qui reste à faire ce mois-ci », puis les paquets. */
 export function countriesHtml() {
@@ -504,6 +553,33 @@ export function toggleWorld() {
 /** Le « ? » de la légende : la seconde ligne (hachure, bordure, pointillé) se montre ou se cache. */
 export function toggleLegend() {
   S.cw.legend = !S.cw.legend;
+  renderBuild();
+}
+/** « Ajouter à ma couverture » : le pays entre dans la couverture de ce poste (écrite, rien n'est téléchargé : il passe dans « à faire ») ; la fiche, l'état des pays et la liste du mois se relisent. */
+export function addCountry(zone) {
+  if (!S.d || frozen() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
+  if (!addZones([zone])) return;
+  S.ctx.notify(tt(TX.lc.added, {
+    c: nameOf(zone)
+  }), 'ok');
+  forgetReads(false, true);
+  renderBuild();
+}
+/** « Retirer de ma couverture » : une question d'abord (les fichiers du pays restent où ils sont, jamais purgés), puis le pays sort de la couverture de ce poste ; la fiche reste ouverte, comme celle d'un pays hors couverture. */
+export async function removeCountry(zone) {
+  const me = S;
+  if (!S.d || frozen() || !S.d.cov.ids.includes(zone)) return;
+  const yes = await S.ctx.ask(tt(TX.lc.removeAsk, {
+    c: nameOf(zone)
+  }), {
+    ok: tt(TX.lc.removeBtn)
+  });
+  if (S !== me || !yes) return;
+  if (!removeZones([zone])) return;
+  S.ctx.notify(tt(TX.lc.removed, {
+    c: nameOf(zone)
+  }), 'ok');
+  forgetReads(false, true);
   renderBuild();
 }
 /** Le pli « Déjà faits » de « ce qui reste à faire » : son état est retenu d'un dessin à l'autre. */
@@ -688,6 +764,7 @@ export function afterDraw() {
   if (!S?.cw) return;
   wantProc();
   wantTodo();
+  wantPlan(); // ce que « Publier » emporterait (base/publish à blanc)
   if (S.cw.sheet) wantCycle(S.cw.sheet);
 }
 /** Les lectures à refaire (une opération vient de finir, un fichier a été envoyé : les fichiers ont bougé). La liste du cycle et la vue du pays ouvert sont marquées « à relire » (elles restent affichées jusqu'à la réponse) ; `all` : les procédures aussi (après un rechargement des données). */
@@ -695,6 +772,7 @@ export function forgetReads(all = true, status = false) {
   if (!S?.cw) return;
   if (S.cw.cycle) S.cw.cycle.dirty = true;
   if (S.cw.todo) S.cw.todo.dirty = true;
+  forgetPlan();
   if (all && S.cw.proc?.state !== 'loading') S.cw.proc = null;
   if (status) S.cw.statusDirty =
     true; // un fichier a bougé sans rechargement des données (une prise, un envoi, un plan) : l'état des pays se relit aussi
@@ -709,6 +787,7 @@ export function readsIdle() {
   }
   if (c.sheet && (c.cycle?.dirty || c.cycle?.state === 'busy')) wantCycle(c.sheet);
   if (c.todo?.dirty || c.todo?.state === 'busy') wantTodo();
+  wantPlan(); // le plan de « Publier » : lu dès que l'état des zones l'est, relu quand il est « à relire »
 }
 /** La mise en page propre à la carte, aux paquets et à la fiche (à côté de STYLE, jetons du cadre). En large la fiche est à droite de la carte ; au téléphone elle recouvre l'écran (position fixe, son propre défilement). */
 export const CW_STYLE = `

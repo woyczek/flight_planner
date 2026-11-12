@@ -281,6 +281,7 @@ def _stub(cfg):
     A.publication = async () => { const k = window.__stub.calls = window.__stub.calls || {}; k.publication = (k.publication || 0) + 1; if (window.__stub.fail.includes('publication')) throw new Error('stub: publication');
       return window.__stub.memo ? (window.__stub.memoPub ||= JSON.parse(JSON.stringify(window.__stub.publication))) : window.__stub.publication };
     A.refresh = () => { const k = window.__stub.calls = window.__stub.calls || {}; k.refresh = (k.refresh || 0) + 1; window.__stub.memoPub = null };
+    if (cfg.nat) { const cnt = n => { const k = window.__stub.calls = window.__stub.calls || {}; k[n] = (k[n] || 0) + 1 }; A.natState = async () => { cnt('natState'); return window.__stub.nat.state }; A.natEnsure = async () => { cnt('natEnsure'); const n = window.__stub.nat; if (n.ensure && n.ok !== false) n.state = n.ensure; return { ...n.state, refreshed: true, ok: n.ok !== false } } }   // the NAT tracks of aerodb (SOG-0263): natState() says the validity, natEnsure() takes them again
     if (cfg.packs) A.packs = async () => cfg.packs;   // the country packs of aerodb (packs(), SOG-0065): absent unless the case gives them
     A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states'); A.zoneOutlines = ok('zoneOutlines', 'outlines');
     // Portugal's catalogue entry (SOG-0244): 'pick' = the source the user takes by hand from the start (fetch.pick + its step-by-step), 'nopick' = an ordinary downloaded source (the cases of the plain line)
@@ -298,11 +299,13 @@ def _stub(cfg):
     set(v) { ab = v; if (v && v.create && !v.__data) { const o = v.create; v.__data = 1; v.create = function (...a) { return patch(o.apply(this, a)) } } } }) })()""" % json.dumps(cfg)
 
 
-def _open(c, cfg, target='data'):
+def _open(c, cfg, target='data', my_coverage=True):
     c.page.add_init_script(_stub(cfg))
     c.open(target, docs=LEVEL3, wait=False, app='maintenance')  # le module Données est dans l'application Maintenance
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
     c.settle()
+    if my_coverage:   # « Ma couverture » (the packs, the box « Je certifie… ») is folded when the screen opens (SOG-0262, lot C): the cases that act on them open it, the case of lot C leaves it folded (my_coverage=False)
+        c.js("document.querySelectorAll('details[data-my-coverage]').forEach(d => { d.open = true })")
 
 
 _ROWS_JS = r"""() => {
@@ -377,18 +380,18 @@ def l2(c):
     c.eq(g['weather']['states'], {'world': 'absent'}, 'the weather rows from the catalogue have no state; the only one is the world synoptic row (SOG-0138), made on the workstation: absent until published', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons'] - c.count('[data-act=update-pack]') - c.count('[data-act=grp-toggle]')], [['download:off', 'build:off', 'purge:off', 'publish:off'], 7],
-         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 7 buttons count Mettre à jour, the two country-pack tabs and the world synoptic row « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071); the two selection gestures are gone (SOG-0262: no selection), the pack lines of the new list and their « Mettre à jour (n) » (SOG-0188) are counted apart', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons'] - c.count('[data-act=update-pack]') - c.count('[data-act=grp-toggle]')], [['download:off', 'build:off', 'purge:off', 'publish:off'], 5],
+         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 5 buttons count Mettre à jour and the world synoptic row (SOG-0262 lot C: the two country-pack tabs sit in the fold « Ma couverture », at the foot of the page) — the old count also had Mettre à jour, the two country-pack tabs and the world synoptic row « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071); the two selection gestures are gone (SOG-0262: no selection), the pack lines of the new list and their « Mettre à jour (n) » (SOG-0188) are counted apart', what='verbs / buttons')
     c.eq([c.attr('[data-publish] [data-reason]', 'data-reason'), norm(c.text('[data-publish] [data-reason]'))], ['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))],
          'Publier is grey for the same reason, written once', what='publish reason')
     c.eq(c.count('[data-group=base] > [data-build] + [data-publish]'), 1, 'the Publier panel follows the Construire panel', what='panel order')
     # the build panel at the top of the base group: every zone of the coverage ticked, the personal sources unticked, the reason written once
-    panel = c.js("""() => { const b = document.querySelector('[data-group=base] > [data-build]'); return b && {
+    panel = c.js("""() => { const b = document.querySelector('[data-group=base] > [data-build]'), my = document.querySelector('[data-group=base] > [data-mycov-box]'); return b && {
       zones: [...b.querySelectorAll('[data-build-zone]')].map(i => [i.dataset.buildZone, i.checked]),
-      personal: [[...b.querySelectorAll('[data-personal-row]')].map(r => r.dataset.personalRow), b.querySelector('[data-certify]')?.checked],
-      lines: [...b.querySelectorAll('[data-personal-line]')].map(p => p.textContent.trim()),
+      personal: [[...my.querySelectorAll('[data-personal-row]')].map(r => r.dataset.personalRow), my.querySelector('[data-certify]')?.checked],
+      lines: [...my.querySelectorAll('[data-personal-line]')].map(p => p.textContent.trim()),
       reasons: [...b.querySelectorAll('[data-reason]')].map(p => [p.dataset.reason, p.textContent.trim()]),
-      labels: [...b.querySelectorAll('label.d-opt')].filter(l => l.offsetParent).map(l => Math.round(l.getBoundingClientRect().height)),
+      labels: [...b.querySelectorAll('label.d-opt'), ...my.querySelectorAll('label.d-opt')].filter(l => l.offsetParent).map(l => Math.round(l.getBoundingClientRect().height)),
       btn: Math.round(b.querySelector('[data-verb=build]').getBoundingClientRect().height), first: b === document.querySelector('[data-group=base]').children[1],
       journal: (j => j && { open: j.open, h: Math.round(j.querySelector('summary').getBoundingClientRect().height), last: j === document.querySelector('[data-module=data] [data-body]').lastElementChild })(document.querySelector('[data-journal]')) } }""")
     c.ok(panel and panel['first'], panel, 'the build panel is the first thing in the content of the base group')
@@ -642,7 +645,7 @@ def _zs(state, done=0, total=0, **extra):
     return {'state': state, 'done': done, 'total': total, **extra}
 
 
-def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None, busy_running=None, cycle=None):
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None, personal=None, busy_running=None, cycle=None, publish=None):
     """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
     after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
     POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
@@ -657,7 +660,7 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
     st = {'status': None, 'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
           'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
           'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0,
-          'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False, 'cycle': cycle}
+          'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False, 'cycle': cycle, 'publish': publish}
 
     def handler(route):
         req = route.request
@@ -727,6 +730,11 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 if callable(res):   # the answer depends on the zone asked for (the view per zone, K182)
                     res = res(st['posts'][-1].get('args') or {})
                 body = {'id': 'jcy', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': res, 'zones': {}}
+            elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'publish' and st.get('publish') is not None:
+                res = st['publish']   # `publish` (SOG-0262, lot C): the RESULT of base/publish, a dict or a function of its args `{zone, dry}` (the plan, then the real run)
+                if callable(res):
+                    res = res(st['posts'][-1].get('args') or {})
+                body = {'id': 'jpb', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'étapes', 'log': [], 'result': res, 'zones': {}}
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st.get('status') is not None:
                 res = st['status']
                 if callable(res):   # the answer depends on what was asked (args: zones, personal), like the real launcher's
@@ -858,9 +866,9 @@ def l7(c):
     c.eq([c.js("[...document.querySelectorAll('[data-personal-row]')].map(r => r.dataset.personalRow)"), c.js("document.querySelector('[data-certify]').checked")], [['nats', 'xplane'], False],
          'France and the UK feed NATS and X-Plane (not ENAIRE): listed, the one box unticked', what='personal sources')
     # the box ticked: X-Plane (read on this workstation only) is listed with its mention, and nothing tells the user to untick it (SOG-0162: there is no box to untick)
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.eq([c.count('[data-xplane-hint]'), norm(c.text('[data-personal-row="xplane"] [data-personal-line]'))], [0, norm(tx(TX, 'xplane', lang, after='personalLine: {'))], 'ticked: X-Plane says it is read on this workstation only, no hint to untick it', what='X-Plane line')
-    c.tap('[data-certify]')
+    _tap_certify(c)
     _screen_ok(c, 'before the start')
     before = c.js('window.__stub.calls.publication')
     # start
@@ -923,7 +931,7 @@ def l7(c):
                      'sources': {s: {'cycle': _prev_day, 'current': _cur_day, 'stale': True} for s in ('sia', 'nats')}}, jid='j2')]
     st['i'] = 0
     st['start'] = (200, {'job': 'j2'})
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.tap('[data-verb=build]')
     c.until('document.querySelector("[data-build-result][data-result=done]")', timeout=10000, what='the second build ends')
     c.eq(st['posts'][1]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats']}, 'ticking the box adds the personal sources of the zones (not X-Plane)', what='second body')
@@ -1090,6 +1098,7 @@ def l10(c):
     st['current'] = None
     c.page.reload(wait_until='load')
     _head(c)
+    c.js("document.querySelectorAll('details[data-my-coverage]').forEach(d => { d.open = true })")   # the fold « Ma couverture » is folded after a reload
     c.tap('[data-verb=build]')
     c.until("!!document.querySelector('[data-build-result][data-result=no-browser]')", timeout=8000, what='no-browser is said')
     want = _trow('sumNoBrowser', lang)
@@ -1098,7 +1107,7 @@ def l10(c):
     st['views'] = [_view('error', jid='j5', zones={}, result={'ok': False, 'reason': 'xplane-in-page'})]
     st['i'] = 0
     st['start'] = (200, {'job': 'j5'})
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.tap('[data-verb=build]')
     c.until("!!document.querySelector('[data-build-result][data-result=xplane-in-page]')", timeout=8000, what='xplane-in-page is said')
     c.eq(st['posts'][-1]['args']['personal'], ['enaire', 'nats'], 'the one box is sent as the personal sources of the ticked zones, X-Plane (read on this workstation only) never among them', what='body')
@@ -1679,7 +1688,7 @@ def l15(c):
     st['views'] = [_fview({}, state='error', jid='j2', done=0, total=0, result={'ok': False, 'fetched': [], 'unchanged': [], 'failed': [], 'manual': [], 'outside_sync': 0, 'warnings': [], 'reason': 'nothing-to-fetch'})]
     st['i'], st['start'] = 0, (200, {'job': 'j2'})
     _readd(c, 'es')
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.tap('[data-verb=download]')
     c.until("!!document.querySelector('[data-build-result][data-result=nothing]')", timeout=10000, what='nothing to download is said')
     c.eq(st['posts'][1]['args'], {'zones': ['es', 'fr', 'gb'], 'personal': ['enaire', 'nats']}, 'ENAIRE goes in args.personal when the box is ticked, with the other personal sources of the zones (not X-Plane)', what='second body')
@@ -2168,6 +2177,12 @@ def _panels_ok(c, what):
 def _all_open(c):
     """Opens every group (a closed `details` has no visible button): the panels sit in their groups, which open by themselves only when a row needs attention."""
     c.js("() => document.querySelectorAll('details.f-group').forEach(g => { g.open = true })")
+
+
+def _tap_certify(c):
+    """Taps the box « Je certifie… »: it lives in the fold « Ma couverture » (SOG-0262, lot C), folded after every opening or reload, so the fold is opened first."""
+    c.js("document.querySelectorAll('details[data-my-coverage]').forEach(d => { d.open = true })")
+    c.tap('[data-certify]')
 
 
 def _line(c, sel):
@@ -3745,7 +3760,7 @@ def l32(c):
     c.eq([box(), rows(), c.count('[data-personal-kept]')], [False, ['nats', 'xplane'], 0], 'the first time: unticked, the sources it will unlock listed, nothing remembered', what='first time')
     c.eq(c.count('[data-licences-link]'), 1, 'a link to the « Sources et licences » page', what='link')
     # ---- ticked: written at once, said remembered
-    c.tap('[data-certify]')
+    _tap_certify(c)
     doc = c.until_doc('cache/data/personal.json', lambda d: bool(d and d.get('certified') is True), what='the certification written')
     c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T.*Z', doc.get('updated_at') or ''), doc, 'a UTC time beside it')
     c.eq(norm(c.text('[data-personal-kept]')), norm(_trow('personalKept', lang)), 'the line under the box says it is remembered, in the language of the run', what='note text')
@@ -3759,7 +3774,7 @@ def l32(c):
     c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
     c.eq(st['posts'][0]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats']}, 'the build is sent with the personal sources of the ticked zones, never X-Plane', what='body')
     # ---- only its own box undoes it
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.until_doc('cache/data/personal.json', lambda d: bool(d) and d.get('certified') is False, what='unticked: written')
     c.page.reload()
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen is drawn a third time')
@@ -3767,7 +3782,7 @@ def l32(c):
     _untick(c, 'ca', 'es', 'us')
     c.eq([box(), c.count('[data-personal-kept]')], [False, 0], 'unticked stays unticked', what='third opening')
     # ---- a source whose zone is unticked is not listed, not sent
-    c.tap('[data-certify]')
+    _tap_certify(c)
     _untick(c, 'gb')
     c.eq(rows(), ['xplane'], 'NATS feeds only the UK: not listed with it unticked (so not sent)', what='listed')
     # ---- the migration: a document of before (one box per source) with one source ticked = the box ticked
@@ -3796,12 +3811,12 @@ def l82(c):
         c.js("document.querySelector('[data-personal-box]').scrollIntoView({ block: 'center' })")
         c.shot(f'L82_launcher_{c.width}_{lang}_delivered.png')   # the box held by the launcher
     # ---- a click posts the strict body, the launcher answers, the cache follows
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.until_doc('cache/data/personal.json', lambda d: bool(d) and d.get('certified') is False, what='the cache follows the launcher')
     c.eq([st['personal_posts'], box()], [[{'certified': False}], False], 'the click posts { certified: false } and nothing else; the box follows the answer', what='click post')
     # ---- a refusal of the launcher: the box comes back as it was, said
     st['personal_refuse'] = True
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.until("!document.querySelector('[data-certify]').checked && !!document.querySelector('#fNotes .f-note')", timeout=6000, what='the box comes back')
     c.eq([box(), len(_notes_with(c, tx('modules/data/texts.js', 'tickRefused', lang)))], [False, 1], 'a refused write puts the box back and says it', what='refused')
     c.eq(st['personal_posts'][-1], {'certified': True}, 'what was posted is still the strict body', what='refused body')
@@ -3825,7 +3840,7 @@ def l82(c):
     c.page.reload()
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen with an older launcher')
     c.settle()
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.until_doc('cache/data/personal.json', lambda d: bool(d) and d.get('certified') is False, what='the page keeps its own tick')
     c.eq(st['personal_posts'][1:], [], 'an older launcher: no POST (the migration’s one is the only one so far)', what='old launcher')
     c.eq(norm(c.text('[data-tick-station]')), norm(tx('modules/data/texts.js', 'tickOnStation', lang)), 'without the launcher’s route the screen says the certification for Little Navmap is made on the workstation', what='station line')
@@ -4903,7 +4918,7 @@ def l58(c):
     want = norm(T('pickupUnread').replace('{z}', gb).replace('{n}', '3').replace('{s}', 'NATS'))
     c.eq(lines(), [want], 'the line says the sets are there but not read: the « personnel » box does not declare NATS', what='unread line')
     # ---- B: the one box is ticked (it declares NATS): personal [enaire, nats, xplane] is sent, nothing is unread
-    c.tap('[data-certify]')
+    _tap_certify(c)
     st['views'], st['i'], st['start'] = [_pk_plan([], [], [], zones=five, jid='k2', extra=in_place)], 0, (200, {'job': 'k2'})
     c.tap('[data-build] [data-verb=pickup]')
     c.until("document.querySelector('[data-build-result][data-op=pickup]') && !document.querySelector('[data-build-result] [data-line]')", timeout=10000, what='the end of the second plan')
@@ -5680,7 +5695,7 @@ def l75(c):
     c.ok('stale' in states(), states(), 'and Spain, built with ENAIRE, is said stale (the launcher cannot read the personal file)')
     # ---- the box ticked: the same sources as the build, the state is read again, Spain is up to date
     n = len(st['posts'])
-    c.tap('[data-certify]')
+    _tap_certify(c)
     c.until(_SENT_UPTO % 4, timeout=8000, what='every zone but Great Britain up to date once the state is read with the personal sources')
     c.eq({z: v for z, v in _pills(c).items() if v != 'up-to-date'}, {'gb': 'stale'}, 'only Great Britain is left to rebuild', what='pills')
     ask2 = [p['args'].get('personal') for p in st['posts'][n:] if p['verb'] == 'status']
@@ -6657,16 +6672,19 @@ def _l89_cycle(world):
         enaire = _l89_item('enaire', 'auto', {'state': 'done', 'cycle': '2026-10-29', 'at': '2026-11-02T08:00:00Z'}, (1, 1), (1, 0, 0), ['es'])
         ukmil = _l89_item('ukmil', 'hand', {'state': 'unavailable'}, (1, 0), (0, 0, 1), ['gb'], 'unavailable-at-publisher', {'link': 'https://ukmil.example/', 'expected': ['ENR-5-2.pdf'], 'inDownloads': []}, None, {'since': '2025-11'})
         items = [mora, openaip, enaire, dircam] if world.get('done') else [mora, faa, navcan, xplane, lfv, openaip, nats, enaire, sia, dircam, ukmil]
-        res = {'ok': True, 'cycle': {'inForce': '2026-10-29', 'next': '2026-11-26', 'ids': {'inForce': '2611', 'next': '2612'}}, 'items': items, 'unavailable': ['ukmil'], 'next': {'cycle': '2026-11-26', 'items': []}, 'unread': []}
+        res = {'ok': True, 'cycle': {'inForce': '2026-10-29', 'next': '2026-11-26', 'ids': {'inForce': '2611', 'next': '2612'}}, 'items': items, 'unavailable': ['ukmil'], 'next': world.get('next', {'cycle': '2026-11-26', 'items': []}), 'unread': world.get('unread', [])}   # world['next'] / world['unread']: the cycle after and what is seen but not read (lot C)
         zone = args.get('zone')
         by = {'fr': [sia, dircam, openaip], 'gb': [nats, ukmil, openaip], 'es': [enaire, openaip], 'ca': [navcan, openaip], 'us': [faa, openaip]}
         if zone in by:
             res['zoneView'] = {'zone': zone, 'known': True, 'inCoverage': True, 'sources': by[zone], 'state': None, 'addWillAsk': {'sources': [], 'auto': [], 'hand': [], 'personal': [], 'noReader': []}}
+        if zone == 'de':   # a country outside the coverage: what adding it will ask (K182 addWillAsk, lot C)
+            res['zoneView'] = {'zone': 'de', 'known': True, 'inCoverage': False, 'sources': [_l89_item('openaip', 'auto', {'state': 'missing'}, (1, 0), (0, 1, 0), None, 'not-downloaded')], 'state': None,
+                               'addWillAsk': {'sources': ['openaip', 'sia', 'nats', 'naviair'], 'auto': ['openaip'], 'hand': [{'id': 'sia', 'expected': ['export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip']}], 'personal': ['nats'], 'noReader': ['naviair']}}
         return res
     return answer
 
 
-def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_running=None, busy_view=None):
+def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_running=None, busy_view=None, publish=None, nat=None, my_coverage=True, extra=None):
     """The Données screen on the fake launcher of lot B: the map and the packs of L88, the fake `base/cycle` (_l89_cycle), the state of five countries (France waits for a file seen in Downloads, the United Kingdom is stale and buildable,
     the others are up to date) read from the LIVE `world['zs']`; the stubbed catalogue says the SIA's two files and shelves UK Mil.  Returns (st, x4)."""
     x4 = lambda s: [f'{s} fr', f'{s} en', f'{s} de', f'{s} es']
@@ -6681,12 +6699,16 @@ def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_r
     cfg['packs'] = {'generated': '2026-11-12', 'source': 'test', 'regions': [
         {'id': 'ouest', 'names': ['Europe de l’Ouest', 'Western Europe', 'Westeuropa', 'Europa occidental'], 'zones': ['fr', 'gb', 'es', 'de', 'it']},
         {'id': 'amerique', 'names': ['Amérique du Nord', 'North America', 'Nordamerika', 'Norteamérica'], 'zones': ['ca', 'us']}], 'themes': []}
-    st = _launcher(c, [], verbs=_VERBS + list(verbs), cycle=_l89_cycle(world), busy_running=busy_running, busy_view=busy_view)
+    if nat is not None:
+        cfg['nat'] = nat   # the stub of aerodb answers natState() / natEnsure() from window.__stub.nat (lot C)
+    if extra:
+        extra(cfg)
+    st = _launcher(c, [], verbs=_VERBS + list(verbs), cycle=_l89_cycle(world), busy_running=busy_running, busy_view=busy_view, publish=publish)
     world.setdefault('zs', {'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'us': _zst('up-to-date'),
                             'fr': _zst('stale', {'code': 'pickup-waiting', 'source': 'sia', 'cycle': '2026-11-26', 'zip': 'export_xml_bd_sia_2026-10-29-v01.zip'}, buildable=False), 'gb': _zst('stale', _NEWER)})
     if status:
         st['status'] = lambda args: _status(world['zs'])
-    _open(c, cfg)
+    _open(c, cfg, my_coverage=my_coverage)
     _all_open(c)
     c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length === 8 && !!document.querySelector('[data-todo-state=ready]')", timeout=20000, what='the map and the list of the month')
     _ready(c, 5)
@@ -6921,7 +6943,7 @@ def l91(c):
       (function walk(o, p) { if (Array.isArray(o) && o.length === 4 && typeof o[0] === 'string') { if (o.some(s => re.test(s))) out.push(p); return } if (o && typeof o === 'object') for (const k of Object.keys(o)) walk(o[k], p ? p + '.' + k : k) })(TX, '');
       return out }""")
     allowed = ('up.tick', 'certifyHint', 'tickOnStation', 'tickRefused', 'bal.personal', 'toCertify', 'zr.', 'upd.planTick', 'packs.', 'personalKept', 'greyReason.no-set', 'greyReason.no-state', 'zoneMap.', 'mapLegendNote',
-               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick')
+               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick', 'lc.addPersonal')
     c.eq([h for h in hits if not h.startswith(allowed)], [], 'only the texts about the « Je certifie… » box, the coverage fold, the States of the Procédures and the proc map still say ticked / selection', what='selection texts')
     t = c.js("""async () => { const { TX } = await import('/modules/data/texts.js'); return [TX.upd.none, TX.upd.ask, TX.advice.partial, TX.advice.interrupted, TX.greyReason['no-zone']] }""")
     c.ok(all(not re.search(r'coch|ticked|angekreuzt|marcad', ' '.join(row), re.I) for row in t), t, '« Rien à reconstruire : ces n sont à jour », the question, the advice and « no zone » no longer say ticked')
@@ -7042,4 +7064,238 @@ def l92(c):
     fc.value.set_files({'name': 'export.zip', 'mimeType': 'application/zip', 'buffer': good})
     c.wait(1200)
     c.eq([len(sent) - before, sent[-1]['body'] == good], [1, True], 'another source\'s chooser sends the file as it is (the launcher recognises it by its content)', what='other source')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L93 to L95 (SOG-0262, lot C)
+_L93_UNREAD = [{'id': 'naviair', 'files': ['EK_ENR_4_1.pdf'], 'reason': 'no-reader', 'note': 'EK_: Denmark OR Faroe Islands <img src=x onerror=window.__pwn=1>'},
+               {'id': 'openaip_xml', 'files': ['gb_apt.xml'], 'reason': 'format', 'note': ''}]
+_L93_NEXT = {'cycle': '2026-11-26', 'items': [{'id': 'sia', 'state': 'in-downloads', 'files': ['export_xml_bd_sia_2026-11-26-v01.zip']}, {'id': 'nats', 'state': 'to-take', 'files': []},
+                                              {'id': 'faa', 'state': 'will-be-taken', 'files': []}, {'id': 'ukmil', 'state': 'unavailable', 'files': []}]}
+_L93_PLAN = {'ok': True, 'zone': 'fr', 'state': 'unpublished', 'commit': 'abc1234', 'ahead': ['gb'], 'commits': 3, 'otherFiles': 2, 'pending': 1, 'nothing': False}
+_L93_SENT = {'ok': True, 'zone': 'fr', 'state': 'published', 'sync': {'ok': True, 'pushed': True, 'committed': 3, 'received': 1, 'conflicts': 0, 'refused': 0}}
+
+
+def _l93_world():
+    """The state of five countries with their publication: France and the United Kingdom are built and not sent; plus the cycle after and what is seen but not read."""
+    pub = lambda state: {'state': state, 'commit': 'abc1234', 'at': '2026-11-01T12:00:00Z'}
+    zs = {z: {**_zst('up-to-date'), 'publish': pub('unpublished' if z in ('fr', 'gb') else 'published')} for z in ('ca', 'es', 'fr', 'gb', 'us')}
+    return {'sia_seen': True, 'zs': zs, 'next': _L93_NEXT, 'unread': _L93_UNREAD, 'plan': dict(_L93_PLAN), 'real': dict(_L93_SENT)}
+
+
+def _l93_open(c, world, nat=None, my_coverage=False):
+    """Lot C on the fake launcher: `base/publish` answers the plan from `world['plan']` (dry) and the real run from `world['real']`; the folded blocks are left folded."""
+    return _l89_open(c, world, verbs=('base/pickup', 'base/cycle', 'base/publish'), publish=lambda a: world['plan'] if a.get('dry', True) else world['real'], nat=nat, my_coverage=my_coverage)
+
+
+def _l93_ready(c):
+    c.until("document.querySelector('[data-publish-plan=ready]') !== null", timeout=15000, what='the plan of Publier is read')
+
+
+def _l93_run(c):
+    """Taps « Publier… », answers Yes to the question and waits for the result."""
+    c.tap('[data-publish] [data-verb=publish]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-publish-result]')", timeout=8000, what='the result is drawn')
+
+
+def _l93_real_posts(st):
+    return [p for p in st['posts'] if p['verb'] == 'publish' and p['args'].get('dry') is False]
+
+
+@case('L93', 'Données: « Publier » says FIRST what leaves with it (SOG-0262, lot C) — the plan of base/publish read without writing (the other built zones, the user\'s files as a NUMBER, the unsent commits), « Un envoi emporte TOUS les commits non envoyés… » on the screen, the button « Publier… » asks the usual single question, the real run (dry false, no frame sync) is said in words: sent, committed, conflicts, refused, no trigram; nothing to publish; no plan without a remote',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 + K178 (Q-0025: one push carries every unsent commit, no isolation of one zone): the plan comes from the launcher (counts only, never a user file name); the real run is base/publish { zone, dry: false } (the trigram is the launcher\'s); « Publier » stays ONE place, under the country groups')
+def l93(c):
+    lang = c.lang
+    LC = lambda k, row=0, after='  lc: {': _trow(k, lang, after=after, row=row)
+    w = _l93_world()
+    st, _x4 = _l93_open(c, w)
+    _l93_ready(c)
+    # ---- 1. the plan is read once at the opening, for the first built zone not sent, and said BEFORE the button
+    reads = [p for p in st['posts'] if p['verb'] == 'publish']
+    c.eq([{k: r[k] for k in ('set', 'verb', 'args')} for r in reads], [{'set': 'base', 'verb': 'publish', 'args': {'zone': 'fr', 'dry': True}}], 'one read of the plan at the opening: dry sent explicitly, the first built zone not sent', what='plan read')
+    zu = lambda n: f"{n} {_unit('zone', lang, n)}"
+    fu = lambda n: f'{n} {FILES[lang][0 if n == 1 else 1]}'
+    cu = lambda n: f'{n} {COMMITS[lang][0 if n == 1 else 1]}'
+    sentence = LC('planAll').replace('{z}', zu(2)).replace('{f}', fu(3))
+    commits = LC('planCommits').replace('{c}', cu(3))
+    c.eq(norm(c.text('[data-publish] [data-plan-sentence]')), norm(f'{sentence} {commits}'), 'what leaves with an upload, said plainly: every unsent commit — 2 built zones, 3 files of yours (counts only), 3 commits', what='sentence')
+    names = {'fr': ['France', 'Royaume-Uni'], 'en': ['France', 'United Kingdom'], 'de': ['Frankreich', 'Vereinigtes Königreich'], 'es': ['Francia', 'Reino Unido']}[lang]
+    c.eq(norm(c.text('[data-publish] [data-plan-zones]')), norm(LC('planZones').replace('{z}', ', '.join(names))), 'the zones that leave, by name', what='zones line')
+    c.eq(c.js("!!(document.querySelector('[data-publish] [data-plan-sentence]').compareDocumentPosition(document.querySelector('[data-publish] [data-verb=publish]')) & 4)"), True, 'the plan comes before the button', what='before button')
+    c.eq([norm(c.text('[data-publish] [data-verb=publish]')), c.js("document.querySelector('[data-publish] [data-verb=publish]').disabled")], [norm(LC('publishDots')), False], 'the button says « Publier… » and is live (the launcher sends: no frame gesture needed)', what='button')
+    c.eq(c.count('[data-verb=publish]'), 1, 'ONE place for Publier in the base group', what='one place')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    # ---- 2. the question: the same sentence, the commits, then the question; No: nothing is sent
+    c.tap('[data-publish] [data-verb=publish]')
+    q = _ask_text(c)
+    c.eq([norm(q['text']), norm(q['ok']), q['no']], [norm(f"{sentence} {commits} {LC('planTail')}"), norm(_trow('publish', lang)), True], 'ONE question: what leaves, then « Publier vers le dépôt des données ? »', what='question')
+    c.eq(len(_l93_real_posts(st)), 0, 'nothing is sent before the answer (the plan was read again, dry)', what='no real run')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    c.wait(300)
+    c.eq([len(_l93_real_posts(st)), c.count('[data-publish-result]')], [0, 0], 'No: nothing is sent, nothing is said', what='refusal')
+    # ---- 3. Yes: the real run is the verb (dry false) for that zone, once; the result in words
+    _l93_run(c)
+    c.eq([{k: r[k] for k in ('set', 'verb', 'args')} for r in _l93_real_posts(st)], [{'set': 'base', 'verb': 'publish', 'args': {'zone': 'fr', 'dry': False}}], 'the real run: base/publish { zone, dry: false }, once', what='real run')
+    done = _trow('pubDone', lang).replace('{c}', '3').replace('{r}', '1')
+    c.eq([c.attr('[data-publish-result]', 'data-result'), norm(c.text('[data-publish-result] [data-line=done]'))], ['done', norm(done)], 'the result in words: sent, 3 files committed, 1 received', what='result')
+    c.eq(len(_notes_with(c, done)), 1, 'ONE notification with the counts', what='notification')
+    doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the journal is written')
+    c.eq([doc['ops'][-1]['verb'], doc['ops'][-1]['result'], doc['ops'][-1]['committed']], ['publish', 'done', 3], 'the journal entry', what='journal')
+    # ---- 4. nothing left (the plan says so at the next opening): said, the button is grey with its reason, written once
+    w['plan'] = {**_L93_PLAN, 'state': 'published', 'ahead': [], 'commits': 0, 'otherFiles': 0, 'pending': 0, 'nothing': True}
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-publish-plan=nothing]')", timeout=15000, what='the plan says nothing is left')
+    c.eq([norm(c.text('[data-publish-plan=nothing]')), c.js("document.querySelector('[data-publish] [data-verb=publish]').disabled"), c.attr('[data-publish] [data-reason]', 'data-reason'), c.count('[data-publish] [data-reason]')],
+         [norm(LC('planNothing')), True, 'nothing', 1], 'nothing to publish: said, the button grey for that reason, written once', what='nothing')
+    # ---- 5. the real run with a conflict and refused files, then without a trigram
+    w['plan'] = dict(_L93_PLAN)
+    w['real'] = {'ok': True, 'zone': 'fr', 'state': 'unpublished', 'sync': {'ok': True, 'pushed': True, 'committed': 1, 'received': 0, 'conflicts': 1, 'refused': 2}}
+    c.page.reload(wait_until='load')
+    _l93_ready(c)
+    _l93_run(c)
+    lines = c.js("[...document.querySelectorAll('[data-publish-result] [data-line]')].map(p => [p.dataset.line, p.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.eq(lines, [['done', norm(_trow('pubDone', lang).replace('{c}', '1').replace('{r}', '0'))], ['conflicts', norm(_trow('pubConflicts', lang, row=0).replace('{n}', '1'))], ['refused', norm(_trow('pubRefused', lang, row=1).replace('{n}', '2'))]],
+         'the result says what went, the conflict and the 2 refused files', what='conflicts / refused')
+    w['real'] = {'ok': False, 'reason': 'no-author', 'zone': 'fr', 'state': 'unpublished', 'message': 'trigram of the author missing or invalid'}
+    c.page.reload(wait_until='load')
+    _l93_ready(c)
+    _l93_run(c)
+    c.eq([c.attr('[data-publish-result]', 'data-result'), norm(c.text('[data-publish-result] [data-line=no-author]'))], ['no-author', norm(LC('pubNoAuthor'))], 'no trigram: nothing left, said with what to do (Réglages › Identité)', what='no author')
+    # ---- 6. no remote repository: the reason in words, from the plan
+    w['plan'] = {'ok': False, 'zone': 'fr', 'reason': 'no-remote'}
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-publish-plan=refused]')", timeout=15000, what='the plan is refused')
+    c.eq([c.attr('[data-publish-plan=refused]', 'data-plan-reason'), norm(c.text('[data-publish-plan=refused]'))], ['no-remote', norm(_trow('no-remote', lang, after='    planReason: {'))], 'no remote repository: the reason in words', what='no remote')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth"), True, 'no horizontal scroll', what='no sideways scroll')
+    w['plan'] = dict(_L93_PLAN)
+    c.page.reload(wait_until='load')
+    _l93_ready(c)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-publish]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L93_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('L94', 'Données: under « Publier », three folded blocks in this order (SOG-0262, lot C) — « Cycle suivant (2612) » (already in Downloads by the file names, still to fetch by hand, taken by itself once in force, the shelved ones apart), « Quand ça change » (X-Plane, Little Navmap, openAIP, GeoNames, MORA with their last date and a button where the screen has the gesture; the NAT tracks say their validity and are taken again when the fold opens, no « Ouvrir »), « Vu par le poste, pas encore lu » (file names, reason in words, the note); « Ma couverture » folded at the foot; the page order',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 lot C: the lists come from the one read of base/cycle (next, unread) — no launcher call of their own; the NAT line reads aerodb.natState() and calls natEnsure() when the fold opens (SOG-0263); an untrusted launcher string is escaped; nothing in « vu, pas encore lu » is an action')
+def l94(c):
+    lang = c.lang
+    LC = lambda k, row=0, after='  lc: {': _trow(k, lang, after=after, row=row)
+    NAT = lambda k: LC(k, after='    nat: {')
+    w = _l93_world()
+    valid = {'present': True, 'count': 17, 'from': '2026-11-12T07:00:00Z', 'validUntil': '2026-11-12T19:00:00Z', 'expired': False, 'current': 12}
+    expired = {**valid, 'validUntil': '2026-11-10T19:00:00Z', 'expired': True, 'current': 0}
+    st, _x4 = _l93_open(c, w, nat={'state': valid})
+    _l93_ready(c)
+    # ---- 1. the page order, the folds folded, no call of their own
+    pos = c.js("""(() => { const q = s => document.querySelector(s), before = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return [before('[data-state-head]', '[data-world-map]'), before('[data-world-map]', '[data-todo]'), before('[data-todo]', '[data-cw-groups]'), before('[data-cw-groups]', '[data-publish]'), before('[data-publish]', '[data-lc-fold=later]'),
+        before('[data-lc-fold=later]', '[data-lc-fold=change]'), before('[data-lc-fold=change]', '[data-lc-fold=unread]'), before('[data-lc-fold=unread]', '[data-my-coverage]')] })()""")
+    c.eq(pos, [True] * 8, 'the page order: state bar, map, what is left to do, the country groups, Publier, cycle suivant, quand ça change, vu pas encore lu, ma couverture', what='page order')
+    c.eq(c.js("[...document.querySelectorAll('[data-lc-fold], [data-my-coverage]')].map(d => [d.dataset.lcFold || 'mycov', d.open])"), [['later', False], ['change', False], ['unread', False], ['mycov', False]], 'the three blocks and « Ma couverture » are folded', what='folded')
+    c.eq([norm(c.text('[data-lc-fold=later] > summary')), norm(c.text('[data-lc-fold=change] > summary')), norm(c.text('[data-lc-fold=unread] > summary')), norm(c.text('[data-my-coverage] > summary'))],
+         [norm(LC('laterTitle').replace('{c}', '2612')), norm(LC('changeTitle')), norm(LC('unreadTitle')), norm(LC('myCovTitle'))], 'their titles, the cycle after is named', what='titles')
+    calls = lambda: c.js('window.__stub.calls') or {}
+    c.eq([len(_l89_reads(st)), len(_l89_reads(st, 'fr')), calls().get('natState', 0), calls().get('natEnsure', 0)], [1, 0, 0, 0], 'no launcher call of their own: the one read of base/cycle feeds them; the NAT tracks are not read before the fold opens', what='lazy')
+    # ---- 2. Cycle suivant
+    c.tap('[data-lc-fold=later] > summary')
+    c.until("document.querySelector('[data-lc-fold=later]').open", timeout=3000, what='the fold opens')
+    lists = c.js("[...document.querySelectorAll('[data-lc-fold=later] [data-later-list]')].map(u => [u.dataset.laterList, [...u.querySelectorAll('li')].map(l => [l.dataset.laterItem, l.textContent.replace(/\\s+/g, ' ').trim()])])")
+    c.eq([[k, [i[0] for i in items]] for k, items in lists], [['in-downloads', ['sia']], ['to-take', ['nats']], ['will-be-taken', ['faa']]], 'three lists in order: already in Downloads, still to fetch by hand, taken by itself once in force', what='lists')
+    c.ok('export_xml_bd_sia_2026-11-26-v01.zip' in lists[0][1][0][1], lists[0], 'the file already in Downloads is named')
+    c.eq([norm(c.text(f'[data-later-title={k}]')) for k in ('in-downloads', 'to-take', 'will-be-taken')], [norm(_trow(k, lang, after='    laterState: {')) for k in ('in-downloads', 'to-take', 'will-be-taken')], 'the three headings', what='headings')
+    c.eq([c.js("[...document.querySelectorAll('[data-later-gone] li')].map(l => l.dataset.laterItem)"), c.js("document.querySelector('[data-later-gone-title]').compareDocumentPosition(document.querySelector('[data-later-gone]')) & 4")], [['ukmil'], 4], 'a source its publisher no longer offers is apart, under its muted title', what='gone')
+    # ---- 3. Quand ça change: the lines, their dates, the buttons; the NAT validity without « Ouvrir »
+    c.tap('[data-lc-fold=change] > summary')
+    c.until("(document.querySelector('[data-change=nat] [data-change-last]')?.textContent || '').includes('19:00Z')", timeout=8000, what='the NAT validity is read')
+    c.eq(c.js("[...document.querySelectorAll('[data-change-list] > li')].map(l => l.dataset.change)"), ['xplane', 'lnm', 'openaip', 'geonames', 'mora', 'nat'], 'six lines: X-Plane, Little Navmap, openAIP, GeoNames, MORA, the NAT tracks', what='lines')
+    last = lambda i: norm(c.text(f'[data-change={i}] [data-change-last]'))
+    c.eq([last('openaip'), last('xplane'), last('geonames')], [norm(LC('changeLast').replace('{d}', _date_text(datetime.date(2026, 11, 2), lang))), norm(LC('changeNoDate')), norm(LC('changeNoDate'))], 'the last date of a source (the day of its file), « date non lue » when the list of the cycle gives none', what='dates')
+    c.eq(c.js("[...document.querySelectorAll('[data-change-list] [data-act=change-act]')].map(b => [b.closest('li').dataset.change, b.dataset.kind, b.disabled])"), [['xplane', 'build', False], ['openaip', 'fetch', False], ['mora', 'fetch', False]], 'a button where the screen already has the gesture (rebuild, download again), none for Little Navmap, GeoNames and the NAT tracks', what='buttons')
+    until = f"{_date_text(datetime.date(2026, 11, 12), lang)} 19:00Z"
+    c.eq(last('nat'), norm(NAT('valid').replace('{d}', until) + ' · ' + NAT('count').replace('{n}', '17')), 'the NAT line says the validity and the number of tracks', what='nat valid')
+    c.eq([calls().get('natState', 0), calls().get('natEnsure', 0), c.count('[data-change=nat] a, [data-change=nat] button'), c.count('[data-set=nat] a[target=_blank]')], [1, 0, 0, 0], 'valid tracks: read once, not taken again, and « Ouvrir » is gone (no link, no button on the line or on the row)', what='nat calls')
+    # expired tracks: the fold opens -> taken again; then the launcher cannot (said, no new try at once)
+    c.js("window.__stub.nat = { state: " + json.dumps(expired) + ", ensure: " + json.dumps({**valid, 'validUntil': '2026-11-13T07:00:00Z'}) + ", ok: true }")
+    c.js("document.querySelector('[data-lc-fold=change]').open = false")
+    c.tap('[data-lc-fold=change] > summary')
+    c.until("(window.__stub.calls.natEnsure || 0) === 1", timeout=8000, what='the expired tracks are taken again when the fold opens')
+    c.until("document.querySelector('[data-change=nat] [data-change-last]').textContent.includes('07:00Z')", timeout=8000, what='the new validity')
+    c.eq(last('nat'), norm(NAT('refreshed').replace('{d}', f"{_date_text(datetime.date(2026, 11, 13), lang)} 07:00Z") + ' · ' + NAT('count').replace('{n}', '17')), 'taken again: said, with the new validity', what='nat refreshed')
+    c.js("window.__stub.nat = { state: " + json.dumps(expired) + ", ensure: null, ok: false }")
+    c.js("document.querySelector('[data-lc-fold=change]').open = false")
+    c.tap('[data-lc-fold=change] > summary')
+    c.until("(window.__stub.calls.natEnsure || 0) === 2 && document.querySelector('[data-change=nat] [data-change-last]').textContent.includes('10')", timeout=8000, what='the failed retake is said')
+    c.ok(norm(NAT('expired').replace('{d}', f"{_date_text(datetime.date(2026, 11, 10), lang)} 19:00Z")) in last('nat') and norm(NAT('failed')) in last('nat'), last('nat'), 'expired tracks: « périmées (valides jusqu\'à … ) » then the failure in words')
+    # ---- 4. Vu par le poste, pas encore lu: file names, reason in words, the note (escaped); no action
+    c.tap('[data-lc-fold=unread] > summary')
+    c.until("document.querySelector('[data-lc-fold=unread]').open", timeout=3000, what='the fold opens')
+    rows = c.js("[...document.querySelectorAll('[data-unread-list] > li')].map(l => [l.dataset.unread, l.dataset.unreadReason, l.querySelector('[data-unread-why]').textContent, l.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.eq([[r[0], r[1], norm(r[2])] for r in rows], [['naviair', 'no-reader', norm(LC('no-reader', after='    unreadReason: {'))], ['openaip_xml', 'format', norm(LC('format', after='    unreadReason: {'))]], 'one line per source seen and not read, its reason in words (no reader / format not recognised)', what='unread')
+    c.ok('EK_ENR_4_1.pdf' in rows[0][3] and 'EK_: Denmark OR Faroe Islands' in rows[0][3] and 'gb_apt.xml' in rows[1][3], rows, 'the file names and the note of the launcher (Denmark OR Faroe) are said')
+    c.eq([c.count('[data-lc-fold=unread] button, [data-lc-fold=unread] a, [data-lc-fold=unread] img'), c.js('window.__pwn === undefined')], [0, True], 'nothing here is an action; the note is escaped (nothing is injected)', what='no action')
+    # ---- 5. « Ma couverture »: the packs and the box « Je certifie… » are one tap away
+    c.tap('[data-my-coverage] > summary')
+    c.until("document.querySelector('[data-my-coverage]').open", timeout=3000, what='the fold opens')
+    c.eq([c.count('[data-my-coverage] [data-packs-fold]'), c.count('[data-my-coverage] [data-certify]')], [1, 1], 'the country packs and the box « Je certifie… » live in « Ma couverture »', what='my coverage')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth"), True, 'no horizontal scroll', what='no sideways scroll')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js("document.querySelector('[data-my-coverage]').open = false")
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-publish]').scrollIntoView({ block: 'start' })")
+        c.shot(f'L94_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('L95', 'Données: « Ajouter à ma couverture » on the sheet of a country outside the coverage (SOG-0262, lot C) — it says in words what adding will ask (download by the launcher, take by hand with the expected file names, the personal-use box, files dropped and not read yet) from base/cycle { zone } addWillAsk; the button adds the country (nothing is downloaded); « Retirer de ma couverture » on a covered country asks first and never purges',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0262 (Q-0028 « Ajouter à ma couverture » avec ce que cela demandera): addWillAsk = { sources, auto, hand: [{ id, expected }], personal, noReader }; the add writes the coverage only (addZone); removal is one question first (the files stay)')
+def l95(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    LC = lambda k, row=0, after='  lc: {': _trow(k, lang, after=after, row=row)
+    w = _l93_world()
+    st, _x4 = _l93_open(c, w)
+    de = _L88_NAMES['de'][li]
+    c.tap('[data-wmap] path[data-zone=de]')
+    c.until("!!document.querySelector('[data-sheet=de] [data-add-ask] [data-ask]')", timeout=10000, what='the sheet of Germany says what adding it will ask')
+    c.eq([c.count('[data-sheet=de] [data-sheet-out]'), c.count('[data-sheet=de] [data-tick]'), c.count('[data-sheet=de] [data-sheet-update]')], [1, 0, 0], 'outside the coverage: it says so, no tick, no update', what='outside')
+    asks = c.js("[...document.querySelectorAll('[data-sheet=de] [data-add-ask] [data-ask]')].map(l => [l.dataset.ask, l.hasAttribute('data-sheet-noreader'), l.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.eq([[a[0], a[1]] for a in asks], [['auto', False], ['hand', False], ['personal', False], ['noreader', True]], 'four things, in words: download by the launcher, take by hand, the box, files dropped and not read yet', what='asks')
+    c.eq(norm(c.text('[data-sheet=de] [data-add-ask] > p b')), norm(LC('addTitle')), 'the title says what adding will ask', what='title')
+    c.ok(norm(LC('addAuto').split('{s}')[0]) in norm(asks[0][2]) and 'openAIP' in asks[0][2], asks[0], 'automatic: the sources the launcher downloads by itself are named')
+    c.ok('export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip' in asks[1][2] and norm(LC('addHand').split('{s}')[0]) in norm(asks[1][2]), asks[1], 'by hand: the source and the expected file names')
+    c.ok(norm(LC('addPersonal').split('{s}')[0]) in norm(asks[2][2]) and norm(LC('addNoReader').split('{s}')[1]) in norm(asks[3][2]), asks[2:], 'the personal-use box and the files not read yet are said')
+    c.eq(norm(c.text('[data-sheet=de] [data-act=add-country]')), norm(LC('addBtn')), 'the button', what='button')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth"), True, 'no horizontal scroll', what='no sideways scroll')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    if c.width in (390, 1280):
+        c.shot(f'L95_{c.width}_{lang}_delivered.png')
+    n_posts = len(st['posts'])
+    c.tap('[data-sheet=de] [data-act=add-country]')
+    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'de' in d.get('zones', [])), what='the country is in the coverage')
+    c.eq(sorted(doc['zones']), ['ca', 'de', 'es', 'fr', 'gb', 'us'], 'the coverage is written with the country', what='coverage.json')
+    c.eq(len(_notes_with(c, LC('added').replace('{c}', de))), 1, 'one notification', what='notification')
+    c.eq([p['verb'] for p in st['posts'][n_posts:] if p['verb'] in ('fetch', 'build', 'update')], [], 'adding downloads and builds nothing', what='nothing started')
+    c.until("!document.querySelector('[data-sheet=de] [data-add-ask]') && !!document.querySelector('[data-sheet=de] [data-sheet-remove]')", timeout=8000, what='the sheet is now the one of a covered country')
+    # ---- remove: one question first, No keeps it, Yes removes it (the files are never purged)
+    c.tap('[data-sheet=de] [data-act=remove-country]')
+    q = _ask_text(c)
+    c.eq([norm(q['text']), norm(q['ok'])], [norm(LC('removeAsk').replace('{c}', de)), norm(LC('removeBtn'))], 'ONE question that says the files stay', what='question')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    c.wait(300)
+    c.eq('de' in (c.doc('cache/data/coverage.json') or {}).get('zones', []), True, 'No: still in the coverage', what='kept')
+    c.tap('[data-sheet=de] [data-act=remove-country]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'de' not in d.get('zones', [])), what='the country leaves the coverage')
+    c.eq([len(_notes_with(c, LC('removed').replace('{c}', de))), [p['verb'] for p in st['posts'][n_posts:] if p['verb'] == 'purge']], [1, []], 'Yes: out of the coverage, one notification, nothing purged', what='removed')
+    c.until("!!document.querySelector('[data-sheet=de] [data-add-ask]')", timeout=8000, what='the sheet offers to add it again')
     c.check_errors()

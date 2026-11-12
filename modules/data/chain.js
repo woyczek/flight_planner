@@ -283,7 +283,7 @@ async function runChain(me, plan, prevRows = null) {
     if (S !== me) return;
     const out = S.pub.result?.out;
     p = out ? publishLines(out)[0].text : S.pub.result?.unread ? tt(TX.pubUnread) : publishReason('nothing');
-    if (out && (out.kind === 'failed' || out.kind === 'no-exchange'))[result, level] = ['failed', 'err'];
+    if (out && (out.kind === 'failed' || out.kind === 'no-exchange' || out.kind === 'no-author'))[result, level] = ['failed', 'err'];
     else if (out && out.kind !== 'done') level = 'warn';
   }
   if (failures.length) {

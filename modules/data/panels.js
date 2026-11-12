@@ -29,6 +29,10 @@ import {
   renderPublish
 } from './publish.js';
 import {
+  laterHtml,
+  renderLater
+} from './later.js';
+import {
   busyCardHtml
 } from './busy.js';
 import {
@@ -783,13 +787,21 @@ function setInner(panel) {
     pk = panel === M.PICKUP.set ? gateOf(panel, sel.ids.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb] :
     null; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
   return `<h2>${esc(tt(ui.title))}</h2>
-    ${panel === 'base' ? stateHeadHtml() + countriesHtml() : `<h3>${esc(tt(ui.items))}</h3>`}
-    ${spec.map && panel !== 'base' ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
+    ${panel === 'base' ? stateHeadHtml() : `<h3>${esc(tt(ui.items))}</h3>`}
+    ${panel === 'base' ? '' : spec.map ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
     ${verbsHtml(gate, panel, pk)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
-    ${panel === 'base' ? missingHtml() : ''}
+    ${panel === 'base' ? missingHtml() + countriesHtml() : ''}
     ${ui.hint ? `<p class="f-muted" ${ui.hint[0]}>${esc(tt(ui.hint[1]))}</p>` : ''}
     ${panel === 'base' ? '' : opAreaHtml(panel)}`;
+}
+/** « Ma couverture », au pied de la base : un pli (les paquets de pays, la case « Je certifie… ») dans une carte à part, redessinée comme un panneau (data-mycov-box). */
+function myCovInner() {
+  return `<details class="d-mycov" data-my-coverage${S.myCovOpen ? ' open' : ''}><summary><h3>${esc(tt(TX.lc.myCovTitle))}</h3></summary>${choiceHtml('base', frozen())}</details>`;
+}
+
+function myCovHtml() {
+  return `<section class="f-card" data-mycov-box>${myCovInner()}</section>`;
 }
 /** Le panneau d'un jeu (base comprise, repérée par `data-build`) ou celui des fiches publiées (`data-set-panel`). */
 function setPanelHtml(panel) {
@@ -798,7 +810,9 @@ function setPanelHtml(panel) {
 /** Les panneaux d'un groupe : base (Télécharger · Construire · Purger de la base, « Publier » partagé, puis les points VFR), procédures, appareils (puis
  *  les fiches publiées) ; aucun pour la météo, publiée avec le site. */
 export function panelsHtml(group) {
-  if (group === 'base') return setPanelHtml('base') + publishHtml() + setPanelHtml('vfr');
+  if (group === 'base') return setPanelHtml('base') + publishHtml() + laterHtml() + myCovHtml() + setPanelHtml(
+    'vfr'
+  ); // la barre d'état, la carte, ce qui reste à faire et les groupes de pays (le panneau de la base), puis « Publier », les trois blocs repliés et « Ma couverture »
   if (group === 'proc') return setPanelHtml('proc');
   if (group === 'aircraft') return setPanelHtml('aircraft') + setPanelHtml('sheets');
   return '';
@@ -819,8 +833,12 @@ function redrawPanel(box) {
   const inner = [...box.querySelectorAll('[data-sheet]')].map(e => [e
     .scrollTop
   ]); // la fiche d'un pays défile en elle-même : elle garde sa place à chaque redessin
+  const myCov = box.querySelector('details.d-mycov');
+  if (myCov) S.myCovOpen = myCov
+    .open; // le pli « Ma couverture » ouvert à l'instant garde son état même si l'événement toggle n'est pas encore passé
   keepScroll(S.body, () => {
-    box.innerHTML = box.matches('[data-update-all]') ? updateAllInner() : setInner(panelId(box));
+    box.innerHTML = box.matches('[data-update-all]') ? updateAllInner() : box.matches('[data-mycov-box]') ? myCovInner() : setInner(
+      panelId(box));
     box.querySelectorAll('[data-sheet]').forEach((e, i) => {
       if (inner[i]) e.scrollTop = inner[i][0];
     });
@@ -839,7 +857,8 @@ function redrawPanel(box) {
 export function renderBuild() {
   renderPublish(); // le bouton « Publier » suit la construction (et l'inverse) : un seul point de redessin pour tous les panneaux
   if (!S?.body || !S.d) return;
-  for (const box of S.body.querySelectorAll('[data-build], [data-set-panel], [data-update-all]')) redrawPanel(box);
+  for (const box of S.body.querySelectorAll('[data-build], [data-set-panel], [data-update-all], [data-mycov-box]')) redrawPanel(box);
+  renderLater(); // cycle suivant, quand ça change, vu pas encore lu : lus dans la liste du cycle, qui vient peut-être d'arriver
   readsIdle(); // l'écran est libre : ce qui était « à relire » (la liste du cycle, la fiche ouverte) se relit
 }
 /** Ouvre le groupe d'un panneau (une marche ou un résultat s'y montre) sans attendre un toucher. */
