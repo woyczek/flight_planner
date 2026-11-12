@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 164,
+  "tests": 165,
   "verdicts": 59
  },
  "apps": [
@@ -13,6 +13,20 @@
   "stats"
  ],
  "tests": [
+  {
+   "id": "SOG-0023",
+   "app": "pilote",
+   "title": {
+    "fr": "Fiches appareil : le JSON est la seule source, lnmperf n'est qu'un import/export",
+    "en": "Aircraft sheets: the JSON is the only source, lnmperf is just an import/export",
+    "de": "Flugzeugdatenblätter: Das JSON ist die einzige Quelle, lnmperf ist nur ein Import/Export",
+    "es": "Fichas de aeronave: el JSON es la única fuente, lnmperf es solo una importación/exportación"
+   },
+   "test": "Recharge la page. Réglages, carte « Fiches Little Navmap (.lnmperf) » : le bouton s'appelle « Exporter les fiches » ; il écrit tes fiches dans le dossier et ne reprend rien. Modifie un .lnmperf dans Little Navmap (ou déposes-en un nouveau dans le dossier), puis « Exporter les fiches » : le fichier est listé « Changés dans Little Navmap — non repris » et ta fiche n'a pas bougé. Pour le reprendre : Appareils › « Importer un fichier », avec l'aperçu avant l'écriture.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-12T23:16:08Z"
+  },
   {
    "id": "SOG-0036",
    "app": "compagnie",

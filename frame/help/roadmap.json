@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d908143",
+  "organisation": "94bd193",
   "fiches": 287,
   "untranslated": 0,
   "priorities": 243
@@ -726,13 +726,14 @@
     {
      "id": "SOG-0023",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Fiches appareil : le JSON est la seule source, lnmperf n'est qu'un import/export",
      "en": "Aircraft sheets: the JSON is the only source, lnmperf is just an import/export",
      "de": "Flugzeugdatenblätter: Das JSON ist die einzige Quelle, lnmperf ist nur ein Import/Export",
      "es": "Fichas de aeronave: el JSON es la única fuente, lnmperf es solo una importación/exportación",
      "milestone": "6.0.0-alpha.3",
-     "rank": 24
+     "rank": 24,
+     "test": true
     },
     {
      "id": "SOG-0028",
