@@ -109,9 +109,14 @@
   }
 
   function fakeNet(opts = {}) {
-    const calls = [];
+    const calls = [],
+      stats = {
+        inflight: 0,
+        max: 0
+      };
     return {
       calls,
+      stats,
       opts,
       forecasts: () => calls.filter(u => u.includes('/v1/forecast')),
       async fetch(url) {
@@ -122,7 +127,21 @@
           json({
             last_run_initialisation_time: opts.run ?? RUN
           });
-        if (u.hostname === 'api.open-meteo.com') return fakeForecast(u, opts.refuse || []);
+        if (u.hostname === 'api.open-meteo.com') {
+          if (opts.r429 > 0) { // le serveur refuse (SOG-0266) : 429, avec ou sans Retry-After
+            opts.r429--;
+            return new Response('', {
+              status: 429,
+              headers: opts.retryAfter ? {
+                'retry-after': String(opts.retryAfter)
+              } : {}
+            });
+          }
+          stats.max = Math.max(stats.max, ++stats.inflight);
+          if (opts.delay) await new Promise(r => setTimeout(r, opts.delay));
+          stats.inflight--;
+          return fakeForecast(u, opts.refuse || []);
+        }
         if (u.hostname === 'aviationweather.gov') {
           if (!opts.launcher) return marked('x-sog-unreachable');
           const ids = u.searchParams.get('ids').split(',');
@@ -594,6 +613,46 @@
     ck('run : heure gardée pour un autre modèle ignorée, relue', (await S.w.run('meteofrance_seamless')) === RUN && S.net.calls
       .length ===
       1);
+    // ---------------------------------------------------------------- SOG-0266 : une file à UN appel Open-Meteo, une pause après un 429
+    {
+      const shift = (pts, d) => pts.map(p => ({
+        ...p,
+        lat: p.lat + d,
+        lon: p.lon + d
+      }));
+      const S2 = mk({
+        delay: 30
+      });
+      const got = await Promise.allSettled([S2.w.aloft(shift(route, 0), when), S2.w.aloft(shift(route, 3), when), S2.w.aloft(shift(route, 6), when), S2.w.grid(shift(route, 9), when, ['temperature_2m'])]);
+      ck('quatre demandeurs en même temps : un seul appel Open-Meteo en vol à la fois, tous servis', S2.net.stats.max === 1 && got.every(r => r.status === 'fulfilled') && S2.net.forecasts().length >= 4, JSON.stringify([S2.net.stats, got.map(r => r.status), S2.net.forecasts().length]));
+      // un 429 : pause d'une minute, aucun appel pendant elle, rien dépensé, jamais une relance
+      const t0 = clock.t;
+      const S3 = mk({
+        r429: 1
+      });
+      const e1 = await S3.w.aloft(shift(route, 12), when).then(() => null, e => e);
+      ck('un 429 : l’erreur du serveur est rendue (status 429), un seul appel parti', e1?.status === 429 && !e1.paused && S3.net.forecasts().length === 1, JSON.stringify([e1?.status, S3.net.forecasts().length]));
+      const spent1 = S3.spend.length;
+      const e2 = await S3.w.aloft(shift(route, 15), when).then(() => null, e => e);
+      ck('pendant la pause : aucun appel, une erreur 429 marquée `paused` tout de suite, rien dépensé, jamais une relance', e2?.paused === true && e2.status === 429 && e2.wait >= 1 && e2.wait <= 60 && S3.net.forecasts().length === 1 && S3.spend.length === spent1, JSON.stringify([e2?.paused, e2?.wait, S3.net.forecasts().length, S3.spend.length - spent1]));
+      clock.t = t0 + 61e3;
+      const ok3 = await S3.w.aloft(shift(route, 15), when).then(r => r, () => null);
+      ck('une minute après : la file repart', !!ok3 && S3.net.forecasts().length === 2, S3.net.forecasts().length);
+      // Retry-After rendu par le serveur : la pause dure ce qu'il dit
+      clock.t = t0;
+      const S4 = mk({
+        r429: 1,
+        retryAfter: 120
+      });
+      await S4.w.aloft(shift(route, 18), when).catch(() => null);
+      clock.t = t0 + 61e3;
+      const e4 = await S4.w.aloft(shift(route, 21), when).then(() => null, e => e);
+      ck('Retry-After de 120 s : encore en pause après 61 s', e4?.paused === true && e4.wait > 50 && S4.net.forecasts().length === 1, JSON.stringify([e4?.paused, e4?.wait, S4.net.forecasts().length]));
+      clock.t = t0 + 121e3;
+      const ok4 = await S4.w.aloft(shift(route, 21), when).then(r => r, () => null);
+      ck('et repart après ce délai', !!ok4 && S4.net.forecasts().length === 2, S4.net.forecasts().length);
+      clock.t = t0;
+    }
   } catch (e) {
     ck('exception', false, e.stack || e.message);
   }

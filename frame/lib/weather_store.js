@@ -188,13 +188,46 @@ export function weatherStore({
       } catch {
         /* corps illisible */
       }
+      const ra = +r.headers?.get?.('retry-after');
       throw fail(reason || why || `HTTP ${r.status}`, {
         status: r.status,
-        reason: why
+        reason: why,
+        ...(Number.isFinite(ra) && ra > 0 ? {
+          retryAfter: Math.min(Math.ceil(ra), 3600)
+        } : {})
       });
     }
     return r;
   }
+  // SOG-0266 : UN seul appel Open-Meteo à la fois, pour tous les demandeurs de la page (Carburant jusqu'à 24 lieux, la coupe de la route, la grille de la carte Météo jusqu'à 48 lieux partaient ensemble au
+  // changement de route : quatorze délais dépassés puis six 429 du relais le 12 novembre 2026). `spend()` borne le POIDS par minute et par jour, jamais la concurrence. Un 429 (ou un Retry-After) met la file en PAUSE
+  // (une minute, ou ce que le serveur dit, dix au plus) : pendant elle aucun appel ne part — le demandeur reçoit tout de suite une erreur 429 marquée `paused`, que les lecteurs disent déjà (« limite atteinte »),
+  // et sert sa réserve (les cases déjà gardées) ; jamais une relance. Un délai dépassé est un échec de la file comme un autre : le suivant part après lui, pas en parallèle.
+  let omChain = Promise.resolve(),
+    omPausedUntil = 0;
+  const OM_PAUSE_MS = 60e3,
+    OM_PAUSE_MAX_MS = 600e3;
+  /** L'erreur « en pause » tant qu'une pause court (sinon null) : aussi levée AVANT de réserver du poids, pour qu'une pause ne dépense rien. */
+  const omPaused = () => now() < omPausedUntil ? fail('rate limited: paused', {
+    status: 429,
+    paused: true,
+    wait: Math.max(1, Math.ceil((omPausedUntil - now()) / 1e3))
+  }) : null;
+  const omCall = (url, init) => {
+    const go = async () => {
+      const paused = omPaused();
+      if (paused) throw paused;
+      try {
+        return await call(url, init);
+      } catch (e) {
+        if (e?.status === 429) omPausedUntil = now() + Math.min(OM_PAUSE_MAX_MS, Math.max(OM_PAUSE_MS, (e.retryAfter || 0) * 1e3));
+        throw e;
+      }
+    };
+    const p = omChain.then(go, go);
+    omChain = p.catch(() => {});
+    return p;
+  };
 
   // ---------------------------------------------------------------- décompte
   const LEDGER = `${PREFIX}ledger.json`;
@@ -278,7 +311,7 @@ export function weatherStore({
       return c.run;
     }
     try {
-      const j = await (await call(`https://api.open-meteo.com/data/${k}/static/meta.json`)).json(),
+      const j = await (await omCall(`https://api.open-meteo.com/data/${k}/static/meta.json`)).json(),
         v = {
           at: now(),
           meta: k,
@@ -402,6 +435,7 @@ export function weatherStore({
     async function fetchGroup(g) {
       const ask = async list => {
         const w = callWeight(g.cells.length, list.length);
+        if (omPaused()) throw omPaused(); // une pause ne dépense rien
         await spend(w, {
           stale,
           onWait
@@ -409,7 +443,7 @@ export function weatherStore({
         weight += w;
         requests++;
         const f = v => (+v).toFixed(3);
-        return [].concat(await (await call('https://api.open-meteo.com/v1/forecast' +
+        return [].concat(await (await omCall('https://api.open-meteo.com/v1/forecast' +
           `?latitude=${g.cells.map(c => f(c.lat)).join(',')}&longitude=${g.cells.map(c => f(c.lon)).join(',')}` +
           `&hourly=${list.join(',')}&wind_speed_unit=kn&timeformat=unixtime&start_date=${g.from}&end_date=${g.to}` +
           `&models=${encodeURIComponent(model)}`, {
