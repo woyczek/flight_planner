@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-12",
-  "tests": 140,
-  "verdicts": 60
+  "tests": 141,
+  "verdicts": 59
  },
  "apps": [
   "pilote",
@@ -1173,11 +1173,14 @@
     "de": "Eine Mission vorbereiten heißt einen Flug vorbereiten: gleiche Schritte samt Wetter; Distanz berechnet; Zeit im Einsatzgebiet",
     "es": "Preparar una misión es preparar un vuelo: mismos pasos, meteo incluida; distancia calculada; tiempo en zona"
    },
-   "test": "Compagnie › Missions › une mission avec un rendez-vous ou une cible › « Préparer ce vol » : dans Carburant › Route › Points, les points de la mission sont dits « imposé par la mission » et ne se montent, ne se descendent ni ne se retirent ; le reste de la route se modifie librement. Sur la Carte, en Édition : ces points sont des carrés pleins, on ne peut ni les glisser ni les retirer. La préparation suit les mêmes étapes qu'un vol, météo comprise, avec la distance calculée.",
-   "since": "2026-11-11",
-   "state": "ok",
-   "delivered": "2026-11-10T14:55:14Z",
-   "at": "2026-11-10T16:02:27Z"
+   "test": "Recharge la page. Carburant, une mission dont des points portent un temps sur zone : sous ces points, « Sur zone [n] min · mission : 5 à 40 » (le maximum compté par défaut) ; change la valeur : l'étape et le devis suivent, avec une ligne « Sur zone » par point au détail ; un point sans temps porte un « + » qui ouvre le champ. Sur la Carte, le point porte la durée et la position prévue attend sur le point.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T16:17:00Z",
+   "previous": {
+    "verdict": "ok",
+    "at": "2026-11-10T16:02:27Z"
+   }
   },
   {
    "id": "SOG-0194",
@@ -1875,6 +1878,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T15:03:28Z"
+  },
+  {
+   "id": "SOG-0248",
+   "app": "maintenance",
+   "title": {
+    "fr": "Procédures de l'AIP : très peu de STAR et d'approches à la relecture (Bordeaux : trois approches, aucun ILS)",
+    "en": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
+    "de": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
+    "es": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)"
+   },
+   "test": "Relance le lanceur, puis dans Carburant « Relire » les procédures de LFBD, LFST et LFRS. Attendu : LFBD gagne la finale des ILS 23 et 29 ; LFST celle des ILS 05 et 23 (ses RNP 05 / 23 restent « à vérifier » pour l'instant) ; LFRS gagne ses huit départs nommés de la piste 21 (ANG 4S, BALNI 4S…), la finale de l'ILS 03 et la RNP 03. Dis-moi ce que tu obtiens terrain par terrain.",
+   "since": "2026-11-12",
+   "state": "todo",
+   "delivered": "2026-11-12T16:13:46Z"
   },
   {
    "id": "SOG-0250",

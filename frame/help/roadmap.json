@@ -4,7 +4,7 @@
  "updated": "2026-11-12",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "038723e",
+  "organisation": "2658cca",
   "fiches": 280,
   "untranslated": 0,
   "priorities": 243
@@ -1762,7 +1762,8 @@
      "en": "Preparing a mission is preparing a flight: same steps, weather included; distance computed; time on station",
      "de": "Eine Mission vorbereiten heißt einen Flug vorbereiten: gleiche Schritte samt Wetter; Distanz berechnet; Zeit im Einsatzgebiet",
      "es": "Preparar una misión es preparar un vuelo: mismos pasos, meteo incluida; distancia calculada; tiempo en zona",
-     "rank": 180
+     "rank": 180,
+     "test": true
     }
    ]
   },
@@ -2149,11 +2150,12 @@
     {
      "id": "SOG-0248",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Procédures de l'AIP : très peu de STAR et d'approches à la relecture (Bordeaux : trois approches, aucun ILS)",
      "en": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
      "de": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
-     "es": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)"
+     "es": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
+     "test": true
     }
    ]
   },
