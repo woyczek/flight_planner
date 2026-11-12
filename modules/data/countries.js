@@ -81,12 +81,18 @@ import {
 import {
   busyCardHtml
 } from './busy.js';
+import {
+  selBarHtml
+} from './select.js';
 
 /** L'état propre à cet écran, créé au montage : le pays survolé, le paquet ouvert, la fiche ouverte (et d'où), la vue du monde, la légende dépliée, les chemins SVG gardés, les lectures du lanceur (la liste du cycle d'un pays, celle de tout le cycle, les procédures), la source du dernier geste de fichier de chaque pays. */
 export const cwInit = () => ({
   lc: lcInit(), // les blocs repliés sous « Publier » : plis ouverts et lecture des routes NAT (later.js)
   hover: null,
+  sel: new Set(), // les pays choisis sur la carte (select.js) : Maj + clic, rectangle ; vidée après le geste
+  rect: null, // le rectangle de sélection en cours (select.js)
   grp: null,
+  home: false, // « Recentrer sur ma couverture » touché : la carte montre la couverture même si un groupe est ouvert (rouvrir un groupe le cadre de nouveau)
   view: null, // le zoom et le déplacement de la carte : { box, key } (mapview.js), null : le cadre de départ
   thread: new Map(), // le fil de la dernière opération de chaque pays (zoneop.js) : identifiant → { state, steps, bilan, why }
   todoOpen: false, // le bloc « À faire ce mois-ci » : replié d'origine
@@ -156,10 +162,14 @@ function pathInfo(id) {
   if (o && Array.isArray(o.box) && o.box.length === 4 && o.box.every(Number.isFinite)) {
     const rings = o.framed || o.rings || [],
       d = M.pathOf(rings, o.box);
+    const main = M.mainBox(rings, o
+      .box
+    ); // le cadre du pays sans son outre-mer (les anneaux à plus de 3° du plus grand : les Açores, les Canaries, la Guyane ; `parts` d'aerodb les réunit à moins de FRAME_GAP, trop large pour cadrer un groupe)
     out = d ? {
       id,
       d,
       box: o.box,
+      main,
       approx: M.isApproxOutline({
         ...o,
         rings
@@ -168,6 +178,10 @@ function pathInfo(id) {
   }
   c.paths.set(id, out);
   return out;
+}
+/** Le cadre [ouest, sud, est, nord] d'un pays SANS son outre-mer (le groupe d'anneaux principal) : celui qui cadre un groupe de pays et celui que touche un rectangle de sélection ; null sans contour. */
+export function mainBoxOf(id) {
+  return S.outlines && S.outlines !== 'loading' ? pathInfo(id)?.main || null : null;
 }
 /** Les pays que la carte dessine : ceux de la couverture et ceux que la suite connaît (dans l'ordre des zones), avec un contour. */
 function drawn() {
@@ -186,7 +200,11 @@ function mapHtml() {
     open = S.cw.grp ? new Set(packList().find(x => x.pack.id === S.cw.grp)?.state.known || []) : new Set(),
     procs = S.cw.proc?.zones || {},
     covBoxes = all.filter(p => cov.has(p.id)).map(p => p.box),
-    frame = (!S.cw.world && covBoxes.length ? M.frameOf(covBoxes) : null) || (S.cw.world ? M.worldFrame() : M.frameOf(all.map(p => p.box))),
+    grpBoxes = all.filter(p => open.has(p.id)).map(p => p
+      .main), // un groupe ouvert cadre la carte sur LUI, sans l'outre-mer de ses pays (teintés quand même, visibles en dézoomant)
+    frame = S.cw.world ? M.worldFrame() : (grpBoxes.length && !S.cw.home ? M.frameOf(grpBoxes) : null) || (covBoxes.length ? M.frameOf(
+        covBoxes) :
+      null) || M.frameOf(all.map(p => p.box)),
     rank = p => open.has(p.id) ? 2 : cov.has(p.id) ? 1 : 0,
     list = [...all].sort((a, b) => rank(a) - rank(b)),
     fr = framesOf(frame), // la vue (le zoom et le déplacement gardés), le cadre de départ et le monde (mapview.js)
@@ -194,7 +212,7 @@ function mapHtml() {
   const paths = list.map(p => {
     const t = tone(p.id),
       label = `${nameOf(p.id)} : ${word(t)}${procs[p.id] ? `, ${tt(TX.cw.procYes, { s: procs[p.id].map(procName).join(', ') })}` : ''}`;
-    return `<path class="d-wz" d="${p.d}" data-zone="${esc(p.id)}" data-hz="${esc(p.id)}" data-tone="${esc(t)}" data-act="open-country" tabindex="-1" role="button" aria-label="${esc(label)}"${p.approx ? ' data-approx' : ''}${open.has(p.id) ? ' data-grp' : ''}${S.cw.hover === p.id ? ' data-hover' : ''}${S.packHl?.has(p.id) ? ' data-hl' : ''}><title>${esc(label)}</title></path>`;
+    return `<path class="d-wz" d="${p.d}" data-zone="${esc(p.id)}" data-hz="${esc(p.id)}" data-tone="${esc(t)}" data-act="open-country" tabindex="-1" role="button" aria-label="${esc(label)}"${p.approx ? ' data-approx' : ''}${open.has(p.id) ? ' data-grp' : ''}${S.cw.hover === p.id ? ' data-hover' : ''}${S.packHl?.has(p.id) ? ' data-hl' : ''}${S.cw.sel.has(p.id) ? ' data-sel' : ''}><title>${esc(label)}</title></path>`;
   }).join('');
   const hatch = list.filter(p => procs[p.id]).map(p => `<path class="d-wh" d="${p.d}" data-proc="${esc(p.id)}"></path>`).join('');
   const sw = t => `<span class="d-sw" data-tone="${t}"></span>`,
@@ -206,7 +224,7 @@ function mapHtml() {
     <div class="d-mapframe"><svg class="d-wmap" data-wmap viewBox="${fr.view.join(' ')}" data-base="${frame.join(' ')}" data-world="${fr.world.join(' ')}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${(frame[2] / frame[3]).toFixed(3)}" role="group" aria-label="${esc(tt(TX.cw.mapLabel))}"><defs><pattern id="d-hatch" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${cell.toFixed(2)}" stroke="currentColor" stroke-width="${(cell * .3).toFixed(2)}"></line></pattern></defs><g data-wz>${paths}</g><g class="d-whg" data-wh>${hatch}</g></svg>
 </div>
     <p class="d-lgd" data-cw-legend><span class="d-lgl">${['ok', 'warn', 'err'].map(t => `<span class="d-lgi">${sw(t)}${esc(tt(TX.mapLegendBase[t]))}</span>`).join('')}<span class="d-lgi">${sw('muted')}${esc(tt(TX.cw.outside))}</span></span><span class="d-zoom" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button><button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">\u2212</button></span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
-    ${S.cw.legend ? `<p class="f-muted" data-cw-legend-more><span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''} · ${esc(tt(TX.d2.mapTouch))}</p>` : ''}</section>`;
+    ${S.cw.legend ? `<p class="f-muted" data-cw-legend-more><span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''} · ${esc(tt(TX.d2.mapTouch))} · ${esc(tt(TX.d4.selHelp))}</p>` : ''}${selBarHtml()}</section>`;
 }
 /** Le nom d'une origine de procédures (CIFP, eAIP, EAD) ; le code tel quel pour une autre. */
 const procName = s => tt(M.own(TX.cw.procSource, s) || [s, s, s, s]);
@@ -269,14 +287,23 @@ function groupsHtml() {
   const packs = packList();
   if (!packs.length) return '';
   const cov = S.d.cov.ids,
-    items = packs.map(({
+    // l'ordre : ceux où il y a quelque chose à faire, puis ceux à jour, puis ceux sans aucun pays de la couverture (estompés, à la fin) ; à égalité l'ordre des paquets
+    rank = x => !x.tl.inCov ? 2 : x.tl.warn + x.tl.err > 0 ? 0 : 1,
+    ordered = packs.map(x => ({
+      ...x,
+      tl: M.tally(x.state.known, cov, tone)
+    })).map((x, i) => ({
+      ...x,
+      i
+    })).sort((a, b) => rank(a) - rank(b) || a.i - b.i),
+    items = ordered.map(({
       pack,
-      state
+      state,
+      tl
     }) => {
       const open = S.cw.grp === pack.id,
-        tl = M.tally(state.known, cov, tone),
         name = pack.names[li()] || pack.names[0];
-      return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-open="${open}"><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><span class="d-gtitle"><b>${esc(name)}</b> <span class="f-muted d-gcount">${esc(count('country', state.known.length))}</span></span> <span class="d-gsum" data-group-sum>${groupSummaryHtml(tl)}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
+      return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-open="${open}"${tl.inCov ? '' : ' data-nocov'}><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><span class="d-gtitle"><b>${esc(name)}</b> <span class="f-muted d-gcount">${esc(count('country', state.known.length))}</span></span> <span class="d-gsum" data-group-sum>${groupSummaryHtml(tl)}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
         <ul class="d-gc">${state.known.map(z => {
           const t = tone(z);
           return `<li><button type="button" class="d-gcb" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}" data-tone="${esc(t)}"${S.cw.hover === z ? ' data-hover' : ''}${S.cw.sheet === z ? ' aria-current="true"' : ''}><span class="d-gcn">${esc(nameOf(z))}</span> <span class="d-gw"><b aria-hidden="true">${M.own(SIGN_OF, t) || ''}</b> ${esc(word(t))}${S.cw.proc?.zones?.[z] ? ` <span class="d-gproc" data-has-proc><i class="d-sw" data-hatch aria-hidden="true"></i>${esc(tt(TX.d2.procShort))}</span>` : ''}</span></button></li>`;
@@ -300,6 +327,62 @@ export function tickHtml(key, ok, detail) {
       na: 'twNa'
     } [sign]]);
   return `<li data-tick="${key}" data-ok="${sign}"><span class="d-tk" aria-hidden="true">${M.SIGN[sign]}</span> <b>${esc(tt(TX.cw.tick[{ download: 'dlTick', build: 'buildTick', publish: 'pubTick' }[key]]))}</b> <span class="d-tkw" data-tick-word>(${esc(word)})</span> : <span data-tick-text>${esc(detail)}</span></li>`;
+}
+/** Une date « jj/mm » (« 05/10 ») : le mot court d'une cellule de la fiche ; '' sans date lisible. */
+function shortDate(iso) {
+  const d = new Date(iso);
+  return !iso || Number.isNaN(+d) ? '' : new Intl.DateTimeFormat(lang() === 'en' ? 'en-GB' : String(lang()), {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'UTC'
+  }).format(d);
+}
+/** Une cellule d'état de la fiche (construit, publié) : le signe, le MOT court (« à faire », « à jour », « le 05/10 ») et, à part, la phrase longue qui va sur sa propre ligne, sous les trois cellules (une phrase entière ne tient pas dans une cellule étroite). Rend { li, note }. */
+function factCell(key, ok, word, short, long) {
+  const sign = M.SIGNS.includes(ok) ? ok : 'na',
+    label = tt(TX.cw.tick[{
+      build: 'buildTick',
+      publish: 'pubTick'
+    } [key]]);
+  return {
+    li: `<li data-tick="${key}" data-ok="${sign}"><span class="d-tk" aria-hidden="true">${M.SIGN[sign]}</span> <b>${esc(label)}</b> <span class="d-tkw" data-tick-word>(${esc(word)})</span>${short ? ` <span data-tick-text>${esc(short)}</span>` : ''}</li>`,
+    note: long ? `<p class="d-cellnote" data-cell-note="${key}" data-ok="${sign}"><b>${esc(label)}</b> ${esc(long)}</p>` : ''
+  };
+}
+/** La cellule « construit » du pays : à jour, la date en mot court (la phrase longue ne garde que le cycle) ; sinon « à faire » et, sur sa ligne, pourquoi pas et la dernière construction. */
+function buildFact(id, z) {
+  const T = TX.cw,
+    word = k => tt(TX.zx[k]);
+  if (!z) return factCell('build', 'na', word('twNa'), tt(T.dlUnread), '');
+  const last = builtDetail(z);
+  if (z.state === 'up-to-date') return factCell('build', 'yes', tt(TX.d4.cellOk), z.builtAt ? tt(T.on, {
+    d: shortDate(z.builtAt)
+  }) : '', z.builtCycle && S.airac ? tt(T.cycleOf, {
+    c: M.cycleName(S.airac, z.builtCycle)
+  }) : '');
+  return factCell('build', z.state === 'failed' ? 'no' : 'todo', word(z.state === 'failed' ? 'twNo' : 'twTodo'), '', tt(T.buildNot, {
+    r: zoneReasons(id)[0] || tt(TX.zst[z.state])
+  }) + (last ? ` · ${tt(T.buildLast, { b: last })}` : ''));
+}
+/** La cellule « publié » : seulement quand le lanceur le dit ; null sinon (un état inconnu ne dit rien). */
+function publishFact(z) {
+  const p = z?.publish;
+  if (!p || p.state === 'unknown') return null;
+  const word = k => tt(TX.zx[k]);
+  if (z.state !== 'up-to-date') return factCell('publish', 'na', word('twNa'), '', tt(TX.zx.pubWaitBuild));
+  return p.state === 'published' ? factCell('publish', 'yes', word('twYes'), p.at ? tt(TX.cw.on, {
+    d: shortDate(p.at)
+  }) : '', '') : factCell('publish', 'todo', word('twTodo'), '', tt(TX.cw.pubNo));
+}
+/** Les parties du territoire d'un pays quand aerodb les NOMME (`partNames` : [[fr, en, de, es], …] de zones()) : « 3 zones : continent, Madère, Açores » ; '' sans noms (rien n'est inventé : les cadres d'aerodb n'ont pas de nom). */
+function partsText(id) {
+  const z = (S.d?.zones || []).find(x => x.id === id),
+    names = (Array.isArray(z?.partNames) ? z.partNames : []).slice(0, 12).map(n => Array.isArray(n) ? String(n[li()] ?? n[0] ?? '').replace(
+      /[\p{Cc}]/gu, ' ').trim().slice(0, 40) : '').filter(Boolean);
+  return names.length > 1 ? tt(TX.d4.subZones, {
+    n: names.length,
+    z: names.join(', ')
+  }) : '';
 }
 /** La coche « téléchargé » d'une source pour ce pays : d'abord la liste du cycle (l'état du fichier, sa date, son édition), à défaut ce que base/status dit des sources que le lanceur télécharge, sinon « non lu ». */
 export function downloadTick(id, item, z) {
@@ -335,26 +418,6 @@ function builtDetail(z) {
   }) : '', z?.builtCycle && S.airac ? tt(T.cycleOf, {
     c: M.cycleName(S.airac, z.builtCycle)
   }) : ''].filter(Boolean).join(' · ');
-}
-/** La coche « construit » du PAYS (un fait du pays, dite une fois en tête de la fiche, jamais sous chaque source) : à jour, la date et le cycle de sa construction ; sinon pourquoi pas, puis la dernière construction. */
-function buildTick(id, z) {
-  const T = TX.cw;
-  if (!z) return tickHtml('build', 'na', tt(T.dlUnread));
-  const last = builtDetail(z);
-  if (z.state === 'up-to-date') return tickHtml('build', 'yes', last || '—');
-  return tickHtml('build', z.state === 'failed' ? 'no' : 'todo', tt(T.buildNot, {
-    r: zoneReasons(id)[0] || tt(TX.zst[z.state])
-  }) + (last ? ` · ${tt(T.buildLast, { b: last })}` : ''));
-}
-/** La coche « publié » : seulement quand le lanceur le dit (publié, pas encore envoyé) ; un état inconnu ne dit rien. */
-function publishTick(z) {
-  const p = z?.publish;
-  if (!p || p.state === 'unknown') return '';
-  if (z.state !== 'up-to-date') return tickHtml('publish', 'na', tt(TX.zx
-    .pubWaitBuild)); // un pays pas construit ne peut pas être publié : pas encore possible
-  return p.state === 'published' ? tickHtml('publish', 'yes', p.at ? tt(TX.cw.on, {
-    d: dateOf(p.at)
-  }) : '—') : tickHtml('publish', 'todo', tt(TX.cw.pubNo));
 }
 /** La lecture de la liste du cycle pour la fiche ouverte : { state ('loading' | 'ready' | 'busy' | 'unread' | 'none'), data, zv (la vue par zone du lanceur, K182) } ; la lecture d'un autre pays n'est pas la sienne. */
 function cycleOf(id) {
@@ -464,6 +527,12 @@ function computedHtml(name, item, z, loc) {
   const at = item?.download?.at || loc?.at || z?.builtAt || '';
   return `<p class="f-muted" data-computed-fact>${esc(at ? tt(TX.zx.computed, { s: name, d: dateOf(at) }) : tt(TX.zx.computedHere, { s: name }))}</p>`;
 }
+/** « Pourquoi à la main » : seulement ce que le catalogue en dit (`steps.why`, une phrase par langue) ; '' sans — jamais un texte inventé. */
+function handWhyHtml(id) {
+  const w = filesOf(id, null).steps?.why,
+    t = Array.isArray(w) ? String(w[li()] ?? w[0] ?? '').replace(/[\p{Cc}]/gu, ' ').trim().slice(0, 400) : '';
+  return t ? `<p class="d-why" data-hand-why><b class="d-cl">${esc(tt(TX.d4.whyHand))}</b> ${esc(t)}</p>` : '';
+}
 /** Une source du pays : son nom, son régime, sa coche « téléchargé » (dans la couverture seulement ; « construit » et « publié » sont des faits du PAYS, en tête de la fiche) et, pour un fichier pris à la main, l'inventaire puis ses gestes. */
 function sourceHtml(id, zone, z, inCov, msg) {
   const cy = cycleOf(zone),
@@ -477,7 +546,7 @@ function sourceHtml(id, zone, z, inCov, msg) {
     tone = ds === 'done' ? 'ok' : ds === 'failed' ? 'err' : !ds || ds === 'n/a' || ds === 'unavailable' ? 'muted' :
     'warn'; // la couleur du bord gauche du bloc : l'état de CETTE source
   return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="${tone}"${reg ? ` data-regime="${reg}"` : ''}><div class="d-srch"><h4>${esc(name)}</h4>${reg ? `<p class="f-muted d-regbadge" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}</div>
-    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${reg === 'hand' ? inventoryHtml(id, item, cy) : ''}</section>`;
+    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${reg === 'hand' ? handWhyHtml(id) + inventoryHtml(id, item, cy) : ''}</section>`;
 }
 /** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
  *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
@@ -578,12 +647,13 @@ function sheetHtml() {
   const gp = packList().find(x => x.pack.zones.includes(id))?.pack,
     sub = [id.toUpperCase(), gp ? tt(TX.d2.subGroup, {
       g: gp.names[li()] || gp.names[0]
-    }) : ''].filter(Boolean).join(' \u00b7 '),
+    }) : '', partsText(id)].filter(Boolean).join(' \u00b7 '),
+    facts = inCov ? [buildFact(id, z), publishFact(z)].filter(Boolean) : [],
     tn = tone(id),
     gest = hands.map(s => handHtml(s, id, z, split.find(x => x.id === s)?.item, cy, s === msgSrc)).join('');
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">
     <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(tn)}" data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, tn) || ''}</b> ${esc(word(tn))}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
-    ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div><ul class="d-ticks d-facts d-cells" data-sheet-facts>${buildTick(id, z)}${publishTick(z)}</ul></div>` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
+    ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div><ul class="d-ticks d-facts d-cells" data-sheet-facts>${facts.map(f => f.li).join('')}</ul></div>${facts.some(f => f.note) ? `<div class="d-cellnotes" data-cell-notes>${facts.map(f => f.note).join('')}</div>` : ''}` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
     ${S.cw.proc?.state === 'ready' ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
     ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
     ${inCov ? '' : addHtml(id, cy)}
@@ -645,6 +715,9 @@ export function closeSheet() {
 /** Ouvre le paquet touché et ferme les autres (un seul à la fois) ; le même touché le referme. */
 export function toggleGroup(id) {
   S.cw.grp = S.cw.grp === id ? null : id;
+  S.cw.world = false; // le groupe ouvert cadre la carte, sa fermeture la rend à la couverture
+  S.cw.home = false;
+  S.cw.view = null;
   renderBuild();
 }
 /** Le « ? » de la légende : la seconde ligne (hachure, bordure, pointillé) se montre ou se cache. */
@@ -938,18 +1011,18 @@ export const CW_STYLE = `
 /* l'en-tête du cycle : le titre, sa barre, la phrase d'état en légende, le bouton et, à côté, ce qu'il fait (la forme de la maquette validée, lot D2) */
 [data-module="data"] [data-data-head]{border:0;background:none;box-shadow:none;padding:0;margin:0 0 6px}
 [data-module="data"] [data-data-head] p{margin:2px 0}
-[data-module="data"] .d-title{margin:10px 0 8px;font-size:1.25rem;font-weight:700;line-height:1.25}
+[data-module="data"] .d-title{margin:6px 0 6px;font-size:1.25rem;font-weight:700;line-height:1.25}
 [data-module="data"] .d-title-ok{color:var(--sog-ok)}
 [data-module="data"] .d-cbar{height:8px;background:var(--d-soft);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);overflow:hidden}
 [data-module="data"] .d-cbar>i{display:block;height:100%;background:var(--sog-ok)}
-[data-module="data"] .d-cap{margin:8px 0 4px;color:var(--sog-muted);font-size:var(--sog-size-s);line-height:1.4}
-[data-module="data"] .d-cap button{min-height:var(--sog-touch);padding:0 3px;border:0;background:none;color:var(--sog-link);text-decoration:underline;font:inherit}
+[data-module="data"] .d-cap{margin:6px 0 2px;color:var(--sog-muted);font-size:var(--sog-size-xs,.8rem);line-height:1.4}
+[data-module="data"] .d-cap button{min-height:var(--sog-touch);padding:0 2px;border:0;background:none;color:var(--sog-link);text-decoration:underline;font:inherit}
 [data-module="data"] .d-cap button[aria-expanded="true"]{font-weight:700;outline:0}
-[data-module="data"] .d-go{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin:8px 0}
+[data-module="data"] .d-go{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;margin:4px 0}
 [data-module="data"] .d-go>.d-verbs{margin:0}
 [data-module="data"] .d-go>[data-update-reason]{flex:1 1 100%;margin:0}
 [data-module="data"] .d-go [data-verb="update"]{min-width:230px;font-weight:600}
-[data-module="data"] .d-what{flex:1 1 260px;min-width:0}
+[data-module="data"] .d-what{flex:1 1 260px;min-width:0;font-size:.85rem}
 [data-module="data"] .d-what p{margin:2px 0}
 /* la page : une colonne ; en large, deux (la fiche d'un pays est une carte collante à droite, tout le reste à gauche) */
 [data-module="data"] .d-page{min-width:0}
@@ -966,7 +1039,7 @@ export const CW_STYLE = `
 [data-module="data"] .d-maplinks{display:inline-flex;flex-wrap:wrap;gap:0 12px}
 [data-module="data"] .d-maplinks .d-link{margin-left:0}
 [data-module="data"] .d-mapframe{position:relative;border:1px solid var(--sog-border);background:var(--d-sea);overflow:hidden}
-[data-module="data"] .d-wmap{display:block;width:100%;height:auto;max-height:clamp(170px,calc(100vh - 600px),330px);margin:0 auto;border:0;background:none;touch-action:pan-y;cursor:grab;user-select:none}
+[data-module="data"] .d-wmap{display:block;width:100%;height:auto;max-height:clamp(240px,calc(100vh - 480px),380px);margin:0 auto;border:0;background:none;touch-action:pan-y;cursor:grab;user-select:none}
 [data-module="data"] .d-zoom{flex:none;display:inline-flex;gap:4px}
 [data-module="data"] .d-zoom button{min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0;font-size:1.2rem;font-weight:700}
 [data-module="data"] .d-wz{stroke-width:1.1px;vector-effect:non-scaling-stroke;fill-opacity:.3;cursor:pointer;stroke:var(--sog-muted);fill:var(--sog-muted);outline:none}
@@ -989,12 +1062,14 @@ export const CW_STYLE = `
 [data-module="data"] .d-lgd .d-sw,[data-module="data"] [data-cw-legend-more] .d-sw{margin:0 4px 0 0;border-radius:50%;width:12px;height:12px}
 [data-module="data"] .d-lg{flex:none;min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0;border-radius:50%}
 [data-module="data"] [data-cw-legend-more]{margin:2px 0 0}
+/* la page suit SA largeur (celle de l'écran, que la barre ou le rail du cadre fait varier), pas celle de la fenêtre : requêtes de conteneur sur l'enveloppe de l'écran */
+[data-module="data"] [data-body]{container:data / inline-size}
 /* les groupes de pays : des cartes en deux colonnes ; le groupe ouvert, encadré de bleu sur toute la largeur, ses pays en tuiles */
 [data-module="data"] .d-groups{min-width:0}
 [data-module="data"] .d-gl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;border:0}
 [data-module="data"] .d-gp{min-width:0;border:1px solid var(--sog-border);background:var(--sog-surface);border-radius:var(--sog-radius-s)}
 [data-module="data"] .d-gp[data-open=true]{grid-column:1/-1;border:2px solid var(--sog-accent);background:var(--d-acc-bg)}
-[data-module="data"] .d-gh{display:flex;align-items:center;gap:8px;width:100%;min-height:52px;padding:7px 12px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+[data-module="data"] .d-gh{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:5px 12px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
 [data-module="data"] .d-gname{flex:1;min-width:0;display:grid;gap:1px;overflow-wrap:anywhere}
 [data-module="data"] .d-gtitle b{font-weight:700}
 [data-module="data"] .d-gcount{margin-left:6px}
@@ -1098,21 +1173,22 @@ export const CW_STYLE = `
 [data-module="data"] .d-cap button,[data-module="data"] .d-mapbar{min-height:32px}
 [data-module="data"] .d-lg,[data-module="data"] .d-zoom button{min-width:32px;min-height:32px}
 }
-@media (min-width:640px){
+@container data (min-width:640px){
 [data-module="data"] .d-gl{grid-template-columns:repeat(2,minmax(0,1fr))}
 [data-module="data"] .d-gc{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
-@media (min-width:900px){
+@container data (min-width:900px){
 [data-module="data"] .d-back{display:none}
 [data-module="data"] .d-x{display:inline-flex;align-items:center;justify-content:center}
 [data-module="data"] .d-page{display:grid;grid-template-columns:minmax(0,3fr) minmax(300px,2fr);column-gap:24px;row-gap:0;align-items:start}
 [data-module="data"] .d-page>[data-build],[data-module="data"] .d-cw,[data-module="data"] .d-cwtop{display:contents}
 [data-module="data"] .d-page>*,[data-module="data"] .d-page>[data-build]>*,[data-module="data"] .d-cw>*,[data-module="data"] .d-cwtop>*{grid-column:1;min-width:0}
-[data-module="data"] .d-page>[data-build]>*,[data-module="data"] .d-cw>*{margin-bottom:var(--sog-gap)}
+[data-module="data"] .d-page>[data-build]>*{margin-bottom:var(--sog-gap)}
+[data-module="data"] .d-cw>*{margin-bottom:calc(var(--sog-gap) / 2)}
 [data-module="data"] .d-cwtop>.d-sheet,[data-module="data"] .d-cwtop>.d-sheetph{display:flex;grid-column:2;grid-row:1/span 80;position:sticky;top:8px;align-self:start;margin:0;max-height:calc(100vh - 24px);overflow:auto}
 [data-module="data"] .d-cwtop>.d-sheetph{display:block}
 }
-@media (max-width:899px){
+@container data (max-width:899px){
 [data-module="data"] .d-sheet{position:fixed;inset:0;z-index:15;overflow:auto;overscroll-behavior:contain;padding:0 16px 24px;border:0;border-radius:0;background:var(--sog-bg,var(--sog-surface))}
 [data-module="data"] .d-wmap{max-height:min(40vh,300px)}
 }

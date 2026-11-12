@@ -545,7 +545,7 @@ export const TX = {
     sumTodo: ['{n} à faire', '{n} to do', '{n} zu tun', '{n} por hacer'],
     sumErr: ['{n} en échec', '{n} failed', '{n} fehlgeschlagen', '{n} fallidas'],
     sumNone: ['{n} sans état', '{n} without a state', '{n} ohne Zustand', '{n} sin estado'],
-    sumOut: ['{n} hors de votre couverture', '{n} outside your coverage', '{n} außerhalb Ihrer Abdeckung', '{n} fuera de su cobertura'],
+    sumOut: ['{n} hors couverture', '{n} not covered', '{n} nicht abgedeckt', '{n} sin cobertura'],
     sumNoCov: ['aucun pays dans votre couverture', 'no country in your coverage', 'kein Land in Ihrer Abdeckung',
       'ningún país en su cobertura'
     ],
@@ -2602,18 +2602,52 @@ export const TX = {
   d3: {
     // « Quand ça change » : une source calculée sur ce poste (MORA, X-Plane…) dit sa date et pour combien de pays
     changeComputed: ['calculée le {d}', 'computed on {d}', 'berechnet am {d}', 'calculada el {d}'],
-    changeZones: ['pour {z}', 'for {z}', 'für {z}', 'para {z}'],
-    // la carte « Tout mettre à jour » des jeux (la chaîne), distincte du bouton de la base au-dessus
-    allSetsTitle: ['Tout mettre à jour · tous les jeux', 'Update all · every data set', 'Alles aktualisieren · alle Datensätze',
-      'Actualizar todo · todos los conjuntos'
+    changeZones: ['pour {z}', 'for {z}', 'für {z}', 'para {z}']
+  },
+  // lot D4 (SOG-0262) : le bas de la page en plis d'une ligne, « Tout mettre à jour » unique en tête, la sélection de pays sur la carte, la fiche d'un pays
+  d4: {
+    // « Tout mettre à jour (n) » : ce que la chaîne lance et ce qu'elle laisse
+    setOk: ['à jour', 'up to date', 'aktuell', 'al día'],
+    doSets: ['mettre à jour {s}', 'update {s}', '{s} aktualisieren', 'actualizar {s}'],
+    doPublish: ['publier une seule fois à la fin', 'publish once at the end', 'am Ende einmal veröffentlichen',
+      'publicar una sola vez al final'
     ],
-    allSetsButton: ['Tout mettre à jour · tous les jeux ({n})', 'Update all · every data set ({n})',
-      'Alles aktualisieren · alle Datensätze ({n})', 'Actualizar todo · todos los conjuntos ({n})'
+    baseOnly: ['Seulement la base ({n})', 'The base only ({n})', 'Nur die Basis ({n})', 'Solo la base ({n})'],
+    // les plis des autres jeux : leur état en un mot
+    stOk: ['à jour', 'up to date', 'aktuell', 'al día'],
+    stTodo: ['{n} à faire', '{n} to do', '{n} zu tun', '{n} por hacer'],
+    stUnknown: ['état inconnu', 'state unknown', 'Zustand unbekannt', 'estado desconocido'],
+    foldVfr: ['Points VFR', 'VFR points', 'VFR-Punkte', 'Puntos VFR'],
+    foldSources: ['Sources de données', 'Data sources', 'Datenquellen', 'Fuentes de datos'],
+    // la sélection de pays sur la carte
+    selHelp: ['Maj + clic ou rectangle (deux doigts posés une demi-seconde) : choisir plusieurs pays',
+      'Shift + click or rectangle (two fingers held half a second): pick several countries',
+      'Umschalt + Klick oder Rechteck (zwei Finger eine halbe Sekunde halten): mehrere Länder wählen',
+      'Mayús + clic o rectángulo (dos dedos una medio segundo): elegir varios países'
     ],
-    allSetsCaption: ['Fait aussi les procédures, les aéronefs et les points VFR, en plus de la base.',
-      'Also does the procedures, the aircraft and the VFR points, besides the base.',
-      'Aktualisiert auch die Verfahren, die Luftfahrzeuge und die VFR-Punkte, zusätzlich zur Basis.',
-      'Hace también los procedimientos, las aeronaves y los puntos VFR, además de la base.'
-    ]
+    selLabel: ['Pays choisis sur la carte', 'Countries picked on the map', 'Auf der Karte gewählte Länder', 'Países elegidos en el mapa'],
+    selAdd: ['Ajouter à ma couverture ({n})', 'Add to my coverage ({n})', 'Zu meiner Abdeckung hinzufügen ({n})',
+      'Añadir a mi cobertura ({n})'
+    ],
+    selUpdate: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
+    selCancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+    selAddNote: ['Ajouter ne télécharge rien : les pays passent parmi ceux à faire.',
+      'Adding downloads nothing: the countries move to those to do.',
+      'Hinzufügen lädt nichts herunter: die Länder kommen zu denen, die zu tun sind.',
+      'Añadir no descarga nada: los países pasan a los que hay que hacer.'
+    ],
+    selUpdateNote: ['« Mettre à jour » fait : {l}.', '“Update” does: {l}.', '„Aktualisieren“ tut: {l}.', '«Actualizar» hace: {l}.'],
+    selUpdateNone: ['« Mettre à jour » vérifie ces pays : rien à télécharger ni à reconstruire pour l’instant.',
+      '“Update” checks these countries: nothing to download or rebuild for now.',
+      '„Aktualisieren“ prüft diese Länder: vorerst nichts herunterzuladen oder neu zu bauen.',
+      '«Actualizar» revisa estos países: nada que descargar ni reconstruir por ahora.'
+    ],
+    selAdded: ['{n} ajouté(s) à votre couverture.', '{n} added to your coverage.', '{n} zu Ihrer Abdeckung hinzugefügt.',
+      '{n} añadido(s) a su cobertura.'
+    ],
+    // la fiche d'un pays
+    cellOk: ['à jour', 'up to date', 'aktuell', 'al día'],
+    subZones: ['{n} zones : {z}', '{n} zones: {z}', '{n} Zonen: {z}', '{n} zonas: {z}'],
+    whyHand: ['Pourquoi à la main', 'Why by hand', 'Warum von Hand', 'Por qué a mano']
   }
 };

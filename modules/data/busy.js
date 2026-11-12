@@ -47,12 +47,13 @@ function aliveText(r) {
     t
   }) : '';
 }
-/** Où un geste a été fait : 'sheet' (la fiche d'un pays), 'group' (le corps d'un paquet), 'todo' (le bloc « À faire ce mois-ci »), 'chain' (la carte « Tout mettre à jour »), 'publish' (le panneau « Publier »), 'later' (les blocs « Quand ça change »), sinon 'head' (la barre d'état). */
+/** Où un geste a été fait : 'sheet' (la fiche d'un pays), 'group' (le corps d'un paquet), 'todo' (le bloc « À faire ce mois-ci »), 'chain' (le bouton « Tout mettre à jour » de l'en-tête et sa marche ; le lien « la base seule » reste à la barre d'état), 'publish' (le panneau « Publier »), 'later' (les blocs « Quand ça change »), sinon 'head' (la barre d'état). */
 export function placeOf(el) {
   const at = el?.closest;
   if (!at) return 'head';
   return el.closest('[data-sheet]') ? 'sheet' : el.closest('[data-group-body]') ? 'group' : el.closest('[data-todo]') ? 'todo' : el.closest(
-    '[data-update-all]') ? 'chain' : el.closest('[data-publish]') ? 'publish' : el.closest('[data-later-blocks]') ? 'later' : 'head';
+    '[data-update-all]') && !el.closest('[data-base-only]') ? 'chain' : el.closest('[data-publish]') ? 'publish' : el.closest(
+    '[data-later-blocks]') ? 'later' : 'head';
 }
 /** Un geste commence (un bouton touché) : l'endroit où il a été fait (S.at) et son numéro (S.gid : le fil de chaque pays de l'opération est celui du dernier geste). */
 export function startGesture(el) {

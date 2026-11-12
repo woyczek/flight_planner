@@ -33,6 +33,32 @@ export function pathOf(rings, box) {
   const [w, s, e, n] = box;
   return `M${num(w)},${num(-mercY(n))}L${num(e)},${num(-mercY(n))}L${num(e)},${num(-mercY(s))}L${num(w)},${num(-mercY(s))}Z`;
 }
+/** Le cadre [ouest, sud, est, nord] d'un pays SANS son outre-mer ni ses îles lointaines : celui du plus grand anneau, élargi aux anneaux qui le touchent à `gap` degrés près (de proche en proche : la Corse, la Sicile, les îles grecques en font partie ; les Açores, les Canaries, la Guyane, le Svalbard non). Sans anneau lisible, `box`. */
+export function mainBox(rings, box, gap = 3) {
+  const bb = (Array.isArray(rings) ? rings : []).map(r => {
+    const pts = (Array.isArray(r) ? r : []).filter(p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    return pts.length > 2 ? [Math.min(...pts.map(p => p[0])), Math.min(...pts.map(p => p[1])), Math.max(...pts.map(p => p[0])), Math
+      .max(...pts.map(p => p[1]))
+    ] : null;
+  }).filter(Boolean);
+  if (!bb.length) return box;
+  const area = b => (b[2] - b[0]) * (b[3] - b[1]);
+  let cur = [...bb.sort((a, b) => area(b) - area(a))][0].slice(),
+    grown = true;
+  const left = bb.slice(1);
+  while (grown) {
+    grown = false;
+    for (let i = left.length - 1; i >= 0; i--) {
+      const b = left[i];
+      if (b[0] <= cur[2] + gap && b[2] >= cur[0] - gap && b[1] <= cur[3] + gap && b[3] >= cur[1] - gap) {
+        cur = [Math.min(cur[0], b[0]), Math.min(cur[1], b[1]), Math.max(cur[2], b[2]), Math.max(cur[3], b[3])];
+        left.splice(i, 1);
+        grown = true;
+      }
+    }
+  }
+  return cur;
+}
 /** Le cadre de la vue [x, y, largeur, hauteur] (unités du chemin) qui contient des cadres [ouest, sud, est, nord] avec une marge (8 % de chaque côté, 6° au moins) ; null sans cadre lisible. */
 export function frameOf(boxes) {
   const ok = (boxes || []).filter(b => Array.isArray(b) && b.length === 4 && b.every(Number.isFinite));

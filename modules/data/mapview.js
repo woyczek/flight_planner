@@ -15,6 +15,14 @@ import {
 import {
   renderBuild
 } from './panels.js';
+import {
+  holdEnd,
+  holdMove,
+  holdStart,
+  rectMouseDown,
+  rectMouseMove,
+  rectMouseUp
+} from './select.js';
 
 /** Un cadre lu dans un attribut « x y l h » du SVG ; null sans cadre lisible. */
 function boxAttr(svg, name) {
@@ -86,12 +94,14 @@ export function mapZoomButton(dir) {
 /** « Voir le monde entier » : le cadre du monde (sans zoom gardé). */
 export function mapWorld() {
   S.cw.world = true;
+  S.cw.home = false;
   S.cw.view = null;
   renderBuild();
 }
 /** « Recentrer sur ma couverture » : le cadre de départ de la couverture. */
 export function mapHome() {
   S.cw.world = false;
+  S.cw.home = true;
   S.cw.view = null;
   renderBuild();
 }
@@ -107,6 +117,7 @@ const DRAG = 5; // pixels de la fenêtre au-delà desquels un appui devient un g
 export function mapDown(e) {
   const m = mapOf(e.target);
   if (!m || !S.cw || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  if (rectMouseDown(e, m.svg)) return; // Maj + glisser : le rectangle de sélection (select.js), pas le déplacement de la carte
   const g = S.cw.mapG ||= {
     pts: new Map(),
     moved: false
@@ -121,6 +132,7 @@ export function mapDown(e) {
   if (g.pts.size === 2) {
     g.moved = true;
     g.last = pinchOf(g);
+    if (e.pointerType === 'touch') holdStart(g); // deux doigts immobiles une demi-seconde : le rectangle de sélection (select.js)
   }
 }
 /** Le centre et l'écart des deux premiers doigts. */
@@ -134,6 +146,7 @@ function pinchOf(g) {
 }
 /** Un mouvement : un doigt déplace la vue (au-delà du seuil), deux doigts zooment autour de leur centre et la déplacent avec lui. */
 export function mapMove(e) {
+  if (rectMouseMove(e)) return;
   const g = S?.cw?.mapG;
   if (!g || !g.pts.has(e.pointerId) || !g.svg?.isConnected) return;
   const p = g.pts.get(e.pointerId),
@@ -144,6 +157,10 @@ export function mapMove(e) {
   p.x = e.clientX;
   p.y = e.clientY;
   if (g.pts.size >= 2) {
+    if (holdMove(g)) {
+      e.preventDefault(); // le rectangle suit les deux doigts : ni déplacement ni pincement
+      return;
+    }
     const now = pinchOf(g),
       last = g.last || now,
       at = toUnits(m.svg, now.cx, now.cy);
@@ -173,8 +190,10 @@ export function mapMove(e) {
 }
 /** Un relâchement ou une annulation : le geste finit ; après un glisser, le toucher qui suit est avalé un instant. */
 export function mapUp(e) {
+  if (rectMouseUp(e)) return;
   const g = S?.cw?.mapG;
   if (!g || !g.pts.has(e.pointerId)) return;
+  holdEnd(g, e.type === 'pointerup');
   g.pts.delete(e.pointerId);
   g.last = null;
   if (g.pts.size === 0) {

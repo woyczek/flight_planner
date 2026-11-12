@@ -86,6 +86,13 @@ import {
   startUpdate
 } from './update.js';
 import {
+  clearSel,
+  hasSel,
+  selAdd,
+  selUpdate,
+  toggleSel
+} from './select.js';
+import {
   answerRoute,
   routeInit,
   startRoute
@@ -151,7 +158,7 @@ export const meta = {
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
     'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'zipmember.js', 'model_mapview.js', 'mapview.js',
     'model_thread.js',
-    'zoneop.js',
+    'zoneop.js', 'select.js',
     '../../frame/lib/plural.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
@@ -172,11 +179,13 @@ function onAerodbChange(e) {
   S.again = setTimeout(async () => {
     const me = S;
     const byState = await ask('coverageByState');
-    const box = me === S && S.body?.querySelector('[data-states-box]');
-    if (!box || !S.d) return;
-    const open = box.querySelector('[data-more]')?.open;
+    if (me !== S || !S.d) return;
+    const box = S.body?.querySelector(
+      '[data-states-box]'
+    ); // (la carte « Couverture » n'existe plus : la liste des États n'a plus de boîte, seuls les États du panneau des procédures se redessinent)
+    const open = box?.querySelector('[data-more]')?.open;
     S.d.byState = byState;
-    keepScroll(S.body, () => {
+    if (box) keepScroll(S.body, () => {
       box.innerHTML = statesHtml();
       if (open) box.querySelector('[data-more]')?.setAttribute('open', '');
     });
@@ -217,9 +226,17 @@ function onClick(e) {
     const p = (S.d?.packs || []).find(x => x.id === up.dataset.pack);
     return up.disabled || !p ? undefined : startUpdate(M.packState(p, S.d.zones, S.d.cov.ids).inCoverage);
   }
+  const sb = e.target.closest?.(
+    '[data-act="sel-add"], [data-act="sel-update"], [data-act="sel-cancel"]'); // le bandeau de la sélection de pays (select.js)
+  if (sb) {
+    if (sb.disabled) return;
+    startGesture(sb);
+    return sb.dataset.act === 'sel-add' ? selAdd() : sb.dataset.act === 'sel-update' ? selUpdate() : clearSel();
+  }
   const oc = e.target.closest?.(
     '[data-act="open-country"]'); // un pays de la carte, d'un paquet ou de la liste de la phrase d'état : sa fiche (SOG-0262)
-  if (oc) return openCountry(oc);
+  if (oc) return e.shiftKey && oc.closest('[data-wmap]') ? toggleSel(oc.dataset.zone) : openCountry(
+    oc); // Maj + clic sur la carte : le pays est choisi (un clic simple ouvre toujours la fiche)
   const su = e.target.closest?.(
     '[data-act="sheet-update"]'
   ); // « Mettre à jour ce pays » : le même chemin que le bouton d'un paquet, pour ce pays seul (SOG-0262, lot B)
@@ -312,8 +329,9 @@ function onZoneOut(e) {
   const z = zoneEl(e);
   if (z && !z.contains(e.relatedTarget)) hoverZone('');
 }
-/** « Échap » referme la fiche d'un pays. */
+/** « Échap » vide la sélection de pays de la carte, puis referme la fiche d'un pays. */
 function onKey(e) {
+  if (e.key === 'Escape' && hasSel() && !e.defaultPrevented) return clearSel(); // d'abord la sélection de pays, ensuite la fiche
   if (e.key === 'Escape' && S?.cw?.sheet && !e.defaultPrevented) closeSheet();
 }
 /** La rangée de paquet sous le pointeur (avec ses zones), ou null. */
@@ -426,7 +444,8 @@ function onToggle(e) {
 /** Identifiant du groupe dont l'aide s'ouvre : le dernier touché s'il est encore ouvert, sinon le premier ouvert ; '' sans. */
 function helpGroup() {
   const g = S?.body?.querySelector(`details.f-group[data-group="${S.focus}"][open]`) || S?.body?.querySelector('details.f-group[open]');
-  return g?.dataset.group || '';
+  const id = g?.dataset.group || '';
+  return id === 'vfr' || id === 'sources' ? 'base' : id; // les points VFR et les sources sont des plis du chapitre de la base
 }
 /** Monte l'écran dans el : le titre, les écouteurs, le « ? » de l'aide, puis la lecture et le dessin. */
 export async function mount(el, ctx) {

@@ -65,7 +65,8 @@ import {
 } from './publish.js';
 import {
   chainName,
-  updateAllHtml
+  rowsState,
+  setStateOf
 } from './chain.js';
 import {
   inventoryHtml
@@ -154,7 +155,7 @@ export const STYLE = `
 [data-module="data"] .d-zup{grid-column:1/-1;margin:0 0 4px 28px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
 [data-module="data"] .d-zup progress{width:min(100%,220px)}
 [data-module="data"] .d-zup button{min-height:var(--sog-touch)}
-[data-module="data"] .d-statehead{margin:4px 0 12px}
+[data-module="data"] .d-statehead{margin:4px 0 4px}
 [data-module="data"] .d-statehead [data-state-sentence]{margin:0 0 4px;line-height:1.3}
 [data-module="data"] .d-statehead [data-filter]{min-height:var(--sog-touch);padding:0 8px;margin:2px 0}
 [data-module="data"] .d-statehead [data-filter][aria-expanded="true"]{font-weight:600;outline:2px solid var(--sog-accent);outline-offset:-2px}
@@ -214,7 +215,7 @@ export const STYLE = `
 [data-module="data"] .f-status-dot[data-attn]{display:inline-block;vertical-align:middle;margin-left:6px}
 [data-module="data"] .d-map{margin:6px 0}
 [data-module="data"] .d-map-host{position:relative;height:45vh;min-height:260px;border:1px solid var(--sog-line,var(--sog-muted));background:var(--sog-surface)}
-[data-module="data"] .d-rect{position:absolute;box-sizing:border-box;border:2px dashed var(--sog-accent,currentColor);background:color-mix(in srgb,var(--sog-accent,#08c) 18%,transparent);pointer-events:none;z-index:6}
+[data-module="data"] .d-rect{position:absolute;box-sizing:border-box;border:2px dashed var(--sog-accent,currentColor);background:color-mix(in srgb,var(--sog-accent) 18%,transparent);pointer-events:none;z-index:6}
 [data-module="data"] .d-rect-count{position:absolute;left:0;top:0;padding:2px 8px;background:var(--sog-surface);color:var(--sog-text,inherit);border:1px solid var(--sog-line,currentColor);font-weight:700;white-space:nowrap}
 [data-module="data"] .d-map-row{margin:6px 0}
 [data-module="data"] .d-map-row button{min-height:var(--sog-touch);min-width:44px}
@@ -232,6 +233,35 @@ export const STYLE = `
 [data-module="data"] .d-ops li{overflow-wrap:anywhere}
 /* l'ordre vu de l'écran (la maquette validée, lot D2) : le cycle, puis la base (la carte, les groupes, « Publier »), puis la couverture, « Tout mettre à jour » et les autres jeux ; le code suit le même ordre (lot D3 : la tabulation du clavier aussi, plus de propriété CSS « order ») */
 [data-module="data"] [data-body]{display:flex;flex-direction:column;min-width:0}
+/* lot D4 : l'en-tête en une ligne, « Tout mettre à jour » et sa phrase, les autres jeux en plis d'une ligne, la sélection de pays sur la carte, les phrases longues de la fiche (que des jetons du cadre, aucune couleur écrite en dur) */
+[data-module="data"] [data-world-map]>.d-sh{margin:4px 0 2px}
+[data-module="data"] .d-groups>.d-sh{margin:2px 0 4px;padding-bottom:3px}
+[data-module="data"] .d-headline{margin:0;font-size:var(--sog-size-s);line-height:1.4}
+[data-module="data"] [data-data-head]{margin:0 0 2px}
+[data-module="data"] .d-all{min-width:0}
+[data-module="data"] .d-baseonly{margin:2px 0 0}
+[data-module="data"] .d-baseonly .d-link{margin-left:0;padding:0}
+[data-module="data"] details.f-group.d-fold{border:1px solid var(--sog-border);background:var(--sog-surface);padding:0 12px;margin:10px 0 0;min-width:0}
+[data-module="data"] details.d-fold>summary{min-height:var(--sog-touch);display:flex;align-items:center;gap:8px;cursor:pointer;font-size:1em;font-weight:600}
+[data-module="data"] details.d-fold>summary>span:first-child{flex:0 1 auto}
+[data-module="data"] details.d-fold>summary>.d-fstate{flex:1;font-weight:400;color:var(--sog-muted)}
+[data-module="data"] details.d-fold>summary>.d-fstate[data-fold-state=ok]{color:var(--sog-ok)}
+[data-module="data"] details.d-fold>summary>.d-fstate[data-fold-state=todo]{color:var(--sog-warn);font-weight:600}
+[data-module="data"] details.d-fold>summary>.d-chev{margin-left:auto;flex:none}
+[data-module="data"] details.d-fold[open]>summary{border-bottom:1px solid var(--sog-border);margin-bottom:8px}
+[data-module="data"] details.d-fold[open]>summary>.d-chev{transform:rotate(180deg)}
+[data-module="data"] details.d-fold>[data-set-panel],[data-module="data"] details.d-fold>.f-card{margin-bottom:var(--sog-gap)}
+[data-module="data"] .d-gp[data-nocov]{opacity:.6}
+[data-module="data"] .d-wz[data-sel]{stroke:var(--sog-text,currentColor);stroke-width:3px;stroke-dasharray:6 3;fill-opacity:.55}
+[data-module="data"] .d-selbar{margin:8px 0 0;padding:8px 10px;border:1px solid var(--sog-border);border-left:5px solid var(--sog-accent);background:var(--d-acc-bg)}
+[data-module="data"] .d-selbar p{margin:2px 0}
+[data-module="data"] .d-selbar .d-verbs{margin:6px 0 2px}
+[data-module="data"] .d-selbar button{min-height:var(--sog-touch)}
+[data-module="data"] .d-cellnotes{margin:0 0 6px}
+[data-module="data"] .d-cellnote{margin:3px 0;font-size:.85rem;color:var(--sog-fg);overflow-wrap:anywhere}
+[data-module="data"] .d-cellnote b{font-size:.7rem;font-weight:400;letter-spacing:.03em;text-transform:uppercase;color:var(--sog-muted)}
+[data-module="data"] .d-why{margin:4px 0 6px;font-size:.85rem;overflow-wrap:anywhere}
+[data-module="data"] .d-why b{display:block;font-size:.7rem;font-weight:400;letter-spacing:.03em;text-transform:uppercase;color:var(--sog-muted)}
 `;
 /** Les opérations que le lanceur connaît (GET regen/verbs), lues une fois au montage : M.knownVerbs de sa réponse ; sans lanceur, sans réponse, sur
  *  un 404 ou un refus : celles d'un lanceur ancien (base/fetch, base/build, base/purge). Ne lève jamais. */
@@ -331,20 +361,18 @@ function render() {
   attachMaps(); // les panneaux sont neufs : les cartes MapLibre reprennent la place de leur emplacement
   afterDraw(); // les procédures par pays (la hachure) et, fiche ouverte, la liste du cycle : lues une fois
 }
-/** En-tête : le cycle AIRAC en vigueur avec ses dates et le prochain, puis le lanceur du poste. */
+/** En-tête, UNE ligne : le cycle AIRAC en vigueur avec ses dates et le prochain, puis le lanceur du poste (la maquette n'a qu'un titre et sa barre ; ces trois lignes doublaient l'en-tête, elles tiennent en une). */
 function headHtml() {
   const info = S.ctx.launcher?.info?.() || null,
-    runner = `<p class="f-muted" data-runner="${info ? 'launcher' : 'none'}">${esc(tt(info ? TX.runnerLauncher : TX.runnerNone))}</p>`;
-  if (!S.airac) return `<section class="f-card" data-data-head><p class="f-warn" data-error="catalogue">${esc(tt(TX.headError))}</p>${runner}</section>`;
+    runner = `<span class="f-muted" data-runner="${info ? 'launcher' : 'none'}">${esc(tt(info ? TX.runnerLauncher : TX.runnerNone))}</span>`;
+  if (!S.airac) return `<section class="f-card" data-data-head><p class="f-warn" data-error="catalogue">${esc(tt(TX.headError))}</p><p>${runner}</p></section>`;
   const h = M.cycleHead(S.airac, S.now),
     next = tt(h.daysToNext === 1 ? TX.nextOne : TX.nextMany, {
       c: h.next.id,
       n: h.daysToNext
     });
-  return `<section class="f-card" data-data-head>
-    <p><span class="f-muted">${esc(tt(TX.cycleNow))}</span> <b data-cycle-now>${esc(h.id)}</b></p>
-    <p class="f-muted" data-cycle-dates>${esc(tt(TX.cycleDates, { a: M.dateText(h.date, lang()), b: M.dateText(h.end, lang()) }))} · ${esc(next)}</p>
-    ${runner}</section>`;
+  return `<section class="f-card" data-data-head><p class="d-headline"><span class="f-muted">${esc(tt(TX.cycleNow))}</span> <b data-cycle-now>${esc(h.id)}</b>
+    <span class="f-muted" data-cycle-dates>${esc(tt(TX.cycleDates, { a: M.dateText(h.date, lang()), b: M.dateText(h.end, lang()) }))} · ${esc(next)}</span> <span class="f-muted">·</span> ${runner}</p></section>`;
 }
 /** Une ligne de la liste des États : le point de couleur (jamais la couleur seule : le libellé suit), le motif et les États. */
 function stateLineHtml(l) {
@@ -367,33 +395,6 @@ export function statesHtml() {
   return `<ul class="d-states" data-states>${visible.map(stateLineHtml).join('')}</ul>
       ${more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreStates, { n: more.length }))}</summary><ul class="d-states">${more.map(stateLineHtml).join('')}</ul></details>` : ''}
       <p class="f-muted" data-legend>${esc(tt(TX.legend))}</p>`;
-}
-/** Couverture : la ligne des zones, puis les États par couleur et motif. */
-function coverageHtml() {
-  const {
-    zones,
-    cov
-  } = S.d,
-    names = M.orderZones(cov.ids, zones).map(id => M.zoneName(zones, id, li())),
-    err = zones ? '' : `<p class="f-warn" data-error="zones">${esc(tt(TX.zonesError))}</p>`;
-  return `<section class="f-card" data-coverage><h2>${esc(tt(TX.coverage))}</h2>${err}
-    <p data-zones>${esc(cov.ids.length ? tt(TX.coverageZones, { z: names.join(', ') }) : tt(TX.coverageNone))}</p>
-    ${addZoneHtml()}
-    <h3>${esc(tt(TX.states))}</h3><div data-states-box>${statesHtml()}</div></section>`;
-}
-/** « Ajouter un pays » : les zones que la suite connaît (zones() d'aerodb, dans l'ordre de leur nom français) hors de la couverture ;
- *  rien sans la liste des zones ou pendant une construction. Choisir une zone l'ajoute aussitôt (addZone). */
-function addZoneHtml() {
-  const {
-    zones,
-    cov
-  } = S.d;
-  if (!zones) return '';
-  const have = new Set(cov.ids),
-    rest = zones.filter(z => !have.has(z.id));
-  if (!rest.length) return '';
-  return `<p><label>${esc(tt(TX.addZone))} <select data-add-zone${frozen() ? ' disabled' : ''}><option value="">${esc(tt(TX.addZonePick))}</option>
-    ${rest.map(z => `<option value="${esc(z.id)}">${esc(M.zoneName(zones, z.id, li()))}</option>`).join('')}</select></label></p>`;
 }
 /** À l'ouverture, avec un lanceur sur ce poste : la coche reflète SON fichier (GET personal : { certified, at }), pas le cache de la page. Une seule fois, si le lanceur n'a pas de fichier
  *  (certified:false sans `at`) et que le cache de la page est déjà coché : POST { certified: true, migrated: true } (409 'exists' : on ne réessaie pas). Sans lanceur, d'un lanceur plus ancien
@@ -559,29 +560,48 @@ function rowHtml(r) {
   return `<details class="f-card" data-set="${esc(r.id)}" data-status="used"${r.state ? ` data-state="${esc(r.state)}"` : ''} data-cycle="${esc(r.cycle)}">
     <summary><span class="d-sum"><b>${name}</b><span class="f-muted">${esc(metaText(r))}</span></span>${pill}</summary>${detailHtml(r, src)}</details>`;
 }
-/** Les quatre groupes : repliés sauf ceux qui portent une ligne à regarder ; sept lignes visibles au plus, le reste (et les jeux
- *  envisagés ou écartés) sous « n autres jeux ». Rend { base (le groupe de la base, que l'écran montre juste sous l'en-tête), rest (l'erreur éventuelle, puis les autres groupes) } : le code suit l'ordre vu de l'écran, le clavier aussi (SOG-0262, lot D3). */
+/** Le mot d'état d'un pli : « à jour », « n à faire », « état inconnu » ; '' quand rien n'est suivi. */
+function foldWord(st) {
+  return st.k === 'ok' ? tt(TX.d4.stOk) : st.k === 'todo' ? tt(TX.d4.stTodo, {
+    n: st.n
+  }) : st.k === 'unknown' ? tt(TX.d4.stUnknown) : '';
+}
+/** Les autres jeux de l'écran : UNE ligne repliée chacun, avec son état (« Procédures · à jour », « Aéronefs · 1 à faire »…) ; rien n'est ouvert d'origine, l'ouverture à la main est gardée. Ouvert, le pli montre le panneau du jeu comme avant. Rend { base (le bloc de la base, que l'écran montre juste sous l'en-tête), rest (l'erreur éventuelle, puis les plis) } : le code suit l'ordre vu de l'écran, le clavier aussi (SOG-0262, lot D3). */
 function groupsHtml() {
   const {
     cat,
-    pub,
-    cov
+    pub
   } = S.d;
   if (!cat || !S.airac) return {
     base: '',
     rest: `<p class="f-warn" data-error="catalogue">${esc(tt(TX.catError))}</p>`
   };
-  const groups = S.groups,
-    one = g => {
-      const open = g.id in S.manual ? S.manual[g.id] : g.attention;
-      return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
-      ${panelsHtml(g.id)}
-      ${g.rows.map(rowHtml).join('') || (g.more.length || g.id === 'proc' || g.id === 'weather' ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}${g.id === 'proc' ? routeRowHtml() : g.id === 'weather' ? worldRowHtml() : ''}
-      ${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}</details>`;
-    };
+  const gid = id => S.groups.find(g => g.id === id),
+    rows = g => g ? [...g.rows, ...g.more] : [],
+    body = g => g ? `${g.rows.map(rowHtml).join('')}${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}` : '',
+    fold = (id, title, st, inner) => {
+      const open = id in S.manual ? S.manual[id] : false,
+        word = foldWord(st);
+      return `<details class="f-group d-fold" data-group="${id}"${open ? ' open' : ''}><summary><span>${esc(title)}</span>${word ? ` <span class="d-fstate" data-fold-state="${st.k}">${esc(word)}</span>` : ''}<i class="f-status-dot" data-attn${st.k === 'todo' ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i><i class="d-chev" aria-hidden="true"></i></summary>${inner}</details>`;
+    },
+    proc = gid('proc'),
+    air = gid('aircraft'),
+    wx = gid('weather'),
+    src = gid('base'),
+    srcRows = rows(src).filter(r => r.kind !== 'vfr');
+  const procBody = `${panelsHtml('proc')}${body(proc)}${routeRowHtml()}`,
+    airBody = `${panelsHtml('aircraft')}${body(air)}`,
+    wxBody = `${body(wx)}${worldRowHtml()}`,
+    srcBody = body(src) || `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`;
   return {
-    base: groups.filter(g => g.id === 'base').map(one).join(''),
-    rest: `${pub ? '' : `<p class="f-warn" data-error="publication">${esc(tt(TX.pubError))}</p>`}${groups.filter(g => g.id !== 'base').map(one).join('')}`
+    base: `<section class="d-basegroup" data-group="base">${panelsHtml('base')}</section>`,
+    rest: `${pub ? '' : `<p class="f-warn" data-error="publication">${esc(tt(TX.pubError))}</p>`}${S.d.zones ? '' : `<p class="f-warn" data-error="zones">${esc(tt(TX.zonesError))}</p>`}${S.d.byState ? '' : `<p class="f-warn" data-error="states">${esc(tt(TX.statesError))}</p>`}${[
+      fold('proc', tt(TX.groups.proc), rowsState(rows(proc)), procBody),
+      fold('vfr', tt(TX.d4.foldVfr), setStateOf('vfr'), panelsHtml('vfr')),
+      fold('aircraft', tt(TX.groups.aircraft), rowsState(rows(air)), airBody),
+      fold('weather', tt(TX.groups.weather), rowsState(rows(wx)), wxBody),
+      fold('sources', tt(TX.d4.foldSources), rowsState(srcRows), srcBody)
+    ].join('')}`
   };
 }
 /** L'écran : l'en-tête, la couverture, « Tout mettre à jour », les groupes, le journal. */
@@ -602,7 +622,7 @@ function renderBody() {
   const myCov = S.body.querySelector('details.d-mycov');
   if (myCov) S.myCovOpen = myCov.open; // « Ma couverture » ouvert à l'instant : l'événement toggle n'est peut-être pas encore passé
   const grp = groupsHtml();
-  S.body.innerHTML = `<input type="file" data-upload-input hidden tabindex="-1" aria-hidden="true">${headHtml()}${grp.base}${coverageHtml()}${updateAllHtml()}${grp.rest}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
+  S.body.innerHTML = `<input type="file" data-upload-input hidden tabindex="-1" aria-hidden="true">${headHtml()}${grp.base}${grp.rest}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
 }
 /** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */
 const wordOf = (map, key) => tt(M.own(map, key) || [key, key, key, key]);

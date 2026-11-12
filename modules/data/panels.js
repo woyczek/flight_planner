@@ -36,7 +36,8 @@ import {
   busyCardHtml
 } from './busy.js';
 import {
-  updateAllInner
+  chainBelowHtml,
+  chainButton
 } from './chain.js';
 import {
   updateGate,
@@ -691,12 +692,7 @@ function stateWhy() {
 /** La tête du panneau de la base (lot 1 de l'écran Données) : la phrase d'état (le cycle en vigueur et sa date d'effet, puis les zones de la base : n à jour · n à reconstruire · n en échec · n attendent un fichier · n sans état, chaque nombre un bouton qui déplie ses zones sur place, juste dessous),
  *  puis LE bouton « Mettre à jour » (le même verbe `update`) avec sa portée (toute la couverture, ou « la sélection » quand elle est partielle), ce qu'il va faire, la raison s'il est gris ; « Tout est à jour. » sans bouton quand il n'y a rien à faire ; enfin la marche et la fin de l'opération de la base. */
 function stateHeadHtml() {
-  const head = S.airac ? M.cycleHead(S.airac, S.now) : null,
-    cyc = head ? tt(TX.stateCycle, {
-      c: head.id,
-      d: M.dateText(head.date, lang())
-    }) : '',
-    groups = balance().groups,
+  const groups = balance().groups,
     z = n => count('zone', n),
     bal = (k, n) => tt(TX.bal[k][n === 1 ? 0 : 1], {
       n: z(n)
@@ -704,38 +700,33 @@ function stateHeadHtml() {
   const parts = groups ? ZONE_KEYS.filter(k => groups[k].length) : [],
     tail = !groups ? esc(tt(TX.stateUnknown, {
       r: stateWhy()
-    })) : parts.length ? `${esc(tt(TX.stateBase))} ${parts.map(k => `<button type="button" data-act="zone-filter" data-filter="${k}" aria-expanded="${S.zoneFilter === k}">${esc(bal(k, groups[k].length))}</button>`).join(' · ')}.` : esc(tt(TX.stateEmpty)),
+    })) : parts.length ? `${esc(tt(TX.stateBase))} ${parts.map(k => `<button type="button" data-act="zone-filter" data-filter="${k}" aria-expanded="${S.zoneFilter === k}">${esc(bal(k, groups[k].length))}</button>`).join(' · ')}` : esc(tt(TX.stateEmpty)),
     open = groups && S.zoneFilter && groups[S.zoneFilter]?.length ? S.zoneFilter : null;
   const list = open ? `<ul class="d-statezones" data-state-zones data-state-open="${open}">${groups[open].map(id => `<li class="d-zrow" data-zone-row="${esc(id)}">${zoneRowInner(id)}</li>`).join('')}</ul>` : '';
   const sc = updateScope(),
     gate = updateGate(),
-    miss = missingList().length > 0; // un cycle manuel manque : la prise du fichier est le primaire, pas « Mettre à jour »
-  // « Tout est à jour. » seulement quand rien n'est à reconstruire, en échec, attendu de l'utilisateur ou sans état dans la portée ; sinon, sans zone que le bouton traite, ce que les zones attendent : jamais deux phrases qui se contredisent
+    miss = missingList().length > 0, // un cycle manuel manque : la prise du fichier est le primaire, pas « Mettre à jour »
+    all = chainButton(); // « Tout mettre à jour (n) » : la base ET les autres jeux, la chaîne (chain.js)
+  // « Tout est à jour. » seulement quand rien n'est à reconstruire, en échec, attendu de l'utilisateur ou sans état dans la portée, et que la chaîne n'a aucun jeu à lancer ; sinon, sans zone que le bouton traite, ce que les zones attendent : jamais deux phrases qui se contredisent
   const lone = sc.counts ? ['rebuild', 'failed', 'waiting', 'personal', 'unknown'].reduce((n, k) => n + sc.counts[k].length, 0) : 0,
-    reason = greyOnce(gate.reason, 'base');
-  const none = sc.known && sc.n === 0,
+    none = sc.known && sc.n === 0 && !all.plan.runs.length,
+    reason = greyOnce(all.gate.reason, 'base', all.only ? 'head' : 'chain'),
     action = none ? lone ? `<p class="f-muted" data-hand-alone>${esc(tt(TX.handAlone[lone === 1 ? 0 : 1], { z: z(lone) }))}</p>` : `<p class="f-ok" data-all-fresh>${esc(tt(TX.allFresh))}</p>` :
-    `<p class="d-verbs" data-update-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(sc.known ? tt(TX.upd.updateN, { n: sc.n }) : tt(TX.upd.update))}</button></p>`,
-    why = !none && reason ? `<p class="f-muted" data-update-reason="${esc(gate.reason)}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''; // sous le bouton et sa phrase, dans l'ordre du clavier comme dans celui de l'écran
-  const dl = sc.plan?.fetch.length || 0,
-    bd = sc.plan?.build.length || 0,
-    doing = [dl ? tt(TX.upd.doDl, {
-      z: z(dl)
-    }) : '', bd ? tt(TX.upd.doBuild, {
-      z: z(bd)
-    }) : ''].filter(Boolean),
-    plan = sc.n > 0 && doing.length ? `<p class="f-muted" data-update-plan>${esc(tt(TX.upd.doLine, { l: doing.join(', ') }))}</p>` : '',
-    left = sc.counts ? sc.counts.waiting.filter(id => !sc.todo.includes(id)) :
+    `<p class="d-verbs" data-update-row>${all.html}</p>`,
+    why = !none && reason ? `<p class="f-muted" data-update-reason="${esc(all.gate.reason)}">${esc(tt(TX.greyReason[all.gate.reason]))}</p>` : ''; // sous le bouton et sa phrase, dans l'ordre du clavier comme dans celui de l'écran
+  const left = sc.counts ? sc.counts.waiting.filter(id => !sc.todo.includes(id)) :
   [], // les zones qui attendent un fichier et que le bouton ne traite pas : à la main de l'utilisateur
     leftTick = sc.counts ? sc.counts.personal.filter(id => !sc.todo.includes(id)) : [], // celles qui attendent la coche d'usage personnel
     notes = sc.counts ? [left.length || leftTick.length ? tt(TX.upd.waitNote, {
       z: [left.length ? bal('waiting', left.length) : '', leftTick.length ? bal('personal', leftTick.length) : ''].filter(Boolean).join(
         ' · ')
     }) : ''].filter(Boolean) : [];
+  // le même verbe pour la base seule (SOG-0071) : un lien discret sous la phrase, jamais un second bouton primaire
+  const baseOnly = !none && !all.only && sc.known && sc.n > 0 ? `<p class="d-baseonly" data-base-only><button type="button" class="d-link" data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.d4.baseOnly, { n: sc.n }))}</button></p>` : '';
   // la forme de la maquette validée (lot D2) : le titre du cycle et sa barre d'avancement, la légende en une ligne (la phrase d'état, ses nombres restent des boutons), puis le bouton avec, à côté, ce qu'il fait
-  const what = [plan, notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : ''].join('');
-  return `<div class="d-statehead" data-state-head>${cycleBarHtml()}<p class="d-cap" data-state-sentence>${[esc(cyc), tail].filter(Boolean).join(' ')}</p>${list}
-    <div class="d-go">${action}${what ? `<div class="d-what">${what}</div>` : ''}${why}</div>
+  const what = [all.what ? `<p class="f-muted" data-update-plan>${esc(all.what)}</p>` : '', notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : '', baseOnly].join('');
+  return `<div class="d-statehead" data-state-head>${cycleBarHtml()}<p class="d-cap" data-state-sentence>${tail}</p>${list}
+    <div class="d-all" data-update-all><div class="d-go">${action}${what ? `<div class="d-what">${what}</div>` : ''}${why}</div>${chainBelowHtml()}</div>
     ${opAreaHtml('base', 'head')}</div>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
@@ -828,8 +819,9 @@ function setPanelHtml(panel) {
  *  les fiches publiées) ; aucun pour la météo, publiée avec le site. */
 export function panelsHtml(group) {
   if (group === 'base')
-    return `<div class="d-page" data-page>${setPanelHtml('base') + publishHtml() + laterHtml() + myCovHtml() + setPanelHtml('vfr')}</div>`; // la barre d'état, la carte, ce qui reste à faire et les groupes de pays (le panneau de la base), puis « Publier », les trois blocs repliés et « Ma couverture » : en large, la colonne de gauche d'une page à deux colonnes (la fiche d'un pays est à droite, collante)
+    return `<div class="d-page" data-page>${setPanelHtml('base') + publishHtml() + laterHtml() + myCovHtml()}</div>`; // la barre d'état, la carte, ce qui reste à faire et les groupes de pays (le panneau de la base), puis « Publier », les trois blocs repliés et « Ma couverture » : en large, la colonne de gauche d'une page à deux colonnes (la fiche d'un pays est à droite, collante)
   if (group === 'proc') return setPanelHtml('proc');
+  if (group === 'vfr') return setPanelHtml('vfr');
   if (group === 'aircraft') return setPanelHtml('aircraft') + setPanelHtml('sheets');
   return '';
 }
@@ -853,7 +845,7 @@ function redrawPanel(box) {
   if (myCov) S.myCovOpen = myCov
     .open; // le pli « Ma couverture » ouvert à l'instant garde son état même si l'événement toggle n'est pas encore passé
   keepScroll(S.body, () => {
-    box.innerHTML = box.matches('[data-update-all]') ? updateAllInner() : box.matches('[data-mycov-box]') ? myCovInner() : setInner(
+    box.innerHTML = box.matches('[data-mycov-box]') ? myCovInner() : setInner(
       panelId(box));
     box.querySelectorAll('[data-sheet]').forEach((e, i) => {
       if (inner[i]) e.scrollTop = inner[i][0];
@@ -873,13 +865,13 @@ function redrawPanel(box) {
 export function renderBuild() {
   renderPublish(); // le bouton « Publier » suit la construction (et l'inverse) : un seul point de redessin pour tous les panneaux
   if (!S?.body || !S.d) return;
-  for (const box of S.body.querySelectorAll('[data-build], [data-set-panel], [data-update-all], [data-mycov-box]')) redrawPanel(box);
+  for (const box of S.body.querySelectorAll('[data-build], [data-set-panel], [data-mycov-box]')) redrawPanel(box);
   renderLater(); // cycle suivant, quand ça change, vu pas encore lu : lus dans la liste du cycle, qui vient peut-être d'arriver
   readsIdle(); // l'écran est libre : ce qui était « à relire » (la liste du cycle, la fiche ouverte) se relit
 }
 /** Ouvre le groupe d'un panneau (une marche ou un résultat s'y montre) sans attendre un toucher. */
 export function openGroup(set, verb) {
-  const id = M.groupOf(set, verb);
+  const id = set === 'vfr' ? 'vfr' : M.groupOf(set, verb); // les points VFR ont leur pli
   S.manual[id] = true;
   const g = S.body?.querySelector(`details.f-group[data-group="${id}"]`);
   if (g) g.open = true;

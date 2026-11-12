@@ -221,7 +221,7 @@ export function todoHtml() {
 }
 /** La mise en page de « À faire ce mois-ci » (à côté de CW_STYLE) : un bloc encadré, replié sous son repère de la hauteur d'un doigt ; une ligne par source, les coches l'une sous l'autre au téléphone et côte à côte en large ; chaque bouton a la taille d'un doigt. */
 export const TODO_STYLE = `
-[data-module="data"] details.d-todo{border:1px solid var(--sog-border);background:var(--sog-surface);padding:0 12px;min-width:0;margin:10px 0 0}
+[data-module="data"] details.d-todo{border:1px solid var(--sog-border);background:var(--sog-surface);padding:0 12px;min-width:0;margin:0}
 [data-module="data"] details.d-todo>summary{min-height:var(--sog-touch);display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;font-weight:600;text-align:left}
 [data-module="data"] details.d-todo>summary>span{flex:1;min-width:0}
 [data-module="data"] details.d-todo[open]>summary{border-bottom:1px solid var(--sog-border);margin-bottom:4px}
