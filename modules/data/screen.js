@@ -250,6 +250,14 @@ export const STYLE = `
 [data-module="data"] details.d-fold>summary>.d-fstate[data-fold-state=ok]{color:var(--sog-ok)}
 [data-module="data"] details.d-fold>summary>.d-fstate[data-fold-state=todo]{color:var(--sog-warn);font-weight:600}
 [data-module="data"] details.d-fold>summary>.d-chev{margin-left:auto;flex:none}
+@container data (max-width:639px){
+[data-module="data"] details.d-fold>summary{flex-wrap:wrap}
+[data-module="data"] details.d-fold>summary>span:first-child{order:1}
+[data-module="data"] details.d-fold>summary>[data-attn]{order:2;margin-left:auto}
+[data-module="data"] details.d-fold>summary>.d-chev{order:3;margin-left:0}
+[data-module="data"] details.d-fold>summary>[data-attn][hidden]+.d-chev{margin-left:auto}
+[data-module="data"] details.d-fold>summary>.d-fstate{order:4;flex:1 0 100%;padding:0 0 8px}
+}
 [data-module="data"] details.d-fold[open]>summary{border-bottom:1px solid var(--sog-border);margin-bottom:8px}
 [data-module="data"] details.d-fold[open]>summary>.d-chev{transform:rotate(180deg)}
 [data-module="data"] details.d-fold>[data-set-panel],[data-module="data"] details.d-fold>.f-card{margin-bottom:var(--sog-gap)}

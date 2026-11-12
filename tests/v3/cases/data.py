@@ -7142,6 +7142,9 @@ def l119(c):
     tpl = norm(CWB('receivedSame').replace('{name}', canon))
     rx = '.{1,24}?'.join(re.escape(p) for p in tpl.split('{b}'))
     c.ok(re.search(rx, msg()) is not None, (msg(), rx), 'the same file is said « already there, nothing rewritten »')
+    # the capture: the sheet of France, the DIRCAM line after an upload (the file chosen, what the launcher received, « already there »)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    _tall_shot(c, f'L119_{c.width}_{lang}_sheet.png', block, 1000 if c.width > 800 else 1100, 'end')
     # ---- a PDF as it is, under the name of a second download: sent as it is
     answer.update(status=200, body=ok_body(True))
     n = pick('miam_oaci_enr 5.7 (2).pdf', pdf)
@@ -8158,6 +8161,11 @@ def l103(c):
     world['last'] = {'ok': True, 'results': {}}   # the launcher has done nothing yet
     st, _x4 = _l89_open(c, world, verbs=('base/pickup', 'base/cycle', 'base/last'), last_results=lambda a: world['last'])
     reads = lambda: [p for p in st['posts'] if p['verb'] == 'last']
+    # the read of base/last is queued AFTER the read of the list of the cycle in the lane of the screen (one job at a time): the screen is drawn when the first one is done, the second may still be on its way (a loaded machine) - wait for it, then check that no other follows
+    deadline = time.time() + 15
+    while not reads() and time.time() < deadline:
+        c.wait(100)
+    c.wait(1200)
     c.eq([len(reads()), (reads() or [{'args': None}])[0]['args']], [1, {}], 'the journal of the launcher is read ONCE when the screen opens (no argument), through the screen lane like the other reads', what='one read at the opening')
     steps = lambda: c.js("[...document.querySelectorAll('[data-sheet=gb] [data-thread-step]')].map(s => [s.dataset.threadStep, s.dataset.ok, s.querySelector('[data-thread-text]').textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])")
     # ---- 1. the sheet of the United Kingdom runs « Mettre à jour ce pays »: the page keeps its own thread; the launcher's journal now holds the same two operations
@@ -8626,6 +8634,21 @@ _L112_JS = r"""() => {
 }"""
 
 
+def _tall_shot(c, name, sel, height, align='start'):
+    """A capture of `sel` seen whole: the window is made `height` px tall for the shot (the screen scrolls inside the window), the element is brought to the top, the window is given back."""
+    size = c.page.viewport_size
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.page.set_viewport_size({'width': size['width'], 'height': height})
+    c.wait(500)
+    c.js(f"document.querySelector('{sel}').scrollIntoView({{block: '{align}'}})")
+    if align == 'start':   # under the header of the frame
+        c.js("window.scrollBy(0, -70); document.querySelectorAll('*').forEach(e => { if (e.scrollTop > 0 && e.scrollHeight > e.clientHeight) e.scrollTop = Math.max(0, e.scrollTop - 70); })")
+    c.wait(500)
+    c.shot(name)
+    c.page.set_viewport_size(size)
+    c.wait(300)
+
+
 def _l120_tpl(template, **given):
     """A regex for a text of texts.js with `{x}` holes: the given values are literal, the other holes match any short text (a date written by the page)."""
     t = norm(template)
@@ -8675,6 +8698,9 @@ def l120(c):
     c.ok(want in proc, (proc, want), 'the folded line of the procedures says « cycle 2610 · 1 200 terrains CIFP · 30 terrains eAIP » (numbers formatted for the language)')
     wx = norm(c.text('[data-body] > details.f-group[data-group=weather] .d-fstate'))
     c.ok(re.search(_l120_tpl(_trow('natExpired', lang, after='  d6: {')), wx) is not None, wx, 'the weather fold names the expired NAT tracks and the date they ended')
+    # the capture: the block unfolded (the sources and the sets to do, with their gestures and reasons)
+    c.js("document.querySelector('[data-todo-done]').open = false; document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    _tall_shot(c, f'L120_{c.width}_{lang}_todo.png', '[data-todo]', 1150 if c.width > 800 else 1900)
     c.check_errors()
 
 
@@ -8700,6 +8726,9 @@ def l121(c):
     c.ok(re.search(_l120_tpl(D6('run')), wx) is not None and re.search(_l120_tpl(D6('natValid')), wx) is not None, wx, 'weather: « prévision du … » and, for the NAT tracks of the same fold, « routes NAT valides jusqu’au … »')
     c.ok('06:00Z' in wx and '19:00Z' in wx, wx, 'both with the hour in UTC, as the rest of the screen writes it')
     c.ok(norm(_trow('dsNa', lang, after='  d5: {')) in line('vfr') or line('vfr').startswith(norm(_trow('stTodo', lang, after='  d4: {')).split('{n}')[0]), line('vfr'), 'a set that gives no useful date keeps its own word and the date of its file')
+    # the capture: the other sets, folded, each with its useful date
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    _tall_shot(c, f'L121_{c.width}_{lang}_folds.png', '[data-body] > details.f-group[data-group=proc]', 600 if c.width > 800 else 700)
     c.check_errors()
 
 
