@@ -241,7 +241,7 @@ def nasr(data):
     if not issue or not blobs:
         why = (f'la page du NASR refuse l’accès automatique ({refused}) ; ' if refused else 'cycle en vigueur introuvable sur la page du NASR ; ') + \
             f'les jeux du cycle {" ou ".join(cycles)} ne répondent pas non plus sur {faa_nasr.HOST} ({last}) : points et voies des États-Unis non mis à jour, ceux déjà là sont gardés. ' + \
-            f'Repli : télécharger les trois jeux CSV (FIX, AWY, NAV) de {faa_nasr.PAGE} dans un navigateur, puis « Choisir le fichier… » sur la ligne des États-Unis (Données)' + \
+            f'Repli : télécharger l’abonnement NASR complet du cycle (28DaySubscription_Effective_<AAAA-MM-JJ>.zip, page de l’abonnement {faa_nasr.PAGE}) dans un navigateur, puis « Choisir le fichier… » sur la ligne des États-Unis (Données) ; les trois jeux CSV (FIX, AWY, NAV) pris un à un restent admis' + \
             ''.join(f' ; déjà déposés pour {c} : {", ".join(ks)}, il manque {", ".join(k for k in faa_nasr.KINDS if k not in ks)}' for c, ks in partial.items() if len(ks) < 3)
         raise ValueError(why)
     g, n, m = faa_nasr.convert(*blobs, issue)

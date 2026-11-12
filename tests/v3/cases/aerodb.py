@@ -8046,11 +8046,68 @@ def k183(c):
             if f.get('where') and not all(' › ' in w or w.startswith('http') for w in f['where']):
                 bad.append(tag + ' where is not a path')
     c.ok(not bad and len(r['steps']) >= 10, str(bad) + ' ' + str(sorted(r['steps'])), 'every file taken by hand has what, where (a path) and file in four languages, and says if its path was followed')
-    c.eq(sorted(unverified), sorted(['dircam:MIAM_OACI_ENR 5.7.pdf', 'ukmil:ENR-5-2.pdf', 'adds:<JJ>_<Mon>_<AAAA>_FIX_CSV.zip', 'adds:<JJ>_<Mon>_<AAAA>_AWY_CSV.zip', 'adds:<JJ>_<Mon>_<AAAA>_NAV_CSV.zip', 'vac:AD-2.<OACI>.pdf', 'eurocontrol_rad:eurocontrol-airac-<cycle>-fra-points-….xlsx']),
-         'the paths the sites did not let us follow (FAA, UK Mil, DIRCAM, VAC, the FRA points file) are marked « à vérifier »: nothing else, and nothing guessed', what='unverified')
+    c.eq(sorted(unverified), sorted(['ukmil:ENR-5-2.pdf', 'vac:AD-2.<OACI>.pdf']),
+         'the paths the sites did not let us follow (UK Mil, VAC) are marked « à vérifier »: nothing else, and nothing guessed (the FAA, DIRCAM and FRA paths were given by the user: SOG-0273)', what='unverified')
     nv = r['steps']['naviair']
     ek = [f for f in nv if f['file'] == 'EK_ENR_3_1_en.pdf']
     c.eq([('01. AIP Danmark' in f['where'][1], '03. AIP Færøerne' in f['where'][1]) for f in ek], [(True, False), (False, True)], 'the two « EK » of Naviair (Denmark and the Faroe Islands) bear the same name and are told apart by their path', what='EK')
     c.eq([f['file'] for f in nv if f['file'].startswith('BG_')], ['BG_ENR_3_1_en.pdf', 'BG_ENR_3_2_en.pdf', 'BG_ENR_4_1_en.pdf', 'BG_ENR_4_4_en.pdf'], 'Greenland: the BG files, under « 04. AIP Grønland »', what='BG')
     c.eq(r['check'][0], 'chemin à vérifier', 'the word of the screen for a path to check, in four languages', what='check')
     c.eq(len(r['check']), 4, 'four languages', what='check4')
+
+
+@case('K184', 'FAA NASR in ONE file (SOG-0273): the full subscription 28DaySubscription_Effective_<date>.zip, dropped by hand, is recognised by its content (the CSV_Data zip) and its name (the cycle), and the launcher reads FIX, AWY and NAV in place from it; the three separate sets stay admitted, and the cleanup counts it as a complete set', 'K', static=True,
+      rule='SOG-0273 (12 Nov 2026, the user): the FAA page refuses the launcher; the user downloads ONE file, « 28DaySubscription_Effective_2026-11-26.zip » (page of the cycle, file under nfdc.faa.gov/webContent/28DaySub/), which holds the three CSV sets in CSV_Data/<DD_Mon_YYYY>_CSV.zip (and the shapefile of the airspace classes and the AIXM 5.1). The upload recognises it, the build reads the inner zip in place (a tenth of a second, 20 Mo), the three-file deposit keeps working, an incomplete deposit is never touched by the cleanup and a subscription counts as a complete set. Real file read once on this workstation, outside the tests: 10 935 points and 17 624 segments (26 Nov 2026).')
+def k184(c):
+    import io
+    import sys
+    import tempfile
+    import zipfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    import base_upload
+    import faa_nasr
+    import upload_cleanup
+
+    def zipped(members):
+        b = io.BytesIO()
+        with zipfile.ZipFile(b, 'w', zipfile.ZIP_DEFLATED) as z:
+            for n, t in members.items():
+                z.writestr(n, t)
+        return b.getvalue()
+    inner = zipped({'FIX_BASE.csv': 'EFF_DATE,FIX_ID,LAT_DECIMAL,LONG_DECIMAL\n2026/11/26,MONPI,40.5,-70.5\n2026/11/26,OATSS,41.0,-71.0\n',
+                    'NAV_BASE.csv': 'EFF_DATE,NAV_ID,LAT_DECIMAL,LONG_DECIMAL\n2026/11/26,ILC,45.0,-72.0\n',
+                    'AWY_SEG_ALT.csv': 'AWY_ID,FROM_POINT,FROM_PT_TYPE,TO_POINT,MIN_ENROUTE_ALT,MAX_AUTH_ALT,AWY_SEG_GAP_FLAG\nV12,MONPI,WP,OATSS,4000,,N\n'})
+    full = zipped({'FIX.txt': 'x', 'AWY.txt': 'x', 'CSV_Data/26_Nov_2026_CSV.zip': inner, 'Additional_Data/Shape_Files/Class_Airspace.dbf': 'x'})
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        sub = td / 'in.zip'
+        sub.write_bytes(full)
+        r = base_upload.recognise(str(sub), '28DaySubscription_Effective_2026-11-26 (1).zip')
+        c.eq((r['source'], r['zone'], r['name'], r['cycle']), ('faa', 'us', '28DaySubscription_Effective_2026-11-26.zip', '2026-11-26'), 'the full subscription: recognised by the CSV_Data zip and the name that says the cycle; put under its canonical name', what='recognise')
+        try:
+            base_upload.recognise(str(sub), 'whatever.zip')
+            other = 'recognised'
+        except base_upload.Refused as e:
+            other = e.args[0] if e.args else 'refused'
+        c.ok(other != 'recognised', other, 'the same zip with another name: the cycle is not guessed')
+        up = td / 'data' / 'local' / 'upload'
+        up.mkdir(parents=True)
+        (up / '28DaySubscription_Effective_2026-11-26.zip').write_bytes(full)
+        iso, blobs, partial = faa_nasr.deposited_latest(str(td / 'data'))
+        c.eq((iso, len(blobs), partial), ('2026-11-26', 3, {}), 'the deposit is a complete set for its cycle', what='latest')
+        g, n, m = faa_nasr.convert(*blobs, iso)
+        c.eq((n, m), (3, 1), 'FIX, NAV and AWY are read in place from the inner zip: 2 fixes + 1 navaid, 1 segment', what='convert')
+        c.ok(faa_nasr.deposited_date(str(td / 'data'), '2026-11-26') is not None, 'date', 'the date of the deposit is said')
+        c.eq(faa_nasr.sub_url('2026-11-26'), 'https://nfdc.faa.gov/webContent/28DaySub/28DaySubscription_Effective_2026-11-26.zip', 'the address of the file, computed from the cycle', what='url')
+        # an inner zip missing: said with its reason, not guessed
+        (up / '28DaySubscription_Effective_2026-11-26.zip').write_bytes(zipped({'FIX.txt': 'x'}))
+        try:
+            faa_nasr.sub_blobs(str(up / '28DaySubscription_Effective_2026-11-26.zip'))
+            said = ''
+        except ValueError as e:
+            said = str(e)
+        c.ok('CSV_Data' in said, said, 'a zip without the CSV_Data zip is refused with its reason')
+        # the cleanup counts a subscription as one complete set
+        g2, _ = upload_cleanup._groups(['28DaySubscription_Effective_2026-11-26.zip', '29_Oct_2026_FIX_CSV.zip'], 'us')
+        c.eq({k: [(cy, ns) for cy, ns in v] for k, v in g2.items()}, {'nasr': [('2026-11-26', ['28DaySubscription_Effective_2026-11-26.zip'])]}, 'the cleanup: a subscription is a complete set; one set alone (FIX only) never enters the count', what='cleanup')

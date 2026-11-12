@@ -33,6 +33,8 @@ STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'bus
 NATS_MEMBER = re.compile(r'^EG_(AIP|OBS|UAS)_.*?(\d{8})\.xml\Z', re.I | re.A)
 SIA_MEMBER = re.compile(r'^(?:AIXM4\.5_all_FR_OM_|XML_SIA_)(\d{4}-\d{2}-\d{2})\.xml\Z', re.I | re.A)
 NASR_NAME = re.compile(r'^(\d{2})_([A-Z][a-z]{2})_(\d{4})_(FIX|AWY|NAV)_CSV(?: \(\d+\))?\.zip\Z', re.A)      # « 29_Oct_2026_FIX_CSV.zip » : le nom que la FAA donne à ses jeux CSV
+SUB_NAME = re.compile(r'^28DaySubscription_Effective_(\d{4}-\d{2}-\d{2})(?: \(\d+\))?\.zip\Z', re.A)      # SOG-0273 : l'abonnement NASR complet (tools/faa_nasr.py SUB_NAME, le même motif)
+INNER_MEMBER = re.compile(r'^CSV_Data/\d{2}_[A-Z][a-z]{2}_\d{4}_CSV\.zip\Z', re.A)      # son zip de jeux CSV (tools/faa_nasr.py INNER_MEMBER)
 NASR_MEMBER = {'FIX': 'FIX_BASE.csv', 'AWY': 'AWY_SEG_ALT.csv', 'NAV': 'NAV_BASE.csv'}
 RAD_NAME = re.compile(r'^RAD_\d{4}_v[\d_]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)      # tools/route_engine/import_books.py RAD_NAME / FRA_NAME : les classeurs d'EUROCONTROL, sous leur nom d'origine
 FRA_NAME = re.compile(r'^eurocontrol-airac-\d{4}-fra-points-[A-Za-z0-9-]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)
@@ -136,6 +138,11 @@ def recognise(path, hint=''):
                     return {'source': 'lfv', 'zone': 'se', 'name': 'AIP_OFFLINE.zip', 'cycle': None}
             except ImportError:
                 pass
+            sub = SUB_NAME.fullmatch(hint or '')                  # SOG-0273 : l'abonnement NASR COMPLET (un seul fichier, ses jeux CSV dans CSV_Data/) : le nom dit le cycle, le contenu dit que c'en est un
+            if sub and any(INNER_MEMBER.fullmatch(n) for n in names) and 'FIX.txt' in names:
+                iso = _date_ok(sub.group(1))
+                if iso:
+                    return {'source': 'faa', 'zone': 'us', 'name': f'28DaySubscription_Effective_{iso}.zip', 'cycle': iso}
             nasr = NASR_NAME.match(hint or '')                    # le NASR de la FAA (SOG-0219 : la page de l'abonnement refuse le lanceur, le fichier se dépose à la main) : le contenu dit le jeu, le nom dit le cycle
             if nasr and NASR_MEMBER[nasr.group(4)] in names:
                 months = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
@@ -248,7 +255,10 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
             os.replace(tmp, dest)
         extra = {'kind': info['kind']} if info.get('kind') else {}           # eurocontrol_rad : 'rad' ou 'fra' (le classeur)
         if info['source'] == 'faa':                      # le NASR arrive en trois jeux : ce qui est déjà posé pour ce cycle et ce qui manque (SOG-0219), pour que l'écran n'ait pas à compter
-            have = sorted(k for k in NASR_MEMBER if os.path.isfile(os.path.join(folder, NASR_NAME.sub(lambda m: f'{m.group(1)}_{m.group(2)}_{m.group(3)}_{k}_CSV.zip', info['name']))))
+            if SUB_NAME.fullmatch(info['name']):             # l'abonnement complet vaut les trois jeux
+                have = sorted(NASR_MEMBER)
+            else:
+                have = sorted(k for k in NASR_MEMBER if os.path.isfile(os.path.join(folder, NASR_NAME.sub(lambda m: f'{m.group(1)}_{m.group(2)}_{m.group(3)}_{k}_CSV.zip', info['name']))))
             extra = {'deposited': have, 'missing': [k for k in NASR_MEMBER if k not in have]}
         return 200, {'ok': True, 'source': info['source'], 'zone': info['zone'], 'name': info['name'], 'size': got, **({'cycle': info['cycle']} if info['cycle'] else {}), **extra, 'replaced': replaced, 'sha256': digest}
     except OSError as e:

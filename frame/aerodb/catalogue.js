@@ -109,7 +109,7 @@
   // Une ligne par source : { id, no (ligne du tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md, ou null), status
   // ('used' : la suite s'en sert aujourd'hui ; 'candidate' : envisagée ; 'abandoned' : écartée, avec sa raison), cycled (adresse
   // du cycle AIRAC en vigueur), n [fr, en, de, es], url (chaîne, ou fonction du cycle), gives [4] (ce qu'elle donne et où cela
-  // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir), steps { page: { url, home }, files: [{ name, url?, gives [4] }] } (SOG-0189, facultatif : le pas-à-pas d'une source déposée à la main, lu par stepsOf), et, facultatifs, pour la page « Sources et licences » : pub (l'éditeur, texte ou [4] ; à défaut le début du nom),
+  // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir), unavailable { since, note [4] } (SOG-0273 : l'éditeur ne publie plus le fichier : la source est rangée à part, ni « en retard » ni « à faire »), steps { page: { url, home }, files: [{ name, url?, gives [4] }] } (SOG-0189, facultatif : le pas-à-pas d'une source déposée à la main, lu par stepsOf), et, facultatifs, pour la page « Sources et licences » : pub (l'éditeur, texte ou [4] ; à défaut le début du nom),
   // credit [4] (le crédit obligatoire), date (la date ou l'édition : texte), localOnly (vrai : lu sur ce poste seulement) }. Données seules :
   // l'écran (sources.js) ne fait qu'afficher des liens, aucune récupération.
   const SOURCES = [{
@@ -241,6 +241,15 @@
   }, {
     id: 'dircam',
     group: 'base',
+    unavailable: {
+      since: '2025-11',
+      note: [
+        'le site de la DIRCAM ne répond plus depuis environ un an (dit l\'utilisateur) : le fichier se prend dans le disque DIRCAM du SIA',
+        'the DIRCAM site has not answered for about a year (user\'s word): the file is taken from the DIRCAM disk on the SIA site',
+        'die DIRCAM-Seite antwortet seit etwa einem Jahr nicht mehr (Aussage des Nutzers): die Datei kommt von der DIRCAM-Disk auf der SIA-Seite',
+        'el sitio de la DIRCAM no responde desde hace casi un año (dicho por el usuario): el archivo se toma del disco DIRCAM del SIA'
+      ]
+    },
     steps: {
       page: {
         url: 'https://www.dircam.dsae.defense.gouv.fr/fr/milaip',
@@ -253,12 +262,14 @@
           'ENR 5.7 der französischen Militär-AIP',
           'ENR 5.7 de la AIP militar francesa'
         ],
-        where: ['DIRCAM › AIP militaire (MIAM OACI) › ENR › ENR 5.7',
-          'DIRCAM › Military AIP (MIAM OACI) › ENR › ENR 5.7',
-          'DIRCAM › Militär-AIP (MIAM OACI) › ENR › ENR 5.7',
-          'DIRCAM › AIP militar (MIAM OACI) › ENR › ENR 5.7'
+        link: 'https://www.sia.aviation-civile.gouv.fr/info_dircam',
+        where: [
+          'SIA › info_dircam › info_aero_dircam.zip (le disque DIRCAM, 1,3 Go) › PDF › MIAM › MIAM_OACI_ENR 5.7.pdf (à sortir du zip)',
+          'SIA › info_dircam › info_aero_dircam.zip (the DIRCAM disk, 1.3 GB) › PDF › MIAM › MIAM_OACI_ENR 5.7.pdf (to take out of the zip)',
+          'SIA › info_dircam › info_aero_dircam.zip (die DIRCAM-Disk, 1,3 GB) › PDF › MIAM › MIAM_OACI_ENR 5.7.pdf (aus dem Zip zu nehmen)',
+          'SIA › info_dircam › info_aero_dircam.zip (el disco DIRCAM, 1,3 GB) › PDF › MIAM › MIAM_OACI_ENR 5.7.pdf (para sacar del zip)'
         ],
-        verified: false,
+        verified: true,
         url: 'https://www.dircam.dsae.defense.gouv.fr/images/Stories/Doc/MIAM_OACI/MIAM_OACI_ENR%205.7.pdf',
         gives: ['ENR 5.7 · axes de ravitaillement en vol de la France', 'ENR 5.7 · air-to-air refuelling tracks of France',
           'ENR 5.7 · Luftbetankungsstrecken Frankreichs', 'ENR 5.7 · ejes de reabastecimiento en vuelo de Francia'
@@ -296,6 +307,15 @@
     id: 'ukmil',
     group: 'base',
     // SOG-0262 : l'inventaire exact : le fichier que le lanceur lit seul, et que l'utilisateur prend à la main quand le serveur coupe sa connexion (SOG-0234)
+    unavailable: {
+      since: '2025-11',
+      note: [
+        'le site de l\'AIP militaire britannique est cassé depuis environ un an (dit l\'utilisateur) : rien à faire tant que l\'éditeur ne publie pas',
+        'the UK military AIP site has been broken for about a year (user\'s word): nothing to do until the publisher publishes again',
+        'die Seite der britischen Militär-AIP ist seit etwa einem Jahr gestört (Aussage des Nutzers): nichts zu tun, bis der Herausgeber wieder veröffentlicht',
+        'el sitio de la AIP militar británica está roto desde hace casi un año (dicho por el usuario): nada que hacer hasta que el editor vuelva a publicar'
+      ]
+    },
     steps: {
       page: {
         url: 'https://www.aidu.mod.uk/aip/aipVolumes.html',
@@ -648,63 +668,29 @@
     // SOG-0262 : l'inventaire exact du NASR pris à la main (SOG-0219 : la FAA refuse parfois le lanceur) : trois jeux CSV du cycle, le nom est celui de la FAA
     steps: {
       page: {
-        url: 'https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/',
+        url: c => `https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/${dateOf(c)}/`,
         home: 'https://www.faa.gov/'
       },
       files: [{
-        name: '<JJ>_<Mon>_<AAAA>_FIX_CSV.zip',
-        what: ['les points de report américains (FIX), jeu CSV',
-          'the US reporting points (FIX), CSV set',
-          'die US-Meldepunkte (FIX), CSV-Satz',
-          'los puntos de notificación de EE. UU. (FIX), juego CSV'
+        name: '28DaySubscription_Effective_<AAAA-MM-JJ>.zip',
+        url: c => `https://nfdc.faa.gov/webContent/28DaySub/28DaySubscription_Effective_${dateOf(c)}.zip`,
+        what: ['l\'abonnement NASR complet du cycle (un seul fichier)',
+          'the complete NASR subscription of the cycle (one file)',
+          'das vollständige NASR-Abonnement des Zyklus (eine Datei)',
+          'la suscripción NASR completa del ciclo (un solo archivo)'
         ],
-        where: ['FAA › NASR Subscription › le cycle en vigueur › CSV Data (dossier CSV_Data)',
-          'FAA › NASR Subscription › the cycle in force › CSV Data (folder CSV_Data)',
-          'FAA › NASR Subscription › der gültige Zyklus › CSV Data (Ordner CSV_Data)',
-          'FAA › NASR Subscription › el ciclo en vigor › CSV Data (carpeta CSV_Data)'
+        where: [
+          'FAA › NASR Subscription › la page du cycle (…/NASR_Subscription/<AAAA-MM-JJ>/) › « Subscription effective <date> » (28DaySubscription_Effective_<date>.zip, serveur nfdc.faa.gov)',
+          'FAA › NASR Subscription › the page of the cycle (…/NASR_Subscription/<YYYY-MM-DD>/) › "Subscription effective <date>" (28DaySubscription_Effective_<date>.zip, server nfdc.faa.gov)',
+          'FAA › NASR Subscription › die Seite des Zyklus (…/NASR_Subscription/<JJJJ-MM-TT>/) › „Subscription effective <Datum>“ (28DaySubscription_Effective_<Datum>.zip, Server nfdc.faa.gov)',
+          'FAA › NASR Subscription › la página del ciclo (…/NASR_Subscription/<AAAA-MM-DD>/) › « Subscription effective <fecha> » (28DaySubscription_Effective_<fecha>.zip, servidor nfdc.faa.gov)'
         ],
-        verified: false,
+        verified: true,
         gives: [
-          'NASR · points de report (FIX) des États-Unis, un jeu CSV du cycle (le lanceur le lit seul ; la FAA le refuse parfois : ce jeu se prend à la main)',
-          'NASR · reporting points (FIX) of the United States, one CSV set of the cycle (the launcher reads it by itself; the FAA sometimes refuses it: take this set by hand)',
-          'NASR · Meldepunkte (FIX) der USA, ein CSV-Satz des Zyklus (der Launcher liest ihn selbst; die FAA verweigert ihn manchmal: diesen Satz von Hand nehmen)',
-          'NASR · puntos de notificación (FIX) de Estados Unidos, un juego CSV del ciclo (el lanzador lo lee solo; la FAA a veces lo rechaza: este juego se toma a mano)'
-        ]
-      }, {
-        name: '<JJ>_<Mon>_<AAAA>_AWY_CSV.zip',
-        what: ['les routes aériennes américaines (AWY), jeu CSV',
-          'the US airways (AWY), CSV set',
-          'die US-Luftstraßen (AWY), CSV-Satz',
-          'las aerovías de EE. UU. (AWY), juego CSV'
-        ],
-        where: ['FAA › NASR Subscription › le cycle en vigueur › CSV Data (dossier CSV_Data)',
-          'FAA › NASR Subscription › the cycle in force › CSV Data (folder CSV_Data)',
-          'FAA › NASR Subscription › der gültige Zyklus › CSV Data (Ordner CSV_Data)',
-          'FAA › NASR Subscription › el ciclo en vigor › CSV Data (carpeta CSV_Data)'
-        ],
-        verified: false,
-        gives: ['NASR · routes aériennes (AWY) des États-Unis, le deuxième jeu CSV du cycle',
-          'NASR · airways (AWY) of the United States, the second CSV set of the cycle',
-          'NASR · Luftstraßen (AWY) der USA, der zweite CSV-Satz des Zyklus',
-          'NASR · aerovías (AWY) de Estados Unidos, el segundo juego CSV del ciclo'
-        ]
-      }, {
-        name: '<JJ>_<Mon>_<AAAA>_NAV_CSV.zip',
-        what: ['les aides radio américaines (NAV), jeu CSV',
-          'the US navaids (NAV), CSV set',
-          'die US-Funknavigationshilfen (NAV), CSV-Satz',
-          'las radioayudas de EE. UU. (NAV), juego CSV'
-        ],
-        where: ['FAA › NASR Subscription › le cycle en vigueur › CSV Data (dossier CSV_Data)',
-          'FAA › NASR Subscription › the cycle in force › CSV Data (folder CSV_Data)',
-          'FAA › NASR Subscription › der gültige Zyklus › CSV Data (Ordner CSV_Data)',
-          'FAA › NASR Subscription › el ciclo en vigor › CSV Data (carpeta CSV_Data)'
-        ],
-        verified: false,
-        gives: ['NASR · aides radio (NAV) des États-Unis, le troisième jeu CSV du cycle (les trois sont nécessaires)',
-          'NASR · navaids (NAV) of the United States, the third CSV set of the cycle (all three are needed)',
-          'NASR · Funknavigationshilfen (NAV) der USA, der dritte CSV-Satz des Zyklus (alle drei sind nötig)',
-          'NASR · radioayudas (NAV) de Estados Unidos, el tercer juego CSV del ciclo (los tres son necesarios)'
+          'NASR · l\'abonnement complet du cycle : le lanceur y lit seul les points (FIX), les voies (AWY) et les balises (NAV) des États-Unis, dans CSV_Data ; un seul fichier à prendre (la FAA refuse parfois le lanceur : ce fichier se prend à la main)',
+          'NASR · the complete subscription of the cycle: the launcher reads by itself the fixes (FIX), airways (AWY) and navaids (NAV) of the United States in CSV_Data; one file to take (the FAA sometimes refuses the launcher: take this file by hand)',
+          'NASR · das vollständige Abonnement des Zyklus: der Launcher liest darin selbst die Meldepunkte (FIX), Luftstraßen (AWY) und Funkfeuer (NAV) der USA in CSV_Data; eine Datei genügt (die FAA verweigert den Launcher manchmal: diese Datei von Hand nehmen)',
+          'NASR · la suscripción completa del ciclo: el lanzador lee solo los puntos (FIX), aerovías (AWY) y radioayudas (NAV) de Estados Unidos en CSV_Data; un solo archivo (la FAA a veces rechaza el lanzador: este archivo se toma a mano)'
         ]
       }]
     },
@@ -1492,13 +1478,14 @@
           'die FRA-Punktliste (Free Route Airspace) des Zyklus',
           'la lista de puntos FRA (espacio de ruta libre) del ciclo'
         ],
+        link: 'https://www.eurocontrol.int/concept/free-route-airspace',
         where: [
-          'EUROCONTROL Network Manager › RAD › Additional Documentation › Free Route Airspace (FRA) › [More info] › « FRA Points List for the ECAC and neighbouring States » › Follow (page eurocontrol.int)',
-          'EUROCONTROL Network Manager › RAD › Additional Documentation › Free Route Airspace (FRA) › [More info] › "FRA Points List for the ECAC and neighbouring States" › Follow (page on eurocontrol.int)',
-          'EUROCONTROL Network Manager › RAD › Additional Documentation › Free Route Airspace (FRA) › [More info] › „FRA Points List for the ECAC and neighbouring States“ › Follow (Seite auf eurocontrol.int)',
-          'EUROCONTROL Network Manager › RAD › Additional Documentation › Free Route Airspace (FRA) › [More info] › « FRA Points List for the ECAC and neighbouring States » › Follow (página en eurocontrol.int)'
+          'EUROCONTROL › Free Route Airspace (le fichier courant ; l\'historique des cycles : eurocontrol.int/publication/free-route-airspace-fra-points-list-ecac-area) › « FRA Points List for the ECAC and neighbouring States »',
+          'EUROCONTROL › Free Route Airspace (the current file; the history of the cycles: eurocontrol.int/publication/free-route-airspace-fra-points-list-ecac-area) › "FRA Points List for the ECAC and neighbouring States"',
+          'EUROCONTROL › Free Route Airspace (die aktuelle Datei; die Zyklen-Historie: eurocontrol.int/publication/free-route-airspace-fra-points-list-ecac-area) › „FRA Points List for the ECAC and neighbouring States“',
+          'EUROCONTROL › Free Route Airspace (el archivo actual; el historial de ciclos: eurocontrol.int/publication/free-route-airspace-fra-points-list-ecac-area) › « FRA Points List for the ECAC and neighbouring States »'
         ],
-        verified: false,
+        verified: true,
         gives: ['Les points significatifs FRA : rôles entrée / sortie / intermédiaire, niveaux, horaires',
           'The FRA significant points: entry / exit / intermediate roles, levels, times',
           'Die signifikanten FRA-Punkte: Rollen Eintritt / Austritt / Zwischenpunkt, Ebenen, Zeiten',
@@ -1869,6 +1856,12 @@
     if (!st) return null;
     return {
       id: s.id,
+      ...(s.unavailable ? {
+        unavailable: {
+          since: s.unavailable.since,
+          note: s.unavailable.note.slice()
+        }
+      } : {}),
       page: {
         url: typeof st.page.url === 'function' ? st.page.url(cycle || A.cycleOf().id) : st.page.url,
         home: st.page.home
@@ -1877,7 +1870,7 @@
         name: f.name,
         file: f.file || f.name,
         ...(f.url ? {
-          url: f.url
+          url: typeof f.url === 'function' ? f.url(cycle || A.cycleOf().id) : f.url
         } : {}),
         ...(f.link ? {
           link: f.link

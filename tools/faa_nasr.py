@@ -26,6 +26,9 @@ KINDS = ('FIX', 'AWY', 'NAV')
 FILES = {'FIX': 'FIX_BASE.csv', 'AWY': 'AWY_SEG_ALT.csv', 'NAV': 'NAV_BASE.csv'}
 MONTHS = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 FULL = {m: i + 1 for i, m in enumerate(('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'))}
+SUB_NAME = re.compile(r'28DaySubscription_Effective_(\d{4}-\d{2}-\d{2})(?: \(\d+\))?\.zip\Z', re.A)       # SOG-0273 : l'abonnement COMPLET du cycle (un seul fichier), tel que la FAA le nomme
+INNER_MEMBER = re.compile(r'CSV_Data/\d{2}_[A-Z][a-z]{2}_\d{4}_CSV\.zip\Z', re.A)                          # …et son zip de jeux CSV (FIX_BASE, AWY_SEG_ALT, NAV_BASE), lu sur place
+INNER_MAX = 128 * 1024 * 1024        # ce zip fait 20 Mo aujourd'hui
 MEMBER_MAX = 64 * 1024 * 1024        # un fichier CSV décompressé : 11 Mo aujourd'hui (FIX_BASE)
 MAX_FEATURES = 400_000
 NAME = 'faa_nasr'
@@ -42,8 +45,40 @@ def current_cycle(page):
         return None
 
 
+def sub_file(iso):
+    """Le nom canonique de l'abonnement complet d'un cycle : 28DaySubscription_Effective_2026-11-26.zip (celui que la FAA donne ; l'envoi par la page le pose sous ce nom)."""
+    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(iso)):
+        raise ValueError(f'cycle NASR refusé : {iso!r}')
+    return f'28DaySubscription_Effective_{iso}.zip'
+
+
+def sub_url(iso):
+    """L'adresse de l'abonnement complet : https://nfdc.faa.gov/webContent/28DaySub/28DaySubscription_Effective_2026-11-26.zip (calculée ici)."""
+    return f'https://{HOST}/webContent/28DaySub/{sub_file(iso)}'
+
+
+def sub_blobs(path):
+    """Les trois jeux CSV d'un abonnement complet déposé : le zip CSV_Data/<JJ>_<Mon>_<AAAA>_CSV.zip est lu SUR PLACE (l'annuaire du gros zip, puis ce seul membre) et rendu trois fois : [FIX, AWY, NAV] au sens de
+    convert() (chaque zip porte ses trois fichiers). ValueError, avec la raison, si le fichier n'est pas un abonnement NASR."""
+    try:
+        with zipfile.ZipFile(path) as z:
+            members = [i for i in z.infolist() if INNER_MEMBER.fullmatch(i.filename)]
+            if len(members) != 1:
+                raise ValueError('abonnement NASR non reconnu : pas de zip CSV_Data/<jour>_<mois>_<année>_CSV.zip')
+            if members[0].file_size > INNER_MAX:
+                raise ValueError('abonnement NASR refusé : le zip des jeux CSV est trop gros')
+            inner = z.read(members[0])
+    except (zipfile.BadZipFile, OSError, RuntimeError) as e:
+        raise ValueError(f'abonnement NASR illisible : {e}') from None
+    return [inner, inner, inner]
+
+
 def deposited(data, iso):
     """Les trois jeux CSV d'un cycle que l'utilisateur a choisis à la main (data/local/upload/, tools/base_upload.py : nom canonique « 29_Oct_2026_FIX_CSV.zip ») : [FIX, AWY, NAV] en octets, ou None s'il en manque un. Lecture seule ; jamais un chemin de la page."""
+    try:
+        return sub_blobs(os.path.join(data, 'local', 'upload', sub_file(iso)))       # l'abonnement complet d'abord (un seul fichier)
+    except ValueError:
+        pass
     out = []
     for k in KINDS:
         p = os.path.join(data, 'local', 'upload', os.path.basename(url(k, iso)))
@@ -57,6 +92,10 @@ def deposited(data, iso):
 
 def deposited_date(data, iso):
     """La date (AAAA-MM-JJ, heure locale) à laquelle les trois jeux d'un cycle ont été déposés à la main : celle du plus ancien des trois fichiers ; None si l'un manque."""
+    try:
+        return datetime.date.fromtimestamp(os.path.getmtime(os.path.join(data, 'local', 'upload', sub_file(iso)))).isoformat()
+    except OSError:
+        pass
     times = []
     for k in KINDS:
         try:
@@ -74,6 +113,10 @@ def deposited_latest(data):
     except OSError:
         return None, None, {}
     for n in names:
+        m = SUB_NAME.fullmatch(n)
+        if m and n == sub_file(m.group(1)):                   # l'abonnement complet vaut les trois jeux
+            have.setdefault(m.group(1), set()).update(KINDS)
+            continue
         m = re.fullmatch(r'(\d{2})_([A-Z][a-z]{2})_(\d{4})_(FIX|AWY|NAV)_CSV\.zip', n)
         if m and m.group(2) in MONTHS:
             have.setdefault(datetime.date(int(m.group(3)), MONTHS.index(m.group(2)) + 1, int(m.group(1))).isoformat(), set()).add(m.group(4))

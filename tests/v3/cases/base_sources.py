@@ -2644,3 +2644,36 @@ def k182(c):
         c.eq((sorted(by)[:3], by['nats']['regime'], by['nats']['hand']['expected'][:1], v['addWillAsk']['hand'][0]['id'], v['addWillAsk']['personal']), (['mora', 'nats', 'openaip'], 'hand', ['EG_AIP_DS_*_XML.zip'], 'nats', ['nats']),
              'the United Kingdom: its sources, NATS by hand with the file pattern it expects, under personal use', what='gb')
         c.eq([(view('dk')['addWillAsk']['noReader']), (view('ca')['addWillAsk']['noReader']), view('xx')], [['naviair'], ['navcan_aip'], {'zone': 'xx', 'known': False}], 'Denmark and Canada say what the suite does not read yet; an unknown zone is `known: false`', what='noReader')
+
+
+@case('K185', 'Sources « indisponibles chez l\'éditeur » (DIRCAM, UK Mil; SOG-0273): the catalogue carries `unavailable` and base/cycle shelves them apart — state `unavailable`, never « late » nor « to do », absent from the next cycle\'s to-take list — and the FAA is ONE deliverable (the full subscription) whose page and file addresses follow the cycle', 'K',
+      rule='SOG-0273 (12 Nov 2026, the user: the DIRCAM and UK Mil sites « cassés depuis 1 an »): a source whose publisher no longer publishes is not late and is not to be done; base/cycle gives `unavailable: [ids]`, items with `unavailable: { since }`, download state `unavailable` (why `unavailable-at-publisher`) and, for the next cycle, state `unavailable`. The catalogue (AeroCatalogue.stepsOf → unavailable { since, note[4] }) and the launcher (base_cycle.UNAVAILABLE) say the same: compared here (K183 is the page side). The FAA entry of the catalogue is the 28DaySubscription of the cycle: page …/NASR_Subscription/<date>/, file on nfdc.faa.gov.')
+def k185(c):
+    import datetime
+    import tempfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    import importlib
+    BC = RJ.REGISTRY[('base', 'cycle')][0].__globals__
+    fn, check = RJ.REGISTRY[('base', 'cycle')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        data = _repo(DS, td, {})
+        (data / 'sia').mkdir(parents=True)
+        ctx = {**_ctx(DS, data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 12)}
+        r = fn(RJ.Job('base', 'cycle', {}), check({}), ctx)
+    by = {i['id']: i for i in r['items']}
+    c.eq(r['unavailable'], ['dircam', 'ukmil'], 'the shelved sources, apart', what='list')
+    c.eq([(by[k]['steps']['download']['state'], by[k]['why'], by[k]['unavailable']) for k in ('dircam', 'ukmil')], [('unavailable', 'unavailable-at-publisher', {'since': '2025-11'})] * 2, 'never « late », never « missing »: unavailable, and since when', what='state')
+    nx = {i['id']: i['state'] for i in r['next']['items']}
+    c.eq((nx.get('dircam'), nx.get('ukmil'), nx.get('sia')), ('unavailable', 'unavailable', 'to-take'), 'the next cycle: nothing to take for them, the others unchanged', what='next')
+    c.eq(BC['UNAVAILABLE'], {'dircam': '2025-11', 'ukmil': '2025-11'}, 'the launcher side of the list (K183 and the catalogue say the same)', what='py')
+    c.page.goto(f'{c.base}/frame/aerodb/test/catalogue.html', wait_until='load')
+    j = c.js("""() => { const C = AeroCatalogue, o = {};
+      for (const id of ['dircam', 'ukmil', 'sia']) { const s = C.stepsOf(id, '2612'); o[id] = s && s.unavailable ? { since: s.unavailable.since, n4: s.unavailable.note.length === 4 } : null; }
+      const f = C.stepsOf('adds', '2612');
+      return { o, page: f.page.url, files: f.files.map(x => [x.name, x.url, x.verified]) }; }""")
+    c.eq(j['o'], {'dircam': {'since': '2025-11', 'n4': True}, 'ukmil': {'since': '2025-11', 'n4': True}, 'sia': None}, 'the catalogue says the same: unavailable { since, note ×4 } on DIRCAM and UK Mil only', what='catalogue')
+    c.eq((j['page'], j['files']), ('https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/2026-11-26/',
+                                   [['28DaySubscription_Effective_<AAAA-MM-JJ>.zip', 'https://nfdc.faa.gov/webContent/28DaySub/28DaySubscription_Effective_2026-11-26.zip', True]]),
+         'the FAA: ONE file, the full subscription of the cycle; its page and its address are those of the cycle', what='faa')

@@ -19,6 +19,7 @@ UPLOAD = ('local', 'upload')
 SIA_ZIP = re.compile(r'^export_xml_bd_SIA_(\d{4})-(\d{2})-(\d{2})\.zip\Z', re.A)
 NATS_ZIP = re.compile(r'^EG_(AIP|OBS|UAS)_DS_(\d{4})(\d{2})(\d{2})_XML\.zip\Z', re.A)
 NASR_ZIP = re.compile(r'^(\d{2})_([A-Z][a-z]{2})_(\d{4})_(FIX|AWY|NAV)_CSV\.zip\Z', re.A)
+NASR_SUB = re.compile(r'^28DaySubscription_Effective_(\d{4}-\d{2}-\d{2})\.zip\Z', re.A)      # SOG-0273 : l'abonnement complet : UN fichier qui vaut le jeu entier
 MONTHS = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 KINDS = ('FIX', 'AWY', 'NAV')
 
@@ -41,8 +42,10 @@ def _groups(names, zone):
             keep[m.group(1)] = m.group(1) != 'AIP'
         elif zone == 'us' and (m := NASR_ZIP.match(n)) and m.group(2) in MONTHS and (c := _cycle(m.group(3), MONTHS.index(m.group(2)) + 1, m.group(1))):
             groups.setdefault('nasr', {}).setdefault(c, []).append(n)
+        elif zone == 'us' and (m := NASR_SUB.match(n)) and (c := _cycle(*m.group(1).split('-'))):
+            groups.setdefault('nasr', {}).setdefault(c, []).append(n)
     if 'nasr' in groups:      # un jeu incomplet n'est jamais touché : il n'entre pas dans le compte
-        groups['nasr'] = {c: ns for c, ns in groups['nasr'].items() if len(ns) == len(KINDS)}
+        groups['nasr'] = {c: ns for c, ns in groups['nasr'].items() if len(ns) == len(KINDS) or (len(ns) == 1 and NASR_SUB.match(ns[0]))}
     return {g: sorted(cs.items()) for g, cs in groups.items() if cs}, keep
 
 

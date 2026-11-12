@@ -4,9 +4,10 @@
   { ok, cycle: { inForce, next, ids: { inForce, next } } (l'identifiant AIRAC « 2611 » : année et numéro du cycle),
     items: [ { id (la source), label ×4, regime: 'auto' (le lanceur la prend seul) | 'hand' (attend la main de l'utilisateur) | 'local' (calculée ou lue sur ce poste),
                zones: [identifiants] (celles qu'elle nourrit ; omis pour les sources communes : `zoneCount`), zoneCount, personal: 'licence' | 'xplane' | '' ,
-               steps: { download: { state: 'done' | 'late' | 'missing' | 'waiting' | 'n/a', cycle (le cycle détenu, pour une source datée), at (ISO UTC du plus récent fichier) },
+               steps: { download: { state: 'done' | 'late' | 'missing' | 'waiting' | 'unavailable' | 'n/a', cycle (le cycle détenu, pour une source datée), at (ISO UTC du plus récent fichier) },
                         build: { zones: n, upToDate: n }, publish: { published: n, unpublished: n, unknown: n } },
-               why (la raison quand une étape manque : 'newer-in-downloads' | 'not-downloaded' | 'older-than-cycle' | 'no-file'),
+               why (la raison quand une étape manque : 'newer-in-downloads' | 'not-downloaded' | 'older-than-cycle' | 'no-file' | 'unavailable-at-publisher'),
+               unavailable: { since } (SOG-0273 : l'éditeur ne publie plus le fichier — DIRCAM, AIP militaire britannique : l'étape n'est NI « en retard » NI « à faire »),
                hand: { link, expected: [motifs de nom], inDownloads: [noms du premier niveau de Téléchargements] } (regime 'hand' seulement) } ],
     next: { cycle, items: [ { id, state: 'in-downloads' | 'to-take' | 'will-be-taken', files: [noms] } ] } (le cycle SUIVANT, à part : ce qui est déjà dans Téléchargements, ce qui reste à prendre ; une source prise seule « sera prise quand il sera en vigueur »),
     unread: [ { id, files: [noms], reason: 'no-reader' | 'format', note? } ] (ce que le poste a vu dans Téléchargements et que la suite ne lit pas encore : une ligne comme les autres, avec sa raison) }.
@@ -32,6 +33,7 @@ def _bs():
     return types.SimpleNamespace(**entry[0].__globals__)
 
 MAX_NAMES = 5000
+UNAVAILABLE = {'dircam': '2025-11', 'ukmil': '2025-11'}      # SOG-0273 : les sources « indisponibles chez l'éditeur » (le site ne répond plus depuis environ un an, dit l'utilisateur) : le catalogue (`unavailable`) dit la même chose, K185 les compare
 NO_READER_ZONES = {'naviair': ('dk', 'fo', 'gl'), 'navcan_aip': ('ca',)}      # les États dont des fichiers se déposent à la main et ne sont pas encore lus par la suite : la fiche d'un pays le dit (`addWillAsk.noReader`)
 EDITION_SOURCES = aero_cycles.EDITION_SOURCES      # publiés par éditions : l'édition détenue n'est jamais « en retard » du seul fait du cycle
 
@@ -158,12 +160,16 @@ def run(job, args, ctx):
             state, why = 'late', 'older-than-cycle'
         else:
             state = 'done'
+        if sid in UNAVAILABLE and state in ('late', 'missing'):
+            state, why = 'unavailable', 'unavailable-at-publisher'      # rangée à part : rien à faire tant que l'éditeur ne publie pas
         if state == 'late' and current in dl_cycles.get(sid, ()) and (held is None or held < current):
             why = 'newer-in-downloads'      # un fichier du cycle en vigueur attend déjà dans Téléchargements (par son nom) : à prendre
         item = {'id': sid, 'label': list(src['label']), 'regime': regime, 'personal': src.get('personal', ''), 'zoneCount': len(zones), **({} if common else {'zones': zones}),
                 'steps': {'download': {'state': state, **({'cycle': held} if held else {}), 'at': iso(at) if at else None}, 'build': {'zones': len(mine), 'upToDate': built}, 'publish': pub}}
         if why:
             item['why'] = why
+        if sid in UNAVAILABLE:
+            item['unavailable'] = {'since': UNAVAILABLE[sid]}
         if hand:
             item['hand'] = hand
         return item
@@ -179,6 +185,8 @@ def run(job, args, ctx):
     for it in items:
         if it['id'] in nxt_files:
             next_items.append({'id': it['id'], 'state': 'in-downloads', 'files': nxt_files[it['id']][:20]})
+        elif it['id'] in UNAVAILABLE:
+            next_items.append({'id': it['id'], 'state': 'unavailable', 'files': []})
         elif it['regime'] == 'hand':
             next_items.append({'id': it['id'], 'state': 'to-take', 'files': []})
         elif it['regime'] == 'auto':
@@ -207,7 +215,7 @@ def run(job, args, ctx):
                          'addWillAsk': {'sources': [i['id'] for i in srcs], 'auto': [i['id'] for i in srcs if i['regime'] == 'auto'],
                                         'hand': [{'id': i['id'], 'expected': (i.get('hand') or {}).get('expected', [])} for i in srcs if i['regime'] == 'hand'],
                                         'personal': [i['id'] for i in srcs if i['personal'] == 'licence'], 'noReader': [u for u, zl in NO_READER_ZONES.items() if zid in zl]}}
-    return {'ok': True, **({'zoneView': zone_view} if zone_view else {}), 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
+    return {'ok': True, **({'zoneView': zone_view} if zone_view else {}), 'cycle': {'inForce': current, 'next': nxt, 'ids': {'inForce': airac_id(current), 'next': airac_id(nxt)}}, 'items': items, 'unavailable': [it['id'] for it in items if it['id'] in UNAVAILABLE], 'next': {'cycle': nxt, 'items': next_items}, 'unread': unread}
 
 
 VERBS = {('base', 'cycle'): (run, check)}
