@@ -224,6 +224,40 @@
     /\n11 ZZCCC 37000\.000000 /
     .test(v3), v3);
 
+  // ---------------------------------------------------------------- branche en arc RF (AeroDB e12c25faf : points arc, id null)
+  const arcPt = (lat, lon) => ({
+      id: null,
+      lat,
+      lon,
+      alt: null,
+      arc: true,
+      leg: 'RF',
+      phase: 'main'
+    }),
+    procsRf = {
+      ...procs,
+      app: rec('EIXB.APP.RNPZ25L.RW25L.NONE', 'APP', 'RNP Z RWY 25L', [{
+        id: 'AP301',
+        lat: 53.3,
+        lon: -6
+      }, arcPt(53.3033, -6.002), arcPt(53.3066, -6.004), arcPt(53.31, -6.006), {
+        id: 'AP302',
+        lat: 53.4,
+        lon: -6.2,
+        leg: 'RF',
+        nm: 8.4,
+        phase: 'main'
+      }])
+    },
+    pathRf = expandedPath(flight, procsRf),
+    arcs = pathRf.filter(p => p.arc === true),
+    v3rf = lines(toFmsV3(flight, pathRf, opts)),
+    i301 = v3rf.findIndex(l => / AP301 /.test(l));
+  ck('arc RF : le chemin garde les trois points de l’arc (0,2 NM l’un de l’autre, sans nom : jamais fondus)', arcs.length === 3, pathRf.map(
+    p => `${p.id || '·'}${p.arc ? '(arc)' : ''}`).join(' '));
+  ck('arc RF : le .fms v3 n’écrit aucun point d’arc ; AP301 puis AP302, le point de fin de la branche', i301 > 0 && / AP302 /.test(v3rf[
+    i301 + 1]) && !v3rf.some(l => /^28 \S*_/.test(l) || /^\d+ WPT /.test(l)), v3rf.join(' | '));
+
   // ---------------------------------------------------------------- 1100
   const x = toFms1100(flight, path, opts),
     L = lines(x),

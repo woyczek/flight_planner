@@ -77,11 +77,14 @@ function routePoints(path) {
   return (path || []).filter(p => p && p.origin === 'route' && fin(p.lat) !== null && fin(p.lon) !== null);
 }
 /** Points de tout le chemin volé pour le format version 3, qui ne connaît pas les procédures : la route et les points des procédures,
- *  sans approche interrompue, sans seuil de piste (« RW07 » n'est pas un point de navigation), sans doublon consécutif. */
+ *  sans approche interrompue, sans seuil de piste (« RW07 » n'est pas un point de navigation), sans doublon consécutif. Un point de
+ *  procédure sans nom (un point d'arc RF d'AeroDB : arc vrai, id null) n'est jamais écrit : la branche en arc part par son point de
+ *  fin, nommé (INTEGRATION d'aerodb, « RF arcs: what the consumers must use »). */
 function flownPoints(path) {
   const out = [];
   for (const p of path || []) {
     if (!p || p.origin === 'missed' || p.rwy || fin(p.lat) === null || fin(p.lon) === null) continue;
+    if (p.origin !== 'route' && (p.arc === true || !ident(p.id))) continue;
     if (out.length && ident(out.at(-1).id) === ident(p.id)) continue;
     out.push(p);
   }

@@ -1723,3 +1723,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   AIP with its chart (and the same, disabled, in the list: never chosen); a « finale seule » record (synthetic FAF and threshold) named
   so; a chart-only approach of the same kind and runway as a coded one (final-only comprised) is not said twice; « Aucune approche
   publiée » only when `approachSummary.none`. F150 (red before).
+- **12 Nov 2026 — RF arcs in the path and the export** (AeroDB e12c25faf / abd0f5980, INTEGRATION « RF arcs: what the consumers must
+  use »): an arc point (`arc: true`, `id: null`) is never « the same point » as another in frame/lib/flight_path.js (`samePoint`: before,
+  a nameless point within 0.3 NM was merged with its neighbour, so an arc of 20+ points kept one, and the named fix before it was lost);
+  the path and its distances go through every arc point (the printed `nm` of the RF point stays metadata, never added). The .fms v3
+  export (frame/lib/fms.js `flownPoints`, the only writer that lists procedure points) never writes a nameless procedure point: the RF
+  leg leaves by its named end point. The 1100 and .pln writers list route points only (procedures by name): unchanged. Bench of
+  frame/lib/test/fms.html (F60), red before (one arc point kept, AP301 lost, a nameless position written).

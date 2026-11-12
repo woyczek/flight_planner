@@ -142,9 +142,13 @@ function procPoint(p, origin, phase) {
   if (o.phase === 'missed') o.origin = 'missed';
   return o;
 }
-/** Même point : même nom et positions proches (moins de 3 NM), ou sans nom à moins de 0,3 NM. */
+/** Un point d'arc RF : p_arc dans la chaîne, arc une fois le point rendu (legFields). */
+const isArc = p => p.p_arc === true || p.arc === true;
+/** Même point : même nom et positions proches (moins de 3 NM), ou sans nom à moins de 0,3 NM. Un point d'arc RF (p_arc, AeroDB : un
+ *  point du tracé tous les 5° au plus, sans nom) n'est jamais « le même » qu'un autre : il ne coupe pas une chaîne et n'est pas fondu
+ *  avec son voisin (le tracé et la distance passent par TOUS les points de l'arc). */
 const samePoint = (a, b) => {
-  if (!a || !b || a.lat === null || b.lat === null || a.lon === null || b.lon === null) return false;
+  if (!a || !b || a.lat === null || b.lat === null || a.lon === null || b.lon === null || isArc(a) || isArc(b)) return false;
   const d = gcNm(a, b);
   return a.id && b.id && a.id.toUpperCase() === b.id.toUpperCase() ? d < 3 : d < .3;
 };
