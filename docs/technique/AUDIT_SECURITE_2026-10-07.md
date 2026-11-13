@@ -1036,6 +1036,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 184 | The fix of the defect of 181 (337e3c177: header of an exported or stored YAML, names in the archive) and the comparison extended to the shared mission and the draft of the generator (22dbe6d04, SOG-0293 c) | fix verified, defect closed; extension acceptable |
 | 185 | The fix of the defect of 183 (b8e3048ef: `loadYaml`, a budget of expanded nodes, one `try` per item, the three notes) and the button emphasis of the comparison (d140b1358) | fix verified, defect closed; one note |
 | 186 | The fix of 182 (ef0772f71) and the V3 editor's places and story steps (6dc8740f5, ce72c9c25, 923807228); the V2 comparison's header and criteria (cc8dfc3b1) | defects 1 and 2 of 182 closed for the editor; two defects proved (a single-object rendezvous is deleted; the registry's own dump is not guarded) |
+| 187 | The fix of 186 (d1f544bfe: `shapeOf` in the frame, single objects read as one entry, the guards of the registry, `add.js` and `move.js`), the editor's risks step (92906e900), `aerodb.navaidsOf` (7667e5c6c) and the stop-point names of `ground.py` (62cc7ce8f) | defects of 186 closed; one defect proved (the risks step deletes a risk whose danger is under `title`); AeroDB acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2848,6 +2849,35 @@ file freezes the writes of whoever next saves. **Fix.** `shapeOf` (or the V2's `
 (refuse the document and say so, as the editor does), and in `add.js` and `move.js` before their dump; counter-test: the nine-level registry above is
 refused in under a second and no write is attempted. **Note.** A legitimate anchor in a mission file is now refused with a message (the rewrite would
 expand it): the right trade, but the message should say how to remove it (write the repeated object out).
+
+**187. The fix of 186, the risks step, `navaidsOf` and the stop-point names — defects of 186 closed; one defect proved in the risks step; AeroDB acceptable.**
+*Fix (d1f544bfe).* `shapeOf` and `NODES_MAX` now live in `frame/lib/mission.js` and the editor re-exports them. Lists are read the way the
+reader reads them (`arrOf`: an array, or one object as one entry), and a kind whose rows did not change keeps its key as the file writes it. Probed on
+the fixed code: a `rendezvous` given as one object survives the edit of the target's latitude, a `zones` or a `turning_points` that is not a list is
+left alone, the teams and places round trips are identical, and the 20-level alias file is refused in 2 ms by `shapeOf` (iterative, no
+expansion). The registry is read through `shapeOf`: a registry or a mission with anchors is “unreadable” and so never rewritten (`regPut` and
+`edRegister` do not write a registry that does not read), `withHeader` throws before any dump (probed: the nine-level registry now throws at once instead
+of 6.4 s), `add.js` answers `alias` for such a text and `move.js` (`withAirline`) returns `null` before its dump; the message says how to get
+out (write the repeated object out in full). N56 green. Defects 1 and 2 of 186 are closed. *Risks step (92906e900).* The same rules as the other steps
+(an unchanged risk stays the file's own object, bounds kept, texts cut to 300, escaped on output), and a removed risk is removed from every
+`i18n.<language>.risks`. **Defect (proved): editing a risk whose danger is under `title` or `name` deletes it.** The reader and `risksOf` take the danger
+from `hazard`, else `title`, else `name`; `withRisks` rebuilds an edited risk from the file's object plus the changed fields and then keeps it only
+`if (o.hazard)`, so for `{ title: 'Birds', mitigation: 'old' }` an edit of the mitigation alone leaves no `hazard` and the risk is dropped. Probed: four
+risks in, three out, and the `i18n.en.risks` list is left with four entries (no longer in the order of `risks`). Clearing a danger on purpose
+also drops the risk (the stated rule) but leaves the translations unaligned. **Fix and counter-test.** Test the danger as `risksOf` reads it
+(`hazard ?? title ?? name`) and keep a risk whose danger is shown; drop the matching `i18n` entry for every risk removed by either path (those
+absent from the rows and those dropped for an empty danger). Counter-test (red now): `withRisks` with the mitigation of a `title` risk changed keeps
+four risks and four translations, and the one-risk-cleared case leaves the lists the same length. *`navaidsOf` (7667e5c6c).* The code must have four
+letters or digits; the aerodrome comes from the published base and the aids from `navaids` within 15 NM, kept only when `kind` is `ILS` and `ad`
+matches; every field is checked by an anchored pattern (runway `^\d{2}[LRC]?$`, identifier `^[A-Z0-9]{1,5}$`, frequency `^1[01]\d\.\d{1,3}$`, category among
+four words, glide slope `^3[23]\d\.\d{1,3}$`, DME channel `^\d{1,3}[XY]$`), the bearing a number from 0 to 360 or `null`, the type from a closed list, duplicates removed,
+the sort by runway then identifier; the readers add `cat`, `gs`, `dmeId` and `dmeChannel` from the AIXM with linear patterns. K226 to K228 green. **Notes.** (1) `lat` and
+`lon` of an aid are `+n.lat` and `+n.lon` without a check: a missing value becomes `0` and a text `NaN`; test them as finite and in range like the aerodrome's
+(and drop the aid otherwise). (2) A `bearing` of `true` passes the numeric test as `1`; test the type. *`ground.py` (62cc7ce8f).* Only `_name` changed:
+for a stop point, `NO ENTRY` gives no name and a leading “stop point” label is removed by anchored patterns applied to a text whose white space is
+already collapsed to single spaces; no new source, no new network call. (3) The 100,000-node ceiling of `shapeOf` is about two thousand registry lines
+(some forty nodes each); the registry has a few hundred today, but a larger one would be refused as unreadable: raise it for the registry only if it ever
+approaches.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
