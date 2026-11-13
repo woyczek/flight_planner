@@ -7289,6 +7289,66 @@ def a190(c):
     c.check_errors()
 
 
+@case('A191', "Growing the window never takes a container breakpoint away from the content: the left bar goes from the 56 px rail to the 210 px bar at one width and the module's width must not fall under a width it already had (a two-column sheet turned into one column and back, the right column « blinked ») (SOG-0331)", 'A',
+      designs=('standard',), screens=True, night=False, phone=False,
+      rule="SOG-0331 (the user, on SOG-0287: « attention au clignottement de la colonne de droite (3 screenshots) au moment où le rail s'élargit »): the bar is the rail (56 px) from 761 to 1099 px and the whole bar (210 px) from 1100 px; the module's `@container (min-width: 900px)` two-column sheet had 1 043 px at 1 099 px and 890 px at 1 100 px — the column went away just as the window grew, and came back 10 px later; the rule: for every `@container (min-width: N)` the loaded styles use, once the module is N px wide it stays at least N px wide as the window grows")
+def a191(c):
+    c.page.set_viewport_size({'width': 1000, 'height': 800})
+    c.open('missions', app='company', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-module=missions]')", timeout=20000, what='Company mounts Missions')
+    BPS = r"""() => { const out = new Set(); const walk = rules => { for (const r of rules) { if (r.conditionText && /min-width/.test(r.conditionText) && r.constructor.name.includes('Container')) { const m = /min-width:\s*(\d+)px/.exec(r.conditionText); if (m) out.add(+m[1]); } if (r.cssRules) walk(r.cssRules); } };
+      for (const s of document.styleSheets) { try { walk(s.cssRules) } catch (e) {} } return [...out].sort((a, b) => a - b) }"""
+    c.until(f"({BPS})().includes(850)", timeout=15000, what='the styles of the module are loaded (the 850 of the sheet among its container breakpoints)')
+    bps = c.js(f"({BPS})()")
+    c.ok(bps and 850 in bps, bps, 'the container breakpoints of the loaded styles are read (the 850 of the sheet among them)')
+    widths = list(range(780, 1300, 5))
+    got = []
+    for w in widths:
+        c.page.set_viewport_size({'width': w, 'height': 800})
+        c.page.wait_for_timeout(60)
+        got.append([w, c.js("document.querySelector('[data-module=missions]').clientWidth")])
+    bad = []
+    for b in bps:
+        if b > 1400:
+            continue
+        seen = False
+        for w, cw in got:
+            if cw >= b:
+                seen = True
+            elif seen:
+                bad.append((b, w, cw))
+                break
+    c.eq(bad, [], 'once the module is N px wide it stays at least N px wide while the window grows (a bar that gets wider takes no breakpoint away)', what=f'{c.design}: {got[40:60]}')
+    c.page.set_viewport_size({'width': 1280, 'height': 800})
+    c.check_errors()
+
+
+@case('A194', "A real « Signaler » button heads the Help on all its views (the manual, the index, a tutorial, a suite document) and the Recette and the Roadmap, visible while the page is scrolled, at least 44 px, and it opens the report screen (SOG-0316: « pas trouvé le bug report »)", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule="SOG-0316 (the user, 13 Nov: « pas trouvé le bug report »): the entry was a text link at the top of the Help home, out of sight from a chapter; now a bordered button `[data-report]` (4 languages) sits in the head bar of every Help view and of the Recette and the Roadmap — where the user spends his day — sticky, so it stays in reach when the page is scrolled; it goes to #signaler")
+def a194(c):
+    c.open('help', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-chapter]')", timeout=20000, what='the Help with its chapters')
+    chapter = c.js("document.querySelector('[data-chapter]').dataset.chapter")
+    views = [('help', '#help'), ('a chapter', '#help?m=' + chapter), ('help index', '#help?all=1'), ('a tutorial', '#help?t=prepare-flight'), ('recette', '#recette'), ('roadmap', '#roadmap')]
+    for name, h in views:
+        c.page.evaluate("(h) => { location.hash = h }", h)
+        c.until("!!document.querySelector('[data-report]')", timeout=20000, what=f'{name}: the report button')
+        c.wait(400)
+        g = c.js("""() => { const b = document.querySelector('[data-report]'), r = b.getBoundingClientRect(); return { h: Math.round(r.height), href: b.getAttribute('href'), w: Math.round(r.width), inView: r.top >= 0 && r.bottom <= innerHeight, txt: b.textContent.trim() } }""")
+        c.ok(g['h'] >= 44 and g['href'] == '#signaler' and g['txt'], g, f'{name}: a button of 44 px at least, « {g["txt"]} », to #signaler')
+        c.page.evaluate("() => { const v = document.querySelector('.f-view') || document.scrollingElement; v.scrollTop = 1500; window.scrollTo(0, 1500) }")
+        c.wait(250)
+        c.ok(c.js("(() => { const r = document.querySelector('[data-report]').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight })()"), name, f'{name}: still in sight after scrolling (the bar is sticky)')
+        c.page.evaluate("() => { const v = document.querySelector('.f-view') || document.scrollingElement; v.scrollTop = 0; window.scrollTo(0, 0) }")
+    c.page.evaluate("() => { location.hash = '#recette' }")
+    c.until("!!document.querySelector('[data-report]')", timeout=20000, what='the Recette again')
+    c.tap('[data-report]')
+    c.until("!!document.querySelector('[data-form]')", timeout=20000, what='the report screen opens')
+    c.shot(f'A194_{c.width}_{c.lang}_delivered.png')
+    c.check_errors()
+
+
 @case('A180', 'Maintenance: « Administration » is never cut inside the word on the Material rail, and the button « Réglage des seuils de la carte » of the Administration card opens the Map (Pilot app) instead of the Data screen (SOG-0315, items 1 and 2)',
       'A', langs4=True, screens=False, night=False, designs=('material',),
       rule='SOG-0315 (the user, recette of SOG-0274 and SOG-0118): the Material rail is 88 px and its entries carry `overflow-wrap: anywhere`, so « Administration » (12 px, about 80 px) was cut as « Administratio / n »; and `#maps?tune=1` opened from the Administration card INSIDE the Maintenance app names a module that app does not have, so the frame fell back to its first screen (Données)')

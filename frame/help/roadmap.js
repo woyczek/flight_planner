@@ -16,7 +16,13 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const ORDER = ['done', 'doing', 'planned', 'later'];
   const STORE = 'device/roadmap.json';
+  /** Le bouton « Signaler » de la barre d'en-tête (SOG-0316 : « pas trouvé le bug report »). */
+  const reportBtn = t => `<a class="f-report" href="#signaler" data-report title="${esc(t(T.report))}">${esc(t(T.reportShort))}</a>`;
   const T = {
+    report: ['Signaler un problème ou une demande', 'Report a problem or make a request', 'Ein Problem melden oder einen Wunsch äußern',
+      'Informar de un problema o hacer una petición'
+    ],
+    reportShort: ['Signaler', 'Feedback', 'Melden', 'Informar'],
     title: ['Feuille de route', 'Roadmap', 'Fahrplan', 'Hoja de ruta'],
     updated: ['Mise à jour : {d}', 'Updated: {d}', 'Aktualisiert: {d}', 'Actualizado: {d}'],
     apps: ['Applications', 'Applications', 'Anwendungen', 'Aplicaciones'],
@@ -151,7 +157,7 @@
       }).join('')}</section>`;
     }).join('');
     const apps = (d.apps || []).map(a => `<li class="f-rm-item" data-state="${esc(a.state)}"><b>${esc(t(row(a.label)))}</b> — ${esc(st(a.state))}</li>`).join('');
-    view.innerHTML = `<h1>${esc(t(T.title))}</h1>
+    view.innerHTML = `<div class="f-docbar"><h1>${esc(t(T.title))}</h1>${reportBtn(t)}</div>
       ${d.note ? `<p class="f-card f-rm-note">${esc(t(row(d.note)))}</p>` : ''}
       <p class="f-muted">${esc(t(T.updated, { d: d.updated || '?' }))} · <a href="#help">${esc(t(T.help))}</a></p>
       ${apps ? `<h2>${esc(t(T.apps))}</h2><ul class="f-rm-apps">${apps}</ul>` : ''}
@@ -261,7 +267,7 @@
         }).join('')}</div>`;
     };
     const draw = focus => {
-      view.innerHTML = `<h1>${esc(t(T.title))}</h1>
+      view.innerHTML = `<div class="f-docbar"><h1>${esc(t(T.title))}</h1>${reportBtn(t)}</div>
         ${d.note ? `<p class="f-card f-rm-note">${esc(t(row(d.note)))}</p>` : ''}
         <p class="f-muted">${esc(t(T.updated, { d: d.updated || '?' }))} · <a href="#help">${esc(t(T.help))}</a></p>
         ${frieze()}

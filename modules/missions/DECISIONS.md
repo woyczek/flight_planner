@@ -286,3 +286,6 @@
   Also, from the ergonomist's reading of the step: map kinds said in words (« générale », « cible », « détail », « détail du
   rendez-vous », « zone ») instead of `general · general`; for a link flight, « À compléter » no longer asks the positions of the two
   aerodromes (they come from the aero base by their ICAO code) nor the story (optional).
+
+## 13 November 2026 — the container breakpoint of the sheet is 850 px (SOG-0331)
+`@container (min-width: 900px)` became 850 on the four rules of the sheet (`.ms-evrow`, `.ms-edteam`, `.ms-edgrid`, `.ms-sheet`), by V3 Frame, a one-line exception to this module's file: at 1 100 px the whole left bar leaves the module 858 px and the second column was lost as the window grew (the « blinking » right column). Noreg A191 (generic rule), captures at 940 and 1 100 px: two columns. See `frame/design/DECISIONS.md`.

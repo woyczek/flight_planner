@@ -294,7 +294,8 @@ details.f-card[open]>summary {
 .f-full {
   grid-column: 1/-1
 }
-@container (min-width: 900px) {
+/* 850 px et non 900 (SOG-0331) : à 1 100 px la barre entière prend 154 px et un module n'a plus que 858 px ; un seuil de conteneur à 900 px s'y perdrait quand la fenêtre grandit (A191) */
+@container (min-width: 850px) {
   .f-cols {
     display: grid;
     grid-template-columns: repeat(var(--f-cols, 3), minmax(0, 1fr));

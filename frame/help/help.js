@@ -30,6 +30,7 @@
     report: ['Signaler un problème ou une demande', 'Report a problem or make a request', 'Ein Problem melden oder einen Wunsch äußern',
       'Informar de un problema o hacer una petición'
     ],
+    reportShort: ['Signaler', 'Feedback', 'Melden', 'Informar'],
     label: ['{h} :', '{h}:', '{h}:', '{h}:'],
     contents: ['Sommaire', 'Contents', 'Inhalt', 'Índice'],
     back: ['↑ Sommaire', '↑ Contents', '↑ Inhalt', '↑ Índice'],
@@ -73,6 +74,8 @@
     tutorials: ['Tutoriels', 'Tutorials', 'Tutorials', 'Tutoriales']
   };
   // tutoriels, dans l'ordre d'usage (fichiers frame/help/tutorial/<id>.<langue>.md, vérifiés par build_help.py)
+  /** Le bouton « Signaler » de la barre d'en-tête (SOG-0316 : « pas trouvé le bug report »). */
+  const reportBtn = c => `<a class="f-report" href="#signaler" data-report title="${esc(c.t(T.report))}">${esc(c.t(T.reportShort))}</a>`;
   const TUTORIALS = [{
     id: 'join-airline',
     title: ['Rejoindre la compagnie', 'Join the airline', 'Der Fluggesellschaft beitreten', 'Unirse a la aerolínea']
@@ -346,7 +349,7 @@
     if (got.lang !== c.lang()) doc.lang = got.lang;
     doc.innerHTML = r.html;
     const back = `<a href="#help">${esc(c.t(T.manual))}</a>`;
-    view.innerHTML = `<p class="f-back">${back}</p>`;
+    view.innerHTML = `<div class="f-docbar"><p class="f-back">${back}</p>${reportBtn(c)}</div>`;
     view.append(doc);
     view.insertAdjacentHTML('beforeend', `<p class="f-back">${next ? `<a href="#help?t=${encodeURIComponent(next.id)}">${esc(c.t(T.next, { t: c.t(next.title) }))}</a> · ` : ''}${back}</p>`);
     labelTables(doc, c.t);
@@ -368,7 +371,7 @@
       tutorials: true
     });
     const list = c.tutorials === false && pilot ? tuts.replace(/href="#help\?t=/g, `href="${esc(pilot.href)}?t=`) : tuts;
-    view.innerHTML = `<div class="f-doc" data-help-index><h1>${esc(c.t(T.all))}</h1><p class="f-muted">${esc(c.t(T.allIntro))}</p>
+    view.innerHTML = `<div class="f-docbar"><p class="f-back"><a href="#help">${esc(c.t(T.manual))}</a></p>${reportBtn(c)}</div><div class="f-doc" data-help-index><h1>${esc(c.t(T.all))}</h1><p class="f-muted">${esc(c.t(T.allIntro))}</p>
       <h2>${esc(c.t(T.manuals))}</h2><ul data-help-manuals>${apps.map(a => `<li><a href="${esc(a.href)}" data-app="${esc(a.id)}">${esc(c.t(T.manualOf, { a: a.name }))}</a></li>`).join('')}</ul>
       ${list ? `<h2>${esc(c.t(T.tutorials))}</h2><ul data-help-tutorials>${list}</ul>` : ''}</div>`;
   }
@@ -396,7 +399,7 @@
     doc.className = 'f-doc';
     doc.dataset.suiteDoc = id;
     doc.innerHTML = md(text, new URL(path, c.root).href).html;
-    view.innerHTML = `<p class="f-back"><a href="#help">${esc(c.t(T.manual))}</a></p>`;
+    view.innerHTML = `<div class="f-docbar"><p class="f-back"><a href="#help">${esc(c.t(T.manual))}</a></p>${reportBtn(c)}</div>`;
     view.append(doc);
     labelTables(doc, c.t);
     for (const a of doc.querySelectorAll(
@@ -457,7 +460,7 @@
         `<p class="f-howto-show"><a href="#${esc(id)}" data-howto-show="${esc(id)}">${esc(c.t(T.showAgain))}</a></p>`);
     }
     view.replaceChildren(intro);
-    intro.insertAdjacentHTML('afterbegin', `<p class="f-rm-link"><a href="#roadmap">${esc(c.t(T.roadmap))}</a> · <a href="#signaler" data-report>${esc(c.t(T.report))}</a></p>`);
+    intro.insertAdjacentHTML('afterbegin', `<div class="f-docbar"><p class="f-rm-link"><a href="#roadmap">${esc(c.t(T.roadmap))}</a></p>${reportBtn(c)}</div>`);
     // « Commencer par… » : les tutoriels, après le titre du manuel
     const list = await tutorialList(c);
     if (list)(intro.querySelector('h1 ~ p:not(.f-rm-link)') || intro.querySelector('h1') || intro.firstChild).insertAdjacentHTML(

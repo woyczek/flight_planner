@@ -109,7 +109,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-rkrow{grid-template-columns:minmax(0,1fr) auto}
 [data-module="missions"] .ms-evrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 [data-module="missions"] .ms-evrow>.ms-evtext{grid-column:1 / span 2}
-@container (min-width: 900px){
+@container (min-width: 850px){
   [data-module="missions"] .ms-evrow{grid-template-columns:minmax(0,.6fr) minmax(0,1fr) minmax(0,2fr) auto}
   [data-module="missions"] .ms-evrow>.ms-evtext{grid-column:auto}
 }
@@ -117,13 +117,13 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-stload>.f-field:first-child{flex:3 1 14em}
 [data-module="missions"] [data-stcount][data-over="1"]{color:var(--sog-warn,#b06f00)} /* au-delà de 600 : la synthèse coupera (jamais l'écriture) */
 [data-module="missions"] .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2;min-width:44px;min-height:44px}
-@container (min-width: 900px){
+@container (min-width: 850px){
   [data-module="missions"] .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,.7fr) minmax(0,1.2fr) minmax(0,1.2fr) auto}
   [data-module="missions"] .ms-edteam>.ms-edtdel{grid-column:auto;grid-row:auto}
   [data-module="missions"] .ms-edthead{display:grid;padding:0;border:0;font-size:.9em}
   [data-module="missions"] .ms-tlabel{display:none}
 }
-@container (min-width: 900px){
+@container (min-width: 850px){
   [data-module="missions"] .ms-edgrid{display:grid;grid-template-columns:minmax(12em,16em) minmax(0,1fr) minmax(14em,20em);gap:16px;align-items:start}
   [data-module="missions"] .ms-steps{flex-direction:column;overflow:visible}
   [data-module="missions"] .ms-steps>button{border-radius:6px;text-align:left;border-color:transparent;background:none}
@@ -147,7 +147,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] a[data-zonemap],[data-module="missions"] a[data-maplink]{display:inline-flex;align-items:center;min-height:44px} /* cible de 44 px */
 [data-module="missions"] .ms-png{display:block;max-width:100%;height:auto;margin:.4em 0}
 [data-module="missions"] .ms-sec>summary{min-height:44px;display:flex;align-items:center}
-@container (min-width: 900px){
+@container (min-width: 850px){
   [data-module="missions"] .ms-sheet{display:grid;grid-template-columns:minmax(16em,24em) minmax(0,1fr);gap:16px;align-items:start}
   [data-module="missions"] .ms-sheet .ms-first,[data-module="missions"] .ms-sheet .ms-detail{display:block}
   [data-module="missions"] .ms-todetail,[data-module="missions"] .ms-tofirst{display:none}

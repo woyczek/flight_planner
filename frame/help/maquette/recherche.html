@@ -204,15 +204,28 @@ button {
   padding: 0
 }
 .group li {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 12px;
-  align-items: center;
-  padding: 8px 0;
   border-bottom: 1px solid var(--line)
 }
 .group li:last-child {
   border-bottom: 0
+}
+.group li button.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 4px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer
+}
+.group li button.row:hover,
+.group li button.row:focus-visible {
+  background: var(--accent-bg);
+  outline: 0
 }
 .name {
   font-weight: 600
@@ -222,25 +235,18 @@ button {
   color: inherit;
   border-radius: 2px
 }
+.act {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap
+}
 .what {
-  grid-column: 1;
+  flex: 1 1 100%;
   font-size: 14px;
   color: var(--muted);
   overflow-wrap: anywhere
-}
-.go {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-  background: #fff;
-  color: var(--accent);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap
 }
 .msg {
   padding: 28px 4px;
@@ -270,6 +276,20 @@ button {
   color: var(--warn);
   border-radius: 6px;
   padding: 12px 14px
+}
+.recent-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px
+}
+.recent-head .one {
+  background: none;
+  color: var(--accent);
+  border-color: var(--line);
+  font-weight: 400;
+  min-height: 44px;
+  padding: 0 14px
 }
 .recent {
   list-style: none;
@@ -321,6 +341,11 @@ button {
     <button type="button" data-v="none" aria-pressed="false">Rien trouvé</button>
     <button type="button" data-v="zone" aria-pressed="false">Hors des zones installées</button>
   </span>
+  <span>Maintenance :</span>
+  <span class="seg" id="ac">
+    <button type="button" data-v="on" aria-pressed="true">Avec accès</button>
+    <button type="button" data-v="off" aria-pressed="false">Sans accès</button>
+  </span>
 </div>
 
 <div class="head"><b>Pilote</b>
@@ -348,13 +373,16 @@ const hl = (s, q) => {
   const i = s.toLowerCase().indexOf(q.toLowerCase());
   return q && i >= 0 ? `${esc(s.slice(0, i))}<mark>${esc(s.slice(i, i + q.length))}</mark>${esc(s.slice(i + q.length))}` : esc(s);
 };
-const row = (name, what, verb, q) => `<li><span class="name">${hl(name, q)}</span><span class="what">${esc(what)}</span><button class="go" type="button">${esc(verb)}</button></li>`;
+const row = (name, what, verb, q) => `<li><button class="row" type="button"><span class="name">${hl(name, q)}</span><span class="act">${esc(verb)} ›</span><span class="what">${esc(what)}</span></button></li>`;
 const group = (title, rows, more) => `<section class="group"><h2><span>${esc(title)}</span>${more ? `<button type="button">Tout voir (${more})</button>` : ''}</h2><ul>${rows.join('')}</ul></section>`;
+const ACCESS = {
+  on: true
+};
 const STATES = {
   empty: {
     q: '',
     html: () => `<div class="msg"><p>Cherchez un terrain (<b>LFRS</b>), une voie (<b>UN858</b>), un point, un espace, une procédure, une mission ou un aéronef (<b>F-GABC</b>). À partir de deux signes ; l'identifiant exact vient d'abord.</p>
-      <p class="muted">Les dernières recherches de cet appareil (un toucher la relance) :</p>
+      <p class="muted recent-head"><span>Les dernières recherches de cet appareil (un toucher la relance) :</span><button type="button" class="one">Effacer</button></p>
       <ul class="recent"><li><button type="button"><b>UN858</b><small>voie</small></button></li><li><button type="button"><b>LFRS</b><small>terrain</small></button></li><li><button type="button"><b>ESSB</b><small>terrain</small></button></li></ul></div>`
   },
   airway: {
@@ -374,21 +402,29 @@ const STATES = {
   },
   none: {
     q: 'zzqx',
-    html: q => `<div class="msg"><p><b>Rien pour « ${esc(q)} ».</b></p><p class="muted">Essayez le début d'un nom (Nantes) ou l'identifiant : LFRS, UN858, F-GABC.</p><button class="one" type="button">Effacer</button></div>`
+    html: q => `<div class="msg"><p><b>Rien pour « ${esc(q)} » dans vos zones installées</b> (France, Espagne, Royaume-Uni).</p><p class="muted">Essayez le début d'un nom (Nantes) ou l'identifiant : LFRS, UN858, F-GABC.</p>${ACCESS.on ? '<button class="one" type="button">Voir les zones installées</button>' : '<p class="muted">Demandez à l\'administrateur d\'installer la zone qui vous manque.</p>'}</div>`
   },
   zone: {
     q: 'kjfk',
-    html: q => `<div class="msg"><p class="warn"><b>KJFK n'est pas dans vos zones installées.</b><br>Installées : France, Espagne, Royaume-Uni. La recherche ne lit que la base de ce poste : rien ne sort.</p><button class="one" type="button">Voir les zones installées</button></div>`
+    html: q => `<div class="msg"><p class="warn"><b>KJFK n'est pas dans vos zones installées.</b><br>Installées : France, Espagne, Royaume-Uni. La recherche ne lit que la base de ce poste : rien ne sort.</p>${ACCESS.on ? '<button class="one" type="button">Voir les zones installées</button>' : '<p class="muted">Demandez à l\'administrateur d\'installer la zone qui vous manque.</p>'}</div>`
   }
 };
 
+let cur = 'empty';
+
 function paint(v) {
+  cur = v;
   const s = STATES[v];
   $('q').value = s.q;
   $('res').innerHTML = s.html(s.q);
   document.querySelectorAll('#st button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
 }
 document.querySelectorAll('#st button').forEach(b => b.onclick = () => paint(b.dataset.v));
+document.querySelectorAll('#ac button').forEach(b => b.onclick = () => {
+  ACCESS.on = b.dataset.v === 'on';
+  document.querySelectorAll('#ac button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  paint(cur);
+});
 paint('empty');
 </script>
 </body>

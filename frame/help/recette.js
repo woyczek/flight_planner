@@ -21,7 +21,13 @@
     ROWS_MAX = 12,
     SEVEN = 7,
     SECTIONS = ['today', 'older', 'known', 'seen'];
+  /** Le bouton « Signaler » de la barre d'en-tête (SOG-0316 : « pas trouvé le bug report »). */
+  const reportBtn = t => `<a class="f-report" href="#signaler" data-report title="${esc(t(T.report))}">${esc(t(T.reportShort))}</a>`;
   const T = {
+    report: ['Signaler un problème ou une demande', 'Report a problem or make a request', 'Ein Problem melden oder einen Wunsch äußern',
+      'Informar de un problema o hacer una petición'
+    ],
+    reportShort: ['Signaler', 'Feedback', 'Melden', 'Informar'],
     title: ['Recette', 'Acceptance', 'Abnahme', 'Recepción'],
     intro: [
       'Un test fonctionnel par fiche livrée : où aller, quoi faire, quoi voir. « Validé » ou « Refusé » (un refus demande un commentaire) : l’ergonome lit vos verdicts à chaque tour.',
@@ -510,7 +516,7 @@
       const n = k => by[k].length,
         verdictN = v => mine.filter(x => !known(x) && verdictOf(x)?.verdict === v).length;
       const tabs = questions.length ? `<div class="f-rm-bar" role="tablist" data-tabs>${['tests', 'decisions'].map(k => `<button type="button" class="f-rm-btn" data-tab="${k}" aria-pressed="${ui.tab === k}">${esc(k === 'tests' ? t(T.tabTests) : t(T.tabDecide, { n: undecided() }))}</button>`).join('')}</div>` : '';
-      view.innerHTML = `<h1>${esc(t(T.title))}</h1>${tabs}${ui.tab === 'decisions' && questions.length ? decisionsPanel() : `        <p class="f-muted">${esc(t(T.intro))}</p>
+      view.innerHTML = `<div class="f-docbar"><h1>${esc(t(T.title))}</h1>${reportBtn(t)}</div>${tabs}${ui.tab === 'decisions' && questions.length ? decisionsPanel() : `        <p class="f-muted">${esc(t(T.intro))}</p>
         <p data-summary>${esc(t(T.summary, { a: n('today') + n('older'), b: verdictN('ok') + verdictN('reserve'), c: verdictN('ko'), d: n('known') }) + (verdictN('reserve') ? ` (${t(T.withReserves, { r: verdictN('reserve') })})` : ''))}</p>
         <div class="f-rm-bar" data-apps>${[''].concat(apps).map(a => `<button type="button" class="f-rm-btn" data-app="${esc(a)}" aria-pressed="${ui.app === a}">${esc(a ? appName(a) : t(T.all))}</button>`).join('')}</div>
         ${mine.length ? SECTIONS.map(k => sectionHtml(k, by[k])).join('') : `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`}`}`;

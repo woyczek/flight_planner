@@ -27,7 +27,7 @@ The full list of tokens and primitives is in [SPEC.md](SPEC.md); the former demo
 | Tabs, steps | `.f-tabs` / `.f-steps` with `aria-pressed` / `aria-current`, `data-done` | your own active colours |
 | A form | `.f-grid` of `.f-field`, `.f-full` to span | fixed widths |
 | Three columns on a screen | `.f-cols` (`--f-cols: 2` for two) | your own 980 px media query |
-| A layout that depends on your width | `@container (min-width: 900px) { … }`: your module is a container | `@media (min-width: …)`, which reads the window: in the dual view your module has half of it |
+| A layout that depends on your width | `@container (min-width: 850px) { … }`: your module is a container (850, not 900: at 1 100 px the whole left bar takes 154 px and a module has 858 px — a breakpoint over that would be lost as the window grows, noreg A191) | `@media (min-width: …)`, which reads the window: in the dual view your module has half of it |
 | A result or save bar | `.f-bar` | your own shadow |
 | A table | `.f-scroll > table.f-table`, `.f-num` | |
 | Figures | `.f-tiles` | |
