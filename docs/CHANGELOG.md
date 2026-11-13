@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the « contour lines visible from zoom 9 » note is said only after the box is ticked** — at the first drawing of a view ticked by default it covered « Reset all » at the foot of Layers on a phone (D35 red on origin/v3); D229.
 - **Fuel › procedures: « Carte » opens the drawn chart, « Données » the procedure's data page** (fuel DECISIONS; noreg F214; SOG-0330).
 - **Map, VOR rose: room between the four solid points and the numbers** (SOG-0328): a gap of a quarter of the number's height at least, at any scale; D209 measures it (red before).
 - **Map, ground: a holding point keeps its red mark with or without its name, the name moves before it is dropped, and the ghost signs are gone** (SOG-0327, « supperposition de deux LNA »): every hold is a red bar across its taxiway; ten places are tried for its name; the signs of the ground layer were painted twice (once in the mute first pass of the collision pass, at a provisional place) — one over the other wherever a name had moved; D228 (red before).

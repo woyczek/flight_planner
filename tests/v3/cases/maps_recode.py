@@ -7693,3 +7693,24 @@ def d228(c):
     bad = [(a, b) for i, a in enumerate(rc) for b in rc[i + 1:] if a[1] < b[1] + b[3] and b[1] < a[1] + a[3] and a[2] < b[2] + b[4] and b[2] < a[2] + a[4]]
     c.ok(len(rc) >= 3 and not bad, f'{len(rc)} signs, overlaps: {bad[:2]}', 'two signs never overlap')
     c.shot('D228_standard_holds_17.png')
+
+
+@case('D229', 'The Map does not warn about the contour lines by itself: a view where they are ticked by default but too far says nothing (it covered « Reset all » at the foot of Layers on a phone: D35); ticking the box on a view too far says once that they appear from zoom 9', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='D35 red on origin/v3 (the ergonomist, 13 Nov 16:44: « cannot tap [data-layers-reset] … not covered »): the floating note of SOG-0300 (« visibles à partir du zoom 9 ») appeared at the first drawing of a view where the box is ticked by default')
+def d229(c):
+    c.open('maps', flight=True, aero=True)
+    c.tap('[data-mp="mode"]')
+    c.until("window.__t.shown(document.getElementById('mp-mode-opts'))", what='the modes panel opens')
+    c.tap('.mp-choice[data-mode="vfr"]')
+    c.wait(1500)
+    want = tx(M, 'contoursFar', c.lang).split('{z}')[0]
+    has = "(w) => (window.__notes || []).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))"
+    c.eq(c.js(has, norm(want)), False, 'no note about the contour lines before anyone touched the box', what='note')
+    c.tap('[data-mp="layers"]')
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=contours]'))", what='the Layers content')
+    c.js("() => { const i = document.querySelector('.mp-dbody input[data-layer=contours]'); if (i.checked) i.click(); return true }")
+    c.wait(500)
+    c.js("() => { const i = document.querySelector('.mp-dbody input[data-layer=contours]'); if (!i.checked) i.click(); return true }")
+    c.until(has, norm(want), timeout=6000, what='ticking the box on a view too far says it once')
+

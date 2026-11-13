@@ -429,6 +429,10 @@ export function setLayer(key, value, keep = false) {
     else own[key] = value;
     if (!Object.keys(own).length) delete all[modeKey()];
   }
+  if (key === 'contours' && value) { // la case vient d'être cochée : si la vue est trop loin, l'écran le dit (une fois par coche)
+    S.contoursAsked = true;
+    delete S.noted.contoursFar;
+  }
   saveUi();
   if (key === 'cov') { // la couche n'entre pas dans le profil d'affichage : ni données relues ni profil refait
     schedule();

@@ -735,8 +735,9 @@ function draw() {
     .topoDown; // le fond OpenTopoMap porte ses courbes dans ses tuiles : les nôtres n'y sont pas dessinées (SOG-0300)
   const contoursWanted = !!L.contours &&
     ownContours; // la case « Courbes de niveau » seule décide (SOG-0300 : « sans effet ») ; d'origine cochée dans les vues à densité VFR
-  // la case est cochée mais la vue est trop loin : l'écran le dit une fois (SOG-0300 : « la raison la plus probable est le seuil de zoom »)
-  if (contoursWanted && !mission && !zoomOn('contours')) noteOnce('contoursFar', tt(TX.contoursFar, {
+  // la case vient d'être cochée mais la vue est trop loin : l'écran le dit une fois (SOG-0300 : « la raison la plus probable est le seuil de zoom ») ; jamais de lui-même pour une case cochée d'origine
+  // (il couvrait « Tout remettre » au pied de Couches sur un téléphone : D35)
+  if (contoursWanted && S.contoursAsked && !mission && !zoomOn('contours')) noteOnce('contoursFar', tt(TX.contoursFar, {
     z: Math.round((S.profile?.elements?.zoom?.contours || [9])[0])
   }), 'warn');
   if (contoursWanted && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(ctx, {
