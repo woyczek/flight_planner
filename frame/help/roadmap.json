@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ee71cbc",
+  "organisation": "0f0c1ca",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -1967,11 +1967,12 @@
     {
      "id": "SOG-0288",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions et Registre : la recherche lit aussi le contenu des missions",
      "en": "Missions and Registry: search also reads the content of missions",
      "de": "Missionen und Register: die Suche liest auch den Inhalt der Missionen",
-     "es": "Misiones y Registro: la búsqueda lee también el contenido de las misiones"
+     "es": "Misiones y Registro: la búsqueda lee también el contenido de las misiones",
+     "test": true
     }
    ]
   },
