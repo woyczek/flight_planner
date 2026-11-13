@@ -1842,3 +1842,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (reading 'ctx') ». Now `atisRead` hands its state to both, which stop when Fuel is no longer the same (`gone(s)`), and it checks again
   between the two steps. F206 (FrameData's airline answering in 1.5 s, Fuel left at once: red before, three errors). The three-second
   wait of D202 can go (BUGS SOG's case).
+- **13 Nov 2026 — SOG-0301, the rule: a runway without any published SID (STAR) is never the probable runway** (user: LFPO 02 « n'a
+  aucun départ publié et ne doit pas être la piste probable au départ »; the ergonomist's rule; written by Features SOG): `probableRwy`
+  skips, on an aerodrome that publishes SIDs (departure) or STARs (arrival), a runway that none of them serves. Only the procedures
+  themselves count, never their transitions: « NTS1A.RWALL.LUGEN » names no runway and `servesAll` would make it serve them all — the
+  first version of the case stayed red for that reason. The rest of the fiche (the runway choosable, listed last, « aucun départ publié »)
+  is screen and waits for the mock-up of SOG-0308. F207 (red before: 21 probable without any SID).

@@ -368,8 +368,13 @@ export function createProcedures(host) {
   function probableRwy(m) {
     const w = m?.wind;
     if (!w || !(+w.kt >= 3) || !Number.isFinite(+w.dir)) return null;
+    // SOG-0301 : sur un terrain qui publie des SID (au départ) ou des STAR (à l'arrivée), une piste qu'aucune ne sert n'est jamais probable ;
+    // seules les procédures elles-mêmes comptent, pas leurs transitions (« NTS1A.RWALL.LUGEN » ne dit aucune piste : servesAll serait vrai)
+    const procs = [...(m.lists?.SID || []), ...(m.lists?.STAR || [])].filter(p => !p.transition),
+      served = r => !procs.length || procs.some(p => PR.servesRwy(p, r.id));
     let best = null;
     for (const r of m.rwys || []) {
+      if (!served(r)) continue;
       const x = runwayWind(m, r, +host.crossLimit?.() || 0);
       if (x && x.level !== 'alert' && x.c.head > 0 && (!best || x.c.head > best.w.c.head)) best = {
         r,

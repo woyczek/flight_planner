@@ -5092,3 +5092,33 @@ def f206(c):
         c.until("() => !!document.querySelector('[data-module=maps]')", timeout=15000, what='the Map')
         c.wait(2500)
     c.eq([e for e in errors if 'ctx' in e or 'null' in e], [], 'no error from a read of the left Fuel', what='page errors')
+
+
+
+# SOG-0301: LFRS (bench) where runway 21 has no SID left (NTS2B removed), the wind 240/8 favouring 21
+_NO_SID_21_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { const ps = db.procedures;
+        db.procedures = async (icao, q) => { const r = await ps.call(db, icao, q);
+          return String(icao).toUpperCase() === 'LFRS' ? (r || []).filter(x => !(x.kind === 'SID' && (x.runways || []).some(w => /21/.test(String(w))))) : r } } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F207', 'Departure: on an aerodrome that publishes SIDs, a runway without any SID is never the probable runway, whatever the wind',
+      'F', tags=('fuel', 'weather'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0301 (LFPO: « la piste 02 n\'a aucun départ publié et ne doit pas être la piste probable au départ »; the ergonomist: on an '
+      'aerodrome that publishes SIDs, a runway without any SID is never probable at departure, the same rule at arrival with STARs) — the '
+      'rule only, the screen waits for the mock-up of SOG-0308')
+def f207(c):
+    route_metar(c, {'LFRS': (240, 8), 'LFML': (310, 12)})
+    c.page.add_init_script(_NO_SID_21_STUB)
+    open_proc(c)
+    wait_rows(c, 'dep')
+    c.settle()
+    line = c.text(f'{FUEL} [data-proc="dep"] [data-rwyprob]') or ''
+    c.ok('21' not in line, line, 'runway 21 has no SID left: never said probable, although the wind favours it')
+    # the arrival keeps its rule: 31L has its STAR, it stays probable with the wind from 310
+    unfold(c, 'arr')
+    c.settle()
+    c.ok('31L' in (c.text(f'{FUEL} [data-proc="arr"] [data-rwyprob]') or ''), c.text(f'{FUEL} [data-proc="arr"] [data-rwyprob]'),
+         'a runway with its STAR stays probable')
