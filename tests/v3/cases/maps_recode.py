@@ -6686,6 +6686,7 @@ def d202(c):
     c.tap(f'{F.FUEL} [data-do="rcompute"]')
     c.until(f"document.querySelectorAll('{F.FUEL} [data-altlist] [data-alt]').length === 3", what='three proposals in Fuel')
     card = "() => { const k = document.querySelector('.mp-alts'); return { on: !!k && !k.hidden, rows: k ? k.querySelectorAll('[data-alt]').length : 0 } }"
+    c.wait(3000)      # leaving Fuel at once makes its own ATIS read fail on the unmounted screen (flightNetworks: « reading 'ctx' », modules/fuel/module.js, Features SOG, handed over): the user does not leave in 100 ms
     # 1. the Map alone shows the window; back to Fuel WITHOUT choosing: the proposals are still there
     c.js("() => { location.hash = '#maps' }")
     c.until("() => !!document.querySelector('.mp-alts:not([hidden]) [data-alttake]')", timeout=10000, what='the window of the proposed routes on the Map')
@@ -6699,6 +6700,7 @@ def d202(c):
     c.js("() => { document.querySelector('.mp-alts [data-alttake]').click(); return true }")
     c.until(f"!!document.querySelector('{F.FUEL} [data-rtaken]')", timeout=12000, what='Fuel says the route is taken')
     c.eq(c.count(f'{F.FUEL} [data-routealts] [data-alt]'), 0, 'no proposal left in Fuel', what='proposals in Fuel')
+    c.wait(3000)      # (same reason as above: Fuel is left after its own reads)
     c.js("() => { location.hash = '#maps' }")
     c.wait(2500)
     c.eq(c.js(card), {'on': False, 'rows': 0}, 'back on the Map: no window, no proposal', what='window')
