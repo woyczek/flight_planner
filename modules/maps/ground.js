@@ -36,6 +36,13 @@ export const Z_LINE = 13, // un cran plus tôt qu'avant (SOG-0195 : « les taxiw
   Z_NAME = 15,
   Z_PARK = 16,
   // le point d'attente : cartouche rouge, lettres blanches grasses (contraste 5,9 : 4,5 est le minimum de lecture), 12 px, 16 de haut (SOG-0297)
+  // le code couleur des panneaux d'un terrain (SOG-0297, SOG-0252 : ce sont les couleurs du terrain, pas celles du design) : une voie jaune sur noir (une position), un point d'arrêt blanc sur rouge, une aire noir sur blanc
+  // le contexte de dessin de la Carte est thématique (render.js themed : blanc → papier du design, noir → encre, et toute couleur pleine trop proche du fond est foncée ou éclaircie) : les panneaux
+  // d'un terrain s'écrivent sur le contexte brut (rawCtx), jamais retouchés
+  TWY_BG = '#000000',
+  TWY_FG = '#ffcc00',
+  APRON_BG = '#ffffff',
+  APRON_FG = '#000000',
   HOLD_BG = '#c8102e',
   HOLD_FG = '#ffffff',
   HOLD_FONT = 12,
@@ -67,6 +74,9 @@ const G = () => S.ground ||= {
   drawn: new Map(), // id → vrai si son nom a trouvé une place au dernier dessin
   hits: [] // { id, x, y | segs } en coordonnées de la vue
 };
+/** Le repère d'un point d'arrêt : « W28＠02/20 » (le repère, puis la piste) se lit « W28 » ; la piste reste dans la ligne de la liste (SOG-0297). */
+const rawCtx = c => c.canvas?.getContext?.('2d') || c;
+const holdMark = name => String(name || '').split(/[＠@]/)[0].trim() || String(name || '');
 /** Le groupe d'un élément : sa nature et son nom (OpenStreetMap découpe une voie en plusieurs tronçons : une ligne de la liste, tous les tronçons surlignés). */
 export const grpOf = it => `g:${it.kind}:${it.name}`;
 const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -378,6 +388,7 @@ export function groundLayout(toC, zReal, W, H) {
       c.textBaseline = 'middle';
       const drawn = new Map(),
         signs = [],
+        placedHolds = [],
         put = (key, ids, spots, w, hh = 7) => {
           const got = MapsRender.kit.ask(pl, {
             layer: 'points',
@@ -405,32 +416,68 @@ export function groundLayout(toC, zReal, W, H) {
         // SOG-0252) posé sur la voie
         writeBox = (got, name, w) => {
           const x = (got.x0 + got.x1) / 2,
-            y = (got.y0 + got.y1) / 2;
-          c.fillStyle = S.theme.fg;
-          c.fillRect(x - w / 2, y - 8, w, 16);
-          c.lineWidth = 1;
-          c.strokeStyle = S.theme.bg;
-          c.strokeRect(x - w / 2 + .5, y - 7.5, w - 1, 15);
-          c.fillStyle = S.theme.bg;
-          c.textAlign = 'center';
-          c.fillText(name, x, y + .5);
-          c.textAlign = 'left';
+            y = (got.y0 + got.y1) / 2,
+            r = rawCtx(c);
+          r.fillStyle = TWY_BG;
+          r.fillRect(x - w / 2, y - 8, w, 16);
+          r.lineWidth = 1;
+          r.strokeStyle = TWY_FG;
+          r.strokeRect(x - w / 2 + .5, y - 7.5, w - 1, 15);
+          r.fillStyle = TWY_FG;
+          r.textAlign = 'center';
+          r.fillText(name, x, y + .5);
+          r.textAlign = 'left';
+          signs.push({
+            kind: 'twy',
+            id: name,
+            fs: 11,
+            w,
+            h: 16,
+            bg: TWY_BG,
+            fg: TWY_FG
+          });
+        },
+        // le nom d'une aire de stationnement : noir sur blanc, comme son panneau
+        writeApron = (got, name, w) => {
+          const x = (got.x0 + got.x1) / 2,
+            y = (got.y0 + got.y1) / 2,
+            r = rawCtx(c);
+          r.fillStyle = APRON_BG;
+          r.fillRect(x - w / 2, y - 8, w, 16);
+          r.lineWidth = 1;
+          r.strokeStyle = APRON_FG;
+          r.strokeRect(x - w / 2 + .5, y - 7.5, w - 1, 15);
+          r.fillStyle = APRON_FG;
+          r.textAlign = 'center';
+          r.fillText(name, x, y + .5);
+          r.textAlign = 'left';
+          signs.push({
+            kind: 'apron',
+            id: name,
+            fs: 11.5,
+            w,
+            h: 16,
+            bg: APRON_BG,
+            fg: APRON_FG
+          });
         },
         // le nom d'un point d'attente : un cartouche rouge à lettres blanches grasses (le panneau des cartes de l'AIP), jamais un texte nu à côté d'un point de 4 px ; le cartouche est gardé dans g.signs
         // (taille du texte, fond, encre) pour que la mesure du contraste se lise
         writeHold = (got, name, w) => {
           const x = (got.x0 + got.x1) / 2,
-            y = (got.y0 + got.y1) / 2;
-          c.fillStyle = HOLD_BG;
-          c.fillRect(x - w / 2, y - HOLD_H / 2, w, HOLD_H);
-          c.lineWidth = 1;
-          c.strokeStyle = HOLD_FG;
-          c.strokeRect(x - w / 2 + .5, y - HOLD_H / 2 + .5, w - 1, HOLD_H - 1);
-          c.fillStyle = HOLD_FG;
-          c.textAlign = 'center';
-          c.fillText(name, x, y + .5);
-          c.textAlign = 'left';
+            y = (got.y0 + got.y1) / 2,
+            r = rawCtx(c);
+          r.fillStyle = HOLD_BG;
+          r.fillRect(x - w / 2, y - HOLD_H / 2, w, HOLD_H);
+          r.lineWidth = 1;
+          r.strokeStyle = HOLD_FG;
+          r.strokeRect(x - w / 2 + .5, y - HOLD_H / 2 + .5, w - 1, HOLD_H - 1);
+          r.fillStyle = HOLD_FG;
+          r.textAlign = 'center';
+          r.fillText(name, x, y + .5);
+          r.textAlign = 'left';
           return {
+            kind: 'hold',
             id: name,
             fs: HOLD_FONT,
             w,
@@ -448,9 +495,9 @@ export function groundLayout(toC, zReal, W, H) {
         for (const s of shown) {
           const it = s.it;
           if (it.kind !== 'apron' || !it.name) continue;
-          const w = c.measureText(it.name).width + 4,
-            got = put(`gnd:${it.id}`, [it.id], [s.pts[0]], w);
-          if (got) write(got, it.name, w);
+          const w = c.measureText(it.name).width + 10,
+            got = put(`gnd:${it.id}`, [it.id], [s.pts[0]], w, 8);
+          if (got) writeApron(got, it.name, w);
         }
         c.font = '10.5px system-ui, sans-serif';
         // 2. les voies : un nom par groupe (nature + nom), sur son tronçon visible le plus long
@@ -502,12 +549,22 @@ export function groundLayout(toC, zReal, W, H) {
           if (!it.name || it.kind === 'twy' || it.kind === 'apron' || it.kind !== 'hold' && !at(zReal, Z_PARK)) continue;
           if (it.kind === 'hold') {
             c.font = `bold ${HOLD_FONT}px system-ui, sans-serif`;
-            const w = Math.max(HOLD_H, c.measureText(it.name).width + 8),
+            const mark = holdMark(it.name);
+            // deux points d'attente de même repère à moins de 140 px (« W4＠07/25 » et « W4＠25/07 » : le même repère, deux pistes) ne portent qu'un cartouche, comme deux voies de même nom
+            if (placedHolds.some(q => q.mark === mark && Math.hypot(q.x - s.pts[0].x, q.y - s.pts[0].y) < 140)) continue;
+            const w = Math.max(HOLD_H, c.measureText(mark).width + 8),
               got = put(`gnd:${it.id}`, [it.id], [{
                 x: s.pts[0].x + 7 + w / 2,
                 y: s.pts[0].y
               }], w, HOLD_H / 2 + 1);
-            if (got) signs.push(writeHold(got, it.name, w));
+            if (got) {
+              signs.push(writeHold(got, mark, w));
+              placedHolds.push({
+                mark,
+                x: s.pts[0].x,
+                y: s.pts[0].y
+              });
+            }
             c.font = '10.5px system-ui, sans-serif';
             continue;
           }

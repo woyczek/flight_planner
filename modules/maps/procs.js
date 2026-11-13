@@ -955,11 +955,24 @@ export function drawRunways(ctx, arrows, pl = null) {
           y1: ny + 7
         }]
       })) continue;
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = S.theme.bg;
-    ctx.strokeText(w.name, nx, ny);
-    ctx.fillStyle = w.col;
-    ctx.fillText(w.name, nx, ny);
+    // le numéro de piste : blanc sur noir, comme sur le tarmac (SOG-0297 : le code couleur du terrain, pas celui du design)
+    ctx.font = `700 11px Arial,sans-serif`;
+    const bw = Math.max(16, tw + 8),
+      raw = ctx.canvas?.getContext?.('2d') ||
+      ctx; // le contexte brut : le contexte thématique de la Carte remplacerait le noir pur par l'encre du design et foncerait un blanc trop proche du fond (render.js themed)
+    raw.fillStyle = '#000000';
+    raw.fillRect(nx - bw / 2, ny - 8, bw, 16);
+    raw.lineWidth = 1;
+    raw.strokeStyle = '#ffffff';
+    raw.strokeRect(nx - bw / 2 + .5, ny - 7.5, bw - 1, 15);
+    raw.fillStyle = '#ffffff';
+    raw.fillText(w.name, nx, ny);
+    (S.rwySigns ||= []).push({
+      name: w.name,
+      fs: 11,
+      bg: '#000000',
+      fg: '#ffffff'
+    });
   }
   ctx.restore();
 }

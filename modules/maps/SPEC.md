@@ -601,7 +601,10 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
 - **When**: only for the flight's departure and arrival (`groundIcaos()`, four letters) and from zoom 13 (the Map's own MapLibre zoom,
   `zoomOf`, the scale of `COVER_ZOOM` and `runwayZoom`; a tolerance of .02 absorbs the view's rounding): the taxiway **lines** from 13 (one level earlier than the first 14: SOG-0195),
   their **names** from 13 too (SOG-0297: the name comes with the line; rank `ground` in `RANK`, after `procedure`, three places along the line, collision pass; a sign is allowed on a line of 26 px
-  or one and a sixth of its length), the **holds** from 15 as red signs with white bold letters (12 px, 16 px high, contrast 5.9; kept in `S.ground.signs`, D198), the **stands** (points and
+  or one and a sixth of its length) as a **black sign with yellow letters** (the real airfield colour code, SOG-0297: a position is yellow on black), the **holds** from 15 as red signs with white bold letters
+  showing the **mark only** (« W28＠02/20 » reads « W28 », the runway stays in the panel's row; two holds of the same mark within 140 px share one sign; 12 px, 16 px high, contrast 5.9), the aprons' names black on white,
+  the runway numbers white on black (`drawRunways`); every sign kept in `S.ground.signs` with its colours (D198, D204) and drawn on the RAW 2D context (`rawCtx`: the Map's themed context turns pure black into the design's ink and
+  darkens a colour too close to the paper, which would undo the code), the **stands** (points and
   names) from 16; the aprons are never filled (3 to 5 ms for nothing). During a gesture the light drawing keeps the
   lines only (`groundLight`, D68). The element highlighted from the list is drawn last, thicker, in the accent hue; the attribution
   « © OpenStreetMap contributors, ODbL » is shown while the layer is drawn. Cost (LFPO, desktop, measured 6 Nov before the code: about 2.3 ms the

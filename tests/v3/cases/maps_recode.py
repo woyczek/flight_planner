@@ -5657,7 +5657,7 @@ def d_altsgone(c):
     c.until("() => !window.__mp.S.alts && (window.__mp.S.altHits || []).length === 0 && document.querySelector('.mp-alts').hidden", timeout=4000, what='an empty publication: no list, no pale line')
 
 
-@case('D178', 'Taxiway names as signs: one dark sign with light letters (the design’s ink and paper) per taxiway, never two of the same name within 140 px, only the long taxiways when zoomed out, none below the names’ zoom; the sign covers a road name under it', 'D',
+@case('D178', 'Taxiway names as signs: one black sign with yellow letters (the aerodrome’s colour code, SOG-0297) per taxiway, never two of the same name within 140 px, only the long taxiways when zoomed out, none below the names’ zoom; the sign covers a road name under it', 'D',
       tags=('maps',), designs=('standard',), night=False,
       rule='SOG-0252 (the user, « TWY : illisible… fusionner les points au même endroit s’ils sont identiques », two Navigraph captures as the target: black signs with yellow letters on the taxiway, once per taxiway, fewer when zoomed out, none further out; ours: tiny grey letters on the line, twice a few metres apart (« B », « P4 »), a road name more readable than a taxiway’s): a sign per taxiway in the design’s colours (its ink as the ground, its paper as the letters), the long ones first, the names that repeat within 140 px merged, a taxiway shorter on the screen than its sign has none')
 def d_signs(c):
@@ -5665,14 +5665,14 @@ def d_signs(c):
     _ground_open(c)
     c.js("""() => { window.__ct = []; const f = CanvasRenderingContext2D.prototype.fillText, r = CanvasRenderingContext2D.prototype.fillRect;
       CanvasRenderingContext2D.prototype.fillText = function (t, x, y) { if (window.__sg) { window.__sg = false; window.__ct.push({ t: String(t), x, y }) } return f.apply(this, arguments) };
-      CanvasRenderingContext2D.prototype.fillRect = function (x, y, w, h) { if (h === 16 && w > 12 && w < 80) { window.__rc = (window.__rc || 0) + 1; window.__sg = true } return r.apply(this, arguments) }; return true }""")
+      CanvasRenderingContext2D.prototype.fillRect = function (x, y, w, h) { if (h === 16 && w > 12 && w < 80 && this.fillStyle === '#000000') { window.__rc = (window.__rc || 0) + 1; window.__sg = true } return r.apply(this, arguments) }; return true }""")
     seen = {}
     for z in (12, 13, 15, 16):
         _ground_at(c, z, 900)
         c.js("() => { window.__ct = []; window.__rc = 0; window.__mp.S.map.panBy([3, 3], { duration: 0 }); return true }")
         c.wait(1500)
         ct = c.js("() => ({ ct: window.__ct, rc: window.__rc })")
-        names = ct['ct']
+        names = list({(x['t'], round(x['x'] / 12), round(x['y'] / 12)): x for x in ct['ct']}.values())      # the same sign drawn again (a few pixels away: the pan) by another drawing of the frame is not a second sign
         dup = sum(1 for i, a in enumerate(names) for b in names[i + 1:] if a['t'] == b['t'] and ((a['x'] - b['x']) ** 2 + (a['y'] - b['y']) ** 2) ** .5 < 140)
         seen[z] = (len({(x['t'], round(x['x']), round(x['y'])) for x in names}), ct['rc'], dup)
     c.eq(seen[12][0], 0, 'no sign below the names’ zoom (13, the zoom of the lines, SOG-0297)', what=str(seen))
@@ -6571,7 +6571,7 @@ def d198(c):
     c.page.set_viewport_size({'width': 1280, 'height': 760})
     _ground_open(c)
     _ground_at(c, 15, 1500)
-    r = c.js("""() => { const g = window.__mp.S.ground, signs = g.signs || [];
+    r = c.js("""() => { const g = window.__mp.S.ground, signs = (g.signs || []).filter(s => s.kind === 'hold');
       const lum = h => { const v = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4)); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2] };
       const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05) };
       return { n: signs.length, minFs: Math.min(...signs.map(s => s.fs)), minH: Math.min(...signs.map(s => s.h)), minW: Math.min(...signs.map(s => s.w)), minContrast: Math.round(Math.min(...signs.map(s => cr(s.bg, s.fg))) * 100) / 100,
@@ -6747,3 +6747,32 @@ def d203(c):
     near = {'aerodromes': 'NEAR AD', 'navaids': 'NEAR VOR', 'vrp': 'NEAR VRP', 'cities': 'NEARTOWN'}
     for k, n in near.items():
         c.ok(n in ticked[k], f'{k}: {ticked[k]}', f'ticked ({k}): the item on the route is read')
+
+
+
+@case('D204', 'Ground signs in the real airfield colour code, not the design’s: a taxiway yellow on black, a holding point white on red showing the mark only (never « W28@02/20 »), an apron black on white, a runway number white on black; every pair readable (contrast 4.5 or more)', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0297 / SOG-0252 (the user, 13 Nov, his note: « le code couleur d’un TWY, c’est noir sur jaune pour une direction, jaune sur noir pour une indication. RWY : blanc sur rouge (point d’arrêt), ou blanc sur noir sur le tarmac. Apron : noir sur blanc »; the ergonomist: the colours of the aerodrome, not the design’s; AeroDB: the hold’s name is the mark, the runway apart)')
+def d204(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    _ground_open(c)
+    c.js("""async () => { const S = window.__mp.S, fx = await S.ctx.aerodb.ground('LFPO');
+      const items = fx.items.concat([{ id: 'ap-U', kind: 'apron', name: 'U', point: [2.3794, 48.7233], line: [[2.376, 48.7225], [2.383, 48.7225], [2.383, 48.7245], [2.376, 48.7245]] }]);
+      S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? { ...fx, items } : null; S.ground = null; S.runwayZoom = 11;
+      S.runways.set('LFPO', [{ id: '02', lat: 48.7167, lon: 2.3665, qfu: 20 }, { id: '20', lat: 48.7302, lon: 2.3733, qfu: 200 }]); S.rwySigns = []; return true }""")
+    _ground_at(c, 15, 1800)
+    c.js("() => { window.__mp.S.map.panBy([3, 3], { duration: 0 }); return true }")
+    c.wait(1500)
+    r = c.js("""() => { const g = window.__mp.S.ground, signs = g.signs || [];
+      const lum = h => { const v = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4)); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2] };
+      const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05) };
+      const by = k => signs.filter(s => s.kind === k), pair = a => [...new Set(a.map(s => s.bg + '/' + s.fg))];
+      const rw = window.__mp.S.rwySigns || [];
+      return { twy: pair(by('twy')), nTwy: by('twy').length, hold: pair(by('hold')), nHold: by('hold').length, apron: pair(by('apron')), nApron: by('apron').length, rwy: [...new Set(rw.map(s => s.bg + '/' + s.fg))], nRwy: rw.length,
+        holdNames: by('hold').map(s => s.id), minContrast: Math.round(Math.min(...signs.map(s => cr(s.bg, s.fg)), ...rw.map(s => cr(s.bg, s.fg))) * 100) / 100 } }""")
+    c.ok(r['nTwy'] >= 3 and r['twy'] == ['#000000/#ffcc00'], str(r), 'taxiway signs: yellow on black')
+    c.ok(r['nHold'] >= 3 and r['hold'] == ['#c8102e/#ffffff'] and not [n for n in r['holdNames'] if '@' in n or '＠' in n], str(r), 'holding points: white on red, the mark only (no « @runway »)')
+    c.ok(r['nApron'] >= 1 and r['apron'] == ['#ffffff/#000000'], str(r), 'aprons: black on white')
+    c.ok(r['nRwy'] >= 1 and r['rwy'] == ['#000000/#ffffff'], str(r), 'runway numbers: white on black')
+    c.ok(r['minContrast'] >= 4.5, str(r), 'every pair reads (contrast 4.5 or more)')
+    c.shot('D204_standard_signs_15_delivered.png')
