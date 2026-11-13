@@ -730,6 +730,8 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 if callable(res):
                     res = res(st['posts'][-1].get('args') or {})
                 body = {'id': 'jpb', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'étapes', 'log': [], 'result': res, 'zones': {}}
+            elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'circuits' and st['posts'][-1].get('set') == 'vfr' and st.get('circuits') is not None:
+                body = {'id': 'jcc', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'terrains', 'log': [], 'result': st['circuits'], 'zones': {}}   # vfr/circuits (SOG-0253): read only, what the launcher kept of the user’s XML
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st['posts'][-1].get('set') in ('proc', 'vfr', 'aircraft') and st.get('setstate') is not None:
                 res = st['setstate'].get(st['posts'][-1]['set'])   # the state verbs of the other sets (SOG-0119: proc/status, vfr/status, aircraft/status): a dict, or a function of the args
                 if callable(res):
@@ -7330,7 +7332,7 @@ def l94(c):
       return [before('[data-state-head]', '[data-world-map]'), before('[data-world-map]', '[data-todo]'), before('[data-todo]', '[data-cw-groups]'), before('[data-cw-groups]', '[data-publish]'), before('[data-publish]', '[data-lc-fold=later]'),
         before('[data-lc-fold=later]', '[data-lc-fold=change]'), before('[data-lc-fold=change]', '[data-lc-fold=unread]'), before('[data-lc-fold=unread]', '[data-my-coverage]')] })()""")
     c.eq(pos, [True] * 8, 'the page order: state bar, map, what is left to do, the country groups, Publier, cycle suivant, quand ça change, vu pas encore lu, ma couverture', what='page order')
-    c.eq(c.js("[...document.querySelectorAll('[data-lc-fold], [data-my-coverage]')].map(d => [d.dataset.lcFold || 'mycov', d.open])"), [['later', False], ['change', False], ['unread', False], ['registry', False], ['mycov', False]], 'the three blocks, the French register (SOG-0315) and « Ma couverture » are folded', what='folded')
+    c.eq(c.js("[...document.querySelectorAll('[data-lc-fold], [data-my-coverage]')].map(d => [d.dataset.lcFold || 'mycov', d.open])"), [['later', False], ['change', False], ['unread', False], ['registry', False], ['tours', False], ['mycov', False]], 'the three blocks, the French register (SOG-0315), the VFR circuits (SOG-0253) and « Pays définis » are folded', what='folded')
     c.eq([norm(c.text('[data-lc-fold=later] > summary > .d-lct')), norm(c.text('[data-lc-fold=change] > summary > .d-lct')), norm(c.text('[data-lc-fold=unread] > summary > .d-lct')), norm(c.text('[data-my-coverage] > summary'))],
          [norm(LC('laterTitle').replace('{c}', '2612')), norm(LC('changeTitle')), norm(LC('unreadTitle')), norm(LC('myCovTitle'))], 'their titles, the cycle after is named (each fold has its count pill after the title: lot D2)', what='titles')
     calls = lambda: c.js('window.__stub.calls') or {}
@@ -9434,4 +9436,53 @@ def l133(c):
     seq = c.js("(() => { clearInterval(window.__iv); const out = []; for (const t of window.__tones) if (t && out[out.length - 1] !== t) out.push(t); return out })()")
     i = seq.index('busy') if 'busy' in seq else -1
     c.ok(i >= 0 and 'warn' not in seq[i:] and seq[-1] == 'ok', seq, 'from the first « en cours » to the end the tone goes busy → ok, never amber in between')
+    c.check_errors()
+
+
+@case('L134', 'Données: the user’s VFR circuits XML has a place to be deposited (SOG-0253) — a fold « Tours de piste VFR (extracteur) » under « Vu par le poste »: « Choisir le fichier… » sends the XML to the launcher (POST base/upload, the route of the register), the page then reads what the launcher kept (vfr/circuits, read only) and says it: n circuits on m aerodromes, those whose VAC chart changed left out, the malformed items left aside; a file it does not recognise or cannot read is refused in words',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0253 (Q-0050: the user writes an extractor that outputs XML): the launcher recognises the file by its root `<VfrCircuits` (tools/base_upload.py, source vfr_circuits), keeps it as data/local/upload/vfr_circuits.xml (never published) and reads it with the verb vfr/circuits; the page only deposits and says what was read; no route is new')
+def l134(c):
+    lang = c.lang
+    N = lambda k, **kw: [_trow(k, lang, after='  trk: {')] and __import__('functools').reduce(lambda a, kv: a.replace('{' + kv[0] + '}', str(kv[1])), kw.items(), _trow(k, lang, after='  trk: {'))
+    st = _l102_open(c, extra_verbs=['vfr/circuits'])
+    st['circuits'] = {'ok': True, 'airac': '2611', 'extractor': 'x', 'aerodromes': {'LFRN': {'state': 'obsolete', 'circuits': []}}, 'counts': {'aerodromes': 26, 'circuits': 28, 'obsolete': ['LFRN']}, 'warnings': {'points': 2}}
+    sent = []
+    answer = {'status': 200, 'body': {'ok': True, 'source': 'vfr_circuits', 'zone': '', 'name': 'vfr_circuits.xml', 'size': 900}}
+
+    def upload(route):
+        req = route.request
+        sent.append({'method': req.method, 'headers': {k.lower(): v for k, v in req.headers.items()}, 'size': len(req.post_data_buffer or b'')})
+        route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body']))
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)
+    c.until("!!document.querySelector('[data-lc-fold=tours]')", timeout=12000, what='the fold of the circuits')
+    c.js("document.querySelector('[data-lc-fold=tours]').open = true")
+    c.eq(norm(c.text('[data-lc-fold=tours] > summary .d-lct')), norm(N('title')), 'the fold carries its name', what='title')
+    msg = lambda: c.js("(e => e ? [e.dataset.level, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-lc-fold=tours] [data-trk-msg]'))")
+
+    def deposit(name, data):
+        sent.clear()
+        with c.page.expect_file_chooser() as fc:
+            c.js("document.querySelector('[data-act=trk-choose]').click()")
+        fc.value.set_files({'name': name, 'mimeType': 'text/xml', 'buffer': data})
+        for _ in range(40):
+            if sent:
+                break
+            c.wait(250)
+        c.until("!!document.querySelector('[data-lc-fold=tours] [data-trk-msg]')", timeout=8000, what='the answer is said')
+    deposit('tours.xml', b'<?xml version="1.0"?><VfrCircuits airac="2611"/>')
+    c.eq([sent[0]['method'], sent[0]['headers'].get('content-type'), sent[0]['headers'].get('x-sog-name')], ['POST', 'application/octet-stream', 'tours.xml'], 'a POST of the raw bytes (the route of the register: nothing new)', what='request')
+    want = ' '.join([N('done', c=28, a=26), N('obsolete', o=1), N('left', w=2)])
+    m = msg()
+    c.eq([m[0], norm(m[1])], ['ok', norm(want)], 'what the launcher read: n circuits on m aerodromes, the changed ones left out, the malformed ones left aside', what='done')
+    c.eq(norm(c.text('[data-lc-fold=tours] [data-lc-pill]')), norm(N('pill', c=28, a=26)), 'the pill follows', what='pill')
+    c.shot(f'L134_{c.width}_{lang}_delivered.png')
+    st['circuits'] = {'ok': False, 'reason': 'refused', 'message': 'ligne 3 : <b>DOCTYPE</b>'}
+    deposit('mauvais.xml', b'<VfrCircuits airac="2611"/>')
+    m = msg()
+    c.eq([m[0], norm(m[1])], ['err', norm(N('unreadable'))], 'a file the launcher keeps but cannot read: said in words, never the launcher’s text', what='unreadable')
+    answer.update(status=422, body={'ok': False, 'reason': 'unrecognised', 'message': 'pas un export'})
+    deposit('autre.xml', b'<autre/>')
+    m = msg()
+    c.eq([m[0], norm(m[1])], ['err', norm(N('refused'))], 'a file that is not the extractor’s XML: refused in words', what='refused')
     c.check_errors()

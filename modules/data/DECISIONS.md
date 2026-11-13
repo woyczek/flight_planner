@@ -723,3 +723,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   there is one, `sumBusy` in the summary of a group), held while `S.run` covers the country or `S.zop` is its own; cases L133 (red before: no `busy`).
   Not done: the chain « Tout mettre à jour » between two of its verbs (`S.run` is empty for an instant); the « Repartir de zéro sur cet appareil » gesture
   of the same fiche (survey sent: `FrameData.evict` + re-read, never `reset()`).
+- **13 Nov 2026 — SOG-0253: the user's VFR circuits XML has a place to be deposited** (the ergonomist: « la page de dépôt accepte le `.xml` des tracés de tours de
+  piste, reconnu par le lanceur (34c24550e) et dit ce qui est reconnu ou refusé »). New fold « Tours de piste VFR (extracteur) » under « Vu par le poste », next to the
+  French register (`tours.js`, `model_tours.js`, `later.js`): « Choisir le fichier… » (the same hidden input and the same route `base/upload` as the register: no route
+  is new), then the page reads what the launcher kept (`vfr/circuits`, read only, through the screen's `serial()` lane) and says it — « Tracés lus : n tours de piste
+  sur m terrains », the terrains whose VAC chart changed (`counts.obsolete`) left out, the malformed items (`warnings`) left aside — or refuses in words (a file the
+  launcher does not recognise by its root, or keeps but cannot read: its own text is never shown). The result is kept in memory for the pill only; the Map reads the verb
+  itself. Case L134 (red before: no fold); L94 lists the new fold.

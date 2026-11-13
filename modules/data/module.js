@@ -141,6 +141,11 @@ import {
   startRegistryUpload
 } from './registry.js';
 import {
+  cancelTours,
+  chooseTours,
+  startToursUpload
+} from './tours.js';
+import {
   closeCovTable,
   covClick,
   openCovTable
@@ -162,7 +167,8 @@ export const meta = {
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
-    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'registry.js', 'model_setstate.js', 'setstate.js',
+    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'registry.js', 'tours.js', 'model_tours.js',
+    'model_setstate.js', 'setstate.js',
     'zipmember.js', 'model_mapview.js',
     'mapview.js',
     'model_thread.js',
@@ -227,6 +233,14 @@ function onClick(e) {
     if (rg.dataset.act === 'reg-cancel') return cancelRegistry();
     startGesture(rg);
     return chooseRegistry();
+  }
+  const tr = e.target.closest?.(
+    '[data-act="trk-choose"], [data-act="trk-cancel"]'); // « Choisir le fichier… » et « Annuler » des tours de piste VFR (tours.js)
+  if (tr) {
+    if (tr.disabled) return;
+    if (tr.dataset.act === 'trk-cancel') return cancelTours();
+    startGesture(tr);
+    return chooseTours();
   }
   const uc = e.target.closest?.(
     '[data-act="zone-upload"], [data-act="upload-cancel"]'); // « Choisir le fichier… » et « Annuler » de la ligne d'une zone (SOG-0199)
@@ -424,6 +438,8 @@ function onChange(e) {
     t.value = '';
     if (S.uploadSource === 'registry_fr' && !S.uploadZone) return f ? startRegistryUpload(f) :
       undefined; // le fichier du registre français (registry.js)
+    if (S.uploadSource === 'vfr_circuits' && !S.uploadZone) return f ? startToursUpload(f) :
+      undefined; // le XML des tours de piste (tours.js)
     return f ? startUpload(S.uploadZone, f, S.uploadSource) : undefined;
   }
   if (!(t instanceof HTMLInputElement) || frozen()) return;

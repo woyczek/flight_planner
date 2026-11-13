@@ -100,7 +100,7 @@ sticky card on the right; under that width the sheet is full screen (« ← Reto
    « Prendre le fichier téléchargé » / « Choisir un autre fichier… » for a hand-taken source (the DIRCAM zip is read in the page: only the
    useful member is sent), « Ajouter ce pays » / « Retirer ce pays ». A source unavailable at its publisher is set apart.
 6. **« Publier la base »**: the plan first (`base/publish` with `dry`), one question, then the send; « Rien à publier » is said with the reason.
-7. **Four closed folds** under it: « Cycle suivant (2612) » (what Downloads already holds for the next cycle, what is still to fetch by hand,
+7. **Five closed folds** under it (the fifth, « Tours de piste VFR (extracteur) », takes the user's `VfrCircuits` XML and says what the launcher read of it, SOG-0253): « Cycle suivant (2612) » (what Downloads already holds for the next cycle, what is still to fetch by hand,
    what the workstation takes by itself once in force), « Quand ça change » (X-Plane, Little Navmap, openAIP, GeoNames, MORA, the NAT tracks:
    their last date and, where the screen has it, the gesture), « Vu par le poste, pas encore lu » (files in Downloads the suite does not read,
    with the reason) and **« Registre français des aéronefs »** (the place to deposit the DGAC registrations file, SOG-0315; `#data?registry=1`

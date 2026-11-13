@@ -36,6 +36,11 @@ import {
   registryPill
 } from './registry.js';
 import {
+  toursBody,
+  toursInit,
+  toursPill
+} from './tours.js';
+import {
   startOp
 } from './follow.js';
 import {
@@ -47,6 +52,7 @@ import {
 export const lcInit = () => ({
   open: {},
   reg: regInit(), // le pli du registre français des aéronefs (registry.js)
+  tours: toursInit(), // le pli des tours de piste VFR de l'extracteur de l'utilisateur (tours.js)
   revealUntil: 0,
   reveal: '', // un pli à ouvrir et à amener dans la vue au prochain dessin (l'adresse #data?registry=1)
   nat: {
@@ -184,11 +190,16 @@ function registryHtml() {
   if (!S.d?.cat) return '';
   return fold('registry', tt(TX.regs.title), registryBody(), registryPill());
 }
+/** « Tours de piste VFR » (SOG-0253) : le dépôt du XML de l'extracteur de l'utilisateur ; plié, avec ce que le lanceur en a lu dans la pastille. */
+function toursHtml() {
+  if (!S.d?.cat) return '';
+  return fold('tours', tt(TX.trk.title), toursBody(), toursPill());
+}
 /** Les blocs repliés, dans l'ordre : cycle suivant, quand ça change, vu par le poste pas encore lu, registre français des aéronefs. */
 export function laterHtml() {
   if (!S.cw?.lc) return '';
   if (S.cw.lc.reveal) S.cw.lc.open[S.cw.lc.reveal] = true; // l'adresse a demandé ce pli : il s'ouvre
-  return `<div class="d-later" data-later-blocks>${nextHtml()}${changeHtml()}${unreadHtml()}${registryHtml()}</div>`;
+  return `<div class="d-later" data-later-blocks>${nextHtml()}${changeHtml()}${unreadHtml()}${registryHtml()}${toursHtml()}</div>`;
 }
 /** Redessine les trois blocs seuls (la lecture des routes NAT avance sans toucher le reste de l'écran). */
 export function renderLater() {
