@@ -7731,3 +7731,30 @@ def d230(c):
     c.ok(all(r['onTrack']), str(r), 'the rectangles hold the track all along')
     c.ok(r['area'] < 2500, str(r), 'the rectangles together are a strip, not the 4 500 NM square (about 4 000 square degrees)')
 
+
+@case('D231', 'The proposals in progress are one window, the same beside Fuel and on the Map alone (SOG-0224): from the schema-2 document the window shows the open row (Fuel’s `open`) with its detail (route, distance, level, deviations) and the age of the computation; after 12 hours it says « stale » with « Recompute »; beside Fuel there is no « Choose » button (Fuel’s is the one)', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0224 refused (the user, 13 Nov 16:06: « je voulais pouvoir choisir et conserver le détail. Y a-t-il un souci à afficher la popup, comme pour les missions, sur la carte sidecar, switcher carte full, revenir, tout en conservant le statut ? »; the ergonomist’s specification: one object read by the side map AND the full Map, the same window; Fuel half 27dfbf758, fuel INTEGRATION § 3 bis): the window existed only on the Map alone, without the detail, the open row or the age')
+def d231(c):
+    def doc(hours):
+        d = _alts_doc(schema=2, open=1, computed_at=iso(now() - datetime.timedelta(hours=hours)), aircraft='F-ABCD', base='ab12cd34')
+        d['answer'] = {'ok': True, 'alternatives': [{'name': 'Via UN10', 'route': 'LFRS NTS1A LUGEN UN10 NEPIX LFML', 'distanceNm': 366, 'fl': 270, 'faults': 0},
+                                                      {'name': 'Via UN20', 'route': 'LFRS DCT X DCT Y LFML', 'distanceNm': 402, 'fl': 250, 'faults': 1}]}
+        return d
+    for q, alone in (('maps', True), ('maps?pane=1', False)):
+        for hours, stale in ((2, False), (14, True)):
+            c.open(q, docs=fdocs(flight()) + [['cache/fuel/route_alts.json', doc(hours), 'cache']], flight=False, airfields=True, wait=False)
+            c.ready('maps', sheet=True)
+            c.js(_STATE_JS)
+            c.until("() => !!window.__mp.S.alts && window.__mp.S.alts.list.length === 2 && !document.querySelector('.mp-alts').hidden", timeout=15000, what=f'{q}: the window of the proposals')
+            w = c.js("""() => { const e = document.querySelector('.mp-alts'), row = e.querySelector('.mp-al-row[data-shown="1"]'); return { shown: row ? +row.dataset.alt : null, detail: (e.querySelector('[data-altdetail]') || {}).textContent || '',
+              age: (e.querySelector('[data-altage]') || {}).textContent || '', stale: !!e.querySelector('[data-altstale]'), redo: !!e.querySelector('[data-altredo]'), take: !!e.querySelector('[data-alttake]') } }""")
+            c.eq(w['shown'], 1, f'{q}, {hours} h: the row Fuel kept open is the shown one', what=str(w))
+            c.ok('402 NM' in w['detail'] and 'FL250' in w['detail'] and 'LFRS DCT X DCT Y LFML' in w['detail'], w['detail'], f'{q}: the detail of the open route (route, distance, level)')
+            c.eq(w['take'], alone, f'{q}: « Choose this route » only on the Map alone', what=str(w))
+            if stale:
+                c.ok(w['stale'] and w['redo'] and not w['age'], str(w), f'{q}: after 12 hours the window says stale, with « Recompute » and no age')
+            else:
+                c.ok(not w['stale'] and 'Z' in w['age'], str(w), f'{q}: before, the window says the age of the computation')
+        c.shot(f'D231_standard_{q.replace("?", "_").replace("=", "")}.png')
+

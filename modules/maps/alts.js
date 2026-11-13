@@ -35,6 +35,38 @@ const LAYERS = ['SID', 'LOW', 'HIGH', 'FRA', 'STAR', 'APP'];
 const num = (v, lo, hi) => Number.isFinite(+v) && +v >= lo && +v <= hi;
 const clean = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
 
+/** Le détail d'un itinéraire que Carburant garde (schéma 2, `answer.alternatives[i]`) : seulement des champs bornés, jamais l'objet ; null sans rien. */
+function detailOf(x) {
+  if (!x || typeof x !== 'object') return null;
+  const d = {
+    route: clean(x.route, 200),
+    nm: num(x.distanceNm, 0, 19999) ? Math.round(+x.distanceNm) : null,
+    fl: num(x.fl, 0, 700) ? Math.round(+x.fl) : null,
+    faults: num(x.faults, 0, 999) ? Math.round(+x.faults) : 0,
+    incomplete: x.incomplete === true
+  };
+  return d.route || d.nm != null ? d : null;
+}
+/** Plus de 12 heures depuis le calcul : « périmé » (décision de l'ergonome du 13/11 ; Carburant ajoute le changement de cycle AIRAC et de base) ; l'âge est dit d'ici là. */
+const STALE_MS = 12 * 3600e3;
+const ageOf = A => {
+  const t = Date.parse(A?.computedAt || '');
+  return Number.isFinite(t) ? {
+    t,
+    stale: Date.now() - t > STALE_MS
+  } : null;
+};
+/** Le détail et l'âge sous les lignes : la ligne montrée dit son itinéraire, sa distance, son niveau et ses écarts ; l'âge du calcul, ou « périmé » avec « Recalculer ». */
+function detailHtml(A) {
+  const a = A.list.find(x => x.index === S.altShow) || A.list.find(x => x.index === A.open),
+    d = a?.detail,
+    ag = ageOf(A),
+    bits = d ? [d.route, d.nm != null ? `${d.nm} NM` : '', d.fl != null ? `FL${d.fl}` : '', d.faults ? tt(TX.altFaultN, {
+      n: d.faults
+    }) : '', d.incomplete ? tt(TX.altIncomplete) : ''].filter(Boolean) : [],
+    z = ag ? new Date(ag.t).toISOString().slice(11, 16) + 'Z' : '';
+  return `${bits.length ? `<p class="mp-al-det f-muted" data-altdetail>${esc(bits.join(' · '))}</p>` : ''}${ag ? ag.stale ? `<p class="mp-al-det" data-altstale>${esc(tt(TX.altStale))} <button type="button" class="f-btn" data-altredo>${esc(tt(TX.altRedo))}</button></p>` : `<p class="mp-al-det f-muted" data-altage>${esc(tt(TX.altAge, { t: z }))}</p>` : ''}`;
+}
 /** Le document ou l'événement de Carburant, nettoyé : { mode, dep, arr, chosen, hovered, list: [{ index, name, faulty (Set), points }] } ou null.
  *  Schéma 1 ou 2 : le schéma 2 (SOG-0224, Carburant garde le détail) porte tout le schéma 1 ; ce qu'il ajoute n'est pas lu ici. */
 export function altsSanitize(raw) {
@@ -63,6 +95,7 @@ export function altsSanitize(raw) {
       layer,
       ids,
       index: Number.isInteger(a.index) ? a.index : list.length,
+      detail: detailOf(raw.answer?.alternatives?.[Number.isInteger(a.index) ? a.index : list.length]),
       name: clean(a.name, 60) || clean(a.route, 60),
       faulty: new Set((Array.isArray(a.faulty) ? a.faulty : []).filter(k => Number.isInteger(k) && k >= 0 && k < points.length - 1)
         .slice(0, MAX_POINTS)),
@@ -75,6 +108,9 @@ export function altsSanitize(raw) {
     dep: clean(raw.dep, 8).toUpperCase(),
     arr: clean(raw.arr, 8).toUpperCase(),
     chosen: ixs.includes(raw.chosen) ? raw.chosen : null,
+    computedAt: raw.schema === 2 ? clean(raw.computed_at, 30) :
+    '', // le schéma 2 (SOG-0224) : l'heure du calcul et la ligne dont le détail est ouvert, gardés par Carburant
+    open: raw.schema === 2 && ixs.includes(raw.open) ? raw.open : null,
     hovered: ixs.includes(raw.hovered) ? raw.hovered : null,
     list
   };
@@ -395,17 +431,21 @@ export function altsCard() {
   const el = S?.altsEl;
   if (!el) return;
   const A = current(),
-    on = !!A && !dual() && A.list.length > 0;
+    on = !!A && A.list.length > 0; // la MÊME fenêtre à côté de Carburant et sur la Carte seule (SOG-0224 : « comme pour les missions »)
   // une Carte seule : le PREMIER itinéraire est montré et pris pour choix courant dès l'ouverture (tracé surligné, ligne marquée) : « Choisir cet itinéraire » est toujours actif et prend ce choix (SOG-0224 :
   // « inefficient » — le bouton était grisé tant qu'aucune ligne n'était touchée, sans un mot)
-  if (on && A.mode === 'compute' && !A.list.some(a => a.index === S.altShow)) {
+  if (on && A.mode === 'compute' && !A.list.some(a => a.index === S.altShow) && A.list.some(a => a.index === A
+      .open)) { // la ligne ouverte que Carburant a gardée (elle survit au changement de carte, d'écran et au rechargement)
+    S.altShow = A.open;
+    S.altAuto = false;
+  } else if (on && !dual() && A.mode === 'compute' && !A.list.some(a => a.index === S.altShow)) {
     S.altShow = A.list[0].index;
     S.altAuto = true; // posé par défaut, pas touché : le tracé ne s'épaissit pas (le survol et l'appui l'épaississent)
   }
   const
     said = on && A.list.some(a => a.control.some(Boolean)), // le moteur dit ses tronçons : la clef du dessin
     legend = on ? altsLegendRows() : [],
-    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-shown="${a.index === S.altShow ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${A.mode === 'compute' ? `<button type="button" class="f-btn mp-al-take" data-alttake${A.list.some(a => a.index === S.altShow) ? '' : ' disabled'}>${esc(tt(TX.altTake))}</button>` : ''}` : '';
+    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-shown="${a.index === S.altShow ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${detailHtml(A)}${A.mode === 'compute' && !dual() ? `<button type="button" class="f-btn mp-al-take" data-alttake${A.list.some(a => a.index === S.altShow) ? '' : ' disabled'}>${esc(tt(TX.altTake))}</button>` : ''}` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
 }
@@ -452,6 +492,7 @@ export function altsStart() {
     if (S && (paths || []).some(p => p === DOC)) readDoc();
   }));
   S.altsEl?.addEventListener('click', e => {
+    if (e.target.closest('[data-altredo]')) return void(location.hash = '#fuel'); // périmé : Carburant recalcule
     if (e.target.closest('[data-alttake]')) return Number.isInteger(S.altShow) && altsPick(S.altShow);
     const b = e.target.closest('[data-alt]');
     if (b && !b.disabled) altsShow(+b.dataset.alt);

@@ -230,6 +230,15 @@ export const TX = {
     'Actividad real no conocida: solo horarios publicados (ni NOTAM ni AZBA leídos).'
   ],
   spMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
+  altAge: ['Calculé à {t}', 'Computed at {t}', 'Berechnet um {t}', 'Calculado a las {t}'],
+  altStale: ['Périmé : le calcul a plus de 12 heures', 'Stale: the computation is over 12 hours old',
+    'Veraltet: die Berechnung ist über 12 Stunden alt', 'Caducado: el cálculo tiene más de 12 horas'
+  ],
+  altRedo: ['Recalculer', 'Recompute', 'Neu berechnen', 'Recalcular'],
+  altFaultN: ['{n} tronçon(s) en écart', '{n} segment(s) with a deviation', '{n} Abschnitt(e) mit Abweichung',
+    '{n} tramo(s) con desviación'
+  ],
+  altIncomplete: ['contrôle incomplet', 'check incomplete', 'Prüfung unvollständig', 'control incompleto'],
   altTake: ['Choisir cet itinéraire', 'Choose this route', 'Diese Route wählen', 'Elegir esta ruta'],
   altTitle: ['Itinéraires proposés', 'Proposed routes', 'Vorgeschlagene Routen', 'Rutas propuestas'],
   altCheck: ['Route contrôlée', 'Checked route', 'Geprüfte Route', 'Ruta comprobada'],
