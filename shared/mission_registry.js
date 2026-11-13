@@ -628,8 +628,10 @@
       }));
     }
   }
+  /** Texte sur UNE ligne, coupé à 80 : les retours à la ligne et séparateurs de ligne deviennent des espaces (un identifiant venu du navigateur ou d'un fichier ne sort pas du commentaire d'en-tête). */
+  const oneLine = v => String(v ?? '').replace(/[\r\n\u0085\u2028\u2029]+/g, ' ').slice(0, 80);
   /** YAML d'une mission précédé d'une ligne de commentaire : identifiant, action, date. */
-  const dumpYaml = (y, id, what) => `# Mission ${id} — ${what} — ${new Date().toLocaleString('fr-FR')}\n` + window.jsyaml.dump(y, {
+  const dumpYaml = (y, id, what) => `# Mission ${oneLine(id)} — ${oneLine(what)} — ${new Date().toLocaleString('fr-FR')}\n` + window.jsyaml.dump(y, {
     lineWidth: -1,
     noRefs: true
   });
@@ -2406,7 +2408,7 @@
   async function fileYaml(line) {
     try {
       const name = line.files.find(f => /\.ya?ml$/i.test(f)),
-        url = new URL(`data/missions/${String(line.folder || '').split('/').filter(Boolean).map(encodeURIComponent).join('/')}/${encodeURIComponent(name)}`, window.RepositoryNav.root);
+        url = new URL(`data/missions/${String(line.folder || '').split('/').filter(x => x && x !== '.' && x !== '..').map(encodeURIComponent).join('/')}/${encodeURIComponent(name)}`, window.RepositoryNav.root);
       const r = await fetch(url, {
         cache: 'no-store'
       });
@@ -2583,10 +2585,20 @@
     try {
       await waitFor('jsyaml', 3000);
       if (!window.ZipStore) throw new Error('ZipStore');
-      const safe = id => String(id || 'sans-identifiant').replace(/[^\w.-]+/g, '_'),
+      const used = new Set(),
+        safe = id => String(id || 'sans-identifiant').replace(/[^\w.-]+/g, '_').slice(0, 60),
+        /** Nom d'entrée de l'archive : jamais deux fois le même (le second est numéroté : « -2 »), rien de ce qui n'existe que dans le navigateur n'est écrasé. */
+        entryName = (dir, id) => {
+          const base = safe(id);
+          let k = 1,
+            name = `${dir}/${base}.yaml`;
+          while (used.has(name)) name = `${dir}/${base}-${++k}.yaml`;
+          used.add(name);
+          return name;
+        },
         files = [];
       for (const s of keptSnapshots()) files.push({
-        name: `instantanes/${safe(s.id)}.yaml`,
+        name: entryName('instantanes', s.id),
         data: dumpYaml(s.yaml, s.id, `gardée par ce navigateur (${s.kind || 'instantané'}${s.dirtyAt ? ', modifiée non rangée' : ''})`)
       });
       for (const [dir, key] of [
@@ -2595,7 +2607,7 @@
         ]) {
         const d = readJson(key, null);
         if (d?.yaml) files.push({
-          name: `${dir}/${safe(d.yaml.mission?.id)}.yaml`,
+          name: entryName(dir, d.yaml.mission?.id),
           data: dumpYaml(keptYaml(d), d.yaml.mission?.id || '—', dir === 'partagee' ? 'mission partagée du générateur' :
             'brouillon du générateur')
         });
@@ -2649,7 +2661,7 @@
       `mission partagée du générateur : ${shared}`,
       `brouillon du générateur : ${keys.some(k => /^missionGeneratorDraft/.test(k)) ? 'oui' : 'non'} · brouillons de l'éditeur : ${keys.filter(k => /^missionCoreDraft:/.test(k)).length}`,
       `index : ${reg.missions.length} entrée(s)`,
-      `dernier « Ouvrir » : ${go ? `${go.where} — pas ${go.step}${go.error ? ` — erreur ${go.error}` : ''} — il y a ${Math.max(0, Math.round((Date.now() - Date.parse(go.at)) / 1000))} s` : 'aucun'}`
+      `dernier « Ouvrir » : ${go ? `${String(go.where).slice(0, 40)} — pas ${String(go.step).slice(0, 40)}${go.error ? ` — erreur ${String(go.error).slice(0, 40)}` : ''} — il y a ${Math.max(0, Math.round((Date.now() - Date.parse(go.at)) / 1000))} s` : 'aucun'}`
     ].join('\n');
   }
   /** « Copier le diagnostic » : au presse-papiers ; sans presse-papiers, le texte est montré, sélectionné. */

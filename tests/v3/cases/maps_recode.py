@@ -6447,6 +6447,20 @@ def k_keptexport(c):
     one = z.read([n for n in names if n.startswith('instantanes/') and '85' in n][0]).decode('utf-8')
     c.ok('A longer summary written in the editor' in one and 'Detailed 85' in one, one[:300], 'the snapshot under the old number is exported with the text written in the editor')
     c.ok(not sent, str(sent), 'nothing was sent anywhere (no write to the folder, no request but reads)')
+    # a forged identifier (a line break inside the key of a snapshot) stays inside the header comment; two identifiers that differ only by characters made « _ » do not share a name
+    c.js(r"""() => { const at = Date.now(), y = (id) => ({ schema: 'helo-xp-mission', mission: { id, type: 'AIRLIFT' }, title: 'Forged' }), snap = (id) => JSON.stringify({ yaml: y(id), narrative: { summary: '', detailed: '', sections: [] } });
+      localStorage.setItem('siaMissionSaved:v1', JSON.stringify({ 'T-1\nairline: injected': { kind: 'new', at, snap: snap('T-1'), dirtyAt: at }, 'A B': { kind: 'new', at, snap: snap('A B'), dirtyAt: at }, 'A_B': { kind: 'new', at, snap: snap('A_B'), dirtyAt: at } }));
+      localStorage.removeItem('siaMissionShared:v1'); return true }""")
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!document.getElementById('rgKeptExport')", timeout=15000, what='the registry has its export button for the forged snapshots')
+    with c.page.expect_download(timeout=15000) as dl2:
+        c.js("() => { document.getElementById('rgKeptExport').click(); return true }")
+    z2 = zipfile.ZipFile(dl2.value.path())
+    names2 = sorted(z2.namelist())
+    c.ok(len(set(names2)) == len(names2) == 3 and 'instantanes/A_B.yaml' in names2 and 'instantanes/A_B-2.yaml' in names2, str(names2), 'two identifiers that differ only by a character made « _ » get two names (the second numbered), nothing is lost')
+    forged = [n for n in names2 if n.startswith('instantanes/T-1')]
+    body = z2.read(forged[0]).decode('utf-8').split('\n') if forged else []
+    c.ok(body and body[0].startswith('#') and not any(l.lower().startswith('airline') for l in body[1:]), str(body[:3]), 'a line break in an identifier stays inside the one comment line: no key the mission did not have')
     c.shot('K222_standard_kept_delivered.png')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
 
