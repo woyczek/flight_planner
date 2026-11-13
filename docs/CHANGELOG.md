@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › « Sur la carte »: the head and cross wind of each runway again** — the METAR of the aerodrome is read before the Map opens when Fuel does not hold it yet (fuel DECISIONS; noreg F202; SOG-0306).
 - **Mission editor: the chronology read and written where the file keeps it, every tolerated shape kept (audit 190)** — a timeline in list form or `chronology` shown and never replaced; map kinds in words; a link flight asks neither positions nor story (missions DECISIONS lists every shape and its case; noreg N60).
 - **Map: « Around the flight only » acts on every layer read around the plan** — only the small airspaces and the airways followed the box; the aerodromes, navaids, VRP and RNAV points, towns, MORA cells and obstacles were read over the whole view, and the big airspace families by an exception of SOG-0169 (removed): ticked, all of them are read in the corridor of the route only, unticked the whole view; the list of the layers, one line each, is in the Maps DECISIONS (help ×4; noreg D203, D75 and D132 accorded; SOG-0246).
 - **Fuel › route: a route chosen on a Map alone clears the proposals there too; back in Fuel without a choice, the proposals come back** (fuel DECISIONS, INTEGRATION § 3 bis; noreg F201; SOG-0224).

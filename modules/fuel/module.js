@@ -2763,7 +2763,17 @@ function onPlanClick(e) {
   // « Sur la carte » : le mode choix de la Carte pour ce côté (§ 10.23) ; elle revient par location.replace avec son choix
   const om = e.target.closest('[data-do="onmap"]');
   if (om) {
-    location.hash = `#maps?choose=${om.dataset.side}&icao=${encodeURIComponent(om.dataset.icao)}`;
+    // SOG-0306 : la Carte dit le vent de face et de travers de chaque piste depuis le METAR que la couche météo du cadre a GARDÉ (elle
+    // ne demande rien au réseau) ; s'il n'est pas encore là (la lecture du montage a échoué ou n'est pas finie), il est lu ici d'abord,
+    // trois secondes au plus, puis la Carte s'ouvre — avec ou sans lui
+    const icao = om.dataset.icao,
+      go = () => {
+        if (S) location.hash = `#maps?choose=${om.dataset.side}&icao=${encodeURIComponent(icao)}`;
+      };
+    if (S.wx?.metar?.[icao] || S.ctx.net?.online?.() === false || !S.ctx.weather?.metar) return go();
+    om.disabled = true;
+    Promise.race([Promise.resolve().then(() => S.ctx.weather.metar([icao])).catch(() => null), new Promise(r => setTimeout(r, 3000))])
+      .finally(go);
     return;
   }
   // une tape sur la ligne de résumé d'un côté (ou son bouton ▸) le déplie (§ 10.31) ; les autres boutons de la ligne gardent leur geste

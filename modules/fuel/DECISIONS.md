@@ -1813,3 +1813,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (`flightReady`, no `ralt`) reads the document back (`raltsOfDoc`, shared with the address: same pair, `mode` compute, three lines,
   bounded texts, procedures to their form) and shows the list again, nothing taken, nothing republished. INTEGRATION § 3 bis. F201 (red
   before: no list on return). The end-to-end case Fuel + Map is BUGS SOG's.
+- **13 Nov 2026 — SOG-0306: « Sur la carte » reads the METAR of its aerodrome first** (regression reported by the user; written by
+  Features SOG): no commit removed the wind — the Map's choice draws « ↓ 12 kt · → 1 kt » on each runway from the METAR the frame's
+  weather layer has KEPT (modules/maps/choose.js, `cacheOnly`, unchanged since edd31f958; the Map asks nothing of the network). It is
+  missing whenever that METAR is not kept yet: Fuel reads the weather once per mount, and that reading may have failed or not finished
+  (end to end, F202 red before: no wind on any runway). Now « Sur la carte » reads the METAR of its aerodrome when Fuel does not hold it
+  (online, three seconds at most), then opens the Map — with or without it. The order « the best oriented runway first » is the Map's
+  model (BUGS SOG): said to the ergonomist, not changed here. F202.

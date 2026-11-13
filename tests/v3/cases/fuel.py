@@ -4957,3 +4957,28 @@ def f201(c):
            'the address ralt=2 takes the third route', timeout=12000)
     c.until_doc('cache/fuel/route_alts.json', lambda x: x is not None and len(x.get('alternatives') or []) == 0,
                 'the document published empty after a choice from the Map alone', timeout=8000)
+
+
+
+_CH_WIND = """[...document.querySelectorAll('[data-module="maps"] .mp-ch-row[data-fam=rwy]')].map(b => [b.dataset.id, (b.querySelector('.mp-ch-wind') || {}).textContent || ''])"""
+
+
+@case('F202', 'The arrival runway chosen « Sur la carte »: each runway of the Map\'s choice says its head and cross wind from the METAR Fuel has '
+      'read, end to end from Fuel — a METAR missing at the mount is read before the Map opens', 'F', tags=('fuel', 'maps', 'weather'), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0306 (user, 13 Nov: « le choix des pistes d\'arrivée, via le bouton « sur la carte » : plus d\'infos de vent face/travers. comment '
+      'choisir !? c\'était présent avant. ») — the Map reads the METAR from the frame\'s weather cache only')
+def f202(c):
+    # the METAR is not there when Fuel mounts (its one reading of the mount fails: no answer yet), it answers later
+    c.context.route(re.compile(r'aviationweather\.gov|metar\.vatsim\.net', re.I), lambda route: route.abort())
+    open_proc(c)
+    wait_rows(c, 'arr')
+    c.settle()
+    c.eq(c.doc('cache/weather/metar/LFML.json'), None, 'no METAR kept at the mount', what='cache')
+    c.context.unroute(re.compile(r'aviationweather\.gov|metar\.vatsim\.net', re.I))
+    route_metar(c, {'LFML': (310, 12)})
+    c.tap(f'{FUEL} [data-proc="arr"] .fu-proctitle [data-do="onmap"]')
+    c.until("""document.querySelectorAll('[data-module="maps"] .mp-ch-row[data-fam=rwy]').length > 0""", timeout=15000, what='the runways of the choice')
+    rows = c.js(_CH_WIND)
+    rw = [r for r in rows if r[0] != 'none']  # « Aucune » is not a runway
+    c.ok(rw and all(w for _, w in rw), rows, 'every runway of the choice says its head and cross wind')
