@@ -206,6 +206,7 @@ the suite root) and has no listing.
 | `airspaces(q)` | airspaces touching the area; `q.types` keeps some types |
 | `aerodromes(q)` | aerodromes of the area, or the one of `q.icao` (from the light index when published); `q.lite`: the area's aerodromes with an ICAO code from the light index (code, name, position, elevation, runway axis, magnetic variation) |
 | `navaids(q)`, `points(q)`, `vrp(q)` | points of the area |
+| `navaidsOf(icao)` | the landing aids of an aerodrome (SOG-0298), from the published base of its zone: `[{ icao, rwy, id, type ('ILS' \| 'LOC' \| 'GLS' \| 'MLS'), freq (MHz; empty when not in 108–112), bearing (° or `null`), cat? (`I` \| `II` \| `III` \| `NOCAT`), gs? (glide path, MHz), dme, dmeId?, dmeChannel? ('30Y'), lat, lon }]` sorted by runway then identifier; `[]` for a bad code, an unknown aerodrome or none. Each field is checked; the entries of another aerodrome nearby, VOR, NDB and DME are not returned (the base links them to no aerodrome). `cat`, `gs`, `dmeId`, `dmeChannel` exist only in a base built by a reader that keeps them (SIA `aero_symbols.js`, since 13 Nov 2026) |
 | `obstacles(q)` | obstacles of the area; `q.minHgt` (ft) |
 | `airways(q)` | airways with a segment touching the area |
 | `mora(lat, lon)`, `moraCells(q)` | MORA of a point (ft, or null), cells of an area |

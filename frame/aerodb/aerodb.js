@@ -1940,6 +1940,64 @@
         }), e.lk);
         return finishProc(e.P, rec, e.table, e.adOf, () => 0);
       },
+      /** Les aides d'atterrissage d'un terrain, d'après la base publiée de sa zone (SOG-0298, source : le SIA pour la France, navaids.json de la zone ; rien d'une autre origine) :
+       *  [{ icao, rwy ('05', '23L'), id (indicatif), type ('ILS' | 'LOC' | 'GLS' | 'MLS'), freq (MHz du radiophare d'alignement, '' si non conforme), bearing (° ou null),
+       *  cat? ('I' | 'II' | 'III' | 'NOCAT'), gs? (MHz du plan de descente), dme (bool), dmeId?, dmeChannel? ('30Y'), lat, lon }], triées par piste puis indicatif ; [] pour un code
+       *  mal formé, un terrain inconnu ou sans aide. Chaque champ est vérifié (la base est une donnée non fiable) ; `cat`, `gs`, `dmeId` et `dmeChannel` n'existent que dans une base construite
+       *  par un lecteur qui les garde (un fichier plus ancien les ignore, sans erreur). Les VOR, NDB et DME ne sont pas rendus : la base ne les relie à aucun terrain. */
+      async navaidsOf(icao) {
+        const k = String(icao || '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(k)) return [];
+        const ad = (await api.aerodromes({
+          icao: k
+        }).catch(() => []))?.[0];
+        if (!ad || !Number.isFinite(+ad.lat) || !Number.isFinite(+ad.lon)) return [];
+        const list = await api.navaids({
+          lat: +ad.lat,
+          lon: +ad.lon,
+          radiusNm: 15
+        }).catch(() => []);
+        const re = (v, rx) => typeof v === 'string' && rx.test(v.trim()) ? v.trim() : null,
+          out = [],
+          seen = new Set();
+        for (const n of Array.isArray(list) ? list : []) {
+          if (!n || n.kind !== 'ILS' || String(n.ad || '').toUpperCase() !== k) continue;
+          const rwy = re(String(n.rwy ?? ''), /^\d{2}[LRC]?$/),
+            id = re(String(n.id ?? ''), /^[A-Z0-9]{1,5}$/);
+          if (!rwy || !id || seen.has(`${rwy}|${id}`)) continue;
+          seen.add(`${rwy}|${id}`);
+          const bearing = Number.isFinite(+n.bearing) && n.bearing !== null && n.bearing !== '' && +n.bearing >= 0 && +n.bearing <=
+            360 ? +n.bearing : null,
+            cat = re(String(n.cat ?? ''), /^(I|II|III|NOCAT)$/),
+            gs = re(String(n.gs ?? ''), /^3[23]\d\.\d{1,3}$/),
+            dmeId = re(String(n.dmeId ?? ''), /^[A-Z0-9]{1,5}$/),
+            dmeChannel = re(String(n.dmeChannel ?? ''), /^\d{1,3}[XY]$/);
+          out.push({
+            icao: k,
+            rwy,
+            id,
+            type: n.sys === 'GLS' || n.sys === 'MLS' ? n.sys : n.loc === true ? 'LOC' : 'ILS',
+            freq: re(String(n.freq ?? ''), /^1[01]\d\.\d{1,3}$/) || '',
+            bearing,
+            ...(cat ? {
+              cat
+            } : {}),
+            ...(gs ? {
+              gs
+            } : {}),
+            dme: n.dme === true,
+            ...(dmeId ? {
+              dmeId
+            } : {}),
+            ...(dmeChannel ? {
+              dmeChannel
+            } : {}),
+            lat: +n.lat,
+            lon: +n.lon
+          });
+        }
+        return out.sort((a, b) => (a.rwy < b.rwy ? -1 : a.rwy > b.rwy ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      },
       /** Pistes d'un terrain (§ 10.20) : [{ id ('23', '05R'), lat, lon (seuil), elev (ft, seuil), qfu (relèvement magnétique, °),
        *  displaced (ft), length, width, source, approx }] — celles que les fichiers de procédures portent (FAA CIFP : enregistrements
        *  de piste, complets), ceux de la page AD 2.12 de l'eAIP du SIA (complets aussi : `true` cap vrai, `displaced` en ft comme le CIFP,

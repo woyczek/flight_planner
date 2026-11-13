@@ -8897,3 +8897,66 @@ def k218(c):
     for w in (390, 1280):  # the card after the export, at both widths (shown to the ergonomist)
         c.page.set_viewport_size({'width': w, 'height': 800})
         c.page.locator('#k218card').screenshot(path=str(ROOT / 'tests' / 'v3' / 'shots' / f'K218_card_{w}.png'))
+
+
+@case('K226', 'The SIA ILS reader keeps what the AIXM carries and the base used to drop (SOG-0298): the category, the frequency of the glide path, the identifier and the channel of the associated DME; a localizer without them has none of these fields (the shape of the others does not change)', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist 13 Nov 2026 (SOG-0298, first step ILS and LOC): `parseAixm` (shared/carto/aero_symbols.js, and its copy for the maps module) read, of each Ils of the SIA AIXM 4.5, the localizer (identifier, frequency, position) and whether a DME is associated; the category (codeCat), the glide path (Igp valFreq), the DME identifier and its channel (codeChannel of the Dme record) were dropped. Added only when present, so a file read before this change, or a localizer with none, keeps its shape.')
+def k226(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    c.page.add_script_tag(url=f'{c.base}/shared/carto/aero_symbols.js')
+    c.page.wait_for_function('!!window.SiaAero && !!window.SiaAero.parseAixm', timeout=30000)
+    r = c.js("""() => {
+      const dme = '<DmeUid mid="501"><codeId>XA</codeId><geoLat>480000.00N</geoLat><geoLong>0030000.00E</geoLong></DmeUid>';
+      const ils = (mid, ad, thr, id, cat, freq, extra) => `<Ils><IlsUid mid="${mid}"><RdnUid mid="2"><RwyUid mid="3"><AhpUid mid="4"><codeId>${ad}</codeId></AhpUid><txtDesig>${thr}/${thr}</txtDesig></RwyUid><txtDesig>${thr}</txtDesig></RdnUid></IlsUid>${extra[0]}<codeCat>${cat}</codeCat><Ilz><codeId>${id}</codeId><valFreq>${freq}</valFreq><uomFreq>MHZ</uomFreq><geoLat>480100.00N</geoLat><geoLong>0030100.00E</geoLong></Ilz>${extra[1]}</Ils>`;
+      const xml = '<AIXM-Snapshot><Dme>' + dme + '<OrgUid mid="1"><txtName>FRANCE</txtName></OrgUid><codeChannel>40Y</codeChannel></Dme>'
+        + ils(601, 'LFXA', '05', 'XA', 'II', '110.30', [dme, '<Igp><valFreq>332.00</valFreq><uomFreq>MHZ</uomFreq></Igp>'])
+        + ils(602, 'LFXB', '23', 'XB', 'NOCAT', '109.10', ['', '']) + '</AIXM-Snapshot>';
+      return window.SiaAero.parseAixm(xml).navaids.filter(n => n.kind === 'ILS');
+    }""")
+    by = {n['id']: n for n in r}
+    c.eq(sorted(by), ['XA', 'XB'], 'the two localizers are read', what='ids')
+    a, b = by['XA'], by['XB']
+    c.eq((a['freq'], a['ad'], a['rwy'], a['dme'], a.get('cat'), a.get('gs'), a.get('dmeId'), a.get('dmeChannel')), ('110.30', 'LFXA', '05', True, 'II', '332.00', 'XA', '40Y'),
+         'a complete ILS: its category, the frequency of its glide path, its DME identifier and the channel of that DME', what='complete')
+    c.eq((b['freq'], b['dme'], b.get('cat'), 'gs' in b, 'dmeId' in b, 'dmeChannel' in b), ('109.10', False, 'NOCAT', False, False, False),
+         'a localizer with no glide path and no DME: none of the three fields (the shape of an existing record is unchanged)', what='bare')
+
+
+@case('K227', 'AeroDb.navaidsOf(icao): the ILS and LOC of an aerodrome from the published base of its zone, each field checked, with category, glide path and DME when the base carries them; [] for a bad code, an unknown aerodrome or none (SOG-0298)', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist 13 Nov 2026 (SOG-0298, first step ILS and LOC, official source only): « terrain, piste, indicatif, fréquence LOC, DME et canal quand ils sont là ». The base already holds the SIA ILS (navaids.json, kind ILS, ad, rwy, id, freq, bearing, dme); Fuel read them with its own query. One function on the contract: the entries of the aerodrome only (not those of another terrain nearby), sorted by runway then identifier, a malformed field dropped (a frequency out of the 108-112 MHz band gives \'\'; an identifier or a runway that is not one drops the entry), VOR / NDB / DME not returned (the base links them to no aerodrome). A file built before the extra fields simply lacks them.')
+def k227(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'];
+      const ils = (id, ad, rwy, freq, o = {}) => ({ kind: 'ILS', id, name: `${ad} ${rwy}`, freq, ad, rwy, bearing: 48.68, dme: false, lat: 48.54, lon: 7.63, ...o });
+      const nav = [
+        ils('STZ', 'LFST', '23', '109.55', { dme: true, bearing: 228.7, cat: 'III', gs: '332.00', dmeId: 'SZ', dmeChannel: '32Y' }),
+        ils('ENT', 'LFST', '05', '108.55', { dme: true }),
+        ils('ENT', 'LFST', '05', '108.55', { dme: true }),
+        ils('ZZZ', 'LFST', '05L', '99.9'),
+        ils('BAD1', 'LFST', 'XX', '109.55'),
+        ils('toolongid', 'LFST', '23', '109.55'),
+        ils('OTH', 'LFGA', '05', '110.10', { lat: 48.0, lon: 7.4 }),
+        ils('LCT', 'LFST', '15', '110.7', { loc: true, bearing: null, cat: 'bogus', gs: '12', dmeChannel: '<x>' }),
+        { kind: 'VOR', id: 'STR', name: 'STRASBOURG', freq: '115.6', lat: 48.5, lon: 7.57, dme: true }
+      ];
+      const f = { 'sia/base/fr/2026-10-29/meta.json': { schema: 2, zone: 'fr', cycle: '2026-10-29', kind: 'meta', parserVersion: 28, data: {} },
+        'sia/base/fr/2026-10-29/aerodromes.json': { schema: 2, zone: 'fr', cycle: '2026-10-29', kind: 'aerodromes', data: [{ id: 'LFST', icao: 'LFST', lat: 48.5383, lon: 7.6282, name: 'STRASBOURG ENTZHEIM' }, { id: 'LFGA', icao: 'LFGA', lat: 48.1, lon: 7.35, name: 'COLMAR' }, { id: 'LFXX', icao: 'LFXX', lat: 47, lon: 2, name: 'SANS AIDE' }] },
+        'sia/base/fr/2026-10-29/navaids.json': { schema: 2, zone: 'fr', cycle: '2026-10-29', kind: 'navaids', data: nav } };
+      for (const k of kinds) if (!(`sia/base/fr/2026-10-29/${k}.json` in f)) f[`sia/base/fr/2026-10-29/${k}.json`] = { schema: 2, zone: 'fr', cycle: '2026-10-29', kind: k, data: [] };
+      const db = AeroDB.create({ reader: { read: async p => p in f ? { value: f[p], rev: 'r' } : null, list: async prefix => Object.keys(f).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse('2026-11-10T12:00:00Z') });
+      return { st: await db.navaidsOf('lfst'), ga: await db.navaidsOf('LFGA'), none: await db.navaidsOf('LFXX'), unknown: await db.navaidsOf('LFZZ'), bad: [await db.navaidsOf('x'), await db.navaidsOf(''), await db.navaidsOf(null), await db.navaidsOf('LF<>')] };
+    }""")
+    st = r['st']
+    c.eq([(x['rwy'], x['id']) for x in st], [('05', 'ENT'), ('05L', 'ZZZ'), ('15', 'LCT'), ('23', 'STZ')],
+         'the aerodrome\'s own entries, sorted by runway then identifier: the duplicate once, the entry with a bad runway or an over-long identifier dropped, the neighbour\'s ILS and the VOR left out', what='list')
+    by = {x['id']: x for x in st}
+    c.eq(by['STZ'], {'icao': 'LFST', 'rwy': '23', 'id': 'STZ', 'type': 'ILS', 'freq': '109.55', 'bearing': 228.7, 'cat': 'III', 'gs': '332.00', 'dme': True, 'dmeId': 'SZ', 'dmeChannel': '32Y', 'lat': 48.54, 'lon': 7.63},
+         'a complete ILS: frequency, axis, category, glide path, DME with its identifier and channel', what='complete')
+    c.eq(by['ENT'], {'icao': 'LFST', 'rwy': '05', 'id': 'ENT', 'type': 'ILS', 'freq': '108.55', 'bearing': 48.68, 'dme': True, 'lat': 48.54, 'lon': 7.63},
+         'a base without the extra fields (built before): the entry has none of them, no error', what='old')
+    c.eq((by['ZZZ']['freq'], by['LCT']['type'], by['LCT']['bearing'], 'cat' in by['LCT'], 'gs' in by['LCT'], 'dmeChannel' in by['LCT']), ('', 'LOC', None, False, False, False),
+         'a frequency out of the band is \'\', a localizer alone is a LOC without axis, a category, a glide path or a channel that does not fit are dropped', what='checked')
+    c.eq([[(x['rwy'], x['id']) for x in r['ga']], r['none'], r['unknown'], r['bad']], [[('05', 'OTH')], [], [], [[], [], [], []]],
+         'another aerodrome has its own list; an aerodrome without aid, an unknown one and the bad codes give []', what='others')

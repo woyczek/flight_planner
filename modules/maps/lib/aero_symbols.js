@@ -104,6 +104,7 @@
     // Radionavigation : VOR (+ DME associé = VOR-DME ; TACAN co-implanté = VOR-TACAN), DME, TACAN, NDB.
     const navaids = [],
       vorByMid = new Map(),
+      dmeChannel = new Map(), // canal de chaque DME (par mid) : celui du DME d'un ILS (SOG-0298)
       ilsDme = new Set([...text.matchAll(/<Ils>[\s\S]*?<DmeUid mid="(\d+)"/g)].map(m => m[1]));
     for (const b of blocks(text, 'Vor')) {
       const mid = /<VorUid mid="(\d+)"/.exec(b)?.[1],
@@ -125,6 +126,8 @@
       const vor = vorByMid.get(/<VorUid mid="(\d+)"/.exec(b)?.[1]),
         p = geo(b);
       if (!Number.isFinite(p.lat)) continue;
+      const dmeMid = /<DmeUid mid="(\d+)"/.exec(b)?.[1];
+      if (dmeMid && tag(b, 'codeChannel')) dmeChannel.set(dmeMid, tag(b, 'codeChannel'));
       if (vor) {
         vor.dme = true;
         continue;
@@ -174,7 +177,11 @@
       const p = geo(ilz);
       if (!Number.isFinite(p.lat)) continue;
       const ad = /<AhpUid[^>]*>\s*<codeId>([^<]+)/.exec(b)?.[1] || '',
-        thr = /<\/RwyUid>\s*<txtDesig>([^<]+)/.exec(b)?.[1] || '';
+        thr = /<\/RwyUid>\s*<txtDesig>([^<]+)/.exec(b)?.[1] || '',
+        cat = tag(b, 'codeCat'),
+        gs = /<Igp>\s*<valFreq>([^<]+)/.exec(b)?.[1].trim(),
+        dmeOf = /<DmeUid mid="(\d+)"[^>]*>\s*<codeId>([^<]+)/.exec(b),
+        dmeCh = dmeOf && dmeChannel.get(dmeOf[1]);
       navaids.push({
         kind: 'ILS',
         id: tag(ilz, 'codeId'),
@@ -184,6 +191,19 @@
         rwy: thr,
         bearing: rdnBrg.get(ad + '|' + thr),
         dme: /<DmeUid/.test(b),
+        // ce que l'AIXM porte en plus (SOG-0298) : catégorie, fréquence du plan de descente, indicatif et canal du DME associé ; absents quand l'AIXM ne les donne pas
+        ...(cat ? {
+          cat
+        } : {}),
+        ...(gs ? {
+          gs
+        } : {}),
+        ...(dmeOf ? {
+          dmeId: dmeOf[2].trim()
+        } : {}),
+        ...(dmeCh ? {
+          dmeChannel: dmeCh
+        } : {}),
         ...p
       });
     }
