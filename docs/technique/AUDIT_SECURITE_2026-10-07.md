@@ -1042,6 +1042,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 190 | The fix of 187 (779654075: risks under `title`, translations aligned, the registry's node ceiling), the editor's timeline and maps step (2dfa0aeca) and the commercial family (57c8cb17a) | defect of 187 closed; one defect proved (a `timeline` that is a list loses its events), three notes |
 | 191 | The published site's root: one added step in `pages.yml` and `build_pages.py --root-only` (93258d646, SOG-0278 / Q-0039), read before the push | accepted, three notes |
 | 192 | The Map alone: “Choose this route” is never a dead button (edbe901be, SOG-0224) | acceptable, display only |
+| 193 | The publication of the site's root (78053845b on v3, 027747a83 on develop), the Map's “around the flight only” (b4efa222d), Fuel's proposals after a choice on the Map (dd7c3f8d2, 95d0a34f2), the stop points' runway and the ENV charts (e79e56dd1), the wording of the recette verbs (001b4aa56) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2950,6 +2951,18 @@ service worker of a browser that cached the old root may show it until it update
 opens (`S.altShow`, `S.altAuto`), a tap changes the choice instead of removing it, and the row carries `data-shown` (a numeric `data-alt`, `0` / `1` flags, a constant CSS
 rule). The route names stay through `esc`, the legend rows are built by `altsLegendRows`, which escapes its labels, and nothing new is read from a file or written. D201 green,
 D202 is the known failure the commit declares (Fuel loses its proposals when its screen is left), not a regression. No note.
+
+**193. The published root, the Map's corridor, Fuel's proposals, the stop points' runway — acceptable, one note.** *Publication.* The commit on develop (027747a83, parent 8b6093da7)
+changes one file, `pages.yml`, by the two lines of audit 191 and no other; its blob is the one of `origin/v3` (c1c5c597c), so the triggers, permissions and existing steps are unchanged, and
+`build_pages.py` of develop is not touched; 78053845b is on `v3` with `--root-only`, so the step finds its code whichever branch is pushed. The run itself was not seen (no access to the runs).
+*Map (b4efa222d).* “Around the flight only” now applies the route's corridor to every layer read around the plan; the removed `withBig` and `BIG_TYPES` only added reads, and nothing new
+is read or written (a smaller read, not a larger one). *Fuel (dd7c3f8d2, 95d0a34f2).* After a choice on the Map alone Fuel publishes an empty list (`altsClear(true)`); on return without a choice it
+takes the proposals from `cache/fuel/route_alts.json` through `raltsOfDoc` (a calculation, the same pair of aerodromes, three at most, texts bounded, procedures in their form). That
+document is of the `cache` kind: it stays on the device and is not in the data repository, so no pilot writes it. D202 and F201 green. *AeroDB (e79e56dd1).* `ground.py` splits
+`W28@02/20` with an anchored pattern applied to a name that is already one line and an OpenStreetMap tag of at most 255 characters (no backtracking to speak of), and the reader keeps `rwy` only
+if it matches `^\d{2}[LRC]?(?:/\d{2}[LRC]?)?$`; the ENV charts leave the approach charts by a word test on the file name. K228 and K229 green. *Recette (001b4aa56).* Wording only: the two verbs' rule
+now says “no control character but tab and line feed”, which is what the pattern does (the note of 188 is closed). **Note.** `altsFromDoc` hands `d.alternatives.slice(0, 3)` to the Map as the
+list without passing it through the validation `raltsOfDoc` applies to the Fuel list; the document is device-local, so it is hygiene: give the Map the validated list.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
