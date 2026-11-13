@@ -6382,3 +6382,59 @@ def k_gosilent(c):
     c.ok('origine : http://127.0.0.1' in txt and 'mission partagée du générateur : aucune' in txt and 'pas folder' in txt and 'erreur Timeout' in txt, txt[:600], 'it says the origin, the shared mission, the folder and the last step reached with its error')
     c.shot('K221_standard_diagnostic_delivered.png')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404') and 'bench failure' not in e and 'pas de réponse en 8 s' not in e]      # the bench failures and the folder that does not answer are the case's own
+
+
+
+# The missions the V2 editor keeps in the browser (siaMissionSaved:v1: { id -> { kind, at, snap, dirtyAt } }, snap = a JSON text { yaml, narrative }), on a bench: three snapshots (one
+# under the number a mission had before the renumbering and different from its file, one identical to its file, one with no file), the shared mission, and the lines of the index.
+_KEPT_SEED_JS = r"""async () => {
+  const y = (id, title, summary) => ({ schema: 'helo-xp-mission', mission: { id, type: 'AIRLIFT' }, title, summary, detailed_description: 'Detailed ' + id });
+  const snap = (id, title, summary) => JSON.stringify({ yaml: y(id, title, summary), narrative: { summary: '', detailed: '', sections: [] } });
+  const at = Date.now();
+  localStorage.setItem('siaMissionSaved:v1', JSON.stringify({
+    '85': { kind: 'loaded', at, snap: snap('85', 'Bench one', 'A longer summary written in the editor'), dirtyAt: at },
+    'T-086': { kind: 'saved', at, snap: snap('T-086', 'Bench two', 'Same as the file'), dirtyAt: at },
+    'X-001': { kind: 'new', at, snap: snap('X-001', 'Bench three', 'No file anywhere'), dirtyAt: at } }));
+  localStorage.setItem('siaMissionShared:v1', JSON.stringify({ yaml: y('T-090', 'Bench shared', 'Shared'), narrative: { summary: '', detailed: '', sections: [] }, rev: 1, at: '2026-10-20T10:00:00.000Z', by: 'bench' }));
+  const line = (id, former, folder) => ({ id, formerId: former, series: '', number: 0, type: 'AIRLIFT', family: 'T', subtype: '', title: 'Bench', folder, files: ['mission' + id + '.yaml'], source: 'dossier',
+    status: 'generated', statusAt: '2026-10-20T10:00:00.000Z', notes: '', flownAt: '', addedAt: '2026-10-20T10:00:00.000Z', teams: [], teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0, origin: '', destination: '', hasYaml: true });
+  await window.MissionIndex.ready;
+  await window.MissionIndex.save([line('T-085', '85', 'T_AIRLIFT/T-085'), line('T-086', '', 'T_AIRLIFT/T-086')], new Date().toISOString());
+  return true }"""
+_KEPT_FILE_85 = "schema: helo-xp-mission\nmission:\n  id: T-085\n  type: AIRLIFT\ntitle: Bench one\nsummary: The short summary of the file\ndetailed_description: Detailed 85\n"
+_KEPT_FILE_86 = "schema: helo-xp-mission\nmission:\n  id: T-086\n  type: AIRLIFT\ntitle: Bench two\nsummary: Same as the file\ndetailed_description: Detailed T-086\n"
+
+
+@case('K222', 'The registry of the V2 says how many missions the browser keeps (the editor’s snapshots), how many differ from their folder, have no file, or are identical; one button downloads them all as YAML in one archive, and writes nothing to the folder', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0293 (a) and (b) (the user: « si il y a discordance entre le registre et les fichiers, export yaml vers les fichiers »; the ergonomist, 13 Nov): the backup first -- one YAML per snapshot, DOWNLOADED, nothing written to the folder; the same line says the state; a snapshot under an old number is compared with the file of the mission that carries that former_id')
+def k_keptexport(c):
+    import io as _io
+    import zipfile
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry", timeout=15000, what='the registry page is loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree
+    c.js(_KEPT_SEED_JS)
+    c.page.route('**/data/missions/T_AIRLIFT/T-085/missionT-085.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_85))
+    c.page.route('**/data/missions/T_AIRLIFT/T-086/missionT-086.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_86))
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!document.getElementById('rgKept') && document.getElementById('rgKept').textContent.length > 10", timeout=15000, what='the registry says what the browser keeps')
+    c.wait(800)
+    line = c.js("() => document.getElementById('rgKept').textContent.replace(/\\s+/g, ' ').trim()")
+    c.ok(line.startswith('3 mission(s) gardée(s) par ce navigateur') and '1 différente(s) du dossier' in line and '1 sans fichier' in line and '1 identique(s)' in line, line, 'the line counts what the browser keeps: 1 different (the one under the old number, compared with the file of T-085), 1 without file, 1 identical')
+    sent = []
+    c.page.on('request', lambda r: sent.append(r.method + ' ' + r.url) if r.method != 'GET' else None)
+    with c.page.expect_download(timeout=15000) as dl:
+        c.js("() => { document.getElementById('rgKeptExport').click(); return true }")
+    d = dl.value
+    path = d.path()
+    z = zipfile.ZipFile(path)
+    names = sorted(z.namelist())
+    c.ok(d.suggested_filename.endswith('.zip'), d.suggested_filename, 'one archive is downloaded')
+    c.ok(len(names) == 4 and sum(n.startswith('instantanes/') for n in names) == 3 and any(n.startswith('partagee/') for n in names), str(names), 'one YAML per snapshot, and the shared mission')
+    one = z.read([n for n in names if n.startswith('instantanes/') and '85' in n][0]).decode('utf-8')
+    c.ok('A longer summary written in the editor' in one and 'Detailed 85' in one, one[:300], 'the snapshot under the old number is exported with the text written in the editor')
+    c.ok(not sent, str(sent), 'nothing was sent anywhere (no write to the folder, no request but reads)')
+    c.shot('K222_standard_kept_delivered.png')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]

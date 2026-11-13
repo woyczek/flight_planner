@@ -1408,6 +1408,7 @@
         ${oldNumbers() ? `<p class="rg-small" id="rgOldNumbers">${esc(t(['{n} mission(s) sous un ancien numéro, sans mission renumérotée', '{n} mission(s) under an old number, with no renumbered mission', '{n} Mission(en) unter einer alten Nummer, ohne neu nummerierte Mission', '{n} misión(es) bajo un número antiguo, sin misión renumerada'], { n: oldNumbers() }))}</p>` : ''}
         ${keptFormer() ? `<p class="rg-small" id="rgFormer">${esc(t(['{n} ancienne(s) entrée(s) gardée(s), plus complète(s) que leur mission : numéro d’avant la renumérotation, cachée(s) de la liste, jamais supprimée(s)', '{n} old entry(ies) kept, more complete than their mission: number from before the renumbering, hidden from the list, never deleted', '{n} alte Einträge behalten, vollständiger als ihre Mission: Nummer von vor der Neunummerierung, in der Liste ausgeblendet, nie gelöscht', '{n} entrada(s) antigua(s) conservada(s), más completa(s) que su misión: número de antes de la renumeración, oculta(s) en la lista, nunca eliminada(s)'], { n: keptFormer() }))}</p>` : ''}
         <div id="rgMsg">${msg}</div>
+        <p class="rg-small" id="rgKept"></p>
         <p class="rg-small"><a href="#" id="rgDiag" title="${esc(t(['Copie au presse-papiers l’état de la page (formes seulement : aucune valeur, aucun identifiant, aucun chemin) — à joindre à un signalement', 'Copies the page’s state to the clipboard (shapes only: no value, no identifier, no path) — to attach to a report', 'Kopiert den Zustand der Seite in die Zwischenablage (nur Formen: kein Wert, keine Kennung, kein Pfad) — einer Meldung beizufügen', 'Copia el estado de la página al portapapeles (solo formas: ningún valor, identificador ni ruta) — para adjuntar a un informe']))}">${esc(t(['Copier le diagnostic', 'Copy the diagnostic', 'Diagnose kopieren', 'Copiar el diagnóstico']))}</a></p>
       </section>
       <section data-block-id="choose" data-icon="search" data-subtitle="${esc(t(['Type, sous-type, rendez-vous, équipes, ravitaillement, théâtre, statut — puis tirer au sort ou ouvrir', 'Type, subtype, rendezvous, teams, refuelling, theatre, status — then draw or open']))}">
@@ -1777,6 +1778,7 @@
         m: `${m.id} ${m.title}`
       })
     });
+    paintKept(); // les missions gardées par ce navigateur (SOG-0293)
     host.querySelector('#rgDiag')?.addEventListener('click', e => {
       e.preventDefault();
       copyDiagnostic(e.currentTarget);
@@ -2337,6 +2339,141 @@
       })), 'err');
     }
   }
+  // ---- missions gardées par ce navigateur (SOG-0293) : l'éditeur de la V2 garde, dans le stockage local, un instantané par mission (siaMissionSaved:v1 : { identifiant → { kind, at,
+  // snap, dirtyAt } }, snap = { yaml, narrative } en texte JSON) et la mission partagée ; ce qui n'est pas rangé au dossier n'existe que là, et « effacer les données du site » le perd.
+  // Ici : la ligne d'état (combien, différentes du dossier, sans fichier, identiques) et l'export — un YAML par mission, TÉLÉCHARGÉ en une archive ; rien n'est écrit au dossier.
+  const SAVED_KEY = 'siaMissionSaved:v1',
+    SHARED_KEY = 'siaMissionShared:v1',
+    LEGACY_DRAFT_KEY = 'missionGeneratorDraft';
+  /** YAML d'un { yaml, narrative } de l'éditeur : le résumé et la description du récit passent dans le YAML comme à l'export de l'éditeur (syncNarrative). */
+  function keptYaml(doc) {
+    const y = structuredClone(doc?.yaml || {});
+    if (doc?.narrative?.summary && !y.summary) y.summary = doc.narrative.summary;
+    if (doc?.narrative?.detailed && !y.detailed_description) y.detailed_description = doc.narrative.detailed;
+    return y;
+  }
+  /** Les instantanés du navigateur : [{ id, kind, at, dirtyAt, yaml }] (illisibles écartés). */
+  function keptSnapshots() {
+    return Object.entries(readJson(SAVED_KEY, {}) || {}).map(([id, r]) => {
+      try {
+        const doc = JSON.parse(r.snap);
+        return doc?.yaml ? {
+          id,
+          kind: String(r.kind || ''),
+          at: +r.at || 0,
+          dirtyAt: r.dirtyAt || null,
+          yaml: keptYaml(doc)
+        } : null;
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  }
+  /** La ligne du registre qui a des fichiers et porte cet identifiant, sinon cet ancien numéro (former_id). */
+  const lineWithFiles = id => reg.missions.find(m => !m.supersededBy && !m.missingFile && m.files?.some(f => /\.ya?ml$/i.test(f)) && m
+      .id === id) ||
+    reg.missions.find(m => !m.supersededBy && !m.missingFile && m.files?.some(f => /\.ya?ml$/i.test(f)) && m.formerId === id) || null;
+  /** Le YAML du fichier de la mission, lu au lanceur (même origine) ; null s'il ne se lit pas. */
+  async function fileYaml(line) {
+    try {
+      const name = line.files.find(f => /\.ya?ml$/i.test(f)),
+        url = new URL(`data/missions/${String(line.folder || '').split('/').filter(Boolean).map(encodeURIComponent).join('/')}/${encodeURIComponent(name)}`, window.RepositoryNav.root);
+      const r = await fetch(url, {
+        cache: 'no-store'
+      });
+      return r.ok ? window.jsyaml.load(await r.text()) : null;
+    } catch {
+      return null;
+    }
+  }
+  let kept = null; // { n, diff, none, same, unknown } ; null : pas encore lu
+  /** Lit l'état de chaque instantané par rapport au fichier de sa mission. */
+  async function refreshKept() {
+    await waitFor('jsyaml', 3000);
+    const items = keptSnapshots();
+    let diff = 0,
+      none = 0,
+      same = 0,
+      unknown = 0;
+    for (const s of items) {
+      const line = lineWithFiles(s.id);
+      if (!line) {
+        none++;
+        continue;
+      }
+      const f = await fileYaml(line);
+      if (!f) unknown++;
+      else if (canon(f) === canon(s.yaml)) same++;
+      else diff++;
+    }
+    kept = {
+      n: items.length,
+      diff,
+      none,
+      same,
+      unknown
+    };
+    paintKept();
+  }
+  /** La ligne d'état et son bouton, posés dans la zone prévue (aucune ligne sans mission gardée). */
+  function paintKept() {
+    const el = host?.querySelector('#rgKept');
+    if (!el) return;
+    const n = kept?.n || 0,
+      html = !n ? '' : `${esc(t(['{n} mission(s) gardée(s) par ce navigateur : {d} différente(s) du dossier, {s} sans fichier, {i} identique(s){u}', '{n} mission(s) kept by this browser: {d} different from the folder, {s} without a file, {i} identical{u}', '{n} Mission(en) von diesem Browser gespeichert: {d} anders als der Ordner, {s} ohne Datei, {i} identisch{u}', '{n} misión(es) guardada(s) por este navegador: {d} distinta(s) de la carpeta, {s} sin archivo, {i} idéntica(s){u}'], {
+        n,
+        d: kept.diff,
+        s: kept.none,
+        i: kept.same,
+        u: kept.unknown ? t([', {k} non comparée(s)', ', {k} not compared', ', {k} nicht verglichen', ', {k} sin comparar'], {
+          k: kept.unknown
+        }) : ''
+      }))} <button type="button" class="secondary" id="rgKeptExport" data-icon="download" title="${esc(t(['Un fichier YAML par mission gardée, avec la mission partagée et le brouillon du générateur, dans une archive téléchargée : rien n’est écrit dans le dossier. À faire avant d’effacer les données du site.', 'One YAML file per kept mission, with the shared mission and the generator draft, in a downloaded archive: nothing is written to the folder. Do it before clearing the site data.', 'Eine YAML-Datei je gespeicherter Mission, mit der gemeinsamen Mission und dem Entwurf des Generators, in einem heruntergeladenen Archiv: Nichts wird in den Ordner geschrieben. Vor dem Löschen der Websitedaten tun.', 'Un archivo YAML por misión guardada, con la misión compartida y el borrador del generador, en un archivo descargado: no se escribe nada en la carpeta. Hágalo antes de borrar los datos del sitio.']))}">${esc(t(['Exporter les missions gardées par ce navigateur', 'Export the missions kept by this browser', 'Von diesem Browser gespeicherte Missionen exportieren', 'Exportar las misiones guardadas por este navegador']))}</button>`;
+    if (el.dataset.k === html) return;
+    el.dataset.k = html;
+    el.innerHTML = html;
+    el.querySelector('#rgKeptExport')?.addEventListener('click', exportKept);
+  }
+  /** Télécharge les missions gardées : instantanes/<identifiant>.yaml, partagee/…, brouillon/… ; rien n'est écrit dans le dossier. */
+  async function exportKept() {
+    try {
+      await waitFor('jsyaml', 3000);
+      if (!window.ZipStore) throw new Error('ZipStore');
+      const safe = id => String(id || 'sans-identifiant').replace(/[^\w.-]+/g, '_'),
+        files = [];
+      for (const s of keptSnapshots()) files.push({
+        name: `instantanes/${safe(s.id)}.yaml`,
+        data: dumpYaml(s.yaml, s.id, `gardée par ce navigateur (${s.kind || 'instantané'}${s.dirtyAt ? ', modifiée non rangée' : ''})`)
+      });
+      for (const [dir, key] of [
+          ['partagee', SHARED_KEY],
+          ['brouillon', LEGACY_DRAFT_KEY]
+        ]) {
+        const d = readJson(key, null);
+        if (d?.yaml) files.push({
+          name: `${dir}/${safe(d.yaml.mission?.id)}.yaml`,
+          data: dumpYaml(keptYaml(d), d.yaml.mission?.id || '—', dir === 'partagee' ? 'mission partagée du générateur' :
+            'brouillon du générateur')
+        });
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(await window.ZipStore.build(files));
+      a.download = `missions-du-navigateur-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      window.AppFramework?.notify?.(t(['Archive téléchargée : {n} fichier(s) YAML. Rien n’a été écrit dans le dossier.',
+        'Archive downloaded: {n} YAML file(s). Nothing was written to the folder.',
+        'Archiv heruntergeladen: {n} YAML-Datei(en). Es wurde nichts in den Ordner geschrieben.',
+        'Archivo descargado: {n} archivo(s) YAML. No se escribió nada en la carpeta.'
+      ], {
+        n: files.length
+      }), 'ok');
+    } catch (e) {
+      window.AppFramework?.notify?.(explain(e, t(['Missions gardées non exportées', 'Kept missions not exported',
+        'Gespeicherte Missionen nicht exportiert', 'Misiones guardadas no exportadas'
+      ])), 'err');
+    }
+  }
   // ---- diagnostic de la page (SOG-0290) : formes et états seulement — aucune valeur, aucun identifiant de mission, aucun chemin
   /** Texte du diagnostic : origine, mode GitHub, dossier des missions (poignée, autorisation), mission partagée du générateur (squelette ou non),
    *  brouillons, dernier pas de « Ouvrir ». */
@@ -2640,6 +2777,7 @@
     if (attachFormer().changed) persist(); // anciens numéros d'un index repris (SOG-0289)
     await loadReports();
     linkReports();
+    if (host) refreshKept(); // missions gardées par ce navigateur (SOG-0293) : leur état, par rapport aux fichiers servis
     // ?mission=M-016 (retour du générateur, du studio ou d'un CR) : mission choisie et affichée
     const want = normMissionId(new URLSearchParams(location.search).get('mission') || '');
     const hit = want && reg.missions.find(m => m.id === want);
