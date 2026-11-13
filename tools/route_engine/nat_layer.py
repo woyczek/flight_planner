@@ -21,6 +21,7 @@ MAX_TRACKS = 60
 MAX_POINTS = 40
 LINK_NM = 900                         # un raccord DCT de simulation : jusqu'à 900 NM (la côte est loin du premier repère océanique, et le Canada n'a pas de points dans la base) ; le plus proche est le moins cher
 LINK_NODES = 3
+MIN_COMPONENT = 200                  # un réseau d'au moins 200 nœuds connexes : celui d'un pays, pas un îlot
 HIGH_FT = 24500                      # un airway « haut » : son plafond atteint au moins cette altitude
 NAME = re.compile(r'[A-Z][A-Z0-9]{1,6}')
 TRACK = re.compile(r'[A-Z]{1,2}')
@@ -126,6 +127,29 @@ def hint(nav, dep, arr):
     return f"Aucune route NAT vers {'l' + chr(39) + 'est' if east else 'l' + chr(39) + 'ouest'} dans le message du {info.get('issued') or '?'}."
 
 
+def main_network(nav):
+    """Les nœuds du réseau HAUT (airways dont le plafond atteint HIGH_FT) qui sont dans une composante CONNEXE d'au moins MIN_COMPONENT nœuds : un nœud d'airway isolé (un îlot de quelques points, sans lien avec le réseau d'un pays) n'est pas
+    un raccord : une track qui s'y raccorde ne mène nulle part (mesuré le 13/11 : trois nœuds irlandais voisins de l'entrée d'une track, sans aucune voie vers le Royaume-Uni). Composantes par union-find sur les arêtes hautes, sans tenir compte du sens."""
+    parent = {}
+
+    def find(x):
+        while parent.setdefault(x, x) != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    for e in nav.edges:
+        if isinstance(e.get('upper'), (int, float)) and e['upper'] >= HIGH_FT and not e.get('nat'):
+            ra, rb = find(e['a']), find(e['b'])
+            if ra != rb:
+                parent[ra] = rb
+    size = {}
+    for x in list(parent):
+        r = find(x)
+        size[r] = size.get(r, 0) + 1
+    floor = min(MIN_COMPONENT, max(3, max(size.values(), default=0) // 4))      # sur une base de banc de quelques nœuds, un quart de la plus grande composante
+    return {x for x in parent if size[find(x)] >= floor}
+
+
 def add(nav, nm):
     """Ajoute les tracks du fichier au graphe `nav` (voir l'en-tête) ; rend `nav.nat` = { tracks: [id], issued: 'JJ/MM' | None, stale: bool, skipped: [raisons], links: n } (aussi posé sur nav)."""
     nav.nat = {'tracks': [], 'issued': None, 'stale': False, 'skipped': [], 'links': 0, 'directions': []}
@@ -139,8 +163,7 @@ def add(nav, nm):
             day = dt.date.fromisoformat(str(nav.date)[:10])
         except ValueError:
             day = None
-    network = {x for e in nav.edges for x in (e['a'], e['b'])}
-    high = {x for e in nav.edges if isinstance(e.get('upper'), (int, float)) and e['upper'] >= HIGH_FT for x in (e['a'], e['b'])}
+    high = main_network(nav)
     issued = [t['from'] for t in tracks if t['from']]
     nav.nat['issued'] = min(issued).strftime('%d/%m') if issued else None
     for t in tracks:

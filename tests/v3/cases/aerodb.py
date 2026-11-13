@@ -9218,6 +9218,15 @@ def k237(c):
         E0 = __import__('route_engine.engine', fromlist=['Nav'])
         E0.DATA_DIR = None
         n0 = E0.Nav(os.path.join(td, 'rev'), __import__('datetime').date(2026, 11, 10))
+        fake = __import__('types').SimpleNamespace(edges=[{'a': f'n{i}', 'b': f'n{i + 1}', 'upper': 60000} for i in range(10)] + [{'a': 'x', 'b': 'y', 'upper': 60000}, {'a': 'l1', 'b': 'l2', 'upper': 10000}, {'a': 'n3', 'b': 'n4', 'upper': 60000, 'nat': {}}])
+        c.eq(sorted(NL.main_network(fake)), sorted(f'n{i}' for i in range(11)), 'the join targets are the nodes of the connected main network only: an island of two airway nodes (the Irish ones, linked to nothing) and a low-level network are not targets', what='main network')
+        try:
+            n0.generate('EGLL', 'KJFK', 370, 40, (), {}, False, (), None, False, {})
+            said = None
+        except ValueError as ex:
+            said = str(ex)
+        c.eq((bool(said) and said.startswith('Aucune route trouvée'), n0.last_search['algorithm'][:9], n0.last_search['found']), (True, 'parcours ', False),
+             'a pair that the graph does not link at all (no track against the flow, no other way) is refused by a breadth-first check in a few ms, never by exhausting the 6 s search budget (SOG-0161)', what='connected')
         c.eq((NL.hint(n0, 'EGLL', 'KJFK'), NL.hint(n0, 'KJFK', 'EGLL'), NL.hint(n0, 'KJFK', 'KJFK')),("Aucune route NAT vers l'ouest dans le message du 10/11.", '', ''), 'the hint is given for a crossing against every track only: not with a track in the flow direction, not without a crossing', what='hint')
         # 6. the file is an input read, not trusted: bad ids, bad names, bad coordinates, too many points, text levels, a size bound
         hostile = {'tracks': [{'id': 'a<b>', 'route': ['ENTRA', 'EXITA'], 'east': ['350']}, {'id': 'C', 'route': ['ENTRA', '99/99', 'EXITA'], 'east': ['350']}, {'id': 'D', 'route': ['EN TRA', 'EXITA'], 'east': ['9999']},

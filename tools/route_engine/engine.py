@@ -283,6 +283,19 @@ class Nav:
 
     def path(self,g,start,end):return self.search(g,start,end)
 
+    def connected(self,g,start,end):
+        """SOG-0161 : `end` est-il atteignable depuis `start` dans le graphe, SANS tenir compte des altitudes ? (parcours en largeur, quelques ms). Faux : aucune recherche d'altitudes n'y trouvera de route, et elle épuiserait son budget (6 s,
+        100 000 états) à parcourir l'espace des états avant de s'arrêter : EGLL → KJFK le faisait trois fois (41 s) ; `last_search` dit alors found=False, fra_reachable (un état FRA a été vu : le graphe large peut encore relier)."""
+        seen={start};queue=collections.deque([start]);fra_seen=False
+        while queue:
+            u=queue.popleft()
+            if u==end:return True
+            fra_seen=fra_seen or '|FRA|' in u
+            for v,e in g.get(u,()):
+                if v not in seen:seen.add(v);queue.append(v)
+        self.last_search=dict(algorithm='parcours en largeur (liaison sans altitude)',expanded=len(seen),seconds=0.0,found=False,fra_reachable=fra_seen)
+        return False
+
     def terminal_gates(self,airport,isdep,ad,g,incoming,terminal,radius,have,other):
         """SOG-0161 : sans SID ni STAR, les portes FRA que le classeur EUROCONTROL publie pour CET aérodrome (point « D » de départ, « A » d'arrivée, l'aérodrome nommé dans la ligne) sont des raccords possibles
         AU-DELÀ du rayon : le plancher d'une zone FRA (FL285 en Suède et au Danemark) est atteint après une distance de montée (2000 ft/min, 450 kt : ~107 NM) que la SID parcourt ; un point plus proche n'est pas atteignable,
@@ -427,7 +440,7 @@ class Nav:
     def generate(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         g,a,b=self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,terminal)
         mandatory=self.resolve_vias(g,a,b,via)
-        path=self.constrained_path(g,a,b,mandatory,bool((terminal or {}).get('require_fra')))
+        path=self.constrained_path(g,a,b,mandatory,bool((terminal or {}).get('require_fra'))) if self.connected(g,a,b) else None   # SOG-0161 : sans liaison, même sans contrainte d'altitude, la recherche de niveaux ne cherche pas 6 s dans le vide
         if path is None and enable_fra and getattr(self,'last_search',{}).get('fra_reachable',True) and (terminal or {}).get('search_density','normal')=='normal':
             del g
             self.release_graph_caches()
