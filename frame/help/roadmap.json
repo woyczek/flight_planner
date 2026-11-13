@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7648663",
-  "fiches": 331,
+  "organisation": "3709179",
+  "fiches": 334,
   "untranslated": 0,
   "priorities": 310
  },
@@ -837,13 +837,12 @@
     {
      "id": "SOG-0296",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "« Calculer A → B » : 27,8 s passées dans le lanceur (LFPO → EIDW)",
      "en": "« Compute A → B »: 27.8 s spent in the launcher (LFPO → EIDW)",
      "de": "« A → B berechnen »: 27,8 s im Launcher (LFPO → EIDW)",
      "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)",
-     "rank": 34,
-     "test": true
+     "rank": 34
     },
     {
      "id": "SOG-0322",
@@ -853,6 +852,15 @@
      "en": "Published site: no « Compute A → B » without the launcher",
      "de": "Veröffentlichte Seite: kein « A → B berechnen » ohne den Launcher",
      "es": "Sitio publicado: sin « Calcular A → B » sin el lanzador"
+    },
+    {
+     "id": "SOG-0332",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route par les NAT prise dans Carburant : les points en coordonnées perdent leur fin et deviennent « points inconnus »",
+     "en": "NAT route taken in Fuel: coordinate points lose their end and become « unknown points »",
+     "de": "NAT-Route in Kraftstoff übernommen: Koordinatenpunkte verlieren ihr Ende und werden « unbekannte Punkte »",
+     "es": "Ruta por los NAT tomada en Combustible: los puntos en coordenadas pierden su final y pasan a « puntos desconocidos »"
     }
    ]
   },
@@ -1210,13 +1218,12 @@
     {
      "id": "SOG-0246",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Carte : la coche « autour du plan de vol uniquement » est sans effet (toujours appliquée)",
      "en": "Map: the box “around the flight plan only” has no effect",
      "de": "Map: the box “around the flight plan only” has no effect",
      "es": "Map: the box “around the flight plan only” has no effect",
-     "rank": 75,
-     "test": true
+     "rank": 75
     },
     {
      "id": "SOG-0252",
@@ -1387,8 +1394,7 @@
      "en": "Mission preparation map, « swiss » design: transparency defect",
      "de": "Karte der Missionsvorbereitung, Design « swiss »: Transparenzfehler",
      "es": "Mapa de preparación de misión, diseño « swiss »: defecto de transparencia",
-     "rank": 82,
-     "test": true
+     "rank": 82
     }
    ]
   },
@@ -1410,8 +1416,7 @@
      "en": "Performance: on LFPO → KEGE the flight profile is very slow (2 frames per second)",
      "de": "Leistung: auf LFPO → KEGE ist das Flugprofil sehr langsam (2 Bilder pro Sekunde)",
      "es": "Rendimiento: en LFPO → KEGE el perfil de vuelo es muy lento (2 imágenes por segundo)",
-     "rank": 83,
-     "test": true
+     "rank": 83
     }
    ]
   },
@@ -1627,8 +1632,7 @@
      "en": "Report: the reading from the logs finds no flight (it compares the registration)",
      "de": "Report: the reading from the logs finds no flight (it compares the registration)",
      "es": "Report: the reading from the logs finds no flight (it compares the registration)",
-     "rank": 89,
-     "test": true
+     "rank": 89
     }
    ]
   },
@@ -1767,13 +1771,12 @@
     {
      "id": "SOG-0220",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Fiches d'appareils : une valeur convertie s'affiche avec treize décimales",
      "en": "Aircraft sheets: a converted value shows thirteen decimals",
      "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",
      "es": "Fichas de aeronaves: un valor convertido muestra trece decimales",
-     "rank": 102,
-     "test": true
+     "rank": 102
     }
    ]
   },
@@ -2160,8 +2163,7 @@
      "en": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
      "de": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
      "es": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
-     "rank": 138,
-     "test": true
+     "rank": 138
     },
     {
      "id": "SOG-0269",
@@ -2812,13 +2814,12 @@
     {
      "id": "SOG-0270",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Aéronefs : un registre local des immatriculations — le type depuis une immatriculation, les immatriculations d'un type",
      "en": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
      "de": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
      "es": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
-     "rank": 173,
-     "test": true
+     "rank": 173
     }
    ]
   },
@@ -3482,6 +3483,15 @@
      "es": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
      "rank": 221,
      "test": true
+    },
+    {
+     "id": "SOG-0334",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Design Metro : les icônes de la barre ne sont pas centrées (les actives, peut-être les autres)",
+     "en": "Metro design: the bar icons are not centred (the active ones, maybe the others)",
+     "de": "Design Metro: die Symbole der Leiste sind nicht zentriert (die aktiven, vielleicht auch die anderen)",
+     "es": "Diseño Metro: los iconos de la barra no están centrados (los activos, quizá los demás)"
     }
    ]
   },
@@ -3793,6 +3803,27 @@
    ]
   },
   {
+   "id": "maintenance-compte-rendu-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Compte rendu ; lanceur",
+    "en": "Compte rendu ; lanceur",
+    "de": "Compte rendu ; lanceur",
+    "es": "Compte rendu ; lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0333",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Compte rendu : lire le journal de vol d'X-Plane et celui du planificateur de courbes carburant (XP12\\Output)",
+     "en": "Report: read X-Plane's flight log and the fuel-curve planner's log (XP12\\Output)",
+     "de": "Bericht: das Flugprotokoll von X-Plane und das des Kraftstoffkurven-Planers lesen (XP12\\Output)",
+     "es": "Informe: leer el diario de vuelo de X-Plane y el del planificador de curvas de combustible (XP12\\Output)"
+    }
+   ]
+  },
+  {
    "id": "maintenance-donnees",
    "app": "maintenance",
    "label": {
@@ -3811,8 +3842,7 @@
      "de": "Daten: Neugestaltung des Aufbau-Bildschirms aus den funktionalen Spezifikationen — Vorschlag für Donnerstag, 12.11.",
      "es": "Datos: rediseño de la pantalla de construcción de la base desde las especificaciones funcionales — propuesta para el jueves 12/11",
      "milestone": "6.0.0-alpha.5",
-     "rank": 47,
-     "test": true
+     "rank": 47
     },
     {
      "id": "SOG-0010",
@@ -4895,13 +4925,12 @@
     {
      "id": "SOG-0277",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Jetons : prévenir avant l'expiration (les jetons envoyés aux pilotes et le sien)",
      "en": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
      "de": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
      "es": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
-     "rank": 309,
-     "test": true
+     "rank": 309
     }
    ]
   },

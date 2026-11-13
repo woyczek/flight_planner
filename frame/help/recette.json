@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 201,
-  "verdicts": 143
+  "verdicts": 148
  },
  "apps": [
   "pilote",
@@ -1676,8 +1676,7 @@
    },
    "test": "Maintenance › Appareils, une fiche vue dans une autre unité que celle où elle a été saisie (S210, TBM9) : un débit converti se lit avec deux chiffres significatifs (« 12000 lb/h », plus de treize décimales) ; une valeur que tu saisis reste telle que tu l'as écrite.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T17:46:06Z"
+   "state": "known"
   },
   {
    "id": "SOG-0221",
@@ -1808,8 +1807,9 @@
    },
    "test": "Recharge la page. Maintenance › Données : sous les paquets, un seul pli fermé « Détail de la base » ; déplie-le : la couverture par pays, l'inventaire et le journal y sont, tels qu'avant. Rien d'autre n'a bougé sur l'écran.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-13T12:44:08Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:44:08Z",
+   "at": "2026-11-13T16:01:16Z"
   },
   {
    "id": "SOG-0230",
@@ -2003,13 +2003,7 @@
    },
    "test": "Recharge la page. Carte : coche puis décoche « autour du plan de vol uniquement » ; les espaces aériens et les terrains suivent la coche comme les autres couches (décochée : toute la vue ; cochée : seulement autour de la route).",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-13T11:33:37Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "a un effet, mais pas sur tout. manque :  * airspaces * AD * peut-être d’autres",
-    "at": "2026-11-13T09:12:07Z"
-   }
+   "state": "known"
   },
   {
    "id": "SOG-0247",
@@ -2067,8 +2061,10 @@
    },
    "test": "Compte rendu : relève un vol depuis les journaux avec l'immatriculation de ta livrée X-Plane (différente de celle du compte rendu). Le vol qui part du bon terrain, arrive au bon terrain et tombe dans les heures doit être proposé ; s'il y en a plusieurs, la liste te laisse choisir.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:15:05Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:15:05Z",
+   "comment": "ça a l’air de passer… néanmoins, tu ne lis toujours pas, ni le flightlog xplane, ni le flightlog dans XP12\\output, généré par le planificateur de courbes carburant ?",
+   "at": "2026-11-13T15:57:28Z"
   },
   {
    "id": "SOG-0251",
@@ -2299,8 +2295,9 @@
    },
    "test": "Maintenance › Fiches › Flotte, ouvre un aéronef : le champ s'appelle « Propriétaire ou exploitant » avec une ligne qui dit ce qu'on attend ; le titre « Exploitation » est devenu « En vol » ; les indicatifs disent à quoi ils servent, avec un exemple.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:17:55Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:17:55Z",
+   "at": "2026-11-13T15:59:32Z"
   },
   {
    "id": "SOG-0269",
@@ -2329,8 +2326,7 @@
    },
    "test": "Relance le lanceur. Maintenance › Données : dépose ton export.csv du registre (« Choisir le fichier… »). Puis Fiches › Flotte, tape « fbhhh » : la ligne doit dire ce que c'était (modèle, « registre français, données du … », l'aérodrome d'attache s'il existe), proposer un type en le disant « suggestion », et « Créer à l'identique ». En créant un aéronef, « Chercher dans le registre français » liste les immatriculations d'un modèle. Aucun nom de personne ne doit apparaître nulle part.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T17:04:58Z"
+   "state": "known"
   },
   {
    "id": "SOG-0274",
@@ -2390,8 +2386,7 @@
    },
    "test": "Relance le lanceur. Maintenance › Jetons des pilotes : chaque jeton dit « expire le … · dans n jours », en orange sous 30 jours, en rouge sous 7. Dans les Réglages, l'État prévient quand des jetons de pilotes expirent bientôt, et quand le tien expire dans moins de 30 jours (avec une notification, une fois par jour).",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T17:24:32Z"
+   "state": "known"
   },
   {
    "id": "SOG-0278",
@@ -2633,8 +2628,7 @@
    },
    "test": "Relance le lanceur, recharge. Carburant, « Calculer A → B » sur LFPO → EIDW, deux fois de suite, puis « Copier le diagnostic » : la part « launcher » doit être de quelques secondes la première fois, bien moins la seconde.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T13:20:07Z"
+   "state": "known"
   },
   {
    "id": "SOG-0297",
@@ -2663,8 +2657,9 @@
    },
    "test": "Recharge la page, design « swiss ». Carte d'une mission : la fenêtre de la mission, la fiche d'un point touché, l'infobulle et les itinéraires proposés ont un fond plein ; on ne voit plus la carte au travers.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T13:08:20Z"
+   "state": "ok",
+   "delivered": "2026-11-13T13:08:20Z",
+   "at": "2026-11-13T16:07:42Z"
   },
   {
    "id": "SOG-0300",
@@ -2736,8 +2731,9 @@
    },
    "test": "Recharge la page. Carte, ton vol LFPO → KEGE, profil de vol : déplace et zoome la fenêtre du profil — il suit sans saccade. S'il reste lent, dis-le-moi : il faudra une trace de performance du navigateur.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T13:00:25Z"
+   "state": "ok",
+   "delivered": "2026-11-13T13:00:25Z",
+   "at": "2026-11-13T16:08:35Z"
   },
   {
    "id": "SOG-0306",
@@ -2988,37 +2984,5 @@
    "delivered": "2026-11-13T15:39:21Z"
   }
  ],
- "decisions": [
-  {
-   "id": "Q-0052",
-   "fiche": "SOG-0115",
-   "app": "maintenance",
-   "question": "Plusieurs compagnies sur un même terminal (SOG-0115), que tu as mise dans l'alpha 6 : on la garde entière dans ce jalon ?",
-   "context": "Relevé de V3 Frame : aujourd'hui plusieurs compagnies tiennent dans UN dépôt, avec une compagnie courante par appareil. Ce qui manque — un dépôt par compagnie, un profil de pilote par compagnie, plusieurs administrateurs — touche le cœur : la copie locale est rangée par chemin, deux dépôts s'y mélangeraient ; il faut une base locale par profil, un changement de profil par rechargement propre, et des clés et jetons par profil (à qualifier avec Sécurisation). Mon avis : c'est un chantier de la couche de données, risqué pour tes données si on le presse ; en alpha 6 je ferais seulement la conception, relue par Sécurisation, et le code en bêta 1.",
-   "options": [
-    "Conception en alpha 6, code en bêta 1",
-    "Tout en alpha 6, comme je l'ai posé",
-    "Tout après la bêta 1",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0053",
-   "fiche": "SOG-0273",
-   "app": "maintenance",
-   "question": "Lire des PDF officiels (Danemark, ENR 5.7 de la DIRCAM, ENR 5.2 de l'AIP britannique) demande la bibliothèque pypdf sur ton poste, en plus de Python. D'accord ?",
-   "context": "Jusqu'ici le lanceur ne dépend que de la bibliothèque standard de Python (rien à installer). Trois sources que tu as demandées ne se lisent que dans des PDF : les routes et points du Danemark (Naviair), l'ENR 5.7 de la DIRCAM, et les zones de vol à basse altitude et de ravitaillement britanniques (ENR 5.2, dans l'AIP civil de 772 Mo, le site militaire étant hors service). AeroDB ne codera aucun de ces lecteurs sur une page inventée : il lui faut la permission pour pypdf ET un exemplaire déposé par toi. Ma recommandation : pypdf en OPTION — le lanceur démarre et fait tout le reste sans lui ; une lecture de PDF sans pypdf dit « pypdf manque » avec la commande à lancer ; Sécurisation donne son avis sur la version à épingler avant le premier lecteur.",
-   "options": [
-    "Oui, pypdf en option (le lanceur marche sans)",
-    "Non : bibliothèque standard seulement (ces trois sources attendent)",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
-  }
- ]
+ "decisions": []
 }
