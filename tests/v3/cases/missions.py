@@ -603,7 +603,7 @@ _FAM_REGISTRY = """missions:
 """
 
 
-@case('N12', 'Missions: a family is said by its acronym first — in bold, then its long name — in the list headings, « SIGLE · Nom long » in the filter; an unknown code keeps its acronym alone',
+@case('N12', 'Missions: a family is said by its acronym first — in bold, then its long name — in the list headings, « lettre · SIGLE · Nom long » in the filter (SOG-0292); an unknown code keeps its acronym alone',
       'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0179 (user, 10 Nov: « le nom abrégé a disparu »): the acronym first then the long name, bold where the rendering is ours, plain '
       'text in a native list, the acronym alone when there is no long name, never the long name alone; one source with the report (modules/report/vocab.js)')
@@ -621,7 +621,9 @@ def n12(c):
         c.ok(got['MEDEVAC'][1] == 'MEDEVAC' and 'HEMS' in got['MEDEVAC'][2], heads, f'{w} px: MEDEVAC, the registry\'s code of the HEMS family, with its long name')
         c.ok(got['TESTFAM'][1] == 'TESTFAM' and not got['TESTFAM'][2], heads, f'{w} px: an unknown code keeps its acronym alone')
         opts = c.js(f"[...document.querySelectorAll('{M} select[data-k=family] option')].filter(o => o.value).map(o => [o.value, o.textContent.trim()])")
-        c.ok(all(t.startswith(v) for v, t in opts) and dict(opts).get('SAR', '').startswith('SAR · '), opts, f'{w} px: the filter « SIGLE · Nom long », the acronym first')
+        # SOG-0292: the letter first when the family has one (« S · SAR · … »), then the acronym, then the long name
+        c.ok(all(re.sub(r'^[A-Z] · ', '', t).startswith(v) for v, t in opts) and dict(opts).get('SAR', '').startswith('S · SAR · '), opts,
+             f'{w} px: the filter « lettre · SIGLE · Nom long », the acronym after the letter')
         c.shot(f'N12_{c.design}_{w}_{c.lang}.png')
 
 
@@ -1844,3 +1846,55 @@ def n46(c):
         c.until(f"!!document.querySelector('{M} [data-sec=sum]')", what='the Detail with the summary')
         g = c.js(_SUM_JS)
         c.ok('FINCACHEE' in g['sumSec'] and 'FINCACHEE' not in g['desc'], g['sumSec'][-80:], f'at {w}: the Detail has the summary whole, apart from the description')
+
+
+
+# SOG-0292: four invented lines in three families — AIRLIFT (letter T of the themes) with two subtypes, SAR (S) with one, TESTFAM (no
+# letter in the table: the letter of its identifiers, X)
+_FAM_IDS = [('T-901A', 'AIRLIFT', 'STRATEGIC'), ('T-902A', 'AIRLIFT', 'TACTICAL'), ('S-903A', 'SAR', 'RECHERCHE'), ('X-904A', 'TESTFAM', '')]
+_FAM_TEXTS = [['missions/mission_registry.yaml', 'schema: mission-registry\nversion: 1\nmissions:\n' + ''.join(
+    f'  - {{ id: {m}, family: {f}, {f"subtype: {st}, " if st else ""}title: Ligne {m}, folder: X_REG/{m}, files: [mission{m}.yaml] }}\n'
+    for m, f, st in _FAM_IDS)]] + [[f'missions/X_REG/{m}/mission{m}.yaml', mission_doc(m)] for m, _, _ in _FAM_IDS]
+_OPTS = """k => [...document.querySelectorAll('[data-module="missions"] select[data-k=' + k + '] option')].filter(o => o.value).map(o => [o.value, o.textContent.trim()])"""
+
+
+@case('N47', 'Missions and Registry: a family is chosen as « lettre · sigle · nom » (« T · AIRLIFT · Transport aérien / logistique »), the families '
+      'sorted by letter (the letter of the themes, else the letter of the identifiers); once a family with two subtypes or more is chosen, '
+      'a second list « Sous-type » filters them; none for a family of one subtype', 'N', tags=('missions',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0292 (user, 13 Nov: « ajouter au pop down de sélection la lettre (mission / registre) … pas de sous famille ? ») — the '
+      'lists said « SIGLE · nom » sorted by code, and offered no subtype')
+def n47(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_REG_CLEAR)
+        c.js(_TEXTS_JS, _FAM_TEXTS)
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"T-901A\"]')", timeout=15000, what='the list of missions')
+        o = c.js(_OPTS, 'family')
+        c.eq([x[1].split(' · ')[:2] for x in o], [['S', 'SAR'], ['T', 'AIRLIFT'], ['X', 'TESTFAM']], 'letter · short, sorted by letter', what='Missions')
+        c.eq(o[1][1], 'T · AIRLIFT · Transport aérien / logistique', 'the user\'s example, with the middle dot', what='AIRLIFT')
+        c.ok(not c.count(f'{M} select[data-k=subtype]'), 'a subtype list', 'no subtype list while no family is chosen')
+        c.page.select_option(f'{M} select[data-k=family]', 'AIRLIFT')
+        c.until(f"!!document.querySelector('{M} select[data-k=subtype]')", what='the subtype list')
+        c.eq([x[0] for x in c.js(_OPTS, 'subtype')], ['STRATEGIC', 'TACTICAL'], 'the subtypes of the family', what='subtypes')
+        c.page.select_option(f'{M} select[data-k=subtype]', 'TACTICAL')
+        c.until(f"!document.querySelector('{M} [data-list] [data-id=\"T-901A\"]')", what='the filter applied')
+        c.ok(c.count(f'{M} [data-list] [data-id="T-902A"]') == 1, 'T-902A missing', 'the subtype keeps T-902A only')
+        c.shot(f'N47_{w}_missions.png')
+        c.page.select_option(f'{M} select[data-k=family]', 'SAR')
+        c.until(f"!document.querySelector('{M} select[data-k=subtype]')", what='no subtype list for one subtype')
+        # the Registry: the same list, the same second list
+        c.page.select_option(f'{M} select[data-k=family]', '')
+        c.tap(f'{M} [data-do="regopen"]')
+        c.until(_REG_READ, timeout=20000, what='the registry read')
+        c.eq([x[1] for x in c.js(_OPTS, 'rfam')], [x[1] for x in o], 'the Registry offers the same families, in the same order', what='Registry')
+        c.page.select_option(f'{R} select[data-k=rfam]', 'AIRLIFT')
+        c.until(f"!!document.querySelector('{R} select[data-k=rsub]')", what='the subtype list of the Registry')
+        c.page.select_option(f'{R} select[data-k=rsub]', 'STRATEGIC')
+        c.until(f"!document.querySelector('{R} [data-rowid=\"T-902A\"]')", what='the filter applied')
+        c.eq([e for e in c.js(f"[...document.querySelectorAll('{R} [data-reglist] [data-rowid]')].map(e => e.dataset.rowid)")], ['T-901A'],
+             'the Registry keeps T-901A only', what='rows')
+        c.shot(f'N47_{w}_registry.png')
+        c.js(_REG_CLEAR)

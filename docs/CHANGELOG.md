@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions and Registry: families listed as « lettre · sigle · nom », sorted by letter, with a « Sous-type » list** — once a family with several subtypes is chosen (missions DECISIONS, help; noreg N47; SOG-0292).
 - **V2 registry: the number a mission had before the renumbering no longer shows as a second mission** — « 85 » next to « T-085 »: the browser's index kept an entry under the old number, and re-reading the folder only marks, never removes. An entry whose identifier is the `former_id` of a registry line, and that is not itself a line, is attached to that line when the page opens and after each re-reading: its status, notes and flight date follow when the line has none; an old entry carrying a field the line lacks is kept, hidden from the list and counted (« n old entries kept, more complete »), never purged, and « Clean up the registry » leaves it alone; the repository's files are not touched (manual ×4; noreg K219; SOG-0289).
 - **Missions › mission sheet: the summary in full, apart from the description** — « Résumé » shown whole on the first page (cut at 600 signs with « Lire la suite »), the Detail's « Description » without the summary (missions DECISIONS, help; noreg N46; SOG-0291).
 - **Missions › Registre: texts bounded at reading, files beyond the 500 read said « non lu »** — never « fichier là » without reading it (Missions DECISIONS, help; noreg N44; audit 174).

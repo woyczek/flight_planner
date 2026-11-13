@@ -12,6 +12,7 @@ import *
 as MT from '../../frame/lib/mission_themes.js'; // le thème d'une ancienne catégorie (SOG-0202 T2) // changer la compagnie d'une mission : le champ airline retouché dans le texte (SOG-0223)
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
 import {
+  familyLetters,
   familyParts,
   familyText
 } from '../report/vocab.js'; // une famille : son sigle d'abord, puis son nom long (SOG-0179, une seule source avec le compte rendu)
@@ -72,6 +73,10 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-regbar{align-items:center}
 [data-module="missions"] .ms-reghead{display:flex;flex-wrap:wrap;gap:0 .75em;align-items:center}
 [data-module="missions"] .ms-reghead>.f-field{flex:1 1 12em;margin:0}
+[data-module="missions"] .ms-reghead>.ms-famrow{flex:2 1 24em;margin:0}
+[data-module="missions"] .ms-famrow{gap:0 .75em;flex-wrap:wrap} /* la famille et, choisie, son sous-type sur une ligne (SOG-0292) */
+[data-module="missions"] .ms-famrow>.f-field{flex:1 1 12em;min-width:0}
+[data-module="missions"] .ms-famrow select{max-width:100%}
 @container (min-width: 700px){
   [data-module="missions"] .ms-rrow>summary{display:flex;gap:1em;min-height:0;padding:.1em .75em;line-height:1.3}
   [data-module="missions"] .ms-rrow>summary>span:first-child{flex:1 1 auto;min-width:0}
@@ -104,6 +109,8 @@ const TX = {
   secDesc: ['Description', 'Description', 'Beschreibung', 'Descripción'],
   // le résumé (champ summary), sous son nom ; au-delà de SUM_MAX signes, coupé avec « Lire la suite » vers le Détail (SOG-0291)
   sumTitle: ['Résumé', 'Summary', 'Kurzbeschreibung', 'Resumen'],
+  // la seconde liste d'un filtre de famille (SOG-0292) : les sous-types de la famille choisie
+  allSubtypes: ['Tous les sous-types', 'All subtypes', 'Alle Untertypen', 'Todos los subtipos'],
   readMore: ['Lire la suite', 'Read more', 'Weiterlesen', 'Seguir leyendo'],
   secObj: ['Objectifs', 'Objectives', 'Ziele', 'Objetivos'],
   objPrimary: ['Principal :', 'Primary:', 'Hauptziel:', 'Principal:'],
@@ -619,7 +626,8 @@ async function flownOf(s) {
 }
 
 /** Les lignes retenues par la recherche et le filtre de famille. */
-const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.category || catOf(s, r)?.id === s
+const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.subtype || r.subtype === s
+  .subtype) && (!s.category || catOf(s, r)?.id === s
   .category) && (!s.q || [r.id, r.formerId, r.title, r.operation, r
   .family, r.kind,
   r.subtype, ...r.callsigns, ...r.words, r.originIcao, r.destinationIcao, r.origin, r
@@ -642,7 +650,7 @@ const day = d => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split('-').reverse().join('/'
 function listHtml(s) {
   const w = s.regWhy;
   if (!s.rows.length) return `<div class="f-card"><div class="f-row"><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button></div><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
-  const families = [...new Set(s.rows.filter(r => ofAirline(s, r)).map(r => r.family).filter(Boolean))].sort(),
+  const mine = s.rows.filter(r => ofAirline(s, r)),
     // les catégories connues de la compagnie que ses missions portent, dans l'ordre de sa liste ; sans elles, pas de filtre
     held = new Set(s.rows.filter(r => ofAirline(s, r)).map(r => catOf(s, r)?.id).filter(Boolean)),
     cats = s.cats.all.filter(c => held.has(c.id)),
@@ -650,7 +658,7 @@ function listHtml(s) {
   return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
     ${scopeHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
-    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(familyText(f, s.ctx.lang?.() || 'fr'))}</option>`).join('')}</select></label>
+    ${famFilterHtml(s, 'family', 'subtype', mine, s.family, s.subtype)}
     ${cats.length ? `<label class="f-field"><span class="f-sr">${esc(s.tt(TX.allCategories))}</span><select data-k="category"><option value="">${esc(s.tt(TX.allCategories))}</option>${cats.map(c => `<option value="${esc(c.id)}"${s.category === c.id ? ' selected' : ''}>${esc(MC.nameOf(s.cats, c.id, lang))}</option>`).join('')}</select></label>` : ''}
     <div data-results>${resultsHtml(s)}</div></div>`;
 }
@@ -703,6 +711,54 @@ function missionHtml(s) {
 /** Sept lignes au plus, puis « N autres » replié (la règle 13 dans une section). */
 function seven(s, items) {
   return items.length > 7 ? `${items.slice(0, 7).join('')}<details class="ms-more"><summary class="f-muted">${esc(s.tt(TX.more, { n: items.length - 7 }))}</summary>${items.slice(7).join('')}</details>` : items.join('');
+}
+/** La lettre d'une famille (SOG-0292) : celle de la table des thèmes (AIRLIFT → T), sinon la plus fréquente des identifiants de ses
+ *  missions (« X-001A » → X) ; '' sinon. `ids` : les identifiants des lignes de la famille. */
+function famLetter(code, ids) {
+  const known = familyLetters[String(code || '').toUpperCase()];
+  if (known) return known;
+  const n = new Map();
+  for (const id of ids) {
+    const m = /^([A-Z])-\d/.exec(id);
+    if (m) n.set(m[1], (n.get(m[1]) || 0) + 1);
+  }
+  return [...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || '';
+}
+/** Les familles d'une liste de choix (SOG-0292) : « T · AIRLIFT · Transport aérien / logistique » (la lettre, puis familyText), triées
+ *  par lettre ; sans lettre, en dernier, par code. `rows` : [{ id, family }]. → [{ code, label }] */
+function famChoices(rows, lang) {
+  const ids = new Map();
+  for (const r of rows)
+    if (r.family) {
+      if (!ids.has(r.family)) ids.set(r.family, []);
+      ids.get(r.family).push(r.id);
+    }
+  return [...ids].map(([code, list]) => ({
+    code,
+    letter: famLetter(code, list),
+    text: familyText(code, lang)
+  })).sort((a, b) => (a.letter ? 0 : 1) - (b.letter ? 0 : 1) || a.letter.localeCompare(b.letter) || a.code.localeCompare(b.code)).map(f =>
+    ({
+      code: f.code,
+      label: [f.letter, f.text].filter(Boolean).join(' · ')
+    }));
+}
+/** Les sous-types d'une famille (SOG-0292) : ceux de ses lignes, dits par la série du thème quand elle est connue (STRATEGIC →
+ *  « Transport stratégique »), sinon tels quels (bornés à l'affichage). `rows` : [{ family, subtype }]. → [{ code, label }] */
+function subChoices(rows, fam, lang) {
+  const series = MT.themeOf(fam)?.series || [],
+    li = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang));
+  return [...new Set(rows.filter(r => r.family === fam).map(r => String(r.subtype || '')).filter(Boolean))].sort().map(code => ({
+    code,
+    label: series.find(x => x.value === code)?.labels[li] || code.slice(0, 60)
+  }));
+}
+/** Le filtre de famille et, quand une famille de deux sous-types au moins est choisie, la liste « Sous-type » à côté (SOG-0292). */
+function famFilterHtml(s, kFam, kSub, rows, fam, sub) {
+  const lang = s.ctx.lang?.() || 'fr',
+    subs = fam ? subChoices(rows, fam, lang) : [],
+    sel = (k, all, list, v) => `<label class="f-field"><span class="f-sr">${esc(s.tt(all))}</span><select data-k="${k}"><option value="">${esc(s.tt(all))}</option>${list.map(f => `<option value="${esc(f.code)}"${v === f.code ? ' selected' : ''}>${esc(f.label)}</option>`).join('')}</select></label>`;
+  return `<div class="f-row ms-famrow" data-famrow>${sel(kFam, TX.allFamilies, famChoices(rows, lang), fam)}${subs.length >= 2 ? sel(kSub, TX.allSubtypes, subs, sub) : ''}</div>`;
 }
 /** Une famille dans notre rendu (SOG-0179) : le sigle en gras, puis son nom long ; le sigle seul pour un code inconnu. */
 function famHtml(s, code) {
@@ -834,11 +890,17 @@ function onInput(s, e) {
   if (s.reg) {
     // l'écran Registre : la recherche et le filtre de famille redessinent les lignes seules (le champ garde son curseur)
     const rk = e.target?.dataset?.k;
-    if ((rk === 'rq' && e.type === 'input') || (rk === 'rfam' && e
+    if ((rk === 'rq' && e.type === 'input') || ((rk === 'rfam' || rk === 'rsub') && e
         .type === 'change'
       )) { // « change » de la recherche (à la perte du focus) ne redessine pas : il mangerait le toucher qui la provoque
       if (rk === 'rq') s.reg.q = e.target.value;
-      else s.reg.fam = e.target.value;
+      else if (rk === 'rsub') s.reg.sub = e.target.value;
+      else {
+        s.reg.fam = e.target.value;
+        s.reg.sub = ''; // une autre famille : son sous-type tombe, la seconde liste se redessine (SOG-0292)
+        const row = s.el.querySelector('[data-famrow]');
+        if (row) row.outerHTML = regFamHtml(s);
+      }
       s.reg.all = false;
       const box = s.el.querySelector('[data-regrows]');
       if (box) box.innerHTML = regListHtml(s);
@@ -874,13 +936,19 @@ function onInput(s, e) {
   if (k === 'scope') {
     s.scope = ['perso', 'all'].includes(e.target.value) ? e.target.value : 'mine';
     s.family = '';
+    s.subtype = '';
     s.category = '';
     s.all = false;
     return draw(s);
   }
-  if (k !== 'q' && k !== 'family' && k !== 'category') return;
+  if (k !== 'q' && k !== 'family' && k !== 'subtype' && k !== 'category') return;
   s[k] = e.target.value;
   s.all = false;
+  if (k === 'family') { // une autre famille : son sous-type tombe, la liste « Sous-type » se redessine avec elle (SOG-0292)
+    s.subtype = '';
+    const row = s.el.querySelector('[data-famrow]');
+    if (row) row.outerHTML = famFilterHtml(s, 'family', 'subtype', s.rows.filter(r => ofAirline(s, r)), s.family, s.subtype);
+  }
   results(s);
 }
 
@@ -1260,14 +1328,16 @@ function regRows(s) {
     bad = new Set([...plan.dup, ...plan.former]),
     serOf = e => Number.isFinite(+e.raw.series) && e.raw.series !== '' && e.raw.series !== null ? +e.raw.series : 1e9,
     q = r.q.trim().toUpperCase(),
-    hit = (id, title, fam) => (!q || `${id} ${title}`.toUpperCase().includes(q)) && (!r.fam || fam === r.fam),
+    hit = (id, title, fam, sub) => (!q || `${id} ${title}`.toUpperCase().includes(q)) && (!r.fam || fam === r.fam) && (!r.sub || String(sub ||
+      '') === r.sub),
     rows = [
-      ...r.found.filter(f => hit(f.entry.id, f.entry.title, f.entry.family)).sort((a, b) => b.entry.id.localeCompare(a.entry.id)).map(f =>
+      ...r.found.filter(f => hit(f.entry.id, f.entry.title, f.entry.family, f.entry.subtype)).sort((a, b) => b.entry.id.localeCompare(a
+        .entry.id)).map(f =>
         ({
           kind: 'found',
           f
         })),
-      ...r.lines.filter(e => hit(e.row.id, e.row.title, e.row.family)).map(e => ({
+      ...r.lines.filter(e => hit(e.row.id, e.row.title, e.row.family, e.row.subtype)).map(e => ({
         kind: 'line',
         e,
         rank: r.status.get(e.idx) === 'notread' ? 2 : r.status.get(e.idx) === 'ok' && !bad.has(e.idx) ? 1 : 0 // les non lues en dernier
@@ -1359,13 +1429,17 @@ function regPlanHtml(s) {
     <div class="f-row"><button type="button" class="primary" data-do="regwrite"${any ? '' : ' disabled'}>${esc(s.tt(TX.regWrite))}</button><button type="button" data-do="regplancancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
 }
 
+/** Le filtre de famille du Registre et sa liste « Sous-type » (SOG-0292) : les lignes et les missions hors registre. */
+const regFamHtml = s => famFilterHtml(s, 'rfam', 'rsub', [...s.reg.lines.map(e => e.row), ...s.reg.found.map(f => ({
+  id: f.entry.id,
+  family: f.entry.family,
+  subtype: f.entry.subtype
+}))], s.reg.fam, s.reg.sub || '');
 /** L'écran « Registre des missions ». */
 function regHtml(s) {
   const r = s.reg,
     n = r.lines.length,
-    lang = s.ctx.lang?.() || 'fr',
-    // les familles des lignes et des missions hors registre : le filtre en tête, comme le « Type » de la V2 (SOG-0286)
-    fams = [...new Set([...r.lines.map(e => e.row.family), ...r.found.map(f => f.entry.family)].filter(Boolean))].sort(),
+    // les familles des lignes et des missions hors registre : le filtre en tête, comme le « Type » de la V2 (SOG-0286) ; regFamHtml
     broken = r.why === 'unreadable',
     // l'en-tête tient en deux lignes (SOG-0286 : vingt missions vues sans défiler à 1 280) : le titre (l'explication en infobulle et
     // dans l'aide), puis « Mettre à jour le registre », « Retour » et le compte sur la même ligne
@@ -1376,7 +1450,7 @@ function regHtml(s) {
   if (broken) return `${head}<p class="f-warn" data-why="unreadable">${esc(s.tt(TX.regUnreadable, { e: r.err }))}</p></div>`;
   return `${head}${r.why === 'missing' ? `<p class="f-muted" data-why="missing">${esc(s.tt(TX.none))}</p>` : ''}
     ${r.plan ? regPlanHtml(s) : ''}
-    <div class="ms-reghead"><label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="rfam"><option value="">${esc(s.tt(TX.allFamilies))}</option>${fams.map(f => `<option value="${esc(f)}"${r.fam === f ? ' selected' : ''}>${esc(familyText(f, lang))}</option>`).join('')}</select></label>
+    <div class="ms-reghead">${regFamHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.regSearch))}</span><input type="search" data-k="rq" value="${esc(r.q)}" placeholder="${esc(s.tt(TX.regSearch))}" autocomplete="off"></label></div>
     <div data-regrows>${regListHtml(s)}</div></div>`;
 }

@@ -139,3 +139,11 @@
   and « Lire la suite » opens the Detail, which then carries it in its own « Résumé » section. The Detail's « Description » carries
   `detailed_description` (and the notes) only — the summary is no longer repeated there. N46 (red before: no « Résumé », the text
   clamped); N9 now asks for the summary uncut.
+- **13 Nov 2026 — a family is chosen by its letter, and its subtype** (SOG-0292, written by Features SOG): the family lists of Missions
+  and of the Registry say « T · AIRLIFT · Transport aérien / logistique » — the letter (`familyLetters`, the table of the themes; for a
+  family outside the table, the most frequent letter of its identifiers « X-001A »), then `familyText` — sorted by letter, letterless
+  families last. One function (`famFilterHtml`) for both screens; once a family with two subtypes or more is chosen, a second list
+  « Sous-type » sits beside it (the theme's series label when known: STRATEGIC → « Transport stratégique »; else the raw value, cut at 60
+  for display), and changing the family drops the subtype. « Corriger » edits no family today (title, series, number, operation), so it
+  has no list to change; the editor's Famille field (SOG-0287) will take `famChoices`. The report's families (per airline, SOG-0041) are
+  untouched. N47 (red before: « SAR · … » sorted by code, no subtype).
