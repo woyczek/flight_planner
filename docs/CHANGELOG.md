@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Route text: a NAT point written as in the day's message (« 51/20 », « 5030/30 ») is read as a coordinate, not cut to « 51 »** (fuel DECISIONS; noreg F216; SOG-0332).
 - **Aircraft › sheets: a converted value is shown with four significant digits at most** — no decimal from three digits before the point, two at most otherwise (12407.616 → 12410, 84.736 → 84.74) (aircraft DECISIONS; noreg M47, M38, M25; SOG-0220 refused).
 - **Map: the proposed routes are one window, the same beside Fuel and on the Map alone** (SOG-0224, Map half; Fuel half 27dfbf758, schema 2): it shows the row Fuel kept open with its detail (route, distance, level, deviations) and the age of the computation (« Computed at 14:32Z »), « Stale » with « Recompute » by Fuel's own rule (one shared function, `frame/lib/route_alts.js`: new AIRAC cycle, base changed, NAT route of another day — never the age alone); the window never goes under the Map's round buttons at 390 px; « Choose this route » only on the Map alone; help ×4; D231 (red before).
 - **Map: « Around the flight only » is one rectangle per piece of leg, the same for every layer** (SOG-0246 refused again: « un rectangle de 4500nm de côté, ça donne deux pays de hauteur »): a long leg is cut along its rhumb line (at most 100 NM or a 48th of the route per piece); aerodromes, fixes, airways, MORA, obstacles and cities no longer reach Morocco and Canada on LFOE → KTPA; D230 (red before).

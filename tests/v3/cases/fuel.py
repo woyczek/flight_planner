@@ -5382,3 +5382,28 @@ def f215(c):
     to_step(c, 1)
     c.until_doc('cache/fuel/route_alts.json', lambda x: x is not None and not (x.get('alternatives') or []), 'the object of another aircraft emptied', timeout=8000)
     c.eq(c.count(f'{FUEL} [data-altlist] [data-alt]'), 0, 'nothing shown for another aircraft', what='routes')
+
+
+
+@case('F216', 'Route text: a NAT point written as in the NMS message — « 51/20 », « 5030/30 » — is a coordinate (north, west), its name kept as '
+      'written; out of the North Atlantic bounds the slash keeps its old sense', 'F', tags=('fuel', 'maps'), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0332 (user\'s capture 16 h 51: a NAT route taken wrote « 51 5030 49 H4842 4630 » → « Points inconnus »; the ergonomist\'s bounds: '
+      'latitude 20 to 75, longitude 5 to 80) — tokenize cut every word at « / »')
+def f216(c):
+    open_proc(c)
+    got = c.js("""async () => { const RT = await import('/frame/lib/route_text.js');
+        return RT.tokenize('LFPO 51/20 5030/30 4630/50 1910/20 LFBO/32L NTS/F280').map(t => [t.kind, t.id, t.lat ?? null, t.lon ?? null]) }""")
+    c.eq(got[1], ['coord', '51/20', 51, -20], '« 51/20 »: 51° N 020° W, its name as written', what='51/20')
+    c.eq(got[2], ['coord', '5030/30', 50.5, -30], '« 5030/30 »: 50° 30\' N 030° W', what='5030/30')
+    c.eq(got[3], ['coord', '4630/50', 46.5, -50], '« 4630/50 »', what='4630/50')
+    c.ok(got[4][0] != 'coord', got[4], '« 1910/20 »: latitude out of the North Atlantic bounds, not a coordinate')
+    c.eq(got[5][:2], ['name', 'LFBO'], 'a runway after the slash keeps its sense', what='LFBO/32L')
+    c.eq(got[6][:2], ['name', 'NTS'], 'a level after the slash keeps its sense', what='NTS/F280')
+    # in the route field: no « point inconnu » for the NAT points
+    c.page.fill(f'{FUEL} [data-k="rtext"]', 'LFRS 51/20 5030/30 LFML')
+    c.page.keyboard.press('Tab')
+    c.settle()
+    c.eq(c.js(f"[...document.querySelectorAll('{FUEL} [data-unres-pt]')].map(e => e.dataset.unresPt)"), [], 'no unknown point', what='unknown points')
+    c.ok('51/20' in (c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"),
+         'the text keeps « 51/20 »')

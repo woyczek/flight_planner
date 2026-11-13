@@ -49,6 +49,8 @@ l'aéronef de votre dernier plan.
 
 **Les propositions restent.** Les itinéraires proposés par « Calculer A → B », et celui dont le détail est ouvert, restent là quand vous passez à la Carte, changez d'écran ou rechargez la page, sans nouveau calcul ; leur heure est dite (« Calculé à 14:32Z »). Ils partent quand vous prenez un itinéraire, touchez « Fermer les propositions », lancez un nouveau calcul ou changez de départ, d'arrivée ou d'aéronef. Au changement de cycle AIRAC, si la base aéronautique a changé depuis, ou le lendemain pour une route par les NAT, ils se disent « périmés », avec « Recalculer », sans disparaître.
 
+**Points NAT.** Un point des routes de l'Atlantique nord s'écrit comme dans le message du jour : « 51/20 » (51° N 020° W), « 5030/30 » (50° 30' N 030° W) ; il est lu comme une coordonnée et gardé tel qu'écrit. Hors de l'Atlantique nord, la barre garde son sens habituel (un point et son niveau ou sa piste).
+
 Le bouton « Auto » à côté du champ « Route » inscrit les voies aériennes entre les points : pour chaque paire de points
 nommés qui se suivent sans voie entre eux, il cherche le plus court chemin sur les voies de la base publiée, ouvertes au
 niveau prévu (plancher et plafond de chaque tronçon, à 100 ft près ; sans niveau prévu, 6 500 ft, et une notification le

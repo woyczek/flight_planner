@@ -34,6 +34,10 @@ const COORD = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[
   // SOG-0211 : les points de l'Atlantique Nord à cinq signes (ARINC 424) — « 5520N » = 55°N 020°W, « 55N20 » = 55°N 120°W ; la lettre
   // dit le quadrant : N = nord / ouest, E = nord / est, S = sud / est, W = sud / ouest
   NAT_LL = /^(\d{2})(\d{2})([NESW])$|^(\d{2})([NESW])(\d{2})$/,
+  // SOG-0332 : un point NAT écrit comme dans le message NMS (FAA) : « 51/20 » (51° N 020° W), « 5030/30 » (50° 30' N 030° W) — nord et ouest,
+  // bornés à l'Atlantique nord (latitude 20 à 75, longitude 5 à 80, décision de l'ergonome) ; hors bornes, la barre garde son sens
+  // de toujours (un point et son niveau ou sa piste)
+  NAT_SLASH = /^(\d{2})(\d{2})?\/(\d{2,3})$/,
   NAT_Q = {
     N: [1, -1],
     E: [1, 1],
@@ -114,7 +118,17 @@ export function tokenize(text) {
       alt = lv ? +lv[1] * 100 : 0,
       tok = word.split('/')[0];
     let m;
-    if (GROUP.test(tok)) out.push({
+    const ns = NAT_SLASH.exec(word),
+      nlat = ns ? +ns[1] + (ns[2] ? +ns[2] / 60 : 0) : NaN,
+      nlon = ns ? +ns[3] : NaN;
+    if (ns && (!ns[2] || +ns[2] < 60) && nlat >= 20 && nlat <= 75 && nlon >= 5 && nlon <= 80) out.push({
+      kind: 'coord',
+      id: word,
+      lat: nlat,
+      lon: -nlon,
+      alt_ft: 0
+    });
+    else if (GROUP.test(tok)) out.push({
       kind: 'group',
       alt_ft: alt
     });

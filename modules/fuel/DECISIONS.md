@@ -1915,3 +1915,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   12 h first decided: a new AIRAC cycle, the base's stamp changed, or the next UTC day for a route over the NAT; said with
   « Recalculer », never erased; the age is said before. Fuel's half of the end-to-end case: F215 (red before: schema 1, the detail lost); F201, F208, F114, F109 still green. The
   shared window of the side map and the full Map is BUGS SOG's.
+- **13 Nov 2026 — SOG-0332: a NAT point written as in the NMS message is a coordinate** (user's capture of 16 h 51: a NAT route taken
+  wrote « 51 5030 49 H4842 4630 » → « Points inconnus »; written by Features SOG). Cause: `frame/lib/route_text.js` `tokenize` cut every
+  word at « / » (a point and its level or runway: « NTS/F280 », « LFBO/32L »), so « 51/20 » became « 51 ». The engine writes the NAT points
+  as the FAA NMS message does (latitude/west longitude, half degrees in minutes). Now « DD/LL » and « DDMM/LL » are read first as a
+  coordinate, north and west, bounded to the North Atlantic (latitude 20 to 75, longitude 5 to 80, the ergonomist's bounds), the name
+  kept as written; out of bounds the slash keeps its old sense. Readers of `tokenize` (Fuel, the Map, Atmosphere, the report) get the same
+  points. F216 (red before: « 51 »).

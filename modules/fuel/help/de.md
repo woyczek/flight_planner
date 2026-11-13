@@ -55,6 +55,8 @@ letzten Plans auf einmal.
 
 **Die Vorschläge bleiben.** Die von „A → B berechnen“ vorgeschlagenen Routen und die, deren Detail offen ist, bleiben, wenn Sie zur Karte wechseln, den Bildschirm wechseln oder die Seite neu laden, ohne neue Berechnung; ihre Uhrzeit wird genannt („Berechnet um 14:32Z“). Sie verschwinden, wenn Sie eine Route übernehmen, „Vorschläge schließen“ tippen, neu berechnen oder Abflug, Ankunft oder Luftfahrzeug ändern. Bei einem neuen AIRAC-Zyklus, wenn sich die Luftfahrtdatenbank seitdem geändert hat, oder am nächsten Tag für eine Route über die NAT heißen sie „veraltet“, mit „Neu berechnen“, ohne zu verschwinden.
 
+**NAT-Punkte.** Ein Punkt der Nordatlantik-Routen wird wie in der Tagesmeldung geschrieben: „51/20“ (51° N 020° W), „5030/30“ (50° 30' N 030° W); er wird als Koordinate gelesen und so behalten, wie er geschrieben ist. Außerhalb des Nordatlantiks behält der Schrägstrich seinen üblichen Sinn (ein Punkt und seine Flughöhe oder Piste).
+
 Die Schaltfläche „Auto“ neben dem Feld „Route“ trägt die Luftstraßen zwischen den Punkten ein: Für jedes Paar benannter
 Punkte, die ohne Luftstraße aufeinander folgen, sucht sie den kürzesten Weg über die Luftstraßen der veröffentlichten
 Datenbank, die auf der geplanten Flugfläche offen sind (Untergrenze und Obergrenze jedes Abschnitts, auf 100 ft genau; ohne

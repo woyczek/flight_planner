@@ -107,6 +107,8 @@ set (⚙), “Last SimBrief OFP” takes the route, the level, the mean wind and
 
 **The proposals stay.** The routes proposed by "Compute A → B", and the one whose detail is open, stay when you go to the Map, change screen or reload the page, with no new computation; their time is said ("Computed at 14:32Z"). They go when you take a route, tap "Close the proposals", start a new computation or change the departure, arrival or aircraft. At a new AIRAC cycle, if the aeronautical database changed since, or the next day for a route over the NAT, they are said "stale", with "Compute again", without disappearing.
 
+**NAT points.** A point of the North Atlantic tracks is written as in the day's message: "51/20" (51° N 020° W), "5030/30" (50° 30' N 030° W); it is read as a coordinate and kept as written. Outside the North Atlantic, the slash keeps its usual sense (a point and its level or runway).
+
 The “Auto” button next to the “Route” field writes the airways between the points: for each pair of named points that
 follow each other with no airway between them, it looks for the shortest path over the published base's airways, open at the
 planned level (each leg's floor and ceiling, within 100 ft; with no planned level, 6,500 ft, and a notification says so),
