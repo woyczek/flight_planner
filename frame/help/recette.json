@@ -2678,7 +2678,7 @@
     "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",
     "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte"
    },
-   "test": "Recharge la page. Carte d'une mission, vue VFR : la case « Courbes de niveau » est cochée quand les courbes sont dessinées ; décoche-la, elles disparaissent ; recoche-la, elles reviennent. (Le fond topographique, les vues par famille et le cadre gradué arrivent ensuite.)",
+   "test": "Recharge la page. Carte d'une mission, vue topographique : le fond est une vraie carte topographique avec ses courbes de niveau (OpenTopoMap, mention en bas), sans hippodromes ni zones ; la case « Courbes de niveau » y est grisée et dit pourquoi. Coupe le réseau : la vue retombe sur le fond d'avant et le dit. En vue VFR, la case « Courbes de niveau » coche et décoche les courbes.",
    "since": "2026-11-13",
    "state": "known"
   },
@@ -2867,21 +2867,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0047",
-   "fiche": "SOG-0308",
-   "app": "pilote",
-   "question": "Bloc « Procédures » de Carburant : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/modules/fuel/maquette/procedures.html (sept boutons en haut, un par état).",
-   "context": "Un côté par terrain (Départ, Arrivée), un seul ouvert ; replié, une phrase et une marque (complet, à choisir, périmé). Ouvert : trois lignes en mots — Piste (« 31L — face 12 kt · travers 1 kt », et d'où vient le vent), Départ ou Arrivée (la procédure, sa transition, sa carte), Approche (son nom, l'indicatif et la fréquence du moyen, sa carte) — chacune avec un seul geste « Changer », qui ouvre la liste de cette ligne (une feuille du bas au téléphone), la piste la mieux orientée en tête. En vent ",
-   "options": [
-    "Oui, on code sur cette maquette",
-    "Oui, avec mes remarques (dans le texte)",
-    "Non, à reprendre (dis-moi quoi)"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0048",
    "fiche": "SOG-0036",
    "app": "compagnie",
@@ -2963,6 +2948,24 @@
    "choice": 1,
    "text": "J’ai un statut un peu différent de tous les autres (je suis devel). si je fais un report, direct chez toi (capture là où tu m’as indiqué). si c’est un autre que RBR, 722630 IVAO, ça part sur mon poste, dans « bugs à vérifier ». On peut aussi imaginer que ça parte en bug sur github ou gitlab, et qu’on fasse le suivi des bugs là bas. on pourrait. Je pense que la roadmap suffit.",
    "at": "2026-11-13T12:43:50Z"
+  },
+  {
+   "id": "Q-0047",
+   "fiche": "SOG-0308",
+   "app": "pilote",
+   "question": "Bloc « Procédures » de Carburant : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/modules/fuel/maquette/procedures.html (sept boutons en haut, un par état).",
+   "context": "Un côté par terrain (Départ, Arrivée), un seul ouvert ; replié, une phrase et une marque (complet, à choisir, périmé). Ouvert : trois lignes en mots — Piste (« 31L — face 12 kt · travers 1 kt », et d'où vient le vent), Départ ou Arrivée (la procédure, sa transition, sa carte), Approche (son nom, l'indicatif et la fréquence du moyen, sa carte) — chacune avec un seul geste « Changer », qui ouvre la liste de cette ligne (une feuille du bas au téléphone), la piste la mieux orientée en tête. En vent ",
+   "options": [
+    "Oui, on code sur cette maquette",
+    "Oui, avec mes remarques (dans le texte)",
+    "Non, à reprendre (dis-moi quoi)"
+   ],
+   "since": "2026-11-13",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "RÀS ! du boulot comme ça, j’aime.",
+   "at": "2026-11-13T13:36:28Z"
   }
  ]
 }
