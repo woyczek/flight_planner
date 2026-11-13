@@ -133,3 +133,9 @@
   doubles (the second removed) — a bait any pilot could set. The identifier keeps 40 signs in the reader (what registry.js compares;
   `entryOfMission` already did, Fuel's `r.id === missionId` follows the reader); the registry line shortens it to 12 for display only,
   whole in the tooltip. N45 (red before: former [0], dup [1], the plan changed the registry).
+- **13 Nov 2026 — the summary in full on the first page** (SOG-0291, written by Features SOG): the user read the summary clamped at two
+  lines (SOG-0051, `.ms-summary` line-clamp) as « un extrait de la description longue ». The first page now shows `summary` whole under
+  its name (« Résumé », an `h3` inside the same block: still seven elements); beyond `SUM_MAX` = 600 signs it is cut at a word with « … »
+  and « Lire la suite » opens the Detail, which then carries it in its own « Résumé » section. The Detail's « Description » carries
+  `detailed_description` (and the notes) only — the summary is no longer repeated there. N46 (red before: no « Résumé », the text
+  clamped); N9 now asks for the summary uncut.

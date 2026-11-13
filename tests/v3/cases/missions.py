@@ -516,7 +516,7 @@ _FIRST_JS = f"""(() => {{ const f = document.querySelector('{M} [data-first]'), 
     sw: document.documentElement.scrollWidth, iw: innerWidth }} }})()"""
 
 
-@case('N9', 'Mission sheet, first page: title, category, the summary in two lines at most, three risks « danger → parade » and « N autres », teams, zones count, one primary action; no risk said',
+@case('N9', 'Mission sheet, first page: title, category, the summary in full (SOG-0291), three risks « danger → parade » and « N autres », teams, zones count, one primary action; no risk said',
       'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
       rule='V3 spec 10.45 / SOG-0051 (user: « les risques sur la première page »; refused 10 Nov: « oui, mais la description courte, avant les '
       'risques ») : title, category (with the state « Volée le … »), summary (two lines at most, « … »), risks, teams, zones, actions — seven '
@@ -527,7 +527,7 @@ def n9(c):
     f = c.js(_FIRST_JS)
     c.le(f['blocks'], 7, 'seven elements at most on the first page', what='elements')
     c.eq(f['order'], ['title', 'cat', 'summary', 'risks', 'teams', 'zones', 'actions'], 'the summary always comes after the category, before the risks', what='order')
-    c.ok(1 <= f['sumLines'] <= 2 and f['sumCut'], f, 'the summary in two lines at most, cut with « … »')
+    c.ok(f['sumLines'] >= 1 and not f['sumCut'], f, 'the summary in full, never clamped (SOG-0291 replaces the two lines of SOG-0051)')
     c.eq(f['risks'], ['Danger un → Parade un', 'Danger deux → Parade deux', 'Danger trois → Parade trois'], 'three risks « danger → parade »', what='risks')
     c.eq(norm(f['more']), norm(row(c, 'more').replace('{n}', '2')), 'the two others folded', what='others')
     c.eq(f['teams'], 3, 'the teams engaged', what='teams')
@@ -1775,3 +1775,72 @@ def n45(c):
     c.ok(c.count(f'{R} [data-regplan] [data-plan=Dup]') == 0 and c.count(f'{R} [data-regplan] [data-plan=Former]') == 0, c.text(f'{R} [data-regplan]'),
          'the plan proposes neither a double to remove nor an identifier to rewrite')
     c.js(_REG_CLEAR)
+
+
+
+# SOG-0291: a summary of 370 signs (four invented sentences) and a description that is not a piece of it; a summary of 700 signs
+_SUM_370 = ('Une phrase inventée ouvre le résumé de la mission d\'essai et pose le cadre sans rien dire de réel sur le terrain. '
+            'Une deuxième phrase inventée décrit la tâche demandée aux équipages du banc, en restant volontairement assez longue. '
+            'Une troisième phrase inventée ajoute une contrainte de météo. Une quatrième phrase inventée clôt le résumé par sa fin.')
+_SUM_700 = ' '.join(['Une longue phrase inventée qui remplit le résumé de la seconde mission d\'essai sans rien dire de réel.'] * 7) + ' FINCACHEE'
+_SUM_REG = """missions:
+  - { id: X-311A, family: TESTSHEET, title: Mission au résumé moyen, folder: X_SU/X-311A, files: [missionX-311A.yaml] }
+  - { id: X-312A, family: TESTSHEET, title: Mission au résumé long, folder: X_SU/X-312A, files: [missionX-312A.yaml] }
+"""
+
+
+def _sum_doc(mid, summary):
+    return (f"mission: {{ id: {mid}, type: SAR, subtype: RECHERCHE }}\ntitle: Mission {mid}\nsummary: {summary}\n"
+            "detailed_description: |-\n  Une description inventée qui commence autrement.\n\n  Son second paragraphe inventé.\n"
+            "origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }\nrisks:\n  - { hazard: Danger un, mitigation: Parade un }\n")
+
+
+_SUM_JS = f"""(() => {{ const f = document.querySelector('{M} [data-first]'), b = f.querySelector('[data-summary]'), p = b?.querySelector('[data-sumtext]') || b,
+  d = document.querySelector('{M} [data-sec=desc]'), vis = e => !!e && e.getBoundingClientRect().height > 0;
+  return {{ head: b?.querySelector('h3')?.textContent.trim() || '', text: (p?.textContent || '').trim(), cut: !!p && p.scrollHeight > p.clientHeight + 1,
+    blocks: [...f.children].filter(vis).length, desc: d?.textContent || '', more: !!b?.querySelector('[data-do=detail]'),
+    sumSec: document.querySelector('{M} [data-sec=sum]')?.textContent || '' }} }})()"""
+
+
+@case('N46', 'Mission sheet, first page: the summary IN FULL under its name « Résumé » (370 signs, never cut at two lines), at 390 and 1 280; the Detail\'s '
+      '« Description » carries the detailed description only; beyond 600 signs the summary is cut with « Lire la suite » to the Detail, which then has it whole',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0291 (user, 13 Nov: « j\'ai demandé la description courte dans la synthèse de mission, tu m\'as mis un extrait de la description longue, '
+      'non ? ») — the summary was clamped at two lines (.ms-summary), read as an excerpt; the Detail chained summary then description with no title')
+def n46(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _SUM_REG], ['missions/X_SU/X-311A/missionX-311A.yaml', _sum_doc('X-311A', _SUM_370)],
+                         ['missions/X_SU/X-312A/missionX-312A.yaml', _sum_doc('X-312A', _SUM_700)]])
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"X-311A\"]')", timeout=15000, what='the list of missions')
+        c.tap(f'{M} [data-list] [data-id="X-311A"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=mission][data-id=\"X-311A\"] [data-first] [data-summary]')", timeout=10000, what='X-311A opens')
+        c.settle()
+        g = c.js(_SUM_JS)
+        c.eq([norm(g['head']), g['text'], g['cut']], [norm(row(c, 'sumTitle')), _SUM_370, False], f'at {w}: the summary whole, under « Résumé », not cut',
+             what='[head, text, cut]')
+        c.le(g['blocks'], 7, f'at {w}: seven elements at most on the first page', what='elements')
+        c.shot(f'N46_{w}_first.png')
+        if w == 390:
+            c.tap(f'{M} [data-first] [data-do="detail"]')
+            c.until(f"!!document.querySelector('{M} [data-sec=desc]')", what='the Detail')
+            g = c.js(_SUM_JS)
+        c.ok('commence autrement' in g['desc'] and 'Une phrase inventée' not in g['desc'], g['desc'][:200],
+             f'at {w}: « Description » carries the detailed description, not the summary')
+        c.shot(f'N46_{w}_detail.png')
+        # beyond 600 signs: cut, « Lire la suite » to the Detail, which has the summary whole
+        if w == 390:
+            c.tap(f'{M} [data-do="first"]')
+        c.tap(f'{M} [data-first] [data-do="back"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"X-312A\"]')", what='back to the list')
+        c.tap(f'{M} [data-list] [data-id="X-312A"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=mission][data-id=\"X-312A\"] [data-first] [data-summary]')", timeout=10000, what='X-312A opens')
+        g = c.js(_SUM_JS)
+        c.ok(g['more'] and 'FINCACHEE' not in g['text'] and len(g['text']) <= 602 and g['text'].endswith('…'), g,
+             f'at {w}: a summary of more than 600 signs is cut, with « Lire la suite »')
+        c.tap(f'{M} [data-summary] [data-do="detail"]')
+        c.until(f"!!document.querySelector('{M} [data-sec=sum]')", what='the Detail with the summary')
+        g = c.js(_SUM_JS)
+        c.ok('FINCACHEE' in g['sumSec'] and 'FINCACHEE' not in g['desc'], g['sumSec'][-80:], f'at {w}: the Detail has the summary whole, apart from the description')

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions › mission sheet: the summary in full, apart from the description** — « Résumé » shown whole on the first page (cut at 600 signs with « Lire la suite »), the Detail's « Description » without the summary (missions DECISIONS, help; noreg N46; SOG-0291).
 - **Missions › Registre: texts bounded at reading, files beyond the 500 read said « non lu »** — never « fichier là » without reading it (Missions DECISIONS, help; noreg N44; audit 174).
 - **Settings › Little Navmap sheets: « Exporter les fiches » replaces « Synchroniser maintenant »** — the JSON sheet is the only source; a file changed in Little Navmap is listed, never merged nor overwritten, and imported through Aircraft with its preview (aerodb DECISIONS, SPEC § 5 ter, Settings help; noreg K218; SOG-0023).
 - **Report: the families offered are always those of the company the heading says** — a saved report reopened after « Vol en cours » no longer offers the families of that flight's company (Report DECISIONS; noreg G21; SOG-0041, audit 173).

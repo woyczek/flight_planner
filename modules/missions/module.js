@@ -54,7 +54,9 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] [data-famlong]{font-weight:400}
 [data-module="missions"] .f-linkbtn{min-height:44px;padding:0 4px;border:0;border-radius:0;background:none;box-shadow:none;text-shadow:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer} /* « Changer », « N autres » : des liens dans le texte (SOG-0223) */
 [data-module="missions"] .ms-fam{display:block;font-size:.72em;margin-top:.15em} /* la famille sous le titre de la fiche : « SAR · Récupération de personnel » (SOG-0187) */ /* le sigle en gras, le nom long en clair (SOG-0179) */
-[data-module="missions"] .ms-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:.2em 0 .4em} /* le résumé, deux lignes au plus avec « … » (SOG-0051) */
+[data-module="missions"] .ms-summary{margin:.2em 0 .4em} /* le résumé EN ENTIER sous son nom (SOG-0291 : coupé à deux lignes, il se lisait comme un extrait) */
+[data-module="missions"] .ms-summary>h3{margin:0 0 .15em}
+[data-module="missions"] .ms-summary>p{margin:0}
 [data-module="missions"] .ms-lines li{margin:.15em 0}
 [data-module="missions"] .ms-rrow{display:block;border-top:1px solid var(--sog-border)} /* une ligne du registre : une mission, repliée (le modèle de la V2, SOG-0286) */
 [data-module="missions"] .ms-rrow>summary{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:8px;padding:.3em .75em;min-height:44px;box-sizing:border-box} /* le chevron du cadre à gauche, les deux lignes à droite */
@@ -100,6 +102,9 @@ const TX = {
   zonesCount: ['{n} zone(s)', '{n} zone(s)', '{n} Zone(n)', '{n} zona(s)'],
   flownOn: ['Volée le {d}', 'Flown on {d}', 'Geflogen am {d}', 'Volada el {d}'],
   secDesc: ['Description', 'Description', 'Beschreibung', 'Descripción'],
+  // le résumé (champ summary), sous son nom ; au-delà de SUM_MAX signes, coupé avec « Lire la suite » vers le Détail (SOG-0291)
+  sumTitle: ['Résumé', 'Summary', 'Kurzbeschreibung', 'Resumen'],
+  readMore: ['Lire la suite', 'Read more', 'Weiterlesen', 'Seguir leyendo'],
   secObj: ['Objectifs', 'Objectives', 'Ziele', 'Objetivos'],
   objPrimary: ['Principal :', 'Primary:', 'Hauptziel:', 'Principal:'],
   secZones: ['Zones à activer', 'Zones to activate', 'Zu aktivierende Zonen', 'Zonas que activar'],
@@ -704,6 +709,15 @@ function famHtml(s, code) {
   const p = familyParts(code, s.ctx.lang?.() || 'fr');
   return `<b data-famshort>${esc(p.short)}</b>${p.long ? ` · <span data-famlong>${esc(p.long)}</span>` : ''}`;
 }
+/** Au-delà de ce nombre de signes, le résumé de la première page est coupé et « Lire la suite » ouvre le Détail, qui l'a en entier. */
+const SUM_MAX = 600;
+/** Le résumé coupé à SUM_MAX signes, à la fin d'un mot, suivi de « … » ; tel quel s'il tient. */
+function sumCut(t) {
+  if (t.length <= SUM_MAX) return t;
+  const head = t.slice(0, SUM_MAX),
+    sp = head.lastIndexOf(' ');
+  return `${(sp > SUM_MAX * 0.8 ? head.slice(0, sp) : head).trimEnd()}…`;
+}
 /** La première page (voir missionHtml). */
 function firstHtml(s, r, m, drawn, why) {
   const lang = s.ctx.lang?.() || 'fr',
@@ -728,7 +742,7 @@ function firstHtml(s, r, m, drawn, why) {
   return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted ms-fam" data-family-of="${esc(r.family)}">${famHtml(s, r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
     ${kindLine.length || flownBadge ? `<p class="f-muted" data-cat>${esc(kindLine.join(' · '))}${kindLine.length && flownBadge ? ' ' : ''}${flownBadge}</p>` : ''}
     ${s.co?.filter ? coHtml(s, r) : ''}
-    ${m?.summary ? `<p class="ms-summary" data-summary title="${esc(m.summary)}">${esc(m.summary)}</p>` : ''}
+    ${m?.summary ? `<div class="ms-summary" data-summary><h3>${esc(s.tt(TX.sumTitle))}</h3><p data-sumtext>${esc(sumCut(m.summary))}</p>${m.summary.length > SUM_MAX ? `<button type="button" class="f-linkbtn" data-do="detail" data-readmore>${esc(s.tt(TX.readMore))}</button>` : ''}</div>` : ''}
     ${m ? risks.length ? `<div data-risks><h3>${esc(s.tt(TX.risks))}</h3><ul class="ms-lines">${risks.slice(0, 3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>${risks.length > 3 ? `<details class="ms-more" data-riskmore><summary class="f-muted">${esc(s.tt(TX.more, { n: risks.length - 3 }))}</summary><ul class="ms-lines">${risks.slice(3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul></details>` : ''}</div>` :
     `<div data-risks><p class="f-muted" data-norisk>${esc(s.tt(TX.noRisk))}</p></div>` : ''}
     ${teams.length ? `<div data-teams><h3>${esc(s.tt(TX.teams))}</h3><ul class="ms-lines">${seven(s, teams.map(t => `<li data-team>${esc(t.name)}${t.role ? ` <span class="f-muted">${esc(t.role)}</span>` : ''}</li>`))}</ul></div>` : ''}
@@ -747,7 +761,9 @@ function detailHtml(s, r, m) {
     zoneMap = z => m.maps.find(x => x.file && x.centreRef && x.centreRef.toUpperCase() === z.id.toUpperCase())?.file || '',
     nm = MS.routeNm(m),
     lines = a => a.length ? `<ul class="ms-lines">${seven(s, a)}</ul>` : '';
-  const desc = [m.summary ? `<p data-summary>${esc(m.summary)}</p>` : '', ...m.details.map(p => `<p>${esc(p)}</p>`), m.notes?.length ? `<ul class="ms-lines">${m.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''].filter(Boolean),
+  // « Description » ne porte que la description détaillée (SOG-0291) ; le résumé n'a sa section ici que s'il est coupé sur la première page
+  const sum = m.summary && m.summary.length > SUM_MAX ? `<p data-sumfull>${esc(m.summary)}</p>` : '',
+    desc = [...m.details.map(p => `<p>${esc(p)}</p>`), m.notes?.length ? `<ul class="ms-lines">${m.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''].filter(Boolean),
     obj = [m.objectives.primary ? `<p><b>${esc(s.tt(TX.objPrimary))}</b> ${esc(m.objectives.primary)}</p>` : '', lines(m.objectives.secondary.map(x => `<li>${esc(x)}</li>`))].join(''),
     zones = lines(m.zones.map(z => `<li data-zone="${esc(z.id)}"><b>${esc(z.name || z.id)}</b> <span class="f-muted">${esc([z.kind, z.radiusKm !== null ? km(z.radiusKm) : z.polygon ? s.tt(TX.polygon) : '', z.role, z.timeMin !== null ? s.tt(TX.minutes, { n: z.timeMin }) : ''].filter(Boolean).join(' · '))}</span>${z.lat !== null && z.lon !== null ? ` <a class="f-linkbtn" data-zonemap href="${esc(mapHref(r, { map: zoneMap(z), zone: z.id }))}">${esc(s.tt(TX.onMap))}</a>` : ''}</li>`)),
     rdv = lines(m.rendezvous.map(p => `<li data-rdv><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc([p.participants.join(', '), p.role].filter(Boolean).join(' · '))}</span></li>`)),
@@ -761,7 +777,7 @@ function detailHtml(s, r, m) {
     load = `<dl class="f-dl">${dl(TX.operation, r.operation)}${dl(TX.route, [dep, arr].filter(Boolean).join(' → '))}${dl(TX.aircraft, ac)}${dl(TX.block, hmm(m.estimate?.blockMin || r.blockMin))}${dl(TX.payload, m.payload.description)}${dl(TX.massKg, m.payload.massKg !== null ? String(m.payload.massKg) : '')}${dl(TX.pax, m.payload.passengers !== null ? String(m.payload.passengers) : '')}</dl>${m.constraints?.length ? `<ul class="ms-lines">${m.constraints.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`;
   // la place du bouton documentation (SOG-0084, § 10.46) et l'historique des affectations (lot 5) viendront après la charge
   return `<button type="button" class="ms-tofirst" data-do="first">${esc(s.tt(TX.back))}</button>
-    ${sec('desc', TX.secDesc, desc.join(''), true)}${sec('obj', TX.secObj, obj)}${sec('zones', TX.secZones, zones)}${sec('rdv', TX.secRdv, rdv)}${sec('route', TX.secRoute, route)}${sec('maps', TX.secMaps, maps)}${sec('payload', TX.secPayload, load)}`;
+    ${sec('sum', TX.sumTitle, sum, true)}${sec('desc', TX.secDesc, desc.join(''), true)}${sec('obj', TX.secObj, obj)}${sec('zones', TX.secZones, zones)}${sec('rdv', TX.secRdv, rdv)}${sec('route', TX.secRoute, route)}${sec('maps', TX.secMaps, maps)}${sec('payload', TX.secPayload, load)}`;
 }
 /** Les images héritées d'une mission sans coordonnées (le dossier de la mission, un nom de fichier vérifié par le lecteur) : lues en
  *  octets, montrées si ce sont des PNG ; rien sinon. */
