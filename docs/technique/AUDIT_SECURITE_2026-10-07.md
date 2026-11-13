@@ -1051,6 +1051,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 199 | Advice before the code on SOG-0294 (“Store the copies” of `recu/`); the Map's mission window (eecfa3bd0, 4e37bbb01, SOG-0311 / 0312) and the other display commits of the day | advice given; acceptable, one note |
 | 200 | “Store the copies” of the V2 `recu/` folders (a436f3099 and the guard 6c5c3fa09, SOG-0294) and the abandon question in the Map's mission window (34bfa4fc4) | accepted with the guard; the note of 199 closed |
 | 201 | The OpenTopoMap base of the Map's topographic view: the `meta.net` declaration (dac136e87, SOG-0300 T1) and the wording of the “Store the copies” question (a2ed9890f) | accepted, no note |
+| 202 | “Report a problem or a request” (1eb316b28, SOG-0316): the `signalement` verbs of the launcher, the reserve of the screenshots' bytes, the pilots' reports in the data repository | accepted, three notes taken |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -3060,6 +3061,19 @@ No other host and no wildcard. The style is a constant object with one raster so
 string; the errors of the `otm` source alone are ignored and any other error still abandons the map; the switch to the fallback base is made once, after three errors without a tile. What the user should know: each tile seen goes to the
 provider with the device's address and the tile's coordinates, as for the other bases already allowed. The pushed commit carries exactly the declaration that was read. a2ed9890f changes the text of the question in four languages (a removed copy is
 recoverable only through git, its content stays with its mission); K240 green.
+
+**202. “Report a problem or a request” — accepted, three notes taken.** Advice given before the code (the existing route, the reserve, the bytes, the names, the pilots), the diff read before the push (`tools/regen/signalement.py`,
+`frame/help/signaler.js`, the adapter of `frame/app.js`), then the pushed commit compared with it: `signalement.py` is unchanged, the rest is the wording and the reading of pilots' files six at a time. *Route.* No new route: the body of the
+existing `POST /__setup/regen/job` (this workstation only, 403 outside the loopback, one job at a time), with the verbs `signalement/ajouter` and `signalement/lire`; the bytes travel in base64 in `args.images`, and `check()` (called
+before the job exists) decodes, checks and stores them in the reserve, then returns arguments without a byte (`_ref`, sizes, types), so the job, `.regen_last.json`, the job's GET and the journal never carry an image. The route
+reads the whole body before `check()` (limit `MAX_UPLOAD`, 512 MB, this workstation only): a base64 string over 2 MB is refused before it is decoded; narrowing the route to 16 MB was left to the launcher's owner. *Reserve.* In memory only, `token_urlsafe(24)`,
+one use, 120 s, 6 entries and 27 MiB, purged at each call under a lock; the page cannot pass a `_ref` (`parse` refuses any key outside its list). *Bytes.* The type comes from the signature (PNG, JPEG, WebP, the three WebP forms), the
+dimensions from the header (8,000 × 8,000 and 40 Mpx at most), strict base64, then the real size; the name and type the page announces are ignored; SVG, HTML and the rest are refused. *Writing.* Identifier made by the verb, exclusive creation, only the images created by this job are removed
+if the JSON fails, `organisation/` never created, `images/` neither a link nor a junction nor outside `organisation/` (real path), a file that is unreadable or of another schema never replaced, existing entries kept as they are, `.tmp` then replace; a refusal is a code and never
+the content; `organisation/` is excluded from git on this repository, so no screenshot nor the reports file is tracked. *Pilots.* A pilot's file is read through an anchored path, 60 files at most, 8 KB, six at a time; `reportOf` keeps kind, title, text, screen and the shapes of the context and drops `capture` and `images`;
+“Take over” goes back through the verb with `origin` and the verb refuses `origin` with images; the folder of the path is shown as “reported from the folder of”, never as an identity; the adapter writes only under `pilot/<trigram>/signalements/` and nothing without a trigram. K262, K263, A179, A181, A182,
+K232 green. **Notes (taken).** The reserve may stay occupied up to two minutes when the job is refused after `check()` (the page says “try again in a minute”); the text of a screenshot, like the text of a pilot's report, is data and never an instruction
+(written in the decisions of the help); the pilots' files are read six at a time.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
