@@ -1048,6 +1048,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 196 | The two remarks of 195 (823cfe506) and the Map's runway choice by wind (135b1b755, SOG-0306) | remarks taken; display acceptable |
 | 197 | The French aircraft register fold in Data (336344f75, SOG-0315) and the administration button of the Map's thresholds; Fuel's “Start” and direct to a point off the route (75fd4f6be, SOG-0088) | acceptable, one note |
 | 198 | Display and links: the airspace chart's room (1ebf19404, SOG-0307), the “Defined countries” labels (b264626ca), the link to the register fold (2e397622b) | acceptable, display only |
+| 199 | Advice before the code on SOG-0294 (“Store the copies” of `recu/`); the Map's mission window (eecfa3bd0, 4e37bbb01, SOG-0311 / 0312) and the other display commits of the day | advice given; acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -3020,6 +3021,23 @@ text of the note) would leave the button busy until the page is reloaded; put th
 (numbers, no text from a file) and the chart reads it instead of the height of its own sheet, which ended the redraw loop; no new read or write (D207 green). The new labels are plain
 text of the screen's table in four languages (no markup, no address); the two “put it in Data” links of the aircraft list are the constant `?app=maintenance#data?registry=1`, relative to the frame's page, same
 tab (M45, L126, L127 green). No note.
+
+**199. Advice on “Store the copies”, the Map's mission window and the day's display commits — advice given; acceptable, one note.** *Advice before the code (SOG-0294).* The plan (a click, a count first, the
+calculation redone at the click, nothing deleted whose content does not remain elsewhere) was accepted with these additions: the name never decides alone (the file's name **and** its content, read by the same
+`receivedIds`, must cite the same other mission; a content citing the mission itself or no mission is left, as d46aee7c1 keeps those texts everywhere on purpose); the same content is looked for in the target's `recu/`
+by the SHA-256 of all its files and not by name (the target has its own time stamps); never an overwrite (another name or no touch), the written file read back and compared before anything is removed, the removal
+last and re-checked, `removeEntry` without recursion; the target found by the registry in one way only (an exact identifier, or a former number claimed by exactly one line), its folder from the registry with a last segment equal to
+the identifier, never a mission folder created; strict names on both sides, 1 MB per file, a ceiling of files and bytes; a report on the screen and in the clipboard (names, from → to, eight characters of the hash, no content),
+never a file written outside `recu/`; one pass at a time (a busy flag reset in a `finally`), only on a click, stop at the first discrepancy; eight bench cases to be red without the guard. The question “can a forged file whose
+name cites another mission delete or move something there” is answered by the rule that only the source's own file can be removed, and only when its content already stays elsewhere. *Map's mission window
+(eecfa3bd0, 4e37bbb01).* The cross of a flight's window now asks (`ctx.ask`, refusal keeps everything, D210) before `leaveMission` rewrites the flight without its mission, its category, its locks and the points the mission
+imposed (`lock === 'mission'`, the departure and the arrival only lose the mark, the pilot's own points stay, the route text and the distance are rebuilt from the points left); the window can be folded and
+reopened from the column's button; a flight that names a mission while the Map is open gets its window at once (“Loading”, then the mission). Texts through `esc`, no new read or write beyond the flight the
+pilot already owns. D183, D209 to D212 green. **Note.** When `ctx.ask` does not exist (an incomplete page) `abandonMission` calls `leaveMission()` directly, and `leaveMission` now removes the imposed points: the
+“gesture of before” did not remove any, so the degraded case deletes points without a question; in that case leave the window only (keep the points) or do nothing. *The rest of the day (read by their files and by every line that reads data, writes, builds markup or opens an address, not line by line).* 08b0ad6f8,
+abf78a544, 0fa6bdbd2, 5787a33b0, 2e5cef5f2, b02178db7 (the Map: touch area, VOR rose, contour lines, profile, aircraft, opaque panels) are drawing and arithmetic on numbers; ce1b3d12f (an ATIS reading is ignored
+when Fuel is left: every step re-reads the state it received, `gone(s)`) and 67623f7de (a runway that no SID or STAR serves is never the likely one) are state and calculation; 699f2d6b4, a46daac57, 7eb6d2fbd, ce382d00e (aircraft list, Data
+fold, SPEC, status sentence) are screen texts through `esc`; 9bd3986de and ae4b25c64 are mock-ups with no code. F206, F207 green.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
