@@ -466,18 +466,53 @@ function wrapBoxes(b) {
     [-180, b.s, e - 360, b.n]
   ];
 }
-/** Emprises du couloir de la route (marge nm NM), une par tronçon, coupées à box puis ramenées à [-180, 180]. */
+/** Les points d'un tronçon a → b à la suite, en pas d'au plus stepNm NM le long de la loxodromie (le trait de la carte : droit en Mercator, longitude et
+ *  latitude croissante interpolées linéairement) ; a et b compris. */
+function legPieces(a, b, stepNm) {
+  const rad = Math.PI / 180,
+    psi = la => Math.log(Math.tan(Math.PI / 4 + Math.max(-85, Math.min(85, la)) * rad / 2)),
+    unpsi = p => (2 * Math.atan(Math.exp(p)) - Math.PI / 2) / rad,
+    dLat = (b.lat - a.lat) * 60,
+    dLon = (b.lon - a.lon) * 60 * Math.cos((a.lat + b.lat) / 2 * rad),
+    k = Math.max(1, Math.ceil(Math.hypot(dLat, dLon) / stepNm)),
+    out = [];
+  for (let i = 0; i <= k; i++) {
+    const t = i / k;
+    out.push(i === 0 ? a : i === k ? b : {
+      lat: unpsi(psi(a.lat) + (psi(b.lat) - psi(a.lat)) * t),
+      lon: a.lon + (b.lon - a.lon) * t
+    });
+  }
+  return out;
+}
+/** Emprises du couloir de la route (marge nm NM), coupées à box puis ramenées à [-180, 180] : UN rectangle PAR MORCEAU de tronçon, jamais celui de la route ni d'un long
+ *  tronçon entier (SOG-0246 : « un rectangle de 4500nm de côté, ça donne deux pays de hauteur » — le rectangle d'un tronçon de l'Atlantique couvre le Maroc et le Canada) ;
+ *  un tronçon est coupé en morceaux d'au plus max(100 NM, la route / 48), le même couloir pour toutes les couches (aerodb : espaces, terrains, balises, voies, MORA, obstacles,
+ *  villes, points). */
 export function corridorBoxes(route, nm, box) {
-  const out = [];
+  const out = [],
+    legs = [];
+  let total = 0;
   for (let i = 1; i < route.length; i++) {
-    const b = MapsRender.bboxOf([route[i - 1], route[i]], nm),
-      c = box ? {
-        w: Math.max(box.w, b.w),
-        s: Math.max(box.s, b.s),
-        e: Math.min(box.e, b.e),
-        n: Math.min(box.n, b.n)
-      } : b;
-    if (c.w <= c.e && c.s <= c.n) out.push(...wrapBoxes(c));
+    const a = route[i - 1],
+      b = route[i];
+    if (!Number.isFinite(a?.lat) || !Number.isFinite(b?.lat)) continue;
+    legs.push([a, b]);
+    total += Math.hypot((b.lat - a.lat) * 60, (b.lon - a.lon) * 60 * Math.cos((a.lat + b.lat) / 2 * Math.PI / 180));
+  }
+  const step = Math.max(100, total / 48);
+  for (const [a, b] of legs) {
+    const pts = legPieces(a, b, step);
+    for (let i = 1; i < pts.length; i++) {
+      const bb = MapsRender.bboxOf([pts[i - 1], pts[i]], nm),
+        c = box ? {
+          w: Math.max(box.w, bb.w),
+          s: Math.max(box.s, bb.s),
+          e: Math.min(box.e, bb.e),
+          n: Math.min(box.n, bb.n)
+        } : bb;
+      if (c.w <= c.e && c.s <= c.n) out.push(...wrapBoxes(c));
+    }
   }
   return out;
 }

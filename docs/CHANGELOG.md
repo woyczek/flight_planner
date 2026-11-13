@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: « Around the flight only » is one rectangle per piece of leg, the same for every layer** (SOG-0246 refused again: « un rectangle de 4500nm de côté, ça donne deux pays de hauteur »): a long leg is cut along its rhumb line (at most 100 NM or a 48th of the route per piece); aerodromes, fixes, airways, MORA, obstacles and cities no longer reach Morocco and Canada on LFOE → KTPA; D230 (red before).
 - **Fuel › route: the proposals in progress survive a change of map, of screen and a reload, with their detail and open row** — route_alts.json schema 2; « Fermer les propositions »; « Calculé à … », « Périmé » at a new AIRAC, a changed base or the next day for a NAT route, with « Recalculer » (fuel INTEGRATION § 3 bis, DECISIONS; noreg F215; SOG-0224).
 - **Metro and Swiss: the icons of the left rail are centred in their box** (SOG-0334; Metro was 9 px, Swiss 6 px to the right of the centre, active or not; the whole bar at 1 280 px is unchanged); noreg A195 over the eight designs
 - **Recette: the lead sentence names the three gestures; the summary reads « 2 validés (dont 1 avec réserves) · 1 refusé »** (SOG-0329 touch-ups): the reservations right after the passed ones, the singular when there is one, in the four languages; noreg A115, A190

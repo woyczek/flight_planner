@@ -7714,3 +7714,20 @@ def d229(c):
     c.js("() => { const i = document.querySelector('.mp-dbody input[data-layer=contours]'); if (!i.checked) i.click(); return true }")
     c.until(has, norm(want), timeout=6000, what='ticking the box on a view too far says it once')
 
+
+@case('D230', 'The corridor around the flight is one rectangle PER PIECE of leg, the same for every layer: on a transatlantic leg (LFOE → KTPA, about 4 500 NM) the rectangles follow the track — none holds Casablanca or Montreal, each holds the track — instead of one rectangle of 4 500 NM that covers two countries’ height', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0246 refused again (the user, 13 Nov 17:04: « un rectangle de 4500nm de côté, ça donne deux pays de hauteur. c’est trop… les airspaces sont mieux calculés, mais ad, points tournants, awy, elles, n’ont manifestement pas le même calcul »; screenshot 164825: aerodromes up to Morocco and Canada): the box of a leg was the bounding box of its two ends')
+def d230(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const D = await import('/modules/maps/data.js'), route = [{ lat: 49.38, lon: 1.19 }, { lat: 28.0, lon: -82.5 }], boxes = D.corridorBoxes(route, 12, null),
+      inB = (b, la, lo) => lo >= b[0] && lo <= b[2] && la >= b[1] && la <= b[3], rad = Math.PI / 180, psi = la => Math.log(Math.tan(Math.PI / 4 + la * rad / 2)), unpsi = p => (2 * Math.atan(Math.exp(p)) - Math.PI / 2) / rad;
+      const track = [.1, .25, .5, .75, .9].map(t => [unpsi(psi(route[0].lat) + (psi(route[1].lat) - psi(route[0].lat)) * t), route[0].lon + (route[1].lon - route[0].lon) * t]);
+      const area = boxes.reduce((s, b) => s + (b[2] - b[0]) * (b[3] - b[1]), 0);
+      return { n: boxes.length, casa: boxes.some(b => inB(b, 33.4, -7.6)), mtl: boxes.some(b => inB(b, 45.5, -73.6)), onTrack: track.map(([la, lo]) => boxes.some(b => inB(b, la, lo))), area: Math.round(area) } }""")
+    c.ok(10 <= r['n'] <= 80, str(r), 'a long leg is cut in pieces (some tens of rectangles, not one)')
+    c.ok(not r['casa'] and not r['mtl'], str(r), 'no rectangle holds Casablanca or Montreal, 800 NM and more from the track')
+    c.ok(all(r['onTrack']), str(r), 'the rectangles hold the track all along')
+    c.ok(r['area'] < 2500, str(r), 'the rectangles together are a strip, not the 4 500 NM square (about 4 000 square degrees)')
+

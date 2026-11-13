@@ -3104,3 +3104,9 @@ The list, one line per layer (what `loadData` reads around the plan; the box is 
 
 ## The contour-lines note is said only after the box is ticked (D35 red on origin/v3)
 - The floating note « visibles à partir du zoom 9 » (SOG-0300) was said at the first drawing of a view whose box is ticked **by default** (VFR): on a phone it covered « Tout remettre » at the foot of Layers (D35: « cannot tap [data-layers-reset] »). It is now said by the ticking itself (`setLayer('contours', true)` sets `S.contoursAsked` and allows the note once more), never by the drawing alone. D229.
+
+## « Autour du vol seulement »: one rectangle per piece of leg, the same for every layer (SOG-0246 refused again)
+- The user (13 Nov 17:04): « un rectangle de 4500nm de côté, ça donne deux pays de hauteur. c'est trop :) les airspaces sont mieux calculés, mais ad, points tournants, awy, elles, n'ont manifestement pas le même calcul » (capture 164825: LFOE → KTPA, aerodromes up to Morocco and Canada).
+- **Cause**: `corridorBoxes` took the bounding box of the two ends of each leg — one leg of 4 500 NM is one rectangle of 4 500 NM (plus `bboxOf`'s 10 % margin on each side). The airspaces looked better only because `selectAirspaces(…, route)` filters them by their distance to the route afterwards; the aerodromes, fixes, airways, MORA, obstacles and cities had nothing but the rectangle.
+- **Rule** (`data.js`): a leg is cut along the rhumb line (the drawn track: straight in Mercator) in pieces of at most `max(100 NM, route length / 48)`, one rectangle per piece (with the corridor's margin), the same list for **every** layer read around the flight and for the profile's reads: on the 4 500 NM leg, about 48 rectangles forming a strip, none within 800 NM of the track. D230.
+
