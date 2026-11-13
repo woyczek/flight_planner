@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 198,
-  "verdicts": 126
+  "tests": 199,
+  "verdicts": 129
  },
  "apps": [
   "pilote",
@@ -2650,8 +2650,10 @@
    },
    "test": "Relance le lanceur, recharge, puis relis le sol de LFPO (fiche du terrain › Sol › Réessayer) pour avoir les noms nettoyés. Carte, zoom sur le terrain : les noms des taxiways apparaissent en même temps que leurs traits, en jaune sur noir ; les points d'arrêt sont des cartouches blancs sur rouge (W28, pas « W28@02/20 ») ; les aires en noir sur blanc. Le bouton loupe de la colonne de droite ouvre le panneau « Sol » : tape un nom de voie ou de poste dans « Filtrer par nom ».",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T11:52:34Z"
+   "state": "ok",
+   "delivered": "2026-11-13T11:52:34Z",
+   "comment": "oui. réserve : si tu as besoin de supprimer un label, tu laisse le holding point ! quitte à les déplacer légèrement pour éviter l’overlap (il y a un trait, ou point rouge de toute façon. Quand tu enlèves le label d’un holding, tu laisse son trait rouge ! LFBD : supperposition de deux LNA (screenshot). J’accepte, tu traites la mineure, pas besoin de retester.",
+   "at": "2026-11-13T15:12:52Z"
   },
   {
    "id": "SOG-0299",
@@ -2678,8 +2680,9 @@
    },
    "test": "Recharge la page. Carte, vue VFR : le cadre gradué (degrés de latitude et de longitude) est sur les bords ; Couches : la case « Relief ombré » coupe le relief et le remet, et le choix est gardé après rechargement ; sur le fond topographique (OpenTopoMap) la case est grisée et dit pourquoi. Missions : la carte d'une mission militaire (famille T) offre VFR, Topographique, IFR, Transit basse altitude ; une mission de secours : VFR, Topographique, IFR bas, IFR haut ; une liaison commerciale : VFR, IFR, fond seul. La case des courbes de niveau est toujours là.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T14:06:21Z"
+   "state": "ok",
+   "delivered": "2026-11-13T14:06:21Z",
+   "at": "2026-11-13T15:14:15Z"
   },
   {
    "id": "SOG-0301",
@@ -2705,8 +2708,10 @@
    },
    "test": "Recharge la page. Carte, un VOR avec sa rose : zoome et dézoome — les petites flèches des caps, les graduations et la tête de la flèche du nord gardent la même taille que les chiffres ; elles ne grossissent plus avec le cercle.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:38:24Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:38:24Z",
+   "comment": "oui. réserve : un peu d’espace entre les 4 pointes de flèches et les chiffres (screenshot) accepté avec réserve non bloquante. BTW : ajoute un bouton « accepter avec réserves (pas de retest) ». refuser implique un retest.",
+   "at": "2026-11-13T15:15:42Z"
   },
   {
    "id": "SOG-0303",
@@ -2764,6 +2769,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:25:02Z"
+  },
+  {
+   "id": "SOG-0308",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : clarifier le bloc « Procédures » — maquette d'abord",
+    "en": "Fuel: make the « Procedures » block clearer — mock-up first",
+    "de": "Kraftstoff: den Block « Verfahren » klarer machen — zuerst ein Entwurf",
+    "es": "Combustible: aclarar el bloque « Procedimientos » — primero una maqueta"
+   },
+   "test": "Recharge la page. Carburant, un vol avec ses deux terrains, bloc « Procédures » : un seul côté est ouvert ; le côté replié tient en une phrase avec sa marque (✓ ou !). Côté ouvert : trois lignes, chacune son « Changer » ; la piste dit le vent en mots. « Changer » de la piste : la mieux orientée est en tête, une piste en vent arrière le dit, une piste sans départ publié (la 02 de LFPO) est en dernier avec « aucun départ publié ». Si la piste retenue est en vent arrière, la ligne passe en avertissement et propose « Prendre la … (vent de face) ». Au téléphone rien ne se coupe. Ne juge pas encore : le nom de l'approche (« I13R »), la fréquence du moyen, l'ATIS — ce sont les tranches suivantes.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T15:15:53Z"
   },
   {
    "id": "SOG-0309",

@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0b64a40",
+  "organisation": "4ecbfc6",
   "fiches": 326,
   "untranslated": 0,
   "priorities": 310
@@ -786,13 +786,14 @@
     {
      "id": "SOG-0308",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant : clarifier le bloc « Procédures » — maquette d'abord",
      "en": "Fuel: make the « Procedures » block clearer — mock-up first",
      "de": "Kraftstoff: den Block « Verfahren » klarer machen — zuerst ein Entwurf",
      "es": "Combustible: aclarar el bloque « Procedimientos » — primero una maqueta",
      "milestone": "6.0.0-alpha.6",
-     "rank": 129
+     "rank": 129,
+     "test": true
     }
    ]
   },
@@ -1328,8 +1329,7 @@
      "de": "Karte: die Pfeile der VOR-Rose müssen mit dem Zoom kleiner werden, wie die Ziffern",
      "es": "Mapa: las flechas de la rosa de un VOR deben reducirse con el zoom, como sus cifras",
      "milestone": "6.0.0-alpha.5",
-     "rank": 45,
-     "test": true
+     "rank": 45
     }
    ]
   },
@@ -1397,8 +1397,7 @@
      "en": "Topographic view: real contour lines, no holding patterns; holding patterns and RTBA in a dedicated view",
      "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",
      "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte",
-     "rank": 84,
-     "test": true
+     "rank": 84
     }
    ]
   },
@@ -1443,8 +1442,7 @@
      "de": "Flugplatzkarte: Rollwegnamen sobald Rollwege erscheinen, lesbare Haltepunkte, und wo die Rollweg- / Standplatzsuche ist",
      "es": "Mapa del aeródromo: nombres de calles de rodaje en cuanto aparecen, puntos de espera legibles, y dónde está la búsqueda de calle / puesto",
      "milestone": "6.0.0-alpha.5",
-     "rank": 42,
-     "test": true
+     "rank": 42
     },
     {
      "id": "SOG-0319",
