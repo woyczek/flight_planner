@@ -477,24 +477,39 @@ def eaip_tables(data, key, downloads=None):
     label = prof['label'].split(' (')[0]
     folder = os.path.join(data, 'sia', 'zones', prof['zone'])
     out_re = core.out_re(prof)
-    manual, refused = eaip_manual(prof, downloads)
+    manual, refused = ([], []) if prof.get('editions') else eaip_manual(prof, downloads)      # un profil à page des éditions (Islande) n'a pas de voie à la main : un paquet du Portugal n'y est pas « refusé »
     p44, routes, issue, how = None, None, None, ''
     if manual:
         pick = eaip_pick(manual)
         issue, how, (p44, routes) = pick[0], pick[2], pick[3]
     if p44 is None:
+        base, tried = None, None
         try:
-            p44 = get(core.page_url(prof, prof['points'])).decode('utf-8', 'replace')
+            if prof.get('editions'):      # SOG-0240 (Islande) : l'adresse de l'édition est LUE sur la page des éditions, jamais devinée
+                tried = prof['editions']
+                found = core.edition_base(prof, get(tried).decode('utf-8', 'replace'))
+                if not found:
+                    return [], [f'{label} : aucune édition en vigueur lue sur {tried} (page changée ?) ; rien n’a été écrit']
+                base = found[0]
+            tried = core.page_url(prof, prof['points'], base)
+            p44 = get(tried).decode('utf-8', 'replace')
+            if prof.get('editions') and prof['title'] not in p44:
+                return [], [f'{label} : la page {tried} n’a pas le titre « {prof["title"]} » ; rien n’a été écrit']
             issue = core.issue_of_title(p44)
             if not issue:
                 return [], [f'{label} : date d’entrée en vigueur introuvable dans le titre de l’ENR 4.4 (page changée ?)'] + [f'fichier non pris : {r}' for r in refused]
             if os.path.exists(os.path.join(folder, core.out_name(prof['name'], issue))):  # l'édition en vigueur est déjà là : rien d'autre à lire
                 name = core.out_name(prof['name'], issue)
                 return [{'name': name, 'bytes': os.path.getsize(os.path.join(folder, name)), 'edition': issue, 'unchanged': True}], []
-            routes = [get(core.page_url(prof, n)).decode('utf-8', 'replace') for n in prof['routes']]
+            routes = []
+            for n in prof['routes']:
+                tried = core.page_url(prof, n, base)
+                routes.append(get(tried).decode('utf-8', 'replace'))
+                if prof.get('editions') and prof['title'] not in routes[-1]:
+                    return [], [f'{label} : la page {tried} n’a pas le titre « {prof["title"]} » ; rien n’a été écrit']
         except (OSError, ValueError) as e:
             hint = f' ; ou prendre le fichier à la main : le zip ou l’image ISO de l’AIP, ou son dossier extrait, dans Téléchargements ou par « Choisir le fichier… »'
-            return [], [f'{label} : {e}{hint}'] + [f'fichier non pris : {r}' for r in refused]
+            return [], [f'{label} : {e}' + (f' (adresse essayée : {tried})' if tried and prof.get('editions') else '') + f'{hint} ; rien n’a été écrit'] + [f'fichier non pris : {r}' for r in refused]
     name = core.out_name(prof['name'], issue)
     path = os.path.join(folder, name)
     try:
@@ -522,6 +537,11 @@ def eaip_tables(data, key, downloads=None):
     if refused:
         entry['refused'] = refused[:5]      # des fichiers qui ressemblaient à un eAIP et n'ont pas été pris, dits en clair (la source n'échoue pas pour autant)
     return [entry], []
+
+
+def avians(data, downloads=None):
+    """eAIP d'Islande (Avians) : ENR 4.4, ENR 3.1 et ENR 3.3 (tools/eaip_annexe15.py, profil is), l'adresse de l'édition LUE sur la page des éditions ; une page absente ou sans le titre « AIP for ICELAND » : dit avec l'adresse essayée, rien d'écrit (SOG-0240)."""
+    return eaip_tables(data, 'is', downloads)
 
 
 def navpt(data, downloads=None):
@@ -674,6 +694,8 @@ def fetch(data, provider, args=()):
         files, errors = navcan(data)
     elif provider == 'airnav':
         files, errors = airnav(data)
+    elif provider == 'avians':
+        files, errors = avians(data)
     elif provider == 'dfs':
         files, errors = dfs(data)
     elif provider == 'nat':

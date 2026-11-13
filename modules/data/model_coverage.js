@@ -4,7 +4,8 @@
 /** Les colonnes du tableau après le pays (sept colonnes au plus à l'écran : le pays et ces six). */
 export const COV_COLS = ['points', 'airways', 'airspaces', 'fir', 'procedures', 'ground'];
 /** Les sources que le contrat connaît (liste fermée des clés de SOURCES, base_sources.py) : un identifiant hors liste est ignoré. */
-export const COV_SOURCES = ['airnav', 'dfs', 'dircam', 'enaire', 'faa', 'faaclass', 'lfv', 'mora', 'nat', 'nats', 'navcan', 'navpt',
+export const COV_SOURCES = ['airnav', 'avians', 'dfs', 'dircam', 'enaire', 'faa', 'faaclass', 'lfv', 'mora', 'nat', 'nats', 'navcan',
+  'navpt',
   'openaip',
   'sia', 'ukmil', 'xplane'
 ];

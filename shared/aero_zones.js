@@ -88,6 +88,22 @@
       personal: 'licence', // aucune licence de réutilisation trouvée : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'file'
     },
+    // eAIP d'Islande (Avians, ex-Isavia) : ENR 4.4 (points), ENR 3.1 et 3.3 (routes) lus par le lanceur (tools/aero_fetch.py avians → tools/eaip_annexe15.py, profil is) ; l'adresse de l'édition est LUE sur la page des éditions,
+    // jamais devinée ; zones/is/avians_is_enr_AAAAMMJJ.geojson. Aucune condition de réutilisation lue : usage personnel, comme la Suède (V3, SOG-0240, 13 nov. 2026)
+    avians: {
+      kind: 'download',
+      readable: true,
+      provider: 'avians',
+      label: L4('Avians — eAIP Islande (points et routes)', 'Avians — Icelandic eAIP (points and routes)',
+        'Avians — eAIP Island (Punkte und Strecken)', 'Avians — eAIP Islandia (puntos y rutas)'),
+      gives: L4('points désignés (ENR 4.4), routes conventionnelles et RNAV (ENR 3.1, 3.3)',
+        'designated points (ENR 4.4), conventional and RNAV routes (ENR 3.1, 3.3)',
+        'benannte Punkte (ENR 4.4), konventionelle und RNAV-Strecken (ENR 3.1, 3.3)',
+        'puntos designados (ENR 4.4), rutas convencionales y RNAV (ENR 3.1, 3.3)'),
+      licence: 'Avians (usage personnel)',
+      personal: 'licence', // aucune condition de réutilisation lue : la case dit qu'elle ne vaut que pour un dépôt à soi
+      age: 'file'
+    },
     // eAIP du Portugal (NAV Portugal, adresse fixe « eAIP_Current ») : ENR 4.4 (points), ENR 3.1 et 3.3 (routes) lus par le lanceur (tools/aero_fetch.py navpt → tools/eaip_annexe15.py) ;
     // zones/pt/navpt_pt_enr_AAAAMMJJ.geojson. Reproduction et redistribution seulement par accord préalable de NAV Portugal (GEN 0.1) : usage personnel (V3, SOG-0240, 11 nov. 2026)
     navpt: {
@@ -329,6 +345,7 @@
     ie: ['airnav'],
     se: ['lfv'],
     pt: ['navpt'],
+    is: ['avians'],
     us: ['faa', 'faaclass'],
     ca: ['navcan']
   };

@@ -25,6 +25,10 @@ export const PERSONAL = {
     kind: 'licence',
     zones: ['gb']
   },
+  avians: {
+    kind: 'licence',
+    zones: ['is']
+  },
   navpt: {
     kind: 'licence',
     zones: ['pt']

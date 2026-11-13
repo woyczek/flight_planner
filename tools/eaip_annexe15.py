@@ -202,7 +202,43 @@ PROFILES = {
            'base': 'https://ais.nav.pt/wp-content/uploads/AIS_Files/eAIP_Current/eAIP_Online/eAIP/html/eAIP/',
            'points': 'LP-ENR-4.4-en-PT.html', 'routes': ('LP-ENR-3.1-en-PT.html', 'LP-ENR-3.3-en-PT.html'),
            'title': 'AIP for PORTUGAL', 'points_section': 'ENR-4.4', 'routes_sections': ('ENR-3.1', 'ENR-3.3')},
+    # SOG-0240 : l'Islande (Avians, ex-Isavia), voie (B) : l'adresse de l'édition n'est PAS fixe, elle est LUE sur la page des éditions (`editions`, hôtes contrôlés `hosts`), jamais devinée ; les noms de pages sont ceux de la norme eAIP (préfixe BI)
+    'is': {'zone': 'is', 'source': 'avians', 'name': 'avians_is_enr', 'label': 'Avians Iceland eAIP (ENR 4.4, ENR 3.1, ENR 3.3)', 'host': 'eaip.avians.is', 'hosts': ('eaip.avians.is', 'eaip.isavia.is'),
+           'editions': 'https://eaip.avians.is/',
+           'points': 'BI-ENR-4.4-en-GB.html', 'routes': ('BI-ENR-3.1-en-GB.html', 'BI-ENR-3.3-en-GB.html'),
+           'title': 'AIP for ICELAND', 'points_section': 'ENR-4.4', 'routes_sections': ('ENR-3.1', 'ENR-3.3')},
 }
+
+
+_ISO_DAY = re.compile(r'(\d{4})-(\d{2})-(\d{2})')
+
+
+def edition_base(profile, page, today=None):
+    """(adresse de base des pages, date AAAA-MM-JJ) de l'édition EN VIGUEUR, LUE sur la page des éditions du profil (`editions`) : un lien `https` d'un des hôtes du profil (ou relatif à la page), sans paramètre ni « .. », dont un segment
+    du chemin porte une date AAAA-MM-JJ (« …/2026-10-29-AIRAC/html/index-en-GB.html ») ; le lien le plus récent dont la date n'est pas postérieure à `today` ; la base est ce chemin jusqu'à ce segment + « /html/eAIP/ ». None si aucun lien
+    ne convient (la page a changé : l'appelant le dit avec l'adresse essayée). Jamais une adresse construite sans qu'un lien de la page la porte."""
+    import datetime as _dt
+    import html as _html
+    import urllib.parse as _up
+    today = today or _dt.date.today().isoformat()
+    best = None
+    for href in re.findall(r'<a\b[^>]*\bhref\s*=\s*"([^"]+)"', page or '', re.I):
+        u = _up.urlsplit(_up.urljoin(profile['editions'], _html.unescape(href).strip()))
+        if u.scheme != 'https' or u.netloc not in profile['hosts'] or u.query or u.fragment or '..' in u.path or len(u.path) > 300:
+            continue
+        segs = u.path.split('/')
+        for i, seg in enumerate(segs):
+            m = _ISO_DAY.search(seg)
+            if m and re.fullmatch(r'[A-Za-z0-9_.-]+', seg):
+                day = m.group(0)
+                try:
+                    _dt.date.fromisoformat(day)
+                except ValueError:
+                    break
+                if day <= today and (best is None or day > best[1]):
+                    best = (f'https://{u.netloc}' + '/'.join(segs[:i + 1]) + '/html/eAIP/', day)
+                break
+    return best
 
 
 def out_re(profile):
@@ -210,11 +246,11 @@ def out_re(profile):
     return re.compile(r'^' + re.escape(profile['name']) + r'_(\d{8})\.geojson\Z')
 
 
-def page_url(profile, name):
-    """L'adresse d'une page du profil : sa base fixe + un nom connu du profil, jamais autre chose."""
+def page_url(profile, name, base=None):
+    """L'adresse d'une page du profil : sa base (fixe, ou lue sur la page des éditions : `base`) + un nom connu du profil, jamais autre chose."""
     if name != profile['points'] and name not in profile['routes']:
         raise ValueError(f'page refusée : {name!r}')
-    return profile['base'] + name
+    return (base or profile['base']) + name
 
 
 # ----------------------------------------------------------------------------------------------------------------------- l'eAIP pris à la main : un zip qui porte une ISO, une ISO, un zip du dossier, le dossier extrait (SOG-0244)

@@ -602,6 +602,37 @@
       'Sin licencia de reutilización: uso personal'
     ]
   }, {
+    id: 'avians',
+    group: 'base',
+    zones: ['is'],
+    // SOG-0240 : le lanceur lit le site d'Avians (eAIP d'Islande) ; l'adresse de l'édition en vigueur est LUE sur la page des éditions, jamais devinée ; une page absente ou sans le titre « AIP for ICELAND » est dite avec l'adresse essayée et rien n'est écrit
+    fetch: {
+      how: 'launcher',
+      provider: 'avians'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'geojson'
+    },
+    publish: true,
+    no: 22,
+    status: 'used',
+    n: ['Avians (eAIP d’Islande)', 'Avians (Icelandic eAIP)', 'Avians (eAIP Island)', 'Avians (eAIP de Islandia)'],
+    url: 'https://eaip.avians.is/',
+    gives: [
+      'Les points désignés et les routes de l’Islande (zone is) ; pas de procédures : l’eAIP islandais n’en donne que sur cartes.',
+      'The designated points and routes of Iceland (zone is); no procedures: the Icelandic eAIP gives them on charts only.',
+      'Die benannten Punkte und Strecken Islands (Zone is); keine Verfahren: der isländische eAIP gibt sie nur auf Karten.',
+      'Los puntos designados y las rutas de Islandia (zona is); sin procedimientos: el eAIP islandés los da solo en cartas.'
+    ],
+    pub: 'Avians',
+    credit: ['Source : Avians (eAIP)', 'Source: Avians (eAIP)', 'Quelle: Avians (eAIP)', 'Fuente: Avians (eAIP)'],
+    localOnly: false,
+    lic: ['Aucune condition de réutilisation lue : usage personnel', 'No reuse terms read: personal use',
+      'Keine Weiterverwendungsbedingungen gelesen: persönliche Nutzung',
+      'Sin condiciones de reutilización leídas: uso personal'
+    ]
+  }, {
     id: 'navpt',
     group: 'base',
     zones: ['pt'],

@@ -32,7 +32,7 @@ import zone_publish  # noqa: E402  (l'état de publication de chaque zone, SOG-0
 RECORD_DIR = ('local', 'build')
 ORDER = ('index-orphan', 'never-built', 'failed', 'pickup-waiting', 'source-newer', 'personal-undeclared', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing', 'source-unread', 'source-missing', 'source-old')
 BUILDABLE = {'index-orphan', 'never-built', 'failed', 'source-newer', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing'}
-POINT_SOURCES = ('sia', 'nats', 'enaire', 'airnav', 'dfs', 'lfv', 'faa', 'navpt')      # les sources dont la suite lit les points ou les voies aériennes (openAIP n'en porte pas)
+POINT_SOURCES = ('sia', 'nats', 'enaire', 'airnav', 'dfs', 'lfv', 'faa', 'navpt', 'avians')      # les sources dont la suite lit les points ou les voies aériennes (openAIP n'en porte pas)
 MAX_ZONES = 60
 
 

@@ -320,6 +320,7 @@ export const TX = {
     airnav: ['AirNav Ireland (AIP Irlande)', 'AirNav Ireland (Ireland AIP)', 'AirNav Ireland (AIP Irland)',
       'AirNav Ireland (AIP Irlanda)'
     ],
+    avians: ['Avians (AIP Islande)', 'Avians (Iceland AIP)', 'Avians (AIP Island)', 'Avians (AIP Islandia)'],
     enaire: ['ENAIRE (AIP Espagne)', 'ENAIRE (Spain AIP)', 'ENAIRE (AIP Spanien)', 'ENAIRE (AIP España)'],
     lfv: ['LFV (AIP Suède)', 'LFV (Sweden AIP)', 'LFV (AIP Schweden)', 'LFV (AIP Suecia)'],
     navpt: ['NAV Portugal (AIP Portugal)', 'NAV Portugal (Portugal AIP)', 'NAV Portugal (AIP Portugal)', 'NAV Portugal (AIP Portugal)'],
@@ -2832,7 +2833,8 @@ export const TX = {
       'Dieses Land wartet auf eine Datei: zuerst hinterlegen (wo man sie bekommt, direkt darunter).',
       'Este país espera un archivo: deposítelo primero (dónde conseguirlo, justo debajo).'
     ],
-    tick: ['Cochez la case d’usage personnel (en bas de la liste) pour que ce pays puisse se reconstruire.', 'Tick the personal-use box (at the bottom of the list) so that this country can rebuild.',
+    tick: ['Cochez la case d’usage personnel (en bas de la liste) pour que ce pays puisse se reconstruire.',
+      'Tick the personal-use box (at the bottom of the list) so that this country can rebuild.',
       'Kreuzen Sie das Kästchen für den persönlichen Gebrauch an (unten in der Liste), damit dieses Land neu aufgebaut werden kann.',
       'Marque la casilla de uso personal (al final de la lista) para que este país pueda reconstruirse.'
     ],

@@ -119,6 +119,11 @@ SOURCES = {
             'NAV Portugal — Portuguese eAIP (points and routes)',
             'NAV Portugal — eAIP Portugal (Punkte und Strecken)',
             'NAV Portugal — eAIP Portugal (puntos y rutas)'), personal='licence', provider='navpt'),
+    'avians': _src('download', (
+            'Avians — eAIP Islande (points et routes)',
+            'Avians — Icelandic eAIP (points and routes)',
+            'Avians — eAIP Island (Punkte und Strecken)',
+            'Avians — eAIP Islandia (puntos y rutas)'), personal='licence', provider='avians'),
     'lfv': _src('manual', (
             'LFV — AIP Suède (eAIP hors ligne : points ENR 4.4, routes RNAV ENR 3.2)',
             'LFV — Sweden AIP (offline eAIP: ENR 4.4 points, ENR 3.2 RNAV routes)',
@@ -157,7 +162,7 @@ SOURCES = {
 }
 COMMON = ('openaip', 'mora', 'xplane')
 OWN = {'nat': ('nat', 'xplane')}  # zones hors pays : leurs seules sources
-EXTRA = {'fr': ('sia', 'dircam'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'se': ('lfv',), 'pt': ('navpt',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
+EXTRA = {'fr': ('sia', 'dircam'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'se': ('lfv',), 'pt': ('navpt',), 'is': ('avians',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
 SIA_ROOT = re.compile(r'^(AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)\d{4}-\d{2}-\d{2}\.xml\Z', re.I | re.A)
 
 
@@ -311,7 +316,7 @@ def _step(job, done, total):
 
 # ----------------------------------------------------------------------------------------------------------------------- base/fetch
 # où aero_fetch écrit, par fournisseur (data/sia/…) : la même arborescence que file_source lit (le banc K52 le vérifie)
-FOLDERS = {'openaip': 'sia/openaip', 'faa': 'sia/geojson', 'enaire': 'sia/aixm5', 'ukmil': 'sia/zones/gb', 'dfs': 'sia/zones/de', 'airnav': 'sia/zones/ie', 'navpt': 'sia/zones/pt', 'navcan': 'sia/zones/ca', 'nat': 'sia/zones/nat'}
+FOLDERS = {'openaip': 'sia/openaip', 'faa': 'sia/geojson', 'enaire': 'sia/aixm5', 'ukmil': 'sia/zones/gb', 'dfs': 'sia/zones/de', 'airnav': 'sia/zones/ie', 'navpt': 'sia/zones/pt', 'avians': 'sia/zones/is', 'navcan': 'sia/zones/ca', 'nat': 'sia/zones/nat'}
 # les messages de tools/aero_fetch.py (des textes, pas des codes) rangés en codes ; HTTP d'abord, puis ce qui est une forme de réponse inattendue
 HTTP_RE = re.compile(r'\bHTTP(?: Error)? (\d{3})\b')
 PARSE_RE = re.compile(r'illisible|aucun|introuvable|chang[ée]|invalide|inconnu|service FAA|Expecting|JSON|decod|Extra data|Unterminated', re.I)

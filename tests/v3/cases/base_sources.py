@@ -773,7 +773,7 @@ def k64(c):
     c.ok(not any(s in C.CYCLED for z in ('de', 'it', 'us', 'ca', 'nat') for s in BS.sources_of(z)), 'others', 'zones fed only by sources without AIRAC have no dated source')
     rep = C.report(names, d(2026, 11, 1))
     c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-01', 'current': '2026-10-29', 'stale': True},
-               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'lfv': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'navpt': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
+               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'lfv': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'navpt': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'avians': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
          'report: the newest cycle of each source (NATS: the AIP alone dates it, SOG-0077; ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
     c.eq(C.report([], d(2026, 11, 1))['sia'], {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'no file: no cycle, not stale', what='no file')
     # base/fetch: the plan (in the view from the start) and the end carry it
@@ -787,7 +787,7 @@ def k64(c):
             view, res = _run(RJ, BS, 'fetch', {'zones': ['de']}, ctx)
         cur = C.airac_start()
         want = {'sia': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur}, 'nats': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur},
-                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}, 'lfv': {'cycle': None, 'current': cur, 'stale': False}, 'navpt': {'cycle': None, 'current': cur, 'stale': False}}
+                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}, 'lfv': {'cycle': None, 'current': cur, 'stale': False}, 'navpt': {'cycle': None, 'current': cur, 'stale': False}, 'avians': {'cycle': None, 'current': cur, 'stale': False}}
         c.eq((view['sources'], res['sources']), (want, want), 'the plan and the end of base/fetch give the cycle held per dated source', what='fetch sources')
 
 
@@ -2910,3 +2910,49 @@ def k217(c):
     c.ok(not bad, str(bad[:5]), 'every row has a finite latitude and longitude in range, an integer population, a two-letter country and a readable name')
     ids = [r['geonameid'] for r in rows]
     c.ok(len(ids) == len(set(ids)), str(len(ids) - len(set(ids))), 'no geonameid twice (the refill replaced the rows of the two countries, it did not add to them)')
+
+
+@case('K243', 'Iceland (Avians eAIP, family F1, SOG-0240): the address of the edition is READ on the editions page, never guessed; a page that is missing or lacks the title « AIP for ICELAND » is said with the address tried and nothing is written; personal-use licence like Sweden', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0240, way B): the next State of the eAIP family is Iceland (free access, points and routes readable). Reader tested on a FAKE network (the pages are the Portuguese fixtures with the title of Iceland: no page of Avians was downloaded by the session): the profile `is` of tools/eaip_annexe15.py holds the editions page, the controlled hosts and the page names of the standard (BI-ENR-4.4/3.1/3.3-en-GB); `edition_base` takes, from the links of the editions page, the most recent edition not after today (https, a controlled host, no parameter, no « .. », a date AAAA-MM-JJ in a segment of the path); a missing page (said with its address), a page without the title (said, with its address) or an editions page without a usable link write nothing, no partial file; the source `avians` is personal-licence, cycled by the date of its file, listed in the catalogue, the zone map and the Data module')
+def k243(c):
+    import os
+    import tempfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    import aero_cycles as C
+    import eaip_annexe15 as E
+    fx = ROOT / 'frame' / 'aerodb' / 'test' / 'fixtures' / 'eaip_pt'
+    relabel = lambda t: t.replace('AIP for PORTUGAL', 'AIP for ICELAND')
+    p44, p33 = relabel((fx / 'LP-ENR-4.4-extract.html').read_text(encoding='utf-8')), relabel((fx / 'LP-ENR-3.3-extract.html').read_text(encoding='utf-8'))
+    p31 = b'<title>AIP for ICELAND valid from 01 OCT 2026</title><p>NIL</p>'
+    prof = E.PROFILES['is']
+    editions = ('<a href="/2026-09-03-AIRAC/html/index-en-GB.html">2026-09-03</a> <a href="https://eaip.avians.is/2026-10-29-AIRAC/html/index-en-GB.html?x=1">query</a>'
+                ' <a href="/2026-10-29-AIRAC/html/index-en-GB.html">current</a> <a href="/2099-01-01-AIRAC/html/index-en-GB.html">future</a> <a href="https://evil.example/2026-11-01-AIRAC/html/index.html">other host</a>'
+                ' <a href="/2026-11-02-AIRAC/../x/html/index.html">dotdot</a> <a href="http://eaip.avians.is/2026-11-01-AIRAC/html/index.html">http</a>')
+    c.eq(E.edition_base(prof, editions, '2026-11-13'), ('https://eaip.avians.is/2026-10-29-AIRAC/html/eAIP/', '2026-10-29'),
+         'the edition is the most recent link of the page not after today; a link with a query, another host, a « .. » or plain http is never taken, a future edition waits', what='edition')
+    c.eq((E.edition_base(prof, '<p>no link</p>', '2026-11-13'), E.edition_base(prof, '<a href="/about.html">x</a>', '2026-11-13')), (None, None), 'a page with no link that carries a date: none (never an address built by hand)', what='none')
+    c.eq(E.page_url(prof, prof['points'], 'https://eaip.avians.is/2026-10-29-AIRAC/html/eAIP/'), 'https://eaip.avians.is/2026-10-29-AIRAC/html/eAIP/BI-ENR-4.4-en-GB.html', 'a page of the profile is asked under the base read', what='url')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        folder = data / 'sia' / 'zones' / 'is'
+        folder.mkdir(parents=True)
+        pages = {'BI-ENR-4.4-en-GB.html': p44.encode(), 'BI-ENR-3.1-en-GB.html': p31, 'BI-ENR-3.3-en-GB.html': p33.encode(), 'eaip.avians.is/': editions.encode()}
+        with _Net(AF, pages) as net:
+            out, err = AF.avians(str(data))
+        c.eq((err, [(f['name'], f['edition'], f['unchanged']) for f in out], sorted(os.listdir(folder))), ([], [('avians_is_enr_20261001.geojson', '2026-10-01', False)], ['avians_is_enr_20261001.geojson']),
+             'written under the date of the edition read in the title of ENR 4.4', what='written')
+        c.ok(net.calls[0][0] == 'https://eaip.avians.is/' and all(u.startswith('https://eaip.avians.is/2026-10-29-AIRAC/html/eAIP/') for u, _ in net.calls[1:]) and len(net.calls) == 4, str(net.calls), 'the editions page first, then the three pages under the edition it named, nothing else')
+        os.remove(folder / 'avians_is_enr_20261001.geojson')
+        for label, routes, want in (('no usable link', {**pages, 'eaip.avians.is/': b'<p>nothing</p>'}, 'aucune édition'),
+                                    ('a page missing', {k: v for k, v in pages.items() if k != 'BI-ENR-3.3-en-GB.html'}, 'BI-ENR-3.3-en-GB.html'),
+                                    ('a page without the title', {**pages, 'BI-ENR-3.1-en-GB.html': b'<title>AIP for FAROE valid from 01 OCT 2026</title><p>x</p>'}, 'AIP for ICELAND'),
+                                    ('ENR 4.4 refused', {**pages, 'BI-ENR-4.4-en-GB.html': ('http', 403)}, 'BI-ENR-4.4-en-GB.html')):
+            with _Net(AF, routes):
+                out, err = AF.avians(str(data))
+            c.ok(out == [] and err and want in err[0] and 'rien n’a été écrit' in err[0] and os.listdir(folder) == [], f'{label}: {err}', f'{label}: said with the address tried or the reason, nothing written (no partial file)')
+    c.eq((C.cycled('zones/is/avians_is_enr_20261029.geojson'), C.CYCLED.get('avians'), 'avians' in C.PERSONAL_CYCLED), (('avians', '2026-10-29'), 'is', True), 'the date of the file is its cycle, the source is personal-licence', what='cycle')
+    z = (ROOT / 'shared' / 'aero_zones.js').read_text(encoding='utf-8')
+    cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
+    c.ok("avians: {" in z and "is: ['avians']" in z and "provider: 'avians'" in z and "personal: 'licence'" in z[z.index('avians: {'):z.index('avians: {') + 1600] and "id: 'avians'" in cat and "is: 'avians'" in (ROOT / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8'),
+         'wiring', 'the page\'s catalogue, the catalogue of sources and the cycled zones all hold the source and its zone')
