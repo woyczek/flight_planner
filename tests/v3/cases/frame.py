@@ -6885,10 +6885,10 @@ def a165(c):
     c.eq([c.js("document.querySelector('[data-card=\"about\"] [data-licence]').getAttribute('href')"), c.js("document.querySelector('[data-card=\"about\"] [data-licence]').hasAttribute('target')")], ['#help?d=licence', False], 'the licence link goes to the help viewer, in the same tab', what='link')
     c.tap('[data-card="about"] [data-licence]')
     c.until("!!document.querySelector('[data-suite-doc=licence] h1')", timeout=15000, what='the licence in the viewer')
-    c.eq([c.js('location.hash'), c.count('[data-suite-doc=licence] h1') >= 1, c.count('[data-suite-doc=licence] table') >= 1, c.count('#fView > .f-back a[href="#help"]')], ['#help?d=licence', True, True, 1], 'the licence is formatted (a heading, its tables) with the way back to the manual', what='viewer')
+    c.eq([c.js('location.hash'), c.count('[data-suite-doc=licence] h1') >= 1, c.count('[data-suite-doc=licence] table') >= 1, c.count('#fView > .f-docbar .f-back a[href="#help"]')], ['#help?d=licence', True, True, 1], 'the licence is formatted (a heading, its tables) with the way back to the manual', what='viewer')
     c.ok(not c.js("/^#\s|\|---/m.test(document.querySelector('[data-suite-doc=licence]').textContent)"), None, 'no raw Markdown on the screen (no « # » titles, no table pipes)')
     c.shot(f'A165_licence_{c.width}_{c.lang}_delivered.png')
-    c.tap('#fView > .f-back a[href="#help"]')
+    c.tap('#fView > .f-docbar .f-back a[href="#help"]')
     c.until("!!document.querySelector('[data-help-manuals], [data-toc], .f-doc')", what='back in the help')
     c.check_errors()
 
