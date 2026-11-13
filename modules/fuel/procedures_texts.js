@@ -321,6 +321,8 @@ export const TX = {
   procRwyWord: ['piste {r}', 'runway {r}', 'Piste {r}', 'pista {r}'],
   procTransWord: ['transition', 'transition', 'Übergang', 'transición'],
   procChartOne: ['Carte', 'Chart', 'Karte', 'Carta'],
+  // SOG-0330 : la page de données de la procédure (son tableau), à côté de sa carte dessinée
+  procDataOne: ['Données', 'Data', 'Daten', 'Datos'],
   procMarkOk: ['complet', 'complete', 'vollständig', 'completo'],
   procMarkTodo: ['à choisir', 'to choose', 'zu wählen', 'por elegir'],
   procMarkOld: ['procédures périmées', 'outdated procedures', 'veraltete Verfahren', 'procedimientos caducados'],

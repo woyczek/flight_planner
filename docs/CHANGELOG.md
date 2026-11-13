@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › procedures: « Carte » opens the drawn chart, « Données » the procedure's data page** (fuel DECISIONS; noreg F214; SOG-0330).
 - **Map, VOR rose: room between the four solid points and the numbers** (SOG-0328): a gap of a quarter of the number's height at least, at any scale; D209 measures it (red before).
 - **Map, ground: a holding point keeps its red mark with or without its name, the name moves before it is dropped, and the ghost signs are gone** (SOG-0327, « supperposition de deux LNA »): every hold is a red bar across its taxiway; ten places are tried for its name; the signs of the ground layer were painted twice (once in the mute first pass of the collision pass, at a provisional place) — one over the other wherever a name had moved; D228 (red before).
 - **Map: the list of the spaces at a point is to the right of the graph again, in a narrow window too** (SOG-0307 refused: « la liste des espaces, qui devait être à droite du graphique, est maintenant à nouveau en bas »): the rule falls from 440 to 400 px of body (a card opened under 440 px still goes under); D227 holds the list on the right AND the height without flicker, at seven widths.

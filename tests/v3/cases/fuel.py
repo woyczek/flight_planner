@@ -5297,3 +5297,36 @@ def f212(c):
     show_list(c, 'p-arr-app')
     labs = [lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')]
     c.ok(any(l.startswith('ILS 13R') for l in labs), labs, 'the list says « ILS 13R »')
+
+
+
+# SOG-0330: the LFRS SID's record carries its data page (source.url); chartUrl answers a DRAWN chart for it, and for the arrival's STAR
+# the data page itself (a numbered DATA page taken for the chart: the fault of LFLC ILS 26)
+_DATA_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      const data = id => 'https://data.invalid/' + id + '_DATA_01.pdf';
+      try { const ps = db.procedures;
+        db.procedures = async (icao, q) => (await ps.call(db, icao, q) || []).map(r => r && (r.kind === 'SID' || r.kind === 'STAR')
+          ? { ...r, source: { ...(r.source || {}), url: data(r.id) } } : r);
+        db.chartUrl = async p => p.kind === 'SID' ? 'https://charts.invalid/' + p.id + '_IAC.pdf' : p.kind === 'STAR' ? data(p.id) : null } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F214', 'Procedures: « Carte » opens the DRAWN chart, « Données » the data page of the procedure — two links on its line; a « chart » '
+      'that is only the data page is not said « Carte »', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0330 (user: « ILS 26 sur LFLC ne donne pas la carte de l\'ILS, mais le tableau des data »; AeroDB 5e1cc406a: the chart index; '
+      'Fuel: « Carte » = chartUrl when it differs from source.url, « Données » = source.url) — one link, which could be the data page')
+def f214(c):
+    c.page.add_init_script(_DATA_STUB)
+    open_proc(c, procs=V2_PROCS)
+    wait_rows(c, 'dep')
+    D = f'{FUEL} [data-proc="dep"] [data-prow="main"]'
+    c.until(f"!!document.querySelector('{D} [data-procdata=SID]')", timeout=10000, what='« Données » on the SID line')
+    links = c.js(f"[...document.querySelectorAll('{D} [data-chart-slot] a')].map(a => [a.textContent.trim(), a.getAttribute('href')])")
+    c.ok(any(t == norm(tx(PT, 'procChartOne', c.lang)) and h.endswith('_IAC.pdf') for t, h in links), links, '« Carte »: the drawn chart')
+    c.ok(any(t == norm(tx(PT, 'procDataOne', c.lang)) and h.endswith('_DATA_01.pdf') for t, h in links), links, '« Données »: the data page')
+    wait_rows(c, 'arr')
+    A = f'{FUEL} [data-proc="arr"] [data-prow="main"]'
+    c.until(f"!!document.querySelector('{A} [data-procdata=STAR]')", timeout=10000, what='« Données » on the STAR line')
+    c.settle()
+    c.eq(c.count(f'{A} [data-chart=STAR]'), 0, 'a chart that is only the data page is not « Carte »', what='STAR « Carte »')

@@ -1900,3 +1900,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   published base (`aidFor`, the ILS / LOC of the runway: SOG-0176, SOG-0298 — exact for ILS and LOC only), the language's decimal sign
   (« TST 110,30 »); the whole aid line (type, runway, axis, DME) in its title; « Aides radio » keeps the whole line. F212 (red before:
   « I13R »); F127 and F65 read the new line. Slice 3b (an approach chosen by its chart only) follows, on the ergonomist's five conditions.
+- **13 Nov 2026 — SOG-0330, Fuel side: « Carte » and « Données »** (user: « ILS 26 sur LFLC ne donne pas la carte de l'ILS, mais le
+  tableau des data »; AeroDB 5e1cc406a fixed the chart index; written by Features SOG). On a procedure's line, « Carte » is
+  `aerodb.chartUrl(proc)` when it differs from the record's `source.url`; « Données » is `source.url` (https only), a second link. A
+  « chart » that is only the data page is not said « Carte »; without `chartUrl` the data page still shows. F214 (red before: one link,
+  no « Données »); F95 still green.

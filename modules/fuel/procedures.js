@@ -832,6 +832,7 @@ export function createProcedures(host) {
   /** L'adresse de la carte d'un choix (chartUrl d'aerodb, jamais composée ici) : une adresse https://, null, ou undefined tant que la
    *  réponse n'est pas venue (demandée à la première vue ; la réponse remplit les emplacements du terrain). */
   function chartOf(icao, it) {
+    if (typeof ctx.aerodb?.chartUrl !== 'function') return null;
     const key = `${icao}|${it.proc.kind}|${it.proc.id}`;
     if (!chartOfProc.has(key)) {
       chartOfProc.set(key, undefined);
@@ -846,15 +847,20 @@ export function createProcedures(host) {
    *  du choix (chartUrl) ; '' sinon, ou tant que la réponse n'est pas venue (l'emplacement se remplit à la réponse). */
   function rowChartHtml(icao, side, row) {
     const k = String(icao || '').toUpperCase();
-    if (!/^[A-Z]{4}$/.test(k) || typeof ctx.aerodb?.chartUrl !== 'function') return '';
+    if (!/^[A-Z]{4}$/.test(k)) return ''; // sans chartUrl, la page de données reste (SOG-0330)
     const kinds = {
         rwy: ['RWY'],
         main: ['SID', 'STAR'],
         app: ['APP']
       } [row] || [],
       it = chosenOf(k, side).find(x => kinds.includes(x.proc.kind)),
-      url = it ? chartOf(k, it) : null;
-    return url ? `<a class="fu-procsrc" data-chart="${esc(it.proc.kind)}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(String(it.proc.name || it.label))}">${esc(tt(TX.procChartOne))}</a>` : '';
+      url = it ? chartOf(k, it) : null,
+      // SOG-0330 : « Carte » ouvre la page DESSINÉE ; la page de données de la procédure (source.url, LFLC ILS 26 : un tableau) est
+      // « Données », un second lien ; une carte qui n'est que cette page n'est pas dite « Carte »
+      data = /^https:\/\/[^\s"'<>]+$/.test(String(it?.proc?.source?.url || '')) ? String(it.proc.source.url) : '',
+      chart = url && url !== data ? `<a class="fu-procsrc" data-chart="${esc(it.proc.kind)}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(String(it.proc.name || it.label))}">${esc(tt(TX.procChartOne))}</a>` : '',
+      dl = data ? `<a class="fu-procsrc" data-procdata="${esc(it.proc.kind)}" href="${esc(data)}" target="_blank" rel="noopener noreferrer">${esc(tt(TX.procDataOne))}</a>` : '';
+    return [chart, dl].filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>');
   }
   /** Les documents sans lien public des procédures choisies d'un côté (autre source que l'eAIP) : pour le title de la ligne. */
   function sourceTitle(m, side) {
