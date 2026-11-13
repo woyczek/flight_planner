@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte : le suivi du vol (maquette SOG-0304)</title>
+<style>
+/* Maquette autonome (rien n'est lu ni écrit, aucun code du suivi) : le DESSIN de l'ergonome du 13 nov. (fiche SOG-0304), tel quel ; vol inventé du banc (LFRS → LFML, IVAO) */
+:root{
+  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa; --card:#fff; --bg:#e8eef3;
+  --ok:#1e7d32; --warn:#7d4e00; --warn-bg:#fff0c2; --warn-line:#e0a400; --accent:#1a6fd8; --accent-bg:#eaf2fb; --route:#8e24aa;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:#fff;color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column}
+.note{flex:none;background:#fffbe6;border-bottom:1px solid #f0d78c;padding:6px 12px;font-size:13px;color:#5c4a00}
+.note b{font-weight:600}
+@media (max-width:640px){.note .long{display:none}}
+.states{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.states a{font-size:13px;border:1px solid #e3c766;border-radius:14px;padding:2px 10px;color:#5c4a00;text-decoration:none;background:#fff}
+.states a[aria-current]{background:#5c4a00;color:#fff;border-color:#5c4a00}
+.app{flex:1;min-height:0;display:flex;flex-direction:column}
+.top{flex:none;display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;background:#fff;border-bottom:1px solid var(--line);font-weight:700}
+.body{flex:1;min-height:0;display:flex;flex-direction:column}
+/* la carte (dessin du banc) */
+.map{position:relative;flex:1;min-height:0;background:var(--bg);overflow:hidden}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.fit{position:absolute;right:10px;top:10px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:#fff;display:grid;place-items:center;font-size:20px}
+.fit.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.gps{position:absolute;left:0;right:0;top:0;background:var(--warn-bg);border-bottom:1px solid var(--warn-line);color:var(--warn);padding:8px 12px;display:flex;gap:10px;align-items:center;font-size:14px;z-index:2}
+.gps button{margin-left:auto}
+/* le suivi : jamais sur la carte — feuille du bas au téléphone, colonne de 340 px à droite à partir de 1 000 px */
+.follow{flex:none;background:#fff;border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.12);display:flex;flex-direction:column}
+.grip{display:grid;place-items:center;height:14px;cursor:pointer}
+.grip::before{content:'';width:40px;height:4px;border-radius:2px;background:#b8c0c8}
+.line{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:48px;padding:6px 14px;font-weight:600;cursor:pointer}
+.line .a{flex:1 1 auto;min-width:0}
+.line .b{flex:none;color:var(--ink)}
+.line.warn .b{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line);border-radius:6px;padding:4px 8px}
+.line .ch{flex:none;color:var(--muted);font-size:14px}
+.full{padding:0 14px 12px;overflow:auto;max-height:56vh}
+.sec{border-top:1px solid var(--soft);padding:9px 0}
+.sec:first-child{border-top:0}
+.sec .k{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.sec .v{font-weight:600;font-size:17px}
+.sec .s{color:var(--muted);font-size:14px}
+.sec.warn{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:8px;padding:9px 10px;margin:6px 0}
+.sec.warn .v,.sec.warn .s{color:var(--warn)}
+.sec .ic{font-weight:700;margin-right:4px}
+.band{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.band>div{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--soft)}
+.band .k{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.band .v{font-weight:600;font-size:14px;line-height:1.25}
+button,.btn{font:inherit;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.link{border:0;background:none;color:var(--accent);text-decoration:underline;padding:0;min-height:32px;font-weight:600}
+.big{width:100%;min-height:64px;font-size:20px;font-weight:700;border-radius:10px;margin:6px 0}
+.bigwrap{padding:6px 14px 12px}
+.none{color:var(--muted)}
+/* à partir de 1 000 px : une colonne de 340 px à droite, la carte se rétrécit */
+@media (min-width:1000px){
+  .body{flex-direction:row}
+  .follow{width:340px;border-top:0;border-left:1px solid var(--line);box-shadow:-4px 0 14px rgba(0,0,0,.08);order:2}
+  .grip{display:none}
+  .full{max-height:none;flex:1}
+  .folded .line{border-bottom:1px solid var(--line)}
+  .body.folded .follow{height:auto;align-self:flex-start;width:340px;position:absolute;right:0;top:0;border:1px solid var(--line);border-top:0}
+  .body{position:relative}
+}
+</style>
+</head>
+<body>
+<div class="note"><b>Maquette du suivi du vol (SOG-0304)</b> <span class="long">— d'après le dessin de l'ergonome ; vol inventé du banc, rien n'est lu ni écrit. Le suivi n'est jamais sur la carte : feuille du bas au téléphone, colonne de 340 px à droite dès 1 000 px.</span>
+  <div class="states" id="states"></div></div>
+<div class="app"><div class="top">✈ Pilote <span style="font-weight:400;color:var(--muted)">· Carte</span></div>
+<div class="body" id="body"><div class="map" id="map"></div><div class="follow" id="follow"></div></div></div>
+<script>
+/* Vol inventé : LFRS → LFML, 14:32Z ; les états de la maquette, un bouton par état */
+const S = {
+  croisiere: { line: ['ANG 4 min → 187°', '124.725 dans 6 min'], full: true, nowCtl: 'Nantes Approche 124.425 · IVAO', nextCtl: 'Rennes Approche 124.725 · dans environ 6 min', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN', ''], nav: ['À régler : NTS 117.20 · radiale 187 en éloignement', 'Ensuite : ANG 113.00 dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: ['dans 12 min (78 NM)', '2 340 kg · 3 min de retard', '3 400 ft'], circle: true },
+  replie: { line: ['ANG 4 min → 187°', '124.725 dans 6 min'], full: false, circle: true },
+  contact: { line: ['ANG 4 min → 187°', '124.725 · Contacter'], warn: true, full: true, nowCtl: 'Nantes Approche 124.425 · IVAO', nextCtl: 'À contacter dans 1 min : Rennes Approche 124.725', ctlWarn: true, pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN', ''], nav: ['À régler : NTS 117.20 · radiale 187 en éloignement', 'Ensuite : ANG 113.00 dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: ['dans 12 min (78 NM)', '2 340 kg · 3 min de retard', '3 400 ft'], circle: true, mark: true },
+  sol: { big: 'Sol 121.800 — Contacté', sub: 'Avant le départ · prévol ou sol, selon ce qui est en ligne', full: true, proc: 'Piste 21 et parking', ground: true },
+  pose: { big: 'Posé : contacter Sol 121.900', sub: 'Reste affiché tant que « Contacté » n’est pas pressé', full: true, proc: 'Parking', ground: true },
+  sansreseau: { line: ['ANG 4 min → 187°', 'Unicom 122.800'], full: true, nowCtl: 'Aucun contrôle en ligne sur IVAO le long de la route · Unicom 122.800', nextCtl: '', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN', ''], nav: ['À régler : NTS 117.20 · radiale 187 en éloignement', 'Ensuite : ANG 113.00 dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: ['dans 12 min (78 NM)', '2 340 kg · 3 min de retard', '3 400 ft'] },
+  approche: { line: ['LFML 11 min → 263°', '119.350 dans 2 min'], full: true, nowCtl: 'Marseille Approche 119.350 · IVAO', nextCtl: 'Marseille Tour 118.700 · dans environ 7 min', pt: ['MEN · 3 min (14 NM)', 'ensuite cap 263° vers RW26', ''], nav: ['À régler : ILS 26 · 110.30', ''], proc: 'Approche ILS 26', band: ['en descente · 2 100 ft', '1 120 kg · 1 min d’avance', '1 800 ft'], circle: true },
+  sansposition: { line: ['ANG 4 min → 187°', '124.725 dans 6 min'], full: true, gps: true, nowCtl: 'Nantes Approche 124.425 · IVAO', nextCtl: 'Rennes Approche 124.725 · dans environ 6 min', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN', ''], nav: ['À régler : NTS 117.20 · radiale 187 en éloignement', 'Ensuite : ANG 113.00 dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: ['dans 12 min (78 NM)', '2 340 kg · 3 min de retard', '3 400 ft'], circle: true }
+};
+const NAMES = { croisiere: 'croisière', replie: 'replié', contact: 'contact (< 2 min)', sol: 'sol', pose: 'posé', sansreseau: 'sans réseau', approche: 'approche', sansposition: 'sans position' };
+const $ = id => document.getElementById(id);
+let open = null;
+function esc(t) { return String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+function mapSvg(st) {
+  const wide = innerWidth >= 1000, W = 1000, H = 800;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <rect width="${W}" height="${H}" fill="#e8eef3"/>
+    <g stroke="#cfd9e2" stroke-width="1"><path d="M0 200H${W}M0 400H${W}M0 600H${W}M250 0V${H}M500 0V${H}M750 0V${H}"/></g>
+    <path d="M60 700 L300 520 L520 430 L760 250 L930 110" fill="none" stroke="var(--route)" stroke-width="6" stroke-dasharray="14 10" stroke-linecap="round"/>
+    <g fill="#fff" stroke="var(--route)" stroke-width="4"><circle cx="300" cy="520" r="9"/><circle cx="520" cy="430" r="9"/><circle cx="760" cy="250" r="9"/></g>
+    <g font-size="22" font-weight="700" fill="var(--route)"><text x="318" y="548">NTS</text><text x="538" y="458">ANG</text><text x="778" y="278">LUGEN</text></g>
+    ${st.circle ? `<circle cx="700" cy="300" r="190" fill="none" stroke="#1a6fd8" stroke-width="3" stroke-dasharray="10 9"/><text x="590" y="130" font-size="22" font-weight="700" fill="#1a6fd8">Rennes Approche 124.725</text>
+    <g><circle cx="${st.mark ? 592 : 560}" cy="${st.mark ? 395 : 392}" r="8" fill="#1a6fd8"/><rect x="${st.mark ? 608 : 576}" y="${st.mark ? 370 : 366}" width="190" height="34" rx="6" fill="#fff" stroke="#1a6fd8"/><text x="${st.mark ? 618 : 586}" y="${st.mark ? 394 : 390}" font-size="21" fill="#1a6fd8">contact ≈ 14:38Z</text></g>` : ''}
+    <g transform="translate(${st.ground ? 300 : 440} ${st.ground ? 520 : 470}) rotate(${st.ground ? 0 : 55})"><path d="M0 0 L16 36 L0 28 L-16 36Z" fill="#1d6fd8" stroke="#fff" stroke-width="5" stroke-linejoin="round"/></g>
+  </svg><div class="fit on" title="Suivre">◎</div>${st.gps ? '<div class="gps">D’après le plan — GPS ou réseau non activé <button class="primary">Activer</button></div>' : ''}`;
+}
+function fullHtml(st) {
+  if (st.ground) return `<div class="bigwrap"><button class="primary big">${esc(st.big)}</button><div class="s none">${esc(st.sub)}</div></div><div class="full"><div class="sec"><div class="k">Procédure</div><div class="v"><button class="link">${esc(st.proc)}</button></div></div></div>`;
+  const ctl = st.ctlWarn ? 'warn' : '';
+  return `<div class="full">
+    <div class="sec"><div class="k">Prochain point</div><div class="v">${esc(st.pt[0])}</div><div class="s">${esc(st.pt[1])}</div></div>
+    <div class="sec ${ctl}"><div class="k">${st.ctlWarn ? '<span class="ic">⚠</span>' : ''}Contrôle</div>
+      <div class="v">${st.nextCtl || st.ctlWarn ? '' : ''}${st.nowCtl.startsWith('Aucun') ? `<span class="none" style="font-weight:600;color:var(--ink)">${esc(st.nowCtl)}</span>` : `Maintenant : ${esc(st.nowCtl)}`}</div>
+      ${st.nextCtl ? `<div class="s">${st.ctlWarn ? '' : 'Ensuite : '}${esc(st.nextCtl)}</div>` : ''}
+      ${st.ctlWarn ? '<div style="margin-top:6px"><button class="primary">Contacté</button></div>' : ''}</div>
+    <div class="sec"><div class="k">Radionav</div><div class="v">${esc(st.nav[0])}</div>${st.nav[1] ? `<div class="s">${esc(st.nav[1])}</div>` : ''}</div>
+    <div class="sec"><div class="k">Procédure</div><div class="v"><button class="link">${esc(st.proc)}</button></div></div>
+    <div class="band"><div><div class="k">Descente</div><div class="v">${esc(st.band[0])}</div></div><div><div class="k">Prévu au point</div><div class="v">${esc(st.band[1])}</div></div><div><div class="k">Sécurité</div><div class="v">${esc(st.band[2])}</div></div></div></div>`;
+}
+function render() {
+  const key = (location.hash || '#croisiere').slice(1), st = S[key] || S.croisiere, wide = innerWidth >= 1000;
+  $('states').innerHTML = Object.keys(S).map(k => `<a href="#${k}"${k === key ? ' aria-current="page"' : ''}>${NAMES[k]}</a>`).join('');
+  $('map').innerHTML = mapSvg(st);
+  const folded = key === 'replie' || (open === false);
+  const isOpen = !folded && (open === true || st.full) ;
+  $('body').classList.toggle('folded', wide && !isOpen);
+  const bigOnly = !!st.ground;
+  const lineHtml = st.line ? `<div class="line ${st.warn ? 'warn' : ''}" data-t><span class="a">${esc(st.line[0])}</span><span class="b">${esc(st.line[1])}</span><span class="ch">${isOpen ? '▾' : '▴'}</span></div>` : '';
+  $('follow').innerHTML = (wide ? '' : '<div class="grip" data-t></div>') + (bigOnly ? '' : lineHtml) + (isOpen ? fullHtml(st) : (bigOnly ? `<div class="bigwrap"><button class="primary big">${esc(st.big)}</button></div>` : ''));
+  $('follow').querySelectorAll('[data-t]').forEach(e => e.onclick = () => { open = !isOpen; render(); });
+}
+addEventListener('hashchange', () => { open = null; render(); });
+addEventListener('resize', render);
+render();
+</script>
+</body>
+</html>
