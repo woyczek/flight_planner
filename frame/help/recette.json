@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 199,
+  "tests": 200,
   "verdicts": 139
  },
  "apps": [
@@ -2962,6 +2962,20 @@
    "state": "ok",
    "delivered": "2026-11-13T13:54:57Z",
    "at": "2026-11-13T15:25:53Z"
+  },
+  {
+   "id": "SOG-0326",
+   "app": "pilote",
+   "title": {
+    "fr": "Direct sur instruction du contrôle : garder le trajet initial en violet, tracer le direct d'un autre trait",
+    "en": "Direct on ATC instruction: keep the initial route in purple, draw the direct with another line",
+    "de": "Direct auf Anweisung der Flugsicherung: die ursprüngliche Route violett behalten, den Direct anders zeichnen",
+    "es": "Directo por instrucción del control: mantener la ruta inicial en violeta, trazar el directo con otro trazo"
+   },
+   "test": "Recharge la page. Carburant, un vol démarré, « Direct vers… » un point plus loin sur la route ; ouvre la Carte : le morceau de route abandonné reste visible, en violet fin ; le direct est un trait plein or foncé marqué « DCT ». Dis si la teinte te va (tu proposais jaune ou vert). Au passage : survoler un nom de point dans le profil le surligne sur la carte, comme depuis la liste de la route.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T15:37:53Z"
   }
  ],
  "decisions": [

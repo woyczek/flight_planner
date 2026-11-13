@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8a8de56",
+  "organisation": "ee8a890",
   "fiches": 331,
   "untranslated": 0,
   "priorities": 310
@@ -1284,11 +1284,12 @@
     {
      "id": "SOG-0326",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Direct sur instruction du contrôle : garder le trajet initial en violet, tracer le direct d'un autre trait",
      "en": "Direct on ATC instruction: keep the initial route in purple, draw the direct with another line",
      "de": "Direct auf Anweisung der Flugsicherung: die ursprüngliche Route violett behalten, den Direct anders zeichnen",
-     "es": "Directo por instrucción del control: mantener la ruta inicial en violeta, trazar el directo con otro trazo"
+     "es": "Directo por instrucción del control: mantener la ruta inicial en violeta, trazar el directo con otro trazo",
+     "test": true
     }
    ]
   },
