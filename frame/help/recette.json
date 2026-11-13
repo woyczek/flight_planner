@@ -2871,5 +2871,21 @@
    "delivered": "2026-11-13T12:40:57Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0049",
+   "fiche": "SOG-0320",
+   "app": "maintenance",
+   "question": "Réglages rangés par fréquence d'usage : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/frame/settings/maquette/reglages_usage.html",
+   "context": "Ton rangement : toujours visible — État, Affichage, Compagnie ; parfois, repliés (toute la ligne ouvre) — Données, Synchronisation, Appareil ; Administration n'est plus un pli mais une ligne qui ouvre sa page ; ce qui ne sert qu'une fois — Identité, Accès, créer ou rejoindre une compagnie — sous « Mise en route », tout en bas ; À propos déplié en dernier. Le vide sous « Compagnie » disparaît (une place réservée qui n'était jamais rendue). Le « chemin bizarre » depuis Maintenance est expliqué : l",
+   "options": [
+    "Oui, on code sur cette maquette",
+    "Oui, avec mes remarques (dans le texte)",
+    "Non, à reprendre (dis-moi quoi)"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }
