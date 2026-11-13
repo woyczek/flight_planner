@@ -9540,3 +9540,29 @@ def k244(c):
         (data / 'local' / 'upload' / 'vfr_circuits.xml').write_bytes(b'<VfrCircuits><!DOCTYPE x></VfrCircuits>')
         r = fn(RJ.Job('vfr', 'circuits', {}), {}, {'data': str(data)})
         c.eq((r['ok'], r['reason']), (False, 'refused'), 'a hostile deposited file is refused, said', what='refused file')
+
+
+@case('K265', 'chartFor (SOG-0330): an approach read on a NUMBERED data page (« …_DATA_01 », « …_DATA_02 ») gets its DRAWN chart from its own name (ILS 26 of LFLC, ILS of LFLL), one chart or none; it no longer falls back on the data table', 'K', tags=('aerodb',), phone=False,
+      rule='User remark validating SOG-0306 (13 Nov 2026): « ILS 26 sur LFLC ne donne pas la carte de l\'ILS, mais le tableau des data ». Cause: the ILS of LFLC, LFLL and LFOE are read on a numbered DATA page (the page carries the FAF and the initial fix of every ILS, no word of the procedure in its name), so chartFor had no word to look for and returned null; chartUrl then gave the data page (`source.url`). The words now come from the name of the procedure (ILS, LOC, Z/Y), only for such a page, runways already judged; one IAC chart or none, never guessed (two ILS charts on a runway: null). 29 other ILS / LOC of the SIA files have a named data page and were right already (K83)')
+def k265(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    iac = lambda icao, *names: [{'path': f'Cartes/{icao}/AD_2_{icao}_{n}.pdf', 'kind': k} for n, k in names]
+    lflc = iac('LFLC', ('DATA_01', 'DATA'), ('DATA_RWY26_RNP_Y_CODE', 'DATA'), ('IAC_RWY26_FNA_ILS_LOC_CAT_123', 'IAC'), ('IAC_RWY26_FNA_RNP_Y', 'IAC'), ('IAC_RWY26_FNA_RNP_Z', 'IAC'), ('IAC_RWY26_INA_RNAV', 'IAC'), ('IAC_RWY26_VOR', 'IAC'), ('SID_RWY26_RNAV', 'SID'))
+    lfll = iac('LFLL', ('DATA_02', 'DATA'), ('IAC_RWY35L_35R_INA_RNAV', 'IAC'), ('IAC_RWY35L_FNA_ILS_CAT123_LOC', 'IAC'), ('IAC_RWY35L_FNA_RNP', 'IAC'), ('IAC_RWY35R_FNA_ILS_CAT123_LOC', 'IAC'), ('IAC_RWY35R_FNA_RNP', 'IAC'))
+    lfoe = iac('LFOE', ('DATA_01', 'DATA'), ('IAC_RWY22_RNP', 'IAC'))
+    twin = iac('LFXX', ('DATA_01', 'DATA'), ('IAC_RWY26_FNA_ILS_Z', 'IAC'), ('IAC_RWY26_FNA_ILS_Y', 'IAC'))
+    app = lambda icao, name, rwy, page: {'icao': icao, 'kind': 'APP', 'name': name, 'runways': [rwy], 'source': {'kind': 'eaip', 'file': page}}
+    r = c.js("""([a, b, d, e, f, g, h]) => {
+      const P = AeroDBProcedures;
+      return {
+        lflc: P.chartFor(a[0], a[1]), lfll35l: P.chartFor(b[0], b[1]), lfll35r: P.chartFor(d[0], d[1]), lfoe: P.chartFor(e[0], e[1]),
+        twin: P.chartFor(f[0], f[1]), twinZ: P.chartFor(g[0], g[1]), named: P.chartFor(h[0], h[1])
+      };
+    }""", [[app('LFLC', 'ILS RWY 26', '26', 'AD_2_LFLC_DATA_01.pdf'), lflc], [app('LFLL', 'ILS RWY 35L', '35L', 'AD_2_LFLL_DATA_02.pdf'), lfll], [app('LFLL', 'ILS RWY 35R', '35R', 'AD_2_LFLL_DATA_02.pdf'), lfll],
+           [app('LFOE', 'ILS RWY 22', '22', 'AD_2_LFOE_DATA_01.pdf'), lfoe], [app('LFXX', 'ILS RWY 26', '26', 'AD_2_LFXX_DATA_01.pdf'), twin], [app('LFXX', 'ILS Z RWY 26', '26', 'AD_2_LFXX_DATA_01.pdf'), twin],
+           [app('LFLC', 'RNP Y RWY 26', '26', 'AD_2_LFLC_DATA_RWY26_RNP_Y_CODE.pdf'), lflc]])
+    c.eq(r['lflc'], 'Cartes/LFLC/AD_2_LFLC_IAC_RWY26_FNA_ILS_LOC_CAT_123.pdf', 'LFLC ILS 26 (read on DATA_01): the drawn ILS chart, not the data table', what='LFLC')
+    c.eq((r['lfll35l'], r['lfll35r']), ('Cartes/LFLL/AD_2_LFLL_IAC_RWY35L_FNA_ILS_CAT123_LOC.pdf', 'Cartes/LFLL/AD_2_LFLL_IAC_RWY35R_FNA_ILS_CAT123_LOC.pdf'), 'LFLL (DATA_02, three ILS): the ILS chart of each runway, not the shared INA RNAV one', what='LFLL')
+    c.eq(r['lfoe'], None, 'LFOE ILS 22: the file lists no ILS chart (RNP only): none, never another approach\'s chart', what='LFOE')
+    c.eq((r['twin'], r['twinZ']), (None, 'Cartes/LFXX/AD_2_LFXX_IAC_RWY26_FNA_ILS_Z.pdf'), 'two ILS charts on a runway: « ILS » alone is ambiguous (none), « ILS Z » picks its one', what='twin')
+    c.eq(r['named'], 'Cartes/LFLC/AD_2_LFLC_IAC_RWY26_FNA_RNP_Y.pdf', 'a procedure read on a named data page works as before', what='named')

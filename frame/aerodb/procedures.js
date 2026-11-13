@@ -281,8 +281,15 @@
     if (kind === 'APP') {
       const src = str(proc.source?.file || proc.source?.ref);
       if (!/\.pdf$/i.test(src)) return null;
-      const want = chartWords(src).words;
-      if (!want.length) return null;
+      let want = chartWords(src).words;
+      if (!want.length) {
+        // SOG-0330 : une approche lue sur une page DATA NUMÉROTÉE (« …_DATA_01 », « …_DATA_02 » : les ILS de LFLC, LFLL, LFOE) n'a pas de mots dans le nom de sa page : sa carte se choisit par SON nom (« ILS RWY 26 » → les mots ILS), les
+        // pistes étant déjà jugées ; une seule carte IAC qui convienne, sinon rien (jamais devinée : l'appelant retombe sur la page DATA, qui n'est pas la carte)
+        if (!/_DATA_\d{2}\.pdf$/i.test(src)) return null;
+        want = str(proc.name).toUpperCase().split(/\s+/).filter(t => t && t !== 'RWY' && !/^\d{2}[LRC]?$/.test(t) && !
+          /^(?:OR|AND|CAT|I|II|III)$/.test(t));
+        if (!want.length) return null;
+      }
       const cand = own.filter(i => i.kind === 'IAC' && onRunway(i) && want.every(w => chartWords(i.path).words.includes(w)));
       if (cand.length === 1) return cand[0].path;
       const tr = str(proc.transition).toUpperCase().split(/\s+/)[0];
