@@ -114,23 +114,37 @@
       'Geht mit dem nächsten gebündelten Versand ins Datenarchiv (unter 5 Minuten); ohne Netz wartet es auf die Verbindung.',
       'Sale al repositorio de datos con el próximo envío agrupado (menos de 5 minutos); sin red, espera a que vuelva.'
     ],
-    noShots: [
-      'Les captures ne partent pas encore par ce chemin : le texte et ce qui est noté tout seul (écran, taille, langue, version) partent, rien d’autre.',
-      'Screenshots do not leave yet by this path: the text and what is noted by itself (screen, size, language, version) are sent, nothing else.',
-      'Screenshots gehen auf diesem Weg noch nicht mit: Der Text und die automatisch notierten Angaben (Bildschirm, Größe, Sprache, Version) werden gesendet, sonst nichts.',
-      'Las capturas aún no salen por este camino: se envían el texto y lo que se anota solo (pantalla, tamaño, idioma, versión), nada más.'
+    photoInfo: [
+      'Une photo est possible : elle est réduite sur cet appareil (1 600 px, 400 Ko ; la position GPS est retirée) et part dans le dépôt des données de la compagnie, lisible par ses pilotes.',
+      'A photo is possible: it is reduced on this device (1,600 px, 400 KB; the GPS position is removed) and goes to the company’s data repository, readable by its pilots.',
+      'Ein Foto ist möglich: Es wird auf diesem Gerät verkleinert (1 600 px, 400 KB; der GPS-Standort wird entfernt) und geht ins Datenarchiv der Gesellschaft, lesbar für ihre Piloten.',
+      'Se puede añadir una foto: se reduce en este dispositivo (1 600 px, 400 KB; se quita la posición GPS) y sale al repositorio de datos de la compañía, legible por sus pilotos.'
     ],
-    shotsHeld: [
-      'Cette capture ne part pas encore : seul le texte part. Elle n’est ni envoyée ni gardée.',
-      'This screenshot does not leave yet: only the text is sent. It is neither sent nor kept.',
-      'Dieser Screenshot geht noch nicht mit: Nur der Text wird gesendet. Er wird weder gesendet noch gespeichert.',
-      'Esta captura aún no sale: solo se envía el texto. No se envía ni se guarda.'
+    photoLabel: [
+      'Photos ou captures d’écran (trois au plus)',
+      'Photos or screenshots (three at most)',
+      'Fotos oder Screenshots (höchstens drei)',
+      'Fotos o capturas de pantalla (tres como máximo)'
     ],
-    shotsDropped: [
-      ' La capture jointe n’est pas partie : seul le texte est parti.',
-      ' The attached screenshot did not leave: only the text was sent.',
-      ' Der angehängte Screenshot wurde nicht gesendet: Nur der Text wurde gesendet.',
-      ' La captura adjunta no salió: solo se envió el texto.'
+    photoReducing: ['Réduction de la photo…', 'Reducing the photo…', 'Foto wird verkleinert…', 'Reduciendo la foto…'],
+    photoBad: [
+      'Photo refusée : {name} (illisible, ou trop lourde même réduite).',
+      'Photo refused: {name} (unreadable, or too large even when reduced).',
+      'Foto abgelehnt: {name} (unlesbar oder auch verkleinert zu groß).',
+      'Foto rechazada: {name} (ilegible, o demasiado pesada incluso reducida).'
+    ],
+    photoSent: [
+      ' Photos jointes : {n} (réduites, dans le dépôt des données de la compagnie, lisibles par ses pilotes).',
+      ' Photos attached: {n} (reduced, in the company’s data repository, readable by its pilots).',
+      ' Fotos angehängt: {n} (verkleinert, im Datenarchiv der Gesellschaft, für ihre Piloten lesbar).',
+      ' Fotos adjuntas: {n} (reducidas, en el repositorio de datos de la compañía, legibles por sus pilotos).'
+    ],
+    photosOf: ['Photos jointes', 'Attached photos', 'Angehängte Fotos', 'Fotos adjuntas'],
+    photoRefused: [
+      'Photo refusée au contrôle (type, taille ou métadonnées) : non affichée, non reprise.',
+      'Photo refused by the check (type, size or metadata): not shown, not taken over.',
+      'Foto von der Prüfung abgelehnt (Typ, Größe oder Metadaten): nicht angezeigt, nicht übernommen.',
+      'Foto rechazada por el control (tipo, tamaño o metadatos): no se muestra ni se retoma.'
     ],
     checking: ['Vérification du poste…', 'Checking the workstation…', 'Rechner wird geprüft…', 'Comprobando el puesto…'],
     sentPost: ['✓ Écrit dans organisation/SIGNALEMENTS.json ({id}). L’ergonome le lira à son prochain tour.',
@@ -364,7 +378,9 @@
     const st = await readStore(c);
     const ui = {
       ch: null, // 'poste' | 'poste-off' | 'pilote' | 'old'
-      shots: [], // les fichiers choisis (poste seulement)
+      shots: [], // les fichiers choisis (poste)
+      pshots: [], // les photos RÉDUITES (un pilote, sans lanceur) : { name, bytes, type, w, h }
+      reducing: false,
       note: '', // { kind: 'ok' | 'warn', text }
       sending: false,
       pilots: null, // { items, left, more, refs } | null
@@ -434,8 +450,8 @@
         <label class="f-field">${esc(t(T.fText))}<textarea data-text rows="${ROWS_MIN}" maxlength="${MAX_TEXT}" placeholder="${esc(t(T.fTextHint))}">${esc(st.draft.text)}</textarea><small class="f-muted f-rc-count" data-xcount hidden></small></label>
         <div class="f-sg-where" data-where><b class="f-sg-wt">${esc(t(T.noted))}</b><span data-wtext></span>
           <label class="f-check"><input type="checkbox" data-wc checked> ${esc(t(T.notedJoin))}</label></div>
-        <div class="f-sg-shots" data-shotsbox hidden><label class="f-field">${esc(t(T.shots))}<input type="file" data-shots accept="image/png,image/jpeg,image/webp" multiple></label><p class="f-muted" data-shotslist></p><p class="f-muted" data-shotsnote>${esc(t(T.shotsNote))}</p></div>
-        <p class="f-muted" data-noshots hidden></p>
+        <div class="f-sg-shots" data-shotsbox hidden><label class="f-field"><span data-shotslabel>${esc(t(T.shots))}</span><input type="file" data-shots accept="image/png,image/jpeg,image/webp" multiple></label><p class="f-muted" data-shotslist></p><p class="f-muted" data-shotsnote>${esc(t(T.shotsNote))}</p></div>
+        <p class="f-muted" data-shotsinfo hidden></p>
         <div class="f-row"><button type="submit" class="primary" data-send disabled>${esc(t(T.send))}</button> <span class="f-muted" data-why></span></div>
       </form>
       <div data-note role="status"></div>
@@ -469,17 +485,19 @@
           v: k.version
         }) : ''
       });
-      // le téléphone peut choisir une photo (SOG-0335) : elle ne part pas encore par le chemin d'un pilote, et l'écran le dit au lieu de la perdre en silence
+      // le téléphone peut joindre une photo (SOG-0335) : réduite ici, elle part dans le dépôt des données avec le signalement ; l'écran le dit avant l'envoi
       $('[data-shotsbox]').hidden = ui.ch !== 'poste' && ui.ch !== 'pilote';
       const sn = $('[data-shotsnote]');
       if (sn.hidden !== (ui.ch !== 'poste')) sn.hidden = ui.ch !== 'poste';
-      const ns = $('[data-noshots]'),
-        nsText = ui.ch === 'pilote' ? t(ui.shots.length ? T.shotsHeld : T.noShots) : '';
+      const sb = $('[data-shotslabel]'),
+        sbText = t(ui.ch === 'pilote' ? T.photoLabel : T.shots);
+      if (sb.textContent !== sbText) sb.textContent = sbText;
+      const ns = $('[data-shotsinfo]'),
+        nsText = ui.ch === 'pilote' ? t(ui.reducing ? T.photoReducing : T.photoInfo) : '';
       if (ns.hidden !== !nsText) ns.hidden = !nsText;
       if (ns.textContent !== nsText) ns.textContent = nsText;
-      ns.classList.toggle('f-warn', !!nsText && ui.shots.length > 0);
       const sl = $('[data-shotslist]');
-      sl.textContent = ui.shots.map(f => f.name).join(' · ');
+      sl.textContent = ui.ch === 'pilote' ? ui.pshots.map(f => `${f.name} (${f.w}×${f.h}, ${Math.max(1, Math.round(f.bytes.length / 1024))} Ko)`).join(' · ') : ui.shots.map(f => f.name).join(' · ');
       const d = draft();
       $('[data-tcount]').textContent = `${d.title.length} / ${MAX_TITLE}`;
       const xc = $('[data-xcount]');
@@ -488,7 +506,7 @@
         n: d.text.length,
         max: MAX_TEXT
       });
-      const can = !chk && ui.ch !== 'old' && !ui.sending && d.title.trim() && d.text.trim();
+      const can = !chk && ui.ch !== 'old' && !ui.sending && !ui.reducing && d.title.trim() && d.text.trim();
       $('[data-send]').disabled = !can;
       $('[data-why]').textContent = ui.ch === 'pilote' ? t(T.whyPilot) : ui.ch === 'poste' ? t(T.whyPost) : '';
       const n = $('[data-note]');
@@ -513,7 +531,7 @@
       const p = ui.pilots;
       box.hidden = false;
       const left = p.items.filter(i => i.report && !i.taken).length + p.more;
-      box.innerHTML = `<h2>${esc(t(T.pilots))}${left ? ` <small class="f-muted" data-left>${esc(t(T.pilotsLeft, { n: left }))}</small>` : ''}</h2><p class="f-muted">${esc(t(T.pilotsIntro))}</p>${p.items.length ? `<ul class="f-sg-list" data-plist>${p.items.map(i => `<li data-p="${esc(i.folder)}/${esc(i.id)}">${i.report ? `<span class="f-sg-tag">${esc(kindLabel(i.report.kind))}</span> <span class="f-sg-t">${esc(i.report.title)}</span><div class="f-muted">${esc(t(T.pilotsFrom, { tri: i.folder }))}</div><div class="f-sg-body">${esc(i.report.text)}</div>${i.taken ? `<span class="f-sg-state">${esc(t(T.taken))}</span>` : `<button type="button" data-take="${esc(i.folder)}/${esc(i.id)}">${esc(t(T.take))}</button>`}` : `<span class="f-muted">${esc(t(T.invalid))}</span>`}</li>`).join('')}</ul>` : `<p class="f-muted" data-pnone>${esc(t(T.pilotsNone))}</p>`}${p.more ? `<p class="f-muted">${esc(t(T.pilotsMore, { n: p.more }))}</p>` : ''}`;
+      box.innerHTML = `<h2>${esc(t(T.pilots))}${left ? ` <small class="f-muted" data-left>${esc(t(T.pilotsLeft, { n: left }))}</small>` : ''}</h2><p class="f-muted">${esc(t(T.pilotsIntro))}</p>${p.items.length ? `<ul class="f-sg-list" data-plist>${p.items.map(i => `<li data-p="${esc(i.folder)}/${esc(i.id)}">${i.report ? `<span class="f-sg-tag">${esc(kindLabel(i.report.kind))}</span> <span class="f-sg-t">${esc(i.report.title)}</span><div class="f-muted">${esc(t(T.pilotsFrom, { tri: i.folder }))}</div><div class="f-sg-body">${esc(i.report.text)}</div>${i.images?.length ? `<div class="f-sg-imgs" data-pimgs><small class="f-muted">${esc(t(T.photosOf))}</small><div>${i.images.map(m => `<img src="${esc(m.url)}" alt="" width="${m.w > m.h ? 120 : Math.round(120 * m.w / m.h)}" height="${m.w > m.h ? Math.round(120 * m.h / m.w) : 120}">`).join('')}</div></div>` : ''}${i.refused ? `<div class="f-warn" data-pimg-refused>${esc(t(T.photoRefused))}</div>` : ''}${i.taken ? `<span class="f-sg-state">${esc(t(T.taken))}</span>` : `<button type="button" data-take="${esc(i.folder)}/${esc(i.id)}">${esc(t(T.take))}</button>`}` : `<span class="f-muted">${esc(t(T.invalid))}</span>`}</li>`).join('')}</ul>` : `<p class="f-muted" data-pnone>${esc(t(T.pilotsNone))}</p>`}${p.more ? `<p class="f-muted">${esc(t(T.pilotsMore, { n: p.more }))}</p>` : ''}`;
     }
     /** Les signalements de pilotes du dépôt de données (poste de l'ergonome) : chemins sous pilot/<tri>/signalements/, bornés, relus par les règles du verbe ; la liste des déjà repris vient du fichier. */
     const loadPilots = async refs => {
@@ -530,6 +548,44 @@
       }));
       const taken = new Set(refs);
       found.sort((a, b) => Number(taken.has(`${a.folder}/${a.id}`)) - Number(taken.has(`${b.folder}/${b.id}`)) || a.id.localeCompare(b.id));
+      // les photos jointes : le texte est borné avant d'être analysé, puis les MÊMES contrôles qu'à l'écriture (signature des octets, base64 vérifié avant décodage, dimensions, pas d'EXIF) ;
+      // une photo qui échoue est dite et n'est ni affichée ni reprise ; l'image est un blob du type RECONNU, montré par <img>, jamais du HTML
+      const readPhotos = async (f, want) => {
+        const SI = await import(new URL('frame/lib/signal_image.js', c.root).href),
+          images = [];
+        let refused = 0;
+        for (let n = 1; n <= want; n++) {
+          let doc = null;
+          try {
+            const r = await Promise.race([Promise.resolve(c.data.read(`pilot/${f.folder}/signalements/${f.id}/${n}.json`, {
+              wait: true
+            })), new Promise(res => setTimeout(() => res(null), 4000))]);
+            const raw = r?.value ?? r?.text ?? null;
+            if (typeof raw === 'string' && raw.length <= SI.LIMITS.doc) doc = JSON.parse(raw);
+            else if (raw && typeof raw === 'object' && JSON.stringify(raw).length <= SI.LIMITS.doc) doc = raw;
+          } catch {
+            doc = null;
+          }
+          const k = SI.checkDoc(doc, {
+            id: f.id,
+            n
+          });
+          if (k.ok) images.push({
+            n,
+            b64: doc.b64,
+            w: k.w,
+            h: k.h,
+            url: URL.createObjectURL(new Blob([k.bytes], {
+              type: `image/${k.type}`
+            }))
+          });
+          else refused++;
+        }
+        return {
+          images,
+          refused
+        };
+      };
       const readOne = async f => {
         let doc = null;
         try {
@@ -542,10 +598,13 @@
         } catch {
           doc = null;
         }
+        const report = reportOf(doc),
+          want = report && Number.isInteger(doc?.shots) && doc.shots >= 1 && doc.shots <= MAX_SHOTS ? doc.shots : 0;
         return {
           ...f,
-          report: reportOf(doc),
-          taken: taken.has(`${f.folder}/${f.id}`)
+          report,
+          taken: taken.has(`${f.folder}/${f.id}`),
+          ...(want ? await readPhotos(f, want) : {})
         };
       };
       const items = [],
@@ -668,7 +727,7 @@
       ui.refusal = res;
       return false;
     };
-    const sendPilot = async r => {
+    const sendPilot = async (r, photos = []) => {
       const tri = c.trigram?.() || '';
       if (!TRI.test(tri)) {
         ui.refusal = {
@@ -679,6 +738,21 @@
       const id = SG_ID.test(r.id) ? r.id : rid(),
         at = AT.test(r.at) ? r.at : now();
       try {
+        const SI = photos.length ? await import(new URL('frame/lib/signal_image.js', c.root).href) : null;
+        // les photos d'abord (un document chacune, à côté du signalement), le signalement ensuite : il ne dit « n photos » qu'une fois celles-ci écrites
+        for (let k = 0; k < photos.length && k < MAX_SHOTS; k++) {
+          const doc = {
+            schema: SI.SCHEMA,
+            id,
+            n: k + 1,
+            b64: SI.toB64(photos[k].bytes)
+          };
+          if (!SI.checkDoc(doc, {
+              id,
+              n: k + 1
+            }).ok) throw new Error('photo');
+          await c.data.put(`pilot/${tri}/signalements/${id}/${k + 1}.json`, doc);
+        }
         await c.data.put(`pilot/${tri}/signalements/${id}.json`, {
           schema: 'sog-signalement/1',
           id,
@@ -688,6 +762,9 @@
           screen: r.screen,
           ...(r.ctx ? {
             ctx: r.ctx
+          } : {}),
+          ...(photos.length ? {
+            shots: Math.min(photos.length, MAX_SHOTS)
           } : {}),
           at
         });
@@ -725,7 +802,7 @@
       paint();
       let id = false;
       if (ui.ch === 'poste') id = await sendPost(r, ui.shots);
-      else if (ui.ch === 'pilote') id = await sendPilot(r);
+      else if (ui.ch === 'pilote') id = await sendPilot(r, ui.pshots);
       else if (ui.ch === 'poste-off') ui.refusal = {
         offline: true
       };
@@ -736,7 +813,9 @@
           text: t(ui.ch === 'pilote' ? T.sentPilot : T.sentPost, {
             id,
             path: `pilot/${c.trigram?.() || ''}/signalements/${id}.json`
-          }) + (ui.ch === 'pilote' && ui.shots.length ? t(T.shotsDropped) : '')
+          }) + (ui.ch === 'pilote' && ui.pshots.length ? t(T.photoSent, {
+            n: ui.pshots.length
+          }) : '')
         };
         st.draft = {
           kind: d.kind,
@@ -746,6 +825,7 @@
         $('[data-title]').value = '';
         $('[data-text]').value = '';
         ui.shots = [];
+        ui.pshots = [];
         $('[data-shots]').value = '';
         fitText();
         await saveStore(c, st);
@@ -804,6 +884,11 @@
       ui.busy = true;
       const res = await call('ajouter', {
         ...it.report,
+        ...(it.images?.length ? {
+          images: it.images.map(m => ({
+            data: m.b64
+          }))
+        } : {}),
         origin: {
           folder,
           ref: id
@@ -822,6 +907,50 @@
       }
       paint();
     };
+    /** Les photos d'un appareil sans lanceur : chacune est RÉDUITE ici (canvas : l'EXIF part avec) avant tout ; une photo illisible ou trop lourde même réduite est dite. */
+    const pickPhotos = async (files, input) => {
+      ui.pshots = [];
+      ui.note = '';
+      const tooMany = files.length > MAX_SHOTS,
+        bad = files.find(f => !/^image\//.test(f.type) || f.size > 30e6 || f.size < 1);
+      if (tooMany || bad) {
+        ui.note = {
+          kind: 'warn',
+          text: t(T.photoBad, {
+            name: bad ? text(bad.name, 60) : `> ${MAX_SHOTS}`
+          })
+        };
+        input.value = '';
+        paint();
+        return;
+      }
+      ui.reducing = true;
+      paint();
+      const SI = await import(new URL('frame/lib/signal_image.js', c.root).href);
+      for (const f of files) {
+        const r = await SI.reduce(f);
+        if (r.why) {
+          ui.pshots = [];
+          ui.note = {
+            kind: 'warn',
+            text: t(T.photoBad, {
+              name: text(f.name, 60)
+            })
+          };
+          input.value = '';
+          break;
+        }
+        ui.pshots.push({
+          name: text(f.name, 60),
+          bytes: r.bytes,
+          type: r.type,
+          w: r.w,
+          h: r.h
+        });
+      }
+      ui.reducing = false;
+      paint();
+    };
     view.addEventListener('input', e => {
       if (e.target.matches('[data-title],[data-text]')) {
         fitText();
@@ -836,6 +965,10 @@
         saveStore(c, st);
       } else if (e.target.matches('[data-shots]')) {
         const files = [...e.target.files];
+        if (ui.ch === 'pilote') {
+          pickPhotos(files, e.target);
+          return;
+        }
         const bad = files.find(f => !/^image\/(png|jpeg|webp)$/.test(f.type) || f.size > SHOT_MAX || f.size < 1);
         if (bad || files.length > MAX_SHOTS) {
           ui.note = {

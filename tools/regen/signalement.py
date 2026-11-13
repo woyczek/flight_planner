@@ -10,7 +10,7 @@ une clé inconnue de l'argument est REFUSÉE ; l'identifiant est fabriqué ici (
 CAPTURES (SOG-0316, avis de Sécurisation) : trois au plus, png, jpeg ou webp RECONNUS PAR LEURS OCTETS (signature ; ni le nom ni le type annoncé ne comptent ; svg, html et le reste sont refusés), 1,5 Mio chacune sur les octets réellement reçus, dimensions lues dans l'en-tête (8000 × 8000 et 40 millions de pixels au plus) ;
 le nom est fabriqué ici (SIG-<identifiant>-<n>.<ext>), jamais reçu ; création exclusive dans organisation/images/ (qui ne se crée pas, n'est ni un lien ni une jonction), jamais d'écrasement ; les images d'abord, puis le JSON (.tmp puis remplacement) ; si le JSON échoue, les images CRÉÉES PAR CE TRAVAIL sont retirées, elles seules.
 Les octets ne restent JAMAIS dans les arguments du travail : `check()` les décode, les contrôle et les range dans une RÉSERVE en mémoire (jamais sur disque, jeton token_urlsafe, usage unique, 2 minutes, 6 entrées, 27 Mio au total, vidée à l'usage, à l'échec et à l'expiration) ; le travail ne garde que des tailles et des types.
-`origin` { folder, ref } : un signalement REPRIS du dépôt de données (celui d'un pilote, SOG-0316) — texte seul, jamais de capture ; marqué `from: pilote`, `folder` (« signalé depuis le dossier de … » : le trigramme d'un chemin n'est pas une identité vérifiée) et `ref` ; le même `ref` n'est repris qu'une fois."""
+`origin` { folder, ref } : un signalement REPRIS du dépôt de données (celui d'un pilote, SOG-0316) — avec ses photos si le pilote en a jointes (SOG-0335 : réduites sur son appareil, lues et contrôlées par la page, puis re-contrôlées ici comme toute capture : signature, taille, dimensions) ; marqué `from: pilote`, `folder` (« signalé depuis le dossier de … » : le trigramme d'un chemin n'est pas une identité vérifiée) et `ref` ; le même `ref` n'est repris qu'une fois."""
 import base64
 import json
 import os
@@ -183,8 +183,6 @@ def parse(a):
     imgs = a.get('images', [])
     if not isinstance(imgs, list) or len(imgs) > MAX_IMAGES:
         return None, 'too-many-images'
-    if imgs and origin is not None:
-        return None, 'bad-fields'            # un signalement repris d'un pilote n'a jamais de capture
     raws = []
     for im in imgs:
         if not isinstance(im, dict) or not set(im) <= {'data', 'name', 'type'}:    # le nom et le type annoncés par la page sont ignorés

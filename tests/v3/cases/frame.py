@@ -7200,7 +7200,7 @@ def a179(c):
 def a181(c):
     c.open('signaler', docs=LEVEL3 + [['device/identity.json', {'trigram': 'ABC'}, 'cache']])
     c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the form, the channel known (a pilot: no launcher)')
-    c.eq([c.js("document.querySelector('[data-shotsbox]').hidden"), c.shown('[data-noshots]')], [False, True], "a pilot may pick a photo (SOG-0335) but the screen says it does not leave yet: no capture is ever sent by this path", what='shots')
+    c.eq([c.js("document.querySelector('[data-shotsbox]').hidden"), c.shown('[data-shotsinfo]')], [False, True], "a pilot may pick a photo (SOG-0335): the screen says where it goes (reduced here, the company's data repository, readable by its pilots)", what='shots')
     c.page.fill('[data-title]', 'La liste se replie')
     c.page.fill('[data-text]', 'Quand je tourne le téléphone.')
     c.tap('[data-send]')
@@ -7530,14 +7530,8 @@ def a196(c):
     c.tap('#fSignal')
     c.until("location.hash === '#signaler' && !!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen, its channel known')
     c.eq(c.js("document.getElementById('fSignal').getAttribute('aria-pressed')"), 'true', 'the button is pressed while the screen is open', what='pressed')
-    c.eq(c.js("document.querySelector('[data-shotsbox]').hidden"), False, 'the phone can pick a photo (its library) even if it does not leave yet', what='shots box')
-    c.ok(c.text('[data-noshots]').strip() != '' and c.shown('[data-noshots]'), '', 'the screen says that no screenshot leaves yet on this path')
-    before = c.text('[data-noshots]')
-    import base64
-    png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
-    c.page.set_input_files('[data-shots]', {'name': 'cap.png', 'mimeType': 'image/png', 'buffer': png})
-    c.until("document.querySelector('[data-noshots]').classList.contains('f-warn')", what='the screen says the chosen photo does not leave')
-    c.ok(c.text('[data-noshots]') != before and 'cap.png' in c.text('[data-shotslist]'), '', 'the chosen photo is named and the warning is stronger: only the text leaves')
+    c.eq(c.js("document.querySelector('[data-shotsbox]').hidden"), False, 'the phone can pick a photo (its library)', what='shots box')
+    c.ok(c.text('[data-shotsinfo]').strip() != '' and c.shown('[data-shotsinfo]'), '', 'the screen says what becomes of a photo (reduced here, in the data repository, readable by the pilots)')
     c.eq(c.count('[data-note] .f-warn'), 0, 'no warning about a launcher that does not answer (there is none, and there will be none)', what='warning')
     c.page.fill('[data-title]', 'Bouton cassé')
     c.page.fill('[data-text]', 'Au téléphone, depuis la carte.')
@@ -7545,7 +7539,6 @@ def a196(c):
     c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=15000, what='the report in « Mes signalements »')
     sid = c.js("document.querySelector('[data-mine] li').dataset.id")
     c.ok(f'pilot/ABC/signalements/{sid}.json' in c.text('[data-note]'), c.text('[data-note]'), 'the screen says where it went: the folder of the data repository')
-    c.ok(c.js("!!document.querySelector('[data-note]').textContent.match(/capture|screenshot|Screenshot|captura/i)"), c.text('[data-note]'), 'and that the attached photo did not leave (not lost in silence)')
     keys = c.js("""() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => String(k).includes('/signalements/'))) } })""")
     c.eq(keys, [f'pilot/ABC/signalements/{sid}.json'], 'one document under the pilot folder (for the grouped send), not « non envoyé »', what='document')
     c.eq(c.js("document.querySelector('[data-mine] .f-sg-state').classList.contains('f-warn')"), False, 'the line of the report is not « not sent »', what='state')
@@ -7572,4 +7565,130 @@ def a196(c):
             c.wait(250)
         c.wait(700)
         c.eq(c.js("!document.getElementById('fSignal').hidden"), shown, f'version {v!r}: the report button is ' + ('shown' if shown else 'hidden (an exact final version)'), what=f'button for {v}')
+    c.check_errors()
+
+
+_SI_JS = """(() => document.querySelector('script[src*="app.js"]').src.replace(/app\\.js.*$/, 'lib/signal_image.js'))()"""
+
+_SI_GUARDS_JS = """async (url) => {
+  const SI = await import(url), out = {}, id = 'SIG-0123456789', enc = s => new TextEncoder().encode(s);
+  const u32 = n => [n >>> 24, (n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const png = (w, h, size = 0) => { const b = [0x89, 0x50, 0x4e, 0x47, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, ...u32(w), ...u32(h), 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 73, 69, 78, 68, 0, 0, 0, 0]; while (b.length < size) b.push(0); return Uint8Array.from(b) };
+  const jpg = (w, h, exif) => Uint8Array.from([0xff, 0xd8, ...(exif ? [0xff, 0xe1, 0, 12, 69, 120, 105, 102, 0, 0, 71, 80, 83, 0] : [0xff, 0xe0, 0, 4, 97, 98]), 0xff, 0xc0, 0, 11, 8, h >> 8, h & 255, w >> 8, w & 255, 1, 1, 17, 0, 0xff, 0xd9, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const doc = (bytes, x = {}) => ({ schema: SI.SCHEMA, id, n: 1, b64: SI.toB64(bytes), ...x });
+  const why = (d, w = { id, n: 1 }) => { const k = SI.checkDoc(d, w); return k.ok ? 'ok' : k.why };
+  out.png = why(doc(png(300, 200)));
+  out.jpg = why(doc(jpg(640, 480)));
+  out.exif = why(doc(jpg(640, 480, true)));
+  out.gif = why(doc(Uint8Array.from([...enc('GIF89a'), ...new Array(40).fill(0)])));
+  out.svg = why(doc(enc('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>1</script></svg>' + ' '.repeat(40))));
+  out.liesType = why(doc(png(300, 200), { type: 'image/png' }));
+  out.wide = why(doc(png(1601, 100)));
+  out.tall = why(doc(png(100, 1601)));
+  out.notB64 = why({ ...doc(png(300, 200)), b64: 'not base64 !! not base64 !! not base64 !!' });
+  out.badLen = why({ ...doc(png(300, 200)), b64: SI.toB64(png(300, 200)).slice(0, -1) });
+  out.tooLong = why({ ...doc(png(300, 200)), b64: 'A'.repeat(SI.LIMITS.b64 + 4) });
+  out.tooBig = why(doc(png(300, 200, SI.LIMITS.bytes + 1)));
+  out.exactly = why(doc(png(300, 200, SI.LIMITS.bytes)));
+  out.otherId = why(doc(png(300, 200)), { id: 'SIG-aaaaaaaaaa', n: 1 });
+  out.otherN = why(doc(png(300, 200)), { id, n: 2 });
+  out.badN = why(doc(png(300, 200), { n: 4 }), { id });
+  out.extraKey = why(doc(png(300, 200), { path: '../../x' }));
+  const w = (p, v, t = 'ABC') => { const k = SI.checkWrite(p, v, t); return k.ok ? 'ok' : k.why };
+  out.wGood = w(`pilot/ABC/signalements/${id}/1.json`, doc(png(300, 200)));
+  out.wOther = w(`pilot/XYZ/signalements/${id}/1.json`, doc(png(300, 200)));
+  out.wDeep = w(`pilot/ABC/signalements/${id}/1/x.json`, doc(png(300, 200)));
+  out.wFour = w(`pilot/ABC/signalements/${id}/4.json`, doc(png(300, 200), { n: 4 }));
+  out.wBadImg = w(`pilot/ABC/signalements/${id}/1.json`, doc(enc('GIF89a' + ' '.repeat(40))));
+  out.wReport = w(`pilot/ABC/signalements/${id}.json`, { schema: 'sog-signalement/1', id });
+  out.wReportBig = w(`pilot/ABC/signalements/${id}.json`, { text: 'x'.repeat(9000) });
+  out.wElsewhere = w('pilot/ABC/current_flight.json', {});
+  return out }"""
+
+_SI_BIG_JS = """async () => {
+  const cv = document.createElement('canvas'); cv.width = 3200; cv.height = 2400; const g = cv.getContext('2d');
+  const im = g.createImageData(3200, 2400), d = im.data; for (let i = 0; i < d.length; i += 4) { d[i] = (i * 7 + Math.random() * 90) & 255; d[i + 1] = (i * 3 + Math.random() * 90) & 255; d[i + 2] = Math.random() * 255; d[i + 3] = 255 } g.putImageData(im, 0, 0)
+  const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.97)), b = new Uint8Array(await blob.arrayBuffer());
+  const seg = [0xff, 0xe1, 0, 24, 69, 120, 105, 102, 0, 0, ...new TextEncoder().encode('GPSMARK:48.85,2.35'), 0];
+  const out = new Uint8Array(b.length + seg.length); out.set(b.subarray(0, 2), 0); out.set(seg, 2); out.set(b.subarray(2), 2 + seg.length);
+  let s = ''; for (let i = 0; i < out.length; i += 32768) s += String.fromCharCode(...out.subarray(i, i + 32768)); return btoa(s) }"""
+
+_SI_DOCS_JS = """(sid) => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const s = r.result.transaction('docs').objectStore('docs'), q = s.getAllKeys(); q.onsuccess = async () => {
+  const keys = q.result.filter(k => String(k).includes('/signalements/')), out = { keys };
+  for (const k of keys) out[k] = await new Promise(rs => { const g = s.get(k); g.onsuccess = () => rs(g.result?.text || '') });
+  res(out) } } })"""
+
+
+@case('A197', "Report photos from a device without launcher (SOG-0335, step 2): a photo is REDUCED on the device (1 600 px, 400 KB, the EXIF and its GPS position gone), written as a JSON document next to the report, and the ergonomist's workstation reads it back with the same checks — type by the bytes (never svg, never the announced type), base64 checked before decoding, dimensions before an image, no EXIF — and takes it over with the report", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0335 + Sécurisation (the conditions of the data-repository path): a photo of the phone's library (HEIC converted to JPEG by the system) is re-encoded by a canvas (the EXIF, so the GPS position, is not copied), 1 600 px at most on the long side, WebP or JPEG, 400 KB at most, three at most; it goes as pilot/<trigram>/signalements/<id>/<n>.json = { schema, id, n, b64 } (the report says « shots: n »); the adapter refuses at WRITE what is not a report (8 KB) or such an image document; the reader refuses at READ a type that is not png, jpeg or webp by its bytes (the announced type is never read), a base64 that is too long or not base64 (before decoding), dimensions beyond 1 600 (read from the header), a block of EXIF, an extra key, a wrong identifier; the page shows an accepted image by <img> on a blob; the workstation's « take over » sends the checked photos with the report and the verb checks them again")
+def a197(c):
+    import base64
+    import struct
+    import tempfile
+    import zlib
+    c.open('fuel', docs=LEVEL3)
+    url = c.js(_SI_JS)
+    # ---- the guards, one by one (the library the adapter and the reader share)
+    r = c.js(_SI_GUARDS_JS, url)
+    c.eq(r, {'png': 'ok', 'jpg': 'ok', 'exif': 'exif', 'gif': 'type', 'svg': 'type', 'liesType': 'shape', 'wide': 'dims', 'tall': 'dims', 'notB64': 'b64', 'badLen': 'b64', 'tooLong': 'b64', 'tooBig': 'size', 'exactly': 'ok',
+             'otherId': 'id', 'otherN': 'id', 'badN': 'shape', 'extraKey': 'shape', 'wGood': 'ok', 'wOther': 'path', 'wDeep': 'path', 'wFour': 'path', 'wBadImg': 'type', 'wReport': 'ok', 'wReportBig': 'size', 'wElsewhere': 'path'},
+         'every guard says no to its own forgery and yes to the good one (type by the bytes, never svg or gif, the announced type is not a key, base64 before decoding, dimensions, EXIF, 400 KB to the byte, identifier, path, 8 KB for a report)', what='guards')
+    # ---- the phone: a big photo carrying EXIF and a GPS position is reduced, written next to the report, and the position is gone
+    raw = base64.b64decode(c.js(_SI_BIG_JS))
+    c.ok(b'GPSMARK' in raw and len(raw) > 409600, len(raw), 'the photo of the test is large and carries a GPS marker in its EXIF')
+    c.open('fuel', docs=LEVEL3 + [['device/signaler.json', {'poste': True, 'mine': [], 'unsent': [], 'draft': {'kind': 'bug', 'title': '', 'text': ''}}, 'cache']])
+    c.tap('#fSignal')
+    c.until("location.hash === '#signaler' && !!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen')
+    c.page.set_input_files('[data-shots]', {'name': 'IMG_0001.jpg', 'mimeType': 'image/jpeg', 'buffer': raw})
+    c.until("document.querySelector('[data-shotslist]').textContent.includes('IMG_0001.jpg')", timeout=30000, what='the photo reduced')
+    lst = c.text('[data-shotslist]')
+    m = re.search(r'\((\d+)×(\d+), (\d+) Ko\)', lst)
+    c.ok(m and max(int(m[1]), int(m[2])) <= 1600 and int(m[3]) <= 400, lst, 'the photo is reduced here: 1 600 px at most on the long side, 400 KB at most')
+    c.page.fill('[data-title]', 'Capture depuis le téléphone')
+    c.page.fill('[data-text]', 'La carte ne se redessine pas.')
+    c.tap('[data-form] [data-send]')
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=20000, what='the report sent')
+    sid = c.js("document.querySelector('[data-mine] li').dataset.id")
+    got = c.js(_SI_DOCS_JS, sid)
+    rk = f'pilot/ABC/signalements/{sid}.json'
+    ik = f'pilot/ABC/signalements/{sid}/1.json'
+    c.eq(sorted(got['keys']), sorted([rk, ik]), 'the report and ONE image document next to it, both under the folder of the device', what='documents')
+    rep, img = json.loads(got[rk]), json.loads(got[ik])
+    c.eq((rep.get('shots'), sorted(img), img['schema'], img['id'], img['n']), (1, ['b64', 'id', 'n', 'schema'], 'sog-signalement-image/1', sid, 1), 'the report says « shots: 1 »; the image document has its four keys and nothing else (no type, no name)', what='shape')
+    out = base64.b64decode(img['b64'])
+    c.ok(out[:3] == b'\xff\xd8\xff' or out[:4] == b'RIFF', out[:4], 'the bytes are a jpeg or a webp (the canvas wrote them)')
+    c.ok(b'GPSMARK' not in out and b'Exif' not in out and b'48.85' not in out, '', 'the GPS marker and the EXIF are gone from what leaves (the canvas re-encoded the photo)')
+    c.ok(len(out) <= 409600, len(out), 'and it is at most 400 KB')
+    c.ok('ABC/signalements' in c.text('[data-note]'), c.text('[data-note]'), 'the screen says where it went, the photos with it')
+    c.shot(f'A197_phone_{c.width}_{c.lang}_delivered.png')
+    # ---- the workstation: reads the photos back with the same checks, shows the accepted one, refuses the others, takes over the good ones with the report
+    ok = {'schema': 'sog-signalement/1', 'id': 'SIG-0123456789', 'kind': 'bug', 'title': 'La carte', 'text': 'Elle ne se redessine pas.', 'screen': 'maps', 'at': '2026-11-13T10:00:00Z', 'shots': 3}
+
+    def png_doc(w, h, n, **x):
+        ihdr = struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)
+        b = b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + ihdr + struct.pack('>I', zlib.crc32(b'IHDR' + ihdr)) + struct.pack('>I', 0) + b'IEND' + struct.pack('>I', zlib.crc32(b'IEND'))
+        return {'schema': 'sog-signalement-image/1', 'id': 'SIG-0123456789', 'n': n, 'b64': base64.b64encode(b).decode(), **x}
+    svg = base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg" onload="window.__pwn=1"><script>window.__pwn=1</script></svg>' + b' ' * 40).decode()
+    docs = LEVEL3 + [['pilot/XYZ/signalements/SIG-0123456789.json', ok, 'document'],
+                     ['pilot/XYZ/signalements/SIG-0123456789/1.json', png_doc(300, 200, 1), 'document'],
+                     ['pilot/XYZ/signalements/SIG-0123456789/2.json', {**png_doc(300, 200, 2), 'b64': svg}, 'document'],
+                     ['pilot/XYZ/signalements/SIG-0123456789/3.json', png_doc(5000, 100, 3), 'document']]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation' / 'images').mkdir(parents=True)
+        f = root / 'organisation' / 'SIGNALEMENTS.json'
+        _sg_launcher(c, root, data=False)
+        c.open('signaler', docs=docs)
+        c.until("!!document.querySelector('[data-p=\"XYZ/SIG-0123456789\"] [data-pimgs]')", timeout=25000, what='the photo of the pilot report')
+        r = c.js("""() => { const li = document.querySelector('[data-p="XYZ/SIG-0123456789"]'); return { imgs: [...li.querySelectorAll('[data-pimgs] img')].map(i => i.src.slice(0, 5)), refused: !!li.querySelector('[data-pimg-refused]'), pwn: window.__pwn === undefined,
+          svgInDom: !!document.querySelector('[data-plist] svg, [data-plist] script') } }""")
+        c.eq(r, {'imgs': ['blob:'], 'refused': True, 'pwn': True, 'svgInDom': False}, 'one photo accepted and shown (an <img> on a blob), the svg and the 5 000 px one refused and said, nothing executed (the report of the phone above, with its own photo, is listed too)', what='read')
+        c.shot(f'A197_poste_{c.width}_{c.lang}_delivered.png')
+        c.tap('[data-take="XYZ/SIG-0123456789"]')
+        c.until("!document.querySelector('[data-take=\"XYZ/SIG-0123456789\"]')", timeout=15000, what='taken over')
+        items = json.loads(f.read_text(encoding='utf-8'))['items']
+        e = next(iter(items.values()))
+        files = sorted(p.name for p in (root / 'organisation' / 'images').iterdir())
+        c.eq((len(items), e.get('from'), len(e.get('images', [])), [n.rsplit('.', 1)[-1] for n in files]), (1, 'pilote', 1, ['png']), 'taken over with the report: only the checked photo, written by the launcher under a name it made', what='taken')
     c.check_errors()

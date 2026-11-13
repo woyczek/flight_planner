@@ -3053,7 +3053,6 @@ def k262(c):
         c.eq(rd(Job('signalement', 'lire', {}), {}, ctx)['refs'], ['ABC/sig-2026-0001'], 'a read lists the pilot reports already taken (folder/reference), to say « n not taken »', what='refs')
         for bad in ({'folder': '../..', 'ref': 'abcd'}, {'folder': 'ABC', 'ref': '../../x'}, {'folder': 'ABC'}, {'folder': 'ABC', 'ref': 'abcd', 'x': 1}, 'ABC'):
             c.ok(check({**GOOD_SG, 'origin': bad}) is None, repr(bad), f'a forged origin {bad!r} is refused')
-        c.ok(check({**GOOD_SG, 'origin': org_a, 'images': [{'data': _b64(_png(10, 10))}]}) is None and G['held']()[0] == 0, '', 'a pilot report never carries a capture (nothing held either)')
     # the list of screens follows the modules of the suite
     mods = sorted(p.name for p in (ROOT / 'modules').iterdir() if p.is_dir() and not p.name.startswith(('_', '.')))
     c.eq([m for m in mods if m not in G['SCREENS']], [], 'every module of the suite is a screen the verb knows (add the new one to SCREENS)', what='screens')
@@ -3092,6 +3091,11 @@ def k263(c):
         c.eq((r['ok'], r['images'], names, G['held']()[0]), (True, 3, [f'{sid}-1.png', f'{sid}-2.jpg', f'{sid}-3.webp'], 0), 'the three captures are written under names the verb made, the extension said by the bytes, the reserve emptied', what='three')
         c.eq([(img / n).read_bytes() for n in names], [raws[0][0], raws[1][0], raws[2][0]], 'the files are the bytes received', what='bytes')
         c.eq((json.loads(f.read_text(encoding='utf-8'))['items'][sid]['images'], [p.name for p in root.rglob('evil*')], [p.name for p in org.glob('*.tmp')]), (names, [], []), 'the entry lists exactly those names; nothing was written under the name of the page', what='names')
+        # SOG-0335: the photos a pilot attached (reduced on his device, read and checked by the page) travel with the report, checked again here like any capture
+        r = ajout({**GOOD_SG, 'origin': {'folder': 'ABC', 'ref': 'sig-2026-0002'}, 'images': [im(_jpg(640, 480))]})
+        e = json.loads(f.read_text(encoding='utf-8'))['items'][r['id']]
+        c.eq((r['ok'], len(e.get('images', [])), e.get('from')), (True, 1, 'pilote'), 'a pilot report taken over keeps the photos attached to it (checked here again by signature)', what='pilot photos')
+        c.ok(check({**GOOD_SG, 'origin': {'folder': 'ABC', 'ref': 'sig-2026-0003'}, 'images': [im(b'GIF89a' + bytes(40))]}) is None, '', 'a pilot photo that is not png, jpeg or webp is refused by the verb too')
         # refused by the bytes
         svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
         for raw, why in ((svg, 'an svg'), (b'<html><script>1</script></html>', 'an html'), (b'<svg/>' + _png(10, 10), 'an svg followed by a png'), (b'', 'nothing'), (b'GIF89a' + b'\0' * 20, 'a gif'), (_png(10, 10)[:20], 'a cut png'), (b'RIFF\0\0\0\0WAVEfmt ', 'a wav')):

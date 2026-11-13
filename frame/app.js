@@ -4198,14 +4198,27 @@
   const signalAdapters = new Map();
   const signalData = () => {
     const tri = /^[A-Za-z0-9]{2,8}$/.test(identity.trigram || '') ? identity.trigram : '';
-    if (!signalAdapters.has(tri)) signalAdapters.set(tri, FD.adapter({
-      id: 'frame-signaler',
-      reads: ['pilot/'],
-      writes: tri ? [{
-        prefix: `pilot/${tri}/signalements/`,
-        merge: 'record'
-      }] : []
-    }));
+    if (!signalAdapters.has(tri)) {
+      const ad = FD.adapter({
+        id: 'frame-signaler',
+        reads: ['pilot/'],
+        writes: tri ? [{
+          prefix: `pilot/${tri}/signalements/`,
+          merge: 'record'
+        }] : []
+      });
+      // SOG-0335 : les bornes sont aussi refusées ICI, à l'écriture, pas seulement dans l'écran : un signalement (8 Ko) ou une image réduite d'un signalement
+      // (pilot/<tri>/signalements/<id>/<n>.json : type par la signature des octets, base64 vérifié avant décodage, dimensions, 400 Ko, pas d'EXIF), rien d'autre
+      signalAdapters.set(tri, {
+        ...ad,
+        put: async (path, value, opts) => {
+          const SI = await import(new URL('frame/lib/signal_image.js', ROOT).href),
+            r = SI.checkWrite(path, value, tri);
+          if (!r.ok) throw new Error(`signaler: write refused (${r.why})`);
+          return ad.put(path, value, opts);
+        }
+      });
+    }
     return signalAdapters.get(tri);
   };
   const helpCtx = () => ({
