@@ -2011,3 +2011,95 @@ def n49(c):
     c.ok(t['key'] < 100 and t['next'] < 100, t, 'a keystroke redraws the list in less than 100 ms (before and after the index)')
     c.eq(t['hits'], 100, 'every mission has the risk: a hundred found (the count)', what='hits')
     c.js(_REG_CLEAR)
+
+
+
+# SOG-0287, step 1: the bench's complete mission (X-301A, invented) filed as X-001A of an invented family REG (its letter: X, read from
+# its identifiers), in X_REG/ — the folder the noreg clears before and after
+_ED_FULL = _SHEET_FULL.replace('X-301A', 'X-001A').replace('type: SAR,', 'type: REG,')  # the family of the file is the registry's
+_ED_TEXTS = [['missions/mission_registry.yaml', 'schema: mission-registry\nversion: 1\nmissions:\n'
+              '  - { id: X-001A, family: REG, series: 1, title: Mission complète, folder: X_REG/X-001A, files: [missionX-001A.yaml] }\n'],
+             ['missions/X_REG/X-001A/missionX-001A.yaml', _ED_FULL]]
+E = f'{M} [data-pane=editor]'
+
+
+def _ed_fill(c, k, v):
+    c.page.fill(f'{E} input[data-k={k}]', v)
+
+
+@case('N50', 'Missions › Registre › the editor, step 1 (Cadre): « Créer une mission » at the head, « Modifier » and « Dupliquer » on the unfolded '
+      'line; six steps, the Cadre open; « Enregistrer » writes the mission file and its registry line on the device (pending, sent with the '
+      'grouped send) and says so; the identifier\'s form blocks; Modifier keeps every other field of the file; Dupliquer proposes the next '
+      'identifier and keeps the content', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0287 (mock-up validated by the user on 13 Nov: « la maquette me va. »): modules/missions/maquette/editeur_cadre_*.png is the '
+      'contract; the ergonomist\'s answers: Enregistrer on the device then the grouped send, subtype from the family\'s list, personal by '
+      'default, Dupliquer on the unfolded line')
+def n50(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _ED_TEXTS)
+    c.ok(c.count(f'{R} [data-do=edcreate]') == 1, 'no « Créer une mission »', '« Créer une mission » at the head of the Registry')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.ok(c.count(f'{R} [data-rowid="X-001A"] [data-do=edmodify]') == 1 and c.count(f'{R} [data-rowid="X-001A"] [data-do=eddup]') == 1,
+         'no Modifier / Dupliquer', '« Modifier » and « Dupliquer » on the unfolded line')
+    # create
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E}')", what='the editor')
+    steps = c.js(f"[...document.querySelectorAll('{E} [data-steps] button')].map(b => [b.dataset.step, b.disabled])")
+    c.eq(steps, [['cadre', False], ['teams', True], ['places', True], ['story', True], ['risks', True], ['timeline', True]],
+         'six steps, the Cadre open (the others come with the next pushes)', what='steps')
+    c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
+    c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier of the family proposed')
+    _ed_fill(c, 'edid', 'X-1')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(300)
+    c.ok(c.js(_TEXT_OF, 'missions/X_REG/X-1/missionX-1.yaml') is None and 'X-1' not in (reg_text(c) or ''), 'written',
+         'an identifier without its form blocks: nothing written')
+    c.ok(any(norm(row(c, 'edBlock_idForm')) in norm(n) for n in c.note_log()), c.note_log(), 'and the floating notification says why')
+    _ed_fill(c, 'edid', 'X-002')
+    _ed_fill(c, 'edtitle', 'Mission créée')
+    c.page.select_option(f'{E} select[data-k=edth]', 'Corse')
+    _ed_fill(c, 'eddep', 'XTST · Base Test')
+    _ed_fill(c, 'edarr', 'Base Test Sud (XTSU)')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='« modifiée sur cet appareil — pas encore envoyée »')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-002/missionX-002.yaml') or ''
+    c.ok(all(x in t for x in ('id: X-002', 'type: REG', 'theatre: Corse', 'title: Mission créée', 'name: Base Test (XTST)', 'icao: XTSU',
+                               'schema: helo-xp-mission')), t, 'the file of the new mission, in the V2 form')
+    c.ok('airline' not in t, t, 'no airline: a personal mission by default (N17)')
+    reg_wait_text(c, lambda x: 'X-002' in x)
+    c.ok('id: X-002' in reg_text(c) and 'X_REG/X-002' in reg_text(c), reg_text(c), 'its registry line, on the device')
+    # the noreg's transport is local: data.put writes the cache at once (on a device with a repository, the same put waits for the grouped send)
+    # modify X-001A: every other field kept
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.until(_REG_READ, timeout=20000, what='back to the registry')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{E} input[data-k=edtitle]')?.value === 'Mission complète'", timeout=10000, what='X-001A in the editor')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # the captures without the toasts of the steps before
+    bar = c.js(f"""(() => {{ const b = document.querySelector('{E} [data-do=edsave]').getBoundingClientRect();
+      return document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)?.closest('[data-do=edsave]') ? b.bottom <= innerHeight : false }})()""")
+    c.ok(bar, 'covered or off screen', 'at 390, « Enregistrer · Suivante · Annuler » stays on screen above the tab bar')
+    c.shot('N50_390_cadre.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N50_1280_cadre.png')
+    c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edaside]')).display") != 'none', 'hidden', 'wide: the preview and « À compléter » on the right')
+    _ed_fill(c, 'edtitle', 'Mission retouchée')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('title: Mission retouchée' in t and all(x in t for x in ('Danger cinq', 'Second paragraphe inventé', 'ZONE-2', 'CHARLIE3', 'lat: 45')), t[:400],
+         'Modifier changes the frame and keeps the rest of the file')
+    reg_wait_text(c, lambda x: 'Mission retouchée' in x)
+    # duplicate X-001A: the next identifier, the content kept, the original untouched
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.until(_REG_READ, timeout=20000, what='back to the registry')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="eddup"]')
+    c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-003'", timeout=10000, what='the duplicate proposes X-003')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    d = c.js(_TEXT_OF, 'missions/X_REG/X-003/missionX-003.yaml') or ''
+    c.ok('id: X-003' in d and 'Danger cinq' in d, d[:300], 'the copy: a new identifier, the content kept')
+    c.ok('id: X-001A' in (c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''), 'changed', 'the original is untouched')
+    c.js(_REG_CLEAR)

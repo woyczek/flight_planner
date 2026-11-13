@@ -9,6 +9,7 @@ import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des 
 import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
 import * as SE from './search.js'; // la recherche dans le contenu des missions (SOG-0288) : le calcul pur
+import * as ED from './editor.js'; // l'éditeur de missions (SOG-0287) : le calcul pur
 import *
 as MT from '../../frame/lib/mission_themes.js'; // le thème d'une ancienne catégorie (SOG-0202 T2) // changer la compagnie d'une mission : le champ airline retouché dans le texte (SOG-0223)
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
@@ -23,7 +24,7 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
@@ -78,6 +79,31 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-famrow{gap:0 .75em;flex-wrap:wrap} /* la famille et, choisie, son sous-type sur une ligne (SOG-0292) */
 [data-module="missions"] .ms-famrow>.f-field{flex:1 1 12em;min-width:0}
 [data-module="missions"] .ms-famrow select{max-width:100%}
+/* l'éditeur (SOG-0287, la maquette est le contrat) : téléphone, une étape à la fois, pastilles qui défilent, barre du bas ; large,
+   étapes à gauche, formulaire au centre, aperçu et « À compléter » à droite */
+[data-module="missions"] .ms-crumb{margin:0 0 .2em}
+[data-module="missions"] .ms-ed>h2{margin:.1em 0 .3em;font-size:1.4em}
+[data-module="missions"] .ms-edpend{display:inline-block;margin:0 0 .6em}
+[data-module="missions"] .ms-steps{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;margin:0 0 4px}
+[data-module="missions"] .ms-steps>button{flex:0 0 auto;border-radius:999px;min-height:44px;white-space:nowrap}
+[data-module="missions"] .ms-steps>button[aria-current=step]{outline:2px solid var(--accent,#1a73e8)}
+[data-module="missions"] .ms-stepmark{display:inline-block;width:1.4em;text-align:center}
+[data-module="missions"] .ms-stepmark[data-kind=ok]{color:var(--ok,#1e7e34)}
+[data-module="missions"] .ms-stepmark[data-kind=warn]{color:var(--warn,#b06f00)}
+[data-module="missions"] .ms-edform{min-width:0}
+[data-module="missions"] .ms-edform .f-row{align-items:flex-start}
+[data-module="missions"] .ms-edform .f-row>.f-field{flex:1 1 10em;min-width:0}
+[data-module="missions"] .ms-edaside{display:none}
+[data-module="missions"] .ms-edbar{position:sticky;bottom:var(--f-tab-space,0px);display:flex;gap:8px;align-items:center;padding:8px 0;background:var(--sog-bg,#fff);z-index:2} /* au-dessus de la barre d'onglets du téléphone, comme rp-dock */
+[data-module="missions"] .ms-edbar>.ms-edcancel{margin-left:auto}
+@container (min-width: 900px){
+  [data-module="missions"] .ms-edgrid{display:grid;grid-template-columns:minmax(12em,16em) minmax(0,1fr) minmax(14em,20em);gap:16px;align-items:start}
+  [data-module="missions"] .ms-steps{flex-direction:column;overflow:visible}
+  [data-module="missions"] .ms-steps>button{border-radius:6px;text-align:left;border-color:transparent;background:none}
+  [data-module="missions"] .ms-steps>button[aria-current=step]{outline:none;background:var(--accent-bg,#e8f0fe)}
+  [data-module="missions"] .ms-edaside{display:block}
+  [data-module="missions"] .ms-edaside>.f-card{margin:0 0 12px}
+}
 @container (min-width: 700px){
   [data-module="missions"] .ms-rrow>summary{display:flex;gap:1em;min-height:0;padding:.1em .75em;line-height:1.3}
   [data-module="missions"] .ms-rrow>summary>span:first-child{flex:1 1 auto;min-width:0}
@@ -389,7 +415,98 @@ const TX = {
     'Das Register hat sich inzwischen geändert: es wird neu gelesen, bitte erneut versuchen.',
     'El registro cambió entretanto: se vuelve a leer, inténtelo de nuevo.'
   ],
-  regEdit: ['Corriger', 'Edit', 'Bearbeiten', 'Corregir'],
+  regEdit: ['Corriger', 'Correct', 'Korrigieren', 'Corregir'],
+  // l'éditeur de missions (SOG-0287, maquette validée le 13 nov. : modules/missions/maquette/)
+  edCreate: ['Créer une mission', 'Create a mission', 'Mission anlegen', 'Crear una misión'],
+  edModify: ['Modifier', 'Edit', 'Bearbeiten', 'Modificar'],
+  edDup: ['Dupliquer', 'Duplicate', 'Duplizieren', 'Duplicar'],
+  edCrumbNew: ['Missions › Registre › Créer', 'Missions › Registry › Create', 'Missionen › Register › Anlegen',
+    'Misiones › Registro › Crear'
+  ],
+  edCrumbEdit: ['Missions › Registre › Modifier', 'Missions › Registry › Edit', 'Missionen › Register › Bearbeiten',
+    'Misiones › Registro › Modificar'
+  ],
+  edCrumbDup: ['Missions › Registre › Dupliquer', 'Missions › Registry › Duplicate', 'Missionen › Register › Duplizieren',
+    'Misiones › Registro › Duplicar'
+  ],
+  edNewTitle: ['Nouvelle mission', 'New mission', 'Neue Mission', 'Nueva misión'],
+  edPending: ['modifiée sur cet appareil — pas encore envoyée', 'changed on this device — not sent yet',
+    'auf diesem Gerät geändert — noch nicht gesendet',
+    'modificada en este dispositivo — aún no enviada'
+  ],
+  stepCadre: ['Cadre', 'Frame', 'Rahmen', 'Marco'],
+  stepTeams: ['Équipes', 'Teams', 'Teams', 'Equipos'],
+  stepPlaces: ['Lieux', 'Places', 'Orte', 'Lugares'],
+  stepStory: ['Récit', 'Story', 'Erzählung', 'Relato'],
+  stepRisks: ['Risques', 'Risks', 'Risiken', 'Riesgos'],
+  stepTimeline: ['Chronologie et cartes', 'Timeline and maps', 'Ablauf und Karten', 'Cronología y mapas'],
+  edCadreHint: ['Ce qui range la mission : sa famille, sa série, son identifiant, d\'où elle part et où elle arrive.',
+    'What files the mission: its family, its series, its identifier, where it leaves from and where it arrives.',
+    'Was die Mission einordnet: Familie, Serie, Kennung, Abflug und Ankunft.',
+    'Lo que clasifica la misión: su familia, su serie, su identificador, de dónde sale y adónde llega.'
+  ],
+  edLater: ['Cette étape arrive dans un prochain lot ; d\'ici là, elle se remplit dans la V2.',
+    'This step comes in a next lot; until then, it is filled in the V2.',
+    'Dieser Schritt kommt in einem nächsten Los; bis dahin wird er in der V2 ausgefüllt.',
+    'Este paso llega en un próximo lote; hasta entonces, se rellena en la V2.'
+  ],
+  edFamily: ['Famille', 'Family', 'Familie', 'Familia'],
+  edSubtype: ['Sous-type', 'Subtype', 'Untertyp', 'Subtipo'],
+  edSeries: ['Série', 'Series', 'Serie', 'Serie'],
+  edId: ['Identifiant', 'Identifier', 'Kennung', 'Identificador'],
+  edTitle: ['Titre', 'Title', 'Titel', 'Título'],
+  edTheatre: ['Théâtre', 'Theatre', 'Einsatzgebiet', 'Teatro'],
+  edDep: ['Départ', 'Departure', 'Abflug', 'Salida'],
+  edArr: ['Arrivée', 'Arrival', 'Ankunft', 'Llegada'],
+  edNextSeries: ['suivante : {n}', 'next: {n}', 'nächste: {n}', 'siguiente: {n}'],
+  edIdKept: ['l\'ancien est gardé', 'the former one is kept', 'die frühere bleibt erhalten', 'el anterior se conserva'],
+  edIdNext: ['le suivant de la famille', 'the next of the family', 'die nächste der Familie', 'el siguiente de la familia'],
+  edPlaceHint: ['code OACI · nom', 'ICAO code · name', 'ICAO-Code · Name', 'código OACI · nombre'],
+  edSave: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
+  edNext: ['Suivante', 'Next', 'Weiter', 'Siguiente'],
+  edPreview: ['Aperçu de la fiche', 'Preview of the sheet', 'Vorschau des Blatts', 'Vista previa de la ficha'],
+  edTodo: ['À compléter', 'To complete', 'Zu ergänzen', 'Por completar'],
+  edNothing: ['rien', 'nothing', 'nichts', 'nada'],
+  edSeriesN: ['série {n}', 'series {n}', 'Serie {n}', 'serie {n}'],
+  edSaved: ['Mission enregistrée sur cet appareil ; elle part avec le prochain envoi.',
+    'Mission saved on this device; it goes with the next send.',
+    'Mission auf diesem Gerät gespeichert; sie geht mit dem nächsten Senden.',
+    'Misión guardada en este dispositivo; sale con el próximo envío.'
+  ],
+  edFailed: ['Mission non enregistrée : {e}', 'Mission not saved: {e}', 'Mission nicht gespeichert: {e}', 'Misión no guardada: {e}'],
+  edUnreadable: ['Fichier de mission illisible : {e}', 'Mission file unreadable: {e}', 'Missionsdatei unlesbar: {e}',
+    'Archivo de misión ilegible: {e}'
+  ],
+  edRegLater: ['Le fichier est enregistré ; le registre n\'a pas pu être retouché ({e}) : « Mettre à jour le registre » l\'ajoutera.',
+    'The file is saved; the registry could not be updated ({e}): « Update the registry » will add it.',
+    'Die Datei ist gespeichert; das Register konnte nicht angepasst werden ({e}): „Register aktualisieren“ fügt sie hinzu.',
+    'El archivo está guardado; el registro no pudo actualizarse ({e}): «Actualizar el registro» lo añadirá.'
+  ],
+  edBlock_family: ['Choisissez une famille.', 'Choose a family.', 'Wählen Sie eine Familie.', 'Elija una familia.'],
+  edBlock_idForm: ['L\'identifiant a la forme « T-086 » : une lettre, un tiret, trois chiffres (une lettre d\'équipe permise).',
+    'The identifier has the form « T-086 »: a letter, a hyphen, three digits (a team letter allowed).',
+    'Die Kennung hat die Form „T-086“: ein Buchstabe, ein Bindestrich, drei Ziffern (ein Teambuchstabe erlaubt).',
+    'El identificador tiene la forma «T-086»: una letra, un guion, tres cifras (se admite una letra de equipo).'
+  ],
+  edBlock_idLetter: ['L\'identifiant commence par la lettre de la famille ({l}).',
+    'The identifier begins with the letter of the family ({l}).',
+    'Die Kennung beginnt mit dem Buchstaben der Familie ({l}).', 'El identificador empieza por la letra de la familia ({l}).'
+  ],
+  edBlock_idTaken: ['Cet identifiant est déjà dans le registre.', 'This identifier is already in the registry.',
+    'Diese Kennung steht schon im Register.',
+    'Este identificador ya está en el registro.'
+  ],
+  todo_title: ['titre', 'title', 'Titel', 'título'],
+  todo_theatre: ['théâtre', 'theatre', 'Einsatzgebiet', 'teatro'],
+  todo_dep: ['départ', 'departure', 'Abflug', 'salida'],
+  todo_arr: ['arrivée', 'arrival', 'Ankunft', 'llegada'],
+  todo_teams: ['aucune équipe', 'no team', 'kein Team', 'ningún equipo'],
+  todo_origin: ['position du départ', 'position of the departure', 'Position des Abflugs', 'posición de la salida'],
+  todo_destination: ['position de l\'arrivée', 'position of the arrival', 'Position der Ankunft', 'posición de la llegada'],
+  todo_summary: ['résumé', 'summary', 'Kurzbeschreibung', 'resumen'],
+  todo_description: ['description', 'description', 'Beschreibung', 'descripción'],
+  todo_risks: ['aucun risque', 'no risk', 'kein Risiko', 'ningún riesgo'],
+  todo_timeline: ['aucun événement', 'no event', 'kein Ereignis', 'ningún evento'],
   regTitleF: ['Titre', 'Title', 'Titel', 'Título'],
   regSeries: ['Série', 'Series', 'Serie', 'Serie'],
   regNumber: ['Numéro', 'Number', 'Nummer', 'Número'],
@@ -652,10 +769,10 @@ const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.fami
 
 /** Dessine la liste, ou la mission choisie. */
 function draw(s) {
-  s.ctx.helpAnchor?.(() => s.open ? 'missions-open' : s.reg ? 'missions-registry' : 'missions-list');
+  s.ctx.helpAnchor?.(() => s.ed ? 'missions-editor' : s.open ? 'missions-open' : s.reg ? 'missions-registry' : 'missions-list');
   for (const u of s.urls || []) URL.revokeObjectURL(u);
   s.urls = [];
-  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : s.reg ? regHtml(s) : listHtml(s)}`;
+  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.ed ? edHtml(s) : s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : s.reg ? regHtml(s) : listHtml(s)}`;
   if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
 }
 
@@ -971,6 +1088,7 @@ async function openMission(s, row, drawn = false) {
 
 /** Saisie : la recherche et la famille filtrent la liste. */
 function onInput(s, e) {
+  if (s.ed) return edInput(s, e);
   if (s.reg) {
     // l'écran Registre : la recherche et le filtre de famille redessinent les lignes seules (le champ garde son curseur)
     const rk = e.target?.dataset?.k;
@@ -1042,6 +1160,7 @@ function onClick(s, e) {
   if (row) return openMission(s, s.rows.find(r => r.id === row.dataset.id));
   const b = e.target.closest('[data-do]');
   if (!b) return;
+  if (b.dataset.do.startsWith('ed') && (s.ed || s.reg)) return edClick(s, b);
   switch (b.dataset.do) {
     case 'draw': {
       // parmi les missions du filtre que ce pilote n'a pas volées, au hasard, sans poids ; jamais un départ silencieux
@@ -1480,7 +1599,7 @@ function regLineHtml(s, e, plan) {
       f: cut(e.raw.id, 40)
     }) : ''].filter(Boolean).join(' · ');
   return `<details class="ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"${r.edit === e.idx ? ' open' : ''}>${regSumHtml(s, k, word, row.id, row.title, row.family, e.raw.series, row.originIcao || cut(row.origin, 12), row.destinationIcao || cut(row.destination, 12), dup || former, whereHtml(s, row, r.q))}
-    <div class="ms-rbody"><span>${badges}</span><span class="f-muted">${esc(detail)}</span>${path ? `<span class="f-muted" data-rpath>${esc(path)}</span>` : ''}${r.edit === e.idx ? regEditHtml(s, e) : `<span class="f-row"><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></span>`}</div></details>`;
+    <div class="ms-rbody"><span>${badges}</span><span class="f-muted">${esc(detail)}</span>${path ? `<span class="f-muted" data-rpath>${esc(path)}</span>` : ''}${r.edit === e.idx ? regEditHtml(s, e) : `<span class="f-row"><button type="button" data-do="edmodify" data-rid="${e.idx}">${esc(s.tt(TX.edModify))}</button><button type="button" data-do="eddup" data-rid="${e.idx}">${esc(s.tt(TX.edDup))}</button><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></span>`}</div></details>`;
 }
 
 /** Le formulaire de correction d'une ligne : titre, série, numéro, opération. */
@@ -1531,7 +1650,7 @@ function regHtml(s) {
     // dans l'aide), puis « Mettre à jour le registre », « Retour » et le compte sur la même ligne
     count = r.why === 'loading' || broken ? '' : `<span class="f-muted" data-regcount>${esc(s.tt(TX.regCount, { n }))}${r.found.length ? ` · ${esc(s.tt(TX.regUnlisted, { n: r.found.length }))}` : ''}${r.checking ? ` · ${esc(s.tt(TX.regChecking))}` : ''}${r.readOf ? ` · <span data-regreadof>${esc(s.tt(TX.regReadOf, r.readOf))}</span>` : ''}</span>`,
     head = `<div class="f-card" data-pane="registry"><h2 title="${esc(s.tt(TX.regHint))}">${esc(s.tt(TX.regTitle))}</h2>
-    <div class="f-row ms-regbar"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button>${count}</div>`;
+    <div class="f-row ms-regbar"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="edcreate">${esc(s.tt(TX.edCreate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button>${count}</div>`;
   if (r.why === 'loading') return `${head}<p class="f-muted" data-why="loading">${esc(s.tt(TX.regLoading))}</p></div>`;
   if (broken) return `${head}<p class="f-warn" data-why="unreadable">${esc(s.tt(TX.regUnreadable, { e: r.err }))}</p></div>`;
   return `${head}${r.why === 'missing' ? `<p class="f-muted" data-why="missing">${esc(s.tt(TX.none))}</p>` : ''}
@@ -1539,6 +1658,326 @@ function regHtml(s) {
     <div class="ms-reghead">${regFamHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.regSearch))}</span><input type="search" data-k="rq" value="${esc(r.q)}" placeholder="${esc(s.tt(TX.regSearch))}" autocomplete="off"></label></div>
     <div data-regrows>${regListHtml(s)}</div></div>`;
+}
+
+// ---------------------------------------------------------------- l'éditeur de missions (SOG-0287)
+/** Les lignes connues (liste et registre) : la numérotation, les familles et l'unicité de l'identifiant les lisent. */
+const allRows = s => [...s.rows, ...(s.reg?.lines || []).map(e => ({
+  ...e.row,
+  series: e.raw?.series
+}))];
+/** La lettre d'une famille pour l'éditeur (famLetter, les identifiants des lignes de la famille). */
+const edLetter = (s, fam) => famLetter(fam, allRows(s).filter(r => r.family === fam).map(r => r.id));
+/** Les familles de l'éditeur : celles des thèmes et celles des lignes, « T · AIRLIFT · … » (SOG-0292). La famille commerciale attend la
+ *  décision de l'ergonome sur son Cadre réduit (SOG-0287, ajout du 13 nov.). */
+const edFamilies = (s, lang) => famChoices([...MT.THEMES.filter(t => t.id !== 'COMMERCIAL').map(t => ({
+  id: '',
+  family: t.id
+})), ...allRows(s)], lang);
+/** Les sous-types de l'éditeur : la liste de la famille (les séries du thème, comme la V2), puis ceux des lignes. */
+function edSubtypes(s, fam, lang) {
+  const li = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang)),
+    theme = (MT.themeOf(fam)?.series || []).map(x => ({
+      code: x.value,
+      label: x.labels[li] || x.value
+    }));
+  const all = [...theme, ...subChoices(allRows(s), fam, lang).filter(x => !theme.some(t => t.code === x.code))],
+    cur = s.ed?.cadre.subtype;
+  // le sous-type du fichier, même hors de la liste de la famille, reste montré et choisi (jamais effacé en silence)
+  return cur && !all.some(x => x.code === cur) ? [...all, {
+    code: cur,
+    label: cur.slice(0, 60)
+  }] : all;
+}
+
+/** Lit le fichier d'une mission pour l'éditeur : le texte en schéma CORE (les dates restent des textes) ; { doc, pending } ou { err }. */
+async function edRead(s, path) {
+  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  const r = await Promise.resolve().then(() => s.ctx.data.read(path, {
+      wait: true
+    })).catch(e => ({
+      err: e
+    })),
+    v = r?.value ?? r?.text ?? null;
+  if (r?.err || v === null) return {
+    err: String(r?.err?.message || r?.err || s.tt(TX.regUnread)).slice(0, 120)
+  };
+  if (typeof v === 'string' && v.length > ADD.LIMITS.bytes) return {
+    err: 'size'
+  };
+  try {
+    const doc = typeof v === 'string' ? globalThis.jsyaml.load(v, {
+      schema: globalThis.jsyaml.CORE_SCHEMA
+    }) : structuredClone(v);
+    return doc && typeof doc === 'object' && !Array.isArray(doc) ? {
+      doc,
+      pending: !!r.pending
+    } : {
+      err: s.tt(TX.regUnread)
+    };
+  } catch (e) {
+    return {
+      err: String(e?.message || e).split('\n')[0].slice(0, 120)
+    };
+  }
+}
+
+/** Ouvre l'éditeur : « new » (Créer), « edit » (Modifier) ou « dup » (Dupliquer) une ligne du registre. */
+async function edOpen(s, mode, line = null) {
+  if (mode === 'new') {
+    s.ed = {
+      mode,
+      step: 'cadre',
+      base: ED.blank(),
+      cadre: ED.cadreOf(ED.blank()),
+      path: '',
+      regIdx: -1,
+      regId: '',
+      origId: '',
+      pending: false
+    };
+    return draw(s);
+  }
+  const path = RG.pathOf(line?.row);
+  if (!path) return s.ctx.notify(s.tt(TX.edUnreadable, {
+    e: s.tt(TX.regRefused)
+  }), 'warn');
+  const got = await edRead(s, path);
+  if (S !== s) return;
+  if (got.err) return s.ctx.notify(s.tt(TX.edUnreadable, {
+    e: got.err
+  }), 'warn');
+  const base = mode === 'dup' ? ED.duplicate(got.doc) : got.doc,
+    cadre = ED.cadreOf(base);
+  if (!cadre.family) cadre.family = line.row.family;
+  // la série que le fichier ne porte pas : celle de la ligne du registre
+  if (cadre.series === '' && /^\d{1,5}$/.test(String(line.raw?.series ?? ''))) cadre.series = String(line.raw.series);
+  if (mode === 'dup') cadre.id = ED.numbering(allRows(s), cadre.family, edLetter(s, cadre.family)).id;
+  s.ed = {
+    mode,
+    step: 'cadre',
+    base,
+    cadre,
+    path: mode === 'edit' ? path : '',
+    regIdx: mode === 'edit' ? line.idx : -1,
+    regId: mode === 'edit' ? cut(line.raw?.id, 40) : '',
+    origId: mode === 'edit' ? line.row.id : '',
+    pending: mode === 'edit' && got.pending
+  };
+  draw(s);
+}
+
+/** Les pastilles des six étapes : l'état de chacune (✓ ou !), seule l'étape Cadre s'ouvre dans ce lot. */
+function edStepsHtml(s, doc) {
+  const names = {
+      cadre: TX.stepCadre,
+      teams: TX.stepTeams,
+      places: TX.stepPlaces,
+      story: TX.stepStory,
+      risks: TX.stepRisks,
+      timeline: TX.stepTimeline
+    },
+    open = ['cadre'];
+  return `<nav class="ms-steps" data-steps>${ED.STEPS.map((k, i) => {
+    const ok = ED.stepState(doc, k) === 'ok';
+    return `<button type="button" data-do="edstep" data-step="${k}"${s.ed.step === k ? ' aria-current="step"' : ''}${open.includes(k) ? '' : ` disabled title="${esc(s.tt(TX.edLater))}"`}><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" aria-hidden="true">${ok ? '✓' : '!'}</span> ${i + 1}. ${esc(s.tt(names[k]))}</button>`;
+  }).join('')}</nav>`;
+}
+
+/** L'étape Cadre (sept éléments au plus : famille et sous-type, série et identifiant, titre, théâtre, départ et arrivée). */
+function edCadreHtml(s) {
+  const e = s.ed,
+    c = e.cadre,
+    lang = s.ctx.lang?.() || 'fr',
+    letter = edLetter(s, c.family),
+    num = ED.numbering(allRows(s), c.family, letter),
+    subs = c.family ? edSubtypes(s, c.family, lang) : [],
+    theatres = [...new Set([...ED.THEATRES, c.theatre].filter(Boolean))],
+    field = (k, label, input, hint = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span>${input}${hint ? `<small class="f-muted" data-hint="${k}">${esc(hint)}</small>` : ''}</label>`,
+    text = (k, v, extra = '') => `<input data-k="${k}" value="${esc(v)}" autocomplete="off"${extra}>`,
+    sel = (k, list, v, empty = true) => `<select data-k="${k}">${empty ? '<option value=""></option>' : ''}${list.map(x => `<option value="${esc(x.code)}"${x.code === v ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select>`,
+    idHint = e.mode === 'edit' ? c.id.toUpperCase() !== e.origId ? s.tt(TX.edIdKept) : '' : c.id === num.id ? s.tt(TX.edIdNext) : '';
+  return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3><p class="f-muted">${esc(s.tt(TX.edCadreHint))}</p>
+    <div class="f-row">${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edSubtype, sel('edsub', subs, c.subtype)) : ''}</div>
+    <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ' inputmode="numeric" maxlength="5"'), s.tt(TX.edNextSeries, { n: num.nextSeries }))}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
+    ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
+    ${field('edth', TX.edTheatre, sel('edth', theatres.map(t => ({ code: t, label: t })), c.theatre))}
+    <div class="f-row">${field('eddep', TX.edDep, text('eddep', c.dep, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}${field('edarr', TX.edArr, text('edarr', c.arr, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}</div>`;
+}
+
+/** La colonne de droite : l'aperçu de la fiche (titre, famille · série, résumé, trois risques) et « À compléter ». */
+function edAsideHtml(s, doc) {
+  const m = MS.readMission(doc),
+    c = s.ed.cadre,
+    names = {
+      cadre: TX.stepCadre,
+      teams: TX.stepTeams,
+      places: TX.stepPlaces,
+      story: TX.stepStory,
+      risks: TX.stepRisks,
+      timeline: TX.stepTimeline
+    },
+    todo = ED.todo(doc),
+    sum = m?.summary || '';
+  return `<div class="f-card" data-edpreview><p class="f-muted">${esc(s.tt(TX.edPreview))}</p><h3>${esc(c.title || s.tt(TX.edNewTitle))}</h3>
+      <p class="f-muted">${c.family ? famHtml(s, c.family) : ''}${c.series !== '' ? ` · ${esc(s.tt(TX.edSeriesN, { n: c.series }))}` : ''}</p>
+      ${sum ? `<p>${esc(sum.length > 160 ? `${sum.slice(0, 159)}…` : sum)}</p>` : ''}
+      ${m?.risks.length ? `<ul class="ms-lines">${m.risks.slice(0, 3).map(x => `<li>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>` : ''}</div>
+    <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
+}
+
+/** L'écran de l'éditeur (la maquette : modules/missions/maquette/editeur_cadre_*.png). */
+function edHtml(s) {
+  const e = s.ed,
+    doc = ED.withCadre(e.base, e.cadre),
+    crumb = e.mode === 'new' ? TX.edCrumbNew : e.mode === 'dup' ? TX.edCrumbDup : TX.edCrumbEdit;
+  return `<div class="ms-ed" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(crumb))}</p>
+    <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
+    ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
+    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
+    <div class="ms-edbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" data-do="ednext" disabled title="${esc(s.tt(TX.edLater))}">${esc(s.tt(TX.edNext))}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
+}
+
+/** Une saisie de l'éditeur : un texte met à jour l'aperçu, les pastilles et l'en-tête seuls (le champ garde son curseur) ; une liste
+ *  redessine l'écran (la famille propose son identifiant suivant et sa série à une mission neuve ou dupliquée). */
+function edInput(s, ev) {
+  const e = s.ed,
+    k = ev.target?.dataset?.k,
+    key = {
+      edfam: 'family',
+      edsub: 'subtype',
+      edser: 'series',
+      edid: 'id',
+      edtitle: 'title',
+      edth: 'theatre',
+      eddep: 'dep',
+      edarr: 'arr'
+    } [k];
+  if (!key) return;
+  e.cadre[key] = key === 'id' ? ev.target.value.toUpperCase() : ev.target.value;
+  if (ev.target.tagName === 'SELECT') {
+    if (ev.type !== 'change') return;
+    if (key === 'family') {
+      e.cadre.subtype = '';
+      if (e.mode !== 'edit') {
+        const n = ED.numbering(allRows(s), e.cadre.family, edLetter(s, e.cadre.family));
+        e.cadre.id = n.id;
+        e.cadre.series = String(n.series);
+      }
+    }
+    return draw(s);
+  }
+  if (ev.type !== 'input') return;
+  const doc = ED.withCadre(e.base, e.cadre),
+    aside = s.el.querySelector('[data-edaside]'),
+    steps = s.el.querySelector('[data-steps]'),
+    head = s.el.querySelector('[data-edhead]');
+  if (aside) aside.innerHTML = edAsideHtml(s, doc);
+  if (steps) steps.outerHTML = edStepsHtml(s, doc);
+  if (head) head.textContent = [e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · ');
+}
+
+/** Le registre retouché par l'éditeur : relu d'abord (un autre pilote a pu l'écrire), `change(doc)` → { doc } | { error } ; une seule
+ *  écriture, sur l'appareil (elle part avec l'envoi groupé, SOG-0279). → '' ou le mot de l'échec. */
+async function edRegister(s, change) {
+  let got = await yamlFile(s.ctx, REGISTRY);
+  if (got.why === 'late') got = await got.later;
+  if (got.why && got.why !== 'missing') return got.err || s.tt(TX.regUnread);
+  const out = change(got.doc && typeof got.doc === 'object' ? got.doc : {});
+  if (out.error) return out.error === 'taken' ? s.tt(TX.edBlock_idTaken) : s.tt(TX.regStale);
+  await s.ctx.data.put(REGISTRY, RG.withHeader(out.doc, globalThis.jsyaml), {
+    module: 'missions'
+  });
+  s.rows = MS.readRegistry(out.doc).filter(x => !x.organisation).sort((a, b) => b.id.localeCompare(a.id));
+  s.idx = null;
+  return '';
+}
+
+/** « Enregistrer » : ce qui bloque est dit (famille, identifiant) ; sinon le fichier de la mission puis sa ligne du registre, écrits sur
+ *  l'appareil par data.put (bornés aux écritures déclarées du module) ; ils partent avec l'envoi groupé (réponse de l'ergonome, 13 nov.).
+ *  Un identifiant changé écrit un nouveau fichier ; l'ancien n'est jamais effacé, la ligne garde l'ancien identifiant (formerId). */
+async function edSave(s) {
+  const e = s.ed;
+  if (!e || e.busy) return;
+  const c = {
+      ...e.cadre,
+      id: e.cadre.id.trim().toUpperCase(),
+      family: e.cadre.family.trim().toUpperCase()
+    },
+    letter = edLetter(s, c.family),
+    block = ED.blocking(c, {
+      rows: allRows(s),
+      letter,
+      own: [e.origId, e.regId].filter(Boolean)
+    });
+  if (block.length) return s.ctx.notify(s.tt(TX[`edBlock_${block[0]}`], {
+    l: letter
+  }), 'warn');
+  const path = e.mode === 'edit' && c.id === e.origId && e.path ? e.path : ED.pathFor(letter, c.family, c.id);
+  if (!path) return s.ctx.notify(s.tt(TX.edBlock_idForm), 'warn');
+  e.busy = true;
+  draw(s);
+  try {
+    if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+    const doc = ED.withCadre(e.base, c);
+    await s.ctx.data.put(path, ED.yamlText(doc, globalThis.jsyaml), {
+      module: 'missions'
+    });
+    const regErr = await edRegister(s, reg => {
+      if (e.mode !== 'edit' || !e.regId) return ED.regAdd(reg, RG.entryOfMission(doc, path));
+      const list = Array.isArray(reg.missions) ? reg.missions : [],
+        idx = cut(list[e.regIdx]?.id, 40) === e.regId ? e.regIdx : list.findIndex(x => cut(x?.id, 40) === e.regId);
+      return ED.regEdit(reg, idx, e.regId, c, path);
+    }).catch(x => String(x?.message || x).slice(0, 120));
+    if (S !== s || s.ed !== e) return;
+    // la mission enregistrée devient celle qu'on modifie (Enregistrer ne ferme pas l'éditeur)
+    const line = RG.entries(regErr ? {} : (await yamlFile(s.ctx, REGISTRY)).doc || {}).find(x => x.row.id === c.id);
+    Object.assign(e, {
+      mode: 'edit',
+      base: doc,
+      cadre: ED.cadreOf(doc),
+      path,
+      origId: c.id,
+      regIdx: line ? line.idx : e.regIdx,
+      regId: line ? cut(line.raw.id, 40) : e.regId,
+      pending: true
+    });
+    s.ctx.notify(regErr ? s.tt(TX.edRegLater, {
+      e: regErr
+    }) : s.tt(TX.edSaved), regErr ? 'warn' : 'ok');
+  } catch (x) {
+    s.ctx.notify(s.tt(TX.edFailed, {
+      e: String(x?.message || x).slice(0, 120)
+    }), 'error');
+  } finally {
+    e.busy = false;
+    if (S === s && s.ed === e) draw(s);
+  }
+}
+
+/** Les gestes de l'éditeur et ses entrées depuis le Registre. */
+function edClick(s, b) {
+  const r = s.reg,
+    idx = Number.isInteger(+b.dataset.rid) ? +b.dataset.rid : -1,
+    line = r?.lines.find(x => x.idx === idx);
+  switch (b.dataset.do) {
+    case 'edcreate':
+      return edOpen(s, 'new');
+    case 'edmodify':
+      return line && edOpen(s, 'edit', line);
+    case 'eddup':
+      return line && edOpen(s, 'dup', line);
+    case 'edsave':
+      return edSave(s);
+    case 'edstep':
+      s.ed.step = b.dataset.step === 'cadre' ? 'cadre' : s.ed.step;
+      return draw(s);
+    case 'edcancel':
+      s.ed = null;
+      draw(s);
+      if (s.reg) regLoad(s);
+      return;
+  }
 }
 
 /** Écrit le registre : relu d'abord (un autre pilote a pu l'écrire), la retouche faite sur ce qui vient d'être lu, refusée si la ligne

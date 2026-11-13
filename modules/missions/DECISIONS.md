@@ -159,3 +159,18 @@
   and the Registry; a mission opened later joins the index; new registry rows drop it (rebuilt at the next keystroke). Measure (N49): a
   hundred missions of about 3 ko, index ready in under 50 ms, a keystroke under 2 ms on this workstation. N48 (red before: « averse » only
   in a risk found nothing), N49.
+- **13 Nov 2026 — the mission editor, step 1: the Cadre** (SOG-0287, mock-up validated by the user on 13 Nov, written by Features SOG):
+  « Créer une mission » at the head of the Registry, « Modifier » and « Dupliquer » on the unfolded line (the ergonomist's answer 4); one
+  screen, six steps of the mock-up, only the Cadre open in this push (the others disabled with « arrive dans un prochain lot », one push
+  each). `editor.js` (pure): `cadreOf` / `withCadre` touch only mission.{ id, type, subtype, series, number, theatre }, title, origin,
+  destination — every other key of the file is kept (the file is read in js-yaml's CORE schema: dates stay texts); a place whose ICAO
+  code does not change keeps its position, else it drops (« À compléter » › Lieux). Blocking: a family, the form of the identifier, the
+  family's letter and an identifier free in the registry — never for the edited line's own unchanged identifier (a file whose family
+  differs from its letter stays editable). `numbering` proposes the next number of the letter and the family's current series.
+  « Enregistrer » = `data.put` of the file then of the registry line (re-read first, `regAdd` / `regEdit`), on the device: they go with
+  the grouped send (answer 1, SOG-0279), never `sendNow`. A changed identifier writes a new file, the old one is never deleted, the line
+  keeps the old id (readRegistry shows the new one, formerId the old). No airline written: personal by default (answer 3, N17). Subtype:
+  the family's list (theme series) plus the line's own value (answer 2). The commercial family (COMMERCIAL, CAT, E) is left out of the
+  list until the ergonomist answers on its reduced Cadre. Not in this push: the map thumbnail of the preview (with Lieux), the aero base
+  lookup of a departure (with Lieux). Missions › Registre « Corriger » is now « Correct » / « Korrigieren » (« Edit » is the editor's).
+  N50 (red before: no « Créer une mission »).
