@@ -9239,3 +9239,94 @@ def k237(c):
         bad = bench('bad', '{not json')
         n = nav(os.path.join(td, 'bad'), dt.date(2026, 11, 10))
         c.eq((n.nat['tracks'], n.nat['skipped']), ([], ['no-file']), 'an unreadable file is no file', what='unreadable')
+
+
+@case('K238', 'Route engine, the loaded context is kept from one calculation to the next (SOG-0296): the second calculation reads no file of the base; a changed, added or removed file (base, procedure, RAD, NAT) rebuilds it; two contexts at most; none kept past its idle time; the result is the same warm as cold', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0296, Features SOG\'s measure): LFPO → EIDW took 3.6 to 4.5 s on the workstation, of which 1.7 s to load the context (507 JSON files and the engine\'s init) at EVERY request, then the routing graph rebuilt each time; nothing was kept. plan.context keeps (Nav, Rad) under the key (root, data folder, RAD, FRA, date of the flight) as long as the FINGERPRINT of the files it read (path, modification time, size of sia/base, proc, the NAT layer and the two books) does not change: a rebuilt base, a procedure read again, an imported book or a new NAT message gives another fingerprint and the context is rebuilt. Bounds: 2 contexts, 1 hour idle. Measured on the workstation: cold 2.4 s, the same pair warm 0.35 s, another pair warm 1.4 s (target: under 2 s), the fingerprint 11 ms')
+def k238(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I
+    from route_engine import nav_data
+    from route_engine import plan as P
+    fn = RJ.REGISTRY[('route', 'compute')][0]
+    loads = []
+    orig = nav_data.load
+    nav_data.load = lambda path: (loads.append(str(path)), orig(path))[1]
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+                json.dump([], f)
+            ctx = {'data': data, 'secrets': td}
+            P.drop_contexts()
+            stats = lambda: (P.CONTEXT_STATS['built'], P.CONTEXT_STATS['reused'])
+
+            def run(date='2026-11-10T12:00'):
+                before = len(loads)
+                r = fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': 'LFPO', 'arr': 'EIDW', 'fl': 350, 'date': date, 'enable_fra': False}, ctx)
+                p = r['plan']['primary']
+                return p.get('route'), len(loads) - before, p.get('ok')
+            s0 = stats()
+            r1, n1, ok1 = run()
+            c.ok(ok1 and n1 > 0 and stats() == (s0[0] + 1, s0[1]), str((r1, n1, stats(), s0)), 'the first calculation builds the context: it reads the files of the base')
+            r2, n2, ok2 = run()
+            c.eq((r2 == r1, n2, stats()), (True, 0, (s0[0] + 1, s0[1] + 1)), 'the second reads no file of the base (the context is reused) and gives the same route as the first', what='warm')
+            # a file of the base changes (modification time): rebuilt
+            base_file = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29', 'points.json')
+            st = os.stat(base_file)
+            os.utime(base_file, ns=(st.st_atime_ns, st.st_mtime_ns + 5_000_000_000))
+            r3, n3, ok3 = run()
+            c.ok(ok3 and r3 == r1 and n3 > 0 and stats() == (s0[0] + 2, s0[1] + 1), str((n3, stats())), 'a base file with another modification time: the context is rebuilt, the files are read again')
+            # a procedure file added: rebuilt
+            os.makedirs(os.path.join(data, 'proc', 'manual'))
+            with open(os.path.join(data, 'proc', 'manual', 'LFPO.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 1, 'icao': 'LFPO', 'cycle': '2026-10-29', 'procedures': []}, f)
+            n4 = run()[1]
+            c.ok(n4 > 0 and stats() == (s0[0] + 3, s0[1] + 1), str((n4, stats())), 'a procedure file that appears: rebuilt')
+            # the RAD book re-imported: rebuilt
+            rp = os.path.join(data, 'route', 'rad.json.gz')
+            st = os.stat(rp)
+            os.utime(rp, ns=(st.st_atime_ns, st.st_mtime_ns + 5_000_000_000))
+            run()
+            c.eq(stats(), (s0[0] + 4, s0[1] + 1), 'the RAD book with another modification time: rebuilt', what='rad')
+            # a NAT message appears: rebuilt, and the layer is there
+            os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+            with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                json.dump({'tracks': [{'id': 'A', 'route': ['SITET', '51/20', 'KEPAD'], 'east': ['350'], 'west': [], 'from': '2026-11-10T01:00:00Z', 'to': '2026-11-10T08:00:00Z'}]}, f)
+            run()
+            c.eq(stats(), (s0[0] + 5, s0[1] + 1), 'a NAT file that appears: rebuilt', what='nat')
+            key = [k for k in P._CONTEXTS][-1]
+            c.eq(P._CONTEXTS[key]['nav'].nat['tracks'], ['A'], 'and the new context carries its tracks', what='nat tracks')
+            # the bound: two contexts at most, the oldest leaves
+            run('2026-11-11T12:00')
+            run('2026-11-12T12:00')
+            c.eq((len(P._CONTEXTS), [k[-1].isoformat() for k in P._CONTEXTS]), (2, ['2026-11-11', '2026-11-12']), 'two contexts at most: a third date pushes the oldest out', what='bound')
+            built = stats()[0]
+            run('2026-11-10T12:00')
+            c.eq(stats()[0], built + 1, 'the date that left is rebuilt when it comes back', what='evicted')
+            # idle: nothing kept past its idle time
+            keep = P.IDLE_S
+            P.IDLE_S = -1
+            try:
+                run('2026-11-10T12:00')
+            finally:
+                P.IDLE_S = keep
+            c.eq(stats()[0], built + 2, 'a context idle for longer than IDLE_S is dropped: the next calculation rebuilds', what='idle')
+            run('2026-11-10T12:00')
+            P.drop_contexts()
+            c.eq(len(P._CONTEXTS), 0, 'drop_contexts empties them', what='drop')
+            n9 = run()[1]
+            c.ok(n9 > 0, str(n9), 'after the drop the files are read again')
+    finally:
+        nav_data.load = orig
+        P.drop_contexts()

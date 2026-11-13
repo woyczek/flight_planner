@@ -6,8 +6,12 @@ connus, types et bornes) au lieu d'un dictionnaire libre, un résultat BORNÉ (`
 Entrée (`compute(request, root, rad_file, fra_file)`) : voir check_request. Sortie : { primary, alternatives, alternative_message, alternative_failures, automatic_alternatives, alternative_attempts, input_route, via, dep, arr } ;
 primary et chaque alternative sont les résultats de engine.assess : { ok, status, route, fl, date, distance_nm, issues [{level, text}], legs [{start, end, via, nm, lower, upper, altitude_*_ft, speed_kt, alerts…}], gaps, rad, profile, … }.
 """
+import collections
 import datetime as dt
+import hashlib
+import os
 import re
+import time
 
 import json
 import threading
@@ -76,14 +80,85 @@ def nav_time(request):
     return value.astimezone(dt.timezone.utc).replace(tzinfo=None) if value.tzinfo else value
 
 
+# SOG-0296 : le contexte chargé (la base, le moteur initialisé, le RAD) est GARDÉ d'un calcul à l'autre : relire 507 fichiers JSON et refaire l'init prenait ~1,7 s à chaque demande. Ce qui le garde valable : l'EMPREINTE
+# des fichiers qu'il a lus (chemin, date de modification, taille : sia/base, proc, la couche NAT, les deux classeurs) ; un fichier qui change, s'ajoute ou disparaît (une base reconstruite, une procédure relue, un
+# classeur importé, un nouveau message NAT) donne une autre empreinte : le contexte est refait. Bornes : MAX_CONTEXTS contextes (un par date de vol et par jeu de fichiers, les moins récents partent), IDLE_S secondes
+# sans usage (le plus gros morceau de mémoire du lanceur ne reste pas des jours). Sûr parce que les calculs sont en série (SOLVER_LOCK) ; les caches de graphe du moteur (un seul de chaque, bornés par lui) restent
+# d'un calcul à l'autre : leur clé porte tout ce dont le graphe dépend.
+MAX_CONTEXTS = 2
+IDLE_S = 3600
+MAX_FILES = 200_000                    # fichiers comptés au plus dans l'empreinte (un dossier de données hors norme ne la fait pas durer)
+_CONTEXTS = collections.OrderedDict()   # (racine, données, RAD, FRA, date) → { sig, nav, rad, at }
+CONTEXT_STATS = {'built': 0, 'reused': 0}      # pour le diagnostic et les essais
+
+
+def _walk(path, out, skip=()):
+    """Les fichiers .json / .gz sous `path` : (chemin, date de modification en ns, taille) ajoutés à `out` ; les dossiers de `skip` ne sont pas parcourus ; aucun lien suivi ; borné."""
+    try:
+        it = os.scandir(path)
+    except OSError:
+        return
+    with it:
+        for e in it:
+            if len(out) >= MAX_FILES:
+                return
+            try:
+                if e.is_dir(follow_symlinks=False):
+                    if e.name not in skip:
+                        _walk(e.path, out)
+                elif e.name.endswith(('.json', '.gz')):
+                    st = e.stat()
+                    out.append((e.path, st.st_mtime_ns, st.st_size))
+            except OSError:
+                continue
+
+
+def fingerprint():
+    """L'empreinte des fichiers que le contexte lit : sia/base, proc (sans le sol), sia/zones/nat, RAD et FRA ; une chaîne courte."""
+    items = []
+    data = engine.DATA_DIR
+    if data:
+        for sub, skip in ((('sia', 'base'), ()), (('proc',), ('ground',)), (('sia', 'zones', 'nat'), ())):
+            _walk(os.path.join(str(data), *sub), items, skip)
+    for f in (engine.RAD_FILE, fra.FRA_FILE):
+        try:
+            if f:
+                st = os.stat(f)
+                items.append((str(f), st.st_mtime_ns, st.st_size))
+        except OSError:
+            items.append((str(f), 0, -1))
+    return hashlib.sha1(repr(sorted(items)).encode('utf-8', 'replace')).hexdigest()
+
+
+def drop_contexts():
+    """Vide les contextes gardés (le lanceur peut l'appeler après une reconstruction : l'empreinte le ferait de toute façon au calcul suivant)."""
+    _CONTEXTS.clear()
+
+
 def context(request, root):
-    """Les données de navigation et le RAD de la date : relus à CHAQUE demande (la base, les procédures et les classeurs changent sous le lanceur ; le serveur de RouteSim 2 gardait trois contextes, ici l'économie
-    ne vaut pas une donnée périmée : ~2 s)."""
+    """Les données de navigation et le RAD de la date, GARDÉS d'un calcul à l'autre tant que l'empreinte de leurs fichiers ne change pas (voir plus haut, SOG-0296) ; refaits sinon."""
     date = dt.datetime.fromisoformat(str(request.get('date', '2026-11-09T12:00')).replace('Z', '+00:00'))
     if date.tzinfo:
         date = date.astimezone(dt.timezone.utc)
     date = date.date()
-    return engine.Nav(root, date), engine.Rad(date)
+    now = time.monotonic()
+    for k in [k for k, v in _CONTEXTS.items() if now - v['at'] > IDLE_S]:
+        del _CONTEXTS[k]
+    key = (str(root), str(engine.DATA_DIR), str(engine.RAD_FILE), str(fra.FRA_FILE), date)
+    sig = fingerprint()
+    hit = _CONTEXTS.get(key)
+    if hit and hit['sig'] == sig:
+        hit['at'] = now
+        _CONTEXTS.move_to_end(key)
+        CONTEXT_STATS['reused'] += 1
+        return hit['nav'], hit['rad']
+    _CONTEXTS.pop(key, None)          # l'ancien (empreinte changée) part avant que le neuf soit construit : jamais deux Nav pour la même clé en mémoire
+    nav, rad = engine.Nav(root, date), engine.Rad(date)
+    CONTEXT_STATS['built'] += 1
+    _CONTEXTS[key] = {'sig': sig, 'nav': nav, 'rad': rad, 'at': now}
+    while len(_CONTEXTS) > MAX_CONTEXTS:
+        _CONTEXTS.popitem(last=False)
+    return nav, rad
 
 
 class SearchBudget(Exception):
