@@ -1046,6 +1046,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 194 | The fix of 190 (ac9489a17: the timeline where the file keeps it, every tolerated shape kept) | defect of 190 closed, its three notes taken; one note |
 | 195 | The V2 missions folder that does not answer (1a5d7e6ac), the Map's ground signs and arcs (593e6d6c9, bed86e5b4), Fuel's METAR before “On the map” (a78c17066) and its Little Navmap mention (1f3dfe6a6), the read-only status verbs `proc`, `vfr`, `aircraft` (345ad3c15) | acceptable, three notes |
 | 196 | The two remarks of 195 (823cfe506) and the Map's runway choice by wind (135b1b755, SOG-0306) | remarks taken; display acceptable |
+| 197 | The French aircraft register fold in Data (336344f75, SOG-0315) and the administration button of the Map's thresholds; Fuel's “Start” and direct to a point off the route (75fd4f6be, SOG-0088) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -3000,6 +3001,19 @@ The automatic reading at the opening is `doScan(false)`, and the buttons call `d
 opens nothing and asks for nothing. No other caller passes a non-boolean (probed by a search of the calls). K235 and K236 green; the two remarks are closed. *135b1b755.* The runway rows are ordered by the
 head wind then the cross wind of the METAR the layer kept (numbers; a row without wind keeps the model's order), the wind is written with the constant words of `TX` and numbers, the identifiers and
 the class values go through `esc` or are constants. D206 green. No note.
+
+**197. The French register fold in Data, the Map's button, Fuel's “Start” and direct off the route — acceptable, one note.** *Register (336344f75).* The commit touches no launcher file: the fold posts the chosen
+file's raw bytes to the **existing** `base/upload` route (the library of the country sheets, `ctx.launcher.upload`), with the file name cleaned of control and line characters and cut to 120, a ceiling of
+200 MB checked on the page (empty and too large refused before any send), one upload at a time, an abort signal. The rule of the register is held by the launcher, whose code is unchanged and was read for
+SOG-0270: the sniff recognises the file, `registry_fr.derive` writes the five columns to `data/local/registry`, the original (owners, addresses) is dropped at once on success and on every refusal
+(`finally: _drop(tmp)`), a refusal is a code (`unrecognised`, `too-large`) and never a line of the file, and the answer carries counts, a date and a hash, no content. On the page the launcher's text is never
+shown (the refusals are said with the screen's own words), the row count is accepted only as an integer from 0 to 5,000,000, the date only as `YYYY-MM-DD`, everything written goes through `esc` or
+`textContent`, and the DGAC address is a constant in the code, opened in a new tab with `noopener noreferrer`. Nothing is published and no journal is written by the page. The Administration entry
+that opens an application's page from another (`app: 'pilot'`) builds its address from the current location with the application name checked by `^[a-z]{3,12}$` and a constant hash, same origin. A180,
+L126, L127 green. *Fuel (75fd4f6be).* `S.starting` holds the departure during the weather re-reading (the button stays busy, a second gesture does nothing); a direct to a point off the route
+is allowed and its distance to the route is said, a point of the route is found by its id or its mission name, an unknown or passed point is refused; all texts through `esc`, the distance is a computed
+number. F204, F205 green. **Note.** `S.starting` is set to `true` and put back to `false` at the end of the function, without a `finally`: an exception between the two (in `refresh()` or in the
+text of the note) would leave the button busy until the page is reloaded; put the reset in a `finally`.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
