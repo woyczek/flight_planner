@@ -1879,3 +1879,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   on a phone (the native list is the phone's own sheet), the runway list ordered best first with « aucun départ publié » (slice 2),
   the approach by its chart and the navaid's frequency in words (slice 3: a CIFP name « I13R » still reads « I13R »), the ATIS line restyled
   (slice 4).
+- **13 Nov 2026 — SOG-0321, Fuel side: a point of the route list hovered is said to the Map** (user: « au survol d'un point sur la
+  route, surlignement du point ou du tronçon sur la carte »; written by Features SOG). Each row of the route's points (and each fix of
+  a procedure group) carries `data-hover-pt`; `ptHover` sends the window event `route-point-hover { id }` (BUGS SOG's contract,
+  6db4e07cc: the Map highlights the point and its two legs without moving) when the point under the pointer or the focus changes, and
+  `{ id: null }` out of the list, when the pointer leaves Fuel, and when Fuel is left with a point highlighted. One event per change.
+  F210 (red before: nothing emitted). The profile is the Map's (`modules/maps`, its canvas): its hover is BUGS SOG's, not done here.

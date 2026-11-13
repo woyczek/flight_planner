@@ -4043,6 +4043,21 @@ function altsHover(e) {
   S.alts.hovered = Number.isInteger(h) ? h : null;
   altsSend(false);
 }
+/** SOG-0321 : le point de la liste de la route sous le pointeur ou le focus (data-hover-pt), dit à la Carte par l'événement de fenêtre
+ *  « route-point-hover » { id } (contrat de BUGS SOG, 6db4e07cc) ; null hors de la liste. Un seul envoi par changement. `leaving` :
+ *  Carburant démonté, le surlignage est retiré s'il y en avait un. */
+function ptHover(target, leaving = false) {
+  if (!S) return;
+  const row = !leaving && target?.closest?.('[data-pts] [data-hover-pt]'),
+    id = row ? String(row.dataset.hoverPt || '').slice(0, 40) || null : null;
+  if (id === (S.ptHovered ?? null)) return;
+  S.ptHovered = id;
+  window.dispatchEvent(new CustomEvent('route-point-hover', {
+    detail: {
+      id
+    }
+  }));
+}
 /** Le tracé touché dans la Carte (vue double, maps-route-alt-show, contrat de BUGS SOG du 10 nov.) : un index entier de la liste, ou
  *  null quand il est relâché, et rien d'autre de l'événement ; il MONTRE la ligne, il ne la prend pas (SOG-0134). */
 function altsPicked(e) {
@@ -4418,7 +4433,7 @@ function renderPts() {
     plan = +S.flight.level?.ft || 0,
     groups = procGroups(),
     inGroup = new Set(groups.flatMap(g => g.fixes)),
-    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(g.fixes.length === 1 ? TX.ptsGroup1 : TX.ptsGroupN, { n: g.fixes.length })}`)}</summary><div class="fu-ptfix">${g.fixes.map(fx => `<label class="f-item fu-pt"><span class="fu-ptid"><b>${esc(fx)}</b></span><input data-k="pcon" data-fix="${esc(fx)}" data-kind="${g.kind}" inputmode="numeric" maxlength="3" value="${+S.flight.route?.constraints?.[fx] > 0 ? Math.round(S.flight.route.constraints[fx] / 100) : ''}" aria-label="${esc(tt(TX.pconLabel, { id: fx }))}"></label>`).join('')}</div></details>`;
+    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(g.fixes.length === 1 ? TX.ptsGroup1 : TX.ptsGroupN, { n: g.fixes.length })}`)}</summary><div class="fu-ptfix">${g.fixes.map(fx => `<label class="f-item fu-pt" data-hover-pt="${esc(fx)}"><span class="fu-ptid"><b>${esc(fx)}</b></span><input data-k="pcon" data-fix="${esc(fx)}" data-kind="${g.kind}" inputmode="numeric" maxlength="3" value="${+S.flight.route?.constraints?.[fx] > 0 ? Math.round(S.flight.route.constraints[fx] / 100) : ''}" aria-label="${esc(tt(TX.pconLabel, { id: fx }))}"></label>`).join('')}</div></details>`;
   // les noms de la route sans position (SOG-0035) : une ligne chacun, à sa place, avec sa raison ; pour le texte qui les a lus seulement
   const un = S.unres && S.unres.text === S.flight.route?.text ? S.unres.rows : [],
     why = S.unres?.zone ? tt(TX.ptUnresZone, S.unres.zone) : tt(TX.ptUnres),
@@ -4439,7 +4454,7 @@ function renderPts() {
       lock = p.lock === 'mission', // SOG-0193 L3 : ni monté, ni descendu, ni retiré
       off = lock ? ` disabled title="${esc(tt(TX.ptLocked, { id: p.mission || p.id }))}"` : '',
       bad = rc ? rc.find(g => g.state === 'error' && g.to === String(p.id || '').toUpperCase()) : null;
-    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}${mid && holdShown(p) ? ' fu-pthas' : ''}"${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small>${lock ? `<small class="fu-ptlock" data-lock>${svg('pin')} ${esc(tt(TX.ptLock, { id: p.mission || p.id }))}</small>` : ''}${mid && !holdShown(p) ? holdAdd(p, i) : ''}</span>
+    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}${mid && holdShown(p) ? ' fu-pthas' : ''}"${p.id ? ` data-hover-pt="${id}"` : ''}${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small>${lock ? `<small class="fu-ptlock" data-lock>${svg('pin')} ${esc(tt(TX.ptLock, { id: p.mission || p.id }))}</small>` : ''}${mid && !holdShown(p) ? holdAdd(p, i) : ''}</span>
       ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
       <button type="button" data-do="ptup" data-i="${i}" ${i && !lock ? '' : 'disabled'}${off} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 && !lock ? '' : 'disabled'}${off} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}"${off} aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button>${mid && holdShown(p) ? holdField(p, i) : ''}</div>${after}${unRows(i)}`;
   }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
@@ -6318,6 +6333,12 @@ export async function mount(el, ctx) {
   // touché sur la Carte en vue double revient ici, montré (maps-route-alt-show)
   S.body.addEventListener('pointerover', e => altsHover(e));
   S.body.addEventListener('focusin', e => altsHover(e));
+  // SOG-0321 : un point de la liste de la route survolé, touché ou atteint au clavier est dit à la Carte (route-point-hover), qui le
+  // surligne avec ses deux tronçons ; hors de la liste, ou Carburant quitté : plus rien
+  S.body.addEventListener('pointerover', e => ptHover(e.target));
+  S.body.addEventListener('focusin', e => ptHover(e.target));
+  S.body.addEventListener('pointerleave', () => ptHover(null));
+  S.stops.push(() => ptHover(null, true));
   S.onAltPick = e => altsPicked(e);
   window.addEventListener('maps-route-alt-show', S.onAltPick);
   // SOG-0134 : la Carte à côté dit quand elle a dessiné les tracés publiés : la dernière part du calcul

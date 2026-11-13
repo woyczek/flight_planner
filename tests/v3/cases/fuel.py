@@ -5221,3 +5221,24 @@ def f209(c):
     c.tap(f'{A} [data-prow="rwy"] [data-do="procchange"]')
     c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F209_arriere_{c.design}_{c.width}_{c.lang}.png')
+
+
+
+@case('F210', 'Route step: a point of the route list hovered (or reached by the keyboard) is said to the Map — route-point-hover { id } — and '
+      'nothing once the pointer leaves the list', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0321 (user: « au survol d\'un point sur la route, surlignement du point ou du tronçon sur la carte »; the Map listens since '
+      '6db4e07cc, D223) — the list emitted nothing')
+def f210(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 800})   # a pointer that hovers: the desktop
+    open_proc(c)
+    c.js("() => { window.__pth = []; window.addEventListener('route-point-hover', e => window.__pth.push(e.detail ? e.detail.id : 'none')); return true }")
+    c.until(f"!!document.querySelector('{FUEL} [data-pts] [data-hover-pt]')", timeout=10000, what='the points of the route listed')
+    first = c.js(f"document.querySelector('{FUEL} [data-pts] [data-hover-pt]').dataset.hoverPt")
+    c.js(f"document.querySelector('{FUEL} [data-pts] [data-hover-pt]').scrollIntoView({{block: 'center'}})")
+    over = "(s) => { document.querySelector(s).dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' })); return true }"
+    c.js(over, f'{FUEL} [data-pts] [data-hover-pt="{first}"] .fu-ptid')
+    c.js(over, f'{FUEL} [data-pts] [data-hover-pt="{first}"] b')   # within the same row: nothing new
+    c.until("(w) => (window.__pth || []).includes(w)", first, timeout=4000, what=f'route-point-hover {{ id: {first} }}')
+    c.js(over, f'{FUEL} [data-proc="arr"] .fu-proctitle')
+    c.until("(window.__pth || []).at(-1) === null", timeout=4000, what='route-point-hover { id: null } once out of the list')
+    c.eq(len([x for x in c.js('window.__pth') if x == first]), 1, 'one event per change, not one per pixel', what='events')
