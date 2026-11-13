@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e638283",
+  "organisation": "a24e51f",
   "fiches": 335,
   "untranslated": 0,
   "priorities": 310
@@ -880,11 +880,12 @@
     {
      "id": "SOG-0325",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Données du vol : le QNH d'arrivée, l'ATIS (lettre, piste, QNH, vent) si le terrain est contrôlé, et l'altitude du terrain",
      "en": "Flight data: arrival QNH, the ATIS (letter, runway, QNH, wind) when the aerodrome is controlled, and the field elevation",
      "de": "Flugdaten: QNH am Ziel, die ATIS (Buchstabe, Piste, QNH, Wind) bei kontrolliertem Platz und die Platzhöhe",
-     "es": "Datos del vuelo: QNH de llegada, el ATIS (letra, pista, QNH, viento) si el aeródromo está controlado, y la elevación del campo"
+     "es": "Datos del vuelo: QNH de llegada, el ATIS (letra, pista, QNH, viento) si el aeródromo está controlado, y la elevación del campo",
+     "test": true
     }
    ]
   },

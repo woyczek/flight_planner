@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 210,
+  "tests": 211,
   "verdicts": 147
  },
  "apps": [
@@ -3054,6 +3054,20 @@
    "test": "Recharge la page. (1) Données, « Mettre à jour ce pays » : la tuile reste bleue « en cours » du début à la fin, plus de marron. (2) Réglages › Appareil (déplie la ligne) : « Repartir de zéro sur cet appareil » — AVANT d'agir il dit combien de fichiers seront relus et ce qui reste (tes documents, tes réglages, tes envois en attente) ; une seule confirmation ; puis l'appareil relit le dépôt. Vérifie après coup que tes vols, tes réglages et ta compagnie sont toujours là.",
    "since": "2026-11-13",
    "state": "known"
+  },
+  {
+   "id": "SOG-0325",
+   "app": "pilote",
+   "title": {
+    "fr": "Données du vol : le QNH d'arrivée, l'ATIS (lettre, piste, QNH, vent) si le terrain est contrôlé, et l'altitude du terrain",
+    "en": "Flight data: arrival QNH, the ATIS (letter, runway, QNH, wind) when the aerodrome is controlled, and the field elevation",
+    "de": "Flugdaten: QNH am Ziel, die ATIS (Buchstabe, Piste, QNH, Wind) bei kontrolliertem Platz und die Platzhöhe",
+    "es": "Datos del vuelo: QNH de llegada, el ATIS (letra, pista, QNH, viento) si el aeródromo está controlado, y la elevación del campo"
+   },
+   "test": "Recharge la page. Carburant, un vol vers un terrain contrôlé dont un ATIS est en ligne sur IVAO ou VATSIM, « Lire la météo des terrains » : côté arrivée du bloc « Procédures », la ligne de l'ATIS donne sa lettre, sa piste, son QNH et son vent ; dessous, une ligne « Terrain » donne l'altitude du terrain et le QNH (celui de l'ATIS d'abord, puis celui du METAR avec son heure). Un terrain sans ATIS : le QNH du METAR seul. Sans météo : « QNH inconnu ».",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T22:14:57Z"
   },
   {
    "id": "SOG-0326",
