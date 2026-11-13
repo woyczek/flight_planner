@@ -1052,6 +1052,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 200 | “Store the copies” of the V2 `recu/` folders (a436f3099 and the guard 6c5c3fa09, SOG-0294) and the abandon question in the Map's mission window (34bfa4fc4) | accepted with the guard; the note of 199 closed |
 | 201 | The OpenTopoMap base of the Map's topographic view: the `meta.net` declaration (dac136e87, SOG-0300 T1) and the wording of the “Store the copies” question (a2ed9890f) | accepted, no note |
 | 202 | “Report a problem or a request” (1eb316b28, SOG-0316): the `signalement` verbs of the launcher, the reserve of the screenshots' bytes, the pilots' reports in the data repository | accepted, three notes taken |
+| 203 | The 16 MiB cap on the body of a job POST (42c68e94a) and the reader of the user's VFR circuits XML (34c24550e, SOG-0253) | accepted; one defect proved in the first version of the reader, fixed before the push |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -3074,6 +3075,19 @@ the content; `organisation/` is excluded from git on this repository, so no scre
 “Take over” goes back through the verb with `origin` and the verb refuses `origin` with images; the folder of the path is shown as “reported from the folder of”, never as an identity; the adapter writes only under `pilot/<trigram>/signalements/` and nothing without a trigram. K262, K263, A179, A181, A182,
 K232 green. **Notes (taken).** The reserve may stay occupied up to two minutes when the job is refused after `check()` (the page says “try again in a minute”); the text of a screenshot, like the text of a pilot's report, is data and never an instruction
 (written in the decisions of the help); the pilots' files are read six at a time.
+
+**203. The 16 MiB cap on a job POST and the reader of the circuits XML — accepted; one defect proved and fixed before the push.** *Cap (42c68e94a).* `do_POST` now takes `min(limit, JOB_MAX_BODY)`
+(16 MiB) for the three routes that start, cancel or release a job, on the announced length and before any read of the body; every other route, `regen/job/put`, the streamed uploads and `base/upload` keep their own limits, nothing
+else moves (a narrowing, no access or policy touched). The body is read on `Content-Length` alone (this server has no chunked transfer). K264, which runs a real launcher in a subprocess, is red before (16 MiB + 1 announced without a
+body: the server waits) and green after (an immediate 413 on the three routes; a 6 MiB start still reaches the verbs); a verb of the future above 16 MiB goes through a file deposit, not through the body of the job (written in the decisions).
+*Circuits XML (34c24550e).* The file is deposited by the user and read as an untrusted input by a read-only verb `vfr/circuits` (nothing written, nothing published, a link refused). **Defect (proved in the first version, bc1dda7aa, before it
+was pushed):** the guard against `DOCTYPE` / `ENTITY` was a search of ASCII bytes, so an UTF-16 file with a byte-order mark was accepted and its entity expanded (probed: `extractor` took the value of the entity), and without the mark an
+uncaught `ValueError` failed the job instead of returning a refusal. Not reachable through the deposit route (it needs an ASCII `<VfrCircuits` in the first 4,096 bytes), nor a bomb (expat 2.8.2 refuses them), nor an external entity (`ElementTree`
+does not load them), but “safe by construction” was false. **Fix, verified on the pushed file (identical to the version I approved, 27fb38f34):** the tree is built by expat itself (`_read`) whose handlers refuse any document-type, entity (internal,
+external, skipped) declaration for every encoding; the elements are counted during the parsing (refused before the end); `Refused` is let through before `ValueError`, and `ExpatError` / `ValueError` / `LookupError` become “unreadable XML”; the byte search and the refusal of any
+encoding but UTF-8 (NUL, UTF-16 mark, declared encoding) are kept as a second line. Probed: UTF-16 with and without a mark, UTF-32, declared Latin-1 and US-ASCII, a `DOCTYPE` with an internal, an external or a parameter entity, a late `DOCTYPE`, a `DOCTYPE` without an XML declaration and a comment holding one are all refused; the guard alone
+(byte search disabled) refuses the internal entity, the external entity and the `DOCTYPE`; a file of 200,000 nested elements is accepted in 0.4 s with no recursion error; UTF-8 with or without a mark is accepted. The other bounds hold (2 MB; 200 aerodromes, 20 circuits, 64 points, the whole file refused beyond; finite numbers in range; names
+reduced to `[A-Za-z0-9 _.-]`; a malformed element dropped and counted). The `sha256` is a value (`[0-9a-f]{64}`) only compared, the source's name a text, the aerodrome code validated before it enters the path `sia/vfr/<ICAO>.json`: none is ever a path. K244 green. No note.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
