@@ -5648,7 +5648,7 @@ def d_altsgone(c):
     c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
     c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc())
     c.until("() => !!document.querySelector('.mp-alts [data-alttake]')", timeout=6000, what='« Choose » is on the list before any route is shown')
-    c.eq(c.js("() => document.querySelector('.mp-alts [data-alttake]').disabled"), True, '« Choose » is grey while no route is shown', what='disabled')
+    c.eq(c.js("() => document.querySelector('.mp-alts [data-alttake]').disabled"), False, '« Choose » is active from the opening: the first route is the current choice (SOG-0224)', what='disabled')
     c.tap('.mp-alts .mp-al-row[data-alt="1"]')
     c.until("() => !document.querySelector('.mp-alts [data-alttake]').disabled", timeout=4000, what='« Choose » is on once a route is shown')
     c.shot(f'D177_{c.design}_delivered.png')
@@ -6640,3 +6640,64 @@ def k_loadyaml(c):
     src = (ROOT / 'shared' / 'mission_registry.js').read_text(encoding='utf-8')
     direct = re.findall(r'window\.jsyaml\??\.load\(', src)
     c.eq(len(direct), 1, 'one direct call: the one inside loadYaml itself', what=str(len(direct)))
+
+
+
+@case('D201', 'The window of the proposed routes on a Map alone: the first route is shown and is the current choice from the opening, « Choose this route » is always active and takes it; a touch on another row changes the current choice (it does not unselect)', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0224 refused again (the user, 13 Nov: « « choisir cet itinéraire » inefficient »; the ergonomist: a dead button without a reason is the defect): the button was disabled until a row was touched, a second touch on the same row took the selection away; now the first route is the current choice, the button never dead')
+def d201(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
+    c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc())
+    c.until("() => !!document.querySelector('.mp-alts:not([hidden]) [data-alttake]')", timeout=8000, what='the window of the proposed routes is there')
+    st = c.js("() => ({ dis: document.querySelector('[data-alttake]').disabled, shown: window.__mp.S.altShow, marked: [...document.querySelectorAll('.mp-alts [data-alt]')].map(b => b.dataset.shown || '0') })")
+    c.ok(st['dis'] is False and st['shown'] == 0 and st['marked'] == ['1', '0'], str(st), 'the first route is shown and marked, the button is active from the opening')
+    c.js("() => { document.querySelector('.mp-alts [data-alt=\"1\"]').click(); return true }")
+    c.wait(300)
+    st = c.js("() => ({ dis: document.querySelector('[data-alttake]').disabled, shown: window.__mp.S.altShow, marked: [...document.querySelectorAll('.mp-alts [data-alt]')].map(b => b.dataset.shown || '0') })")
+    c.ok(st['dis'] is False and st['shown'] == 1 and st['marked'] == ['0', '1'], str(st), 'a touch on another row changes the current choice')
+    c.js("() => { document.querySelector('.mp-alts [data-alt=\"1\"]').click(); return true }")
+    c.wait(300)
+    st = c.js("() => ({ dis: document.querySelector('[data-alttake]').disabled, shown: window.__mp.S.altShow })")
+    c.ok(st['dis'] is False and st['shown'] == 1, str(st), 'a second touch on the same row does not take the selection away')
+    c.shot(f'D201_standard_alts_{c.lang}_delivered.png')
+    c.js("() => { document.querySelector('.mp-alts [data-alt=\"0\"]').click(); window.__hs = []; window.addEventListener('hashchange', e => window.__hs.push(new URL(e.newURL).hash)); return true }")
+    c.wait(200)
+    c.js("() => { document.querySelector('[data-alttake]').click(); return true }")
+    c.until("() => window.__hs.length >= 1", timeout=6000, what='« Choose this route » goes to Fuel')
+    c.eq(c.js("() => window.__hs[0]"), '#fuel?ralt=0', 'the current choice is what the button takes', what='address')
+
+
+
+@case('D202', 'Proposed routes across TWO screens (Fuel, then the Map alone, then Fuel, then the Map): left unchosen they are still there in Fuel after a round trip; chosen on the Map, the route is taken in Fuel and the window does not come back on the Map', 'D',
+      tags=('maps', 'fuel'), screens=False, designs=('standard',),
+      rule='SOG-0224 refused again (the user, 13 Nov: « si on laisse les itinéraires et qu’on affiche la carte, il y a une popup. elle ne disparaît pas ; retour carbu : plus d’itinéraire à choisir ; retour carte : toujours la popup », and « si on n’a pas choisi l’itinéraire, aller-retour vers carte, les itinéraires disparaissent »): Fuel (modules/fuel/module.js, Features SOG) loses its proposals when its screen is left, and its path #fuel?ralt= (altsFromAddress) nulls S.alts before routeTake, so altsClear() publishes nothing and route_alts.json keeps the old proposals; a known failure until Fuel is fixed')
+def d202(c):
+    from cases import fuel as F
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    F._route_launcher(c, ['route/compute'])
+    F.open_proc(c)
+    c.until(f"!!document.querySelector('{F.FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{F.FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{F.FUEL} [data-altlist] [data-alt]').length === 3", what='three proposals in Fuel')
+    card = "() => { const k = document.querySelector('.mp-alts'); return { on: !!k && !k.hidden, rows: k ? k.querySelectorAll('[data-alt]').length : 0 } }"
+    # 1. the Map alone shows the window; back to Fuel WITHOUT choosing: the proposals are still there
+    c.js("() => { location.hash = '#maps' }")
+    c.until("() => !!document.querySelector('.mp-alts:not([hidden]) [data-alttake]')", timeout=10000, what='the window of the proposed routes on the Map')
+    c.js("() => { location.hash = '#fuel' }")
+    c.wait(2500)
+    n = c.js(f"document.querySelectorAll('{F.FUEL} [data-altlist] [data-alt]').length")
+    c.eq(n, 3, 'back in Fuel without having chosen: the three proposals are still there', what='proposals in Fuel')
+    # 2. the Map alone again, « Choose this route » (the first, the current choice): Fuel takes it; the window does not come back
+    c.js("() => { location.hash = '#maps' }")
+    c.until("() => !!document.querySelector('.mp-alts:not([hidden]) [data-alttake]')", timeout=10000, what='the window again')
+    c.js("() => { document.querySelector('.mp-alts [data-alttake]').click(); return true }")
+    c.until(f"!!document.querySelector('{F.FUEL} [data-rtaken]')", timeout=12000, what='Fuel says the route is taken')
+    c.eq(c.count(f'{F.FUEL} [data-routealts] [data-alt]'), 0, 'no proposal left in Fuel', what='proposals in Fuel')
+    c.js("() => { location.hash = '#maps' }")
+    c.wait(2500)
+    c.eq(c.js(card), {'on': False, 'rows': 0}, 'back on the Map: no window, no proposal', what='window')

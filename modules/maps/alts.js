@@ -123,7 +123,8 @@ export function drawAlts(ctx, toC, avoid = []) {
     },
     bg = S.theme?.bg || '#fff',
     fg = S.theme?.fg || '#17202a',
-    hov = S.altHover ?? S.altShow ?? A.hovered, // le survolé, sinon le montré (un appui), sinon celui que la liste de Carburant survole
+    hov = S.altHover ?? (S.altAuto ? null : S.altShow) ?? A
+    .hovered, // le survolé, sinon le montré (un appui), sinon celui que la liste de Carburant survole
     rank = a => a.index === hov ? 2 : a.index === A.chosen ? 1 : 0,
     hits = [],
     // les cadres des noms déjà posés (jamais deux noms l'un sur l'autre), ceux de la route du vol d'abord (avoid : ses étiquettes, en coordonnées de la vue)
@@ -369,7 +370,9 @@ export function altsPick(i) {
 /** Un itinéraire proposé MONTRÉ (SOG-0134 : un appui sur un tracé ne le choisit pas) : surligné, gardé jusqu'à un autre appui ; Carburant en est prévenu (l'événement maps-route-alt-show,
  *  { index } ou { index: null }) pour surligner sa ligne ; le choisir est un autre geste (le bouton de sa liste, ou ci-dessous pour une Carte seule). */
 function altsShow(i) {
-  S.altShow = S.altShow === i ? null : i;
+  // une Carte seule : un appui CHANGE le choix courant, il ne le retire pas (le bouton « Choisir » n'est jamais mort, SOG-0224) ; en vue double, la ligne de Carburant reste un interrupteur
+  S.altShow = !dual() ? i : S.altShow === i ? null : i;
+  S.altAuto = false;
   window.dispatchEvent(new CustomEvent('maps-route-alt-show', {
     detail: {
       index: S.altShow
@@ -391,10 +394,17 @@ export function altsCard() {
   const el = S?.altsEl;
   if (!el) return;
   const A = current(),
-    on = !!A && !dual() && A.list.length > 0,
+    on = !!A && !dual() && A.list.length > 0;
+  // une Carte seule : le PREMIER itinéraire est montré et pris pour choix courant dès l'ouverture (tracé surligné, ligne marquée) : « Choisir cet itinéraire » est toujours actif et prend ce choix (SOG-0224 :
+  // « inefficient » — le bouton était grisé tant qu'aucune ligne n'était touchée, sans un mot)
+  if (on && A.mode === 'compute' && !A.list.some(a => a.index === S.altShow)) {
+    S.altShow = A.list[0].index;
+    S.altAuto = true; // posé par défaut, pas touché : le tracé ne s'épaissit pas (le survol et l'appui l'épaississent)
+  }
+  const
     said = on && A.list.some(a => a.control.some(Boolean)), // le moteur dit ses tronçons : la clef du dessin
     legend = on ? altsLegendRows() : [],
-    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${A.mode === 'compute' ? `<button type="button" class="f-btn mp-al-take" data-alttake${A.list.some(a => a.index === S.altShow) ? '' : ' disabled'}>${esc(tt(TX.altTake))}</button>` : ''}` : '';
+    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-shown="${a.index === S.altShow ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${A.mode === 'compute' ? `<button type="button" class="f-btn mp-al-take" data-alttake${A.list.some(a => a.index === S.altShow) ? '' : ' disabled'}>${esc(tt(TX.altTake))}</button>` : ''}` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
 }

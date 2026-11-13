@@ -282,6 +282,7 @@ export const STYLE = `
 [data-module="maps"] .mp-al-key{display:block;font-size:11px;margin:0 0 2px}
 [data-module="maps"] .mp-al-row{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;margin:0;padding:0 6px;border:0;border-bottom:1px solid var(--sog-border);background:none;color:var(--sog-fg);font:inherit;font-size:13px;text-align:left;cursor:pointer}
 [data-module="maps"] .mp-al-row[data-chosen="1"]{font-weight:700;background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}
+[data-module="maps"] .mp-al-row[data-shown="1"]{box-shadow:inset 3px 0 0 var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 8%,transparent)} /* le choix courant (SOG-0224) */
 [data-module="maps"] .mp-al-row:disabled{cursor:default}
 [data-module="maps"] .mp-al-n{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="maps"] .mp-al-k{flex:none;font-size:11px;color:var(--sog-muted)}
