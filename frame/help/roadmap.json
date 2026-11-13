@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3b1f7ad",
+  "organisation": "3ae7b44",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -1341,7 +1341,7 @@
     {
      "id": "SOG-0300",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Vue topographique : de vraies courbes de niveau, pas d'hippodromes ; les hippodromes et le RTBA dans une vue dédiée",
      "en": "Topographic view: real contour lines, no holding patterns; holding patterns and RTBA in a dedicated view",
      "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",

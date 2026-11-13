@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 186,
+  "tests": 187,
   "verdicts": 123
  },
  "apps": [
@@ -2625,6 +2625,19 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T11:52:34Z"
+  },
+  {
+   "id": "SOG-0300",
+   "app": "pilote",
+   "title": {
+    "fr": "Vue topographique : de vraies courbes de niveau, pas d'hippodromes ; les hippodromes et le RTBA dans une vue dédiée",
+    "en": "Topographic view: real contour lines, no holding patterns; holding patterns and RTBA in a dedicated view",
+    "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",
+    "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte"
+   },
+   "test": "Recharge la page. Carte d'une mission, vue VFR : la case « Courbes de niveau » est cochée quand les courbes sont dessinées ; décoche-la, elles disparaissent ; recoche-la, elles reviennent. (Le fond topographique, les vues par famille et le cadre gradué arrivent ensuite.)",
+   "since": "2026-11-13",
+   "state": "known"
   },
   {
    "id": "SOG-0302",
