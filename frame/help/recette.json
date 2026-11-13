@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 175,
-  "verdicts": 80
+  "verdicts": 122
  },
  "apps": [
   "pilote",
@@ -52,13 +52,9 @@
    },
    "test": "Recharge la page. Ton dépôt n'a pas de mission commerciale : le parcours se joue sans mission. 1. Réglages › Compagnie : choisis ITF ; sa fiche dit qu'elle est commerciale. 2. Carburant, « Nouveau vol » : à l'étape Vol, choisis Famille « Commercial » et Série « Fret ». 3. Choisis l'aéronef, puis « Démarrer le vol ». 4. CR : touche « Vol en cours ». L'en-tête dit « Compte rendu pour ITF » ; au pas Mission tu lis Commercial / Fret ; au pas suivant, la carte « Fret » demande les kg. 5. Comme si tu avais oublié de choisir au départ : change la série dans le CR (Passagers) ; la carte de charge devient « Passagers » — c'est le CR qui décide. 6. Enregistre : dans « Mes vols », le CR porte ITF et Co",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-12T23:09:23Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "bah non, actuellement, si je me mets en « missions ITF », je vois toutes les missions hems, le, sar… donc ça ne marche probablement pas. idem sur l’écran 2 du CR, je peux choisir n’importe laquelle des missions. À quel moment, je décide de faire une mission fret, passagers, essais en vol... ? à quel moment le cr match ce choix ? que faire si j’ai oublié de choisir au départ du vol, et que je m’en rend compte en fin de vol, au moment du cr ?",
-    "at": "2026-11-10T14:56:09Z"
-   }
+   "at": "2026-11-13T10:39:17Z"
   },
   {
    "id": "SOG-0046",
@@ -164,7 +160,8 @@
    },
    "test": "Maintenance › Feuille de route : glisser une carte au-dessus d'une autre, recharger la page → l'ordre est tenu ; appui long sur un identifiant → il est copié.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-13T11:20:00Z"
   },
   {
    "id": "SOG-0067",
@@ -205,8 +202,9 @@
    },
    "test": "Maintenance › Données › Base aéronautique : « Mettre à jour » est le seul bouton en vue ; il pose une seule question qui nomme les zones à reconstruire et leur raison ; les autres verbes sont sous « Plus » ; « Seulement les périmés », « Tout désélectionner » et le rectangle (Maj + glisser) cochent ce qu'ils disent.",
    "since": "2026-11-09",
-   "state": "todo",
-   "delivered": "2026-11-09T15:09:29Z"
+   "state": "ok",
+   "delivered": "2026-11-09T15:09:29Z",
+   "at": "2026-11-13T11:20:04Z"
   },
   {
    "id": "SOG-0072",
@@ -232,7 +230,8 @@
    },
    "test": "Maintenance › Appareils › modifier la Caravelle : plus de boîte « Douglas DC-3 » en haut ; « Compléter depuis une autre fiche » est un bouton.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-13T11:20:13Z"
   },
   {
    "id": "SOG-0078",
@@ -288,10 +287,7 @@
    },
    "test": "Recharge la page. Sur un vol démarré : dans Carburant (Départ), « Direct vers… » un point de la route restante — le panneau dit d'où part le direct, les points sautés et les écarts (NM, minutes, kg) avant « Appliquer » ; « Annuler le direct » remet la route. Même geste depuis la fiche d'un point sur la Carte (« Direct vers ce point »). Sur une mission, un direct qui saute un point imposé le dit en rouge et demande une seconde confirmation ; le compte rendu en garde la trace.",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-12T18:12:26Z",
-   "comment": "1/ il faut démarrer plusieurs fois. étrange. 2/ le contrôle peut donner un direct vers un point autre que la route. un warn, avec la distance à la route. ici, sur lfop lfbd, le direct PT m’est refusé (screenshot). pourtant, c’est sur la route (ou presque).",
-   "at": "2026-11-13T09:02:38Z"
+   "state": "known"
   },
   {
    "id": "SOG-0089",
@@ -350,10 +346,7 @@
    },
    "test": "Carte, une procédure (départ, arrivée ou approche) qui fait un virage de plus de 90° : le coin doit être tracé en arc, pas en angle vif. Aucune capture n'a pu en être faite : dis-moi sur quelle procédure tu l'as vu et si le rayon te paraît juste.",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-12T16:15:54Z",
-   "comment": "ne voit rien. cf. capture. « plus de 45° » en fait.",
-   "at": "2026-11-13T09:29:30Z"
+   "state": "known"
   },
   {
    "id": "SOG-0094",
@@ -366,10 +359,7 @@
    },
    "test": "Recharge la page. Carte, volet des couches : coche « Contrôleurs en ligne (IVAO / VATSIM) ». Sur un terrain tenu, des pastilles (D, G, T, A, i) apparaissent, bleues pour IVAO, orange pour VATSIM ; le survol dit les positions et les fréquences. Décochée, la couche ne lit rien.",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-12T16:02:23Z",
-   "comment": "oui. pas assez visible : as-tu la capacité à avoir la zone couverte ? Par ex, si rennes approche est ouvert, afficher la limite et le temps avant le contact ? Objectif, je rapelle, contacter le contrôle aérien sur la bonne fréquence au bon moment pendant le vol, même quand un contrôle monte en cours de route. Si c’est le sol, il faut un gros bouton voyant, ou un rappel après l’atterrissage.",
-   "at": "2026-11-13T09:07:14Z"
+   "state": "known"
   },
   {
    "id": "SOG-0095",
@@ -397,8 +387,9 @@
    },
    "test": "Recharge la page. Carte : zoome sur l'Alentejo ou l'Algarve, puis sur l'ouest de l'Irlande : les villes et les bourgs sont nommés comme en France (avant : deux lieux pour tout le Portugal). Recherche d'un lieu : « Évora » et « Westport » sont trouvés.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T22:43:16Z"
+   "state": "ok",
+   "delivered": "2026-11-12T22:43:16Z",
+   "at": "2026-11-13T10:44:59Z"
   },
   {
    "id": "SOG-0118",
@@ -411,7 +402,9 @@
    },
    "test": "Réglages › Administration : la liste du zoom des seuils de piste (8 à 16, 11 par défaut). Choisis 13 : sur la Carte, les seuils de piste ne se dessinent qu'à partir du zoom 13. Remets 11.",
    "since": "2026-11-12",
-   "state": "todo"
+   "state": "ok",
+   "comment": "bah oui, mais le réglage des seuils de carte renvoie sur… « données ». sinon, trouvé, ça me va.",
+   "at": "2026-11-13T10:42:39Z"
   },
   {
    "id": "SOG-0125",
@@ -762,8 +755,9 @@
    },
    "test": "Au prochain échec de publication : le message dit sa cause (« push refusé », « réseau », « crochet LFS ») et l'étape, plus « Corrigez la cause ».",
    "since": "2026-11-09",
-   "state": "todo",
-   "delivered": "2026-11-09T17:34:32Z"
+   "state": "ok",
+   "delivered": "2026-11-09T17:34:32Z",
+   "at": "2026-11-13T11:20:41Z"
   },
   {
    "id": "SOG-0156",
@@ -1002,8 +996,9 @@
    },
    "test": "Ouvrir Réglages (et Données) : l'écran se dessine une fois et ne clignote plus quand l'état du dépôt arrive ; seuls les blocs qui en dépendent changent, rien ne saute.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T10:27:31Z"
+   "state": "ok",
+   "delivered": "2026-11-10T10:27:31Z",
+   "at": "2026-11-13T11:16:42Z"
   },
   {
    "id": "SOG-0173",
@@ -1089,8 +1084,9 @@
    },
    "test": "Après relance du lanceur : Carte avec une route, toucher plusieurs fois « Météo de la route », y compris quand Open-Meteo répond mal : les autres pages et onglets continuent de se charger, Chrome ne se fige plus ; au pire la météo dit « occupé » ou sa raison avec « Réessayer ».",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T10:28:49Z"
+   "state": "ok",
+   "delivered": "2026-11-10T10:28:49Z",
+   "at": "2026-11-13T11:18:00Z"
   },
   {
    "id": "SOG-0179",
@@ -1119,8 +1115,9 @@
    },
    "test": "Relancer le lanceur. Maintenance › Données, ta couverture de 78 zones : chaque zone a sa pastille d'état (les 18 dernières n'en avaient pas). « Mettre à jour » : une ligne dit ce qui va être fait (« n à télécharger, n à reconstruire, n déjà à jour ») ; ce qui est à jour n'est pas refait ; la question de reconstruction propose les zones restées à l'ancien analyseur ; la zone que la FAA refuse dit « FAA : téléchargement refusé (403) » avec « Réessayer », « Choisir le fichier… » et le lien de la page NASR, et le reste va au bout.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:28:52Z"
+   "state": "ok",
+   "delivered": "2026-11-10T16:28:52Z",
+   "at": "2026-11-13T11:18:07Z"
   },
   {
    "id": "SOG-0181",
@@ -1224,8 +1221,9 @@
    },
    "test": "Maintenance › Données › « Paquets de pays » : un paquet dont des pays sont déjà dans la couverture porte « Mettre à jour (n) » ; il met à jour ces pays seuls, sans rien décocher ni recocher, avec une question au plus. Les pays d'un pli ouvert sont décalés sous leur paquet.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T13:00:22Z"
+   "state": "ok",
+   "delivered": "2026-11-10T13:00:22Z",
+   "at": "2026-11-13T11:18:10Z"
   },
   {
    "id": "SOG-0189",
@@ -1294,12 +1292,10 @@
    },
    "test": "Recharge la page. Carburant, une mission dont des points portent un temps sur zone : sous ces points, « Sur zone [n] min · mission : 5 à 40 » (le maximum compté par défaut) ; change la valeur : l'étape et le devis suivent, avec une ligne « Sur zone » par point au détail ; un point sans temps porte un « + » qui ouvre le champ. Sur la Carte, le point porte la durée et la position prévue attend sur le point.",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-12T16:17:00Z",
-   "previous": {
-    "verdict": "ok",
-    "at": "2026-11-10T16:02:27Z"
-   }
+   "comment": "oui, c’est bien. à un détail près :  - faire réapparaître la popup de choix de carte ; si on coche la case de fermeture, on perd tout, sans warn, mais les tracés restent. Comme c’est un abandon de mission, il faut une confirmation.",
+   "at": "2026-11-13T09:58:33Z"
   },
   {
    "id": "SOG-0194",
@@ -1312,8 +1308,9 @@
    },
    "test": "Carburant, une mission en cours de préparation : Devis → Vol → « Nouveau vol » : tout se vide tout de suite (étapes, mission, tracé sur la carte à côté), sans aller-retour entre les étapes ; si tu appuies pendant que le vol se charge, le bouton dit « Vol en cours de lecture… » puis le fait. Ensuite, saisir LFPO / LFMT : la carte à côté se déplace et se zoome normalement (dis-moi si elle reste figée).",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T12:34:51Z"
+   "state": "ok",
+   "delivered": "2026-11-10T12:34:51Z",
+   "at": "2026-11-13T11:18:25Z"
   },
   {
    "id": "SOG-0195",
@@ -1326,8 +1323,9 @@
    },
    "test": "Carte, LFPO, couche Sol : en zoomant, chaque voie de circulation porte son nom une seule fois ; les points d'attente rouges apparaissent en même temps que les noms des voies, avant les postes ; les aires de trafic sont nommées avant les postes ; la puce « Aires » les masque ou les montre ; le sol du terrain de dégagement est lu aussi.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:54:22Z"
+   "state": "ok",
+   "delivered": "2026-11-10T16:54:22Z",
+   "at": "2026-11-13T11:18:30Z"
   },
   {
    "id": "SOG-0196",
@@ -1356,8 +1354,9 @@
    },
    "test": "Maintenance › Données › « Prendre le fichier téléchargé » : la question est une liste lisible : « Sera pris (n) » (pays · fichier · taille), « Ignoré (n) » avec la raison, « À corriger (n) » avec ce qu'il faut faire ; plus de pavé.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T12:50:01Z"
+   "state": "ok",
+   "delivered": "2026-11-10T12:50:01Z",
+   "at": "2026-11-13T11:18:38Z"
   },
   {
    "id": "SOG-0198",
@@ -1370,8 +1369,9 @@
    },
    "test": "Pilote › Météo pendant une construction du synoptique ou une lecture lente : plus de notification rouge « prévision de la grille injoignable (hors ligne) » quand le réseau est là ; l'écran dit « lecture de la grille… », et, en cas d'échec réel, la vraie raison (lanceur occupé, délai, statut).",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T14:00:29Z"
+   "state": "ok",
+   "delivered": "2026-11-10T14:00:29Z",
+   "at": "2026-11-13T11:18:45Z"
   },
   {
    "id": "SOG-0199",
@@ -1384,8 +1384,9 @@
    },
    "test": "Après relance du lanceur. Maintenance › Données, une zone qui attend un fichier (Suède, Royaume-Uni) : à côté de « Prendre le fichier téléchargé », « Choisir le fichier… » ouvre le sélecteur ; choisis ton AIP_OFFLINE.zip : une barre d'avancement, puis « … reconnu : LFV, Suède. La prise suit. », et la zone se construit. Un fichier non reconnu le dit clairement.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T15:16:27Z"
+   "state": "ok",
+   "delivered": "2026-11-10T15:16:27Z",
+   "at": "2026-11-13T11:18:50Z"
   },
   {
    "id": "SOG-0200",
@@ -1413,8 +1414,9 @@
    },
    "test": "Maintenance › Données, carte des pays, zoom sur une frontière (Biélorussie / Ukraine, France / Espagne) : les deux contours suivent la même ligne, plus de vide ni de chevauchement entre voisins.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T15:02:11Z"
+   "state": "ok",
+   "delivered": "2026-11-10T15:02:11Z",
+   "at": "2026-11-13T11:18:54Z"
   },
   {
    "id": "SOG-0202",
@@ -1458,8 +1460,9 @@
    },
    "test": "Après relance du lanceur : Ctrl + Maj + R sur l'appli : le cartouche rouge « Version ancienne · Recharger » n'apparaît plus.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T14:21:14Z"
+   "state": "ok",
+   "delivered": "2026-11-10T14:21:14Z",
+   "at": "2026-11-13T11:18:57Z"
   },
   {
    "id": "SOG-0205",
@@ -1502,8 +1505,9 @@
    },
    "test": "Lanceur arrêté, Carburant › Route : « Calculer A → B » (ou « Contrôler ») dit « Disponible avec le lanceur du poste (il ne répond pas) » avec « Réessayer », au lieu de ne rien faire ; l'en-tête dit « Lanceur injoignable ». Lanceur relancé : « Réessayer » fait le calcul.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T14:55:50Z"
+   "state": "ok",
+   "delivered": "2026-11-10T14:55:50Z",
+   "at": "2026-11-13T11:19:05Z"
   },
   {
    "id": "SOG-0209",
@@ -1516,8 +1520,9 @@
    },
    "test": "Ouvrir l'appli dans DEUX onglets sur le même vol (Carburant dans les deux) et ne rien toucher pendant une minute : « Synchronisation » ne clignote plus, le bloc Procédures non plus ; dans le dépôt des données, plus de commit du vol toutes les cinq secondes.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T14:59:09Z"
+   "state": "ok",
+   "delivered": "2026-11-10T14:59:09Z",
+   "at": "2026-11-13T11:19:08Z"
   },
   {
    "id": "SOG-0210",
@@ -1530,8 +1535,7 @@
    },
    "test": "Lanceur relancé, sur ce poste. Maintenance › Données : la case « Je certifie… » est cochée (elle reflète maintenant ce que le lanceur a noté ; décoche et recoche-la une fois si elle ne l'est pas). Carburant, arrivée KDEN, étape Procédures : la ligne « aucune procédure publiée » porte un lien « Lire depuis Little Navmap » ; il lit les procédures de KDEN, dites « Little Navmap, lue sur ce poste ». Depuis ton téléphone appairé : le lien n'est pas proposé. Les fichiers .fms / .pln portent ces procédures.",
    "since": "2026-11-11",
-   "state": "todo",
-   "delivered": "2026-11-11T01:12:54Z"
+   "state": "known"
   },
   {
    "id": "SOG-0211",
@@ -1559,8 +1563,9 @@
    },
    "test": "Compagnie › Missions. (1) Tes missions ne sont plus sous ITF mais sous « Personnel », et presque plus aucune n'est dite « fichier illisible » (deux manquent au dépôt, dites avec leur chemin). (2) « Ajouter des missions » : choisis un ou plusieurs fichiers YAML, ou colle un YAML : l'écran montre ce qu'il a lu et ce qu'il refuse avec la raison, puis « Ajouter (n) » ; une mission qui existe déjà n'est remplacée que si tu coches. (3) Sous les boutons, « Ma compagnie · Personnel · Toutes les compagnies » : « Toutes » montre aussi les missions des autres compagnies, chacune avec le nom de la sienne. (Changer une mission de compagnie : à venir.)",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:24:20Z"
+   "state": "ok",
+   "delivered": "2026-11-10T16:24:20Z",
+   "at": "2026-11-13T10:07:03Z"
   },
   {
    "id": "SOG-0213",
@@ -1573,8 +1578,9 @@
    },
    "test": "Avec au moins deux compagnies : à côté du nom de l'appli, une puce avec le code de la compagnie (« Pilote · ITF ») ; un appui ouvre la liste des compagnies, un choix en change sans quitter l'écran ; le menu des applications ne liste aucune compagnie. Avec une seule compagnie : pas de puce.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:02:56Z"
+   "state": "ok",
+   "delivered": "2026-11-10T16:02:56Z",
+   "at": "2026-11-13T11:19:11Z"
   },
   {
    "id": "SOG-0214",
@@ -1602,8 +1608,9 @@
    },
    "test": "Page de l'appli ouverte, arrêter puis relancer le lanceur : en une dizaine de secondes l'en-tête repasse de « Lanceur injoignable » à l'état normal, sans Maj + F5 ; si le lanceur sert une version plus récente, le cartouche « Version ancienne · Recharger » apparaît tout seul et un appui suffit.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T15:38:40Z"
+   "state": "ok",
+   "delivered": "2026-11-10T15:38:40Z",
+   "at": "2026-11-13T11:19:15Z"
   },
   {
    "id": "SOG-0217",
@@ -1631,8 +1638,9 @@
    },
    "test": "Réglages › Compagnie, sur l'appareil où tu as vu 8 s : la liste des compagnies s'affiche en moins de deux secondes, puis leurs détails (genre, flotte) se complètent sans rien déplacer. Dis sur quel appareil et par quel accès (poste, réseau local, relais) c'était lent.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T15:59:00Z"
+   "state": "ok",
+   "delivered": "2026-11-10T15:59:00Z",
+   "at": "2026-11-13T11:19:20Z"
   },
   {
    "id": "SOG-0220",
@@ -1659,8 +1667,9 @@
    },
    "test": "Lanceur relancé. Carburant, un vol vers LFRS, étape Procédures : le lien « Cartes » ouvre l'eAIP du 29 OCT 2026 (l'adresse contient eAIP_29_OCT_2026), pas celui du 01 OCT.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T17:13:07Z"
+   "state": "ok",
+   "delivered": "2026-11-10T17:13:07Z",
+   "at": "2026-11-13T11:19:33Z"
   },
   {
    "id": "SOG-0222",
@@ -1703,10 +1712,7 @@
    },
    "test": "Recharge la page. Carburant avec la Carte à côté, ton scénario du 11/11 : « Calculer A → B » donne trois propositions ; survole-en une, puis clique : elle s'affiche avec ses calculs ; « Choisir » : la route est modifiée, une ligne dit « Itinéraire pris : … », et les deux autres disparaissent tout de suite — dans Carburant ET sur la Carte (traits pâles et mini-légende), sans changer d'écran.",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-12T15:10:00Z",
-   "comment": "si on lasise les itinéraires et qu’on afifche la carte, il y a une popup. elle ne disparait pas (« choisir cet itinéraire » inéfficient). retour carbu : plus d’itilnéraire à choisir. Retour carte : toujours la popup. 2 screenshots.",
-   "at": "2026-11-13T08:31:22Z"
+   "state": "known"
   },
   {
    "id": "SOG-0225",
@@ -1734,8 +1740,9 @@
    },
    "test": "Maintenance › Données, la case « Je certifie… » cochée : la Suède (construite ce soir avec le LFV) porte la pastille « à jour », d'accord avec « Base construite : Suède » ; « Mettre à jour » ne propose plus de la reconstruire. Décocher la case : l'état est relu.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T17:12:28Z"
+   "state": "ok",
+   "delivered": "2026-11-10T17:12:28Z",
+   "at": "2026-11-13T11:19:38Z"
   },
   {
    "id": "SOG-0227",
@@ -1748,8 +1755,9 @@
    },
    "test": "Carte, zoom arrière massif (l'Atlantique entier) : les grands aérodromes de tous les pays restent (KJFK, EGLL, EDDF…), pas seulement ceux du SIA ; plus de petit terrain français là où un grand terrain étranger a disparu.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T17:29:22Z"
+   "state": "ok",
+   "delivered": "2026-11-10T17:29:22Z",
+   "at": "2026-11-13T11:19:42Z"
   },
   {
    "id": "SOG-0228",
@@ -1762,8 +1770,9 @@
    },
    "test": "Maintenance › Données : « Paquets de pays » est replié à l'ouverture ; sous « Zones de la couverture (n) », une ligne dit ce que compte le nombre ; « Mettre à jour (n) » d'un paquet est un petit lien au bout de sa ligne. (Le bilan « n à jour · n à reconstruire » est maintenant la phrase d'état en tête du panneau : test SOG-0229.)",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-11T12:03:52Z"
+   "state": "ok",
+   "delivered": "2026-11-11T12:03:52Z",
+   "at": "2026-11-13T11:19:45Z"
   },
   {
    "id": "SOG-0229",
@@ -1928,13 +1937,7 @@
    },
    "test": "Recharge la page. Carte, ta route LFPO MOPAR KOLIV VEPET PETAX EGKB avec les vents : déplace la carte pour amener le coude de VEPET à quelques centimètres du bord de l'écran, à plusieurs zooms. Toutes les barbules restent posées sur le trait, y compris dans le coude. Si tu en vois encore une de travers, dis-moi à quel endroit de la route.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-13T09:10:42Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "reproduit. à quelques cm du bord de l’écran. 3 screenshots.",
-    "at": "2026-11-13T08:42:36Z"
-   }
+   "state": "known"
   },
   {
    "id": "SOG-0244",
@@ -1975,10 +1978,7 @@
    },
    "test": "Recharge la page. Carte, la France entière à l'écran : décoche « autour du plan de vol uniquement » — toute la vue doit être lue (zones loin de la route comprises), le curseur de Complexité descend et une ligne le dit ; remonte-le si tu veux, il reste où tu le mets ; recoche : la Complexité d'avant revient. Avec un vol LFPO–LFST en cours, zoome sur l'Australie, case décochée : ses espaces doivent se dessiner. Dis-moi si la France décochée est lisible et fluide au cran proposé.",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-12T15:36:53Z",
-   "comment": "a un effet, mais pas sur tout. manque :  * airspaces * AD * peut-être d’autres",
-   "at": "2026-11-13T09:12:07Z"
+   "state": "known"
   },
   {
    "id": "SOG-0247",
@@ -2006,8 +2006,9 @@
    },
    "test": "Relance d'abord le lanceur. Puis relis les procédures, terrain par terrain (Réglages › Procédures, « relire », ou « Relire » dans Carburant) et dis-moi ce que tu obtiens. LFBD : la finale des ILS 23 et 29 à côté des RNP 05, 11, 23, 29 ; les VOR et les autres ILS / LOC en lignes « carte seulement dans l'AIP ». LFST : la finale des ILS 05 et 23 ; les RNP 05 et 23 avec leur arc (piste 05 : un arc d'environ 179° et 8,6 NM ; piste 23 : 7,1 NM, ou « à vérifier : branche en arc RF » si le centre n'est pas dans la base). LFRS : les huit départs nommés de la piste 21 (ANG 4S, ANG 4T, BALNI 4S, RIMON 4S, ERBIN 4S, ERIGA 4S, LUSON 4S, LUGEN 4S), la RNP 03 avec les routes 117 / 232 / 314, la finale de l",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T19:23:34Z"
+   "state": "ok",
+   "delivered": "2026-11-12T19:23:34Z",
+   "at": "2026-11-13T10:59:28Z"
   },
   {
    "id": "SOG-0249",
@@ -2020,8 +2021,9 @@
    },
    "test": "Recharge la page. « Anciennes pages (V2) » : le parser des performances de carburant est dans le groupe Carburant ; l'aide de la V2, l'original des pélicandromes et les comptes rendus par famille de mission y sont aussi. Dis-moi s'il manque encore une page V2.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T17:50:42Z"
+   "state": "ok",
+   "delivered": "2026-11-12T17:50:42Z",
+   "at": "2026-11-13T11:09:16Z"
   },
   {
    "id": "SOG-0250",
@@ -2062,10 +2064,7 @@
    },
    "test": "Carte, sur un grand terrain (LFBD, LFPO) au zoom de ta capture : les noms des voies de circulation sont des cartouches lisibles, un par voie, sans doublon à quelques mètres ; en reculant ils se raréfient puis disparaissent ; le nom d'une voie passe devant celui d'une route.",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-12T15:11:24Z",
-   "comment": "cf bugs.md",
-   "at": "2026-11-13T09:12:33Z"
+   "state": "known"
   },
   {
    "id": "SOG-0254",
@@ -2094,8 +2093,9 @@
    },
    "test": "Recharge la page. Feuille de route, vue « Priorités » : les colonnes sont Livré, En test, alpha.5, alpha.6, beta.1, Backlog. « En test » porte ce qui est livré et attend ton verdict. Glisse une carte de Backlog vers alpha.6 puis vers Backlog : elle y revient. « Masquer les livrées » cache Livré, pas En test.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:21:11Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:21:11Z",
+   "at": "2026-11-13T11:04:54Z"
   },
   {
    "id": "SOG-0257",
@@ -2108,8 +2108,9 @@
    },
    "test": "Feuille de route, vue « Priorités » : va au fond de la colonne Backlog, prends une carte et déplace-la de côté : la bande entière de la colonne voisine doit se teinter et une étiquette dire « → alpha.6, en tête » ; lâche : la carte est en tête de cette colonne. Sur une carte, les petits boutons « En tête », « Monter », « Descendre » la déplacent sans glisser.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:38:36Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:38:36Z",
+   "at": "2026-11-13T11:04:57Z"
   },
   {
    "id": "SOG-0258",
@@ -2122,8 +2123,9 @@
    },
    "test": "Maintenance › Données, la fiche d'un pays (le Portugal, le Royaume-Uni) : ses trois étapes sont dites séparément — téléchargée, construite, publiée — avec leur date ; « Publier » montre d'abord ce qui partira, pour ce pays seulement. Dis-moi si une étape manque ou ne peut pas se faire seule.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T18:28:56Z"
+   "state": "ok",
+   "delivered": "2026-11-12T18:28:56Z",
+   "at": "2026-11-13T11:05:02Z"
   },
   {
    "id": "SOG-0259",
@@ -2136,8 +2138,9 @@
    },
    "test": "Maintenance › Données : déplie « À faire ce mois-ci ». La liste porte tout ce qui reste pour le cycle, chaque ligne avec son geste (prendre un fichier, mettre à jour) ; une ligne faite est cochée par l'outil et le décompte de l'en-tête baisse. Dis-moi ce qui manque à ton rafraîchissement mensuel.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T18:28:56Z"
+   "state": "ok",
+   "delivered": "2026-11-12T18:28:56Z",
+   "at": "2026-11-13T11:05:04Z"
   },
   {
    "id": "SOG-0260",
@@ -2150,8 +2153,7 @@
    },
    "test": "Relance le lanceur. Maintenance › Données : la phrase d'état doit donner des chiffres qui se tiennent (environ 72 zones à jour, une douzaine à faire) et ne plus dire « Tout est à jour » à côté de zones à faire. Un pays sans rien à faire est vert, même s'il porte la remarque « sans points ni voies ». Aucun « Raison non reconnue ». L'Afghanistan n'a pas de bouton de fichier ; l'Espagne, la Suède ou l'Irlande disent « cochez Je certifie… » et non « prendre un fichier ». Le Portugal n'est plus dit « cycle passé ».",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T10:07:31Z"
+   "state": "known"
   },
   {
    "id": "SOG-0261",
@@ -2164,8 +2166,7 @@
    },
    "test": "Maintenance › Données : fais défiler la liste des zones jusqu'en bas, touche « pourquoi ? » à côté d'un « À reconstruire » : la raison se déplie sur la ligne, la liste ne remonte pas ; un second appui la replie.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T10:07:31Z"
+   "state": "known"
   },
   {
    "id": "SOG-0262",
@@ -2178,8 +2179,9 @@
    },
    "test": "Relance le lanceur et recharge la page. Maintenance › Données : l'écran est celui de la maquette — l'en-tête du cycle et sa barre, un seul « Tout mettre à jour », la carte (zoom et déplacement), « À faire ce mois-ci » replié, les paquets de pays ; touche un pays : sa fiche à droite (plein écran au téléphone). Refais ton parcours du matin : le Portugal (« Prendre le fichier téléchargé », l'édition dite), « Mettre à jour ce pays » (l'avancement sur place, puis le fil de l'opération qui reste), un second geste pendant ce temps (la carte « opération en cours »), Maj + clic sur plusieurs pays (le bandeau), « Publier » (le plan d'abord). Déplie « À faire ce mois-ci » : chaque ligne (pays, fichier ",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T20:19:28Z"
+   "state": "ok",
+   "delivered": "2026-11-12T20:19:28Z",
+   "at": "2026-11-13T11:05:24Z"
   },
   {
    "id": "SOG-0263",
@@ -2192,8 +2194,7 @@
    },
    "test": "Maintenance › Données, « Quand ça change » : la ligne des routes NAT dit jusqu'à quand elles valent, sans bouton « Ouvrir » ; sur la Carte, la couche NAT dit « valides jusqu'au … » ou « périmées » et les reprend une fois quand tu l'affiches.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T17:58:55Z"
+   "state": "known"
   },
   {
    "id": "SOG-0264",
@@ -2206,8 +2207,10 @@
    },
    "test": "Maintenance › Données : la carte du monde montre ta couverture (pays couverts, à faire, hors couverture) et marque les pays dont tu as les procédures ; la Belgique (enregistrement sans procédure) n'est pas marquée.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T18:28:56Z"
+   "state": "ok",
+   "delivered": "2026-11-12T18:28:56Z",
+   "comment": "oui. « ma couverture » n’est pas adapté, mauvaise traduction.",
+   "at": "2026-11-13T11:11:26Z"
   },
   {
    "id": "SOG-0265",
@@ -2220,8 +2223,9 @@
    },
    "test": "Relance le lanceur et regarde sa fenêtre : chaque ligne porte l'heure (HH:MM:SS), et une rafale de lignes identiques (« [sortant] échec … ») tient en une ligne suivie de « ↑ ×n ».",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:45:24Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:45:24Z",
+   "at": "2026-11-13T11:08:01Z"
   },
   {
    "id": "SOG-0266",
@@ -2234,8 +2238,7 @@
    },
    "test": "Recharge la page, lanceur ouvert, et change plusieurs fois de route dans Carburant avec la Carte et la Météo ouvertes : dans la fenêtre du lanceur tu ne dois plus voir de rafale de « [sortant] échec relais : api.open-meteo.com » ; au pire une ligne, et les écrans disent « limite atteinte » ou « vent indisponible » pendant une minute, puis reprennent.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T17:46:15Z"
+   "state": "known"
   },
   {
    "id": "SOG-0267",
@@ -2248,8 +2251,7 @@
    },
    "test": "Arrête le lanceur, puis ouvre dans la page un écran pas encore visité (la feuille de route, par exemple) : une carte doit dire que le lanceur de ce poste ne répond plus et qu'il faut relancer lancer.cmd, avec « Copier le diagnostic ». Relance le lanceur : l'écran doit se charger seul.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:36:12Z"
+   "state": "known"
   },
   {
    "id": "SOG-0268",
@@ -2276,8 +2278,10 @@
    },
    "test": "Flotte : tape « fbhhh » dans la recherche. Sous « Aucun aéronef… », « Créer F-BHHH » doit ouvrir une fiche neuve avec l'immatriculation remplie ; « Rechercher sur rzjets.net » doit ouvrir le site dans un nouvel onglet sur cette immatriculation.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:20:40Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:20:40Z",
+   "comment": "oui. mais : « registre français non déposé sur ce poste - le déposer » . je clique, et je retourne sur « ma compagnie » (2 screenshots). BTW, je n’ai pas trouvé où le déposer dans maintenance.",
+   "at": "2026-11-13T10:10:30Z"
   },
   {
    "id": "SOG-0270",
@@ -2304,8 +2308,10 @@
    },
    "test": "Recharge la page et rétrécis la fenêtre : au-dessus de 1 100 px la barre de gauche est entière ; entre 761 et 1 099 px elle se réduit aux icônes (le libellé au survol, l'écran actif marqué) et le contenu prend la place ; à 760 px et moins, le mode téléphone. Regarde Pilote et Maintenance.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T17:22:59Z"
+   "state": "ok",
+   "delivered": "2026-11-12T17:22:59Z",
+   "comment": "à part « administratio ... n ».",
+   "at": "2026-11-13T11:11:49Z"
   },
   {
    "id": "SOG-0275",
@@ -2318,8 +2324,9 @@
    },
    "test": "Aide › À propos, lien de la licence (sur le site publié aussi) : elle s'ouvre mise en forme dans l'afficheur de l'aide, avec le retour au manuel, pas en texte brut dans un onglet.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T17:58:23Z"
+   "state": "ok",
+   "delivered": "2026-11-12T17:58:23Z",
+   "at": "2026-11-13T11:12:02Z"
   },
   {
    "id": "SOG-0276",
@@ -2362,8 +2369,9 @@
    },
    "test": "Recharge la page. Modifie plusieurs fois ton vol dans Carburant, puis une donnée (une ligne de la flotte) : la puce en haut à droite doit dire « n modifications à envoyer · dans k min » ; rien ne part tout de suite. Un clic sur la puce envoie tout en une fois. Dans le dépôt des données, tu ne dois plus voir un commit par retouche du vol : au plus un toutes les cinq minutes, ou à ta demande. Le vol en cours reste sur l'appareil tant que tu ne synchronises pas. Dans le résumé du Départ, « Envoyer ce vol à mes appareils » l'envoie tout de suite et dit l'heure de l'envoi ; ouvre alors la page sur ton téléphone : le vol y est. Tes unités d'affichage (altitude, distance, vitesse) restent celles de",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T17:45:10Z"
+   "state": "ok",
+   "delivered": "2026-11-12T17:45:10Z",
+   "at": "2026-11-13T11:12:07Z"
   },
   {
    "id": "SOG-0281",
@@ -2404,8 +2412,9 @@
    },
    "test": "Recharge la page. Maintenance › Données. (1) Pointeur au-dessus d'un pays, puis de la mer : la molette zoome la carte et la page ne défile pas ; arrivé au bout du zoom, la page défile. (2) Maj + clic sur deux pays : ils restent pleins et entourés de bleu ; sous la carte, le bandeau dit « 2 pays » avec leurs noms, « Mettre à jour (2) » et « Annuler ». (3) Survole un paquet de la grille : son périmètre s'entoure de bleu sur la carte, sans que la carte bouge ; il s'efface quand tu quittes le paquet.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T22:46:31Z"
+   "state": "ok",
+   "delivered": "2026-11-12T22:46:31Z",
+   "at": "2026-11-13T11:12:28Z"
   },
   {
    "id": "SOG-0286",
@@ -2447,8 +2456,9 @@
    },
    "test": "Recharge la page. Missions : tape « averse » → T-085, avec « dans : risques » ; tape « clermont-ferrand » → T-085 ; tape « voie » → M-003, M-013, T-045. Même chose dans Compagnie › Registre. Si une ligne dit « n missions non lues sur cet appareil », ces missions-là ne sont cherchées que sur leur ligne du registre.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T08:15:52Z"
+   "state": "ok",
+   "delivered": "2026-11-13T08:15:52Z",
+   "at": "2026-11-13T10:39:08Z"
   },
   {
    "id": "SOG-0289",
@@ -2489,8 +2499,9 @@
    },
    "test": "Recharge la page. Missions : choisis une mission (T-085 par exemple). La première page montre « Résumé » puis le résumé EN ENTIER (plus de coupe à deux lignes) ; au-delà de 600 signes seulement, « Lire la suite ». Dans le Détail, « Description » ne répète plus le résumé. Le texte est celui du fichier de la mission : ta retouche du 10/11 de T-085 n'y est pas encore (SOG-0293).",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T07:59:40Z"
+   "state": "ok",
+   "delivered": "2026-11-13T07:59:40Z",
+   "at": "2026-11-13T10:39:24Z"
   },
   {
    "id": "SOG-0292",
@@ -2503,8 +2514,9 @@
    },
    "test": "Recharge la page. Missions : la liste des familles se lit « T · AIRLIFT · Transport aérien / logistique », triée par lettre. Choisis une famille : une seconde liste « Sous-type » apparaît à côté si elle en a au moins deux ; changer de famille la remet à zéro. Même chose dans Compagnie › Registre.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T08:06:48Z"
+   "state": "ok",
+   "delivered": "2026-11-13T08:06:48Z",
+   "at": "2026-11-13T10:39:51Z"
   },
   {
    "id": "SOG-0293",
@@ -2517,8 +2529,7 @@
    },
    "test": "Recharge la page. Anciennes pages (V2) › registre des missions. 1) « Exporter les missions gardées par ce navigateur » : garde l'archive .zip, c'est la sauvegarde. 2) Déplie « Comparer avec le dossier (n) » : une ligne par mission qui diffère ou sans fichier, avec ce qui est comparé (dates, longueurs du résumé et de la description, champs remplis) et le verdict par critère. Pour T-085 (ligne « 85 → T-085 »), la version du navigateur doit avoir les textes plus longs. 3) « Ranger dans le dossier » sur cette ligne : il te demande le dossier des missions (E:\\DEFA\\data\\missions), écrit la version du navigateur sous T-085 et garde l'ancien fichier dans versions/ ; « Garder le fichier » ne change r",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T09:03:29Z"
+   "state": "known"
   },
   {
    "id": "SOG-0294",
@@ -2544,8 +2555,9 @@
    },
    "test": "Recharge la page. Carte › Couches : la case « Météo (vent, nuages) » a disparu ; « Vents en altitude » est toujours là et ses barbules s'affichent sur la route.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T09:28:21Z"
+   "state": "ok",
+   "delivered": "2026-11-13T09:28:21Z",
+   "at": "2026-11-13T10:34:20Z"
   },
   {
    "id": "SOG-0303",
@@ -2558,24 +2570,10 @@
    },
    "test": "Recharge la page (et relance le lanceur : son Python a changé). Aide › Recette : le champ du commentaire fait quatre lignes et grandit avec le texte ; tu peux écrire jusqu'à 2 000 signes, un compteur apparaît vers la fin. Écris un long commentaire, valide : il est gardé en entier.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T09:26:13Z"
+   "state": "ok",
+   "delivered": "2026-11-13T09:26:13Z",
+   "at": "2026-11-13T10:34:41Z"
   }
  ],
- "decisions": [
-  {
-   "id": "Q-0042",
-   "fiche": "SOG-0278",
-   "app": "maintenance",
-   "question": "Racine du site → V3 : pour que le renvoi tienne, la même étape doit être ajoutée au fichier de publication de la branche develop sur GitHub (la branche par défaut, celle de la V2). Je la pose ?",
-   "context": "Le site est republié à chaque poussée de develop ou de v3, et toutes les six heures depuis develop. Si seule v3 reçoit l'étape, la racine renvoie vers la V3 puis redevient l'accueil de la V2 au plus tard six heures après. Le changement sur develop est une étape ajoutée à .github/workflows/pages.yml, identique à celle de v3, rien d'autre (ni code de la V2, ni déclencheurs, ni permissions) ; Sécurisation relit le diff avant. La racine renverra vers …/v3/frame/ (l'application) : …/v3/ est un vieux ",
-   "options": [
-    "Oui : pose la même étape sur develop, après l'accord de Sécurisation",
-    "Non : on ne touche pas à develop, la racine reste l'accueil de la V2 pour l'instant"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
-  }
- ]
+ "decisions": []
 }

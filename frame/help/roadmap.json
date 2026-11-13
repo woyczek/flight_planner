@@ -4,10 +4,10 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7c1a592",
-  "fiches": 310,
+  "organisation": "e1be74b",
+  "fiches": 316,
   "untranslated": 0,
-  "priorities": 243
+  "priorities": 310
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
  "note": {
@@ -188,7 +188,17 @@
     "SOG-0062",
     "SOG-0063",
     "SOG-0064",
-    "SOG-0065"
+    "SOG-0065",
+    "SOG-0298",
+    "SOG-0294",
+    "SOG-0307",
+    "SOG-0297",
+    "SOG-0310",
+    "SOG-0302",
+    "SOG-0119",
+    "SOG-0229",
+    "SOG-0273",
+    "SOG-0306"
    ],
    "content": {
     "fr": "Semaine du 10/11 : roadmap utilisateur, compagnies multiples (étape 1), courbes par altitude, couche sol, Fuel Phase Monitor, Statistiques, Missions minimal, CR",
@@ -208,13 +218,16 @@
    "date": "2026-11-21",
    "state": "planned",
    "items": [
-    "SOG-0090",
-    "SOG-0103",
-    "SOG-0238",
-    "SOG-0135",
-    "SOG-0076",
-    "SOG-0136",
-    "SOG-0190"
+    "SOG-0161",
+    "SOG-0240",
+    "SOG-0182",
+    "SOG-0287",
+    "SOG-0272",
+    "SOG-0304",
+    "SOG-0253",
+    "SOG-0114",
+    "SOG-0115",
+    "SOG-0308"
    ],
    "content": {
     "fr": "En développement : ce qui suit l'alpha.5 (colonne « En développement » de la roadmap)",
@@ -243,7 +256,12 @@
     "SOG-0025",
     "SOG-0009",
     "SOG-0014",
-    "SOG-0017"
+    "SOG-0017",
+    "SOG-0153",
+    "SOG-0309",
+    "SOG-0255",
+    "SOG-0278",
+    "SOG-0301"
    ],
    "content": {
     "fr": "Formats gelés, retrait des pages V2 décidé, doc relue ×4, écran en vol, missions complètes en V3",
@@ -272,7 +290,7 @@
      "en": "\"Join the airline\" tutorial rewritten for GitLab (token received from the administrator, no account to create), screenshots redone",
      "de": "Tutorial „Der Gesellschaft beitreten“ für GitLab neu geschrieben (Token vom Administrator, kein Konto anzulegen), Bildschirmfotos erneuert",
      "es": "Tutorial «Unirse a la compañía» reescrito para GitLab (token recibido del administrador, sin cuenta que crear), capturas rehechas",
-     "rank": 229
+     "rank": 2
     }
    ]
   },
@@ -294,7 +312,7 @@
      "en": "Points to decide shown like the acceptance tests: multiple choice and a free field, in the acceptance page",
      "de": "Zu entscheidende Punkte wie die Abnahme dargestellt: Auswahl und Freitext, auf der Abnahmeseite",
      "es": "Los puntos por decidir presentados como la aceptación: opción múltiple y campo libre, en la página de aceptación",
-     "rank": 147
+     "rank": 3
     }
    ]
   },
@@ -316,7 +334,16 @@
      "en": "Acceptance sheet: the comment field is too small",
      "de": "Abnahmeblatt: das Kommentarfeld ist zu klein",
      "es": "Hoja de pruebas: el campo de comentario es demasiado pequeño",
-     "test": true
+     "rank": 4
+    },
+    {
+     "id": "SOG-0316",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Signaler un bug ou une demande depuis l'application",
+     "en": "Report a bug or a request from within the application",
+     "de": "Einen Fehler oder Wunsch direkt in der Anwendung melden",
+     "es": "Señalar un fallo o una petición desde la aplicación"
     }
    ]
   },
@@ -359,7 +386,8 @@
      "fr": "Aéronefs : « Rechercher » une immatriculation hors de France (rzjets.net), à la demande",
      "en": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
      "de": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
-     "es": "Aircraft: “Search” a registration outside France (rzjets.net), on request"
+     "es": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
+     "rank": 6
     }
    ]
   },
@@ -382,7 +410,7 @@
      "de": "Pilotenbildschirm 1: Eine Schaltfläche „Auto“ berechnet die Flugfläche aus Kraftstoff und Zeit",
      "es": "Pantalla 1 del piloto: un botón « Auto » calcula el nivel a partir del combustible y el tiempo",
      "milestone": "6.0.0-alpha.5",
-     "rank": 6
+     "rank": 7
     },
     {
      "id": "SOG-0058",
@@ -393,7 +421,7 @@
      "de": "Kraftstoff und Betrieb: Die Felder sind nicht ausgerichtet (Texte unterschiedlicher Länge)",
      "es": "Combustible y operación: las casillas no están alineadas (textos de longitudes variables)",
      "milestone": "6.0.0-alpha.5",
-     "rank": 7
+     "rank": 8
     },
     {
      "id": "SOG-0059",
@@ -404,7 +432,7 @@
      "de": "Kraftstoff: 585 kg für 45 min bei einem Datenblatt mit 2 000–11 000 lb/h; Einheit des „Durchflusses dieses Flugs“; „Einstellung der Kraftstoffberechnung“ unten auf Seite 5 unsichtbar",
      "es": "Combustible: 585 kg para 45 min con una ficha de 2 000–11 000 lb/h; unidad del « caudal de este vuelo »; « Ajuste del cálculo de combustible » invisible al pie de la página 5",
      "milestone": "6.0.0-alpha.4",
-     "rank": 8
+     "rank": 9
     },
     {
      "id": "SOG-0060",
@@ -415,7 +443,7 @@
      "de": "Kraftstoff: Das Flugzeug des Flugs im Klartext; die Flugzeugauswahl hat dieselbe Suchmaschine wie die Einstellungen",
      "es": "Combustible: la aeronave del vuelo dicha en claro; la elección de aeronave usa el mismo motor de búsqueda que los ajustes",
      "milestone": "6.0.0-alpha.5",
-     "rank": 9
+     "rank": 10
     },
     {
      "id": "SOG-0061",
@@ -426,7 +454,7 @@
      "de": "Steigflugvorgaben: die Soll-Drehzahl (Caravelle: der Schubhebel bestimmt die rpm, „full“ = 8 000+), der Schubhebel aus den CSVs gelesen",
      "es": "Consignas de ascenso: el régimen objetivo (Caravelle: la palanca fija las rpm, « full » = 8 000+), la palanca leída en los CSV",
      "milestone": "6.0.0-alpha.5",
-     "rank": 10
+     "rank": 11
     },
     {
      "id": "SOG-0080",
@@ -436,7 +464,7 @@
      "en": "RouteSim (E:\\DEFA\\rad): take inspiration from its layout (left band = route alternatives in wide view)?",
      "de": "RouteSim (E:\\DEFA\\rad): sich an seinem Layout orientieren (linke Leiste = Routenalternativen in der Weitansicht)?",
      "es": "RouteSim (E:\\DEFA\\rad): ¿inspirarse en su disposición (banda izquierda = alternativas de ruta en vista amplia)?",
-     "rank": 11
+     "rank": 12
     },
     {
      "id": "SOG-0081",
@@ -446,7 +474,7 @@
      "en": "Automatic route calculation and IFPS / RAD / FRA check: integrate the RouteSim engine into the pilot’s path (alpha.5)",
      "de": "Automatische Routenberechnung und IFPS-/RAD-/FRA-Prüfung: die RouteSim-Engine in den Pilotenweg integrieren (alpha.5)",
      "es": "Cálculo automático de ruta y control IFPS / RAD / FRA: integrar el motor de RouteSim en el camino del piloto (alpha.5)",
-     "rank": 12
+     "rank": 13
     },
     {
      "id": "SOG-0086",
@@ -471,7 +499,7 @@
     {
      "id": "SOG-0088",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Direct vers un point sur instruction du contrôle : chercher le point, reprendre le reste du vol",
      "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
      "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
@@ -526,7 +554,7 @@
      "en": "“No published procedure table”: no plan B nor instruction — goes through the “missing zone” component",
      "de": "„Keine veröffentlichte Verfahrenstabelle“: kein Plan B, keine Anleitung — über die Komponente „fehlende Zone“",
      "es": "«Ninguna tabla de procedimientos publicada»: sin plan B ni instrucción; pasa por el componente «zona ausente»",
-     "rank": 148
+     "rank": 21
     },
     {
      "id": "SOG-0158",
@@ -536,17 +564,7 @@
      "en": "ADEP / ADEST entry: find “Stockholm” (city and airport name, not only the code)",
      "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
      "es": "Entrada ADEP / ADEST: encontrar «Estocolmo» (ciudad y nombre del aeródromo, no solo el código)",
-     "rank": 149
-    },
-    {
-     "id": "SOG-0161",
-     "kind": "feature",
-     "state": "doing",
-     "fr": "Moteur de route : l'améliorer, pas seulement le recopier — la plus longue route valide IFPS en LOW, HIGH ou FRA, par itérations avec points intermédiaires (ESSB → LEMO)",
-     "en": "Route engine: improve it, not only copy it — the longest IFPS-valid route in LOW, HIGH or FRA, iterating with intermediate points (ESSB → LEMO)",
-     "de": "Routen-Engine: verbessern, nicht nur kopieren — die längste IFPS-gültige Route in LOW, HIGH oder FRA, iterativ mit Zwischenpunkten (ESSB → LEMO)",
-     "es": "Motor de rutas: mejorarlo, no solo copiarlo: la ruta válida IFPS más larga en LOW, HIGH o FRA, iterando con puntos intermedios (ESSB → LEMO)",
-     "rank": 151
+     "rank": 22
     },
     {
      "id": "SOG-0200",
@@ -556,7 +574,7 @@
      "en": "Fuel, Departure step: a board of the flight's radio aids (the chosen ILS first, then the guiding VORs)",
      "de": "Kraftstoff, Schritt Abflug: eine Tafel der Funkhilfen des Flugs (zuerst das gewählte ILS, dann die leitenden VOR)",
      "es": "Combustible, paso Salida: un tablero de las ayudas radio del vuelo (primero el ILS elegido, luego los VOR que guían)",
-     "rank": 152
+     "rank": 23
     },
     {
      "id": "SOG-0205",
@@ -566,7 +584,7 @@
      "en": "Fuel: the alternate aerodrome is not taken into account after it is typed",
      "de": "Kraftstoff: der Ausweichflugplatz wird nach der Eingabe nicht übernommen",
      "es": "Combustible: el aeródromo alternativo no se tiene en cuenta tras escribirlo",
-     "rank": 153
+     "rank": 24
     },
     {
      "id": "SOG-0211",
@@ -576,7 +594,7 @@
      "en": "Route: a coordinate in ICAO format (4959N08712W) is called an “unknown point”",
      "de": "Route: eine Koordinate im ICAO-Format (4959N08712W) gilt als „unbekannter Punkt“",
      "es": "Ruta: una coordenada en formato OACI (4959N08712W) se da como «punto desconocido»",
-     "rank": 154
+     "rank": 25
     },
     {
      "id": "SOG-0222",
@@ -586,7 +604,7 @@
      "en": "Fuel › Route: the “Points” fold must be closed by default",
      "de": "Kraftstoff › Route: der Abschnitt „Punkte“ muss standardmäßig geschlossen sein",
      "es": "Combustible › Ruta: el pliegue «Puntos» debe estar cerrado por defecto",
-     "rank": 155
+     "rank": 26
     },
     {
      "id": "SOG-0225",
@@ -596,7 +614,7 @@
      "en": "Fuel quote: a computed alternate fuel (distance from the arrival to the alternate aerodrome)",
      "de": "Kraftstoffplan: berechneter Ausweichkraftstoff (Strecke vom Ziel zum Ausweichflugplatz)",
      "es": "Presupuesto de combustible: combustible de alternativo calculado (distancia de la llegada al alternativo)",
-     "rank": 156
+     "rank": 27
     },
     {
      "id": "SOG-0090",
@@ -606,8 +624,7 @@
      "en": "Runway in use or probable from the departure and arrival METAR",
      "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
      "es": "Pista en uso o probable según el METAR de salida y llegada",
-     "milestone": "6.0.0-alpha.6",
-     "rank": 237
+     "rank": 28
     },
     {
      "id": "SOG-0247",
@@ -616,7 +633,19 @@
      "fr": "Carburant, étape Départ : le pli des aides radio se referme dès qu'on l'ouvre",
      "en": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
      "de": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
-     "es": "Fuel, Departure step: the radio aids fold closes as soon as it is opened"
+     "es": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
+     "rank": 29
+    },
+    {
+     "id": "SOG-0161",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Moteur de route : l'améliorer, pas seulement le recopier — la plus longue route valide IFPS en LOW, HIGH ou FRA, par itérations avec points intermédiaires (ESSB → LEMO)",
+     "en": "Route engine: improve it, not only copy it — the longest IFPS-valid route in LOW, HIGH or FRA, iterating with intermediate points (ESSB → LEMO)",
+     "de": "Routen-Engine: verbessern, nicht nur kopieren — die längste IFPS-gültige Route in LOW, HIGH oder FRA, iterativ mit Zwischenpunkten (ESSB → LEMO)",
+     "es": "Motor de rutas: mejorarlo, no solo copiarlo: la ruta válida IFPS más larga en LOW, HIGH o FRA, iterando con puntos intermedios (ESSB → LEMO)",
+     "milestone": "6.0.0-alpha.6",
+     "rank": 120
     }
    ]
   },
@@ -638,6 +667,7 @@
      "en": "A mission stays active after “New flight”, and even after its cross on the map",
      "de": "A mission stays active after “New flight”, and even after its cross on the map",
      "es": "A mission stays active after “New flight”, and even after its cross on the map",
+     "rank": 30,
      "test": true
     }
    ]
@@ -660,6 +690,7 @@
      "en": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "de": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "es": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
+     "rank": 31,
      "test": true
     }
    ]
@@ -682,7 +713,7 @@
      "en": "Fuel › Route: “Check” after choosing a route, a runway and a SID answers “the check did not answer”",
      "de": "Kraftstoff › Route: „Prüfen“ nach Wahl von Route, Bahn und SID antwortet „die Prüfung hat nicht geantwortet“",
      "es": "Combustible › Ruta: «Comprobar» tras elegir itinerario, pista y SID responde «la comprobación no ha respondido»",
-     "rank": 157
+     "rank": 32
     },
     {
      "id": "SOG-0217",
@@ -692,7 +723,7 @@
      "en": "Automatic route computation: between two distant aerodromes, follow the great circle",
      "de": "Automatische Routenberechnung: zwischen zwei fernen Plätzen der Orthodrome folgen",
      "es": "Cálculo automático de ruta: entre dos aeródromos lejanos, seguir la ortodrómica",
-     "rank": 158
+     "rank": 33
     }
    ]
   },
@@ -713,7 +744,9 @@
      "fr": "RÉGRESSION : choix de la piste d'arrivée par « Sur la carte » — le vent de face et de travers a disparu",
      "en": "REGRESSION: arrival runway choice via « On the map » — headwind and crosswind are gone",
      "de": "REGRESSION: Wahl der Landebahn über « Auf der Karte » — Gegen- und Seitenwind fehlen",
-     "es": "REGRESIÓN: elección de pista de llegada por « En el mapa » — falta el viento de cara y de través"
+     "es": "REGRESIÓN: elección de pista de llegada por « En el mapa » — falta el viento de cara y de través",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 49
     }
    ]
   },
@@ -734,7 +767,9 @@
      "fr": "Carburant : clarifier le bloc « Procédures » — maquette d'abord",
      "en": "Fuel: make the « Procedures » block clearer — mock-up first",
      "de": "Kraftstoff: den Block « Verfahren » klarer machen — zuerst ein Entwurf",
-     "es": "Combustible: aclarar el bloque « Procedimientos » — primero una maqueta"
+     "es": "Combustible: aclarar el bloque « Procedimientos » — primero una maqueta",
+     "milestone": "6.0.0-alpha.6",
+     "rank": 129
     }
    ]
   },
@@ -755,7 +790,8 @@
      "fr": "« Calculer A → B » : 27,8 s passées dans le lanceur (LFPO → EIDW)",
      "en": "« Compute A → B »: 27.8 s spent in the launcher (LFPO → EIDW)",
      "de": "« A → B berechnen »: 27,8 s im Launcher (LFPO → EIDW)",
-     "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)"
+     "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)",
+     "rank": 34
     }
    ]
   },
@@ -778,7 +814,7 @@
      "de": "Fuel as volume und Fuel density erklären",
      "es": "Explicar fuel as volume y fuel density",
      "milestone": "6.0.0-alpha.3",
-     "rank": 21
+     "rank": 35
     },
     {
      "id": "SOG-0014",
@@ -789,7 +825,7 @@
      "de": "Einen einfachen Weg finden, ein Datenblatt über ChatGPT zu vervollständigen",
      "es": "Encontrar un recorrido sencillo para completar una ficha mediante ChatGPT",
      "milestone": "6.0.0-beta.1",
-     "rank": 22
+     "rank": 36
     },
     {
      "id": "SOG-0015",
@@ -800,7 +836,7 @@
      "de": "Die Verbrauchsabweichung bei der Caravelle S210 erklären",
      "es": "Explicar la diferencia de consumo del Caravelle S210",
      "milestone": "6.0.0-alpha.3",
-     "rank": 23
+     "rank": 37
     },
     {
      "id": "SOG-0023",
@@ -811,7 +847,7 @@
      "de": "Flugzeugdatenblätter: Das JSON ist die einzige Quelle, lnmperf ist nur ein Import/Export",
      "es": "Fichas de aeronave: el JSON es la única fuente, lnmperf es solo una importación/exportación",
      "milestone": "6.0.0-alpha.3",
-     "rank": 24,
+     "rank": 38,
      "test": true
     },
     {
@@ -823,7 +859,7 @@
      "de": "Datenblätter: mehrere RPM-/Verbrauchskurven pro Höhe, im Reiseflug",
      "es": "Fichas: varias curvas de RPM / consumo por altitud, en crucero",
      "milestone": "6.0.0-alpha.5",
-     "rank": 25
+     "rank": 50
     }
    ]
   },
@@ -838,6 +874,17 @@
    },
    "items": [
     {
+     "id": "SOG-0307",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : elle clignote pendant qu'on réduit le volet des espaces aériens",
+     "en": "Map: it flickers while the airspace panel is being reduced",
+     "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
+     "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 41
+    },
+    {
      "id": "SOG-0046",
      "kind": "feature",
      "state": "done",
@@ -846,17 +893,17 @@
      "de": "Karte: Liste der Punkte und Rollwege von ADEP / ADEST, Suche und Hervorhebung (große Flugplätze)",
      "es": "Mapa: lista de puntos y calles de rodaje del ADEP / ADEST, búsqueda y resaltado (grandes aeródromos)",
      "milestone": "6.0.0-alpha.5",
-     "rank": 1
+     "rank": 51
     },
     {
      "id": "SOG-0094",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Contrôleurs VATSIM et IVAO actifs sur la Carte, une teinte par réseau",
      "en": "Active VATSIM and IVAO controllers on the Map, one hue per network",
      "de": "Aktive VATSIM- und IVAO-Lotsen auf der Karte, eine Farbe je Netz",
      "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red",
-     "rank": 13
+     "rank": 52
     },
     {
      "id": "SOG-0067",
@@ -866,7 +913,7 @@
      "en": "Map: “not enough memory to open this page” on the enlarged map view",
      "de": "Karte: „Not enough memory to open this page“ in der vergrößerten Kartenansicht",
      "es": "Mapa: «not enough memory to open this page» en la vista de mapa ampliada",
-     "rank": 26
+     "rank": 53
     },
     {
      "id": "SOG-0091",
@@ -876,7 +923,7 @@
      "en": "Probable route, exercise traces, operation maps, AAR / NAT, built-up areas, offline terrain",
      "de": "Wahrscheinliche Route, Übungsspuren, Einsatzkarten, AAR / NAT, bebaute Gebiete, Gelände offline",
      "es": "Ruta probable, trazas de ejercicio, mapas de operación, AAR / NAT, zonas urbanizadas, relieve sin conexión",
-     "rank": 27
+     "rank": 54
     },
     {
      "id": "SOG-0092",
@@ -886,7 +933,7 @@
      "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
      "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
      "es": "Capas meteorológicas en el mapa desde la biblioteca de Meteo (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación",
-     "rank": 28
+     "rank": 55
     },
     {
      "id": "SOG-0095",
@@ -896,17 +943,17 @@
      "en": "Route trace: a DCT leg dotted, an airway leg solid with the airway's cartouche (request of 1 Nov, after 6 Nov)",
      "de": "Routenspur: ein DCT-Abschnitt gepunktet, ein Luftstraßen-Abschnitt durchgezogen mit der Kartusche der Luftstraße (Wunsch vom 1.11., nach dem 6.11.)",
      "es": "Traza de la ruta: un tramo DCT punteado, un tramo de aerovía continuo con el cartucho de la aerovía (petición del 1/11, después del 6/11)",
-     "rank": 29
+     "rank": 56
     },
     {
      "id": "SOG-0093",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée",
      "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
      "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
      "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada",
-     "rank": 31
+     "rank": 57
     },
     {
      "id": "SOG-0139",
@@ -916,7 +963,7 @@
      "en": "Weather on the Map: a “download AROME” link rather than a “show weather” button",
      "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",
      "es": "Meteo en el Mapa: un enlace «descargar AROME» en vez de un botón «mostrar meteo»",
-     "rank": 32
+     "rank": 58
     },
     {
      "id": "SOG-0141",
@@ -926,7 +973,7 @@
      "en": "Weather on the Map: the wind arrows are all the same on a route that leaves the model's coverage",
      "de": "Wetter auf der Karte: alle Windpfeile gleich auf einer Route außerhalb der Modellabdeckung",
      "es": "Meteo en el Mapa: las flechas de viento son todas iguales en una ruta que sale de la cobertura del modelo",
-     "rank": 33
+     "rank": 59
     },
     {
      "id": "SOG-0145",
@@ -936,7 +983,7 @@
      "en": "Map: show the great-circle route",
      "de": "Karte: die Großkreisroute anzeigen",
      "es": "Mapa: mostrar la ruta ortodrómica",
-     "rank": 34
+     "rank": 60
     },
     {
      "id": "SOG-0148",
@@ -946,7 +993,7 @@
      "en": "Weather: the vertical cut has its weather, the map (plan view) does not, data yet downloaded",
      "de": "Wetter: der Vertikalschnitt hat sein Wetter, die Karte (Draufsicht) nicht, Daten dennoch geladen",
      "es": "Meteo: el corte vertical tiene su meteo, el mapa (vista en planta) no, con los datos ya descargados",
-     "rank": 35
+     "rank": 61
     },
     {
      "id": "SOG-0156",
@@ -956,7 +1003,7 @@
      "en": "Map: a very far point (PAM in the USA) makes the map crawl in the dual view",
      "de": "Karte: ein sehr ferner Punkt (PAM in den USA) lässt die Karte in der Doppelansicht kriechen",
      "es": "Mapa: un punto muy lejano (PAM en EE. UU.) hace que el mapa se arrastre en vista doble",
-     "rank": 159
+     "rank": 62
     },
     {
      "id": "SOG-0163",
@@ -966,7 +1013,7 @@
      "en": "R and D areas: read their text (activity, conditions) from the vertical profile and the map",
      "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
      "es": "Zonas R y D: leer su texto (actividad, condiciones) desde el perfil vertical y el mapa",
-     "rank": 160
+     "rank": 63
     },
     {
      "id": "SOG-0169",
@@ -976,7 +1023,7 @@
      "en": "Airspaces: erratic display at the same zoom, complexity shows no more; no FIR outside France",
      "de": "Lufträume: launische Anzeige bei gleichem Zoom, die Komplexität zeigt nicht mehr; keine FIR außerhalb Frankreichs",
      "es": "Espacios aéreos: visualización caprichosa con el mismo zoom, la complejidad no muestra más; sin FIR fuera de Francia",
-     "rank": 161
+     "rank": 64
     },
     {
      "id": "SOG-0173",
@@ -986,7 +1033,7 @@
      "en": "Map: at a wide zoom, dragging the map shows a crowd of low airways",
      "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
      "es": "Mapa: con zoom amplio, arrastrar el mapa muestra multitud de aerovías bajas",
-     "rank": 162
+     "rank": 65
     },
     {
      "id": "SOG-0175",
@@ -996,7 +1043,7 @@
      "en": "VOR: a double compass circle with marks every 30°",
      "de": "VOR: doppelter Gradkreis mit Marken alle 30°",
      "es": "VOR: doble círculo de grados con marcas cada 30°",
-     "rank": 163
+     "rank": 66
     },
     {
      "id": "SOG-0177",
@@ -1006,7 +1053,7 @@
      "en": "Long route: too many distance markers",
      "de": "Lange Route: zu viele Distanzmarken",
      "es": "Ruta larga: demasiados marcadores de distancia",
-     "rank": 164
+     "rank": 67
     },
     {
      "id": "SOG-0183",
@@ -1016,7 +1063,7 @@
      "en": "Mission map: the complexity slider is gone",
      "de": "Missionskarte: der Komplexitätsregler ist verschwunden",
      "es": "Mapa de misión: ha desaparecido el cursor de complejidad",
-     "rank": 165
+     "rank": 68
     },
     {
      "id": "SOG-0184",
@@ -1026,7 +1073,7 @@
      "en": "VFR topo: no contour lines (V2 had them)",
      "de": "VFR-Topo: keine Höhenlinien (V2 hatte sie)",
      "es": "VFR topo: sin curvas de nivel (la V2 las tenía)",
-     "rank": 166
+     "rank": 69
     },
     {
      "id": "SOG-0185",
@@ -1036,7 +1083,7 @@
      "en": "Map: an airspace sheet flickers when it opens, and the “Layers” tab is used for more than choosing layers",
      "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
      "es": "Mapa: la ficha de un espacio parpadea al abrirse y la pestaña «Capas» sirve para algo más que elegir capas",
-     "rank": 167
+     "rank": 70
     },
     {
      "id": "SOG-0192",
@@ -1046,7 +1093,7 @@
      "en": "Map: an airspace tooltip stays when the “i” panel opens",
      "de": "Karte: der Luftraum-Tooltip bleibt, wenn das „i“-Feld geöffnet wird",
      "es": "Mapa: la ayuda emergente de un espacio se queda al abrir el panel «i»",
-     "rank": 168
+     "rank": 71
     },
     {
      "id": "SOG-0196",
@@ -1056,17 +1103,17 @@
      "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
      "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
      "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)",
-     "rank": 169
+     "rank": 72
     },
     {
      "id": "SOG-0224",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Carte à côté de Carburant : un tracé d'itinéraire proposé reste après le calcul ; deux erreurs dans la console (infobulles, cadrage)",
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
      "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)",
-     "rank": 170
+     "rank": 73
     },
     {
      "id": "SOG-0233",
@@ -1076,34 +1123,27 @@
      "en": "Map: distance marks along the flight — steps between 25 and 500 NM; marks off the track",
      "de": "Karte: Distanzmarken entlang des Flugs — Stufen zwischen 25 und 500 NM; Marken neben der Linie",
      "es": "Mapa: marcas de distancia a lo largo del vuelo — escalones entre 25 y 500 NM; marcas fuera del trazado",
-     "rank": 171
+     "rank": 74
     },
     {
      "id": "SOG-0246",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Carte : la coche « autour du plan de vol uniquement » est sans effet (toujours appliquée)",
      "en": "Map: the box “around the flight plan only” has no effect",
      "de": "Map: the box “around the flight plan only” has no effect",
-     "es": "Map: the box “around the flight plan only” has no effect"
+     "es": "Map: the box “around the flight plan only” has no effect",
+     "rank": 75
     },
     {
      "id": "SOG-0252",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Taxiways : illisibles — fusionner les points identiques au même endroit, corriger le niveau de zoom (« à traiter pour ce cycle »)",
      "en": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
      "de": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
-     "es": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level"
-    },
-    {
-     "id": "SOG-0253",
-     "kind": "feature",
-     "state": "planned",
-     "fr": "Vue VFR : donner les directions du tour de piste (carte VAC), voilure fixe en noir, tournante en vert",
-     "en": "VFR view: show the traffic pattern directions (VAC chart)",
-     "de": "VFR view: show the traffic pattern directions (VAC chart)",
-     "es": "VFR view: show the traffic pattern directions (VAC chart)"
+     "es": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
+     "rank": 76
     },
     {
      "id": "SOG-0254",
@@ -1112,16 +1152,19 @@
      "fr": "Taxiways : la voie se surligne au survol et se place dans la liste du volet du bas",
      "en": "Taxiways: the way highlights on hover and is located in the bottom list",
      "de": "Taxiways: the way highlights on hover and is located in the bottom list",
-     "es": "Taxiways: the way highlights on hover and is located in the bottom list"
+     "es": "Taxiways: the way highlights on hover and is located in the bottom list",
+     "rank": 77
     },
     {
-     "id": "SOG-0307",
+     "id": "SOG-0253",
      "kind": "feature",
      "state": "planned",
-     "fr": "Carte : elle clignote pendant qu'on réduit le volet des espaces aériens",
-     "en": "Map: it flickers while the airspace panel is being reduced",
-     "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
-     "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos"
+     "fr": "Vue VFR : donner les directions du tour de piste (carte VAC), voilure fixe en noir, tournante en vert",
+     "en": "VFR view: show the traffic pattern directions (VAC chart)",
+     "de": "VFR view: show the traffic pattern directions (VAC chart)",
+     "es": "VFR view: show the traffic pattern directions (VAC chart)",
+     "milestone": "6.0.0-alpha.6",
+     "rank": 126
     }
    ]
   },
@@ -1143,7 +1186,7 @@
      "en": "Follow the flight: a “Follow” button on the Map and a board of the flight in progress",
      "de": "Dem Flug folgen: eine Schaltfläche „Folgen“ auf der Karte und eine Tafel des laufenden Flugs",
      "es": "Seguir el vuelo: un botón «Seguir» en el Mapa y un tablero del vuelo en curso",
-     "rank": 172
+     "rank": 78
     }
    ]
   },
@@ -1160,13 +1203,12 @@
     {
      "id": "SOG-0243",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "BLOQUANT : les barbules (et tout ce qui longe la route) ne suivent pas le tracé — le tracé est sur le grand cercle, les barbules sur la ligne droite",
      "en": "BLOCKING: the wind barbs (and everything along the route) do not follow the track — the track is on the great circle, the barbs on the straight line",
      "de": "BLOCKIEREND: die Windfiedern (und alles entlang der Route) folgen der Linie nicht — die Linie liegt auf dem Großkreis, die Fiedern auf der Geraden",
      "es": "BLOQUEANTE: las barbas de viento (y todo lo que sigue la ruta) no siguen el trazado — el trazado va por el círculo máximo, las barbas por la línea recta",
-     "rank": 173,
-     "test": true
+     "rank": 79
     }
    ]
   },
@@ -1188,7 +1230,7 @@
      "en": "Wind barbs: density by zoom; all pointing the same way on a long route",
      "de": "Windfiedern: Dichte je nach Zoom; auf langer Route alle in dieselbe Richtung",
      "es": "Barbas de viento: densidad según el zoom; todas en el mismo sentido en una ruta larga",
-     "rank": 174
+     "rank": 80
     },
     {
      "id": "SOG-0295",
@@ -1198,7 +1240,7 @@
      "en": "Map: remove the « Weather (wind, clouds) » layer, wind barbs are enough",
      "de": "Karte: Ebene « Wetter (Wind, Wolken) » entfernen, Windfiedern genügen",
      "es": "Mapa: retirar la capa « Meteo (viento, nubes) », bastan las barbas de viento",
-     "test": true
+     "rank": 81
     }
    ]
   },
@@ -1219,7 +1261,9 @@
      "fr": "Carte : les flèches de la rose d'un VOR doivent réduire avec le zoom, comme ses chiffres",
      "en": "Map: the arrows of a VOR rose must shrink with the zoom, like its digits",
      "de": "Karte: die Pfeile der VOR-Rose müssen mit dem Zoom kleiner werden, wie die Ziffern",
-     "es": "Mapa: las flechas de la rosa de un VOR deben reducirse con el zoom, como sus cifras"
+     "es": "Mapa: las flechas de la rosa de un VOR deben reducirse con el zoom, como sus cifras",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 45
     }
    ]
   },
@@ -1240,7 +1284,8 @@
      "fr": "Carte de préparation d'une mission, design « swiss » : défaut de transparence",
      "en": "Mission preparation map, « swiss » design: transparency defect",
      "de": "Karte der Missionsvorbereitung, Design « swiss »: Transparenzfehler",
-     "es": "Mapa de preparación de misión, diseño « swiss »: defecto de transparencia"
+     "es": "Mapa de preparación de misión, diseño « swiss »: defecto de transparencia",
+     "rank": 82
     }
    ]
   },
@@ -1261,7 +1306,8 @@
      "fr": "Performance : sur LFPO → KEGE le profil de vol est très lent (2 images par seconde)",
      "en": "Performance: on LFPO → KEGE the flight profile is very slow (2 frames per second)",
      "de": "Leistung: auf LFPO → KEGE ist das Flugprofil sehr langsam (2 Bilder pro Sekunde)",
-     "es": "Rendimiento: en LFPO → KEGE el perfil de vuelo es muy lento (2 imágenes por segundo)"
+     "es": "Rendimiento: en LFPO → KEGE el perfil de vuelo es muy lento (2 imágenes por segundo)",
+     "rank": 83
     }
    ]
   },
@@ -1282,7 +1328,8 @@
      "fr": "Vue topographique : de vraies courbes de niveau, pas d'hippodromes ; les hippodromes et le RTBA dans une vue dédiée",
      "en": "Topographic view: real contour lines, no holding patterns; holding patterns and RTBA in a dedicated view",
      "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",
-     "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte"
+     "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte",
+     "rank": 84
     }
    ]
   },
@@ -1303,7 +1350,9 @@
      "fr": "Carte du terrain : numéros de taxiways dès que les taxiways apparaissent, points d'arrêt lisibles (cartouche rouge), et où est passée la recherche de taxiway / parking",
      "en": "Airport map: taxiway names as soon as taxiways show, readable holding points, and where the taxiway / stand search went",
      "de": "Flugplatzkarte: Rollwegnamen sobald Rollwege erscheinen, lesbare Haltepunkte, und wo die Rollweg- / Standplatzsuche ist",
-     "es": "Mapa del aeródromo: nombres de calles de rodaje en cuanto aparecen, puntos de espera legibles, y dónde está la búsqueda de calle / puesto"
+     "es": "Mapa del aeródromo: nombres de calles de rodaje en cuanto aparecen, puntos de espera legibles, y dónde está la búsqueda de calle / puesto",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 42
     }
    ]
   },
@@ -1324,7 +1373,9 @@
      "fr": "Carte : « toucher le terrain » demande des doigts trop précis",
      "en": "Map: touching the aerodrome needs too precise a finger",
      "de": "Karte: den Flugplatz zu berühren verlangt zu genaue Finger",
-     "es": "Mapa: tocar el aeródromo exige dedos demasiado precisos"
+     "es": "Mapa: tocar el aeródromo exige dedos demasiado precisos",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 43
     }
    ]
   },
@@ -1339,22 +1390,26 @@
    },
    "items": [
     {
-     "id": "SOG-0304",
-     "kind": "feature",
-     "state": "later",
-     "fr": "Carte pendant le vol : une fenêtre de suivi avec les informations cruciales",
-     "en": "Map during the flight: a follow-up window with the crucial information",
-     "de": "Karte im Flug: ein Verfolgungsfenster mit den entscheidenden Informationen",
-     "es": "Mapa durante el vuelo: una ventana de seguimiento con la información crucial"
-    },
-    {
      "id": "SOG-0309",
      "kind": "feature",
      "state": "planned",
      "fr": "Carte : l'avion (ou son fantôme) ne se voit pas assez sur une carte chargée",
      "en": "Map: the aircraft (or its ghost) is not visible enough on a busy map",
      "de": "Karte: das Flugzeug (oder sein Schatten) ist auf einer vollen Karte zu schlecht zu sehen",
-     "es": "Mapa: el avión (o su fantasma) no se ve lo bastante en un mapa cargado"
+     "es": "Mapa: el avión (o su fantasma) no se ve lo bastante en un mapa cargado",
+     "milestone": "6.0.0-beta.1",
+     "rank": 94
+    },
+    {
+     "id": "SOG-0304",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carte pendant le vol : une fenêtre de suivi avec les informations cruciales",
+     "en": "Map during the flight: a follow-up window with the crucial information",
+     "de": "Karte im Flug: ein Verfolgungsfenster mit den entscheidenden Informationen",
+     "es": "Mapa durante el vuelo: una ventana de seguimiento con la información crucial",
+     "milestone": "6.0.0-alpha.6",
+     "rank": 125
     }
    ]
   },
@@ -1377,7 +1432,7 @@
      "de": "Direkter Zugriff auf die Verfahrenskarte (VAC, SID, STAR, omni) und die Piste aus Verfahren oder Im Flug",
      "es": "Acceso directo a la carta del procedimiento (VAC, SID, STAR, omni) y a la pista desde Procedimientos o En vuelo",
      "milestone": "6.0.0-alpha.4",
-     "rank": 36
+     "rank": 85
     }
    ]
   },
@@ -1399,7 +1454,7 @@
      "en": "Recording on the site without copy-paste (PHP web service)",
      "de": "Eintragen auf der Website ohne Kopieren und Einfügen (PHP-Webservice)",
      "es": "Inscripción en el sitio sin copiar y pegar (servicio web PHP)",
-     "rank": 37
+     "rank": 86
     },
     {
      "id": "SOG-0179",
@@ -1409,7 +1464,7 @@
      "en": "Mission report: the short name of the category is gone (“SAR - Search and rescue”)",
      "de": "Missionsbericht: das Kürzel der Kategorie ist verschwunden („SAR - Suche / Rettung“)",
      "es": "Informe de misión: ha desaparecido la sigla de la categoría («SAR - Búsqueda / salvamento»)",
-     "rank": 175
+     "rank": 87
     },
     {
      "id": "SOG-0181",
@@ -1419,7 +1474,7 @@
      "en": "Report: say which airline it is written for",
      "de": "Bericht: sagen, für welche Gesellschaft er geschrieben wird",
      "es": "Informe: decir para qué compañía se escribe",
-     "rank": 176
+     "rank": 88
     },
     {
      "id": "SOG-0250",
@@ -1429,6 +1484,7 @@
      "en": "Report: the reading from the logs finds no flight (it compares the registration)",
      "de": "Report: the reading from the logs finds no flight (it compares the registration)",
      "es": "Report: the reading from the logs finds no flight (it compares the registration)",
+     "rank": 89,
      "test": true
     }
    ]
@@ -1451,7 +1507,7 @@
      "en": "Other V2 designs, report printing",
      "de": "Weitere V2-Designs, Drucken des Berichts",
      "es": "Otros diseños V2, impresión del informe",
-     "rank": 38
+     "rank": 90
     },
     {
      "id": "SOG-0117",
@@ -1461,7 +1517,7 @@
      "en": "Hues, font, repeated rules to promote to tokens (user's choice)",
      "de": "Farbtöne, Schrift, wiederholte Regeln als Tokens (Wahl des Nutzers)",
      "es": "Tonos, fuente, reglas repetidas a promover en tokens (elección del usuario)",
-     "rank": 39
+     "rank": 91
     }
    ]
   },
@@ -1482,7 +1538,8 @@
      "fr": "Designs Swiss et Metro : l'avion du titre en rouge, la couleur de contraste prise pour la couleur d'accent",
      "en": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
      "de": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
-     "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour"
+     "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
+     "rank": 92
     }
    ]
   },
@@ -1505,7 +1562,7 @@
      "de": "Im Flug: Bodenerfassung alle 0,5 s oder 1 s, um Bahnfehler vorherzusehen",
      "es": "En vuelo: captura en el suelo cada 0,5 s o 1 s para anticipar errores de trayectoria",
      "milestone": "6.0.0-beta.1",
-     "rank": 30
+     "rank": 98
     },
     {
      "id": "SOG-0048",
@@ -1516,7 +1573,7 @@
      "de": "Im Flug: Geschwindigkeit über Grund, Fluggeschwindigkeit und Kurs auf der Seite „Im Flug“, im Blickfeld des Piloten",
      "es": "En vuelo: velocidad respecto al suelo, velocidad aerodinámica y rumbo en la página « En vuelo », en la mirada del piloto",
      "milestone": "6.0.0-beta.1",
-     "rank": 40
+     "rank": 99
     }
    ]
   },
@@ -1539,7 +1596,7 @@
      "de": "Eine konforme MSFS-2020-PLN exportieren",
      "es": "Exportar un PLN de MSFS 2020 conforme",
      "milestone": "6.0.0-beta.1",
-     "rank": 41
+     "rank": 100
     },
     {
      "id": "SOG-0018",
@@ -1550,7 +1607,7 @@
      "de": "Eine konforme MSFS-2024-EFB-PLN exportieren",
      "es": "Exportar un PLN de MSFS 2024 EFB conforme",
      "milestone": "6.0.0-beta.1",
-     "rank": 42
+     "rank": 101
     }
    ]
   },
@@ -1572,7 +1629,7 @@
      "en": "Aircraft sheets: a converted value shows thirteen decimals",
      "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",
      "es": "Fichas de aeronaves: un valor convertido muestra trece decimales",
-     "rank": 177,
+     "rank": 102,
      "test": true
     }
    ]
@@ -1596,7 +1653,7 @@
      "de": "Flugvorgaben mit ihrer Frist angeben",
      "es": "Dar las consignas de vuelo con su plazo",
      "milestone": "6.0.0-beta.1",
-     "rank": 43
+     "rank": 103
     },
     {
      "id": "SOG-0008",
@@ -1607,7 +1664,7 @@
      "de": "Die Übergänge von Steig- und Sinkflug auf beiden Profilen platzieren",
      "es": "Colocar las transiciones de ascenso y descenso en los dos perfiles",
      "milestone": "6.0.0-alpha.3",
-     "rank": 44
+     "rank": 104
     }
    ]
   },
@@ -1629,7 +1686,7 @@
      "en": "TEMSI; world SIGMET and METAR through the launcher relay",
      "de": "TEMSI; SIGMET und METAR der Welt über das Launcher-Relais",
      "es": "TEMSI; SIGMET y METAR del mundo por el relé del lanzador",
-     "rank": 45
+     "rank": 105
     },
     {
      "id": "SOG-0138",
@@ -1639,7 +1696,7 @@
      "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
      "es": "GFS: sigue sin haber mapa sinóptico; y una respuesta visible, no entre dos puertas",
-     "rank": 46
+     "rank": 106
     }
    ]
   },
@@ -1662,7 +1719,7 @@
      "de": "Eine Beschränkung auf einen STAR-Punkt anwenden",
      "es": "Aplicar una restricción en un punto de STAR",
      "milestone": "6.0.0-alpha.3",
-     "rank": 47
+     "rank": 107
     },
     {
      "id": "SOG-0012",
@@ -1673,7 +1730,7 @@
      "de": "BEPAN auflösen, wenn es zur gewählten SID gehört",
      "es": "Resolver BEPAN cuando pertenece a la SID elegida",
      "milestone": "6.0.0-alpha.3",
-     "rank": 48
+     "rank": 108
     },
     {
      "id": "SOG-0019",
@@ -1684,7 +1741,7 @@
      "de": "LGL–BOBSA über die Luftstraße A34 statt DCT auflösen",
      "es": "Resolver LGL–BOBSA por la aerovía A34 en lugar de un DCT",
      "milestone": "6.0.0-alpha.3",
-     "rank": 49
+     "rank": 109
     },
     {
      "id": "SOG-0021",
@@ -1695,7 +1752,7 @@
      "de": "BOBSA9E muss eine Ankunft auf Piste 07 von LFPO ermöglichen",
      "es": "BOBSA9E debe permitir una llegada a la pista 07 de LFPO",
      "milestone": "6.0.0-alpha.3",
-     "rank": 50
+     "rank": 110
     },
     {
      "id": "SOG-0022",
@@ -1706,7 +1763,7 @@
      "de": "ILS 07 von LFPO: Punkte C107 und F107 fehlen",
      "es": "ILS 07 de LFPO: faltan los puntos C107 y F107",
      "milestone": "6.0.0-alpha.3",
-     "rank": 51
+     "rank": 111
     },
     {
      "id": "SOG-0024",
@@ -1717,7 +1774,7 @@
      "de": "Routenbildschirm: Links zu nützlichen Karten statt zu Tabellen",
      "es": "Pantalla Ruta: enlaces a las cartas útiles, no a las tablas",
      "milestone": "6.0.0-alpha.3",
-     "rank": 52
+     "rank": 112
     },
     {
      "id": "SOG-0031",
@@ -1728,7 +1785,7 @@
      "de": "Die offizielle Karte eines Flugplatzes aus der Route öffnen (chartsUrl)",
      "es": "Abrir la carta oficial de un aeródromo desde la ruta (chartsUrl)",
      "milestone": "6.0.0-alpha.4",
-     "rank": 53
+     "rank": 113
     },
     {
      "id": "SOG-0033",
@@ -1739,7 +1796,7 @@
      "de": "Neuer Flugplan: Der Abflugplatz bleibt in der Punkteliste",
      "es": "Nuevo plan de vuelo: el aeródromo de salida permanece en la lista de puntos",
      "milestone": "6.0.0-alpha.4",
-     "rank": 54
+     "rank": 114
     },
     {
      "id": "SOG-0035",
@@ -1750,7 +1807,7 @@
      "de": "Die Routenpunkte erscheinen nicht in der Punkteliste",
      "es": "Los puntos de la ruta no aparecen en la lista de puntos",
      "milestone": "6.0.0-alpha.4",
-     "rank": 55
+     "rank": 115
     }
    ]
   },
@@ -1773,7 +1830,7 @@
      "de": "Benannte AWYs im Profil anzeigen und ihre Überlappung durch TMAs behandeln",
      "es": "Mostrar las AWY con nombre en el perfil y gestionar su solape con las TMA",
      "milestone": "6.0.0-alpha.3",
-     "rank": 56
+     "rank": 116
     },
     {
      "id": "SOG-0002",
@@ -1784,7 +1841,7 @@
      "de": "Die im Profil angezeigte Höhe prüfen",
      "es": "Verificar la altura mostrada en el perfil",
      "milestone": "6.0.0-alpha.3",
-     "rank": 57
+     "rank": 117
     },
     {
      "id": "SOG-0005",
@@ -1795,7 +1852,7 @@
      "de": "Das Zoomen auf einen Profilabschnitt wirksam machen",
      "es": "Hacer eficaz el zoom de una porción del perfil",
      "milestone": "6.0.0-alpha.3",
-     "rank": 58
+     "rank": 118
     },
     {
      "id": "SOG-0006",
@@ -1806,7 +1863,7 @@
      "de": "Den vpath im Profil anzeigen",
      "es": "Mostrar el vpath en el perfil",
      "milestone": "6.0.0-alpha.3",
-     "rank": 59
+     "rank": 119
     }
    ]
   },
@@ -1828,8 +1885,7 @@
      "en": "Route generation from Eurocontrol RAD files (and the FRA)",
      "de": "Routengenerierung aus den RAD-Dateien von Eurocontrol (und dem FRA)",
      "es": "Generación de rutas a partir de los archivos RAD de Eurocontrol (y del FRA)",
-     "milestone": "6.0.0-alpha.6",
-     "rank": 241
+     "rank": 130
     }
    ]
   },
@@ -1851,7 +1907,7 @@
      "en": "Ergonomics pass (refactoring): confront every screen with the ideal roadmap and ergonomics, challenge the requests",
      "de": "Ergonomie-Durchgang (Refactoring): jeden Bildschirm an idealer Roadmap und Ergonomie messen, Anfragen hinterfragen",
      "es": "Pasada de ergonomía (refactorización): confrontar cada pantalla con la hoja de ruta y la ergonomía ideales, cuestionar las peticiones",
-     "rank": 60
+     "rank": 131
     },
     {
      "id": "SOG-0152",
@@ -1861,7 +1917,7 @@
      "en": "Wednesday pass: clean and reorganise the repository folders (rad, organisation, fuelplanner… dead entry points to archives)",
      "de": "Mittwochsdurchgang: Ordner des Repositorys aufräumen und neu ordnen (rad, organisation, fuelplanner… tote Einstiege ins Archiv)",
      "es": "Pasada del miércoles: limpiar y reorganizar las carpetas del repositorio (rad, organisation, fuelplanner… entradas muertas a archivos)",
-     "rank": 61
+     "rank": 132
     }
    ]
   },
@@ -1884,7 +1940,7 @@
      "de": "Die Karte nach einer Höhenänderung in Fuel aktualisieren",
      "es": "Actualizar el mapa tras un cambio de altitud en Fuel",
      "milestone": "6.0.0-alpha.3",
-     "rank": 62
+     "rank": 133
     },
     {
      "id": "SOG-0013",
@@ -1895,7 +1951,7 @@
      "de": "Verhindern, dass ein alter FPL zwischen Tabs wiederhergestellt wird",
      "es": "Impedir la restauración de un FPL antiguo entre pestañas",
      "milestone": "6.0.0-alpha.3",
-     "rank": 63
+     "rank": 134
     },
     {
      "id": "SOG-0020",
@@ -1906,7 +1962,7 @@
      "de": "Eine Flugzeit von fünf Minuten beim Flugflächenwechsel erklären",
      "es": "Explicar un tiempo de vuelo de cinco minutos al cambiar de nivel",
      "milestone": "6.0.0-alpha.3",
-     "rank": 64
+     "rank": 135
     },
     {
      "id": "SOG-0034",
@@ -1917,7 +1973,7 @@
      "de": "EIDW kommt nach einem Wechsel von SID, STAR oder Route zurück; „Auto“ routet vom alten Abflug",
      "es": "EIDW vuelve tras un cambio de SID, STAR o ruta; « Auto » traza la ruta desde la salida anterior",
      "milestone": "6.0.0-alpha.4",
-     "rank": 65
+     "rank": 136
     },
     {
      "id": "SOG-0037",
@@ -1928,7 +1984,7 @@
      "de": "Rahmen: liveCheck vergleicht zwei Zeitpunkte als Zeichenketten",
      "es": "Marco: liveCheck compara dos instantes como cadenas",
      "milestone": "6.0.0-alpha.4",
-     "rank": 66
+     "rank": 137
     }
    ]
   },
@@ -1943,6 +1999,17 @@
    },
    "items": [
     {
+     "id": "SOG-0272",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Importer la flotte et les données depuis SimToolkitPro",
+     "en": "Import the fleet and data from SimToolkitPro",
+     "de": "Import the fleet and data from SimToolkitPro",
+     "es": "Import the fleet and data from SimToolkitPro",
+     "milestone": "6.0.0-alpha.6",
+     "rank": 124
+    },
+    {
      "id": "SOG-0268",
      "kind": "bug",
      "state": "done",
@@ -1950,6 +2017,7 @@
      "en": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
      "de": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
      "es": "Aircraft sheet: “Operator” and “Operation” — what do they mean?",
+     "rank": 138,
      "test": true
     },
     {
@@ -1960,16 +2028,7 @@
      "en": "Aircraft list: “No aircraft matches” must offer “Create”",
      "de": "Aircraft list: “No aircraft matches” must offer “Create”",
      "es": "Aircraft list: “No aircraft matches” must offer “Create”",
-     "test": true
-    },
-    {
-     "id": "SOG-0272",
-     "kind": "feature",
-     "state": "planned",
-     "fr": "Importer la flotte et les données depuis SimToolkitPro",
-     "en": "Import the fleet and data from SimToolkitPro",
-     "de": "Import the fleet and data from SimToolkitPro",
-     "es": "Import the fleet and data from SimToolkitPro"
+     "rank": 139
     }
    ]
   },
@@ -1991,7 +2050,7 @@
      "en": "Wording (French): an aircraft is called “Aéronef”, no longer “Appareil”",
      "de": "Wortwahl (Französisch): ein Luftfahrzeug heißt „Aéronef“, nicht mehr „Appareil“",
      "es": "Vocabulario (francés): una aeronave se llama «Aéronef», ya no «Appareil»",
-     "rank": 178
+     "rank": 140
     }
    ]
   },
@@ -2013,7 +2072,7 @@
      "en": "Fleet and mission registry: out of Maintenance, in a fourth tab “CPCO”",
      "de": "Flotte und Missionsregister: raus aus der Wartung, in einen vierten Reiter „CPCO“",
      "es": "Flota y registro de misiones: fuera de Mantenimiento, en una cuarta pestaña «CPCO»",
-     "rank": 179
+     "rank": 141
     }
    ]
   },
@@ -2035,8 +2094,7 @@
      "en": "Preparing a mission is preparing a flight: same steps, weather included; distance computed; time on station",
      "de": "Eine Mission vorbereiten heißt einen Flug vorbereiten: gleiche Schritte samt Wetter; Distanz berechnet; Zeit im Einsatzgebiet",
      "es": "Preparar una misión es preparar un vuelo: mismos pasos, meteo incluida; distancia calculada; tiempo en zona",
-     "rank": 180,
-     "test": true
+     "rank": 142
     }
    ]
   },
@@ -2058,7 +2116,7 @@
      "en": "Mission on the Map: illegible and illogical; show at least the title, reuse the chosen-mission setting",
      "de": "Mission auf der Karte: unleserlich und unlogisch; wenigstens den Titel zeigen, die gewählte Mission wiederverwenden",
      "es": "Misión en el Mapa: ilegible e ilógica; mostrar al menos el título y reutilizar el ajuste de la misión elegida",
-     "rank": 67
+     "rank": 143
     },
     {
      "id": "SOG-0171",
@@ -2068,7 +2126,37 @@
      "en": "Mission maps: the theme by use (VFR topographic on the “target” map of an SO mission), and a view selector",
      "de": "Missionskarten: Thema nach Verwendung (VFR-Topografie auf der „Ziel“-Karte einer SO-Mission) und eine Ansichtswahl",
      "es": "Mapas de misión: el tema según el uso (VFR topográfico en el mapa «objetivo» de una misión SO) y un selector de vista",
-     "rank": 181
+     "rank": 144
+    }
+   ]
+  },
+  {
+   "id": "compagnie-carte-missions",
+   "app": "compagnie",
+   "label": {
+    "fr": "Carte ; missions",
+    "en": "Carte ; missions",
+    "de": "Carte ; missions",
+    "es": "Carte ; missions"
+   },
+   "items": [
+    {
+     "id": "SOG-0311",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte, préparation d'une mission : fermer la fenêtre de la mission l'abandonne sans confirmation ; rien ne fait revenir le choix de carte",
+     "en": "Map, mission preparation: closing the mission window abandons it without confirmation; nothing brings the chart choice back",
+     "de": "Karte, Missionsvorbereitung: Schließen des Missionsfensters bricht ohne Rückfrage ab; die Kartenwahl kommt nicht zurück",
+     "es": "Mapa, preparación de misión: cerrar la ventana la abandona sin confirmación; nada devuelve la elección de carta"
+    },
+    {
+     "id": "SOG-0312",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Préparation d'une mission : le sélecteur de carte n'apparaît qu'après un aller-retour entre Carte et Carburant (ou très tard)",
+     "en": "Mission preparation: the chart selector only shows after a round trip between Map and Fuel",
+     "de": "Missionsvorbereitung: die Kartenauswahl erscheint erst nach einem Wechsel zwischen Karte und Kraftstoff",
+     "es": "Preparación de misión: el selector de carta solo aparece tras ir y volver entre Mapa y Combustible"
     }
    ]
   },
@@ -2091,7 +2179,7 @@
      "de": "Eine Gesellschaft nach Code, Callsign oder Tätigkeit suchen",
      "es": "Buscar una compañía por código, indicativo o actividad",
      "milestone": "6.0.0-beta.1",
-     "rank": 68
+     "rank": 145
     }
    ]
   },
@@ -2113,7 +2201,7 @@
      "en": "Airlines: several airlines with several rights levels (admin of one, not of another)",
      "de": "Gesellschaften: mehrere Gesellschaften mit mehreren Rechtestufen (Admin der einen, nicht der anderen)",
      "es": "Compañías: varias compañías con varios niveles de derechos (admin de una, no de otra)",
-     "rank": 69
+     "rank": 146
     },
     {
      "id": "SOG-0039",
@@ -2124,7 +2212,7 @@
      "de": "Mehrere Gesellschaften; die persönliche Flotte ist eine Gesellschaft „persönlich“",
      "es": "Varias compañías; la flota personal es una compañía « personal »",
      "milestone": "6.0.0-alpha.5",
-     "rank": 70
+     "rank": 147
     },
     {
      "id": "SOG-0050",
@@ -2135,7 +2223,7 @@
      "de": "Import von Journal und Flotte: den Host der Gesellschaftsseite in der Vorschau anzeigen",
      "es": "Importaciones del diario y de la flota: mostrar el host del sitio de la compañía en la vista previa",
      "milestone": "6.0.0-alpha.5",
-     "rank": 71
+     "rank": 148
     },
     {
      "id": "SOG-0082",
@@ -2145,7 +2233,7 @@
      "en": "Fleet management (personal or airline): maintenance, flight hours, aircraft map, repatriation missions with deadline, workshops, bases and pelicandromes of the Canadairs",
      "de": "Flottenverwaltung (persönlich oder Gesellschaft): Wartung, Flugstunden, Flugzeugkarte, Rückführungsmissionen mit Stichtag, Werkstätten, Basen und Pelicandromes der Canadair",
      "es": "Gestión de la flota (personal o de compañía): mantenimiento, horas de vuelo, mapa de aeronaves, misiones de repatriación con fecha límite, talleres, bases y pelicandromes de los Canadair",
-     "rank": 74
+     "rank": 149
     },
     {
      "id": "SOG-0099",
@@ -2155,7 +2243,7 @@
      "en": "CPCO V3 app: planning, assignments, reporting; SOG client app: my missions to deliver",
      "de": "App CPCO V3: Planung, Zuweisungen, Reporting; App SOG-Client: meine abzugebenden Missionen",
      "es": "App CPCO V3: planificación, asignaciones, reporting; app Cliente SOG: mis misiones por entregar",
-     "rank": 75
+     "rank": 150
     },
     {
      "id": "SOG-0100",
@@ -2165,7 +2253,7 @@
      "en": "Progressive shutdown of V2 (decided; the pace is not); until then V2 pages live next to V3",
      "de": "Schrittweise Abschaltung der V2 (beschlossen; das Tempo nicht); bis dahin leben die V2-Seiten neben der V3",
      "es": "Apagado progresivo de la V2 (decidido; el ritmo no); hasta entonces las páginas V2 viven junto a la V3",
-     "rank": 76
+     "rank": 151
     }
    ]
   },
@@ -2180,6 +2268,17 @@
    },
    "items": [
     {
+     "id": "SOG-0287",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Compagnie : l'éditeur de missions en V3",
+     "en": "Airline: the mission editor in V3",
+     "de": "Airline: the mission editor in V3",
+     "es": "Airline: the mission editor in V3",
+     "milestone": "6.0.0-alpha.6",
+     "rank": 123
+    },
+    {
      "id": "SOG-0202",
      "kind": "feature",
      "state": "done",
@@ -2187,7 +2286,7 @@
      "en": "Mission categories of an airline: reuse the themes and sub-themes of V2, do not reinvent",
      "de": "Missionskategorien einer Gesellschaft: Themen und Unterthemen der V2 übernehmen, nichts neu erfinden",
      "es": "Categorías de misiones de una compañía: reutilizar los temas y subtemas de la V2, no reinventar",
-     "rank": 182
+     "rank": 152
     },
     {
      "id": "SOG-0286",
@@ -2196,16 +2295,8 @@
      "fr": "Compagnie › Registre : trop de lignes par mission — reprendre le modèle de la V2",
      "en": "Airline › Register: too many lines per mission — take the V2 layout",
      "de": "Airline › Register: too many lines per mission — take the V2 layout",
-     "es": "Airline › Register: too many lines per mission — take the V2 layout"
-    },
-    {
-     "id": "SOG-0287",
-     "kind": "feature",
-     "state": "doing",
-     "fr": "Compagnie : l'éditeur de missions en V3",
-     "en": "Airline: the mission editor in V3",
-     "de": "Airline: the mission editor in V3",
-     "es": "Airline: the mission editor in V3"
+     "es": "Airline › Register: too many lines per mission — take the V2 layout",
+     "rank": 153
     },
     {
      "id": "SOG-0288",
@@ -2215,7 +2306,37 @@
      "en": "Missions and Registry: search also reads the content of missions",
      "de": "Missionen und Register: die Suche liest auch den Inhalt der Missionen",
      "es": "Misiones y Registro: la búsqueda lee también el contenido de las misiones",
-     "test": true
+     "rank": 154
+    }
+   ]
+  },
+  {
+   "id": "compagnie-compagnie-flotte",
+   "app": "compagnie",
+   "label": {
+    "fr": "Compagnie ; flotte",
+    "en": "Compagnie ; flotte",
+    "de": "Compagnie ; flotte",
+    "es": "Compagnie ; flotte"
+   },
+   "items": [
+    {
+     "id": "SOG-0313",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Flotte : à la création d'un aéronef, un ombrage reste sur la saisie du type OACI, et la liste n'est pas rafraîchie au retour",
+     "en": "Fleet: when creating an aircraft, a shadow stays on the ICAO type field and the list is not refreshed",
+     "de": "Flotte: beim Anlegen bleibt ein Schatten auf dem ICAO-Typfeld und die Liste wird nicht aktualisiert",
+     "es": "Flota: al crear una aeronave queda una sombra en el campo del tipo OACI y la lista no se refresca"
+    },
+    {
+     "id": "SOG-0314",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Flotte : un même aéronef dans plusieurs compagnies — recherche, doublon d'immatriculation, registre des vols",
+     "en": "Fleet: the same aircraft in several airlines — search, duplicate registration, flight log",
+     "de": "Flotte: dasselbe Luftfahrzeug in mehreren Gesellschaften — Suche, doppelte Kennung, Flugbuch",
+     "es": "Flota: la misma aeronave en varias compañías — búsqueda, matrícula duplicada, registro de vuelos"
     }
    ]
   },
@@ -2237,6 +2358,7 @@
      "en": "Duplicate missions: old numbers left in the V2 index",
      "de": "Doppelte Missionen: alte Nummern im V2-Index",
      "es": "Misiones duplicadas: números antiguos en el índice de la V2",
+     "rank": 155,
      "test": true
     }
    ]
@@ -2259,8 +2381,7 @@
      "en": "Fleet: say which airline it is; tapping the aircraft's name opens its editing",
      "de": "Flotte: sagen, um welche Gesellschaft es geht; ein Tipp auf den Namen öffnet die Bearbeitung",
      "es": "Flota: decir de qué compañía se trata; tocar el nombre del aparato abre su edición",
-     "milestone": "6.0.0-alpha.6",
-     "rank": 243
+     "rank": 156
     }
    ]
   },
@@ -2283,8 +2404,7 @@
      "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
      "es": "Misiones: categorías « comercial » (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba) e informe de un vuelo comercial",
      "milestone": "6.0.0-alpha.5",
-     "rank": 2,
-     "test": true
+     "rank": 157
     },
     {
      "id": "SOG-0051",
@@ -2295,7 +2415,7 @@
      "de": "Missionen in V3 in der Gesellschafts-App: Risiken auf der ersten Seite, ausführliche Beschreibung, beteiligte Teams, zu aktivierende Zonen, Kartenvorschau",
      "es": "Misiones en V3 en la aplicación Compañía: riesgos en la primera página, descripción detallada, equipos comprometidos, zonas por activar, vista previa de las cartas",
      "milestone": "6.0.0-beta.1",
-     "rank": 3
+     "rank": 158
     },
     {
      "id": "SOG-0036",
@@ -2306,7 +2426,7 @@
      "de": "Missionen sind gesammelt in data/ eingetroffen: Das Register folgt den Dateien nicht",
      "es": "Misiones llegadas en masa a data/: el registro no sigue los archivos",
      "milestone": "6.0.0-alpha.4",
-     "rank": 77,
+     "rank": 159,
      "test": true
     },
     {
@@ -2317,7 +2437,7 @@
      "en": "Missions: a button to the general documentation (phraseology, interactions, procedures) with a management interface, not a wiki",
      "de": "Missionen: eine Schaltfläche zur allgemeinen Dokumentation (Phraseologie, Interaktionen, Verfahren) mit Verwaltungsoberfläche, kein Wiki",
      "es": "Misiones: un botón hacia la documentación general (fraseología, interacciones, procedimientos) con una interfaz de gestión, no un wiki",
-     "rank": 78
+     "rank": 160
     },
     {
      "id": "SOG-0130",
@@ -2327,7 +2447,7 @@
      "en": "Pelicandromes → refill installation for X-Plane (FIRE_FIGHTING_FSX3D plugin, scenery or dedicated plugin): to study",
      "de": "Pelikandrome → Befüllanlage für X-Plane (Plugin FIRE_FIGHTING_FSX3D, Szenerie oder eigenes Plugin): zu untersuchen",
      "es": "Pelicandromos → instalación de recarga para X-Plane (plugin FIRE_FIGHTING_FSX3D, escenario o plugin dedicado): por estudiar",
-     "rank": 79
+     "rank": 161
     },
     {
      "id": "SOG-0187",
@@ -2337,7 +2457,7 @@
      "en": "Missions, drawing a family: the acronym alone, without the long name",
      "de": "Missionen, Familie auslosen: nur das Kürzel, ohne den langen Namen",
      "es": "Misiones, sortear una familia: solo la sigla, sin el nombre largo",
-     "rank": 183
+     "rank": 162
     },
     {
      "id": "SOG-0212",
@@ -2347,8 +2467,7 @@
      "en": "Missions: “unreadable file” on many missions; add a mission or a batch of missions from a YAML; search in another airline",
      "de": "Missionen: „Datei unlesbar“ bei vielen Missionen; eine Mission oder einen Satz aus einer YAML hinzufügen; in einer anderen Gesellschaft suchen",
      "es": "Misiones: «archivo ilegible» en muchas misiones; añadir una misión o un lote desde un YAML; buscar en otra compañía",
-     "rank": 184,
-     "test": true
+     "rank": 163
     },
     {
      "id": "SOG-0223",
@@ -2358,7 +2477,7 @@
      "en": "Move a mission to another airline (one by one, or in a batch)",
      "de": "Eine Mission einer anderen Gesellschaft zuweisen (einzeln oder im Stapel)",
      "es": "Cambiar una misión de compañía (una a una o en lote)",
-     "rank": 185
+     "rank": 164
     },
     {
      "id": "SOG-0291",
@@ -2368,7 +2487,7 @@
      "en": "Missions summary: the short description in full, apart from the long one",
      "de": "Missionsübersicht: die Kurzbeschreibung vollständig, getrennt von der langen",
      "es": "Síntesis de misión: el resumen entero, aparte de la descripción",
-     "test": true
+     "rank": 165
     }
    ]
   },
@@ -2390,7 +2509,7 @@
      "en": "Families: the identifier letter in the choice lists, and the subtype",
      "de": "Familien: der Kennbuchstabe in den Auswahllisten, und der Untertyp",
      "es": "Familias: la letra del identificador en las listas, y el subtipo",
-     "test": true
+     "rank": 166
     }
    ]
   },
@@ -2412,7 +2531,7 @@
      "en": "PHP web service of the site (no PHP hosting for now): fleet and log as JSON, sign-in with the site account, the site as a transport; GitHub sign-in without a token",
      "de": "PHP-Webdienst der Website (derzeit kein PHP-Hosting): Flotte und Logbuch als JSON, Anmeldung mit dem Website-Konto, die Website als Transport; GitHub-Anmeldung ohne Token",
      "es": "Servicio web PHP del sitio (sin alojamiento PHP por ahora): flota y diario en JSON, inicio de sesión con la cuenta del sitio, el sitio como transporte; inicio de sesión GitHub sin token",
-     "rank": 102
+     "rank": 167
     }
    ]
   },
@@ -2434,17 +2553,18 @@
      "en": "V2: editing a mission does nothing",
      "de": "V2: Mission bearbeiten tut nichts",
      "es": "V2: editar una misión no hace nada",
+     "rank": 168,
      "test": true
     },
     {
      "id": "SOG-0293",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Missions modifiées dans l'éditeur de la V2 et jamais rangées : les sortir du navigateur (YAML → fichiers → V3)",
      "en": "Missions edited in the V2 editor and never filed: get them out of the browser (YAML to files, then V3)",
      "de": "In V2 bearbeitete, nie abgelegte Missionen: aus dem Browser holen (YAML in Dateien, dann V3)",
      "es": "Misiones editadas en la V2 y nunca guardadas: sacarlas del navegador (YAML a ficheros, luego V3)",
-     "test": true
+     "rank": 169
     }
    ]
   },
@@ -2465,7 +2585,9 @@
      "fr": "Dossiers « recu » : 5 412 copies de fichiers d'autres missions (lot du 05/11)",
      "en": "Received-files folders: 5,412 copies of other missions' files (batch of 5 Nov)",
      "de": "Empfangsordner: 5 412 Kopien von Dateien anderer Missionen (Stapel vom 5.11.)",
-     "es": "Carpetas de recibidos: 5 412 copias de ficheros de otras misiones (lote del 5/11)"
+     "es": "Carpetas de recibidos: 5 412 copias de ficheros de otras misiones (lote del 5/11)",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 40
     }
    ]
   },
@@ -2488,7 +2610,7 @@
      "de": "Anwender-Fahrplan (#roadmap): Feature- und Bug-Karten nach Anwendung ordnen, gelieferte ausblenden, Meilenstein-Zeitleiste, Synchronisation mit organisation/",
      "es": "Hoja de ruta de usuario (#roadmap): organizar las tarjetas de funciones y errores por aplicación, ocultar las entregadas, cronología de hitos, sincronización con organisation/",
      "milestone": "6.0.0-alpha.5",
-     "rank": 80
+     "rank": 170
     },
     {
      "id": "SOG-0066",
@@ -2498,8 +2620,7 @@
      "en": "Roadmap: reprioritise from the screen (readable, copyable id; drag and drop of rank and milestone, written by the launcher to organisation/PRIORITES.json)",
      "de": "Fahrplan: Prioritäten direkt im Bildschirm ändern (lesbare, kopierbare Kennung; Rang und Meilenstein per Ziehen und Ablegen, vom Launcher in organisation/PRIORITES.json geschrieben)",
      "es": "Hoja de ruta: repriorizar desde la pantalla (identificador legible y copiable; arrastrar y soltar del rango y del hito, escrito por el lanzador en organisation/PRIORITES.json)",
-     "rank": 81,
-     "test": true
+     "rank": 171
     },
     {
      "id": "SOG-0069",
@@ -2509,7 +2630,7 @@
      "en": "Roadmap: collapse the lanes that already exist",
      "de": "Fahrplan: bereits vorhandene Bahnen einklappen",
      "es": "Hoja de ruta: contraer los carriles ya existentes",
-     "rank": 82
+     "rank": 172
     }
    ]
   },
@@ -2531,6 +2652,7 @@
      "en": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
      "de": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
      "es": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
+     "rank": 173,
      "test": true
     }
    ]
@@ -2553,7 +2675,7 @@
      "en": "Procedures in doubt: a page that lists them and lets the pilot validate them by hand",
      "de": "Verfahren im Zweifel: eine Seite, die sie auflistet und von Hand bestätigen lässt",
      "es": "Procedimientos en duda: una página que los lista y permite validarlos a mano",
-     "rank": 98
+     "rank": 174
     },
     {
      "id": "SOG-0248",
@@ -2563,7 +2685,7 @@
      "en": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
      "de": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
      "es": "AIP procedures: very few STARs and approaches after a re-read (Bordeaux: three approaches, no ILS)",
-     "test": true
+     "rank": 175
     }
    ]
   },
@@ -2585,7 +2707,7 @@
      "en": "LFST: no approach (several RNAV, several conventional); no taxiway names",
      "de": "LFST: kein Anflug (mehrere RNAV, mehrere konventionelle); keine Rollwegnamen",
      "es": "LFST: ninguna aproximación (varias RNAV, varias convencionales); sin nombres de calles de rodaje",
-     "rank": 186
+     "rank": 176
     }
    ]
   },
@@ -2607,7 +2729,7 @@
      "en": "ILS frequencies: planned, coded, displayed?",
      "de": "ILS-Frequenzen: geplant, kodiert, angezeigt?",
      "es": "Frecuencias ILS: ¿previstas, codificadas, mostradas?",
-     "rank": 187
+     "rank": 177
     }
    ]
   },
@@ -2622,6 +2744,39 @@
    },
    "items": [
     {
+     "id": "SOG-0153",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Pays sans source de points ni voies (Suède, Danemark…) : plan B par les données X-Plane en source locale « personnel »",
+     "en": "Countries without a source of points or airways (Sweden, Denmark…): plan B through X-Plane data as a personal local source",
+     "de": "Länder ohne Quelle für Punkte oder Luftstraßen (Schweden, Dänemark…): Plan B über X-Plane-Daten als persönliche lokale Quelle",
+     "es": "Países sin fuente de puntos ni aerovías (Suecia, Dinamarca…): plan B con los datos de X-Plane como fuente local personal",
+     "milestone": "6.0.0-beta.1",
+     "rank": 93
+    },
+    {
+     "id": "SOG-0240",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Trouver des sources de points et de voies pour les zones qui n'en ont pas (76 sur 83) : les AIP d'abord, EUROCONTROL sinon",
+     "en": "Find sources of points and airways for the zones that have none (76 of 83): the AIPs first, EUROCONTROL otherwise",
+     "de": "Quellen für Punkte und Luftstraßen der Zonen ohne solche finden (76 von 83): zuerst die AIPs, sonst EUROCONTROL",
+     "es": "Encontrar fuentes de puntos y aerovías para las zonas que no tienen (76 de 83): primero los AIP, si no EUROCONTROL",
+     "milestone": "6.0.0-alpha.6",
+     "rank": 121
+    },
+    {
+     "id": "SOG-0182",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Procédures hors France : les recréer depuis le texte des cartes (a minima leurs noms), et superposer la carte publiée à la Carte",
+     "en": "Procedures outside France: rebuild them from the text of the charts (at least their names), and overlay the published chart on the Map",
+     "de": "Verfahren außerhalb Frankreichs: aus dem Text der Karten nachbauen (mindestens die Namen) und die veröffentlichte Karte über die Karte legen",
+     "es": "Procedimientos fuera de Francia: recrearlos desde el texto de las cartas (al menos sus nombres) y superponer la carta publicada al Mapa",
+     "milestone": "6.0.0-alpha.6",
+     "rank": 122
+    },
+    {
      "id": "SOG-0065",
      "kind": "feature",
      "state": "done",
@@ -2630,7 +2785,7 @@
      "de": "Aero-Datenbank: Länder zu Paketen (Kontinente, Regionen) zusammenfassen und eine Meta-Klassifizierung (Inseln, Himalaya, Wüsten, Wälder, Seen und Flüsse, Megastädte …)",
      "es": "Base de datos aero: agrupar los países en paquetes (continentes, regiones) y una metaclasificación (islas, Himalaya, desiertos, bosques, lagos y ríos, megalópolis…)",
      "milestone": "6.0.0-alpha.5",
-     "rank": 4
+     "rank": 178
     },
     {
      "id": "SOG-0054",
@@ -2641,7 +2796,7 @@
      "de": "SIA Übersee: NTAA (Französisch-Polynesien), NWWM (Neukaledonien) und die übrigen eAIP des SIA",
      "es": "Ultramar del SIA: NTAA (Polinesia Francesa), NWWM (Nueva Caledonia) y los demás eAIP del SIA",
      "milestone": "6.0.0-alpha.5",
-     "rank": 83
+     "rank": 179
     },
     {
      "id": "SOG-0064",
@@ -2652,7 +2807,7 @@
      "de": "Aero-Datenbank: China und Nikosia fehlen in der Liste der herunterladbaren Pakete",
      "es": "Base de datos aero: China y Nicosia ausentes de la lista de paquetes descargables",
      "milestone": "6.0.0-alpha.5",
-     "rank": 84
+     "rank": 180
     },
     {
      "id": "SOG-0068",
@@ -2662,7 +2817,7 @@
      "en": "AIP Canada: very blurry charts; files downloaded from navcanada.ca",
      "de": "AIP Kanada: sehr unscharfe Karten; von navcanada.ca heruntergeladene Dateien",
      "es": "AIP Canadá: cartas muy borrosas; archivos descargados de navcanada.ca",
-     "rank": 85
+     "rank": 181
     },
     {
      "id": "SOG-0077",
@@ -2672,7 +2827,7 @@
      "en": "AWY: coverage outside France? Notation of FRA entry / exit points",
      "de": "Luftstraßen: Abdeckung außerhalb Frankreichs? Notation der FRA-Ein- und Ausflugpunkte",
      "es": "Aerovías: ¿cobertura fuera de Francia? Notación de los puntos de entrada / salida del FRA",
-     "rank": 86
+     "rank": 182
     },
     {
      "id": "SOG-0078",
@@ -2682,7 +2837,7 @@
      "en": "One-way AWYs: the direction is not carried or not drawn",
      "de": "Einbahn-Luftstraßen: die Richtung wird nicht geführt oder nicht gezeichnet",
      "es": "Aerovías de sentido único: el sentido no se registra o no se dibuja",
-     "rank": 87
+     "rank": 183
     },
     {
      "id": "SOG-0083",
@@ -2692,7 +2847,7 @@
      "en": "Pelicandromes of France: a specific file in Downloads, to integrate as a layer",
      "de": "Pelicandromes in Frankreich: eine bestimmte Datei in Downloads, als Ebene zu integrieren",
      "es": "Pelicandromes de Francia: un archivo concreto en Descargas, para integrar como capa",
-     "rank": 88
+     "rank": 184
     },
     {
      "id": "SOG-0102",
@@ -2702,8 +2857,7 @@
      "en": "Fuller GeoNames extract (Portugal, Ireland)",
      "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)",
      "es": "Extracto de GeoNames más completo (Portugal, Irlanda)",
-     "rank": 89,
-     "test": true
+     "rank": 185
     },
     {
      "id": "SOG-0106",
@@ -2713,7 +2867,7 @@
      "en": "Aircraft (V3 § 10.35, decided 31 Oct, code after 6 Nov): a sheet is a type + variant without registration, an aircraft a registration (state, maintenance, hours from the log, history); add = choose the sheet then fill; aircraft \"seen in your flights\" to confirm; shared and personal fleets in the repository",
      "de": "Luftfahrzeuge (V3 § 10.35, entschieden am 31.10., Code nach dem 6.11.): ein Datenblatt ist ein Typ + Variante ohne Kennzeichen, ein Luftfahrzeug ein Kennzeichen (Zustand, Wartung, Stunden aus dem Logbuch, Historie); Hinzufügen = Datenblatt wählen, dann ausfüllen; „in Ihren Flügen gesehene“ Luftfahrzeuge zum Bestätigen; gemeinsame und persönliche Flotte im Repository",
      "es": "Aeronaves (V3 § 10.35, decidido el 31/10, código después del 6/11): una ficha es un tipo + variante sin matrícula, una aeronave una matrícula (estado, mantenimiento, horas del diario, historial); añadir = elegir la ficha y luego rellenar; aeronaves «vistas en sus vuelos» por confirmar; flota compartida y flota personal en el repositorio",
-     "rank": 90
+     "rank": 186
     },
     {
      "id": "SOG-0104",
@@ -2723,7 +2877,7 @@
      "en": "Dedicated \"Data\" application (iOS, Android): separate project, to open",
      "de": "Eigene App „Daten“ (iOS, Android): eigenes Vorhaben, noch zu eröffnen",
      "es": "Aplicación «Datos» dedicada (iOS, Android): proyecto aparte, por abrir",
-     "rank": 91
+     "rank": 187
     },
     {
      "id": "SOG-0105",
@@ -2733,7 +2887,7 @@
      "en": "Procedures from Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) as a local fallback, never published; MSFS position through Little Navmap",
      "de": "Verfahren aus Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) als lokaler Rückfall, nie veröffentlicht; MSFS-Position über Little Navmap",
      "es": "Procedimientos desde Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) como respaldo local, nunca publicados; posición MSFS por Little Navmap",
-     "rank": 92
+     "rank": 188
     },
     {
      "id": "SOG-0107",
@@ -2743,7 +2897,7 @@
      "en": "Aircraft maintenance: quick check and major overhaul every n hours (thresholds on the type's sheet, airline defaults), hard landing declared in the report, flying beyond allowed and said (derogation); costs as data (hourly cost, fuel price and density, cost of an overhaul)",
      "de": "Wartung der Luftfahrzeuge: kurze Kontrolle und Grundüberholung alle n Stunden (Schwellen am Typ-Datenblatt, Vorgaben der Gesellschaft), harte Landung im Bericht gemeldet, Überschreitung erlaubt und gesagt (Ausnahme); Kosten als Daten (Stundensatz, Treibstoffpreis und -dichte, Kosten einer Überholung)",
      "es": "Mantenimiento de las aeronaves: revisión rápida y gran revisión cada n horas (umbrales en la ficha del tipo, valores por defecto de la compañía), aterrizaje duro declarado en el informe, exceder permitido y dicho (derogación); costes como datos (coste horario, precio y densidad del combustible, coste de una revisión)",
-     "rank": 93
+     "rank": 189
     },
     {
      "id": "SOG-0126",
@@ -2753,7 +2907,7 @@
      "en": "Zone gb (NATS) still “ko” after dropping the files into Downloads",
      "de": "Zone gb (NATS) weiterhin „ko“ nach Ablage der Dateien in Downloads",
      "es": "Zona gb (NATS) sigue «ko» tras dejar los archivos en Descargas",
-     "rank": 94,
+     "rank": 190,
      "test": true
     },
     {
@@ -2764,7 +2918,7 @@
      "en": "BLOCKING: “Recompute everything” fails in the build page, 46 zones at once, cause not said",
      "de": "BLOCKIEREND: „Alles neu berechnen“ scheitert auf der Aufbauseite, 46 Zonen auf einmal, Ursache nicht genannt",
      "es": "BLOQUEANTE: «Recalcular todo» falla en la página de construcción, 46 zonas de golpe, causa no dicha",
-     "rank": 95,
+     "rank": 191,
      "test": true
     },
     {
@@ -2775,7 +2929,7 @@
      "en": "NATS: the pickup says “nothing to take” and talks about openAIP while the NATS zips are in Downloads",
      "de": "NATS: die Übernahme sagt „nichts zu nehmen“ und spricht von openAIP, obwohl die NATS-Zips in Downloads liegen",
      "es": "NATS: la recogida dice «nada que tomar» y habla de openAIP mientras los zips NATS están en Descargas",
-     "rank": 96,
+     "rank": 192,
      "test": true
     },
     {
@@ -2786,17 +2940,7 @@
      "en": "Financial balance: per aircraft, per pilot, per airline, over a period; read-only from the costs (hours, fuel, overhauls)",
      "de": "Finanzbilanz: je Luftfahrzeug, je Pilot, je Gesellschaft, über einen Zeitraum; nur lesend aus den Kosten (Stunden, Treibstoff, Überholungen)",
      "es": "Balance financiero: por aeronave, por piloto, por compañía, en un periodo; solo lectura a partir de los costes (horas, combustible, revisiones)",
-     "rank": 134
-    },
-    {
-     "id": "SOG-0153",
-     "kind": "feature",
-     "state": "later",
-     "fr": "Pays sans source de points ni voies (Suède, Danemark…) : plan B par les données X-Plane en source locale « personnel »",
-     "en": "Countries without a source of points or airways (Sweden, Denmark…): plan B through X-Plane data as a personal local source",
-     "de": "Länder ohne Quelle für Punkte oder Luftstraßen (Schweden, Dänemark…): Plan B über X-Plane-Daten als persönliche lokale Quelle",
-     "es": "Países sin fuente de puntos ni aerovías (Suecia, Dinamarca…): plan B con los datos de X-Plane como fuente local personal",
-     "rank": 188
+     "rank": 193
     },
     {
      "id": "SOG-0155",
@@ -2806,8 +2950,7 @@
      "en": "“Publishing failed: nothing is lost… Fix the cause and retry”: which cause?",
      "de": "„Veröffentlichung fehlgeschlagen: nichts verloren… Ursache beheben und erneut“: welche Ursache?",
      "es": "«La publicación falló: nada se pierde… Corrija la causa y reintente»: ¿qué causa?",
-     "rank": 189,
-     "test": true
+     "rank": 194
     },
     {
      "id": "SOG-0174",
@@ -2817,18 +2960,8 @@
      "en": "Aeronautical data for ALL countries, starting with Europe and the United States",
      "de": "Luftfahrtdaten für ALLE Länder, zuerst Europa und die USA",
      "es": "Datos aeronáuticos para TODOS los países, empezando por Europa y Estados Unidos",
-     "rank": 190,
+     "rank": 195,
      "test": true
-    },
-    {
-     "id": "SOG-0182",
-     "kind": "feature",
-     "state": "planned",
-     "fr": "Procédures hors France : les recréer depuis le texte des cartes (a minima leurs noms), et superposer la carte publiée à la Carte",
-     "en": "Procedures outside France: rebuild them from the text of the charts (at least their names), and overlay the published chart on the Map",
-     "de": "Verfahren außerhalb Frankreichs: aus dem Text der Karten nachbauen (mindestens die Namen) und die veröffentlichte Karte über die Karte legen",
-     "es": "Procedimientos fuera de Francia: recrearlos desde el texto de las cartas (al menos sus nombres) y superponer la carta publicada al Mapa",
-     "rank": 191
     },
     {
      "id": "SOG-0203",
@@ -2838,18 +2971,17 @@
      "en": "Procedures and ground: LFOE reads nothing (“0 page read out of 2”), LFBD has no taxiways",
      "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
      "es": "Procedimientos y suelo: LFOE no lee nada («0 páginas leídas de 2»), LFBD no tiene calles de rodaje",
-     "rank": 192
+     "rank": 196
     },
     {
      "id": "SOG-0210",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "États-Unis : aucune procédure pour KDEN, et le repli Little Navmap annoncé n'a pas de geste",
      "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
      "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
      "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto",
-     "rank": 193,
-     "test": true
+     "rank": 197
     },
     {
      "id": "SOG-0216",
@@ -2859,17 +2991,7 @@
      "en": "Nantes (LFRS) procedures: only the transition points, no approaches; no STAR",
      "de": "Verfahren Nantes (LFRS): nur die Übergangspunkte, keine Anflüge; keine STAR",
      "es": "Procedimientos de Nantes (LFRS): solo los puntos de transición, sin aproximaciones; ninguna STAR",
-     "rank": 194
-    },
-    {
-     "id": "SOG-0240",
-     "kind": "feature",
-     "state": "doing",
-     "fr": "Trouver des sources de points et de voies pour les zones qui n'en ont pas (76 sur 83) : les AIP d'abord, EUROCONTROL sinon",
-     "en": "Find sources of points and airways for the zones that have none (76 of 83): the AIPs first, EUROCONTROL otherwise",
-     "de": "Quellen für Punkte und Luftstraßen der Zonen ohne solche finden (76 von 83): zuerst die AIPs, sonst EUROCONTROL",
-     "es": "Encontrar fuentes de puntos y aerovías para las zonas que no tienen (76 de 83): primero los AIP, si no EUROCONTROL",
-     "rank": 195
+     "rank": 198
     },
     {
      "id": "SOG-0103",
@@ -2879,8 +3001,7 @@
      "en": "Base generation (SIA by zone, MORA, aircraft base): done today by V2 only, on the workstation; a desktop client will probably be needed, unless something better is found; failing better, that part of V2 is kept",
      "de": "Erzeugung der Datenbanken (SIA nach Zone, MORA, Luftfahrzeugbasis): heute nur durch die V2 am Arbeitsplatz; wahrscheinlich wird ein Desktop-Client nötig sein, sofern nichts Besseres gefunden wird; andernfalls bleibt dieser Teil der V2",
      "es": "Generación de las bases (SIA por zona, MORA, base de aeronaves): hoy solo la hace la V2, en el puesto; probablemente hará falta un cliente de escritorio, salvo algo mejor; a falta de algo mejor, se conserva esa parte de la V2",
-     "milestone": "6.0.0-alpha.6",
-     "rank": 238
+     "rank": 199
     }
    ]
   },
@@ -2895,46 +3016,6 @@
    },
    "items": [
     {
-     "id": "SOG-0109",
-     "kind": "feature",
-     "state": "later",
-     "fr": "Le site web de la compagnie à la place du relais NAS, si son web service existe un jour (même identité, pas une seconde)",
-     "en": "The company website in place of the NAS relay, if its web service ever exists (same identity, not a second one)",
-     "de": "Die Website der Gesellschaft anstelle des NAS-Relais, falls ihr Webdienst je existiert (gleiche Identität, keine zweite)",
-     "es": "El sitio web de la compañía en lugar del relé NAS, si su servicio web existe algún día (misma identidad, no una segunda)",
-     "rank": 97
-    },
-    {
-     "id": "SOG-0111",
-     "kind": "feature",
-     "state": "doing",
-     "fr": "Accueil d'un pilote par un relais sur le NAS : relais et appareils appairés codés sur le poste (R1a), connexion IVAO par le relais (R1b) ; invitations et…",
-     "en": "Pilot onboarding through a relay on the NAS: relay and paired devices coded on the workstation (R1a), IVAO login through the relay (R1b); invitations and deployment next, after a full security review, nothing exposed before the go",
-     "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Relais und gekoppelte Geräte auf dem Rechner codiert (R1a), IVAO-Anmeldung über das Relais (R1b); Einladungen und Bereitstellung danach, nach vollständiger Sicherheitsprüfung, nichts exponiert vor der Freigabe",
-     "es": "Alta de un piloto mediante un relé en el NAS: relé y dispositivos emparejados codificados en el equipo (R1a), inicio de sesión IVAO por el relé (R1b); invitaciones y despliegue después, tras una revisión de seguridad completa, nada expuesto antes del visto bueno",
-     "rank": 99
-    },
-    {
-     "id": "SOG-0112",
-     "kind": "feature",
-     "state": "doing",
-     "fr": "Applications = jeux de modules nommés du même cadre : pilot et maintenance livrés (?app=), choisis par l'adresse ; puis cpco, client, par le rôle",
-     "en": "Applications = named module sets of the same frame: pilot and maintenance delivered (?app=), chosen by the address; then cpco, client, by the role",
-     "de": "Anwendungen = benannte Modulsätze desselben Rahmens: pilot und maintenance geliefert (?app=), gewählt über die Adresse; dann cpco, client, über die Rolle",
-     "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco: pilot y maintenance entregados (?app=), elegidos por la dirección; luego cpco, client, por el rol",
-     "rank": 100
-    },
-    {
-     "id": "SOG-0113",
-     "kind": "feature",
-     "state": "planned",
-     "fr": "IVAO sur le téléphone : connexion du pilote par le relais (OpenID), son propre jeton sur son appareil, tracker lu en direct",
-     "en": "IVAO on the phone: pilot login through the relay (OpenID), their own token on their device, tracker read directly",
-     "de": "IVAO auf dem Telefon: Anmeldung des Piloten über das Relais (OpenID), eigenes Token auf dem Gerät, Tracker direkt gelesen",
-     "es": "IVAO en el teléfono: inicio de sesión del piloto por el relé (OpenID), su propio token en su dispositivo, tracker leído directamente",
-     "rank": 101
-    },
-    {
      "id": "SOG-0114",
      "kind": "feature",
      "state": "doing",
@@ -2942,7 +3023,8 @@
      "en": "Missions (after the stabilisation): common missions of the repository read by all, a mission generates the flight (departure, rendezvous, arrival) and its map, \"crew member\" usage of the Pilot, CPCO as the third application once rebuilt",
      "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Piloten, CPCO als dritte Anwendung nach dem Neubau",
      "es": "Misiones (tras la estabilización): misiones comunes del depósito leídas por todos, una misión genera el vuelo (salida, punto de encuentro, llegada) y su mapa, uso «tripulante» del Piloto, CPCO como tercera aplicación cuando se rehaga",
-     "rank": 103
+     "milestone": "6.0.0-alpha.6",
+     "rank": 127
     },
     {
      "id": "SOG-0115",
@@ -2952,7 +3034,48 @@
      "en": "Several airlines on one terminal: several administrators, several pilot profiles, one data repository per airline, switching airline without mixing (request of 1 Nov)",
      "de": "Mehrere Gesellschaften auf einem Gerät: mehrere Administratoren, mehrere Pilotenprofile, ein Daten-Repository je Gesellschaft, Wechsel der Gesellschaft ohne Vermischung (Wunsch vom 1.11.)",
      "es": "Varias compañías en un mismo terminal: varios administradores, varios perfiles de piloto, un repositorio de datos por compañía, cambio de compañía sin mezcla (petición del 1/11)",
-     "rank": 104
+     "milestone": "6.0.0-alpha.6",
+     "rank": 128
+    },
+    {
+     "id": "SOG-0109",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Le site web de la compagnie à la place du relais NAS, si son web service existe un jour (même identité, pas une seconde)",
+     "en": "The company website in place of the NAS relay, if its web service ever exists (same identity, not a second one)",
+     "de": "Die Website der Gesellschaft anstelle des NAS-Relais, falls ihr Webdienst je existiert (gleiche Identität, keine zweite)",
+     "es": "El sitio web de la compañía en lugar del relé NAS, si su servicio web existe algún día (misma identidad, no una segunda)",
+     "rank": 200
+    },
+    {
+     "id": "SOG-0111",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Accueil d'un pilote par un relais sur le NAS : relais et appareils appairés codés sur le poste (R1a), connexion IVAO par le relais (R1b) ; invitations et…",
+     "en": "Pilot onboarding through a relay on the NAS: relay and paired devices coded on the workstation (R1a), IVAO login through the relay (R1b); invitations and deployment next, after a full security review, nothing exposed before the go",
+     "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Relais und gekoppelte Geräte auf dem Rechner codiert (R1a), IVAO-Anmeldung über das Relais (R1b); Einladungen und Bereitstellung danach, nach vollständiger Sicherheitsprüfung, nichts exponiert vor der Freigabe",
+     "es": "Alta de un piloto mediante un relé en el NAS: relé y dispositivos emparejados codificados en el equipo (R1a), inicio de sesión IVAO por el relé (R1b); invitaciones y despliegue después, tras una revisión de seguridad completa, nada expuesto antes del visto bueno",
+     "rank": 201
+    },
+    {
+     "id": "SOG-0112",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Applications = jeux de modules nommés du même cadre : pilot et maintenance livrés (?app=), choisis par l'adresse ; puis cpco, client, par le rôle",
+     "en": "Applications = named module sets of the same frame: pilot and maintenance delivered (?app=), chosen by the address; then cpco, client, by the role",
+     "de": "Anwendungen = benannte Modulsätze desselben Rahmens: pilot und maintenance geliefert (?app=), gewählt über die Adresse; dann cpco, client, über die Rolle",
+     "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco: pilot y maintenance entregados (?app=), elegidos por la dirección; luego cpco, client, por el rol",
+     "rank": 202
+    },
+    {
+     "id": "SOG-0113",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "IVAO sur le téléphone : connexion du pilote par le relais (OpenID), son propre jeton sur son appareil, tracker lu en direct",
+     "en": "IVAO on the phone: pilot login through the relay (OpenID), their own token on their device, tracker read directly",
+     "de": "IVAO auf dem Telefon: Anmeldung des Piloten über das Relais (OpenID), eigenes Token auf dem Gerät, Tracker direkt gelesen",
+     "es": "IVAO en el teléfono: inicio de sesión del piloto por el relé (OpenID), su propio token en su dispositivo, tracker leído directamente",
+     "rank": 203
     },
     {
      "id": "SOG-0132",
@@ -2962,7 +3085,7 @@
      "en": "Moving screens: reserve the place of a block whose content arrives later",
      "de": "Springende Bildschirme: Platz für Blöcke reservieren, deren Inhalt später kommt",
      "es": "Pantallas que se mueven: reservar el sitio de un bloque cuyo contenido llega después",
-     "rank": 105
+     "rank": 204
     },
     {
      "id": "SOG-0110",
@@ -2972,7 +3095,7 @@
      "en": "iOS / Android app (shell resumed)",
      "de": "iOS- / Android-App (Wiederaufnahme der Hülle)",
      "es": "App iOS / Android (retomando el envoltorio)",
-     "rank": 150
+     "rank": 205
     },
     {
      "id": "SOG-0164",
@@ -2982,7 +3105,7 @@
      "en": "Maintenance: the page takes more than two seconds to open (two /__setup/changes calls in a row)",
      "de": "Wartung: die Seite braucht über zwei Sekunden zum Öffnen (zwei /__setup/changes-Aufrufe nacheinander)",
      "es": "Mantenimiento: la página tarda más de dos segundos en abrirse (dos llamadas /__setup/changes seguidas)",
-     "rank": 196
+     "rank": 206
     },
     {
      "id": "SOG-0166",
@@ -2992,7 +3115,7 @@
      "en": "Pages outside V3 (Maintenance V2, fuel, missions V2, original RAD, stats V2, Canadair…) grouped at the bottom of the column in one entry",
      "de": "Seiten außerhalb V3 (Wartung V2, Fuel, Missionen V2, ursprüngliches RAD, Stats V2, Canadair…) unten in der Spalte in einem Eintrag",
      "es": "Páginas fuera de V3 (Mantenimiento V2, fuel, misiones V2, RAD original, estadísticas V2, Canadair…) agrupadas al pie de la columna en una entrada",
-     "rank": 197
+     "rank": 207
     },
     {
      "id": "SOG-0168",
@@ -3002,7 +3125,7 @@
      "en": "The user tests an old copy without knowing: the new version applies by itself on a workstation with a launcher, and the served version is readable",
      "de": "Der Benutzer testet unwissentlich eine alte Kopie: die neue Version greift auf einem Rechner mit Launcher von selbst, und die ausgelieferte Version ist lesbar",
      "es": "El usuario prueba una copia antigua sin saberlo: la nueva versión se aplica sola en un puesto con lanzador, y la versión servida es legible",
-     "rank": 198
+     "rank": 208
     },
     {
      "id": "SOG-0170",
@@ -3012,7 +3135,7 @@
      "en": "Frame: the data/ tree read fifty times from IndexedDB at each load (10,339 entries cloned)",
      "de": "Rahmen: der data/-Baum wird bei jedem Laden fünfzigmal aus IndexedDB gelesen (10 339 Einträge geklont)",
      "es": "Marco: el árbol de data/ leído cincuenta veces de IndexedDB en cada carga (10 339 entradas clonadas)",
-     "rank": 199
+     "rank": 209
     },
     {
      "id": "SOG-0204",
@@ -3022,8 +3145,7 @@
      "en": "Frame: after Ctrl + Shift + R, the “Old version · Reload” cartouche shows wrongly",
      "de": "Rahmen: nach Strg + Umschalt + R erscheint die Kartusche „Alte Version · Neu laden“ zu Unrecht",
      "es": "Marco: tras Ctrl + Mayús + R, aparece por error el cartucho «Versión antigua · Recargar»",
-     "rank": 200,
-     "test": true
+     "rank": 210
     },
     {
      "id": "SOG-0213",
@@ -3033,8 +3155,7 @@
      "en": "App header: say the current airline, and switch quickly from the application picker",
      "de": "Kopfzeile der App: die aktuelle Gesellschaft nennen und schnell über die App-Auswahl wechseln",
      "es": "Cabecera de la app: decir la compañía actual y cambiarla rápido desde el selector de aplicación",
-     "rank": 201,
-     "test": true
+     "rank": 211
     },
     {
      "id": "SOG-0215",
@@ -3044,8 +3165,7 @@
      "en": "When the launcher comes back, the page does not reconnect by itself",
      "de": "Wenn der Launcher zurückkommt, verbindet sich die Seite nicht von selbst",
      "es": "Cuando vuelve el lanzador, la página no se reconecta sola",
-     "rank": 202,
-     "test": true
+     "rank": 212
     },
     {
      "id": "SOG-0235",
@@ -3055,7 +3175,7 @@
      "en": "BLOCKING: an airline vanishes from the device's list (DEFA) — the data layer keeps a document older than its tree",
      "de": "BLOCKIEREND: eine Gesellschaft verschwindet aus der Liste des Geräts (DEFA) — die Datenschicht behält ein Dokument, das älter ist als ihr Baum",
      "es": "BLOQUEANTE: una compañía desaparece de la lista del dispositivo (DEFA) — la capa de datos guarda un documento más antiguo que su árbol",
-     "rank": 203
+     "rank": 213
     },
     {
      "id": "SOG-0249",
@@ -3065,17 +3185,17 @@
      "en": "Old pages (V2): the fuel performance parser is missing",
      "de": "Old pages (V2): the fuel performance parser is missing",
      "es": "Old pages (V2): the fuel performance parser is missing",
-     "test": true
+     "rank": 214
     },
     {
      "id": "SOG-0267",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "« Module roadmap impossible à charger » : dire la cause (le lanceur ne répond plus) et ce qu'il faut faire",
      "en": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
      "de": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
      "es": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
-     "test": true
+     "rank": 215
     },
     {
      "id": "SOG-0274",
@@ -3085,7 +3205,7 @@
      "en": "Frame: the left bar shrinks to its icons before switching to phone mode",
      "de": "Frame: the left bar shrinks to its icons before switching to phone mode",
      "es": "Frame: the left bar shrinks to its icons before switching to phone mode",
-     "test": true
+     "rank": 216
     }
    ]
   },
@@ -3106,7 +3226,9 @@
      "fr": "Un moteur de recherche global (par exemple « un858 » depuis la carte)",
      "en": "A global search engine (for instance “un858” from the map)",
      "de": "A global search engine (for instance “un858” from the map)",
-     "es": "A global search engine (for instance “un858” from the map)"
+     "es": "A global search engine (for instance “un858” from the map)",
+     "milestone": "6.0.0-beta.1",
+     "rank": 95
     }
    ]
   },
@@ -3128,7 +3250,7 @@
      "en": "Backward challenge of 11 Nov: stability risks found by the sessions (three fixed, ten to decide or measure)",
      "de": "Rückblickende Prüfung vom 11.11.: von den Sitzungen gefundene Stabilitätsrisiken (drei behoben, zehn zu entscheiden oder zu messen)",
      "es": "Revisión a posteriori del 11/11: riesgos de estabilidad hallados por las sesiones (tres corregidos, diez por decidir o medir)",
-     "rank": 204
+     "rank": 217
     }
    ]
   },
@@ -3150,7 +3272,7 @@
      "en": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
      "de": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
      "es": "Roadmap, Priorities view: the columns “Delivered · In test · alpha.5 · beta.1 · Backlog” instead of a single “in development” one",
-     "test": true
+     "rank": 218
     },
     {
      "id": "SOG-0257",
@@ -3160,7 +3282,7 @@
      "en": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
      "de": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
      "es": "Roadmap, Priorities view: a sideways move lights the column at once; no more long drag in a column of 40 cards",
-     "test": true
+     "rank": 219
     },
     {
      "id": "SOG-0275",
@@ -3170,7 +3292,7 @@
      "en": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
      "de": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
      "es": "Help › About: the licences open as raw text (no viewer for LICENSE.md)",
-     "test": true
+     "rank": 220
     }
    ]
   },
@@ -3192,6 +3314,7 @@
      "en": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
      "de": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
      "es": "Bottom bar and rail: the active tab is an empty pill when its icon has no filled variant (Maintenance: Data, Sheets)",
+     "rank": 221,
      "test": true
     }
    ]
@@ -3213,7 +3336,9 @@
      "fr": "La V3 devient la version par défaut ; toutes les pages V2 restent accessibles depuis la V3",
      "en": "V3 becomes the default version; every V2 page stays reachable from V3",
      "de": "V3 becomes the default version; every V2 page stays reachable from V3",
-     "es": "V3 becomes the default version; every V2 page stays reachable from V3"
+     "es": "V3 becomes the default version; every V2 page stays reachable from V3",
+     "milestone": "6.0.0-beta.1",
+     "rank": 96
     }
    ]
   },
@@ -3235,7 +3360,7 @@
      "en": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
      "de": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
      "es": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
-     "test": true
+     "rank": 222
     }
    ]
   },
@@ -3257,7 +3382,7 @@
      "en": "Import the RAD and the FRA points from a screen (the route/import-rad job is reachable from no page)",
      "de": "RAD und FRA-Punkte von einem Bildschirm importieren (der Job route/import-rad ist von keiner Seite erreichbar)",
      "es": "Importar el RAD y los puntos FRA desde una pantalla (el trabajo route/import-rad no es accesible desde ninguna página)",
-     "rank": 106
+     "rank": 223
     },
     {
      "id": "SOG-0127",
@@ -3267,7 +3392,7 @@
      "en": "ADEP / ADEST completion as in RouteSim: airport list, name under the field, swap button",
      "de": "ADEP/ADEST-Vervollständigung wie in RouteSim: Flugplatzliste, Name unter dem Feld, Tauschknopf",
      "es": "Autocompletado ADEP / ADEST como en RouteSim: lista de aeródromos, nombre bajo el campo, botón de intercambio",
-     "rank": 107
+     "rank": 224
     },
     {
      "id": "SOG-0142",
@@ -3277,7 +3402,7 @@
      "en": "Route reader: homonyms (PAM in the USA, ALS in Morocco) and unknown points said with their zone",
      "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
      "es": "Lector de ruta: homónimos (PAM en EE. UU., ALS en Marruecos) y puntos desconocidos dichos con su zona",
-     "rank": 108
+     "rank": 225
     },
     {
      "id": "SOG-0154",
@@ -3287,7 +3412,7 @@
      "en": "Homonyms: “LFLL: 2 homonyms, the nearest kept” — an airport has no homonym",
      "de": "Homonyme: „LFLL: 2 Homonyme, das nächste behalten“ — ein Flugplatz hat kein Homonym",
      "es": "Homónimos: «LFLL: 2 homónimos, se conserva el más cercano»: un aeródromo no tiene homónimo",
-     "rank": 205
+     "rank": 226
     }
    ]
   },
@@ -3309,8 +3434,7 @@
      "en": "BLOCKING: the flight is rewritten in a loop, the synchronisation never stops, the blocks flicker",
      "de": "BLOCKIEREND: der Flug wird in einer Schleife neu geschrieben, die Synchronisation hört nicht auf, die Blöcke flackern",
      "es": "BLOQUEANTE: el vuelo se reescribe en bucle, la sincronización no se detiene, los bloques parpadean",
-     "rank": 206,
-     "test": true
+     "rank": 227
     }
    ]
   },
@@ -3332,8 +3456,7 @@
      "en": "“Charts” link: it leads to the eAIP of the previous cycle",
      "de": "Link „Karten“: führt zur eAIP des vorigen Zyklus",
      "es": "Enlace «Cartas»: lleva al eAIP del ciclo anterior",
-     "rank": 207,
-     "test": true
+     "rank": 228
     }
    ]
   },
@@ -3355,8 +3478,7 @@
      "en": "Fuel: “New flight” clears nothing at once; the side map can no longer be resized or moved",
      "de": "Kraftstoff: „Neuer Flug“ leert nichts sofort; die Karte daneben lässt sich nicht mehr verschieben oder skalieren",
      "es": "Combustible: «Nuevo vuelo» no vacía nada al instante; el mapa lateral ya no se redimensiona ni se mueve",
-     "rank": 208,
-     "test": true
+     "rank": 229
     },
     {
      "id": "SOG-0208",
@@ -3366,8 +3488,7 @@
      "en": "A gesture that needs the launcher says so when the launcher is absent (“Compute A → B” without effect)",
      "de": "Eine Geste, die den Launcher braucht, sagt es, wenn er fehlt („A → B berechnen“ ohne Wirkung)",
      "es": "Un gesto que necesita el lanzador lo dice cuando el lanzador falta («Calcular A → B» sin efecto)",
-     "rank": 209,
-     "test": true
+     "rank": 230
     }
    ]
   },
@@ -3388,7 +3509,9 @@
      "fr": "LFPO : la piste 02 proposée au départ alors qu'elle n'a aucun départ publié",
      "en": "LFPO: runway 02 offered for departure though it has no published departure",
      "de": "LFPO: Piste 02 für den Abflug angeboten, obwohl kein Abflugverfahren veröffentlicht ist",
-     "es": "LFPO: pista 02 propuesta para la salida sin ninguna salida publicada"
+     "es": "LFPO: pista 02 propuesta para la salida sin ninguna salida publicada",
+     "milestone": "6.0.0-beta.1",
+     "rank": 97
     }
    ]
   },
@@ -3409,7 +3532,9 @@
      "fr": "Procédures d'approche connues sans tracé : les choisir quand même, avec la fréquence du moyen et le bouton « Carte »",
      "en": "Approach procedures known without a track: choose them anyway, with the navaid frequency and the « Chart » button",
      "de": "Anflugverfahren ohne Kurslinie: trotzdem wählbar, mit Frequenz der Funkhilfe und Schaltfläche « Karte »",
-     "es": "Aproximaciones conocidas sin trazado: elegirlas igualmente, con la frecuencia de la ayuda y el botón « Carta »"
+     "es": "Aproximaciones conocidas sin trazado: elegirlas igualmente, con la frecuencia de la ayuda y el botón « Carta »",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 39
     }
    ]
   },
@@ -3430,7 +3555,8 @@
      "fr": "Ouvrir un vol l'écrit déjà, sans aucun geste (profil, vents en altitude, route normalisée)",
      "en": "Opening a flight already writes it, with no gesture (profile, winds aloft, normalised route)",
      "de": "Opening a flight already writes it, with no gesture (profile, winds aloft, normalised route)",
-     "es": "Opening a flight already writes it, with no gesture (profile, winds aloft, normalised route)"
+     "es": "Opening a flight already writes it, with no gesture (profile, winds aloft, normalised route)",
+     "rank": 231
     }
    ]
   },
@@ -3452,8 +3578,7 @@
      "en": "Read the ground (taxiways) with the airport's procedures, not through one more button",
      "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
      "es": "Leer el suelo (calles de rodaje) con los procedimientos del aeródromo, no con un botón más",
-     "milestone": "6.0.0-alpha.6",
-     "rank": 240
+     "rank": 232
     }
    ]
   },
@@ -3475,8 +3600,7 @@
      "en": "Map: at a very wide zoom only the SIA aerodromes remain (France, Réunion…)",
      "de": "Karte: bei sehr weitem Zoom bleiben nur die Flugplätze des SIA (Frankreich, Réunion…)",
      "es": "Mapa: con el zoom muy alejado solo quedan los aeródromos del SIA (Francia, Reunión…)",
-     "rank": 210,
-     "test": true
+     "rank": 233
     }
    ]
   },
@@ -3498,8 +3622,7 @@
      "en": "Taxiways: shown too late in the zoom, unnamed; no apron names",
      "de": "Rollwege: zu spät im Zoom angezeigt, ohne Namen; keine Vorfeldnamen",
      "es": "Calles de rodaje: mostradas demasiado tarde en el zoom, sin nombre; sin nombres de plataformas",
-     "rank": 211,
-     "test": true
+     "rank": 234
     }
    ]
   },
@@ -3514,6 +3637,17 @@
    },
    "items": [
     {
+     "id": "SOG-0229",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Données : refonte de l'écran de construction de la base, depuis les spécifications fonctionnelles — proposition de l'ergonome pour le jeudi 12/11",
+     "en": "Data: redesign of the base build screen from the functional specifications — proposal for Thursday 12 Nov",
+     "de": "Daten: Neugestaltung des Aufbau-Bildschirms aus den funktionalen Spezifikationen — Vorschlag für Donnerstag, 12.11.",
+     "es": "Datos: rediseño de la pantalla de construcción de la base desde las especificaciones funcionales — propuesta para el jueves 12/11",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 47
+    },
+    {
      "id": "SOG-0010",
      "kind": "feature",
      "state": "done",
@@ -3522,7 +3656,7 @@
      "de": "Informationen an einem Referenzort zusammenführen",
      "es": "Consolidar la información en una ubicación de referencia",
      "milestone": "6.0.0-alpha.3",
-     "rank": 109
+     "rank": 235
     },
     {
      "id": "SOG-0025",
@@ -3533,7 +3667,7 @@
      "de": "Spanien: das AIXM von ENAIRE lesen und auf die Pilotenkarten verweisen",
      "es": "España: leer el AIXM de ENAIRE y apuntar a las cartas de piloto",
      "milestone": "6.0.0-beta.1",
-     "rank": 110
+     "rank": 236
     },
     {
      "id": "SOG-0026",
@@ -3544,7 +3678,7 @@
      "de": "Mit dem aktuellen AIRAC neu aufgebaute Datenbank, stets als veraltet markiert",
      "es": "Base reconstruida con el AIRAC en curso, siempre marcada como obsoleta",
      "milestone": "6.0.0-alpha.3",
-     "rank": 111
+     "rank": 237
     },
     {
      "id": "SOG-0027",
@@ -3555,7 +3689,7 @@
      "de": "openAIP: die im Ordner Downloads heruntergeladenen Exporte verwenden",
      "es": "openAIP: aprovechar las exportaciones descargadas en Descargas",
      "milestone": "6.0.0-alpha.3",
-     "rank": 112
+     "rank": 238
     },
     {
      "id": "SOG-0030",
@@ -3566,7 +3700,7 @@
      "de": "Die SIA-Rohquellen aus Wartung › Daten verschieben (Schaltfläche base/move-sources)",
      "es": "Mover las fuentes brutas del SIA desde Mantenimiento › Datos (botón base/move-sources)",
      "milestone": "6.0.0-alpha.5",
-     "rank": 113
+     "rank": 239
     },
     {
      "id": "SOG-0038",
@@ -3577,7 +3711,7 @@
      "de": "Launcher: Die Headless-Browser der Basis-Builds werden nie beendet",
      "es": "Lanzador: los navegadores sin interfaz de las compilaciones de base nunca se detienen",
      "milestone": "6.0.0-alpha.4",
-     "rank": 114
+     "rank": 240
     },
     {
      "id": "SOG-0070",
@@ -3587,7 +3721,7 @@
      "en": "Data: click a country on the map to toggle it, active or inactive",
      "de": "Daten: ein Land auf der Karte anklicken, um es umzuschalten, aktiv oder inaktiv",
      "es": "Datos: hacer clic en un país del mapa para alternarlo, activo o inactivo",
-     "rank": 115
+     "rank": 241
     },
     {
      "id": "SOG-0071",
@@ -3597,8 +3731,7 @@
      "en": "Data: rework the overall ergonomics of the screen (choose, update the differences, purge, recompute only the outdated ones, deselect all, by package or by rectangle)",
      "de": "Daten: die Gesamtergonomie des Bildschirms überarbeiten (auswählen, Unterschiede aktualisieren, bereinigen, nur veraltete neu berechnen, alles abwählen, nach Paket oder per Rechteck)",
      "es": "Datos: revisar la ergonomía global de la pantalla (elegir, actualizar las diferencias, purgar, recalcular solo las obsoletas, deseleccionar todo, por paquete o por rectángulo)",
-     "rank": 116,
-     "test": true
+     "rank": 242
     },
     {
      "id": "SOG-0072",
@@ -3608,7 +3741,7 @@
      "en": "Data: a country stays orange “new” after recompute and publication, until a forced reload",
      "de": "Daten: ein Land bleibt nach Neuberechnung und Veröffentlichung orange „neu“, bis zu einem erzwungenen Neuladen",
      "es": "Datos: un país sigue en naranja «nuevo» tras recalcular y publicar, hasta una recarga forzada",
-     "rank": 117,
+     "rank": 243,
      "test": true
     },
     {
@@ -3619,7 +3752,7 @@
      "en": "Data: keep the sources’ “personal” boxes ticked",
      "de": "Daten: die Kontrollkästchen „persönlich“ der Quellen angehakt lassen",
      "es": "Datos: mantener marcadas las casillas «personal» de las fuentes",
-     "rank": 118
+     "rank": 244
     },
     {
      "id": "SOG-0146",
@@ -3629,7 +3762,7 @@
      "en": "Données: the build page gets very messy with many countries",
      "de": "Daten: die Aufbauseite wird mit vielen Ländern sehr unordentlich",
      "es": "Datos: la página de construcción se vuelve muy sucia con muchos países",
-     "rank": 119
+     "rank": 245
     },
     {
      "id": "SOG-0147",
@@ -3639,7 +3772,7 @@
      "en": "Country packs: remove them as they are added, see what they cover on the map, beside the map in the wide view",
      "de": "Länderpakete: ebenso entfernen wie hinzufügen, auf der Karte sehen, was sie abdecken, in der Breitansicht neben der Karte",
      "es": "Paquetes de países: quitarlos como se añaden, ver qué cubren en el mapa, junto al mapa en vista ancha",
-     "rank": 120
+     "rank": 246
     },
     {
      "id": "SOG-0151",
@@ -3649,7 +3782,7 @@
      "en": "Données: the “Take the downloaded file” question is taller than the screen, buttons unreachable",
      "de": "Daten: die Frage „Heruntergeladene Datei nehmen“ ist höher als der Bildschirm, Knöpfe unerreichbar",
      "es": "Datos: la pregunta «Tomar el archivo descargado» es más alta que la pantalla, botones inaccesibles",
-     "rank": 121
+     "rank": 247
     },
     {
      "id": "SOG-0162",
@@ -3659,7 +3792,7 @@
      "en": "Licences: one “personal use” checkbox unlocks every source; one page lists sources and licences",
      "de": "Lizenzen: ein Häkchen „persönliche Nutzung“ schaltet alle Quellen frei; eine Seite listet Quellen und Lizenzen",
      "es": "Licencias: una sola casilla «uso personal» desbloquea todas las fuentes; una página recoge fuentes y licencias",
-     "rank": 212
+     "rank": 248
     },
     {
      "id": "SOG-0165",
@@ -3669,7 +3802,7 @@
      "en": "Données, pack themes: the “Add” button is huge next to the text; page to condense and make consistent",
      "de": "Daten, Paket-Themen: der Knopf „Hinzufügen“ ist riesig neben dem Text; Seite verdichten und vereinheitlichen",
      "es": "Datos, temas de paquetes: el botón «Añadir» es enorme junto al texto; página por condensar y homogeneizar",
-     "rank": 213
+     "rank": 249
     },
     {
      "id": "SOG-0180",
@@ -3679,8 +3812,7 @@
      "en": "Data: rework the whole base update path (one gesture, messages that name buttons that exist)",
      "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",
      "es": "Datos: rehacer todo el recorrido de actualización de la base (un solo gesto, mensajes que nombran botones que existen)",
-     "rank": 214,
-     "test": true
+     "rank": 250
     },
     {
      "id": "SOG-0186",
@@ -3690,7 +3822,7 @@
      "en": "Data, country packs: choose one country inside a pack (folded list)",
      "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
      "es": "Datos, paquetes de países: elegir un país dentro de un paquete (lista plegada)",
-     "rank": 215
+     "rank": 251
     },
     {
      "id": "SOG-0188",
@@ -3700,8 +3832,7 @@
      "en": "Data, packs: update a pack without unticking and ticking everything again",
      "de": "Daten, Pakete: ein Paket aktualisieren, ohne alles ab- und wieder anzuwählen",
      "es": "Datos, paquetes: actualizar un paquete sin desmarcar y volver a marcar todo",
-     "rank": 216,
-     "test": true
+     "rank": 252
     },
     {
      "id": "SOG-0189",
@@ -3711,7 +3842,7 @@
      "en": "Sources to download yourself: direct links (Danish, Swedish AIP) and a step-by-step that says which file to take",
      "de": "Selbst herunterzuladende Quellen: direkte Links (dänische, schwedische AIP) und eine Schritt-für-Schritt-Anleitung",
      "es": "Fuentes para descargar uno mismo: enlaces directos (AIP danés y sueco) y un paso a paso que dice qué archivo tomar",
-     "rank": 217,
+     "rank": 253,
      "test": true
     },
     {
@@ -3722,7 +3853,7 @@
      "en": "VFR points: a stopped download then a build say “up to date” instead of “partly up to date”",
      "de": "VFR-Punkte: abgebrochener Download und Aufbau melden „aktuell“ statt „teilweise aktuell“",
      "es": "Puntos VFR: una descarga detenida y una construcción dicen «al día» en vez de «parcialmente al día»",
-     "rank": 218,
+     "rank": 254,
      "test": true
     },
     {
@@ -3733,8 +3864,7 @@
      "en": "Data: the question of “Take the downloaded file” is an unreadable block of text",
      "de": "Daten: die Rückfrage von „Heruntergeladene Datei übernehmen“ ist ein unlesbarer Textblock",
      "es": "Datos: la pregunta de «Tomar el archivo descargado» es un bloque de texto ilegible",
-     "rank": 219,
-     "test": true
+     "rank": 255
     },
     {
      "id": "SOG-0199",
@@ -3744,8 +3874,7 @@
      "en": "Data: pick the file yourself when “Take the downloaded file” did not find it",
      "de": "Daten: die Datei selbst wählen, wenn „Heruntergeladene Datei übernehmen“ sie nicht gefunden hat",
      "es": "Datos: elegir uno mismo el archivo cuando «Tomar el archivo descargado» no lo ha encontrado",
-     "rank": 220,
-     "test": true
+     "rank": 256
     },
     {
      "id": "SOG-0201",
@@ -3755,8 +3884,7 @@
      "en": "Data, country map: the outlines of two neighbouring countries do not meet",
      "de": "Daten, Länderkarte: die Umrisse zweier Nachbarländer treffen sich nicht",
      "es": "Datos, mapa de países: los contornos de dos países vecinos no coinciden",
-     "rank": 221,
-     "test": true
+     "rank": 257
     },
     {
      "id": "SOG-0226",
@@ -3766,8 +3894,7 @@
      "en": "Data: a zone built with a personal source is said “To rebuild” (Sweden: “built” and “To rebuild” at once)",
      "de": "Daten: eine mit persönlicher Quelle gebaute Zone heißt „Neu aufzubauen“ (Schweden: „gebaut“ und „Neu aufzubauen“ zugleich)",
      "es": "Datos: una zona construida con una fuente personal se dice «Por reconstruir» (Suecia: «construida» y «Por reconstruir» a la vez)",
-     "rank": 222,
-     "test": true
+     "rank": 258
     },
     {
      "id": "SOG-0228",
@@ -3777,18 +3904,7 @@
      "en": "Data: until the redesign, fold “Country packs”, shrink the “Update” buttons, explain “Zones of the coverage (75)”, lead from “7 to rebuild” to the 7 zones",
      "de": "Daten: bis zur Neugestaltung „Länderpakete“ einklappen, „Aktualisieren“ verkleinern, „Zonen der Abdeckung (75)“ erklären, von „7 neu aufzubauen“ zu den 7 Zonen führen",
      "es": "Datos: hasta el rediseño, plegar «Paquetes de países», reducir los «Actualizar», explicar «Zonas de la cobertura (75)», llevar de «7 por reconstruir» a las 7 zonas",
-     "rank": 223,
-     "test": true
-    },
-    {
-     "id": "SOG-0229",
-     "kind": "feature",
-     "state": "later",
-     "fr": "Données : refonte de l'écran de construction de la base, depuis les spécifications fonctionnelles — proposition de l'ergonome pour le jeudi 12/11",
-     "en": "Data: redesign of the base build screen from the functional specifications — proposal for Thursday 12 Nov",
-     "de": "Daten: Neugestaltung des Aufbau-Bildschirms aus den funktionalen Spezifikationen — Vorschlag für Donnerstag, 12.11.",
-     "es": "Datos: rediseño de la pantalla de construcción de la base desde las especificaciones funcionales — propuesta para el jueves 12/11",
-     "rank": 224
+     "rank": 259
     },
     {
      "id": "SOG-0230",
@@ -3798,7 +3914,7 @@
      "en": "Data: “Publish” answers “0 files sent” after a build (Sweden built, “Nothing to publish”)",
      "de": "Daten: „Veröffentlichen“ meldet „0 Dateien gesendet“ nach einem Aufbau (Schweden gebaut, „Nichts zu veröffentlichen“)",
      "es": "Datos: «Publicar» responde «0 archivos enviados» tras una construcción (Suecia construida, «Nada que publicar»)",
-     "rank": 225,
+     "rank": 260,
      "test": true
     },
     {
@@ -3809,6 +3925,7 @@
      "en": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
      "de": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
      "es": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
+     "rank": 261,
      "test": true
     },
     {
@@ -3819,7 +3936,7 @@
      "en": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
      "de": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
      "es": "Data: download, integrate and publish are done zone by zone, each step said and doable on its own",
-     "test": true
+     "rank": 262
     },
     {
      "id": "SOG-0259",
@@ -3829,27 +3946,27 @@
      "en": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
      "de": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
      "es": "Data: the list of everything to refresh at each cycle, ticked by the tool when done",
-     "test": true
+     "rank": 263
     },
     {
      "id": "SOG-0260",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Données : l'écran dit « 69 zones attendent un fichier » et peint tout en brun alors que tout est construit ; « Tout est à jour » juste dessous ; « Raison non reconnue »",
      "en": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
      "de": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
      "es": "Data: the screen says “69 zones wait for a file” and paints everything brown while everything is built; “All is up to date” just below; “Unknown reason”",
-     "test": true
+     "rank": 264
     },
     {
      "id": "SOG-0261",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Données : un clic sur « À reconstruire » d'un pays — on ne sait pas ce que ça fait, et la liste revient au début",
      "en": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
      "de": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
      "es": "Data: a click on a country's “To rebuild” — what it does is not said, and the list goes back to its top",
-     "test": true
+     "rank": 265
     },
     {
      "id": "SOG-0262",
@@ -3859,7 +3976,7 @@
      "en": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
      "de": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
      "es": "Data: the world map and the country packs as the entry; the list of 75 countries goes; one sheet per country with the exact inventory of its files",
-     "test": true
+     "rank": 266
     },
     {
      "id": "SOG-0264",
@@ -3869,7 +3986,7 @@
      "en": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
      "de": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
      "es": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
-     "test": true
+     "rank": 267
     }
    ]
   },
@@ -3886,12 +4003,12 @@
     {
      "id": "SOG-0263",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Routes NAT du jour : « Ouvrir » affiche un JSON ; les prendre seul ; servent-elles au calcul d'une route transatlantique ?",
      "en": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
      "de": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
      "es": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
-     "test": true
+     "rank": 268
     }
    ]
   },
@@ -3913,7 +4030,7 @@
      "en": "EUROCONTROL: tell the user how to create the account and get the workbooks",
      "de": "EUROCONTROL: dem Nutzer sagen, wie das Konto angelegt und die Arbeitsmappen geholt werden",
      "es": "EUROCONTROL: decir al usuario cómo crear la cuenta y obtener los libros",
-     "rank": 226,
+     "rank": 269,
      "test": true
     }
    ]
@@ -3935,7 +4052,9 @@
      "fr": "Sources à la main : les chemins rapportés par l'utilisateur (FAA en un seul téléchargement, DIRCAM par le SIA, éditions de l'AIP de France, points FRA, repli pour l'AIP militaire britannique)",
      "en": "Sources taken by hand: the paths reported by the user (FAA in one download, DIRCAM through the SIA, editions of the French AIP, FRA points, fallback for the UK military AIP)",
      "de": "Sources taken by hand: the paths reported by the user (FAA in one download, DIRCAM through the SIA, editions of the French AIP, FRA points, fallback for the UK military AIP)",
-     "es": "Sources taken by hand: the paths reported by the user (FAA in one download, DIRCAM through the SIA, editions of the French AIP, FRA points, fallback for the UK military AIP)"
+     "es": "Sources taken by hand: the paths reported by the user (FAA in one download, DIRCAM through the SIA, editions of the French AIP, FRA points, fallback for the UK military AIP)",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 48
     }
    ]
   },
@@ -3957,6 +4076,7 @@
      "en": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
      "de": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
      "es": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
+     "rank": 270,
      "test": true
     }
    ]
@@ -3980,7 +4100,7 @@
      "de": "Ein Flugzeugdatenblatt in kg und in lb/h lesen und schreiben",
      "es": "Leer y escribir una ficha de aeronave en kg y en lb/h",
      "milestone": "6.0.0-alpha.4",
-     "rank": 122
+     "rank": 271
     },
     {
      "id": "SOG-0052",
@@ -3991,7 +4111,7 @@
      "de": "Fuel Phase Monitor in V3: von CSV-Protokollen zu rpm-/Flugflächen-/Verbrauchskurven, Vergleich und Aktualisierung der Datenblätter; danach Flugbuch und Reporting",
      "es": "Fuel Phase Monitor en V3: de los registros CSV a las curvas de rpm / nivel / consumo, comparación y actualización de las fichas; luego diario de vuelo y reporting",
      "milestone": "6.0.0-alpha.5",
-     "rank": 123
+     "rank": 272
     },
     {
      "id": "SOG-0053",
@@ -4002,7 +4122,7 @@
      "de": "Konsistenz der Flugdaten: In Wartung › Flugzeuge aktualisierte Kurven ändern die Berechnungen von Fuel nicht",
      "es": "Coherencia de los datos de vuelo: las curvas actualizadas en Mantenimiento › Aeronaves no cambian los cálculos de Combustible",
      "milestone": "6.0.0-alpha.4",
-     "rank": 124
+     "rank": 273
     },
     {
      "id": "SOG-0055",
@@ -4013,7 +4133,7 @@
      "de": "rpm-/Flugflächen-/Verbrauchsdiagramme: eine Seite zum Lesen der Kurven je Flugzeug, Farben nach Flugfläche",
      "es": "Ábacos de rpm / nivel / consumo: una página de lectura de las curvas por aeronave, colores por nivel",
      "milestone": "6.0.0-alpha.5",
-     "rank": 125
+     "rank": 274
     },
     {
      "id": "SOG-0057",
@@ -4024,7 +4144,7 @@
      "de": "Bearbeitung der Datenblätter: Kommentare beeinträchtigen die Oberfläche, nötig, aber schlecht platziert",
      "es": "Edición de fichas: los comentarios degradan la interfaz, necesarios pero mal ubicados",
      "milestone": "6.0.0-alpha.5",
-     "rank": 126
+     "rank": 275
     },
     {
      "id": "SOG-0073",
@@ -4034,8 +4154,7 @@
      "en": "Aircraft sheets: “Complete from another sheet” shows “Douglas DC-3” when editing the Caravelle, and takes up space",
      "de": "Flugzeugdatenblätter: „Aus einem anderen Datenblatt ergänzen“ zeigt „Douglas DC-3“ beim Bearbeiten der Caravelle und beansprucht Platz",
      "es": "Fichas de aeronave: «Completar desde otra ficha» muestra «Douglas DC-3» al editar la Caravelle, y ocupa espacio",
-     "rank": 127,
-     "test": true
+     "rank": 276
     },
     {
      "id": "SOG-0074",
@@ -4045,7 +4164,7 @@
      "en": "Units: show the current unit in the header, visible everywhere and while scrolling",
      "de": "Einheiten: die aktuelle Einheit in der Kopfzeile anzeigen, überall und beim Scrollen sichtbar",
      "es": "Unidades: mostrar la unidad actual en el encabezado, visible en todas partes y al desplazarse",
-     "rank": 128
+     "rank": 277
     },
     {
      "id": "SOG-0075",
@@ -4055,7 +4174,7 @@
      "en": "Curves: meaningful levels (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, raw data kept",
      "de": "Kurven: aussagekräftige Ebenen (< 5 000, FL100, FL150, FL200, FL300, FL450), Extrapolation, Rohdaten bleiben erhalten",
      "es": "Curvas: niveles significativos (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolación, datos brutos conservados",
-     "rank": 129
+     "rank": 278
     }
    ]
   },
@@ -4077,7 +4196,7 @@
      "en": "The first git synchronisation of the day takes more than two minutes",
      "de": "Die erste Git-Synchronisation des Tages dauert über zwei Minuten",
      "es": "La primera sincronización git del día tarda más de dos minutos",
-     "rank": 130,
+     "rank": 279,
      "test": true
     },
     {
@@ -4088,8 +4207,7 @@
      "en": "Launcher: a slow or failing outside service (Open-Meteo, Overpass) freezes the launcher, then the app and Chrome",
      "de": "Launcher: ein langsamer oder fehlerhafter externer Dienst (Open-Meteo, Overpass) friert Launcher, App und Chrome ein",
      "es": "Lanzador: un servicio externo lento o con error (Open-Meteo, Overpass) congela el lanzador, la app y Chrome",
-     "rank": 227,
-     "test": true
+     "rank": 280
     },
     {
      "id": "SOG-0219",
@@ -4099,7 +4217,7 @@
      "en": "Launcher log: sets “left aside”, an exception while files are updated, a repeated warning, FAA answering 403",
      "de": "Launcher-Protokoll: Sätze „beiseitegelassen“, Ausnahme während einer Dateiaktualisierung, wiederholte Warnung, FAA mit 403",
      "es": "Registro del lanzador: conjuntos «dejados de lado», excepción durante una actualización de archivos, aviso repetido, FAA con 403",
-     "rank": 228
+     "rank": 281
     },
     {
      "id": "SOG-0265",
@@ -4109,7 +4227,7 @@
      "en": "Launcher: the lines of its log carry no time",
      "de": "Launcher: the lines of its log carry no time",
      "es": "Launcher: the lines of its log carry no time",
-     "test": true
+     "rank": 282
     }
    ]
   },
@@ -4131,8 +4249,7 @@
      "en": "Security review of 10 Nov: four notes (sqlite URI, exports of Little Navmap records, directory of an uploaded zip, relay without a deadline on an error body)",
      "de": "Sicherheitsdurchsicht vom 10.11.: vier Anmerkungen (sqlite-URI, Exporte der Little-Navmap-Einträge, Verzeichnis eines hochgeladenen Zip, Relais ohne Frist für den Fehlerkörper)",
      "es": "Revisión de seguridad del 10/11: cuatro notas (URI de sqlite, exportaciones de fichas de Little Navmap, directorio de un zip enviado, relé sin plazo en el cuerpo de error)",
-     "milestone": "6.0.0-alpha.6",
-     "rank": 239
+     "rank": 283
     },
     {
      "id": "SOG-0283",
@@ -4141,7 +4258,8 @@
      "fr": "Relecture de sécurité du 12/11 au soir (ligne d'audit 170) : un durcissement prouvé dans la lecture des PDF de procédures, une note sur les durées du calcul",
      "en": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
      "de": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
-     "es": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings"
+     "es": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
+     "rank": 284
     }
    ]
   },
@@ -4163,7 +4281,7 @@
      "en": "Launcher: the British military source (aidu.mod.uk, ENR 5.2) fails in SSL",
      "de": "Launcher: die britische Militärquelle (aidu.mod.uk, ENR 5.2) scheitert an SSL",
      "es": "Lanzador: la fuente militar británica (aidu.mod.uk, ENR 5.2) falla en SSL",
-     "rank": 230,
+     "rank": 285,
      "test": true
     }
    ]
@@ -4185,7 +4303,8 @@
      "fr": "Relecture de sécurité du 12/11 (ligne d'audit 165) : deux défauts prouvés dans la prise de fichiers à la main, un durcissement",
      "en": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening",
      "de": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening",
-     "es": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening"
+     "es": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening",
+     "rank": 286
     }
    ]
   },
@@ -4207,7 +4326,7 @@
      "en": "Roadmap: a “Priorities” view without lanes to order every card and replan it (in integration, in development, backlog)",
      "de": "Roadmap: eine Ansicht „Prioritäten“ ohne Bahnen, um alle Karten zu ordnen und umzuplanen (in Integration, in Entwicklung, Backlog)",
      "es": "Hoja de ruta: una vista «Prioridades» sin carriles para ordenar todas las tarjetas y replanificarlas (en integración, en desarrollo, pendientes)",
-     "rank": 231
+     "rank": 287
     },
     {
      "id": "SOG-0167",
@@ -4217,7 +4336,7 @@
      "en": "Acceptance: a page of the functional tests to do each day, with my comments and an accepted / refused status",
      "de": "Abnahme: eine Seite mit den täglichen Funktionstests, mit meinen Kommentaren und dem Status angenommen / abgelehnt",
      "es": "Recepción: una página con las pruebas funcionales diarias, con mis comentarios y el estado validado / rechazado",
-     "rank": 232
+     "rank": 288
     }
    ]
   },
@@ -4240,7 +4359,7 @@
      "de": "FuelDashboard V2 in Wartung V3 integrieren",
      "es": "Integrar FuelDashboard V2 en Mantenimiento V3",
      "milestone": "6.0.0-beta.1",
-     "rank": 131
+     "rank": 289
     }
    ]
   },
@@ -4262,7 +4381,7 @@
      "en": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
      "de": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
      "es": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
-     "test": true
+     "rank": 290
     }
    ]
   },
@@ -4284,8 +4403,7 @@
      "en": "Weather: “grid forecast unreachable (offline)” while the synoptic is being built, although the network is there",
      "de": "Wetter: „Gittervorhersage nicht erreichbar (offline)“ während des Aufbaus der Synoptik, obwohl das Netz da ist",
      "es": "Meteo: «previsión de la malla inalcanzable (sin conexión)» durante la construcción del sinóptico, aunque hay red",
-     "rank": 233,
-     "test": true
+     "rank": 291
     }
    ]
   },
@@ -4302,12 +4420,12 @@
     {
      "id": "SOG-0266",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Relais météo : des rafales d'échecs vers open-meteo (délais dépassés, puis HTTP 429)",
      "en": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)",
      "de": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)",
      "es": "Weather relay: bursts of failures towards open-meteo (timeouts, then HTTP 429)",
-     "test": true
+     "rank": 292
     }
    ]
   },
@@ -4330,7 +4448,7 @@
      "de": "LFPO: Die SID OKASI2A (Piste 20) fehlt; LFLL: viele Anflüge fehlen, darunter das ILS 17L mit drei Übergängen",
      "es": "LFPO: falta la SID OKASI2A (pista 20); LFLL: faltan muchas aproximaciones, entre ellas el ILS 17L con tres transiciones",
      "milestone": "6.0.0-alpha.4",
-     "rank": 132
+     "rank": 293
     },
     {
      "id": "SOG-0049",
@@ -4341,7 +4459,7 @@
      "de": "SIA-Verfahren: alle Seiten einer Tabelle oder Kartenfamilie lesen (OKASI 2A und PILUL, zweite Seite der RNAV-SIDs der Piste 20 von LFPO)",
      "es": "Procedimientos SIA: leer todas las páginas de una tabla o de una familia de cartas (OKASI 2A y PILUL, segunda página de las SID RNAV de la pista 20 de LFPO)",
      "milestone": "6.0.0-alpha.4",
-     "rank": 133
+     "rank": 294
     }
    ]
   },
@@ -4356,17 +4474,6 @@
    },
    "items": [
     {
-     "id": "SOG-0118",
-     "kind": "feature",
-     "state": "done",
-     "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
-     "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
-     "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
-     "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)",
-     "rank": 72,
-     "test": true
-    },
-    {
      "id": "SOG-0122",
      "kind": "feature",
      "state": "later",
@@ -4374,7 +4481,7 @@
      "en": "Repository providers refactoring: one table read by the export, Join, Access, the transport and the content policy; any provider declared in administration, pushed through the airline's configuration",
      "de": "Neuordnung der Repository-Anbieter: eine Tabelle, gelesen von Export, Beitreten, Zugang, Transport und Inhaltsrichtlinie; jeder in der Verwaltung erklärte Anbieter, über die Konfiguration der Gesellschaft verteilt",
      "es": "Refundición de los proveedores de repositorio: una sola tabla leída por la exportación, Unirse, Acceso, el transporte y la política de contenido; cualquier proveedor declarado en administración, enviado por la configuración de la compañía",
-     "rank": 73
+     "rank": 1
     },
     {
      "id": "SOG-0119",
@@ -4384,7 +4491,18 @@
      "en": "Administration: the four verbs for every data set (procedures, VAC, aircraft types and sheets) and \"Update everything\"; suite update, workstation backup, folders; fleet and aircraft sheets edited in Maintenance",
      "de": "Verwaltung: die vier Verben für jeden Datensatz (Verfahren, VAC, Flugzeugtypen und -blätter) und „Alles aktualisieren“; Aktualisierung der Suite, Sicherung des Rechners, Ordner; Flotte und Flugzeugblätter in der Wartung bearbeitet",
      "es": "Administración: los cuatro verbos para cada conjunto de datos (procedimientos, VAC, tipos y fichas de aeronaves) y «Actualizar todo»; actualización de la suite, copia de seguridad del equipo, carpetas; flota y fichas de aeronaves editadas en Mantenimiento",
-     "rank": 135
+     "milestone": "6.0.0-alpha.5",
+     "rank": 46
+    },
+    {
+     "id": "SOG-0118",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
+     "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
+     "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
+     "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)",
+     "rank": 295
     },
     {
      "id": "SOG-0120",
@@ -4394,7 +4512,7 @@
      "en": "Settings › Administration: a \"Costs and maintenance\" card (currency, default overhaul thresholds, hourly cost, fuel price and density)",
      "de": "Einstellungen › Verwaltung: Karte „Kosten und Wartung“ (Währung, Standard-Wartungsschwellen, Stundensatz, Treibstoffpreis und -dichte)",
      "es": "Ajustes › Administración: tarjeta «Costes y mantenimiento» (moneda, umbrales de revisión por defecto, coste horario, precio y densidad del combustible)",
-     "rank": 136
+     "rank": 296
     },
     {
      "id": "SOG-0121",
@@ -4404,7 +4522,7 @@
      "en": "Administration: the read-only card \"Hosts this page may contact\", by category and with the origin of each host (code, launcher configuration); a case checks that every provider of the table is there; never an editable list",
      "de": "Verwaltung: die schreibgeschützte Karte „Hosts, die die Seite kontaktieren darf“, nach Kategorie und mit der Herkunft jedes Hosts (Code, Starter-Konfiguration); ein Fall prüft, dass jeder Anbieter der Tabelle dort ist; nie eine bearbeitbare Liste",
      "es": "Administración: la tarjeta de solo lectura «Hosts que la página puede contactar», por categoría y con el origen de cada host (código, configuración del lanzador); un caso comprueba que cada proveedor de la tabla está; nunca una lista editable",
-     "rank": 137
+     "rank": 297
     },
     {
      "id": "SOG-0123",
@@ -4414,7 +4532,7 @@
      "en": "Airline logo: an SVG dropped in is converted to PNG by the app (request of 2 Nov)",
      "de": "Logo der Gesellschaft: ein abgelegtes SVG wird von der App automatisch in PNG umgewandelt (Wunsch vom 2.11.)",
      "es": "Logotipo de la compañía: un SVG depositado se convierte automáticamente a PNG en la aplicación (petición del 2/11)",
-     "rank": 138
+     "rank": 298
     },
     {
      "id": "SOG-0133",
@@ -4424,7 +4542,7 @@
      "en": "Settings: several seconds of waiting before the screen, for a repository version that is only accessory",
      "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
      "es": "Ajustes: varios segundos de espera antes de la pantalla, por una versión del repositorio solo accesoria",
-     "rank": 139
+     "rank": 299
     },
     {
      "id": "SOG-0172",
@@ -4434,8 +4552,7 @@
      "en": "Settings: the flicker is back",
      "de": "Einstellungen: das Flackern ist zurück",
      "es": "Ajustes: han vuelto los parpadeos",
-     "rank": 234,
-     "test": true
+     "rank": 300
     },
     {
      "id": "SOG-0218",
@@ -4445,8 +4562,28 @@
      "en": "Settings: “This device's airline” takes 8 seconds to show",
      "de": "Einstellungen: „Gesellschaft dieses Geräts“ braucht 8 Sekunden",
      "es": "Ajustes: «Compañía de este dispositivo» tarda 8 segundos en mostrarse",
-     "rank": 235,
-     "test": true
+     "rank": 301
+    }
+   ]
+  },
+  {
+   "id": "maintenance-reglages-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Réglages ; Données",
+    "en": "Réglages ; Données",
+    "de": "Réglages ; Données",
+    "es": "Réglages ; Données"
+   },
+   "items": [
+    {
+     "id": "SOG-0315",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages et Données : trois retouches de libellés et de liens",
+     "en": "Settings and Data: three label and link touch-ups",
+     "de": "Einstellungen und Daten: drei Korrekturen an Beschriftungen und Links",
+     "es": "Ajustes y Datos: tres retoques de etiquetas y enlaces"
     }
    ]
   },
@@ -4469,7 +4606,7 @@
      "de": "Ein Optimierungsdurchgang für die Anzeige- und Ladeleistung",
      "es": "Una pasada de optimización del rendimiento de visualización y de carga",
      "milestone": "6.0.0-alpha.5",
-     "rank": 140
+     "rank": 302
     },
     {
      "id": "SOG-0124",
@@ -4479,7 +4616,7 @@
      "en": "Run on the Windows workstation (Playwright and Chromium to install); the cloud runner meanwhile",
      "de": "Ausführung am Windows-Arbeitsplatz (Playwright und Chromium zu installieren); bis dahin der Cloud-Runner",
      "es": "Ejecución en el puesto Windows (Playwright y Chromium por instalar); mientras tanto, el runner en la nube",
-     "rank": 141
+     "rank": 303
     }
    ]
   },
@@ -4502,7 +4639,7 @@
      "de": "Benennen, was bei der Synchronisation gerade versendet wurde (FrameData.lastPushed)",
      "es": "Nombrar lo que acaba de salir en la sincronización (FrameData.lastPushed)",
      "milestone": "6.0.0-alpha.3",
-     "rank": 142
+     "rank": 304
     },
     {
      "id": "SOG-0040",
@@ -4513,7 +4650,7 @@
      "de": "Synchronisation: „0 Datei(en) des Rechners committet; Empfang unmöglich ([WinError 206])“",
      "es": "Sincronización: « 0 archivo(s) del equipo confirmados; recepción imposible ([WinError 206]) »",
      "milestone": "6.0.0-alpha.4",
-     "rank": 143
+     "rank": 305
     },
     {
      "id": "SOG-0043",
@@ -4524,7 +4661,7 @@
      "de": "Synchronisation: viele Konflikte in data/, eine Abhilfe suchen",
      "es": "Sincronización: muchos conflictos en data/, buscar una mitigación",
      "milestone": "6.0.0-alpha.4",
-     "rank": 144
+     "rank": 306
     },
     {
      "id": "SOG-0159",
@@ -4534,7 +4671,7 @@
      "en": "BLOCKING: “synchronisation refused by the server ‘last is not defined’”",
      "de": "BLOCKIEREND: „Synchronisation vom Server abgelehnt ‚last is not defined‘“",
      "es": "BLOQUEANTE: «sincronización rechazada por el servidor ‘last is not defined’»",
-     "rank": 236
+     "rank": 307
     },
     {
      "id": "SOG-0136",
@@ -4544,8 +4681,7 @@
      "en": "A new barrowful of sync conflicts while the user is alone",
      "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
      "es": "Una nueva carretilla de conflictos de sincronización estando el usuario solo",
-     "milestone": "6.0.0-alpha.6",
-     "rank": 242
+     "rank": 308
     }
    ]
   },
@@ -4567,6 +4703,7 @@
      "en": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
      "de": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
      "es": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
+     "rank": 309,
      "test": true
     }
    ]
@@ -4589,7 +4726,7 @@
      "en": "Missing zone: everywhere, say what is missing, offer the gesture (Données) and the external fallbacks (LittleNavMap, Navigraph, ChartFox)",
      "de": "Fehlende Zone: überall sagen, was fehlt, die Geste anbieten (Daten) und die externen Ausweichwege (LittleNavMap, Navigraph, ChartFox)",
      "es": "Zona ausente: en todas partes, decir qué falta, ofrecer el gesto (Datos) y los recursos externos (LittleNavMap, Navigraph, ChartFox)",
-     "rank": 145,
+     "rank": 310,
      "test": true
     }
    ]
@@ -4613,7 +4750,7 @@
      "de": "Die eigenständigen Module portieren: Landing Report, Fuel Report, Missions Report",
      "es": "Portar los módulos autónomos: informe de aterrizaje, informe de combustible, informe de misiones",
      "milestone": "6.0.0-alpha.5",
-     "rank": 146
+     "rank": 44
     }
    ]
   },
