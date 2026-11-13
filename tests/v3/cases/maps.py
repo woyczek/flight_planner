@@ -1043,7 +1043,7 @@ def d16(c):
     c.open('settings', docs=[['device/level.json', {'level': 2}, 'cache']])
     c.wait(600)
     c.eq(c.count('[data-card="admin"]'), 0, 'the Administration card is the Full level\'s', what='Administration cards at level 2')
-    c.open('settings', docs=[['device/level.json', {'level': 3}, 'cache']])
+    c.open('settings?card=admin', docs=[['device/level.json', {'level': 3}, 'cache']])
     c.until("!!document.querySelector('[data-admin=tune] a')", what='the tuning button in the Administration card')
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')     # Settings: the card sits in a folded group (SPEC 1)

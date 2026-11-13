@@ -766,9 +766,7 @@ Konflikten), der Starter, „Offline“ und auf einem Telefon die Position währ
 **Die Gruppen.** Auf der Stufe Einstieg zeigt der Bildschirm höchstens sieben Karten untereinander: Identität,
 Datenzugang, Synchronisation (wenn sie gebraucht wird), Nutzungen, Stufe, Design und Über. Die Sicherung, die
 Offline-Daten, der Wetterschlüssel, die Little-Navmap-Profile und der Zugang des Rechners kommen ab der Stufe Alltag.
-Auf den Stufen Alltag und Vollständig sind die Karten unter sieben Titeln geordnet, in der Reihenfolge, in der man die
-Dinge einstellt: Identität, Zugang, Daten, Gerät, Anzeige, Verwaltung (Stufe Vollständig) und Hilfe. Jeder Titel ist
-eingeklappt; tippen Sie ihn an, um ihn zu öffnen. Eine Gruppe, die Aufmerksamkeit braucht (eine Warnung, ein Fehler oder
+Auf den Stufen Alltag und Vollständig ist der Bildschirm **nach Nutzungshäufigkeit** geordnet: immer sichtbar der Block „Status“, die Anzeige (Nutzungsstufe, Design) und die Gesellschaft des Geräts; was ab und zu gebraucht wird, ist eingeklappt, mit seiner Häufigkeit rechts: Daten (einmal im Monat), Synchronisierung (bei Problemen), Gerät; Verwaltung ist eine Zeile „›“, die ihre eigene Seite öffnet (mit „← Einstellungen“ zurück); was nur einmal gebraucht wird, steht ganz unten, eingeklappt, unter „Einrichtung“ (Identität, Zugang, Gesellschaft gründen oder beitreten); „Über“ beschließt den Bildschirm. Tippen Sie einen eingeklappten Titel an, um ihn zu öffnen. Eine Gruppe, die Aufmerksamkeit braucht (eine Warnung, ein Fehler oder
 die Karte, zu der eine orange Statuszeile führt), öffnet sich von selbst, mit einem orangen Punkt; eine Zeile des Blocks
 „Status“ öffnet die Gruppe ihrer Karte. Eine von Hand geöffnete Gruppe bleibt offen, solange die Seite offen ist. Die
 Karten des Augenblicks (gefundene V2-Einstellungen, erhaltene Konfiguration, Fortsetzung des Beitritts) stehen auf jeder

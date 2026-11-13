@@ -898,6 +898,7 @@
     cards.push(P.access.syncHtml(env));
     // compagnie courante et « Ajouter une compagnie » (access.js, SOG-0039) : niveau Complet ou #settings?card=company
     show(P.airline.html(env));
+    show(P.airline.onboard(env)); // créer ou rejoindre : sous « Mise en route » (SOG-0320)
     // données hors ligne
     show(P.cards.offline(env));
     // compte IVAO du pilote par le relais (R1b) : avec un lanceur (le relais de la compagnie ou ce poste) ; le jeton n'est

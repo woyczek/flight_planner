@@ -14,9 +14,7 @@ conexión» y, en un teléfono, la posición durante un vuelo.
 **Los grupos.** En el nivel Descubrimiento, la pantalla muestra siete tarjetas como mucho, una debajo de otra:
 Identidad, Acceso a los datos, Sincronización (cuando sirve), Usos, Nivel, Diseño y Acerca de. La copia de seguridad, los
 datos sin conexión, la clave meteorológica, las fichas de Little Navmap y el acceso del equipo llegan en el nivel
-Habitual. En los niveles Habitual y Completo, las tarjetas se ordenan bajo siete títulos, en el orden en que se
-configuran las cosas: Identidad, Acceso, Datos, Dispositivo, Visualización, Administración (nivel Completo) y Ayuda.
-Cada título está plegado; tóquelo para abrirlo. Un grupo que requiere atención (un aviso, un error o la tarjeta a la que
+Habitual. En los niveles Habitual y Completo la pantalla se ordena **por frecuencia de uso**: siempre visibles, el bloque «Estado», la visualización (nivel de uso, diseño) y la compañía del dispositivo; lo que se usa de vez en cuando está plegado, con su frecuencia a la derecha: Datos (una vez al mes), Sincronización (en caso de problema), Dispositivo; Administración es una línea «›» que abre su propia página (con «← Ajustes» para volver); lo que solo se usa una vez va abajo del todo, plegado, en «Puesta en marcha» (identidad, acceso, crear o unirse a una compañía); «Acerca de» cierra la pantalla. Toque un título plegado para abrirlo. Un grupo que requiere atención (un aviso, un error o la tarjeta a la que
 lleva una línea naranja del estado) se abre solo, con un punto naranja; una línea del bloque «Estado» abre el grupo de su
 tarjeta. Un grupo abierto a mano sigue abierto mientras la página está abierta. Las tarjetas de circunstancia (ajustes de
 la V2 encontrados, configuración recibida, reanudación de la adhesión) van primero, en todos los niveles, y desaparecen

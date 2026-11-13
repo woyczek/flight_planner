@@ -366,13 +366,13 @@ def a12(c):
     c.eq(c.count('[data-admin], [data-adminpanel], a[href="#maps?tune=1"]'), 0, 'rule 18: nothing of the administrator\'s on the ordinary cards', what='administrator controls at the Everyday level')
     # SPEC § 1 at the Everyday level: the cards under seven titles at most, in the order of the path, the status block outside
     groups = c.js("[...document.querySelectorAll('#fView > .f-screen > details.f-group')].map(g => g.dataset.group)")
-    order = ['identity', 'access', 'data', 'device', 'display', 'admin', 'help']
+    order = ['data', 'sync', 'device', 'start']   # SOG-0320: by frequency of use
     c.ok(1 <= len(groups) <= 7, f'groups {groups}', 'between one and seven groups')
     c.eq(groups, [g for g in order if g in groups], 'the groups follow the order of the path', what='group order')
-    c.eq(c.js("[...document.querySelectorAll('#fView > .f-screen > [data-card]')].map(k => k.dataset.card)"), ['status'], 'only the status block is outside the groups (no card of circumstance here)', what='cards outside groups')
+    c.eq(c.js("[...document.querySelectorAll('#fView > .f-screen > [data-card]')].map(k => k.dataset.card)"), ['status', 'level', 'design', 'about'], 'outside the groups: the status block, the display cards and « À propos » (always visible, SOG-0320)', what='cards outside groups')
     c.ok(c.js("[...document.querySelectorAll('details.f-group')].every(g => g.open === !g.querySelector(':scope > summary > .f-status-dot').hidden)"),
          'a group is open exactly when its title carries the attention dot', 'folded unless it needs attention')
-    c.eq(c.js("document.querySelector('[data-card=\"identity\"]').closest('details.f-group').dataset.group"), 'identity', 'Identity is in its group', what='identity group')
+    c.eq(c.js("document.querySelector('[data-card=\"identity\"]').closest('details.f-group').dataset.group"), 'start', 'Identity is in « Mise en route » (SOG-0320)', what='identity group')
     sw, iw = hscroll(c)
     c.le(sw, iw, 'no horizontal scroll on a phone with the groups', what='page width, Everyday')
     c.tap('#fDevice')                                  # the control that opened the screen closes it
@@ -392,13 +392,9 @@ def a12(c):
     c.eq([k for k in flat if k in ('identity', 'access', 'usages', 'level', 'design', 'about')], ['identity', 'access', 'usages', 'level', 'design', 'about'], 'the Discovery cards in the order of the path', what='Discovery order')
     # rule 18 at the Full level: one card, one button per administrator page; the airline's thresholds file already holds a mode
     profiles = {'schema': 1, 'updated_at': '2026-10-23T18:00:00Z', 'by': 'maps', 'profiles': {'vfr': {'elements': {'zoom': {'vrp': [9.25, 24]}}}}}
-    c.open('settings', docs=[['device/level.json', {'level': 3}, 'cache'], ['airline/map_profiles.json', profiles, 'document']])
+    c.open('settings?card=admin', docs=[['device/level.json', {'level': 3}, 'cache'], ['airline/map_profiles.json', profiles, 'document']])   # Administration is a PAGE (SOG-0320)
     c.until("!!document.querySelector('[data-card=\"admin\"]')", what='the Administration card is drawn at the Full level')
     c.eq(c.count('[data-card="admin"]'), 1, 'one Administration card', what='cards')
-    c.eq(c.js("document.querySelector('[data-card=\"admin\"]').closest('details.f-group')?.dataset.group"), 'admin', 'the card sits in the Administration group', what='admin group')
-    if not c.js("document.querySelector('[data-group=\"admin\"]').open"):
-        c.tap('[data-group="admin"] > summary')
-    c.until("document.querySelector('[data-group=\"admin\"]').open", what='the Administration group opens on its title')
     ids = c.js("[...document.querySelectorAll('[data-card=\"admin\"] li[data-admin]')].map(li => li.dataset.admin)")
     for k in ADMIN_FR:
         c.ok(k in ids, f'entries {ids}', f'an entry "{k}"')
@@ -867,7 +863,7 @@ def a20(c):
             what='the address alone gives the level message of the frame')
     c.eq(c.count('[data-screen=sources]'), 0, 'no Sources screen below the Full level', what='screen')
     # Full level: the button of the Administration card (a real link, its absolute address, "Copy the link"), then the screen
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     c.until("!!document.querySelector('[data-card=\"admin\"] li[data-admin=\"sources\"]')", what='the Administration card lists the Sources')
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')     # Settings: the card sits in a folded group (SPEC 1)
@@ -1100,7 +1096,7 @@ def a32(c):
                 body = secrets
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/'), launcher)
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     c.until("!!document.querySelector('[data-card=\"admin\"] li[data-admin=\"keys\"]')", what='the Administration card lists the keys panel')
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')
@@ -1332,10 +1328,8 @@ def a43(c):
                 body = secrets()
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/'), launcher)
-    c.open('settings', docs=LEVEL3)
-    c.until("!!document.querySelector('[data-group=\"admin\"] [data-card=\"ivaoapp\"]')", what='the card is in the Administration group at the Full level')
-    if not c.js("document.querySelector('[data-group=\"admin\"]').open"):
-        c.tap('[data-group="admin"] > summary')
+    c.open('settings?card=admin', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"ivaoapp\"]')", what='the card is on the Administration page at the Full level')
     card = '[data-card="ivaoapp"]'
     msg = f"document.querySelector('{card} [data-msg]').textContent.trim()"
     c.eq(norm(c.text(f'{card} h2')), norm(t('ivaoAppTitle')), 'the card is titled', what='title')
@@ -1629,7 +1623,7 @@ def a49(c):
 
     # the pure helper: https, ssh, scp-like, the public hosts (github.com, gitlab.com, framagit.org), no guess for any other host (a name that contains « gitlab » proves nothing), credentials never kept
     state['url'] = 'https://gitlab.com/grp/proj.git'
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     c.until("!!window.SogConfig && !!SogConfig.providerOf", what='the configuration helper is loaded')
     fixtures = [
         ('https://gitlab.com/grp/proj.git', 'gitlab', 'https://gitlab.com/grp/proj', 'grp/proj'),
@@ -1905,7 +1899,7 @@ def a51(c):
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/'), launcher)
     state['url'] = 'https://git.example.org/acme/data.git'
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     c.until("!!window.SogConfig && !!SogConfig.validate", what='the configuration helper is loaded')
 
     # validate: the field is the provider; without it only github.com is read (legacy); the rest is refused at the entry
@@ -1948,13 +1942,13 @@ def a51(c):
         return [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': api, 'repo': 'grp/proj', 'branch': 'main', 'token': 'test-token'},
                                       'avwx': '', 'ivao': None, 'updated_at': '2026-10-30T10:00:00Z'}, 'cache']]
     state['url'] = 'https://git.example.test/grp/proj.git'
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     panel()
     c.eq([c.attr(box, 'data-provider'), norm(c.text(box))], ['other', norm(tx(launcher_file, 'providerOther', c.lang))], 'a self-hosted remote the device does not know: not recognised', what='unknown remote')
-    c.open('settings', docs=LEVEL3 + keys('https://git.example.test/api/v4'))
+    c.open('settings?card=admin', docs=LEVEL3 + keys('https://git.example.test/api/v4'))
     panel()
     c.eq(c.attr(box, 'data-provider'), 'gitlab', 'the device configuration says gitlab on the same host: recognised', what='known remote')
-    c.open('settings', docs=LEVEL3 + keys('https://git.other.test/api/v4'))
+    c.open('settings?card=admin', docs=LEVEL3 + keys('https://git.other.test/api/v4'))
     panel()
     c.eq(c.attr(box, 'data-provider'), 'other', 'another host: not recognised', what='other host')
 
@@ -1966,14 +1960,14 @@ def a51(c):
         c.tap('[data-adminpanel="addPilot"] [data-act="pilotMake"]')
         c.wait(800)
 
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     c.until("!!document.querySelector('[data-admin=\"addPilot\"]')", what='the « Ajouter un pilote » line (the export)')
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')
     export()
     c.eq(norm(c.js("document.querySelector('[data-adminpanel=\"addPilot\"] [data-xmsg]').textContent")), norm(tx('frame/settings/kit.js', 'providerUnknown', c.lang)), 'an unknown source: the export is refused with the message', what='export refusal')
     c.eq(c.js("document.querySelector('[data-adminpanel=\"addPilot\"] [data-cfgout]').hidden"), True, 'nothing is written', what='export output')
-    c.open('settings', docs=LEVEL3 + keys('https://git.example.test/api/v4'))
+    c.open('settings?card=admin', docs=LEVEL3 + keys('https://git.example.test/api/v4'))
     c.until("!!document.querySelector('[data-admin=\"addPilot\"]')", what='the « Ajouter un pilote » line (the export)')
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')
@@ -1986,7 +1980,7 @@ def a51(c):
     state['up'] = False
     got = c.js("""() => SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'git.example.test', repo: 'grp/proj', branch: 'main', provider: 'gitlab' } }).cfg""")
     sent = _gl_instance(c, 'git.example.test', who={'bot': True, 'scopes': ['api'], 'expires': '2099-01-01'})   # the instance answers branch, user and token alike
-    c.open('settings', docs=LEVEL3 + [['device/join.json', {'cfg': got, 'step': 5, 'done': {}}, 'cache']])
+    c.open('settings?card=admin', docs=LEVEL3 + [['device/join.json', {'cfg': got, 'step': 5, 'done': {}}, 'cache']])
     c.page.evaluate("location.hash = '#settings?join=1'")
     c.until("!!document.querySelector('[data-jact=\"test\"]')", timeout=15000, what='the token step is offered (the steps of an access set here)')
     c.eq(norm(c.text('[data-jact="test"]')), ('Tester', 'Test', 'Testen', 'Probar')[LANG_IX[c.lang]], 'the button tests the token (a device access), it does not clone', what='step 5 button')
@@ -2484,7 +2478,7 @@ def _ap_msg(code, name, link):
       rule='frame/settings SPEC 3 and 5 (« Ajouter un pilote », § 10.36): the configuration link of the export, the administrator\u2019s steps (access tokens page of the project, name = trigram, expiry today + 90 d, Developer, api, the branch, revoke, the token sent apart), a message in the language chosen; nothing written, no token')
 def a67(c):
     import datetime
-    c.open('settings', docs=LEVEL3 + _ap_keys('gitlab', 'https://gitlab.com/api/v4', 'acme/data'))
+    c.open('settings?card=admin', docs=LEVEL3 + _ap_keys('gitlab', 'https://gitlab.com/api/v4', 'acme/data'))
     _ap_prepare(c)
     box = '[data-adminpanel="addPilot"]'
     link = c.js(f"document.querySelector('{box} [data-cfglink]').value")
@@ -2523,7 +2517,7 @@ def a67(c):
       rule='frame/settings SPEC 3 and 5 (« Ajouter un pilote », § 10.36): with a launcher the administrator creates the token on #pilot-tokens?tri=<TRI> (the launcher uses the administrator\u2019s token); the steps by hand stay, folded; the screen fills its trigram field from the address')
 def a68(c):
     _ap_launcher(c, 'https://gitlab.com/acme/data.git')
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     _ap_prepare(c, name='')
     box = '[data-adminpanel="addPilot"]'
     c.eq(c.attr(f'{box} [data-aptoken]', 'href'), '?app=maintenance#pilot-tokens?tri=ABC', 'the link to the tokens screen carries the trigram and its application (the screen is Maintenance’s)', what='token link')
@@ -2547,7 +2541,7 @@ def a68(c):
 @case('A69', 'Add a pilot, GitHub repository: the GitHub steps of the export, no GitLab step', 'A', designs=('standard',), screens=False, night=False,
       rule='frame/settings SPEC 3 and 5 (« Ajouter un pilote », § 10.36): for a GitHub repository the steps are the export\u2019s (invite, create the file, send); the access tokens page and the Developer role are GitLab\u2019s only; the message and the link are the same')
 def a69(c):
-    c.open('settings', docs=LEVEL3 + _ap_keys('github', None, 'acme/data'))
+    c.open('settings?card=admin', docs=LEVEL3 + _ap_keys('github', None, 'acme/data'))
     _ap_prepare(c)
     box = '[data-adminpanel="addPilot"]'
     steps = norm(c.text(f'{box} [data-apsteps]'))
@@ -2717,9 +2711,11 @@ def a72(c):
 def a73(c):
     c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
     settings_file = 'frame/settings/settings.js'
-    c.open('settings', docs=LEVEL3 + _ap_keys('gitlab', 'https://gitlab.com/api/v4', 'acme/data'))
-    c.until("!!document.querySelector('[data-admin=\"addPilot\"]') && !!document.querySelector('[data-card=access]')", timeout=15000, what='the Administration and Access cards')
+    c.open('settings?card=admin', docs=LEVEL3 + _ap_keys('gitlab', 'https://gitlab.com/api/v4', 'acme/data'))
+    c.until("!!document.querySelector('[data-admin=\"addPilot\"]')", timeout=15000, what='the Administration page')
     c.eq([c.count('[data-admin="cfg"]'), c.count('[data-adminpanel="cfg"]'), c.count('[data-admin="addPilot"]')], [0, 0, 1], 'Administration: « Ajouter un pilote » only, no second export', what='administration')
+    c.open('settings', docs=LEVEL3 + _ap_keys('gitlab', 'https://gitlab.com/api/v4', 'acme/data'))   # the Access card is in « Mise en route », on the list (SOG-0320)
+    c.until("!!document.querySelector('[data-card=access]')", timeout=15000, what='the Access card')
     c.js("document.querySelector('[data-card=access]').closest('details')?.setAttribute('open', '')")
     entries = c.js("[...document.querySelectorAll('[data-card=access] [data-act]')].map(b => b.dataset.act).filter(a => /^cfg/.test(a))")
     c.eq([entries, c.count('[data-cfgfile]')], [['cfgJoin'], 0], 'the Access card has one join entry: no import button, no hidden file input of its own', what='access')
@@ -2825,7 +2821,7 @@ def a75(c):
     c.eq([norm(w) for w in words], [norm(tx(settings_file, k, c.lang, after='asState: {')) for k in ('todo', 'todo', 'todo', 'unknown', 'optional', 'optional', 'todo')], 'the state words, in the language of the run', what='state words')
     c.eq([c.count('[data-card="assistant"] p'), c.count('[data-card="assistant"] [data-card="status"]')], [1, 1], 'one introductory sentence, and the frame\u2019s status block at the end', what='nothing else')
     # not in the list of cards: only by its address; the Administration card has a line for it
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     c.until("!!document.querySelector('[data-card=\"admin\"]')", timeout=15000, what='the list of cards')
     c.eq([c.count('[data-card="assistant"]'), c.attr('[data-admin="assistant"] a', 'href')], [0, '#settings?card=assistant'], 'the assistant is not in the list; the Administration card links to it', what='not in the list')
     # no launcher: the repository step cannot be read here
@@ -3133,8 +3129,8 @@ def a84(c):
     c.eq([c.count('[data-card="about"] [data-licence]'), c.count('[data-card="about"] a[href="#roadmap"]'), c.count('[data-card="about"] a[href^="#help"]:not([data-licence])')], [1, 1, 0],
          'the licence and the roadmap; no link to the help manual (its one door is the « ? » of the header; the licence opens in the help viewer, SOG-0275)', what='links')
     c.open('settings', docs=LEVEL3)
-    c.until("!!document.querySelector('[data-group=\"help\"] > summary')", timeout=15000, what='the settings groups')
-    c.eq(norm(c.text('[data-group="help"] > summary')).startswith(norm(tx('frame/settings/groups.js', 'help', c.lang))), True, 'the group is named « À propos »', what='group name')
+    c.until("!!document.querySelector('[data-card=\"about\"] h2')", timeout=15000, what='the settings cards')
+    c.eq(norm(c.text('[data-card="about"] h2')).startswith(norm(tx('frame/settings/groups.js', 'help', c.lang))), True, 'the card is named « À propos » (flat, last: SOG-0320)', what='group name')
 
 
 # ------------------------------------------------------------------------------------------------------ A85
@@ -3570,18 +3566,18 @@ def a95(c):
     # ---- C: add an airline: the folder and the index; a taken or bad code writes nothing
     c.js("document.querySelector('[data-airline-add]').open = true")
     seeded = c.doc('airline/dfa/settings.json')
-    fill = lambda name, code: (c.page.fill('[data-card="company"] [data-f="co-name"]', name), c.page.fill('[data-card="company"] [data-f="co-code"]', code))
+    fill = lambda name, code: (c.page.fill('[data-card="onboard"] [data-f="co-name"]', name), c.page.fill('[data-card="onboard"] [data-f="co-code"]', code))
     fill('Taken', 'dfa')
     c.tap('[data-act="companyNext"]')
-    c.until(f"document.querySelector('[data-card=\"company\"] [data-msg]').textContent.trim() !== ''", what='a message')
-    c.eq([norm(c.text('[data-card="company"] [data-msg]')), c.doc('airline/dfa/settings.json') == seeded], [norm(T('taken')), True], 'a taken code: said, the existing folder is not overwritten', what='taken')
+    c.until(f"document.querySelector('[data-card=\"onboard\"] [data-msg]').textContent.trim() !== ''", what='a message')
+    c.eq([norm(c.text('[data-card="onboard"] [data-msg]')), c.doc('airline/dfa/settings.json') == seeded], [norm(T('taken')), True], 'a taken code: said, the existing folder is not overwritten', what='taken')
     fill('Bad', 'BAD!')
     c.tap('[data-act="companyNext"]')
     c.wait(400)
-    c.eq(norm(c.text('[data-card="company"] [data-msg]')), norm(T('badCode')), 'a bad code: said', what='bad msg')
+    c.eq(norm(c.text('[data-card="onboard"] [data-msg]')), norm(T('badCode')), 'a bad code: said', what='bad msg')
     c.eq(c.doc('airline/bad/settings.json'), None, 'a bad code writes nothing', what='bad')
     fill('Air Test', 'atx')
-    c.page.check('[data-card="company"] [data-co-net="ivao"]')
+    c.page.check('[data-card="onboard"] [data-co-net="ivao"]')
     c.tap('[data-act="companyNext"]')
     c.until("!document.querySelector('[data-wizard] [data-step-pane=themes]').hidden", timeout=6000, what='the themes step')
     c.tap('[data-act="companyNext"]')
@@ -4099,7 +4095,7 @@ def a102(c):
         (data / 'airline' / 'map_profiles.json').write_text('{"schema": 1, "profiles": []}', encoding='utf-8')
         st = _prio_launcher(c, Path(td), verb=('airline', 'migrate'), ctx={'data': str(data)})
         docs = LEVEL3 + [['airline/settings.json', {'name': 'DEFA Virtual', 'networks': {'ivao': True}}, 'document']]
-        box = '[data-card="company"] [data-mig]'
+        box = '[data-card="onboard"] [data-mig]'
         plan_btn, go_btn = f'{box} [data-act="companyPlan"]', f'{box} [data-act="companyMigrate"]'
         c.open('settings?card=company', docs=docs)
         c.until("(() => { const b = document.querySelector('" + plan_btn + "'); return !!b && !b.closest('[data-mig]').hidden })()", timeout=15000, what='the migration block (airline still at the root, launcher here)')
@@ -4109,7 +4105,7 @@ def a102(c):
         c.until("!!document.querySelector('" + go_btn + "')", timeout=15000, what='the plan and its « Migrate » button')
         plan = norm(c.text(f'{box} [data-mig-plan]'))
         c.ok(all(x in plan for x in ('DEFA Virtual', 'defa', 'settings.json', 'map_profiles.json', 'fleet.json')) and norm(T('migFleet')) in plan, plan, 'the plan: the name, the code proposed, the three files, the fleet said empty')
-        c.eq(c.js("document.querySelector('[data-card=\"company\"] [data-f=\"mig-code\"]').value"), 'defa', 'the proposed code fills the field', what='proposed')
+        c.eq(c.js("document.querySelector('[data-card=\"onboard\"] [data-f=\"mig-code\"]').value"), 'defa', 'the proposed code fills the field', what='proposed')
         c.ok(not (data / 'airline' / 'defa').exists() and not (data / 'airline' / 'index.json').exists(), sorted(os.listdir(data / 'airline')), 'the plan wrote nothing')
         c.eq(norm(c.text(go_btn)), norm(T('migGo').replace('{c}', 'defa')), 'the button names the folder', what='button')
         # ---- the migration
@@ -4125,11 +4121,11 @@ def a102(c):
         # ---- a second plan on the same code: refused, said (nothing overwritten)
         before = (data / 'airline' / 'defa' / 'settings.json').read_bytes()
         c.tap(plan_btn)
-        c.until("document.querySelector('[data-card=\"company\"] [data-mig] [data-msg]').textContent.trim() !== ''", timeout=15000, what='a message')
-        c.eq((norm(c.text('[data-card="company"] [data-mig] [data-msg]')) != '', (data / 'airline' / 'defa' / 'settings.json').read_bytes() == before), (True, True), 'a second plan: the airline already has its folder, said; nothing overwritten', what='exists')
+        c.until("document.querySelector('[data-card=\"onboard\"] [data-mig] [data-msg]').textContent.trim() !== ''", timeout=15000, what='a message')
+        c.eq((norm(c.text('[data-card="onboard"] [data-mig] [data-msg]')) != '', (data / 'airline' / 'defa' / 'settings.json').read_bytes() == before), (True, True), 'a second plan: the airline already has its folder, said; nothing overwritten', what='exists')
         # ---- a hostile answer: only the closed list is read, nothing runs
         st['raw'] = {'ok': True, 'dry': True, 'code': '<img src=x onerror=window.__pwn=1>', 'name': '<img src=x onerror=window.__pwn=1>', 'files': [{'name': '../../x', 'bytes': 5}, {'name': 'settings.json', 'bytes': 'a'}], 'reason': '<b>x</b>'}
-        c.page.fill('[data-card="company"] [data-f="mig-code"]', '')
+        c.page.fill('[data-card="onboard"] [data-f="mig-code"]', '')
         c.tap(plan_btn)
         c.wait(2000)
         c.ok(c.js("window.__pwn === undefined") and c.count('[data-card="company"] img') == 0, 'img', 'a hostile code or name is never drawn: no element, nothing runs')
@@ -4272,7 +4268,7 @@ def a105(c):
     c.eq(norm(c.text('[data-fiche-msg]')), norm(T('themeOne')), 'the last theme cannot be unticked: said under the sheet', what='refusal')
     c.eq(c.doc('airline/aaa/themes.json'), before, 'and nothing is written', what='refused')
     # ---- the three gestures under the sheet, in this order
-    c.eq([norm(x) for x in c.js("[...document.querySelectorAll('[data-card=\"company\"] > details > summary')].map(s => s.textContent)")], [norm(T('add')), norm(T('join'))], '« Create an airline », then « Join an airline » (the migration after them when it applies)', what='gestures')
+    c.eq([norm(x) for x in c.js("[...document.querySelectorAll('[data-card=\"onboard\"] > details > summary')].map(s => s.textContent)")], [norm(T('add')), norm(T('join'))], '« Create an airline », then « Join an airline » (the migration after them when it applies)', what='gestures')
     c.check_errors()
 
 
@@ -4825,7 +4821,7 @@ def a119(c):
 def a120(c):
     full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
     c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)
     c.until("!!document.querySelector('[data-card=\"admin\"]')", timeout=15000, what='the Administration card')
     c.wait(600)
     ids = c.js("[...document.querySelectorAll('[data-card=\"admin\"] li[data-admin]')].map(li => li.dataset.admin)")
@@ -4958,7 +4954,7 @@ def a123(c):
     tagged = c.js("""() => { window.__tag = []; document.querySelectorAll('[data-card], details.f-group').forEach((e, i) => { e.__id = i; window.__tag.push(e) }); return window.__tag.length }""")
     c.ok(tagged >= 8, tagged, 'the first drawing has its cards and its groups')
     c.js("() => { window.__cls.value = 0; window.__cls.items = [] }")   # the arrival of the repository is what is measured: the shifts of the opening itself are A110’s
-    c.until("(performance.getEntriesByName('sog-settings-start').length >= 2) && !!document.querySelector('[data-card=\"remote\"]')", timeout=10000, what='the screen is drawn a second time with the repository')
+    c.until("(performance.getEntriesByName('sog-settings-start').length >= 2) && !!document.querySelector('[data-git-line]') && !document.querySelector('[data-git-line][aria-busy=true]')", timeout=10000, what='the screen is drawn a second time with the repository')
     c.wait(300)
     res = c.js("""() => { const dep = new Set(['access', 'usages', 'admin', 'remote', 'hist', 'assistant', 'keys', 'ead', 'update', 'folders', 'ivaoapp']);   // the Administration card and its panels, the cards that read the repository
       const lost = window.__tag.filter(e => !dep.has(e.dataset.card) && !e.isConnected).map(e => e.dataset.card || 'group:' + e.dataset.group);
@@ -7290,4 +7286,37 @@ def a183(c):
     c.until("location.hash.includes('card=admin')", timeout=10000, what='the administration card')
     c.wait(500)
     c.eq(cur(), ['admin'], 'on the administration card the entry is marked', what='admin card')
+    c.check_errors()
+
+
+@case('A184', 'Settings: the screen is ranged by frequency of use (SOG-0320, the mockup of 13 Nov validated by the user) — ALWAYS VISIBLE: the status block, the display cards, the device airline; SOMETIMES, folded, each with its frequency: Data, Synchronisation, Device; IN A PAGE: « Administration » is a row that opens its page, with a way back; ONCE, folded, at the bottom: « Mise en route » (identity, access, create or join an airline); « À propos » last',
+      'A', langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0320 (the user: « déplacer ce qui sert de ce qui sert parfois, et ce qui sert une seule fois »): the seven folded groups of the path (Identity, Access, Data, Device, Display, Administration, About) put the most-used things behind a fold and the once-used ones first; Administration was too big for a fold')
+def a184(c):
+    lang = c.lang
+    G = lambda k: tx('frame/settings/groups.js', k, lang, after='    groups: {')
+    H = lambda k: tx('frame/settings/groups.js', k, lang, after='    groupHint: {')
+    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'dfa', 'name': 'DEFA Virtual'}]}, 'document']]
+    c.open('settings', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length >= 2", timeout=15000, what='the airlines')
+    c.wait(600)
+    order = c.js("[...document.querySelector('[data-card=\"status\"]').parentElement.children].filter(e => e.dataset.card || e.dataset.group).map(e => e.dataset.card || 'group:' + e.dataset.group)")
+    c.eq([k for k in order if k != 'assistant'], ['status', 'level', 'design', 'company', 'group:data', 'group:sync', 'group:device', 'group:admin', 'group:start', 'about'],
+         'the order: status, display, device airline, then data, synchronisation, device (folded), the Administration row, « Mise en route » (folded), « À propos » last', what='order')
+    folds = c.js("[...document.querySelectorAll('details.f-group')].map(g => [g.dataset.group, g.open === !g.querySelector(':scope > summary > .f-status-dot').hidden, g.querySelector(':scope > summary > span:nth-child(2)')?.textContent.trim() || ''])")
+    c.eq([[f[0], f[1]] for f in folds], [['data', True], ['sync', True], ['device', True], ['start', True]], 'the four folds are folded unless their title carries the attention dot', what='folded')
+    c.eq([norm(f[2]) for f in folds], [norm(H('data')), norm(H('sync')), norm(H('device')), norm(H('start'))], 'each says how often it is used', what='hints')
+    row = c.js("(a => a ? [a.tagName, a.getAttribute('href'), a.textContent.replace(/\s+/g, ' ').trim(), a.getBoundingClientRect().height] : null)(document.querySelector('a.f-grow[data-group=admin]'))")
+    c.ok(row and row[0] == 'A' and row[1] == '#settings?card=admin' and norm(row[2]).startswith(norm(G('admin'))) and row[3] >= 43.5, row, 'Administration is a row (a link, 44 px) to its page, not a fold')
+    start = c.js("[...document.querySelectorAll('details.f-group[data-group=start] [data-card]')].map(e => e.dataset.card)")
+    c.eq([k for k in start if k in ('identity', 'access', 'onboard')], ['identity', 'access', 'onboard'], '« Mise en route » holds identity, access, and create / join an airline', what='start cards')
+    c.eq([c.count('[data-card="company"] [data-airline-add]'), c.count('[data-card="company"] [data-company-more]'), c.count('[data-card="onboard"] [data-airline-add]')], [0, 1, 1], 'the device airline card keeps its list and a line that points to « Mise en route »; the wizard is there', what='company card')
+    c.shot(f'A184_{c.width}_{lang}_delivered.png')
+    c.page.screenshot(path=str(ROOT / 'tests/v3/shots' / f'A184_{c.width}_{lang}_full.png'), full_page=True)
+    # the page of Administration, with its way back
+    c.tap('a.f-grow[data-group=admin]')
+    c.until("!!document.querySelector('[data-card=\"admin\"]') && !!document.querySelector('[data-settings-back]')", timeout=10000, what='the Administration page')
+    c.eq([c.count('[data-card="admin"]'), c.count('[data-card="company"]')], [1, 0], 'the page holds the Administration card alone, under « ← Réglages »', what='admin page')
+    c.tap('[data-settings-back]')
+    c.until("!!document.querySelector('a.f-grow[data-group=admin]')", timeout=10000, what='back to the list')
     c.check_errors()

@@ -284,6 +284,14 @@
     INDEX = 'airline/index.json';
   const TA = {
     title: ['Compagnie de cet appareil', 'This device’s airline', 'Fluggesellschaft dieses Geräts', 'Compañía de este dispositivo'],
+    moreLine: ['Créer ou rejoindre une compagnie : sous « Mise en route », en bas.',
+      'Create or join an airline: under “Getting started”, at the bottom.',
+      'Gesellschaft gründen oder beitreten: unter „Einrichtung“, ganz unten.',
+      'Crear o unirse a una compañía: en «Puesta en marcha», abajo.'
+    ],
+    onboardTitle: ['Créer ou rejoindre une compagnie', 'Create or join an airline', 'Gesellschaft gründen oder beitreten',
+      'Crear o unirse a una compañía'
+    ],
     hint: [
       'La compagnie courante de cet appareil : les missions, le compte rendu et la flotte lisent celle-ci. Le choix est propre à l’appareil.',
       'This device’s current airline: the missions, the report and the fleet read this one. The choice is per device.',
@@ -850,6 +858,17 @@
     } = env;
     if (lvl !== 3 && focus !== 'company') return '';
     return `<div class="f-card" data-card="company"><h2>${esc(t(TA.title))}</h2><p class="f-muted">${esc(t(TA.hint))}</p><div class="f-cos" role="radiogroup" aria-label="${esc(t(TA.title))}" data-airlines></div><p class="f-warn" data-airline-note hidden></p><div class="f-fiche" data-airline-fiche></div>
+      <p class="f-muted" data-company-more>${esc(t(TA.moreLine))}</p></div>`;
+  }
+  /** « Créer ou rejoindre une compagnie » (SOG-0320) : ce qui ne sert qu'une fois, sorti de la carte Compagnie pour la rangée « Mise en route » en bas de l'écran ; le même niveau que la carte Compagnie. */
+  function onboardHtml(env) {
+    const {
+      t,
+      lvl,
+      focus
+    } = env;
+    if (lvl !== 3 && focus !== 'company' && focus !== 'onboard') return '';
+    return `<div class="f-card" data-card="onboard"><h2>${esc(t(TA.onboardTitle))}</h2>
       ${wizardHtml(env)}
       ${joinHtml(env)}
       <div data-mig hidden></div></div>`;
@@ -1873,7 +1892,7 @@
       });
     }
     if (act === 'companyPlan' || act === 'companyMigrate') {
-      const root = card('company'),
+      const root = card('onboard') || card('company'),
         out = root.querySelector('[data-mig-plan]'),
         typed = val('mig-code', root),
         // le message de la migration se dit dans son propre bloc (celui de « Créer une compagnie » est replié)
@@ -1981,6 +2000,7 @@
       'companySeriesDel'
     ],
     html: airlineHtml,
+    onboard: onboardHtml,
     live: airlineLive,
     list: airlineList,
     run: airlineRun

@@ -13,9 +13,7 @@ le lanceur, « Hors ligne » et, sur un téléphone, la position pendant un vol.
 
 **Les groupes.** Au niveau Découverte, l'écran montre sept cartes au plus, l'une sous l'autre : Identité, Accès aux
 données, Synchronisation (quand elle sert), Usages, Niveau, Design et À propos. La sauvegarde, les données hors ligne, la
-clé météo, les fiches Little Navmap et l'accès du poste arrivent au niveau Courant. Aux niveaux Courant et Complet, les
-cartes sont rangées sous sept titres, dans l'ordre où l'on règle les choses : Identité, Accès, Données, Appareil,
-Affichage, Administration (niveau Complet) et Aide. Chaque titre est replié ; touchez-le pour l'ouvrir. Un groupe qui
+clé météo, les fiches Little Navmap et l'accès du poste arrivent au niveau Courant. Aux niveaux Courant et Complet, l'écran est rangé **par fréquence d'usage** : toujours visibles, le bloc « État », l'affichage (niveau d'usage, design) et la compagnie de l'appareil ; ce qui sert parfois est replié, avec sa fréquence à droite : Données (une fois par mois), Synchronisation (en cas de souci), Appareil ; Administration est une ligne « › » qui ouvre sa propre page (avec « ← Réglages » pour revenir) ; ce qui ne sert qu'une fois est tout en bas, replié, sous « Mise en route » (identité, accès, créer ou rejoindre une compagnie) ; « À propos » ferme l'écran. Touchez un titre replié pour l'ouvrir. Un groupe qui
 demande de l'attention (un avertissement, une erreur, ou la carte visée par une ligne orange de l'état) s'ouvre seul,
 avec une pastille orange ; une ligne du bloc « État » ouvre le groupe de sa carte. Un groupe ouvert à la main le reste
 tant que la page est ouverte. Les cartes de circonstance (réglages de la V2 trouvés, configuration reçue, reprise de

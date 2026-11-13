@@ -751,3 +751,15 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   showed « Réglages » with « Administration » highlighted. An entry that names a card is now marked only when the address names that card
   (`cardOk` in `frame/app.js`, `renderMenu`). Case A183 (red before: 620 px, `['admin']`). The rest of SOG-0320 (the rearrangement by frequency of
   use) waits for the user's answer to the mockup `frame/settings/maquette/reglages_usage.html` (Q-0049).
+
+## SOG-0320, the rearrangement by frequency of use (13 Nov 2026)
+
+- The user's answer to the mockup (Q-0049, 13 Nov, 14 h 58): « Oui ». ALWAYS VISIBLE: status, display, airline; SOMETIMES, folded: Data, Synchronisation,
+  Device; IN A PAGE: Administration (a row `a.f-grow` to `#settings?card=admin`, which also carries the IVAO application card); ONCE, folded, at the bottom:
+  « Mise en route » (Identity, Access, and the new card `onboard` = « Créer / Rejoindre une compagnie » taken out of the airline card, whose
+  `#settings?card=company` page still shows it); About flat, last. Level 1 (Discovery) keeps its seven flat cards in the old order. `groups.js`
+  (`GROUPS`, `START`, `FLAT`, `ORDER1`, the frequency hints `T.groupHint`), `access.js` (`onboardHtml`, `TA.moreLine`), `settings.js` (the second
+  `show`). Cases A184 (the order, the folds, the hints, the row, the page and its way back; captures 390 and 1 280) and A183; the cases that
+  named the old groups or the inline Administration card were adapted (A12, A20, A32, A43, A49, A55, A67 to A69, A73, A75, A84, A120, A123: they open
+  `settings?card=admin` or look in « Mise en route »). Known difference from the mockup: the chosen airline's sheet (kind radios, mission families) stays
+  open under the list (A105 requires it), so the Company card is longer than drawn.

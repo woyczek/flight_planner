@@ -20,21 +20,40 @@
       device: ['Appareil', 'Device', 'Gerät', 'Dispositivo'],
       display: ['Affichage', 'Display', 'Anzeige', 'Visualización'],
       admin: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
-      help: ['À propos', 'About', 'Über', 'Acerca de'] // une seule porte « Aide » par écran : le « ? » de l'en-tête (9377637d6)
+      help: ['À propos', 'About', 'Über', 'Acerca de'], // une seule porte « Aide » par écran : le « ? » de l'en-tête (9377637d6)
+      sync: ['Synchronisation', 'Synchronisation', 'Synchronisierung', 'Sincronización'],
+      start: ['Mise en route', 'Getting started', 'Einrichtung', 'Puesta en marcha']
+    },
+    // ce qui dit la fréquence d'usage d'un groupe, à droite de son titre (SOG-0320)
+    groupHint: {
+      data: ['une fois par mois', 'once a month', 'einmal im Monat', 'una vez al mes'],
+      sync: ['en cas de souci', 'when something is wrong', 'bei Problemen', 'en caso de problema'],
+      device: ['sauvegarde · clé météo · réseau local', 'backup · weather key · local network',
+        'Sicherung · Wetterschlüssel · lokales Netz', 'copia · clave meteo · red local'
+      ],
+      start: ['identité, accès, créer ou rejoindre une compagnie', 'identity, access, create or join an airline',
+        'Identität, Zugang, Gesellschaft gründen oder beitreten', 'identidad, acceso, crear o unirse a una compañía'
+      ],
+      admin: ['jetons, accès, mises à jour, pages de réglage', 'tokens, access, updates, setting pages',
+        'Token, Zugriff, Updates, Einstellungsseiten', 'tokens, acceso, actualizaciones, páginas de ajuste'
+      ]
     },
     groupAttn: ['À regarder', 'Needs attention', 'Bitte ansehen', 'Requiere atención'],
   });
 
-  // groupes de cartes, dans l'ordre du chemin (ce qu'on règle une fois en haut) ; une carte d'aucun groupe (le bloc
-  // d'état, les cartes de circonstance) reste en tête, à plat
+  // Réglages rangés par fréquence d'usage (SOG-0320, maquette `maquette/reglages_usage.html` validée par l'utilisateur le 13/11) : TOUJOURS VISIBLE — le bloc d'état, l'affichage (niveau d'usage,
+  // apparence) et la compagnie de l'appareil ; PARFOIS, repliés — Données, Synchronisation, Appareil ; EN PAGE — Administration (une ligne qui ouvre sa page) ; UNE SEULE FOIS, replié tout en bas —
+  // Mise en route (identité, accès, créer ou rejoindre une compagnie) ; À propos en dernier. Une carte d'aucun groupe (le bloc d'état, les cartes de circonstance) reste en tête, à plat.
   const GROUPS = [
-    ['identity', ['identity', 'ivao']], // le compte IVAO du pilote à côté de son identité (ergonomie, 30/10)
-    ['access', ['access', 'sync']],
     ['data', ['usages', 'offline', 'lnmperf']],
-    ['device', ['backup', 'wx', 'lan']],
-    ['display', ['level', 'design']],
-    ['admin', ['admin', 'ivaoapp']],
-    ['help', ['about']]
+    ['sync', ['sync']],
+    ['device', ['backup', 'wx', 'lan']]
+  ];
+  const START = ['identity', 'ivao', 'access', 'onboard']; // « Mise en route »
+  const FLAT = ['level', 'design', 'company']; // toujours visibles, après le bloc d'état
+  // l'ordre à plat du niveau Découverte (sept cartes au plus, SPEC § 1) : celui du chemin, inchangé
+  const ORDER1 = ['identity', 'ivao', 'access', 'sync', 'usages', 'offline', 'lnmperf', 'backup', 'wx', 'lan', 'level', 'design', 'admin',
+    'ivaoapp', 'about'
   ];
   const OPEN = new Set(); // groupes ouverts à la main, gardés d'un dessin à l'autre (le temps de la page)
   const WIRED = new WeakSet(); // vues déjà écoutées (toggle, lignes du bloc d'état)
@@ -44,21 +63,26 @@
    *  à la main ; en tête, hors groupes, ce qui n'est d'aucun groupe ; la pastille d'attention et l'ouverture qu'elle
    *  entraîne sont posées après le dessin (markAttention). */
   function arrange(list, t, lvl) {
-    const grouped = new Set(GROUPS.flatMap(g => g[1])),
+    const grouped = new Set([...GROUPS.flatMap(g => g[1]), ...START, ...FLAT, 'admin', 'ivaoapp', 'about']),
       top = list.filter(h => h && !grouped.has(keyOf(h))),
-      rest = list.filter(h => h && grouped.has(keyOf(h)));
-    // Découverte : à plat, dans l'ordre des groupes (le chemin)
-    if (lvl === 1) return top.join('') + GROUPS.flatMap(g => g[1]).flatMap(k => rest.filter(h => keyOf(h) === k)).join('');
-    return top.join('') + GROUPS.map(([g, keys]) => {
-      const inG = rest.filter(h => keys.includes(keyOf(h)));
-      return inG.length ? `<details class="f-group" data-group="${g}"${OPEN.has(g) ? ' open' : ''}><summary><span>${esc(t(T.groups[g]))}</span><i class="f-status-dot" data-attn hidden title="${esc(t(T.groupAttn))}"></i></summary>${inG.join('')}</details>` : '';
-    }).join('');
+      by = k => list.filter(h => h && keyOf(h) === k);
+    // Découverte : à plat, dans l'ordre du chemin
+    if (lvl === 1) return top.join('') + ORDER1.flatMap(by).join('');
+    const fold = (g, keys) => {
+      const inG = keys.flatMap(by);
+      return inG.length ? `<details class="f-group" data-group="${g}"${OPEN.has(g) ? ' open' : ''}><summary><span>${esc(t(T.groups[g]))}</span>${T.groupHint[g] ? `<span class="f-ghint f-muted">${esc(t(T.groupHint[g]))}</span>` : ''}<i class="f-status-dot" data-attn hidden title="${esc(t(T.groupAttn))}"></i></summary>${inG.join('')}</details>` : '';
+    };
+    // Administration : trop grosse pour un pli, une LIGNE qui ouvre sa page (`#settings?card=admin`) avec son retour
+    const adminRow = by('admin').length ? `<a class="f-group f-grow" data-group="admin" href="#settings?card=admin"><span>${esc(t(T.groups.admin))}</span><span class="f-ghint f-muted">${esc(t(T.groupHint.admin))}</span></a>` : '';
+    return top.join('') + FLAT.flatMap(by).join('') + GROUPS.map(([g, keys]) => fold(g, keys)).join('') + adminRow + fold('start',
+      START) + by('about').join('');
   }
   /** La carte `key` de la liste, visible (sans son attribut hidden), '' si la liste ne l'a pas : une carte atteinte par
    *  son adresse (#settings?card=…) s'affiche seule. */
   function pick(list, key) {
-    const h = list.find(x => x && keyOf(x) === key) || '';
-    return h.replace(/^(<div[^>]*?)\shidden(?=[\s>])/, '$1');
+    const one = k => (list.find(x => x && keyOf(x) === k) || '').replace(/^(<div[^>]*?)\shidden(?=[\s>])/, '$1');
+    // la page d'une carte porte aussi celle qui l'accompagne : l'application IVAO sous Administration, créer ou rejoindre sous la compagnie (SOG-0320)
+    return one(key) + (key === 'admin' ? one('ivaoapp') : key === 'company' ? one('onboard') : '');
   }
   /** Carte visée par une ligne du bloc d'état (`card:a,b` : la première présente et non masquée), comme le cadre. */
   function goCard(view, go) {

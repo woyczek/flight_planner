@@ -32,13 +32,16 @@ diagnostic, admin); the split is a matter of size, not of behaviour, and a regen
   - **Discovery** (level 1): no groups; seven cards at most, flat, in the order of the path: Identity, Access,
     Synchronisation (when shown), Usages, Level, Design, About. Backup, Offline data, Weather key, Little Navmap sheets
     and Computer access are not drawn at this level (they start at Everyday).
-  - **Everyday and Full**: the cards under seven titles at most, in the order of the path (what is set once comes
-    first): **Identity** (Identity), **Access** (Access, Synchronisation), **Data** (Usages, Offline data, Little Navmap
-    sheets), **Device** (Backup, Weather key, Computer access), **Display** (Level, Design), **Administration** (Full
-    only), **Help** (About). Each title is a fold (`details.f-group[data-group]`), closed by default, except a group that
-    carries an attention: a warning or an error in one of its cards, or the card an amber line of the status block leads
-    to; it is open and its title carries the amber dot. A group opened or closed by hand stays so when the screen is
-    drawn again (for the page's life). A group with no card is not drawn.
+  - **Everyday and Full** (SOG-0320, 13 Nov 2026; the mockup `maquette/reglages_usage.html`, validated by the user): ranged **by frequency of
+    use**. ALWAYS VISIBLE, flat, after the status block: **Display** (Level, Design) and the device **airline** (Company). SOMETIMES, folded, each
+    title with its frequency on the right: **Data** (Usages, Offline data, Little Navmap sheets; « une fois par mois »), **Synchronisation**
+    (« en cas de souci »), **Device** (Backup, Weather key, Computer access). IN A PAGE: **Administration** (Full only) is a row (`a.f-grow`)
+    that opens `#settings?card=admin` — the Administration card and the IVAO application assistant, under « ← Réglages ». ONCE, folded, at the
+    bottom: **Mise en route** (Identity, Access, and « Créer / Rejoindre une compagnie », a card `onboard` taken out of the airline card, which keeps
+    a line that points to it); then **About**, flat, last. Each fold is `details.f-group[data-group]`, closed by default, except a group that
+    carries an attention: a warning or an error in one of its cards, or the card an amber line of the status block leads to; it is open and its
+    title carries the amber dot. A group opened or closed by hand stays so when the screen is drawn again (for the page's life). A group with no
+    card is not drawn. The place kept for the airline sheet (rule 22) is given back once the read is done with no airline chosen.
   - At every level, the status block and the **cards of circumstance** (V2 settings found, configuration received,
     joining resume) come first, outside groups and outside the count; they go once dealt with.
   - A line of the status block that leads to a card opens that card's group first (listened to in the capture phase,

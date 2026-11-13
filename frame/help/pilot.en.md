@@ -717,9 +717,7 @@ on a phone, the position during a flight.
 
 **The groups.** At the Discovery level, the screen shows seven cards at most, one under the other: Identity, Data
 access, Synchronisation (when it is used), Usages, Level, Design and About. The backup, the offline data, the weather
-key, the Little Navmap sheets and the computer access come at the Everyday level. At the Everyday and Full levels, the
-cards are arranged under seven titles, in the order things are set: Identity, Access, Data, Device, Display,
-Administration (Full level) and Help. Each title is folded; touch it to open it. A group that needs attention (a warning,
+key, the Little Navmap sheets and the computer access come at the Everyday level. At the Everyday and Full levels the screen is ranged **by frequency of use**: always visible, the “Status” block, the display (usage level, design) and the device's airline; what is used now and then is folded, with its frequency on the right: Data (once a month), Synchronisation (when something is wrong), Device; Administration is a “›” row that opens its own page (with “← Settings” to come back); what is used only once is at the very bottom, folded, under “Getting started” (identity, access, create or join an airline); “About” closes the screen. Touch a folded title to open it. A group that needs attention (a warning,
 an error, or the card an amber status line leads to) opens by itself, with an amber dot; a line of the “Status” block
 opens the group of its card. A group opened by hand stays open while the page is open. The cards of circumstance (V2
 settings found, configuration received, joining resume) come first, at every level, and go once dealt with. A card
