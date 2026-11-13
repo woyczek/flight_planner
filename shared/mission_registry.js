@@ -920,7 +920,8 @@
       kept = 0;
     for (const old of reg.missions) {
       const line = byFormer.get(String(old.id || '').toUpperCase());
-      if (!line || line === old || !(old.missingFile || !old.folder || old.source !== 'dossier')) continue;
+      // pas une ligne : sans dossier, dossier absent, ou le dossier MÊME de la ligne dont c'est l'ancien numéro (reste d'une lecture d'avant la renumérotation)
+      if (!line || line === old || !(old.missingFile || !old.folder || old.source !== 'dossier' || old.folder === line.folder)) continue;
       const userSet = old.status && !['generated', 'ordered'].includes(old.status) || old.notes || old.flownAt;
       if (userSet && (!line.status || line.status === 'generated') && !line.notes && !line.flownAt) {
         for (const k of USER_FIELDS)
@@ -945,6 +946,8 @@
       kept
     };
   }
+  /** Missions restées sous un ancien numéro nu (« 85 », « 85A ») sans mission renumérotée qui le porte en former_id : comptées, jamais cachées. */
+  const oldNumbers = () => reg.missions.filter(m => !m.supersededBy && /^\d+[A-Z]?$/.test(String(m.id || ''))).length;
   /** Les anciennes entrées gardées parce que plus complètes (cachées de la liste). */
   const keptFormer = () => reg.missions.filter(m => m.supersededBy).length;
   /** Mission « fichier absent » à retirer par le nettoyage : pas une ancienne entrée gardée (plus complète que sa ligne). */
@@ -985,7 +988,9 @@
     const found = [],
       problems = [];
     // relecture incrémentale : un dossier dont les fichiers (nom, date, taille) et les cartes n'ont pas changé depuis la
-    // dernière lecture reprend ses entrées du registre, sans relire ni réanalyser ses fichiers (missionRegistryScan:v1)
+    // dernière lecture reprend ses entrées du registre, sans relire ni réanalyser ses fichiers (missionRegistryScan:v1 : { sig, keys } par
+    // dossier — les entrées que la lecture précédente y avait trouvées ; une entrée du même dossier qu'elle n'y avait pas trouvée (reste
+    // d'une lecture d'avant la renumérotation) n'est JAMAIS reprise : sinon elle revivait à chaque relecture d'un dossier inchangé, SOG-0289)
     const SCAN = 'missionRegistryScan:v1',
       seenSig = readJson(SCAN, {}),
       nextSig = {},
@@ -1021,9 +1026,15 @@
         const got = await Promise.all(files.map(fh => fh.getFile()));
         const sf = suiviFile ? await suiviFile.getFile() : null;
         const sig = [...got.map(f => `${f.name}:${f.lastModified}:${f.size}`), ...images, ...(sf ? [`${SUIVI}:${sf.lastModified}:${sf.size}`] : [])].sort().join('|');
-        nextSig[path] = sig;
-        const known = reg.missions.filter(m => m.source === 'dossier' && m.folder === path);
-        if (seenSig[path] === sig && known.length) {
+        const was = seenSig[path],
+          known = was && typeof was === 'object' ? reg.missions.filter(m => m.source === 'dossier' && m.folder === path && (was
+            .keys || []).includes(keyOf(
+            m))) : [];
+        nextSig[path] = {
+          sig,
+          keys: known.map(keyOf)
+        };
+        if (was?.sig === sig && known.length && known.length === was.keys.length) {
           found.push(...known); // inchangé : entrées reprises telles quelles
           reused++;
           for (const [name, x] of subs) await walk(x, path ? `${path}/${name}` : name, depth + 1);
@@ -1053,6 +1064,7 @@
             });
             if (suivi && (!suivi.mission || suivi.mission === e.id)) e.suivi = suivi;
             found.push(e);
+            nextSig[path].keys.push(keyOf(e));
           }
         } catch (e) {
           problems.push(explain(e, path || '.'));
@@ -1341,6 +1353,7 @@
         <h2>${esc(t(['Missions du registre', 'Registry missions', 'Missionen des Registers', 'Misiones del registro']))}</h2>
         <p class="row" id="rgFolder"></p>
         <p>${esc(t(['{n} mission(s)', '{n} mission(s)'], { n: reg.missions.length - keptFormer() }))} · ${counts.map(([k, n]) => `${pill(k, t(STATUS[k]))} ${n}`).join(' ')} ${reg.updatedAt ? `<span class="rg-small">— ${esc(t(['mis à jour le {d}', 'updated {d}'], { d: fmtDate(reg.updatedAt) }))}</span>` : ''}</p>
+        ${oldNumbers() ? `<p class="rg-small" id="rgOldNumbers">${esc(t(['{n} mission(s) sous un ancien numéro, sans mission renumérotée', '{n} mission(s) under an old number, with no renumbered mission', '{n} Mission(en) unter einer alten Nummer, ohne neu nummerierte Mission', '{n} misión(es) bajo un número antiguo, sin misión renumerada'], { n: oldNumbers() }))}</p>` : ''}
         ${keptFormer() ? `<p class="rg-small" id="rgFormer">${esc(t(['{n} ancienne(s) entrée(s) gardée(s), plus complète(s) que leur mission : numéro d’avant la renumérotation, cachée(s) de la liste, jamais supprimée(s)', '{n} old entry(ies) kept, more complete than their mission: number from before the renumbering, hidden from the list, never deleted', '{n} alte Einträge behalten, vollständiger als ihre Mission: Nummer von vor der Neunummerierung, in der Liste ausgeblendet, nie gelöscht', '{n} entrada(s) antigua(s) conservada(s), más completa(s) que su misión: número de antes de la renumeración, oculta(s) en la lista, nunca eliminada(s)'], { n: keptFormer() }))}</p>` : ''}
         <div id="rgMsg">${msg}</div>
       </section>

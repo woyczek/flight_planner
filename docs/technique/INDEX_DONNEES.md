@@ -26,7 +26,7 @@ writes**; the index merely follows.
 | `assignments` | `[mission, pilot, role]` | `pilot`, `day` (yyyy-mm-dd), `mission`, `[pilot, day]` | `data/missions/affectations.json` | full read on every page | My missions: a pilot's week; ODV: grid by day (end of the pilots × slots × assignments cost) |
 | `availability` | `[pilot, week]` | `week` | `data/disponibilites/<TRI>.json` | `pilotAvailability:v1` | ODV grid by week |
 | `readMarks` | `[mission, pilot, at]` | `takeoff` | local | `assignmentsRead:v1`, `pilotPlis:v2` (never purged) | expiry (§ 4) |
-| `files` | `path` | — | metadata of the files read | `missionRegistryScan:v1` | signature of each source (§ 3) |
+| `files` | `path` | — | metadata of the files read | `missionRegistryScan:v1` | signature of each source (§ 3), and the keys of the entries the previous reading found in that folder (an entry of the folder the previous reading did not find is never taken back) |
 
 **No index** for: preferences, hand-overs between pages (handoffs), the SIA database (already in IndexedDB, database
 `sia-map-parser`), performance profiles (60 KB, read in full by a single page).

@@ -6245,3 +6245,56 @@ def k_former(c):
     c.ok(st['index'][0]['status'] == 'flown' and st['index'][0]['notes'] == 'note two', str(st['index']), 'its status and notes follow')
     c.ok(not st['note'], st['note'], 'nothing is said when nothing is kept')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders (their own repositories) are not in the test tree
+
+
+
+# A bench missions folder (a tree of fake directory handles; no data of the user): one renumbered mission T-085 (its former number 85 in `former_id`), with the versions kept
+# under the old number (recu/ as « <stamp>_<n>_<name>.txt », versions/ as « mission85_<stamp>.yaml »), and its maps.
+_FAKE_FOLDER_JS = r"""(tree) => {
+  const file = (name, text) => ({ kind: 'file', name, getFile: async () => ({ name, lastModified: 1760000000000, size: text.length, text: async () => text }) });
+  const dir = (name, kids) => ({ kind: 'directory', name, async *entries() { for (const [k, v] of Object.entries(kids)) yield [k, v] },
+    async getDirectoryHandle(n) { if (kids[n] && kids[n].kind === 'directory') return kids[n]; throw new DOMException('absent', 'NotFoundError') },
+    async getFileHandle(n) { if (kids[n] && kids[n].kind === 'file') return kids[n]; throw new DOMException('absent', 'NotFoundError') } });
+  const build = (name, node) => dir(name, Object.fromEntries(Object.entries(node).map(([k, v]) => [k, typeof v === 'string' ? file(k, v) : build(k, v)])));
+  const root = build('missions', tree);
+  window.FileAccess.status = async () => ({ handle: root, permission: 'granted', name: 'missions' });
+  return true }"""
+_YAML = "schema: helo-xp-mission\nmission:\n  id: '{id}'\n{former}  type: AIRLIFT\ntitle: Bench\n"
+_FAKE_TREE = {'T_AIRLIFT': {'T-085': {
+    'missionT-085.yaml': _YAML.format(id='T-085', former="  former_id: '85'\n"), 'summaryT-085.md': '# Mission T-085 - Bench\n',
+    'recu': {'2026-10-01T10-00-00_1_mission85.yaml.txt': _YAML.format(id='85', former=''), '2026-10-01T10-00-00_2_summary85.md.txt': '# Mission 85\n'},
+    'versions': {'mission85_2026-10-01.yaml': _YAML.format(id='85', former='')}, 'cartes': {'map.png': 'x'}}}}
+# an index entry the way an earlier reading left it: same folder, another identifier
+_FAKE_ENTRY_JS = """(id) => { const R = window.MissionRegistry, base = R.get().missions.find(m => m.id === 'T-085');
+  R.get().missions.push({ ...base, id, formerId: '', missingFile: false }); return R.get().missions.length }"""
+_SCAN_TWICE_JS = """async () => { const R = window.MissionRegistry; await R.scan(false); await R.scan(false); R.setFilters({});
+  return { shown: R.get().missions.filter(R.matches).map(m => m.id), all: R.get().missions.map(m => [m.id, !!m.missingFile, m.supersededBy || '']),
+    olds: (document.getElementById('rgOldNumbers') || {}).textContent || '' } }"""
+
+
+@case('K220', 'Re-reading a renumbered mission folder (versions kept under the old number in recu/ and versions/) twice leaves one entry per mission: the reading no longer brings back an entry its folder no longer holds, an entry under the number the line had before is attached, and the bare numbers left without a renumbered mission are counted', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0289 (the ergonomist, 13 Nov, device counts): 50 entries under a bare number, source « dossier », in the NEW lettered folder, none « file missing »: the incremental re-reading took back every entry of an unchanged folder, the stale ones included; the reading of a folder neither creates nor revives an entry for the former_id of the mission of that same folder')
+def k_formerscan(c):
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry && !!window.FileAccess", timeout=15000, what='the registry page is loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree
+    c.js(_FAKE_FOLDER_JS, _FAKE_TREE)
+    c.js("async () => { await window.MissionIndex.ready; await window.MissionIndex.save([], new Date().toISOString()); window.MissionRegistry.get().missions.length = 0; const r = await window.MissionRegistry.scan(false); return r.found }")
+    c.eq(c.js("() => window.MissionRegistry.get().missions.map(m => m.id)"), ['T-085'], 'the first reading of the renumbered folder: one entry (recu/ and versions/ are not missions)', what='entries')
+    # 1. an entry under the old number, in the same folder (what the earlier readings left), then two re-readings of the unchanged folder
+    c.js(_FAKE_ENTRY_JS, '85')
+    st = c.js(_SCAN_TWICE_JS)
+    c.eq(st['shown'], ['T-085'], 'two re-readings: one mission on the screen', what=str(st))
+    # 2. an entry of that folder that no file gives any more (not a former number): the reading marks it, it does not take it back
+    c.js(_FAKE_ENTRY_JS, '77')
+    st = c.js(_SCAN_TWICE_JS)
+    gone = [m for m in st['all'] if m[0] == '77']
+    c.ok(gone and gone[0][1], str(st['all']), 'an entry its folder no longer holds is « file missing » after the re-readings, not live again')
+    # 3. a bare number with no renumbered mission: counted, not hidden
+    c.js("() => { const R = window.MissionRegistry; R.get().missions.push({ ...R.get().missions.find(m => m.id === 'T-085'), id: '99', formerId: '', folder: 'X_OLD/99', files: [], missingFile: false }); return true }")
+    st = c.js(_SCAN_TWICE_JS)
+    c.ok(st['olds'].startswith('2 '), st['olds'], 'the page counts the missions left under an old number (77, 99), without a renumbered mission')
+    c.shot('K220_standard_old_numbers_delivered.png')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
