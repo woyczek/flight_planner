@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 200,
-  "verdicts": 139
+  "tests": 201,
+  "verdicts": 141
  },
  "apps": [
   "pilote",
@@ -2084,8 +2084,9 @@
    },
    "test": "Prépare une mission (Carburant, Carte à côté), puis « Nouveau vol » : plus de puce « Mission », plus de points imposés, plus de bandeau ni d'objets de mission sur la Carte. Recommence, et ferme la mission par sa croix sur la Carte : elle doit être quittée des deux côtés, tout de suite.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:25:07Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:25:07Z",
+   "at": "2026-11-13T15:43:55Z"
   },
   {
    "id": "SOG-0252",
@@ -2439,8 +2440,9 @@
    },
    "test": "Recharge la page. Carburant, une route coudée avec du vent (LFRS → un point au nord-est → LFML, ou un de tes vols avec un vent fort de travers sur une branche) : la barre de résultat dit « vent par tronçon » ; le temps du devis et l'heure d'arrivée du plan de progression disent la même chose. Compare à ton outil habituel sur un vol que tu connais : dis-moi si le temps et le carburant d'étape sont plus proches qu'avant, ou l'écart que tu lis.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T19:42:33Z"
+   "state": "ok",
+   "delivered": "2026-11-12T19:42:33Z",
+   "at": "2026-11-13T15:43:59Z"
   },
   {
    "id": "SOG-0284",
@@ -2976,6 +2978,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T15:37:53Z"
+  },
+  {
+   "id": "SOG-0330",
+   "app": "pilote",
+   "title": {
+    "fr": "LFLC, ILS 26 : le lien « Carte » ouvre le tableau des données, pas la carte de l'ILS",
+    "en": "LFLC, ILS 26: the « Chart » link opens the data table, not the ILS chart",
+    "de": "LFLC, ILS 26: der Link « Karte » öffnet die Datentabelle, nicht die ILS-Karte",
+    "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS"
+   },
+   "test": "Recharge la page. Carburant, arrivée à LFLC (Clermont-Ferrand), approche ILS 26 : le lien « Carte » ouvre la carte dessinée de l'ILS, plus le tableau des données. Même essai à LFLL (Lyon) sur un ILS.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T15:39:21Z"
   }
  ],
  "decisions": [

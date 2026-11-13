@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ee8a890",
+  "organisation": "fe945e1",
   "fiches": 331,
   "untranslated": 0,
   "priorities": 310
@@ -697,8 +697,7 @@
      "en": "A mission stays active after “New flight”, and even after its cross on the map",
      "de": "A mission stays active after “New flight”, and even after its cross on the map",
      "es": "A mission stays active after “New flight”, and even after its cross on the map",
-     "rank": 30,
-     "test": true
+     "rank": 30
     }
    ]
   },
@@ -720,8 +719,7 @@
      "en": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "de": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "es": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
-     "rank": 31,
-     "test": true
+     "rank": 31
     }
    ]
   },
@@ -817,11 +815,12 @@
     {
      "id": "SOG-0330",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "LFLC, ILS 26 : le lien « Carte » ouvre le tableau des données, pas la carte de l'ILS",
      "en": "LFLC, ILS 26: the « Chart » link opens the data table, not the ILS chart",
      "de": "LFLC, ILS 26: der Link « Karte » öffnet die Datentabelle, nicht die ILS-Karte",
-     "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS"
+     "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS",
+     "test": true
     }
    ]
   },
