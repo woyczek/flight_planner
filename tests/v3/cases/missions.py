@@ -2235,3 +2235,69 @@ def n53(c):
     c.ok('Une contrainte inventée.' in t and 'Second paragraphe inventé.' in t and 'Danger cinq' in t, t[:300],
          'the other keys of the load, the paragraphs and the rest of the file kept')
     c.js(_REG_CLEAR)
+
+
+
+# audit 182: an invented file the editor must never alter by itself — 45 teams (beyond the 40 shown), teams without name nor role, a team
+# written as a plain text, texts longer than the editor's bounds, a point without position, objectives as a list, numbers as texts
+_MESSY = ('mission: { id: X-001A, type: REG, subtype: ESSAI }\n'
+          f"title: {'Un titre inventé très long ' * 12}\n"
+          'summary: "Un résumé inventé  avec des espaces doublés.  "\n'
+          'origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0, elevation_ft: 300 }\n'
+          'destination: { name: Base Test Sud }\n'
+          'teams:\n' + ''.join(
+              '  - { aircraft: AC' + str(i) + ' }\n' if i % 5 == 0 else '  - Une équipe en texte\n' if i % 7 == 0 else
+              f"  - {{ name: EQ{i}, role: {'un rôle inventé très long ' * 12}, extra: {i} }}\n" for i in range(45)) +
+          'turning_points:\n  - { id: PT1, name: Point sans position, lat: null, lon: null, time_on_task_min: 5 }\n'
+          'objectives: [Premier objectif inventé., Second objectif inventé.]\n'
+          'payload: { mass_kg: "120", constraints: [Une contrainte inventée.] }\n')
+_ALIAS = 'mission: { id: X-001A, type: REG }\ntitle: Alias\nbase: &b { name: Base Test (XTST), lat: 45.0, lon: 1.0 }\norigin: *b\ndestination: *b\n'
+
+
+def _ed_open(c, text):
+    reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', text]])
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+
+
+@case('N54', 'Missions › editor, audit 182: opening every delivered step and « Enregistrer » without touching anything leaves the file '
+      'identical (45 teams, teams without name, texts beyond the bounds, a point without position); one change touches only its field; '
+      'a file with YAML aliases is refused at opening and never rewritten', 'N', tags=('missions', 'security'), designs=('standard',),
+      screens=False, langs4=False,
+      rule='Sécurisation, audit 182 on 3ace1a58f…6dc8740f5: the Équipes step lost data at saving without any edit (teams beyond 40, entries '
+      'without name or role, texts cut), and a mission file with YAML aliases froze the save — « enregistrer sans rien toucher rend le '
+      'fichier identique », for every step')
+def n54(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    _ed_open(c, _MESSY)
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='the messy file in the editor')
+    for step in ('teams', 'places', 'story', 'cadre'):
+        c.tap(f'{E} [data-steps] [data-step="{step}"]')
+        c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(500)
+    c.eq(c.js(_TEXT_OF, path), _MESSY, 'every step opened, nothing touched: the file is identical, byte for byte', what='file')
+    c.ok(any(norm(row(c, 'edSame')) in norm(n) for n in c.note_log()), c.note_log(), 'and the editor says there is nothing to save')
+    # one change: only its field (the toast of the step before cleared: at 390 it covers the bar)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-steps] [data-step="teams"]')
+    c.page.fill(f'{E} [data-team="1"] [data-f=role]', 'relais')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, path) or ''
+    # 45 teams: 9 « aircraft » only (i % 5), 5 plain texts (i % 7), 31 named with a role of 324 signs (the plain scalar loses its last space)
+    long_role = ('un rôle inventé très long ' * 12).strip()
+    c.ok('role: relais' in t and t.count('extra:') == 31 and 'aircraft: AC40' in t and t.count('Une équipe en texte') == 5
+         and t.count(long_role) == 30, [t.count('extra:'), 'aircraft: AC40' in t, t.count('Une équipe en texte'), t.count(long_role), 'role: relais' in t],
+         'one role changed: the 44 other teams (those beyond 40 too) kept whole, texts uncut')
+    c.ok(('Un titre inventé très long ' * 12).strip() in t and 'elevation_ft: 300' in t and 'Premier objectif inventé.' in t and "mass_kg: '120'" in t,
+         t[:400], 'the frame, the places and the story untouched')
+    # YAML aliases: refused at opening
+    c.tap(f'{E} [data-do="edcancel"]')
+    _ed_open(c, _ALIAS)
+    c.wait(800)
+    c.ok(not c.count(E) and any(norm(row(c, 'edAlias')) in norm(n) for n in c.note_log()), c.note_log(),
+         'a file with aliases does not open in the editor, and the notification says why')
+    c.eq(c.js(_TEXT_OF, path), _ALIAS, 'never rewritten', what='file')
+    c.js(_REG_CLEAR)

@@ -30,6 +30,8 @@
 //   stepState(doc, step) → 'ok' | 'todo'.
 //   regAdd(regDoc, entry) → { doc } | { error: 'taken' } ; regEdit(regDoc, idx, regId, cadre, path, now) → { doc } | { error: 'stale' }.
 //   yamlText(doc, Y, now) : le texte du fichier (en-tête daté, puis le document).
+//   shapeOf(doc) → '' | 'alias' | 'size' : refusé à l'ouverture quand il ne se réécrit pas sans risque ; same(a, b) : rien n'a changé.
+//   Règle des with… (audit 182, Sécurisation) : seul ce que le pilote a changé est écrit ; « Enregistrer » sans rien toucher n'écrit rien.
 import * as MS from '../../frame/lib/mission.js';
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
@@ -41,6 +43,8 @@ export const SUMMARY_MAX = 600,
 export const PLACES_MAX = 60;
 /** Les équipes d'une mission, au plus (la borne du lecteur, frame/lib/mission.js). */
 export const TEAMS_MAX = 40;
+/** Les nœuds d'un fichier de mission que l'éditeur accepte de réécrire (une mission de la V2 en a quelques centaines). */
+export const NODES_MAX = 100000;
 export const THEATRES = ['métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie'];
 /** L'identifiant d'une mission (la forme de add.js) et une famille (mission.type). */
 const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/,
@@ -111,29 +115,42 @@ function placeWith(prev, text) {
 export function withCadre(doc, cadre) {
   const out = structuredClone(obj(doc)),
     c = cadre || {},
-    m = out.mission = {
-      ...obj(out.mission)
-    },
-    series = /^\d{1,5}$/.test(String(c.series ?? '').trim()) ? +String(c.series).trim() : null,
-    num = /^[A-Z]-(\d{3})/.exec(cut(c.id, 40));
-  m.id = cut(c.id, 40).toUpperCase();
-  m.type = cut(c.family, 24).toUpperCase();
-  if (cut(c.subtype, 40)) m.subtype = cut(c.subtype, 40);
-  else delete m.subtype;
-  if (series !== null) m.series = series;
-  else delete m.series;
-  if (num) m.number = +num[1];
-  if (cut(c.theatre, 40)) m.theatre = cut(c.theatre, 40);
-  else delete m.theatre;
-  out.title = cut(c.title, 200);
-  for (const [k, v] of [
-      ['origin', c.dep],
-      ['destination', c.arr]
-    ]) {
-    const p = placeWith(out[k], v);
-    if (p) out[k] = p;
-    else delete out[k];
+    prev = cadreOf(doc),
+    // audit 182 : seul ce que le pilote a changé est écrit — un champ inchangé garde la valeur du fichier telle quelle (jamais recoupée)
+    changed = k => String(c[k] ?? '') !== String(prev[k] ?? '');
+  if (!['id', 'family', 'subtype', 'series', 'theatre', 'title', 'dep', 'arr'].some(changed)) return out;
+  const m = out.mission = {
+    ...obj(out.mission)
+  };
+  if (changed('id')) {
+    m.id = cut(c.id, 40).toUpperCase();
+    const num = /^[A-Z]-(\d{3})/.exec(m.id);
+    if (num) m.number = +num[1];
   }
+  if (changed('family')) m.type = cut(c.family, 24).toUpperCase();
+  if (changed('subtype')) {
+    if (cut(c.subtype, 40)) m.subtype = cut(c.subtype, 40);
+    else delete m.subtype;
+  }
+  if (changed('series')) {
+    const t = String(c.series ?? '').trim();
+    if (/^\d{1,5}$/.test(t)) m.series = +t;
+    else delete m.series;
+  }
+  if (changed('theatre')) {
+    if (cut(c.theatre, 40)) m.theatre = cut(c.theatre, 40);
+    else delete m.theatre;
+  }
+  if (changed('title')) out.title = cut(c.title, 200);
+  for (const [k, f] of [
+      ['origin', 'dep'],
+      ['destination', 'arr']
+    ])
+    if (changed(f)) {
+      const pl = placeWith(out[k], c[f]);
+      if (pl) out[k] = pl;
+      else delete out[k];
+    }
   return out;
 }
 
@@ -151,20 +168,41 @@ export function teamsOf(doc) {
 /** Le document avec ses équipes retouchées (voir l'en-tête). */
 export function withTeams(doc, rows) {
   const out = structuredClone(obj(doc)),
-    before = Array.isArray(out.teams) ? out.teams : [],
-    teams = (Array.isArray(rows) ? rows : []).slice(0, TEAMS_MAX).map(r => {
-      const t = {
-        ...(Number.isInteger(r?.i) && r.i >= 0 ? obj(before[r.i]) : {}),
-        name: cut(r?.name, 80),
-        service: cut(r?.service, 120),
-        type: cut(r?.type, 60).toUpperCase(),
-        role: cut(r?.role, 200)
-      };
-      for (const k of ['service', 'type', 'role'])
-        if (!t[k]) delete t[k];
-      return t;
-    }).filter(t => t.name || t.service || t.type || t.role);
-  if (teams.length) out.teams = teams;
+    prev = teamsOf(doc),
+    list = Array.isArray(rows) ? rows : [];
+  // audit 182 : rien de changé, rien de réécrit ; sinon une équipe inchangée reste l'objet du fichier, une équipe retouchée ne prend
+  // que ses champs changés, les équipes au-delà de TEAMS_MAX (non montrées) restent telles quelles à la fin
+  if (JSON.stringify(list) === JSON.stringify(prev)) return out;
+  const before = Array.isArray(out.teams) ? out.teams : [],
+    F = ['name', 'service', 'type', 'role'],
+    N = {
+      name: 80,
+      service: 120,
+      type: 60,
+      role: 200
+    },
+    put = (t, f, v) => {
+      const x = cut(v, N[f]);
+      if (x) t[f] = f === 'type' ? x.toUpperCase() : x;
+      else delete t[f];
+    },
+    teams = list.slice(0, TEAMS_MAX).map(r => {
+      const was = Number.isInteger(r?.i) && r.i >= 0 ? prev.find(x => x.i === r.i) : null;
+      if (was) {
+        const diff = F.filter(f => String(r[f] ?? '') !== String(was[f] ?? ''));
+        if (!diff.length) return before[r.i];
+        const t = {
+          ...obj(before[r.i])
+        };
+        for (const f of diff) put(t, f, r[f]);
+        return Object.keys(t).length ? t : null;
+      }
+      const t = {};
+      for (const f of F) put(t, f, r?.[f]);
+      return Object.keys(t).length ? t : null;
+    }).filter(t => t !== null),
+    all = [...teams, ...before.slice(TEAMS_MAX)];
+  if (all.length) out.teams = all;
   else delete out.teams;
   return out;
 }
@@ -255,86 +293,107 @@ export function placesOf(doc) {
 /** Le document avec ses lieux retouchés (voir l'en-tête). */
 export function withPlaces(doc, rows) {
   const out = structuredClone(obj(doc)),
-    list = Array.isArray(rows) ? rows : [],
-    before = k => Array.isArray(out[k]) ? out[k] : [],
-    base = (k, r) => Number.isInteger(r.i) && r.i >= 0 ? obj(before(k)[r.i]) : {},
-    common = r => ({
-      id: cut(r.id, 40),
-      name: cut(r.name, 120),
-      role: cut(r.role, 200)
-    }),
-    trim = o => {
-      for (const k of ['id', 'name', 'role'])
-        if (!o[k]) delete o[k];
-      return o;
+    prev = placesOf(doc),
+    list = Array.isArray(rows) ? rows : [];
+  // audit 182 : rien de changé, rien de réécrit ; sinon un lieu inchangé reste l'objet du fichier, un lieu retouché ne prend que ses
+  // champs changés, les lieux au-delà de PLACES_MAX (non montrés) restent tels quels à la fin
+  if (JSON.stringify(list) === JSON.stringify(prev)) return out;
+  const wasOf = r => Number.isInteger(r?.i) && r.i >= 0 ? prev.find(x => x.kind === r.kind && x.i === r.i) : null,
+    diffOf = (r, was, F) => was ? F.filter(f => String(r[f] ?? '') !== String(was[f] ?? '')) : F,
+    text = (o, k, v, n) => {
+      const x = cut(v, n);
+      if (x) o[k] = x;
+      else delete o[k];
     },
-    at = (o, r) => {
-      const lat = coord(r.lat, 90),
-        lon = coord(r.lon, 180);
-      o.lat = lat;
-      o.lon = lon;
-      return o;
+    common = (o, r, diff) => {
+      if (diff.includes('id')) text(o, 'id', r.id, 40);
+      if (diff.includes('name')) text(o, 'name', r.name, 120);
+      if (diff.includes('role')) text(o, 'role', r.role, 200);
+    },
+    // une position : là où l'objet la portait ; null quand elle est vide ou hors bornes (« à placer »)
+    at = (o, r, diff) => {
+      if (diff.includes('lat')) o.lat = coord(r.lat, 90);
+      if (diff.includes('lon')) o.lon = coord(r.lon, 180);
     };
-  // le départ et l'arrivée : leur position seule (le nom se change au Cadre)
   for (const [kind, key] of [
       ['dep', 'origin'],
       ['arr', 'destination']
     ]) {
-    const r = list.find(x => x.kind === kind);
-    if (r && out[key] && typeof out[key] === 'object') out[key] = at({
-      ...out[key]
-    }, r);
+    const r = list.find(x => x.kind === kind),
+      was = prev.find(x => x.kind === kind);
+    if (r && was && out[key] && typeof out[key] === 'object') {
+      const diff = diffOf(r, was, ['lat', 'lon']);
+      if (diff.length) at(out[key] = {
+        ...out[key]
+      }, r, diff);
+    }
   }
-  const t = list.find(x => x.kind === 'target');
-  if (t) out.target = trim(at({
-    ...obj(out.target),
-    ...common(t)
-  }, t));
-  else delete out.target;
-  const zones = list.filter(x => x.kind === 'zone').slice(0, PLACES_MAX).map(r => {
-      const b = base('zones', r),
-        z = trim({
-          ...b,
-          ...common(r)
-        }),
-        lat = coord(r.lat, 90),
-        lon = coord(r.lon, 180),
-        radius = positive(r.radius, 500),
-        tot = positive(r.tot, 9999);
-      if (cut(r.zkind, 40)) z.kind = cut(r.zkind, 40);
-      else delete z.kind;
+  const t = list.find(x => x.kind === 'target'),
+    tw = prev.find(x => x.kind === 'target');
+  if (!t) {
+    if (tw) delete out.target;
+  } else {
+    const diff = diffOf(t, tw, ['id', 'name', 'role', 'lat', 'lon']);
+    if (diff.length) {
+      const o = {
+        ...(tw ? obj(out.target) : {})
+      };
+      common(o, t, diff);
+      at(o, t, diff);
+      out.target = o;
+    }
+  }
+  const rebuild = (kind, key, F, apply) => {
+    const before = Array.isArray(out[key]) ? out[key] : [],
+      items = list.filter(x => x.kind === kind).slice(0, PLACES_MAX).map(r => {
+        const was = wasOf(r),
+          diff = diffOf(r, was, F);
+        if (was && !diff.length) return before[r.i];
+        const o = {
+          ...(was ? obj(before[r.i]) : {})
+        };
+        common(o, r, diff);
+        apply(o, r, diff, was ? obj(before[r.i]) : {});
+        return o;
+      }),
+      all = [...items, ...before.slice(PLACES_MAX)];
+    if (all.length) out[key] = all;
+    else if (key in out) delete out[key];
+  };
+  rebuild('zone', 'zones', ['id', 'name', 'role', 'zkind', 'lat', 'lon', 'radius', 'tot'], (z, r, diff, b) => {
+    if (diff.includes('zkind')) text(z, 'kind', r.zkind, 40);
+    if (diff.includes('lat') || diff.includes('lon')) {
+      const lat = coord(r.lat, 90),
+        lon = coord(r.lon, 180);
       // le centre : là où le fichier le portait (centre: { lat, lon }, ou lat / lon à plat) ; un polygone garde ses points
       if (b.lat !== undefined && !b.centre) Object.assign(z, {
         lat,
         lon
       });
-      else if (lat !== null || lon !== null || b.centre) z.centre = {
+      else z.centre = {
         ...obj(b.centre),
         lat,
         lon
       };
-      if (radius !== null) z.radius_km = radius;
+    }
+    if (diff.includes('radius')) {
+      const v = positive(r.radius, 500);
+      if (v !== null) z.radius_km = v;
       else delete z.radius_km;
-      if (tot !== null) z.time_on_task_min = tot;
+    }
+    if (diff.includes('tot')) {
+      const v = positive(r.tot, 9999);
+      if (v !== null) z.time_on_task_min = v;
       else delete z.time_on_task_min;
-      return z;
-    }),
-    pts = list.filter(x => x.kind === 'pt').slice(0, PLACES_MAX).map(r => trim(at({
-      ...base('turning_points', r),
-      ...common(r)
-    }, r))),
-    rdv = list.filter(x => x.kind === 'rdv').slice(0, PLACES_MAX).map(r => trim(at({
-      ...base('rendezvous', r),
-      ...common(r),
-      participants: String(r.participants ?? '').split(',').map(x => cut(x, 60)).filter(Boolean).slice(0, 20)
-    }, r)));
-  for (const [k, v] of [
-      ['zones', zones],
-      ['turning_points', pts],
-      ['rendezvous', rdv]
-    ])
-    if (v.length) out[k] = v;
-    else delete out[k];
+    }
+  });
+  rebuild('pt', 'turning_points', ['id', 'name', 'role', 'lat', 'lon'], (o, r, diff) => at(o, r, diff));
+  rebuild('rdv', 'rendezvous', ['id', 'name', 'role', 'lat', 'lon', 'participants'], (o, r, diff) => {
+    at(o, r, diff);
+    if (diff.includes('participants')) o.participants = String(r.participants ?? '').split(',').map(x => cut(x, 60)).filter(Boolean)
+      .slice(0,
+        20);
+  });
   return out;
 }
 
@@ -362,31 +421,51 @@ export function storyOf(doc) {
 export function withStory(doc, st) {
   const out = structuredClone(obj(doc)),
     t = st || {},
-    o = out.objectives,
-    objectives = Array.isArray(o) ? {} : {
-      ...obj(o)
-    },
-    payload = {
+    prev = storyOf(doc),
+    // audit 182 : seul ce que le pilote a changé est écrit ; le reste du fichier, objectifs et charge compris, tel quel
+    diff = ['summary', 'description', 'primary', 'secondary', 'payload', 'mass', 'pax'].filter(k => String(t[k] ?? '') !== String(prev[k] ??
+      ''));
+  if (!diff.length) return out;
+  if (diff.includes('summary')) out.summary = para(t.summary, SUMMARY_MAX * 4);
+  if (diff.includes('description')) out.detailed_description = para(t.description, TEXT_MAX);
+  if (diff.includes('primary') || diff.includes('secondary')) {
+    const o = Array.isArray(out.objectives) ? {
+      secondary: out.objectives
+    } : {
+      ...obj(out.objectives)
+    };
+    if (diff.includes('primary')) {
+      o.primary = para(t.primary, 2000);
+      if (!o.primary) delete o.primary;
+    }
+    if (diff.includes('secondary')) {
+      o.secondary = String(t.secondary ?? '').split('\n').map(x => cut(x, 300)).filter(Boolean).slice(0, 20);
+      if (!o.secondary.length) delete o.secondary;
+    }
+    if (Object.keys(o).length) out.objectives = o;
+    else delete out.objectives;
+  }
+  if (diff.some(k => ['payload', 'mass', 'pax'].includes(k))) {
+    const pl = {
       ...obj(out.payload)
-    },
-    mass = positive(t.mass, 999999),
-    pax = positive(t.pax, 9999);
-  out.summary = para(t.summary, SUMMARY_MAX * 4);
-  out.detailed_description = para(t.description, TEXT_MAX);
-  objectives.primary = para(t.primary, 2000);
-  objectives.secondary = String(t.secondary ?? '').split('\n').map(x => cut(x, 300)).filter(Boolean).slice(0, 20);
-  if (!objectives.primary) delete objectives.primary;
-  if (!objectives.secondary.length) delete objectives.secondary;
-  if (Object.keys(objectives).length) out.objectives = objectives;
-  else delete out.objectives;
-  payload.description = para(t.payload, 2000);
-  if (!payload.description) delete payload.description;
-  if (mass !== null) payload.mass_kg = mass;
-  else delete payload.mass_kg;
-  if (pax !== null && Number.isInteger(pax)) payload.passengers = pax;
-  else delete payload.passengers;
-  if (Object.keys(payload).length) out.payload = payload;
-  else delete out.payload;
+    };
+    if (diff.includes('payload')) {
+      pl.description = para(t.payload, 2000);
+      if (!pl.description) delete pl.description;
+    }
+    if (diff.includes('mass')) {
+      const v = positive(t.mass, 999999);
+      if (v !== null) pl.mass_kg = v;
+      else delete pl.mass_kg;
+    }
+    if (diff.includes('pax')) {
+      const v = positive(t.pax, 9999);
+      if (v !== null && Number.isInteger(v)) pl.passengers = v;
+      else delete pl.passengers;
+    }
+    if (Object.keys(pl).length) out.payload = pl;
+    else delete out.payload;
+  }
   return out;
 }
 
@@ -526,6 +605,26 @@ export function regEdit(regDoc, idx, regId, cadre, path, now = new Date().toISOS
     doc: out
   };
 }
+
+/** La forme d'un document lu (audit 182) : '' s'il se réécrit sans risque ; 'alias' quand un objet y paraît deux fois (une ancre
+ *  YAML « &a » / « *a » : la réécriture la déplierait, une bombe d'alias figerait l'enregistrement) ; 'size' au-delà de NODES_MAX nœuds. */
+export function shapeOf(doc) {
+  const seen = new Set(),
+    stack = [doc];
+  let n = 0;
+  while (stack.length) {
+    const v = stack.pop();
+    if (++n > NODES_MAX) return 'size';
+    if (!v || typeof v !== 'object') continue;
+    if (seen.has(v)) return 'alias';
+    seen.add(v);
+    for (const x of Array.isArray(v) ? v : Object.values(v)) stack.push(x);
+  }
+  return '';
+}
+
+/** Vrai quand le document n'a pas changé (audit 182 : « Enregistrer » sans rien toucher n'écrit rien, le fichier reste identique). */
+export const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Le texte du fichier (voir l'en-tête). */
 export function yamlText(doc, Y, now = new Date().toISOString()) {

@@ -495,6 +495,20 @@ const TX = {
   edUnreadable: ['Fichier de mission illisible : {e}', 'Mission file unreadable: {e}', 'Missionsdatei unlesbar: {e}',
     'Archivo de misión ilegible: {e}'
   ],
+  // audit 182 : un fichier que l'éditeur ne réécrirait pas sans risque est refusé à l'ouverture ; rien de changé, rien d'écrit
+  edAlias: ['ce fichier emploie des alias YAML (« &… », « *… ») : il se modifie dans la V2',
+    'this file uses YAML aliases (« &… », « *… »): edit it in the V2',
+    'diese Datei verwendet YAML-Aliasse („&…“, „*…“): in der V2 bearbeiten',
+    'este archivo usa alias YAML («&…», «*…»): se modifica en la V2'
+  ],
+  edHuge: ['ce fichier est trop gros pour l\'éditeur : il se modifie dans la V2',
+    'this file is too large for the editor: edit it in the V2',
+    'diese Datei ist zu groß für den Editor: in der V2 bearbeiten',
+    'este archivo es demasiado grande para el editor: se modifica en la V2'
+  ],
+  edSame: ['Rien à enregistrer : la mission n\'a pas changé.', 'Nothing to save: the mission has not changed.',
+    'Nichts zu speichern: die Mission hat sich nicht geändert.', 'Nada que guardar: la misión no ha cambiado.'
+  ],
   edRegLater: ['Le fichier est enregistré ; le registre n\'a pas pu être retouché ({e}) : « Mettre à jour le registre » l\'ajoutera.',
     'The file is saved; the registry could not be updated ({e}): « Update the registry » will add it.',
     'Die Datei ist gespeichert; das Register konnte nicht angepasst werden ({e}): „Register aktualisieren“ fügt sie hinzu.',
@@ -1797,6 +1811,10 @@ async function edRead(s, path) {
     const doc = typeof v === 'string' ? globalThis.jsyaml.load(v, {
       schema: globalThis.jsyaml.CORE_SCHEMA
     }) : structuredClone(v);
+    const shape = doc && typeof doc === 'object' ? ED.shapeOf(doc) : '';
+    if (shape) return {
+      err: s.tt(shape === 'alias' ? TX.edAlias : TX.edHuge)
+    };
     return doc && typeof doc === 'object' && !Array.isArray(doc) ? {
       doc,
       pending: !!r.pending
@@ -1837,9 +1855,10 @@ async function edOpen(s, mode, line = null) {
   }), 'warn');
   const base = mode === 'dup' ? ED.duplicate(got.doc) : got.doc,
     cadre = ED.cadreOf(base);
-  if (!cadre.family) cadre.family = line.row.family;
-  // la série que le fichier ne porte pas : celle de la ligne du registre
-  if (cadre.series === '' && /^\d{1,5}$/.test(String(line.raw?.series ?? ''))) cadre.series = String(line.raw.series);
+  // audit 182 : rien n'est prérempli d'ailleurs que du fichier (sinon « Enregistrer » sans rien toucher l'écrirait) ; la série du
+  // registre, quand le fichier n'en porte pas, n'est montrée qu'en indication dans le champ ; la famille de la ligne sert à la copie seule
+  const regSeries = /^\d{1,5}$/.test(String(line.raw?.series ?? '')) ? String(line.raw.series) : '';
+  if (mode === 'dup' && !cadre.family) cadre.family = line.row.family;
   if (mode === 'dup') cadre.id = ED.numbering(allRows(s), cadre.family, edLetter(s, cadre.family)).id;
   s.ed = {
     mode,
@@ -1850,7 +1869,8 @@ async function edOpen(s, mode, line = null) {
     regIdx: mode === 'edit' ? line.idx : -1,
     regId: mode === 'edit' ? cut(line.raw?.id, 40) : '',
     origId: mode === 'edit' ? line.row.id : '',
-    pending: mode === 'edit' && got.pending
+    pending: mode === 'edit' && got.pending,
+    regSeries
   };
   draw(s);
 }
@@ -1887,7 +1907,7 @@ function edCadreHtml(s) {
     idHint = e.mode === 'edit' ? c.id.toUpperCase() !== e.origId ? s.tt(TX.edIdKept) : '' : c.id === num.id ? s.tt(TX.edIdNext) : '';
   return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3><p class="f-muted">${esc(s.tt(TX.edCadreHint))}</p>
     <div class="f-row">${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edSubtype, sel('edsub', subs, c.subtype)) : ''}</div>
-    <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ' inputmode="numeric" maxlength="5"'), s.tt(TX.edNextSeries, { n: num.nextSeries }))}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
+    <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), s.tt(TX.edNextSeries, { n: num.nextSeries }))}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
     ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
     ${field('edth', TX.edTheatre, sel('edth', theatres.map(t => ({ code: t, label: t })), c.theatre))}
     <div class="f-row">${field('eddep', TX.edDep, text('eddep', c.dep, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}${field('edarr', TX.edArr, text('edarr', c.arr, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}</div>`;
@@ -2129,6 +2149,8 @@ async function edSave(s) {
   if (block.length) return s.ctx.notify(s.tt(TX[`edBlock_${block[0]}`], {
     l: letter
   }), 'warn');
+  // audit 182 : « Enregistrer » sans rien toucher n'écrit rien (le fichier reste identique, octet pour octet)
+  if (e.mode === 'edit' && ED.same(edDoc(e, c), e.base)) return s.ctx.notify(s.tt(TX.edSame), 'info');
   const path = e.mode === 'edit' && c.id === e.origId && e.path ? e.path : ED.pathFor(letter, c.family, c.id);
   if (!path) return s.ctx.notify(s.tt(TX.edBlock_idForm), 'warn');
   e.busy = true;

@@ -194,3 +194,14 @@
   cut at writing), description (paragraphs separated by a blank line, the reader's form), main objective, secondary objectives (one per
   line, 20 at most), load (description, mass, passengers on one row). `storyOf` / `withStory`: the other keys of `objectives` and
   `payload` are kept (constraints…), an emptied block is removed; line ends normalised. N53 (red before: the Récit step disabled).
+- **13 Nov 2026 — audit 182: the editor writes only what the pilot changed** (Sécurisation proved two defects in 3ace1a58f…6dc8740f5;
+  fixed by Features SOG): (1) opening the Équipes step then « Enregistrer » without any edit lost teams beyond 40, dropped entries without
+  name nor role and re-cut long texts; (2) a mission file with YAML aliases froze the save (`noRefs` unfolds an alias bomb). Rule, for
+  every step: `withCadre`, `withTeams`, `withPlaces`, `withStory` compare what the pilot sees with what the file gives (`cadreOf`,
+  `teamsOf`, `placesOf`, `storyOf` of the same document) and write only the fields that differ; an unchanged entry stays the file's own
+  object (a plain text, an entry with other keys alone), the entries beyond the bounds shown (40 teams, 60 places of a kind) stay
+  untouched at the end; « Enregistrer » with nothing changed writes nothing (`same`, « Rien à enregistrer ») — the file stays identical,
+  byte for byte. Nothing is prefilled from elsewhere than the file: the registry's series of a file without one is a placeholder.
+  `shapeOf` refuses at opening a file where an object appears twice (a YAML alias) or of more than 100 000 nodes: « il se modifie dans
+  la V2 ». N54 (red before: the untouched save rewrote the file, header, `number`, cut texts) — counter-test of the guard: without
+  `shapeOf`, N54 is red — the alias file opens in the editor.
