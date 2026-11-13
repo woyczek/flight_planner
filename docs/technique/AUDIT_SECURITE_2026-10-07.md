@@ -1039,6 +1039,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 187 | The fix of 186 (d1f544bfe: `shapeOf` in the frame, single objects read as one entry, the guards of the registry, `add.js` and `move.js`), the editor's risks step (92906e900), `aerodb.navaidsOf` (7667e5c6c) and the stop-point names of `ground.py` (62cc7ce8f) | defects of 186 closed; one defect proved (the risks step deletes a risk whose danger is under `title`); AeroDB acceptable, two notes |
 | 188 | The morning of 13 November, second group: the recette's comments and free texts raised to 2,000 characters in the page and in the launcher's verbs (45cba6733, SOG-0303); the two notes of 187 on `navaidsOf` (1cb71c46c); the Map's display commits (8b73c9944, 2d80e2c7d, 8f6a17c01, 36a3300bf) | acceptable, one note |
 | 189 | The V2 registry: every YAML read through the guarded function (29fe8ec28, the note of 185) | note closed |
+| 190 | The fix of 187 (779654075: risks under `title`, translations aligned, the registry's node ceiling), the editor's timeline and maps step (2dfa0aeca) and the commercial family (57c8cb17a) | defect of 187 closed; one defect proved (a `timeline` that is a list loses its events), three notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2903,6 +2904,28 @@ usage of a mission, the detail view, the generated Markdown twice, the two reade
 received texts' identifier reader, the local ledger of the reports) now call `loadYaml`; the only direct call left is the function's own. Each of them
 already sits in a `try` (`missionUsage`, `receivedIds`, `loadReports`) or in a click handler whose failure shows nothing and writes nothing, so a refused file
 (`TooBig`) never reaches a write. K230 holds the rule statically (no direct call outside `loadYaml`), K219 and K225 green. No note.
+
+**190. The fix of 187, the timeline and maps step, the commercial family — defect of 187 closed; one defect proved in the timeline step.** *Fix (779654075).* The danger of a
+risk is read as `risksOf` reads it (`hazard`, else `title`, else `name`); a danger cleared on purpose removes the risk and its translation, and so does any
+other removal, at the same place. Probed: the mitigation of a `title` risk edited keeps four risks and four translations; one danger cleared gives three risks
+and three translations in the same order; the round trip is identical. `shapeOf(doc, max)` takes a ceiling and the registry is read and written with
+`REGISTRY_NODES_MAX = 1,000,000` (note 3 of 187; the walk is iterative and an anchor is still refused at once, whatever the ceiling). N59 green: the defect of 187 is
+closed. *Commercial family (57c8cb17a).* The airline is read through `airlineCode` (`^[a-z0-9]{2,8}$`, else empty), written at the first level only when it
+matches and is not `perso`, the aircraft type is cut to 60 and upper-cased, only the first aircraft is touched, the proposed title comes from the two places, the
+“To complete” list drops the steps a link flight does not use; every value goes through `esc`. N58 green. *Timeline and maps (2dfa0aeca).* Events keep the
+bounds (60 events, 20 / 40 / 500 characters), an unchanged event stays the file's own object, `withMaps` only appends (never removes a map, the round trip is
+identical, a single-object `maps` is read as one entry). **Defect (proved): a `timeline` that is a list loses its events.** The step reads
+`timeline.events`; a file whose `timeline` is a list of events (the earlier form: the previous “To complete” rule counted it and `chronology`) shows no row, the
+round trip is identical, but adding one event makes `withEvents` write `timeline: { events: [the new one] }` over the list: probed, a two-event list comes back with
+only the added event. It is the family of defects 1 and 2 of 182 again (what the form does not show is lost). **Fix and counter-test.** Read a list-shaped
+`timeline` (and `chronology`) as the events, so that they are shown and kept (the new ones are appended to them), or refuse to open the step on that shape with a
+message; never replace it. Counter-test (red now): `withEvents(doc, [...eventsOf(doc), one])` on `timeline: [e1, e2]` contains e1 and e2 and the new event. **Notes.** (1) An
+event edited whose text is under another key (`description`, `label`) and without a `place` is dropped by the final `text || place` test, as the risks were
+(the displayed event shows an empty text); keep an event that has any other key. (2) The names of the proposed maps (`general<ID>.png`, `cible<ID>.png`, …) are built from the
+raw `mission.id` (cut to 40, line breaks removed, but `/` and `..` allowed in a file's own identifier; the form refuses them for a new one): build them from the identifier only
+when it has the form `^[A-Z]-\d{3}[A-Z]?$` and from nothing otherwise, so that the V2 studio never receives a name with a path in it. (3) `withCadre` on the aircraft keeps
+only truthy entries of `aircraft`: a `null` entry disappears, harmless. **Incident reported by Features SOG** (an amend command that touched my commit locally during a
+conflicting rebase): the commit “Audit 189” is intact on `origin/v3` (896936de1, my message, the two files of the journal and the bundle).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
