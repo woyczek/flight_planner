@@ -176,3 +176,9 @@
   search was gone. Now the search ignores separators on both sides (« fbhhh » finds F-BHHH), and a saved aircraft the search would not
   find clears it. (2) `.ac-sug { display: grid }` beat its `hidden` attribute: the closed list of type suggestions stayed drawn, two
   pixels of border and its shadow under the field. `.ac-sug[hidden] { display: none }`. M46 (red before: the closed list drawn).
+- **13 Nov 2026 — SOG-0220 refused: four significant digits at most, the user's rule** (« Ah. pardon. j'avais dit « deux chiffres
+  significatifs » … après la virgule… oui, trois ou 4 chiffres avant la virgule, max 2 après si moins de 3 chiffres avant. au total, max
+  4 chiffres significatifs »; written by Features SOG). `convShown` (exported, pure, sheets.js) replaces the two significant digits of
+  10 Nov: four significant digits at most, no decimal once the integer part has three digits, two decimals at most otherwise —
+  12 407,616 → 12410, 847,36 → 847, 84,736 → 84.74, 8,4736 → 8.47, 0,84736 → 0.85. A typed value stays as typed; the sheet keeps its
+  value until the field is edited (unchanged). M47 (the five examples, red before: no rule), M38 and M25 read the new rule.

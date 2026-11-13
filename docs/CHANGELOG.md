@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft › sheets: a converted value is shown with four significant digits at most** — no decimal from three digits before the point, two at most otherwise (12407.616 → 12410, 84.736 → 84.74) (aircraft DECISIONS; noreg M47, M38, M25; SOG-0220 refused).
 - **Map: the proposed routes are one window, the same beside Fuel and on the Map alone** (SOG-0224, Map half; Fuel half 27dfbf758, schema 2): it shows the row Fuel kept open with its detail (route, distance, level, deviations) and the age of the computation (« Computed at 14:32Z »), « Stale » with « Recompute » after 12 hours; « Choose this route » only on the Map alone; help ×4; D231 (red before).
 - **Map: « Around the flight only » is one rectangle per piece of leg, the same for every layer** (SOG-0246 refused again: « un rectangle de 4500nm de côté, ça donne deux pays de hauteur »): a long leg is cut along its rhumb line (at most 100 NM or a 48th of the route per piece); aerodromes, fixes, airways, MORA, obstacles and cities no longer reach Morocco and Canada on LFOE → KTPA; D230 (red before).
 - **Fuel › route: the proposals in progress survive a change of map, of screen and a reload, with their detail and open row** — route_alts.json schema 2; « Fermer les propositions »; « Calculé à … », « Périmé » at a new AIRAC, a changed base or the next day for a NAT route, with « Recalculer » (fuel INTEGRATION § 3 bis, DECISIONS; noreg F215; SOG-0224).
