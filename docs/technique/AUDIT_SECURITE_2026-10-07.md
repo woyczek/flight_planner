@@ -1030,6 +1030,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 178 | The morning of 13 November: the Missions sheet's summary and the family / subtype lists (67e2e93ac SOG-0291, 7709e99b1 SOG-0292); the V2 registry index attaching an entry under a former number (1db36bcb8, 3dafa9d33, SOG-0289) | acceptable for the display; one defect proved (absorption loses data) |
 | 179 | The V2 registry's “Open in the generator” notifications, the guard delays and “Copy the diagnostic” (7e02b1204, SOG-0290) | acceptable, one note |
 | 180 | The fix of the defect of 178 (eba9923ce) and the search in the content of the missions (c83592c6a, SOG-0288: `modules/missions/search.js`, the index built at the first keystroke) | fix verified, defect closed; search acceptable, two notes |
+| 181 | The V2 registry: the missions kept by the browser, counted and exported in one downloaded archive (025bd7651, SOG-0293 a, b) | acceptable; one defect proved (the header of an exported file) |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2692,6 +2693,31 @@ cached mission files and not triggered by typing, so not a defect. **Notes.** (1
 the rest counted “non lue”) or read the stale copies when idle, if the repository's rate limit ever shows. (2) `readMission` keeps every
 entry of `notes` (the other lists are cut to 40): `join()` builds the whole string before cutting it (112 ms for 200,000 notes); cut the list to
 a few hundred in `missionFields` (`arr(m.notes).slice(0, 200)`). N48 and N49 green.
+
+**181. The missions kept by the browser, exported in one archive (025bd7651, SOG-0293) — acceptable; one defect proved.** *Reads and writes.* The
+page reads `siaMissionSaved:v1`, `siaMissionShared:v1` and the legacy draft from `localStorage` (device-local, written by the editor), and for each
+snapshot sends one `GET` to the launcher's own origin (`data/missions/<folder>/<file>`, each segment through `encodeURIComponent`, `cache:
+'no-store'`) whose answer is only parsed (`jsyaml.load` of js-yaml 4, safe by default) and compared with `canon()`: the result is three
+counters. Nothing is written to the folder, nothing is sent elsewhere; the archive is a `Blob` given to a constant `download` name. *Status
+line.* Numbers and the constant words of `t()` go through one `esc`; the button and its title are constants. *File names.* The name of an entry
+is `instantanes/` or `partagee/` or `brouillon/` plus the identifier with every character outside `[A-Za-z0-9_.-]` turned into `_` (`/` and
+`\` included) plus `.yaml`: the directory prefix is fixed, so no traversal (probed: `../../x` gives `instantanes/.._.._x.yaml`, `..` gives
+`instantanes/...yaml`). K222 green. **Defect (proved).** `dumpYaml(y, id, what)` writes `# Mission ${id} — ${what} — date` with the identifier
+**raw**, and the export passes it the key of the snapshot (and `d.yaml.mission.id` for the shared mission and the draft); the editor's
+`missionId()` only trims and upper-cases (an inner line break stays, as does any text of the mission file's `id`). A mission file whose `id`
+is a quoted scalar with a line break and a second line `airline: x` yields a snapshot key that breaks out of the comment: the exported file
+begins `# Mission T-1` then a line `AIRLINE: X — gardée par ce navigateur …`, and `jsyaml.load` of that file gives a top-level key `AIRLINE`
+that the mission never had (probed on the vendored js-yaml). The same raw header exists in the two older callers (writing into the folder), so
+the fix belongs in `dumpYaml`. The effect is a forged field in a file that the user then drops into the missions folder by hand, or a duplicate-key
+refusal when the line repeats a key of the dump: an integrity point on an input that comes from a mission file (untrusted), not a code
+execution. **Fix and counter-test.** In `dumpYaml`, reduce `id` and `what` to one line (`String(x).replace(/[\r\n\u2028\u2029]+/g, ' ').slice(0, 80)`).
+Counter-test (red now): seed a snapshot whose key is `T-1`, a line break, `airline: injected`; export; read the archive with `ZipStore.read`; the
+first line of the entry is the single comment and `jsyaml.load` of the entry has no `AIRLINE` key. **Notes.** (1) Two identifiers that
+differ only by characters turned into `_` (`A/1` and `A_1`, `a b` and `a_b`) give the same name twice in the archive: extracting it keeps
+one, and the export is the safety net for what exists only in the browser; number the second (`-2`). (2) The name is not bounded: past
+65,535 bytes the 16-bit length field of the ZIP header wraps (a 70,000-character identifier in the local storage): cut `safe()` to 60. (3) A
+folder segment `..` in an index entry (a restored copy of the device) would make the GET leave `data/missions`; it stays a same-origin read whose
+only output is a counter, so only filter `.` and `..` segments when convenient.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
