@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2b7358e",
+  "organisation": "fb705ba",
   "fiches": 298,
   "untranslated": 0,
   "priorities": 243
@@ -454,8 +454,7 @@
      "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
      "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
      "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo",
-     "rank": 16,
-     "test": true
+     "rank": 16
     },
     {
      "id": "SOG-0089",
@@ -465,8 +464,7 @@
      "en": "Route in FPL form with runway and procedures (LFPO/07 OPAL2E OPALE DCT …): read and written",
      "de": "Route im FPL-Format mit Piste und Verfahren (LFPO/07 OPAL2E OPALE DCT …): gelesen und geschrieben",
      "es": "Ruta en formato FPL con pista y procedimientos (LFPO/07 OPAL2E OPALE DCT …): leída y escrita",
-     "rank": 17,
-     "test": true
+     "rank": 17
     },
     {
      "id": "SOG-0129",
@@ -588,8 +586,7 @@
      "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
      "es": "Pista en uso o probable según el METAR de salida y llegada",
      "milestone": "6.0.0-alpha.6",
-     "rank": 237,
-     "test": true
+     "rank": 237
     },
     {
      "id": "SOG-0247",
