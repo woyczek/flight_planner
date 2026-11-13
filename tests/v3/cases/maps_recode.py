@@ -6298,3 +6298,68 @@ def k_formerscan(c):
     c.ok(st['olds'].startswith('2 '), st['olds'], 'the page counts the missions left under an old number (77, 99), without a renumbered mission')
     c.shot('K220_standard_old_numbers_delivered.png')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
+
+
+
+# « Open in generator » of the V2 registry on a bench: one line with its files, the shared mission of the generator a never-stored skeleton (so the page asks before replacing it).
+_GO_SEED_JS = r"""async () => {
+  await window.MissionIndex.ready;
+  await window.MissionIndex.save([{ id: 'T-085', formerId: '85', series: '', number: 85, type: 'AIRLIFT', family: 'T', subtype: '', title: 'Bench', folder: 'T_AIRLIFT/T-085',
+    files: ['missionT-085.yaml'], source: 'dossier', status: 'generated', statusAt: '2026-10-20T10:00:00.000Z', notes: '', flownAt: '', addedAt: '2026-10-20T10:00:00.000Z',
+    teams: [], teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0, origin: '', destination: '', hasYaml: true }], new Date().toISOString());
+  localStorage.setItem('siaMissionShared:v1', JSON.stringify({ yaml: { schema: 'helo-xp-mission', meta: { skeleton: true }, mission: { id: 'T-999', type: 'AIRLIFT' } }, narrative: '', sourceNames: [], rev: 1, at: '2026-10-20T10:00:00.000Z', by: 'bench' }));
+  localStorage.removeItem('missionRegistryLastGo:v1');
+  return true }"""
+_GO_HOOK_JS = """() => { window.__n = []; const f = window.AppFramework.notify; window.AppFramework.notify = (t, ...a) => { window.__n.push(String(t)); return f.call(window.AppFramework, t, ...a) }; return true }"""
+_GO_CLICK_JS = """async () => { const b = document.querySelector('#rgDetail [data-go=editor]'); if (!b) return 'no button'; b.click(); await new Promise(r => setTimeout(r, 900)); return window.__n.slice() }"""
+
+
+@case('K221', 'Opening a mission in the generator from the V2 registry never ends silently: a refused or unavailable confirmation, or a failing one, says why in a floating notification; a one-line « Copy the diagnostic » gives the state (forms only, no identifier, no path) and the last step reached', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0290 (the user: « éditer une mission depuis la V2 ne fait rien »; the ergonomist, 13 Nov): « does nothing » with no message is a defect whatever the cause; the two silent exits of go() (the confirmation refused, no confirmation possible or failing) speak; the diagnostic is read-only and carries no value')
+def k_gosilent(c):
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry", timeout=15000, what='the registry page is loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree
+    c.js(_GO_SEED_JS)
+    def open_detail():
+        c.page.goto(c.base + '/apps/cpco/mission_registry.html?mission=T-085', wait_until='load')
+        c.until("() => !!document.querySelector('#rgDetail [data-go=editor]')", timeout=15000, what='the mission is selected: its detail has « Open in generator »')
+        c.js(_GO_HOOK_JS)
+    # 1. the confirmation is refused (Cancel): a notification says the mission was not opened, and why
+    open_detail()
+    c.js("() => { document.querySelector('#rgDetail [data-go=editor]').click(); return true }")
+    c.until("() => !!document.querySelector('dialog.repo-ask[open]')", timeout=8000, what='the page asks before replacing the shared skeleton')
+    c.js("() => { document.querySelector('dialog.repo-ask button').click(); return true }")      # Cancel
+    c.wait(600)
+    n = c.js("() => window.__n.slice()")
+    c.ok(len(n) == 1 and 'T-085' in n[0] and 'T-999' in n[0], str(n), 'a refused confirmation says that the mission was not opened and which shared mission stayed')
+    # 2. no confirmation is possible (the framework's ask is missing): says so, does not open, does not replace
+    open_detail()
+    c.js("() => { window.AppFramework.ask = undefined; return true }")
+    n = c.js(_GO_CLICK_JS)
+    c.ok(isinstance(n, list) and len(n) == 1 and 'T-085' in n[0], str(n), 'without a possible confirmation: a notification says why nothing opens')
+    c.eq(c.js("() => location.pathname.endsWith('mission_registry.html')"), True, 'the page stays on the registry', what='location')
+    # 3. the confirmation itself fails: the same
+    open_detail()
+    c.js("() => { window.AppFramework.ask = () => { throw new Error('bench failure') }; return true }")
+    n = c.js(_GO_CLICK_JS)
+    c.ok(isinstance(n, list) and len(n) == 1 and 'T-085' in n[0], str(n), 'a failing confirmation is said, not an unhandled error')
+    # 4. the missions folder does not answer (a moved folder, a network drive that is gone: the browser never gives the hand back): the page says so after a few seconds
+    open_detail()
+    c.js("() => { localStorage.removeItem('siaMissionShared:v1'); window.FileAccess.status = () => new Promise(() => {}); return true }")
+    c.js("() => { document.querySelector('#rgDetail [data-go=editor]').click(); return true }")
+    c.until("() => window.__n.length > 0", timeout=14000, what='a folder that does not answer is said, not waited for forever')
+    n = c.js("() => window.__n.slice()")
+    c.ok('T-085' in n[0] and 'ne répond pas' in n[0], str(n), 'the notification says that the missions folder does not answer, and how to choose it again')
+    # 5. the diagnostic: copied, forms and states only
+    c.js("() => { window.__copied = ''; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t) => { window.__copied = t } } }); return true }")
+    c.until("() => !!document.getElementById('rgDiag')", timeout=8000, what='the registry has its « Copy the diagnostic » line')
+    c.js("() => { document.getElementById('rgDiag').click(); return true }")
+    c.until("() => window.__copied.length > 20", timeout=10000, what='the diagnostic is copied')
+    txt = c.js("() => window.__copied")
+    c.ok('T-085' not in txt and 'T-999' not in txt and 'T_AIRLIFT' not in txt, txt[:300], 'the diagnostic carries no mission identifier and no path')
+    c.ok('origine : http://127.0.0.1' in txt and 'mission partagée du générateur : aucune' in txt and 'pas folder' in txt and 'erreur Timeout' in txt, txt[:600], 'it says the origin, the shared mission, the folder and the last step reached with its error')
+    c.shot('K221_standard_diagnostic_delivered.png')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404') and 'bench failure' not in e and 'pas de réponse en 8 s' not in e]      # the bench failures and the folder that does not answer are the case's own

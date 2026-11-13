@@ -269,6 +269,42 @@
     await w.close();
     return true;
   }
+  // ---- « Ouvrir » qui ne finit jamais sans le dire (SOG-0290 : « éditer une mission ne fait rien ») : le dernier pas atteint est gardé (formes seulement, pour le
+  // diagnostic), et une attente qui ne finit pas (dossier déplacé, lecteur réseau absent : queryPermission ou la lecture du dossier ne rendent jamais la main) tombe
+  // en erreur dite au bout de quelques secondes
+  const GO_KEY = 'missionRegistryLastGo:v1';
+  const NO_ANSWER = [
+    'Le dossier des missions ne répond pas (dossier déplacé, lecteur réseau absent ?). Le choisir de nouveau avec « Dossier des missions » ou « Relire le dossier ».',
+    'The missions folder does not answer (folder moved, network drive missing?). Choose it again with “Missions folder” or “Re-read folder”.',
+    'Der Missionsordner antwortet nicht (Ordner verschoben, Netzlaufwerk fehlt?). Mit „Missionsordner“ oder „Ordner neu lesen“ erneut wählen.',
+    'La carpeta de misiones no responde (carpeta movida, unidad de red ausente). Elíjala de nuevo con «Carpeta de misiones» o «Releer la carpeta».'
+  ];
+  /** Rend p, ou une erreur « Timeout » (dite) si elle n'est pas résolue au bout de ms. */
+  const within = (p, ms) => new Promise((ok, no) => {
+    const id = setTimeout(() => no(Object.assign(new Error(t(NO_ANSWER)), {
+      name: 'Timeout'
+    })), ms);
+    Promise.resolve(p).then(v => {
+      clearTimeout(id);
+      ok(v);
+    }, e => {
+      clearTimeout(id);
+      no(e);
+    });
+  });
+  /** Garde le dernier pas de « Ouvrir » (où, pas, nom de l'erreur s'il y en a une) : ni identifiant ni chemin. */
+  function goStep(where, step, err) {
+    try {
+      localStorage.setItem(GO_KEY, JSON.stringify({
+        where,
+        step,
+        error: err ? String(err.name || 'Error').slice(0, 40) : '',
+        at: new Date().toISOString()
+      }));
+    } catch {
+      /* stockage indisponible */
+    }
+  }
   /** Dossier des missions autorisé (FileAccess « __missions »). request (geste de l'utilisateur) : réautorise ou fait
    *  choisir le dossier, erreur explicite en cas d'échec ; sans request : null s'il n'est pas déjà autorisé. */
   async function missionsDir(request = false) {
@@ -290,7 +326,17 @@
       ]));
       return null;
     }
-    const st = await FA.status('__missions');
+    let st;
+    try {
+      st = await within(FA.status('__missions'), 8000);
+    } catch (e) {
+      if (e?.name !== 'Timeout') throw e;
+      console.error('[registre des missions] dossier des missions : pas de réponse en 8 s', {
+        origine: location.origin
+      });
+      if (request) throw e;
+      return null;
+    }
     if (st.handle && st.permission === 'granted') return st.handle;
     if (!request) return null;
     // geste de l'utilisateur : réautoriser le dossier mémorisé ; à défaut (aucun dossier, autorisation refusée,
@@ -1356,6 +1402,7 @@
         ${oldNumbers() ? `<p class="rg-small" id="rgOldNumbers">${esc(t(['{n} mission(s) sous un ancien numéro, sans mission renumérotée', '{n} mission(s) under an old number, with no renumbered mission', '{n} Mission(en) unter einer alten Nummer, ohne neu nummerierte Mission', '{n} misión(es) bajo un número antiguo, sin misión renumerada'], { n: oldNumbers() }))}</p>` : ''}
         ${keptFormer() ? `<p class="rg-small" id="rgFormer">${esc(t(['{n} ancienne(s) entrée(s) gardée(s), plus complète(s) que leur mission : numéro d’avant la renumérotation, cachée(s) de la liste, jamais supprimée(s)', '{n} old entry(ies) kept, more complete than their mission: number from before the renumbering, hidden from the list, never deleted', '{n} alte Einträge behalten, vollständiger als ihre Mission: Nummer von vor der Neunummerierung, in der Liste ausgeblendet, nie gelöscht', '{n} entrada(s) antigua(s) conservada(s), más completa(s) que su misión: número de antes de la renumeración, oculta(s) en la lista, nunca eliminada(s)'], { n: keptFormer() }))}</p>` : ''}
         <div id="rgMsg">${msg}</div>
+        <p class="rg-small"><a href="#" id="rgDiag" title="${esc(t(['Copie au presse-papiers l’état de la page (formes seulement : aucune valeur, aucun identifiant, aucun chemin) — à joindre à un signalement', 'Copies the page’s state to the clipboard (shapes only: no value, no identifier, no path) — to attach to a report', 'Kopiert den Zustand der Seite in die Zwischenablage (nur Formen: kein Wert, keine Kennung, kein Pfad) — einer Meldung beizufügen', 'Copia el estado de la página al portapapeles (solo formas: ningún valor, identificador ni ruta) — para adjuntar a un informe']))}">${esc(t(['Copier le diagnostic', 'Copy the diagnostic', 'Diagnose kopieren', 'Copiar el diagnóstico']))}</a></p>
       </section>
       <section data-block-id="choose" data-icon="search" data-subtitle="${esc(t(['Type, sous-type, rendez-vous, équipes, ravitaillement, théâtre, statut — puis tirer au sort ou ouvrir', 'Type, subtype, rendezvous, teams, refuelling, theatre, status — then draw or open']))}">
         <h2>${esc(t(['Choisir une mission', 'Choose a mission', 'Mission wählen', 'Elegir una misión']))}</h2>
@@ -1723,6 +1770,10 @@
       ], {
         m: `${m.id} ${m.title}`
       })
+    });
+    host.querySelector('#rgDiag')?.addEventListener('click', e => {
+      e.preventDefault();
+      copyDiagnostic(e.currentTarget);
     });
     const draw = host.querySelector('#rgDraw');
     if (draw) {
@@ -2194,23 +2245,36 @@
     }
   }
   /** Mission partagée qui serait perdue en ouvrant m : squelette du générateur jamais rangé (meta.skeleton sans
-   *  historique), d'une autre opération ; confirmation demandée. Vrai : on peut continuer. */
+   *  historique), d'une autre opération ; confirmation demandée. { ok: true } : on peut continuer ; sinon { ok: false, step, s } (le pas et le squelette gardé). */
   async function keepSkeleton(m) {
     const cur = window.SiaMission?.load?.(),
       y = cur?.yaml,
       base = id => String(id || '').toUpperCase().replace(/(\d)[A-Z]$/, '$1');
-    if (!y?.meta?.skeleton || y.meta.history?.length || base(y.mission?.id) === base(m.id)) return true;
-    return !!await window.AppFramework?.ask?.(t([
+    if (!y?.meta?.skeleton || y.meta.history?.length || base(y.mission?.id) === base(m.id)) return {
+      ok: true
+    };
+    const s = y.mission?.id || '—';
+    if (typeof window.AppFramework?.ask !== 'function') return {
+      ok: false,
+      step: 'ask-unavailable',
+      s
+    };
+    const yes = !!await window.AppFramework.ask(t([
       'La mission partagée {s} (squelette, jamais rangée) sera remplacée par {m} dans le générateur et le studio. Continuer ? (Sinon, rangez d’abord le squelette : « Enregistrer dans le dossier » du générateur.)',
       'The shared mission {s} (skeleton, never stored) will be replaced by {m} in the generator and the studio. Continue? (Otherwise store the skeleton first: “Save to the folder” in the generator.)',
       'Die gemeinsame Mission {s} (Gerüst, nie abgelegt) wird im Generator und im Studio durch {m} ersetzt. Fortfahren? (Sonst zuerst das Gerüst ablegen: „Im Ordner speichern“ im Generator.)',
       'La misión compartida {s} (esqueleto, nunca guardado) será sustituida por {m} en el generador y el estudio. ¿Continuar? (Si no, guarde primero el esqueleto: «Guardar en la carpeta» del generador.)'
     ], {
-      s: y.mission?.id || '—',
+      s,
       m: m.id
     }), {
       danger: true
     });
+    return {
+      ok: yes,
+      step: 'skeleton-refused',
+      s
+    };
   }
   /** Supprime une mission : sans fichier (commande en attente), retirée du registre ; rangée, son dossier
    *  (data/missions/<famille>/<identifiant>/ : fichiers, cartes, versions, textes reçus) supprimé, puis l'entrée. */
@@ -2267,11 +2331,103 @@
       })), 'err');
     }
   }
+  // ---- diagnostic de la page (SOG-0290) : formes et états seulement — aucune valeur, aucun identifiant de mission, aucun chemin
+  /** Texte du diagnostic : origine, mode GitHub, dossier des missions (poignée, autorisation), mission partagée du générateur (squelette ou non),
+   *  brouillons, dernier pas de « Ouvrir ». */
+  async function diagnosticText() {
+    let folder = 'module absent';
+    const FA = window.FileAccess;
+    if (FA) {
+      try {
+        const st = await within(FA.status('__missions'), 6000);
+        folder = `poignée ${st.handle ? 'oui' : 'non'}, autorisation ${st.permission || 'inconnue'}`;
+      } catch (e) {
+        folder = e?.name === 'Timeout' ? 'ne répond pas (6 s)' : `erreur ${String(e?.name || 'Error').slice(0, 40)}`;
+      }
+    }
+    let shared = 'aucune';
+    try {
+      const cur = window.SiaMission?.load?.();
+      if (cur?.yaml) shared = `oui, ${cur.yaml.meta?.skeleton ? 'squelette' : 'pas un squelette'}${cur.yaml.meta ? '' : ', sans meta'}`;
+    } catch {
+      shared = 'illisible';
+    }
+    const keys = Object.keys(localStorage),
+      go = readJson(GO_KEY, null);
+    return ['Diagnostic du registre des missions (V2) — formes et états, aucune valeur',
+      `origine : ${location.origin}`,
+      `contexte sécurisé : ${window.isSecureContext ? 'oui' : 'non'} · sélecteur de dossier : ${window.showDirectoryPicker ? 'oui' : 'non'}`,
+      `mode GitHub : ${window.GitHubData?.on?.() ? 'oui' : 'non'}`,
+      `dossier des missions : ${folder}`,
+      `mission partagée du générateur : ${shared}`,
+      `brouillon du générateur : ${keys.some(k => /^missionGeneratorDraft/.test(k)) ? 'oui' : 'non'} · brouillons de l'éditeur : ${keys.filter(k => /^missionCoreDraft:/.test(k)).length}`,
+      `index : ${reg.missions.length} entrée(s)`,
+      `dernier « Ouvrir » : ${go ? `${go.where} — pas ${go.step}${go.error ? ` — erreur ${go.error}` : ''} — il y a ${Math.max(0, Math.round((Date.now() - Date.parse(go.at)) / 1000))} s` : 'aucun'}`
+    ].join('\n');
+  }
+  /** « Copier le diagnostic » : au presse-papiers ; sans presse-papiers, le texte est montré, sélectionné. */
+  async function copyDiagnostic(link) {
+    const text = await diagnosticText();
+    try {
+      await navigator.clipboard.writeText(text);
+      window.AppFramework?.notify?.(t(['Diagnostic copié.', 'Diagnostic copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.']), 'ok');
+    } catch {
+      let box = document.getElementById('rgDiagText');
+      if (!box) {
+        box = document.createElement('textarea');
+        box.id = 'rgDiagText';
+        box.readOnly = true;
+        box.rows = 9;
+        box.style.cssText = 'width:100%;font:12px ui-monospace,Consolas,monospace';
+        link.after(box);
+      }
+      box.value = text;
+      box.select();
+      window.AppFramework?.notify?.(t(['Copie impossible : le diagnostic est sélectionné, à copier à la main.',
+        'Copy not possible: the diagnostic is selected, copy it by hand.',
+        'Kopieren nicht möglich: Die Diagnose ist markiert, von Hand kopieren.',
+        'No se pudo copiar: el diagnóstico está seleccionado, cópielo a mano.'
+      ]), 'warn');
+    }
+  }
   /** Ouvre la mission : générateur / studio (mission partagée), CR (passerelle ?from=sia), prompt de commande. */
   async function go(m, where) {
     const out = document.getElementById('rgGoMsg');
-    if (['editor', 'studio', 'duplicate'].includes(where) && !await keepSkeleton(m)) return;
+    /** Dit pourquoi rien ne s'ouvre : une notification flottante (à défaut, la ligne sous la fiche). */
+    const say = (text, kind = 'err') => window.AppFramework?.notify ? window.AppFramework.notify(text, kind) : out && (out.textContent =
+      text);
+    let last = 'start';
+    const at = step => {
+      last = step;
+      goStep(where, step);
+    };
+    at('start');
     try {
+      if (['editor', 'studio', 'duplicate'].includes(where)) {
+        at('skeleton');
+        const k = await keepSkeleton(m);
+        if (!k.ok) {
+          at(k.step);
+          const none = k.step === 'ask-unavailable';
+          say(t([none ?
+            'Mission {m} non ouverte : la confirmation de remplacement du squelette {s} n’a pas pu s’afficher (page incomplète : la recharger).' :
+            'Mission {m} non ouverte : le squelette {s} du générateur (jamais rangé) n’a pas été remplacé. Le ranger d’abord (« Enregistrer dans le dossier » du générateur), ou confirmer le remplacement.',
+            none ?
+            'Mission {m} not opened: the confirmation to replace skeleton {s} could not be shown (incomplete page: reload it).' :
+            'Mission {m} not opened: the generator’s skeleton {s} (never stored) was not replaced. Store it first (“Save to the folder” in the generator), or confirm the replacement.',
+            none ?
+            'Mission {m} nicht geöffnet: Die Bestätigung zum Ersetzen des Gerüsts {s} konnte nicht angezeigt werden (unvollständige Seite: neu laden).' :
+            'Mission {m} nicht geöffnet: Das Gerüst {s} des Generators (nie abgelegt) wurde nicht ersetzt. Zuerst ablegen („Im Ordner speichern“ im Generator) oder das Ersetzen bestätigen.',
+            none ?
+            'Misión {m} no abierta: no se pudo mostrar la confirmación para sustituir el esqueleto {s} (página incompleta: recargarla).' :
+            'Misión {m} no abierta: el esqueleto {s} del generador (nunca guardado) no se sustituyó. Guárdelo primero («Guardar en la carpeta» del generador) o confirme la sustitución.'
+          ], {
+            m: m.id,
+            s: k.s
+          }), 'warn');
+          return;
+        }
+      }
       if (where === 'prompt') {
         await sendPrompt(m.request);
         return;
@@ -2290,15 +2446,18 @@
       } catch {
         /* stockage indisponible */
       }
+      at('folder');
       const dir = await missionsDir(true);
       if (!dir) throw new Error(t(NO_DIR));
-      const files = await missionFiles(dir, m);
+      at('files');
+      const files = await within(missionFiles(dir, m), 20000);
       if (!files.length) throw new Error(t([
         'fichiers de la mission introuvables dans son dossier : « Relire le dossier », puis réessayer',
         'mission files not found in its folder: “Re-read folder”, then try again',
         'Dateien der Mission nicht in ihrem Ordner gefunden: „Ordner neu lesen“ und es erneut versuchen',
         'archivos de la misión no encontrados en su carpeta: «Releer la carpeta» y volver a intentarlo'
       ]));
+      at('opening');
       if (where === 'assign') {
         // affectation aux pilotes (shared/assign_dialog.js) : yaml de la mission et cartes rangées (cartes/)
         const maps = [];
@@ -2353,13 +2512,12 @@
       location.href = new URL(where === 'studio' ? 'apps/cpco/map_parser.html' : 'apps/cpco/mission_editor.html', window.RepositoryNav
         .root).href;
     } catch (e) {
-      const text = explain(e, t(['Mission {m} non ouverte', 'Mission {m} not opened', 'Mission {m} nicht geöffnet',
+      goStep(where, last, e);
+      say(explain(e, t(['Mission {m} non ouverte', 'Mission {m} not opened', 'Mission {m} nicht geöffnet',
         'Misión {m} no abierta'
       ], {
         m: m.id
-      }));
-      if (window.AppFramework?.notify) window.AppFramework.notify(text, 'err');
-      else if (out) out.textContent = text;
+      })));
     }
   }
 
