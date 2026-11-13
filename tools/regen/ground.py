@@ -127,13 +127,23 @@ def check(a):
     return {'icao': icao, 'dry': a.get('dry') is True}
 
 
-def _name(tags):
-    """Le nom affiché : `ref` (« A », « 12 ») puis `name`, sans signe de commande, espaces réduits, 16 signes au plus ; '' sans nom."""
+# point d'arrêt (SOG-0297) : « NO ENTRY » n'est pas un nom, et le libellé d'un nom OpenStreetMap (« Point d'arrêt A ») s'ôte devant le repère (« A »)
+NO_ENTRY = re.compile(r'no[\s_-]*entry', re.I)
+HOLD_LABEL = re.compile(r"(?:point\s+d['’]\s*(?:arr[êée]t|attente)|holding\s+(?:point|position)|hold(?:ing)?\s+point)\s*[:\-]?\s*", re.I)
+
+
+def _name(tags, hold=False):
+    """Le nom affiché : `ref` (« A », « 12 ») puis `name`, sans signe de commande, espaces réduits, 16 signes au plus ; '' sans nom. Pour un point d'arrêt (`hold`) : « NO ENTRY » n'est pas
+    un nom et le libellé « Point d'arrêt » / « Point d'attente » / « Holding point » / « Holding position » devant le repère est ôté (un libellé seul ne donne aucun nom) : le repère
+    (« A », « W22 ») est ce qui se lit sur la carte."""
     for k in ('ref', 'name'):
         v = tags.get(k) if isinstance(tags, dict) else None
         if isinstance(v, str):
             v = re.sub(r'[\x00-\x1f\x7f-\x9f]', ' ', v)
-            v = ' '.join(v.split())[:MAX_NAME].strip()
+            v = ' '.join(v.split())
+            if hold:
+                v = '' if NO_ENTRY.fullmatch(v) else HOLD_LABEL.sub('', v, count=1).strip()
+            v = v[:MAX_NAME].strip()
             if v:
                 return v
     return ''
@@ -179,7 +189,7 @@ def build(icao, response, cycle, warnings=None):
         if kind is None or ident in seen:
             skipped += 1
             continue
-        item = {'id': ident, 'kind': kind, 'name': _name(tags)}
+        item = {'id': ident, 'kind': kind, 'name': _name(tags, kind == 'hold')}
         if kind == 'park' and aeroway == 'gate':
             item['gate'] = True                            # une porte (pas un poste de stationnement) : le poste 12 d'une aire n'est pas la porte A12
         if el['type'] == 'node':

@@ -8960,3 +8960,19 @@ def k227(c):
          'a frequency out of the band is \'\', a localizer alone is a LOC without axis, a category, a glide path or a channel that does not fit are dropped', what='checked')
     c.eq([[(x['rwy'], x['id']) for x in r['ga']], r['none'], r['unknown'], r['bad']], [[('05', 'OTH')], [], [], [[], [], [], []]],
          'another aerodrome has its own list; an aerodrome without aid, an unknown one and the bad codes give []', what='others')
+
+
+@case('K228', 'Ground layer: a holding point is named by its sign only (SOG-0297): « NO ENTRY » gives no name, the label of an OpenStreetMap name such as « Point d\'arrêt A » is taken off and the sign « A » kept; a sign, a taxiway name and an unnamed point are untouched', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0297, after the user\'s trial: « K et w22 illisibles. ce sont des points d\'arrêt, cartouche rouge »): the name of a holding point is its `ref` (LFPO: C, K, N, S; LFBD: A to G, L1, M1), else its `name`; the base had « NO ENTRY » on 8 holding points of LFPO and « Point d\'arrêt A » on one of LFBD (the label of the sign, not the sign). Filtered at the source: « NO ENTRY » (any case) is not a name; a label « point d\'arrêt », « point d\'attente », « holding point » or « holding position » in front of a sign is taken off; a label alone gives no name. Taxiways, stands and aprons keep their names; « W28@02/20 » (a sign with its runway) is kept as it is.')
+def k228(c):
+    RJ, G = _ground_job()
+    node = lambda i, **t: {'type': 'node', 'id': i, 'lat': 49.0 + i / 1e4, 'lon': 2.4, 'tags': {'aeroway': 'holding_position', **t}}
+    resp = {'elements': [node(1, ref='K'), node(2, ref='NO ENTRY'), node(3, name='no entry'), node(4, name="Point d'arrêt A"), node(5, name='Point d\u2019attente B'), node(6, name='Holding point C'), node(7, name='holding position D'),
+                         node(8, name="Point d'arrêt"), node(9), node(10, ref='W28@02/20'), node(11, ref='A', name="Point d'arrêt A"), node(12, name='NO ENTRY 2'),
+                         {'type': 'way', 'id': 20, 'tags': {'aeroway': 'taxiway', 'ref': 'NO ENTRY'}, 'geometry': [{'lat': 49.0, 'lon': 2.4}, {'lat': 49.001, 'lon': 2.4}]},
+                         {'type': 'way', 'id': 21, 'tags': {'aeroway': 'taxiway', 'name': "Point d'arrêt A"}, 'geometry': [{'lat': 49.0, 'lon': 2.4}, {'lat': 49.001, 'lon': 2.4}]}]}
+    out = G.build('LFXX', resp, '2026-11-13')
+    names = {x['id']: x['name'] for x in out['items']}
+    c.eq([names[f'n{i}'] for i in range(1, 13)], ['K', '', '', 'A', 'B', 'C', 'D', '', '', 'W28@02/20', 'A', 'NO ENTRY 2'],
+         'the twelve holding points: the sign kept, « NO ENTRY » (either case) and a label alone give no name, the label taken off before a sign, a ref wins over the name, « W28@02/20 » and « NO ENTRY 2 » untouched', what='holds')
+    c.eq((names['w20'], names['w21']), ('NO ENTRY', "Point d'arrêt A"), 'a taxiway keeps whatever name it has (the filter is for holding points)', what='twy')
