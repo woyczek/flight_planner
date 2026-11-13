@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ed6c7e8",
+  "organisation": "6bbc76d",
   "fiches": 334,
   "untranslated": 0,
   "priorities": 310
@@ -4807,11 +4807,12 @@
     {
      "id": "SOG-0324",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Réglages › État : un geste pour repartir de zéro sur cet appareil ; le clignotement vert-marron-vert à la reconstruction",
      "en": "Settings › Status: one gesture to start again from scratch on this device; the green-brown-green flicker during a rebuild",
      "de": "Einstellungen › Zustand: eine Geste, um auf diesem Gerät neu anzufangen; das Grün-Braun-Grün-Flackern beim Neuaufbau",
-     "es": "Ajustes › Estado: un gesto para empezar de cero en este dispositivo; el parpadeo verde-marrón-verde al reconstruir"
+     "es": "Ajustes › Estado: un gesto para empezar de cero en este dispositivo; el parpadeo verde-marrón-verde al reconstruir",
+     "test": true
     }
    ]
   },
