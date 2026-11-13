@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recherche globale : l'entrée (maquette)</title>
+<style>
+:root {
+  --ink: #1b1f24;
+  --muted: #59636e;
+  --line: #d0d7de;
+  --soft: #f6f8fa;
+  --ok: #1a7f37;
+  --warn: #7d4e00;
+  --warn-bg: #fff4d1;
+  --warn-line: #d4a72c;
+  --accent: #0b5cad;
+  --accent-bg: #eaf2fb
+}
+* {
+  box-sizing: border-box
+}
+html {
+  -webkit-text-size-adjust: 100%
+}
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+}
+button {
+  font: inherit;
+  color: inherit
+}
+.mock {
+  background: var(--soft);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center
+}
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden
+}
+.seg button {
+  font-size: 13px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  background: #fff;
+  cursor: pointer
+}
+.seg button[aria-pressed="true"] {
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600
+}
+/* la barre du haut du cadre : le titre de l'application, la loupe, l'aide, les réglages */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #f3f5f7
+}
+.head b {
+  flex: 1;
+  font-size: 20px
+}
+.ico {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer
+}
+.ico[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-bg)
+}
+.ico svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round
+}
+.stage {
+  display: grid;
+  min-height: 560px
+}
+.stage>* {
+  grid-area: 1 / 1
+}
+.back {
+  padding: 24px 16px;
+  color: var(--muted);
+  background: repeating-linear-gradient(45deg, #eef2f5, #eef2f5 12px, #e6ebef 12px, #e6ebef 24px);
+  min-height: 560px;
+  font-size: 14px
+}
+/* le calque de recherche : sous la barre du haut, plein écran au téléphone, un panneau ancré à la loupe sur grand écran */
+.layer {
+  align-self: start;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 560px
+}
+.bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line)
+}
+.field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 0 10px;
+  min-height: 48px
+}
+.field svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round
+}
+.field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  font-size: 16px;
+  background: transparent;
+  min-height: 44px
+}
+.close {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer
+}
+.keys {
+  display: none;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 16px 0
+}
+.res {
+  padding: 4px 16px 24px
+}
+.group h2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  margin: 16px 0 2px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line)
+}
+.group h2 button {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 14px;
+  text-transform: none;
+  letter-spacing: 0;
+  min-height: 44px;
+  padding: 0 4px;
+  cursor: pointer
+}
+.group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0
+}
+.group li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line)
+}
+.group li:last-child {
+  border-bottom: 0
+}
+.name {
+  font-weight: 600
+}
+.name mark {
+  background: #fff1b8;
+  color: inherit;
+  border-radius: 2px
+}
+.what {
+  grid-column: 1;
+  font-size: 14px;
+  color: var(--muted);
+  overflow-wrap: anywhere
+}
+.go {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap
+}
+.msg {
+  padding: 28px 4px;
+  text-align: left
+}
+.msg p {
+  margin: 0 0 12px;
+  max-width: 34em
+}
+.msg .muted {
+  color: var(--muted);
+  font-size: 14px
+}
+.msg button.one {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer
+}
+.warn {
+  border: 1px solid var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-radius: 6px;
+  padding: 12px 14px
+}
+.recent {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0
+}
+.recent li button {
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: baseline
+}
+.recent small {
+  color: var(--muted)
+}
+@media (min-width: 900px) {
+  .layer {
+    justify-self: end;
+    margin: 8px 16px;
+    width: 640px;
+    min-height: 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .18)
+  }
+  .keys {
+    display: block
+  }
+  .stage {
+    min-height: 640px
+  }
+}
+</style>
+</head>
+<body>
+<div class="mock">
+  <b>Maquette</b>
+  <span>État :</span>
+  <span class="seg" id="st">
+    <button type="button" data-v="empty" aria-pressed="true">Vide</button>
+    <button type="button" data-v="airway" aria-pressed="false">« un858 » (une voie)</button>
+    <button type="button" data-v="mixed" aria-pressed="false">« lfrs » (plusieurs sortes)</button>
+    <button type="button" data-v="none" aria-pressed="false">Rien trouvé</button>
+    <button type="button" data-v="zone" aria-pressed="false">Hors des zones installées</button>
+  </span>
+</div>
+
+<div class="head"><b>Pilote</b>
+  <button class="ico" type="button" aria-pressed="true" aria-label="Rechercher" title="Rechercher (/ ou Ctrl+K)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+  <button class="ico" type="button" aria-label="Aide"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/></svg></button>
+  <button class="ico" type="button" aria-label="Réglages"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></button>
+</div>
+
+<div class="stage">
+  <div class="back">La page sous la recherche (ici la Carte). Le résultat « Voir sur la carte » la recentre sans qu'on la quitte ; depuis un autre écran, il ouvre la Carte centrée, l'objet surligné.</div>
+  <section class="layer" aria-label="Recherche">
+    <div class="bar">
+      <label class="field"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Terrain, voie, point, espace, mission, aéronef…" aria-label="Rechercher" readonly></label>
+      <button class="close" type="button">Fermer</button>
+    </div>
+    <div class="keys">« / » ou Ctrl+K ouvre la recherche · ↑ ↓ choisissent · Entrée fait le geste du résultat · Échap ferme</div>
+    <div class="res" id="res" aria-live="polite"></div>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+const hl = (s, q) => {
+  const i = s.toLowerCase().indexOf(q.toLowerCase());
+  return q && i >= 0 ? `${esc(s.slice(0, i))}<mark>${esc(s.slice(i, i + q.length))}</mark>${esc(s.slice(i + q.length))}` : esc(s);
+};
+const row = (name, what, verb, q) => `<li><span class="name">${hl(name, q)}</span><span class="what">${esc(what)}</span><button class="go" type="button">${esc(verb)}</button></li>`;
+const group = (title, rows, more) => `<section class="group"><h2><span>${esc(title)}</span>${more ? `<button type="button">Tout voir (${more})</button>` : ''}</h2><ul>${rows.join('')}</ul></section>`;
+const STATES = {
+  empty: {
+    q: '',
+    html: () => `<div class="msg"><p>Cherchez un terrain (<b>LFRS</b>), une voie (<b>UN858</b>), un point, un espace, une procédure, une mission ou un aéronef (<b>F-GABC</b>). À partir de deux signes ; l'identifiant exact vient d'abord.</p>
+      <p class="muted">Les dernières recherches de cet appareil (un toucher la relance) :</p>
+      <ul class="recent"><li><button type="button"><b>UN858</b><small>voie</small></button></li><li><button type="button"><b>LFRS</b><small>terrain</small></button></li><li><button type="button"><b>ESSB</b><small>terrain</small></button></li></ul></div>`
+  },
+  airway: {
+    q: 'un858',
+    html: q => group('Voies aériennes', [row('UN858', 'voie supérieure, 14 tronçons, France · Espagne', 'Voir sur la carte', q)])
+  },
+  mixed: {
+    q: 'lfrs',
+    html: q => group('Terrains', [row('LFRS — Nantes Atlantique', 'aérodrome, France, 27 m, pistes 03/21 · 12/30', 'Voir sur la carte',
+        q)]) +
+      group('Points et balises', [row('LFRS', 'point de report (VFR), 4,1 NM de LFRS', 'Voir sur la carte', q), row('NTS',
+        'VOR-DME 113,35, Nantes, rattaché à LFRS', 'Voir sur la carte', q)]) +
+      group('Procédures', ['ABUXA 1B', 'LUCEG 2A', 'NTS 1E', 'ARDIL 2B', 'KOLUV 1D'].map(n => row(`${n} (LFRS)`,
+        'départ normalisé (SID), piste 03', 'Voir sur la carte', q)), 11) +
+      group('Missions', [row('M-021 — Hélitreuillage Quiberon', 'mission, départ LFRS, arrivée LFEQ', 'Ouvrir la mission', q)]) +
+      group('Aéronefs', [row('F-GLFR — Cessna 172S', 'basé à LFRS, disponible', 'Ouvrir la fiche', q)])
+  },
+  none: {
+    q: 'zzqx',
+    html: q => `<div class="msg"><p><b>Rien pour « ${esc(q)} ».</b></p><p class="muted">Essayez le début d'un nom (Nantes) ou l'identifiant : LFRS, UN858, F-GABC.</p><button class="one" type="button">Effacer</button></div>`
+  },
+  zone: {
+    q: 'kjfk',
+    html: q => `<div class="msg"><p class="warn"><b>KJFK n'est pas dans vos zones installées.</b><br>Installées : France, Espagne, Royaume-Uni. La recherche ne lit que la base de ce poste : rien ne sort.</p><button class="one" type="button">Voir les zones installées</button></div>`
+  }
+};
+
+function paint(v) {
+  const s = STATES[v];
+  $('q').value = s.q;
+  $('res').innerHTML = s.html(s.q);
+  document.querySelectorAll('#st button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+}
+document.querySelectorAll('#st button').forEach(b => b.onclick = () => paint(b.dataset.v));
+paint('empty');
+</script>
+</body>
+</html>
