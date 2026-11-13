@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "45097ae",
-  "fiches": 298,
+  "organisation": "7eb4976",
+  "fiches": 307,
   "untranslated": 0,
   "priorities": 243
  },
@@ -295,6 +295,27 @@
      "de": "Zu entscheidende Punkte wie die Abnahme dargestellt: Auswahl und Freitext, auf der Abnahmeseite",
      "es": "Los puntos por decidir presentados como la aceptación: opción múltiple y campo libre, en la página de aceptación",
      "rank": 147
+    }
+   ]
+  },
+  {
+   "id": "pilote-aide-recette",
+   "app": "pilote",
+   "label": {
+    "fr": "Aide ; recette",
+    "en": "Aide ; recette",
+    "de": "Aide ; recette",
+    "es": "Aide ; recette"
+   },
+   "items": [
+    {
+     "id": "SOG-0303",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Recette : le champ du commentaire est trop petit",
+     "en": "Acceptance sheet: the comment field is too small",
+     "de": "Abnahmeblatt: das Kommentarfeld ist zu klein",
+     "es": "Hoja de pruebas: el campo de comentario es demasiado pequeño"
     }
    ]
   },
@@ -595,8 +616,7 @@
      "fr": "Carburant, étape Départ : le pli des aides radio se referme dès qu'on l'ouvre",
      "en": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
      "de": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
-     "es": "Fuel, Departure step: the radio aids fold closes as soon as it is opened",
-     "test": true
+     "es": "Fuel, Departure step: the radio aids fold closes as soon as it is opened"
     }
    ]
   },
@@ -673,6 +693,27 @@
      "de": "Automatische Routenberechnung: zwischen zwei fernen Plätzen der Orthodrome folgen",
      "es": "Cálculo automático de ruta: entre dos aeródromos lejanos, seguir la ortodrómica",
      "rank": 158
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-pistes-carte",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; pistes ; Carte",
+    "en": "Carburant ; pistes ; Carte",
+    "de": "Carburant ; pistes ; Carte",
+    "es": "Carburant ; pistes ; Carte"
+   },
+   "items": [
+    {
+     "id": "SOG-0306",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "RÉGRESSION : choix de la piste d'arrivée par « Sur la carte » — le vent de face et de travers a disparu",
+     "en": "REGRESSION: arrival runway choice via « On the map » — headwind and crosswind are gone",
+     "de": "REGRESSION: Wahl der Landebahn über « Auf der Karte » — Gegen- und Seitenwind fehlen",
+     "es": "REGRESIÓN: elección de pista de llegada por « En el mapa » — falta el viento de cara y de través"
     }
    ]
   },
@@ -1024,8 +1065,7 @@
      "fr": "Carte : la coche « autour du plan de vol uniquement » est sans effet (toujours appliquée)",
      "en": "Map: the box “around the flight plan only” has no effect",
      "de": "Map: the box “around the flight plan only” has no effect",
-     "es": "Map: the box “around the flight plan only” has no effect",
-     "test": true
+     "es": "Map: the box “around the flight plan only” has no effect"
     },
     {
      "id": "SOG-0252",
@@ -1034,8 +1074,7 @@
      "fr": "Taxiways : illisibles — fusionner les points identiques au même endroit, corriger le niveau de zoom (« à traiter pour ce cycle »)",
      "en": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
      "de": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
-     "es": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level",
-     "test": true
+     "es": "Taxiways: unreadable — merge identical names at the same place, fix the zoom level"
     },
     {
      "id": "SOG-0253",
@@ -1053,8 +1092,16 @@
      "fr": "Taxiways : la voie se surligne au survol et se place dans la liste du volet du bas",
      "en": "Taxiways: the way highlights on hover and is located in the bottom list",
      "de": "Taxiways: the way highlights on hover and is located in the bottom list",
-     "es": "Taxiways: the way highlights on hover and is located in the bottom list",
-     "test": true
+     "es": "Taxiways: the way highlights on hover and is located in the bottom list"
+    },
+    {
+     "id": "SOG-0307",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : elle clignote pendant qu'on réduit le volet des espaces aériens",
+     "en": "Map: it flickers while the airspace panel is being reduced",
+     "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
+     "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos"
     }
    ]
   },
@@ -1135,6 +1182,90 @@
    ]
   },
   {
+   "id": "pilote-carte-aides-radio",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; aides radio",
+    "en": "Carte ; aides radio",
+    "de": "Carte ; aides radio",
+    "es": "Carte ; aides radio"
+   },
+   "items": [
+    {
+     "id": "SOG-0302",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : les flèches de la rose d'un VOR doivent réduire avec le zoom, comme ses chiffres",
+     "en": "Map: the arrows of a VOR rose must shrink with the zoom, like its digits",
+     "de": "Karte: die Pfeile der VOR-Rose müssen mit dem Zoom kleiner werden, wie die Ziffern",
+     "es": "Mapa: las flechas de la rosa de un VOR deben reducirse con el zoom, como sus cifras"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-designs",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; designs",
+    "en": "Carte ; designs",
+    "de": "Carte ; designs",
+    "es": "Carte ; designs"
+   },
+   "items": [
+    {
+     "id": "SOG-0299",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte de préparation d'une mission, design « swiss » : défaut de transparence",
+     "en": "Mission preparation map, « swiss » design: transparency defect",
+     "de": "Karte der Missionsvorbereitung, Design « swiss »: Transparenzfehler",
+     "es": "Mapa de preparación de misión, diseño « swiss »: defecto de transparencia"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-profil",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; profil",
+    "en": "Carte ; profil",
+    "de": "Carte ; profil",
+    "es": "Carte ; profil"
+   },
+   "items": [
+    {
+     "id": "SOG-0305",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Performance : sur LFPO → KEGE le profil de vol est très lent (2 images par seconde)",
+     "en": "Performance: on LFPO → KEGE the flight profile is very slow (2 frames per second)",
+     "de": "Leistung: auf LFPO → KEGE ist das Flugprofil sehr langsam (2 Bilder pro Sekunde)",
+     "es": "Rendimiento: en LFPO → KEGE el perfil de vuelo es muy lento (2 imágenes por segundo)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-profils-de-carte",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; profils de carte",
+    "en": "Carte ; profils de carte",
+    "de": "Carte ; profils de carte",
+    "es": "Carte ; profils de carte"
+   },
+   "items": [
+    {
+     "id": "SOG-0300",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Vue topographique : de vraies courbes de niveau, pas d'hippodromes ; les hippodromes et le RTBA dans une vue dédiée",
+     "en": "Topographic view: real contour lines, no holding patterns; holding patterns and RTBA in a dedicated view",
+     "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",
+     "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte"
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-sol",
    "app": "pilote",
    "label": {
@@ -1152,6 +1283,27 @@
      "en": "Airport map: taxiway names as soon as taxiways show, readable holding points, and where the taxiway / stand search went",
      "de": "Flugplatzkarte: Rollwegnamen sobald Rollwege erscheinen, lesbare Haltepunkte, und wo die Rollweg- / Standplatzsuche ist",
      "es": "Mapa del aeródromo: nombres de calles de rodaje en cuanto aparecen, puntos de espera legibles, y dónde está la búsqueda de calle / puesto"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-vol",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; vol",
+    "en": "Carte ; vol",
+    "de": "Carte ; vol",
+    "es": "Carte ; vol"
+   },
+   "items": [
+    {
+     "id": "SOG-0304",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carte pendant le vol : une fenêtre de suivi avec les informations cruciales",
+     "en": "Map during the flight: a follow-up window with the crucial information",
+     "de": "Karte im Flug: ein Verfolgungsfenster mit den entscheidenden Informationen",
+     "es": "Mapa durante el vuelo: una ventana de seguimiento con la información crucial"
     }
    ]
   },
@@ -1279,8 +1431,7 @@
      "fr": "Designs Swiss et Metro : l'avion du titre en rouge, la couleur de contraste prise pour la couleur d'accent",
      "en": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
      "de": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
-     "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
-     "test": true
+     "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour"
     }
    ]
   },
@@ -3168,6 +3319,27 @@
      "es": "Un gesto que necesita el lanzador lo dice cuando el lanzador falta («Calcular A → B» sin efecto)",
      "rank": 209,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-pistes-base-aeronautique",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; pistes ; base aéronautique",
+    "en": "Carburant ; pistes ; base aéronautique",
+    "de": "Carburant ; pistes ; base aéronautique",
+    "es": "Carburant ; pistes ; base aéronautique"
+   },
+   "items": [
+    {
+     "id": "SOG-0301",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "LFPO : la piste 02 proposée au départ alors qu'elle n'a aucun départ publié",
+     "en": "LFPO: runway 02 offered for departure though it has no published departure",
+     "de": "LFPO: Piste 02 für den Abflug angeboten, obwohl kein Abflugverfahren veröffentlicht ist",
+     "es": "LFPO: pista 02 propuesta para la salida sin ninguna salida publicada"
     }
    ]
   },

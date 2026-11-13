@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 173,
-  "verdicts": 71
+  "verdicts": 76
  },
  "apps": [
   "pilote",
@@ -1970,8 +1970,10 @@
    },
    "test": "Recharge la page. Carte, la France entière à l'écran : décoche « autour du plan de vol uniquement » — toute la vue doit être lue (zones loin de la route comprises), le curseur de Complexité descend et une ligne le dit ; remonte-le si tu veux, il reste où tu le mets ; recoche : la Complexité d'avant revient. Avec un vol LFPO–LFST en cours, zoome sur l'Australie, case décochée : ses espaces doivent se dessiner. Dis-moi si la France décochée est lisible et fluide au cran proposé.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:36:53Z"
+   "state": "ko",
+   "delivered": "2026-11-12T15:36:53Z",
+   "comment": "a un effet, mais pas sur tout. manque :  * airspaces * AD * peut-être d’autres",
+   "at": "2026-11-13T09:12:07Z"
   },
   {
    "id": "SOG-0247",
@@ -1984,8 +1986,9 @@
    },
    "test": "Carburant, étape 5 (Départ) : ouvre le pli « VOR / DME de la route », puis change le niveau de vol : le pli doit rester ouvert.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:03:28Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:03:28Z",
+   "at": "2026-11-13T09:12:15Z"
   },
   {
    "id": "SOG-0248",
@@ -2054,8 +2057,10 @@
    },
    "test": "Carte, sur un grand terrain (LFBD, LFPO) au zoom de ta capture : les noms des voies de circulation sont des cartouches lisibles, un par voie, sans doublon à quelques mètres ; en reculant ils se raréfient puis disparaissent ; le nom d'une voie passe devant celui d'une route.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:11:24Z"
+   "state": "ko",
+   "delivered": "2026-11-12T15:11:24Z",
+   "comment": "cf bugs.md",
+   "at": "2026-11-13T09:12:33Z"
   },
   {
    "id": "SOG-0254",
@@ -2068,8 +2073,10 @@
    },
    "test": "Carte, au sol d'un grand terrain, liste du sol ouverte dans le volet du bas : survole une voie de circulation — elle se surligne et sa ligne vient sous les yeux dans la liste.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:49:57Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:49:57Z",
+   "comment": "oui. LFOE : pas de TWY ?",
+   "at": "2026-11-13T09:14:14Z"
   },
   {
    "id": "SOG-0256",
@@ -2320,8 +2327,10 @@
    },
    "test": "Designs Swiss et Metro, clair et sombre : l'avion à côté du titre n'est plus rouge en Swiss et se voit sur le bandeau en Metro. Dis-moi si d'autres éléments de ces deux designs te paraissent encore pris pour une alerte.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T18:10:45Z"
+   "state": "ko",
+   "delivered": "2026-11-12T18:10:45Z",
+   "comment": "oui et non. partiellement livré (screenshot)",
+   "at": "2026-11-13T09:15:17Z"
   },
   {
    "id": "SOG-0277",
