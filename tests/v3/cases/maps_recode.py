@@ -7619,3 +7619,43 @@ def d226(c):
         n = seen[name]
         c.ok(not [s for s in n['st'] if s['c'] in GOLD] and 'DCT' not in n['tx'], str(name), f'{name}: no direct and no label are drawn')
         c.ok(not [s for s in n['st'] if s['c'] == '#8e24aa' and s['a'] < 1 and len(s['p']) == 4], str(name), f'{name}: no abandoned trail is drawn')
+
+
+
+_LV_GEO = """() => { const S = window.__mp.S, w = document.querySelector('.mp-lv-wrap'), k = document.querySelector('.mp-lv-stack'), l = document.querySelector('.mp-lv-list'), b = S.dbodyEl.getBoundingClientRect();
+  const r = e => { if (!e) return null; const q = e.getBoundingClientRect(); return [Math.round(q.left), Math.round(q.top), Math.round(q.right), Math.round(q.bottom)] };
+  return { wide: w && w.dataset.wide, stack: r(k), list: r(l), body: r(S.dbodyEl), bw: Math.round(b.width) } }"""
+
+
+@case('D227', 'The sheet of the spaces at a point keeps its list to the RIGHT of the graph (as soon as the body is 400 px wide or more, a 460 px window included, a phone in portrait (390, 360) keeps it under; with a space’s card open under 440 px the card goes under) AND the bottom sheet takes its height once and keeps it (no step-by-step shrinking, no flicker of the map)', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False,
+      rule='SOG-0307 refused again (the user, 13 Nov 16:21: « régression : la liste des espaces, qui devait être à droite du graphique, est maintenant à nouveau en bas. »): D207 held the height only; one case holds both')
+def d227(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'azba': True, 'act': 'AZBA', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'D', 'cls': '', 'name': '62', 'key': 'LFD62', 'lower': 'SFC', 'upper': 'FL195', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    many = zones + [{'type': t, 'cls': k, 'name': f'N{i}', 'key': f'LFX{i}', 'lower': lo, 'upper': up, 'src': 'sia', 'rings': [ring(44.5, 45.5, 0.3, 1.3)]}
+                    for i, (t, k, lo, up) in enumerate([('TMA', 'D', '1500 ft ASFC', 'FL115'), ('CTR', 'D', 'SFC', '3500 ft AMSL'), ('SIV', '', 'SFC', 'FL115'), ('TMA', 'E', 'FL065', 'FL195'), ('FIR', '', 'SFC', 'FL195'),
+                                                       ('TMA', 'D', '2500 ft AMSL', 'FL095'), ('CTA', 'D', 'FL065', 'FL195'), ('TSA', '', 'SFC', 'FL115'), ('P', '', 'SFC', '2000 ft AMSL'), ('R', '', '800 ft ASFC', '1800 ft ASFC')])]
+    for w, h, q, zs in ((1280, 760, 'maps', zones), (900, 700, 'maps', zones), (1920, 1000, 'maps', zones), (1280, 760, 'fuel?with=maps', zones), (1100, 760, 'fuel?with=maps', zones), (460, 844, 'maps', zones), (430, 900, 'maps', zones), (1280, 760, 'maps', many), (1280, 760, 'fuel?with=maps', many)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open(q, docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zs, wait=False)
+        if not q.startswith('fuel'): c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        hook_map(c)
+        c.until("() => !!(window.__mp && window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R'))", timeout=15000, what=f'the profile ({w} px)')
+        c.wait(1200)
+        c.js(_SH_REC)
+        c.tap('[data-mp="layers"]')
+        c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what=f'{w}: the Layers sheet is open')
+        c.wait(1200)
+        mark = c.js("() => Math.round(performance.now() - window.__sh.t0)")
+        _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", f'{w}: the list of the spaces at this point')
+        c.wait(2500)
+        z = c.js("() => { clearInterval(window.__sh.iv); return { ev: window.__sh.ev, h: window.__sh.h } }")
+        g = c.js(_LV_GEO)
+        c.ok(g['stack'] and g['list'] and g['list'][0] >= g['stack'][2] - 1 and g['list'][1] < g['stack'][3], str(g), f'{w}: the list is to the right of the graph (not under it)')
+        late = [r[1] for r in z['h'] if r[0] >= mark + 1800]
+        c.ok(late and max(late) == min(late), str(late[-4:]), f'{w}: the height is stable in the last second')
+        c.ok(len([t for t in z['ev'] if t >= mark]) <= 4, str([t for t in z['ev'] if t >= mark]), f'{w}: the map is redrawn four times at most from the tap to the rest')
+        c.shot(f'D227_standard_sheet_{w}_{len(zs)}_{re.sub('[^a-z]', '', q)}.png')

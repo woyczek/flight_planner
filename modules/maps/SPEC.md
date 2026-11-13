@@ -1144,8 +1144,7 @@ cursor until all fingers are up.
   name; an unreadable ceiling is ranked as if the ceiling were its floor, after the known ceilings of the same value; an
   unreadable floor counts as 0. Number 1 is the highest, at the top of the list and in the leftmost column.
 - **The stack stays in view** (SOG-0163, refused twice; ergonomics' decision 10 Nov): the content is `.mp-lv-wrap` = the stack (`.mp-lv-stack`, sticky
-  at the top of the body) and `.mp-lv-side` (the list, « Aussi ici », the card). Wide (body ≥ 600 px): the stack on the left, the list and the card
-  beside it; phone: the stack on top (96–150 px while a card is open) and the list and the card under it, the body scrolling under the sticky stack
+  at the top of the body) and `.mp-lv-side` (the list, « Aussi ici », the card). Wide (body ≥ 400 px — SOG-0307 refused: « la liste des espaces, qui devait être à droite du graphique, est maintenant à nouveau en bas »; a narrow window and a phone included): the stack on the left, the list beside it, and the card too from 440 px; under 440 px a card that is open goes under (the stack on top, 96–150 px, the list and the card under it, as the phone always did), under 400 px (a phone in portrait) everything is under, the body scrolling under the sticky stack
   (the card's top is scrolled to just under it, `showIn`; never `scrollIntoView`). The chosen space's block is highlighted (`.mp-lv-sel`) and a **tap
   on a block** chooses that space (the card changes, never closed). The scale is **framed on the stack's limits**: from the ground when a floor is under
   3 000 ft, else from the lowest floor (a TRA FL195 | UNL is not drawn on 19 500 ft of empty scale); at least 2 000 ft high; « UNL » above. The pile of a

@@ -197,8 +197,10 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     step = nice(raw - from),
     top = Math.ceil(raw / step) * step,
     bot = from ? Math.max(0, Math.floor((lo0 - (raw - lo0) * .12) / step) * step) : 0,
-    narrow = bw <
-    440, // sous 440 px la liste passe sous la pile (téléphone) ; au-delà, à sa droite, même dans un volet de Carte à côté de Carburant (SOG-0163 : « dans le profil vertical »)
+    // la liste est à DROITE de la pile dès 400 px de corps, même dans une fenêtre étroite ou un volet de Carte à côté de Carburant (SOG-0163 : « dans le profil vertical » ;
+    // SOG-0307 refusé : « la liste des espaces, qui devait être à droite du graphique, est maintenant à nouveau en bas ») ; sous 440 px, la fiche d'un espace ouverte la
+    // met dessous (la pile reste collée en haut) ; sous 400 px (un téléphone en portrait : 390, 360), elle est dessous
+    narrow = bw < 400 || bw < 440 && !!S.lvOpen,
     L = narrow ? 40 : 46,
     // le graphique garde la largeur que ses colonnes demandent (22 px au plus sur un téléphone, 14 au moins : le numéro reste lisible),
     // l'axe et ses libellés, la marge ; il n'est borné que par 60 % du bloc. Il ne cède jamais à la liste : c'est la liste qui passe sur
