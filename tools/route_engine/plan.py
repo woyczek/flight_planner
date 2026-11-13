@@ -21,10 +21,11 @@ from . import engine, fra, layered, nat_layer, planning, recovery
 FIELDS = {
     'proposals': bool, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
     'speed_kt': (int, float), 'terminal_speed_kt': (int, float), 'climb_fpm': (int, float), 'descent_fpm': (int, float),
-    'allow_levels': bool, 'use_procedures': bool, 'alternatives': bool, 'alternative_levels': (list, str), 'enable_fra': bool, 'level_strategy': str,
+    'allow_levels': bool, 'use_procedures': bool, 'alternatives': bool, 'alternatives_budget': (int, float), 'alternative_levels': (list, str), 'enable_fra': bool, 'level_strategy': str,
     'objective': str, 'traffic': str, 'require_fra': bool, 'unable_rnav': bool, 'fra_preference': (int, float), 'aircraft': str, 'fuel_climb': (int, float), 'fuel_cruise': (int, float), 'fuel_descent': (int, float),     # RouteSim 4 (planning.py)
 }
 MAX_ROUTE = 600
+ALT_BUDGET_S = 8.0                  # SOG-0296 : la recherche des ALTERNATIVES (après la route de tête) tient le poste au plus ce temps (facultatif, `alternatives_budget`, 1 à 25 s) : 25 s pour ne rien trouver de plus n'a pas à le tenir
 MAX_ALTERNATIVES = 3
 MAX_LEGS = 800
 MAX_ISSUES = 300
@@ -65,6 +66,8 @@ def check_request(request):
         raise ValueError('level_strategy : natural ou adapt')
     if isinstance(out.get('via'), list) and (len(out['via']) > 8 or any(not isinstance(x, str) for x in out['via'])):
         raise ValueError('via : jusqu’à 8 identifiants de points')
+    if 'alternatives_budget' in out and not (isinstance(out['alternatives_budget'], (int, float)) and 1 <= out['alternatives_budget'] <= 25):
+        raise ValueError('alternatives_budget : de 1 à 25 secondes')
     if isinstance(out.get('alternative_levels'), list) and (len(out['alternative_levels']) > 12 or any(isinstance(x, bool) or not isinstance(x, int) for x in out['alternative_levels'])):
         raise ValueError('alternative_levels : jusqu’à 12 niveaux')
     if 'date' in out:
@@ -170,9 +173,11 @@ def plan(request, root):
     import time
     started = time.perf_counter()
 
+    limit = {'until': started + 25, 'what': 'Budget global de recherche atteint (25 s)'}
+
     def check_budget():
-        if time.perf_counter() - started > 25:
-            raise SearchBudget('Budget global de recherche atteint (25 s). Les propositions déjà contrôlées sont conservées ; la recherche n’est pas exhaustive.')
+        if time.perf_counter() > limit['until']:
+            raise SearchBudget(limit['what'] + '. Les propositions déjà contrôlées sont conservées ; la recherche n’est pas exhaustive.')
     request = dict(request, root=root)
     request.setdefault('date', '2026-11-09T12:00')
     nav, rad = context(request, root)      # RouteSim libère les caches du graphe à la fin de chaque plan (release_graph_caches) : ici le contexte est refait à chaque demande et disparaît avec elle
@@ -233,6 +238,11 @@ def plan(request, root):
     failures = list(coverage_gaps)
     tested = []
     if (rejected or request.get('alternatives')) and not coverage_gaps:
+        if not rejected:          # SOG-0296 : la route de tête est bonne, les alternatives sont un PLUS : leur recherche a son propre budget (8 s, `alternatives_budget`) ; un plan refusé garde les 25 s (ses propositions sont son recours)
+            secs = float(request.get('alternatives_budget', ALT_BUDGET_S))
+            limit['until'] = min(limit['until'], time.perf_counter() + secs)
+            limit['what'] = f'Budget de recherche des alternatives atteint ({secs:g} s)'
+            request['_deadline'] = limit['until']
         try:
             dep = str(request['dep']).strip().upper()
             arr = str(request['arr']).strip().upper()

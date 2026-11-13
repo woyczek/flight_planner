@@ -9656,3 +9656,58 @@ def k266(c):
             c.ok(len(files) <= RC.MAX_FILES and not [x for x in files if x.name.endswith('.tmp')], str(len(files)), f'at most {RC.MAX_FILES} kept (the least recently used leave), no leftover of a write')
         finally:
             G['_compute_fresh'], RC.signature = was
+
+
+@case('K267', 'Route engine: the search of the ALTERNATIVES has its own budget (SOG-0296, root cause): `alternatives_budget` (optional, 1 to 25 s, 8 by default) instead of the 25 s of the whole plan; a refused plan keeps the 25 s; the field is checked and reaches the engine from the screen\'s form', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026, 21 h 36 (the user: « il faut traiter la root cause »): LFOE → KDEN in the screen\'s form took 25 s with the alternatives and 3.0 s (0.7 s warm) without, the same route of head, and the 25 s search found no other alternative: it only held the station. The primary is returned as before; the search of the alternatives, which comes after it, has its own budget: `alternatives_budget` (a request field of the closed contract, optional, from 1 to 25 s), 8 s by default; a plan that is refused (its proposals are its recourse) keeps the 25 s. The message says which budget was reached. Features SOG then asks twice: the primary alone, then the alternatives (the verb\'s answer stays one per job)')
+def k267(c):
+    import os
+    import sys
+    import tempfile
+    import time
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import engine
+    from route_engine import import_books as I
+    from route_engine import plan as P
+    from route_engine import view
+    base = {'dep': 'LFPO', 'arr': 'EIDW', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': False, 'alternatives': True}
+
+    def refused(v):
+        try:
+            P.check_request(dict(base, alternatives_budget=v))
+            return None
+        except ValueError as e:
+            return str(e)
+    c.eq([refused(v) for v in (1, 8, 25, 0.5, 8.5)], [None, None, None, 'alternatives_budget : de 1 à 25 secondes', None], 'the field is optional and bounded: 1 to 25 s (a decimal is fine, 0.5 is not)', what='bounds')
+    c.eq([bool(refused(v)) for v in (0, 26, -3, True, '8', None, float('nan'))], [True] * 7, 'zero, 26, negative, a boolean, a string, null and NaN are refused', what='refused')
+    c.eq(view.to_request({'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'alternatives': True, 'alternatives_budget': 3})['alternatives_budget'], 3, 'the screen\'s form carries it to the engine\'s request', what='screen form')
+    clock = {'t': 0.0}
+    real = (time.perf_counter, engine.assess)
+
+    def stepped(*a, **k):
+        clock['t'] += 3.0                      # each search costs 3 s of the (fake) clock
+        return real[1](*a, **k)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        out = {}
+        time.perf_counter = lambda: real[0]() * 0 + clock['t']
+        engine.assess = stepped
+        try:
+            for label, extra in (('default', {}), ('1 s', {'alternatives_budget': 1}), ('25 s', {'alternatives_budget': 25}), ('none asked', {'alternatives': False})):
+                clock['t'] = 0.0
+                res = P.compute(dict(base, **extra), data, rad, None)
+                out[label] = (len(res['alternative_attempts']), len(res['alternatives']), res['alternative_message'][:40])
+        finally:
+            time.perf_counter, engine.assess = real
+    c.eq((out['25 s'][0], out['25 s'][1]), (3, 3), 'with the whole 25 s the three alternatives are tried (the baseline of the fixture)', what='baseline')
+    c.ok(out['1 s'][0] < 3 and out['1 s'][1] < out['25 s'][1], str(out), 'with `alternatives_budget` 1 the search stops after the first search that goes past it: fewer attempts, fewer alternatives, the primary unchanged')
+    c.eq(out['default'][0], 3, 'the default is 8 s: three searches of 3 s fit before the third check (6 s)', what='default')
+    c.eq(out['none asked'][1], 0, 'no alternatives asked: none searched (the primary alone, as before)', what='none')

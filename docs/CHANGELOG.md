@@ -13,6 +13,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### V3
 
 - **Fuel and Mes vols keep their wide layout when the window grows past 1 100 px: container threshold 850 px, as Missions** (fuel and flightlog DECISIONS; noreg F217, L135; SOG-0331).
+- **Route computation: the search of the alternatives has its own budget** (SOG-0296, the cause) — `alternatives_budget` (optional, 1 to 25 s, **8 s by default** instead of the 25 s of the whole plan; a refused plan keeps the 25 s): LFOE → KDEN with the alternatives goes from ~26 s to ~14 s without any change of the screen; the primary alone stays 1 to 3 s (the screen will ask twice). Launcher Python: restart the launcher. Case K267.
 - **Map: the company's settings are read newest-first** — two changes in a row (a runway threshold 14 then 30) started two reads and the slower old one could overwrite the newer (D58 failed once under load: « an out-of-range value is 11 »); only the latest read assigns; D232 forces the order (red before).
 - **Fleet: the search is the sheets' search plus the fleet — « caravelle » finds the aircraft of type S210 and offers « add an aircraft of this type »; « Créer » only when nothing answers** (aircraft DECISIONS; noreg M48; SOG-0270).
 - **Noreg A165 follows the head bar of the Help**: the way back from a document of the suite sits in the sticky head bar (`.f-docbar`, SOG-0331), the case looked for it directly under the view; the way back itself was never lost
