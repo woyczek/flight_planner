@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 191,
+  "tests": 193,
   "verdicts": 123
  },
  "apps": [
@@ -417,6 +417,20 @@
    "state": "ok",
    "comment": "bah oui, mais le réglage des seuils de carte renvoie sur… « données ». sinon, trouvé, ça me va.",
    "at": "2026-11-13T10:42:39Z"
+  },
+  {
+   "id": "SOG-0119",
+   "app": "maintenance",
+   "title": {
+    "fr": "Administration : les quatre verbes pour chaque jeu de données (procédures, VAC, types et fiches d'appareils) et « Tout mettre à jour » ; mise à jour de la…",
+    "en": "Administration: the four verbs for every data set (procedures, VAC, aircraft types and sheets) and \"Update everything\"; suite update, workstation backup, folders; fleet and aircraft sheets edited in M",
+    "de": "Verwaltung: die vier Verben für jeden Datensatz (Verfahren, VAC, Flugzeugtypen und -blätter) und „Alles aktualisieren“; Aktualisierung der Suite, Sicherung des Rechners, Ordner; Flotte und Flugzeugblä",
+    "es": "Administración: los cuatro verbos para cada conjunto de datos (procedimientos, VAC, tipos y fichas de aeronaves) y «Actualizar todo»; actualización de la suite, copia de seguridad del equipo, carpetas"
+   },
+   "test": "Relance le lanceur, recharge. Maintenance › Données, les autres jeux : chaque ligne dit son état et pourquoi (par exemple « Procédures · à faire — LF : téléchargé, pas construit », « Points VFR · à faire — incomplet »). « Tout mettre à jour » compte les mêmes jeux.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T13:15:17Z"
   },
   {
    "id": "SOG-0125",
@@ -2593,9 +2607,10 @@
     "de": "Empfangsordner: 5 412 Kopien von Dateien anderer Missionen (Stapel vom 5.11.)",
     "es": "Carpetas de recibidos: 5 412 copias de ficheros de otras misiones (lote del 5/11)"
    },
-   "test": "Rien à faire tout de suite : au prochain lot de missions reçu dans la V2 (« Ajouter des fichiers… » ou le générateur), vérifie que le dossier recu/ de chaque mission ne porte que SES fichiers. Les copies déjà là ne bougent pas tant que tu n'as pas répondu à Q-0041.",
+   "test": "Recharge la page. Anciennes pages (V2) › registre des missions, niveau Expert : « Ranger les copies ». La page compte d'abord, sans rien toucher (copies déjà chez leur mission, copies à déplacer, fichiers laissés, contenus conservés). Si le compte te va, « Ranger » : les copies partent, un rapport s'affiche (copiable). « Garder tout » ne change rien. C'est une suppression dans ton dépôt de données : les fichiers restent dans son historique git.",
    "since": "2026-11-13",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T13:28:51Z"
   },
   {
    "id": "SOG-0295",
@@ -2611,6 +2626,20 @@
    "state": "ok",
    "delivered": "2026-11-13T09:28:21Z",
    "at": "2026-11-13T10:34:20Z"
+  },
+  {
+   "id": "SOG-0296",
+   "app": "pilote",
+   "title": {
+    "fr": "« Calculer A → B » : 27,8 s passées dans le lanceur (LFPO → EIDW)",
+    "en": "« Compute A → B »: 27.8 s spent in the launcher (LFPO → EIDW)",
+    "de": "« A → B berechnen »: 27,8 s im Launcher (LFPO → EIDW)",
+    "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)"
+   },
+   "test": "Relance le lanceur, recharge. Carburant, « Calculer A → B » sur LFPO → EIDW, deux fois de suite, puis « Copier le diagnostic » : la part « launcher » doit être de quelques secondes la première fois, bien moins la seconde.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T13:20:07Z"
   },
   {
    "id": "SOG-0297",

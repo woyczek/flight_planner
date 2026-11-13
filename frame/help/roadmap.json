@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7623bde",
+  "organisation": "861e0ea",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -798,12 +798,13 @@
     {
      "id": "SOG-0296",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "« Calculer A → B » : 27,8 s passées dans le lanceur (LFPO → EIDW)",
      "en": "« Compute A → B »: 27.8 s spent in the launcher (LFPO → EIDW)",
      "de": "« A → B berechnen »: 27,8 s im Launcher (LFPO → EIDW)",
      "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)",
-     "rank": 34
+     "rank": 34,
+     "test": true
     }
    ]
   },
@@ -2608,13 +2609,14 @@
     {
      "id": "SOG-0294",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Dossiers « recu » : 5 412 copies de fichiers d'autres missions (lot du 05/11)",
      "en": "Received-files folders: 5,412 copies of other missions' files (batch of 5 Nov)",
      "de": "Empfangsordner: 5 412 Kopien von Dateien anderer Missionen (Stapel vom 5.11.)",
      "es": "Carpetas de recibidos: 5 412 copias de ficheros de otras misiones (lote del 5/11)",
      "milestone": "6.0.0-alpha.5",
-     "rank": 40
+     "rank": 40,
+     "test": true
     }
    ]
   },
@@ -4515,13 +4517,14 @@
     {
      "id": "SOG-0119",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Administration : les quatre verbes pour chaque jeu de données (procédures, VAC, types et fiches d'appareils) et « Tout mettre à jour » ; mise à jour de la…",
      "en": "Administration: the four verbs for every data set (procedures, VAC, aircraft types and sheets) and \"Update everything\"; suite update, workstation backup, folders; fleet and aircraft sheets edited in Maintenance",
      "de": "Verwaltung: die vier Verben für jeden Datensatz (Verfahren, VAC, Flugzeugtypen und -blätter) und „Alles aktualisieren“; Aktualisierung der Suite, Sicherung des Rechners, Ordner; Flotte und Flugzeugblätter in der Wartung bearbeitet",
      "es": "Administración: los cuatro verbos para cada conjunto de datos (procedimientos, VAC, tipos y fichas de aeronaves) y «Actualizar todo»; actualización de la suite, copia de seguridad del equipo, carpetas; flota y fichas de aeronaves editadas en Mantenimiento",
      "milestone": "6.0.0-alpha.5",
-     "rank": 46
+     "rank": 46,
+     "test": true
     },
     {
      "id": "SOG-0118",
