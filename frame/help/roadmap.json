@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6e07044",
+  "organisation": "9574aea",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -749,13 +749,14 @@
     {
      "id": "SOG-0306",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "RÉGRESSION : choix de la piste d'arrivée par « Sur la carte » — le vent de face et de travers a disparu",
      "en": "REGRESSION: arrival runway choice via « On the map » — headwind and crosswind are gone",
      "de": "REGRESSION: Wahl der Landebahn über « Auf der Karte » — Gegen- und Seitenwind fehlen",
      "es": "REGRESIÓN: elección de pista de llegada por « En el mapa » — falta el viento de cara y de través",
      "milestone": "6.0.0-alpha.5",
-     "rank": 49
+     "rank": 49,
+     "test": true
     }
    ]
   },
