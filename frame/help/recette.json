@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 196,
+  "tests": 197,
   "verdicts": 124
  },
  "apps": [
@@ -2896,6 +2896,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T13:51:35Z"
+  },
+  {
+   "id": "SOG-0321",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : survoler un point de la route le montre sur la carte ; pendant un déplacement, montrer aussi les points",
+    "en": "Map: hovering a route point shows it on the map; while panning, show the points too",
+    "de": "Karte: ein Routenpunkt unter dem Zeiger wird auf der Karte gezeigt; beim Verschieben auch die Punkte zeigen",
+    "es": "Mapa: al pasar sobre un punto de la ruta se muestra en el mapa; al desplazar, mostrar también los puntos"
+   },
+   "test": "Recharge la page. Carte avec une route : fais glisser la carte — pendant le geste, les points de la route restent visibles (des ronds), ainsi que les points au bout des voies. Le surlignage d'un point survolé dans la liste de la route n'est pas encore branché : ne le teste pas.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T14:08:46Z"
   },
   {
    "id": "SOG-0323",

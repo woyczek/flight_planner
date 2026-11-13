@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f16c7be",
+  "organisation": "4de7831",
   "fiches": 324,
   "untranslated": 0,
   "priorities": 310
@@ -1386,11 +1386,12 @@
     {
      "id": "SOG-0321",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : survoler un point de la route le montre sur la carte ; pendant un déplacement, montrer aussi les points",
      "en": "Map: hovering a route point shows it on the map; while panning, show the points too",
      "de": "Karte: ein Routenpunkt unter dem Zeiger wird auf der Karte gezeigt; beim Verschieben auch die Punkte zeigen",
-     "es": "Mapa: al pasar sobre un punto de la ruta se muestra en el mapa; al desplazar, mostrar también los puntos"
+     "es": "Mapa: al pasar sobre un punto de la ruta se muestra en el mapa; al desplazar, mostrar también los puntos",
+     "test": true
     }
    ]
   },
