@@ -1856,3 +1856,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   in Fuel. Reading another company's `settings.json` would also have widened Fuel's reads to `airline/` for nothing. One line per network
   with an ATIS (`[data-atisline]`), offline: none — F152 already holds both. If the flight should keep the company of another device or of
   a mission, it is SOG-0041 that changes, and `flightNetworks` with it.
+- **13 Nov 2026 — audits 193 and 197 notes: the Map gets the checked proposals; « Démarrer » always freed** (Sécurisation; written by
+  Features SOG). (193) Back in Fuel without a choice (SOG-0224), `altsFromDoc` gave the Map `d.alternatives.slice(0, 3)` as read — the
+  document is written by any device. Now each line goes through `mapAltOfDoc`, the shape `altsPublish` gives: name, route and procedures
+  as `raltsOfDoc`, 400 bounded points at most, short identifiers, per segment a state from `RE.CONTROLS`, an airway through `RL.viaOf`, a
+  layer from `RL.LAYERS`, `proposal` true only if true; any other field is left. F208 (red before: a foreign field reached the Map).
+  (197) `startFlight` puts `starting` back to false in a `finally`: an exception between the two no longer leaves the button busy until
+  the reload. F204 still green.

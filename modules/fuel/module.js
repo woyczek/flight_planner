@@ -4106,10 +4106,36 @@ async function altsFromDoc() {
     mode: 'compute',
     dep: String(d.dep || ''),
     arr: String(d.arr || ''),
-    list: d.alternatives.slice(0, 3),
+    list: d.alternatives.slice(0, 3).map(mapAltOfDoc),
     hovered: null
   };
   routeAltsDraw();
+}
+/** Audit 193 : une ligne du document (écrit par tout appareil, entrée non fiable) remise à la forme que altsPublish donne à la Carte —
+ *  nom, route et procédures comme raltsOfDoc, 400 points bornés au plus, identifiants courts, et pour chaque segment son état de
+ *  contrôle, sa voie et sa couche pris dans leurs listes fermées ; tout autre champ est laissé. */
+function mapAltOfDoc(a, i) {
+  const pts = (Array.isArray(a?.points) ? a.points : []).filter(q => Array.isArray(q) && q.length === 2 && q.every(Number.isFinite) &&
+      Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180).slice(0, 400).map(q => [Math.round(q[0] * 1e5) / 1e5, Math.round(q[1] * 1e5) / 1e5]),
+    n = Math.max(pts.length - 1, 0),
+    seg = (v, f) => Array.from({
+      length: n
+    }, (_, k) => f(Array.isArray(v) ? v[k] : null)),
+    proc = (v, kind) => new RegExp(`^[A-Z0-9]{4}\\.${kind}\\.[A-Z0-9.]{1,60}$`).test(String(v || '')) ? String(v) : '';
+  return {
+    index: i,
+    name: String(a?.name || '').slice(0, 60),
+    route: String(a?.route || '').toUpperCase().split(/\s+/).filter(t => /^[A-Z0-9/]{1,16}$/.test(t)).join(' ').slice(0, 800),
+    sid: proc(a?.sid, 'SID'),
+    star: proc(a?.star, 'STAR'),
+    ids: (Array.isArray(a?.ids) ? a.ids : []).slice(0, pts.length).map(x => /^[A-Z0-9]{1,12}$/.test(String(x || '')) ? String(x) : ''),
+    points: pts,
+    faulty: (Array.isArray(a?.faulty) ? a.faulty : []).filter(k => Number.isInteger(k) && k >= 0 && k < n).slice(0, 400),
+    control: seg(a?.control, v => RE.CONTROLS.includes(v) ? v : null),
+    via: seg(a?.via, v => RL.viaOf(v, v === 'FRA' ? 'FRA' : '')),
+    layer: seg(a?.layer, v => RL.LAYERS.includes(v) ? v : ''),
+    proposal: a?.proposal === true
+  };
 }
 /** « Prendre » : la route de l'itinéraire écrite comme une saisie (le champ de route et son événement : le seul chemin d'écriture,
  *  SOG-0013), puis sa SID et sa STAR proposées aux procédures (P.propose : vérifiées contre les fiches du terrain, rien d'inconnu écrit). */
@@ -4561,45 +4587,49 @@ async function startFlight() {
   // est tenu (S.starting) : le bouton reste occupé, un second geste ne fait rien
   if (S.starting) return;
   S.starting = true;
-  if (btn) {
-    btn.disabled = true;
-    btn.setAttribute('aria-busy', 'true');
-  }
-  S.startNote = tt(TX.starting);
-  if (note) note.textContent = S.startNote;
-  // la planification peut dater : date du vol = maintenant, météo des terrains, vents en altitude et ISA relus, devis refait
-  setPlanned(null);
-  const online = S.ctx.net?.online?.() !== false;
-  if (online) await wxFetch(false).catch(() => {});
-  if (gone(s)) return;
-  refresh();
-  const offline = !online || S.wx?.cached,
-    q = S.C?.q,
-    after = {
-      wind: windTxt(f.wind),
-      block: q?.hasFuel ? fuelTxt(q.block, unit()) : '—'
-    },
-    eta = q?.minutes ? hhmmLocal(new Date(Date.now() + ((+S.settings.taxiMin || 0) + q.minutes) * 60000).toISOString()) : '',
-    diffs = [after.wind !== before.wind ? tt(TX.diffWind, {
-      a: before.wind,
-      b: after.wind
-    }) : '', after.block !== before.block ? tt(TX.diffBlock, {
-      a: before.block,
-      b: after.block
-    }) : ''].filter(Boolean);
-  S.startNote = offline ? tt(TX.startOffline) : diffs.length ? tt(TX.startDiff, {
-    l: [...diffs, eta ? tt(TX.diffEta, {
+  // audit 197 : rendu à faux quoi qu'il arrive (une exception entre les deux laisserait le bouton occupé jusqu'au rechargement)
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+    }
+    S.startNote = tt(TX.starting);
+    if (note) note.textContent = S.startNote;
+    // la planification peut dater : date du vol = maintenant, météo des terrains, vents en altitude et ISA relus, devis refait
+    setPlanned(null);
+    const online = S.ctx.net?.online?.() !== false;
+    if (online) await wxFetch(false).catch(() => {});
+    if (gone(s)) return;
+    refresh();
+    const offline = !online || S.wx?.cached,
+      q = S.C?.q,
+      after = {
+        wind: windTxt(f.wind),
+        block: q?.hasFuel ? fuelTxt(q.block, unit()) : '—'
+      },
+      eta = q?.minutes ? hhmmLocal(new Date(Date.now() + ((+S.settings.taxiMin || 0) + q.minutes) * 60000).toISOString()) : '',
+      diffs = [after.wind !== before.wind ? tt(TX.diffWind, {
+        a: before.wind,
+        b: after.wind
+      }) : '', after.block !== before.block ? tt(TX.diffBlock, {
+        a: before.block,
+        b: after.block
+      }) : ''].filter(Boolean);
+    S.startNote = offline ? tt(TX.startOffline) : diffs.length ? tt(TX.startDiff, {
+      l: [...diffs, eta ? tt(TX.diffEta, {
+        t: eta
+      }) : ''].filter(Boolean).join(' · ')
+    }) : eta ? tt(TX.startSameEta, {
       t: eta
-    }) : ''].filter(Boolean).join(' · ')
-  }) : eta ? tt(TX.startSameEta, {
-    t: eta
-  }) : tt(TX.startSame);
-  if (S.body.querySelector('[data-startnote]')) S.body.querySelector('[data-startnote]').textContent = S.startNote;
-  S.flight.started = {
-    at: new Date().toISOString(),
-    by: 'fuel'
-  };
-  S.starting = false;
+    }) : tt(TX.startSame);
+    if (S.body.querySelector('[data-startnote]')) S.body.querySelector('[data-startnote]').textContent = S.startNote;
+    S.flight.started = {
+      at: new Date().toISOString(),
+      by: 'fuel'
+    };
+  } finally {
+    s.starting = false;
+  }
   startNote = {
     at: S.flight.started.at,
     text: S.startNote

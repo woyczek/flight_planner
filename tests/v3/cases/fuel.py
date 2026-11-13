@@ -5122,3 +5122,29 @@ def f207(c):
     c.settle()
     c.ok('31L' in (c.text(f'{FUEL} [data-proc="arr"] [data-rwyprob]') or ''), c.text(f'{FUEL} [data-proc="arr"] [data-rwyprob]'),
          'a runway with its STAR stays probable')
+
+
+
+@case('F208', 'Route step, back in Fuel without a choice: the proposals of the document are given to the Map in their checked form — points '
+      'bounded, segment states, airways and layers from their closed lists, no foreign field', 'F', tags=('fuel',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='Audit 193 note (Sécurisation, 13 Nov): altsFromDoc gave the Map d.alternatives.slice(0, 3) without the validation of raltsOfDoc; '
+      'the document is written by any device (an untrusted entry)')
+def f208(c):
+    bad = {'name': 'Direct', 'route': 'LFRS LUGEN LFML', 'sid': 'LFRS.SID.<b>', 'star': '', 'ids': ['LFRS', '<img src=x>', 'LFML'],
+           'points': [[47.15, -1.6], [999, 5], 'x', [45.0, 2.0], [43.43, 5.21]], 'faulty': [0, 77, 'z'],
+           'control': ['controlled', 'evil', 'error'], 'via': ['<b>', 'UN10', 'FRA'], 'layer': ['LOW', 'X', 'HIGH'],
+           'proposal': 'yes', 'script': '<script>'}
+    doc = {'schema': 1, 'dep': 'LFRS', 'arr': 'LFML', 'mode': 'compute', 'alternatives': [bad], 'chosen': None, 'hovered': None}
+    c.open('fuel', docs=proc_docs() + proc_flight(None) + [['cache/fuel/route_alts.json', doc, 'cache']], airfields=True)
+    to_step(c, 1)
+    c.until(f"document.querySelectorAll('{FUEL} [data-routealts] [data-alt]').length === 1", timeout=10000, what='the proposal of the document')
+    c.js(_ALTS_LISTEN)
+    c.tap(f'{FUEL} [data-routealts] [data-alt="0"] [data-altname]')
+    c.until("(window.__alts || []).length > 0", timeout=5000, what='the route shown, published to the Map')
+    a = c.js(_ALTS_LAST)['alternatives'][0]
+    c.eq(sorted(a), sorted(['index', 'name', 'route', 'sid', 'star', 'ids', 'points', 'faulty', 'control', 'via', 'layer', 'proposal']),
+         'the fields of altsPublish only', what='fields')
+    c.eq(a['points'], [[47.15, -1.6], [45.0, 2.0], [43.43, 5.21]], 'the points out of bounds or out of shape left', what='points')
+    c.eq([a['sid'], a['ids'][1], a['faulty'], a['control'], a['via'], a['layer'], a['proposal']],
+         ['', '', [0], ['controlled', None], ['', 'UN10'], ['LOW', ''], False], 'each value from its closed list', what='checked')
