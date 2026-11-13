@@ -169,7 +169,9 @@ export const meta = {
     '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/texts.js?v=0', '../fuel/winds.js?v=0'
   ],
   // hôtes publics appelés directement par MapLibre (tuiles) et par le relief ombré ; CSP connect-src du cadre
-  net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']
+  net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod', 'a.tile.opentopomap.org',
+    'b.tile.opentopomap.org', 'c.tile.opentopomap.org'
+  ] // OpenTopoMap (SOG-0300) : les trois hôtes que tools/csp_policy.py CONNECT permet déjà, la politique effective ne change pas
 };
 
 /** Squelette de l'écran (SPEC § 4, § 18) : le h1 invisible, la boîte de la carte (MapLibre, la surcouche, l'état vide,

@@ -677,8 +677,7 @@ Six modes, the current one kept in `cache/maps/ui.json` (`preset`); each has its
 and when there is no map.
 - Auto (`wand-sparkles`, the flight's level: High IFR from FL195), Low IFR (`routeProfile(5000)`), High IFR
   (`routeProfile(30000)`), VFR (`map`, the studio's `vfr-detail` profile on `liberty`, plus beacons and `vfrDensity`; its
-  families from the layers: TMA / CTR and D / R / P whole), Topo (`liberty` with a hillshade of the Terrarium tiles drawn in
-  CSS, contour lines on the canvas, aerodromes, towns and close-up obstacles only), CAM / OAT (red `plane`: the flight
+  families from the layers: TMA / CTR and D / R / P whole), Topo (**OpenTopoMap**, `STYLE_TOPO` of `lib/map_base.js`: raster tiles from `a`, `b`, `c.tile.opentopomap.org` — contour lines and relief in the tiles, credit « © OpenTopoMap (CC-BY-SA), © OpenStreetMap contributors » in MapLibre's « i »; aerodromes, towns and close-up obstacles only, **no zone**: no racetrack, no RTBA; the « Contour lines » box greyed with its reason (`contoursOwn`) because the base carries its own; **fallback** when no tile comes after three errors (`topoError` in screen.js, `S.topoDown`): the former `liberty` base with the hillshade of the Terrarium tiles and our own contour lines, one line said (`topoDown`), the box acts again; a ticked box with the view too far says once that the lines appear from zoom 9, `contoursFar`; SOG-0300; noreg D216), CAM / OAT (red `plane`: the flight
   level's IFR plus refuelling and NAT tracks, R / D / P, TSA / TRA / CBA and the low-flying network at all levels, state
   aerodromes).
 - Colours: the accent for the choice, `--sog-err` for CAM; corners from `--sog-radius`.

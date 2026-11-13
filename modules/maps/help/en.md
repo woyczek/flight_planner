@@ -58,8 +58,7 @@ height.
 **Six map modes.** The mode button, at the right of the map, shows the chosen mode; tap it to see the six modes. “Low IFR”:
 low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
 “VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the
-terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit, the index contours numbered),
-with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling tracks,
+OpenTopoMap base (relief and contour lines in its tiles; “© OpenTopoMap, © OpenStreetMap” under the “i”), with only airfields, towns and obstacles, no racetracks and no RTBA; the “Contour lines” box is greyed on that base (it carries its own); if its tiles do not come, the Map says so (“topographic base unavailable: fallback base”) and takes the former base back with the shaded relief and our own contour lines (every 500 ft or 100 m depending on your unit, the index contours numbered), the box then acts; a ticked “Contour lines” box that shows nothing says they only appear from zoom 9. “OAT”: military flight, the IFR of your level plus the air refuelling tracks,
 the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses from
 your flight's level (High IFR from FL195). The mode is kept on this device.
 

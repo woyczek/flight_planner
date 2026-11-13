@@ -22,15 +22,38 @@ export const STYLES = {
   'vt-shadow': 'https://tiles.versatiles.org/assets/styles/shadow/style.json',
   'vt-eclipse': 'https://tiles.versatiles.org/assets/styles/eclipse/style.json'
 };
+/** Le fond OpenTopoMap (SOG-0300 : « une vraie carte topographique ») : tuiles raster dont les courbes de niveau et le relief ombré sont dans l'image ; style posé en objet (rien à
+ *  charger), hôtes a, b et c.tile.opentopomap.org déjà dans la politique de la page (tools/csp_policy.py) ; la mention de la source est celle de la couche (« i »). */
+export const STYLE_TOPO = {
+  version: 8,
+  name: 'OpenTopoMap',
+  sources: {
+    otm: {
+      type: 'raster',
+      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+        'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256,
+      maxzoom: 17,
+      attribution: '© OpenTopoMap (CC-BY-SA), © OpenStreetMap contributors'
+    }
+  },
+  layers: [{
+    id: 'otm',
+    type: 'raster',
+    source: 'otm'
+  }]
+};
 /** Attente des tuiles par défaut (ms) : fond pas prêt après ce délai, fond uni. */
 export const TILE_WAIT = 10e3;
 
 /** Style du fond : celui du profil d'affichage (base : clé de STYLES), de jour ; la nuit, le style sombre (VersaTiles :
  *  eclipse pour une base VersaTiles). Sans base connue : le fond de jour. */
 export const styleFor = ({
-  dark = false,
-  base = ''
-} = {}) => dark ? /^vt-/.test(base) ? STYLES['vt-eclipse'] : STYLE_NIGHT : STYLES[base] || STYLE_DAY;
+    dark = false,
+    base = ''
+  } = {}) => base === 'otm-topo' ? STYLE_TOPO : dark ? /^vt-/.test(base) ? STYLES['vt-eclipse'] : STYLE_NIGHT : STYLES[base] ||
+  STYLE_DAY; // pas de topographique de nuit : le même fond
 
 // ---------------------------------------------------------------- MapLibre
 /** Ce que la page change à la feuille de MapLibre, une fois (règles de poids supérieur, posées après elle).
@@ -160,7 +183,11 @@ export async function startTiles(container, {
       }
       onStyleLoad?.(map);
     });
-    map.on('error', () => finish(null));
+    map.on('error', e => {
+      if (e?.sourceId === 'otm')
+        return; // une tuile du fond topographique qui ne vient pas n'abandonne pas la carte : la Carte bascule sur son fond de repli (SOG-0300)
+      finish(null);
+    });
     map.on('load', () => {
       if (!alive()) return finish(null);
       if (attributionControl?.compact) collapseAttribution(map);

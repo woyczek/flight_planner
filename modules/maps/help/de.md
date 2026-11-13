@@ -61,8 +61,7 @@ lässt; ein Tippen auf die Zeile klappt ihn ein oder bringt ihn auf seine normal
 **Sechs Kartenmodi.** Die Modus-Schaltfläche rechts auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
 sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege
 (UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen,
-Meldepunkten und Hindernissen. „Topo“: das Gelände und, aus der Nähe, die Höhenlinien (alle 500 ft oder 100 m je nach
-Ihrer Einheit, die Zähllinien beschriftet), nur mit Flugplätzen, Städten und Hindernissen. „OAT“: Militärflug, das IFR
+Meldepunkten und Hindernissen. „Topo“: der OpenTopoMap-Hintergrund (Gelände und Höhenlinien in seinen Kacheln; „© OpenTopoMap, © OpenStreetMap“ unter dem „i“), nur mit Flugplätzen, Städten und Hindernissen, ohne Rennbahnen und ohne RTBA; das Feld „Höhenlinien“ ist auf diesem Hintergrund ausgegraut (er trägt seine eigenen); kommen seine Kacheln nicht, sagt es die Karte („Topografischer Hintergrund nicht verfügbar: Ersatzhintergrund“) und nimmt den früheren Hintergrund mit Geländeschattierung und unseren Höhenlinien (alle 500 ft oder 100 m je nach Ihrer Einheit, die Zähllinien beschriftet) wieder auf, das Feld wirkt dann; ein angekreuztes Feld „Höhenlinien“, das nichts zeigt, sagt, dass sie erst ab Zoom 9 erscheinen. „OAT“: Militärflug, das IFR
 Ihrer Flughöhe plus die Luftbetankungsstrecken, die NAT-Tracks des Tages, die Gebiete R, D, P, TSA, TRA, CBA und das
 Tiefflugnetz in allen Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf
 diesem Gerät erhalten.

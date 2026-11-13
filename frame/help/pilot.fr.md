@@ -323,8 +323,7 @@ ligne la réduit ou la ramène à sa hauteur normale.
 **Six modes de carte.** Le bouton du mode, à droite de la carte, montre le mode choisi ; touchez-le pour voir les six
 modes. « IFR bas » : voies aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies
 hautes (UN…, UM…), espaces au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR,
-points de report et obstacles. « Topo » : le relief et, de près, les courbes de niveau (tous les 500 ft ou 100 m selon votre unité, les
-maîtresses chiffrées), avec seulement les terrains, les villes et les obstacles.
+points de report et obstacles. « Topo » : le fond OpenTopoMap (relief et courbes de niveau dans ses tuiles ; « © OpenTopoMap, © OpenStreetMap » sous le « i »), avec seulement les terrains, les villes et les obstacles, ni hippodromes ni RTBA ; la case « Courbes de niveau » est grisée sur ce fond (il porte les siennes) ; si ses tuiles ne viennent pas, la Carte le dit (« fond topographique indisponible : fond de repli ») et reprend l'ancien fond avec le relief ombré et nos courbes (tous les 500 ft ou 100 m selon votre unité, les maîtresses chiffrées), la case agit alors ; une coche « Courbes de niveau » qui ne montre rien dit qu'elles ne paraissent qu'à partir du zoom 9.
 « CAM » : vol militaire, l'IFR de votre niveau plus les axes de ravitaillement, les tracks NAT du jour, les zones R, D, P,
 TSA, TRA, CBA et le RTBA à tous les niveaux.
 « Auto » choisit selon le niveau de votre vol (IFR haut à partir du FL195). Le mode est gardé sur cet appareil.

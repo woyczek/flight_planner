@@ -17,8 +17,12 @@ import {
   tileLoader,
   keptRoute,
   greatCircle,
-  thinPx
+  thinPx,
+  tt
 } from './state.js';
+import {
+  TX
+} from './texts.js';
 import {
   nearLon
 } from '../../frame/lib/geo.js';
@@ -49,7 +53,8 @@ import {
   WORLD_NM
 } from './data.js';
 import {
-  status
+  status,
+  noteOnce
 } from './screen.js';
 import {
   withEta,
@@ -541,7 +546,8 @@ export function relief() {
   try {
     // pas isStyleLoaded() : faux tant que les sources du style se chargent, donc au « style.load » d'un setStyle (SOG-0171 rouvert : le relief ne venait pas
     // après un changement de vue) ; un style qui n'est pas encore posé refuse (getLayer, addSource) et la pose est reprise à son chargement
-    const want = !!S.profile?.hillshade,
+    const want = !!S.profile?.hillshade || !!S.topoDown && S.profile?.base ===
+      'otm-topo', // le fond de repli de la vue topographique reprend le relief ombré
       has = !!m.getLayer('mp-hillshade');
     if (want === has) return;
     if (!want) return m.removeLayer('mp-hillshade');
@@ -693,8 +699,14 @@ function draw() {
   // du studio qui coche les courbes) les allume — l'IFR et le fond seul non (SOG-0184)
   if (!mission && S.profile?.elements?.natTracks)
     natCheck(); // la couche NAT est affichée : sa validité est dite, périmée elle est relue (SOG-0266)
-  const contoursWanted = !!L
-    .contours; // la case « Courbes de niveau » seule décide (SOG-0300 : « sans effet ») ; d'origine cochée dans les vues à densité VFR et quand le profil du studio d'une carte de mission les demande
+  const ownContours = S.profile?.base !== 'otm-topo' || !!S
+    .topoDown; // le fond OpenTopoMap porte ses courbes dans ses tuiles : les nôtres n'y sont pas dessinées (SOG-0300)
+  const contoursWanted = !!L.contours &&
+    ownContours; // la case « Courbes de niveau » seule décide (SOG-0300 : « sans effet ») ; d'origine cochée dans les vues à densité VFR
+  // la case est cochée mais la vue est trop loin : l'écran le dit une fois (SOG-0300 : « la raison la plus probable est le seuil de zoom »)
+  if (contoursWanted && !mission && !zoomOn('contours')) noteOnce('contoursFar', tt(TX.contoursFar, {
+    z: Math.round((S.profile?.elements?.zoom?.contours || [9])[0])
+  }), 'warn');
   if (contoursWanted && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(ctx, {
     minor: MapsRender.visibleAt(S.profile, 'contours', zv - 1.5),
     toC,

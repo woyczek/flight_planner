@@ -60,8 +60,7 @@ lo devuelve a su altura normal.
 **Seis modos de mapa.** El botón del modo, a la derecha del mapa, muestra el modo elegido; tóquelo para ver los seis
 modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
 superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en
-VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve y, de cerca, las curvas de nivel (cada 500 ft o 100
-m según su unidad, las directoras numeradas), solo con los aeródromos, las ciudades y los obstáculos. «CAM»: vuelo
+VFR, los puntos de notificación y los obstáculos. «Topo»: el fondo OpenTopoMap (relieve y curvas de nivel en sus teselas; «© OpenTopoMap, © OpenStreetMap» bajo la «i»), solo con los aeródromos, las ciudades y los obstáculos, sin hipódromos ni RTBA; la casilla «Curvas de nivel» está atenuada en ese fondo (lleva las suyas); si sus teselas no llegan, el Mapa lo dice («fondo topográfico no disponible: fondo de reserva») y recupera el fondo anterior con el relieve sombreado y nuestras curvas (cada 500 ft o 100 m según su unidad, las directoras numeradas), la casilla actúa entonces; una casilla «Curvas de nivel» marcada que no muestra nada dice que solo aparecen desde el zoom 9. «CAM»: vuelo
 militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las zonas R, D, P, TSA, TRA, CBA
 y la red de vuelo bajo a todos los niveles. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195). El modo
 se conserva en este dispositivo.

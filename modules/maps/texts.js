@@ -638,6 +638,16 @@ export const TX = {
     'Die Vorbereitung der Mission {id} abbrechen? Das Fenster, die gewählte Karte und die von der Mission vorgegebenen Punkte werden entfernt (Ihre anderen Punkte bleiben).',
     '¿Abandonar la preparación de la misión {id}? Se quitan la ventana, el mapa elegido y los puntos que impone la misión (sus otros puntos se quedan).'
   ],
+  // le fond topographique (SOG-0300)
+  topoDown: ['Fond topographique indisponible : fond de repli', 'Topographic base unavailable: fallback base',
+    'Topografischer Hintergrund nicht verfügbar: Ersatzhintergrund', 'Fondo topográfico no disponible: fondo de reserva'
+  ],
+  contoursOwn: ['Ce fond porte ses propres courbes de niveau', 'This base carries its own contour lines',
+    'Dieser Hintergrund trägt seine eigenen Höhenlinien', 'Este fondo lleva sus propias curvas de nivel'
+  ],
+  contoursFar: ['Courbes de niveau : visibles à partir du zoom {z}, rapprochez la carte', 'Contour lines: visible from zoom {z}, zoom in',
+    'Höhenlinien: sichtbar ab Zoom {z}, näher heranzoomen', 'Curvas de nivel: visibles desde el zoom {z}, acerque el mapa'
+  ],
   mbLoading: ['Chargement de la mission…', 'Loading the mission…', 'Mission wird geladen …', 'Cargando la misión…'],
   mbAbandonOk: ['Abandonner', 'Abandon', 'Abbrechen', 'Abandonar'],
   mbKeep: ['Garder la mission', 'Keep the mission', 'Mission behalten', 'Conservar la misión'],

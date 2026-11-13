@@ -7289,3 +7289,57 @@ def k_tidy(c):
     last = c.js(_TIDY_COUNT_JS)
     c.ok(N(10, 'T-087') in last['a'] and last['c'] == [N(1, 'T-087')], str(last), 'the source copy is intact and the unfaithful file written for the check is not left in the recu/ of the other mission')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree
+
+
+
+import base64 as _b64
+_PNG1 = _b64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+
+
+@case('D216', 'The topographic view of the Map (SOG-0300, first view slice): its base is OpenTopoMap (raster tiles from a, b and c.tile.opentopomap.org only, its contour lines and relief in the tiles, its credit in the map’s « i »), no racetracks and no RTBA, the « Contour lines » box greyed with its reason; when the tiles do not come, the base falls back to the former one (OpenFreeMap, our own contour lines and relief), says so in one line and the box acts again', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0300 (the user, 13 Nov: « toujours pas de courbes de niveau sur la vue topo. La vue topo ne doit pas contenir les hippodromes !… Le profil « vfr détaillé » de la V2 est parfait pour la vue topo, et utilise « opentopomap » »; the ergonomist: OpenTopoMap with a fallback and a line that says so, the box greyed with its reason on that base and acting on the fallback, the credit shown, the tiles of the displayed view only)')
+def d216(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    docs = fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'topo', 'layers': {}}, 'cache']]
+    reqs = []
+    tiles = re.compile(r'tile\.opentopomap\.org')
+    c.context.route(tiles, lambda r: (reqs.append(r.request.url), r.fulfill(status=200, content_type='image/png', body=_PNG1)))
+    c.open('maps', docs=docs, flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js(_CONT_SPY_JS)
+    st = c.js("() => { const S = window.__mp.S, src = S.map.getStyle().sources.otm; return { base: S.profile.base, hosts: src ? src.tiles.map(x => new URL(x).host) : null, zones: S.profile.zones, down: !!S.topoDown, attr: src ? src.attribution : '', hill: !!S.map.getLayer('mp-hillshade') } }")
+    c.eq([st['base'], st['hosts']], ['otm-topo', ['a.tile.opentopomap.org', 'b.tile.opentopomap.org', 'c.tile.opentopomap.org']], 'the base is OpenTopoMap, from its three tile hosts only', what=str(st))
+    c.ok(st['zones'] == [] and not st['hill'] and 'OpenTopoMap' in st['attr'] and 'OpenStreetMap' in st['attr'], str(st), 'no zone (no racetrack, no RTBA), no shading of our own, the credit of the source says OpenTopoMap and OpenStreetMap')
+    c.js("() => { window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 12 }); return true }")
+    c.until("() => window.__mp.S.topoOk === true", timeout=15000, what='a tile of the topographic base came')
+    c.tap('[data-mp="layers"]')
+    c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what='the Layers sheet is open')
+    box = c.js("() => { const r = window.__mp.S.layersEl.querySelector('input[data-layer=contours]'); return { disabled: r.disabled, title: r.closest('label').title, drp: window.__mp.S.layersEl.querySelector('input[data-layer=asDrp]').checked } }")
+    c.ok(box['disabled'] and box['title'] and not box['drp'], str(box), 'the « Contour lines » box is greyed with its reason (this base carries its own), the R / D / P spaces are not ticked')
+    c.wait(1500)
+    c.eq(c.js("() => window.__ct.length"), 0, 'our own contour lines are not drawn over a base that carries its own', what='contour calls')
+    c.ok(reqs and all(re.match(r'https://[abc]\.tile\.opentopomap\.org/\d+/\d+/\d+\.png$', x) for x in reqs) and len(reqs) < 80, str(len(reqs)), 'only tiles of the displayed view are asked, from the three hosts')
+    c.shot('D216_standard_topo_delivered.png')
+    # the tiles do not come: the fallback base, said in one line, and the box acts again
+    c.context.unroute(tiles)
+    c.context.route(tiles, lambda r: r.abort())
+    c.open('maps', docs=docs, flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js(_CONT_SPY_JS)
+    c.js("() => { window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 12 }); return true }")
+    c.until("() => window.__mp.S.topoDown === true", timeout=30000, what='after three errors without a tile the base falls back')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", tx(M, 'topoDown', c.lang), timeout=4000, what='the Map says in one line that the topographic base is unavailable')
+    c.until("() => !window.__mp.S.map.getStyle().sources.otm", timeout=15000, what='the style is the fallback one')
+    c.js("() => { window.__mpMap.jumpTo({ center: [2.81, 45.61], zoom: 12.1 }); return true }")
+    c.until("() => window.__ct.length > 0", timeout=15000, what='our own contour lines are drawn again on the fallback base')
+    c.tap('[data-mp="layers"]')
+    c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what='the Layers sheet is open')
+    c.eq(c.js("() => window.__mp.S.layersEl.querySelector('input[data-layer=contours]').disabled"), False, 'the box acts again on the fallback base', what='disabled')
+    c.shot('D216_standard_fallback_delivered.png')
+    c.context.unroute(tiles)
+    c.errors[:] = [e for e in c.errors if 'opentopomap' not in e.lower() and 'Failed to load resource' not in e and 'ERR_FAILED' not in e]

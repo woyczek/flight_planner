@@ -174,8 +174,8 @@ function modeProfile(mode = S.preset, levelFt = S.route.levelFt) {
     return {
       ...p,
       id: 'v3-topo',
-      base: 'ofm-liberty',
-      hillshade: true,
+      base: 'otm-topo', // OpenTopoMap : courbes de niveau et relief dans les tuiles (SOG-0300) ; sans lui (S.topoDown), le fond de repli et nos courbes
+      hillshade: false,
       cities: true,
       zones: [],
       corridorNm: 0,
@@ -477,6 +477,14 @@ export function fillLayers() {
     if (c.checked !== v) c.checked = v;
     if (c.dataset.layer === 'corridor' && c.disabled !== !!S.corrForced) c.disabled = !!S
       .corrForced; // forcée : la case l'est, sa raison écrite à côté (SOG-0246)
+    if (c.dataset.layer ===
+      'contours') { // sur le fond OpenTopoMap la case est grisée, sa raison dite : ce fond porte ses propres courbes (SOG-0300)
+      const own = S.profile?.base === 'otm-topo' && !S.topoDown,
+        lab = c.closest('label'),
+        tip = own ? tt(TX.contoursOwn) : '';
+      if (c.disabled !== own) c.disabled = own;
+      if (lab && lab.title !== tip) lab.title = tip;
+    }
   }
   const why = S.layersEl.querySelector('.mp-corr-why'),
     note = S.layersEl.querySelector('.mp-cx-note');

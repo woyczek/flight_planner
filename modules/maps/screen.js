@@ -36,7 +36,8 @@ import {
 import {
   toggleModes,
   closePanels,
-  toggleLayers
+  toggleLayers,
+  fillLayers
 } from './layers.js';
 import {
   dataHead,
@@ -83,8 +84,22 @@ export async function loadLibs() {
 /** Style du fond : celui du profil d'affichage, de jour ; la nuit, le style sombre. */
 export const styleFor = () => baseStyle({
   dark: S.theme?.dark,
-  base: S.profile?.base
+  base: S.topoDown && S.profile?.base === 'otm-topo' ? 'ofm-liberty' : S.profile
+    ?.base // le fond topographique qui ne vient pas : le fond de repli (SOG-0300)
 });
+/** Une erreur du fond topographique (tuile refusée, hôte injoignable) : après trois erreurs sans qu'une seule tuile soit venue, le fond de repli (OpenFreeMap et nos courbes de niveau)
+ *  prend la place, une fois, et la Carte le dit en une ligne. */
+function topoError(e) {
+  if (!S || S.topoDown || S.topoOk || e?.sourceId !== 'otm') return;
+  S.topoErr = (S.topoErr || 0) + 1;
+  if (S.topoErr < 3) return;
+  S.topoDown = true;
+  S.ctx.notify?.(tt(TX.topoDown), 'warn');
+  (S.map || S.mapNew)?.setStyle(
+    styleFor()); // le relief et les courbes de niveau de la Carte reviennent au chargement du style (relief), au prochain dessin (courbes)
+  schedule();
+  if (S.dpanel === 'layers') fillLayers();
+}
 
 // ---------------------------------------------------------------- boutons sur la carte
 /** Couche de superposition hors du cadre (page d'essai, sans ctx.overlay) : les deux colonnes construites dans la boîte de la
@@ -474,7 +489,13 @@ export async function startTiles() {
       customAttribution: tt(TX.credit)
     },
     alive: () => !!S,
-    onCreate: m => S.mapNew = m,
+    onCreate: m => {
+      S.mapNew = m;
+      m.on('error', topoError); // dès la création : les erreurs du fond topographique avant le chargement comptent aussi (SOG-0300)
+      m.on('data', e => {
+        if (S && e.sourceId === 'otm' && e.tile) S.topoOk = true; // une tuile est venue : le fond topographique est là
+      });
+    },
     onStyleLoad: map => {
       if (S?.map !== map) return;
       mapBase(map);
