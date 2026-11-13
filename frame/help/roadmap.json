@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6bbc76d",
+  "organisation": "7c095f7",
   "fiches": 334,
   "untranslated": 0,
   "priorities": 310
@@ -358,11 +358,12 @@
     {
      "id": "SOG-0329",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Recette : un troisième verdict « Accepter avec réserves (pas de retest) » ; refuser implique un retest",
      "en": "Acceptance: a third verdict « Accept with reservations (no retest) »; refusing means a retest",
      "de": "Abnahme: ein drittes Urteil « Mit Vorbehalt annehmen (kein Nachtest) »; Ablehnen heißt Nachtest",
-     "es": "Recepción: un tercer veredicto « Aceptar con reservas (sin nueva prueba) »; rechazar implica una nueva prueba"
+     "es": "Recepción: un tercer veredicto « Aceptar con reservas (sin nueva prueba) »; rechazar implica una nueva prueba",
+     "test": true
     }
    ]
   },
@@ -2235,11 +2236,12 @@
     {
      "id": "SOG-0331",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions (application Compagnie) : la colonne de droite clignote quand le rail s'élargit",
      "en": "Missions (Company app): the right column flickers when the rail widens",
      "de": "Missionen (App Gesellschaft): die rechte Spalte flackert, wenn die Leiste breiter wird",
-     "es": "Misiones (aplicación Compañía): la columna derecha parpadea cuando el riel se ensancha"
+     "es": "Misiones (aplicación Compañía): la columna derecha parpadea cuando el riel se ensancha",
+     "test": true
     }
    ]
   },

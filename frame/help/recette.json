@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 202,
+  "tests": 204,
   "verdicts": 148
  },
  "apps": [
@@ -2883,10 +2883,10 @@
     "de": "Einen Fehler oder Wunsch direkt in der Anwendung melden",
     "es": "Señalar un fallo o una petición desde la aplicación"
    },
-   "test": "Relance le lanceur (nouveaux verbes), recharge la page. Depuis un écran quelconque (Carburant, par exemple), Aide › Signaler : le cadre « Noté tout seul » nomme cet écran, la langue et la version. Choisis une sorte, écris un titre et un texte, joins une capture, « Envoyer » : le message dit que c'est écrit sur ce poste ; le signalement apparaît dessous dans « Mes signalements ». Je le lis à mon prochain tour et j'en fais une fiche : dis-moi si elle est arrivée.",
+   "test": "Relance le lanceur, recharge la page. Ouvre l'Aide (« ? ») ou la Recette : un bouton « Signaler » est en haut à droite de la page et y reste quand tu fais défiler. Choisis une sorte, un titre, un texte, joins une capture, « Envoyer » : c'est écrit sur ce poste et ça apparaît dans « Mes signalements ». Je le lis à mon prochain tour : dis-moi si la fiche est arrivée.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-13T15:02:50Z"
+   "delivered": "2026-11-13T17:47:49Z"
   },
   {
    "id": "SOG-0317",
@@ -2990,6 +2990,20 @@
    "delivered": "2026-11-13T15:37:53Z"
   },
   {
+   "id": "SOG-0329",
+   "app": "pilote",
+   "title": {
+    "fr": "Recette : un troisième verdict « Accepter avec réserves (pas de retest) » ; refuser implique un retest",
+    "en": "Acceptance: a third verdict « Accept with reservations (no retest) »; refusing means a retest",
+    "de": "Abnahme: ein drittes Urteil « Mit Vorbehalt annehmen (kein Nachtest) »; Ablehnen heißt Nachtest",
+    "es": "Recepción: un tercer veredicto « Aceptar con reservas (sin nueva prueba) »; rechazar implica una nueva prueba"
+   },
+   "test": "Relance le lanceur (nouveau verbe), recharge la page. Aide › Recette : chaque test a trois boutons — « Validé », « Accepter avec réserves », « Refusé ». « Accepter avec réserves » demande un commentaire, range le test avec les validés et ne te le représente plus ; je fais de ta réserve une fiche mineure que je clos moi-même.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T17:44:32Z"
+  },
+  {
    "id": "SOG-0330",
    "app": "pilote",
    "title": {
@@ -3002,7 +3016,37 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T16:54:11Z"
+  },
+  {
+   "id": "SOG-0331",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions (application Compagnie) : la colonne de droite clignote quand le rail s'élargit",
+    "en": "Missions (Company app): the right column flickers when the rail widens",
+    "de": "Missionen (App Gesellschaft): die rechte Spalte flackert, wenn die Leiste breiter wird",
+    "es": "Misiones (aplicación Compañía): la columna derecha parpadea cuando el riel se ensancha"
+   },
+   "test": "Recharge la page. Compagnie › Missions, ouvre une mission ; agrandis lentement la fenêtre de 1 000 à 1 200 px de large : la colonne de droite (« Description ») reste là quand la barre de gauche passe du rail à la barre entière ; plus de disparition puis de retour.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T17:44:40Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0054",
+   "fiche": "SOG-0255",
+   "app": "maintenance",
+   "question": "Recherche globale (ta demande « un858 depuis la carte ») : la maquette de l'entrée te va-t-elle ? Ouvre http://127.0.0.1:8000/frame/help/maquette/recherche.html (un bouton par état en haut)",
+   "context": "Une loupe dans la barre du haut, à côté de l'aide et des réglages (« / » ou Ctrl+K au clavier) ; UN champ ; au téléphone un calque plein écran, en grand un panneau ancré à la loupe. Les résultats sont groupés par sorte — terrains, points et balises, voies aériennes, espaces, procédures, missions, aéronefs —, cinq par groupe puis « Tout voir » ; chaque ligne dit ce que c'est et où, et la ligne entière est le geste (« Voir sur la carte › », « Ouvrir la mission › », « Ouvrir la fiche › »). L'état vide garde tes cinq dernières recherches sur l'appareil. Rien ne sort du poste. Limites dites : les voies, les espaces et les procédures n'arriveront qu'aux tranches 2 et 3 ; pour ce qui n'est pas un terrain, on ne sait pas dire « existe ailleurs » — la phrase est « Rien pour « UN858 » dans vos zones installées (France, Espagne…) ». C'est un chantier de la bêta 1 : ta réponse fixe la forme, le code viendra après les alphas.",
+   "options": [
+    "Oui, on codera sur cette maquette",
+    "Oui, avec mes remarques (dans le texte)",
+    "Non, à reprendre (dis-moi quoi)"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }
