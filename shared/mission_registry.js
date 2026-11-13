@@ -172,7 +172,7 @@
   /** Analyse le texte d'un suivi.yaml ; null s'il est vide, illisible ou n'est pas un objet. */
   const readSuivi = text => {
     try {
-      const y = window.jsyaml?.load(String(text || '')) || null;
+      const y = window.jsyaml ? loadYaml(String(text || '')) || null : null;
       return y && typeof y === 'object' ? y : null;
     } catch {
       return null;
@@ -729,7 +729,7 @@
         const md = /^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)\b/im.exec(x.text || '');
         if (md) return SM.parseId(md[1]).id;
         try {
-          const y = window.jsyaml.load(x.text || '');
+          const y = loadYaml(x.text || '');
           return y && typeof y === 'object' && y.mission?.id ? SM.parseId(String(y.mission.id)).id : '';
         } catch {
           return '';
@@ -939,7 +939,7 @@
     if (!y) {
       try {
         const txt = await readText(mh.h, `mission${normMissionId(String(mh.folder || '').split('/').pop())}.yaml`) || '';
-        y = txt ? window.jsyaml.load(txt.replace(/^#.*\n/, '')) : null;
+        y = txt ? loadYaml(txt.replace(/^#.*\n/, '')) : null;
       } catch {
         y = null;
       }
@@ -1354,7 +1354,7 @@
     const i = await window.ReportIndex?.load?.();
     if (i) crList = i.missions;
     else try {
-      crList = window.jsyaml?.load(readJson('missionCoreLedger:v2', null)?.text || '')?.missions || [];
+      crList = (window.jsyaml ? loadYaml(readJson('missionCoreLedger:v2', null)?.text || '') : null)?.missions || [];
     } catch {
       crList = [];
     }
@@ -2126,7 +2126,7 @@
     // place occupée et cartes surnuméraires (générées mais absentes de la liste des cartes du YAML)
     let yObj = null;
     try {
-      yObj = yaml ? window.jsyaml.load((await (await yaml.h.getFile()).text()).replace(/^#.*\n/, '')) : null;
+      yObj = yaml ? loadYaml((await (await yaml.h.getFile()).text()).replace(/^#.*\n/, '')) : null;
     } catch {
       yObj = null;
     }
@@ -2211,7 +2211,7 @@
     /** Markdown produit à la demande depuis le YAML (SiaMission.markdownOf, même code que l'export du générateur) :
      *  affiché, pas écrit — le YAML reste la seule source. */
     async function showGeneratedMd() {
-      const y = window.jsyaml.load((await text(yaml)).replace(/^#.*\n/, '')) || {},
+      const y = loadYaml((await text(yaml)).replace(/^#.*\n/, '')) || {},
         docs = [];
       for (const x of operationMembers(m).filter(x => keyOf(x) !== keyOf(m))) { // exercice : organisation de l'opération
         try {
@@ -2219,7 +2219,7 @@
               folder: x.folder
             }),
             f = h && await readText(h.h, `mission${normMissionId(x.id)}.yaml`);
-          if (f) docs.push(window.jsyaml.load(f.replace(/^#.*\n/, '')));
+          if (f) docs.push(loadYaml(f.replace(/^#.*\n/, '')));
         } catch {
           /* illisible */
         }
@@ -2246,8 +2246,8 @@
     host.querySelectorAll('[data-v]').forEach(a => a.onclick = async e => {
       e.preventDefault();
       const f = vers[+a.dataset.v],
-        old = window.jsyaml.load((await text(f)).replace(/^#.*\n/, '')) || {},
-        cur = yaml ? window.jsyaml.load((await text(yaml)).replace(/^#.*\n/, '')) || {} : {};
+        old = loadYaml((await text(f)).replace(/^#.*\n/, '')) || {},
+        cur = yaml ? loadYaml((await text(yaml)).replace(/^#.*\n/, '')) || {} : {};
       const d = C.diffOf(old, cur);
       view(f.name, `<p><b>${esc(t(['Différences avec la version actuelle', 'Differences with the current version']))}</b> : ${esc(d.join(', ') || t(['aucune', 'none']))}</p><pre>${esc(await text(f))}</pre>`);
     });

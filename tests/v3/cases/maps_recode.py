@@ -6081,6 +6081,26 @@ def d_altsdrawn(c):
     c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc(updated_at='2026-11-09T16:41:00Z'))
     c.until("() => window.__drawn.length >= 2", timeout=8000, what='a new publication is announced again')
 
+# The index of the V2 (IndexedDB « defaIndex », MissionIndex) of a bench: a registry line (T-085, its former number 85 in `formerId`) and an entry under the bare former number.
+_FORMER_LINE = """(id, former, title) => ({ id, formerId: former, series: '', number: +former, type: 'AIRLIFT', family: 'T', subtype: '', title, folder: 'T_AIRLIFT/' + id,
+  files: ['mission' + id + '.yaml'], source: 'dossier', status: 'generated', statusAt: '2026-10-20T10:00:00.000Z', notes: '', flownAt: '', addedAt: '2026-10-20T10:00:00.000Z',
+  teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0, hasYaml: true })"""
+_FORMER_OLD = """(id, title, status, notes, flownAt) => ({ id, formerId: '', series: '', number: +id, type: 'AIRLIFT', family: 'T', subtype: '', title, folder: '', files: [],
+  source: 'collage', status, statusAt: '2026-10-01T10:00:00.000Z', notes, flownAt, addedAt: '2026-10-01T10:00:00.000Z', teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0 })"""
+_FORMER_SEED_JS = "async (spec) => { const line = " + _FORMER_LINE + ", old = " + _FORMER_OLD + ";" + """
+  await window.MissionIndex.ready;
+  const make = s => { const b = Array.isArray(s) ? s : s.base, o = b.length === 3 ? line(...b) : old(...b); return Array.isArray(s) ? o : { ...o, ...s.set } };
+  await window.MissionIndex.save(spec.map(make), new Date().toISOString());
+  return window.MissionIndex.all().length }"""
+_FORMER_STATE_JS = """async () => { await window.MissionIndex.ready; const R = window.MissionRegistry;
+  return { index: window.MissionIndex.all().map(m => ({ id: m.id, by: m.supersededBy || '', status: m.status || '', notes: m.notes || '', flownAt: m.flownAt || '' })),
+    shown: R.get().missions.filter(R.matches).map(m => m.id), note: (document.getElementById('rgFormer') || {}).textContent || '' } }"""
+
+
+# the ledger of the reports of the bench: one report written under the number 89
+_FORMER_LEDGER_JS = r"""() => { localStorage.setItem('missionCoreLedger:v2', JSON.stringify({ text: ['missions:', '  - family: AIRLIFT', '    metadata:', "      missionNumber: '89'", '      date: 2026-10-05', ''].join('\n') })); return true }"""
+
+
 @case('K219', 'The registry of the V2 shows one mission under its lettered identifier when its index also holds the number it had before the renumbering: what was attached to the old number follows, an old entry carrying a field the line lacks is kept (and said), nothing else is purged', 'K',
       tags=('maps',), screens=False, designs=('standard',),
       rule='SOG-0289 (the user: « 85 est doublon de T-085 … vérifier lequel est le plus complet, fusionner »; the ergonomist, 13 Nov): an index entry whose id is the formerId of a registry line, and that is not itself a line, is attached to that line; its status, notes and flight date follow; a field it has and the line lacks keeps it (hidden from the list, counted « n anciennes entrées gardées, plus complètes »); never a purge')
@@ -6088,6 +6108,7 @@ def k_former(c):
     c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
     c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry", timeout=15000, what='the registry page and its index are loaded')
     c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")      # the Centre of the bench (the default password of the template)
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders (their own repositories) are not in the test tree
     # 1. the old entry has what the line lacks (the title): kept, hidden, said; its status, notes and flight date follow
     c.eq(c.js(_FORMER_SEED_JS, [['T-085', '85', ''], ['85', 'Bench airlift', 'planned', 'bench note', '2026-10-01']]), 2, 'the bench index holds the line and the old number', what='index')
     c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
@@ -6608,3 +6629,14 @@ def d200(c):
     c.js("([z]) => { window.__mpMap.jumpTo({ center: [2.55, 50.2], zoom: z }); return true }", [8])
     c.wait(1800)
     c.ok(c.js("() => (window.__mp.S.windHits || []).length") >= 3, '', 'the wind barbs of « Winds aloft » are still drawn')
+
+
+
+@case('K230', 'The V2 registry reads every YAML through the one guarded function: no direct jsyaml.load left but the function’s own, so a file with shared anchors is refused the same everywhere', 'K',
+      tags=('maps',), screens=False, static=True,
+      rule='audit 185 (Sécurisation): six direct window.jsyaml.load calls remained (the usage of a mission, the detail view, the generated Markdown twice, the two readers of the previous versions); loadYaml refuses a document beyond 200 000 nodes once its shared references are expanded')
+def k_loadyaml(c):
+    import re
+    src = (ROOT / 'shared' / 'mission_registry.js').read_text(encoding='utf-8')
+    direct = re.findall(r'window\.jsyaml\??\.load\(', src)
+    c.eq(len(direct), 1, 'one direct call: the one inside loadYaml itself', what=str(len(direct)))
