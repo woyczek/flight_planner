@@ -2783,7 +2783,7 @@ function onPlanClick(e) {
   if (st) return goStep(+st.dataset.step);
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   const pf = e.target.closest('[data-do="procfetch"]');
-  if (pf) return S.P.read(pf.dataset.icao); // « Lire » et « Relire » : un seul geste
+  if (pf) return Promise.resolve(S.P.read(pf.dataset.icao)).then(() => arrInfoKeep()); // « Lire » et « Relire » : un seul geste ; SOG-0325
   const ho = e.target.closest('[data-do="holdopen"]');
   if (ho) { // le temps sur zone d'un point sans temps : « ⏱ + » ouvre sa ligne, le champ prêt à la frappe
     (S.holdOpen ||= new Set()).add(String(ho.dataset.id || '').toUpperCase());
@@ -2852,10 +2852,8 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="when30"]')) return setWhen(30);
   if (e.target.closest('[data-do="whennow"]')) return setWhen(0);
   const wb = e.target.closest('[data-do="wx"]');
-  if (wb) {
-    atisRead(true); // « Lire la météo » relit aussi l'ATIS (SOG-0090)
-    return wxRead(wb);
-  }
+  if (wb) // « Lire la météo » relit aussi l'ATIS (SOG-0090) ; puis les données d'arrivée gardées dans le vol (SOG-0325 : un geste)
+    return Promise.all([atisRead(true), wxRead(wb)]).then(() => arrInfoKeep());
   const b = e.target.closest('[data-do]'),
     pick = e.target.closest('[data-pick]');
   if (b?.dataset.do === 'simbrief') return loadSimbrief();
@@ -4836,6 +4834,9 @@ async function startFlight() {
     const online = S.ctx.net?.online?.() !== false;
     if (online) await wxFetch(false).catch(() => {});
     if (gone(s)) return;
+    await arrInfoKeep().catch(
+      () => {}); // SOG-0325 : « Démarrer » est un geste qui garde les données d'arrivée (une seule écriture : saveFlight)
+    if (gone(s)) return;
     refresh();
     const offline = !online || S.wx?.cached,
       q = S.C?.q,
@@ -6435,7 +6436,7 @@ export async function mount(el, ctx) {
     metarQnh: icao => {
       const st = WX.station(self.wx?.metar?.[icao], null),
         q = Number.isFinite(+st?.qnh) ? Math.round(+st.qnh) : null;
-      return q != null && q >= 900 && q <= 1100 ? {
+      return q != null && q >= 850 && q <= 1090 ? {
         qnh: q,
         at: (/\b\d{2}(\d{4})Z\b/.exec(String(st.raw || '')) || [])[1] || ''
       } : null;
@@ -6858,6 +6859,68 @@ async function atisFeed(url, net, s = S) {
 }
 /** Lit l'ATIS des réseaux du vol (à l'ouverture de l'étape des procédures, sur « Lire la météo » ; jamais en minuterie), puis redessine
  *  les procédures. Sans réseau du vol : rien n'est demandé. */
+/** SOG-0325 (contrat de l'ergonome, 13/11 à 23 h 00) : les données d'arrivée gardées dans le vol (arr_info) — l'altitude du terrain
+ *  (la base), chaque QNH connu avec sa source et son heure (l'ATIS d'abord, puis le METAR), l'ATIS en ligne (lettre, piste, QNH, vent,
+ *  heure ; jamais son texte), `atis: null` quand rien n'est en ligne. Écrites SEULEMENT sur un geste (« Lire la météo des terrains »,
+ *  « Démarrer », « Relire »), jamais sur une minuterie ni à chaque METAR relu (SOG-0209 : un commit par écriture), et seulement quand
+ *  elles changent ; entre deux gestes l'écran peut montrer plus frais, l'heure de chaque valeur dite. Lues par CF.arrInfoOf. */
+async function arrInfoKeep() {
+  const s = S,
+    icao = String(S?.flight?.route?.arr || '').toUpperCase();
+  if (!s || gone(s) || s.flightPending || !/^[A-Z0-9]{4}$/.test(icao)) return;
+  const [ads, rws] = await Promise.all([Promise.resolve().then(() => s.ctx.aerodb?.aerodromes?.({
+    icao
+  })).catch(() => null), Promise.resolve().then(() => s.ctx.aerodb?.runways?.(icao)).catch(() => null)]);
+  if (gone(s) || S !== s || String(s.flight.route?.arr || '').toUpperCase() !== icao) return;
+  const e = +ads?.[0]?.elev,
+    elev = Number.isFinite(e) && e > -1500 && e < 30000 ? Math.round(e) : null,
+    nets = s.atis?.nets || [],
+    known = (Array.isArray(rws) ? rws : []).map(r => r?.id).filter(Boolean),
+    infos = nets.map(n => ATIS.atisInfo(n, s.atis.feeds?.[n], icao, 'arr')).filter(Boolean),
+    st = WX.station(s.wx?.metar?.[icao], null),
+    mq = Number.isFinite(+st?.qnh) && +st.qnh >= 850 && +st.qnh <= 1090 ? Math.round(+st.qnh) : null,
+    obs = +s.wx?.metar?.[icao]?.obsTime,
+    qnh = [];
+  for (const i of infos)
+    if (Number.isInteger(i.qnh) && !qnh.some(q => q.hpa === i.qnh)) qnh.push({
+      hpa: i.qnh,
+      src: 'atis',
+      net: i.net,
+      letter: i.letter || '',
+      at: i.when
+    });
+  if (mq != null && !qnh.some(q => q.hpa === mq)) qnh.push({
+    hpa: mq,
+    src: 'metar',
+    at: Number.isFinite(obs) && obs > 0 ? new Date(obs * 1000).toISOString() : null
+  });
+  const i = infos[0] || null,
+    side = i ? ATIS.atisSide(i.net, s.atis.feeds?.[i.net], icao, 'arr', known) : null,
+    next = {
+      icao,
+      elev_ft: elev,
+      elev_src: elev === null ? null : 'base',
+      qnh,
+      atis: i ? {
+        net: i.net,
+        letter: i.letter || '',
+        rwy: side?.rwys?.length === 1 ? side.rwys[0] : null,
+        qnh: Number.isInteger(i.qnh) ? i.qnh : null,
+        wind: i.wind || null,
+        at: i.when
+      } : null
+    },
+    cur = s.flight.arr_info;
+  if (cur && JSON.stringify({
+      ...cur,
+      updated_at: undefined
+    }) === JSON.stringify(next)) return; // rien de changé : rien d'écrit
+  s.flight.arr_info = {
+    ...next,
+    updated_at: new Date().toISOString()
+  };
+  saveFlight();
+}
 async function atisRead(force = false) {
   const s = S;
   if (!s?.ctx?.net?.fetch || s.atisBusy || (!force && s.atis && Date.now() - s.atis.at < ATIS_FRESH_MS)) return;

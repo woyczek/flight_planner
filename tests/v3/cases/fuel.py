@@ -5609,3 +5609,45 @@ def f219(c):
     c.ok(atis.startswith('ATIS F · VATSIM · ') and 'QNH 1016' in atis and '130° / 12 kt' in atis and 'Z' in atis, atis, '« ATIS F · VATSIM · piste 13R · QNH 1016 · 130° / 12 kt · …Z »')
     c.js(f"document.querySelector('{A} [data-terrain]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F219_{c.design}_{c.width}_{c.lang}_delivered.png')
+
+
+
+@case('F220', 'The arrival data kept in the flight (arr_info): written on a gesture only (« Lire la météo des terrains »), never on opening '
+      'nor on a METAR read by itself; the elevation, each QNH with its source and time (the ATIS first), the ATIS without its text; nothing '
+      'written when nothing changed; read back bounded by CF.arrInfoOf', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0325, the ergonomist\'s contract of 13 Nov, 23 h 00: arr_info { icao, elev_ft, elev_src, qnh [{ hpa, src, net?, letter?, at }], '
+      'atis { net, letter, rwy, qnh, wind, at } | null, updated_at }, written on a gesture only (SOG-0209: one commit per write), never the '
+      'ATIS text, bounded on read (hPa 850 to 1090, wind 0 to 360 and 0 to 150 kt, letter A to Z, runway by its pattern)')
+def f220(c):
+    route_metar(c, {'LFML': (310, 12)})   # QNH 1015
+    _atis_feeds(c, ['MARSEILLE INFORMATION F', 'RWY IN USE 13R', 'WIND 130/12KT', 'QNH 1016'])
+    _atis_open(c, {'vatsim': True})
+    A = f'{FUEL} [data-proc="arr"]'
+    c.until(f"/1016/.test(document.querySelector('{A} [data-terrain]')?.textContent || '') && /1015/.test(document.querySelector('{A} [data-terrain]')?.textContent || '')",
+            timeout=20000, what='the screen shows the ATIS and the METAR')
+    c.settle()
+    c.eq((c.doc('pilot/ABC/current_flight.json') or {}).get('arr_info'), None, 'nothing written on opening, nor on the METAR read by itself', what='no gesture')
+    c.js(f"document.querySelector('{FUEL} [data-do=wx]').click()")
+    d = cf_doc(c, lambda d: bool((d.get('arr_info') or {}).get('qnh')), 'arr_info written by the gesture', timeout=15000)
+    a = d['arr_info']
+    c.eq([a['icao'], a['elev_ft'], a['elev_src']], ['LFML', 100, 'base'], 'the elevation from the base', what='elevation')
+    c.eq([[q['hpa'], q['src'], q.get('net'), q.get('letter')] for q in a['qnh']], [[1016, 'atis', 'vatsim', 'F'], [1015, 'metar', None, None]],
+         'each QNH with its source, the ATIS first', what='qnh')
+    c.ok(all(q.get('at') for q in a['qnh']), a['qnh'], 'each QNH with its time')
+    c.eq({k: a['atis'][k] for k in ('net', 'letter', 'rwy', 'qnh', 'wind')}, {'net': 'vatsim', 'letter': 'F', 'rwy': '13R', 'qnh': 1016, 'wind': {'dir': 130, 'kt': 12}},
+         'the ATIS: letter, runway, QNH, wind', what='atis')
+    c.ok('MARSEILLE' not in json.dumps(a) and 'Invented' not in json.dumps(a), a, 'never the ATIS text, never a name')
+    # the same gesture again, nothing changed: nothing written
+    at = a['updated_at']
+    c.js(f"document.querySelector('{FUEL} [data-do=wx]').click()")
+    c.wait(2500)
+    c.settle()
+    c.eq(c.doc('pilot/ABC/current_flight.json')['arr_info']['updated_at'], at, 'the same values: nothing written again', what='no write')
+    # read back bounded (a flight written by any device is an untrusted input)
+    got = c.js("""async () => { const CF = await import('/frame/lib/current_flight.js');
+        return CF.arrInfoOf({ arr_info: { icao: 'lfml', elev_ft: '1e9', text: 'SECRET', qnh: [{ hpa: 2000, src: 'metar' }, { hpa: 1016, src: 'atis', net: 'x' },
+          { hpa: 1013, src: 'metar', at: 'never', name: 'P' }], atis: { net: 'ivao', letter: 'KK', rwy: '99', qnh: 1016, wind: { dir: 400, kt: 5 }, text: 'X' } } }) }""")
+    c.eq(got, {'icao': 'LFML', 'elev_ft': None, 'elev_src': None, 'qnh': [{'hpa': 1013, 'src': 'metar', 'at': None}],
+               'atis': {'net': 'ivao', 'letter': '', 'rwy': None, 'qnh': 1016, 'wind': None, 'at': None}, 'updated_at': None},
+         'bounded on read: out-of-range values dropped, no text, no unknown key', what='arrInfoOf')

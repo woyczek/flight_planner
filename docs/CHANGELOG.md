@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the arrival data (elevation, QNH, ATIS) kept in the flight with their time and source, on a gesture only; `CF.arrInfoOf` reads them bounded** (fuel DECISIONS, INTEGRATION § 3; noreg F220; SOG-0325).
 - **Fuel › procedures: a « Terrain » line on the arrival (elevation, QNH of the ATIS then of the METAR, « QNH inconnu »), and the ATIS line carries letter, network, runway, QNH, wind and time** (fuel DECISIONS; noreg F219, F152; SOG-0325, SOG-0308 slice 4).
 - **Fuel › route: the head route first, the variants added when found (two requests), « du cache, calculé à … »; an input changed during the search stops it and computes again** (fuel DECISIONS; noreg F218; SOG-0296).
 - **Report photos from a device without launcher** (SOG-0335, step 2): up to three photos of the library, reduced on the device (1 600 px, 400 KB, the EXIF and its GPS position gone), written as a JSON document next to the report (`pilot/<trigram>/signalements/<id>/<n>.json`); type by the bytes (never svg), base64 checked before decoding, dimensions before an image, at write and at read; the workstation shows them and takes them over with the report; the screen says they go to the company's data repository, readable by its pilots; noreg A197

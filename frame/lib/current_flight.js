@@ -7,6 +7,7 @@
 // (§ 10.29 b) ; ce fichier les ré-exporte pendant la transition : importer de préférence depuis eux.
 // API :
 //   FUEL_FIELDS : champs de premier niveau écrits par fuel ; FUEL_PROGRESS : clés de progress écrites par fuel.
+//   arrInfoOf(f) : les données d'arrivée gardées par Carburant (SOG-0325), relues bornées (le suivi du vol, le compte rendu).
 //   routeBase(rec), changesOf(base, mine), applyChanges(stored, ch), setRoute(data, path, ch, { by }) : un seul écrivain de la route et
 //     du niveau (R-F4, voir plus bas) ; Carburant ne passe plus route ni level par merge.
 //   merge(stored, mine, { fields, progressKeys, by }) → l'enregistrement à écrire : stored (relu juste avant), avec les
@@ -25,7 +26,8 @@ export const FUEL_FIELDS = ['aircraft', 'route', 'level', 'wind', 'windSource', 
   'missionCategory', // sa catégorie (SOG-0041, § 10.38), lue par la migration de mission_themes.js (fromCategory)
   'airline', // le code de la compagnie où le vol est préparé (SOG-0041) : le compte rendu en propose les familles
   'theme',
-  'series' // le thème et le sous-thème du vol (SOG-0202 T2, § 10.48) : choisis à l'étape Vol, remplis par la mission ; le compte rendu les reprend
+  'series', // le thème et le sous-thème du vol (SOG-0202 T2, § 10.48) : choisis à l'étape Vol, remplis par la mission ; le compte rendu les reprend
+  'arr_info' // SOG-0325 : les données d'arrivée (altitude, QNH, ATIS) avec leur heure et leur source ; lues bornées par arrInfoOf
 ];
 export const FUEL_PROGRESS = ['at', 'plannedPos', 'eta', 'fuelRemainingKg', 'remainingNm', 'phase'];
 
@@ -124,3 +126,57 @@ export async function setRoute(data, path, ch, {
 // le vol dans le temps et la route et ses procédures : deux fichiers (§ 10.29 b), ré-exportés ici pendant la transition
 export * from './flight_time.js';
 export * from './flight_path.js';
+
+/** SOG-0325 (contrat de l'ergonome, 13/11 à 23 h 00) : les données d'arrivée gardées par Carburant (`arr_info`), relues bornées — le vol
+ *  est écrit par n'importe quel appareil, c'est une entrée non fiable. { icao, elev_ft, elev_src ('base' | null), qnh: [{ hpa, src
+ *  ('atis' | 'metar'), net?, letter?, at }] (l'ATIS d'abord), atis: { net, letter, rwy, qnh, wind: { dir, kt } | null, at } | null,
+ *  updated_at } ; null sans terrain lisible. hPa de 850 à 1090, vent de 0 à 360° et de 0 à 150 kt (dir null : calme), lettre A à Z,
+ *  piste par son motif, heures ISO ; tout autre champ (un texte d'ATIS, un nom) est laissé. */
+export function arrInfoOf(f) {
+  const a = f?.arr_info;
+  if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
+  const icao = String(a.icao ?? '').toUpperCase();
+  if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
+  const iso = v => {
+      const t = Date.parse(typeof v === 'string' ? v : '');
+      return Number.isFinite(t) ? new Date(t).toISOString() : null;
+    },
+    hpa = v => v !== null && v !== '' && Number.isInteger(+v) && +v >= 850 && +v <= 1090 ? +v : null,
+    net = v => v === 'ivao' || v === 'vatsim' ? v : null,
+    letter = v => typeof v === 'string' && /^[A-Z]$/.test(v) ? v : '',
+    rwy = v => typeof v === 'string' && /^(0[1-9]|[12]\d|3[0-6])[LRC]?$/.test(v) ? v : null,
+    wind = w => w && typeof w === 'object' && w.kt !== null && Number.isFinite(+w.kt) && +w.kt >= 0 && +w.kt <= 150 && (w.dir === null || w
+      .dir !== '' && Number.isFinite(+w.dir) && +w.dir >= 0 && +w.dir <= 360) ? {
+      dir: w.dir === null ? null : Math.round(+w.dir),
+      kt: Math.round(+w.kt)
+    } : null,
+    e = a.elev_ft !== null && a.elev_ft !== '' && Number.isFinite(+a.elev_ft) && +a.elev_ft > -1500 && +a.elev_ft < 30000 ? Math.round(+a
+      .elev_ft) : null,
+    qnh = (Array.isArray(a.qnh) ? a.qnh : []).slice(0, 4).map(q => q?.src === 'atis' && net(q.net) ? {
+      hpa: hpa(q.hpa),
+      src: 'atis',
+      net: net(q.net),
+      letter: letter(q.letter),
+      at: iso(q.at)
+    } : q?.src === 'metar' ? {
+      hpa: hpa(q.hpa),
+      src: 'metar',
+      at: iso(q.at)
+    } : null).filter(q => q && q.hpa !== null),
+    t = a.atis && typeof a.atis === 'object' && !Array.isArray(a.atis) && net(a.atis.net) ? a.atis : null;
+  return {
+    icao,
+    elev_ft: e,
+    elev_src: e === null ? null : 'base',
+    qnh,
+    atis: t ? {
+      net: net(t.net),
+      letter: letter(t.letter),
+      rwy: rwy(t.rwy),
+      qnh: hpa(t.qnh),
+      wind: wind(t.wind),
+      at: iso(t.at)
+    } : null,
+    updated_at: iso(a.updated_at)
+  };
+}

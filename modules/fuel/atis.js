@@ -107,7 +107,7 @@ function entriesOf(net, feed, icao) {
   return out;
 }
 
-/** SOG-0325: the QNH an ATIS text says (hPa, an integer from 900 to 1100) — a closed list of phrasings: « QNH 1016 », « Q1016 »,
+/** SOG-0325: the QNH an ATIS text says (hPa, an integer from 850 to 1090) — a closed list of phrasings: « QNH 1016 », « Q1016 »,
  *  « ALTIMETER 2992 » / « A2992 » (inches, converted); two values that differ: null (nothing without proof). */
 export function qnhOfText(text) {
   const t = String(text || '').toUpperCase(),
@@ -118,7 +118,7 @@ export function qnhOfText(text) {
   for (const m of t.matchAll(/\bALTIMETER\s*:?\s*([23]\d)\.?(\d{2})\b/g)) got.add(inch(m[1], m[2]));
   for (const m of t.matchAll(/(?<![A-Z0-9/])A([23]\d)(\d{2})(?![0-9A-Z])/g)) got.add(inch(m[1], m[2]));
   const v = [...got];
-  return v.length === 1 && v[0] >= 900 && v[0] <= 1100 ? v[0] : null;
+  return v.length === 1 && v[0] >= 850 && v[0] <= 1090 ? v[0] : null; // les bornes du contrat arr_info
 }
 
 /** SOG-0325: the wind an ATIS text says — « WIND 130/12KT », « WIND 130 DEGREES 12 KNOTS », a METAR group « 13012KT » (gusts left out);
@@ -155,6 +155,7 @@ export function atisInfo(net, feed, icao, side, now = Date.now()) {
     net,
     letter: last.letter,
     at: hhmm(last.at),
+    when: new Date(last.at).toISOString(), // its time, kept in the flight (arr_info)
     qnh: qnhOfText(last.text),
     wind: windOfText(last.text)
   };

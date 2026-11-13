@@ -1959,3 +1959,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   each QNH, the ATIS's first, the METAR's with its time when it differs; « QNH inconnu » without either; nothing invented. NOT done here:
   keeping these values in the flight with their time and source (the contract `arr_info` is proposed to the ergonomist; the flight
   follow of BUGS SOG and the report will read it). F219 (red before); F152 follows (the new line, the trap ATIS gives its wind).
+- **13 Nov 2026 — SOG-0325 (write): `arr_info` in the flight, on a gesture only** (the ergonomist's contract, 23 h 00; INTEGRATION § 3).
+  `arrInfoKeep` writes { icao, elev_ft, elev_src, qnh [ATIS first, then METAR, each with its time], atis | null } on « Lire la météo
+  des terrains », « Démarrer » and the procedures' « Lire » / « Relire » — never on a timer nor on a METAR read by itself (SOG-0209) — and
+  only when a value changed. `CF.FUEL_FIELDS` gains `arr_info` in this commit (the exception granted: the field and its writer in one
+  commit); `CF.arrInfoOf` reads it bounded (hPa 850 to 1090, the bounds `qnhOfText` and the screen now use too). F220 (red before);
+  the readers of the flight played: journeys P1, P2, P3 (Map, Météo, report, Mes vols) and D30, D31.

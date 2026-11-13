@@ -245,6 +245,15 @@ report and maps never write nor erase it.
 - `wind` is null when unknown; `ofp` is null without a SimBrief flight plan (summary only: the OFP itself stays in the
   device cache).
 - Maps reads it as is; a field a module does not know is kept when it writes the record back.
+- `arr_info` (SOG-0325, the ergonomist's contract of 13 Nov 2026, 23 h 00; written by Fuel only, `CF.FUEL_FIELDS`): the arrival data
+  with their time and source, so that the flight follow (descent, approach) and the report read them without computing them again —
+  `{ icao, elev_ft (the base) | null, elev_src: 'base' | null, qnh: [{ hpa, src: 'atis', net, letter, at } | { hpa, src: 'metar', at }]
+  (the ATIS first, a value once), atis: { net, letter, rwy | null, qnh | null, wind: { dir | null (calm), kt } | null, at } | null (nothing
+  on air), updated_at }`; times ISO UTC. Written ONLY on a gesture — « Lire la météo des terrains », « Démarrer », the procedures'
+  « Lire » / « Relire » — never on a timer nor on a METAR read by itself (SOG-0209: one commit per write), and only when a value
+  changed; between two gestures the screen may show fresher values, each with its time. Never the ATIS text, never a name. A reader
+  goes through `CF.arrInfoOf(flight)` (`frame/lib/current_flight.js`): hPa 850 to 1090, wind 0 to 360° and 0 to 150 kt, letter A to
+  Z, runway by its pattern, unknown keys left — the record is written by any device, an untrusted input.
 
 ## 3 bis. The proposed routes for the Map — `cache/fuel/route_alts.json` and the event `fuel-route-alts` (SOG-0134 a, 9 Nov 2026)
 
