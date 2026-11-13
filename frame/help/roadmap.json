@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5ebac43",
+  "organisation": "55d5d7c",
   "fiches": 334,
   "untranslated": 0,
   "priorities": 310
@@ -2877,12 +2877,13 @@
     {
      "id": "SOG-0232",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "LFST : aucune approche (plusieurs RNAV, plusieurs conventionnelles) ; pas de noms de taxiways",
      "en": "LFST: no approach (several RNAV, several conventional); no taxiway names",
      "de": "LFST: kein Anflug (mehrere RNAV, mehrere konventionelle); keine Rollwegnamen",
      "es": "LFST: ninguna aproximación (varias RNAV, varias convencionales); sin nombres de calles de rodaje",
-     "rank": 176
+     "rank": 176,
+     "test": true
     }
    ]
   },
@@ -4225,7 +4226,8 @@
      "en": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
      "de": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
      "es": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
-     "rank": 268
+     "rank": 268,
+     "test": true
     }
    ]
   },

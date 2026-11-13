@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 207,
-  "verdicts": 148
+  "verdicts": 147
  },
  "apps": [
   "pilote",
@@ -1867,9 +1867,15 @@
     "de": "LFST: kein Anflug (mehrere RNAV, mehrere konventionelle); keine Rollwegnamen",
     "es": "LFST: ninguna aproximación (varias RNAV, varias convencionales); sin nombres de calles de rodaje"
    },
-   "test": "Lanceur relancé. Carburant, arrivée LFST, étape Procédures : la liste des approches porte aussi celles « ⚑ à vérifier » (elles étaient cachées) ; aucune n'est choisie d'office ; choisie à la main, sa raison est écrite sous la liste et elle est tracée en pointillé sur la Carte. « Carte seulement dans l'AIP : … » donne le lien des approches que l'AIP ne publie qu'en carte (conventionnelles, ILS). Côté sol : le panneau Sol dit que la source ne nomme que 13 voies sur 213.",
+   "test": "Carburant, un vol vers LFST (Strasbourg), bloc « Procédures », côté arrivée, « Source et cartes » › « Relire » (la lecture des procédures de LFST repart ; une notification dit la fin). Puis « Changer » de l'approche : les approches RNAV / RNP de LFST sont dans la liste, marquées « à vérifier », plus aucune « en doute » ; les ILS et LOC sont proposés « par leur carte ».",
    "since": "2026-11-11",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T20:36:16Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "deux rnav à vérifier, aucune ils, aucune vor, aucune loc. pourtant existantes.",
+    "at": "2026-11-12T08:03:29Z"
+   }
   },
   {
    "id": "SOG-0233",
@@ -2244,12 +2250,15 @@
     "de": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
     "es": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?"
    },
-   "test": "Relance le lanceur, recharge. Carburant, « Calculer A → B » sur KJFK → EGLL (FL370) : un itinéraire est trouvé en quelques secondes, il passe par une route NAT du jour, et une remarque le dit (« Routes NAT du JJ/MM : … »), avec « périmées » si le message est passé. Dans l'autre sens (EGLL → KJFK), le calcul n'aboutit pas encore : c'est connu.",
+   "test": "Relance le lanceur, recharge la page. Carburant : EGLL → KJFK puis « Calculer A → B » : un itinéraire par une route NAT arrive en quelques secondes ; même essai dans l'autre sens, KJFK → EGLL. La fiche des routes NAT du jour s'ouvre en clair (plus de JSON).",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-13T13:41:04Z",
-   "comment": "je ne sais pas si ça fonctionne. en tout cas, il faudrais mettre le bouton de prise des nats sur la sélection de route (dès qu’on détecte un vol transat). D’ailleurs, les nats c’est comme la météo, ça se fait tous les jours, pas tous les mois. ce n’est donc pas dans cette page « mensuelle », mais dans la page quotidienne qu’il faut un rappel. Screenshot. (nats à jour jusque demain).",
-   "at": "2026-11-13T15:48:38Z"
+   "state": "todo",
+   "delivered": "2026-11-13T20:36:16Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "je ne sais pas si ça fonctionne. en tout cas, il faudrais mettre le bouton de prise des nats sur la sélection de route (dès qu’on détecte un vol transat). D’ailleurs, les nats c’est comme la météo, ça se fait tous les jours, pas tous les mois. ce n’est donc pas dans cette page « mensuelle », mais dans la page quotidienne qu’il faut un rappel. Screenshot. (nats à jour jusque demain).",
+    "at": "2026-11-13T15:48:38Z"
+   }
   },
   {
    "id": "SOG-0264",
