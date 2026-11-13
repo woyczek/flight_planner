@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1eaa78c",
+  "organisation": "8a8de56",
   "fiches": 331,
   "untranslated": 0,
   "priorities": 310
@@ -2320,8 +2320,7 @@
      "fr": "Préparation d'une mission : le sélecteur de carte n'apparaît qu'après un aller-retour entre Carte et Carburant (ou très tard)",
      "en": "Mission preparation: the chart selector only shows after a round trip between Map and Fuel",
      "de": "Missionsvorbereitung: die Kartenauswahl erscheint erst nach einem Wechsel zwischen Karte und Kraftstoff",
-     "es": "Preparación de misión: el selector de carta solo aparece tras ir y volver entre Mapa y Combustible",
-     "test": true
+     "es": "Preparación de misión: el selector de carta solo aparece tras ir y volver entre Mapa y Combustible"
     }
    ]
   },
@@ -2492,8 +2491,7 @@
      "fr": "Flotte : à la création d'un aéronef, un ombrage reste sur la saisie du type OACI, et la liste n'est pas rafraîchie au retour",
      "en": "Fleet: when creating an aircraft, a shadow stays on the ICAO type field and the list is not refreshed",
      "de": "Flotte: beim Anlegen bleibt ein Schatten auf dem ICAO-Typfeld und die Liste wird nicht aktualisiert",
-     "es": "Flota: al crear una aeronave queda una sombra en el campo del tipo OACI y la lista no se refresca",
-     "test": true
+     "es": "Flota: al crear una aeronave queda una sombra en el campo del tipo OACI y la lista no se refresca"
     },
     {
      "id": "SOG-0314",

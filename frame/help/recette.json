@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 199,
-  "verdicts": 137
+  "verdicts": 139
  },
  "apps": [
   "pilote",
@@ -2842,8 +2842,10 @@
    },
    "test": "Recharge la page. Prépare une mission (Missions › Préparer ce vol), puis ouvre la Carte : la fenêtre de la mission est là dans la seconde, avec « Chargement de la mission… » si la lecture est lente, puis le sélecteur de carte — sans aller-retour par Carburant.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:50:06Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:50:06Z",
+   "comment": "attention, si on affiche la vue cible dans fuel, et qu’on passe sur carte, on doit voir la vue cible avec les mêmes paramètres… même punition que pour les procédures star/sid ? Faut-il une spec pour conserver les données entre les deux ?",
+   "at": "2026-11-13T15:31:35Z"
   },
   {
    "id": "SOG-0313",
@@ -2856,8 +2858,9 @@
    },
    "test": "Recharge la page. Compagnie › aéronefs : tape une immatriculation sans tiret (« fbhhh »), « Créer » ; enregistre : de retour sur la liste, l'aéronef est là tout de suite. Dans la fiche, choisis un type OACI dans la liste : une fois la liste refermée, aucun cadre ni ombre ne reste sous le champ.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:54:26Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:54:26Z",
+   "at": "2026-11-13T15:31:40Z"
   },
   {
    "id": "SOG-0315",
@@ -2972,6 +2975,21 @@
     "Conception en alpha 6, code en bêta 1",
     "Tout en alpha 6, comme je l'ai posé",
     "Tout après la bêta 1",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0053",
+   "fiche": "SOG-0273",
+   "app": "maintenance",
+   "question": "Lire des PDF officiels (Danemark, ENR 5.7 de la DIRCAM, ENR 5.2 de l'AIP britannique) demande la bibliothèque pypdf sur ton poste, en plus de Python. D'accord ?",
+   "context": "Jusqu'ici le lanceur ne dépend que de la bibliothèque standard de Python (rien à installer). Trois sources que tu as demandées ne se lisent que dans des PDF : les routes et points du Danemark (Naviair), l'ENR 5.7 de la DIRCAM, et les zones de vol à basse altitude et de ravitaillement britanniques (ENR 5.2, dans l'AIP civil de 772 Mo, le site militaire étant hors service). AeroDB ne codera aucun de ces lecteurs sur une page inventée : il lui faut la permission pour pypdf ET un exemplaire déposé par toi. Ma recommandation : pypdf en OPTION — le lanceur démarre et fait tout le reste sans lui ; une lecture de PDF sans pypdf dit « pypdf manque » avec la commande à lancer ; Sécurisation donne son avis sur la version à épingler avant le premier lecteur.",
+   "options": [
+    "Oui, pypdf en option (le lanceur marche sans)",
+    "Non : bibliothèque standard seulement (ces trois sources attendent)",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-13",
