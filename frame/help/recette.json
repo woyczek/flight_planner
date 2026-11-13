@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 205,
+  "tests": 206,
   "verdicts": 148
  },
  "apps": [
@@ -2930,6 +2930,20 @@
    "state": "ok",
    "delivered": "2026-11-13T13:51:35Z",
    "at": "2026-11-13T15:25:05Z"
+  },
+  {
+   "id": "SOG-0320",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages : ranger par fréquence d'usage, et ce que font le chevron et le titre d'un bloc",
+    "en": "Settings: order by how often they are used, and what the chevron and the title of a block do",
+    "de": "Einstellungen: nach Nutzungshäufigkeit ordnen, und was Pfeil und Titel eines Blocks tun",
+    "es": "Ajustes: ordenar por frecuencia de uso, y qué hacen la flecha y el título de un bloque"
+   },
+   "test": "Recharge la page. Réglages (la roue) : en haut, sans rien déplier, l'état, l'affichage (niveau, apparence, ton en pastilles) et la compagnie ; dessous, Données, Synchronisation et Appareil repliés, chacun avec sa fréquence à droite — toucher la ligne l'ouvre ; « Administration » ouvre sa page et « ← Réglages » en revient ; « Mise en route » tout en bas. Depuis Maintenance : plus de grand vide sous « Compagnie », et l'entrée « Administration » de la barre n'est surlignée que sur sa page. Au téléphone, on atteint « Données » en un écran et demi.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T18:33:11Z"
   },
   {
    "id": "SOG-0321",

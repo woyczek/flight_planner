@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "01e6f4d",
+  "organisation": "719f3fa",
   "fiches": 334,
   "untranslated": 0,
   "priorities": 310
@@ -4779,11 +4779,12 @@
     {
      "id": "SOG-0320",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Réglages : ranger par fréquence d'usage, et ce que font le chevron et le titre d'un bloc",
      "en": "Settings: order by how often they are used, and what the chevron and the title of a block do",
      "de": "Einstellungen: nach Nutzungshäufigkeit ordnen, und was Pfeil und Titel eines Blocks tun",
-     "es": "Ajustes: ordenar por frecuencia de uso, y qué hacen la flecha y el título de un bloque"
+     "es": "Ajustes: ordenar por frecuencia de uso, y qué hacen la flecha y el título de un bloque",
+     "test": true
     }
    ]
   },
