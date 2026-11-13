@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aide : Signaler un problème ou une demande (maquette)</title>
+<style>
+:root {
+  --ink: #1b1f24;
+  --muted: #59636e;
+  --line: #d0d7de;
+  --soft: #f6f8fa;
+  --ok: #1a7f37;
+  --ok-bg: #e6f6ea;
+  --ok-line: #9bd3a8;
+  --warn: #7d4e00;
+  --warn-bg: #fff4d1;
+  --warn-line: #d4a72c;
+  --accent: #0b5cad;
+  --accent-bg: #eaf2fb;
+}
+* {
+  box-sizing: border-box
+}
+html {
+  -webkit-text-size-adjust: 100%
+}
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+}
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px 56px
+}
+h1 {
+  font-size: 24px;
+  line-height: 1.2;
+  margin: 16px 0 4px
+}
+h2 {
+  font-size: 18px;
+  margin: 24px 0 8px
+}
+a {
+  color: var(--accent)
+}
+code {
+  font: 13px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  padding: 1px 4px;
+  border-radius: 3px;
+  overflow-wrap: anywhere
+}
+.mock {
+  background: var(--soft);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted)
+}
+.mock .wrap {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden
+}
+.seg button {
+  font: inherit;
+  font-size: 13px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer
+}
+.seg button[aria-pressed="true"] {
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600
+}
+.crumb {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 16px 0 4px
+}
+.muted {
+  color: var(--muted)
+}
+.lead {
+  margin: 0 0 16px;
+  color: var(--muted)
+}
+/* le formulaire */
+.card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 12px 0
+}
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 16px;
+  padding: 0;
+  border: 0
+}
+.kinds legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 6px
+}
+.kinds label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  cursor: pointer;
+  background: #fff
+}
+.kinds input {
+  position: absolute;
+  opacity: 0
+}
+.kinds label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  font-weight: 600
+}
+.kinds label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px
+}
+.field {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 16px
+}
+.field>span {
+  font-weight: 600
+}
+input[type=text],
+textarea {
+  font: inherit;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #8c959f;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink)
+}
+textarea {
+  min-height: 7.5em;
+  max-height: 19em;
+  resize: vertical
+}
+.count {
+  text-align: right;
+  font-size: 13px;
+  color: var(--muted)
+}
+.where {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 14px
+}
+.where b {
+  display: block;
+  margin-bottom: 2px
+}
+.where label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  min-height: 36px
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px
+}
+button.primary {
+  font: inherit;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer
+}
+button.primary[disabled] {
+  background: #9db9d6;
+  border-color: #9db9d6;
+  cursor: not-allowed
+}
+.why {
+  font-size: 14px;
+  color: var(--muted)
+}
+.note {
+  border: 1px solid var(--ok-line);
+  background: var(--ok-bg);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 12px 0
+}
+.note.warn {
+  border-color: var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn)
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0
+}
+.list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--line)
+}
+.list li:first-child {
+  border-top: 0
+}
+.tag {
+  justify-self: start;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1px 8px;
+  background: #fff;
+  white-space: nowrap
+}
+.state {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap
+}
+.state.ok {
+  color: var(--ok)
+}
+.state.wait {
+  color: var(--warn)
+}
+.bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+  margin-bottom: 8px
+}
+.bar b {
+  font-size: 15px
+}
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none
+}
+[hidden] {
+  display: none !important
+}
+@media (max-width:560px) {
+  .list li {
+    grid-template-columns: 1fr auto
+  }
+  .list li .tag {
+    grid-column: 1
+  }
+  .list li .t {
+    grid-column: 1/-1;
+    order: 3
+  }
+}
+</style>
+</head>
+<body>
+<div class="mock"><div class="wrap">
+  <b>Maquette</b>
+  <span>Qui signale :</span>
+  <span class="seg" id="who"><button type="button" data-v="user" aria-pressed="true">Poste de l'ergonome</button><button type="button" data-v="pilot" aria-pressed="false">Pilote</button></span>
+  <span>État :</span>
+  <span class="seg" id="st"><button type="button" data-v="form" aria-pressed="true">Formulaire</button><button type="button" data-v="sent" aria-pressed="false">Envoyé</button><button type="button" data-v="off" aria-pressed="false">Sans accès au dépôt</button></span>
+</div></div>
+
+<main class="wrap">
+  <p class="crumb">Aide › Signaler</p>
+  <div class="bar"><b>Aide</b><a class="help-link" href="#" onclick="return false">Tutoriels</a></div>
+  <h1>Signaler un problème ou une demande</h1>
+  <p class="lead" id="lead"></p>
+
+  <form class="card" id="f" onsubmit="return false" autocomplete="off">
+    <fieldset class="kinds">
+      <legend>De quoi s'agit-il ?</legend>
+      <label><input type="radio" name="k" value="bug" checked>Bug</label>
+      <label><input type="radio" name="k" value="reg">Régression</label>
+      <label><input type="radio" name="k" value="ergo">Ergonomie</label>
+      <label><input type="radio" name="k" value="perf">Performance</label>
+      <label><input type="radio" name="k" value="feat">Demande</label>
+    </fieldset>
+    <label class="field"><span>Titre</span><input type="text" id="t" maxlength="80" value="Le bouton « Appliquer » reste gris après le choix de la piste" placeholder="Une phrase : ce qui ne va pas, ou ce que vous voulez"><span class="count" id="tc">62 / 80</span></label>
+    <label class="field"><span>Ce qui s'est passé, ce que vous attendiez</span><textarea id="x" maxlength="2000" rows="4" placeholder="Les étapes, ce que vous avez vu, ce que vous attendiez.">J'ouvre Carburant, je choisis la piste 27 sur la carte, je reviens : le bouton « Appliquer » est gris et rien n'explique pourquoi. J'attendais qu'il applique la piste.</textarea><span class="count" id="xc" hidden></span></label>
+    <div class="where" id="where">
+      <b>Noté tout seul</b>
+      <span id="wtext"></span>
+      <label><input type="checkbox" id="wc" checked> Joindre ces informations (aucune donnée de vol, aucune clé)</label>
+    </div>
+    <div class="row">
+      <button class="primary" type="submit" id="send">Envoyer</button>
+      <span class="why" id="why"></span>
+    </div>
+  </form>
+
+  <div class="note" id="sent" hidden></div>
+  <div class="note warn" id="off" hidden></div>
+
+  <h2>Mes signalements</h2>
+  <ul class="list" id="mine"></ul>
+  <p class="muted" id="foot"></p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const S = {
+  who: 'user',
+  st: 'form'
+};
+const KIND = {
+  bug: 'Bug',
+  reg: 'Régression',
+  ergo: 'Ergonomie',
+  perf: 'Performance',
+  feat: 'Demande'
+};
+const WHERE = 'Écran : Carburant › Route (#fuel) · 390 × 844 · design Standard · français · alpha.6 (a1b2c3d)';
+
+function paint() {
+  const user = S.who === 'user';
+  $('lead').textContent = user ?
+    'Sur votre poste, le signalement est écrit dans le fichier des signalements de la suite (organisation/SIGNALEMENTS.json) : l’ergonome le lit à son prochain tour et en fait une fiche.' :
+    'Votre signalement part avec le prochain envoi groupé vers le dépôt de la compagnie ; l’administrateur le voit dans Compagnie › Signalements. Aucun courriel n’est envoyé.';
+  $('wtext').textContent = WHERE;
+  $('f').hidden = S.st === 'sent';
+  $('sent').hidden = S.st !== 'sent';
+  $('off').hidden = S.st !== 'off';
+  const off = S.st === 'off';
+  $('send').disabled = off;
+  $('why').textContent = off ? 'Envoi impossible pour l’instant : voir plus haut.' : (user ? 'Écrit tout de suite sur ce poste.' :
+    'Part avec le prochain envoi groupé (moins de 5 minutes).');
+  $('sent').textContent = user ?
+    '✓ Écrit dans organisation/SIGNALEMENTS.json (SIG-0007). L’ergonome le lira à son prochain tour.' :
+    '✓ Gardé sur cet appareil et envoyé avec le prochain envoi groupé (dans 4 min). Vous pouvez le suivre ci-dessous.';
+  $('off').textContent = user ?
+    'Le lanceur de ce poste ne répond pas : le signalement n’est pas perdu, il reste sur cet appareil (« non envoyé ») et part dès que le lanceur revient.' :
+    'Pas d’accès au dépôt de données pour l’instant : le signalement reste sur cet appareil (« non envoyé ») et part avec le prochain envoi réussi.';
+  const rows = S.st === 'sent' ? [
+    ['bug', 'Le bouton « Appliquer » reste gris après le choix de la piste', user ? 'écrit' : 'dans 4 min', user ? 'ok' : 'wait']
+  ] : [];
+  rows.push(['ergo', 'La liste des terrains se replie quand on tourne le téléphone', 'lu par l’ergonome', 'ok'], ['perf',
+    'La carte Météo met 6 s à s’afficher', 'devenu fiche SOG-0312', 'ok'
+  ], ['feat', 'Pouvoir copier la route en un geste', 'non envoyé', 'wait']);
+  $('mine').innerHTML = rows.map(r => `<li><span class="tag">${KIND[r[0]]}</span><span class="t">${r[1]}</span><span class="state ${r[3]}">${r[2]}</span></li>`).join('');
+  $('foot').textContent = user ? 'Dix derniers signalements de ce poste.' :
+    'Dix derniers signalements de cet appareil ; l’administrateur voit tous ceux de la compagnie.';
+  for (const [g, v] of [
+      ['who', S.who],
+      ['st', S.st]
+    ]) document.querySelectorAll(`#${g} button`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+}
+document.querySelectorAll('#who button').forEach(b => b.onclick = () => {
+  S.who = b.dataset.v;
+  paint();
+});
+document.querySelectorAll('#st button').forEach(b => b.onclick = () => {
+  S.st = b.dataset.v;
+  paint();
+});
+
+function counts() {
+  $('tc').textContent = `${$('t').value.length} / 80`;
+  const n = $('x').value.length;
+  $('xc').hidden = n < 1800;
+  $('xc').textContent = `${n} / 2000 signes`;
+  $('send').disabled = S.st === 'off' || !$('t').value.trim() || !$('x').value.trim();
+}
+$('t').oninput = $('x').oninput = counts;
+$('wc').onchange = () => {
+  $('wtext').style.opacity = $('wc').checked ? 1 : .4;
+};
+paint();
+counts();
+</script>
+</body>
+</html>
