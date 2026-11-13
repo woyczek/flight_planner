@@ -6207,7 +6207,8 @@ _FORMER_OLD = """(id, title, status, notes, flownAt) => ({ id, formerId: '', ser
   source: 'collage', status, statusAt: '2026-10-01T10:00:00.000Z', notes, flownAt, addedAt: '2026-10-01T10:00:00.000Z', teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0 })"""
 _FORMER_SEED_JS = "async (spec) => { const line = " + _FORMER_LINE + ", old = " + _FORMER_OLD + ";" + """
   await window.MissionIndex.ready;
-  await window.MissionIndex.save(spec.map(s => s.length === 3 ? line(...s) : old(...s)), new Date().toISOString());
+  const make = s => { const b = Array.isArray(s) ? s : s.base, o = b.length === 3 ? line(...b) : old(...b); return Array.isArray(s) ? o : { ...o, ...s.set } };
+  await window.MissionIndex.save(spec.map(make), new Date().toISOString());
   return window.MissionIndex.all().length }"""
 _FORMER_STATE_JS = """async () => { await window.MissionIndex.ready; const R = window.MissionRegistry;
   return { index: window.MissionIndex.all().map(m => ({ id: m.id, by: m.supersededBy || '', status: m.status || '', notes: m.notes || '', flownAt: m.flownAt || '' })),
@@ -6244,6 +6245,24 @@ def k_former(c):
     c.eq([m['id'] for m in st['index']], ['T-086'], 'the old entry, with nothing more than the line, is attached (one entry left in the index)', what=str(st['index']))
     c.ok(st['index'][0]['status'] == 'flown' and st['index'][0]['notes'] == 'note two', str(st['index']), 'its status and notes follow')
     c.ok(not st['note'], st['note'], 'nothing is said when nothing is kept')
+    # 3. what the user wrote on the old entry that the line cannot take (it has its own note and status): the old entry is kept, hidden, counted -- never dropped
+    c.eq(c.js(_FORMER_SEED_JS, [{'base': ['T-087', '87', 'Same title'], 'set': {'status': 'planned', 'notes': 'own note'}},
+                                {'base': ['87', 'Same title', 'flown', 'other note', '2026-10-03'], 'set': {}}]), 2, 'the bench index holds a line with its own note and an old entry with another', what='index')
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.MissionRegistry && window.MissionRegistry.get().missions.length >= 1", timeout=15000, what='the registry is read a third time')
+    c.wait(1500)
+    st = c.js(_FORMER_STATE_JS)
+    old = [m for m in st['index'] if m['id'] == '87']
+    c.ok(old and old[0]['by'] == 'T-087' and old[0]['notes'] == 'other note' and old[0]['flownAt'] == '2026-10-03', str(st['index']), 'the old entry keeps what the user wrote on it, hidden and attached to the line')
+    c.eq(st['shown'], ['T-087'], 'one mission on the screen', what=str(st))
+    c.ok([m for m in st['index'] if m['id'] == 'T-087'][0]['notes'] == 'own note', str(st['index']), 'the line keeps its own note')
+    # 4. a pending order (status ordered, no file) whose number a mission file quotes as its former_id is never absorbed
+    c.eq(c.js(_FORMER_SEED_JS, [['T-088', '88', 'Same title'], {'base': ['88', 'Order', 'ordered', '', ''], 'set': {'files': [], 'request': {'serie': '88', 'text': 'bench order'}, 'folder': ''}}]), 2, 'the bench index holds a line and a pending order', what='index')
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.MissionRegistry && window.MissionRegistry.get().missions.length >= 1", timeout=15000, what='the registry is read a fourth time')
+    c.wait(1500)
+    order = c.js("async () => { await window.MissionIndex.ready; return window.MissionIndex.all().filter(m => m.id === '88').map(m => ({ status: m.status, by: m.supersededBy || '', request: m.request })) }")
+    c.eq(order, [{'status': 'ordered', 'by': '', 'request': {'serie': '88', 'text': 'bench order'}}], 'the pending order is intact, not attached to the line', what='order')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders (their own repositories) are not in the test tree
 
 

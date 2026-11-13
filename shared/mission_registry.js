@@ -967,14 +967,20 @@
     for (const old of reg.missions) {
       const line = byFormer.get(String(old.id || '').toUpperCase());
       // pas une ligne : sans dossier, dossier absent, ou le dossier MÊME de la ligne dont c'est l'ancien numéro (reste d'une lecture d'avant la renumérotation)
-      if (!line || line === old || !(old.missingFile || !old.folder || old.source !== 'dossier' || old.folder === line.folder)) continue;
+      // une commande en attente (sans fichier) n'est jamais absorbée : son request n'existe nulle part ailleurs, et le former_id d'un fichier n'est pas une donnée sûre
+      if (!line || line === old || old.status === 'ordered' && !old.files?.length || !(old.missingFile || !old.folder || old.source !==
+          'dossier' || old.folder === line.folder)) continue;
       const userSet = old.status && !['generated', 'ordered'].includes(old.status) || old.notes || old.flownAt;
       if (userSet && (!line.status || line.status === 'generated') && !line.notes && !line.flownAt) {
         for (const k of USER_FIELDS)
           if (old[k] != null && old[k] !== '') line[k] = old[k];
         changed = true;
       }
-      const more = Object.keys(old).filter(k => !FORMER_SKIP.has(k) && filled(old[k]) && !filled(line[k]));
+      // ce que l'utilisateur a écrit sur l'ancienne entrée et que la ligne ne porte pas (elle a déjà son statut, ses notes ou sa date de vol) compte comme « plus complet »
+      const unmoved = ['status', 'notes', 'flownAt', 'request'].filter(k => (k === 'status' ? old.status && !['generated', 'ordered']
+          .includes(old.status) : filled(old[k])) &&
+        JSON.stringify(old[k]) !== JSON.stringify(line[k]));
+      const more = [...Object.keys(old).filter(k => !FORMER_SKIP.has(k) && filled(old[k]) && !filled(line[k])), ...unmoved];
       if (!more.length) {
         drop.add(old);
         changed = true;
