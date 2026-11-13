@@ -1040,6 +1040,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 188 | The morning of 13 November, second group: the recette's comments and free texts raised to 2,000 characters in the page and in the launcher's verbs (45cba6733, SOG-0303); the two notes of 187 on `navaidsOf` (1cb71c46c); the Map's display commits (8b73c9944, 2d80e2c7d, 8f6a17c01, 36a3300bf) | acceptable, one note |
 | 189 | The V2 registry: every YAML read through the guarded function (29fe8ec28, the note of 185) | note closed |
 | 190 | The fix of 187 (779654075: risks under `title`, translations aligned, the registry's node ceiling), the editor's timeline and maps step (2dfa0aeca) and the commercial family (57c8cb17a) | defect of 187 closed; one defect proved (a `timeline` that is a list loses its events), three notes |
+| 191 | The published site's root: one added step in `pages.yml` and `build_pages.py --root-only` (93258d646, SOG-0278 / Q-0039), read before the push | accepted, three notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2926,6 +2927,23 @@ raw `mission.id` (cut to 40, line breaks removed, but `/` and `..` allowed in a 
 when it has the form `^[A-Z]-\d{3}[A-Z]?$` and from nothing otherwise, so that the V2 studio never receives a name with a path in it. (3) `withCadre` on the aircraft keeps
 only truthy entries of `aircraft`: a `null` entry disappears, harmless. **Incident reported by Features SOG** (an amend command that touched my commit locally during a
 conflicting rebase): the commit “Audit 189” is intact on `origin/v3` (896936de1, my message, the two files of the journal and the bundle).
+
+**191. The published site's root (93258d646, SOG-0278 / Q-0039) — accepted, three notes.** *Workflow.* The whole diff of `pages.yml` is one added step after the two builds and before
+the world synoptic: `python v3/tools/build_pages.py --root-only _site --start v3/frame/`. The triggers (`push` on develop and v3, the schedule, the manual
+dispatch), the permissions (`contents: read`, `pages: write`, `id-token: write`), the concurrency group, the checkouts and every existing step are
+byte for byte as before; no secret, no `curl`, no `rm`, no new action, no third-party address. *Script.* Run on a fake site in a scratch folder (the commit's
+own files): it writes only `index.html` at the root (another file of the site is untouched), and each of `../x`, `v3/../x`, an empty value, a value with a
+space and `v3/frame/"><script>` is refused before anything is written (the character class `[A-Za-z0-9_][A-Za-z0-9_./-]*` leaves no quote, angle bracket or leading
+dot; a leading slash is stripped and the folder must hold an `index.html` of the built site). The page is a constant: a `meta refresh` to a relative address, one
+inline script `location.replace(<constant> + location.search + location.hash)`, a visible link; the address begins with the constant, so the query string
+and the anchor cannot change the host; the Content-Security-Policy meta (the same one as the other pages, `script-src 'self' 'unsafe-inline'` and the
+fixed list of hosts) comes before the script, so the inline script runs and the query and anchor are kept. `main()` only has its policy line moved into
+`csp_meta()` (same list, same source). K231 is the commit's own static case. **Notes.** (1) The step reads the code of `v3`: the new `build_pages.py` must be on `v3`
+before, or in the same push as, the workflow; with the old script the arguments would be taken as an output folder and the step would most likely fail (the build job fails, the deploy
+does not run, the site keeps its previous version) — harmless, but the first run would be lost. Push `v3` first, then `develop` with the same `pages.yml`, so that a push
+of either branch publishes the same root. (2) What the user sees: the V2's home page (`index.html` of develop) is no longer served; the V2 manifest's
+`start_url` is `apps/pilot/mes_missions.html`, so an installed V2 keeps opening on its own page, and `/v3/` and `/v3/frame/` keep their addresses; the
+service worker of a browser that cached the old root may show it until it updates. (3) The page is in French with an English link text only: no issue.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
