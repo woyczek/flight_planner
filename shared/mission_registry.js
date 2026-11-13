@@ -2443,18 +2443,42 @@
       none = 0,
       same = 0,
       unknown = 0;
-    for (const sn of snaps) {
+    // ce qu'on compare au fichier : les instantanés (versions de référence, comptés), puis la mission en cours dans le générateur (partagée) et son brouillon — c'est elle
+    // qui porte la retouche non rangée ; la nature de chaque ligne est dite
+    const cands = [...snaps.map(sn => ({
+      ...sn,
+      key: sn.id,
+      nature: 'snapshot',
+      counted: true
+    }))];
+    for (const [nature, key] of [
+        ['shared', SHARED_KEY],
+        ['draft', LEGACY_DRAFT_KEY]
+      ]) {
+      const d = readJson(key, null);
+      if (d?.yaml?.mission?.id) cands.push({
+        id: normMissionId(d.yaml.mission.id),
+        key: `${nature === 'shared' ? 'partagee' : 'brouillon'}:${normMissionId(d.yaml.mission.id)}`,
+        nature,
+        kind: '',
+        at: Date.parse(d.at || '') || 0,
+        yaml: keptYaml(d)
+      });
+    }
+    for (const sn of cands) {
       const line = lineWithFiles(sn.id),
         browser = facts(sn.yaml, sn.at),
         item = {
           id: sn.id,
+          key: sn.key,
+          nature: sn.nature,
           lineId: line?.id || '',
           kind: sn.kind,
           yaml: sn.yaml,
           at: sn.at,
           browser,
           state: 'none',
-          chosen: choices[sn.id]?.at === sn.at ? choices[sn.id].choice : ''
+          chosen: choices[sn.key]?.at === sn.at ? choices[sn.key].choice : ''
         };
       if (line) {
         const f = await fileYaml(line);
@@ -2469,10 +2493,12 @@
             'browser' : item.file.chars > browser.chars ? 'file' : 'browser';
         }
       }
-      if (item.state === 'diff') diff++;
-      else if (item.state === 'none') none++;
-      else if (item.state === 'same') same++;
-      else unknown++;
+      if (sn.counted) {
+        if (item.state === 'diff') diff++;
+        else if (item.state === 'none') none++;
+        else if (item.state === 'same') same++;
+        else unknown++;
+      }
       items.push(item);
     }
     kept = {
@@ -2485,6 +2511,18 @@
     };
     paintKept();
   }
+  /** Ce que la ligne compare au fichier : une version de référence (chargée, enregistrée ou créée, à sa date), la mission en cours dans le générateur, ou son brouillon. */
+  const natureOf = i => i.nature === 'shared' ? t(['mission en cours dans le générateur', 'mission in progress in the generator',
+      'Mission in Arbeit im Generator', 'misión en curso en el generador'
+    ]) :
+    i.nature === 'draft' ? t(['brouillon du générateur', 'generator draft', 'Entwurf des Generators', 'borrador del generador']) :
+    t(i.kind === 'saved' ? ['référence enregistrée le {d}', 'reference stored on {d}', 'Referenz gespeichert am {d}',
+      'referencia guardada el {d}'
+    ] : i.kind === 'loaded' ? ['référence chargée le {d}', 'reference loaded on {d}', 'Referenz geladen am {d}',
+      'referencia cargada el {d}'
+    ] : ['mission créée le {d}', 'mission created on {d}', 'Mission erstellt am {d}', 'misión creada el {d}'], {
+      d: i.at ? new Date(i.at).toLocaleString(t(['fr-FR', 'en-GB', 'de-DE', 'es-ES'])) : '—'
+    });
   /** La ligne d'état, son bouton d'export et, pour les missions à décider, le côte à côte (aucune ligne sans mission gardée). */
   function paintKept() {
     const el = host?.querySelector('#rgKept');
@@ -2501,10 +2539,10 @@
       }))}</span>` : '—',
       yes = k => k ? ` <b>${esc(t(k === 'file' ? ['fichier', 'file', 'Datei', 'archivo'] : ['navigateur', 'browser', 'Browser', 'navegador']))}</b>` : ' —',
       todo = (kept?.items || []).filter(i => i.state === 'diff' || i.state === 'none'),
-      rows = todo.map(i => `<tr data-kept-id="${esc(i.id)}"><td><b>${esc(i.id)}</b>${i.lineId && i.lineId !== i.id ? ` → ${esc(i.lineId)}` : ''}</td>
+      rows = todo.map(i => `<tr data-kept-id="${esc(i.key)}"><td><b>${esc(i.id)}</b>${i.lineId && i.lineId !== i.id ? ` → ${esc(i.lineId)}` : ''}<br><span class="rg-small">${esc(natureOf(i))}</span></td>
         <td>${i.state === 'none' ? esc(t(['sans fichier', 'no file', 'keine Datei', 'sin archivo'])) : cell(i.file)}</td><td>${cell(i.browser)}</td>
         <td class="rg-small">${i.state === 'none' ? '' : `${esc(t(['plus récent :', 'newer:', 'neuer:', 'más reciente:']))}${yes(i.newer)}<br>${esc(t(['plus complet :', 'more complete:', 'vollständiger:', 'más completo:']))}${yes(i.fuller)}`}</td>
-        <td>${i.chosen === 'file' ? `<span class="rg-small">${esc(t(['fichier gardé', 'file kept', 'Datei behalten', 'archivo conservado']))}</span>` : `<button type="button" class="primary" data-kept-store="${esc(i.id)}">${esc(t(['Ranger dans le dossier', 'Store in the folder', 'Im Ordner ablegen', 'Guardar en la carpeta']))}</button>${i.state === 'none' ? '' : ` <button type="button" class="secondary" data-kept-file="${esc(i.id)}">${esc(t(['Garder le fichier', 'Keep the file', 'Datei behalten', 'Conservar el archivo']))}</button>`}`}</td></tr>`).join(''),
+        <td>${i.chosen === 'file' ? `<span class="rg-small">${esc(t(['fichier gardé', 'file kept', 'Datei behalten', 'archivo conservado']))}</span>` : `<button type="button" class="primary" data-kept-store="${esc(i.key)}">${esc(t(['Ranger dans le dossier', 'Store in the folder', 'Im Ordner ablegen', 'Guardar en la carpeta']))}</button>${i.state === 'none' ? '' : ` <button type="button" class="secondary" data-kept-file="${esc(i.key)}">${esc(t(['Garder le fichier', 'Keep the file', 'Datei behalten', 'Conservar el archivo']))}</button>`}`}</td></tr>`).join(''),
       html = !n ? '' : `${esc(t(['{n} mission(s) gardée(s) par ce navigateur : {d} différente(s) du dossier, {s} sans fichier, {i} identique(s){u}', '{n} mission(s) kept by this browser: {d} different from the folder, {s} without a file, {i} identical{u}', '{n} Mission(en) von diesem Browser gespeichert: {d} anders als der Ordner, {s} ohne Datei, {i} identisch{u}', '{n} misión(es) guardada(s) por este navegador: {d} distinta(s) de la carpeta, {s} sin archivo, {i} idéntica(s){u}'], {
         n,
         d: kept.diff,
@@ -2532,7 +2570,7 @@
   }
   /** « Garder le fichier » : le choix est noté (tant que l'instantané ne change pas) ; rien n'est écrit ni retiré. */
   function keepFile(id) {
-    const it = kept?.items.find(x => x.id === id);
+    const it = kept?.items.find(x => x.key === id);
     if (!it) return;
     const all = readJson(CHOICE_KEY, {}) || {};
     all[id] = {
@@ -2546,7 +2584,7 @@
   /** « Ranger dans le dossier » : la version du navigateur est écrite dans le dossier de la mission (storeMission : l'ancien fichier part dans versions/, meta et historique
    *  mis à jour) ; un instantané sous un ancien numéro se range sous l'identifiant à lettre de la mission qui le porte en former_id. */
   async function storeKept(id) {
-    const it = kept?.items.find(x => x.id === id);
+    const it = kept?.items.find(x => x.key === id);
     if (!it) return;
     try {
       const y = structuredClone(it.yaml);

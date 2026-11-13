@@ -6482,6 +6482,11 @@ _WFS_JS = r"""(tree) => {
 _WFS_READ_JS = r"""(path) => { let n = window.__wfs.root; for (const k of path.split('/')) { n = n.kids[k]; if (!n) return null } return n.kind === 'file' ? n.text : Object.keys(n.kids) }"""
 
 
+# the draft of the generator (the old key missionGeneratorDraft): T-086 with a summary of its own
+_KEPT_DRAFT_JS = r"""() => { localStorage.setItem('missionGeneratorDraft', JSON.stringify({ yaml: { schema: 'helo-xp-mission', mission: { id: 'T-086', type: 'AIRLIFT' }, title: 'Bench two', summary: 'A draft summary', detailed_description: 'Detailed T-086' },
+  narrative: { summary: '', detailed: '', sections: [] }, sourceNames: [] })); return true }"""
+
+
 @case('K223', 'The registry of the V2 sets the file and the browser’s version side by side for each kept mission that differs (date, lengths of the summary and the description, newer, more complete): « Store in the folder » writes the browser’s version and keeps the old file in versions/, a snapshot under an old number goes under the lettered identifier; « Keep the file » changes nothing; nothing is ever overwritten without the choice', 'K',
       tags=('maps',), screens=False, designs=('standard',),
       rule='SOG-0293 (c) (the ergonomist, 13 Nov): side by side file / browser, then « Ranger dans le dossier » (the old file kept as a version) or « Garder le fichier »; never an automatic overwrite (a snapshot can be poorer than the file); a snapshot under an old number is stored under the lettered identifier of the mission carrying that former_id')
@@ -6493,12 +6498,15 @@ def k_keptstore(c):
     c.js(_KEPT_SEED_JS)
     c.page.route('**/data/missions/T_AIRLIFT/T-085/missionT-085.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_85))
     c.page.route('**/data/missions/T_AIRLIFT/T-086/missionT-086.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_86))
+    c.js(_KEPT_DRAFT_JS)
     c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
     c.js(_WFS_JS, {'T_AIRLIFT': {'T-085': {'missionT-085.yaml': _KEPT_FILE_85}, 'T-086': {'missionT-086.yaml': _KEPT_FILE_86}}})
     c.until("() => !!document.getElementById('rgKeptList')", timeout=15000, what='the side-by-side list is there for the missions that differ or have no file')
     c.wait(500)
     rows = c.js("() => [...document.querySelectorAll('#rgKeptList tbody tr')].map(r => r.dataset.keptId)")
-    c.eq(sorted(rows), ['85', 'X-001'], 'two missions to decide: the one that differs (under its old number) and the one without a file', what='rows')
+    c.eq(sorted(rows), ['85', 'X-001', 'brouillon:T-086', 'partagee:T-090'], 'four to decide: the snapshot that differs (under its old number), the one without a file, the generator draft that differs from its file, the shared mission without a file', what='rows')
+    nature = c.js("() => Object.fromEntries([...document.querySelectorAll('#rgKeptList tbody tr')].map(r => [r.dataset.keptId, r.cells[0].textContent.replace(/\\s+/g, ' ')]))")
+    c.ok('référence chargée' in nature['85'] and 'mission en cours dans le générateur' in nature['partagee:T-090'] and 'brouillon du générateur' in nature['brouillon:T-086'], str(nature), 'each row says the nature of what is compared: a reference loaded, the mission in progress in the generator, the draft')
     row85 = c.js("() => document.querySelector('#rgKeptList tr[data-kept-id=\"85\"]').textContent.replace(/\\s+/g, ' ')")
     c.ok('T-085' in row85 and 'résumé 38' in row85 and 'résumé 29' in row85 and 'plus récent' in row85 and 'plus complet' in row85, row85, 'the row sets the file and the browser side by side: the lettered identifier, the lengths of the summary, newer, more complete')
     c.shot('K223_standard_kept_list_delivered.png')
