@@ -180,3 +180,12 @@
   file), an empty row is dropped, no team left removes `teams`. The rows typed are kept from step to step (`s.ed.teams`, read from the file
   at the first opening of the step) until « Enregistrer » or « Annuler ». The `aircraft` block is not touched here. N51 (red before:
   « Suivante » disabled); N50 now asks for the six steps with the Cadre open, not for the list of the delivered ones.
+- **13 Nov 2026 — the mission editor, step 3: the Lieux** (SOG-0287, written by Features SOG): the mock-up's rows (CIBLE, ZONE, PT, RDV,
+  « ID · nom », a detail line, « Modifier »), plus two rows the mock-up did not draw — DÉP and ARR, their position only (their name is the
+  Cadre's) — because « À compléter » sends there for a departure without position. `placesOf` / `withPlaces`: positions typed in decimal
+  degrees (the decimal comma read), shown in degrees and minutes; empty or out of bounds = null, « à placer » (the V2's form); a zone's
+  centre written where the file had it (centre: { lat, lon } or flat), a polygon keeps its points (moved in the V2 for now), every place
+  keeps its other keys (merged by its place in the file); target, zones, points and rendezvous rewritten from the rows, an empty kind
+  removed. Changing the departure or arrival in the Cadre after the Lieux resyncs their row (the position stays only with the same ICAO
+  code). « Sur la carte » opens the Carte on the mission (read only: placing a point on the map comes later, with the map studio's rules).
+  60 places of a kind at most. N52 (red before: the Lieux step disabled).

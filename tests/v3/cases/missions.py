@@ -2142,3 +2142,53 @@ def n51(c):
          'the teams written: one changed, one removed, one added (type in capitals)')
     c.ok('base: Base Test' in t and 'Danger cinq' in t and 'ZONE-2' in t, t[:300], 'a team keeps its other keys; the rest of the file is kept')
     c.js(_REG_CLEAR)
+
+
+
+_PLACES_JS = f"""[...document.querySelectorAll('{E} [data-edplaces] [data-place]')].map(r => [r.dataset.kind, r.querySelector('.ms-plbody b').textContent.trim()])"""
+
+
+@case('N52', 'Missions › editor, step 3 (Lieux): one row per place (departure, arrival, target, zones, turning points, rendezvous) with its '
+      'position in degrees and minutes; « Modifier » opens its fields; a point moved, a turning point added, a rendezvous removed; '
+      '« Enregistrer » writes them, a polygon keeps its points, every place its other keys', 'N', tags=('missions',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0287 step 3, the mock-up editeur_lieux_*.png: « Cible, zones, points tournants et rendez-vous. Une ligne par lieu »')
+def n52(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _ED_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
+    c.eq(c.js(_PLACES_JS), [['dep', 'XTST · Base Test'], ['arr', 'XTSU · Base Test Sud'], ['target', "TARGET · Cible d'essai"],
+                            ['zone', 'ZONE-1 · Secteur nord'], ['zone', 'ZONE-2 · Secteur sud'], ['pt', 'PT1 · Point un'], ['pt', 'PT2 · Point deux'],
+                            ['rdv', "RDV-1 · Rendez-vous d'essai"]], 'one row per place, in the order of the file', what='rows')
+    pt1 = c.js(f"document.querySelector('{E} [data-place=\"5\"] .ms-plbody .f-muted').textContent")
+    c.ok('44°48′N 1°12′E' in pt1, pt1, 'the position in degrees and minutes, as the mock-up')
+    c.tap(f'{E} [data-place="5"] [data-do="edplace"]')
+    c.page.fill(f'{E} [data-plform="5"] [data-f=lat]', '44,9')
+    c.tap(f'{E} [data-plform="5"] [data-do="edplaceok"]')
+    c.ok('44°54′N' in c.js(f"document.querySelector('{E} [data-place=\"5\"] .ms-plbody .f-muted').textContent"), 'not shown',
+         'the decimal comma is read on the row too')
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"!!document.querySelector('{E} [data-plform] [data-f=name]')", what='the new turning point open')
+    c.page.fill(f'{E} [data-plform] [data-f=name]', 'Point trois')
+    c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.3')
+    c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.7')
+    c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
+    c.tap(f'{E} [data-place="8"] [data-do="edplace"]')
+    c.tap(f'{E} [data-plform="8"] [data-do="edplacedel"]')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N52_390_places.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N52_1280_places.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('lat: 44.9' in t and 'name: Point trois' in t and 'id: PT3' in t and 'RDV-1' not in t and 'rendezvous' not in t, t[t.find('turning_points'):][:500],
+         'a point moved, one added (PT3), the rendezvous removed')
+    c.ok('lat: 44.1' in t and 'radius_km: 12' in t and 'time_on_task_min: 30' in t and 'Danger cinq' in t, t[t.find('zones'):][:500],
+         'the polygon keeps its points, the circle its radius and time; the rest of the file is kept')
+    c.js(_REG_CLEAR)

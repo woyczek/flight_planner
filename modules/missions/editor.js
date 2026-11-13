@@ -8,6 +8,10 @@
 //     déjà (les autres suivent, une par push).
 //   teamsOf(doc) → [{ i, name, service, type, role }] (i : la place dans doc.teams, -1 pour une ligne ajoutée) ; withTeams(doc, rows) →
 //     un NOUVEAU document : chaque équipe gardée garde ses autres clés, une ligne vide est retirée ; TEAMS_MAX lignes au plus.
+//   placesOf(doc) → [{ kind: dep|arr|target|zone|pt|rdv, i, id, name, role, lat, lon, (zone) zkind, radius, tot, poly, (rdv)
+//     participants }] : les nombres en texte, pour les champs ; withPlaces(doc, rows) → un NOUVEAU document : la cible, les zones, les
+//     points tournants et les rendez-vous réécrits depuis les lignes (chaque lieu gardé garde ses autres clés, un polygone ses points),
+//     la position seule du départ et de l'arrivée ; une coordonnée vide ou hors bornes s'écrit null (« à placer », la forme de la V2).
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr } (textes) ; placeText(p) : « XTST · Base Test ».
 //   withCadre(doc, cadre) → un NOUVEAU document : mission.{ id, type, subtype, series, number, theatre }, title, origin, destination ;
@@ -25,7 +29,9 @@
 import * as MS from '../../frame/lib/mission.js';
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
-export const OPEN = ['cadre', 'teams'];
+export const OPEN = ['cadre', 'teams', 'places'];
+/** Les lieux d'une sorte, au plus (la borne du lecteur pour les points). */
+export const PLACES_MAX = 60;
 /** Les équipes d'une mission, au plus (la borne du lecteur, frame/lib/mission.js). */
 export const TEAMS_MAX = 40;
 export const THEATRES = ['métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie'];
@@ -156,6 +162,175 @@ export function withTeams(doc, rows) {
   return out;
 }
 
+/** Une coordonnée saisie (« 44.6 », « 44,6 ») : un nombre dans [-max, max], null vide ou hors bornes. */
+const coord = (v, max) => {
+  const t = String(v ?? '').trim().replace(',', '.');
+  if (!t) return null;
+  const n = Number(t);
+  return Number.isFinite(n) && Math.abs(n) <= max ? Math.round(n * 1e6) / 1e6 : null;
+};
+/** Un nombre positif saisi, ou null. */
+const positive = (v, max) => {
+  const n = coord(v, max);
+  return n !== null && n >= 0 ? n : null;
+};
+/** Un nombre lu du fichier, en texte pour un champ ('' sinon). */
+const numText = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? '' : String(+v);
+
+/** Les lieux d'une mission (voir l'en-tête). */
+export function placesOf(doc) {
+  const d = obj(doc),
+    arr = v => (Array.isArray(v) ? v : []).slice(0, PLACES_MAX),
+    out = [];
+  for (const [kind, key] of [
+      ['dep', 'origin'],
+      ['arr', 'destination']
+    ])
+    if (placeText(d[key])) out.push({
+      kind,
+      i: 0,
+      id: '',
+      name: placeText(d[key]),
+      role: '',
+      lat: numText(obj(d[key]).lat),
+      lon: numText(obj(d[key]).lon)
+    });
+  if (d.target && typeof d.target === 'object') out.push({
+    kind: 'target',
+    i: 0,
+    id: cut(d.target.id, 40),
+    name: cut(d.target.name, 120),
+    role: cut(d.target.role, 200),
+    lat: numText(d.target.lat),
+    lon: numText(d.target.lon)
+  });
+  arr(d.zones).forEach((z, i) => {
+    const o = obj(z),
+      c = obj(o.centre ?? o.center),
+      poly = [o.points, o.polygon, o.vertices].find(a => Array.isArray(a) && a.length > 2);
+    out.push({
+      kind: 'zone',
+      i,
+      id: cut(o.id, 40),
+      name: cut(o.name, 120),
+      role: cut(o.role, 200),
+      zkind: cut(o.kind, 40),
+      lat: numText(c.lat ?? o.lat),
+      lon: numText(c.lon ?? o.lon),
+      radius: numText(o.radius_km),
+      tot: numText(o.time_on_task_min),
+      poly: poly ? poly.length : 0
+    });
+  });
+  arr(d.turning_points).forEach((p, i) => out.push({
+    kind: 'pt',
+    i,
+    id: cut(obj(p).id, 40),
+    name: cut(obj(p).name, 120),
+    role: cut(obj(p).role, 200),
+    lat: numText(obj(p).lat),
+    lon: numText(obj(p).lon)
+  }));
+  arr(d.rendezvous).forEach((p, i) => out.push({
+    kind: 'rdv',
+    i,
+    id: cut(obj(p).id, 40),
+    name: cut(obj(p).name, 120),
+    role: cut(obj(p).role, 200),
+    lat: numText(obj(p).lat),
+    lon: numText(obj(p).lon),
+    participants: (Array.isArray(obj(p).participants) ? obj(p).participants : []).slice(0, 20).map(x => cut(x, 60)).filter(Boolean)
+      .join(', ')
+  }));
+  return out;
+}
+
+/** Le document avec ses lieux retouchés (voir l'en-tête). */
+export function withPlaces(doc, rows) {
+  const out = structuredClone(obj(doc)),
+    list = Array.isArray(rows) ? rows : [],
+    before = k => Array.isArray(out[k]) ? out[k] : [],
+    base = (k, r) => Number.isInteger(r.i) && r.i >= 0 ? obj(before(k)[r.i]) : {},
+    common = r => ({
+      id: cut(r.id, 40),
+      name: cut(r.name, 120),
+      role: cut(r.role, 200)
+    }),
+    trim = o => {
+      for (const k of ['id', 'name', 'role'])
+        if (!o[k]) delete o[k];
+      return o;
+    },
+    at = (o, r) => {
+      const lat = coord(r.lat, 90),
+        lon = coord(r.lon, 180);
+      o.lat = lat;
+      o.lon = lon;
+      return o;
+    };
+  // le départ et l'arrivée : leur position seule (le nom se change au Cadre)
+  for (const [kind, key] of [
+      ['dep', 'origin'],
+      ['arr', 'destination']
+    ]) {
+    const r = list.find(x => x.kind === kind);
+    if (r && out[key] && typeof out[key] === 'object') out[key] = at({
+      ...out[key]
+    }, r);
+  }
+  const t = list.find(x => x.kind === 'target');
+  if (t) out.target = trim(at({
+    ...obj(out.target),
+    ...common(t)
+  }, t));
+  else delete out.target;
+  const zones = list.filter(x => x.kind === 'zone').slice(0, PLACES_MAX).map(r => {
+      const b = base('zones', r),
+        z = trim({
+          ...b,
+          ...common(r)
+        }),
+        lat = coord(r.lat, 90),
+        lon = coord(r.lon, 180),
+        radius = positive(r.radius, 500),
+        tot = positive(r.tot, 9999);
+      if (cut(r.zkind, 40)) z.kind = cut(r.zkind, 40);
+      else delete z.kind;
+      // le centre : là où le fichier le portait (centre: { lat, lon }, ou lat / lon à plat) ; un polygone garde ses points
+      if (b.lat !== undefined && !b.centre) Object.assign(z, {
+        lat,
+        lon
+      });
+      else if (lat !== null || lon !== null || b.centre) z.centre = {
+        ...obj(b.centre),
+        lat,
+        lon
+      };
+      if (radius !== null) z.radius_km = radius;
+      else delete z.radius_km;
+      if (tot !== null) z.time_on_task_min = tot;
+      else delete z.time_on_task_min;
+      return z;
+    }),
+    pts = list.filter(x => x.kind === 'pt').slice(0, PLACES_MAX).map(r => trim(at({
+      ...base('turning_points', r),
+      ...common(r)
+    }, r))),
+    rdv = list.filter(x => x.kind === 'rdv').slice(0, PLACES_MAX).map(r => trim(at({
+      ...base('rendezvous', r),
+      ...common(r),
+      participants: String(r.participants ?? '').split(',').map(x => cut(x, 60)).filter(Boolean).slice(0, 20)
+    }, r)));
+  for (const [k, v] of [
+      ['zones', zones],
+      ['turning_points', pts],
+      ['rendezvous', rdv]
+    ])
+    if (v.length) out[k] = v;
+    else delete out[k];
+  return out;
+}
+
 /** Le document d'une mission neuve (voir l'en-tête). */
 export function blank() {
   return {
@@ -235,6 +410,8 @@ export function todo(doc) {
     const p = obj(d[k]);
     if (placeText(p) && (!Number.isFinite(+p.lat) || !Number.isFinite(+p.lon) || p.lat === null || p.lon === null)) add('places', k);
   }
+  // les lieux sans position (un polygone se place par ses points) : un seul mot pour tous
+  if (placesOf(d).some(p => !['dep', 'arr'].includes(p.kind) && !p.poly && (p.lat === '' || p.lon === ''))) add('places', 'unplaced');
   if (!String(d.summary ?? '').trim()) add('story', 'summary');
   if (!String(d.detailed_description ?? '').trim()) add('story', 'description');
   if (!arr(d.risks).length) add('risks', 'risks');

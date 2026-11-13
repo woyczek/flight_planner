@@ -99,6 +99,12 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-edteam{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-edteam>.f-field{margin:0;min-width:0}
 [data-module="missions"] .ms-edthead{display:none}
+[data-module="missions"] .ms-plrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-plbadge{font-size:.8em;font-weight:700;padding:.35em .5em;border-radius:4px;background:color-mix(in srgb,currentColor 8%,transparent);min-width:3.4em;text-align:center}
+[data-module="missions"] .ms-plbody{display:flex;flex-direction:column;min-width:0}
+[data-module="missions"] .ms-plbody>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="missions"] .ms-plform{grid-column:1 / -1;padding:4px 0 8px}
+[data-module="missions"] .ms-pladd{flex-wrap:wrap;align-items:center;margin-top:8px}
 [data-module="missions"] .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2;min-width:44px;min-height:44px}
 @container (min-width: 900px){
   [data-module="missions"] .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,.7fr) minmax(0,1.2fr) minmax(0,1.2fr) auto}
@@ -517,6 +523,45 @@ const TX = {
   edTeamNone: ['Aucune équipe : « + Équipe » en ajoute une.', 'No team: « + Team » adds one.', 'Kein Team: „+ Team“ fügt eines hinzu.',
     'Ningún equipo: «+ Equipo» añade uno.'
   ],
+  edPlacesHint: ['Cible, zones, points tournants et rendez-vous. Une ligne par lieu ; « Modifier » en ouvre les champs.',
+    'Target, zones, turning points and rendezvous. One row per place; « Edit » opens its fields.',
+    'Ziel, Zonen, Wendepunkte und Treffpunkte. Eine Zeile pro Ort; „Bearbeiten“ öffnet seine Felder.',
+    'Objetivo, zonas, puntos de giro y encuentros. Una fila por lugar; «Modificar» abre sus campos.'
+  ],
+  plDep: ['DÉP', 'DEP', 'ABF', 'SAL'],
+  plArr: ['ARR', 'ARR', 'ANK', 'LLE'],
+  plTarget: ['CIBLE', 'TARGET', 'ZIEL', 'OBJ'],
+  plZone: ['ZONE', 'ZONE', 'ZONE', 'ZONA'],
+  plPt: ['PT', 'PT', 'WP', 'PG'],
+  plRdv: ['RDV', 'RDV', 'TP', 'ENC'],
+  plAddZone: ['+ Zone', '+ Zone', '+ Zone', '+ Zona'],
+  plAddPt: ['+ Point tournant', '+ Turning point', '+ Wendepunkt', '+ Punto de giro'],
+  plAddRdv: ['+ Rendez-vous', '+ Rendezvous', '+ Treffpunkt', '+ Encuentro'],
+  plAddTarget: ['+ Cible', '+ Target', '+ Ziel', '+ Objetivo'],
+  plOnMap: ['Sur la carte', 'On the map', 'Auf der Karte', 'En el mapa'],
+  plUnplaced: ['à placer', 'to place', 'zu platzieren', 'por situar'],
+  plPoly: ['{n} points', '{n} points', '{n} Punkte', '{n} puntos'],
+  plCircle: ['cercle {r} km', 'circle {r} km', 'Kreis {r} km', 'círculo {r} km'],
+  plTot: ['{n} min sur zone', '{n} min on station', '{n} min im Gebiet', '{n} min en zona'],
+  plId: ['Identifiant', 'Identifier', 'Kennung', 'Identificador'],
+  plName: ['Nom', 'Name', 'Name', 'Nombre'],
+  plRole: ['Rôle', 'Role', 'Rolle', 'Función'],
+  plLat: ['Latitude (°, décimale)', 'Latitude (°, decimal)', 'Breite (°, dezimal)', 'Latitud (°, decimal)'],
+  plLon: ['Longitude (°, décimale)', 'Longitude (°, decimal)', 'Länge (°, dezimal)', 'Longitud (°, decimal)'],
+  plKind: ['Sorte', 'Kind', 'Art', 'Tipo'],
+  plRadius: ['Rayon (km)', 'Radius (km)', 'Radius (km)', 'Radio (km)'],
+  plTotF: ['Temps sur zone (min)', 'Time on station (min)', 'Zeit im Gebiet (min)', 'Tiempo en zona (min)'],
+  plParticipants: ['Participants (indicatifs, séparés par des virgules)', 'Participants (callsigns, comma separated)',
+    'Teilnehmer (Rufzeichen, durch Kommas getrennt)', 'Participantes (indicativos, separados por comas)'
+  ],
+  plPolyKept: ['Le polygone garde ses {n} points (ils se déplacent dans la V2 pour l\'instant).',
+    'The polygon keeps its {n} points (they are moved in the V2 for now).',
+    'Das Polygon behält seine {n} Punkte (sie werden vorerst in der V2 verschoben).',
+    'El polígono conserva sus {n} puntos (por ahora se mueven en la V2).'
+  ],
+  plDone: ['OK', 'OK', 'OK', 'OK'],
+  plRemove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
+  todo_unplaced: ['lieux à placer', 'places to place', 'Orte zu platzieren', 'lugares por situar'],
   todo_title: ['titre', 'title', 'Titel', 'título'],
   todo_theatre: ['théâtre', 'theatre', 'Einsatzgebiet', 'teatro'],
   todo_dep: ['départ', 'departure', 'Abflug', 'salida'],
@@ -1847,8 +1892,14 @@ function edAsideHtml(s, doc) {
     <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
 }
 
-/** Le document en cours d'édition : le fichier lu, le cadre et les équipes retouchés (une étape jamais ouverte ne retouche rien). */
-const edDoc = (e, cadre = e.cadre) => e.teams ? ED.withTeams(ED.withCadre(e.base, cadre), e.teams) : ED.withCadre(e.base, cadre);
+/** Le document en cours d'édition : le fichier lu, puis le cadre, les équipes et les lieux retouchés (une étape jamais ouverte ne
+ *  retouche rien ; les lieux après le cadre : le nom du départ vient du Cadre, sa position des Lieux). */
+function edDoc(e, cadre = e.cadre) {
+  let d = ED.withCadre(e.base, cadre);
+  if (e.teams) d = ED.withTeams(d, e.teams);
+  if (e.places) d = ED.withPlaces(d, e.places);
+  return d;
+}
 
 /** L'étape Équipes : une ligne par équipe (indicatif, service, type OACI, rôle), « Retirer » ; « + Équipe » ajoute une ligne. */
 function edTeamsHtml(s) {
@@ -1857,6 +1908,64 @@ function edTeamsHtml(s) {
   return `<h3>2. ${esc(s.tt(TX.stepTeams))}</h3><p class="f-muted">${esc(s.tt(TX.edTeamsHint))}</p>
     <div class="f-list" data-edteams>${rows.length ? `<div class="ms-edteam ms-edthead f-muted" aria-hidden="true">${[TX.edTeamName, TX.edTeamType, TX.edTeamService, TX.edTeamRole].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>` : ''}${rows.length ? rows.map((r, i) => `<div class="ms-edteam" data-team="${i}">${inp(i, 'name', r.name, TX.edTeamName, ' maxlength="80"')}${inp(i, 'type', r.type, TX.edTeamType, ' maxlength="60" autocapitalize="characters"')}${inp(i, 'service', r.service, TX.edTeamService, ' maxlength="120"')}${inp(i, 'role', r.role, TX.edTeamRole, ' maxlength="200"')}<button type="button" class="ms-edtdel" data-do="edteamdel" data-i="${i}" title="${esc(s.tt(TX.edTeamDel))}" aria-label="${esc(s.tt(TX.edTeamDel))}">✕</button></div>`).join('') : `<p class="f-muted" data-noteam>${esc(s.tt(TX.edTeamNone))}</p>`}</div>
     ${rows.length < ED.TEAMS_MAX ? `<button type="button" data-do="edteamadd">${esc(s.tt(TX.edTeamAdd))}</button>` : ''}`;
+}
+
+/** Une coordonnée en degrés et minutes : « 44°36′N 1°24′E » ; « à placer » sans position. */
+function dms(s, lat, lon) {
+  // la saisie telle quelle (« 44,9 » : la virgule décimale), hors bornes ou illisible : « à placer », comme à l'écriture (withPlaces)
+  const num = (v, max) => {
+      const n = Number(String(v ?? '').trim().replace(',', '.'));
+      return String(v ?? '').trim() !== '' && Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+    },
+    la = num(lat, 90),
+    lo = num(lon, 180);
+  if (la === null || lo === null) return s.tt(TX.plUnplaced);
+  lat = la;
+  lon = lo;
+  const f = (v, p, n) => {
+    const a = Math.abs(+v),
+      d = Math.floor(a),
+      m = Math.round((a - d) * 60);
+    return `${m === 60 ? d + 1 : d}°${String(m === 60 ? 0 : m).padStart(2, '0')}′${+v < 0 ? n : p}`;
+  };
+  return `${f(lat, 'N', 'S')} ${f(lon, 'E', 'W')}`;
+}
+
+/** L'étape Lieux (la maquette editeur_lieux_*.png) : une ligne par lieu, « Modifier » en ouvre les champs sur place ; « + Zone »,
+ *  « + Point tournant », « + Rendez-vous » (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte. */
+function edPlacesHtml(s) {
+  const e = s.ed,
+    rows = e.places || [],
+    badge = {
+      dep: TX.plDep,
+      arr: TX.plArr,
+      target: TX.plTarget,
+      zone: TX.plZone,
+      pt: TX.plPt,
+      rdv: TX.plRdv
+    },
+    detail = r => [r.kind === 'zone' ? r.zkind : '', r.role, r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
+      n: r.poly
+    }) : r.kind === 'zone' && r.radius ? s.tt(TX.plCircle, {
+      r: r.radius
+    }) : '', r.kind === 'zone' && r.tot ? s.tt(TX.plTot, {
+      n: r.tot
+    }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, r.lat, r.lon)].filter(Boolean).join(' · '),
+    field = (i, f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edplace" data-i="${i}" data-f="${f}" value="${esc(v ?? '')}" autocomplete="off"${extra}></label>`,
+    form = (r, i) => {
+      const fixed = r.kind === 'dep' || r.kind === 'arr',
+        num = ' inputmode="decimal" maxlength="12"';
+      return `<div class="ms-plform" data-plform="${i}">${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}</div>`}
+        ${r.kind === 'zone' ? `<div class="f-row">${field(i, 'zkind', TX.plKind, r.zkind, ' maxlength="40"')}${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
+        ${r.kind === 'zone' && r.poly ? `<p class="f-muted">${esc(s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}
+        ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
+        ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
+        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(TX.plRemove))}</button>`}</div></div>`;
+    },
+    id = e.cadre.id.trim().toUpperCase();
+  return `<h3>3. ${esc(s.tt(TX.stepPlaces))}</h3><p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
+    <div class="f-list" data-edplaces>${rows.map((r, i) => `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('')}</div>
+    <div class="f-row ms-pladd">${rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>`;
 }
 
 /** L'écran de l'éditeur (la maquette : modules/missions/maquette/editeur_cadre_*.png). */
@@ -1868,7 +1977,7 @@ function edHtml(s) {
   return `<div class="ms-ed" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(crumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
+    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : e.step === 'places' ? edPlacesHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
     <div class="ms-edbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" data-do="ednext"${nextStep ? ` data-step="${nextStep}"` : ` disabled title="${esc(s.tt(TX.edLater))}"`}>${esc(s.tt(TX.edNext))}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
 }
 
@@ -1877,6 +1986,12 @@ function edHtml(s) {
 function edInput(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
+  if (k === 'edplace') { // un lieu : le champ retouché en place, la ligne redessinée à « OK »
+    const row = e.places?.[+ev.target.dataset.i],
+      f = ev.target.dataset.f;
+    if (row && ['id', 'name', 'role', 'lat', 'lon', 'zkind', 'radius', 'tot', 'participants'].includes(f)) row[f] = ev.target.value;
+    return edRefresh(s);
+  }
   if (k === 'edteam') { // une équipe : la ligne retouchée en place (le champ garde son curseur)
     const row = e.teams?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
@@ -1895,6 +2010,13 @@ function edInput(s, ev) {
   } [k];
   if (!key) return;
   e.cadre[key] = key === 'id' ? ev.target.value.toUpperCase() : ev.target.value;
+  // un départ ou une arrivée retouchés au Cadre : leur ligne des Lieux suit (sa position ne reste que si le code OACI ne change pas)
+  if ((key === 'dep' || key === 'arr') && e.places) {
+    const fresh = ED.placesOf(ED.withCadre(e.base, e.cadre)).find(r => r.kind === key),
+      at = e.places.findIndex(r => r.kind === key);
+    if (at >= 0) e.places = fresh ? e.places.map((r, i) => i === at ? fresh : r) : e.places.filter((_, i) => i !== at);
+    else if (fresh) e.places = [fresh, ...e.places];
+  }
   if (ev.target.tagName === 'SELECT') {
     if (ev.type !== 'change') return;
     if (key === 'family') {
@@ -1982,6 +2104,8 @@ async function edSave(s) {
       base: doc,
       cadre: ED.cadreOf(doc),
       teams: null,
+      places: null,
+      placeEdit: -1,
       path,
       origId: c.id,
       regIdx: line ? line.idx : e.regIdx,
@@ -2021,7 +2145,49 @@ function edClick(s, b) {
       s.ed.step = b.dataset.step;
       // la première ouverture des Équipes lit celles du fichier ; ensuite, les lignes retouchées sont gardées d'une étape à l'autre
       if (s.ed.step === 'teams' && !s.ed.teams) s.ed.teams = ED.teamsOf(s.ed.base);
+      // les lieux lus du document au cadre déjà retouché (le départ et l'arrivée portent le nom saisi au Cadre)
+      if (s.ed.step === 'places' && !s.ed.places) s.ed.places = ED.placesOf(edDoc(s.ed));
       return draw(s);
+    case 'edplace':
+      s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
+      return draw(s);
+    case 'edplaceok':
+      s.ed.placeEdit = -1;
+      return draw(s);
+    case 'edplacedel':
+      s.ed.places = (s.ed.places || []).filter((_, i) => i !== +b.dataset.i);
+      s.ed.placeEdit = -1;
+      return draw(s);
+    case 'edplaceadd': {
+      const kind = ['target', 'zone', 'pt', 'rdv'].includes(b.dataset.kind) ? b.dataset.kind : 'pt',
+        list = s.ed.places || [],
+        n = list.filter(r => r.kind === kind).length + 1;
+      if (n > ED.PLACES_MAX || (kind === 'target' && n > 1)) return;
+      const row = {
+        kind,
+        i: -1,
+        id: kind === 'zone' ? `ZONE-${n}` : kind === 'pt' ? `PT${n}` : kind === 'rdv' ? `RDV-${n}` : 'TARGET',
+        name: '',
+        role: '',
+        lat: '',
+        lon: '',
+        ...(kind === 'zone' ? {
+          zkind: '',
+          radius: '',
+          tot: '',
+          poly: 0
+        } : kind === 'rdv' ? {
+          participants: ''
+        } : {})
+      };
+      // la nouvelle ligne rejoint les lieux de sa sorte (l'ordre du fichier : cible, zones, points, rendez-vous)
+      const order = ['dep', 'arr', 'target', 'zone', 'pt', 'rdv'],
+        at = list.findIndex(r => order.indexOf(r.kind) > order.indexOf(kind));
+      s.ed.places = at < 0 ? [...list, row] : [...list.slice(0, at), row, ...list.slice(at)];
+      s.ed.placeEdit = at < 0 ? s.ed.places.length - 1 : at;
+      draw(s);
+      return s.el.querySelector(`[data-plform="${s.ed.placeEdit}"] input`)?.focus();
+    }
     case 'edteamadd':
       s.ed.teams = [...(s.ed.teams || ED.teamsOf(s.ed.base)), {
         i: -1,
