@@ -1373,12 +1373,16 @@ p.f-back {
 }
 /* l'onglet « À trancher » de la recette (SOG-0241) : une réponse par ligne, la zone de toucher de la hauteur d'une cible */
 .f-rc-opt {
+  overflow-wrap: anywhere;
   display: flex;
   align-items: flex-start;
   gap: 10px;
   min-height: var(--sog-touch, 44px);
   padding: 6px 0;
   cursor: pointer
+}
+.f-rc-item p {
+  overflow-wrap: anywhere
 }
 .f-rc-opt input {
   flex: none;

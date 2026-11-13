@@ -126,6 +126,14 @@ input[type="radio"] {
 .f-card.f-accent {
   border-color: var(--sog-accent)
 }
+/* un panneau qui flotte sur autre chose (la Carte : fenêtre de la mission, fiche d'un point, itinéraires proposés ; SOG-0299 / jeton de fond) : plein, jamais le filet sans fond que certains designs (swiss) donnent à une carte de page.
+   Un module met `f-float` à côté de `f-card` ; un design peut poser --sog-float-bg et --sog-float-border (sinon : --sog-surface et un filet --sog-border plein). Plus spécifique que les règles `[data-design] .f-card` des designs. */
+.f-card.f-float,
+[data-design] .f-card.f-float {
+  background: var(--sog-float-bg, var(--sog-surface));
+  border: var(--sog-float-border, 1px solid var(--sog-border));
+  padding-inline: 14px
+}
 /* lecteurs d'écran seulement : présent dans l'arbre (h1 d'un module dont l'en-tête porte le titre : ctx.titled), invisible */
 .f-sr {
   position: absolute;

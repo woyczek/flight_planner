@@ -7039,6 +7039,53 @@ def a176(c):
     c.check_errors()
 
 
+@case('A177', 'The tab « À trancher » shows the question, its context and every answer IN FULL (long text wraps, nothing is cut), and a link written in the text is clickable (SOG-0323)', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0323 (the user, Q-0048: « je n\'ai pas vu toute ta question (truncated by design, tu peux augmenter la taille des labels) »): the page cut the question at 300 signs, the context at 500 and each answer at 200 (tools/recette_build.py at 300 / 500 / 160); now 2 000 / 2 000 / 600 on both sides, the text wraps (a long word or an address never widens the card), and an https address written in a question, a context or an answer is a link that opens in a new tab (noopener); only http(s) addresses become links, the rest stays text; K171 keeps the build side')
+def a177(c):
+    fx = _dq_fixture()
+    link = 'https://example.org/organisation/images/Screenshot-2026-11-13-135146.png'
+    longq = 'Que veux-tu ? ' + 'Une question longue qui passe la limite de trois cents signes. ' * 8 + 'FIN-QUESTION ' + link
+    longc = 'Le contexte complet : ' + 'beaucoup de détails sur le sujet, qui passent cinq cents signes. ' * 14 + 'FIN-CONTEXTE'
+    longo = 'Une réponse très longue ' + 'qui tient sur plusieurs lignes à 390 de large, ' * 7 + 'FIN-REPONSE ' + 'x' * 70
+    fx['decisions'][1].update(question=longq, context=longc, options=[longo, 'Courte', 'Pas de lien : javascript:alert(1) et <b>x</b>'], recommended=None)
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    c.open('recette', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-tab=decisions]')", timeout=20000, what='the tab « À trancher »')
+    c.tap('[data-tab=decisions]')
+    c.until("!!document.querySelector('[data-decisions] li[data-q=Q-0002]')", what='the long question')
+    g = c.js("""() => { const li = document.querySelector('[data-decisions] li[data-q=Q-0002]'), W = document.documentElement.clientWidth, opts = [...li.querySelectorAll('.f-rc-opt')];
+      const a = li.querySelectorAll('a[href]');
+      return { q: li.querySelector('b').textContent, ctx: li.querySelector('[data-context]').textContent, opts: opts.map(o => o.textContent), over: li.scrollWidth > li.clientWidth + 1 || document.documentElement.scrollWidth > W + 1,
+        inView: opts.every(o => o.getBoundingClientRect().right <= W + 1), links: [...a].map(x => [x.getAttribute('href'), x.target, x.rel]), badLink: !!li.querySelector('a[href^=javascript]') } }""")
+    c.ok('FIN-QUESTION' in g['q'], g['q'][-80:], 'the whole question is shown (it was cut at 300 signs)')
+    c.ok('FIN-CONTEXTE' in g['ctx'], g['ctx'][-60:], 'the whole context is shown (it was cut at 500 signs)')
+    c.ok('FIN-REPONSE' in g['opts'][0], g['opts'][0][-60:], 'the whole answer is shown (it was cut at 200 signs)')
+    c.ok(not g['over'] and g['inView'], g, 'nothing widens the card: the long text wraps, every answer stays inside the screen')
+    c.eq([x for x in g['links'] if x[0] == link], [[link, '_blank', 'noopener noreferrer']], 'the address of the question is a link that opens in a new tab', what='links')
+    c.ok(not g['badLink'] and len(g['links']) == 1, g['links'], 'only an http(s) address becomes a link: « javascript: » and markup stay plain text')
+    c.shot(f'A177_{c.width}_{c.lang}_delivered.png')
+    c.check_errors()
+
+
+@case('A178', 'A card marked `f-float` (a panel that floats over something) has a full background and a full border in every design, day and night, whatever the design does to a page card; the plain card keeps its design (SOG-0299, token for the floating panels)', 'A',
+      designs=('standard', 'metro', 'swiss', 'cupertino', 'material'), screens=False, night=True,
+      rule='SOG-0299 (BUGS SOG: « un jeton de fond pour les panneaux flottants »): swiss.css draws `.f-card` as a rule (transparent, a line on top only), right for a page, wrong for a panel over a map; frame/design/primitives.css gives `.f-card.f-float` a background `--sog-float-bg` (default `--sog-surface`) and a border `--sog-float-border` (default a full `--sog-border` line), more specific than the design rules, so a module writes the class instead of repeating the rule; a plain `.f-card` is untouched')
+def a178(c):
+    c.open('help', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('.f-view')", timeout=20000, what='a screen of the frame')
+    r = c.js("""() => { const k = document.createElement('canvas').getContext('2d'), alpha = e => { k.clearRect(0, 0, 1, 1); k.fillStyle = getComputedStyle(e).backgroundColor; k.fillRect(0, 0, 1, 1); return +(k.getImageData(0, 0, 1, 1).data[3] / 255).toFixed(2) };
+      const host = document.querySelector('.f-view'), mk = cls => { const d = document.createElement('div'); d.className = cls; d.textContent = 'x'; host.appendChild(d); return d };
+      const a = mk('f-card f-float'), b = mk('f-card'), side = e => { const cs = getComputedStyle(e); return [cs.borderTopWidth, cs.borderRightWidth, cs.borderBottomWidth, cs.borderLeftWidth] };
+      const out = { float: alpha(a), floatBorder: side(a), plain: alpha(b), plainBorder: side(b) }; a.remove(); b.remove(); return out }""")
+    c.eq(r['float'], 1, 'the floating panel has an opaque background', what=f'{c.design}: {r}')
+    c.ok(all(w != '0px' for w in r['floatBorder']), r['floatBorder'], 'the floating panel has a border on its four sides')
+    if c.design == 'swiss':
+        c.eq((r['plain'], r['plainBorder'][1]), (0, '0px'), 'the plain card keeps the design: a rule, no ground (the page look is not touched)', what='swiss plain card')
+    c.shot(f'A178_{c.design}_delivered.png')
+    c.check_errors()
+
+
 @case('A180', 'Maintenance: « Administration » is never cut inside the word on the Material rail, and the button « Réglage des seuils de la carte » of the Administration card opens the Map (Pilot app) instead of the Data screen (SOG-0315, items 1 and 2)',
       'A', langs4=True, screens=False, night=False, designs=('material',),
       rule='SOG-0315 (the user, recette of SOG-0274 and SOG-0118): the Material rail is 88 px and its entries carry `overflow-wrap: anywhere`, so « Administration » (12 px, about 80 px) was cut as « Administratio / n »; and `#maps?tune=1` opened from the Administration card INSIDE the Maintenance app names a module that app does not have, so the frame fell back to its first screen (Données)')

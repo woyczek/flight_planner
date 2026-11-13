@@ -213,6 +213,26 @@
   };
   const QID = /^Q-\d{4}$/;
   const MAX_Q = 200;
+  // SOG-0323 (Q-0048 : « truncated by design ») : 300 / 500 / 200 avant ; la question, son contexte et chaque réponse s'affichent en entier (tools/recette_build.py dit les mêmes bornes)
+  const MAX_QUESTION = 2000,
+    MAX_OPT = 600;
+  /** Un texte de la feuille pour l'écran : échappé, et une adresse http(s) écrite dedans devient un lien qui s'ouvre dans un autre onglet (rien d'autre ne devient lien : ni javascript:, ni balise). */
+  const rich = s => {
+    s = String(s ?? '');
+    let out = '',
+      i = 0;
+    for (const m of s.matchAll(/https?:\/\/[^\s<>"'`]+/g)) {
+      const u = m[0].replace(/[.,;:!?)\]]+$/, '');
+      try {
+        new URL(u);
+      } catch {
+        continue;
+      }
+      out += `${esc(s.slice(i, m.index))}<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`;
+      i = m.index + u.length;
+    }
+    return out + esc(s.slice(i));
+  };
   /** Une réponse lue d'ailleurs (le fichier du lanceur, le magasin de l'appareil, le fichier généré) : { choice: 0 à 9 | null, text, at? } aux règles, sinon null (au moins un choix ou un texte). */
   const answerOf = v => {
     if (!v || typeof v !== 'object') return null;
@@ -243,14 +263,14 @@
   /** Les questions du fichier (non fiable) : identifiant Q-nnnn, fiche SOG-nnnn, textes bornés, 2 à 6 réponses, 200 au plus. */
   const questionsOf = list => (Array.isArray(list) ? list : []).filter(q => q && typeof q === 'object' && QID.test(q.id)).slice(0, MAX_Q)
     .map(q => {
-      const options = (Array.isArray(q.options) ? q.options : []).map(o => text(typeof o === 'string' ? o : o?.text, 200)).filter(
+      const options = (Array.isArray(q.options) ? q.options : []).map(o => text(typeof o === 'string' ? o : o?.text, MAX_OPT)).filter(
         Boolean).slice(0, 6);
       return {
         id: q.id,
         fiche: typeof q.fiche === 'string' && ID.test(q.fiche) ? q.fiche : '',
         app: typeof q.app === 'string' ? q.app.slice(0, 20) : '',
-        question: text(q.question, 300),
-        context: text(q.context, 500),
+        question: text(q.question, MAX_QUESTION),
+        context: text(q.context, MAX_QUESTION),
         options,
         recommended: Number.isInteger(q.recommended) && q.recommended >= 0 && q.recommended < options.length ? q.recommended : null,
         since: /^\d{4}-\d{2}-\d{2}$/.test(String(q.since)) ? q.since : '',
@@ -440,15 +460,15 @@
       const a = answerNow(q),
         editing = !a || ui.dedit.has(q.id),
         head = `<p><button type="button" class="f-rm-id" data-copy="${esc(q.fiche || q.id)}" title="${esc(t(T.dCopy))}">${esc(q.fiche || q.id)}</button> <small class="f-muted">${esc(q.id)}${q.app ? ` · ${esc(appName(q.app))}` : ''}</small>${Object.hasOwn(ui.dlocal, q.id) ? ` <small class="f-warn" data-unsent>${esc(t(ui.dwhy === 'unknown' ? T.dUnknown : T.unsent))}</small>` : ''}</p>
-        <p><b>${esc(q.question)}</b></p>${q.context ? `<p class="f-muted" data-context>${esc(q.context)}</p>` : ''}`;
-      if (!editing) return `<li class="f-rc-item" data-q="${esc(q.id)}" data-state="answered">${head}<p data-answer><b>${esc(t(T.dYours))}</b> : ${a.choice !== null && q.options[a.choice] ? esc(q.options[a.choice]) : ''}${a.choice !== null && a.text ? ' · ' : ''}${esc(a.text)}${a.at ? ` <small class="f-muted">${esc(a.at.slice(0, 10))}</small>` : ''}</p>
+        <p><b>${rich(q.question)}</b></p>${q.context ? `<p class="f-muted" data-context>${rich(q.context)}</p>` : ''}`;
+      if (!editing) return `<li class="f-rc-item" data-q="${esc(q.id)}" data-state="answered">${head}<p data-answer><b>${esc(t(T.dYours))}</b> : ${a.choice !== null && q.options[a.choice] ? rich(q.options[a.choice]) : ''}${a.choice !== null && a.text ? ' · ' : ''}${esc(a.text)}${a.at ? ` <small class="f-muted">${esc(a.at.slice(0, 10))}</small>` : ''}</p>
         <div class="f-row"><button type="button" data-dmod="${esc(q.id)}">${esc(t(T.dModify))}</button></div></li>`;
       const dr = ui.ddraft[q.id] || {
         choice: a?.choice ?? null,
         text: a?.text || ''
       };
       return `<li class="f-rc-item" data-q="${esc(q.id)}" data-state="todo">${head}
-        <div role="radiogroup" aria-label="${esc(q.question)}">${q.options.map((o, i) => `<label class="f-rc-opt"><input type="radio" name="dq-${esc(q.id)}" value="${i}" data-dchoice="${esc(q.id)}"${dr.choice === i ? ' checked' : ''}> ${esc(o)}${q.recommended === i ? ` <small class="f-muted" data-proposed>(${esc(t(T.dProposed))})</small>` : ''}</label>`).join('')}</div>
+        <div role="radiogroup" aria-label="${esc(q.question)}">${q.options.map((o, i) => `<label class="f-rc-opt"><input type="radio" name="dq-${esc(q.id)}" value="${i}" data-dchoice="${esc(q.id)}"${dr.choice === i ? ' checked' : ''}> ${rich(o)}${q.recommended === i ? ` <small class="f-muted" data-proposed>(${esc(t(T.dProposed))})</small>` : ''}</label>`).join('')}</div>
         <label class="f-field">${esc(t(T.dFree))}<textarea data-dtext="${esc(q.id)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(dr.text)}</textarea>${counter(dr.text)}</label>
         ${ui.dneed === q.id ? `<p class="f-warn" data-need>${esc(t(T.dNeed))}</p>` : ''}
         <div class="f-row"><button type="button" class="primary" data-dok="${esc(q.id)}">${esc(t(T.dAnswer))}</button></div></li>`;

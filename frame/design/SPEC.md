@@ -165,7 +165,7 @@ what depends on the device stays in `@media`: the bottom tab bar (the rail on a 
 | Fields | `input`, `select`, `textarea`; checkboxes and radios | 44 px, text at 16 px, background `surface-2`; checkboxes 20 px, inside a 44 px `f-check` label |
 | Links, focus | `a`, `:focus-visible` | `link` colour; 2 px `focus` outline |
 | Headings | `h1`–`h3` inside `.f-view` | title font, case and spacing of the design, the `h1`–`h3` sizes |
-| Card | `.f-card`, `.f-card.f-accent` | |
+| Card | `.f-card`, `.f-card.f-accent`, `.f-card.f-float` | `f-float`: a panel that floats over something (a map): opaque `--sog-float-bg` (default `--sog-surface`) and a full `--sog-float-border` (default 1 px `--sog-border`), whatever rule the design gives a page card |
 | Row, field, check | `.f-row`, `.f-field`, `.f-check` | fields fill their cell |
 | Text | `.f-muted`, `.f-ok`, `.f-warn`, `.f-err`, `.f-msg[data-kind]` | |
 | Term / value | `dl.f-dl` | |

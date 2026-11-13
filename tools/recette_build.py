@@ -139,12 +139,12 @@ def decisions(org, fs):
     for qid, q in sorted((read_json(os.path.join(org, 'DECISIONS_A_PRENDRE.json')).get('questions') or {}).items()):
         if not QID.match(str(qid)) or not isinstance(q, dict) or q.get('closed') is True or not isinstance(q.get('question'), str):
             continue
-        options = [clean(o, 160) for o in q.get('options') or [] if isinstance(o, str)][:4]
+        options = [clean(o, 600) for o in q.get('options') or [] if isinstance(o, str)][:4]
         if len(options) < 2:
             continue
         fid = q.get('fiche') if ID.match(str(q.get('fiche', ''))) and q.get('fiche') in fs else ''
-        row = {'id': qid, 'fiche': fid, 'app': RB.app_of(fs[fid]['theme']) if fid else '', 'question': clean(q['question'], 300),
-               'context': clean(q.get('context', ''), 500), 'options': options, 'since': str(q.get('since', ''))[:10], 'state': 'todo'}
+        row = {'id': qid, 'fiche': fid, 'app': RB.app_of(fs[fid]['theme']) if fid else '', 'question': clean(q['question'], 2000),
+               'context': clean(q.get('context', ''), 2000), 'options': options, 'since': str(q.get('since', ''))[:10], 'state': 'todo'}
         r = q.get('recommended')
         if isinstance(r, int) and not isinstance(r, bool) and 0 <= r < len(options):
             row['recommended'] = r

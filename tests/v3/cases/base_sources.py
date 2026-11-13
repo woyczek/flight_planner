@@ -1509,6 +1509,14 @@ def k96(c):
              (True, 3, 'sog-priorities/1', ['SOG-0001', 'SOG-0002', 'SOG-0003'], {'milestone': 'alpha.5', 'rank': 1}, True, []), 'a set writes the file: the schema, the date, the entries by rank, no temporary file', what='set')
         r = run(action='get')
         c.eq((r['items'], r['dropped'], r['exists'], r['updated'] == doc['updated']), (good, 0, True, True), 'a get gives back what was set', what='get')
+        # SOG-0323: the regeneration keeps a long question, context and answer whole (2000 / 2000 / 600 signs; 300 / 500 / 160 before)
+        sys.path.insert(0, str(c.root / 'tools'))
+        import recette_build as RB
+        q = {'questions': {'Q-0099': {'question': 'q' * 1999 + '!', 'context': 'c' * 1999 + '!', 'options': ['o' * 599 + '!', 'b']}}}
+        (org / 'DECISIONS_A_PRENDRE.json').write_text(json.dumps(q), encoding='utf-8')
+        row = ([x for x in RB.decisions(str(org), {}) if x['id'] == 'Q-0099'] or [{}])[0]
+        c.eq((len(row.get('question', '')), len(row.get('context', '')), [len(o) for o in row.get('options', [])]), (2000, 2000, [600, 1]), 'a long question, context and answer are kept whole by tools/recette_build.py (SOG-0323)', what='long decision')
+        (org / 'DECISIONS_A_PRENDRE.json').unlink()
         # « no milestone » (the Backlog column of the roadmap, SOG-0256): an empty milestone is a milestone-less entry, written and read back as such
         nomile = {**good, 'SOG-0001': {'milestone': '', 'rank': 1}}
         r = run(action='set', items=nomile)
