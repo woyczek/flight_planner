@@ -592,7 +592,12 @@ export function createProcedures(host) {
     V: 'VOR',
     D: 'VOR/DME',
     N: 'NDB',
-    Q: 'NDB/DME'
+    Q: 'NDB/DME',
+    // retouche de SOG-0332 (KTPA « H01LZ ») : les autres lettres ARINC 424 d'une approche
+    H: 'RNP AR',
+    P: 'GPS',
+    X: 'LDA',
+    B: 'LOC BC'
   };
 
   /** L'approche choisie par sa carte (route.procedures.arr.appChart, SOG-0298) telle que le vol la porte — une entrée non fiable : un
@@ -617,7 +622,8 @@ export function createProcedures(host) {
   const chartName = n => String(n || '').replace(/\bRWY\s*/i, '').replace(/\s+/g, ' ').trim();
 
   function appWords(label) {
-    const t = /^([ILRVDNQ])(\d{2}[LRC]?)(?:-([A-Z]))?$/.exec(String(label || '').trim());
+    // « I13R », « R06-Y », « H01LZ » (la lettre de l'approche collée à la piste, sans tiret)
+    const t = /^([ILRVDNQHPXB])(\d{2}[LRC]?)-?([A-Z])?$/.exec(String(label || '').trim());
     return t ? [APP_TYPE[t[1]], t[2], t[3] || ''].filter(Boolean).join(' ') : String(label || '');
   }
   /** SOG-0308 : les valeurs en mots des lignes d'un côté, la même règle pour la phrase repliée et les lignes ouvertes : { rwy, rwyWords,
@@ -1093,7 +1099,10 @@ export function createProcedures(host) {
       dir: String(Math.round(+m.wind.dir)).padStart(3, '0'),
       kt: Math.round(+m.wind.kt)
     }) : '');
-    el.querySelector('[data-prow="rwy"]')?.classList.toggle('fu-pwarn', !!(v.rwy && p && PR.rwNum(p.r.id) !== v.rwy));
+    // retouche de SOG-0332 (KDEN « 16L — face 3 kt » en avertissement) : l'avertissement est réservé au vent ARRIÈRE ; une piste de
+    // vent de face qui n'est pas la mieux orientée garde sa ligne calme, la mieux orientée proposée dessous (« Prendre la 25 »)
+    el.querySelector('[data-prow="rwy"]')?.classList.toggle('fu-pwarn', !!(v.rwy && p && PR.rwNum(p.r.id) !== v.rwy && v.w?.c && Math
+      .round(-v.w.c.head) >= 1));
     val('main', v.proc === null ? tt(TX.procNone) : v.proc);
     src('main', mainRec ? srcLabel(mainRec) : '');
     val('app', v.app === null ? tt(TX.procNone) : v.app);
@@ -1224,7 +1233,9 @@ export function createProcedures(host) {
             take = a && !a.rwys.includes(cur) ? a.rwys.map(k => `<button type="button" data-do="rwyprob" data-side="${side}" data-rwy="${esc(rwOf(k).id)}">${esc(a.rwys.length > 1 ? tt(TX.procAtisTakeOne, { rwy: k }) : tt(TX.procAtisTake))}</button>`).join(' ') : '';
           return `<span class="fu-rwyline" data-atisline="${esc(net)}"><span>${esc(parts.join(' · '))}</span>${take ? ` ${take}` : ''}</span>`;
         });
-      if (p && PR.rwNum(p.r.id) !== cur && !said.has(PR.rwNum(p.r.id))) {
+      // retouche de l'ergonome (23 h 36) : une ATIS qui donne une piste en service, son geste est le SEUL (le choix du contrôle) ; la
+      // suggestion par le vent ne revient que sans piste d'ATIS
+      if (p && !atis.length && PR.rwNum(p.r.id) !== cur && !said.has(PR.rwNum(p.r.id))) {
         const pw = runwayWind(m, p.r, +host.crossLimit?.() || 0);
         lines.push(`<span class="fu-rwyline" data-metarline><button type="button" data-do="rwyprob" data-side="${side}" data-rwy="${esc(p.r.id)}" title="${esc(tt(TX.procRwyProb, { rwy: PR.rwNum(p.r.id), at: m.wind.at ? `${m.wind.at}Z` : '—', dir: String(Math.round(+m.wind.dir)).padStart(3, '0'), kt: Math.round(+m.wind.kt) }))}">${esc(tt(pw?.c?.head > 0 ? TX.procRwyTakeHead : TX.procRwyTakeOne, { rwy: PR.rwNum(p.r.id) }))}</button></span>`);
       }

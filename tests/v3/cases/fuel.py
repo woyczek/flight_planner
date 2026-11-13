@@ -4648,8 +4648,8 @@ def _atis_open(c, networks):
     wait_rows(c, 'arr')
 
 
-@case('F152', 'Procedures: the runway in use from the ATIS of the flight\'s networks, above the METAR line (both when they differ, the ATIS alone '
-      'when they agree), with its gesture; the traps of the survey give no runway; an offline company reads nothing; an ATIS over 90 min is not said',
+@case('F152', 'Procedures: the runway in use from the ATIS of the flight\'s networks, its gesture the only one (the wind suggestion only without an ATIS '
+      'runway; SOG-0325), its letter, QNH and wind; the traps of the survey give no runway; an offline company reads nothing; an ATIS over 90 min is not said',
       'F', tags=('fuel', 'weather'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0090 second lot (the ergonomist\'s GO, 12 Nov: a closed list of phrasings, a runway kept only if the aerodrome has it, a clash or a '
       'phrasing off the list = nothing, never a timer, the age shown, 90 min at most; the networks of the current company crossed with the pilot\'s '
@@ -4663,8 +4663,8 @@ def f152(c):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         st = _atis_feeds(c, ['MARSEILLE INFORMATION F', 'EXPECT ILS APCH RWY 13R. RWY IN USE 13R', 'TRL 70'], ivao_lines=traps)
         _atis_open(c, {'vatsim': True, 'ivao': True})
-        c.until(f"!!document.querySelector('{line} [data-atisline=vatsim]') && !!document.querySelector('{line} [data-metarline]')", timeout=20000,
-                what=f'{w} px: the ATIS line above the METAR line')
+        c.until(f"!!document.querySelector('{line} [data-atisline=vatsim]')", timeout=20000, what=f'{w} px: the ATIS line')
+        c.settle()
         atis = norm(c.text(f'{line} [data-atisline=vatsim]') or '')
         # SOG-0325 : la ligne de l'ATIS porte tout, « ATIS F · VATSIM · piste 13R · …Z »
         c.ok(atis.startswith('ATIS F · VATSIM · ' + norm(tx(T, 'procRwyWord', c.lang).replace('{r}', '13R'))) and 'Z' in atis and norm(tx(T, 'procAtisTake', c.lang)) in atis
@@ -4673,7 +4673,10 @@ def f152(c):
         c.ok(not c.js(f"!!document.querySelector('{line} [data-atisline=ivao] [data-do=rwyprob]')") and '13R' not in ivao and '31L' not in ivao, ivao,
              'the IVAO ATIS made only of traps (renamed, visual ops, RVR, RMK) gives no runway (its METAR group gives its wind: SOG-0325)')
         order = c.js(f"[...document.querySelectorAll('{line} .fu-rwyline')].map(e => e.hasAttribute('data-atisline') ? 'atis' : 'metar')")
-        c.eq(order, ['atis', 'atis', 'metar'], 'the ATIS above, the METAR (31L, it differs) below', what='order')
+        # retouche de l'ergonome (23 h 36) : une ATIS qui donne une piste en service, « Prendre la piste de l'ATIS » est le SEUL geste (le
+        # choix du contrôle) ; la suggestion par le vent (« Prendre la 31L ») ne revient que sans ATIS
+        c.eq(order, ['atis', 'atis'], 'an ATIS gives the runway in use: no wind suggestion beside it (two gestures that contradict)', what='order')
+        c.eq(c.count(f'{line} [data-do=rwyprob]'), 1, 'one gesture only: the ATIS runway', what='gestures')
         c.ok(sorted({u.split('/')[2] for u in st['calls']}) == ['api.ivao.aero', 'data.vatsim.net'], st['calls'], 'the two feeds the suite already reads, no other host')
         c.js(f"document.querySelector('{line}').scrollIntoView({{block: 'center'}})")
         c.shot(f'F152_{c.design}_{w}_{c.lang}_delivered.png')
@@ -5651,3 +5654,40 @@ def f220(c):
     c.eq(got, {'icao': 'LFML', 'elev_ft': None, 'elev_src': None, 'qnh': [{'hpa': 1013, 'src': 'metar', 'at': None}],
                'atis': {'net': 'ivao', 'letter': '', 'rwy': None, 'qnh': 1016, 'wind': None, 'at': None}, 'updated_at': None},
          'bounded on read: out-of-range values dropped, no text, no unknown key', what='arrInfoOf')
+
+
+
+@case('F221', 'Procedures: the runway line is a warning only for a TAILWIND — a headwind runway that is not the best keeps a calm line, the best '
+      'offered under it; an RNAV / RNP approach reads in words (« H31LZ » → « RNP AR 31L Z »)', 'F', tags=('fuel', 'weather'), designs=('standard',),
+      screens=False, langs4=False,
+      rule='The two touches read by the ergonomist on the user\'s captures of 16 h 52 / 16 h 53 (with SOG-0332): KDEN « 16L — face 3 kt » in '
+      'warning with « Prendre la 25 » — the warning is for a tailwind; KTPA « H01LZ » still coded — slice 3a\'s words must cover RNAV / RNP')
+def f221(c):
+    import copy
+    docs = proc_docs()
+    for d in docs:
+        if d[0].startswith('proc/') and d[0].endswith('/LFML.json') and '/manual/' not in d[0] and '/local/' not in d[0]:
+            f = d[1]
+            f['runways'] = f['runways'] + [{'id': '04', 'lat': 43.43, 'lon': 5.20, 'elev': 25, 'qfu': 40}]
+            star = copy.deepcopy(next(p for p in f['procedures'] if p['kind'] == 'STAR' and p['runways'] == ['13R']))
+            star.update(id='LFML.STAR.MEN4A.RW04.NONE', name='MEN4A', runways=['04'])
+            app = copy.deepcopy(star)
+            app.update(id='LFML.APP.H31LZ.RW31L.NONE', kind='APP', name='H31LZ', runways=['31L'])
+            f['procedures'] = f['procedures'] + [star, app]
+    route_metar(c, {'LFML': (80, 12)})   # 04: headwind 9 kt (the best); 13R: headwind 8 kt; 31L: tailwind
+    A = f'{FUEL} [data-proc="arr"]'
+    c.open('fuel', docs=docs + proc_flight({'dep': {'rwy': '03'}, 'arr': {'rwy': '13R'}}), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'arr')
+    c.until(f"!!document.querySelector('{A} [data-metarline]')", timeout=20000, what='the best runway offered (« Prendre la 04 »)')
+    c.ok(not c.js(f"document.querySelector('{A} [data-prow=rwy]').classList.contains('fu-pwarn')"), c.text(f'{A} [data-prow=rwy]'),
+         'a headwind runway that is not the best: a calm line, no warning')
+    # an RNAV / RNP approach in words
+    show_list(c, 'p-arr-app')
+    opts = [norm(o) for o in c.js(f"[...document.querySelectorAll('{A} select[data-k=p-arr-app] option')].map(o => o.textContent)")]
+    c.ok(any(o.startswith('RNP AR 31L Z') for o in opts) and not any('H31LZ' in o for o in opts), opts, '« H31LZ » reads « RNP AR 31L Z »')
+    # a tailwind runway keeps its warning
+    c.open('fuel', docs=docs + proc_flight({'dep': {'rwy': '03'}, 'arr': {'rwy': '31L'}}), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'arr')
+    c.until(f"document.querySelector('{A} [data-prow=rwy]')?.classList.contains('fu-pwarn')", timeout=20000, what='a tailwind runway: the warning')

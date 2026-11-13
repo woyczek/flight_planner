@@ -1965,3 +1965,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   only when a value changed. `CF.FUEL_FIELDS` gains `arr_info` in this commit (the exception granted: the field and its writer in one
   commit); `CF.arrInfoOf` reads it bounded (hPa 850 to 1090, the bounds `qnhOfText` and the screen now use too). F220 (red before);
   the readers of the flight played: journeys P1, P2, P3 (Map, Météo, report, Mes vols) and D30, D31.
+- **13 Nov 2026 — two touches of the procedures block** (read by the ergonomist on the user's captures of 16 h 52 / 16 h 53, with
+  SOG-0332). (1) The runway line is a warning only for a TAILWIND (1 kt or more on the chosen runway): KDEN « 16L — face 3 kt » was
+  in warning because 25 was better oriented; now a headwind runway keeps a calm line and the best one is offered under it (« Prendre la
+  25 »). (2) An approach's coded name reads in words for every ARINC 424 letter: H → « RNP AR » (KTPA « H01LZ » → « RNP AR 01L Z »),
+  P → GPS, X → LDA, B → LOC BC, the suffix letter with or without its dash. F221 (red before).
+  (3, the ergonomist at 23 h 36, on the capture of slice 4) When an ATIS gives the runway in use, « Prendre la piste de l'ATIS »
+  is the ONLY gesture (the controller's choice): « Prendre la 31L (vent de face) » beside it contradicted it; the wind suggestion
+  comes back only without an ATIS runway. F152 (red before: two gestures).
