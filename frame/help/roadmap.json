@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0f0c1ca",
+  "organisation": "cb07dd7",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -991,8 +991,7 @@
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
      "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)",
-     "rank": 170,
-     "test": true
+     "rank": 170
     },
     {
      "id": "SOG-0233",
@@ -2197,11 +2196,12 @@
     {
      "id": "SOG-0293",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Missions modifiées dans l'éditeur de la V2 et jamais rangées : les sortir du navigateur (YAML → fichiers → V3)",
      "en": "Missions edited in the V2 editor and never filed: get them out of the browser (YAML to files, then V3)",
      "de": "In V2 bearbeitete, nie abgelegte Missionen: aus dem Browser holen (YAML in Dateien, dann V3)",
-     "es": "Misiones editadas en la V2 y nunca guardadas: sacarlas del navegador (YAML a ficheros, luego V3)"
+     "es": "Misiones editadas en la V2 y nunca guardadas: sacarlas del navegador (YAML a ficheros, luego V3)",
+     "test": true
     }
    ]
   },
