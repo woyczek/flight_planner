@@ -1038,6 +1038,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 186 | The fix of 182 (ef0772f71) and the V3 editor's places and story steps (6dc8740f5, ce72c9c25, 923807228); the V2 comparison's header and criteria (cc8dfc3b1) | defects 1 and 2 of 182 closed for the editor; two defects proved (a single-object rendezvous is deleted; the registry's own dump is not guarded) |
 | 187 | The fix of 186 (d1f544bfe: `shapeOf` in the frame, single objects read as one entry, the guards of the registry, `add.js` and `move.js`), the editor's risks step (92906e900), `aerodb.navaidsOf` (7667e5c6c) and the stop-point names of `ground.py` (62cc7ce8f) | defects of 186 closed; one defect proved (the risks step deletes a risk whose danger is under `title`); AeroDB acceptable, two notes |
 | 188 | The morning of 13 November, second group: the recette's comments and free texts raised to 2,000 characters in the page and in the launcher's verbs (45cba6733, SOG-0303); the two notes of 187 on `navaidsOf` (1cb71c46c); the Map's display commits (8b73c9944, 2d80e2c7d, 8f6a17c01, 36a3300bf) | acceptable, one note |
+| 189 | The V2 registry: every YAML read through the guarded function (29fe8ec28, the note of 185) | note closed |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2896,6 +2897,12 @@ K228 green. *The Map (8b73c9944, 2d80e2c7d, 8f6a17c01, 36a3300bf).* The barbs fo
 drawn with `fillText` and `measureText` on names that `ground.js` already cleans (controls and angle brackets removed, 24 characters), the search
 button is a constant; the weather layer and its `wx.js` are removed with their texts, and no reference to the Map's `wx.js` is left (the Atmosphere
 module has its own, unchanged). D178 and D194 green.
+
+**189. Every YAML of the V2 registry through the guarded function (29fe8ec28) — note closed.** The six direct `window.jsyaml.load` calls of the note of 185 (the
+usage of a mission, the detail view, the generated Markdown twice, the two readers of the previous versions) and the three others found in the same pass (the reader of a pasted text, the
+received texts' identifier reader, the local ledger of the reports) now call `loadYaml`; the only direct call left is the function's own. Each of them
+already sits in a `try` (`missionUsage`, `receivedIds`, `loadReports`) or in a click handler whose failure shows nothing and writes nothing, so a refused file
+(`TooBig`) never reaches a write. K230 holds the rule statically (no direct call outside `loadYaml`), K219 and K225 green. No note.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
