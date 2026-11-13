@@ -6,8 +6,10 @@
 //   · a target on the remaining route: the points between the anchor and it are skipped, the rest follows as it is;
 //   · a target off the route: inserted, then the route resumes at the first remaining point after its projection (another one may be
 //     chosen among the remaining points);
-//   · refused: a target farther from the anchor than the remaining distance of the route (the user: « on refuse »), a point already
-//     passed, no route.
+//   · a target off the route is ALLOWED, however far (the user, 13 Nov: « le contrôle peut donner un direct vers un point autre que la
+//     route. un warn, avec la distance à la route »): the plan carries `off`, its distance to the route (NM), said by the screen;
+//   · a point of the route is found by its id or by its mission name (« PT4 » for a point written in coordinates);
+//   · refused: a point already passed, an unknown point, no route.
 import {
   rhumbNm
 } from '../../frame/lib/geo.js';
@@ -40,8 +42,8 @@ export function projectOnRoute(points, pos) {
 /** The distance (NM, by compass, leg after leg) from `from` through `pts`. */
 const along = (from, pts) => pts.reduce((a, p, i) => a + rhumbNm(i ? pts[i - 1] : from, p), 0);
 
-/** The direct: { ok: true, points, skipped: [{ id, lock, hold }], resume, choices, nmBefore, nmAfter, holdsLeft, locksLeft } or
- *  { ok: false, why: 'route' | 'passed' | 'far' | 'anchor' }.
+/** The direct: { ok: true, points, skipped: [{ id, lock, hold }], resume, choices, nmBefore, nmAfter, holdsLeft, locksLeft, off } or
+ *  { ok: false, why: 'route' | 'passed' | 'unknown' | 'anchor' }. off: the distance of an off-route target to the route (NM), 0 on it.
  *  route: { points, holds, locks } (the flight's) ; anchor: { kind: 'actual' | 'planned' | 'passed', lat, lon, id? } ; target:
  *  { id, lat, lon } ; resume (off-route only): the index (in points) where the route resumes, else the first after the projection ;
  *  coord(lat, lon): the ICAO name of a position (route_text icaoCoord). */
@@ -54,7 +56,9 @@ export function planDirect(route, anchor, target, {
     ok: false,
     why: 'route'
   };
-  const name = String(target?.id || '').toUpperCase();
+  const name = String(target?.id || '').toUpperCase(),
+    // a point of the route by its id or its mission name (SOG-0088 refused: « le direct PT m'est refusé … c'est sur la route »)
+    named = p => String(p.id || '').toUpperCase() === name || String(p.mission || '').toUpperCase() === name;
   // the anchor: the index of the last point passed (pass) and, for a position, its point
   let pass, pos = null;
   if (anchor?.kind === 'passed') pass = Math.max(0, Math.min(pts.length - 2, +anchor.index || 0));
@@ -75,14 +79,15 @@ export function planDirect(route, anchor, target, {
     rest = pts.slice(pass + 1),
     nmBefore = along(from, rest);
   // the target on the remaining route (the first of its name after the anchor)
-  const j = pts.findIndex((p, k) => k > pass && String(p.id || '').toUpperCase() === name);
+  const j = pts.findIndex((p, k) => k > pass && named(p));
   let next, skipped, choices = [],
-    resumeAt = null;
+    resumeAt = null,
+    off = 0;
   if (j > 0) {
     next = [...pts.slice(0, pass + 1), ...(pos ? [pos] : []), ...pts.slice(j)];
     skipped = pts.slice(pass + 1, j);
   } else {
-    if (pts.slice(0, pass + 1).some(p => String(p.id || '').toUpperCase() === name)) return {
+    if (pts.slice(0, pass + 1).some(named)) return {
       ok: false,
       why: 'passed'
     };
@@ -95,14 +100,12 @@ export function planDirect(route, anchor, target, {
       lat: +target.lat,
       lon: +target.lon
     };
-    if (rhumbNm(from, tp) > nmBefore) return {
-      ok: false,
-      why: 'far'
-    };
+    // never refused for its distance (SOG-0088, 13 Nov): its distance to the route is said
+    const pt = projectOnRoute(pts, tp);
+    off = pt ? Math.round(pt.d * 10) / 10 : 0;
     // where the route resumes: the first remaining point after the projection of the target (never the anchor's leg start), or the
     // pilot's choice among the remaining points (the arrival comprised)
-    const pt = projectOnRoute(pts, tp),
-      first = Math.max(pass + 1, pt ? pt.i + 1 : pass + 1);
+    const first = Math.max(pass + 1, pt ? pt.i + 1 : pass + 1);
     choices = pts.map((p, k) => k).filter(k => k > pass);
     const k = Number.isInteger(resume) && choices.includes(resume) ? resume : first;
     next = [...pts.slice(0, pass + 1), ...(pos ? [pos] : []), tp, ...pts.slice(k)];
@@ -128,6 +131,7 @@ export function planDirect(route, anchor, target, {
     nmBefore,
     nmAfter: along(from, next.slice(pass + 1 + (pos ? 1 : 0))),
     holdsLeft,
-    locksLeft
+    locksLeft,
+    off
   };
 }

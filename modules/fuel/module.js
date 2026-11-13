@@ -528,6 +528,11 @@ const TX = {
     '{id} ist bereits überflogen: Direkt abgelehnt.',
     '{id} ya está pasado: directo rechazado.'
   ],
+  // SOG-0088 (refus du 13 nov.) : un point hors de la route est permis, sa distance à la route dite
+  directOff: ['⚠ {id} est hors de la route : à {d} de la route.', '⚠ {id} is off the route: {d} from the route.',
+    '⚠ {id} liegt abseits der Route: {d} von der Route.',
+    '⚠ {id} está fuera de la ruta: a {d} de la ruta.'
+  ],
   directWhyFar: ['{id} est plus loin que le reste de la route : direct refusé.',
     '{id} is farther than the rest of the route: direct refused.',
     '{id} ist weiter entfernt als der Rest der Route: Direkt abgelehnt.',
@@ -4551,6 +4556,11 @@ async function startFlight() {
       wind: windTxt(f.wind),
       block: S.C?.q?.hasFuel ? fuelTxt(S.C.q.block, unit()) : '—'
     };
+  // SOG-0088 (refus du 13 nov., « il faut démarrer plusieurs fois ») : la relecture de la météo peut durer ; la ligne du départ, redessinée
+  // par setPlanned et refresh pendant ce temps, redonnait un « Démarrer » libre — le premier geste semblait perdu. Le départ en cours
+  // est tenu (S.starting) : le bouton reste occupé, un second geste ne fait rien
+  if (S.starting) return;
+  S.starting = true;
   if (btn) {
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
@@ -4560,7 +4570,7 @@ async function startFlight() {
   // la planification peut dater : date du vol = maintenant, météo des terrains, vents en altitude et ISA relus, devis refait
   setPlanned(null);
   const online = S.ctx.net?.online?.() !== false;
-  if (online) await wxFetch(false);
+  if (online) await wxFetch(false).catch(() => {});
   if (gone(s)) return;
   refresh();
   const offline = !online || S.wx?.cached,
@@ -4589,6 +4599,7 @@ async function startFlight() {
     at: new Date().toISOString(),
     by: 'fuel'
   };
+  S.starting = false;
   startNote = {
     at: S.flight.started.at,
     text: S.startNote
@@ -4806,10 +4817,11 @@ function renderSummary(C) {
   const row = S.body.querySelector('[data-startrow]');
   if (row) {
     const on = !!f.started?.at; // un vol démarré s'arrête par son compte rendu (report remet started à null) ou s'annule
-    row.innerHTML = on ? `<button type="button" data-do="cancelstart">${esc(tt(TX.cancelStart))}</button>` : `<button type="button" class="primary" data-do="start">${esc(tt(TX.start))}</button>`;
+    row.innerHTML = on ? `<button type="button" data-do="cancelstart">${esc(tt(TX.cancelStart))}</button>` : `<button type="button" class="primary" data-do="start"${S.starting ? ' disabled aria-busy="true"' : ''}>${esc(tt(TX.start))}</button>`;
   }
   const sn = S.body.querySelector('[data-startnote]');
-  if (sn) sn.textContent = f.started?.at && startNote?.at === f.started.at ? startNote.text : ''; // ce que la relecture au départ a changé
+  // ce que la relecture au départ a changé ; pendant le départ, « Démarrage… » reste dit (SOG-0088)
+  if (sn) sn.textContent = S.starting ? S.startNote || '' : f.started?.at && startNote?.at === f.started.at ? startNote.text : '';
   renderProgress(C);
   S.AD.paint(); // les noms des terrains du récapitulatif et des horaires
 }
@@ -6701,7 +6713,7 @@ function directDraw() {
       locked = p.skipped.filter(x => x.lock),
       holds = p.skipped.filter(x => x.hold > 0),
       pts = r.points || [];
-    html = `<p data-directsays>${esc(directLine(d))}</p>${locked.map(x => `<p class="f-note" data-kind="err" data-directlock>${esc(tt(TX.directLock, { id: x.lock }))}</p>`).join('')}${holds.map(x => `<p class="f-muted" data-directhold>${esc(tt(TX.directHold, { id: x.name || x.id, n: x.hold }))}</p>`).join('')}${p.choices.length ? `<label class="f-field">${esc(tt(TX.directResume))}<select data-k="directresume">${p.choices.map(k => `<option value="${k}"${k === p.resume ? ' selected' : ''}>${esc(pts[k]?.id || '?')}</option>`).join('')}</select></label>` : ''}<div class="f-row"><button type="button" class="primary" data-do="directapply">${esc(tt(TX.directApply))}</button><button type="button" data-do="directcancel">${esc(tt(TX.directCancel))}</button></div>`;
+    html = `<p data-directsays>${esc(directLine(d))}</p>${p.off >= 1 ? `<p class="f-note" data-kind="warn" data-directoff>${esc(tt(TX.directOff, { id: d.to, d: distTxt(p.off) }))}</p>` : ''}${locked.map(x => `<p class="f-note" data-kind="err" data-directlock>${esc(tt(TX.directLock, { id: x.lock }))}</p>`).join('')}${holds.map(x => `<p class="f-muted" data-directhold>${esc(tt(TX.directHold, { id: x.name || x.id, n: x.hold }))}</p>`).join('')}${p.choices.length ? `<label class="f-field">${esc(tt(TX.directResume))}<select data-k="directresume">${p.choices.map(k => `<option value="${k}"${k === p.resume ? ' selected' : ''}>${esc(pts[k]?.id || '?')}</option>`).join('')}</select></label>` : ''}<div class="f-row"><button type="button" class="primary" data-do="directapply">${esc(tt(TX.directApply))}</button><button type="button" data-do="directcancel">${esc(tt(TX.directCancel))}</button></div>`;
   } else if (undo) html = `<p class="f-muted" data-directdone>${esc(tt(TX.directDone, { to: undo.to }))}</p><div class="f-row"><button type="button" data-do="directundo">${esc(tt(TX.directUndo))}</button></div>`;
   if (pane && pane.__html !== html) pane.innerHTML = pane.__html = html;
 }

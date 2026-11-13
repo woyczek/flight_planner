@@ -1826,3 +1826,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   line under the lists of its side (`[data-lnmline]`: source, « pour votre usage personnel », the procedures named) and a « ⚠ Little
   Navmap » mark on the summary line of the side, seen folded too (`[data-lnmflag]`, the whole sentence in its title). On the Map's
   choice, the same source is the Map's (BUGS SOG) — not touched here. F203 (red before).
+- **13 Nov 2026 — SOG-0088 refused: a direct off the route is allowed and said; the start at the first tap** (user: « 1/ il faut
+  démarrer plusieurs fois. étrange. 2/ le contrôle peut donner un direct vers un point autre que la route. un warn, avec la distance à la
+  route. ici, sur lfop lfbd, le direct PT m'est refusé. pourtant, c'est sur la route (ou presque) »; written by Features SOG). (1) Cause:
+  `startFlight` reads the weather again (it may take seconds through the launcher's relay) and meanwhile `setPlanned` / `refresh` redrew
+  the start row with a FREE « Démarrer » — the first tap looked lost, the pilot tapped again. Now the start in progress is held
+  (`S.starting`): the button stays busy, « Démarrage… » stays said, a second tap does nothing (F204, red before with a weather answering
+  in 4 s). (2) `planDirect` no longer refuses a target for its distance (`why: 'far'` gone): an off-route target is inserted as before
+  and the plan carries `off`, its distance to the route (NM, cross-track of `projectOnRoute`), said in amber « ⚠ X est hors de la route :
+  à N NM de la route » from 1 NM; and a point of the route is found by its id OR its mission name (« PT4 » for a point written in
+  coordinates), which was the refusal of « PT » on the route. Still refused: a point already passed, an unknown point. F205 (red before:
+  PT4 refused); F154 still green.

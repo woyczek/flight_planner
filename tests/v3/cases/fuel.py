@@ -5015,3 +5015,60 @@ def f203(c):
     c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-lnmflag]'), 0, 'not on the departure (its procedures are the base\'s)', what='departure')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('F203_390_lnm.png')
+
+
+
+@case('F204', '« Démarrer le vol » starts the flight at the FIRST tap, even when the weather answers slowly: the button stays busy and is not '
+      'offered again until the start is written, then « Annuler le départ » is offered', 'F', tags=('fuel',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0088 refused on 13 Nov (user: « il faut démarrer plusieurs fois. étrange. »)')
+def f204(c):
+    import time as _t
+
+    def slow(route):
+        _t.sleep(4)
+        route.fulfill(status=200, content_type='application/json', body='[]')
+    c.context.route(re.compile(r'aviationweather\.gov|metar\.vatsim\.net', re.I), slow)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.open('fuel', flight=True)
+    wait_quote(c)
+    to_step(c, 4)
+    c.until(f"!!document.querySelector('{FUEL} [data-startrow] [data-do=start]')", what='« Démarrer le vol »')
+    c.tap(f'{FUEL} [data-startrow] [data-do="start"]')
+    seen = []
+    for _ in range(40):   # 10 s: what the pilot sees while the weather answers
+        st = c.js(f"""(() => {{ const b = document.querySelector('{FUEL} [data-startrow] [data-do=start]');
+          return b ? (b.disabled || b.getAttribute('aria-busy') === 'true' ? 'busy' : 'free') : document.querySelector('{FUEL} [data-startrow] [data-do=cancelstart]') ? 'started' : 'none' }})()""")
+        if not seen or seen[-1] != st:
+            seen.append(st)
+        if st == 'started':
+            break
+        c.wait(250)
+    c.ok('free' not in seen and seen[-1] == 'started', seen, 'one tap: busy until the start is written, never offered again meanwhile')
+    cf_doc(c, lambda d: bool((d.get('started') or {}).get('at')), 'the flight is written started', timeout=8000)
+
+
+
+@case('F205', 'Direct, refusal of 13 Nov: a point of the route asked by its mission name (« PT4 ») is on the route; a point far off the route '
+      '(farther than the rest of it) is allowed, with a warning that says its distance to the route', 'F', tags=('fuel',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0088 refused on 13 Nov (user: « le contrôle peut donner un direct vers un point autre que la route. un warn, avec la distance '
+      'à la route. ici, sur lfop lfbd, le direct PT m\'est refusé. pourtant, c\'est sur la route (ou presque). »)')
+def f205(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel?direct=PT4', docs=_direct_docs())
+    c.until(f"!!document.querySelector('{FUEL} [data-block=direct]:not([hidden]) [data-directsays], {FUEL} [data-directwhy]')", timeout=15000,
+            what='the panel of the direct to PT4')
+    c.eq(c.count(f'{FUEL} [data-directwhy]'), 0, 'PT4 (the mission name of a point in coordinates) is not refused', what='refusal')
+    c.eq(c.count(f'{FUEL} [data-directoff]'), 0, 'it is on the route: no warning', what='warning')
+    # a point far off the route, given by the Map with its position (farther than the rest of the route): allowed, said
+    c.open('fuel?direct=XFAR&lat=40.0&lon=10.0', docs=_direct_docs())
+    c.until(f"!!document.querySelector('{FUEL} [data-block=direct]:not([hidden]) [data-directsays], {FUEL} [data-directwhy]')", timeout=15000,
+            what='the panel of the direct to XFAR')
+    c.eq(c.count(f'{FUEL} [data-directwhy]'), 0, 'a point off the route is never refused for its distance', what='refusal')
+    t = norm(c.text(f'{FUEL} [data-directoff]') or '')
+    c.ok('XFAR' in t and 'NM' in t, t, 'a warning says its distance to the route')
+    c.ok(c.count(f'{FUEL} [data-do=directapply]') == 1, 'no apply', '« Appliquer » offered')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{FUEL} [data-block=direct]').scrollIntoView({{block: 'start'}})")
+    c.shot('F205_390_off.png')
