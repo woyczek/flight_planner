@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 199,
-  "verdicts": 132
+  "verdicts": 135
  },
  "apps": [
   "pilote",
@@ -2926,8 +2926,9 @@
    },
    "test": "Recharge la page. Carte, Toulouse (LFBO) au zoom du terrain : les cartouches « 14R » et « 14L » sont entiers, jamais coupés par le nom du terrain ; une ligne dit qu'il n'y a pas de données du sol pour LFBO — le bouton « Sol » (loupe) les lit, puis les taxiways apparaissent. À LFPO, les taxiways sont dessinés ; s'ils ne le sont pas chez toi, dépose une capture dans organisation/images/.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T13:51:35Z"
+   "state": "ok",
+   "delivered": "2026-11-13T13:51:35Z",
+   "at": "2026-11-13T15:25:05Z"
   },
   {
    "id": "SOG-0321",
@@ -2940,8 +2941,9 @@
    },
    "test": "Recharge la page. Carburant avec une route, la carte à côté (écran large) : passe le pointeur sur un point de la liste de la route — il se surligne sur la carte avec ses deux tronçons, sans que la carte bouge ; sors de la liste : le surlignage part. Fais glisser la carte : pendant le geste, les points de la route restent visibles. Le survol depuis le profil n'est pas encore fait : ne le teste pas.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T14:57:47Z"
+   "state": "ok",
+   "delivered": "2026-11-13T14:57:47Z",
+   "at": "2026-11-13T15:25:48Z"
   },
   {
    "id": "SOG-0323",
@@ -2954,8 +2956,9 @@
    },
    "test": "Recharge la page. Aide, Recette, « À trancher » : la question Q-0049 (Réglages) se lit en entier, ses trois réponses aussi, et l'adresse de la maquette est un lien qui l'ouvre.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T13:54:57Z"
+   "state": "ok",
+   "delivered": "2026-11-13T13:54:57Z",
+   "at": "2026-11-13T15:25:53Z"
   }
  ],
  "decisions": [

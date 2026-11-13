@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b0083eb",
+  "organisation": "dda589f",
   "fiches": 326,
   "untranslated": 0,
   "priorities": 310
@@ -353,8 +353,7 @@
      "fr": "Feuille des questions : les libellés des options sont tronqués",
      "en": "Decisions sheet: the option labels are truncated",
      "de": "Entscheidungsblatt: die Optionstexte sind abgeschnitten",
-     "es": "Hoja de decisiones: las etiquetas de las opciones están cortadas",
-     "test": true
+     "es": "Hoja de decisiones: las etiquetas de las opciones están cortadas"
     }
    ]
   },
@@ -1416,8 +1415,7 @@
      "fr": "Carte : survoler un point de la route le montre sur la carte ; pendant un déplacement, montrer aussi les points",
      "en": "Map: hovering a route point shows it on the map; while panning, show the points too",
      "de": "Karte: ein Routenpunkt unter dem Zeiger wird auf der Karte gezeigt; beim Verschieben auch die Punkte zeigen",
-     "es": "Mapa: al pasar sobre un punto de la ruta se muestra en el mapa; al desplazar, mostrar también los puntos",
-     "test": true
+     "es": "Mapa: al pasar sobre un punto de la ruta se muestra en el mapa; al desplazar, mostrar también los puntos"
     }
    ]
   },
@@ -1449,8 +1447,7 @@
      "fr": "Carte du terrain : plus de taxiways, et le cartouche du numéro de piste est décalé et coupé",
      "en": "Airport map: taxiways gone, and the runway number plate is shifted and clipped",
      "de": "Flugplatzkarte: Rollwege fehlen, und das Schild der Pistennummer ist verschoben und abgeschnitten",
-     "es": "Mapa del aeródromo: sin calles de rodaje, y el cartel del número de pista desplazado y cortado",
-     "test": true
+     "es": "Mapa del aeródromo: sin calles de rodaje, y el cartel del número de pista desplazado y cortado"
     }
    ]
   },
