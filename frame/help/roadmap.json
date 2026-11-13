@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d7af0f6",
+  "organisation": "aec9db4",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -1272,13 +1272,14 @@
     {
      "id": "SOG-0302",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : les flèches de la rose d'un VOR doivent réduire avec le zoom, comme ses chiffres",
      "en": "Map: the arrows of a VOR rose must shrink with the zoom, like its digits",
      "de": "Karte: die Pfeile der VOR-Rose müssen mit dem Zoom kleiner werden, wie die Ziffern",
      "es": "Mapa: las flechas de la rosa de un VOR deben reducirse con el zoom, como sus cifras",
      "milestone": "6.0.0-alpha.5",
-     "rank": 45
+     "rank": 45,
+     "test": true
     }
    ]
   },
