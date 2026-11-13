@@ -2562,5 +2562,20 @@
    "delivered": "2026-11-13T09:26:13Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0042",
+   "fiche": "SOG-0278",
+   "app": "maintenance",
+   "question": "Racine du site → V3 : pour que le renvoi tienne, la même étape doit être ajoutée au fichier de publication de la branche develop sur GitHub (la branche par défaut, celle de la V2). Je la pose ?",
+   "context": "Le site est republié à chaque poussée de develop ou de v3, et toutes les six heures depuis develop. Si seule v3 reçoit l'étape, la racine renvoie vers la V3 puis redevient l'accueil de la V2 au plus tard six heures après. Le changement sur develop est une étape ajoutée à .github/workflows/pages.yml, identique à celle de v3, rien d'autre (ni code de la V2, ni déclencheurs, ni permissions) ; Sécurisation relit le diff avant. La racine renverra vers …/v3/frame/ (l'application) : …/v3/ est un vieux ",
+   "options": [
+    "Oui : pose la même étape sur develop, après l'accord de Sécurisation",
+    "Non : on ne touche pas à develop, la racine reste l'accueil de la V2 pour l'instant"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }
