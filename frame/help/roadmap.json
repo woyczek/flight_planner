@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a24e51f",
-  "fiches": 335,
+  "organisation": "0e276b1",
+  "fiches": 336,
   "untranslated": 0,
   "priorities": 310
  },
@@ -4492,6 +4492,27 @@
      "de": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
      "es": "Security review of the evening of 12/11 (audit line 170): one proven hardening in the reading of procedure PDFs, one note on the computation timings",
      "rank": 284
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur-carte-outils",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; Carte ; outils",
+    "en": "Lanceur ; Carte ; outils",
+    "de": "Lanceur ; Carte ; outils",
+    "es": "Lanceur ; Carte ; outils"
+   },
+   "items": [
+    {
+     "id": "SOG-0336",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Atelier VAC : le parseur entre dans le lanceur, le serveur de l'atelier disparaît, la Carte lit le JSON",
+     "en": "VAC workbench: the parser moves into the launcher, the workbench server goes away, the Map reads the JSON",
+     "de": "VAC-Werkbank: der Parser zieht in den Launcher, der Werkbank-Server entfällt, die Karte liest das JSON",
+     "es": "Taller VAC: el analizador entra en el lanzador, el servidor del taller desaparece, el Mapa lee el JSON"
     }
    ]
   },
