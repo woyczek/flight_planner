@@ -730,6 +730,12 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 if callable(res):
                     res = res(st['posts'][-1].get('args') or {})
                 body = {'id': 'jpb', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'étapes', 'log': [], 'result': res, 'zones': {}}
+            elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st['posts'][-1].get('set') in ('proc', 'vfr', 'aircraft') and st.get('setstate') is not None:
+                res = st['setstate'].get(st['posts'][-1]['set'])   # the state verbs of the other sets (SOG-0119: proc/status, vfr/status, aircraft/status): a dict, or a function of the args
+                if callable(res):
+                    res = res(st['posts'][-1].get('args') or {})
+                st.setdefault('setstate_reads', []).append([st['posts'][-1]['set'], st['posts'][-1].get('args')])
+                body = {'id': 'jss', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'états', 'log': [], 'result': res, 'zones': {}}
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st.get('status') is not None:
                 res = st['status']
                 if callable(res):   # the answer depends on what was asked (args: zones, personal), like the real launcher's
@@ -7983,7 +7989,7 @@ def _l102_cycle(world, labels):
     return answer
 
 
-def _l102_open(c, tweak=None, wrap=None, target='data', detail=True):
+def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs=(), setstate=None):
     """The Données screen of the capture: real outlines, real names, real packs, real catalogue; invented states."""
     labels = _l102_labels()
     geo, packs, cover = _l102_world()
@@ -7999,8 +8005,10 @@ def _l102_open(c, tweak=None, wrap=None, target='data', detail=True):
         world['zs'][z] = {**_zst('stale', _NEWER), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}}
     world['zs']['it'] = {**_zst('failed', {'code': 'failed', 'error': 'x'}), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'unpublished', 'at': '2026-10-29T11:00:00Z'}}
     procs = {z: {'cycle': '2026-10-29', 'counts': {}, 'procedures': 9, 'sources': {}, 'procSources': ['eaip']} for z in ('fr', 'es', 'gb', 'ie', 'nl', 'de', 'ch', 'it')}
-    st = _launcher(c, [_view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': procs})], verbs=_VERBS + ['base/pickup', 'base/cycle', 'base/coverage'], cycle=(wrap or (lambda a: a))(_l102_cycle(world, labels)))
+    st = _launcher(c, [_view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': procs})], verbs=_VERBS + ['base/pickup', 'base/cycle', 'base/coverage'] + list(extra_verbs), cycle=(wrap or (lambda a: a))(_l102_cycle(world, labels)))
     st['status'] = lambda args: _status(world['zs'])
+    if setstate is not None:
+        st['setstate'] = setstate   # the state verbs of the other sets (SOG-0119)
     if tweak:
         tweak(cfg)   # D4: a case adds its own sub-zone names or catalogue steps
     _open(c, cfg, target=target, my_coverage=False, detail=detail)
@@ -9342,4 +9350,30 @@ def l130(c):
     c.ok(look[0] not in ('none', '') and look[1] < .3, look, 'neutral to the eye: a dashed outline, a pale fill')
     line = c.js("(e => e ? e.textContent.replace(/\\s+/g, ' ').trim() : null)(document.querySelector('[data-state-names=unknown]'))")
     c.ok(line and all(_zname(c, z) in line for z in dropped), line, 'the sentence names the four')
+    c.check_errors()
+
+
+@case('L131', 'Données: the line of each OTHER set says what the launcher says of it (SOG-0119; AeroDB 345ad3c15) — proc/status, vfr/status and aircraft/status are read once, read only, and their answer replaces what the page deduced from the publication: « Procédures · à faire — LF : téléchargé, pas construit », « Points VFR · à faire — incomplet : 28 sur 454 », « Aéronefs · à jour »; a launcher without the verbs keeps the old lines',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, phone=False, night=False,
+      rule='frame/INTEGRATION.md « State verbs » (13 Nov 2026): « up to date » is what the workstation PUBLISHED for the cycle in force; the page used to deduce it from the publication it read, which could say « à jour » for a set the workstation had downloaded and never built')
+def l131(c):
+    lang = c.lang
+    SS = lambda k: _trow(k, lang, after='  ss: {')
+    D5 = lambda k: _trow(k, lang, after='    dsTodo:') if False else None
+    setstate = {
+        'proc': {'ok': True, 'cycle': '2026-10-29', 'states': {'LF': {'state': 'missing', 'reasons': [{'code': 'not-built'}]}, 'K': {'state': 'up-to-date', 'reasons': []}, 'LO': {'state': 'n/a', 'reasons': [{'code': 'ead-per-aerodrome'}]}}},
+        'vfr': {'ok': True, 'cycle': '2026-10-29', 'state': 'stale', 'reasons': [{'code': 'partial', 'have': 28, 'expected': 454}], 'cached': {'have': 28, 'expected': 454, 'remaining': 426}, 'built': {'total': 28, 'atCycle': 28, 'older': 0, 'unknown': 0}},
+        'aircraft': {'ok': True, 'state': 'up-to-date', 'reasons': [], 'files': {'db': True, 'perf': True}, 'published': 'same'}}
+    st = _l102_open(c, extra_verbs=['proc/status', 'vfr/status', 'aircraft/status', 'proc/fetch', 'proc/build', 'vfr/fetch', 'vfr/build', 'aircraft/fetch', 'aircraft/build'], setstate=setstate)
+    c.until("document.querySelectorAll('details.d-fold [data-fold-why=not-built], details.d-fold [data-fold-why=partial]').length === 2", timeout=15000, what='the lines of the sets say what the launcher says')
+    line = lambda g: c.js(f"(e => e ? [e.dataset.foldState, e.dataset.foldWhy || '', e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-body] > details.f-group[data-group={g}] .d-fstate'))")
+    todo = _trow('dsTodo', lang, after='    dsTodo:')
+    ok_w = _trow('stOk', lang, after='    stOk:')
+    pr, vf, ac = line('proc'), line('vfr'), line('aircraft')
+    c.eq([pr[0], pr[1], norm(pr[2])], ['todo', 'not-built', norm(todo.replace('{w}', 'LF : ' + SS('not-built')))], 'Procédures: the one State the workstation has not built is named, with its reason; K (up to date) and LO (one aerodrome at a time) are not', what='proc line')
+    c.eq([vf[0], vf[1], norm(vf[2])], ['todo', 'partial', norm(todo.replace('{w}', SS('partial').replace('{n}', '28').replace('{of}', '454')))], 'Points VFR: incomplete, 28 of 454', what='vfr line')
+    c.eq([ac[0], norm(ac[2])], ['ok', norm(ok_w)], 'Aéronefs: up to date', what='aircraft line')
+    reads = sorted(r[0] for r in st.get('setstate_reads', []))
+    c.eq(reads[:3], ['aircraft', 'proc', 'vfr'], 'one read-only job per set, nothing else asked of the launcher', what='reads')
+    c.ok(all(isinstance(r[1], dict) for r in st['setstate_reads']) and any(r[0] == 'proc' and r[1].get('states') for r in st['setstate_reads']), st['setstate_reads'], 'the procedures read asks for the States of the list')
     c.check_errors()

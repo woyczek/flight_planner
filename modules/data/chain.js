@@ -44,6 +44,9 @@ import {
   readStatus,
   startPublish
 } from './publish.js';
+import {
+  launcherSetState
+} from './setstate.js';
 
 /** Le nom d'un jeu dans les phrases de la chaîne : le groupe pour la base, le nom du jeu pour les autres. */
 export const chainName = set => tt(set === 'base' ? TX.groups.base : TX.setLabel[set]);
@@ -53,6 +56,13 @@ const skipWhy = (key, sel) => key === 'bad-codes' ? tt(TX.codesBad, {
 }) : key === 'up-to-date' ? tt(TX.d4.setOk) : tt(TX.greyReason[key]);
 /** L'état d'un jeu d'après ce que la page lit de sa publication (lignes des groupes du catalogue) : { k: 'ok' | 'todo' | 'unknown' | 'none', n (lignes à regarder) } ; 'none' : le jeu n'a aucune ligne suivie. Sert au pli de l'écran (« Procédures · à jour ») et à ce que « Tout mettre à jour » lance. */
 export function setStateOf(set) {
+  const ls = launcherSetState(
+    set
+  ); // le lanceur dit lui-même l'état du jeu (proc/status, vfr/status, aircraft/status : SOG-0119) : il prime sur ce que la page déduit de la publication
+  if (ls && ls.state !== 'n/a') return {
+    k: ls.state === 'todo' ? 'todo' : 'ok',
+    n: ls.n
+  };
   const st = rowsState((S.groups || []).flatMap(g => [...g.rows, ...g.more]).filter(r => r.kind === set)),
     f = M.foldDataset(S.cw?.todo?.state === 'ready' ? S.cw.todo.data : null,
       set

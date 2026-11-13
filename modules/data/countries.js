@@ -75,6 +75,11 @@ import {
   natOpen
 } from './later.js';
 import {
+  forgetSetStates,
+  setStatesIdle,
+  wantSetStates
+} from './setstate.js';
+import {
   forgetPlan,
   planKnown,
   publishGate,
@@ -1048,6 +1053,7 @@ export async function wantProc() {
 /** Ce qui se lit après un dessin complet de l'écran : les procédures par pays (la hachure), la liste du cycle (« ce qui reste à faire ») et, si une fiche est ouverte, la vue de son pays. */
 export function afterDraw() {
   if (!S?.cw) return;
+  wantSetStates(); // l'état des autres jeux, dit par les verbes d'état du lanceur (SOG-0119)
   wantProc();
   wantTodo();
   wantLast();
@@ -1060,6 +1066,7 @@ export function forgetReads(all = true, status = false) {
   if (S.cw.cycle) S.cw.cycle.dirty = true;
   if (S.cw.todo) S.cw.todo.dirty = true;
   if (S.cw.last) S.cw.last.dirty = true;
+  forgetSetStates();
   forgetPlan();
   if (all && S.cw.proc?.state !== 'loading') S.cw.proc = null;
   if (status) S.cw.statusDirty =
@@ -1080,6 +1087,7 @@ export function readsIdle() {
   if (due(c.last)) wantLast();
   if (c.lc?.nat?.deferred && c.lc.open.change)
     natOpen(); // la reprise des routes NAT, reportée pour cause d'opération en cours, repart quand l'écran est libre
+  setStatesIdle(); // l'état des autres jeux : relu quand il est « à relire » ou qu'un refus l'a laissé en attente
   wantPlan(); // le plan de « Publier » : lu dès que l'état des zones l'est, relu quand il est « à relire »
 }
 /** La mise en page propre à la carte, aux paquets et à la fiche (à côté de STYLE, jetons du cadre). En large la fiche est à droite de la carte ; au téléphone elle recouvre l'écran (position fixe, son propre défilement). */

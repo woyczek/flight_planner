@@ -106,7 +106,7 @@ sticky card on the right; under that width the sheet is full screen (« ← Reto
    with the reason) and **« Registre français des aéronefs »** (the place to deposit the DGAC registrations file, SOG-0315; `#data?registry=1`
    opens it); then **« Pays définis »** (the packs and the box « Je certifie… » of the personal-licence sources).
 8. **The other sets**, one closed line each with its state in words (« Procédures · à jour », « Aéronefs · 1 à faire », points VFR, météo,
-   sources): unfolded, the line keeps its own « Mettre à jour » and the set's panel (the four verbs of § 5.1 survive there and in the folded
+   sources; the state of procedures, VFR points and aircraft is the launcher's own, from `proc/status`, `vfr/status`, `aircraft/status`: « up to date » = published for the cycle in force, SOG-0119): unfolded, the line keeps its own « Mettre à jour » and the set's panel (the four verbs of § 5.1 survive there and in the folded
    « Détail » of the base, for the cases where one verb alone is wanted). Nothing is unfolded by default.
 9. **« Détail de la base »** (SOG-0229, lot 4): ONE closed fold, the foot of the screen, that holds what is read and not done: « Couverture par
    pays » (§ 5.11), the data inventory (§ 12) and the journal (the last 50 operations, time UTC with Z, each unfolding to its log).

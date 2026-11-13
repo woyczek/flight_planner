@@ -692,3 +692,15 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   The line of names is ONE compact paragraph (kinds separated by « · ») after the unfolded list of a number, so it takes at most one line at 1280:
   the cases L102 and L108 now ask that the TITLE line of the first row of groups (not its whole height) is on the first screen of 800 px — one line
   of height traded for the names; the ergonomist can reverse it by lowering the minimum height of the map.
+- **13 Nov 2026 — SOG-0119, the lines of the other sets read the launcher's state verbs** (the ergonomist; AeroDB 345ad3c15: `proc/status`,
+  `vfr/status`, `aircraft/status`, read only, no network, nothing written; « up to date » = what the workstation PUBLISHED for the cycle in
+  force). Until now only the base had a launcher state: the folded line of procedures, VFR points and aircraft, and « Tout mettre à jour »,
+  deduced « à jour » from the publication the page read (or from `base/cycle.datasets`), which could say « à jour » for a set downloaded and
+  never built. New `setstate.js` (the reads, through the screen's `serial()` lane, never during another operation, once at the opening and after
+  each operation, a refusal retried like the other reads, a failed read never retried in a loop) and `model_setstate.js` (the pure part: closed
+  lists of states and reason codes, integers bounded, the launcher's text never shown). The launcher's state REPLACES the deduction in
+  `chain.js` `setStateOf` (so « Tout mettre à jour » and the line agree) and in `screen.js` `foldView`, with the reasons in words (`TX.ss`: « LF :
+  téléchargé, pas construit », « incomplet : 28 sur 454 »); `n/a` (an EAD State, one aerodrome at a time) falls back to the old line; a launcher
+  without the verb is not asked and keeps the old deduction. `proc/status` is asked for the States ticked, else for all those of the list (60 at
+  most). Case L131 (red before: the lines said the datasets' words). Not done: the weather and the sources lines (no verb for them), and the part
+  of the SOG-0119 title that is not the launcher's (suite update, workstation backup, folders, fleet in Maintenance: the user's question).

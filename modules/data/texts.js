@@ -2797,5 +2797,27 @@ export const TX = {
       'Quellen seit dem Aufbau geändert', 'fuentes modificadas desde la construcción'
     ],
     'r_never-built': ['jamais construite', 'never built', 'nie aufgebaut', 'nunca construida']
+  },
+  // SOG-0119 : ce que disent les verbes d'état du lanceur des autres jeux (proc/status, vfr/status, aircraft/status), en mots, dans la ligne repliée du jeu
+  ss: {
+    'older-than-cycle': ['plus ancien que le cycle {cycle}', 'older than cycle {cycle}', 'älter als Zyklus {cycle}',
+      'anterior al ciclo {cycle}'
+    ],
+    'older-count': ['{n} plus anciens que le cycle', '{n} older than the cycle', '{n} älter als der Zyklus', '{n} anteriores al ciclo'],
+    'not-fetched': ['pas encore téléchargé', 'not downloaded yet', 'noch nicht heruntergeladen', 'aún sin descargar'],
+    'not-built': ['téléchargé, pas construit', 'downloaded, not built', 'heruntergeladen, nicht aufgebaut', 'descargado, sin construir'],
+    'ead-per-aerodrome': ['un terrain à la fois (EAD)', 'one aerodrome at a time (EAD)', 'ein Flugplatz nach dem anderen (EAD)',
+      'un aeródromo a la vez (EAD)'
+    ],
+    'no-source': ['pas de source', 'no source', 'keine Quelle', 'sin fuente'],
+    partial: ['incomplet : {n} sur {of}', 'incomplete: {n} of {of}', 'unvollständig: {n} von {of}', 'incompleto: {n} de {of}'],
+    'unknown-cycle': ['cycle inconnu pour {n} (à refaire)', 'cycle unknown for {n} (redo)', 'Zyklus für {n} unbekannt (neu erstellen)',
+      'ciclo desconocido para {n} (rehacer)'
+    ],
+    'no-base': ['pas de base pour vérifier', 'no base to check against', 'keine Basis zum Prüfen', 'sin base para comprobar'],
+    'no-db': ['base des appareils absente', 'aircraft database missing', 'Luftfahrzeugdatenbank fehlt', 'base de aeronaves ausente'],
+    'fleet-types-missing': ['{n} types de la flotte absents de la base', '{n} fleet types missing from the database',
+      '{n} Flottentypen fehlen in der Datenbank', '{n} tipos de la flota ausentes de la base'
+    ]
   }
 };

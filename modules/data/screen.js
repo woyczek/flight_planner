@@ -69,6 +69,9 @@ import {
   setStateOf
 } from './chain.js';
 import {
+  launcherSetState
+} from './setstate.js';
+import {
   inventoryHtml
 } from './inventory.js';
 import {
@@ -583,9 +586,34 @@ const DS_WHY_KEY = Object.freeze({
   old: 'dsWhyOld',
   expired: 'dsWhyExpired'
 });
+/** Une raison d'un verbe d'état du lanceur (`proc/status`, `vfr/status`, `aircraft/status`) en mots : « LF : téléchargé, pas construit », « 28 sur 454 construits » ; '' pour un code que la page ne dit pas. */
+function reasonWord(r) {
+  const row = M.own(TX.ss, r.code === 'older-than-cycle' && !r.cycle ? 'older-count' : r
+    .code); // les points VFR disent combien, les procédures disent quel cycle
+  return row ? `${r.prefix ? `${r.prefix} : ` : ''}${tt(row, {
+    n: r.n,
+    of: r.of,
+    cycle: r.cycle ? shortDate(r.cycle) : ''
+  })}` : '';
+}
 /** Ce que dit la ligne repliée d'un jeu : { k ('ok' | 'todo' | 'unknown' | 'none'), word, why } — le mot d'état et la raison en mots (« à faire — plus ancien que le cycle · le 05/10 ») quand le lanceur dit le jeu (`datasets` de base/cycle) ; sinon l'état tiré de la publication (foldWord). Un jeu à faire dit sa raison ;
  *  la publication à regarder (« n à faire ») reste dite quand le jeu est à jour ; plusieurs jeux à faire sous un pli : leur nombre. */
 function foldView(id, st) {
+  const ls = launcherSetState(id); // le lanceur dit l'état du jeu (SOG-0119) : sa phrase prime sur ce que la page déduit de la publication
+  if (ls && ls.state !== 'n/a') {
+    const w = ls.reasons.map(reasonWord).filter(Boolean).slice(0, 3).join(' ; ');
+    return ls.state === 'todo' ? {
+      k: 'todo',
+      word: tt(w ? TX.d5.dsTodo : TX.d5.dsTodoPlain, {
+        w
+      }),
+      why: ls.reasons[0]?.code || ''
+    } : {
+      k: 'ok',
+      word: tt(TX.d4.stOk),
+      why: ''
+    };
+  }
   const data = S.cw?.todo?.state === 'ready' ? S.cw.todo.data : null,
     f = M.foldDataset(data, id);
   if (!f) return {
