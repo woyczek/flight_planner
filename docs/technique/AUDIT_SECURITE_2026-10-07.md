@@ -1031,6 +1031,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 179 | The V2 registry's “Open in the generator” notifications, the guard delays and “Copy the diagnostic” (7e02b1204, SOG-0290) | acceptable, one note |
 | 180 | The fix of the defect of 178 (eba9923ce) and the search in the content of the missions (c83592c6a, SOG-0288: `modules/missions/search.js`, the index built at the first keystroke) | fix verified, defect closed; search acceptable, two notes |
 | 181 | The V2 registry: the missions kept by the browser, counted and exported in one downloaded archive (025bd7651, SOG-0293 a, b) | acceptable; one defect proved (the header of an exported file) |
+| 182 | The V3 mission editor: the frame step (3ace1a58f, SOG-0287; `modules/missions/editor.js`, new) and the teams step (c138087b3) | paths and display acceptable; two defects proved (the teams step loses data, a dump of a file with aliases) |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2718,6 +2719,39 @@ one, and the export is the safety net for what exists only in the browser; numbe
 65,535 bytes the 16-bit length field of the ZIP header wraps (a 70,000-character identifier in the local storage): cut `safe()` to 60. (3) A
 folder segment `..` in an index entry (a restored copy of the device) would make the GET leave `data/missions`; it stays a same-origin read whose
 only output is a counter, so only filter `.` and `..` segments when convenient.
+
+**182. The V3 mission editor, frame and teams steps (3ace1a58f, c138087b3) — paths and display acceptable; two defects proved.** *Path of the file written.*
+`pathFor(letter, family, id)` accepts a capital letter, a family of `^[A-Z][A-Z0-9_]{1,23}$` and an identifier of `^[A-Z]-\d{3}[A-Z]?$` and
+answers `missions/<L>_<FAMILY>/<ID>/mission<ID>.yaml` through `MS.missionPath`, or an empty string (probed: `../X` as a family, `T-086/../../x`
+as an identifier, a lower-case letter and a family with a space give an empty string); an edit that keeps its identifier reuses the path read
+from the registry line (`RG.pathOf`), and an identifier changed writes a new file without removing the old one. The letter comes from the
+table or from one capital taken from the identifiers. Writes go through `data.put` under the declared prefix `missions/` (a wide prefix, but the
+path is built as above) and are sent with the grouped send, never `sendNow`. `numbering()` builds a `RegExp` only from a single validated
+capital. *Display.* Every value goes through `esc` (attributes included), the heading is `textContent`, the “To complete” keys are the closed
+list of `todo()`, the numeric `data-i` comes from an index. `yamlText` writes a constant header and an ISO date: no identifier, so no equivalent
+of the defect of 181. *Registry line.* `regEdit` checks that the line at the place still carries the identifier read (`stale` otherwise),
+`regAdd` refuses an identifier already taken (as a former number too). N50 and N51 green. **Defect 1 (proved): the teams step loses data
+without any edit.** Opening the step sets `e.teams = teamsOf(base)` (40 rows at most, text cut, blank rows kept) and every later save runs
+`withTeams(doc, rows)`, which rebuilds `teams` from those rows only. Probe on `editor.js`: a file of 47 teams gives 40 rows and 40 teams
+back (the last 7 are gone); an entry carrying none of name, service, type and role (for instance `callsign` and `crew`) is dropped by the
+final `filter`; a role of 300 characters is written back at 200 and a type `h145` as `H145`, on rows the user never touched. The reader
+already limits itself to 40 teams, so the loss is invisible on the sheet and the editor writes the cut file back. **Fix and counter-test.** A
+row that the user did not change keeps its original object as it is (compare the cut values with the cut values of the original); a row
+that stays but is blank keeps its original when the original has other keys; the entries past `TEAMS_MAX` are appended unchanged. Counter-test
+(red now, a pure one in the style of the editor's): `withTeams(doc, teamsOf(doc))` deep-equals `doc.teams` for a file of 47 teams, one of which
+has only other keys and one a role of 300 characters. **Defect 2 (proved): a file with aliases freezes the save.** `edRead` loads with
+`jsyaml.load` (anchors are shared, not copied, so it is cheap), `structuredClone` keeps the sharing, and `edSave` calls `Y.dump(doc,
+{ noRefs: true })`, which writes every alias out in full: a 389-byte file of nine nested levels (`l1: &l1 [*l0, *l0, *l0, *l0]` …) dumps to
+88,546,510 characters in 1.2 s, six levels to 1 MB, and one more level multiplies by four (past the string limit the save fails, in
+between it freezes the page for seconds and then hands tens of megabytes to `data.put`). Any pilot can write the file the user opens with
+“Modify”. The same `noRefs: true` is in `add.js` (line 112, where the size is tested after the dump) and in `registry.js` (line 184), so the guard
+belongs in one shared function. **Fix and counter-test.** After the load, count the nodes of the document with every shared reference expanded
+and refuse the file past a budget (say 200,000 nodes) in `edRead`, in `add.js` before its dump and for the registry's own load; or dump
+without `noRefs` and refuse a document that has anchors. Counter-test (red now): `edRead` (or the shared function) refuses the nine-level file
+above in under a second and does not call `dump`. **Notes.** (1) `duplicate()` keeps `meta.former_id` of the original: a copy of a renumbered
+mission then carries the same former number, and the V2 registry pairs a number with the last line that names it (SOG-0289); delete
+`meta.former_id` next to `meta.history`. (2) In `blocking()`, an identifier equal to the line's own (`own`) skips the form test: harmless
+here because the path is then the one read or an empty string, but keep the order.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
