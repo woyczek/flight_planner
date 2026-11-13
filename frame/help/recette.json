@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 206,
+  "tests": 207,
   "verdicts": 148
  },
  "apps": [
@@ -2998,8 +2998,7 @@
    },
    "test": "Recharge la page. (1) Données, « Mettre à jour ce pays » : la tuile reste bleue « en cours » du début à la fin, plus de marron. (2) Réglages › Appareil (déplie la ligne) : « Repartir de zéro sur cet appareil » — AVANT d'agir il dit combien de fichiers seront relus et ce qui reste (tes documents, tes réglages, tes envois en attente) ; une seule confirmation ; puis l'appareil relit le dépôt. Vérifie après coup que tes vols, tes réglages et ta compagnie sont toujours là.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T19:19:52Z"
+   "state": "known"
   },
   {
    "id": "SOG-0326",
@@ -3056,6 +3055,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T17:44:40Z"
+  },
+  {
+   "id": "SOG-0332",
+   "app": "pilote",
+   "title": {
+    "fr": "Route par les NAT prise dans Carburant : les points en coordonnées perdent leur fin et deviennent « points inconnus »",
+    "en": "NAT route taken in Fuel: coordinate points lose their end and become « unknown points »",
+    "de": "NAT-Route in Kraftstoff übernommen: Koordinatenpunkte verlieren ihr Ende und werden « unbekannte Punkte »",
+    "es": "Ruta por los NAT tomada en Combustible: los puntos en coordenadas pierden su final y pasan a « puntos desconocidos »"
+   },
+   "test": "Recharge la page. Carburant, LFOE → KTPA, « Calculer A → B », prends l'itinéraire qui passe par une route NAT : la route garde « 51/20 », « 5030/30 »… et plus de ligne « Points inconnus : 51, 5030… » ; les distances d'un point au suivant sont plausibles.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T20:19:26Z"
   },
   {
    "id": "SOG-0334",
