@@ -1037,6 +1037,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 185 | The fix of the defect of 183 (b8e3048ef: `loadYaml`, a budget of expanded nodes, one `try` per item, the three notes) and the button emphasis of the comparison (d140b1358) | fix verified, defect closed; one note |
 | 186 | The fix of 182 (ef0772f71) and the V3 editor's places and story steps (6dc8740f5, ce72c9c25, 923807228); the V2 comparison's header and criteria (cc8dfc3b1) | defects 1 and 2 of 182 closed for the editor; two defects proved (a single-object rendezvous is deleted; the registry's own dump is not guarded) |
 | 187 | The fix of 186 (d1f544bfe: `shapeOf` in the frame, single objects read as one entry, the guards of the registry, `add.js` and `move.js`), the editor's risks step (92906e900), `aerodb.navaidsOf` (7667e5c6c) and the stop-point names of `ground.py` (62cc7ce8f) | defects of 186 closed; one defect proved (the risks step deletes a risk whose danger is under `title`); AeroDB acceptable, two notes |
+| 188 | The morning of 13 November, second group: the recette's comments and free texts raised to 2,000 characters in the page and in the launcher's verbs (45cba6733, SOG-0303); the two notes of 187 on `navaidsOf` (1cb71c46c); the Map's display commits (8b73c9944, 2d80e2c7d, 8f6a17c01, 36a3300bf) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2878,6 +2879,23 @@ for a stop point, `NO ENTRY` gives no name and a leading “stop point” label 
 already collapsed to single spaces; no new source, no new network call. (3) The 100,000-node ceiling of `shapeOf` is about two thousand registry lines
 (some forty nodes each); the registry has a few hundred today, but a larger one would be refused as unreadable: raise it for the registry only if it ever
 approaches.
+
+**188. The recette's 2,000 characters, the notes of 187 on `navaidsOf`, the Map's display — acceptable, one note.** *Recette (45cba6733).* The limit is held
+on the launcher's side, where it counts: `recette/verdict` and `recette/decision` **refuse** (not truncate) a comment or a text of more than
+`MAX_COMMENT = 2000` characters or with a control character, keep the 1,000 entries at most, the identifier of at most 20 characters and the closed
+list of actions, and read a file back with the same bounds (an entry outside the rules is dropped, 1,000 kept); `tools/recette_build.py` cuts what it
+reads at 2,000 and flattens the control characters; the page's `maxlength` is a convenience, not the guard. The size of a written file is bounded by
+the entry count times that limit (about 2 MB), and the launcher's own body limit applies before the verb. On the page the counter is `textContent`
+or an `esc`aped string, the limit a constant, the height computed from `scrollHeight` and capped at twelve lines. K123, K171, A175 and K96 green.
+**Note.** The write verbs' rule says “no control character” but the pattern lets tab and line feed through (the textarea is now several lines);
+both readers flatten them to spaces, so it is a wording point: say “no control character but tab and line feed”. *`navaidsOf` (1cb71c46c).*
+The two notes of 187 are taken: the aerodrome's and each aid's `lat` / `lon` must be numbers (not text, not `null`, so never `0`), finite and
+within ±90 / ±180, or the aid is dropped; the bearing must be a number of type `number` (a boolean or a text gives `null`) between 0 and 360. K226 to
+K228 green. *The Map (8b73c9944, 2d80e2c7d, 8f6a17c01, 36a3300bf).* The barbs follow the route by a curvilinear abscissa on the on-screen polyline
+(arithmetic on finite numbers, a `Math.max/min` clamp at both ends, a guard on a zero-length segment); the ground names and the stop-point signs are
+drawn with `fillText` and `measureText` on names that `ground.js` already cleans (controls and angle brackets removed, 24 characters), the search
+button is a constant; the weather layer and its `wx.js` are removed with their texts, and no reference to the Map's `wx.js` is left (the Atmosphere
+module has its own, unchanged). D178 and D194 green.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
