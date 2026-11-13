@@ -2643,6 +2643,21 @@
    "since": "2026-11-13",
    "state": "todo",
    "recommended": 0
+  },
+  {
+   "id": "Q-0046",
+   "fiche": "SOG-0316",
+   "app": "pilote",
+   "question": "Signaler un problème ou une demande depuis l'application : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/frame/help/maquette/signaler.html (deux boutons en haut : qui signale, et l'état).",
+   "context": "Aide › Signaler : une sorte (bug, régression, ergonomie, performance, demande), un titre, un texte de 2 000 signes, l'écran d'où tu viens noté tout seul (décochable). Sur ton poste, c'est écrit dans organisation/SIGNALEMENTS.json et je le lis à chaque tour pour en faire une fiche ; pour un pilote, ça part dans le dépôt de sa compagnie avec l'envoi groupé et tu le vois dans Compagnie › Signalements. Sans accès, le signalement reste sur l'appareil et part au retour. Aucun courriel, aucun hôte nouv",
+   "options": [
+    "Oui, on code sur cette maquette, sans capture jointe",
+    "Oui, et sur mon poste je veux joindre des captures",
+    "Non, à reprendre (dis-moi quoi)"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 1
   }
  ]
 }
