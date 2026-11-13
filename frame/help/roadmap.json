@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4de7831",
+  "organisation": "2e32219",
   "fiches": 324,
   "untranslated": 0,
   "priorities": 310
@@ -785,7 +785,7 @@
     {
      "id": "SOG-0308",
      "kind": "feature",
-     "state": "later",
+     "state": "doing",
      "fr": "Carburant : clarifier le bloc « Procédures » — maquette d'abord",
      "en": "Fuel: make the « Procedures » block clearer — mock-up first",
      "de": "Kraftstoff: den Block « Verfahren » klarer machen — zuerst ein Entwurf",
