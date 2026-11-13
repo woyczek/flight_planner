@@ -9413,3 +9413,28 @@ def k241(c):
         c.ok(p['ok'] and [l['via'] for l in legs][1:-1] == ['J1'] * 6, str((p.get('error'), [l['via'] for l in legs])), 'KJFK → EGLL is found: the first airway node (28 NM) is above the reach of a real climb to 18 000 ft, the connector is free of it (no SID read)')
         c.eq([(l['start']['id'], l['end']['id']) for l in legs][:1] + [(legs[-1]['start']['id'], legs[-1]['end']['id'])], [('KJFK', 'N1'), ('N7', 'EGLL')], 'the connectors are the nearest nodes: KJFK → N1 (28 NM) and N7 → EGLL (21 NM)', what='connectors')
         c.eq({l['control'] for l in legs[:1] + legs[-1:]}, {'fallback'}, 'and they are « fallback » (no SID, no STAR read), never controlled', what='class')
+
+
+@case('K242', 'VFR sequences carry the kind of aircraft (SOG-0253): `aircraft` = fixed | rotary | both | unknown on an INTERPRETED route reaches sia/vfr/<ICAO>.json; a value that is none of them is refused; a candidate (not interpreted) route or an absent field gives « unknown »', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0253: the VFR view gives the directions of the circuit of the VAC chart, solid for aircraft in black, dashed for helicopters in green): the Map already draws the arrow of a sequence and tells a helicopter point; the compiled VAC data carried the direction (`direction`: forward | both | unknown, interpreted only) but not the kind of aircraft. The interpretation files (tools/report-vfr/interpretations/<ICAO>.json, edited by hand from the chart, traceable) may now say, per route, `aircraft`; vfr_import validates it, writes it for an interpreted route only (like `direction`), « unknown » otherwise; vfr_core carries it on the relations and the geometry. Nothing is read automatically from the drawing and no terrain is entered here: who enters the 28 terrains is the user\'s decision (Q-0050)')
+def k242(c):
+    import importlib
+    import json
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    imp = importlib.import_module('vfr_import')
+    pt = lambda code, lon: {'code': code, 'coordinates': [lon, 44.8], 'role': 'reporting_point', 'pdfPage': 1}
+    route = lambda key, **kw: {'key': key, 'pointCodes': ['AD', 'N', 'NE'], 'sourceText': 'N - NE', 'pdfPage': 1, 'status': 'interpreted', 'direction': 'forward', **kw}
+
+    def run(routes):
+        ad = {'icao': 'LFXX', 'status': 'interprété', 'points': [pt('AD', -0.7), pt('N', -0.6), pt('NE', -0.5)], 'routes': routes, 'source': {'file': 'AD-2.LFXX.pdf', 'sha256': 'x', 'airac': '2026-10-29'}}
+        p = imp.plan({'schemaVersion': '2.0', 'generatedAt': '2026-11-13T10:00:00+00:00', 'sourceAirac': '2026-10-29', 'aerodromes': [ad]}, '/nonexistent')
+        if not p['ok']:
+            return p, None
+        doc = json.loads(next(v for k, v in p['files'].items() if k.endswith('LFXX.json')))
+        return p, doc['routes']
+    p, rts = run([route('r1', aircraft='rotary'), route('r2', aircraft='fixed'), route('r3', aircraft='both'), route('r4'), route('r5', status='candidate', aircraft='rotary')])
+    c.eq(([r['aircraft'] for r in rts], [r['direction'] for r in rts]) if rts else p.get('errors'), (['rotary', 'fixed', 'both', 'unknown', 'unknown'], ['forward', 'forward', 'forward', 'forward', 'unknown']),
+         'an interpreted route keeps its kind (rotary, fixed, both), none given or a candidate route gives « unknown »; the direction works as before', what='written')
+    p, rts = run([route('bad', aircraft='jet')])
+    c.ok(p['ok'] is False and any('sorte d\'appareil' in e for e in p['errors']), str(p.get('errors')), 'a kind that is none of the four is refused, said with its terrain and route')

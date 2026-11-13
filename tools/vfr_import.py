@@ -21,6 +21,7 @@ LABEL = 'Extrait des VAC, à vérifier'
 ICAO = re.compile(r'[A-Z]{4}')
 CODE = re.compile(r'[A-Z0-9][A-Z0-9-]{0,23}')
 DIRECTIONS = ('forward', 'both', 'unknown')
+AIRCRAFT = ('fixed', 'rotary', 'both', 'unknown')      # SOG-0253 : la sorte d'appareil d'une séquence (tour de piste, arrivée, départ) : voilure fixe (noir), tournante (vert), les deux, inconnue
 MAX_AD, MAX_POINTS, MAX_ROUTES, MAX_PAGES, MAX_TEXT, MAX_GEOM = 2000, 300, 400, 60, 60000, 2000
 
 
@@ -127,6 +128,8 @@ def _check(compiled):
                 err(f'{k} : géométrie de séquence invalide.')
             elif r.get('direction') is not None and r['direction'] not in DIRECTIONS:
                 err(f"{k} : sens « {r['direction']} » inconnu.")
+            elif r.get('aircraft') is not None and r['aircraft'] not in AIRCRAFT:
+                err(f"{k} : sorte d'appareil « {str(r['aircraft'])[:20]} » inconnue.")
             elif not _text(r.get('sourceText', ''), 2000) or not _text(r.get('key', ''), 80):
                 err(f'{k} : texte ou nom de séquence trop long.')
         for g in pgs:
@@ -221,6 +224,7 @@ def plan(compiled, data_dir, keep_others=False):
                 'fragment': bool(r.get('isFragmentPossible')),
                 'status': 'interpreted' if r.get('status') == 'interpreted' else 'candidate',
                 'direction': r.get('direction') if r.get('status') == 'interpreted' else 'unknown',  # sens : analyse seulement
+                'aircraft': r.get('aircraft') if r.get('status') == 'interpreted' and r.get('aircraft') in AIRCRAFT else 'unknown',  # SOG-0253 : sorte d'appareil, analyse seulement
                 'runways': r.get('runways') if isinstance(r.get('runways'), list) else None,
                 'conditions': r.get('conditions') if isinstance(r.get('conditions'), dict) else None,
                 # tracé interprété [[lat, lon], …] ; partiel : l'intégration près des pistes n'est pas tracée

@@ -175,6 +175,7 @@ def finish_graph(ad):
                                     "from": start, "to": end, "routeRef": r["id"],
                                     "relationType": "report_sequence",
                                     "direction": r.get("direction", "unknown"), "origin": r["origin"],
+                                    "aircraft": r.get("aircraft", "unknown"),
                                     "conditions": r.get("conditions"), "instructionRefs": r.get("instructionRefs", [])})
         if r.get("geometryPointRefs"):
             path = r["geometryPointRefs"]
@@ -183,6 +184,7 @@ def finish_graph(ad):
                                         "from": start, "to": end, "routeRef": r["id"],
                                         "relationType": "geometry_leg", "origin": "manual_interpretation",
                                         "direction": r.get("direction", "unknown"),
+                                        "aircraft": r.get("aircraft", "unknown"),
                                         "conditions": r.get("conditions"), "instructionRefs": r.get("instructionRefs", [])})
     ad["relationsStatus"] = "available" if ad["relations"] else ("confirmed_none" if ad["status"] == "sans relations" else "not_extracted")
 
@@ -269,6 +271,6 @@ def geojson(dataset):
                 features.append({"type": "Feature", "id": r["id"], "geometry": {"type": "LineString", "coordinates": geom["coordinates"]},
                                  "properties": {"icao": ad["icao"], "routeRef": r["id"], "origin": geom["origin"],
                                                 "isOfficialGeometry": False, "geometryPartial": r.get("geometryPartial", False),
-                                                "direction": r["direction"], "conditions": r.get("conditions"),
+                                                "direction": r["direction"], "aircraft": r.get("aircraft", "unknown"), "conditions": r.get("conditions"),
                                                 "instructionRefs": r.get("instructionRefs"), "adStatus": ad["status"]}})
     return {"type": "FeatureCollection", "features": features}

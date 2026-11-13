@@ -39,6 +39,8 @@ Un point manuel conserve la page, les coordonnées graphiques choisies, le calag
 
 `pointRefs` est la séquence des points de report ou d'AD. `geometryPointRefs` est la séquence détaillée de sommets dessinés, points manuels inclus. Elle peut ne couvrir qu'une partie de la route (`geometryPartial: true`). Une intégration non numérisée n'est pas remplacée par une droite vers le centre de l'AD.
 
+**`aircraft` (SOG-0253, 13 Nov 2026)** : la sorte d'appareil d'une séquence, `fixed` (voilure fixe), `rotary` (voilure tournante), `both` ou `unknown` (absent = `unknown`) ; saisie à la main dans `interpretations/<OACI>.json` d'après la carte (comme `direction`), écrite dans `sia/vfr/<OACI>.json` pour une séquence interprétée seulement, portée par les relations et la géométrie ; une autre valeur est refusée à l'import. Rien n'est lu automatiquement du dessin.
+
 `relations[].relationType` distingue `report_sequence` et `geometry_leg`. Le sens est `forward`, `both` ou `unknown`. Les conditions et références de consignes sont attachées aux routes et aux relations. Les pistes ne sont renseignées que lorsqu'elles ont été interprétées explicitement.
 
 Les `instructions` contiennent le texte extrait, pas une réécriture officielle. Les conditions structurées n'épuisent pas toutes les consignes : leur texte reste joint. Une valeur `null` signifie inconnue ou non interprétée, jamais absence de restriction.
