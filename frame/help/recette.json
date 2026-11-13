@@ -1744,9 +1744,15 @@
     "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
     "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)"
    },
-   "test": "Recharge la page. Carburant : « Calculer A → B », laisse les itinéraires sans choisir, passe à la Carte : la fenêtre des itinéraires est là, le premier est tracé, « Choisir cet itinéraire » est actif. Reviens à Carburant sans choisir : les propositions sont toujours là. Retourne à la Carte, choisis : Carburant dit l'itinéraire pris ; de retour sur la Carte, la fenêtre ne revient plus.",
+   "test": "Recharge la page. Carburant, un vol, « Calculer A → B » : ouvre le détail du DEUXIÈME itinéraire sans le choisir. Passe à la Carte en grand : la fenêtre « Itinéraires proposés » est là, le deuxième ouvert avec son détail. Reviens à Carburant : la liste et le détail sont toujours là. Recharge la page : toujours là, sans recalcul. « Choisir cet itinéraire » puis « Prendre » : tout part, et rien ne revient. Essaie aussi « Fermer les propositions ».",
    "since": "2026-11-12",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T20:34:22Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "Techniquement, il n’y a plus de bug. néanmoins, je voulais pouvoir choisir et conserver le détail. Y a-t-il un souci à afficher la popup, comme pour les missions, sur la carte sidecar, switcher carte full, revenir, tout en conservant le statut ? On spécifie ça correctement, et on arrête de bricoler. il y a des éléments qui doivent survivre au changement (il y en a, puisqu’en revenant sur fuel, on reclique sur calcul et il réaffiche instantanément). on regarde quelles sont les contraintes de faire survivre ce point au changement de page, et on code. ça semblait simple, sur le papier.",
+    "at": "2026-11-13T15:06:53Z"
+   }
   },
   {
    "id": "SOG-0225",
@@ -2342,9 +2348,15 @@
     "de": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
     "es": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type"
    },
-   "test": "Relance le lanceur. Maintenance › Données : dépose ton export.csv du registre (« Choisir le fichier… »). Puis Fiches › Flotte, tape « fbhhh » : la ligne doit dire ce que c'était (modèle, « registre français, données du … », l'aérodrome d'attache s'il existe), proposer un type en le disant « suggestion », et « Créer à l'identique ». En créant un aéronef, « Chercher dans le registre français » liste les immatriculations d'un modèle. Aucun nom de personne ne doit apparaître nulle part.",
+   "test": "Recharge la page. Compagnie › Flotte, tape « caravelle » (ou « carav ») : les aéronefs de la flotte de ce type s'affichent, puis la fiche du type avec « ajouter un aéronef de ce type » ; plus de « Aucun aéronef ne correspond » ni de « Créer C-ARAV ». Tape une immatriculation inconnue : « Créer » est proposé.",
    "since": "2026-11-12",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T20:34:22Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "nope. recherche « caravelle », qui fonctionne partout ailleurs, ne donne rien. screenshot. imho, cette recherche est une évolution de la recherche des fiches, en ajoutant le critère flotte dans ta fonction.",
+    "at": "2026-11-13T16:00:44Z"
+   }
   },
   {
    "id": "SOG-0274",
@@ -3104,8 +3116,11 @@
     "Non, à reprendre (dis-moi quoi)"
    ],
    "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-13T20:32:43Z"
   }
  ]
 }
