@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 175,
+  "tests": 176,
   "verdicts": 122
  },
  "apps": [
@@ -1710,9 +1710,15 @@
     "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
     "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)"
    },
-   "test": "Recharge la page. Carburant avec la Carte à côté, ton scénario du 11/11 : « Calculer A → B » donne trois propositions ; survole-en une, puis clique : elle s'affiche avec ses calculs ; « Choisir » : la route est modifiée, une ligne dit « Itinéraire pris : … », et les deux autres disparaissent tout de suite — dans Carburant ET sur la Carte (traits pâles et mini-légende), sans changer d'écran.",
+   "test": "Recharge la page. Carburant : « Calculer A → B », laisse les itinéraires sans choisir, passe à la Carte : la fenêtre des itinéraires est là, le premier est tracé, « Choisir cet itinéraire » est actif. Reviens à Carburant sans choisir : les propositions sont toujours là. Retourne à la Carte, choisis : Carburant dit l'itinéraire pris ; de retour sur la Carte, la fenêtre ne revient plus.",
    "since": "2026-11-12",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T11:33:37Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "si on lasise les itinéraires et qu’on afifche la carte, il y a une popup. elle ne disparait pas (« choisir cet itinéraire » inéfficient). retour carbu : plus d’itilnéraire à choisir. Retour carte : toujours la popup. 2 screenshots.",
+    "at": "2026-11-13T08:31:22Z"
+   }
   },
   {
    "id": "SOG-0225",
@@ -1976,9 +1982,15 @@
     "de": "Map: the box “around the flight plan only” has no effect",
     "es": "Map: the box “around the flight plan only” has no effect"
    },
-   "test": "Recharge la page. Carte, la France entière à l'écran : décoche « autour du plan de vol uniquement » — toute la vue doit être lue (zones loin de la route comprises), le curseur de Complexité descend et une ligne le dit ; remonte-le si tu veux, il reste où tu le mets ; recoche : la Complexité d'avant revient. Avec un vol LFPO–LFST en cours, zoome sur l'Australie, case décochée : ses espaces doivent se dessiner. Dis-moi si la France décochée est lisible et fluide au cran proposé.",
+   "test": "Recharge la page. Carte : coche puis décoche « autour du plan de vol uniquement » ; les espaces aériens et les terrains suivent la coche comme les autres couches (décochée : toute la vue ; cochée : seulement autour de la route).",
    "since": "2026-11-12",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T11:33:37Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "a un effet, mais pas sur tout. manque :  * airspaces * AD * peut-être d’autres",
+    "at": "2026-11-13T09:12:07Z"
+   }
   },
   {
    "id": "SOG-0247",
@@ -2357,6 +2369,20 @@
    "since": "2026-11-12",
    "state": "todo",
    "delivered": "2026-11-12T17:24:32Z"
+  },
+  {
+   "id": "SOG-0278",
+   "app": "maintenance",
+   "title": {
+    "fr": "La V3 devient la version par défaut ; toutes les pages V2 restent accessibles depuis la V3",
+    "en": "V3 becomes the default version; every V2 page stays reachable from V3",
+    "de": "V3 becomes the default version; every V2 page stays reachable from V3",
+    "es": "V3 becomes the default version; every V2 page stays reachable from V3"
+   },
+   "test": "Dans quelques minutes (le temps de la publication, puis une dizaine de minutes de cache) : ouvre l'adresse racine du site publié ; tu arrives sur l'application de la V3 (…/v3/frame/). Une adresse de la V2 (par exemple …/apps/pilot/mes_missions.html) répond toujours ; l'application V3 installée sur ton téléphone n'a pas bougé. Si tu vois encore l'accueil de la V2, recharge sans le cache.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T11:29:55Z"
   },
   {
    "id": "SOG-0279",

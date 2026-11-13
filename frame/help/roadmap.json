@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "42488ea",
+  "organisation": "3a86022",
   "fiches": 316,
   "untranslated": 0,
   "priorities": 310
@@ -1108,12 +1108,13 @@
     {
      "id": "SOG-0224",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Carte à côté de Carburant : un tracé d'itinéraire proposé reste après le calcul ; deux erreurs dans la console (infobulles, cadrage)",
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
      "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)",
-     "rank": 73
+     "rank": 73,
+     "test": true
     },
     {
      "id": "SOG-0233",
@@ -1128,12 +1129,13 @@
     {
      "id": "SOG-0246",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Carte : la coche « autour du plan de vol uniquement » est sans effet (toujours appliquée)",
      "en": "Map: the box “around the flight plan only” has no effect",
      "de": "Map: the box “around the flight plan only” has no effect",
      "es": "Map: the box “around the flight plan only” has no effect",
-     "rank": 75
+     "rank": 75,
+     "test": true
     },
     {
      "id": "SOG-0252",
@@ -3332,13 +3334,14 @@
     {
      "id": "SOG-0278",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "La V3 devient la version par défaut ; toutes les pages V2 restent accessibles depuis la V3",
      "en": "V3 becomes the default version; every V2 page stays reachable from V3",
      "de": "V3 becomes the default version; every V2 page stays reachable from V3",
      "es": "V3 becomes the default version; every V2 page stays reachable from V3",
      "milestone": "6.0.0-beta.1",
-     "rank": 96
+     "rank": 96,
+     "test": true
     }
    ]
   },
