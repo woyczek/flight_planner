@@ -65,65 +65,79 @@ everywhere.
 
 ## 3. The screen
 
-A non-fixed module (it scrolls like a page), `meta.title` « Données ». From top to bottom:
+*Rewritten on 13 Nov 2026 (SOG-0229, lot 4) from what the screen is since the redesign SOG-0262, validated by the user on 13 Nov:
+the validated mockup [`maquette/`](maquette/LISEZMOI.md) is its visual contract, the fiche SOG-0262 its content. What the earlier
+versions of this section said (the flat « Couverture » list with checkboxes, « Seulement les périmés », « Tout désélectionner »,
+the selection line, one panel of four verbs per group, the EAD line) is gone from the screen; §§ 5.1, 5.5, 5.8, 5.10 and 5.11 keep
+the description of the logic those gestures stand on, with a reading note.*
 
-1. **Head**: the AIRAC cycle in force (its number, its dates, « prochain cycle dans n jours »); the runner (« Lanceur de
-   <poste> » or « Sans lanceur : lecture et publication seulement »); the repository state (« n publications à envoyer »
-   when the launcher has commits not pushed). The **end-of-cycle notice** (§ 6.3) when it applies.
-2. **Couverture**: one line, the zones of the coverage by name (« France, Belgique, Espagne ») and a button « Modifier »
-   that folds open the list: every zone published in the repository (from aerodb), each a checkbox, plus « Ajouter un
-   pays » (the zones the suite knows but nobody publishes yet, from the zone table). Saved at once in
-   `cache/data/coverage.json` (§ 7). A zone ticked here and published by nobody is built and published by this workstation.
-   **At the first opening every published zone is ticked** (the screen shows what the airline publishes; unticking is the
-   rare gesture); nothing is taken over from V2.
-   Under it, **the States of the procedures** (V3 § 10.22), from `aerodb.coverageByState()`: one line per colour and reason,
-   green (procedures held, with the number of aerodromes), then orange (readable on demand: the SIA's eAIP, EAD Basic),
-   then red (nothing readable: tables in images, prose…), each line its reason's label and the States' names; seven lines at
-   most, the others under « n autres »; a legend sentence. The colour is never alone: the reason's words carry it.
-3. **« Tout mettre à jour »**: the main gesture, one primary button at the top (§ 5.3), with the count of data sets it will
-   touch; the four verbs stay on each row.
-4. **The groups**, in this order: Base aéronautique, Procédures, Appareils, Météo. Each group is a fold (`details`), open
-   when one of its rows needs attention (stale, gap, failure), like the Settings groups; **seven rows at most visible** in a
-   group, the others under « n autres jeux » (a fold inside the group).
-5. **A row** (one data set) = **link, licence, status and state**: its name; its **cycle** (or edition); a **state** pill
-   (§ 6.2) with its date; the **gap** between the workstation and the repository (§ 6.4) in one short phrase; the buttons
-   **Télécharger · Construire · Publier · Purger** and **Mettre à jour**, each 44 px, icon and label on a phone; under a
-   tap, a folded detail: the source's link (with its address written beside it), its licence and its status (used,
-   considered, set aside) from the catalogue (§ 7), files and sizes, counts, warnings, the zones it feeds, the last lines
-   of its log. The catalogue's sources that are **considered or set aside** have no verbs: they are rows of the « n autres
-   jeux » fold of their group, with their link, licence and status. This replaces the Sources screen (`#sources`), which
-   goes with lot D1.
-   **In the Base aéronautique group the verbs act on zones, not on rows** (29–30 Oct, lots Construire to Purger): the base
-   is built per zone from all its sources, so one panel at the top of the group carries the zones concerned (the coverage's,
-   ticked), the personal-licence sources (unticked the first time, then **remembered**, see below, with their line) and **Télécharger · Construire · Purger**, then the
-   panel **Publier**; the rows below keep their cycle, state and detail, without buttons.
-   **One panel for every set** (R-S7): the base is an entry of `SETS` like the others, and its panel is drawn by the same set panel as the procedures, the VAC points and the aircraft,
-   driven by that entry (its items, its verbs, the extra verb « Prendre le fichier téléchargé » that only the base has); the base panel keeps its attribute `data-build`, the others
-   `data-set-panel`. **One gate for every set, the base included**: before the gesture, `setGate` (model.js) gives each verb its
-   grey reason (no launcher, another operation running, offline, no item ticked, a verb the launcher does not know); after it,
-   the launcher's refusals (409 `updating` or another operation, 429 too soon, 404, 400 refused arguments) go through `refusal`
-   and a job's end such as `merge-pending` through the one summary table, with no branch of the base's own.
-6. ~~**The EAD line** in the Procédures group (§ 4.3): an ICAO code field and « Lire un terrain ».~~ **Out of this screen's specs** (the user, 11 Nov 2026, SOG-0229 questionnaire: « oui »): the EAD line and the gestures « Lire un terrain / Relire / Retirer » are no longer part of the Données screen; where they live next is the procedures' own decision (aerodb, Fuel). The code stays as it is until the refonte lot that moves it; nothing is removed by this entry.
-7. **Journal**: a fold at the foot, the last 50 operations (time UTC with Z, data set, verb, duration, result), each
-   unfolding to its log; « Copier ».
+A non-fixed module (it scrolls like a page), `meta.title` « Données ». On a wide screen (the module's own width ≥ 900 px, a container
+query, so the frame's icon rail is accounted for) the screen has two columns: the page on the left, the **sheet of a country** as a
+sticky card on the right; under that width the sheet is full screen (« ← Retour »). From top to bottom:
 
-Rules:
+1. **Head** (`[data-data-head]`): the AIRAC cycle in force with its dates and « prochain cycle dans n jours », the runner (« Lanceur de ce
+   poste » or the read-only notice), the cycle title with its bar (« Cycle AIRAC 2611 : n faits sur m »: the sources of the cycle that
+   are done, read from `base/cycle`), **the state sentence** (« Votre base : 76 zones à jour · 3 zones à reconstruire · 5 zones attendent la
+   coche d'usage personnel »: each count a link that unfolds its countries on the spot), and **the one button « Tout mettre à jour (n) »**
+   (§ 5.3) with the sentence that says what it will do and what it leaves to the user; « Seulement la base (n) » limits it to the base. The
+   end-of-cycle notice (§ 6.3) when it applies.
+2. **The map** (« La carte »): the country outlines on three states (green up to date, amber to do, red failed) plus « non défini » (grey: not
+   one of the defined countries) and a hatch where procedures exist; framed on the defined countries, or on the open group; wheel zoom
+   (no Ctrl needed, it gives the wheel back to the page at the end of the zoom), drag, two-finger pan and pinch; « Voir le monde entier »,
+   « Recentrer sur mes pays définis », « + » / « − »; a tap opens the sheet of the country; **Shift + click** or Shift + drag a rectangle
+   (two fingers held half a second on a phone) picks several countries, outlined in the blue of the open group, and a banner offers
+   « Ajouter ces pays (n) » / « Mettre à jour (n) » / « Annuler » (§ 5.8).
+3. **« À faire ce mois-ci · n »**: a framed fold, closed: one line per source not done this cycle (the regime: taken by the launcher / by hand /
+   computed here; the three ticks put by the tool alone — downloaded · built · published — with the date or the reason in words), each leading
+   to the sheet of its country; the done ones folded, those unavailable at their publisher apart and not counted.
+4. **« Paquets de pays (n) »**: the country groups (regions and themes) as a two-column grid, those with something to do first, those with no
+   defined country faded and last; one summary line each (« 12 sur 14 à jour · 2 à faire »); one group opens at a time, its countries are
+   tiles, its borders turn blue on the map and the map frames it; the group's « Mettre à jour » acts on its defined countries only.
+5. **The sheet of a country** (right column or full screen): its state, its build date, **what it waits for** in words (no « Raison non
+   reconnue »: every launcher code has its text, an unknown code is said with its code), the thread of the last operation of THIS country
+   (read from `base/last`, it survives a reload: what was taken, downloaded, built, and why it stays not up to date), per source the
+   three ticks, and the gestures where one acts: **« Mettre à jour ce pays »** (pick up, download, build, in place, no question),
+   « Prendre le fichier téléchargé » / « Choisir un autre fichier… » for a hand-taken source (the DIRCAM zip is read in the page: only the
+   useful member is sent), « Ajouter ce pays » / « Retirer ce pays ». A source unavailable at its publisher is set apart.
+6. **« Publier la base »**: the plan first (`base/publish` with `dry`), one question, then the send; « Rien à publier » is said with the reason.
+7. **Four closed folds** under it: « Cycle suivant (2612) » (what Downloads already holds for the next cycle, what is still to fetch by hand,
+   what the workstation takes by itself once in force), « Quand ça change » (X-Plane, Little Navmap, openAIP, GeoNames, MORA, the NAT tracks:
+   their last date and, where the screen has it, the gesture), « Vu par le poste, pas encore lu » (files in Downloads the suite does not read,
+   with the reason) and **« Registre français des aéronefs »** (the place to deposit the DGAC registrations file, SOG-0315; `#data?registry=1`
+   opens it); then **« Pays définis »** (the packs and the box « Je certifie… » of the personal-licence sources).
+8. **The other sets**, one closed line each with its state in words (« Procédures · à jour », « Aéronefs · 1 à faire », points VFR, météo,
+   sources): unfolded, the line keeps its own « Mettre à jour » and the set's panel (the four verbs of § 5.1 survive there and in the folded
+   « Détail » of the base, for the cases where one verb alone is wanted). Nothing is unfolded by default.
+9. **« Détail de la base »** (SOG-0229, lot 4): ONE closed fold, the foot of the screen, that holds what is read and not done: « Couverture par
+   pays » (§ 5.11), the data inventory (§ 12) and the journal (the last 50 operations, time UTC with Z, each unfolding to its log).
 
-- **A button is never missing, it is grey with its reason** (§ 6.5), written under the row once per row (not per button).
-- **One operation at a time** on the workstation: a running row shows a bar (determinate when the runner gives a total),
-  the step, the elapsed time and « Arrêter »; the other rows' buttons are grey with « une autre opération est en cours ».
-- **Idempotent**: downloading what is current downloads nothing, building unchanged inputs rewrites nothing, publishing an
-  unchanged tree makes no commit; the result says « rien de nouveau ».
-- **Plan before change**: Publier and Purger first show their plan (new, changed, removed, size) and ask once
-  (`ctx.ask`); nothing is sent or removed without that answer.
-- **Notifications** (`ctx.notify`) at the end of each verb and of « Tout mettre à jour » (counts, the sets that failed or
-  wait for the user); none at the start. Errors say what to do (« le site du SIA n'a pas répondu, réessayez plus tard »,
-  « ce fichier n'est pas un export du SIA »), the technical text is in the journal.
-- **A failure never stops the others** in « Tout mettre à jour »; the summary names it.
-- 390 px: no horizontal scroll, buttons wrap; 1280 px: the groups in one column, the journal below. No dual-view
-  specifics: in a pane the module draws for its width.
-- Help: `modules/data/help/<lang>.md` (four languages, French first), anchors `data-…`; `ctx.helpAnchor` follows the open
-  group.
+**Out of this screen** (the user, 11 Nov 2026, SOG-0229 questionnaire: « oui »): the EAD line and « Lire un terrain / Relire / Retirer » (§ 4.3),
+and « Publier » as a gesture of the current view of a build (the build publishes; « Publier la base » is the plan-then-send of item 6).
+
+**The six rules of the screen** (the proposal of SOG-0229, accepted by the user's validation of 13 Nov 2026):
+
+1. **A failure never stops the others**: the summary lists each failure with its reason and « Réessayer » (case L18).
+2. **A state is said once**: the map and the lists reflect it, they do not say it again in words (the sentence, the sheet and the map agree by
+   construction: one read of `base/status`, one tone per zone).
+3. **Every number leads to what it counts**, on the spot (the counts of the sentence unfold their countries; « n faits sur m » leads to the lines).
+4. **Nothing is grey without its reason written next to it** (§ 6.5).
+5. **A zone with no state is counted** (« n sans état : relire »), never hidden, never painted as a fact.
+6. **What the launcher cannot do alone always has the same card**: why, where, what, « Choisir le fichier… » (the sheet's source card; the
+   SOG-0245 card for « une autre opération est en cours »).
+
+Other rules:
+
+- **One operation at a time** on the workstation (`serial()` lane in the page, the launcher refuses a second with `running`): a running
+  operation shows its bar, its step and « Arrêter »; the busy card (which one, since when, « Voir » · « Arrêter » · « Libérer ») is shown
+  wherever the refusal happened.
+- **Idempotent**: downloading what is current downloads nothing, building unchanged inputs rewrites nothing, publishing an unchanged tree makes no
+  commit; the result says « rien de nouveau ».
+- **Plan before change**: « Tout mettre à jour » shows ONE plan (the AIRAC cycle, what will be touched, the size) and asks once; « Publier la base »
+  and « Purger » show theirs; nothing is sent or removed without that answer.
+- **Notifications** (`ctx.notify`) at the end of each verb and of « Tout mettre à jour »; none at the start; errors say what to do, the technical
+  text is in the journal. The notices of the launcher (`notices[]`, e.g. « zone sans points ni voies ») are information on the sheet: never a state,
+  never a colour, never counted as a defect.
+- 390 px: no horizontal scroll; 1280 px: the two columns. Help: `modules/data/help/<lang>.md`, anchors `data-…`; `ctx.helpAnchor` follows the open group.
 
 ## 4. Data sets and their chains
 
@@ -207,6 +221,8 @@ fr base (its outlines feed the priority rule) → other zones → MORA → eAIP 
 
 ### 5.1 The four verbs
 
+> **Reading note (13 Nov 2026, SOG-0229):** the four verbs are the launcher's and the model's; the screen's gesture is « Mettre à jour » (§ 3). The verbs stay as buttons of the folded « Détail » of the base and of each other set's panel.
+
 | Verb | Does | Result |
 |---|---|---|
 | **Télécharger** | brings the source into the workstation's cache: a download by the launcher, or the pick-up of a file the user obtained (Downloads folder, file picker); the expected name is checked and the cycle read from it, a wrong file is refused | files, size, date, « inchangé » |
@@ -248,6 +264,8 @@ Rules (V3 § 10.34, 30 Oct 2026):
 > **Reading again after an operation** (SOG-0072): the real end of a build, download, purge, sheets publication, publication and of the chain calls `load(true)`: `ctx.aerodb.refresh()` (aerodb keeps its list of published zones until told), then the openings' reads. Case L31.
 
 ### 5.5 The same four verbs for every set (V3 § 10.34, lot A1)
+
+> **Reading note (13 Nov 2026, SOG-0229):** the panel is now the unfolded content of the set's one folded line (§ 3 item 8); « Tout mettre à jour » is the header button, with one question and one publication.
 
 Every group has the panel the Base aéronautique has (§ 3, rule « In the Base aéronautique group… »): **one choice of
 items** (zones for the base, States for the procedures, the cycle for the VAC points, types for the aircraft, the
@@ -333,6 +351,8 @@ The launcher's job `route/import-rad` (`tools/regen/route.py`, `frame/aerodb/INT
 
 ### 5.8 Three verbs and the selection gestures of the base (SOG-0071, time 1; V3_SPECIFICATION § 10.44)
 
+> **Reading note (13 Nov 2026, SOG-0229, SOG-0262):** the flat zone list, « Seulement les périmés », « Tout désélectionner » and the selection line are gone; the selection is made on the map (Shift + click, Shift + drag, two fingers held) and acts through the banner (§ 3 item 2); « Mettre à jour » (`update.js`) is unchanged and acts on the defined countries, on a group, on one country or on the picked ones.
+
 The base panel's row is **Mettre à jour · Télécharger · (Prendre le fichier) · Tout recalculer · Purger**; above the zones list, a row **Seulement les périmés · Tout désélectionner** and the line **Sélection : n zones · taille**.
 
 - **Mettre à jour** (`update.js`, `startUpdate`): the download of the whole selection (the ordinary `base/fetch`, its own result and notification), then **the launcher's state** (`base/status`, § 5.9) for the selection, then — if some zone is not up to date and
@@ -374,6 +394,8 @@ bounded texts and numbers, hostile ids dropped) leaves the previous state and dr
 - **« Mettre à jour » and « Seulement les périmés »** read this state (§ 5.8). Without `base/status` in `regen/verbs`: no pill, both grey (`unknown-verb`), « Tout recalculer » unaffected. Cases L36, L37, L40–L43.
 
 ### 5.10 Country packs (SOG-0065, V3_SPECIFICATION § 10.42)
+
+> **Reading note (13 Nov 2026, SOG-0229):** the packs are the « Paquets de pays » grid (§ 3 item 4) and the fold « Pays définis » (§ 3 item 7); the pack model is unchanged.
 
 Packs come from aerodb: **`await ctx.aerodb.packs()`** → `{ generated, source, regions: [pack], themes: [pack] }`, `pack = { id, names: [fr, en, de, es], zones: [ids], partial?: [ids], empty?: 'no-zone-no-source', basis }` (frame/aerodb/INTEGRATION.md « Country packs »; `null` when unreadable). The page was written first against `{ packs: [{ id, kind: 'region' | 'theme', … }] }`; **it reads both** (`packsOf`), the kind being the list (`regions` / `themes`) or the pack's own field (L46). Read with `zones()` at each load (`M.packsOf`: ids `^[a-z0-9-]{1,40}$`, a closed list of kinds,
 four bounded names, zone ids `^[a-z0-9]{2,8}$`, sixty packs at most, anything else dropped). **Without `packs()`, or with an unreadable answer, nothing is drawn** (no block, no empty title).
@@ -648,6 +670,8 @@ The module is split by responsibility; no rule changes place without the case th
   - `inventory.js`: the folded card of § 12: draws it, reads the launcher once when it is opened, and carries « Ranger les sources brutes » (§ 12.1); it writes nothing itself.
 
 ### 5.11 The coverage table by country (SOG-0174)
+
+> **Reading note (13 Nov 2026, SOG-0229, lot 4):** the block is now inside the one fold « Détail de la base » (§ 3 item 9), no longer a fold of its own under the groups.
 
 A folded block « Couverture par pays » (`details.d-covtable`, `covtable.js`, pure part `model_coverage.js`), under the groups and above the inventory; **it reads nothing until opened** (`launcher.job('regen/job', { set: 'base', verb: 'coverage', args: {} })`, the contract of `frame/aerodb/INTEGRATION.md`: no argument, one answer for every zone, about 1 s, read-only, refused with a 409 while another job runs → « occupé » and « Relire »; unreadable → « n'a pas pu être lu » and « Relire »; closing the block drops the read, opening reads again). Without a launcher, or with one that does not list `base/coverage` in `regen/verbs`, the block says so. **Seven columns at most on screen**: the country (a button that unfolds it) and **Points, Voies, Espaces, FIR, Procédures, Sol**, each a number (the count of the last published cycle; for procedures and ground, the aerodromes held) or « non » for 0 — the contract has no « unknown » in a count; each heading is a sort button (`aria-sort`; the same button reverses; the country goes up first, the numbers down first; ties by country name); at 480 px and under the font is reduced so the seven columns fit without sideways scroll. **The detail of a row** (a country unfolded, `aria-expanded`): the cycle and the parser version, « n terrains · n balises · n points VFR », the **sources read** (`sources.present`) each with the catalogue's licence, publisher and credit (`catSource`: `lic`, `pub`, `credit`), and the sources declared but **not read yet** (X-Plane and MORA, declared for every zone, are not listed as missing). **Untrusted**: zone ids `^[a-z0-9_-]{2,12}$` and 90 at most, source ids from the closed list of the contract (others ignored, ten per array), counts integers ≥ 0 bounded (anything else is 0), cycles `YYYY-MM-DD`, booleans strict; everything is drawn by `esc`. Case L67.
 

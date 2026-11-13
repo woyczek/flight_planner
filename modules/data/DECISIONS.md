@@ -672,3 +672,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   own read at opening (nothing is read while the outer fold is closed, as before). Nothing else moved. Case L128; L2 and L107 adapted
   (the journal and the tail of the page), and `_open` / `_l102_open` of the cases open the fold by default (`detail=True`) as they open
   « Ma couverture ». The specs / inventory part of the lot is a separate commit (no code).
+- **13 Nov 2026 — SOG-0229, lot 4 (specs and inventory, no code)**: `SPEC.md` § 3 is rewritten from the screen as it is (the redesign SOG-0262,
+  validated by the user the same day), with **the six rules of the proposal** written once (a failure never stops the others; a state is said
+  once; every number leads to what it counts; nothing is grey without its reason; a zone with no state is counted; what the launcher cannot do
+  alone always has the same card) and the notices-are-information rule (SOG-0260). The sections that describe gestures the screen no longer
+  offers as such (§§ 5.1, 5.5, 5.8, 5.10, 5.11) keep their logic with a reading note instead of being deleted: the code under them (gates, plans,
+  models) is still used. `INVENTAIRE_FONCTIONNEL.md` gets a banner (a survey of the screen BEFORE the redesign) and § 6: what became of each
+  block and of each of its ten gaps. Nothing in the code changed.

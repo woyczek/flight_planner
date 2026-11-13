@@ -2,6 +2,8 @@
 
 Read-only survey of `modules/data/` at the state of the `v3-settings` worktree (verified in the code, 11 Nov 2026). Sources: `SPEC.md` (cited `SPEC § n`; the SPEC has two sections numbered 5.11: « world » and « coverage table »), `DECISIONS.md` (cited by SOG number or dated bullet), `*.js`, `texts.js` (cited `TX.key`, fr text shortened; every text exists in fr/en/de/es), `tests/v3/cases/data.py` (cases `L1`…`L78`; `—` = no case found). « Launcher verb » = a job `regen/job { set, verb, args }` unless written otherwise. « Unverified » = not checked in a case or not checkable by reading.
 
+> **13 Nov 2026 (SOG-0229, lot 4): this survey describes the screen as it was BEFORE the redesign SOG-0262 (11 Nov).** The current screen is `SPEC.md` § 3 (validated by the user on 13 Nov); § 6 below says what became of each block and of each gap. Tables A, B and C are kept as the reference of the gestures, states and messages the cases still read (the texts are looked up by key).
+
 ## 1. What the screen is, and its blocks in screen order
 
 « Données » is the module `modules/data/` (`meta.level 3`, not fixed: it scrolls like a page), the heart of the Maintenance application (`/frame/?app=maintenance`, `#data`; SPEC § 1, L3). On a workstation with a launcher the administrator regenerates the published data (aeronautical base per country zone, procedures, VAC points, aircraft types, weather synoptic, EUROCONTROL route workbooks): download, build, publish, purge; without a launcher it only shows what is published (all actions grey). Compiling is separate from using; the module only orders jobs (launcher), reads aerodb (`sources, publication, zones, coverageByState, packs`), writes its own `cache/data/{coverage,personal,journal,route}.json` through `ctx.data`, and publishes through the frame's `ctx.data.sync({gesture:true})`. One operation at a time (`busyNow`, state.js:45). Order of `renderBody` (screen.js:532-547):
@@ -201,3 +203,31 @@ Common gate for the verbs of a set panel: `M.setGate` (model_sets.js:243): `no-l
 8. **SPEC contradicts itself**: § 3 rules (« A failure never stops the others in « Tout mettre à jour » », SPEC.md:122) vs § 5.3 (« Stop at the first failure », SPEC.md:232); the code stops (chain.js:237-247, `chainVerdict`), while « Mettre à jour » on zones continues after a failure (`chunkVerdict`, SOG-0180). A redesign must pick one rule per path.
 9. **Behaviours only in code / decisions, not in a gesture-level SPEC section**: pack « Mettre à jour (n) » link, the zone-list actions (Réessayer, Choisir le fichier…), the balance filter that also ticks zones (SOG-0228 b), « Détail » fold, certify box, `#data?zone=` and `?source=` links, FAA NASR three-set flow (upload.js:123-145) are specified only as dated bullets of § 5.8 (long paragraph), not in the § 3 screen description or § 9 DOM contract (which still lists the removed row verbs).
 10. **No case found**: help anchor (module.js:363), group/journal fold persistence (`S.manual`, `S.journalOpen`: only L15 touches group state), offline/online redraw (module.js:375-380), `TX.refused.updating` text itself (L8 sends 409 generally), seven of ten `pubCause` keys (L59 plays three), « Tout afficher » is only in L63 by name, zone link text `zoneLinkOut` (L48 unverified). L62 only checks quoted button names, not message wording.
+
+## 6. What became of it (13 Nov 2026, after SOG-0262 and SOG-0229 lot 4)
+
+Blocks of § 1, in screen order:
+
+| Block (before) | Now |
+|---|---|
+| 1. file chooser | unchanged (shared by the country sheets and the register fold) |
+| 2. Head | kept: the cycle, its bar (« n faits sur m »), the state sentence, **the one button « Tout mettre à jour (n) »** (block 4 is merged into it) |
+| 3. « Couverture » card (« Ajouter un pays » select, the list with checkboxes) | **gone**: the map, the « Paquets de pays » grid, the sheet of a country (« Ajouter ce pays » / « Retirer ce pays ») and the fold « Pays définis » |
+| 4. « Tout mettre à jour » card | the header button + its sentence; ONE plan, ONE publication |
+| 5. four groups | the base block (map, « À faire ce mois-ci », packs, sheet, « Publier la base », four folds) and **one closed line per other set** |
+| 6–8. « Couverture par pays », inventory, journal | **one fold « Détail de la base »** (case L128) |
+
+Gaps of § 5:
+
+| Gap | Fate |
+|---|---|
+| 1. EAD line, « Relire », « Retirer » | **out of the specs** (the user, 11 Nov) |
+| 2. row-level gesture model | obsolete: replaced by the sheet of a country (SPEC § 3 item 5) |
+| 3. a single zone cannot leave the coverage | closed: « Retirer ce pays » on the sheet, with a question (files are never purged) |
+| 4. grey « Mettre à jour » without its reason | closed: rule 4 of SPEC § 3; the reasons are texted (the 13 launcher codes, SOG-0260) |
+| 5. journal « Copier », route / world outside the journal | unchanged, still open (decided as such on 10 Nov) |
+| 6. head vs SPEC | the head was rewritten (cycle, bar, sentence, button); the old § 3.1 text is replaced |
+| 7. duplicated information | closed by rule 2: one read of `base/status`, one tone per zone, the sentence, the map and the sheet agree |
+| 8. SPEC contradicts itself (stop / continue after a failure) | closed: **a failure never stops the others** (SOG-0239, rule 1) |
+| 9. behaviours only in code | written in SPEC § 3 (items 1–9) and DECISIONS 12–13 Nov |
+| 10. no case | the redesign added cases L82–L128 (the sheet, the thread, the folds, the register, the gestures of the map) |
