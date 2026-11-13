@@ -236,6 +236,11 @@ export function themeProfile(theme, levelFt = 0) {
       }
     };
   }
+  if (theme === 'topo') return builtinProfile('topo', levelFt); // le fond OpenTopoMap des vues de mission (SOG-0300 T2), sans zone ni RTBA
+  if (theme === 'ifrlow') return builtinProfile('low', levelFt);
+  if (theme === 'ifrhigh') return builtinProfile('high', levelFt);
+  if (theme === 'transit') return builtinProfile('cam',
+    levelFt); // le transit basse altitude : RTBA, réseau très basse altitude, axes de ravitaillement
   if (theme !== 'base') return builtinProfile('auto', levelFt);
   const p = MapsRender.routeProfile(0);
   return {

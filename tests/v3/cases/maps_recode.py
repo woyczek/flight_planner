@@ -4442,10 +4442,10 @@ def d138(c):
     _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
     t = c.js(_THEME_JS)
     c.eq([t['theme'], t['base'], t['src'], t['sel']], ['vfr', 'ofm-liberty', 'theme', 'vfr'], 'SAR, target map: VFR topo on the topographic base, said in the banner', what=str(t))
-    c.eq(t['opts'], ['vfr', 'ifr', 'base'], 'the banner offers three views (no profile of the map’s own here)', what='options')
+    c.eq(t['opts'], ['vfr', 'topo', 'ifrlow', 'ifrhigh'], 'the banner offers the views of a rescue family (SOG-0300 T2; no profile of the map’s own here)', what='options')
     _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_generale.png')
     t = c.js(_THEME_JS)
-    c.eq([t['theme'], t['src']], ['ifr', 'theme'], 'SAR, general map: the flight’s view (IFR)', what=str(t))
+    c.eq([t['theme'], t['src']], ['ifrlow', 'theme'], 'SAR, general map: the flight’s view (IFR, low IFR for a rescue family)', what=str(t))
     # 2. a commercial mission keeps the flight’s view even on its target map
     _themed(c, '3_COMMERCIAL', 'COM1', 'maps?mission=COM1&map=carte_cible.png')
     t = c.js(_THEME_JS)
@@ -4454,17 +4454,17 @@ def d138(c):
     _themed(c, '2_SAR', 'SAR2', 'maps?mission=SAR2&map=carte_generale.png', profile_def=True)
     t = c.js(_THEME_JS)
     c.eq([t['theme'], t['id'], t['src']], ['yaml', 'essai-copy', 'copy'], 'the YAML profile of the map comes first', what=str(t))
-    c.eq(t['opts'], ['yaml', 'vfr', 'ifr', 'base'], 'and is offered as a first choice', what='options')
+    c.eq(t['opts'], ['yaml', 'vfr', 'topo', 'ifrlow', 'ifrhigh'], 'and is offered as a first choice', what='options')
     # 4. the choice of the banner is kept for this map on the device, and only when it differs from the use
-    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    _themed(c, '3_COMMERCIAL', 'COM1', 'maps?mission=COM1&map=carte_cible.png')   # a civil family offers the base-only view
     c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'base'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
     c.until("() => window.__mp.S.profile?.id === 'v3-base'", timeout=6000, what='« Base only » redraws the map without aeronautical layers')
     c.eq(c.js("() => window.__mp.S.profileSource"), 'chosen', 'it is a choice', what='source')
-    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    _themed(c, '3_COMMERCIAL', 'COM1', 'maps?mission=COM1&map=carte_cible.png')
     t = c.js(_THEME_JS)
-    c.eq([t['theme'], t['auto']], ['base', 'vfr'], 'the choice survives a reload (kept for this map), the use’s view stays the default', what=str(t))
-    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'vfr'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
-    c.until("() => window.__mp.S.profile?.base === 'ofm-liberty'", timeout=6000, what='back to the use’s view')
+    c.eq([t['theme'], t['auto']], ['base', 'ifr'], 'the choice survives a reload (kept for this map), the use’s view stays the default', what=str(t))
+    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'ifr'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.profile?.id !== 'v3-base'", timeout=6000, what='back to the use’s view')
     c.eq(c.js("() => Object.keys(window.__mp.S.mthemes)"), [], 'the use’s view is not kept as a choice', what='kept')
     # 5. closing the banner gives the flight’s view back
     c.tap('.mp-mbar [data-mbx]')
@@ -4855,7 +4855,7 @@ def d147(c):
     c.js("() => { window.__ct = []; window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 10 }); return true }")
     c.until("() => window.__ct.length > 0", timeout=8000, what='asked again further out')
     c.eq(c.js("() => window.__ct.at(-1).minor"), False, 'the master lines alone further out (the threshold of the layer, one level and a half before the intermediate ones)', what='minor far')
-    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'ifr'; s.dispatchEvent(new Event('change', { bubbles: true })); window.__ct = []; window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 11.6 }); return true }")
+    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'ifrlow'; s.dispatchEvent(new Event('change', { bubbles: true })); window.__ct = []; window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 11.6 }); return true }")
     c.wait(2500)
     c.eq(c.js("() => window.__ct.length"), 0, 'none in the IFR view', what='ifr calls')
     c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'vfr'; s.dispatchEvent(new Event('change', { bubbles: true })); window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 11.7 }); return true }")
@@ -4983,7 +4983,7 @@ _MVIEW_JS = """() => { const S = window.__mp.S, E = S.profile.elements || {}, m 
       rule='SOG-0171 reopened (« en vfr topo sur la vue générale, on a un fond IFR, des hippodromes de ravitaillement, et pas de courbes de niveau ; sur la vue régionale, idem pour les objets, mais sur un fond VFR, sans relief »): the base style follows the view (it stayed the one the map was born with), the VFR view has no refuelling tracks (the studio’s vfr-detail profile carries them, only the flight’s CAM mode lights them), and has the shaded relief')
 def d152(c):
     for m in ('carte_generale.png', 'carte_cible.png'):
-        _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=' + m, preset='cam')    # a military flight: the CAM view lights the refuelling tracks
+        _themed(c, '1_COMBAT', 'CMB1', 'maps?mission=CMB1&map=' + m, preset='cam')    # a military mission (SOG-0300 T2: its views are VFR, topographic, IFR, transit) on a military flight: the CAM view lights the refuelling tracks
         c.until("() => !!window.__mp.S.map && window.__mp.S.map.isStyleLoaded()", timeout=12000, what=f'{m}: the base map is loaded')
         c.js("() => { window.__styles = []; const m = window.__mp.S.map, o = m.setStyle.bind(m); m.setStyle = (s, ...a) => { window.__styles.push(String(s)); return o(s, ...a) }; return true }")
         pick = "(v) => { const s = document.querySelector('.mp-mb-theme'); s.value = v; s.dispatchEvent(new Event('change', { bubbles: true })); return true }"
@@ -5001,11 +5001,7 @@ def d152(c):
         c.eq([t['base'], t['hill'], t['awl']], ['positron', False, True], f'{m}, IFR: the IFR base and its airways, no relief', what=str(t))
         c.ok(len(t['styles']) >= 2 and 'liberty' not in t['styles'][-1], str(t['styles']), f'{m}, IFR: the base was swapped back')
         if m == 'carte_generale.png':
-            # « Base only » is the base of the IFR view without any object; the boxes of the layers decide the objects, whatever the view
-            c.js(pick, 'base')
-            c.until("() => window.__mp.S.mtheme === 'base'", timeout=8000, what='base only')
-            t = c.js(_MVIEW_JS)
-            c.eq([t['base'], t['aar'], t['awl'], t['hill']], ['positron', False, False, False], 'Base only: the IFR view’s base, no object', what=str(t))
+            # (« Base only » belongs to the civil views: D138 measures it)
             c.js(pick, 'ifr')
             c.until("() => window.__mp.S.mtheme === 'ifr'", timeout=8000, what='IFR')
             c.tap('[data-mp="layers"]')
@@ -7391,3 +7387,34 @@ def d218(c):
     _ground_open(c)
     _ground_at(c, 15, 1500)
     c.eq(c.js("() => (window.__notes || []).filter(n => /LFPO/.test(n) && /(Rollw|rodaje|taxiways|circulation)/i.test(n)).length"), 0, 'no line when the ground is drawn', what='notes')
+
+
+
+@case('D219', 'The views of a mission map depend on its family: a civil mission offers VFR, IFR and base only; a military one VFR, topographic, IFR and low-level transit (RTBA and refuelling); a rescue, search or customs one VFR, topographic, low IFR and high IFR; the topographic view is the OpenTopoMap base with no zone, the transit view has the RTBA and the refuelling axes, and a view the family does not list cannot be chosen', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0300 T2 (the user, 13 Nov: « liste des vues pour les missions civiles : vfr, ifr, fond seul. pour les missions militaires : vfr, topo, ifr, transit basse altitude (rtba + ravitaillement). pour les missions secours, recherche, douane, etc. : vfr, topo, ifr bas, ifr haut »): the banner offered VFR, IFR and base map to every family')
+def d219(c):
+    cases = [('3_COMMERCIAL', 'COM9', ['vfr', 'ifr', 'base']), ('1_COMBAT', 'CMB9', ['vfr', 'topo', 'ifr', 'transit']), ('2_SAR', 'SAR9', ['vfr', 'topo', 'ifrlow', 'ifrhigh'])]
+    for fam, mid, want in cases:
+        _themed(c, fam, mid, f'maps?mission={mid}&map=carte_generale.png')
+        t = c.js(_THEME_JS)
+        c.eq(t['opts'], want, f'{fam}: the views of its family, in the order of the list', what=str(t))
+    # the views do what their names say
+    pick = "(v) => { const s = document.querySelector('.mp-mb-theme'); s.value = v; s.dispatchEvent(new Event('change', { bubbles: true })); return true }"
+    prof = "() => { const S = window.__mp.S; return { base: S.profile.base, zones: S.profile.zones, aar: !!(S.profile.elements && S.profile.elements.aarTracks), theme: S.mtheme } }"
+    _themed(c, '1_COMBAT', 'CMB9', 'maps?mission=CMB9&map=carte_generale.png')
+    c.js(pick, 'topo')
+    c.until("() => window.__mp.S.mtheme === 'topo'", timeout=6000, what='the topographic view')
+    c.eq(c.js(prof)['base'], 'otm-topo', 'military, topographic: the OpenTopoMap base', what='base')
+    c.js(pick, 'transit')
+    c.until("() => window.__mp.S.mtheme === 'transit'", timeout=6000, what='the transit view')
+    r = c.js(prof)
+    c.ok('TSA' in r['zones'] and 'R' in r['zones'] and r['aar'], str(r), 'low-level transit: the R / D / P and TSA zones (the RTBA) and the refuelling axes')
+    # a view the family does not list cannot be set
+    c.js(pick, 'base')
+    c.wait(500)
+    c.eq(c.js("() => window.__mp.S.mtheme"), 'transit', 'a military mission has no base-only view: the choice is refused', what='mtheme')
+    _themed(c, '2_SAR', 'SAR9', 'maps?mission=SAR9&map=carte_generale.png')
+    c.js(pick, 'ifrhigh')
+    c.until("() => window.__mp.S.mtheme === 'ifrhigh'", timeout=6000, what='the high IFR view')
+    c.shot('D219_standard_rescue_views_delivered.png')

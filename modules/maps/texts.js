@@ -659,8 +659,12 @@ export const TX = {
   mbKeep: ['Garder la mission', 'Keep the mission', 'Mission behalten', 'Conservar la misión'],
   mbTheme: ['Vue', 'View', 'Ansicht', 'Vista'],
   mbThemes: {
-    vfr: ['VFR topo', 'VFR topo', 'VFR Topo', 'VFR topo'],
+    vfr: ['VFR', 'VFR', 'VFR', 'VFR'],
+    topo: ['Topographique', 'Topographic', 'Topografisch', 'Topográfica'],
     ifr: ['IFR', 'IFR', 'IFR', 'IFR'],
+    ifrlow: ['IFR bas', 'Low IFR', 'IFR niedrig', 'IFR bajo'],
+    ifrhigh: ['IFR haut', 'High IFR', 'IFR hoch', 'IFR alto'],
+    transit: ['Transit basse altitude', 'Low-level transit', 'Tiefflug-Transit', 'Tránsito a baja altitud'],
     base: ['Fond seul', 'Base map only', 'Nur Hintergrund', 'Solo fondo'],
     yaml: ['Profil de la carte', 'The map’s own profile', 'Profil der Karte', 'Perfil del mapa']
   },

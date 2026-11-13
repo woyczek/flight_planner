@@ -362,13 +362,26 @@ export async function applyMission(reuse = false) {
 /** Les cartes de ces types, dans une mission d'une famille SO, s'ouvrent en VFR topographique (SOG-0171) ; le commercial garde la vue du vol. */
 const SO_TYPE = /^(target|cible|detail|zone)/i,
   COMMERCIAL = /^(commercial|commerciale|civil|civile)$/i;
+/** Les vues d'une carte de mission selon la famille de la mission (SOG-0300 T2, la liste de l'utilisateur) : civile (commerciale) VFR, IFR, fond seul ; militaire VFR, topographique, IFR, transit basse
+ *  altitude (RTBA et ravitaillement) ; secours, recherche, douane (médicale, SAR, incendie, maritime, forces de l'ordre) VFR, topographique, IFR bas, IFR haut. La vue du profil de la carte (« yaml ») s'y
+ *  ajoute en tête quand la carte en porte un ; la vue retenue ou d'usage l'est aussi si la liste ne la donne pas. */
+const RESCUE = /^(medevac|sar|fire|le|maritime|douane|customs|secours|recherche|rescue|search)/i,
+  VIEWS = {
+    civil: ['vfr', 'ifr', 'base'],
+    military: ['vfr', 'topo', 'ifr', 'transit'],
+    rescue: ['vfr', 'topo', 'ifrlow', 'ifrhigh']
+  };
+export const viewsOf = fam => VIEWS[!fam || COMMERCIAL.test(fam) ? 'civil' : RESCUE.test(fam) ? 'rescue' : 'military'];
 /** Le YAML de la carte porte-t-il un profil d'affichage (sa copie, ou l'id d'un profil intégré) ? Il l'emporte alors. */
 const ownProfile = m => !!(m?.profileDef || (m?.profileId && window.MAPS_PROFILES.some(p => p.id === m.profileId)));
 /** La vue d'une carte de mission, d'après son usage : son profil (YAML) ; sinon VFR topo pour les cartes cible / détail / rendez-vous / zone
  *  d'une famille SO ; sinon la vue du vol (VFR topo si le vol l'est, IFR sinon). */
-export const themeOf = (m, fam) => ownProfile(m) ? 'yaml' : fam && !COMMERCIAL.test(fam) && SO_TYPE.test(m?.type || '') ? 'vfr' : ['vfr',
-  'topo'
-].includes(S.preset) ? 'vfr' : 'ifr';
+export const themeOf = (m, fam) => {
+  const t = ownProfile(m) ? 'yaml' : fam && !COMMERCIAL.test(fam) && SO_TYPE.test(m?.type || '') ? 'vfr' : ['vfr', 'topo'].includes(S
+    .preset) ? 'vfr' : 'ifr';
+  return t === 'ifr' && !viewsOf(fam).includes('ifr') ? 'ifrlow' :
+    t; // le « IFR » d'usage d'une famille de secours, recherche ou douane est son IFR bas
+};
 /** Clef de la vue retenue : la mission et sa carte. */
 const themeKey = () => `${S.missionId}|${S.mapDef?.file || ''}`;
 /** Le profil d'affichage de la carte de mission montrée, selon sa vue. */
@@ -397,7 +410,8 @@ function restyle(before) {
 }
 /** Le choix de la vue (bandeau) : retenu pour cette carte sur l'appareil (seulement s'il diffère de la vue de son usage), la carte redessinée. */
 function setTheme(v) {
-  if (!TX.mbThemes[v] || (v === 'yaml' && S.mthemeAuto !== 'yaml')) return;
+  if (!TX.mbThemes[v] || (v === 'yaml' && S.mthemeAuto !== 'yaml') || (v !== 'yaml' && !viewsOf(familyOf(S.missionId)).includes(v) && v !==
+      S.mtheme)) return;
   const all = S.mthemes ||= {},
     key = themeKey();
   if (v === S.mthemeAuto) delete all[key];
@@ -496,7 +510,7 @@ export function bannerFill() {
     // la liste des cartes : celle d'un vol commence par « Vol » (la vue vol, la mission par-dessus), choisir une carte fournie la montre sur place (SOG-0196)
     mapSel = S.missionAside || maps.length > 1 ? `<label class="mp-mb-map"><span>${esc(tt(TX.mbMap))}</span><select class="mp-mb-sel" aria-label="${esc(tt(TX.mbMap))}">${S.missionAside ? `<option value=""${flightView ? ' selected' : ''}>${esc(tt(TX.mbFlight))}</option>` : ''}${maps.map(m => `<option value="${esc(m.file)}"${m.file === cur ? ' selected' : ''}>${esc(m.description || m.file)}</option>`).join('')}</select></label>` : maps.length === 1 ? `<div class="mp-mb-sub">${esc(maps[0].description || maps[0].file)}</div>` : '',
     // la vue : celle de la carte fournie montrée ; sur la vue vol, la vue est celle du vol (liste grisée)
-    themes = ['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml'),
+    themes = [...new Set([...(S.mthemeAuto === 'yaml' ? ['yaml'] : []), ...viewsOf(fam), S.mtheme].filter(k => TX.mbThemes[k]))],
     themeSel = `<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}"${flightView ? ' disabled' : ''}>${flightView ? `<option>${esc(tt(TX.mbFlight))}</option>` : themes.map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>`,
     ask = on && S.mbarAsk && !!S.missionAside, // la question d'abandon, dans la fenêtre
     html = ask ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b></div>
