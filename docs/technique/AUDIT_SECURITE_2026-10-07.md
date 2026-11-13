@@ -1056,6 +1056,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 204 | The Iceland source read by the launcher (688b0f238, SOG-0240), the `aircraft` field of the VAC interpretations (ccf5bcd11), the “waiting in Downloads” state (1e99374c8, da1c44b14), the `route-point-hover` window event (6db4e07cc, ce3fd0f63) and six commits without surface | accepted, two notes |
 | 205 | The cache of the route calculation's results, `data/local/route-cache/` (89738c128, SOG-0296), read after the push | acceptable; two small defects on a hostile file, one note |
 | 206 | “Start again from scratch on this device” (182818739, SOG-0324) and the “VFR circuits” fold of Data (3818191f6, SOG-0253), read after the push | the first never touches what the device alone carries; one defect (it empties while offline); the second accepted |
+| 207 | The Map opens a launcher route to draw the user's VFR circuits (4752a85b0, SOG-0253), read after the push | accepted: one route already given to another module, one read-only verb, local only, the answer sanitised; one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -3125,6 +3126,16 @@ Before the first `evict`, refuse when the device is offline (`c.net?.online?.() 
 the gesture says so and `FrameData.cached('')` is unchanged. *VFR circuits fold (3818191f6).* The file goes through the existing `base/upload` (no new route; the page's ceiling of 2 MB is the launcher's), the file's name is cleaned of control and line characters and cut to 120 before it is shown, the answer
 is recognised only if `source === 'vfr_circuits'`, and what the page shows of the launcher's reading is **numbers only**: `circuitsOf` keeps integers from 0 to 1,000,000 (circuits, aerodromes, the count of obsolete aerodromes filtered by `^[A-Z0-9]{3,5}$` and cut to 200, the sum of the warnings of eight keys); no name, no track and no text of the file or of the
 launcher is ever shown, so there is nothing to escape beyond the file name, which goes through `esc`. L134 green. No note.
+
+**207. The Map opens a launcher route to draw the VFR circuits — accepted, one note.** *What the opening is.* `modules/maps/module.js` now declares `launcher: { routes: ['regen/job'], read: [] }`; the module's only call
+is `L.job('regen/job', { set: 'vfr', verb: 'circuits', args: {} })`, once per mount, with no argument taken from the page, from the URL or from a file. The route is the smallest one of the launcher (no `regen/job/cancel`, no `regen/job/release`, no `regen/verbs`,
+no `base/upload`), the same that the Atmosphere module already holds; the frame gives a module the launcher only on the workstation's own loop (`!launcherHere.lan`; a device without launcher or on the LAN gets `null`, and the Map then draws nothing). The verb `vfr/circuits`
+is the one read in audit 203: it reads `data/local/upload/vfr_circuits.xml` only (a link refused, 2 MB), writes nothing and publishes nothing. *What the page does with the answer.* `circuitsSanitize` takes the answer as an untrusted input: a code of the form
+`[A-Z0-9]{3,5}`, at most 200 aerodromes, 20 circuits and 64 points each, finite numbers in range (latitude, longitude, altitude 0 to 60,000), `aircraft` and `ref` from closed lists, `hand` left or right or nothing, the identifier cleaned of control characters and `<` `>` and cut to 24
+(and never put in markup); an `obsolete` aerodrome returns nothing, a circuit of fewer than two points is dropped. The drawing is a canvas (no markup); the one line in the aerodrome's card (`circuitLine`) is built from closed texts and numbers through `esc`. A failed or refused job leaves the
+state `none` or `null`: nothing is drawn, never a default circuit. The three states of the user's rule hold in the code (VAC chart not read: nothing; read without a track: the sentence “left-hand, nothing published”; track: the track). **Note.** The declaration is by route, not
+by verb: `regen/job` would let a later edit of the Map start any verb the loopback allows. The present code is bound to one verb; keep it so by a case that fails if another `verb:` appears in `modules/maps` (the Atmosphere module has the same property, so this is a rule for both, not a new risk). The
+case D233 (the circuits are read through the launcher) passes by a fake launcher only; no real launcher was started for this review.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
