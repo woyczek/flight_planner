@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 199,
-  "verdicts": 129
+  "verdicts": 132
  },
  "apps": [
   "pilote",
@@ -2753,8 +2753,10 @@
    },
    "test": "Recharge la page. Carburant, côté Arrivée, « Sur la carte » : dans le volet, chaque piste dit son vent en mots — « face 12 kt · travers 6 kt », ou « arrière 12 kt » souligné en rouge — et la piste la mieux orientée est la première de la liste.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:15:53Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:15:53Z",
+   "comment": "ok. En passant : ILS 26 sur LFLC ne donne pas la carte de l’ILS, mais le tableau des data. parseur à revoir ?",
+   "at": "2026-11-13T15:18:29Z"
   },
   {
    "id": "SOG-0307",
@@ -2767,8 +2769,10 @@
    },
    "test": "Recharge la page. Carte : ouvre « Couches », puis touche la carte dans un ou deux espaces aériens pour passer à leur vue : la carte ne clignote plus et le volet du bas garde sa hauteur. Si tu vois encore le volet rétrécir, dis-moi par quel geste.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:25:02Z"
+   "state": "ko",
+   "delivered": "2026-11-13T12:25:02Z",
+   "comment": "régression : la liste des espaces, qui devait être à droite du graphique, est maintenant à nouveau en bas.",
+   "at": "2026-11-13T15:21:57Z"
   },
   {
    "id": "SOG-0308",
@@ -2809,8 +2813,9 @@
    },
    "test": "Recharge la page, sur ton téléphone. Carte : touche le terrain de départ ou d'arrivée sans viser — sa fiche s'ouvre, même si une balise ou un point est tout près. Zoome sur le terrain jusqu'à voir les taxiways : toucher n'importe où dans l'emprise du terrain ouvre sa fiche (toucher une voie garde sa ligne dans le panneau).",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:33:18Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:33:18Z",
+   "at": "2026-11-13T15:23:42Z"
   },
   {
    "id": "SOG-0311",

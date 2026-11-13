@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4ecbfc6",
+  "organisation": "b0083eb",
   "fiches": 326,
   "untranslated": 0,
   "priorities": 310
@@ -768,8 +768,7 @@
      "de": "REGRESSION: Wahl der Landebahn über « Auf der Karte » — Gegen- und Seitenwind fehlen",
      "es": "REGRESIÓN: elección de pista de llegada por « En el mapa » — falta el viento de cara y de través",
      "milestone": "6.0.0-alpha.5",
-     "rank": 49,
-     "test": true
+     "rank": 49
     }
    ]
   },
@@ -937,8 +936,7 @@
      "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
      "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos",
      "milestone": "6.0.0-alpha.5",
-     "rank": 41,
-     "test": true
+     "rank": 41
     },
     {
      "id": "SOG-0046",
@@ -1475,8 +1473,7 @@
      "de": "Karte: den Flugplatz zu berühren verlangt zu genaue Finger",
      "es": "Mapa: tocar el aeródromo exige dedos demasiado precisos",
      "milestone": "6.0.0-alpha.5",
-     "rank": 43,
-     "test": true
+     "rank": 43
     }
    ]
   },
