@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 208,
+  "tests": 209,
   "verdicts": 147
  },
  "apps": [
@@ -2704,6 +2704,20 @@
    "delivered": "2026-11-13T11:52:34Z",
    "comment": "oui. réserve : si tu as besoin de supprimer un label, tu laisse le holding point ! quitte à les déplacer légèrement pour éviter l’overlap (il y a un trait, ou point rouge de toute façon. Quand tu enlèves le label d’un holding, tu laisse son trait rouge ! LFBD : supperposition de deux LNA (screenshot). J’accepte, tu traites la mineure, pas besoin de retester.",
    "at": "2026-11-13T15:12:52Z"
+  },
+  {
+   "id": "SOG-0298",
+   "app": "maintenance",
+   "title": {
+    "fr": "Procédures d'approche connues sans tracé : les choisir quand même, avec la fréquence du moyen et le bouton « Carte »",
+    "en": "Approach procedures known without a track: choose them anyway, with the navaid frequency and the « Chart » button",
+    "de": "Anflugverfahren ohne Kurslinie: trotzdem wählbar, mit Frequenz der Funkhilfe und Schaltfläche « Karte »",
+    "es": "Aproximaciones conocidas sin trazado: elegirlas igualmente, con la frecuencia de la ayuda y el botón « Carta »"
+   },
+   "test": "Recharge la page. Carburant, arrivée sur un terrain dont une approche n'existe que par sa carte (LFST, ou LFML avec un VOR) : bloc « Procédures », « Changer » de l'approche — sous les approches codées, une partie « par leur carte seulement » ; choisis-en une : la ligne dit « par sa carte : ni tracé ni distance », le lien « Carte » ouvre la carte. Passe par la Carte et reviens : le choix est toujours là. Choisis ensuite une approche codée : elle remplace l'autre.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T21:47:55Z"
   },
   {
    "id": "SOG-0299",

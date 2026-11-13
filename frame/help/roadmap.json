@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ed2b43c",
+  "organisation": "9e44c51",
   "fiches": 335,
   "untranslated": 0,
   "priorities": 310
@@ -3725,13 +3725,14 @@
     {
      "id": "SOG-0298",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Procédures d'approche connues sans tracé : les choisir quand même, avec la fréquence du moyen et le bouton « Carte »",
      "en": "Approach procedures known without a track: choose them anyway, with the navaid frequency and the « Chart » button",
      "de": "Anflugverfahren ohne Kurslinie: trotzdem wählbar, mit Frequenz der Funkhilfe und Schaltfläche « Karte »",
      "es": "Aproximaciones conocidas sin trazado: elegirlas igualmente, con la frecuencia de la ayuda y el botón « Carta »",
      "milestone": "6.0.0-alpha.5",
-     "rank": 39
+     "rank": 39,
+     "test": true
     }
    ]
   },
