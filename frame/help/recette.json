@@ -1674,9 +1674,15 @@
     "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",
     "es": "Fichas de aeronaves: un valor convertido muestra trece decimales"
    },
-   "test": "Maintenance › Appareils, une fiche vue dans une autre unité que celle où elle a été saisie (S210, TBM9) : un débit converti se lit avec deux chiffres significatifs (« 12000 lb/h », plus de treize décimales) ; une valeur que tu saisis reste telle que tu l'as écrite.",
+   "test": "Recharge la page. Appareils, une fiche dont une valeur est convertie d'une autre unité (un débit en lb/h lu en kg/h, par exemple) : elle s'affiche avec quatre chiffres significatifs au plus — « 12410 », « 847 », « 84.74 », « 8.47 », « 0.85 » — et plus jamais treize décimales. Une valeur que tu as saisie reste telle que tu l'as écrite. Dis si tu veux une virgule à la place du point.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T19:17:08Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "Ah. pardon. j’avais dit « deux chiffres significatifs » … après la virgule… oui, trois ou 4 chiffres avant la virgule, max 2 après si moins de 3 chiffres avant. au total, max 4 chiffres significatifs. #meaculpa",
+    "at": "2026-11-13T15:59:27Z"
+   }
   },
   {
    "id": "SOG-0221",

@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3d57548",
+  "organisation": "953810e",
   "fiches": 334,
   "untranslated": 0,
   "priorities": 310
@@ -1773,12 +1773,13 @@
     {
      "id": "SOG-0220",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Fiches d'appareils : une valeur convertie s'affiche avec treize décimales",
      "en": "Aircraft sheets: a converted value shows thirteen decimals",
      "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",
      "es": "Fichas de aeronaves: un valor convertido muestra trece decimales",
-     "rank": 102
+     "rank": 102,
+     "test": true
     }
    ]
   },
