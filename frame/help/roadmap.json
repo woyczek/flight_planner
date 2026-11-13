@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2e32219",
+  "organisation": "936c89a",
   "fiches": 324,
   "untranslated": 0,
   "priorities": 310
@@ -2838,13 +2838,14 @@
     {
      "id": "SOG-0240",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Trouver des sources de points et de voies pour les zones qui n'en ont pas (76 sur 83) : les AIP d'abord, EUROCONTROL sinon",
      "en": "Find sources of points and airways for the zones that have none (76 of 83): the AIPs first, EUROCONTROL otherwise",
      "de": "Quellen für Punkte und Luftstraßen der Zonen ohne solche finden (76 von 83): zuerst die AIPs, sonst EUROCONTROL",
      "es": "Encontrar fuentes de puntos y aerovías para las zonas que no tienen (76 de 83): primero los AIP, si no EUROCONTROL",
      "milestone": "6.0.0-alpha.6",
-     "rank": 121
+     "rank": 121,
+     "test": true
     },
     {
      "id": "SOG-0182",

@@ -1944,9 +1944,10 @@
     "de": "Quellen für Punkte und Luftstraßen der Zonen ohne solche finden (76 von 83): zuerst die AIPs, sonst EUROCONTROL",
     "es": "Encontrar fuentes de puntos y aerovías para las zonas que no tienen (76 de 83): primero los AIP, si no EUROCONTROL"
    },
-   "test": "Lanceur relancé, case « Je certifie… » cochée. Maintenance › Données : ajoute le Portugal à ta couverture, « Mettre à jour » : la zone se construit avec les points et les routes de l'AIP portugais (c'est le premier essai sur les pages entières : dis-moi le nombre de points et de voies affiché, et tout refus). Puis Carburant, une route qui traverse le Portugal (LPPT → LEMD) : « Calculer A → B » propose des voies portugaises ; la Carte les montre.",
+   "test": "Relance le lanceur, recharge la page. Données, Islande : la source « Avians » est listée ; avec la case d'usage personnel cochée, « Mettre à jour ce pays ». DEUX issues possibles, les deux sont des réponses : (1) l'Islande gagne des points et des voies (son compte le dit) — valide ; (2) un message dit qu'une page n'a pas été trouvée, avec l'adresse essayée, et que rien n'a été écrit — refuse en copiant ce message : le lecteur n'a été essayé que sur un faux réseau, je te demanderai alors deux pages enregistrées à la main.",
    "since": "2026-11-11",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T14:41:30Z"
   },
   {
    "id": "SOG-0241",
