@@ -3121,3 +3121,9 @@ The list, one line per layer (what `loadData` reads around the plan; the box is 
 
 ## The settings are read newest-first (D58 under load)
 - D58 failed once in a group of nine (« an out-of-range value is 11 ») and passed alone: a real race, not the test's. `readSettings` ran once per change of `airline/map_profiles.json`; two changes in a row (14 then 30) started two reads and the **last to finish** won — a slow old read could overwrite the newer value. Each read now takes a sequence number (`settingsSeq`) and only the latest one assigns (`runwayZoom`, the profiles, the altitude unit). D232 forces the order (the first read slow, the second fast): red before.
+
+## The traffic circuits on the Map (SOG-0253, Map half)
+- The user (13 Nov): left-hand by default « est la réalité » ; « si la carte n'est pas lue, on n'affiche rien, bien sûr ! c'est MG si on ne trouve rien » → three states and that is the rule: VAC chart not read: nothing; read and nothing found: « Tour de piste : main gauche (rien de publié sur la carte) »; a circuit extracted: the circuit. The ergonomist's objection to a DRAWN default circuit stands: none is ever drawn.
+- **Source**: the user's extractor's XML (`VfrCircuits`, AeroDB's reader 34c24550e, Settings' deposit 3818191f6), read by the launcher's read-only verb `vfr/circuits`. **New**: the Map declares `launcher.routes: ['regen/job']` (`module.js`) and runs that one verb (`circuits.js`) — to be seen by Sécurisation (a module that can run the launcher's jobs, here with a fixed body, read only). Without a launcher (a phone) nothing is read and nothing is drawn.
+- Look: fixed wing solid black (night: near white), rotary dotted green, a paper edge under the line, arrows in the order of flight, the altitude (`1000 AAL`) on the longest leg. D233 (the three states, the drawing, the obsolete one dropped).
+

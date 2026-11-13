@@ -31,6 +31,10 @@ import {
   covCard
 } from './coverage.js';
 import {
+  drawCircuits,
+  circuitLine
+} from './circuits.js';
+import {
   hideTips,
   followTip,
   hoverHtml,
@@ -452,7 +456,7 @@ function showAdCard(icao) {
     }
   }
   // piste et procédures choisies dans Carburant pour ce terrain (départ ou arrivée du vol), avec « Changer » ; la Carte ne les écrit jamais
-  body = cardHtml(icao) + covCard(icao) + body;
+  body = cardHtml(icao) + covCard(icao) + circuitLine(icao, v) + body;
   openData('ad', `ad:${icao}`, title, () => body, label);
 }
 /** VRP de la base que la surbrillance dessine (terrains montrés) : la couche des VRP ne les redessine pas. */
@@ -531,6 +535,7 @@ export function drawVfr(ctx, toC) {
         ctx.fill();
       }
     }
+    drawCircuits(ctx, toC, icao); // les tours de piste extraits (SOG-0253) : sous les noms des points de report
     ctx.font = '700 11px Arial,sans-serif';
     ctx.textBaseline = 'middle';
     for (const p of pts) {

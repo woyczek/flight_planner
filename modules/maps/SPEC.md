@@ -1360,6 +1360,8 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 
 ## 16. VFR reporting points of an aerodrome (VAC)
 
+- **The traffic circuits** (SOG-0253, 13 Nov; `circuits.js`): the launcher reads the user's `VfrCircuits` XML (`vfr/circuits`, read only; `meta.launcher.routes = ['regen/job']`, the Map's first use of the launcher; without it nothing is drawn) once per mount; `circuitsSanitize` bounds it (200 aerodromes, 20 circuits, 64 points, finite numbers, a changed chart = `obsolete` = nothing). Drawn in the VFR view for the aerodromes the VFR layer shows: **solid black** (fixed wing, unknown, both), **dotted green** (rotary), an arrow in the order of the points on each leg longer than 24 px, the altitude on the longest leg. **Three states** (the user's rule): the aerodrome's VAC compilation not read → nothing; read, no circuit extracted → the line « Tour de piste : main gauche (rien de publié sur la carte) » in its content, nothing drawn; a circuit extracted → drawn, its hand (deduced by the launcher from the order) and altitude said. No default circuit is ever drawn.
+
 - **The flight's choice at the top of the card**: for the aerodrome that is the flight's departure and / or arrival, a row per side
   (`.mp-ad-proc[data-proc=dep|arr]`) — "Departure : runway 03 · SID XX1A · transition TRA", "Arrival : runway 31 · STAR … · APP …"
   with the source's state, "none" when the pilot chose none, "not chosen yet" otherwise — and a **Change** button, `data-go` =

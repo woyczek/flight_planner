@@ -7778,3 +7778,40 @@ def d232(c):
       const slow = D.readSettings(), fast = D.readSettings(); await Promise.all([slow, fast]); return { zoom: S.runwayZoom, reads: n } }""")
     c.eq(r['zoom'], 11, 'the newest read wins: 14 then 30 (out of range) is 11, though the older read finished last', what=str(r))
 
+
+@case('D233', 'The VFR traffic circuits of the user’s extractor (SOG-0253), three states: the aerodrome’s VAC chart not read: nothing; read and no circuit extracted: « Traffic circuit: left-hand (nothing published on the chart) » and nothing drawn; a circuit extracted: drawn (solid for fixed wing, dotted for rotary, the altitude on the line) and its hand said', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0253 (the user, 13 Nov evening: « si la carte n’est pas lue, on n’affiche rien, bien sûr ! c’est MG si on ne trouve rien »; format VfrCircuits, AeroDB 34c24550e, reader 3818191f6): the Map read none of it')
+def d233(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'vfr', 'layers': {}}, 'cache']], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    sq = lambda la, lo, d: [{'lat': la - d, 'lon': lo - d}, {'lat': la - d, 'lon': lo + d}, {'lat': la + d, 'lon': lo + d}, {'lat': la + d, 'lon': lo - d}]
+    res = {'ok': True, 'aerodromes': {'LFRS': {'state': 'current', 'circuits': [
+        {'id': 'RWY03-A', 'aircraft': 'fixed', 'altitude': {'ft': 1000, 'ref': 'AAL'}, 'closed': True, 'hand': 'right', 'points': sq(47.1569, -1.6078, .02)},
+        {'id': 'RWY03-H', 'aircraft': 'rotary', 'altitude': None, 'closed': True, 'hand': 'left', 'points': sq(47.1569, -1.6078, .03)}]},
+        'LFPO': {'state': 'obsolete', 'circuits': [{'id': 'X', 'aircraft': 'fixed', 'closed': True, 'hand': 'left', 'points': sq(48.72, 2.38, .02)}]}}}
+    c.js("""(res) => { const S = window.__mp.S; S.ctx = { ...S.ctx, launcher: { job: async (route, body) => (route === 'regen/job' && body.verb === 'circuits' ? { ok: true, state: 'done', result: res } : { ok: false }) } };
+      S.ctx.aerodb.vfrRoutes = async icao => icao === 'LFRS' || icao === 'LFML' ? { routes: [], points: [], analysis: {} } : null; S.vfr = new Map(); S.circuitsState = null; S.circuits = null; return true }""", res)
+    c.js(_DCT_HOOK)
+    c.js("() => { window.__mpMap.jumpTo({ center: [-1.6078, 47.1569], zoom: 11 }); return true }")
+    c.until("() => window.__mp.S.circuitsState === 'done'", timeout=10000, what='the circuits are read through the launcher')
+    c.wait(1200)
+    g = c.js("""() => ({ st: window.__st.filter(s => s.p.length === 5), tx: window.__tx, got: [...(window.__mp.S.circuits || new Map()).keys()] })""")
+    c.eq(g['got'], ['LFRS'], 'the circuits kept: the aerodrome whose chart is current; one whose chart changed (obsolete) gives none', what=str(g['got']))
+    solid = [x for x in g['st'] if x['dash'] == 0 and x['w'] > 2 and x['w'] < 3]
+    dotted = [x for x in g['st'] if x['dash'] > 0 and x['w'] > 2 and x['w'] < 3]
+    c.ok(solid and dotted, str([(x['c'], x['w'], x['dash']) for x in g['st']][:6]), 'a closed circuit is drawn solid (fixed wing) and one dotted (rotary)')
+    c.ok('1000 AAL' in g['tx'], str(g['tx'][-6:]), 'the altitude of the circuit is written on its line')
+    c.shot('D233_standard_circuits.png')
+    # the contents of the aerodromes
+    card = "async (icao) => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao, name: '', lat: 47, lon: -1 }); await new Promise(r => setTimeout(r, 700)); return [...document.querySelectorAll('.mp-vfr-circ')].map(e => [e.dataset.circuit, e.textContent]) }"
+    r1 = c.js(card, 'LFRS')
+    c.ok(len(r1) == 2 and r1[0][0] == 'extracted' and any(w in r1[0][1] for w in ('droite', 'right', 'Rechts', 'derecha')) and '1000 AAL' in r1[0][1], str(r1), 'an extracted circuit: its hand and its altitude are said')
+    r2 = c.js(card, 'LFML')
+    c.ok(len(r2) == 1 and r2[0][0] == 'default', str(r2), 'the chart read, no circuit: « left-hand (nothing published on the chart) »')
+    r3 = c.js(card, 'LFPO')
+    c.eq(r3, [], 'the chart not read: nothing is said', what=str(r3))
+

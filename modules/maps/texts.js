@@ -860,6 +860,17 @@ export const TX = {
   vfrPoints: ['Points de report ({n})', 'Reporting points ({n})', 'Meldepunkte ({n})', 'Puntos de notificación ({n})'],
   vfrBaseCount: ['{n} points de report', '{n} reporting points', '{n} Meldepunkte', '{n} puntos de notificación'],
   vfrSeqCount: ['{r} séquences VAC', '{r} VAC sequences', '{r} VAC-Sequenzen', '{r} secuencias VAC'],
+  circuitDefault: ['Tour de piste : main gauche (rien de publié sur la carte)',
+    'Traffic circuit: left-hand (nothing published on the chart)', 'Platzrunde: Linksrunde (nichts auf der Karte veröffentlicht)',
+    'Circuito de tránsito: mano izquierda (nada publicado en la carta)'
+  ],
+  circuitHand: ['Tour de piste : main {h} (tracé extrait)', 'Traffic circuit: {h}-hand (extracted track)',
+    'Platzrunde: {h} (extrahierter Verlauf)', 'Circuito de tránsito: mano {h} (trazado extraído)'
+  ],
+  circuitLeft: ['gauche', 'left', 'Linksrunde', 'izquierda'],
+  circuitRight: ['droite', 'right', 'Rechtsrunde', 'derecha'],
+  circuitAlt: ['altitude {a}', 'altitude {a}', 'Höhe {a}', 'altitud {a}'],
+  circuitRotary: ['voilure tournante', 'rotary wing', 'Drehflügler', 'ala rotatoria'],
   vfrNoVac: ['séquences VAC : non importées', 'VAC sequences: not imported', 'VAC-Sequenzen: nicht importiert',
     'secuencias VAC: no importadas'
   ],

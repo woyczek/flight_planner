@@ -127,6 +127,11 @@ export const meta = {
     prefix: 'missions/',
     policy: 'reference'
   }, 'cache/maps/', 'cache/fuel/display.json', 'airline/'],
+  // les tours de piste VFR de l'extracteur de l'utilisateur (SOG-0253) : le verbe `vfr/circuits` du lanceur, LECTURE SEULE (circuits.js ; sans lanceur, rien n'est dessiné)
+  launcher: {
+    routes: ['regen/job'],
+    read: []
+  },
   // SPEC § 2.2 : réglages de l'appareil, vol courant modifié sur la carte, seuils de la compagnie (page de réglage)
   writes: [{
     prefix: 'cache/maps/',
@@ -145,7 +150,7 @@ export const meta = {
     'layers.js?v=0',
     'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'ground.js?v=0', 'coverage.js?v=0', 'tips.js?v=0',
     'lv.js?v=0',
-    'vfr.js?v=0', 'light.js?v=0',
+    'vfr.js?v=0', 'circuits.js?v=0', 'light.js?v=0',
     'flight_time.js?v=0',
     'mission_view.js?v=0',
     'weather.js?v=0',
@@ -153,7 +158,8 @@ export const meta = {
     'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', 'lib/map_base.js?v=0', 'lib/axis_window.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0',
-    '../../frame/lib/route_legend.js?v=0', '../../frame/lib/route_alts.js?v=0', '../../frame/lib/fms.js?v=0', '../../frame/lib/flight_time.js?v=0', '../../frame/lib/flight_path.js?v=0',
+    '../../frame/lib/route_legend.js?v=0', '../../frame/lib/route_alts.js?v=0', '../../frame/lib/fms.js?v=0',
+    '../../frame/lib/flight_time.js?v=0', '../../frame/lib/flight_path.js?v=0',
     '../../frame/lib/procedures.js?v=0',
     '../../frame/lib/trail.js?v=0',
     '../../frame/lib/adnames.js?v=0',
