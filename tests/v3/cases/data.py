@@ -6959,7 +6959,7 @@ def l91(c):
       (function walk(o, p) { if (Array.isArray(o) && o.length === 4 && typeof o[0] === 'string') { if (o.some(s => re.test(s))) out.push(p); return } if (o && typeof o === 'object') for (const k of Object.keys(o)) walk(o[k], p ? p + '.' + k : k) })(TX, '');
       return out }""")
     allowed = ('up.tick', 'certifyHint', 'tickOnStation', 'tickRefused', 'bal.personal', 'toCertify', 'zr.', 'upd.planTick', 'packs.', 'personalKept', 'greyReason.no-set', 'greyReason.no-state', 'zoneMap.', 'mapLegendNote',
-               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick', 'lc.addPersonal', 'sn.personal')
+               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick', 'lc.addPersonal', 'sn.personal', 'now.tick')
     c.eq([h for h in hits if not h.startswith(allowed)], [], 'only the texts about the « Je certifie… » box, the coverage fold, the States of the Procédures and the proc map still say ticked / selection', what='selection texts')
     t = c.js("""async () => { const { TX } = await import('/modules/data/texts.js'); return [TX.upd.none, TX.upd.ask, TX.advice.partial, TX.advice.interrupted, TX.greyReason['no-zone']] }""")
     c.ok(all(not re.search(r'coch|ticked|angekreuzt|marcad', ' '.join(row), re.I) for row in t), t, '« Rien à reconstruire : ces n sont à jour », the question, the advice and « no zone » no longer say ticked')
@@ -9376,4 +9376,40 @@ def l131(c):
     reads = sorted(r[0] for r in st.get('setstate_reads', []))
     c.eq(reads[:3], ['aircraft', 'proc', 'vfr'], 'one read-only job per set, nothing else asked of the launcher', what='reads')
     c.ok(all(isinstance(r[1], dict) for r in st['setstate_reads']) and any(r[0] == 'proc' and r[1].get('states') for r in st['setstate_reads']), st['setstate_reads'], 'the procedures read asks for the States of the list')
+    c.check_errors()
+
+
+def _l132_wrap(answer):
+    """The launcher of the user on 13 Nov: NAV Portugal is a source `kind: download` for it (the launcher reads the site), so base/cycle says regime « auto » and the edition of 1 Oct « done »; the ISO of the next edition waits in Downloads (the state says pickup-waiting)."""
+    def go(args):
+        res = answer(args)
+        for it in list(res.get('items') or []) + list((res.get('zoneView') or {}).get('sources') or []):
+            if it.get('id') == 'navpt':
+                it['regime'] = 'auto'
+                it.pop('hand', None)
+                it.pop('why', None)
+                it['steps'] = {**it.get('steps', {}), 'download': {'state': 'done', 'cycle': '2026-10-01', 'at': '2026-11-11T08:00:00Z'}}
+        return res
+    return go
+
+
+@case('L132', 'Données: the sheet of a country says ONE thing to do now, and nothing under it contradicts it (SOG-0318, the user: « portugal : toujours pas clair… contradictoires ») — Portugal as the launcher says it (NAV Portugal « auto » and its edition downloaded, the ISO of the next one waiting in Downloads): the head line says to take the file, the source is a hand-taken one with its gesture, and « Ce pays attend un fichier : prenez-le d’abord » is not there',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0318: the launcher lists NAV Portugal as `regime: auto` (a source it reads on the site) while the catalogue says the ISO is « taken by hand » and the status says `pickup-waiting` (a file is in Downloads): the sheet said « Prise seule par le lanceur : rien à déposer » on the source, hid the gesture to take the file, and greyed « Mettre à jour ce pays » with « Ce pays attend un fichier : prenez-le d’abord »')
+def l132(c):
+    lang = c.lang
+    N = lambda k: _trow(k, lang, after='  now: {')
+    _l102_open(c, wrap=_l132_wrap)
+    c.tap('[data-group-id=europe-south] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-zone=pt]')
+    c.until("!!document.querySelector('[data-sheet=pt] [data-sheet-source]')", timeout=10000, what='the sheet of Portugal')
+    c.wait(800)
+    head = c.js("(e => e ? [e.dataset.now, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=pt] [data-sheet-now]'))")
+    c.eq([head[0], norm(head[1])] if head else None, ['pick', norm(N('pick'))], 'the head line says what to do now: take the file that is in Downloads', what='head line')
+    reg = c.js("document.querySelector('[data-sheet=pt] [data-sheet-source=navpt]')?.dataset.regime")
+    c.eq(reg, 'hand', 'NAV Portugal is a hand-taken source on the sheet (its ISO is taken by hand), whatever the launcher calls its site reading', what='regime')
+    c.eq(c.js("[...document.querySelectorAll('[data-sheet=pt] [data-sheet-source=navpt] [data-verb=pickup]')].map(b => b.disabled)"), [False], 'the gesture to take the file is there and live', what='pickup button')
+    upd = c.text('[data-sheet=pt] [data-sheet-update]')
+    c.ok(norm(_trow('waitsFile', lang, after='    waitsFile:').split('{')[0]) not in norm(upd) and norm(_trow('waitsFile', lang, after='    waitsFile:')) not in norm(upd), upd, 'and « Ce pays attend un fichier : prenez-le d’abord » is not said under it')
+    c.shot(f'L132_{c.width}_{lang}_delivered.png')
     c.check_errors()

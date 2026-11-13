@@ -532,8 +532,9 @@ function inventoryHtml(id, item, cy, zone = '') {
 }
 /** Le régime d'une source : celui de la liste du cycle, à défaut celui que le catalogue dit (un fichier pris à la main, lu sur ce poste, pris par le lanceur) ; '' sans. */
 export function regimeOf(id, item) {
-  if (item?.regime) return item.regime;
   const s = catSource(id);
+  // une source que le lanceur lit sur le site (`auto`) mais dont le catalogue dit que le fichier se PREND À LA MAIN (`fetch.pick` : le disque ISO du Portugal) est une source à la main pour l'écran : « Prise seule par le lanceur : rien à déposer » serait faux quand un fichier attend dans Téléchargements (SOG-0318)
+  if (item?.regime && !(item.regime === 'auto' && (s?.fetch?.how === 'pick' || s?.fetch?.pick))) return item.regime;
   return !s ? '' : (s.fetch?.how === 'pick' || s.fetch?.pick) ? 'hand' : s.localOnly ? 'local' : s.fetch ? 'auto' : '';
 }
 /** La source n'est-elle plus offerte par son éditeur ? { since, note } d'après la liste du cycle (`unavailable`, ou l'état `unavailable` du téléchargement) et le catalogue (`stepsOf(id).unavailable`) ; null sinon. Rien n'est inventé : la note est celle du catalogue. */
@@ -610,6 +611,31 @@ function sourceHtml(id, zone, z, inCov, msg) {
 }
 /** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
  *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
+/** Ce qu'il faut faire MAINTENANT pour un pays, d'après l'état du lanceur : { k: 'fresh' | 'pick' | 'file' | 'tick' | 'update' } (une seule chose) ; null quand rien n'est dit (pas de lanceur, état non lu, geste grisé pour une autre raison). La phrase de tête de la fiche et le bouton « Mettre à jour ce pays » le lisent
+ *  tous deux : ils ne peuvent pas se contredire (SOG-0318). `seenAny` : un fichier est vu dans Téléchargements pour une source à la main du pays. */
+function nowOf(id, seenAny) {
+  const gate = updateGate([id]),
+    plan = S.status && statusKnown() ? M.downloadPlan(S.status, [id]) : null;
+  if (gate.disabled || !plan) return null;
+  if (plan.upToDate.includes(id)) return {
+    k: 'fresh'
+  };
+  if (plan.waiting.includes(id)) return {
+    k: seenAny ? 'pick' : 'file'
+  };
+  if (plan.personal.includes(id)) return {
+    k: 'tick'
+  };
+  return {
+    k: 'update'
+  };
+}
+/** La phrase de tête de la fiche d'un pays : UNE chose à faire maintenant (prendre le fichier vu, déposer le fichier attendu, cocher, mettre à jour, rien) ; '' sans lanceur ou sans état lu. */
+function nowHtml(id, seenAny) {
+  const n = nowOf(id, seenAny);
+  return n ? `<p class="d-now" data-sheet-now data-now="${n.k}"><b>${esc(tt(TX.now[n.k]))}</b></p>` : '';
+}
+
 function updateBlockHtml(id, primary, seenAny = false) {
   const T = TX.cwb,
     gate = updateGate([id]),
@@ -713,6 +739,7 @@ function sheetHtml() {
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">
     <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(tn)}" data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, tn) || ''}</b> ${esc(word(tn))}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
     ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div><ul class="d-ticks d-facts d-cells" data-sheet-facts>${facts.map(f => f.li).join('')}</ul></div>${facts.some(f => f.note) ? `<div class="d-cellnotes" data-cell-notes>${facts.map(f => f.note).join('')}</div>` : ''}` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
+    ${inCov ? nowHtml(id, seenAny) : ''}
     ${S.cw.proc?.state === 'ready' ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
     ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
     ${inCov ? '' : addHtml(id, cy)}
@@ -1133,6 +1160,8 @@ export const CW_STYLE = `
 [data-module="data"] .d-wz[data-tone=err]{stroke:var(--sog-err);fill:var(--sog-err)}
 [data-module="data"] .d-wz[data-tone=muted]{fill-opacity:.1}
 [data-module="data"] .d-wz[data-tone=unread]{fill-opacity:.12;stroke-dasharray:3 2}
+[data-module="data"] .d-now{margin:10px 0 4px;padding:8px 10px;border-left:4px solid var(--sog-accent);background:var(--d-acc-bg)}
+[data-module="data"] .d-now[data-now=fresh]{border-left-color:var(--sog-ok)}
 [data-module="data"] .d-wz[data-approx]{stroke-dasharray:4 3}
 [data-module="data"] .d-wz[data-grp],[data-module="data"] .d-wz[data-hl],[data-module="data"] .d-wz[data-sel]{stroke:var(--sog-accent);stroke-width:2.6px;stroke-dasharray:none}
 [data-module="data"] .d-wz[data-sel]{fill-opacity:.7}

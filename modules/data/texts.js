@@ -2819,5 +2819,29 @@ export const TX = {
     'fleet-types-missing': ['{n} types de la flotte absents de la base', '{n} fleet types missing from the database',
       '{n} Flottentypen fehlen in der Datenbank', '{n} tipos de la flota ausentes de la base'
     ]
+  },
+  // SOG-0318 : la phrase de tête de la fiche d'un pays : ce qu'il faut faire MAINTENANT (une seule), que rien dessous ne contredit
+  now: {
+    pick: ['Un fichier est dans Téléchargements : prenez-le, ce pays se reconstruit ensuite.',
+      'A file is in Downloads: take it, then this country rebuilds.',
+      'Eine Datei liegt in Downloads: übernehmen Sie sie, danach wird dieses Land neu aufgebaut.',
+      'Hay un archivo en Descargas: tómelo y luego este país se reconstruye.'
+    ],
+    file: ['Ce pays attend un fichier : déposez-le d’abord (où le prendre, juste dessous).',
+      'This country waits for a file: deposit it first (where to get it, just below).',
+      'Dieses Land wartet auf eine Datei: zuerst hinterlegen (wo man sie bekommt, direkt darunter).',
+      'Este país espera un archivo: deposítelo primero (dónde conseguirlo, justo debajo).'
+    ],
+    tick: ['Cochez la case d’usage personnel (en bas de la liste) pour que ce pays puisse se reconstruire.', 'Tick the personal-use box (at the bottom of the list) so that this country can rebuild.',
+      'Kreuzen Sie das Kästchen für den persönlichen Gebrauch an (unten in der Liste), damit dieses Land neu aufgebaut werden kann.',
+      'Marque la casilla de uso personal (al final de la lista) para que este país pueda reconstruirse.'
+    ],
+    update: ['Rien à déposer : « Mettre à jour ce pays » fait le reste.', 'Nothing to deposit: “Update this country” does the rest.',
+      'Nichts zu hinterlegen: „Dieses Land aktualisieren“ erledigt den Rest.',
+      'Nada que depositar: «Actualizar este país» hace el resto.'
+    ],
+    fresh: ['Rien à faire : ce pays est à jour.', 'Nothing to do: this country is up to date.', 'Nichts zu tun: dieses Land ist aktuell.',
+      'Nada que hacer: este país está al día.'
+    ]
   }
 };

@@ -704,3 +704,15 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   without the verb is not asked and keeps the old deduction. `proc/status` is asked for the States ticked, else for all those of the list (60 at
   most). Case L131 (red before: the lines said the datasets' words). Not done: the weather and the sources lines (no verb for them), and the part
   of the SOG-0119 title that is not the launcher's (suite update, workstation backup, folders, fleet in Maintenance: the user's question).
+- **13 Nov 2026 — SOG-0318: the sheet of a country says ONE thing to do now and nothing under it contradicts it** (the user, the real shape of
+  « c'est toujours le cas »: Portugal said « À reconstruire », its source « ✓ fait » and « Prise seule par le lanceur : rien à déposer », then « Ce
+  pays attend un fichier : prenez-le d'abord »). Cause: the launcher lists NAV Portugal as `kind: download` (it reads the site), so `base/cycle`
+  says `regime: auto` and the edition of 1 Oct « done »; the catalogue says the ISO of the next edition is taken by hand (`fetch.pick`), and the
+  state says `pickup-waiting` (a file is in Downloads). The page believed the launcher's regime: no hand-taken source, so no inventory, no
+  « Prendre le fichier téléchargé » (`seenAny` only counted hand sources), the update button grey with « prenez-le d'abord », and a badge that
+  said nothing was to be deposited. Fixes: (1) `regimeOf`: a source the launcher calls `auto` that the catalogue marks `fetch.pick` is a
+  hand-taken source on the screen; (2) one decision, `nowOf` (`countries.js`), read by BOTH the new head line of the sheet (`data-sheet-now`,
+  texts `TX.now`: take the file seen · deposit the expected file · tick « Je certifie… » · update · nothing to do) and the update button, so they
+  cannot disagree. Case L132 (red before: no head line, `regime=auto`, the gesture absent). Not done: the « ✓ fait » of a source whose OLDER
+  edition is downloaded while the next one waits says « done » for the edition in force (it is true); AeroDB may want to call the source `hand`
+  too (`tools/regen/base_sources.py`, navpt `_src('download'…)`): asked in the state report.
