@@ -189,3 +189,8 @@
   removed. Changing the departure or arrival in the Cadre after the Lieux resyncs their row (the position stays only with the same ICAO
   code). « Sur la carte » opens the Carte on the mission (read only: placing a point on the map comes later, with the map studio's rules).
   60 places of a kind at most. N52 (red before: the Lieux step disabled).
+- **13 Nov 2026 — the mission editor, step 4: the Récit** (SOG-0287, written by Features SOG): the mock-up's five elements — summary
+  (a count of signs; 600 advised because the sheet shows it whole up to there, SOG-0291 — beyond, the count turns amber, the text is never
+  cut at writing), description (paragraphs separated by a blank line, the reader's form), main objective, secondary objectives (one per
+  line, 20 at most), load (description, mass, passengers on one row). `storyOf` / `withStory`: the other keys of `objectives` and
+  `payload` are kept (constraints…), an emptied block is removed; line ends normalised. N53 (red before: the Récit step disabled).

@@ -2192,3 +2192,46 @@ def n52(c):
     c.ok('lat: 44.1' in t and 'radius_km: 12' in t and 'time_on_task_min: 30' in t and 'Danger cinq' in t, t[t.find('zones'):][:500],
          'the polygon keeps its points, the circle its radius and time; the rest of the file is kept')
     c.js(_REG_CLEAR)
+
+
+
+_STORY_JS = f"""Object.fromEntries([...document.querySelectorAll('{E} [data-k=edstory]')].map(x => [x.dataset.f, x.value]))"""
+
+
+@case('N53', 'Missions › editor, step 4 (Récit): the summary (with its count of signs, 600 advised), the description in paragraphs, the main '
+      'objective, the secondary ones one per line, the load (description, mass, passengers); « Enregistrer » writes them and keeps the '
+      'other keys of objectives and payload, and the rest of the file', 'N', tags=('missions',), designs=('standard',), screens=False,
+      langs4=False, rule='SOG-0287 step 4, the mock-up: « Récit (5) : Résumé (600 signes), Description, Objectif principal, Objectifs '
+      'secondaires, Charge »')
+def n53(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', _ED_FULL.replace(
+        'payload: { description: Un treuil inventé., mass_kg: 120, passengers: 2 }',
+        'payload: { description: Un treuil inventé., mass_kg: 120, passengers: 2, constraints: [Une contrainte inventée.] }')]])
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-steps] [data-step="story"]')
+    c.until(f"!!document.querySelector('{E} [data-k=edstory]')", what='the Récit')
+    st = c.js(_STORY_JS)
+    c.eq([st['description'], st['primary'], st['secondary'], st['payload'], st['mass'], st['pax']],
+         ['Premier paragraphe inventé.\n\nSecond paragraphe inventé.', 'Trouver la cible inventée.', 'Rester en contact.\nRentrer avant la nuit.',
+          'Un treuil inventé.', '120', '2'], 'the story of the file in its fields', what='fields')
+    c.ok(st['summary'].startswith('Une recherche inventée'), st['summary'][:60], 'the summary')
+    c.page.fill(f'{E} [data-k=edstory][data-f=summary]', 'Un résumé retouché, court.')
+    c.ok(c.text(f'{E} [data-stcount]').startswith('26'), c.text(f'{E} [data-stcount]'), 'the count of signs follows the typing')
+    c.page.fill(f'{E} [data-k=edstory][data-f=secondary]', 'Rester en contact.\nRentrer avant la nuit.\nPrévenir la base.')
+    c.page.fill(f'{E} [data-k=edstory][data-f=pax]', '3')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N53_390_story.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N53_1280_story.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('summary: Un résumé retouché, court.' in t and 'Prévenir la base.' in t and 'passengers: 3' in t and 'mass_kg: 120' in t, t[:600],
+         'the summary, a third objective, three passengers written; the mass kept')
+    c.ok('Une contrainte inventée.' in t and 'Second paragraphe inventé.' in t and 'Danger cinq' in t, t[:300],
+         'the other keys of the load, the paragraphs and the rest of the file kept')
+    c.js(_REG_CLEAR)

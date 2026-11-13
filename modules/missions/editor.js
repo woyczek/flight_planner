@@ -12,6 +12,10 @@
 //     participants }] : les nombres en texte, pour les champs ; withPlaces(doc, rows) → un NOUVEAU document : la cible, les zones, les
 //     points tournants et les rendez-vous réécrits depuis les lignes (chaque lieu gardé garde ses autres clés, un polygone ses points),
 //     la position seule du départ et de l'arrivée ; une coordonnée vide ou hors bornes s'écrit null (« à placer », la forme de la V2).
+//   storyOf(doc) → { summary, description, primary, secondary (une ligne par objectif), payload, mass, pax } ; withStory(doc, story) →
+//     un NOUVEAU document : summary, detailed_description, objectives.{ primary, secondary }, payload.{ description, mass_kg,
+//     passengers } (les autres clés de objectives et de payload gardées) ; SUMMARY_MAX : la longueur conseillée du résumé (600, la
+//     coupe de la synthèse, SOG-0291) — un résumé plus long n'est jamais coupé à l'écriture.
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr } (textes) ; placeText(p) : « XTST · Base Test ».
 //   withCadre(doc, cadre) → un NOUVEAU document : mission.{ id, type, subtype, series, number, theatre }, title, origin, destination ;
@@ -29,7 +33,10 @@
 import * as MS from '../../frame/lib/mission.js';
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
-export const OPEN = ['cadre', 'teams', 'places'];
+export const OPEN = ['cadre', 'teams', 'places', 'story'];
+/** Le résumé conseillé (la synthèse le montre entier jusque-là, SOG-0291) ; une description, au plus. */
+export const SUMMARY_MAX = 600,
+  TEXT_MAX = 20000;
 /** Les lieux d'une sorte, au plus (la borne du lecteur pour les points). */
 export const PLACES_MAX = 60;
 /** Les équipes d'une mission, au plus (la borne du lecteur, frame/lib/mission.js). */
@@ -328,6 +335,58 @@ export function withPlaces(doc, rows) {
     ])
     if (v.length) out[k] = v;
     else delete out[k];
+  return out;
+}
+
+/** Un texte de plusieurs lignes, borné, ses fins de ligne ramenées à « \n ». */
+const para = (v, n) => String(v ?? '').replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').trim().slice(0, n);
+
+/** Le récit d'une mission (voir l'en-tête). */
+export function storyOf(doc) {
+  const d = obj(doc),
+    o = d.objectives,
+    pl = obj(d.payload);
+  return {
+    summary: para(d.summary, SUMMARY_MAX * 4),
+    description: para(d.detailed_description, TEXT_MAX),
+    primary: Array.isArray(o) ? '' : para(obj(o).primary, 2000),
+    secondary: (Array.isArray(o) ? o : Array.isArray(obj(o).secondary) ? obj(o).secondary : []).slice(0, 20).map(x => cut(x, 300)).filter(
+      Boolean).join('\n'),
+    payload: para(pl.description, 2000),
+    mass: numText(pl.mass_kg),
+    pax: numText(pl.passengers)
+  };
+}
+
+/** Le document avec son récit retouché (voir l'en-tête). */
+export function withStory(doc, st) {
+  const out = structuredClone(obj(doc)),
+    t = st || {},
+    o = out.objectives,
+    objectives = Array.isArray(o) ? {} : {
+      ...obj(o)
+    },
+    payload = {
+      ...obj(out.payload)
+    },
+    mass = positive(t.mass, 999999),
+    pax = positive(t.pax, 9999);
+  out.summary = para(t.summary, SUMMARY_MAX * 4);
+  out.detailed_description = para(t.description, TEXT_MAX);
+  objectives.primary = para(t.primary, 2000);
+  objectives.secondary = String(t.secondary ?? '').split('\n').map(x => cut(x, 300)).filter(Boolean).slice(0, 20);
+  if (!objectives.primary) delete objectives.primary;
+  if (!objectives.secondary.length) delete objectives.secondary;
+  if (Object.keys(objectives).length) out.objectives = objectives;
+  else delete out.objectives;
+  payload.description = para(t.payload, 2000);
+  if (!payload.description) delete payload.description;
+  if (mass !== null) payload.mass_kg = mass;
+  else delete payload.mass_kg;
+  if (pax !== null && Number.isInteger(pax)) payload.passengers = pax;
+  else delete payload.passengers;
+  if (Object.keys(payload).length) out.payload = payload;
+  else delete out.payload;
   return out;
 }
 

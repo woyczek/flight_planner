@@ -105,6 +105,9 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-plbody>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-module="missions"] .ms-plform{grid-column:1 / -1;padding:4px 0 8px}
 [data-module="missions"] .ms-pladd{flex-wrap:wrap;align-items:center;margin-top:8px}
+[data-module="missions"] .ms-edform textarea{width:100%;box-sizing:border-box;resize:vertical;font:inherit}
+[data-module="missions"] .ms-stload>.f-field:first-child{flex:3 1 14em}
+[data-module="missions"] [data-stcount][data-over="1"]{color:var(--sog-warn,#b06f00)} /* au-delà de 600 : la synthèse coupera (jamais l'écriture) */
 [data-module="missions"] .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2;min-width:44px;min-height:44px}
 @container (min-width: 900px){
   [data-module="missions"] .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,.7fr) minmax(0,1.2fr) minmax(0,1.2fr) auto}
@@ -562,6 +565,25 @@ const TX = {
   plDone: ['OK', 'OK', 'OK', 'OK'],
   plRemove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
   todo_unplaced: ['lieux à placer', 'places to place', 'Orte zu platzieren', 'lugares por situar'],
+  edStoryHint: [
+    'Ce que lit le pilote : le résumé (la synthèse le montre entier jusqu\'à 600 signes), la description, les objectifs, la charge.',
+    'What the pilot reads: the summary (the sheet shows it whole up to 600 signs), the description, the objectives, the load.',
+    'Was der Pilot liest: die Kurzbeschreibung (das Blatt zeigt sie bis 600 Zeichen ganz), die Beschreibung, die Ziele, die Zuladung.',
+    'Lo que lee el piloto: el resumen (la ficha lo muestra entero hasta 600 signos), la descripción, los objetivos, la carga.'
+  ],
+  stSummary: ['Résumé', 'Summary', 'Kurzbeschreibung', 'Resumen'],
+  stCount: ['{n} / {m} signes', '{n} / {m} signs', '{n} / {m} Zeichen', '{n} / {m} signos'],
+  stDescription: ['Description (un paragraphe par ligne vide)', 'Description (one paragraph per blank line)',
+    'Beschreibung (ein Absatz pro Leerzeile)',
+    'Descripción (un párrafo por línea en blanco)'
+  ],
+  stPrimary: ['Objectif principal', 'Main objective', 'Hauptziel', 'Objetivo principal'],
+  stSecondary: ['Objectifs secondaires (un par ligne)', 'Secondary objectives (one per line)', 'Nebenziele (eins pro Zeile)',
+    'Objetivos secundarios (uno por línea)'
+  ],
+  stPayload: ['Charge', 'Load', 'Zuladung', 'Carga'],
+  stMass: ['Masse (kg)', 'Mass (kg)', 'Masse (kg)', 'Masa (kg)'],
+  stPax: ['Passagers', 'Passengers', 'Passagiere', 'Pasajeros'],
   todo_title: ['titre', 'title', 'Titel', 'título'],
   todo_theatre: ['théâtre', 'theatre', 'Einsatzgebiet', 'teatro'],
   todo_dep: ['départ', 'departure', 'Abflug', 'salida'],
@@ -1898,6 +1920,7 @@ function edDoc(e, cadre = e.cadre) {
   let d = ED.withCadre(e.base, cadre);
   if (e.teams) d = ED.withTeams(d, e.teams);
   if (e.places) d = ED.withPlaces(d, e.places);
+  if (e.story) d = ED.withStory(d, e.story);
   return d;
 }
 
@@ -1968,6 +1991,19 @@ function edPlacesHtml(s) {
     <div class="f-row ms-pladd">${rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>`;
 }
 
+/** L'étape Récit (cinq éléments : résumé, description, objectif principal, objectifs secondaires, charge). */
+function edStoryHtml(s) {
+  const t = s.ed.story || {},
+    area = (f, label, v, rows, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><textarea data-k="edstory" data-f="${f}" rows="${rows}"${extra}>${esc(v)}</textarea>${f === 'summary' ? `<small class="f-muted" data-stcount>${esc(s.tt(TX.stCount, { n: String(v).length, m: ED.SUMMARY_MAX }))}</small>` : ''}</label>`,
+    inp = (f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edstory" data-f="${f}" value="${esc(v)}" autocomplete="off"${extra}></label>`;
+  return `<h3>4. ${esc(s.tt(TX.stepStory))}</h3><p class="f-muted">${esc(s.tt(TX.edStoryHint))}</p>
+    ${area('summary', TX.stSummary, t.summary, 4)}
+    ${area('description', TX.stDescription, t.description, 8, ` maxlength="${ED.TEXT_MAX}"`)}
+    ${area('primary', TX.stPrimary, t.primary, 2, ' maxlength="2000"')}
+    ${area('secondary', TX.stSecondary, t.secondary, 3)}
+    <div class="f-row ms-stload">${inp('payload', TX.stPayload, t.payload, ' maxlength="2000"')}${inp('mass', TX.stMass, t.mass, ' inputmode="decimal" maxlength="7"')}${inp('pax', TX.stPax, t.pax, ' inputmode="numeric" maxlength="4"')}</div>`;
+}
+
 /** L'écran de l'éditeur (la maquette : modules/missions/maquette/editeur_cadre_*.png). */
 function edHtml(s) {
   const e = s.ed,
@@ -1977,7 +2013,7 @@ function edHtml(s) {
   return `<div class="ms-ed" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(crumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : e.step === 'places' ? edPlacesHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
+    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : e.step === 'places' ? edPlacesHtml(s) : e.step === 'story' ? edStoryHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
     <div class="ms-edbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" data-do="ednext"${nextStep ? ` data-step="${nextStep}"` : ` disabled title="${esc(s.tt(TX.edLater))}"`}>${esc(s.tt(TX.edNext))}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
 }
 
@@ -1986,6 +2022,19 @@ function edHtml(s) {
 function edInput(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
+  if (k === 'edstory') { // le récit : le champ retouché en place ; le compte du résumé suit la frappe
+    const f = ev.target.dataset.f;
+    if (e.story && ['summary', 'description', 'primary', 'secondary', 'payload', 'mass', 'pax'].includes(f)) e.story[f] = ev.target.value;
+    const n = s.el.querySelector('[data-stcount]');
+    if (n && f === 'summary') {
+      n.textContent = s.tt(TX.stCount, {
+        n: ev.target.value.length,
+        m: ED.SUMMARY_MAX
+      });
+      n.dataset.over = ev.target.value.length > ED.SUMMARY_MAX ? '1' : '';
+    }
+    return edRefresh(s);
+  }
   if (k === 'edplace') { // un lieu : le champ retouché en place, la ligne redessinée à « OK »
     const row = e.places?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
@@ -2106,6 +2155,7 @@ async function edSave(s) {
       teams: null,
       places: null,
       placeEdit: -1,
+      story: null,
       path,
       origId: c.id,
       regIdx: line ? line.idx : e.regIdx,
@@ -2147,6 +2197,7 @@ function edClick(s, b) {
       if (s.ed.step === 'teams' && !s.ed.teams) s.ed.teams = ED.teamsOf(s.ed.base);
       // les lieux lus du document au cadre déjà retouché (le départ et l'arrivée portent le nom saisi au Cadre)
       if (s.ed.step === 'places' && !s.ed.places) s.ed.places = ED.placesOf(edDoc(s.ed));
+      if (s.ed.step === 'story' && !s.ed.story) s.ed.story = ED.storyOf(s.ed.base);
       return draw(s);
     case 'edplace':
       s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
