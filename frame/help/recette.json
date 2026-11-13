@@ -2626,9 +2626,15 @@
     "de": "« A → B berechnen »: 27,8 s im Launcher (LFPO → EIDW)",
     "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)"
    },
-   "test": "Relance le lanceur, recharge. Carburant, « Calculer A → B » sur LFPO → EIDW, deux fois de suite, puis « Copier le diagnostic » : la part « launcher » doit être de quelques secondes la première fois, bien moins la seconde.",
+   "test": "Relance le lanceur, recharge la page. Carburant, LFOE → KDEN, « Calculer A → B » : la première fois environ 26 secondes ; refais le MÊME calcul (même aéronef, même niveau) : la réponse est immédiate, la ligne « Calculé en … » le montre. Change d'écran, reviens, recalcule : toujours immédiat. La phrase « du cache, calculé à … » n'est pas encore affichée ; la première recherche reste longue : dis si c'est acceptable.",
    "since": "2026-11-13",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T16:51:29Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "oui, il faut garder un cache, qui périme uniquement au changement d’airac, ou s’il passe par les nats. second calcul lfoe kden aussi long, sauf si on shifte de page. étonnant, non ? détail amusant : l’affichage reste identique si on change d’écran 1-> 5, mais est différent si on fait un aller-retour carte (screenshot).",
+    "at": "2026-11-13T16:07:09Z"
+   }
   },
   {
    "id": "SOG-0297",

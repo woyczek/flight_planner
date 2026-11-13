@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3709179",
+  "organisation": "ed6c7e8",
   "fiches": 334,
   "untranslated": 0,
   "priorities": 310
@@ -837,12 +837,13 @@
     {
      "id": "SOG-0296",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "« Calculer A → B » : 27,8 s passées dans le lanceur (LFPO → EIDW)",
      "en": "« Compute A → B »: 27.8 s spent in the launcher (LFPO → EIDW)",
      "de": "« A → B berechnen »: 27,8 s im Launcher (LFPO → EIDW)",
      "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)",
-     "rank": 34
+     "rank": 34,
+     "test": true
     },
     {
      "id": "SOG-0322",
