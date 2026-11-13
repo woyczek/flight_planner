@@ -41,7 +41,6 @@ import {
 import {
   components as windComponents,
   runwayAxis,
-  label as windLabel,
   severity as windSeverity,
   LIMITS as WIND_LIMITS
 } from '../../frame/lib/wind.js';
@@ -92,24 +91,50 @@ let live = null;
  *  quand la grille déborderait (fu-one, posé par fitGrid : « jamais coupé » prime). Une liste est au moins aussi large que son libellé
  *  le plus long (colonnes minmax(max-content, 1fr)) : aucun libellé n'est coupé. */
 export const PROC_STYLE = `
-[data-module="fuel"] .fu-procbox{display:grid;grid-template-columns:minmax(0,1fr);column-gap:8px;row-gap:4px}
-[data-module="fuel"] .fu-proc{display:grid;grid-column:1/-1;grid-template-columns:subgrid;row-gap:2px;align-items:end;margin-top:10px}
-[data-module="fuel"] .fu-proc>.fu-proctitle,[data-module="fuel"] .fu-proc>.fu-procmeta{grid-column:1/-1}
-/* replié : ni vu ni atteignable au clavier, sans hauteur, mais gardé dans la grille (les colonnes restent celles des deux côtés) */
-[data-module="fuel"] .fu-proc.fu-folded>.fu-procmeta,[data-module="fuel"] .fu-proc.fu-folded>.fu-pf{visibility:hidden;height:0;min-height:0;overflow:hidden;margin:0;padding:0}
-[data-module="fuel"] .fu-proctitle{cursor:pointer}
-/* le nom du terrain reste dans la ligne de résumé, coupé d'une ellipse quand la place manque (téléphone) */
-[data-module="fuel"] .fu-proctitle{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.35em}
-[data-module="fuel"] .fu-proctitle>.fu-procsum{flex-basis:100%}
-[data-module="fuel"] .fu-procname{min-width:0;max-width:min(40vw,18em);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-module="fuel"] .fu-procfold{min-width:44px;min-height:44px;padding:0;margin:-12px 0 -12px -12px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;vertical-align:middle}
-[data-module="fuel"] .fu-proctitle{font-size:1.05em}
-[data-module="fuel"] .fu-procsum{display:block;font-size:.92em;margin-top:2px}
-[data-module="fuel"] .fu-procsum>span{display:inline-block;margin-right:1em;white-space:nowrap}
+[data-module="fuel"] .fu-procbox{display:block}
+[data-module="fuel"] .fu-proc{padding:6px 0;border-top:1px solid var(--sog-line,rgba(0,0,0,.12))}
+[data-module="fuel"] .fu-proc:first-child{border-top:0}
+/* l'en-tête d'un côté : repli, « Départ LFRS Nantes Atlantique », « Choisir sur la carte » (un seul geste) */
+[data-module="fuel"] .fu-proctitle{display:flex;align-items:center;column-gap:.4em;min-height:44px;font-size:1.05em;cursor:pointer}
+[data-module="fuel"] .fu-procad{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="fuel"] .fu-procicao{font-weight:600}
+[data-module="fuel"] .fu-procname{color:var(--sog-muted)}
+[data-module="fuel"] .fu-procfold{flex:none;min-width:44px;min-height:44px;padding:0;margin:0 -8px 0 -12px;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+[data-module="fuel"] .fu-onmap{flex:none;min-height:44px}
+/* au téléphone, « Choisir sur la carte » passe sous le nom du terrain (il le coupait : retouche de l'ergonome) */
+@container (max-width: 479px){
+  [data-module="fuel"] .fu-proctitle{display:grid;grid-template-columns:auto minmax(0,1fr)}
+  [data-module="fuel"] .fu-onmap{grid-column:2;justify-self:start;margin-top:2px}
+}
+/* replié : une phrase et une marque ; déplié : les lignes, la source au pied */
+[data-module="fuel"] .fu-procsum{display:flex;align-items:flex-start;gap:8px;margin:0 0 4px 32px}
+[data-module="fuel"] .fu-procsum:empty,[data-module="fuel"] .fu-proc:not(.fu-folded)>.fu-procsum{display:none}
+[data-module="fuel"] .fu-proc.fu-folded>.fu-prows,[data-module="fuel"] .fu-proc.fu-folded>.fu-procfoot,[data-module="fuel"] .fu-proc.fu-folded>.fu-lnmline{display:none}
+[data-module="fuel"] .fu-mark{flex:none;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;font-weight:700}
+[data-module="fuel"] .fu-mark[data-mark="ok"]{background:color-mix(in srgb,var(--sog-ok) 16%,transparent);color:var(--sog-ok)}
+[data-module="fuel"] .fu-mark[data-mark="todo"],[data-module="fuel"] .fu-mark[data-mark="old"]{background:color-mix(in srgb,var(--sog-warn) 18%,transparent);color:var(--sog-warn)}
+[data-module="fuel"] .fu-prows,[data-module="fuel"] .fu-procfoot,[data-module="fuel"] .fu-lnmline,[data-module="fuel"] .fu-proc>.fu-procmeta{margin-left:32px}
+[data-module="fuel"] .fu-prow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:2px;align-items:center;padding:8px 0;border-top:1px solid var(--sog-line,rgba(0,0,0,.08))}
+[data-module="fuel"] .fu-prow:first-child{border-top:0}
+[data-module="fuel"] .fu-prow>*{grid-column:1;min-width:0}
+[data-module="fuel"] .fu-plab{font-size:.85em;color:var(--sog-muted)}
+[data-module="fuel"] .fu-pval{font-weight:600}
+[data-module="fuel"] .fu-pval[data-todo]{font-weight:400;color:var(--sog-muted)}
+[data-module="fuel"] .fu-psrc{font-size:.85em;color:var(--sog-muted)}
+[data-module="fuel"] .fu-psrc>[hidden]{display:none}
+[data-module="fuel"] .fu-psrc>span:not(:empty)~span:not(:empty)::before{content:' · '}
+[data-module="fuel"] .fu-prow>.fu-pchange{grid-column:2;grid-row:1 / span 3;min-height:44px}
+[data-module="fuel"] .fu-prow>.fu-plist{grid-column:1 / -1}
+/* la liste de la piste, seule dans sa ligne : son nom n'est pas redit (il reste lu par un lecteur d'écran) */
+[data-module="fuel"] .fu-pf-rwy>.fu-pflab{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[data-module="fuel"] .fu-prow.fu-pwarn{background:color-mix(in srgb,var(--sog-warn) 12%,transparent);padding:8px 10px;margin:4px 0}
+[data-module="fuel"] .fu-prow.fu-pwarn>.fu-pval{color:var(--sog-warn)}
+[data-module="fuel"] .fu-procfoot:not([open])>:not(summary){display:none} /* fermé : rien de vu ni d'atteignable (sûr sous tous les moteurs) */
+[data-module="fuel"] .fu-procfoot>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--sog-muted)}
+[data-module="fuel"] .fu-rwyprob{margin:4px 0 0}
 [data-module="fuel"] .fu-procmeta{display:flex;flex-wrap:wrap;align-items:center;column-gap:.45em;font-size:.85em}
 [data-module="fuel"] .fu-procmeta .fu-linkbtn{padding:0 2px}
-[data-module="fuel"] .fu-appaid{grid-column:1/-1;margin:0;font-variant-numeric:tabular-nums} /* l'aide de l'approche (SOG-0176) : « ILS 25 · DO 109.35 · axe 246° » */
+[data-module="fuel"] .fu-appaid{font-variant-numeric:tabular-nums} /* l'aide de l'approche (SOG-0176) : « ILS 25 · DO 109.35 · axe 246° » */
 [data-module="fuel"] .fu-procmeta [data-ground-slot]{display:contents} /* la part « sol » : chaque morceau est un élément de la ligne, la phrase longue passe seule à la ligne (SOG-0135) */
 [data-module="fuel"] .fu-proc .f-field{margin:6px 0 0;min-width:0}
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
@@ -118,14 +143,6 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-proc .wind-ok{color:var(--sog-ok)}
 [data-module="fuel"] .fu-proc .wind-warn{color:var(--sog-warn)}
 [data-module="fuel"] .fu-proc .wind-alert{color:var(--sog-err)}
-@container (min-width: 480px){
-  [data-module="fuel"] .fu-procbox:not(.fu-one){grid-template-columns:6em minmax(max-content,1fr) minmax(max-content,1fr)}
-  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-rwy{grid-column:1;grid-row:3}
-  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-main{grid-column:2;grid-row:3}
-  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-trans{grid-column:3;grid-row:3}
-  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-app{grid-column:2;grid-row:4}
-  [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-apptrans{grid-column:3;grid-row:4}
-}
 `;
 
 /** Crée le bloc « Procédures » d'un montage de Carburant (voir l'interface en tête de fichier). */
@@ -150,7 +167,8 @@ export function createProcedures(host) {
   // dessiné (« Changer » de la Carte, #fuel?focus=arr), vidé une fois donné
   const cardState = {
     open: '',
-    focus: ''
+    focus: '',
+    change: '' // SOG-0308 : « côté:ligne » dont « Changer » a ouvert la liste (une seule à la fois)
   };
 
   /** État d'un terrain, créé au besoin. */
@@ -422,7 +440,7 @@ export function createProcedures(host) {
       tail = c.head < 0 ? -c.head : 0;
     return {
       c,
-      text: windLabel(c),
+      text: windWords(c),
       level: windSeverity(c, L),
       why: [tail > L.tail ? tt(TX.procWindTail, {
         kt: tail,
@@ -438,8 +456,18 @@ export function createProcedures(host) {
       }) : ''].filter(Boolean)
     };
   }
-  /** Options de la liste des pistes : « — », les pistes de PR.orderProcedures, chacune suivie du vent du METAR connu (« 13R — ↓ 12 kt
-   *  · ← 6 kt », en vert, orange ou rouge selon severity, la raison en infobulle), puis la piste choisie si elle n'y est plus. */
+  /** SOG-0308 : le vent d'une piste en mots (« face 12 kt · travers 1 kt », « arrière 12 kt ») ; « vent nul » ; '' sans composantes.
+   *  Le mot d'abord : plus de flèche seule (la Carte garde wind.label, son repère dessiné). */
+  function windWords(c) {
+    if (!c) return '';
+    return [c.head ? tt(c.head > 0 ? TX.windHead : TX.windTail, {
+      kt: Math.abs(c.head)
+    }) : '', c.cross ? tt(TX.windCross, {
+      kt: c.cross
+    }) : ''].filter(Boolean).join(' · ') || tt(TX.windCalm);
+  }
+  /** Options de la liste des pistes : « — », les pistes de PR.orderProcedures, chacune suivie du vent du METAR connu (« 13R — face 12 kt
+   *  · travers 6 kt », en vert, orange ou rouge selon severity, la raison en infobulle), puis la piste choisie si elle n'y est plus. */
   function runwayOptionsHtml(m, o) {
     const rwys = PR.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, recsNow()),
       lim = +host.crossLimit?.() || 0,
@@ -516,30 +544,73 @@ export function createProcedures(host) {
       String(r.name || r.id || '').slice(0, 40));
   }
 
-  function summaryHtml(side, m) {
+  /** SOG-0308 : les valeurs en mots des lignes d'un côté, la même règle pour la phrase repliée et les lignes ouvertes : { rwy, rwyWords,
+   *  w (vent de la piste choisie), proc, app } ; proc / app : le nom (« MEN2B · transition MTL », « ILS 31L »), null pour « aucune »,
+   *  undefined sans choix. */
+  function valuesOf(side, m) {
     const o = CF.proceduresOf(host.flight())[side] || {},
-      r = o.rwy ? m.rwys.find(x => PR.rwNum(x.id) === PR.rwNum(o.rwy)) : null,
+      byId = adOf(m.icao).recs || new Map(),
+      rwy = PR.rwNum(o.rwy),
+      r = rwy ? m.rwys.find(x => PR.rwNum(x.id) === rwy) : null,
       w = r ? runwayWind(m, r, +host.crossLimit?.() || 0) : null,
       s = PR.summaryOf(o, {
-        byId: adOf(m.icao).recs || new Map(),
-        wind: w?.c
+        byId,
+        via: `· ${tt(TX.procTransWord)}`
       }),
-      none = k => `${tt(TX[k])} ${tt(TX.procNone)}`,
-      // SOG-0176 : le résumé replié de l'arrivée dit l'indicatif et la fréquence de l'ILS de l'approche quand la base le porte
-      // (« I13R · TST 110.30 ») : la ligne complète est sous les listes, hors de l'écran tant que le côté est replié
-      aid = side === 'arr' && s.app ? aidFor(m) : null,
-      // une approche en doute choisie : son panonceau dans le résumé replié aussi (retouche de F139)
-      flag = side === 'arr' && s.app && chosenDoubt(m) ? ' ⚑' : '',
-      parts = [s.rwy, s.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : s.proc, s.app === null ? none('procApp') : s.app ? (
-        aid ? `${s.app} · ${aid.x.id} ${aid.x.freq}` : s.app) + flag : s.app].filter(Boolean);
-    // la piste porte la couleur de son vent (severity) et ses raisons en infobulle, comme dans la liste
-    const lnm = chosenLnm(side, m);
-    return parts.length ? `<span class="fu-procsum">${parts.map(p => p === s.rwy && w ? `<span class="wind-${w.level}" title="${esc([p, ...w.why].join(' · '))}">${esc(p)}</span>` : `<span>${esc(p)}</span>`).join('')}${lnm.length ? `<span class="f-warn" data-lnmflag title="${esc(tt(TX.procLnmChosen, { list: lnm.join(', ') }))}">${esc(tt(TX.procLnmFlag))}</span>` : ''}</span>` : '';
+      finals = PR.appChoices(m.lists?.APP || []).list,
+      appRec = typeof o.app === 'string' ? byId.get(o.app) || finals.find(x => x.id === o.app) : null,
+      appTrans = typeof o.appTrans === 'string' && o.appTrans !== o.app ? byId.get(o.appTrans) : null,
+      app = o.app === null ? null : appRec ? [PR.labelOf(appRec, finals), appTrans ? `${tt(TX.procTransWord)} ${PR.transitionLabelOf(appTrans)}` : '']
+      .filter(Boolean).join(' · ') : s.app;
+    return {
+      rwy,
+      w,
+      rwyText: rwy ? w ? `${rwy} — ${w.text}` : rwy : '',
+      proc: s.proc,
+      app
+    };
   }
-  /** Ligne de titre d'un côté, la ligne de résumé de la carte repliée (§ 10.31) : un bouton ▸ / ▾ qui déplie le côté (toute la ligne
-   *  le fait aussi), « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb), « Sur la carte », puis le résumé du
-   *  choix (summaryHtml). « Relire » et « Source » sont sur la ligne discrète, dépliée avec les listes. */
-  const titleHtml = (side, m) => `${m.nodata ? '' : `<button type="button" class="fu-procfold" data-do="procfold" data-side="${side}" aria-expanded="${cardState.open === side}" aria-label="${esc(tt(TX[side]))}">${cardState.open === side ? '▾' : '▸'}</button>`}<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}${m.nodata ? '' : ` <button type="button" class="fu-linkbtn fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}${summaryHtml(side, m)}`;
+  /** La marque d'un côté replié : 'todo' (!) tant qu'une ligne attend son choix (la piste ; la SID ou la STAR quand le terrain en publie ;
+   *  l'approche quand il en publie), 'old' (⌛) quand tout est choisi sur des procédures d'un cycle passé, 'ok' (✓) sinon. */
+  function markOf(side, m) {
+    const o = CF.proceduresOf(host.flight())[side] || {},
+      main = side === 'dep' ? 'sid' : 'star',
+      needMain = (m.lists?.[side === 'dep' ? 'SID' : 'STAR'] || []).some(r => !r.transition),
+      needApp = side === 'arr' && (m.lists?.APP || []).length > 0,
+      done = !!PR.rwNum(o.rwy) && (!needMain || o[main] !== undefined) && (!needApp || o.app !== undefined);
+    return !done ? 'todo' : m.cov?.outdated ? 'old' : 'ok';
+  }
+  /** La phrase du côté replié (SOG-0308) : la marque, puis « piste 31L · MEN2B · ILS 31L » — sans « Départ LFRS », déjà dans l'en-tête
+   *  (retouche de l'ergonome) ; la marque Little Navmap au bout (SOG-0210). '' sans donnée (la ligne de lecture se voit). */
+  function summaryHtml(side, m) {
+    if (m.nodata) return '';
+    const v = valuesOf(side, m),
+      none = k => `${tt(TX[k])} ${tt(TX.procNone)}`,
+      // une approche en doute choisie : son panonceau dans le résumé replié aussi (retouche de F139)
+      flag = side === 'arr' && v.app && chosenDoubt(m) ? ' ⚑' : '',
+      parts = [v.rwy ? tt(TX.procRwyWord, {
+          r: v.rwy
+        }) : '', v.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : v.proc || '', v.app === null ? none('procApp') : v.app ?
+        v.app +
+        flag : ''
+      ].filter(Boolean),
+      mark = markOf(side, m),
+      sign = {
+        ok: '✓',
+        todo: '!',
+        old: '⌛'
+      } [mark],
+      title = tt({
+        ok: TX.procMarkOk,
+        todo: TX.procMarkTodo,
+        old: TX.procMarkOld
+      } [mark]),
+      lnm = chosenLnm(side, m);
+    return `<span class="fu-mark" data-mark="${mark}" title="${esc(title)}" aria-label="${esc(title)}">${sign}</span><span class="fu-sumtext">${esc(parts.join(' · ') || tt(TX.procToChoose))}</span>${lnm.length ? `<span class="f-warn" data-lnmflag title="${esc(tt(TX.procLnmChosen, { list: lnm.join(', ') }))}">${esc(tt(TX.procLnmFlag))}</span>` : ''}`;
+  }
+  /** L'en-tête d'un côté (SOG-0308) : le repli ▸ / ▾ (toute la ligne le fait aussi), « Départ LFPO Paris-Orly » (le code seul pour un
+   *  terrain inconnu d'aerodb), « Choisir sur la carte » — un seul geste. */
+  const titleHtml = (side, m) => `${m.nodata ? '' : `<button type="button" class="fu-procfold" data-do="procfold" data-side="${side}" aria-expanded="${cardState.open === side}" aria-label="${esc(tt(TX[side]))}">${cardState.open === side ? '▾' : '▸'}</button>`}<span class="fu-procad"><b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}</span>${m.nodata ? '' : `<button type="button" class="fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}`;
   /** Un bouton de lecture (même geste « Lire » et « Relire » : data-do procfetch, un seul chemin dans read) ; occupé tant que la lecture
    *  de ce terrain est en cours. */
   const readButton = (icao, text, again) => {
@@ -587,7 +658,7 @@ export function createProcedures(host) {
     // SOG-0203 : les avertissements de la dernière lecture, en texte, repliés (« 2 avertissements » seuls ne disaient rien de LFOE)
     const wl = adOf(m.icao).warnings || [],
       warn = wl.length ? `<details class="fu-procwarn" data-procwarn><summary>${esc(tt(TX.procWarnList, { n: wl.length }))}</summary><ul>${wl.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : '';
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ground + ` <span data-source-slot>${slotHtml(m.icao, side)}</span>${gap}${warn}`;
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ground + ` <span data-source-slot>${chartsHtml(m.icao)}</span>${gap}${warn}`;
   }
   // l'adresse des cartes officielles de chaque terrain, demandée une fois à aerodb (chartsUrl, lot C2) : une adresse, null (État inconnu
   // d'aerodb) ; absente tant que la réponse n'est pas venue. Les emplacements de ce terrain se remplissent à la réponse
@@ -678,8 +749,11 @@ export function createProcedures(host) {
 
   function refillSlots(k) {
     for (const el of host.body?.()?.querySelectorAll?.('[data-proc]') || []) {
-      const slot = el.dataset.icao === k ? el.querySelector('[data-source-slot]') : null;
-      if (slot) slot.innerHTML = slotHtml(k, el.dataset.proc);
+      if (el.dataset.icao !== k) continue;
+      const slot = el.querySelector('[data-source-slot]');
+      if (slot) slot.innerHTML = chartsHtml(k);
+      // SOG-0308 : la carte de chaque choix, sur sa ligne
+      for (const c of el.querySelectorAll('[data-chart-slot]')) c.innerHTML = rowChartHtml(k, el.dataset.proc, c.dataset.chartSlot);
     }
   }
   // l'adresse de la carte de chaque procédure choisie, demandée une fois à aerodb (chartUrl, SOG-0045) : une adresse, null (aucune
@@ -724,22 +798,19 @@ export function createProcedures(host) {
     }
     return chartOfProc.get(key);
   }
-  /** La fin de la ligne discrète d'un côté (SOG-0045) : un lien « Carte SID », « Carte 13R »… par choix dont aerodb connaît la carte
-   *  (chartUrl), dans un nouvel onglet ; la page du terrain (« Cartes », SOG-0031) tant qu'un choix n'a pas de carte connue, ou
-   *  qu'aucun n'est fait ; sans fonction chartUrl, la page du terrain seule, comme avant. */
-  function slotHtml(icao, side) {
+  /** SOG-0308 : le lien « Carte » d'une ligne (rwy : la piste, main : la SID ou la STAR, app : l'approche), quand aerodb connaît la carte
+   *  du choix (chartUrl) ; '' sinon, ou tant que la réponse n'est pas venue (l'emplacement se remplit à la réponse). */
+  function rowChartHtml(icao, side, row) {
     const k = String(icao || '').toUpperCase();
-    if (!/^[A-Z]{4}$/.test(k)) return '';
-    const items = typeof ctx.aerodb?.chartUrl === 'function' ? chosenOf(k, side) : [],
-      links = [];
-    let rest = !items.length;
-    for (const it of items) {
-      const url = chartOf(k, it);
-      if (url) links.push(`<a class="fu-procsrc" data-chart="${esc(it.proc.kind)}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(String(it.proc.name || it.label))}">${esc(tt(TX.procChart, { k: it.label }))}</a>`);
-      else rest = true;
-    }
-    if (rest) links.push(chartsHtml(k));
-    return links.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>');
+    if (!/^[A-Z]{4}$/.test(k) || typeof ctx.aerodb?.chartUrl !== 'function') return '';
+    const kinds = {
+        rwy: ['RWY'],
+        main: ['SID', 'STAR'],
+        app: ['APP']
+      } [row] || [],
+      it = chosenOf(k, side).find(x => kinds.includes(x.proc.kind)),
+      url = it ? chartOf(k, it) : null;
+    return url ? `<a class="fu-procsrc" data-chart="${esc(it.proc.kind)}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(String(it.proc.name || it.label))}">${esc(tt(TX.procChartOne))}</a>` : '';
   }
   /** Les documents sans lien public des procédures choisies d'un côté (autre source que l'eAIP) : pour le title de la ligne. */
   function sourceTitle(m, side) {
@@ -780,8 +851,26 @@ export function createProcedures(host) {
     painted.set(el, html);
     if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
-  /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
-  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div><p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${m.nodata ? '' : '<p class="fu-lnmline f-warn" data-r="lnm" data-lnmline hidden></p>'}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p><p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
+  /** La ligne de la vue des procédures où va chaque liste (SOG-0308) : la piste ; la SID ou la STAR et sa transition ; l'approche et la
+   *  sienne. */
+  const ROW_OF = {
+    rwy: 'rwy',
+    sid: 'main',
+    star: 'main',
+    trans: 'main',
+    app: 'app',
+    appTrans: 'app'
+  };
+  /** Une ligne du côté ouvert (SOG-0308) : son nom, sa valeur en mots, sa source en petit, UN geste « Changer » à droite ; la liste
+   *  qu'il ouvre est à sa place, dessous (les listes data-k de toujours). */
+  const rowHtml = (side, row, label, fields) => `<div class="fu-prow" data-prow="${row}"><span class="fu-plab">${esc(tt(label))}</span><span class="fu-pval" data-r="v-${row}"></span><span class="fu-psrc" data-r="s-${row}">${row === 'app' ? '<span class="fu-appaid" data-r="aid" data-appaid hidden></span>' : ''}<span data-r="src-${row}"></span><span data-chart-slot="${row}"></span></span>${row === 'rwy' ? '<p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>' : ''}<button type="button" class="fu-pchange" data-do="procchange" data-side="${side}" data-row="${row}" aria-expanded="false">${esc(tt(TX.procChangeBtn))}</button><div class="fu-plist" data-r="l-${row}" hidden>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}"><span class="fu-pflab">${esc(tt(f.label))}</span><select data-k="${f.k}"></select></label>`).join('')}</div>${row === 'app' ? '<p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
+  /** Squelette d'un côté (SOG-0308) : l'en-tête, la phrase du côté replié, puis, déplié, les trois lignes et le pied « Source et
+   *  cartes » ; sans donnée, la ligne de lecture seule (« Lire les procédures »), toujours vue. patchSide remplit le tout. */
+  const skeleton = (side, m, fields) => {
+    const of = row => fields.filter(f => ROW_OF[f.k.split('-')[2]] === row),
+      rows = m.nodata ? '' : `<div class="fu-prows">${rowHtml(side, 'rwy', TX.procRwy, of('rwy'))}${rowHtml(side, 'main', side === 'dep' ? TX.procSidRow : TX.procStarRow, of('main'))}${side === 'arr' ? rowHtml(side, 'app', TX.procApp, of('app')) : ''}</div>`;
+    return `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><p class="fu-procsum" data-r="sum" data-procsum></p>${m.nodata ? '<div class="fu-procmeta f-muted" data-r="meta"></div>' : `${rows}<p class="fu-lnmline f-warn" data-r="lnm" data-lnmline hidden></p><details class="fu-procfoot" data-procfoot><summary>${esc(tt(TX.procFoot))}</summary><div class="fu-procmeta f-muted" data-r="meta"></div></details>`}</div>`;
+  };
   // l'ILS de la base pour une piste d'un terrain (SOG-0176) : clé « OACI|piste » → la fiche nettoyée, null (aucun), absente tant que la
   // réponse n'est pas venue (demandée une fois)
   const aids = new Map();
@@ -863,10 +952,74 @@ export function createProcedures(host) {
     setHtml(el, html);
     el.hidden = !html;
   }
+  /** SOG-0308 : les valeurs des lignes d'un côté ouvert, leurs sources, la liste ouverte par « Changer » ; la ligne Piste passe en
+   *  avertissement quand la piste choisie n'est pas la mieux orientée (le geste pour la prendre est sur la ligne). */
+  function patchRows(el, side, m) {
+    const v = valuesOf(side, m),
+      p = probableRwy(m),
+      todo = tt(TX.procToChoose),
+      val = (row, text) => {
+        const e = el.querySelector(`[data-r="v-${row}"]`);
+        if (!e) return;
+        setHtml(e, esc(text || todo));
+        e.toggleAttribute('data-todo', !text);
+      },
+      src = (row, text) => {
+        const e = el.querySelector(`[data-r="src-${row}"]`);
+        if (e) setHtml(e, esc(text || ''));
+      },
+      byId = adOf(m.icao).recs || new Map(),
+      o = CF.proceduresOf(host.flight())[side] || {},
+      mainRec = byId.get(o[side === 'dep' ? 'sid' : 'star']);
+    val('rwy', v.rwyText);
+    const hm = /^(\d{2})(\d{2})$/.exec(String(m.wind?.at || ''));
+    src('rwy', m.wind && Number.isFinite(+m.wind.dir) ? tt(TX.procMetarSrc, {
+      at: hm ? tt(TX.procMetarAt, {
+        h: hm[1],
+        m: hm[2]
+      }) : m.wind.at ? `${m.wind.at}Z` : '—',
+      dir: String(Math.round(+m.wind.dir)).padStart(3, '0'),
+      kt: Math.round(+m.wind.kt)
+    }) : '');
+    el.querySelector('[data-prow="rwy"]')?.classList.toggle('fu-pwarn', !!(v.rwy && p && PR.rwNum(p.r.id) !== v.rwy));
+    val('main', v.proc === null ? tt(TX.procNone) : v.proc);
+    src('main', mainRec ? srcLabel(mainRec) : '');
+    val('app', v.app === null ? tt(TX.procNone) : v.app);
+    for (const c of el.querySelectorAll('[data-chart-slot]')) setHtml(c, rowChartHtml(m.icao, side, c.dataset.chartSlot));
+    for (const row of el.querySelectorAll('[data-prow]')) {
+      const on = cardState.change === `${side}:${row.dataset.prow}`,
+        list = row.querySelector('.fu-plist'),
+        b = row.querySelector('[data-do="procchange"]');
+      if (list) list.hidden = !on;
+      if (b) {
+        b.setAttribute('aria-expanded', String(on));
+        b.textContent = tt(on ? TX.procCloseBtn : TX.procChangeBtn);
+      }
+    }
+  }
+  /** « Changer » d'une ligne (SOG-0308) : ouvre la liste de CETTE ligne, à sa place, et ferme celle qui l'était ; « Fermer » la referme. */
+  function change(side, row) {
+    const k = `${side}:${row}`;
+    cardState.change = cardState.change === k ? '' : k;
+    for (const el of host.body()?.querySelectorAll('.fu-proc[data-proc]') || [])
+      for (const r of el.querySelectorAll('[data-prow]')) {
+        const on = cardState.change === `${el.dataset.proc}:${r.dataset.prow}`,
+          list = r.querySelector('.fu-plist'),
+          b = r.querySelector('[data-do="procchange"]');
+        if (list) list.hidden = !on;
+        if (b) {
+          b.setAttribute('aria-expanded', String(on));
+          b.textContent = tt(on ? TX.procCloseBtn : TX.procChangeBtn);
+        }
+      }
+    if (cardState.change === k && !coarse()) host.body()?.querySelector(`[data-proc="${side}"] [data-prow="${row}"] select`)?.focus();
+  }
   /** Met un côté à jour sur place : le titre, la ligne discrète et les options de chaque liste, chacun seulement s'il a changé. */
   function patchSide(el, side, m, fields) {
     el.classList.toggle('fu-folded', cardState.open !== side && !m.nodata); // sans donnée, la ligne de lecture reste visible
     setHtml(el.querySelector('[data-r="title"]'), titleHtml(side, m));
+    setHtml(el.querySelector('[data-r="sum"]'), summaryHtml(side, m));
+    if (!m.nodata) patchRows(el, side, m);
     const meta = el.querySelector('[data-r="meta"]');
     setHtml(meta, metaHtml(m, side));
     const t = sourceTitle(m, side);
@@ -900,7 +1053,10 @@ export function createProcedures(host) {
             take = a.rwys.map(k => `<button type="button" class="fu-linkbtn" data-do="rwyprob" data-side="${side}" data-rwy="${esc(rwOf(k).id)}">${esc(a.rwys.length > 1 ? tt(TX.procAtisTakeOne, { rwy: k }) : tt(TX.procAtisTake))}</button>`).join(' ');
           return `<span class="fu-rwyline" data-atisline="${esc(a.net)}"><span>${esc(tt(a.letter ? TX.procAtisRwy : TX.procAtisRwyNoL, v))}</span> ${take}</span>`;
         });
-      if (p && PR.rwNum(p.r.id) !== cur && !said.has(PR.rwNum(p.r.id))) lines.push(`<span class="fu-rwyline" data-metarline><span>${esc(tt(TX.procRwyProb, { rwy: PR.rwNum(p.r.id), at: m.wind.at ? `${m.wind.at}Z` : '—', dir: String(Math.round(+m.wind.dir)).padStart(3, '0'), kt: Math.round(+m.wind.kt) }))}</span> <button type="button" class="fu-linkbtn" data-do="rwyprob" data-side="${side}" data-rwy="${esc(p.r.id)}">${esc(tt(TX.procRwyTake))}</button></span>`);
+      if (p && PR.rwNum(p.r.id) !== cur && !said.has(PR.rwNum(p.r.id))) {
+        const pw = runwayWind(m, p.r, +host.crossLimit?.() || 0);
+        lines.push(`<span class="fu-rwyline" data-metarline><button type="button" data-do="rwyprob" data-side="${side}" data-rwy="${esc(p.r.id)}" title="${esc(tt(TX.procRwyProb, { rwy: PR.rwNum(p.r.id), at: m.wind.at ? `${m.wind.at}Z` : '—', dir: String(Math.round(+m.wind.dir)).padStart(3, '0'), kt: Math.round(+m.wind.kt) }))}">${esc(tt(pw?.c?.head > 0 ? TX.procRwyTakeHead : TX.procRwyTakeOne, { rwy: PR.rwNum(p.r.id) }))}</button></span>`);
+      }
       rp.hidden = !lines.length;
       setHtml(rp, lines.join(''));
     }
@@ -1001,6 +1157,7 @@ export function createProcedures(host) {
   function focus(side) {
     cardState.focus = side;
     cardState.open = side; // le côté demandé est déplié : sa première liste est visible
+    cardState.change = `${side}:rwy`; // SOG-0308 : la liste de la piste, ouverte
   }
   /** Déplie un côté (et replie l'autre), ou le replie s'il l'était (une tape sur sa ligne de résumé, § 10.31). */
   function fold(side) {
@@ -1445,6 +1602,7 @@ export function createProcedures(host) {
     onChange,
     focus,
     fold,
+    change,
     applyFocus,
     textModel,
     snapshot,

@@ -477,9 +477,28 @@ def unfold(c, side):
         c.until("(s) => !document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=\"' + s + '\"]')", side, what=f'the {side} side unfolds')
 
 
-def pick_proc(c, k, value):
-    """Chooses `value` in the procedure list data-k=`k` (p-dep-… / p-arr-…), its side unfolded first."""
+def show_list(c, k):
+    """Opens the line of the procedure list data-k=`k` by its « Changer » (SOG-0308: each line's list opens at its place), its side
+    unfolded first; nothing when the list is already shown."""
     unfold(c, k.split('-')[1])
+    if not c.shown(f'{FUEL} select[data-k="{k}"]'):
+        c.js("(k) => document.querySelector('[data-module=fuel] select[data-k=\"' + k + '\"]').closest('.fu-prow').querySelector('[data-do=procchange]').click()", k)
+        c.until("(k) => window.__t.shown(document.querySelector('[data-module=fuel] select[data-k=\"' + k + '\"]'))", k, what=f'the list {k} is open')
+
+
+def open_foot(c, side):
+    """Opens the foot « Source et cartes » of a side (SOG-0308: the reading line, « Relire », the ground, the aerodrome's charts are folded
+    under it) by a tap on its summary, the side unfolded first."""
+    unfold(c, side)
+    sel = f'{FUEL} [data-proc="{side}"] [data-procfoot]'
+    if c.js(f"!!document.querySelector('{sel}') && !document.querySelector('{sel}').open"):
+        c.tap(f'{sel} > summary')
+        c.until(f"document.querySelector('{sel}').open", what=f'the foot of {side} is open')
+
+
+def pick_proc(c, k, value):
+    """Chooses `value` in the procedure list data-k=`k` (p-dep-… / p-arr-…), its side unfolded and its line opened first."""
+    show_list(c, k)
     c.page.select_option(f'{FUEL} select[data-k="{k}"]', value)
 
 
@@ -971,6 +990,7 @@ def f27(c):
     c.ok(c.js("!!document.querySelector('[data-module=fuel] [data-proc=arr] select[data-k=\"p-arr-star\"]')"), 'no STAR list', 'the lists stay next to it')
     # the button is on the secondary line, after the date of the last reading (LFML's file was read by hand on 29 Oct 16:53Z, an earlier cycle)
     c.eq(meta_parts(c, 'arr'), [norm(row(c, 'procFileAt').replace('{d}', '29/10 16:53Z')) + ' ⌛', norm(row(c, 'procReread'))], 'the date of the last reading comes before the button, on one line', what='arrival line')
+    open_foot(c, 'arr')
     c.tap(b)
     want = norm(tx(PT, "no-launcher'", c.lang, after='procReasons'))
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
@@ -1082,7 +1102,7 @@ def narrow_selects(c):
           return { k: s.dataset.k, need: Math.ceil(w + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)), have: Math.floor(s.getBoundingClientRect().width) } }).filter(r => r.have < r.need) }""")
 
 
-@case('F34', 'Procedures card: titled with the name, one secondary line, one fixed grid on both sides, no label cut', 'F', tags=('fuel', 'aerodb', 'layout'),
+@case('F34', 'Procedures card: titled with the name, one secondary line (in the foot), never wider than its place', 'F', tags=('fuel', 'aerodb', 'layout'),
       designs=('standard',), phone=False, screens=True,
       rule='V3 spec 10.23 / 10.27 / 10.29 d: "Départ LFPO Paris-Orly"; one muted line "lu le … · Relire · N non lues" (Relire outside the grid); runway · procedure · transition on columns identical on both sides; a select as wide as its longest label; one column under 600 px')
 def f34(c):
@@ -1101,39 +1121,15 @@ def f34(c):
     c.eq(c.js("[...document.querySelectorAll('[data-module=fuel] [data-do=procfetch][data-again]')].map(b => !!b.closest('.fu-procmeta') && !b.closest('.fu-pf'))"), [True, True],
          '"Relire" is a text button of the line, outside the grid', what='Relire in the line')
     c.eq(c.count(f'{FUEL} [data-proc] .fu-procmeta [data-source-slot]'), 2, 'each line ends with the slot of the later "Source" link', what='source slots')
-    c.eq(narrow_selects(c), [], 'at 1280, beside the map, no select is narrower than its longest option', what='narrow selects at 1280')
-    # beside the map (about 515 px): the three columns from 480 px, unless they would overflow (then one column: never cut)
-    fit = c.js("(() => { const b = document.querySelector('[data-module=fuel] .fu-procbox'); return { one: b.classList.contains('fu-one'), over: b.scrollWidth > b.clientWidth + 1, w: b.clientWidth } })()")
-    c.ok(not fit['over'], f'{fit}', 'beside the map the card never overflows its width')
-    if not fit['one']:
-        g0 = select_geometry(c)
-        c.ok(g0['p-dep-rwy']['y'] == g0['p-dep-sid']['y'] and g0['p-dep-rwy']['x'] < g0['p-dep-sid']['x'], f'{g0}', 'beside the map the runway and the SID are on one line (the grid)')
-    c.page.set_viewport_size({'width': 1920, 'height': 1080})            # a module of 600 px and more: the three columns
-    c.settle()
-    wait_rows(c, 'arr')
-    # the same columns on both sides: runway, procedure, transition; the approach under the STAR
-    g = select_geometry(c)
-    for a, b, what in (('p-dep-rwy', 'p-arr-rwy', 'runway'), ('p-dep-sid', 'p-arr-star', 'procedure'), ('p-dep-trans', 'p-arr-trans', 'transition')):
-        c.eq((g[a]['x'], g[a]['w']), (g[b]['x'], g[b]['w']), f'the {what} column has the same left edge and width on both sides', what=what)
-    c.eq((g['p-arr-app']['x'], g['p-arr-app']['w']), (g['p-arr-star']['x'], g['p-arr-star']['w']), 'the approach is under the STAR, on the same column', what='approach column')
-    c.ok(g['p-arr-app']['y'] > g['p-arr-star']['y'], f"{g['p-arr-app']} below {g['p-arr-star']}", 'the approach is on the second line of the arrival')
-    c.ok(g['p-arr-rwy']['w'] < g['p-arr-star']['w'], f"{g['p-arr-rwy']['w']} vs {g['p-arr-star']['w']}", 'the runway column is narrow, the procedure column wide')
-    c.eq(narrow_selects(c), [], 'every select is at least as wide as its longest option label (none is cut)', what='narrow selects at 1920')
-    c.ok(c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] option')].filter(o => o.value !== '' && o.value !== '__none' && !o.parentElement.dataset.k.endsWith('-rwy')).every(o => o.title.startsWith(o.textContent.trim()))"),
-         'a title lacks its label', 'the full label of an option is also its title')
-    # under 600 px a single column, every select at the full width
-    c.page.set_viewport_size({'width': 390, 'height': 844})
-    try:
+    # SOG-0308: the grid of three columns gave way to lines (F209); the card never overflows its width, beside the map nor on a phone
+    for w in (1280, 390):
+        c.page.set_viewport_size({'width': w, 'height': 844 if w < 600 else 800})
         c.settle()
         to_step(c, 1)
-        c.until("(() => { const r = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]'); return !!r && r.getBoundingClientRect().width > 0 })()", what='the card is on screen at 390 px')
-        g = select_geometry(c)
-        c.eq(len({v['x'] for v in g.values()}), 1, 'one column: every select has the same left edge', what=f'left edges {sorted({v["x"] for v in g.values()})}')
-        c.eq(len({v['w'] for v in g.values()}), 1, 'and the same, full width', what=f'widths {sorted({v["w"] for v in g.values()})}')
-        ys = [v['y'] for v in g.values()]
-        c.ok(len(set(ys)) == len(ys), f'tops {ys}', 'and they are stacked, none beside another')
-    finally:
-        c.page.set_viewport_size({'width': 1280, 'height': 800})
+        wait_rows(c, 'arr')
+        fit = c.js("(() => { const b = [...document.querySelectorAll('[data-module=fuel] .fu-procbox')].find(x => x.offsetParent); return { over: b.scrollWidth > b.clientWidth + 1, w: b.clientWidth } })()")
+        c.ok(not fit['over'], f'{fit}', f'{w} px: the card never overflows its width')
+    c.page.set_viewport_size({'width': 1280, 'height': 800})
     # an aerodrome with nothing: the line says so and offers the reading; the title is the code alone when aerodb does not know the aerodrome
     set_icao(c, 'dep', 'LFQQ')
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep] [data-do=procfetch]:not([data-again])')", what='the departure of LFQQ offers the reading')
@@ -1147,6 +1143,7 @@ def f35(c):
     open_proc(c, procs=V2_PROCS)
     wait_rows(c, 'arr')
     wait_rows(c, 'dep')   # one side unfolded at a time (§ 10.31): the departure, where the focus goes
+    show_list(c, 'p-dep-sid')   # SOG-0308: a list is shown by its line's « Changer »
     c.js("""() => { const q = k => document.querySelector('[data-module=fuel] select[data-k="' + k + '"]');
         window.__keep = { sid: q('p-dep-sid'), star: q('p-arr-star'), rwy: q('p-dep-rwy'), box: q('p-dep-sid').closest('.fu-procbox'), dep: q('p-dep-sid').closest('.fu-proc') }; q('p-dep-sid').focus() }""")
     # the departure runway changes by script (no focus move): the SID list is re-marked while the focus is in it
@@ -1180,7 +1177,7 @@ def f36(c):
     wait_rows(c, 'arr')
     # three choices in a row, then watch the flight record until it holds the last one: no state with only the first choices is ever written
     for k, v in (('p-arr-rwy', '13R'), ('p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE'), ('p-arr-app', 'LFML.APP.I13R.RW13R.NONE')):
-        c.page.select_option(f'{FUEL} select[data-k="{k}"]', v)
+        pick_proc(c, k, v)
     seen = []
     for _ in range(80):
         arr = (((c.doc('pilot/ABC/current_flight.json') or {}).get('route') or {}).get('procedures') or {}).get('arr')
@@ -1221,6 +1218,7 @@ def f38(c):
           return db } } } }) })()""")
     open_proc(c)
     wait_rows(c, 'arr')
+    open_foot(c, 'arr')
     c.tap(f'{FUEL} [data-proc="arr"] [data-do="procfetch"][data-again]')
     want = norm(row(c, 'procCountRead1').replace('{read}', '0').replace('{pages}', '31'))
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", want, timeout=8000, what=f'the failure notification says "{want}"')
@@ -1632,8 +1630,8 @@ def route_metar(c, items):
 
 
 @case('F64', 'Wind on each runway of the procedure card, from the known METAR', 'F', tags=('fuel', 'weather'), designs=('standard',),
-      screens=False, langs4=True, rule='V3 spec 10.30: each runway option ends with "↓ 12 kt · ← 6 kt" (frame/lib/wind.js label: where the wind '
-      'blows, runway upward) from the METAR of the Departure step; green / orange / red by wind.severity, the reason in the title; no METAR, no suffix')
+      screens=False, langs4=True, rule='V3 spec 10.30, in words since SOG-0308 (the mock-up: « face 12 kt · travers 6 kt », no arrow alone; the Map keeps '
+      'wind.label) from the METAR of the Departure step; green / orange / red by wind.severity, the reason in the title; no METAR, no suffix')
 def f64(c):
     route_metar(c, {'LFML': (310, 12)})
     open_proc(c)
@@ -1644,8 +1642,9 @@ def f64(c):
         color: getComputedStyle(o).color, ok: getComputedStyle(document.querySelector('[data-module=fuel]')).getPropertyValue('--sog-ok').trim() }))""")
     by = {x['v']: x for x in o}
     # the arrows say where the wind blows, the runway drawn upward (§ 10.30, third reading): head wind ↓, tail wind ↑
-    c.ok('↓ 12 kt' in by['31L']['t'] and by['31L']['cls'] == 'wind-ok', f"{by['31L']}", 'runway 31L: 12 kt of head wind, « ↓ », green (wind-ok)')
-    c.ok('↑ 12 kt' in by['13R']['t'] and by['13R']['cls'] == 'wind-alert', f"{by['13R']}", 'runway 13R: 12 kt of tail wind, « ↑ », red (wind-alert: over 5 kt)')
+    head, tail = norm(tx(PT, 'windHead', c.lang).replace('{kt}', '12')), norm(tx(PT, 'windTail', c.lang).replace('{kt}', '12'))
+    c.ok(head in norm(by['31L']['t']) and by['31L']['cls'] == 'wind-ok', f"{by['31L']}", 'runway 31L: 12 kt of head wind, in words, green (wind-ok)')
+    c.ok(tail in norm(by['13R']['t']) and by['13R']['cls'] == 'wind-alert', f"{by['13R']}", 'runway 13R: 12 kt of tail wind, in words, red (wind-alert: over 5 kt)')
     c.ok(norm(row(c, 'procWindTail').replace('{kt}', '12').replace('{max}', '5')) in norm(by['13R']['title']), by['13R']['title'], 'the reason in the title, in the language of the run')
     c.ok(by['31L']['color'] != by['13R']['color'], f"{by['31L']['color']} / {by['13R']['color']}", 'the two levels are drawn in two colours (semantic tokens of the design)')
     # the departure (LFRS) has no METAR: no suffix, nothing invented
@@ -1661,15 +1660,19 @@ def f65(c):
     open_proc(c, procs={'dep': {'rwy': '03', 'sid': None}, 'arr': {'rwy': '13R', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RWALL.NEPIX',
                                                                     'app': 'LFML.APP.I13R.RW13R.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
     wait_rows(c, 'arr')
-    parts = "(s) => [...document.querySelectorAll('[data-module=fuel] [data-proc=\"' + s + '\"] .fu-procsum > span')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
-    c.until(f"(() => ({parts})('arr').some(t => t.includes('kt')))()", timeout=20000, what='the arrival summary gets the wind of the METAR')
-    arr = c.js(f"({parts})('arr')")
+    v = "(k) => (document.querySelector('[data-module=fuel] [data-proc=arr] [data-r=v-' + k + ']')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()"
+    c.until(f"({v})('rwy').includes('kt')", timeout=20000, what='the arrival runway line gets the wind of the METAR')
+    arr = [c.js(f"({v})('{k}')") for k in ('rwy', 'main', 'app')]
     # the runway's axis is the Map's rule since the refactoring R-F1 (§ 10.33): threshold → opposite threshold before the QFU; the invented
     # thresholds of LFML give 134° (their QFU says 130°), hence the 1 kt of crosswind
-    c.eq(arr, ['13R · ↑ 12 kt · ← 1 kt', 'MEN1A via NEPIX', 'I13R'], 'runway with its wind (tail: « ↑ »), STAR via its transition, approach', what='arrival summary')
-    c.eq(c.js("document.querySelector('[data-module=fuel] [data-proc=arr] .fu-procsum > span').className"), 'wind-alert', 'the runway of the summary carries the colour of its wind', what='class')
-    dep = c.js(f"({parts})('dep')")
-    c.eq(dep, ['03', norm(f"{row(c, 'procSid')} {row(c, 'procNone')}")], 'no METAR: the runway alone; « Aucune » said with its kind', what='departure summary')
+    want = ['13R — ' + norm(tx(PT, 'windTail', c.lang).replace('{kt}', '12')) + ' · ' + norm(tx(PT, 'windCross', c.lang).replace('{kt}', '1')),
+            'MEN1A · ' + norm(tx(PT, 'procTransWord', c.lang)) + ' NEPIX', 'I13R']
+    c.eq([norm(x) for x in arr], want, 'runway with its wind in words, STAR with its transition, approach', what='arrival lines')
+    c.ok(c.js("document.querySelector('[data-module=fuel] [data-proc=arr] [data-prow=rwy]').classList.contains('fu-pwarn')"), 'no warning',
+         'a tail wind over the limits: the runway line is a warning')
+    dep = norm(c.text(f'{FUEL} [data-proc="dep"] [data-procsum] .fu-sumtext') or '')
+    c.eq(dep, norm(tx(PT, 'procRwyWord', c.lang).replace('{r}', '03') + ' · ' + f"{row(c, 'procSid')} {row(c, 'procNone')}"),
+         'folded, no METAR: the runway alone; « Aucune » said with its kind', what='departure sentence')
 
 
 @case('F66', 'Approaches the SIA way: initial segments are transitions of every final of the runway, short labels', 'F', tags=('fuel', 'aerodb'),
@@ -1698,7 +1701,7 @@ def f66(c):
     # the other final of the runway offers the same segments
     pick_proc(c, 'p-arr-app', apps[1][0])
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]'); return !!s && s.options.length === 4 })()", what='the RNP offers the same three segments')
-    c.until("[...document.querySelectorAll('[data-module=fuel] [data-proc=arr] .fu-procsum > span')].some(e => e.textContent.trim() === 'RNP 06')", what='the summary says the short label')
+    c.until("(document.querySelector('[data-module=fuel] [data-proc=arr] [data-r=v-app]')?.textContent || '').trim().startsWith('RNP 06')", what='the approach line says the short label')
 
 
 @case('F68', 'A typed airway between two points is an airway, never a point of the same name elsewhere; followed only along its own nodes', 'F',
@@ -1827,14 +1830,15 @@ def f72(c):
                  meta: [...box.querySelectorAll('.fu-procmeta')].filter(shown).length, onmap: [...box.querySelectorAll('[data-do=onmap]')].filter(shown).length } }"""
     v = c.js(vis)
     c.eq((v['selects'], v['meta']), (0, 0), 'at opening no list and no secondary line is visible: the two summary lines only', what='visible lists, lines')
-    c.eq(v['onmap'], 2, 'one « Sur la carte » per side', what='visible « Sur la carte »')
+    c.eq(v['onmap'], 2, 'one « Choisir sur la carte » per side', what='visible « Choisir sur la carte »')
     c.ok(v['controls'] < 7, f'{v}', 'fewer than seven controls visible at opening')
     c.ok(not c.js("!!document.querySelector('[data-module=fuel] .fu-proctitle [data-do=procfetch], [data-module=fuel] .fu-proctitle [data-source-slot]')"), 'title',
          '« Relire » and « Source » are not in the summary line')
     # a tap on the arrival line (not on a button) unfolds it; then the departure line unfolds the departure and folds the arrival
     c.tap(f'{FUEL} [data-proc="arr"] .fu-prochead')
     c.until("!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=arr]')", what='the arrival unfolds')
-    c.eq(c.js(vis)['selects'], 4, 'the arrival lists are visible (runway, STAR, its transition, approach)', what='visible lists')
+    c.eq(c.js(vis)['selects'], 0, 'SOG-0308: the arrival\'s three lines, no list until a « Changer »', what='visible lists')
+    c.eq(c.count(f'{FUEL} [data-proc="arr"] [data-do="procchange"]'), 3, 'one « Changer » per line', what='Changer')
     c.tap(f'{FUEL} [data-proc="dep"] .fu-prochead')
     c.until("!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=dep]') && !!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=arr]')",
             what='the departure unfolds and the arrival folds: one side at a time')
@@ -2457,9 +2461,9 @@ _CHART_STUB = """(() => { let ab; window.__chartCalls = [];
     return p.icao === 'LFRS' ? 'https://charts.invalid/' + p.id + '.pdf' : null }; return A };
   Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab },
     set(v) { ab = v; if (v && v.create && !v.__chart) { const o = v.create; v.__chart = 1; v.create = function (...a) { return patch(o.apply(this, a)) } } } }) })()"""
-_SLOT_JS = """(s) => { const e = document.querySelector('[data-module=fuel] [data-proc=' + s + '] [data-source-slot]'); return e ? {
-    charts: !!e.querySelector('[data-charts]'),
-    chart: [...e.querySelectorAll('[data-chart]')].map(a => [a.dataset.chart, a.getAttribute('href'), a.target, a.rel, a.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) } : null }"""
+_SLOT_JS = """(s) => { const e = document.querySelector('[data-module=fuel] [data-proc=' + s + ']'); return e ? {
+    charts: !!e.querySelector('[data-source-slot] [data-charts]'),
+    chart: [...e.querySelectorAll('[data-chart-slot] [data-chart]')].map(a => [a.dataset.chart, a.getAttribute('href'), a.target, a.rel, a.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) } : null }"""
 
 
 @case('F95', '« Carte » per chosen procedure: the chart aerodb gives for the runway, SID, STAR or approach; else the aerodrome page; nothing new without the function',
@@ -2477,12 +2481,13 @@ def f95(c):
     c.page.add_init_script(_CHART_STUB)
     open_proc(c, procs=V2_PROCS)
     wait_rows(c, 'dep')
-    want = [['RWY', 'https://charts.invalid/LFRS.RWY.03.pdf', '_blank', 'noopener noreferrer', norm(tx(PT, 'procChart', c.lang).replace('{k}', '03'))],
-            ['SID', 'https://charts.invalid/LFRS.SID.NTS1A.RW03.NONE.pdf', '_blank', 'noopener noreferrer', norm(tx(PT, 'procChart', c.lang).replace('{k}', 'SID'))]]
-    c.until("(s) => document.querySelectorAll('[data-module=fuel] [data-proc=' + s + '] [data-source-slot] [data-chart]').length === 2", 'dep',
+    one = norm(tx(PT, 'procChartOne', c.lang))
+    want = [['RWY', 'https://charts.invalid/LFRS.RWY.03.pdf', '_blank', 'noopener noreferrer', one],
+            ['SID', 'https://charts.invalid/LFRS.SID.NTS1A.RW03.NONE.pdf', '_blank', 'noopener noreferrer', one]]
+    c.until("(s) => document.querySelectorAll('[data-module=fuel] [data-proc=' + s + '] [data-chart-slot] [data-chart]').length === 2", 'dep',
             what='the two charts of the departure')
-    c.eq(c.js(_SLOT_JS, 'dep'), {'charts': False, 'chart': want}, 'one « Carte » per choice, its address as aerodb gives it; every choice has its chart: no aerodrome page',
-         what='departure with chartUrl')
+    c.eq(c.js(_SLOT_JS, 'dep'), {'charts': True, 'chart': want}, 'one « Carte » on the line of each choice (SOG-0308), its address as aerodb gives it; '
+         '« Toutes les cartes du terrain » at the foot', what='departure with chartUrl')
     calls = c.js('window.__chartCalls')
     c.ok({'icao': 'LFRS', 'kind': 'RWY', 'id': 'LFRS.RWY.03', 'runways': ['03']} in calls, calls, 'the runway asked as { icao, kind RWY, id, runways }')
     c.ok(any(x['id'] == 'LFRS.SID.NTS1A.RW03.NONE' and x['kind'] == 'SID' and x['icao'] == 'LFRS' for x in calls), calls, 'the SID asked with its record')
@@ -2497,9 +2502,9 @@ def f95(c):
     c.tap(f'{FUEL} .fu-steps button[data-step="4"]')
     c.until("!!document.querySelector('[data-module=fuel] [data-block=procs]:not(.fu-hide) [data-proc=dep]')", timeout=10000, what='the procedures on the in-flight step')
     unfold(c, 'dep')
-    c.until("document.querySelectorAll('[data-module=fuel] [data-procbox=start] [data-proc=dep] [data-source-slot] [data-chart]').length === 2",
+    c.until("document.querySelectorAll('[data-module=fuel] [data-procbox=start] [data-proc=dep] [data-chart-slot] [data-chart]').length === 2",
             what='the two charts of the departure in flight')
-    c.eq(c.js(_SLOT_JS, 'dep'), {'charts': False, 'chart': want}, 'in flight: the same « Carte » links', what='in-flight departure')
+    c.eq(c.js(_SLOT_JS, 'dep'), {'charts': True, 'chart': want}, 'in flight: the same « Carte » links', what='in-flight departure')
 
 
 def _curve_sheet(alts):
@@ -3495,6 +3500,7 @@ def f124(c):
     title = c.js(f"document.querySelector('{arr} [data-ground=\"failed\"]').title")
     c.ok('429' in title and '<' not in title and '\n' not in title, title, 'the launcher\'s own words in its title, without < > nor line breaks')
     c.eq(norm(c.text(f'{arr} [data-do="groundretry"]') or ''), norm(tx(PT, 'groundRetry', c.lang)), 'and « Réessayer »', what='retry')
+    open_foot(c, 'arr')
     c.js(f"document.querySelector('{arr}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F124_{c.design}_{c.width}_{c.lang}.png')
     c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-ground]'), 0, 'nothing on a line whose ground is neither read nor tried', what='departure')
@@ -3615,8 +3621,8 @@ def f127(c):
     c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-appaid]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F127_{c.design}_{c.width}_{c.lang}.png')
     # the folded summary of the arrival says the ident and the frequency (the full line is under the lists, off screen when folded)
-    summ = "[...document.querySelectorAll('[data-module=fuel] [data-proc=arr] .fu-procsum > span')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
-    c.until(f"{summ}.includes('I13R · TST 110.30')", timeout=8000, what='the summary « I13R · TST 110.30 »')
+    c.ok(c.js(f"!!document.querySelector('{FUEL} [data-proc=arr] [data-prow=app] [data-appaid]')"), 'elsewhere', 'SOG-0308: the aid is the source of the approach line')
+    summ = "[document.querySelector('[data-module=fuel] [data-proc=arr] [data-r=v-app]').textContent.trim()]"
     # the same approach, no ILS of LFML in the base (its navaids rewritten: an ILS of another aerodrome only): no line, no dash
     other = _ils_extra()
     other['navaids'][0].update(ad='LFMT', name='LFMT 13R')
@@ -4068,7 +4074,7 @@ def f139(c):
         href = c.js(f"document.querySelector('{FUEL} [data-chartonly] a[data-chartonly-item]').getAttribute('href')")
         c.ok(href.endswith('Cartes/LFML/AD_2_LFML_IAC_RWY31R_VOR.pdf') and href.startswith('https://www.sia.aviation-civile.gouv.fr/'), href, 'its link, composed by aerodb')
         # chosen by hand: the flight's approach, its line says « à vérifier »
-        c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', dub)
+        pick_proc(c, 'p-arr-app', dub)
         cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == dub, f'{w} px: chosen by hand, it is the flight\'s', timeout=8000)
         # its reason said in clear words under the list (no hover on a phone), and the panonceau in the folded summary (retouches)
         c.until(f"!!document.querySelector('{FUEL} [data-proc=arr] [data-doubtline]:not([hidden])')", timeout=8000, what=f'{w} px: the line under the list')
@@ -4145,6 +4151,7 @@ def f141(c):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         open_proc(c)
         wait_rows(c, 'arr')
+        open_foot(c, 'arr')
         c.tap(f'{FUEL} [data-proc="arr"] [data-do="procfetch"][data-again]')
         c.until(f"!!document.querySelector('{FUEL} [data-proc=arr] [data-procwarn]')", timeout=10000, what=f'{w} px: the warnings under the line')
         items = c.js(f"[...document.querySelectorAll('{FUEL} [data-proc=arr] [data-procwarn] li')].map(e => e.textContent)")
@@ -4456,8 +4463,9 @@ def f148(c):
         line = f'{FUEL} [data-proc="arr"] [data-rwyprob]'
         c.until(f"!!document.querySelector('{line}:not([hidden])')", timeout=20000, what=f'{w} px: the probable runway said')
         txt = norm(c.text(line) or '')
-        c.ok('31L' in txt and '310/12' in txt and norm(tx('modules/fuel/procedures_texts.js', 'procRwyTake', c.lang)) in txt, txt,
-             f'{w} px: « Piste probable : 31L (METAR …Z, vent 310/12) » and its gesture')
+        c.ok(norm(tx(PT, 'procRwyTakeHead', c.lang).replace('{rwy}', '31L')) in txt, txt, f'{w} px: « Prendre la 31L (vent de face) » (SOG-0308)')
+        c.ok('310' in (c.text(f'{FUEL} [data-proc="arr"] [data-r="src-rwy"]') or ''), c.text(f'{FUEL} [data-proc="arr"] [data-r="src-rwy"]'),
+             f'{w} px: the METAR said as the source of the runway line')
         c.ok((procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr') or {}).get('rwy') != '31L', procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr'),
              'never set by itself')
         c.js(f"document.querySelector('{line}').scrollIntoView({{block: 'center'}})")
@@ -4782,7 +4790,7 @@ def f155(c):
         c.shot(f'F155_{c.design}_{w}_{c.lang}_delivered.png')
     # a runway chosen in the list: written after its aerodrome
     unfold(c, 'dep')
-    c.page.select_option(f'{FUEL} select[data-k="p-dep-rwy"]', '03')
+    pick_proc(c, 'p-dep-rwy', '03')
     cf_doc(c, lambda d: words(d)[:1] == ['LFRS/03'], 'the runway chosen in the list written « LFRS/03 »', timeout=10000)
     # a runway the aerodrome does not have: said, nothing chosen
     n0 = c.js("(window.__notes || []).length")
@@ -5148,3 +5156,68 @@ def f208(c):
     c.eq(a['points'], [[47.15, -1.6], [45.0, 2.0], [43.43, 5.21]], 'the points out of bounds or out of shape left', what='points')
     c.eq([a['sid'], a['ids'][1], a['faulty'], a['control'], a['via'], a['layer'], a['proposal']],
          ['', '', [0], ['controlled', None], ['', 'UN10'], ['LOW', ''], False], 'each value from its closed list', what='checked')
+
+
+
+@case('F209', 'Procedures, the block of the validated mock-up (first slice): one side open; folded, a sentence and a mark; open, three lines '
+      '(name, value in words, its source, ONE « Changer » that opens the list of THAT line at its place); « Choisir sur la carte » alone in '
+      'the head; « Source et cartes » folded at the foot', 'F', tags=('fuel', 'weather'), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0308 (mock-up modules/fuel/maquette/procedures.html validated by the user, Q-0047: « RÀS ! du boulot comme ça, j\'aime. »; '
+      'the ergonomist\'s two touches: on a phone « Choisir sur la carte » under the aerodrome\'s name; the folded sentence without '
+      '« Départ LFRS ») — the block was a code summary line, four stacked lists and five links in a row')
+def f209(c):
+    route_metar(c, {'LFRS': (210, 9), 'LFML': (130, 12)})
+    open_proc(c)
+    wait_rows(c, 'arr')
+    A = f'{FUEL} [data-proc="arr"]'
+    D = f'{FUEL} [data-proc="dep"]'
+    # the head: one gesture, renamed
+    c.eq(norm(c.text(f'{A} .fu-proctitle [data-do="onmap"]')), norm(tx(PT, 'procOnMap', c.lang)), 'the head has « Choisir sur la carte »', what='onmap')
+    # open: three lines, each with its name and ONE « Changer »; no list shown until it is asked
+    rows = c.js(f"[...document.querySelectorAll('{A} [data-prow]')].map(r => [r.dataset.prow, r.querySelectorAll('[data-do=procchange]').length])")
+    c.eq(rows, [['rwy', 1], ['main', 1], ['app', 1]], 'three lines: runway, arrival (STAR), approach — one « Changer » each', what='rows')
+    c.eq(c.js(f"[...document.querySelectorAll('{A} select')].filter(e => window.__t.shown(e)).length"), 0, 'no list shown before « Changer »', what='lists')
+    # « Changer » opens the list of THAT line only, at its place; another « Changer » closes the first
+    c.tap(f'{A} [data-prow="rwy"] [data-do="procchange"]')
+    shown = c.js(f"[...document.querySelectorAll('{A} select')].filter(e => window.__t.shown(e)).map(e => e.dataset.k)")
+    c.eq(shown, ['p-arr-rwy'], 'the runway list alone', what='rwy list')
+    opts = c.js(f"[...document.querySelectorAll('{A} select[data-k=p-arr-rwy] option')].map(o => o.textContent)")
+    c.ok(any('13R' in o and norm(tx(PT, 'windHead', c.lang)).split('{')[0].strip() in norm(o) for o in opts), opts, 'the runways say their wind in words')
+    c.ok(not any(a in o for o in opts for a in '↓↑←→'), opts, 'no arrow alone')
+    c.tap(f'{A} [data-prow="main"] [data-do="procchange"]')
+    shown = c.js(f"[...document.querySelectorAll('{A} select')].filter(e => window.__t.shown(e)).map(e => e.dataset.k)")
+    c.eq(shown[:1], ['p-arr-star'], 'the STAR list, the runway list closed', what='star list')
+    c.tap(f'{A} [data-prow="main"] [data-do="procchange"]')
+    # a choice: the runway's value in words, the METAR as its source
+    pick_proc(c, 'p-arr-rwy', '13R')
+    c.until(f"(document.querySelector('{A} [data-r=v-rwy]')?.textContent || '').includes('13R')", what='the runway line says 13R')
+    v = c.text(f'{A} [data-r="v-rwy"]')
+    c.ok(norm(tx(PT, 'windHead', c.lang)).split('{')[0].strip() in norm(v), v, 'the runway with its wind in words')
+    c.ok('130' in (c.text(f'{A} [data-r="src-rwy"]') or ''), c.text(f'{A} [data-r="src-rwy"]'), 'its source: the METAR, 130° / 12 kt')
+    # the foot: « Source et cartes », folded, holds « Relire »
+    c.ok(not c.js(f"document.querySelector('{A} [data-procfoot]').open"), 'open', 'the foot is folded')
+    c.ok(not c.shown(f'{A} [data-do="procfetch"]'), c.js(f"[...document.querySelectorAll('{A} [data-do=procfetch]')].map(e => [e.closest('details') ? 'details' : e.parentElement.className, window.__t.shown(e)])"), '« Relire » is in the foot, not on the lines')
+    # the other side, folded: a sentence and a mark, without « Départ LFRS » (already in its head)
+    sm = c.js(f"(() => {{ const e = document.querySelector('{D} [data-procsum]'); return {{ shown: window.__t.shown(e), mark: e.querySelector('[data-mark]')?.dataset.mark, "
+              f"text: e.textContent }} }})()")
+    c.ok(sm['shown'] and sm['mark'] in ('ok', 'todo', 'old'), sm, 'folded: a sentence and its mark')
+    c.ok('LFRS' not in sm['text'] and norm(tx(PT, 'dep', c.lang)) not in norm(sm['text']), sm, 'the sentence does not repeat « Départ LFRS »')
+    # on a phone, « Choisir sur la carte » is under the aerodrome's name
+    name, btn = c.box(f'{A} .fu-procad'), c.box(f'{A} [data-do="onmap"]')
+    if c.width < 480:
+        c.ok(btn['y'] >= name['y'] + name['h'] - 2, [name, btn], 'on a phone, « Choisir sur la carte » under the name')
+    # the complete arrival (the mock-up's first state), every list closed
+    pick_proc(c, 'p-arr-star', _STAR)
+    pick_proc(c, 'p-arr-app', 'LFML.APP.I13R.RW13R.NONE')
+    c.tap(f'{A} [data-prow="app"] [data-do="procchange"]')
+    c.until(f"[...document.querySelectorAll('{A} select')].every(e => !window.__t.shown(e))", what='every list closed')
+    c.until(f"(document.querySelector('{A} [data-r=v-app]')?.textContent || '').includes('13R')", what='the approach line says its approach')
+    c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F209_complet_{c.design}_{c.width}_{c.lang}.png')
+    # the runway against the wind: the line turns to a warning, with the gesture to take the runway into the wind
+    pick_proc(c, 'p-arr-rwy', '31L')
+    c.until(f"!!document.querySelector('{A} [data-prow=rwy].fu-pwarn [data-do=rwyprob]')", what='the warning line with « Prendre la 13R »')
+    c.ok('13R' in (c.text(f'{A} [data-prow=rwy] [data-do=rwyprob]') or ''), c.text(f'{A} [data-prow=rwy] [data-do=rwyprob]'), 'the gesture names the runway into the wind')
+    c.tap(f'{A} [data-prow="rwy"] [data-do="procchange"]')
+    c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F209_arriere_{c.design}_{c.width}_{c.lang}.png')

@@ -1863,3 +1863,19 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   layer from `RL.LAYERS`, `proposal` true only if true; any other field is left. F208 (red before: a foreign field reached the Map).
   (197) `startFlight` puts `starting` back to false in a `finally`: an exception between the two no longer leaves the button busy until
   the reload. F204 still green.
+- **13 Nov 2026 — SOG-0308, first slice: the « Procédures » block on the validated mock-up** (`modules/fuel/maquette/procedures.html`,
+  Q-0047: « RÀS ! du boulot comme ça, j'aime. »; written by Features SOG). One side open. The head: fold, « Départ LFRS Nantes
+  Atlantique », ONE gesture « Choisir sur la carte » (the old « Sur la carte », renamed; under the name below 480 px of container, the
+  ergonomist's touch). Folded: a mark (✓ complete, ! a line waits for its choice — runway; SID / STAR when the aerodrome publishes some;
+  approach when it publishes some —, ⌛ all chosen on procedures of a past cycle) and the sentence « piste 13R · MEN1A · I13R », without
+  « Départ LFRS » (the other touch). Open: three lines (`[data-prow]`: rwy, main, app), each its name, its value in words, its source in
+  small print (METAR, « Little Navmap, lue sur ce poste », the « Carte » link of the choice) and ONE « Changer » that opens the list of
+  THAT line at its place (`cardState.change`, one at a time; « Fermer »). The lists are the `select[data-k]` of always, moved into their
+  line: the choice, its writing and every rule behind them are unchanged. The runway line turns to a warning when the chosen runway is not
+  the probable one, the gesture « Prendre la 13R (vent de face) » on it. The wind in words everywhere in the block (« face 12 kt · travers
+  1 kt »; `wind.label` and its arrows stay the Map's). The foot « Source et cartes », folded: the reading line of always (date, Relire,
+  pages not read, ground) and « Toutes les cartes du terrain »; an aerodrome with nothing read keeps its reading line in view. F209 (red
+  before: no line), captures 390 and 1280 of the complete arrival and of the tail-wind warning. Not in this slice, said: the bottom sheet
+  on a phone (the native list is the phone's own sheet), the runway list ordered best first with « aucun départ publié » (slice 2),
+  the approach by its chart and the navaid's frequency in words (slice 3: a CIFP name « I13R » still reads « I13R »), the ATIS line restyled
+  (slice 4).

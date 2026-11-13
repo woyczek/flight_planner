@@ -158,10 +158,12 @@ export const TX = {
   // la page codée d'une procédure choisie (§ 10.25) : lien public du SIA pour une fiche de l'eAIP
   procSource: ['Source', 'Source', 'Quelle', 'Fuente'],
   // les cartes officielles du terrain (SOG-0024, SOG-0031) : la page de l'aérodrome dans l'AIP de son État, l'adresse d'aerodb (chartsUrl)
-  procCharts: ['Cartes', 'Charts', 'Karten', 'Cartas'],
+  procCharts: ['Toutes les cartes du terrain', 'All the charts of the aerodrome', 'Alle Karten des Flugplatzes',
+    'Todas las cartas del aeródromo'
+  ],
   // la carte officielle d'une procédure choisie (SOG-0045) : l'adresse d'aerodb (chartUrl) ; {k} : la piste, SID, STAR ou APP
   procChart: ['Carte {k}', 'Chart {k}', 'Karte {k}', 'Carta {k}'],
-  procOnMap: ['Sur la carte', 'On the map', 'Auf der Karte', 'En el mapa'],
+  procOnMap: ['Choisir sur la carte', 'Choose on the map', 'Auf der Karte wählen', 'Elegir en el mapa'],
   // le vent sur une piste (§ 10.30) : les raisons de l'orange et du rouge, en infobulle de la piste
   procWindTailSome: ['Vent arrière {kt} kt', 'Tail wind {kt} kt', 'Rückenwind {kt} kt', 'Viento de cola {kt} kt'],
   procWindTail: ['Vent arrière {kt} kt (plus de {max} kt)', 'Tail wind {kt} kt (over {max} kt)', 'Rückenwind {kt} kt (über {max} kt)',
@@ -308,5 +310,31 @@ export const TX = {
   ],
   procCountRead: [' {read} pages lues sur {pages}.', ' {read} pages read of {pages}.', ' {read} Seiten von {pages} gelesen.',
     ' {read} páginas leídas de {pages}.'
-  ]
+  ],
+  // SOG-0308 (maquette validée, Q-0047) : le bloc en trois lignes, chacune son nom, sa valeur en mots et UN geste « Changer »
+  procChangeBtn: ['Changer', 'Change', 'Ändern', 'Cambiar'],
+  procCloseBtn: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+  procFoot: ['Source et cartes', 'Source and charts', 'Quelle und Karten', 'Fuente y cartas'],
+  procSidRow: ['Départ (SID)', 'Departure (SID)', 'Abflug (SID)', 'Salida (SID)'],
+  procStarRow: ['Arrivée (STAR)', 'Arrival (STAR)', 'Ankunft (STAR)', 'Llegada (STAR)'],
+  procToChoose: ['à choisir', 'to choose', 'zu wählen', 'por elegir'],
+  procRwyWord: ['piste {r}', 'runway {r}', 'Piste {r}', 'pista {r}'],
+  procTransWord: ['transition', 'transition', 'Übergang', 'transición'],
+  procChartOne: ['Carte', 'Chart', 'Karte', 'Carta'],
+  procMarkOk: ['complet', 'complete', 'vollständig', 'completo'],
+  procMarkTodo: ['à choisir', 'to choose', 'zu wählen', 'por elegir'],
+  procMarkOld: ['procédures périmées', 'outdated procedures', 'veraltete Verfahren', 'procedimientos caducados'],
+  procMetarSrc: ['METAR de {at}, {dir}° / {kt} kt', 'METAR of {at}, {dir}° / {kt} kt', 'METAR von {at}, {dir}° / {kt} kt',
+    'METAR de las {at}, {dir}° / {kt} kt'
+  ],
+  procRwyTakeHead: ['Prendre la {rwy} (vent de face)', 'Take {rwy} (headwind)', '{rwy} nehmen (Gegenwind)',
+    'Tomar la {rwy} (viento de cara)'
+  ],
+  procRwyTakeOne: ['Prendre la {rwy}', 'Take {rwy}', '{rwy} nehmen', 'Tomar la {rwy}'],
+  // le vent d'une piste en mots (plus de flèche seule ni de couleur seule : le mot d'abord)
+  windHead: ['face {kt} kt', 'headwind {kt} kt', 'Gegenwind {kt} kt', 'de cara {kt} kt'],
+  windTail: ['arrière {kt} kt', 'tailwind {kt} kt', 'Rückenwind {kt} kt', 'de cola {kt} kt'],
+  windCross: ['travers {kt} kt', 'crosswind {kt} kt', 'Seitenwind {kt} kt', 'cruzado {kt} kt'],
+  windCalm: ['vent nul', 'calm', 'windstill', 'calma'],
+  procMetarAt: ['{h} h {m} Z', '{h}:{m}Z', '{h}:{m} Z', '{h}:{m} Z']
 };

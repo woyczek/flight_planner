@@ -2782,6 +2782,8 @@ function onPlanClick(e) {
     return;
   }
   // une tape sur la ligne de résumé d'un côté (ou son bouton ▸) le déplie (§ 10.31) ; les autres boutons de la ligne gardent leur geste
+  const pch = e.target.closest('[data-do="procchange"]');
+  if (pch) return S.P.change(pch.dataset.side, pch.dataset.row); // SOG-0308 : la liste de CETTE ligne, à sa place
   const pfold = e.target.closest('[data-do="procfold"]');
   if (pfold && (pfold.matches('button') || !e.target.closest('button, a'))) return S.P.fold(pfold.dataset.side);
   const fm = e.target.closest('[data-do="fms"]');
