@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0e276b1",
+  "organisation": "0a349ed",
   "fiches": 336,
   "untranslated": 0,
   "priorities": 310
@@ -1254,14 +1254,13 @@
     {
      "id": "SOG-0253",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Vue VFR : donner les directions du tour de piste (carte VAC), voilure fixe en noir, tournante en vert",
      "en": "VFR view: show the traffic pattern directions (VAC chart)",
      "de": "VFR view: show the traffic pattern directions (VAC chart)",
      "es": "VFR view: show the traffic pattern directions (VAC chart)",
      "milestone": "6.0.0-alpha.6",
-     "rank": 126,
-     "test": true
+     "rank": 126
     },
     {
      "id": "SOG-0328",
@@ -4508,7 +4507,7 @@
     {
      "id": "SOG-0336",
      "kind": "feature",
-     "state": "later",
+     "state": "planned",
      "fr": "Atelier VAC : le parseur entre dans le lanceur, le serveur de l'atelier disparaît, la Carte lit le JSON",
      "en": "VAC workbench: the parser moves into the launcher, the workbench server goes away, the Map reads the JSON",
      "de": "VAC-Werkbank: der Parser zieht in den Launcher, der Werkbank-Server entfällt, die Karte liest das JSON",

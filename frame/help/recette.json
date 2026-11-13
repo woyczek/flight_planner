@@ -2135,8 +2135,7 @@
    },
    "test": "Relance le lanceur, recharge la page. Données, pli « Tours de piste VFR » : dépose le XML de ton extracteur (format VfrCircuits de tools/report-vfr/FORMAT-DONNEES.md) — la page dit combien de terrains et de circuits ont été lus, ou le refus en mots. Carte, vue VFR, sur un terrain du fichier : le circuit des avions en trait plein noir avec ses flèches et son altitude, celui des hélicoptères en pointillé vert. Un terrain dont la carte est lue sans tracé : « main gauche (rien de publié sur la carte) ». Un terrain non lu : rien.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T20:50:46Z"
+   "state": "known"
   },
   {
    "id": "SOG-0254",
