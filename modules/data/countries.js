@@ -149,6 +149,8 @@ function tone(id) {
     running = !!S.run && S.run.set === 'base' && S.run.verb !== 'purge' && S.ids.includes(id),
     t = M.toneOf(S.status, id, inCov, running);
   if (t) return t;
+  if (inCov && S.ctx.launcher && statusKnown())
+    return 'unread'; // l'état de la base n'est pas encore lu (ou la lecture a échoué) : neutre, jamais une teinte de défaut (SOG-0260)
   const pub = S.d.pub,
     b = M.baseOf(pub?.base, [id]),
     cycle = b ? b.cycle : null,
@@ -220,9 +222,14 @@ function mapHtml() {
     list = [...all].sort((a, b) => rank(a) - rank(b)),
     fr = framesOf(frame), // la vue (le zoom et le déplacement gardés), le cadre de départ et le monde (mapview.js)
     cell = Math.max(frame[2] / 110, .3);
+  let unread = 0;
   const paths = list.map(p => {
-    const t = tone(p.id),
-      label = `${nameOf(p.id)} : ${word(t)}${procs[p.id] ? `, ${tt(TX.cw.procYes, { s: procs[p.id].map(procName).join(', ') })}` : ''}`;
+    const t = tone(p.id);
+    if (t === 'unread') unread++;
+    const code = S.status?.zones?.[p.id]?.reasons?.[0]?.code,
+      why = t === 'warn' || t === 'err' ? (M.own(TX.sn, `r_${code}`) ? tt(TX.sn[`r_${code}`]) : zoneReasons(p.id)[0]) :
+      '', // l'infobulle dit pourquoi une zone n'est pas verte
+      label = `${nameOf(p.id)} : ${word(t)}${why ? ` (${why})` : ''}${procs[p.id] ? `, ${tt(TX.cw.procYes, { s: procs[p.id].map(procName).join(', ') })}` : ''}`;
     return `<path class="d-wz" d="${p.d}" data-zone="${esc(p.id)}" data-hz="${esc(p.id)}" data-tone="${esc(t)}" data-act="open-country" tabindex="-1" role="button" aria-label="${esc(label)}"${p.approx ? ' data-approx' : ''}${open.has(p.id) ? ' data-grp' : ''}${S.cw.hover === p.id ? ' data-hover' : ''}${S.packHl?.has(p.id) ? ' data-hl' : ''}${S.cw.sel.has(p.id) ? ' data-sel' : ''}><title>${esc(label)}</title></path>`;
   }).join('');
   const hatch = list.filter(p => procs[p.id]).map(p => `<path class="d-wh" d="${p.d}" data-proc="${esc(p.id)}"></path>`).join('');
@@ -234,7 +241,7 @@ function mapHtml() {
       <span class="d-maplinks" data-map-links><button type="button" class="d-link" data-act="world-toggle" aria-pressed="${S.cw.world}">${esc(tt(TX.zx.mvWorld))}</button> <button type="button" class="d-link" data-act="map-home" aria-pressed="${!S.cw.world}">${esc(tt(TX.zx.mvHome))}</button></span></div>
     <div class="d-mapframe"><svg class="d-wmap" data-wmap viewBox="${fr.view.join(' ')}" data-base="${frame.join(' ')}" data-world="${fr.world.join(' ')}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${(frame[2] / frame[3]).toFixed(3)}" role="group" aria-label="${esc(tt(TX.cw.mapLabel))}"><defs><pattern id="d-hatch" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${cell.toFixed(2)}" stroke="currentColor" stroke-width="${(cell * .3).toFixed(2)}"></line></pattern></defs><g data-wz>${paths}</g><g class="d-whg" data-wh>${hatch}</g></svg>
 </div>
-    <p class="d-lgd" data-cw-legend><span class="d-lgl">${['ok', 'warn', 'err'].map(t => `<span class="d-lgi">${sw(t)}${esc(tt(TX.mapLegendBase[t]))}</span>`).join('')}<span class="d-lgi">${sw('muted')}${esc(tt(TX.cw.outside))}</span></span><span class="d-zoom" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button><button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">\u2212</button></span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
+    <p class="d-lgd" data-cw-legend><span class="d-lgl">${['ok', 'warn', 'err'].map(t => `<span class="d-lgi">${sw(t)}${esc(tt(TX.mapLegendBase[t]))}</span>`).join('')}${unread ? `<span class="d-lgi">${sw('unread')}${esc(tt(TX.cw.word.unread))}</span>` : ''}<span class="d-lgi">${sw('muted')}${esc(tt(TX.cw.outside))}</span></span><span class="d-zoom" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button><button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">\u2212</button></span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
     ${S.cw.legend ? `<p class="f-muted" data-cw-legend-more><span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''} · ${esc(tt(TX.d2.mapTouch))} · ${esc(tt(TX.d4.selHelp))}</p>` : ''}${selBarHtml()}</section>`;
 }
 /** Le nom d'une origine de procédures (CIFP, eAIP, EAD) ; le code tel quel pour une autre. */
@@ -291,7 +298,8 @@ const SIGN_OF = {
   ok: '✓',
   warn: '!',
   err: '✗',
-  muted: '–'
+  muted: '–',
+  unread: '?'
 };
 /** Les paquets : une ligne par paquet (nom, état résumé, chevron), un seul ouvert ; ouvert, ses pays (nom et état en mot, chacun ouvre sa fiche) puis le « Mettre à jour » du paquet. '' sans paquet. */
 function groupsHtml() {
@@ -1116,6 +1124,7 @@ export const CW_STYLE = `
 [data-module="data"] .d-wz[data-tone=warn]{stroke:var(--sog-warn);fill:var(--sog-warn)}
 [data-module="data"] .d-wz[data-tone=err]{stroke:var(--sog-err);fill:var(--sog-err)}
 [data-module="data"] .d-wz[data-tone=muted]{fill-opacity:.1}
+[data-module="data"] .d-wz[data-tone=unread]{fill-opacity:.12;stroke-dasharray:3 2}
 [data-module="data"] .d-wz[data-approx]{stroke-dasharray:4 3}
 [data-module="data"] .d-wz[data-grp],[data-module="data"] .d-wz[data-hl],[data-module="data"] .d-wz[data-sel]{stroke:var(--sog-accent);stroke-width:2.6px;stroke-dasharray:none}
 [data-module="data"] .d-wz[data-sel]{fill-opacity:.7}

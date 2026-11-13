@@ -227,6 +227,7 @@ export const STYLE = `
 [data-module="data"] .d-sw[data-tone=ok]{background:var(--sog-ok);border-color:var(--sog-ok)}
 [data-module="data"] .d-sw[data-tone=warn]{background:var(--sog-warn);border-color:var(--sog-warn)}
 [data-module="data"] .d-sw[data-tone=err]{background:var(--sog-err);border-color:var(--sog-err)}
+[data-module="data"] .d-sw[data-tone=unread]{background:color-mix(in srgb,var(--sog-muted) 12%,transparent);border:1px dashed var(--sog-muted)}
 [data-module="data"] .d-sw[data-tone=accent]{background:var(--sog-accent);border-color:var(--sog-accent)}
 [data-module="data"] .d-sw[data-tone=muted]{background:var(--sog-muted);border-color:var(--sog-muted)}
 [data-module="data"] .d-journal{margin-top:var(--sog-gap-s)}

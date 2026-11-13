@@ -6953,7 +6953,7 @@ def l91(c):
       (function walk(o, p) { if (Array.isArray(o) && o.length === 4 && typeof o[0] === 'string') { if (o.some(s => re.test(s))) out.push(p); return } if (o && typeof o === 'object') for (const k of Object.keys(o)) walk(o[k], p ? p + '.' + k : k) })(TX, '');
       return out }""")
     allowed = ('up.tick', 'certifyHint', 'tickOnStation', 'tickRefused', 'bal.personal', 'toCertify', 'zr.', 'upd.planTick', 'packs.', 'personalKept', 'greyReason.no-set', 'greyReason.no-state', 'zoneMap.', 'mapLegendNote',
-               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick', 'lc.addPersonal')
+               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick', 'lc.addPersonal', 'sn.personal')
     c.eq([h for h in hits if not h.startswith(allowed)], [], 'only the texts about the « Je certifie… » box, the coverage fold, the States of the Procédures and the proc map still say ticked / selection', what='selection texts')
     t = c.js("""async () => { const { TX } = await import('/modules/data/texts.js'); return [TX.upd.none, TX.upd.ask, TX.advice.partial, TX.advice.interrupted, TX.greyReason['no-zone']] }""")
     c.ok(all(not re.search(r'coch|ticked|angekreuzt|marcad', ' '.join(row), re.I) for row in t), t, '« Rien à reconstruire : ces n sont à jour », the question, the advice and « no zone » no longer say ticked')
@@ -8073,7 +8073,7 @@ def l102(c):
     # ---- 4. the folded block of the month, then the first row of groups: all on screen at 1280 x 800
     if wide:
         td, gr = rect('[data-todo]'), rect('[data-group-id]')
-        c.ok(gr['b'] <= c.js('window.innerHeight') and td['b'] <= gr['t'], (td, gr, c.js('window.innerHeight')), 'the map, the folded « À faire » line and the FIRST ROW of groups are all on screen (the viewport of 800)')
+        c.ok(gr['t'] + 44 <= c.js('window.innerHeight') and td['b'] <= gr['t'], (td, gr, c.js('window.innerHeight')), 'the map, the folded « À faire » line and the FIRST ROW of groups (its title line at least: the line that names the zones not up to date, SOG-0260, takes one) are on screen (the viewport of 800)')
         c.ge(mp['h'], 320, 'the map is at least 320 px high at 1280 x 800 (it was 200: the header doubled itself; the mockup has about 380)')
         c.ok(mp['b'] <= td['t'] and td['b'] <= gr['t'], (mp, td, gr), 'in that order: the map, the folded « À faire » line, the first row of groups')
     c.eq(c.js("[...document.querySelector('[data-todo]').children].length > 0 && document.querySelector('details[data-todo]').open"), False, '« À faire ce mois-ci » is folded', what='todo folded')
@@ -8404,7 +8404,7 @@ def l108(c):
         mp, td, gr = _L_RECT(c, '[data-wmap]'), _L_RECT(c, '[data-todo]'), _L_RECT(c, '[data-group-id]')
         vh = c.js('window.innerHeight')
         c.ge(mp['h'], 320, 'the map is at least 320 px high (it was 200)', what='map height')
-        c.ok(gr['b'] <= vh and mp['b'] <= td['t'] and td['b'] <= gr['t'], (mp, td, gr, vh), 'the map, the folded « À faire ce mois-ci » line and the first row of group cards are all in the first screen of 800')
+        c.ok(gr['t'] + 44 <= vh and mp['b'] <= td['t'] and td['b'] <= gr['t'], (mp, td, gr, vh), 'the map, the folded « À faire ce mois-ci » line and the first row of group cards are all in the first screen of 800')
     c.check_errors()
 
 
@@ -9256,4 +9256,90 @@ def l128(c):
     c.js("document.querySelector('[data-base-detail] [data-journal]').open = true")
     c.until("!!document.querySelector('[data-base-detail] [data-journal] .f-muted, [data-base-detail] [data-journal] .d-ops')", timeout=4000, what='the journal opens inside')
     c.eq(c.js("document.querySelector('[data-base-detail]').open"), True, 'the outer fold keeps its state', what='stays open')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L129 .. L130 (SOG-0260, the user's refusal of 13 Nov: the amber of the map says nothing)
+_L129_AMBER = {'es': ['Espagne', 'Spain', 'Spanien', 'España'], 'gb': ['Royaume-Uni', 'United Kingdom', 'Vereinigtes Königreich', 'Reino Unido'], 'ie': ['Irlande', 'Ireland', 'Irland', 'Irlanda'],
+               'pt': ['Portugal', 'Portugal', 'Portugal', 'Portugal'], 'se': ['Suède', 'Sweden', 'Schweden', 'Suecia'], 'il': ['Israël', 'Israel', 'Israel', 'Israel'],
+               'ps': ['Palestine', 'Palestine', 'Palästina', 'Palestina'], 'sy': ['Syrie', 'Syria', 'Syrien', 'Siria']}
+
+
+def _l129_open(c, drop=()):
+    """The state of the user's base as the launcher answered AeroDB on 13 Nov (base/status of 84 zones: 73 up to date carrying the notice « no-points », 3 up to date, five that wait for the
+    personal-use tick, three to rebuild with the old reader), on the real outlines: the screen of the capture. `drop`: zones the launcher does not answer for (their state is not read)."""
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[c.lang]
+    geo, packs, _cover = _l102_world()
+    amber = [z for z in _L129_AMBER if z in geo]
+    assert len(amber) == 8, amber
+    ids = amber + [z for z in sorted(geo) if z not in amber][:76]
+    cfg, _ = _fixture()
+    cfg['realOutlines'] = True
+    cfg['zones'] = [{'id': z, 'names': g['n'], 'frames': [], 'published': z in ids} for z, g in sorted(geo.items())]
+    cfg['packs'] = {'generated': packs['generated'], 'source': 'test', 'regions': [r for r in packs['regions'] if r['zones']], 'themes': []}
+    for zid in ids:
+        cfg['publication']['base'][zid] = cfg['publication']['base']['es']
+    notice = {'code': 'no-points', 'source': 'openaip'}
+    rest = [z for z in ids if z not in amber]
+    zs = {zid: {**_ZDL(_zst('up-to-date'), True), 'notices': [notice] if i < 73 else [], 'publish': {'state': 'published'}} for i, zid in enumerate(rest)}
+    for zid, src in (('es', 'enaire'), ('gb', 'nats'), ('ie', 'airnav'), ('pt', 'navpt'), ('se', 'lfv')):
+        zs[zid] = _ZDL(_zst('stale', {'code': 'personal-undeclared', 'source': src}, buildable=False), True)
+    for zid in ('il', 'ps', 'sy'):
+        zs[zid] = {**_ZDL(_zst('stale', {'code': 'parser-old', 'built': 23, 'current': 28}), True), 'notices': [notice]}
+    dropped = [rest[k] for k in drop]
+    st = _launcher(c, [_view('done', step='Terminé')], verbs=_VERBS + ['base/pickup'], busy_running=_running())
+    st['by_args'] = True
+    st['status'] = lambda args: _status({z: v for z, v in zs.items() if z not in dropped and (not args.get('zones') or z in args['zones'])})
+    _open(c, cfg)
+    c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length > 20", timeout=30000, what='the real map')
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) >= %d" % (84 - len(dropped)), timeout=25000, what='the state of the zones')
+    return li, rest, dropped
+
+
+def _zname(c, z):
+    return _l102_world()[0][z]['n'][{'fr': 0, 'en': 1, 'de': 2, 'es': 3}[c.lang]]
+
+
+@case('L129', 'Données: under the state sentence, the zones that are not up to date are NAMED with what each kind waits for (SOG-0260, the user: « pourquoi en marron, alors que tout semble bon ? ») — on the real state of 13 Nov (84 zones, 76 green, 8 amber: five wait for the tick, three to rebuild with the old reader), the amber zones of the map are named under the sentence, the notice « no-points » colours nothing, and a zone of the map says why in its tooltip',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0260 (refused on 13 Nov: « c\'est toujours le cas »): the state of the zones was only counted, so eight amber countries among 76 green ones said nothing; the sentence names them (with the shared reason when there is one) and the tooltip of an amber country gives its reason in words; a notice is information, never a colour')
+def l129(c):
+    lang = c.lang
+    li, rest, _dropped = _l129_open(c)
+    SN = lambda k: _trow(k, lang, after='  sn: {')
+    names = {z: _l102_world()[0][z]['n'][li] for z in _L129_AMBER}
+    sent = c.text('[data-state-sentence]')
+    lines = {k: c.js(f"(e => e ? e.textContent.replace(/\\s+/g, ' ').trim() : null)(document.querySelector('[data-state-names={k}]'))") for k in ('rebuild', 'personal')}
+    c.ok(all(lines.values()), lines, 'one line under the sentence per kind that is not up to date (to rebuild, waiting for the tick)')
+    want_pers = set(names[z] for z in ('es', 'gb', 'ie', 'pt', 'se'))
+    want_old = set(names[z] for z in ('il', 'ps', 'sy'))
+    got = lambda k: set(x.strip() for x in lines[k].split(' : ', 1)[1].split(' — ')[0].split(','))
+    c.eq([got('personal'), got('rebuild')], [want_pers, want_old], 'each line names its countries', what='names')
+    c.ok(norm(SN('personal')) in norm(lines['personal']) and norm(SN('rebuild')) in norm(lines['rebuild']), lines, 'and starts with what the kind waits for, in words')
+    c.ok(norm(SN('r_parser-old')) in norm(lines['rebuild']), lines['rebuild'], 'the three that share one reason say it (read by an older reader)')
+    tones = c.js("(() => { const o = {}; document.querySelectorAll('[data-wmap] path[data-zone]').forEach(p => { if (p.dataset.tone !== 'muted') o[p.dataset.tone] = (o[p.dataset.tone] || 0) + 1 }); return o })()")
+    c.eq(tones, {'ok': 76, 'warn': 8}, 'the map: 76 green, 8 amber — the notice « no-points » colours nothing', what='tones')
+    tip = c.js("(p => p.querySelector('title').textContent)(document.querySelector('[data-wmap] path[data-zone=sy]'))")
+    c.ok(names['sy'] in tip and SN('r_parser-old') in tip, tip, 'the tooltip of an amber country says why')
+    tip_ok = c.js("(p => p.querySelector('title').textContent)(document.querySelector('[data-wmap] path[data-zone=' + %r + ']'))" % rest[1])
+    c.ok(SN('r_parser-old') not in tip_ok, tip_ok, 'a green one does not')
+    c.shot(f'L129_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('L130', 'Données: a zone whose state is not read yet is NEUTRAL (« état non lu »), never amber (SOG-0260 / SOG-0180: not hidden, not painted as a fault) — the launcher answers for 80 of the 84 zones: those four are grey with a dashed outline, named in the sentence, counted « sans état », and the group counts say « état non lu »',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0260 (the ergonomist, 13 Nov: « un état de chargement ne doit jamais ressembler à un défaut »): the map painted amber every country the read state did not mention, so a read in progress (or a failed chunk) looked like eighty faults')
+def l130(c):
+    lang = c.lang
+    li, rest, dropped = _l129_open(c, drop=(10, 11, 12, 13))
+    W = lambda k: _trow(k, lang, after='    word: {')
+    tones = c.js("(() => { const o = {}; document.querySelectorAll('[data-wmap] path[data-zone]').forEach(p => { if (p.dataset.tone !== 'muted') o[p.dataset.tone] = (o[p.dataset.tone] || 0) + 1 }); return o })()")
+    c.eq(tones, {'ok': 72, 'warn': 8, 'unread': 4}, 'the four zones the launcher did not answer for are neutral, not amber (the eight real ones stay amber)', what='tones')
+    tip = c.js("(p => p.querySelector('title').textContent)(document.querySelector('[data-wmap] path[data-zone=' + %r + ']'))" % dropped[0])
+    c.ok(norm(W('unread')) in norm(tip), tip, 'its tooltip says « état non lu »')
+    look = c.js("(p => { const s = getComputedStyle(p); return [s.strokeDasharray, parseFloat(s.fillOpacity)] })(document.querySelector('[data-wmap] path[data-zone=' + %r + ']'))" % dropped[0])
+    c.ok(look[0] not in ('none', '') and look[1] < .3, look, 'neutral to the eye: a dashed outline, a pale fill')
+    line = c.js("(e => e ? e.textContent.replace(/\\s+/g, ' ').trim() : null)(document.querySelector('[data-state-names=unknown]'))")
+    c.ok(line and all(_zname(c, z) in line for z in dropped), line, 'the sentence names the four')
     c.check_errors()

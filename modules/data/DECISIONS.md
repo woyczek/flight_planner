@@ -679,3 +679,16 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   offers as such (§§ 5.1, 5.5, 5.8, 5.10, 5.11) keep their logic with a reading note instead of being deleted: the code under them (gates, plans,
   models) is still used. `INVENTAIRE_FONCTIONNEL.md` gets a banner (a survey of the screen BEFORE the redesign) and § 6: what became of each
   block and of each of its ten gaps. Nothing in the code changed.
+- **13 Nov 2026 — SOG-0260, the refusal of 13 Nov (« c'est toujours le cas »): the amber of the map says why, and a state not read is neutral.**
+  Replay of the REAL state (AeroDB's base/status of 84 zones on the user's tree: 76 up to date — 73 of them with the notice `no-points` —, five
+  waiting for the personal-use tick, three to rebuild with the old reader) on the current screen: 76 green, 8 amber, the sentence right, the notice
+  colouring and counting nothing: the reported defect does not reproduce with that launcher and this screen. What remained wrong is that eight amber
+  countries among seventy-six green ones said nothing, and that every country the read state did not mention (a read under way, a failed chunk) was
+  painted AMBER like a fault. (a) Under the state sentence, one line per kind not up to date names its countries (six at most, « et n autres »)
+  with the reason when all share it (`stateNamesHtml`, `data-state-names`, texts `TX.sn`); (b) the tooltip of an amber or red country gives its
+  reason; (c) a country the launcher's state does not mention, or whose state is not read yet while a launcher answers, is NEUTRAL (tone `unread`:
+  grey, dashed outline, « état non lu », a fourth legend item when there is one) — not hidden (SOG-0180 stands), not a fault. Without a launcher the
+  publication tone is kept. Cases L129 (the real state: names, tones, tooltips) and L130 (four zones not answered for).
+  The line of names is ONE compact paragraph (kinds separated by « · ») after the unfolded list of a number, so it takes at most one line at 1280:
+  the cases L102 and L108 now ask that the TITLE line of the first row of groups (not its whole height) is on the first screen of 800 px — one line
+  of height traded for the names; the ergonomist can reverse it by lowering the minimum height of the map.

@@ -564,7 +564,8 @@ export const TX = {
       warn: ['à faire', 'to do', 'zu tun', 'por hacer'],
       err: ['en échec', 'failed', 'fehlgeschlagen', 'fallida'],
       muted: ['non défini', 'not defined', 'nicht festgelegt', 'no definido'],
-      none: ['état inconnu', 'state unknown', 'Zustand unbekannt', 'estado desconocido']
+      none: ['état inconnu', 'state unknown', 'Zustand unbekannt', 'estado desconocido'],
+      unread: ['état non lu', 'state not read', 'Zustand nicht gelesen', 'estado sin leer']
     },
     openSheet: ['Ouvrir la fiche : {c}', 'Open the sheet: {c}', 'Blatt öffnen: {c}', 'Abrir la ficha: {c}'],
     back: ['← Retour', '← Back', '← Zurück', '← Atrás'],
@@ -2775,5 +2776,26 @@ export const TX = {
       'Was man liest, ohne etwas zu tun: die Abdeckung nach Land, das Dateninventar des Rechners und das Protokoll der Vorgänge.',
       'Lo que se lee sin hacer nada: la cobertura por país, el inventario de datos del equipo y el diario de las operaciones.'
     ]
+  },
+  // SOG-0260 : sous la phrase d'état, les pays qui ne sont pas à jour, nommés, avec ce que chaque sorte attend (et la raison quand elle est commune) ; l'infobulle de la carte
+  sn: {
+    rebuild: ['À reconstruire', 'To rebuild', 'Neu aufzubauen', 'Por reconstruir'],
+    failed: ['En échec', 'Failed', 'Fehlgeschlagen', 'Fallidos'],
+    waiting: ['Attendent un fichier', 'Waiting for a file', 'Warten auf eine Datei', 'Esperan un archivo'],
+    personal: ['Attendent la coche d’usage personnel', 'Waiting for the personal-use tick',
+      'Warten auf das Häkchen für den persönlichen Gebrauch', 'Esperan la casilla de uso personal'
+    ],
+    unknown: ['Sans état lu', 'State not read', 'Zustand nicht gelesen', 'Sin estado leído'],
+    more: ['et {n} autres', 'and {n} more', 'und {n} weitere', 'y {n} más'],
+    'r_parser-old': ['lecteur plus ancien que celui de la suite', 'read by an older reader than the suite’s',
+      'von einem älteren Leser als dem der Suite gelesen', 'leído por un lector anterior al de la suite'
+    ],
+    'r_source-newer': ['une source plus récente existe', 'a newer source exists', 'es gibt eine neuere Quelle',
+      'existe una fuente más reciente'
+    ],
+    'r_inputs-changed': ['sources modifiées depuis la construction', 'sources changed since the build',
+      'Quellen seit dem Aufbau geändert', 'fuentes modificadas desde la construcción'
+    ],
+    'r_never-built': ['jamais construite', 'never built', 'nie aufgebaut', 'nunca construida']
   }
 };

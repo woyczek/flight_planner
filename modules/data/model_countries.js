@@ -75,13 +75,13 @@ export function frameOf(boxes) {
 }
 /** Le cadre du monde entier (le même pour tous : « Voir le monde entier »). */
 export const worldFrame = () => frameOf([WORLD]);
-/** La teinte d'un pays sur la carte : 'muted' (hors de la couverture), la teinte de l'état du lanceur (vert, ambre, rouge ; « en cours » dit ambre : la marche se lit dans la barre d'état), ambre quand l'état est lu et ne dit rien de ce pays ; null quand l'état n'est pas lu
+/** La teinte d'un pays sur la carte : 'muted' (hors de la couverture), la teinte de l'état du lanceur (vert, ambre, rouge ; « en cours » dit ambre : la marche se lit dans la barre d'état), neutre (« état non lu ») quand l'état est lu et ne dit rien de ce pays ; null quand l'état n'est pas lu
  *  (l'appelant donne alors la teinte de la publication). */
 export function toneOf(status, id, inCoverage, running) {
   if (!inCoverage) return 'muted';
   const ds = drawnState(status, id, running);
   if (ds) return STATE_TONE[ds] === 'accent' ? 'warn' : STATE_TONE[ds];
-  return status ? 'warn' : null;
+  return status ? 'unread' : null; // l'état est lu et ne dit rien de ce pays : neutre, ni caché ni peint en défaut (SOG-0260)
 }
 /** Le bilan d'un paquet : { known (ses pays), inCov, ok (à jour), warn (à faire), err (en échec), none (sans état lu), out (hors de la couverture) } ; `tone(id)` est la teinte d'un pays (toneOf). */
 export function tally(known, covIds, tone) {

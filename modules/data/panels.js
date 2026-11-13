@@ -45,6 +45,7 @@ import {
 } from './update.js';
 import {
   countriesHtml,
+  nameOf,
   readsIdle
 } from './countries.js';
 import {
@@ -691,6 +692,22 @@ function stateWhy() {
 }
 /** La tête du panneau de la base (lot 1 de l'écran Données) : la phrase d'état (le cycle en vigueur et sa date d'effet, puis les zones de la base : n à jour · n à reconstruire · n en échec · n attendent un fichier · n sans état, chaque nombre un bouton qui déplie ses zones sur place, juste dessous),
  *  puis LE bouton « Mettre à jour » (le même verbe `update`) avec sa portée (toute la couverture, ou « la sélection » quand elle est partielle), ce qu'il va faire, la raison s'il est gris ; « Tout est à jour. » sans bouton quand il n'y a rien à faire ; enfin la marche et la fin de l'opération de la base. */
+/** Sous la phrase d'état, les pays qui ne sont pas à jour, NOMMÉS, une ligne par sorte (à reconstruire, en échec, attendent un fichier, attendent la coche, sans état lu) avec la raison quand tous la partagent (SOG-0260 : huit pays
+ *  ambre au milieu de soixante-seize verts ne disaient rien) ; six noms au plus, « et n autres » ensuite. '' quand tout est à jour. */
+function stateNamesHtml(groups) {
+  if (!groups) return '';
+  const lines = ['rebuild', 'failed', 'waiting', 'personal', 'unknown'].filter(k => groups[k].length).map(k => {
+    const ids = groups[k],
+      names = ids.slice(0, 6).map(nameOf).join(', '),
+      more = ids.length > 6 ? ` ${tt(TX.sn.more, { n: ids.length - 6 })}` : '',
+      codes = new Set(ids.map(id => S.status?.zones?.[id]?.reasons?.[0]?.code)),
+      code = codes.size === 1 ? [...codes][0] : '',
+      why = (k === 'rebuild' || k === 'failed') && code && M.own(TX.sn, `r_${code}`) ? ` — ${tt(TX.sn[`r_${code}`])}` : '';
+    return `<span data-state-names="${k}"><b>${esc(tt(TX.sn[k]))}</b> : ${esc(names)}${esc(more)}${esc(why)}</span>`;
+  });
+  return lines.length ? `<p class="f-muted d-names" data-state-names-box>${lines.join(' · ')}</p>` : '';
+}
+
 function stateHeadHtml() {
   const groups = balance().groups,
     z = n => count('zone', n),
@@ -725,7 +742,7 @@ function stateHeadHtml() {
   const baseOnly = !none && !all.only && sc.known && sc.n > 0 ? `<p class="d-baseonly" data-base-only><button type="button" class="d-link" data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.d4.baseOnly, { n: sc.n }))}</button></p>` : '';
   // la forme de la maquette validée (lot D2) : le titre du cycle et sa barre d'avancement, la légende en une ligne (la phrase d'état, ses nombres restent des boutons), puis le bouton avec, à côté, ce qu'il fait
   const what = [all.what ? `<p class="f-muted" data-update-plan>${esc(all.what)}</p>` : '', notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : '', baseOnly].join('');
-  return `<div class="d-statehead" data-state-head>${cycleBarHtml()}<p class="d-cap" data-state-sentence>${tail}</p>${list}
+  return `<div class="d-statehead" data-state-head>${cycleBarHtml()}<p class="d-cap" data-state-sentence>${tail}</p>${list}${stateNamesHtml(groups)}
     <div class="d-all" data-update-all><div class="d-go">${action}${what ? `<div class="d-what">${what}</div>` : ''}${why}</div>${chainBelowHtml()}</div>
     ${opAreaHtml('base', 'head')}</div>`;
 }
