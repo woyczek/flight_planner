@@ -2601,5 +2601,48 @@
    "at": "2026-11-13T10:34:41Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0043",
+   "fiche": "SOG-0240",
+   "app": "maintenance",
+   "question": "Danemark (Naviair) : la reproduction de ses données est interdite sans autorisation écrite. La demande est prête (NAVIAIR_LICENCE_REQUEST.md). On l'envoie, ou on renonce au Danemark ?",
+   "context": "C'est le seul pays de l'alpha.6 bloqué par une licence. L'envoi est un courriel de ta part : aucune session n'écrit à un tiers. En attendant, le Danemark reste sans points ni voies officiels ; le plan B par les données du simulateur (usage personnel, jamais publié) existe déjà.",
+   "options": [
+    "J'envoie la demande à Naviair (donne-moi le texte)",
+    "On renonce au Danemark pour l'instant : le plan B du simulateur suffit"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 1
+  },
+  {
+   "id": "Q-0044",
+   "fiche": "SOG-0182",
+   "app": "maintenance",
+   "question": "Procédures hors France : pour mesurer ce qu'on peut tirer d'une carte espagnole, AeroDB a besoin de télécharger une ou deux cartes d'essai chez ENAIRE (LEMO CARR_1 et une autre, environ 1 Mo chacune). D'accord ?",
+   "context": "Une carte ENAIRE est un dessin avec des étiquettes : les noms des points sortent sans l'ordre de la procédure, et ENAIRE ne publie pas de table de codage. Marche A — les NOMS des procédures, lus de la liste des cartes du terrain — est faisable vite, sans rien télécharger de plus. Marche B — la suite des points — ne peut être chiffrée que sur une carte réelle. Les cartes resteraient sur ce poste, jamais publiées.",
+   "options": [
+    "Oui : deux cartes d'essai, sur ce poste seulement",
+    "Non : on s'en tient à la marche A (les noms)"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0045",
+   "fiche": "SOG-0153",
+   "app": "maintenance",
+   "question": "Le classeur des points FRA d'EUROCONTROL est commité dans ton dépôt privé de données, donc partagé entre pilotes, alors que sa licence interdit de le redistribuer. On le sort du dépôt ?",
+   "context": "La règle posée le 12/11 : les classeurs d'EUROCONTROL se lisent sur le poste, jamais compilés, commités ni publiés. Les points FRA sont déjà servis en couche locale (hors dépôt). Aucune session n'écrit dans ton dépôt de données : le retrait serait un geste de ta main (je te donne la commande), et le fichier resterait dans l'historique git tant qu'il n'est pas purgé.",
+   "options": [
+    "Oui : je le retire du dépôt (donne-moi le chemin et la commande)",
+    "Non : le dépôt est privé, je le laisse"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }
