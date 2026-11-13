@@ -3157,3 +3157,65 @@ def k263(c):
         else:
             c.ok(True, '', 'symbolic links are not allowed on this machine: that case is skipped')
     c.ok(not G['_HELD'], '', 'the reserve is empty at the end')
+
+
+@case('K264', 'POST /__setup/regen/job (and its cancel / release) is refused above 16 MiB by its Content-Length, BEFORE any byte of the body is read; a job start of a few MiB (captures of a report) still reaches the verbs (audit 202)', 'K',
+      static=True, rule='Sécurisation, audit 202 (13 Nov): `_post_regen_job` read the whole body (up to MAX_UPLOAD, 512 MiB) then `json.loads` it: a job start never carries more than a few MiB (the biggest, the recette, about 2 MiB; the reports of SOG-0316 about 6 MiB; big deposits go through /regen/job/put with its own bound), so the route refuses above 16 MiB (413) as the local network already is; the other routes keep their bounds')
+def k264(c):
+    import http.client
+    import shutil
+    import socket
+    import subprocess
+    import tempfile
+    import time
+    CRLF = chr(13) + chr(10)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td) / 'root'
+        shutil.copytree(c.root / 'tools', root / 'tools', ignore=shutil.ignore_patterns('__pycache__', '_verify', 'demo', '.regen_last.json'))
+        data = root / 'data'
+        data.mkdir()
+        (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        log = open(Path(td) / 'launcher.log', 'w')
+        p = subprocess.Popen([sys.executable, str(root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
+                             stdin=subprocess.DEVNULL, cwd=td, env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp)})
+        try:
+            hdr = {'X-SOG-Setup': '1', 'Sec-Fetch-Site': 'same-origin'}
+            for _ in range(60):
+                try:
+                    http.client.HTTPConnection('127.0.0.1', port, timeout=5).request('GET', '/', headers=hdr)
+                    break
+                except OSError:
+                    time.sleep(0.5)
+
+            def head_only(route, n):
+                """The request line and headers with a Content-Length of n, and NO body: a server that reads the body first waits; one that refuses by the length answers at once. (status line, answered)"""
+                sk = socket.create_connection(('127.0.0.1', port), timeout=6)
+                sk.sendall((f'POST {route} HTTP/1.1{CRLF}Host: 127.0.0.1:{port}{CRLF}X-SOG-Setup: 1{CRLF}Sec-Fetch-Site: same-origin{CRLF}Content-Type: application/json{CRLF}Content-Length: {n}{CRLF}{CRLF}').encode())
+                try:
+                    got = sk.recv(4096).decode('utf-8', 'replace')
+                except OSError:
+                    got = ''
+                sk.close()
+                return got.split(CRLF)[0], bool(got)
+            for route in ('/__setup/regen/job', '/__setup/regen/job/cancel', '/__setup/regen/job/release'):
+                line, answered = head_only(route, 16 * 1024 * 1024 + 1)
+                c.ok(answered and ' 413 ' in line, line, f'{route}: 16 MiB + 1 byte is refused by its length, at once, without reading the body')
+            # a job start of a few MiB still reaches the verbs (here: an unknown operation, 400, not 413)
+            con = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
+            con.request('POST', '/__setup/regen/job', body=json.dumps({'set': 'nowhere', 'verb': 'none', 'args': {'pad': 'x' * (6 * 1024 * 1024)}}), headers={**hdr, 'Content-Type': 'application/json'})
+            r = con.getresponse()
+            r.read()
+            c.eq(r.status, 400, 'a job start of 6 MiB (the captures of a report) reaches the launcher and is answered by it (unknown operation)', what='6 MiB')
+        finally:
+            p.terminate()
+            try:
+                p.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            log.close()

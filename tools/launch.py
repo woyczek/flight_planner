@@ -921,7 +921,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             size = int(self.headers.get('Content-Length') or 0)
         except ValueError:
             return self._json({'error': 'taille invalide'}, 400)
-        if size < 0 or size > (LAN_MAX_BODY if self._lan() else self.MAX_UPLOAD):
+        limit = LAN_MAX_BODY if self._lan() else self.MAX_UPLOAD
+        if path in JOB_POSTS:          # démarrer, annuler, libérer un travail : jamais plus de quelques Mio (audit 202) ; refusé sur la longueur annoncée, AVANT toute lecture du corps
+            limit = min(limit, JOB_MAX_BODY)
+        if size < 0 or size > limit:
             return self._json({'error': 'fichier trop gros'}, 413)
         body = self.rfile.read(size) if size else b''
         if path in LNMPERF_ROUTES:
@@ -2041,6 +2044,8 @@ class Server6(Server):
 # demande et fermés avec le lanceur
 LAN = {'servers': [], 'hosts': set(), 'order': [], 'handler': None, 'port': 0}
 LAN_MAX_BODY = 16 * 1024 * 1024  # corps d'un POST venu du réseau local (un lot d'écritures, un relais)
+JOB_MAX_BODY = 16 * 1024 * 1024  # corps d'un POST de travail (regen/job et son annulation) : le plus gros verbe (la recette) tient dans environ 2 Mio, les captures d'un signalement dans environ 6 ; les gros dépôts passent par regen/job/put
+JOB_POSTS = ('/__setup/regen/job', '/__setup/regen/job/cancel', '/__setup/regen/job/release')
 _tree_memo = {'at': 0.0, 'v': None}  # dernier arbre de data/ calculé (servi de nouveau à un appareil, 2 s au plus)
 LAN_LOCK = threading.Lock()
 NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
