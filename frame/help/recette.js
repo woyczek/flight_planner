@@ -22,6 +22,8 @@
     SEVEN = 7,
     SECTIONS = ['today', 'older', 'known', 'seen'];
   /** Le bouton « Signaler » de la barre d'en-tête (SOG-0316 : « pas trouvé le bug report »). */
+  /** Un morceau du résumé : le nombre dit avec la forme du singulier ou du pluriel de la langue. */
+  const sumPart = (t, k, n) => t(T.sum[k].map(f => f[n === 1 ? 0 : 1])).replace('{n}', n);
   const reportBtn = t => `<a class="f-report" href="#signaler" data-report title="${esc(t(T.report))}">${esc(t(T.reportShort))}</a>`;
   const T = {
     report: ['Signaler un problème ou une demande', 'Report a problem or make a request', 'Ein Problem melden oder einen Wunsch äußern',
@@ -30,15 +32,38 @@
     reportShort: ['Signaler', 'Feedback', 'Melden', 'Informar'],
     title: ['Recette', 'Acceptance', 'Abnahme', 'Recepción'],
     intro: [
-      'Un test fonctionnel par fiche livrée : où aller, quoi faire, quoi voir. « Validé » ou « Refusé » (un refus demande un commentaire) : l’ergonome lit vos verdicts à chaque tour.',
-      'One functional test per delivered card: where to go, what to do, what to see. “Passed” or “Failed” (a failure needs a comment): the ergonomist reads your verdicts every round.',
-      'Ein Funktionstest je gelieferte Karte: wohin, was tun, was sehen. „Bestanden“ oder „Abgelehnt“ (eine Ablehnung braucht einen Kommentar): Die Ergonomie liest Ihre Urteile in jeder Runde.',
-      'Una prueba funcional por ficha entregada: adónde ir, qué hacer, qué ver. «Válido» o «Rechazado» (un rechazo pide un comentario): la ergonomía lee sus veredictos en cada ronda.'
+      'Un test fonctionnel par fiche livrée : où aller, quoi faire, quoi voir. « Validé », « Accepter avec réserves » ou « Refusé » (des réserves ou un refus demandent un commentaire ; des réserves ne demandent pas de nouveau test, un refus oui) : l’ergonome lit vos verdicts à chaque tour.',
+      'One functional test per delivered card: where to go, what to do, what to see. “Passed”, “Accept with reservations” or “Failed” (reservations or a failure need a comment; reservations need no retest, a failure does): the ergonomist reads your verdicts every round.',
+      'Ein Funktionstest je gelieferte Karte: wohin, was tun, was sehen. „Bestanden“, „Mit Vorbehalten akzeptieren“ oder „Abgelehnt“ (Vorbehalte oder eine Ablehnung brauchen einen Kommentar; Vorbehalte brauchen keinen neuen Test, eine Ablehnung schon): Die Ergonomie liest Ihre Urteile in jeder Runde.',
+      'Una prueba funcional por ficha entregada: adónde ir, qué hacer, qué ver. «Válido», «Aceptar con reservas» o «Rechazado» (las reservas o un rechazo piden un comentario; las reservas no piden otra prueba, un rechazo sí): la ergonomía lee sus veredictos en cada ronda.'
     ],
-    summary: ['{a} à valider · {b} validés · {c} refusés · {d} en cours', '{a} to check · {b} passed · {c} failed · {d} in progress',
-      '{a} zu prüfen · {b} bestanden · {c} abgelehnt · {d} in Arbeit',
-      '{a} por comprobar · {b} válidos · {c} rechazados · {d} en curso'
-    ],
+    // le résumé (SOG-0329) : « 2 validés (dont 1 avec réserves) · 1 refusé » — la réserve après les validés, le singulier quand il n'y en a qu'un ; un morceau par état, [une, plusieurs]
+    sum: {
+      todo: [
+        ['{n} à valider', '{n} à valider'],
+        ['{n} to check', '{n} to check'],
+        ['{n} zu prüfen', '{n} zu prüfen'],
+        ['{n} por comprobar', '{n} por comprobar']
+      ],
+      ok: [
+        ['{n} validé', '{n} validés'],
+        ['{n} passed', '{n} passed'],
+        ['{n} bestanden', '{n} bestanden'],
+        ['{n} válido', '{n} válidos']
+      ],
+      ko: [
+        ['{n} refusé', '{n} refusés'],
+        ['{n} failed', '{n} failed'],
+        ['{n} abgelehnt', '{n} abgelehnt'],
+        ['{n} rechazado', '{n} rechazados']
+      ],
+      known: [
+        ['{n} en cours', '{n} en cours'],
+        ['{n} in progress', '{n} in progress'],
+        ['{n} in Arbeit', '{n} in Arbeit'],
+        ['{n} en curso', '{n} en curso']
+      ]
+    },
     all: ['Toutes', 'All', 'Alle', 'Todas'],
     app: {
       pilote: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
@@ -517,7 +542,7 @@
         verdictN = v => mine.filter(x => !known(x) && verdictOf(x)?.verdict === v).length;
       const tabs = questions.length ? `<div class="f-rm-bar" role="tablist" data-tabs>${['tests', 'decisions'].map(k => `<button type="button" class="f-rm-btn" data-tab="${k}" aria-pressed="${ui.tab === k}">${esc(k === 'tests' ? t(T.tabTests) : t(T.tabDecide, { n: undecided() }))}</button>`).join('')}</div>` : '';
       view.innerHTML = `<div class="f-docbar"><h1>${esc(t(T.title))}</h1>${reportBtn(t)}</div>${tabs}${ui.tab === 'decisions' && questions.length ? decisionsPanel() : `        <p class="f-muted">${esc(t(T.intro))}</p>
-        <p data-summary>${esc(t(T.summary, { a: n('today') + n('older'), b: verdictN('ok') + verdictN('reserve'), c: verdictN('ko'), d: n('known') }) + (verdictN('reserve') ? ` (${t(T.withReserves, { r: verdictN('reserve') })})` : ''))}</p>
+        <p data-summary>${esc([sumPart(t, 'todo', n('today') + n('older')), sumPart(t, 'ok', verdictN('ok') + verdictN('reserve')) + (verdictN('reserve') ? ` (${t(T.withReserves, { r: verdictN('reserve') })})` : ''), sumPart(t, 'ko', verdictN('ko')), sumPart(t, 'known', n('known'))].join(' · '))}</p>
         <div class="f-rm-bar" data-apps>${[''].concat(apps).map(a => `<button type="button" class="f-rm-btn" data-app="${esc(a)}" aria-pressed="${ui.app === a}">${esc(a ? appName(a) : t(T.all))}</button>`).join('')}</div>
         ${mine.length ? SECTIONS.map(k => sectionHtml(k, by[k])).join('') : `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`}`}`;
       fitAll(view);

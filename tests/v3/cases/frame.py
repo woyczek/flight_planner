@@ -4561,6 +4561,19 @@ def a114(c):
     c.check_errors()
 
 
+def _rc_summary(lang, todo, ok, ko, known, reserve=0):
+    """The Recette summary as it must read (SOG-0329): « 2 validés (dont 1 avec réserves) · 1 refusé » — the reservations after the passed ones, the singular when there is one. Written here, per language."""
+    i = ['fr', 'en', 'de', 'es'].index(lang)
+    forms = {'todo': [('{n} à valider',) * 2, ('{n} to check',) * 2, ('{n} zu prüfen',) * 2, ('{n} por comprobar',) * 2],
+             'ok': [('{n} validé', '{n} validés'), ('{n} passed',) * 2, ('{n} bestanden',) * 2, ('{n} válido', '{n} válidos')],
+             'ko': [('{n} refusé', '{n} refusés'), ('{n} failed',) * 2, ('{n} abgelehnt',) * 2, ('{n} rechazado', '{n} rechazados')],
+             'known': [('{n} en cours',) * 2, ('{n} in progress',) * 2, ('{n} in Arbeit',) * 2, ('{n} en curso',) * 2]}
+    withres = ['dont {r} avec réserves', 'including {r} with reservations', 'davon {r} mit Vorbehalten', 'de ellos {r} con reservas'][i]
+    part = lambda k, n: forms[k][i][0 if n == 1 else 1].replace('{n}', str(n))
+    ok_txt = part('ok', ok) + (f' ({withres.replace("{r}", str(reserve))})' if reserve else '')
+    return ' · '.join([part('todo', todo), ok_txt, part('ko', ko), part('known', known)])
+
+
 def _rc_fixture():
     """A frame/help/recette.json (sog-recette/1): nine new tests, one older than the last recette, one known defect, one passed, one failed, a hostile title."""
     lab = lambda fr, en: {'fr': fr, 'en': en, 'de': en + ' (de)', 'es': en + ' (es)'}
@@ -4599,7 +4612,7 @@ def a115(c):
         c.eq(norm(c.text('[data-more=today]')), norm(T('more').replace('{n}', '2')), 'then « Voir les 2 autres »', what='more')
         c.eq([c.count('[data-section=older]'), c.count('[data-section=known]'), c.count('[data-section=seen]')], [1, 1, 1], 'the older, the known and the seen are sections', what='sections')
         c.eq(c.js("[...document.querySelectorAll('details[data-section]')].map(d => d.open)"), [False, False, False], 'folded', what='folded')
-        c.eq(norm(c.text('[data-summary]')), norm(T('summary').replace('{a}', '10').replace('{b}', '1').replace('{c}', '1').replace('{d}', '1')), 'the summary counts them', what='summary')
+        c.eq(norm(c.text('[data-summary]')), norm(_rc_summary(lang, 10, 1, 1, 1)), 'the summary counts them (the singular when there is one)', what='summary')
         c.ok(c.count('[data-section=today] img') == 0 and c.js('window.__pwn === undefined'), 'img', 'a hostile title is text')
         c.js("document.querySelector('[data-section=known] summary').click()")
         c.eq([c.count('[data-section=known] [data-ok]'), norm(c.text('[data-section=known] [data-known]'))], [0, norm(T('knownLine'))], 'a known defect says « do not retest » and has no verdict button', what='known')
@@ -7277,9 +7290,11 @@ def a190(c):
             c.wait(250)
         c.eq([got[first]['verdict'], got[first]['comment'], {k: got[k] for k in old}], ['reserve', 'Le libellé est coupé à 390', old], 'the launcher wrote the third verdict with its comment; the verdicts already there are not rewritten', what='written')
         c.until(f"!document.querySelector('[data-section=today] [data-id=\"{first}\"]')", what='the test left the day list')
-        c.eq(norm(c.text('[data-summary]')), norm(T('summary').replace('{a}', '9').replace('{b}', '2').replace('{c}', '1').replace('{d}', '1') + ' (' + T('withReserves').replace('{r}', '1') + ')'), 'the summary counts it with the passed ones and marks it apart', what='summary')
+        c.eq(norm(c.text('[data-summary]')), norm(_rc_summary(lang, 9, 2, 1, 1, 1)), 'the summary counts it with the passed ones and marks it apart', what='summary')
         c.js("document.querySelector('[data-section=seen]').open = true")
         c.eq(norm(c.text(f'[data-section=seen] [data-id="{first}"] [data-verdict]')).startswith(norm(T('reserve'))), True, 'in « Déjà vus » it says « Accepté avec réserves » and its comment', what='seen')
+        c.eq(norm(c.js("document.querySelector('.f-docbar ~ p.f-muted').textContent")), norm(T('intro')), 'the lead sentence is the text of the page', what='intro')
+        c.ok(norm(T('reserveBtn')) in norm(T('intro')), T('intro')[:80], 'the lead sentence names the three gestures, « Accepter avec réserves » among them')
         c.shot(f'A190_{c.width}_{lang}_delivered.png')
         c.wait(2500)
         c.page.reload()
