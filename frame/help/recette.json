@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 197,
+  "tests": 198,
   "verdicts": 124
  },
  "apps": [
@@ -2855,6 +2855,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:29:51Z"
+  },
+  {
+   "id": "SOG-0316",
+   "app": "pilote",
+   "title": {
+    "fr": "Signaler un bug ou une demande depuis l'application",
+    "en": "Report a bug or a request from within the application",
+    "de": "Einen Fehler oder Wunsch direkt in der Anwendung melden",
+    "es": "Señalar un fallo o una petición desde la aplicación"
+   },
+   "test": "Relance le lanceur (nouveaux verbes), recharge la page. Aide › Signaler : choisis une sorte, écris un titre et un texte, joins une capture, « Envoyer » : le message dit que c'est écrit sur ce poste ; le signalement apparaît dessous dans « Mes signalements ». Je le lis à mon prochain tour et j'en fais une fiche : dis-moi ensuite si elle est arrivée. Le contexte « Noté tout seul » ne porte pas encore la version : c'est demandé.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T14:44:16Z"
   },
   {
    "id": "SOG-0317",

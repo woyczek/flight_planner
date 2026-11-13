@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c712279",
+  "organisation": "5b174d8",
   "fiches": 324,
   "untranslated": 0,
   "priorities": 310
@@ -339,11 +339,12 @@
     {
      "id": "SOG-0316",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Signaler un bug ou une demande depuis l'application",
      "en": "Report a bug or a request from within the application",
      "de": "Einen Fehler oder Wunsch direkt in der Anwendung melden",
-     "es": "Señalar un fallo o una petición desde la aplicación"
+     "es": "Señalar un fallo o una petición desde la aplicación",
+     "test": true
     },
     {
      "id": "SOG-0323",
