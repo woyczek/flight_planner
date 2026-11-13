@@ -4666,19 +4666,22 @@ def f152(c):
         c.until(f"!!document.querySelector('{line} [data-atisline=vatsim]') && !!document.querySelector('{line} [data-metarline]')", timeout=20000,
                 what=f'{w} px: the ATIS line above the METAR line')
         atis = norm(c.text(f'{line} [data-atisline=vatsim]') or '')
-        head = norm(tx(T, 'procAtisRwy', c.lang).split('{rwy}')[0])
-        c.ok(atis.startswith(head) and atis[len(head):].strip().startswith('13R') and 'VATSIM' in atis and ' F' in atis and 'Z' in atis and norm(tx(T, 'procAtisTake', c.lang)) in atis
-             and 'RWY IN USE' not in atis and 'Invented' not in atis, atis, f'{w} px: « Piste en service : 13R (ATIS VATSIM, information F, …Z) », its gesture; never the text, never a name')
-        c.ok(not c.js(f"!!document.querySelector('{line} [data-atisline=ivao]')"), '', 'the IVAO ATIS made only of traps (renamed, visual ops, RVR, RMK) gives no runway')
+        # SOG-0325 : la ligne de l'ATIS porte tout, « ATIS F · VATSIM · piste 13R · …Z »
+        c.ok(atis.startswith('ATIS F · VATSIM · ' + norm(tx(T, 'procRwyWord', c.lang).replace('{r}', '13R'))) and 'Z' in atis and norm(tx(T, 'procAtisTake', c.lang)) in atis
+             and 'RWY IN USE' not in atis and 'Invented' not in atis, atis, f'{w} px: « ATIS F · VATSIM · piste 13R · …Z », its gesture; never the text, never a name')
+        ivao = norm(c.text(f'{line} [data-atisline=ivao]') or '')
+        c.ok(not c.js(f"!!document.querySelector('{line} [data-atisline=ivao] [data-do=rwyprob]')") and '13R' not in ivao and '31L' not in ivao, ivao,
+             'the IVAO ATIS made only of traps (renamed, visual ops, RVR, RMK) gives no runway (its METAR group gives its wind: SOG-0325)')
         order = c.js(f"[...document.querySelectorAll('{line} .fu-rwyline')].map(e => e.hasAttribute('data-atisline') ? 'atis' : 'metar')")
-        c.eq(order, ['atis', 'metar'], 'the ATIS above, the METAR (31L, it differs) below', what='order')
+        c.eq(order, ['atis', 'atis', 'metar'], 'the ATIS above, the METAR (31L, it differs) below', what='order')
         c.ok(sorted({u.split('/')[2] for u in st['calls']}) == ['api.ivao.aero', 'data.vatsim.net'], st['calls'], 'the two feeds the suite already reads, no other host')
         c.js(f"document.querySelector('{line}').scrollIntoView({{block: 'center'}})")
         c.shot(f'F152_{c.design}_{w}_{c.lang}_delivered.png')
         c.context.unroute(re.compile(r'https://(data\.vatsim\.net|api\.ivao\.aero)/'))
     c.tap(f'{line} [data-atisline=vatsim] [data-do="rwyprob"]')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '13R', 'the ATIS runway taken by the gesture', timeout=8000)
-    c.until(f"!document.querySelector('{line} [data-atisline]')", timeout=5000, what='the ATIS line said no more once it is the flight\'s')
+    # SOG-0325 : la ligne reste (elle porte aussi le QNH et le vent), sans son geste une fois sa piste celle du vol
+    c.until(f"!document.querySelector('{line} [data-atisline=vatsim] [data-do=rwyprob]')", timeout=5000, what='no gesture once the ATIS runway is the flight\'s')
     # agreeing with the METAR: the ATIS alone
     _atis_feeds(c, ['RWY IN USE 31L'])
     _atis_open(c, {'vatsim': True})
@@ -5572,3 +5575,37 @@ def f218(c):
         c.wait(100)
     c.ok(st.get('cancels'), st.get('cancels'), '(c) the second request cancelled (regen/job/cancel)')
     c.ok(any(a.get('fl') == 250 and 'alternatives' not in a for a in comps()[n:]), comps()[n:], '(c) the first asked again with the new level')
+
+
+
+@case('F219', 'Procedures, arrival: a « Terrain » line — the elevation from the base, the QNH of the ATIS first then the METAR\'s when they '
+      'differ, « QNH inconnu » without either — and the ATIS line carries everything: letter, network, runway, QNH, wind, time', 'F',
+      tags=('fuel', 'weather'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0325 (the user, 13 Nov 15 h 49: « dans les données de vol, il faut le qnh d\'arrivée, l\'information ATIS (lettre, piste, qnh, vents) '
+      'si contrôlée, et l\'altitude du terrain »), the ergonomist\'s line « Altitude 69 ft · QNH 1016 (METAR de 14 h 25 Z) » and « ATIS K · IVAO · '
+      'piste 13R · QNH 1016 · 130° / 12 kt »; SOG-0308 slice 4; nothing invented; invented feeds')
+def f219(c):
+    T = 'modules/fuel/procedures_texts.js'
+    A = f'{FUEL} [data-proc="arr"]'
+    # no METAR for the arrival, no ATIS: « QNH inconnu », nothing invented
+    route_metar(c, {'LFRS': (30, 5)})
+    _atis_open(c, {'offline': True})
+    c.until(f"!!document.querySelector('{A} [data-terrain]') && /100/.test(document.querySelector('{A} [data-terrain]').textContent)", timeout=20000, what='the Terrain line')
+    c.settle()
+    t = norm(c.text(f'{A} [data-terrain]'))
+    c.ok(norm(tx(T, 'procQnhUnknown', c.lang)) in t and 'METAR' not in t, t, '« QNH inconnu »')
+    c.context.unroute(re.compile(r'aviationweather\.gov(/|%2F)api(/|%2F)data(/|%2F)metar', re.I))
+    c.context.unroute(re.compile(r'metar\.vatsim\.net', re.I))
+    route_metar(c, {'LFRS': (30, 5), 'LFML': (310, 12)})   # QNH 1015 in the invented METAR
+    _atis_feeds(c, ['MARSEILLE INFORMATION F', 'RWY IN USE 13R', 'WIND 130/12KT', 'QNH 1016'])
+    _atis_open(c, {'vatsim': True})
+    c.until(f"/1016/.test(document.querySelector('{A} [data-terrain]')?.textContent || '') && /1015/.test(document.querySelector('{A} [data-terrain]')?.textContent || '')",
+            timeout=20000, what='the Terrain line with the ATIS QNH and the METAR QNH')
+    t = norm(c.text(f'{A} [data-terrain]'))
+    elev = norm(tx(T, 'procElev', c.lang).replace('{e}', '100'))
+    c.ok(t.startswith(elev), t, '« Altitude 100 ft » first (the base)')
+    c.ok(t.index('QNH 1016') < t.index('QNH 1015') and 'VATSIM F' in t and 'METAR' in t, t, 'both QNH, the ATIS first, then the METAR with its time')
+    atis = norm(c.text(f'{A} [data-rwyprob] [data-atisline=vatsim]') or '')
+    c.ok(atis.startswith('ATIS F · VATSIM · ') and 'QNH 1016' in atis and '130° / 12 kt' in atis and 'Z' in atis, atis, '« ATIS F · VATSIM · piste 13R · QNH 1016 · 130° / 12 kt · …Z »')
+    c.js(f"document.querySelector('{A} [data-terrain]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F219_{c.design}_{c.width}_{c.lang}_delivered.png')

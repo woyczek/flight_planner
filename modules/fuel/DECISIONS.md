@@ -1948,3 +1948,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   is the computation's, which the stale rule reads) and « Variantes du cache, calculées à … ». A refused plan's proposals come with the
   first answer: no second request. F218 (red before); F109 and F157 follow (two requests); the Map's readers D126, D136, D140, D144,
   D154, D159, D164, D177, D193, D201, D202, D231 played.
+- **13 Nov 2026 — SOG-0308 slice 4 widened to SOG-0325 (display): a « Terrain » line on the arrival, the ATIS line carries everything**
+  (the user, 15 h 49: « le qnh d'arrivée, l'information ATIS (lettre, piste, qnh, vents) si contrôlée, et l'altitude du terrain »; the
+  ergonomist's lines). `atis.js` reads, from the most recent fresh ATIS of the side (`atisInfo`), the QNH (`qnhOfText`: « QNH 1016 »,
+  « Q1016 », « ALTIMETER 2992 » / « A2992 » converted, one value or nothing, 900 to 1100 hPa) and the wind (`windOfText`: « WIND 130/12KT »,
+  a METAR group, calm; two winds or a variable one: nothing) — never the text. The ATIS line is « ATIS F · VATSIM · piste 13R · QNH 1016
+  · 130° / 12 kt · 1655Z », one per network that says a runway, a QNH or a wind, kept when its runway is the flight's (only its gesture
+  goes); its gesture is a bordered button as in the mock-up (`maquette/procedures_atis_390.png`). The « Terrain » line (no « Changer »:
+  information, not a choice; `data-terrainrow`, not a `data-prow`): the elevation from the base (`aerodb.aerodromes`, asked once), then
+  each QNH, the ATIS's first, the METAR's with its time when it differs; « QNH inconnu » without either; nothing invented. NOT done here:
+  keeping these values in the flight with their time and source (the contract `arr_info` is proposed to the ergonomist; the flight
+  follow of BUGS SOG and the report will read it). F219 (red before); F152 follows (the new line, the trap ATIS gives its wind).

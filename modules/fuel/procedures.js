@@ -137,6 +137,8 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-procfoot>summary::before{content:'▸';border:0;width:auto;height:auto;transform:none;margin:0 .5em 0 0;font-size:.9em}
 [data-module="fuel"] .fu-procfoot[open]>summary::before{content:'▾';transform:none}
 [data-module="fuel"] .fu-rwyprob{margin:4px 0 0}
+[data-module="fuel"] .fu-rwyline{display:block}
+[data-module="fuel"] .fu-rwyline>button{margin-top:8px} /* SOG-0325 : deux gestes empilés ne se touchent pas */
 [data-module="fuel"] .fu-procmeta{display:flex;flex-wrap:wrap;align-items:center;column-gap:.45em;font-size:.85em}
 [data-module="fuel"] .fu-procmeta .fu-linkbtn{padding:0 2px}
 [data-module="fuel"] .fu-appaid{font-variant-numeric:tabular-nums} /* l'aide de l'approche (SOG-0176) : « ILS 25 · DO 109.35 · axe 246° » */
@@ -959,7 +961,7 @@ export function createProcedures(host) {
    *  cartes » ; sans donnée, la ligne de lecture seule (« Lire les procédures »), toujours vue. patchSide remplit le tout. */
   const skeleton = (side, m, fields) => {
     const of = row => fields.filter(f => ROW_OF[f.k.split('-')[2]] === row),
-      rows = m.nodata ? '' : `<div class="fu-prows">${rowHtml(side, 'rwy', TX.procRwy, of('rwy'))}${rowHtml(side, 'main', side === 'dep' ? TX.procSidRow : TX.procStarRow, of('main'))}${side === 'arr' ? rowHtml(side, 'app', TX.procApp, of('app')) : ''}</div>`;
+      rows = m.nodata ? '' : `<div class="fu-prows">${rowHtml(side, 'rwy', TX.procRwy, of('rwy'))}${rowHtml(side, 'main', side === 'dep' ? TX.procSidRow : TX.procStarRow, of('main'))}${side === 'arr' ? rowHtml(side, 'app', TX.procApp, of('app')) + `<div class="fu-prow fu-pterrain" data-terrainrow><span class="fu-plab">${esc(tt(TX.procTerrain))}</span><span class="fu-pval" data-r="v-terrain" data-terrain></span></div>` : ''}</div>`;
     return `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><p class="fu-procsum" data-r="sum" data-procsum></p>${m.nodata ? '<div class="fu-procmeta f-muted" data-r="meta"></div>' : `${rows}<p class="fu-lnmline f-warn" data-r="lnm" data-lnmline hidden></p><details class="fu-procfoot" data-procfoot><summary>${esc(tt(TX.procFoot))}</summary><div class="fu-procmeta f-muted" data-r="meta"></div></details>`}</div>`;
   };
   // l'ILS de la base pour une piste d'un terrain (SOG-0176) : clé « OACI|piste » → la fiche nettoyée, null (aucun), absente tant que la
@@ -1095,6 +1097,8 @@ export function createProcedures(host) {
     val('main', v.proc === null ? tt(TX.procNone) : v.proc);
     src('main', mainRec ? srcLabel(mainRec) : '');
     val('app', v.app === null ? tt(TX.procNone) : v.app);
+    const tr = el.querySelector('[data-r="v-terrain"]');
+    if (tr) setHtml(tr, terrainHtml(m));
     for (const c of el.querySelectorAll('[data-chart-slot]')) setHtml(c, rowChartHtml(m.icao, side, c.dataset.chartSlot));
     for (const row of el.querySelectorAll('[data-prow]')) {
       const on = cardState.change === `${side}:${row.dataset.prow}`,
@@ -1107,6 +1111,59 @@ export function createProcedures(host) {
       }
     }
   }
+  /** SOG-0325 : la ligne « Terrain » de l'arrivée — l'altitude du terrain (la base), puis chaque QNH connu, celui de l'ATIS d'abord
+   *  (« QNH 1016 (ATIS VATSIM F) · QNH 1015 (METAR de 14 h 25 Z) ») ; une valeur égale n'est dite qu'une fois ; sans METAR ni ATIS,
+   *  « QNH inconnu ». Rien d'inventé : sans altitude dans la base, l'altitude n'est pas dite. */
+  function terrainHtml(m) {
+    const e = elevOf(m.icao),
+      parts = Number.isFinite(e) ? [tt(TX.procElev, {
+        e: Math.round(e).toLocaleString(ctx.lang?.() || 'fr')
+      })] : [],
+      seen = new Set();
+    for (const a of host.atisInfo?.(m.icao, 'arr') || [])
+      if (Number.isInteger(a?.qnh) && !seen.has(a.qnh)) {
+        seen.add(a.qnh);
+        parts.push(tt(TX.procQnhAtis, {
+          q: a.qnh,
+          net: NET_NAME[a.net] || '',
+          letter: a.letter || ''
+        }).replace(/\s+\)/, ')'));
+      }
+    const mq = host.metarQnh?.(m.icao),
+      hm = /^(\d{2})(\d{2})$/.exec(String(mq?.at || ''));
+    if (mq && !seen.has(mq.qnh)) {
+      seen.add(mq.qnh);
+      parts.push(tt(TX.procQnhMetar, {
+        q: mq.qnh,
+        at: hm ? tt(TX.procMetarAt, {
+          h: hm[1],
+          m: hm[2]
+        }) : '—'
+      }));
+    }
+    if (!seen.size) parts.push(tt(TX.procQnhUnknown));
+    return esc(parts.join(' · '));
+  }
+  // SOG-0325 : l'altitude d'un terrain dans la base (aerodb.aerodromes, ft) : null (inconnue), absente tant que la réponse n'est pas venue
+  const elevs = new Map();
+  /** L'altitude du terrain (ft) d'après la base publiée, demandée une fois ; la ligne redessinée à la réponse. */
+  function elevOf(icao) {
+    if (!elevs.has(icao) && typeof ctx.aerodb?.aerodromes === 'function') {
+      elevs.set(icao, undefined);
+      Promise.resolve().then(() => ctx.aerodb.aerodromes({
+        icao
+      })).then(list => {
+        const e = +list?.[0]?.elev;
+        return Number.isFinite(e) && e > -1500 && e < 30000 ? e : null;
+      }).catch(() => null).then(v => {
+        elevs.set(icao, v);
+        if (!host.gone() && v != null) render();
+      });
+    }
+    return elevs.get(icao);
+  }
+  /** SOG-0325 : le vent d'un ATIS en mots (« 130° / 12 kt », « vent nul »). */
+  const atisWind = w => w.kt === 0 ? tt(TX.windCalm) : `${String(w.dir).padStart(3, '0')}° / ${w.kt} kt`;
   /** « Changer » d'une ligne (SOG-0308) : ouvre la liste de CETTE ligne, à sa place, et ferme celle qui l'était ; « Fermer » la referme. */
   function change(side, row) {
     const k = `${side}:${row}`;
@@ -1153,15 +1210,19 @@ export function createProcedures(host) {
           .rwys.every(rwOf)),
         said = new Set(atis.flatMap(a => a.rwys)),
         p = m.nodata ? null : probableRwy(m),
-        lines = atis.filter(a => !a.rwys.includes(cur)).map(a => {
-          const v = {
-              rwy: a.rwys.join(', '),
-              net: NET_NAME[a.net] || '',
-              letter: a.letter,
-              at: a.at || '—'
-            },
-            take = a.rwys.map(k => `<button type="button" class="fu-linkbtn" data-do="rwyprob" data-side="${side}" data-rwy="${esc(rwOf(k).id)}">${esc(a.rwys.length > 1 ? tt(TX.procAtisTakeOne, { rwy: k }) : tt(TX.procAtisTake))}</button>`).join(' ');
-          return `<span class="fu-rwyline" data-atisline="${esc(a.net)}"><span>${esc(tt(a.letter ? TX.procAtisRwy : TX.procAtisRwyNoL, v))}</span> ${take}</span>`;
+        // SOG-0325 : la ligne de l'ATIS porte tout — « ATIS F · VATSIM · piste 13R · QNH 1016 · 130° / 12 kt · 1655Z » ; une ligne par
+        // réseau qui dit une piste, un QNH ou un vent, même quand sa piste est celle du vol (le geste seulement quand elle diffère)
+        infos = m.nodata ? [] : (host.atisInfo?.(m.icao, side) || []).filter(i => i?.qnh != null || i?.wind),
+        nets = [...new Set([...atis.map(a => a.net), ...infos.map(i => i.net)])],
+        lines = nets.map(net => {
+          const a = atis.find(x => x.net === net),
+            i = infos.find(x => x.net === net) || {},
+            letter = a?.letter || i.letter || '',
+            parts = [letter ? `ATIS ${letter}` : 'ATIS', NET_NAME[net] || '', a ? tt(TX.procRwyWord, {
+              r: a.rwys.join(', ')
+            }) : '', Number.isInteger(i.qnh) ? `QNH ${i.qnh}` : '', i.wind ? atisWind(i.wind) : '', a?.at || i.at || ''].filter(Boolean),
+            take = a && !a.rwys.includes(cur) ? a.rwys.map(k => `<button type="button" data-do="rwyprob" data-side="${side}" data-rwy="${esc(rwOf(k).id)}">${esc(a.rwys.length > 1 ? tt(TX.procAtisTakeOne, { rwy: k }) : tt(TX.procAtisTake))}</button>`).join(' ') : '';
+          return `<span class="fu-rwyline" data-atisline="${esc(net)}"><span>${esc(parts.join(' · '))}</span>${take ? ` ${take}` : ''}</span>`;
         });
       if (p && PR.rwNum(p.r.id) !== cur && !said.has(PR.rwNum(p.r.id))) {
         const pw = runwayWind(m, p.r, +host.crossLimit?.() || 0);

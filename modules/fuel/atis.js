@@ -107,6 +107,59 @@ function entriesOf(net, feed, icao) {
   return out;
 }
 
+/** SOG-0325: the QNH an ATIS text says (hPa, an integer from 900 to 1100) — a closed list of phrasings: « QNH 1016 », « Q1016 »,
+ *  « ALTIMETER 2992 » / « A2992 » (inches, converted); two values that differ: null (nothing without proof). */
+export function qnhOfText(text) {
+  const t = String(text || '').toUpperCase(),
+    got = new Set(),
+    inch = (a, b) => Math.round((+a + +b / 100) * 33.8639);
+  for (const m of t.matchAll(/\bQNH\s*:?\s*(\d{3,4})\b/g)) got.add(+m[1]);
+  for (const m of t.matchAll(/(?<![A-Z0-9/])Q(\d{4})(?![0-9A-Z])/g)) got.add(+m[1]);
+  for (const m of t.matchAll(/\bALTIMETER\s*:?\s*([23]\d)\.?(\d{2})\b/g)) got.add(inch(m[1], m[2]));
+  for (const m of t.matchAll(/(?<![A-Z0-9/])A([23]\d)(\d{2})(?![0-9A-Z])/g)) got.add(inch(m[1], m[2]));
+  const v = [...got];
+  return v.length === 1 && v[0] >= 900 && v[0] <= 1100 ? v[0] : null;
+}
+
+/** SOG-0325: the wind an ATIS text says — « WIND 130/12KT », « WIND 130 DEGREES 12 KNOTS », a METAR group « 13012KT » (gusts left out);
+ *  { dir (1 to 360), kt } or { dir: null, kt: 0 } (calm); two winds that differ, a variable one, or nothing: null. */
+export function windOfText(text) {
+  const t = String(text || '').toUpperCase(),
+    got = [];
+  for (const m of t.matchAll(/\bWIND\s*:?\s*(\d{3})\s*(?:DEGREES?|DEG|°)?\s*(?:\/|AT|,)?\s*(\d{1,3})\s*(?:KT|KTS|KNOTS)\b/g)) got.push([+m[
+    1], +m[2]]);
+  for (const m of t.matchAll(/(?<![A-Z0-9/])(\d{3})(\d{2,3})(?:G\d{2,3})?KT\b/g)) got.push([+m[1], +m[2]]);
+  const ok = got.filter(([d, k]) => d <= 360 && k <= 150);
+  if (!ok.length || ok.length !== got.length || new Set(ok.map(x => x.join('/'))).size > 1) return null;
+  const [d, k] = ok[0];
+  return k === 0 ? {
+    dir: null,
+    kt: 0
+  } : {
+    dir: d % 360 || 360,
+    kt: k
+  };
+}
+
+/** SOG-0325: beyond the runway, what the ATIS of a network says for one aerodrome and one side: { net, letter, at ('1655Z'), qnh, wind },
+ *  from its most recent fresh ATIS of that side (an ATIS D is not read for the arrival, nor an ATIS A for the departure); null without
+ *  a fresh ATIS. The text itself is never returned. */
+export function atisInfo(net, feed, icao, side, now = Date.now()) {
+  const ad = String(icao || '').toUpperCase();
+  if (!/^[A-Z0-9]{4}$/.test(ad) || !['arr', 'dep'].includes(side)) return null;
+  const fresh = entriesOf(net, feed, ad).filter(e => Number.isFinite(e.at) && now - e.at <= MAX_AGE_MS && e.at - now <= 10 * 60e3 && (!e
+    .kind || (e.kind === 'A') === (side === 'arr')));
+  if (!fresh.length) return null;
+  const last = fresh.sort((a, b) => b.at - a.at)[0];
+  return {
+    net,
+    letter: last.letter,
+    at: hhmm(last.at),
+    qnh: qnhOfText(last.text),
+    wind: windOfText(last.text)
+  };
+}
+
 /** What the ATIS of a network says for one aerodrome and one side: { net, letter, at ('1655Z'), rwys: ['25'] } or null (no ATIS, too
  *  old, no phrasing of the list, a clash between its phrasings or between its ATIS). `known`: the runways of the aerodrome (any form). */
 export function atisSide(net, feed, icao, side, known, now = Date.now()) {

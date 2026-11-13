@@ -6429,6 +6429,17 @@ export async function mount(el, ctx) {
     // SOG-0090, second lot : ce que l'ATIS de chaque réseau du vol dit de la piste d'un côté (lu par atisRead, jamais en minuterie)
     atis: (icao, side, known) => (self.atis?.nets || []).map(n => ATIS.atisSide(n, self.atis.feeds?.[n], icao, side, known)).filter(
       Boolean),
+    // SOG-0325 : au-delà de la piste, la lettre, le QNH et le vent de l'ATIS de chaque réseau du vol (jamais son texte)
+    atisInfo: (icao, side) => (self.atis?.nets || []).map(n => ATIS.atisInfo(n, self.atis.feeds?.[n], icao, side)).filter(Boolean),
+    // SOG-0325 : le QNH du METAR connu (hPa) et son heure (« 1425 ») ; null sans METAR
+    metarQnh: icao => {
+      const st = WX.station(self.wx?.metar?.[icao], null),
+        q = Number.isFinite(+st?.qnh) ? Math.round(+st.qnh) : null;
+      return q != null && q >= 900 && q <= 1100 ? {
+        qnh: q,
+        at: (/\b\d{2}(\d{4})Z\b/.exec(String(st.raw || '')) || [])[1] || ''
+      } : null;
+    },
     // la limite de vent de travers de la fiche de l'appareil (maxCrosswindKt), 0 sans fiche ou sans limite
     crossLimit: () => +self.sheets?.find(p => p.id === self.flight.aircraft?.sheetId)?.maxCrosswindKt || 0
   });

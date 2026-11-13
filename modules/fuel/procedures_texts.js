@@ -84,15 +84,6 @@ export const TX = {
     'Wahrscheinliche Piste: {rwy} (METAR {at}, Wind {dir}/{kt})', 'Pista probable: {rwy} (METAR {at}, viento {dir}/{kt})'
   ],
   // SOG-0090, second lot : la piste en service d'après l'ATIS du réseau du vol (la piste, la lettre, l'heure ; jamais le texte)
-  procAtisRwy: ['Piste en service : {rwy} (ATIS {net}, information {letter}, {at})',
-    'Runway in use: {rwy} (ATIS {net}, information {letter}, {at})',
-    'Piste in Betrieb: {rwy} (ATIS {net}, Information {letter}, {at})',
-    'Pista en servicio: {rwy} (ATIS {net}, información {letter}, {at})'
-  ],
-  procAtisRwyNoL: ['Piste en service : {rwy} (ATIS {net}, {at})', 'Runway in use: {rwy} (ATIS {net}, {at})',
-    'Piste in Betrieb: {rwy} (ATIS {net}, {at})',
-    'Pista en servicio: {rwy} (ATIS {net}, {at})'
-  ],
   procAtisTake: ['Prendre la piste de l’ATIS', 'Take the ATIS runway', 'Piste der ATIS übernehmen', 'Tomar la pista del ATIS'],
   procAtisTakeOne: ['Prendre {rwy}', 'Take {rwy}', '{rwy} übernehmen', 'Tomar {rwy}'],
   procRwyTake: ['Prendre la piste probable', 'Take the probable runway', 'Wahrscheinliche Piste übernehmen', 'Tomar la pista probable'],
@@ -351,5 +342,13 @@ export const TX = {
   windTail: ['arrière {kt} kt', 'tailwind {kt} kt', 'Rückenwind {kt} kt', 'de cola {kt} kt'],
   windCross: ['travers {kt} kt', 'crosswind {kt} kt', 'Seitenwind {kt} kt', 'cruzado {kt} kt'],
   windCalm: ['vent nul', 'calm', 'windstill', 'calma'],
+  // SOG-0325 : la ligne « Terrain » de l'arrivée
+  procTerrain: ['Terrain', 'Aerodrome', 'Flugplatz', 'Aeródromo'],
+  procElev: ['Altitude {e} ft', 'Elevation {e} ft', 'Höhe {e} ft', 'Altitud {e} ft'],
+  procQnhAtis: ['QNH {q} (ATIS {net} {letter})', 'QNH {q} (ATIS {net} {letter})', 'QNH {q} (ATIS {net} {letter})',
+    'QNH {q} (ATIS {net} {letter})'
+  ],
+  procQnhMetar: ['QNH {q} (METAR de {at})', 'QNH {q} (METAR of {at})', 'QNH {q} (METAR von {at})', 'QNH {q} (METAR de las {at})'],
+  procQnhUnknown: ['QNH inconnu', 'QNH unknown', 'QNH unbekannt', 'QNH desconocido'],
   procMetarAt: ['{h} h {m} Z', '{h}:{m}Z', '{h}:{m} Z', '{h}:{m} Z']
 };
