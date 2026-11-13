@@ -787,14 +787,14 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   margin: 8px 0
 }
 /* la place est réservée avant l'arrivée de la lecture (règle 22 : rien ne bouge dessous) : trois lignes, puis une fiche de hauteur moyenne ; vide, un :empty la libère */
-.f-cos:empty {
+.f-cos:empty:not([data-settled]) {
   min-height: calc(var(--sog-touch, 44px) * 3)
 }
-.f-fiche:empty {
+.f-fiche:empty:not([data-settled]) {
   min-height: 620px
 }
 @media (min-width: 700px) {
-  .f-fiche:empty {
+  .f-fiche:empty:not([data-settled]) {
     min-height: 380px
   }
 }

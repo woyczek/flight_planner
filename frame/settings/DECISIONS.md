@@ -740,3 +740,14 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   fleet count, the fleet step of the assistant, « Rejoindre », « Base des aéronefs », « Fiches d'aéronefs », « Références aéronefs »,
   the data group and the French help; « cet appareil », « Appareils connectés », « appareil photo » stay. Case A150 forbids
   the lower-case word in the fleet keys. « depuis Appareils » (the module's label, not mine) stays until its owner renames it.
+
+## SOG-0320 (13 Nov 2026): the blank under « Compagnie de cet appareil » and the bar's mark
+
+- **The blank** (the user's capture of Settings inside Maintenance): `.f-fiche:empty { min-height: 620px }` (380 px from 700 px) and `.f-cos:empty` in
+  `frame/frame.css` reserve the place of the airline sheet and of the list before their read (rule 22: nothing moves under them). With no airline
+  chosen on the device (none of the radios checked) the sheet stays empty and the place was never given back. `airlineLive` now sets
+  `data-settled` on the list and on the sheet once the read is done, and the reservation applies only to `:empty:not([data-settled])`.
+- **The mark**: the bar marked the entry whose address is `#settings?card=admin` for EVERY Settings screen (same route), so the gear of the header
+  showed « Réglages » with « Administration » highlighted. An entry that names a card is now marked only when the address names that card
+  (`cardOk` in `frame/app.js`, `renderMenu`). Case A183 (red before: 620 px, `['admin']`). The rest of SOG-0320 (the rearrangement by frequency of
+  use) waits for the user's answer to the mockup `frame/settings/maquette/reglages_usage.html` (Q-0049).

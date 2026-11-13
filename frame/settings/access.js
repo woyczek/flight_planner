@@ -1680,6 +1680,8 @@
     paintRows(box, rows, t, can, CL, n => nounText(view, 'aircraft', n));
     markCurrent(view, now);
     paintFiche(env);
+    // la lecture est finie : la place gardée (règle 22) est rendue quand la liste ou la fiche reste vide (aucune compagnie choisie : SOG-0320)
+    for (const h of [box, view.querySelector('[data-airline-fiche]')]) h?.setAttribute('data-settled', '');
   }
   /** La migration (seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine de data/airline/) et la note sous la liste (le choix pas encore possible, ou aucune compagnie). */
   function paintAirlineNotes(env, list, can) {

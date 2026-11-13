@@ -3190,11 +3190,18 @@
         `<li class="f-legacy"><a href="#legacy" data-link="legacy" data-landmark="settings" title="${esc(t(LEGACY.label))}">${icon('file')}<span class="f-nav-lab">${esc(t(LEGACY.label))}</span></a></li>`;
     }
     // une seule entrée marquée, comme dans la barre : le lien de l'écran du cadre ouvert (Administration, Aide), ou le module
-    const scr = shownScreen(active, screen) ? screenBase(screen) : '';
+    const scr = shownScreen(active, screen) ? screenBase(screen) : '',
+      // un lien qui nomme une carte (« #settings?card=admin ») n'est marqué que sur cette carte : l'écran des Réglages ouvert par l'engrenage n'est pas « Administration » (SOG-0320)
+      curCard = new URLSearchParams(location.hash.split('?')[1] || '').get('card') || '',
+      cardOk = a => {
+        const want = new URLSearchParams((a.getAttribute('href') || '').split('?')[1] || '').get('card');
+        return !want || want === curCard;
+      };
     for (const a of ul.querySelectorAll('a')) {
       // deux entrées d'un même module (une vue de lui : Missions et Registre) : la vue de l'adresse départage ; un module à une seule entrée n'a pas besoin de vue
       const twins = !scr && a.dataset.id && ul.querySelectorAll(`a[data-id="${CSS.escape(a.dataset.id)}"]`).length > 1,
-        on = scr ? !!a.dataset.link && (a.getAttribute('href') || '').replace(/^#/, '').split('?')[0] === scr : a.dataset.id === active &&
+        on = scr ? !!a.dataset.link && (a.getAttribute('href') || '').replace(/^#/, '').split('?')[0] === scr && cardOk(a) : a.dataset
+        .id === active &&
         (!twins || (a.dataset.menuView || '') === menuView);
       if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
         'aria-current');

@@ -7105,3 +7105,32 @@ def a180(c):
     h = c.js("(a => [a.href, a.target, a.getAttribute('href')])(document.querySelector('[data-admin=tune] > a'))")
     c.ok(h[0].endswith('?app=pilot#maps?tune=1') and not h[1], h, 'from Maintenance the button is a link to the Pilot app (same tab) on the tuning page of the Map')
     c.check_errors()
+
+
+@case('A183', 'Settings: the place kept for the airline sheet is given back once the read is done and no airline is chosen (SOG-0320, the user’s capture: a blank of 300 px under « Compagnie de cet appareil ») — and the Maintenance bar marks « Administration » only on the administration card, not on the Settings screen of the gear',
+      'A', screens=False, night=False,
+      rule='SOG-0320: `.f-fiche:empty { min-height: 620px }` (380 px from 700 px) reserves the place of the chosen airline’s sheet before the read (rule 22: nothing moves under it); with no airline chosen the sheet stays empty and the place was never given back; and the bar marked every `#settings…` screen with the entry whose address is `#settings?card=admin`')
+def a183(c):
+    if c.design != 'standard':
+        return
+    c.page.set_viewport_size({'width': 460, 'height': 900})
+    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'dfa', 'name': 'DEFA Virtual'}]}, 'document']]
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length >= 2 && document.querySelector('[data-airline-fiche]').children.length > 0", timeout=15000, what='the airlines and the sheet of the chosen one')
+    c.wait(500)
+    h = c.js("(f => { f.innerHTML = ''; f.__html = ''; return new Promise(r => setTimeout(() => r(Math.round(f.getBoundingClientRect().height)), 100)) })(document.querySelector('[data-airline-fiche]'))")
+    c.ok(h < 60, h, 'once the read is done, an EMPTY airline sheet (no airline chosen) keeps no reserved place: it was 380 px or more')
+    # ---- the bar of Maintenance
+    c.page.set_viewport_size({'width': 1280, 'height': 800})
+    c.open('data', app='maintenance', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelectorAll('#fMenu a').length", timeout=20000, what='the bar of Maintenance')
+    c.js("location.hash = '#settings'")
+    c.until("location.hash === '#settings' && !!document.querySelector('.f-over, [data-card=\"status\"]')", timeout=10000, what='the Settings screen of the gear')
+    c.wait(500)
+    cur = lambda: c.js("[...document.querySelectorAll('#fMenu a[aria-current=page]')].map(a => a.dataset.link || a.dataset.id)")
+    c.eq(cur(), [], 'on the Settings screen of the gear no entry of the bar is marked (« Administration » is not where we are)', what='gear')
+    c.js("[...document.querySelectorAll('#fMenu a')].find(a => a.dataset.link === 'admin').click()")
+    c.until("location.hash.includes('card=admin')", timeout=10000, what='the administration card')
+    c.wait(500)
+    c.eq(cur(), ['admin'], 'on the administration card the entry is marked', what='admin card')
+    c.check_errors()
