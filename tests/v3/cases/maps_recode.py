@@ -7204,18 +7204,20 @@ _TIDY_JS = r"""() => {
   const ym = (id, extra = '') => `schema: helo-xp-mission\nmission:\n  id: ${id}\n  type: AIRLIFT\ntitle: ${id}${extra}\n`, md = (id, plain = false) => plain ? 'A few words with no mission cited' : `# Mission ${id}\n\nA summary of ${id}`;
   const nm = (k, tok, kind = 'y') => `2026-11-05T10-00-00_${k}_` + (kind === 'y' ? `mission${tok}.yaml.txt` : `summary${tok}.md.txt`);
   const writes = [], removes = [];
-  const file = (path, text) => { const f = { kind: 'file', name: path.split('/').pop(), text, getFile: async () => ({ size: f.text.length, text: async () => f.text }),
+  const enc = t => new TextEncoder().encode(t).length;
+  const file = (path, text, delta = 0) => { const f = { kind: 'file', name: path.split('/').pop(), text, getFile: async () => ({ size: enc(f.text) + delta, text: async () => f.text }),
     createWritable: async () => ({ write: async t => { f.text = String(t) + (window.__tidy && window.__tidy.corrupt && path.includes(window.__tidy.corrupt) ? 'X' : ''); writes.push(path) }, close: async () => {} }) }; return f };
   const dir = (path, kids) => { const d = { kind: 'directory', name: path.split('/').pop(), kids, async *entries() { for (const [k, v] of Object.entries(d.kids)) yield [k, v] },
     async getDirectoryHandle(n, o) { if (d.kids[n] && d.kids[n].kind === 'directory') return d.kids[n]; if (o && o.create) return d.kids[n] = dir(path + '/' + n, {}); throw new DOMException('absent', 'NotFoundError') },
     async getFileHandle(n, o) { if (d.kids[n] && d.kids[n].kind === 'file') return d.kids[n]; if (o && o.create) return d.kids[n] = file(path + '/' + n, ''); throw new DOMException('absent', 'NotFoundError') },
     async removeEntry(n, o) { if (o && o.recursive) throw new Error('recursive removal'); if (!d.kids[n]) throw new DOMException('absent', 'NotFoundError'); delete d.kids[n]; removes.push(path + '/' + n) } }; return d };
-  const mk = (base, files) => dir(base, Object.fromEntries(Object.entries(files).map(([k, v]) => [k, file(base + '/' + k, v)])));
+  const mk = (base, files) => dir(base, Object.fromEntries(Object.entries(files).map(([k, v]) => [k, Array.isArray(v) ? file(base + '/' + k, v[0], v[1]) : file(base + '/' + k, v)])));
   const mission = (id, files) => dir('missions/T_AIRLIFT/' + id, { recu: mk('missions/T_AIRLIFT/' + id + '/recu', files) });
   const big = ym('T-087') + ' '.repeat(1000001);
   const fam = dir('missions/T_AIRLIFT', {
     'T-085': mission('T-085', { [nm(1, 'T-085')]: ym('T-085'), [nm(2, 'T-086')]: ym('T-086', '\nsummary: moved'), [nm(3, 'T-086', 's')]: md('T-086'), [nm(4, 'T-087')]: ym('T-085', '\nsummary: its name cites another mission'),
-      [nm(5, 'T-087', 's')]: md('', true), [nm(6, '90')]: ym('T-090'), [nm(7, 'T-087')]: big, '../evil.txt': ym('T-086') }),
+      [nm(5, 'T-087', 's')]: md('', true), [nm(6, '90')]: ym('T-090'), [nm(7, 'T-087')]: big, '../evil.txt': ym('T-086'),
+      [nm(11, 'T-086')]: ['\uFEFF' + ym('T-086', '\nsummary: bom'), 3], [nm(12, 'T-086', 's')]: [md('T-086') + '\uFFFD', -2] }),   // a BOM the decoder strips (3 bytes on the disk), an invalid byte it turns into U+FFFD (1 byte instead of 3)
     'T-086': mission('T-086', { [nm(2, 'T-086')]: ym('T-086', '\nsummary: another text, same name'), [nm(9, 'T-086', 's')]: md('T-086') }),
     'T-087': mission('T-087', { [nm(1, 'T-087')]: ym('T-087') }),
     'T-090': mission('T-090', {}), 'T-091': mission('T-091', {}) });
@@ -7249,7 +7251,7 @@ def k_tidy(c):
     click()
     ask()
     q = c.js("() => document.querySelector('dialog.repo-ask p').textContent")
-    c.ok(q.startswith('Ranger 2 copie') and '1 sont déjà chez leur mission' in q and '1 lui manquent' in q and '5 fichier(s) laissé(s) tels quels' in q, q, 'the question says the count: 2 copies (1 already in its mission by its content, 1 missing there), 5 files left as they are')
+    c.ok(q.startswith('Ranger 2 copie') and '1 sont déjà chez leur mission' in q and '1 lui manquent' in q and '7 fichier(s) laissé(s) tels quels' in q, q, 'the question says the count: 2 copies (1 already in its mission by its content, 1 missing there), 7 files left as they are (a file with a BOM or an invalid byte among them)')
     c.eq(c.js(_TIDY_COUNT_JS), before, 'counting touched nothing', what='after the count')
     answer('Garder tout')
     c.wait(800)
@@ -7262,7 +7264,7 @@ def k_tidy(c):
     c.wait(500)
     after = c.js(_TIDY_COUNT_JS)
     N = lambda k, tok, kind='y': f"2026-11-05T10-00-00_{k}_" + (f'mission{tok}.yaml.txt' if kind == 'y' else f'summary{tok}.md.txt')
-    c.eq(after['a'], sorted([N(1, 'T-085'), N(4, 'T-087'), N(5, 'T-087', 's'), N(6, '90'), N(7, 'T-087'), '../evil.txt']), 'T-085 loses the two copies of T-086’s texts and keeps everything else: the text whose name cites another mission but whose content cites T-085, the text with no mission, the ambiguous number, the file over 1 MB, the name with « .. »', what=str(after['a']))
+    c.eq(after['a'], sorted([N(1, 'T-085'), N(4, 'T-087'), N(5, 'T-087', 's'), N(6, '90'), N(7, 'T-087'), N(11, 'T-086'), N(12, 'T-086', 's'), '../evil.txt']), 'T-085 loses the two copies of T-086’s texts and keeps everything else: the text whose name cites another mission but whose content cites T-085, the text with no mission, the ambiguous number, the file over 1 MB, the name with « .. », the file with a BOM and the one with an invalid byte (their decoded text is not their bytes: a hash of it would prove nothing)', what=str(after['a']))
     c.eq(after['b'], sorted([N(2, 'T-086'), N(3, 'T-086'), N(9, 'T-086', 's')]), 'T-086 received the text it lacked under a free name (its same-name file with another content is untouched: no overwrite), and its summary, present under another name, was not duplicated', what=str(after['b']))
     c.eq([after['writes'], after['removes']], [1, 2], 'one write (in the recu/ of the mission that lacked the text), two removals', what=str(after))
     r = c.js("""() => { const b = window.__tidy.root.kids.T_AIRLIFT.kids['T-086'].kids.recu.kids; return { kept: b[window.__tidy.nm(2, 'T-086')].text.includes('another text'), moved: b[window.__tidy.nm(3, 'T-086')].text.includes('summary: moved'), msg: (document.getElementById('rgMsg') || {}).textContent || '', report: (document.getElementById('rgTidyReport') || {}).textContent || '', stored: localStorage.getItem('missionRegistryTidy:v1') || '' } }""")

@@ -3120,6 +3120,12 @@
             skipped
           };
           const text = await f.text();
+          if (new TextEncoder().encode(text).length !== f
+            .size
+          ) { // le texte décodé n'est pas les octets du fichier (BOM retiré, octet invalide remplacé) : l'empreinte ne prouverait rien, laissé tel quel
+            skipped++;
+            continue;
+          }
           files.push({
             name,
             text,
@@ -3227,7 +3233,10 @@
                 if (x.kind !== 'file' || !recuName(name)) continue;
                 const f = await x.getFile();
                 if (f.size > RECU_MAX) continue;
-                m.set(await sha256(await f.text()), name);
+                const text = await f.text();
+                if (new TextEncoder().encode(text).length !== f.size)
+                  continue; // ses octets ne sont pas son texte : ne compte pas comme un contenu gardé
+                m.set(await sha256(text), name);
               }
             held.set(b.folder, m);
           }
