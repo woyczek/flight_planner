@@ -47,6 +47,30 @@ def check_compute(a):
 
 
 def compute(job, args, ctx):
+    """Le calcul, AVEC le cache des résultats (SOG-0296, route_engine/results_cache.py) : une demande identique, sur la même base, rend le résultat gardé avec `cache: { hit, computedAt, until }` ; un échec n'est jamais gardé."""
+    from route_engine import results_cache as RC
+    data = ctx['data']
+    rad_file, fra_file = _paths(data)
+    k = sig = None
+    if os.path.isfile(rad_file) and not regen_jobs.merge_pending(ctx):
+        try:
+            k, sig = RC.key(args), RC.signature(data, rad_file, fra_file if os.path.isfile(fra_file) else None)
+        except (OSError, ValueError, TypeError):
+            k = sig = None
+    if k:
+        hit = RC.load(data, k, sig)
+        if hit:
+            job.step('route : résultat gardé', 1, 1, 'cache')
+            return {**hit[0], 'cache': {'hit': True, **hit[1]}}
+    res = _compute_fresh(job, args, ctx)
+    if k and isinstance(res, dict) and res.get('ok') is True:
+        meta = RC.store(data, k, sig, res)
+        if meta:
+            res = {**res, 'cache': {'hit': False, **meta}}
+    return res
+
+
+def _compute_fresh(job, args, ctx):
     from route_engine import engine, fra, plan
     data = ctx['data']
     rad_file, fra_file = _paths(data)

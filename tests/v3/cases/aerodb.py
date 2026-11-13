@@ -9266,6 +9266,8 @@ def k238(c):
     loads = []
     orig = nav_data.load
     nav_data.load = lambda path: (loads.append(str(path)), orig(path))[1]
+    from route_engine import results_cache as RC
+    RC.ENABLED = False                      # this case is about the CONTEXT: with the results kept, the second call would not even ask for it (K266 is the results)
     try:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
             data = os.path.join(td, 'data')
@@ -9338,6 +9340,7 @@ def k238(c):
             c.ok(n9 > 0, str(n9), 'after the drop the files are read again')
     finally:
         nav_data.load = orig
+        RC.ENABLED = True
         P.drop_contexts()
 
 
@@ -9566,3 +9569,90 @@ def k265(c):
     c.eq(r['lfoe'], None, 'LFOE ILS 22: the file lists no ILS chart (RNP only): none, never another approach\'s chart', what='LFOE')
     c.eq((r['twin'], r['twinZ']), (None, 'Cartes/LFXX/AD_2_LFXX_IAC_RWY26_FNA_ILS_Z.pdf'), 'two ILS charts on a runway: « ILS » alone is ambiguous (none), « ILS Z » picks its one', what='twin')
     c.eq(r['named'], 'Cartes/LFLC/AD_2_LFLC_IAC_RWY26_FNA_RNP_Y.pdf', 'a procedure read on a named data page works as before', what='named')
+
+
+@case('K266', 'Route results cache (SOG-0296): the same request on the same base gives the kept result with `cache: { hit, computedAt, until }`; it expires only when the base or the engine code changes, or at the end of the UTC day for a route by the NAT; a failure is never kept; a hostile file of the folder is ignored', 'K', static=True,
+      rule='User refusal of SOG-0296 (13 Nov 2026, 17 h): « oui, il faut garder un cache, qui périme uniquement au changement d\'airac, ou s\'il passe par les nats. second calcul lfoe kden aussi long, sauf si on shifte de page ». Measured on the real base: the screen form (alternatives, proposals) of LFOE → KDEN took 26 s EVERY time although the loaded context was reused (the context saves the 2 to 6 s of reading, not the search). tools/route_engine/results_cache.py keeps the RESULT of a request (every field of the request is in its key) under data/local/route-cache/ (the workstation\'s local folder: never synchronised), valid while the signature of the base files and of the engine code is the same; a route through the NAT is valid until the end of the UTC day; `cache` tells the screen « du cache, calculé à … »; a result that is not ok is never kept; the entries are bounded (64 files, 4 MB) and a file found there is an untrusted input (size, JSON, version, key, signature, deadline)')
+def k266(c):
+    import datetime as dt
+    import importlib
+    import json
+    import os
+    import sys
+    import tempfile
+    import types
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    RJ = _regen()
+    G = RJ.REGISTRY[('route', 'compute')][0].__globals__         # the verb modules are loaded by path: their namespace is patched, never a copy
+    R = types.SimpleNamespace(compute=RJ.REGISTRY[('route', 'compute')][0])
+    RC = importlib.import_module('route_engine.results_cache')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'route').mkdir(parents=True)
+        (data / 'route' / 'rad.json.gz').write_bytes(b'x')
+        ctx = {'data': str(data)}
+        calls = []
+        state = {'sig': 'S1', 'res': {'ok': True, 'alternatives': [{'id': 1, 'name': 'A', 'nat': None}], 'segments': []}}
+        was = (G['_compute_fresh'], RC.signature)
+        G['_compute_fresh'] = lambda job, args, ctx: (calls.append(dict(args)), state['res'])[1]
+        RC.signature = lambda d, r, f: state['sig']
+        try:
+            job = lambda: RJ.Job('route', 'compute', {})
+            req = {'action': 'compute', 'adep': 'LFOE', 'adest': 'KDEN', 'fl': 370, 'date': '2026-11-13T21:00', 'alternatives': True, 'proposals': True}
+            r1 = R.compute(job(), dict(req), ctx)
+            r2 = R.compute(job(), dict(req), ctx)
+            c.eq((len(calls), r1['cache']['hit'], r2['cache']['hit'], r2['cache']['computedAt'] == r1['cache']['computedAt'], r2['cache']['until'], r2['alternatives'] == r1['alternatives']), (1, False, True, True, None, True),
+                 'the second identical request is the kept result (no second search), with the time it was computed; no NAT, no deadline', what='hit')
+            R.compute(job(), dict(req, fl=390), ctx)
+            R.compute(job(), dict(req, via=['ABC']), ctx)
+            R.compute(job(), dict(req, adest='KJFK'), ctx)
+            c.eq(len(calls), 4, 'a request that differs by one field (level, imposed points, arrival) is another request: three more searches', what='key')
+            state['sig'] = 'S2'
+            r3 = R.compute(job(), dict(req), ctx)
+            c.eq((len(calls), r3['cache']['hit']), (5, False), 'the base (or the engine code) changed: the kept result is not used', what='signature')
+            r4 = R.compute(job(), dict(req), ctx)
+            c.eq((len(calls), r4['cache']['hit']), (5, True), 'and the new one is kept', what='renewed')
+            # a route by the NAT: valid until the end of the UTC day; an expired deadline: not used
+            state['res'] = {'ok': True, 'alternatives': [{'id': 1, 'name': 'N', 'nat': 'S'}], 'segments': []}
+            nat = dict(req, adest='EGLL')
+            r5 = R.compute(job(), dict(nat), ctx)
+            until = r5['cache']['until']
+            c.ok(until and until.endswith('T00:00:00Z') and until > dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), until, 'a route by the NAT has a deadline: midnight UTC at the end of the day it was computed')
+            k = RC.key(nat)
+            path = data / 'local' / 'route-cache' / (k + '.json')
+            doc = json.loads(path.read_text(encoding='utf-8'))
+            doc['until'] = '2020-01-01T00:00:00Z'
+            path.write_text(json.dumps(doc), encoding='utf-8')
+            n = len(calls)
+            r6 = R.compute(job(), dict(nat), ctx)
+            c.eq((len(calls) - n, r6['cache']['hit']), (1, False), 'a NAT result past its deadline is searched again', what='deadline')
+            # a failure is never kept
+            state['res'] = {'ok': False, 'reason': 'failed', 'message': 'x'}
+            bad = dict(req, adep='LFPG')
+            R.compute(job(), dict(bad), ctx)
+            R.compute(job(), dict(bad), ctx)
+            c.eq((len(calls) - n, (data / 'local' / 'route-cache' / (RC.key(bad) + '.json')).exists()), (3, False), 'a failed computation is searched again each time and never written', what='failure')
+            # an untrusted file: garbage, another key, another signature, too big: ignored
+            state['res'] = {'ok': True, 'alternatives': [], 'segments': []}
+            ok = dict(req, adep='LFRN')
+            kk = RC.key(ok)
+            p = data / 'local' / 'route-cache' / (kk + '.json')
+            p.parent.mkdir(parents=True, exist_ok=True)
+            seen = []
+            for label, body in (('garbage', b'not json'), ('array', b'[1,2]'), ('other key', json.dumps({'version': 1, 'key': 'x', 'sig': 'S2', 'computedAt': 'a', 'until': None, 'result': {'ok': True, 'evil': 1}}).encode()),
+                                ('other signature', json.dumps({'version': 1, 'key': kk, 'sig': 'OLD', 'computedAt': 'a', 'until': None, 'result': {'ok': True, 'evil': 1}}).encode()),
+                                ('not ok', json.dumps({'version': 1, 'key': kk, 'sig': 'S2', 'computedAt': 'a', 'until': None, 'result': {'ok': False, 'evil': 1}}).encode()),
+                                ('too big', b'{"a":"' + b'x' * (RC.MAX_BYTES + 10) + b'"}')):
+                p.write_bytes(body)
+                n = len(calls)
+                r = R.compute(job(), dict(ok), ctx)
+                seen.append((label, len(calls) - n, 'evil' in r))
+            c.eq(seen, [(x, 1, False) for x in ('garbage', 'array', 'other key', 'other signature', 'not ok', 'too big')], 'a file of the folder that is garbage, not a dict, of another key or signature, not ok or too big is ignored (the search is redone), its content never returned', what='hostile')
+            # bounded
+            for i in range(RC.MAX_FILES + 8):
+                R.compute(job(), dict(req, fl=100 + i), ctx)
+            files = [x for x in (data / 'local' / 'route-cache').iterdir()]
+            c.ok(len(files) <= RC.MAX_FILES and not [x for x in files if x.name.endswith('.tmp')], str(len(files)), f'at most {RC.MAX_FILES} kept (the least recently used leave), no leftover of a write')
+        finally:
+            G['_compute_fresh'], RC.signature = was

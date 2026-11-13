@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Route computation: the results are kept** (SOG-0296) — the same request on the same base (LFOE → KDEN took 26 s each time, the loaded context being reused: the cost is the search) now returns the kept result at once, with `cache: { hit, computedAt, until }` for the screen's « du cache, calculé à … »; it expires only when the base or the engine changes, or at the end of the UTC day for a route through the NAT; kept under `data/local/route-cache/` (local, bounded). Launcher Python: restart the launcher. Case K266.
 - **Map: the « contour lines visible from zoom 9 » note is said only after the box is ticked** — at the first drawing of a view ticked by default it covered « Reset all » at the foot of Layers on a phone (D35 red on origin/v3); D229.
 - **Fuel › procedures: « Carte » opens the drawn chart, « Données » the procedure's data page** (fuel DECISIONS; noreg F214; SOG-0330).
 - **Map, VOR rose: room between the four solid points and the numbers** (SOG-0328): a gap of a quarter of the number's height at least, at any scale; D209 measures it (red before).
