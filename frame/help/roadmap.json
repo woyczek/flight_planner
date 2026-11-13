@@ -650,13 +650,14 @@
     {
      "id": "SOG-0161",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Moteur de route : l'améliorer, pas seulement le recopier — la plus longue route valide IFPS en LOW, HIGH ou FRA, par itérations avec points intermédiaires (ESSB → LEMO)",
      "en": "Route engine: improve it, not only copy it — the longest IFPS-valid route in LOW, HIGH or FRA, iterating with intermediate points (ESSB → LEMO)",
      "de": "Routen-Engine: verbessern, nicht nur kopieren — die längste IFPS-gültige Route in LOW, HIGH oder FRA, iterativ mit Zwischenpunkten (ESSB → LEMO)",
      "es": "Motor de rutas: mejorarlo, no solo copiarlo: la ruta válida IFPS más larga en LOW, HIGH o FRA, iterando con puntos intermedios (ESSB → LEMO)",
      "milestone": "6.0.0-alpha.6",
-     "rank": 120
+     "rank": 120,
+     "test": true
     },
     {
      "id": "SOG-0317",
@@ -1363,12 +1364,13 @@
     {
      "id": "SOG-0300",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Vue topographique : de vraies courbes de niveau, pas d'hippodromes ; les hippodromes et le RTBA dans une vue dédiée",
      "en": "Topographic view: real contour lines, no holding patterns; holding patterns and RTBA in a dedicated view",
      "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",
      "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte",
-     "rank": 84
+     "rank": 84,
+     "test": true
     }
    ]
   },
