@@ -2608,6 +2608,11 @@ def k181(c):
         st = status(RJ.Job('base', 'status', {}), check_s({'zones': ['pt'], 'personal': ['navpt']}), ctx)['zones']['pt']
         wait = [r for r in st['reasons'] if r['code'] == 'pickup-waiting']
         c.eq([(r['source'], r['zip']) for r in wait], [('navpt', 'EAIP ISO (1).zip')], 'a package recognised by its shape in Downloads and newer than the layer taken: pickup-waiting { source: navpt, zip } (the screen offers « Prendre le fichier téléchargé »)', what='waiting')
+        cyc, check_c = RJ.REGISTRY[('base', 'cycle')]
+        item = lambda: next(i for i in cyc(RJ.Job('base', 'cycle', {}), check_c({'zone': 'pt', 'personal': ['navpt']}), ctx)['zoneView']['sources'] if i['id'] == 'navpt')
+        it = item()
+        c.eq((it['steps']['download']['state'], it.get('why'), (it.get('hand') or {}).get('inDownloads')), ('waiting', 'newer-in-downloads', ['EAIP ISO (1).zip']),
+             'the list of the cycle agrees with the status (SOG-0318, the card of Portugal contradicted itself): the source whose package waits in Downloads is « waiting » with the name of the package, not « fait » / « missing »', what='cycle waiting')
         # 2. the pickup: the plan, then the layer written
         plan = pickup(RJ.Job('base', 'pickup', {}), check_p({'zones': ['pt']}), ctx)
         t = [x for x in plan['taken'] if x['source'] == 'navpt']
@@ -2620,6 +2625,7 @@ def k181(c):
         time.sleep(0.05)
         st = status(RJ.Job('base', 'status', {}), check_s({'zones': ['pt'], 'personal': ['navpt']}), ctx)['zones']['pt']
         c.eq([r for r in st['reasons'] if r['code'] == 'pickup-waiting'], [], 'taken: nothing waits any more', what='not waiting')
+        c.ok(item()['steps']['download']['state'] != 'waiting', str(item()['steps']['download']), 'and the list of the cycle no longer says waiting')
         # a package that is not read: said with its reason
         (dl / 'broken.iso').write_bytes(b'\x00' * 40000)
         (dl / 'EAIP ISO (1).zip').unlink()

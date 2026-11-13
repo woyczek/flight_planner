@@ -163,6 +163,11 @@ def run(job, args, ctx):
             state, why = 'late', 'older-than-cycle'
         else:
             state = 'done'
+        # SOG-0318 : base/status dit « pickup-waiting » (un paquet plus récent que la couche prise attend dans Téléchargements : NAV Portugal) : la liste du cycle ne dit plus « fait » pour une source dont un fichier attend, elle le dit en attente, avec son nom
+        waiting = next((r['zip'] for z in mine for r in (z.get('reasons') or []) if isinstance(r, dict) and r.get('code') == 'pickup-waiting' and r.get('source') == sid and isinstance(r.get('zip'), str)), None)
+        if waiting and state in ('done', 'late', 'missing'):
+            state, why = 'waiting', 'newer-in-downloads'
+            hand = hand or {'link': src.get('link', ''), 'expected': [], 'inDownloads': [waiting]}
         if sid in UNAVAILABLE and state in ('late', 'missing'):
             state, why = 'unavailable', 'unavailable-at-publisher'      # rangée à part : rien à faire tant que l'éditeur ne publie pas
         if state == 'late' and current in dl_cycles.get(sid, ()) and (held is None or held < current):
@@ -217,6 +222,8 @@ def run(job, args, ctx):
             zone_view = {'zone': zid, 'known': False}
         else:
             zs = states.get(zid) or base_state.zone_states(data, [zid], args['personal'], ctx).get(zid)
+            if zs:
+                states.setdefault(zid, zs)      # SOG-0318 : les lignes de la zone lisent ses raisons (un paquet qui attend) même quand la zone n'est pas de la couverture
             srcs = [make_item(sid, S.SOURCES[sid], [zid], zid) for sid in S.sources_of(zid)]
             for it in srcs:
                 it['steps']['build'] = {'zones': 1, 'upToDate': 1 if zs and zs['state'] == 'up-to-date' else 0}
