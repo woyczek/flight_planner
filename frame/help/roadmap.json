@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "072e2f1",
+  "organisation": "7853713",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -887,13 +887,14 @@
     {
      "id": "SOG-0307",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : elle clignote pendant qu'on réduit le volet des espaces aériens",
      "en": "Map: it flickers while the airspace panel is being reduced",
      "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
      "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos",
      "milestone": "6.0.0-alpha.5",
-     "rank": 41
+     "rank": 41,
+     "test": true
     },
     {
      "id": "SOG-0046",

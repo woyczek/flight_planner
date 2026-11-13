@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 179,
+  "tests": 180,
   "verdicts": 122
  },
  "apps": [
@@ -2652,6 +2652,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:15:53Z"
+  },
+  {
+   "id": "SOG-0307",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : elle clignote pendant qu'on réduit le volet des espaces aériens",
+    "en": "Map: it flickers while the airspace panel is being reduced",
+    "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
+    "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos"
+   },
+   "test": "Recharge la page. Carte : ouvre « Couches », puis touche la carte dans un ou deux espaces aériens pour passer à leur vue : la carte ne clignote plus et le volet du bas garde sa hauteur. Si tu vois encore le volet rétrécir, dis-moi par quel geste.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T12:25:02Z"
   },
   {
    "id": "SOG-0315",
