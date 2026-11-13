@@ -6412,7 +6412,7 @@ _KEPT_SEED_JS = r"""async () => {
   await window.MissionIndex.ready;
   await window.MissionIndex.save([line('T-085', '85', 'T_AIRLIFT/T-085'), line('T-086', '', 'T_AIRLIFT/T-086')], new Date().toISOString());
   return true }"""
-_KEPT_FILE_85 = "schema: helo-xp-mission\nmission:\n  id: T-085\n  type: AIRLIFT\ntitle: Bench one\nsummary: The short summary of the file\ndetailed_description: Detailed 85\n"
+_KEPT_FILE_85 = "schema: helo-xp-mission\nmission:\n  id: T-085\n  former_id: '85'\n  type: AIRLIFT\ntitle: Bench one\nsummary: The short summary of the file\ndetailed_description: Detailed 85\n"
 _KEPT_FILE_86 = "schema: helo-xp-mission\nmission:\n  id: T-086\n  type: AIRLIFT\ntitle: Bench two\nsummary: Same as the file\ndetailed_description: Detailed T-086\n"
 
 
@@ -6448,4 +6448,70 @@ def k_keptexport(c):
     c.ok('A longer summary written in the editor' in one and 'Detailed 85' in one, one[:300], 'the snapshot under the old number is exported with the text written in the editor')
     c.ok(not sent, str(sent), 'nothing was sent anywhere (no write to the folder, no request but reads)')
     c.shot('K222_standard_kept_delivered.png')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
+
+
+
+# A writable fake missions folder (a tree of in-memory directory handles; no data of the user): the file of T-085 as the folder holds it, and nothing for the others.
+_WFS_JS = r"""(tree) => {
+  const writes = [];
+  const file = (path, text) => { const f = { kind: 'file', name: path.split('/').pop(), text, getFile: async () => ({ name: f.name, lastModified: 1760000000000, size: f.text.length, text: async () => f.text }),
+    createWritable: async () => ({ write: async (t) => { f.text = String(t); writes.push(path) }, close: async () => {} }) }; return f };
+  const dir = (path, kids) => { const d = { kind: 'directory', name: path.split('/').pop(), kids, async *entries() { for (const [k, v] of Object.entries(d.kids)) yield [k, v] },
+    async getDirectoryHandle(n, o) { if (d.kids[n] && d.kids[n].kind === 'directory') return d.kids[n]; if (o && o.create) return d.kids[n] = dir(path + '/' + n, {}); throw new DOMException('absent', 'NotFoundError') },
+    async getFileHandle(n, o) { if (d.kids[n] && d.kids[n].kind === 'file') return d.kids[n]; if (o && o.create) return d.kids[n] = file(path + '/' + n, ''); throw new DOMException('absent', 'NotFoundError') } }; return d };
+  const build = (path, node) => dir(path, Object.fromEntries(Object.entries(node).map(([k, v]) => [k, typeof v === 'string' ? file(path + '/' + k, v) : build(path + '/' + k, v)])));
+  const root = build('missions', tree);
+  window.__wfs = { root, writes };
+  window.FileAccess.status = async () => ({ handle: root, permission: 'granted', name: 'missions' });
+  return true }"""
+_WFS_READ_JS = r"""(path) => { let n = window.__wfs.root; for (const k of path.split('/')) { n = n.kids[k]; if (!n) return null } return n.kind === 'file' ? n.text : Object.keys(n.kids) }"""
+
+
+@case('K223', 'The registry of the V2 sets the file and the browser’s version side by side for each kept mission that differs (date, lengths of the summary and the description, newer, more complete): « Store in the folder » writes the browser’s version and keeps the old file in versions/, a snapshot under an old number goes under the lettered identifier; « Keep the file » changes nothing; nothing is ever overwritten without the choice', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0293 (c) (the ergonomist, 13 Nov): side by side file / browser, then « Ranger dans le dossier » (the old file kept as a version) or « Garder le fichier »; never an automatic overwrite (a snapshot can be poorer than the file); a snapshot under an old number is stored under the lettered identifier of the mission carrying that former_id')
+def k_keptstore(c):
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry", timeout=15000, what='the registry page is loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree
+    c.js(_KEPT_SEED_JS)
+    c.page.route('**/data/missions/T_AIRLIFT/T-085/missionT-085.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_85))
+    c.page.route('**/data/missions/T_AIRLIFT/T-086/missionT-086.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_86))
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.js(_WFS_JS, {'T_AIRLIFT': {'T-085': {'missionT-085.yaml': _KEPT_FILE_85}, 'T-086': {'missionT-086.yaml': _KEPT_FILE_86}}})
+    c.until("() => !!document.getElementById('rgKeptList')", timeout=15000, what='the side-by-side list is there for the missions that differ or have no file')
+    c.wait(500)
+    rows = c.js("() => [...document.querySelectorAll('#rgKeptList tbody tr')].map(r => r.dataset.keptId)")
+    c.eq(sorted(rows), ['85', 'X-001'], 'two missions to decide: the one that differs (under its old number) and the one without a file', what='rows')
+    row85 = c.js("() => document.querySelector('#rgKeptList tr[data-kept-id=\"85\"]').textContent.replace(/\\s+/g, ' ')")
+    c.ok('T-085' in row85 and 'résumé 38' in row85 and 'résumé 29' in row85 and 'plus récent' in row85 and 'plus complet' in row85, row85, 'the row sets the file and the browser side by side: the lettered identifier, the lengths of the summary, newer, more complete')
+    c.shot('K223_standard_kept_list_delivered.png')
+    # « Keep the file » changes nothing
+    before = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/missionT-085.yaml')
+    c.js("() => { document.querySelector('[data-kept-file=\"85\"]').click(); return true }")
+    c.wait(400)
+    c.eq(c.js("() => window.__wfs.writes.length"), 0, '« Keep the file »: nothing is written', what='writes')
+    c.ok('fichier gardé' in c.js("() => document.querySelector('#rgKeptList tr[data-kept-id=\"85\"]').textContent"), '', 'the choice is shown on the row')
+    # reload: the choice is kept for the same snapshot; then « Store in the folder » on the other mission (no file): created under its folder
+    c.js("() => { document.querySelector('[data-kept-store=\"X-001\"]').click(); return true }")
+    c.wait(1500)
+    c.ok(any(w.endswith('missionX-001.yaml') for w in c.js("() => window.__wfs.writes")), str(c.js("() => window.__wfs.writes")), '« Store in the folder » of a mission without a file writes it into the folder')
+    # the snapshot under the old number, stored under the lettered identifier; the old file kept in versions/
+    c.js("() => { const t = document.querySelector('[data-kept-store=\"85\"]'); if (t) t.click(); return !!t }")
+    c.page.evaluate("() => { localStorage.removeItem('missionRegistryKeptChoice:v1') }")
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.js(_WFS_JS, {'T_AIRLIFT': {'T-085': {'missionT-085.yaml': _KEPT_FILE_85}, 'T-086': {'missionT-086.yaml': _KEPT_FILE_86}}})
+    c.until("() => !!document.querySelector('[data-kept-store=\"85\"]')", timeout=15000, what='the row of the old number is there again (the choice was removed)')
+    c.js(_GO_HOOK_JS)
+    c.js("() => { document.querySelector('[data-kept-store=\"85\"]').click(); return true }")
+    c.wait(3000)
+    c.ok(c.js("() => window.__wfs.writes.some(w => w.endsWith('missionT-085.yaml'))"), str(c.js("() => [window.__wfs.writes, window.__n]")), 'the version of the browser is written under the lettered identifier')
+    new = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/missionT-085.yaml')
+    c.ok('A longer summary written in the editor' in new and 'id: T-085' in new and "former_id: '85'" in new or 'former_id: 85' in new, new[:400], 'the file now holds the browser’s text, under T-085, the old number kept in former_id')
+    vers = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/versions')
+    c.ok(vers and len(vers) == 1 and vers[0].startswith('missionT-085_'), str(vers), 'the old file went to versions/')
+    old = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/versions/' + vers[0]) if vers else ''
+    c.eq(old, before, 'and its content is intact there', what='old file')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
