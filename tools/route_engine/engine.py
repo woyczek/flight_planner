@@ -685,6 +685,9 @@ def assess(request,_nav=None,_rad=None,_path=None):
         used=list(dict.fromkeys(n['track'] for n in nat_legs)); issued=next((n['issued'] for n in nat_legs if n.get('issued')),None); stale=any(n['stale'] for n in nat_legs)
         issue('REVUE',f'Routes NAT du {issued or "?"}'+(', périmées' if stale else '')+f' : {" ".join("NAT"+t for t in used)}. '
               +('Prises quand même (le message en vigueur au moment du vol n\'est pas lu) ; ' if stale else 'Message du jour ; ')+'autorisation océanique non vérifiée.')
+    if not nat_legs and legs and getattr(nav,'nat',None):   # SOG-0263 : un vol qui traverse sans track dans son sens le dit, au lieu de se taire
+        hint=nat_layer.hint(nav,dep,arr)
+        if hint:issue('REVUE',hint)
     for l in legs:   # SOG-0263 : le raccord du réseau à la track (entrée) ou de la track au réseau (sortie) est un DCT de simulation, dit « revue »
         if l.get('nat_link'):issue('REVUE',f'Raccord NAT ({"entrée" if l["nat_link"]=="entry" else "sortie"}) : DCT de {l["nm"]:.0f} NM {l["start"]["id"]}–{l["end"]["id"]}, simulation (aucune route lue).')
     candidates=rad.candidates(dep,arr,known_ids,used_routes | {alias for route_name in used_routes for alias in rad_flight.aliases(route_name)})

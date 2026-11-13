@@ -108,9 +108,27 @@ def read(path):
     return out, skipped
 
 
+def hint(nav, dep, arr):
+    """Une phrase quand le vol traverse l'Atlantique (départ à l'ouest de 35°W, arrivée à l'est de 15°W, ou l'inverse) et qu'AUCUNE track du message ne va dans son sens : « Aucune route NAT vers l'est dans le message du 13/11. » ; '' sinon (pas de couche, pas de traversée, ou une track dans le bon sens)."""
+    info = getattr(nav, 'nat', None)
+    if not info or not info.get('tracks'):
+        return ''
+    a, b = nav.ads.get(dep), nav.ads.get(arr)
+    if not a or not b:
+        return ''
+    east = a['lon'] < -35 and b['lon'] > -15
+    west = a['lon'] > -15 and b['lon'] < -35
+    if not (east or west):
+        return ''
+    want = 'east' if east else 'west'
+    if want in info.get('directions', ()):
+        return ''
+    return f"Aucune route NAT vers {'l' + chr(39) + 'est' if east else 'l' + chr(39) + 'ouest'} dans le message du {info.get('issued') or '?'}."
+
+
 def add(nav, nm):
     """Ajoute les tracks du fichier au graphe `nav` (voir l'en-tête) ; rend `nav.nat` = { tracks: [id], issued: 'JJ/MM' | None, stale: bool, skipped: [raisons], links: n } (aussi posé sur nav)."""
-    nav.nat = {'tracks': [], 'issued': None, 'stale': False, 'skipped': [], 'links': 0}
+    nav.nat = {'tracks': [], 'issued': None, 'stale': False, 'skipped': [], 'links': 0, 'directions': []}
     tracks, skipped = read(path_of(nav))
     nav.nat['skipped'] = skipped
     if not tracks:
@@ -166,5 +184,6 @@ def add(nav, nm):
             if not near:
                 nav.nat['skipped'].append(f'{t["id"]}: {end} sans réseau haut à moins de {LINK_NM} NM')
         nav.nat['tracks'].append(t['id'])
+        nav.nat['directions'] = sorted(set(nav.nat['directions']) | ({'east', 'west'} if direction == 'both' else {direction}))
         nav.nat['stale'] = nav.nat['stale'] or stale
     return nav.nat

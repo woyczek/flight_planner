@@ -9186,6 +9186,7 @@ def k237(c):
              'the alternative says NAT A, issued 10/11, not stale; its segments say the direction; no DCT link was needed', what='nat view')
         c.eq([(i['kind'], i['text'].startswith('Routes NAT du 10/11 :')) for i in v['issues'] if i.get('kind') == 'NAT'], [('NAT', True)], 'a remark « Routes NAT du 10/11 » (review, not an error)', what='issue')
         c.eq([i['level'] for i in v['issues'] if i.get('kind') == 'NAT'], ['review'], 'it is a review', what='level')
+        c.eq(sorted({s['control'] for s in a0['segments'] if s['via'] == 'NATA'}), ['incomplete'], 'a NAT track is never « controlled » (it is not a published airway segment: no oceanic clearance read), it is « incomplete »', what='track class')
         # 3. the same file, a later day: the track is taken all the same and said stale
         r, p, v = run(bench('a2', {'tracks': [A]}), 'KJFK', 'EGLL', '2026-11-12T12:00')
         a0 = v['alternatives'][0]
@@ -9198,6 +9199,7 @@ def k237(c):
         links = [(s['from'], s['to'], s['nat']['link']) for s in segs if s.get('nat') and s['nat'].get('link')]
         c.ok(p['ok'] and [x[2] for x in links] == ['entry', 'exit'] and links[0][0] in ('CANOUT', 'MIDUS') and links[1][1] in ('UKIN1', 'UKIN2', 'EXITA'), str(links), 'track B: the entry is joined from the high network and the exit to it, by DCT segments marked entry / exit (« revue »: no route read)')
         c.ok(all(s['via'] == 'DCT' for s in segs if s.get('nat') and s['nat'].get('link')), 'dct', 'the joins are DCT of simulation')
+        c.eq({s['control'] for s in segs if s.get('nat') and s['nat'].get('link')}, {'fallback'}, 'a join is a fallback, never « controlled » (SOG-0161 share)', what='join class')
         rac = [(i['kind'], i['level']) for i in v['issues'] if i['text'].startswith('Raccord NAT')]
         c.eq(rac, [('NAT', 'review')] * 2, 'each join is said in a remark of kind NAT, a review (DCT of simulation, no route read)', what='join remarks')
         import datetime as dt
@@ -9211,6 +9213,12 @@ def k237(c):
         # 5. a track in the flow direction only: against the flow, the track is not taken
         r, p, v = run(bench('rev', {'tracks': [A]}), 'EGLL', 'KJFK', '2026-11-10T07:00')
         c.ok('NATA' not in [l['via'] for l in p.get('legs') or []], str([l['via'] for l in p.get('legs') or []]), 'an eastbound track is not flown westbound (EGLL → KJFK)')
+        c.ok(p['ok'] is False and "Aucune route NAT vers l'ouest dans le message du 10/11." in p['error'], p.get('error', ''), 'the failure says it plainly: no NAT route to the west in the message of 10/11 (instead of keeping silent)')
+        from route_engine import nat_layer as NL
+        E0 = __import__('route_engine.engine', fromlist=['Nav'])
+        E0.DATA_DIR = None
+        n0 = E0.Nav(os.path.join(td, 'rev'), __import__('datetime').date(2026, 11, 10))
+        c.eq((NL.hint(n0, 'EGLL', 'KJFK'), NL.hint(n0, 'KJFK', 'EGLL'), NL.hint(n0, 'KJFK', 'KJFK')),("Aucune route NAT vers l'ouest dans le message du 10/11.", '', ''), 'the hint is given for a crossing against every track only: not with a track in the flow direction, not without a crossing', what='hint')
         # 6. the file is an input read, not trusted: bad ids, bad names, bad coordinates, too many points, text levels, a size bound
         hostile = {'tracks': [{'id': 'a<b>', 'route': ['ENTRA', 'EXITA'], 'east': ['350']}, {'id': 'C', 'route': ['ENTRA', '99/99', 'EXITA'], 'east': ['350']}, {'id': 'D', 'route': ['EN TRA', 'EXITA'], 'east': ['9999']},
                               {'id': 'E', 'route': ['ENTRA'] * 100, 'east': ['350']}, {'id': 'F', 'route': ['ENTRA', 'EXITA'], 'east': [], 'west': []}, 'junk', None,

@@ -12,7 +12,7 @@ import re
 import json
 import threading
 
-from . import engine, fra, layered, planning, recovery
+from . import engine, fra, layered, nat_layer, planning, recovery
 
 FIELDS = {
     'proposals': bool, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
@@ -131,7 +131,8 @@ def plan(request, root):
     try:
         primary = engine.assess(request, nav, rad)
     except ValueError as e:
-        primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e), route=request.get('route', ''), legs=[], issues=[])
+        hint = nat_layer.hint(nav, str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper()) if request.get('mode', 'calculate') == 'calculate' else ''      # SOG-0263 : traversée sans track dans le sens du vol
+        primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e) + (' ' + hint if hint else ''), route=request.get('route', ''), legs=[], issues=[])
     rad_retries = []
     # A route-dependent RAD condition can only be decided after its SID, route and STAR are known. Retry with the implicated procedure / links excluded.
     if request.get('mode', 'calculate') == 'calculate':
