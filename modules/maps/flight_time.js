@@ -250,9 +250,38 @@ function progressHtml(st) {
     }))}</span>` : '';
   return `<p><b>${esc(parts[0] || '')}</b>${parts.length > 1 ? ` · ${esc(parts.slice(1).join(' · '))}` : ''}${stale}${src}</p>${div}`;
 }
-/** Avion vu de dessus orienté au cap (degrés vrais), plein ou creux, liseré du fond ; la POINTE de la flèche est sur la position
- *  (utilisateur, 29 octobre : « c'est la pointe de la flèche qui doit indiquer la position, pas son centre »). */
+/** Le rayon de l'avion de la carte (SOG-0309 : « pas assez visible ») : 16, soit 29 px de long, plus de 28 ; la position réelle et le fantôme ont la même silhouette. */
+export const PLANE_R = 16;
+const rgbCache = new Map();
+/** [r, g, b] d'une couleur CSS (lue une fois par couleur). */
+function rgbOf(col) {
+  let v = rgbCache.get(col);
+  if (!v) {
+    const k = document.createElement('canvas').getContext('2d');
+    k.fillStyle = '#000';
+    k.fillStyle = col;
+    k.fillRect(0, 0, 1, 1);
+    v = [...k.getImageData(0, 0, 1, 1).data].slice(0, 3);
+    rgbCache.set(col, v);
+  }
+  return v;
+}
+const lumOf = ([r, g, b]) => {
+  const f = v => (v /= 255) <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;
+  return .2126 * f(r) + .7152 * f(g) + .0722 * f(b);
+};
+/** La couleur de l'avion assombrie jusqu'à un contraste de 4,5 avec le liseré blanc (le design de nuit a des teintes claires) : lisible sur n'importe quel fond. */
+function planeInk(col) {
+  let rgb = rgbOf(col),
+    n = 0;
+  while ((1.05) / (lumOf(rgb) + .05) < 4.5 && n++ < 12) rgb = rgb.map(v => Math.round(v * .88));
+  return `rgb(${rgb.join(',')})`;
+}
+/** Avion vu de dessus orienté au cap (degrés vrais), plein ou creux, liseré clair de 6 px (celui du fond, sombre la nuit, ne le détachait pas du plus chargé des fonds) ; la POINTE
+ *  de la flèche est sur la position (utilisateur, 29 octobre : « c'est la pointe de la flèche qui doit indiquer la position, pas son centre »). Écrit sur le contexte brut : le
+ *  contexte thématique de la Carte remplace un blanc écrit par valeur par un jeton du design (SOG-0297). */
 export function drawPlane(ctx, c, hdg, col, filled, r = 9) {
+  ctx = ctx.canvas?.getContext?.('2d') || ctx;
   ctx.save();
   ctx.translate(c.x, c.y);
   ctx.rotate((+hdg || 0) * Math.PI / 180);
@@ -263,12 +292,13 @@ export function drawPlane(ctx, c, hdg, col, filled, r = 9) {
   ctx.lineTo(-r * .75, r * 1.8);
   ctx.closePath();
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = S.theme.bg;
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#ffffff';
   ctx.stroke();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = col;
-  ctx.fillStyle = col;
+  const ink = planeInk(col);
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
   if (filled) ctx.fill();
   ctx.stroke();
   ctx.restore();
@@ -332,7 +362,7 @@ export function drawProgress(ctx, toC) {
   }
   if (st.planned && st.planned.phase !== 'arrived') {
     const q = toC(st.planned.lat, nearLon(st.planned.lon, ref));
-    drawPlane(ctx, q, st.pp ? trackAt(st.pp.nm) : 0, acc, false);
+    drawPlane(ctx, q, st.pp ? trackAt(st.pp.nm) : 0, acc, false, PLANE_R);
     haloText(ctx, tt(TX.progPlanned, {
       t: fmtZ(new Date().toISOString())
     }), q.x + 12, q.y - 12, acc);
@@ -342,7 +372,7 @@ export function drawProgress(ctx, toC) {
       tr = S.trail || [],
       prev = tr.length > 1 ? tr[tr.length - 2] : null,
       hdg = Number.isFinite(+st.actual.trackDeg) ? +st.actual.trackDeg : prev ? MapsRender.trackOf(prev, st.actual) : 0;
-    drawPlane(ctx, q, hdg, real, true, 10);
+    drawPlane(ctx, q, hdg, real, true, PLANE_R);
   }
 }
 /** Profil : position prévue (cercle) à la distance et à l'altitude prévues, position réelle (point plein). */

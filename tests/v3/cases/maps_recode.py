@@ -681,13 +681,13 @@ def d54(c):
 
 _PLANE_JS = """async () => { await import('/modules/maps/state.js'); const F = await import('/modules/maps/flight_time.js');
   const cv = document.createElement('canvas'); cv.width = 200; cv.height = 200; const raw = cv.getContext('2d'), pts = [];
-  const ctx = new Proxy(raw, { get(o, p) { if (p === 'moveTo' || p === 'lineTo') return (x, y) => { const m = o.getTransform();
-      pts.push([m.e + x * m.a + y * m.c, m.f + x * m.b + y * m.d]); return o[p](x, y) };
-    const v = o[p]; return typeof v === 'function' ? v.bind(o) : v }, set(o, p, v) { o[p] = v; return true } });
+  // drawPlane writes on the raw context of the canvas (the themed one would turn its white rim into a token of the design): the points are read on the prototype
+  const P = CanvasRenderingContext2D.prototype, o = { moveTo: P.moveTo, lineTo: P.lineTo }, tr = (x, y) => { const m = raw.getTransform(); return [m.e + x * m.a + y * m.c, m.f + x * m.b + y * m.d] };
+  P.moveTo = function (x, y) { if (this === raw) pts.push(tr(x, y)); return o.moveTo.call(this, x, y) }; P.lineTo = function (x, y) { if (this === raw) pts.push(tr(x, y)); return o.lineTo.call(this, x, y) };
   const out = [];
-  for (const hdg of [0, 90, 225]) { pts.length = 0; F.drawPlane(ctx, { x: 100, y: 100 }, hdg, '#c62828', true, 10);
+  try { for (const hdg of [0, 90, 225]) { pts.length = 0; F.drawPlane(raw, { x: 100, y: 100 }, hdg, '#c62828', true, 10);
     const far = Math.max(...pts.map(p => Math.hypot(p[0] - 100, p[1] - 100)));
-    out.push({ hdg, tip: pts[0], far }) }
+    out.push({ hdg, tip: pts[0], far }) } } finally { Object.assign(P, o) }
   return out }"""
 
 
@@ -7141,3 +7141,39 @@ def d213(c):
       return { ms: +ms.toFixed(2), fixes: S.lgFixes, marks: S.pc.dataset.marks } }""")
     c.ok(r['ms'] < 12, str(r), 'one drawing of the profile takes under 12 ms with 4 000 navaids read along the route (it took 104)')
     c.ok(r['fixes'] is True, str(r), 'the fixes along the route are still named')
+
+
+
+_GHOST_JS = """async () => { const S = window.__mp.S, F = await import('/modules/maps/flight_time.js'), cv = document.createElement('canvas'); cv.width = 300; cv.height = 300; const raw = cv.getContext('2d'), pts = [], strokes = [];
+  const P = CanvasRenderingContext2D.prototype, o = { moveTo: P.moveTo, lineTo: P.lineTo, stroke: P.stroke, fill: P.fill };
+  const tr = (ctx, x, y) => { const m = ctx.getTransform(); return [m.e + x * m.a + y * m.c, m.f + x * m.b + y * m.d] };
+  P.moveTo = function (x, y) { if (this === raw) pts.push(tr(this, x, y)); return o.moveTo.call(this, x, y) }; P.lineTo = function (x, y) { if (this === raw) pts.push(tr(this, x, y)); return o.lineTo.call(this, x, y) };
+  P.stroke = function () { if (this === raw) strokes.push(['stroke', this.strokeStyle, this.lineWidth]); return o.stroke.apply(this, arguments) };
+  try { F.drawProgress(MapsRender.themed(raw, S.theme), () => ({ x: 150, y: 150 })) } finally { Object.assign(P, o) }
+  const tip = pts[0], far = Math.max(...pts.map(q => Math.hypot(q[0] - tip[0], q[1] - tip[1])));
+  const lum = c => { const d = document.createElement('canvas').getContext('2d'); d.fillStyle = c; d.fillRect(0, 0, 1, 1); const [r, g, b] = d.getImageData(0, 0, 1, 1).data, f = v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b) };
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05) };
+  const rim = strokes[0], ink = strokes.at(-1);
+  return { n: pts.length, far: +far.toFixed(1), rim: rim && rim[1], rimW: rim && rim[2], ink: ink && ink[1], inkW: ink && ink[2], contrast: rim && ink ? +cr(rim[1], ink[1]).toFixed(2) : 0, rimLum: rim ? lum(rim[1]) : 0 } }"""
+
+
+@case('D214', 'The aircraft’s planned position (its ghost) on a loaded map: the silhouette is at least 28 px long, the tip on the position, a light rim around it, and the contrast between the rim and the symbol is at least 4.5, so it reads on the busiest background', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0309 (the user, 13 Nov: « l’avion n’est pas assez visible (même si ce n’est que son fantôme) sur carte chargée »; the ergonomist: the most important object of the map in flight: drawn over everything, a light rim, not under 28 px, the ghost keeps the silhouette as an outline, rim included, contrast ≥ 4.5): the arrow was 17 px long with a 4 px rim of the background')
+def d214(c):
+    f = flight(started={'at': iso(now() - datetime.timedelta(minutes=30))})
+    f['planned_at'] = iso(now() - datetime.timedelta(minutes=30))
+    f['quote'] = {'minutes': 80, 'block': 4000, 'unit': 'kg', 'taxiMin': 12, 'legs': [{'id': 'LFRS', 'min': 0}, {'id': 'LUGEN', 'min': 9}, {'id': 'NEPIX', 'min': 52}, {'id': 'LFML', 'min': 80}]}
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
+    r = c.js(_GHOST_JS)
+    c.ok(r['far'] >= 28, str(r), 'the ghost is at least 28 px long, from its tip on the position')
+    c.ok(r['rimW'] >= 5, str(r), 'with a rim of 5 px or more')
+    c.ok(r['contrast'] >= 4.5, str(r), 'the rim and the symbol contrast at 4.5 or more')
+    c.ok(r['rimLum'] > .5, str(r), 'and the rim is light')
+    for w, h in ((1280, 760), (390, 844)):   # the ghost on a loaded map (the captures of the check)
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.wait(1800)
+        c.shot(f'D214_{c.design}_{w}_delivered.png')
