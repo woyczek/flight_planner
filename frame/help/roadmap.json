@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f7b6a02",
+  "organisation": "3e58607",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -2991,12 +2991,13 @@
     {
      "id": "SOG-0210",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "États-Unis : aucune procédure pour KDEN, et le repli Little Navmap annoncé n'a pas de geste",
      "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
      "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
      "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto",
-     "rank": 197
+     "rank": 197,
+     "test": true
     },
     {
      "id": "SOG-0216",

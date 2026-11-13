@@ -1539,9 +1539,15 @@
     "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
     "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto"
    },
-   "test": "Lanceur relancé, sur ce poste. Maintenance › Données : la case « Je certifie… » est cochée (elle reflète maintenant ce que le lanceur a noté ; décoche et recoche-la une fois si elle ne l'est pas). Carburant, arrivée KDEN, étape Procédures : la ligne « aucune procédure publiée » porte un lien « Lire depuis Little Navmap » ; il lit les procédures de KDEN, dites « Little Navmap, lue sur ce poste ». Depuis ton téléphone appairé : le lien n'est pas proposé. Les fichiers .fms / .pln portent ces procédures.",
+   "test": "Recharge la page. Carburant, un terrain dont les procédures viennent de Little Navmap (KDEN par exemple, après « Lire depuis Little Navmap ») : choisis une procédure ; un avertissement dit qu'elle vient de Little Navmap, pour ton usage personnel, sous les listes et dans la ligne de résumé du côté.",
    "since": "2026-11-11",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T12:02:33Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "pas de warn qui dit que la procédure vient de little nav map ?",
+    "at": "2026-11-13T11:16:33Z"
+   }
   },
   {
    "id": "SOG-0211",
