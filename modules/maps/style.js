@@ -235,6 +235,7 @@ export const STYLE = `
 [data-module="maps"] .mp-ch-wind[data-sev=ok]{color:var(--sog-ok)}
 [data-module="maps"] .mp-ch-wind[data-sev=warn]{color:var(--sog-warn)}
 [data-module="maps"] .mp-ch-wind[data-sev=alert]{color:var(--sog-err)}
+[data-module="maps"] .mp-ch-wind[data-tail="1"]{text-decoration:underline;text-underline-offset:2px}
 [data-module="maps"] .mp-ch-fix{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:4px 0 0;color:var(--sog-warn)}
 [data-module="maps"] .mp-ch-fix .f-btn{margin:0}
 /* « Terminer » en pied, toujours visible : il colle au bas du corps qui défile (parcours du 30/10, point 7) */

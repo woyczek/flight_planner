@@ -528,7 +528,8 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   families meeting at a point stacked one line each; a label without room is left out (its trace stays). Hovering any row of
   any family highlights its trace and label (drawn even outside the family touched last), leaving it gives the previous state
   back; a tap chooses and leaves the row highlighted; hovering a trace highlights its row (unfolded and scrolled into view).
-  Runway rows: the wind text of `wind.label` (↓ head, ↑ tail, ← wind from the right, → from the left) coloured by
+  Runway rows: the wind **in words** (`windWords`: « face 12 kt · travers 6 kt », « arrière 12 kt » underlined; the arrows of `wind.label` stay in the tooltip, SOG-0306), the best-oriented runway first
+  (`bestFirst`: the most head wind, then the least cross wind, a tail wind last; the model's order without a wind), coloured by
   `wind.severity` (ok, warn, alert: the design's green, orange, red), the reason in the row's title. The summary at the top is
   the pane's table of contents: three lines always ("—" when not chosen), a tap on a family's label scrolls to its group and
   unfolds it, ✕ (chosen families only) clears.
@@ -544,8 +545,8 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
 - **Runway and procedure correct each other** (one line under the procedure's group, one tap, never silently): the procedure just
   chosen serves one other runway → "OPAL2E sert la 25 — Passer en 25"; otherwise (the runway changed, or the procedure serves
   several) → "OKRIX5A ne sert pas la 07 — Choisir OKRIX5B", the first of the group that serves it (`firstServing`); the row keeps ⚠.
-- **Wind on every runway row**: `components(true bearing, METAR wdir, wspd)` → "↑ 12 kt · ← 6 kt" (↑ head, ↓ tail, orange above
-  5 kt of tail; the arrows say where the wind comes from, `label` of `frame/lib/wind.js`, the text Fuel prints too); the true bearing is `runwayAxis` of `frame/lib/wind.js`; no METAR, a variable wind
+- **Wind on every runway row**: `components(true bearing, METAR wdir, wspd)` → « face 12 kt · travers 6 kt » / « arrière 12 kt » (orange above
+  5 kt of tail; the tooltip keeps the arrows of `label` of `frame/lib/wind.js`, the text Fuel prints); the true bearing is `runwayAxis` of `frame/lib/wind.js`; no METAR, a variable wind
   or no bearing → no wind, nothing invented. The crosswind limit of the aircraft sheet is not read yet.
 - **Closing** ("Terminer", ✕, Escape: `chooseClose`, the one exit) returns once: `location.replace('#fuel?focus=<side>&rwy=25&star=ID&app=ID&
   apptrans=none')` — one key per family touched (`rwy`, `sid`, `star`, `app`, `apptrans`; `none` for "Aucune"), a key absent =

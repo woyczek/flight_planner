@@ -1311,6 +1311,7 @@ def _back(c, how):
     return dict(kv.split('=', 1) for kv in q.split('?', 1)[1].split('&'))
 
 
+_ww = lambda key, lang, n: tx(M, key, lang).replace('{n}', str(n))
 _CH_METAR = ['cache/weather/metar/LFML.json', {'at': 4102444800000, 'source': 'launcher', 'data': {'icaoId': 'LFML', 'wdir': 107, 'wspd': 12}}, 'cache']
 
 
@@ -1418,8 +1419,8 @@ def d60(c):
     # the wind of the METAR known on every runway: headwind on 31, tailwind (orange) on 13
     _ch_open(c, {}, extra=[_CH_METAR])
     rw = {x['id']: x for x in _grp(c.js(_CH_ROWS), 'rwy')['rows'] if x['id'] != 'none'}
-    c.eq([rw['31']['wind'], rw['31']['sev']], ['↓ 12 kt', 'ok'], 'runway 31 (true 107° here) faces the 107° wind: 12 kt head, green (wind.severity)', what='wind on 31')
-    c.eq([rw['13']['wind'], rw['13']['sev']], ['↑ 12 kt', 'alert'], 'runway 13: 12 kt tail, red (beyond 5 kt of tail)', what='wind on 13')
+    c.eq([rw['31']['wind'], rw['31']['sev']], [_ww('chHead', c.lang, 12), 'ok'], 'runway 31 (true 107° here) faces the 107° wind: 12 kt head, said in words, green (wind.severity)', what='wind on 31')
+    c.eq([rw['13']['wind'], rw['13']['sev']], [_ww('chTail', c.lang, 12), 'alert'], 'runway 13: 12 kt tail, said in words, red (beyond 5 kt of tail)', what='wind on 13')
     # the departure: runway and SID, the transitions drawn for the highlighted SID only
     _ch_open(c, {'rwy': '03'}, 'dep', 'LFRS')
     r = c.js(_CH_ROWS)
@@ -6842,3 +6843,45 @@ def k_deadfolder(c):
     c.js("() => { document.querySelector('#rgDetail [data-go=editor]').click(); return true }")
     c.until("() => !document.getElementById('rgFolderDead')", timeout=9000, what='the line goes once a folder is chosen')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404') and 'dossier des missions' not in e and 'bench' not in e]
+
+
+
+_CH_METAR_AT = lambda d, k: ['cache/weather/metar/LFML.json', {'at': 4102444800000, 'source': 'launcher', 'data': {'icaoId': 'LFML', 'wdir': d, 'wspd': k}}, 'cache']
+_CH_RWY_WIND = """() => [...document.querySelectorAll('.mp-ch-grp[data-fam=rwy] .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => { const w = b.querySelector('.mp-ch-wind');
+  return { id: b.dataset.id, text: w ? w.textContent.trim() : null, tail: w ? w.dataset.tail : null, under: w ? getComputedStyle(w).textDecorationLine : null, tip: b.title } })"""
+
+
+@case('D206', 'Choosing a runway on the Map: the best-oriented runway comes first (the most head wind, then the least cross wind; a tail wind last) and the wind reads in words, without a tooltip — « face 12 kt · travers 6 kt », « arrière 12 kt » underlined; the order follows the wind, not the numbers', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0306, Map side (the user, 13 Nov: « le choix des pistes d\'arrivée : plus d\'infos de vent face/travers. comment choisir !? »; the ergonomist: the best-oriented runway first — with a 310° wind 13R in tail wind passes before 31L — and « face 12 kt · travers 1 kt », not only arrows)')
+def d206(c):
+    def rows(d, k):
+        _ch_open(c, {}, extra=[_CH_METAR_AT(d, k)])
+        return c.js(_CH_RWY_WIND)
+    # 107°/12 kt: 31 (true 107°) faces it, 13 has it in the tail
+    r = rows(107, 12)
+    c.eq([x['id'] for x in r], ['31', '13'], 'the runway facing the wind comes first', what='order')
+    c.eq([x['text'] for x in r], [_ww('chHead', c.lang, 12), _ww('chTail', c.lang, 12)], 'the wind is said in words, not in arrows', what='texts')
+    c.eq([x['tail'] for x in r], ['0', '1'], 'the tail wind is marked', what='tail mark')
+    c.ok(r[1]['under'] == 'underline' and r[0]['under'] != 'underline', str(r), 'the tail wind is underlined, the head wind is not')
+    c.ok('→' in r[0]['tip'] or '←' in r[0]['tip'] or '↓' in r[0]['tip'], r[0]['tip'], 'the tooltip keeps the arrows (the side the wind comes from)')
+    if c.lang == 'fr':
+        scroll = "() => { const g = document.querySelector('.mp-ch-grp[data-fam=rwy]'); g.scrollIntoView({ block: 'start' }); return true }"
+        c.page.set_viewport_size({'width': 1280, 'height': 900})
+        c.wait(900)
+        c.js(scroll)
+        c.wait(300)
+        c.shot('D206_standard_wind_words_1280_delivered.png')
+        c.page.set_viewport_size({'width': 390, 'height': 800})
+        c.wait(600)
+        c.js(scroll)
+        c.wait(300)
+        c.shot('D206_standard_wind_words_390_delivered.png')
+    # 137°/12 kt: 30° off 31 — head and cross on both
+    r = rows(137, 12)
+    j = ' · '
+    c.eq([x['id'] for x in r], ['31', '13'], 'still 31 first', what='order')
+    c.eq([x['text'] for x in r], [_ww('chHead', c.lang, 10) + j + _ww('chCross', c.lang, 6), _ww('chTail', c.lang, 10) + j + _ww('chCross', c.lang, 6)], 'head and cross wind, in words', what='texts')
+    # 287°/12 kt: now 13 faces the wind — the order follows the wind, not the numbers
+    r = rows(287, 12)
+    c.eq([x['id'] for x in r], ['13', '31'], 'the order follows the wind: 13 now comes first', what='order')

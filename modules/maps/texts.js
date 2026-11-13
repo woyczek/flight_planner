@@ -537,6 +537,9 @@ export const TX = {
     'METAR {id}: Wind {d}° {kt} kt — Gegenwind {h} kt (negativ: Rückenwind), Seitenwind {x} kt',
     'METAR {id}: viento {d}° {kt} kt — de cara {h} kt (negativo: de cola), cruzado {x} kt'
   ],
+  chHead: ['face {n} kt', 'head {n} kt', 'Gegenwind {n} kt', 'de cara {n} kt'],
+  chTail: ['arrière {n} kt', 'tail {n} kt', 'Rückenwind {n} kt', 'de cola {n} kt'],
+  chCross: ['travers {n} kt', 'cross {n} kt', 'Seitenwind {n} kt', 'cruzado {n} kt'],
   chNone: ['Aucune', 'None', 'Keine', 'Ninguna'],
   chFold: ['{n} autres · Toutes', '{n} more · All', '{n} weitere · Alle', '{n} más · Todas'],
   chFoldLess: ['Compatibles seulement', 'Compatible only', 'Nur passende', 'Solo compatibles'],

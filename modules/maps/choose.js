@@ -129,9 +129,17 @@ function setState(C, s) {
 const rowsOf = (C, f) => (f === 'appTrans' ? C.model.subs : C.model.groups[f]?.rows) || [];
 /** Lignes montrées d'une famille, dans l'ordre du modèle. */
 const shownOf = (C, f) => {
-  const g = C.model.groups[f];
-  return g ? g.shown.map(id => g.rows.find(r => r.id === id)).filter(Boolean) : [];
+  const g = C.model.groups[f],
+    rows = g ? g.shown.map(id => g.rows.find(r => r.id === id)).filter(Boolean) : [];
+  return f === 'rwy' ? bestFirst(rows) : rows;
 };
+/** Les pistes dont le vent du METAR est connu : la mieux orientée en tête (SOG-0306 : « comment choisir ? ») — le plus de vent de face (un vent arrière
+ *  est négatif, il passe après), à égalité le moins de travers, à égalité encore l'ordre du modèle. Sans vent sur une piste, l'ordre du modèle. */
+function bestFirst(rows) {
+  if (rows.length < 2 || !rows.every(it => it.wind?.k)) return rows;
+  return rows.map((it, i) => [it, i]).sort((a, b) => b[0].wind.k.head - a[0].wind.k.head || a[0].wind.k.cross - b[0].wind.k.cross || a[1] -
+    b[1]).map(x => x[0]);
+}
 /** Le texte d'un libellé du modèle : « Piste 25 », sinon le nom et l'état de la source. */
 const labelText = l => l.kind === 'rwy' ? tt(TX.chRwy, {
   r: l.r
@@ -148,16 +156,23 @@ const whyText = w => w.kind === 'rwy' ? tt(TX.chConflictRwy, {
 const offText = o => o ? tt(o.kind === 'exit' ? TX.chExit : TX.chEntry, {
   p: o.p
 }) : '';
-/** Le vent d'une piste : le texte de frame/lib/wind.js (label, le même que Carburant) et l'infobulle. */
+/** Le texte du vent d'une piste, en mots (SOG-0306 : « face 12 kt · travers 1 kt », « arrière 12 kt » : on le lit sans infobulle) ; une composante nulle
+ *  est omise, « 0 kt » quand les deux le sont. Le côté d'où vient le vent reste dans l'infobulle (les flèches de frame/lib/wind.js label). */
+const windWords = k => [k.head ? tt(k.head > 0 ? TX.chHead : TX.chTail, {
+  n: Math.abs(k.head)
+}) : '', k.cross ? tt(TX.chCross, {
+  n: k.cross
+}) : ''].filter(Boolean).join(' · ') || '0 kt';
+/** Le vent d'une piste : le texte en mots et l'infobulle. */
 const windTexts = (C, w) => ({
-  text: windLabel(w.k),
+  text: windWords(w.k),
   tip: tt(TX.chWindTip, {
     id: C.icao,
     d: String(Math.round(C.input.wind.dir)).padStart(3, '0'),
     kt: Math.round(C.input.wind.kt),
     h: w.k.head,
     x: w.k.cross
-  }) + ` — ${tt(TX.chSev[w.sev])}`
+  }) + ` — ${windLabel(w.k)} — ${tt(TX.chSev[w.sev])}`
 });
 /** Nom de famille d'une procédure pour un cartouche : le radical, une espace, le chiffre (« NIMER9A » → « NIMER 9 », PR.familyOf) ;
  *  le nom tel quel s'il n'a pas cette forme. */
@@ -379,7 +394,7 @@ function rowHtml(C, it) {
     wind = it.wind ? windTexts(C, it.wind) : null,
     off = offText(it.off),
     tip = [it.title || '', it.old ? tt(TX.procOutdated) : '', ...why, wind?.tip || ''].filter(Boolean).join(' · ');
-  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.state.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(labelText(it.label))}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${off ? `<span class="mp-ch-off">${esc(off)}</span>` : ''}${it.dir?.deg != null ? `<span class="mp-ch-dir" style="--r:${Math.round(it.dir.deg)}deg" role="img" aria-label="${esc(tt(TX.chDir, { c: String(Math.round(it.dir.deg) % 360).padStart(3, '0') }))}">↑</span>` : ''}${wind ? `<span class="mp-ch-wind" data-sev="${esc(it.wind.sev)}">${esc(wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(why.join(' · '))}">⚠</span>` : ''}</button>`;
+  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.state.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(labelText(it.label))}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${off ? `<span class="mp-ch-off">${esc(off)}</span>` : ''}${it.dir?.deg != null ? `<span class="mp-ch-dir" style="--r:${Math.round(it.dir.deg)}deg" role="img" aria-label="${esc(tt(TX.chDir, { c: String(Math.round(it.dir.deg) % 360).padStart(3, '0') }))}">↑</span>` : ''}${wind ? `<span class="mp-ch-wind" data-sev="${esc(it.wind.sev)}" data-tail="${it.wind.k.head < 0 ? 1 : 0}">${esc(wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(why.join(' · '))}">⚠</span>` : ''}</button>`;
 }
 /** Sous-lignes de l'approche choisie : « Sans transition », puis ses transitions (V3 § 10.30 : la transition sous l'approche). */
 function subsHtml(C) {
