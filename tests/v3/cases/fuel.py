@@ -2849,6 +2849,9 @@ def _route_launcher(c, verbs):
     bodies are kept."""
     import urllib.parse
     st = {'posts': [], 'verbs': verbs, 'norad': False}
+    # SOG-0296: the first request (no `alternatives`) answers the head route only; the second (alternatives true) all of them; a refused
+    # plan's proposals come at once (its recourse); st['delay_alt'], st['fail_alt'], st['cache'] shape the second / both
+    phase = lambda lst, a: lst if a.get('alternatives') or (lst and lst[0].get('proposal')) else lst[:1]
     alts = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]),
             _alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, [_seg('LFRS', 'NEPIX'), _seg('NEPIX', 'LFML')]),
             _alt(3, 'Direct · FL190', 'LFRS LUGEN LFML', 380, 190, [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'LFML', {'kind': 'ceiling', 'text': 'plafond 19500 ft', 'deltaFt': 500})],
@@ -2878,13 +2881,21 @@ def _route_launcher(c, verbs):
             st['posts'].append(json.loads(req.post_data or '{}'))
             st['t'] = time.time()
             body = {'job': 'j' + str(len(st['posts']))}
+        elif u.path.endswith('/__setup/regen/job/cancel'):
+            st.setdefault('cancels', []).append(json.loads(req.post_data or '{}'))
+            body = {'ok': True}
+        elif u.path.endswith('/__setup/regen/job') and st['posts'] and (st['posts'][-1].get('args') or {}).get('alternatives') \
+                and time.time() - st.get('t', 0) < st.get('delay_alt', 0):
+            body = {'id': 'j' + str(len(st['posts'])), 'state': 'running', 'step': '', 'done': 0, 'total': 1, 'unit': '', 'log': []}
         elif u.path.endswith('/__setup/regen/job') and time.time() - st.get('t', 0) < st.get('delay', 0):
             # SOG-0134: a slow launcher (st['delay'] seconds after the request): the job says « running » until then
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'running', 'step': '', 'done': 0, 'total': 1, 'unit': '', 'log': []}
         elif u.path.endswith('/__setup/regen/job'):
             a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
             res = {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'} \
-                if st['norad'] else dict(common, ok=True, alternatives=st.get('alts') or alts, segments=alts[0]['segments'], issues=[], message='2 alternative(s).') if a.get('action') == 'compute' else \
+                if st['norad'] else {'ok': False, 'reason': 'failed', 'message': 'search stopped'} if a.get('action') == 'compute' and a.get('alternatives') and st.get('fail_alt') else \
+                dict(common, ok=True, alternatives=phase(st.get('alts') or alts, a), segments=alts[0]['segments'], issues=[], message='2 alternative(s).',
+                     **({'cache': st['cache']} if st.get('cache') else {})) if a.get('action') == 'compute' else \
                 dict(common, ok=True, alternatives=[st.get('check') or checked], segments=(st.get('check') or checked)['segments'],
                      issues=st.get('issues') or [{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message='')
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
@@ -2918,9 +2929,10 @@ def f109(c):
     # Calculer A → B: the typed points are imposed; the computed route and two alternatives; « Prendre » the first alternative
     c.tap(f'{FUEL} [data-do="rcompute"]')
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='the computed route and two alternatives')
-    comp = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute'][0]
-    c.eq([sorted(comp), comp['via'], comp['alternatives'], comp['proposals']], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'alternatives', 'proposals']), ['LUGEN', 'NEPIX'], True, True],
-         'the typed points as imposed passages, alternatives and the proposals of an impossible plan asked (AeroDB 9a7f1dde3)', what='compute args')
+    comps = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute']
+    comp = comps[0]
+    c.eq([sorted(comp), comp['via'], comp['proposals'], comps[1]], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'proposals']), ['LUGEN', 'NEPIX'], True, dict(comp, alternatives=True)],
+         'the typed points as imposed passages and the proposals of an impossible plan asked (AeroDB 9a7f1dde3); the alternatives in a second request (SOG-0296)', what='compute args')
     names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altname]')].map(e => e.textContent.trim())")
     c.eq(names, ['Via UN10', 'Direct · FL250', 'Direct · FL190'], 'each route named by the launcher', what='names')
     before = cf_doc(c, lambda d: True, 'the flight')['route']['text']
@@ -4853,7 +4865,7 @@ def f157(c):
         head = norm(tx(F, 'rTimeLauncher', c.lang).split('{t}')[0])
         c.ok(line.startswith(head) and c.js(f"document.querySelector('{FUEL} [data-rtime]').dataset.part") == 'launcher'
              and norm(tx(F, 'rTimeCopy', c.lang)) in line, line, 'said in words, the launcher\'s part first, « Copier le diagnostic »')
-        c.eq(len([p for p in st['posts'] if (p.get('args') or {}).get('action') == 'calculate' or p.get('verb') == 'compute']), 1,
+        c.eq(len([p for p in st['posts'] if ((p.get('args') or {}).get('action') == 'calculate' or p.get('verb') == 'compute') and not (p.get('args') or {}).get('alternatives')]), 1,
              'one computation only (the second tap started nothing)', what='posts')
         d = c.until_doc('cache/fuel/route_timing.json', lambda d: bool(d and (d.get('ms') or {}).get('total')), 'the durations kept on the device')
         c.ok(d['ms']['launcher'] >= 3500 and d['ms']['total'] > 3000 and d['route'] == 'LFRS → LFML' and set(d) <= {'schema', 'at', 'action', 'route', 'ms'},
@@ -5502,3 +5514,61 @@ def f213(c):
     c.settle()
     c.ok(((procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr') or {}).get('appChart') or {}).get('name') == 'VOR RWY 31R OLD',
          procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr'), 'nothing erased')
+
+
+
+@case('F218', 'Route step, two requests: the head route at once without alternatives with « Variantes en recherche… », then the same request '
+      'with alternatives whose variants are ADDED under it (never replaced); a failure keeps the first and says so; « du cache, calculé à … » '
+      'for each; an input changed during the second cancels it and asks the first again', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0296, the cause (the user: « il faut traiter la root cause »; measured by AeroDB, LFOE → KDEN: 3.0 s without alternatives, '
+      '25.3 s with, the same head route; `alternatives_budget` da64b03c9); the ergonomist\'s way (13 Nov, 21 h 36): (a) the first without '
+      'alternatives, shown at once; (b) the second, same fields plus alternatives, ADDS; (c) a changed input cancels it and asks (a) again; '
+      '(d) « du cache, calculé à … » for each; route_alts.json follows the two times')
+def f218(c):
+    F = 'modules/fuel/module.js'
+    st = _route_launcher(c, ['route/compute'])
+    st['delay_alt'] = 3.0
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    comps = lambda: [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute']
+    rows = f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length"
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"{rows} === 1 && !!document.querySelector('{FUEL} [data-rmore=busy]')", timeout=8000, what='(a) the head route at once, « Variantes en recherche… »')
+    c.ok('alternatives' not in comps()[0], comps()[0], '(a) the first request without alternatives')
+    c.ok(norm(tx(F, 'rMoreBusy', c.lang)) in norm(c.text(f'{FUEL} [data-rmore]')), c.text(f'{FUEL} [data-rmore]'), 'said in words')
+    c.until(f"{rows} === 3 && !document.querySelector('{FUEL} [data-rmore=busy]')", timeout=12000, what='(b) the variants added')
+    c.eq(comps()[1], dict(comps()[0], alternatives=True), '(b) the second request: the same fields plus alternatives', what='second request')
+    names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altname]')].map(e => e.textContent.trim())")
+    c.eq(names, ['Via UN10', 'Direct · FL250', 'Direct · FL190'], 'the first kept at the head, the variants added under it', what='names')
+    c.until_doc('cache/fuel/route_alts.json', lambda d: bool(d) and len(d.get('alternatives') or []) == 3 and len((d.get('answer') or {}).get('alternatives') or []) == 3,
+                'route_alts.json follows the second time (schema 2: alternatives and answer)')
+    # a failure of the second keeps the first and says so
+    st['delay_alt'], st['fail_alt'] = 0, True
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-rmore=fail]')", timeout=10000, what='the failure of the second said')
+    c.eq(c.js(rows), 1, 'the head route kept', what='kept')
+    c.ok(norm(tx(F, 'rMoreFail', c.lang)) in norm(c.text(f'{FUEL} [data-rmore]')), c.text(f'{FUEL} [data-rmore]'), 'said in words')
+    # (d) « du cache, calculé à … » for each request
+    st['fail_alt'] = False
+    st['cache'] = {'hit': True, 'computedAt': '2026-11-13T13:32:00Z', 'until': None}
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-rage][data-cache]') && !!document.querySelector('{FUEL} [data-rmore=cache]')", timeout=10000,
+            what='(d) « du cache » for the first and for the second')
+    head = norm(c.text(f'{FUEL} [data-rage]') or '')
+    c.ok(norm(tx(F, 'rCache', c.lang).split('{t}')[0]) in head, head, '« Du cache, calculé à … »')
+    st.pop('cache')
+    # (c) a changed input during the second cancels it and asks the first again
+    st['delay_alt'] = 8.0
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-rmore=busy]')", timeout=8000, what='the second under way')
+    n = len(comps())
+    to_step(c, 0)
+    c.page.fill(f'{FUEL} input[data-k="fl"]', '250')
+    c.page.keyboard.press('Tab')
+    for _ in range(80):
+        if st.get('cancels') and any(a.get('fl') == 250 and 'alternatives' not in a for a in comps()[n:]):
+            break
+        c.wait(100)
+    c.ok(st.get('cancels'), st.get('cancels'), '(c) the second request cancelled (regen/job/cancel)')
+    c.ok(any(a.get('fl') == 250 and 'alternatives' not in a for a in comps()[n:]), comps()[n:], '(c) the first asked again with the new level')

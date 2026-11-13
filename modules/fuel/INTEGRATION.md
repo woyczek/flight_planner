@@ -338,6 +338,13 @@ its age is said (« Calculé à 14:32Z »). A schema-1 document reads « without
 tap that shows a row (its `open`), never on hover. The shared window of the side map and the full Map is BUGS SOG's: it reads this
 document and hands a row back by `maps-route-alt-show`.
 
+**Two times (SOG-0296, 13 Nov 2026).** « Calculer A → B » makes two requests: the head route first (no `alternatives`), published
+at once (event and document, one route); then the same request with `alternatives: true`, whose new routes are APPENDED (the head
+route stays index 0, three routes at most, `answer.alternatives` appended alike) and published again. A reader therefore sees the
+document written twice for one computation, the second a longer list with the same first route; `chosen`, `open` and the indices of
+the first time stay valid. `computed_at` is the time of the computation, which for a result from the workstation's cache is its
+`cache.computedAt`.
+
 ## 4. Quote settings — `pilot/<trigram>/fuel.json`
 
 `{ "schema": 1, "updated_at", "taxiMin": 10, "reserveMin": 30, "contingencyPct": 5, "displayUnit": "kg",

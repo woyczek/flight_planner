@@ -1936,3 +1936,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   line says « VOR 31R — par sa carte : ni tracé ni distance » with its chart. The chart-only lines (SOG-0248) are read with the
   approach's list open, as the mock-up (`maquette/procedures_carte_390.png`); « pas d'approche » stays said. F213 (red before); F150
   follows the new rule (selectable). Map readers of `route.procedures` played: D53, D54, D171, D224.
+- **13 Nov 2026 — SOG-0296, the cause: two requests, the head route first** (the user: « il faut traiter la root cause »; measured by
+  AeroDB, LFOE → KDEN: 3.0 s without alternatives, 25.3 s with, the same head route; AeroDB's `alternatives_budget`, da64b03c9; the
+  ergonomist's way, 21 h 36). (a) `routeArgs` asks route/compute WITHOUT `alternatives`; the head route is drawn at once with
+  « Variantes en recherche… » (`S.ralts.more`). (b) `altsMore` then sends the same fields plus `alternatives: true`; its variants are ADDED
+  under the head route (never replaced; three routes at most; a route already there (same text, level and name) is not repeated; the raw answers appended to
+  `answer`, so route_alts.json schema 2 follows the two times). A failure or a stop keeps the first and says so (`data-rmore`). (c) After a
+  write of the flight, an input changed during the second (`argsKey`: the request's fields, the planned time instead of the clock's date)
+  aborts it (`RE.run`'s signal → regen/job/cancel), waits for its end, and asks (a) again; a new request or « Fermer les propositions »
+  stops it too. (d) `RE.normalize` reads the answer's `cache: { hit, computedAt }`: « Du cache, calculé à … » on the head line (the time
+  is the computation's, which the stale rule reads) and « Variantes du cache, calculées à … ». A refused plan's proposals come with the
+  first answer: no second request. F218 (red before); F109 and F157 follow (two requests); the Map's readers D126, D136, D140, D144,
+  D154, D159, D164, D177, D193, D201, D202, D231 played.

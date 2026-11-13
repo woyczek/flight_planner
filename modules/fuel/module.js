@@ -387,6 +387,24 @@ const TX = {
   ],
   rRecompute: ['Recalculer', 'Compute again', 'Neu berechnen', 'Recalcular'],
   rClose: ['Fermer les propositions', 'Close the proposals', 'Vorschläge schließen', 'Cerrar las propuestas'],
+  // SOG-0296 : deux demandes — la route de tête tout de suite, les variantes ensuite ; le cache du poste dit
+  rMoreBusy: ['Variantes en recherche…', 'Searching for variants…', 'Varianten werden gesucht…', 'Buscando variantes…'],
+  rMoreNone: ['Pas d’autre variante trouvée.', 'No other variant found.', 'Keine andere Variante gefunden.',
+    'No se encontró otra variante.'
+  ],
+  rMoreFail: ['Variantes non trouvées : la route de tête reste.', 'Variants not found: the head route stays.',
+    'Varianten nicht gefunden: die Hauptroute bleibt.', 'Variantes no encontradas: la ruta principal se queda.'
+  ],
+  rMoreStop: ['Recherche des variantes arrêtée : la route de tête reste.', 'Search for variants stopped: the head route stays.',
+    'Variantensuche abgebrochen: die Hauptroute bleibt.', 'Búsqueda de variantes detenida: la ruta principal se queda.'
+  ],
+  rMoreCache: ['Variantes du cache, calculées à {t}', 'Variants from the cache, computed at {t}',
+    'Varianten aus dem Cache, berechnet um {t}',
+    'Variantes de la caché, calculadas a las {t}'
+  ],
+  rCache: ['Du cache, calculé à {t}', 'From the cache, computed at {t}', 'Aus dem Cache, berechnet um {t}',
+    'De la caché, calculado a las {t}'
+  ],
   rProposals: ['Propositions non validées', 'Unvalidated proposals', 'Nicht bestätigte Vorschläge', 'Propuestas no validadas'],
   rProposal: ['Proposition {n}', 'Proposal {n}', 'Vorschlag {n}', 'Propuesta {n}'],
   rTakenProposal: ['Proposition non validée prise : à vérifier — {share}.', 'Unvalidated proposal taken: to be checked — {share}.',
@@ -1423,7 +1441,9 @@ function saveFlight() {
   const s = S; // gardé : l'écriture part même si le module est démonté entre-temps
   // les écritures de Carburant à la file : une écriture relit l'enregistrement après la fin de la précédente (deux écritures qui se
   // chevauchaient relisaient le même état d'avant, et la seconde reprenait un niveau périmé : F7 avec des lectures lentes)
-  s.flightTimer = setTimeout(() => s.saving = (s.saving || Promise.resolve()).then(() => writeFlight(s)).catch(() => {}), 300);
+  s.flightTimer = setTimeout(() => s.saving = (s.saving || Promise.resolve()).then(() => writeFlight(s)).then(() => S === s &&
+      altsMoreCheck())
+    .catch(() => {}), 300); // SOG-0296 (c) : une entrée changée pendant la recherche des variantes
 }
 /** Une écriture du vol courant (saveFlight, à la file) : voir saveFlight. */
 async function writeFlight(s) {
@@ -3698,24 +3718,14 @@ async function routeAsk(action) {
 }
 /** La demande elle-même (routeAsk), mesurée : appui (t0), départ de la demande au lanceur (t1), réponse (t2), liste dessinée (t3). */
 async function routeAskRun(s, act, r, o, box, retry) {
+  await altsMoreStop(); // SOG-0296 : une nouvelle demande arrête la recherche des variantes de la précédente
   if (!(await RE.answers(S.ctx.launcher))) {
     if (!gone(s) && box) box.innerHTML = `<p class="f-warn" data-rnolauncher>${esc(tt(TX.rNoLauncher))} ${retry}</p>`;
     return;
   }
   if (gone(s) || !S.body) return;
   altsClear(); // une nouvelle demande : la Carte n'a plus d'itinéraires à dessiner
-  const when = Date.parse(S.flight.planned_at || ''),
-    args = RE.request({
-      action: act,
-      dep: r.dep,
-      arr: r.arr,
-      points: r.points,
-      text: r.text,
-      fl: +S.flight.level?.ft > 0 ? Math.round(+S.flight.level.ft / 100) : null,
-      date: new Date(Number.isFinite(when) ? when : Date.now()).toISOString().slice(0, 16),
-      depRunway: o.dep?.rwy,
-      arrRunway: o.arr?.rwy
-    });
+  const args = routeArgs(act, r, o);
   s.rtime.t1 = performance.now();
   const res = await RE.run(S.ctx.launcher, args);
   s.rtime.t2 = performance.now();
@@ -3755,14 +3765,121 @@ async function routeAskRun(s, act, r, o, box, retry) {
     // SOG-0224 : ce qui fait survivre la liste et son détail (route_alts.json, schéma 2) ; la réponse elle-même, relue par
     // RE.normalize à chaque lecture (une entrée non fiable, bornée au même endroit que la réponse du lanceur)
     answer: answerOf(res),
-    computed_at: new Date().toISOString(),
+    // SOG-0296 : un résultat du cache du poste garde l'heure de SON calcul (« du cache, calculé à … ») ; la règle « périmé » la lit
+    computed_at: n.cache?.at || new Date().toISOString(),
+    cache: n.cache,
+    // SOG-0296 : les variantes, demandées ensuite (altsMore) ; un plan impossible a déjà ses propositions
+    more: n.plans.length && !n.plans[0].proposal ? 'busy' : '',
     ac: acKey(),
     base: await baseStamp()
   };
   if (gone(s) || !S.body) return;
   routeAltsDraw();
   altsPublish('compute', n.plans); // pour la Carte (INTEGRATION § 3 bis)
+  if (S.ralts.more === 'busy') altsMore(s, args); // SOG-0296 : la seconde demande, sans attendre
   return routeDrawn(s);
+}
+/** La demande du travail route/compute pour le vol courant (RE.request) : la première (sans variantes) ; `r`, `o` : la route et les
+ *  procédures du vol. */
+function routeArgs(act, r = S.flight.route || {}, o = CF.proceduresOf(S.flight)) {
+  const when = Date.parse(S.flight.planned_at || '');
+  return RE.request({
+    action: act,
+    dep: r.dep,
+    arr: r.arr,
+    points: r.points,
+    text: r.text,
+    fl: +S.flight.level?.ft > 0 ? Math.round(+S.flight.level.ft / 100) : null,
+    date: new Date(Number.isFinite(when) ? when : Date.now()).toISOString().slice(0, 16),
+    depRunway: o.dep?.rwy,
+    arrRunway: o.arr?.rwy,
+    alternatives: false
+  });
+}
+/** SOG-0296 : ce qui fait la demande (pour savoir si l'entrée a changé pendant la seconde) — ses champs, sans la date tirée de
+ *  l'horloge (l'heure prévue du vol en tient lieu). */
+const argsKey = a => JSON.stringify({
+  ...a,
+  date: undefined,
+  at: S?.flight?.planned_at || ''
+});
+/** SOG-0296 (la cause, mesurée par AeroDB : LFOE → KDEN 3,0 s sans alternatives, 25,3 s avec, la même route de tête) : la seconde
+ *  demande, les mêmes champs plus `alternatives` ; à son retour, les variantes AJOUTÉES sous la route de tête (jamais remplacée, trois
+ *  itinéraires au plus, une route déjà là pas répétée) et le document route_alts.json suit ; un échec ou un arrêt garde la première
+ *  et le dit. Arrêtée (signal → regen/job/cancel) par une nouvelle demande, la fin des propositions, ou l'entrée changée (altsMoreCheck). */
+async function altsMore(s, args) {
+  const R = S.ralts,
+    ctl = new AbortController(),
+    run = RE.run(S.ctx.launcher, {
+      ...args,
+      alternatives: true
+    }, {
+      signal: ctl.signal
+    }).catch(() => null);
+  S.raltsMore = {
+    ctl,
+    key: argsKey(args),
+    run
+  };
+  const res = await run;
+  if (S?.raltsMore?.ctl === ctl) S.raltsMore = null;
+  if (gone(s) || !S.body || S.ralts !== R) return;
+  if (ctl.signal.aborted) { // arrêtée pour une nouvelle demande : celle-ci dessine
+    R.more = '';
+    return;
+  }
+  const n = res ? RE.normalize(res, 'compute') : null;
+  if (!n?.ok) {
+    R.more = n?.reason === 'stopped' ? 'stop' : 'fail';
+    return routeAltsDraw();
+  }
+  const key = p => `${p.route}|${p.fl}|${p.name}`, // la même route à un autre niveau ou sous un autre nom est une autre variante
+    seen = new Set(R.list.map(key)),
+    add = [];
+  for (const a of (Array.isArray(res.alternatives) ? res.alternatives : []).slice(0, 3)) {
+    const p = RE.normalize({
+      ok: true,
+      alternatives: [a]
+    }, 'compute').plans[0];
+    if (!p?.route || p.proposal || seen.has(key(p)) || R.list.length + add.length >= 3) continue;
+    seen.add(key(p));
+    add.push([{
+      ...p,
+      role: 'alternative'
+    }, a]);
+  }
+  R.list = [...R.list, ...add.map(x => x[0])];
+  R.answer = {
+    ...R.answer,
+    alternatives: [...R.answer.alternatives, ...add.map(x => x[1])].slice(0, 3)
+  };
+  R.more = !add.length ? 'none' : n.cache?.hit ? 'cache' : '';
+  R.moreCache = n.cache;
+  routeAltsDraw();
+  altsPublish('compute', R.list);
+}
+/** SOG-0296 : arrête la seconde demande en cours (s'il y en a une) et attend sa fin (le poste libéré avant une autre demande). */
+async function altsMoreStop() {
+  const M = S?.raltsMore;
+  if (!M) return;
+  S.raltsMore = null;
+  M.ctl.abort();
+  await M.run;
+}
+/** SOG-0296 (c) : après une écriture du vol, une entrée changée pendant la seconde demande l'annule et relance la première. */
+function altsMoreCheck() {
+  const M = S?.raltsMore;
+  if (!M || S.routeBusy || argsKey(routeArgs('compute')) === M.key) return;
+  altsMoreStop().then(() => S && !S.routeBusy && routeAsk('compute'));
+}
+/** SOG-0296 : la ligne des variantes sous la route de tête — en recherche, aucune autre, l'échec ou l'arrêt (la première reste), ou
+ *  « du cache ». */
+function moreHtml(A) {
+  const k = A?.more,
+    t = k === 'busy' ? TX.rMoreBusy : k === 'none' ? TX.rMoreNone : k === 'fail' ? TX.rMoreFail : k === 'stop' ? TX.rMoreStop : k ===
+    'cache' &&
+    A.moreCache?.at ? TX.rMoreCache : null;
+  return t ? `<p class="${k === 'fail' || k === 'stop' ? 'f-warn' : 'f-muted'}" data-rmore="${k}">${esc(tt(t, { t: k === 'cache' ? hhmmLocal(A.moreCache.at) : '' }))}</p>` : '';
 }
 // ---------------------------------------------------------------- la durée d'un calcul de route (SOG-0134)
 // Refusé en recette le 11/11 (« toujours pareil. instable, lent. ») sans un fait : le poste de l'utilisateur les donne lui-même. Quatre
@@ -3933,10 +4050,10 @@ function routeAltsDraw() {
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
-    head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}><span>${esc(tt(A.stale ? TX.rStale : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
+    head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}${A.cache?.hit ? ' data-cache' : ''}><span>${esc(tt(A.stale ? TX.rStale : A.cache?.hit ? TX.rCache : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
     A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
   box.innerHTML = head + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
-    `<p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + (props.length ?
+    `<p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
     limitation: '',
@@ -4104,6 +4221,7 @@ async function proposalsAge() {
  *  couche. */
 function proposalsEnd() {
   if (!S) return;
+  altsMoreStop(); // SOG-0296 : la recherche des variantes s'arrête avec les propositions
   S.ralts = null;
   altsClear(true);
   const box = S.body?.querySelector('[data-routealts]');

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › route: the head route first, the variants added when found (two requests), « du cache, calculé à … »; an input changed during the search stops it and computes again** (fuel DECISIONS; noreg F218; SOG-0296).
 - **Fuel › procedures: an approach known by its chart only can be chosen — « VOR 31R — par sa carte : ni tracé ni distance », with its chart** (fuel DECISIONS; noreg F213, F150; SOG-0308 slice 3b, SOG-0298).
 - **Map, VFR view: the traffic circuits of the user's extractor are drawn** (SOG-0253): solid black for fixed wing, dotted green for rotary, arrows in the order of flight, the altitude on the line; in the aerodrome's content — chart not read: nothing; read and no circuit: « Tour de piste : main gauche (rien de publié sur la carte) »; circuit extracted: its hand and altitude; read through the launcher's read-only `vfr/circuits` (new `meta.launcher` route of the Map: for Sécurisation); help ×4; D233.
 - **A « Signaler » bug icon in the top bar of the three applications, before the help « ? »** (SOG-0335, for the phone tests of the weekend): shown for every version but an exact final one (a bare SHA of the published site included; one place to remove it, `signalWanted`); a device without launcher (the phone on the published site) sends the developer's report by the pilot's path (`pilot/<trigram>/signalements/`, grouped send, waits offline), says where it went and that no screenshot leaves; noreg A196

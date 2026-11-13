@@ -45,6 +45,12 @@ const ident = v => {
   const x = text(v, 12).toUpperCase();
   return /^[A-Z0-9]{1,12}$/.test(x) ? x : '';
 };
+/** SOG-0296 : ce que la réponse dit de son cache (AeroDB, `cache: { hit, computedAt, until }`) — { hit: true, at: ISO } quand le résultat
+ *  vient du cache du poste, null sinon (une entrée non fiable : seule une date lisible passe). */
+const cacheOf = c => c && typeof c === 'object' && c.hit === true && Number.isFinite(Date.parse(c.computedAt)) ? {
+  hit: true,
+  at: new Date(Date.parse(c.computedAt)).toISOString()
+} : null;
 const num = (v, lo, hi) => Number.isFinite(+v) && v !== null && v !== '' && +v >= lo && +v <= hi ? +v : null;
 
 /** La demande fermée du contrat (voir l'en-tête) : un champ absent est omis, jamais envoyé vide ou null (le lanceur refuserait). */
@@ -57,7 +63,8 @@ export function request({
   fl,
   date,
   depRunway,
-  arrRunway
+  arrRunway,
+  alternatives = true
 }) {
   const check = action === 'check',
     out = {
@@ -72,7 +79,8 @@ export function request({
   if (check) out.route = text(typed, 600).toUpperCase();
   else {
     out.via = (Array.isArray(points) ? points : []).slice(1, -1).map(p => ident(p?.id)).filter(Boolean).slice(0, 8);
-    out.alternatives = true;
+    // SOG-0296 : la première demande sans variantes (la route de tête en 1 à 3 s), la seconde avec
+    if (alternatives) out.alternatives = true;
     out.proposals = true; // un plan impossible rend les propositions de repli du moteur, marquées proposal (AeroDB 9a7f1dde3, SOG-0161)
   }
   return out;
@@ -81,14 +89,19 @@ export function request({
 /** Un appel du travail route/compute ; le résultat ({ ok, … }), ou, sans résultat, la RAISON dite (SOG-0206 : « le contrôle n'a pas répondu »
  *  sans cause) : { ok: false, reason: 'busy' (un autre travail du poste tourne : 409), 'offline' (lanceur injoignable), 'stopped' (travail
  *  arrêté ou interrompu), 'failed' (le travail a échoué sans résultat) } ; null sans lanceur (rien n'a été demandé). */
-export async function run(launcher, args) {
+export async function run(launcher, args, {
+  signal
+} = {}) {
   if (typeof launcher?.job !== 'function') return null;
   try {
+    // SOG-0296 : `signal` arrête le travail (regen/job/cancel) : la seconde demande, quand l'entrée change
     const r = await launcher.job('regen/job', {
       set: 'route',
       verb: 'compute',
       args
-    });
+    }, signal ? {
+      signal
+    } : undefined);
     if (r?.result && typeof r.result === 'object') return r.result;
     const reason = r?.status === 409 ? 'busy' : r?.offline ? 'offline' : r?.cancelled || ['cancelled', 'interrupted'].includes(r?.state) ?
       'stopped' : 'failed';
@@ -215,7 +228,8 @@ export function normalize(res, action = 'compute') {
     errors: [],
     plans: [],
     limitation: '',
-    gaps: []
+    gaps: [],
+    cache: null
   };
   const check = action === 'check',
     errors = (Array.isArray(res.issues) ? res.issues : []).slice(0, 300).filter(x => x?.level === 'error').map(x => text(x?.text, 300))
@@ -232,6 +246,7 @@ export function normalize(res, action = 'compute') {
     errors,
     plans,
     limitation: text(res.limitation, 400),
+    cache: cacheOf(res.cache),
     gaps: (Array.isArray(res.gaps) ? res.gaps : []).slice(0, 8).map(g => ({
       name: text(g?.name, 80),
       reason: text(g?.reason, 300)
