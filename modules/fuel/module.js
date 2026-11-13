@@ -6529,7 +6529,8 @@ const ATIS_FEEDS = {
 };
 /** Une lecture de moins de cinq minutes sert telle quelle (l'étape rouverte) ; « Lire la météo » la refait. */
 const ATIS_FRESH_MS = 5 * 60e3;
-/** Les réseaux du vol (Q-0038 en attente : la réponse de l'utilisateur ne change que cette fonction) : ceux que la compagnie courante
+/** Les réseaux du vol (SOG-0090, Q-0038 : « ceux de la compagnie du vol ») : ceux que la compagnie courante — celle du vol, que
+ *  themesLoad y écrit à chaque montage et changement de compagnie (SOG-0041) —
  *  déclare (settings.networks, ivao / vatsim vrais ; « offline » seul : aucun) et pour lesquels le pilote a son identifiant. */
 async function flightNetworks(s = S) {
   const a = await Promise.resolve().then(() => window.FrameData?.airline?.()).catch(() => null);

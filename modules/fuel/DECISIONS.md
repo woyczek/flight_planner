@@ -1754,7 +1754,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (« Piste en service : 25 (ATIS VATSIM, information F, 1655Z) » and « Prendre la piste de l'ATIS », a gesture); the METAR line below when
   it differs, quiet when it agrees. Read at the opening of the procedures step and on « Lire la météo des terrains », never on a timer; kept five
   minutes. The networks of the flight = those of the current company (`settings.networks`, `=== true`) where the pilot has an identity,
-  in `flightNetworks()` only (Q-0038 pending). The feeds are reduced at reception to callsign, letter, time and lines: no name, no
+  in `flightNetworks()` only (Q-0038 answered: see SOG-0090 below). The feeds are reduced at reception to callsign, letter, time and lines: no name, no
   identifier of a person is kept; the text is never shown. F152 (red before): the traps of the survey (« RWY 31L RENAMED TO RWY 13R »,
   « VISUAL OPS », a RVR group, « RMK VOR ») give no runway; an offline company reads nothing.
 - **12 Nov 2026 — a direct to a point on instruction of ATC** (SOG-0088, the ergonomist's GO and answers (a) (b) (c)): modules/fuel/direct.js
@@ -1848,3 +1848,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   themselves count, never their transitions: « NTS1A.RWALL.LUGEN » names no runway and `servesAll` would make it serve them all — the
   first version of the case stayed red for that reason. The rest of the fiche (the runway choosable, listed last, « aucun départ publié »)
   is screen and waits for the mock-up of SOG-0308. F207 (red before: 21 probable without any SID).
+- **13 Nov 2026 — SOG-0090, Q-0038 answered: the ATIS is read on the networks of the flight's company — already the case, no code**
+  (user: « ceux de la compagnie du vol (ses réglages : IVAO, VATSIM, hors ligne) ; une ligne par réseau qui a une ATIS »; written by
+  Features SOG). In Fuel the flight's company IS the current one: `themesLoad` writes the current code into `current_flight.airline` at
+  each mount and each change of company (SOG-0041, « the flight is of the company where it is prepared »). A case with a flight of
+  another company than the current one was written first (F208) and dropped: the flight is restamped at mount, the situation cannot occur
+  in Fuel. Reading another company's `settings.json` would also have widened Fuel's reads to `airline/` for nothing. One line per network
+  with an ATIS (`[data-atisline]`), offline: none — F152 already holds both. If the flight should keep the company of another device or of
+  a mission, it is SOG-0041 that changes, and `flightNetworks` with it.
