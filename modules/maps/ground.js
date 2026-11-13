@@ -75,7 +75,10 @@ const G = () => S.ground ||= {
   hits: [] // { id, x, y | segs } en coordonnées de la vue
 };
 /** Le repère d'un point d'arrêt : « W28＠02/20 » (le repère, puis la piste) se lit « W28 » ; la piste reste dans la ligne de la liste (SOG-0297). */
-const rawCtx = c => c.canvas?.getContext?.('2d') || c;
+// le contexte muet du premier tour de la passe de collision (aero_symbols.js `muted` : des méthodes à lui, qui ne font rien) reste muet : le contexte brut de son canevas peindrait au premier tour, à la place
+// provisoire de chaque panneau, un fantôme sous le panneau du second (SOG-0327 : « supperposition de deux LNA »)
+const isMuted = c => Object.prototype.hasOwnProperty.call(c, 'measureText');
+const rawCtx = c => isMuted(c) ? c : c.canvas?.getContext?.('2d') || c;
 const holdMark = name => String(name || '').split(/[＠@]/)[0].trim() || String(name || '');
 /** Le groupe d'un élément : sa nature et son nom (OpenStreetMap découpe une voie en plusieurs tronçons : une ligne de la liste, tous les tronçons surlignés). */
 export const grpOf = it => `g:${it.kind}:${it.name}`;
@@ -239,6 +242,30 @@ async function retry(icao) {
 }
 
 // ---------------------------------------------------------------- dessin
+/** Le trait d'un point d'attente : une barre de 12 px en travers de la voie la plus proche (à 14 px au plus), ou null (un carré). */
+function holdBar(p, segs) {
+  let best = null,
+    bd = 14;
+  for (const [a, b] of segs) {
+    const dx = b.x - a.x,
+      dy = b.y - a.y,
+      l2 = dx * dx + dy * dy;
+    if (!l2) continue;
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)),
+      d = Math.hypot(a.x + t * dx - p.x, a.y + t * dy - p.y);
+    if (d < bd) {
+      bd = d;
+      best = [dx, dy, Math.sqrt(l2)];
+    }
+  }
+  return best && [{
+    x: p.x - best[1] / best[2] * 6,
+    y: p.y + best[0] / best[2] * 6
+  }, {
+    x: p.x + best[1] / best[2] * 6,
+    y: p.y - best[0] / best[2] * 6
+  }];
+}
 const stroke = (c, pts, w, col) => {
   c.lineWidth = w;
   c.strokeStyle = col;
@@ -368,14 +395,32 @@ export function groundLayout(toC, zReal, W, H) {
       c.lineJoin = 'round';
       for (const s of shown)
         if (s.it.kind === 'twy' && grpOf(s.it) !== hl) stroke(c, s.pts, 2, col);
+      const twySegs = [];
       for (const s of shown)
-        if (s.it.kind !== 'twy' && s.it.kind !== 'apron') {
-          const p = s.pts[0];
-          c.fillStyle = s.it.kind === 'hold' ? '#d6173f' : S.theme.accent;
-          c.globalAlpha = grpOf(s.it) === hl ? 1 : .85;
-          c.fillRect(p.x - 2, p.y - 2, 4, 4);
+        if (s.it.kind === 'twy')
+          for (let k = 1; k < s.pts.length; k++) twySegs.push([s.pts[k - 1], s.pts[k]]);
+      let holdMarks = 0;
+      for (const s of shown)
+        if (s.it.kind ===
+          'hold'
+        ) { // le trait rouge du point d'attente : TOUJOURS dessiné, avec ou sans son nom (SOG-0327) — en travers de la voie la plus proche, sinon un carré
+          const p = s.pts[0],
+            bar = holdBar(p, twySegs);
+          c.globalAlpha = grpOf(s.it) === hl ? 1 : .95;
+          if (bar) stroke(c, bar, 3, '#d6173f');
+          else {
+            c.fillStyle = '#d6173f';
+            c.fillRect(p.x - 3, p.y - 3, 6, 6);
+          }
           c.globalAlpha = 1;
-        }
+          holdMarks++;
+        } else if (s.it.kind !== 'twy' && s.it.kind !== 'apron') {
+        const p = s.pts[0];
+        c.fillStyle = S.theme.accent;
+        c.globalAlpha = grpOf(s.it) === hl ? 1 : .85;
+        c.fillRect(p.x - 2, p.y - 2, 4, 4);
+        c.globalAlpha = 1;
+      }
       // l'élément survolé : un trait large et clair sous le trait (une voie), un anneau (un poste, une attente)
       if (hv)
         for (const h of shown.filter(s => grpOf(s.it) === hv)) {
@@ -568,10 +613,26 @@ export function groundLayout(toC, zReal, W, H) {
             // deux points d'attente de même repère à moins de 140 px (« W4＠07/25 » et « W4＠25/07 » : le même repère, deux pistes) ne portent qu'un cartouche, comme deux voies de même nom
             if (placedHolds.some(q => q.mark === mark && Math.hypot(q.x - s.pts[0].x, q.y - s.pts[0].y) < 140)) continue;
             const w = Math.max(HOLD_H, c.measureText(mark).width + 8),
-              got = put(`gnd:${it.id}`, [it.id], [{
-                x: s.pts[0].x + 7 + w / 2,
-                y: s.pts[0].y
-              }], w, HOLD_H / 2 + 1);
+              px = s.pts[0].x,
+              py = s.pts[0].y,
+              dx = 7 + w / 2,
+              dy = HOLD_H + 1,
+              // le nom SE DÉPLACE avant d'être retiré (SOG-0327) : à droite du trait, puis à gauche, au-dessous, au-dessus, puis les quatre diagonales plus loin
+              got = put(`gnd:${it.id}`, [it.id], [
+                [dx, 0],
+                [-dx, 0],
+                [0, dy],
+                [0, -dy],
+                [dx, dy],
+                [dx, -dy],
+                [-dx, dy],
+                [-dx, -dy],
+                [dx + 18, 0],
+                [-dx - 18, 0]
+              ].map(([ox, oy]) => ({
+                x: px + ox,
+                y: py + oy
+              })), w, HOLD_H / 2 + 1);
             if (got) {
               signs.push(writeHold(got, mark, w));
               placedHolds.push({
@@ -619,6 +680,7 @@ export function groundLayout(toC, zReal, W, H) {
       c.restore();
       g.drawn = drawn;
       g.signs = signs;
+      g.holdMarks = holdMarks; // les traits rouges dessinés (un par point d'attente montré, nommé ou non)
       g.hits = shown.map(s => s.it.kind === 'twy' ? {
         id: s.it.id,
         grp: grpOf(s.it),

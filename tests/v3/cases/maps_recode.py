@@ -6983,13 +6983,14 @@ def d208(c):
 
 
 _ROSE_ARROWS_JS = """([px]) => {
-  const cv = document.createElement('canvas'); cv.width = 500; cv.height = 500; const ctx = cv.getContext('2d'), log = { polys: [], ticks: [], fs: [] };
+  const cv = document.createElement('canvas'); cv.width = 500; cv.height = 500; const ctx = cv.getContext('2d'), log = { polys: [], ticks: [], fs: [], dig: [], base: [] };
+  const rad = (m, x, y) => { const p = m.transformPoint({ x, y }); return Math.hypot(p.x - 250, p.y - 250) };
   let cur = [];
   const bp = ctx.beginPath.bind(ctx), mt = ctx.moveTo.bind(ctx), lt = ctx.lineTo.bind(ctx), fl = ctx.fill.bind(ctx), st = ctx.stroke.bind(ctx), ft = ctx.fillText.bind(ctx);
   ctx.beginPath = () => { cur = []; return bp() }; ctx.moveTo = (x, y) => { cur.push([x, y]); return mt(x, y) }; ctx.lineTo = (x, y) => { cur.push([x, y]); return lt(x, y) };
-  ctx.fill = function () { if (cur.length === 3) { const ys = cur.map(q => q[1]), xs = cur.map(q => q[0]); log.polys.push([Math.max(...ys) - Math.min(...ys), Math.max(...xs) - Math.min(...xs)]) } return fl(...arguments) };
+  ctx.fill = function () { if (cur.length === 3) { const m = ctx.getTransform(), rs = cur.map(q => rad(m, q[0], q[1])); if (Math.abs(Math.max(...rs) - px) < .5) log.base.push(Math.min(...rs)); const ys = cur.map(q => q[1]), xs = cur.map(q => q[0]); log.polys.push([Math.max(...ys) - Math.min(...ys), Math.max(...xs) - Math.min(...xs)]) } return fl(...arguments) };
   ctx.stroke = function () { if (cur.length === 2 && Math.abs(Math.hypot(cur[0][0], cur[0][1]) - px) < .5) log.ticks.push(Math.hypot(cur[0][0] - cur[1][0], cur[0][1] - cur[1][1])); return st(...arguments) };
-  ctx.fillText = (t, x, y) => { log.fs.push(parseFloat(String(ctx.font).match(/([0-9.]+)px/)?.[1])); return ft(t, x, y) };
+  ctx.fillText = (t, x, y) => { log.dig.push(rad(ctx.getTransform(), x, y)); log.fs.push(parseFloat(String(ctx.font).match(/([0-9.]+)px/)?.[1])); return ft(t, x, y) };
   window.SiaAero.drawNavaid(ctx, { kind: 'VOR', id: 'ABC', magVar: 0 }, { x: 250, y: 250 }, 6, 0, 0, 3.2, false, px);
   return log }"""
 
@@ -7006,6 +7007,8 @@ def d209(c):
         fs = max(r['fs'])
         hs = sorted(p[0] for p in r['polys'])
         c.ok(len(hs) == 5, str(r['polys']), f'R {R}: four solid points and the head of the north arrow')
+        gap = min(r['base']) - max(r['dig']) - fs / 2
+        c.ok(len(r['base']) == 4 and len(r['dig']) == 4 and gap >= .24 * fs, f'R {R}: gap {gap:.2f} px, numbers {fs:.1f} px', f'R {R}: the numbers keep a quarter of their height at least between their head and the base of the solid point (SOG-0328)')
         rows.append((R, round(hs[0] / fs, 3), round(hs[-1] / fs, 3), round(max(r['ticks']) / fs, 3)))
     spread = lambda i: max(x[i] for x in rows) - min(x[i] for x in rows)
     c.ok(spread(1) < .02, str(rows), 'the solid points: the same height / numbers ratio at the three zooms')
@@ -7659,3 +7662,34 @@ def d227(c):
         c.ok(late and max(late) == min(late), str(late[-4:]), f'{w}: the height is stable in the last second')
         c.ok(len([t for t in z['ev'] if t >= mark]) <= 4, str([t for t in z['ev'] if t >= mark]), f'{w}: the map is redrawn four times at most from the tap to the rest')
         c.shot(f'D227_standard_sheet_{w}_{len(zs)}_{re.sub('[^a-z]', '', q)}.png')
+
+
+
+@case('D228', 'Ground: a holding point always keeps its red mark (with or without its name), its name MOVES (right, left, under, over) before it is dropped, and two signs never overlap: four holds a few metres apart on one taxiway (LN, LNA, LM and a nameless one) at zoom 17 give four red marks, three names and no overlap', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0327 (the user, 13 Nov, validating SOG-0297: « si tu as besoin de supprimer un label, tu laisses le holding point ! quitte à les déplacer légèrement pour éviter l’overlap… Quand tu enlèves le label d’un holding, tu laisses son trait rouge ! LFBD : superposition de deux LNA »): a hold whose name found no free place at its right lost its name and kept a 4 px dot')
+def d228(c):
+    _ground_open(c, aerodb=False)
+    c.js("""() => { const S = window.__mp.S, lon = 2.3794, lat = 48.7233, d = 1 / 111320 / Math.cos(lat * Math.PI / 180);
+      const fx = { icao: 'LFPO', cycle: '2026-11-06', source: 'osm', attribution: 'test', items: [
+        { id: 't1', kind: 'twy', name: 'T1', line: [[lon - 120 * d, lat], [lon + 120 * d, lat]] },
+        { id: 'h1', kind: 'hold', name: 'LN', point: [lon, lat] }, { id: 'h2', kind: 'hold', name: 'LNA', point: [lon + 5 * d, lat] },
+        { id: 'h3', kind: 'hold', name: 'LM', point: [lon - 6 * d, lat] }, { id: 'h4', kind: 'hold', name: '', point: [lon + 30 * d, lat] }] };
+      S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? fx : null; window.__rc = [];
+      const P = CanvasRenderingContext2D.prototype, o = P.fillRect; P.fillRect = function (x, y, w, h) { if (h === 16 && w > 8) window.__rc.push([String(this.fillStyle), Math.round(x), Math.round(y), Math.round(w), h]); return o.apply(this, arguments) }; return true }""")
+    c.js("() => { window.__mp.S.ground = null; return true }")
+    _ground_at(c, 17, 1500, (2.3794, 48.7233))
+    c.until("() => { const g = window.__mp.S.ground; return !!g && g.hits && g.hits.length >= 4 }", timeout=8000, what='the four holds and the taxiway are drawn')
+    c.js("() => { window.__rc = []; return true }")
+    _ground_at(c, 17, 1200, (2.37941, 48.72331))   # one more drawing, recorded
+    g = c.js("() => { const g = window.__mp.S.ground; return { marks: g.holdMarks, holds: (g.signs || []).filter(s => s.kind === 'hold').map(s => s.id).sort(), nsigns: (g.signs || []).length, rc: window.__rc } }")
+    c.eq(g['marks'], 4, 'every holding point keeps its red mark, named or not', what=str(g))
+    c.eq(g['holds'], ['LM', 'LN', 'LNA'], 'the three names are all written: they moved instead of being dropped', what=str(g))
+    seen, rc = set(), []   # every drawing since the reset: the same view draws the same signs, a first-pass ghost would be another rectangle
+    for r in g['rc']:
+        if tuple(r) not in seen:
+            seen.add(tuple(r))
+            rc.append(r)
+    bad = [(a, b) for i, a in enumerate(rc) for b in rc[i + 1:] if a[1] < b[1] + b[3] and b[1] < a[1] + a[3] and a[2] < b[2] + b[4] and b[2] < a[2] + a[4]]
+    c.ok(len(rc) >= 3 and not bad, f'{len(rc)} signs, overlaps: {bad[:2]}', 'two signs never overlap')
+    c.shot('D228_standard_holds_17.png')

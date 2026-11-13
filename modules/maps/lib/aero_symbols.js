@@ -1230,7 +1230,7 @@
                 [27, '27']
               ]) {
               const a = k * Math.PI / 18,
-                r = R - long - fs * .62;
+                r = R - long - fs * .92; // un écart d'un quart de la hauteur du chiffre au moins entre sa tête et la base de la pointe pleine du point cardinal (SOG-0328)
               ctx.save();
               ctx.translate(Math.sin(a) * r, -Math.cos(a) * r);
               ctx.rotate(a);
@@ -1255,7 +1255,7 @@
           ctx.lineWidth = Math.max(1, Math.min(2, R / 40));
           ctx.beginPath();
           // la pointe de la flèche, à l'échelle des chiffres, près du 0 (à 72 % du rayon sur une petite rose, au pied du chiffre sur une grande) ; la hampe va de la station à sa base
-          const tip = Math.max(R * .72, R - long - fs * 1.7),
+          const tip = Math.max(R * .72, R - long - fs * 1.95),
             hl = fs * 1.2,
             hw = fs * .25;
           ctx.moveTo(0, -s * 1.1);
