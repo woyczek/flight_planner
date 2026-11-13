@@ -1033,6 +1033,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 181 | The V2 registry: the missions kept by the browser, counted and exported in one downloaded archive (025bd7651, SOG-0293 a, b) | acceptable; one defect proved (the header of an exported file) |
 | 182 | The V3 mission editor: the frame step (3ace1a58f, SOG-0287; `modules/missions/editor.js`, new) and the teams step (c138087b3) | paths and display acceptable; two defects proved (the teams step loses data, a dump of a file with aliases) |
 | 183 | The V2 registry, group B continued: the reports under a former number (a78fa30b0), “Compare with the folder” / “Store in the folder” / “Keep the file” (ec6c6ee02, SOG-0293 c), the texts received in a batch kept per mission (d46aee7c1, SOG-0294) | acceptable; one defect proved (the comparison of a served file with aliases), three notes |
+| 184 | The fix of the defect of 181 (337e3c177: header of an exported or stored YAML, names in the archive) and the comparison extended to the shared mission and the draft of the generator (22dbe6d04, SOG-0293 c) | fix verified, defect closed; extension acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2785,6 +2786,20 @@ claims the number and show the target's title in the row. (2) `storeMission` bac
 file that does not parse leaves status `new` and is overwritten without a copy in `versions/`; copy `oldText` whenever it exists and differs.
 (3) `receivedOf` calls `receivedIds` (a YAML parse per text) for every mission of a batch: the work is the number of missions times the number of
 texts; compute the cited identifiers once per batch.
+
+**184. The fix of 181 and the comparison of the shared mission and the draft — fix verified, defect closed; extension acceptable.** *Fix (337e3c177).* `dumpYaml`
+now writes `oneLine(id)` and `oneLine(what)`: carriage returns, line feeds, NEL and the two Unicode line separators become spaces and the text is
+cut to 80, in the one function that all callers share (the export, the storing in the folder and the older writers); the new case in K222 seeds a key
+made of `T-1`, a line break and `airline: injected` and checks that the first line of the exported entry is the single comment and that no
+other line begins with the injected key. The three notes of 181 are taken: a second entry with the same name is numbered (`-2`), the name is cut to
+60, the segments `.` and `..` of a folder are dropped before the address is built, and the last-step record is cut to 40 characters when read.
+K222 green; the defect of 181 is closed. *Extension (22dbe6d04).* The shared mission (`siaMissionShared:v1`) and the legacy draft join the
+list as two more candidates with their own keys (`partagee:ID`, `brouillon:ID`: the prefix is lower case and identifiers are upper-cased, so a
+snapshot cannot take such a key); they come from the device's local storage as JSON (no alias), they are not counted among the snapshots, each
+has its own button and its own “keep the file” choice, the identifier shown and the nature of the row go through `esc`, and “Store” runs the same
+`storeMission` (identifier checked, folder built from the identifier, old file written to `versions/` first) after one click on that row. K223
+green. The point left open in 183 stays open (a loaded file with aliases freezes the comparison, and a failure of one item stops the others),
+since the new candidates do not change it. **Notes.** None new.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
