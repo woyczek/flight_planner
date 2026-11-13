@@ -291,6 +291,9 @@ export const STYLE = `
 @media (pointer:coarse){[data-module="maps"] .mp-al-row{min-height:44px}}
 [data-module="maps"] .mp-mbar{position:absolute;z-index:4;left:8px;top:8px;right:72px;max-width:420px;padding:6px 10px;box-sizing:border-box;line-height:1.25}
 [data-module="maps"] .mp-mbar[hidden]{display:none}
+/* un panneau posé sur la carte est opaque dans tous les designs (SOG-0299) : swiss dessine ses cartes en filets, sans fond (« .f-card{background:transparent} »), la carte se voyait à travers ; la
+   survol (.mp-hover) a sa propre translucidité voulue */
+[data-module="maps"] :is(.mp-mbar,.mp-alts,.mp-empty,.mp-spsel,.mp-tip:not(.mp-hover)).f-card{background:var(--sog-surface);border:1px solid var(--sog-border)}
 [data-module="maps"] .mp-mb-top{display:flex;align-items:flex-start;gap:6px}
 [data-module="maps"] .mp-mb-t{flex:1 1 auto;min-width:0;font-size:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 [data-module="maps"] .mp-mb-x{flex:none;width:32px;height:32px;margin:-4px -6px 0 0;border:0;background:none;color:var(--sog-muted);font:inherit;font-size:22px;cursor:pointer}

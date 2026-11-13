@@ -7177,3 +7177,23 @@ def d214(c):
         c.page.set_viewport_size({'width': w, 'height': h})
         c.wait(1800)
         c.shot(f'D214_{c.design}_{w}_delivered.png')
+
+
+
+@case('D215', 'Every panel the Map puts over its map is opaque in every design: the mission window, the card of a point, the tooltip, the proposed routes, the empty state, the profile strip — whatever the design does to its cards (swiss draws them as rules, with no background)', 'D',
+      tags=('maps',), screens=False, designs=('standard', 'metro', 'swiss', 'cupertino', 'material'), night=True,
+      rule='SOG-0299 (the user, 13 Nov: « préparer une mission, carte, thème « swiss ». souci de transparence »; the ergonomist: a panel put over the map is opaque in every design): swiss.css draws .f-card with « background: transparent » (a rule on the page); the Map’s floating panels are cards and showed the map through')
+def d215(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!document.querySelector('.mp-mbar .mp-mb-sel')", timeout=20000, what='the window of the mission')
+    c.wait(1200)
+    r = c.js("""() => { const S = window.__mp.S, k = document.createElement('canvas').getContext('2d'), alpha = e => { const cs = getComputedStyle(e); k.clearRect(0, 0, 1, 1); k.fillStyle = cs.backgroundColor; k.fillRect(0, 0, 1, 1); return +(k.getImageData(0, 0, 1, 1).data[3] / 255).toFixed(2) };
+      const els = { mbar: S.mbarEl, card: S.cardEl, tip: S.tipEl, alts: document.querySelector('.mp-alts'), empty: document.querySelector('.mp-empty'), spsel: document.querySelector('.mp-spsel') };
+      return Object.fromEntries(Object.entries(els).filter(([, e]) => e).map(([n, e]) => [n, alpha(e)])) }""")
+    c.ok(set(r) >= {'mbar', 'card', 'tip', 'alts', 'empty', 'spsel'}, str(r), 'the panels of the Map are all there to be measured')
+    c.eq({n: a for n, a in r.items() if a < 1}, {}, 'no panel over the map has a see-through background', what=f'{c.design}: {r}')
+    c.shot(f'D215_{c.design}_delivered.png')
