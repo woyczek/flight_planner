@@ -2512,3 +2512,69 @@ def n59(c):
     c.eq(got['one'], [4, 4, 'Oiseaux inventés', 'nouvelle'], 'a « title » risk edited: kept, four risks and four translations', what='title risk')
     c.eq(got['two'], [3, 'acd'], 'a danger cleared: the risk and its translation removed, the lists aligned', what='cleared')
     c.eq(got['reg'], ['', 'size'], 'eight thousand short registry lines (some 128 000 nodes): within the registry\'s budget, beyond a mission\'s', what='registry budget')
+
+
+
+_TOLERATED_JS = """async () => { const ED = await import('/modules/missions/editor.js'); const J = x => JSON.stringify(x);
+  // every shape the reader (frame/lib/mission.js) or shared/mission_exercise.js tolerates, invented, in one file
+  const doc = { mission: { id: 'libre', type: 'REG', subtype: 'S' }, title: 'T', origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    timeline: [{ at: 'H', text: 'Premier' }, { at: 'H+1h', description: 'Second' }],
+    maps: ['carte_libre.png', { id: 'general', type: 'general' }], aircraft: [{ type: 'H135' }, null, { type: 'EC25' }],
+    zones: [{ id: 'Z1', center: { lat: 44, lon: 1 }, radiusKm: 5 }], rendezvous: [{ id: 'R1', participants: 'ALPHA1', lat: 44.5, lon: 1.5 }],
+    objectives: { secondary: 'Un seul objectif' }, risks: [{ title: 'Oiseaux' }, 'Texte brut'], teams: { name: 'SEULE' } };
+  const out = {}, same = [];
+  for (const [n, of, w] of [['cadre', 'cadreOf', 'withCadre'], ['teams', 'teamsOf', 'withTeams'], ['places', 'placesOf', 'withPlaces'],
+    ['story', 'storyOf', 'withStory'], ['risks', 'risksOf', 'withRisks'], ['events', 'eventsOf', 'withEvents']])
+    if (J(ED[w](doc, ED[of](doc))) === J(doc)) same.push(n);
+  // the audit's counter-test: an event added to a list-form timeline keeps the two others, in the list
+  const ev = ED.eventsOf(doc), add = ED.withEvents(doc, [...ev, { i: -1, at: 'H+2h', place: '', text: 'Ajouté' }]);
+  out.events = ev.map(e => e.text); out.added = add.timeline;
+  const ch = { chronology: { events: [{ at: 'H', label: 'Étiquette' }] } }, r = ED.eventsOf(ch); r[0].text = 'Retouchée';
+  out.chronology = ED.withEvents(ch, r);
+  out.maps = ED.mapsOf(doc).map(m => m.id); out.files = ED.proposedMaps(doc).map(m => m.filename);
+  const c = ED.cadreOf(doc); c.aircraft = 'A320'; out.aircraft = ED.withCadre(doc, c).aircraft;
+  const pl = ED.placesOf(doc), z = pl.find(x => x.kind === 'zone'); out.zone = [z.radius, pl.find(x => x.kind === 'rdv').participants];
+  z.lat = '44.2'; out.center = ED.withPlaces(doc, pl).zones[0];
+  out.secondary = ED.storyOf(doc).secondary; out.teams = ED.teamsOf(doc).map(t => t.name); out.risks = ED.risksOf(doc).map(x => x.hazard);
+  out.same = same; return out }"""
+
+
+@case('N60', 'Missions › editor, audit 190 and the review of tolerated shapes: a timeline written as a LIST (or chronology, or an event text '
+      'under description / label) is shown and kept — an added event never replaces it; maps as plain file names listed; proposed file '
+      'names without a free identifier; a null aircraft kept; radiusKm, centre under « center », participants and secondary objectives as '
+      'single texts, a teams object, a risk under title: shown, and every step gives the file back identical', 'N', tags=('missions', 'security'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='Sécurisation, audit 190 on 2dfa0aeca: a timeline in list form was not shown and an added event overwrote it (two events in, one '
+      'out) — the fourth audit of the same family: every shape the reader tolerates and the form does not show is listed in DECISIONS')
+def n60(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    g = c.js(_TOLERATED_JS)
+    c.eq(g['same'], ['cadre', 'teams', 'places', 'story', 'risks', 'events'], 'every step, untouched, gives the file back identical', what='identity')
+    c.eq([g['events'], g['added']], [['Premier', 'Second'], [{'at': 'H', 'text': 'Premier'}, {'at': 'H+1h', 'description': 'Second'},
+                                                          {'at': 'H+2h', 'text': 'Ajouté'}]],
+         'a list-form timeline shown (text under description too) and kept as a list with the added event', what='timeline')
+    c.eq(g['chronology'], {'chronology': {'events': [{'at': 'H', 'label': 'Retouchée'}]}}, 'chronology and label kept where they are', what='chronology')
+    c.ok(g['maps'] == ['carte_libre.png', 'general'] and all('libre' not in f for f in g['files']), g, 'a map given as a file name listed; '
+         'no free identifier in a proposed file name')
+    c.eq(g['aircraft'], [{'type': 'A320'}, None, {'type': 'EC25'}], 'the first aircraft changed, the null entry and the others kept', what='aircraft')
+    c.eq([g['zone'], g['center']], [['5', 'ALPHA1'], {'id': 'Z1', 'center': {'lat': 44.2, 'lon': 1}, 'radiusKm': 5}],
+         'radiusKm and a single participant shown; the centre edited where it was written (« center »)', what='zone')
+    c.eq([g['secondary'], g['teams'], g['risks']], ['Un seul objectif', ['SEULE'], ['Oiseaux', 'Texte brut']],
+         'a single secondary objective, a teams object, risks under title or as text: shown', what='shown')
+    # the step itself: a list-form timeline listed, an event added through the screen, the list kept
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml',
+                                                       _ED_FULL + 'timeline:\n  - { at: H, text: Premier inventé }\n  - { at: H+1h, description: Second inventé }\n']])
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events of the list shown')
+    c.tap(f'{E} [data-do="edeventadd"]')
+    c.page.fill(f'{E} [data-event="2"] [data-f=text]', 'Troisième inventé')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('Premier inventé' in t and 'description: Second inventé' in t and 'Troisième inventé' in t and 'events:' not in t, t[t.find('timeline'):][:300],
+         'the list kept, its two events and the added one')
+    c.js(_REG_CLEAR)

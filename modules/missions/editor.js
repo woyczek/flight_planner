@@ -190,7 +190,10 @@ export function withCadre(doc, cadre) {
     if (t) first.type = t;
     else delete first.type;
     ac[0] = first;
-    out.aircraft = ac.filter(x => x && (typeof x !== 'object' || Object.keys(x).length));
+    // seul le premier est retouché ; les autres entrées, même null (audit 190), restent telles quelles ; un premier vidé qui était absent
+    // ou null le redevient
+    if (!Object.keys(first).length && (ac.length <= 1 || !ac[0])) ac[0] = ac.length > 1 ? null : undefined;
+    out.aircraft = ac.filter((x, i) => !(i === 0 && x === undefined));
     if (!out.aircraft.length) delete out.aircraft;
   }
   for (const [k, f] of [
@@ -313,7 +316,7 @@ export function placesOf(doc) {
       zkind: cut(o.kind, 40),
       lat: numText(c.lat ?? o.lat),
       lon: numText(c.lon ?? o.lon),
-      radius: numText(o.radius_km),
+      radius: numText(o.radius_km ?? o.radiusKm),
       tot: numText(o.time_on_task_min),
       poly: poly ? poly.length : 0
     });
@@ -335,7 +338,10 @@ export function placesOf(doc) {
     role: cut(obj(p).role, 200),
     lat: numText(obj(p).lat),
     lon: numText(obj(p).lon),
-    participants: (Array.isArray(obj(p).participants) ? obj(p).participants : []).slice(0, 20).map(x => cut(x, 60)).filter(Boolean)
+    participants: (Array.isArray(obj(p).participants) ? obj(p).participants : typeof obj(p).participants === 'string' ? [obj(p)
+        .participants
+      ] : [])
+      .slice(0, 20).map(x => cut(x, 60)).filter(Boolean)
       .join(', ')
   }));
   return out;
@@ -425,6 +431,11 @@ export function withPlaces(doc, rows) {
         lat,
         lon
       });
+      else if (b.center && !b.centre) z.center = { // le centre écrit « center » (le lecteur l'accepte) : retouché là
+        ...obj(b.center),
+        lat,
+        lon
+      };
       else z.centre = {
         ...obj(b.centre),
         lat,
@@ -464,7 +475,9 @@ export function storyOf(doc) {
     summary: para(d.summary, SUMMARY_MAX * 4),
     description: para(d.detailed_description, TEXT_MAX),
     primary: Array.isArray(o) ? '' : para(obj(o).primary, 2000),
-    secondary: (Array.isArray(o) ? o : Array.isArray(obj(o).secondary) ? obj(o).secondary : []).slice(0, 20).map(x => cut(x, 300)).filter(
+    secondary: (Array.isArray(o) ? o : Array.isArray(obj(o).secondary) ? obj(o).secondary : typeof obj(o).secondary === 'string' ? [obj(o)
+      .secondary
+    ] : []).slice(0, 20).map(x => cut(x, 300)).filter(
       Boolean).join('\n'),
     payload: para(pl.description, 2000),
     mass: numText(pl.mass_kg),
@@ -600,13 +613,45 @@ export function withRisks(doc, rows) {
   return out;
 }
 
-/** La chronologie d'une mission (voir l'en-tête) : timeline.events, la forme de shared/mission_exercise.js (missionTimeline). */
+/** Où vivent les événements d'une mission (audit 190) : `timeline` en liste (l'ancienne forme), `timeline.events`, `chronology` en liste
+ *  ou `chronology.events` ; la première qui en porte, sinon timeline.events (la forme de shared/mission_exercise.js). → { key, sub } */
+function eventsHome(d) {
+  for (const key of ['timeline', 'chronology']) {
+    const v = d[key];
+    if (Array.isArray(v) && v.length) return {
+      key,
+      sub: false
+    };
+    if (v && typeof v === 'object' && !Array.isArray(v) && Array.isArray(v.events) && v.events.length) return {
+      key,
+      sub: true
+    };
+    if (v && typeof v === 'object' && !Array.isArray(v) && v.events && typeof v.events === 'object') return {
+      key,
+      sub: true
+    };
+  }
+  return {
+    key: 'timeline',
+    sub: !Array.isArray(d.timeline)
+  };
+}
+/** Les événements tels qu'ils sont dans le document (voir eventsHome). */
+const eventsIn = d => {
+  const h = eventsHome(d),
+    v = d[h.key];
+  return arrOf(h.sub ? obj(v).events : v);
+};
+/** Le texte d'un événement : `text`, sinon `description`, sinon `label` (audit 190) ; la clé d'où il vient. */
+const textKey = e => ['text', 'description', 'label'].find(k => typeof obj(e)[k] === 'string' && obj(e)[k].trim()) || 'text';
+
+/** La chronologie d'une mission (voir l'en-tête) : où qu'elle vive (eventsHome), le texte sous text / description / label. */
 export function eventsOf(doc) {
-  return arrOf(obj(obj(doc).timeline).events).slice(0, EVENTS_MAX).map((e, i) => ({
+  return eventsIn(obj(doc)).slice(0, EVENTS_MAX).map((e, i) => ({
     i,
     at: cut(obj(e).at, 20),
     place: cut(obj(e).place, 40).toUpperCase(),
-    text: cut(obj(e).text, 500)
+    text: cut(obj(e)[textKey(e)], 500)
   }));
 }
 
@@ -616,8 +661,9 @@ export function withEvents(doc, rows) {
     prev = eventsOf(doc),
     list = Array.isArray(rows) ? rows : [];
   if (JSON.stringify(list) === JSON.stringify(prev)) return out;
-  const T = obj(out.timeline),
-    before = arrOf(T.events),
+  // les événements restent là où le fichier les porte (une liste reste une liste, chronology reste chronology) : jamais remplacés
+  const home = eventsHome(out),
+    before = eventsIn(out),
     F = ['at', 'place', 'text'],
     N = {
       at: 20,
@@ -635,27 +681,37 @@ export function withEvents(doc, rows) {
         const diff = F.filter(f => String(r[f] ?? '') !== String(was[f] ?? ''));
         if (!diff.length) return before[r.i];
         const o = {
-          ...obj(before[r.i])
-        };
-        for (const f of diff) put(o, f, r[f]);
-        return o.text || o.place ? o : null;
+            ...obj(before[r.i])
+          },
+          tk = textKey(before[r.i]);
+        for (const f of diff)
+          if (f === 'text') { // le texte retouché là où il était (text, description ou label)
+            const x = cut(r.text, 500);
+            if (x) o[tk] = x;
+            else delete o[tk];
+          } else put(o, f, r[f]);
+        return o[tk] || o.text || o.place ? o : null;
       }
       const o = {};
       for (const f of F) put(o, f, r?.[f]);
       return o.text || o.place ? o : null;
     }).filter(o => o !== null),
     all = [...events, ...before.slice(EVENTS_MAX)];
-  if (all.length) out.timeline = {
-    ...T,
+  const cur = out[home.key];
+  if (!home.sub) {
+    if (all.length) out[home.key] = all;
+    else delete out[home.key];
+  } else if (all.length) out[home.key] = {
+    ...obj(cur),
     events: all
   };
-  else if (out.timeline && typeof out.timeline === 'object') {
+  else if (cur && typeof cur === 'object' && !Array.isArray(cur)) {
     const rest = {
-      ...T
+      ...cur
     };
     delete rest.events;
-    if (Object.keys(rest).length) out.timeline = rest;
-    else delete out.timeline;
+    if (Object.keys(rest).length) out[home.key] = rest;
+    else delete out[home.key];
   }
   return out;
 }
@@ -665,7 +721,10 @@ export function withEvents(doc, rows) {
 export function mapsOf(doc) {
   const places = new Map(placesOf(doc).filter(p => p.id).map(p => [p.id.toUpperCase(), p]));
   return arrOf(obj(doc).maps).slice(0, 40).map(m => {
-    const o = obj(m),
+    // une carte écrite comme un nom de fichier seul (le lecteur l'accepte, audit 190) : montrée par ce nom
+    const o = typeof m === 'string' ? {
+        id: m
+      } : obj(m),
       ref = cut(o.centre_ref ?? o.center_ref, 40).toUpperCase(),
       p = places.get(ref);
     return {
@@ -682,8 +741,9 @@ export function mapsOf(doc) {
  *  cible et son détail, un détail par rendez-vous, une par zone. Des entrées seulement : les images se font au studio de la V2. */
 export function proposedMaps(doc) {
   const d = obj(doc),
-    id = cut(obj(d.mission).id, 40),
-    have = new Set(arrOf(d.maps).map(m => cut(obj(m).id, 60))),
+    // l'identifiant dans les noms de fichier seulement s'il a sa forme (audit 190 : jamais un texte libre dans un nom de fichier)
+    id = MISSION_ID.test(cut(obj(d.mission).id, 40)) ? cut(obj(d.mission).id, 40) : '',
+    have = new Set(arrOf(d.maps).map(m => cut(typeof m === 'string' ? m : obj(m).id, 60))),
     out = [{
       id: 'general',
       filename: `general${id}.png`,
@@ -820,14 +880,17 @@ export function todo(doc) {
   if (!placeText(d.origin)) add('cadre', 'dep');
   if (!placeText(d.destination)) add('cadre', 'arr');
   if (!link && !arr(d.teams).length && !arr(d.aircraft).length) add('teams', 'teams');
+  // une liaison : la position d'un terrain vient de la base aéronautique par son code OACI, jamais à la main — rien à compléter
   for (const k of ['origin', 'destination']) {
     const p = obj(d[k]);
-    if (placeText(p) && (!Number.isFinite(+p.lat) || !Number.isFinite(+p.lon) || p.lat === null || p.lon === null)) add('places', k);
+    if (!link && placeText(p) && (!Number.isFinite(+p.lat) || !Number.isFinite(+p.lon) || p.lat === null || p.lon === null)) add('places',
+      k);
   }
   // les lieux sans position (un polygone se place par ses points) : un seul mot pour tous
   if (placesOf(d).some(p => !['dep', 'arr'].includes(p.kind) && !p.poly && (p.lat === '' || p.lon === ''))) add('places', 'unplaced');
-  if (!String(d.summary ?? '').trim()) add('story', 'summary');
-  if (!String(d.detailed_description ?? '').trim()) add('story', 'description');
+  // le récit d'une liaison est facultatif (décision du 13 nov.)
+  if (!link && !String(d.summary ?? '').trim()) add('story', 'summary');
+  if (!link && !String(d.detailed_description ?? '').trim()) add('story', 'description');
   if (!link && !arr(d.risks).length) add('risks', 'risks');
   // la chronologie de la mission : timeline.events (shared/mission_exercise.js) ; les cartes centrées sur un lieu sans position
   if (!link && !eventsOf(d).length) add('timeline', 'timeline');

@@ -653,6 +653,12 @@ const TX = {
     'Ningún evento: «+ Evento» añade uno.'
   ],
   mpTitle: ['Cartes', 'Maps', 'Karten', 'Mapas'],
+  // les sortes de cartes du générateur (apps/cpco/mission_guide.js proposedMaps), dites en clair (relecture du 13 nov.)
+  mt_general: ['générale', 'general', 'Übersicht', 'general'],
+  mt_target: ['cible', 'target', 'Ziel', 'objetivo'],
+  mt_detail: ['détail', 'detail', 'Detail', 'detalle'],
+  mt_detail_rdv: ['détail du rendez-vous', 'rendezvous detail', 'Treffpunkt-Detail', 'detalle del encuentro'],
+  mt_zone: ['zone', 'zone', 'Zone', 'zona'],
   mpNone: ['Aucune carte déclarée.', 'No map declared.', 'Keine Karte angegeben.', 'Ningún mapa declarado.'],
   mpPropose: ['Proposer les cartes depuis les lieux ({n})', 'Propose maps from the places ({n})',
     'Karten aus den Orten vorschlagen ({n})',
@@ -2149,7 +2155,7 @@ function edTimelineHtml(s) {
     <div class="f-list" data-edevents>${rows.length ? `<div class="ms-edteam ms-evrow ms-edthead f-muted" aria-hidden="true">${[TX.evAt, TX.evPlace, TX.evText].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>${rows.map(row).join('')}` : `<p class="f-muted" data-noevent>${esc(s.tt(TX.evNone))}</p>`}</div>
     ${rows.length < ED.EVENTS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edeventadd">${esc(s.tt(TX.evAdd))}</button></div>` : ''}
     <h4>${esc(s.tt(TX.mpTitle))}</h4>
-    <div class="f-list" data-edmaps>${maps.length ? maps.map(m => `<div class="ms-plrow ms-rkrow" data-map="${esc(m.id)}"><span class="ms-plbody"><b>${esc([m.id, m.type].filter(Boolean).join(' · '))}</b><span class="f-muted">${esc([m.description, m.unplaced ? s.tt(TX.mpUnplaced) : ''].filter(Boolean).join(' · '))}</span></span></div>`).join('') : `<p class="f-muted" data-nomap>${esc(s.tt(TX.mpNone))}</p>`}</div>
+    <div class="f-list" data-edmaps>${maps.length ? maps.map(m => `<div class="ms-plrow ms-rkrow" data-map="${esc(m.id)}"><span class="ms-plbody"><b>${esc(TX[`mt_${m.type}`] ? s.tt(TX[`mt_${m.type}`]) : m.type || m.id)}</b><span class="f-muted">${esc([m.description || m.id, m.unplaced ? s.tt(TX.mpUnplaced) : ''].filter(Boolean).join(' · '))}</span></span></div>`).join('') : `<p class="f-muted" data-nomap>${esc(s.tt(TX.mpNone))}</p>`}</div>
     <div class="f-row ms-pladd">${missing.length ? `<button type="button" data-do="edmapspropose">${esc(s.tt(TX.mpPropose, { n: missing.length }))}</button>` : ''}<span class="f-muted">${esc(s.tt(TX.mpStudio))}</span></div>`;
 }
 

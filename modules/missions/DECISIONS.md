@@ -255,3 +255,34 @@
   emptied) leaves its translation at the same place. Note 3: `shapeOf(doc, max)`; the registry is read and dumped with its own budget,
   `REGISTRY_NODES_MAX` = 1 000 000 nodes (the 100 000 of a mission is about two thousand registry lines). N59 (red before: three risks
   out of four, budget shared).
+- **13 Nov 2026 — audit 190: the chronology where the file keeps it; the shapes the reader tolerates, step by step** (Sécurisation proved
+  the defect in 2dfa0aeca; fixed by Features SOG): a `timeline` written as a LIST (the old form) was not shown and an added event wrote
+  `timeline: { events: [the new one] }` over it — two events in, one out. Now `eventsHome` finds the events where the file keeps them
+  (`timeline` as a list, `timeline.events`, `chronology` as a list or `{ events }`) and `withEvents` writes them back THERE, never
+  replacing the container; an event's text is read and edited under `text`, else `description`, else `label`. The three notes: proposed
+  map file names carry the identifier only when it has the form `^[A-Z]-\d{3}[A-Z]?$` (never a free text in a file name); a `null` entry of
+  `aircraft` stays (only the first aircraft is touched); an event under `description` / `label` (above). The fourth audit of the same
+  family, so the review asked: **every shape the reader tolerates (frame/lib/mission.js, shared/mission_exercise.js), how each step reads
+  it, and the case that covers it** —
+  - *Any step, untouched:* the file comes back identical, byte for byte; « Enregistrer » with nothing changed writes nothing (N54 opens the
+    six steps; N60 runs the six round trips on one file holding every shape below). Anchors / over 100 000 nodes: refused at opening (N54,
+    N56); the registry, 1 000 000 nodes (N59).
+  - *Cadre:* `origin` / `destination` given as a text (the reader ignores them): not shown, kept unless the pilot types a place (N60
+    identity); `mission.airline` or top-level `airline` (read both, write top level); `aircraft` as one object or a list with `null`
+    entries: only the first is edited, the rest kept (N60); a `series` absent from the file: the registry's is a placeholder, never written
+    (N54).
+  - *Équipes:* `teams` as ONE object (one entry), entries as plain texts or with other keys only, more than 40: kept, only changed fields
+    written (N54, N60).
+  - *Lieux:* `rendezvous` / `zones` / `turning_points` as one object: kept as an object unless that kind is edited (N56); a zone's centre
+    under `centre`, `center` or flat `lat` / `lon`: edited where it is (N52, N60); `radius_km` or `radiusKm` (N60); a polygon under
+    `points`, `polygon` or `vertices`: kept, never shown as editable (N52); `participants` as a single text (N60); positions out of range
+    → null only when the pilot edits them (N52, N54); more than 60 of a kind kept (N54).
+  - *Récit:* `objectives` as a list (read as secondary, kept unless edited) or `secondary` as a single text (N60); `payload` other keys
+    (constraints) kept (N53); `notes` (text, list or `{ text | description }`) not edited here, kept.
+  - *Risques:* a risk as a plain text, its danger under `hazard`, `title` or `name`; `i18n.<lang>.risks` kept aligned when one leaves
+    (N55, N59, N60).
+  - *Chronologie et cartes:* as above (N57, N60); `maps` entries as plain file names: listed by that name, never rewritten (N60); a map
+    under `center_ref`: read (N57).
+  Also, from the ergonomist's reading of the step: map kinds said in words (« générale », « cible », « détail », « détail du
+  rendez-vous », « zone ») instead of `general · general`; for a link flight, « À compléter » no longer asks the positions of the two
+  aerodromes (they come from the aero base by their ICAO code) nor the story (optional).
