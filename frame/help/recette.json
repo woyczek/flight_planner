@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 183,
+  "tests": 185,
   "verdicts": 123
  },
  "apps": [
@@ -2696,6 +2696,34 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:33:18Z"
+  },
+  {
+   "id": "SOG-0311",
+   "app": "compagnie",
+   "title": {
+    "fr": "Carte, préparation d'une mission : fermer la fenêtre de la mission l'abandonne sans confirmation ; rien ne fait revenir le choix de carte",
+    "en": "Map, mission preparation: closing the mission window abandons it without confirmation; nothing brings the chart choice back",
+    "de": "Karte, Missionsvorbereitung: Schließen des Missionsfensters bricht ohne Rückfrage ab; die Kartenwahl kommt nicht zurück",
+    "es": "Mapa, preparación de misión: cerrar la ventana la abandona sin confirmación; nada devuelve la elección de carta"
+   },
+   "test": "Recharge la page. Carte, une mission en préparation : la croix de sa fenêtre pose la question « Abandonner la préparation de la mission … ? » ; « Garder la mission » ne change rien ; « Abandonner » retire la fenêtre, la carte choisie et les points imposés par la mission (les tiens restent). Le tiret replie la fenêtre ; un bouton de la colonne de droite la rouvre, avec le choix de carte.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T12:45:02Z"
+  },
+  {
+   "id": "SOG-0312",
+   "app": "compagnie",
+   "title": {
+    "fr": "Préparation d'une mission : le sélecteur de carte n'apparaît qu'après un aller-retour entre Carte et Carburant (ou très tard)",
+    "en": "Mission preparation: the chart selector only shows after a round trip between Map and Fuel",
+    "de": "Missionsvorbereitung: die Kartenauswahl erscheint erst nach einem Wechsel zwischen Karte und Kraftstoff",
+    "es": "Preparación de misión: el selector de carta solo aparece tras ir y volver entre Mapa y Combustible"
+   },
+   "test": "Recharge la page. Prépare une mission (Missions › Préparer ce vol), puis ouvre la Carte : la fenêtre de la mission est là dans la seconde, avec « Chargement de la mission… » si la lecture est lente, puis le sélecteur de carte — sans aller-retour par Carburant.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T12:50:06Z"
   },
   {
    "id": "SOG-0315",

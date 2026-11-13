@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "83ee7da",
+  "organisation": "108c990",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -2162,20 +2162,22 @@
     {
      "id": "SOG-0311",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte, préparation d'une mission : fermer la fenêtre de la mission l'abandonne sans confirmation ; rien ne fait revenir le choix de carte",
      "en": "Map, mission preparation: closing the mission window abandons it without confirmation; nothing brings the chart choice back",
      "de": "Karte, Missionsvorbereitung: Schließen des Missionsfensters bricht ohne Rückfrage ab; die Kartenwahl kommt nicht zurück",
-     "es": "Mapa, preparación de misión: cerrar la ventana la abandona sin confirmación; nada devuelve la elección de carta"
+     "es": "Mapa, preparación de misión: cerrar la ventana la abandona sin confirmación; nada devuelve la elección de carta",
+     "test": true
     },
     {
      "id": "SOG-0312",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Préparation d'une mission : le sélecteur de carte n'apparaît qu'après un aller-retour entre Carte et Carburant (ou très tard)",
      "en": "Mission preparation: the chart selector only shows after a round trip between Map and Fuel",
      "de": "Missionsvorbereitung: die Kartenauswahl erscheint erst nach einem Wechsel zwischen Karte und Kraftstoff",
-     "es": "Preparación de misión: el selector de carta solo aparece tras ir y volver entre Mapa y Combustible"
+     "es": "Preparación de misión: el selector de carta solo aparece tras ir y volver entre Mapa y Combustible",
+     "test": true
     }
    ]
   },
