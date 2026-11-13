@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the company's settings are read newest-first** — two changes in a row (a runway threshold 14 then 30) started two reads and the slower old one could overwrite the newer (D58 failed once under load: « an out-of-range value is 11 »); only the latest read assigns; D232 forces the order (red before).
 - **Fleet: the search is the sheets' search plus the fleet — « caravelle » finds the aircraft of type S210 and offers « add an aircraft of this type »; « Créer » only when nothing answers** (aircraft DECISIONS; noreg M48; SOG-0270).
 - **Noreg A165 follows the head bar of the Help**: the way back from a document of the suite sits in the sticky head bar (`.f-docbar`, SOG-0331), the case looked for it directly under the view; the way back itself was never lost
 - **Route text: a NAT point written as in the day's message (« 51/20 », « 5030/30 ») is read as a coordinate, not cut to « 51 »** (fuel DECISIONS; noreg F216; SOG-0332).

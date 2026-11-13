@@ -373,17 +373,21 @@ const RUNWAY_ZOOM = 11;
 /** Profils des modes de la compagnie (airline/map_profiles.json) et unité d'altitude du pilote (fuel.json, displayAlt :
  *  équidistance des courbes de niveau). */
 export async function readSettings() {
+  const me = S,
+    seq = me.settingsSeq = (me.settingsSeq || 0) +
+    1, // deux changements de suite (14 puis 30) lancent deux lectures : la plus récente seule pose ses valeurs, jamais la plus lente d'avant (D58 rouge sous charge : « an out-of-range value is 11 »)
+    live = () => S === me && me.settingsSeq === seq;
   const P = await S.ctx.data.get('airline/map_profiles.json').catch(() => null);
   if (!S) return; // la Carte a été quittée pendant la lecture
   const F = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/fuel.json`).catch(() => null);
-  if (!S) return;
+  if (!live()) return; // quittée, ou une lecture plus récente est partie : ses valeurs sont les bonnes
   S.repoProfiles = P?.profiles && typeof P.profiles === 'object' ? P.profiles : null;
   // seuil de zoom des vecteurs de piste (V3 § 10.30 ; Réglages › Administration ; frame/settings/INTEGRATION.md § 4)
   const z = P?.runwayZoom;
   S.runwayZoom = Number.isInteger(z) && z >= 8 && z <= 16 ? z : RUNWAY_ZOOM;
   // l'unité d'altitude : le réglage d'affichage de l'appareil (cache/fuel/display.json, lecture seule), sinon celui du pilote (fuel.json) sur un appareil où Carburant n'a pas encore tourné
   const D = await S.ctx.data.get('cache/fuel/display.json').catch(() => null);
-  if (!S) return;
+  if (!live()) return;
   S.altUnit = (D?.displayAlt ?? F?.displayAlt) === 'm' ? 'm' : 'ft';
 }
 /** Réglages de l'écran gardés sur cet appareil (cache/maps/ui.json) : mode et couches par mode (seulement ce qui diffère des

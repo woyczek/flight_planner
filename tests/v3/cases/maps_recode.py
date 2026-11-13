@@ -7766,3 +7766,15 @@ def d231(c):
         c.eq(r['under'], 0, f'{q}: the window never goes under the round buttons of the Map', what=str(r))
         c.shot(f'D231_standard_{q.replace("?", "_").replace("=", "")}.png')
 
+
+@case('D232', 'The settings of the company are read newest-first: two changes in a row start two reads, the slower old one never overwrites the newer (a runway threshold set to 14 then to 30 ends at 11, whatever the order in which the reads finish) — D58 no longer depends on the load of the machine', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='D58 failed once in a group of nine on a loaded machine (« an out-of-range value is 11 », the ergonomist, 13 Nov 16:44, passing 3 of 3 alone): readSettings of the Map ran once per change of airline/map_profiles.json and the last read to finish won, not the last to start')
+def d232(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const S = window.__mp.S, D = await import('/modules/maps/data.js'), real = S.ctx.data.get.bind(S.ctx.data); let n = 0;
+      S.ctx = { ...S.ctx, data: { ...S.ctx.data, get: async (p, ...a) => { if (p === 'airline/map_profiles.json') { const k = ++n; if (k === 1) { await new Promise(r => setTimeout(r, 700)); return { runwayZoom: 14 } } return { runwayZoom: 30 } } return real(p, ...a) } } };
+      const slow = D.readSettings(), fast = D.readSettings(); await Promise.all([slow, fast]); return { zoom: S.runwayZoom, reads: n } }""")
+    c.eq(r['zoom'], 11, 'the newest read wins: 14 then 30 (out of range) is 11, though the older read finished last', what=str(r))
+
