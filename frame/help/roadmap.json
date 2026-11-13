@@ -1220,12 +1220,13 @@
     {
      "id": "SOG-0246",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Carte : la coche « autour du plan de vol uniquement » est sans effet (toujours appliquée)",
      "en": "Map: the box “around the flight plan only” has no effect",
      "de": "Map: the box “around the flight plan only” has no effect",
      "es": "Map: the box “around the flight plan only” has no effect",
-     "rank": 75
+     "rank": 75,
+     "test": true
     },
     {
      "id": "SOG-0252",
