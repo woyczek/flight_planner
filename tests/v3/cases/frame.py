@@ -7364,6 +7364,22 @@ def a194(c):
     c.check_errors()
 
 
+@case('A195', "Design Metro: in the icon rail of the left bar (761 to 1099 px) the icon is centred in its box, the current entry and the others (SOG-0334); the other designs are as they were", 'A',
+      designs=('standard',), screens=True, night=False, phone=False,
+      rule="SOG-0334 (the user, Metro: « les icônes actives non centrées. peut-être même les inactives… un peu plus à gauche »): measured at 900 px the 20 px icon sat 9 px to the right of the centre of its 43 px box (metro.css: an 8 px left rule as a border and a 10 px padding on the left only, the rail's `padding: 0` overridden); the centre of the icon must be within 1 px of the centre of the box, whichever entry, in every design")
+def a195(c):
+    for design in ('metro', 'standard', 'cabinet', 'field', 'swiss', 'cupertino', 'material', 'aqua'):
+        c.design = design
+        c.page.set_viewport_size({'width': 900, 'height': 800})
+        c.open('missions', app='company', docs=LEVEL3, wait=False)
+        c.until("document.querySelectorAll('#fMenu a[data-id]').length >= 3", timeout=20000, what=f'{design}: the rail')
+        c.wait(500)
+        off = c.js("""() => [...document.querySelectorAll('#fMenu a[data-id]')].map(a => { const b = a.getBoundingClientRect(), i = a.querySelector('.f-icon, svg').getBoundingClientRect(); return [a.getAttribute('aria-current') || '-', Math.round(((i.left + i.right) / 2 - (b.left + b.right) / 2) * 10) / 10, Math.round(b.width)] })""")
+        c.ok(off and all(abs(o[1]) <= 1 for o in off) and off[0][2] < 100, off, f'{design}: the icon of each entry is within 1 px of the centre of its box (current: {off[0][0]}), in the rail')
+        c.shot(f'A195_{design}_900_delivered.png')
+    c.check_errors()
+
+
 @case('A180', 'Maintenance: « Administration » is never cut inside the word on the Material rail, and the button « Réglage des seuils de la carte » of the Administration card opens the Map (Pilot app) instead of the Data screen (SOG-0315, items 1 and 2)',
       'A', langs4=True, screens=False, night=False, designs=('material',),
       rule='SOG-0315 (the user, recette of SOG-0274 and SOG-0118): the Material rail is 88 px and its entries carry `overflow-wrap: anywhere`, so « Administration » (12 px, about 80 px) was cut as « Administratio / n »; and `#maps?tune=1` opened from the Administration card INSIDE the Maintenance app names a module that app does not have, so the frame fell back to its first screen (Données)')

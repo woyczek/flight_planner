@@ -33,6 +33,12 @@
     border-radius: 0;
     padding-left: 8px
   }
+  /* SOG-0334 : au palier du rail (761 à 1099 px) l'icône est centrée dans sa case, le filet de 4 px de gauche compris (un remplissage égal à la bordure, de l'autre côté) */
+  @media (min-width: 761px) and (max-width: 1099px) {
+    [data-design="swiss"] .f-nav a {
+      padding: 0 4px 0 0
+    }
+  }
   [data-design="swiss"] .f-nav a[aria-current="page"] {
     background: transparent;
     color: var(--sog-fg);

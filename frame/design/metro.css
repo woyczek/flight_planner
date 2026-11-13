@@ -64,6 +64,12 @@
     border-left: 8px solid var(--sog-module);
     padding-left: 10px
   }
+  /* SOG-0334 : au palier du rail (761 à 1099 px) l'icône est centrée dans sa case — celle de 8 px du filet comprise : le filet de gauche est une bordure, le remplissage de 10 px à gauche seul la poussait de 9 px à droite du centre ; un remplissage égal à la bordure, de l'autre côté, la recentre */
+  @media (min-width: 761px) and (max-width: 1099px) {
+    [data-design="metro"] .f-nav a {
+      padding: 0 8px 0 0
+    }
+  }
   [data-design="metro"] .f-nav a[aria-current="page"] {
     background: var(--sog-module);
     color: var(--sog-module-ink)
