@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 177,
+  "tests": 178,
   "verdicts": 122
  },
  "apps": [
@@ -344,9 +344,15 @@
     "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
     "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada"
    },
-   "test": "Carte, une procédure (départ, arrivée ou approche) qui fait un virage de plus de 90° : le coin doit être tracé en arc, pas en angle vif. Aucune capture n'a pu en être faite : dis-moi sur quelle procédure tu l'as vu et si le rayon te paraît juste.",
+   "test": "Recharge la page. Carte, une procédure tracée (SID, STAR ou approche) : chaque virage de plus de 45° est arrondi en arc ; un virage de 45° ou moins garde son angle. Regarde une arrivée qui tourne franchement (par exemple une STAR de LFBD ou de LFRS).",
    "since": "2026-11-12",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T11:59:17Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "ne voit rien. cf. capture. « plus de 45° » en fait.",
+    "at": "2026-11-13T09:29:30Z"
+   }
   },
   {
    "id": "SOG-0094",
@@ -2585,6 +2591,20 @@
    "state": "ok",
    "delivered": "2026-11-13T09:28:21Z",
    "at": "2026-11-13T10:34:20Z"
+  },
+  {
+   "id": "SOG-0297",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte du terrain : numéros de taxiways dès que les taxiways apparaissent, points d'arrêt lisibles (cartouche rouge), et où est passée la recherche de taxiway / parking",
+    "en": "Airport map: taxiway names as soon as taxiways show, readable holding points, and where the taxiway / stand search went",
+    "de": "Flugplatzkarte: Rollwegnamen sobald Rollwege erscheinen, lesbare Haltepunkte, und wo die Rollweg- / Standplatzsuche ist",
+    "es": "Mapa del aeródromo: nombres de calles de rodaje en cuanto aparecen, puntos de espera legibles, y dónde está la búsqueda de calle / puesto"
+   },
+   "test": "Relance le lanceur, recharge, puis relis le sol de LFPO (fiche du terrain › Sol › Réessayer) pour avoir les noms nettoyés. Carte, zoom sur le terrain : les noms des taxiways apparaissent en même temps que leurs traits, en jaune sur noir ; les points d'arrêt sont des cartouches blancs sur rouge (W28, pas « W28@02/20 ») ; les aires en noir sur blanc. Le bouton loupe de la colonne de droite ouvre le panneau « Sol » : tape un nom de voie ou de poste dans « Filtrer par nom ».",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T11:52:34Z"
   },
   {
    "id": "SOG-0303",

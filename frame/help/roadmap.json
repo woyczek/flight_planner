@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "085876f",
+  "organisation": "f7b6a02",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -958,12 +958,13 @@
     {
      "id": "SOG-0093",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée",
      "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
      "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
      "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada",
-     "rank": 57
+     "rank": 57,
+     "test": true
     },
     {
      "id": "SOG-0139",
@@ -1358,13 +1359,14 @@
     {
      "id": "SOG-0297",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte du terrain : numéros de taxiways dès que les taxiways apparaissent, points d'arrêt lisibles (cartouche rouge), et où est passée la recherche de taxiway / parking",
      "en": "Airport map: taxiway names as soon as taxiways show, readable holding points, and where the taxiway / stand search went",
      "de": "Flugplatzkarte: Rollwegnamen sobald Rollwege erscheinen, lesbare Haltepunkte, und wo die Rollweg- / Standplatzsuche ist",
      "es": "Mapa del aeródromo: nombres de calles de rodaje en cuanto aparecen, puntos de espera legibles, y dónde está la búsqueda de calle / puesto",
      "milestone": "6.0.0-alpha.5",
-     "rank": 42
+     "rank": 42,
+     "test": true
     }
    ]
   },
