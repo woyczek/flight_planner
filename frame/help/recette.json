@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 172,
-  "verdicts": 62
+  "tests": 173,
+  "verdicts": 63
  },
  "apps": [
   "pilote",
@@ -470,13 +470,10 @@
    },
    "test": "C'est une MESURE, pas encore le correctif : lanceur relancé, page rechargée. Carburant › Route avec la Carte à côté, « Calculer A → B » sur le trajet où tu as vu « instable, lent » : le bouton est occupé dès l'appui et compte les secondes ; un second appui ne lance rien. Si le calcul dépasse 3 s, une ligne sous la liste dit « Calculé en … s — dont … s chez le lanceur » : touche « Copier le diagnostic » et colle-le-moi (dans ta note ou ici). Refais-le pour un second calcul de suite. Dis-moi aussi ce qui reste « instable » : ce que tu touches, ce que tu vois.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-12T19:21:59Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "toujours pareil. instable, lent.",
-    "at": "2026-11-11T19:12:09Z"
-   }
+   "comment": "SOG route compute LFPO → EIDW · 2026-11-13T08:35:27.112Z · reach 5 ms · launcher 27830 ms · draw 22 ms · map 17 ms · total 27857 ms non reproduit.",
+   "at": "2026-11-13T08:39:40Z"
   },
   {
    "id": "SOG-0135",
@@ -2501,6 +2498,19 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T08:21:44Z"
+  },
+  {
+   "id": "SOG-0294",
+   "app": "compagnie",
+   "title": {
+    "fr": "Dossiers « recu » : 5 412 copies de fichiers d'autres missions (lot du 05/11)",
+    "en": "Received-files folders: 5,412 copies of other missions' files (batch of 5 Nov)",
+    "de": "Empfangsordner: 5 412 Kopien von Dateien anderer Missionen (Stapel vom 5.11.)",
+    "es": "Carpetas de recibidos: 5 412 copias de ficheros de otras misiones (lote del 5/11)"
+   },
+   "test": "Rien à faire tout de suite : au prochain lot de missions reçu dans la V2 (« Ajouter des fichiers… » ou le générateur), vérifie que le dossier recu/ de chaque mission ne porte que SES fichiers. Les copies déjà là ne bougent pas tant que tu n'as pas répondu à Q-0041.",
+   "since": "2026-11-13",
+   "state": "known"
   }
  ],
  "decisions": [

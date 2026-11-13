@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "fe7b7ac",
+  "organisation": "fbb6353",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -486,8 +486,7 @@
      "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
      "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
      "es": "Ruta (RAD): dibujar las rutas propuestas antes de elegir y decir cuáles son las desviaciones a las reglas",
-     "rank": 19,
-     "test": true
+     "rank": 19
     },
     {
      "id": "SOG-0140",
