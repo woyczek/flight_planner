@@ -1041,6 +1041,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 189 | The V2 registry: every YAML read through the guarded function (29fe8ec28, the note of 185) | note closed |
 | 190 | The fix of 187 (779654075: risks under `title`, translations aligned, the registry's node ceiling), the editor's timeline and maps step (2dfa0aeca) and the commercial family (57c8cb17a) | defect of 187 closed; one defect proved (a `timeline` that is a list loses its events), three notes |
 | 191 | The published site's root: one added step in `pages.yml` and `build_pages.py --root-only` (93258d646, SOG-0278 / Q-0039), read before the push | accepted, three notes |
+| 192 | The Map alone: “Choose this route” is never a dead button (edbe901be, SOG-0224) | acceptable, display only |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2944,6 +2945,11 @@ does not run, the site keeps its previous version) — harmless, but the first r
 of either branch publishes the same root. (2) What the user sees: the V2's home page (`index.html` of develop) is no longer served; the V2 manifest's
 `start_url` is `apps/pilot/mes_missions.html`, so an installed V2 keeps opening on its own page, and `/v3/` and `/v3/frame/` keep their addresses; the
 service worker of a browser that cached the old root may show it until it updates. (3) The page is in French with an English link text only: no issue.
+
+**192. “Choose this route” on the Map alone (edbe901be, SOG-0224) — acceptable, display only.** The first proposed route is shown and taken as the current choice when the window
+opens (`S.altShow`, `S.altAuto`), a tap changes the choice instead of removing it, and the row carries `data-shown` (a numeric `data-alt`, `0` / `1` flags, a constant CSS
+rule). The route names stay through `esc`, the legend rows are built by `altsLegendRows`, which escapes its labels, and nothing new is read from a file or written. D201 green,
+D202 is the known failure the commit declares (Fuel loses its proposals when its screen is left), not a regression. No note.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
