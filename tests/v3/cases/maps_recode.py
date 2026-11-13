@@ -5666,7 +5666,7 @@ def d_signs(c):
       CanvasRenderingContext2D.prototype.fillText = function (t, x, y) { if (window.__sg) { window.__sg = false; window.__ct.push({ t: String(t), x, y }) } return f.apply(this, arguments) };
       CanvasRenderingContext2D.prototype.fillRect = function (x, y, w, h) { if (h === 16 && w > 12 && w < 80) { window.__rc = (window.__rc || 0) + 1; window.__sg = true } return r.apply(this, arguments) }; return true }""")
     seen = {}
-    for z in (13, 15, 16):
+    for z in (12, 13, 15, 16):
         _ground_at(c, z, 900)
         c.js("() => { window.__ct = []; window.__rc = 0; window.__mp.S.map.panBy([3, 3], { duration: 0 }); return true }")
         c.wait(1500)
@@ -5674,9 +5674,9 @@ def d_signs(c):
         names = ct['ct']
         dup = sum(1 for i, a in enumerate(names) for b in names[i + 1:] if a['t'] == b['t'] and ((a['x'] - b['x']) ** 2 + (a['y'] - b['y']) ** 2) ** .5 < 140)
         seen[z] = (len({(x['t'], round(x['x']), round(x['y'])) for x in names}), ct['rc'], dup)
-    c.eq(seen[13][0], 0, 'no sign below the names’ zoom', what=str(seen))
-    c.ok(seen[15][0] >= 3 and seen[16][0] >= 3, str(seen), 'signs at 15 and at 16')
-    c.ok(seen[15][1] >= 3 and seen[16][1] >= 3, str(seen), 'each one is a sign (a filled box of the design’s ink behind the letters)')
+    c.eq(seen[12][0], 0, 'no sign below the names’ zoom (13, the zoom of the lines, SOG-0297)', what=str(seen))
+    c.ok(seen[13][0] >= 3 and seen[15][0] >= 3 and seen[16][0] >= 3, str(seen), 'signs from 13 (with the lines), at 15 and at 16')
+    c.ok(seen[13][1] >= 3 and seen[15][1] >= 3 and seen[16][1] >= 3, str(seen), 'each one is a sign (a filled box of the design’s ink behind the letters)')
     c.ok(all(v[2] == 0 for v in seen.values()), str(seen), 'no two signs of the same name within 140 px')
     c.shot('D178_{}_1280_delivered.png'.format('standard'))
     c.page.set_viewport_size({'width': 390, 'height': 844})
