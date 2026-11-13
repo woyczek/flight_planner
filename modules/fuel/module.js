@@ -30,6 +30,7 @@ import * as RE from './route_engine.js'; // le calcul et le contrôle de route d
 import * as RL from '../../frame/lib/route_legend.js'; // la légende commune des itinéraires avec la Carte (SOG-0134)
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
+import * as RA from '../../frame/lib/route_alts.js'; // la règle de péremption des propositions, partagée avec la Carte (SOG-0224)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
 // la piste en service d'après l'ATIS des réseaux du vol (SOG-0090, second lot) ; un direct vers un point sur instruction du contrôle
 // (SOG-0088, calcul pur)
@@ -107,6 +108,7 @@ export const meta = {
     '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
+    '../../frame/lib/route_alts.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js', '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js',
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
@@ -3928,7 +3930,7 @@ function routeAltsDraw() {
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
     html;
   const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
-  // SOG-0224 : l'âge du calcul toujours dit, « périmé » au-delà de 12 h ou la base changée (avec « Recalculer », jamais effacé), et
+  // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
     head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}><span>${esc(tt(A.stale ? TX.rStale : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
@@ -4081,18 +4083,7 @@ function answerOf(res) {
 /** SOG-0224 : le tampon de la base aéronautique (les cycles publiés de chaque zone, AeroDb.status) : changé, le calcul est périmé ; ''
  *  quand la base ne le dit pas. Un condensé court (FNV-1a), jamais la liste. */
 async function baseStamp() {
-  const st = await Promise.resolve().then(() => S?.ctx?.aerodb?.status?.()).catch(() => null),
-    txt = st?.published ? JSON.stringify(Object.entries(st.published).sort()) : '';
-  if (!txt) return '';
-  let h = 0x811c9dc5;
-  for (let i = 0; i < txt.length; i++) h = Math.imul(h ^ txt.charCodeAt(i), 16777619) >>> 0;
-  return h.toString(16);
-}
-/** SOG-0224 : un itinéraire de la réponse passe-t-il par les NAT (routes du jour) ? — `nat` posé par le moteur sur l'itinéraire ou un
- *  tronçon (SOG-0263), ou une voie « NAT… ». */
-function natRoute(answer) {
-  return (answer?.alternatives || []).some(a => a?.nat || (Array.isArray(a?.segments) ? a.segments : []).some(g => g?.nat || /^NAT/i.test(
-    String(g?.via || ''))));
+  return RA.baseStampOf(await Promise.resolve().then(() => S?.ctx?.aerodb?.status?.()).catch(() => null));
 }
 /** SOG-0224, règle de l'utilisateur (17 h 14, sur SOG-0296 : « un cache, qui périme uniquement au changement d'airac, ou s'il passe
  *  par les nats ») : périmé quand le cycle AIRAC a changé depuis le calcul, quand la base a changé (son tampon), ou, pour une route par
@@ -4103,8 +4094,7 @@ async function proposalsAge() {
   if (!R?.computed_at) return;
   const now = await baseStamp();
   if (gone(s) || S.ralts !== R) return;
-  const stale = FMS.airacOf(new Date(R.computed_at)) !== FMS.airacOf(new Date()) || !!(R.base && now && now !== R.base) || natRoute(R
-    .answer) && String(R.computed_at).slice(0, 10) !== new Date().toISOString().slice(0, 10);
+  const stale = RA.isStale(R, now);
   if (stale !== !!R.stale) {
     R.stale = stale;
     routeAltsDraw();
@@ -4237,7 +4227,7 @@ async function altsFromDoc() {
     hovered: null
   };
   routeAltsDraw();
-  proposalsAge(); // SOG-0224 : relu, l'objet peut être périmé (12 h, la base changée)
+  proposalsAge(); // SOG-0224 : relu, l'objet peut être périmé (AIRAC, base, NAT : frame/lib/route_alts.js)
 }
 /** Audit 193 : une ligne du document (écrit par tout appareil, entrée non fiable) remise à la forme que altsPublish donne à la Carte —
  *  nom, route et procédures comme raltsOfDoc, 400 points bornés au plus, identifiants courts, et pour chaque segment son état de

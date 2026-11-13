@@ -231,8 +231,10 @@ export const TX = {
   ],
   spMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   altAge: ['Calculé à {t}', 'Computed at {t}', 'Berechnet um {t}', 'Calculado a las {t}'],
-  altStale: ['Périmé : le calcul a plus de 12 heures', 'Stale: the computation is over 12 hours old',
-    'Veraltet: die Berechnung ist über 12 Stunden alt', 'Caducado: el cálculo tiene más de 12 horas'
+  altStale: ['Périmé : nouvel AIRAC, base changée ou routes NAT d’un autre jour',
+    'Stale: new AIRAC, database changed, or NAT tracks of another day',
+    'Veraltet: neuer AIRAC, Datenbank geändert oder NAT-Routen eines anderen Tages',
+    'Caducado: nuevo AIRAC, base cambiada o rutas NAT de otro día'
   ],
   altRedo: ['Recalculer', 'Recompute', 'Neu berechnen', 'Recalcular'],
   altFaultN: ['{n} tronçon(s) en écart', '{n} segment(s) with a deviation', '{n} Abschnitt(e) mit Abweichung',

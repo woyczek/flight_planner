@@ -20,6 +20,7 @@ import {
 import {
   colOf
 } from './procs.js';
+import * as RA from '../../frame/lib/route_alts.js'; // la règle de péremption, celle de Carburant (une seule fonction)
 import *
 as RL from '../../frame/lib/route_legend.js'; // la légende commune avec Carburant : les natures, leurs mots et leurs motifs (une seule source)
 
@@ -47,13 +48,21 @@ function detailOf(x) {
   };
   return d.route || d.nm != null ? d : null;
 }
-/** Plus de 12 heures depuis le calcul : « périmé » (décision de l'ergonome du 13/11 ; Carburant ajoute le changement de cycle AIRAC et de base) ; l'âge est dit d'ici là. */
-const STALE_MS = 12 * 3600e3;
+/** L'âge du calcul et s'il est périmé : la règle de Carburant, UNE fonction (frame/lib/route_alts.js `isStale`) — nouvel AIRAC, base changée (son tampon, S.baseStamp), ou le lendemain
+ *  (UTC) pour une route par les NAT ; jamais à cause de l'âge seul (SOG-0224, mot de l'utilisateur : « un cache, qui périme uniquement au changement d'airac, ou s'il passe par les nats »). */
 const ageOf = A => {
   const t = Date.parse(A?.computedAt || '');
   return Number.isFinite(t) ? {
     t,
-    stale: Date.now() - t > STALE_MS
+    stale: RA.isStale({
+      computed_at: A.computedAt,
+      base: A.base,
+      answer: A.nat ? {
+        alternatives: [{
+          nat: true
+        }]
+      } : null
+    }, S.baseStamp || '')
   } : null;
 };
 /** Le détail et l'âge sous les lignes : la ligne montrée dit son itinéraire, sa distance, son niveau et ses écarts ; l'âge du calcul, ou « périmé » avec « Recalculer ». */
@@ -111,6 +120,8 @@ export function altsSanitize(raw) {
     computedAt: raw.schema === 2 ? clean(raw.computed_at, 30) :
     '', // le schéma 2 (SOG-0224) : l'heure du calcul et la ligne dont le détail est ouvert, gardés par Carburant
     open: raw.schema === 2 && ixs.includes(raw.open) ? raw.open : null,
+    base: raw.schema === 2 ? clean(raw.base, 16) : '',
+    nat: raw.schema === 2 && RA.natRoute(raw.answer), // une route par les NAT : périmée le lendemain (UTC)
     hovered: ixs.includes(raw.hovered) ? raw.hovered : null,
     list
   };
@@ -487,6 +498,13 @@ export function altsStart() {
   };
   window.addEventListener('fuel-route-alts', evt);
   stops.push(() => window.removeEventListener('fuel-route-alts', evt));
+  Promise.resolve().then(() => S?.ctx?.aerodb?.status?.()).then(st => {
+    const k = RA.baseStampOf(st);
+    if (S && k !== S.baseStamp) {
+      S.baseStamp = k;
+      altsCard();
+    }
+  }, () => {});
   readDoc();
   if (S.ctx.data.watch) stops.push(S.ctx.data.watch('cache/fuel/', paths => {
     if (S && (paths || []).some(p => p === DOC)) readDoc();
