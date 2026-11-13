@@ -7095,3 +7095,27 @@ def d211(c):
 
 def performance_ms(c):
     return c.js("() => Math.round(performance.now() - window.__t0)")
+
+
+
+@case('D212', 'The « Contour lines » box acts on a mission map in the VFR topo view: ticked from the start (the view wants them), unticked no contour is asked at all, ticked again they come back', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0300 (the user, 13 Nov: « la coche « courbes de niveaux » est sans effet »): on a mission map the drawing asked for the contours when the box OR the view’s own profile wanted them, so the profile of the VFR view kept them whatever the box said')
+def d212(c):
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    hook_map(c)
+    c.js(_CONT_SPY_JS)
+    c.tap('[data-mp="layers"]')
+    c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what='the Layers sheet is open')
+    box = "() => { const r = window.__mp.S.layersEl.querySelector('input[data-layer=contours]'); return r ? r.checked : null }"
+    c.eq(c.js(box), True, 'ticked from the start on the VFR topo view', what='box')
+    c.js("() => { window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 12 }); return true }")
+    c.until("() => window.__ct.length > 0", timeout=8000, what='the contour lines are asked while the box is ticked')
+    c.js("() => { const r = window.__mp.S.layersEl.querySelector('input[data-layer=contours]'); r.checked = false; r.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.wait(1000)
+    c.js("() => { window.__ct = []; window.__mpMap.jumpTo({ center: [2.81, 45.61], zoom: 12.2 }); return true }")
+    c.wait(2500)
+    c.eq(c.js("() => window.__ct.length"), 0, 'unticked: no contour is asked', what='calls')
+    c.js("() => { const r = window.__mp.S.layersEl.querySelector('input[data-layer=contours]'); r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.js("() => { window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 12 }); return true }")
+    c.until("() => window.__ct.length > 0", timeout=8000, what='ticked again: they come back')

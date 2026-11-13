@@ -693,9 +693,8 @@ function draw() {
   // du studio qui coche les courbes) les allume — l'IFR et le fond seul non (SOG-0184)
   if (!mission && S.profile?.elements?.natTracks)
     natCheck(); // la couche NAT est affichée : sa validité est dite, périmée elle est relue (SOG-0266)
-  const contoursWanted = !!(L.contours || mission && S.profile?.layers
-    ?.contours
-  ); // la case « Courbes de niveau » (d'origine : les vues à densité VFR) ; le profil du studio d'une carte de mission les demande aussi
+  const contoursWanted = !!L
+    .contours; // la case « Courbes de niveau » seule décide (SOG-0300 : « sans effet ») ; d'origine cochée dans les vues à densité VFR et quand le profil du studio d'une carte de mission les demande
   if (contoursWanted && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(ctx, {
     minor: MapsRender.visibleAt(S.profile, 'contours', zv - 1.5),
     toC,

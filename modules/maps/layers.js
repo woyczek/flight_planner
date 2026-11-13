@@ -334,7 +334,8 @@ export function layerDefaults(B) {
     // allumée par sa case seulement (V3 § 10.22, § 10.29 h)
     cov: false,
     // courbes de niveau : modes à densité VFR (VFR, Topo), de près
-    contours: !!MapsRender.elementOf(B, 'vfrDensity'),
+    contours: !!MapsRender.elementOf(B, 'vfrDensity') || !!B.layers
+      ?.contours, // le profil de la vue (VFR détaillé d'une carte de mission) les veut : la case est cochée, et c'est elle qui décide (SOG-0300)
     zoneLabels: E('zoneLabelsShow'),
     awLabels: MapsRender.elementOf(B, 'awLabels') !== false,
     detail: 0
