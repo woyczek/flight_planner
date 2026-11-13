@@ -2939,6 +2939,22 @@
  ],
  "decisions": [
   {
+   "id": "Q-0052",
+   "fiche": "SOG-0115",
+   "app": "maintenance",
+   "question": "Plusieurs compagnies sur un même terminal (SOG-0115), que tu as mise dans l'alpha 6 : on la garde entière dans ce jalon ?",
+   "context": "Relevé de V3 Frame : aujourd'hui plusieurs compagnies tiennent dans UN dépôt, avec une compagnie courante par appareil. Ce qui manque — un dépôt par compagnie, un profil de pilote par compagnie, plusieurs administrateurs — touche le cœur : la copie locale est rangée par chemin, deux dépôts s'y mélangeraient ; il faut une base locale par profil, un changement de profil par rechargement propre, et des clés et jetons par profil (à qualifier avec Sécurisation). Mon avis : c'est un chantier de la couche de données, risqué pour tes données si on le presse ; en alpha 6 je ferais seulement la conception, relue par Sécurisation, et le code en bêta 1.",
+   "options": [
+    "Conception en alpha 6, code en bêta 1",
+    "Tout en alpha 6, comme je l'ai posé",
+    "Tout après la bêta 1",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0051",
    "fiche": "SOG-0304",
    "app": "pilote",
