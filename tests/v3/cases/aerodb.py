@@ -8939,6 +8939,13 @@ def k227(c):
         ils('toolongid', 'LFST', '23', '109.55'),
         ils('OTH', 'LFGA', '05', '110.10', { lat: 48.0, lon: 7.4 }),
         ils('LCT', 'LFST', '15', '110.7', { loc: true, bearing: null, cat: 'bogus', gs: '12', dmeChannel: '<x>' }),
+        ils('NOLA', 'LFST', '07', '109.90', { lat: undefined }),
+        ils('TXLA', 'LFST', '09', '109.90', { lat: '48.5' }),
+        ils('INFO', 'LFST', '11', '109.90', { lon: Infinity }),
+        ils('NANL', 'LFST', '12', '109.90', { lat: NaN }),
+        ils('BIG', 'LFST', '13', '109.90', { lat: 95 }),
+        ils('BTRU', 'LFST', '17', '110.50', { bearing: true }),
+        ils('BSTR', 'LFST', '19', '110.50', { bearing: '48' }),
         { kind: 'VOR', id: 'STR', name: 'STRASBOURG', freq: '115.6', lat: 48.5, lon: 7.57, dme: true }
       ];
       const f = { 'sia/base/fr/2026-10-29/meta.json': { schema: 2, zone: 'fr', cycle: '2026-10-29', kind: 'meta', parserVersion: 28, data: {} },
@@ -8949,13 +8956,14 @@ def k227(c):
       return { st: await db.navaidsOf('lfst'), ga: await db.navaidsOf('LFGA'), none: await db.navaidsOf('LFXX'), unknown: await db.navaidsOf('LFZZ'), bad: [await db.navaidsOf('x'), await db.navaidsOf(''), await db.navaidsOf(null), await db.navaidsOf('LF<>')] };
     }""")
     st = r['st']
-    c.eq([(x['rwy'], x['id']) for x in st], [('05', 'ENT'), ('05L', 'ZZZ'), ('15', 'LCT'), ('23', 'STZ')],
-         'the aerodrome\'s own entries, sorted by runway then identifier: the duplicate once, the entry with a bad runway or an over-long identifier dropped, the neighbour\'s ILS and the VOR left out', what='list')
+    c.eq([(x['rwy'], x['id']) for x in st], [('05', 'ENT'), ('05L', 'ZZZ'), ('15', 'LCT'), ('17', 'BTRU'), ('19', 'BSTR'), ('23', 'STZ')],
+         'the aerodrome\'s own entries, sorted by runway then identifier: the duplicate once, the entry with a bad runway or an over-long identifier dropped, one with no latitude, a text, an infinite, a NaN or an out-of-globe position dropped (never read as 0), the neighbour\'s ILS and the VOR left out', what='list')
     by = {x['id']: x for x in st}
     c.eq(by['STZ'], {'icao': 'LFST', 'rwy': '23', 'id': 'STZ', 'type': 'ILS', 'freq': '109.55', 'bearing': 228.7, 'cat': 'III', 'gs': '332.00', 'dme': True, 'dmeId': 'SZ', 'dmeChannel': '32Y', 'lat': 48.54, 'lon': 7.63},
          'a complete ILS: frequency, axis, category, glide path, DME with its identifier and channel', what='complete')
     c.eq(by['ENT'], {'icao': 'LFST', 'rwy': '05', 'id': 'ENT', 'type': 'ILS', 'freq': '108.55', 'bearing': 48.68, 'dme': True, 'lat': 48.54, 'lon': 7.63},
          'a base without the extra fields (built before): the entry has none of them, no error', what='old')
+    c.eq((by['BTRU']['bearing'], by['BSTR']['bearing']), (None, None), 'an axis that is `true` or a text is no axis (a number only, 0 to 360)', what='bearing type')
     c.eq((by['ZZZ']['freq'], by['LCT']['type'], by['LCT']['bearing'], 'cat' in by['LCT'], 'gs' in by['LCT'], 'dmeChannel' in by['LCT']), ('', 'LOC', None, False, False, False),
          'a frequency out of the band is \'\', a localizer alone is a LOC without axis, a category, a glide path or a channel that does not fit are dropped', what='checked')
     c.eq([[(x['rwy'], x['id']) for x in r['ga']], r['none'], r['unknown'], r['bad']], [[('05', 'OTH')], [], [], [[], [], [], []]],

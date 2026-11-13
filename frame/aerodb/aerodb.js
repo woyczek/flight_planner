@@ -1951,10 +1951,11 @@
         const ad = (await api.aerodromes({
           icao: k
         }).catch(() => []))?.[0];
-        if (!ad || !Number.isFinite(+ad.lat) || !Number.isFinite(+ad.lon)) return [];
+        if (!ad || typeof ad.lat !== 'number' || typeof ad.lon !== 'number' || !Number.isFinite(ad.lat) || !Number.isFinite(ad.lon))
+          return [];
         const list = await api.navaids({
-          lat: +ad.lat,
-          lon: +ad.lon,
+          lat: ad.lat,
+          lon: ad.lon,
           radiusNm: 15
         }).catch(() => []);
         const re = (v, rx) => typeof v === 'string' && rx.test(v.trim()) ? v.trim() : null,
@@ -1965,9 +1966,13 @@
           const rwy = re(String(n.rwy ?? ''), /^\d{2}[LRC]?$/),
             id = re(String(n.id ?? ''), /^[A-Z0-9]{1,5}$/);
           if (!rwy || !id || seen.has(`${rwy}|${id}`)) continue;
+          // position : deux nombres finis dans le globe, sinon l'aide est écartée (un fichier compilé ne porte jamais un nombre non fini ; « absent » ne devient pas 0)
+          if (typeof n.lat !== 'number' || typeof n.lon !== 'number' || !Number.isFinite(n.lat) || !Number.isFinite(n.lon) || Math
+            .abs(n.lat) > 90 || Math.abs(n.lon) > 180) continue;
           seen.add(`${rwy}|${id}`);
-          const bearing = Number.isFinite(+n.bearing) && n.bearing !== null && n.bearing !== '' && +n.bearing >= 0 && +n.bearing <=
-            360 ? +n.bearing : null,
+          // l'axe : un nombre (ni un booléen ni un texte), de 0 à 360°, sinon null
+          const bearing = typeof n.bearing === 'number' && Number.isFinite(n.bearing) && n.bearing >= 0 && n.bearing <= 360 ? n
+            .bearing : null,
             cat = re(String(n.cat ?? ''), /^(I|II|III|NOCAT)$/),
             gs = re(String(n.gs ?? ''), /^3[23]\d\.\d{1,3}$/),
             dmeId = re(String(n.dmeId ?? ''), /^[A-Z0-9]{1,5}$/),
@@ -1992,8 +1997,8 @@
             ...(dmeChannel ? {
               dmeChannel
             } : {}),
-            lat: +n.lat,
-            lon: +n.lon
+            lat: n.lat,
+            lon: n.lon
           });
         }
         return out.sort((a, b) => (a.rwy < b.rwy ? -1 : a.rwy > b.rwy ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
