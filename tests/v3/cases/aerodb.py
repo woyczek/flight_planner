@@ -7568,7 +7568,7 @@ def k163(c):
     r = c.js("""async () => {
       const base = 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/';
       const pt = (id, lat, lon) => ({ id, lat, lon, leg: 'TF', alt: null, seq: 1, phase: 'main' });
-      const items = ['ADC_01', 'IAC_RWY05_FNA_RNP', 'IAC_RWY05_ILS_LOC', 'IAC_RWY05_VOR', 'IAC_RWY23_FNA_ILS_CAT123_LOC', 'IAC_RWY23_FNA_RNP', 'DATA_01', 'STAR_RWY05_CONV', 'STAR_RWY05_RNAV', 'SID_RWY23_CONV'].map(n => ({ path: `Cartes/LFST/AD_2_LFST_${n}.pdf`, kind: n.split('_')[0] }));
+      const items = ['ADC_01', 'IAC_RWY05_FNA_RNP', 'IAC_RWY05_ILS_LOC', 'IAC_RWY05_VOR', 'IAC_RWY23_FNA_ILS_CAT123_LOC', 'IAC_RWY23_FNA_RNP', 'DATA_01', 'STAR_RWY05_CONV', 'STAR_RWY05_RNAV', 'SID_RWY23_CONV', 'IAC_RWY_ 05-23_ENV'].map(n => ({ path: `Cartes/LFST/AD_2_LFST_${n}.pdf`, kind: n.split('_')[0] }));
       const file = { schema: 1, icao: 'LFST', cycle: '2026-10-29', updated_at: '2026-11-01T00:00:00Z', charts: { base, items }, procedures: [
         { id: 'LFST.APP.RNPRWY05.RW05', icao: 'LFST', kind: 'APP', name: 'RNP RWY 05', runways: ['05'], transition: null, points: [pt('A', 48.6, 7.8), pt('B', 48.5, 7.7)], source: { kind: 'eaip', file: 'AD_2_LFST_DATA_RWY05_FNA_RNP_CODE.pdf' }, status: 'check', doubt: 'geometry' },
         { id: 'LFST.APP.RNPRWY23.RW23', icao: 'LFST', kind: 'APP', name: 'RNP RWY 23', runways: ['23'], transition: null, points: [pt('C', 48.6, 7.8), pt('D', 48.5, 7.7)], source: { kind: 'eaip', file: 'AD_2_LFST_DATA_RWY23_FNA_RNP_CODE.pdf' }, status: 'check' }] };
@@ -7581,7 +7581,7 @@ def k163(c):
         {'name': 'ILS LOC RWY 05', 'runway': '05', 'url': base + 'Cartes/LFST/AD_2_LFST_IAC_RWY05_ILS_LOC.pdf'},
         {'name': 'VOR RWY 05', 'runway': '05', 'url': base + 'Cartes/LFST/AD_2_LFST_IAC_RWY05_VOR.pdf'},
         {'name': 'ILS CAT123 LOC RWY 23', 'runway': '23', 'url': base + 'Cartes/LFST/AD_2_LFST_IAC_RWY23_FNA_ILS_CAT123_LOC.pdf'}],
-         'the three IAC charts with no approach record (the RNP charts are carried by the two records, one of them in doubt; the aerodrome chart and the DATA page are not approach charts), name, runway and address composed from the file', what='only')
+         'the three IAC charts with no approach record (the RNP charts are carried by the two records, one of them in doubt; the aerodrome chart and the DATA page are not approach charts, nor is the environment chart « RWY_ 05-23_ENV » that the SIA files among the IAC: SOG-0298), name, runway and address composed from the file', what='only')
     c.eq((r['none'], r['foreign'], r['bad']), ([], [], []), 'an aerodrome without file, a foreign aerodrome, a bad code: nothing', what='empty')
     c.eq((r['summary'], r['foreignsum'], r['badsum']), ({'coded': 2, 'chartOnly': 3, 'published': True, 'none': False, 'sia': True}, {'coded': 0, 'chartOnly': 0, 'published': False, 'none': False, 'sia': False}, {'coded': 0, 'chartOnly': 0, 'published': False, 'none': False, 'sia': False}),
          'approachSummary (SOG-0248): 2 coded approaches + 3 « carte seulement » = published, « aucune approche » false; a foreign aerodrome or a bad code: never « none » (the charts of a non-SIA terrain are not listed)', what='summary')
@@ -8963,16 +8963,42 @@ def k227(c):
 
 
 @case('K228', 'Ground layer: a holding point is named by its sign only (SOG-0297): « NO ENTRY » gives no name, the label of an OpenStreetMap name such as « Point d\'arrêt A » is taken off and the sign « A » kept; a sign, a taxiway name and an unnamed point are untouched', 'K', static=True,
-      rule='Ergonomist 13 Nov 2026 (SOG-0297, after the user\'s trial: « K et w22 illisibles. ce sont des points d\'arrêt, cartouche rouge »): the name of a holding point is its `ref` (LFPO: C, K, N, S; LFBD: A to G, L1, M1), else its `name`; the base had « NO ENTRY » on 8 holding points of LFPO and « Point d\'arrêt A » on one of LFBD (the label of the sign, not the sign). Filtered at the source: « NO ENTRY » (any case) is not a name; a label « point d\'arrêt », « point d\'attente », « holding point » or « holding position » in front of a sign is taken off; a label alone gives no name. Taxiways, stands and aprons keep their names; « W28@02/20 » (a sign with its runway) is kept as it is.')
+      rule='Ergonomist 13 Nov 2026 (SOG-0297, after the user\'s trial: « K et w22 illisibles. ce sont des points d\'arrêt, cartouche rouge »): the name of a holding point is its `ref` (LFPO: C, K, N, S; LFBD: A to G, L1, M1), else its `name`; the base had « NO ENTRY » on 8 holding points of LFPO and « Point d\'arrêt A » on one of LFBD (the label of the sign, not the sign). Filtered at the source: « NO ENTRY » (any case) is not a name; a label « point d\'arrêt », « point d\'attente », « holding point » or « holding position » in front of a sign is taken off; a label alone gives no name. Taxiways, stands and aprons keep their names. Ergonomist, same day: « W28@02/20 » (a sign with its runway): the sign is the part before the « @ » (name « W28 »), the runway goes in its own field `rwy` (« 02/20 »), so the map can say it on hover.')
 def k228(c):
     RJ, G = _ground_job()
     node = lambda i, **t: {'type': 'node', 'id': i, 'lat': 49.0 + i / 1e4, 'lon': 2.4, 'tags': {'aeroway': 'holding_position', **t}}
     resp = {'elements': [node(1, ref='K'), node(2, ref='NO ENTRY'), node(3, name='no entry'), node(4, name="Point d'arrêt A"), node(5, name='Point d\u2019attente B'), node(6, name='Holding point C'), node(7, name='holding position D'),
-                         node(8, name="Point d'arrêt"), node(9), node(10, ref='W28@02/20'), node(11, ref='A', name="Point d'arrêt A"), node(12, name='NO ENTRY 2'),
+                         node(8, name="Point d'arrêt"), node(9), node(10, ref='W28@02/20'), node(11, ref='A', name="Point d'arrêt A"), node(12, name='NO ENTRY 2'), node(13, ref='W31 @ 07L / 25R'), node(14, ref='X@zz'), node(15, name="Point d'arrêt W22@06"),
+                         {'type': 'way', 'id': 22, 'tags': {'aeroway': 'taxiway', 'ref': 'T@02/20'}, 'geometry': [{'lat': 49.0, 'lon': 2.4}, {'lat': 49.001, 'lon': 2.4}]},
                          {'type': 'way', 'id': 20, 'tags': {'aeroway': 'taxiway', 'ref': 'NO ENTRY'}, 'geometry': [{'lat': 49.0, 'lon': 2.4}, {'lat': 49.001, 'lon': 2.4}]},
                          {'type': 'way', 'id': 21, 'tags': {'aeroway': 'taxiway', 'name': "Point d'arrêt A"}, 'geometry': [{'lat': 49.0, 'lon': 2.4}, {'lat': 49.001, 'lon': 2.4}]}]}
     out = G.build('LFXX', resp, '2026-11-13')
     names = {x['id']: x['name'] for x in out['items']}
-    c.eq([names[f'n{i}'] for i in range(1, 13)], ['K', '', '', 'A', 'B', 'C', 'D', '', '', 'W28@02/20', 'A', 'NO ENTRY 2'],
-         'the twelve holding points: the sign kept, « NO ENTRY » (either case) and a label alone give no name, the label taken off before a sign, a ref wins over the name, « W28@02/20 » and « NO ENTRY 2 » untouched', what='holds')
-    c.eq((names['w20'], names['w21']), ('NO ENTRY', "Point d'arrêt A"), 'a taxiway keeps whatever name it has (the filter is for holding points)', what='twy')
+    c.eq([names[f'n{i}'] for i in range(1, 16)], ['K', '', '', 'A', 'B', 'C', 'D', '', '', 'W28', 'A', 'NO ENTRY 2', 'W31', 'X@zz', 'W22'],
+         'the holding points: the sign kept, « NO ENTRY » (either case) and a label alone give no name, the label taken off before a sign, a ref wins over the name, « W28@02/20 » is the sign « W28 » (spaces around the « @ » too), « X@zz » (no runway after the « @ ») and « NO ENTRY 2 » untouched', what='holds')
+    rwy = {x['id']: x.get('rwy') for x in out['items'] if x['kind'] == 'hold'}
+    c.eq([rwy[f'n{i}'] for i in (1, 10, 13, 14, 15)], [None, '02/20', '07L/25R', None, '06'],
+         'the runway the sign protects goes into its own field (« 02/20 », « 07L/25R », « 06 »), spaces removed; none without a runway after the « @ »', what='rwy')
+    c.eq((names['w20'], names['w21'], names['w22'], 'rwy' in {k for x in out['items'] if x['id'] == 'w22' for k in x}), ('NO ENTRY', "Point d'arrêt A", 'T@02/20', False), 'a taxiway keeps whatever name it has, « @ » included, and has no runway field (the filter is for holding points)', what='twy')
+
+
+@case('K229', 'AeroDb.ground(icao) keeps the runway of a holding point (SOG-0297: « 02/20 », « 07L/25R », « 06 ») and nothing else of that field: a malformed value, a value on another kind of item, a non-string are dropped', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist 13 Nov 2026 (SOG-0297): a holding sign read as « W28@02/20 » is the sign « W28 » and the runway « 02/20 » in its own field (the job writes it, K228); the reader hands the Map that field as it hands the rest: a bounded copy of an untrusted file, the field only on a holding point and only if it is one or two runways (two digits and L, R or C), never markup')
+def k229(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const files = { 'proc/ground/LFPO.json': { icao: 'LFPO', cycle: '2026-11-13', source: 'osm', attribution: 'x', items: [
+        { id: 'n1', kind: 'hold', name: 'W28', rwy: '02/20', point: [2.3, 48.7] },
+        { id: 'n2', kind: 'hold', name: 'W31', rwy: '07L/25R', point: [2.3, 48.7] },
+        { id: 'n3', kind: 'hold', name: 'W22', rwy: '06', point: [2.3, 48.7] },
+        { id: 'n4', kind: 'hold', name: 'B', rwy: '<img src=x>', point: [2.3, 48.7] },
+        { id: 'n5', kind: 'hold', name: 'C', rwy: '02/20/33', point: [2.3, 48.7] },
+        { id: 'n6', kind: 'hold', name: 'D', rwy: 2, point: [2.3, 48.7] },
+        { id: 'n7', kind: 'hold', name: 'E', point: [2.3, 48.7] },
+        { id: 'n8', kind: 'park', name: 'P', rwy: '02/20', point: [2.3, 48.7] },
+        { id: 'w9', kind: 'twy', name: 'T', rwy: '02/20', line: [[2.3, 48.7], [2.31, 48.71]] }] } };
+      const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse('2026-11-13T12:00:00Z') });
+      return (await db.ground('LFPO')).items.map(i => [i.id, i.kind, i.name, i.rwy === undefined ? null : i.rwy]);
+    }""")
+    c.eq(r, [['n1', 'hold', 'W28', '02/20'], ['n2', 'hold', 'W31', '07L/25R'], ['n3', 'hold', 'W22', '06'], ['n4', 'hold', 'B', None], ['n5', 'hold', 'C', None], ['n6', 'hold', 'D', None], ['n7', 'hold', 'E', None], ['n8', 'park', 'P', None], ['w9', 'twy', 'T', None]],
+         'the runway is kept on a holding point only when it is one runway or two (« 02/20 »); markup, three runways, a number, a stand or a taxiway carrying the field: no field', what='rwy')

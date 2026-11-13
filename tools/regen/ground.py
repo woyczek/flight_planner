@@ -5,7 +5,7 @@ met ~30 s et le serveur est public : un appel par terrain, MIN_GAP 30 s entre de
   · `dry: true` : à blanc, le plan seulement (l'hôte et le fichier), aucun appel, rien d'écrit ;
   · sinon : UNE requête Overpass (overpass-api.de, adresse calculée ici, jamais prise de la page) sur la surface de l'aérodrome (le tag `icao`), les réponses compactées dans
     data/proc/ground/<OACI>.json = { icao, cycle (la date du jour), source: 'osm', attribution: '© OpenStreetMap contributors, ODbL',
-    items: [{ id, kind: 'twy' | 'park' | 'hold' | 'apron', name, gate?: vrai (une porte), line: [[lon, lat]…] (twy, apron) | point: [lon, lat] (park, hold, apron : son centre) }] } et le manifeste proc/ground/index.json ({ aerodromes: { <OACI>: { cycle, twy, park, hold, bytes } } }),
+    items: [{ id, kind: 'twy' | 'park' | 'hold' | 'apron', name, rwy? (un point d'arrêt : la piste de son repère, « 02/20 »), gate?: vrai (une porte), line: [[lon, lat]…] (twy, apron) | point: [lon, lat] (park, hold, apron : son centre) }] } et le manifeste proc/ground/index.json ({ aerodromes: { <OACI>: { cycle, twy, park, hold, bytes } } }),
     UN commit (regen_jobs.commit_outputs, au nom de l'auteur, sans push). Noms bornés à 16 signes (sans signe de commande), éléments bornés à 5 000, coordonnées arrondies à 1e-6 ; rien n'est écrit
     sans un seul élément (« no-data »). Licence : base dérivée sous ODbL, dépôt privé de la compagnie (décision de l'utilisateur du 6 nov. 2026) ; l'attribution est dans le fichier.
 Résultat : { ok, icao, items: { twy, park, hold }, bytes, truncated, commit, warnings, file } ou { ok: False, reason: 'no-data' | 'failed' | 'cancelled', message? } ; ou, à blanc, { ok, dry, plan }."""
@@ -132,21 +132,33 @@ NO_ENTRY = re.compile(r'no[\s_-]*entry', re.I)
 HOLD_LABEL = re.compile(r"(?:point\s+d['’]\s*(?:arr[êée]t|attente)|holding\s+(?:point|position)|hold(?:ing)?\s+point)\s*[:\-]?\s*", re.I)
 
 
-def _name(tags, hold=False):
-    """Le nom affiché : `ref` (« A », « 12 ») puis `name`, sans signe de commande, espaces réduits, 16 signes au plus ; '' sans nom. Pour un point d'arrêt (`hold`) : « NO ENTRY » n'est pas
-    un nom et le libellé « Point d'arrêt » / « Point d'attente » / « Holding point » / « Holding position » devant le repère est ôté (un libellé seul ne donne aucun nom) : le repère
-    (« A », « W22 ») est ce qui se lit sur la carte."""
+HOLD_RWY = re.compile(r'(.+?)\s*@\s*(\d{2}[LRC]?(?:\s*/\s*\d{2}[LRC]?)?)')      # « W28@02/20 » : le repère, puis la piste que le point protège
+
+
+def _name_rwy(tags, hold=False):
+    """(nom, piste) : le nom affiché : `ref` (« A », « 12 ») puis `name`, sans signe de commande, espaces réduits, 16 signes au plus ; '' sans nom. Pour un point d'arrêt (`hold`) : « NO ENTRY »
+    n'est pas un nom, le libellé « Point d'arrêt » / « Point d'attente » / « Holding point » / « Holding position » devant le repère est ôté (un libellé seul ne donne aucun nom), et un repère
+    suivi de sa piste (« W28@02/20 ») se coupe : le nom est le repère (« W28 », ce qui se lit sur la carte) et la piste (« 02/20 ») va dans son propre champ. Piste : '' sans piste."""
     for k in ('ref', 'name'):
         v = tags.get(k) if isinstance(tags, dict) else None
         if isinstance(v, str):
             v = re.sub(r'[\x00-\x1f\x7f-\x9f]', ' ', v)
             v = ' '.join(v.split())
+            rwy = ''
             if hold:
                 v = '' if NO_ENTRY.fullmatch(v) else HOLD_LABEL.sub('', v, count=1).strip()
+                m = HOLD_RWY.fullmatch(v)
+                if m:
+                    v, rwy = m.group(1), re.sub(r'\s+', '', m.group(2))
             v = v[:MAX_NAME].strip()
             if v:
-                return v
-    return ''
+                return v, rwy
+    return '', ''
+
+
+def _name(tags, hold=False):
+    """Le nom affiché seul (voir _name_rwy)."""
+    return _name_rwy(tags, hold)[0]
 
 
 def _pt(lon, lat):
@@ -189,7 +201,10 @@ def build(icao, response, cycle, warnings=None):
         if kind is None or ident in seen:
             skipped += 1
             continue
-        item = {'id': ident, 'kind': kind, 'name': _name(tags, kind == 'hold')}
+        name, rwy = _name_rwy(tags, kind == 'hold')
+        item = {'id': ident, 'kind': kind, 'name': name}
+        if rwy:
+            item['rwy'] = rwy                              # un point d'arrêt : la piste que son repère protège (« 02/20 »), dite au survol
         if kind == 'park' and aeroway == 'gate':
             item['gate'] = True                            # une porte (pas un poste de stationnement) : le poste 12 d'une aire n'est pas la porte A12
         if el['type'] == 'node':

@@ -2741,9 +2741,9 @@
             ...p,
             icao: k
           }, items)).filter(Boolean));
-        // IAC : les cartes qu'aucune fiche d'approche ne porte ; STAR / SID : les cartes CONVENTIONNELLES (« …_STAR_RWY05_CONV ») : l'AIP ne code que les procédures RNAV, une carte « CONV » n'a jamais de table
+        // IAC : les cartes qu'aucune fiche d'approche ne porte, sauf les cartes d'ENVIRONNEMENT (« RWY_ 05-23_ENV » : rangée parmi les IAC par le SIA, ce n'est pas une approche, SOG-0298) ; STAR / SID : les cartes CONVENTIONNELLES (« …_STAR_RWY05_CONV ») : l'AIP ne code que les procédures RNAV, une carte « CONV » n'a jamais de table
         return items.filter(i => i && i.kind === what && typeof i.path === 'string' && mine.test(i.path) && (what === 'IAC' ? !taken
-          .has(i.path) : P.chartWords(i.path).words.includes('CONV'))).map(
+          .has(i.path) && !P.chartWords(i.path).words.includes('ENV') : P.chartWords(i.path).words.includes('CONV'))).map(
           i => {
             const w = P.chartWords(i.path),
               runway = w.runways[0] || '';
@@ -3302,6 +3302,8 @@
             }
           } else {
             if (it.kind === 'park' && it.gate === true) out.gate = true;
+            if (it.kind === 'hold' && typeof it.rwy === 'string' && /^\d{2}[LRC]?(?:\/\d{2}[LRC]?)?$/.test(it.rwy)) out.rwy = it
+              .rwy; // la piste que le repère protège (« 02/20 »)
             const p = pt(it.point);
             if (!p) continue;
             out.point = p;
