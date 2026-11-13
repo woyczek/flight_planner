@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2df33e1",
+  "organisation": "caccbb1",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -807,8 +807,7 @@
      "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
      "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
      "es": "Capas meteorológicas en el mapa desde la biblioteca de Meteo (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación",
-     "rank": 28,
-     "test": true
+     "rank": 28
     },
     {
      "id": "SOG-0095",
@@ -1949,8 +1948,7 @@
      "fr": "Compagnie › Registre : trop de lignes par mission — reprendre le modèle de la V2",
      "en": "Airline › Register: too many lines per mission — take the V2 layout",
      "de": "Airline › Register: too many lines per mission — take the V2 layout",
-     "es": "Airline › Register: too many lines per mission — take the V2 layout",
-     "test": true
+     "es": "Airline › Register: too many lines per mission — take the V2 layout"
     },
     {
      "id": "SOG-0287",
@@ -4259,8 +4257,7 @@
      "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
      "es": "Una nueva carretilla de conflictos de sincronización estando el usuario solo",
      "milestone": "6.0.0-alpha.6",
-     "rank": 242,
-     "test": true
+     "rank": 242
     }
    ]
   },

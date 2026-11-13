@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 173,
-  "verdicts": 63
+  "verdicts": 66
  },
  "apps": [
   "pilote",
@@ -330,8 +330,10 @@
    },
    "test": "Recharge la page. Ouvre Météo pour un vol (elle charge sa prévision), puis la Carte › Couches : coche « Météo (vent, nuages) ». Les barbules du vent et le voile des nuages se dessinent au niveau de croisière, la ligne sous la case dit le niveau et l'heure (mi-route), un trait fin borde la zone couverte. Sur un vol dont Météo n'a rien chargé : « Pas de prévision chargée : ouvrir Météo ». Dis-moi si la case fait double emploi avec « Vents en altitude », et si le voile des nuages se lit sur un vrai run.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-12T23:02:04Z"
+   "state": "ok",
+   "delivered": "2026-11-12T23:02:04Z",
+   "comment": "rien ne se passe. imho, ça fait double emploi. l’onglet meteo sert à la préparation. simplement les barbules suffisent.",
+   "at": "2026-11-13T08:43:54Z"
   },
   {
    "id": "SOG-0093",
@@ -499,13 +501,9 @@
    },
    "test": "Recharge la page, « Tout marquer comme vu » sur les anciens conflits, puis travaille normalement un jour ou deux (Carburant, la Carte à côté, le lanceur ouvert) : tu ne dois plus voir de nouveaux conflits « celle d'un autre appareil » alors que tu es seul. S'il en revient un, « Copier le diagnostic » avant de recharger : il dira si la version écartée était la tienne ou celle d'un autre appareil.",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-12T17:40:00Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "3 conflits aujourd’hui.",
-    "at": "2026-11-10T15:11:52Z"
-   }
+   "at": "2026-11-13T08:44:15Z"
   },
   {
    "id": "SOG-0137",
@@ -2399,8 +2397,10 @@
    },
    "test": "Recharge la page. Compagnie › Registre : une ligne par mission (signe d'état, identifiant, titre ; à droite la famille, la série, origine → destination) ; plus de vingt missions tiennent à l'écran. Le chevron déplie la ligne : état en mots, chemin, « Corriger », « Retirer ». Le filtre de famille et la recherche sont en tête. Dis-moi s'il te manque des colonnes de la V2 (Statut, Durée, CR, Généré) ou le tri par colonne.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-12T22:59:55Z"
+   "state": "ok",
+   "delivered": "2026-11-12T22:59:55Z",
+   "comment": "presque. cf. bugs.md",
+   "at": "2026-11-13T08:44:11Z"
   },
   {
    "id": "SOG-0287",
@@ -2411,7 +2411,7 @@
     "de": "Airline: the mission editor in V3",
     "es": "Airline: the mission editor in V3"
    },
-   "test": "Recharge la page. Compagnie › Registre : « Créer une mission » en tête ; au dépli d'une ligne, « Modifier » et « Dupliquer ». L'éditeur s'ouvre sur l'étape Cadre (famille, sous-type, série, identifiant, titre, théâtre, départ, arrivée) ; à droite l'aperçu de la fiche et « À compléter ». Change le titre d'une mission d'essai, « Enregistrer » : la mission est modifiée sur cet appareil et part avec l'envoi groupé ; le reste du fichier n'a pas bougé. Les étapes suivantes arrivent une à une (Équipes est déjà là).",
+   "test": "NE PAS RETESTER POUR L'INSTANT sur une vraie mission : un défaut prouvé fait perdre des équipes à l'enregistrement. Tu peux regarder l'écran (Compagnie › Registre : « Créer une mission », « Modifier », « Dupliquer » ; étapes Cadre, Équipes, Lieux) sans cliquer « Enregistrer ». Je te dis quand le correctif est poussé.",
    "since": "2026-11-13",
    "state": "known"
   },
