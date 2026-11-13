@@ -1905,3 +1905,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   `aerodb.chartUrl(proc)` when it differs from the record's `source.url`; « Données » is `source.url` (https only), a second link. A
   « chart » that is only the data page is not said « Carte »; without `chartUrl` the data page still shows. F214 (red before: one link,
   no « Données »); F95 still green.
+- **13 Nov 2026 — SOG-0224 refused, then specified: the proposals in progress survive** (user: « je voulais pouvoir choisir et conserver
+  le détail […] on regarde quelles sont les contraintes de faire survivre ce point au changement de page, et on code »; the ergonomist's
+  specification of 16 h 31 and answers of 16 h 53; written by Features SOG). Not a second file: `cache/fuel/route_alts.json` in schema 2
+  (INTEGRATION § 3 bis) — the launcher's answer bounded to the keys `RE.normalize` reads and normalized again at each reading, the time
+  of the computation, the open row, the aircraft key, the base's stamp. Ends: « Prendre », « Fermer les propositions » (new), a new
+  computation, another pair, another aircraft (`pickAircraft`, and an object of another aircraft read back is emptied). Stale — the user's
+  rule (17 h 14, on SOG-0296: « un cache, qui périme uniquement au changement d'airac, ou s'il passe par les nats »), which replaced the
+  12 h first decided: a new AIRAC cycle, the base's stamp changed, or the next UTC day for a route over the NAT; said with
+  « Recalculer », never erased; the age is said before. Fuel's half of the end-to-end case: F215 (red before: schema 1, the detail lost); F201, F208, F114, F109 still green. The
+  shared window of the side map and the full Map is BUGS SOG's.

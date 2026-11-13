@@ -321,6 +321,23 @@ choisit pas ; il faut spécifiquement le bouton « choisir » pour valider »; c
   back in the list, nothing taken and nothing republished (the Map already has the document).
 - Values are bounded on both sides (an index is an integer within the list; nothing else is read from the event).
 
+**Schema 2 — the proposals in progress (SOG-0224, 13 Nov 2026, the ergonomist's specification).** After « Calculer A → B » the document
+is written in schema 2: everything of schema 1, plus
+- `answer`: the launcher's answer kept for the detail — `{ ok: true, alternatives (≤ 3), issues (≤ 300), message, limitation, gaps (≤ 8) }`,
+  the only keys `RE.normalize` reads; a reader runs it through `RE.normalize` again (`modules/fuel/route_engine.js`), never trusts it;
+- `computed_at`: the ISO time of the computation; `open`: the index of the route whose detail is open (the « shown » row), else `null`;
+- `aircraft`: the flight's aircraft key (registration, else sheet id, else type, ≤ 24 signs, upper case);
+- `base`: a short stamp (FNV-1a, hex) of the aeronautical database's published cycles (`AeroDb.status().published`), '' when unknown.
+
+The object **survives** a change of map, of screen and a reload: Fuel reads it back (`altsFromDoc`) with its detail and its open row,
+with no new computation. It **ends** (alternatives `[]`, written) on « Prendre », on « Fermer les propositions », on a new computation,
+on another pair of aerodromes, on another aircraft (an object whose `aircraft` is not the flight's is emptied, never shown). It is
+**stale** when the AIRAC cycle changed since `computed_at` (`frame/lib/fms.js` `airacOf`), when `base` differs from the current stamp,
+or — a route over the NAT (`nat` on a route or a leg, a `NAT…` airway) — the next UTC day: said « Périmé » with « Recalculer », never erased; until then
+its age is said (« Calculé à 14:32Z »). A schema-1 document reads « without detail », never as an error. The document is written on a
+tap that shows a row (its `open`), never on hover. The shared window of the side map and the full Map is BUGS SOG's: it reads this
+document and hands a row back by `maps-route-alt-show`.
+
 ## 4. Quote settings — `pilot/<trigram>/fuel.json`
 
 `{ "schema": 1, "updated_at", "taxiMin": 10, "reserveMin": 30, "contingencyPct": 5, "displayUnit": "kg",

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › route: the proposals in progress survive a change of map, of screen and a reload, with their detail and open row** — route_alts.json schema 2; « Fermer les propositions »; « Calculé à … », « Périmé » at a new AIRAC, a changed base or the next day for a NAT route, with « Recalculer » (fuel INTEGRATION § 3 bis, DECISIONS; noreg F215; SOG-0224).
 - **Metro and Swiss: the icons of the left rail are centred in their box** (SOG-0334; Metro was 9 px, Swiss 6 px to the right of the centre, active or not; the whole bar at 1 280 px is unchanged); noreg A195 over the eight designs
 - **Recette: the lead sentence names the three gestures; the summary reads « 2 validés (dont 1 avec réserves) · 1 refusé »** (SOG-0329 touch-ups): the reservations right after the passed ones, the singular when there is one, in the four languages; noreg A115, A190
 - **Route computation: the results are kept** (SOG-0296) — the same request on the same base (LFOE → KDEN took 26 s each time, the loaded context being reused: the cost is the search) now returns the kept result at once, with `cache: { hit, computedAt, until }` for the screen's « du cache, calculé à … »; it expires only when the base or the engine changes, or at the end of the UTC day for a route through the NAT; kept under `data/local/route-cache/` (local, bounded). Launcher Python: restart the launcher. Case K266.

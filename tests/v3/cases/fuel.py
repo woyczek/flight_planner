@@ -5330,3 +5330,55 @@ def f214(c):
     c.until(f"!!document.querySelector('{A} [data-procdata=STAR]')", timeout=10000, what='« Données » on the STAR line')
     c.settle()
     c.eq(c.count(f'{A} [data-chart=STAR]'), 0, 'a chart that is only the data page is not « Carte »', what='STAR « Carte »')
+
+
+
+@case('F215', 'Route step, the proposals in progress survive (SOG-0224, schema 2 of route_alts.json): compute, open the detail of the second, '
+      'leave Fuel and come back, reload — the list and the open detail are there WITHOUT the launcher, with « Calculé à … »; « Fermer les '
+      'propositions » ends them; another aircraft ends them; another AIRAC « périmé » with « Recalculer », never erased', 'F', tags=('fuel',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0224 refused on 13 Nov (« je voulais pouvoir choisir et conserver le détail […] on regarde quelles sont les contraintes de faire '
+      'survive au changement de page, et on code »); the ergonomist\'s specification (16 h 31) and answers (16 h 53: schema 2, '
+      'aircraft in the key; 17 h 14: stale at a new AIRAC, a changed base, or the next day for a NAT route) — the detail lived in memory '
+      'only')
+def f215(c):
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='three routes')
+    c.tap(f'{FUEL} [data-altlist] [data-alt="1"] [data-altname]')
+    c.until(f"!!document.querySelector('{FUEL} [data-alt=\"1\"][data-shown]')", what='the detail of the second open')
+    before = norm(c.text(f'{FUEL} [data-altlist] [data-alt="1"]') or '')
+    doc = c.until_doc('cache/fuel/route_alts.json', lambda x: x and x.get('schema') == 2 and x.get('open') == 1, 'schema 2, the second open', timeout=8000)
+    c.ok(doc.get('computed_at') and doc.get('answer') and doc.get('aircraft') is not None, sorted(doc), 'computed_at, answer, aircraft in the object')
+    # the launcher gone: nothing can be computed again
+    st['down'] = True
+    for how in ('away', 'reload'):
+        if how == 'away':
+            c.go('maps')
+            c.go('fuel')
+        else:
+            c.page.reload()
+        to_step(c, 1)
+        c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", timeout=12000, what=f'{how}: the three routes back')
+        c.until(f"!!document.querySelector('{FUEL} [data-alt=\"1\"][data-shown]')", what=f'{how}: the second still open')
+        c.eq(norm(c.text(f'{FUEL} [data-altlist] [data-alt="1"]') or ''), before, f'{how}: its detail as computed (distance, level, share)', what='detail')
+        c.ok(norm(tx(F, 'rAge', c.lang).split('{')[0]) in norm(c.text(f'{FUEL} [data-rage]') or ''), c.text(f'{FUEL} [data-rage]'), f'{how}: « Calculé à … »')
+    # computed under another AIRAC cycle (the user's rule, 17 h 14): « périmé », « Recalculer », not erased
+    old = dict(doc, computed_at='2026-01-01T08:00:00.000Z')
+    c.open('fuel', docs=proc_docs() + proc_flight(None) + [['cache/fuel/route_alts.json', old, 'cache']], airfields=True)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-rage][data-stale]')", timeout=12000, what='« Périmé » said')
+    c.eq(c.count(f'{FUEL} [data-altlist] [data-alt]'), 3, 'a stale list is not erased', what='routes')
+    c.eq(c.count(f'{FUEL} [data-rage] [data-do="rcompute"]'), 1, 'with « Recalculer »', what='recompute')
+    # « Fermer les propositions » ends them: the list and the document emptied
+    c.tap(f'{FUEL} [data-do="rclose"]')
+    c.until_doc('cache/fuel/route_alts.json', lambda x: x is not None and not (x.get('alternatives') or []), 'the object emptied', timeout=8000)
+    c.eq(c.count(f'{FUEL} [data-altlist] [data-alt]'), 0, 'the list gone', what='routes')
+    # another aircraft: an object of the old one is not shown, and emptied
+    other = dict(doc, aircraft='F-ZZZZ')
+    c.open('fuel', docs=proc_docs() + proc_flight(None) + [['cache/fuel/route_alts.json', other, 'cache']], airfields=True)
+    to_step(c, 1)
+    c.until_doc('cache/fuel/route_alts.json', lambda x: x is not None and not (x.get('alternatives') or []), 'the object of another aircraft emptied', timeout=8000)
+    c.eq(c.count(f'{FUEL} [data-altlist] [data-alt]'), 0, 'nothing shown for another aircraft', what='routes')

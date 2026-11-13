@@ -376,6 +376,15 @@ const TX = {
   rLegend: ['Légende', 'Legend', 'Legende', 'Leyenda'], // les natures des tronçons, mêmes mots et mêmes traits que la Carte (SOG-0134)
   rTakenShare: ['Itinéraire pris — {share}.', 'Route taken — {share}.', 'Route übernommen — {share}.', 'Itinerario tomado: {share}.'],
   // un plan impossible : les propositions de repli du moteur, à part (AeroDB 9a7f1dde3), jamais dites contrôlées
+  // SOG-0224 : l'objet « propositions en cours » dit son âge, se dit périmé, se ferme
+  rAge: ['Calculé à {t}', 'Computed at {t}', 'Berechnet um {t}', 'Calculado a las {t}'],
+  rStale: ['Périmé (calculé à {t}) : nouvel AIRAC, base changée, ou routes NAT d’un autre jour',
+    'Stale (computed at {t}): new AIRAC, database changed, or NAT tracks of another day',
+    'Veraltet (berechnet um {t}): neuer AIRAC, Datenbank geändert oder NAT-Tracks eines anderen Tages',
+    'Caducado (calculado a las {t}): nuevo AIRAC, base cambiada o rutas NAT de otro día'
+  ],
+  rRecompute: ['Recalculer', 'Compute again', 'Neu berechnen', 'Recalcular'],
+  rClose: ['Fermer les propositions', 'Close the proposals', 'Vorschläge schließen', 'Cerrar las propuestas'],
   rProposals: ['Propositions non validées', 'Unvalidated proposals', 'Nicht bestätigte Vorschläge', 'Propuestas no validadas'],
   rProposal: ['Proposition {n}', 'Proposal {n}', 'Vorschlag {n}', 'Propuesta {n}'],
   rTakenProposal: ['Proposition non validée prise : à vérifier — {share}.', 'Unvalidated proposal taken: to be checked — {share}.',
@@ -2813,6 +2822,7 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="acopen"]')) return acOpen();
   if (e.target.closest('[data-do="acgo"]')) return acGo();
   if (e.target.closest('[data-do="rtimecopy"]')) return routeTimingCopy(); // SOG-0134
+  if (e.target.closest('[data-do="rclose"]')) return proposalsEnd(); // SOG-0224 : « Fermer les propositions »
   const rb = e.target.closest('[data-do="rcompute"],[data-do="rcheck"],[data-do="rtake"]');
   if (rb) return rb.dataset.do === 'rtake' ? routeTake(+rb.dataset.i) : routeAsk(rb.dataset.do === 'rcompute' ? 'compute' : 'check');
   const ar = e.target.closest('[data-altlist] [data-alt]');
@@ -3471,6 +3481,7 @@ function pickAircraft(key) {
     at: new Date().toISOString()
   });
   S.manual = null;
+  if (S.ralts?.ac !== undefined && S.ralts.ac !== acKey()) proposalsEnd(); // SOG-0224 : un autre aéronef finit les propositions
   const panel = S.body.querySelector('[data-acpanel]'), // absent de la vue Fiches (sa recherche est redessinée par refresh)
     field = S.body.querySelector('input[data-k="acsearch"]');
   panel?.classList.add('fu-hide');
@@ -3738,8 +3749,15 @@ async function routeAskRun(s, act, r, o, box, retry) {
   S.ralts = {
     list: n.plans,
     chosen: -1,
-    n
+    n,
+    // SOG-0224 : ce qui fait survivre la liste et son détail (route_alts.json, schéma 2) ; la réponse elle-même, relue par
+    // RE.normalize à chaque lecture (une entrée non fiable, bornée au même endroit que la réponse du lanceur)
+    answer: answerOf(res),
+    computed_at: new Date().toISOString(),
+    ac: acKey(),
+    base: await baseStamp()
   };
+  if (gone(s) || !S.body) return;
   routeAltsDraw();
   altsPublish('compute', n.plans); // pour la Carte (INTEGRATION § 3 bis)
   return routeDrawn(s);
@@ -3910,7 +3928,12 @@ function routeAltsDraw() {
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
     html;
   const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
-  box.innerHTML = (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
+  // SOG-0224 : l'âge du calcul toujours dit, « périmé » au-delà de 12 h ou la base changée (avec « Recalculer », jamais effacé), et
+  // « Fermer les propositions »
+  const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
+    head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}><span>${esc(tt(A.stale ? TX.rStale : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
+    A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
+  box.innerHTML = head + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
@@ -3994,9 +4017,19 @@ async function altsPublish(mode, plans, pts) {
 }
 /** L'objet du contrat (INTEGRATION § 3 bis) ; `hovered` vaut null dans le document. */
 function altsObject(forDoc) {
-  const A = S.alts;
+  const A = S.alts,
+    R = A?.mode === 'compute' && S.ralts?.answer && S.ralts.list?.length ? S.ralts : null;
   return {
-    schema: 1,
+    // SOG-0224, schéma 2 (INTEGRATION § 3 bis) : la réponse (answer), l'heure du calcul, la ligne ouverte (open), la clé du vol
+    // (aircraft), le tampon de la base ; sans eux, le schéma 1 de toujours (lu « sans détail »)
+    ...(R && forDoc ? {
+      answer: R.answer,
+      computed_at: R.computed_at,
+      open: shownOf(),
+      aircraft: R.ac,
+      base: R.base
+    } : {}),
+    schema: R && forDoc ? 2 : 1,
     updated_at: new Date().toISOString(),
     dep: A?.dep || '',
     arr: A?.arr || '',
@@ -4017,7 +4050,7 @@ function altsShow(i) {
   if (k === (S.ralts.shown ?? -1)) return;
   S.ralts.shown = k;
   routeAltsDraw();
-  if (S.alts?.mode === 'compute') altsSend(false);
+  if (S.alts?.mode === 'compute') altsSend(true); // SOG-0224 : la ligne ouverte survit (un appui, jamais au survol)
 }
 /** L'événement (toujours) et le document (doc vrai : arrivée, choix, effacement ; jamais au survol). */
 function altsSend(doc) {
@@ -4026,6 +4059,65 @@ function altsSend(doc) {
     detail: altsObject(false)
   }));
   if (doc) Promise.resolve(S.ctx.data.put(ALTS_DOC, altsObject(true))).catch(() => {});
+}
+/** SOG-0224 : la clé d'aéronef de l'objet « propositions en cours » — l'immatriculation, sinon la fiche, sinon le type (24 signes au
+ *  plus) ; '' sans aéronef. */
+function acKey() {
+  const a = S?.flight?.aircraft || {};
+  return String(a.registration || a.sheetId || a.type || '').trim().toUpperCase().slice(0, 24);
+}
+/** SOG-0224 : la réponse du lanceur gardée dans l'objet — les seules clés que RE.normalize lit, bornées comme il les borne (trois
+ *  itinéraires, 300 remarques) ; relue par RE.normalize à chaque lecture. */
+function answerOf(res) {
+  return {
+    ok: true,
+    alternatives: (Array.isArray(res?.alternatives) ? res.alternatives : []).slice(0, 3),
+    issues: (Array.isArray(res?.issues) ? res.issues : []).slice(0, 300),
+    message: String(res?.message ?? '').slice(0, 300),
+    limitation: String(res?.limitation ?? '').slice(0, 400),
+    gaps: (Array.isArray(res?.gaps) ? res.gaps : []).slice(0, 8)
+  };
+}
+/** SOG-0224 : le tampon de la base aéronautique (les cycles publiés de chaque zone, AeroDb.status) : changé, le calcul est périmé ; ''
+ *  quand la base ne le dit pas. Un condensé court (FNV-1a), jamais la liste. */
+async function baseStamp() {
+  const st = await Promise.resolve().then(() => S?.ctx?.aerodb?.status?.()).catch(() => null),
+    txt = st?.published ? JSON.stringify(Object.entries(st.published).sort()) : '';
+  if (!txt) return '';
+  let h = 0x811c9dc5;
+  for (let i = 0; i < txt.length; i++) h = Math.imul(h ^ txt.charCodeAt(i), 16777619) >>> 0;
+  return h.toString(16);
+}
+/** SOG-0224 : un itinéraire de la réponse passe-t-il par les NAT (routes du jour) ? — `nat` posé par le moteur sur l'itinéraire ou un
+ *  tronçon (SOG-0263), ou une voie « NAT… ». */
+function natRoute(answer) {
+  return (answer?.alternatives || []).some(a => a?.nat || (Array.isArray(a?.segments) ? a.segments : []).some(g => g?.nat || /^NAT/i.test(
+    String(g?.via || ''))));
+}
+/** SOG-0224, règle de l'utilisateur (17 h 14, sur SOG-0296 : « un cache, qui périme uniquement au changement d'airac, ou s'il passe
+ *  par les nats ») : périmé quand le cycle AIRAC a changé depuis le calcul, quand la base a changé (son tampon), ou, pour une route par
+ *  les NAT, le jour suivant (UTC) ; le reste du temps, l'âge est dit. Posée sur S.ralts.stale, puis la liste redessinée. */
+async function proposalsAge() {
+  const s = S,
+    R = S?.ralts;
+  if (!R?.computed_at) return;
+  const now = await baseStamp();
+  if (gone(s) || S.ralts !== R) return;
+  const stale = FMS.airacOf(new Date(R.computed_at)) !== FMS.airacOf(new Date()) || !!(R.base && now && now !== R.base) || natRoute(R
+    .answer) && String(R.computed_at).slice(0, 10) !== new Date().toISOString().slice(0, 10);
+  if (stale !== !!R.stale) {
+    R.stale = stale;
+    routeAltsDraw();
+  }
+}
+/** SOG-0224 : la fin des propositions (« Fermer les propositions », un autre aéronef) : la liste et le document vidés, la Carte efface sa
+ *  couche. */
+function proposalsEnd() {
+  if (!S) return;
+  S.ralts = null;
+  altsClear(true);
+  const box = S.body?.querySelector('[data-routealts]');
+  if (box) box.innerHTML = '';
 }
 /** Plus d'itinéraires à dessiner (nouvelle demande, nouveau couple, refus) : alternatives []. `force` : publié même sans liste en
  *  mémoire (un choix : le document peut encore en porter une, venue d'une autre ouverture — SOG-0224, choix depuis la Carte seule). */
@@ -4115,8 +4207,26 @@ async function altsFromDoc() {
   if (S?.ralts?.list?.length) return;
   const d = await Promise.resolve(S.ctx.data.get(ALTS_DOC)).catch(() => null);
   if (gone(s) || S.ralts?.list?.length) return;
-  const R = raltsOfDoc(d);
+  let R = raltsOfDoc(d);
   if (!R) return;
+  // SOG-0224 : un autre aéronef que celui du calcul : l'objet est fini (vidé), rien n'est montré
+  if (d.schema === 2 && typeof d.aircraft === 'string' && d.aircraft !== acKey()) return altsClear(true);
+  // le schéma 2 : la réponse relue (RE.normalize), la ligne ouverte, l'heure et le tampon ; un document du schéma 1 se lit « sans détail »
+  const n = d.schema === 2 && d.answer ? RE.normalize(d.answer, 'compute') : null;
+  if (n?.ok && n.plans.length) {
+    const at = typeof d.computed_at === 'string' && Number.isFinite(Date.parse(d.computed_at)) ? new Date(Date.parse(d.computed_at))
+      .toISOString() : null;
+    R = {
+      list: n.plans,
+      chosen: -1,
+      n,
+      answer: d.answer,
+      computed_at: at,
+      ac: acKey(),
+      base: typeof d.base === 'string' ? d.base.slice(0, 64) : '',
+      shown: Number.isInteger(d.open) && d.open >= 0 && d.open < n.plans.length ? d.open : undefined
+    };
+  }
   S.ralts = R;
   // le survol et l'appui se publient comme après un calcul (altsHover, altsShow) : la liste gardée telle que le document la porte
   S.alts = {
@@ -4127,6 +4237,7 @@ async function altsFromDoc() {
     hovered: null
   };
   routeAltsDraw();
+  proposalsAge(); // SOG-0224 : relu, l'objet peut être périmé (12 h, la base changée)
 }
 /** Audit 193 : une ligne du document (écrit par tout appareil, entrée non fiable) remise à la forme que altsPublish donne à la Carte —
  *  nom, route et procédures comme raltsOfDoc, 400 points bornés au plus, identifiants courts, et pour chaque segment son état de
