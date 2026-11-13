@@ -37,7 +37,8 @@ import {
   toggleModes,
   closePanels,
   toggleLayers,
-  fillLayers
+  fillLayers,
+  reprofile
 } from './layers.js';
 import {
   dataHead,
@@ -97,6 +98,7 @@ function topoError(e) {
   S.ctx.notify?.(tt(TX.topoDown), 'warn');
   (S.map || S.mapNew)?.setStyle(
     styleFor()); // le relief et les courbes de niveau de la Carte reviennent au chargement du style (relief), au prochain dessin (courbes)
+  reprofile(); // le relief et les courbes de la Carte reviennent avec le fond de repli : le profil est refait, les cases le disent
   schedule();
   if (S.dpanel === 'layers') fillLayers();
 }

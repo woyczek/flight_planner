@@ -546,8 +546,8 @@ export function relief() {
   try {
     // pas isStyleLoaded() : faux tant que les sources du style se chargent, donc au « style.load » d'un setStyle (SOG-0171 rouvert : le relief ne venait pas
     // après un changement de vue) ; un style qui n'est pas encore posé refuse (getLayer, addSource) et la pose est reprise à son chargement
-    const want = !!S.profile?.hillshade || !!S.topoDown && S.profile?.base ===
-      'otm-topo', // le fond de repli de la vue topographique reprend le relief ombré
+    const want = !!S.profile
+      ?.hillshade, // la case « Relief ombré » (SOG-0300 T4) ; le fond de repli de la vue topographique la reprend (layerDefaults)
       has = !!m.getLayer('mp-hillshade');
     if (want === has) return;
     if (!want) return m.removeLayer('mp-hillshade');

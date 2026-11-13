@@ -7418,3 +7418,59 @@ def d219(c):
     c.js(pick, 'ifrhigh')
     c.until("() => window.__mp.S.mtheme === 'ifrhigh'", timeout=6000, what='the high IFR view')
     c.shot('D219_standard_rescue_views_delivered.png')
+
+
+
+@case('D220', 'The VFR and topographic views carry the graduated frame (the latitude and longitude degrees on the edges of the map), on a flight and on a mission map; its box in Layers is ticked and acts; the IFR view keeps it as before', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0300 T3 (the user, 13 Nov: « sur vfr topo, il faut les degrés de latitude longitude (le cadre) »; the ergonomist: VFR and topographic carry the graduated frame): the VFR and Topo profiles had the graticule off')
+def d220(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    state = "async () => { const L = await import('/modules/maps/layers.js'), S = window.__mp.S; return { elem: !!S.profile.elements.graticule, box: !!L.layersNow().graticule } }"
+    for preset, want in (('vfr', True), ('topo', True), ('low', True)):
+        c.open('maps', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': preset, 'layers': {}}, 'cache']], flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.eq(c.js(state), {'elem': want, 'box': want}, f'flight, {preset}: the graduated frame is {"on" if want else "off"}, its box says so', what=preset)
+    pick = "(v) => { const s = document.querySelector('.mp-mb-theme'); s.value = v; s.dispatchEvent(new Event('change', { bubbles: true })); return true }"
+    _themed(c, '1_COMBAT', 'CMB9', 'maps?mission=CMB9&map=carte_generale.png')
+    for v in ('vfr', 'topo'):
+        c.js(pick, v)
+        c.until(f"() => window.__mp.S.mtheme === '{v}'", timeout=6000, what=f'the {v} view of the mission')
+        c.eq(c.js(state), {'elem': True, 'box': True}, f'mission, {v}: the graduated frame', what=v)
+    c.shot('D220_standard_topo_frame_delivered.png')
+
+
+
+@case('D221', 'The shaded relief can be switched off: a « Shaded relief » box in Layers, ticked in the views that carry it (VFR, the mission VFR), acting at once, kept on the device; greyed with its reason on the OpenTopoMap base, which carries its own, and ticked again on the fallback base', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0300 T4 (the user, 13 Nov: « on doit pouvoir désactiver le relief dans les paramètres »): the relief was drawn whenever the view had it, without a way to turn it off')
+def d221(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    _themed(c, '1_COMBAT', 'CMB9', 'maps?mission=CMB9&map=carte_generale.png')   # the VFR view of a mission carries the shaded relief
+    hook_map(c)
+    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'vfr'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.mtheme === 'vfr'", timeout=6000, what='the VFR view of the mission')
+    c.tap('[data-mp="layers"]')
+    c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what='the Layers sheet is open')
+    box = "() => { const r = window.__mp.S.layersEl.querySelector('input[data-layer=relief]'); return r ? [r.checked, r.disabled] : null }"
+    hill = "() => !!window.__mp.S.map.getLayer('mp-hillshade')"
+    c.eq(c.js(box), [True, False], 'VFR: the « Shaded relief » box is ticked and free', what='box')
+    c.until("() => !!window.__mp.S.map.getLayer('mp-hillshade')", timeout=15000, what='the relief is laid')
+    c.tap('input[data-layer="relief"]')
+    c.until("() => !window.__mp.S.map.getLayer('mp-hillshade')", timeout=8000, what='unticked: the relief is taken off the map')
+    c.eq(c.js("() => !!window.__mp.S.profile.hillshade"), False, 'the profile does not ask for it any more', what='hillshade')
+    ui = c.until_doc('cache/maps/ui.json', lambda d: d and (d.get('layers') or {}).get('mission', {}).get('relief') is False, what='the choice is kept on the device', timeout=8000)
+    c.tap('input[data-layer="relief"]')
+    c.until("() => !!window.__mp.S.map.getLayer('mp-hillshade')", timeout=8000, what='ticked again: the relief is back')
+    # the OpenTopoMap base carries its own relief: the box is greyed with its reason
+    c.context.route(re.compile(r'tile\.opentopomap\.org'), lambda r: r.fulfill(status=200, content_type='image/png', body=_PNG1))   # the tiles come: the base stays OpenTopoMap
+    c.open('maps', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'topo', 'layers': {}}, 'cache']], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => window.__mp.S.topoOk === true", timeout=15000, what='a tile of the topographic base came')
+    c.tap('[data-mp="layers"]')
+    c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what='the Layers sheet is open')
+    r = c.js("() => { const S = window.__mp.S, r = S.layersEl.querySelector('input[data-layer=relief]'); return { checked: r.checked, disabled: r.disabled, title: r.closest('label').title, base: S.profile.base, preset: S.preset, mission: S.missionId } }")
+    c.ok(r['disabled'] and not r['checked'] and r['title'], str(r), 'Topo (OpenTopoMap): the box is greyed, unticked, with its reason')

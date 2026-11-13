@@ -325,6 +325,7 @@ export const TX = {
       'Controladores en línea (IVAO / VATSIM)'
     ],
     contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
+    relief: ['Relief ombré', 'Shaded relief', 'Geländeschattierung', 'Relieve sombreado'],
     cov: ['Couverture', 'Coverage', 'Abdeckung', 'Cobertura'],
     zoneLabels: ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios'],
     awLabels: ['Noms des voies (distance, routes)', 'Airway names (length, tracks)', 'Namen der Flugwege (Länge, Kurse)',
@@ -371,7 +372,8 @@ export const TX = {
     ],
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
     wind: ['Barbules de vent', 'Wind barbs', 'Windfiedern', 'Barbas de viento'],
-    contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel']
+    contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
+    relief: ['Relief ombré', 'Shaded relief', 'Geländeschattierung', 'Relieve sombreado']
   },
   tuneTitle: ['Réglage de la carte : seuils de zoom', 'Map tuning: zoom thresholds', 'Kartenabstimmung: Zoomschwellen',
     'Ajuste del mapa: umbrales de zoom'
@@ -647,6 +649,9 @@ export const TX = {
   // le fond topographique (SOG-0300)
   topoDown: ['Fond topographique indisponible : fond de repli', 'Topographic base unavailable: fallback base',
     'Topografischer Hintergrund nicht verfügbar: Ersatzhintergrund', 'Fondo topográfico no disponible: fondo de reserva'
+  ],
+  reliefOwn: ['Ce fond porte son relief ombré', 'This base carries its own shaded relief',
+    'Dieser Hintergrund trägt seine eigene Geländeschattierung', 'Este fondo lleva su propio relieve sombreado'
   ],
   contoursOwn: ['Ce fond porte ses propres courbes de niveau', 'This base carries its own contour lines',
     'Dieser Hintergrund trägt seine eigenen Höhenlinien', 'Este fondo lleva sus propias curvas de nivel'

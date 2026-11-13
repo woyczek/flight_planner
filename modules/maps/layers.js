@@ -163,6 +163,7 @@ function modeProfile(mode = S.preset, levelFt = S.route.levelFt) {
       elements: {
         ...p.elements,
         navaids: true,
+        graticule: true, // le cadre gradué en latitude et longitude (SOG-0300 T3 : « sur vfr topo, il faut les degrés »)
         vfrDensity: true,
         zoneCeil: p.elements?.zoneCeil || '19500'
       }
@@ -185,7 +186,7 @@ function modeProfile(mode = S.preset, levelFt = S.route.levelFt) {
         airwaysHigh: false,
         navaids: false,
         mora: false,
-        graticule: false,
+        graticule: true, // le cadre gradué (SOG-0300 T3)
         obstacles: true,
         agglos: true,
         vfrDensity: true
@@ -277,7 +278,7 @@ const AS_GROUPS = {
 };
 /** Cases du contenu Couches, dans l'ordre de la SPEC § 6.7 (« Autour de la route seulement » en dernier). */
 const LAYER_KEYS = ['asTma', 'asDrp', 'asFir', 'asOther', 'zoneLabels', 'awLow', 'awHigh', 'awLabels', 'navaids', 'fixes', 'vrp',
-  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'atc', 'contours', 'cov', 'corridor'
+  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'atc', 'contours', 'relief', 'cov', 'corridor'
 ];
 /** Couche du contenu Couches qui commande chaque ligne de la page de réglage (une famille d'espaces : une seule case). */
 export const LAYER_OF = {
@@ -306,7 +307,8 @@ export const LAYER_OF = {
   aar: 'aar',
   nat: 'nat',
   wind: 'wind',
-  contours: 'contours'
+  contours: 'contours',
+  relief: 'relief'
 };
 /** Famille de couches d'un type d'espace. */
 export const groupOf = t => Object.keys(AS_GROUPS).find(g => AS_GROUPS[g].includes(String(t || '').toUpperCase())) || 'asOther';
@@ -341,6 +343,8 @@ export function layerDefaults(B) {
     // courbes de niveau : modes à densité VFR (VFR, Topo), de près
     contours: !!MapsRender.elementOf(B, 'vfrDensity') || !!B.layers
       ?.contours, // le profil de la vue (VFR détaillé d'une carte de mission) les veut : la case est cochée, et c'est elle qui décide (SOG-0300)
+    relief: !!B.hillshade || B.base === 'otm-topo' && !!S
+      .topoDown, // le relief ombré de la vue (SOG-0300 T4 : « on doit pouvoir désactiver le relief ») ; le fond de repli de la vue topographique le reprend
     zoneLabels: E('zoneLabelsShow'),
     awLabels: MapsRender.elementOf(B, 'awLabels') !== false,
     detail: 0
@@ -392,6 +396,7 @@ export function effectiveProfile() {
   });
   if (L.vrp) E.vrpLabels = true;
   P.cities = L.cities;
+  P.hillshade = !!L.relief; // la case « Relief ombré » seule décide
   P.zones = Object.keys(AS_GROUPS).filter(g => L[g]).flatMap(g => AS_GROUPS[g]);
   P.otherZones = L.asOther; // types hors familles : ajoutés à la lecture (data.js)
   P.corridorNm = L.corridor ? +B.corridorNm || 10 : 0;
@@ -430,6 +435,7 @@ export function setLayer(key, value, keep = false) {
     return got('tune')?.tuneVis();
   }
   reprofile();
+  if (key === 'relief' || key == null) relief(); // le relief ombré est posé ou retiré tout de suite (SOG-0300 T4)
   got('tune')?.tuneVis();
 }
 /** Mode choisi : gardé sur l'appareil, profil, données, fond (style du mode, relief), profil vertical refaits. */
@@ -487,6 +493,13 @@ export function fillLayers() {
       const own = S.profile?.base === 'otm-topo' && !S.topoDown,
         lab = c.closest('label'),
         tip = own ? tt(TX.contoursOwn) : '';
+      if (c.disabled !== own) c.disabled = own;
+      if (lab && lab.title !== tip) lab.title = tip;
+    }
+    if (c.dataset.layer === 'relief') { // sur le fond OpenTopoMap le relief est dans les tuiles : la case est grisée, sa raison dite
+      const own = S.profile?.base === 'otm-topo' && !S.topoDown,
+        lab = c.closest('label'),
+        tip = own ? tt(TX.reliefOwn) : '';
       if (c.disabled !== own) c.disabled = own;
       if (lab && lab.title !== tip) lab.title = tip;
     }
