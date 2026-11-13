@@ -152,6 +152,13 @@ export function buildOverlay(ctx, modesHtml) {
       schedule(); // redessinée même quand le cadrage n'a pas changé (frameFlight ne pose alors aucune caméra)
     }
   });
+  // la recherche d'une voie, d'un poste, d'une attente (SOG-0297 : « j'ai perdu le bouton recherche »): le champ de filtre du panneau Sol, jusque-là derrière le bouton « Sol » de la fiche du terrain ; caché
+  // tant que la vue ne montre pas le départ ou l'arrivée du vol (ground.js groundBtnSync lui pose le terrain dans data-ground : le clic est celui des fiches)
+  S.groundBtn = btn('ground', {
+    icon: 'search',
+    label: ctx.t(TX.gSearch)
+  });
+  S.groundBtn.hidden = true;
   S.modeBtn = btn('mode', {
     icon: 'map',
     label: ctx.t(TX.preset),

@@ -490,6 +490,10 @@ export const TX = {
   // couche « sol » (§ 10.40, ground.js) : voies, postes et points d'attente du départ et de l'arrivée
   gTitle: ['Sol · {icao}', 'Ground · {icao}', 'Boden · {icao}', 'Suelo · {icao}'],
   gBtn: ['Sol', 'Ground', 'Boden', 'Suelo'],
+  gSearch: ['Sol : chercher une voie de circulation, un poste, une attente', 'Ground: search a taxiway, a stand, a holding point',
+    'Boden: Rollweg, Standplatz oder Wartepunkt suchen',
+    'Suelo: buscar una calle de rodaje, un puesto, un punto de espera'
+  ],
   gBtnTip: ['Voies de circulation, postes et points d’attente de ce terrain : une liste qui surligne sur la carte',
     'Taxiways, stands and holding points of this aerodrome: a list that highlights on the map',
     'Rollwege, Standplätze und Wartepunkte dieses Flugplatzes: eine Liste, die auf der Karte hervorhebt',

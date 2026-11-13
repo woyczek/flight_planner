@@ -600,14 +600,16 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   coordinates, names cut to 24 characters and stripped of control characters and `<`, `>`, at most 4 000 items and 600 points a line.
 - **When**: only for the flight's departure and arrival (`groundIcaos()`, four letters) and from zoom 13 (the Map's own MapLibre zoom,
   `zoomOf`, the scale of `COVER_ZOOM` and `runwayZoom`; a tolerance of .02 absorbs the view's rounding): the taxiway **lines** from 13 (one level earlier than the first 14: SOG-0195),
-  their **names** from 15 (rank `ground` in `RANK`, after `procedure`, three places along the line, collision pass), the **stands and
-  holds** (points and names) from 16; the aprons are never filled (3 to 5 ms for nothing). During a gesture the light drawing keeps the
+  their **names** from 13 too (SOG-0297: the name comes with the line; rank `ground` in `RANK`, after `procedure`, three places along the line, collision pass; a sign is allowed on a line of 26 px
+  or one and a sixth of its length), the **holds** from 15 as red signs with white bold letters (12 px, 16 px high, contrast 5.9; kept in `S.ground.signs`, D198), the **stands** (points and
+  names) from 16; the aprons are never filled (3 to 5 ms for nothing). During a gesture the light drawing keeps the
   lines only (`groundLight`, D68). The element highlighted from the list is drawn last, thicker, in the accent hue; the attribution
   « © OpenStreetMap contributors, ODbL » is shown while the layer is drawn. Cost (LFPO, desktop, measured 6 Nov before the code: about 2.3 ms the
   lines, about 1 ms the names, under 0.5 ms the stands; the pre-study's zooms were in 256-tile numbering, one more than MapLibre's, so these
   figures are the conservative ones): noreg D114 asserts a median under 16 ms.
 - **The panel** (`openData('ground', 'ground:<ICAO>')`, copied from `choose`): a button « Ground » on the aerodrome card of the departure and
-  the arrival (only when `ground()` exists); a filter field (sub-string, no case, no accent), chips Taxiways / Stands / Holds, one row per
+  the arrival (only when `ground()` exists), and, from zoom 11 when the view shows one of them, a « search » button in the map's column (`data-mp=ground`, `groundBtnSync`: it carries the
+  aerodrome in `data-ground`, the nearest to the centre, and the cards' click opens the panel; D199, SOG-0297); a filter field (sub-string, no case, no accent), chips Taxiways / Stands / Holds, one row per
   kind and name (OpenStreetMap cuts a taxiway into several ways: the row stands for all of them and highlights them together; the aerodrome's runways first
   — read from its sheets, `S.runways`, whatever the zoom —, then by kind and name, 40 rows at most then « n more: narrow the filter »), the mark « not drawn »
   on the rows whose name found no place, « Done ». Hover or focus of a row calls `setGroundHl(id)` (the map redraws with it highlighted);

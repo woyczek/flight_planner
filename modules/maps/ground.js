@@ -35,6 +35,11 @@ import {
 export const Z_LINE = 13, // un cran plus tôt qu'avant (SOG-0195 : « les taxiways apparaissent trop tard au zoom »)
   Z_NAME = 15,
   Z_PARK = 16,
+  // le point d'attente : cartouche rouge, lettres blanches grasses (contraste 5,9 : 4,5 est le minimum de lecture), 12 px, 16 de haut (SOG-0297)
+  HOLD_BG = '#c8102e',
+  HOLD_FG = '#ffffff',
+  HOLD_FONT = 12,
+  HOLD_H = 16,
   HIT_PX = 6,
   ROWS_MAX = 40,
   ATTRIBUTION = '© OpenStreetMap contributors, ODbL';
@@ -235,7 +240,49 @@ const stroke = (c, pts, w, col) => {
 const inside = (pts, W, H) => pts.some(p => p.x > -40 && p.x < W + 40 && p.y > -40 && p.y < H + 40);
 /** La couche de ce dessin : { paint(c, pl), shown } ou null (pas de terrain du vol, zoom trop petit, rien de lu). toC : (lat, lon) → { x, y }
  *  de la vue. Le surlignement d'une piste se calcule de sa fiche (runwayVector), pas des vecteurs tracés : il ne dépend pas de runwayZoom. */
+/** Le bouton « chercher une voie, un poste » de la carte (SOG-0297) : visible quand la vue montre le départ ou l'arrivée du vol, de plus près que le zoom 11, et que le sol peut être lu ; il porte le terrain
+ *  (le plus proche du centre de la vue) dans data-ground, ce que lit déjà le clic des fiches (groundEvents) ; écrit seulement s'il change. */
+const Z_BTN = 11;
+
+function groundBtnSync(toC, zReal, W, H) {
+  const b = S.groundBtn;
+  if (!b) return;
+  let icao = '';
+  if (!onMission() && !S.choose && at(zReal, Z_BTN)) {
+    const pts = S.route?.points || [],
+      r = S.route?.flight?.route,
+      ok = new Set(groundIcaos());
+    let best = Infinity;
+    for (const [id, p] of [
+        [r?.dep || pts[0]?.id, pts[0]],
+        [r?.arr || pts.at(-1)?.id, pts.at(-1)]
+      ]) {
+      const k = String(id || '').toUpperCase();
+      if (!p || !ok.has(k)) continue;
+      const q = toC(p.lat, p.lon),
+        d = Math.hypot(q.x - W / 2, q.y - H / 2);
+      if (q.x >= 0 && q.x <= W && q.y >= 0 && q.y <= H && d < best) {
+        best = d;
+        icao = k;
+      }
+    }
+  }
+  if ((b.dataset.ground || '') === icao) return;
+  if (icao) b.dataset.ground = icao;
+  else delete b.dataset.ground;
+  b.hidden = !icao;
+}
+/** Une carte de mission ou le choix sur la carte : pas de bouton de recherche du sol ; rend null (la couche n'est pas dessinée). */
+export function groundBtnHide() {
+  const b = S.groundBtn;
+  if (b && !b.hidden) {
+    delete b.dataset.ground;
+    b.hidden = true;
+  }
+  return null;
+}
 export function groundLayout(toC, zReal, W, H) {
+  groundBtnSync(toC, zReal, W, H);
   if (!groundIcaos().length) { // pas de terrain du vol, ou AeroDB ne sait pas donner le sol : ni couche ni état
     if (S.ground) { // (les touchers et les marques ne gardent pas l'image d'avant : la liste se remplace à la fin de chaque dessin)
       S.ground.hits = [];
@@ -330,6 +377,7 @@ export function groundLayout(toC, zReal, W, H) {
       c.font = '10.5px system-ui, sans-serif';
       c.textBaseline = 'middle';
       const drawn = new Map(),
+        signs = [],
         put = (key, ids, spots, w, hh = 7) => {
           const got = MapsRender.kit.ask(pl, {
             layer: 'points',
@@ -368,8 +416,33 @@ export function groundLayout(toC, zReal, W, H) {
           c.fillText(name, x, y + .5);
           c.textAlign = 'left';
         },
+        // le nom d'un point d'attente : un cartouche rouge à lettres blanches grasses (le panneau des cartes de l'AIP), jamais un texte nu à côté d'un point de 4 px ; le cartouche est gardé dans g.signs
+        // (taille du texte, fond, encre) pour que la mesure du contraste se lise
+        writeHold = (got, name, w) => {
+          const x = (got.x0 + got.x1) / 2,
+            y = (got.y0 + got.y1) / 2;
+          c.fillStyle = HOLD_BG;
+          c.fillRect(x - w / 2, y - HOLD_H / 2, w, HOLD_H);
+          c.lineWidth = 1;
+          c.strokeStyle = HOLD_FG;
+          c.strokeRect(x - w / 2 + .5, y - HOLD_H / 2 + .5, w - 1, HOLD_H - 1);
+          c.fillStyle = HOLD_FG;
+          c.textAlign = 'center';
+          c.fillText(name, x, y + .5);
+          c.textAlign = 'left';
+          return {
+            id: name,
+            fs: HOLD_FONT,
+            w,
+            h: HOLD_H,
+            bg: HOLD_BG,
+            fg: HOLD_FG
+          };
+        },
         len = pts => pts.slice(1).reduce((a, p, k) => a + Math.hypot(p.x - pts[k].x, p.y - pts[k].y), 0);
-      if (pl && at(zReal, Z_NAME)) {
+      if (pl && at(zReal,
+          Z_LINE
+        )) { // le nom d'une voie vient avec son trait (SOG-0297) ; les aires et les attentes sont déjà filtrées par leur zoom (shown), les postes par Z_PARK
         // 1. les aires de trafic, à leur centre
         c.font = 'bold 11.5px system-ui, sans-serif';
         for (const s of shown) {
@@ -408,7 +481,8 @@ export function groundLayout(toC, zReal, W, H) {
           of cand) {
           const name = list[0].it.name,
             w = c.measureText(name).width + 10;
-          if (L < Math.max(60, w * 2.2)) continue;
+          if (L < Math.max(26, w * 1.15))
+            continue; // un nom sur une voie courte est permis (au zoom 13 un trait de 300 m tient 30 px) : jamais une voie nommée sans son nom
           const at3 = [.5, .25, .75].map(f => best.pts[Math.min(best.pts.length - 1, Math.floor((best.pts.length - 1) * f))]);
           if (placed.some(q => q.name === name && at3.some(a => Math.hypot(q.x - a.x, q.y - a.y) < 140))) continue;
           const got = put(`gnd:${grpOf(list[0].it)}`, list.map(s => s.it.id), at3, w, 8);
@@ -422,10 +496,21 @@ export function groundLayout(toC, zReal, W, H) {
           }
         }
         c.font = '10.5px system-ui, sans-serif';
-        // 3. les attentes (au zoom des noms), puis les postes (au zoom des postes)
+        // 3. les attentes (au zoom des noms) en cartouche rouge à lettres blanches, comme le panneau des cartes de l'AIP (SOG-0297 : « K » et « W22 » illisibles) ; puis les postes (au zoom des postes)
         for (const s of shown) {
           const it = s.it;
           if (!it.name || it.kind === 'twy' || it.kind === 'apron' || it.kind !== 'hold' && !at(zReal, Z_PARK)) continue;
+          if (it.kind === 'hold') {
+            c.font = `bold ${HOLD_FONT}px system-ui, sans-serif`;
+            const w = Math.max(HOLD_H, c.measureText(it.name).width + 8),
+              got = put(`gnd:${it.id}`, [it.id], [{
+                x: s.pts[0].x + 7 + w / 2,
+                y: s.pts[0].y
+              }], w, HOLD_H / 2 + 1);
+            if (got) signs.push(writeHold(got, it.name, w));
+            c.font = '10.5px system-ui, sans-serif';
+            continue;
+          }
           const w = c.measureText(it.name).width + 4,
             got = put(`gnd:${it.id}`, [it.id], [{
               x: s.pts[0].x + 4 + w / 2,
@@ -461,6 +546,7 @@ export function groundLayout(toC, zReal, W, H) {
       }
       c.restore();
       g.drawn = drawn;
+      g.signs = signs;
       g.hits = shown.map(s => s.it.kind === 'twy' ? {
         id: s.it.id,
         grp: grpOf(s.it),

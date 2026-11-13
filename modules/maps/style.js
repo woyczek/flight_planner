@@ -92,6 +92,7 @@ export const STYLE = `
 /* la règle de la vue fixe du cadre (display: flex) est sans poids (:where, frame/INTEGRATION.md § 9.2) : pas de !important */
 @media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start;align-content:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100dvh - 90px);overflow:auto}}
 .f-overlay button.f-ov-btn[data-mp]:disabled{opacity:.5;cursor:default}
+.f-overlay button.f-ov-btn[data-mp=ground][hidden]{display:none}
 .f-overlay button.f-ov-btn[data-mp=mode]{color:var(--sog-accent)}
 .f-overlay button.f-ov-btn[data-mp=mode].mp-mil{color:var(--sog-err)}
 .f-overlay button.f-ov-btn[data-mp=mode][aria-expanded=true]{box-shadow:0 0 0 1px var(--sog-accent),0 2px 8px #0000002e}

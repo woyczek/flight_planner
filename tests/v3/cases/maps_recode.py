@@ -3243,7 +3243,7 @@ _GSTAT = """() => { const g = window.__mp.S.ground; if (!g) return null; const r
            names: [...g.drawn.values()].filter(Boolean).length, asked: g.drawn.size } }"""
 
 
-@case('D112', 'Ground layer: only with a flight aerodrome and zoom 13 or more; lines at 13, names at 15, stands at 16; absent without AeroDB’s ground()', 'D',
+@case('D112', 'Ground layer: only with a flight aerodrome and zoom 13 or more; lines and taxiway names at 13, holds at 15, stands at 16; absent without AeroDB’s ground()', 'D',
       tags=('maps',), designs=('standard',), night=False, phone=False,
       rule='V3 spec 10.40 (SOG-0046), cost rule D68: the layer needs a departure or an arrival of the flight and zoom 13 or more (SOG-0195: one level earlier than the first 14); the taxiway lines from 13, their names from 15, the stands and holds (points and names) from 16; never without AeroDb.ground')
 def d112(c):
@@ -3258,10 +3258,10 @@ def d112(c):
     c.ok(st and st['hits'] == 0, f'{st}', 'under zoom 13 nothing is drawn')
     _ground_at(c, 13, 1500)
     st = c.js(_GSTAT)
-    c.ok(st and st['twy'] > 50 and st['pts'] == 0 and st['asked'] == 0, f'{st}', 'at 13: the taxiway lines, no stand, no name')
+    c.ok(st and st['twy'] > 50 and st['pts'] == 0, f'{st}', 'at 13: the taxiway lines (and their names, SOG-0297), no stand')
     _ground_at(c, 14, 1200)
     st = c.js(_GSTAT)
-    c.ok(st and st['twy'] > 50 and st['pts'] == 0 and st['asked'] == 0, f'{st}', 'at 14: the same, still no name')
+    c.ok(st and st['twy'] > 50 and st['pts'] == 0, f'{st}', 'at 14: the same, still no stand')
     _ground_at(c, 15, 1200)
     st = c.js(_GSTAT)
     holds = c.js("() => (window.__mp.S.ground.hits || []).filter(h => h.id && !h.pts && /^hold|^h/.test(String(h.id))).length")
@@ -6660,3 +6660,61 @@ def d_barbedge(c):
             c.ok(r['n'] >= 3 and r['worst'] < 2, f'{vw} px, zoom {z}, centre {cen}: {r}', 'every barb is less than 2 px from the line, near the edge as at the centre')
             if (z, cen) in ((8, [3.6, 50.2]), (8, [0.8, 50.8])):
                 c.shot(f'D195_{c.design}_edge_{vw}_delivered.png')
+
+
+
+@case('D197', 'Ground: a taxiway’s name is shown at the zoom of its line (13), never a named taxiway without its name; the name is a sign the size of the line’s label', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0297 (the user, 13 Nov, on SOG-0203: « les numéros n’apparaissent pas encore au bon niveau de zoom (dès que les TWY apparaissent, les labels avec) »): the lines were drawn from zoom 13 and their names from 15; the names now follow the lines, the sign being allowed on a shorter line')
+def d197(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    _ground_open(c)
+    _ground_at(c, 12, 1200)
+    st = c.js(_GSTAT)
+    c.ok(st and st['hits'] == 0 and st['asked'] == 0, f'{st}', 'under zoom 13 nothing is drawn, no name')
+    for z in (13, 14):
+        _ground_at(c, z, 1500)
+        st = c.js(_GSTAT)
+        c.ok(st and st['twy'] > 50 and st['asked'] > 8 and st['names'] >= 8, f'zoom {z}: {st}', f'at {z} the taxiway lines AND their names (the names come with the lines)')
+    c.shot('D197_standard_names_at_13_delivered.png')
+
+
+
+@case('D198', 'Ground: a holding point is a red sign with white bold letters (the AIP’s), readable where it appears: text of 11 px or more, contrast of 4.5 or more, never a bare text beside a 4 px square', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0297 (the user, 13 Nov: « K et W22 illisibles. ce sont des points d’arrêt, cartouche rouge »): the holds were a 4 px red square and a plain 10.5 px text; measure: size of the text and contrast of its sign')
+def d198(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    _ground_open(c)
+    _ground_at(c, 15, 1500)
+    r = c.js("""() => { const g = window.__mp.S.ground, signs = g.signs || [];
+      const lum = h => { const v = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4)); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2] };
+      const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05) };
+      return { n: signs.length, minFs: Math.min(...signs.map(s => s.fs)), minH: Math.min(...signs.map(s => s.h)), minW: Math.min(...signs.map(s => s.w)), minContrast: Math.round(Math.min(...signs.map(s => cr(s.bg, s.fg))) * 100) / 100,
+        red: signs.every(s => /^#c8/i.test(s.bg)) } }""")
+    c.ok(r['n'] >= 3, f'{r}', 'the holding points are drawn as signs at zoom 15')
+    c.ok(r['minFs'] >= 11 and r['minH'] >= 15 and r['minW'] >= 15, f'{r}', 'the text is 11 px or more, the sign 15 px or more each way (« K » is not a speck)')
+    c.ok(r['minContrast'] >= 4.5 and r['red'], f'{r}', 'white letters on red, a contrast of 4.5 or more')
+    c.shot('D198_standard_hold_signs_15_delivered.png')
+
+
+
+@case('D199', 'The Map has a button for the ground search: a « search » button in the map’s column appears when the view shows the flight’s departure or arrival (zoom 11 or more) and the ground can be read, and opens the Ground panel with its filter field; nothing when the view shows neither', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False, langs4=True,
+      rule='SOG-0297 (the user, 13 Nov: « j’ai perdu le bouton recherche, pour les twy / parking. où est-il ? sur la carte ? »): the search is the filter of the Ground panel, reached only through the « Ground » button of the aerodrome card; it did not move, nothing on the map said it exists; the button is now on the map')
+def d199(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    _ground_open(c)
+    vis = "() => { const b = document.querySelector('[data-mp=ground]'); return !!b && !b.hidden && b.offsetParent !== null }"
+    _ground_at(c, 5, 1200)
+    c.eq(c.js(vis), False, 'a world view: no button', what='button at zoom 5')
+    _ground_at(c, 12, 1500)
+    c.until(vis, timeout=6000, what='the view shows the departure: the button is there')
+    lab = c.js("() => document.querySelector('[data-mp=ground]').getAttribute('aria-label')")
+    c.eq(norm(lab), norm(tx(M, 'gSearch', c.lang)), 'it says what it is for, in the language of the run', what='label')
+    c.tap('[data-mp=ground]')
+    c.until("() => window.__mp.S.dpanel === 'ground'", timeout=6000, what='the Ground panel opens')
+    c.ok(c.js("() => !!document.querySelector('.mp-gd-q')"), '', 'with its filter field')
+    c.shot(f'D199_standard_ground_button_{c.lang}_delivered.png')
+    _ground_at(c, 12, 900, [8.0, 40.0])
+    c.until("() => { const b = document.querySelector('[data-mp=ground]'); return !b || b.hidden || b.offsetParent === null }", timeout=6000, what='a view of neither end: no button')
