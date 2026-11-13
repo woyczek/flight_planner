@@ -2896,3 +2896,50 @@ def i42(c):
     links = (root / 'frame' / 'settings' / 'admin_links.js').read_text(encoding='utf-8')
     c.ok("id: 'primitives'" not in links, '', 'the Administration card no longer links the primitives page')
 
+
+@case('K231', 'The root of the published site sends to the V3 app (v3/frame/), and nothing else moves: a V2 deep address still answers, /v3/ is untouched, the workflow gains ONE step (SOG-0278, Q-0039)', 'K', static=True,
+      rule='SOG-0278 / Q-0039 (the user, 13 Nov: « La racine renvoie vers /v3/ ; la V3 garde son adresse ; les pages V2 gardent les leurs »; the ergonomist: the narrowest form, the root goes straight to v3/frame/ where the app is, /v3/ is not touched): `build_pages.py --root-only _site --start v3/frame/` writes ONLY _site/index.html — a redirect page (meta refresh, a visible fallback link, the page\'s own script that keeps the query and the anchor, no third-party script or resource, relative address so the site may be served under a prefix, the CSP meta) — and erases nothing; a start that is not in the built site, or not a plain relative folder, is refused; .github/workflows/pages.yml gains one step after the two builds and keeps its triggers, permissions and steps')
+def k231(c):
+    import hashlib
+    import tempfile
+    script = c.root / 'tools' / 'build_pages.py'
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        site = Path(td) / '_site'
+        files = {'index.html': b'<html>the V2 home</html>', 'apps/pilot/mes_missions.html': b'<html>V2 deep page</html>', 'manifest.webmanifest': b'{}', 'sw.js': b'//sw',
+                 'v3/index.html': b'<html>old menu</html>', 'v3/frame/index.html': b'<html>the V3 app</html>', 'v3/frame/manifest.webmanifest': b'{}'}
+        for rel, body in files.items():
+            (site / rel).parent.mkdir(parents=True, exist_ok=True)
+            (site / rel).write_bytes(body)
+        digest = lambda: {str(p.relative_to(site)).replace(os.sep, '/'): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(site.rglob('*')) if p.is_file()}
+        before = digest()
+        run = lambda *a: subprocess.run([sys.executable, str(script), *a], capture_output=True, text=True, encoding='utf-8', cwd=td)
+        r = run('--root-only', str(site), '--start', 'v3/frame/')
+        c.ok(r.returncode == 0, ((r.stdout or '') + (r.stderr or ''))[-200:], 'the root mode runs')
+        after = digest()
+        changed = sorted(k for k in after if after[k] != before.get(k))
+        c.eq(changed, ['index.html'], 'only the root index.html is written: every other file is byte for byte what it was, nothing added, nothing erased', what='changed')
+        c.eq(sorted(set(before) - set(after)), [], 'nothing erased', what='erased')
+        root = (site / 'index.html').read_text(encoding='utf-8')
+        c.ok('http-equiv="refresh" content="0; url=v3/frame/"' in root and '<a href="v3/frame/">' in root, root[:300], 'the root sends to v3/frame/ (meta refresh) and shows a fallback link')
+        c.ok('location.replace("v3/frame/" + location.search + location.hash)' in root, root[:400], 'the query and the anchor are kept')
+        c.ok('Content-Security-Policy' in root, '', 'the page carries the CSP meta like every page of the site')
+        body_wo_csp = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]*>', '', root)
+        c.ok(not re.search(r'<script[^>]*\ssrc=|<link|<img|<iframe|https?://', body_wo_csp), body_wo_csp[:300], 'no third-party script or resource, no absolute address (the site may be served under a prefix)')
+        c.eq((site / 'apps/pilot/mes_missions.html').read_bytes(), files['apps/pilot/mes_missions.html'], 'a deep V2 address still answers, unchanged', what='V2 deep')
+        c.eq((site / 'v3/index.html').read_bytes(), files['v3/index.html'], '/v3/ is untouched', what='v3 untouched')
+        # refusals: a start the site does not hold, a path that leaves the site or is not relative
+        for bad in ('v3/nowhere/', '../x/', '/etc/', 'v3/frame/../../x', 'a b', ''):
+            r = run('--root-only', str(site), '--start', bad)
+            c.ok(r.returncode != 0 and digest() == after, (bad, r.returncode, (r.stderr or '')[-120:]), f'a start {bad!r} is refused and nothing is written')
+        r = run('--root-only', str(site))
+        c.ok(r.returncode != 0 and digest() == after, (r.stderr or '')[-120:], 'the root mode without --start is refused')
+    # the workflow: ONE step more, after the two builds; triggers, permissions and the other steps are as they were
+    wf = (c.root / '.github' / 'workflows' / 'pages.yml').read_text(encoding='utf-8')
+    steps = re.findall(r'^      - (?:name|uses|id): (.*)$', wf, re.M)
+    c.eq(wf.count('--root-only'), 1, 'the workflow runs the root mode once', what='root-only count')
+    i2, i3, ir = wf.index('python v2/tools/build_pages.py _site'), wf.index('python v3/tools/build_pages.py _site/v3'), wf.index('python v3/tools/build_pages.py --root-only _site --start v3/frame/')
+    c.ok(i2 < i3 < ir, [i2, i3, ir], 'the root step comes after the two builds (the V2 build empties its folder)')
+    c.ok("branches: [develop, v3]" in wf and "cron: '25 4,10,16,22 * * *'" in wf and 'workflow_dispatch:' in wf and 'pages: write' in wf and 'id-token: write' in wf and 'contents: read' in wf,
+         '', 'triggers and permissions are as they were')
+    c.ok(not re.search(r'\brm\b|rmtree|--force|\bcurl\b|\bwget\b|secrets\.', wf), '', 'no deletion, download or secret in the workflow')
+    c.ok(steps.count("Racine du site → l'appli V3 (SOG-0278)") == 1, steps, 'the step is named')

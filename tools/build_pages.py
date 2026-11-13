@@ -17,7 +17,14 @@ Page de départ (--start chemin, enveloppe Capacitor de mobile/ : l'appli ouvre 
 d'accueil du site est remplacée par un renvoi vers ce chemin (par ex. frame/index.html, l'appli Pilote de la V3),
 adresse et ancre gardées ; le chemin doit faire partie du site construit.
 
+Racine du site publié (--root-only, SOG-0278 / Q-0039) : le site porte deux versions (V2 à la racine, V3 sous /v3/ ;
+.github/workflows/pages.yml) ; `--root-only _site --start v3/frame/` n'écrit QUE _site/index.html : un renvoi vers
+l'appli V3 (page minimale : meta refresh, lien de secours visible, adresse et ancre gardées, aucun script tiers),
+sans rien construire ni effacer — les pages V2 (apps/…), les manifestes, le service worker et /v3/ gardent leurs
+adresses. Le chemin (un dossier : son index.html) doit faire partie du site déjà construit.
+
 Usage : python tools/build_pages.py _site [--start frame/index.html]
+        python tools/build_pages.py --root-only _site --start v3/frame/
 """
 import json
 import os
@@ -60,16 +67,42 @@ def start_page(out, start, meta):
     print(f'page de départ : {start}')
 
 
+def csp_meta():
+    """La balise meta de la politique de sécurité des pages (avant tout script) : liste fixe, adresses de la configuration
+    et hôtes que les bibliothèques des modules V3 appellent elles-mêmes (meta.net)."""
+    with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
+        policy = csp_policy.value([*csp_policy.config_sites(f.read()), *csp_policy.module_hosts(ROOT)], meta=True)
+    return f'<meta http-equiv="Content-Security-Policy" content="{policy}">'.encode()
+
+
+def root_only(out, start):
+    """SOG-0278 : écrit SEUL le index.html de la racine du site déjà construit, un renvoi vers `start` (un dossier du site,
+    avec son index.html, relatif à la racine : le site peut être servi sous un préfixe, jamais d'adresse absolue) ; rien
+    n'est effacé ni reconstruit. Page minimale : meta refresh, lien de secours visible, script de la page seul (il garde
+    la recherche et l'ancre de l'adresse), aucun script ni ressource tiers."""
+    out = os.path.abspath(out)
+    start = start.strip('/')
+    if not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_./-]*', start) or '..' in start.split('/'):
+        sys.exit(f'--root-only : chemin de départ invalide : {start!r}')
+    if not os.path.isfile(os.path.join(out, *start.split('/'), 'index.html')):
+        sys.exit(f'--root-only : le site construit ne contient pas {start}/index.html')
+    href = f'{start}/'
+    page = (f'<!doctype html><html lang="fr"><head><meta charset="utf-8">'
+            f'<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+            f'<meta http-equiv="refresh" content="0; url={href}"><title>SOG</title>'
+            f'<script>location.replace({json.dumps(href)} + location.search + location.hash)</script></head>'
+            f'<body><p><a href="{href}">Ouvrir la suite · Open the suite</a></p></body></html>\n').encode()
+    with open(os.path.join(out, 'index.html'), 'wb') as f:
+        f.write(with_csp(page, csp_meta()))
+    print(f'racine : renvoi vers {href}')
+
+
 def main(out, start=''):
     out = os.path.abspath(out)
     if os.path.isdir(out):
         shutil.rmtree(out)
     files = [f for f in git('ls-files', '-z').split('\0') if f and not f.startswith(SKIP)]
-    # politique de sécurité des pages (balise meta, avant tout script) : liste fixe, adresses de la configuration et
-    # hôtes que les bibliothèques des modules V3 appellent elles-mêmes (meta.net)
-    with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
-        policy = csp_policy.value([*csp_policy.config_sites(f.read()), *csp_policy.module_hosts(ROOT)], meta=True)
-    meta = f'<meta http-equiv="Content-Security-Policy" content="{policy}">'.encode()
+    meta = csp_meta()
     pointers = []
     for rel in files:
         src = os.path.join(ROOT, rel)
@@ -109,6 +142,9 @@ def main(out, start=''):
 
 if __name__ == '__main__':
     args = sys.argv[1:]
+    only = '--root-only' in args
+    if only:
+        args.remove('--root-only')
     start = ''
     if '--start' in args:
         i = args.index('--start')
@@ -116,4 +152,9 @@ if __name__ == '__main__':
         del args[i:i + 2]
         if not start:
             sys.exit('--start : chemin de la page de départ attendu (ex. frame/index.html)')
-    main(args[0] if args else '_site', start)
+    if only:
+        if not start:
+            sys.exit('--root-only : --start v3/frame/ attendu (le dossier du site où renvoyer la racine)')
+        root_only(args[0] if args else '_site', start)
+    else:
+        main(args[0] if args else '_site', start)

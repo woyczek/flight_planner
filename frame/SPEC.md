@@ -860,6 +860,13 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 - **Start page** (`tools/build_pages.py --start frame/index.html`): the root `index.html` of the built site becomes a
   redirect to that path, query and anchor kept; the path must be part of the site. It is for the Capacitor shell,
   which opens `index.html` at the root.
+- **Root of the site** (`tools/build_pages.py --root-only _site --start v3/frame/`, SOG-0278 / Q-0039): the root of
+  the published site sends to the V3 application. The mode writes ONLY `_site/index.html` (a redirect: meta refresh, a
+  visible fallback link, the page's own script that keeps the query and the anchor, a relative address, the CSP meta),
+  erases and builds nothing; `pages.yml` runs it as one step after the two builds (the V2 build empties its folder).
+  The V2 pages (`apps/…`, their deep links), the manifests, the service worker, `/v3/` (the old menu of the v3 branch)
+  and `/v3/frame/` keep their addresses; the V2 home itself is no longer served (the V2 pages stay open from « Old pages
+  (V2) », K208). Case K231.
 - **Capacitor shell** (`mobile/`): name "SOG Pilote", same app id, opening on the Pilot application. It runs without a
   launcher and without a service worker (no http(s) origin); data go through the `github` transport.
   `.github/workflows/ios.yml` is paused and unchanged: when it resumes, it needs `--start frame/index.html` and the v3
