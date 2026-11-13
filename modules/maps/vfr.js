@@ -44,16 +44,76 @@ import {
 // toujours en tirets et marqués « à vérifier », jamais un itinéraire publié ni un sens de parcours.
 // séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor), couleur de la palette de la Carte
 const vfrCol = () => MapsRender.palette(!!S.theme?.dark).vfr;
+/** Le rayon d'un toucher sur un terrain : 22 px, une zone de 44 px de large (une cible de doigt), à tout zoom (SOG-0310). */
+export const TAP_R = 22;
 /** Terrain dessiné sous (x, y), à 22 px près (une cible de doigt) ; null sinon. */
 export function adAt(x, y) {
   let best = null,
-    bd = 22;
+    bd = TAP_R;
   for (const h of S.adHits || []) {
     const d = Math.hypot(h.x - x, h.y - y);
     if (d <= bd && h.a?.icao) {
       bd = d;
       best = h.a;
     }
+  }
+  return best;
+}
+/** Position à l'écran (vue de la carte) d'un point (lat, lon), sur la copie du monde la plus proche du centre ; null sans carte. */
+function viewPt(lat, lon) {
+  if (!S.map || !Number.isFinite(+lat) || !Number.isFinite(+lon)) return null;
+  const ro = 360 * Math.round((S.map.getCenter().lng - +lon) / 360);
+  return S.map.project([+lon + ro, +lat]);
+}
+/** Le départ et l'arrivée du vol touchés en (x, y), à TAP_R près : { icao, lat, lon, name } du plus proche ; null sinon. Ils passent avant tout autre objet sous
+ *  le doigt (SOG-0310 : « toucher le terrain » ne doit pas demander un doigt précis), qu'ils soient dessinés comme terrains ou seulement comme extrémités de la route. */
+export function endAt(x, y) {
+  const r = S.route?.flight?.route,
+    pts = S.route?.points || [];
+  let best = null,
+    bd = TAP_R;
+  for (const id of new Set([r?.dep || pts[0]?.id, r?.arr || pts.at(-1)?.id].map(k => String(k || '').toUpperCase()).filter(k =>
+      /^[A-Z0-9]{4}$/.test(k)))) {
+    const at = adPos(id),
+      p = at && viewPt(at.lat, at.lon),
+      d = p ? Math.hypot(p.x - x, p.y - y) : Infinity;
+    if (d <= bd) {
+      bd = d;
+      best = {
+        icao: id,
+        ...at
+      };
+    }
+  }
+  return best;
+}
+/** Le terrain dont l'emprise est touchée en (x, y) : le cadre de ses seuils de piste et, quand son sol est dessiné, de ses voies et de ses postes, élargi de TAP_R ;
+ *  au zoom du sol, toucher n'importe où dans le terrain ouvre sa fiche (SOG-0310), les traits du sol touchés gardant leur ligne dans le panneau. Le plus petit cadre
+ *  si plusieurs ; { icao, lat, lon, name } ou null. */
+export function fieldAt(x, y) {
+  if (!S.map || !(S.runways instanceof Map)) return null;
+  let best = null,
+    ba = Infinity;
+  for (const [icao, list] of S.runways) {
+    const pts = (list || []).map(r => viewPt(r?.lat, r?.lon)).filter(Boolean);
+    if (S.ground?.icao === icao)
+      for (const h of S.ground.hits || []) pts.push(...(h.pts || [h]).filter(q => Number.isFinite(q?.x) && Number.isFinite(q?.y)));
+    if (!pts.length) continue;
+    const x0 = Math.min(...pts.map(q => q.x)) - TAP_R,
+      x1 = Math.max(...pts.map(q => q.x)) + TAP_R,
+      y0 = Math.min(...pts.map(q => q.y)) - TAP_R,
+      y1 = Math.max(...pts.map(q => q.y)) + TAP_R;
+    if (x < x0 || x > x1 || y < y0 || y > y1 || (x1 - x0) * (y1 - y0) >= ba) continue;
+    const at = adPos(icao) || {
+      lat: list.reduce((s, r) => s + +r.lat, 0) / list.length,
+      lon: list.reduce((s, r) => s + +r.lon, 0) / list.length,
+      name: ''
+    };
+    ba = (x1 - x0) * (y1 - y0);
+    best = {
+      icao,
+      ...at
+    };
   }
   return best;
 }

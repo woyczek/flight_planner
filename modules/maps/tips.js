@@ -56,6 +56,8 @@ import {
 import {
   adAt,
   adHover,
+  endAt,
+  fieldAt,
   pinAd,
   previewAd,
   vrpTap
@@ -293,11 +295,14 @@ export function tapAt(x, y, lat, lon) {
   if (!S.modeOpts.hidden) return toggleModes(false);
   closeLv();
   if (S.edit.on) return got('edit')?.editTap(x, y);
+  // le départ et l'arrivée du vol avant tout autre objet sous le doigt (une zone de 44 px) : « toucher le terrain » ne demande pas un doigt précis (SOG-0310)
+  const end = onMission() ? null : endAt(x, y);
+  if (end) return pinAd(end);
   if (!onMission() && vrpTap(x, y)) return;
   if (altsTap(x, y)) return; // un tracé proposé par Carburant touché : « Prendre » (SOG-0134 a)
   if (!onMission() && navTap(x, y)) return; // une balise ou un point de voie : sa fiche, avec « Direct vers ce point » (SOG-0088)
   if (!onMission() && groundTap(x, y)) return; // un trait ou un point du sol touché : sa ligne dans le panneau (§ 10.40)
-  const ad = onMission() ? null : adAt(x, y);
+  const ad = onMission() ? null : adAt(x, y) || fieldAt(x, y); // le terrain : son point, ou n'importe où dans son emprise (au zoom du sol)
   if (ad) return pinAd(ad);
   if (!S.cardEl.hidden) return hideTips();
   if (tipAt(x, y, null, null, true)) return mapTip(lat, lon, x, y);

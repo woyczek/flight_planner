@@ -1377,7 +1377,10 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
   within 12 px. Tap targets (22 px): first a reporting point (the highlighted ones, then those of the VRP layer: the
   aerodrome of their prefix within 30 NM, else the nearest within 5 NM), when nearer than an aerodrome — its aerodrome is
   pinned, the point first and in bold in the list; a VRP without aerodrome gives its own tooltip (code, name); then an
-  aerodrome. Both before the tooltips and the airspaces list.
+  aerodrome. Both before the tooltips and the airspaces list. **SOG-0310** — the touch zone of an aerodrome is `TAP_R` = 22 px (44 px across) at any
+  zoom; the flight's **departure and arrival come first** of all (`endAt`, before the reporting points, the proposed routes, the navaids and the ground lines: drawn as aerodromes or only as the
+  ends of the route); at the ground zoom a touch **anywhere in the footprint** of an aerodrome opens its card (`fieldAt`: the box of its runway thresholds and, when its ground is drawn, of its taxiways
+  and stands, widened by `TAP_R`; the smallest box if several), after the ground lines (a taxiway or a stand touched keeps its row in the ground panel).
 - **Hover** (mouse; barb, airway box and airspace label first): preview of the aerodrome's points and sequences, tooltip
   "LFMN NICE COTE D'AZUR · 21 reporting points · 5 VAC sequences: tap to see them", or "… · VAC sequences: not imported".
 - **Tap or click** (not in Edit mode, not on a mission map): the aerodrome is pinned; when its points span less than 160 px

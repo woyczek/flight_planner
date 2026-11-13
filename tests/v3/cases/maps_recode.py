@@ -6943,3 +6943,40 @@ def d207(c):
         before = [r[1] for r in z['h'] if 200 < r[0] < mark]
         c.ok(before and max(before) - min(before) == 0, str(before[-5:]), f'{w}: the Layers sheet keeps its height without a gesture')
         c.shot(f'D207_standard_sheet_{w}_delivered.png')
+
+
+
+_TAP_AT_JS = """async ([dx, dy]) => { const S = window.__mp.S, V = await import('/modules/maps/vfr.js'), T = await import('/modules/maps/tips.js'), p = S.map.project([2.3794, 48.7233]);
+  V.unpinAd(); S.vfrPin = null; T.tapAt(p.x + dx, p.y + dy, 48.7233, 2.3794); await new Promise(r => setTimeout(r, 150)); const pin = S.vfrPin || null; V.unpinAd(); return pin }"""
+
+
+@case('D208', 'Touching the flight’s aerodrome without aiming: its touch zone is 44 px across at any zoom (21 px from its mark opens it, 30 px does not), the departure and the arrival come before any other object under the finger (a navaid 8 px away does not take the touch), and at the ground zoom a touch anywhere in the field’s footprint opens its card', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0310 (the user, 13 Nov: « « toucher le terrain » : il faut des doigts sacrément précis. trouver une solution »; the ergonomist: the zone is at least 44 px at any zoom, the departure and the arrival come before any other object, at the ground zoom any touch in the footprint opens the field): the order of the touches put the points, the navaids and the ground lines before the aerodrome; at the ground zoom the field was a 44 px disc on a map of a kilometre')
+def d208(c):
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    _ground_open(c)
+    c.js("""() => { const S = window.__mp.S; S.runways.set('LFPO', [{ id: '02', lat: 48.7167, lon: 2.3665, qfu: 20 }, { id: '20', lat: 48.7302, lon: 2.3733, qfu: 200 }]); return true }""")
+    # 1. the zone, at three zooms: inside at 21 px (a diagonal), outside at 30 px
+    for z in (7, 10, 13):
+        _ground_at(c, z, 1500)
+        c.eq(c.js(_TAP_AT_JS, [15, 15]), 'LFPO', f'zoom {z}: a touch 21 px from the mark opens the departure', what='inside')
+        c.eq(c.js(_TAP_AT_JS, [30, 0]), None, f'zoom {z}: a touch 30 px away does not (a zone of 44 px across, not a field of the map)', what='outside')
+    # 2. the departure and the arrival come before any other object under the finger: a navaid 8 px from the mark
+    _ground_at(c, 10, 1500)
+    r = c.js("""async () => { const S = window.__mp.S, V = await import('/modules/maps/vfr.js'), T = await import('/modules/maps/tips.js'), p = S.map.project([2.3794, 48.7233]);
+      V.unpinAd(); S.vfrPin = null; S.navHits = [{ x: p.x + 8, y: p.y, n: { id: 'ZZZ9', lat: 48.7233, lon: 2.39, name: 'bench' } }]; S.vrpHits = [{ x: p.x - 8, y: p.y, v: { id: 'ZZ-1' }, p: { id: 'ZZ-1' } }];
+      T.tapAt(p.x, p.y, 48.7233, 2.3794); await new Promise(r => setTimeout(r, 150)); return { pin: S.vfrPin || null, card: !S.cardEl.hidden } }""")
+    c.eq(r, {'pin': 'LFPO', 'card': False}, 'a navaid and a reporting point 8 px away do not take the touch: the departure opens, no navaid card', what='order')
+    # 3. at the ground zoom: any touch in the footprint of the field, on a place with no taxiway, stand or hold, opens its card
+    _ground_at(c, 15, 1800, where=(2.3699, 48.7234))   # centred on the runways: the footprint is in view
+    pt = c.js("""async () => { const S = window.__mp.S, G = await import('/modules/maps/ground.js'), m = S.map, box = m.getContainer().getBoundingClientRect(), ref = m.project([2.3794, 48.7233]),
+      px = S.runways.get('LFPO').map(r => m.project([r.lon, r.lat])), x0 = Math.min(...px.map(q => q.x)), x1 = Math.max(...px.map(q => q.x)), y0 = Math.min(...px.map(q => q.y)), y1 = Math.max(...px.map(q => q.y));
+      for (let y = Math.max(40, y0 + 6); y < Math.min(box.height - 40, y1); y += 8) for (let x = Math.max(24, x0 + 4); x < Math.min(box.width - 24, x1); x += 8)
+        if (!G.groundAt(x, y) && Math.hypot(x - ref.x, y - ref.y) > 60) return { x: box.left + x, y: box.top + y };
+      return null }""")
+    c.ok(pt is not None, str(pt), 'the bench has a place in the footprint with nothing to take the touch')
+    c.eq(c.js("async () => { (await import('/modules/maps/vfr.js')).unpinAd(); window.__mp.S.vfrPin = null; return [window.__mp.S.vfrPin || null, window.__mp.S.dpanel || null] }"), [None, None], 'nothing opened before the touch', what='before')
+    c.page.mouse.click(pt['x'], pt['y'])
+    c.until("() => window.__mp.S.vfrPin === 'LFPO' && window.__mp.S.dpanel === 'ad'", timeout=4000, what='a touch in the footprint, far from the mark and from any line, opens the card of the field')
+    c.shot('D208_standard_ground_footprint_390_delivered.png')
