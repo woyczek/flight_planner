@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "108c990",
+  "organisation": "3b1f7ad",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -2345,11 +2345,12 @@
     {
      "id": "SOG-0313",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Flotte : à la création d'un aéronef, un ombrage reste sur la saisie du type OACI, et la liste n'est pas rafraîchie au retour",
      "en": "Fleet: when creating an aircraft, a shadow stays on the ICAO type field and the list is not refreshed",
      "de": "Flotte: beim Anlegen bleibt ein Schatten auf dem ICAO-Typfeld und die Liste wird nicht aktualisiert",
-     "es": "Flota: al crear una aeronave queda una sombra en el campo del tipo OACI y la lista no se refresca"
+     "es": "Flota: al crear una aeronave queda una sombra en el campo del tipo OACI y la lista no se refresca",
+     "test": true
     },
     {
      "id": "SOG-0314",

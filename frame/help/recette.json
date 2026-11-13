@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 185,
+  "tests": 186,
   "verdicts": 123
  },
  "apps": [
@@ -2724,6 +2724,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:50:06Z"
+  },
+  {
+   "id": "SOG-0313",
+   "app": "compagnie",
+   "title": {
+    "fr": "Flotte : à la création d'un aéronef, un ombrage reste sur la saisie du type OACI, et la liste n'est pas rafraîchie au retour",
+    "en": "Fleet: when creating an aircraft, a shadow stays on the ICAO type field and the list is not refreshed",
+    "de": "Flotte: beim Anlegen bleibt ein Schatten auf dem ICAO-Typfeld und die Liste wird nicht aktualisiert",
+    "es": "Flota: al crear una aeronave queda una sombra en el campo del tipo OACI y la lista no se refresca"
+   },
+   "test": "Recharge la page. Compagnie › aéronefs : tape une immatriculation sans tiret (« fbhhh »), « Créer » ; enregistre : de retour sur la liste, l'aéronef est là tout de suite. Dans la fiche, choisis un type OACI dans la liste : une fois la liste refermée, aucun cadre ni ombre ne reste sous le champ.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T12:54:26Z"
   },
   {
    "id": "SOG-0315",
