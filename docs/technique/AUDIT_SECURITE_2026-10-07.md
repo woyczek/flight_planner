@@ -1035,6 +1035,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 183 | The V2 registry, group B continued: the reports under a former number (a78fa30b0), “Compare with the folder” / “Store in the folder” / “Keep the file” (ec6c6ee02, SOG-0293 c), the texts received in a batch kept per mission (d46aee7c1, SOG-0294) | acceptable; one defect proved (the comparison of a served file with aliases), three notes |
 | 184 | The fix of the defect of 181 (337e3c177: header of an exported or stored YAML, names in the archive) and the comparison extended to the shared mission and the draft of the generator (22dbe6d04, SOG-0293 c) | fix verified, defect closed; extension acceptable |
 | 185 | The fix of the defect of 183 (b8e3048ef: `loadYaml`, a budget of expanded nodes, one `try` per item, the three notes) and the button emphasis of the comparison (d140b1358) | fix verified, defect closed; one note |
+| 186 | The fix of 182 (ef0772f71) and the V3 editor's places and story steps (6dc8740f5, ce72c9c25, 923807228); the V2 comparison's header and criteria (cc8dfc3b1) | defects 1 and 2 of 182 closed for the editor; two defects proved (a single-object rendezvous is deleted; the registry's own dump is not guarded) |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2817,6 +2818,36 @@ text and per mission. K225 (the eleven-level file under a mission with a snapsho
 current file, two calls). They all run on a click or on the opening of one mission's detail, not at the opening of the page, and none writes; use `loadYaml`
 there too (a one-word change) so that a file with aliases is refused everywhere the same way. The pasted texts read by `receivedIds` are
 only asked for `mission.id`, so they do not walk the tree.
+
+**186. The fix of 182, the places and story steps — the editor's two defects closed; two defects proved.** *Fix (ef0772f71).* `withCadre`, `withTeams`, `withPlaces` and
+`withStory` now compare the form with what the file shows and write only the fields that differ: an unchanged entry stays the very object of
+the file, the entries past the bounds are kept as they are at the end, and “Nothing to save” writes nothing. The counter-test of defect 1 of 182
+passes on the probe (47 teams, one with only other keys, one with a 300-character role): `withTeams(doc, teamsOf(doc))` is identical to the
+file's `teams`; editing one team and removing another gives 46 entries, the entry without the four fields and the 47th are kept, and the extra
+key of a kept team is kept. `shapeOf` refuses at opening a document in which an object appears twice (an anchor) or that has more than 100,000
+nodes, with an iterative walk (no recursion, a `Set`), so that the 20-level file of the probe is refused in 183 ms; N54 holds the counter-test
+without `shapeOf`. Defect 2 of 182 is closed **for the editor**. *Places and story (6dc8740f5, ce72c9c25).* Positions go through `coord()`
+(a number in range, rounded to six decimals; empty or out of range gives `null`, probed: latitude 95 gives `null`), radius, time and load through
+`positive()`, texts through `cut` and `para`, 60 places per kind, 20 objectives; a place keeps its other keys (a zone keeps its polygon, its custom
+key, a turning point its `hold`) and an unchanged form gives the file back identical (probed). Every value of the forms goes through `esc`, the
+kinds are the constants of `placesOf`, a zone kind outside the three known ones is shown as it is, escaped. N50 to N54 green. 923807228 is style and
+three constant labels. cc8dfc3b1: the date comes from `Date.parse` of the `Last-Modified` header of the same-origin answer, a number, shown through
+`esc`. **Defect 1 (proved): editing Lieux deletes a single-object rendezvous.** The reader accepts `rendezvous` as one object (`d.rendezvous ?
+[d.rendezvous] : []`), `placesOf` lists only arrays, and `withPlaces` runs `rebuild` for every kind at every edit: for `rendezvous` the file's
+value is not an array, so `before` is empty, the rebuilt list is empty and `delete out[key]` removes it. Probed: a file with `rendezvous:
+{ id: R1, … }` and the edit of the target's latitude alone comes back without `rendezvous`; the same for a `zones` or `turning_points` that is not
+a list. It is the same family as defect 1 of 182 (what the form does not show is lost), on a shape the reader tolerates. **Fix and
+counter-test.** In `rebuild`, when the file's value is not an array and no row of the kind exists, leave the key as it is; when rows of the kind
+exist beside a non-array value, wrap an object as one entry. Counter-test (red now): `withPlaces(doc, placesOf(doc))` with the target's
+latitude changed leaves a single-object `rendezvous` equal to the file's. **Defect 2 (proved): only the editor's reading is guarded; the registry's
+own dump is not.** `registry.js` (`withHeader`, line 184, used for every write of the registry), `add.js` (line 112, the size tested after the dump)
+and `move.js` (line 75) call `Y.dump(doc, { noRefs: true })` on documents that come from the data repository or from a text the pilot pastes. A
+333-byte registry file of nine nested levels (`missions: []` plus the anchors) goes through `withHeader` in 6.4 s and 88,546,570 characters.
+Any pilot can write the registry file, and every “Save” of the editor, every correction and every update of the registry rewrites it, so one such
+file freezes the writes of whoever next saves. **Fix.** `shapeOf` (or the V2's `loadYaml`) at the moment the registry is read in `yamlFile`
+(refuse the document and say so, as the editor does), and in `add.js` and `move.js` before their dump; counter-test: the nine-level registry above is
+refused in under a second and no write is attempted. **Note.** A legitimate anchor in a mission file is now refused with a message (the rewrite would
+expand it): the right trade, but the message should say how to remove it (write the repeated object out).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
