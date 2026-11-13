@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Réglages rangés par fréquence d'usage (maquette, SOG-0320)</title>
+<style>
+:root{
+  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa;
+  --ok:#1a7f37; --warn:#7d4e00; --warn-bg:#fff4d1; --warn-line:#d4a72c; --bad:#b42318;
+  --accent:#0b5cad; --accent-bg:#eaf2fb;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#fff;color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.mock{background:var(--soft);border-bottom:1px solid var(--line);font-size:13px;color:var(--muted);padding:8px 16px}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 56px}
+h1{font-size:24px;line-height:1.2;margin:18px 0 2px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+.card{border:1px solid var(--line);background:#fff;padding:12px 14px;margin:0 0 12px}
+.card h2{font-size:15px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.line{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.line:first-of-type{border-top:0}
+.dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:7px;background:var(--line)}
+.dot.w{background:#b8860b}
+.dot.ok{background:var(--ok)}
+.small{color:var(--muted);font-size:13px}
+.radios label{display:flex;gap:10px;align-items:center;min-height:44px;border-top:1px solid var(--line)}
+.radios label:first-child{border-top:0}
+.radios code{font:13px ui-monospace,Consolas,monospace;color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border:1px solid var(--line);background:#fff;margin:0 0 8px;font-weight:600;text-decoration:none;color:var(--ink)}
+.row .hint{font-weight:400;color:var(--muted);font-size:13px;margin-left:auto;text-align:right}
+.row i{flex:none;width:9px;height:9px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(-45deg);margin-left:6px}
+details.fold{border:1px solid var(--line);background:#fff;margin:0 0 8px}
+details.fold>summary{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;cursor:pointer;font-weight:600;list-style:none}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary .hint{font-weight:400;color:var(--muted);font-size:13px;margin-left:auto;text-align:right}
+details.fold>summary i{flex:none;width:9px;height:9px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg);margin:-4px 0 0 6px}
+details.fold[open]>summary i{transform:rotate(225deg);margin-top:4px}
+details.fold>.body{padding:6px 14px 12px;border-top:1px dashed var(--line);font-size:15px}
+.group{margin:18px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.sw{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.sw span{border:1px solid var(--line);padding:6px 10px;font-size:14px}
+.sw span.on{background:var(--accent-bg);border-color:var(--accent);font-weight:600}
+.attn{display:inline-block;width:9px;height:9px;border-radius:50%;background:#b8860b}
+.legend{font-size:13px;color:var(--muted);border-left:4px solid var(--accent);padding:6px 10px;margin:0 0 16px;background:var(--accent-bg)}
+</style>
+</head>
+<body>
+<div class="mock"><b>Maquette</b> — rien n'est réel. Le même écran dans les trois applications ; sous 700 px comme au-delà (une colonne).</div>
+<div class="wrap">
+<h1>Réglages</h1>
+<p class="sub">Réglages de cet appareil, gardés ici seulement.</p>
+<p class="legend"><b>Ce qui change :</b> ce qu'on regarde tout le temps est ouvert en haut ; ce qui sert parfois est replié (toute la ligne ouvre, un seul geste) ; ce qui ne sert qu'une fois est rangé tout en bas ; Administration est une page, pas un pli ; plus de vide sous « Compagnie ».</p>
+
+<div class="group">Toujours visible</div>
+<section class="card" aria-labelledby="h-etat">
+  <h2 id="h-etat">État</h2>
+  <div class="line"><span class="dot"></span><div>3 aéronefs, 34 fiches, 18 types de la flotte sans fiche</div></div>
+  <div class="line"><span class="dot w"></span><div>1 jeton de pilote expire bientôt (2026-12-03)</div></div>
+  <div class="line"><span class="dot ok"></span><div>Données : synchronisation à jour<div class="small">Échange : lanceur</div></div></div>
+  <div class="line"><span class="dot w"></span><div>Le lanceur du poste ne répond plus<div class="small">Les calculs et les mises à jour qui passent par lui sont arrêtés ; vos documents restent sur l'appareil.</div></div></div>
+  <div class="line"><span class="dot"></span><div>Météo : 1 869 appels aujourd'hui<div class="small">Prévisions Open-Meteo, limite 10 000 par jour</div></div></div>
+</section>
+
+<section class="card" aria-labelledby="h-aff">
+  <h2 id="h-aff">Affichage</h2>
+  <div class="small">Niveau d'usage</div>
+  <div class="sw"><span>Découverte</span><span>Courant</span><span class="on">Complet</span></div>
+  <div class="small">Apparence</div>
+  <div class="sw"><span class="on">Standard</span><span>Metro</span><span>Swiss</span><span>Cupertino</span><span>Material</span></div>
+</section>
+
+<section class="card" aria-labelledby="h-co">
+  <h2 id="h-co">Compagnie de cet appareil</h2>
+  <div class="radios" role="radiogroup" aria-labelledby="h-co">
+    <label><input type="radio" name="co"> <span>AIR INTER VA <code>itf</code></span></label>
+    <label><input type="radio" name="co"> <span>DEFA Virtual <code>defa</code></span></label>
+    <label><input type="radio" name="co" checked> <span>Personnel <code>perso</code></span></label>
+  </div>
+  <div class="small" style="margin-top:6px">Créer ou rejoindre une compagnie : sous « Mise en route », en bas.</div>
+</section>
+
+<div class="group">Parfois</div>
+<details class="fold"><summary><span>Données</span><span class="hint">une fois par mois</span><i></i></summary><div class="body">Usages (seul, sur plusieurs appareils…), hors ligne, performances de Little Navmap.</div></details>
+<details class="fold"><summary><span>Synchronisation</span><span class="hint">en cas de souci</span><i></i></summary><div class="body">Dépôt des données, dernier échange, relancer la synchronisation.</div></details>
+<details class="fold"><summary><span>Appareil</span><span class="hint">sauvegarde · clé météo · réseau local</span><i></i></summary><div class="body">Sauvegarde de cet appareil, clé météo, réseau local.</div></details>
+
+<div class="group">En page</div>
+<a class="row" href="#"><span>Administration</span><span class="hint">jetons, accès, mises à jour, pages de réglage</span><i></i></a>
+
+<div class="group">Une seule fois</div>
+<details class="fold"><summary><span>Mise en route</span><span class="hint">identité, accès, créer ou rejoindre une compagnie</span><i></i></summary>
+  <div class="body">
+    <div class="line"><div><b>Identité</b><div class="small">Trigramme, compte IVAO.</div></div></div>
+    <div class="line"><div><b>Accès</b><div class="small">Dépôt GitLab ou GitHub, jeton.</div></div></div>
+    <div class="line"><div><b>Créer une compagnie</b> · <b>Rejoindre une compagnie</b></div></div>
+  </div>
+</details>
+
+<div class="group">À propos</div>
+<section class="card"><h2>À propos</h2><div class="small">SOG — version 6.0.0-alpha.5 · licence · site</div></section>
+</div>
+</body>
+</html>
