@@ -1047,6 +1047,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 195 | The V2 missions folder that does not answer (1a5d7e6ac), the Map's ground signs and arcs (593e6d6c9, bed86e5b4), Fuel's METAR before “On the map” (a78c17066) and its Little Navmap mention (1f3dfe6a6), the read-only status verbs `proc`, `vfr`, `aircraft` (345ad3c15) | acceptable, three notes |
 | 196 | The two remarks of 195 (823cfe506) and the Map's runway choice by wind (135b1b755, SOG-0306) | remarks taken; display acceptable |
 | 197 | The French aircraft register fold in Data (336344f75, SOG-0315) and the administration button of the Map's thresholds; Fuel's “Start” and direct to a point off the route (75fd4f6be, SOG-0088) | acceptable, one note |
+| 198 | Display and links: the airspace chart's room (1ebf19404, SOG-0307), the “Defined countries” labels (b264626ca), the link to the register fold (2e397622b) | acceptable, display only |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -3014,6 +3015,11 @@ L126, L127 green. *Fuel (75fd4f6be).* `S.starting` holds the departure during th
 is allowed and its distance to the route is said, a point of the route is found by its id or its mission name, an unknown or passed point is refused; all texts through `esc`, the distance is a computed
 number. F204, F205 green. **Note.** `S.starting` is set to `true` and put back to `false` at the end of the function, without a `finally`: an exception between the two (in `refresh()` or in the
 text of the note) would leave the button busy until the page is reloaded; put the reset in a `finally`.
+
+**198. The airspace chart's room, the “Defined countries” labels, the register link — acceptable, display only.** `bodyRoom()` computes a height from the frame's tokens and the view's size
+(numbers, no text from a file) and the chart reads it instead of the height of its own sheet, which ended the redraw loop; no new read or write (D207 green). The new labels are plain
+text of the screen's table in four languages (no markup, no address); the two “put it in Data” links of the aircraft list are the constant `?app=maintenance#data?registry=1`, relative to the frame's page, same
+tab (M45, L126, L127 green). No note.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
