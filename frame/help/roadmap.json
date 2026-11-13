@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "aec9db4",
+  "organisation": "aa45348",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -651,11 +651,12 @@
     {
      "id": "SOG-0317",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : la lecture de l'ATIS tourne encore après qu'on a quitté l'écran (exception)",
      "en": "Fuel: the ATIS read still runs after the screen is left (exception)",
      "de": "Kraftstoff: das ATIS-Lesen läuft nach Verlassen des Bildschirms weiter (Ausnahme)",
-     "es": "Combustible: la lectura del ATIS sigue tras salir de la pantalla (excepción)"
+     "es": "Combustible: la lectura del ATIS sigue tras salir de la pantalla (excepción)",
+     "test": true
     }
    ]
   },
@@ -3661,13 +3662,14 @@
     {
      "id": "SOG-0229",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Données : refonte de l'écran de construction de la base, depuis les spécifications fonctionnelles — proposition de l'ergonome pour le jeudi 12/11",
      "en": "Data: redesign of the base build screen from the functional specifications — proposal for Thursday 12 Nov",
      "de": "Daten: Neugestaltung des Aufbau-Bildschirms aus den funktionalen Spezifikationen — Vorschlag für Donnerstag, 12.11.",
      "es": "Datos: rediseño de la pantalla de construcción de la base desde las especificaciones funcionales — propuesta para el jueves 12/11",
      "milestone": "6.0.0-alpha.5",
-     "rank": 47
+     "rank": 47,
+     "test": true
     },
     {
      "id": "SOG-0010",

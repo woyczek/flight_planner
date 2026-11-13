@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 182,
+  "tests": 183,
   "verdicts": 122
  },
  "apps": [
@@ -1807,9 +1807,10 @@
     "de": "Daten: Neugestaltung des Aufbau-Bildschirms aus den funktionalen Spezifikationen — Vorschlag für Donnerstag, 12.11.",
     "es": "Datos: rediseño de la pantalla de construcción de la base desde las especificaciones funcionales — propuesta para el jueves 12/11"
    },
-   "test": "Maintenance › Données, panneau de la base : en tête, une phrase dit le cycle et ta base (« n zones à jour · n à reconstruire · n en échec · n attendent un fichier · n sans état »). Appuie sur un nombre : ses zones se déplient juste dessous, sans défilement. Le bouton dit « Mettre à jour (n) » : il traite tout ce qui n'est pas à jour. Décoche des zones pour n'en garder que deux ou trois : il devient « Mettre à jour la sélection (n) » et ne traite qu'elles. Une ligne sous le bouton dit ce qu'il va faire.",
+   "test": "Recharge la page. Maintenance › Données : sous les paquets, un seul pli fermé « Détail de la base » ; déplie-le : la couverture par pays, l'inventaire et le journal y sont, tels qu'avant. Rien d'autre n'a bougé sur l'écran.",
    "since": "2026-11-11",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T12:44:08Z"
   },
   {
    "id": "SOG-0230",
@@ -2708,38 +2709,23 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:29:51Z"
+  },
+  {
+   "id": "SOG-0317",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : la lecture de l'ATIS tourne encore après qu'on a quitté l'écran (exception)",
+    "en": "Fuel: the ATIS read still runs after the screen is left (exception)",
+    "de": "Kraftstoff: das ATIS-Lesen läuft nach Verlassen des Bildschirms weiter (Ausnahme)",
+    "es": "Combustible: la lectura del ATIS sigue tras salir de la pantalla (excepción)"
+   },
+   "test": "Recharge la page. Carburant, un vol avec une ATIS de réseau à lire : quitte l'écran aussitôt ouvert (vers la Carte), plusieurs fois — aucune erreur ne s'affiche et la console ne porte pas « Cannot read properties of null ».",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T12:40:57Z"
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0045",
-   "fiche": "SOG-0153",
-   "app": "maintenance",
-   "question": "Le classeur des points FRA d'EUROCONTROL est commité dans ton dépôt privé de données, donc partagé entre pilotes, alors que sa licence interdit de le redistribuer. On le sort du dépôt ?",
-   "context": "La règle posée le 12/11 : les classeurs d'EUROCONTROL se lisent sur le poste, jamais compilés, commités ni publiés. Les points FRA sont déjà servis en couche locale (hors dépôt). Aucune session n'écrit dans ton dépôt de données : le retrait serait un geste de ta main (je te donne la commande), et le fichier resterait dans l'historique git tant qu'il n'est pas purgé.",
-   "options": [
-    "Oui : je le retire du dépôt (donne-moi le chemin et la commande)",
-    "Non : le dépôt est privé, je le laisse"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0046",
-   "fiche": "SOG-0316",
-   "app": "pilote",
-   "question": "Signaler un problème ou une demande depuis l'application : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/frame/help/maquette/signaler.html (deux boutons en haut : qui signale, et l'état).",
-   "context": "Aide › Signaler : une sorte (bug, régression, ergonomie, performance, demande), un titre, un texte de 2 000 signes, l'écran d'où tu viens noté tout seul (décochable). Sur ton poste, c'est écrit dans organisation/SIGNALEMENTS.json et je le lis à chaque tour pour en faire une fiche ; pour un pilote, ça part dans le dépôt de sa compagnie avec l'envoi groupé et tu le vois dans Compagnie › Signalements. Sans accès, le signalement reste sur l'appareil et part au retour. Aucun courriel, aucun hôte nouv",
-   "options": [
-    "Oui, on code sur cette maquette, sans capture jointe",
-    "Oui, et sur mon poste je veux joindre des captures",
-    "Non, à reprendre (dis-moi quoi)"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 1
-  },
   {
    "id": "Q-0043",
    "fiche": "SOG-0240",
@@ -2773,6 +2759,41 @@
    "choice": 0,
    "text": "",
    "at": "2026-11-13T12:41:20Z"
+  },
+  {
+   "id": "Q-0045",
+   "fiche": "SOG-0153",
+   "app": "maintenance",
+   "question": "Le classeur des points FRA d'EUROCONTROL est commité dans ton dépôt privé de données, donc partagé entre pilotes, alors que sa licence interdit de le redistribuer. On le sort du dépôt ?",
+   "context": "La règle posée le 12/11 : les classeurs d'EUROCONTROL se lisent sur le poste, jamais compilés, commités ni publiés. Les points FRA sont déjà servis en couche locale (hors dépôt). Aucune session n'écrit dans ton dépôt de données : le retrait serait un geste de ta main (je te donne la commande), et le fichier resterait dans l'historique git tant qu'il n'est pas purgé.",
+   "options": [
+    "Oui : je le retire du dépôt (donne-moi le chemin et la commande)",
+    "Non : le dépôt est privé, je le laisse"
+   ],
+   "since": "2026-11-13",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 1,
+   "text": "",
+   "at": "2026-11-13T12:41:39Z"
+  },
+  {
+   "id": "Q-0046",
+   "fiche": "SOG-0316",
+   "app": "pilote",
+   "question": "Signaler un problème ou une demande depuis l'application : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/frame/help/maquette/signaler.html (deux boutons en haut : qui signale, et l'état).",
+   "context": "Aide › Signaler : une sorte (bug, régression, ergonomie, performance, demande), un titre, un texte de 2 000 signes, l'écran d'où tu viens noté tout seul (décochable). Sur ton poste, c'est écrit dans organisation/SIGNALEMENTS.json et je le lis à chaque tour pour en faire une fiche ; pour un pilote, ça part dans le dépôt de sa compagnie avec l'envoi groupé et tu le vois dans Compagnie › Signalements. Sans accès, le signalement reste sur l'appareil et part au retour. Aucun courriel, aucun hôte nouv",
+   "options": [
+    "Oui, on code sur cette maquette, sans capture jointe",
+    "Oui, et sur mon poste je veux joindre des captures",
+    "Non, à reprendre (dis-moi quoi)"
+   ],
+   "since": "2026-11-13",
+   "state": "answered",
+   "recommended": 1,
+   "choice": 1,
+   "text": "J’ai un statut un peu différent de tous les autres (je suis devel). si je fais un report, direct chez toi (capture là où tu m’as indiqué). si c’est un autre que RBR, 722630 IVAO, ça part sur mon poste, dans « bugs à vérifier ». On peut aussi imaginer que ça parte en bug sur github ou gitlab, et qu’on fasse le suivi des bugs là bas. on pourrait. Je pense que la roadmap suffit.",
+   "at": "2026-11-13T12:43:50Z"
   }
  ]
 }
