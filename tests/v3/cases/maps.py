@@ -1053,7 +1053,7 @@ def d16(c):
     c.until("location.hash === '#maps?tune=1' && !!document.querySelector('.mp-tune .mp-tune-row')", timeout=9000, what='the tuning page opens')
     c.ge(c.count('.mp-tune-row'), 20, 'one line per element on the tuning page', what='tuning rows')
     c.page.go_back()
-    c.until("location.hash === '#settings'", what='the normal way back returns to Settings')
+    c.until("location.hash === '#settings?card=admin'", what='the normal way back returns to the Administration page of Settings (SOG-0320)')
 
 
 @case('D17', 'Complexity block is one compact line', 'D', tags=('sheet', 'maps'), screens=False, langs4=True,
