@@ -268,10 +268,10 @@
       again
     } = env;
     view.onclick = e => onClick(env, e);
-    view.querySelectorAll('[data-design-pick]').forEach(b => b.addEventListener('click', async () => {
+    view.querySelectorAll('[data-design-pick], [data-design-preview]').forEach(b => b.addEventListener('click', async () => {
       await c.saveDesign({
         ...(c.design?.() || {}),
-        design: b.dataset.designPick
+        design: b.dataset.designPick || b.dataset.designPreview
       });
       again();
     }));

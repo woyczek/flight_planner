@@ -284,11 +284,10 @@
     INDEX = 'airline/index.json';
   const TA = {
     title: ['Compagnie de cet appareil', 'This device’s airline', 'Fluggesellschaft dieses Geräts', 'Compañía de este dispositivo'],
-    moreLine: ['Créer ou rejoindre une compagnie : sous « Mise en route », en bas.',
-      'Create or join an airline: under “Getting started”, at the bottom.',
-      'Gesellschaft gründen oder beitreten: unter „Einrichtung“, ganz unten.',
-      'Crear o unirse a una compañía: en «Puesta en marcha», abajo.'
+    ficheFold: ['Genre et familles de missions · {n} sur {m}', 'Kind and mission families · {n} of {m}',
+      'Art und Missionsfamilien · {n} von {m}', 'Tipo y familias de misiones · {n} de {m}'
     ],
+    moreLine: ['Créer ou rejoindre une compagnie : « Mise en route », en bas.', 'Create or join an airline: “Getting started”, below.', 'Gesellschaft gründen oder beitreten: „Einrichtung“, unten.', 'Crear o unirse a una compañía: «Puesta en marcha», abajo.'],
     onboardTitle: ['Créer ou rejoindre une compagnie', 'Create or join an airline', 'Gesellschaft gründen oder beitreten',
       'Crear o unirse a una compañía'
     ],
@@ -735,7 +734,7 @@
   const themesInTableOrder = (CL, ids, added = []) => [...CL.themes('fr').map(x => x.id), ...added.map(a => a.id)].filter(id => ids
     .includes(id));
   /** La fiche de la compagnie CHOISIE (les autres n'en ont pas) : le genre en deux boutons radio, une ligne d'explication chacun ; puis les thèmes de missions, un par case (le sigle, le nom), cochés d'après son fichier ou, sans fichier, d'après le genre (rien n'est écrit tant qu'on ne coche pas). « Personnel » : une ligne, rien à régler. `lang` : la langue des noms. */
-  function airlineFicheHtml(r, CL, lang, t) {
+  function airlineFicheHtml(r, CL, lang, t, open = false) {
     if (!r) return '';
     if (r.code === PERSO) return `<p class="f-muted" data-fiche-perso>${esc(t(TA.persoNote))}</p>`;
     if (!CL) return '';
@@ -758,7 +757,7 @@
       code = esc(r.code),
       li = CL.LANGS.indexOf(lang) < 0 ? 0 : CL.LANGS.indexOf(lang),
       seriesList = id => (added.series[id] || []).map(x => `<li data-series="${esc(x.value)}">${esc(x.labels[li] || x.labels[0])} <button type="button" data-act="companySeriesDel" data-code="${code}" data-theme="${esc(id)}" data-series="${esc(x.value)}">${esc(t(TA.del))}</button></li>`).join('');
-    return `<h3>${esc(t(TA.ficheTitle, { n: r.name }))}</h3>
+    const body = `<h3>${esc(t(TA.ficheTitle, { n: r.name }))}</h3>
       <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(CL.KIND_NAMES[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
       <h4 data-themes-title>${esc(t(TA.themeSummary, { n: list.filter(x => chosen.has(x.id)).length, m: list.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}<p class="f-muted">${esc(t(TA.themeHint))}</p>
       <ul class="f-themes" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label>${letterHtml(x)}${x.added ? ` <button type="button" data-act="companyThemeDel" data-code="${code}" data-theme="${esc(x.id)}">${esc(t(TA.del))}</button>` : ''}${added.series[x.id]?.length ? `<ul class="f-series" data-series-list="${esc(x.id)}">${seriesList(x.id)}</ul>` : ''}</li>`).join('')}</ul>
@@ -771,6 +770,8 @@
         <label class="f-field">${esc(t(TA.seriesOf))}<select data-f="sr-theme-${code}">${list.map(x => `<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('')}</select></label>
         <label class="f-field">${esc(t(TA.seriesName))}<input type="text" maxlength="40" data-f="sr-name-${code}" autocomplete="off" spellcheck="false"></label>
         <div class="f-row"><button type="button" class="primary" data-act="companySeriesAdd" data-code="${code}">${esc(t(TA.seriesAdd))}</button></div></details><p class="f-msg" data-fiche-msg></p>`;
+    // SOG-0320 : sur l'écran des Réglages la fiche (genre, familles de missions) est UNE ligne repliée ; sa page (#settings?card=company) la montre ouverte
+    return `<details data-fiche-fold${open ? ' open' : ''}><summary>${esc(t(TA.ficheFold, { n: list.filter(x => chosen.has(x.id)).length, m: list.length }))}</summary>${body}</details>`;
   }
   /** Écrit le genre d'une compagnie dans son settings.json (le fichier lu, le champ `kind` posé ou retiré) ; faux si le fichier manque ou ne s'écrit pas. */
   async function writeKind(env, code, kind) {
@@ -1631,7 +1632,7 @@
       t
     } = env, host = view.querySelector('[data-airline-fiche]'), s = AIR.get(view);
     if (!host || !s) return;
-    const html = airlineFicheHtml(s.rows.find(r => r.code === s.now), s.CL, s.lang, t);
+    const html = airlineFicheHtml(s.rows.find(r => r.code === s.now), s.CL, s.lang, t, env.focus === 'company');
     if (host.__html === html) return;
     const kind = document.activeElement?.closest?.('[data-airline-fiche]') ? document.activeElement.dataset?.kind : '';
     host.innerHTML = html;

@@ -50,9 +50,9 @@
     ['device', ['backup', 'wx', 'lan']]
   ];
   const START = ['identity', 'ivao', 'access', 'onboard']; // « Mise en route »
-  const FLAT = ['level', 'design', 'company']; // toujours visibles, après le bloc d'état
+  const FLAT = ['display', 'company']; // toujours visibles, après le bloc d'état
   // l'ordre à plat du niveau Découverte (sept cartes au plus, SPEC § 1) : celui du chemin, inchangé
-  const ORDER1 = ['identity', 'ivao', 'access', 'sync', 'usages', 'offline', 'lnmperf', 'backup', 'wx', 'lan', 'level', 'design', 'admin',
+  const ORDER1 = ['identity', 'ivao', 'access', 'sync', 'usages', 'offline', 'lnmperf', 'backup', 'wx', 'lan', 'display', 'admin',
     'ivaoapp', 'about'
   ];
   const OPEN = new Set(); // groupes ouverts à la main, gardés d'un dessin à l'autre (le temps de la page)

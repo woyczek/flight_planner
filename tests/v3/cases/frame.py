@@ -369,7 +369,7 @@ def a12(c):
     order = ['data', 'sync', 'device', 'start']   # SOG-0320: by frequency of use
     c.ok(1 <= len(groups) <= 7, f'groups {groups}', 'between one and seven groups')
     c.eq(groups, [g for g in order if g in groups], 'the groups follow the order of the path', what='group order')
-    c.eq(c.js("[...document.querySelectorAll('#fView > .f-screen > [data-card]')].map(k => k.dataset.card)"), ['status', 'level', 'design', 'about'], 'outside the groups: the status block, the display cards and « À propos » (always visible, SOG-0320)', what='cards outside groups')
+    c.eq(c.js("[...document.querySelectorAll('#fView > .f-screen > [data-card]')].map(k => k.dataset.card)"), ['status', 'display', 'about'], 'outside the groups: the status block, the display card and « À propos » (always visible, SOG-0320)', what='cards outside groups')
     c.ok(c.js("[...document.querySelectorAll('details.f-group')].every(g => g.open === !g.querySelector(':scope > summary > .f-status-dot').hidden)"),
          'a group is open exactly when its title carries the attention dot', 'folded unless it needs attention')
     c.eq(c.js("document.querySelector('[data-card=\"identity\"]').closest('details.f-group').dataset.group"), 'start', 'Identity is in « Mise en route » (SOG-0320)', what='identity group')
@@ -389,7 +389,7 @@ def a12(c):
     c.eq(c.count('details.f-group'), 0, 'no groups at the Discovery level', what='groups at Discovery')
     c.ok(len([k for k in flat if not c.js("(k) => document.querySelector('[data-card=\"' + k + '\"]').hidden", k)]) <= 7, f'cards {flat}', 'seven visible cards at most at Discovery')
     c.eq([k for k in flat if k in ('backup', 'offline', 'wx', 'lan', 'lnmperf', 'admin')], [], 'backup, offline data, weather key, computer access, Little Navmap start at Everyday', what='cards above Discovery')
-    c.eq([k for k in flat if k in ('identity', 'access', 'usages', 'level', 'design', 'about')], ['identity', 'access', 'usages', 'level', 'design', 'about'], 'the Discovery cards in the order of the path', what='Discovery order')
+    c.eq([k for k in flat if k in ('identity', 'access', 'usages', 'display', 'about')], ['identity', 'access', 'usages', 'display', 'about'], 'the Discovery cards in the order of the path', what='Discovery order')
     # rule 18 at the Full level: one card, one button per administrator page; the airline's thresholds file already holds a mode
     profiles = {'schema': 1, 'updated_at': '2026-10-23T18:00:00Z', 'by': 'maps', 'profiles': {'vfr': {'elements': {'zoom': {'vrp': [9.25, 24]}}}}}
     c.open('settings?card=admin', docs=[['device/level.json', {'level': 3}, 'cache'], ['airline/map_profiles.json', profiles, 'document']])   # Administration is a PAGE (SOG-0320)
@@ -922,15 +922,15 @@ def a26(c):
     if not c.phone:
         c.skip('a phone only')
     c.open('settings', docs=[['device/design.json', {'design': 'aqua', 'tone': 'auto'}, 'cache']])
-    c.until("!!document.querySelector('[data-card=\"design\"]')", what='the Design card is drawn')
+    c.until("!!document.querySelector('[data-card=\"display\"] [data-design-pick]')", what='the Display card is drawn (SOG-0320)')
     # until the frame gives design().applied (Aqua's lot, origin/v3-aqua), there is nothing to check
     if not c.js("fetch(new URL('/frame/app.js', location.href)).then(r => r.text()).then(t => t.includes('appliedDesign'))"):
         c.skip('the frame does not give design().applied yet (Aqua not integrated)')
     c.eq(c.count('[data-design-pick="aqua"]'), 0, 'no Aqua thumbnail on a phone (designs() leaves it out)', what='Aqua thumbnails')
     c.eq(c.attr('[data-design-pick="standard"]', 'aria-pressed'), 'true', 'Standard, the design applied, is marked as set', what='Standard aria-pressed')
-    line = c.text('[data-card="design"] [data-design-applied]') or ''
+    line = c.text('[data-card="display"] [data-design-applied]') or ''
     c.ok('Aqua' in line and 'Standard' in line, f'line {line!r}', 'one line names Aqua and Standard')
-    c.ok(c.js("(() => { const p = document.querySelector('[data-design-applied]'); return !!p.previousElementSibling?.matches('.f-designs') })()"),
+    c.ok(c.js("(() => { const p = document.querySelector('[data-design-applied]'); return !!p.previousElementSibling?.matches('.f-pills') })()"),
          'the line is not right after the thumbnails', 'the line sits under the thumbnails')
 
 
@@ -4211,7 +4211,7 @@ def a105(c):
     c.le(c.js(f"document.querySelector('{row('aaa')}').children.length"), 7, 'a line has seven elements at most', what='elements')
     c.eq(checked('[data-card="company"] [data-airlines] input'), [['aaa', True], ['bbb', False], ['perso', False]], 'the current airline (the first of the index, no choice yet) is the checked radio', what='checked')
     # ---- the sheet of the CHOSEN airline is open under the list: kind radios with a line each, the themes visible without unfolding
-    c.eq([c.count('[data-card="company"] [data-airline-fiche] details'), c.count('[data-card="company"] [data-airlines] details')], [2, 0], 'nothing to unfold in the list; in the sheet only the two folded forms « Ajouter un thème… » and « Ajouter une série… » (SOG-0202 T3b)', what='details')
+    c.eq([c.count('[data-card="company"] [data-airline-fiche] details'), c.count('[data-card="company"] [data-airlines] details')], [3, 0], 'nothing to unfold in the list; in the sheet only the two folded forms « Ajouter un thème… » and « Ajouter une série… » (SOG-0202 T3b)', what='details')
     c.ok(norm(T('ficheTitle').replace('{n}', 'Alpha Air')) in norm(c.text(fiche('h3'))), norm(c.text(fiche('h3'))), 'the sheet is titled with the chosen airline')
     c.eq(checked(fiche('[data-act=companyKind]')), [['va', False], ['sog', False]], 'the kind: two radio buttons, none chosen yet', what='kind radios')
     c.eq(c.count(fiche('.f-kind .f-muted')), 2, 'each kind has its line of explanation', what='explanations')
@@ -7442,7 +7442,7 @@ def a184(c):
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length >= 2", timeout=15000, what='the airlines')
     c.wait(600)
     order = c.js("[...document.querySelector('[data-card=\"status\"]').parentElement.children].filter(e => e.dataset.card || e.dataset.group).map(e => e.dataset.card || 'group:' + e.dataset.group)")
-    c.eq([k for k in order if k != 'assistant'], ['status', 'level', 'design', 'company', 'group:data', 'group:sync', 'group:device', 'group:admin', 'group:start', 'about'],
+    c.eq([k for k in order if k != 'assistant'], ['status', 'display', 'company', 'group:data', 'group:sync', 'group:device', 'group:admin', 'group:start', 'about'],
          'the order: status, display, device airline, then data, synchronisation, device (folded), the Administration row, « Mise en route » (folded), « À propos » last', what='order')
     folds = c.js("[...document.querySelectorAll('details.f-group')].map(g => [g.dataset.group, g.open === !g.querySelector(':scope > summary > .f-status-dot').hidden, g.querySelector(':scope > summary > span:nth-child(2)')?.textContent.trim() || ''])")
     c.eq([[f[0], f[1]] for f in folds], [['data', True], ['sync', True], ['device', True], ['start', True]], 'the four folds are folded unless their title carries the attention dot', what='folded')
@@ -7460,4 +7460,30 @@ def a184(c):
     c.eq([c.count('[data-card="admin"]'), c.count('[data-card="company"]')], [1, 0], 'the page holds the Administration card alone, under « ← Réglages »', what='admin page')
     c.tap('[data-settings-back]')
     c.until("!!document.querySelector('a.f-grow[data-group=admin]')", timeout=10000, what='back to the list')
+    c.check_errors()
+
+
+@case('A185', 'Settings: the part that is always visible is compact (SOG-0320, retouches of 13 Nov, 16 h 41) — at 390 px « État », « Affichage » and « Compagnie de cet appareil » take 1 000 px at most (the mockup: about 900; delivered: more than 4 000): « Affichage » is ONE card of pills (usage level, appearance, tone) with the previews behind a fold, the airline sheet (kind, mission families) is one folded line, « Comment s’en servir » is under « Mise en route »',
+      'A', langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0320: the user validated the mockup (about 900 px for the three blocks); the screen delivered at d19410e67 needed four screens before « Données »: the level card (three radios with their menus), the Design card (ten thumbnails and three tone radios), the open sheet of the chosen airline (kinds, seventeen mission families)')
+def a185(c):
+    lang = c.lang
+    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'dfa', 'name': 'DEFA Virtual'}]}, 'document']]
+    c.open('settings', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length >= 2 && !!document.querySelector('[data-card=\"company\"] [data-airline-fiche]')", timeout=15000, what='the airlines')
+    c.wait(800)
+    g = c.js("""() => { const r = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { t: b.top + scrollY, b: b.bottom + scrollY } };
+      const st = r('[data-card="status"]'), co = r('[data-card="company"]'), di = r('[data-card="display"]'), data = r('[data-group="data"]'), how = document.querySelector('details.f-howto, [data-howto]');
+      return { st, di, co, data, span: st && co ? Math.round(co.b - st.t) : null, howInStart: !!document.querySelector('details.f-group[data-group=start] ~ details, details.f-group[data-group=start] + *')} }""")
+    if c.width <= 760:
+        c.ok(g['span'] is not None and g['span'] <= 1000, g, 'at 390 « État », « Affichage » and « Compagnie » take 1 000 px at most (it was more than 4 000)')
+    else:
+        c.ok(g['span'] is not None and g['span'] <= 1300, g, 'wide: the three blocks take no more than two screens')
+    c.eq(c.count('[data-card="display"]'), 1, 'one « Affichage » card', what='display card')
+    c.eq([c.count('[data-card="display"] [data-level]'), c.count('[data-card="display"] [data-design-pick]'), c.count('[data-card="display"] [data-tone-pick]')], [3, c.count('[data-card="display"] [data-design-pick]'), 3], 'three levels, the designs, three tones: all in it', what='display controls')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] details')].map(d => [d.hasAttribute('data-previews'), d.open])"), [[True, False]], 'the previews are behind a closed fold', what='previews')
+    fiche = c.js("(f => f ? [f.tagName, f.open] : null)(document.querySelector('[data-card=\"company\"] details[data-fiche-fold]'))")
+    c.eq(fiche, ['DETAILS', False], 'the airline sheet is one closed line', what='fiche fold')
+    c.eq(c.count('details.f-group[data-group=start] + details, details.f-group[data-group=start] ~ details:not(.f-group)'), 1, '« Comment s’en servir » follows « Mise en route »', what='howto')
+    c.shot(f'A185_{c.width}_{lang}_delivered.png')
     c.check_errors()

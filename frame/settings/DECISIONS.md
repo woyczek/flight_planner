@@ -763,3 +763,15 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   named the old groups or the inline Administration card were adapted (A12, A20, A32, A43, A49, A55, A67 to A69, A73, A75, A84, A120, A123: they open
   `settings?card=admin` or look in « Mise en route »). Known difference from the mockup: the chosen airline's sheet (kind radios, mission families) stays
   open under the list (A105 requires it), so the Company card is longer than drawn.
+
+## SOG-0320, the retouches of 13 Nov (16 h 41): the part that is always visible is compact
+
+- The ergonomist, on his captures against the validated mockup: the order was right, but « toujours visible » took more than 4 000 px at 390 instead of about
+  900. (a) **« Affichage » is ONE card** (`cards.js` `display`, key `display`, replaces the cards `level` and `design`): the usage level in three pills (the
+  sentence of the chosen level only under them; its menu is the tooltip), the appearance in pills of names (`[data-design-pick]`), the tone in three pills
+  (« Automatique », « Jour », « Nuit », the long label cut at its parenthesis), the design previews (`.f-design`, `[data-design-preview]`) behind the closed
+  fold « Voir les aperçus ». (b) **« Comment s'en servir »** (the frame's help panel) goes under « Mise en route » (`settings.js`, `placePage`). (c) **The airline
+  sheet** (kind, mission families) is ONE closed line « Genre et familles de missions · n sur m » (`access.js`, `airlineFicheHtml(…, open)`); the page
+  `#settings?card=company` shows it open (the cases of that page are unchanged). (d) The measure that decides: **A185** (red before: 2 000 px at 1 280, more
+  than 4 000 at 390): at 390, « État » + « Affichage » + « Compagnie » take 1 000 px at most (1 017 → 997 px in German, the longest). Adapted: A12, A26, A184 (the
+  card `display`). Known difference: the status block (the frame's) wraps its two lines on a phone.

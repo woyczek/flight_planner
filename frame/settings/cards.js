@@ -55,40 +55,37 @@
       ${us.users && !id.trigram ? `<p class="f-warn">${esc(t(T.needTrigram))}</p>` : ''}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="identity">${esc(t(T.save))}</button></div></div>`;
   };
-  /** Carte Niveau : un choix parmi les trois, le menu suit aussitôt. */
-  const level = env => {
+  /** Carte Affichage (SOG-0320, la maquette validée) : UNE carte de pastilles — le niveau d'usage (trois pastilles, la phrase du seul niveau choisi dessous : le menu suit aussitôt), l'apparence (les noms des designs de cet appareil), le ton (automatique,
+   *  jour, nuit) — et, derrière un pli fermé, les aperçus des designs. Le cadre applique et garde le choix (ctx.saveDesign) : rien n'est écrit ici ; sans jeu de design sur cet appareil, la carte n'a que le niveau. */
+  const display = env => {
     const {
+      c,
       t,
       lvl,
       mods
     } = env;
-    const shows = n => mods.filter(m => m.level <= n).map(m => t(m.label)).join(', ') || t(T.levelNone);
-    return `<div class="f-card" data-card="level"><h2>${esc(t(T.level))}</h2><p class="f-muted">${esc(t(T.levelHint))}</p>
-      ${T.levels.map(([name, desc], i) => `<label class="f-check f-level"><input type="radio" name="sogLevel" data-level="${i + 1}" ${lvl === i + 1 ? 'checked' : ''}><span><b>${esc(t(name))}</b> — ${esc(t(desc))}<br><span class="f-muted">${esc(t(T.levelShows, { m: shows(i + 1) }))}</span></span></label>`).join('')}</div>`;
-  };
-  /** Carte Design : vignettes des jeux du cadre et ton ; vide sans jeu de design sur cet appareil. */
-  const design = env => {
-    const {
-      c,
-      t
-    } = env;
+    const shows = n => mods.filter(m => m.level <= n).map(m => t(m.label)).join(', ') || t(T.levelNone),
+      [name, desc] = T.levels[lvl - 1] || T.levels[0],
+      levelBlock = `<h3>${esc(t(T.level))}</h3><div class="f-pills" role="radiogroup" aria-label="${esc(t(T.level))}">${T.levels.map(([n], k) => `<label class="f-pill"><input type="radio" name="sogLevel" data-level="${k + 1}" ${lvl === k + 1 ? 'checked' : ''}><span>${esc(t(n))}</span></label>`).join('')}</div>
+        <p class="f-muted" data-level-says title="${esc(t(T.levelShows, { m: shows(lvl) }))}"><b>${esc(t(name))}</b> — ${esc(t(desc))}</p>`;
     const sets = c.designs?.() || [];
+    let design = '';
     if (sets.length) {
       const cur = c.design?.() || {},
-        night = cur.tone === 'night' || (cur.tone !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches);
-      /** Nom d'un design (son libellé s'il est dans la liste de cet appareil, sinon son identifiant). */
-      const nameOf = id => {
-        const d = sets.find(x => x.id === id);
-        return d ? t(d.label) : String(id || '').replace(/^./, ch => ch.toUpperCase());
-      };
-      const desk = cur.applied && cur.design && cur.applied !== cur.design ? `<p class="f-muted" data-design-applied>${esc(t(T.designDesk, { d: nameOf(cur.design), a: nameOf(cur.applied) }))}</p>` : '';
-      return `<div class="f-card" data-card="design"><h2>${esc(t(T.design))}</h2><p class="f-muted">${esc(t(T.designHint))}</p>
-        <div class="f-designs">${sets.map(d => `<button type="button" class="f-design" data-design-pick="${esc(d.id)}" aria-pressed="${(cur.applied || cur.design) === d.id}">
+        night = cur.tone === 'night' || (cur.tone !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches),
+        nameOf = id => {
+          const d = sets.find(x => x.id === id);
+          return d ? t(d.label) : String(id || '').replace(/^./, ch => ch.toUpperCase());
+        },
+        desk = cur.applied && cur.design && cur.applied !== cur.design ? `<p class="f-muted" data-design-applied>${esc(t(T.designDesk, { d: nameOf(cur.design), a: nameOf(cur.applied) }))}</p>` : '',
+        on = id => (cur.applied || cur.design) === id;
+      design = `<h3>${esc(t(T.appearance))}</h3><div class="f-pills" role="group" aria-label="${esc(t(T.appearance))}">${sets.map(d => `<button type="button" class="f-pill" data-design-pick="${esc(d.id)}" aria-pressed="${on(d.id)}">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</button>`).join('')}</div>${desk}
+        <h3>${esc(t(T.tone))}</h3><div class="f-pills" role="radiogroup" aria-label="${esc(t(T.tone))}">${['auto', 'day', 'night'].map(k => `<label class="f-pill"><input type="radio" name="sogTone" data-tone-pick="${k}" ${(cur.tone || 'auto') === k ? 'checked' : ''}><span>${esc(t(T.tones[k]).replace(/\s*\(.*\)\s*$/, ''))}</span></label>`).join('')}</div>
+        <details class="f-previews" data-previews><summary>${esc(t(T.previews))}</summary><div class="f-designs">${sets.map(d => `<button type="button" class="f-design" data-design-preview="${esc(d.id)}" aria-pressed="${on(d.id)}">
           <span class="f-design-thumb" data-design="${esc(d.id)}" data-tone="${night ? 'night' : 'day'}"><span class="f-design-bar"></span><span class="f-design-card">${esc(t(T.sample))}<span class="f-design-chip"></span></span></span>
-          <span class="f-design-name">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</span></button>`).join('')}</div>${desk}
-        <h3>${esc(t(T.tone))}</h3>${['auto', 'day', 'night'].map(k => `<label class="f-check"><input type="radio" name="sogTone" data-tone-pick="${k}" ${(cur.tone || 'auto') === k ? 'checked' : ''}>${esc(t(T.tones[k]))}</label>`).join('')}</div>`;
+          <span class="f-design-name">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</span></button>`).join('')}</div></details>`;
     }
-    return '';
+    return `<div class="f-card" data-card="display"><h2>${esc(t(T.groups.display))}</h2>${levelBlock}${design}</div>`;
   };
   /** Carte Usages : les échanges cochés (« Seul sur cet appareil » est l'état sans échange) et la phrase qui les résume. */
   const usages = env => {
@@ -255,8 +252,7 @@
     joinResume,
     v2Import,
     identity,
-    level,
-    design,
+    display,
     usages,
     backup,
     joinEntry,

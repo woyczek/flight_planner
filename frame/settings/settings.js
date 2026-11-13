@@ -104,6 +104,8 @@
       'El aspecto de la aplicación y su tono, solo en este dispositivo; aplicados en el acto.'
     ],
     tone: ['Ton', 'Tone', 'Ton', 'Tono'],
+    appearance: ['Apparence', 'Appearance', 'Erscheinungsbild', 'Apariencia'],
+    previews: ['Voir les aperçus', 'See the previews', 'Vorschauen ansehen', 'Ver las vistas previas'],
     tones: {
       auto: ['Automatique (comme le système)', 'Automatic (as the system)', 'Automatisch (wie das System)',
         'Automático (como el sistema)'
@@ -589,7 +591,8 @@
     reconcile(view, one ? `<h1>${esc(t(T.title))}</h1><p><a class="f-btn" href="#settings" data-settings-back>${esc(t(T.backToList))}</a></p>${one}` :
       `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange(all, t, lvl)}`);
     P.groups.wireGroups(view);
-    if (help && !one)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
+    if (help && !one)(view.querySelector('details.f-group[data-group="start"]') || view.querySelector('[data-card="status"]') || view
+      .querySelector('h1 + p'))?.after(help); // « Comment s'en servir » : sous « Mise en route » (SOG-0320)
   }
 
   // ---- le second dessin ne touche que ce qui change (SOG-0172, règle 22) : le HTML de l'écran est construit dans un conteneur à part, puis comparé au contenu posé ; un bloc dont le HTML construit est le même garde son nœud (et ce que les
@@ -876,11 +879,8 @@
     show(P.cards.v2Import(env));
     // identité
     show(P.cards.identity(env));
-    // niveau d'usage : un geste, le menu suit aussitôt
-    show(P.cards.level(env));
-    // design : vignettes des jeux du cadre (chaque vignette porte son design et le ton du moment), ton auto / jour / nuit ;
-    // le cadre applique et garde le choix (ctx.saveDesign), rien n'est écrit ici
-    show(P.cards.design(env));
+    // affichage (SOG-0320) : niveau d'usage, apparence et ton en pastilles, les aperçus des designs derrière un pli ; le cadre applique et garde le choix (ctx.saveDesign), rien n'est écrit ici
+    show(P.cards.display(env));
     // usages
     show(P.cards.usages(env));
     // à Découverte : sept cartes au plus (SPEC § 1) — sauvegarde, données hors ligne, clé météo, accès du poste et
@@ -961,7 +961,7 @@
     if (!DESK.has(view)) {
       DESK.add(view);
       addEventListener('frame-desk', () => {
-        if (view.querySelector('[data-card="design"]')) render(view, c);
+        if (view.querySelector('[data-card="display"]')) render(view, c);
       });
     }
     Object.assign(env, {

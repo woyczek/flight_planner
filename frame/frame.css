@@ -579,6 +579,70 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   flex: 1;
   min-width: 0
 }
+/* les pastilles de la carte Affichage (SOG-0320) : un choix par pastille, la coche native cachée mais gardée (elle couvre la pastille : le toucher la prend) */
+.f-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 8px
+}
+.f-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sog-touch, 44px);
+  padding: 0 14px;
+  border: 1px solid var(--sog-border);
+  background: var(--sog-surface);
+  color: var(--sog-text);
+  font: inherit;
+  cursor: pointer
+}
+.f-pill input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer
+}
+.f-pill:has(input:checked),
+.f-pill[aria-pressed="true"] {
+  border-color: var(--sog-accent);
+  background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface));
+  font-weight: 600
+}
+.f-pill:has(input:focus-visible),
+.f-pill:focus-visible {
+  outline: 2px solid var(--sog-accent);
+  outline-offset: 2px
+}
+.f-previews {
+  margin: 4px 0 0
+}
+[data-card="display"] h3 {
+  margin: 8px 0 2px;
+  font-size: .85rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--sog-muted)
+}
+[data-card="display"] .f-pills {
+  gap: 6px;
+  margin: 2px 0 6px
+}
+[data-card="display"] .f-pill {
+  padding: 0 12px
+}
+[data-card="company"] > .f-muted {
+  font-size: .85rem;
+  margin: 2px 0 4px
+}
+[data-card="display"] [data-level-says] {
+  margin: 2px 0 4px;
+  font-size: .85rem
+}
 /* la fréquence d'usage d'un groupe, à droite de son titre ; la ligne « Administration › » qui ouvre sa page (SOG-0320) */
 .f-ghint {
   flex: none !important;
