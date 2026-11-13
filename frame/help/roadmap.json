@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a6c6d93",
-  "fiches": 292,
+  "organisation": "a6713d1",
+  "fiches": 294,
   "untranslated": 0,
   "priorities": 243
  },
@@ -2189,6 +2189,36 @@
      "en": "V2: editing a mission does nothing",
      "de": "V2: Mission bearbeiten tut nichts",
      "es": "V2: editar una misión no hace nada"
+    },
+    {
+     "id": "SOG-0293",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Missions modifiées dans l'éditeur de la V2 et jamais rangées : les sortir du navigateur (YAML → fichiers → V3)",
+     "en": "Missions edited in the V2 editor and never filed: get them out of the browser (YAML to files, then V3)",
+     "de": "In V2 bearbeitete, nie abgelegte Missionen: aus dem Browser holen (YAML in Dateien, dann V3)",
+     "es": "Misiones editadas en la V2 y nunca guardadas: sacarlas del navegador (YAML a ficheros, luego V3)"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-v2-missions-donnees",
+   "app": "compagnie",
+   "label": {
+    "fr": "V2 ; missions ; données",
+    "en": "V2 ; missions ; données",
+    "de": "V2 ; missions ; données",
+    "es": "V2 ; missions ; données"
+   },
+   "items": [
+    {
+     "id": "SOG-0294",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Dossiers « recu » : 5 412 copies de fichiers d'autres missions (lot du 05/11)",
+     "en": "Received-files folders: 5,412 copies of other missions' files (batch of 5 Nov)",
+     "de": "Empfangsordner: 5 412 Kopien von Dateien anderer Missionen (Stapel vom 5.11.)",
+     "es": "Carpetas de recibidos: 5 412 copias de ficheros de otras misiones (lote del 5/11)"
     }
    ]
   },
