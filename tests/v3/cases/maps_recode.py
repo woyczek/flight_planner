@@ -6496,7 +6496,7 @@ def k_keptstore(c):
     c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree
     c.js(_KEPT_SEED_JS)
-    c.page.route('**/data/missions/T_AIRLIFT/T-085/missionT-085.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_85))
+    c.page.route('**/data/missions/T_AIRLIFT/T-085/missionT-085.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', headers={'Last-Modified': 'Wed, 21 Oct 2026 07:28:00 GMT'}, body=_KEPT_FILE_85))
     c.page.route('**/data/missions/T_AIRLIFT/T-086/missionT-086.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_86))
     c.js(_KEPT_DRAFT_JS)
     c.js("""() => { const all = JSON.parse(localStorage.getItem('siaMissionSaved:v1')); all['Y-001'] = { kind: 'saved', at: Date.parse('2026-10-12T10:00:00Z'),
@@ -6512,9 +6512,15 @@ def k_keptstore(c):
     c.ok('référence chargée' in nature['85'] and 'mission en cours dans le générateur' in nature['partagee:T-090'] and 'brouillon du générateur' in nature['brouillon:T-086'], str(nature), 'each row says the nature of what is compared: a reference loaded, the mission in progress in the generator, the draft')
     c.ok('enregistrée le' in nature['Y-001'] and 'dans un dossier qui n’est pas celui-ci' in nature['Y-001'], nature['Y-001'], 'a « stored » snapshot with no file here says it was stored in a folder that is not this one')
     cls = c.js("""() => ({ keep85: document.querySelector('[data-kept-file="85"]').className, store85: document.querySelector('[data-kept-store="85"]').className, storeX: document.querySelector('[data-kept-store="X-001"]').className })""")
-    c.ok('primary' in cls['keep85'] and 'primary' not in cls['store85'] and 'primary' in cls['storeX'], str(cls), 'the button the comparison points to is the highlighted one: « Keep the file » where the file is more complete, « Store in the folder » where there is no file')
+    c.ok('primary' not in cls['keep85'] and 'primary' not in cls['store85'] and 'primary' in cls['storeX'], str(cls), 'the texts are longer in the browser but the file has more fields filled: the two buttons weigh the same; where there is no file, « Store in the folder » is the highlighted one')
     row85 = c.js("() => document.querySelector('#rgKeptList tr[data-kept-id=\"85\"]').textContent.replace(/\\s+/g, ' ')")
-    c.ok('T-085' in row85 and 'résumé 38' in row85 and 'résumé 29' in row85 and 'plus récent' in row85 and 'plus complet' in row85 and 'Bench' in row85, row85, 'the row sets the file and the browser side by side: the lettered identifier, the lengths of the summary, newer, more complete')
+    c.ok('T-085' in row85 and 'résumé 38' in row85 and 'résumé 29' in row85 and 'Bench' in row85 and 'champ' in row85, row85, 'the row shows what is compared: the lengths of the summary and of the description, and the fields filled, on both sides')
+    c.ok('textes plus longs : navigateur' in row85 and 'champs remplis : fichier' in row85 and 'plus complet' not in row85, row85, 'the verdict is said by criterion; « more complete » is not said when the criteria contradict each other')
+    c.ok('plus récent : navigateur' in row85 and 'date du fichier inconnue' not in row85, row85, 'the date of the file is the Last-Modified of the answer of the launcher, so « newer » is said')
+    row86 = c.js("() => document.querySelector('#rgKeptList tr[data-kept-id=\"brouillon:T-086\"]').textContent.replace(/\\s+/g, ' ')")
+    c.ok('date du fichier inconnue' in row86, row86, 'a file whose answer has no Last-Modified says « file date unknown » instead of a dash')
+    c.ok(c.js("() => document.querySelector('#rgKeptList').textContent.includes('un champ présent seulement dans le fichier')"), '', 'a sentence says that storing replaces the whole file: a field present only in the file stays only in versions/')
+    c.eq(c.js("() => getComputedStyle(document.querySelector('#rgKeptList th')).textAlign"), 'left', 'the column heads are aligned with their cells', what='text-align')
     c.shot('K223_standard_kept_list_delivered.png')
     # the table at 1 280, scrolled to its rows (the five lines of the bench with their natures and their buttons)
     back = c.page.viewport_size

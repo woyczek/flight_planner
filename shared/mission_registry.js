@@ -2476,7 +2476,11 @@
       const r = await fetch(url, {
         cache: 'no-store'
       });
-      return r.ok ? loadYaml(await r.text()) : null;
+      return r.ok ? {
+        yaml: loadYaml(await r.text()),
+        modified: Date.parse(r.headers.get('Last-Modified') || '') ||
+          0 // la date du fichier : l'en-tête de la même réponse, rien de plus
+      } : null;
     } catch {
       return null;
     }
@@ -2546,16 +2550,21 @@
           chosen: choices[sn.key]?.at === sn.at ? choices[sn.key].choice : ''
         };
       try {
-        const f = line ? await fileYaml(line) : null;
+        const fr = line ? await fileYaml(line) : null,
+          f = fr?.yaml;
         if (line && !f) item.state = 'unknown';
         else if (line) {
           item.state = canon(f) === canon(sn.yaml) ? 'same' : 'diff';
-          const stamp = Date.parse(f.meta?.modified_at || f.meta?.received_at || '') || 0;
+          const stamp = fr.modified || Date.parse(f.meta?.modified_at || f.meta?.received_at || '') ||
+            0; // l'en-tête Last-Modified d'abord, à défaut la date du YAML
           item.file = facts(f, stamp);
           item.newer = stamp && sn.at ? stamp > sn.at ? 'file' : 'browser' : '';
-          item.fuller = item.file.leaves === browser.leaves && item.file.chars === browser.chars ? '' : item.file.leaves !== browser
-            .leaves ? item.file.leaves > browser.leaves ? 'file' :
-            'browser' : item.file.chars > browser.chars ? 'file' : 'browser';
+          // les critères, un par un : textes (résumé + description) plus longs, champs renseignés ; « plus complet » seulement s'ils vont dans le même sens
+          const more = (a, b) => a === b ? '' : a > b ? 'file' : 'browser';
+          item.longer = more(item.file.chars, browser.chars);
+          item.filled = more(item.file.leaves, browser.leaves);
+          item.contradict = !!item.longer && !!item.filled && item.longer !== item.filled;
+          item.complete = item.contradict ? '' : item.longer || item.filled;
         }
       } catch {
         item.state = 'unknown'; // la comparaison de cette mission a échoué : non comparée, les autres continuent
@@ -2578,10 +2587,11 @@
     };
     paintKept();
   }
-  /** Vers quoi penche la comparaison : « browser » (plus récent et / ou plus complet côté navigateur, rien de contraire), « file » (l'inverse), '' (égalité ou contradiction : les deux boutons ont le même poids). */
+  /** Vers quoi penche la comparaison : « browser » (plus récent et / ou plus complet côté navigateur, rien de contraire ; jamais quand textes et champs se contredisent), « file » (l'inverse), '' (égalité ou contradiction : les deux boutons ont le même poids). */
   const lean = i => {
-    const b = (i.newer === 'browser') + (i.fuller === 'browser'),
-      f = (i.newer === 'file') + (i.fuller === 'file');
+    if (i.contradict) return ''; // textes plus longs d'un côté, plus de champs de l'autre : rien ne tranche
+    const b = (i.newer === 'browser') + (i.complete === 'browser'),
+      f = (i.newer === 'file') + (i.complete === 'file');
     return b > f ? 'browser' : f > b ? 'file' : '';
   };
   /** Ce que la ligne compare au fichier : une version de référence (chargée, enregistrée ou créée, à sa date), la mission en cours dans le générateur, ou son brouillon. */
@@ -2609,15 +2619,17 @@
     }
     const n = kept?.n || 0,
       when = ms => ms ? new Date(ms).toLocaleString(t(['fr-FR', 'en-GB', 'de-DE', 'es-ES'])) : '—',
-      cell = f => f ? `${esc(when(f.at))}<br><span class="rg-small">${esc(t(['résumé {s} · description {d} signes', 'summary {s} · description {d} characters', 'Zusammenfassung {s} · Beschreibung {d} Zeichen', 'resumen {s} · descripción {d} caracteres'], {
+      cell = (f, ofFile) => f ? `${f.at ? esc(when(f.at)) : esc(ofFile ? t(['date du fichier inconnue', 'file date unknown', 'Dateidatum unbekannt', 'fecha del archivo desconocida']) : t(['date inconnue', 'date unknown', 'Datum unbekannt', 'fecha desconocida']))}<br><span class="rg-small">${esc(t(['résumé {s} · description {d} signes · {c} champ(s) rempli(s)', 'summary {s} · description {d} characters · {c} field(s) filled', 'Zusammenfassung {s} · Beschreibung {d} Zeichen · {c} Feld(er) ausgefüllt', 'resumen {s} · descripción {d} caracteres · {c} campo(s) rellenado(s)'], {
         s: f.summary,
-        d: f.detail
+        d: f.detail,
+        c: f.leaves
       }))}</span>` : '—',
-      yes = k => k ? ` <b>${esc(t(k === 'file' ? ['fichier', 'file', 'Datei', 'archivo'] : ['navigateur', 'browser', 'Browser', 'navegador']))}</b>` : ' —',
+      yes = (k, equal = ' —') => k ? ` <b>${esc(t(k === 'file' ? ['fichier', 'file', 'Datei', 'archivo'] : ['navigateur', 'browser', 'Browser', 'navegador']))}</b>` : equal,
+      same = ` ${esc(t(['égaux', 'equal', 'gleich', 'iguales']))}`,
       todo = (kept?.items || []).filter(i => i.state === 'diff' || i.state === 'none'),
       rows = todo.map(i => `<tr data-kept-id="${esc(i.key)}"><td><b>${esc(i.id)}</b>${i.lineId && i.lineId !== i.id ? ` → ${esc(i.lineId)}${i.lineTitle ? ` — ${esc(i.lineTitle)}` : ''}` : ''}<br><span class="rg-small">${esc(natureOf(i))}</span></td>
-        <td>${i.state === 'none' ? esc(t(['sans fichier', 'no file', 'keine Datei', 'sin archivo'])) : cell(i.file)}</td><td>${cell(i.browser)}</td>
-        <td class="rg-small">${i.state === 'none' ? '' : `${esc(t(['plus récent :', 'newer:', 'neuer:', 'más reciente:']))}${yes(i.newer)}<br>${esc(t(['plus complet :', 'more complete:', 'vollständiger:', 'más completo:']))}${yes(i.fuller)}`}</td>
+        <td>${i.state === 'none' ? esc(t(['sans fichier', 'no file', 'keine Datei', 'sin archivo'])) : cell(i.file, true)}</td><td>${cell(i.browser)}</td>
+        <td class="rg-small">${i.state === 'none' ? '' : `${i.newer ? `${esc(t(['plus récent :', 'newer:', 'neuer:', 'más reciente:']))}${yes(i.newer)}<br>` : ''}${esc(t(['textes plus longs :', 'longer texts:', 'längere Texte:', 'textos más largos:']))}${yes(i.longer, same)}<br>${esc(t(['champs remplis :', 'fields filled:', 'ausgefüllte Felder:', 'campos rellenados:']))}${yes(i.filled, same)}${i.complete ? `<br>${esc(t(['plus complet :', 'more complete:', 'vollständiger:', 'más completo:']))}${yes(i.complete)}` : ''}`}</td>
         <td>${i.chosen === 'file' ? `<span class="rg-small">${esc(t(['fichier gardé', 'file kept', 'Datei behalten', 'archivo conservado']))}</span>` : `<button type="button" class="${lean(i) === 'file' ? 'secondary' : lean(i) === '' && i.state !== 'none' ? 'secondary' : 'primary'}" data-kept-store="${esc(i.key)}">${esc(t(['Ranger dans le dossier', 'Store in the folder', 'Im Ordner ablegen', 'Guardar en la carpeta']))}</button>${i.state === 'none' ? '' : ` <button type="button" class="${lean(i) === 'file' ? 'primary' : 'secondary'}" data-kept-file="${esc(i.key)}">${esc(t(['Garder le fichier', 'Keep the file', 'Datei behalten', 'Conservar el archivo']))}</button>`}`}</td></tr>`).join(''),
       html = !n ? '' : `${esc(t(['{n} mission(s) gardée(s) par ce navigateur : {d} différente(s) du dossier, {s} sans fichier, {i} identique(s){u}', '{n} mission(s) kept by this browser: {d} different from the folder, {s} without a file, {i} identical{u}', '{n} Mission(en) von diesem Browser gespeichert: {d} anders als der Ordner, {s} ohne Datei, {i} identisch{u}', '{n} misión(es) guardada(s) por este navegador: {d} distinta(s) de la carpeta, {s} sin archivo, {i} idéntica(s){u}'], {
         n,
@@ -2630,8 +2642,8 @@
       }))} <button type="button" class="secondary" data-kept-export id="rgKeptExport" data-icon="download" title="${esc(t(['Un fichier YAML par mission gardée, avec la mission partagée et le brouillon du générateur, dans une archive téléchargée : rien n’est écrit dans le dossier. À faire avant d’effacer les données du site.', 'One YAML file per kept mission, with the shared mission and the generator draft, in a downloaded archive: nothing is written to the folder. Do it before clearing the site data.', 'Eine YAML-Datei je gespeicherter Mission, mit der gemeinsamen Mission und dem Entwurf des Generators, in einem heruntergeladenen Archiv: Nichts wird in den Ordner geschrieben. Vor dem Löschen der Websitedaten tun.', 'Un archivo YAML por misión guardada, con la misión compartida y el borrador del generador, en un archivo descargado: no se escribe nada en la carpeta. Hágalo antes de borrar los datos del sitio.']))}">${esc(t(['Exporter les missions gardées par ce navigateur', 'Export the missions kept by this browser', 'Von diesem Browser gespeicherte Missionen exportieren', 'Exportar las misiones guardadas por este navegador']))}</button>${rows ? `
         <details id="rgKeptList" open><summary>${esc(t(['Comparer avec le dossier ({n})', 'Compare with the folder ({n})', 'Mit dem Ordner vergleichen ({n})', 'Comparar con la carpeta ({n})'], {
         n: todo.length
-      }))}</summary><p class="rg-small">${esc(t(['« Ranger dans le dossier » écrit la version du navigateur (l’ancien fichier est gardé dans versions/) ; « Garder le fichier » ne change rien. Rien n’est écrasé sans votre choix : une version du navigateur peut être plus pauvre que le fichier.', '“Store in the folder” writes the browser’s version (the old file is kept in versions/); “Keep the file” changes nothing. Nothing is overwritten without your choice: the browser’s version can be poorer than the file.', '„Im Ordner ablegen“ schreibt die Version des Browsers (die alte Datei bleibt in versions/); „Datei behalten“ ändert nichts. Nichts wird ohne Ihre Wahl überschrieben: Die Version des Browsers kann ärmer sein als die Datei.', '«Guardar en la carpeta» escribe la versión del navegador (el archivo antiguo se conserva en versions/); «Conservar el archivo» no cambia nada. Nada se sobrescribe sin su elección: la versión del navegador puede ser más pobre que el archivo.']))}</p>
-        <div style="overflow-x:auto"><table class="rg-table"><thead><tr><th>${esc(t(['Mission', 'Mission', 'Mission', 'Misión']))}</th><th>${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th>${esc(t(['Navigateur', 'Browser', 'Browser', 'Navegador']))}</th><th></th><th></th></tr></thead><tbody>${rows}</tbody></table></div></details>` : ''}`;
+      }))}</summary><p class="rg-small">${esc(t(['« Ranger dans le dossier » écrit la version du navigateur (l’ancien fichier est gardé dans versions/) ; « Garder le fichier » ne change rien. Rien n’est écrasé sans votre choix : une version du navigateur peut être plus pauvre que le fichier. « Ranger » remplace tout le fichier par la version du navigateur : un champ présent seulement dans le fichier ne sera plus que dans versions/.', '“Store in the folder” writes the browser’s version (the old file is kept in versions/); “Keep the file” changes nothing. Nothing is overwritten without your choice: the browser’s version can be poorer than the file. “Store” replaces the whole file with the browser’s version: a field present only in the file will then be only in versions/.', '„Im Ordner ablegen“ schreibt die Version des Browsers (die alte Datei bleibt in versions/); „Datei behalten“ ändert nichts. Nichts wird ohne Ihre Wahl überschrieben: Die Version des Browsers kann ärmer sein als die Datei. „Ablegen“ ersetzt die ganze Datei durch die Version des Browsers: Ein Feld, das nur in der Datei steht, steht danach nur noch in versions/.', '«Guardar en la carpeta» escribe la versión del navegador (el archivo antiguo se conserva en versions/); «Conservar el archivo» no cambia nada. Nada se sobrescribe sin su elección: la versión del navegador puede ser más pobre que el archivo. «Guardar» sustituye todo el archivo por la versión del navegador: un campo presente solo en el archivo quedará solo en versions/.']))}</p>
+        <div style="overflow-x:auto"><table class="rg-table"><thead><tr style="text-align:left"><th style="text-align:left">${esc(t(['Mission', 'Mission', 'Mission', 'Misión']))}</th><th style="text-align:left">${esc(t(['Fichier', 'File', 'Datei', 'Archivo']))}</th><th style="text-align:left">${esc(t(['Navigateur', 'Browser', 'Browser', 'Navegador']))}</th><th></th><th></th></tr></thead><tbody>${rows}</tbody></table></div></details>` : ''}`;
     if (el.dataset.k === html) return;
     el.dataset.k = html;
     el.innerHTML = html;
