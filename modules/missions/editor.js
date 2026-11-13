@@ -16,6 +16,9 @@
 //     un NOUVEAU document : summary, detailed_description, objectives.{ primary, secondary }, payload.{ description, mass_kg,
 //     passengers } (les autres clés de objectives et de payload gardées) ; SUMMARY_MAX : la longueur conseillée du résumé (600, la
 //     coupe de la synthèse, SOG-0291) — un résumé plus long n'est jamais coupé à l'écriture.
+//   risksOf(doc) → [{ i, hazard, consequence, mitigation }] ; withRisks(doc, rows) → un NOUVEAU document : la forme du prompt de la V2
+//     (hazard, consequence, mitigation ; pas de niveau, la V2 n'en lit pas) ; un risque sans danger est retiré ; un risque retiré l'est
+//     aussi de i18n.<langue>.risks (« même ordre que risks ») ; RISKS_MAX lignes.
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr } (textes) ; placeText(p) : « XTST · Base Test ».
 //   withCadre(doc, cadre) → un NOUVEAU document : mission.{ id, type, subtype, series, number, theatre }, title, origin, destination ;
@@ -35,7 +38,9 @@
 import * as MS from '../../frame/lib/mission.js';
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
-export const OPEN = ['cadre', 'teams', 'places', 'story'];
+export const OPEN = ['cadre', 'teams', 'places', 'story', 'risks'];
+/** Les risques d'une mission, au plus (la borne du lecteur). */
+export const RISKS_MAX = 40;
 /** Le résumé conseillé (la synthèse le montre entier jusque-là, SOG-0291) ; une description, au plus. */
 export const SUMMARY_MAX = 600,
   TEXT_MAX = 20000;
@@ -466,6 +471,72 @@ export function withStory(doc, st) {
     if (Object.keys(pl).length) out.payload = pl;
     else delete out.payload;
   }
+  return out;
+}
+
+/** Les risques d'une mission (voir l'en-tête). */
+export function risksOf(doc) {
+  return (Array.isArray(obj(doc).risks) ? obj(doc).risks : []).slice(0, RISKS_MAX).map((r, i) => typeof r === 'string' ? {
+    i,
+    hazard: cut(r, 300),
+    consequence: '',
+    mitigation: ''
+  } : {
+    i,
+    hazard: cut(obj(r).hazard ?? obj(r).title ?? obj(r).name, 300),
+    consequence: cut(obj(r).consequence, 300),
+    mitigation: cut(obj(r).mitigation, 300)
+  });
+}
+
+/** Le document avec ses risques retouchés (voir l'en-tête). */
+export function withRisks(doc, rows) {
+  const out = structuredClone(obj(doc)),
+    prev = risksOf(doc),
+    list = Array.isArray(rows) ? rows : [];
+  // audit 182 : rien de changé, rien de réécrit ; un risque inchangé reste l'objet (ou le texte) du fichier, un risque retouché ne prend
+  // que ses champs changés ; ceux au-delà de RISKS_MAX restent tels quels à la fin
+  if (JSON.stringify(list) === JSON.stringify(prev)) return out;
+  const before = Array.isArray(out.risks) ? out.risks : [],
+    F = ['hazard', 'consequence', 'mitigation'],
+    put = (o, f, v) => {
+      const x = cut(v, 300);
+      if (x) o[f] = x;
+      else delete o[f];
+    },
+    kept = new Set(list.filter(r => Number.isInteger(r?.i) && r.i >= 0).map(r => r.i)),
+    risks = list.slice(0, RISKS_MAX).map(r => {
+      const was = Number.isInteger(r?.i) && r.i >= 0 ? prev.find(x => x.i === r.i) : null;
+      if (was) {
+        const diff = F.filter(f => String(r[f] ?? '') !== String(was[f] ?? ''));
+        if (!diff.length) return before[r.i];
+        const o = typeof before[r.i] === 'string' ? {
+          hazard: before[r.i]
+        } : {
+          ...obj(before[r.i])
+        };
+        for (const f of diff) put(o, f, r[f]);
+        return o.hazard ? o : null;
+      }
+      const o = {};
+      for (const f of F) put(o, f, r?.[f]);
+      return o.hazard ? o : null;
+    }).filter(o => o !== null),
+    all = [...risks, ...before.slice(RISKS_MAX)];
+  if (all.length) out.risks = all;
+  else delete out.risks;
+  // les traductions suivent « même ordre que risks » (le prompt de la V2) : un risque retiré l'est aussi de chaque langue
+  const gone = prev.filter(p => !kept.has(p.i)).map(p => p.i).sort((a, b) => b - a);
+  if (gone.length && out.i18n && typeof out.i18n === 'object')
+    for (const [lang, t] of Object.entries(out.i18n))
+      if (t && typeof t === 'object' && Array.isArray(t.risks)) {
+        const tr = [...t.risks];
+        for (const i of gone) tr.splice(i, 1);
+        out.i18n[lang] = {
+          ...t,
+          risks: tr
+        };
+      }
   return out;
 }
 

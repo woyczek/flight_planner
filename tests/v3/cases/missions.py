@@ -2272,7 +2272,7 @@ def n54(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     _ed_open(c, _MESSY)
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='the messy file in the editor')
-    for step in ('teams', 'places', 'story', 'cadre'):
+    for step in ('teams', 'places', 'story', 'risks', 'cadre'):
         c.tap(f'{E} [data-steps] [data-step="{step}"]')
         c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
     c.tap(f'{E} [data-do="edsave"]')
@@ -2300,4 +2300,47 @@ def n54(c):
     c.ok(not c.count(E) and any(norm(row(c, 'edAlias')) in norm(n) for n in c.note_log()), c.note_log(),
          'a file with aliases does not open in the editor, and the notification says why')
     c.eq(c.js(_TEXT_OF, path), _ALIAS, 'never rewritten', what='file')
+    c.js(_REG_CLEAR)
+
+
+
+_RISKS_JS = f"""[...document.querySelectorAll('{E} [data-edrisks] [data-risk] .ms-plbody b')].map(b => b.textContent.trim())"""
+
+
+@case('N55', 'Missions › editor, step 5 (Risques): one row « danger → parade » per risk; « Modifier » opens hazard, consequence, mitigation; '
+      'a risk changed, one removed, one added; « Enregistrer » writes them, the removed one leaves the translations too (same order), '
+      'the others keep their keys', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0287 step 5, the mock-up: « Risques : une ligne « danger → parade » ; + Risque » (no level: the V2 schema has none)')
+def n55(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    text = _ED_FULL + ('i18n:\n  en:\n    risks:\n' + ''.join(f'      - {{ hazard: Hazard {w} }}\n' for w in ('one', 'two', 'three', 'four', 'five')))
+    reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', text]])
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-steps] [data-step="risks"]')
+    c.until(f"!!document.querySelector('{E} [data-edrisks]')", what='the Risques')
+    c.eq(c.js(_RISKS_JS), [f'Danger {w} → Parade {w}' for w in ('un', 'deux', 'trois', 'quatre', 'cinq')], 'one row « danger → parade » per risk',
+         what='rows')
+    c.tap(f'{E} [data-risk="0"] [data-do="edrisk"]')
+    c.page.fill(f'{E} [data-rkform="0"] [data-f=mitigation]', 'Parade retouchée')
+    c.tap(f'{E} [data-rkform="0"] [data-do="edriskok"]')
+    c.tap(f'{E} [data-risk="1"] [data-do="edrisk"]')
+    c.tap(f'{E} [data-rkform="1"] [data-do="edriskdel"]')
+    c.tap(f'{E} [data-do="edriskadd"]')
+    c.page.fill(f'{E} [data-rkform] [data-f=hazard]', 'Danger six')
+    c.page.fill(f'{E} [data-rkform] [data-f=mitigation]', 'Parade six')
+    c.tap(f'{E} [data-rkform] [data-do="edriskok"]')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N55_390_risks.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N55_1280_risks.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    r = t[t.find('risks:'):t.find('maps:')] if 'maps:' in t else t
+    c.ok('Parade retouchée' in r and 'Danger deux' not in t and 'hazard: Danger six' in r and 'Danger cinq' in r, r[:400],
+         'one risk changed, one removed, one added at the end')
+    c.ok('Hazard two' not in t and 'Hazard one' in t and 'Hazard three' in t, t[t.find('i18n'):][:300], 'the removed risk leaves the translations too')
     c.js(_REG_CLEAR)

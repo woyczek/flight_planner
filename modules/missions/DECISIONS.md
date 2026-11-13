@@ -211,3 +211,10 @@
   file's own value kept and offered when it is another; the step marks are round; on a wide module the editor fills the height and the
   action bar sits at its foot, aligned on the form column (a grid that reuses the steps column). Still to come, said: the map thumbnail
   of the preview.
+- **13 Nov 2026 — the mission editor, step 5: the Risques** (SOG-0287, written by Features SOG): one row « danger → parade » per risk,
+  « Modifier » opens hazard, consequence, mitigation on the spot, « + Risque » adds one at the end (40 at most, the reader's bound). The
+  mock-up's « niveau » is NOT written: the V2 schema (PROMPT_GENERATEUR_MISSIONS) has no level and would not read it — said here rather
+  than inventing a key. `risksOf` / `withRisks` follow the audit-182 rule (only changed fields; an untouched risk, a plain text one
+  included, stays the file's own; beyond 40 kept; N54 now opens this step too). A removed risk also leaves `i18n.<lang>.risks` at the
+  same place (the prompt: « même ordre que risks »); a changed risk keeps its translation as it was (to be redone in the V2's generator).
+  N55 (red before: the Risques step disabled).

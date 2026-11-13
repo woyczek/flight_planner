@@ -106,6 +106,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-plbody>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-module="missions"] .ms-plform{grid-column:1 / -1;padding:4px 0 8px}
 [data-module="missions"] .ms-pladd{flex-wrap:wrap;align-items:center;margin-top:8px}
+[data-module="missions"] .ms-rkrow{grid-template-columns:minmax(0,1fr) auto}
 [data-module="missions"] .ms-edform textarea{width:100%;box-sizing:border-box;resize:vertical;font:inherit}
 [data-module="missions"] .ms-stload>.f-field:first-child{flex:3 1 14em}
 [data-module="missions"] [data-stcount][data-over="1"]{color:var(--sog-warn,#b06f00)} /* au-delà de 600 : la synthèse coupera (jamais l'écriture) */
@@ -609,6 +610,19 @@ const TX = {
   stPayload: ['Charge', 'Load', 'Zuladung', 'Carga'],
   stMass: ['Masse (kg)', 'Mass (kg)', 'Masse (kg)', 'Masa (kg)'],
   stPax: ['Passagers', 'Passengers', 'Passagiere', 'Pasajeros'],
+  edRisksHint: ['Une ligne par risque : le danger, sa conséquence, la parade. La fiche en montre trois sur sa première page.',
+    'One row per risk: the hazard, its consequence, the mitigation. The sheet shows three on its first page.',
+    'Eine Zeile pro Risiko: die Gefahr, ihre Folge, die Gegenmaßnahme. Das Blatt zeigt drei auf seiner ersten Seite.',
+    'Una fila por riesgo: el peligro, su consecuencia, la medida. La ficha muestra tres en su primera página.'
+  ],
+  rkHazard: ['Danger', 'Hazard', 'Gefahr', 'Peligro'],
+  rkConsequence: ['Conséquence', 'Consequence', 'Folge', 'Consecuencia'],
+  rkMitigation: ['Parade', 'Mitigation', 'Gegenmaßnahme', 'Medida'],
+  rkAdd: ['+ Risque', '+ Risk', '+ Risiko', '+ Riesgo'],
+  rkNone: ['Aucun risque : « + Risque » en ajoute un.', 'No risk: « + Risk » adds one.', 'Kein Risiko: „+ Risiko“ fügt eines hinzu.',
+    'Ningún riesgo: «+ Riesgo» añade uno.'
+  ],
+  rkNoHazard: ['danger à dire', 'hazard to state', 'Gefahr angeben', 'peligro por indicar'],
   todo_title: ['titre', 'title', 'Titel', 'título'],
   todo_theatre: ['théâtre', 'theatre', 'Einsatzgebiet', 'teatro'],
   todo_dep: ['départ', 'departure', 'Abflug', 'salida'],
@@ -1952,6 +1966,7 @@ function edDoc(e, cadre = e.cadre) {
   if (e.teams) d = ED.withTeams(d, e.teams);
   if (e.places) d = ED.withPlaces(d, e.places);
   if (e.story) d = ED.withStory(d, e.story);
+  if (e.risks) d = ED.withRisks(d, e.risks);
   return d;
 }
 
@@ -2036,6 +2051,16 @@ function edStoryHtml(s) {
     <div class="f-row ms-stload">${inp('payload', TX.stPayload, t.payload, ' maxlength="2000"')}${inp('mass', TX.stMass, t.mass, ' inputmode="decimal" maxlength="7"')}${inp('pax', TX.stPax, t.pax, ' inputmode="numeric" maxlength="4"')}</div>`;
 }
 
+/** L'étape Risques : une ligne « danger → parade » par risque, « Modifier » en ouvre les champs sur place ; « + Risque ». */
+function edRisksHtml(s) {
+  const e = s.ed,
+    rows = e.risks || [],
+    field = (i, f, label, v) => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edrisk" data-i="${i}" data-f="${f}" value="${esc(v ?? '')}" maxlength="300" autocomplete="off"></label>`;
+  return `<h3>5. ${esc(s.tt(TX.stepRisks))}</h3><p class="f-muted">${esc(s.tt(TX.edRisksHint))}</p>
+    <div class="f-list" data-edrisks>${rows.length ? rows.map((r, i) => `<div class="ms-plrow ms-rkrow" data-risk="${i}"><span class="ms-plbody"><b>${esc(r.hazard || s.tt(TX.rkNoHazard))}${r.mitigation ? ` → ${esc(r.mitigation)}` : ''}</b>${r.consequence ? `<span class="f-muted">${esc(r.consequence)}</span>` : ''}</span><button type="button" class="f-linkbtn" data-do="edrisk" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.riskEdit === i ? `<div class="ms-plform" data-rkform="${i}">${field(i, 'hazard', TX.rkHazard, r.hazard)}${field(i, 'consequence', TX.rkConsequence, r.consequence)}${field(i, 'mitigation', TX.rkMitigation, r.mitigation)}<div class="f-row"><button type="button" data-do="edriskok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edriskdel" data-i="${i}">${esc(s.tt(TX.plRemove))}</button></div></div>` : ''}</div>`).join('') : `<p class="f-muted" data-norisk>${esc(s.tt(TX.rkNone))}</p>`}</div>
+    ${rows.length < ED.RISKS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edriskadd">${esc(s.tt(TX.rkAdd))}</button></div>` : ''}`;
+}
+
 /** L'écran de l'éditeur (la maquette : modules/missions/maquette/editeur_cadre_*.png). */
 function edHtml(s) {
   const e = s.ed,
@@ -2045,7 +2070,7 @@ function edHtml(s) {
   return `<div class="ms-ed" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(crumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : e.step === 'places' ? edPlacesHtml(s) : e.step === 'story' ? edStoryHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
+    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : e.step === 'places' ? edPlacesHtml(s) : e.step === 'story' ? edStoryHtml(s) : e.step === 'risks' ? edRisksHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
     <div class="ms-edbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" data-do="ednext"${nextStep ? ` data-step="${nextStep}"` : ` disabled title="${esc(s.tt(TX.edLater))}"`}>${esc(s.tt(TX.edNext))}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
 }
 
@@ -2054,6 +2079,12 @@ function edHtml(s) {
 function edInput(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
+  if (k === 'edrisk') { // un risque : le champ retouché en place, la ligne redessinée à « OK »
+    const row = e.risks?.[+ev.target.dataset.i],
+      f = ev.target.dataset.f;
+    if (row && ['hazard', 'consequence', 'mitigation'].includes(f)) row[f] = ev.target.value;
+    return edRefresh(s);
+  }
   if (k === 'edstory') { // le récit : le champ retouché en place ; le compte du résumé suit la frappe
     const f = ev.target.dataset.f;
     if (e.story && ['summary', 'description', 'primary', 'secondary', 'payload', 'mass', 'pax'].includes(f)) e.story[f] = ev.target.value;
@@ -2190,6 +2221,8 @@ async function edSave(s) {
       places: null,
       placeEdit: -1,
       story: null,
+      risks: null,
+      riskEdit: -1,
       path,
       origId: c.id,
       regIdx: line ? line.idx : e.regIdx,
@@ -2232,10 +2265,36 @@ function edClick(s, b) {
       // les lieux lus du document au cadre déjà retouché (le départ et l'arrivée portent le nom saisi au Cadre)
       if (s.ed.step === 'places' && !s.ed.places) s.ed.places = ED.placesOf(edDoc(s.ed));
       if (s.ed.step === 'story' && !s.ed.story) s.ed.story = ED.storyOf(s.ed.base);
-      return draw(s);
+      if (s.ed.step === 'risks' && !s.ed.risks) s.ed.risks = ED.risksOf(s.ed.base);
+      draw(s);
+      // au téléphone, la pastille de l'étape ouverte vient dans la bande qui défile (sans faire sauter la page)
+      return s.el.querySelector('[data-steps] [aria-current]')?.scrollIntoView?.({
+        inline: 'nearest',
+        block: 'nearest'
+      });
     case 'edplace':
       s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
       return draw(s);
+    case 'edrisk':
+      s.ed.riskEdit = s.ed.riskEdit === +b.dataset.i ? -1 : +b.dataset.i;
+      return draw(s);
+    case 'edriskok':
+      s.ed.riskEdit = -1;
+      return draw(s);
+    case 'edriskdel':
+      s.ed.risks = (s.ed.risks || []).filter((_, i) => i !== +b.dataset.i);
+      s.ed.riskEdit = -1;
+      return draw(s);
+    case 'edriskadd':
+      s.ed.risks = [...(s.ed.risks || ED.risksOf(s.ed.base)), {
+        i: -1,
+        hazard: '',
+        consequence: '',
+        mitigation: ''
+      }].slice(0, ED.RISKS_MAX);
+      s.ed.riskEdit = s.ed.risks.length - 1;
+      draw(s);
+      return s.el.querySelector(`[data-rkform="${s.ed.riskEdit}"] input`)?.focus();
     case 'edplaceok':
       s.ed.placeEdit = -1;
       return draw(s);
