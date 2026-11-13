@@ -2046,7 +2046,7 @@ def n50(c):
     c.until(f"!!document.querySelector('{E}')", what='the editor')
     steps = c.js(f"[...document.querySelectorAll('{E} [data-steps] button')].map(b => [b.dataset.step, b.disabled])")
     c.eq([x[0] for x in steps], ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'], 'the six steps of the mock-up', what='steps')
-    c.ok(steps[0][1] is False and steps[-1][1] is True, steps, 'the Cadre open; a step not delivered yet is disabled (one push each)')
+    c.ok(all(x[1] is False for x in steps), steps, 'the six steps open (delivered one push each, 13 Nov)')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier of the family proposed')
     _ed_fill(c, 'edid', 'X-1')
@@ -2272,7 +2272,7 @@ def n54(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     _ed_open(c, _MESSY)
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='the messy file in the editor')
-    for step in ('teams', 'places', 'story', 'risks', 'cadre'):
+    for step in ('teams', 'places', 'story', 'risks', 'timeline', 'cadre'):
         c.tap(f'{E} [data-steps] [data-step="{step}"]')
         c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
     c.tap(f'{E} [data-do="edsave"]')
@@ -2399,4 +2399,43 @@ def n56(c):
       return { move: MV.withAirline(mission, 'abc', Y), dumped, ms: Math.round(performance.now() - t) } }""" % repr(_BOMB_REG).replace("'", '"'))
     c.eq([got['move'], got['dumped']], [None, 'refused'], '« Changer de compagnie » and the registry dump refuse an anchored document', what='guards')
     c.ok(got['ms'] < 1000, got, 'refused in under a second')
+    c.js(_REG_CLEAR)
+
+
+
+@case('N57', 'Missions › editor, step 6 (Chronologie et cartes): an event added (H+30mn, a place of the mission, what happens); the declared maps '
+      'listed; « Proposer les cartes depuis les lieux » adds the missing entries (target, its detail, the rendezvous, the second zone) and '
+      'keeps the others; « Enregistrer » writes timeline.events and the maps', 'N', tags=('missions',), designs=('standard',), screens=False,
+      langs4=False, rule='SOG-0287 step 6, the mock-up: « Chronologie et cartes : les événements, puis les cartes proposées depuis les lieux » '
+      '(timeline.events: shared/mission_exercise.js; proposedMaps: apps/cpco/mission_guide.js)')
+def n57(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _ED_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
+    c.eq(c.js(f"[...document.querySelectorAll('{E} [data-edmaps] [data-map]')].map(m => m.dataset.map)"), ['general', 'zone_1', 'bad'],
+         'the declared maps', what='maps')
+    c.tap(f'{E} [data-do="edeventadd"]')
+    c.page.fill(f'{E} [data-event="0"] [data-f=at]', 'H+30mn')
+    c.page.select_option(f'{E} [data-event="0"] select[data-f=place]', 'PT1')
+    c.page.fill(f'{E} [data-event="0"] [data-f=text]', 'Un message inventé arrive.')
+    c.tap(f'{E} [data-do="edmapspropose"]')
+    c.until(f"document.querySelectorAll('{E} [data-edmaps] [data-map]').length > 3", what='the proposed maps')
+    c.eq(c.js(f"[...document.querySelectorAll('{E} [data-edmaps] [data-map]')].map(m => m.dataset.map)"),
+         ['general', 'zone_1', 'bad', 'cible', 'detail_cible', 'detail_rdv_1', 'zone_2'], 'the missing ones added, the others kept', what='maps')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N57_390_timeline.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N57_1280_timeline.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('timeline:' in t and 'at: H+30mn' in t and 'place: PT1' in t and 'Un message inventé arrive.' in t, t[t.find('timeline'):][:300],
+         'the event written in timeline.events')
+    c.ok('id: detail_rdv_1' in t and 'id: zone_2' in t and 'filename: ../../secret.png' in t and 'Danger cinq' in t, t[t.find('maps:'):][:600],
+         'the proposed maps added, the declared ones (even a refused path) kept as written')
     c.js(_REG_CLEAR)

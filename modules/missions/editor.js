@@ -19,6 +19,10 @@
 //   risksOf(doc) → [{ i, hazard, consequence, mitigation }] ; withRisks(doc, rows) → un NOUVEAU document : la forme du prompt de la V2
 //     (hazard, consequence, mitigation ; pas de niveau, la V2 n'en lit pas) ; un risque sans danger est retiré ; un risque retiré l'est
 //     aussi de i18n.<langue>.risks (« même ordre que risks ») ; RISKS_MAX lignes.
+//   eventsOf(doc) → [{ i, at, place, text }] (timeline.events, la forme de shared/mission_exercise.js : « H+30mn », un lieu de la
+//     mission ou rien, ce qui se passe) ; withEvents(doc, rows) → un NOUVEAU document (les autres clés de timeline gardées).
+//   mapsOf(doc) → [{ id, type, description, ref, unplaced }] ; proposedMaps(doc) → les cartes attendues d'après les lieux et absentes
+//     (la règle de la V2) ; withMaps(doc, add) → les cartes ajoutées à la fin (des entrées : les images se font au studio de la V2).
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr } (textes) ; placeText(p) : « XTST · Base Test ».
 //   withCadre(doc, cadre) → un NOUVEAU document : mission.{ id, type, subtype, series, number, theatre }, title, origin, destination ;
@@ -38,7 +42,9 @@
 import * as MS from '../../frame/lib/mission.js';
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
-export const OPEN = ['cadre', 'teams', 'places', 'story', 'risks'];
+export const OPEN = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
+/** Les événements d'une chronologie, au plus. */
+export const EVENTS_MAX = 60;
 /** Les risques d'une mission, au plus (la borne du lecteur). */
 export const RISKS_MAX = 40;
 /** Le résumé conseillé (la synthèse le montre entier jusque-là, SOG-0291) ; une description, au plus. */
@@ -546,6 +552,148 @@ export function withRisks(doc, rows) {
   return out;
 }
 
+/** La chronologie d'une mission (voir l'en-tête) : timeline.events, la forme de shared/mission_exercise.js (missionTimeline). */
+export function eventsOf(doc) {
+  return arrOf(obj(obj(doc).timeline).events).slice(0, EVENTS_MAX).map((e, i) => ({
+    i,
+    at: cut(obj(e).at, 20),
+    place: cut(obj(e).place, 40).toUpperCase(),
+    text: cut(obj(e).text, 500)
+  }));
+}
+
+/** Le document avec sa chronologie retouchée (voir l'en-tête ; la règle de l'audit 182). */
+export function withEvents(doc, rows) {
+  const out = structuredClone(obj(doc)),
+    prev = eventsOf(doc),
+    list = Array.isArray(rows) ? rows : [];
+  if (JSON.stringify(list) === JSON.stringify(prev)) return out;
+  const T = obj(out.timeline),
+    before = arrOf(T.events),
+    F = ['at', 'place', 'text'],
+    N = {
+      at: 20,
+      place: 40,
+      text: 500
+    },
+    put = (o, f, v) => {
+      const x = f === 'place' ? cut(v, N[f]).toUpperCase() : cut(v, N[f]);
+      if (x) o[f] = x;
+      else delete o[f];
+    },
+    events = list.slice(0, EVENTS_MAX).map(r => {
+      const was = Number.isInteger(r?.i) && r.i >= 0 ? prev.find(x => x.i === r.i) : null;
+      if (was) {
+        const diff = F.filter(f => String(r[f] ?? '') !== String(was[f] ?? ''));
+        if (!diff.length) return before[r.i];
+        const o = {
+          ...obj(before[r.i])
+        };
+        for (const f of diff) put(o, f, r[f]);
+        return o.text || o.place ? o : null;
+      }
+      const o = {};
+      for (const f of F) put(o, f, r?.[f]);
+      return o.text || o.place ? o : null;
+    }).filter(o => o !== null),
+    all = [...events, ...before.slice(EVENTS_MAX)];
+  if (all.length) out.timeline = {
+    ...T,
+    events: all
+  };
+  else if (out.timeline && typeof out.timeline === 'object') {
+    const rest = {
+      ...T
+    };
+    delete rest.events;
+    if (Object.keys(rest).length) out.timeline = rest;
+    else delete out.timeline;
+  }
+  return out;
+}
+
+/** Les cartes d'une mission (voir l'en-tête) : { id, type, description, ref, unplaced } ; unplaced quand le lieu de son centre n'a pas
+ *  de position. */
+export function mapsOf(doc) {
+  const places = new Map(placesOf(doc).filter(p => p.id).map(p => [p.id.toUpperCase(), p]));
+  return arrOf(obj(doc).maps).slice(0, 40).map(m => {
+    const o = obj(m),
+      ref = cut(o.centre_ref ?? o.center_ref, 40).toUpperCase(),
+      p = places.get(ref);
+    return {
+      id: cut(o.id ?? o.filename, 60),
+      type: cut(o.type, 40),
+      description: cut(o.description, 300),
+      ref,
+      unplaced: !!p && !p.poly && (p.lat === '' || p.lon === '')
+    };
+  });
+}
+
+/** Les cartes attendues d'après les lieux, absentes du fichier (la règle de la V2, apps/cpco/mission_guide.js proposedMaps) : générale,
+ *  cible et son détail, un détail par rendez-vous, une par zone. Des entrées seulement : les images se font au studio de la V2. */
+export function proposedMaps(doc) {
+  const d = obj(doc),
+    id = cut(obj(d.mission).id, 40),
+    have = new Set(arrOf(d.maps).map(m => cut(obj(m).id, 60))),
+    out = [{
+      id: 'general',
+      filename: `general${id}.png`,
+      type: 'general',
+      description: 'Vue d’ensemble : départ, points tournants, cible, rendez-vous, zone, arrivée.',
+      include: {
+        origin: true,
+        destination: true,
+        turning_points: true,
+        target: true,
+        rendezvous: true,
+        zones: true
+      }
+    }];
+  if (d.target && typeof d.target === 'object') out.push({
+    id: 'cible',
+    filename: `cible${id}.png`,
+    type: 'target',
+    centre_ref: cut(d.target.id, 40) || 'TARGET',
+    range_km: 50,
+    description: 'Abords de la cible (50 km).'
+  }, {
+    id: 'detail_cible',
+    filename: `detail_cible${id}.png`,
+    type: 'detail',
+    centre_ref: cut(d.target.id, 40) || 'TARGET',
+    width_km: 8,
+    height_km: 5,
+    description: 'Détail de la cible (8 × 5 km).'
+  });
+  arrOf(d.rendezvous).forEach((r, k) => out.push({
+    id: `detail_rdv_${k + 1}`,
+    filename: `detail_rdv${id}-${k + 1}.png`,
+    type: 'detail_rdv',
+    centre_ref: cut(obj(r).id, 40),
+    width_km: 8,
+    height_km: 5,
+    description: `Détail du rendez-vous ${cut(obj(r).id, 40)} (8 × 5 km).`
+  }));
+  arrOf(d.zones).forEach((z, k) => out.push({
+    id: `zone_${k + 1}`,
+    filename: `zone${id}${k ? `-${k + 1}` : ''}.png`,
+    type: 'zone',
+    centre_ref: cut(obj(z).id, 40) || `ZONE-${k + 1}`,
+    range_km: 20,
+    description: `Zone de travail ${cut(obj(z).id, 40) || `ZONE-${k + 1}`}.`
+  }));
+  return out.filter(m => !have.has(m.id));
+}
+
+/** Le document avec les cartes proposées ajoutées à la fin de `maps` (un objet seul devient une liste ; jamais une carte retirée). */
+export function withMaps(doc, add) {
+  const out = structuredClone(obj(doc)),
+    extra = (Array.isArray(add) ? add : []).filter(m => m && typeof m === 'object');
+  if (extra.length) out.maps = [...arrOf(out.maps), ...extra];
+  return out;
+}
+
 /** Le document d'une mission neuve (voir l'en-tête). */
 export function blank() {
   return {
@@ -630,7 +778,9 @@ export function todo(doc) {
   if (!String(d.summary ?? '').trim()) add('story', 'summary');
   if (!String(d.detailed_description ?? '').trim()) add('story', 'description');
   if (!arr(d.risks).length) add('risks', 'risks');
-  if (!arr(d.timeline).length && !arr(d.chronology).length) add('timeline', 'timeline');
+  // la chronologie de la mission : timeline.events (shared/mission_exercise.js) ; les cartes centrées sur un lieu sans position
+  if (!eventsOf(d).length) add('timeline', 'timeline');
+  if (mapsOf(d).some(m => m.unplaced)) add('timeline', 'mapUnplaced');
   return out;
 }
 

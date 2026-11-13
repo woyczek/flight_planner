@@ -230,3 +230,12 @@
   document (belt and braces), `add.js` refuses it (`alias`), `move.js withAirline` returns null before `JSON.stringify` / dump. The
   editor's refusal says how to remove the anchor (the audit's note). N56 (red before: the single rendezvous was not even listed); the
   nine-level registry of the audit is said unreadable at once and refused by `withHeader` in under a second.
+- **13 Nov 2026 — the mission editor, step 6: Chronologie et cartes — the six steps delivered** (SOG-0287, written by Features SOG):
+  the chronology of ONE mission is `timeline.events` (shared/mission_exercise.js `missionTimeline`: at « H+30mn », place = an id of the
+  mission's places or none, text) — the exercise's events (`events` of the Z mission, kind radio / pli, reveals) stay out, with the
+  exercise organisation (the mock-up's « hors de l'éditeur »). `eventsOf` / `withEvents` follow the audit-182 rule (the other keys of
+  `timeline` kept, 60 events). The maps: the declared ones listed (a map centred on a place without position is said, and listed in
+  « À compléter »); « Proposer les cartes depuis les lieux » ports the V2's `proposedMaps` (general, target and its detail, one detail per
+  rendezvous, one per zone) and adds ENTRIES only, at the end — never removes or rewrites a declared map, even one whose path the reader
+  refuses; the images are made in the V2 map studio. « À compléter » read `timeline` as a list (always « aucun événement »): it reads
+  `timeline.events` now. N57 (red before: the step disabled); N54 opens the six steps; N50 now asks for the six open.

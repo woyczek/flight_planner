@@ -107,6 +107,12 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-plform{grid-column:1 / -1;padding:4px 0 8px}
 [data-module="missions"] .ms-pladd{flex-wrap:wrap;align-items:center;margin-top:8px}
 [data-module="missions"] .ms-rkrow{grid-template-columns:minmax(0,1fr) auto}
+[data-module="missions"] .ms-evrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
+[data-module="missions"] .ms-evrow>.ms-evtext{grid-column:1 / span 2}
+@container (min-width: 900px){
+  [data-module="missions"] .ms-evrow{grid-template-columns:minmax(0,.6fr) minmax(0,1fr) minmax(0,2fr) auto}
+  [data-module="missions"] .ms-evrow>.ms-evtext{grid-column:auto}
+}
 [data-module="missions"] .ms-edform textarea{width:100%;box-sizing:border-box;resize:vertical;font:inherit}
 [data-module="missions"] .ms-stload>.f-field:first-child{flex:3 1 14em}
 [data-module="missions"] [data-stcount][data-over="1"]{color:var(--sog-warn,#b06f00)} /* au-delà de 600 : la synthèse coupera (jamais l'écriture) */
@@ -630,6 +636,36 @@ const TX = {
     'Ningún riesgo: «+ Riesgo» añade uno.'
   ],
   rkNoHazard: ['danger à dire', 'hazard to state', 'Gefahr angeben', 'peligro por indicar'],
+  edTimelineHint: [
+    'H = décollage prévu. Un événement par ligne : l\'heure (H+30mn, H+1h05mn), un lieu de la mission ou rien, ce qui se passe.',
+    'H = planned take-off. One event per row: the time (H+30mn, H+1h05mn), a place of the mission or none, what happens.',
+    'H = geplanter Start. Ein Ereignis pro Zeile: die Zeit (H+30mn, H+1h05mn), ein Ort der Mission oder keiner, was geschieht.',
+    'H = despegue previsto. Un evento por fila: la hora (H+30mn, H+1h05mn), un lugar de la misión o ninguno, lo que ocurre.'
+  ],
+  evAt: ['Heure', 'Time', 'Zeit', 'Hora'],
+  evPlace: ['Lieu', 'Place', 'Ort', 'Lugar'],
+  evFree: ['(aucun lieu)', '(no place)', '(kein Ort)', '(ningún lugar)'],
+  evText: ['Ce qui se passe', 'What happens', 'Was geschieht', 'Lo que ocurre'],
+  evAdd: ['+ Événement', '+ Event', '+ Ereignis', '+ Evento'],
+  evDel: ['Retirer cet événement', 'Remove this event', 'Dieses Ereignis entfernen', 'Quitar este evento'],
+  evNone: ['Aucun événement : « + Événement » en ajoute un.', 'No event: « + Event » adds one.',
+    'Kein Ereignis: „+ Ereignis“ fügt eines hinzu.',
+    'Ningún evento: «+ Evento» añade uno.'
+  ],
+  mpTitle: ['Cartes', 'Maps', 'Karten', 'Mapas'],
+  mpNone: ['Aucune carte déclarée.', 'No map declared.', 'Keine Karte angegeben.', 'Ningún mapa declarado.'],
+  mpPropose: ['Proposer les cartes depuis les lieux ({n})', 'Propose maps from the places ({n})',
+    'Karten aus den Orten vorschlagen ({n})',
+    'Proponer los mapas a partir de los lugares ({n})'
+  ],
+  mpUnplaced: ['centre à placer (Lieux)', 'centre to place (Places)', 'Mitte zu platzieren (Orte)', 'centro por situar (Lugares)'],
+  mpStudio: ['Les images des cartes se font au studio cartographique de la V2.', 'The map images are made in the V2 map studio.',
+    'Die Kartenbilder entstehen im Kartenstudio der V2.', 'Las imágenes de los mapas se hacen en el estudio cartográfico de la V2.'
+  ],
+  todo_mapUnplaced: ['carte centrée sur un lieu sans position', 'map centred on a place without position',
+    'Karte auf einen Ort ohne Position zentriert',
+    'mapa centrado en un lugar sin posición'
+  ],
   todo_title: ['titre', 'title', 'Titel', 'título'],
   todo_theatre: ['théâtre', 'theatre', 'Einsatzgebiet', 'teatro'],
   todo_dep: ['départ', 'departure', 'Abflug', 'salida'],
@@ -1981,6 +2017,8 @@ function edDoc(e, cadre = e.cadre) {
   if (e.places) d = ED.withPlaces(d, e.places);
   if (e.story) d = ED.withStory(d, e.story);
   if (e.risks) d = ED.withRisks(d, e.risks);
+  if (e.events) d = ED.withEvents(d, e.events);
+  if (e.mapsAdd?.length) d = ED.withMaps(d, e.mapsAdd);
   return d;
 }
 
@@ -2075,6 +2113,25 @@ function edRisksHtml(s) {
     ${rows.length < ED.RISKS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edriskadd">${esc(s.tt(TX.rkAdd))}</button></div>` : ''}`;
 }
 
+/** L'étape Chronologie et cartes : une ligne par événement (heure, lieu, ce qui se passe), « + Événement » ; puis les cartes déclarées
+ *  et « Proposer les cartes depuis les lieux » (des entrées : les images se font au studio de la V2). */
+function edTimelineHtml(s) {
+  const e = s.ed,
+    rows = e.events || [],
+    doc = edDoc(e),
+    places = ED.placesOf(doc).filter(p => p.id && !['dep', 'arr'].includes(p.kind)),
+    maps = ED.mapsOf(doc),
+    missing = ED.proposedMaps(doc),
+    opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`,
+    row = (r, i) => `<div class="ms-edteam ms-evrow" data-event="${i}"><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evAt))}</span><input data-k="edevent" data-i="${i}" data-f="at" value="${esc(r.at)}" placeholder="H+30mn" maxlength="20" autocomplete="off"></label><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evPlace))}</span><select data-k="edevent" data-i="${i}" data-f="place">${opt('', s.tt(TX.evFree), r.place)}${[...places.map(p => [p.id.toUpperCase(), `${p.id}${p.name ? ` — ${p.name}` : ''}`]), ...(r.place && !places.some(p => p.id.toUpperCase() === r.place) ? [[r.place, r.place]] : [])].map(([v, l]) => opt(v, l, r.place)).join('')}</select></label><label class="f-field ms-evtext"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evText))}</span><input data-k="edevent" data-i="${i}" data-f="text" value="${esc(r.text)}" maxlength="500" autocomplete="off"></label><button type="button" class="ms-edtdel" data-do="edeventdel" data-i="${i}" title="${esc(s.tt(TX.evDel))}" aria-label="${esc(s.tt(TX.evDel))}">✕</button></div>`;
+  return `<h3>6. ${esc(s.tt(TX.stepTimeline))}</h3><p class="f-muted">${esc(s.tt(TX.edTimelineHint))}</p>
+    <div class="f-list" data-edevents>${rows.length ? `<div class="ms-edteam ms-evrow ms-edthead f-muted" aria-hidden="true">${[TX.evAt, TX.evPlace, TX.evText].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>${rows.map(row).join('')}` : `<p class="f-muted" data-noevent>${esc(s.tt(TX.evNone))}</p>`}</div>
+    ${rows.length < ED.EVENTS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edeventadd">${esc(s.tt(TX.evAdd))}</button></div>` : ''}
+    <h4>${esc(s.tt(TX.mpTitle))}</h4>
+    <div class="f-list" data-edmaps>${maps.length ? maps.map(m => `<div class="ms-plrow ms-rkrow" data-map="${esc(m.id)}"><span class="ms-plbody"><b>${esc([m.id, m.type].filter(Boolean).join(' · '))}</b><span class="f-muted">${esc([m.description, m.unplaced ? s.tt(TX.mpUnplaced) : ''].filter(Boolean).join(' · '))}</span></span></div>`).join('') : `<p class="f-muted" data-nomap>${esc(s.tt(TX.mpNone))}</p>`}</div>
+    <div class="f-row ms-pladd">${missing.length ? `<button type="button" data-do="edmapspropose">${esc(s.tt(TX.mpPropose, { n: missing.length }))}</button>` : ''}<span class="f-muted">${esc(s.tt(TX.mpStudio))}</span></div>`;
+}
+
 /** L'écran de l'éditeur (la maquette : modules/missions/maquette/editeur_cadre_*.png). */
 function edHtml(s) {
   const e = s.ed,
@@ -2084,7 +2141,7 @@ function edHtml(s) {
   return `<div class="ms-ed" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(crumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : e.step === 'places' ? edPlacesHtml(s) : e.step === 'story' ? edStoryHtml(s) : e.step === 'risks' ? edRisksHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
+    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : e.step === 'places' ? edPlacesHtml(s) : e.step === 'story' ? edStoryHtml(s) : e.step === 'risks' ? edRisksHtml(s) : e.step === 'timeline' ? edTimelineHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
     <div class="ms-edbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" data-do="ednext"${nextStep ? ` data-step="${nextStep}"` : ` disabled title="${esc(s.tt(TX.edLater))}"`}>${esc(s.tt(TX.edNext))}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
 }
 
@@ -2093,6 +2150,12 @@ function edHtml(s) {
 function edInput(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
+  if (k === 'edevent') { // un événement : le champ retouché en place (le lieu, une liste, aussi)
+    const row = e.events?.[+ev.target.dataset.i],
+      f = ev.target.dataset.f;
+    if (row && ['at', 'place', 'text'].includes(f)) row[f] = f === 'place' ? ev.target.value.toUpperCase() : ev.target.value;
+    return edRefresh(s);
+  }
   if (k === 'edrisk') { // un risque : le champ retouché en place, la ligne redessinée à « OK »
     const row = e.risks?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
@@ -2237,6 +2300,8 @@ async function edSave(s) {
       story: null,
       risks: null,
       riskEdit: -1,
+      events: null,
+      mapsAdd: null,
       path,
       origId: c.id,
       regIdx: line ? line.idx : e.regIdx,
@@ -2280,6 +2345,7 @@ function edClick(s, b) {
       if (s.ed.step === 'places' && !s.ed.places) s.ed.places = ED.placesOf(edDoc(s.ed));
       if (s.ed.step === 'story' && !s.ed.story) s.ed.story = ED.storyOf(s.ed.base);
       if (s.ed.step === 'risks' && !s.ed.risks) s.ed.risks = ED.risksOf(s.ed.base);
+      if (s.ed.step === 'timeline' && !s.ed.events) s.ed.events = ED.eventsOf(s.ed.base);
       draw(s);
       // au téléphone, la pastille de l'étape ouverte vient dans la bande qui défile (sans faire sauter la page)
       return s.el.querySelector('[data-steps] [aria-current]')?.scrollIntoView?.({
@@ -2288,6 +2354,22 @@ function edClick(s, b) {
       });
     case 'edplace':
       s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
+      return draw(s);
+    case 'edeventadd':
+      s.ed.events = [...(s.ed.events || ED.eventsOf(s.ed.base)), {
+        i: -1,
+        at: 'H',
+        place: '',
+        text: ''
+      }].slice(0, ED.EVENTS_MAX);
+      draw(s);
+      return s.el.querySelector(`[data-event="${s.ed.events.length - 1}"] [data-f=text]`)?.focus();
+    case 'edeventdel':
+      s.ed.events = (s.ed.events || []).filter((_, i) => i !== +b.dataset.i);
+      return draw(s);
+    case 'edmapspropose':
+      // les cartes attendues d'après les lieux tels qu'ils sont à l'écran (des entrées ; une proposition ne se fait qu'une fois)
+      s.ed.mapsAdd = [...(s.ed.mapsAdd || []), ...ED.proposedMaps(edDoc(s.ed))];
       return draw(s);
     case 'edrisk':
       s.ed.riskEdit = s.ed.riskEdit === +b.dataset.i ? -1 : +b.dataset.i;
