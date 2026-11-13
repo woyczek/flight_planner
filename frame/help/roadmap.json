@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4f27426",
+  "organisation": "b8021cc",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -981,8 +981,7 @@
      "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
      "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
      "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)",
-     "rank": 169,
-     "test": true
+     "rank": 169
     },
     {
      "id": "SOG-0224",
