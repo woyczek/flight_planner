@@ -1032,6 +1032,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 180 | The fix of the defect of 178 (eba9923ce) and the search in the content of the missions (c83592c6a, SOG-0288: `modules/missions/search.js`, the index built at the first keystroke) | fix verified, defect closed; search acceptable, two notes |
 | 181 | The V2 registry: the missions kept by the browser, counted and exported in one downloaded archive (025bd7651, SOG-0293 a, b) | acceptable; one defect proved (the header of an exported file) |
 | 182 | The V3 mission editor: the frame step (3ace1a58f, SOG-0287; `modules/missions/editor.js`, new) and the teams step (c138087b3) | paths and display acceptable; two defects proved (the teams step loses data, a dump of a file with aliases) |
+| 183 | The V2 registry, group B continued: the reports under a former number (a78fa30b0), “Compare with the folder” / “Store in the folder” / “Keep the file” (ec6c6ee02, SOG-0293 c), the texts received in a batch kept per mission (d46aee7c1, SOG-0294) | acceptable; one defect proved (the comparison of a served file with aliases), three notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2752,6 +2753,38 @@ above in under a second and does not call `dump`. **Notes.** (1) `duplicate()` k
 mission then carries the same former number, and the V2 registry pairs a number with the last line that names it (SOG-0289); delete
 `meta.former_id` next to `meta.history`. (2) In `blocking()`, an identifier equal to the line's own (`own`) skips the form test: harmless
 here because the path is then the one read or an empty string, but keep the order.
+
+**183. The V2 registry: reports under a former number, comparison and storing of the kept missions, received texts per mission — acceptable; one defect proved.**
+*Reports (a78fa30b0).* `linkReports` also takes the reports whose mission is the line's former number; it only reads (the reports' own registry
+is not touched) and skips a line that is hidden as superseded. A forged `former_id` can only make a line show reports that are not its own, a
+display association for a line the contributor could already create. *Store in the folder (ec6c6ee02).* Each “Store” button carries one
+identifier, the click is delegated and handled for that row only (no loop over the list, no bulk button); “Keep the file” writes one
+choice key and removes nothing; the rows to decide are only the states `diff` and `none`, so a snapshot that could not be compared (`unknown`)
+cannot be stored. `storeMission` re-validates the identifier (`checkMissionId`), builds the folder from the identifier alone
+(`<letter>_<family found by letter>/<ID>`, the family name stripped to `[A-Z0-9-]`) and, when a file is there and differs, writes it to
+`versions/` **before** replacing it (K223 green, on a writable fake folder). The texts shown (dates, counts, the identifier and the target)
+go through `esc`; the target is written “old → new” in the row. *Received texts (d46aee7c1).* `receivedOf` keeps for a mission the
+texts that cite its identifier or its former one and the texts that cite no mission (copied everywhere, as before): it is strictly narrower than
+the former behaviour, and a text forged to cite another mission only lands in that mission's `recu/` when it is in the same batch. The
+patterns are anchored and linear. K219 to K224 green. **Defect (proved): the comparison reads a served file with aliases through
+`JSON.stringify`.** `refreshKept` runs at each opening of the page; for each snapshot with a line it fetches the mission's file from the launcher
+(`jsyaml.load`: anchors are shared, so it is cheap) and then runs `canon()` (a `JSON.stringify` of the whole tree, shared references written out
+in full) and, since ec6c6ee02, `leafCount()` (a recursive walk of the same tree). Probed on the vendored js-yaml: a 420-byte file of ten nested
+levels takes 0.6 s and 87 MB of JSON, an eleven-level file of 455 bytes takes 2.6 s and 350 MB (and 2.1 s more for `leafCount`), twelve levels
+exceed the string limit and the call throws, unhandled, since `refreshKept()` is not awaited. The precondition is a snapshot for that identifier
+in the local storage, which the editor creates when the user loads that very mission: so a hostile file in the missions folder, once loaded, makes
+the registry page freeze at every opening until the snapshot is gone. The same family as defect 2 of 182 (any `noRefs: true` dump) on another
+reader: the guard belongs in one shared function. **Fix and counter-test.** A function that loads a text and refuses the result when
+the document, counted with every shared reference expanded, passes a budget (200,000 nodes), used by `fileYaml`, the folder reading, the
+`storeMission` reader and the V3 `edRead`; in `refreshKept`, an item whose file is refused is `unknown`, and a failure in one item never
+stops the others (a `try` per item). Counter-test (red now): serve the eleven-level file above under a mission with a snapshot; the page answers in
+under a second and counts that mission as not compared. **Notes.** (1) `lineWithFiles` falls back to the first line that names the identifier as
+its former number: a hostile line that claims a former number the real, renumbered line also claims (or one nobody else claims) receives the
+user's snapshot of that old number if the user presses its row's button, after seeing “85 → T-999”; use the fallback only when exactly one line
+claims the number and show the target's title in the row. (2) `storeMission` backs up the old file only when it parses (`old` truthy): an existing
+file that does not parse leaves status `new` and is overwritten without a copy in `versions/`; copy `oldText` whenever it exists and differs.
+(3) `receivedOf` calls `receivedIds` (a YAML parse per text) for every mission of a batch: the work is the number of missions times the number of
+texts; compute the cited identifiers once per batch.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
