@@ -1589,8 +1589,15 @@ def k123(c):
         c.eq((r['ok'], run(action='get')['items'].get('SOG-0003', {}).get('comment') == long_c, RB.verdicts(str(org)).get('SOG-0003', {}).get('comment') == long_c), (True, True, True),
              'a comment of 2000 signs is written, read back and kept whole by tools/recette_build.py (SOG-0303)', what='2000 comment')
         run(action='set', items={}, drop=['SOG-0003'])
+        # SOG-0329: « accepter avec réserves » is a third verdict that needs its comment; what is already written is not rewritten; the regeneration counts it as a verdict
+        existing = json.loads(f.read_text(encoding='utf-8'))['items']
+        r = run(action='set', items={'SOG-0009': {'verdict': 'reserve', 'comment': 'le libellé est coupé à 390', 'at': '2026-11-13T16:15:00Z'}})
+        after = json.loads(f.read_text(encoding='utf-8'))['items']
+        c.eq((r['ok'], after['SOG-0009'], {k: after[k] for k in existing}, RB.verdicts(str(org)).get('SOG-0009', {}).get('verdict')), (True, {'verdict': 'reserve', 'comment': 'le libellé est coupé à 390', 'at': '2026-11-13T16:15:00Z'}, existing, 'reserve'),
+             'a verdict « reserve » with its comment is written and read back by the regeneration; the verdicts already there are not rewritten (SOG-0329)', what='reserve')
+        run(action='set', items={}, drop=['SOG-0009'])
         before = f.read_bytes()
-        for bad in ({'SOG-12': {'verdict': 'ok'}}, {'SOG-0003': {'verdict': 'maybe'}}, {'SOG-0003': {}}, {'SOG-0003': {'verdict': 'ko'}}, {'SOG-0003': {'verdict': 'ko', 'comment': '   '}},
+        for bad in ({'SOG-12': {'verdict': 'ok'}}, {'SOG-0003': {'verdict': 'maybe'}}, {'SOG-0003': {}}, {'SOG-0003': {'verdict': 'ko'}}, {'SOG-0003': {'verdict': 'ko', 'comment': '   '}}, {'SOG-0003': {'verdict': 'reserve'}}, {'SOG-0003': {'verdict': 'reserve', 'comment': '  '}},
                     {'SOG-0003': {'verdict': 'ok', 'comment': 'x' * 2001}}, {'SOG-0003': {'verdict': 'ok', 'comment': 'a\x00b'}}, {'SOG-0003': {'verdict': 'ok', 'at': 'yesterday'}},
                     {'SOG-0003': {'verdict': 'ok', 'extra': 1}}, {'SOG-0003': {'verdict': 'ok', 'comment': 3}}):
             r = run(action='set', items={**good, **bad})

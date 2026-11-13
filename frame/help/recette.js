@@ -10,6 +10,10 @@
   const ID = /^SOG-\d{4}$/;
   const AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
   const DELIVERED = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/; // la date de livraison d'une fiche : UTC, à la seconde
+  const VERDICTS = ['ok', 'ko',
+      'reserve'
+    ], // SOG-0329 : « accepter avec réserves (pas de retest) » compte comme validé et ne revient pas en recette
+    NEEDS_COMMENT = ['ko', 'reserve']; // un refus et des réserves se disent
   const MAX_ITEMS = 1000,
     MAX_COMMENT = 2000, // SOG-0303 : 600 avant ; le lanceur (tools/regen/recette.py) et tools/recette_build.py disent la même limite
     COUNT_FROM = 1800, // le compteur discret apparaît à partir de là
@@ -52,6 +56,11 @@
     comment: ['Commentaire', 'Comment', 'Kommentar', 'Comentario'],
     ok: ['Validé', 'Passed', 'Bestanden', 'Válido'],
     ko: ['Refusé', 'Failed', 'Abgelehnt', 'Rechazado'],
+    reserve: ['Accepté avec réserves', 'Accepted with reservations', 'Mit Vorbehalten akzeptiert', 'Aceptado con reservas'],
+    reserveBtn: ['Accepter avec réserves', 'Accept with reservations', 'Mit Vorbehalten akzeptieren', 'Aceptar con reservas'],
+    withReserves: ['dont {r} avec réserves', 'including {r} with reservations', 'davon {r} mit Vorbehalten',
+      'de ellos {r} con reservas'
+    ],
     redo: ['Remettre à tester', 'Test again', 'Erneut testen', 'Volver a probar'],
     // un test livré de nouveau depuis son verdict : il revient à tester, et la ligne dit pourquoi (SOG-0167)
     redelivered: {
@@ -65,8 +74,15 @@
       ok: ['Relivré depuis votre validation du {d}', 'Delivered again since your pass of {d}',
         'Erneut geliefert seit Ihrer Bestätigung vom {d}',
         'Entregada de nuevo desde su validación del {d}'
+      ],
+      reserve: ['Relivré depuis vos réserves du {d} : « {c} »', 'Delivered again since your reservations of {d}: “{c}”',
+        'Erneut geliefert seit Ihren Vorbehalten vom {d}: „{c}“', 'Entregada de nuevo desde sus reservas del {d}: «{c}»'
       ]
     },
+    needReserve: ['Des réserves demandent un commentaire : dites lesquelles.', 'Reservations need a comment: say which.',
+      'Vorbehalte brauchen einen Kommentar: Sagen Sie, welche.',
+      'Las reservas piden un comentario: diga cuáles.'
+    ],
     need: ['Un refus demande un commentaire : dites ce qui ne va pas.', 'A failure needs a comment: say what is wrong.',
       'Eine Ablehnung braucht einen Kommentar: Sagen Sie, was nicht stimmt.',
       'Un rechazo pide un comentario: diga qué falla.'
@@ -144,19 +160,19 @@
   const text = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '';
   /** Un verdict lu d'ailleurs (le fichier du lanceur, le magasin de l'appareil, le fichier généré) : { verdict, comment?, at? } aux règles, sinon null ; un refus sans commentaire n'est pas un verdict. */
   const entryOf = v => {
-    if (!v || typeof v !== 'object' || (v.verdict !== 'ok' && v.verdict !== 'ko')) return null;
+    if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict)) return null;
     const e = {
         verdict: v.verdict
       },
       c = text(v.comment, MAX_COMMENT);
     if (c) e.comment = c;
     if (typeof v.at === 'string' && AT.test(v.at)) e.at = v.at;
-    return v.verdict === 'ko' && !e.comment ? null : e;
+    return NEEDS_COMMENT.includes(v.verdict) && !e.comment ? null : e;
   };
   /** Le verdict qu'une nouvelle livraison a remplacé (donné par le générateur) : { verdict, comment?, at? } aux règles, sinon null ; contrairement à
    *  entryOf, un refus sans commentaire reste dicible (« Relivré depuis votre refus du … »). */
   const previousEntry = v => {
-    if (!v || typeof v !== 'object' || (v.verdict !== 'ok' && v.verdict !== 'ko')) return null;
+    if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict)) return null;
     const e = {
         verdict: v.verdict
       },
@@ -324,11 +340,11 @@
       title: x.title,
       test: text(x.test, 700),
       since: /^\d{4}-\d{2}-\d{2}$/.test(String(x.since)) ? x.since : '',
-      state: ['todo', 'known', 'ok', 'ko'].includes(x.state) ? x.state : 'todo',
+      state: ['todo', 'known', ...VERDICTS].includes(x.state) ? x.state : 'todo',
       // la date de la dernière livraison de la fiche (UTC, « AAAA-MM-JJThh:mm:ssZ ») et le verdict qu'elle a remplacé : lus comme des entrées non fiables
       delivered: typeof x.delivered === 'string' && DELIVERED.test(x.delivered) ? x.delivered : '',
       previous: previousEntry(x.previous),
-      gen: x.state === 'ok' || x.state === 'ko' ? entryOf({
+      gen: VERDICTS.includes(x.state) ? entryOf({
         verdict: x.state,
         comment: x.comment,
         at: x.at
@@ -425,11 +441,11 @@
       if (v) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="${v.verdict}">${head}<p data-verdict="${v.verdict}"><b>${esc(t(T[v.verdict]))}</b>${v.at ? ` <small class="f-muted">${esc(v.at.slice(0, 10))}</small>` : ''}${v.comment ? ` — ${esc(v.comment)}` : ''}</p>
         <div class="f-row"><button type="button" data-redo="${esc(x.id)}">${esc(t(T.redo))}</button></div></li>`;
       const p = previousOf(x),
-        why = p ? `<p class="f-muted" data-redelivered="${p.verdict}">${esc(t(T.redelivered[p.verdict === 'ko' && !p.comment ? 'koBare' : p.verdict], { d: (p.at || x.delivered || '').slice(0, 10), c: p.comment || '' }))}</p>` : '';
+        why = p ? `<p class="f-muted" data-redelivered="${p.verdict}">${esc(t(T.redelivered[p.verdict === 'ko' && !p.comment ? 'koBare' : p.verdict === 'reserve' && !p.comment ? 'ok' : p.verdict], { d: (p.at || x.delivered || '').slice(0, 10), c: p.comment || '' }))}</p>` : '';
       return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="todo">${head}${why}
         <label class="f-field">${esc(t(T.comment))}<textarea data-comment="${esc(x.id)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(ui.draft[x.id] || '')}</textarea>${counter(ui.draft[x.id])}</label>
-        ${ui.need === x.id ? `<p class="f-warn" data-need>${esc(t(T.need))}</p>` : ''}
-        <div class="f-row"><button type="button" class="primary" data-ok="${esc(x.id)}">${esc(t(T.ok))}</button><button type="button" data-ko="${esc(x.id)}">${esc(t(T.ko))}</button></div></li>`;
+        ${ui.need === x.id ? `<p class="f-warn" data-need>${esc(t(ui.needKind === 'reserve' ? T.needReserve : T.need))}</p>` : ''}
+        <div class="f-row"><button type="button" class="primary" data-ok="${esc(x.id)}">${esc(t(T.ok))}</button><button type="button" data-reserve="${esc(x.id)}">${esc(t(T.reserveBtn))}</button><button type="button" data-ko="${esc(x.id)}">${esc(t(T.ko))}</button></div></li>`;
     };
     /** Une section : ses tests par application, sept visibles puis « Voir les n autres » ; hors « Tests du jour » elle est repliée jusqu'à un toucher sur son titre. */
     const sectionHtml = (k, list) => {
@@ -495,7 +511,7 @@
         verdictN = v => mine.filter(x => !known(x) && verdictOf(x)?.verdict === v).length;
       const tabs = questions.length ? `<div class="f-rm-bar" role="tablist" data-tabs>${['tests', 'decisions'].map(k => `<button type="button" class="f-rm-btn" data-tab="${k}" aria-pressed="${ui.tab === k}">${esc(k === 'tests' ? t(T.tabTests) : t(T.tabDecide, { n: undecided() }))}</button>`).join('')}</div>` : '';
       view.innerHTML = `<h1>${esc(t(T.title))}</h1>${tabs}${ui.tab === 'decisions' && questions.length ? decisionsPanel() : `        <p class="f-muted">${esc(t(T.intro))}</p>
-        <p data-summary>${esc(t(T.summary, { a: n('today') + n('older'), b: verdictN('ok'), c: verdictN('ko'), d: n('known') }))}</p>
+        <p data-summary>${esc(t(T.summary, { a: n('today') + n('older'), b: verdictN('ok') + verdictN('reserve'), c: verdictN('ko'), d: n('known') }) + (verdictN('reserve') ? ` (${t(T.withReserves, { r: verdictN('reserve') })})` : ''))}</p>
         <div class="f-rm-bar" data-apps>${[''].concat(apps).map(a => `<button type="button" class="f-rm-btn" data-app="${esc(a)}" aria-pressed="${ui.app === a}">${esc(a ? appName(a) : t(T.all))}</button>`).join('')}</div>
         ${mine.length ? SECTIONS.map(k => sectionHtml(k, by[k])).join('') : `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`}`}`;
       fitAll(view);
@@ -759,15 +775,17 @@
         return draw(`[data-more="${CSS.escape(b.dataset.more)}"]`);
       }
       if (b.dataset.redo) return commit(b.dataset.redo, null);
-      const id = b.dataset.ok || b.dataset.ko;
+      const id = b.dataset.ok || b.dataset.ko || b.dataset.reserve;
       if (!id || !ID.test(id)) return;
       const comment = text(ui.draft[id] ?? view.querySelector(`[data-comment="${CSS.escape(id)}"]`)?.value, MAX_COMMENT);
-      if (b.dataset.ko && !comment) { // un refus sans commentaire : on le dit, on garde la place
+      if ((b.dataset.ko || b.dataset.reserve) && !
+        comment) { // un refus ou des réserves sans commentaire : on le dit, on garde la place
         ui.need = id;
+        ui.needKind = b.dataset.reserve ? 'reserve' : 'ko';
         return draw(`[data-comment="${CSS.escape(id)}"]`);
       }
       return commit(id, {
-        verdict: b.dataset.ok ? 'ok' : 'ko',
+        verdict: b.dataset.ok ? 'ok' : b.dataset.reserve ? 'reserve' : 'ko',
         ...(comment ? {
           comment
         } : {}),

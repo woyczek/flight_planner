@@ -9,7 +9,7 @@ Inputs, all in the organisation folder (the single source, like the roadmap of t
                         rewritten?: "YYYY-MM-DDTHH:MM:SSZ" } } }, one functional test per delivered fiche, written by the
                         ergonomist in the pilot's words;
   · RECETTE.json        the user's verdicts, written by the launcher from the screen (sog-recette/1 :
-                        { items: { "SOG-xxxx": { verdict: "ok" | "ko", comment, at } } }); optional;
+                        { items: { "SOG-xxxx": { verdict: "ok" | "ko" | "reserve", comment, at } } }); optional;
   · roadmap_i18n.json   the translated titles (en, de, es), shared with the roadmap.
 
 Output: { schema: 'sog-recette/1', generated: { tool, at, tests, verdicts }, apps, tests: [{ id, app, title: {fr, en, de, es},
@@ -17,7 +17,7 @@ test (French: the user's language of work), since, state: 'todo' | 'known' | 'ok
   · 'todo'  the fiche is delivered and waits for the user's verdict;
   · 'known' the fiche is open again or in progress: said on its test (« en cours, ne pas retester »), so that a known defect
             is not reported twice;
-  · 'ok' / 'ko' the user's last verdict, kept while the fiche has not been delivered again after it.
+  · 'ok' / 'ko' / 'reserve' the user's last verdict (`reserve`: accepted with reservations, no retest, a comment is required — SOG-0329), kept while the fiche has not been delivered again after it.
 `delivered` is the date (UTC) of the newest commit the state of the fiche cites: its last delivery. A verdict older than it is no
 longer in force: the test is 'todo' again and the old verdict is kept in `previous` ({ verdict, comment?, at }), so that the
 screen can say « delivered again since your refusal » (the user, 10 Nov 2026: « je ne vois pas de màj de la page de recette »).
@@ -116,7 +116,7 @@ def verdicts(org):
     """{ id: { verdict, comment, at } } from RECETTE.json, bounded and filtered."""
     out = {}
     for fid, v in list((read_json(os.path.join(org, 'RECETTE.json')).get('items') or {}).items())[:1000]:
-        if not ID.match(str(fid)) or not isinstance(v, dict) or v.get('verdict') not in ('ok', 'ko'):
+        if not ID.match(str(fid)) or not isinstance(v, dict) or v.get('verdict') not in ('ok', 'ko', 'reserve'):
             continue
         e = {'verdict': v['verdict']}
         if isinstance(v.get('comment'), str):
@@ -192,7 +192,7 @@ def build(org):
         tests.append(row)
     return {'schema': 'sog-recette/1',
             'generated': {'tool': 'tools/recette_build.py', 'at': datetime.date.today().isoformat(), 'tests': len(tests),
-                          'verdicts': sum(1 for t in tests if t['state'] in ('ok', 'ko'))},
+                          'verdicts': sum(1 for t in tests if t['state'] in ('ok', 'ko', 'reserve'))},
             'apps': [a for a, _, _ in RB.APPS] if hasattr(RB, 'APPS') else ['pilote', 'compagnie', 'maintenance', 'stats'],
             'tests': tests, 'decisions': decisions(org, fs)}
 

@@ -7239,6 +7239,56 @@ def a182(c):
     c.check_errors()
 
 
+@case('A190', "The Recette screen has three gestures (SOG-0329): « Validé », « Accepter avec réserves » (a comment is required, it counts as passed, the test does not come back) and « Refusé »; the launcher writes the third verdict `reserve`, the summary counts it with the passed ones and marks it « dont n avec réserves »", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule="SOG-0329 (the user, 13 Nov: « ajoute un bouton « accepter avec réserves (pas de retest) ». refuser implique un retest. »): a third verdict `reserve` in organisation/RECETTE.json (written by recette/verdict, a comment required like for a refusal), counted with the passed ones and marked apart; the verdicts already written are not rewritten; the test goes to « Déjà vus » and does not come back to test")
+def a190(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    T = lambda k: tx('frame/help/recette.js', k, lang, after='const T = {')
+    fx = _rc_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'RECETTE.json'
+        old = {'SOG-0312': {'verdict': 'ok', 'at': '2026-11-09T18:00:00Z'}, 'SOG-0313': {'verdict': 'ko', 'comment': 'le bouton reste gris', 'at': '2026-11-09T18:05:00Z'}}
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': '2026-11-09T18:05:00Z', 'items': old}), encoding='utf-8')
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items']
+        _prio_launcher(c, root, verb=('recette', 'verdict'))
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=15000, what='the tests')
+        first = c.js("document.querySelector('[data-section=today] li[data-id]').dataset.id")
+        c.eq(c.js(f"[...document.querySelectorAll('[data-id=\"{first}\"] .f-row button')].map(b => Object.keys(b.dataset)[0])"), ['ok', 'reserve', 'ko'], 'three gestures: passed, accepted with reservations, failed', what='buttons')
+        c.eq(norm(c.text(f'[data-reserve="{first}"]')), norm(T('reserveBtn')), 'the third button says « Accepter avec réserves »', what='label')
+        # without a comment: asked, nothing written
+        c.tap(f'[data-reserve="{first}"]')
+        c.until(f"!!document.querySelector('[data-id=\"{first}\"] [data-need]')", what='the comment is asked')
+        c.eq([norm(c.text(f'[data-id="{first}"] [data-need]')), first in written()], [norm(T('needReserve')), False], 'reservations without a comment: asked, nothing written', what='need')
+        # with a comment: written as `reserve`, the others untouched
+        c.page.fill(f'[data-comment="{first}"]', 'Le libellé est coupé à 390')
+        c.tap(f'[data-reserve="{first}"]')
+        got = None
+        for _ in range(40):
+            got = written()
+            if first in got:
+                break
+            c.wait(250)
+        c.eq([got[first]['verdict'], got[first]['comment'], {k: got[k] for k in old}], ['reserve', 'Le libellé est coupé à 390', old], 'the launcher wrote the third verdict with its comment; the verdicts already there are not rewritten', what='written')
+        c.until(f"!document.querySelector('[data-section=today] [data-id=\"{first}\"]')", what='the test left the day list')
+        c.eq(norm(c.text('[data-summary]')), norm(T('summary').replace('{a}', '9').replace('{b}', '2').replace('{c}', '1').replace('{d}', '1') + ' (' + T('withReserves').replace('{r}', '1') + ')'), 'the summary counts it with the passed ones and marks it apart', what='summary')
+        c.js("document.querySelector('[data-section=seen]').open = true")
+        c.eq(norm(c.text(f'[data-section=seen] [data-id="{first}"] [data-verdict]')).startswith(norm(T('reserve'))), True, 'in « Déjà vus » it says « Accepté avec réserves » and its comment', what='seen')
+        c.shot(f'A190_{c.width}_{lang}_delivered.png')
+        c.wait(2500)
+        c.page.reload()
+        c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=15000, what='the screen again')
+        c.until(f"!!document.querySelector('[data-section=seen] [data-id=\"{first}\"]')", timeout=15000, what='the verdict read back')
+        c.eq(c.count(f'[data-section=today] [data-id="{first}"], [data-section=older] [data-id="{first}"]'), 0, 'after a reload it does not come back to test', what='no retest')
+    c.check_errors()
+
+
 @case('A180', 'Maintenance: « Administration » is never cut inside the word on the Material rail, and the button « Réglage des seuils de la carte » of the Administration card opens the Map (Pilot app) instead of the Data screen (SOG-0315, items 1 and 2)',
       'A', langs4=True, screens=False, night=False, designs=('material',),
       rule='SOG-0315 (the user, recette of SOG-0274 and SOG-0118): the Material rail is 88 px and its entries carry `overflow-wrap: anywhere`, so « Administration » (12 px, about 80 px) was cut as « Administratio / n »; and `#maps?tune=1` opened from the Administration card INSIDE the Maintenance app names a module that app does not have, so the frame fell back to its first screen (Données)')

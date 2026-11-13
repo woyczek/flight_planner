@@ -3,8 +3,9 @@
 Un verbe, `recette/verdict` { action, items? } (ce poste seulement, comme tous les travaux), deux actions, sur le modèle de roadmap/priorities :
   · `get` : lit organisation/RECETTE.json (à la racine de la suite) et rend { ok, action, schema, updated, items, dropped, exists } ;
   · `set` { items, drop? } : FUSIONNE `items` dans le contenu, par identifiant (une entrée écrite ne disparaît JAMAIS parce que l'écran ne l'a pas en main : seul `drop`, la liste des identifiants que l'utilisateur reprend, en retire) et rend { ok, action, count, updated }.
-Forme du fichier : { "schema": "sog-recette/1", "updated": "<ISO UTC>", "items": { "SOG-0046": { "verdict": "ok" | "ko", "comment": "…", "at": "<ISO UTC>" }, … } } — 1000 entrées au plus,
-un identifiant ^SOG-\\d{4}$, un verdict `ok` ou `ko`, un commentaire de 2000 signes au plus (SANS caractère de commande, hors tabulation et saut de ligne : le champ est sur plusieurs lignes) qui est OBLIGATOIRE pour un refus (`ko`), une date ISO UTC. C'est l'entrée
+Forme du fichier : { "schema": "sog-recette/1", "updated": "<ISO UTC>", "items": { "SOG-0046": { "verdict": "ok" | "ko" | "reserve", "comment": "…", "at": "<ISO UTC>" }, … } } — 1000 entrées au plus,
+un identifiant ^SOG-\\d{4}$, un verdict `ok`, `ko` ou `reserve` (SOG-0329 : « accepter avec réserves, pas de retest » : compte comme validé et ne revient pas en recette ; un verdict déjà écrit n'est pas réécrit),
+un commentaire de 2000 signes au plus (SANS caractère de commande, hors tabulation et saut de ligne : le champ est sur plusieurs lignes) qui est OBLIGATOIRE pour un refus (`ko`) et pour des réserves (`reserve`), une date ISO UTC. C'est l'entrée
 de l'utilisateur : tools/recette_build.py la lit à chaque régénération (un verdict tient tant que la fiche n'est pas livrée de nouveau).
 Règles : le dossier organisation/ absent → { ok: false, reason: 'no-organisation' } (rien n'est créé) ; `set` refuse en bloc ({ ok: false, reason: 'bad-items', bad: [identifiants, 20 au plus] })
 une entrée hors des règles ci-dessus, sans rien écrire ; `get` lit un fichier qui peut venir d'ailleurs : ce qui n'est pas aux règles est écarté (`dropped`), un fichier d'un autre schéma ou
@@ -18,6 +19,8 @@ TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(TOOLS)
 SCHEMA = 'sog-recette/1'
 FILE = 'RECETTE.json'
+VERDICTS = ('ok', 'ko', 'reserve')       # le troisième : SOG-0329
+NEEDS_COMMENT = ('ko', 'reserve')        # un refus et des réserves se disent
 ID = re.compile(r'SOG-[0-9]{4}')
 AT = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,3})?Z')
 MAX_ITEMS = 1000
@@ -47,9 +50,9 @@ def check(a):
 
 
 def entry(v):
-    """L'entrée nettoyée { verdict, comment?, at? } d'une valeur, ou None si elle n'est pas aux règles : un verdict ok ou ko, un commentaire texte de 2000 signes au plus sans caractère de commande hors tabulation et saut de ligne (obligatoire,
-    non vide, pour `ko`), une date ISO UTC ; rien d'autre."""
-    if not isinstance(v, dict) or not set(v) <= {'verdict', 'comment', 'at'} or v.get('verdict') not in ('ok', 'ko'):
+    """L'entrée nettoyée { verdict, comment?, at? } d'une valeur, ou None si elle n'est pas aux règles : un verdict ok, ko ou reserve, un commentaire texte de 2000 signes au plus sans caractère de commande hors tabulation et saut de ligne (obligatoire,
+    non vide, pour `ko` et `reserve`), une date ISO UTC ; rien d'autre."""
+    if not isinstance(v, dict) or not set(v) <= {'verdict', 'comment', 'at'} or v.get('verdict') not in VERDICTS:
         return None
     out = {'verdict': v['verdict']}
     if 'comment' in v:
@@ -59,7 +62,7 @@ def entry(v):
         c = c.strip()
         if c:
             out['comment'] = c
-    if v['verdict'] == 'ko' and 'comment' not in out:
+    if v['verdict'] in NEEDS_COMMENT and 'comment' not in out:
         return None
     if 'at' in v:
         if not isinstance(v['at'], str) or not AT.fullmatch(v['at']):
