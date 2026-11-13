@@ -2562,21 +2562,5 @@
    "delivered": "2026-11-13T09:26:13Z"
   }
  ],
- "decisions": [
-  {
-   "id": "Q-0041",
-   "fiche": "SOG-0294",
-   "app": "compagnie",
-   "question": "Dossiers « recu » des missions : que faire des 5 412 copies de fichiers d'autres missions (lot du 05/11) ?",
-   "context": "52 dossiers, 5 502 fichiers, 21 Mo, mais 102 contenus distincts seulement : chaque fichier reçu du lot a été copié dans le dossier de chaque mission. 90 fichiers sont à leur place. Aucune session ne supprime dans ton dépôt de données : le rangement serait un bouton de l'application, sur ton geste, qui vérifie que chaque contenu reste au moins une fois. La cause (la copie partout) est corrigée de toute façon.",
-   "options": [
-    "Ranger : ne garder dans chaque dossier que les fichiers de sa mission",
-    "Laisser tel quel, corriger seulement la cause",
-    "Tout déplacer dans un dossier d'archive du lot, hors des missions"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
-  }
- ]
+ "decisions": []
 }
