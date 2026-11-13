@@ -2642,10 +2642,10 @@
     "de": "REGRESSION: Wahl der Landebahn über « Auf der Karte » — Gegen- und Seitenwind fehlen",
     "es": "REGRESIÓN: elección de pista de llegada por « En el mapa » — falta el viento de cara y de través"
    },
-   "test": "Recharge la page. Carburant, choix de la piste d'arrivée par « Sur la carte » : chaque piste dit son vent (une flèche et des nœuds pour la composante de face ou arrière, une pour le travers). Pas encore fait : la piste la mieux orientée en tête, et les mots « face » et « travers » écrits en clair.",
+   "test": "Recharge la page. Carburant, côté Arrivée, « Sur la carte » : dans le volet, chaque piste dit son vent en mots — « face 12 kt · travers 6 kt », ou « arrière 12 kt » souligné en rouge — et la piste la mieux orientée est la première de la liste.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-13T11:45:13Z"
+   "delivered": "2026-11-13T12:15:53Z"
   }
  ],
  "decisions": [
