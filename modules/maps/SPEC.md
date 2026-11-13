@@ -89,7 +89,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     the ground, **5 NM** (`roseSize` / 3.2 scales it), so it grows with the zoom (`pxPerDegree / (60 cos lat) × 5`); graduations **inwards** every 10°, longer every 30°; the **only numbers 0, 9, 18, 27**
     (tens of degrees) inside at the foot of their graduation, written along the circle (the top of the signs outwards: the 18 reads from the centre; none under a 36 px radius); a small **solid point
     inwards** at the four cardinal points and the **magnetic north arrow** from the station to the 0; turned to the station's declination (its own `magVar`, else the nearest point's of the base);
-    drawn with the points, so under the route and the names, thin and discreet (alpha .7). Noreg D143.
+    drawn with the points, so under the route and the names, thin and discreet (alpha .7). Noreg D143. **One scale for everything written on the circle** (SOG-0302): the numbers' height `fs`
+    (1.5 × the long graduations, bold, 15 px at most), and from it the graduations (`fs` / 2.1, half of that every 10°), the four solid points (0.45 `fs`) and the head of the north arrow (1.2 `fs` long, 0.5 `fs` wide,
+    its tip at the foot of the 0), so the arrows no longer grow with the 5 NM circle while the numbers stay at 15 px; noreg D209 (the ratio to the numbers is the same at 60, 150 and 450 px of radius).
 - `selectAirspaces(list, profile, route)`: kept by family, floor and ceiling (`SiaAero.limitFt`) and the white or
   black list, then by the corridor (a route sample inside the airspace, or an edge within `corridorNm`).
 - `rhumbAt(a, b, f)` (copy of `frame/lib/geo.js`, compared by `frame/lib/test/geo.html`): **one path along a direct leg, the rhumb line** (constant heading, the straight

@@ -6980,3 +6980,40 @@ def d208(c):
     c.page.mouse.click(pt['x'], pt['y'])
     c.until("() => window.__mp.S.vfrPin === 'LFPO' && window.__mp.S.dpanel === 'ad'", timeout=4000, what='a touch in the footprint, far from the mark and from any line, opens the card of the field')
     c.shot('D208_standard_ground_footprint_390_delivered.png')
+
+
+
+_ROSE_ARROWS_JS = """([px]) => {
+  const cv = document.createElement('canvas'); cv.width = 500; cv.height = 500; const ctx = cv.getContext('2d'), log = { polys: [], ticks: [], fs: [] };
+  let cur = [];
+  const bp = ctx.beginPath.bind(ctx), mt = ctx.moveTo.bind(ctx), lt = ctx.lineTo.bind(ctx), fl = ctx.fill.bind(ctx), st = ctx.stroke.bind(ctx), ft = ctx.fillText.bind(ctx);
+  ctx.beginPath = () => { cur = []; return bp() }; ctx.moveTo = (x, y) => { cur.push([x, y]); return mt(x, y) }; ctx.lineTo = (x, y) => { cur.push([x, y]); return lt(x, y) };
+  ctx.fill = function () { if (cur.length === 3) { const ys = cur.map(q => q[1]), xs = cur.map(q => q[0]); log.polys.push([Math.max(...ys) - Math.min(...ys), Math.max(...xs) - Math.min(...xs)]) } return fl(...arguments) };
+  ctx.stroke = function () { if (cur.length === 2 && Math.abs(Math.hypot(cur[0][0], cur[0][1]) - px) < .5) log.ticks.push(Math.hypot(cur[0][0] - cur[1][0], cur[0][1] - cur[1][1])); return st(...arguments) };
+  ctx.fillText = (t, x, y) => { log.fs.push(parseFloat(String(ctx.font).match(/([0-9.]+)px/)?.[1])); return ft(t, x, y) };
+  window.SiaAero.drawNavaid(ctx, { kind: 'VOR', id: 'ABC', magVar: 0 }, { x: 250, y: 250 }, 6, 0, 0, 3.2, false, px);
+  return log }"""
+
+
+@case('D209', 'The VOR rose at any zoom: the arrows (the four solid points, the head of the north arrow) and the graduations keep the same scale as the numbers — the ratio to the numbers’ height is the same at 60, 150 and 450 px of radius — instead of growing with the circle while the numbers stay at 15 px', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0302 (the user, 13 Nov: « VOR : cf. screenshot. flèches devraient réduire au zoom, comme les chiffres »; the ergonomist: the arrows follow the numbers’ scale at every zoom, a case measures the arrow / number ratio at three zooms): the numbers were capped at 15 px, the points and the arrow head grew with the ground radius of the circle (R × 0.06, R × 0.17)')
+def d209(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    rows = []
+    for R in (60, 150, 450):
+        r = c.js(_ROSE_ARROWS_JS, [R])
+        fs = max(r['fs'])
+        hs = sorted(p[0] for p in r['polys'])
+        c.ok(len(hs) == 5, str(r['polys']), f'R {R}: four solid points and the head of the north arrow')
+        rows.append((R, round(hs[0] / fs, 3), round(hs[-1] / fs, 3), round(max(r['ticks']) / fs, 3)))
+    spread = lambda i: max(x[i] for x in rows) - min(x[i] for x in rows)
+    c.ok(spread(1) < .02, str(rows), 'the solid points: the same height / numbers ratio at the three zooms')
+    c.ok(spread(2) < .02, str(rows), 'the head of the north arrow: the same height / numbers ratio at the three zooms')
+    c.ok(spread(3) < .02, str(rows), 'the long graduations: the same length / numbers ratio at the three zooms')
+    c.ok(rows[-1][1] < 1 and rows[-1][2] < 2, str(rows), 'at 450 px of radius the arrow stays a reading size (the point under one numbers’ height, the head under two)')
+    import base64
+    for R in (60, 150, 240):   # the rose beside a route, at three zooms that fit the canvas (the captures of the ergonomist's check)
+        png = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 6, 12, True, R])['png']
+        (ROOT / f'tests/v3/shots/D209_rose_{R}_delivered.png').write_bytes(base64.b64decode(png.split(',')[1]))

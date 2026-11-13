@@ -1201,8 +1201,12 @@
           ctx.beginPath();
           ctx.arc(0, 0, R, 0, Math.PI * 2);
           ctx.stroke();
-          const short = Math.max(3, R * .04),
-            long = Math.max(5, R * .08);
+          // UNE échelle pour tout ce qui s'écrit sur le cercle (SOG-0302 : « les flèches devraient réduire au zoom, comme les chiffres ») : celle des chiffres, fs — la
+          // hauteur d'une fois et demie celle des graduations longues, en gras, plafonnée à 15 px (SOG-0175 : le « 18 » devenait énorme à fort zoom) ; les graduations, les pointes
+          // des points cardinaux et la flèche du nord en sont des fractions fixes, au lieu de grandir avec le rayon du cercle (au sol, 5 NM) sans plafond comme avant
+          const fs = Math.min(15, Math.max(8, Math.max(5, R * .08) * 2.1)),
+            long = fs / 2.1,
+            short = long / 2;
           for (let k = 0; k < 36; k++) {
             const t = k * Math.PI / 18,
               sn = Math.sin(t),
@@ -1214,9 +1218,6 @@
             ctx.lineTo(sn * (R - l), cs * (R - l));
             ctx.stroke();
           }
-          const fs = Math.min(15, Math.max(8, long *
-            2.1
-          )); // la hauteur des chiffres : une fois et demie celle des graduations longues, en gras, plafonnée à 15 px (SOG-0175 : le « 18 » devenait énorme à fort zoom)
           if (R >= 36) { // les quatre chiffres, tête vers l'extérieur
             ctx.font = `700 ${fs.toFixed(1)}px Arial,sans-serif`;
             ctx.textAlign = 'center';
@@ -1238,7 +1239,7 @@
             }
           }
           ctx.globalAlpha = .85;
-          const tri = Math.max(3, R * .06); // la pointe pleine, vers l'intérieur, aux quatre points cardinaux
+          const tri = fs * .45; // la pointe pleine, vers l'intérieur, aux quatre points cardinaux
           for (let k = 0; k < 4; k++) {
             ctx.save();
             ctx.rotate(k * Math.PI / 2);
@@ -1253,13 +1254,17 @@
           // la flèche du nord magnétique : de la station vers le 0
           ctx.lineWidth = Math.max(1, Math.min(2, R / 40));
           ctx.beginPath();
+          // la pointe de la flèche, à l'échelle des chiffres, près du 0 (à 72 % du rayon sur une petite rose, au pied du chiffre sur une grande) ; la hampe va de la station à sa base
+          const tip = Math.max(R * .72, R - long - fs * 1.7),
+            hl = fs * 1.2,
+            hw = fs * .25;
           ctx.moveTo(0, -s * 1.1);
-          ctx.lineTo(0, -R * .62);
+          ctx.lineTo(0, -(tip - hl * .5));
           ctx.stroke();
           ctx.beginPath();
-          ctx.moveTo(0, -R * .72);
-          ctx.lineTo(-Math.max(2.5, R * .035), -R * .55);
-          ctx.lineTo(Math.max(2.5, R * .035), -R * .55);
+          ctx.moveTo(0, -tip);
+          ctx.lineTo(-hw, -(tip - hl));
+          ctx.lineTo(hw, -(tip - hl));
           ctx.closePath();
           ctx.fill();
           ctx.restore();
