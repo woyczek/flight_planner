@@ -115,10 +115,22 @@
       'Sale al repositorio de datos con el próximo envío agrupado (menos de 5 minutos); sin red, espera a que vuelva.'
     ],
     noShots: [
-      'Pas de capture d’écran sur ce chemin : le texte et ce qui est noté tout seul (écran, taille, langue, version) partent, rien d’autre.',
-      'No screenshot on this path: the text and what is noted by itself (screen, size, language, version) are sent, nothing else.',
-      'Kein Screenshot auf diesem Weg: Der Text und die automatisch notierten Angaben (Bildschirm, Größe, Sprache, Version) werden gesendet, sonst nichts.',
-      'Sin captura en este camino: se envían el texto y lo que se anota solo (pantalla, tamaño, idioma, versión), nada más.'
+      'Les captures ne partent pas encore par ce chemin : le texte et ce qui est noté tout seul (écran, taille, langue, version) partent, rien d’autre.',
+      'Screenshots do not leave yet by this path: the text and what is noted by itself (screen, size, language, version) are sent, nothing else.',
+      'Screenshots gehen auf diesem Weg noch nicht mit: Der Text und die automatisch notierten Angaben (Bildschirm, Größe, Sprache, Version) werden gesendet, sonst nichts.',
+      'Las capturas aún no salen por este camino: se envían el texto y lo que se anota solo (pantalla, tamaño, idioma, versión), nada más.'
+    ],
+    shotsHeld: [
+      'Cette capture ne part pas encore : seul le texte part. Elle n’est ni envoyée ni gardée.',
+      'This screenshot does not leave yet: only the text is sent. It is neither sent nor kept.',
+      'Dieser Screenshot geht noch nicht mit: Nur der Text wird gesendet. Er wird weder gesendet noch gespeichert.',
+      'Esta captura aún no sale: solo se envía el texto. No se envía ni se guarda.'
+    ],
+    shotsDropped: [
+      ' La capture jointe n’est pas partie : seul le texte est parti.',
+      ' The attached screenshot did not leave: only the text was sent.',
+      ' Der angehängte Screenshot wurde nicht gesendet: Nur der Text wurde gesendet.',
+      ' La captura adjunta no salió: solo se envió el texto.'
     ],
     checking: ['Vérification du poste…', 'Checking the workstation…', 'Rechner wird geprüft…', 'Comprobando el puesto…'],
     sentPost: ['✓ Écrit dans organisation/SIGNALEMENTS.json ({id}). L’ergonome le lira à son prochain tour.',
@@ -422,7 +434,7 @@
         <label class="f-field">${esc(t(T.fText))}<textarea data-text rows="${ROWS_MIN}" maxlength="${MAX_TEXT}" placeholder="${esc(t(T.fTextHint))}">${esc(st.draft.text)}</textarea><small class="f-muted f-rc-count" data-xcount hidden></small></label>
         <div class="f-sg-where" data-where><b class="f-sg-wt">${esc(t(T.noted))}</b><span data-wtext></span>
           <label class="f-check"><input type="checkbox" data-wc checked> ${esc(t(T.notedJoin))}</label></div>
-        <div class="f-sg-shots" data-shotsbox hidden><label class="f-field">${esc(t(T.shots))}<input type="file" data-shots accept="image/png,image/jpeg,image/webp" multiple></label><p class="f-muted" data-shotslist></p><p class="f-muted">${esc(t(T.shotsNote))}</p></div>
+        <div class="f-sg-shots" data-shotsbox hidden><label class="f-field">${esc(t(T.shots))}<input type="file" data-shots accept="image/png,image/jpeg,image/webp" multiple></label><p class="f-muted" data-shotslist></p><p class="f-muted" data-shotsnote>${esc(t(T.shotsNote))}</p></div>
         <p class="f-muted" data-noshots hidden></p>
         <div class="f-row"><button type="submit" class="primary" data-send disabled>${esc(t(T.send))}</button> <span class="f-muted" data-why></span></div>
       </form>
@@ -457,11 +469,15 @@
           v: k.version
         }) : ''
       });
-      $('[data-shotsbox]').hidden = ui.ch !== 'poste';
+      // le téléphone peut choisir une photo (SOG-0335) : elle ne part pas encore par le chemin d'un pilote, et l'écran le dit au lieu de la perdre en silence
+      $('[data-shotsbox]').hidden = ui.ch !== 'poste' && ui.ch !== 'pilote';
+      const sn = $('[data-shotsnote]');
+      if (sn.hidden !== (ui.ch !== 'poste')) sn.hidden = ui.ch !== 'poste';
       const ns = $('[data-noshots]'),
-        nsText = ui.ch === 'pilote' ? t(T.noShots) : '';
+        nsText = ui.ch === 'pilote' ? t(ui.shots.length ? T.shotsHeld : T.noShots) : '';
       if (ns.hidden !== !nsText) ns.hidden = !nsText;
       if (ns.textContent !== nsText) ns.textContent = nsText;
+      ns.classList.toggle('f-warn', !!nsText && ui.shots.length > 0);
       const sl = $('[data-shotslist]');
       sl.textContent = ui.shots.map(f => f.name).join(' · ');
       const d = draft();
@@ -720,7 +736,7 @@
           text: t(ui.ch === 'pilote' ? T.sentPilot : T.sentPost, {
             id,
             path: `pilot/${c.trigram?.() || ''}/signalements/${id}.json`
-          })
+          }) + (ui.ch === 'pilote' && ui.shots.length ? t(T.shotsDropped) : '')
         };
         st.draft = {
           kind: d.kind,
