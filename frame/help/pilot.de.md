@@ -53,6 +53,10 @@ Computer, mit oder ohne Netz.
   einsehbar (Statusschaltfläche, dann „Konflikte“) und kann zurückgenommen werden; „Gesehen“ nimmt einen Konflikt aus der Liste und
   der Zählung, „Alle als gesehen markieren“ tut das für alle auf einmal.
 
+## Ein Problem melden oder einen Wunsch äußern
+
+In der Hilfe unter „Ein Problem melden oder einen Wunsch äußern“: Wählen Sie eine Art (Fehler, Regression, Ergonomie, Leistung, Wunsch), schreiben Sie einen Titel und was passiert ist (2.000 Zeichen); der Bildschirm, von dem Sie kamen, die Größe, das Design, die Sprache und die Version werden automatisch vermerkt (nie Flugdaten oder Schlüssel) und lassen sich abwählen. Auf dem Rechner der Ergonomie wird die Meldung sofort in die Meldungsdatei der Suite geschrieben, mit bis zu drei Screenshots (sie bleiben auf diesem Rechner, nichts wird veröffentlicht); auf jedem anderen Gerät geht sie mit dem nächsten gebündelten Versand an das Repository der Gesellschaft, ohne E-Mail. „Meine Meldungen“ zeigt die letzten zehn und ihren Zustand; ohne Zugriff bleibt die Meldung auf dem Gerät („nicht gesendet“) und geht, sobald der Zugriff zurück ist.
+
 <!-- chapter: fuel -->
 # Kraftstoff und Flugfläche
 

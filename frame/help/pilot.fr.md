@@ -51,6 +51,10 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   consultable (bouton d'état, puis « Conflits ») et peut être reprise ; « Vu » écarte un conflit de la liste et du compte, « Tout
   marquer comme vu » le fait pour tous d'un coup.
 
+## Signaler un problème ou une demande
+
+Dans l'Aide, « Signaler un problème ou une demande » : choisissez une sorte (bug, régression, ergonomie, performance, demande), écrivez un titre et ce qui s'est passé (2 000 signes) ; l'écran d'où vous veniez, la taille, le design, la langue et la version sont notés tout seuls (jamais de donnée de vol ni de clé), décochables. Sur le poste de l'ergonome, le signalement est écrit tout de suite dans le fichier des signalements de la suite, avec jusqu'à trois captures d'écran (qui restent sur ce poste, rien n'est publié) ; sur un autre appareil, il part dans le dépôt de la compagnie avec le prochain envoi groupé, sans courriel. « Mes signalements » garde les dix derniers et leur état ; sans accès, le signalement reste sur l'appareil (« non envoyé ») et part au retour.
+
 <!-- chapter: fuel -->
 # Carburant et niveau
 

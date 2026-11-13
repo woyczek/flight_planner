@@ -50,6 +50,10 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   disponible (botón de estado, luego «Conflictos») y puede recuperarse; «Visto» quita un conflicto de la lista y del recuento, «Marcar
   todo como visto» lo hace con todos a la vez.
 
+## Informar de un problema o hacer una petición
+
+En la Ayuda, «Informar de un problema o hacer una petición»: elija un tipo (error, regresión, ergonomía, rendimiento, petición), escriba un título y lo que pasó (2000 signos); la pantalla de la que venía, el tamaño, el diseño, el idioma y la versión se anotan solos (nunca datos de vuelo ni claves) y se pueden desmarcar. En el puesto de la ergonomía, el informe se escribe de inmediato en el archivo de informes de la suite, con hasta tres capturas de pantalla (se quedan en ese puesto, no se publica nada); en cualquier otro dispositivo sale hacia el repositorio de la compañía con el próximo envío agrupado, sin correo. «Mis informes» guarda los diez últimos y su estado; sin acceso, el informe se queda en el dispositivo («no enviado») y sale al volver el acceso.
+
 <!-- chapter: fuel -->
 # Combustible y nivel
 

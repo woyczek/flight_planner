@@ -2956,3 +2956,204 @@ def k243(c):
     cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
     c.ok("avians: {" in z and "is: ['avians']" in z and "provider: 'avians'" in z and "personal: 'licence'" in z[z.index('avians: {'):z.index('avians: {') + 1600] and "id: 'avians'" in cat and "is: 'avians'" in (ROOT / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8'),
          'wiring', 'the page\'s catalogue, the catalogue of sources and the cycled zones all hold the source and its zone')
+def _sg():
+    """(fonction ajouter, contrôle, fonction lire, contrôle de lecture, espace de noms du module, Job) du jeu « signalement », chargé comme le lanceur le charge."""
+    RJ = _mods()[0]
+    fn, check = RJ.REGISTRY[('signalement', 'ajouter')]
+    rd, check_rd = RJ.REGISTRY[('signalement', 'lire')]
+    return fn, check, rd, check_rd, fn.__globals__, RJ.Job
+
+
+def _png(w, h, size=0):
+    import struct
+    import zlib
+    ihdr = struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)
+    b = b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + ihdr + struct.pack('>I', zlib.crc32(b'IHDR' + ihdr)) + struct.pack('>I', 0) + b'IEND' + struct.pack('>I', zlib.crc32(b'IEND'))
+    return b + b'\0' * max(0, size - len(b))
+
+
+def _jpg(w, h):
+    return b'\xff\xd8\xff\xe0\x00\x04ab\xff\xc0\x00\x0b\x08' + h.to_bytes(2, 'big') + w.to_bytes(2, 'big') + b'\x01\x01\x11\x00\xff\xd9'
+
+
+def _webp(w, h):
+    body = b'WEBP' + b'VP8X' + (10).to_bytes(4, 'little') + b'\0\0\0\0' + (w - 1).to_bytes(3, 'little') + (h - 1).to_bytes(3, 'little')
+    return b'RIFF' + len(body).to_bytes(4, 'little') + body
+
+
+def _b64(raw):
+    import base64
+    return base64.b64encode(raw).decode()
+
+
+GOOD_SG = {'kind': 'bug', 'title': 'Le bouton ne répond pas', 'text': 'Je touche « Démarrer » et rien ne se passe.\n\tDeuxième ligne.', 'screen': 'fuel',
+           'ctx': {'version': '3.0.0-alpha.5', 'lang': 'fr', 'design': 'swiss', 'size': 'phone', 'tone': 'day'}}
+
+
+@case('K262', 'signalement/ajouter and signalement/lire: organisation/SIGNALEMENTS.json written by the launcher (no organisation folder said and nothing created, closed lists, a title of 80 and a text of 2000 without control characters, an unknown key refused, the identifier made here, 1000 entries, what the file already holds kept as it is, an unreadable file never replaced, a pilot report taken once) (SOG-0316)', 'K',
+      static=True, rule='SOG-0316 (the user, Q-0046: his own reports go « direct chez » the ergonomist, in organisation/SIGNALEMENTS.json): a launcher verb on the existing job route, same guards as recette/verdict; Sécurisation (13 Nov): closed lists for kind and screen, no free field, identifier generated here, 1000 entries refused by code, an unreadable file refused not replaced, a pilot text is untrusted (the folder is not an identity: « signalé depuis le dossier de »)')
+def k262(c):
+    fn, check, rd, check_rd, G, Job = _sg()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        ctx = {'root': str(root)}
+        ajout = lambda a: fn(Job('signalement', 'ajouter', {}), check(a), ctx)
+        for bad, why in ((None, 'none'), ({}, 'empty'), ({**GOOD_SG, 'extra': 1}, 'an unknown key'), ({**GOOD_SG, 'kind': 'feat'}, 'a kind outside the list'), ({**GOOD_SG, 'screen': '../x'}, 'a screen outside the list'),
+                         ({**GOOD_SG, 'title': ''}, 'an empty title'), ({**GOOD_SG, 'title': 'x' * 81}, 'a title of 81'), ({**GOOD_SG, 'title': 'a\nb'}, 'a line break in the title'), ({**GOOD_SG, 'text': 'x' * 2001}, 'a text of 2001'),
+                         ({**GOOD_SG, 'text': 'a\x00b'}, 'a NUL in the text'), ({**GOOD_SG, 'text': 'a\x1bb'}, 'an escape in the text'), ({**GOOD_SG, 'ctx': {'path': 'C:/x'}}, 'a free key in the context'),
+                         ({**GOOD_SG, 'ctx': {'design': 'neon'}}, 'a design outside the list'), ({**GOOD_SG, 'ctx': {'version': '../1'}}, 'a version with a path')):
+            c.ok(check(bad) is None, repr(bad)[:50], f'refused: {why}')
+        c.ok(check({**GOOD_SG, 'title': 'x' * 80, 'text': 'y' * 2000}) is not None, '', 'a title of 80 and a text of 2000 are accepted')
+        c.eq((ajout(GOOD_SG).get('reason'), (root / 'organisation').exists(), rd(Job('signalement', 'lire', {}), {}, ctx).get('reason')), ('no-organisation', False, 'no-organisation'),
+             'no organisation folder: said, nothing created (the ergonomist poste is the one that has it)', what='no organisation')
+        org = root / 'organisation'
+        org.mkdir()
+        r = ajout({**GOOD_SG, 'title': ' ' + GOOD_SG['title'] + ' '})
+        f = org / 'SIGNALEMENTS.json'
+        doc = json.loads(f.read_text(encoding='utf-8'))
+        sid = r.get('id', '')
+        e = doc['items'].get(sid, {})
+        c.ok(r.get('ok') and re.fullmatch(r'SIG-[0-9a-f]{10}', sid), r, 'an add gives the identifier made here')
+        c.eq((doc['schema'], list(doc['items']), e.get('title'), e.get('text'), e.get('state'), e.get('kind'), e.get('screen'), e.get('ctx'), bool(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', e.get('at', ''))), 'images' in e, list(org.glob('*.tmp'))),
+             ('sog-signalements/1', [sid], GOOD_SG['title'], GOOD_SG['text'], 'new', 'bug', 'fuel', GOOD_SG['ctx'], True, False, []), 'the entry is written: the schema, the cleaned title, the text with its tab and line break, the state new, the date, no temporary file', what='entry')
+        # the ergonomist works in the file: what a later add does not create is kept AS IT IS (unknown keys, state, fiche)
+        doc['items'][sid].update({'state': 'fiche', 'fiche': 'SOG-0400', 'note': 'à moi'})
+        doc['items']['SIG-aaaaaaaaaa'] = {'whatever': [1, 2]}
+        f.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
+        before = json.loads(f.read_text(encoding='utf-8'))['items']
+        r2 = ajout({**GOOD_SG, 'title': 'Second'})
+        after = json.loads(f.read_text(encoding='utf-8'))['items']
+        c.eq(({k: after[k] for k in before}, list(after)[-1] == r2['id'], len(after)), (before, True, 3), 'a second add keeps every entry already there as it is (unknown keys, state, fiche included) and appends', what='kept')
+        got = rd(Job('signalement', 'lire', {}), check_rd({}), ctx)
+        c.eq((got['ok'], got['count'], got['items'][sid], got['items']['SIG-aaaaaaaaaa'], got['items'][r2['id']]), (True, 3, {'state': 'fiche', 'fiche': 'SOG-0400'}, {'state': 'new'}, {'state': 'new'}), 'a read says the state of the entries (a fiche with its number)', what='read')
+        c.ok(check_rd({'ids': ['../x']}) is None and check_rd({'ids': ['SIG-%010x' % i for i in range(21)]}) is None and check_rd({'x': 1}) is None, '', 'a read refuses an identifier that is not one, more than twenty, and any other key')
+        # an unreadable or other-schema file is refused, never replaced
+        for body in ('{not json', json.dumps({'schema': 'other/1', 'items': {}}), json.dumps({'schema': 'sog-signalements/1', 'items': []})):
+            f.write_text(body, encoding='utf-8')
+            r = ajout(GOOD_SG)
+            c.eq((r.get('reason'), f.read_text(encoding='utf-8')), ('unreadable', body), f'an unreadable file ({body[:18]}) is refused and left as it is', what='unreadable')
+        # 1000 entries at most
+        f.write_text(json.dumps({'schema': 'sog-signalements/1', 'items': {f'SIG-{n:010x}': {'title': 't'} for n in range(1000)}}), encoding='utf-8')
+        b0 = f.read_bytes()
+        c.eq((ajout(GOOD_SG).get('reason'), f.read_bytes() == b0), ('too-many', True), 'the 1001st entry is refused by code, the file untouched', what='1001')
+        # a pilot report taken into the file: text only, marked, taken once
+        f.unlink()
+        org_a = {'folder': 'ABC', 'ref': 'sig-2026-0001'}
+        r = ajout({**GOOD_SG, 'origin': org_a})
+        e = json.loads(f.read_text(encoding='utf-8'))['items'][r['id']]
+        c.eq((r['ok'], e.get('from'), e.get('folder'), e.get('ref'), 'images' in e), (True, 'pilote', 'ABC', 'sig-2026-0001', False), 'a pilot report taken over is marked « pilote » with the folder it was found in', what='origin')
+        c.eq(ajout({**GOOD_SG, 'origin': org_a}).get('reason'), 'already', 'the same report is taken once', what='already')
+        c.eq(rd(Job('signalement', 'lire', {}), {}, ctx)['refs'], ['ABC/sig-2026-0001'], 'a read lists the pilot reports already taken (folder/reference), to say « n not taken »', what='refs')
+        for bad in ({'folder': '../..', 'ref': 'abcd'}, {'folder': 'ABC', 'ref': '../../x'}, {'folder': 'ABC'}, {'folder': 'ABC', 'ref': 'abcd', 'x': 1}, 'ABC'):
+            c.ok(check({**GOOD_SG, 'origin': bad}) is None, repr(bad), f'a forged origin {bad!r} is refused')
+        c.ok(check({**GOOD_SG, 'origin': org_a, 'images': [{'data': _b64(_png(10, 10))}]}) is None and G['held']()[0] == 0, '', 'a pilot report never carries a capture (nothing held either)')
+    # the list of screens follows the modules of the suite
+    mods = sorted(p.name for p in (ROOT / 'modules').iterdir() if p.is_dir() and not p.name.startswith(('_', '.')))
+    c.eq([m for m in mods if m not in G['SCREENS']], [], 'every module of the suite is a screen the verb knows (add the new one to SCREENS)', what='screens')
+
+
+@case('K263', 'signalement/ajouter, the captures: up to three png, jpeg or webp recognised by their BYTES (svg, html, a renamed file refused), 1.5 MiB and not a byte more, dimensions bounded from the header, names made by the verb, exclusive creation, organisation/images/ never created and never a link, images first then the JSON, a JSON failure removes the images of this job and only them, bytes held in memory once for two minutes and never in the job (SOG-0316)', 'K',
+      static=True, rule='SOG-0316 (Sécurisation, 13 Nov): the type comes from the bytes (PNG 89 50 4E 47, JPEG FF D8 FF, WebP RIFF..WEBP), 1.5 MiB checked on the bytes received, 8000 x 8000 and 40 million pixels at most (a small PNG may decompress to gigabytes), names ^SIG-[0-9a-f]{10}-[1-3]\\.(png|jpg|webp)$ made by the verb, O_EXCL, no write outside organisation/images/, a reserve in memory (token, single use, 2 minutes, 6 entries, 27 MiB) emptied on use, failure and expiry; the job keeps sizes and types, never a byte')
+def k263(c):
+    fn, check, rd, check_rd, G, Job = _sg()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        ctx = {'root': str(root)}
+        ajout = lambda a: fn(Job('signalement', 'ajouter', {}), check(a), ctx)
+        org = root / 'organisation'
+        org.mkdir()
+        img = org / 'images'
+        f = org / 'SIGNALEMENTS.json'
+        im = lambda raw, **k: {'data': _b64(raw), **k}
+        png = _png(1200, 800)
+        # no images folder: said, never created, nothing written, nothing held
+        r = ajout({**GOOD_SG, 'images': [im(png)]})
+        c.eq((r.get('reason'), img.exists(), f.exists(), G['held']()[0]), ('no-images-dir', False, False, 0), 'a capture without organisation/images/: said, the folder is not created, nothing written, nothing left in the reserve', what='no images dir')
+        r0 = ajout(GOOD_SG)
+        c.ok(r0['ok'] and not img.exists(), r0, 'a report without capture needs no images folder')
+        img.mkdir()
+        # the three types, recognised by their bytes whatever the page says (name, type)
+        raws = [(_png(300, 200), 'png'), (_jpg(640, 480), 'jpg'), (_webp(1000, 700), 'webp')]
+        sent = {**GOOD_SG, 'images': [im(raw, name='../../evil.svg', type='image/svg+xml') for raw, _ in raws]}
+        a = check(sent)
+        c.ok(a is not None and 'data' not in json.dumps(a) and not re.search(r'[A-Za-z0-9+/]{200,}', json.dumps(a)) and a['images'] == [{'type': e, 'size': len(r)} for r, e in raws], str(a)[:200],
+             'the arguments the job keeps carry sizes and types, never a byte (nor the name of the page)')
+        c.eq(G['held']()[0], 1, 'the bytes are in the reserve, one entry', what='held')
+        r = fn(Job('signalement', 'ajouter', {}), a, ctx)
+        sid = r['id']
+        names = sorted(p.name for p in img.iterdir())
+        c.eq((r['ok'], r['images'], names, G['held']()[0]), (True, 3, [f'{sid}-1.png', f'{sid}-2.jpg', f'{sid}-3.webp'], 0), 'the three captures are written under names the verb made, the extension said by the bytes, the reserve emptied', what='three')
+        c.eq([(img / n).read_bytes() for n in names], [raws[0][0], raws[1][0], raws[2][0]], 'the files are the bytes received', what='bytes')
+        c.eq((json.loads(f.read_text(encoding='utf-8'))['items'][sid]['images'], [p.name for p in root.rglob('evil*')], [p.name for p in org.glob('*.tmp')]), (names, [], []), 'the entry lists exactly those names; nothing was written under the name of the page', what='names')
+        # refused by the bytes
+        svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+        for raw, why in ((svg, 'an svg'), (b'<html><script>1</script></html>', 'an html'), (b'<svg/>' + _png(10, 10), 'an svg followed by a png'), (b'', 'nothing'), (b'GIF89a' + b'\0' * 20, 'a gif'), (_png(10, 10)[:20], 'a cut png'), (b'RIFF\0\0\0\0WAVEfmt ', 'a wav')):
+            c.ok(check({**GOOD_SG, 'images': [im(raw, name='shot.png', type='image/png')]}) is None, why, f'{why} renamed .png is refused by its bytes')
+        c.ok(check({**GOOD_SG, 'images': [{'data': 'not base64 !!'}]}) is None and check({**GOOD_SG, 'images': [{'data': 12}]}) is None and check({**GOOD_SG, 'images': ['x']}) is None and check({**GOOD_SG, 'images': [{'data': _b64(png), 'path': 'C:/x'}]}) is None, '', 'a bad base64, a number, a string, an unknown key of the image are refused')
+        c.eq(G['held']()[0], 0, 'every refusal above held nothing', what='nothing held')
+        # sizes: 1.5 MiB accepted, one byte more refused (on the bytes, not the header)
+        c.ok(check({**GOOD_SG, 'images': [im(_png(100, 100, G['IMAGE_MAX']))]}) is not None, '', '1.5 MiB exactly is accepted')
+        G['_HELD'].clear()
+        c.ok(check({**GOOD_SG, 'images': [im(_png(100, 100, G['IMAGE_MAX'] + 1))]}) is None and G['held']()[0] == 0, '', '1.5 MiB + 1 byte is refused, and nothing is held')
+        # four captures: the fourth refused
+        c.ok(check({**GOOD_SG, 'images': [im(png)] * 4}) is None and G['held']()[0] == 0, '', 'four captures: refused, nothing held')
+        # dimensions read from the header: a small file may decompress to gigabytes
+        for w, h, ok in ((8000, 5000, True), (8001, 100, False), (100, 8001, False), (7000, 7000, False), (6000, 6000, True), (0, 10, False)):
+            a = check({**GOOD_SG, 'images': [im(_png(w, h))]})
+            c.ok((a is not None) == ok, (w, h), f'a png of {w} x {h} is {"accepted" if ok else "refused"} (8000 x 8000 and 40 million pixels at most)')
+            G['_HELD'].clear()
+        c.ok(check({**GOOD_SG, 'images': [im(_jpg(30000, 30000))]}) is None and check({**GOOD_SG, 'images': [im(_webp(30000, 30000))]}) is None, '', 'a jpeg and a webp of 30 000 x 30 000 are refused as well')
+        # the reserve: single use, two minutes, six entries, a total of bytes
+        tok = G['hold']([('png', png)])
+        c.eq((G['take'](tok)[0][0], G['take'](tok)), ('png', None), 'a token is used once', what='single use')
+        tok = G['hold']([('png', png)], now=1000.0)
+        c.eq((G['take'](tok, now=1000.0 + G['HOLD_S'] + 1), G['held']()[0]), (None, 0), 'a token expires after two minutes, and the expired entry is dropped', what='expiry')
+        toks = [G['hold']([('png', png)]) for _ in range(6)]
+        c.eq((all(toks), G['hold']([('png', png)])), (True, None), 'a seventh entry is refused', what='seventh')
+        for t in toks:
+            G['take'](t)
+        big = [('png', b'\0' * G['IMAGE_MAX'])] * 3
+        toks = [G['hold'](big) for _ in range(6)]
+        c.eq((all(toks), G['hold']([('png', b'\0')])), (True, None), 'the reserve is also capped in bytes (27 MiB): one byte more is refused', what='bytes cap')
+        c.eq(check({**GOOD_SG, 'images': [im(png)]}), None, 'a launcher whose reserve is full refuses the arguments (by code, nothing kept)', what='full')
+        for t in toks:
+            G['take'](t)
+        # a job whose token is gone (taken, expired) writes nothing
+        a = check({**GOOD_SG, 'images': [im(png)]})
+        G['take'](a['_ref'])
+        n_before = len(list(img.iterdir()))
+        r = fn(Job('signalement', 'ajouter', {}), a, ctx)
+        c.eq((r.get('reason'), len(list(img.iterdir())) == n_before), ('expired', True), 'a token already used or expired: refused by code, nothing written', what='reused token')
+        # a name collision: a new identifier, nothing overwritten
+        tok_hex = G['secrets'].token_hex
+        clash = 'a1b2c3d4e5'
+        keep = img / f'SIG-{clash}-1.png'
+        keep.write_bytes(b'KEEP')
+        seq = iter([clash, '0a0b0c0d0e'])
+        G['secrets'].token_hex = lambda n=5: next(seq)
+        try:
+            r = ajout({**GOOD_SG, 'images': [im(png)]})
+        finally:
+            G['secrets'].token_hex = tok_hex
+        c.eq((r.get('id'), keep.read_bytes(), (img / 'SIG-0a0b0c0d0e-1.png').exists()), ('SIG-0a0b0c0d0e', b'KEEP', True), 'a name already there: a new identifier, the existing file is not overwritten', what='collision')
+        # the JSON fails: the images this job created are removed, the others stay
+        others = sorted(p.name for p in img.iterdir())
+        (org / 'SIGNALEMENTS.json.tmp').mkdir()
+        r = ajout({**GOOD_SG, 'images': [im(png), im(png)]})
+        c.eq((r.get('reason'), sorted(p.name for p in img.iterdir())), ('failed', others), 'the JSON cannot be written: the images of this job are removed, and only them', what='json failure')
+        (org / 'SIGNALEMENTS.json.tmp').rmdir()
+        # organisation/images/ as a link: refused
+        link = root / 'elsewhere'
+        link.mkdir()
+        __import__('shutil').rmtree(img)
+        try:
+            os.symlink(str(link), str(img), target_is_directory=True)
+            linked = True
+        except (OSError, NotImplementedError):
+            linked = False
+        if linked:
+            r = ajout({**GOOD_SG, 'images': [im(png)]})
+            c.eq((r.get('reason'), list(link.iterdir())), ('no-images-dir', []), 'organisation/images/ is a link: refused, nothing written through it', what='symlink')
+        else:
+            c.ok(True, '', 'symbolic links are not allowed on this machine: that case is skipped')
+    c.ok(not G['_HELD'], '', 'the reserve is empty at the end')

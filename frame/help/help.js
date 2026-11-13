@@ -27,6 +27,9 @@
     roadmap: ['Feuille de route : ce qui est livré, en cours, prévu', 'Roadmap: what is delivered, in progress, planned',
       'Fahrplan: was geliefert, in Arbeit, geplant ist', 'Hoja de ruta: lo entregado, en curso, previsto'
     ],
+    report: ['Signaler un problème ou une demande', 'Report a problem or make a request', 'Ein Problem melden oder einen Wunsch äußern',
+      'Informar de un problema o hacer una petición'
+    ],
     label: ['{h} :', '{h}:', '{h}:', '{h}:'],
     contents: ['Sommaire', 'Contents', 'Inhalt', 'Índice'],
     back: ['↑ Sommaire', '↑ Contents', '↑ Inhalt', '↑ Índice'],
@@ -454,7 +457,7 @@
         `<p class="f-howto-show"><a href="#${esc(id)}" data-howto-show="${esc(id)}">${esc(c.t(T.showAgain))}</a></p>`);
     }
     view.replaceChildren(intro);
-    intro.insertAdjacentHTML('afterbegin', `<p class="f-rm-link"><a href="#roadmap">${esc(c.t(T.roadmap))}</a></p>`);
+    intro.insertAdjacentHTML('afterbegin', `<p class="f-rm-link"><a href="#roadmap">${esc(c.t(T.roadmap))}</a> · <a href="#signaler" data-report>${esc(c.t(T.report))}</a></p>`);
     // « Commencer par… » : les tutoriels, après le titre du manuel
     const list = await tutorialList(c);
     if (list)(intro.querySelector('h1 ~ p:not(.f-rm-link)') || intro.querySelector('h1') || intro.firstChild).insertAdjacentHTML(

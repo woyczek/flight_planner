@@ -1991,3 +1991,77 @@ html.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
 html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)
 }
+
+/* Signaler un problème ou une demande (SOG-0316) : les sortes en pastilles, le contexte noté, la liste des signalements */
+.f-sg-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 var(--sog-gap);
+  padding: 0;
+  border: 0
+}
+.f-sg-kinds legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 6px
+}
+.f-sg-kinds label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--sog-touch, 44px);
+  padding: 0 14px;
+  border: 1px solid var(--sog-border);
+  border-radius: 999px;
+  cursor: pointer
+}
+.f-sg-kinds label:has(input:checked) {
+  border-color: var(--sog-accent);
+  font-weight: 600
+}
+.f-sg-where {
+  margin: 0 0 var(--sog-gap);
+  padding: 8px 10px;
+  border: 1px solid var(--sog-border);
+  overflow-wrap: anywhere
+}
+.f-sg-list {
+  list-style: none;
+  margin: 0 0 var(--sog-gap);
+  padding: 0;
+  display: grid;
+  gap: 6px
+}
+.f-sg-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--sog-border);
+  overflow-wrap: anywhere
+}
+.f-sg-tag {
+  font-size: var(--sog-size-s);
+  padding: 1px 8px;
+  border: 1px solid var(--sog-border);
+  border-radius: 999px
+}
+.f-sg-t {
+  flex: 1 1 12em
+}
+.f-sg-state {
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted)
+}
+.f-sg-body {
+  flex: 1 1 100%;
+  white-space: pre-wrap;
+  color: var(--sog-muted)
+}
+.f-sg input[type="text"],
+.f-sg textarea {
+  width: 100%;
+  box-sizing: border-box
+}

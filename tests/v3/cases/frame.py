@@ -7086,6 +7086,156 @@ def a178(c):
     c.check_errors()
 
 
+def _sg_launcher(c, root, data=True):
+    """A FAKE launcher for the reports: /__setup/status says there is one, and regen/job runs the REAL verbs signalement/lire and signalement/ajouter (tools/regen/signalement.py) on `root`. `st`: `posts`, `up` (False: every job fails), `detect`."""
+    import importlib
+    import sys
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    RJ = importlib.import_module('regen_jobs')
+    if ('signalement', 'ajouter') not in RJ.REGISTRY:
+        RJ.load_verbs()
+    st = {'posts': [], 'up': True, 'detect': True, 'views': {}, 'n': 0}
+    status = {'server': True, 'root': '', 'git': True, 'data': data, 'dataGit': data, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        code, body = 200, {}
+        if u.path.endswith('/__setup/status'):
+            code, body = (200, status) if st['detect'] else (404, {})
+        elif u.path.endswith('/__setup/regen/job'):
+            if req.method == 'POST':
+                post = json.loads(req.post_data or '{}')
+                key = (post.get('set'), post.get('verb'))
+                st['posts'].append({'verb': key[1], 'args': {k: v for k, v in (post.get('args') or {}).items() if k != 'images'}, 'images': len((post.get('args') or {}).get('images') or [])})
+                if not st['up']:
+                    code, body = 500, {'ok': False, 'message': 'down'}
+                elif key not in RJ.REGISTRY:
+                    code, body = 400, {'ok': False, 'status': 400, 'message': f'unknown operation {key[0]}/{key[1]}'}
+                else:
+                    st['n'] += 1
+                    fn, check = RJ.REGISTRY[key]
+                    args = check(post.get('args'))
+                    res = fn(RJ.Job(key[0], key[1], {}), args, {'root': str(root)}) if args is not None else {'ok': False, 'reason': 'bad-args'}
+                    st['views'][f"j{st['n']}"] = {'id': f"j{st['n']}", 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res, 'zones': {}, 'set': key[0], 'verb': key[1], 'args': {}}
+                    body = {'job': f"j{st['n']}"}
+            elif 'id=' in u.query:
+                body = st['views'].get(urllib.parse.parse_qs(u.query)['id'][0], {})
+        route.fulfill(status=code, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    return st
+
+
+@case('A179', "Help › Signaler (SOG-0316), the ergonomist's workstation: a kind, a title, a text (the field grows, 2 000 signs), the screen noted by itself, up to three captures; « Envoyer » is written by the launcher in organisation/SIGNALEMENTS.json and organisation/images/, the report appears in « Mes signalements »; with the launcher down the text stays on the device, « non envoyé »", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule="SOG-0316 (the user, Q-0046: « direct chez toi (capture là où tu m'as indiqué) »; the mockup frame/help/maquette/signaler.html): the screen knows it is the ergonomist's workstation when the launcher answers signalement/lire; the report goes by signalement/ajouter (the existing job route), the captures as bytes in the arguments, checked and written by the launcher; a launcher that does not answer: kept on the device, « not sent », and sent again at the next opening; nothing about a flight, a key or a trigram in the noted context")
+def a179(c):
+    import tempfile
+    from pathlib import Path
+    from cases.base_sources import _png
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation' / 'images').mkdir(parents=True)
+        f = root / 'organisation' / 'SIGNALEMENTS.json'
+        st = _sg_launcher(c, root)
+        c.open('signaler', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-form]') && !document.querySelector('[data-shotsbox]').hidden", timeout=20000, what="the form, with the captures box (the launcher answered: this is the ergonomist's workstation)")
+        c.eq(c.count('input[name=sg-kind]'), 5, 'five kinds', what='kinds')
+        c.eq(c.js("document.querySelector('[data-send]').disabled"), True, 'nothing to send yet: the button is off', what='off')
+        c.page.fill('[data-title]', 'Le bouton Appliquer reste gris')
+        c.page.fill('[data-text]', 'Je choisis la piste 27, je reviens : rien.\n' * 8)
+        c.eq(c.js("document.querySelector('[data-send]').disabled"), False, 'a title and a text: the button is on', what='on')
+        c.ok(c.js("document.querySelector('[data-text]').rows") > 4, '', 'the text field grows with the text')
+        wt = c.js("document.querySelector('[data-wtext]').textContent")
+        c.ok(wt and not re.search(r'token|ghp_|ABC', wt), wt, 'the noted context is shapes (screen, size, design, language, version)')
+        c.page.check('input[name=sg-kind][value=regression]')
+        c.page.set_input_files('[data-shots]', files=[{'name': 'a.png', 'mimeType': 'image/png', 'buffer': _png(300, 200)}, {'name': 'b.png', 'mimeType': 'image/png', 'buffer': _png(120, 80)}])
+        c.eq(c.js("document.querySelector('[data-shotslist]').textContent.includes('a.png')"), True, 'the chosen captures are listed', what='shots list')
+        c.shot(f'A179_form_{c.width}_{c.lang}_delivered.png')
+        c.tap('[data-send]')
+        c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=15000, what='the report in « Mes signalements »')
+        doc = json.loads(f.read_text(encoding='utf-8'))
+        sid, e = next(iter(doc['items'].items()))
+        c.eq((e['kind'], e['title'], e['state'], len(e['images']), sorted(e.get('ctx', {}))[:4]), ('regression', 'Le bouton Appliquer reste gris', 'new', 2, ['design', 'lang', 'size', 'tone']), 'the launcher wrote the report with its two captures and the context shapes', what='entry')
+        c.eq(sorted(p.name for p in (root / 'organisation' / 'images').iterdir()), [f'{sid}-1.png', f'{sid}-2.png'], 'the captures are in organisation/images/ under the names the launcher made', what='images')
+        c.eq(c.js("document.querySelector('[data-mine] li').dataset.id"), sid, 'the list shows the identifier the launcher gave', what='mine')
+        c.eq(c.js("document.querySelector('[data-title]').value + document.querySelector('[data-text]').value"), '', 'the form is empty again', what='cleared')
+        c.ok(all(p['verb'] in ('lire', 'ajouter') for p in st['posts']) and st['posts'][-1]['images'] == 2, st['posts'][-1], 'the page asked the verb with two captures and nothing else')
+        # the launcher goes down: the text stays on the device, « not sent »
+        st['up'] = False
+        c.page.fill('[data-title]', 'Hors ligne')
+        c.page.fill('[data-text]', 'Le lanceur est arrêté.')
+        c.tap('[data-send]')
+        c.until("!!document.querySelector('[data-mine] li .f-sg-state.f-warn')", timeout=15000, what='« not sent »')
+        c.eq(len(json.loads(f.read_text(encoding='utf-8'))['items']), 1, 'nothing more in the file', what='not written')
+        # the launcher is back: the next opening sends it
+        st['up'] = True
+        c.page.reload()
+        c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 2 && !document.querySelector('[data-mine] li .f-sg-state.f-warn')", timeout=20000, what='the kept report is sent at the next opening')
+        c.eq(sorted(v['title'] for v in json.loads(f.read_text(encoding='utf-8'))['items'].values()), ['Hors ligne', 'Le bouton Appliquer reste gris'], 'both reports are in the file', what='both')
+    c.check_errors()
+
+
+@case('A181', "Help › Signaler (SOG-0316), a pilot: no launcher, no captures; the report is one document under the pilot's own folder (pilot/<trigram>/signalements/<id>.json) that leaves with the grouped send, and appears in « Mes signalements »", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0316 (the user: « si c'est un autre que RBR… »): a pilot's report goes through the data repository (no e-mail, no new host): a document per report under pilot/<trigram>/signalements/ (a file each: never a conflict), the identifier made on the device; the page never writes outside that folder (the screen's adapter is declared with it); the captures box is not shown")
+def a181(c):
+    c.open('signaler', docs=LEVEL3 + [['device/identity.json', {'trigram': 'ABC'}, 'cache']])
+    c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the form, the channel known (a pilot: no launcher)')
+    c.eq(c.js("document.querySelector('[data-shotsbox]').hidden"), True, 'a pilot has no captures box', what='no shots')
+    c.page.fill('[data-title]', 'La liste se replie')
+    c.page.fill('[data-text]', 'Quand je tourne le téléphone.')
+    c.tap('[data-send]')
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=15000, what='the report in « Mes signalements »')
+    sid = c.js("document.querySelector('[data-mine] li').dataset.id")
+    keys = c.js("""() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => String(k).includes('/signalements/'))) } })""")
+    c.eq(keys, [f'pilot/ABC/signalements/{sid}.json'], "one document under the pilot's folder, named by the identifier made here", what='document')
+    doc = c.js("""(k) => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').get(k); q.onsuccess = () => res(q.result?.text || '') } })""", f'pilot/ABC/signalements/{sid}.json')
+    d = json.loads(doc)
+    c.eq((d['schema'], d['id'], d['kind'], d['title'], d['text'], 'ABC' in doc, 'images' in d), ('sog-signalement/1', sid, 'bug', 'La liste se replie', 'Quand je tourne le téléphone.', False, False), 'the document: the report and its context shapes; neither the trigram nor a capture inside', what='content')
+    c.shot(f'A181_{c.width}_{c.lang}_delivered.png')
+    c.check_errors()
+
+
+@case('A182', "Help › Signaler (SOG-0316), the ergonomist's workstation reads the pilots' reports from the data repository (« depuis le dossier de … », an untrusted text: escaped, bounded, a `capture` field ignored, a forged file name not read) and takes them over one by one into organisation/SIGNALEMENTS.json (marked « pilote », no capture, taken once)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0316 (Sécurisation, 13 Nov: « le trigramme du chemin n'est PAS une identité vérifiée » ; « un champ capture ou images du fichier est ignoré » ; « reprendre = un geste par signalement, qui repasse par le verbe »): the list is read under pilot/<folder>/signalements/ with a strict file name, each file bounded and checked by the verb's rules, the text only through the escape; « Reprendre » asks the verb with the origin (folder, reference), the verb marks it and refuses a second take; the count says « n non repris »")
+def a182(c):
+    import tempfile
+    from pathlib import Path
+    ok = {'schema': 'sog-signalement/1', 'id': 'SIG-0123456789', 'kind': 'ergonomics', 'title': 'La liste se replie', 'text': 'Quand je tourne le téléphone.', 'screen': 'fuel', 'at': '2026-11-13T10:00:00Z',
+          'ctx': {'lang': 'fr', 'design': 'swiss', 'size': 'phone'}}
+    hostile = {**ok, 'id': 'SIG-abcdef0123', 'kind': 'bug', 'title': '<img src=x onerror=window.__pwn=1>', 'text': '<b>x</b> javascript:alert(1)', 'capture': '../../organisation/images/secret.png', 'images': ['SIG-abcdef0123-1.png']}
+    bad_kind = {**ok, 'id': 'SIG-00000000aa', 'kind': 'hack'}
+    docs = LEVEL3 + [['pilot/XYZ/signalements/SIG-0123456789.json', ok, 'document'], ['pilot/XYZ/signalements/SIG-abcdef0123.json', hostile, 'document'], ['pilot/DEF/signalements/SIG-00000000aa.json', bad_kind, 'document'],
+                     ['pilot/XYZ/signalements/..%2f..%2fx.json', ok, 'document']]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation' / 'images').mkdir(parents=True)
+        f = root / 'organisation' / 'SIGNALEMENTS.json'
+        _sg_launcher(c, root, data=False)    # the data of this workstation is local (no data folder behind the launcher): the pilots' files seeded below are what the screen lists
+        c.open('signaler', docs=docs)
+        c.until("!!document.querySelector('[data-pilots] [data-plist]')", timeout=25000, what="the pilots' reports")
+        rows = c.js("[...document.querySelectorAll('[data-plist] li')].map(l => [l.dataset.p, !!l.querySelector('[data-take]'), l.textContent.includes('depuis le dossier de') || l.textContent.includes('from the folder of')])")
+        c.eq(sorted(r[0] for r in rows), ['DEF/SIG-00000000aa', 'XYZ/SIG-0123456789', 'XYZ/SIG-abcdef0123'], 'the three files with a strict name are listed; the forged name is not read', what='rows')
+        c.eq({r[0]: r[1] for r in rows}, {'DEF/SIG-00000000aa': False, 'XYZ/SIG-0123456789': True, 'XYZ/SIG-abcdef0123': True}, 'a report outside the rules (a kind that is not one) has no « take over » button', what='buttons')
+        c.ok(c.count('[data-plist] img') == 0 and c.js('window.__pwn === undefined') and 'images/secret' not in c.js("document.querySelector('[data-pilots]').innerHTML"), '', 'a hostile text is text, and the capture field of the file is ignored')
+        c.eq(c.js("document.querySelector('[data-left]').textContent.match(/\\d+/)[0]"), '2', 'the count says 2 not taken over', what='left')
+        c.shot(f'A182_{c.width}_{c.lang}_delivered.png')
+        c.tap('[data-take="XYZ/SIG-abcdef0123"]')
+        c.until("!document.querySelector('[data-take=\"XYZ/SIG-abcdef0123\"]')", timeout=15000, what='taken')
+        items = json.loads(f.read_text(encoding='utf-8'))['items']
+        e = next(iter(items.values()))
+        c.eq((len(items), e.get('from'), e.get('folder'), e.get('ref'), 'images' in e, 'capture' in e, e['title']), (1, 'pilote', 'XYZ', 'SIG-abcdef0123', False, False, '<img src=x onerror=window.__pwn=1>'), 'taken over: marked « pilote » with its folder and reference, no capture; the text stays text', what='taken')
+        c.eq(c.js("document.querySelector('[data-left]').textContent.match(/\\d+/)[0]"), '1', 'the count goes down', what='left after')
+        c.page.reload()
+        c.until("!!document.querySelector('[data-plist] li')", timeout=25000, what='the list again')
+        c.eq(c.js("[...document.querySelectorAll('[data-plist] li')].filter(l => l.querySelector('[data-take]')).map(l => l.dataset.p)"), ['XYZ/SIG-0123456789'], 'after a reload the one taken is known as taken (read from the file)', what='after reload')
+    c.check_errors()
+
+
 @case('A180', 'Maintenance: « Administration » is never cut inside the word on the Material rail, and the button « Réglage des seuils de la carte » of the Administration card opens the Map (Pilot app) instead of the Data screen (SOG-0315, items 1 and 2)',
       'A', langs4=True, screens=False, night=False, designs=('material',),
       rule='SOG-0315 (the user, recette of SOG-0274 and SOG-0118): the Material rail is 88 px and its entries carry `overflow-wrap: anywhere`, so « Administration » (12 px, about 80 px) was cut as « Administratio / n »; and `#maps?tune=1` opened from the Administration card INSIDE the Maintenance app names a module that app does not have, so the frame fell back to its first screen (Données)')

@@ -47,3 +47,7 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 - **Conflicts.** A file changed here and elsewhere at the same time keeps its newest version; the other one stays
   available (status button, then "Conflicts") and can be taken back; "Seen" takes a conflict off the list and the count, "Mark
   all as seen" does it for all of them at once.
+
+## Report a problem or make a request
+
+In Help, "Report a problem or make a request": pick a kind (bug, regression, ergonomics, performance, request), write a title and what happened (2,000 signs); the screen you came from, the size, the design, the language and the version are noted by themselves (never flight data or keys) and can be unticked. On the ergonomist's workstation the report is written at once to the suite's reports file, with up to three screenshots (they stay on that workstation, nothing is published); on any other device it goes to the company repository with the next grouped send, with no e-mail. "My reports" keeps the last ten and their state; without access the report stays on the device ("not sent") and leaves when access is back.

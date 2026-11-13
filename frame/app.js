@@ -2970,11 +2970,14 @@
   // Réglages, aide et feuille de route : scripts classiques injectés à la première ouverture de leur écran (le service
   // worker les garde comme les autres fichiers du cadre) ; le démarrage, le menu et le premier module ne les attendent
   // jamais ; l'aide en page d'un module est chargée après son montage
-  const DOCS = ['help', 'roadmap', 'recette']; // les écrans du cadre qui défilent comme une page (la recette : SOG-0167)
+  const DOCS = ['help', 'roadmap', 'recette',
+    'signaler'
+  ]; // les écrans du cadre qui défilent comme une page (la recette : SOG-0167 ; Signaler : SOG-0316)
   const LAZY = {
     help: ['lib/markdown.js?v=0', 'help/help.js?v=0'],
     roadmap: ['help/roadmap.js?v=0'],
     recette: ['help/recette.js?v=0'],
+    signaler: ['help/signaler.js?v=0'],
     settings: ['settings/admin_links.js?v=0', 'settings/config.js?v=0', 'settings/join.js?v=0', 'lib/qr.js?v=0',
       'settings/kit.js?v=0', 'settings/launcher.js?v=0', 'settings/sync_summary.js?v=0', 'settings/access.js?v=0',
       'settings/diagnostic.js?v=0',
@@ -3093,7 +3096,8 @@
       return loadFailed(box, id, e, new URL(`frame/${LAZY[id].find(p => p.split('?')[0] === e.message) || LAZY[id][0]}`, ROOT).href);
     }
     if (tok !== navSeq || location.hash !== at || !box.isConnected) return;
-    return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : id === 'recette' ? SogRecette.screen(box, helpCtx()) : SogRoadmap
+    return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : id === 'recette' ? SogRecette.screen(box, helpCtx()) : id ===
+      'signaler' ? SogSignaler.screen(box, helpCtx()) : SogRoadmap
       .screen(box, helpCtx());
   }
   /** Aide en page d'un module monté : panneau replié « Comment s'en servir » tiré de son chapitre (frame/help), et carte
@@ -3219,7 +3223,7 @@
   const tabModules = tb => (tb.modules || []).filter(id => APP.modules.some(m => m.id === id));
   const tabVisible = tb => tabModules(tb).filter(id => (moduleLevel[id] ?? 1) <= level);
   /** Écran du cadre tel que la barre le nomme : l'appareil est l'écran des Réglages, la feuille de route s'ouvre de l'aide. */
-  const screenBase = id => id === 'device' ? 'settings' : id === 'roadmap' || id === 'recette' ? 'help' : id;
+  const screenBase = id => id === 'device' ? 'settings' : id === 'roadmap' || id === 'recette' || id === 'signaler' ? 'help' : id;
   /** Écran du cadre affiché ('' : un module) : celui qui couvre le module, ou celui routé seul (aide ouverte par son adresse,
    *  avant tout module : renderMenu('help', 'help')). */
   const shownScreen = (moduleId, screenId) => screenId && (screenId !== moduleId || !APP.modules.some(m => m.id === moduleId)) ?
@@ -3731,7 +3735,7 @@
   // aide, feuille de route, réglages, conflits : ouverts depuis un module, ils se montrent dans la zone du module sans
   // le démonter (il est seulement masqué) ; le bouton qui les a ouverts (enfoncé tant qu'ils le sont), Échap ou le retour
   // du navigateur les referment, et l'on retrouve le module tel quel : même adresse, même étape, même défilement
-  const SCREENS = ['help', 'roadmap', 'recette', 'settings', 'device', 'conflicts', ...APP.screens.map(s => s.id)];
+  const SCREENS = ['help', 'roadmap', 'recette', 'signaler', 'settings', 'device', 'conflicts', ...APP.screens.map(s => s.id)];
   let over = null; // { id, returnHash, scroll, stack: [adresses des écrans du cadre ouverts], sig }
   // ce qu'un module lit à son montage (identité, usages, niveau, langue, transport) : changé pendant que l'écran du cadre
   // était ouvert (réglages), le module est remonté à la fermeture au lieu d'être rendu tel quel
@@ -4168,6 +4172,20 @@
     };
   }
   /** Contexte de l'aide (frame/help/help.js) : textes, langue, documents de l'appareil, racine de la suite. */
+  // le dépôt de données pour « Signaler » : un document par signalement, sous le dossier du pilote seulement (rien d'écrit sans trigramme) ; lu : pilot/ (le poste de l'ergonome liste ceux des pilotes)
+  const signalAdapters = new Map();
+  const signalData = () => {
+    const tri = /^[A-Za-z0-9]{2,8}$/.test(identity.trigram || '') ? identity.trigram : '';
+    if (!signalAdapters.has(tri)) signalAdapters.set(tri, FD.adapter({
+      id: 'frame-signaler',
+      reads: ['pilot/'],
+      writes: tri ? [{
+        prefix: `pilot/${tri}/signalements/`,
+        merge: 'record'
+      }] : []
+    }));
+    return signalAdapters.get(tri);
+  };
   const helpCtx = () => ({
     t,
     lang,
@@ -4180,6 +4198,11 @@
     }, {
       author: () => identity.trigram || ''
     }) : null) || null,
+    // Signaler (SOG-0316) : de quoi noter d'où l'on vient et laisser un signalement de pilote dans le dépôt de données
+    from: () => current?.id || '',
+    version: () => suiteVersion,
+    trigram: () => identity.trigram || '',
+    data: signalData(),
     app: APP.id, // le manuel de l'application affichée (frame/help/<app>.<langue>.md)
     tutorials: APP.welcome !== false, // les tutoriels sont ceux de Pilote
     // « Toute l'aide » : le manuel de chaque application que l'appareil ouvre (son niveau), à son adresse
