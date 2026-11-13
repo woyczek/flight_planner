@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9f01a92",
-  "fiches": 323,
+  "organisation": "f16c7be",
+  "fiches": 324,
   "untranslated": 0,
   "priorities": 310
  },
@@ -514,8 +514,7 @@
      "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
      "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
      "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo",
-     "rank": 16,
-     "test": true
+     "rank": 16
     },
     {
      "id": "SOG-0089",
@@ -1195,7 +1194,7 @@
     {
      "id": "SOG-0253",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Vue VFR : donner les directions du tour de piste (carte VAC), voilure fixe en noir, tournante en vert",
      "en": "VFR view: show the traffic pattern directions (VAC chart)",
      "de": "VFR view: show the traffic pattern directions (VAC chart)",
@@ -4074,11 +4073,12 @@
     {
      "id": "SOG-0318",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Données : la fiche du Portugal se contredit — « rien à déposer » et « ce pays attend un fichier »",
      "en": "Data: the Portugal sheet contradicts itself — « nothing to drop » and « this country waits for a file »",
      "de": "Daten: das Blatt Portugal widerspricht sich — « nichts abzulegen » und « dieses Land wartet auf eine Datei »",
-     "es": "Datos: la ficha de Portugal se contradice — « nada que depositar » y « este país espera un fichero »"
+     "es": "Datos: la ficha de Portugal se contradice — « nada que depositar » y « este país espera un fichero »",
+     "test": true
     }
    ]
   },
@@ -4661,7 +4661,7 @@
     {
      "id": "SOG-0320",
      "kind": "feature",
-     "state": "later",
+     "state": "doing",
      "fr": "Réglages : ranger par fréquence d'usage, et ce que font le chevron et le titre d'un bloc",
      "en": "Settings: order by how often they are used, and what the chevron and the title of a block do",
      "de": "Einstellungen: nach Nutzungshäufigkeit ordnen, und was Pfeil und Titel eines Blocks tun",
@@ -4688,6 +4688,15 @@
      "de": "Einstellungen und Daten: drei Korrekturen an Beschriftungen und Links",
      "es": "Ajustes y Datos: tres retoques de etiquetas y enlaces",
      "test": true
+    },
+    {
+     "id": "SOG-0324",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages › État : un geste pour repartir de zéro sur cet appareil ; le clignotement vert-marron-vert à la reconstruction",
+     "en": "Settings › Status: one gesture to start again from scratch on this device; the green-brown-green flicker during a rebuild",
+     "de": "Einstellungen › Zustand: eine Geste, um auf diesem Gerät neu anzufangen; das Grün-Braun-Grün-Flackern beim Neuaufbau",
+     "es": "Ajustes › Estado: un gesto para empezar de cero en este dispositivo; el parpadeo verde-marrón-verde al reconstruir"
     }
    ]
   },

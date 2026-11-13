@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 195,
-  "verdicts": 123
+  "tests": 196,
+  "verdicts": 124
  },
  "apps": [
   "pilote",
@@ -287,13 +287,10 @@
    },
    "test": "Recharge la page. Carburant, ton vol LFOP → LFBD : « Démarrer » une seule fois — le bouton dit « Démarrage… » le temps de relire la météo, puis le vol est démarré. « Direct vers… » PT (ou PT4) : le direct est pris. Essaie un point hors de la route : il est pris aussi, avec un avertissement qui dit à combien de milles il est de la route.",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-13T12:18:15Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "1/ il faut démarrer plusieurs fois. étrange. 2/ le contrôle peut donner un direct vers un point autre que la route. un warn, avec la distance à la route. ici, sur lfop lfbd, le direct PT m’est refusé (screenshot). pourtant, c’est sur la route (ou presque).",
-    "at": "2026-11-13T09:02:38Z"
-   }
+   "comment": "garder le trajet initial, en violet, écrire le direct en jaune ou vert, ou une couleur qui ressemble (ou un violet pointillés).",
+   "at": "2026-11-13T14:05:03Z"
   },
   {
    "id": "SOG-0089",
@@ -2685,10 +2682,10 @@
     "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",
     "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte"
    },
-   "test": "Recharge la page. Missions : ouvre la carte d'une mission militaire (famille T, par exemple) : le choix des vues donne VFR, Topographique, IFR, Transit basse altitude ; « Topographique » montre le fond OpenTopoMap sans zones ; « Transit basse altitude » montre le RTBA et les axes de ravitaillement. Une mission de secours (M, S) : VFR, Topographique, IFR bas, IFR haut. Une liaison commerciale : VFR, IFR, fond seul. Dans la Carte : la case des courbes de niveau et le fond topographique de la tranche 1 sont toujours là.",
+   "test": "Recharge la page. Carte, vue VFR : le cadre gradué (degrés de latitude et de longitude) est sur les bords ; Couches : la case « Relief ombré » coupe le relief et le remet, et le choix est gardé après rechargement ; sur le fond topographique (OpenTopoMap) la case est grisée et dit pourquoi. Missions : la carte d'une mission militaire (famille T) offre VFR, Topographique, IFR, Transit basse altitude ; une mission de secours : VFR, Topographique, IFR bas, IFR haut ; une liaison commerciale : VFR, IFR, fond seul. La case des courbes de niveau est toujours là.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-13T13:59:25Z"
+   "delivered": "2026-11-13T14:06:21Z"
   },
   {
    "id": "SOG-0301",
@@ -2873,6 +2870,20 @@
    "delivered": "2026-11-13T12:40:57Z"
   },
   {
+   "id": "SOG-0318",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la fiche du Portugal se contredit — « rien à déposer » et « ce pays attend un fichier »",
+    "en": "Data: the Portugal sheet contradicts itself — « nothing to drop » and « this country waits for a file »",
+    "de": "Daten: das Blatt Portugal widerspricht sich — « nichts abzulegen » und « dieses Land wartet auf eine Datei »",
+    "es": "Datos: la ficha de Portugal se contradice — « nada que depositar » y « este país espera un fichero »"
+   },
+   "test": "Relance le lanceur, recharge la page. Données, Portugal : la fiche commence par UNE phrase qui dit quoi faire (« Un fichier est dans Téléchargements : prenez-le, ce pays se reconstruit ensuite. ») ; le bouton « Prendre le fichier téléchargé » est là et actif ; plus de « rien à déposer » à côté de « ce pays attend un fichier ». Après la prise et la mise à jour : « Rien à faire : à jour ».",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T14:02:52Z"
+  },
+  {
    "id": "SOG-0319",
    "app": "pilote",
    "title": {
@@ -2903,22 +2914,20 @@
  ],
  "decisions": [
   {
-   "id": "Q-0049",
-   "fiche": "SOG-0320",
-   "app": "maintenance",
-   "question": "Réglages rangés par fréquence d'usage : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/frame/settings/maquette/reglages_usage.html",
-   "context": "Ton rangement : toujours visible — État, Affichage, Compagnie ; parfois, repliés (toute la ligne ouvre) — Données, Synchronisation, Appareil ; Administration n'est plus un pli mais une ligne qui ouvre sa page ; ce qui ne sert qu'une fois — Identité, Accès, créer ou rejoindre une compagnie — sous « Mise en route », tout en bas ; À propos déplié en dernier. Le vide sous « Compagnie » disparaît (une place réservée qui n'était jamais rendue). Le « chemin bizarre » depuis Maintenance est expliqué : l'entrée « Administration » de sa barre ouvrait le même écran et restait surlignée quoi qu'on ouvre. Dans l'écran réel, les mots « Toujours visible », « Parfois », « En page », « Une seule fois » de la maquette ne seront pas affichés : ce sont des repères pour toi ; seul « Mise en route » reste un titre.",
+   "id": "Q-0050",
+   "fiche": "SOG-0253",
+   "app": "pilote",
+   "question": "Tours de piste sur la vue VFR : le sens n'est écrit nulle part, il n'est que dans le dessin des cartes VAC. Qui le saisit pour les 28 terrains ?",
+   "context": "AeroDB a lu les 28 cartes VAC du poste : le texte ne dit jamais main droite ou gauche ; le sens est dans les flèches (plein pour les avions, pointillé pour les hélicoptères). AeroDB prépare de toute façon le champ (sens et sorte d'aéronef par suite de points) ; la Carte sait déjà dessiner la flèche, noir pour la voilure fixe, vert pour la tournante. Reste à remplir : environ dix minutes par terrain à la main. Chaque saisie est marquée « interprété ». Ma recommandation : AeroDB regarde chaque carte et propose le sens ; tu vérifies d'un coup d'œil sur la Carte, terrain par terrain, pendant la recette — une erreur de lecture est possible, c'est pour cela que tu vérifies.",
    "options": [
-    "Oui, on code sur cette maquette",
-    "Oui, avec mes remarques (dans le texte)",
-    "Non, à reprendre (dis-moi quoi)"
+    "AeroDB propose le sens d'après chaque carte, je vérifie sur la Carte",
+    "Je les saisis moi-même (dix minutes par terrain)",
+    "Seulement les terrains que j'utilise (je les nomme dans le texte)",
+    "Lecture automatique du dessin (1 à 2 jours, à revalider à chaque amendement)"
    ],
    "since": "2026-11-13",
-   "state": "answered",
-   "recommended": 0,
-   "choice": null,
-   "text": "Oui.  sur l’état du poste, prévoir un bouton de purge pour recommencer ce qui semble bizarre. un rapport avec le clignottement vert-marron-vert à la reconstruction ?",
-   "at": "2026-11-13T13:58:33Z"
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }
