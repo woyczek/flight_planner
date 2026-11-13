@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b4fd80a",
+  "organisation": "0b64a40",
   "fiches": 326,
   "untranslated": 0,
   "priorities": 310
@@ -1168,8 +1168,7 @@
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
      "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)",
-     "rank": 73,
-     "test": true
+     "rank": 73
     },
     {
      "id": "SOG-0233",
