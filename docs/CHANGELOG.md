@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › procedures: an approach known by its chart only can be chosen — « VOR 31R — par sa carte : ni tracé ni distance », with its chart** (fuel DECISIONS; noreg F213, F150; SOG-0308 slice 3b, SOG-0298).
 - **Map, VFR view: the traffic circuits of the user's extractor are drawn** (SOG-0253): solid black for fixed wing, dotted green for rotary, arrows in the order of flight, the altitude on the line; in the aerodrome's content — chart not read: nothing; read and no circuit: « Tour de piste : main gauche (rien de publié sur la carte) »; circuit extracted: its hand and altitude; read through the launcher's read-only `vfr/circuits` (new `meta.launcher` route of the Map: for Sécurisation); help ×4; D233.
 - **Fuel and Mes vols keep their wide layout when the window grows past 1 100 px: container threshold 850 px, as Missions** (fuel and flightlog DECISIONS; noreg F217, L135; SOG-0331).
 - **Route computation: the search of the alternatives has its own budget** (SOG-0296, the cause) — `alternatives_budget` (optional, 1 to 25 s, **8 s by default** instead of the 25 s of the whole plan; a refused plan keeps the 25 s): LFOE → KDEN with the alternatives goes from ~26 s to ~14 s without any change of the screen; the primary alone stays 1 to 3 s (the screen will ask twice). Launcher Python: restart the launcher. Case K267.

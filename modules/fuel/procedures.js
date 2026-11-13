@@ -131,6 +131,7 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-prow.fu-pwarn{background:color-mix(in srgb,var(--sog-warn) 12%,transparent);padding:8px 10px;margin:4px -10px}
 [data-module="fuel"] .fu-prow.fu-pwarn>.fu-pval{color:var(--sog-warn)}
 [data-module="fuel"] .fu-procfoot:not([open])>:not(summary){display:none} /* fermé : rien de vu ni d'atteignable (sûr sous tous les moteurs) */
+[data-module="fuel"] .fu-pchange[aria-expanded="false"]~.fu-chartonly:not(:has([data-appnone])){display:none} /* SOG-0308 tranche 3b : les approches par leur carte se choisissent dans la liste ; leurs lignes et leurs liens se lisent la liste de l'approche ouverte, « pas d'approche » reste dit */
 [data-module="fuel"] .fu-procfoot>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--sog-muted)}
 /* le même signe de pli que les côtés (▸ / ▾), à la place du chevron du cadre (retouche c) */
 [data-module="fuel"] .fu-procfoot>summary::before{content:'▸';border:0;width:auto;height:auto;transform:none;margin:0 .5em 0 0;font-size:.9em}
@@ -543,8 +544,16 @@ export function createProcedures(host) {
         .isDoubt(r) ? ` · ⚑ ${tt(TX.procDoubt)}` : '') + (r.outdated ? PROC_OLD : ''));
       // SOG-0248 : après les approches codées, chaque approche « carte seulement » de l'AIP, dite mais jamais choisie (son lien est sous
       // la liste)
-      const co = chartOnlyOf(m);
-      if (co.length) out.at(-1).html += `<optgroup label="${esc(tt(TX.procChartOnly))}">${co.map(x => `<option disabled data-chartopt>${esc(tt(TX.procChartOnlyOne, { name: x.name }))}</option>`).join('')}</optgroup>`;
+      // SOG-0298 / SOG-0308 tranche 3b : elles se CHOISISSENT (« __chart:<rang> » dans la liste du terrain, jamais un identifiant)
+      const co = chartOnlyOf(m),
+        ach = appChartOf(o),
+        gone = ach && o.app === undefined && !co.some(x => String(x.name || '').trim() === ach.name && (PR.rwNum(x.runway) || '') === ach
+          .runway);
+      adOf(m.icao).chartOnly = co;
+      if (co.length || gone) out.at(-1).html += `<optgroup label="${esc(tt(TX.procChartOnly))}">${co.map((x, i) => {
+          const on = ach && o.app === undefined && String(x.name || '').trim() === ach.name && (PR.rwNum(x.runway) || '') === ach.runway;
+          return `<option value="__chart:${i}" data-chartopt${on ? ' selected' : ''}>${esc(tt(TX.procChartOnlyOne, { name: x.name }))}</option>`;
+        }).join('')}${gone ? `<option value="__chart:gone" data-chartopt disabled selected>${esc(`${chartName(ach.name)} — ${tt(TX.procChartGone)}`)}</option>` : ''}</optgroup>`;
 
       const at = ac.transitionsOf(o.app);
       if (at.length) sel('appTrans', 'apptrans', TX.procAppTrans, at, false, r => PR.transitionLabelOf(r) + (r.outdated ? PROC_OLD : ''));
@@ -584,6 +593,27 @@ export function createProcedures(host) {
     Q: 'NDB/DME'
   };
 
+  /** L'approche choisie par sa carte (route.procedures.arr.appChart, SOG-0298) telle que le vol la porte — une entrée non fiable : un
+   *  nom de 60 signes au plus sans caractère de contrôle, une piste à sa forme ; null sinon. */
+  function appChartOf(o) {
+    const a = o?.appChart,
+      name = a && typeof a === 'object' && typeof a.name === 'string' ? a.name.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ')
+      .trim().slice(0, 60) : '';
+    return name ? {
+      name,
+      runway: PR.rwNum(a.runway) || ''
+    } : null;
+  }
+  /** La carte de la base qui porte l'approche choisie par sa carte (même nom, même piste), parmi celles du terrain ; null quand elle n'y
+   *  est plus (la ligne le dit, rien n'est effacé : condition 5 de l'ergonome). */
+  function chartOfChoice(m, ac) {
+    return ac ? (m?.chartOnly || []).find(x => String(x.name || '').trim() === ac.name && (PR.rwNum(x.runway) || '') === ac.runway) ||
+      null :
+      null;
+  }
+  /** Le nom court d'une carte d'approche (« ILS RWY 31R » → « ILS 31R »). */
+  const chartName = n => String(n || '').replace(/\bRWY\s*/i, '').replace(/\s+/g, ' ').trim();
+
   function appWords(label) {
     const t = /^([ILRVDNQ])(\d{2}[LRC]?)(?:-([A-Z]))?$/.exec(String(label || '').trim());
     return t ? [APP_TYPE[t[1]], t[2], t[3] || ''].filter(Boolean).join(' ') : String(label || '');
@@ -604,7 +634,9 @@ export function createProcedures(host) {
       finals = PR.appChoices(m.lists?.APP || []).list,
       appRec = typeof o.app === 'string' ? byId.get(o.app) || finals.find(x => x.id === o.app) : null,
       appTrans = typeof o.appTrans === 'string' && o.appTrans !== o.app ? byId.get(o.appTrans) : null,
-      app = o.app === null ? null : appRec ? [appWords(PR.labelOf(appRec, finals)), appTrans ? `${tt(TX.procTransWord)} ${PR.transitionLabelOf(appTrans)}` : '']
+      ac = appChartOf(o),
+      app = ac && o.app === undefined ? `${chartName(ac.name)} — ${tt(chartOfChoice(m, ac) ? TX.procByChart : TX.procChartGone)}` :
+      o.app === null ? null : appRec ? [appWords(PR.labelOf(appRec, finals)), appTrans ? `${tt(TX.procTransWord)} ${PR.transitionLabelOf(appTrans)}` : '']
       .filter(Boolean).join(' · ') : s.app && appWords(s.app);
     return {
       rwy,
@@ -621,7 +653,7 @@ export function createProcedures(host) {
       main = side === 'dep' ? 'sid' : 'star',
       needMain = (m.lists?.[side === 'dep' ? 'SID' : 'STAR'] || []).some(r => !r.transition),
       needApp = side === 'arr' && (m.lists?.APP || []).length > 0,
-      done = !!PR.rwNum(o.rwy) && (!needMain || o[main] !== undefined) && (!needApp || o.app !== undefined);
+      done = !!PR.rwNum(o.rwy) && (!needMain || o[main] !== undefined) && (!needApp || o.app !== undefined || !!appChartOf(o));
     return !done ? 'todo' : m.cov?.outdated ? 'old' : 'ok';
   }
   /** La phrase du côté replié (SOG-0308) : la marque, puis « piste 31L · MEN2B · ILS 31L » — sans « Départ LFRS », déjà dans l'en-tête
@@ -632,11 +664,12 @@ export function createProcedures(host) {
       none = k => `${tt(TX[k])} ${tt(TX.procNone)}`,
       // une approche en doute choisie : son panonceau dans le résumé replié aussi (retouche de F139)
       flag = side === 'arr' && v.app && chosenDoubt(m) ? ' ⚑' : '',
+      acf = side === 'arr' ? appChartOf(CF.proceduresOf(host.flight()).arr) : null,
       parts = [v.rwy ? tt(TX.procRwyWord, {
           r: v.rwy
-        }) : '', v.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : v.proc || '', v.app === null ? none('procApp') : v.app ?
-        v.app +
-        flag : ''
+        }) : '', v.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : v.proc || '', acf && v.app ? chartName(acf.name) : v
+        .app === null ?
+        none('procApp') : v.app ? v.app + flag : ''
       ].filter(Boolean),
       mark = markOf(side, m),
       sign = {
@@ -848,6 +881,14 @@ export function createProcedures(host) {
   function rowChartHtml(icao, side, row) {
     const k = String(icao || '').toUpperCase();
     if (!/^[A-Z]{4}$/.test(k)) return ''; // sans chartUrl, la page de données reste (SOG-0330)
+    // SOG-0298 : l'approche choisie par sa carte a sa carte sur sa ligne (l'adresse donnée par aerodb.chartOnly)
+    const acx = row === 'app' && side === 'arr' ? appChartOf(CF.proceduresOf(host.flight()).arr) : null;
+    if (acx && CF.proceduresOf(host.flight()).arr?.app === undefined) {
+      const u = chartOfChoice({
+        chartOnly: adOf(k).chartOnly || []
+      }, acx)?.url;
+      return u && /^https:\/\/[^\s"'<>]+$/.test(u) ? `<a class="fu-procsrc" data-chart="APPCHART" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(tt(TX.procChartOne))}</a>` : '';
+    }
     const kinds = {
         rwy: ['RWY'],
         main: ['SID', 'STAR'],
@@ -961,6 +1002,16 @@ export function createProcedures(host) {
   /** L'aide de l'approche choisie à l'arrivée : { t: [, I | L, piste], x: l'ILS } ; null sans approche ILS / LOC ou sans ILS en base
    *  (ou tant que la réponse n'est pas venue). */
   function aidFor(m) {
+    const ac = appChartOf(CF.proceduresOf(host.flight()).arr),
+      ct = ac && CF.proceduresOf(host.flight()).arr?.app === undefined ? /^(ILS|LOC)\b/i.exec(ac.name) : null;
+    // SOG-0298 : une approche ILS / LOC choisie par sa carte lit le moyen de sa piste dans la base (condition 2 : jamais gardé dans le vol)
+    if (ct && ac.runway) {
+      const x = aidOf(m.icao, ac.runway);
+      return x ? {
+        t: [ct[0], ct[1].toUpperCase() === 'ILS' ? 'I' : 'L', ac.runway],
+        x
+      } : null;
+    }
     const id = CF.proceduresOf(host.flight()).arr?.app,
       rec = id ? adOf(m.icao).recs?.get(id) : null,
       a = rec ? PR.arincApp(rec) : '',
@@ -1269,8 +1320,24 @@ export function createProcedures(host) {
       o = cur[side],
       val = raw === '' ? undefined : raw === '__none' ? null : raw;
     if (!PROC_FIELDS[side]?.includes(field)) return;
-    if (val === undefined) delete o[field];
-    else o[field] = val;
+    // SOG-0298 / SOG-0308 tranche 3b : une approche par sa carte, prise dans la liste des cartes de la base (jamais un texte libre) ;
+    // elle remplace l'approche codée et sa transition, et une approche codée (ou « aucune ») la remplace (condition 3)
+    const chart = side === 'arr' && field === 'app' && typeof raw === 'string' && raw.startsWith('__chart:');
+    if (chart) {
+      const x = adOf(String(host.route()?.arr || '').toUpperCase()).chartOnly?.[+raw.slice(8)];
+      if (!x || !/^\d{1,2}$/.test(raw.slice(8))) return;
+      o.appChart = {
+        name: String(x.name || '').trim().slice(0, 60),
+        runway: PR.rwNum(x.runway) || ''
+      };
+      delete o.app;
+      delete o.appTrans;
+      if (!o.rwy && o.appChart.runway) o.rwy = o.appChart.runway;
+    } else {
+      if (side === 'arr' && field === 'app') delete o.appChart;
+      if (val === undefined) delete o[field];
+      else o[field] = val;
+    }
     // une procédure choisie avant la piste, qui n'en dessert qu'une, pose cette piste
     if (['sid', 'star', 'app'].includes(field) && typeof val === 'string' && !o.rwy) {
       const rec = recsNow().get(val),

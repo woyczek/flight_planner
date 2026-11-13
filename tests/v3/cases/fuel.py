@@ -4505,7 +4505,7 @@ def _chartonly_docs():
     return docs, fin['id']
 
 
-@case('F150', 'Procedures: the coded approaches, then one line per approach charted only in the AIP (its chart, never chosen); a « finale seule » named so and never doubled by a chart line',
+@case('F150', 'Procedures: the coded approaches, then one line per approach charted only in the AIP (its chart; chosen since slice 3b, F213), read with the list open; a « finale seule » named so and never doubled by a chart line',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0248 / SOG-0232 (user, recette: « aucune ils, aucune vor, aucune loc. pourtant existantes »): AeroDb.approachSummary / chartOnly (AeroDB '
       '6cc170b8e, K163); an invented aerodrome; captures 390 and 1 280')
@@ -4526,8 +4526,12 @@ def f150(c):
         opts = c.js(f"[...document.querySelectorAll('{FUEL} select[data-k=\"p-arr-app\"] option')].map(o => [o.value, o.textContent.trim(), o.disabled])")
         fo = [o for o in opts if o[0] == fin]
         c.ok(fo and norm(tx(T, 'procFinalOnly', c.lang)) in norm(fo[0][1]), fo, 'the final-only ILS named « — finale seule », selectable')
-        dis = [o for o in opts if o[2] and o[1] not in ('—',)]
-        c.ok(len(dis) == 2 and all(one in norm(o[1]) for o in dis), dis, 'the two chart-only approaches listed after the coded ones, never selectable')
+        # SOG-0308 tranche 3b : elles se choisissent désormais (« __chart:<rang> », F213)
+        dis = [o for o in opts if o[0].startswith('__chart:')]
+        c.ok(len(dis) == 2 and all(one in norm(o[1]) and not o[2] for o in dis), dis, 'the two chart-only approaches listed after the coded ones, selectable (slice 3b)')
+        # leurs lignes et leurs liens se lisent la liste ouverte (« Changer » de l'approche), comme la maquette
+        c.tap(f'{FUEL} [data-proc=arr] [data-do=procchange][data-row=app]')
+        c.until(f"getComputedStyle(document.querySelector('{FUEL} [data-proc=arr] [data-chartonly]')).display !== 'none'", what=f'{w} px: the chart lines, the list open')
         c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-chartonly]').scrollIntoView({{block: 'center'}})")
         c.shot(f'F150_{c.design}_{w}_{c.lang}_delivered.png')
 
@@ -5448,3 +5452,53 @@ def f217(c):
     open_proc(c)
     # jusqu'à 1 195 px : dès 1 200 px de fenêtre, Carburant passe en vue double (la Carte à côté) — une autre mise en page, dite à l'ergonome
     _no_breakpoint_lost(c, 'fuel', upto=1200)
+
+
+
+@case('F213', 'Procedures, an approach known by its chart only is CHOSEN (slice 3b): written as route.procedures.arr.appChart { name, runway }, '
+      'never an identifier in app; the line says « VOR 31R — par sa carte : ni tracé ni distance » with its chart; a coded approach removes it '
+      'and the other way round; it survives a write of the route by the Map; a chart no longer in the base is said, nothing erased', 'F',
+      tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0298 (user: « on doit pouvoir les choisir, même si on n\'a pas le tracé »), SOG-0308 slice 3b — the ergonomist\'s five conditions '
+      '(13 Nov, 16 h 04): the name from the base\'s charts, the frequency read at display, coded and chart exclusive, survives another '
+      'module\'s write, a chart gone is said')
+def f213(c):
+    docs, fin = _chartonly_docs()
+    c.open('fuel', docs=docs + proc_flight(V2_PROCS), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'arr')
+    A = f'{FUEL} [data-proc="arr"]'
+    show_list(c, 'p-arr-app')
+    opts = c.js(f"[...document.querySelectorAll('{A} select[data-k=p-arr-app] option[data-chartopt]')].map(o => [o.value, o.textContent.trim(), o.disabled])")
+    vor = [o for o in opts if 'VOR' in o[1]]
+    c.ok(vor and not vor[0][2] and vor[0][0].startswith('__chart:'), opts, 'the chart-only approaches can be chosen')
+    c.page.select_option(f'{A} select[data-k="p-arr-app"]', vor[0][0])
+    d = cf_doc(c, lambda d: bool(((procs_of(d, 'arr') or {}).get('appChart') or {}).get('name')), 'appChart written', timeout=8000)
+    arr = procs_of(d, 'arr')
+    c.ok('VOR' in arr['appChart']['name'] and arr['appChart']['runway'] == '31R' and 'app' not in arr, arr,
+         '{ name, runway } from the base\'s chart, no identifier in app')
+    c.ok(set(arr['appChart']) == {'name', 'runway'}, arr['appChart'], 'no frequency kept in the flight')
+    v = norm(c.text(f'{A} [data-r="v-app"]') or '')
+    c.ok('VOR 31R' in v and norm(tx(PT, 'procByChart', c.lang)) in v, v, '« VOR 31R — par sa carte : ni tracé ni distance »')
+    c.until(f"!!document.querySelector('{A} [data-prow=app] [data-chart=APPCHART]')", what='its chart on its line')
+    # another module writes the route (the Map's setRoute: route.text changed): appChart survives
+    # the Map's write (modules/maps/edit.js saveRoute: changesOf from its read, applyChanges in setRoute) of a new route text, on the
+    # flight as written
+    kept = c.js("""async (f) => { const CF = await import('/frame/lib/current_flight.js');
+        const ch = CF.changesOf(CF.routeBase(f), { route: { ...f.route, text: 'LFRS NEPIX LFML' }, level: f.level ?? null });
+        return CF.applyChanges(f, ch).route.procedures.arr.appChart || null }""", d)
+    c.eq(kept, arr['appChart'], 'a write of the route by the Map keeps appChart as it was', what="appChart after the Map's write")
+    # a coded approach removes it
+    pick_proc(c, 'p-arr-app', fin)
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == fin, 'the coded approach written', timeout=8000)
+    c.ok('appChart' not in procs_of(d, 'arr'), procs_of(d, 'arr'), 'the coded approach removes appChart')
+    # a flight read again whose chart is no longer in the base: said, nothing erased
+    gone = {'dep': {}, 'arr': {'rwy': '31R', 'appChart': {'name': 'VOR RWY 31R OLD', 'runway': '31R'}}, 'by': 'fuel', 'at': '2026-11-13T10:00:00Z'}
+    c.open('fuel', docs=docs + proc_flight(gone), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'arr')
+    c.until(f"(document.querySelector('{A} [data-r=v-app]')?.textContent || '').includes('OLD')", timeout=10000, what='the gone chart said on the line')
+    c.ok(norm(tx(PT, 'procChartGone', c.lang)) in norm(c.text(f'{A} [data-r="v-app"]')), c.text(f'{A} [data-r="v-app"]'), '« sa carte n\'est plus dans la base »')
+    c.settle()
+    c.ok(((procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr') or {}).get('appChart') or {}).get('name') == 'VOR RWY 31R OLD',
+         procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr'), 'nothing erased')

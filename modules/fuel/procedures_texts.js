@@ -334,6 +334,14 @@ export const TX = {
   ],
   procRwyTakeOne: ['Prendre la {rwy}', 'Take {rwy}', '{rwy} nehmen', 'Tomar la {rwy}'],
   // la liste des pistes (SOG-0308, tranche 2 ; SOG-0301) : ce qui distingue une piste, après son vent
+  // SOG-0298 / SOG-0308 tranche 3b : une approche choisie par sa seule carte
+  procByChart: ['par sa carte : ni tracé ni distance', 'by its chart: no track nor distance', 'nach ihrer Karte: weder Bahn noch Strecke',
+    'por su carta: ni trazado ni distancia'
+  ],
+  procChartGone: ['sa carte n’est plus dans la base', 'its chart is no longer in the database',
+    'ihre Karte ist nicht mehr in der Datenbank',
+    'su carta ya no está en la base'
+  ],
   procRwyBest: ['la mieux orientée', 'best oriented', 'am besten ausgerichtet', 'la mejor orientada'],
   procRwyTailMark: ['vent arrière', 'tailwind', 'Rückenwind', 'viento de cola'],
   procRwyNoSid: ['aucun départ publié', 'no published departure', 'kein veröffentlichter Abflug', 'ninguna salida publicada'],

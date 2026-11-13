@@ -1926,3 +1926,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the 56 px rail to the 210 px bar at 1 100 px of window, and the module falls from 1 010 to 858 px — every step shown, without the step bar went away just as the
   window grew, as in Missions). 850 px is the frame's `.f-cols` threshold and Missions' since f71672620; once the module reaches it,
   growing the window keeps it. F217 (A191's rule on this module; red before: 900 lost at 1 100 px).
+- **13 Nov 2026 — SOG-0308 slice 3b (SOG-0298): an approach known by its chart only is CHOSEN** (user: « on doit pouvoir les choisir,
+  même si on n'a pas le tracé »; the ergonomist's five conditions, 16 h 04). Written by Fuel only as `route.procedures.arr.appChart`
+  `{ name, runway }` — never a false identifier in `app`; the list offers `__chart:<rank>` after the coded approaches. (1) The name is the
+  base's chart name (`chartOnly`), bounded on read (`appChartOf`: 60 signs, no control character, a runway of its shape). (2) For an ILS /
+  LOC chart the aid is read from the base at display (`aidFor`), never kept in the flight. (3) Coded and chart are exclusive: choosing
+  one removes the other. (4) It survives the Map's write of the route (`changesOf` / `applyChanges` only touch the keys that changed).
+  (5) A chart no longer in the base is said on the line (« sa carte n'est plus dans la base ») and kept selected, nothing erased. The
+  line says « VOR 31R — par sa carte : ni tracé ni distance » with its chart. The chart-only lines (SOG-0248) are read with the
+  approach's list open, as the mock-up (`maquette/procedures_carte_390.png`); « pas d'approche » stays said. F213 (red before); F150
+  follows the new rule (selectable). Map readers of `route.procedures` played: D53, D54, D171, D224.
