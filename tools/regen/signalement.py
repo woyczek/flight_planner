@@ -36,7 +36,7 @@ TONES = ('day', 'night')
 SCREENS = ('aircraft', 'atmosphere', 'data', 'flightlog', 'fuel', 'hello', 'maps', 'missions', 'report', 'stats', 'website',
            'help', 'roadmap', 'recette', 'settings', 'device', 'conflicts', 'sources', 'signaler', 'other')
 STATES = ('new', 'read', 'fiche')
-VERSION = re.compile(r'[0-9A-Za-z._+-]{1,24}')
+VERSION = re.compile(r'[0-9A-Za-z._+-]{1,40}')      # « jalon-n-gSHA » (git describe) : le jalon et le SHA court
 ID = re.compile(r'SIG-[0-9a-f]{10}')
 IMAGE_NAME = re.compile(r'SIG-[0-9a-zA-Z]{4,16}-[1-3]\.(png|jpg|webp)')
 FICHE = re.compile(r'SOG-[0-9]{4}')

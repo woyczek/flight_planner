@@ -19,7 +19,7 @@
   const SG_ID = /^SIG-[0-9a-f]{10}$/,
     FICHE = /^SOG-\d{4}$/,
     TRI = /^[A-Za-z0-9]{2,8}$/,
-    VERSION = /^[0-9A-Za-z._+-]{1,24}$/;
+    VERSION = /^[0-9A-Za-z._+-]{1,40}$/;
   const AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
   const MAX_TITLE = 80,
     MAX_TEXT = 2000,
@@ -77,7 +77,14 @@
       'Diese Angaben beifügen (keine Flugdaten, kein Schlüssel)',
       'Adjuntar esta información (sin datos de vuelo, sin claves)'
     ],
-    screenOther: ['autre', 'other', 'andere', 'otra'],
+    screenOther: ['non précisé', 'not specified', 'nicht angegeben', 'sin especificar'],
+    langName: {
+      fr: 'français',
+      en: 'English',
+      de: 'Deutsch',
+      es: 'español'
+    },
+    notedVersion: [' · version {v}', ' · version {v}', ' · Version {v}', ' · versión {v}'],
     size: {
       phone: ['téléphone', 'phone', 'Telefon', 'teléfono'],
       tablet: ['tablette', 'tablet', 'Tablet', 'tableta'],
@@ -226,6 +233,15 @@
       'informe no válido (ignorado)'
     ]
   };
+  /** La version de la suite (git describe : « jalon-n-gSHA ») pour le signalement : les signes permis seulement, le SHA court gardé en queue, 40 signes au plus ; '' si elle n'est pas connue. */
+  const versionOf = raw => {
+    if (typeof raw !== 'string' || !raw.trim()) return '';
+    const v = raw.trim().replace(/[^0-9A-Za-z._+-]+/g, '-'),
+      m = /^(.*?)((?:-\d+)?-g[0-9a-f]{7,12})?$/.exec(v),
+      tail = m[2] || '';
+    const out = m[1].slice(0, 40 - tail.length) + tail;
+    return VERSION.test(out) ? out : '';
+  };
   const text = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '';
   const multi = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').replace(/\r\n?/g, '\n').trim()
     .slice(0, n) : '';
@@ -360,18 +376,20 @@
         offline: true // le travail n'a pas tourné (lanceur arrêté, occupé, en erreur) : rien n'a été écrit de ce côté
       };
     };
+    const langNow = () => typeof c.lang === 'function' ? c.lang() : c.lang; // le cadre donne la langue par une fonction
     const ctxNow = () => {
       const h = document.documentElement,
         w = innerWidth,
         v = c.version?.()?.version;
       const k = {
-        lang: LANGS.includes(c.lang) ? c.lang : 'fr',
+        lang: LANGS.includes(langNow()) ? langNow() : 'fr',
         design: DESIGNS.includes(h.dataset.design) ? h.dataset.design : 'standard',
         size: w < 600 ? 'phone' : w < 1000 ? 'tablet' : 'desktop',
         tone: h.dataset.tone === 'night' || (h.dataset.tone !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches) ?
           'night' : 'day'
       };
-      if (typeof v === 'string' && VERSION.test(v)) k.version = v;
+      const ver = versionOf(v);
+      if (ver) k.version = ver;
       return k;
     };
     const screenNow = () => {
@@ -392,7 +410,7 @@
         <fieldset class="f-sg-kinds"><legend>${esc(t(T.kinds))}</legend>${KINDS.map(k => `<label><input type="radio" name="sg-kind" value="${k}"${st.draft.kind === k ? ' checked' : ''}> ${esc(kindLabel(k))}</label>`).join('')}</fieldset>
         <label class="f-field">${esc(t(T.fTitle))}<input type="text" data-title maxlength="${MAX_TITLE}" placeholder="${esc(t(T.fTitleHint))}" value="${esc(st.draft.title)}"><small class="f-muted f-rc-count" data-tcount></small></label>
         <label class="f-field">${esc(t(T.fText))}<textarea data-text rows="${ROWS_MIN}" maxlength="${MAX_TEXT}" placeholder="${esc(t(T.fTextHint))}">${esc(st.draft.text)}</textarea><small class="f-muted f-rc-count" data-xcount hidden></small></label>
-        <div class="f-sg-where" data-where><b>${esc(t(T.noted))}</b> <span data-wtext></span>
+        <div class="f-sg-where" data-where><b class="f-sg-wt">${esc(t(T.noted))}</b><span data-wtext></span>
           <label class="f-check"><input type="checkbox" data-wc checked> ${esc(t(T.notedJoin))}</label></div>
         <div class="f-sg-shots" data-shotsbox hidden><label class="f-field">${esc(t(T.shots))}<input type="file" data-shots accept="image/png,image/jpeg,image/webp" multiple></label><p class="f-muted" data-shotslist></p><p class="f-muted">${esc(t(T.shotsNote))}</p></div>
         <div class="f-row"><button type="submit" class="primary" data-send disabled>${esc(t(T.send))}</button> <span class="f-muted" data-why></span></div>
@@ -420,11 +438,13 @@
       const k = ctxNow(),
         scr = screenNow();
       $('[data-wtext]').textContent = t(T.notedLine, {
-        screen: scr === 'other' ? t(T.screenOther) : scr,
+        screen: c.fromLabel?.() || (scr === 'other' ? t(T.screenOther) : scr),
         size: t(T.size[k.size]),
         design: k.design,
-        lang: k.lang,
-        version: k.version ? ` · ${k.version}` : ''
+        lang: T.langName[k.lang],
+        version: k.version ? t(T.notedVersion, {
+          v: k.version
+        }) : ''
       });
       $('[data-shotsbox]').hidden = ui.ch !== 'poste';
       const sl = $('[data-shotslist]');

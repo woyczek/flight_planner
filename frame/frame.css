@@ -2006,6 +2006,18 @@ html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
   padding: 0;
   margin-bottom: 6px
 }
+.f-sg-kinds input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none
+}
+.f-sg-kinds label:has(input:focus-visible) {
+  outline: 2px solid var(--sog-focus, var(--sog-accent));
+  outline-offset: 2px
+}
+.f-sg-wt {
+  display: block
+}
 .f-sg-kinds label {
   display: inline-flex;
   align-items: center;

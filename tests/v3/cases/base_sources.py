@@ -3001,9 +3001,9 @@ def k262(c):
         for bad, why in ((None, 'none'), ({}, 'empty'), ({**GOOD_SG, 'extra': 1}, 'an unknown key'), ({**GOOD_SG, 'kind': 'feat'}, 'a kind outside the list'), ({**GOOD_SG, 'screen': '../x'}, 'a screen outside the list'),
                          ({**GOOD_SG, 'title': ''}, 'an empty title'), ({**GOOD_SG, 'title': 'x' * 81}, 'a title of 81'), ({**GOOD_SG, 'title': 'a\nb'}, 'a line break in the title'), ({**GOOD_SG, 'text': 'x' * 2001}, 'a text of 2001'),
                          ({**GOOD_SG, 'text': 'a\x00b'}, 'a NUL in the text'), ({**GOOD_SG, 'text': 'a\x1bb'}, 'an escape in the text'), ({**GOOD_SG, 'ctx': {'path': 'C:/x'}}, 'a free key in the context'),
-                         ({**GOOD_SG, 'ctx': {'design': 'neon'}}, 'a design outside the list'), ({**GOOD_SG, 'ctx': {'version': '../1'}}, 'a version with a path')):
+                         ({**GOOD_SG, 'ctx': {'design': 'neon'}}, 'a design outside the list'), ({**GOOD_SG, 'ctx': {'version': '../1'}}, 'a version with a path'), ({**GOOD_SG, 'ctx': {'version': 'v' * 41}}, 'a version of 41 signs')):
             c.ok(check(bad) is None, repr(bad)[:50], f'refused: {why}')
-        c.ok(check({**GOOD_SG, 'title': 'x' * 80, 'text': 'y' * 2000}) is not None, '', 'a title of 80 and a text of 2000 are accepted')
+        c.ok(check({**GOOD_SG, 'title': 'x' * 80, 'text': 'y' * 2000}) is not None and check({**GOOD_SG, 'ctx': {'version': 'alpha.6-25-g1a2b3c4d5e'}}) is not None, '', 'a title of 80, a text of 2000 and a version of the form milestone-n-gSHA are accepted')
         c.eq((ajout(GOOD_SG).get('reason'), (root / 'organisation').exists(), rd(Job('signalement', 'lire', {}), {}, ctx).get('reason')), ('no-organisation', False, 'no-organisation'),
              'no organisation folder: said, nothing created (the ergonomist poste is the one that has it)', what='no organisation')
         org = root / 'organisation'

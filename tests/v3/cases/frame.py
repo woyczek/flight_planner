@@ -7097,7 +7097,8 @@ def _sg_launcher(c, root, data=True):
     if ('signalement', 'ajouter') not in RJ.REGISTRY:
         RJ.load_verbs()
     st = {'posts': [], 'up': True, 'detect': True, 'views': {}, 'n': 0}
-    status = {'server': True, 'root': '', 'git': True, 'data': data, 'dataGit': data, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    status = {'server': True, 'root': '', 'git': True, 'data': data, 'dataGit': data, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False,
+              'version': {'version': 'alpha.6-25-g1a2b3c4', 'date': '2026-11-13', 'time': '15:00'}}
 
     def handler(route):
         req = route.request
@@ -7149,8 +7150,14 @@ def a179(c):
         c.eq(c.js("document.querySelector('[data-send]').disabled"), False, 'a title and a text: the button is on', what='on')
         c.ok(c.js("document.querySelector('[data-text]').rows") > 4, '', 'the text field grows with the text')
         wt = c.js("document.querySelector('[data-wtext]').textContent")
-        c.ok(wt and not re.search(r'token|ghp_|ABC', wt), wt, 'the noted context is shapes (screen, size, design, language, version)')
-        c.page.check('input[name=sg-kind][value=regression]')
+        name = {'fr': 'français', 'en': 'English', 'de': 'Deutsch', 'es': 'español'}[c.lang]
+        c.ok(wt and not re.search(r'token|ghp_|ABC', wt) and 'alpha.6-25-g1a2b3c4' in wt and name in wt, wt, 'the noted context is shapes: the screen, the size, the design, the language in full and the version (milestone and short SHA)')
+        c.ok(c.js("getComputedStyle(document.querySelector('.f-sg-wt')).display") == 'block' and c.js("document.querySelector('[data-wtext]').getBoundingClientRect().top > document.querySelector('.f-sg-wt').getBoundingClientRect().bottom - 2"), '', 'the title of the noted context is on its own line')
+        rad = c.js("(() => { const i = document.querySelector('.f-sg-kinds input'), r = i.getBoundingClientRect(); return [getComputedStyle(i).opacity, r.width < 20] })()")
+        c.eq(rad[0], '0', 'the kinds are pills: the radio button itself is not drawn', what='pills')
+        rows = c.js("new Set([...document.querySelectorAll('.f-sg-kinds label')].map(l => Math.round(l.getBoundingClientRect().top))).size")
+        c.ok(rows <= (2 if c.width <= 390 else 1), rows, 'the five pills fit on two rows at 390 and one wide')
+        c.page.click('.f-sg-kinds label:has(input[value=regression])')
         c.page.set_input_files('[data-shots]', files=[{'name': 'a.png', 'mimeType': 'image/png', 'buffer': _png(300, 200)}, {'name': 'b.png', 'mimeType': 'image/png', 'buffer': _png(120, 80)}])
         c.eq(c.js("document.querySelector('[data-shotslist]').textContent.includes('a.png')"), True, 'the chosen captures are listed', what='shots list')
         c.shot(f'A179_form_{c.width}_{c.lang}_delivered.png')
@@ -7158,7 +7165,7 @@ def a179(c):
         c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=15000, what='the report in « Mes signalements »')
         doc = json.loads(f.read_text(encoding='utf-8'))
         sid, e = next(iter(doc['items'].items()))
-        c.eq((e['kind'], e['title'], e['state'], len(e['images']), sorted(e.get('ctx', {}))[:4]), ('regression', 'Le bouton Appliquer reste gris', 'new', 2, ['design', 'lang', 'size', 'tone']), 'the launcher wrote the report with its two captures and the context shapes', what='entry')
+        c.eq((e['kind'], e['title'], e['state'], len(e['images']), sorted(e.get('ctx', {})), e['ctx'].get('version')), ('regression', 'Le bouton Appliquer reste gris', 'new', 2, ['design', 'lang', 'size', 'tone', 'version'], 'alpha.6-25-g1a2b3c4'), 'the launcher wrote the report with its two captures and the context shapes', what='entry')
         c.eq(sorted(p.name for p in (root / 'organisation' / 'images').iterdir()), [f'{sid}-1.png', f'{sid}-2.png'], 'the captures are in organisation/images/ under the names the launcher made', what='images')
         c.eq(c.js("document.querySelector('[data-mine] li').dataset.id"), sid, 'the list shows the identifier the launcher gave', what='mine')
         c.eq(c.js("document.querySelector('[data-title]').value + document.querySelector('[data-text]').value"), '', 'the form is empty again', what='cleared')
