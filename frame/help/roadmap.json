@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e1c0ee0",
+  "organisation": "ed2b43c",
   "fiches": 335,
   "untranslated": 0,
   "priorities": 310
@@ -1253,13 +1253,14 @@
     {
      "id": "SOG-0253",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Vue VFR : donner les directions du tour de piste (carte VAC), voilure fixe en noir, tournante en vert",
      "en": "VFR view: show the traffic pattern directions (VAC chart)",
      "de": "VFR view: show the traffic pattern directions (VAC chart)",
      "es": "VFR view: show the traffic pattern directions (VAC chart)",
      "milestone": "6.0.0-alpha.6",
-     "rank": 126
+     "rank": 126,
+     "test": true
     },
     {
      "id": "SOG-0328",

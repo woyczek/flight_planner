@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 207,
+  "tests": 208,
   "verdicts": 147
  },
  "apps": [
@@ -2123,6 +2123,20 @@
    "test": "Carte, sur un grand terrain (LFBD, LFPO) au zoom de ta capture : les noms des voies de circulation sont des cartouches lisibles, un par voie, sans doublon à quelques mètres ; en reculant ils se raréfient puis disparaissent ; le nom d'une voie passe devant celui d'une route.",
    "since": "2026-11-12",
    "state": "known"
+  },
+  {
+   "id": "SOG-0253",
+   "app": "pilote",
+   "title": {
+    "fr": "Vue VFR : donner les directions du tour de piste (carte VAC), voilure fixe en noir, tournante en vert",
+    "en": "VFR view: show the traffic pattern directions (VAC chart)",
+    "de": "VFR view: show the traffic pattern directions (VAC chart)",
+    "es": "VFR view: show the traffic pattern directions (VAC chart)"
+   },
+   "test": "Relance le lanceur, recharge la page. Données, pli « Tours de piste VFR » : dépose le XML de ton extracteur (format VfrCircuits de tools/report-vfr/FORMAT-DONNEES.md) — la page dit combien de terrains et de circuits ont été lus, ou le refus en mots. Carte, vue VFR, sur un terrain du fichier : le circuit des avions en trait plein noir avec ses flèches et son altitude, celui des hélicoptères en pointillé vert. Un terrain dont la carte est lue sans tracé : « main gauche (rien de publié sur la carte) ». Un terrain non lu : rien.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T20:50:46Z"
   },
   {
    "id": "SOG-0254",
