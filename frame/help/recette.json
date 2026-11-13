@@ -2237,9 +2237,15 @@
     "de": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
     "es": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?"
    },
-   "test": "Maintenance › Données, « Quand ça change » : la ligne des routes NAT dit jusqu'à quand elles valent, sans bouton « Ouvrir » ; sur la Carte, la couche NAT dit « valides jusqu'au … » ou « périmées » et les reprend une fois quand tu l'affiches.",
+   "test": "Relance le lanceur, recharge. Carburant, « Calculer A → B » sur KJFK → EGLL (FL370) : un itinéraire est trouvé en quelques secondes, il passe par une route NAT du jour, et une remarque le dit (« Routes NAT du JJ/MM : … »), avec « périmées » si le message est passé. Dans l'autre sens (EGLL → KJFK), le calcul n'aboutit pas encore : c'est connu.",
    "since": "2026-11-12",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T13:41:04Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "ne sert pas encore au calcul transat, si ? Même si on n’a pas la bonne nats, on essaie tout de même de les utiliser, on raffine après. screeshot.",
+    "at": "2026-11-13T11:07:45Z"
+   }
   },
   {
    "id": "SOG-0264",
@@ -2867,20 +2873,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0048",
-   "fiche": "SOG-0036",
-   "app": "compagnie",
-   "question": "Série d'une mission ajoutée au registre depuis son fichier : ta réponse (« la tirer de la lettre de l'identifiant ») ne peut pas s'écrire telle quelle — la série est un nombre partout. Que veux-tu ?",
-   "context": "Ma question Q-0036 était mal posée, et l'exemple A-001A ne disait pas quelle lettre (la première est celle de la famille, la dernière celle de la variante). Dans les fichiers, dans la V2 et dans « Corriger », la série est un NOMBRE (série 1, série 2…) : y écrire une lettre ferait refuser la mission par la V2 et par « Corriger ». Proposition de Features SOG, que je retiens : la mission ajoutée prend la série écrite dans son fichier s'il en porte une, sinon la série en cours de sa famille (celle q",
-   "options": [
-    "Oui : la série du fichier, sinon celle en cours de la famille ; la lettre montrée sur la ligne",
-    "Non : je veux une lettre comme série (dis-moi laquelle : celle de la famille, ou celle de la variante)"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0043",
    "fiche": "SOG-0240",
    "app": "maintenance",
@@ -2966,6 +2958,23 @@
    "choice": 0,
    "text": "RÀS ! du boulot comme ça, j’aime.",
    "at": "2026-11-13T13:36:28Z"
+  },
+  {
+   "id": "Q-0048",
+   "fiche": "SOG-0036",
+   "app": "compagnie",
+   "question": "Série d'une mission ajoutée au registre depuis son fichier : ta réponse (« la tirer de la lettre de l'identifiant ») ne peut pas s'écrire telle quelle — la série est un nombre partout. Que veux-tu ?",
+   "context": "Ma question Q-0036 était mal posée, et l'exemple A-001A ne disait pas quelle lettre (la première est celle de la famille, la dernière celle de la variante). Dans les fichiers, dans la V2 et dans « Corriger », la série est un NOMBRE (série 1, série 2…) : y écrire une lettre ferait refuser la mission par la V2 et par « Corriger ». Proposition de Features SOG, que je retiens : la mission ajoutée prend la série écrite dans son fichier s'il en porte une, sinon la série en cours de sa famille (celle q",
+   "options": [
+    "Oui : la série du fichier, sinon celle en cours de la famille ; la lettre montrée sur la ligne",
+    "Non : je veux une lettre comme série (dis-moi laquelle : celle de la famille, ou celle de la variante)"
+   ],
+   "since": "2026-11-13",
+   "state": "answered",
+   "recommended": 0,
+   "choice": null,
+   "text": "je n’ai pas vu toute ta question (truncated by design, tu peux augmenter la taille des labels). Il faut garder LETTRE-FAMILLE-NUM-SUFX Le suffixe n’est PAS une variante, mais un A->Y de vols liés à la fiche SANS suffixe, le Z étant l’organisation. normalement, c’est détaillé en specs V2. on garde le nommage V2, c’est défini et important. la première lettre seule est celle de la famille. je n’ai peut-être pas bien compris la question.",
+   "at": "2026-11-13T13:40:39Z"
   }
  ]
 }

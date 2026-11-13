@@ -4034,12 +4034,13 @@
     {
      "id": "SOG-0263",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Routes NAT du jour : « Ouvrir » affiche un JSON ; les prendre seul ; servent-elles au calcul d'une route transatlantique ?",
      "en": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
      "de": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
      "es": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
-     "rank": 268
+     "rank": 268,
+     "test": true
     }
    ]
   },
