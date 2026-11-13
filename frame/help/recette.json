@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 194,
+  "tests": 195,
   "verdicts": 123
  },
  "apps": [
@@ -2883,6 +2883,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T13:51:35Z"
+  },
+  {
+   "id": "SOG-0323",
+   "app": "pilote",
+   "title": {
+    "fr": "Feuille des questions : les libellés des options sont tronqués",
+    "en": "Decisions sheet: the option labels are truncated",
+    "de": "Entscheidungsblatt: die Optionstexte sind abgeschnitten",
+    "es": "Hoja de decisiones: las etiquetas de las opciones están cortadas"
+   },
+   "test": "Recharge la page. Aide, Recette, « À trancher » : la question Q-0049 (Réglages) se lit en entier, ses trois réponses aussi, et l'adresse de la maquette est un lien qui l'ouvre.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T13:54:57Z"
   }
  ],
  "decisions": [
@@ -2891,7 +2905,7 @@
    "fiche": "SOG-0320",
    "app": "maintenance",
    "question": "Réglages rangés par fréquence d'usage : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/frame/settings/maquette/reglages_usage.html",
-   "context": "Ton rangement : toujours visible — État, Affichage, Compagnie ; parfois, repliés (toute la ligne ouvre) — Données, Synchronisation, Appareil ; Administration n'est plus un pli mais une ligne qui ouvre sa page ; ce qui ne sert qu'une fois — Identité, Accès, créer ou rejoindre une compagnie — sous « Mise en route », tout en bas ; À propos déplié en dernier. Le vide sous « Compagnie » disparaît (une place réservée qui n'était jamais rendue). Le « chemin bizarre » depuis Maintenance est expliqué : l",
+   "context": "Ton rangement : toujours visible — État, Affichage, Compagnie ; parfois, repliés (toute la ligne ouvre) — Données, Synchronisation, Appareil ; Administration n'est plus un pli mais une ligne qui ouvre sa page ; ce qui ne sert qu'une fois — Identité, Accès, créer ou rejoindre une compagnie — sous « Mise en route », tout en bas ; À propos déplié en dernier. Le vide sous « Compagnie » disparaît (une place réservée qui n'était jamais rendue). Le « chemin bizarre » depuis Maintenance est expliqué : l'entrée « Administration » de sa barre ouvrait le même écran et restait surlignée quoi qu'on ouvre. Dans l'écran réel, les mots « Toujours visible », « Parfois », « En page », « Une seule fois » de la maquette ne seront pas affichés : ce sont des repères pour toi ; seul « Mise en route » reste un titre.",
    "options": [
     "Oui, on code sur cette maquette",
     "Oui, avec mes remarques (dans le texte)",

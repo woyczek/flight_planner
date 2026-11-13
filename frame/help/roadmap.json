@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5d52925",
+  "organisation": "c66a83d",
   "fiches": 323,
   "untranslated": 0,
   "priorities": 310
@@ -348,11 +348,12 @@
     {
      "id": "SOG-0323",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Feuille des questions : les libellés des options sont tronqués",
      "en": "Decisions sheet: the option labels are truncated",
      "de": "Entscheidungsblatt: die Optionstexte sind abgeschnitten",
-     "es": "Hoja de decisiones: las etiquetas de las opciones están cortadas"
+     "es": "Hoja de decisiones: las etiquetas de las opciones están cortadas",
+     "test": true
     }
    ]
   },
