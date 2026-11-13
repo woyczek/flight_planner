@@ -302,7 +302,7 @@ const STYLE = `
 [data-module="flightlog"] .fl-detail{margin:0}
 [data-module="flightlog"] .f-dot{margin-right:6px}
 [data-module="flightlog"] .fl-now{display:flex;gap:10px;align-items:center;justify-content:space-between}
-@container (min-width: 900px){ /* largeur du module (volet de la vue double compris), pas de la fenêtre */
+@container (min-width: 850px){ /* SOG-0331 : 850 comme .f-cols du cadre, gardé quand la barre de gauche s'élargit à 1 100 px ; largeur du module (volet de la vue double compris), pas de la fenêtre */
   [data-module="flightlog"] .f-list .f-item{grid-template-columns:7em 9em 10em minmax(0,1fr) 5em minmax(0,1fr)}
 }`;
 

@@ -1922,3 +1922,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   coordinate, north and west, bounded to the North Atlantic (latitude 20 to 75, longitude 5 to 80, the ergonomist's bounds), the name
   kept as written; out of bounds the slash keeps its old sense. Readers of `tokenize` (Fuel, the Map, Atmosphere, the report) get the same
   points. F216 (red before: « 51 »).
+- **13 Nov 2026 — SOG-0331: the module's container threshold is 850 px, not 900** (V3 Frame's survey, 18 h 47: the left bar goes from
+  the 56 px rail to the 210 px bar at 1 100 px of window, and the module falls from 1 010 to 858 px — every step shown, without the step bar went away just as the
+  window grew, as in Missions). 850 px is the frame's `.f-cols` threshold and Missions' since f71672620; once the module reaches it,
+  growing the window keeps it. F217 (A191's rule on this module; red before: 900 lost at 1 100 px).

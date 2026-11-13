@@ -2133,7 +2133,7 @@ const STYLE = `
 }
 [data-module="fuel"] .fu-next{justify-content:flex-end;margin:4px 0 var(--sog-gap)}
 [data-module="fuel"] .fu-sumroute{white-space:normal;word-break:break-word;font-size:14px}
-@container (min-width: 900px){ /* module large : tous les pas visibles, sans barre de pas ni « Suivant » */
+@container (min-width: 850px){ /* SOG-0331 : 850 comme .f-cols du cadre, gardé quand la barre de gauche s'élargit à 1 100 px ; module large : tous les pas visibles, sans barre de pas ni « Suivant » */
   [data-module="fuel"] .fu-steps,[data-module="fuel"] .fu-next{display:none}
   [data-module="fuel"] .fu-step[hidden]{display:block}
 }

@@ -5407,3 +5407,44 @@ def f216(c):
     c.eq(c.js(f"[...document.querySelectorAll('{FUEL} [data-unres-pt]')].map(e => e.dataset.unresPt)"), [], 'no unknown point', what='unknown points')
     c.ok('51/20' in (c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"),
          'the text keeps « 51/20 »')
+
+
+_BPS_JS = r"""() => { const out = new Set(); const walk = rules => { for (const r of rules) { if (r.conditionText && /min-width/.test(r.conditionText) && r.constructor.name.includes('Container')) { const m = /min-width:\s*(\d+)px/.exec(r.conditionText); if (m) out.add(+m[1]); } if (r.cssRules) walk(r.cssRules); } };
+  for (const s of document.styleSheets) { try { walk(s.cssRules) } catch (e) {} } return [...out].sort((a, b) => a - b) }"""
+
+
+def _no_breakpoint_lost(c, mod, upto=1300):
+    """La règle d'A191 (SOG-0331) sur un module : une fois le module large de N px (N, un seuil @container des styles chargés), il le
+    reste quand la fenêtre grandit — la barre de gauche qui passe de 56 à 210 px à 1 100 px ne doit pas lui reprendre un seuil."""
+    bps = c.js(f"({_BPS_JS})()")
+    c.ok(bps, bps, 'the container breakpoints of the loaded styles are read')
+    got = []
+    for w in range(780, upto, 5):
+        c.page.set_viewport_size({'width': w, 'height': 800})
+        c.page.wait_for_timeout(60)
+        got.append([w, c.js(f"(document.querySelector('[data-module={mod}]') || {{}}).clientWidth || 0")])
+    bad = []
+    for b in bps:
+        if b > 1400:
+            continue
+        seen = False
+        for w, cw in got:
+            if cw >= b:
+                seen = True
+            elif seen:
+                bad.append((b, w, cw))
+                break
+    c.eq(bad, [], 'once the module is N px wide it stays at least N px wide while the window grows', what=f'{mod}: {got[60:68]}')
+    c.page.set_viewport_size({'width': 1280, 'height': 800})
+
+
+@case('F217', "Growing the window never takes Fuel's container breakpoint away: all the steps side by side from 850 px of module, kept when the "
+      "left bar becomes the whole bar at 1 100 px of window (SOG-0331)", 'F', tags=('fuel', 'layout'), designs=('standard',), screens=False,
+      langs4=False,
+      rule="SOG-0331 (the ergonomist, 18 h 47: Fuel had `@container (min-width: 900px)`; at 1 100 px of window the module falls from 1 010 to "
+      "858 px and lost its wide layout as the window grew, as Missions did): the threshold is 850 px, the frame's `.f-cols` one")
+def f217(c):
+    c.page.set_viewport_size({'width': 1000, 'height': 800})
+    open_proc(c)
+    # jusqu'à 1 195 px : dès 1 200 px de fenêtre, Carburant passe en vue double (la Carte à côté) — une autre mise en page, dite à l'ergonome
+    _no_breakpoint_lost(c, 'fuel', upto=1200)
