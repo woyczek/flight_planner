@@ -2344,3 +2344,59 @@ def n55(c):
          'one risk changed, one removed, one added at the end')
     c.ok('Hazard two' not in t and 'Hazard one' in t and 'Hazard three' in t, t[t.find('i18n'):][:300], 'the removed risk leaves the translations too')
     c.js(_REG_CLEAR)
+
+
+
+# audit 186: a registry of nine nested anchors (a few hundred bytes, invented) that Y.dump would unfold into tens of millions of signs
+_BOMB_REG = 'schema: mission-registry\nversion: 1\nmissions: []\na0: &a0 [xxxxxxxxxx, xxxxxxxxxx, xxxxxxxxxx]\n' + ''.join(
+    f'a{i}: &a{i} [*a{i - 1}, *a{i - 1}, *a{i - 1}, *a{i - 1}, *a{i - 1}, *a{i - 1}, *a{i - 1}, *a{i - 1}, *a{i - 1}]\n' for i in range(1, 10))
+_SINGLE_RDV = _ED_FULL.replace("""rendezvous:
+  - { id: RDV-1, name: Rendez-vous d'essai, lat: 44.5, lon: 1.5, participants: [ALPHA1, BRAVO2], role: ralliement }""",
+                               """rendezvous: { id: RDV-1, name: Rendez-vous d'essai, lat: 44.5, lon: 1.5, participants: [ALPHA1, BRAVO2], role: ralliement }""")
+
+
+@case('N56', 'Missions › editor and registry, audit 186: a rendezvous written as a single object survives an edit of the Lieux (the shape kept); '
+      'a registry with YAML anchors is said unreadable, never unfolded nor rewritten (the screen opens at once, « Mettre à jour » stays '
+      'off); « Changer de compagnie » and the registry\'s own dump refuse an anchored document', 'N', tags=('missions', 'security'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='Sécurisation, audit 186: withPlaces deleted a single-object rendezvous (the reader tolerates it, placesOf did not); registry.js '
+      'withHeader, add.js and move.js dumped documents of the repository without the alias guard — a 333-byte registry took 6.4 s and '
+      '88 million signs')
+def n56(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    assert _SINGLE_RDV != _ED_FULL
+    reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], [path, _SINGLE_RDV]])
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-place][data-kind=rdv]')", what='the single rendezvous listed')
+    c.tap(f'{E} [data-place][data-kind=target] [data-do="edplace"]')
+    c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.65')
+    c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, path) or ''
+    c.ok('lat: 44.65' in t and 'rendezvous:\n  id: RDV-1' in t, t[t.find('target'):][:500], 'the target moved, the single-object rendezvous kept as it was')
+    c.tap(f'{E} [data-do="edcancel"]')
+    # the anchored registry: unreadable at once, never rewritten
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _BOMB_REG]])
+    t0 = c.js('performance.now()')
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='Missions')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(f"!!document.querySelector('{R} [data-why=unreadable]')", timeout=5000, what='the registry said unreadable')
+    c.ok(c.js(f"document.querySelector('{R} [data-do=regplan]')?.disabled") is True, 'enabled', '« Mettre à jour le registre » stays off')
+    c.eq(c.js(_TEXT_OF, 'missions/mission_registry.yaml'), _BOMB_REG, 'never rewritten', what='registry')
+    got = c.js("""async () => { const MV = await import('/modules/missions/move.js'); const RG = await import('/modules/missions/registry.js');
+      if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const Y = globalThis.jsyaml;
+      const mission = 'mission: { id: X-001A, type: REG }\\ntitle: Ancres\\nbase: &b { name: Base }\\norigin: *b\\n';
+      let dumped = 'not refused'; const t = performance.now();
+      try { RG.withHeader(Y.load(%s), Y); } catch (e) { dumped = 'refused' }
+      return { move: MV.withAirline(mission, 'abc', Y), dumped, ms: Math.round(performance.now() - t) } }""" % repr(_BOMB_REG).replace("'", '"'))
+    c.eq([got['move'], got['dumped']], [None, 'refused'], '« Changer de compagnie » and the registry dump refuse an anchored document', what='guards')
+    c.ok(got['ms'] < 1000, got, 'refused in under a second')
+    c.js(_REG_CLEAR)

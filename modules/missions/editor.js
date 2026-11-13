@@ -48,8 +48,7 @@ export const SUMMARY_MAX = 600,
 export const PLACES_MAX = 60;
 /** Les équipes d'une mission, au plus (la borne du lecteur, frame/lib/mission.js). */
 export const TEAMS_MAX = 40;
-/** Les nœuds d'un fichier de mission que l'éditeur accepte de réécrire (une mission de la V2 en a quelques centaines). */
-export const NODES_MAX = 100000;
+export const NODES_MAX = MS.NODES_MAX;
 export const THEATRES = ['métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie'];
 /** L'identifiant d'une mission (la forme de add.js) et une famille (mission.type). */
 const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/,
@@ -59,6 +58,9 @@ const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/,
 const cut = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 /** Un objet du document, ou {}. */
 const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+/** Une liste du document comme le lecteur la lit (frame/lib/mission.js list) : un tableau, un objet seul = une entrée, sinon rien
+ *  (audit 186 : un « rendezvous: { … } » seul était perdu à la première retouche des Lieux). */
+const arrOf = v => Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : [];
 
 /** Le texte d'un terrain : « XTST · Base Test » (le code OACI d'abord), le nom seul sans code. */
 export function placeText(p) {
@@ -161,7 +163,7 @@ export function withCadre(doc, cadre) {
 
 /** Les équipes d'une mission (voir l'en-tête). */
 export function teamsOf(doc) {
-  return (Array.isArray(obj(doc).teams) ? obj(doc).teams : []).slice(0, TEAMS_MAX).map((t, i) => ({
+  return arrOf(obj(doc).teams).slice(0, TEAMS_MAX).map((t, i) => ({
     i,
     name: cut(obj(t).name, 80),
     service: cut(obj(t).service, 120),
@@ -178,7 +180,7 @@ export function withTeams(doc, rows) {
   // audit 182 : rien de changé, rien de réécrit ; sinon une équipe inchangée reste l'objet du fichier, une équipe retouchée ne prend
   // que ses champs changés, les équipes au-delà de TEAMS_MAX (non montrées) restent telles quelles à la fin
   if (JSON.stringify(list) === JSON.stringify(prev)) return out;
-  const before = Array.isArray(out.teams) ? out.teams : [],
+  const before = arrOf(out.teams),
     F = ['name', 'service', 'type', 'role'],
     N = {
       name: 80,
@@ -230,7 +232,7 @@ const numText = v => v === null || v === undefined || v === '' || !Number.isFini
 /** Les lieux d'une mission (voir l'en-tête). */
 export function placesOf(doc) {
   const d = obj(doc),
-    arr = v => (Array.isArray(v) ? v : []).slice(0, PLACES_MAX),
+    arr = v => arrOf(v).slice(0, PLACES_MAX),
     out = [];
   for (const [kind, key] of [
       ['dep', 'origin'],
@@ -349,7 +351,11 @@ export function withPlaces(doc, rows) {
     }
   }
   const rebuild = (kind, key, F, apply) => {
-    const before = Array.isArray(out[key]) ? out[key] : [],
+    // une sorte dont aucune ligne n'a changé garde sa clé telle que le fichier l'écrit (un objet seul reste un objet seul, audit 186)
+    const mine = list.filter(x => x.kind === kind),
+      was = prev.filter(x => x.kind === kind);
+    if (JSON.stringify(mine) === JSON.stringify(was)) return;
+    const before = arrOf(out[key]),
       items = list.filter(x => x.kind === kind).slice(0, PLACES_MAX).map(r => {
         const was = wasOf(r),
           diff = diffOf(r, was, F);
@@ -476,7 +482,7 @@ export function withStory(doc, st) {
 
 /** Les risques d'une mission (voir l'en-tête). */
 export function risksOf(doc) {
-  return (Array.isArray(obj(doc).risks) ? obj(doc).risks : []).slice(0, RISKS_MAX).map((r, i) => typeof r === 'string' ? {
+  return arrOf(obj(doc).risks).slice(0, RISKS_MAX).map((r, i) => typeof r === 'string' ? {
     i,
     hazard: cut(r, 300),
     consequence: '',
@@ -497,7 +503,7 @@ export function withRisks(doc, rows) {
   // audit 182 : rien de changé, rien de réécrit ; un risque inchangé reste l'objet (ou le texte) du fichier, un risque retouché ne prend
   // que ses champs changés ; ceux au-delà de RISKS_MAX restent tels quels à la fin
   if (JSON.stringify(list) === JSON.stringify(prev)) return out;
-  const before = Array.isArray(out.risks) ? out.risks : [],
+  const before = arrOf(out.risks),
     F = ['hazard', 'consequence', 'mitigation'],
     put = (o, f, v) => {
       const x = cut(v, 300);
@@ -677,22 +683,8 @@ export function regEdit(regDoc, idx, regId, cadre, path, now = new Date().toISOS
   };
 }
 
-/** La forme d'un document lu (audit 182) : '' s'il se réécrit sans risque ; 'alias' quand un objet y paraît deux fois (une ancre
- *  YAML « &a » / « *a » : la réécriture la déplierait, une bombe d'alias figerait l'enregistrement) ; 'size' au-delà de NODES_MAX nœuds. */
-export function shapeOf(doc) {
-  const seen = new Set(),
-    stack = [doc];
-  let n = 0;
-  while (stack.length) {
-    const v = stack.pop();
-    if (++n > NODES_MAX) return 'size';
-    if (!v || typeof v !== 'object') continue;
-    if (seen.has(v)) return 'alias';
-    seen.add(v);
-    for (const x of Array.isArray(v) ? v : Object.values(v)) stack.push(x);
-  }
-  return '';
-}
+/** La forme d'un document lu : celle de frame/lib/mission.js (audits 182 et 186), pour tout lecteur qui réécrit. */
+export const shapeOf = MS.shapeOf;
 
 /** Vrai quand le document n'a pas changé (audit 182 : « Enregistrer » sans rien toucher n'écrit rien, le fichier reste identique). */
 export const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);

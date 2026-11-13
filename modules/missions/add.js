@@ -12,7 +12,7 @@
 //              sinon missions/<lettre>_<FAMILLE>/<ID>/mission<ID>.yaml ; text : le texte du fichier quand il ne porte qu'une mission (ses
 //              commentaires gardés), sinon la mission réécrite ; airline '' : personnelle (MS.ownerOf)
 //     refused  [{ name, id, reason, line?, msg? }] — reason : tooMany, tooBig, yaml (line, msg), noMission, badId, badFamily,
-//              organisation, twice
+//              organisation, twice, alias (ancres YAML : jamais dépliées par Y.dump, audit 186)
 //   Formes lues (un « pool ») : plusieurs documents séparés par « --- », une liste `missions:` de missions, une liste au premier niveau,
 //   ou une seule mission (`mission: { id, type }`, la forme du CPCO).
 import * as MS from '../../frame/lib/mission.js';
@@ -102,6 +102,7 @@ export function read(sources, {
       else if (!FAMILY.test(family)) no('badFamily');
       else if (m.organisation) no('organisation');
       else if (seen.has(id)) no('twice');
+      else if (MS.shapeOf(doc)) no('alias'); // audit 186 : jamais déplié par Y.dump (une bombe d'alias figerait l'écriture)
       else {
         seen.add(id);
         const k = known.get(id),

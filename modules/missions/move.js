@@ -27,7 +27,7 @@ export function withAirline(text, code, Y) {
   } catch {
     return null;
   }
-  if (!MS.readMission(doc)) return null;
+  if (!MS.readMission(doc) || MS.shapeOf(doc)) return null; // audit 186 : un document à ancres n'est ni comparé ni réécrit
   const want = MS.airlineCode(code) && code !== MS.PERSONAL ? code : '',
     nl = /\r\n/.test(text) ? '\r\n' : '\n';
   // retirés, ligne à ligne : `airline:` au premier niveau ; `airline:` au premier retrait du bloc `mission:` écrit en lignes ; la clé

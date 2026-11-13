@@ -218,3 +218,15 @@
   included, stays the file's own; beyond 40 kept; N54 now opens this step too). A removed risk also leaves `i18n.<lang>.risks` at the
   same place (the prompt: « même ordre que risks »); a changed risk keeps its translation as it was (to be redone in the V2's generator).
   N55 (red before: the Risques step disabled).
+- **13 Nov 2026 — audit 186: a single-object entry kept; no anchored document is ever rewritten** (Sécurisation proved two defects;
+  fixed by Features SOG). (1) The reader accepts `rendezvous`, `zones`, `turning_points`, `teams`, `risks` written as ONE object
+  (frame/lib/mission.js `list`); `placesOf` / `teamsOf` / `risksOf` listed arrays only and `withPlaces` rebuilt every kind at every
+  edit, so moving the target deleted a single-object rendezvous. Now the editor reads them as the reader does (`arrOf`: an object = one
+  entry) and a kind whose rows are all unchanged keeps its key exactly as the file writes it (a single object stays a single object);
+  an edited one becomes a list. (2) Only the editor's reading was guarded: `registry.js withHeader` (every registry write), `add.js` and
+  `move.js` dumped repository documents with `noRefs`. `shapeOf` (and `NODES_MAX`) move to frame/lib/mission.js; the module's `parse`
+  says an anchored registry or mission « illisible » (`why_alias`: write the repeated object out in full) — so the registry is never
+  rewritten (regPut / edRegister refuse an unreadable registry) and « Mettre à jour » stays off; `withHeader` throws on an anchored
+  document (belt and braces), `add.js` refuses it (`alias`), `move.js withAirline` returns null before `JSON.stringify` / dump. The
+  editor's refusal says how to remove the anchor (the audit's note). N56 (red before: the single rendezvous was not even listed); the
+  nine-level registry of the audit is said unreadable at once and refused by `withHeader` in under a second.

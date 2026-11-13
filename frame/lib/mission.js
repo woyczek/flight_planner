@@ -21,6 +21,8 @@
 //     missionA-001A.yaml ») ; null pour tout autre fichier (versions/, recu/, résumé) ou un chemin pas sûr.
 //   rowOfMission(doc, path) → une ligne comme celles de readRegistry, tirée du fichier d'une mission absente du registre (SOG-0036) ;
 //     null si le fichier n'est pas une mission de ce dossier (id différent du dossier, mission.id ou mission.type absents).
+//   shapeOf(doc) → '' | 'alias' | 'size' : un document lu qui ne se réécrit pas sans risque (ancre YAML, plus de NODES_MAX nœuds) ;
+//     tout lecteur qui réécrit (éditeur, registre, « Ajouter », « Changer de compagnie ») le refuse avant (audits 182 et 186).
 //   icaoOf(name) : le code OACI entre parenthèses à la fin d'un nom (« BA 118 Mont-de-Marsan (LFBM) » → « LFBM ») ; '' sinon.
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points, depAt, arrAt }, aircraft: { type, registration }, levelFt, speedKt, mission,
@@ -161,6 +163,26 @@ function sheetOf(d) {
 /** Une liste de textes (une chaîne, une liste, ou rien). */
 const texts = v => (Array.isArray(v) ? v : v ? [v] : []).map(x => typeof x === 'string' ? clean(x) : clean(x?.text || x?.description || ''))
   .filter(Boolean);
+
+/** Les nœuds d'un document lu que l'application accepte de réécrire (une mission de la V2 en a quelques centaines). */
+export const NODES_MAX = 100000;
+/** La forme d'un document lu (audits 182 et 186) : '' s'il se réécrit sans risque ; 'alias' quand un objet y paraît deux fois (une ancre
+ *  YAML « &a » / « *a » : une réécriture — Y.dump, JSON.stringify — la déplierait, une bombe d'alias fige l'écriture) ; 'size' au-delà
+ *  de NODES_MAX nœuds. Parcours itératif (ni récursion, ni dépliage). */
+export function shapeOf(doc) {
+  const seen = new Set(),
+    stack = [doc];
+  let n = 0;
+  while (stack.length) {
+    const v = stack.pop();
+    if (++n > NODES_MAX) return 'size';
+    if (!v || typeof v !== 'object') continue;
+    if (seen.has(v)) return 'alias';
+    seen.add(v);
+    for (const x of Array.isArray(v) ? v : Object.values(v)) stack.push(x);
+  }
+  return '';
+}
 
 /** Une mission lue (voir l'en-tête). */
 export function readMission(doc) {

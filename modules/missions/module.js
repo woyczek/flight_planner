@@ -274,6 +274,12 @@ const TX = {
   why_tooBig: ['fichier trop gros (1 Mo au plus)', 'file too big (1 MB at most)', 'Datei zu groß (höchstens 1 MB)',
     'archivo demasiado grande (1 MB como máximo)'
   ],
+  // audit 186 : un document à ancres YAML n'est jamais réécrit (le dépliage figerait l'écriture) ; dire comment l'ôter
+  why_alias: ['alias YAML (« &… », « *… ») : écrivez l\'objet répété en entier à chaque endroit',
+    'YAML aliases (« &… », « *… »): write the repeated object out in full at each place',
+    'YAML-Aliasse („&…“, „*…“): das wiederholte Objekt an jeder Stelle ausschreiben',
+    'alias YAML («&…», «*…»): escriba el objeto repetido entero en cada lugar'
+  ],
   why_yaml: ['YAML illisible, ligne {l} : {m}', 'unreadable YAML, line {l}: {m}', 'YAML unlesbar, Zeile {l}: {m}',
     'YAML ilegible, línea {l}: {m}'
   ],
@@ -504,10 +510,11 @@ const TX = {
     'Archivo de misión ilegible: {e}'
   ],
   // audit 182 : un fichier que l'éditeur ne réécrirait pas sans risque est refusé à l'ouverture ; rien de changé, rien d'écrit
-  edAlias: ['ce fichier emploie des alias YAML (« &… », « *… ») : il se modifie dans la V2',
-    'this file uses YAML aliases (« &… », « *… »): edit it in the V2',
-    'diese Datei verwendet YAML-Aliasse („&…“, „*…“): in der V2 bearbeiten',
-    'este archivo usa alias YAML («&…», «*…»): se modifica en la V2'
+  edAlias: [
+    'ce fichier emploie des alias YAML (« &… », « *… ») : écrivez l\'objet répété en entier à chaque endroit, ou modifiez-le dans la V2',
+    'this file uses YAML aliases (« &… », « *… »): write the repeated object out in full at each place, or edit it in the V2',
+    'diese Datei verwendet YAML-Aliasse („&…“, „*…“): das wiederholte Objekt an jeder Stelle ausschreiben oder in der V2 bearbeiten',
+    'este archivo usa alias YAML («&…», «*…»): escriba el objeto repetido entero en cada lugar, o modifíquelo en la V2'
   ],
   edHuge: ['ce fichier est trop gros pour l\'éditeur : il se modifie dans la V2',
     'this file is too large for the editor: edit it in the V2',
@@ -698,8 +705,15 @@ async function parse(text) {
   };
   try {
     if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+    const doc = globalThis.jsyaml.load(text);
+    // audit 186 : un registre ou une mission à ancres YAML (n'importe quel pilote écrit le dépôt) se dit illisible, et n'est donc jamais
+    // réécrit (le registre ne se réécrit pas quand il ne se lit pas : regPut, edRegister)
+    if (MS.shapeOf(doc)) return {
+      why: 'unreadable',
+      err: S?.tt(TX.why_alias) ?? 'YAML aliases'
+    };
     return {
-      doc: globalThis.jsyaml.load(text)
+      doc
     };
   } catch (e) {
     const line = Number.isInteger(e?.mark?.line) ? e.mark.line + 1 : 0,
