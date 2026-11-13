@@ -202,6 +202,7 @@ const STYLE = `[data-module="aircraft"] .ac-head{align-items:center;gap:8px}
 [data-module="aircraft"] .ac-head{flex-wrap:wrap} /* « Ajouter » suit l'en-tête dans son flux, jamais seul à droite (SOG-0190) */
 [data-module="aircraft"] .ac-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;width:100%;min-height:44px;text-align:left}
 [data-module="aircraft"] .ac-group{position:relative;border:0;padding:0;margin:0 0 12px;display:grid;gap:4px}
+[data-module="aircraft"] .ac-sug[hidden]{display:none} /* SOG-0313 : fermée, la liste ne laisse ni cadre ni ombre sous le champ */
 [data-module="aircraft"] .ac-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)}
 [data-module="aircraft"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
 [data-module="aircraft"] .fu-sugitem:last-child{border-bottom-width:0}
@@ -863,6 +864,9 @@ async function save(s) {
   if (S !== s) return;
   s.fleet = next;
   s.edit = null;
+  // SOG-0313 : un appareil créé depuis la recherche (« fnew9 » → F-NEW9) est dans la liste au retour : une recherche qui ne le trouve pas
+  // est vidée
+  if (!FL.matches(d, s.q)) s.q = '';
   draw(s);
   publishStatus(s);
   s.ctx.notify(s.tt(TX.saved, {

@@ -86,6 +86,9 @@ export function retire(file, registration, {
 export function matches(ac, q) {
   const s = clean(q).toUpperCase();
   if (!s) return true;
+  // SOG-0313 : « fbhhh » trouve F-BHHH — les séparateurs (tiret, espace, point) ne comptent pas, d'un côté comme de l'autre
+  const bare = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+    b = bare(s);
   return [ac?.registration, ac?.type, ac?.variant, ac?.base, ac?.operator, ...(ac?.callsigns || [])].some(v => String(v ?? '')
-    .toUpperCase().includes(s));
+    .toUpperCase().includes(s) || !!b && bare(v).includes(b));
 }

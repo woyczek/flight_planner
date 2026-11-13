@@ -169,3 +169,10 @@
   application, which has no Data module, the frame fell back on its first screen (« Ma compagnie »), what the user saw. Now
   `?app=maintenance#data?registry=1` (relative to the frame's page, same tab): the Data screen of Maintenance opens its fold « Registre
   français des aéronefs » and keeps it in view (Réglages, L126 / L127). M45 checks the address (red before: `#data`).
+- **13 Nov 2026 — SOG-0313: a created aircraft in the list at once; no shadow left on the type field** (user: « à la création d'un aéronef,
+  pas de refresh au retour à la liste … il n'apparaît qu'avec un aller retour sur une autre page » ; « rémanence d'un ombrage sur la saisie
+  du type oaci »; written by Features SOG): (1) an aircraft created from the search (« fbhhh » → « Créer F-BHHH ») came back to a list
+  still filtered on « fbhhh », which `FL.matches` compared with « F-BHHH » letter for letter — « Aucun aéronef ne correspond » until the
+  search was gone. Now the search ignores separators on both sides (« fbhhh » finds F-BHHH), and a saved aircraft the search would not
+  find clears it. (2) `.ac-sug { display: grid }` beat its `hidden` attribute: the closed list of type suggestions stayed drawn, two
+  pixels of border and its shadow under the field. `.ac-sug[hidden] { display: none }`. M46 (red before: the closed list drawn).

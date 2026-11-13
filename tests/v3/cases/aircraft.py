@@ -1339,3 +1339,30 @@ def m45(c):
     href = c.js(f"document.querySelector('{M} [data-regline] a').getAttribute('href')") or ''
     c.ok(norm(tx(A, 'regAbsent', c.lang)) in norm(c.text(f'{M} [data-regline]') or '') and 'app=maintenance' in href and href.endswith('#data?registry=1'),
          [c.text(f'{M} [data-regline]'), href], 'the line and its link to Data › French register, in Maintenance')
+
+
+
+@case('M46', 'Fleet: an aircraft created from the search (« fnewa » → « Créer F-NEWA ») is in the list at once on return, the search finding it '
+      'without its hyphen; the type suggestions, closed, leave no box nor shadow on the ICAO type field', 'M', tags=('aircraft',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0313 (user, 13 Nov: « à la création d\'un aéronef, pas de refresh au retour à la liste des aéronefs. il n\'apparaît qu\'avec un '
+      'aller retour sur une autre page » ; « rémanence d\'un ombrage sur la saisie du type oaci ») — the search kept « fnewa », which did not '
+      'match « F-NEWA »; .ac-sug { display: grid } beat its hidden attribute')
+def m46(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    open_fleet(c)
+    c.page.fill(f'{M} [data-k="q"]', 'fnewa')
+    c.until(f"!!document.querySelector('{M} [data-do=addq]')", timeout=10000, what='« Créer F-NEWA » under « Aucun aéronef ne correspond »')
+    c.tap(f'{M} [data-do="addq"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=edit]')", what='the editor')
+    shown = c.js(f"""(() => {{ const e = document.querySelector('{M} [data-typesug]'); const r = e.getBoundingClientRect();
+      return {{ hidden: e.hidden, display: getComputedStyle(e).display, h: Math.round(r.height) }} }})()""")
+    c.ok(shown['hidden'] and shown['display'] == 'none', shown, 'the closed suggestion list takes no room and casts no shadow')
+    c.page.fill(f'{M} [data-f="type"]', 'C172')
+    c.page.keyboard.press('Escape')
+    c.tap(f'{M} [data-f="variant"]')
+    c.wait(300)
+    c.ok(c.js(f"getComputedStyle(document.querySelector('{M} [data-typesug]')).display") == 'none', 'shown', 'left, the suggestions are gone')
+    c.tap(f'{M} [data-do="save"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", what='back on the list')
+    c.until(f"!!document.querySelector('{M} [data-reg=\"F-NEWA\"]')", timeout=5000, what='the new aircraft is in the list at once, without another page')

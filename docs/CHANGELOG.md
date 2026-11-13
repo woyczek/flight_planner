@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft › fleet: a created aircraft is in the list at once (the search ignores hyphens); no shadow left under the type field** (aircraft DECISIONS; noreg M46; SOG-0313).
 - **Map, preparing a mission: the map selector no longer waits for a Map ↔ Fuel round trip, nor for the mission to be read** — « the map selector only appears after a round trip between Map and Fuel, or it is very slow » (SOG-0312): a flight that gains its mission while the Map is open is now followed (it was derived again only at the next mount), and the window is there before the mission is read, saying « Loading the mission… » (Maps SPEC § 15, DECISIONS; noreg D211).
 - **Map, preparing a mission: the cross of its window asks before abandoning, and a folded window opens again** — « no confirmation? it is risky. How do I bring it back? » (SOG-0311): the cross of a flight's mission window asks « Abandon the preparation of the mission? » (refused: nothing changes; accepted: the window, the chosen map and the points the mission imposed all go, the pilot's own points and the flight's ends stay); a « − » folds the window and a button of the map's column opens it again (Maps SPEC § 15, DECISIONS, help ×4; noreg D210, D123 and D183 answer the question).
 - **Fuel: leaving the screen during an ATIS read no longer throws** (fuel DECISIONS; noreg F206; SOG-0317).
