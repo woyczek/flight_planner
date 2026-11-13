@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5e1ac79",
+  "organisation": "5d52925",
   "fiches": 323,
   "untranslated": 0,
   "priorities": 310
@@ -1417,11 +1417,12 @@
     {
      "id": "SOG-0319",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte du terrain : plus de taxiways, et le cartouche du numéro de piste est décalé et coupé",
      "en": "Airport map: taxiways gone, and the runway number plate is shifted and clipped",
      "de": "Flugplatzkarte: Rollwege fehlen, und das Schild der Pistennummer ist verschoben und abgeschnitten",
-     "es": "Mapa del aeródromo: sin calles de rodaje, y el cartel del número de pista desplazado y cortado"
+     "es": "Mapa del aeródromo: sin calles de rodaje, y el cartel del número de pista desplazado y cortado",
+     "test": true
     }
    ]
   },
