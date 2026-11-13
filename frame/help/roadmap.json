@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9d5071d",
-  "fiches": 317,
+  "organisation": "9455a8c",
+  "fiches": 323,
   "untranslated": 0,
   "priorities": 310
  },
@@ -344,6 +344,15 @@
      "en": "Report a bug or a request from within the application",
      "de": "Einen Fehler oder Wunsch direkt in der Anwendung melden",
      "es": "Señalar un fallo o una petición desde la aplicación"
+    },
+    {
+     "id": "SOG-0323",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Feuille des questions : les libellés des options sont tronqués",
+     "en": "Decisions sheet: the option labels are truncated",
+     "de": "Entscheidungsblatt: die Optionstexte sind abgeschnitten",
+     "es": "Hoja de decisiones: las etiquetas de las opciones están cortadas"
     }
    ]
   },
@@ -805,6 +814,15 @@
      "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)",
      "rank": 34,
      "test": true
+    },
+    {
+     "id": "SOG-0322",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Site publié : pas de « Calculer A → B » sans le lanceur",
+     "en": "Published site: no « Compute A → B » without the launcher",
+     "de": "Veröffentlichte Seite: kein « A → B berechnen » ohne den Launcher",
+     "es": "Sitio publicado: sin « Calcular A → B » sin el lanzador"
     }
    ]
   },
@@ -1354,6 +1372,27 @@
    ]
   },
   {
+   "id": "pilote-carte-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; route",
+    "en": "Carte ; route",
+    "de": "Carte ; route",
+    "es": "Carte ; route"
+   },
+   "items": [
+    {
+     "id": "SOG-0321",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : survoler un point de la route le montre sur la carte ; pendant un déplacement, montrer aussi les points",
+     "en": "Map: hovering a route point shows it on the map; while panning, show the points too",
+     "de": "Karte: ein Routenpunkt unter dem Zeiger wird auf der Karte gezeigt; beim Verschieben auch die Punkte zeigen",
+     "es": "Mapa: al pasar sobre un punto de la ruta se muestra en el mapa; al desplazar, mostrar también los puntos"
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-sol",
    "app": "pilote",
    "label": {
@@ -1374,6 +1413,15 @@
      "milestone": "6.0.0-alpha.5",
      "rank": 42,
      "test": true
+    },
+    {
+     "id": "SOG-0319",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte du terrain : plus de taxiways, et le cartouche du numéro de piste est décalé et coupé",
+     "en": "Airport map: taxiways gone, and the runway number plate is shifted and clipped",
+     "de": "Flugplatzkarte: Rollwege fehlen, und das Schild der Pistennummer ist verschoben und abgeschnitten",
+     "es": "Mapa del aeródromo: sin calles de rodaje, y el cartel del número de pista desplazado y cortado"
     }
    ]
   },
@@ -4018,6 +4066,15 @@
      "de": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
      "es": "Data: the coverage map back in “Coverage”, with a mark for the available procedures",
      "rank": 267
+    },
+    {
+     "id": "SOG-0318",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : la fiche du Portugal se contredit — « rien à déposer » et « ce pays attend un fichier »",
+     "en": "Data: the Portugal sheet contradicts itself — « nothing to drop » and « this country waits for a file »",
+     "de": "Daten: das Blatt Portugal widerspricht sich — « nichts abzulegen » und « dieses Land wartet auf eine Datei »",
+     "es": "Datos: la ficha de Portugal se contradice — « nada que depositar » y « este país espera un fichero »"
     }
    ]
   },
@@ -4596,6 +4653,15 @@
      "de": "Einstellungen: „Gesellschaft dieses Geräts“ braucht 8 Sekunden",
      "es": "Ajustes: «Compañía de este dispositivo» tarda 8 segundos en mostrarse",
      "rank": 301
+    },
+    {
+     "id": "SOG-0320",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Réglages : ranger par fréquence d'usage, et ce que font le chevron et le titre d'un bloc",
+     "en": "Settings: order by how often they are used, and what the chevron and the title of a block do",
+     "de": "Einstellungen: nach Nutzungshäufigkeit ordnen, und was Pfeil und Titel eines Blocks tun",
+     "es": "Ajustes: ordenar por frecuencia de uso, y qué hacen la flecha y el título de un bloque"
     }
    ]
   },
