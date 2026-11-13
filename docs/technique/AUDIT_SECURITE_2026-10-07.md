@@ -1034,6 +1034,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 182 | The V3 mission editor: the frame step (3ace1a58f, SOG-0287; `modules/missions/editor.js`, new) and the teams step (c138087b3) | paths and display acceptable; two defects proved (the teams step loses data, a dump of a file with aliases) |
 | 183 | The V2 registry, group B continued: the reports under a former number (a78fa30b0), “Compare with the folder” / “Store in the folder” / “Keep the file” (ec6c6ee02, SOG-0293 c), the texts received in a batch kept per mission (d46aee7c1, SOG-0294) | acceptable; one defect proved (the comparison of a served file with aliases), three notes |
 | 184 | The fix of the defect of 181 (337e3c177: header of an exported or stored YAML, names in the archive) and the comparison extended to the shared mission and the draft of the generator (22dbe6d04, SOG-0293 c) | fix verified, defect closed; extension acceptable |
+| 185 | The fix of the defect of 183 (b8e3048ef: `loadYaml`, a budget of expanded nodes, one `try` per item, the three notes) and the button emphasis of the comparison (d140b1358) | fix verified, defect closed; one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2800,6 +2801,22 @@ has its own button and its own “keep the file” choice, the identifier shown 
 `storeMission` (identifier checked, folder built from the identifier, old file written to `versions/` first) after one click on that row. K223
 green. The point left open in 183 stays open (a loaded file with aliases freezes the comparison, and a failure of one item stops the others),
 since the new candidates do not change it. **Notes.** None new.
+
+**185. The fix of 183 and the emphasis of the buttons — fix verified, defect closed; one note.** *Fix (b8e3048ef).* `loadYaml(text)` loads with `jsyaml.load`
+and then counts the document with every shared reference expanded, once per object (a `Map` memoises the count, so the work stays linear), stops
+adding past the budget of 200,000 nodes and refuses with an error named `TooBig`; a circular reference counts as one and does not loop. It is
+now the loader of the served file (`fileYaml`), of the folder reading, of “Add files” (`acceptYaml` drops the refused file and says so in a
+notification) and of the old file read by `storeMission`. In `refreshKept` each item has its own `try`: an item that fails is `unknown` and the
+others go on. The three notes are taken: a former number is followed only when exactly one line claims it, and the row shows the target's title
+after the arrow; the old file is copied to `versions/` whenever it exists and differs, readable or not (`old || oldText`), so a file that does not
+parse is no longer overwritten without a copy; `receivedIds` is memoised per received text in a `WeakMap`, one analysis per text and not one per
+text and per mission. K225 (the eleven-level file under a mission with a snapshot) and K219 to K224 green; the defect of 183 is closed. *Emphasis
+(d140b1358).* Display only: a class chosen among constants from the comparison, and a phrase chosen among constants. **Note.** Six calls to
+`window.jsyaml.load` remain: `missionUsage` (the size of a mission), the detail view of a mission (the maps already there),
+`showGeneratedMd` (two calls) and the two readers of “Previous versions” (`diffOf` of an old version against the
+current file, two calls). They all run on a click or on the opening of one mission's detail, not at the opening of the page, and none writes; use `loadYaml`
+there too (a one-word change) so that a file with aliases is refused everywhere the same way. The pasted texts read by `receivedIds` are
+only asked for `mission.id`, so they do not walk the tree.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
