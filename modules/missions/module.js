@@ -733,10 +733,11 @@ const WAIT_MS = 8000; // attente d'un fichier pas encore sur l'appareil, au-del�
 async function yamlFile(ctx, path) {
   const job = Promise.resolve().then(() => ctx.data.read(path, {
       wait: true
-    })).then(r => r ? r.value ?? r.text ?? null : null).then(parse, e => ({
-      why: 'unreadable',
-      err: String(e?.message || e)
-    })),
+    })).then(r => r ? r.value ?? r.text ?? null : null).then(t => parse(t, path === REGISTRY ? MS.REGISTRY_NODES_MAX : MS.NODES_MAX), e =>
+      ({
+        why: 'unreadable',
+        err: String(e?.message || e)
+      })),
     late = Symbol('late'),
     first = await Promise.race([job, new Promise(res => setTimeout(() => res(late), WAIT_MS))]);
   return first === late ? {
@@ -745,7 +746,7 @@ async function yamlFile(ctx, path) {
   } : first;
 }
 /** Le document d'un texte YAML (js-yaml du cadre, chargé une fois) : { doc }, { why: 'missing' } sans texte, { why: 'unreadable', err }. */
-async function parse(text) {
+async function parse(text, max = MS.NODES_MAX) {
   if (text && typeof text === 'object') return {
     doc: text
   };
@@ -757,7 +758,7 @@ async function parse(text) {
     const doc = globalThis.jsyaml.load(text);
     // audit 186 : un registre ou une mission à ancres YAML (n'importe quel pilote écrit le dépôt) se dit illisible, et n'est donc jamais
     // réécrit (le registre ne se réécrit pas quand il ne se lit pas : regPut, edRegister)
-    if (MS.shapeOf(doc)) return {
+    if (MS.shapeOf(doc, max)) return {
       why: 'unreadable',
       err: S?.tt(TX.why_alias) ?? 'YAML aliases'
     };

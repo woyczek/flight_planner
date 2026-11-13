@@ -166,16 +166,18 @@ const texts = v => (Array.isArray(v) ? v : v ? [v] : []).map(x => typeof x === '
 
 /** Les nœuds d'un document lu que l'application accepte de réécrire (une mission de la V2 en a quelques centaines). */
 export const NODES_MAX = 100000;
+/** Le registre (une quarantaine de nœuds par ligne : NODES_MAX en tient deux mille) : dix fois plus (audit 187, note 3). */
+export const REGISTRY_NODES_MAX = 1000000;
 /** La forme d'un document lu (audits 182 et 186) : '' s'il se réécrit sans risque ; 'alias' quand un objet y paraît deux fois (une ancre
  *  YAML « &a » / « *a » : une réécriture — Y.dump, JSON.stringify — la déplierait, une bombe d'alias fige l'écriture) ; 'size' au-delà
  *  de NODES_MAX nœuds. Parcours itératif (ni récursion, ni dépliage). */
-export function shapeOf(doc) {
+export function shapeOf(doc, max = NODES_MAX) {
   const seen = new Set(),
     stack = [doc];
   let n = 0;
   while (stack.length) {
     const v = stack.pop();
-    if (++n > NODES_MAX) return 'size';
+    if (++n > max) return 'size';
     if (!v || typeof v !== 'object') continue;
     if (seen.has(v)) return 'alias';
     seen.add(v);

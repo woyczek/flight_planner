@@ -554,6 +554,9 @@ export function withRisks(doc, rows) {
       if (x) o[f] = x;
       else delete o[f];
     },
+    // le danger comme risksOf le lit (hazard, sinon title, sinon name) : un risque dont le danger est sous title reste (audit 187)
+    danger = o => cut(o.hazard ?? o.title ?? o.name, 300),
+    dropped = new Set(),
     kept = new Set(list.filter(r => Number.isInteger(r?.i) && r.i >= 0).map(r => r.i)),
     risks = list.slice(0, RISKS_MAX).map(r => {
       const was = Number.isInteger(r?.i) && r.i >= 0 ? prev.find(x => x.i === r.i) : null;
@@ -566,7 +569,14 @@ export function withRisks(doc, rows) {
           ...obj(before[r.i])
         };
         for (const f of diff) put(o, f, r[f]);
-        return o.hazard ? o : null;
+        // le danger effacé à dessein : le risque part, et ses traductions avec lui
+        if (diff.includes('hazard') && !cut(r.hazard, 300)) {
+          dropped.add(r.i);
+          return null;
+        }
+        if (danger(o)) return o;
+        dropped.add(r.i);
+        return null;
       }
       const o = {};
       for (const f of F) put(o, f, r?.[f]);
@@ -576,7 +586,7 @@ export function withRisks(doc, rows) {
   if (all.length) out.risks = all;
   else delete out.risks;
   // les traductions suivent « même ordre que risks » (le prompt de la V2) : un risque retiré l'est aussi de chaque langue
-  const gone = prev.filter(p => !kept.has(p.i)).map(p => p.i).sort((a, b) => b - a);
+  const gone = prev.filter(p => !kept.has(p.i) || dropped.has(p.i)).map(p => p.i).sort((a, b) => b - a);
   if (gone.length && out.i18n && typeof out.i18n === 'object')
     for (const [lang, t] of Object.entries(out.i18n))
       if (t && typeof t === 'object' && Array.isArray(t.risks)) {

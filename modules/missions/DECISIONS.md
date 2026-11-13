@@ -247,3 +247,11 @@
   as long as it is the proposed one or empty — a title typed by the pilot is never replaced. « À compléter » of a link flight asks the
   aircraft and neither theatre, teams, risks nor chronology. `cadreOf` / `withCadre` gain `airline` and `aircraft` under the audit-182
   rule (written only when changed; N54 still identical). N58 (red before: no commercial family offered).
+- **13 Nov 2026 — audit 187: a risk whose danger is under « title » or « name » is kept; translations stay aligned; the registry's node
+  budget** (Sécurisation proved the defect in 92906e900; fixed by Features SOG): `withRisks` kept an edited risk only `if (o.hazard)`,
+  while the reader and `risksOf` read the danger from `hazard`, else `title`, else `name` — `{ title: Birds, mitigation: old }` with its
+  mitigation edited was dropped and `i18n.<lang>.risks` left with one entry too many. Now the danger is tested as `risksOf` reads it; a
+  danger cleared on purpose still removes the risk (the stated rule), and every risk removed by either path (absent from the rows, or
+  emptied) leaves its translation at the same place. Note 3: `shapeOf(doc, max)`; the registry is read and dumped with its own budget,
+  `REGISTRY_NODES_MAX` = 1 000 000 nodes (the 100 000 of a mission is about two thousand registry lines). N59 (red before: three risks
+  out of four, budget shared).

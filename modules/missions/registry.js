@@ -180,7 +180,7 @@ export function removeEntry(doc, idx, id, now = new Date().toISOString()) {
 /** Le texte du registre : l'en-tête d'origine (commentaire), puis le document en YAML. */
 export function withHeader(doc, Y, now = new Date().toISOString()) {
   // audit 186 : un registre à ancres (écrit par n'importe quel pilote) n'est jamais déplié par Y.dump — l'écriture est refusée
-  if (MS.shapeOf(doc)) throw new Error('mission_registry.yaml: YAML aliases or too large — not rewritten');
+  if (MS.shapeOf(doc, MS.REGISTRY_NODES_MAX)) throw new Error('mission_registry.yaml: YAML aliases or too large — not rewritten');
   return `# Registre des missions — tenu par l'application (modules/missions, Compagnie › Registre)\n# ${now}\n${Y.dump(doc, {
     lineWidth: -1,
     noRefs: true

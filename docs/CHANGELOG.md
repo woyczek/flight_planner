@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Mission editor: a risk named under « title » or « name » survives an edit, translations stay aligned; the registry has its own node budget (audit 187)** (missions DECISIONS; noreg N59).
 - **V2 registry: every YAML goes through the one guarded function** — six direct `jsyaml.load` calls remained (the usage of a mission, the detail view, the generated Markdown twice, the two readers of the previous versions, and the follow-up and report readers): they now go through `loadYaml`, so a file with shared anchors that expand beyond 200 000 nodes is refused the same everywhere (audit 185; noreg K230).
 - **Mission editor: the commercial family, a link flight** — « E · CAT », Cadre reduced to departure, arrival, airline, load and aircraft, title proposed (« LFPO → LFRS »); no teams, risks, chronology nor theatre asked (missions DECISIONS, help; noreg N58; SOG-0287).
 - **Map: the « Weather (wind, cloud) » layer is removed** — a double use of the Weather tab, which is for preparation; « nothing happens » was the absence of a kept forecast for the flight (the layer read only the device's cache, and its one trace was a line under its box in Layers); the wind barbs of « Winds aloft » stay, as does the cache-only reading of the weather library (help ×4, Maps SPEC, DECISIONS; noreg D200; SOG-0295).

@@ -2489,3 +2489,26 @@ def n58(c):
          t, 'a link flight written: family, load, title, aircraft; personal without an airline chosen')
     c.js(_E_CLEAR)
     c.js(_REG_CLEAR)
+
+
+
+@case('N59', 'Missions › editor, audit 187: a risk whose danger is under « title » or « name » survives an edit of its mitigation (four risks, '
+      'four translations); a danger cleared on purpose removes the risk and its translation (the lists stay aligned); a registry of eight '
+      'thousand short lines is not « too large » (its own node budget)', 'N', tags=('missions', 'security'), designs=('standard',), screens=False,
+      langs4=False,
+      rule='Sécurisation, audit 187 on 92906e900: withRisks kept an edited risk only if (o.hazard) — { title: Birds } was dropped and '
+      'i18n.<lang>.risks left unaligned; note 3: 100 000 nodes is about two thousand registry lines')
+def n59(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    got = c.js("""async () => { const ED = await import('/modules/missions/editor.js'); const MS = await import('/frame/lib/mission.js');
+      const doc = { risks: [{ title: 'Oiseaux inventés', mitigation: 'ancienne' }, { name: 'Vent inventé' }, { hazard: 'Givre inventé' }, 'Texte brut'],
+        i18n: { en: { risks: ['a', 'b', 'c', 'd'] } } };
+      let r = ED.risksOf(doc); r[0].mitigation = 'nouvelle'; const one = ED.withRisks(doc, r);
+      r = ED.risksOf(doc); r[1].hazard = ''; const two = ED.withRisks(doc, r);
+      const reg = { missions: Array.from({ length: 8000 }, (_, i) => ({ id: 'X-' + String(i % 1000).padStart(3, '0') + 'A', family: 'REG', title: 'Ligne',
+        folder: 'X_REG/X', files: ['m.yaml'], aircraftTypes: ['H135'], callsigns: ['A'], teams: [{ name: 'A', service: 'B', type: 'C' }] })) };
+      return { one: [one.risks.length, one.i18n.en.risks.length, one.risks[0].title, one.risks[0].mitigation],
+        two: [two.risks.length, two.i18n.en.risks.join('')], reg: [MS.shapeOf(reg, MS.REGISTRY_NODES_MAX), MS.shapeOf(reg)] } }""")
+    c.eq(got['one'], [4, 4, 'Oiseaux inventés', 'nouvelle'], 'a « title » risk edited: kept, four risks and four translations', what='title risk')
+    c.eq(got['two'], [3, 'acd'], 'a danger cleared: the risk and its translation removed, the lists aligned', what='cleared')
+    c.eq(got['reg'], ['', 'size'], 'eight thousand short registry lines (some 128 000 nodes): within the registry\'s budget, beyond a mission\'s', what='registry budget')
