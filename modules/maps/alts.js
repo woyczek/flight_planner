@@ -35,9 +35,10 @@ const LAYERS = ['SID', 'LOW', 'HIGH', 'FRA', 'STAR', 'APP'];
 const num = (v, lo, hi) => Number.isFinite(+v) && +v >= lo && +v <= hi;
 const clean = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
 
-/** Le document ou l'événement de Carburant, nettoyé : { mode, dep, arr, chosen, hovered, list: [{ index, name, faulty (Set), points }] } ou null. */
+/** Le document ou l'événement de Carburant, nettoyé : { mode, dep, arr, chosen, hovered, list: [{ index, name, faulty (Set), points }] } ou null.
+ *  Schéma 1 ou 2 : le schéma 2 (SOG-0224, Carburant garde le détail) porte tout le schéma 1 ; ce qu'il ajoute n'est pas lu ici. */
 export function altsSanitize(raw) {
-  if (!raw || typeof raw !== 'object' || raw.schema !== 1 || !Array.isArray(raw.alternatives)) return null;
+  if (!raw || typeof raw !== 'object' || (raw.schema !== 1 && raw.schema !== 2) || !Array.isArray(raw.alternatives)) return null;
   const list = [];
   for (const a of raw.alternatives.slice(0, MAX_ROUTES)) {
     if (!a || typeof a !== 'object' || !Array.isArray(a.points)) continue;
