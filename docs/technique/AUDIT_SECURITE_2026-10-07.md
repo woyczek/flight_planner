@@ -1029,6 +1029,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 177 | The registry identifier kept at 40 characters, shortened on screen only (ae9df7beb): the fix of 176 | closed |
 | 178 | The morning of 13 November: the Missions sheet's summary and the family / subtype lists (67e2e93ac SOG-0291, 7709e99b1 SOG-0292); the V2 registry index attaching an entry under a former number (1db36bcb8, 3dafa9d33, SOG-0289) | acceptable for the display; one defect proved (absorption loses data) |
 | 179 | The V2 registry's “Open in the generator” notifications, the guard delays and “Copy the diagnostic” (7e02b1204, SOG-0290) | acceptable, one note |
+| 180 | The fix of the defect of 178 (eba9923ce) and the search in the content of the missions (c83592c6a, SOG-0288: `modules/missions/search.js`, the index built at the first keystroke) | fix verified, defect closed; search acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2668,6 +2669,29 @@ or, if refused, into a read-only `textarea` by `.value` (never markup); `console
 last-step record is read back from `localStorage` (`missionRegistryLastGo:v1`) with no bound on `where` and `step`, only the error name is cut
 when written; the only writer is this page on this device and the sink is the clipboard, so it is a hygiene point, not a hole: cut the three
 strings to 40 characters in `diagnosticText()` when convenient.
+
+**180. The fix of 178 and the search in the content of the missions — fix verified, search acceptable, two notes.** *Fix (eba9923ce).* A pending
+order (`status === 'ordered'` without files) is skipped before any test, so a `former_id` written in a mission file can no longer absorb it;
+what the user wrote on the old entry and the line cannot take (status other than generated / ordered, notes, flight date, `request`, compared
+by value after the transfer has been done) now counts as “more”, so the entry is kept, hidden and counted, never dropped. The two probes of
+178 are K219's cases 3 and 4 (green, as are K220 and K221): the old note and flight date stay on the hidden entry, the line keeps its own note,
+the order and its `request` are intact. The CR links are recomputed by `linkReports()` at each reading, so they do not need the entry. The
+defect of 178 is closed. *Search (c83592c6a).* `search.js` is pure (no page, store or network, no `RegExp` built from the input: `where()` is
+two `includes`); the text is folded after being cut to 4,000 characters per field and 16,000 per mission. A forged mission (6 MB title,
+summary and subtype, 200,000 entries in each list, an array nested 5,000 deep) went through `readMission` then `missionFields`: 213 ms and
+112 ms, six fields, 16,000 characters in all, the longest 3,999; the reader keeps 40 risks, zones and teams. “dans : …” is built from the
+closed `KEYS` list through the `TX` table, the words are constants, the whole goes through `esc`, and `data-where` is the keys joined; no
+text of a file reaches it. The path of an index entry (`missions/<folder>/<file>`) is only a key into the set of paths that
+`data.cached('missions/')` lists, so a forged folder name reads nothing that is not already on the device. *Outgoing reads.* A keystroke
+cannot start a burst: `ensureIndex` builds once per state of the rows (`s.idx`, reset only by mount, the unlisted pass and a registry write),
+the filter is memoised per search. But the first keystroke after one of those resets reads, by `data.read(path)`, every cached mission file
+(8 at a time), and `read` awaits a re-reading from the repository for each copy that `staleCopy` finds older than the known tree
+(SOG-0235), so after a tree refresh that changed many mission files the first search can send up to as many requests as there are such
+files, once (the copies are then fresh; offline, the old copy is used, and the next reset tries again). It is bounded by the number of
+cached mission files and not triggered by typing, so not a defect. **Notes.** (1) Cap the number of stale re-readings of one build (say 40,
+the rest counted “non lue”) or read the stale copies when idle, if the repository's rate limit ever shows. (2) `readMission` keeps every
+entry of `notes` (the other lists are cut to 40): `join()` builds the whole string before cutting it (112 ms for 200,000 notes); cut the list to
+a few hundred in `missionFields` (`arr(m.notes).slice(0, 200)`). N48 and N49 green.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
