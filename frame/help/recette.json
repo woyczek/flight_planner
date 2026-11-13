@@ -380,8 +380,9 @@
    },
    "test": "Carte, une route qui mêle directs et voies aériennes : les tronçons directs sont en pointillé, les tronçons de voie en trait plein avec le nom de la voie au milieu.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T15:53:47Z"
+   "state": "ok",
+   "delivered": "2026-11-12T15:53:47Z",
+   "at": "2026-11-13T09:10:02Z"
   },
   {
    "id": "SOG-0102",
@@ -1920,12 +1921,15 @@
     "de": "BLOCKIEREND: die Windfiedern (und alles entlang der Route) folgen der Linie nicht — die Linie liegt auf dem Großkreis, die Fiedern auf der Geraden",
     "es": "BLOQUEANTE: las barbas de viento (y todo lo que sigue la ruta) no siguen el trazado — el trazado va por el círculo máximo, las barbas por la línea recta"
    },
-   "test": "Carburant : la route LFPO → SFD via MOPAR, KOLIV, VEPET, PETAX (celle du calculateur IFPS). Sur la Carte, les barbules de vent doivent être posées sur le trait de la route d'un bout à l'autre et tourner avec lui à VEPET : plus de file de barbules qui coupe tout droit de KOLIV à PETAX.",
+   "test": "Recharge la page. Carte, ta route LFPO MOPAR KOLIV VEPET PETAX EGKB avec les vents : déplace la carte pour amener le coude de VEPET à quelques centimètres du bord de l'écran, à plusieurs zooms. Toutes les barbules restent posées sur le trait, y compris dans le coude. Si tu en vois encore une de travers, dis-moi à quel endroit de la route.",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-12T15:03:00Z",
-   "comment": "reproduit. à quelques cm du bord de l’écran. 3 screenshots.",
-   "at": "2026-11-13T08:42:36Z"
+   "state": "todo",
+   "delivered": "2026-11-13T09:10:42Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "reproduit. à quelques cm du bord de l’écran. 3 screenshots.",
+    "at": "2026-11-13T08:42:36Z"
+   }
   },
   {
    "id": "SOG-0244",
