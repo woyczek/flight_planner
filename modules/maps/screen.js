@@ -159,6 +159,12 @@ export function buildOverlay(ctx, modesHtml) {
     label: ctx.t(TX.gSearch)
   });
   S.groundBtn.hidden = true;
+  // la fenêtre de la mission en préparation, repliée (SOG-0311 : « comment la faire réapparaître ? ») : ce bouton la rouvre (mission_view.js missionEvents) ; caché tant qu'elle est ouverte
+  S.missionBtn = btn('mission', {
+    icon: 'clipboard',
+    label: ctx.t(TX.mbOpen)
+  });
+  S.missionBtn.hidden = true;
   S.modeBtn = btn('mode', {
     icon: 'map',
     label: ctx.t(TX.preset),

@@ -1308,8 +1308,11 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
   flight ») and opens on that mission exactly as `#maps?mission=<ID>` does (`S.missionId`, `deriveMission`); `#maps?flight=1` (the banner's
   cross, or the flight chosen in Layers) keeps the flight and its layers; a started flight, a mission the repository does not have, the
   choose mode and the tune mode leave the flight. **The banner** (`.mp-mbar`, top left of the map, clear of the buttons on the right): title,
-  `ID · FAMILY` (the folder `missions/<n>_<FAMILY>/`), the provided map shown and, from two maps, their choice (seven at most), and a cross
-  to remove it. **Legibility**: zones as a light flat tint (no hatching) with their name, points with their role after their name
+  `ID · FAMILY` (the folder `missions/<n>_<FAMILY>/`), the provided map shown and, from two maps, their choice (seven at most), a **dash « − »** (`data-mbmin`) that folds it and a cross
+  to remove it. **SOG-0311**: a folded window opens again from a button of the map's column (`data-mp="mission"`, the clipboard, hidden while the window is open or no mission is in preparation; `S.mbarFold`);
+  the **cross of a flight's window asks first** (`ctx.ask`, « Abandon the preparation of the mission {id}? »; `abandonMission`): refused, nothing changes; accepted, `leaveMission` writes the flight without its mission,
+  category and locks **and without the points the mission imposed** (`lock` = `mission`, except the departure and the arrival, which only lose the mark; the route text is rebuilt from the points left), the pilot's own points stay.
+  The cross of a mission map opened by its address (not a flight's window) leaves without a question: nothing is written. Noreg D210. **Legibility**: zones as a light flat tint (no hatching) with their name, points with their role after their name
   (« XXAA · departure », the roles ORIGIN, DESTINATION, TARGET, ALTERNATE, RDV), the legend (« i ») names each zone kind and each role
   drawn. Noreg D123.
 - **Address** `#maps?mission=<ID>&map=<file>&zone=<id>`: without `map`, the mission's first map; without `mission`, the planned

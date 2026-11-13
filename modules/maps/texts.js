@@ -623,6 +623,23 @@ export const TX = {
     'Remove the mission banner: back to the flight and its layers',
     'Missionsleiste entfernen: zurück zum Flug und seinen Ebenen', 'Quitar la banda de misión: volver al vuelo y a sus capas'
   ],
+  // la fenêtre d'une mission en préparation (SOG-0311) : replier, rouvrir, et la confirmation de l'abandon
+  mbFold: ['Replier la fenêtre de la mission (un bouton de la colonne la rouvre)',
+    'Fold the mission window (a button of the column opens it again)',
+    'Missionsfenster einklappen (eine Schaltfläche der Spalte öffnet es wieder)',
+    'Plegar la ventana de la misión (un botón de la columna la vuelve a abrir)'
+  ],
+  mbOpen: ['Rouvrir la fenêtre de la mission : carte fournie, vue', 'Open the mission window again: provided map, view',
+    'Missionsfenster wieder öffnen: bereitgestellte Karte, Ansicht', 'Volver a abrir la ventana de la misión: mapa facilitado, vista'
+  ],
+  mbAbandonAsk: [
+    'Abandonner la préparation de la mission {id} ? La fenêtre, la carte choisie et les points que la mission impose sont retirés (vos autres points restent).',
+    'Abandon the preparation of mission {id}? The window, the chosen map and the points the mission imposes are removed (your other points stay).',
+    'Die Vorbereitung der Mission {id} abbrechen? Das Fenster, die gewählte Karte und die von der Mission vorgegebenen Punkte werden entfernt (Ihre anderen Punkte bleiben).',
+    '¿Abandonar la preparación de la misión {id}? Se quitan la ventana, el mapa elegido y los puntos que impone la misión (sus otros puntos se quedan).'
+  ],
+  mbAbandonOk: ['Abandonner', 'Abandon', 'Abbrechen', 'Abandonar'],
+  mbKeep: ['Garder la mission', 'Keep the mission', 'Mission behalten', 'Conservar la misión'],
   mbTheme: ['Vue', 'View', 'Ansicht', 'Vista'],
   mbThemes: {
     vfr: ['VFR topo', 'VFR topo', 'VFR Topo', 'VFR topo'],

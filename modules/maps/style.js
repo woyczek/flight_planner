@@ -294,6 +294,7 @@ export const STYLE = `
 [data-module="maps"] .mp-mb-top{display:flex;align-items:flex-start;gap:6px}
 [data-module="maps"] .mp-mb-t{flex:1 1 auto;min-width:0;font-size:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 [data-module="maps"] .mp-mb-x{flex:none;width:32px;height:32px;margin:-4px -6px 0 0;border:0;background:none;color:var(--sog-muted);font:inherit;font-size:22px;cursor:pointer}
+[data-module="maps"] .mp-mb-min{margin-right:2px}
 [data-module="maps"] .mp-mb-sub{font-size:12px;color:var(--sog-muted)}
 [data-module="maps"] .mp-mb-th{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--sog-muted)}
 [data-module="maps"] .mp-mb-theme{flex:1 1 auto;min-width:0;min-height:32px;font:inherit;font-size:13px}

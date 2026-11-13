@@ -3766,6 +3766,8 @@ def d123(c):
     c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_generale.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
     c.until("() => window.__mp.S.missionId === 'ESSAI1'", timeout=10000, what='a provided map again')
     c.tap('.mp-mbar [data-mbx]')
+    c.until("() => !!document.querySelector('.f-modal [data-ok]')", timeout=6000, what='the cross of a flight’s window asks before abandoning the preparation')
+    c.tap('.f-modal [data-ok]')
     c.until("() => window.__mp.S.missionId === '' && !!window.__mp.S.route.flight", timeout=10000, what='the cross gives the flight back (in place, not through the address)')
     c.ok('flight=1' not in c.js("() => location.hash"), c.js("() => location.hash"), 'the address is untouched')
     c.js(_STATE_JS)
@@ -5740,6 +5742,8 @@ def d_leave183(c):
     c.until("() => !!window.__mp.S && !!document.querySelector('.mp-mbar .mp-mb-sel') && !document.querySelector('.mp-mbar').hidden", timeout=20000, what='the window of the mission beside Fuel')
     c.until("() => window.__mp.S.stops.length >= 4", timeout=20000, what='the Map is mounted (it follows the flight)')
     c.tap('.mp-mbar [data-mbx]')
+    c.until("() => !!document.querySelector('.f-modal [data-ok]')", timeout=6000, what='the cross asks before abandoning the preparation (SOG-0311)')
+    c.tap('.f-modal [data-ok]')
     c.until("() => document.querySelector('.mp-mbar').hidden && !window.__mp.S.missionAside", timeout=10000, what='the window goes with the cross')
     doc = c.until_doc(PATH, lambda d: d and not d.get('mission') and not (d.get('route') or {}).get('locks'), what='the flight written without its mission and its locks', timeout=15000)
     c.ok(not doc.get('mission') and doc.get('missionCategory', '') == '' and not any(p.get('lock') or p.get('mission') for p in doc['route']['points']), str(doc.get('route', {}).get('points')), 'no mission, no category, no lock on the points')
@@ -7017,3 +7021,45 @@ def d209(c):
     for R in (60, 150, 240):   # the rose beside a route, at three zooms that fit the canvas (the captures of the ergonomist's check)
         png = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 6, 12, True, R])['png']
         (ROOT / f'tests/v3/shots/D209_rose_{R}_delivered.png').write_bytes(base64.b64decode(png.split(',')[1]))
+
+
+
+@case('D210', 'The window of a mission in preparation: the cross asks before abandoning (refused, nothing changes; accepted, the window, the choice of map and the points the mission imposed all go, the pilot’s own points stay); the window can be folded, and a button of the map’s column, there while a mission is in preparation, opens it again', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0311 (the user, 13 Nov: « case à cocher de la popup sur la carte, pendant préparation de mission : pas de confirmation ? c’est risqué. comment la faire réapparaître ? … si on coche la case de fermeture, on perd tout, sans warn, mais les tracés restent. Comme c’est un abandon de mission, il faut une confirmation. »; the ergonomist: the cross asks; confirmed, everything goes; refused, nothing changes; a folded window opens again from a button of the column)')
+def d210(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    f = flight(mission='ESSAI1')
+    f['route']['points'][2] = {'id': 'NEPIX', 'lat': 44.9, 'lon': 2.4, 'lock': 'mission', 'mission': 'RDV-1'}
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(f), airfields=True, wait=False)   # the Map alone: Fuel would give the lock back only to the points the mission itself names
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!document.querySelector('.mp-mbar .mp-mb-sel') && !document.querySelector('.mp-mbar').hidden", timeout=20000, what='the window of the mission')
+    c.until("() => window.__mp.S.stops.length >= 4", timeout=20000, what='the Map is mounted')
+    state = "() => ({ bar: !document.querySelector('.mp-mbar').hidden, btn: !!document.querySelector('[data-mp=mission]') && !document.querySelector('[data-mp=mission]').hidden, aside: window.__mp.S.missionAside })"
+    c.eq(c.js(state), {'bar': True, 'btn': False, 'aside': 'ESSAI1'}, 'the window is open and the column has no button for it', what='start')
+    # 1. folded, the window opens again from the column
+    c.tap('.mp-mbar [data-mbmin]')
+    c.until("() => document.querySelector('.mp-mbar').hidden && !!document.querySelector('[data-mp=mission]') && !document.querySelector('[data-mp=mission]').hidden", timeout=4000, what='folded: the window is hidden and the column offers it again')
+    c.eq(c.js("() => window.__mp.S.missionAside"), 'ESSAI1', 'folding abandons nothing: the mission is still the flight’s', what='aside')
+    c.shot(f'D210_{c.design}_{c.lang}_folded_delivered.png')
+    c.tap('[data-mp="mission"]')
+    c.until("() => !document.querySelector('.mp-mbar').hidden && document.querySelector('[data-mp=mission]').hidden", timeout=4000, what='the button opens the window again, and goes')
+    # 2. the cross asks; refused, nothing changes
+    c.tap('.mp-mbar [data-mbx]')
+    c.until("() => !!document.querySelector('.f-modal [data-no]')", timeout=6000, what='the cross asks before abandoning the preparation')
+    c.shot(f'D210_{c.design}_{c.lang}_ask_delivered.png')
+    c.tap('.f-modal [data-no]')
+    c.wait(900)
+    c.eq(c.js(state), {'bar': True, 'btn': False, 'aside': 'ESSAI1'}, 'refused: the window and the mission are as they were', what='after refusal')
+    d = c.doc(PATH)
+    c.ok(d.get('mission') == 'ESSAI1' and [p['id'] for p in d['route']['points']] == ['LFRS', 'LUGEN', 'NEPIX', 'LFML'] and d['route']['points'][2].get('lock') == 'mission', str(d['route']['points']), 'refused: the flight is not written (mission, points and lock as they were)')
+    # 3. accepted: everything goes — the window, the mission, the point it imposed; the pilot’s points stay
+    c.tap('.mp-mbar [data-mbx]')
+    c.until("() => !!document.querySelector('.f-modal [data-ok]')", timeout=6000, what='asked again')
+    c.tap('.f-modal [data-ok]')
+    doc = c.until_doc(PATH, lambda d: d and not d.get('mission'), what='the flight written without its mission', timeout=15000)
+    c.eq([p['id'] for p in doc['route']['points']], ['LFRS', 'LUGEN', 'LFML'], 'the point the mission imposed is gone, the pilot’s own points (and the ends) stay', what='points')
+    c.ok('NEPIX' not in str(doc['route'].get('text', '')), str(doc['route'].get('text')), 'and the route text no longer names it')
+    c.until("() => document.querySelector('.mp-mbar').hidden && !window.__mp.S.missionAside && !(window.__mp.S.missionPts || []).length && document.querySelector('[data-mp=mission]').hidden", timeout=10000, what='the window, the mission’s objects and the button are gone')

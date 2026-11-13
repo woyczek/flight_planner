@@ -13,6 +13,9 @@ import {
   unwrapLons
 } from '../../frame/lib/geo.js';
 import {
+  textFromPoints
+} from '../../frame/lib/route_text.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -245,11 +248,24 @@ async function leaveMission() {
     ...(cur.route || {})
   };
   delete r.locks;
-  r.points = (r.points || []).map(({
-    lock,
-    mission,
-    ...p
-  }) => p);
+  // les points que la mission imposait (lock « mission ») partent avec elle (SOG-0311 : « les tracés restent ») — sauf le départ et l'arrivée du vol, dont on ne retire que
+  // la marque ; les points du pilote restent ; le texte de la route est refait des points restants
+  const was = r.points || [],
+    last = was.length - 1,
+    pts = was.filter((p, i) => i === 0 || i === last || !(p && p.lock === 'mission')).map(({
+      lock,
+      mission,
+      ...p
+    }) => p);
+  if (pts.length !== was.length) {
+    const un = unwrapLons(pts);
+    r.text = textFromPoints(pts, r.text || '', was);
+    r.distanceNm = pts.length >= 2 ? Math.round(MapsRender.distances(un).pop() * 10) / 10 : 0;
+    r.trackDeg = pts.length >= 2 ? Math.round(MapsRender.trackOf(pts[0], pts[pts.length - 1])) : r.trackDeg;
+    r.from = 'points';
+    r.manual = false;
+  }
+  r.points = pts;
   try {
     await S.ctx.data.put(path, {
       ...cur,
@@ -405,15 +421,44 @@ export function missionEvents() {
     } else if (e.target.matches('.mp-mb-theme')) setTheme(e.target.value);
   });
   S.mbarEl.addEventListener('click', e => {
-    if (e.target.closest('[data-mbx]')) S.missionAside ? leaveMission() : go('',
+    if (e.target.closest('[data-mbmin]')) { // replier : rien n'est abandonné, un bouton de la colonne la rouvre (SOG-0311)
+      S.mbarFold = true;
+      return bannerFill();
+    }
+    if (e.target.closest('[data-mbx]')) S.missionAside ? abandonMission() : go('',
       ''
     ); // la croix quitte la mission pour de bon : le vol est écrit sans elle, la carte fournie montrée rend le vol (SOG-0251) ; « Vol » de la liste garde la mission
   });
-  const id = S.missionId || S.missionAside;
-  if (!id) return () => {};
-  return S.ctx.data.watch('missions/', paths => {
+  const open = () => { // le bouton de la colonne rouvre la fenêtre repliée
+    S.mbarFold = false;
+    bannerFill();
+  };
+  S.missionBtn?.addEventListener('click', open);
+  const off = () => S?.missionBtn?.removeEventListener('click', open),
+    id = S.missionId || S.missionAside;
+  if (!id) return off;
+  const stop = S.ctx.data.watch('missions/', paths => {
     if (S && (paths || []).some(p => MISSION_YAML.exec(p)?.[1] === id)) S.missionId ? applyMission() : loadAside();
   });
+  return () => {
+    off();
+    stop?.();
+  };
+}
+/** Abandonner la préparation de la mission du vol (la croix de sa fenêtre) : une question d'abord (SOG-0311, « comme c'est un abandon de mission, il faut une confirmation ») ;
+ *  refusée, rien ne change ; acceptée, la fenêtre, la carte choisie et les points imposés par la mission partent (leaveMission). */
+async function abandonMission() {
+  const me = S,
+    id = S.missionAside;
+  if (!S.ctx.ask) return leaveMission(); // pas de question possible (page incomplète) : le geste reste celui d'avant
+  const yes = await S.ctx.ask(tt(TX.mbAbandonAsk, {
+    id
+  }), {
+    ok: tt(TX.mbAbandonOk),
+    cancel: tt(TX.mbKeep)
+  });
+  if (S !== me || !yes || S.missionAside !== id) return;
+  leaveMission();
 }
 /** La famille d'une mission : celle du dossier missions/<n>_<FAMILLE>/<ID>/ (rien n'est lu pour la connaître). */
 const familyOf = id => {
@@ -438,9 +483,13 @@ export function bannerFill() {
     // la vue : celle de la carte fournie montrée ; sur la vue vol, la vue est celle du vol (liste grisée)
     themes = ['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml'),
     themeSel = `<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}"${flightView ? ' disabled' : ''}>${flightView ? `<option>${esc(tt(TX.mbFlight))}</option>` : themes.map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>`,
-    html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
+    html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b><button type="button" class="mp-mb-x mp-mb-min" data-mbmin title="${esc(tt(TX.mbFold))}" aria-label="${esc(tt(TX.mbFold))}">−</button><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
 <div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || id)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${mapSel}${themeSel}` : '';
-  if (el.hidden === on) el.hidden = !on;
+  if (!on) S.mbarFold = false; // plus de mission : plus de fenêtre repliée
+  const shown = on && !S.mbarFold;
+  if (el.hidden === shown) el.hidden = !shown;
+  if (S.missionBtn && S.missionBtn.hidden === (on && !!S.mbarFold)) S.missionBtn.hidden = !(on && !!S
+    .mbarFold); // la fenêtre repliée se rouvre par le bouton de la colonne
   if (el.innerHTML !== html) el.innerHTML = html;
   setData(el, 'maps', String(maps.length));
 }
