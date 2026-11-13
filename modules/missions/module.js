@@ -87,7 +87,8 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-steps{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;margin:0 0 4px}
 [data-module="missions"] .ms-steps>button{flex:0 0 auto;border-radius:999px;min-height:44px;white-space:nowrap}
 [data-module="missions"] .ms-steps>button[aria-current=step]{outline:2px solid var(--accent,#1a73e8)}
-[data-module="missions"] .ms-stepmark{display:inline-block;width:1.4em;text-align:center}
+[data-module="missions"] .ms-stepmark{display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;border-radius:50%;text-align:center;background:color-mix(in srgb,currentColor 14%,transparent)}
+[data-module="missions"] .ms-tlabel{display:block;font-size:.85em}
 [data-module="missions"] .ms-stepmark[data-kind=ok]{color:var(--ok,#1e7e34)}
 [data-module="missions"] .ms-stepmark[data-kind=warn]{color:var(--warn,#b06f00)}
 [data-module="missions"] .ms-edform{min-width:0}
@@ -113,6 +114,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
   [data-module="missions"] .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,.7fr) minmax(0,1.2fr) minmax(0,1.2fr) auto}
   [data-module="missions"] .ms-edteam>.ms-edtdel{grid-column:auto;grid-row:auto}
   [data-module="missions"] .ms-edthead{display:grid;padding:0;border:0;font-size:.9em}
+  [data-module="missions"] .ms-tlabel{display:none}
 }
 @container (min-width: 900px){
   [data-module="missions"] .ms-edgrid{display:grid;grid-template-columns:minmax(12em,16em) minmax(0,1fr) minmax(14em,20em);gap:16px;align-items:start}
@@ -120,6 +122,11 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
   [data-module="missions"] .ms-steps>button{border-radius:6px;text-align:left;border-color:transparent;background:none}
   [data-module="missions"] .ms-steps>button[aria-current=step]{outline:none;background:var(--accent-bg,#e8f0fe)}
   [data-module="missions"] .ms-edaside{display:block}
+  /* la barre d'actions en bas de l'écran, alignée sur le formulaire (la maquette) : l'éditeur occupe la hauteur, la barre colle en bas */
+  [data-module="missions"] .ms-ed{display:flex;flex-direction:column;min-height:calc(100dvh - 160px)}
+  [data-module="missions"] .ms-edbar{margin-top:auto;display:grid;grid-template-columns:minmax(12em,16em) auto auto minmax(0,1fr);column-gap:8px;border-top:1px solid var(--sog-line,#ddd)}
+  [data-module="missions"] .ms-edbar>:first-child{grid-column:2;margin-left:8px}
+  [data-module="missions"] .ms-edbar>.ms-edcancel{justify-self:end}
   [data-module="missions"] .ms-edaside>.f-card{margin:0 0 12px}
 }
 @container (min-width: 700px){
@@ -566,6 +573,10 @@ const TX = {
   plLat: ['Latitude (°, décimale)', 'Latitude (°, decimal)', 'Breite (°, dezimal)', 'Latitud (°, decimal)'],
   plLon: ['Longitude (°, décimale)', 'Longitude (°, decimal)', 'Länge (°, dezimal)', 'Longitud (°, decimal)'],
   plKind: ['Sorte', 'Kind', 'Art', 'Tipo'],
+  // les sortes de zone du générateur (docs/technique/PROMPT_GENERATEUR_MISSIONS.md, modules/maps/mission.js), dites en clair
+  zk_search: ['recherche', 'search', 'Suche', 'búsqueda'],
+  zk_mission: ['travail', 'work', 'Einsatz', 'trabajo'],
+  zk_exclusion: ['à éviter', 'to avoid', 'zu meiden', 'a evitar'],
   plRadius: ['Rayon (km)', 'Radius (km)', 'Radius (km)', 'Radio (km)'],
   plTotF: ['Temps sur zone (min)', 'Time on station (min)', 'Zeit im Gebiet (min)', 'Tiempo en zona (min)'],
   plParticipants: ['Participants (indicatifs, séparés par des virgules)', 'Participants (callsigns, comma separated)',
@@ -1947,7 +1958,7 @@ function edDoc(e, cadre = e.cadre) {
 /** L'étape Équipes : une ligne par équipe (indicatif, service, type OACI, rôle), « Retirer » ; « + Équipe » ajoute une ligne. */
 function edTeamsHtml(s) {
   const rows = s.ed.teams || [],
-    inp = (i, f, v, label, extra = '') => `<label class="f-field"><span class="f-sr">${esc(s.tt(label))}</span><input data-k="edteam" data-i="${i}" data-f="${f}" value="${esc(v)}" placeholder="${esc(s.tt(label))}" autocomplete="off"${extra}></label>`;
+    inp = (i, f, v, label, extra = '') => `<label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(label))}</span><input data-k="edteam" data-i="${i}" data-f="${f}" value="${esc(v)}" placeholder="${esc(s.tt(label))}" autocomplete="off"${extra}></label>`;
   return `<h3>2. ${esc(s.tt(TX.stepTeams))}</h3><p class="f-muted">${esc(s.tt(TX.edTeamsHint))}</p>
     <div class="f-list" data-edteams>${rows.length ? `<div class="ms-edteam ms-edthead f-muted" aria-hidden="true">${[TX.edTeamName, TX.edTeamType, TX.edTeamService, TX.edTeamRole].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>` : ''}${rows.length ? rows.map((r, i) => `<div class="ms-edteam" data-team="${i}">${inp(i, 'name', r.name, TX.edTeamName, ' maxlength="80"')}${inp(i, 'type', r.type, TX.edTeamType, ' maxlength="60" autocapitalize="characters"')}${inp(i, 'service', r.service, TX.edTeamService, ' maxlength="120"')}${inp(i, 'role', r.role, TX.edTeamRole, ' maxlength="200"')}<button type="button" class="ms-edtdel" data-do="edteamdel" data-i="${i}" title="${esc(s.tt(TX.edTeamDel))}" aria-label="${esc(s.tt(TX.edTeamDel))}">✕</button></div>`).join('') : `<p class="f-muted" data-noteam>${esc(s.tt(TX.edTeamNone))}</p>`}</div>
     ${rows.length < ED.TEAMS_MAX ? `<button type="button" data-do="edteamadd">${esc(s.tt(TX.edTeamAdd))}</button>` : ''}`;
@@ -1987,7 +1998,8 @@ function edPlacesHtml(s) {
       pt: TX.plPt,
       rdv: TX.plRdv
     },
-    detail = r => [r.kind === 'zone' ? r.zkind : '', r.role, r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
+    zk = v => TX[`zk_${v}`] ? s.tt(TX[`zk_${v}`]) : v,
+    detail = r => [r.kind === 'zone' ? zk(r.zkind) : '', r.role, r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
       n: r.poly
     }) : r.kind === 'zone' && r.radius ? s.tt(TX.plCircle, {
       r: r.radius
@@ -1999,7 +2011,7 @@ function edPlacesHtml(s) {
       const fixed = r.kind === 'dep' || r.kind === 'arr',
         num = ' inputmode="decimal" maxlength="12"';
       return `<div class="ms-plform" data-plform="${i}">${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}</div>`}
-        ${r.kind === 'zone' ? `<div class="f-row">${field(i, 'zkind', TX.plKind, r.zkind, ' maxlength="40"')}${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
+        ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
         ${r.kind === 'zone' && r.poly ? `<p class="f-muted">${esc(s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}

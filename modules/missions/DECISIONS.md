@@ -205,3 +205,9 @@
   `shapeOf` refuses at opening a file where an object appears twice (a YAML alias) or of more than 100 000 nodes: « il se modifie dans
   la V2 ». N54 (red before: the untouched save rewrote the file, header, `number`, cut texts) — counter-test of the guard: without
   `shapeOf`, N54 is red — the alias file opens in the editor.
+- **13 Nov 2026 — the editor read against the mock-up, the ergonomist's remarks** (SOG-0287, written by Features SOG): the team fields
+  have their visible labels on a phone (the header row says them on a wide module); a zone's kind is a list said in words — « recherche »,
+  « travail », « à éviter » for search / mission / exclusion, the generator's three kinds (PROMPT_GENERATEUR_MISSIONS, modules/maps) — the
+  file's own value kept and offered when it is another; the step marks are round; on a wide module the editor fills the height and the
+  action bar sits at its foot, aligned on the form column (a grid that reuses the steps column). Still to come, said: the map thumbnail
+  of the preview.
