@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3825149",
+  "organisation": "09e3745",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -3533,7 +3533,7 @@
     {
      "id": "SOG-0301",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "LFPO : la piste 02 proposée au départ alors qu'elle n'a aucun départ publié",
      "en": "LFPO: runway 02 offered for departure though it has no published departure",
      "de": "LFPO: Piste 02 für den Abflug angeboten, obwohl kein Abflugverfahren veröffentlicht ist",
