@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3e58607",
+  "organisation": "4e20e62",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -2574,12 +2574,13 @@
     {
      "id": "SOG-0293",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Missions modifiées dans l'éditeur de la V2 et jamais rangées : les sortir du navigateur (YAML → fichiers → V3)",
      "en": "Missions edited in the V2 editor and never filed: get them out of the browser (YAML to files, then V3)",
      "de": "In V2 bearbeitete, nie abgelegte Missionen: aus dem Browser holen (YAML in Dateien, dann V3)",
      "es": "Misiones editadas en la V2 y nunca guardadas: sacarlas del navegador (YAML a ficheros, luego V3)",
-     "rank": 169
+     "rank": 169,
+     "test": true
     }
    ]
   },

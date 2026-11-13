@@ -2522,10 +2522,10 @@
     "de": "V2: Mission bearbeiten tut nichts",
     "es": "V2: editar una misión no hace nada"
    },
-   "test": "Recharge la page (le lanceur n'a pas changé). Anciennes pages (V2) › registre des missions : clique « Copier le diagnostic », puis « Ouvrir dans le générateur » sur une mission, puis encore « Copier le diagnostic », et colle-moi les deux textes. Si une notification dit « le dossier des missions ne répond pas », choisis de nouveau le dossier avec « Dossier des missions » (E:\\DEFA\\data\\missions) et réessaie : la mission doit s'ouvrir dans le générateur.",
+   "test": "Recharge la page. Anciennes pages (V2) › registre des missions : « Ouvrir dans le générateur » sur une mission ; si le dossier « Missions » ne répond pas, la page le dit et ouvre le choix du dossier (E:\\DEFA\\data\\missions), puis la mission s'ouvre dans le générateur. Une fois le dossier choisi, le geste suivant ne redemande rien.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-13T08:14:55Z"
+   "delivered": "2026-11-13T12:04:40Z"
   },
   {
    "id": "SOG-0291",
@@ -2566,9 +2566,15 @@
     "de": "In V2 bearbeitete, nie abgelegte Missionen: aus dem Browser holen (YAML in Dateien, dann V3)",
     "es": "Misiones editadas en la V2 y nunca guardadas: sacarlas del navegador (YAML a ficheros, luego V3)"
    },
-   "test": "Recharge la page. Anciennes pages (V2) › registre des missions. 1) « Exporter les missions gardées par ce navigateur » : garde l'archive .zip, c'est la sauvegarde. 2) Déplie « Comparer avec le dossier (n) » : une ligne par mission qui diffère ou sans fichier, avec ce qui est comparé (dates, longueurs du résumé et de la description, champs remplis) et le verdict par critère. Pour T-085 (ligne « 85 → T-085 »), la version du navigateur doit avoir les textes plus longs. 3) « Ranger dans le dossier » sur cette ligne : il te demande le dossier des missions (E:\\DEFA\\data\\missions), écrit la version du navigateur sous T-085 et garde l'ancien fichier dans versions/ ; « Garder le fichier » ne change r",
+   "test": "Recharge la page. Anciennes pages (V2) › registre des missions › « Comparer avec le dossier » › ligne « 85 → T-085 » › « Ranger dans le dossier » : au bout de deux à trois secondes, une notification dit que le dossier « Missions » ne répond pas et la fenêtre de choix de dossier s'ouvre ; choisis E:\\DEFA\\data\\missions ; la mission est rangée sous T-085, l'ancien fichier gardé dans versions/. Dans la V3, Missions › T-085 : le résumé commence par « À la suite d'un épisode… ».",
    "since": "2026-11-13",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T12:04:40Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "ranger dans le dossier ne fait rien : Mission T-085 non rangée : échec (Le dossier des missions ne répond pas (dossier déplacé, lecteur réseau absent ?). Le choisir de nouveau avec « Dossier des missions » ou « Relire le dossier ».).",
+    "at": "2026-11-13T10:16:01Z"
+   }
   },
   {
    "id": "SOG-0294",
