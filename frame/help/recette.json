@@ -2943,6 +2943,22 @@
    "since": "2026-11-13",
    "state": "todo",
    "recommended": 0
+  },
+  {
+   "id": "Q-0051",
+   "fiche": "SOG-0304",
+   "app": "pilote",
+   "question": "Suivi du vol sur la Carte : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/modules/maps/maquette/suivi.html (un bouton par état en haut ; essaie à la largeur d'un téléphone et en grand)",
+   "context": "Tu demandais « une popup avec les infos cruciales ». Mon objection : posée sur la carte, elle cache l'avion ou la route au moment où on les regarde. Ma proposition : le suivi n'est jamais SUR la carte — au téléphone c'est la feuille du bas (fermée : une ligne « ANG 4 min → 187° · 124.725 dans 6 min ») ; en grand c'est une colonne à droite. Ouvert, dans l'ordre : prochain point ; contrôle (la fréquence d'abord ; à moins de deux minutes d'un contact la ligne passe en avertissement jusqu'au geste « Contacté » ; au sol, avant le départ et après l'atterrissage, un gros bouton) ; radionav à régler et la suivante ; un lien vers la procédure de la phase ; un bandeau descente / carburant prévu au point / altitude de sécurité. Limites dites : le temps avant le contact est approximatif (cercle de portée autour du terrain, pas de limite de secteur publiée) ; les centres ne sont pas annoncés ; le carburant est celui du plan (l'appli ne lit pas la jauge) ; la radionav n'est connue que si un bout du tronçon est une balise.",
+   "options": [
+    "Oui, on code sur cette maquette",
+    "Oui, avec mes remarques (dans le texte)",
+    "Je préfère une fenêtre posée sur la carte (dis-moi où)",
+    "Non, à reprendre (dis-moi quoi)"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
   }
  ]
 }
