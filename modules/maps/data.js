@@ -55,7 +55,8 @@ import {
   wantRunways
 } from './procs.js';
 import {
-  followMission
+  followMission,
+  gainMission
 } from './mission_view.js';
 
 // ---------------------------------------------------------------- vol
@@ -318,6 +319,9 @@ export function watchFlight() {
         if (S.missionId) return left;
       }
       const f = await S?.ctx.data.get(flightPath()).catch(() => null);
+      // le vol vient de nommer une mission (« Préparer ce vol » avec la Carte à côté) : la fenêtre n'attend pas un remontage (SOG-0312) ; pas attendu, la lecture est longue
+      if (S && !S.missionAside && !S.missionId && typeof f?.mission === 'string' && f.mission.trim() && f.mission.trim() !== S
+        .missionWanted) gainMission();
       if (!S || !((f?.updated_at || '') > (S.route.updated || ''))) return;
       performance.mark('maps:live');
       if (sameRoute(f, S.route.flight)) return progressOnly(f);

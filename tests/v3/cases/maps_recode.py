@@ -3735,7 +3735,7 @@ def d123(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
     c.open('maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
-    c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=15000, what='the banner: a flight with a mission opens the Map on it')
+    c.until("() => !!document.querySelector('.mp-mbar .mp-mb-id')", timeout=15000, what='the banner: a flight with a mission opens the Map on it (the mission read: its title and id, no longer « loading »)')
     c.js(_STATE_JS)
     c.ok('mission=' not in c.js("() => location.hash"), c.js("() => location.hash"), 'without any mission parameter in the address')
     txt = c.js("() => document.querySelector('.mp-mbar').textContent")
@@ -7063,3 +7063,35 @@ def d210(c):
     c.eq([p['id'] for p in doc['route']['points']], ['LFRS', 'LUGEN', 'LFML'], 'the point the mission imposed is gone, the pilot’s own points (and the ends) stay', what='points')
     c.ok('NEPIX' not in str(doc['route'].get('text', '')), str(doc['route'].get('text')), 'and the route text no longer names it')
     c.until("() => document.querySelector('.mp-mbar').hidden && !window.__mp.S.missionAside && !(window.__mp.S.missionPts || []).length && document.querySelector('[data-mp=mission]').hidden", timeout=10000, what='the window, the mission’s objects and the button are gone')
+
+
+
+_GAIN_JS = """async () => { const S = window.__mp.S, path = `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`, f = await S.ctx.data.get(path);
+  window.__t0 = performance.now(); await S.ctx.data.put(path, { ...f, mission: 'ESSAI1', by: 'fuel', updated_at: new Date(Math.max(Date.now(), Date.parse(f.updated_at) + 60000)).toISOString() }); return true }"""
+
+
+@case('D211', 'A flight that gains a mission while the Map is open (« Prepare this flight », Fuel beside) shows the window of the mission and its map selector at once, without a round trip between Map and Fuel; while the mission is read, the window is there and says it is loading', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0312 (the user, 13 Nov: « préparation de mission, le sélecteur de carte n’apparaît qu’après un aller retour entre carte et carburant ? ou alors, c’est très lent. »): the Map followed a mission only to leave it (followMission needs missionAside); a flight that GAINED a mission was not derived again until the Map was mounted again, and a slow read of the mission showed no window at all')
+def d211(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(flight()), airfields=True, wait=False)    # no mission yet
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && window.__mp.S.stops.length >= 4", timeout=20000, what='the Map is mounted on a flight without a mission')
+    c.eq(c.js("() => document.querySelector('.mp-mbar').hidden"), True, 'no window without a mission', what='before')
+    # the mission arrives (the pilot prepared the flight from it), the reading of the repository is slow
+    c.js("""() => { const d = window.__mp.S.ctx.data, read = d.read.bind(d); d.read = async (...a) => { await new Promise(r => setTimeout(r, 2500)); return read(...a) }; return true }""")
+    c.js(_GAIN_JS)
+    c.until("() => !document.querySelector('.mp-mbar').hidden", timeout=2500, what='the window is there within the second: it does not wait for the mission to be read')
+    c.ok(performance_ms(c) < 1500, str(performance_ms(c)), 'within a second and a half of the flight’s write')
+    c.ok(tx(M, 'mbLoading', c.lang) in c.js("() => document.querySelector('.mp-mbar').textContent"), c.js("() => document.querySelector('.mp-mbar').textContent"), 'and it says that the mission is loading')
+    c.shot(f'D211_{c.design}_{c.lang}_loading_delivered.png')
+    c.until("() => !!document.querySelector('.mp-mbar .mp-mb-sel') && window.__mp.S.missionAside === 'ESSAI1'", timeout=12000, what='the selector of the provided maps, once the mission is read')
+    c.ok(tx(M, 'mbLoading', c.lang) not in c.js("() => document.querySelector('.mp-mbar').textContent"), 'loaded', 'the loading line is gone')
+    c.shot(f'D211_{c.design}_{c.lang}_delivered.png')
+
+
+def performance_ms(c):
+    return c.js("() => Math.round(performance.now() - window.__t0)")

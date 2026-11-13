@@ -638,6 +638,7 @@ export const TX = {
     'Die Vorbereitung der Mission {id} abbrechen? Das Fenster, die gewählte Karte und die von der Mission vorgegebenen Punkte werden entfernt (Ihre anderen Punkte bleiben).',
     '¿Abandonar la preparación de la misión {id}? Se quitan la ventana, el mapa elegido y los puntos que impone la misión (sus otros puntos se quedan).'
   ],
+  mbLoading: ['Chargement de la mission…', 'Loading the mission…', 'Mission wird geladen …', 'Cargando la misión…'],
   mbAbandonOk: ['Abandonner', 'Abandon', 'Abbrechen', 'Abandonar'],
   mbKeep: ['Garder la mission', 'Keep the mission', 'Mission behalten', 'Conservar la misión'],
   mbTheme: ['Vue', 'View', 'Ansicht', 'Vista'],

@@ -170,6 +170,7 @@ export async function loadAside() {
   const me = S; // ce montage : une lecture qui finit après un remontage n'écrit pas dans le suivant (D172)
   if (!S?.missionAside) return;
   const id = S.missionAside;
+  bannerFill(); // la fenêtre est là avant la lecture : elle dit qu'elle charge (SOG-0312)
   await loadMission(id);
   if (S !== me) return;
   if (S.missionAside !== id) { // le vol a cessé de nommer cette mission pendant la lecture (SOG-0251) : elle ne revient pas
@@ -207,6 +208,16 @@ export const leaveProvided = () => serial(async () => {
   await applyFlight(false);
   if (!S) return;
   restyle(before);
+  missionUi();
+  await loadAside();
+});
+/** Le vol nomme maintenant une mission que la Carte n'a pas (« Préparer ce vol » pendant que la Carte est ouverte à côté, SOG-0312 : « le sélecteur de carte n'apparaît qu'après un aller-retour ») :
+ *  la mission est cherchée comme au montage, la fenêtre est là tout de suite (elle dit qu'elle charge), puis la mission se lit. */
+export const gainMission = () => serial(async () => {
+  if (!S || S.missionAside || S.missionId) return;
+  const me = S;
+  await deriveMission();
+  if (S !== me || !S.missionAside) return;
   missionUi();
   await loadAside();
 });
@@ -474,6 +485,8 @@ export function bannerFill() {
   const M = S.mission,
     flightView = !S.missionId && !!S.missionAside && !!M, // la mission d'un vol, en surimpression de la vue vol (SOG-0193 L1)
     on = (!!S.missionId || flightView) && !!M,
+    // la mission d'un vol est en lecture : la fenêtre est là, avec son identifiant et « Chargement… », au lieu de rien (SOG-0312)
+    loading = !M && !!S.missionAside && !S.missionId && !S.missionError,
     id = S.missionId || S.missionAside,
     maps = (M?.maps || []).slice(0, 7),
     cur = flightView ? '' : S.mapDef?.file || '',
@@ -484,9 +497,10 @@ export function bannerFill() {
     themes = ['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml'),
     themeSel = `<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}"${flightView ? ' disabled' : ''}>${flightView ? `<option>${esc(tt(TX.mbFlight))}</option>` : themes.map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>`,
     html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b><button type="button" class="mp-mb-x mp-mb-min" data-mbmin title="${esc(tt(TX.mbFold))}" aria-label="${esc(tt(TX.mbFold))}">−</button><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
-<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || id)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${mapSel}${themeSel}` : '';
-  if (!on) S.mbarFold = false; // plus de mission : plus de fenêtre repliée
-  const shown = on && !S.mbarFold;
+<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || id)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${mapSel}${themeSel}` : loading ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(id)}</b></div>
+<div class="mp-mb-sub" role="status">${esc(tt(TX.mbLoading))}</div>` : '';
+  if (!on && !loading) S.mbarFold = false; // plus de mission : plus de fenêtre repliée
+  const shown = (on || loading) && !S.mbarFold;
   if (el.hidden === shown) el.hidden = !shown;
   if (S.missionBtn && S.missionBtn.hidden === (on && !!S.mbarFold)) S.missionBtn.hidden = !(on && !!S
     .mbarFold); // la fenêtre repliée se rouvre par le bouton de la colonne

@@ -1312,7 +1312,8 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
   to remove it. **SOG-0311**: a folded window opens again from a button of the map's column (`data-mp="mission"`, the clipboard, hidden while the window is open or no mission is in preparation; `S.mbarFold`);
   the **cross of a flight's window asks first** (`ctx.ask`, « Abandon the preparation of the mission {id}? »; `abandonMission`): refused, nothing changes; accepted, `leaveMission` writes the flight without its mission,
   category and locks **and without the points the mission imposed** (`lock` = `mission`, except the departure and the arrival, which only lose the mark; the route text is rebuilt from the points left), the pilot's own points stay.
-  The cross of a mission map opened by its address (not a flight's window) leaves without a question: nothing is written. Noreg D210. **Legibility**: zones as a light flat tint (no hatching) with their name, points with their role after their name
+  The cross of a mission map opened by its address (not a flight's window) leaves without a question: nothing is written. Noreg D210. **SOG-0312**: a flight that **gains** a mission while the Map is open (« Prepare this flight »,
+  Fuel beside) is followed (`gainMission`, from `watchFlight`: the flight names a mission and none is aside), and the window is there **before the mission is read**, with its identifier and « Loading the mission… » (`loading` in `bannerFill`), then the selector. Noreg D211. **Legibility**: zones as a light flat tint (no hatching) with their name, points with their role after their name
   (« XXAA · departure », the roles ORIGIN, DESTINATION, TARGET, ALTERNATE, RDV), the legend (« i ») names each zone kind and each role
   drawn. Noreg D123.
 - **Address** `#maps?mission=<ID>&map=<file>&zone=<id>`: without `map`, the mission's first map; without `mission`, the planned
