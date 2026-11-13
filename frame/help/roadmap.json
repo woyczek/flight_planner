@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a6713d1",
+  "organisation": "30fccdd",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -2120,11 +2120,12 @@
     {
      "id": "SOG-0291",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions › synthèse : le résumé en entier, distinct de la description",
      "en": "Missions summary: the short description in full, apart from the long one",
      "de": "Missionsübersicht: die Kurzbeschreibung vollständig, getrennt von der langen",
-     "es": "Síntesis de misión: el resumen entero, aparte de la descripción"
+     "es": "Síntesis de misión: el resumen entero, aparte de la descripción",
+     "test": true
     }
    ]
   },

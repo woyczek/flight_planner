@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 165,
+  "tests": 166,
   "verdicts": 59
  },
  "apps": [
@@ -2413,6 +2413,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-12T22:59:55Z"
+  },
+  {
+   "id": "SOG-0291",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions › synthèse : le résumé en entier, distinct de la description",
+    "en": "Missions summary: the short description in full, apart from the long one",
+    "de": "Missionsübersicht: die Kurzbeschreibung vollständig, getrennt von der langen",
+    "es": "Síntesis de misión: el resumen entero, aparte de la descripción"
+   },
+   "test": "Recharge la page. Missions : choisis une mission (T-085 par exemple). La première page montre « Résumé » puis le résumé EN ENTIER (plus de coupe à deux lignes) ; au-delà de 600 signes seulement, « Lire la suite ». Dans le Détail, « Description » ne répète plus le résumé. Le texte est celui du fichier de la mission : ta retouche du 10/11 de T-085 n'y est pas encore (SOG-0293).",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T07:59:40Z"
   }
  ],
  "decisions": [
