@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 173,
-  "verdicts": 79
+  "tests": 175,
+  "verdicts": 80
  },
  "apps": [
   "pilote",
@@ -350,8 +350,10 @@
    },
    "test": "Carte, une procédure (départ, arrivée ou approche) qui fait un virage de plus de 90° : le coin doit être tracé en arc, pas en angle vif. Aucune capture n'a pu en être faite : dis-moi sur quelle procédure tu l'as vu et si le rayon te paraît juste.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T16:15:54Z"
+   "state": "ko",
+   "delivered": "2026-11-12T16:15:54Z",
+   "comment": "ne voit rien. cf. capture. « plus de 45° » en fait.",
+   "at": "2026-11-13T09:29:30Z"
   },
   {
    "id": "SOG-0094",
@@ -2530,6 +2532,34 @@
    "test": "Rien à faire tout de suite : au prochain lot de missions reçu dans la V2 (« Ajouter des fichiers… » ou le générateur), vérifie que le dossier recu/ de chaque mission ne porte que SES fichiers. Les copies déjà là ne bougent pas tant que tu n'as pas répondu à Q-0041.",
    "since": "2026-11-13",
    "state": "known"
+  },
+  {
+   "id": "SOG-0295",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : retirer la couche « Météo (vent, nuages) » — double emploi, les barbules suffisent",
+    "en": "Map: remove the « Weather (wind, clouds) » layer, wind barbs are enough",
+    "de": "Karte: Ebene « Wetter (Wind, Wolken) » entfernen, Windfiedern genügen",
+    "es": "Mapa: retirar la capa « Meteo (viento, nubes) », bastan las barbas de viento"
+   },
+   "test": "Recharge la page. Carte › Couches : la case « Météo (vent, nuages) » a disparu ; « Vents en altitude » est toujours là et ses barbules s'affichent sur la route.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T09:28:21Z"
+  },
+  {
+   "id": "SOG-0303",
+   "app": "pilote",
+   "title": {
+    "fr": "Recette : le champ du commentaire est trop petit",
+    "en": "Acceptance sheet: the comment field is too small",
+    "de": "Abnahmeblatt: das Kommentarfeld ist zu klein",
+    "es": "Hoja de pruebas: el campo de comentario es demasiado pequeño"
+   },
+   "test": "Recharge la page (et relance le lanceur : son Python a changé). Aide › Recette : le champ du commentaire fait quatre lignes et grandit avec le texte ; tu peux écrire jusqu'à 2 000 signes, un compteur apparaît vers la fin. Écris un long commentaire, valide : il est gardé en entier.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T09:26:13Z"
   }
  ],
  "decisions": [
