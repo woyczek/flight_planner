@@ -25,6 +25,20 @@ function colorOf(a) {
 }
 /** Couleur de la marque d'un terrain : celle de son symbole (rouge d'État, sinon bleu ; lib/aero_symbols.js). */
 const adColor = a => a.cov?.main || (a.state ? '#d6173f' : '#1d4a9e');
+/** Les points au bout des segments de voie, une seule fois chacun (à la précision du millième de degré, ~100 m). */
+function fixList(airways) {
+  const seen = new Set(),
+    out = [];
+  for (const s of airways)
+    for (const e of [s?.a, s?.b]) {
+      if (!e || !Number.isFinite(+e.lat) || !Number.isFinite(+e.lon)) continue;
+      const k = `${Math.round(e.lat * 1e3)},${Math.round(e.lon * 1e3)}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(e);
+    }
+  return out;
+}
 /** Les listes d'un dessin complet sont-elles les mêmes (mêmes tableaux) ? */
 export const sameSrc = (a, b) => !!a && !!b && a.airspaces === b.airspaces && a.airways === b.airways && a.aerodromes === b.aerodromes &&
   a.navaids === b.navaids && a.route === b.route;
@@ -84,7 +98,9 @@ export function lightPaths(src) {
     route,
     ads: flat(src.aerodromes || []),
     adCol: (src.aerodromes || []).map(adColor),
-    navs: flat(src.navaids || [])
+    navs: flat(src.navaids || []),
+    rpts: flat(src.route || []), // les points de la route (SOG-0321 : ils restent visibles pendant le geste)
+    fixes: flat(fixList(src.airways || [])) // les points au bout des voies, un petit point chacun
   };
 }
 /** Peint les chemins L à l'écran : project(lngLat) → { x, y } (px CSS, la carte MapLibre), zoom de la carte, W × H, dpr ; pal : la
@@ -128,10 +144,26 @@ export function drawLight(ctx, L, {
     ctx.strokeStyle = col;
     ctx.stroke();
   };
+  ctx.fillStyle = pal.airwayLow; // les points au bout des voies : un petit point (SOG-0321)
+  for (let i = 0; i < L.fixes.length; i += 2) {
+    const x = o.x + L.fixes[i] * k,
+      y = o.y + L.fixes[i + 1] * k;
+    if (x > -4 && y > -4 && x < W + 4 && y < H + 4) {
+      ctx.beginPath();
+      ctx.arc(x, y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.fillStyle = paper;
   for (let i = 0; i < L.navs.length; i += 2) {
     const x = o.x + L.navs[i] * k,
       y = o.y + L.navs[i + 1] * k;
     if (x > -8 && y > -8 && x < W + 8 && y < H + 8) ring(x, y, 4, '#1d4a9e');
+  }
+  for (let i = 0; i < L.rpts.length; i += 2) { // les points de la route : un rond à la couleur de la route
+    const x = o.x + L.rpts[i] * k,
+      y = o.y + L.rpts[i + 1] * k;
+    if (x > -8 && y > -8 && x < W + 8 && y < H + 8) ring(x, y, 5, pal.route);
   }
   let n = 0;
   for (let i = 0; i < L.ads.length; i += 2) {

@@ -420,10 +420,20 @@ export async function mount(el, ctx) {
     mapSize();
     schedule();
   };
+  // un point de la route survolé ailleurs (la liste de la route de Carburant, le profil) : surligné sur la carte avec ses tronçons, sans recadrer (SOG-0321) ; contrat : window event
+  // « route-point-hover » { detail: { id } } (id de la route, majuscules ou non ; null ou absent : plus de surlignage)
+  const hl = e => {
+    const id = String(e?.detail?.id ?? '').trim().toUpperCase().slice(0, 40) || null;
+    if (!S || S.hlPoint === id) return;
+    S.hlPoint = id;
+    schedule();
+  };
+  window.addEventListener('route-point-hover', hl);
   document.addEventListener('visibilitychange', back);
   window.addEventListener('pageshow', back);
   document.addEventListener('resume', back);
   S.stops.push(() => {
+    window.removeEventListener('route-point-hover', hl);
     document.removeEventListener('visibilitychange', back);
     window.removeEventListener('pageshow', back);
     document.removeEventListener('resume', back);

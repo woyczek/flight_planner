@@ -7474,3 +7474,54 @@ def d221(c):
     c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what='the Layers sheet is open')
     r = c.js("() => { const S = window.__mp.S, r = S.layersEl.querySelector('input[data-layer=relief]'); return { checked: r.checked, disabled: r.disabled, title: r.closest('label').title, base: S.profile.base, preset: S.preset, mission: S.missionId } }")
     c.ok(r['disabled'] and not r['checked'] and r['title'], str(r), 'Topo (OpenTopoMap): the box is greyed, unticked, with its reason')
+
+
+
+_LIGHT_JS = r"""async () => { const L = await import('/modules/maps/light.js'), cv = document.createElement('canvas'); cv.width = 800; cv.height = 600; const ctx = cv.getContext('2d'), arcs = [], oa = ctx.arc.bind(ctx);
+  ctx.arc = (x, y, r, a, b) => { arcs.push([Math.round(x), Math.round(y), r]); return oa(x, y, r, a, b) };
+  const route = [{ lat: 45, lon: 1 }, { lat: 45.3, lon: 1.6 }, { lat: 45.5, lon: 2.4 }], airways = [], navaids = [{ lat: 45.1, lon: 1.2 }];
+  for (let i = 0; i < 1500; i++) airways.push({ a: { lat: 44.5 + (i % 50) * .02, lon: 0.8 + Math.floor(i / 50) * .05 }, b: { lat: 44.5 + (i % 50) * .02 + .01, lon: 0.8 + Math.floor(i / 50) * .05 + .02 } });
+  const P = L.lightPaths({ airspaces: [], airways, aerodromes: [], navaids, route });
+  const proj = ([lon, lat]) => { const k = 2 ** 7 * 512 / 360; return { x: 400 + (lon - 1.6) * k, y: 300 - (lat - 45.2) * k * 1.4 } };
+  const t0 = performance.now(); for (let i = 0; i < 20; i++) L.drawLight(ctx, P, { project: proj, zoom: 7, W: 800, H: 600, dpr: 1, pal: { airwayLow: '#888', route: '#a0f' }, paper: '#fff' });
+  const ms = (performance.now() - t0) / 20; arcs.length = 0;
+  L.drawLight(ctx, P, { project: proj, zoom: 7, W: 800, H: 600, dpr: 1, pal: { airwayLow: '#888', route: '#a0f' }, paper: '#fff' });
+  return { n: arcs.length, big: arcs.filter(a => a[2] >= 4.5).length, small: arcs.filter(a => a[2] < 4.5).length, ms: +ms.toFixed(2) } }"""
+
+
+@case('D222', 'During a pan or a zoom (the simplified drawing) the points of the route and the fixes at the ends of the airways stay visible, with the airways and the beacons: a ring for each route point, a small dot for each airway fix; and the simplified drawing stays under 16 ms', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0321 (the user, 13 Nov: « au déplacement simplifié, afficher les points en plus des AWY (points, et/ou vor/ndb en simplifié, un point ou un cercle) »; the ergonomist: the route’s points and the beacons stay visible with the airways, the simplified drawing under 16 ms): the simplified drawing showed the route line, the airways, the aerodromes and the beacons, not the points of the route nor the fixes')
+def d222(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js(_LIGHT_JS)
+    c.ok(r['big'] >= 3, str(r), 'the three route points (rings of 5 px) are drawn during the gesture, beside the beacon')
+    c.ok(r['small'] >= 20, str(r), 'the fixes at the ends of the airways are small dots')
+    c.ok(r['ms'] < 16, str(r), 'the simplified drawing stays under 16 ms with 1 500 airway segments')
+
+
+
+@case('D223', 'A route point hovered elsewhere (the route list of Fuel, the profile) is highlighted on the map with its two legs, without moving the camera: the window event « route-point-hover » with the point’s id draws a ring and a wide pale stroke; without an id (or an unknown one) nothing is drawn', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0321 (the user, 13 Nov: « au survol d’un point sur la route, surlignement du point ou du tronçon sur la carte »; the ergonomist: hovering or touching a point in the route list or on the profile highlights the point and its leg on the map, without recentring): the Map had no way to show a point hovered elsewhere')
+def d223(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""() => { window.__ring = []; const oa = CanvasRenderingContext2D.prototype.arc; CanvasRenderingContext2D.prototype.arc = function (x, y, r) { if (r === 11) window.__ring.push([Math.round(x), Math.round(y)]); return oa.apply(this, arguments) }; return true }""")
+    cam = lambda: c.js("() => { const m = window.__mpMap, c0 = m.getCenter(); return [+c0.lng.toFixed(5), +c0.lat.toFixed(5), +m.getZoom().toFixed(3)] }")
+    before = cam()
+    c.js("() => { window.__ring = []; window.dispatchEvent(new CustomEvent('route-point-hover', { detail: { id: 'lugen' } })); return true }")
+    c.until("() => window.__ring.length > 0", timeout=6000, what='the hovered point is highlighted on the map (a ring of 11 px)')
+    p = c.js("() => { const S = window.__mp.S, q = S.toC(46.5833, -1.2); return [Math.round(q.x), Math.round(q.y)] }")
+    last = c.js("() => window.__ring.at(-1)")
+    c.ok(abs(last[0] - p[0]) <= 2 and abs(last[1] - p[1]) <= 2, f'{last} against {p}', 'the ring is on LUGEN (case of the id does not matter)')
+    c.eq(cam(), before, 'the camera did not move', what='center and zoom')
+    c.js("() => { window.__ring = []; window.dispatchEvent(new CustomEvent('route-point-hover', { detail: { id: null } })); return true }")
+    c.wait(600)
+    c.eq(c.js("() => window.__ring.length"), 0, 'without an id nothing is highlighted', what='ring')
+    c.js("() => { window.dispatchEvent(new CustomEvent('route-point-hover', { detail: { id: 'NOPE' } })); return true }")
+    c.wait(600)
+    c.eq(c.js("() => window.__ring.length"), 0, 'an unknown id draws nothing', what='ring')

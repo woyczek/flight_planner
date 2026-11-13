@@ -538,6 +538,37 @@ export function mapBase(map) {
 // ---------------------------------------------------------------- fond MapLibre : relief et noms de lieux
 /** Tuiles d'altitude Terrarium (hôte de meta.net). */
 const DEM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+/** Le point de la route surligné (S.hlPoint, l'identifiant) et ses deux tronçons : un trait large et clair sous la route, un anneau autour du point. */
+function drawPointHl(ctx, toC) {
+  const pts = S.route.points || [],
+    i = pts.findIndex(p => String(p.id || '').toUpperCase() === S.hlPoint);
+  if (i < 0) return;
+  const at = p => toC(+p.lat, nearLon(+p.lon, +pts[0].lon)),
+    q = at(pts[i]);
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = S.theme.accent;
+  ctx.globalAlpha = .35;
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  if (i > 0) {
+    const a = at(pts[i - 1]);
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(q.x, q.y);
+  } else ctx.moveTo(q.x, q.y);
+  if (i < pts.length - 1) {
+    const b = at(pts[i + 1]);
+    ctx.lineTo(b.x, b.y);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(q.x, q.y, 11, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
 /** Relief ombré (mode Topo, profil hillshade) : couche hillshade posée sous les libellés du fond, retirée hors du mode ; rien
  *  tant que le style n'est pas prêt (posée au chargement du style). */
 export function relief() {
@@ -843,6 +874,8 @@ function draw() {
       }
     }));
   }
+  if (!mission && !pick && S.hlPoint) drawPointHl(ctx,
+    toC); // un point de la route survolé ailleurs : lui et ses tronçons, sans recadrer (SOG-0321)
   if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
   S.toC = toC;
   if (S.edit.on) got('edit')?.drawEdit(ctx, toC);
