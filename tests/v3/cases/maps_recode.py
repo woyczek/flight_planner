@@ -7536,3 +7536,86 @@ def d224(c):
     c.eq(c.js(line), norm(tx(M, 'procLnmWarn', c.lang)), 'the choose pane says that a procedure comes from Little Navmap (source, personal use)', what='warning')
     _ch_open(c, {}, file=_CH_FILE)
     c.eq(c.js(line), None, 'no line when no row comes from Little Navmap', what='warning')
+
+
+
+@case('D225', 'The profile says the route point under the pointer to the Map like the route list of Fuel does: the window event « route-point-hover » { id } when the pointer comes within 12 px of a point name under the cut, { id: null } between two points and on leaving, and only one event per change', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0321 (ergonomist, 13 Nov: the profile also emits route-point-hover { id } on hovering a point and { id: null } on leaving, like the route list of Fuel, F210): the profile moved a cursor only')
+def d225(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.geo && window.__mp.S.prof.marks.length > 2)", timeout=15000, what='the profile with its points')
+    c.wait(700)
+    c.js("() => { window.__pth = []; window.addEventListener('route-point-hover', e => window.__pth.push(e.detail ? e.detail.id : 'none')); return true }")
+    at = "(f) => { const S = window.__mp.S, g = S.geo, r = S.profBox.getBoundingClientRect(), ms = S.prof.marks.filter(m => m.name), m = ms[1], nx = ms[0]; const x = (v) => r.left + window.MapsProfile.xOf(g, v.s); return { name: m.name, x: x(m) + (f || 0), mid: (x(m) + x(ms[2])) / 2, y: r.top + g.padT + (g.H - g.padT - g.padB) / 2, ok: Math.abs(x(m) - x(nx)) > 40 && Math.abs(x(m) - x(ms[2])) > 40 } }"
+    pt = c.js(at, 0)
+    c.ok(pt['ok'], str(pt), 'the bench flight has points far enough apart on the cut to tell them apart')
+    c.page.mouse.move(pt['x'] - 60, pt['y'])
+    c.page.mouse.move(pt['x'] + 4, pt['y'], steps=4)
+    c.until("(w) => window.__pth.includes(w)", pt['name'], timeout=4000, what=f'route-point-hover {{ id: {pt["name"]} }} on a point under the cut')
+    n = c.js("() => window.__pth.length")
+    c.page.mouse.move(pt['x'] + 6, pt['y'], steps=3)
+    c.wait(300)
+    c.eq(c.js("() => window.__pth.length"), n, 'a move inside the same point sends nothing more', what='events')
+    c.page.mouse.move(pt['mid'], pt['y'], steps=4)
+    c.until("() => window.__pth.at(-1) === null", timeout=4000, what='{ id: null } between two points')
+    c.page.mouse.move(pt['x'], pt['y'], steps=2)
+    c.until("(w) => window.__pth.at(-1) === w", pt['name'], timeout=4000, what='the point again')
+    c.page.mouse.move(pt['x'], pt['y'] - 500)
+    c.until("() => window.__pth.at(-1) === null", timeout=4000, what='{ id: null } on leaving the profile')
+    c.eq(c.js("() => window.__mp.S.hlPoint"), None, 'the map highlights nothing once the pointer is out', what='hlPoint')
+
+
+
+_DCT_HOOK = """() => { const P = CanvasRenderingContext2D.prototype; if (!P.__dct) { P.__dct = 1; window.__st = []; window.__tx = [];
+  const bp = P.beginPath, mt = P.moveTo, lt = P.lineTo, sk = P.stroke, ft = P.fillText;
+  P.beginPath = function () { this.__p = []; return bp.apply(this, arguments) };
+  P.moveTo = function (x, y) { (this.__p ||= []).push([Math.round(x), Math.round(y)]); return mt.apply(this, arguments) };
+  P.lineTo = function (x, y) { (this.__p ||= []).push([Math.round(x), Math.round(y)]); return lt.apply(this, arguments) };
+  P.stroke = function () { if (!arguments.length) window.__st.push({ c: String(this.strokeStyle).toLowerCase(), w: this.lineWidth, a: this.globalAlpha, dash: this.getLineDash().length, p: (this.__p || []).slice() }); return sk.apply(this, arguments) };
+  P.fillText = function (t) { window.__tx.push(String(t)); return ft.apply(this, arguments) } }
+  window.__st = []; window.__tx = []; return true }"""
+
+
+def _dct_flight(trail=True, to='P4'):
+    f = flight()
+    pts = {'P1': (45.0, -0.5), 'P2': (45.6, 0.8), 'P3': (45.6, 2.1), 'P4': (45.0, 3.5), 'POS': (45.1, 0.0)}
+    f['route'] = {'text': 'P1 POS P4', 'dep': '', 'arr': '', 'points': [{'id': i, 'lat': pts[i][0], 'lon': pts[i][1]} for i in ('P1', 'POS', 'P4')]}
+    f['level'] = {'ft': 8000}
+    d = {'at': iso(now()), 'to': to, 'from': 'actual', 'skipped': ['P2', 'P3'], 'notOverflown': []}
+    if trail:
+        d['trail'] = {'from': {'lat': 45.1, 'lon': 0.0}, 'dropped': [{'lat': 45.6, 'lon': 0.8}, {'lat': 45.6, 'lon': 2.1}], 'rejoin': {'lat': 45.0, 'lon': 3.5}}
+    f['route']['directs'] = [d]
+    return f
+
+
+@case('D226', 'After a « Direct vers… » the Map keeps the initial route: the abandoned part stays in the route violet as a thin line under the route, the direct is a SOLID stroke of its own hue (dark gold, not the red of the real position, the orange of the STAR or the green of the SID) with the label « DCT »; a direct with no trail (a flight from before), or whose point is no longer on the route, draws neither', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0326 (the user, 13 Nov, validating SOG-0088: « garder le trajet initial, en violet, écrire le direct en jaune ou vert, ou une couleur qui ressemble (ou un violet pointillés) »; the ergonomist: the initial route stays violet, the abandoned part in a thin stroke, the direct a plain stroke with « DCT » — no dots, the dots already say the great circle): the flight dropped the skipped points and the Map drew the direct as one more dashed leg')
+def d226(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    seen = {}
+    for name, f in (('with', _dct_flight()), ('notrail', _dct_flight(trail=False)), ('gone', _dct_flight(to='ZZZ'))):
+        c.open('maps', docs=fdocs(f), flight=False)
+        c.js(_STATE_JS)
+        hook_map(c)
+        c.js(_DCT_HOOK)
+        c.tap('[data-mp="fit"]')
+        c.wait(900)
+        if name == 'with': c.shot('D226_standard_direct_kept.png')
+        seen[name] = c.js("""() => { const S = window.__mp.S, q = (la, lo) => { const p = S.toC(la, lo); return [Math.round(p.x), Math.round(p.y)] };
+          return { st: window.__st, tx: window.__tx, pos: q(45.1, 0.0), p2: q(45.6, 0.8), p3: q(45.6, 2.1), p4: q(45.0, 3.5) } }""")
+    near = lambda a, b: abs(a[0] - b[0]) <= 2 and abs(a[1] - b[1]) <= 2
+    GOLD = ('#b8860b', '#936b09')   # the token (pal.direct) and the same hue as the design standard draws it (darkened on paper)
+    w = seen['with']
+    dct = [s for s in w['st'] if s['c'] in GOLD and len(s['p']) == 2 and near(s['p'][0], w['pos']) and near(s['p'][1], w['p4'])]
+    c.ok(dct and all(s['dash'] == 0 for s in dct), str(sorted({(s['c'], s['a']) for s in w['st']})), 'the direct is a solid stroke of its own hue, from the position to the point asked')
+    lost = [s for s in w['st'] if s['c'] == '#8e24aa' and s['a'] < 1 and len(s['p']) == 4 and near(s['p'][0], w['pos']) and near(s['p'][1], w['p2']) and near(s['p'][2], w['p3']) and near(s['p'][3], w['p4'])]
+    c.ok(lost and lost[0]['w'] <= 2.5, str([(s['c'], s['a'], s['w'], s['p']) for s in w['st'] if s['c'] == '#8e24aa' and s['a'] < 1]), 'the abandoned part is kept: position, P2, P3, P4, in the route violet, thin and paler')
+    c.ok('DCT' in w['tx'], str(w['tx'][-12:]), 'the direct carries the label « DCT » (never the hue alone)')
+    for name in ('notrail', 'gone'):
+        n = seen[name]
+        c.ok(not [s for s in n['st'] if s['c'] in GOLD] and 'DCT' not in n['tx'], str(name), f'{name}: no direct and no label are drawn')
+        c.ok(not [s for s in n['st'] if s['c'] == '#8e24aa' and s['a'] < 1 and len(s['p']) == 4], str(name), f'{name}: no abandoned trail is drawn')

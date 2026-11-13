@@ -322,6 +322,53 @@
     ctx.restore();
   }
 
+  /** Les directs sur instruction du contrôle (SOG-0326) : `trails` = [{ lost: [points], from, to }] (lost : le trajet abandonné, de
+   *  l'ancre du direct au point où la route reprenait ; from → to : le direct). part 'lost' : le trajet initial abandonné, un trait
+   *  fin dans la teinte de la route, sous elle ; part 'dct' : le direct, un trait PLEIN d'une teinte à lui (pal.direct), avec
+   *  l'étiquette « DCT » — jamais la couleur seule, et jamais en pointillé (le pointillé dit le grand cercle). */
+  function drawDirects(ctx, trails, toC, scale, env, part) {
+    if (!trails?.length) return;
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    const stroke = pts => {
+      ctx.beginPath();
+      pts.forEach((p, i) => {
+        const q = toC(p.lat, p.lon);
+        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      });
+      ctx.stroke();
+    };
+    for (const t of trails) {
+      if (part === 'lost') {
+        if (t.lost.length < 2) continue;
+        ctx.globalAlpha = .6;
+        ctx.strokeStyle = env.pal.route;
+        ctx.lineWidth = Math.max(1.5, 2 * scale);
+        stroke(t.lost);
+        continue;
+      }
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = env.theme.bg; // le liseré du fond, comme la route
+      ctx.lineWidth = Math.max(5, 7.5 * scale);
+      stroke([t.from, t.to]);
+      ctx.strokeStyle = env.pal.direct;
+      ctx.lineWidth = Math.max(2.5, 4 * scale);
+      stroke([t.from, t.to]);
+      const a = toC(t.from.lat, t.from.lon),
+        b = toC(t.to.lat, t.to.lon),
+        len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len > 56) { // l'étiquette aux deux cinquièmes du direct, de côté (jamais sur le trait) ; un direct trop court ne la porte pas
+        const nx = -(b.y - a.y) / len,
+          ny = (b.x - a.x) / len,
+          side = ny >= 0 ? 1 : -1; // du côté du bas de l'écran : les marques NM de la route sont au-dessus
+        halo(ctx, 'DCT', a.x + (b.x - a.x) * .38 + nx * 15 * side, a.y + (b.y - a.y) * .38 + ny * 15 * side + 4, Math.max(11, 12 * scale),
+          env.pal.direct, 'center');
+      }
+    }
+    ctx.restore();
+  }
+
   /** La route orthodromique (SOG-0145) : le grand cercle départ → arrivée, en pointillé fin dans la teinte atténuée de la route, sous
    *  elle. pts : ses points déjà en coordonnées de la vue (draw.js). */
   function drawGreatCircle(ctx, pts, scale, env) {
@@ -346,6 +393,7 @@
       routeLabels,
       planLabels,
       drawRoute,
+      drawDirects,
       drawGreatCircle
     }),
     enumerable: true

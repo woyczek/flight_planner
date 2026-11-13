@@ -296,6 +296,9 @@ export function tapAt(x, y, lat, lon) {
   closeLv();
   if (S.edit.on) return got('edit')?.editTap(x, y);
   // le départ et l'arrivée du vol avant tout autre objet sous le doigt (une zone de 44 px) : « toucher le terrain » ne demande pas un doigt précis (SOG-0310)
+  if (!onMission() && atcAt(x, y) && tipAt(x, y, null, null, true)) return mapTip(lat, lon, x,
+    y
+  ); // les contrôleurs en ligne d'un terrain (de petites pastilles sur lui) gardent leur infobulle : la zone de 44 px du terrain ne les couvre pas
   const end = onMission() ? null : endAt(x, y);
   if (end) return pinAd(end);
   if (!onMission() && vrpTap(x, y)) return;

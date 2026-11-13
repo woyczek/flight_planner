@@ -275,6 +275,7 @@
       altnText: '#4b5563',
       terrain: '#b08a5a',
       mora: '#8b2d18',
+      direct: '#b8860b', // le direct du contrôle (SOG-0326) : un or foncé, plein ; ni le rouge de la position, ni l'orange de la STAR, ni le vert de la SID
       sid: '#1b8a3a',
       star: '#d95500',
       app: '#0a86c4',
@@ -291,6 +292,7 @@
   PALETTE.night = {
     ...PALETTE.day,
     sid: '#5cd27a',
+    direct: '#ffd54f',
     star: '#ff9a4d',
     app: '#5cc4f5',
     procHues: ['#f48fb1', '#64b5f6', '#ff8a65', '#4db6ac', '#dce775', '#81c784', '#ce93d8', '#bcaaa4'],
@@ -1439,6 +1441,7 @@
     detail = 0,
     hideVrp = null, // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
     lines = null, // suites de points que la route trace (null : toute la route), voir drawRoute
+    directs = null, // les directs du vol (SOG-0326) : [{ lost, from, to }], voir drawDirects
     cov = null, // couche « Procédures » : cov(icao) → niveau de couverture ('green' | 'orange' | 'red') ou rien, voir coverPins
     runwayZoom =
     11, // zoom à partir duquel les symboles de terrains ont leur pleine taille (le seuil des pistes de la compagnie, S.runwayZoom)
@@ -1670,12 +1673,20 @@
         bare: true,
         paint: c => PR.drawGreatCircle(c, gc, scale, env)
       }, {
+        id: 'directsLost', // le trajet initial abandonné après un direct, un trait fin sous la route (SOG-0326)
+        bare: true,
+        paint: c => PR.drawDirects(c, directs, toC, scale, env, 'lost')
+      }, {
         id: 'route',
         bare: true,
         paint: c => PR.drawRoute(c, route, toC, scale, labels, {
           marks: mk,
           lines
         }, env)
+      }, {
+        id: 'directsDct', // le direct lui-même, plein, d'une teinte à lui, avec « DCT » (SOG-0326)
+        bare: true,
+        paint: c => PR.drawDirects(c, directs, toC, scale, env, 'dct')
       }, {
         // couches de la Carte éteintes : la part dim de ce qui est déjà peint s'efface (destination-out), le fond MapLibre l'est par la
         // classe de la boîte ; ce que l'écran peint ensuite est entier

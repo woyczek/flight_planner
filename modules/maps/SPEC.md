@@ -270,6 +270,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 
 ## 4. The screen
 
+- **A direct from the controller** (SOG-0326, 13 Nov): `route.directs[i].trail = { from: { lat, lon }, dropped: [{ lat, lon }…], rejoin: { lat, lon } }` (written by Fuel with the direct, read here only; `directTrails` in `data.js` validates it: the last 20, 60 dropped points, finite bounded numbers, the target `to` still on the route, else nothing is drawn). `drawDirects` (`render_route.js`): layer `directsLost` under `route` = the initial route's abandoned part (`from → dropped → rejoin`) in the route's violet, 2 px, alpha .6; layer `directsDct` over `route` = the direct `from → to` as a SOLID stroke of `pal.direct` (day `#b8860b`, night `#ffd54f`) with a paper edge and the label « DCT » at two fifths of it, on the lower side (never dotted: the dots say the great circle). The simplified drawing carries both (`light.js`). The profile is built from the route's points: it follows the direct.
 - **Fixed view** (`meta.fixed: true`, frame INTEGRATION § 9.2): the module root is a flex column at the height of the
   frame's view, `overflow: hidden`, `isolation: isolate`; nothing scrolls but the sheet's body.
 - **Layout: header · map · sheet · bar.** Nothing between the frame's header and the map. The root's children are an

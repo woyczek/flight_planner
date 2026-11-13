@@ -50,7 +50,8 @@ import {
   within,
   fresh,
   widthNm,
-  WORLD_NM
+  WORLD_NM,
+  directTrails
 } from './data.js';
 import {
   status,
@@ -775,6 +776,7 @@ function draw() {
     detail: detailShift(),
     hideVrp: mission ? null : vfrVrpIds(),
     lines: mission || pick ? null : routeLines(),
+    directs: mission || pick ? null : directTrails(S.route),
     cov,
     coverZoom: COVER_ZOOM,
     runwayZoom: S.runwayZoom,
@@ -813,7 +815,8 @@ function draw() {
   S.lightZoom = S.map ? S.map.getZoom() : null; // le zoom de ce dessin complet : ses listes ne valent que près de lui pour le dessin léger
   S.lightSrc = mission || pick || !got0.light ? null : {
     ...got0.light,
-    route: S.route.flown?.length > 1 ? S.route.flown : route
+    route: S.route.flown?.length > 1 ? S.route.flown : route,
+    directs: directTrails(S.route)
   };
   // les listes de toucher ramenées du canvas à la vue
   const back = l => (l || []).map(o => moved(o, mx, my));

@@ -224,6 +224,38 @@ function fitOf() {
     n: 51.5
   };
 }
+/** Les directs sur instruction du contrôle du vol (SOG-0326) : [{ lost, from, to }] — lost : le trajet abandonné, de l'ancre du direct
+ *  (`from`) par les points sautés jusqu'à celui où la route reprenait ; from → to : le direct (to : le point demandé, retrouvé dans les
+ *  points de la route par son nom). Contrat avec Carburant (route.directs[i].trail, écrit au direct, lu ici seulement) :
+ *  `trail: { from: { lat, lon }, dropped: [{ lat, lon }…], rejoin: { lat, lon } }`. Un direct sans trace (vol d'avant), au point
+ *  disparu de la route ou aux nombres hors bornes ne se dessine pas ; les 20 derniers, 60 points sautés au plus ; longitudes
+ *  continues avec celles du point demandé. Calculé une fois par vol lu (S.route.trails). */
+export function directTrails(route) {
+  if (route?.trails) return route.trails;
+  const list = Array.isArray(route?.flight?.route?.directs) ? route.flight.route.directs.slice(-20) : [],
+    ok = q => q && Number.isFinite(+q.lat) && Number.isFinite(+q.lon) && Math.abs(+q.lat) <= 90 && Math.abs(+q.lon) <= 360,
+    out = [];
+  for (const d of list) {
+    const t = d?.trail,
+      id = String(d?.to || '').toUpperCase(),
+      to = id && (route.points || []).find(p => String(p.id || '').toUpperCase() === id || String(p.mission || '').toUpperCase() === id);
+    if (!ok(to) || !ok(t?.from) || !ok(t?.rejoin) || !Array.isArray(t.dropped) || t.dropped.length > 60 || !t.dropped.every(ok)) continue;
+    const at = q => ({
+      lat: +q.lat,
+      lon: nearLon(+q.lon, +to.lon)
+    });
+    out.push({
+      lost: [t.from, ...t.dropped, t.rejoin].map(at),
+      from: at(t.from),
+      to: {
+        lat: +to.lat,
+        lon: +to.lon
+      }
+    });
+  }
+  if (route) route.trails = out;
+  return out;
+}
 /** Points du profil d'après les points volés : longitudes continues, niveaux tenus (alt_ft des points de la route, jamais le
  *  premier ni le dernier ; le premier prend level.ft dès qu'un palier existe) ; noMark pour les points de procédure, qui ne
  *  portent pas de nom sous la coupe. */

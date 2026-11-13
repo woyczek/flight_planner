@@ -333,6 +333,32 @@ function paintProfile(ctx, pl, W, H) {
   g.fixes = nFix;
   return g;
 }
+/** Le repère de la route (le nom sous la coupe) à 12 px au plus de l'abscisse x du cadre, le plus proche, ou null ; seuls les points
+ *  de la fenêtre et de la route (pas ceux des voies) comptent. */
+function markAt(x) {
+  const g = S.geo;
+  let best = null,
+    bd = 12.5;
+  for (const m of S.prof?.marks || []) {
+    const d = m.name ? Math.abs(MapsProfile.xOf(g, m.s) - x) : Infinity;
+    if (d < bd) {
+      bd = d;
+      best = m.name;
+    }
+  }
+  return best;
+}
+/** SOG-0321 : le point de la route sous le pointeur sur la coupe, dit à la Carte par l'événement de fenêtre « route-point-hover » { id }
+ *  (celui de la liste de Carburant, un seul contrat) ; { id: null } hors d'un point, à la sortie et au démontage. Un envoi par changement. */
+function pointSay(id) {
+  if ((S.profHl ?? null) === id) return;
+  S.profHl = id;
+  window.dispatchEvent(new CustomEvent('route-point-hover', {
+    detail: {
+      id
+    }
+  }));
+}
 /** « Vol entier » : dans l'en-tête, devant un dessin, tant que la fenêtre est resserrée ; écrit seulement s'il change. */
 export function winSync() {
   if (!S?.wholeBtn || !S.axw) return;
@@ -507,6 +533,7 @@ export function profileEvents() {
     const r = S.profBox.getBoundingClientRect(),
       x = e.clientX - r.left;
     setCursor(MapsProfile.sOf(S.geo, x));
+    pointSay(markAt(x));
     const zones = MapsProfile.at(S.prof, S.cursor).zones;
     if (!zones.length) return linger('prof');
     stay('prof');
@@ -516,11 +543,16 @@ export function profileEvents() {
     })}` : l[1] || ''));
   };
   S.profBox.addEventListener('pointerleave', e => {
+    pointSay(null);
     if (e.pointerType === 'mouse') linger('prof');
   });
   S.profBox.addEventListener('pointerup', e => {
-    if (e.pointerType !== 'mouse') linger('prof'); // doigt levé : l'infobulle reste 5 s
+    if (e.pointerType !== 'mouse') {
+      pointSay(null); // le surlignage de la carte ne reste pas après le doigt
+      linger('prof'); // doigt levé : l'infobulle reste 5 s
+    }
   });
+  S.profBox.addEventListener('pointercancel', () => pointSay(null));
   S.profBox.addEventListener('pointerdown', onProf);
   S.profBox.addEventListener('pointermove', onProf);
   // un appui sur un bloc d'espace du profil : sa fiche (SOG-0163) — le bloc dont les limites contiennent l'altitude touchée, le plus étroit
@@ -559,5 +591,8 @@ export function profileEvents() {
       .filter(Boolean) : []);
   });
   const openSelected = list => openSpace(S.selSpace, list.includes(S.selSpace) ? list : [S.selSpace, ...list]);
-  return [() => S.axw.stop()];
+  return [() => {
+    pointSay(null);
+    S.axw.stop();
+  }];
 }

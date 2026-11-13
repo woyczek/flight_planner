@@ -39,9 +39,10 @@ function fixList(airways) {
     }
   return out;
 }
+const src0Directs = L => !!L.src.directs?.length;
 /** Les listes d'un dessin complet sont-elles les mêmes (mêmes tableaux) ? */
 export const sameSrc = (a, b) => !!a && !!b && a.airspaces === b.airspaces && a.airways === b.airways && a.aerodromes === b.aerodromes &&
-  a.navaids === b.navaids && a.route === b.route;
+  a.navaids === b.navaids && a.route === b.route && a.directs === b.directs;
 /** Chemins du dessin léger pour src = { airspaces, airways, aerodromes, navaids, route } (ce que le dernier dessin complet a dessiné) :
  *  { src, ref, spaces: [[couleur, Path2D]], airways, route, ads, adCol, navs } en px Mercator au zoom Z0 relatifs au point ref (des
  *  nombres petits). */
@@ -80,6 +81,14 @@ export function lightPaths(src) {
   }
   const route = new Path2D();
   (src.route || []).forEach((q, i) => i ? route.lineTo(...at(q.lat, q.lon)) : route.moveTo(...at(q.lat, q.lon)));
+  // les directs du vol (SOG-0326) : le trajet abandonné, fin, et le direct, plein
+  const lost = new Path2D(),
+    dct = new Path2D();
+  for (const t of src.directs || []) {
+    t.lost.forEach((q, i) => i ? lost.lineTo(...at(q.lat, q.lon)) : lost.moveTo(...at(q.lat, q.lon)));
+    dct.moveTo(...at(t.from.lat, t.from.lon));
+    dct.lineTo(...at(t.to.lat, t.to.lon));
+  }
   /** Positions d'une liste de points, à plat (x, y, x, y…). */
   const flat = list => {
     const out = new Float64Array(list.length * 2);
@@ -96,6 +105,8 @@ export function lightPaths(src) {
     spaces: [...byColor],
     airways,
     route,
+    lost,
+    dct,
     ads: flat(src.aerodromes || []),
     adCol: (src.aerodromes || []).map(adColor),
     navs: flat(src.navaids || []),
@@ -131,8 +142,20 @@ export function drawLight(ctx, L, {
   ctx.stroke(L.airways);
   ctx.globalAlpha = 1;
   ctx.lineWidth = 3 / k;
+  if (src0Directs(L)) {
+    ctx.globalAlpha = .6;
+    ctx.lineWidth = 1.5 / k;
+    ctx.strokeStyle = pal.route;
+    ctx.stroke(L.lost);
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 3 / k;
+  }
   ctx.strokeStyle = pal.route;
   ctx.stroke(L.route);
+  if (src0Directs(L)) {
+    ctx.strokeStyle = pal.direct;
+    ctx.stroke(L.dct);
+  }
   // les terrains et les balises du dernier dessin complet : un rond à la couleur et à la taille de leur symbole, fixe à l'écran
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.lineWidth = 1.5;
