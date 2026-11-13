@@ -6834,7 +6834,7 @@ def k_deadfolder(c):
     c.until("() => window.__picked > 0", timeout=9000, what='the chooser of the folder is opened by the click, not a message')
     r = c.js("() => ({ key: window.__key, dt: window.__dt, n: window.__n.slice(), line: (document.getElementById('rgFolderDead') || {}).textContent || '' })")
     c.eq(r['key'], '__missions', 'the folder asked for is the missions folder', what='key')
-    c.ok(0 <= r['dt'] < 4200, str(r['dt']), 'the chooser opens within the life of the click (a few seconds)')
+    c.ok(0 <= r['dt'] < 3400, str(r['dt']), 'the chooser opens right after the 2.5 s of the wait, before the name of the folder is read (the life of a click is about 5 s)')
     c.ok(any('Missions-bench' in x and 'ne répond pas' in x for x in r['n']), str(r['n']), 'a notification says which folder is kept and that it does not answer')
     c.ok(not any('Relire le dossier' in x or 'Dossier des missions »' in x for x in r['n'][:1]), str(r['n']), 'the first message does not send the user to another button')
     c.ok('Missions-bench' in r['line'] and 'ne répond pas' in r['line'], r['line'], 'the page keeps the line: the folder (its name only) does not answer')
@@ -6885,3 +6885,16 @@ def d206(c):
     # 287°/12 kt: now 13 faces the wind — the order follows the wind, not the numbers
     r = rows(287, 12)
     c.eq([x['id'] for x in r], ['13', '31'], 'the order follows the wind: 13 now comes first', what='order')
+
+
+
+@case('K236', 'The V2 registry reads the folder at the opening without any gesture path: the automatic reading asks for no permission and no folder choice, the buttons call the reading without the click event, and the dead-folder path starts the choice before it reads the kept folder’s name', 'K',
+      tags=('maps',), screens=False, static=True,
+      rule='audit 195 (Sécurisation), notes 1 and 2 on 1a5d7e6ac: about 4 s passed before the picker against the 5 s of a click; and doScan() at the opening went through scan(true), so a folder that stops answering at that moment ran the gesture path without a gesture')
+def k_noGesture(c):
+    import re
+    src = (ROOT / 'shared' / 'mission_registry.js').read_text(encoding='utf-8')
+    c.ok('doScan(false)' in src, 'the automatic reading at the opening', 'it calls doScan(false)')
+    c.ok(not re.search(r'onclick = doScan;', src), 'the button', 'no button hands the click event to doScan as its request')
+    c.eq(len(re.findall(r'await keptName\(FA\)', src)), 1, 'the name is awaited only where no gesture asks (the silent path)', what='await keptName')
+    c.ok('keptName(FA).then(' in src, 'the name beside the choice', 'on a gesture the name is read beside the choice, not before')

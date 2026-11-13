@@ -408,7 +408,8 @@
       ]));
       return null;
     }
-    let st;
+    let st, nameP = null,
+      chosen = false;
     try {
       // sur un geste (request), la page n'attend que 2,5 s : l'activation du clic dure environ 5 s, et le choix du dossier en a besoin
       st = await within(FA.status('__missions'), request ? 2500 : 8000);
@@ -423,20 +424,26 @@
       }
       // SOG-0290 / 0293 : le dossier gardé ne répond pas (déplacé, lecteur absent). Le clic est le geste : on ne s'arrête pas sur un message qui renvoie à un autre
       // bouton, on dit quel dossier est gardé et qu'il ne répond pas, et le choix du dossier s'ouvre tout de suite
+      // le choix commence AVANT la lecture du nom (audit 195 : l'activation du clic dure environ 5 s) : le nom se lit à côté, la ligne et la notification
+      // le disent quand il arrive
       st = {
-        name: await keptName(FA),
+        name: '',
         permission: 'dead',
         handle: null
       };
-      deadNote(st.name);
-      window.AppFramework?.notify?.(t([
-        'Le dossier « {d} » ne répond pas : choisissez-le de nouveau.',
-        'The folder “{d}” does not answer: choose it again.',
-        'Der Ordner „{d}“ antwortet nicht: bitte erneut wählen.',
-        'La carpeta «{d}» no responde: elíjala de nuevo.'
-      ], {
-        d: st.name || '?'
-      }), 'warn');
+      nameP = keptName(FA).then(name => {
+        st.name = name;
+        if (chosen) return; // un dossier choisi entre-temps : plus rien à dire
+        deadNote(name);
+        window.AppFramework?.notify?.(t([
+          'Le dossier « {d} » ne répond pas : choisissez-le de nouveau.',
+          'The folder “{d}” does not answer: choose it again.',
+          'Der Ordner „{d}“ antwortet nicht: bitte erneut wählen.',
+          'La carpeta «{d}» no responde: elíjala de nuevo.'
+        ], {
+          d: name || '?'
+        }), 'warn');
+      });
     }
     if (st.handle && st.permission === 'granted') {
       deadNote('');
@@ -475,9 +482,11 @@
     if (!window.showDirectoryPicker) throw fail(`Dossier des missions « {d} » non autorisé, et ce navigateur ne permet pas d’en choisir un (Chrome ou Edge, page servie en https ou depuis localhost ; ici ${location.origin}).`, `Missions folder “{d}” not authorised, and this browser cannot choose one (Chrome or Edge, page served over https or from localhost; here ${location.origin}).`, why);
     try {
       const h = await FA.pickFolder('__missions');
+      chosen = true;
       deadNote('');
       return h;
     } catch (e) {
+      if (nameP) await nameP; // le nom (1,5 s au plus) est lu pour le message d'échec, après le choix et non avant
       if (e?.name === 'AbortError') throw fail('Dossier des missions « {d} » non autorisé : choix du dossier annulé.',
         'Missions folder “{d}” not authorised: folder choice cancelled.', why || e);
       throw fail('Dossier des missions « {d} » non autorisé ({e}).', 'Missions folder “{d}” not authorised ({e}).', e);
@@ -1605,7 +1614,7 @@
     sb.className = 'secondary'; // action principale : « Nouvelle mission »
     sb.dataset.icon = 'refresh';
     sb.textContent = t(['Relire le dossier', 'Re-read folder', 'Ordner neu lesen', 'Releer la carpeta']);
-    sb.onclick = doScan;
+    sb.onclick = () => doScan();
     // ajout de fichiers (tout navigateur) : sélection de missionNN.yaml / summaryNN.md, ou d'un dossier de série
     const ab = document.createElement('label');
     ab.className = 'rg-file';
@@ -3033,13 +3042,14 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
-  /** Relit le dossier des missions (scan, autorisation demandée) puis redessine la page ; false en cas d'échec. */
-  async function doScan() {
+  /** Relit le dossier des missions (scan, autorisation demandée sur un geste ; request false : la lecture automatique de l'ouverture n'en demande aucune)
+   *  puis redessine la page ; false en cas d'échec. */
+  async function doScan(request = true) {
     msg = t(['Lecture du dossier…', 'Reading folder…']);
     const box = host.querySelector('#rgMsg');
     if (box) box.textContent = msg;
     try {
-      const r = await scan(true);
+      const r = await scan(request);
       msg = pill('generated', t(['{n} mission(s) lue(s)', '{n} mission(s) read'], {
         n: r.found
       })) + (r.problems.length ? `<br><span class="rg-small">${esc(r.problems.join(' · '))}</span>` : '');
@@ -3130,6 +3140,6 @@
     // missions de l'index sans dossier : bandeau « Nettoyer l'index » (page du registre seulement)
     if (host) ghostsLoad();
     // relecture silencieuse si le dossier est déjà autorisé
-    if (await missionsDir(false)) doScan();
+    if (await missionsDir(false)) doScan(false);
   })();
 })();
