@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "05703d6",
-  "fiches": 316,
+  "organisation": "9ff87de",
+  "fiches": 317,
   "untranslated": 0,
   "priorities": 310
  },
@@ -646,6 +646,15 @@
      "es": "Motor de rutas: mejorarlo, no solo copiarlo: la ruta válida IFPS más larga en LOW, HIGH o FRA, iterando con puntos intermedios (ESSB → LEMO)",
      "milestone": "6.0.0-alpha.6",
      "rank": 120
+    },
+    {
+     "id": "SOG-0317",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : la lecture de l'ATIS tourne encore après qu'on a quitté l'écran (exception)",
+     "en": "Fuel: the ATIS read still runs after the screen is left (exception)",
+     "de": "Kraftstoff: das ATIS-Lesen läuft nach Verlassen des Bildschirms weiter (Ausnahme)",
+     "es": "Combustible: la lectura del ATIS sigue tras salir de la pantalla (excepción)"
     }
    ]
   },
