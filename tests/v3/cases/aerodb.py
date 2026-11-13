@@ -9330,3 +9330,40 @@ def k238(c):
     finally:
         nav_data.load = orig
         P.drop_contexts()
+
+
+@case('K239', 'Route engine, the reference route ESSB → LEMO (SOG-0161): on a base that holds the Spanish upper network of the user\'s variant (ARVID T424 PPN N857 NOLSA N10 BAN N857 HIJ N10 SVL), the plan is found in under 10 s, mostly controlled, and uses that network; SKIPPED, and says why, while the base lacks it', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0161, the user\'s reference): ESSB → LEMO must give a route whose Spanish part follows ARVID T424 PPN N857 NOLSA N10 BAN N857 HIJ N10 SVL or better, the northern part in FRA when the Swedish points are readable, in under 10 s. The case runs on the workstation\'s real base (E:/DEFA/data, or DEFA_DATA) read-only, never on invented data, and is SKIPPED, with the missing segments named, as long as the zone of Spain does not hold the five segments of the variant (rebuild Spain with the personal-use box: ENAIRE): never red because of the user\'s data. When the data is there it is a real target: measured on 13 Nov with the base of 29 Oct the plan is found (65 % controlled, 22 % incomplete, 13 % fallback) in 14 s cold by `… DEMIR N872 MEDIL … UM728 KOTAP J18 VEROS G54 … L27 BLN DCT LEMO`, without T424 nor N857: it is a known failure (cases/known_failures.py) until the intermediate points on the great circle and the speed are done')
+def k239(c):
+    import glob
+    import json
+    import os
+    import time
+    root = os.environ.get('DEFA_DATA', 'E:/DEFA/data')
+    segs = set()
+    for f in glob.glob(os.path.join(root, 'sia', 'base', '*', '*', 'airways.json')):
+        try:
+            with open(f, encoding='utf-8') as fh:
+                doc = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        for w in doc.get('data') or []:
+            if isinstance(w, dict) and isinstance(w.get('a'), dict) and isinstance(w.get('b'), dict):
+                segs.add((str(w.get('route')), frozenset((str(w['a'].get('id')), str(w['b'].get('id'))))))
+    variant = [('T424', 'ARVID', 'PPN'), ('N857', 'PPN', 'NOLSA'), ('N10', 'NOLSA', 'BAN'), ('N857', 'BAN', 'HIJ'), ('N10', 'HIJ', 'SVL')]
+    if not os.path.isfile(os.path.join(root, 'route', 'rad.json.gz')) or not segs:
+        c.skip(f'no real base with the RAD at {root} (DEFA_DATA): the reference route is not run')
+    missing = [f'{r} {a}–{b}' for r, a, b in variant if (r, frozenset((a, b))) not in segs]
+    if missing:
+        c.skip('the base of this workstation lacks the segments of the user\'s variant (' + ', '.join(missing) + '): rebuild Spain with the personal-use box (ENAIRE); the reference route is not run')
+    RJ = _regen()
+    fn = RJ.REGISTRY[('route', 'compute')][0]
+    started = time.perf_counter()
+    r = fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': 'ESSB', 'arr': 'LEMO', 'fl': 350, 'date': '2026-11-13T12:00', 'enable_fra': True}, {'data': root, 'secrets': root})
+    seconds = time.perf_counter() - started
+    p = r['plan']['primary']
+    ctl = p.get('control') or {}
+    c.ok(p.get('ok') is True, str(p.get('error')), 'ESSB → LEMO has a route')
+    c.ok(seconds < 10, f'{seconds:.1f} s', 'found in under 10 s')
+    c.ok((ctl.get('controlled_pct') or 0) >= 65, str(ctl.get('controlled_pct')), 'at least 65 % of the distance controlled (the figure of 10 Nov, never to fall)')
+    c.ok(any(w in str(p.get('route')).split() for w in ('T424', 'N857')), str(p.get('route'))[:200], 'the route uses the Spanish upper network of the variant (T424 or N857)')
