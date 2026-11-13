@@ -164,3 +164,8 @@
   fake launcher in the contract's shape). The maker: the reader gives it only when ten aircraft or more carry it (a homebuilder is a
   person; AeroDB bcb60f834, Sécurisation); empty, the line says « <model> · constructeur non précisé »; no label, key or type is ever built
   from the maker alone (it only narrows the type candidates); a row without model is dropped.
+- **13 Nov 2026 — « Le déposer dans Données » leads to Data › French register, in Maintenance** (SOG-0315, point 4; found by Réglages,
+  written by Features SOG): the two links of the line « Registre français non déposé sur ce poste » were `#data` — inside the Company
+  application, which has no Data module, the frame fell back on its first screen (« Ma compagnie »), what the user saw. Now
+  `?app=maintenance#data?registry=1` (relative to the frame's page, same tab): the Data screen of Maintenance opens its fold « Registre
+  français des aéronefs » and keeps it in view (Réglages, L126 / L127). M45 checks the address (red before: `#data`).

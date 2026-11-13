@@ -1334,5 +1334,8 @@ def m45(c):
     c.until(f"!!document.querySelector('{M} input[data-k=q]')", timeout=15000, what='the fleet and its search')
     c.page.fill(f'{M} input[data-k="q"]', 'fbhhh')
     c.until(f"!!document.querySelector('{M} [data-regline][data-absent]')", timeout=10000, what='« registre non déposé sur ce poste »')
-    c.ok(norm(tx(A, 'regAbsent', c.lang)) in norm(c.text(f'{M} [data-regline]') or '') and c.js(f"document.querySelector('{M} [data-regline] a').getAttribute('href')") == '#data',
-         c.text(f'{M} [data-regline]'), 'the line and its link to Data')
+    # SOG-0315 (Réglages, 13 Nov): « Le déposer dans Données » leads to the Data screen of the MAINTENANCE application, its register fold
+    # open (#data alone fell back on the first screen of the application the link was in: Company has no Data module)
+    href = c.js(f"document.querySelector('{M} [data-regline] a').getAttribute('href')") or ''
+    c.ok(norm(tx(A, 'regAbsent', c.lang)) in norm(c.text(f'{M} [data-regline]') or '') and 'app=maintenance' in href and href.endswith('#data?registry=1'),
+         [c.text(f'{M} [data-regline]'), href], 'the line and its link to Data › French register, in Maintenance')

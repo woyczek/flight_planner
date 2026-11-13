@@ -195,6 +195,9 @@ const TX = {
 };
 
 /** Le style du module (aucune feuille globale : les jetons et les classes du cadre, ces quelques règles en plus). */
+/** « Le déposer dans Données » (SOG-0315) : l'écran Données de l'application MAINTENANCE, son pli « Registre français » ouvert ; une
+ *  adresse relative à la page du cadre, même onglet (#data seul retombait sur le premier écran de l'application Compagnie, sans Données). */
+const REG_DATA_HREF = '?app=maintenance#data?registry=1';
 const STYLE = `[data-module="aircraft"] .ac-head{align-items:center;gap:8px}
 [data-module="aircraft"] .ac-head{flex-wrap:wrap} /* « Ajouter » suit l'en-tête dans son flux, jamais seul à droite (SOG-0190) */
 [data-module="aircraft"] .ac-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;width:100%;min-height:44px;text-align:left}
@@ -571,7 +574,7 @@ function regLineHtml(s, reg) {
     reg
   }));
   if (!v || v.wait) return '<div data-regline hidden></div>';
-  if (v.absent) return `<p class="f-muted ac-regline" data-regline data-absent>${esc(s.tt(TX.regAbsent))} <a href="#data">${esc(s.tt(TX.regDataLink))}</a></p>`;
+  if (v.absent) return `<p class="f-muted ac-regline" data-regline data-absent>${esc(s.tt(TX.regAbsent))} <a href="${REG_DATA_HREF}">${esc(s.tt(TX.regDataLink))}</a></p>`;
   const row = v.rows.find(x => x.reg.replace(/-/g, '') === reg.replace(/-/g, ''));
   if (!row) return '<div data-regline hidden></div>';
   const head = s.tt(TX.regLine, {
@@ -589,7 +592,7 @@ function regResHtml(s) {
     }),
     v = key ? s.regs.get(key) : null;
   if (!v || v.wait) return '';
-  if (v.absent) return `<p class="f-muted" data-absent>${esc(s.tt(TX.regAbsent))} <a href="#data">${esc(s.tt(TX.regDataLink))}</a></p>`;
+  if (v.absent) return `<p class="f-muted" data-absent>${esc(s.tt(TX.regAbsent))} <a href="${REG_DATA_HREF}">${esc(s.tt(TX.regDataLink))}</a></p>`;
   if (!v.rows.length) return `<p class="f-muted" data-regnone>${esc(s.tt(TX.regNone))}</p>`;
   const shown = s.edit.rall ? v.rows : v.rows.slice(0, ROWS),
     rest = v.rows.length - shown.length,
