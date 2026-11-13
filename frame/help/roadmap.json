@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7c095f7",
+  "organisation": "01e6f4d",
   "fiches": 334,
   "untranslated": 0,
   "priorities": 310
@@ -3490,11 +3490,12 @@
     {
      "id": "SOG-0334",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Design Metro : les icônes de la barre ne sont pas centrées (les actives, peut-être les autres)",
      "en": "Metro design: the bar icons are not centred (the active ones, maybe the others)",
      "de": "Design Metro: die Symbole der Leiste sind nicht zentriert (die aktiven, vielleicht auch die anderen)",
-     "es": "Diseño Metro: los iconos de la barra no están centrados (los activos, quizá los demás)"
+     "es": "Diseño Metro: los iconos de la barra no están centrados (los activos, quizá los demás)",
+     "test": true
     }
    ]
   },

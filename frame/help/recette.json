@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 204,
+  "tests": 205,
   "verdicts": 148
  },
  "apps": [
@@ -3030,6 +3030,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T17:44:40Z"
+  },
+  {
+   "id": "SOG-0334",
+   "app": "maintenance",
+   "title": {
+    "fr": "Design Metro : les icônes de la barre ne sont pas centrées (les actives, peut-être les autres)",
+    "en": "Metro design: the bar icons are not centred (the active ones, maybe the others)",
+    "de": "Design Metro: die Symbole der Leiste sind nicht zentriert (die aktiven, vielleicht auch die anderen)",
+    "es": "Diseño Metro: los iconos de la barra no están centrados (los activos, quizá los demás)"
+   },
+   "test": "Recharge la page. Design Metro, fenêtre entre 800 et 1 090 px de large (le rail d'icônes à gauche) : chaque icône est au milieu de sa case, la courante comme les autres ; elle s'est déplacée d'environ 9 px vers la gauche. Même chose en Swiss. Si tu la veux encore plus à gauche ou centrée à droite du filet, dis-le.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T17:53:59Z"
   }
  ],
  "decisions": [
