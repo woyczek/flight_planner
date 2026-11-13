@@ -11,7 +11,10 @@
   const AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
   const DELIVERED = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/; // la date de livraison d'une fiche : UTC, à la seconde
   const MAX_ITEMS = 1000,
-    MAX_COMMENT = 600,
+    MAX_COMMENT = 2000, // SOG-0303 : 600 avant ; le lanceur (tools/regen/recette.py) et tools/recette_build.py disent la même limite
+    COUNT_FROM = 1800, // le compteur discret apparaît à partir de là
+    ROWS_MIN = 4,
+    ROWS_MAX = 12,
     SEVEN = 7,
     SECTIONS = ['today', 'older', 'known', 'seen'];
   const T = {
@@ -102,6 +105,7 @@
   T.dFree = ['Votre réponse libre (facultatif)', 'Your own answer (optional)', 'Ihre eigene Antwort (optional)',
     'Su propia respuesta (opcional)'
   ];
+  T.count = ['{n} / {max} signes', '{n} / {max} characters', '{n} / {max} Zeichen', '{n} / {max} caracteres'];
   T.dAnswer = ['Répondre', 'Answer', 'Antworten', 'Responder'];
   T.dModify = ['Modifier', 'Change', 'Ändern', 'Modificar'];
   T.dYours = ['Votre réponse', 'Your answer', 'Ihre Antwort', 'Su respuesta'];
@@ -364,6 +368,35 @@
       'older';
     const shownTests = () => tests.filter(x => !ui.app || x.app === ui.app);
     const appName = a => T.app[a] ? t(T.app[a]) : a;
+    // SOG-0303 : le champ de saisie grandit avec le texte (quatre lignes au départ, douze au plus, puis il défile) ; un compteur discret à partir de COUNT_FROM signes
+    const counter = v => {
+      const n = String(v ?? '').length;
+      return `<small class="f-muted f-rc-count" data-count${n >= COUNT_FROM ? '' : ' hidden'}>${esc(t(T.count, { n, max: MAX_COMMENT }))}</small>`;
+    };
+    /** Hauteur du champ selon son texte, bornée à ROWS_MAX lignes ; sans effet sur un champ caché (un volet fermé : on le recalcule à l'ouverture). */
+    const fit = ta => {
+      if (!ta.offsetParent) return;
+      const cs = getComputedStyle(ta),
+        lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4,
+        edge = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth),
+        cap = ROWS_MAX * lh + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + edge;
+      ta.style.height = 'auto'; // la mesure : la hauteur naturelle des quatre lignes, puis celle du texte
+      const h = `${Math.round(Math.min(Math.max(ta.scrollHeight + edge, ta.offsetHeight), cap))}px`;
+      if (ta.style.height !== h) ta.style.height = h;
+    };
+    const fitAll = root => root.querySelectorAll('textarea[data-comment], textarea[data-dtext]').forEach(fit);
+    /** Le compteur du champ : écrit seulement si sa valeur change. */
+    const count = ta => {
+      const el = ta.parentElement?.querySelector('[data-count]');
+      if (!el) return;
+      const n = ta.value.length,
+        txt = t(T.count, {
+          n,
+          max: MAX_COMMENT
+        });
+      if (el.textContent !== txt) el.textContent = txt;
+      if (el.hidden !== (n < COUNT_FROM)) el.hidden = n < COUNT_FROM;
+    };
     const item = x => {
       const v = verdictOf(x);
       const head = `<p><span class="f-rm-id">${esc(x.id)}</span> <b>${esc(t(row(x.title)))}</b>${x.since ? ` <small class="f-muted">${esc(t(T.since, { d: x.since }))}</small>` : ''}${ui.unsent.has(x.id) ? ` <small class="f-rm-unsent" data-unsent>${esc(t(T.unsent))}</small>` : ''}</p>
@@ -374,7 +407,7 @@
       const p = previousOf(x),
         why = p ? `<p class="f-muted" data-redelivered="${p.verdict}">${esc(t(T.redelivered[p.verdict === 'ko' && !p.comment ? 'koBare' : p.verdict], { d: (p.at || x.delivered || '').slice(0, 10), c: p.comment || '' }))}</p>` : '';
       return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="todo">${head}${why}
-        <label class="f-field">${esc(t(T.comment))}<textarea data-comment="${esc(x.id)}" rows="2" maxlength="${MAX_COMMENT}">${esc(ui.draft[x.id] || '')}</textarea></label>
+        <label class="f-field">${esc(t(T.comment))}<textarea data-comment="${esc(x.id)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(ui.draft[x.id] || '')}</textarea>${counter(ui.draft[x.id])}</label>
         ${ui.need === x.id ? `<p class="f-warn" data-need>${esc(t(T.need))}</p>` : ''}
         <div class="f-row"><button type="button" class="primary" data-ok="${esc(x.id)}">${esc(t(T.ok))}</button><button type="button" data-ko="${esc(x.id)}">${esc(t(T.ko))}</button></div></li>`;
     };
@@ -416,7 +449,7 @@
       };
       return `<li class="f-rc-item" data-q="${esc(q.id)}" data-state="todo">${head}
         <div role="radiogroup" aria-label="${esc(q.question)}">${q.options.map((o, i) => `<label class="f-rc-opt"><input type="radio" name="dq-${esc(q.id)}" value="${i}" data-dchoice="${esc(q.id)}"${dr.choice === i ? ' checked' : ''}> ${esc(o)}${q.recommended === i ? ` <small class="f-muted" data-proposed>(${esc(t(T.dProposed))})</small>` : ''}</label>`).join('')}</div>
-        <label class="f-field">${esc(t(T.dFree))}<textarea data-dtext="${esc(q.id)}" rows="2" maxlength="${MAX_COMMENT}">${esc(dr.text)}</textarea></label>
+        <label class="f-field">${esc(t(T.dFree))}<textarea data-dtext="${esc(q.id)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(dr.text)}</textarea>${counter(dr.text)}</label>
         ${ui.dneed === q.id ? `<p class="f-warn" data-need>${esc(t(T.dNeed))}</p>` : ''}
         <div class="f-row"><button type="button" class="primary" data-dok="${esc(q.id)}">${esc(t(T.dAnswer))}</button></div></li>`;
     };
@@ -445,6 +478,7 @@
         <p data-summary>${esc(t(T.summary, { a: n('today') + n('older'), b: verdictN('ok'), c: verdictN('ko'), d: n('known') }))}</p>
         <div class="f-rm-bar" data-apps>${[''].concat(apps).map(a => `<button type="button" class="f-rm-btn" data-app="${esc(a)}" aria-pressed="${ui.app === a}">${esc(a ? appName(a) : t(T.all))}</button>`).join('')}</div>
         ${mine.length ? SECTIONS.map(k => sectionHtml(k, by[k])).join('') : `<p class="f-muted" data-nothing>${esc(t(T.nothing))}</p>`}`}`;
+      fitAll(view);
       if (focus) view.querySelector(focus)?.focus();
       else if (typing?.sel) {
         const ta = view.querySelector(`textarea[${typing.sel}="${CSS.escape(typing.id)}"]`);
@@ -739,6 +773,8 @@
           ...(ui.ddraft[dt.dataset.dtext] || {}),
           text: dt.value
         };
+        fit(dt);
+        count(dt);
         if (ui.dneed === dt.dataset.dtext && dt.value.trim()) {
           ui.dneed = '';
           dt.closest('li')?.querySelector('[data-need]')?.remove();
@@ -748,6 +784,8 @@
       const ta = e.target.closest?.('textarea[data-comment]');
       if (!ta || !ID.test(ta.dataset.comment)) return;
       ui.draft[ta.dataset.comment] = ta.value;
+      fit(ta);
+      count(ta);
       if (ui.need === ta.dataset.comment && ta.value.trim()) {
         ui.need = '';
         ta.closest('li')?.querySelector('[data-need]')?.remove();
@@ -757,6 +795,7 @@
       const sec = e.target.closest?.('details[data-section]');
       if (!sec || !SECTIONS.includes(sec.dataset.section) || ui.open[sec.dataset.section] === sec.open) return;
       ui.open[sec.dataset.section] = sec.open;
+      if (sec.open) fitAll(sec);
       saveStore(c, {
         open: ui.open
       });

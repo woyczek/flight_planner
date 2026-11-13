@@ -1384,6 +1384,18 @@ p.f-back {
   flex: none;
   margin-top: 6px
 }
+/* SOG-0303 : le champ de la recette grandit avec le texte (recette.js : quatre à douze lignes), il défile au-delà ; le compteur discret n'apparaît qu'à 1 800 signes */
+.f-rc-item textarea {
+  overflow-y: auto;
+  resize: vertical
+}
+.f-rc-count {
+  display: block;
+  text-align: right
+}
+.f-rc-count[hidden] {
+  display: none
+}
 .f-rc-item {
   background: var(--sog-surface);
   border: 1px solid var(--sog-border);

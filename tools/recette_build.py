@@ -120,7 +120,7 @@ def verdicts(org):
             continue
         e = {'verdict': v['verdict']}
         if isinstance(v.get('comment'), str):
-            e['comment'] = re.sub(r'[\x00-\x1f]', ' ', v['comment'])[:600]
+            e['comment'] = re.sub(r'[\x00-\x1f]', ' ', v['comment'])[:2000]
         if isinstance(v.get('at'), str) and re.match(r'^\d{4}-\d{2}-\d{2}T', v['at']):
             e['at'] = v['at'][:24]
         out[fid] = e
@@ -152,7 +152,7 @@ def decisions(org, fs):
         if isinstance(a, dict):
             c = a.get('choice')
             choice = c if isinstance(c, int) and not isinstance(c, bool) and 0 <= c < len(options) else None
-            text = clean(a['text'], 600) if isinstance(a.get('text'), str) else ''
+            text = clean(a['text'], 2000) if isinstance(a.get('text'), str) else ''
             if choice is not None or text:
                 row.update({'state': 'answered', 'choice': choice, 'text': text})
                 if isinstance(a.get('at'), str) and re.match(r'^\d{4}-\d{2}-\d{2}T', a['at']):

@@ -4988,7 +4988,7 @@ def a124(c):
         mk(505, delivered=D),                                                                          # the device holds an older refusal
         mk(506, delivered=D),                                                                          # the device holds a later pass
         mk(507, delivered='javascript:alert(1)', previous={'verdict': 'ko', 'comment': '<img src=x onerror=window.__pwn=1>', 'at': 'nope'}),  # hostile
-        mk(508, app='maintenance', delivered=D, previous={'verdict': 'ko', 'comment': 'x' * 900, 'at': '2026-11-10T06:00:00Z'}),
+        mk(508, app='maintenance', delivered=D, previous={'verdict': 'ko', 'comment': 'x' * 2500, 'at': '2026-11-10T06:00:00Z'}),
     ]
     doc = {'schema': 'sog-recette/1', 'generated': {'tool': 'tools/recette_build.py', 'at': '2026-11-10', 'tests': len(tests), 'verdicts': 3},
            'apps': ['pilote', 'compagnie', 'maintenance', 'stats'], 'tests': tests}
@@ -5025,7 +5025,7 @@ def a124(c):
     # untrusted entries: a bad `delivered` is ignored, a bad `at` dropped, a long comment bounded, nothing runs
     c.ok(c.count('[data-section=today] img') == 0 and c.js('window.__pwn === undefined'), 'img', 'a hostile comment is text')
     long = why('SOG-0508') or ''
-    c.ok(0 < len(long) < 700, str(len(long)), 'a long comment is bounded')
+    c.ok(0 < len(long) < 2100, str(len(long)), 'a long comment is bounded (2 000 signs since SOG-0303)')
     c.eq(state('SOG-0507'), 'todo', 'a delivered that is not a date is ignored: the test is still to test', what='0507')
 @case('A125', 'Settings › Company › « Créer une compagnie » (SOG-0041, step B1): a stepper on the same screen (identity, summary), nothing written before the last button, then settings, fleet and the INDEX last; an interruption says what is done and « Reprendre » finishes without overwriting', 'A', langs4=True, tags=('airline',),
       designs=('standard',), screens=True, night=False,
@@ -7003,4 +7003,37 @@ def a175(c):
             c.ok(shown and len(shown) == 1, shown, f'{app}/{tab}: the selected tab shows exactly one icon (never an empty pill)')
             if app == 'maintenance':
                 c.shot(f'A175_{tab}_390_{c.design}_delivered.png')
+    c.check_errors()
+
+
+@case('A176', 'The Recette comment field grows with the text (four lines to start, twelve at most, then it scrolls), takes 2 000 signs, and a discreet counter appears from 1 800; the free text of a decision does the same (SOG-0303)', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0303 (the user: « recette : le champ de saisie est trop petit. tu as du limiter à 255 caractères ? »): the comment of a test and the free text of a decision were a two-line field cut at 600 signs; now the field starts at four lines, grows with the text up to twelve, then scrolls; the limit is 2 000 signs (page, launcher verb and recette_build.py agree: K123, K-decision), a counter « n / 2000 » appears from 1 800 signs, hidden before')
+def a176(c):
+    fx = _dq_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    c.open('recette', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-section=today] li[data-state=todo] textarea[data-comment]')", timeout=20000, what='a test to do with its comment field')
+    GEO = "(sel) => { const t = document.querySelector(sel), cs = getComputedStyle(t), lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4; const e = t.parentElement.querySelector('[data-count]'); return { rows: t.rows, max: t.maxLength, h: t.offsetHeight, lh, scrolls: t.scrollHeight > t.clientHeight + 1, counter: e ? [!e.hidden && e.offsetParent !== null, e.textContent] : null } }"
+    FILL = "([sel, v]) => { const t = document.querySelector(sel); t.value = v; t.dispatchEvent(new Event('input', { bubbles: true })); }"
+    for sel, what in (('[data-section=today] li[data-state=todo] textarea[data-comment]', 'comment'), (None, 'decision')):
+        if sel is None:
+            c.tap('[data-tab=decisions]')
+            c.until("!!document.querySelector('[data-decisions] li[data-q] textarea[data-dtext]')", what='the free field of a decision')
+            sel = '[data-decisions] li[data-q] textarea[data-dtext]'
+        g0 = c.js(f"({GEO})({json.dumps(sel)})")
+        c.eq([g0['rows'], g0['max'], g0['counter'][0]], [4, 2000, False], f'{what}: four lines to start, 2 000 signs, the counter hidden', what=f'{what} start')
+        c.js(f"({FILL})({json.dumps([sel, 'une ligne\n' * 8])})")
+        g1 = c.js(f"({GEO})({json.dumps(sel)})")
+        c.ok(g1['h'] > g0['h'] + g0['lh'], [g0['h'], g1['h']], f'{what}: eight lines of text: the field grew')
+        c.js(f"({FILL})({json.dumps([sel, 'une ligne\n' * 60])})")
+        g2 = c.js(f"({GEO})({json.dumps(sel)})")
+        c.ok(g2['h'] <= 12 * g2['lh'] + 40 and g2['h'] >= g1['h'] and g2['scrolls'], [g1['h'], g2['h'], g2['lh'], g2['scrolls']], f'{what}: sixty lines: twelve at most, then it scrolls')
+        c.js(f"({FILL})({json.dumps([sel, 'x' * 1799])})")
+        c.eq(c.js(f"({GEO})({json.dumps(sel)})")['counter'][0], False, f'{what}: 1 799 signs: no counter', what=f'{what} 1799')
+        c.js(f"({FILL})({json.dumps([sel, 'x' * 1800])})")
+        g3 = c.js(f"({GEO})({json.dumps(sel)})")
+        c.ok(g3['counter'][0] and '1800' in g3['counter'][1] and '2000' in g3['counter'][1], g3['counter'], f'{what}: 1 800 signs: the counter shows « 1800 / 2000 »')
+        c.js(f"({FILL})({json.dumps([sel, 'une ligne\n' * 9 + 'x' * 1700])})")
+        c.shot(f'A176_{what}_{c.width}_{c.lang}_delivered.png')
     c.check_errors()

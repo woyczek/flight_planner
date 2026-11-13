@@ -1535,7 +1535,7 @@ def k96(c):
 
 
 @case('K123', 'recette/verdict: organisation/RECETTE.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a refusal needs a comment, a hostile file filtered, atomic write)', 'K',
-      static=True, rule='SOG-0167: the user\u2019s verdicts on the functional tests are written by the launcher: 1000 entries at most, ids SOG-nnnn, ok or ko, a comment of 600 signs (required for a refusal), an ISO UTC date; a file read is untrusted')
+      static=True, rule='SOG-0167: the user\u2019s verdicts on the functional tests are written by the launcher: 1000 entries at most, ids SOG-nnnn, ok or ko, a comment of 2000 signs (required for a refusal; 600 before SOG-0303), an ISO UTC date; a file read is untrusted')
 def k123(c):
     RJ, BS, AF, DS = _mods()
     fn, check = RJ.REGISTRY[('recette', 'verdict')]
@@ -1573,9 +1573,17 @@ def k123(c):
         r = run(action='set', items={'SOG-0003': {'verdict': 'ok'}})
         c.eq(r['ok'], True, 'the file is complete again for what follows', what='refill')
         run(action='set', items={}, drop=['SOG-0003'])
+        # SOG-0303: a comment of 2000 signs is kept whole by the launcher and by the regeneration (recette_build); 2001 is refused (below)
+        long_c = 'é' * 1999 + '!'
+        r = run(action='set', items={'SOG-0003': {'verdict': 'ko', 'comment': long_c}})
+        sys.path.insert(0, str(c.root / 'tools'))
+        import recette_build as RB
+        c.eq((r['ok'], run(action='get')['items'].get('SOG-0003', {}).get('comment') == long_c, RB.verdicts(str(org)).get('SOG-0003', {}).get('comment') == long_c), (True, True, True),
+             'a comment of 2000 signs is written, read back and kept whole by tools/recette_build.py (SOG-0303)', what='2000 comment')
+        run(action='set', items={}, drop=['SOG-0003'])
         before = f.read_bytes()
         for bad in ({'SOG-12': {'verdict': 'ok'}}, {'SOG-0003': {'verdict': 'maybe'}}, {'SOG-0003': {}}, {'SOG-0003': {'verdict': 'ko'}}, {'SOG-0003': {'verdict': 'ko', 'comment': '   '}},
-                    {'SOG-0003': {'verdict': 'ok', 'comment': 'x' * 601}}, {'SOG-0003': {'verdict': 'ok', 'comment': 'a\x00b'}}, {'SOG-0003': {'verdict': 'ok', 'at': 'yesterday'}},
+                    {'SOG-0003': {'verdict': 'ok', 'comment': 'x' * 2001}}, {'SOG-0003': {'verdict': 'ok', 'comment': 'a\x00b'}}, {'SOG-0003': {'verdict': 'ok', 'at': 'yesterday'}},
                     {'SOG-0003': {'verdict': 'ok', 'extra': 1}}, {'SOG-0003': {'verdict': 'ok', 'comment': 3}}):
             r = run(action='set', items={**good, **bad})
             c.ok(r.get('reason') == 'bad-items' and f.read_bytes() == before, (r.get('reason'), r.get('bad')), f'a bad entry {repr(bad)[:50]} refuses the whole set, nothing written (a refusal needs its comment)')
@@ -1594,7 +1602,7 @@ def k123(c):
 
 
 @case('K171', 'recette/decision: organisation/DECISIONS_REPONSES.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a hostile file filtered, atomic write) (SOG-0241)', 'K',
-      static=True, rule='SOG-0241: the user’s answers to the points to decide (the « À trancher » tab of the recette) are written by the launcher: 1000 entries at most, ids Q-nnnn, a choice 0 to 9 or none, a free text of 600 signs, one of the two at least, nothing else written; same guards as recette/verdict')
+      static=True, rule='SOG-0241: the user’s answers to the points to decide (the « À trancher » tab of the recette) are written by the launcher: 1000 entries at most, ids Q-nnnn, a choice 0 to 9 or none, a free text of 2000 signs, one of the two at least, nothing else written; same guards as recette/verdict')
 def k171(c):
     RJ, BS, AF, DS = _mods()
     fn, check = RJ.REGISTRY[('recette', 'decision')]
@@ -1632,9 +1640,12 @@ def k171(c):
         r = run(action='set', items={'Q-0003': {'choice': 0}})
         c.eq(r['ok'], True, 'the file is complete again for what follows', what='refill')
         run(action='set', items={}, drop=['Q-0003'])
+        r = run(action='set', items={'Q-0003': {'choice': 0, 'text': 'é' * 2000}})      # SOG-0303: a free text of 2000 signs is kept
+        c.eq((r['ok'], len(run(action='get')['items'].get('Q-0003', {}).get('text', ''))), (True, 2000), 'a free text of 2000 signs is written and read back whole (SOG-0303)', what='2000 text')
+        run(action='set', items={}, drop=['Q-0003'])
         before = f.read_bytes()
         for bad in ({'Q-12': {'choice': 0}}, {'SOG-0003': {'choice': 0}}, {'Q-0003': {}}, {'Q-0003': {'choice': None}}, {'Q-0003': {'choice': None, 'text': '   '}}, {'Q-0003': {'choice': 10}},
-                    {'Q-0003': {'choice': -1}}, {'Q-0003': {'choice': True}}, {'Q-0003': {'choice': '1'}}, {'Q-0003': {'choice': 0, 'text': 'x' * 601}}, {'Q-0003': {'choice': 0, 'text': 'a\x00b'}},
+                    {'Q-0003': {'choice': -1}}, {'Q-0003': {'choice': True}}, {'Q-0003': {'choice': '1'}}, {'Q-0003': {'choice': 0, 'text': 'x' * 2001}}, {'Q-0003': {'choice': 0, 'text': 'a\x00b'}},
                     {'Q-0003': {'choice': 0, 'at': 'yesterday'}}, {'Q-0003': {'choice': 0, 'extra': 1}}, {'Q-0003': {'choice': 0, 'text': 3}}):
             r = run(action='set', items={**good, **bad})
             c.ok(r.get('reason') == 'bad-items' and f.read_bytes() == before, (r.get('reason'), r.get('bad')), f'a bad entry {repr(bad)[:50]} refuses the whole set, nothing written')
