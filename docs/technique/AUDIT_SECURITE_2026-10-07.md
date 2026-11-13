@@ -1044,6 +1044,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 192 | The Map alone: “Choose this route” is never a dead button (edbe901be, SOG-0224) | acceptable, display only |
 | 193 | The publication of the site's root (78053845b on v3, 027747a83 on develop), the Map's “around the flight only” (b4efa222d), Fuel's proposals after a choice on the Map (dd7c3f8d2, 95d0a34f2), the stop points' runway and the ENV charts (e79e56dd1), the wording of the recette verbs (001b4aa56) | acceptable, one note |
 | 194 | The fix of 190 (ac9489a17: the timeline where the file keeps it, every tolerated shape kept) | defect of 190 closed, its three notes taken; one note |
+| 195 | The V2 missions folder that does not answer (1a5d7e6ac), the Map's ground signs and arcs (593e6d6c9, bed86e5b4), Fuel's METAR before “On the map” (a78c17066) and its Little Navmap mention (1f3dfe6a6), the read-only status verbs `proc`, `vfr`, `aircraft` (345ad3c15) | acceptable, three notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2976,6 +2977,21 @@ third). The same pass also tolerates a `radiusKm`, a `center`, a single particip
 N58 to N60 green. With this, the six steps and the commercial family keep what they do not show: for every shape I probed the round trip is identical, an edit writes only the fields
 that changed, and “Nothing to save” writes nothing. **Note.** A `timeline` that is a bare text (neither a list nor an object) is replaced by `{ events: […] }` at the first added event;
 no reader takes a text for a timeline, so nothing is lost that the sheet showed, but leave a non-container value alone.
+
+**195. The folder that does not answer, the Map's ground, Fuel's METAR, the status verbs — acceptable, three notes.** *Missions folder (1a5d7e6ac).* The path “dead folder → choice”
+exists only when `request` is true (a click: “Store in the folder”, “Open in the generator”, “Duplicate”, “Re-read”); without a gesture the page keeps its 8 seconds, writes the
+name of the kept folder (`textContent`, cut to 80, read from `FileAccess.get` in 1.5 s at most) and returns `null`, opening nothing. The dead folder is a `handle: null` state, so it
+is never taken for a valid folder; `pickFolder` stores nothing before the user chooses; nothing is created or written before the click on a row's “Store” (the writing is `storeMission`,
+read in 183). K235, K219, K223, K225, K230 green. *Map (593e6d6c9, bed86e5b4).* Sign colours are constants, the names are drawn with `fillText` after the cleaning of `ground.js`, the
+hold's mark is the text before an `@`; arcs from 45° are arithmetic. D178, D189, D190, D204, D205 green. *Fuel (a78c17066, 1f3dfe6a6).* “On the map” reads the airfield's METAR first only when
+the frame's weather layer has not kept it and the device is online, through the same declared layer (`ctx.weather.metar([icao])`, one airfield), waits three seconds at most and opens the Map
+with or without it; the button is disabled during the wait; the mention of a Little Navmap procedure is a constant text. F202, F203 green. *Status verbs (345ad3c15).* `proc/status`,
+`vfr/status`, `aircraft/status`: read-only (no network, no write, no subprocess); the arguments are checked (`states`: a non-empty list of at most 40 prefixes matching the pattern; the folder
+names read are matched by `\d{4}-\d{2}-\d{2}`), files are read only below a size ceiling (`MAX_INDEX` 20 MB, `MAX_DB_BYTES` 5 MB, `MAX_BUILT` 2,000 files of 2 MB) and only names or
+sets of identifiers are returned; the paths are built from constants and from validated cycle or state codes. K232 to K234 green. **Notes.** (1) The dead-folder path waits 2.5 s, then up to
+1.5 s for the name, so about 4 s pass before the picker, against about 5 s of activation of a click: begin the choice before reading the name. (2) `doScan` called at the opening when
+`missionsDir(false)` returned a folder goes through `scan(true)`: if the folder stops answering at that moment, the gesture path runs without a gesture (the picker refuses, a notification
+appears, nothing is written); pass `request` false in that automatic call. (3) `a78c17066` hands the icao from the button's `data-icao` to the weather layer, which keeps only `^[A-Z0-9]{3,4}$` before any file or request, so nothing leaves the device with another shape; a test in Fuel too would make the rule readable where the button is.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
