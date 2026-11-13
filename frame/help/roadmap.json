@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "30fccdd",
+  "organisation": "4f27426",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -1989,11 +1989,12 @@
     {
      "id": "SOG-0289",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Doublons de missions : « 85 » à côté de T-085 — les anciens numéros de l'index de la V2",
      "en": "Duplicate missions: old numbers left in the V2 index",
      "de": "Doppelte Missionen: alte Nummern im V2-Index",
-     "es": "Misiones duplicadas: números antiguos en el índice de la V2"
+     "es": "Misiones duplicadas: números antiguos en el índice de la V2",
+     "test": true
     }
    ]
   },
@@ -2142,11 +2143,12 @@
     {
      "id": "SOG-0292",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Familles : la lettre de l'identifiant dans les listes de choix, et le sous-type",
      "en": "Families: the identifier letter in the choice lists, and the subtype",
      "de": "Familien: der Kennbuchstabe in den Auswahllisten, und der Untertyp",
-     "es": "Familias: la letra del identificador en las listas, y el subtipo"
+     "es": "Familias: la letra del identificador en las listas, y el subtipo",
+     "test": true
     }
    ]
   },

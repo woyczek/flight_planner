@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 166,
+  "tests": 168,
   "verdicts": 59
  },
  "apps": [
@@ -2415,6 +2415,20 @@
    "delivered": "2026-11-12T22:59:55Z"
   },
   {
+   "id": "SOG-0289",
+   "app": "compagnie",
+   "title": {
+    "fr": "Doublons de missions : « 85 » à côté de T-085 — les anciens numéros de l'index de la V2",
+    "en": "Duplicate missions: old numbers left in the V2 index",
+    "de": "Doppelte Missionen: alte Nummern im V2-Index",
+    "es": "Misiones duplicadas: números antiguos en el índice de la V2"
+   },
+   "test": "Recharge. Anciennes pages (V2) › registre des missions, puis relis le dossier « Missions » : « 85 » n'apparaît plus à côté de T-085 ; le nombre de missions tombe de 154 à une centaine ; une ligne compte les missions restées sous un ancien numéro sans mission renumérotée (cinq attendues). Aucun fichier n'est touché.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T08:07:50Z"
+  },
+  {
    "id": "SOG-0291",
    "app": "compagnie",
    "title": {
@@ -2427,6 +2441,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T07:59:40Z"
+  },
+  {
+   "id": "SOG-0292",
+   "app": "compagnie",
+   "title": {
+    "fr": "Familles : la lettre de l'identifiant dans les listes de choix, et le sous-type",
+    "en": "Families: the identifier letter in the choice lists, and the subtype",
+    "de": "Familien: der Kennbuchstabe in den Auswahllisten, und der Untertyp",
+    "es": "Familias: la letra del identificador en las listas, y el subtipo"
+   },
+   "test": "Recharge la page. Missions : la liste des familles se lit « T · AIRLIFT · Transport aérien / logistique », triée par lettre. Choisis une famille : une seconde liste « Sous-type » apparaît à côté si elle en a au moins deux ; changer de famille la remet à zéro. Même chose dans Compagnie › Registre.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T08:06:48Z"
   }
  ],
  "decisions": [
