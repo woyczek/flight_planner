@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "cb07dd7",
+  "organisation": "ef28e50",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -1084,8 +1084,7 @@
      "en": "BLOCKING: the wind barbs (and everything along the route) do not follow the track — the track is on the great circle, the barbs on the straight line",
      "de": "BLOCKIEREND: die Windfiedern (und alles entlang der Route) folgen der Linie nicht — die Linie liegt auf dem Großkreis, die Fiedern auf der Geraden",
      "es": "BLOQUEANTE: las barbas de viento (y todo lo que sigue la ruta) no siguen el trazado — el trazado va por el círculo máximo, las barbas por la línea recta",
-     "rank": 173,
-     "test": true
+     "rank": 173
     }
    ]
   },
@@ -1957,7 +1956,7 @@
     {
      "id": "SOG-0287",
      "kind": "feature",
-     "state": "later",
+     "state": "doing",
      "fr": "Compagnie : l'éditeur de missions en V3",
      "en": "Airline: the mission editor in V3",
      "de": "Airline: the mission editor in V3",

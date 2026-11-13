@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 171,
-  "verdicts": 61
+  "tests": 172,
+  "verdicts": 62
  },
  "apps": [
   "pilote",
@@ -1924,13 +1924,10 @@
    },
    "test": "Carburant : la route LFPO → SFD via MOPAR, KOLIV, VEPET, PETAX (celle du calculateur IFPS). Sur la Carte, les barbules de vent doivent être posées sur le trait de la route d'un bout à l'autre et tourner avec lui à VEPET : plus de file de barbules qui coupe tout droit de KOLIV à PETAX.",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "ko",
    "delivered": "2026-11-12T15:03:00Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "encore quelques bizarreries (trajet lfpo sfd via mopar koliv vepet petax, proposé par le calculateur IFPS, barbules mal ficelées. cf. screenshot)",
-    "at": "2026-11-11T21:19:20Z"
-   }
+   "comment": "« à un moment » du zoom in, les barbules disparaissent. ajoutes-moi un « niveau de zoom » quelque part, que je puisse te faire les diags. néanmoins, ne pas mettre les barbules pile sur le trait, alterner. sinon, c’est souvent illisible. screenshot.",
+   "at": "2026-11-13T08:34:52Z"
   },
   {
    "id": "SOG-0244",
@@ -2407,6 +2404,19 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-12T22:59:55Z"
+  },
+  {
+   "id": "SOG-0287",
+   "app": "compagnie",
+   "title": {
+    "fr": "Compagnie : l'éditeur de missions en V3",
+    "en": "Airline: the mission editor in V3",
+    "de": "Airline: the mission editor in V3",
+    "es": "Airline: the mission editor in V3"
+   },
+   "test": "Recharge la page. Compagnie › Registre : « Créer une mission » en tête ; au dépli d'une ligne, « Modifier » et « Dupliquer ». L'éditeur s'ouvre sur l'étape Cadre (famille, sous-type, série, identifiant, titre, théâtre, départ, arrivée) ; à droite l'aperçu de la fiche et « À compléter ». Change le titre d'une mission d'essai, « Enregistrer » : la mission est modifiée sur cet appareil et part avec l'envoi groupé ; le reste du fichier n'a pas bougé. Les étapes suivantes arrivent une à une (Équipes est déjà là).",
+   "since": "2026-11-13",
+   "state": "known"
   },
   {
    "id": "SOG-0288",
