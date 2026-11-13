@@ -2439,3 +2439,53 @@ def n57(c):
     c.ok('id: detail_rdv_1' in t and 'id: zone_2' in t and 'filename: ../../secret.png' in t and 'Danger cinq' in t, t[t.find('maps:'):][:600],
          'the proposed maps added, the declared ones (even a refused path) kept as written')
     c.js(_REG_CLEAR)
+
+
+
+_E_CLEAR = """async () => { const db = await new Promise(r => { const q = indexedDB.open('sogFrame'); q.onsuccess = () => r(q.result) });
+  for (const st of ['pending', 'docs']) { if (!db.objectStoreNames.contains(st)) continue;
+    const keys = await new Promise(res => { const q = db.transaction(st).objectStore(st).getAllKeys(); q.onsuccess = () => res(q.result) });
+    const t = db.transaction(st, 'readwrite'); for (const k of keys) if (/^missions\\/E_COMMERCIAL\\/E-9/.test(String(k))) t.objectStore(st).delete(k);
+    await new Promise(r => { t.oncomplete = r; t.onerror = r }) } db.close(); return true }"""
+
+
+@case('N58', 'Missions › editor, the commercial family (a link flight): « E · CAT · … » offered; its Cadre reduced to departure, arrival, airline, '
+      'load and aircraft; the title proposed by itself (« LFPO → LFRS ») and following the two ends; « À compléter » without teams, risks, '
+      'chronology nor theatre; « Enregistrer » writes type COMMERCIAL, the load as subtype, the aircraft type', 'N', tags=('missions',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0287, addition of 13 Nov (user: « Une mission commercial, c\'est en gros, une liaison. genre, LFPO-LFRS pour ITF, en '
+      'passagers. »), granted: COMMERCIAL / CAT / E, subtype = the nature of the load')
+def n58(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _ED_TEXTS)
+    c.js(_E_CLEAR)
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E}')", what='the editor')
+    fam = c.js(f"[...document.querySelectorAll('{E} select[data-k=edfam] option')].map(o => [o.value, o.textContent.trim()]).find(o => o[0] === 'COMMERCIAL')")
+    c.ok(bool(fam) and fam[1].startswith('E · CAT'), fam, 'the commercial family offered as « E · CAT · … »')
+    c.page.select_option(f'{E} select[data-k=edfam]', 'COMMERCIAL')
+    c.until(f"!!document.querySelector('{E} [data-liaison]')", what='the reduced Cadre')
+    c.ok(not c.count(f'{E} select[data-k=edth]') and c.count(f'{E} [data-k=edco]') == 1 and c.count(f'{E} [data-k=edac]') == 1,
+         'fields', 'no theatre; the airline and the aircraft asked')
+    c.page.select_option(f'{E} select[data-k=edsub]', 'PASSENGERS')
+    _ed_fill(c, 'edid', 'E-901')
+    _ed_fill(c, 'eddep', 'LFPO · Orly')
+    _ed_fill(c, 'edarr', 'LFRS')
+    c.eq(c.js(f"document.querySelector('{E} input[data-k=edtitle]').value"), 'LFPO → LFRS', 'the title proposed by itself', what='title')
+    _ed_fill(c, 'edarr', 'LFRN')
+    c.eq(c.js(f"document.querySelector('{E} input[data-k=edtitle]').value"), 'LFPO → LFRN', 'and it follows the two ends', what='title')
+    _ed_fill(c, 'edac', 'a320')
+    todo = c.js(f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo]')].map(x => x.dataset.todo)")
+    c.ok(not set(todo) & {'teams', 'risks', 'timeline', 'theatre'}, todo, '« À compléter » without teams, risks, chronology nor theatre')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N58_390_liaison.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N58_1280_liaison.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/E_COMMERCIAL/E-901/missionE-901.yaml') or ''
+    c.ok(all(x in t for x in ('type: COMMERCIAL', 'subtype: PASSENGERS', 'title: LFPO → LFRN', 'type: A320', 'icao: LFPO', 'icao: LFRN')) and 'airline' not in t,
+         t, 'a link flight written: family, load, title, aircraft; personal without an airline chosen')
+    c.js(_E_CLEAR)
+    c.js(_REG_CLEAR)

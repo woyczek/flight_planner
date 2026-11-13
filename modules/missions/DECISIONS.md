@@ -239,3 +239,11 @@
   rendezvous, one per zone) and adds ENTRIES only, at the end — never removes or rewrites a declared map, even one whose path the reader
   refuses; the images are made in the V2 map studio. « À compléter » read `timeline` as a list (always « aucun événement »): it reads
   `timeline.events` now. N57 (red before: the step disabled); N54 opens the six steps; N50 now asks for the six open.
+- **13 Nov 2026 — the commercial family in the editor: a link flight** (SOG-0287, the user's addition of 13 Nov, granted: COMMERCIAL /
+  CAT / E; written by Features SOG): the family list offers « E · CAT · … »; its Cadre is reduced to departure, arrival, airline
+  (`airline` at the top level, the form of move.js « Changer de compagnie »; « Personnel » = no key), load (the subtype, the theme's
+  series: Passagers, Fret…), aircraft (`aircraft[0].type`, its other keys and the other aircraft kept), then the title, the identifier and
+  the series. The title is proposed by itself (`liaisonTitle`: « LFPO → LFRS », the ICAO codes, else the names) and follows the two ends
+  as long as it is the proposed one or empty — a title typed by the pilot is never replaced. « À compléter » of a link flight asks the
+  aircraft and neither theatre, teams, risks nor chronology. `cadreOf` / `withCadre` gain `airline` and `aircraft` under the audit-182
+  rule (written only when changed; N54 still identical). N58 (red before: no commercial family offered).

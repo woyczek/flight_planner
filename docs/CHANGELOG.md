@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Mission editor: the commercial family, a link flight** — « E · CAT », Cadre reduced to departure, arrival, airline, load and aircraft, title proposed (« LFPO → LFRS »); no teams, risks, chronology nor theatre asked (missions DECISIONS, help; noreg N58; SOG-0287).
 - **Map: the « Weather (wind, cloud) » layer is removed** — a double use of the Weather tab, which is for preparation; « nothing happens » was the absence of a kept forecast for the flight (the layer read only the device's cache, and its one trace was a line under its box in Layers); the wind barbs of « Winds aloft » stay, as does the cache-only reading of the weather library (help ×4, Maps SPEC, DECISIONS; noreg D200; SOG-0295).
 - **Mission editor, step 6 (Chronologie et cartes): the six steps delivered** — the mission's events (H+…, place, what happens), the declared maps and « Proposer les cartes depuis les lieux » (entries only) (missions DECISIONS, help; noreg N57, N54; SOG-0287).
 - **aerodb `navaidsOf`: position and axis are tested** (security audit 187) — the latitude and longitude of an aid must be numbers, finite and inside the globe (an aid with none, a text or an infinite one is left out, never read as 0), and the axis must be a number from 0 to 360 (`true` or a text gives no axis); the aerodrome's own position is tested the same way. Case K227 extended, red before.

@@ -666,6 +666,19 @@ const TX = {
     'Karte auf einen Ort ohne Position zentriert',
     'mapa centrado en un lugar sin posición'
   ],
+  edLiaisonHint: ['Une liaison : le départ, l\'arrivée, la compagnie, la charge et l\'aéronef ; le titre se propose seul.',
+    'A link flight: the departure, the arrival, the airline, the load and the aircraft; the title is proposed by itself.',
+    'Eine Verbindung: Abflug, Ankunft, Fluggesellschaft, Zuladung und Luftfahrzeug; der Titel wird von selbst vorgeschlagen.',
+    'Un enlace: la salida, la llegada, la compañía, la carga y la aeronave; el título se propone solo.'
+  ],
+  edCharge: ['Charge', 'Load', 'Zuladung', 'Carga'],
+  edAirline: ['Compagnie', 'Airline', 'Fluggesellschaft', 'Compañía'],
+  edAircraft: ['Aéronef (type OACI)', 'Aircraft (ICAO type)', 'Luftfahrzeug (ICAO-Typ)', 'Aeronave (tipo OACI)'],
+  edTitleAuto: ['proposé d\'après le départ et l\'arrivée', 'proposed from the departure and the arrival',
+    'aus Abflug und Ankunft vorgeschlagen',
+    'propuesto a partir de la salida y la llegada'
+  ],
+  todo_aircraft: ['aéronef', 'aircraft', 'Luftfahrzeug', 'aeronave'],
   todo_title: ['titre', 'title', 'Titel', 'título'],
   todo_theatre: ['théâtre', 'theatre', 'Einsatzgebiet', 'teatro'],
   todo_dep: ['départ', 'departure', 'Abflug', 'salida'],
@@ -1847,7 +1860,7 @@ const allRows = s => [...s.rows, ...(s.reg?.lines || []).map(e => ({
 const edLetter = (s, fam) => famLetter(fam, allRows(s).filter(r => r.family === fam).map(r => r.id));
 /** Les familles de l'éditeur : celles des thèmes et celles des lignes, « T · AIRLIFT · … » (SOG-0292). La famille commerciale attend la
  *  décision de l'ergonome sur son Cadre réduit (SOG-0287, ajout du 13 nov.). */
-const edFamilies = (s, lang) => famChoices([...MT.THEMES.filter(t => t.id !== 'COMMERCIAL').map(t => ({
+const edFamilies = (s, lang) => famChoices([...MT.THEMES.map(t => ({
   id: '',
   family: t.id
 })), ...allRows(s)], lang);
@@ -1980,6 +1993,13 @@ function edCadreHtml(s) {
     text = (k, v, extra = '') => `<input data-k="${k}" value="${esc(v)}" autocomplete="off"${extra}>`,
     sel = (k, list, v, empty = true) => `<select data-k="${k}">${empty ? '<option value=""></option>' : ''}${list.map(x => `<option value="${esc(x.code)}"${x.code === v ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select>`,
     idHint = e.mode === 'edit' ? c.id.toUpperCase() !== e.origId ? s.tt(TX.edIdKept) : '' : c.id === num.id ? s.tt(TX.edIdNext) : '';
+  if (ED.liaison(c.family)) // une liaison (famille commerciale) : le Cadre réduit (décision du 13 nov.), six éléments
+    return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3><p class="f-muted" data-liaison>${esc(s.tt(TX.edLiaisonHint))}</p>
+    <div class="f-row">${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edCharge, sel('edsub', subs, c.subtype)) : ''}</div>
+    <div class="f-row">${field('eddep', TX.edDep, text('eddep', c.dep, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}${field('edarr', TX.edArr, text('edarr', c.arr, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}</div>
+    <div class="f-row">${field('edco', TX.edAirline, coSelect(s, 'edco', c.airline || MS.PERSONAL))}${field('edac', TX.edAircraft, text('edac', c.aircraft, ' maxlength="12" autocapitalize="characters" placeholder="A320"'))}</div>
+    ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'), c.title && c.title === ED.liaisonTitle(c.dep, c.arr) ? s.tt(TX.edTitleAuto) : '')}
+    <div class="f-row">${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), s.tt(TX.edNextSeries, { n: num.nextSeries }))}</div>`;
   return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3><p class="f-muted">${esc(s.tt(TX.edCadreHint))}</p>
     <div class="f-row">${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edSubtype, sel('edsub', subs, c.subtype)) : ''}</div>
     <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), s.tt(TX.edNextSeries, { n: num.nextSeries }))}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
@@ -2195,10 +2215,21 @@ function edInput(s, ev) {
     edtitle: 'title',
     edth: 'theatre',
     eddep: 'dep',
-    edarr: 'arr'
+    edarr: 'arr',
+    edco: 'airline',
+    edac: 'aircraft'
   } [k];
   if (!key) return;
-  e.cadre[key] = key === 'id' ? ev.target.value.toUpperCase() : ev.target.value;
+  const auto = ED.liaison(e.cadre.family) && (!e.cadre.title || e.cadre.title === ED.liaisonTitle(e.cadre.dep, e.cadre.arr));
+  e.cadre[key] = key === 'id' || key === 'aircraft' ? ev.target.value.toUpperCase() : key === 'airline' && ev.target.value === MS.PERSONAL ?
+    '' :
+    ev.target.value;
+  // une liaison : tant que le titre est celui que proposent les deux bouts (ou vide), il les suit (« LFPO → LFRS »)
+  if (auto && (key === 'dep' || key === 'arr' || key === 'family')) {
+    e.cadre.title = ED.liaisonTitle(e.cadre.dep, e.cadre.arr);
+    const t = s.el.querySelector('input[data-k=edtitle]');
+    if (t) t.value = e.cadre.title;
+  }
   // un départ ou une arrivée retouchés au Cadre : leur ligne des Lieux suit (sa position ne reste que si le code OACI ne change pas)
   if ((key === 'dep' || key === 'arr') && e.places) {
     const fresh = ED.placesOf(ED.withCadre(e.base, e.cadre)).find(r => r.kind === key),

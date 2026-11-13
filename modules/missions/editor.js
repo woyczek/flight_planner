@@ -24,7 +24,11 @@
 //   mapsOf(doc) → [{ id, type, description, ref, unplaced }] ; proposedMaps(doc) → les cartes attendues d'après les lieux et absentes
 //     (la règle de la V2) ; withMaps(doc, add) → les cartes ajoutées à la fin (des entrées : les images se font au studio de la V2).
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
-//   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr } (textes) ; placeText(p) : « XTST · Base Test ».
+//   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr, airline, aircraft } (textes) ; placeText(p) : « XTST · Base
+//     Test ». airline : la compagnie (airline au premier niveau, la forme de move.js ; '' = personnelle) ; aircraft : aircraft[0].type.
+//   COMMERCIAL, liaison(family) : la famille commerciale (thème COMMERCIAL, sigle CAT, lettre E) — une liaison : le Cadre se réduit au
+//     départ, à l'arrivée, à la compagnie, à la charge (le sous-type) et à l'aéronef ; liaisonTitle(dep, arr) → « LFPO → LFRS » ;
+//     Équipes, Risques, Chronologie et le théâtre ne comptent pas dans « À compléter » (décision du 13 nov., SOG-0287).
 //   withCadre(doc, cadre) → un NOUVEAU document : mission.{ id, type, subtype, series, number, theatre }, title, origin, destination ;
 //     un terrain dont le code OACI ne change pas garde sa position, sinon elle tombe (à placer dans Lieux).
 //   blank() → le document d'une mission neuve (schéma de la V2, helo-xp-mission 2.0), vide.
@@ -42,6 +46,9 @@
 import * as MS from '../../frame/lib/mission.js';
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
+/** La famille commerciale : une liaison (SOG-0287, ajout du 13 nov.). */
+export const COMMERCIAL = 'COMMERCIAL';
+export const liaison = family => String(family || '').toUpperCase() === COMMERCIAL;
 export const OPEN = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
 /** Les événements d'une chronologie, au plus. */
 export const EVENTS_MAX = 60;
@@ -98,8 +105,19 @@ export function cadreOf(doc) {
     title: cut(obj(doc).title, 200),
     theatre: cut(m.theatre, 40),
     dep: placeText(obj(doc).origin),
-    arr: placeText(obj(doc).destination)
+    arr: placeText(obj(doc).destination),
+    airline: MS.airlineCode(m.airline ?? obj(doc).airline),
+    aircraft: cut(obj(arrOf(obj(doc).aircraft)[0]).type, 60)
   };
+}
+
+/** Le titre proposé d'une liaison : « LFPO → LFRS » (les codes OACI, sinon les noms saisis) ; '' sans les deux bouts. */
+export function liaisonTitle(dep, arr) {
+  const a = placeIn(dep),
+    b = placeIn(arr),
+    x = a.icao || a.name,
+    y = b.icao || b.name;
+  return x && y ? `${x} → ${y}` : '';
 }
 
 /** Un terrain retouché : le nom et le code saisis ; la position gardée si le code ne change pas, sinon retirée. */
@@ -131,7 +149,7 @@ export function withCadre(doc, cadre) {
     prev = cadreOf(doc),
     // audit 182 : seul ce que le pilote a changé est écrit — un champ inchangé garde la valeur du fichier telle quelle (jamais recoupée)
     changed = k => String(c[k] ?? '') !== String(prev[k] ?? '');
-  if (!['id', 'family', 'subtype', 'series', 'theatre', 'title', 'dep', 'arr'].some(changed)) return out;
+  if (!['id', 'family', 'subtype', 'series', 'theatre', 'title', 'dep', 'arr', 'airline', 'aircraft'].some(changed)) return out;
   const m = out.mission = {
     ...obj(out.mission)
   };
@@ -155,6 +173,26 @@ export function withCadre(doc, cadre) {
     else delete m.theatre;
   }
   if (changed('title')) out.title = cut(c.title, 200);
+  // la compagnie : au premier niveau (la forme de move.js « Changer de compagnie ») ; vide ou « perso » = personnelle
+  if (changed('airline')) {
+    const code = MS.airlineCode(c.airline);
+    delete m.airline;
+    if (code && code !== MS.PERSONAL) out.airline = code;
+    else delete out.airline;
+  }
+  // l'aéronef : le type du premier aéronef (les autres et ses autres clés gardés)
+  if (changed('aircraft')) {
+    const ac = [...arrOf(out.aircraft)],
+      first = {
+        ...obj(ac[0])
+      },
+      t = cut(c.aircraft, 60).toUpperCase();
+    if (t) first.type = t;
+    else delete first.type;
+    ac[0] = first;
+    out.aircraft = ac.filter(x => x && (typeof x !== 'object' || Object.keys(x).length));
+    if (!out.aircraft.length) delete out.aircraft;
+  }
   for (const [k, f] of [
       ['origin', 'dep'],
       ['destination', 'arr']
@@ -765,10 +803,13 @@ export function todo(doc) {
       key
     });
   if (!cut(d.title, 200)) add('cadre', 'title');
-  if (!cut(m.theatre, 40)) add('cadre', 'theatre');
+  // une liaison (famille commerciale) : ni théâtre, ni équipes, ni risques, ni chronologie à compléter (décision du 13 nov.)
+  const link = liaison(m.type);
+  if (!cut(m.theatre, 40) && !link) add('cadre', 'theatre');
+  if (link && !cut(obj(arrOf(d.aircraft)[0]).type, 60)) add('cadre', 'aircraft');
   if (!placeText(d.origin)) add('cadre', 'dep');
   if (!placeText(d.destination)) add('cadre', 'arr');
-  if (!arr(d.teams).length && !arr(d.aircraft).length) add('teams', 'teams');
+  if (!link && !arr(d.teams).length && !arr(d.aircraft).length) add('teams', 'teams');
   for (const k of ['origin', 'destination']) {
     const p = obj(d[k]);
     if (placeText(p) && (!Number.isFinite(+p.lat) || !Number.isFinite(+p.lon) || p.lat === null || p.lon === null)) add('places', k);
@@ -777,9 +818,9 @@ export function todo(doc) {
   if (placesOf(d).some(p => !['dep', 'arr'].includes(p.kind) && !p.poly && (p.lat === '' || p.lon === ''))) add('places', 'unplaced');
   if (!String(d.summary ?? '').trim()) add('story', 'summary');
   if (!String(d.detailed_description ?? '').trim()) add('story', 'description');
-  if (!arr(d.risks).length) add('risks', 'risks');
+  if (!link && !arr(d.risks).length) add('risks', 'risks');
   // la chronologie de la mission : timeline.events (shared/mission_exercise.js) ; les cartes centrées sur un lieu sans position
-  if (!eventsOf(d).length) add('timeline', 'timeline');
+  if (!link && !eventsOf(d).length) add('timeline', 'timeline');
   if (mapsOf(d).some(m => m.unplaced)) add('timeline', 'mapUnplaced');
   return out;
 }
