@@ -1820,3 +1820,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (end to end, F202 red before: no wind on any runway). Now « Sur la carte » reads the METAR of its aerodrome when Fuel does not hold it
   (online, three seconds at most), then opens the Map — with or without it. The order « the best oriented runway first » is the Map's
   model (BUGS SOG): said to the ergonomist, not changed here. F202.
+- **13 Nov 2026 — SOG-0210 (refused): a procedure read from Little Navmap says so where it is chosen and where it is seen** (user: « pas
+  de warn qui dit que la procédure vient de little nav map ? »; written by Features SOG): the source was only in the options of the list.
+  Now a chosen procedure whose record is Little Navmap's (`status: 'lnm'` or `lnm: true`, the same test as `srcLabel`) adds a warning
+  line under the lists of its side (`[data-lnmline]`: source, « pour votre usage personnel », the procedures named) and a « ⚠ Little
+  Navmap » mark on the summary line of the side, seen folded too (`[data-lnmflag]`, the whole sentence in its title). On the Map's
+  choice, the same source is the Map's (BUGS SOG) — not touched here. F203 (red before).

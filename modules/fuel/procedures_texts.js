@@ -18,6 +18,13 @@ export const TX = {
   procSrcLnm: ['Little Navmap, lue sur ce poste', 'Little Navmap, read on this device', 'Little Navmap, auf diesem Gerät gelesen',
     'Little Navmap, leída en este equipo'
   ],
+  // SOG-0210 (refus du 13 nov.) : une procédure choisie lue de Little Navmap le dit sous les listes et sur la ligne de résumé
+  procLnmChosen: ['⚠ Lue de Little Navmap sur ce poste, pour votre usage personnel : {list}',
+    '⚠ Read from Little Navmap on this device, for your personal use: {list}',
+    '⚠ Aus Little Navmap auf diesem Gerät gelesen, für Ihren persönlichen Gebrauch: {list}',
+    '⚠ Leída de Little Navmap en este equipo, para su uso personal: {list}'
+  ],
+  procLnmFlag: ['⚠ Little Navmap', '⚠ Little Navmap', '⚠ Little Navmap', '⚠ Little Navmap'],
   // SOG-0232 (l'utilisateur, 10 nov. : « oui, ajouter les approches en doute, mais avec un panonceau ») : une approche dont la lecture est
   // douteuse est listée, marquée, sa raison en infobulle ; jamais prise par un choix automatique
   procDoubt: ['à vérifier', 'to check', 'zu prüfen', 'a comprobar'],

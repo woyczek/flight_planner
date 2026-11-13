@@ -501,6 +501,16 @@ export function createProcedures(host) {
     return rec && PR.isDoubt(rec) ? rec : null;
   }
 
+  /** Les procédures choisies d'un côté qui viennent de Little Navmap (SOG-0210 : dites là où on les choisit et là où on les voit) :
+   *  [libellé]. Une fiche lnm est celle que srcLabel dit « Little Navmap, lue sur ce poste ». */
+  function chosenLnm(side, m) {
+    const o = CF.proceduresOf(host.flight())[side] || {},
+      byId = adOf(m?.icao).recs || new Map(),
+      lnm = r => r?.status === 'lnm' || r?.lnm === true;
+    return ['sid', 'star', 'trans', 'app', 'appTrans'].map(k => typeof o[k] === 'string' ? byId.get(o[k]) : null).filter(lnm).map(r =>
+      String(r.name || r.id || '').slice(0, 40));
+  }
+
   function summaryHtml(side, m) {
     const o = CF.proceduresOf(host.flight())[side] || {},
       r = o.rwy ? m.rwys.find(x => PR.rwNum(x.id) === PR.rwNum(o.rwy)) : null,
@@ -518,7 +528,8 @@ export function createProcedures(host) {
       parts = [s.rwy, s.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : s.proc, s.app === null ? none('procApp') : s.app ? (
         aid ? `${s.app} · ${aid.x.id} ${aid.x.freq}` : s.app) + flag : s.app].filter(Boolean);
     // la piste porte la couleur de son vent (severity) et ses raisons en infobulle, comme dans la liste
-    return parts.length ? `<span class="fu-procsum">${parts.map(p => p === s.rwy && w ? `<span class="wind-${w.level}" title="${esc([p, ...w.why].join(' · '))}">${esc(p)}</span>` : `<span>${esc(p)}</span>`).join('')}</span>` : '';
+    const lnm = chosenLnm(side, m);
+    return parts.length ? `<span class="fu-procsum">${parts.map(p => p === s.rwy && w ? `<span class="wind-${w.level}" title="${esc([p, ...w.why].join(' · '))}">${esc(p)}</span>` : `<span>${esc(p)}</span>`).join('')}${lnm.length ? `<span class="f-warn" data-lnmflag title="${esc(tt(TX.procLnmChosen, { list: lnm.join(', ') }))}">${esc(tt(TX.procLnmFlag))}</span>` : ''}</span>` : '';
   }
   /** Ligne de titre d'un côté, la ligne de résumé de la carte repliée (§ 10.31) : un bouton ▸ / ▾ qui déplie le côté (toute la ligne
    *  le fait aussi), « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb), « Sur la carte », puis le résumé du
@@ -765,7 +776,7 @@ export function createProcedures(host) {
     if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
   /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
-  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div><p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p><p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
+  const skeleton = (side, m, fields) => `<div class="fu-proc${cardState.open === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div><p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}${m.nodata ? '' : '<p class="fu-lnmline f-warn" data-r="lnm" data-lnmline hidden></p>'}${side === 'arr' && !m.nodata ? '<p class="fu-appaid" data-r="aid" data-appaid hidden></p><p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
   // l'ILS de la base pour une piste d'un terrain (SOG-0176) : clé « OACI|piste » → la fiche nettoyée, null (aucun), absente tant que la
   // réponse n'est pas venue (demandée une fois)
   const aids = new Map();
@@ -887,6 +898,15 @@ export function createProcedures(host) {
       if (p && PR.rwNum(p.r.id) !== cur && !said.has(PR.rwNum(p.r.id))) lines.push(`<span class="fu-rwyline" data-metarline><span>${esc(tt(TX.procRwyProb, { rwy: PR.rwNum(p.r.id), at: m.wind.at ? `${m.wind.at}Z` : '—', dir: String(Math.round(+m.wind.dir)).padStart(3, '0'), kt: Math.round(+m.wind.kt) }))}</span> <button type="button" class="fu-linkbtn" data-do="rwyprob" data-side="${side}" data-rwy="${esc(p.r.id)}">${esc(tt(TX.procRwyTake))}</button></span>`);
       rp.hidden = !lines.length;
       setHtml(rp, lines.join(''));
+    }
+    // SOG-0210 : une procédure choisie lue de Little Navmap, dite sous les listes (source, usage personnel)
+    const ll = el.querySelector('[data-r="lnm"]');
+    if (ll) {
+      const lnm = chosenLnm(side, m);
+      ll.hidden = !lnm.length;
+      setHtml(ll, lnm.length ? esc(tt(TX.procLnmChosen, {
+        list: lnm.join(', ')
+      })) : '');
     }
     // retouche de F139 : une approche en doute choisie, sa raison dite en clair sous la liste (pas de survol sur un téléphone)
     const dl = el.querySelector('[data-r="doubt"]');

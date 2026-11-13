@@ -4982,3 +4982,36 @@ def f202(c):
     rows = c.js(_CH_WIND)
     rw = [r for r in rows if r[0] != 'none']  # « Aucune » is not a runway
     c.ok(rw and all(w for _, w in rw), rows, 'every runway of the choice says its head and cross wind')
+
+
+
+# SOG-0210 (refused 13 Nov): LFML's procedures as if read from Little Navmap on this device (status lnm), the others untouched
+_LNM_RECORDS_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { const ps = db.procedures;
+        db.procedures = async (icao, q) => { const r = await ps.call(db, icao, q);
+          return String(icao).toUpperCase() === 'LFML' ? (r || []).map(x => ({ ...x, status: 'lnm' })) : r } } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F203', 'Little Navmap: a procedure read from Little Navmap says so where it is chosen (a warning line under the lists: source, personal '
+      'use) and where it is seen (a mark on the summary line of the side, folded too)', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0210 refused on 13 Nov (user: « pas de warn qui dit que la procédure vient de little nav map ? ») — the source was only in '
+      'the options of the list')
+def f203(c):
+    c.page.add_init_script(_LNM_RECORDS_STUB)
+    open_proc(c)
+    wait_rows(c, 'arr')
+    star = [v for v, l in sel_opts(c, 'p-arr-star') or [] if 'MEN1A' in l]
+    c.ok(bool(star), sel_opts(c, 'p-arr-star'), 'a STAR of LFML in the list')
+    pick_proc(c, 'p-arr-star', star[0])
+    line = f'{FUEL} [data-proc="arr"] [data-lnmline]'
+    c.until(f"(() => {{ const e = document.querySelector('{line}'); return !!e && !e.hidden }})()", timeout=8000, what='the warning line under the lists')
+    t = norm(c.text(line) or '')
+    c.ok('Little Navmap' in t and 'MEN1A' in t and 'personnel' in t, t, 'it names the source, the procedure and the personal use')
+    c.ok(c.count(f'{FUEL} [data-proc="arr"] .fu-procsum [data-lnmflag]') == 1, c.text(f'{FUEL} [data-proc="arr"] .fu-procsum'),
+         'the summary line of the side carries the mark')
+    c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-lnmflag]'), 0, 'not on the departure (its procedures are the base\'s)', what='departure')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('F203_390_lnm.png')
