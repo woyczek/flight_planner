@@ -227,6 +227,37 @@ export function drawProfile() {
 /** La liste fermée des priorités de la coupe (SPEC § 3) : TOC / TOD, contraintes des procédures choisies, paliers, espaces,
  *  obstacles, points des voies ; la case « +n » des espaces est réservée avant tout. */
 const PROFILE_RANK = new Map(['plan', 'constraint', 'level', 'zone', 'awy', 'obstacle', 'fix', 'zoneLow'].map((k, i) => [k, i]));
+/** Les points des voies et les balises à moins de 3 NM de la route, avec leur abscisse sur elle : projetés UNE fois pour un profil et les données lues (SOG-0305 : chaque dessin de la coupe — chaque
+ *  image d'un déplacement ou d'un zoom de sa fenêtre — projetait tous les points des voies et toutes les balises de la zone lue, 104 ms avec 4 000 d'entre eux, 2 images par seconde sur un
+ *  vol de 4 500 NM) ; un dessin ne fait plus que les placer. Refait quand le profil, les voies, les balises ou les points de la route changent d'objet. */
+function routeFixes() {
+  const d = S.data?.data,
+    c = S.profFixes;
+  if (c && c.prof === S.prof && c.awy === d?.airways && c.nav === d?.navaids && c.pts === S.route.points) return c.list;
+  const ends = new Map();
+  for (const w of d?.airways || [])
+    for (const e of [w.a, w.b])
+      if (e?.id) ends.set(e.id, e);
+  for (const n of d?.navaids || []) ends.set(n.id, n);
+  const own = new Set(S.route.points.map(p => p.id)),
+    list = [];
+  for (const e of ends.values()) {
+    if (own.has(e.id)) continue;
+    const pr = MapsProfile.project(S.prof, e.lat, e.lon);
+    if (pr.s != null && pr.offNm <= 3) list.push({
+      id: e.id,
+      s: pr.s
+    });
+  }
+  S.profFixes = {
+    prof: S.prof,
+    awy: d?.airways,
+    nav: d?.navaids,
+    pts: S.route.points,
+    list
+  };
+  return list;
+}
 /** Un tour de la passe de la coupe (ctx, placeur pl) : la coupe (SiaProfile), les contraintes, les marques NM au bas du cadre, les
  *  points des voies ; rend la géométrie, avec cons (contraintes dessinées), ticks (marques NM) et fixes (points des voies
  *  écrits). */
@@ -263,21 +294,12 @@ function paintProfile(ctx, pl, W, H) {
   }
   // points des voies et balises à moins de 3 NM de la route : petit triangle et nom, 30 px au moins entre deux, jamais sur un
   // libellé d'espace ; une coupe basse (moins de 90 px de tracé) n'en a pas
-  const ends = new Map();
-  for (const w of S.data?.data?.airways || [])
-    for (const e of [w.a, w.b])
-      if (e?.id) ends.set(e.id, e);
-  for (const n of S.data?.data?.navaids || []) ends.set(n.id, n);
-  const own = new Set(S.route.points.map(p => p.id)),
-    marks = [];
-  for (const e of g.H - g.padT - g.padB < 90 ? [] : ends.values()) {
-    if (own.has(e.id)) continue;
-    const pr = MapsProfile.project(S.prof, e.lat, e.lon);
-    if (pr.s != null && pr.offNm <= 3 && inX(MapsProfile.xOf(g, pr.s))) marks.push({
+  const marks = [];
+  for (const e of g.H - g.padT - g.padB < 90 ? [] : routeFixes())
+    if (inX(MapsProfile.xOf(g, e.s))) marks.push({
       id: e.id,
-      x: MapsProfile.xOf(g, pr.s)
+      x: MapsProfile.xOf(g, e.s)
     });
-  }
   marks.sort((a, b) => a.x - b.x);
   ctx.fillStyle = S.theme.fg;
   ctx.strokeStyle = S.theme.fg;

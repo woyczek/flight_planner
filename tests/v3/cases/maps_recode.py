@@ -7119,3 +7119,25 @@ def d212(c):
     c.js("() => { const r = window.__mp.S.layersEl.querySelector('input[data-layer=contours]'); r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); return true }")
     c.js("() => { window.__mpMap.jumpTo({ center: [2.8, 45.6], zoom: 12 }); return true }")
     c.until("() => window.__ct.length > 0", timeout=8000, what='ticked again: they come back')
+
+
+
+@case('D213', 'The vertical profile of a very long flight stays fluid: with thousands of airway ends and navaids read along the route, one drawing of the profile (what a pan or a zoom of its window asks for at every frame) costs a few milliseconds, and the fixes it names are the same', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0305 (the user, 13 Nov: « trajet LFPO KEGE : profil de vol très lent (2 fps). profil météo ok. »; the ergonomist: 30 frames per second when moving, a case that measures): every drawing of the profile projected every airway end and every navaid read onto the route to find those within 3 NM — 104 ms with 4 000 of them against 0.4 ms with none; they are projected once for a profile and its data, a frame only places them')
+def d213(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps', docs=fdocs(_long_flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.prof && !!window.__mp.S.geo", timeout=15000, what='the profile is drawn')
+    c.wait(1500)
+    r = c.js("""async () => { const S = window.__mp.S, P = await import('/modules/maps/profile_view.js'), pts = S.route.points, nav = [];
+      for (let i = 0; i < 4000; i++) { const k = i % (pts.length - 1), a = pts[k], b = pts[k + 1], t = (i % 97) / 97; nav.push({ id: 'N' + i, lat: a.lat + (b.lat - a.lat) * t + (i % 7) * .01, lon: a.lon + (b.lon - a.lon) * t, kind: 'VOR' }) }
+      S.data.data.navaids = (S.data.data.navaids || []).concat(nav);
+      P.drawProfile();
+      const a = performance.now(); for (let i = 0; i < 20; i++) P.drawProfile(); const ms = (performance.now() - a) / 20;
+      return { ms: +ms.toFixed(2), fixes: S.lgFixes, marks: S.pc.dataset.marks } }""")
+    c.ok(r['ms'] < 12, str(r), 'one drawing of the profile takes under 12 ms with 4 000 navaids read along the route (it took 104)')
+    c.ok(r['fixes'] is True, str(r), 'the fixes along the route are still named')
