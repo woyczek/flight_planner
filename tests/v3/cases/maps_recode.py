@@ -5958,7 +5958,7 @@ def d_holds(c):
     c.shot('D188_{}_delivered.png'.format('standard'))
 
 
-@case('D189', 'A turn of more than 90° of a procedure is an arc tangent to its two legs, the radius from the indicated speed (V / 62.8 NM, the point’s speed or the phase’s), shrunk to fit; a turn of 90° or less, the route and the missed approach keep their corner', 'D',
+@case('D189', 'A turn of more than 45° of a procedure is an arc tangent to its two legs, the radius from the indicated speed (V / 62.8 NM, the point’s speed or the phase’s), shrunk to fit; a turn of 45° or less, the route and the missed approach keep their corner', 'D',
       tags=('maps',), screens=False, designs=('standard',),
       rule='SOG-0093 (roadmap of the Map): « virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée »; roundTurns in procs.js on the legs of the layout: a fly-by arc between the tangent points, the corner replaced, never on the route, the missed approach, a dash or an arc already given')
 def d_turns(c):
@@ -5968,7 +5968,7 @@ def d_turns(c):
       mk = (la, lo, kt) => ({ ...toC(la, lo), lat: la, lon: lo, src: { kt } }), A = mk(0, 0), V = mk(0, 0.2, 190), B = mk(0.1, 0.1);
       const hair = [{ a: A, b: V, o: 'sid', dash: false }, { a: V, b: B, o: 'sid', dash: false }];
       P.roundTurns(hair, toC);
-      const V2 = mk(0, 0.2), C = mk(0.2, 0.3), right = [{ a: A, b: V2, o: 'sid', dash: false }, { a: V2, b: C, o: 'sid', dash: false }];
+      const V2 = mk(0, 0.2), C = mk(0.1, 0.4), right = [{ a: A, b: V2, o: 'sid', dash: false }, { a: V2, b: C, o: 'sid', dash: false }];
       P.roundTurns(right, toC);
       const route = [{ a: A, b: mk(0, 0.2), o: 'route', dash: false }, { a: mk(0, 0.2), b: mk(0.1, 0.1), o: 'route', dash: false }]; P.roundTurns(route, toC);
       const missed = [{ a: A, b: mk(0, 0.2), o: 'missed', dash: false }, { a: mk(0, 0.2), b: mk(0.1, 0.1), o: 'missed', dash: false }]; P.roundTurns(missed, toC);
@@ -5976,7 +5976,7 @@ def d_turns(c):
       return { hair: hair.length, rr: g && Math.round(rr * 10) / 10, same: g && Math.abs(rr - r2) < .01, turn: g && g.arc.turn, tangentLen: g && Math.round(Math.hypot(hair[0].b.x - 200, hair[0].b.y) * 10) / 10, small: right.length, route: route.length, missed: missed.length } }""")
     c.ok(r['hair'] == 3 and r['same'] and r['turn'] in ('L', 'R'), str(r), 'a hairpin (135°) is cut at its tangent points and joined by an arc')
     c.ok(r['rr'] > 3 and abs(r['tangentLen'] - r['rr'] * 2.414) < 1, str(r), 'the arc’s radius and the tangent length agree (t = r tan(δ/2)); the radius was shrunk to fit the legs')
-    c.eq([r['small'], r['route'], r['missed']], [2, 2, 2], 'a turn under 90° (here 45°), the route and the missed approach keep their corner', what=str(r))
+    c.eq([r['small'], r['route'], r['missed']], [2, 2, 2], 'a turn under 45° (here 27°), the route and the missed approach keep their corner', what=str(r))
 
 
 @case('D190', 'The arc points of an RF leg (arc: true, no id) carry the procedure’s line through all of them, and are neither dots, labels nor targets: the polyline is never a straight line across the arc', 'D',
@@ -6776,3 +6776,34 @@ def d204(c):
     c.ok(r['nRwy'] >= 1 and r['rwy'] == ['#000000/#ffffff'], str(r), 'runway numbers: white on black')
     c.ok(r['minContrast'] >= 4.5, str(r), 'every pair reads (contrast 4.5 or more)')
     c.shot('D204_standard_signs_15_delivered.png')
+
+
+
+@case('D205', 'A turn of more than 45° of a procedure is an arc (the threshold was 90°, which a real procedure seldom reaches): 60° and 135° become arcs, 30° and 45° keep their corner; a bench procedure with a hairpin and a 60° turn is drawn with its arcs', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0093 refused (the user, 13 Nov: « ne voit rien. cf. capture. « plus de 45° » en fait. »): the threshold goes from 90° to 45°; why nothing showed on a real procedure: the arcs needed a turn above 90°, a hairpin, which the procedures seldom have; the bench had no such leg')
+def d205(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!window.__mp.S.route && window.__mp.S.route.points.length >= 2 && !!window.__mp.S.map", timeout=15000, what='the flight is read and the map is there')
+    r = c.js("""async () => { const P = await import('/modules/maps/procs.js'), toC = (la, lo) => ({ x: lo * 1000, y: -la * 1000 }),
+      mk = (la, lo) => ({ ...toC(la, lo), lat: la, lon: lo, src: {} }), corner = deg => { const a = deg * Math.PI / 180, A = mk(0, 0), V = mk(0, 0.2), B = mk(0.2 * Math.sin(a), 0.2 + 0.2 * Math.cos(a)); const segs = [{ a: A, b: V, o: 'sid', dash: false }, { a: V, b: B, o: 'sid', dash: false }]; P.roundTurns(segs, toC); return segs.length };
+      return { d30: corner(30), d45: corner(45), d60: corner(60), d100: corner(100), d135: corner(135) } }""")
+    c.ok(r['d30'] == 2 and r['d45'] == 2, str(r), 'a turn of 30° or 45° keeps its corner')
+    c.ok(r['d60'] == 3 and r['d100'] == 3 and r['d135'] == 3, str(r), 'a turn of 60°, 100° or 135° is an arc tangent to its two legs')
+    # a bench procedure that turns: an arrival with a 60° turn and a hairpin, drawn on the map (capture at 1 280 and 390)
+    c.js("""async () => { const S = window.__mp.S, P = await import('/modules/maps/procs.js');
+      const pts = [[43.62, 4.50], [43.62, 4.90], [43.46, 5.05], [43.52, 5.25], [43.43, 5.12]];
+      S.route.path = [{ origin: 'route', id: 'LFRS', lat: 47.1, lon: -1.6 }, ...pts.map((p, i) => ({ origin: 'star', id: 'PT' + i + 'AA', lat: p[0], lon: p[1], phase: 'main' })), { origin: 'route', id: 'LFML', lat: 43.44, lon: 5.2 }];
+      S.procs = { star: { id: 'LFML.STAR.BENCH1', name: 'BENCH 1', status: 'ok' } };
+      S.route.flight = { ...S.route.flight, route: { ...S.route.flight.route, procedures: { arr: { star: 'LFML.STAR.BENCH1' } } } };
+      return true }""")
+    c.js("() => { window.__mpMap = window.__mpMap || window.__mp.S.map; window.__mp.S.map.jumpTo({ center: [4.95, 43.5], zoom: 9.2 }); return true }")
+    c.wait(1800)
+    n = c.js("""async () => { const S = window.__mp.S, P = await import('/modules/maps/procs.js'), toC = (la, lo) => S.toC(la, lo), cv = document.createElement('canvas').getContext('2d'); const L = P.layout(cv, toC, 300); return L.segs.filter(s => s.arc).length }""")
+    c.ok(n >= 2, str(n), 'the bench procedure is laid out with at least two arcs (the 60° turn and the hairpin)')
+    c.shot('D205_standard_arcs_1280_delivered.png')
+    c.page.set_viewport_size({'width': 390, 'height': 800})
+    c.wait(1500)
+    c.shot('D205_standard_arcs_390_delivered.png')

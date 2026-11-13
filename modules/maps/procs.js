@@ -282,7 +282,7 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     for (const s of segs)
       if (s.o === 'app') s.dash = true;
   }
-  roundTurns(segs, toC); // les virages de plus de 90° à rayon constant (SOG-0093)
+  roundTurns(segs, toC); // les virages de plus de 45° à rayon constant (SOG-0093)
   for (const [origin, rec, id, key] of [
       ['sid', P.sid || P.sidTrans, f.dep?.sid || f.dep?.trans, P.sid ? null : 'trans'],
       ['star', P.star || P.starTrans, f.arr?.star || f.arr?.trans, P.star ? null : 'trans'],
@@ -402,9 +402,9 @@ const TURN_KT = {
   app: 170,
   trans: 200
 };
-/** Les virages de plus de 90° d'une procédure (une épingle, un retournement) tracés à rayon constant selon la vitesse indiquée : le coin de deux tronçons consécutifs est remplacé par un arc
+/** Les virages de plus de 45° d'une procédure (un virage de 60°, une épingle, un retournement) tracés à rayon constant selon la vitesse indiquée : le coin de deux tronçons consécutifs est remplacé par un arc
  *  tangent aux deux (virage « fly-by »), de rayon r = V / 62,8 NM (virage de taux 1, 3 °/s) avec V la contrainte de vitesse du point (≤ 220 kt) ou la vitesse de la phase ; le rayon est réduit pour
- *  que l'arc tienne dans la moitié du plus court des deux tronçons ; en dessous de 3 px, ou sous 90°, le coin reste un coin. Tronçons d'une même procédure seulement (jamais la route, ni
+ *  que l'arc tienne dans la moitié du plus court des deux tronçons ; en dessous de 3 px, ou sous 45°, le coin reste un coin. Tronçons d'une même procédure seulement (jamais la route, ni
  *  l'approche interrompue, ni un tireté, ni un arc déjà donné : SOG-0093). segs est modifié en place. */
 export function roundTurns(segs, toC) {
   const out = [];
@@ -421,7 +421,7 @@ export function roundTurns(segs, toC) {
     const d1 = [(v.x - s1.a.x) / l1, (v.y - s1.a.y) / l1],
       d2 = [(s2.b.x - v.x) / l2, (s2.b.y - v.y) / l2],
       delta = Math.min(Math.acos(Math.max(-1, Math.min(1, d1[0] * d2[0] + d1[1] * d2[1]))), 170 * Math.PI / 180);
-    if (delta <= Math.PI / 2 + .01) continue;
+    if (delta <= Math.PI / 4 + .01) continue; // plus de 45° (SOG-0093 : 90° n'arrivait presque jamais sur une vraie procédure)
     const kt = Math.min(220, num(v.src?.kt) && +v.src.kt > 0 ? +v.src.kt : TURN_KT[s1.o] || 190),
       a = Number.isFinite(v.lat) ? toC(v.lat, v.lon) : null,
       b = Number.isFinite(v.lat) ? toC(v.lat + 1 / 60, v.lon) : null,
