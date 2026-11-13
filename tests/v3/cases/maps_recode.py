@@ -6260,13 +6260,14 @@ def k_gosilent(c):
     c.js("() => { window.AppFramework.ask = () => { throw new Error('bench failure') }; return true }")
     n = c.js(_GO_CLICK_JS)
     c.ok(isinstance(n, list) and len(n) == 1 and 'T-085' in n[0], str(n), 'a failing confirmation is said, not an unhandled error')
-    # 4. the missions folder does not answer (a moved folder, a network drive that is gone: the browser never gives the hand back): the page says so after a few seconds
+    # 4. the missions folder does not answer (a moved folder, a network drive that is gone: the browser never gives the hand back): the page says so after a few seconds, and (SOG-0290, K235) opens the choice of the folder; the choice cancelled, the mission says it was not opened
     open_detail()
-    c.js("() => { localStorage.removeItem('siaMissionShared:v1'); window.FileAccess.status = () => new Promise(() => {}); return true }")
+    c.js("""() => { localStorage.removeItem('siaMissionShared:v1'); window.FileAccess.status = () => new Promise(() => {}); window.FileAccess.get = async () => ({ name: 'Missions-bench' });
+      window.FileAccess.pickFolder = async () => { throw Object.assign(new Error('bench'), { name: 'AbortError' }) }; window.showDirectoryPicker = async () => { throw Object.assign(new Error('bench'), { name: 'AbortError' }) }; return true }""")
     c.js("() => { document.querySelector('#rgDetail [data-go=editor]').click(); return true }")
-    c.until("() => window.__n.length > 0", timeout=14000, what='a folder that does not answer is said, not waited for forever')
+    c.until("() => window.__n.length > 1", timeout=14000, what='a folder that does not answer is said, not waited for forever')
     n = c.js("() => window.__n.slice()")
-    c.ok('T-085' in n[0] and 'ne répond pas' in n[0], str(n), 'the notification says that the missions folder does not answer, and how to choose it again')
+    c.ok('ne répond pas' in n[0] and 'T-085' in n[1], str(n), 'the notifications say that the missions folder does not answer, then that the mission was not opened')
     # 5. the diagnostic: copied, forms and states only
     c.js("() => { window.__copied = ''; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t) => { window.__copied = t } } }); return true }")
     c.until("() => !!document.getElementById('rgDiag')", timeout=8000, what='the registry has its « Copy the diagnostic » line')
@@ -6274,9 +6275,9 @@ def k_gosilent(c):
     c.until("() => window.__copied.length > 20", timeout=10000, what='the diagnostic is copied')
     txt = c.js("() => window.__copied")
     c.ok('T-085' not in txt and 'T-999' not in txt and 'T_AIRLIFT' not in txt, txt[:300], 'the diagnostic carries no mission identifier and no path')
-    c.ok('origine : http://127.0.0.1' in txt and 'mission partagée du générateur : aucune' in txt and 'pas folder' in txt and 'erreur Timeout' in txt, txt[:600], 'it says the origin, the shared mission, the folder and the last step reached with its error')
+    c.ok('origine : http://127.0.0.1' in txt and 'mission partagée du générateur : aucune' in txt and 'pas folder' in txt and 'erreur Error' in txt, txt[:600], 'it says the origin, the shared mission, the folder and the last step reached with its error')
     c.shot('K221_standard_diagnostic_delivered.png')
-    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404') and 'bench failure' not in e and 'pas de réponse en 8 s' not in e]      # the bench failures and the folder that does not answer are the case's own
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404') and 'bench failure' not in e and 'dossier des missions' not in e and 'bench' not in e]      # the bench failures and the folder that does not answer are the case's own
 
 
 
@@ -6807,3 +6808,37 @@ def d205(c):
     c.page.set_viewport_size({'width': 390, 'height': 800})
     c.wait(1500)
     c.shot('D205_standard_arcs_390_delivered.png')
+
+
+
+@case('K235', 'A missions folder that does not answer (moved folder, network drive gone) opens the folder chooser at once, on the very click that needs it (« Open in generator »), within the life of the click; the page says which folder is kept (its name only) and that it does not answer; it never stops on a message that sends to another button; the line goes once a folder is chosen', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0290 / SOG-0293 refused (the user, 13 Nov: « Mission T-085 non rangée : échec (Le dossier des missions ne répond pas…) »; the ergonomist): the kept folder is dead; every gesture that needs the folder opens its choice at once and goes on; the status wait is short on a gesture (the click’s activation lasts about 5 s)')
+def k_deadfolder(c):
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry", timeout=15000, what='the registry page is loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
+    c.js(_GO_SEED_JS)
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html?mission=T-085', wait_until='load')
+    c.until("() => !!document.querySelector('#rgDetail [data-go=editor]')", timeout=15000, what='the mission is selected')
+    c.js(_GO_HOOK_JS)
+    c.js("""() => { localStorage.removeItem('siaMissionShared:v1'); window.__picked = 0; window.__t0 = 0; window.__dt = -1;
+      window.FileAccess.status = () => new Promise(() => {});
+      window.FileAccess.get = async () => ({ name: 'Missions-bench' });
+      window.showDirectoryPicker = async () => { throw Object.assign(new Error('bench'), { name: 'AbortError' }) };
+      window.FileAccess.pickFolder = async key => { window.__picked++; window.__key = key; window.__dt = performance.now() - window.__t0; throw Object.assign(new Error('bench'), { name: 'AbortError' }) };
+      return true }""")
+    c.js("() => { window.__t0 = performance.now(); document.querySelector('#rgDetail [data-go=editor]').click(); return true }")
+    c.until("() => window.__picked > 0", timeout=9000, what='the chooser of the folder is opened by the click, not a message')
+    r = c.js("() => ({ key: window.__key, dt: window.__dt, n: window.__n.slice(), line: (document.getElementById('rgFolderDead') || {}).textContent || '' })")
+    c.eq(r['key'], '__missions', 'the folder asked for is the missions folder', what='key')
+    c.ok(0 <= r['dt'] < 4200, str(r['dt']), 'the chooser opens within the life of the click (a few seconds)')
+    c.ok(any('Missions-bench' in x and 'ne répond pas' in x for x in r['n']), str(r['n']), 'a notification says which folder is kept and that it does not answer')
+    c.ok(not any('Relire le dossier' in x or 'Dossier des missions »' in x for x in r['n'][:1]), str(r['n']), 'the first message does not send the user to another button')
+    c.ok('Missions-bench' in r['line'] and 'ne répond pas' in r['line'], r['line'], 'the page keeps the line: the folder (its name only) does not answer')
+    # chosen at last: the line goes
+    c.js("""() => { window.FileAccess.pickFolder = async key => { window.__picked++; return { kind: 'directory', name: 'Missions-bench', entries: async function* () {}, getDirectoryHandle: async () => { throw new Error('bench') }, getFileHandle: async () => { throw new Error('bench') } } }; return true }""")
+    c.js("() => { document.querySelector('#rgDetail [data-go=editor]').click(); return true }")
+    c.until("() => !document.getElementById('rgFolderDead')", timeout=9000, what='the line goes once a folder is chosen')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404') and 'dossier des missions' not in e and 'bench' not in e]

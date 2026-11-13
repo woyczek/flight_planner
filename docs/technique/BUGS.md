@@ -9,6 +9,7 @@ English interface shows them.
 
 | Reported | Area | Bug | Status |
 |---|---|---|---|
+| 13/11 | V2 Mission registry › « Store in the folder » / « Open in generator » (SOG-0290, SOG-0293, cause established) | « Mission T-085 not stored: failed (The missions folder does not answer…) » (the user's own message) | The folder kept by the V2 was dead (moved, drive gone): the browser's status call never returns, and the page stopped on a message sending to another button. Fixed (K235): on a gesture the wait is 2.5 s (the click's activation lasts about 5 s), then the page says which folder is kept (name only) and that it does not answer, and opens the folder choice at once; the gesture goes on with the chosen folder; the line on the page goes. Earlier entry of the same fiche: |
 | 13/11 | V2 Mission registry › « Open in generator » | « Editing a mission from the V2 does nothing » (the user) | Cause not established: the V2 code is unchanged since 30/10 and nothing reproduces on a clean bench. Fixed meanwhile (K221): the silent exits (confirmation refused / impossible / failing) say why, a missions folder that does not answer falls into a said error after 8 s; « Copy the diagnostic » on the registry gives the device state (origin, folder handle and permission, shared skeleton, last step). Suspect, to confirm with the diagnostic: a folder handle that no longer answers (queryPermission never returns) |
 
 ## Closed

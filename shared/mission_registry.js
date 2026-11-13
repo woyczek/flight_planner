@@ -352,6 +352,41 @@
       /* stockage indisponible */
     }
   }
+  /** Nom (seulement) du dossier des missions gardé, sans attendre plus d'1,5 s ('' s'il n'y en a pas ou s'il ne répond pas). */
+  async function keptName(FA) {
+    try {
+      return String((await within(FA.get('__missions'), 1500))?.name || '').slice(0, 80);
+    } catch {
+      return '';
+    }
+  }
+  let deadShown = null;
+  /** La page dit quel dossier est gardé et qu'il ne répond pas (nom seulement) ; '' l'efface. N'écrit que si le texte change. */
+  function deadNote(name) {
+    const host = document.getElementById('rgFolder');
+    if (!host || deadShown === name) return;
+    deadShown = name;
+    let el = document.getElementById('rgFolderDead');
+    if (name === '') {
+      el?.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement('span');
+      el.id = 'rgFolderDead';
+      el.className = 'rg-small';
+      el.setAttribute('role', 'status');
+      host.append(el);
+    }
+    el.textContent = t([
+      '⚠ Dossier « {d} » : ne répond pas',
+      '⚠ Folder “{d}”: does not answer',
+      '⚠ Ordner „{d}“: antwortet nicht',
+      '⚠ Carpeta «{d}»: no responde'
+    ], {
+      d: name || '?'
+    });
+  }
   /** Dossier des missions autorisé (FileAccess « __missions »). request (geste de l'utilisateur) : réautorise ou fait
    *  choisir le dossier, erreur explicite en cas d'échec ; sans request : null s'il n'est pas déjà autorisé. */
   async function missionsDir(request = false) {
@@ -375,16 +410,38 @@
     }
     let st;
     try {
-      st = await within(FA.status('__missions'), 8000);
+      // sur un geste (request), la page n'attend que 2,5 s : l'activation du clic dure environ 5 s, et le choix du dossier en a besoin
+      st = await within(FA.status('__missions'), request ? 2500 : 8000);
     } catch (e) {
       if (e?.name !== 'Timeout') throw e;
-      console.error('[registre des missions] dossier des missions : pas de réponse en 8 s', {
+      console.error('[registre des missions] dossier des missions : pas de réponse', {
         origine: location.origin
       });
-      if (request) throw e;
-      return null;
+      if (!request) {
+        deadNote(await keptName(FA));
+        return null;
+      }
+      // SOG-0290 / 0293 : le dossier gardé ne répond pas (déplacé, lecteur absent). Le clic est le geste : on ne s'arrête pas sur un message qui renvoie à un autre
+      // bouton, on dit quel dossier est gardé et qu'il ne répond pas, et le choix du dossier s'ouvre tout de suite
+      st = {
+        name: await keptName(FA),
+        permission: 'dead',
+        handle: null
+      };
+      deadNote(st.name);
+      window.AppFramework?.notify?.(t([
+        'Le dossier « {d} » ne répond pas : choisissez-le de nouveau.',
+        'The folder “{d}” does not answer: choose it again.',
+        'Der Ordner „{d}“ antwortet nicht: bitte erneut wählen.',
+        'La carpeta «{d}» no responde: elíjala de nuevo.'
+      ], {
+        d: st.name || '?'
+      }), 'warn');
     }
-    if (st.handle && st.permission === 'granted') return st.handle;
+    if (st.handle && st.permission === 'granted') {
+      deadNote('');
+      return st.handle;
+    }
     if (!request) return null;
     // geste de l'utilisateur : réautoriser le dossier mémorisé ; à défaut (aucun dossier, autorisation refusée,
     // dossier devenu inaccessible), le choisir : sélecteur de dossier (data/missions). Échec : erreur explicite (cause,
@@ -417,7 +474,9 @@
     }
     if (!window.showDirectoryPicker) throw fail(`Dossier des missions « {d} » non autorisé, et ce navigateur ne permet pas d’en choisir un (Chrome ou Edge, page servie en https ou depuis localhost ; ici ${location.origin}).`, `Missions folder “{d}” not authorised, and this browser cannot choose one (Chrome or Edge, page served over https or from localhost; here ${location.origin}).`, why);
     try {
-      return await FA.pickFolder('__missions');
+      const h = await FA.pickFolder('__missions');
+      deadNote('');
+      return h;
     } catch (e) {
       if (e?.name === 'AbortError') throw fail('Dossier des missions « {d} » non autorisé : choix du dossier annulé.',
         'Missions folder “{d}” not authorised: folder choice cancelled.', why || e);
