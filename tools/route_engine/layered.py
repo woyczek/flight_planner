@@ -72,7 +72,7 @@ def annotate(result, rad):
                 control, why = 'controlled', 'DCT publié sans condition (RAD, annexe 3B DCT)'
             elif i == 0 or i == last:
                 layer = 'SID' if i == 0 else 'STAR'
-                control, why = 'fallback', ('SID' if i == 0 else 'STAR') + ' non lue : raccord DCT de simulation'
+                control, why = 'fallback', ('SID' if i == 0 else 'STAR') + ' non lue : raccord DCT de simulation, montée / descente supposée libre'
             else:
                 control, why = 'fallback', 'DCT hors liste du RAD : non contrôlé'
             if l.get('compatible') is False or l.get('vertical_errors') or l.get('alerts') and control == 'controlled':

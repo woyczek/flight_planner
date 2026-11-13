@@ -1,7 +1,10 @@
 """Continuous simulation altitude profile with exact segment-boundary constraints."""
 import math
 
-def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,descent_fps=2000/60,strategy='natural'):
+FREE=1e7   # ft/s : « libre » (SOG-0161)
+
+
+def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,descent_fps=2000/60,strategy='natural',free_departure=False,free_arrival=False):   # SOG-0161 : free_* : le raccord DCT d'un aérodrome sans SID (STAR) lue monte (descend) comme la procédure le ferait
     for name,value,low,high in [('Vitesse sol',speed_kt,30,1500),('Montée ft/s',climb_fps,.1,500),('Descente ft/s',descent_fps,.1,500)]:
         if not isinstance(value,(int,float)) or not math.isfinite(value) or not low<=value<=high:
             raise ValueError(f'{name} : valeur entre {low} et {high}.')
@@ -31,8 +34,8 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
         samples=sorted(set([cursor+distance*j/count for j in range(1,count+1)]+extra))
         for s in samples:
             positions.append(s); elapsed.append(time_cursor+(s-cursor)/leg_speed*3600); lowers.append(low); uppers.append(cap)
-            rates_up.append(0 if leg.get('kind') in ['STAR','APPROACH_LINK'] else climb_fps)
-            rates_down.append(0 if leg.get('kind')=='SID' else descent_fps)
+            rates_up.append(0 if leg.get('kind') in ['STAR','APPROACH_LINK'] else FREE if free_departure and leg is legs[0] else climb_fps)
+            rates_down.append(0 if leg.get('kind')=='SID' else FREE if free_arrival and leg is legs[-1] else descent_fps)
         if constraint.get('end_min') is not None:lowers[-1]=max(lowers[-1],constraint['end_min'])
         if constraint.get('end_max') is not None:uppers[-1]=min(uppers[-1],constraint['end_max'])
         cursor+=distance;time_cursor+=duration;ranges.append((start,len(positions)-1))

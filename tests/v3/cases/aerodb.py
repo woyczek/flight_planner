@@ -9378,8 +9378,8 @@ def k239(c):
     c.ok(any(w in str(p.get('route')).split() for w in ('T424', 'N857')), str(p.get('route'))[:200], 'the route uses the Spanish upper network of the variant (T424 or N857)')
 
 
-@case('K241', 'Route engine, an aerodrome joins an airway whose lower limit its climb can reach (SOG-0161): without a SID read, a connector that the climb (descent) of the vertical model cannot bring to the lower limit of the airway is no connector; connectors farther away, up to 300 NM, are added, the six best placed', 'K', static=True,
-      rule='Ergonomist 13 Nov 2026 (SOG-0161, KJFK → EGLL): the high routes of the United States start at 18 000 ft (J) or 24 500 ft (Q) and a connector of 40 NM climbs about 10 000 ft at 450 kt and 2 000 ft/min: the aerodrome joined only airways it could not enter, no altitude-feasible path existed and the search walked its whole state space to the budget. When no connector within the radius can be entered, the nodes within 300 NM that the climb (the descent, for the arrival) can bring to the lower limit of their airways are added as connectors (the six with the least detour), « revue » like every connector. Invented bench: two aerodromes with one airway chain whose lower limit is 18 000 ft, the first node 28 NM away')
+@case('K241', 'Route engine, an aerodrome with no SID (STAR) read climbs (descends) freely on its DCT connector (SOG-0161): the search, the vertical profile and the control agree, and the connector is a « fallback » that says so; with a SID read nothing changes', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0161, EGLL → KJFK and KJFK → EGLL): the high routes start at 18 000 / 24 500 ft and an aerodrome with no SID read joins them by a DCT connector: the climb the SID would make is not modelled, so no altitude-feasible path existed and the search walked its whole state space to the 6 s budget (EGLL → KJFK on the real base: 40 s, then no route). Without a SID read the departure may start at any altitude up to the cruise level after the connector, and without a STAR read the arrival connector may lose any altitude (`free_departure`, `free_arrival` in the search; the same in `flight_profile.build` so the control does not refuse what the search found); the connector is « fallback » (« montée / descente supposée libre »), like every connector without a procedure. Invented bench: one airway chain whose lower limit is 18 000 ft, the first node 28 NM from the aerodrome. Measured on the real base from the form of the Fuel screen: EGLL → KJFK 1.6 s (NAT H), KJFK → EGLL 2.7 s, ESSB → LEMO 8.0 s cold and 1.3 s warm')
 def k241(c):
     import gzip
     import json
@@ -9390,7 +9390,7 @@ def k241(c):
     from route_engine import import_books as I
     fn = RJ.REGISTRY[('route', 'compute')][0]
     pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
-    nodes = {'N1': (41.2, -73.0), 'N2': (42.0, -72.0), 'N3': (45.0, -60.0), 'N4': (50.0, -40.0), 'N5': (52.0, -20.0), 'N6': (51.8, -5.0), 'N7': (51.5, -1.0)}
+    nodes = {'N1': (41.0, -73.4), 'N2': (42.0, -72.0), 'N3': (45.0, -60.0), 'N4': (50.0, -40.0), 'N5': (52.0, -20.0), 'N6': (51.8, -5.0), 'N7': (51.5, -1.0)}
     ids = list(nodes)
     ways = [{'route': 'J1', 'a': pt(a, *nodes[a]), 'b': pt(b, *nodes[b]), 'lower': 18000, 'upper': 66000} for a, b in zip(ids, ids[1:])]
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
@@ -9410,6 +9410,6 @@ def k241(c):
         r = fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': 'KJFK', 'arr': 'EGLL', 'fl': 370, 'date': '2026-11-10T12:00', 'enable_fra': False}, {'data': data, 'secrets': td})
         p = r['plan']['primary']
         legs = p.get('legs') or []
-        c.ok(p['ok'] and [l['via'] for l in legs][1:-1] == ['J1'] * 4, str((p.get('error'), [l['via'] for l in legs])), 'KJFK → EGLL is found: the first airway node (28 NM) cannot be reached by the climb to 18 000 ft, the connector goes to N2, farther away (the climb needs about 70 NM)')
-        c.eq([(l['start']['id'], l['end']['id']) for l in legs][:1] + [(legs[-1]['start']['id'], legs[-1]['end']['id'])], [('KJFK', 'N2'), ('N6', 'EGLL')], 'the connectors: KJFK → N2 and N6 → EGLL (the descent from 18 000 ft needs about 70 NM too), not the nearest nodes', what='connectors')
+        c.ok(p['ok'] and [l['via'] for l in legs][1:-1] == ['J1'] * 6, str((p.get('error'), [l['via'] for l in legs])), 'KJFK → EGLL is found: the first airway node (28 NM) is above the reach of a real climb to 18 000 ft, the connector is free of it (no SID read)')
+        c.eq([(l['start']['id'], l['end']['id']) for l in legs][:1] + [(legs[-1]['start']['id'], legs[-1]['end']['id'])], [('KJFK', 'N1'), ('N7', 'EGLL')], 'the connectors are the nearest nodes: KJFK → N1 (28 NM) and N7 → EGLL (21 NM)', what='connectors')
         c.eq({l['control'] for l in legs[:1] + legs[-1:]}, {'fallback'}, 'and they are « fallback » (no SID, no STAR read), never controlled', what='class')
