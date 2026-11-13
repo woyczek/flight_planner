@@ -824,6 +824,8 @@ Start, alle 10 Minuten online und bei Rückkehr des Netzes. Die Karte erscheint,
 ist die einzige Kopie. „Importieren (zusammenführen)…“ übernimmt sie, ohne hier etwas zu verlieren; „Durch eine Datei
 ersetzen…“ löscht zuerst, was auf dem Gerät ist.
 
+**Von vorn beginnen.** Wenn etwas seltsam wirkt, leert „Auf diesem Gerät von vorn beginnen“ (Gruppe „Gerät“; eine Zeile des Blocks „Status“ führt dorthin) die Kopien der Repository-Dateien, die das Gerät wieder lesen kann, und liest sie neu. Es nennt vorher die Zahlen, stellt eine einzige Frage und sendet zuerst, was wartet. Nie Ihre wartenden Sendungen, Einstellungen, Entwürfe oder Dokumente. Ohne Netz oder wenn das Repository nicht antwortet, wird nichts geleert: Das Gerät hätte bis zur Rückkehr des Netzes keine Basen.
+
 **Die Offline-Daten.** Jede veröffentlichte Zone hat ihre Zeile: ihren Status auf diesem Gerät, ihren Zyklus und ihre
 Größe. „Offline behalten“ lädt sie ganz herunter (am besten im WLAN); „Freigeben“ gibt den Platz zurück.
 

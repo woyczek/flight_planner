@@ -162,6 +162,8 @@ enregistré dans les données) et « à envoyer » (enregistré, pas encore part
 seule copie. « Importer (fusion)… » la reprend sans rien perdre d'ici ; « Remplacer par un fichier… » efface d'abord ce
 qui est sur l'appareil.
 
+**Repartir de zéro.** Quand quelque chose semble bizarre, « Repartir de zéro sur cet appareil » (groupe « Appareil », et une ligne du bloc « État » y mène) vide les copies des fichiers du dépôt que l'appareil sait relire, puis les relit. Il dit les chiffres avant, ne pose qu'une question, envoie d'abord ce qui attend. Jamais vos envois en attente, vos réglages, vos brouillons ni vos documents. Sans réseau, ou si le dépôt ne répond pas, rien n'est vidé : l'appareil garderait ses bases jusqu'au retour du réseau.
+
 **Les données hors ligne.** Chaque zone publiée a sa ligne : son état sur cet appareil, son cycle et sa taille.
 « Garder hors ligne » la télécharge entière (de préférence en Wi-Fi) ; « Libérer » rend la place.
 

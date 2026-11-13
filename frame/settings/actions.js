@@ -251,16 +251,19 @@
           maximumFractionDigits: 1
         }).format(copies.reduce((n, d) => n + (d.bytes || 0), 0) / 1048576);
       if (!copies.length) return say('reset', t(T.resetNone), 'warn');
+      if (navigator.onLine === false) return say('reset', t(T.resetOffline),
+        'err'); // hors ligne : on ne le propose même pas (audit 206)
       if (!await c.ask(t(p ? T.resetAsk1 : T.resetAsk0, {
           n: copies.length,
           mb,
           p
         }))) return;
-      if (p) {
-        await FD.sync().catch(() => null);
-        const st1 = await FD.status();
-        if ((st1.pending || 0) > 0) return say('reset', t(T.resetHeld), 'err'); // un envoi n'est pas parti : rien n'est vidé
-      }
+      // SOG-0324 (audit 206) : jamais vider sans pouvoir relire. Hors ligne, ou l'arbre du dépôt ne répond pas : rien n'est vidé (l'appareil garderait ses bases jusqu'au retour du réseau). Le passage envoie aussi les écritures en attente, puis relit l'arbre : c'est l'essai du réseau.
+      if (navigator.onLine === false) return say('reset', t(T.resetOffline), 'err'); // le réseau a pu tomber pendant la question
+      const pass = await FD.sync().catch(() => null);
+      if (!pass || !pass.ok || pass.error || pass.warning) return say('reset', t(T.resetOffline), 'err');
+      if (p && ((await FD.status()).pending || 0) > 0) return say('reset', t(T.resetHeld),
+        'err'); // un envoi n'est pas parti : rien n'est vidé
       let n = 0;
       for (const d of copies) n += await FD.evict(d.path).catch(() => 0);
       FD.sync().catch(() => null); // relit l'arbre du dépôt ; les copies reviennent à la demande

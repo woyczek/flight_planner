@@ -148,11 +148,16 @@ export function nameOf(id) {
   const z = (S.d?.zones || []).find(x => x.id === id);
   return z ? M.zoneName(S.d.zones, id, li()) : M.own(S.outlines, id)?.name?.[li()] || id;
 }
+/** Vrai de la première étape de la chaîne « Tout mettre à jour » à la relecture de l'état qui suit sa fin, pour les pays de sa part de la base : entre deux verbes `S.run` est vide un instant, et la publication n'est pas une étape de la base ; le pays ne repasse pas par sa teinte d'avant (SOG-0324). */
+function chainHolds(id) {
+  return !!S.chainHold?.has(id);
+}
 /** La teinte d'un pays : celle de l'état du lanceur ; sans état lu, celle de la publication (un cycle en vigueur, daté ou non) ; 'muted' hors de la couverture. */
 function tone(id) {
   const inCov = S.d.cov.ids.includes(id),
-    running = (!!S.run && S.run.set === 'base' && S.run.verb !== 'purge' && S.ids.includes(id)) || S.zop?.zone ===
-    id, // l'opération du pays (sa fiche) compte aussi : entre deux étapes il n'y a pas de passage par « à faire »
+    running = (!!S.run && S.run.set === 'base' && S.run.verb !== 'purge' && S.ids.includes(id)) || S.zop?.zone === id || chainHolds(
+      id
+    ), // l'opération du pays (sa fiche) et la chaîne « Tout mettre à jour » comptent aussi : entre deux verbes il n'y a pas de passage par « à faire » (SOG-0324)
     t = M.toneOf(S.status, id, inCov, running);
   if (t) return t;
   if (inCov && S.ctx.launcher && statusKnown())
@@ -166,7 +171,7 @@ function tone(id) {
       published: b ? b.published > 0 : !!cycle,
       stale: !!cycle && S.airac && M.staleLevel(S.airac, cycle, S.now) !== null
     });
-  return mt === 'accent' ? 'warn' : mt;
+  return mt === 'accent' ? 'busy' : mt; // une opération en cours : bleue, jamais ambre (SOG-0324)
 }
 /** Le contour d'un pays pour le dessin : { id, d (le chemin), box, approx } ; gardé tant que les contours sont les mêmes. null sans contour. */
 function pathInfo(id) {
@@ -457,6 +462,10 @@ export function downloadTick(id, item, z) {
       c: M.cycleName(S.airac, d.cycle)
     }) : tt(M.own(T.why, 'older-than-cycle')));
     if (d.state === 'n/a') return tickHtml('download', 'na', tt(T.dlNone));
+    // l'édition déjà prise (la couche que le poste a lue : status `download.sources`) reste dite quand la suivante attend : les deux sont vraies (SOG-0318)
+    const taken = d.state === 'waiting' ? z?.download?.list?.[id] : null,
+      then = taken?.present && taken.at ? ` · ${tt(T.dlTaken, { d: dateOf(taken.at) })}` : '';
+    if (then) return tickHtml('download', 'todo', `${tt(T.dlWaiting)}${then}`);
     return tickHtml('download', d.state === 'failed' ? 'no' : 'todo', tt(d.state === 'waiting' ? T.dlWaiting : M.own(T.why, item.why) || T
       .dlMissing));
   }

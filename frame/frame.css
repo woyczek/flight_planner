@@ -622,7 +622,7 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   margin: 4px 0 0
 }
 [data-card="display"] h3 {
-  margin: 8px 0 2px;
+  margin: 4px 0 0;
   font-size: .85rem;
   letter-spacing: .03em;
   text-transform: uppercase;
@@ -630,14 +630,17 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 }
 [data-card="display"] .f-pills {
   gap: 6px;
-  margin: 2px 0 6px
+  margin: 0 0 4px
 }
 [data-card="display"] .f-pill {
   padding: 0 12px
 }
 [data-card="company"] > .f-muted {
   font-size: .85rem;
-  margin: 2px 0 4px
+  margin: 2px 0 2px
+}
+[data-card="company"] .f-fiche {
+  margin: 2px 0
 }
 [data-card="display"] [data-level-says] {
   margin: 2px 0 4px;

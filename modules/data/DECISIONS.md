@@ -721,8 +721,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   went amber while it was being rebuilt, then green again; and the run of the sheet (`S.zop`, « Mettre à jour ce pays ») was not counted as running, so between
   its steps the refreshed state (downloaded, not built yet) painted amber too. Now: a run is its own tone `busy` (blue, « en cours », a legend item when
   there is one, `sumBusy` in the summary of a group), held while `S.run` covers the country or `S.zop` is its own; cases L133 (red before: no `busy`).
-  Not done: the chain « Tout mettre à jour » between two of its verbs (`S.run` is empty for an instant); the « Repartir de zéro sur cet appareil » gesture
-  of the same fiche (survey sent: `FrameData.evict` + re-read, never `reset()`).
+  The chain « Tout mettre à jour » (ergonomist, 13 Nov evening): between two of its verbs `S.run` is empty for an instant, so `tone()` also asks `chainHolds(id)`
+  (`S.chainHold`, the ids of the base runs of the chain, set at its start and cleared once the state is read again after its end — the publication step and the final read
+  are held too); the tone without a read state (publication fallback) is `busy` too, no longer amber. Case L136 (red before: busy while a verb runs, amber between the verbs and
+  during the publication). The « Repartir de zéro sur cet appareil » gesture of the same fiche is in
+  Settings (`frame/settings/DECISIONS.md`).
 - **13 Nov 2026 — SOG-0253: the user's VFR circuits XML has a place to be deposited** (the ergonomist: « la page de dépôt accepte le `.xml` des tracés de tours de
   piste, reconnu par le lanceur (34c24550e) et dit ce qui est reconnu ou refusé »). New fold « Tours de piste VFR (extracteur) » under « Vu par le poste », next to the
   French register (`tours.js`, `model_tours.js`, `later.js`): « Choisir le fichier… » (the same hidden input and the same route `base/upload` as the register: no route
@@ -730,3 +733,8 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   sur m terrains », the terrains whose VAC chart changed (`counts.obsolete`) left out, the malformed items (`warnings`) left aside — or refuses in words (a file the
   launcher does not recognise by its root, or keeps but cannot read: its own text is never shown). The result is kept in memory for the pill only; the Map reads the verb
   itself. Case L134 (red before: no fold); L94 lists the new fold.
+- **13 Nov 2026 — SOG-0318, the rest: the download tick says both** (the ergonomist: « la ligne « ✓ fait » d'une source dont l'édition suivante attend dit les deux »).
+  Since AeroDB 1e99374c8 a source with a package of the next edition in Downloads is `steps.download.state: waiting` (`why: newer-in-downloads`, `hand.inDownloads`), so the
+  tick says « un fichier attend dans Téléchargements »; the layer the workstation ALREADY took (status `download.sources`, present, dated) was no longer said. `downloadTick`
+  (`countries.js`) now adds « déjà pris le {date} » to the waiting tick (text `TX.cw.dlTaken`). The page-side rule of SOG-0318 (a source the launcher calls `auto` that the
+  catalogue marks `fetch.pick` is a hand-taken source) stays: the catalogue is the user's view. Case L137 (red before: the date is missing).

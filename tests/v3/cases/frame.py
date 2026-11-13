@@ -4735,7 +4735,7 @@ def a117(c):
     c.open('settings', docs=LEVEL3, wait=False)
     c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]')", timeout=15000, what='the version line')
     keys = c.js("[...document.querySelectorAll('[data-card=\"status\"] li[data-k]')].map(l => l.dataset.k)")
-    c.eq(keys[-2:], ['stale', 'version'], 'the stale line comes before the version, the version stays the last line', what='lines')
+    c.eq([k for k in keys if k != 'reset'][-2:], ['stale', 'version'], 'the stale line comes before the version, the version stays the last line', what='lines')
     c.ok(norm(stale) in norm(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"stale\"]').textContent")), '', 'the line says the page is older than the launcher')
     c.eq(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"stale\"] [data-go]')?.dataset.go"), 'reload', 'a tap reloads', what='go')
     text = norm(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]').textContent"))
@@ -7773,6 +7773,55 @@ def a199(c):
     txt = c.text('[data-card="sync"] [data-sync]')
     c.ok('limite de requêtes' in txt and not re.search(r'GitLab 429:\s*(\)|$)', txt), txt, 'the last error is the sentence of the limit, not « GitLab 429: » alone')
     c.shot(f'A199_sync_{c.width}_{c.lang}_delivered.png')
+
+
+@case('A187', 'Settings › État: ONE line leads to « Repartir de zéro sur cet appareil » (SOG-0324, the ergonomist 20 h 19: the user asked it « sur l’état du poste ») — the line is in the status block, one touch opens the group Device and brings the card into view; the gesture itself stays in Device',
+      'A', langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0324: the gesture lives in the folded group Device (nothing is added to the always-visible part but one line); the line « Quelque chose semble bizarre ? » leads to it like every other line of the status block (`data-go="card:reset"`)')
+def a187(c):
+    docs = LEVEL3 + [['sia/base/index.json', {'zones': {}}, 'reference']]
+    c.open('settings', docs=docs)
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=reset] [data-go]')", timeout=15000, what='the line of the status block')
+    c.eq(c.attr('[data-card="status"] li[data-k=reset] [data-go]', 'data-go'), 'card:reset', 'it leads to the card', what='go')
+    c.ok(len(norm(c.text('[data-card="status"] li[data-k=reset]'))) > 12, c.text('[data-card="status"] li[data-k=reset]'), 'it says something in the language of the run')
+    c.tap('[data-card="status"] li[data-k=reset] [data-go]')
+    c.until("document.querySelector('[data-group=device]')?.open && !!document.querySelector('[data-card=\"reset\"] [data-act=resetDevice]')", timeout=10000, what='the group Device opens on the card')
+    c.wait(900)
+    c.ok(c.js("(r => r.bottom > 0 && r.top < innerHeight)(document.querySelector('[data-card=\"reset\"]').getBoundingClientRect())"), None, 'and the card is in view')
+    c.check_errors()
+
+
+@case('A188', 'Settings › Device: « Repartir de zéro » empties NOTHING when the device cannot read the repository files again — offline, or the read of the tree does not answer (audit 206 of Sécurisation, SOG-0324): the copies stay, the message says nothing was emptied',
+      'A', langs4=True, designs=('standard',), screens=False, night=False,
+      rule='Audit 206 on 182818739: with nothing waiting the gesture evicted every `reference` copy then started the re-read without waiting for it; without a network the device lost its bases until the network came back (a pilot in flight, a device without launcher). Now: offline, it is refused before the question; the pass (it also sends what waits) is the test of the network, and a pass that is not ok, has an error or a warning empties nothing')
+def a188(c):
+    docs = LEVEL3 + [['sia/base/index.json', {'zones': {}}, 'reference'], ['sia/base/fr.json', {'x': 1}, 'reference']]
+    c.open('settings', docs=docs)
+    c.until("!!document.querySelector('[data-card=\"reset\"]')", timeout=15000, what='the card')
+    c.js("document.querySelector('[data-group=device]').open = true")
+    refs = lambda: c.js("FrameData.cached('').then(l => l.filter(d => d.policy === 'reference').map(d => d.path))")
+    before = refs()
+    c.ok(len(before) >= 2, before, 'the device holds copies of repository files')
+    msg = lambda: norm(c.text('[data-card="reset"] [data-msg]'))
+    # 1. the read of the tree does not answer (the pass fails): the question is asked, the answer is yes, nothing is emptied
+    c.js("window.__sync0 = FrameData.sync; FrameData.sync = async () => ({ ok: false, error: 'offline', pulled: [], pushed: 0, conflicts: 0 })")
+    c.tap('[data-card="reset"] [data-act=resetDevice]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=10000, what='the question')
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-card=\"reset\"] [data-msg]')?.textContent.trim() !== ''", timeout=15000, what='the refusal is said')
+    c.eq(refs(), before, 'the tree does not answer: every copy is still there', what='copies after a failed pass')
+    said = msg()
+    c.js("FrameData.sync = window.__sync0; document.querySelector('[data-card=\"reset\"] [data-msg]').textContent = ''")
+    # 2. offline: refused before the question
+    c.context.set_offline(True)
+    c.js("window.dispatchEvent(new Event('offline'))")
+    c.until("navigator.onLine === false", timeout=5000, what='the page is offline')
+    c.tap('[data-card="reset"] [data-act=resetDevice]')
+    c.until("document.querySelector('[data-card=\"reset\"] [data-msg]')?.textContent.trim() !== ''", timeout=10000, what='the refusal is said offline')
+    c.ok(not c.count('.f-modal'), None, 'offline the question is not even asked')
+    c.eq(refs(), before, 'offline: every copy is still there', what='copies offline')
+    c.eq(msg(), said, 'the same words, the same refusal', what='message')
+    c.context.set_offline(False)
     c.check_errors()
 
 

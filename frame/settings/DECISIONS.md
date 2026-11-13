@@ -787,4 +787,12 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   writes, say in figures what goes (« n copies relues du dépôt (x Mo) seront vidées puis relues… ») and what stays, ask ONCE, send the waiting writes first
   (`FrameData.sync`; if one does not go, nothing is emptied, said), `evict` each copy, then `sync` to read the tree again; the copies come back on demand. The documents,
   the settings of the device (`cache` policy) and the pending writes are never touched. Case A186 (red before: no card; the documents and the device settings
-  stay, the `reference` copies go). Not done: a button inside the frame's « État » block itself (a frame file); the flicker of the same fiche is c9ff785e4.
+  stay, the `reference` copies go). The ergonomist (13 Nov, 20 h 19) kept the card in « Device » AND asked for ONE line in the « État » block that leads to it: the
+  status item `reset` (`frame/app.js`, `T.info.reset`, « Quelque chose semble bizarre ? Repartir de zéro », `go: 'card:reset'`, from level 2 where the card exists); it
+  opens Device on the card. Case A187 (red before: no line). The flicker of the same fiche is c9ff785e4 and the chain hold is in `modules/data/DECISIONS.md`.
+  **Audit 206 of Sécurisation (13 Nov, 21 h 22) on 182818739: the gesture emptied OFFLINE** — the only test of the network was on the waiting sends; with none waiting it evicted every
+  `reference` copy then started the re-read without waiting for it, and without a network the device lost its bases until the network came back (a pilot in flight, a device
+  without launcher). Now: offline, it is refused BEFORE the question; after the answer the pass `FrameData.sync()` (which also sends what waits, then reads the tree: it is the test of
+  the network) must be ok with no error and no warning, else « Rien n'a été vidé : pas de réseau pour relire les fichiers du dépôt » and nothing is emptied; a send that did not go
+  still stops it. Case A188 (red before: the copies are gone after a failed pass; green after: the copies stay, offline and with a failed pass). The rest of the audit stands
+  (never what the device alone carries, never `reset()`).

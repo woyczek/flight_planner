@@ -166,6 +166,8 @@ back. The card appears as soon as an exchange is ticked or something is waiting.
 **The backup.** Alone on this device, “Export (one file)” keeps all your data in a file: it is the only copy. “Import
 (merge)…” takes it back without losing anything here; “Replace from a file…” first erases what is on the device.
 
+**Start again from scratch.** When something looks odd, “Start again from scratch on this device” (the “Device” group, and a line of the “Status” block leads to it) empties the copies of the repository files that the device can read again, then reads them again. It says the figures first, asks one question, and sends what waits first. Never your waiting sends, your settings, your drafts or your documents. With no network, or if the repository does not answer, nothing is emptied: the device would keep no bases until the network came back.
+
 **Offline data.** Each published zone has its row: its state on this device, its cycle and its size. “Keep offline”
 downloads it whole (preferably on Wi-Fi); “Free” gives the space back.
 

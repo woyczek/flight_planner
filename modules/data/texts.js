@@ -620,6 +620,7 @@ export const TX = {
       'Datei des Zyklus {c}, älter als der gültige Zyklus', 'archivo del ciclo {c}, más antiguo que el ciclo vigente'
     ],
     dlMissing: ['aucun fichier', 'no file', 'keine Datei', 'ningún archivo'],
+    dlTaken: ['déjà pris le {d}', 'already taken on {d}', 'schon übernommen am {d}', 'ya tomado el {d}'],
     dlWaiting: ['un fichier attend dans Téléchargements', 'a file waits in Downloads', 'eine Datei wartet in Downloads',
       'un archivo espera en Descargas'
     ],
@@ -2858,11 +2859,27 @@ export const TX = {
       'Die XML-Datei VfrCircuits Ihres Zeichnungsextraktors: die auf der Karte gezeichneten Platzrunden. Sie bleibt unverändert auf diesem Rechner; nichts wird veröffentlicht. Ohne sie sagt die Karte Linkskurve: Standard, nichts veröffentlicht.',
       'El archivo XML VfrCircuits de su extractor de trazados: los circuitos dibujados en el mapa. Se queda en este equipo, tal cual; no se publica nada. Sin él, el mapa dice mano izquierda: por defecto, nada publicado.'
     ],
-    done: ['Tracés lus : {c} tours de piste sur {a} terrains.', 'Read: {c} circuits on {a} aerodromes.', 'Gelesen: {c} Platzrunden auf {a} Flugplätzen.', 'Leídos: {c} circuitos en {a} aeródromos.'],
-    obsolete: ['Terrains dont la carte VAC a changé, écartés : {o}.', 'Aerodromes whose VAC chart changed, left out: {o}.', 'Flugplätze, deren VAC-Karte sich geändert hat, ausgelassen: {o}.', 'Aeródromos cuya carta VAC cambió, descartados: {o}.'],
-    left: ['Éléments mal formés laissés de côté : {w}.', 'Malformed items left aside: {w}.', 'Fehlerhafte Elemente beiseitegelassen: {w}.', 'Elementos mal formados dejados de lado: {w}.'],
-    received: ['Fichier reçu : le lanceur ne l’a pas encore lu.', 'File received: the launcher has not read it yet.', 'Datei empfangen: der Starter hat sie noch nicht gelesen.', 'Archivo recibido: el lanzador aún no lo ha leído.'],
-    unreadable: ['Fichier reçu, mais refusé à la lecture : il ne suit pas le format VfrCircuits. Rien n’est dessiné.', 'File received, but refused on reading: it does not follow the VfrCircuits format. Nothing is drawn.', 'Datei empfangen, beim Lesen aber abgelehnt: sie folgt nicht dem Format VfrCircuits. Es wird nichts gezeichnet.', 'Archivo recibido, pero rechazado al leerlo: no sigue el formato VfrCircuits. No se dibuja nada.'],
-    refused: ['Ce fichier n’est pas le XML VfrCircuits de l’extracteur. Rien n’a été gardé.', 'This file is not the extractor’s VfrCircuits XML. Nothing was kept.', 'Diese Datei ist nicht das XML VfrCircuits des Extraktors. Es wurde nichts behalten.', 'Este archivo no es el XML VfrCircuits del extractor. No se guardó nada.']
+    done: ['Tracés lus : {c} tours de piste sur {a} terrains.', 'Read: {c} circuits on {a} aerodromes.',
+      'Gelesen: {c} Platzrunden auf {a} Flugplätzen.', 'Leídos: {c} circuitos en {a} aeródromos.'
+    ],
+    obsolete: ['Terrains dont la carte VAC a changé, écartés : {o}.', 'Aerodromes whose VAC chart changed, left out: {o}.',
+      'Flugplätze, deren VAC-Karte sich geändert hat, ausgelassen: {o}.', 'Aeródromos cuya carta VAC cambió, descartados: {o}.'
+    ],
+    left: ['Éléments mal formés laissés de côté : {w}.', 'Malformed items left aside: {w}.',
+      'Fehlerhafte Elemente beiseitegelassen: {w}.', 'Elementos mal formados dejados de lado: {w}.'
+    ],
+    received: ['Fichier reçu : le lanceur ne l’a pas encore lu.', 'File received: the launcher has not read it yet.',
+      'Datei empfangen: der Starter hat sie noch nicht gelesen.', 'Archivo recibido: el lanzador aún no lo ha leído.'
+    ],
+    unreadable: ['Fichier reçu, mais refusé à la lecture : il ne suit pas le format VfrCircuits. Rien n’est dessiné.',
+      'File received, but refused on reading: it does not follow the VfrCircuits format. Nothing is drawn.',
+      'Datei empfangen, beim Lesen aber abgelehnt: sie folgt nicht dem Format VfrCircuits. Es wird nichts gezeichnet.',
+      'Archivo recibido, pero rechazado al leerlo: no sigue el formato VfrCircuits. No se dibuja nada.'
+    ],
+    refused: ['Ce fichier n’est pas le XML VfrCircuits de l’extracteur. Rien n’a été gardé.',
+      'This file is not the extractor’s VfrCircuits XML. Nothing was kept.',
+      'Diese Datei ist nicht das XML VfrCircuits des Extraktors. Es wurde nichts behalten.',
+      'Este archivo no es el XML VfrCircuits del extractor. No se guardó nada.'
+    ]
   }
 };

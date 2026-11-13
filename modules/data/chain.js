@@ -292,6 +292,10 @@ async function endChain(me, ch, result, text, level) {
     job: ch.job
   }), true);
   await load(true);
+  if (S === me) {
+    S.chainHold = null; // l'état est relu : les pays reprennent leur teinte
+    renderBuild();
+  }
 }
 /** La chaîne : pour chaque jeu, Télécharger puis Construire par le suiveur ; au premier échec, arrêt (ce qui est construit reste commité sur le poste, rien n'est
  *  publié) ; si tout a réussi, UNE publication sans autre question que celle du plan. */
@@ -314,6 +318,8 @@ async function runChain(me, plan, prevRows = null) {
   };
   S.chainEnd = null;
   S.chainNote = false;
+  S.chainHold = new Set(plan.runs.filter(r => r.set === 'base').flatMap(r => r.sel?.ids ||
+[])); // les pays de la base restent « en cours » jusqu'à la relecture de l'état, après la publication (SOG-0324)
   journalWrite(M.chainEntry({
     at: Date.now(),
     items: ch.rows,

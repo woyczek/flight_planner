@@ -714,6 +714,10 @@
       // cycle : l'utilisateur reconstruisait en boucle une base restée en 2610, 1er nov. 2026)
       // la version de la suite, dernière ligne du bloc d'état : git describe et la date du commit
       version: ['SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}'],
+      // la ligne qui mène à « Repartir de zéro sur cet appareil » (Réglages › Appareil : SOG-0324)
+      reset: ['Quelque chose semble bizarre ? Repartir de zéro', 'Looks odd? Start again from scratch',
+        'Seltsam? Von vorn beginnen', '¿Algo raro? Empezar de cero'
+      ],
       staleTag: ['Version ancienne · Recharger', 'Old version · Reload', 'Alte Version · Neu laden', 'Versión antigua · Recargar'],
       staleShort: ['Recharger', 'Reload', 'Neu laden', 'Recargar'],
       stale: ['Cette page est plus ancienne que le lanceur : recharger', 'This page is older than the launcher: reload',
@@ -2490,6 +2494,12 @@
       text: t(T.info.stale),
       attn: true,
       go: 'reload'
+    });
+    // un geste pour repartir de zéro sur cet appareil (Réglages › Appareil, SOG-0324) : une ligne qui y mène, aux niveaux où la carte existe
+    if (level >= 2) items.push({
+      k: 'reset',
+      text: t(T.info.reset),
+      go: 'card:reset'
     });
     // la version de la suite, en dernier (ni nouvelle ni attention) : sans pied de page qui prend de la hauteur ; elle mène
     // à la carte « À propos » des Réglages (dépôt, licence, feuille de route)

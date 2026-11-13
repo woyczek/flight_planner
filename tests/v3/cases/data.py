@@ -7991,7 +7991,7 @@ def _l102_cycle(world, labels):
     return answer
 
 
-def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs=(), setstate=None):
+def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs=(), setstate=None, world_tweak=None):
     """The Données screen of the capture: real outlines, real names, real packs, real catalogue; invented states."""
     labels = _l102_labels()
     geo, packs, cover = _l102_world()
@@ -8008,6 +8008,8 @@ def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs
     world['zs']['it'] = {**_zst('failed', {'code': 'failed', 'error': 'x'}), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'unpublished', 'at': '2026-10-29T11:00:00Z'}}
     procs = {z: {'cycle': '2026-10-29', 'counts': {}, 'procedures': 9, 'sources': {}, 'procSources': ['eaip']} for z in ('fr', 'es', 'gb', 'ie', 'nl', 'de', 'ch', 'it')}
     st = _launcher(c, [_view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': procs})], verbs=_VERBS + ['base/pickup', 'base/cycle', 'base/coverage'] + list(extra_verbs), cycle=(wrap or (lambda a: a))(_l102_cycle(world, labels)))
+    if world_tweak:
+        world_tweak(world)   # SOG-0318: what the launcher says of one country
     st['status'] = lambda args: _status(world['zs'])
     if setstate is not None:
         st['setstate'] = setstate   # the state verbs of the other sets (SOG-0119)
@@ -9485,4 +9487,70 @@ def l134(c):
     deposit('autre.xml', b'<autre/>')
     m = msg()
     c.eq([m[0], norm(m[1])], ['err', norm(N('refused'))], 'a file that is not the extractor’s XML: refused in words', what='refused')
+    c.check_errors()
+
+
+def _l135_wrap(answer):
+    """The launcher AFTER the fix of AeroDB (1e99374c8): NAV Portugal is still `regime: auto`, but a package of the next edition waits in Downloads: `steps.download.state` is `waiting`, `why` `newer-in-downloads`, `hand.inDownloads` names the file."""
+    def go(args):
+        res = answer(args)
+        for it in list(res.get('items') or []) + list((res.get('zoneView') or {}).get('sources') or []):
+            if it.get('id') == 'navpt':
+                it['regime'] = 'auto'
+                it['why'] = 'newer-in-downloads'
+                it['hand'] = {'link': 'https://ais.nav.pt/', 'expected': ['EAIP ISO.zip'], 'inDownloads': ['EAIP ISO.zip']}
+                it['steps'] = {**it.get('steps', {}), 'download': {'state': 'waiting', 'cycle': '2026-10-01', 'at': '2026-11-11T17:03:00Z'}}
+        return res
+    return go
+
+
+@case('L137', 'Données: the download tick of a source whose NEXT edition waits says BOTH (SOG-0318, the rest): the edition already taken (« déjà pris : le 11/11 ») and the file that waits in Downloads — never « done » alone, never « waiting » alone',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0318: the launcher said « ✓ fait le 11/11 » for NAV Portugal while a package of the next edition waited in Downloads; since AeroDB 1e99374c8 it says `waiting`, and the layer already taken (status `download.sources`) was no longer said; both are true and the sheet says both')
+def l137(c):
+    lang = c.lang
+    T = lambda k: _trow(k, lang, after='  cw: {')
+    def world(w):
+        w['zs']['pt']['download'] = {'done': True, 'cycle': '2026-10-29', 'at': '2026-11-11T17:03:00Z', 'sources': {'navpt': {'present': True, 'at': '2026-11-11T17:03:00Z'}, 'openaip': {'present': True, 'at': '2026-11-11T17:03:00Z'}}}
+    _l102_open(c, wrap=_l135_wrap, world_tweak=world)
+    c.tap('[data-group-id=europe-south] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-zone=pt]')
+    c.until("!!document.querySelector('[data-sheet=pt] [data-sheet-source=navpt]')", timeout=10000, what='the sheet of Portugal')
+    c.until("!document.querySelector('[data-sheet=pt] [data-inventory-state=loading]') && !!document.querySelector('[data-sheet=pt] [data-sheet-source=navpt] [data-regime-line]')", timeout=10000, what='the view of the country is read')
+    c.wait(500)
+    tick = norm(c.text('[data-sheet=pt] [data-sheet-source=navpt] .d-ticks'))
+    day = c.js(f"import('/modules/data/model.js').then(M => M.dateText('2026-11-11', '{lang}'))")
+    c.ok(norm(T('dlWaiting')) in tick, tick, 'it says the file that waits in Downloads')
+    c.ok(norm(day) in tick, (day, tick), 'and the edition already taken, with its date')
+    c.shot(f'L137_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('L136', 'Données: during « Tout mettre à jour » a country of the base stays BUSY (blue) from the first verb to the end of the chain — never back to amber between « Télécharger » and « Construire » (SOG-0324, the ergonomist: « tenir « en cours » pendant « Tout mettre à jour », entre deux verbes de la chaîne »)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0324: between two verbs of the chain `S.run` is empty for an instant and the zone is in no `S.zop`; `tone()` asks `chainHolds(id)` (the chain runs and the zone is in its part of the base), so the tone is busy from the first verb to the last')
+def l136(c):
+    cfg, _ = _fixture()
+    cfg['publication']['vfr'] = None
+    cfg['outlines'] = _l88_outlines()
+    _today, cur, _prev, _nxt = _cycles()
+    views = _chain_views(cur.isoformat())
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    _sync_cfg(c, True, None)
+    st = _launcher(c, views, verbs=ALL_VERBS + ['base/status'], sync={'changes': 3, 'ahead': 0, 'merging': False, 'last': None})
+    st['status'] = lambda args: _status({z: _zst('up-to-date' if any(p['verb'] == 'build' and p['set'] == 'base' for p in st['posts']) else 'stale', buildable=True) for z in ('fr', 'gb')})
+    c.page.add_init_script(_SYNC_JS)
+    _open(c, cfg)
+    c.page.add_init_script(_FRESH_JS)
+    _all_open(c)
+    c.until("document.querySelector('[data-wmap] path[data-zone=fr]')?.dataset.tone === 'warn'", timeout=12000, what='fr is amber before the chain')
+    c.js("window.__tones = []; window.__iv = setInterval(() => { const p = document.querySelector('[data-wmap] path[data-zone=fr]'); if (!document.querySelector('[data-update-all] [data-chain-result]')) window.__tones.push(p ? p.dataset.tone : null) }, 10)")
+    c.tap('[data-update-all] [data-verb=all]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-update-all] [data-chain-result]')", timeout=60000, what='the end of the chain')
+    c.wait(500)
+    seq = c.js("(() => { clearInterval(window.__iv); const out = []; for (const t of window.__tones) if (t && out[out.length - 1] !== t) out.push(t); return out })()")
+    i = seq.index('busy') if 'busy' in seq else -1
+    c.ok(i >= 0 and 'warn' not in seq[i:], seq, 'from the first « en cours » to the end of the chain the country is never amber again')
     c.check_errors()

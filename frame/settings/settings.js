@@ -475,6 +475,11 @@
       'Einige wartende Sendungen konnten nicht raus: es wurde nichts geleert.',
       'Algunos envíos en espera no pudieron salir: no se vació nada.'
     ],
+    resetOffline: ['Rien n’a été vidé : pas de réseau pour relire les fichiers du dépôt.',
+      'Nothing was emptied: no network to read the repository files again.',
+      'Es wurde nichts geleert: kein Netz, um die Repository-Dateien neu zu lesen.',
+      'No se vació nada: no hay red para releer los archivos del repositorio.'
+    ],
     resetDone: ['{n} copies vidées ; elles sont relues du dépôt à la demande.',
       '{n} copies emptied; they are read again from the repository on demand.',
       '{n} Kopien geleert; sie werden bei Bedarf neu aus dem Repository gelesen.',

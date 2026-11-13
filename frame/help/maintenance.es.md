@@ -191,6 +191,8 @@ marca un intercambio o algo espera. Debajo, una línea dice lo que acaba de sali
 copia. «Importar (fusión)…» la retoma sin perder nada de aquí; «Sustituir por un fichero…» borra primero lo que hay en
 el dispositivo.
 
+**Empezar de cero.** Cuando algo parece raro, «Empezar de cero en este dispositivo» (grupo «Dispositivo»; una línea del bloque «Estado» lleva allí) vacía las copias de los archivos del repositorio que el dispositivo puede volver a leer y las relee. Dice las cifras antes, hace una sola pregunta y envía primero lo que espera. Nunca sus envíos en espera, sus ajustes, sus borradores ni sus documentos. Sin red, o si el repositorio no responde, no se vacía nada: el dispositivo se quedaría sin bases hasta que vuelva la red.
+
 **Los datos sin conexión.** Cada zona publicada tiene su línea: su estado en este dispositivo, su ciclo y su tamaño.
 «Guardar sin conexión» la descarga entera (mejor por wifi); «Liberar» devuelve el espacio.
 
