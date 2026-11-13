@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 180,
+  "tests": 181,
   "verdicts": 122
  },
  "apps": [
@@ -2666,6 +2666,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:25:02Z"
+  },
+  {
+   "id": "SOG-0310",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : « toucher le terrain » demande des doigts trop précis",
+    "en": "Map: touching the aerodrome needs too precise a finger",
+    "de": "Karte: den Flugplatz zu berühren verlangt zu genaue Finger",
+    "es": "Mapa: tocar el aeródromo exige dedos demasiado precisos"
+   },
+   "test": "Recharge la page, sur ton téléphone. Carte : touche le terrain de départ ou d'arrivée sans viser — sa fiche s'ouvre, même si une balise ou un point est tout près. Zoome sur le terrain jusqu'à voir les taxiways : toucher n'importe où dans l'emprise du terrain ouvre sa fiche (toucher une voie garde sa ligne dans le panneau).",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T12:33:18Z"
   },
   {
    "id": "SOG-0315",

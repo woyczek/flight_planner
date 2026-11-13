@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7853713",
+  "organisation": "e969127",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -1385,13 +1385,14 @@
     {
      "id": "SOG-0310",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : « toucher le terrain » demande des doigts trop précis",
      "en": "Map: touching the aerodrome needs too precise a finger",
      "de": "Karte: den Flugplatz zu berühren verlangt zu genaue Finger",
      "es": "Mapa: tocar el aeródromo exige dedos demasiado precisos",
      "milestone": "6.0.0-alpha.5",
-     "rank": 43
+     "rank": 43,
+     "test": true
     }
    ]
   },
