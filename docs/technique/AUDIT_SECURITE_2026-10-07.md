@@ -1049,6 +1049,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 197 | The French aircraft register fold in Data (336344f75, SOG-0315) and the administration button of the Map's thresholds; Fuel's “Start” and direct to a point off the route (75fd4f6be, SOG-0088) | acceptable, one note |
 | 198 | Display and links: the airspace chart's room (1ebf19404, SOG-0307), the “Defined countries” labels (b264626ca), the link to the register fold (2e397622b) | acceptable, display only |
 | 199 | Advice before the code on SOG-0294 (“Store the copies” of `recu/`); the Map's mission window (eecfa3bd0, 4e37bbb01, SOG-0311 / 0312) and the other display commits of the day | advice given; acceptable, one note |
+| 200 | “Store the copies” of the V2 `recu/` folders (a436f3099 and the guard 6c5c3fa09, SOG-0294) and the abandon question in the Map's mission window (34bfa4fc4) | accepted with the guard; the note of 199 closed |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -3038,6 +3039,19 @@ pilot already owns. D183, D209 to D212 green. **Note.** When `ctx.ask` does not 
 abf78a544, 0fa6bdbd2, 5787a33b0, 2e5cef5f2, b02178db7 (the Map: touch area, VOR rose, contour lines, profile, aircraft, opaque panels) are drawing and arithmetic on numbers; ce1b3d12f (an ATIS reading is ignored
 when Fuel is left: every step re-reads the state it received, `gone(s)`) and 67623f7de (a runway that no SID or STAR serves is never the likely one) are state and calculation; 699f2d6b4, a46daac57, 7eb6d2fbd, ce382d00e (aircraft list, Data
 fold, SPEC, status sentence) are screen texts through `esc`; 9bd3986de and ae4b25c64 are mock-ups with no code. F206, F207 green.
+
+**200. “Store the copies” of `recu/` and the abandon question — accepted with one guard; the note of 199 closed.** The block follows the nine points of the advice of 199, read in full before the push and replayed on the
+local commit (K238, then renamed K240; K219, K223, K230, K235 green). *What it does.* On a click, `missionsDir(true)`, a count first (nothing touched), then a question and the calculation redone after the answer. A copy of mission A's `recu/` is
+treated only if its **name** (strict expression, resolved by the registry to exactly one line) **and** its **content** (the same `receivedIds` reading) cite the same other line B, and that line alone; a content citing A, no mission or
+several, an ambiguous name (two lines claim the number), a folder without a registry line or whose last segment is not the line's identifier, a file over 1 MB, a name outside the form (`..` included) are left as they are and counted. The
+same content is looked for in B's `recu/` by the SHA-256 of all its files, never by name (B has its own time stamps); a content B lacks is written first (a free name over ten tries, never over a file, `createWritable` without
+existing data), read back and compared, and the unfaithful file that this pass has just created is removed; the copy of A is removed last, after three readings (its own hash, B's file, both again just before), by `removeEntry` of the exact name, without
+recursion. Bounds: 1,500 files per `recu/`, 8,000 per pass, 64 MB read (beyond: nothing is tidied). One pass at a time (`tidying` / `scanning` with a `finally`, a re-reading refused during it), never at the opening. The report (name, A → B, eight
+characters of the hash, “removed” or “moved”) is on the screen and in the clipboard and the last one is kept in the local storage, 9,000 lines at most under a `try`; no content, no file written outside `recu/`. *Guard added by this audit (6c5c3fa09).* The hash and the
+comparison were made on the decoded text; a file with a byte-order mark or an invalid UTF-8 byte could share the hash of a file with other bytes, so its copy would have been removed with its exact bytes kept nowhere. Now a file is kept in the plan, and counted as
+a content held by B, only if `TextEncoder(text).length === size`; otherwise it is left as it is (in `recuFolders` and in `held_of`), with two more fixtures in the bench case, red when the guard is removed. *Abandon question (34bfa4fc4).* The question is
+now asked inside the window (“Keep the mission” first and focused, Escape keeps), with no dependency on `ctx.ask`: the degraded case of my note of 199 (points removed without a question) no longer exists. D210 green. **Note.** The shared test
+identifier K238 was briefly defined twice on `origin/v3` (the case was renamed K240 by ae97463c7 and no duplicate remains: `git grep` of the case identifiers, `uniq -d`, is empty); keep that check before each push.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
