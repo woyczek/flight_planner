@@ -1050,6 +1050,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 198 | Display and links: the airspace chart's room (1ebf19404, SOG-0307), the “Defined countries” labels (b264626ca), the link to the register fold (2e397622b) | acceptable, display only |
 | 199 | Advice before the code on SOG-0294 (“Store the copies” of `recu/`); the Map's mission window (eecfa3bd0, 4e37bbb01, SOG-0311 / 0312) and the other display commits of the day | advice given; acceptable, one note |
 | 200 | “Store the copies” of the V2 `recu/` folders (a436f3099 and the guard 6c5c3fa09, SOG-0294) and the abandon question in the Map's mission window (34bfa4fc4) | accepted with the guard; the note of 199 closed |
+| 201 | The OpenTopoMap base of the Map's topographic view: the `meta.net` declaration (dac136e87, SOG-0300 T1) and the wording of the “Store the copies” question (a2ed9890f) | accepted, no note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -3052,6 +3053,13 @@ comparison were made on the decoded text; a file with a byte-order mark or an in
 a content held by B, only if `TextEncoder(text).length === size`; otherwise it is left as it is (in `recuFolders` and in `held_of`), with two more fixtures in the bench case, red when the guard is removed. *Abandon question (34bfa4fc4).* The question is
 now asked inside the window (“Keep the mission” first and focused, Escape keeps), with no dependency on `ctx.ask`: the degraded case of my note of 199 (points removed without a question) no longer exists. D210 green. **Note.** The shared test
 identifier K238 was briefly defined twice on `origin/v3` (the case was renamed K240 by ae97463c7 and no duplicate remains: `git grep` of the case identifiers, `uniq -d`, is empty); keep that check before each push.
+
+**201. The OpenTopoMap base and the wording of the question — accepted, no note.** Read before the push, as the ergonomist asked for any change of `meta.net`. The only declaration change is the addition of
+`a`, `b` and `c.tile.opentopomap.org` to the Map module's `net`; the three are already in `tools/csp_policy.py` `CONNECT`, so the effective policy does not move (`csp_policy.value()` contains them; I30, I40, K154 green on the commit).
+No other host and no wildcard. The style is a constant object with one raster source made of three fixed https addresses, with no datum of the user in the URL and no style or glyph host to load; the choice of the base is a comparison to a closed
+string; the errors of the `otm` source alone are ignored and any other error still abandons the map; the switch to the fallback base is made once, after three errors without a tile. What the user should know: each tile seen goes to the
+provider with the device's address and the tile's coordinates, as for the other bases already allowed. The pushed commit carries exactly the declaration that was read. a2ed9890f changes the text of the question in four languages (a removed copy is
+recoverable only through git, its content stays with its mission); K240 green.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
