@@ -2467,9 +2467,10 @@
     "de": "Airline: the mission editor in V3",
     "es": "Airline: the mission editor in V3"
    },
-   "test": "NE PAS RETESTER POUR L'INSTANT sur une vraie mission : un défaut prouvé fait perdre des équipes à l'enregistrement. Tu peux regarder l'écran (Compagnie › Registre : « Créer une mission », « Modifier », « Dupliquer » ; étapes Cadre, Équipes, Lieux) sans cliquer « Enregistrer ». Je te dis quand le correctif est poussé.",
+   "test": "Recharge la page. Compagnie › Registre : « Créer une mission » en tête ; au dépli d'une ligne, « Modifier » et « Dupliquer ». Six étapes : Cadre, Équipes, Lieux, Récit, Risques, Chronologie et cartes ; à droite l'aperçu et « À compléter ». 1) Ouvre une vraie mission, ne touche à rien, « Enregistrer » : « Rien à enregistrer ». 2) Change un titre ou la parade d'un risque, « Enregistrer » : avant l'envoi groupé, regarde le diff du fichier dans ton dépôt de données — seul le champ changé a bougé. 3) Crée une liaison commerciale (famille E · CAT) : départ, arrivée, compagnie, charge, aéronef ; le titre se propose seul. Pour la première vraie mission, garde un œil sur le diff : le dépôt garde l'an",
    "since": "2026-11-13",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T11:43:42Z"
   },
   {
    "id": "SOG-0288",

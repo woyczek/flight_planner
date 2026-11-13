@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9ff87de",
+  "organisation": "6e07044",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -2281,13 +2281,14 @@
     {
      "id": "SOG-0287",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Compagnie : l'éditeur de missions en V3",
      "en": "Airline: the mission editor in V3",
      "de": "Airline: the mission editor in V3",
      "es": "Airline: the mission editor in V3",
      "milestone": "6.0.0-alpha.6",
-     "rank": 123
+     "rank": 123,
+     "test": true
     },
     {
      "id": "SOG-0202",
