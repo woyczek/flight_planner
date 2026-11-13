@@ -389,8 +389,6 @@ The barbs are read from the same forecast as the weather cross-section (nothing 
 climb or descent, with the top of climb and top of descent computed again. The route's waypoints are also marked on
 the profile.
 
-**The “Weather (wind, cloud)” layer.** Off at first; its box is in “Layers”. It draws, over the whole map, the wind and the cloud at the flight's level and at the hour the flight is at mid-route, from the forecast Weather has kept for that flight; a thin line surrounds the area that forecast covers: beyond it the map has no data and does not replace it with another. The Map asks the network for nothing: it reads what Weather (or Fuel) has already read. Without a kept forecast, the line under the box says so and leads to Weather, which loads it. No precipitation: Weather keeps none for an area. It exists on the base map only (not on the plain background) and for a flight of two points or more with a level.
-
 **Climb and descent.** The purple diamonds mark the top of climb (TOC) and the top of descent (TOD), on the map as on
 the profile. They come from the Fuel calculation; without it, the map estimates them with common rates of climb and
 descent. When room is short, the map writes the aerodrome's name first, then the runway numbers, the beacons, the

@@ -132,8 +132,6 @@ Les barbules sont lues dans la même prévision que la coupe météo (rien de pl
 palier, nouvelle montée ou descente, avec la fin de montée et le début de descente recalculés. Les points tournants
 de la route sont aussi repérés sur le profil.
 
-**La couche « Météo (vent, nuages) ».** Éteinte d'origine ; la case est dans « Couches ». Elle dessine, sur toute la carte, le vent et les nuages au niveau du vol et à l'heure où il est à mi-route, d'après la prévision que Météo a gardée pour ce vol ; un trait fin entoure la zone que cette prévision couvre : au-delà, la carte n'a pas de donnée et ne la remplace pas par une autre. La Carte ne demande rien au réseau : elle lit ce que Météo (ou Carburant) a déjà lu. Sans prévision gardée, la ligne sous la case le dit et mène à Météo, qui la charge. Pas de précipitations : Météo n'en garde pas pour une zone. Elle n'existe que sur le fond de carte (pas sur le fond uni) et sur un vol d'au moins deux points avec un niveau.
-
 **Montée et descente.** Les losanges violets marquent la fin de la montée (TOC) et le début de la descente (TOD),
 sur la carte comme sur le profil. Ils viennent du calcul de Carburant ; sans lui, la carte les estime avec des taux
 de montée et de descente courants. Quand la place manque, la carte écrit d'abord le nom du terrain, puis les numéros de

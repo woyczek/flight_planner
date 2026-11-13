@@ -138,8 +138,6 @@ Die Windfiedern werden aus derselben Vorhersage wie der Wetterschnitt gelesen (n
 Steigflug, Reiseflug, neuer Steig- oder Sinkflug, mit neu berechnetem Ende des Steigflugs und Beginn des Sinkflugs.
 Die Wegpunkte der Route sind auch auf dem Profil markiert.
 
-**Die Ebene „Wetter (Wind, Wolken)“.** Zuerst aus; ihr Kästchen steht in „Ebenen“. Sie zeichnet über die ganze Karte den Wind und die Wolken auf der Flughöhe und zu der Stunde, zu der der Flug in der Streckenmitte ist, nach der Vorhersage, die Wetter für diesen Flug gespeichert hat; eine dünne Linie umgibt das Gebiet, das diese Vorhersage abdeckt: darüber hinaus hat die Karte keine Daten und ersetzt sie nicht durch andere. Die Karte fragt das Netz nach nichts: sie liest, was Wetter (oder Kraftstoff) schon gelesen hat. Ohne gespeicherte Vorhersage sagt es die Zeile unter dem Kästchen und führt zu Wetter, das sie lädt. Kein Niederschlag: Wetter speichert keinen für ein Gebiet. Sie gibt es nur auf der Basiskarte (nicht auf dem einfachen Hintergrund) und für einen Flug mit mindestens zwei Punkten und einer Flughöhe.
-
 **Steig- und Sinkflug.** Die violetten Rauten markieren das Ende des Steigflugs (TOC) und den Beginn des Sinkflugs
 (TOD), auf der Karte wie im Profil. Sie stammen aus der Berechnung in Kraftstoff; ohne sie schätzt die Karte sie mit
 üblichen Steig- und Sinkraten. Wenn der Platz knapp ist, schreibt die Karte zuerst den Namen des Flugplatzes, dann die

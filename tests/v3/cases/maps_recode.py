@@ -6081,144 +6081,6 @@ def d_altsdrawn(c):
     c.js("(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }", _alts_doc(updated_at='2026-11-09T16:41:00Z'))
     c.until("() => window.__drawn.length >= 2", timeout=8000, what='a new publication is announced again')
 
-
-# The forecast of the weather map (the 48-place grid of modules/atmosphere/lib/weather_map.js gridRequest), written where the frame's weather layer keeps it:
-# what Météo has read for the flight.  A wind that turns with the latitude and a cloud cover that grows with it: the layer has something to draw.
-_GRID_FORECAST_JS = r"""async (a) => {
-  const [L, W] = await Promise.all([import('/modules/atmosphere/lib/weather_map.js'), import('/frame/lib/weather_store.js')]);
-  const pts = a.points.map(p => ({ id: p.id, lat: p.lat, lon: p.lon, alt_ft: 0 }));
-  const req = L.gridRequest(pts, a.levelFt, 48), model = req.model.id, size = W.cellSize(model), cells = new Map();
-  for (const p of req.g.places) { const c = W.cellOf(p.lat, p.lon, size); cells.set(c.id, c) }
-  const day0 = Date.parse(new Date().toISOString().slice(0, 10)), docs = [];
-  const val = (v, h, lat, lon) => {
-    const m = /^(.*)_(\d+)hPa$/.exec(v), name = m ? m[1] : v, hm = m ? 44330 * (1 - Math.pow(+m[2] / 1013.25, 0.19029)) : 0;
-    const t = { temperature: Math.max(-56, 15 - 0.0065 * hm), relative_humidity: Math.min(100, 55 + (lat - 42) * 9), geopotential_height: hm, wind_speed: 20 + hm / 400 + (lat - 44) * 3,
-      wind_direction: 240 + (lat - 44) * 12 + h, temperature_2m: 12, pressure_msl: 1015 - (lat - 44), surface_pressure: 1000,
-      cloud_cover_low: Math.min(100, 30 + (lat - 43) * 20), cloud_cover_mid: 70, cloud_cover_high: 50, wind_speed_10m: 8, wind_direction_10m: 270 }[name];
-    return t == null ? 0 : t;
-  };
-  for (const c of cells.values()) for (let d = 0; d < 6; d++) {
-    const day = new Date(day0 + d * 864e5).toISOString().slice(0, 10), times = Array.from({ length: 24 }, (_, h) => (day0 + d * 864e5) / 1000 + h * 3600);
-    const vs = {}; for (const v of req.vars) vs[v] = times.map((_, h) => val(v, h, c.lat, c.lon));
-    docs.push([W.PREFIX + model + '/' + c.id + '/' + day + '.json', { schema: 1, model, cell: c.id, size, lat: c.lat, lon: c.lon,
-      elevation: 100, day, times, vars: vs, refused: [], run: null, at: Date.now() }, 'cache']);
-  }
-  return docs;
-}"""
-# The painted pixels of the weather canvas, and along the four sides of the forecast area (the thin line, once the wind and the cloud are put out).
-_WX_PIXELS_JS = """() => { const cv = document.querySelector('canvas.sog-weather-map'); if (!cv) return null;
-  const g = cv.getContext('2d'), W = cv.width, H = cv.height, d = g.getImageData(0, 0, W, H).data; let n = 0;
-  for (let i = 3; i < d.length; i += 4) if (d[i] > 8) n++;
-  return { n, W, H } }"""
-_WX_EDGE_JS = """() => { const S = window.__mp.S, cv = document.querySelector('canvas.sog-weather-map'); if (!cv || !S.wxm) return null;
-  const [w, so, e, no] = S.wxm.wm.info().gridBox, dpr = cv.width / cv.clientWidth, g = cv.getContext('2d'), line = (x0, y0, x1, y1) => {
-    let n = 0; const k = 200;
-    for (let i = 0; i <= k; i++) { const x = Math.round((x0 + (x1 - x0) * i / k) * dpr), y = Math.round((y0 + (y1 - y0) * i / k) * dpr);
-      if (x < 1 || y < 1 || x >= cv.width - 1 || y >= cv.height - 1) continue;
-      let hit = false; for (let dx = -1; dx <= 1 && !hit; dx++) for (let dy = -1; dy <= 1 && !hit; dy++) hit = g.getImageData(x + dx, y + dy, 1, 1).data[3] > 8;
-      if (hit) n++ }
-    return n };
-  const nw = S.map.project([w, no]), ne = S.map.project([e, no]), sw = S.map.project([w, so]), se = S.map.project([e, so]);
-  return { top: line(nw.x, nw.y, ne.x, ne.y), bottom: line(sw.x, sw.y, se.x, se.y), left: line(nw.x, nw.y, sw.x, sw.y), right: line(ne.x, ne.y, se.x, se.y),
-    box: [w, so, e, no] } }"""
-
-
-@case('D194', 'The Map’s « Weather » layer (off at first): the wind and the cloud of the flight at its cruise level and the time of passage, from what Météo already keeps, a thin line round the forecast area; ticking it makes no outgoing call; without a kept forecast it says so and leads to Météo', 'D',
-      tags=('maps',), screens=False, designs=('standard',), langs4=True,
-      rule='SOG-0092 (the ergonomist, 12 Nov): wind at the cruise level, cloud (precipitation is not in what Météo keeps for an area: not drawn); the hour of passage, one level; « bord de la zone du vol » = the contour of the area the data covers; the Map reads the cache and asks nothing; no data: the chip says so and leads to Météo')
-def d_wxlayer(c):
-    c.page.set_viewport_size({'width': 1280, 'height': 760})
-    c.page.goto(c.base + '/frame/manifest.webmanifest')
-    grid = c.page.evaluate(_GRID_FORECAST_JS, {'points': FLIGHT['route']['points'], 'levelFt': FLIGHT['level']['ft']})
-    c.ok(len(grid) >= 12, str(len(grid)), 'the forecast of the weather map is kept (cells × days)')
-    c.open('maps', flight=True, docs=grid)
-    c.js(_STATE_JS)
-    hook_map(c)
-    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
-    c.js("async () => (await import('/modules/maps/layers.js')).toggleLayers(true)")
-    c.until("() => window.__t.shown(document.querySelector('.mp-dbody input[data-layer=wx]'))", timeout=8000, what='the Layers content has the Weather case')
-    c.eq(c.js("() => document.querySelector('.mp-dbody input[data-layer=wx]').checked"), False, 'off at first', what='the Weather case')
-    c.eq(c.js("() => !!document.querySelector('canvas.sog-weather-map') || !!window.__mp.S.wxm"), False, 'nothing is attached while it is off', what='canvas')
-    c.eq(norm(c.js("() => document.querySelector('.mp-dbody input[data-layer=wx]').parentElement.textContent")), norm(tx(M, 'wx', c.lang, after='layerNames: {')), 'the box is named in the language of the run', what='the Weather case label')
-    reqs = []
-    c.page.on('request', lambda r: reqs.append(r.url))
-    c.tap('.mp-dbody input[data-layer="wx"]')
-    c.until("() => window.__mp.S.wxm && window.__mp.S.wxm.wm && window.__mp.S.wxm.wm.state === 'ok'", timeout=15000, what='the kept forecast is read')
-    c.until("() => { const cv = document.querySelector('canvas.sog-weather-map'); return !!cv && cv.width > 0 }", timeout=8000, what='the weather canvas is in the map')
-    c.wait(1500)
-    p = c.js(_WX_PIXELS_JS)
-    c.ge(p['n'], 400, 'the wind barbs and the cloud are drawn', what=str(p))
-    note = c.js("() => document.querySelector('.mp-dbody .mp-wx-note').textContent")
-    c.ok('FL270' in note or 'FL 270' in note, note, 'the note says the level it shows')
-    c.ok(norm(note) != norm(row(c, 'wxNone')), note, 'the note is not the « nothing kept » one')
-    # the edge of the area, alone
-    c.js("() => { window.__mp.S.wxm.wm.update({ layers: { cloud: false, wind: false } }); return true }")
-    c.wait(500)
-    ed = c.js(_WX_EDGE_JS)
-    c.ok(ed and max(ed['top'], ed['bottom'], ed['left'], ed['right']) >= 30, str(ed), 'the thin line round the forecast area is drawn')
-    c.js("() => { window.__mp.S.wxm.wm.update({ layers: { cloud: true, wind: true } }); return true }")
-    c.wait(500)
-    # no outgoing call: nothing but the code of the page left the device while it was ticked
-    bad = [u for u in reqs if not re.search(r'\.(js|css|png|svg|woff2?)(\?|$)', u)]
-    c.ok(not bad, str(bad[:6]), 'ticking the layer made no outgoing call (no Open-Meteo, no synoptic of the pages, no launcher)')
-    c.ok(not [u for u in reqs if 'open-meteo' in u or '/weather/' in u], str([u for u in reqs if 'weather' in u][:6]), 'no weather request at all')
-    c.page.add_style_tag(content='#fNotes{display:none!important}')      # the « data access not set » toast covers the Layers list: the capture is of the layer
-    c.js("() => { const m = window.__mpMap; m.jumpTo({ zoom: m.getZoom() - 1.3 }); return true }")      # out far enough to see the edge of the forecast area
-    c.wait(900)
-    c.js("() => { document.querySelector('.mp-dbody .mp-wx-note').scrollIntoView({ block: 'center' }); return true }")
-    c.shot('D194_{}_wx_1280_delivered.png'.format('standard'))
-    c.page.set_viewport_size({'width': 390, 'height': 800})
-    c.wait(1200)
-    c.js("() => { document.querySelector('.mp-dbody .mp-wx-note').scrollIntoView({ block: 'center' }); return true }")
-    c.wait(300)
-    c.shot('D194_{}_wx_390_delivered.png'.format('standard'))
-    c.page.set_viewport_size({'width': 1280, 'height': 760})
-    c.wait(800)
-    # unticked: the canvas goes
-    c.tap('.mp-dbody input[data-layer="wx"]')
-    c.until("() => !document.querySelector('canvas.sog-weather-map') && !window.__mp.S.wxm", timeout=6000, what='unticked: the weather canvas is removed')
-    # without a kept forecast: the chip says so and leads to Météo, still no call
-    forget(c.page, c.doc_paths('cache/weather/'), c.base)
-    c.open('maps', flight=True)
-    c.js(_STATE_JS)
-    hook_map(c)
-    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read, nothing kept')
-    c.js("async () => (await import('/modules/maps/layers.js')).toggleLayers(true)")
-    c.until("() => window.__t.shown(document.querySelector('.mp-dbody input[data-layer=wx]'))", timeout=8000, what='the Layers content')
-    reqs2 = []
-    c.page.on('request', lambda r: reqs2.append(r.url))
-    c.tap('.mp-dbody input[data-layer="wx"]')
-    c.until("() => window.__mp.S.wxm && window.__mp.S.wxm.wm && window.__mp.S.wxm.wm.state === 'missing'", timeout=15000, what='nothing kept: missing')
-    c.wait(1200)
-    c.eq(norm(c.js("() => document.querySelector('.mp-dbody .mp-wx-note').textContent")), norm(row(c, 'wxNone')) + ' ' + norm(row(c, 'wxOpen')), 'it says nothing is kept and offers Météo', what='note')
-    c.eq(c.js("() => document.querySelector('.mp-dbody .mp-wx-note a').getAttribute('href')"), '#atmosphere', 'the link leads to Météo', what='href')
-    p2 = c.js(_WX_PIXELS_JS)
-    c.ok(not p2 or p2['n'] < 50, str(p2), 'nothing is drawn without data')
-    bad2 = [u for u in reqs2 if not re.search(r'\.(js|css|png|svg|woff2?)(\?|$)', u)]
-    c.ok(not bad2, str(bad2[:6]), 'no outgoing call without data either')
-
-
-
-# The index of the V2 (IndexedDB « defaIndex », MissionIndex) of a bench: a registry line (T-085, its former number 85 in `formerId`) and an entry under the bare former number.
-_FORMER_LINE = """(id, former, title) => ({ id, formerId: former, series: '', number: +former, type: 'AIRLIFT', family: 'T', subtype: '', title, folder: 'T_AIRLIFT/' + id,
-  files: ['mission' + id + '.yaml'], source: 'dossier', status: 'generated', statusAt: '2026-10-20T10:00:00.000Z', notes: '', flownAt: '', addedAt: '2026-10-20T10:00:00.000Z',
-  teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0, hasYaml: true })"""
-_FORMER_OLD = """(id, title, status, notes, flownAt) => ({ id, formerId: '', series: '', number: +id, type: 'AIRLIFT', family: 'T', subtype: '', title, folder: '', files: [],
-  source: 'collage', status, statusAt: '2026-10-01T10:00:00.000Z', notes, flownAt, addedAt: '2026-10-01T10:00:00.000Z', teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0 })"""
-_FORMER_SEED_JS = "async (spec) => { const line = " + _FORMER_LINE + ", old = " + _FORMER_OLD + ";" + """
-  await window.MissionIndex.ready;
-  const make = s => { const b = Array.isArray(s) ? s : s.base, o = b.length === 3 ? line(...b) : old(...b); return Array.isArray(s) ? o : { ...o, ...s.set } };
-  await window.MissionIndex.save(spec.map(make), new Date().toISOString());
-  return window.MissionIndex.all().length }"""
-_FORMER_STATE_JS = """async () => { await window.MissionIndex.ready; const R = window.MissionRegistry;
-  return { index: window.MissionIndex.all().map(m => ({ id: m.id, by: m.supersededBy || '', status: m.status || '', notes: m.notes || '', flownAt: m.flownAt || '' })),
-    shown: R.get().missions.filter(R.matches).map(m => m.id), note: (document.getElementById('rgFormer') || {}).textContent || '' } }"""
-
-
-# the ledger of the reports of the bench: one report written under the number 89
-_FORMER_LEDGER_JS = r"""() => { localStorage.setItem('missionCoreLedger:v2', JSON.stringify({ text: ['missions:', '  - family: AIRLIFT', '    metadata:', "      missionNumber: '89'", '      date: 2026-10-05', ''].join('\n') })); return true }"""
-
-
 @case('K219', 'The registry of the V2 shows one mission under its lettered identifier when its index also holds the number it had before the renumbering: what was attached to the old number follows, an old entry carrying a field the line lacks is kept (and said), nothing else is purged', 'K',
       tags=('maps',), screens=False, designs=('standard',),
       rule='SOG-0289 (the user: « 85 est doublon de T-085 … vérifier lequel est le plus complet, fusionner »; the ergonomist, 13 Nov): an index entry whose id is the formerId of a registry line, and that is not itself a line, is attached to that line; its status, notes and flight date follow; a field it has and the line lacks keeps it (hidden from the list, counted « n anciennes entrées gardées, plus complètes »); never a purge')
@@ -6718,3 +6580,31 @@ def d199(c):
     c.shot(f'D199_standard_ground_button_{c.lang}_delivered.png')
     _ground_at(c, 12, 900, [8.0, 40.0])
     c.until("() => { const b = document.querySelector('[data-mp=ground]'); return !b || b.hidden || b.offsetParent === null }", timeout=6000, what='a view of neither end: no button')
+
+
+
+@case('D200', 'The Map’s « Weather (wind, cloud) » layer is no longer offered (the Weather tab is for preparation); the wind barbs of « Winds aloft » are still drawn', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0295 (the user, 13 Nov, on SOG-0092: « rien ne se passe. imho, ça fait double emploi. l’onglet météo sert à la préparation. simplement les barbules suffisent. »): the layer is removed from the Layers list and the help; the barbs stay; the cache-only reading of the weather library stays')
+def d200(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    pts = [('LFPO', 48.7233, 2.3794, True), ('MOPAR', 48.95, 2.72, True), ('KOLIV', 49.55, 2.40, True), ('VEPET', 50.30, 2.55, False), ('PETAX', 50.75, 1.35, True), ('EGKB', 51.33, 0.03, True)]
+    wind = {'dirDeg': 333, 'kt': 38, 'tempC': -20, 'levelFt': 17000, 'at': '2026-11-11T21:57:00Z'}
+    f = flight()
+    f['route'] = {'text': 'LFPO MOPAR KOLIV VEPET PETAX EGKB', 'dep': 'LFPO', 'arr': 'EGKB',
+                  'points': [{'id': i, 'lat': la, 'lon': lo, **({'wind': wind} if w else {})} for i, la, lo, w in pts]}
+    f['level'] = {'ft': 17000}
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("async () => (await import('/modules/maps/layers.js')).toggleLayers(true)")
+    c.until("() => window.__t.shown(document.querySelector('.mp-dbody input[data-layer=wind]'))", timeout=8000, what='the Layers content has the wind barbs case')
+    c.eq(c.js("() => document.querySelectorAll('.mp-dbody input[data-layer=wx]').length"), 0, 'the Weather (wind, cloud) layer is not offered any more', what='wx case')
+    names = c.js("() => [...document.querySelectorAll('.mp-dbody .mp-layers label')].map(l => l.textContent.replace(/\\s+/g, ' ').trim())")
+    c.ok(not [n for n in names if 'Wetter (Wind' in n or 'Weather (wind' in n or 'Météo (vent' in n or 'Meteo (viento' in n], str(names), 'no label of it in the list')
+    c.eq(c.js("() => !!document.querySelector('.mp-dbody .mp-wx-note')"), False, 'no line under it either', what='note')
+    c.eq(c.js("() => !!document.querySelector('canvas.sog-weather-map')"), False, 'no weather canvas in the map', what='canvas')
+    c.js("([z]) => { window.__mpMap.jumpTo({ center: [2.55, 50.2], zoom: z }); return true }", [8])
+    c.wait(1800)
+    c.ok(c.js("() => (window.__mp.S.windHits || []).length") >= 3, '', 'the wind barbs of « Winds aloft » are still drawn')

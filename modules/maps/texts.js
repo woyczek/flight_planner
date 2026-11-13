@@ -266,19 +266,6 @@ export const TX = {
     'Nada alrededor del vuelo en esta vista: desmarque «Solo alrededor del vuelo» para verlo todo.'
   ],
   directTo: ['Direct vers ce point', 'Direct to this point', 'Direkt zu diesem Punkt', 'Directo a este punto'],
-  wxLayerOk: [
-    'Vent et nuages à {l}, à {t} (mi-route), d’après la prévision que Météo a gardée. Le trait fin borde la zone qu’elle couvre.',
-    'Wind and cloud at {l}, at {t} (mid-route), from the forecast Weather has kept. The thin line is the edge of the area it covers.',
-    'Wind und Wolken auf {l}, um {t} (Streckenmitte), nach der Vorhersage, die Wetter gespeichert hat. Die dünne Linie begrenzt das Gebiet, das sie abdeckt.',
-    'Viento y nubes a {l}, a las {t} (mitad de ruta), según la previsión que Meteo ha guardado. La línea fina es el borde de la zona que cubre.'
-  ],
-  wxLayerFlight: ['Il faut un vol de deux points et un niveau.', 'A flight of two points and a level is needed.',
-    'Ein Flug mit zwei Punkten und einer Flughöhe wird gebraucht.',
-    'Se necesita un vuelo de dos puntos y un nivel.'
-  ],
-  wxLayerPlain: ['Disponible sur le fond de carte, pas sur le fond uni.', 'Available on the base map, not on the plain background.',
-    'Auf der Basiskarte verfügbar, nicht auf dem einfachen Hintergrund.', 'Disponible en el mapa base, no en el fondo liso.'
-  ],
   atcTitle: ['{a} : contrôleurs en ligne', '{a}: online controllers', '{a}: Lotsen online', '{a}: controladores en línea'],
   atcNet: {
     ivao: ['IVAO', 'IVAO', 'IVAO', 'IVAO'],
@@ -334,7 +321,6 @@ export const TX = {
     ],
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
     wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura'],
-    wx: ['Météo (vent, nuages)', 'Weather (wind, cloud)', 'Wetter (Wind, Wolken)', 'Meteo (viento, nubes)'],
     atc: ['Contrôleurs en ligne (IVAO / VATSIM)', 'Online controllers (IVAO / VATSIM)', 'Online-Lotsen (IVAO / VATSIM)',
       'Controladores en línea (IVAO / VATSIM)'
     ],

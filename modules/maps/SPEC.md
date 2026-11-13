@@ -627,10 +627,6 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   (`AeroDb.fetchGround`, the ground alone, not the procedures); `none` keeps the sentence and the link. Noreg D135. (Refusals of the reading used to belong to Fuel's notification.) AeroDB says `on('change', { ground: ICAO })` when
   it has read the ground after the procedures: the Map reads the file again (`groundChanged`), so an open panel shows it at once. Noreg D120.
 
-### 5.2 ter The « Weather » layer (SOG-0092)
-
-- Layer `wx` (« Weather (wind, cloud) »), off at first, in Layers after the wind barbs. Drawn by the library of Météo (`attach`, its own canvas in the MapLibre container, under the overlay): the wind barbs and the cloud at the flight's level and the hour of mid-route passage, from the grid that Météo has kept (`cacheOnly`, never asked); a thin line is the edge of that grid; nothing beyond it (the world synoptic is not given). No precipitation (not kept for an area). Without a kept forecast the line under the box says it and links to `#atmosphere`; on the plain background or without a flight of two points and a level it says why it is idle. `wx.js`; Noreg D194.
-
 ### 5.2 bis The world view (SOG-0156)
 
 - A view wider than `WORLD_NM` = 3 000 NM (`widthNm(shown)`, `data.js`; a route to another continent frames to it) is a **world view**

@@ -64,9 +64,6 @@ import {
   atcStart
 } from './atc.js';
 import {
-  wxOff
-} from './wx.js';
-import {
   makeSheet,
   sheetEvents,
   escapeKey,
@@ -142,7 +139,7 @@ export const meta = {
     merge: 'record'
   }],
   // gardés à l'installation (hors ligne dès la première visite)
-  files: ['atc.js?v=0', 'wx.js?v=0', 'state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'alts.js?v=0',
+  files: ['atc.js?v=0', 'state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'alts.js?v=0',
     'canvas_scale.js?v=0',
     'data.js?v=0',
     'layers.js?v=0',
@@ -169,8 +166,7 @@ export const meta = {
   // météo d'Atmosphère (au premier « Météo ») ; les contours des pays du fond uni viennent d'aerodb (zoneOutlines, le cadre), la
   // copie lib/outlines.js reste le repli de map_base.loadOutlines sans aerodb (Atmosphère)
   lazy: ['edit.js?v=0', 'tune.js?v=0', 'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0',
-    '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/texts.js?v=0', '../fuel/winds.js?v=0',
-    '../atmosphere/lib/weather_map.js?v=0', '../atmosphere/world.js?v=0'
+    '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/texts.js?v=0', '../fuel/winds.js?v=0'
   ],
   // hôtes publics appelés directement par MapLibre (tuiles) et par le relief ombré ; CSP connect-src du cadre
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']
@@ -389,7 +385,6 @@ export async function mount(el, ctx) {
     watchFlight()
   ); // la fenêtre d'un vol suit le vol même quand une carte fournie y est déjà montrée (le choix peut venir avant la fin du montage, SOG-0251)
   S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
-  S.stops.push(wxOff); // la couche Météo : son canevas et ses écouteurs partent avec la Carte (SOG-0092)
   S.stops.push(atcStart()); // les contrôleurs en ligne IVAO / VATSIM, lus tant que leur couche est allumée (SOG-0094)
   S.stops.push(lvEvents()); // la fiche d'un espace de la liste (SOG-0163)
   S.stops.push(directEvents()); // « Direct vers ce point » des fiches : l'adresse de Carburant, jamais le vol (SOG-0088)
