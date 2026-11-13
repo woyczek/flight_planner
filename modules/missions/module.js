@@ -8,6 +8,7 @@ import * as MS from '../../frame/lib/mission.js';
 import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des YAML avant toute écriture (SOG-0212 b)
 import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
+import * as SE from './search.js'; // la recherche dans le contenu des missions (SOG-0288) : le calcul pur
 import *
 as MT from '../../frame/lib/mission_themes.js'; // le thème d'une ancienne catégorie (SOG-0202 T2) // changer la compagnie d'une mission : le champ airline retouché dans le texte (SOG-0223)
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
@@ -22,7 +23,7 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
@@ -130,11 +131,28 @@ const TX = {
   category: ['Catégorie', 'Category', 'Kategorie', 'Categoría'],
   search: ['Rechercher une mission', 'Search a mission', 'Mission suchen', 'Buscar una misión'],
   // ce que la recherche lit, écrit sous le champ (SOG-0009)
-  searchHint: ['Identifiant, titre, terrain (code OACI), type d’aéronef, indicatif (SAMU66), activité (MEDEVAC, HEMS, SAMU…).',
-    'Id, title, aerodrome (ICAO code), aircraft type, callsign (SAMU66), activity (MEDEVAC, HEMS, SAMU…).',
-    'ID, Titel, Flugplatz (ICAO-Code), Luftfahrzeugtyp, Rufzeichen (SAMU66), Tätigkeit (MEDEVAC, HEMS, SAMU…).',
-    'Id, título, aeródromo (código OACI), tipo de aeronave, indicativo (SAMU66), actividad (MEDEVAC, HEMS, SAMU…).'
+  searchHint: [
+    'Identifiant, titre, contenu de la mission (résumé, description, risques, lieux…), terrain (code OACI), type d’aéronef, indicatif (SAMU66), activité (MEDEVAC, HEMS, SAMU…).',
+    'Id, title, content of the mission (summary, description, risks, places…), aerodrome (ICAO code), aircraft type, callsign (SAMU66), activity (MEDEVAC, HEMS, SAMU…).',
+    'ID, Titel, Inhalt der Mission (Kurzbeschreibung, Beschreibung, Risiken, Orte …), Flugplatz (ICAO-Code), Luftfahrzeugtyp, Rufzeichen (SAMU66), Tätigkeit (MEDEVAC, HEMS, SAMU…).',
+    'Id, título, contenido de la misión (resumen, descripción, riesgos, lugares…), aeródromo (código OACI), tipo de aeronave, indicativo (SAMU66), actividad (MEDEVAC, HEMS, SAMU…).'
   ],
+  // la recherche dans le contenu (SOG-0288) : où le mot a été trouvé quand ce n'est pas le titre ; les missions cherchées sur leur ligne seule
+  foundIn: ['dans : {w}', 'in: {w}', 'in: {w}', 'en: {w}'],
+  unreadN: ['{n} mission(s) non lue(s) sur cet appareil : cherchée(s) sur la ligne du registre seulement',
+    '{n} mission(s) not read on this device: searched on the registry line only',
+    '{n} Mission(en) auf diesem Gerät nicht gelesen: nur in der Registerzeile gesucht',
+    '{n} misión(es) no leída(s) en este dispositivo: buscada(s) solo en la línea del registro'
+  ],
+  inSummary: ['résumé', 'summary', 'Kurzbeschreibung', 'resumen'],
+  inDescription: ['description', 'description', 'Beschreibung', 'descripción'],
+  inObjectives: ['objectifs', 'objectives', 'Ziele', 'objetivos'],
+  inRisks: ['risques', 'risks', 'Risiken', 'riesgos'],
+  inPlaces: ['lieux', 'places', 'Orte', 'lugares'],
+  inNotes: ['notes', 'notes', 'Notizen', 'notas'],
+  inCallsigns: ['indicatifs', 'callsigns', 'Rufzeichen', 'indicativos'],
+  inTypes: ['types', 'types', 'Typen', 'tipos'],
+  inLine: ['ligne du registre', 'registry line', 'Registerzeile', 'línea del registro'],
   allFamilies: ['Toutes les familles', 'All families', 'Alle Familien', 'Todas las familias'],
   draw: ['Tirer au sort', 'Draw at random', 'Zufällig ziehen', 'Sortear'],
   drawAgain: ['Tirer encore', 'Draw again', 'Erneut ziehen', 'Sortear otra'],
@@ -511,6 +529,7 @@ export async function mount(el, ctx) {
   }
   s.regWhy = got.why ? got : null;
   s.rows = MS.readRegistry(got.doc).filter(r => !r.organisation).sort((a, b) => b.id.localeCompare(a.id)); // les séries récentes d'abord
+  s.idx = null; // l'index de la recherche se rebâtit à la prochaine frappe sur ces lignes (SOG-0288)
   if (!s.open && !s.reg) draw(s);
   await unlisted(s, got.doc);
   if (S !== s) return;
@@ -545,6 +564,7 @@ async function unlisted(s, reg) {
   }
   if (!found.length) return;
   s.rows = [...s.rows, ...found].sort((a, b) => b.id.localeCompare(a.id));
+  s.idx = null;
   if (!s.open && !s.reg) s.rows.length === found.length ? draw(s) : results(s);
 }
 
@@ -628,11 +648,7 @@ async function flownOf(s) {
 /** Les lignes retenues par la recherche et le filtre de famille. */
 const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.subtype || r.subtype === s
   .subtype) && (!s.category || catOf(s, r)?.id === s
-  .category) && (!s.q || [r.id, r.formerId, r.title, r.operation, r
-  .family, r.kind,
-  r.subtype, ...r.callsigns, ...r.words, r.originIcao, r.destinationIcao, r.origin, r
-  .destination, ...r.types
-].some(v => String(v).toUpperCase().includes(s.q.toUpperCase()))));
+  .category) && (!s.q || qWhere(s, r, s.q) !== null));
 
 /** Dessine la liste, ou la mission choisie. */
 function draw(s) {
@@ -674,7 +690,7 @@ function resultsHtml(s) {
     row = r => {
       const f = s.flown.get(r.id) ?? (r.formerId ? s.flown.get(r.formerId) : undefined),
         co = coName(s, r);
-      return `<button type="button" class="f-item" data-id="${esc(r.id)}"><span><b>${esc(r.id)}</b> ${esc(r.title)}${co ? ` <span class="f-badge" data-co>${esc(co)}</span>` : ''}</span><span class="f-muted">${esc([r.originIcao && r.destinationIcao ? `${r.originIcao} → ${r.destinationIcao}` : r.originIcao, r.types[0], hmm(r.blockMin)].filter(Boolean).join(' · '))}${f !== undefined ? ` <span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flown, { d: day(f) }))}</span>` : ''}</span></button>`;
+      return `<button type="button" class="f-item" data-id="${esc(r.id)}"><span><b>${esc(r.id)}</b> ${esc(r.title)}${co ? ` <span class="f-badge" data-co>${esc(co)}</span>` : ''}</span><span class="f-muted">${esc([r.originIcao && r.destinationIcao ? `${r.originIcao} → ${r.destinationIcao}` : r.originIcao, r.types[0], hmm(r.blockMin)].filter(Boolean).join(' · '))}${whereHtml(s, r, s.q)}${f !== undefined ? ` <span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flown, { d: day(f) }))}</span>` : ''}</span></button>`;
     };
   let fam = '',
     body = '';
@@ -682,11 +698,74 @@ function resultsHtml(s) {
     if (r.family !== fam) body += `<h3 class="f-muted" data-family="${esc(fam = r.family)}">${famHtml(s, fam)}</h3>`;
     body += row(r);
   }
-  return `<p class="f-muted" data-count>${esc(s.tt(one(s, hits.length) ? TX.count1 : TX.count, { n: hits.length }))}</p>
+  return `<p class="f-muted" data-count${s.q && s.idx?.ready ? ' data-indexed' : ''}>${esc(s.tt(one(s, hits.length) ? TX.count1 : TX.count, { n: hits.length }))}</p>${unreadHtml(s, s.q)}
     <div class="f-list" data-list>${hits.length ? body : `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>`}</div>
     ${hits.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="more">${esc(s.tt(TX.more, { n: hits.length - shown.length }))}</button>` : ''}`;
 }
 
+/** Le chemin du fichier d'une ligne du registre (« missions/<dossier>/<fichier> ») ; '' sans dossier ou fichier sûrs. */
+const rowPath = r => r?.folder && r?.file ? `missions/${r.folder}/${r.file}` : '';
+/** L'index de la recherche dans le contenu (SOG-0288), en mémoire seulement, bâti à la première frappe : les fichiers de mission DÉJÀ
+ *  sur l'appareil (data.cached, sans réseau), lus sans attente ; une mission dont le fichier n'y est pas est cherchée sur sa ligne du
+ *  registre et comptée « non lue ». Rien n'est écrit. Redessine la liste ou le registre quand il est prêt. */
+function ensureIndex(s) {
+  if (s.idx) return;
+  const idx = s.idx = {
+    map: new Map(),
+    ready: false
+  };
+  (async () => {
+    const have = new Set(((await Promise.resolve().then(() => s.ctx.data.cached?.('missions/')).catch(() => null)) || []).map(d => d
+        .path)),
+      rows = [...s.rows, ...(s.reg?.lines || []).map(e => e.row)],
+      paths = [...new Set(rows.map(rowPath).filter(p => p && have.has(p)))];
+    for (let i = 0; i < paths.length; i += 8)
+      await Promise.all(paths.slice(i, i + 8).map(async p => {
+        const v = await Promise.resolve().then(() => s.ctx.data.read(p)).catch(() => null),
+          g = v ? await parse(v.value ?? v.text ?? null) : null,
+          m = g?.doc ? MS.readMission(g.doc) : null;
+        if (m) idx.map.set(p, SE.missionFields(m));
+      }));
+    idx.ready = true;
+    if (S !== s || s.idx !== idx) return;
+    s.qMemo = null;
+    if (s.reg) {
+      const box = s.el.querySelector('[data-regrows]');
+      if (box && s.reg.q) box.innerHTML = regListHtml(s);
+    } else if (s.q && !s.open) results(s);
+  })();
+}
+/** Les champs où la recherche `q` se trouve pour une ligne : [] trouvée sur l'identifiant ou le titre, [clés] ailleurs, null pas trouvée ;
+ *  mémorisé par recherche (la liste et le tirage au sort filtrent plusieurs fois les mêmes lignes). */
+function qWhere(s, r, q) {
+  const qf = SE.fold(q);
+  if (!qf) return [];
+  ensureIndex(s);
+  if (!s.qMemo || s.qMemo.q !== qf || s.qMemo.ready !== s.idx.ready) s.qMemo = {
+    q: qf,
+    ready: s.idx.ready,
+    m: new Map()
+  };
+  const key = `${r.id}\u0000${rowPath(r)}`;
+  if (s.qMemo.m.has(key)) return s.qMemo.m.get(key);
+  const keys = SE.where([...SE.rowFields(r), ...(s.idx.map.get(rowPath(r)) || [])], qf),
+    out = !keys.length ? null : keys.includes('id') || keys.includes('title') ? [] : keys;
+  s.qMemo.m.set(key, out);
+  return out;
+}
+/** « dans : risques » quand la recherche n'est pas dans l'identifiant ni le titre (SOG-0288) ; '' sinon. */
+function whereHtml(s, r, q) {
+  const w = q ? qWhere(s, r, q) : null;
+  if (!w?.length) return '';
+  const word = k => s.tt(TX[`in${k.charAt(0).toUpperCase()}${k.slice(1)}`] || TX.inLine);
+  return ` · <span class="ms-where" data-where="${esc(w.join(' '))}">${esc(s.tt(TX.foundIn, { w: w.slice(0, 3).map(word).join(', ') }))}</span>`;
+}
+/** « n missions non lues sur cet appareil » pendant une recherche, une fois l'index prêt (SOG-0288) ; '' sinon. */
+function unreadHtml(s, q) {
+  if (!q || !s.idx?.ready) return '';
+  const n = new Set([...s.rows, ...(s.reg?.lines || []).map(e => e.row)].map(rowPath).filter(p => p && !s.idx.map.has(p))).size;
+  return n ? `<p class="f-muted" data-unread="${n}">${esc(s.tt(TX.unreadN, { n }))}</p>` : '';
+}
 /** Redessine les résultats seuls (frappe, famille, « N autres », comptes rendus lus) ; la liste entière si elle n'est pas là. */
 function results(s) {
   const box = s.el.querySelector('[data-results]');
@@ -868,6 +947,11 @@ async function openMission(s, row, drawn = false) {
   if (S !== s) return;
   const show = g => {
     const mission = g.doc ? MS.readMission(g.doc) : null;
+    // une mission lue à l'ouverture rejoint l'index de la recherche s'il est bâti (elle n'est plus « non lue », SOG-0288)
+    if (mission && s.idx?.ready && rowPath(row)) {
+      s.idx.map.set(rowPath(row), SE.missionFields(mission));
+      s.qMemo = null;
+    }
     const pushed = s.open ? s.open.pushed : (history.pushState({
       missions: 'open'
     }, '', location.href), true); // le retour du navigateur revient à la liste
@@ -1328,8 +1412,10 @@ function regRows(s) {
     bad = new Set([...plan.dup, ...plan.former]),
     serOf = e => Number.isFinite(+e.raw.series) && e.raw.series !== '' && e.raw.series !== null ? +e.raw.series : 1e9,
     q = r.q.trim().toUpperCase(),
-    hit = (id, title, fam, sub) => (!q || `${id} ${title}`.toUpperCase().includes(q)) && (!r.fam || fam === r.fam) && (!r.sub || String(sub ||
-      '') === r.sub),
+    // la recherche : la même fonction que la liste (SOG-0288) pour une ligne ; l'identifiant et le titre pour une mission hors registre
+    hit = (id, title, fam, sub, row) => (!q || (row ? qWhere(s, row, r.q) !== null : SE.fold(`${id} ${title}`).includes(SE.fold(r.q)))) && (!r
+      .fam ||
+      fam === r.fam) && (!r.sub || String(sub || '') === r.sub),
     rows = [
       ...r.found.filter(f => hit(f.entry.id, f.entry.title, f.entry.family, f.entry.subtype)).sort((a, b) => b.entry.id.localeCompare(a
         .entry.id)).map(f =>
@@ -1337,7 +1423,7 @@ function regRows(s) {
           kind: 'found',
           f
         })),
-      ...r.lines.filter(e => hit(e.row.id, e.row.title, e.row.family, e.row.subtype)).map(e => ({
+      ...r.lines.filter(e => hit(e.row.id, e.row.title, e.row.family, e.row.subtype, e.row)).map(e => ({
         kind: 'line',
         e,
         rank: r.status.get(e.idx) === 'notread' ? 2 : r.status.get(e.idx) === 'ok' && !bad.has(e.idx) ? 1 : 0 // les non lues en dernier
@@ -1360,7 +1446,7 @@ const SIGN = {
 
 /** La ligne repliée d'une mission (le modèle du tableau de la V2, SOG-0286) : le signe d'état, l'identifiant, le titre ; puis famille ·
  *  série et origine → destination. Deux lignes de texte au plus au téléphone, une seule sur un écran large. */
-function regSumHtml(s, k, word, id, title, fam, series, from, to, warn) {
+function regSumHtml(s, k, word, id, title, fam, series, from, to, warn, where = '') {
   const kind = warn ? 'warn' : k === 'ok' ? 'ok' : k === 'checking' || k === 'notread' ? 'info' : 'warn',
     has = v => v !== undefined && v !== null && v !== '',
     second = [
@@ -1369,7 +1455,7 @@ function regSumHtml(s, k, word, id, title, fam, series, from, to, warn) {
     ].filter(Boolean).join(' · ');
   // l'identifiant raccourci à l'AFFICHAGE seul (12 signes, entier en infobulle) : l'identité garde ses 40 signes (audit 176)
   const shown = id.length > 12 ? `${id.slice(0, 11)}…` : id;
-  return `<summary><span><span class="ms-rsign" data-kind="${kind}" data-rstate="${k}" title="${esc(word)}" aria-label="${esc(word)}">${SIGN[k] && !warn ? SIGN[k] : '!'}</span><b title="${esc(id)}">${esc(shown)}</b> ${esc(title)}</span><span class="f-muted">${esc(second)}</span></summary>`;
+  return `<summary><span><span class="ms-rsign" data-kind="${kind}" data-rstate="${k}" title="${esc(word)}" aria-label="${esc(word)}">${SIGN[k] && !warn ? SIGN[k] : '!'}</span><b title="${esc(id)}">${esc(shown)}</b> ${esc(title)}</span><span class="f-muted">${esc(second)}${where}</span></summary>`;
 }
 
 /** Une ligne du registre : repliée, le signe d'état, l'identifiant, le titre, famille · série, origine → destination ; au dépli, l'état
@@ -1393,7 +1479,7 @@ function regLineHtml(s, e, plan) {
     word = [st, dup ? s.tt(TX.regDup) : '', former ? s.tt(TX.regFormer, {
       f: cut(e.raw.id, 40)
     }) : ''].filter(Boolean).join(' · ');
-  return `<details class="ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"${r.edit === e.idx ? ' open' : ''}>${regSumHtml(s, k, word, row.id, row.title, row.family, e.raw.series, row.originIcao || cut(row.origin, 12), row.destinationIcao || cut(row.destination, 12), dup || former)}
+  return `<details class="ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"${r.edit === e.idx ? ' open' : ''}>${regSumHtml(s, k, word, row.id, row.title, row.family, e.raw.series, row.originIcao || cut(row.origin, 12), row.destinationIcao || cut(row.destination, 12), dup || former, whereHtml(s, row, r.q))}
     <div class="ms-rbody"><span>${badges}</span><span class="f-muted">${esc(detail)}</span>${path ? `<span class="f-muted" data-rpath>${esc(path)}</span>` : ''}${r.edit === e.idx ? regEditHtml(s, e) : `<span class="f-row"><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></span>`}</div></details>`;
 }
 
@@ -1415,7 +1501,7 @@ function regListHtml(s) {
     found = f => `<details class="ms-rrow" data-rid="new" data-rowid="${esc(f.entry.id)}">${regSumHtml(s, 'notyet', s.tt(TX.regNotYet), f.entry.id, f.entry.title, f.entry.family, f.entry.series, '', '', false)}
       <div class="ms-rbody"><span><span class="f-badge" data-kind="warn">${esc(s.tt(TX.regNotYet))}</span></span><span class="f-muted">${esc([familyText(f.entry.family, s.ctx.lang?.() || 'fr'), f.entry.operation?.name].filter(Boolean).join(' · '))}</span><span class="f-muted" data-rpath>${esc(f.path)}</span></div></details>`,
     item = x => x.kind === 'found' ? found(x.f) : regLineHtml(s, x.e, plan);
-  return `<div class="f-list" data-reglist>${rows.length ? shown.map(item).join('') : `<p class="f-muted">${esc(s.tt(TX.regNone))}</p>`}</div>
+  return `${unreadHtml(s, r.q)}<div class="f-list" data-reglist>${rows.length ? shown.map(item).join('') : `<p class="f-muted">${esc(s.tt(TX.regNone))}</p>`}</div>
     ${rows.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="regmore">${esc(s.tt(TX.more, { n: rows.length - shown.length }))}</button>` : ''}`;
 }
 
@@ -1487,6 +1573,7 @@ async function regPut(s, change, done) {
       module: 'missions'
     });
     s.rows = MS.readRegistry(out.doc).filter(x => !x.organisation).sort((a, b) => b.id.localeCompare(a.id));
+    s.idx = null;
     done?.();
     r.busy = false;
     await regLoad(s);

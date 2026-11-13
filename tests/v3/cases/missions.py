@@ -1898,3 +1898,116 @@ def n47(c):
              'the Registry keeps T-901A only', what='rows')
         c.shot(f'N47_{w}_registry.png')
         c.js(_REG_CLEAR)
+
+
+
+# SOG-0288: three invented missions — a word only in a risk (X-501A), a town only in the description (X-502A), a mission whose file is not on
+# the device (X-503A, searched on its registry line)
+_SRCH_REG = """missions:
+  - { id: X-501A, family: TESTREG, title: Première mission, origin: Base Test (XTST), folder: X_REG/X-501A, files: [missionX-501A.yaml] }
+  - { id: X-502A, family: TESTREG, title: Deuxième mission, folder: X_REG/X-502A, files: [missionX-502A.yaml] }
+  - { id: X-503A, family: TESTREG, title: Troisième mission, origin: Base Nord (XNRD), folder: X_REG/X-503A, files: [missionX-503A.yaml] }
+"""
+_SRCH_501 = """mission: { id: X-501A, type: SAR }
+title: Première mission
+summary: Un résumé inventé sans le mot cherché.
+risks:
+  - { hazard: Averse orageuse inventée, mitigation: Attendre }
+"""
+_SRCH_502 = """mission: { id: X-502A, type: SAR }
+title: Deuxième mission
+detailed_description: |-
+  Une description inventée qui passe par Clermont-Ferrand, ville citée ici seulement.
+"""
+_SRCH_TEXTS = [['missions/mission_registry.yaml', _SRCH_REG], ['missions/X_REG/X-501A/missionX-501A.yaml', _SRCH_501],
+               ['missions/X_REG/X-502A/missionX-502A.yaml', _SRCH_502]]
+_SRCH_LIST = f"""(() => [...document.querySelectorAll('{M} [data-list] [data-id]')].map(e => [e.dataset.id, e.querySelector('[data-where]')?.dataset.where || '',
+  (e.querySelector('[data-where]')?.textContent || '').trim()]))()"""
+
+
+def _type(c, sel, text):
+    c.page.fill(sel, '')
+    c.page.type(sel, text)
+
+
+@case('N48', 'Missions › search reads the content: a word only in a risk (« averse ») and a town only in the description (« clermont-ferrand », '
+      'any case, accent or hyphen) find their mission, the line says where (« dans : risques »); a mission not on the device is searched on '
+      'its registry line and the list says « 1 mission non lue »; the index is in memory, built from the copies on the device — no request; '
+      'the Registry search is the same function', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0288 (user, 13 Nov: « recherche : doit pouvoir se faire dans le contenu aussi … « averse » ou « clermont-ferrand » donne T-085 ») '
+      '— the search only read the registry line; the ergonomist: no written index, an index in memory, zero outgoing call more')
+def n48(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _SRCH_TEXTS)
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"X-501A\"]')", timeout=15000, what='the list of missions')
+    reqs = []
+    # the app's own files (the help the frame loads lazily, module files) are not calls of the search: any other request is
+    c.page.on('request', lambda r: reqs.append(r.url) if not re.search(r'^https?://[^/]+/(frame|modules|apps)/', r.url) else None)
+    q = f'{M} input[data-k=q]'
+    _type(c, q, 'averse')
+    c.until(f"!!document.querySelector('{M} [data-list] [data-where]')", timeout=10000, what='a line found in the content')
+    c.eq([[i, w, norm(t)] for i, w, t in c.js(_SRCH_LIST)], [['X-501A', 'risks', norm(row(c, 'foundIn').replace('{w}', row(c, 'inRisks')))]],
+         'a word only in a risk finds its mission, and the line says where', what='averse')
+    c.ok(c.js(f"document.querySelector('{M} [data-unread]')?.dataset.unread") == '1', c.text(f'{M} [data-results]'),
+         'the list says one mission is not read on this device')
+    for text in ('clermont-ferrand', 'CLERMONT FERRAND', 'Clermont Ferrand'):
+        _type(c, q, text)
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-502A\"]')", timeout=10000, what=text)
+        c.eq([x[:2] for x in c.js(_SRCH_LIST)], [['X-502A', 'description']], f'« {text} »: the town of the description, any case, hyphen or space',
+             what=text)
+    _type(c, q, 'xnrd')
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-503A\"]')", timeout=10000, what='the unread mission')
+    c.eq([x[:2] for x in c.js(_SRCH_LIST)], [['X-503A', 'line']], 'a mission not on the device is found on its registry line', what='xnrd')
+    c.shot('N48_390_list.png')
+    c.eq(reqs, [], 'the index is built from the copies on the device: no outgoing request while searching', what='requests')
+    # the Registry: the same search
+    _type(c, q, '')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read')
+    _type(c, f'{R} input[data-k=rq]', 'averse')
+    c.until(f"!!document.querySelector('{R} [data-reglist] [data-where]')", timeout=10000, what='the Registry finds the content')
+    c.eq(c.js(f"[...document.querySelectorAll('{R} [data-reglist] [data-rowid]')].map(e => [e.dataset.rowid, e.querySelector('[data-where]')?.dataset.where || ''])"),
+         [['X-501A', 'risks']], 'the Registry: the same function, the same « dans : risques »', what='Registry')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.shot('N48_1280_registry.png')
+    c.js(_REG_CLEAR)
+
+
+
+# SOG-0288, the measure: a hundred invented missions of about 3 ko each (a risk list, a description), all on the device
+_HUNDRED = [f'X-{i:03d}A' for i in range(601, 701)]
+
+
+def _hundred_doc(mid):
+    return (f"mission: {{ id: {mid}, type: SAR }}\ntitle: Mission {mid}\nsummary: {'Un résumé inventé assez long. ' * 8}\n"
+            f"detailed_description: |-\n  {'Une description inventée qui remplit le fichier. ' * 30}\n"
+            "risks:\n" + ''.join(f"  - {{ hazard: Danger inventé {k}, mitigation: Parade inventée {k} }}\n" for k in range(10)))
+
+
+@case('N49', 'Missions › search over a hundred missions on the device: the index (in memory) is ready within 3 s of the first keystroke, '
+      'and a keystroke redraws the list in less than 100 ms', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0288, the ergonomist\'s measure: « frappe sans latence perçue sur cent missions » (the user\'s registry: 104 missions of 5 ko)')
+def n49(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', 'schema: mission-registry\nversion: 1\nmissions:\n' + ''.join(
+        f'  - {{ id: {m}, family: TESTREG, title: Ligne {m}, folder: X_REG/{m}, files: [mission{m}.yaml] }}\n' for m in _HUNDRED)]] +
+        [[f'missions/X_REG/{m}/mission{m}.yaml', _hundred_doc(m)] for m in _HUNDRED])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"X-700A\"]')", timeout=15000, what='the list of a hundred missions')
+    t = c.js(f"""async () => {{ const i = document.querySelector('{M} input[data-k=q]'), t0 = performance.now();
+      i.value = 'parade inventee 9'; i.dispatchEvent(new Event('input', {{ bubbles: true }}));
+      const key = performance.now() - t0;
+      while (!document.querySelector('{M} [data-count][data-indexed]') && performance.now() - t0 < 10000) await new Promise(r => setTimeout(r, 20));
+      const ready = performance.now() - t0, t1 = performance.now();
+      i.value = 'parade inventee 7'; i.dispatchEvent(new Event('input', {{ bubbles: true }}));
+      return {{ key: Math.round(key), ready: Math.round(ready), next: Math.round(performance.now() - t1),
+        hits: +((document.querySelector('{M} [data-count]')?.textContent || '').match(/\d+/) || [0])[0] }} }}""")
+    c.ok(t['ready'] < 3000, t, 'the index of a hundred missions is ready within 3 s of the first keystroke')
+    c.ok(t['key'] < 100 and t['next'] < 100, t, 'a keystroke redraws the list in less than 100 ms (before and after the index)')
+    c.eq(t['hits'], 100, 'every mission has the risk: a hundred found (the count)', what='hits')
+    c.js(_REG_CLEAR)

@@ -147,3 +147,15 @@
   for display), and changing the family drops the subtype. « Corriger » edits no family today (title, series, number, operation), so it
   has no list to change; the editor's Famille field (SOG-0287) will take `famChoices`. The report's families (per airline, SOG-0041) are
   untouched. N47 (red before: « SAR · … » sorted by code, no subtype).
+- **13 Nov 2026 — the search reads the content of the missions, from an index in memory** (SOG-0288, written by Features SOG): no
+  written index (the ergonomist's objection: a file written to the repository for a display comfort). At the first keystroke
+  (`ensureIndex`), the module lists the mission files already on the device (`data.cached('missions/')`, no network) and reads only those,
+  without `wait` — a fresh copy sends nothing; a copy older than the known tree is re-read as any read does (SOG-0235, the data layer's
+  rule, not the search's). `search.js` (pure): `fold` (lower case, no accent, any non-letter as a space: « clermont-ferrand » =
+  « Clermont Ferrand »), `missionFields` (title, summary, description, objectives, risks, places, notes, callsigns, types; 4 000 signs per
+  field, 16 000 per mission — the file is written by any pilot), `rowFields` (the registry line: what the search read before), `where`.
+  A mission whose file is not on the device is searched on its line and counted (« n missions non lues »); a word found outside the id and
+  title says where (« dans : risques », three fields at most), escaped. One function (`qWhere`, memoised per query) for Missions › Choisir
+  and the Registry; a mission opened later joins the index; new registry rows drop it (rebuilt at the next keystroke). Measure (N49): a
+  hundred missions of about 3 ko, index ready in under 50 ms, a keystroke under 2 ms on this workstation. N48 (red before: « averse » only
+  in a risk found nothing), N49.
