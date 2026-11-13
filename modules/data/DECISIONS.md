@@ -716,3 +716,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   cannot disagree. Case L132 (red before: no head line, `regime=auto`, the gesture absent). Not done: the « ✓ fait » of a source whose OLDER
   edition is downloaded while the next one waits says « done » for the edition in force (it is true); AeroDB may want to call the source `hand`
   too (`tools/regen/base_sources.py`, navpt `_src('download'…)`): asked in the state report.
+- **13 Nov 2026 — SOG-0324, the flicker green → brown → green during a rebuild** (the user: « le clignotement vert-marron-vert à la reconstruction »).
+  Survey: `toneOf` mapped the state « en cours » (`building`, tone `accent`) to `warn` (comment: « en cours dit ambre »), so a country that was up to date
+  went amber while it was being rebuilt, then green again; and the run of the sheet (`S.zop`, « Mettre à jour ce pays ») was not counted as running, so between
+  its steps the refreshed state (downloaded, not built yet) painted amber too. Now: a run is its own tone `busy` (blue, « en cours », a legend item when
+  there is one, `sumBusy` in the summary of a group), held while `S.run` covers the country or `S.zop` is its own; cases L133 (red before: no `busy`).
+  Not done: the chain « Tout mettre à jour » between two of its verbs (`S.run` is empty for an instant); the « Repartir de zéro sur cet appareil » gesture
+  of the same fiche (survey sent: `FrameData.evict` + re-read, never `reset()`).

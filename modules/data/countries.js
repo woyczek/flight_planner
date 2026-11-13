@@ -151,7 +151,8 @@ export function nameOf(id) {
 /** La teinte d'un pays : celle de l'état du lanceur ; sans état lu, celle de la publication (un cycle en vigueur, daté ou non) ; 'muted' hors de la couverture. */
 function tone(id) {
   const inCov = S.d.cov.ids.includes(id),
-    running = !!S.run && S.run.set === 'base' && S.run.verb !== 'purge' && S.ids.includes(id),
+    running = (!!S.run && S.run.set === 'base' && S.run.verb !== 'purge' && S.ids.includes(id)) || S.zop?.zone ===
+    id, // l'opération du pays (sa fiche) compte aussi : entre deux étapes il n'y a pas de passage par « à faire »
     t = M.toneOf(S.status, id, inCov, running);
   if (t) return t;
   if (inCov && S.ctx.launcher && statusKnown())
@@ -227,10 +228,12 @@ function mapHtml() {
     list = [...all].sort((a, b) => rank(a) - rank(b)),
     fr = framesOf(frame), // la vue (le zoom et le déplacement gardés), le cadre de départ et le monde (mapview.js)
     cell = Math.max(frame[2] / 110, .3);
-  let unread = 0;
+  let unread = 0,
+    busy = 0;
   const paths = list.map(p => {
     const t = tone(p.id);
     if (t === 'unread') unread++;
+    if (t === 'busy') busy++;
     const code = S.status?.zones?.[p.id]?.reasons?.[0]?.code,
       why = t === 'warn' || t === 'err' ? (M.own(TX.sn, `r_${code}`) ? tt(TX.sn[`r_${code}`]) : zoneReasons(p.id)[0]) :
       '', // l'infobulle dit pourquoi une zone n'est pas verte
@@ -246,7 +249,7 @@ function mapHtml() {
       <span class="d-maplinks" data-map-links><button type="button" class="d-link" data-act="world-toggle" aria-pressed="${S.cw.world}">${esc(tt(TX.zx.mvWorld))}</button> <button type="button" class="d-link" data-act="map-home" aria-pressed="${!S.cw.world}">${esc(tt(TX.zx.mvHome))}</button></span></div>
     <div class="d-mapframe"><svg class="d-wmap" data-wmap viewBox="${fr.view.join(' ')}" data-base="${frame.join(' ')}" data-world="${fr.world.join(' ')}" preserveAspectRatio="xMidYMid meet" style="aspect-ratio:${(frame[2] / frame[3]).toFixed(3)}" role="group" aria-label="${esc(tt(TX.cw.mapLabel))}"><defs><pattern id="d-hatch" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${cell.toFixed(2)}" stroke="currentColor" stroke-width="${(cell * .3).toFixed(2)}"></line></pattern></defs><g data-wz>${paths}</g><g class="d-whg" data-wh>${hatch}</g></svg>
 </div>
-    <p class="d-lgd" data-cw-legend><span class="d-lgl">${['ok', 'warn', 'err'].map(t => `<span class="d-lgi">${sw(t)}${esc(tt(TX.mapLegendBase[t]))}</span>`).join('')}${unread ? `<span class="d-lgi">${sw('unread')}${esc(tt(TX.cw.word.unread))}</span>` : ''}<span class="d-lgi">${sw('muted')}${esc(tt(TX.cw.outside))}</span></span><span class="d-zoom" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button><button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">\u2212</button></span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
+    <p class="d-lgd" data-cw-legend><span class="d-lgl">${['ok', 'warn', 'err'].map(t => `<span class="d-lgi">${sw(t)}${esc(tt(TX.mapLegendBase[t]))}</span>`).join('')}${busy ? `<span class="d-lgi">${sw('busy')}${esc(tt(TX.cw.word.busy))}</span>` : ''}${unread ? `<span class="d-lgi">${sw('unread')}${esc(tt(TX.cw.word.unread))}</span>` : ''}<span class="d-lgi">${sw('muted')}${esc(tt(TX.cw.outside))}</span></span><span class="d-zoom" data-map-controls><button type="button" data-act="map-zoom" data-dir="in" aria-label="${esc(tt(TX.zx.mvIn))}" title="${esc(tt(TX.zx.mvIn))}">+</button><button type="button" data-act="map-zoom" data-dir="out" aria-label="${esc(tt(TX.zx.mvOut))}" title="${esc(tt(TX.zx.mvOut))}">\u2212</button></span><button type="button" class="d-lg" data-act="legend-more" aria-expanded="${S.cw.legend}" aria-label="${esc(tt(TX.cwb.legendMore))}" title="${esc(tt(TX.cwb.legendMore))}">?</button></p>
     ${S.cw.legend ? `<p class="f-muted" data-cw-legend-more><span class="d-sw" data-hatch></span>${esc(tt(TX.cw.hatch))} · <span class="d-sw" data-grp></span>${esc(tt(TX.cw.border))}${all.some(p => p.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''} · ${esc(tt(TX.d2.mapTouch))} · ${esc(tt(TX.d4.selHelp))}</p>` : ''}${selBarHtml()}</section>`;
 }
 /** Le nom d'une origine de procédures (CIFP, eAIP, EAD) ; le code tel quel pour une autre. */
@@ -286,6 +289,9 @@ function groupParts(tl) {
   if (tl.err) parts.push([tt(T.sumErr, {
     n: tl.err
   }), 'err']);
+  if (tl.busy) parts.push([tt(T.sumBusy, {
+    n: tl.busy
+  }), 'busy']);
   if (tl.none) parts.push([tt(T.sumNone, {
     n: tl.none
   }), 'muted']);
@@ -304,7 +310,8 @@ const SIGN_OF = {
   warn: '!',
   err: '✗',
   muted: '–',
-  unread: '?'
+  unread: '?',
+  busy: '…'
 };
 /** Les paquets : une ligne par paquet (nom, état résumé, chevron), un seul ouvert ; ouvert, ses pays (nom et état en mot, chacun ouvre sa fiche) puis le « Mettre à jour » du paquet. '' sans paquet. */
 function groupsHtml() {
@@ -1160,6 +1167,7 @@ export const CW_STYLE = `
 [data-module="data"] .d-wz[data-tone=err]{stroke:var(--sog-err);fill:var(--sog-err)}
 [data-module="data"] .d-wz[data-tone=muted]{fill-opacity:.1}
 [data-module="data"] .d-wz[data-tone=unread]{fill-opacity:.12;stroke-dasharray:3 2}
+[data-module="data"] .d-wz[data-tone=busy]{stroke:var(--sog-accent);fill:var(--sog-accent)}
 [data-module="data"] .d-now{margin:10px 0 4px;padding:8px 10px;border-left:4px solid var(--sog-accent);background:var(--d-acc-bg)}
 [data-module="data"] .d-now[data-now=fresh]{border-left-color:var(--sog-ok)}
 [data-module="data"] .d-wz[data-approx]{stroke-dasharray:4 3}
@@ -1193,6 +1201,7 @@ export const CW_STYLE = `
 [data-module="data"] [data-sum-tone=ok]{color:var(--sog-ok)}
 [data-module="data"] [data-sum-tone=warn]{color:var(--sog-warn);font-weight:600}
 [data-module="data"] [data-sum-tone=err]{color:var(--sog-err);font-weight:600}
+[data-module="data"] [data-sum-tone=busy]{color:var(--sog-accent);font-weight:600}
 [data-module="data"] [data-sum-tone=muted]{color:var(--sog-muted)}
 [data-module="data"] .d-gh .d-chev{order:-1;flex:none;width:7px;height:7px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);margin:0 4px 0 2px}
 [data-module="data"] .d-gh[aria-expanded=true] .d-chev{transform:rotate(45deg)}
@@ -1202,6 +1211,7 @@ export const CW_STYLE = `
 [data-module="data"] .d-gcb[data-tone=ok]{--d-c:var(--sog-ok)}
 [data-module="data"] .d-gcb[data-tone=warn]{--d-c:var(--sog-warn)}
 [data-module="data"] .d-gcb[data-tone=err]{--d-c:var(--sog-err)}
+[data-module="data"] .d-gcb[data-tone=busy]{--d-c:var(--sog-accent)}
 [data-module="data"] .d-gcb[data-hover]{background:var(--d-acc-bg)}
 [data-module="data"] .d-gcb[aria-current=true]{outline:3px solid var(--sog-fg);outline-offset:-1px}
 [data-module="data"] .d-gcn{font-weight:600;font-size:.93em;line-height:1.2;overflow-wrap:anywhere}
@@ -1221,6 +1231,7 @@ export const CW_STYLE = `
 [data-module="data"] .d-sbadge{flex:none;margin-top:3px;padding:4px 6px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);background:var(--d-soft);color:var(--sog-muted);font-size:.78em;font-weight:700;line-height:1;white-space:nowrap}
 [data-module="data"] .d-sbadge[data-tone=ok]{background:var(--d-ok-bg);border-color:var(--d-ok-line);color:var(--sog-ok)}
 [data-module="data"] .d-sbadge[data-tone=warn]{background:var(--d-warn-bg);border-color:var(--d-warn-line);color:var(--sog-warn)}
+[data-module="data"] .d-sbadge[data-tone=busy]{background:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface));border-color:var(--sog-accent);color:var(--sog-accent)}
 [data-module="data"] .d-sbadge[data-tone=err]{background:var(--d-err-bg);border-color:var(--d-err-line);color:var(--sog-err)}
 [data-module="data"] .d-back{min-height:var(--sog-touch);min-width:var(--sog-touch)}
 [data-module="data"] .d-x{flex:none;margin:-6px -8px 0 0;min-width:var(--sog-touch);min-height:var(--sog-touch);padding:0;display:none;border:0;background:none;font-size:1.4rem;color:var(--sog-muted)}

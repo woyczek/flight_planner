@@ -434,7 +434,7 @@ def l3(c):
         c.eq(c.count('#fMenu a[data-id="data"]'), 0, f'level {lv}: no Données entry in the rail', what='rail entries')
         c.eq(c.count('[data-admin="data"], a[href*="app=maintenance"]'), 0, f'level {lv}: no link to Maintenance in Settings', what='Settings links')
     # the Full level: still not in the rail nor the phone's bar, the line « Maintenance » in the Administration card
-    c.open('settings', docs=LEVEL3)
+    c.open('settings?card=admin', docs=LEVEL3)   # Administration is a page (SOG-0320)
     c.until("!!document.querySelector('[data-card=\"admin\"] li[data-admin=\"data\"]')", what='the Administration card lists the Maintenance line')
     c.eq(c.count('#fMenu a[data-id="data"]'), 0, 'not a place of Pilot\'s rail (the Maintenance application)', what='rail entries')
     c.eq(c.count('#fTabs [data-tab="data"], #fTabs a[href="#data"]'), 0, 'no tab of the phone bar', what='bar entries')
@@ -9412,4 +9412,26 @@ def l132(c):
     upd = c.text('[data-sheet=pt] [data-sheet-update]')
     c.ok(norm(_trow('waitsFile', lang, after='    waitsFile:').split('{')[0]) not in norm(upd) and norm(_trow('waitsFile', lang, after='    waitsFile:')) not in norm(upd), upd, 'and « Ce pays attend un fichier : prenez-le d’abord » is not said under it')
     c.shot(f'L132_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('L133', 'Données: during « Mettre à jour ce pays » the country is BUSY (blue, « en cours ») from the start to the end — never amber in between (SOG-0324, the user: « le clignotement vert-marron-vert à la reconstruction ») — on the map, in its group and in the summary of the group',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0324: `toneOf` mapped the state « en cours » to the amber of « à faire » (comment: « en cours dit ambre »), so a country that was up to date went amber while it was being rebuilt, then green again; a run is its own tone, held while it lasts (the run of the sheet, `S.zop`, included)')
+def l133(c):
+    lang = c.lang
+    W = lambda k: _trow(k, lang, after='    word: {')
+    world = _l97_world()
+    st, _x4 = _l89_open(c, world)
+    _l89_sheet(c, 'gb')
+    c.js("window.__tones = []; window.__iv = setInterval(() => { const p = document.querySelector('[data-wmap] path[data-zone=gb]'); window.__tones.push(p ? p.dataset.tone : null) }, 15)")
+    _l97_run(c, st, world, [_l97_dl('running'), _l97_dl('done'), _l97_build('running'), _l97_build('done')])
+    c.until("document.querySelector('[data-wmap] path[data-zone=gb]')?.dataset.tone === 'busy'", timeout=10000, what='the country is busy on the map')
+    tip = c.js("document.querySelector('[data-wmap] path[data-zone=gb] title').textContent")
+    c.ok(norm(W('busy')) in norm(tip), tip, 'its tooltip says « en cours »')
+    c.until("!document.querySelector('[data-sheet=gb] [data-sheet-progress]')", timeout=25000, what='the run ends')
+    c.wait(600)
+    seq = c.js("(() => { clearInterval(window.__iv); const out = []; for (const t of window.__tones) if (t && out[out.length - 1] !== t) out.push(t); return out })()")
+    i = seq.index('busy') if 'busy' in seq else -1
+    c.ok(i >= 0 and 'warn' not in seq[i:] and seq[-1] == 'ok', seq, 'from the first « en cours » to the end the tone goes busy → ok, never amber in between')
     c.check_errors()

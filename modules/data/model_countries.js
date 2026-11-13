@@ -80,7 +80,9 @@ export const worldFrame = () => frameOf([WORLD]);
 export function toneOf(status, id, inCoverage, running) {
   if (!inCoverage) return 'muted';
   const ds = drawnState(status, id, running);
-  if (ds) return STATE_TONE[ds] === 'accent' ? 'warn' : STATE_TONE[ds];
+  if (ds) return STATE_TONE[ds] === 'accent' ? 'busy' : STATE_TONE[
+    ds
+  ]; // une opération en cours est SA teinte (bleue), tenue du début à la fin : jamais le marron de « à faire » entre deux écritures de l'état (SOG-0324)
   return status ? 'unread' : null; // l'état est lu et ne dit rien de ce pays : neutre, ni caché ni peint en défaut (SOG-0260)
 }
 /** Le bilan d'un paquet : { known (ses pays), inCov, ok (à jour), warn (à faire), err (en échec), none (sans état lu), out (hors de la couverture) } ; `tone(id)` est la teinte d'un pays (toneOf). */
@@ -93,6 +95,7 @@ export function tally(known, covIds, tone) {
       warn: 0,
       err: 0,
       none: 0,
+      busy: 0,
       out: 0
     };
   for (const id of known) {
@@ -102,7 +105,7 @@ export function tally(known, covIds, tone) {
     }
     out.inCov++;
     const t = tone(id);
-    out[t === 'ok' || t === 'warn' || t === 'err' ? t : 'none']++;
+    out[t === 'ok' || t === 'warn' || t === 'err' || t === 'busy' ? t : 'none']++;
   }
   return out;
 }

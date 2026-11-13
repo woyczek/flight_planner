@@ -551,6 +551,7 @@ export const TX = {
     sumOk: ['{n} sur {m} à jour', '{n} of {m} up to date', '{n} von {m} aktuell', '{n} de {m} al día'],
     sumTodo: ['{n} à faire', '{n} to do', '{n} zu tun', '{n} por hacer'],
     sumErr: ['{n} en échec', '{n} failed', '{n} fehlgeschlagen', '{n} fallidas'],
+    sumBusy: ['{n} en cours', '{n} in progress', '{n} in Arbeit', '{n} en curso'],
     sumNone: ['{n} sans état', '{n} without a state', '{n} ohne Zustand', '{n} sin estado'],
     sumOut: ['{n} non définis', '{n} not defined', '{n} nicht festgelegt', '{n} no definidos'],
     sumNoCov: ['aucun pays défini', 'no defined country', 'kein festgelegtes Land',
@@ -566,7 +567,8 @@ export const TX = {
       err: ['en échec', 'failed', 'fehlgeschlagen', 'fallida'],
       muted: ['non défini', 'not defined', 'nicht festgelegt', 'no definido'],
       none: ['état inconnu', 'state unknown', 'Zustand unbekannt', 'estado desconocido'],
-      unread: ['état non lu', 'state not read', 'Zustand nicht gelesen', 'estado sin leer']
+      unread: ['état non lu', 'state not read', 'Zustand nicht gelesen', 'estado sin leer'],
+      busy: ['en cours', 'in progress', 'in Arbeit', 'en curso']
     },
     openSheet: ['Ouvrir la fiche : {c}', 'Open the sheet: {c}', 'Blatt öffnen: {c}', 'Abrir la ficha: {c}'],
     back: ['← Retour', '← Back', '← Zurück', '← Atrás'],
