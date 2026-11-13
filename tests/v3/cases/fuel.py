@@ -5072,3 +5072,23 @@ def f205(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{FUEL} [data-block=direct]').scrollIntoView({{block: 'start'}})")
     c.shot('F205_390_off.png')
+
+
+
+@case('F206', 'Fuel left at once after opening the procedures (its ATIS read still running): no page error — the read is ignored once Fuel is '
+      'unmounted', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0317 (found by BUGS SOG, D202: « Cannot read properties of null (reading \'ctx\') », flightNetworks ← atisRead): a read running '
+      'when Fuel is left reads the state after its await')
+def f206(c):
+    errors = []
+    c.page.on('pageerror', lambda e: errors.append(str(e)))
+    c.page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
+    # FrameData.airline() answers late: the read of the networks is still waiting when Fuel is left
+    c.page.add_init_script("(() => { const t = setInterval(() => { const F = window.FrameData; if (!F || !F.airline || F.__slow) return; const a = F.airline.bind(F);"
+                           " F.airline = (...x) => new Promise(r => setTimeout(() => r(a(...x)), 1500)); F.__slow = true; clearInterval(t) }, 5) })()")
+    for _ in range(3):
+        c.open('fuel', docs=proc_docs() + proc_flight(None, False, None), airfields=True)
+        c.js(f"() => {{ const b = document.querySelector('{FUEL} [data-step=\"1\"], {FUEL} [data-tostep=\"1\"]'); b?.click(); location.hash = '#maps' }}")
+        c.until("() => !!document.querySelector('[data-module=maps]')", timeout=15000, what='the Map')
+        c.wait(2500)
+    c.eq([e for e in errors if 'ctx' in e or 'null' in e], [], 'no error from a read of the left Fuel', what='page errors')

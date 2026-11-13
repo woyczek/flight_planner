@@ -1837,3 +1837,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   à N NM de la route » from 1 NM; and a point of the route is found by its id OR its mission name (« PT4 » for a point written in
   coordinates), which was the refusal of « PT » on the route. Still refused: a point already passed, an unknown point. F205 (red before:
   PT4 refused); F154 still green.
+- **13 Nov 2026 — SOG-0317: an ATIS read running when Fuel is left is ignored** (found by BUGS SOG in D202; written by Features SOG):
+  `flightNetworks` and `atisFeed` read the global `S` after their `await` — Fuel left meanwhile, « Cannot read properties of null
+  (reading 'ctx') ». Now `atisRead` hands its state to both, which stop when Fuel is no longer the same (`gone(s)`), and it checks again
+  between the two steps. F206 (FrameData's airline answering in 1.5 s, Fuel left at once: red before, three errors). The three-second
+  wait of D202 can go (BUGS SOG's case).

@@ -6531,18 +6531,22 @@ const ATIS_FEEDS = {
 const ATIS_FRESH_MS = 5 * 60e3;
 /** Les réseaux du vol (Q-0038 en attente : la réponse de l'utilisateur ne change que cette fonction) : ceux que la compagnie courante
  *  déclare (settings.networks, ivao / vatsim vrais ; « offline » seul : aucun) et pour lesquels le pilote a son identifiant. */
-async function flightNetworks() {
-  const a = await Promise.resolve().then(() => window.FrameData?.airline?.()).catch(() => null),
+async function flightNetworks(s = S) {
+  const a = await Promise.resolve().then(() => window.FrameData?.airline?.()).catch(() => null);
+  // SOG-0317 : Carburant a pu être quitté pendant la lecture (S nul) : rien n'est lu de l'état d'après
+  if (gone(s)) return [];
+  const
     n = a?.settings?.networks || a?.networks ||
     {}, // FrameData.airline() : { settings: { networks } } (le fichier de la compagnie, non fiable : === true seulement)
-    id = S.ctx.identity || {};
+    id = s.ctx.identity || {};
   return ['ivao', 'vatsim'].filter(k => n[k] === true && String(id[k] || '').trim());
 }
 /** Un flux public par ctx.net, réduit à ce qui porte une ATIS (indicatif, lettre, heure, lignes) : ni nom ni identifiant de personne
  *  n'est gardé ; null hors ligne ou en erreur. */
-async function atisFeed(url, net) {
+async function atisFeed(url, net, s = S) {
   try {
-    const r = await S.ctx.net.fetch(url, {
+    if (gone(s)) return null; // SOG-0317 : jamais une lecture lancée pour un Carburant quitté
+    const r = await s.ctx.net.fetch(url, {
       headers: {
         accept: 'application/json'
       }
@@ -6575,10 +6579,12 @@ async function atisRead(force = false) {
   if (!s?.ctx?.net?.fetch || s.atisBusy || (!force && s.atis && Date.now() - s.atis.at < ATIS_FRESH_MS)) return;
   s.atisBusy = true;
   try {
-    const nets = await flightNetworks(),
+    // SOG-0317 : chaque étape relit l'état qu'elle a reçu ; Carburant quitté entre-temps, la lecture s'ignore
+    const nets = await flightNetworks(s),
       feeds = {};
+    if (gone(s)) return;
     await Promise.all(nets.map(async n => {
-      feeds[n] = await atisFeed(ATIS_FEEDS[n], n);
+      feeds[n] = await atisFeed(ATIS_FEEDS[n], n, s);
     }));
     if (S !== s) return;
     s.atis = {

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: leaving the screen during an ATIS read no longer throws** (fuel DECISIONS; noreg F206; SOG-0317).
 - **Map: the arrows of a VOR's rose follow the numbers' scale at every zoom** — « VOR: the arrows should shrink with the zoom, like the numbers » (SOG-0302): the numbers were capped at 15 px but the solid points, the north arrow's head and the graduations grew with the 5 NM circle (at 450 px of radius, 2.5 and 5 times the numbers' height); everything written on the circle is now a fixed fraction of the numbers' height (Maps SPEC, DECISIONS; noreg D209).
 - **Map: touching the aerodrome no longer needs a precise finger** — « touching the field takes very precise fingers » (SOG-0310): the touch zone of an aerodrome is 44 px across at any zoom; the flight's departure and arrival come before any other object under the finger (a navaid or a reporting point next to them no longer takes the touch); at the ground zoom a touch anywhere in the aerodrome's footprint (between the runways and the taxiways) opens its card, the ground lines keeping their row (Maps SPEC § 16, DECISIONS, help ×4; noreg D208).
 - **Aircraft › French register not deposited: « Le déposer dans Données » opens Data › French register in Maintenance** (was the first screen of Company) (aircraft DECISIONS; noreg M45; SOG-0315).
