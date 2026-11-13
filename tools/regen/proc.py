@@ -648,5 +648,79 @@ def states_purge(job, args, ctx):
     return res
 
 
+MAX_INDEX = 20_000_000      # octets : un index de cycle plus gros n'est pas lu (SOG-0119 : l'état ne lit que ce qu'il peut borner)
+
+
+def _index_of(folder):
+    """Les identifiants de l'index d'un dossier de cycle (proc/<cycle>/index.json) : un ensemble ; vide sans index lisible ou trop gros."""
+    path = os.path.join(folder, 'index.json')
+    try:
+        if os.path.getsize(path) > MAX_INDEX:
+            return set()
+        with open(path, encoding='utf-8') as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        return set()
+    ad = doc.get('aerodromes') if isinstance(doc, dict) else None
+    return {k for k in ad if isinstance(k, str)} if isinstance(ad, dict) else set()
+
+
+def _cached_of(data, s, cycle):
+    """Ce que le cache du poste porte pour cet État et ce cycle : { state: 'present' | 'missing', files } (jamais ouvert : les NOMS seulement)."""
+    folder = os.path.join(data, 'local', STATES[s], cycle)
+    if STATES[s] == 'cifp':
+        p = os.path.join(folder, _cifp_name(cycle))
+        try:
+            return {'state': 'present', 'files': 1} if os.path.getsize(p) > 0 else {'state': 'missing', 'files': 0}
+        except OSError:
+            return {'state': 'missing', 'files': 0}
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return {'state': 'missing', 'files': 0}
+    n = len({m.group(1) for m in (re.match(r'AD_2_([A-Z0-9]{4})_', x) or re.match(r'FR-AD-2\.([A-Z0-9]{4})', x) for x in names) if m and m.group(1).startswith(s)})
+    return {'state': 'present' if n else 'missing', 'files': n}
+
+
+def states_status(job, args, ctx):
+    """Verbe proc/status (SOG-0119) : LECTURE SEULE (ni réseau, ni écriture ; les noms du cache et l'index de chaque cycle seulement). Rend
+    { ok, cycle (en vigueur), states: { <préfixe>: { state: 'up-to-date' | 'stale' | 'missing' | 'n/a', cached: { state, files }, built: { cycle, aerodromes } | null,
+    reasons: [{ code }] } }, counts } ; codes : 'older-than-cycle' (construit pour un cycle passé : `cycle`), 'not-fetched' (rien dans le cache), 'not-built' (le cache est là,
+    rien de construit), 'ead-per-aerodrome' (un État d'EAD Basic : un terrain par geste, jamais en masse), 'no-source' (aucune source en masse). Construit : les terrains de l'index du
+    cycle (LF : les LF… ; K : ceux qu'aucun autre État en masse ne réclame)."""
+    data, cycle = ctx['data'], _cycle(ctx['data'])
+    ead, out = set(_ead_states()), {}
+    proc = os.path.join(data, 'proc')
+    try:
+        folders = sorted((n for n in os.listdir(proc) if re.fullmatch(r'\d{4}-\d{2}-\d{2}', n) and n <= cycle), reverse=True)
+    except OSError:
+        folders = []
+    others = tuple(x for x in STATES if STATES[x] == 'eaip')      # les États en masse qui ont leurs préfixes à eux (le CIFP prend le reste)
+
+    def mine(s, ids):
+        return {i for i in ids if i.startswith(s)} if STATES.get(s) == 'eaip' else {i for i in ids if not i.startswith(others)}
+    for s in args['states']:
+        if s not in STATES:
+            out[s] = {'state': 'n/a', 'cached': None, 'built': None, 'reasons': [{'code': 'ead-per-aerodrome' if s in ead else 'no-source'}]}
+            continue
+        cached, built = _cached_of(data, s, cycle), None
+        for f in folders:       # le cycle le plus récent qui porte au moins un terrain de cet État (jamais un cycle à venir)
+            n = len(mine(s, _index_of(os.path.join(proc, f))))
+            if n:
+                built = {'cycle': f, 'aerodromes': n}
+                break
+        if built and built['cycle'] == cycle:
+            state, reasons = 'up-to-date', []
+        elif built:
+            state, reasons = 'stale', [{'code': 'older-than-cycle', 'cycle': built['cycle']}]
+        else:
+            state, reasons = 'missing', [{'code': 'not-built' if cached['state'] == 'present' else 'not-fetched'}]
+        out[s] = {'state': state, 'cached': cached, 'built': built, 'reasons': reasons}
+    counts = {}
+    for v in out.values():
+        counts[v['state']] = counts.get(v['state'], 0) + 1
+    return {'ok': True, 'cycle': cycle, 'states': out, 'counts': counts}
+
+
 VERBS.update({('proc', 'fetch'): (states_fetch, check_states), ('proc', 'build'): (states_build, check_states),
-              ('proc', 'purge'): (states_purge, check_states_purge)})
+              ('proc', 'purge'): (states_purge, check_states_purge), ('proc', 'status'): (states_status, check_states)})

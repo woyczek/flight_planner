@@ -324,8 +324,67 @@ def purge(job, args, ctx):
     return res
 
 
+MAX_BUILT = 2000      # fichiers de sia/vfr/ lus au plus (l'état est borné)
+MAX_BUILT_BYTES = 2_000_000      # octets lus par fichier : au-delà, le fichier compte comme « cycle inconnu »
+
+
+def built_cycles(data):
+    """Les points VFR construits (sia/vfr/LF??.json) : { OACI: cycle de la carte lue, ou None (fichier d'avant que le cycle soit gardé, ou illisible) } ; {} sans dossier."""
+    folder = os.path.join(data, 'sia', 'vfr')
+    try:
+        names = sorted(n for n in os.listdir(folder) if re.fullmatch(r'LF[A-Z0-9]{2}\.json', n))[:MAX_BUILT]
+    except OSError:
+        return {}
+    out = {}
+    for n in names:
+        cycle = None
+        try:
+            if os.path.getsize(os.path.join(folder, n)) <= MAX_BUILT_BYTES:
+                with open(os.path.join(folder, n), encoding='utf-8') as f:
+                    src = (json.load(f) or {}).get('source')
+                c = src.get('cycle') if isinstance(src, dict) else None
+                cycle = c if isinstance(c, str) and CYCLE.fullmatch(c) else None
+        except (OSError, ValueError, AttributeError):
+            cycle = None
+        out[n[:4]] = cycle
+    return out
+
+
+def status(job, args, ctx):
+    """Verbe vfr/status (SOG-0119) : LECTURE SEULE (ni réseau, ni écriture ; les noms du cache, la liste des terrains de la base de la France et le cycle de chaque fichier construit). Rend
+    { ok, cycle, state: 'up-to-date' | 'stale' | 'missing', reasons: [{ code }], cached: { have, expected, remaining }, built: { total, atCycle, older, unknown } } ; l'état dit la vérité de
+    ce que le poste a PUBLIÉ pour ce cycle : à jour = chaque terrain attendu (base de la France du cycle, moins ceux que le SIA ne publie pas) construit pour CE cycle ; codes : 'partial'
+    ({ have, expected }), 'older-than-cycle' (des terrains construits pour un cycle passé), 'unknown-cycle' (construits avant que le cycle soit gardé : à refaire pour le savoir), 'no-base'
+    (sans la base de la France du cycle, on ne peut pas prouver qu'un jeu est complet), 'not-fetched' (aucune carte en cache), 'not-built' (le cache est là, rien de construit)."""
+    data, cycle = ctx['data'], args['cycle']
+    have, expected, remaining = coverage(data, cycle)
+    absent = set(read_state(data, cycle))
+    built = built_cycles(data)
+    at = {i for i, c in built.items() if c == cycle}
+    older = {i for i, c in built.items() if c and c < cycle}
+    unknown = {i for i, c in built.items() if c is None}
+    want = [i for i in expected if i not in absent]
+    reasons = []
+    if not built:
+        state = 'missing'
+        reasons.append({'code': 'not-built' if have else 'not-fetched'})
+    else:
+        if not expected:
+            reasons.append({'code': 'no-base'})
+        elif any(i not in at for i in want):
+            reasons.append({'code': 'partial', 'have': len([i for i in want if i in at]), 'expected': len(want)})
+        if older:
+            reasons.append({'code': 'older-than-cycle', 'count': len(older)})
+        if unknown:
+            reasons.append({'code': 'unknown-cycle', 'count': len(unknown)})
+        state = 'stale' if reasons else 'up-to-date'
+    return {'ok': True, 'cycle': cycle, 'state': state, 'reasons': reasons, 'cached': {'have': len(have), 'expected': len(expected), 'remaining': len(remaining)},
+            'built': {'total': len(built), 'atCycle': len(at), 'older': len(older), 'unknown': len(unknown)}}
+
+
 VERBS = {
     ('vfr', 'fetch'): (fetch, check_fetch),
     ('vfr', 'build'): (build, check_build),
     ('vfr', 'purge'): (purge, check_purge),
+    ('vfr', 'status'): (status, check_build),
 }

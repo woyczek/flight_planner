@@ -238,9 +238,73 @@ def publish(job, args, ctx):
     return res
 
 
+MAX_DB_BYTES = 5_000_000      # octets : une base plus grosse n'est pas lue (SOG-0119 : l'état ne lit que ce qu'il peut borner)
+
+
+def _db_codes(path):
+    """Les types que porte aircraft_db.js (`window.AIRCRAFT_DB = { … };` : les clés, et celles de `__aliases`) : un ensemble ; None si le fichier manque, est trop gros ou illisible."""
+    try:
+        if os.path.getsize(path) > MAX_DB_BYTES:
+            return None
+        with open(path, encoding='utf-8') as f:
+            text = f.read()
+        doc, _ = json.JSONDecoder().raw_decode(text[text.index('{'):])
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    aliases = doc.get('__aliases')
+    return {k for k in doc if isinstance(k, str) and not k.startswith('__')} | ({k for k in aliases if isinstance(k, str)} if isinstance(aliases, dict) else set())
+
+
+def _sha(path):
+    import hashlib
+    try:
+        if os.path.getsize(path) > MAX_DB_BYTES * 4:
+            return None
+        with open(path, 'rb') as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
+
+
+def status(job, args, ctx):
+    """Verbe aircraft/status (SOG-0119) : LECTURE SEULE (ni réseau, ni écriture, aucun sous-processus). Rend { ok, state: 'up-to-date' | 'stale' | 'missing', reasons: [{ code }],
+    files: { db, perf: { state: 'present' | 'missing', bytes, at } }, cached (les caches du poste : 'present' | 'missing'), fleet: { codes, inDb, missing: [≤ 20 codes] }, published:
+    'same' | 'differs' | 'absent' } ; la base n'a pas de cycle : à jour = ses deux fichiers sont là et portent chaque type de la flotte de la compagnie ; codes : 'no-db' (un des deux
+    fichiers manque ou le premier est illisible), 'fleet-types-missing' ({ count }). `published` dit si les deux fichiers du dépôt des données (data/AircraftDB/) sont ceux du poste : une
+    information pour « Publier », pas un état de la base."""
+    import time
+    data = ctx['data']
+    files = {}
+    for key, name in (('db', OUTPUTS[0]), ('perf', OUTPUTS[1])):
+        p = os.path.join(ADB, name)
+        try:
+            st = os.stat(p)
+            files[key] = {'state': 'present', 'bytes': st.st_size, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(st.st_mtime))}
+        except OSError:
+            files[key] = {'state': 'missing', 'bytes': 0, 'at': None}
+    codes = _db_codes(os.path.join(ADB, OUTPUTS[0])) if files['db']['state'] == 'present' else None
+    fleet = fleet_codes(data)
+    missing = sorted(c for c in fleet if codes is None or c not in codes)
+    reasons = []
+    if codes is None or files['perf']['state'] != 'present':
+        state, reasons = 'missing', [{'code': 'no-db'}]
+    elif missing:
+        state, reasons = 'stale', [{'code': 'fleet-types-missing', 'count': len(missing)}]
+    else:
+        state = 'up-to-date'
+    pub = [(_sha(os.path.join(ADB, n)), _sha(os.path.join(data, 'AircraftDB', n))) for n in OUTPUTS]
+    published = 'absent' if any(b is None for _, b in pub) else 'same' if all(a == b for a, b in pub) else 'differs'
+    cached = 'present' if any(os.path.exists(os.path.join(ADB, c)) for c in CACHES) else 'missing'
+    return {'ok': True, 'state': state, 'reasons': reasons, 'files': files, 'cached': cached,
+            'fleet': {'codes': len(fleet), 'inDb': len(fleet) - len(missing), 'missing': missing[:20]}, 'published': published}
+
+
 VERBS = {
     ('aircraft', 'fetch'): (fetch, check_codes),
     ('aircraft', 'build'): (build, check_codes),
     ('aircraft', 'purge'): (purge, check_dry),
     ('aircraft', 'publish'): (publish, check_dry),
+    ('aircraft', 'status'): (status, lambda a: {} if a == {} else None),
 }

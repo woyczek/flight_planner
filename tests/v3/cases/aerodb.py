@@ -9010,3 +9010,121 @@ def k229(c):
     }""")
     c.eq(r, [['n1', 'hold', 'W28', '02/20'], ['n2', 'hold', 'W31', '07L/25R'], ['n3', 'hold', 'W22', '06'], ['n4', 'hold', 'B', None], ['n5', 'hold', 'C', None], ['n6', 'hold', 'D', None], ['n7', 'hold', 'E', None], ['n8', 'park', 'P', None], ['w9', 'twy', 'T', None]],
          'the runway is kept on a holding point only when it is one runway or two (« 02/20 »); markup, three runways, a number, a stand or a taxiway carrying the field: no field', what='rwy')
+
+
+@case('K232', 'Launcher verb proc/status (SOG-0119): the state of each State of the procedures from the workstation alone, read-only: up to date (built for the cycle in force), stale (built for a past cycle), missing (not fetched / fetched, not built), n/a (EAD Basic State, no source)', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0119, milestone alpha.5): every set has the four verbs but only the base had a state verb: the page deduced « à jour » from what it read of the publication. proc/status { states } answers like base/status: no network, nothing written, only the names of the cache and the index of each cycle folder of proc/; LF (the SIA eAIP) is counted by its LF… aerodromes, K (the FAA CIFP) by the aerodromes no other bulk State claims; a cycle folder to come is never taken')
+def k232(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    RJ = _regen()
+    status, check = RJ.REGISTRY[('proc', 'status')]
+    status.__globals__['_cycle'] = lambda data: '2026-10-29'
+    status.__globals__['_ead_states'] = lambda: ['EB', 'EI']
+    c.eq(check({}), None, 'no list of States: refused', what='check empty')
+    c.eq(check({'states': ['lf']}), None, 'a bad prefix: refused', what='check bad')
+    c.eq(check({'states': ['LF', 'K', 'LF']}), {'states': ['K', 'LF']}, 'a list of prefixes: sorted, once each', what='check ok')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        run = lambda *s: status(RJ.Job('proc', 'status', {}), check({'states': list(s)}), {'data': str(data)})
+        r = run('LF', 'K', 'EB', 'ZZ')
+        c.eq({k: [v['state'], [x['code'] for x in v['reasons']]] for k, v in r['states'].items()}, {'LF': ['missing', ['not-fetched']], 'K': ['missing', ['not-fetched']], 'EB': ['n/a', ['ead-per-aerodrome']], 'ZZ': ['n/a', ['no-source']]},
+             'nothing on the workstation: LF and K missing and not fetched; an EAD Basic State is never in bulk; an unknown prefix has no source', what='empty')
+        (data / 'local' / 'eaip' / '2026-10-29').mkdir(parents=True)
+        for n in ('AD_2_LFBD_DATA_01.pdf', 'AD_2_LFBD_DATA_02.pdf', 'AD_2_LFPO_DATA_01.pdf'):
+            (data / 'local' / 'eaip' / '2026-10-29' / n).write_bytes(b'x')
+        (data / 'local' / 'cifp' / '2026-10-29').mkdir(parents=True)
+        (data / 'local' / 'cifp' / '2026-10-29' / 'CIFP_261029.zip').write_bytes(b'x')
+        r = run('LF', 'K')
+        c.eq({k: [v['state'], v['cached'], [x['code'] for x in v['reasons']]] for k, v in r['states'].items()}, {'LF': ['missing', {'state': 'present', 'files': 2}, ['not-built']], 'K': ['missing', {'state': 'present', 'files': 1}, ['not-built']]},
+             'the caches are there (two aerodromes of the eAIP, the CIFP zip), nothing built: « not-built », not « not-fetched »', what='cached')
+        idx = lambda cycle, ids: ((data / 'proc' / cycle).mkdir(parents=True, exist_ok=True), (data / 'proc' / cycle / 'index.json').write_text(json.dumps({'schema': 1, 'cycle': cycle, 'aerodromes': {i: {'status': 'official'} for i in ids}}), encoding='utf-8'))
+        idx('2026-10-01', ['LFBD', 'K01', '00R'])
+        idx('2026-11-26', ['LFBD', 'LFPO', 'KSEA'])         # a cycle to come: never taken
+        r = run('LF', 'K')
+        c.eq({k: [v['state'], v['built'], v['reasons']] for k, v in r['states'].items()}, {'LF': ['stale', {'cycle': '2026-10-01', 'aerodromes': 1}, [{'code': 'older-than-cycle', 'cycle': '2026-10-01'}]], 'K': ['stale', {'cycle': '2026-10-01', 'aerodromes': 2}, [{'code': 'older-than-cycle', 'cycle': '2026-10-01'}]]},
+             'built for a past cycle only: stale, naming that cycle; the folder of 26 Nov (to come) is ignored; K counts what no other bulk State claims (K01 and the FAA code 00R), LF the LF…', what='stale')
+        idx('2026-10-29', ['LFBD', 'LFPO', 'KSEA', 'K01'])
+        r = run('LF', 'K')
+        c.eq(({k: [v['state'], v['built']['aerodromes'], v['reasons']] for k, v in r['states'].items()}, r['counts'], r['cycle']), ({'LF': ['up-to-date', 2, []], 'K': ['up-to-date', 2, []]}, {'up-to-date': 2}, '2026-10-29'),
+             'built for the cycle in force: up to date, with the number of aerodromes', what='up-to-date')
+
+
+@case('K233', 'Launcher verb vfr/status (SOG-0119): the points of the VAC charts of a cycle: up to date only when every aerodrome the France base expects is built FOR THAT CYCLE; partial, past cycle and unknown cycle said with their counts; read-only', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0119): vfr/status { cycle? } like base/status: no network, nothing written; the cache is counted by name (AD-2.<ICAO>.pdf), the aerodromes expected are those of sia/base/fr/<cycle>/aerodromes.json, the aerodromes the SIA does not publish (the state of the last download) are not expected, each built file (sia/vfr/LF??.json) says its cycle in `source.cycle` (null: built before it was kept). The state is the truth of what the workstation PUBLISHED for that cycle: a build of 28 aerodromes of 454 is not « à jour »')
+def k233(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    RJ = _regen()
+    status, check = RJ.REGISTRY[('vfr', 'status')]
+    cyc = '2026-10-29'
+    c.eq(check({'cycle': 'x'}), None, 'a bad cycle: refused', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        run = lambda: status(RJ.Job('vfr', 'status', {}), check({'cycle': cyc}), {'data': str(data)})
+        r = run()
+        c.eq((r['state'], [x['code'] for x in r['reasons']]), ('missing', ['not-fetched']), 'nothing: missing, not fetched', what='empty')
+        (data / 'sia' / 'base' / 'fr' / cyc).mkdir(parents=True)
+        (data / 'sia' / 'base' / 'fr' / cyc / 'aerodromes.json').write_text(json.dumps({'data': [{'icao': 'LFAA'}, {'icao': 'LFAB'}, {'icao': 'LFAC'}, {'icao': 'EGLL'}]}), encoding='utf-8')
+        cache = data / 'local' / 'vac' / cyc
+        cache.mkdir(parents=True)
+        (cache / 'AD-2.LFAA.pdf').write_bytes(b'x')
+        (cache / '_state.json').write_text(json.dumps({'cycle': cyc, 'expected': 3, 'absent': ['LFAC']}), encoding='utf-8')
+        r = run()
+        c.eq((r['state'], [x['code'] for x in r['reasons']], r['cached']), ('missing', ['not-built'], {'have': 1, 'expected': 3, 'remaining': 1}), 'a chart in the cache, nothing built: « not-built »; the base expects 3 (LF… only), the SIA does not publish LFAC: one chart remains to take', what='cached')
+        built = lambda i, cycle: ((data / 'sia' / 'vfr').mkdir(parents=True, exist_ok=True), (data / 'sia' / 'vfr' / f'{i}.json').write_text(json.dumps({'schema': 2, 'ad': i, 'source': {'file': f'AD-2.{i}.pdf', 'cycle': cycle}}), encoding='utf-8'))
+        built('LFAA', cyc)
+        r = run()
+        c.eq((r['state'], r['reasons'], r['built']), ('stale', [{'code': 'partial', 'have': 1, 'expected': 2}], {'total': 1, 'atCycle': 1, 'older': 0, 'unknown': 0}), 'one of the two expected aerodromes built for the cycle: partial, 1 of 2 (LFAC, not published by the SIA, is not expected)', what='partial')
+        built('LFAB', '2026-10-01')
+        built('LFAD', None)
+        r = run()
+        c.eq((r['state'], [x['code'] for x in r['reasons']], r['reasons'][1:], r['built']), ('stale', ['partial', 'older-than-cycle', 'unknown-cycle'], [{'code': 'older-than-cycle', 'count': 1}, {'code': 'unknown-cycle', 'count': 1}], {'total': 3, 'atCycle': 1, 'older': 1, 'unknown': 1}),
+             'a file built for a past cycle and one built before the cycle was kept are said with their counts', what='older')
+        built('LFAB', cyc)
+        built('LFAD', cyc)
+        r = run()
+        c.eq((r['state'], r['reasons']), ('up-to-date', []), 'every expected aerodrome built for the cycle: up to date (an extra built aerodrome does not matter)', what='up-to-date')
+        (data / 'sia' / 'base' / 'fr' / cyc / 'aerodromes.json').unlink()
+        r = run()
+        c.eq((r['state'], [x['code'] for x in r['reasons']]), ('stale', ['no-base']), 'without the France base of the cycle, completeness cannot be proved: stale, « no-base »', what='no-base')
+
+
+@case('K234', 'Launcher verb aircraft/status (SOG-0119): the aircraft base of the workstation: missing without its two files, stale when a type of the company\'s fleet is not in it, up to date otherwise; `published` says whether the data repository holds the same files; read-only', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0119): aircraft/status {} like base/status, for a set with no cycle: AircraftDB/aircraft_db.js and aircraft_perf.js present, the types of airline/fleet.json found among the keys (and the aliases) of the first, the dates of the files; whether data/AircraftDB/ holds the same two files is information for « Publier », not a state of the base. Nothing is run: no network, no subprocess, nothing written')
+def k234(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    RJ = _regen()
+    status, check = RJ.REGISTRY[('aircraft', 'status')]
+    c.eq((check({}), check({'codes': []})), ({}, None), 'no argument: accepted; anything else: refused', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, adb = Path(td) / 'data', Path(td) / 'AircraftDB'
+        status.__globals__['ADB'] = str(adb)
+        run = lambda: status(RJ.Job('aircraft', 'status', {}), {}, {'data': str(data)})
+        r = run()
+        c.eq((r['state'], [x['code'] for x in r['reasons']], r['files']['db']['state'], r['published']), ('missing', ['no-db'], 'missing', 'absent'), 'no file: missing, « no-db »', what='empty')
+        adb.mkdir()
+        db = 'window.AIRCRAFT_DB = ' + json.dumps({'__aliases': {'C172S': 'C172'}, '__meta': {'x': 1}, 'C172': {'name': 'Cessna 172'}, 'PA28': {}}) + ';\n'
+        (adb / 'aircraft_db.js').write_text(db, encoding='utf-8')
+        (adb / 'aircraft_perf.js').write_text('window.AIRCRAFT_PERF = {};\n', encoding='utf-8')
+        (data / 'airline').mkdir(parents=True)
+        (data / 'airline' / 'fleet.json').write_text(json.dumps({'aircraft': [{'type': 'C172'}, {'type': 'c172s'}, {'type': 'EC45'}]}), encoding='utf-8')
+        r = run()
+        c.eq((r['state'], r['reasons'], r['fleet']), ('stale', [{'code': 'fleet-types-missing', 'count': 1}], {'codes': 3, 'inDb': 2, 'missing': ['EC45']}), 'a fleet type (EC45) that the base does not carry: stale, the type named; an alias counts (C172S)', what='stale')
+        c.eq((r['files']['db']['state'], r['files']['db']['bytes'] > 0, r['files']['db']['at'] is not None), ('present', True, True), 'the files are said with their size and their date', what='files')
+        (data / 'airline' / 'fleet.json').write_text(json.dumps({'aircraft': [{'type': 'C172'}, {'type': 'PA28'}]}), encoding='utf-8')
+        r = run()
+        c.eq((r['state'], r['reasons'], r['fleet']['missing'], r['published']), ('up-to-date', [], [], 'absent'), 'every fleet type in the base: up to date', what='up-to-date')
+        (data / 'AircraftDB').mkdir()
+        for n in ('aircraft_db.js', 'aircraft_perf.js'):
+            (data / 'AircraftDB' / n).write_bytes((adb / n).read_bytes())
+        c.eq(run()['published'], 'same', 'the data repository holds the same two files: « same »', what='same')
+        (data / 'AircraftDB' / 'aircraft_perf.js').write_text('window.AIRCRAFT_PERF = {"X": 1};\n', encoding='utf-8')
+        c.eq(run()['published'], 'differs', 'one of them differs: « differs »', what='differs')
+        (adb / 'aircraft_db.js').write_text('window.AIRCRAFT_DB = {broken', encoding='utf-8')
+        r = run()
+        c.eq((r['state'], [x['code'] for x in r['reasons']]), ('missing', ['no-db']), 'an unreadable base counts as missing (never an exception)', what='unreadable')
