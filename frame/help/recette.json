@@ -1268,9 +1268,15 @@
     "de": "Flotte: sagen, um welche Gesellschaft es geht; ein Tipp auf den Namen öffnet die Bearbeitung",
     "es": "Flota: decir de qué compañía se trata; tocar el nombre del aparato abre su edición"
    },
-   "test": "Maintenance › Appareils › Flotte : l'en-tête dit « Flotte de <compagnie> · <genre> ». Onglet Fiches, après une recherche (« caravelle ») : un appui sur le nom de la fiche, ou n'importe où sur sa ligne, l'ouvre pour la modifier ; plus de bouton seul à droite.",
+   "test": "Recharge la page. La compagnie de l'appareil est dans l'en-tête (la puce à côté du nom de l'application). Compagnie › Flotte : le titre dit « Flotte de <ta compagnie> » avec son genre, et un appui sur le nom ouvre la fiche de la compagnie. Si c'est ce que tu demandais le 10/11, valide ; sinon dis ce qui manque.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T20:31:16Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "non, toujours rien dans l’entête, là où ça devrait être, dans le header. possibilité de changer rapidement de compagnie, imho (nota à challenger, comme pour TOUTES MES DÉCISIONS !), quand on clique sur « pilote », on a 3 « compagnie ITF », ou « compagnie DEFA VIRTUAL » si on a 3 compagnies enregistrées (on n’en aura jamais plus de 7 :)",
+    "at": "2026-11-10T14:56:14Z"
+   }
   },
   {
    "id": "SOG-0191",

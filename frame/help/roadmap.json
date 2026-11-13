@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "717a9a1",
+  "organisation": "1cd8655",
   "fiches": 334,
   "untranslated": 0,
   "priorities": 310
@@ -2548,12 +2548,13 @@
     {
      "id": "SOG-0190",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Flotte : dire de quelle compagnie on parle ; un appui sur le nom de l'appareil ouvre sa modification",
      "en": "Fleet: say which airline it is; tapping the aircraft's name opens its editing",
      "de": "Flotte: sagen, um welche Gesellschaft es geht; ein Tipp auf den Namen öffnet die Bearbeitung",
      "es": "Flota: decir de qué compañía se trata; tocar el nombre del aparato abre su edición",
-     "rank": 156
+     "rank": 156,
+     "test": true
     }
    ]
   },
@@ -3343,7 +3344,7 @@
     {
      "id": "SOG-0235",
      "kind": "bug",
-     "state": "doing",
+     "state": "later",
      "fr": "BLOQUANT : une compagnie disparaît de la liste de l'appareil (DEFA) — la couche de données garde un document plus ancien que l'arbre",
      "en": "BLOCKING: an airline vanishes from the device's list (DEFA) — the data layer keeps a document older than its tree",
      "de": "BLOCKIEREND: eine Gesellschaft verschwindet aus der Liste des Geräts (DEFA) — die Datenschicht behält ein Dokument, das älter ist als ihr Baum",
