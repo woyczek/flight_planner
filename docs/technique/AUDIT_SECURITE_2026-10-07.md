@@ -1028,6 +1028,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 176 | The registry reader bounded and "not read" beyond 500 files (81148257a, audit 174 notes) | the 500-file limit acceptable; one defect to fix (identifier cut to 12 against the 40 of the plan) |
 | 177 | The registry identifier kept at 40 characters, shortened on screen only (ae9df7beb): the fix of 176 | closed |
 | 178 | The morning of 13 November: the Missions sheet's summary and the family / subtype lists (67e2e93ac SOG-0291, 7709e99b1 SOG-0292); the V2 registry index attaching an entry under a former number (1db36bcb8, 3dafa9d33, SOG-0289) | acceptable for the display; one defect proved (absorption loses data) |
+| 179 | The V2 registry's “Open in the generator” notifications, the guard delays and “Copy the diagnostic” (7e02b1204, SOG-0290) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2651,6 +2652,22 @@ and after each reading, not at the user's click. **Fix and counter-test.** Treat
 (the line has its own status, notes or flight date, or `request` is set): the entry is then kept, hidden and counted as the others; and
 never absorb a pending order (`status === 'ordered'` without files) — skip it before the test. Counter-test (red now): in K219's
 harness, seed (a) and (b) above and require that the old entry is still in the index (`supersededBy` set for (a)) and the order's `request` is intact.
+
+**179. “Open in the generator” and the page's diagnostic (7e02b1204, SOG-0290) — acceptable, one note.** *Notifications.* The texts say
+which mission was not opened and which skeleton stayed (`m.id`, the shared mission's identifier, both mission data) and go to
+`AppFramework.notify`, which writes them with `textContent`; the journal of alerts that records them writes it back through `esc`; the
+fallback line under the sheet is `textContent` too. `t()` substitutes through a callback (no `$&` expansion). *Guards.* `within()` races
+`FileAccess.status` (8 s) and the reading of the mission's files (20 s) against a timer, clears it on either outcome and leaves the pending
+call alone; the error name `Timeout` can only come from it, and the message is a constant in four languages (no folder name, no path). A
+timeout on the user's gesture rethrows it, on the quiet path it answers `null` as before. *Diagnostic.* `diagnosticText()` is made of
+constants and of shapes: the page's origin (the user copies it by a click; it is not a secret), booleans (`isSecureContext`, picker present,
+GitHub mode), the handle as yes / no and the permission state, an entry count, a count of draft keys (only `Object.keys` filtered by a
+prefix, the values never read), and the last step of “Open” (`where` from a closed list of the code, `step` a constant, the error's
+`name` cut to 40 characters, an age in seconds): no identifier, no path, no folder name, no raw error message. The text goes to the clipboard,
+or, if refused, into a read-only `textarea` by `.value` (never markup); `console.error` carries the origin only. K221 green. **Note.** The
+last-step record is read back from `localStorage` (`missionRegistryLastGo:v1`) with no bound on `where` and `step`, only the error name is cut
+when written; the only writer is this page on this device and the sink is the clipboard, so it is a hygiene point, not a hole: cut the three
+strings to 40 characters in `diagnosticText()` when convenient.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
