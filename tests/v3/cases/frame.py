@@ -7487,3 +7487,26 @@ def a185(c):
     c.eq(c.count('details.f-group[data-group=start] + details, details.f-group[data-group=start] ~ details:not(.f-group)'), 1, '« Comment s’en servir » follows « Mise en route »', what='howto')
     c.shot(f'A185_{c.width}_{lang}_delivered.png')
     c.check_errors()
+
+
+@case('A186', 'Settings › Device: « Repartir de zéro sur cet appareil » empties only what the device can read again (the copies of the repository files, « reference »), says in figures what goes and what stays before it acts, asks once, and never touches what the device alone carries (the documents, the settings of the device, the writes waiting) (SOG-0324)',
+      'A', langs4=True, designs=('standard',), screens=False, night=False,
+      rule='SOG-0324 (the user: « sur l' + '’' + 'état du poste, prévoir un bouton de purge pour recommencer ce qui semble bizarre »; the ergonomist: nothing that the device alone carries may go, nor the compiled data; one gesture, one confirmation, no second « Purger »): FrameData.evict only ever removes `reference` copies that have no write waiting; the gesture lists them with FrameData.cached and reads again after')
+def a186(c):
+    docs = LEVEL3 + [['sia/base/index.json', {'zones': {}}, 'reference'], ['sia/base/fr.json', {'x': 1}, 'reference'], ['disponibilites/TST/2026-W47.json', {'slots': []}, 'document']]
+    c.open('settings', docs=docs)
+    c.until("!!document.querySelector('[data-card=\"reset\"]')", timeout=15000, what='the card')
+    c.js("document.querySelector('[data-group=device]').open = true")
+    before = c.js("FrameData.cached('').then(l => l.map(d => [d.path, d.policy]))")
+    refs = [p for p, pol in before if pol == 'reference']
+    keep = [p for p, pol in before if pol != 'reference']
+    c.ok(len(refs) >= 2 and len(keep) >= 2, before, 'the device holds copies of repository files and documents of its own')
+    c.tap('[data-card="reset"] [data-act=resetDevice]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=10000, what='the question is asked once, with figures')
+    ask = norm(c.text('.f-modal'))
+    c.ok(str(len(refs)) in ask, ask, 'it says in figures how many copies go')
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-card=\"reset\"] [data-msg]')?.textContent.trim() !== ''", timeout=15000, what='the end is said')
+    after = c.js("FrameData.cached('').then(l => l.map(d => d.path))")
+    c.ok(not any(p in after for p in refs) and all(p in after for p in keep), (before, after), 'the copies of the repository files are gone; the documents and the settings of the device stay')
+    c.check_errors()

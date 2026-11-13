@@ -47,7 +47,7 @@
   const GROUPS = [
     ['data', ['usages', 'offline', 'lnmperf']],
     ['sync', ['sync']],
-    ['device', ['backup', 'wx', 'lan']]
+    ['device', ['backup', 'wx', 'lan', 'reset']]
   ];
   const START = ['identity', 'ivao', 'access', 'onboard']; // « Mise en route »
   const FLAT = ['display', 'company']; // toujours visibles, après le bloc d'état

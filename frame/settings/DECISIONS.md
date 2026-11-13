@@ -775,3 +775,16 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   `#settings?card=company` shows it open (the cases of that page are unchanged). (d) The measure that decides: **A185** (red before: 2 000 px at 1 280, more
   than 4 000 at 390): at 390, « État » + « Affichage » + « Compagnie » take 1 000 px at most (1 017 → 997 px in German, the longest). Adapted: A12, A26, A184 (the
   card `display`). Known difference: the status block (the frame's) wraps its two lines on a phone.
+
+## SOG-0324, « Repartir de zéro sur cet appareil » (13 Nov 2026)
+
+- The user (Q-0049): « sur l'état du poste, prévoir un bouton de purge pour recommencer ce qui semble bizarre »; the ergonomist's frame (accepted): nothing that the
+  device alone carries may go (a waiting send, a draft, a setting), nor the compiled data; ONE gesture, ONE confirmation, the waiting sends offered first, figures
+  before acting, no second « Purger ». Survey: nothing existed in Settings to empty the device; the base's « Purger » (Données) acts on the WORKSTATION; FrameData has
+  `cached(prefix)` (the copies with their policy and size), `evict(path)` (removes only a `reference` copy that has no write waiting) and a test-only `reset()` that
+  erases the whole IndexedDB (waiting writes included): never offered. Done: the card « Repartir de zéro sur cet appareil » (`cards.js` `reset`, in the folded group
+  Device, not inside the frame's « État » block, which the frame draws), the gesture in `actions.js` (`resetDevice`): list the `reference` copies and the waiting
+  writes, say in figures what goes (« n copies relues du dépôt (x Mo) seront vidées puis relues… ») and what stays, ask ONCE, send the waiting writes first
+  (`FrameData.sync`; if one does not go, nothing is emptied, said), `evict` each copy, then `sync` to read the tree again; the copies come back on demand. The documents,
+  the settings of the device (`cache` policy) and the pending writes are never touched. Case A186 (red before: no card; the documents and the device settings
+  stay, the `reference` copies go). Not done: a button inside the frame's « État » block itself (a frame file); the flicker of the same fiche is c9ff785e4.

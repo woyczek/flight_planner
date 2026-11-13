@@ -443,6 +443,43 @@
       'avwx.rest antwortet {s}: später erneut versuchen.',
       'avwx.rest responde {s}: vuelva a intentarlo más tarde.'
     ],
+    // « Repartir de zéro sur cet appareil » (SOG-0324) : ne vide que ce que l'appareil sait relire du dépôt, jamais ce qu'il est seul à porter
+    resetTitle: ['Repartir de zéro sur cet appareil', 'Start again from scratch on this device', 'Auf diesem Gerät von vorn beginnen',
+      'Empezar de cero en este dispositivo'
+    ],
+    resetHint: [
+      'En cas de doute : vide les copies des fichiers du dépôt que cet appareil sait relire (bases, références), puis les relit. Jamais vos envois en attente, vos réglages, vos brouillons ni vos documents.',
+      'When in doubt: empties the copies of repository files that this device can read again (bases, references), then reads them again. Never your waiting sends, your settings, your drafts or your documents.',
+      'Im Zweifel: leert die Kopien von Repository-Dateien, die dieses Gerät wieder lesen kann (Basen, Referenzen), und liest sie neu. Nie Ihre wartenden Sendungen, Einstellungen, Entwürfe oder Dokumente.',
+      'En caso de duda: vacía las copias de archivos del repositorio que este dispositivo puede volver a leer (bases, referencias) y las relee. Nunca sus envíos en espera, sus ajustes, sus borradores ni sus documentos.'
+    ],
+    resetBtn: ['Repartir de zéro', 'Start again from scratch', 'Von vorn beginnen', 'Empezar de cero'],
+    resetAsk0: [
+      '{n} copies relues du dépôt ({mb} Mo) seront vidées puis relues. Vos envois en attente, vos réglages, vos brouillons et vos documents restent. Continuer ?',
+      '{n} copies read from the repository ({mb} MB) will be emptied, then read again. Your waiting sends, settings, drafts and documents stay. Continue?',
+      '{n} aus dem Repository gelesene Kopien ({mb} MB) werden geleert und neu gelesen. Ihre wartenden Sendungen, Einstellungen, Entwürfe und Dokumente bleiben. Fortfahren?',
+      'Se vaciarán y releerán {n} copias leídas del repositorio ({mb} MB). Sus envíos en espera, ajustes, borradores y documentos se quedan. ¿Continuar?'
+    ],
+    resetAsk1: [
+      '{n} copies relues du dépôt ({mb} Mo) seront vidées puis relues ; vos {p} envoi(s) en attente partent d’abord. Vos réglages, vos brouillons et vos documents restent. Continuer ?',
+      '{n} copies read from the repository ({mb} MB) will be emptied, then read again; your {p} waiting send(s) go first. Your settings, drafts and documents stay. Continue?',
+      '{n} aus dem Repository gelesene Kopien ({mb} MB) werden geleert und neu gelesen; Ihre {p} wartende(n) Sendung(en) gehen zuerst raus. Einstellungen, Entwürfe und Dokumente bleiben. Fortfahren?',
+      'Se vaciarán y releerán {n} copias leídas del repositorio ({mb} MB); sus {p} envío(s) en espera salen primero. Sus ajustes, borradores y documentos se quedan. ¿Continuar?'
+    ],
+    resetNone: ['Rien à vider : cet appareil ne garde aucune copie à relire.',
+      'Nothing to empty: this device keeps no copy to read again.', 'Nichts zu leeren: dieses Gerät hält keine Kopie zum Neulesen.',
+      'Nada que vaciar: este dispositivo no guarda ninguna copia para releer.'
+    ],
+    resetHeld: ['Des envois en attente n’ont pas pu partir : rien n’a été vidé.',
+      'Some waiting sends could not go out: nothing was emptied.',
+      'Einige wartende Sendungen konnten nicht raus: es wurde nichts geleert.',
+      'Algunos envíos en espera no pudieron salir: no se vació nada.'
+    ],
+    resetDone: ['{n} copies vidées ; elles sont relues du dépôt à la demande.',
+      '{n} copies emptied; they are read again from the repository on demand.',
+      '{n} Kopien geleert; sie werden bei Bedarf neu aus dem Repository gelesen.',
+      '{n} copias vaciadas; se releen del repositorio cuando hacen falta.'
+    ],
     wxEraseAsk: ['Effacer la clé météo de cet appareil ?', 'Erase the weather key from this device?',
       'Den Wetterschlüssel von diesem Gerät löschen?',
       '¿Borrar la clave meteorológica de este dispositivo?'
@@ -883,6 +920,7 @@
     show(P.cards.display(env));
     // usages
     show(P.cards.usages(env));
+    show(P.cards.reset(env)); // repartir de zéro sur cet appareil (SOG-0324)
     // à Découverte : sept cartes au plus (SPEC § 1) — sauvegarde, données hors ligne, clé météo, accès du poste et
     // Little Navmap à partir du niveau Courant
     show(P.cards.backup(env));

@@ -242,6 +242,33 @@
         s: http[1]
       }) : m || '?', r?.ok ? 'ok' : m === 'offline' ? 'warn' : 'err');
     }
+    if (act === 'resetDevice') {
+      // SOG-0324 : ne vide que les copies `reference` (relisibles du dépôt, sans écriture en attente : FrameData.evict) ; les chiffres d'abord, UNE confirmation, les envois en attente partent avant
+      const copies = (await FD.cached('')).filter(d => d.policy === 'reference'),
+        st0 = await FD.status(),
+        p = (st0.pending || 0) + (st0.held || 0),
+        mb = new Intl.NumberFormat(t(['fr', 'en', 'de', 'es']), {
+          maximumFractionDigits: 1
+        }).format(copies.reduce((n, d) => n + (d.bytes || 0), 0) / 1048576);
+      if (!copies.length) return say('reset', t(T.resetNone), 'warn');
+      if (!await c.ask(t(p ? T.resetAsk1 : T.resetAsk0, {
+          n: copies.length,
+          mb,
+          p
+        }))) return;
+      if (p) {
+        await FD.sync().catch(() => null);
+        const st1 = await FD.status();
+        if ((st1.pending || 0) > 0) return say('reset', t(T.resetHeld), 'err'); // un envoi n'est pas parti : rien n'est vidé
+      }
+      let n = 0;
+      for (const d of copies) n += await FD.evict(d.path).catch(() => 0);
+      FD.sync().catch(() => null); // relit l'arbre du dépôt ; les copies reviennent à la demande
+      say('reset', t(T.resetDone, {
+        n
+      }), 'ok');
+      return;
+    }
     if (act === 'wxErase') {
       if (!await c.ask(t(T.wxEraseAsk))) return;
       await c.weatherKey.clear();

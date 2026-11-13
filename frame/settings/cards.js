@@ -106,6 +106,18 @@
     return `<div class="f-card" data-card="usages"><h2>${esc(t(T.usages))}</h2><p><b>${esc(how)}</b></p><p class="f-muted">${esc(t(T.usagesHint))}</p>
       ${chk('devices', T.devices)}${chk('users', T.users)}${chk('backend', T.backend, true)}${us.users && L?.data && !remote?.url ? `<p class="f-warn">${esc(t(T.needRemote))}</p>` : ''}</div>`;
   };
+  /** Carte « Repartir de zéro sur cet appareil » (SOG-0324) : UN geste qui ne vide que les copies relisibles du dépôt ; les chiffres et la confirmation viennent au clic (actions.js). Vide sans le magasin du cadre. */
+  const reset = env => {
+    const {
+      t,
+      FD,
+      lvl,
+      focus
+    } = env;
+    if (typeof FD?.cached !== 'function' || typeof FD?.evict !== 'function' || (lvl < 2 && focus !== 'reset')) return '';
+    return `<div class="f-card" data-card="reset"><h2>${esc(t(T.resetTitle))}</h2><p class="f-muted">${esc(t(T.resetHint))}</p><p class="f-msg" data-msg></p>
+      <div class="f-row"><button type="button" data-act="resetDevice">${esc(t(T.resetBtn))}</button></div></div>`;
+  };
   /** Carte Sauvegarde (export / import des données de l'appareil) : sans échange coché, à partir du niveau Courant ; vide sinon. */
   const backup = env => {
     const {
@@ -254,6 +266,7 @@
     identity,
     display,
     usages,
+    reset,
     backup,
     joinEntry,
     assistant,

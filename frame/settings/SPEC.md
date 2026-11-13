@@ -35,7 +35,7 @@ diagnostic, admin); the split is a matter of size, not of behaviour, and a regen
   - **Everyday and Full** (SOG-0320, 13 Nov 2026; the mockup `maquette/reglages_usage.html`, validated by the user): ranged **by frequency of
     use**. ALWAYS VISIBLE, flat, after the status block: **Display** (ONE card of pills: usage level, appearance, tone; the previews behind a fold) and the device **airline** (Company; its sheet is one closed line). SOMETIMES, folded, each
     title with its frequency on the right: **Data** (Usages, Offline data, Little Navmap sheets; « une fois par mois »), **Synchronisation**
-    (« en cas de souci »), **Device** (Backup, Weather key, Computer access). IN A PAGE: **Administration** (Full only) is a row (`a.f-grow`)
+    (« en cas de souci »), **Device** (Backup, Weather key, Computer access, « Repartir de zéro »). IN A PAGE: **Administration** (Full only) is a row (`a.f-grow`)
     that opens `#settings?card=admin` — the Administration card and the IVAO application assistant, under « ← Réglages ». ONCE, folded, at the
     bottom: **Mise en route** (Identity, Access, and « Créer / Rejoindre une compagnie », a card `onboard` taken out of the airline card, which keeps
     a line that points to it); then **About**, flat, last. Each fold is `details.f-group[data-group]`, closed by default, except a group that
