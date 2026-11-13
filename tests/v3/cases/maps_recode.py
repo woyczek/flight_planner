@@ -6515,3 +6515,30 @@ def k_keptstore(c):
     old = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/versions/' + vers[0]) if vers else ''
     c.eq(old, before, 'and its content is intact there', what='old file')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
+
+
+
+# A batch of three missions received at once (their YAML and Markdown, six files), the way the generator and the registry hand them to the storing: the whole list for every mission.
+_BATCH_JS = r"""async () => {
+  const y = (id) => 'schema: helo-xp-mission\nmission:\n  id: ' + id + '\n  type: AIRLIFT\ntitle: Bench ' + id + '\nsummary: Summary ' + id + '\n';
+  const texts = [];
+  for (const id of ['T-091', 'T-092', 'T-093']) { texts.push({ name: 'mission' + id + '.yaml', text: y(id) }); texts.push({ name: 'summary' + id + '.md', text: '# Mission ' + id + ' - Bench\n\nText ' + id + '\n' }) }
+  const docs = window.SiaMission.fromTextsBatch(texts).docs, out = [];
+  for (const d of docs) out.push((await window.MissionRegistryCore.record(d, { md: '', raw: texts, source: 'fichiers', request: true })).folder);
+  return out }"""
+
+
+@case('K224', 'A batch of three missions received at once keeps each received file in the folder of its own mission only (recu/): no more every file copied into every mission of the batch', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0294 (the ergonomist, 13 Nov, counts): 52 recu/ folders, 5 502 files for 102 distinct contents; every file of the batch of 5 Nov was copied into the recu/ of EVERY mission of the batch, 5 412 being those of another mission; the cause: the whole list of the received files is handed to the storing of each mission')
+def k_recubatch(c):
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistryCore && !!window.SiaMission && !!window.FileAccess", timeout=15000, what='the registry page is loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree
+    c.js(_WFS_JS, {})
+    folders = c.js(_BATCH_JS)
+    c.eq(sorted(folders), ['T_AIRLIFT/T-091', 'T_AIRLIFT/T-092', 'T_AIRLIFT/T-093'], 'the three missions are stored in their own folders', what='folders')
+    for mid in ('T-091', 'T-092', 'T-093'):
+        recu = c.js(_WFS_READ_JS, 'T_AIRLIFT/' + mid + '/recu') or []
+        c.ok(len(recu) == 2 and all(mid in n for n in recu), str(recu), mid + ': its recu/ holds its own two files (YAML and Markdown) and nothing of the others')

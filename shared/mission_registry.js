@@ -664,6 +664,31 @@
       g: guess || 'M-016A'
     }));
   }
+  /** Identifiants de mission que cite un texte reçu (YAML : mission.id ; Markdown : titre « # Mission … » ; un texte à plusieurs missions : tous). */
+  function receivedIds(f) {
+    const SM = window.SiaMission,
+      parts = SM?.splitBundle?.(f.text) || [],
+      one = x => {
+        const md = /^#\s+Mission\s+([A-Z]?-?\d+[A-Z]?)\b/im.exec(x.text || '');
+        if (md) return SM.parseId(md[1]).id;
+        try {
+          const y = window.jsyaml.load(x.text || '');
+          return y && typeof y === 'object' && y.mission?.id ? SM.parseId(String(y.mission.id)).id : '';
+        } catch {
+          return '';
+        }
+      };
+    return (parts.length ? parts : [f]).map(one).filter(Boolean);
+  }
+  /** Parmi les textes reçus d'un lot, ceux de CETTE mission (SOG-0294 : tout le lot était recopié dans le recu/ de chacune de ses missions) : ceux qui la citent (identifiant
+   *  ou ancien identifiant), et ceux qui ne citent aucune mission (rien ne permet de les attribuer à une autre). */
+  function receivedOf(raw, ...ids) {
+    const mine = new Set(ids.filter(Boolean).map(x => String(x).toUpperCase()));
+    return raw.filter(f => {
+      const cited = receivedIds(f);
+      return !cited.length || cited.some(x => mine.has(String(x).toUpperCase()));
+    });
+  }
   /** Range une mission reçue : trace des textes reçus (recu/), comparaison avec la version en place (identique → rien
    *  n'est remplacé ; différente → ancienne dans versions/, réglages du studio repris), meta mise à jour, Markdown.
    *  Sortie : { folder, status: 'new' | 'same' | 'version', diff } ; folder vide si le dossier n'est pas autorisé. */
@@ -687,11 +712,13 @@
       diff: []
     };
     const name = `mission${id}.yaml`;
-    if (raw.length) {
+    const mine = receivedOf(raw, id, doc.yaml?.mission
+      ?.former_id); // ses textes seulement : jamais ceux des autres missions du lot (SOG-0294)
+    if (mine.length) {
       const rh = await m.h.getDirectoryHandle(SUB.received, {
         create: true
       });
-      for (const [i, r] of raw.entries()) await writeText(rh, `${st}_${i + 1}_${String(r.name || 'texte').replace(/[^\w.-]+/g, '_')}.txt`, r.text);
+      for (const [i, r] of mine.entries()) await writeText(rh, `${st}_${i + 1}_${String(r.name || 'texte').replace(/[^\w.-]+/g, '_')}.txt`, r.text);
     }
     const oldText = await readText(m.h, name);
     let old = null;
