@@ -9438,3 +9438,105 @@ def k242(c):
          'an interpreted route keeps its kind (rotary, fixed, both), none given or a candidate route gives « unknown »; the direction works as before', what='written')
     p, rts = run([route('bad', aircraft='jet')])
     c.ok(p['ok'] is False and any('sorte d\'appareil' in e for e in p['errors']), str(p.get('errors')), 'a kind that is none of the four is refused, said with its terrain and route')
+
+
+@case('K244', 'VFR circuits from the user\'s extractor (SOG-0253): the XML `VfrCircuits` is read as an untrusted input (bounds, no entity, finite numbers, cleaned names), the hand is deduced from the order of the points, a terrain whose PDF changed is obsolete, the upload accepts it by its root and the verb vfr/circuits returns it; nothing is invented, nothing is published', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (Q-0050: « par défaut, à gauche… je cherche à faire un extracteur de tracés vers du xml »): nobody enters the 28 terrains and no session reads the drawing; the user\'s extractor writes the XML `VfrCircuits` (points in the order of the flight, aircraft, altitude and its reference), deposited by the page in data/local/upload/vfr_circuits.xml; tools/vfr_circuits.py reads it with the bounds said (2 MB, 200 terrains, 20 circuits, 64 points: over, the file is refused), no DOCTYPE / ENTITY, finite coordinates in range, names cleaned, a malformed circuit or point left out and counted; `hand` is deduced from the order (left = counter-clockwise seen from above), unknown when open or under three points; the sha256 of a terrain is compared with the one of the PDF the compilation read: different = obsolete (its circuits are not returned); the Map draws the extracted circuits only (the default left hand is a sentence, never a drawing). Invented example of the bench')
+def k244(c):
+    import importlib
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    V = importlib.import_module('vfr_circuits')
+    RJ = _regen()
+    sha = lambda ch: ch * 64
+    pt = lambda seq, lat, lon, code='': f'<Point seq="{seq}" lat="{lat}" lon="{lon}"' + (f' code="{code}"' if code else '') + '/>'
+    left = ''.join(pt(i, la, lo) for i, (la, lo) in enumerate([(48.00, -1.70), (48.00, -1.60), (48.05, -1.60), (48.05, -1.70)], 1))
+    right = ''.join(pt(i, la, lo) for i, (la, lo) in enumerate([(48.00, -1.70), (48.05, -1.70), (48.05, -1.60), (48.00, -1.60)], 1))
+    shuffled = pt(3, 48.05, -1.60) + pt(1, 48.00, -1.70) + pt(4, 48.05, -1.70) + pt(2, 48.00, -1.60)
+    doc = ('<?xml version="1.0" encoding="UTF-8"?><VfrCircuits airac="2610" extractor="my extractor &lt;b&gt;v1&lt;/b&gt;">'
+           f'<Aerodrome icao="LFXX" source="AD-2.LFXX.pdf" sha256="{sha("a")}">'
+           f'<Circuit id="RWY10-A" runways="10 28" aircraft="fixed" altitudeFt="1000" altitudeRef="AAL" closed="true" status="checked">{left}</Circuit>'
+           f'<Circuit id="RWY28-H" runways="28" aircraft="rotary" closed="true">{right}</Circuit>'
+           f'<Circuit id="open" runways="10" closed="false">{pt(1, 48.0, -1.7, "N")}{pt(2, 48.1, -1.6, "NE")}</Circuit>'
+           f'<Circuit id="by-seq" closed="true">{shuffled}</Circuit>'
+           f'<Circuit id="bad-aircraft" aircraft="jet">{left}</Circuit>'
+           f'<Circuit id="bad-lat">{pt(1, 91, 0)}{pt(2, 48, 0)}</Circuit>'
+           f'<Circuit id="nan" closed="true">{pt(1, "nan", 0)}{pt(2, 48, 0)}{pt(3, 48.1, 0.1)}</Circuit>'
+           f'<Circuit id="alt-no-ref" altitudeFt="1000" closed="true">{left}</Circuit></Aerodrome>'
+           f'<Aerodrome icao="LFYY" sha256="{sha("b")}"><Circuit closed="true">{left}</Circuit></Aerodrome>'
+           f'<Aerodrome icao="LFZZ"><Circuit closed="true">{left}</Circuit></Aerodrome>'
+           '<Aerodrome icao="bad"><Circuit/></Aerodrome></VfrCircuits>')
+    res, warn = V.parse_bytes(doc.encode('utf-8'), {'LFXX': sha('a'), 'LFYY': sha('c')}.get)
+    a = res['aerodromes']
+    by = {x['id']: x for x in a['LFXX']['circuits']}
+    c.eq((res['airac'], res['extractor'], {k: v['state'] for k, v in a.items()}, res['counts']['obsolete']), ('2610', 'my extractor bv1b', {'LFXX': 'current', 'LFYY': 'obsolete', 'LFZZ': 'unchecked'}, ['LFYY']),
+         'the header is read and cleaned; the sha256 of a terrain is compared with the PDF the compilation read: equal = current, different = obsolete, unknown on one side = unchecked', what='head')
+    c.eq(([x for x in by], a['LFYY']['circuits']), (['RWY10-A', 'RWY28-H', 'open', 'by-seq', 'alt-no-ref'], []), 'the circuits that are kept (in order); an unknown kind of aircraft, an out-of-range or non-finite coordinate are left out; an obsolete terrain returns none', what='kept')
+    c.eq((by['RWY10-A']['hand'], by['RWY28-H']['hand'], by['open']['hand'], by['by-seq']['hand']), ('left', 'right', 'unknown', 'left'),
+         'the hand is deduced from the order of the points (counter-clockwise = left); an open circuit gives none; the points are sorted by `seq` first', what='hand')
+    c.eq((by['RWY10-A']['aircraft'], by['RWY10-A']['altitude'], by['RWY10-A']['runways'], by['RWY10-A']['status'], by['RWY28-H']['aircraft'], by['RWY28-H']['altitude'], by['open']['points'][0].get('code')),
+         ('fixed', {'ft': 1000.0, 'ref': 'AAL'}, ['10', '28'], 'checked', 'rotary', None, 'N'), 'aircraft, altitude with its reference, runways, status and report-point code come through; none given: none (never zero)', what='fields')
+    c.eq(by['alt-no-ref']['altitude'], None, 'an altitude without its reference is not kept', what='altitude')
+    c.eq(warn, {'aerodromes': 1, 'circuits': 3, 'points': 2, 'altitude': 1}, 'what was left out is counted, never corrected', what='warnings')
+
+    def refused(raw):
+        try:
+            V.parse_bytes(raw)
+            return None
+        except V.Refused as e:
+            return str(e)
+    ad = lambda i: f'<Aerodrome icao="LF{chr(65 + i // 26)}{chr(65 + i % 26)}"><Circuit>{left}</Circuit></Aerodrome>'
+    c.eq([bool(refused(x)) for x in (b'', b'<VfrCircuits' + b' ' * (2 * 1024 * 1024), b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "b">]><VfrCircuits/>', b'<Other/>', b'not xml',
+                                      ('<VfrCircuits>' + ''.join(ad(i) for i in range(201)) + '</VfrCircuits>').encode(),
+                                      ('<VfrCircuits><Aerodrome icao="LFXX">' + f'<Circuit>{left}</Circuit>' * 21 + '</Aerodrome></VfrCircuits>').encode(),
+                                      ('<VfrCircuits><Aerodrome icao="LFXX"><Circuit>' + pt(1, 1, 1) * 65 + '</Circuit></Aerodrome></VfrCircuits>').encode())], [True] * 8,
+         'refused whole, said: empty, over 2 MB, a DOCTYPE or ENTITY, another root, not XML, 201 terrains, 21 circuits, 65 points', what='refused')
+    c.eq(refused(('<VfrCircuits>' + ''.join(ad(i) for i in range(200)) + '</VfrCircuits>').encode()), None, 'and 200 terrains are fine (the bound is the bound)', what='bound')
+    # the entity guard is BY CONSTRUCTION (the parser itself), not only a search in the bytes: another encoding would hide the word from a byte search
+    hostile = '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE a [<!ENTITY b "cc">]><VfrCircuits airac="2610" extractor="&b;"/>'
+    c.eq([bool(refused(x)) for x in (hostile.encode('utf-16'), b'\xff\xfe' + hostile.encode('utf-16-le'), hostile.encode('utf-16-le'), '<?xml version="1.0" encoding="ISO-8859-1"?><VfrCircuits/>'.encode())], [True] * 4,
+         'a file that is not UTF-8 (UTF-16 with or without a mark, another declared encoding) is refused: a DOCTYPE written in it would not be seen by a search in the bytes', what='encoding')
+    c.eq([refused(b'<VfrCircuits>' + b'<a/>' * 300000 + b'</VfrCircuits>'), refused('<?xml version="1.0" encoding="cp037"?><VfrCircuits/>'.encode('cp037')), refused(b'<VfrCircuits><a></VfrCircuits>')],
+         ['trop d’éléments', 'XML illisible', 'XML illisible'],
+         'the tree is built by the parser and the elements are counted AS IT READS (a 1.2 MB file of « <a/> » is refused at the bound, not after building 300 000 elements); an encoding the parser cannot read or a broken file is « XML illisible », never an exception', what='elements')
+    was = V._DANGER
+    V._DANGER = importlib.import_module('re').compile(b'(?!)')
+    try:
+        c.eq([refused(x) for x in (b'<!DOCTYPE a [<!ENTITY b "cc">]><VfrCircuits extractor="&b;"/>', b'<!DOCTYPE a><VfrCircuits/>')], ['DOCTYPE ou ENTITY : refusé (une entité se dilate)'] * 2,
+             'even with the search in the bytes switched off, the parser itself refuses a document type or an entity declaration', what='by construction')
+    finally:
+        V._DANGER = was
+    # the upload takes it by its root, the verb returns it, nothing is written outside data/local/upload
+    BU = importlib.import_module('base_upload')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'local' / 'upload').mkdir(parents=True)
+        (data / 'sia' / 'vfr').mkdir(parents=True)
+        (data / 'sia' / 'vfr' / 'LFXX.json').write_text(json.dumps({'ad': 'LFXX', 'source': {'file': 'AD-2.LFXX.pdf', 'sha256': sha('a'), 'cycle': None}}), encoding='utf-8')
+        f = Path(td) / 'x.xml'
+        f.write_text(doc, encoding='utf-8')
+        c.eq({k: v for k, v in BU.recognise(str(f), 'extractor.xml').items() if k != 'cycle'}, {'source': 'vfr_circuits', 'zone': '', 'name': 'vfr_circuits.xml'}, 'the upload recognises the file by its root and gives it its canonical name', what='upload')
+        f.write_bytes(b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "b">]><VfrCircuits/>')
+        try:
+            BU.recognise(str(f), 'x.xml')
+            got = 'taken'
+        except BU.Refused:
+            got = 'refused'
+        c.eq(got, 'refused', 'a file with a DOCTYPE is not taken by the upload', what='upload doctype')
+        fn, check = RJ.REGISTRY[('vfr', 'circuits')]
+        c.eq((check({}), check({'x': 1})), ({}, None), 'the verb takes no argument', what='check')
+        r = fn(RJ.Job('vfr', 'circuits', {}), {}, {'data': str(data)})
+        c.eq((r['ok'], r['reason']), (False, 'no-file'), 'without the deposited file: no-file', what='no file')
+        (data / 'local' / 'upload' / 'vfr_circuits.xml').write_text(doc, encoding='utf-8')
+        r = fn(RJ.Job('vfr', 'circuits', {}), {}, {'data': str(data)})
+        c.eq((r['ok'], {k: v['state'] for k, v in r['aerodromes'].items()}, r['warnings']['circuits'], r['aerodromes']['LFXX']['circuits'][0]['hand']), (True, {'LFXX': 'current', 'LFYY': 'unchecked', 'LFZZ': 'unchecked'}, 3, 'left'),
+             'the verb reads the deposited file against the compiled PDF fingerprint (LFYY: no compiled file here: unchecked)', what='verb')
+        before = sorted(str(p.relative_to(data)) for p in data.rglob('*') if p.is_file())
+        fn(RJ.Job('vfr', 'circuits', {}), {}, {'data': str(data)})
+        c.eq(sorted(str(p.relative_to(data)) for p in data.rglob('*') if p.is_file()), before, 'nothing is written by the verb', what='read-only')
+        (data / 'local' / 'upload' / 'vfr_circuits.xml').write_bytes(b'<VfrCircuits><!DOCTYPE x></VfrCircuits>')
+        r = fn(RJ.Job('vfr', 'circuits', {}), {}, {'data': str(data)})
+        c.eq((r['ok'], r['reason']), (False, 'refused'), 'a hostile deposited file is refused, said', what='refused file')

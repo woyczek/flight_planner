@@ -382,7 +382,29 @@ def status(job, args, ctx):
             'built': {'total': len(built), 'atCycle': len(at), 'older': len(older), 'unknown': len(unknown)}}
 
 
+def circuits(job, args, ctx):
+    """Verbe vfr/circuits (SOG-0253) : LECTURE SEULE du fichier `data/local/upload/vfr_circuits.xml` déposé par la page (l'extracteur de l'utilisateur : tools/vfr_circuits.py, format `VfrCircuits`) ; rend { ok, airac, extractor, aerodromes: { OACI: { state:
+    'current' | 'unchecked' | 'obsolete', source, circuits: [{ id, runways, aircraft, altitude, closed, hand, status, points: [{ lat, lon, code? }] }] } }, counts, warnings } ou { ok: False, reason: 'no-file' | 'refused', message }. Un terrain dont l'empreinte du PDF
+    n'est plus celle que la compilation a lue est `obsolete` (ses circuits ne sont pas rendus). Jamais écrit, jamais publié : la page garde le résultat en mémoire (couche locale, comme les points FRA)."""
+    import vfr_circuits
+    path = os.path.join(ctx['data'], 'local', 'upload', 'vfr_circuits.xml')
+    try:
+        size = os.path.getsize(path)
+        if os.path.islink(path) or size > vfr_circuits.MAX_BYTES:
+            return {'ok': False, 'reason': 'refused', 'message': 'fichier trop gros ou lien : refusé'}
+        with open(path, 'rb') as f:
+            raw = f.read(vfr_circuits.MAX_BYTES + 1)
+    except OSError:
+        return {'ok': False, 'reason': 'no-file', 'message': 'aucun fichier vfr_circuits.xml déposé'}
+    try:
+        res, warnings = vfr_circuits.parse_bytes(raw, vfr_circuits.compiled_sha(ctx['data']))
+    except vfr_circuits.Refused as e:
+        return {'ok': False, 'reason': 'refused', 'message': str(e)[:200]}
+    return {'ok': True, **res, 'warnings': warnings}
+
+
 VERBS = {
+    ('vfr', 'circuits'): (circuits, lambda a: {} if a == {} else None),
     ('vfr', 'fetch'): (fetch, check_fetch),
     ('vfr', 'build'): (build, check_build),
     ('vfr', 'purge'): (purge, check_purge),

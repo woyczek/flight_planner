@@ -56,3 +56,24 @@ Les fichiers `interpretations/OACI.json` sont édités séparément du résultat
 5. l'ancien JSON est conservé dans l'historique du refresh.
 
 Une empreinte différente peut résulter d'un changement purement documentaire. Une relecture est nécessaire avant de réactiver l'interprétation ; ne pas remplacer simplement l'empreinte sans contrôle.
+
+## VfrCircuits — the circuits drawn by the user's extractor (SOG-0253)
+
+The traffic circuit of a VAC chart is in the drawing, not in the text. The user's extractor writes it as XML; this is what the launcher reads (`tools/vfr_circuits.py`, verb `vfr/circuits`). The file is deposited by the page as `data/local/upload/vfr_circuits.xml` (recognised by its root), kept local, never published.
+
+```xml
+<VfrCircuits airac="2610" extractor="name v1">
+  <Aerodrome icao="LFRN" source="AD-2.LFRN.pdf" sha256="<64 hex: the PDF the extractor read>">
+    <Circuit id="RWY10-A" runways="10 28" aircraft="fixed|rotary|both" altitudeFt="1000" altitudeRef="AAL|AMSL" closed="true|false" status="extracted|checked">
+      <Point seq="1" lat="48.0720" lon="-1.7300" code="N"/>  <!-- code: the published report point, optional -->
+      <Point seq="2" lat="48.0720" lon="-1.6000"/> ...
+    </Circuit>
+  </Aerodrome>
+</VfrCircuits>
+```
+
+- **Points in the order of the flight**: the order is the direction (no separate field); WGS84 decimal degrees; `seq` sorts them when given. `hand` is deduced: `left` when the closed outline turns counter-clockwise seen from above (north up), `right` otherwise, `unknown` when open or under three points.
+- **Absent = unknown, never zero**: `aircraft`, `altitudeFt` (with its `altitudeRef`, both or none), `runways`, `status`, `code`. Nothing is invented: no default circuit is written (the Map says « main gauche — par défaut, rien de publié » and draws only extracted circuits).
+- **Bounds** (an untrusted file): 2 MB; at most 200 aerodromes, 20 circuits per aerodrome, 64 points per circuit (over: the whole file is refused, said); UTF-8 only; no `DOCTYPE` / `ENTITY` (refused by the parser itself, by construction, not only by a search in the bytes); finite numbers, latitude ±90, longitude ±180; names reduced to `[A-Za-z0-9 _.-]`; a malformed circuit or point is left out and counted in `warnings`.
+- **Obsolete when the PDF changes**: the `sha256` of an aerodrome is compared with the one the compilation read (`sia/vfr/<ICAO>.json`, `source.sha256`): equal = `current`, different = `obsolete` (its circuits are not returned), unknown on either side = `unchecked`.
+- **Result of the verb** (read only, nothing written): `{ ok, airac, extractor, aerodromes: { ICAO: { state, source, circuits: [{ id, runways, aircraft, altitude: { ft, ref } | null, closed, hand, status, points: [{ lat, lon, code? }] }] } }, counts, warnings }`, or `{ ok: false, reason: 'no-file' | 'refused', message }`. The page keeps it in memory (a local layer, like the FRA points).

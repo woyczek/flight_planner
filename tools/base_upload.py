@@ -178,6 +178,11 @@ def recognise(path, hint='', today=None):
     import registry_fr
     if head[:4] not in (b'PK', b'%PDF') and registry_fr.sniff(open(path, 'rb').read(4096)):          # SOG-0270 : l'export du registre français des immatriculations, reconnu par son EN-TÊTE ; le fichier d'origine n'est jamais gardé : seul son dérivé à cinq colonnes l'est (data/local/registry/)
         return {'source': 'registry_fr', 'zone': '', 'name': registry_fr.OUT_NAME, 'cycle': None, 'derive': True}
+    if first == b'<' and os.path.getsize(path) <= 2 * 1024 * 1024:      # SOG-0253 : le XML `VfrCircuits` de l'extracteur de l'utilisateur, reconnu par sa RACINE ; gardé tel quel (data/local/upload/vfr_circuits.xml), lu par le verbe vfr/circuits, jamais publié
+        with open(path, 'rb') as f:
+            body = f.read(4096)
+        if b'<VfrCircuits' in body and b'<!DOCTYPE' not in body.upper() and b'<!ENTITY' not in body.upper():
+            return {'source': 'vfr_circuits', 'zone': '', 'name': 'vfr_circuits.xml', 'cycle': None}
     if head[:4] == b'%PDF' and re.fullmatch(r'MIAM_OACI_ENR 5\.7(?: \(\d+\))?\.pdf', hint or '', re.I):      # SOG-0273 : l'ENR 5.7 du MIAM (CD DIRCAM du SIA, sorti du zip par la page) : gardé tel quel ; c'est la PAGE qui le lit (pdf.js → miam-enr-5-7-tracks.xml), le lanceur n'a pas de lecteur de PDF
         return {'source': 'dircam', 'zone': 'fr', 'name': 'MIAM_OACI_ENR 5.7.pdf', 'cycle': None}
     if head[:4] == b'%PDF' and re.fullmatch(r'ENR-5-2(?: \(\d+\))?\.pdf', hint or ''):         # l'ENR 5.2 de l'AIP militaire britannique (SOG-0234 : le serveur coupe la connexion TLS du lanceur)
