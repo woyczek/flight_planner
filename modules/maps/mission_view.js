@@ -436,7 +436,16 @@ export function missionEvents() {
       S.mbarFold = true;
       return bannerFill();
     }
-    if (e.target.closest('[data-mbx]')) S.missionAside ? abandonMission() : go('',
+    if (e.target.closest('[data-mbkeep]')) { // la question d'abandon, dans la fenêtre : garder (le choix sûr, aussi Échap)
+      S.mbarAsk = false;
+      return bannerFill();
+    }
+    if (e.target.closest('[data-mbyes]')) {
+      S.mbarAsk = false;
+      bannerFill();
+      return leaveMission();
+    }
+    if (e.target.closest('[data-mbx]')) S.missionAside ? askAbandon() : go('',
       ''
     ); // la croix quitte la mission pour de bon : le vol est écrit sans elle, la carte fournie montrée rend le vol (SOG-0251) ; « Vol » de la liste garde la mission
   });
@@ -456,20 +465,13 @@ export function missionEvents() {
     stop?.();
   };
 }
-/** Abandonner la préparation de la mission du vol (la croix de sa fenêtre) : une question d'abord (SOG-0311, « comme c'est un abandon de mission, il faut une confirmation ») ;
- *  refusée, rien ne change ; acceptée, la fenêtre, la carte choisie et les points imposés par la mission partent (leaveMission). */
-async function abandonMission() {
-  const me = S,
-    id = S.missionAside;
-  if (!S.ctx.ask) return leaveMission(); // pas de question possible (page incomplète) : le geste reste celui d'avant
-  const yes = await S.ctx.ask(tt(TX.mbAbandonAsk, {
-    id
-  }), {
-    ok: tt(TX.mbAbandonOk),
-    cancel: tt(TX.mbKeep)
-  });
-  if (S !== me || !yes || S.missionAside !== id) return;
-  leaveMission();
+/** Abandonner la préparation de la mission du vol (la croix de sa fenêtre) : la question est posée DANS la fenêtre (SOG-0311, « comme c'est un abandon de mission, il faut une confirmation ») avec
+ *  « Garder la mission » en avant, le choix sûr — Échap garde aussi — et « Abandonner » en second ; refusée, rien ne change ; acceptée, la fenêtre, la carte choisie et les points imposés par la
+ *  mission partent (leaveMission). Une fenêtre repliée garde sa question. */
+function askAbandon() {
+  S.mbarAsk = true;
+  bannerFill();
+  S.mbarEl?.querySelector('[data-mbkeep]')?.focus();
 }
 /** La famille d'une mission : celle du dossier missions/<n>_<FAMILLE>/<ID>/ (rien n'est lu pour la connaître). */
 const familyOf = id => {
@@ -496,10 +498,13 @@ export function bannerFill() {
     // la vue : celle de la carte fournie montrée ; sur la vue vol, la vue est celle du vol (liste grisée)
     themes = ['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml'),
     themeSel = `<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}"${flightView ? ' disabled' : ''}>${flightView ? `<option>${esc(tt(TX.mbFlight))}</option>` : themes.map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>`,
-    html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b><button type="button" class="mp-mb-x mp-mb-min" data-mbmin title="${esc(tt(TX.mbFold))}" aria-label="${esc(tt(TX.mbFold))}">−</button><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
+    ask = on && S.mbarAsk && !!S.missionAside, // la question d'abandon, dans la fenêtre
+    html = ask ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b></div>
+<p class="mp-mb-ask" role="alertdialog" aria-label="${esc(tt(TX.mbAbandonAsk, { id }))}">${esc(tt(TX.mbAbandonAsk, { id }))}</p>
+<div class="mp-mb-act"><button type="button" class="f-btn primary" data-mbkeep>${esc(tt(TX.mbKeep))}</button><button type="button" class="f-btn" data-mbyes>${esc(tt(TX.mbAbandonOk))}</button></div>` : on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || id)}</b><button type="button" class="mp-mb-x mp-mb-min" data-mbmin title="${esc(tt(TX.mbFold))}" aria-label="${esc(tt(TX.mbFold))}">−</button><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
 <div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || id)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${mapSel}${themeSel}` : loading ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(id)}</b></div>
 <div class="mp-mb-sub" role="status">${esc(tt(TX.mbLoading))}</div>` : '';
-  if (!on && !loading) S.mbarFold = false; // plus de mission : plus de fenêtre repliée
+  if (!on && !loading) S.mbarFold = S.mbarAsk = false; // plus de mission : plus de fenêtre repliée, plus de question
   const shown = (on || loading) && !S.mbarFold;
   if (el.hidden === shown) el.hidden = !shown;
   if (S.missionBtn && S.missionBtn.hidden === (on && !!S.mbarFold)) S.missionBtn.hidden = !(on && !!S

@@ -65,6 +65,9 @@ import {
   chooseClose,
   chooseRender
 } from './choose.js';
+import {
+  bannerFill
+} from './mission_view.js';
 
 /** Positions de la feuille, dans l'ordre de la primitive. */
 const SHEET_POS = ['collapsed', 'default', 'expanded'];
@@ -393,7 +396,10 @@ export function syncView() {
  *  feuille, la carte d'un point, le « + » armé, le mode Édition ; vrai si quelque chose l'a été. */
 export function escapeKey() {
   const E = got('edit');
-  if (!S.legendEl.hidden) {
+  if (S.mbarAsk) { // la question d'abandon de la mission : Échap garde la mission (SOG-0311)
+    S.mbarAsk = false;
+    bannerFill();
+  } else if (!S.legendEl.hidden) {
     S.legend = false;
     legendSync();
     S.legendBtn.focus();
