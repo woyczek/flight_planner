@@ -1297,12 +1297,13 @@
     {
      "id": "SOG-0299",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte de préparation d'une mission, design « swiss » : défaut de transparence",
      "en": "Mission preparation map, « swiss » design: transparency defect",
      "de": "Karte der Missionsvorbereitung, Design « swiss »: Transparenzfehler",
      "es": "Mapa de preparación de misión, diseño « swiss »: defecto de transparencia",
-     "rank": 82
+     "rank": 82,
+     "test": true
     }
    ]
   },
@@ -1412,13 +1413,14 @@
     {
      "id": "SOG-0309",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : l'avion (ou son fantôme) ne se voit pas assez sur une carte chargée",
      "en": "Map: the aircraft (or its ghost) is not visible enough on a busy map",
      "de": "Karte: das Flugzeug (oder sein Schatten) ist auf einer vollen Karte zu schlecht zu sehen",
      "es": "Mapa: el avión (o su fantasma) no se ve lo bastante en un mapa cargado",
      "milestone": "6.0.0-beta.1",
-     "rank": 94
+     "rank": 94,
+     "test": true
     },
     {
      "id": "SOG-0304",

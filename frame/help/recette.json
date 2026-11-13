@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 188,
+  "tests": 190,
   "verdicts": 123
  },
  "apps": [
@@ -2627,6 +2627,20 @@
    "delivered": "2026-11-13T11:52:34Z"
   },
   {
+   "id": "SOG-0299",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte de préparation d'une mission, design « swiss » : défaut de transparence",
+    "en": "Mission preparation map, « swiss » design: transparency defect",
+    "de": "Karte der Missionsvorbereitung, Design « swiss »: Transparenzfehler",
+    "es": "Mapa de preparación de misión, diseño « swiss »: defecto de transparencia"
+   },
+   "test": "Recharge la page, design « swiss ». Carte d'une mission : la fenêtre de la mission, la fiche d'un point touché, l'infobulle et les itinéraires proposés ont un fond plein ; on ne voit plus la carte au travers.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T13:08:20Z"
+  },
+  {
    "id": "SOG-0300",
    "app": "pilote",
    "title": {
@@ -2709,6 +2723,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:25:02Z"
+  },
+  {
+   "id": "SOG-0309",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : l'avion (ou son fantôme) ne se voit pas assez sur une carte chargée",
+    "en": "Map: the aircraft (or its ghost) is not visible enough on a busy map",
+    "de": "Karte: das Flugzeug (oder sein Schatten) ist auf einer vollen Karte zu schlecht zu sehen",
+    "es": "Mapa: el avión (o su fantasma) no se ve lo bastante en un mapa cargado"
+   },
+   "test": "Recharge la page. Carte, vol démarré (ou sa position estimée) : l'avion est plus grand, cerné de blanc, au-dessus de tout le reste ; son fantôme a la même silhouette en contour. Regarde-le sur une carte chargée (espaces aériens, route, relief).",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T13:04:46Z"
   },
   {
    "id": "SOG-0310",
