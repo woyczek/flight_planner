@@ -2676,10 +2676,10 @@
     "de": "Einstellungen und Daten: drei Korrekturen an Beschriftungen und Links",
     "es": "Ajustes y Datos: tres retoques de etiquetas y enlaces"
    },
-   "test": "Relance le lanceur et recharge. (1) Design Material : « Administration » tient sur une ligne dans le rail. (2) Maintenance › Administration › « Réglage des seuils de la carte » : tu arrives sur la page de réglage de la Carte, plus sur Données. (3) Maintenance › Données : le pli « Registre français des aéronefs » dit s'il est déposé et propose « Choisir le fichier… » ; après le dépôt, il donne le nombre d'immatriculations lues.",
+   "test": "Relance le lanceur et recharge. (1) Design Material : « Administration » tient sur une ligne. (2) Maintenance › Administration › « Réglage des seuils de la carte » : tu arrives sur la page de réglage de la Carte. (3) Maintenance › Données : « Pays définis » remplace « Ma couverture » (« Ajouter ce pays », « Retirer ce pays »). (4) Compagnie › aéronefs, « registre français non déposé — le déposer » : tu arrives sur le pli « Registre français des aéronefs » de Données ; « Choisir le fichier… » le dépose et donne le nombre d'immatriculations lues.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-13T12:12:47Z"
+   "delivered": "2026-11-13T12:29:51Z"
   }
  ],
  "decisions": [
