@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 178,
+  "tests": 179,
   "verdicts": 122
  },
  "apps": [
@@ -285,9 +285,15 @@
     "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
     "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo"
    },
-   "test": "Recharge la page. Sur un vol démarré : dans Carburant (Départ), « Direct vers… » un point de la route restante — le panneau dit d'où part le direct, les points sautés et les écarts (NM, minutes, kg) avant « Appliquer » ; « Annuler le direct » remet la route. Même geste depuis la fiche d'un point sur la Carte (« Direct vers ce point »). Sur une mission, un direct qui saute un point imposé le dit en rouge et demande une seconde confirmation ; le compte rendu en garde la trace.",
+   "test": "Recharge la page. Carburant, ton vol LFOP → LFBD : « Démarrer » une seule fois — le bouton dit « Démarrage… » le temps de relire la météo, puis le vol est démarré. « Direct vers… » PT (ou PT4) : le direct est pris. Essaie un point hors de la route : il est pris aussi, avec un avertissement qui dit à combien de milles il est de la route.",
    "since": "2026-11-12",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-13T12:18:15Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "1/ il faut démarrer plusieurs fois. étrange. 2/ le contrôle peut donner un direct vers un point autre que la route. un warn, avec la distance à la route. ici, sur lfop lfbd, le direct PT m’est refusé (screenshot). pourtant, c’est sur la route (ou presque).",
+    "at": "2026-11-13T09:02:38Z"
+   }
   },
   {
    "id": "SOG-0089",
@@ -2646,6 +2652,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T12:15:53Z"
+  },
+  {
+   "id": "SOG-0315",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages et Données : trois retouches de libellés et de liens",
+    "en": "Settings and Data: three label and link touch-ups",
+    "de": "Einstellungen und Daten: drei Korrekturen an Beschriftungen und Links",
+    "es": "Ajustes y Datos: tres retoques de etiquetas y enlaces"
+   },
+   "test": "Relance le lanceur et recharge. (1) Design Material : « Administration » tient sur une ligne dans le rail. (2) Maintenance › Administration › « Réglage des seuils de la carte » : tu arrives sur la page de réglage de la Carte, plus sur Données. (3) Maintenance › Données : le pli « Registre français des aéronefs » dit s'il est déposé et propose « Choisir le fichier… » ; après le dépôt, il donne le nombre d'immatriculations lues.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T12:12:47Z"
   }
  ],
  "decisions": [

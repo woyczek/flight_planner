@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8706392",
+  "organisation": "a787551",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -499,12 +499,13 @@
     {
      "id": "SOG-0088",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Direct vers un point sur instruction du contrôle : chercher le point, reprendre le reste du vol",
      "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
      "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
      "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo",
-     "rank": 16
+     "rank": 16,
+     "test": true
     },
     {
      "id": "SOG-0089",
@@ -4597,11 +4598,12 @@
     {
      "id": "SOG-0315",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Réglages et Données : trois retouches de libellés et de liens",
      "en": "Settings and Data: three label and link touch-ups",
      "de": "Einstellungen und Daten: drei Korrekturen an Beschriftungen und Links",
-     "es": "Ajustes y Datos: tres retoques de etiquetas y enlaces"
+     "es": "Ajustes y Datos: tres retoques de etiquetas y enlaces",
+     "test": true
     }
    ]
   },
