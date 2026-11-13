@@ -656,3 +656,12 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   the label is now whole (11 px, 84 px available, no cut inside a word); the button « Réglage des seuils de la carte » of the Administration
   card, opened inside Maintenance, pointed to `#maps?tune=1` which Maintenance does not have (it fell back to Données): an entry may now name
   the application that has its page (`app: 'pilot'`) and the button opens that application, in the same tab (case A180).
+- **13 Nov 2026 — SOG-0315, item 3: « Ma couverture » becomes « Pays définis »** (the user: « « ma couverture » n'est pas adapté,
+  mauvaise traduction »; his word, relayed by the ergonomist: « Pays définis »). Interface only: « couverture » / « coverage » stay the
+  words of the specs, the code and the launcher. The labels: the fold « Pays définis » (en Defined countries, de Festgelegte Länder, es
+  Países definidos); « Ajouter ce pays » / « Retirer ce pays » on a sheet; « Ajouter ces pays (n) » on the banner of the map; « Recentrer sur
+  mes pays définis »; « non défini » where the screen said « hors de votre couverture » (the legend, the group counts, the sheet); the
+  sentences that named the coverage say « vos pays définis » (the map label, the confirmations, the grey reasons); the Administration line
+  « Maintenance » says « les pays définis et les États ». The texts that describe the Données-side coverage by State of aerodb and the table
+  « Couverture par pays » (a table of what the base holds per country) keep « couverture »: it is not the user's list of countries. Help
+  ×4 (the quoted labels and one sentence that defines the term), no change of behaviour, no change of key (the cases read the texts by key).

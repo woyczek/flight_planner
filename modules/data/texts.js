@@ -57,8 +57,8 @@ export const TX = {
   },
   attention: ['À regarder', 'Needs attention', 'Bitte ansehen', 'Requiere atención'],
   moreSets: ['{n} autres jeux', '{n} more data sets', '{n} weitere Datensätze', '{n} conjuntos más'],
-  groupEmpty: ['Aucun jeu à suivre pour cette couverture.', 'No data set to follow for this coverage.',
-    'Kein Datensatz für diese Abdeckung.', 'Ningún conjunto que seguir para esta cobertura.'
+  groupEmpty: ['Aucun jeu à suivre pour ces pays définis.', 'No data set to follow for these defined countries.',
+    'Kein Datensatz für diese festgelegten Länder.', 'Ningún conjunto que seguir para estos países definidos.'
   ],
   pubError: ['L’état des publications n’a pas pu être lu : les lignes montrent seulement les sources.',
     'The state of the publications could not be read: the rows only show the sources.',
@@ -269,8 +269,12 @@ export const TX = {
     abandoned: ['Abandonnée', 'Set aside', 'Zurückgestellt', 'Descartada']
   },
   fed: ['Zones nourries', 'Zones fed', 'Versorgte Zonen', 'Zonas alimentadas'],
-  fedAll: ['toutes celles de la couverture', 'all those of the coverage', 'alle der Abdeckung', 'todas las de la cobertura'],
-  fedNone: ['aucune de la couverture', 'none of the coverage', 'keine der Abdeckung', 'ninguna de la cobertura'],
+  fedAll: ['toutes celles des pays définis', 'all those of the defined countries', 'alle der festgelegten Länder',
+    'todas las de los países definidos'
+  ],
+  fedNone: ['aucune parmi les pays définis', 'none of the defined countries', 'keines der festgelegten Länder',
+    'ninguna de los países definidos'
+  ],
   published: ['Publication', 'Publication', 'Veröffentlichung', 'Publicación'],
   zoneLine: ['{z} : {d}', '{z}: {d}', '{z}: {d}', '{z}: {d}'],
   zoneCycle: ['cycle {c}', 'cycle {c}', 'Zyklus {c}', 'ciclo {c}'],
@@ -369,8 +373,8 @@ export const TX = {
     'Ciclo {c}, vigente desde el {d}.'
   ],
   stateBase: ['Votre base :', 'Your base:', 'Ihre Basis:', 'Su base:'],
-  stateEmpty: ['Aucune zone dans la couverture.', 'No zone in the coverage.', 'Keine Zone in der Abdeckung.',
-    'Ninguna zona en la cobertura.'
+  stateEmpty: ['Aucun pays défini.', 'No defined country.', 'Kein festgelegtes Land.',
+    'Ningún país definido.'
   ],
   stateUnknown: ['L’état de votre base n’est pas connu : {r}.', 'The state of your base is not known: {r}.',
     'Der Zustand Ihrer Basis ist nicht bekannt: {r}.', 'No se conoce el estado de su base: {r}.'
@@ -506,10 +510,10 @@ export const TX = {
       '{z}: hier ist sein Blatt; „Aktualisieren“ steht in der Statusleiste.',
       '{z}: aquí está su ficha; «Actualizar» está en la barra de estado.'
     ],
-    zoneLinkOut: ['{z} n’est pas dans la couverture : ajoutez-la d’abord (« Ajouter un pays »).',
-      '{z} is not in the coverage: add it first (“Add a country”).',
-      '{z} ist nicht in der Abdeckung: zuerst hinzufügen („Land hinzufügen“).',
-      '{z} no está en la cobertura: añádala primero («Añadir un país»).'
+    zoneLinkOut: ['{z} n’est pas dans les pays définis : ajoutez-la d’abord (« Ajouter un pays »).',
+      '{z} is not in the defined countries: add it first (“Add a country”).',
+      '{z} ist nicht in den festgelegten Ländern: zuerst hinzufügen („Land hinzufügen“).',
+      '{z} no está en los países definidos: añádala primero («Añadir un país»).'
     ],
     long: ['Cela peut être long.', 'This may take a while.', 'Das kann dauern.', 'Esto puede tardar.'],
     sizeUnknown: ['taille inconnue', 'size unknown', 'Größe unbekannt', 'tamaño desconocido'],
@@ -521,20 +525,22 @@ export const TX = {
   // les paquets de pays (packs.js, SOG-0065)
   // la carte du monde, les paquets de pays et la fiche d'un pays (SOG-0262, lot A)
   cw: {
-    mapLabel: ['Carte de votre couverture : touchez un pays pour ouvrir sa fiche',
-      'Map of your coverage: tap a country to open its sheet',
-      'Karte Ihrer Abdeckung: tippen Sie auf ein Land, um sein Blatt zu öffnen',
-      'Mapa de su cobertura: toque un país para abrir su ficha'
+    mapLabel: ['Carte de vos pays définis : touchez un pays pour ouvrir sa fiche',
+      'Map of your defined countries: tap a country to open its sheet',
+      'Karte Ihrer festgelegten Länder: tippen Sie auf ein Land, um sein Blatt zu öffnen',
+      'Mapa de sus países definidos: toque un país para abrir su ficha'
     ],
     world: ['Voir le monde entier', 'See the whole world', 'Ganze Welt anzeigen', 'Ver el mundo entero'],
-    mine: ['Revenir à ma couverture', 'Back to my coverage', 'Zurück zu meiner Abdeckung', 'Volver a mi cobertura'],
+    mine: ['Revenir à mes pays définis', 'Back to my defined countries', 'Zurück zu meinen festgelegten Ländern',
+      'Volver a mis países definidos'
+    ],
     hatch: ['hachuré : procédures disponibles', 'hatched: procedures available', 'schraffiert: Verfahren verfügbar',
       'rayado: procedimientos disponibles'
     ],
     border: ['bordure bleue : le paquet ouvert', 'blue border: the open pack', 'blauer Rand: das geöffnete Paket',
       'borde azul: el paquete abierto'
     ],
-    outside: ['hors de votre couverture', 'outside your coverage', 'außerhalb Ihrer Abdeckung', 'fuera de su cobertura'],
+    outside: ['non défini', 'not defined', 'nicht festgelegt', 'no definido'],
     groupsTitle: ['Paquets de pays', 'Country packs', 'Länderpakete', 'Paquetes de países'],
     groupsHint: ['Un paquet réunit des pays voisins : ouvrez-en un pour voir ses pays, ouvrir leur fiche ou le mettre à jour.',
       'A pack gathers neighbouring countries: open one to see its countries, open their sheet or update it.',
@@ -545,19 +551,19 @@ export const TX = {
     sumTodo: ['{n} à faire', '{n} to do', '{n} zu tun', '{n} por hacer'],
     sumErr: ['{n} en échec', '{n} failed', '{n} fehlgeschlagen', '{n} fallidas'],
     sumNone: ['{n} sans état', '{n} without a state', '{n} ohne Zustand', '{n} sin estado'],
-    sumOut: ['{n} hors couverture', '{n} not covered', '{n} nicht abgedeckt', '{n} sin cobertura'],
-    sumNoCov: ['aucun pays dans votre couverture', 'no country in your coverage', 'kein Land in Ihrer Abdeckung',
-      'ningún país en su cobertura'
+    sumOut: ['{n} non définis', '{n} not defined', '{n} nicht festgelegt', '{n} no definidos'],
+    sumNoCov: ['aucun pays défini', 'no defined country', 'kein festgelegtes Land',
+      'ningún país definido'
     ],
-    sumUnread: ['{m} dans votre couverture, état non lu', '{m} in your coverage, state not read',
-      '{m} in Ihrer Abdeckung, Zustand nicht gelesen',
-      '{m} en su cobertura, estado sin leer'
+    sumUnread: ['{m} parmi vos pays définis, état non lu', '{m} in your defined countries, state not read',
+      '{m} in Ihren festgelegten Ländern, Zustand nicht gelesen',
+      '{m} en sus países definidos, estado sin leer'
     ],
     word: {
       ok: ['à jour', 'up to date', 'aktuell', 'al día'],
       warn: ['à faire', 'to do', 'zu tun', 'por hacer'],
       err: ['en échec', 'failed', 'fehlgeschlagen', 'fallida'],
-      muted: ['hors couverture', 'outside the coverage', 'außerhalb der Abdeckung', 'fuera de la cobertura'],
+      muted: ['non défini', 'not defined', 'nicht festgelegt', 'no definido'],
       none: ['état inconnu', 'state unknown', 'Zustand unbekannt', 'estado desconocido']
     },
     openSheet: ['Ouvrir la fiche : {c}', 'Open the sheet: {c}', 'Blatt öffnen: {c}', 'Abrir la ficha: {c}'],
@@ -571,10 +577,10 @@ export const TX = {
     builtNever: ['Jamais construit sur ce poste', 'Never built on this workstation', 'Auf diesem Rechner nie erstellt',
       'Nunca construido en este equipo'
     ],
-    notInCoverage: ['{c} n’est pas dans votre couverture : rien n’y est téléchargé ni construit sur ce poste.',
-      '{c} is not in your coverage: nothing is downloaded or built for it on this workstation.',
-      '{c} ist nicht in Ihrer Abdeckung: dafür wird auf diesem Rechner nichts heruntergeladen oder erstellt.',
-      '{c} no está en su cobertura: no se descarga ni se construye nada para él en este equipo.'
+    notInCoverage: ['{c} n’est pas dans vos pays définis : rien n’y est téléchargé ni construit sur ce poste.',
+      '{c} is not in your defined countries: nothing is downloaded or built for it on this workstation.',
+      '{c} ist nicht in Ihren festgelegten Ländern: dafür wird auf diesem Rechner nichts heruntergeladen oder erstellt.',
+      '{c} no está en sus países definidos: no se descarga ni se construye nada para él en este equipo.'
     ],
     procYes: ['Procédures : oui ({s})', 'Procedures: yes ({s})', 'Verfahren: ja ({s})', 'Procedimientos: sí ({s})'],
     procNo: ['Procédures : non', 'Procedures: no', 'Verfahren: nein', 'Procedimientos: no'],
@@ -677,14 +683,14 @@ export const TX = {
     ],
     regions: ['Régions', 'Regions', 'Regionen', 'Regiones'],
     themes: ['Thèmes', 'Themes', 'Themen', 'Temas'],
-    themesHint: ['Cochez un pays pour l’ajouter à la couverture ; décochez-le pour l’en retirer (rien n’est purgé).',
-      'Tick a country to add it to the coverage; untick it to remove it (nothing is purged).',
-      'Kreuzen Sie ein Land an, um es zur Abdeckung hinzuzufügen; entfernen Sie das Häkchen, um es zu entfernen (nichts wird gelöscht).',
-      'Marque un país para añadirlo a la cobertura; desmárquelo para quitarlo (no se purga nada).'
+    themesHint: ['Cochez un pays pour l’ajouter aux pays définis ; décochez-le pour l’en retirer (rien n’est purgé).',
+      'Tick a country to add it to the defined countries; untick it to remove it (nothing is purged).',
+      'Kreuzen Sie ein Land an, um es zu den festgelegten Ländern hinzuzufügen; entfernen Sie das Häkchen, um es zu entfernen (nichts wird gelöscht).',
+      'Marque un país para añadirlo a los países definidos; desmárquelo para quitarlo (no se purga nada).'
     ],
     countries: ['Pays ({n})', 'Countries ({n})', 'Länder ({n})', 'Países ({n})'],
     themeAll: ['Tout le thème', 'The whole theme', 'Das ganze Thema', 'Todo el tema'],
-    inCoverage: ['dans la couverture', 'in the coverage', 'in der Abdeckung', 'en la cobertura'],
+    inCoverage: ['défini', 'defined', 'festgelegt', 'definido'],
     themeCount: ['{n}, {m} à ajouter', '{n}, {m} to add', '{n}, {m} hinzuzufügen', '{n}, {m} por añadir'],
     partial: ['Pays en partie seulement dans ce paquet : {n}', 'Countries only partly in this pack: {n}',
       'Länder nur teilweise in diesem Paket: {n}',
@@ -694,23 +700,23 @@ export const TX = {
       'Länder dieses Pakets, die die Suite noch nicht kennt: {n}',
       'Países de este paquete que la suite aún no conoce: {n}'
     ],
-    some: ['{n} déjà dans la couverture', '{n} already in the coverage', '{n} schon in der Abdeckung', '{n} ya en la cobertura'],
+    some: ['{n} déjà définis', '{n} already defined', '{n} schon festgelegt', '{n} ya definidos'],
     remove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
     removeAsk: [
-      'Retirer {n} de la couverture ({p}) : {z}. Elles seront décochées et disparaîtront de la liste de ce poste ; rien n’est purgé, leurs fichiers restent.',
-      'Remove {n} from the coverage ({p}): {z}. They will be unticked and leave this workstation’s list; nothing is purged, their files stay.',
-      '{n} aus der Abdeckung entfernen ({p}): {z}. Sie werden abgewählt und verschwinden aus der Liste dieses Rechners; nichts wird gelöscht, die Dateien bleiben.',
-      'Quitar {n} de la cobertura ({p}): {z}. Se desmarcarán y saldrán de la lista de este puesto; no se purga nada, sus archivos se quedan.'
+      'Retirer {n} des pays définis ({p}) : {z}. Elles seront décochées et disparaîtront de la liste de ce poste ; rien n’est purgé, leurs fichiers restent.',
+      'Remove {n} from the defined countries ({p}): {z}. They will be unticked and leave this workstation’s list; nothing is purged, their files stay.',
+      '{n} aus den festgelegten Ländern entfernen ({p}): {z}. Sie werden abgewählt und verschwinden aus der Liste dieses Rechners; nichts wird gelöscht, die Dateien bleiben.',
+      'Quitar {n} de los países definidos ({p}): {z}. Se desmarcarán y saldrán de la lista de este puesto; no se purga nada, sus archivos se quedan.'
     ],
-    removed: ['{n} retirée(s) de la couverture ({p}) : décochées, rien n’est purgé.',
-      '{n} removed from the coverage ({p}): unticked, nothing is purged.',
-      '{n} aus der Abdeckung entfernt ({p}): abgewählt, nichts wird gelöscht.',
-      '{n} quitada(s) de la cobertura ({p}): desmarcadas, no se purga nada.'
+    removed: ['{n} retirée(s) des pays définis ({p}) : décochées, rien n’est purgé.',
+      '{n} removed from the defined countries ({p}): unticked, nothing is purged.',
+      '{n} aus den festgelegten Ländern entfernt ({p}): abgewählt, nichts wird gelöscht.',
+      '{n} quitada(s) de los países definidos ({p}): desmarcadas, no se purga nada.'
     ],
-    added: ['{n} ajoutée(s) à la couverture ({p}) : cochées, rien n’est construit.',
-      '{n} added to the coverage ({p}): ticked, nothing is built.',
-      '{n} zur Abdeckung hinzugefügt ({p}): angekreuzt, nichts wird gebaut.',
-      '{n} añadida(s) a la cobertura ({p}): marcadas, no se construye nada.'
+    added: ['{n} ajoutée(s) aux pays définis ({p}) : cochées, rien n’est construit.',
+      '{n} added to the defined countries ({p}): ticked, nothing is built.',
+      '{n} zu den festgelegten Ländern hinzugefügt ({p}): angekreuzt, nichts wird gebaut.',
+      '{n} añadida(s) a los países definidos ({p}): marcadas, no se construye nada.'
     ],
     emptyWhy: {
       'no-zone': ['aucune zone aujourd’hui', 'no zone today', 'heute keine Zone', 'ninguna zona hoy'],
@@ -881,13 +887,13 @@ export const TX = {
     busy: ['Une autre opération est en cours', 'Another operation is running', 'Ein anderer Vorgang läuft',
       'Hay otra operación en curso'
     ],
-    'no-zone': ['Aucun pays dans votre couverture : ajoutez-en un', 'No country in your coverage: add one',
-      'Kein Land in Ihrer Abdeckung: fügen Sie eines hinzu', 'Ningún país en su cobertura: añada uno'
+    'no-zone': ['Aucun pays défini : ajoutez-en un', 'No defined country: add one',
+      'Kein festgelegtes Land: fügen Sie eines hinzu', 'Ningún país definido: añada uno'
     ],
-    'no-set': ['Rien à mettre à jour : ajoutez des pays à la couverture ou cochez des États',
-      'Nothing to update: add countries to the coverage or tick some States',
-      'Nichts zu aktualisieren: Länder zur Abdeckung hinzufügen oder Staaten ankreuzen',
-      'Nada que actualizar: añada países a la cobertura o marque Estados'
+    'no-set': ['Rien à mettre à jour : définissez des pays ou cochez des États',
+      'Nothing to update: define some countries or tick some States',
+      'Nichts zu aktualisieren: Länder festlegen oder Staaten ankreuzen',
+      'Nada que actualizar: defina países o marque Estados'
     ],
     'bad-codes': ['types OACI refusés', 'ICAO types refused', 'ICAO-Muster abgelehnt', 'tipos OACI rechazados'],
     'no-state': ['Cochez au moins un État', 'Tick at least one State', 'Mindestens einen Staat ankreuzen', 'Marque al menos un Estado'],
@@ -1572,8 +1578,8 @@ export const TX = {
     warn: ['cycle dépassé ou absent', 'cycle out of date or missing', 'Zyklus überholt oder fehlend', 'ciclo superado o ausente'],
     err: ['en échec', 'failed', 'fehlgeschlagen', 'fallida'],
     accent: ['en cours', 'running', 'läuft', 'en curso'],
-    muted: ['hors couverture ou jamais construite', 'not in the coverage or never built', 'nicht in der Abdeckung oder nie gebaut',
-      'fuera de la cobertura o nunca construida'
+    muted: ['non définie ou jamais construite', 'not defined or never built', 'nicht festgelegt oder nie gebaut',
+      'no definida o nunca construida'
     ]
   },
   // la ligne d'un État des procédures : ses terrains détenus (LF : avec le cycle publié ; les autres États : relus), et un point de la carte
@@ -2375,15 +2381,15 @@ export const TX = {
       geonames: ['pas de geste ici : les villes se mettent à jour avec la base', 'no gesture here: the towns are updated with the base',
         'keine Aktion hier: die Städte werden mit der Basis aktualisiert', 'sin gesto aquí: las ciudades se actualizan con la base'
       ],
-      build: ['refait la base de la couverture avec ce que ce poste lit',
-        'rebuilds the base of the coverage with what this workstation reads',
-        'erstellt die Basis der Abdeckung mit dem neu, was dieser Rechner liest',
-        'rehace la base de la cobertura con lo que lee este equipo'
+      build: ['refait la base des pays définis avec ce que ce poste lit',
+        'rebuilds the base of the defined countries with what this workstation reads',
+        'erstellt die Basis der festgelegten Länder mit dem neu, was dieser Rechner liest',
+        'rehace la base de los países definidos con lo que lee este equipo'
       ],
-      fetch: ['relance le téléchargement des sources automatiques de la couverture',
-        'restarts the download of the automatic sources of the coverage',
-        'startet das Herunterladen der automatischen Quellen der Abdeckung neu',
-        'reinicia la descarga de las fuentes automáticas de la cobertura'
+      fetch: ['relance le téléchargement des sources automatiques des pays définis',
+        'restarts the download of the automatic sources of the defined countries',
+        'startet das Herunterladen der automatischen Quellen der festgelegten Länder neu',
+        'reinicia la descarga de las fuentes automáticas de los países definidos'
       ]
     },
     changeAct: {
@@ -2439,7 +2445,7 @@ export const TX = {
       format: ['format non reconnu', 'format not recognised', 'Format nicht erkannt', 'formato no reconocido']
     },
     // Ma couverture
-    myCovTitle: ['Ma couverture', 'My coverage', 'Meine Abdeckung', 'Mi cobertura'],
+    myCovTitle: ['Pays définis', 'Defined countries', 'Festgelegte Länder', 'Países definidos'],
     // Ajouter à ma couverture (la fiche d'un pays hors couverture) et Retirer
     addTitle: ['Ajouter ce pays demandera :', 'Adding this country will ask you to:', 'Dieses Land hinzuzufügen verlangt:',
       'Añadir este país pedirá:'
@@ -2462,27 +2468,32 @@ export const TX = {
       'Es wird gelesen, was dieses Land verlangt…',
       'Leyendo lo que pedirá este país…'
     ],
-    addBtn: ['Ajouter à ma couverture', 'Add to my coverage', 'Zu meiner Abdeckung hinzufügen', 'Añadir a mi cobertura'],
+    addBtn: ['Ajouter ce pays', 'Add this country', 'Land hinzufügen', 'Añadir este país'],
     addNote: ['Ajouter ne télécharge rien : le pays passe parmi ceux à faire.',
       'Adding downloads nothing: the country moves to the ones still to do.',
       'Hinzufügen lädt nichts herunter: das Land gehört dann zu denen, die noch zu tun sind.',
       'Añadir no descarga nada: el país pasa a los que quedan por hacer.'
     ],
-    added: ['{c} est dans votre couverture.', '{c} is in your coverage.', '{c} ist in Ihrer Abdeckung.', '{c} está en su cobertura.'],
-    removeBtn: ['Retirer de ma couverture', 'Remove from my coverage', 'Aus meiner Abdeckung entfernen', 'Quitar de mi cobertura'],
-    removeAsk: ['Retirer {c} de votre couverture ? Ses fichiers restent où ils sont : rien n’est purgé.',
-      'Remove {c} from your coverage? Its files stay where they are: nothing is purged.',
-      '{c} aus Ihrer Abdeckung entfernen? Die Dateien bleiben, wo sie sind: nichts wird gelöscht.',
-      '¿Quitar {c} de su cobertura? Sus archivos se quedan donde están: no se purga nada.'
+    added: ['{c} est dans vos pays définis.', '{c} is in your defined countries.', '{c} ist in Ihren festgelegten Ländern.',
+      '{c} está en sus países definidos.'
     ],
-    removed: ['{c} n’est plus dans votre couverture.', '{c} is no longer in your coverage.', '{c} ist nicht mehr in Ihrer Abdeckung.',
-      '{c} ya no está en su cobertura.'
+    removeBtn: ['Retirer ce pays', 'Remove this country', 'Land entfernen', 'Quitar este país'],
+    removeAsk: ['Retirer {c} de vos pays définis ? Ses fichiers restent où ils sont : rien n’est purgé.',
+      'Remove {c} from your defined countries? Its files stay where they are: nothing is purged.',
+      '{c} aus Ihren festgelegten Ländern entfernen? Die Dateien bleiben, wo sie sind: nichts wird gelöscht.',
+      '¿Quitar {c} de sus países definidos? Sus archivos se quedan donde están: no se purga nada.'
+    ],
+    removed: ['{c} n’est plus dans vos pays définis.', '{c} is no longer in your defined countries.',
+      '{c} ist nicht mehr in Ihren festgelegten Ländern.',
+      '{c} ya no está en sus países definidos.'
     ]
   },
   // lot D1 (SOG-0262, l'essai réel) : le zoom de la carte, l'avancement et le fil d'un pays, la liste du mois qui agit, les quatre signes
   zx: {
     mvWorld: ['Voir le monde entier', 'See the whole world', 'Die ganze Welt ansehen', 'Ver el mundo entero'],
-    mvHome: ['Recentrer sur ma couverture', 'Recenter on my coverage', 'Auf meine Abdeckung zentrieren', 'Recentrar en mi cobertura'],
+    mvHome: ['Recentrer sur mes pays définis', 'Recenter on my defined countries', 'Auf meine festgelegten Länder zentrieren',
+      'Recentrar en mis países definidos'
+    ],
     mvIn: ['Zoom avant', 'Zoom in', 'Hineinzoomen', 'Acercar'],
     mvOut: ['Zoom arrière', 'Zoom out', 'Herauszoomen', 'Alejar'],
     mvHint: ['Molette ou pincement pour zoomer, glisser pour déplacer la carte.', 'Wheel or pinch to zoom, drag to move the map.',
@@ -2662,8 +2673,8 @@ export const TX = {
       'Mayús + clic o rectángulo (dos dedos una medio segundo): elegir varios países'
     ],
     selLabel: ['Pays choisis sur la carte', 'Countries picked on the map', 'Auf der Karte gewählte Länder', 'Países elegidos en el mapa'],
-    selAdd: ['Ajouter à ma couverture ({n})', 'Add to my coverage ({n})', 'Zu meiner Abdeckung hinzufügen ({n})',
-      'Añadir a mi cobertura ({n})'
+    selAdd: ['Ajouter ces pays ({n})', 'Add these countries ({n})', 'Diese Länder hinzufügen ({n})',
+      'Añadir estos países ({n})'
     ],
     selUpdate: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
     selCancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
@@ -2678,8 +2689,9 @@ export const TX = {
       '„Aktualisieren“ prüft diese Länder: vorerst nichts herunterzuladen oder neu zu bauen.',
       '«Actualizar» revisa estos países: nada que descargar ni reconstruir por ahora.'
     ],
-    selAdded: ['{n} ajouté(s) à votre couverture.', '{n} added to your coverage.', '{n} zu Ihrer Abdeckung hinzugefügt.',
-      '{n} añadido(s) a su cobertura.'
+    selAdded: ['{n} ajouté(s) à vos pays définis.', '{n} added to your defined countries.',
+      '{n} zu Ihren festgelegten Ländern hinzugefügt.',
+      '{n} añadido(s) a sus países definidos.'
     ],
     // la fiche d'un pays
     cellOk: ['à jour', 'up to date', 'aktuell', 'al día'],

@@ -142,10 +142,10 @@
     where: 'app',
     title: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
     text: [
-      'Les données de la compagnie : la couverture par pays et par État, et l’état de chaque jeu de données (cycle, âge, parseur) ; sur un téléphone, en lecture seule.',
-      'The airline’s data: the coverage by country and by State, and the state of each data set (cycle, age, parser); read only on a phone.',
-      'Die Daten der Fluggesellschaft: die Abdeckung nach Land und Staat und der Zustand jedes Datensatzes (Zyklus, Alter, Parser); auf einem Telefon nur lesbar.',
-      'Los datos de la aerolínea: la cobertura por país y por Estado, y el estado de cada conjunto de datos (ciclo, antigüedad, analizador); solo lectura en un teléfono.'
+      'Les données de la compagnie : les pays définis et les États, et l’état de chaque jeu de données (cycle, âge, parseur) ; sur un téléphone, en lecture seule.',
+      'The airline’s data: the defined countries and the States, and the state of each data set (cycle, age, parser); read only on a phone.',
+      'Die Daten der Fluggesellschaft: die festgelegten Länder und die Staaten und der Zustand jedes Datensatzes (Zyklus, Alter, Parser); auf einem Telefon nur lesbar.',
+      'Los datos de la aerolínea: los países definidos y los Estados, y el estado de cada conjunto de datos (ciclo, antigüedad, analizador); solo lectura en un teléfono.'
     ]
   }, {
     id: 'sources',
