@@ -83,7 +83,7 @@ export function cancelUpload() {
   S.upload?.ctrl.abort();
 }
 /** Dit ce que le lanceur a répondu : { kind: 'ok' | 'same' | 'fail', text } — jamais un texte du lanceur tel quel, sauf son `message` borné quand la raison est hors de la liste. */
-function outcome(r) {
+export function outcome(r) {
   const body = r?.body && typeof r.body === 'object' ? r.body : {},
     reason = typeof(r?.reason || body.reason) === 'string' ? String(r.reason || body.reason) : '';
   if (r?.aborted) return {

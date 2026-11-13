@@ -145,7 +145,7 @@
       grid-template-columns: 88px minmax(0, 1fr)
     }
     [data-design="material"] .f-nav {
-      padding: 12px 4px
+      padding: 12px 2px
     }
     [data-design="material"] .f-nav ul {
       gap: 12px
@@ -157,12 +157,14 @@
       justify-content: flex-start;
       gap: 4px;
       min-height: 64px;
-      padding: 8px 2px 4px;
+      padding: 8px 0 4px;
       border-radius: 16px;
-      font-size: .75rem;
+      font-size: .6875rem;
       line-height: 1.2;
       text-align: center;
-      overflow-wrap: anywhere
+      /* un mot du libellé n'est jamais coupé au milieu (« Administratio / n », SOG-0315) : le rail laisse 84 px au libellé, « Administración » (le plus long, 11 px) en prend 80 */
+      overflow-wrap: normal;
+      hyphens: none
     }
     [data-design="material"] .f-nav a[aria-current="page"] {
       background: transparent

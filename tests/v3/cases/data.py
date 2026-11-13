@@ -7322,7 +7322,7 @@ def l94(c):
       return [before('[data-state-head]', '[data-world-map]'), before('[data-world-map]', '[data-todo]'), before('[data-todo]', '[data-cw-groups]'), before('[data-cw-groups]', '[data-publish]'), before('[data-publish]', '[data-lc-fold=later]'),
         before('[data-lc-fold=later]', '[data-lc-fold=change]'), before('[data-lc-fold=change]', '[data-lc-fold=unread]'), before('[data-lc-fold=unread]', '[data-my-coverage]')] })()""")
     c.eq(pos, [True] * 8, 'the page order: state bar, map, what is left to do, the country groups, Publier, cycle suivant, quand ça change, vu pas encore lu, ma couverture', what='page order')
-    c.eq(c.js("[...document.querySelectorAll('[data-lc-fold], [data-my-coverage]')].map(d => [d.dataset.lcFold || 'mycov', d.open])"), [['later', False], ['change', False], ['unread', False], ['mycov', False]], 'the three blocks and « Ma couverture » are folded', what='folded')
+    c.eq(c.js("[...document.querySelectorAll('[data-lc-fold], [data-my-coverage]')].map(d => [d.dataset.lcFold || 'mycov', d.open])"), [['later', False], ['change', False], ['unread', False], ['registry', False], ['mycov', False]], 'the three blocks, the French register (SOG-0315) and « Ma couverture » are folded', what='folded')
     c.eq([norm(c.text('[data-lc-fold=later] > summary > .d-lct')), norm(c.text('[data-lc-fold=change] > summary > .d-lct')), norm(c.text('[data-lc-fold=unread] > summary > .d-lct')), norm(c.text('[data-my-coverage] > summary'))],
          [norm(LC('laterTitle').replace('{c}', '2612')), norm(LC('changeTitle')), norm(LC('unreadTitle')), norm(LC('myCovTitle'))], 'their titles, the cycle after is named (each fold has its count pill after the title: lot D2)', what='titles')
     calls = lambda: c.js('window.__stub.calls') or {}
@@ -7981,7 +7981,7 @@ def _l102_cycle(world, labels):
     return answer
 
 
-def _l102_open(c, tweak=None, wrap=None):
+def _l102_open(c, tweak=None, wrap=None, target='data'):
     """The Données screen of the capture: real outlines, real names, real packs, real catalogue; invented states."""
     labels = _l102_labels()
     geo, packs, cover = _l102_world()
@@ -8001,7 +8001,7 @@ def _l102_open(c, tweak=None, wrap=None):
     st['status'] = lambda args: _status(world['zs'])
     if tweak:
         tweak(cfg)   # D4: a case adds its own sub-zone names or catalogue steps
-    _open(c, cfg, my_coverage=False)
+    _open(c, cfg, target=target, my_coverage=False)
     c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length > 20 && !!document.querySelector('[data-todo-state=ready]')", timeout=30000, what='the real map and the list of the month')
     _ready(c, len(cover), timeout=20000)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -9146,4 +9146,92 @@ def l125(c):
     c.page.mouse.move(5, 5)
     c.wait(250)
     c.eq(hl(), [], 'leaving the group takes the outline off', what='cleared')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L126 .. L127 (SOG-0315, item 4: where the French aircraft register is deposited)
+_L126_STATE = """() => { const f = document.querySelector('[data-lc-fold=registry]'); if (!f) return null; const r = f.getBoundingClientRect(), t = s => f.querySelector(s)?.textContent.replace(/\\s+/g, ' ').trim() ?? null;
+  return { open: f.open, title: t('summary .d-lct'), pill: t('[data-lc-pill]'), state: t('[data-reg-state]'), msg: t('[data-reg-msg]'), level: f.querySelector('[data-reg-msg]')?.dataset.level || null, top: Math.round(r.top), h: Math.round(r.height), vh: innerHeight,
+    link: (a => a ? [a.href, a.target, a.rel] : null)(f.querySelector('a[href^="https://"]')), btn: (b => b ? [b.textContent.trim(), b.disabled] : null)(f.querySelector('[data-act=reg-choose]')), prog: !!f.querySelector('[data-reg-uploading]') } }"""
+
+
+def _l126_text(c, key, **kw):
+    """A text of TX.regs in the language of the run, its {placeholders} filled."""
+    out = _trow(key, c.lang, after='  regs: {')
+    for k, v in kw.items():
+        out = out.replace('{' + k + '}', str(v))
+    return out
+
+
+@case('L126', 'Données: the French aircraft register has a place to be deposited, under a title one finds (SOG-0315, item 4) — a fold « Registre français des aéronefs » under « Vu par le poste », its state, where to get the file (a real link to the DGAC site), « Choisir le fichier… » sends the CSV to the launcher (POST base/upload) and says how many registrations were read; a refusal is said in words; the address #data?registry=1 opens it',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0315 (the user: « le déposer » → je retourne sur « ma compagnie ». BTW, je n\'ai pas trouvé où le déposer dans maintenance »): the register had no place on the Données screen (only a line without gesture in « Quand ça change »); the link of the aircraft screen (« Le déposer dans Données ») must land on a place that carries the register\'s name; the launcher recognises the CSV by its header (base/upload → source registry_fr), keeps five columns, never the original, never an owner')
+def l126(c):
+    lang = c.lang
+    R = lambda k, **kw: _l126_text(c, k, **kw)
+    st = _l102_open(c, target='data?registry=1')
+    sent = []
+    answer = {'status': 200, 'body': {'ok': True, 'source': 'registry_fr', 'rows': 40689, 'skipped': 12, 'date': '2026-11-13', 'size': 1200}}
+
+    def upload(route):
+        req = route.request
+        sent.append({'method': req.method, 'headers': {k.lower(): v for k, v in req.headers.items()}, 'size': len(req.post_data_buffer or b'')})
+        route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body']))
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)
+    c.until("!!document.querySelector('[data-lc-fold=registry]')", timeout=12000, what='the fold of the register')
+    s = c.js(_L126_STATE)
+    # ---- the place: its name, opened by the address, in sight, its state
+    c.eq(s['title'], R('title'), 'the fold carries the name of the register in the language of the run', what='title')
+    c.ok(s['open'] and s['top'] >= 0 and s['top'] < s['vh'], s, 'the address #data?registry=1 opens it and brings it into view')
+    c.eq([s['pill'], s['state']], [R('pillOff'), R('stateOff')], 'not deposited yet: said in the pill and in the line', what='state')
+    c.ok(s['link'] and s['link'][0].startswith('https://immat.aviation-civile.gouv.fr/') and s['link'][1] == '_blank' and 'noopener' in s['link'][2], s['link'], 'where to get the file: a real link to the DGAC site, a new tab, no referrer')
+    c.eq(s['btn'], [_trow('choose', lang, after='  up: {'), False], '« Choisir le fichier… » is there and live', what='button')
+    # ---- the deposit: the CSV goes to the launcher as raw bytes, the answer is said with the number of registrations
+    with c.page.expect_file_chooser() as fc:
+        c.js("document.querySelector('[data-act=reg-choose]').click()")
+    fc.value.set_files({'name': 'export (1).csv', 'mimeType': 'text/csv', 'buffer': b'IMMATRICULATION;CONSTRUCTEUR;MODELE\r\nF-AAAA;X;Y\r\n'})
+    for _ in range(40):
+        if sent:
+            break
+        c.wait(250)
+    c.eq([sent[0]['method'], sent[0]['headers'].get('content-type'), sent[0]['headers'].get('x-sog-name')], ['POST', 'application/octet-stream', urllib.parse.quote('export (1).csv', safe="-_.!~*'()")], 'a POST of the raw bytes, the name only a hint', what='request')
+    c.until("!!document.querySelector('[data-reg-msg]')", timeout=8000, what='the answer is said')
+    n = c.js(f"new Intl.NumberFormat('{lang}').format(40689)")
+    day = c.js(f"import('/modules/data/model.js').then(M => M.dateText('2026-11-13', '{lang}'))")
+    s = c.js(_L126_STATE)
+    c.eq([norm(s['msg']), s['level']], [norm(R('done', n=n, d=day)), 'ok'], 'the number of registrations read and the date, in words; the original is not kept', what='done')
+    c.eq(norm(s['pill']), norm(R('pillOn', d=day)), 'the pill follows: deposited on that date', what='pill after')
+    c.shot(f'L126_{c.width}_{lang}_delivered.png')
+    # ---- a refusal: in words, never the launcher\'s own text
+    sent.clear()
+    answer.update(status=422, body={'ok': False, 'reason': 'unrecognised', 'message': 'headers: IMMATRICULATION missing'})
+    with c.page.expect_file_chooser() as fc:
+        c.js("document.querySelector('[data-act=reg-choose]').click()")
+    fc.value.set_files({'name': 'autre.csv', 'mimeType': 'text/csv', 'buffer': b'a;b\r\n1;2\r\n'})
+    for _ in range(40):
+        if sent:
+            break
+        c.wait(250)
+    c.until("document.querySelector('[data-reg-msg]')?.dataset.level === 'err'", timeout=8000, what='the refusal is said')
+    s = c.js(_L126_STATE)
+    c.eq(norm(s['msg']), norm(R('refused')), 'a file that is not the register: said in words, nothing kept', what='refused')
+    c.ok('IMMATRICULATION' not in s['msg'], s['msg'], 'the launcher\'s own text is not shown')
+    c.check_errors()
+
+
+@case('L127', 'Données: the register fold without the address stays folded, says « déposé le … » when the launcher reports the file (base/cycle.local registry_fr), and the line of « Quand ça change » stays (SOG-0315, item 4)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0315: opening the Données screen does not unfold the register; the file the launcher keeps (data/local/registry/fr_immat.json) shows as deposited, with the date it carries')
+def l127(c):
+    lang = c.lang
+    R = lambda k, **kw: _l126_text(c, k, **kw)
+    reg = {'id': 'registry_fr', 'label': ['Registre français des immatriculations (DGAC)', 'French aircraft registry (DGAC)', 'Französisches Luftfahrzeugregister (DGAC)', 'Registro francés de matrículas (DGAC)'],
+           'at': '2026-10-05T10:00:00Z', 'personal': '', 'zoneCount': 0}
+    _l102_open(c, wrap=_l116_wrap(None, [reg]))
+    c.until("!!document.querySelector('[data-lc-fold=registry]')", timeout=12000, what='the fold of the register')
+    s = c.js(_L126_STATE)
+    day = c.js(f"import('/modules/data/model.js').then(M => M.dateText('2026-10-05', '{lang}'))")
+    c.eq(s['open'], False, 'folded when the screen opens', what='folded')
+    c.eq([norm(s['pill']), norm(s['state'] or '')], [norm(R('pillOn', d=day)), norm(R('stateOn', d=day))], 'the pill and the line say the file is deposited, with the date it carries', what='state')
+    c.eq(c.count('[data-change=registry_fr]'), 1, 'and the line of « Quand ça change » is still there', what='change line')
     c.check_errors()

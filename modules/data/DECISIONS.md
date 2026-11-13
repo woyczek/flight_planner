@@ -639,3 +639,20 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   nothing is framed (the framing stays with the click); touch has no hover (the touch handler of the old rows is not reused).
   Cases L123 (a REAL wheel over a country, the sea and the margin, the page does not scroll; the wheel goes back to the page at the
   end of the zoom), L124, L125; L96 adapted (a plain wheel is taken) and L113 (the mark is solid blue).
+- **13 Nov 2026 — SOG-0315, item 4: the French aircraft register has a place on the Données screen** (the user: « « registre français non
+  déposé sur ce poste - le déposer ». je clique, et je retourne sur « ma compagnie ». BTW, je n'ai pas trouvé où le déposer dans
+  maintenance »). Two causes. (a) The link of the aircraft screen (`#data`, in the Company application) names a module that application
+  does not have: the frame falls back to its first screen (« Ma compagnie »); the right address is the Maintenance application's,
+  `?app=maintenance#data?registry=1` (to Features SOG, who own that screen). (b) The register had NO place to be deposited in Données: the
+  launcher recognises the CSV by its header (`base/upload` → source `registry_fr`, K202 / K203) but the screen only said it in a line of
+  « Quand ça change », without a gesture. New fold « Registre français des aéronefs » under « Vu par le poste, pas encore lu » (`registry.js`,
+  `later.js`): its state (« déposé le … » from `base/cycle.local` or from the deposit just made, « pas déposé »), the DGAC page as a real link
+  (a new tab, no referrer: the address is written in the code, never taken from the launcher), « Choisir le fichier… » (the same hidden input
+  and the same `ctx.launcher.upload` as the country sheets; one upload at a time; grey with its reason when no launcher or another operation
+  runs), the answer in words (« Immatriculations lues : n, données du … ») and a refusal in words (the launcher's own text is never shown).
+  `#data?registry=1` (read once with `ctx.consume`) opens the fold and holds it in view for the first fifteen seconds, even while the screen
+  fills in above it or the frame puts the page back at the top; a wheel, a touch, a key or a pointer press gives the hand back. Cases L126, L127.
+  Items 1 and 2 of the same fiche: the Material rail (88 px) cut « Administration » as « Administratio / n » (`overflow-wrap: anywhere`, 12 px) —
+  the label is now whole (11 px, 84 px available, no cut inside a word); the button « Réglage des seuils de la carte » of the Administration
+  card, opened inside Maintenance, pointed to `#maps?tune=1` which Maintenance does not have (it fell back to Données): an entry may now name
+  the application that has its page (`app: 'pilot'`) and the button opens that application, in the same tab (case A180).

@@ -31,6 +31,11 @@ import {
   dateOf
 } from './countries.js';
 import {
+  regInit,
+  registryBody,
+  registryPill
+} from './registry.js';
+import {
   startOp
 } from './follow.js';
 import {
@@ -41,6 +46,9 @@ import {
 /** L'état propre à ces blocs, créé avec celui de la carte : les plis ouverts à la main (retenus d'un dessin à l'autre) et la lecture des routes NAT. */
 export const lcInit = () => ({
   open: {},
+  reg: regInit(), // le pli du registre français des aéronefs (registry.js)
+  revealUntil: 0,
+  reveal: '', // un pli à ouvrir et à amener dans la vue au prochain dessin (l'adresse #data?registry=1)
   nat: {
     phase: 'idle',
     state: null,
@@ -171,10 +179,16 @@ function unreadHtml() {
 }
 
 // ------------------------------------------------------------------------------------------------ l'ensemble
-/** Les trois blocs repliés, dans l'ordre : cycle suivant, quand ça change, vu par le poste pas encore lu. */
+/** « Registre français des aéronefs » (SOG-0315) : le dépôt du fichier d'immatriculations ; plié, avec l'état du fichier dans la pastille. */
+function registryHtml() {
+  if (!S.d?.cat) return '';
+  return fold('registry', tt(TX.regs.title), registryBody(), registryPill());
+}
+/** Les blocs repliés, dans l'ordre : cycle suivant, quand ça change, vu par le poste pas encore lu, registre français des aéronefs. */
 export function laterHtml() {
   if (!S.cw?.lc) return '';
-  return `<div class="d-later" data-later-blocks>${nextHtml()}${changeHtml()}${unreadHtml()}</div>`;
+  if (S.cw.lc.reveal) S.cw.lc.open[S.cw.lc.reveal] = true; // l'adresse a demandé ce pli : il s'ouvre
+  return `<div class="d-later" data-later-blocks>${nextHtml()}${changeHtml()}${unreadHtml()}${registryHtml()}</div>`;
 }
 /** Redessine les trois blocs seuls (la lecture des routes NAT avance sans toucher le reste de l'écran). */
 export function renderLater() {
@@ -182,6 +196,33 @@ export function renderLater() {
   if (el && S.d) keepScroll(S.body, () => {
     el.outerHTML = laterHtml();
   });
+  const lc = S?.cw?.lc;
+  if (lc?.reveal && lc.revealUntil && Date.now() > lc.revealUntil) lc.reveal = '';
+  else if (lc?.reveal) holdReveal(lc.reveal);
+}
+/** L'adresse a demandé un pli (« #data?registry=1 ») : il vient dans la vue et y reste pendant ses premières secondes, même quand l'écran se complète au-dessus de lui (la carte, la liste du mois) ou que le cadre remet la page en haut ; l'utilisateur qui défile, touche ou tape reprend la main. */
+function holdReveal(id) {
+  const lc = S.cw.lc;
+  if (lc.iv || !S.body?.querySelector(`[data-lc-fold="${CSS.escape(id)}"]`)) return; // déjà en route, ou le pli n'est pas encore dessiné (le catalogue arrive)
+  lc.revealUntil ||= Date.now() + 15000; // les quinze secondes partent de sa première apparition
+  const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'],
+    stop = () => {
+      lc.reveal = '';
+      clearInterval(lc.iv);
+      lc.iv = 0;
+      for (const ev of events) window.removeEventListener(ev, stop, true);
+    },
+    go = () => {
+      const f = S?.body?.querySelector(`[data-lc-fold="${CSS.escape(id)}"]`);
+      if (!f || lc.reveal !== id || Date.now() > lc.revealUntil) return stop();
+      const top = f.getBoundingClientRect().top;
+      if (top < 24 || top > 140) f.scrollIntoView({
+        block: 'start'
+      }); // sous l'en-tête du cadre (scroll-margin-top du pli)
+    };
+  go();
+  lc.iv = setInterval(go, 250);
+  for (const ev of events) window.addEventListener(ev, stop, true);
 }
 /** L'ouverture d'un pli : l'état est retenu ; celui de « Quand ça change » lit la validité des routes NAT et, si elles sont périmées ou absentes, les reprend (un seul travail à la fois, pas pendant une autre opération). */
 export function toggleLc(id, open) {
@@ -249,7 +290,7 @@ export async function natOpen() {
 /** La mise en page de ces blocs (à côté de TODO_STYLE) : chaque pli a un titre de la taille d'un doigt, ses listes sans puce, les boutons à 44 px. */
 export const LATER_STYLE = `
 [data-module="data"] .d-later{display:grid;gap:8px;margin:12px 0;min-width:0}
-[data-module="data"] details.d-lc{border:1px solid var(--sog-border);background:var(--sog-surface);padding:0 12px;min-width:0}
+[data-module="data"] details.d-lc{scroll-margin-top:72px;border:1px solid var(--sog-border);background:var(--sog-surface);padding:0 12px;min-width:0}
 [data-module="data"] details.d-lc>summary{min-height:var(--sog-touch);display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700}
 [data-module="data"] details.d-lc>summary>.d-lct{min-width:0;overflow-wrap:anywhere}
 [data-module="data"] details.d-lc>summary>.d-chev{margin-left:auto;flex:none}

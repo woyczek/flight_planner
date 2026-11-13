@@ -7037,3 +7037,24 @@ def a176(c):
         c.js(f"({FILL})({json.dumps([sel, 'une ligne\n' * 9 + 'x' * 1700])})")
         c.shot(f'A176_{what}_{c.width}_{c.lang}_delivered.png')
     c.check_errors()
+
+
+@case('A180', 'Maintenance: « Administration » is never cut inside the word on the Material rail, and the button « Réglage des seuils de la carte » of the Administration card opens the Map (Pilot app) instead of the Data screen (SOG-0315, items 1 and 2)',
+      'A', langs4=True, screens=False, night=False, designs=('material',),
+      rule='SOG-0315 (the user, recette of SOG-0274 and SOG-0118): the Material rail is 88 px and its entries carry `overflow-wrap: anywhere`, so « Administration » (12 px, about 80 px) was cut as « Administratio / n »; and `#maps?tune=1` opened from the Administration card INSIDE the Maintenance app names a module that app does not have, so the frame fell back to its first screen (Données)')
+def a180(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 800})
+    c.open('data', app='maintenance', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelectorAll('#fMenu a').length", timeout=20000, what='the bar of Maintenance')
+    c.wait(500)
+    # ---- (1) the label of the Administration entry stays on ONE line, whole
+    r = c.js("""() => { const a = [...document.querySelectorAll('#fMenu a')].find(x => x.getAttribute('href') === '#settings?card=admin'), l = a.querySelector('.f-nav-lab'), range = document.createRange();
+      range.selectNodeContents(l); const cs = getComputedStyle(l); return { text: l.textContent.trim(), lines: new Set([...range.getClientRects()].map(q => Math.round(q.top))).size, fits: l.scrollWidth <= l.clientWidth + 1, wrap: cs.overflowWrap, rail: document.getElementById('fNav').getBoundingClientRect().width } }""")
+    c.ok(r['lines'] == 1 and r['fits'], r, f'the label « {r["text"]} » is on one line, whole, in the rail of {round(r["rail"])} px')
+    c.shot(f'A180_rail_{c.lang}_delivered.png')
+    # ---- (2) the thresholds button, from the Administration card opened INSIDE Maintenance, goes to the Pilot app's Map
+    c.js("[...document.querySelectorAll('#fMenu a')].find(x => x.getAttribute('href') === '#settings?card=admin').click()")
+    c.until("!!document.querySelector('[data-admin=tune] > a')", timeout=15000, what='the Administration card')
+    h = c.js("(a => [a.href, a.target, a.getAttribute('href')])(document.querySelector('[data-admin=tune] > a'))")
+    c.ok(h[0].endswith('?app=pilot#maps?tune=1') and not h[1], h, 'from Maintenance the button is a link to the Pilot app (same tab) on the tuning page of the Map')
+    c.check_errors()

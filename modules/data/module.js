@@ -136,6 +136,11 @@ import {
   startUpload
 } from './upload.js';
 import {
+  cancelRegistry,
+  chooseRegistry,
+  startRegistryUpload
+} from './registry.js';
+import {
   closeCovTable,
   covClick,
   openCovTable
@@ -157,7 +162,8 @@ export const meta = {
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
-    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'zipmember.js', 'model_mapview.js', 'mapview.js',
+    'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'registry.js', 'zipmember.js', 'model_mapview.js',
+    'mapview.js',
     'model_thread.js',
     'zoneop.js', 'select.js',
     '../../frame/lib/plural.js',
@@ -213,6 +219,14 @@ function onClick(e) {
   if (pt) return setPackTab(pt.dataset.packTab); // les onglets Régions | Thèmes (SOG-0165)
   if (e.target.closest?.('[data-covtable]') && e.target.closest?.('[data-cov-sort], [data-cov-row], [data-cov-reload]')) return covClick(
     e); // le tableau de couverture (SOG-0174)
+  const rg = e.target.closest?.(
+    '[data-act="reg-choose"], [data-act="reg-cancel"]'); // « Choisir le fichier… » et « Annuler » du registre français (registry.js)
+  if (rg) {
+    if (rg.disabled) return;
+    if (rg.dataset.act === 'reg-cancel') return cancelRegistry();
+    startGesture(rg);
+    return chooseRegistry();
+  }
   const uc = e.target.closest?.(
     '[data-act="zone-upload"], [data-act="upload-cancel"]'); // « Choisir le fichier… » et « Annuler » de la ligne d'une zone (SOG-0199)
   if (uc) {
@@ -407,6 +421,8 @@ function onChange(e) {
       '[data-upload-input]')) { // le fichier choisi (SOG-0199) : envoyé au lanceur, le champ est vidé pour pouvoir choisir le même
     const f = t.files?.[0];
     t.value = '';
+    if (S.uploadSource === 'registry_fr' && !S.uploadZone) return f ? startRegistryUpload(f) :
+      undefined; // le fichier du registre français (registry.js)
     return f ? startUpload(S.uploadZone, f, S.uploadSource) : undefined;
   }
   if (!(t instanceof HTMLInputElement) || frozen()) return;
@@ -542,6 +558,11 @@ export async function mount(el, ctx) {
     move: null, // « Ranger les sources brutes » (SOG-0030) : { undo, phase: 'planning' | 'asking' | 'running' | null, kind: 'asking' | 'nothing' | 'done' | 'refused', view, why }
     timer: 0
   });
+  if (ctx.consume?.('registry')
+    .registry
+  ) { // « #data?registry=1 » (le lien de l'écran des aéronefs : « Le déposer dans Données ») : le pli du registre français s'ouvre et vient dans la vue
+    S.cw.lc.reveal = 'registry';
+  }
   el.innerHTML = `<style>${STYLE}${CW_STYLE}${TODO_STYLE}${LATER_STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
   // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)

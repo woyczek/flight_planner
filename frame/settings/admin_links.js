@@ -3,7 +3,7 @@
   // V3 — pages d'administration (carte « Administration » des réglages, niveau Complet ; frame/settings/SPEC.md § 6) :
   // une liste déclarée, sans dépendance à aucun module ; la carte montre UN BOUTON par entrée (règle 18 de
   // docs/technique/V3_SPECIFICATION.md § 7.1), rien de l'administrateur n'est sur les autres cartes. Chaque entrée :
-  // { id, href (adresse de l'appli « #… », ou chemin relatif à la racine de la suite ; same : ouvert dans le même onglet,
+  // { id, href (adresse de l'appli « #… », ou chemin relatif à la racine de la suite ; app : l'application du cadre qui a la page d'une adresse « #… » (le bouton ouvre alors cette application depuis une autre) ; same : ouvert dans le même onglet,
   // pour une autre application du cadre « frame/?app=… »), act (action de la carte, au lieu
   // d'une adresse), panel (le bouton déplie un volet de la carte, écrit par settings.js : edge, addPilot, remote, keys), primary
   // (bouton d'une page de réglage de l'administrateur), where (app : partout ; bench : un banc ou une démonstration, bouton
@@ -27,6 +27,7 @@
   }, {
     id: 'tune',
     href: '#maps?tune=1',
+    app: 'pilot', // la Carte est dans l'application Pilote : depuis Maintenance, le bouton ouvre cette application (SOG-0315)
     where: 'app',
     primary: true,
     title: ['Réglage des seuils de la carte', 'Map threshold tuning',

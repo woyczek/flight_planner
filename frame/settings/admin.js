@@ -248,12 +248,20 @@
       <p class="f-muted">${esc(t(T.runwayHint))}</p><p class="f-msg" data-msg></p>` : panels[x.panel] || ''}</div>`;
     /** Ligne de la liste d'administration : titre, lien, bouton de copie et panneau éventuel. */
     const row = x => {
-      const label = esc(t(x.title)),
-        out = x.href && !x.href.startsWith('#'),
+      // une entrée d'une page de l'application `app` (« #maps?tune=1 » : la Carte est dans Pilote), ouverte depuis une autre application du cadre : l'adresse « # » nommerait un module que celle-ci n'a pas
+      // (le cadre retombait sur son premier écran, Données : SOG-0315) ; le lien devient celui de l'application qui l'a, dans le même onglet
+      const here = new URLSearchParams(location.search).get('app') || 'pilot',
+        cross = /^[a-z]{3,12}$/.test(x.app || '') && x.app !== here && !!x.href && x.href.startsWith('#'),
+        crossUrl = cross ? Object.assign(new URL(location.href), {
+          search: `?app=${x.app}`,
+          hash: x.href
+        }).href : '',
+        label = esc(t(x.title)),
+        out = !cross && x.href && !x.href.startsWith('#'),
         cls = `f-btn${x.primary ? ' primary' : ''}`;
       const btn = x.panel ? `<button type="button" class="${cls}" data-act="adminPanel" data-panel="${esc(x.panel)}" aria-expanded="false">${label}</button>` : x.act ?
         `<button type="button" class="${cls}" data-act="${esc(x.act)}">${label}</button>` : x.where === 'bench' && !L ? `<button type="button" class="${cls}" disabled>${label}</button>` :
-        `<a class="${cls}" href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out && !x.same ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
+        `<a class="${cls}" href="${esc(cross ? crossUrl : out ? new URL(x.href, ROOT).href : x.href)}"${out && !x.same ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
       // `copyLink` : sous le lien, l'adresse absolue de la page, construite depuis location (publiée sur GitHub Pages ou locale), à
       // ouvrir ou à mettre en favori sur le téléphone, copiable par un appui
       const abs = x.copyLink && x.href ? new URL(x.href, x.href.startsWith('#') ? location.href : ROOT).href : '',

@@ -2712,5 +2712,46 @@ export const TX = {
     actVfr: ['Refaire les points VFR', 'Rebuild the VFR points', 'VFR-Punkte neu erstellen', 'Rehacer los puntos VFR'],
     actAircraft: ['Relire les aéronefs', 'Read the aircraft again', 'Luftfahrzeuge erneut lesen', 'Volver a leer las aeronaves'],
     actSheets: ['Publier les fiches', 'Publish the sheets', 'Leistungsblätter veröffentlichen', 'Publicar las fichas']
+  },
+  // SOG-0315 (4) : « Registre français des aéronefs » — le dépôt du fichier d'immatriculations (export.csv de la DGAC), un pli sous « Vu par le poste »
+  regs: {
+    title: ['Registre français des aéronefs', 'French aircraft register', 'Französisches Luftfahrzeugregister',
+      'Registro francés de aeronaves'
+    ],
+    pillOn: ['déposé le {d}', 'deposited {d}', 'hinterlegt am {d}', 'depositado el {d}'],
+    pillOff: ['pas déposé', 'not deposited', 'nicht hinterlegt', 'sin depositar'],
+    hint: [
+      'Sert à créer un aéronef : le type d’une immatriculation, ou les immatriculations connues d’un type. Ce poste ne garde que l’immatriculation, le constructeur, le modèle, le numéro de série et l’aérodrome d’attache, chez lui seulement : jamais un nom ni une adresse de propriétaire, et le fichier d’origine n’est pas conservé.',
+      'Used to create an aircraft: the type of a registration, or the known registrations of a type. This workstation keeps only the registration, the maker, the model, the serial number and the home aerodrome, on itself only: never an owner’s name or address, and the original file is not kept.',
+      'Dient zum Anlegen eines Luftfahrzeugs: der Typ eines Kennzeichens oder die bekannten Kennzeichen eines Typs. Dieser Rechner behält nur Kennzeichen, Hersteller, Modell, Seriennummer und Heimatflugplatz, nur bei sich: nie Name oder Adresse eines Halters, und die Originaldatei wird nicht aufbewahrt.',
+      'Sirve para crear una aeronave: el tipo de una matrícula, o las matrículas conocidas de un tipo. Este equipo solo guarda la matrícula, el fabricante, el modelo, el número de serie y el aeródromo base, solo en él: nunca el nombre ni la dirección de un propietario, y el archivo original no se conserva.'
+    ],
+    stateOn: ['Déposé sur ce poste : données du {d}.', 'Deposited on this workstation: data of {d}.',
+      'Auf diesem Rechner hinterlegt: Stand {d}.', 'Depositado en este equipo: datos del {d}.'
+    ],
+    stateOff: ['Pas encore déposé sur ce poste.', 'Not deposited on this workstation yet.', 'Auf diesem Rechner noch nicht hinterlegt.',
+      'Aún no depositado en este equipo.'
+    ],
+    get: [
+      'Le fichier (export.csv) se télécharge sur le site de la DGAC, puis se choisit ici ; le registre change tous les jours, à renouveler de temps en temps :',
+      'The file (export.csv) is downloaded from the DGAC site, then chosen here; the register changes every day, renew it now and then:',
+      'Die Datei (export.csv) wird auf der Seite der DGAC heruntergeladen und dann hier gewählt; das Register ändert sich täglich, ab und zu erneuern:',
+      'El archivo (export.csv) se descarga del sitio de la DGAC y luego se elige aquí; el registro cambia cada día, renuévelo de vez en cuando:'
+    ],
+    site: ['Registre des immatriculations (DGAC)', 'Register of registrations (DGAC)', 'Zulassungsregister (DGAC)',
+      'Registro de matrículas (DGAC)'
+    ],
+    done: [
+      'Immatriculations lues : {n}, données du {d}. Le fichier d’origine n’est pas conservé.',
+      'Registrations read: {n}, data of {d}. The original file is not kept.',
+      'Gelesene Kennzeichen: {n}, Stand {d}. Die Originaldatei wird nicht aufbewahrt.',
+      'Matrículas leídas: {n}, datos del {d}. El archivo original no se conserva.'
+    ],
+    refused: [
+      'Ce fichier n’est pas l’export du registre français : les colonnes attendues n’y sont pas. Rien n’a été gardé.',
+      'This file is not the export of the French register: the expected columns are not there. Nothing was kept.',
+      'Diese Datei ist nicht der Export des französischen Registers: die erwarteten Spalten fehlen. Es wurde nichts behalten.',
+      'Este archivo no es la exportación del registro francés: faltan las columnas esperadas. No se guardó nada.'
+    ]
   }
 };
