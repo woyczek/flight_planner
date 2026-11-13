@@ -8,6 +8,7 @@ from . import procedures as procedure_module
 from . import planning
 from . import rad_flight
 from . import nav_data
+from . import nat_layer     # SOG-0263
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
@@ -105,6 +106,8 @@ class Nav:
             self.coverage.append(dict(zone=zone.name,cycle=datasets.cycles['airways'] or self.cycles[zone.name],segments=count,
                 dataset_cycles=datasets.cycles,sources=datasets.sources['airways']))
         if not self.edges: raise ValueError('Aucun segment airway dans les cycles disponibles à cette date.')
+        try:nat_layer.add(self,nm)   # SOG-0263 : la couche NAT (les tracks du jour, même périmées, dites périmées) ; un fichier illisible ne coûte pas le calcul
+        except (OSError,ValueError,KeyError,TypeError) as exc:self.nat={'tracks':[],'issued':None,'stale':False,'skipped':[f'error: {exc.__class__.__name__}'],'links':0}
         self.fra=fra_module.Fra(self,date,nm)
         self._fra_graph_cache={}
         self._routing_cache=collections.OrderedDict()
@@ -666,7 +669,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
             data_gap=e.get('data_gap'),fra_area=e.get('fra_area'),from_role=e.get('from_role'),to_role=e.get('to_role'),fra_rows=e.get('fra_rows'),nm=round(e['nm'],2),
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
             procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
-            direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée')))   # SOG-0078
+            direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée'),
+            nat=e.get('nat'),nat_link=e.get('nat_link')))   # SOG-0078 ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
     if dep_elev is None or arr_elev is None: issue('REVUE','Élévation AD absente : 0 ft utilisé pour le modèle vertical de simulation.')
     profile=flight_profile.build(legs,dep_elev or 0,arr_elev or 0,fl,**options,strategy=strategy)
@@ -676,6 +680,13 @@ def assess(request,_nav=None,_rad=None,_path=None):
             issue('ERREUR',f'{l["via"]} {l["start"]["id"]}–{l["end"]["id"]} : {text}')
     if legs and not profile['feasible'] and not any(l['vertical_errors'] for l in legs):
         issue('ERREUR','Profil vertical impossible avec les altitudes AD et les taux de montée/descente saisis.')
+    nat_legs=[l['nat'] for l in legs if l.get('nat') and l['via'].startswith('NAT')]   # SOG-0263 : les tracks du jour sont prises même périmées, et dites
+    if nat_legs:
+        used=list(dict.fromkeys(n['track'] for n in nat_legs)); issued=next((n['issued'] for n in nat_legs if n.get('issued')),None); stale=any(n['stale'] for n in nat_legs)
+        issue('REVUE',f'Routes NAT du {issued or "?"}'+(', périmées' if stale else '')+f' : {" ".join("NAT"+t for t in used)}. '
+              +('Prises quand même (le message en vigueur au moment du vol n\'est pas lu) ; ' if stale else 'Message du jour ; ')+'autorisation océanique non vérifiée.')
+    for l in legs:   # SOG-0263 : le raccord du réseau à la track (entrée) ou de la track au réseau (sortie) est un DCT de simulation, dit « revue »
+        if l.get('nat_link'):issue('REVUE',f'Raccord NAT ({"entrée" if l["nat_link"]=="entry" else "sortie"}) : DCT de {l["nm"]:.0f} NM {l["start"]["id"]}–{l["end"]["id"]}, simulation (aucune route lue).')
     candidates=rad.candidates(dep,arr,known_ids,used_routes | {alias for route_name in used_routes for alias in rad_flight.aliases(route_name)})
     if request.get('unable_rnav'):
         for a,b,e in parsed:

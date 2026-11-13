@@ -20,3 +20,5 @@ Copied from `E:/DEFA/rad` (RouteSim 2, not versioned) so that the launcher can c
 Not taken: `server.py` (the web server, port 8766), `web/` (the screen: Fuel does it), `config.json`, `import_rad.py`, the compiled files (they live in `data/route/`).
 
 Jobs: `tools/regen/route.py` (`route/compute`, `route/import-rad`). Contract: `frame/aerodb/INTEGRATION.md`, « Route computation ». Cases: K101, K102, K103.
+
+**NAT layer (SOG-0263, not RouteSim's)**: `nat_layer.py` (the tracks of the day as edges of the graph, even stale, read as untrusted input; hooked by one line in `Nav.__init__`, `nat=` on the legs in `assess`, a « Routes NAT du JJ/MM » remark) and `view.py` (`nat` on segments and alternatives). Every changed line carries `SOG-0263`. Case K237.

@@ -68,10 +68,21 @@ def reason_of(text):
 def segment(leg):
     reasons = [reason_of(t) for t in dict.fromkeys(leg.get('alerts') or [])]
     return {'from': leg['start']['id'], 'to': leg['end']['id'], 'via': leg['via'], 'state': 'error' if reasons or leg.get('compatible') is False else 'ok', 'reasons': reasons,
-            **({'control': leg['control'], 'layer': leg['layer'], 'controlReason': leg['control_reason']} if leg.get('control') else {})}       # SOG-0161 : controlled | incomplete | fallback | error, la couche (SID, LOW, HIGH, FRA, STAR), pourquoi
+            **({'control': leg['control'], 'layer': leg['layer'], 'controlReason': leg['control_reason']} if leg.get('control') else {}),       # SOG-0161 : controlled | incomplete | fallback | error, la couche (SID, LOW, HIGH, FRA, STAR), pourquoi
+            **({'nat': {**leg['nat'], **({'link': leg['nat_link']} if leg.get('nat_link') else {})}} if leg.get('nat') else {})}       # SOG-0263 : { track, direction, from, to, stale, issued } ; link: entry | exit pour un raccord DCT de la couche
+
+
+def nat_of(segs):
+    """Le résumé NAT d'une alternative (SOG-0263) : { tracks: ['A'], issued: 'JJ/MM' | None, stale: bool } d'après les tronçons des tracks ; None sans track."""
+    used = [s['nat'] for s in segs if s.get('nat') and s['via'].startswith('NAT')]
+    if not used:
+        return None
+    return {'tracks': list(dict.fromkeys(n['track'] for n in used)), 'issued': next((n['issued'] for n in used if n.get('issued')), None), 'stale': any(n['stale'] for n in used)}
 
 
 def issue_kind(text):
+    if text.startswith(('Routes NAT', 'Raccord NAT')):
+        return 'NAT'
     return reason_of(text)['kind'] if re.search(r'[Ss]ens interdit|[Cc]ontinuité|RAD|plancher|plafond|FRA', text) else None
 
 
@@ -106,6 +117,7 @@ def alternative(i, r, requested_fl):
     errors = [x for x in r.get('issues') or [] if x['level'] == 'ERREUR']
     return {'id': f'alt{i}', 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
             'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'incomplete': bool(r.get('data_gaps')), 'segments': segs,
+            **({'nat': nat_of(segs)} if nat_of(segs) else {}),       # SOG-0263
             **({'control': {'controlledPct': r['control']['controlled_pct'], 'incompletePct': r['control']['incomplete_pct'], 'fallbackPct': r['control']['fallback_pct'], 'errorPct': r['control']['error_pct'],
                             'sections': [{'layer': s['layer'], 'control': s['control'], 'from': s['from'], 'to': s['to'], 'nm': s['nm'], 'reason': s['reason']} for s in r['control']['sections']]}} if r.get('control') else {})}
 

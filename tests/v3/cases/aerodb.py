@@ -9128,3 +9128,106 @@ def k234(c):
         (adb / 'aircraft_db.js').write_text('window.AIRCRAFT_DB = {broken', encoding='utf-8')
         r = run()
         c.eq((r['state'], [x['code'] for x in r['reasons']]), ('missing', ['no-db']), 'an unreadable base counts as missing (never an exception)', what='unreadable')
+
+
+@case('K237', 'Route engine, the NAT layer (SOG-0263): the tracks of the day are edges of the graph, taken EVEN WHEN STALE and said so; a named fix of the base is shared, an unknown entry or exit is joined to the high network by a DCT « revue »; the file is an input read with bounds', 'K', static=True,
+      rule='Ergonomist 13 Nov 2026 (SOG-0263, the user\'s refusal: « ne sert pas encore au calcul transat, si ? Même si on n\'a pas la bonne nats, on essaie tout de même de les utiliser, on raffine après »): the engine only read the SHAPES of NAT coordinates of a typed route; the tracks of data/sia/zones/nat/nat_tracks.json gave the graph no edge, so KJFK → EGLL had no way over the ocean. tools/route_engine/nat_layer.py adds each track as edges `NAT<id>` (direction of the flow, levels of the message), shares the named fixes of the base, joins an entry or an exit that touches no high airway to the nearest high-network nodes (120 NM) by a DCT, and takes the track whatever its validity, `stale` when it ended before the date of the flight; the answer carries `nat` on the segments and on the alternative, and a « Routes NAT du JJ/MM, périmées » remark; invented bench: two tracks over an ocean with no other way')
+def k237(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I
+    from route_engine import view
+    fn = RJ.REGISTRY[('route', 'compute')][0]
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    nodes = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *nodes[a]), 'b': pt(b, *nodes[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    track = lambda tid, route, frm, to, east=('350', '360', '370'), west=(): {'id': tid, 'route': route, 'east': list(east), 'west': list(west), 'nar': [], 'by': 'EGGX', 'from': frm, 'to': to}
+    A = track('A', ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], '2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z')
+    B = track('B', ['ENTRB', '50/40', '50/30', '5030/20', '5130/12'], '2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        def bench(name, doc):
+            data = os.path.join(td, name, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                         'points': [pt(k, *v) for k, v in nodes.items()], 'navaids': [], 'airways': ways}.items():
+                with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+            rad = os.path.join(td, name, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+                json.dump([], f)
+            if doc is not None:
+                os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+                with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                    f.write(doc if isinstance(doc, str) else json.dumps(doc))
+            return {'data': data, 'secrets': td}
+
+        def run(ctx, dep, arr, date):
+            r = fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': dep, 'arr': arr, 'fl': 370, 'date': date, 'enable_fra': False}, ctx)
+            p = r['plan']['primary']
+            return r, p, view.to_view(r['plan'], {'fl': 370, 'mode': 'calculate'})
+        # 1. no file: no way over the ocean (the bench has no other)
+        r, p, v = run(bench('none', None), 'KJFK', 'EGLL', '2026-11-10T12:00')
+        c.eq(p['ok'], False, 'without the file there is no way over the ocean: no plan', what='no file')
+        # 2. track A, valid that day: its named entry and exit are the base\'s own nodes (shared), the flight uses it, not stale
+        r, p, v = run(bench('a', {'tracks': [A]}), 'KJFK', 'EGLL', '2026-11-10T07:00')
+        vias = [l['via'] for l in p.get('legs') or []]
+        c.ok(p['ok'] and 'NATA' in vias, str((vias, p.get('error'))), 'KJFK → EGLL goes over the ocean by NATA: its entry ENTRA and its exit EXITA are the nodes of the base (J1 before, J2 after)')
+        a0 = v['alternatives'][0]
+        c.eq((a0['nat'], [s['nat']['direction'] for s in a0['segments'] if s['via'] == 'NATA'][:1], any(s['nat'].get('link') for s in a0['segments'] if s.get('nat'))), ({'tracks': ['A'], 'issued': '10/11', 'stale': False}, ['east'], False),
+             'the alternative says NAT A, issued 10/11, not stale; its segments say the direction; no DCT link was needed', what='nat view')
+        c.eq([(i['kind'], i['text'].startswith('Routes NAT du 10/11 :')) for i in v['issues'] if i.get('kind') == 'NAT'], [('NAT', True)], 'a remark « Routes NAT du 10/11 » (review, not an error)', what='issue')
+        c.eq([i['level'] for i in v['issues'] if i.get('kind') == 'NAT'], ['review'], 'it is a review', what='level')
+        # 3. the same file, a later day: the track is taken all the same and said stale
+        r, p, v = run(bench('a2', {'tracks': [A]}), 'KJFK', 'EGLL', '2026-11-12T12:00')
+        a0 = v['alternatives'][0]
+        c.eq((p['ok'], a0['nat'], [i['text'] for i in v['issues'] if i.get('kind') == 'NAT'][0].startswith('Routes NAT du 10/11, périmées')), (True, {'tracks': ['A'], 'issued': '10/11', 'stale': True}, True),
+             'two days later the track is used anyway and said « périmées »: « on essaie, on raffine après »', what='stale')
+        # 4. track B: a named entry the base does not know is left out (said), its first coordinate is joined to the high network by a DCT, so is its last
+        ctx = bench('b', {'tracks': [B]})
+        r, p, v = run(ctx, 'KJFK', 'EGLL', '2026-11-10T07:00')
+        segs = v['alternatives'][0]['segments'] if v['alternatives'] else []
+        links = [(s['from'], s['to'], s['nat']['link']) for s in segs if s.get('nat') and s['nat'].get('link')]
+        c.ok(p['ok'] and [x[2] for x in links] == ['entry', 'exit'] and links[0][0] in ('CANOUT', 'MIDUS') and links[1][1] in ('UKIN1', 'UKIN2', 'EXITA'), str(links), 'track B: the entry is joined from the high network and the exit to it, by DCT segments marked entry / exit (« revue »: no route read)')
+        c.ok(all(s['via'] == 'DCT' for s in segs if s.get('nat') and s['nat'].get('link')), 'dct', 'the joins are DCT of simulation')
+        rac = [(i['kind'], i['level']) for i in v['issues'] if i['text'].startswith('Raccord NAT')]
+        c.eq(rac, [('NAT', 'review')] * 2, 'each join is said in a remark of kind NAT, a review (DCT of simulation, no route read)', what='join remarks')
+        import datetime as dt
+        E = __import__('route_engine.engine', fromlist=['Nav'])
+
+        def nav(root, day):
+            E.DATA_DIR = None
+            return E.Nav(root, day)
+        n = nav(os.path.join(td, 'b'), dt.date(2026, 11, 10))
+        c.ok(any('ENTRB inconnu' in s for s in n.nat['skipped']) and n.nat['tracks'] == ['B'] and n.nat['links'] > 0, str(n.nat), 'the unknown ENTRB is said (skipped), the track starts at its first coordinate')
+        # 5. a track in the flow direction only: against the flow, the track is not taken
+        r, p, v = run(bench('rev', {'tracks': [A]}), 'EGLL', 'KJFK', '2026-11-10T07:00')
+        c.ok('NATA' not in [l['via'] for l in p.get('legs') or []], str([l['via'] for l in p.get('legs') or []]), 'an eastbound track is not flown westbound (EGLL → KJFK)')
+        # 6. the file is an input read, not trusted: bad ids, bad names, bad coordinates, too many points, text levels, a size bound
+        hostile = {'tracks': [{'id': 'a<b>', 'route': ['ENTRA', 'EXITA'], 'east': ['350']}, {'id': 'C', 'route': ['ENTRA', '99/99', 'EXITA'], 'east': ['350']}, {'id': 'D', 'route': ['EN TRA', 'EXITA'], 'east': ['9999']},
+                              {'id': 'E', 'route': ['ENTRA'] * 100, 'east': ['350']}, {'id': 'F', 'route': ['ENTRA', 'EXITA'], 'east': [], 'west': []}, 'junk', None,
+                              {'id': 'G', 'route': ['ENTRA', 'EXITA'], 'east': ['350'], 'from': 'not a date', 'to': 'x' * 100}] + [dict(A, id=chr(70 + i % 10)) for i in range(80)]}
+        ctx = bench('h', hostile)
+        n = nav(os.path.join(td, 'h'), dt.date(2026, 11, 10))
+        c.ok(len(n.nat['tracks']) <= 60 and 'a<b>' not in str(n.nat['tracks']) and all(isinstance(x, str) and len(x) <= 2 for x in n.nat['tracks']) and len(n.nat['skipped']) >= 6, str((n.nat['tracks'], n.nat['skipped'][:8])),
+             'at most 60 tracks, no markup in an identifier, the bad ones left out and said (bad id, a coordinate out of the globe, a bad fix name, a level of 9999, too many points, no direction)')
+        c.ok(all(isinstance(e['lower'], int) and isinstance(e['upper'], int) and 10000 <= e['lower'] <= e['upper'] <= 60000 for e in n.edges if e.get('nat')), 'levels', 'the levels of every NAT edge are integers inside 10 000 – 60 000 ft')
+        r, p, v = run(ctx, 'KJFK', 'EGLL', '2026-11-10T07:00')
+        c.eq(r['ok'], True, 'a hostile file never stops the calculation', what='hostile run')
+        big = bench('big', None)
+        os.makedirs(os.path.join(big['data'], 'sia', 'zones', 'nat'))
+        with open(os.path.join(big['data'], 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            f.write('{"tracks": [], "pad": "' + 'x' * 2_100_000 + '"}')
+        n = nav(os.path.join(td, 'big'), dt.date(2026, 11, 10))
+        c.eq((n.nat['tracks'], n.nat['skipped']), ([], ['file-too-big']), 'a file over 2 MB is not read', what='size')
+        bad = bench('bad', '{not json')
+        n = nav(os.path.join(td, 'bad'), dt.date(2026, 11, 10))
+        c.eq((n.nat['tracks'], n.nat['skipped']), ([], ['no-file']), 'an unreadable file is no file', what='unreadable')
