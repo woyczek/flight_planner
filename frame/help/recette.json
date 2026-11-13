@@ -3148,10 +3148,10 @@
     "de": "Einen Fehler vom Telefon aus melden, mit einer Geste (für seine Tests am Wochenende)",
     "es": "Señalar un error desde el teléfono, con un gesto (para sus pruebas del fin de semana)"
    },
-   "test": "Sur le téléphone, ouvre l'appli : une note « nouvelle version · Recharger » doit apparaître (sinon ferme et rouvre l'appli deux fois). En haut, à gauche du « ? », une icône d'insecte : touche-la. Choisis une sorte, un titre, un texte, « Envoyer » : une note dit où le signalement est parti (dépôt des données, sous ton trigramme) ; sans réseau, il attend. Une photo jointe n'est pas encore envoyée : l'écran le dit. De retour au poste, dis-le moi : je lis le dossier et j'en fais des fiches.",
+   "test": "Sur le téléphone, ouvre l'appli : une note « nouvelle version · Recharger » (sinon ferme et rouvre deux fois). En haut, à gauche du « ? », l'icône d'insecte. Une sorte, un titre, un texte ; « Photos ou captures d'écran » ouvre ta photothèque (trois au plus) ; « Envoyer » : la note dit où c'est parti et combien de photos sont jointes. Au poste (lanceur relancé) : Aide › Signaler, « Signalements des pilotes » montre ton signalement avec ses vignettes ; « Reprendre » me l'envoie. Dis-moi ensuite si la fiche est arrivée.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-13T21:50:52Z"
+   "delivered": "2026-11-13T22:12:02Z"
   }
  ],
  "decisions": [
