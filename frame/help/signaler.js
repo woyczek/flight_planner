@@ -108,8 +108,17 @@
     whyPost: ['Écrit tout de suite sur ce poste.', 'Written at once on this workstation.', 'Sofort auf diesem Rechner geschrieben.',
       'Escrito de inmediato en este puesto.'
     ],
-    whyPilot: ['Part avec le prochain envoi groupé (moins de 5 minutes).', 'Leaves with the next grouped send (under 5 minutes).',
-      'Geht mit dem nächsten gebündelten Versand (unter 5 Minuten).', 'Sale con el próximo envío agrupado (menos de 5 minutos).'
+    whyPilot: [
+      'Part dans le dépôt des données avec le prochain envoi groupé (moins de 5 minutes) ; sans réseau, il attend le retour du réseau.',
+      'Goes to the data repository with the next grouped send (under 5 minutes); without a network it waits for the network to come back.',
+      'Geht mit dem nächsten gebündelten Versand ins Datenarchiv (unter 5 Minuten); ohne Netz wartet es auf die Verbindung.',
+      'Sale al repositorio de datos con el próximo envío agrupado (menos de 5 minutos); sin red, espera a que vuelva.'
+    ],
+    noShots: [
+      'Pas de capture d’écran sur ce chemin : le texte et ce qui est noté tout seul (écran, taille, langue, version) partent, rien d’autre.',
+      'No screenshot on this path: the text and what is noted by itself (screen, size, language, version) are sent, nothing else.',
+      'Kein Screenshot auf diesem Weg: Der Text und die automatisch notierten Angaben (Bildschirm, Größe, Sprache, Version) werden gesendet, sonst nichts.',
+      'Sin captura en este camino: se envían el texto y lo que se anota solo (pantalla, tamaño, idioma, versión), nada más.'
     ],
     checking: ['Vérification du poste…', 'Checking the workstation…', 'Rechner wird geprüft…', 'Comprobando el puesto…'],
     sentPost: ['✓ Écrit dans organisation/SIGNALEMENTS.json ({id}). L’ergonome le lira à son prochain tour.',
@@ -117,10 +126,11 @@
       '✓ In organisation/SIGNALEMENTS.json geschrieben ({id}). Die Ergonomie liest es in der nächsten Runde.',
       '✓ Escrito en organisation/SIGNALEMENTS.json ({id}). La ergonomía lo leerá en su próxima ronda.'
     ],
-    sentPilot: ['✓ Gardé sur cet appareil et envoyé avec le prochain envoi groupé. Vous pouvez le suivre ci-dessous.',
-      '✓ Kept on this device and sent with the next grouped send. You can follow it below.',
-      '✓ Auf diesem Gerät gespeichert und mit dem nächsten gebündelten Versand gesendet. Sie können es unten verfolgen.',
-      '✓ Guardado en este dispositivo y enviado con el próximo envío agrupado. Puede seguirlo abajo.'
+    sentPilot: [
+      '✓ Gardé sur cet appareil et envoyé avec le prochain envoi groupé, dans le dépôt des données ({path}). Vous pouvez le suivre ci-dessous.',
+      '✓ Kept on this device and sent with the next grouped send, to the data repository ({path}). You can follow it below.',
+      '✓ Auf diesem Gerät gespeichert und mit dem nächsten gebündelten Versand ins Datenarchiv gesendet ({path}). Sie können es unten verfolgen.',
+      '✓ Guardado en este dispositivo y enviado con el próximo envío agrupado, al repositorio de datos ({path}). Puede seguirlo abajo.'
     ],
     offPost: [
       'Le lanceur de ce poste ne répond pas : le signalement n’est pas perdu, il reste sur cet appareil (« non envoyé ») et part dès que le lanceur revient (les captures, elles, sont à rejoindre).',
@@ -413,6 +423,7 @@
         <div class="f-sg-where" data-where><b class="f-sg-wt">${esc(t(T.noted))}</b><span data-wtext></span>
           <label class="f-check"><input type="checkbox" data-wc checked> ${esc(t(T.notedJoin))}</label></div>
         <div class="f-sg-shots" data-shotsbox hidden><label class="f-field">${esc(t(T.shots))}<input type="file" data-shots accept="image/png,image/jpeg,image/webp" multiple></label><p class="f-muted" data-shotslist></p><p class="f-muted">${esc(t(T.shotsNote))}</p></div>
+        <p class="f-muted" data-noshots hidden></p>
         <div class="f-row"><button type="submit" class="primary" data-send disabled>${esc(t(T.send))}</button> <span class="f-muted" data-why></span></div>
       </form>
       <div data-note role="status"></div>
@@ -447,6 +458,10 @@
         }) : ''
       });
       $('[data-shotsbox]').hidden = ui.ch !== 'poste';
+      const ns = $('[data-noshots]'),
+        nsText = ui.ch === 'pilote' ? t(T.noShots) : '';
+      if (ns.hidden !== !nsText) ns.hidden = !nsText;
+      if (ns.textContent !== nsText) ns.textContent = nsText;
       const sl = $('[data-shotslist]');
       sl.textContent = ui.shots.map(f => f.name).join(' · ');
       const d = draft();
@@ -556,8 +571,14 @@
       }
     };
     const check = async () => {
-      const r = await call('lire', {});
-      ui.ch = r.old ? 'old' : r.ok ? 'poste' : r.reason === 'no-organisation' ? 'pilote' : r.offline ? (st.poste ? 'poste-off' :
+      // SOG-0335 : un appareil SANS lanceur (le téléphone, le site publié, un appareil appairé) ne peut pas être le poste de l'ergonome : le
+      // signalement du développeur y prend le chemin d'un pilote, il ne reste pas « non envoyé » en attendant un lanceur qui ne viendra pas
+      const r = launcher() ? await call('lire', {}) : {
+        offline: true,
+        noLauncher: true
+      };
+      ui.ch = r.noLauncher ? 'pilote' : r.old ? 'old' : r.ok ? 'poste' : r.reason === 'no-organisation' ? 'pilote' : r.offline ? (st
+        .poste ? 'poste-off' :
         'pilote') : st.poste ? 'poste-off' : 'pilote';
       if (ui.ch === 'poste' && !st.poste) {
         st.poste = true;
@@ -697,7 +718,8 @@
         ui.note = {
           kind: 'ok',
           text: t(ui.ch === 'pilote' ? T.sentPilot : T.sentPost, {
-            id
+            id,
+            path: `pilot/${c.trigram?.() || ''}/signalements/${id}.json`
           })
         };
         st.draft = {

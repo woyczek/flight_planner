@@ -104,12 +104,12 @@ def a2(c):
     c.eq(c.px('--f-head-h'), 57, '--f-head-h resolves to 57 px', tol=0.5, what='--f-head-h')
     shown = c.js("[...document.querySelectorAll('.f-head > *')].filter(e => window.__t.shown(e)).map(e => e.id)")
     # the name is the application switcher's button (#fApp: its icon and #fName, SPEC 3.1, 30 Oct 2026)
-    c.eq(sorted(shown), sorted(['fApp', 'fHelp', 'fDevice']), 'exactly the name, "?" and gear are displayed', what='displayed header controls')
+    c.eq(sorted(shown), sorted(['fApp', 'fSignal', 'fHelp', 'fDevice']), 'exactly the name, the report bug, "?" and gear are displayed (SOG-0335: the report button of the pre-releases)', what='displayed header controls')
     c.ok(c.shown('#fName'), '', 'the name is shown inside its button')
     for i in ('fSync', 'fWho', 'fLive', 'fHost'):
         c.ok(not c.shown('#' + i), f'#{i} is displayed', 'not displayed on a phone')
     c.eq(c.count('#fInfo'), 0, 'the "i" button no longer exists (its lines are the status block of Settings)', what='#fInfo elements')
-    for i in ('fHelp', 'fDevice'):
+    for i in ('fSignal', 'fHelp', 'fDevice'):
         b = c.box('#' + i)
         c.ok(b['w'] >= 43.5 and b['h'] >= 43.5, f'#{i} is {b["w"]:.0f}x{b["h"]:.0f}', 'at least 44x44')
     # rule 16: a fixed module keeps the application's name; a non-fixed one puts its own title in the header and its page loses
@@ -7509,4 +7509,40 @@ def a186(c):
     c.until("document.querySelector('[data-card=\"reset\"] [data-msg]')?.textContent.trim() !== ''", timeout=15000, what='the end is said')
     after = c.js("FrameData.cached('').then(l => l.map(d => d.path))")
     c.ok(not any(p in after for p in refs) and all(p in after for p in keep), (before, after), 'the copies of the repository files are gone; the documents and the settings of the device stay')
+    c.check_errors()
+
+
+@case('A196', "A « Signaler » button (a bug) sits in the top bar next to the help « ? » in the three applications, at every width, at least 44 px; it opens the report screen; and a device WITHOUT launcher — the phone on the published site — sends even the developer's report by the pilot's path (a document under pilot/<trigram>/signalements/ for the grouped send), says where it went and that no capture leaves (SOG-0335)", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule="SOG-0335 (the user, 13 Nov: « Ce WE je vais tester par téléphone. j'ai donc besoin du reporting de bug via tel. un bouton « bug »… avant de me coucher ce soir »): the entry is a icon button in the top bar (not the bottom bar: it carries the navigation) in Pilot, Company and Maintenance, shown while the version is a pre-release; a device that never reaches a launcher (the phone, the published site, a paired device) is not the ergonomist's workstation even when it once was: its report takes the pilot's path, the screen says where it went (the folder of the data repository) and that no screenshot leaves; offline it waits for the network")
+def a196(c):
+    seed = LEVEL3 + [['device/signaler.json', {'poste': True, 'mine': [], 'unsent': [], 'draft': {'kind': 'bug', 'title': '', 'text': ''}}, 'cache']]
+    for app, mod in (('pilot', 'fuel'), ('company', 'missions'), ('maintenance', 'data')):
+        c.open(mod, app=app, docs=seed, wait=False)
+        c.until("!!document.querySelector('#fSignal svg') && document.getElementById('fSignal').getAttribute('aria-label') !== 'report' && !!document.querySelector('#fHelp')", timeout=20000, what=f'the header of {app}')
+        r = c.js("""() => { const b = document.getElementById('fSignal'), h = document.getElementById('fHelp'), q = b.getBoundingClientRect(), p = h.getBoundingClientRect();
+          return { shown: !b.hidden && q.width > 0, w: q.width, h: q.height, label: b.getAttribute('aria-label'), svg: !!b.querySelector('svg'), left: q.right <= p.left + 1, near: p.left - q.right, text: b.textContent.trim() } }""")
+        c.ok(r['shown'] and r['w'] >= 43.5 and r['h'] >= 43.5 and r['svg'] and r['label'] and r['left'] and r['near'] < 12 and not r['text'], r, f'{app} at {c.width}: the report button is an icon of 44 px at least, labelled, right before the « ? »')
+        c.eq(c.js("document.documentElement.scrollWidth <= innerWidth + 1"), True, f'{app}: the header does not overflow', what='overflow')
+    c.shot(f'A196_header_{c.width}_{c.lang}_delivered.png')
+    # ---- the button opens the screen; a device without launcher: the pilot's path, even with « poste » remembered
+    c.open('fuel', docs=seed)
+    c.tap('#fSignal')
+    c.until("location.hash === '#signaler' && !!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen, its channel known')
+    c.eq(c.js("document.getElementById('fSignal').getAttribute('aria-pressed')"), 'true', 'the button is pressed while the screen is open', what='pressed')
+    c.eq(c.js("document.querySelector('[data-shotsbox]').hidden"), True, 'no capture box without a launcher', what='no shots box')
+    c.ok(c.text('[data-noshots]').strip() != '' and c.shown('[data-noshots]'), '', 'the screen says that no screenshot leaves on this path')
+    c.eq(c.count('[data-note] .f-warn'), 0, 'no warning about a launcher that does not answer (there is none, and there will be none)', what='warning')
+    c.page.fill('[data-title]', 'Bouton cassé')
+    c.page.fill('[data-text]', 'Au téléphone, depuis la carte.')
+    c.tap('[data-form] [data-send]')
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=15000, what='the report in « Mes signalements »')
+    sid = c.js("document.querySelector('[data-mine] li').dataset.id")
+    c.ok(f'pilot/ABC/signalements/{sid}.json' in c.text('[data-note]'), c.text('[data-note]'), 'the screen says where it went: the folder of the data repository')
+    keys = c.js("""() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => String(k).includes('/signalements/'))) } })""")
+    c.eq(keys, [f'pilot/ABC/signalements/{sid}.json'], 'one document under the pilot folder (for the grouped send), not « non envoyé »', what='document')
+    c.eq(c.js("document.querySelector('[data-mine] .f-sg-state').classList.contains('f-warn')"), False, 'the line of the report is not « not sent »', what='state')
+    c.shot(f'A196_screen_{c.width}_{c.lang}_delivered.png')
+    c.tap('#fSignal')
+    c.until("location.hash !== '#signaler'", what='a second press closes the screen')
     c.check_errors()

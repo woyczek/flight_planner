@@ -734,6 +734,10 @@
     },
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+    // le bouton « Signaler » de l'en-tête (SOG-0335) : son nom entier, l'icône seule
+    report: ['Signaler un problème ou une demande', 'Report a problem or make a request', 'Ein Problem melden oder einen Wunsch äußern',
+      'Informar de un problema o hacer una petición'
+    ],
     back: ['Revenir à {m}', 'Back to {m}', 'Zurück zu {m}', 'Volver a {m}'],
     host: ['Lanceur de {h}', 'Launcher on {h}', 'Starter auf {h}', 'Lanzador de {h}'],
     who: ['Trigramme ?', 'Trigram?', 'Kürzel?', '¿Trigrama?'],
@@ -2506,6 +2510,7 @@
     if (JSON.stringify(next) === JSON.stringify(suiteVersion)) return;
     suiteVersion = next;
     paintStatus();
+    paintSignal();
   }
 
   const statusRows = items => items.map(it => {
@@ -2648,6 +2653,21 @@
   /** Aide de l'écran affiché (bouton « ? » de l'en-tête, sur un téléphone comme sur un écran) : le manuel au chapitre de
    *  l'écran (celui du module ; celui des Réglages quand ils sont ouverts par-dessus) ; un second appel, avec l'aide ouverte,
    *  la referme. */
+  /** Le bouton « Signaler » de l'en-tête (SOG-0335) : il n'existe que pendant les PRÉVERSIONS (alpha, bêta, rc) et disparaît tout seul à la
+   *  version finale ; une version encore inconnue (page tout juste ouverte, hors ligne) le laisse là. C'est le seul endroit à changer pour le retirer. */
+  const signalWanted = () => !suiteVersion || /-(alpha|beta|rc|pre)/i.test(suiteVersion.version);
+
+  function paintSignal() {
+    const b = $('fSignal'),
+      hide = !signalWanted();
+    if (b && b.hidden !== hide) b.hidden = hide;
+  }
+  /** Le bouton ouvre l'écran Signaler par-dessus le module (qui reste celui d'où l'on vient) ; un second appui le referme, comme le « ? ». */
+  function openSignal() {
+    if (over && over.id === 'signaler') return leaveOver();
+    location.hash = '#signaler';
+  }
+
   function openHelp() {
     if (over && DOCS.includes(over.id)) return leaveOver();
     const shown = over ? over.id : parseHash().id,
@@ -3803,7 +3823,8 @@
   /** Boutons de l'en-tête enfoncés tant que leur écran est ouvert. */
   function paintToggles() {
     const set = (b, on) => b && b.getAttribute('aria-pressed') !== String(on) && b.setAttribute('aria-pressed', String(on));
-    set($('fHelp'), !!over && DOCS.includes(over.id));
+    set($('fHelp'), !!over && DOCS.includes(over.id) && over.id !== 'signaler'); // l'écran Signaler a son propre bouton (SOG-0335)
+    set($('fSignal'), over?.id === 'signaler');
     set($('fDevice'), !!over && ['settings', 'device'].includes(over.id));
   }
 
@@ -4969,6 +4990,7 @@
     PLURAL = await import(new URL('frame/lib/plural.js', ROOT).href).catch(() => null);
     KM = await import(new URL('frame/lib/mission_categories.js', ROOT).href).catch(() => null);
     headIcon('fHelp', 'help');
+    headIcon('fSignal', 'bug');
     headIcon('fDevice', 'settings');
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
@@ -4985,6 +5007,10 @@
     $('fHelp').setAttribute('aria-label', t(T.help));
     $('fHelp').title = t(T.help);
     $('fHelp').onclick = openHelp;
+    $('fSignal').setAttribute('aria-label', t(T.report));
+    $('fSignal').title = t(T.report);
+    $('fSignal').onclick = openSignal;
+    paintSignal();
     $('fDevice').onclick = () => {
       if (over && ['settings', 'device'].includes(over.id)) return leaveOver();
       location.hash = '#settings';
