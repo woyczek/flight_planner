@@ -6631,3 +6631,32 @@ def k_hostile(c):
     vers = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/versions') or []
     c.ok(len(vers) == 1 and c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/versions/' + vers[0]) == 'key: [unclosed\n  - : :', str(vers), 'a copy of the file that could not be read is kept in versions/, intact')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
+
+
+
+@case('D195', 'Wind barbs follow the route near the edge of the screen too: with the map put so that the elbow of the route (VEPET) is close to the border, every barb, the shifted ones included, is less than 2 px from the line, at several zooms and widths', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0243 refused again (the user, 13 Nov: « reproduit. à quelques cm du bord de l’écran. 3 screenshots »): a barb that would fall on a distance mark is shifted along the route; the shift followed the straight direction of the nearest leg, so near an elbow the barb left the line by sin(angle) x the shift (14 to 17 px at VEPET); the marks depend on the view, hence the defect depends on where the map is put')
+def d_barbedge(c):
+    pts = [('LFPO', 48.7233, 2.3794, True), ('MOPAR', 48.95, 2.72, True), ('KOLIV', 49.55, 2.40, True), ('VEPET', 50.30, 2.55, False), ('PETAX', 50.75, 1.35, True), ('EGKB', 51.33, 0.03, True)]
+    wind = {'dirDeg': 333, 'kt': 38, 'tempC': -20, 'levelFt': 17000, 'at': '2026-11-11T21:57:00Z'}
+    f = flight()
+    f['route'] = {'text': 'LFPO MOPAR KOLIV VEPET PETAX EGKB', 'dep': 'LFPO', 'arr': 'EGKB',
+                  'points': [{'id': i, 'lat': la, 'lon': lo, **({'wind': wind} if w else {})} for i, la, lo, w in pts]}
+    f['level'] = {'ft': 17000}
+    for vw, vh, views in ((1280, 760, ((8, [3.6, 50.2]), (8, [3.9, 50.0]), (9, [2.2, 50.5]), (8, [3.3, 50.2]))), (700, 760, ((8, [2.55, 50.2]), (8, [0.8, 50.8]), (9, [3.0, 49.2]), (9, [1.0, 51.0]))), (390, 800, ((8, [0.8, 50.8]), (9, [1.0, 51.0])))):
+        c.page.set_viewport_size({'width': vw, 'height': vh})
+        c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        hook_map(c)
+        for z, cen in views:
+            c.js("([z, cen]) => { window.__mpMap.jumpTo({ center: cen, zoom: z }); return true }", [z, cen])
+            c.wait(1500)
+            r = c.js("""() => { const S = window.__mp.S, m = window.__mpMap, line = S.marksPts.map(p => m.project([p.lon, p.lat])),
+              dist = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
+              const all = S.windHits || []; let worst = 0; for (const h of all) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.x, y: h.y }, line[i - 1], line[i])); worst = Math.max(worst, best) }
+              return { n: all.length, worst: Math.round(worst * 10) / 10 } }""")
+            c.ok(r['n'] >= 3 and r['worst'] < 2, f'{vw} px, zoom {z}, centre {cen}: {r}', 'every barb is less than 2 px from the line, near the edge as at the centre')
+            if (z, cen) in ((8, [3.6, 50.2]), (8, [0.8, 50.8])):
+                c.shot(f'D195_{c.design}_edge_{vw}_delivered.png')

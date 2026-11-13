@@ -607,10 +607,12 @@ function windsInView(list, toC, W, H) {
     }),
     hit = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0,
     pts = (S.marksPts || []).map(p => toC(p.lat, p.lon)),
-    // la direction à l'écran du tronçon de la route le plus proche du point (la loxodromie est droite sur la carte)
-    legDir = c => {
-      let best = null,
-        bd = Infinity;
+    // la route à l'écran : abscisse curviligne de chaque point de la polyligne ; un décalage se fait LE LONG DU TRACÉ (tronçon par tronçon, le coude suivi), jamais dans la direction d'un
+    // seul tronçon : près d'un coude le point décalé de la tangente quittait le trait de sin(angle) × décalage (SOG-0243, 14 à 17 px à VEPET quand le coude est près du bord)
+    cum = pts.reduce((acc, q, i) => (acc.push(i ? acc[i - 1] + Math.hypot(q.x - pts[i - 1].x, q.y - pts[i - 1].y) : 0), acc), []),
+    // la place d'un point sur le trait : son abscisse s (px) et son écart d (px) ; null sans tracé
+    onPoly = c => {
+      let best = null;
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1],
           b = pts[i],
@@ -619,23 +621,33 @@ function windsInView(list, toC, W, H) {
           l2 = dx * dx + dy * dy,
           t = l2 ? Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.y - a.y) * dy) / l2)) : 0,
           d = Math.hypot(c.x - a.x - t * dx, c.y - a.y - t * dy);
-        if (d < bd && l2) {
-          bd = d;
-          best = [dx / Math.sqrt(l2), dy / Math.sqrt(l2)];
-        }
+        if (l2 && (!best || d < best.d)) best = {
+          d,
+          s: cum[i - 1] + t * Math.sqrt(l2)
+        };
       }
       return best;
+    },
+    // le point du trait à l'abscisse s (borné aux deux bouts)
+    polyAt = sv => {
+      let i = 1;
+      while (i < pts.length - 1 && cum[i] < sv) i++;
+      const a = pts[i - 1],
+        b = pts[i],
+        len = cum[i] - cum[i - 1],
+        t = len ? Math.max(0, Math.min(1, (sv - cum[i - 1]) / len)) : 0;
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t
+      };
     },
     out = [];
   for (const q of windsPicked(list, toC, W, H)) {
     if (out.length >= WIND_MAX) break;
-    const dir = legDir(q.c);
+    const on = pts.length > 1 ? onPoly(q.c) : null;
     for (const sh of [0, 8, -8, 16, -16, 24, -24]) {
-      if (sh && !dir) break;
-      const c = sh ? {
-          x: q.c.x + dir[0] * sh,
-          y: q.c.y + dir[1] * sh
-        } : q.c,
+      if (sh && !on) break;
+      const c = sh ? polyAt(on.s + sh) : q.c,
         b = boxOf({
           w: q.w,
           c
