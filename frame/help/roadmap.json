@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b8021cc",
+  "organisation": "ee71cbc",
   "fiches": 294,
   "untranslated": 0,
   "priorities": 243
@@ -2186,11 +2186,12 @@
     {
      "id": "SOG-0290",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "V2 : « éditer une mission » ne fait plus rien",
      "en": "V2: editing a mission does nothing",
      "de": "V2: Mission bearbeiten tut nichts",
-     "es": "V2: editar una misión no hace nada"
+     "es": "V2: editar una misión no hace nada",
+     "test": true
     },
     {
      "id": "SOG-0293",
