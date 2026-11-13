@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3ae7b44",
+  "organisation": "3825149",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -1319,12 +1319,13 @@
     {
      "id": "SOG-0305",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Performance : sur LFPO → KEGE le profil de vol est très lent (2 images par seconde)",
      "en": "Performance: on LFPO → KEGE the flight profile is very slow (2 frames per second)",
      "de": "Leistung: auf LFPO → KEGE ist das Flugprofil sehr langsam (2 Bilder pro Sekunde)",
      "es": "Rendimiento: en LFPO → KEGE el perfil de vuelo es muy lento (2 imágenes por segundo)",
-     "rank": 83
+     "rank": 83,
+     "test": true
     }
    ]
   },
