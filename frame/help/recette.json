@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 183,
-  "verdicts": 122
+  "verdicts": 123
  },
  "apps": [
   "pilote",
@@ -2400,8 +2400,9 @@
    },
    "test": "Dans quelques minutes (le temps de la publication, puis une dizaine de minutes de cache) : ouvre l'adresse racine du site publié ; tu arrives sur l'application de la V3 (…/v3/frame/). Une adresse de la V2 (par exemple …/apps/pilot/mes_missions.html) répond toujours ; l'application V3 installée sur ton téléphone n'a pas bougé. Si tu vois encore l'accueil de la V2, recharge sans le cache.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T11:29:55Z"
+   "state": "ok",
+   "delivered": "2026-11-13T11:29:55Z",
+   "at": "2026-11-13T12:44:34Z"
   },
   {
    "id": "SOG-0279",
@@ -2726,6 +2727,21 @@
   }
  ],
  "decisions": [
+  {
+   "id": "Q-0047",
+   "fiche": "SOG-0308",
+   "app": "pilote",
+   "question": "Bloc « Procédures » de Carburant : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/modules/fuel/maquette/procedures.html (sept boutons en haut, un par état).",
+   "context": "Un côté par terrain (Départ, Arrivée), un seul ouvert ; replié, une phrase et une marque (complet, à choisir, périmé). Ouvert : trois lignes en mots — Piste (« 31L — face 12 kt · travers 1 kt », et d'où vient le vent), Départ ou Arrivée (la procédure, sa transition, sa carte), Approche (son nom, l'indicatif et la fréquence du moyen, sa carte) — chacune avec un seul geste « Changer », qui ouvre la liste de cette ligne (une feuille du bas au téléphone), la piste la mieux orientée en tête. En vent ",
+   "options": [
+    "Oui, on code sur cette maquette",
+    "Oui, avec mes remarques (dans le texte)",
+    "Non, à reprendre (dis-moi quoi)"
+   ],
+   "since": "2026-11-13",
+   "state": "todo",
+   "recommended": 0
+  },
   {
    "id": "Q-0043",
    "fiche": "SOG-0240",

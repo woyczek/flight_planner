@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "aa45348",
+  "organisation": "83ee7da",
   "fiches": 317,
   "untranslated": 0,
   "priorities": 310
@@ -3360,8 +3360,7 @@
      "de": "V3 becomes the default version; every V2 page stays reachable from V3",
      "es": "V3 becomes the default version; every V2 page stays reachable from V3",
      "milestone": "6.0.0-beta.1",
-     "rank": 96,
-     "test": true
+     "rank": 96
     }
    ]
   },
