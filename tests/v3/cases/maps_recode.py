@@ -7732,7 +7732,7 @@ def d230(c):
     c.ok(r['area'] < 2500, str(r), 'the rectangles together are a strip, not the 4 500 NM square (about 4 000 square degrees)')
 
 
-@case('D231', 'The proposals in progress are one window, the same beside Fuel and on the Map alone (SOG-0224): from the schema-2 document the window shows the open row (Fuel’s `open`) with its detail (route, distance, level, deviations) and the age of the computation; when the AIRAC cycle changed, the base changed or — a route over the NAT — the UTC day, it says « stale » with « Recompute » (the shared rule of Fuel, never the age alone); beside Fuel there is no « Choose » button (Fuel’s is the one)', 'D',
+@case('D231', 'The proposals in progress are one window beside Fuel and on the Map alone (SOG-0224): from the schema-2 document the window shows the detail of the open row (Fuel’s `open`; on the Map alone with the list of the routes, beside Fuel without it: the list is Fuel’s) (route, distance, level, deviations) and the age of the computation; when the AIRAC cycle changed, the base changed or — a route over the NAT — the UTC day, it says « stale » with « Recompute » (the shared rule of Fuel, never the age alone); beside Fuel there is no « Choose » button (Fuel’s is the one)', 'D',
       tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='SOG-0224 refused (the user, 13 Nov 16:06: « je voulais pouvoir choisir et conserver le détail. Y a-t-il un souci à afficher la popup, comme pour les missions, sur la carte sidecar, switcher carte full, revenir, tout en conservant le statut ? »; the ergonomist’s specification: one object read by the side map AND the full Map, the same window; Fuel half 27dfbf758, fuel INTEGRATION § 3 bis): the window existed only on the Map alone, without the detail, the open row or the age')
 def d231(c):
@@ -7747,9 +7747,12 @@ def d231(c):
             c.ready('maps', sheet=True)
             c.js(_STATE_JS)
             c.until("() => !!window.__mp.S.alts && window.__mp.S.alts.list.length === 2 && !document.querySelector('.mp-alts').hidden", timeout=15000, what=f'{q}: the window of the proposals')
-            w = c.js("""() => { const e = document.querySelector('.mp-alts'), row = e.querySelector('.mp-al-row[data-shown="1"]'); return { shown: row ? +row.dataset.alt : null, detail: (e.querySelector('[data-altdetail]') || {}).textContent || '',
+            w = c.js("""() => { const e = document.querySelector('.mp-alts'), row = e.querySelector('.mp-al-row[data-shown="1"]'); return { rows: e.querySelectorAll('.mp-al-row').length, shown: row ? +row.dataset.alt : null, detail: (e.querySelector('[data-altdetail]') || {}).textContent || '',
               age: (e.querySelector('[data-altage]') || {}).textContent || '', stale: !!e.querySelector('[data-altstale]'), redo: !!e.querySelector('[data-altredo]'), take: !!e.querySelector('[data-alttake]') } }""")
-            c.eq(w['shown'], 1, f'{q}, {hours} h: the row Fuel kept open is the shown one', what=str(w))
+            if alone:
+                c.eq(w['shown'], 1, f'{q}, {hours} h: the row Fuel kept open is the shown one', what=str(w))
+            else:   # beside Fuel the list is Fuel’s, not repeated: only the detail of the open row (D126, the ergonomist’s reservation)
+                c.eq(w['rows'], 0, f'{q}, {hours} h: beside Fuel the window does not repeat the list of the routes', what=str(w))
             c.ok('402 NM' in w['detail'] and 'FL250' in w['detail'] and 'LFRS DCT X DCT Y LFML' in w['detail'], w['detail'], f'{q}: the detail of the open route (route, distance, level)')
             c.eq(w['take'], alone, f'{q}: « Choose this route » only on the Map alone', what=str(w))
             if stale:

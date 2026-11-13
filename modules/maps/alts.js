@@ -442,7 +442,11 @@ export function altsCard() {
   const el = S?.altsEl;
   if (!el) return;
   const A = current(),
-    on = !!A && A.list.length > 0; // la MÊME fenêtre à côté de Carburant et sur la Carte seule (SOG-0224 : « comme pour les missions »)
+    has = !!A && A.list.length > 0,
+    // la MÊME fenêtre à côté de Carburant et sur la Carte seule (SOG-0224 : « comme pour les missions »), mais à côté de Carburant elle ne répète PAS la liste que Carburant montre : seulement le détail de la ligne
+    // ouverte (ou montrée), sans lui rien (D126)
+    shownRow = has ? A.list.find(a => a.index === S.altShow) || A.list.find(a => a.index === A.open) : null,
+    on = has && (!dual() || !!shownRow?.detail);
   // une Carte seule : le PREMIER itinéraire est montré et pris pour choix courant dès l'ouverture (tracé surligné, ligne marquée) : « Choisir cet itinéraire » est toujours actif et prend ce choix (SOG-0224 :
   // « inefficient » — le bouton était grisé tant qu'aucune ligne n'était touchée, sans un mot)
   if (on && A.mode === 'compute' && !A.list.some(a => a.index === S.altShow) && A.list.some(a => a.index === A
@@ -455,8 +459,9 @@ export function altsCard() {
   }
   const
     said = on && A.list.some(a => a.control.some(Boolean)), // le moteur dit ses tronçons : la clef du dessin
-    legend = on ? altsLegendRows() : [],
-    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-shown="${a.index === S.altShow ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${detailHtml(A)}${A.mode === 'compute' && !dual() ? `<button type="button" class="f-btn mp-al-take" data-alttake${A.list.some(a => a.index === S.altShow) ? '' : ' disabled'}>${esc(tt(TX.altTake))}</button>` : ''}` : '';
+    legend = on ? altsLegendRows() : [];
+  let html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-shown="${a.index === S.altShow ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${detailHtml(A)}${A.mode === 'compute' && !dual() ? `<button type="button" class="f-btn mp-al-take" data-alttake${A.list.some(a => a.index === S.altShow) ? '' : ' disabled'}>${esc(tt(TX.altTake))}</button>` : ''}` : '';
+  if (on && dual()) html = `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${detailHtml(A)}`;
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
 }
