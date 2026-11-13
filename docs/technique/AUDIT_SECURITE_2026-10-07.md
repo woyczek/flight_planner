@@ -1027,6 +1027,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 175 | Little Navmap sheets: "Export the sheets" writes only (e6811d642, SOG-0023); the report's families follow the company of the opened report (fec39491b, SOG-0041) | acceptable |
 | 176 | The registry reader bounded and "not read" beyond 500 files (81148257a, audit 174 notes) | the 500-file limit acceptable; one defect to fix (identifier cut to 12 against the 40 of the plan) |
 | 177 | The registry identifier kept at 40 characters, shortened on screen only (ae9df7beb): the fix of 176 | closed |
+| 178 | The morning of 13 November: the Missions sheet's summary and the family / subtype lists (67e2e93ac SOG-0291, 7709e99b1 SOG-0292); the V2 registry index attaching an entry under a former number (1db36bcb8, 3dafa9d33, SOG-0289) | acceptable for the display; one defect proved (absorption loses data) |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2626,6 +2627,30 @@ today): a registry of two lines with identifiers of 14 characters sharing their 
 for the eye only (`shown`), the whole identifier in a `title` attribute passed through `esc`. The probe of 176 replayed on the real modules
 (the four lines, then with a 52-character identifier): `former []`, `dup []`, `applyPlan` leaves every identifier as it was and removes
 no line. Case N45 (two 14-character identifiers sharing their first 12, `X_CO/old1` and `old2`: plan then application) green, N44 green.
+
+**178. The morning of 13 November — display acceptable; one defect proved in the V2 index.** *Summary (67e2e93ac).* `m.summary` is always a string
+(`String(d.summary ?? '').trim()` in the reader); the first page shows `sumCut()` of it (600 characters, cut at a word) through `esc`, the
+button is a constant, the full text goes through `esc` in the Detail; the old `title` attribute (the whole summary) is gone. *Lists
+(7709e99b1).* The family label is the table's letter (`LETTERS`, `themeOf`: keys are upper-case and `String(code).toUpperCase()` can never
+reach an inherited property), else one capital taken by `^([A-Z])-\d` from the identifiers, then `familyText` (already escaped on output); the
+subtype list is built from the registry's own values (the reader already cuts them to 40, the list to 60), each one `esc`ed in the
+`value` and the label, the select's `data-k` is a constant, a chosen value is only compared by `===`; a family change clears the subtype
+and redraws one fixed container. *Notes.* (1) The Detail shows a summary whole whatever its length (the reader does not bound it, unlike
+the 2,000 characters of the other reader at line 126), a heavy paragraph and not an injection; bound it in `readMission` to the same 2,000
+when convenient. (2) `slice(0, 60)` / `slice(0, SUM_MAX)` count UTF-16 units and may cut a surrogate pair: a replacement sign at worst.
+Cases N46 and N47 green. *V2 index (1db36bcb8, 3dafa9d33).* The bounded key list per folder (`{ sig, keys }`) and the same-folder rule
+are sound (K219, K220 green; an entry of a real folder with another folder is never taken for a former number). **Defect (proved, a
+probe on the real page and index).** `attachFormer()` absorbs an old entry when it carries "nothing more", but `FORMER_SKIP` includes
+`USER_FIELDS` (status, notes, flight date, `request`), so what the user wrote on the old entry is not counted: the transfer to the line is
+done only if the line has no status, notes and flight date of its own, and nothing is kept otherwise. Two proofs: (a) a line `T-085` with
+`former_id: 85` and its own note, and an old entry `85` with another note and flight date and nothing else: the old entry is dropped and
+its note is lost (the line keeps only its own); (b) a pending order (status `ordered`, no folder, a `request`) whose identifier a mission
+file names in `former_id`: the order is absorbed and its `request` is gone, though `cleanup()` keeps pending orders. The identifier of a
+mission file is an untrusted input (any contributor to the missions folder), and since this commit the absorption runs at each opening
+and after each reading, not at the user's click. **Fix and counter-test.** Treat the user's fields as "more" when they would not be moved
+(the line has its own status, notes or flight date, or `request` is set): the entry is then kept, hidden and counted as the others; and
+never absorb a pending order (`status === 'ordered'` without files) — skip it before the test. Counter-test (red now): in K219's
+harness, seed (a) and (b) above and require that the old entry is still in the index (`supersededBy` set for (a)) and the order's `request` is intact.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
