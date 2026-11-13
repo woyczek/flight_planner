@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3b8af1a",
-  "fiches": 324,
+  "organisation": "60f355d",
+  "fiches": 326,
   "untranslated": 0,
   "priorities": 310
  },
@@ -829,6 +829,27 @@
    ]
   },
   {
+   "id": "pilote-carburant-vol-suivi",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; vol ; suivi",
+    "en": "Carburant ; vol ; suivi",
+    "de": "Carburant ; vol ; suivi",
+    "es": "Carburant ; vol ; suivi"
+   },
+   "items": [
+    {
+     "id": "SOG-0325",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données du vol : le QNH d'arrivée, l'ATIS (lettre, piste, QNH, vent) si le terrain est contrôlé, et l'altitude du terrain",
+     "en": "Flight data: arrival QNH, the ATIS (letter, runway, QNH, wind) when the aerodrome is controlled, and the field elevation",
+     "de": "Flugdaten: QNH am Ziel, die ATIS (Buchstabe, Piste, QNH, Wind) bei kontrolliertem Platz und die Platzhöhe",
+     "es": "Datos del vuelo: QNH de llegada, el ATIS (letra, pista, QNH, viento) si el aeródromo está controlado, y la elevación del campo"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant-et-fiches",
    "app": "pilote",
    "label": {
@@ -1224,6 +1245,15 @@
      "de": "Dem Flug folgen: eine Schaltfläche „Folgen“ auf der Karte und eine Tafel des laufenden Flugs",
      "es": "Seguir el vuelo: un botón «Seguir» en el Mapa y un tablero del vuelo en curso",
      "rank": 78
+    },
+    {
+     "id": "SOG-0326",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Direct sur instruction du contrôle : garder le trajet initial en violet, tracer le direct d'un autre trait",
+     "en": "Direct on ATC instruction: keep the initial route in purple, draw the direct with another line",
+     "de": "Direct auf Anweisung der Flugsicherung: die ursprüngliche Route violett behalten, den Direct anders zeichnen",
+     "es": "Directo por instrucción del control: mantener la ruta inicial en violeta, trazar el directo con otro trazo"
     }
    ]
   },

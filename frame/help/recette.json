@@ -2955,27 +2955,11 @@
     "Non, à reprendre (dis-moi quoi)"
    ],
    "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0050",
-   "fiche": "SOG-0253",
-   "app": "pilote",
-   "question": "Tours de piste sur la vue VFR : le sens n'est écrit nulle part, il n'est que dans le dessin des cartes VAC. Qui le saisit pour les 28 terrains ?",
-   "context": "AeroDB a lu les 28 cartes VAC du poste : le texte ne dit jamais main droite ou gauche ; le sens est dans les flèches (plein pour les avions, pointillé pour les hélicoptères). AeroDB prépare de toute façon le champ (sens et sorte d'aéronef par suite de points) ; la Carte sait déjà dessiner la flèche, noir pour la voilure fixe, vert pour la tournante. Reste à remplir : environ dix minutes par terrain à la main. Chaque saisie est marquée « interprété ». Ma recommandation : AeroDB regarde chaque carte et propose le sens ; tu vérifies d'un coup d'œil sur la Carte, terrain par terrain, pendant la recette — une erreur de lecture est possible, c'est pour cela que tu vérifies.",
-   "options": [
-    "AeroDB propose le sens d'après chaque carte, je vérifie sur la Carte",
-    "Je les saisis moi-même (dix minutes par terrain)",
-    "Seulement les terrains que j'utilise (je les nomme dans le texte)",
-    "Lecture automatique du dessin (1 à 2 jours, à revalider à chaque amendement)"
-   ],
-   "since": "2026-11-13",
    "state": "answered",
    "recommended": 0,
-   "choice": null,
-   "text": "par défaut, à gauche. il peut y avoir des tracés (rennes, nantes). à minima, l’altitude du tour de piste. d’ailleurs, dans les données de vol, il faut le qnh d’arrivée, l’information ATIS (lettre, piste, qnh, vents) si contrôlée, et l’altitude du terrain. Je cherche à faire un extracteur de tracés vers du xml.",
-   "at": "2026-11-13T14:49:23Z"
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-13T15:00:53Z"
   }
  ]
 }
