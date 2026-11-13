@@ -6689,7 +6689,6 @@ def d202(c):
     c.tap(f'{F.FUEL} [data-do="rcompute"]')
     c.until(f"document.querySelectorAll('{F.FUEL} [data-altlist] [data-alt]').length === 3", what='three proposals in Fuel')
     card = "() => { const k = document.querySelector('.mp-alts'); return { on: !!k && !k.hidden, rows: k ? k.querySelectorAll('[data-alt]').length : 0 } }"
-    c.wait(3000)      # leaving Fuel at once makes its own ATIS read fail on the unmounted screen (flightNetworks: « reading 'ctx' », modules/fuel/module.js, Features SOG, handed over): the user does not leave in 100 ms
     # 1. the Map alone shows the window; back to Fuel WITHOUT choosing: the proposals are still there
     c.js("() => { location.hash = '#maps' }")
     c.until("() => !!document.querySelector('.mp-alts:not([hidden]) [data-alttake]')", timeout=10000, what='the window of the proposed routes on the Map')
@@ -6703,7 +6702,6 @@ def d202(c):
     c.js("() => { document.querySelector('.mp-alts [data-alttake]').click(); return true }")
     c.until(f"!!document.querySelector('{F.FUEL} [data-rtaken]')", timeout=12000, what='Fuel says the route is taken')
     c.eq(c.count(f'{F.FUEL} [data-routealts] [data-alt]'), 0, 'no proposal left in Fuel', what='proposals in Fuel')
-    c.wait(3000)      # (same reason as above: Fuel is left after its own reads)
     c.js("() => { location.hash = '#maps' }")
     c.wait(2500)
     c.eq(c.js(card), {'on': False, 'rows': 0}, 'back on the Map: no window, no proposal', what='window')
@@ -7525,3 +7523,16 @@ def d223(c):
     c.js("() => { window.dispatchEvent(new CustomEvent('route-point-hover', { detail: { id: 'NOPE' } })); return true }")
     c.wait(600)
     c.eq(c.js("() => window.__ring.length"), 0, 'an unknown id draws nothing', what='ring')
+
+
+
+@case('D224', 'A procedure read from Little Navmap says so where it is chosen on the Map: a warning line under the hint of the choose pane (source, personal use) as soon as one listed row comes from Little Navmap, none otherwise', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0210 refused (the user, 13 Nov: « pas de warn qui dit que la procédure vient de little nav map ? »; the ergonomist: said where it is chosen and where it is seen, source, personal use): Fuel says it (F203); the choose pane of the Map only tagged the row')
+def d224(c):
+    lnm = dict(_CH_FILE, procedures=[dict(p, status='lnm') if i == 0 else p for i, p in enumerate(_CH_PROCS)])
+    _ch_open(c, {}, file=lnm)
+    line = "() => { const e = document.querySelector('.mp-ch-lnm'); return e ? e.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim() : null }"
+    c.eq(c.js(line), norm(tx(M, 'procLnmWarn', c.lang)), 'the choose pane says that a procedure comes from Little Navmap (source, personal use)', what='warning')
+    _ch_open(c, {}, file=_CH_FILE)
+    c.eq(c.js(line), None, 'no line when no row comes from Little Navmap', what='warning')

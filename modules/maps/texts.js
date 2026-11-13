@@ -428,6 +428,11 @@ export const TX = {
   // procédures choisies (V3_SPECIFICATION § 10.20) : état de la source ajouté au libellé du tracé, carte du terrain
   procDoubt: ['à vérifier', 'to be checked', 'zu prüfen', 'por verificar'],
   procX: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
+  procLnmWarn: ['Une procédure de la liste est lue de Little Navmap : source locale, usage personnel.',
+    'A procedure of the list is read from Little Navmap: local source, personal use.',
+    'Ein Verfahren der Liste wird aus Little Navmap gelesen: lokale Quelle, persönliche Nutzung.',
+    'Un procedimiento de la lista se lee de Little Navmap: fuente local, uso personal.'
+  ],
   procLnm: ['Little Navmap, local', 'Little Navmap, local', 'Little Navmap, lokal', 'Little Navmap, local'],
   // procédure périmée : le seul symbole « ⌛ » (décision du 29 octobre), jamais le mot ; son sens dans la légende et l'infobulle
   procOutdated: ['Lue sous un cycle antérieur', 'Read under an earlier cycle', 'Unter einem früheren Zyklus gelesen',

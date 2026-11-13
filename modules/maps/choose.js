@@ -444,7 +444,8 @@ function summaryHtml(C) {
 }
 /** Le corps de la feuille : la consigne, la sélection, les groupes du côté, « Terminer ». */
 function bodyHtml(C) {
-  return `<div class="mp-ch"><p class="f-muted mp-ch-hint">${esc(tt(TX.chHint))}</p>${summaryHtml(C)}${FAMS[C.side].map(f => groupHtml(C, f)).join('')}<button type="button" class="f-btn primary mp-ch-done" data-done="1">${esc(tt(TX.chDone))}</button></div>`;
+  const lnm = C.model.rows.some(it => it.label?.src === 'lnm'); // une procédure lue de Little Navmap le dit là où on la choisit (SOG-0210)
+  return `<div class="mp-ch"><p class="f-muted mp-ch-hint">${esc(tt(TX.chHint))}</p>${lnm ? `<p class="mp-ch-lnm" role="note">${esc(tt(TX.procLnmWarn))}</p>` : ''}${summaryHtml(C)}${FAMS[C.side].map(f => groupHtml(C, f)).join('')}<button type="button" class="f-btn primary mp-ch-done" data-done="1">${esc(tt(TX.chDone))}</button></div>`;
 }
 /** (Re)dessine le contenu de la feuille ; écrit seulement si le HTML change (openData). */
 export function chooseRender() {
