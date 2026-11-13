@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "43b4fa4",
-  "fiches": 287,
+  "organisation": "a6c6d93",
+  "fiches": 292,
   "untranslated": 0,
   "priorities": 243
  },
@@ -1964,6 +1964,36 @@
      "en": "Airline: the mission editor in V3",
      "de": "Airline: the mission editor in V3",
      "es": "Airline: the mission editor in V3"
+    },
+    {
+     "id": "SOG-0288",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions et Registre : la recherche lit aussi le contenu des missions",
+     "en": "Missions and Registry: search also reads the content of missions",
+     "de": "Missionen und Register: die Suche liest auch den Inhalt der Missionen",
+     "es": "Misiones y Registro: la búsqueda lee también el contenido de las misiones"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-compagnie-missions-v2",
+   "app": "compagnie",
+   "label": {
+    "fr": "Compagnie ; missions ; V2",
+    "en": "Compagnie ; missions ; V2",
+    "de": "Compagnie ; missions ; V2",
+    "es": "Compagnie ; missions ; V2"
+   },
+   "items": [
+    {
+     "id": "SOG-0289",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Doublons de missions : « 85 » à côté de T-085 — les anciens numéros de l'index de la V2",
+     "en": "Duplicate missions: old numbers left in the V2 index",
+     "de": "Doppelte Missionen: alte Nummern im V2-Index",
+     "es": "Misiones duplicadas: números antiguos en el índice de la V2"
     }
    ]
   },
@@ -2086,6 +2116,36 @@
      "es": "Cambiar una misión de compañía (una a una o en lote)",
      "rank": 185,
      "test": true
+    },
+    {
+     "id": "SOG-0291",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions › synthèse : le résumé en entier, distinct de la description",
+     "en": "Missions summary: the short description in full, apart from the long one",
+     "de": "Missionsübersicht: die Kurzbeschreibung vollständig, getrennt von der langen",
+     "es": "Síntesis de misión: el resumen entero, aparte de la descripción"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-compagnie",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; Compagnie",
+    "en": "Missions ; Compagnie",
+    "de": "Missions ; Compagnie",
+    "es": "Missions ; Compagnie"
+   },
+   "items": [
+    {
+     "id": "SOG-0292",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Familles : la lettre de l'identifiant dans les listes de choix, et le sous-type",
+     "en": "Families: the identifier letter in the choice lists, and the subtype",
+     "de": "Familien: der Kennbuchstabe in den Auswahllisten, und der Untertyp",
+     "es": "Familias: la letra del identificador en las listas, y el subtipo"
     }
    ]
   },
@@ -2108,6 +2168,27 @@
      "de": "PHP-Webdienst der Website (derzeit kein PHP-Hosting): Flotte und Logbuch als JSON, Anmeldung mit dem Website-Konto, die Website als Transport; GitHub-Anmeldung ohne Token",
      "es": "Servicio web PHP del sitio (sin alojamiento PHP por ahora): flota y diario en JSON, inicio de sesión con la cuenta del sitio, el sitio como transporte; inicio de sesión GitHub sin token",
      "rank": 102
+    }
+   ]
+  },
+  {
+   "id": "compagnie-v2-missions",
+   "app": "compagnie",
+   "label": {
+    "fr": "V2 ; missions",
+    "en": "V2 ; missions",
+    "de": "V2 ; missions",
+    "es": "V2 ; missions"
+   },
+   "items": [
+    {
+     "id": "SOG-0290",
+     "kind": "feature",
+     "state": "later",
+     "fr": "V2 : « éditer une mission » ne fait plus rien",
+     "en": "V2: editing a mission does nothing",
+     "de": "V2: Mission bearbeiten tut nichts",
+     "es": "V2: editar una misión no hace nada"
     }
    ]
   },

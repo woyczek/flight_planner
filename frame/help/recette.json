@@ -2475,21 +2475,6 @@
    "since": "2026-11-12",
    "state": "todo",
    "recommended": 0
-  },
-  {
-   "id": "Q-0040",
-   "fiche": "SOG-0287",
-   "app": "compagnie",
-   "question": "Éditeur de missions en V3 : la maquette te va-t-elle ? (modules/missions/maquette/ : editeur_cadre_1280.png, editeur_lieux_1280.png, et les deux mêmes au 390)",
-   "context": "Six étapes reprises du pas à pas de la V2 : Cadre, Équipes, Lieux, Récit, Risques, Chronologie et cartes. Au téléphone une étape à la fois ; à l'écran large les étapes à gauche, le formulaire au centre, l'aperçu de la fiche et « À compléter » à droite. « Enregistrer » écrit sur l'appareil, la mission part avec l'envoi groupé. Restent en V2 : la commande à ChatGPT, les exports PDF, l'arbre YAML, le studio cartographique. Pas de code avant ta réponse.",
-   "options": [
-    "Oui, on code sur cette maquette",
-    "Oui, avec mes remarques (dans le texte)",
-    "Non, à reprendre (dis-moi quoi)"
-   ],
-   "since": "2026-11-13",
-   "state": "todo",
-   "recommended": 0
   }
  ]
 }
