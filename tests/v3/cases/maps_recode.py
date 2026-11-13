@@ -2343,7 +2343,8 @@ def d85(c):
     rw = sorted(x['key'][4:].split('@')[0] for x in placed if x['rank'] == 'runway')
     c.eq(rw, ['14L', '14R', '32L', '32R'], 'every runway of LFBO has its number at its threshold (rank 2)', what='runway numbers')
     navs = sorted(x['key'].split('@')[0] for x in placed if x['rank'] == 'navaid')
-    c.eq(navs, ['TBN', 'TBS', 'TD', 'TOU'], 'the threshold DMEs and TOU have their boxes (rank 3), before the procedure and the route', what='beacon boxes')
+    # SOG-0319: the runway number is reserved as the whole sign it is drawn (16 px high), no longer a narrower box; a beacon whose box would sit under a sign is dropped (a hidden beacon costs less than a cut number)
+    c.ok(set(navs) <= {'TBN', 'TBS', 'TD', 'TOU'} and {'TBN', 'TOU'} <= set(navs), str(navs), 'the threshold DMEs and TOU have their boxes (rank 3) as far as the signs of the runway numbers leave room, before the procedure and the route')
     proc = [x for x in placed if x['rank'] == 'procedure']
     c.ok(bool(proc), f'{proc}', 'the procedure’s name is written')
     hit = lambda r, q: r['x0'] < q['x1'] and r['x1'] > q['x0'] and r['y0'] < q['y1'] and r['y1'] > q['y0']
@@ -7343,3 +7344,50 @@ def d216(c):
     c.shot('D216_standard_fallback_delivered.png')
     c.context.unroute(tiles)
     c.errors[:] = [e for e in c.errors if 'opentopomap' not in e.lower() and 'Failed to load resource' not in e and 'ERR_FAILED' not in e]
+
+
+
+_RWY_SIGN_JS = r"""async () => { const P = await import('/modules/maps/procs.js'), cv = document.createElement('canvas'); cv.width = 400; cv.height = 400; const raw = cv.getContext('2d'), signs = [];
+  const proto = CanvasRenderingContext2D.prototype, o = proto.fillRect;
+  proto.fillRect = function (x, y, w, h) { if (this === raw && this.fillStyle === '#000000') signs.push({ x0: x, y0: y, x1: x + w, y1: y + h }); return o.call(this, x, y, w, h) };
+  const w = { a: { x: 200, y: 200 }, b: { x: 200, y: 176 }, name: '14R', col: '#d6173f', lw: 2 };
+  const pl = window.SiaAero.placer(), label = { x0: 213.5, y0: 203, x1: 330, y1: 219 };   // the aerodrome’s name beside the threshold: it touches the edge of the sign, not the narrow box the old code reserved
+  pl.add(label);
+  raw.fillStyle = '#fff'; raw.fillRect(0, 0, 400, 400); raw.fillStyle = '#c9d4e3'; raw.fillRect(label.x0, label.y0, label.x1 - label.x0, label.y1 - label.y0); raw.fillStyle = '#1d3557'; raw.font = '700 11px Arial'; raw.fillText('LFBO Toulouse Blagnac', label.x0 + 4, label.y0 + 12);
+  signs.length = 0;
+  try { P.reserveRunways(raw, [w], pl); P.drawRunways(raw, [w], pl) } finally { proto.fillRect = o }
+  const sg = signs[0] || null, hit = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+  return { sg, over: sg ? hit(sg, label) : null, n: signs.length, png: cv.toDataURL('image/png') } }"""
+
+
+@case('D217', 'The runway number is a whole sign that the aerodrome’s name never cuts: the place reserved for it is the sign itself (not a narrower box), and when that place is taken the whole sign moves (box and text together) to a free place beside the threshold', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0319 (the user, 13 Nov, capture of LFBO: « marqueur de piste décalé, avec police réduite, c’est presque ça. bouger tout le cartouche dans ce cas là »; the ergonomist: when it must move, the whole sign moves, never cut by another label): the box reserved in the collision pass was the text’s width by 14 px while the sign drawn is 8 px wider and 16 high, so the aerodrome’s name could be placed over the edge of the sign')
+def d217(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js(_RWY_SIGN_JS)
+    c.eq(r['n'], 1, 'the runway number is drawn, once', what=str({k: v for k, v in r.items() if k != 'png'}))
+    c.eq(r['over'], False, 'the sign does not touch the aerodrome’s name: the whole sign went to a free place', what=str({k: v for k, v in r.items() if k != 'png'}))
+    import base64
+    (ROOT / 'tests/v3/shots/D217_standard_runway_sign_delivered.png').write_bytes(base64.b64decode(r['png'].split(',')[1]))
+
+
+
+@case('D218', 'A flight aerodrome seen at the ground zoom with no ground file says so in one line (once per aerodrome) instead of showing nothing: « taxiways of LFPO: no ground data »; no line while the ground is being read or when it is drawn', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0319 (the user, 13 Nov: « plus de TWY (cf screenshot LFPO) », capture of LFBO whose ground was never built): the layer draws nothing and the screen said nothing; the ergonomist: say in one line why the taxiways are not drawn')
+def d218(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    _ground_open(c, aerodb=False)
+    c.js("() => { window.__mp.S.ctx.aerodb.ground = async () => null; return true }")      # a published ground file that does not exist for this aerodrome
+    _ground_at(c, 15, 1500)
+    want = tx(M, 'gAbsent', c.lang).replace('{icao}', 'LFPO')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", norm(want), timeout=8000, what='the screen says that the aerodrome has no ground data')
+    n = c.js("(w) => (window.__notes || []).filter(n => n.includes(w)).length", want.split(' ')[0])
+    c.eq(n, 1, 'once for this aerodrome', what='notes')
+    # with a ground file the line is not said
+    c.js("(txt) => { window.__notes.length = 0; return true }", '')
+    _ground_open(c)
+    _ground_at(c, 15, 1500)
+    c.eq(c.js("() => (window.__notes || []).filter(n => /LFPO/.test(n) && /(Rollw|rodaje|taxiways|circulation)/i.test(n)).length"), 0, 'no line when the ground is drawn', what='notes')

@@ -863,21 +863,38 @@ export function arrowOf(toC, rw, list, magVar, col) {
     col
   };
 }
-/** Place du numéro d'un vecteur de seuil : en queue, derrière le seuil (la police du dessin). */
-function numBox(ctx, w) {
+/** Les places du numéro d'un vecteur de seuil (SOG-0319) : le CARTOUCHE entier, tel qu'il est dessiné (blanc sur noir, 16 px de haut, le texte plus 8 px de large, 16 px au moins), liseré d'un pixel
+ *  compris — pas la boîte plus étroite de l'ancien dessin, que le nom du terrain pouvait déborder ; d'abord en queue, derrière le seuil, puis plus loin derrière, puis de chaque côté : quand la
+ *  première est prise, c'est tout le cartouche (fond et texte ensemble) qui se déplace à la suivante. Chaque place porte son centre (cx, cy). */
+function numPlaces(ctx, w) {
   const dx = w.b.x - w.a.x,
     dy = w.b.y - w.a.y,
     len = Math.hypot(dx, dy) || 1,
-    nx = w.a.x - dx / len * 11,
-    ny = w.a.y - dy / len * 11;
-  ctx.font = `${(w.lw || 2) > 2.5 ? 700 : 600} 11px Arial,sans-serif`;
-  const tw = ctx.measureText(w.name).width;
-  return {
-    x0: nx - tw / 2 - 1,
-    y0: ny - 7,
-    x1: nx + tw / 2 + 1,
-    y1: ny + 7
-  };
+    ux = dx / len,
+    uy = dy / len;
+  ctx.font = '700 11px Arial,sans-serif';
+  const bw = Math.max(16, ctx.measureText(w.name).width + 8),
+    side = bw / 2 + 11;
+  return [
+    [11, 0],
+    [27, 0],
+    [14, side],
+    [14, -side],
+    [30, side],
+    [30, -side]
+  ].map(([back, lat]) => {
+    const cx = w.a.x - ux * back - uy * lat,
+      cy = w.a.y - uy * back + ux * lat;
+    return {
+      x0: cx - bw / 2 - 1,
+      y0: cy - 9,
+      x1: cx + bw / 2 + 1,
+      y1: cy + 9,
+      cx,
+      cy,
+      bw
+    };
+  });
 }
 /** Réserve dans la passe de collision la place des numéros de piste avant les balises (l'utilisateur, 30/10 : « a minima le numéro
  *  de piste au seuil » ; une balise cachée coûte moins qu'une piste muette) : w.num = la place prise, ou false. */
@@ -889,7 +906,7 @@ export function reserveRunways(ctx, arrows, pl) {
     rank: 'runway',
     key: `rwy:${w.name}@${Math.round(w.a.x)},${Math.round(w.a.y)}`,
     anchor: w.a,
-    boxes: [numBox(ctx, w)]
+    boxes: numPlaces(ctx, w)
   }) || false;
   ctx.restore();
 }
@@ -937,27 +954,21 @@ export function drawRunways(ctx, arrows, pl = null) {
     ctx.font = `${lw > 2.5 ? 700 : 600} 11px Arial,sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const nx = w.a.x - ux * 11,
-      ny = w.a.y - uy * 11,
-      tw = ctx.measureText(w.name).width;
-    // dans la passe de collision de la carte : un numéro qui n'a pas de place n'est pas écrit (le vecteur reste) ; réservé d'avance
-    // (reserveRunways), il est écrit à sa place
+    // le cartouche entier à la place prise (réservée d'avance par reserveRunways, sinon demandée ici à la passe de collision) ; sans placeur, derrière le seuil
     if (w.num === false) continue;
-    if (!w.num && pl && !MapsRender.kit.ask(pl, {
-        layer: 'points',
-        rank: 'runway',
-        key: `rwy:${w.name}@${Math.round(w.a.x)},${Math.round(w.a.y)}`,
-        anchor: w.a,
-        boxes: [{
-          x0: nx - tw / 2 - 1,
-          y0: ny - 7,
-          x1: nx + tw / 2 + 1,
-          y1: ny + 7
-        }]
-      })) continue;
+    const place = w.num || (pl ? MapsRender.kit.ask(pl, {
+      layer: 'points',
+      rank: 'runway',
+      key: `rwy:${w.name}@${Math.round(w.a.x)},${Math.round(w.a.y)}`,
+      anchor: w.a,
+      boxes: numPlaces(ctx, w)
+    }) : numPlaces(ctx, w)[0]);
+    if (!place) continue; // sans place, le numéro n'est pas écrit (le vecteur reste)
+    const nx = place.cx,
+      ny = place.cy;
     // le numéro de piste : blanc sur noir, comme sur le tarmac (SOG-0297 : le code couleur du terrain, pas celui du design)
     ctx.font = `700 11px Arial,sans-serif`;
-    const bw = Math.max(16, tw + 8),
+    const bw = place.bw,
       raw = ctx.canvas?.getContext?.('2d') ||
       ctx; // le contexte brut : le contexte thématique de la Carte remplacerait le noir pur par l'encre du design et foncerait un blanc trop proche du fond (render.js themed)
     raw.fillStyle = '#000000';

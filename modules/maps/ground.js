@@ -248,6 +248,18 @@ const stroke = (c, pts, w, col) => {
   c.stroke();
 };
 const inside = (pts, W, H) => pts.some(p => p.x > -40 && p.x < W + 40 && p.y > -40 && p.y < H + 40);
+/** Le sol d'un terrain du vol que la vue montre n'a pas de fichier (ou sa lecture a échoué) : l'écran le dit en une ligne, une fois par terrain, au lieu de ne rien montrer (SOG-0319 : « plus de
+ *  taxiways »). Pas pendant une lecture en cours, ni quand le lanceur peut encore la faire (autoRead) et ne s'est pas prononcé. */
+function sayAbsent(icao) {
+  const g = G(),
+    st = g.st.get(icao)?.state,
+    cannot = typeof S.ctx?.aerodb?.fetchGround !== 'function';
+  if ((g.said ||= new Set()).has(icao) || st === 'reading' || st === 'ok' || !(cannot || g.auto.has(icao))) return;
+  g.said.add(icao);
+  S.ctx.notify?.(tt(TX.gAbsent, {
+    icao
+  }), 'warn');
+}
 /** La couche de ce dessin : { paint(c, pl), shown } ou null (pas de terrain du vol, zoom trop petit, rien de lu). toC : (lat, lon) → { x, y }
  *  de la vue. Le surlignement d'une piste se calcule de sa fiche (runwayVector), pas des vecteurs tracés : il ne dépend pas de runwayZoom. */
 /** Le bouton « chercher une voie, un poste » de la carte (SOG-0297) : visible quand la vue montre le départ ou l'arrivée du vol, de plus près que le zoom 11, et que le sol peut être lu ; il porte le terrain
@@ -318,7 +330,10 @@ export function groundLayout(toC, zReal, W, H) {
       // seulement un terrain que cette vue montre (celui d'à côté ne se lit pas parce qu'on regarde l'autre)
       const at0 = (S.route?.points || []).find(p => String(p.id || '').toUpperCase() === icao) || (String(S.route?.altn?.id || '')
         .toUpperCase() === icao ? S.route.altn : null);
-      if (at0 && inside([toC(at0.lat, at0.lon)], W, H)) autoRead(icao);
+      if (at0 && inside([toC(at0.lat, at0.lon)], W, H)) {
+        autoRead(icao);
+        sayAbsent(icao);
+      }
     }
   }
   if (!items.length && !(g.hl || '').startsWith('rwy:')) return null;

@@ -638,6 +638,12 @@ export const TX = {
     'Die Vorbereitung der Mission {id} abbrechen? Das Fenster, die gewählte Karte und die von der Mission vorgegebenen Punkte werden entfernt (Ihre anderen Punkte bleiben).',
     '¿Abandonar la preparación de la misión {id}? Se quitan la ventana, el mapa elegido y los puntos que impone la misión (sus otros puntos se quedan).'
   ],
+  // le sol d'un terrain sans fichier (SOG-0319)
+  gAbsent: ['Voies de circulation de {icao} : pas de données du sol (le bouton « Sol » de la fiche du terrain les lit)',
+    'Taxiways of {icao}: no ground data (the « Ground » button of the aerodrome card reads them)',
+    'Rollwege von {icao}: keine Bodendaten (die Schaltfläche „Boden“ der Flugplatzkarte liest sie)',
+    'Calles de rodaje de {icao}: sin datos del suelo (el botón «Suelo» de la ficha del aeródromo los lee)'
+  ],
   // le fond topographique (SOG-0300)
   topoDown: ['Fond topographique indisponible : fond de repli', 'Topographic base unavailable: fallback base',
     'Topografischer Hintergrund nicht verfügbar: Ersatzhintergrund', 'Fondo topográfico no disponible: fondo de reserva'
