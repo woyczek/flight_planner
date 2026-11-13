@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 198,
-  "verdicts": 124
+  "verdicts": 125
  },
  "apps": [
   "pilote",
@@ -349,13 +349,9 @@
    },
    "test": "Recharge la page. Carte, une procédure tracée (SID, STAR ou approche) : chaque virage de plus de 45° est arrondi en arc ; un virage de 45° ou moins garde son angle. Regarde une arrivée qui tourne franchement (par exemple une STAR de LFBD ou de LFRS).",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-13T11:59:17Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "ne voit rien. cf. capture. « plus de 45° » en fait.",
-    "at": "2026-11-13T09:29:30Z"
-   }
+   "at": "2026-11-13T15:02:14Z"
   },
   {
    "id": "SOG-0094",
@@ -2865,10 +2861,10 @@
     "de": "Einen Fehler oder Wunsch direkt in der Anwendung melden",
     "es": "Señalar un fallo o una petición desde la aplicación"
    },
-   "test": "Relance le lanceur (nouveaux verbes), recharge la page. Aide › Signaler : choisis une sorte, écris un titre et un texte, joins une capture, « Envoyer » : le message dit que c'est écrit sur ce poste ; le signalement apparaît dessous dans « Mes signalements ». Je le lis à mon prochain tour et j'en fais une fiche : dis-moi ensuite si elle est arrivée. Le contexte « Noté tout seul » ne porte pas encore la version : c'est demandé.",
+   "test": "Relance le lanceur (nouveaux verbes), recharge la page. Depuis un écran quelconque (Carburant, par exemple), Aide › Signaler : le cadre « Noté tout seul » nomme cet écran, la langue et la version. Choisis une sorte, écris un titre et un texte, joins une capture, « Envoyer » : le message dit que c'est écrit sur ce poste ; le signalement apparaît dessous dans « Mes signalements ». Je le lis à mon prochain tour et j'en fais une fiche : dis-moi si elle est arrivée.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-13T14:44:16Z"
+   "delivered": "2026-11-13T15:02:50Z"
   },
   {
    "id": "SOG-0317",

@@ -1008,8 +1008,7 @@
      "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
      "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
      "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada",
-     "rank": 57,
-     "test": true
+     "rank": 57
     },
     {
      "id": "SOG-0139",
