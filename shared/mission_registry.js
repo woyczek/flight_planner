@@ -127,7 +127,7 @@
   const keyOf = m => `${m.folder || ''}|${m.id || m.title || ''}`;
   // missions de l'index sans dossier sur le disque (registre périmé repris, mission retirée entre deux lancements) :
   // dossiers présents demandés au lanceur à l'ouverture ; ces missions sont marquées « fichier absent », comme après une
-  // relecture du dossier, et « Nettoyer le registre (n) » les retire — sans dossier autorisé ni purge de l'index dans
+  // relecture du dossier, et « Retirer les missions sans fichier (n) » les retire — sans dossier autorisé ni purge de l'index dans
   // Paramètres › Maintenance › Caches, où personne ne pensait à aller
   let servedChecked = false; // dossiers présents lus auprès du lanceur (nettoyage possible sans dossier autorisé)
   /** Marque « fichier absent » les missions dont le dossier n'est pas servi par le lanceur, puis redessine la page. */
@@ -1134,7 +1134,7 @@
       stored = new Set(found.map(e => e.id).filter(Boolean));
     reg.missions.forEach(m => {
       // entrée sans dossier (fichiers ajoutés de l'extérieur, mission reçue sans dossier autorisé) dont la mission est
-      // rangée : doublon, retiré par « Nettoyer le registre » (statut, notes et date de vol passent à la mission rangée)
+      // rangée : doublon, retiré par « Retirer les missions sans fichier » (statut, notes et date de vol passent à la mission rangée)
       m.missingFile = m.source === 'dossier' ? !seen.has(keyOf(m)) : !m.folder && m.status !== 'ordered' && stored.has(m.id);
     });
     attachFormer(); // anciens numéros (SOG-0289)
@@ -1292,9 +1292,10 @@
     const crMission = r => window.MissionVocab?.parseCrId?.(r?.metadata?.missionId)?.mission || normMissionId(r?.metadata
       ?.missionNumber || '');
     for (const m of reg.missions) {
-      const mine = m.id ? all.filter(({
+      // les CR écrits sous l'ancien numéro de la mission (former_id, SOG-0289) suivent la ligne à lettre : lecture seule, le registre des CR n'est pas touché
+      const mine = m.id && !m.supersededBy ? all.filter(({
         r
-      }) => crMission(r) === String(m.id)) : [];
+      }) => crMission(r) === String(m.id) || m.formerId && crMission(r) === m.formerId) : [];
       /** Durées d'un CR en minutes (vol, bloc, transits, temps sur zone) : MissionModel.computeStatistics. */
       const stats = r => {
         const s = window.MissionModel?.computeStatistics?.(r) || {};
@@ -1521,8 +1522,9 @@
     cb.dataset.icon = 'trash';
     // v2 : niveau Expert, sauf s'il y a des missions à retirer (registre périmé : à tous les niveaux)
     if (!missing) cb.dataset.minLevel = '4';
-    cb.textContent = t(['Nettoyer le registre ({n})', 'Clean up the registry ({n})', 'Register bereinigen ({n})',
-      'Limpiar el registro ({n})'
+    cb.textContent = t(['Retirer les missions sans fichier ({n})', 'Remove the missions without a file ({n})',
+      'Missionen ohne Datei entfernen ({n})',
+      'Quitar las misiones sin archivo ({n})'
     ], {
       n: missing
     });

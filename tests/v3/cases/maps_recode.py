@@ -6215,6 +6215,10 @@ _FORMER_STATE_JS = """async () => { await window.MissionIndex.ready; const R = w
     shown: R.get().missions.filter(R.matches).map(m => m.id), note: (document.getElementById('rgFormer') || {}).textContent || '' } }"""
 
 
+# the ledger of the reports of the bench: one report written under the number 89
+_FORMER_LEDGER_JS = r"""() => { localStorage.setItem('missionCoreLedger:v2', JSON.stringify({ text: ['missions:', '  - family: AIRLIFT', '    metadata:', "      missionNumber: '89'", '      date: 2026-10-05', ''].join('\n') })); return true }"""
+
+
 @case('K219', 'The registry of the V2 shows one mission under its lettered identifier when its index also holds the number it had before the renumbering: what was attached to the old number follows, an old entry carrying a field the line lacks is kept (and said), nothing else is purged', 'K',
       tags=('maps',), screens=False, designs=('standard',),
       rule='SOG-0289 (the user: « 85 est doublon de T-085 … vérifier lequel est le plus complet, fusionner »; the ergonomist, 13 Nov): an index entry whose id is the formerId of a registry line, and that is not itself a line, is attached to that line; its status, notes and flight date follow; a field it has and the line lacks keeps it (hidden from the list, counted « n anciennes entrées gardées, plus complètes »); never a purge')
@@ -6263,6 +6267,13 @@ def k_former(c):
     c.wait(1500)
     order = c.js("async () => { await window.MissionIndex.ready; return window.MissionIndex.all().filter(m => m.id === '88').map(m => ({ status: m.status, by: m.supersededBy || '', request: m.request })) }")
     c.eq(order, [{'status': 'ordered', 'by': '', 'request': {'serie': '88', 'text': 'bench order'}}], 'the pending order is intact, not attached to the line', what='order')
+    # 5. the reports written under the old number follow the line (read only: the ledger of the reports is not touched)
+    c.eq(c.js(_FORMER_SEED_JS, [['T-089', '89', 'Same title']]), 1, 'the bench index holds one renumbered line', what='index')
+    c.js(_FORMER_LEDGER_JS)
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.MissionRegistry && window.MissionRegistry.get().missions.length >= 1", timeout=15000, what='the registry is read a fifth time')
+    c.wait(1500)
+    c.eq(c.js("() => window.MissionRegistry.get().missions.map(m => [m.id, (m.reports || []).length])"), [['T-089', 1]], 'the report written under the old number is linked to the lettered line', what='reports')
     c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders (their own repositories) are not in the test tree
 
 
