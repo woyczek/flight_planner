@@ -289,3 +289,8 @@
 
 ## 13 November 2026 — the container breakpoint of the sheet is 850 px (SOG-0331)
 `@container (min-width: 900px)` became 850 on the four rules of the sheet (`.ms-evrow`, `.ms-edteam`, `.ms-edgrid`, `.ms-sheet`), by V3 Frame, a one-line exception to this module's file: at 1 100 px the whole left bar leaves the module 858 px and the second column was lost as the window grew (the « blinking » right column). Noreg A191 (generic rule), captures at 940 and 1 100 px: two columns. See `frame/design/DECISIONS.md`.
+- **13 Nov 2026 — SOG-0036, the series of a mission added from its file** (the user's answer to Q-0048: « Il faut garder
+  LETTRE-FAMILLE-NUM-SUFX […] on garde le nommage V2 »; Features SOG's counter-proposal kept). The series stays a NUMBER: `entryOfMission`
+  takes the file's `mission.series` (1 to 99999), else the family's current series (the largest of the registry, `seriesRows`), else
+  nothing — never the letter. Vocabulary: the final letter of an identifier, A to Y, is a flight linked to the mission without suffix
+  (« vol lié »), Z its organisation (« organisation »); never « variante ». N61 (red before).

@@ -2578,3 +2578,23 @@ def n60(c):
     c.ok('Premier inventé' in t and 'description: Second inventé' in t and 'Troisième inventé' in t and 'events:' not in t, t[t.find('timeline'):][:300],
          'the list kept, its two events and the added one')
     c.js(_REG_CLEAR)
+
+
+
+@case('N61', 'Missions › Registre: a mission added from its file gets a series — the file\'s, else the current series of its family; a number, '
+      'never the letter; a family without a series yet gets none', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0036, the user\'s answer to Q-0048 (13 Nov): « Il faut garder LETTRE-FAMILLE-NUM-SUFX […] on garde le nommage V2 » — the series '
+      'stays a number: the file\'s series, else the family\'s current one (Features SOG\'s counter-proposal, kept); invented X-7xx missions')
+def n61(c):
+    import yaml
+    texts = _REG_TEXTS + [['missions/X_REG/X-712A/missionX-712A.yaml', 'mission: { id: X-712A, type: TESTREG, series: 3 }\ntitle: Du dépôt douze\n']]
+    reg_open(c, texts=texts)
+    c.tap(f'{R} [data-do="regplan"]')
+    c.until(f"!!document.querySelector('{R} [data-regplan]')", what='the plan is shown')
+    c.tap(f'{R} [data-do="regwrite"]')
+    reg_wait_text(c, lambda t: 'X-712A' in t)
+    by = {m['id']: m for m in yaml.safe_load(reg_text(c))['missions']}
+    c.eq(by['X-712A'].get('series'), 3, 'the file\'s series', what='X-712A')
+    c.eq(by['X-710A'].get('series'), 7, 'no series in the file: the current series of its family (TESTREG: 7)', what='X-710A')
+    c.ok(by['X-711A'].get('series') in ('', None), by['X-711A'], 'a family without a series yet: none, never a letter')
+    c.js(_REG_CLEAR)

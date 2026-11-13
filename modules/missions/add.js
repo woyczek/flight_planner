@@ -22,7 +22,8 @@ export const LIMITS = Object.freeze({
   bytes: 1000000,
   missions: 200
 });
-/** L'identifiant d'une mission : « A-001A », « F-071 » (une lettre, trois chiffres, une lettre de variante ou rien). */
+/** L'identifiant d'une mission : « A-001A », « F-071 » (la lettre de la famille, trois chiffres, puis la lettre d'un vol lié — A à Y,
+ *  liés à la fiche sans suffixe — ou Z, l'organisation ; ou rien : SOG-0036, Q-0048, jamais « variante »). */
 export const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/;
 /** La famille d'une mission (mission.type) : « COMBAT », « MEDEVAC »… */
 export const FAMILY = /^[A-Z][A-Z0-9_]{1,23}$/;

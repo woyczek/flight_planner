@@ -1684,7 +1684,7 @@ async function regLoad(s) {
       if (f.why === 'late') f = await f.later;
       if (j.e) r.status.set(j.e.idx, f.why === 'missing' ? 'missing' : f.doc && MS.readMission(f.doc) ? 'ok' : 'unreadable');
       else {
-        const entry = f.doc ? RG.entryOfMission(f.doc, path) : null;
+        const entry = f.doc ? RG.entryOfMission(f.doc, path, undefined, RG.seriesRows(r.lines)) : null; // SOG-0036 : sa série
         if (entry && !ids.has(entry.id)) {
           ids.add(entry.id);
           r.found.push({
@@ -2320,7 +2320,8 @@ async function edSave(s) {
       module: 'missions'
     });
     const regErr = await edRegister(s, reg => {
-      if (e.mode !== 'edit' || !e.regId) return ED.regAdd(reg, RG.entryOfMission(doc, path));
+      if (e.mode !== 'edit' || !e.regId) return ED.regAdd(reg, RG.entryOfMission(doc, path, undefined, RG.seriesRows(RG.entries(
+        reg))));
       const list = Array.isArray(reg.missions) ? reg.missions : [],
         idx = cut(list[e.regIdx]?.id, 40) === e.regId ? e.regIdx : list.findIndex(x => cut(x?.id, 40) === e.regId);
       return ED.regEdit(reg, idx, e.regId, c, path);

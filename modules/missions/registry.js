@@ -5,7 +5,9 @@
 //
 //   entries(doc) → [{ idx, raw, row }] : une entrée par ligne du registre (idx : sa place dans doc.missions ; row : readRegistry).
 //   pathOf(row) → 'missions/<dossier>/<fichier>' ou '' (chemin refusé).
-//   entryOfMission(docMission, path) → l'entrée de registre d'une mission du dépôt (celle que « Mettre à jour » ajoute), null sinon.
+//   entryOfMission(docMission, path, now, rows) → l'entrée de registre d'une mission du dépôt (celle que « Mettre à jour » ajoute), null
+//     sinon ; sa série : celle du fichier, sinon la série en cours de sa famille dans `rows` (seriesRows), un nombre (SOG-0036, Q-0048).
+//   seriesRows(lines) → [{ family, series }] : les lignes du registre (entries) pour la série en cours d'une famille.
 //   planOf(doc, status, found) → { add, noFile, dup, former } : ce que « Mettre à jour le registre » ferait.
 //   applyPlan(doc, plan, now) → un nouveau document (l'ancien n'est pas touché).
 //   editEntry(doc, idx, id, fields, now) → { doc } | { error: 'stale'|'series'|'number' } : corriger titre, série, numéro, opération.
@@ -42,15 +44,27 @@ const numberOf = id => {
   return m ? +m[1] : null;
 };
 
+/** Les lignes du registre (entries) réduites à ce que la série en cours d'une famille demande (voir l'en-tête). */
+export const seriesRows = lines => (Array.isArray(lines) ? lines : []).map(e => ({
+  family: e?.row?.family,
+  series: e?.raw?.series
+}));
+
 /** L'entrée de registre d'une mission du dépôt (voir l'en-tête) : les champs que le registre sait lire, bornés ; rien d'autre. */
-export function entryOfMission(doc, path, now = new Date().toISOString()) {
+export function entryOfMission(doc, path, now = new Date().toISOString(), rows = []) {
   const row = MS.rowOfMission(doc, path);
   if (!row) return null;
+  // SOG-0036 (décision de l'utilisateur, Q-0048 : « on garde le nommage V2 ») : la série reste un NOMBRE — celle du fichier
+  // (mission.series), sinon la série en cours de sa famille (la plus grande du registre) ; '' quand la famille n'en a pas encore
+  const fs = +doc?.mission?.series,
+    fam = (Array.isArray(rows) ? rows : []).filter(r => r?.family === row.family).map(r => +r?.series).filter(n => Number.isInteger(n) &&
+      n > 0 && n <= 99999),
+    series = Number.isInteger(fs) && fs > 0 && fs <= 99999 ? fs : fam.length ? Math.max(...fam) : '';
   const m = MS.readMission(doc),
     e = {
       id: row.id,
       formerId: '',
-      series: '',
+      series,
       number: numberOf(row.id) ?? '',
       type: row.kind,
       family: row.family,
