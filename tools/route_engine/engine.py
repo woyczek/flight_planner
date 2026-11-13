@@ -13,6 +13,7 @@ from . import nat_layer     # SOG-0263
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
 RAD_FILE = None   # SOG-0081 : chemin de rad.json.gz posé par le travail du lanceur (data/route/rad.json.gz) ; None : à côté du module, comme RouteSim 2
+CLIMB_GATE_NM = 300   # SOG-0161 : au plus 300 NM de l'aérodrome pour un raccord que la montée atteint (sans SID lue)
 MONTHS = dict(zip('JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC'.split(),range(1,13)))
 
 def date_in(text):
@@ -385,6 +386,15 @@ class Nav:
             near=[(d,k) for d,k in near if d<=radius]
             gates,unreachable=self.terminal_gates(airport,isdep,dep if isdep else arr,g,incoming,terminal,radius,{k for d,k in near},self.nodes[b if isdep else a])   # SOG-0161
             near=[(d,k) for d,k in near if k not in unreachable]+gates
+            po=profile_options or {}
+            if po.get('speed_kt') and po.get('climb_fps' if isdep else 'descent_fps'):   # SOG-0161 : un raccord que la montée (la descente) ne peut pas atteindre n'en est pas un : la limite basse d'une voie haute (18 000 ft des routes J, 24 500 ft des Q) dépasse ce que 40 NM de montée atteignent ; sans SID lue, des raccords plus loin
+                rate,speed=po['climb_fps' if isdep else 'descent_fps'],po['speed_kt'];elev=float(self.ads[dep if isdep else arr].get('elev') or 0)
+                low=lambda k:min((e['lower'] for _,e in (g.get(k,[]) if isdep else incoming.get(k,[])) if isinstance(e.get('lower'),(int,float))),default=0)
+                reach=lambda d:elev+rate*d/speed*3600
+                if not any(reach(d)>=low(k) for d,k in near):
+                    other=self.nodes[b if isdep else a];have={k for d,k in near}
+                    wide=sorted((nm(self.nodes[airport],self.nodes[k])+nm(self.nodes[k],other),nm(self.nodes[airport],self.nodes[k]),k) for k in set(g)|set(incoming) if k not in have and k not in [a,b] and '|' not in k)
+                    near+=[(d,k) for _,d,k in wide if d<=CLIMB_GATE_NM and reach(d)>=low(k)][:6]   # les six les mieux placées (détour minimal), comme les portes FRA
             if not near: raise ValueError(f'Aucun point du réseau au FL{fl:03d} à moins de {radius:g} NM de {self.nodes[airport]["id"]}. Couverture ou niveau insuffisant.')
             for d,k in near:
                 ids=(self.nodes[airport]['id'],self.nodes[k]['id']) if isdep else (self.nodes[k]['id'],self.nodes[airport]['id'])
