@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carburant : le bloc Procédures (maquette SOG-0308)</title>
+<style>
+/* Maquette autonome (rien n'est lu ni écrit) : le DESSIN de l'ergonome du 13 nov. (fiche SOG-0308), tel quel ; données inventées du banc */
+:root{
+  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa; --card:#fff; --bg:#f3f4f6;
+  --ok:#1e7d32; --ok-bg:#e6f6ea; --warn:#7d4e00; --warn-bg:#fff4d1; --accent:#1a6fd8; --accent-bg:#eaf2fb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.note{background:#fffbe6;border-bottom:1px solid #f0d78c;padding:8px 16px;font-size:14px;color:#5c4a00}
+.note b{font-weight:600}
+.states{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.states a{font-size:13px;border:1px solid #e3c766;border-radius:14px;padding:3px 10px;color:#5c4a00;text-decoration:none;background:#fff}
+.states a[aria-current]{background:#5c4a00;color:#fff;border-color:#5c4a00}
+.top{display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);font-weight:700}
+.page{max-width:760px;margin:0 auto;padding:12px 16px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
+h2{font-size:18px;margin:0 0 6px}
+.side{border-top:1px solid var(--line);padding:10px 0}
+.side:first-of-type{border-top:0}
+.head{display:flex;align-items:center;gap:8px;min-height:44px}
+.head .fold{width:28px;min-height:44px;border:0;background:none;font-size:14px;cursor:pointer;color:var(--muted)}
+.head .name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.head .name b{margin-right:6px}
+.head .ad{color:var(--muted)}
+.sum{display:flex;align-items:flex-start;gap:8px;margin:0 0 0 36px;color:var(--ink)}
+.mark{flex:none;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;font-weight:700}
+.mark.ok{background:var(--ok-bg);color:var(--ok)}
+.mark.todo{background:var(--warn-bg);color:var(--warn)}
+.mark.old{background:var(--warn-bg);color:var(--warn)}
+.mark .w{position:absolute;left:-9999px}
+.rows{margin:6px 0 0 36px}
+.r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:8px 0;border-top:1px solid var(--soft)}
+.r:first-child{border-top:0}
+.r .lab{font-size:13px;color:var(--muted);grid-column:1}
+.r .val{grid-column:1;font-weight:600}
+.r .src{grid-column:1;font-size:13px;color:var(--muted)}
+.r .ch{grid-column:2;grid-row:1 / span 3}
+.r.warn{background:var(--warn-bg);border-radius:6px;padding:8px 10px;margin:4px 0}
+.r.warn .val{color:var(--warn)}
+.r .act{grid-column:1;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px}
+button,.btn{font:inherit;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.link{border:0;background:none;color:var(--accent);text-decoration:underline;padding:0 2px;min-height:32px}
+.list{grid-column:1 / -1;border:1px solid var(--line);border-radius:8px;margin:6px 0 2px;background:#fff;overflow:hidden}
+.list .it{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--soft);min-height:44px;align-items:center}
+.list .it:first-child{border-top:0}
+.list .it[aria-current]{background:var(--accent-bg);font-weight:600}
+.list .it .k{font-size:13px;color:var(--muted)}
+.list .it.tail .k{color:var(--warn)}
+.list .gh{padding:6px 12px;font-size:13px;color:var(--muted);background:var(--soft)}
+.foot{margin:6px 0 0 36px}
+.foot summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--muted)}
+.foot summary::before{content:'▸';width:20px;font-size:12px}
+.foot[open] summary::before{content:'▾'}
+.foot .ln{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:4px 0;font-size:14px}
+.empty{margin:6px 0 0 36px;color:var(--muted)}
+/* au téléphone, « Changer » ouvre une feuille du bas */
+@media (max-width:640px){
+  .rows,.sum,.foot,.empty{margin-left:0}
+  .list.sheet{position:fixed;left:0;right:0;bottom:0;margin:0;border-radius:12px 12px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.18);max-height:70vh;overflow:auto;z-index:5}
+  .list.sheet::before{content:attr(data-title);display:block;padding:12px;font-weight:600;border-bottom:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<div class="note"><b>Maquette SOG-0308</b> — le dessin de l'ergonome du 13 nov., rien n'est lu ni écrit ; vol inventé du banc. État montré :
+  <div class="states" id="states"></div></div>
+<div class="top">✈ Carburant et niveau</div>
+<main class="page"><section class="card" id="block"></section></main>
+<script>
+// Les sept états du dessin ; chaque état décrit les deux côtés (le côté ouvert est l'arrivée, sauf l'état « départ sans départ publié »)
+const S = {
+  complet: { label: 'Arrivée complète', open: 'arr' },
+  arriere: { label: 'Piste en vent arrière', open: 'arr' },
+  carte: { label: 'Approche par sa carte', open: 'arr' },
+  lnm: { label: 'Procédure de Little Navmap', open: 'arr' },
+  vide: { label: 'Rien de lu', open: 'arr' },
+  sansdepart: { label: 'Départ : piste sans départ publié', open: 'dep' },
+  atis: { label: 'ATIS d\'un réseau', open: 'arr' }
+};
+const cur = () => S[(location.hash || '#complet').slice(1)] ? (location.hash || '#complet').slice(1) : 'complet';
+const changing = { k: '' }; // la ligne dont la liste est ouverte (« Changer »)
+
+/** Une ligne : nom, valeur en mots, source en petit, UN geste « Changer » ; `list` : ce que « Changer » ouvre à sa place. */
+function row(k, lab, val, src, opt = {}) {
+  const open = changing.k === k;
+  return `<div class="r${opt.warn ? ' warn' : ''}" data-row="${k}"><span class="lab">${lab}</span><span class="val">${val}</span>${src ? `<span class="src">${src}</span>` : ''}${opt.act ? `<span class="act">${opt.act}</span>` : ''}<button class="ch" data-change="${k}">${open ? 'Fermer' : 'Changer'}</button>${open && opt.list ? `<div class="list${innerWidth <= 640 ? ' sheet' : ''}" data-title="${lab}">${opt.list}</div>` : ''}</div>`;
+}
+const it = (v, k, curr, tail) => `<div class="it${tail ? ' tail' : ''}"${curr ? ' aria-current="true"' : ''}><span>${v}</span><span class="k">${k}</span></div>`;
+
+function arrival(st) {
+  if (st === 'vide') return `<p class="empty">Aucune procédure lue pour LFML.</p><div class="empty"><button class="primary">Lire les procédures</button></div>`;
+  const tail = st === 'arriere',
+    rwy = tail ? row('rwy', 'Piste', '13R — arrière 12 kt · travers 1 kt', 'METAR de 11 h 48 Z, 310° / 12 kt', {
+      warn: true, act: '<button class="primary">Prendre la 31L (vent de face)</button>', list: rwyList('13R') })
+      : row('rwy', 'Piste', '31L — face 12 kt · travers 1 kt', 'METAR de 11 h 48 Z, 310° / 12 kt', {
+        act: st === 'atis' ? '<span>ATIS IVAO : 31L en service</span> <button>Prendre la piste de l\'ATIS</button>' : '', list: rwyList('31L') }),
+    star = st === 'lnm' ? row('star', 'Arrivée (STAR)', 'MEN2B', 'Little Navmap, usage personnel · <a class="link" href="#lnm">Carte</a>', { list: starList() })
+      : row('star', 'Arrivée (STAR)', tail ? 'MEN1A' : 'MEN2B · transition MTL', '<a class="link" href="#">Carte</a>', { list: starList() }),
+    app = st === 'carte' ? row('app', 'Approche', 'ILS 31R — par sa carte : ni tracé ni distance', 'ML 110,30 · <a class="link" href="#">Carte</a>', { list: appList('chart') })
+      : row('app', 'Approche', tail ? 'ILS 13R' : 'ILS 31L', tail ? 'MSE 108,95 · <a class="link" href="#">Carte</a>' : 'ML 110,30 · <a class="link" href="#">Carte</a>', { list: appList() });
+  return `<div class="rows">${rwy}${star}${app}</div>${foot(st === 'lnm')}`;
+}
+function rwyList(chosen) {
+  return it('31L — face 12 kt · travers 1 kt', 'la mieux orientée', chosen === '31L') + it('31R — face 12 kt · travers 1 kt', '', false) +
+    it('13L — arrière 12 kt · travers 1 kt', 'vent arrière', false, true) + it('13R — arrière 12 kt · travers 1 kt', 'vent arrière', chosen === '13R', true);
+}
+const starList = () => it('MEN2B · 31L', 'AIP', true) + it('MEN1A · 13R', 'AIP', false) + it('MAN1A · 13R', 'AIP, périmée', false) + it('Aucune', '', false);
+const appList = chart => it('ILS 31L', 'ML 110,30', !chart) + it('RNP 31L', '', false) + it('ILS 13R', 'MSE 108,95', false) +
+  '<div class="gh">Par leur carte seulement</div>' + it('ILS 31R', 'ni tracé ni distance', !!chart) + it('VOR 13L', 'ni tracé ni distance', false);
+function foot(lnm) {
+  return `<details class="foot"><summary>Source et cartes</summary>
+    <div class="ln">Procédures lues le 29/10 à 16 h 53 Z — périmées <button class="link">Relire</button></div>
+    <div class="ln"><a class="link" href="#">Toutes les cartes du terrain</a></div>
+    ${lnm ? '<div class="ln"><button class="link">Lire depuis Little Navmap</button></div>' : ''}</details>`;
+}
+function departure(st) {
+  if (st !== 'sansdepart') return '';
+  const list = it('24 — face 9 kt · travers 2 kt', 'la mieux orientée', true) + it('25 — face 9 kt · travers 1 kt', '', false) +
+    it('06 — arrière 9 kt · travers 2 kt', 'vent arrière', false, true) + it('07 — arrière 9 kt · travers 1 kt', 'vent arrière', false, true) +
+    it('02 — travers 4 kt', 'aucun départ publié', false, true) + it('20 — travers 4 kt', 'aucun départ publié', false, true);
+  return `<div class="rows">${row('drwy', 'Piste', '24 — face 9 kt · travers 2 kt', 'METAR de 11 h 50 Z, 250° / 9 kt', { list })}${row('sid', 'Départ (SID)', 'ODILO 5B', '<a class="link" href="#">Carte</a>', {})}</div>${foot(false)}`;
+}
+/** Un côté : en-tête (repli, nom, « Choisir sur la carte » seul) ; replié : une phrase et une marque ; ouvert : ses lignes. */
+function side(k, open, st) {
+  const dep = k === 'dep',
+    ad = dep ? (st === 'sansdepart' ? 'LFPO <span class="ad">Paris-Orly</span>' : 'LFRS <span class="ad">Nantes Atlantique</span>') : 'LFML <span class="ad">Marseille Provence</span>',
+    folded = dep ? (st === 'sansdepart' ? '' : '<span class="mark ok" title="complet">✓</span><span>Départ LFRS · piste 21 · NTS2B</span>')
+      : st === 'vide' ? '<span class="mark todo" title="à choisir">!</span><span>Arrivée LFML · procédures à lire</span>'
+      : '<span class="mark ok" title="complet">✓</span><span>Arrivée LFML · piste 31L · MEN2B · ILS 31L</span>';
+  return `<div class="side"><div class="head"><button class="fold" aria-expanded="${open}">${open ? '▾' : '▸'}</button><span class="name"><b>${dep ? 'Départ' : 'Arrivée'}</b>${ad}</span><button>Choisir sur la carte</button></div>
+    ${open ? (dep ? departure(st) : arrival(st)) : `<p class="sum">${folded}</p>`}</div>`;
+}
+function draw() {
+  const st = cur();
+  document.getElementById('states').innerHTML = Object.entries(S).map(([k, v]) => `<a href="#${k}"${k === st ? ' aria-current="true"' : ''}>${v.label}</a>`).join('');
+  document.getElementById('block').innerHTML = `<h2>Procédures</h2>${side('dep', S[st].open === 'dep', st)}${side('arr', S[st].open === 'arr', st)}`;
+}
+addEventListener('hashchange', () => { changing.k = (cur() === 'sansdepart') ? 'drwy' : ''; draw(); });
+addEventListener('click', e => { const b = e.target.closest('[data-change]'); if (!b) return; changing.k = changing.k === b.dataset.change ? '' : b.dataset.change; draw(); });
+changing.k = cur() === 'sansdepart' ? 'drwy' : '';
+draw();
+</script>
+</body>
+</html>
