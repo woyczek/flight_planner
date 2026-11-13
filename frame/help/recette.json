@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 173,
-  "verdicts": 70
+  "verdicts": 71
  },
  "apps": [
   "pilote",
@@ -364,8 +364,10 @@
    },
    "test": "Recharge la page. Carte, volet des couches : coche « Contrôleurs en ligne (IVAO / VATSIM) ». Sur un terrain tenu, des pastilles (D, G, T, A, i) apparaissent, bleues pour IVAO, orange pour VATSIM ; le survol dit les positions et les fréquences. Décochée, la couche ne lit rien.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T16:02:23Z"
+   "state": "ko",
+   "delivered": "2026-11-12T16:02:23Z",
+   "comment": "oui. pas assez visible : as-tu la capacité à avoir la zone couverte ? Par ex, si rennes approche est ouvert, afficher la limite et le temps avant le contact ? Objectif, je rapelle, contacter le contrôle aérien sur la bonne fréquence au bon moment pendant le vol, même quand un contrôle monte en cours de route. Si c’est le sol, il faut un gros bouton voyant, ou un rappel après l’atterrissage.",
+   "at": "2026-11-13T09:07:14Z"
   },
   {
    "id": "SOG-0095",

@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "fb705ba",
+  "organisation": "139b9f5",
   "fiches": 298,
   "untranslated": 0,
   "priorities": 243
@@ -794,8 +794,7 @@
      "en": "Active VATSIM and IVAO controllers on the Map, one hue per network",
      "de": "Aktive VATSIM- und IVAO-Lotsen auf der Karte, eine Farbe je Netz",
      "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red",
-     "rank": 13,
-     "test": true
+     "rank": 13
     },
     {
      "id": "SOG-0067",
