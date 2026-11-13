@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 201,
-  "verdicts": 141
+  "verdicts": 143
  },
  "apps": [
   "pilote",
@@ -1555,13 +1555,10 @@
    },
    "test": "Recharge la page. Carburant, un terrain dont les procédures viennent de Little Navmap (KDEN par exemple, après « Lire depuis Little Navmap ») : choisis une procédure ; un avertissement dit qu'elle vient de Little Navmap, pour ton usage personnel, sous les listes et dans la ligne de résumé du côté.",
    "since": "2026-11-11",
-   "state": "todo",
+   "state": "ko",
    "delivered": "2026-11-13T12:02:33Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "pas de warn qui dit que la procédure vient de little nav map ?",
-    "at": "2026-11-13T11:16:33Z"
-   }
+   "comment": "je vole vers KTPA. je veux choisir la piste. j’ai star/sid, mais pas de meteo sur la piste… pourtant, des fois, on l’a. screenshot. rien ne me dit que les données viennent de lnm. normal ? ah si, une popup discrète qui disparaît. rien sur la zone de choix. screenshot. Une fois qu’on a choisi la piste conseillée, la météo apparaît … bizarre comme bug (screenshot)",
+   "at": "2026-11-13T15:53:35Z"
   },
   {
    "id": "SOG-0211",
@@ -2229,13 +2226,10 @@
    },
    "test": "Relance le lanceur, recharge. Carburant, « Calculer A → B » sur KJFK → EGLL (FL370) : un itinéraire est trouvé en quelques secondes, il passe par une route NAT du jour, et une remarque le dit (« Routes NAT du JJ/MM : … »), avec « périmées » si le message est passé. Dans l'autre sens (EGLL → KJFK), le calcul n'aboutit pas encore : c'est connu.",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "ko",
    "delivered": "2026-11-13T13:41:04Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "ne sert pas encore au calcul transat, si ? Même si on n’a pas la bonne nats, on essaie tout de même de les utiliser, on raffine après. screeshot.",
-    "at": "2026-11-13T11:07:45Z"
-   }
+   "comment": "je ne sais pas si ça fonctionne. en tout cas, il faudrais mettre le bouton de prise des nats sur la sélection de route (dès qu’on détecte un vol transat). D’ailleurs, les nats c’est comme la météo, ça se fait tous les jours, pas tous les mois. ce n’est donc pas dans cette page « mensuelle », mais dans la page quotidienne qu’il faut un rappel. Screenshot. (nats à jour jusque demain).",
+   "at": "2026-11-13T15:48:38Z"
   },
   {
    "id": "SOG-0264",

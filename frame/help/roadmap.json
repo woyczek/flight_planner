@@ -4,7 +4,7 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "fe945e1",
+  "organisation": "7648663",
   "fiches": 331,
   "untranslated": 0,
   "priorities": 310
@@ -3147,8 +3147,7 @@
      "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
      "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
      "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto",
-     "rank": 197,
-     "test": true
+     "rank": 197
     },
     {
      "id": "SOG-0216",
@@ -4186,8 +4185,7 @@
      "en": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
      "de": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
      "es": "NAT tracks of the day: “Open” shows a JSON; take them alone; are they used to compute a transatlantic route?",
-     "rank": 268,
-     "test": true
+     "rank": 268
     }
    ]
   },
