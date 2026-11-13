@@ -317,6 +317,8 @@ At the top: number of missions, breakdown by status and update date.
 | “Write mission_registry.yaml” (Expert level) | Writes the registry to the missions folder |
 | “Clean up the registry (n)” (Expert level) | Removes the “file missing” missions after re-reading |
 
+**Old numbers.** After a renumbering, the browser's index may keep an entry under the old number (“85”) next to the line “T-085” (which keeps it in its `former_id`). When the page opens and after each re-reading of the folder, an entry that is not itself a line of the registry is attached to its line: one mission on the screen, under the lettered identifier, and the status, notes and flight date of the old number pass to the line if it has none. If the old entry carries a field the line lacks (a title, for example) it is not discarded: it is hidden from the list and the page says so (“n old entry(ies) kept, more complete than their mission”); “Clean up the registry” does not remove it. The files of the repository are never modified.
+
 The folder is re-read automatically on opening if it is already authorised. The reading shows a progress bar with “Stop”: the registry stays unchanged.
 On clean-up, the status, notes and flight date move to the mission that replaces a renumbered mission.
 

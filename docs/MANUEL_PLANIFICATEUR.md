@@ -397,6 +397,8 @@ En tête : nombre de missions, répartition par statut et date de mise à jour.
 | « Écrire mission_registry.yaml » (niveau Expert) | Écrit le registre dans le dossier des missions |
 | « Nettoyer le registre (n) » (niveau Expert) | Retire les missions « fichier absent » après relecture |
 
+**Anciens numéros.** Après une renumérotation, l'index du navigateur peut garder une entrée sous l'ancien numéro (« 85 ») à côté de la ligne « T-085 » (qui le garde dans son `former_id`). À l'ouverture de la page et après chaque relecture du dossier, l'entrée qui n'est pas elle-même une ligne du registre est rattachée à sa ligne : une seule mission à l'écran, sous l'identifiant à lettre, et le statut, les notes et la date de vol de l'ancien numéro passent à la ligne si elle n'en a pas. Si l'ancienne entrée porte un champ que la ligne n'a pas (un titre, par exemple), elle n'est pas écartée : elle est cachée de la liste et la page le dit (« n ancienne(s) entrée(s) gardée(s), plus complète(s) que leur mission ») ; « Nettoyer le registre » ne la retire pas. Les fichiers du dépôt ne sont jamais modifiés.
+
 Le dossier est relu automatiquement à l'ouverture s'il est déjà autorisé. La lecture affiche une barre de progression avec « Arrêter » : le registre reste inchangé.
 Au nettoyage, le statut, les notes et la date de vol passent à la mission qui remplace une mission renumérotée.
 

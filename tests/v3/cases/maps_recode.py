@@ -6196,3 +6196,52 @@ def d_wxlayer(c):
     c.ok(not p2 or p2['n'] < 50, str(p2), 'nothing is drawn without data')
     bad2 = [u for u in reqs2 if not re.search(r'\.(js|css|png|svg|woff2?)(\?|$)', u)]
     c.ok(not bad2, str(bad2[:6]), 'no outgoing call without data either')
+
+
+
+# The index of the V2 (IndexedDB « defaIndex », MissionIndex) of a bench: a registry line (T-085, its former number 85 in `formerId`) and an entry under the bare former number.
+_FORMER_LINE = """(id, former, title) => ({ id, formerId: former, series: '', number: +former, type: 'AIRLIFT', family: 'T', subtype: '', title, folder: 'T_AIRLIFT/' + id,
+  files: ['mission' + id + '.yaml'], source: 'dossier', status: 'generated', statusAt: '2026-10-20T10:00:00.000Z', notes: '', flownAt: '', addedAt: '2026-10-20T10:00:00.000Z',
+  teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0, hasYaml: true })"""
+_FORMER_OLD = """(id, title, status, notes, flownAt) => ({ id, formerId: '', series: '', number: +id, type: 'AIRLIFT', family: 'T', subtype: '', title, folder: '', files: [],
+  source: 'collage', status, statusAt: '2026-10-01T10:00:00.000Z', notes, flownAt, addedAt: '2026-10-01T10:00:00.000Z', teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0 })"""
+_FORMER_SEED_JS = "async (spec) => { const line = " + _FORMER_LINE + ", old = " + _FORMER_OLD + ";" + """
+  await window.MissionIndex.ready;
+  await window.MissionIndex.save(spec.map(s => s.length === 3 ? line(...s) : old(...s)), new Date().toISOString());
+  return window.MissionIndex.all().length }"""
+_FORMER_STATE_JS = """async () => { await window.MissionIndex.ready; const R = window.MissionRegistry;
+  return { index: window.MissionIndex.all().map(m => ({ id: m.id, by: m.supersededBy || '', status: m.status || '', notes: m.notes || '', flownAt: m.flownAt || '' })),
+    shown: R.get().missions.filter(R.matches).map(m => m.id), note: (document.getElementById('rgFormer') || {}).textContent || '' } }"""
+
+
+@case('K219', 'The registry of the V2 shows one mission under its lettered identifier when its index also holds the number it had before the renumbering: what was attached to the old number follows, an old entry carrying a field the line lacks is kept (and said), nothing else is purged', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0289 (the user: « 85 est doublon de T-085 … vérifier lequel est le plus complet, fusionner »; the ergonomist, 13 Nov): an index entry whose id is the formerId of a registry line, and that is not itself a line, is attached to that line; its status, notes and flight date follow; a field it has and the line lacks keeps it (hidden from the list, counted « n anciennes entrées gardées, plus complètes »); never a purge')
+def k_former(c):
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry", timeout=15000, what='the registry page and its index are loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")      # the Centre of the bench (the default password of the template)
+    # 1. the old entry has what the line lacks (the title): kept, hidden, said; its status, notes and flight date follow
+    c.eq(c.js(_FORMER_SEED_JS, [['T-085', '85', ''], ['85', 'Bench airlift', 'planned', 'bench note', '2026-10-01']]), 2, 'the bench index holds the line and the old number', what='index')
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.MissionRegistry && window.MissionRegistry.get().missions.length >= 1", timeout=15000, what='the registry is read')
+    c.wait(1500)
+    st = c.js(_FORMER_STATE_JS)
+    c.eq(st['shown'], ['T-085'], 'one mission on the screen, under the lettered identifier', what=str(st))
+    line = [m for m in st['index'] if m['id'] == 'T-085']
+    c.ok(line and line[0]['status'] == 'planned' and line[0]['notes'] == 'bench note' and line[0]['flownAt'] == '2026-10-01', str(line), 'what was attached to the old number follows (status, notes, flight date)')
+    old = [m for m in st['index'] if m['id'] == '85']
+    c.ok(old and old[0]['by'] == 'T-085', str(old), 'the old entry carries a field the line lacks: kept, marked as attached to the line')
+    c.ok(st['note'] and '1' in st['note'], st['note'], 'the page says one old entry was kept')
+    c.shot('K219_standard_former_kept_delivered.png')
+    # 2. the old entry has nothing more than the line: absorbed, the user's fields moved, nothing said
+    c.eq(c.js(_FORMER_SEED_JS, [['T-086', '86', 'Same title'], ['86', 'Same title', 'flown', 'note two', '2026-10-02']]), 2, 'the bench index is replaced by the second pair', what='index')
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.MissionRegistry && window.MissionRegistry.get().missions.length >= 1", timeout=15000, what='the registry is read again')
+    c.wait(1500)
+    st = c.js(_FORMER_STATE_JS)
+    c.eq(st['shown'], ['T-086'], 'one mission on the screen', what=str(st))
+    c.eq([m['id'] for m in st['index']], ['T-086'], 'the old entry, with nothing more than the line, is attached (one entry left in the index)', what=str(st['index']))
+    c.ok(st['index'][0]['status'] == 'flown' and st['index'][0]['notes'] == 'note two', str(st['index']), 'its status and notes follow')
+    c.ok(not st['note'], st['note'], 'nothing is said when nothing is kept')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders (their own repositories) are not in the test tree

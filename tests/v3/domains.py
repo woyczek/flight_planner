@@ -84,6 +84,7 @@ RULES = [
     ('shared/aero_zones.js', ['K', 'I'], 'the zone and source catalogue (the fetch job keeps a mirror of it) and the mirror case'),
     ('tools/data_template/.gitignore', ['K', 'I'], 'the data repository template: the raw sources it ignores (case of the fetch and purge jobs)'),
     ('shared/sia_base.js', ['K', 'I'], 'the base builders (V2 page, Worker path, per-zone build of the launcher) and their aerodb cases'),
+    ('shared/mission_registry.js', ['K219', 'I'], "the V2 mission registry: its index of old numbers (K219)"),
     ('tools/regen_jobs.py', ['I8', 'I'], "the launcher's jobs base (Data module)"),
     ('tools/launch.py', ['I8', 'A12', 'A29', 'I'], 'the launcher: its routes, Settings, the client of the frame'),
     ('tools/**', ['I'], 'tooling'),

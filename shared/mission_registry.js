@@ -146,6 +146,7 @@
         m.missingFile = true;
         n++;
       }
+    if (attachFormer().changed) persist(); // anciens numéros (SOG-0289) : l'état « fichier absent » vient de changer
     if (n && host) render();
   }) : Promise.resolve();
 
@@ -898,11 +899,61 @@
         team(m.id) === team(old.id))) ||
       null;
   }
+  // ---- anciens numéros (SOG-0289) : l'index garde une entrée « 85 » à côté de la ligne « T-085 » (le dossier relu ne retire jamais, il marque)
+  /** Champs d'une entrée qui ne sont pas des données de la mission : identité, provenance, suivi de l'utilisateur, liens calculés. */
+  const FORMER_SKIP = new Set(['id', 'formerId', 'source', 'folder', 'files', 'missingFile', 'supersededBy', 'addedAt', 'suiviAt',
+    'reports', 'report',
+    'hasYaml', 'hasMd', ...USER_FIELDS
+  ]);
+  /** Une valeur qui dit quelque chose (ni vide, ni nulle, ni faux, ni liste ou objet vide). */
+  const filled = v => v != null && v !== '' && v !== false && v !== 0 && !(Array.isArray(v) ? !v.length : typeof v === 'object' && !Object
+    .keys(v).length);
+  /** Rattache à sa ligne l'entrée dont l'identifiant est l'ancien identifiant (former_id) d'une ligne du registre et qui n'est pas elle-même une
+   *  ligne (sans dossier, ou dossier absent) : statut, notes, date de vol et commande passent à la ligne quand elle n'en a pas ; l'entrée
+   *  qui n'apporte rien de plus est absorbée ; celle qui porte un champ que la ligne n'a pas est GARDÉE (cachée de la liste, comptée,
+   *  `supersededBy`) — jamais de purge de ce qui est plus complet. Rend { changed, kept }. */
+  function attachFormer() {
+    const lines = reg.missions.filter(m => m.id && !m.missingFile && !m.supersededBy),
+      byFormer = new Map(lines.filter(m => m.formerId && m.formerId !== m.id).map(m => [m.formerId, m])),
+      drop = new Set();
+    let changed = false,
+      kept = 0;
+    for (const old of reg.missions) {
+      const line = byFormer.get(String(old.id || '').toUpperCase());
+      if (!line || line === old || !(old.missingFile || !old.folder || old.source !== 'dossier')) continue;
+      const userSet = old.status && !['generated', 'ordered'].includes(old.status) || old.notes || old.flownAt;
+      if (userSet && (!line.status || line.status === 'generated') && !line.notes && !line.flownAt) {
+        for (const k of USER_FIELDS)
+          if (old[k] != null && old[k] !== '') line[k] = old[k];
+        changed = true;
+      }
+      const more = Object.keys(old).filter(k => !FORMER_SKIP.has(k) && filled(old[k]) && !filled(line[k]));
+      if (!more.length) {
+        drop.add(old);
+        changed = true;
+      } else {
+        kept++;
+        if (old.supersededBy !== line.id) {
+          old.supersededBy = line.id;
+          changed = true;
+        }
+      }
+    }
+    if (drop.size) reg.missions = reg.missions.filter(m => !drop.has(m));
+    return {
+      changed,
+      kept
+    };
+  }
+  /** Les anciennes entrées gardées parce que plus complètes (cachées de la liste). */
+  const keptFormer = () => reg.missions.filter(m => m.supersededBy).length;
+  /** Mission « fichier absent » à retirer par le nettoyage : pas une ancienne entrée gardée (plus complète que sa ligne). */
+  const stale = m => m.missingFile && !m.supersededBy;
   /** Retire les entrées « fichier absent » ; statut, notes, date de vol, commande et CR passent à la mission qui les remplace
    *  quand elle n'en a pas (statut « générée »). Les commandes en attente (sans fichier) sont gardées. Sortie : { removed, moved }. */
   function cleanup() {
-    const gone = reg.missions.filter(m => m.missingFile),
-      live = reg.missions.filter(m => !m.missingFile);
+    const gone = reg.missions.filter(stale),
+      live = reg.missions.filter(m => !stale(m));
     let moved = 0;
     for (const old of gone) {
       const next = successorOf(old, live);
@@ -1022,6 +1073,7 @@
       // rangée : doublon, retiré par « Nettoyer le registre » (statut, notes et date de vol passent à la mission rangée)
       m.missingFile = m.source === 'dossier' ? !seen.has(keyOf(m)) : !m.folder && m.status !== 'ordered' && stored.has(m.id);
     });
+    attachFormer(); // anciens numéros (SOG-0289)
     linkReports();
     writeJson(SCAN, nextSig);
     // registre réécrit (navigateur et mission_registry.yaml) seulement s'il a changé : plus de fichier modifié à chaque
@@ -1232,7 +1284,7 @@
   };
   /** Mission retenue par les filtres de la page : type ou famille, sous-type, rendez-vous, nombre et types d'équipes,
    *  ravitaillement, théâtre, statut, recherche libre. */
-  const matches = m => (!filters.type || m.type === filters.type || m.family === filters.type) &&
+  const matches = m => !m.supersededBy && (!filters.type || m.type === filters.type || m.family === filters.type) &&
     (!filters.subtype || m.subtype === filters.subtype) &&
     (!filters.rdv || (filters.rdv === 'with' ? m.rdv > 0 : m.rdv === 0)) &&
     (filters.teamsMin === '' || m.teamCount >= +filters.teamsMin) &&
@@ -1282,12 +1334,14 @@
     // entrée incomplète (registre ancien, repris) : ni type d'équipe ni type d'aéronef, sans faire tomber la page
     const teamTypes = uniq(reg.missions.flatMap(m => [...(m.teamTypes || []), ...(m.aircraftTypes || [])]));
     const opt = (v, l, cur) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`;
-    const counts = Object.keys(STATUS).map(k => [k, reg.missions.filter(m => m.status === k).length]).filter(([, n]) => n);
+    const counts = Object.keys(STATUS).map(k => [k, reg.missions.filter(m => !m.supersededBy && m.status === k).length]).filter(([, n]) =>
+      n);
     host.innerHTML = `
       <section data-block-id="source" data-icon="folder" data-subtitle="${esc(t(['Séries générées du dossier « Missions » et missions commandées', 'Generated series of the “Missions” folder and ordered missions']))}">
         <h2>${esc(t(['Missions du registre', 'Registry missions', 'Missionen des Registers', 'Misiones del registro']))}</h2>
         <p class="row" id="rgFolder"></p>
-        <p>${esc(t(['{n} mission(s)', '{n} mission(s)'], { n: reg.missions.length }))} · ${counts.map(([k, n]) => `${pill(k, t(STATUS[k]))} ${n}`).join(' ')} ${reg.updatedAt ? `<span class="rg-small">— ${esc(t(['mis à jour le {d}', 'updated {d}'], { d: fmtDate(reg.updatedAt) }))}</span>` : ''}</p>
+        <p>${esc(t(['{n} mission(s)', '{n} mission(s)'], { n: reg.missions.length - keptFormer() }))} · ${counts.map(([k, n]) => `${pill(k, t(STATUS[k]))} ${n}`).join(' ')} ${reg.updatedAt ? `<span class="rg-small">— ${esc(t(['mis à jour le {d}', 'updated {d}'], { d: fmtDate(reg.updatedAt) }))}</span>` : ''}</p>
+        ${keptFormer() ? `<p class="rg-small" id="rgFormer">${esc(t(['{n} ancienne(s) entrée(s) gardée(s), plus complète(s) que leur mission : numéro d’avant la renumérotation, cachée(s) de la liste, jamais supprimée(s)', '{n} old entry(ies) kept, more complete than their mission: number from before the renumbering, hidden from the list, never deleted', '{n} alte Einträge behalten, vollständiger als ihre Mission: Nummer von vor der Neunummerierung, in der Liste ausgeblendet, nie gelöscht', '{n} entrada(s) antigua(s) conservada(s), más completa(s) que su misión: número de antes de la renumeración, oculta(s) en la lista, nunca eliminada(s)'], { n: keptFormer() }))}</p>` : ''}
         <div id="rgMsg">${msg}</div>
       </section>
       <section data-block-id="choose" data-icon="search" data-subtitle="${esc(t(['Type, sous-type, rendez-vous, équipes, ravitaillement, théâtre, statut — puis tirer au sort ou ouvrir', 'Type, subtype, rendezvous, teams, refuelling, theatre, status — then draw or open']))}">
@@ -1393,7 +1447,7 @@
       }
       render();
     };
-    const missing = reg.missions.filter(m => m.missingFile).length;
+    const missing = reg.missions.filter(stale).length;
     const cb = document.createElement('button');
     cb.type = 'button';
     cb.className = 'secondary';
@@ -1414,7 +1468,7 @@
       // état « fichier absent » à jour avant de retirer quoi que ce soit : relecture du dossier s'il est autorisé ; sinon,
       // dossiers présents d'après le lanceur (déjà lus) — sans ouvrir le sélecteur de dossier
       if ((await missionsDir(false) || !servedChecked) && !await doScan()) return;
-      const n = reg.missions.filter(m => m.missingFile).length;
+      const n = reg.missions.filter(stale).length;
       if (!n) {
         msg = pill('generated', t(['Rien à nettoyer : toutes les missions ont leur fichier.',
           'Nothing to clean up: every mission has its file.'
@@ -2359,6 +2413,7 @@
   window.addEventListener('local-store-restored', async () => {
     await IDX?.ready; // reprise de la copie restaurée : MissionIndex (mission-index-change)
     if (!IDX) reg = loadReg();
+    if (attachFormer().changed) persist();
     render();
   });
   window.addEventListener('mission-index-change', () => {
@@ -2405,6 +2460,7 @@
     await waitFor('jsyaml', 3000);
     await IDX?.ready; // registre lu dans l'index (ouverture de la page)
     reg = loadReg();
+    if (attachFormer().changed) persist(); // anciens numéros d'un index repris (SOG-0289)
     await loadReports();
     linkReports();
     // ?mission=M-016 (retour du générateur, du studio ou d'un CR) : mission choisie et affichée

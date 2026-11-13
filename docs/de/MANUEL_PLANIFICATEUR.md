@@ -318,6 +318,8 @@ Am Kopf: Anzahl der Missionen, Verteilung nach Status und Aktualisierungsdatum.
 | „mission_registry.yaml schreiben“ (Stufe Experte) | Schreibt das Register in den Missionsordner |
 | „Register bereinigen (n)“ (Stufe Experte) | Entfernt die Missionen „Datei fehlt“ nach dem Neueinlesen |
 
+**Alte Nummern.** Nach einer Neunummerierung kann der Index des Browsers einen Eintrag unter der alten Nummer („85“) neben der Zeile „T-085“ behalten (die sie in ihrem `former_id` führt). Beim Öffnen der Seite und nach jedem Neueinlesen des Ordners wird ein Eintrag, der nicht selbst eine Zeile des Registers ist, seiner Zeile zugeordnet: eine Mission auf dem Bildschirm, unter der Kennung mit Buchstabe, und Status, Notizen und Flugdatum der alten Nummer gehen auf die Zeile über, wenn sie keine hat. Trägt der alte Eintrag ein Feld, das der Zeile fehlt (zum Beispiel einen Titel), wird er nicht verworfen: Er wird in der Liste ausgeblendet und die Seite sagt es („n alte Einträge behalten, vollständiger als ihre Mission“); „Register bereinigen“ entfernt ihn nicht. Die Dateien des Repositorys werden nie verändert.
+
 Der Ordner wird beim Öffnen automatisch neu gelesen, wenn er bereits erlaubt ist. Das Lesen zeigt einen Fortschrittsbalken mit „Abbrechen“: Das Register bleibt unverändert.
 Beim Bereinigen gehen Status, Notizen und Flugdatum auf die Mission über, die eine umnummerierte Mission ersetzt.
 
