@@ -174,3 +174,9 @@
   list until the ergonomist answers on its reduced Cadre. Not in this push: the map thumbnail of the preview (with Lieux), the aero base
   lookup of a departure (with Lieux). Missions › Registre « Corriger » is now « Correct » / « Korrigieren » (« Edit » is the editor's).
   N50 (red before: no « Créer une mission »).
+- **13 Nov 2026 — the mission editor, step 2: the Équipes** (SOG-0287, written by Features SOG): `ED.OPEN` lists the steps delivered
+  (« Suivante » goes to the next one, a step not delivered stays disabled). `teamsOf` / `withTeams`: one row per team (callsign, type —
+  written in capitals —, service, role), 40 at most (the reader's bound); a kept team keeps its other keys (merged by its place in the
+  file), an empty row is dropped, no team left removes `teams`. The rows typed are kept from step to step (`s.ed.teams`, read from the file
+  at the first opening of the step) until « Enregistrer » or « Annuler ». The `aircraft` block is not touched here. N51 (red before:
+  « Suivante » disabled); N50 now asks for the six steps with the Cadre open, not for the list of the delivered ones.

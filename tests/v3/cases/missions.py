@@ -2045,8 +2045,8 @@ def n50(c):
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E}')", what='the editor')
     steps = c.js(f"[...document.querySelectorAll('{E} [data-steps] button')].map(b => [b.dataset.step, b.disabled])")
-    c.eq(steps, [['cadre', False], ['teams', True], ['places', True], ['story', True], ['risks', True], ['timeline', True]],
-         'six steps, the Cadre open (the others come with the next pushes)', what='steps')
+    c.eq([x[0] for x in steps], ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'], 'the six steps of the mock-up', what='steps')
+    c.ok(steps[0][1] is False and steps[-1][1] is True, steps, 'the Cadre open; a step not delivered yet is disabled (one push each)')
     c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
     c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier of the family proposed')
     _ed_fill(c, 'edid', 'X-1')
@@ -2102,4 +2102,43 @@ def n50(c):
     d = c.js(_TEXT_OF, 'missions/X_REG/X-003/missionX-003.yaml') or ''
     c.ok('id: X-003' in d and 'Danger cinq' in d, d[:300], 'the copy: a new identifier, the content kept')
     c.ok('id: X-001A' in (c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''), 'changed', 'the original is untouched')
+    c.js(_REG_CLEAR)
+
+
+
+_TEAMS_JS = f"""[...document.querySelectorAll('{E} [data-edteams] [data-team]')].map(r => ['name', 'type', 'service', 'role'].map(f => r.querySelector('[data-f=' + f + ']').value))"""
+
+
+@case('N51', 'Missions › editor, step 2 (Équipes): « Suivante » goes from the Cadre to the Équipes; one row per team (callsign, type, service, '
+      'role); a row is changed, removed, added; « Enregistrer » writes the teams and keeps their other keys and the rest of the file',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0287 step 2, the mock-up: « Équipes : une ligne par équipe (indicatif, service, type ICAO, rôle) ; + Équipe »')
+def n51(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', _ED_FULL.replace(
+        '{ name: ALPHA1, service: Service d\'essai, type: H135, role: recherche }',
+        '{ name: ALPHA1, service: Service d\'essai, type: H135, role: recherche, base: Base Test }')]])
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-do="ednext"]')
+    c.until(f"!!document.querySelector('{E} [data-edteams]')", what='« Suivante » opens the Équipes')
+    c.eq(c.js(_TEAMS_JS), [['ALPHA1', 'H135', "Service d'essai", 'recherche'], ['BRAVO2', 'H145', "Service d'essai", 'relais'],
+                           ['CHARLIE3', 'EC25', "Service d'essai", 'hélitreuillage']], 'one row per team of the file', what='rows')
+    c.page.fill(f'{E} [data-team="1"] [data-f=role]', 'relais radio')
+    c.tap(f'{E} [data-team="2"] [data-do="edteamdel"]')
+    c.tap(f'{E} [data-do="edteamadd"]')
+    c.page.fill(f'{E} [data-team="2"] [data-f=name]', 'DELTA4')
+    c.page.fill(f'{E} [data-team="2"] [data-f=type]', 'h160')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N51_390_teams.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N51_1280_teams.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('relais radio' in t and 'CHARLIE3' not in t and 'name: DELTA4' in t and 'type: H160' in t, t[t.find('teams:'):][:400],
+         'the teams written: one changed, one removed, one added (type in capitals)')
+    c.ok('base: Base Test' in t and 'Danger cinq' in t and 'ZONE-2' in t, t[:300], 'a team keeps its other keys; the rest of the file is kept')
     c.js(_REG_CLEAR)

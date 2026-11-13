@@ -96,6 +96,15 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-edaside{display:none}
 [data-module="missions"] .ms-edbar{position:sticky;bottom:var(--f-tab-space,0px);display:flex;gap:8px;align-items:center;padding:8px 0;background:var(--sog-bg,#fff);z-index:2} /* au-dessus de la barre d'onglets du téléphone, comme rp-dock */
 [data-module="missions"] .ms-edbar>.ms-edcancel{margin-left:auto}
+[data-module="missions"] .ms-edteam{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-edteam>.f-field{margin:0;min-width:0}
+[data-module="missions"] .ms-edthead{display:none}
+[data-module="missions"] .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2;min-width:44px;min-height:44px}
+@container (min-width: 900px){
+  [data-module="missions"] .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,.7fr) minmax(0,1.2fr) minmax(0,1.2fr) auto}
+  [data-module="missions"] .ms-edteam>.ms-edtdel{grid-column:auto;grid-row:auto}
+  [data-module="missions"] .ms-edthead{display:grid;padding:0;border:0;font-size:.9em}
+}
 @container (min-width: 900px){
   [data-module="missions"] .ms-edgrid{display:grid;grid-template-columns:minmax(12em,16em) minmax(0,1fr) minmax(14em,20em);gap:16px;align-items:start}
   [data-module="missions"] .ms-steps{flex-direction:column;overflow:visible}
@@ -495,6 +504,18 @@ const TX = {
   edBlock_idTaken: ['Cet identifiant est déjà dans le registre.', 'This identifier is already in the registry.',
     'Diese Kennung steht schon im Register.',
     'Este identificador ya está en el registro.'
+  ],
+  edTeamsHint: ['Les équipages et services engagés : une ligne par équipe.', 'The crews and services engaged: one row per team.',
+    'Die eingesetzten Besatzungen und Dienste: eine Zeile pro Team.', 'Las tripulaciones y servicios implicados: una fila por equipo.'
+  ],
+  edTeamName: ['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'],
+  edTeamService: ['Service', 'Service', 'Dienst', 'Servicio'],
+  edTeamType: ['Type', 'Type', 'Typ', 'Tipo'],
+  edTeamRole: ['Rôle', 'Role', 'Rolle', 'Función'],
+  edTeamAdd: ['+ Équipe', '+ Team', '+ Team', '+ Equipo'],
+  edTeamDel: ['Retirer cette équipe', 'Remove this team', 'Dieses Team entfernen', 'Quitar este equipo'],
+  edTeamNone: ['Aucune équipe : « + Équipe » en ajoute une.', 'No team: « + Team » adds one.', 'Kein Team: „+ Team“ fügt eines hinzu.',
+    'Ningún equipo: «+ Equipo» añade uno.'
   ],
   todo_title: ['titre', 'title', 'Titel', 'título'],
   todo_theatre: ['théâtre', 'theatre', 'Einsatzgebiet', 'teatro'],
@@ -1777,7 +1798,7 @@ function edStepsHtml(s, doc) {
       risks: TX.stepRisks,
       timeline: TX.stepTimeline
     },
-    open = ['cadre'];
+    open = ED.OPEN;
   return `<nav class="ms-steps" data-steps>${ED.STEPS.map((k, i) => {
     const ok = ED.stepState(doc, k) === 'ok';
     return `<button type="button" data-do="edstep" data-step="${k}"${s.ed.step === k ? ' aria-current="step"' : ''}${open.includes(k) ? '' : ` disabled title="${esc(s.tt(TX.edLater))}"`}><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" aria-hidden="true">${ok ? '✓' : '!'}</span> ${i + 1}. ${esc(s.tt(names[k]))}</button>`;
@@ -1826,33 +1847,52 @@ function edAsideHtml(s, doc) {
     <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
 }
 
+/** Le document en cours d'édition : le fichier lu, le cadre et les équipes retouchés (une étape jamais ouverte ne retouche rien). */
+const edDoc = (e, cadre = e.cadre) => e.teams ? ED.withTeams(ED.withCadre(e.base, cadre), e.teams) : ED.withCadre(e.base, cadre);
+
+/** L'étape Équipes : une ligne par équipe (indicatif, service, type OACI, rôle), « Retirer » ; « + Équipe » ajoute une ligne. */
+function edTeamsHtml(s) {
+  const rows = s.ed.teams || [],
+    inp = (i, f, v, label, extra = '') => `<label class="f-field"><span class="f-sr">${esc(s.tt(label))}</span><input data-k="edteam" data-i="${i}" data-f="${f}" value="${esc(v)}" placeholder="${esc(s.tt(label))}" autocomplete="off"${extra}></label>`;
+  return `<h3>2. ${esc(s.tt(TX.stepTeams))}</h3><p class="f-muted">${esc(s.tt(TX.edTeamsHint))}</p>
+    <div class="f-list" data-edteams>${rows.length ? `<div class="ms-edteam ms-edthead f-muted" aria-hidden="true">${[TX.edTeamName, TX.edTeamType, TX.edTeamService, TX.edTeamRole].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>` : ''}${rows.length ? rows.map((r, i) => `<div class="ms-edteam" data-team="${i}">${inp(i, 'name', r.name, TX.edTeamName, ' maxlength="80"')}${inp(i, 'type', r.type, TX.edTeamType, ' maxlength="60" autocapitalize="characters"')}${inp(i, 'service', r.service, TX.edTeamService, ' maxlength="120"')}${inp(i, 'role', r.role, TX.edTeamRole, ' maxlength="200"')}<button type="button" class="ms-edtdel" data-do="edteamdel" data-i="${i}" title="${esc(s.tt(TX.edTeamDel))}" aria-label="${esc(s.tt(TX.edTeamDel))}">✕</button></div>`).join('') : `<p class="f-muted" data-noteam>${esc(s.tt(TX.edTeamNone))}</p>`}</div>
+    ${rows.length < ED.TEAMS_MAX ? `<button type="button" data-do="edteamadd">${esc(s.tt(TX.edTeamAdd))}</button>` : ''}`;
+}
+
 /** L'écran de l'éditeur (la maquette : modules/missions/maquette/editeur_cadre_*.png). */
 function edHtml(s) {
   const e = s.ed,
-    doc = ED.withCadre(e.base, e.cadre),
+    doc = edDoc(e),
+    nextStep = ED.OPEN[ED.OPEN.indexOf(e.step) + 1] || '',
     crumb = e.mode === 'new' ? TX.edCrumbNew : e.mode === 'dup' ? TX.edCrumbDup : TX.edCrumbEdit;
   return `<div class="ms-ed" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(crumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
-    <div class="ms-edbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" data-do="ednext" disabled title="${esc(s.tt(TX.edLater))}">${esc(s.tt(TX.edNext))}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
+    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
+    <div class="ms-edbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" data-do="ednext"${nextStep ? ` data-step="${nextStep}"` : ` disabled title="${esc(s.tt(TX.edLater))}"`}>${esc(s.tt(TX.edNext))}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
 }
 
 /** Une saisie de l'éditeur : un texte met à jour l'aperçu, les pastilles et l'en-tête seuls (le champ garde son curseur) ; une liste
  *  redessine l'écran (la famille propose son identifiant suivant et sa série à une mission neuve ou dupliquée). */
 function edInput(s, ev) {
   const e = s.ed,
-    k = ev.target?.dataset?.k,
-    key = {
-      edfam: 'family',
-      edsub: 'subtype',
-      edser: 'series',
-      edid: 'id',
-      edtitle: 'title',
-      edth: 'theatre',
-      eddep: 'dep',
-      edarr: 'arr'
-    } [k];
+    k = ev.target?.dataset?.k;
+  if (k === 'edteam') { // une équipe : la ligne retouchée en place (le champ garde son curseur)
+    const row = e.teams?.[+ev.target.dataset.i],
+      f = ev.target.dataset.f;
+    if (row && ['name', 'service', 'type', 'role'].includes(f)) row[f] = ev.target.value;
+    return edRefresh(s);
+  }
+  const key = {
+    edfam: 'family',
+    edsub: 'subtype',
+    edser: 'series',
+    edid: 'id',
+    edtitle: 'title',
+    edth: 'theatre',
+    eddep: 'dep',
+    edarr: 'arr'
+  } [k];
   if (!key) return;
   e.cadre[key] = key === 'id' ? ev.target.value.toUpperCase() : ev.target.value;
   if (ev.target.tagName === 'SELECT') {
@@ -1868,7 +1908,12 @@ function edInput(s, ev) {
     return draw(s);
   }
   if (ev.type !== 'input') return;
-  const doc = ED.withCadre(e.base, e.cadre),
+  edRefresh(s);
+}
+/** L'aperçu, les pastilles et l'en-tête redessinés seuls (pendant la frappe). */
+function edRefresh(s) {
+  const e = s.ed,
+    doc = edDoc(e),
     aside = s.el.querySelector('[data-edaside]'),
     steps = s.el.querySelector('[data-steps]'),
     head = s.el.querySelector('[data-edhead]');
@@ -1919,7 +1964,7 @@ async function edSave(s) {
   draw(s);
   try {
     if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
-    const doc = ED.withCadre(e.base, c);
+    const doc = edDoc(e, c);
     await s.ctx.data.put(path, ED.yamlText(doc, globalThis.jsyaml), {
       module: 'missions'
     });
@@ -1936,6 +1981,7 @@ async function edSave(s) {
       mode: 'edit',
       base: doc,
       cadre: ED.cadreOf(doc),
+      teams: null,
       path,
       origId: c.id,
       regIdx: line ? line.idx : e.regIdx,
@@ -1970,7 +2016,24 @@ function edClick(s, b) {
     case 'edsave':
       return edSave(s);
     case 'edstep':
-      s.ed.step = b.dataset.step === 'cadre' ? 'cadre' : s.ed.step;
+    case 'ednext':
+      if (!ED.OPEN.includes(b.dataset.step)) return;
+      s.ed.step = b.dataset.step;
+      // la première ouverture des Équipes lit celles du fichier ; ensuite, les lignes retouchées sont gardées d'une étape à l'autre
+      if (s.ed.step === 'teams' && !s.ed.teams) s.ed.teams = ED.teamsOf(s.ed.base);
+      return draw(s);
+    case 'edteamadd':
+      s.ed.teams = [...(s.ed.teams || ED.teamsOf(s.ed.base)), {
+        i: -1,
+        name: '',
+        service: '',
+        type: '',
+        role: ''
+      }].slice(0, ED.TEAMS_MAX);
+      draw(s);
+      return s.el.querySelector(`[data-team="${s.ed.teams.length - 1}"] input`)?.focus();
+    case 'edteamdel':
+      s.ed.teams = (s.ed.teams || []).filter((_, i) => i !== +b.dataset.i);
       return draw(s);
     case 'edcancel':
       s.ed = null;

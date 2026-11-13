@@ -4,8 +4,10 @@
 // les champs de l'étape éditée sont retouchés, bornés ; tout le reste du document est gardé tel quel.
 //
 // API :
-//   STEPS : les six étapes de la maquette (Cadre, Équipes, Lieux, Récit, Risques, Chronologie et cartes) ; seule « cadre » s'édite
-//     dans ce lot (les autres suivent, une par push).
+//   STEPS : les six étapes de la maquette (Cadre, Équipes, Lieux, Récit, Risques, Chronologie et cartes) ; OPEN : celles qui s'éditent
+//     déjà (les autres suivent, une par push).
+//   teamsOf(doc) → [{ i, name, service, type, role }] (i : la place dans doc.teams, -1 pour une ligne ajoutée) ; withTeams(doc, rows) →
+//     un NOUVEAU document : chaque équipe gardée garde ses autres clés, une ligne vide est retirée ; TEAMS_MAX lignes au plus.
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr } (textes) ; placeText(p) : « XTST · Base Test ».
 //   withCadre(doc, cadre) → un NOUVEAU document : mission.{ id, type, subtype, series, number, theatre }, title, origin, destination ;
@@ -23,6 +25,9 @@
 import * as MS from '../../frame/lib/mission.js';
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
+export const OPEN = ['cadre', 'teams'];
+/** Les équipes d'une mission, au plus (la borne du lecteur, frame/lib/mission.js). */
+export const TEAMS_MAX = 40;
 export const THEATRES = ['métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion', 'Mayotte', 'Nouvelle-Calédonie', 'Polynésie'];
 /** L'identifiant d'une mission (la forme de add.js) et une famille (mission.type). */
 const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/,
@@ -116,6 +121,38 @@ export function withCadre(doc, cadre) {
     if (p) out[k] = p;
     else delete out[k];
   }
+  return out;
+}
+
+/** Les équipes d'une mission (voir l'en-tête). */
+export function teamsOf(doc) {
+  return (Array.isArray(obj(doc).teams) ? obj(doc).teams : []).slice(0, TEAMS_MAX).map((t, i) => ({
+    i,
+    name: cut(obj(t).name, 80),
+    service: cut(obj(t).service, 120),
+    type: cut(obj(t).type, 60),
+    role: cut(obj(t).role, 200)
+  }));
+}
+
+/** Le document avec ses équipes retouchées (voir l'en-tête). */
+export function withTeams(doc, rows) {
+  const out = structuredClone(obj(doc)),
+    before = Array.isArray(out.teams) ? out.teams : [],
+    teams = (Array.isArray(rows) ? rows : []).slice(0, TEAMS_MAX).map(r => {
+      const t = {
+        ...(Number.isInteger(r?.i) && r.i >= 0 ? obj(before[r.i]) : {}),
+        name: cut(r?.name, 80),
+        service: cut(r?.service, 120),
+        type: cut(r?.type, 60).toUpperCase(),
+        role: cut(r?.role, 200)
+      };
+      for (const k of ['service', 'type', 'role'])
+        if (!t[k]) delete t[k];
+      return t;
+    }).filter(t => t.name || t.service || t.type || t.role);
+  if (teams.length) out.teams = teams;
+  else delete out.teams;
   return out;
 }
 
