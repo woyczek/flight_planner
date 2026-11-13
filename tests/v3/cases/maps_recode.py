@@ -6898,3 +6898,48 @@ def k_noGesture(c):
     c.ok(not re.search(r'onclick = doScan;', src), 'the button', 'no button hands the click event to doScan as its request')
     c.eq(len(re.findall(r'await keptName\(FA\)', src)), 1, 'the name is awaited only where no gesture asks (the silent path)', what='await keptName')
     c.ok('keptName(FA).then(' in src, 'the name beside the choice', 'on a gesture the name is read beside the choice, not before')
+
+
+
+_SH_REC = """() => { const S = window.__mp.S, t0 = performance.now(), log = { t0, n: 0, ev: [], h: [] };
+  const o = CanvasRenderingContext2D.prototype.clearRect; CanvasRenderingContext2D.prototype.clearRect = function () { if (this.canvas.classList.contains('mp-over')) { log.n++; log.ev.push(Math.round(performance.now() - t0)) } return o.apply(this, arguments) };
+  log.iv = setInterval(() => log.h.push([Math.round(performance.now() - t0), Math.round(S.dataEl.getBoundingClientRect().height), S.dpanel]), 50); window.__sh = log; return true }"""
+
+
+@case('D207', 'From « Layers » to the sheet of the spaces at a point, the bottom sheet takes its height once and keeps it: no step-by-step shrinking, the map redrawn a few times at most (it was redrawn at every step, about twice a second), and the sheet does not change height without a gesture', 'D',
+      tags=('maps', 'sheet'), screens=False, designs=('standard',),
+      rule='SOG-0307 (the user, 13 Nov: « clignottement de la carte pendant réduction du volet sur les espaces aériens… toujours ce bug de clignottement à 2fps, et rétrécissement du volet inférieur… notamment passer de « couches » à « vue des airspaces » »): measured at 1 280 px, the sheet went 246 → 233 → 207 → 194 → 181 → 168 px, a map redraw at each step: the graph of the spaces was drawn at the body height minus 16 px, the sheet fitted itself to the graph, the settled size redrew it 13 px smaller, down to the floor')
+def d207(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'azba': True, 'act': 'AZBA', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'D', 'cls': '', 'name': '62', 'key': 'LFD62', 'lower': 'SFC', 'upper': 'FL195', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    for w, h in ((1280, 760), (390, 844)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        hook_map(c)
+        c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R'))", timeout=15000, what=f'the profile ({w} px)')
+        c.wait(1200)
+        c.js(_SH_REC)
+        c.tap('[data-mp="layers"]')
+        c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what=f'{w}: the Layers sheet is open')
+        c.wait(1500)
+        mark = c.js("() => { const m = Math.round(performance.now() - window.__sh.t0); window.__sh.mark = m; return m }")
+        _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", f'{w}: the list of the spaces at this point')
+        c.wait(3000)
+        z = c.js("() => { clearInterval(window.__sh.iv); return { n: window.__sh.n, ev: window.__sh.ev, h: window.__sh.h } }")
+        after = [r for r in z['h'] if r[0] >= mark and r[2] == 'lv']
+        heights = []
+        for r in after:
+            if not heights or heights[-1] != r[1]:
+                heights.append(r[1])
+        c.ok(len(heights) <= 2, str(heights), f'{w}: from the spaces’ sheet opening, the sheet takes its height at most once more (fitting the graph), never step by step')
+        c.ok(len(heights) >= 1 and heights[-1] >= 150, str(heights), f'{w}: and it keeps a working height (the graph is not squeezed to the floor)')
+        late = [r[1] for r in after if r[0] >= mark + 2000]
+        c.ok(late and max(late) - min(late) == 0, str(late[-5:]), f'{w}: nothing moves in the last second: the height is stable')
+        redraws = [t for t in z['ev'] if t >= mark]
+        c.ok(len(redraws) <= 4, str(redraws), f'{w}: the map is redrawn four times at most from the tap to the rest')
+        before = [r[1] for r in z['h'] if 200 < r[0] < mark]
+        c.ok(before and max(before) - min(before) == 0, str(before[-5:]), f'{w}: the Layers sheet keeps its height without a gesture')
+        c.shot(f'D207_standard_sheet_{w}_delivered.png')

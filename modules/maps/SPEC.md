@@ -881,7 +881,9 @@ to its size. A new content replaces the open one; opening the airspaces list rel
   the view; a content (Layers, airspaces at a point, aerodrome, the choose pane) makes the expanded position its head plus its
   content's own height, capped at half, and the default position the smaller of the frame's default and that. `sheetFit()`
   (`sheet_view.js`) writes `--f-sheet-default`, `-default-min`, `-expanded`, `-expanded-min` on the root in pixels, only when they
-  change: after a content is built or closed, after the profile is drawn, at every settle. The choose mode opens the sheet
+  change: after a content is built or closed, after the profile is drawn, at every settle. A content that draws itself to the scale of its sheet (the airspaces at a point) reads its room
+  from `bodyRoom()` — the body height at the sheet's position (the frame's default token, or half the view when expanded, less what the sheet puts around the body) — never from the
+  height the sheet took by fitting itself to that same content (SOG-0307: a feedback that shrank the sheet 13 px per settle, a map redraw at each step). The choose mode opens the sheet
   expanded and gives the position it found back at its exit (§ 5.1).
 - **Landscape** (`html.f-land`): a right column with two positions, default and expanded (`--f-sheet-side`, `-side-min`,
   `-side-max`), its head at the top as the title row; the height rule above does not apply.

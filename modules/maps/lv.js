@@ -14,7 +14,8 @@ import {
 } from './texts.js';
 import {
   openData,
-  endData
+  endData,
+  bodyRoom
 } from './sheet_view.js';
 import {
   releaseAd
@@ -277,7 +278,8 @@ export function showLv() {
   openData('lv', `lv:${list.map(a => a.id || a.name || '').join('|')}#${also.join('|')}@${S.lvOpen ? S.lvOpen.key || S.lvOpen.name || '' : ''}`, list.length === 1 ? tt(TX.levelsTitle1) : tt(
     TX.levelsTitle, {
       n: list.length
-    }), (w, h, el) => levelsHtml(list, w, h, also, el));
+    }), (w, h, el) => levelsHtml(list, w, bodyRoom() || h, also,
+    el)); // la place de la feuille à sa position, jamais la hauteur qu'elle a prise en s'ajustant au graphique (SOG-0307)
   const card = S.lvOpen && S.dbodyEl?.querySelector('.mp-sp-card');
   if (card) fillCard(card, S.lvOpen); // la date de la base s'ajoute à la fiche ouverte d'emblée
 }

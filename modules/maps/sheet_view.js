@@ -140,6 +140,24 @@ export function sheetFit() {
   put('--f-sheet-default', `${def}px`);
   put('--f-sheet-default-min', '0px');
 }
+/** La hauteur du corps à la position de la feuille (par défaut : le jeton du cadre, 35 % au-delà de 760 px, 30 % sinon, 170 px au moins ; agrandie : la moitié de la vue) moins l'en-tête : la place
+ *  qu'un contenu qui se dessine à l'échelle de sa feuille (les espaces d'un point) peut prendre, SANS dépendre de la hauteur que la feuille a prise en s'ajustant à ce
+ *  même contenu (SOG-0307 : le graphique se dessinait à la hauteur du corps moins 16 px, la feuille se réduisait au graphique, la taille arrêtée le redessinait 13 px
+ *  plus petit, et ainsi de suite jusqu'au plancher, une carte redessinée à chaque pas). 0 tant que le jeton n'est pas lu, en colonne (paysage) et sur la page de réglage :
+ *  l'appelant garde alors la hauteur du corps. */
+export function bodyRoom() {
+  const root = S?.dataEl?.parentElement;
+  if (!root || !S.sheetTok || document.documentElement.classList.contains('f-land') || root.classList.contains('mp-tuning')) return 0;
+  const cs = getComputedStyle(root),
+    vh = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+  if (!(vh > 0)) return 0;
+  // normale : le jeton du cadre ; agrandie : la moitié de la vue (le plafond de sheetFit) ; l'une et l'autre ne dépendent pas du contenu
+  const def = S.sh.pos === 'expanded' ? Math.round(vh / 2) : Math.round(Math.max(tokLen(S.sheetTok.def || '30%', vh), tokLen(S.sheetTok
+    .min || '170px', vh)));
+  // ce que la feuille met autour du corps (la poignée, l'en-tête, les bordures) : mesuré, il ne dépend pas du contenu
+  const chrome = S.dataEl.getBoundingClientRect().height - S.dbodyEl.getBoundingClientRect().height;
+  return S.dbodyEl.clientHeight > 0 && chrome >= 0 ? Math.max(0, def - chrome) : 0;
+}
 /** Taille arrêtée de la feuille et de la carte (fin d'un glissement, rotation, plein écran, volet) : le fond MapLibre reprend
  *  la taille du cadre, la route est recadrée tant que l'utilisateur n'a pas bougé la carte, tout est redessiné (SPEC § 7.5) ;
  *  rien si les tailles sont celles du dernier passage. */
