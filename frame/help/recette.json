@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
   "tests": 199,
-  "verdicts": 135
+  "verdicts": 137
  },
  "apps": [
   "pilote",
@@ -1738,10 +1738,7 @@
    },
    "test": "Recharge la page. Carburant : « Calculer A → B », laisse les itinéraires sans choisir, passe à la Carte : la fenêtre des itinéraires est là, le premier est tracé, « Choisir cet itinéraire » est actif. Reviens à Carburant sans choisir : les propositions sont toujours là. Retourne à la Carte, choisis : Carburant dit l'itinéraire pris ; de retour sur la Carte, la fenêtre ne revient plus.",
    "since": "2026-11-12",
-   "state": "ko",
-   "delivered": "2026-11-13T11:33:37Z",
-   "comment": "Techniquement, il n’y a plus de bug. néanmoins, je voulais pouvoir choisir et conserver le détail. Y a-t-il un souci à afficher la popup, comme pour les missions, sur la carte sidecar, switcher carte full, revenir, tout en conservant le statut ? On spécifie ça correctement, et on arrête de bricoler. il y a des éléments qui doivent survivre au changement (il y en a, puisqu’en revenant sur fuel, on reclique sur calcul et il réaffiche instantanément). on regarde quelles sont les contraintes de faire survivre ce point au changement de page, et on code. ça semblait simple, sur le papier.",
-   "at": "2026-11-13T15:06:53Z"
+   "state": "known"
   },
   {
    "id": "SOG-0225",
@@ -2501,8 +2498,10 @@
    },
    "test": "Recharge la page. Compagnie › Registre : « Créer une mission » en tête ; au dépli d'une ligne, « Modifier » et « Dupliquer ». Six étapes : Cadre, Équipes, Lieux, Récit, Risques, Chronologie et cartes ; à droite l'aperçu et « À compléter ». 1) Ouvre une vraie mission, ne touche à rien, « Enregistrer » : « Rien à enregistrer ». 2) Change un titre ou la parade d'un risque, « Enregistrer » : avant l'envoi groupé, regarde le diff du fichier dans ton dépôt de données — seul le champ changé a bougé. 3) Crée une liaison commerciale (famille E · CAT) : départ, arrivée, compagnie, charge, aéronef ; le titre se propose seul. Pour la première vraie mission, garde un œil sur le diff : le dépôt garde l'an",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T11:43:42Z"
+   "state": "ok",
+   "delivered": "2026-11-13T11:43:42Z",
+   "comment": "bien. attention au clignottement de la colonne de droite (3 screenshots) au moment où le rail s’élargit.",
+   "at": "2026-11-13T15:28:43Z"
   },
   {
    "id": "SOG-0288",
@@ -2544,8 +2543,10 @@
    },
    "test": "Recharge la page. Anciennes pages (V2) › registre des missions : « Ouvrir dans le générateur » sur une mission ; si le dossier « Missions » ne répond pas, la page le dit et ouvre le choix du dossier (E:\\DEFA\\data\\missions), puis la mission s'ouvre dans le générateur. Une fois le dossier choisi, le geste suivant ne redemande rien.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:04:40Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:04:40Z",
+   "comment": "en fait, plus besoin, l’éditeur v3 est mieux.",
+   "at": "2026-11-13T15:29:09Z"
   },
   {
    "id": "SOG-0291",
@@ -2769,10 +2770,7 @@
    },
    "test": "Recharge la page. Carte : ouvre « Couches », puis touche la carte dans un ou deux espaces aériens pour passer à leur vue : la carte ne clignote plus et le volet du bas garde sa hauteur. Si tu vois encore le volet rétrécir, dis-moi par quel geste.",
    "since": "2026-11-13",
-   "state": "ko",
-   "delivered": "2026-11-13T12:25:02Z",
-   "comment": "régression : la liste des espaces, qui devait être à droite du graphique, est maintenant à nouveau en bas.",
-   "at": "2026-11-13T15:21:57Z"
+   "state": "known"
   },
   {
    "id": "SOG-0308",
@@ -2799,8 +2797,9 @@
    },
    "test": "Recharge la page. Carte, vol démarré (ou sa position estimée) : l'avion est plus grand, cerné de blanc, au-dessus de tout le reste ; son fantôme a la même silhouette en contour. Regarde-le sur une carte chargée (espaces aériens, route, relief).",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T13:04:46Z"
+   "state": "ok",
+   "delivered": "2026-11-13T13:04:46Z",
+   "at": "2026-11-13T15:30:16Z"
   },
   {
    "id": "SOG-0310",
@@ -2828,8 +2827,9 @@
    },
    "test": "Recharge la page. Carte, une mission en préparation : la croix de sa fenêtre pose la question « Abandonner la préparation de la mission … ? » ; « Garder la mission » ne change rien ; « Abandonner » retire la fenêtre, la carte choisie et les points imposés par la mission (les tiens restent). Le tiret replie la fenêtre ; un bouton de la colonne de droite la rouvre, avec le choix de carte.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T12:45:02Z"
+   "state": "ok",
+   "delivered": "2026-11-13T12:45:02Z",
+   "at": "2026-11-13T15:29:40Z"
   },
   {
    "id": "SOG-0312",
@@ -2977,25 +2977,6 @@
    "since": "2026-11-13",
    "state": "todo",
    "recommended": 0
-  },
-  {
-   "id": "Q-0051",
-   "fiche": "SOG-0304",
-   "app": "pilote",
-   "question": "Suivi du vol sur la Carte : la maquette te va-t-elle ? Ouvre http://127.0.0.1:8000/modules/maps/maquette/suivi.html (un bouton par état en haut ; essaie à la largeur d'un téléphone et en grand)",
-   "context": "Tu demandais « une popup avec les infos cruciales ». Mon objection : posée sur la carte, elle cache l'avion ou la route au moment où on les regarde. Ma proposition : le suivi n'est jamais SUR la carte — au téléphone c'est la feuille du bas (fermée : une ligne « ANG 4 min → 187° · 124.725 dans 6 min ») ; en grand c'est une colonne à droite. Ouvert, dans l'ordre : prochain point ; contrôle (la fréquence d'abord ; à moins de deux minutes d'un contact la ligne passe en avertissement jusqu'au geste « Contacté » ; au sol, avant le départ et après l'atterrissage, un gros bouton) ; radionav à régler et la suivante ; un lien vers la procédure de la phase ; un bandeau descente / carburant prévu au point / altitude de sécurité. Limites dites : le temps avant le contact est approximatif (cercle de portée autour du terrain, pas de limite de secteur publiée) ; les centres ne sont pas annoncés ; le carburant est celui du plan (l'appli ne lit pas la jauge) ; la radionav n'est connue que si un bout du tronçon est une balise.",
-   "options": [
-    "Oui, on code sur cette maquette",
-    "Oui, avec mes remarques (dans le texte)",
-    "Je préfère une fenêtre posée sur la carte (dis-moi où)",
-    "Non, à reprendre (dis-moi quoi)"
-   ],
-   "since": "2026-11-13",
-   "state": "answered",
-   "recommended": 0,
-   "choice": 0,
-   "text": "",
-   "at": "2026-11-13T15:00:53Z"
   }
  ]
 }

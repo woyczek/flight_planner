@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "dda589f",
-  "fiches": 326,
+  "organisation": "1eaa78c",
+  "fiches": 331,
   "untranslated": 0,
   "priorities": 310
  },
@@ -354,6 +354,15 @@
      "en": "Decisions sheet: the option labels are truncated",
      "de": "Entscheidungsblatt: die Optionstexte sind abgeschnitten",
      "es": "Hoja de decisiones: las etiquetas de las opciones están cortadas"
+    },
+    {
+     "id": "SOG-0329",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Recette : un troisième verdict « Accepter avec réserves (pas de retest) » ; refuser implique un retest",
+     "en": "Acceptance: a third verdict « Accept with reservations (no retest) »; refusing means a retest",
+     "de": "Abnahme: ein drittes Urteil « Mit Vorbehalt annehmen (kein Nachtest) »; Ablehnen heißt Nachtest",
+     "es": "Recepción: un tercer veredicto « Aceptar con reservas (sin nueva prueba) »; rechazar implica una nueva prueba"
     }
    ]
   },
@@ -796,6 +805,27 @@
    ]
   },
   {
+   "id": "pilote-carburant-procedures-cartes",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; procédures ; cartes",
+    "en": "Carburant ; procédures ; cartes",
+    "de": "Carburant ; procédures ; cartes",
+    "es": "Carburant ; procédures ; cartes"
+   },
+   "items": [
+    {
+     "id": "SOG-0330",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "LFLC, ILS 26 : le lien « Carte » ouvre le tableau des données, pas la carte de l'ILS",
+     "en": "LFLC, ILS 26: the « Chart » link opens the data table, not the ILS chart",
+     "de": "LFLC, ILS 26: der Link « Karte » öffnet die Datentabelle, nicht die ILS-Karte",
+     "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant-route",
    "app": "pilote",
    "label": {
@@ -929,7 +959,7 @@
     {
      "id": "SOG-0307",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Carte : elle clignote pendant qu'on réduit le volet des espaces aériens",
      "en": "Map: it flickers while the airspace panel is being reduced",
      "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
@@ -1161,7 +1191,7 @@
     {
      "id": "SOG-0224",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Carte à côté de Carburant : un tracé d'itinéraire proposé reste après le calcul ; deux erreurs dans la console (infobulles, cadrage)",
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
@@ -1219,6 +1249,15 @@
      "es": "VFR view: show the traffic pattern directions (VAC chart)",
      "milestone": "6.0.0-alpha.6",
      "rank": 126
+    },
+    {
+     "id": "SOG-0328",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cadre gradué / rose : de l'espace entre les pointes de flèches et les chiffres",
+     "en": "Graduated frame / rose: some space between the arrowheads and the digits",
+     "de": "Gradrahmen / Rose: etwas Abstand zwischen Pfeilspitzen und Ziffern",
+     "es": "Marco graduado / rosa: algo de espacio entre las puntas de flecha y las cifras"
     }
    ]
   },
@@ -1448,6 +1487,15 @@
      "en": "Airport map: taxiways gone, and the runway number plate is shifted and clipped",
      "de": "Flugplatzkarte: Rollwege fehlen, und das Schild der Pistennummer ist verschoben und abgeschnitten",
      "es": "Mapa del aeródromo: sin calles de rodaje, y el cartel del número de pista desplazado y cortado"
+    },
+    {
+     "id": "SOG-0327",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Sol : un point d'attente garde son trait rouge quand son étiquette est retirée ; LFBD, deux étiquettes superposées",
+     "en": "Ground: a holding point keeps its red bar when its label is dropped; LFBD, two labels on top of each other",
+     "de": "Boden: ein Rollhalt behält seinen roten Strich, wenn sein Schild entfällt; LFBD, zwei Schilder übereinander",
+     "es": "Suelo: un punto de espera conserva su trazo rojo cuando se quita su etiqueta; LFBD, dos etiquetas superpuestas"
     }
    ]
   },
@@ -1493,13 +1541,12 @@
      "de": "Karte: das Flugzeug (oder sein Schatten) ist auf einer vollen Karte zu schlecht zu sehen",
      "es": "Mapa: el avión (o su fantasma) no se ve lo bastante en un mapa cargado",
      "milestone": "6.0.0-beta.1",
-     "rank": 94,
-     "test": true
+     "rank": 94
     },
     {
      "id": "SOG-0304",
      "kind": "feature",
-     "state": "later",
+     "state": "doing",
      "fr": "Carte pendant le vol : une fenêtre de suivi avec les informations cruciales",
      "en": "Map during the flight: a follow-up window with the crucial information",
      "de": "Karte im Flug: ein Verfolgungsfenster mit den entscheidenden Informationen",
@@ -2173,6 +2220,27 @@
    ]
   },
   {
+   "id": "compagnie-cadre-missions",
+   "app": "compagnie",
+   "label": {
+    "fr": "Cadre ; Missions",
+    "en": "Cadre ; Missions",
+    "de": "Cadre ; Missions",
+    "es": "Cadre ; Missions"
+   },
+   "items": [
+    {
+     "id": "SOG-0331",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions (application Compagnie) : la colonne de droite clignote quand le rail s'élargit",
+     "en": "Missions (Company app): the right column flickers when the rail widens",
+     "de": "Missionen (App Gesellschaft): die rechte Spalte flackert, wenn die Leiste breiter wird",
+     "es": "Misiones (aplicación Compañía): la columna derecha parpadea cuando el riel se ensancha"
+    }
+   ]
+  },
+  {
    "id": "compagnie-carburant-missions",
    "app": "compagnie",
    "label": {
@@ -2243,8 +2311,7 @@
      "fr": "Carte, préparation d'une mission : fermer la fenêtre de la mission l'abandonne sans confirmation ; rien ne fait revenir le choix de carte",
      "en": "Map, mission preparation: closing the mission window abandons it without confirmation; nothing brings the chart choice back",
      "de": "Karte, Missionsvorbereitung: Schließen des Missionsfensters bricht ohne Rückfrage ab; die Kartenwahl kommt nicht zurück",
-     "es": "Mapa, preparación de misión: cerrar la ventana la abandona sin confirmación; nada devuelve la elección de carta",
-     "test": true
+     "es": "Mapa, preparación de misión: cerrar la ventana la abandona sin confirmación; nada devuelve la elección de carta"
     },
     {
      "id": "SOG-0312",
@@ -2374,8 +2441,7 @@
      "de": "Airline: the mission editor in V3",
      "es": "Airline: the mission editor in V3",
      "milestone": "6.0.0-alpha.6",
-     "rank": 123,
-     "test": true
+     "rank": 123
     },
     {
      "id": "SOG-0202",
@@ -2653,8 +2719,7 @@
      "en": "V2: editing a mission does nothing",
      "de": "V2: Mission bearbeiten tut nichts",
      "es": "V2: editar una misión no hace nada",
-     "rank": 168,
-     "test": true
+     "rank": 168
     },
     {
      "id": "SOG-0293",
