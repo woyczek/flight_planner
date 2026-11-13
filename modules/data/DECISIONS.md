@@ -665,3 +665,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   « Maintenance » says « les pays définis et les États ». The texts that describe the Données-side coverage by State of aerodb and the table
   « Couverture par pays » (a table of what the base holds per country) keep « couverture »: it is not the user's list of countries. Help
   ×4 (the quoted labels and one sentence that defines the term), no change of behaviour, no change of key (the cases read the texts by key).
+- **13 Nov 2026 — SOG-0229, lot 4 (screen part): one fold « Détail de la base »** (the ergonomist, after the user's validation of the
+  redesign: « OUI au « Détail » replié unique »). The three cards that closed the screen — « Couverture par pays », « Inventaire des données »
+  and « Journal » — were three more things to look at; they are now the content of ONE closed fold, the last thing of the screen
+  (`baseDetailHtml` in `screen.js`, state `S.baseDetailOpen`, class `d-lc d-bdetail`, `data-base-detail`). Each keeps its own fold and its
+  own read at opening (nothing is read while the outer fold is closed, as before). Nothing else moved. Case L128; L2 and L107 adapted
+  (the journal and the tail of the page), and `_open` / `_l102_open` of the cases open the fold by default (`detail=True`) as they open
+  « Ma couverture ». The specs / inventory part of the lot is a separate commit (no code).

@@ -299,11 +299,13 @@ def _stub(cfg):
     set(v) { ab = v; if (v && v.create && !v.__data) { const o = v.create; v.__data = 1; v.create = function (...a) { return patch(o.apply(this, a)) } } } }) })()""" % json.dumps(cfg)
 
 
-def _open(c, cfg, target='data', my_coverage=True):
+def _open(c, cfg, target='data', my_coverage=True, detail=True):
     c.page.add_init_script(_stub(cfg))
     c.open(target, docs=LEVEL3, wait=False, app='maintenance')  # le module Données est dans l'application Maintenance
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
     c.settle()
+    if detail:   # « Détail de la base » (SOG-0229, lot 4: the coverage table, the inventory and the journal) is folded when the screen opens: the cases that read them open it
+        c.js("document.querySelectorAll('details[data-base-detail]').forEach(d => { d.open = true })")
     if my_coverage:   # « Ma couverture » (the packs, the box « Je certifie… ») is folded when the screen opens (SOG-0262, lot C): the cases that act on them open it, the case of lot C leaves it folded (my_coverage=False)
         c.js("document.querySelectorAll('details[data-my-coverage]').forEach(d => { d.open = true })")
 
@@ -383,7 +385,7 @@ def l2(c):
       reasons: [...b.querySelectorAll('[data-reason]')].map(p => [p.dataset.reason, p.textContent.trim()]),
       labels: [...b.querySelectorAll('label.d-opt'), ...my.querySelectorAll('label.d-opt')].filter(l => l.offsetParent).map(l => Math.round(l.getBoundingClientRect().height)),
       btn: Math.round(b.querySelector('[data-verb=build]').getBoundingClientRect().height), first: b === document.querySelector('[data-group=base]').children[0].children[0],
-      journal: (j => j && { open: j.open, h: Math.round(j.querySelector('summary').getBoundingClientRect().height), last: j === document.querySelector('[data-module=data] [data-body]').lastElementChild })(document.querySelector('[data-journal]')) } }""")
+      journal: (j => j && { open: j.open, h: Math.round(j.querySelector('summary').getBoundingClientRect().height), last: j.parentElement === document.querySelector('[data-module=data] [data-body]').lastElementChild })(document.querySelector('[data-journal]')) } }""")
     c.ok(panel and panel['first'], panel, 'the build panel is the first thing in the content of the base group')
     c.eq(panel['zones'], [], 'no zone to tick any more (SOG-0262: the verbs of the base act on the whole coverage)', what='build zones')
     c.eq(panel['personal'], [['enaire', 'nats', 'xplane'], False], 'the three personal-licence sources are listed (every zone ticked feeds them), ONE certification box, unticked', what='personal sources')
@@ -392,7 +394,7 @@ def l2(c):
     c.eq([[r[0], norm(r[1])] for r in panel['reasons']], [['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))]], 'the grey button says why, once', what='reason')
     c.ge(min(panel['labels'] + ([panel['btn']] if False else [])), 44 if c.phone else 31, 'every checkbox line is 44 px for a finger, 32 px for a fine pointer (SOG-0168)', what='touch height')
     c.ge(panel['btn'], 44, 'the button is 44 px', what='button height')
-    c.eq([panel['journal']['open'], panel['journal']['last']], [False, True], 'the journal is the foot of the screen, folded', what='journal')
+    c.eq([panel['journal']['open'], panel['journal']['last']], [False, True], 'the journal is in the foot of the screen (the fold « Détail de la base », SOG-0229), folded', what='journal')
     c.ge(panel['journal']['h'], 44, 'its summary is a 44 px target', what='journal summary')
     c.le(m['sw'], m['iw'], 'no horizontal scroll', what='scrollWidth')
     c.ok(not m['over'], m['over'], 'no element beyond the right edge of the window')
@@ -7981,7 +7983,7 @@ def _l102_cycle(world, labels):
     return answer
 
 
-def _l102_open(c, tweak=None, wrap=None, target='data'):
+def _l102_open(c, tweak=None, wrap=None, target='data', detail=True):
     """The Données screen of the capture: real outlines, real names, real packs, real catalogue; invented states."""
     labels = _l102_labels()
     geo, packs, cover = _l102_world()
@@ -8001,7 +8003,7 @@ def _l102_open(c, tweak=None, wrap=None, target='data'):
     st['status'] = lambda args: _status(world['zs'])
     if tweak:
         tweak(cfg)   # D4: a case adds its own sub-zone names or catalogue steps
-    _open(c, cfg, target=target, my_coverage=False)
+    _open(c, cfg, target=target, my_coverage=False, detail=detail)
     c.until("document.querySelectorAll('[data-wmap] path[data-zone]').length > 20 && !!document.querySelector('[data-todo-state=ready]')", timeout=30000, what='the real map and the list of the month')
     _ready(c, len(cover), timeout=20000)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -8371,7 +8373,7 @@ def l107(c):
         c.ok(bool(norm(title or '')), (g, title), 'and has its title')
     c.eq([norm(words[1][1]), norm(words[4][1])], [_D4('foldVfr', lang), _D4('foldSources', lang)], 'the VFR points and the sources have their own lines', what='titles')
     tail = c.js("[...document.querySelector('[data-body]').children].slice(-3).map(e => e.tagName + '.' + e.className.split(' ').find(x => x.startsWith('d-')))")
-    c.eq(tail, ['DETAILS.d-covtable', 'DETAILS.d-inventory', 'DETAILS.d-journal'], 'the coverage by country, the inventory of the files and the journal close the page, as folded lines', what='tail')
+    c.eq(tail, ['DETAILS.d-fold', 'DETAILS.d-fold', 'DETAILS.d-lc'], 'the last set, the sources and the one fold « Détail de la base » close the page (it holds the coverage by country, the inventory and the journal: L128)', what='tail')
     c.eq(c.js("[...document.querySelectorAll('details.d-covtable, details.d-inventory, details.d-journal')].map(d => d.open)"), [False] * 3, 'folded', what='tail folded')
     c.eq(c.count('[data-state-head] [data-update-row] button'), 1, 'ONE « Tout mettre à jour » on the page: the one of the cycle header (the second button of the old card is gone)', what='one button')
     # opening a line shows its panel, as before (data-attributes and verbs kept)
@@ -9234,4 +9236,24 @@ def l127(c):
     c.eq(s['open'], False, 'folded when the screen opens', what='folded')
     c.eq([norm(s['pill']), norm(s['state'] or '')], [norm(R('pillOn', d=day)), norm(R('stateOn', d=day))], 'the pill and the line say the file is deposited, with the date it carries', what='state')
     c.eq(c.count('[data-change=registry_fr]'), 1, 'and the line of « Quand ça change » is still there', what='change line')
+    c.check_errors()
+
+
+@case('L128', 'Données: the three blocks that are read without doing anything — « Couverture par pays », « Inventaire des données » and « Journal » — are ONE fold « Détail de la base » at the foot of the screen, closed when the screen opens (SOG-0229, lot 4)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0229 (the user: « pas clair du tout » ; the proposal of 11 Nov, accepted by the ergonomist on 13 Nov): three folded cards under the groups were three more things to look at; they are one fold, the last thing of the screen, closed; each keeps its own fold and its own read at opening')
+def l128(c):
+    lang = c.lang
+    _l102_open(c, detail=False)
+    t = lambda k: _trow(k, lang, after='  bdet: {')
+    r = c.js("""() => { const b = document.querySelector('[data-body]'), d = b.querySelector(':scope > [data-base-detail]'); if (!d) return null;
+      return { open: d.open, title: d.querySelector(':scope > summary .d-lct')?.textContent.trim(), last: b.lastElementChild === d, inner: ['[data-covtable]', '[data-inventory]', '[data-journal]'].map(s => [!!d.querySelector(s), !!b.querySelector(':scope > ' + s)]), hint: d.querySelector(':scope > p.f-muted')?.textContent.trim() } }""")
+    c.ok(r is not None, r, 'one fold « Détail de la base » is the foot of the screen')
+    c.eq([norm(r['title']), norm(r['hint']), r['open'], r['last']], [norm(t('title')), norm(t('hint')), False, True], 'named in the language of the run, closed, the last thing of the screen', what='fold')
+    c.eq(r['inner'], [[True, False]] * 3, 'it holds the coverage table, the inventory and the journal, none of them alone under the groups any more', what='inner')
+    c.js("document.querySelector('[data-base-detail]').open = true")
+    c.until("document.querySelector('[data-base-detail]').open && document.querySelector('[data-base-detail] [data-journal] > summary').getBoundingClientRect().height > 0", timeout=4000, what='opened')
+    c.js("document.querySelector('[data-base-detail] [data-journal]').open = true")
+    c.until("!!document.querySelector('[data-base-detail] [data-journal] .f-muted, [data-base-detail] [data-journal] .d-ops')", timeout=4000, what='the journal opens inside')
+    c.eq(c.js("document.querySelector('[data-base-detail]').open"), True, 'the outer fold keeps its state', what='stays open')
     c.check_errors()

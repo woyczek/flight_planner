@@ -2765,5 +2765,15 @@ export const TX = {
       'Diese Datei ist nicht der Export des französischen Registers: die erwarteten Spalten fehlen. Es wurde nichts behalten.',
       'Este archivo no es la exportación del registro francés: faltan las columnas esperadas. No se guardó nada.'
     ]
+  },
+  // SOG-0229 (lot 4) : le « Détail de la base », un seul pli fermé pour ce qui se lit mais ne se fait pas
+  bdet: {
+    title: ['Détail de la base', 'Base details', 'Details der Basis', 'Detalle de la base'],
+    hint: [
+      'Ce qui se lit sans rien faire : la couverture par pays, l’inventaire des données du poste et le journal des opérations.',
+      'What is read without doing anything: the coverage by country, the workstation’s data inventory and the journal of operations.',
+      'Was man liest, ohne etwas zu tun: die Abdeckung nach Land, das Dateninventar des Rechners und das Protokoll der Vorgänge.',
+      'Lo que se lee sin hacer nada: la cobertura por país, el inventario de datos del equipo y el diario de las operaciones.'
+    ]
   }
 };

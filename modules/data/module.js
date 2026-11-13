@@ -451,6 +451,8 @@ function onToggle(e) {
   const g = e.target;
   if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-bdetail') && g.isConnected) S.baseDetailOpen = g
+    .open; // le « Détail de la base » (SOG-0229)
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-moreverbs') && g.isConnected) S.verbsOpen = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-packs-fold') && g.isConnected) S.packsOpen = g
     .open; // « Paquets de pays », replié d'origine (SOG-0228)
@@ -552,6 +554,7 @@ export async function mount(el, ctx) {
     }, // « Publier » : sync-status lu, 'asking' | 'running' | null, la fin { out } ou { unread }
     journal: [],
     journalOpen: false,
+    baseDetailOpen: false, // le pli « Détail de la base » (couverture par pays, inventaire, journal), fermé d'origine
     upload: null, // l'envoi d'un fichier choisi au lanceur (SOG-0199) : { zone, name, loaded, total, ctrl }
     cov: null, // le tableau de couverture par pays (SOG-0174) : lu à l'ouverture seulement, { open, state, rows, sort, openRows }
     inventory: null, // la carte « Inventaire des données » : lue à l'ouverture seulement, { open, state, rows }

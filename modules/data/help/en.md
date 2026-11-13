@@ -68,7 +68,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-inventory"></a>**The data inventory.** Under the groups, a folded « Data inventory » block says what “data” covers on this workstation: seven lines (the data repository, the folder local to the workstation, the raw SIA sources, this device’s copy, the suite’s working folders, Downloads, the backups left behind), each with its size, “tracked”, “local” or “outside the repository”, and who writes it. It is read only when you open it. It reads no file, moves nothing, writes nothing; without a launcher, or with an old one, it says “inventory unreadable”. With a launcher that can do it, it also offers “Put the raw sources away”: the raw SIA XML files of data/sia/ go into data/local/sources/sia/<cycle>/. The plan comes first (the files and their size, never a path) and nothing moves before you confirm; each file is copied, checked, then the old one removed (kept if git tracks it, never deleted for every workstation). The result says which files were moved, already in place, kept and refused with their reason; “Put them back” undoes the move the same way. Nothing goes while another operation runs or a merge is pending, nor from a paired device.
 
-<a id="data-journal"></a>**The journal.** At the foot of the screen, the last 50 operations of this device: UTC time, verb, zones, result.
+<a id="data-journal"></a>**The journal.** At the foot of the screen, the last 50 operations of this device: UTC time, verb, zones, result. These three blocks (coverage by country, data inventory, journal) are gathered in **one closed fold “Base details”** at the foot of the screen: open it to read, nothing is done there.
 
 ## Special cases
 

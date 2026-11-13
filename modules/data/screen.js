@@ -695,7 +695,7 @@ function renderBody() {
   const myCov = S.body.querySelector('details.d-mycov');
   if (myCov) S.myCovOpen = myCov.open; // « Ma couverture » ouvert à l'instant : l'événement toggle n'est peut-être pas encore passé
   const grp = groupsHtml();
-  S.body.innerHTML = `<input type="file" data-upload-input hidden tabindex="-1" aria-hidden="true">${headHtml()}${grp.base}${grp.rest}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
+  S.body.innerHTML = `<input type="file" data-upload-input hidden tabindex="-1" aria-hidden="true">${headHtml()}${grp.base}${grp.rest}${baseDetailHtml()}`;
 }
 /** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */
 const wordOf = (map, key) => tt(M.own(map, key) || [key, key, key, key]);
@@ -707,6 +707,11 @@ function opHtml(e) {
     zs = e.verb === 'publish' ? count('file', M.num(e.committed) ?? 0) : items,
     label = set === 'base' || set === 'all' ? '' : `${wordOf(TX.setLabel, set)} · `;
   return `<li data-op data-result="${esc(e.result)}" data-op-verb="${esc(e.verb)}" data-op-set="${esc(set)}"><time datetime="${esc(e.at)}">${esc(fmtDateZ(e.at, lang()))}</time> · ${esc(label)}${esc(wordOf(TX.opVerb, e.verb))} · ${esc(e.set === 'aircraft' && e.verb === 'publish' ? count('sheet', M.num(e.copied) ?? 0) : zs)} · ${esc(wordOf(TX.opResult, e.result))}</li>`;
+}
+/** Le « Détail de la base » (SOG-0229, lot 4) : UN pli fermé, au pied de l'écran, qui range ce qui se lit sans rien faire — la couverture par pays, l'inventaire des données du poste, le journal ; chacun garde son propre pli et sa lecture à l'ouverture. */
+function baseDetailHtml() {
+  return `<details class="d-lc d-bdetail" data-base-detail${S.baseDetailOpen ? ' open' : ''}><summary><span class="d-lct">${esc(tt(TX.bdet.title))}</span><i class="d-chev" aria-hidden="true"></i></summary>
+    <p class="f-muted">${esc(tt(TX.bdet.hint))}</p>${covTableHtml()}${inventoryHtml()}${journalHtml()}</details>`;
 }
 /** Le journal, replié, au pied de l'écran : les opérations les plus récentes d'abord. */
 function journalHtml() {
