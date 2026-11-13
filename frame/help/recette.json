@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-13",
-  "tests": 209,
+  "tests": 210,
   "verdicts": 147
  },
  "apps": [
@@ -3138,6 +3138,20 @@
    "since": "2026-11-13",
    "state": "todo",
    "delivered": "2026-11-13T17:53:59Z"
+  },
+  {
+   "id": "SOG-0335",
+   "app": "maintenance",
+   "title": {
+    "fr": "Signaler un bug depuis le téléphone, en un geste (pour ses essais du week-end)",
+    "en": "Report a bug from the phone, in one gesture (for his weekend tests)",
+    "de": "Einen Fehler vom Telefon aus melden, mit einer Geste (für seine Tests am Wochenende)",
+    "es": "Señalar un error desde el teléfono, con un gesto (para sus pruebas del fin de semana)"
+   },
+   "test": "Sur le téléphone, ouvre l'appli : une note « nouvelle version · Recharger » doit apparaître (sinon ferme et rouvre l'appli deux fois). En haut, à gauche du « ? », une icône d'insecte : touche-la. Choisis une sorte, un titre, un texte, « Envoyer » : une note dit où le signalement est parti (dépôt des données, sous ton trigramme) ; sans réseau, il attend. Une photo jointe n'est pas encore envoyée : l'écran le dit. De retour au poste, dis-le moi : je lis le dossier et j'en fais des fiches.",
+   "since": "2026-11-13",
+   "state": "todo",
+   "delivered": "2026-11-13T21:50:52Z"
   }
  ],
  "decisions": [
