@@ -2650,12 +2650,10 @@
     }
   }
 
-  /** Aide de l'écran affiché (bouton « ? » de l'en-tête, sur un téléphone comme sur un écran) : le manuel au chapitre de
-   *  l'écran (celui du module ; celui des Réglages quand ils sont ouverts par-dessus) ; un second appel, avec l'aide ouverte,
-   *  la referme. */
-  /** Le bouton « Signaler » de l'en-tête (SOG-0335) : il n'existe que pendant les PRÉVERSIONS (alpha, bêta, rc) et disparaît tout seul à la
-   *  version finale ; une version encore inconnue (page tout juste ouverte, hors ligne) le laisse là. C'est le seul endroit à changer pour le retirer. */
-  const signalWanted = () => !suiteVersion || /-(alpha|beta|rc|pre)/i.test(suiteVersion.version);
+  /** Le bouton « Signaler » de l'en-tête (SOG-0335) : montré pendant les PRÉVERSIONS, retiré à la version finale. Il n'est caché que lorsque la version est EXACTEMENT
+   *  une version finale (6.0.0, v6.0.0) ; toute autre chaîne le montre : un SHA nu (le site publié, dont le dépôt est cloné sans étiquettes), un « git describe » avec
+   *  distance ou une étiquette de sauvegarde, alpha, bêta, rc, ou une version encore inconnue. C'est le seul endroit à changer pour le retirer. */
+  const signalWanted = () => !suiteVersion || !/^v?\d+\.\d+\.\d+$/.test(suiteVersion.version);
 
   function paintSignal() {
     const b = $('fSignal'),
@@ -2668,6 +2666,9 @@
     location.hash = '#signaler';
   }
 
+  /** Aide de l'écran affiché (bouton « ? » de l'en-tête, sur un téléphone comme sur un écran) : le manuel au chapitre de
+   *  l'écran (celui du module ; celui des Réglages quand ils sont ouverts par-dessus) ; un second appel, avec l'aide ouverte,
+   *  la referme. */
   function openHelp() {
     if (over && DOCS.includes(over.id)) return leaveOver();
     const shown = over ? over.id : parseHash().id,

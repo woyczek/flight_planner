@@ -7552,4 +7552,24 @@ def a196(c):
     c.shot(f'A196_screen_{c.width}_{c.lang}_delivered.png')
     c.tap('#fSignal')
     c.until("location.hash !== '#signaler'", what='a second press closes the screen')
+    # ---- the button is shown for EVERY version but an exact final one: a bare SHA (the published site: shallow checkout, no tags), a describe with a distance or a backup tag, alpha, beta
+    hits = []
+
+    def serve(v):
+        def h(route):
+            hits.append(v)
+            route.fulfill(status=200, content_type='application/json', body=json.dumps({'version': v, 'date': '2026-11-13'}))
+        return h
+    for v, shown in (('1a2b3c4', True), ('backup/v3-avant-refactoring-2026-11-11-609-g1a2b3c4', True), ('6.0.0-alpha.4', True), ('6.0.0-beta.1+1a2b3c4', True), ('6.0.0', False), ('v6.0.0', False)):
+        h = serve(v)
+        c.context.route(re.compile(r'/version\.json'), h)
+        n = len(hits)
+        c.open('fuel', docs=seed, wait=False)
+        c.until("!!document.querySelector('#fSignal svg')", timeout=20000, what='the header')
+        for _ in range(60):
+            if len(hits) > n:
+                break
+            c.wait(250)
+        c.wait(700)
+        c.eq(c.js("!document.getElementById('fSignal').hidden"), shown, f'version {v!r}: the report button is ' + ('shown' if shown else 'hidden (an exact final version)'), what=f'button for {v}')
     c.check_errors()

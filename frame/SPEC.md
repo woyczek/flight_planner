@@ -479,7 +479,7 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
 - **Header on a phone** (760 px or narrower, rule 14, 24 Oct 2026; the name is the module's title for a non-fixed module, rule 16 below): **name · "?" · ⚙ and nothing else**, never wider than
-  the window (no menu button; the "←" back button takes the name's place after a passage). a bug icon (`#fSignal`: the report screen; pre-releases only, `signalWanted()`; SOG-0335) before "?" (`#fHelp`) which opens the help
+  the window (no menu button; the "←" back button takes the name's place after a passage). a bug icon (`#fSignal`: the report screen; hidden only for an exact final version, `signalWanted()`; SOG-0335) before "?" (`#fHelp`) which opens the help
   chapter of the current screen (the Settings chapter when Settings are open), ⚙ (`#fDevice`) the Settings screen and carries the
   state badge, **in every application** (31 Oct 2026, the user: consistency between applications first). An
   application's bar carries its modules only (Maintenance: Data, and Aircraft at the level that opens it; never Help or
