@@ -539,7 +539,7 @@ export function createProcedures(host) {
       // infobulle ; une transition « via ODILO · ODILO 1A »
       const ac = PR.appChoices(m.lists.APP),
         xp = r => srcLabel(r) ? ` · ${srcLabel(r)}` : '';
-      sel('app', 'app', TX.procApp, ac.list, true, r => PR.labelOf(r, ac.list) + (finalOnly(r) ? ` — ${tt(TX.procFinalOnly)}` : '') + xp(r) + (PR
+      sel('app', 'app', TX.procApp, ac.list, true, r => appWords(PR.labelOf(r, ac.list)) + (finalOnly(r) ? ` — ${tt(TX.procFinalOnly)}` : '') + xp(r) + (PR
         .isDoubt(r) ? ` · ⚑ ${tt(TX.procDoubt)}` : '') + (r.outdated ? PROC_OLD : ''));
       // SOG-0248 : après les approches codées, chaque approche « carte seulement » de l'AIP, dite mais jamais choisie (son lien est sous
       // la liste)
@@ -572,6 +572,22 @@ export function createProcedures(host) {
       String(r.name || r.id || '').slice(0, 40));
   }
 
+  /** SOG-0308 : une approche en mots — un nom CIFP (« I13R », « R06-Y ») lu par son type (« ILS 13R », « RNP 06 Y ») ; tout autre
+   *  libellé tel quel. Le type d'après la lettre ARINC 424 (PR.arincApp en est l'inverse). */
+  const APP_TYPE = {
+    I: 'ILS',
+    L: 'LOC',
+    R: 'RNP',
+    V: 'VOR',
+    D: 'VOR/DME',
+    N: 'NDB',
+    Q: 'NDB/DME'
+  };
+
+  function appWords(label) {
+    const t = /^([ILRVDNQ])(\d{2}[LRC]?)(?:-([A-Z]))?$/.exec(String(label || '').trim());
+    return t ? [APP_TYPE[t[1]], t[2], t[3] || ''].filter(Boolean).join(' ') : String(label || '');
+  }
   /** SOG-0308 : les valeurs en mots des lignes d'un côté, la même règle pour la phrase repliée et les lignes ouvertes : { rwy, rwyWords,
    *  w (vent de la piste choisie), proc, app } ; proc / app : le nom (« MEN2B · transition MTL », « ILS 31L »), null pour « aucune »,
    *  undefined sans choix. */
@@ -588,8 +604,8 @@ export function createProcedures(host) {
       finals = PR.appChoices(m.lists?.APP || []).list,
       appRec = typeof o.app === 'string' ? byId.get(o.app) || finals.find(x => x.id === o.app) : null,
       appTrans = typeof o.appTrans === 'string' && o.appTrans !== o.app ? byId.get(o.appTrans) : null,
-      app = o.app === null ? null : appRec ? [PR.labelOf(appRec, finals), appTrans ? `${tt(TX.procTransWord)} ${PR.transitionLabelOf(appTrans)}` : '']
-      .filter(Boolean).join(' · ') : s.app;
+      app = o.app === null ? null : appRec ? [appWords(PR.labelOf(appRec, finals)), appTrans ? `${tt(TX.procTransWord)} ${PR.transitionLabelOf(appTrans)}` : '']
+      .filter(Boolean).join(' · ') : s.app && appWords(s.app);
     return {
       rwy,
       w,
@@ -976,9 +992,18 @@ export function createProcedures(host) {
   }
   /** Pose la ligne de l'aide (cachée quand elle est vide : pas de place laissée). */
   function setAid(el, m) {
-    const html = m ? aidHtml(m) : '';
+    // SOG-0308 : sur la ligne Approche, l'indicatif et la fréquence du moyen (« TST 110,30 », la virgule de la langue) ; la ligne
+    // complète (type, piste, axe, DME) en infobulle
+    const f = m ? aidFor(m) : null,
+      freq = f ? Number(f.x.freq).toLocaleString(ctx.lang?.() || 'fr', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 3
+      }) : '',
+      html = f ? esc(`${f.x.id} ${freq}`) : '';
     setHtml(el, html);
     el.hidden = !html;
+    if (html) el.title = aidHtml(m).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n));
+    else el.removeAttribute('title');
   }
   /** SOG-0308 : les valeurs des lignes d'un côté ouvert, leurs sources, la liste ouverte par « Changer » ; la ligne Piste passe en
    *  avertissement quand la piste choisie n'est pas la mieux orientée (le geste pour la prendre est sur la ligne). */

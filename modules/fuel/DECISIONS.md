@@ -1894,3 +1894,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   sentence 6 px under « Choisir sur la carte »; the warning line overflows by 10 px each side so that its « Changer » stays on the
   right edge of the others; the foot folds with ▸ / ▾ like the sides. F211 (red before); F209 extended (red before: « Changer » of the
   warning 10 px left of the others).
+- **13 Nov 2026 — SOG-0308, slice 3a: the approach line** (written by Features SOG). An approach is said in words: a CIFP name
+  (« I13R », « R06-Y ») reads by its type, the ARINC 424 letter of `PR.arincApp` the other way (« ILS 13R », « RNP 06 Y »), on the line,
+  in the folded sentence and in the list; any other label as it is. The source of the line: the navaid's ident and frequency from the
+  published base (`aidFor`, the ILS / LOC of the runway: SOG-0176, SOG-0298 — exact for ILS and LOC only), the language's decimal sign
+  (« TST 110,30 »); the whole aid line (type, runway, axis, DME) in its title; « Aides radio » keeps the whole line. F212 (red before:
+  « I13R »); F127 and F65 read the new line. Slice 3b (an approach chosen by its chart only) follows, on the ergonomist's five conditions.

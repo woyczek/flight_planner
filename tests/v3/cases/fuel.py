@@ -1666,7 +1666,7 @@ def f65(c):
     # the runway's axis is the Map's rule since the refactoring R-F1 (§ 10.33): threshold → opposite threshold before the QFU; the invented
     # thresholds of LFML give 134° (their QFU says 130°), hence the 1 kt of crosswind
     want = ['13R — ' + norm(tx(PT, 'windTail', c.lang).replace('{kt}', '12')) + ' · ' + norm(tx(PT, 'windCross', c.lang).replace('{kt}', '1')),
-            'MEN1A · ' + norm(tx(PT, 'procTransWord', c.lang)) + ' NEPIX', 'I13R']
+            'MEN1A · ' + norm(tx(PT, 'procTransWord', c.lang)) + ' NEPIX', 'ILS 13R']
     c.eq([norm(x) for x in arr], want, 'runway with its wind in words, STAR with its transition, approach', what='arrival lines')
     c.ok(c.js("document.querySelector('[data-module=fuel] [data-proc=arr] [data-prow=rwy]').classList.contains('fu-pwarn')"), 'no warning',
          'a tail wind over the limits: the runway line is a warning')
@@ -3613,9 +3613,11 @@ _ILS_PROCS = {'dep': {'rwy': '03', 'sid': None}, 'arr': {'rwy': '13R', 'star': '
 def f127(c):
     open_proc(c, procs=_ILS_PROCS, aero_extra=_ils_extra())
     wait_rows(c, 'arr')
-    c.until(f"(() => {{ const e = document.querySelector('{FUEL} [data-proc=arr] [data-appaid]'); return !!e && !e.hidden && /110\\.30/.test(e.textContent) }})()", timeout=10000,
+    c.until(f"(() => {{ const e = document.querySelector('{FUEL} [data-proc=arr] [data-appaid]'); return !!e && !e.hidden && /110[.,]30/.test(e.textContent) }})()", timeout=10000,
             what='the aid line of the chosen ILS')
-    line = norm(c.text(f'{FUEL} [data-proc="arr"] [data-appaid]'))
+    # SOG-0308: the line says « TST 110,30 » (the ident, the frequency with the language's decimal sign); the whole aid line in its title
+    c.ok(norm(c.text(f'{FUEL} [data-proc="arr"] [data-appaid]')).startswith('TST 110'), c.text(f'{FUEL} [data-proc="arr"] [data-appaid]'), 'the ident and the frequency on the line')
+    line = norm(c.attr(f'{FUEL} [data-proc="arr"] [data-appaid]', 'title'))
     want = norm(tx(PT, 'appAid', c.lang).replace('{type}', 'ILS').replace('{rwy}', '13R').replace('{id}', 'TST').replace('{freq}', '110.30').replace('{axis}', '134') + ' · DME')
     c.eq(line, want, '« ILS 13R · TST 110.30 · axe 134° · DME »: type and runway, ident and frequency, axis, DME', what='aid line')
     c.js(f"document.querySelector('{FUEL} [data-proc=arr] [data-appaid]').scrollIntoView({{block: 'center'}})")
@@ -3632,7 +3634,7 @@ def f127(c):
     c.page.wait_for_timeout(1500)
     c.eq(c.js(f"(() => {{ const e = document.querySelector('{FUEL} [data-proc=arr] [data-appaid]'); return e ? [e.hidden, e.textContent.trim()] : null }})()"), [True, ''],
          'without an ILS in the base: no line (hidden, empty)', what='[hidden, text]')
-    c.ok('I13R' in c.js(summ) and not any('110' in x for x in c.js(summ)), c.js(summ), 'and the summary says the approach alone')
+    c.ok('ILS 13R' in c.js(summ) and not any('110' in x for x in c.js(summ)), c.js(summ), 'and the approach line says the approach alone')
 
 
 @case('F128', 'Fuel beside the Map: after « New flight » the Map beside it is still pannable and the pane still resizable (SOG-0194)', 'F', tags=('fuel', 'maps'),
@@ -5275,3 +5277,23 @@ def f211(c):
     dep = opts('p-dep-rwy')
     c.ok(dep and dep[-1].startswith('21') and norm(tx(PT, 'procRwyNoSid', c.lang)) in norm(dep[-1]), dep,
          'runway 21, which no SID serves any more, last, « aucun départ publié » — although the wind favours it')
+
+
+
+@case('F212', 'Procedures, the approach line (slice 3a of the mock-up): the approach in words — a CIFP name « I13R » reads « ILS 13R », in '
+      'the list too —, its source the navaid\'s ident and frequency « TST 110,30 », the whole aid line in its title', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0308 (mock-up validated, Q-0047: « Ligne APPROCHE : « ILS 31L » avec l\'indicatif et la fréquence du moyen (« ML 110,30 ») ; '
+      'lien « Carte » »), SOG-0298 (navaidsOf) — the line said « I13R » and the aid as a separate sentence')
+def f212(c):
+    open_proc(c, procs=_ILS_PROCS, aero_extra=_ils_extra())
+    wait_rows(c, 'arr')
+    A = f'{FUEL} [data-proc="arr"]'
+    c.until(f"(document.querySelector('{A} [data-r=v-app]')?.textContent || '').trim() === 'ILS 13R'", timeout=10000, what='the approach line says « ILS 13R »')
+    c.until(f"(document.querySelector('{A} [data-appaid]')?.textContent || '').trim() === 'TST 110,30'", timeout=10000, what='its source « TST 110,30 »')
+    t = c.js(f"document.querySelector('{A} [data-appaid]').title")
+    c.ok('110.30' in t and '134' in t and 'DME' in t, t, 'the whole aid line (axis, DME) in its title')
+    c.ok(norm(c.text(f'{A} [data-procsum]') or '') == '' or 'ILS 13R' in norm(c.text(f'{A} [data-procsum]') or ''), c.text(f'{A} [data-procsum]'), 'the folded sentence in words too')
+    show_list(c, 'p-arr-app')
+    labs = [lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')]
+    c.ok(any(l.startswith('ILS 13R') for l in labs), labs, 'the list says « ILS 13R »')
