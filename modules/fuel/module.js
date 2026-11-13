@@ -4010,9 +4010,10 @@ function altsSend(doc) {
   }));
   if (doc) Promise.resolve(S.ctx.data.put(ALTS_DOC, altsObject(true))).catch(() => {});
 }
-/** Plus d'itinéraires à dessiner (nouvelle demande, nouveau couple, refus) : alternatives []. */
-function altsClear() {
-  if (!S || !S.alts?.list?.length) return;
+/** Plus d'itinéraires à dessiner (nouvelle demande, nouveau couple, refus) : alternatives []. `force` : publié même sans liste en
+ *  mémoire (un choix : le document peut encore en porter une, venue d'une autre ouverture — SOG-0224, choix depuis la Carte seule). */
+function altsClear(force = false) {
+  if (!S || (!force && !S.alts?.list?.length)) return;
   S.alts = null;
   altsSend(true);
 }
@@ -4033,18 +4034,16 @@ function altsPicked(e) {
   if (i === null) return altsShow(-1);
   if (Number.isInteger(i) && i >= 0 && i < S.ralts.list.length) altsShow(i);
 }
-/** #fuel?ralt=<index> (Carte seule) : le document relu, l'itinéraire pris seulement pour le même couple et un calcul (§ 3 bis). */
-async function altsFromAddress(index) {
-  const s = S,
-    i = Number.isInteger(+index) && /^\d{1,2}$/.test(String(index)) ? +index : -1,
-    d = i >= 0 ? await Promise.resolve(S.ctx.data.get(ALTS_DOC)).catch(() => null) : null,
-    r = S?.flight?.route || {};
-  if (gone(s) || !d || d.mode !== 'compute' || !Array.isArray(d.alternatives) || i >= Math.min(d.alternatives.length, 3)) return;
-  if (String(d.dep || '') !== String(r.dep || '') || String(d.arr || '') !== String(r.arr || '')) return;
+/** Les itinéraires du document (cache/fuel/route_alts.json) pour la liste de Carburant : null s'il n'en porte pas pour ce vol (un calcul,
+ *  le même couple). Le document est relu comme une entrée : textes bornés, procédures à leur forme, trois lignes au plus. */
+function raltsOfDoc(d) {
+  const r = S?.flight?.route || {};
+  if (!d || d.mode !== 'compute' || !Array.isArray(d.alternatives) || !d.alternatives.length) return null;
+  if (String(d.dep || '') !== String(r.dep || '') || String(d.arr || '') !== String(r.arr || '')) return null;
   const proc = (v, kind) => new RegExp(`^[A-Z0-9]{4}\\.${kind}\\.[A-Z0-9.]{1,60}$`).test(String(v || '')) ? {
     id: String(v)
   } : null;
-  S.ralts = {
+  return {
     list: d.alternatives.slice(0, 3).map(a => ({
       name: String(a?.name || '').slice(0, 60),
       route: String(a?.route || '').toUpperCase().split(/\s+/).filter(t => /^[A-Z0-9/]{1,16}$/.test(t)).join(' ').slice(0, 800),
@@ -4063,8 +4062,39 @@ async function altsFromAddress(index) {
       gaps: []
     }
   };
+}
+/** #fuel?ralt=<index> (Carte seule) : le document relu, l'itinéraire pris seulement pour le même couple et un calcul (§ 3 bis) ; le
+ *  choix publie la liste vide (routeTake → altsClear(true)) : la Carte efface sa couche (SOG-0224). */
+async function altsFromAddress(index) {
+  const s = S,
+    i = Number.isInteger(+index) && /^\d{1,2}$/.test(String(index)) ? +index : -1,
+    d = i >= 0 ? await Promise.resolve(S.ctx.data.get(ALTS_DOC)).catch(() => null) : null;
+  if (gone(s)) return;
+  const R = raltsOfDoc(d);
+  if (!R || i >= R.list.length) return;
+  S.ralts = R;
   S.alts = null;
   routeTake(i);
+}
+/** Le retour dans Carburant sans choix (SOG-0224) : les propositions du document reviennent dans la liste, rien n'est pris ; la Carte
+ *  les a déjà (le document), rien n'est republié. Seulement quand la liste n'est pas déjà là. */
+async function altsFromDoc() {
+  const s = S;
+  if (S?.ralts?.list?.length) return;
+  const d = await Promise.resolve(S.ctx.data.get(ALTS_DOC)).catch(() => null);
+  if (gone(s) || S.ralts?.list?.length) return;
+  const R = raltsOfDoc(d);
+  if (!R) return;
+  S.ralts = R;
+  // le survol et l'appui se publient comme après un calcul (altsHover, altsShow) : la liste gardée telle que le document la porte
+  S.alts = {
+    mode: 'compute',
+    dep: String(d.dep || ''),
+    arr: String(d.arr || ''),
+    list: d.alternatives.slice(0, 3),
+    hovered: null
+  };
+  routeAltsDraw();
 }
 /** « Prendre » : la route de l'itinéraire écrite comme une saisie (le champ de route et son événement : le seul chemin d'écriture,
  *  SOG-0013), puis sa SID et sa STAR proposées aux procédures (P.propose : vérifiées contre les fiches du terrain, rien d'inconnu écrit). */
@@ -4100,7 +4130,7 @@ function routeTake(i) {
     share: shareText(a.control)
   }), a.control.controlledPct >= 100 ? 'ok' : 'warn'); // SOG-0161 : la confirmation redit le partage
   else if (a.incomplete) S.ctx.notify(tt(TX.rTakenIncomplete), 'warn'); // SOG-0081 : la confirmation redit le contrôle incomplet
-  altsClear(); // plus rien à dessiner pour la Carte (INTEGRATION § 3 bis)
+  altsClear(true); // plus rien à dessiner pour la Carte (INTEGRATION § 3 bis), même pour une liste venue du document (SOG-0224)
 }
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
 function levelAutoOn() {
@@ -6397,6 +6427,7 @@ function flightReady() {
   if (S.missionAsked) applyMission(S.missionAsked);
   else if (S.newAsked) newFlight();
   else if (S.raltAsked !== '') altsFromAddress(S.raltAsked);
+  else altsFromDoc(); // SOG-0224 : de retour sans choix, les propositions du document
   S.raltAsked = '';
   S.missionAsked = '';
   S.newAsked = false;

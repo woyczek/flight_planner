@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › route: a route chosen on a Map alone clears the proposals there too; back in Fuel without a choice, the proposals come back** (fuel DECISIONS, INTEGRATION § 3 bis; noreg F201; SOG-0224).
 - **Map alone: « Choose this route » is never dead** — the window of the proposed routes opens with the first route shown and taken as the current choice (trace highlighted without thickening, row marked), so the button is active from the opening and takes it; a touch on another row or trace changes the choice instead of removing it (the button was grey until a touch, and a second touch on the same row greyed it again); across two screens, Fuel loses its proposals when its screen is left and never clears `route_alts.json` after `#fuel?ralt=`: the end-to-end case D202 is a known failure until Fuel (Features SOG) is fixed (help ×4, Maps DECISIONS; noreg D201, D202; SOG-0224).
 - **Mission editor: a risk named under « title » or « name » survives an edit, translations stay aligned; the registry has its own node budget (audit 187)** (missions DECISIONS; noreg N59).
 - **V2 registry: every YAML goes through the one guarded function** — six direct `jsyaml.load` calls remained (the usage of a mission, the detail view, the generated Markdown twice, the two readers of the previous versions, and the follow-up and report readers): they now go through `loadYaml`, so a file with shared anchors that expand beyond 200 000 nodes is refused the same everywhere (audit 185; noreg K230).

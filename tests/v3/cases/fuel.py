@@ -4930,3 +4930,30 @@ def f160(c):
     q = d['quote']
     c.ok(abs(q['legs'][-1]['min'] - q['minutes']) <= 0.6, [q['legs'][-1], q['minutes']],
          'the time at the arrival in the plan equals the quote\'s flight time (the same legs, the same ground speed)')
+
+
+
+@case('F201', 'Route step, a choice made on a Map alone (#fuel?ralt=): the alternatives are published EMPTY (document and event: the Map clears its '
+      'layer); back in Fuel without any choice, the proposals of the document come back (same pair, nothing chosen)', 'F', tags=('fuel',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0224, Fuel side (ergonomist\'s queue of 13 Nov): altsFromAddress set S.alts to null before taking the route, so altsClear '
+      'published nothing — the Map alone kept the proposals; a return to Fuel without a choice showed no list although the document held one')
+def f201(c):
+    _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until_doc('cache/fuel/route_alts.json', lambda x: x and len(x.get('alternatives') or []) == 3, 'three routes in the document', timeout=8000)
+    # back in Fuel without a choice (another screen, then Fuel): the list of the document again
+    c.go('maps')
+    c.go('fuel')
+    to_step(c, 1)
+    c.until(f"document.querySelectorAll('{FUEL} [data-routealts] [data-alt]').length === 3", timeout=10000,
+            what='the three proposals back from the document, nothing chosen')
+    # a choice made on a Map alone: the route taken, the document emptied (the Map clears its layer)
+    c.js(_ALTS_LISTEN)
+    c.go('fuel?ralt=2')
+    cf_doc(c, lambda d: [w for w in str((d.get('route') or {}).get('text', '')).split() if w != 'DCT'][:3] == ['LFRS', 'LUGEN', 'LFML'],
+           'the address ralt=2 takes the third route', timeout=12000)
+    c.until_doc('cache/fuel/route_alts.json', lambda x: x is not None and len(x.get('alternatives') or []) == 0,
+                'the document published empty after a choice from the Map alone', timeout=8000)

@@ -315,7 +315,10 @@ choisit pas ; il faut spécifiquement le bouton « choisir » pour valider »; c
   `maps-route-alt` (the take) is no longer sent by the Map nor listened to by Fuel: the choice is Fuel's « Choisir »;
 - a Map alone (phone): its button « Choisir cet itinéraire » opens **`#fuel?ralt=<index>`**; Fuel consumes `ralt` at mount
   (`ctx.consume`), reads `cache/fuel/route_alts.json` and takes `alternatives[index]` only when its `dep` / `arr` are the flight's and
-  `mode` is `compute` (route text through the route field, SID and STAR through `P.propose`, as « Choisir »).
+  `mode` is `compute` (route text through the route field, SID and STAR through `P.propose`, as « Choisir »); the choice then
+  publishes the alternatives EMPTY (event and document) like « Choisir » does, so a Map clears its layer (SOG-0224, 13 Nov);
+- back in Fuel without any choice (no `ralt`), the proposals of `cache/fuel/route_alts.json` for the same pair (`mode` compute) come
+  back in the list, nothing taken and nothing republished (the Map already has the document).
 - Values are bounded on both sides (an index is an integer within the list; nothing else is read from the event).
 
 ## 4. Quote settings — `pilot/<trigram>/fuel.json`

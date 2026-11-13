@@ -1806,3 +1806,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   single course stays. Climb and descent unchanged. The result bar says « vent par tronçon »; the difference with the old count is not
   shown. `q.wc` becomes the equivalent component (mean ground speed minus TAS) for what reads it. F160 (red before; the plan's arrival
   time equals the quote's flight time).
+- **13 Nov 2026 — SOG-0224, Fuel side: a choice from a Map alone empties the proposals; a return without a choice brings them back**
+  (ergonomist's queue of 13 Nov; written by Features SOG): `altsFromAddress` (#fuel?ralt=) set `S.alts` to null before `routeTake`, whose
+  `altsClear()` then returned at once (« no list ») — the emptied list was never published and the Map alone kept its proposals. Now the
+  choice publishes the empty list whatever the memory holds (`altsClear(true)` in `routeTake`). And a return to Fuel without a choice
+  (`flightReady`, no `ralt`) reads the document back (`raltsOfDoc`, shared with the address: same pair, `mode` compute, three lines,
+  bounded texts, procedures to their form) and shows the list again, nothing taken, nothing republished. INTEGRATION § 3 bis. F201 (red
+  before: no list on return). The end-to-end case Fuel + Map is BUGS SOG's.
