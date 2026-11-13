@@ -57,11 +57,18 @@ button,.btn{font:inherit;min-height:44px;padding:0 14px;border:1px solid var(--l
 .big{width:100%;min-height:64px;font-size:20px;font-weight:700;border-radius:10px;margin:6px 0}
 .bigwrap{padding:6px 14px 12px}
 .none{color:var(--muted)}
+.nw{white-space:nowrap}
+.fq{font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bigwrap .fq{text-align:center;margin-top:2px}
+.fq.none{white-space:normal;font-size:16px}
+.band .s{font-size:13px;line-height:1.25}
 /* à partir de 1 000 px : une colonne de 340 px à droite, la carte se rétrécit */
 @media (min-width:1000px){
   .body{flex-direction:row}
   .follow{width:340px;border-top:0;border-left:1px solid var(--line);box-shadow:-4px 0 14px rgba(0,0,0,.08);order:2}
   .grip{display:none}
+  .line{font-size:15px;flex-wrap:nowrap}
+  .line .a{white-space:nowrap}
   .full{max-height:none;flex:1}
   .folded .line{border-bottom:1px solid var(--line)}
   .body.folded .follow{height:auto;align-self:flex-start;width:340px;position:absolute;right:0;top:0;border:1px solid var(--line);border-top:0}
@@ -77,16 +84,17 @@ button,.btn{font:inherit;min-height:44px;padding:0 14px;border:1px solid var(--l
 <script>
 /* Vol inventé : LFRS → LFML, 14:32Z ; les états de la maquette, un bouton par état */
 const S = {
-  croisiere: { line: ['ANG 4 min → 187°', '124.725 dans 6 min'], full: true, nowCtl: 'Nantes Approche 124.425 · IVAO', nextCtl: 'Rennes Approche 124.725 · dans environ 6 min', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN', ''], nav: ['À régler : NTS 117.20 · radiale 187 en éloignement', 'Ensuite : ANG 113.00 dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: ['dans 12 min (78 NM)', '2 340 kg · 3 min de retard', '3 400 ft'], circle: true },
+  croisiere: { line: ['ANG 4 min → 187°', '124.725 dans 6 min'], full: true, net: 'IVAO', now: ['124.425', 'Nantes Approche'], next: 'Ensuite 124.725 · Rennes Approche · environ 6 min', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN'], nav: ['117.20 · NTS', 'radiale 187 en éloignement', 'Ensuite 113.00 · ANG · dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: [['12 min', '78 NM'], ['2 340 kg', '3 min de retard'], ['3 400 ft', 'tronçon en cours']], circle: true },
   replie: { line: ['ANG 4 min → 187°', '124.725 dans 6 min'], full: false, circle: true },
-  contact: { line: ['ANG 4 min → 187°', '124.725 · Contacter'], warn: true, full: true, nowCtl: 'Nantes Approche 124.425 · IVAO', nextCtl: 'À contacter dans 1 min : Rennes Approche 124.725', ctlWarn: true, pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN', ''], nav: ['À régler : NTS 117.20 · radiale 187 en éloignement', 'Ensuite : ANG 113.00 dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: ['dans 12 min (78 NM)', '2 340 kg · 3 min de retard', '3 400 ft'], circle: true, mark: true },
-  sol: { big: 'Sol 121.800 — Contacté', sub: 'Avant le départ · prévol ou sol, selon ce qui est en ligne', full: true, proc: 'Piste 21 et parking', ground: true },
-  pose: { big: 'Posé : contacter Sol 121.900', sub: 'Reste affiché tant que « Contacté » n’est pas pressé', full: true, proc: 'Parking', ground: true },
-  sansreseau: { line: ['ANG 4 min → 187°', 'Unicom 122.800'], full: true, nowCtl: 'Aucun contrôle en ligne sur IVAO le long de la route · Unicom 122.800', nextCtl: '', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN', ''], nav: ['À régler : NTS 117.20 · radiale 187 en éloignement', 'Ensuite : ANG 113.00 dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: ['dans 12 min (78 NM)', '2 340 kg · 3 min de retard', '3 400 ft'] },
-  approche: { line: ['LFML 11 min → 263°', '119.350 dans 2 min'], full: true, nowCtl: 'Marseille Approche 119.350 · IVAO', nextCtl: 'Marseille Tour 118.700 · dans environ 7 min', pt: ['MEN · 3 min (14 NM)', 'ensuite cap 263° vers RW26', ''], nav: ['À régler : ILS 26 · 110.30', ''], proc: 'Approche ILS 26', band: ['en descente · 2 100 ft', '1 120 kg · 1 min d’avance', '1 800 ft'], circle: true },
-  sansposition: { line: ['ANG 4 min → 187°', '124.725 dans 6 min'], full: true, gps: true, nowCtl: 'Nantes Approche 124.425 · IVAO', nextCtl: 'Rennes Approche 124.725 · dans environ 6 min', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN', ''], nav: ['À régler : NTS 117.20 · radiale 187 en éloignement', 'Ensuite : ANG 113.00 dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: ['dans 12 min (78 NM)', '2 340 kg · 3 min de retard', '3 400 ft'], circle: true }
+  contact: { line: ['ANG 4 min → 187°', '124.725 · Contacter'], warn: true, full: true, net: 'IVAO', ctlWarn: ['À contacter dans 1 min :', '124.725 · Rennes Approche'], cur: 'En cours 124.425 · Nantes Approche', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN'], nav: ['117.20 · NTS', 'radiale 187 en éloignement', 'Ensuite 113.00 · ANG · dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: [['12 min', '78 NM'], ['2 340 kg', '3 min de retard'], ['3 400 ft', 'tronçon en cours']], circle: true, mark: true },
+  sol: { big: 'Sol 121.800 — Contacté', pos: 'Nantes Sol · IVAO', full: true, proc: 'Piste 21 et parking', ground: true },
+  solvide: { none: ['Aucun contrôle en ligne au sol ·', 'Unicom 122.800'], full: true, proc: 'Piste 21 et parking', ground: true },
+  pose: { big: 'Posé : contacter Sol 121.900', pos: 'Marseille Sol · IVAO', full: true, proc: 'Parking', ground: true },
+  sansreseau: { line: ['ANG 4 min → 187°', 'Unicom 122.800'], full: true, net: 'IVAO', noctl: 'Aucun contrôle en ligne sur IVAO le long de la route · Unicom 122.800', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN'], nav: ['117.20 · NTS', 'radiale 187 en éloignement', 'Ensuite 113.00 · ANG · dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: [['12 min', '78 NM'], ['2 340 kg', '3 min de retard'], ['3 400 ft', 'tronçon en cours']] },
+  approche: { line: ['LFML 11 min → 263°', '119.350 dans 2 min'], full: true, net: 'IVAO', now: ['119.350', 'Marseille Approche'], next: 'Ensuite 118.700 · Marseille Tour · environ 7 min', pt: ['MEN · 3 min (14 NM)', 'ensuite cap 263° vers RW26'], nav: ['110.30 · ILS 26', 'axe et pente de la piste 26'], proc: 'Approche ILS 26', band: [['en descente', '2 100 ft'], ['1 120 kg', '1 min d’avance'], ['1 800 ft', 'tronçon en cours']], circle: true },
+  sansposition: { line: ['ANG 4 min → 187°', '124.725 dans 6 min'], full: true, gps: true, net: 'IVAO', now: ['124.425', 'Nantes Approche'], next: 'Ensuite 124.725 · Rennes Approche · environ 6 min', pt: ['ANG · 4 min (23 NM)', 'ensuite cap 187° vers LUGEN'], nav: ['117.20 · NTS', 'radiale 187 en éloignement', 'Ensuite 113.00 · ANG · dans 9 min'], proc: 'Arrivée : STAR NIMER 9A', band: [['12 min', '78 NM'], ['2 340 kg', '3 min de retard'], ['3 400 ft', 'tronçon en cours']], circle: true }
 };
-const NAMES = { croisiere: 'croisière', replie: 'replié', contact: 'contact (< 2 min)', sol: 'sol', pose: 'posé', sansreseau: 'sans réseau', approche: 'approche', sansposition: 'sans position' };
+const NAMES = { croisiere: 'croisière', replie: 'replié', contact: 'contact (< 2 min)', sol: 'sol', solvide: 'sol, personne en ligne', pose: 'posé', sansreseau: 'sans réseau', approche: 'approche', sansposition: 'sans position' };
 const $ = id => document.getElementById(id);
 let open = null;
 function esc(t) { return String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
@@ -98,23 +106,25 @@ function mapSvg(st) {
     <path d="M60 700 L300 520 L520 430 L760 250 L930 110" fill="none" stroke="var(--route)" stroke-width="6" stroke-dasharray="14 10" stroke-linecap="round"/>
     <g fill="#fff" stroke="var(--route)" stroke-width="4"><circle cx="300" cy="520" r="9"/><circle cx="520" cy="430" r="9"/><circle cx="760" cy="250" r="9"/></g>
     <g font-size="22" font-weight="700" fill="var(--route)"><text x="318" y="548">NTS</text><text x="538" y="458">ANG</text><text x="778" y="278">LUGEN</text></g>
-    ${st.circle ? `<circle cx="700" cy="300" r="190" fill="none" stroke="#1a6fd8" stroke-width="3" stroke-dasharray="10 9"/><text x="590" y="130" font-size="22" font-weight="700" fill="#1a6fd8">Rennes Approche 124.725</text>
+    ${st.circle ? `<circle cx="700" cy="300" r="190" fill="none" stroke="#1a6fd8" stroke-width="3" stroke-dasharray="10 9"/><g font-size="20" font-weight="700" fill="#1a6fd8" text-anchor="middle"><text x="630" y="255">Rennes Approche</text><text x="630" y="279">124.725</text></g>
     <g><circle cx="${st.mark ? 592 : 560}" cy="${st.mark ? 395 : 392}" r="8" fill="#1a6fd8"/><rect x="${st.mark ? 608 : 576}" y="${st.mark ? 370 : 366}" width="190" height="34" rx="6" fill="#fff" stroke="#1a6fd8"/><text x="${st.mark ? 618 : 586}" y="${st.mark ? 394 : 390}" font-size="21" fill="#1a6fd8">contact ≈ 14:38Z</text></g>` : ''}
     <g transform="translate(${st.ground ? 300 : 440} ${st.ground ? 520 : 470}) rotate(${st.ground ? 0 : 55})"><path d="M0 0 L16 36 L0 28 L-16 36Z" fill="#1d6fd8" stroke="#fff" stroke-width="5" stroke-linejoin="round"/></g>
   </svg><div class="fit on" title="Suivre">◎</div>${st.gps ? '<div class="gps">D’après le plan — GPS ou réseau non activé <button class="primary">Activer</button></div>' : ''}`;
 }
 function fullHtml(st) {
-  if (st.ground) return `<div class="bigwrap"><button class="primary big">${esc(st.big)}</button><div class="s none">${esc(st.sub)}</div></div><div class="full"><div class="sec"><div class="k">Procédure</div><div class="v"><button class="link">${esc(st.proc)}</button></div></div></div>`;
-  const ctl = st.ctlWarn ? 'warn' : '';
+  const proc = `<div class="sec"><div class="k">Procédure</div><div class="v"><button class="link">${esc(st.proc)}</button></div></div>`;
+  if (st.ground) return `<div class="bigwrap">${st.big ? `<button class="primary big">${esc(st.big)}</button><div class="fq">${esc(st.pos)}</div>` : `<div class="fq none"><span class="nw">${esc(st.none[0])}</span> <span class="nw">${esc(st.none[1])}</span></div>`}</div><div class="full">${proc}</div>`;
+  let ctl;
+  if (st.ctlWarn) ctl = `<div class="sec warn"><div class="k"><span class="ic">⚠</span>Contrôle · ${esc(st.net)}</div><div class="v"><span class="nw">${esc(st.ctlWarn[0])}</span> <span class="nw">${esc(st.ctlWarn[1])}</span></div><div class="s nw">${esc(st.cur)}</div><div style="margin-top:6px"><button class="primary">Contacté</button></div></div>`;
+  else if (st.noctl) ctl = `<div class="sec"><div class="k">Contrôle · ${esc(st.net)}</div><div class="v">${esc(st.noctl)}</div></div>`;
+  else ctl = `<div class="sec"><div class="k">Contrôle · ${esc(st.net)}</div><div class="v fq">${esc(st.now[0])} · ${esc(st.now[1])}</div><div class="s nw">${esc(st.next)}</div></div>`;
+  const cell = (k, b) => `<div><div class="k">${k}</div><div class="v">${esc(b[0])}</div><div class="s">${esc(b[1])}</div></div>`;
   return `<div class="full">
     <div class="sec"><div class="k">Prochain point</div><div class="v">${esc(st.pt[0])}</div><div class="s">${esc(st.pt[1])}</div></div>
-    <div class="sec ${ctl}"><div class="k">${st.ctlWarn ? '<span class="ic">⚠</span>' : ''}Contrôle</div>
-      <div class="v">${st.nextCtl || st.ctlWarn ? '' : ''}${st.nowCtl.startsWith('Aucun') ? `<span class="none" style="font-weight:600;color:var(--ink)">${esc(st.nowCtl)}</span>` : `Maintenant : ${esc(st.nowCtl)}`}</div>
-      ${st.nextCtl ? `<div class="s">${st.ctlWarn ? '' : 'Ensuite : '}${esc(st.nextCtl)}</div>` : ''}
-      ${st.ctlWarn ? '<div style="margin-top:6px"><button class="primary">Contacté</button></div>' : ''}</div>
-    <div class="sec"><div class="k">Radionav</div><div class="v">${esc(st.nav[0])}</div>${st.nav[1] ? `<div class="s">${esc(st.nav[1])}</div>` : ''}</div>
-    <div class="sec"><div class="k">Procédure</div><div class="v"><button class="link">${esc(st.proc)}</button></div></div>
-    <div class="band"><div><div class="k">Descente</div><div class="v">${esc(st.band[0])}</div></div><div><div class="k">Prévu au point</div><div class="v">${esc(st.band[1])}</div></div><div><div class="k">Sécurité</div><div class="v">${esc(st.band[2])}</div></div></div></div>`;
+    ${ctl}
+    <div class="sec"><div class="k">Radionav</div><div class="v fq">${esc(st.nav[0])}</div><div class="s">${esc(st.nav[1])}</div>${st.nav[2] ? `<div class="s nw">${esc(st.nav[2])}</div>` : ''}</div>
+    ${proc}
+    <div class="band">${cell('Descente', st.band[0])}${cell('Prévu au point', st.band[1])}${cell('Sécurité', st.band[2])}</div></div>`;
 }
 function render() {
   const key = (location.hash || '#croisiere').slice(1), st = S[key] || S.croisiere, wide = innerWidth >= 1000;
@@ -125,7 +135,7 @@ function render() {
   $('body').classList.toggle('folded', wide && !isOpen);
   const bigOnly = !!st.ground;
   const lineHtml = st.line ? `<div class="line ${st.warn ? 'warn' : ''}" data-t><span class="a">${esc(st.line[0])}</span><span class="b">${esc(st.line[1])}</span><span class="ch">${isOpen ? '▾' : '▴'}</span></div>` : '';
-  $('follow').innerHTML = (wide ? '' : '<div class="grip" data-t></div>') + (bigOnly ? '' : lineHtml) + (isOpen ? fullHtml(st) : (bigOnly ? `<div class="bigwrap"><button class="primary big">${esc(st.big)}</button></div>` : ''));
+  $('follow').innerHTML = (wide ? '' : '<div class="grip" data-t></div>') + (bigOnly ? '' : lineHtml) + (isOpen ? fullHtml(st) : (bigOnly ? `<div class="bigwrap">${st.big ? `<button class="primary big">${esc(st.big)}</button><div class="fq">${esc(st.pos)}</div>` : `<div class="fq none"><span class="nw">${esc(st.none[0])}</span> <span class="nw">${esc(st.none[1])}</span></div>`}</div>` : ''));
   $('follow').querySelectorAll('[data-t]').forEach(e => e.onclick = () => { open = !isOpen; render(); });
 }
 addEventListener('hashchange', () => { open = null; render(); });
