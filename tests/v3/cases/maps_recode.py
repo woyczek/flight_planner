@@ -7197,3 +7197,86 @@ def d215(c):
     c.ok(set(r) >= {'mbar', 'card', 'tip', 'alts', 'empty', 'spsel'}, str(r), 'the panels of the Map are all there to be measured')
     c.eq({n: a for n, a in r.items() if a < 1}, {}, 'no panel over the map has a see-through background', what=f'{c.design}: {r}')
     c.shot(f'D215_{c.design}_delivered.png')
+
+
+
+_TIDY_JS = r"""() => {
+  const ym = (id, extra = '') => `schema: helo-xp-mission\nmission:\n  id: ${id}\n  type: AIRLIFT\ntitle: ${id}${extra}\n`, md = (id, plain = false) => plain ? 'A few words with no mission cited' : `# Mission ${id}\n\nA summary of ${id}`;
+  const nm = (k, tok, kind = 'y') => `2026-11-05T10-00-00_${k}_` + (kind === 'y' ? `mission${tok}.yaml.txt` : `summary${tok}.md.txt`);
+  const writes = [], removes = [];
+  const file = (path, text) => { const f = { kind: 'file', name: path.split('/').pop(), text, getFile: async () => ({ size: f.text.length, text: async () => f.text }),
+    createWritable: async () => ({ write: async t => { f.text = String(t) + (window.__tidy && window.__tidy.corrupt && path.includes(window.__tidy.corrupt) ? 'X' : ''); writes.push(path) }, close: async () => {} }) }; return f };
+  const dir = (path, kids) => { const d = { kind: 'directory', name: path.split('/').pop(), kids, async *entries() { for (const [k, v] of Object.entries(d.kids)) yield [k, v] },
+    async getDirectoryHandle(n, o) { if (d.kids[n] && d.kids[n].kind === 'directory') return d.kids[n]; if (o && o.create) return d.kids[n] = dir(path + '/' + n, {}); throw new DOMException('absent', 'NotFoundError') },
+    async getFileHandle(n, o) { if (d.kids[n] && d.kids[n].kind === 'file') return d.kids[n]; if (o && o.create) return d.kids[n] = file(path + '/' + n, ''); throw new DOMException('absent', 'NotFoundError') },
+    async removeEntry(n, o) { if (o && o.recursive) throw new Error('recursive removal'); if (!d.kids[n]) throw new DOMException('absent', 'NotFoundError'); delete d.kids[n]; removes.push(path + '/' + n) } }; return d };
+  const mk = (base, files) => dir(base, Object.fromEntries(Object.entries(files).map(([k, v]) => [k, file(base + '/' + k, v)])));
+  const mission = (id, files) => dir('missions/T_AIRLIFT/' + id, { recu: mk('missions/T_AIRLIFT/' + id + '/recu', files) });
+  const big = ym('T-087') + ' '.repeat(1000001);
+  const fam = dir('missions/T_AIRLIFT', {
+    'T-085': mission('T-085', { [nm(1, 'T-085')]: ym('T-085'), [nm(2, 'T-086')]: ym('T-086', '\nsummary: moved'), [nm(3, 'T-086', 's')]: md('T-086'), [nm(4, 'T-087')]: ym('T-085', '\nsummary: its name cites another mission'),
+      [nm(5, 'T-087', 's')]: md('', true), [nm(6, '90')]: ym('T-090'), [nm(7, 'T-087')]: big, '../evil.txt': ym('T-086') }),
+    'T-086': mission('T-086', { [nm(2, 'T-086')]: ym('T-086', '\nsummary: another text, same name'), [nm(9, 'T-086', 's')]: md('T-086') }),
+    'T-087': mission('T-087', { [nm(1, 'T-087')]: ym('T-087') }),
+    'T-090': mission('T-090', {}), 'T-091': mission('T-091', {}) });
+  const root = dir('missions', { T_AIRLIFT: fam });
+  window.__tidy = { root, writes, removes, corrupt: '', nm, ym };
+  window.FileAccess.status = async () => ({ handle: root, permission: 'granted', name: 'missions' });
+  window.FileAccess.writable = async () => { throw new Error('the tidying must not ask for another folder') };
+  return true }"""
+_TIDY_COUNT_JS = r"""() => { const r = id => Object.keys(window.__tidy.root.kids.T_AIRLIFT.kids[id].kids.recu.kids).sort(); return { a: r('T-085'), b: r('T-086'), c: r('T-087'), writes: window.__tidy.writes.length, removes: window.__tidy.removes.length } }"""
+
+
+@case('K238', 'The « Tidy the copies » button of the V2 registry (SOG-0294): it counts first and touches nothing; refused, nothing changes; accepted, a copy leaves the recu/ of the wrong mission only when its NAME and its CONTENT cite the same other mission and its content is already there (by SHA-256) or is written there first; never an overwrite, nothing outside the recu/ folders, a text without mission, an ambiguous number, a name with « .. », a file over 1 MB are not touched; a read-back that differs stops everything with the source intact', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0294 / Q-0041 (the user: « Ranger : ne garder dans chaque dossier que les fichiers de sa mission »), reviewed by Sécurisation: the name never decides alone (a forged name cannot make anything be removed elsewhere), the same content is found by its hash whatever its name, no overwrite, removal last and checked again, the target by the registry only (one line), strict names, one pass at a time, a report with no content')
+def k_tidy(c):
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry", timeout=15000, what='the registry page is loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]
+    c.js("""async () => { const line = (id, former = '') => ({ id, formerId: former, series: '', number: 0, type: 'AIRLIFT', family: 'T', subtype: '', title: 'Bench', folder: 'T_AIRLIFT/' + id, files: ['mission' + id + '.yaml'], source: 'dossier',
+      status: 'generated', statusAt: '2026-10-20T10:00:00.000Z', notes: '', flownAt: '', addedAt: '2026-10-20T10:00:00.000Z', teams: [], teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0, origin: '', destination: '', hasYaml: true });
+      await window.MissionIndex.ready; await window.MissionIndex.save([line('T-085'), line('T-086'), line('T-087'), line('T-090', '90'), line('T-091', '90')], new Date().toISOString()); return true }""")
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry && !!document.getElementById('rgTidy')", timeout=15000, what='the registry page has its button')
+    c.js(_TIDY_JS)
+    before = c.js(_TIDY_COUNT_JS)
+    ask = lambda: c.until("() => !!document.querySelector('dialog.repo-ask[open]')", timeout=15000, what='the page asks, with its count')
+    answer = lambda word: c.js("(w) => { const b = [...document.querySelectorAll('dialog.repo-ask button')].find(x => x.textContent.trim() === w); b.click(); return true }", word)
+    click = lambda: c.js("() => { document.getElementById('rgTidy').click(); return true }")
+    # 1. the count, then refused: nothing written, nothing removed
+    click()
+    ask()
+    q = c.js("() => document.querySelector('dialog.repo-ask p').textContent")
+    c.ok(q.startswith('Ranger 2 copie') and '1 sont déjà chez leur mission' in q and '1 lui manquent' in q and '5 fichier(s) laissé(s) tels quels' in q, q, 'the question says the count: 2 copies (1 already in its mission by its content, 1 missing there), 5 files left as they are')
+    c.eq(c.js(_TIDY_COUNT_JS), before, 'counting touched nothing', what='after the count')
+    answer('Garder tout')
+    c.wait(800)
+    c.eq(c.js(_TIDY_COUNT_JS), before, 'refused: nothing changed', what='after refusal')
+    # 2. accepted
+    click()
+    ask()
+    answer('Ranger')
+    c.until("() => window.__tidy.removes.length >= 2", timeout=15000, what='the copies are tidied')
+    c.wait(500)
+    after = c.js(_TIDY_COUNT_JS)
+    N = lambda k, tok, kind='y': f"2026-11-05T10-00-00_{k}_" + (f'mission{tok}.yaml.txt' if kind == 'y' else f'summary{tok}.md.txt')
+    c.eq(after['a'], sorted([N(1, 'T-085'), N(4, 'T-087'), N(5, 'T-087', 's'), N(6, '90'), N(7, 'T-087'), '../evil.txt']), 'T-085 loses the two copies of T-086’s texts and keeps everything else: the text whose name cites another mission but whose content cites T-085, the text with no mission, the ambiguous number, the file over 1 MB, the name with « .. »', what=str(after['a']))
+    c.eq(after['b'], sorted([N(2, 'T-086'), N(3, 'T-086'), N(9, 'T-086', 's')]), 'T-086 received the text it lacked under a free name (its same-name file with another content is untouched: no overwrite), and its summary, present under another name, was not duplicated', what=str(after['b']))
+    c.eq([after['writes'], after['removes']], [1, 2], 'one write (in the recu/ of the mission that lacked the text), two removals', what=str(after))
+    r = c.js("""() => { const b = window.__tidy.root.kids.T_AIRLIFT.kids['T-086'].kids.recu.kids; return { kept: b[window.__tidy.nm(2, 'T-086')].text.includes('another text'), moved: b[window.__tidy.nm(3, 'T-086')].text.includes('summary: moved'), msg: (document.getElementById('rgMsg') || {}).textContent || '', report: (document.getElementById('rgTidyReport') || {}).textContent || '', stored: localStorage.getItem('missionRegistryTidy:v1') || '' } }""")
+    c.ok(r['kept'] and r['moved'], str(r), 'the same-name file of T-086 keeps its own content, the moved text is complete')
+    c.ok('2 copie' in r['msg'] and '1 déplacée' in r['msg'], r['msg'], 'the page says what it did')
+    c.ok('supprimé' in r['report'] and 'déplacé' in r['report'] and 'T_AIRLIFT/T-085 → T_AIRLIFT/T-086' in r['report'], r['report'][:300], 'a report is shown: removed or moved, from a mission to another, the short hash, the name')
+    c.ok('summary: moved' not in r['report'] and 'A summary of' not in r['report'] and 'summary: moved' not in r['stored'], r['stored'][:200], 'no content in the report nor in what the page keeps of it')
+    # 3. a read-back that differs: everything stops, the source is intact, the bad file is not left behind
+    c.js("""() => { const a = window.__tidy.root.kids.T_AIRLIFT.kids['T-085'].kids.recu, N = window.__tidy.nm; const f = { kind: 'file', name: N(10, 'T-087'), text: window.__tidy.ym('T-087', '\\nsummary: lacks'), getFile: async () => ({ size: f.text.length, text: async () => f.text }), createWritable: async () => ({ write: async t => { f.text = String(t) }, close: async () => {} }) };
+      a.kids[N(10, 'T-087')] = f; window.__tidy.corrupt = 'T-087'; return true }""")
+    click()
+    ask()
+    answer('Ranger')
+    c.until("() => /arrêté/.test((document.getElementById('rgMsg') || {}).textContent || '')", timeout=15000, what='a read-back that differs stops the tidying')
+    last = c.js(_TIDY_COUNT_JS)
+    c.ok(N(10, 'T-087') in last['a'] and last['c'] == [N(1, 'T-087')], str(last), 'the source copy is intact and the unfaithful file written for the check is not left in the recu/ of the other mission')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree

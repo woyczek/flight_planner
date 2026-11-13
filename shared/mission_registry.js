@@ -1564,7 +1564,7 @@
         <p>${esc(t(['{n} mission(s)', '{n} mission(s)'], { n: reg.missions.length - keptFormer() }))} · ${counts.map(([k, n]) => `${pill(k, t(STATUS[k]))} ${n}`).join(' ')} ${reg.updatedAt ? `<span class="rg-small">— ${esc(t(['mis à jour le {d}', 'updated {d}'], { d: fmtDate(reg.updatedAt) }))}</span>` : ''}</p>
         ${oldNumbers() ? `<p class="rg-small" id="rgOldNumbers">${esc(t(['{n} mission(s) sous un ancien numéro, sans mission renumérotée', '{n} mission(s) under an old number, with no renumbered mission', '{n} Mission(en) unter einer alten Nummer, ohne neu nummerierte Mission', '{n} misión(es) bajo un número antiguo, sin misión renumerada'], { n: oldNumbers() }))}</p>` : ''}
         ${keptFormer() ? `<p class="rg-small" id="rgFormer">${esc(t(['{n} ancienne(s) entrée(s) gardée(s), plus complète(s) que leur mission : numéro d’avant la renumérotation, cachée(s) de la liste, jamais supprimée(s)', '{n} old entry(ies) kept, more complete than their mission: number from before the renumbering, hidden from the list, never deleted', '{n} alte Einträge behalten, vollständiger als ihre Mission: Nummer von vor der Neunummerierung, in der Liste ausgeblendet, nie gelöscht', '{n} entrada(s) antigua(s) conservada(s), más completa(s) que su misión: número de antes de la renumeración, oculta(s) en la lista, nunca eliminada(s)'], { n: keptFormer() }))}</p>` : ''}
-        <div id="rgMsg">${msg}</div>
+        <div id="rgMsg">${msg}</div>${tidyHtml()}
         <p class="rg-small" id="rgKept"></p>
         <p class="rg-small"><a href="#" id="rgDiag" title="${esc(t(['Copie au presse-papiers l’état de la page (formes seulement : aucune valeur, aucun identifiant, aucun chemin) — à joindre à un signalement', 'Copies the page’s state to the clipboard (shapes only: no value, no identifier, no path) — to attach to a report', 'Kopiert den Zustand der Seite in die Zwischenablage (nur Formen: kein Wert, keine Kennung, kein Pfad) — einer Meldung beizufügen', 'Copia el estado de la página al portapapeles (solo formas: ningún valor, identificador ni ruta) — para adjuntar a un informe']))}">${esc(t(['Copier le diagnostic', 'Copy the diagnostic', 'Diagnose kopieren', 'Copiar el diagnóstico']))}</a></p>
       </section>
@@ -1753,8 +1753,42 @@
     };
     // mode GitHub : ni choix de dossier, ni relecture ou nettoyage d'après le dossier, ni écriture de mission_registry.yaml
     // (rien à lire ni à écrire hors du dépôt des données)
+    // « Ranger les copies » (SOG-0294) : sur le clic seulement, niveau Expert
+    const rb = document.createElement('button');
+    rb.type = 'button';
+    rb.className = 'secondary';
+    rb.dataset.icon = 'archive';
+    rb.dataset.minLevel = '4';
+    rb.id = 'rgTidy';
+    rb.textContent = t(['Ranger les copies', 'Tidy the copies', 'Kopien aufräumen', 'Ordenar las copias']);
+    rb.title = t([
+      'Dans chaque dossier recu/, retire les copies de textes d’autres missions : comptées d’abord, puis, sur confirmation, retirées si leur contenu est déjà chez leur mission (relu), déplacées chez elle sinon ; rien n’est écrit hors des recu/, un rapport est montré.',
+      'In each recu/ folder, removes the copies of other missions’ texts: counted first, then, once confirmed, removed if their content is already in their mission (read back), moved there otherwise; nothing is written outside the recu/ folders, a report is shown.',
+      'Entfernt in jedem recu/-Ordner die Kopien von Texten anderer Missionen: zuerst gezählt, nach Bestätigung entfernt, wenn ihr Inhalt schon bei ihrer Mission liegt (zurückgelesen), sonst dorthin verschoben; außerhalb der recu/-Ordner wird nichts geschrieben, ein Bericht wird gezeigt.',
+      'Retira en cada carpeta recu/ las copias de textos de otras misiones: se cuentan primero y, tras confirmar, se retiran si su contenido ya está en su misión (releído) o se mueven allí; no se escribe nada fuera de las carpetas recu/, se muestra un informe.'
+    ]);
+    rb.onclick = async () => {
+      try {
+        await tidyRecu();
+      } catch (e) {
+        msg = pill('cancelled', explain(e, t(['Copies non rangées', 'Copies not tidied', 'Kopien nicht aufgeräumt',
+          'Copias no ordenadas'
+        ])));
+        render();
+      }
+    };
+    host.querySelector('[data-tidy-copy]')?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(tidyText(tidyLines));
+        window.AppFramework?.notify?.(t(['Rapport copié.', 'Report copied.', 'Bericht kopiert.', 'Informe copiado.']), 'ok');
+      } catch {
+        window.AppFramework?.notify?.(t(['Copie impossible.', 'Copy not possible.', 'Kopieren nicht möglich.',
+          'No se pudo copiar.'
+        ]), 'warn');
+      }
+    });
     if (window.GitHubData?.on?.()) fb.append(ob);
-    else fb.append(b, sb, wb, cb, ob);
+    else fb.append(b, sb, wb, cb, rb, ob);
     // filtres
     host.querySelector('[data-rg-more]').addEventListener('toggle', e => {
       moreFilters = e.target.open;
@@ -3014,6 +3048,350 @@
     }
   }
 
+  // ---- « Ranger les copies » (SOG-0294, Q-0041 : « ne garder dans chaque dossier que les fichiers de sa mission » ; relu par Sécurisation) : le recu/ de chaque mission d'un lot importé le 5 novembre
+  // portait les textes de TOUTES les missions du lot (5 412 copies). Un bouton du registre, sur le clic de l'utilisateur seulement : d'abord un COMPTE (rien n'est touché), puis, s'il confirme, une copie
+  // est retirée du recu/ de la mission A QUAND SON NOM ET SON CONTENU citent la même autre mission B (une seule ligne du registre, dossier déjà là, dernier segment = identifiant) ET que ce contenu est
+  // déjà dans le recu/ de B (empreinte SHA-256 relue des deux côtés) ; un contenu que B n'a pas y est écrit d'abord (jamais par-dessus un fichier, relu, empreinte comparée), puis retiré de A. Le nom
+  // ne décide jamais seul : un contenu qui cite A, qui ne cite aucune mission ou plusieurs, n'est pas touché. Rien n'est écrit hors des recu/. Un seul passage à la fois ; arrêt au premier écart.
+  const RECU_FILE =
+    /^(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})_(\d{1,3})_(mission|summary)((?:[A-Z]-)?\d{1,4}[A-Z]?)\.(yaml|md)\.txt$/, // horodatage, rang, mission<ID>.yaml ou summary<ID>.md, .txt
+    RECU_SEG = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/, // un segment de chemin du registre (ni « .. », ni nom caché)
+    RECU_MAX = 1e6, // octets par texte reçu
+    RECU_PER = 1500, // fichiers par recu/
+    RECU_CAP = 8000, // fichiers au plus par passage
+    RECU_BYTES = 64e6; // octets lus au plus par passage
+  let tidying = false,
+    scanning = false,
+    tidyLines = [];
+  const TIDY_KEY = 'missionRegistryTidy:v1';
+  const sha256 = async text => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(text))))].map(x =>
+    x.toString(16).padStart(2, '0')).join('');
+  /** Le nom d'un texte reçu selon la forme stricte : { tok (le numéro ou l'identifiant cité), rank, stamp, kind } ; null hors forme. */
+  function recuName(name) {
+    const m = RECU_FILE.exec(String(name));
+    return m && (m[3] === 'mission') === (m[5] === 'yaml') ? {
+      stamp: m[1],
+      rank: +m[2],
+      tok: m[4].toUpperCase(),
+      rest: `${m[3]}${m[4]}.${m[5]}.txt`
+    } : null;
+  }
+  /** Les recu/ des missions du registre (lecture seule) : [{ entry, folder, dir (dossier de la mission), recu (ou null), files: [{ name, text, hash }] }] ; skipped : entrées non touchées (non fichier, hors forme, trop grandes) ;
+   *  tooMany : au-delà des bornes (aucune lecture n'est poussée plus loin). */
+  async function recuFolders(dir) {
+    const out = [],
+      seen = new Set();
+    let total = 0,
+      bytes = 0,
+      skipped = 0;
+    for (const e of reg.missions) {
+      const folder = String(e.folder || ''),
+        segs = folder.split('/');
+      if (!folder || seen.has(folder) || !segs.every(s => RECU_SEG.test(s)) || segs.at(-1) !== String(e.id || ''))
+        continue; // le dernier segment vaut l'identifiant de la ligne
+      seen.add(folder);
+      let h = dir;
+      try {
+        for (const part of segs) h = await h.getDirectoryHandle(part); // jamais créé : le dossier de la mission existe déjà
+      } catch {
+        continue;
+      }
+      let recu = null;
+      try {
+        recu = await h.getDirectoryHandle(SUB.received);
+      } catch {
+        /* pas de recu/ : B peut en recevoir un, sous son dossier seulement */
+      }
+      const files = [];
+      if (recu)
+        for await (const [name, x] of recu.entries()) {
+          if (x.kind !== 'file' || !recuName(name)) {
+            skipped++;
+            continue;
+          }
+          const f = await x.getFile();
+          if (f.size > RECU_MAX) {
+            skipped++;
+            continue;
+          }
+          if (++total > RECU_CAP || files.length >= RECU_PER || (bytes += f.size) > RECU_BYTES) return {
+            tooMany: true,
+            out: [],
+            skipped
+          };
+          const text = await f.text();
+          files.push({
+            name,
+            text,
+            hash: await sha256(text)
+          });
+        }
+      out.push({
+        entry: e,
+        folder,
+        dir: h,
+        recu,
+        files
+      });
+    }
+    return {
+      tooMany: false,
+      out,
+      skipped
+    };
+  }
+  /** Le plan du rangement (rien n'est écrit) : { items: [{ from, file, to (dossier de B), action: 'dupe' | 'move' }], untouched, kept, ... }. */
+  async function recuPlan(dir) {
+    const {
+      tooMany,
+      out,
+      skipped
+    } = await recuFolders(dir);
+    if (tooMany) return {
+      tooMany
+    };
+    const owners = new Map(); // identifiant ou ancien numéro → UNE ligne du registre (revendiqué par deux : écarté)
+    for (const r of out)
+      for (const id of [r.entry.id, r.entry.formerId].filter(Boolean).map(x => String(x).toUpperCase())) owners.set(id, owners.has(
+        id) && owners.get(id) !== r.entry ? null : r.entry);
+    const byEntry = new Map(out.map(r => [r.entry, r])),
+      has = new Map(out.map(r => [r.folder, new Map(r.files.map(f => [f.hash, f
+        .name
+      ]))])), // les empreintes du recu/ de B, par le CONTENU : le nom ne sera pas le même
+      items = [],
+      distinct = new Set();
+    let kept = 0,
+      untouched = skipped,
+      files = 0;
+    for (const r of out) {
+      for (const f of r.files) {
+        files++;
+        distinct.add(f.hash);
+        const n = recuName(f.name),
+          nameOwner = owners.get(n.tok); // la ligne que le NOM cite (null : ambigu ; undefined : inconnue)
+        if (nameOwner === r.entry) {
+          kept++;
+          continue;
+        }
+        const cites = new Set(receivedIds(f).map(x => owners.get(String(x)
+          .toUpperCase()))); // la ou les lignes que le CONTENU cite, par la même lecture que receivedOf
+        const b = nameOwner && byEntry.get(nameOwner);
+        if (!b || cites.size !== 1 || !cites.has(
+            nameOwner)) { // le nom et le contenu citent la même autre mission, et elle seule : sinon rien n'est touché
+          untouched++;
+          continue;
+        }
+        const own = has.get(b.folder),
+          dupe = own.has(f.hash);
+        if (!dupe) own.set(f.hash, ''); // un second exemplaire du même contenu, vers la même mission, est une copie
+        items.push({
+          from: r,
+          file: f,
+          to: b,
+          action: dupe ? 'dupe' : 'move'
+        });
+      }
+    }
+    return {
+      items,
+      folders: out.length,
+      files,
+      kept,
+      untouched,
+      distinct: distinct.size
+    };
+  }
+  /** Le compte du plan, en nombres seuls. */
+  const recuCount = plan => ({
+    n: plan.items.length,
+    dupe: plan.items.filter(i => i.action === 'dupe').length,
+    move: plan.items.filter(i => i.action === 'move').length,
+    untouched: plan.untouched,
+    folders: plan.folders,
+    files: plan.files,
+    distinct: plan.distinct
+  });
+  const stop = (fr, en, vars) => new Error(t([fr, en], vars));
+  /** Le rangement du plan de CE clic ; rend { done, moved, stopped, lines } (lines : { name, from, to, hash8, what }, sans aucun contenu). Une copie n'est retirée qu'après trois relectures : son contenu chez B (relu, empreinte),
+   *  son propre fichier (empreinte du plan), et au moment de retirer, les deux encore. Jamais d'écrasement ; arrêt au premier écart, ce qui reste est intact. */
+  async function recuTidy(plan) {
+    let done = 0,
+      moved = 0;
+    const lines = [],
+      held = new Map(), // folder de B → Map(empreinte → nom) : ce que son recu/ contient en ce moment, relu une fois par cible
+      held_of = async b => {
+          if (!held.has(b.folder)) {
+            const m = new Map();
+            if (b.recu)
+              for await (const [name, x] of b.recu.entries()) {
+                if (x.kind !== 'file' || !recuName(name)) continue;
+                const f = await x.getFile();
+                if (f.size > RECU_MAX) continue;
+                m.set(await sha256(await f.text()), name);
+              }
+            held.set(b.folder, m);
+          }
+          return held.get(b.folder);
+        },
+        readHash = async (h, name) => {
+          const s = await readText(h, name);
+          return s == null ? null : sha256(s);
+        };
+    try {
+      for (const it of [...plan.items].sort((a, b) => (b.action === 'move') - (a.action ===
+          'move'))) { // les déplacements d'abord : une copie du même contenu les suit
+        const {
+          file: f,
+          from,
+          to
+        } = it;
+        if (await readHash(from.recu, f.name) !== f.hash) continue; // la copie n'est plus celle du plan : on n'y touche pas
+        const have = await held_of(to);
+        let name = have.get(f.hash) || '';
+        if (!name) { // le contenu manque chez B : écrit d'abord, jamais par-dessus un fichier
+          const n = recuName(f.name);
+          to.recu ||= await to.dir.getDirectoryHandle(SUB.received, {
+            create: true
+          });
+          let free = '';
+          for (let k = 0; k < 10 && !free; k++) {
+            const cand = k ? `${n.stamp}_${n.rank + k}_${n.rest}` : f.name;
+            if (await readText(to.recu, cand) == null) free = cand;
+          }
+          if (!free) continue; // pas de nom libre : rien n'est touché
+          await writeText(to.recu, free, f.text);
+          if (await readHash(to.recu, free) !== f.hash) {
+            try {
+              await to.recu.removeEntry(
+                free); // le fichier que ce passage vient de créer et qui n'est pas fidèle : retiré, rien d'autre n'est touché
+            } catch {
+              /* déjà absent */
+            }
+            throw stop('relecture différente chez {b}', 'read-back differs in {b}', {
+              b: to.folder
+            });
+          }
+          have.set(f.hash, free);
+          name = free;
+          moved++;
+        } else if (await readHash(to.recu, name) !== f.hash) throw stop('contenu de {b} changé pendant le rangement',
+          'content of {b} changed during the tidying', {
+            b: to.folder
+          });
+        // au moment de retirer : le fichier de B est là avec la bonne empreinte, celui de A a toujours la sienne
+        if (await readHash(to.recu, name) !== f.hash || await readHash(from.recu, f.name) !== f.hash) throw stop(
+          'vérification avant retrait : {n}', 'check before removal: {n}', {
+            n: f.name
+          });
+        await from.recu.removeEntry(f.name); // sans récursion, sur le nom exact
+        done++;
+        lines.push({
+          name: f.name,
+          from: from.folder,
+          to: to.folder,
+          hash8: f.hash.slice(0, 8),
+          what: it.action === 'move' ? 'déplacé' : 'supprimé'
+        });
+      }
+    } catch (e) {
+      return {
+        done,
+        moved,
+        stopped: e,
+        lines
+      };
+    }
+    return {
+      done,
+      moved,
+      stopped: null,
+      lines
+    };
+  }
+  /** Le rapport en texte (nom, de A vers B, empreinte raccourcie, ce qui a été fait) : aucun contenu. */
+  const tidyText = lines => lines.map(l => `${l.what}\t${l.hash8}\t${l.from} → ${l.to}\t${l.name}`).join('\n');
+  /** Le rapport à l'écran (les 200 premières lignes) avec « Copier le rapport » ; vide sans rapport. */
+  const tidyHtml = () => tidyLines.length ? `<details class="rg-small" id="rgTidyReport"><summary>${esc(t(['Rapport du rangement ({n})', 'Tidying report ({n})', 'Bericht des Aufräumens ({n})', 'Informe del orden ({n})'], {
+    n: tidyLines.length
+  }))}</summary><pre>${esc(tidyText(tidyLines.slice(0, 200)))}${tidyLines.length > 200 ? '\n…' : ''}</pre><button type="button" class="secondary" data-tidy-copy>${esc(t(['Copier le rapport', 'Copy the report', 'Bericht kopieren', 'Copiar el informe']))}</button></details>` : '';
+  try {
+    tidyLines = JSON.parse(localStorage.getItem(TIDY_KEY) || '[]').filter(l => l && typeof l.name === 'string').slice(0,
+      9000); // le dernier rapport, gardé par la page
+  } catch {
+    tidyLines = [];
+  }
+  /** Le geste du bouton « Ranger les copies » : compte, question, rangement ; un seul passage à la fois. */
+  async function tidyRecu() {
+    if (tidying || scanning) return;
+    tidying = true;
+    try {
+      const dir = await missionsDir(true);
+      if (!dir) return;
+      const plan = await recuPlan(dir);
+      if (plan.tooMany) {
+        msg = pill('cancelled', t(['Trop de fichiers dans les dossiers recu/ (plus de {n}) : rien n’est rangé (borne de sécurité).',
+          'Too many files in the recu/ folders (over {n}): nothing is tidied (safety bound).'
+        ], {
+          n: RECU_CAP
+        }));
+        return render();
+      }
+      const c = recuCount(plan);
+      if (!c.n) {
+        msg = pill('generated', t([
+          'Rien à ranger : {f} fichiers dans {r} dossiers recu/, aucune copie d’une autre mission ({u} laissés tels quels).',
+          'Nothing to tidy: {f} files in {r} recu/ folders, no copy of another mission ({u} left as they are).'
+        ], {
+          f: c.files,
+          r: c.folders,
+          u: c.untouched
+        }));
+        return render();
+      }
+      const yes = await window.AppFramework.ask(t([
+        'Ranger {n} copie(s) de textes d’autres missions dans {f} dossier(s) recu/ ? {a} sont déjà chez leur mission (la copie d’ici est retirée), {m} lui manquent (déplacées chez elle), {u} fichier(s) laissé(s) tels quels. Les {d} contenus distincts restent chacun au moins une fois ; rien n’est écrit hors des recu/.',
+        'Tidy {n} copy(ies) of other missions’ texts in {f} recu/ folder(s)? {a} are already in their mission (the copy here is removed), {m} are missing there (moved to it), {u} file(s) left as they are. Each of the {d} distinct contents stays at least once; nothing is written outside the recu/ folders.',
+        '{n} Kopie(n) von Texten anderer Missionen in {f} recu/-Ordner(n) aufräumen? {a} liegen schon bei ihrer Mission (die Kopie hier wird entfernt), {m} fehlen dort (dorthin verschoben), {u} Datei(en) bleiben unberührt. Jeder der {d} verschiedenen Inhalte bleibt mindestens einmal; außerhalb der recu/-Ordner wird nichts geschrieben.',
+        '¿Ordenar {n} copia(s) de textos de otras misiones en {f} carpeta(s) recu/? {a} ya están en su misión (se retira la copia de aquí), {m} le faltan (movidas allí), {u} archivo(s) se dejan tal cual. Cada uno de los {d} contenidos distintos queda al menos una vez; no se escribe nada fuera de las carpetas recu/.'
+      ], {
+        n: c.n,
+        f: c.folders,
+        a: c.dupe,
+        m: c.move,
+        u: c.untouched,
+        d: c.distinct
+      }), {
+        ok: t(['Ranger', 'Tidy', 'Aufräumen', 'Ordenar']),
+        cancel: t(['Garder tout', 'Keep all', 'Alles behalten', 'Conservar todo'])
+      });
+      if (!yes) return;
+      const fresh = await recuPlan(dir); // le calcul refait au clic de confirmation : rien d'obsolète
+      if (fresh.tooMany) return;
+      const r = await recuTidy(fresh);
+      tidyLines = r.lines;
+      try {
+        localStorage.setItem(TIDY_KEY, JSON.stringify(r.lines.slice(0, 9000)));
+      } catch {
+        /* stockage plein ou indisponible */
+      }
+      msg = r.stopped ? pill('cancelled', t(['Rangement arrêté après {n} copie(s) : {e}. Rien de ce qui reste n’a été touché.',
+        'Tidying stopped after {n} copy(ies): {e}. Nothing left was touched.'
+      ], {
+        n: r.done,
+        e: explain(r.stopped, '')
+      })) : pill('generated', t([
+        '{n} copie(s) rangée(s) : {m} déplacée(s) chez leur mission, les autres retirées (leur contenu y était déjà).',
+        '{n} copy(ies) tidied: {m} moved to their mission, the others removed (their content was already there).'
+      ], {
+        n: r.done,
+        m: r.moved
+      }));
+      render();
+    } finally {
+      tidying = false;
+    }
+  }
+
   // ---- commande d'une mission : bloc commun MissionOrder (shared/mission_order.js), aussi dans le générateur de brief
   /** Inscrit une commande (statut « commandée ») ; appelé par MissionOrder. */
   function addOrder(entry) {
@@ -3045,6 +3423,15 @@
   /** Relit le dossier des missions (scan, autorisation demandée sur un geste ; request false : la lecture automatique de l'ouverture n'en demande aucune)
    *  puis redessine la page ; false en cas d'échec. */
   async function doScan(request = true) {
+    if (tidying) return false; // pas pendant un rangement des copies (SOG-0294)
+    scanning = true;
+    try {
+      return await doScanNow(request);
+    } finally {
+      scanning = false;
+    }
+  }
+  async function doScanNow(request) {
     msg = t(['Lecture du dossier…', 'Reading folder…']);
     const box = host.querySelector('#rgMsg');
     if (box) box.textContent = msg;
