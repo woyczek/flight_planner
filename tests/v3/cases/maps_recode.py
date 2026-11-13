@@ -6516,6 +6516,15 @@ def k_keptstore(c):
     row85 = c.js("() => document.querySelector('#rgKeptList tr[data-kept-id=\"85\"]').textContent.replace(/\\s+/g, ' ')")
     c.ok('T-085' in row85 and 'résumé 38' in row85 and 'résumé 29' in row85 and 'plus récent' in row85 and 'plus complet' in row85 and 'Bench' in row85, row85, 'the row sets the file and the browser side by side: the lettered identifier, the lengths of the summary, newer, more complete')
     c.shot('K223_standard_kept_list_delivered.png')
+    # the table at 1 280, scrolled to its rows (the five lines of the bench with their natures and their buttons)
+    back = c.page.viewport_size
+    c.page.set_viewport_size({'width': 1280, 'height': 900})
+    c.wait(600)
+    c.js("() => { document.getElementById('rgKeptList').scrollIntoView({ block: 'center' }); return true }")
+    c.wait(500)
+    c.shot('K223_standard_kept_table_1280_delivered.png')
+    c.page.set_viewport_size(back)
+    c.wait(400)
     # « Keep the file » changes nothing
     before = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/missionT-085.yaml')
     c.js("() => { document.querySelector('[data-kept-file=\"85\"]').click(); return true }")
