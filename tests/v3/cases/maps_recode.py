@@ -2001,7 +2001,7 @@ def d75(c):
     c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the first reading')
     c.wait(400)
     st = c.js(_CORR_STATE)
-    c.eq([st['corridor'] > 0, st['far'], st['farR']], [True, True, False], 'ticked by default: the R is read along the flight only; the far TMA, a big family, is read over the whole view (SOG-0169)', what='ticked')
+    c.eq([st['corridor'] > 0, st['far'], st['farR']], [True, False, False], 'ticked by default: everything is read along the flight only, the far TMA (a big family) and the far R alike (SOG-0246: the box acts on every layer)', what='ticked')
     c.ok(norm(tx(M, 'lgCorr', c.lang)) in norm(st['legend']), st['legend'], 'the "i" chip says nothing is read outside the corridor')
     # the box heads the Layers content; the title says it
     c.js("async () => (await import('/modules/maps/layers.js')).toggleLayers(true)")
@@ -4189,7 +4189,8 @@ def _classes(c, mode, detail, zoom, corridor=True):
       tags=('maps',), screens=False, designs=('standard',), langs4=True,
       rule='V3 (SOG-0169, ergonomics 10 Nov): the display of the airspaces is deterministic and progressive: the big families (FIR / UIR, TMA / CTA, CTR) are read over the whole view, the others (R, D, P, TSA…) in the flight’s corridor while « Around the flight only » is ticked (the box is the user’s explicit choice, D75), and every family then appears at its own zoom threshold, which the complexity step shifts by one level per step; the frame size compared with the thresholds is the module’s, not the map’s (the sheet changes it); what the corridor hides, the Map says')
 def d132(c):
-    a, note_a, eff_a = _classes(c, 'auto', 0, 5)
+    a, note_a, eff_a = _classes(c, 'auto', 0, 5, corridor=False)
+    _, note_t, _ = _classes(c, 'auto', 0, 5)       # ticked: the corridor hides what is far from the route, and says so
     # the sheet changes the map's height, not the zoom's meaning: the effective zoom is the same with the sheet collapsed, at its default and expanded
     effs = []
     for pos in ('collapsed', 'expanded', 'default'):
@@ -4197,16 +4198,16 @@ def d132(c):
         c.wait(1200)
         effs.append(c.js("() => +document.querySelector('[data-module=\"maps\"] .mp-map').dataset.zoomEff"))
     c.ok(max(effs) - min(effs) < 0.01, str(effs), 'the effective zoom does not move with the sheet (the module’s size is compared, not the map’s)')
-    a2, _, _ = _classes(c, 'auto', 0, 5)
+    a2, _, _ = _classes(c, 'auto', 0, 5, corridor=False)
     c.eq(sorted(a), sorted(a2), 'the same zoom and the same complexity, loaded twice: the same classes', what='classes twice')
-    c.ok(len(a) >= 1, str(a), 'at zoom 5, complexity 0: the big families are drawn over the whole view (the dense base is Paris’s, the route runs south of it)')
-    c.ok(note_a, str(note_a), 'and the Map says that the R, D and P spaces outside the corridor are hidden')
-    b1, note_b, _ = _classes(c, 'auto', 1, 5)
+    c.ok(len(a) >= 1, str(a), 'at zoom 5, complexity 0, the whole view read: the big families are drawn (the dense base is Paris’s, the route runs south of it)')
+    c.ok(note_t, str(note_t), 'and ticked, the Map says that the spaces outside the corridor are hidden')
+    b1, note_b, _ = _classes(c, 'auto', 1, 5, corridor=False)
     c.ok(a < b1, f'{sorted(a)} -> {sorted(b1)}', 'one more step of complexity at the same zoom: one more class')
-    z1, _, _ = _classes(c, 'auto', 0, 6)
+    z1, _, _ = _classes(c, 'auto', 0, 6, corridor=False)
     c.ok(a < z1, f'{sorted(a)} -> {sorted(z1)}', 'one more level of zoom at the same complexity: one more class')
     full, note_f, _ = _classes(c, 'auto', 4, 5, corridor=False)
-    c.ok(b1 < full and {'asR', 'asD', 'asP'} <= full, f'{sorted(b1)} -> {sorted(full)}', 'with the corridor unticked the view is read whole: R, D and P appear (they were hidden by the corridor)')
+    c.ok(b1 < full and {'asR', 'asD', 'asP'} <= full, f'{sorted(b1)} -> {sorted(full)}', 'at complexity 4 the classes R, D and P appear as well')
     c.ok(not note_f, str(note_f), 'and the note is gone')
 
 
@@ -6701,3 +6702,46 @@ def d202(c):
     c.js("() => { location.hash = '#maps' }")
     c.wait(2500)
     c.eq(c.js(card), {'on': False, 'rows': 0}, 'back on the Map: no window, no proposal', what='window')
+
+
+
+# What each layer reads when « Around the flight only » is ticked, and when it is not: one row per layer (the list of SOG-0246); a far item sits 200 NM north of the route, a near one on it
+_CORR_EXTRA = {
+    'aerodromes': [{'icao': 'LFNR', 'name': 'NEAR AD', 'lat': 47.2, 'lon': -1.55, 'elev': 100}, {'icao': 'LFFR', 'name': 'FAR AD', 'lat': 49.2, 'lon': 2.0, 'elev': 100}],
+    'navaids': [{'id': 'NRV', 'name': 'NEAR VOR', 'type': 'VOR', 'lat': 47.1, 'lon': -1.5, 'freq': 113.0}, {'id': 'FRV', 'name': 'FAR VOR', 'type': 'VOR', 'lat': 49.1, 'lon': 2.1, 'freq': 114.0}],
+    'vrp': [{'code': 'NV', 'name': 'NEAR VRP', 'icao': 'LFNR', 'lat': 47.18, 'lon': -1.6}, {'code': 'FV', 'name': 'FAR VRP', 'icao': 'LFFR', 'lat': 49.15, 'lon': 2.05}],
+    'cities': [{'name': 'NEARTOWN', 'lat': 47.16, 'lon': -1.58, 'pop': 90000}, {'name': 'FARTOWN', 'lat': 49.0, 'lon': 2.2, 'pop': 90000}],
+    'points': [{'id': 'NEARP', 'lat': 47.14, 'lon': -1.5, 'type': 'RNAV'}, {'id': 'FARP', 'lat': 49.05, 'lon': 2.0, 'type': 'RNAV'}],
+    'cells': {str(y): [[-4, 8]] for y in range(41, 51)},
+}
+_FAR_BIG = {'type': 'TMA', 'cls': 'D', 'name': 'TMA FARNORD', 'lower': 'FL200', 'upper': 'FL300', 'rings': [[[48.8, 1.6], [48.8, 2.6], [49.4, 2.6], [49.4, 1.6], [48.8, 1.6]]]}
+_CORR_LAYERS_JS = r"""async (corr) => { const S = window.__mp.S, D = await import('/modules/maps/data.js');
+  S.profile = { ...S.profile, elements: { ...S.profile.elements, aerodromes: true, navaids: true, vrpPoints: true, rnavPoints: true, mora: false, obstacles: false }, cities: true, otherZones: false };
+  await D.refresh({ w: -4, s: 41, e: 8, n: 50.5 }, corr);
+  for (let i = 0; i < 30 && !(S.data && S.data.corridor === corr && S.data.box.n >= 50 && S.data.box.w <= -4); i++) { await new Promise(r => setTimeout(r, 200)); await D.refresh({ w: -4, s: 41, e: 8, n: 50.5 }, corr) }
+  const d = (S.data && S.data.data) || {}, names = k => (d[k] || []).map(x => String(x.name || x.icao || x.id || x.code || ''));
+  return { corridor: S.data && S.data.corridor, aerodromes: names('aerodromes'), navaids: names('navaids'), vrp: names('vrp'), cities: names('cities'), points: (d.points || []).map(x => x.id), airspaces: names('airspaces') } }"""
+
+
+@case('D203', 'Ticked, « Around the flight only » acts on every layer read around the plan: the aerodromes, navaids, VRP, towns, RNAV points and the big airspace families are read in the corridor of the route only; unticked, the whole view', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0246 refused again (the user, 13 Nov: « a un effet, mais pas sur tout. manque : airspaces, AD, peut-être d’autres »): only the small airspaces and the airways followed the box; the aerodromes, navaids, MORA, obstacles, towns, VRP and RNAV points were read over the whole view, and the big families (FIR to CTR) by SOG-0169’s exception; one case per layer: a far item 200 NM off the route is absent ticked, present unticked')
+def d203(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps?view=-4,41,8,50.5', flight=True, airfields=True, airspaces=[_FAR_BIG], aero_extra=_CORR_EXTRA, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the first reading')
+    free = c.js(_CORR_LAYERS_JS, 0)
+    far = {'aerodromes': 'FAR AD', 'navaids': 'FAR VOR', 'vrp': 'FAR VRP', 'cities': 'FARTOWN', 'airspaces': 'TMA FARNORD'}
+    for k, n in far.items():
+        c.ok(n in free[k], f'{k}: {free[k]}', f'unticked ({k}): the far item is read, the fixture is valid')
+    c.ok('FARP' in free['points'], str(free['points']), 'unticked (RNAV points): the far point is read')
+    ticked = c.js(_CORR_LAYERS_JS, 10)
+    for k, n in far.items():
+        c.ok(n not in ticked[k], f'{k}: {ticked[k]}', f'ticked ({k}): the far item, 200 NM off the route, is not read')
+    c.ok('FARP' not in ticked['points'], str(ticked['points']), 'ticked (RNAV points): the far point is not read')
+    near = {'aerodromes': 'NEAR AD', 'navaids': 'NEAR VOR', 'vrp': 'NEAR VRP', 'cities': 'NEARTOWN'}
+    for k, n in near.items():
+        c.ok(n in ticked[k], f'{k}: {ticked[k]}', f'ticked ({k}): the item on the route is read')

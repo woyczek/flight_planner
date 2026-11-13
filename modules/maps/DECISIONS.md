@@ -2968,3 +2968,22 @@ the Map had seen in between: the same line to within the frame's own sampling.
 ## The window of the proposed routes: the first route is the current choice, « Choose this route » is never dead (SOG-0224, the user, 13 Nov: « « choisir cet itinéraire » inefficient »; the ergonomist: no help line, a dead button without a reason is the defect)
 - On a Map alone the window opens with the FIRST route shown and taken as the current choice (`S.altShow`, `S.altAuto`: its trace is not thickened until the user touches something, its row is marked `data-shown`), so « Choose this route » is active from the opening and takes it; a touch on another row or trace CHANGES the current choice (it no longer unselects: in the double view Fuel's row stays a switch). Noreg D201 (rouge before: the button was grey until a touch).
 - **Across two screens** (noreg D202, a known failure until Fuel is fixed, Features SOG): the user's course — Fuel, the Map alone, back to Fuel, the Map again — shows that Fuel loses its proposals when its screen is left (« retour sans choisir : plus d'itinéraire »), and that `#fuel?ralt=` (`altsFromAddress`) nulls `S.alts` before `routeTake`, so `altsClear()` (which starts with `if (!S.alts?.list?.length) return`) publishes nothing and `route_alts.json` keeps the old proposals: the window comes back on the Map after the choice. The Map writes nothing in a document Fuel owns (contract § 3 bis).
+
+## « Around the flight only » acts on EVERY layer read around the plan (SOG-0246, refused again, the user, 13 Nov: « a un effet, mais pas sur tout. manque : airspaces, AD, peut-être d'autres »)
+The list, one line per layer (what `loadData` reads around the plan; the box is read ticked or not by `corridorFor`, wide views only, SOG-0182):
+| Layer | Follows the box? |
+|---|---|
+| Airspaces, small families (R, D, P, TSA…) | yes (it did) |
+| Airspaces, big families (FIR, UIR, TMA, CTA, CTR, FRA…) | **yes now** — they were read over the whole view by SOG-0169's exception (`bigSpaces`, `withBig`), removed |
+| Airways | yes (it did) |
+| Aerodromes (and the coverage pins, which come from them) | **yes now** |
+| Navaids | **yes now** |
+| VRP points | **yes now** |
+| RNAV points | **yes now** |
+| Towns | **yes now** |
+| MORA cells | **yes now** (read, no case: the bench has no MORA) |
+| Obstacles | **yes now** (read, no case: the bench has no obstacles) |
+| AAR axes, NAT tracks | no: named tracks read whole and drawn by the view's box, few, off by default |
+| Wind barbs, route, procedures, alternate, ground | not read by the view: bound to the flight itself |
+| Online controllers, graticule, contours | not read around the plan |
+- Noreg D203: one far item 200 NM off the route per layer (aerodromes, navaids, VRP, towns, RNAV points, a big airspace), absent ticked, present unticked (red before for every layer); D75 and D132 accorded (the progressive classes are read on the whole view). The close view (300 px per degree and more) still reads everything, as decided on 30 Oct: the box is a wide-view guard.
