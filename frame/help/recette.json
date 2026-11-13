@@ -2679,10 +2679,10 @@
     "de": "« A → B berechnen »: 27,8 s im Launcher (LFPO → EIDW)",
     "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)"
    },
-   "test": "Relance le lanceur, recharge la page. Carburant, LFOE → KDEN, « Calculer A → B » : la première fois environ 14 secondes (au lieu de 26) ; le MÊME calcul refait : immédiat ; après un changement d'écran : toujours immédiat. La route de tête en une à trois secondes avec « variantes en recherche… » arrive dans un second temps : ne la cherche pas encore.",
+   "test": "Relance le lanceur, recharge la page. Carburant, LFOE → KDEN, « Calculer A → B » : la route de tête arrive en une à trois secondes, avec « Variantes en recherche… » ; quelques secondes plus tard les variantes s'ajoutent dessous, la première ne bouge pas. Refais le même calcul : immédiat, et l'écran dit « du cache, calculé à … ». Change le niveau pendant la recherche des variantes : elle s'arrête et le calcul repart.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-13T20:45:28Z",
+   "delivered": "2026-11-13T22:00:01Z",
    "previous": {
     "verdict": "ko",
     "comment": "oui, il faut garder un cache, qui périme uniquement au changement d’airac, ou s’il passe par les nats. second calcul lfoe kden aussi long, sauf si on shifte de page. étonnant, non ? détail amusant : l’affichage reste identique si on change d’écran 1-> 5, mais est différent si on fait un aller-retour carte (screenshot).",
