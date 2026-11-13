@@ -2511,12 +2511,21 @@
     };
     paintKept();
   }
+  /** Vers quoi penche la comparaison : « browser » (plus récent et / ou plus complet côté navigateur, rien de contraire), « file » (l'inverse), '' (égalité ou contradiction : les deux boutons ont le même poids). */
+  const lean = i => {
+    const b = (i.newer === 'browser') + (i.fuller === 'browser'),
+      f = (i.newer === 'file') + (i.fuller === 'file');
+    return b > f ? 'browser' : f > b ? 'file' : '';
+  };
   /** Ce que la ligne compare au fichier : une version de référence (chargée, enregistrée ou créée, à sa date), la mission en cours dans le générateur, ou son brouillon. */
   const natureOf = i => i.nature === 'shared' ? t(['mission en cours dans le générateur', 'mission in progress in the generator',
       'Mission in Arbeit im Generator', 'misión en curso en el generador'
     ]) :
     i.nature === 'draft' ? t(['brouillon du générateur', 'generator draft', 'Entwurf des Generators', 'borrador del generador']) :
-    t(i.kind === 'saved' ? ['référence enregistrée le {d}', 'reference stored on {d}', 'Referenz gespeichert am {d}',
+    t(i.kind === 'saved' && i.state === 'none' ? ['enregistrée le {d} dans un dossier qui n’est pas celui-ci',
+      'stored on {d} in a folder that is not this one', 'am {d} in einem Ordner gespeichert, der nicht dieser ist',
+      'guardada el {d} en una carpeta que no es esta'
+    ] : i.kind === 'saved' ? ['référence enregistrée le {d}', 'reference stored on {d}', 'Referenz gespeichert am {d}',
       'referencia guardada el {d}'
     ] : i.kind === 'loaded' ? ['référence chargée le {d}', 'reference loaded on {d}', 'Referenz geladen am {d}',
       'referencia cargada el {d}'
@@ -2542,7 +2551,7 @@
       rows = todo.map(i => `<tr data-kept-id="${esc(i.key)}"><td><b>${esc(i.id)}</b>${i.lineId && i.lineId !== i.id ? ` → ${esc(i.lineId)}` : ''}<br><span class="rg-small">${esc(natureOf(i))}</span></td>
         <td>${i.state === 'none' ? esc(t(['sans fichier', 'no file', 'keine Datei', 'sin archivo'])) : cell(i.file)}</td><td>${cell(i.browser)}</td>
         <td class="rg-small">${i.state === 'none' ? '' : `${esc(t(['plus récent :', 'newer:', 'neuer:', 'más reciente:']))}${yes(i.newer)}<br>${esc(t(['plus complet :', 'more complete:', 'vollständiger:', 'más completo:']))}${yes(i.fuller)}`}</td>
-        <td>${i.chosen === 'file' ? `<span class="rg-small">${esc(t(['fichier gardé', 'file kept', 'Datei behalten', 'archivo conservado']))}</span>` : `<button type="button" class="primary" data-kept-store="${esc(i.key)}">${esc(t(['Ranger dans le dossier', 'Store in the folder', 'Im Ordner ablegen', 'Guardar en la carpeta']))}</button>${i.state === 'none' ? '' : ` <button type="button" class="secondary" data-kept-file="${esc(i.key)}">${esc(t(['Garder le fichier', 'Keep the file', 'Datei behalten', 'Conservar el archivo']))}</button>`}`}</td></tr>`).join(''),
+        <td>${i.chosen === 'file' ? `<span class="rg-small">${esc(t(['fichier gardé', 'file kept', 'Datei behalten', 'archivo conservado']))}</span>` : `<button type="button" class="${lean(i) === 'file' ? 'secondary' : lean(i) === '' && i.state !== 'none' ? 'secondary' : 'primary'}" data-kept-store="${esc(i.key)}">${esc(t(['Ranger dans le dossier', 'Store in the folder', 'Im Ordner ablegen', 'Guardar en la carpeta']))}</button>${i.state === 'none' ? '' : ` <button type="button" class="${lean(i) === 'file' ? 'primary' : 'secondary'}" data-kept-file="${esc(i.key)}">${esc(t(['Garder le fichier', 'Keep the file', 'Datei behalten', 'Conservar el archivo']))}</button>`}`}</td></tr>`).join(''),
       html = !n ? '' : `${esc(t(['{n} mission(s) gardée(s) par ce navigateur : {d} différente(s) du dossier, {s} sans fichier, {i} identique(s){u}', '{n} mission(s) kept by this browser: {d} different from the folder, {s} without a file, {i} identical{u}', '{n} Mission(en) von diesem Browser gespeichert: {d} anders als der Ordner, {s} ohne Datei, {i} identisch{u}', '{n} misión(es) guardada(s) por este navegador: {d} distinta(s) de la carpeta, {s} sin archivo, {i} idéntica(s){u}'], {
         n,
         d: kept.diff,
