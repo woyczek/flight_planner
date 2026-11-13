@@ -4,8 +4,8 @@
  "updated": "2026-11-13",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2bf8f2c",
-  "fiches": 307,
+  "organisation": "f68e3bb",
+  "fiches": 310,
   "untranslated": 0,
   "priorities": 243
  },
@@ -595,8 +595,7 @@
      "en": "Fuel quote: a computed alternate fuel (distance from the arrival to the alternate aerodrome)",
      "de": "Kraftstoffplan: berechneter Ausweichkraftstoff (Strecke vom Ziel zum Ausweichflugplatz)",
      "es": "Presupuesto de combustible: combustible de alternativo calculado (distancia de la llegada al alternativo)",
-     "rank": 156,
-     "test": true
+     "rank": 156
     },
     {
      "id": "SOG-0090",
@@ -714,6 +713,27 @@
      "en": "REGRESSION: arrival runway choice via « On the map » — headwind and crosswind are gone",
      "de": "REGRESSION: Wahl der Landebahn über « Auf der Karte » — Gegen- und Seitenwind fehlen",
      "es": "REGRESIÓN: elección de pista de llegada por « En el mapa » — falta el viento de cara y de través"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-procedures",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; procédures",
+    "en": "Carburant ; procédures",
+    "de": "Carburant ; procédures",
+    "es": "Carburant ; procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0308",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carburant : clarifier le bloc « Procédures » — maquette d'abord",
+     "en": "Fuel: make the « Procedures » block clearer — mock-up first",
+     "de": "Kraftstoff: den Block « Verfahren » klarer machen — zuerst ein Entwurf",
+     "es": "Combustible: aclarar el bloque « Procedimientos » — primero una maqueta"
     }
    ]
   },
@@ -1287,6 +1307,27 @@
    ]
   },
   {
+   "id": "pilote-carte-terrain",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; terrain",
+    "en": "Carte ; terrain",
+    "de": "Carte ; terrain",
+    "es": "Carte ; terrain"
+   },
+   "items": [
+    {
+     "id": "SOG-0310",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : « toucher le terrain » demande des doigts trop précis",
+     "en": "Map: touching the aerodrome needs too precise a finger",
+     "de": "Karte: den Flugplatz zu berühren verlangt zu genaue Finger",
+     "es": "Mapa: tocar el aeródromo exige dedos demasiado precisos"
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-vol",
    "app": "pilote",
    "label": {
@@ -1304,6 +1345,15 @@
      "en": "Map during the flight: a follow-up window with the crucial information",
      "de": "Karte im Flug: ein Verfolgungsfenster mit den entscheidenden Informationen",
      "es": "Mapa durante el vuelo: una ventana de seguimiento con la información crucial"
+    },
+    {
+     "id": "SOG-0309",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : l'avion (ou son fantôme) ne se voit pas assez sur une carte chargée",
+     "en": "Map: the aircraft (or its ghost) is not visible enough on a busy map",
+     "de": "Karte: das Flugzeug (oder sein Schatten) ist auf einer vollen Karte zu schlecht zu sehen",
+     "es": "Mapa: el avión (o su fantasma) no se ve lo bastante en un mapa cargado"
     }
    ]
   },
@@ -2136,8 +2186,7 @@
      "en": "Mission categories of an airline: reuse the themes and sub-themes of V2, do not reinvent",
      "de": "Missionskategorien einer Gesellschaft: Themen und Unterthemen der V2 übernehmen, nichts neu erfinden",
      "es": "Categorías de misiones de una compañía: reutilizar los temas y subtemas de la V2, no reinventar",
-     "rank": 182,
-     "test": true
+     "rank": 182
     },
     {
      "id": "SOG-0286",
@@ -2308,8 +2357,7 @@
      "en": "Move a mission to another airline (one by one, or in a batch)",
      "de": "Eine Mission einer anderen Gesellschaft zuweisen (einzeln oder im Stapel)",
      "es": "Cambiar una misión de compañía (una a una o en lote)",
-     "rank": 185,
-     "test": true
+     "rank": 185
     },
     {
      "id": "SOG-0291",
