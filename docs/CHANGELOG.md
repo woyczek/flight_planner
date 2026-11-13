@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fleet: the search is the sheets' search plus the fleet — « caravelle » finds the aircraft of type S210 and offers « add an aircraft of this type »; « Créer » only when nothing answers** (aircraft DECISIONS; noreg M48; SOG-0270).
 - **Noreg A165 follows the head bar of the Help**: the way back from a document of the suite sits in the sticky head bar (`.f-docbar`, SOG-0331), the case looked for it directly under the view; the way back itself was never lost
 - **Route text: a NAT point written as in the day's message (« 51/20 », « 5030/30 ») is read as a coordinate, not cut to « 51 »** (fuel DECISIONS; noreg F216; SOG-0332).
 - **Aircraft › sheets: a converted value is shown with four significant digits at most** — no decimal from three digits before the point, two at most otherwise (12407.616 → 12410, 84.736 → 84.74) (aircraft DECISIONS; noreg M47, M38, M25; SOG-0220 refused).

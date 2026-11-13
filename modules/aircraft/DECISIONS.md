@@ -182,3 +182,10 @@
   10 Nov: four significant digits at most, no decimal once the integer part has three digits, two decimals at most otherwise —
   12 407,616 → 12410, 847,36 → 847, 84,736 → 84.74, 8,4736 → 8.47, 0,84736 → 0.85. A typed value stays as typed; the sheet keeps its
   value until the field is edited (unchanged). M47 (the five examples, red before: no rule), M38 and M25 read the new rule.
+- **13 Nov 2026 — SOG-0270 (refused on 13 Nov, 17 h 00): the fleet's search is the sheets' search plus the fleet** (« recherche
+  « caravelle », qui fonctionne partout ailleurs, ne donne rien »). `fleet.js` `typesFor(q, {search, sheets, n})` (pure) gives the types
+  that answer — the local type base (`searchTypes`: designator, usage name, model word) then the register's sheets by name, code or
+  type, a type once; `matches(ac, q, types)` also keeps an aircraft whose type is one of them. Order on screen (the ergonomist's): the
+  fleet's aircraft, then the types (« Caravelle — S210 : ajouter un aéronef de ce type », a new aircraft with the type filled), then
+  « Créer <immatriculation> » only when nothing answers. The types are asked once per entry and the list redrawn in place, the field
+  keeping focus and caret. M48 (red before).

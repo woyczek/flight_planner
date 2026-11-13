@@ -1380,3 +1380,28 @@ def m47(c):
         return typeof m.convShown === 'function' ? [12407.616, 847.36, 84.736, 8.4736, 0.84736, NaN].map(m.convShown) : null }""")
     c.eq(got, ['12410', '847', '84.74', '8.47', '0.85', ''], '12 407,616 → 12 410 ; 847,36 → 847 ; 84,736 → 84,74 ; 8,4736 → 8,47 ; '
          '0,84736 → 0,85', what='convShown')
+
+
+
+@case('M48', 'Fleet: the search is the sheets\' search plus the fleet — « carav » finds the aircraft of a Caravelle type and offers « Caravelle — '
+      'S210: add an aircraft of this type », never « Créer C-ARAV »; « Créer » only when nothing answers', 'M', tags=('aircraft',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0270 refused on 13 Nov, 17 h 00 (« recherche « caravelle », qui fonctionne partout ailleurs, ne donne rien […] cette recherche '
+      'est une évolution de la recherche des fiches, en ajoutant le critère flotte »); the ergonomist\'s order: the fleet\'s aircraft, then the '
+      'types, then « Créer » only when the entry has the shape of a registration and nothing answers')
+def m48(c):
+    fleet = fleet_doc(2)
+    fleet['aircraft'].append({'operator': 'ESCADRON TEST', 'type': 'S210', 'variant': '', 'registration': 'F-TCRV', 'callsigns': [], 'base': 'Testville', 'operational': True})
+    types = ['AircraftDB/aircraft_db.json', dict(TYPES[1], S210={'description': 'L2J', 'model': 'Caravelle'}), 'document']
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet, 'document'], types], wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", timeout=15000, what='the fleet list is drawn')
+    c.page.fill(f'{M} [data-k="q"]', 'carav')
+    c.until(f"!!document.querySelector('{M} [data-do=addtype][data-type=S210]')", timeout=10000, what='the type S210 (Caravelle) offered')
+    c.eq(regs(c), ['F-TCRV'], 'the aircraft of the Caravelle type is found', what='fleet hits')
+    c.eq(c.count(f'{M} [data-do="addq"]'), 0, 'no « Créer C-ARAV » when a type answers', what='create')
+    c.page.fill(f'{M} [data-k="q"]', 'zqxwv')
+    c.until(f"!!document.querySelector('{M} [data-do=addq]')", timeout=10000, what='nothing answers: « Créer Z-QXWV »')
+    c.page.fill(f'{M} [data-k="q"]', 'carav')
+    c.until(f"!!document.querySelector('{M} [data-do=addtype][data-type=S210]')", timeout=10000, what='the type again')
+    c.tap(f'{M} [data-do="addtype"][data-type="S210"]')
+    c.until(f"(document.querySelector('{M} [data-f=type]') || {{}}).value === 'S210'", what='a new aircraft of this type: the editor, type filled')

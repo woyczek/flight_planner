@@ -82,13 +82,42 @@ export function retire(file, registration, {
   return f;
 }
 
-/** La recherche dans la flotte (voir l'en-tête). */
-export function matches(ac, q) {
+/** SOG-0270 (refus du 13/11) : les types qui répondent à la recherche, la règle des fiches — la base locale des types (`search` :
+ *  désignateur, nom d'usage, mot du modèle ; [{ code, label }]) et les fiches du registre dont le nom, le code ou le type répond ; un
+ *  type une fois, le code de la base d'abord ; `n` au plus. Pure. */
+export function typesFor(q, {
+  search = null,
+  sheets = [],
+  n = 6
+} = {}) {
+  const t = clean(q);
+  if (t.length < 2) return [];
+  const out = new Map(),
+    bare = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+    b = bare(t);
+  for (const x of (typeof search === 'function' ? search(t, n) || [] : [])) {
+    const code = String(x?.code || '').toUpperCase().slice(0, 8);
+    if (/^[A-Z0-9]{2,8}$/.test(code) && !out.has(code)) out.set(code, String(x?.label || code).slice(0, 80));
+  }
+  for (const sh of Array.isArray(sheets) ? sheets : []) {
+    const code = String(sh?.icao || sh?.type || '').toUpperCase().slice(0, 8);
+    if (!/^[A-Z0-9]{2,8}$/.test(code) || out.has(code)) continue;
+    if ([sh?.name, sh?.id, sh?.icao, sh?.type].some(v => b && bare(v).includes(b))) out.set(code, String(sh?.name || code).slice(0, 80));
+  }
+  return [...out].slice(0, n).map(([code, label]) => ({
+    code,
+    label
+  }));
+}
+
+/** La recherche dans la flotte (voir l'en-tête) ; `types` (SOG-0270) : les codes de type qui répondent à la recherche des fiches (typesFor) —
+ *  un aéronef de ce type répond aussi. */
+export function matches(ac, q, types = null) {
   const s = clean(q).toUpperCase();
   if (!s) return true;
   // SOG-0313 : « fbhhh » trouve F-BHHH — les séparateurs (tiret, espace, point) ne comptent pas, d'un côté comme de l'autre
   const bare = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
     b = bare(s);
   return [ac?.registration, ac?.type, ac?.variant, ac?.base, ac?.operator, ...(ac?.callsigns || [])].some(v => String(v ?? '')
-    .toUpperCase().includes(s) || !!b && bare(v).includes(b));
+    .toUpperCase().includes(s) || !!b && bare(v).includes(b)) || !!types?.has?.(String(ac?.type || '').toUpperCase());
 }

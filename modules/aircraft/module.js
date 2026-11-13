@@ -92,6 +92,10 @@ const TX = {
   noHit: ['Aucun aéronef ne correspond.', 'No aircraft matches.', 'Kein Luftfahrzeug passt.', 'Ninguna aeronave coincide.'],
   // SOG-0269 : « Créer F-BHHH » sous « Aucun aéronef ne correspond » ; SOG-0271 : la recherche chez un tiers, un lien qui ouvre un onglet
   createReg: ['Créer {reg}', 'Create {reg}', '{reg} anlegen', 'Crear {reg}'],
+  // SOG-0270 (refus du 13/11) : un type qui répond à la recherche, sous les aéronefs de la flotte
+  addType: ['{label} — {code} : ajouter un aéronef de ce type', '{label} — {code}: add an aircraft of this type',
+    '{label} — {code}: ein Luftfahrzeug dieses Typs hinzufügen', '{label} — {code}: añadir una aeronave de este tipo'
+  ],
   searchRz: ['Rechercher sur rzjets.net', 'Search on rzjets.net', 'Auf rzjets.net suchen', 'Buscar en rzjets.net'],
   searchRzHint: ['Ouvre le site dans un nouvel onglet ; revenez saisir le type.',
     'Opens the site in a new tab; come back to enter the type.',
@@ -632,15 +636,50 @@ function countText(s, n) {
     n
   });
 }
+/** SOG-0270 : les types qui répondent à la saisie (FL.typesFor : la base des types et les fiches du registre), demandés à aerodb puis la
+ *  liste redessinée sur place si la saisie n'a pas changé (le champ garde le focus et le curseur). Les fiches sont lues une fois. */
+async function typesAsk(s) {
+  const q = s.q;
+  if (String(q || '').trim().length < 2) {
+    s.qTypes = null;
+    return;
+  }
+  const A = await Promise.resolve().then(() => s.ctx.aerodb?.aircraft?.()).catch(() => null);
+  if (!s.sheetsSeen) s.sheetsSeen = await Promise.resolve().then(() => A?.sheets?.list?.()).catch(() => []) || [];
+  if (s.q !== q || !s.el?.isConnected) return;
+  s.qTypes = {
+    q,
+    list: FL.typesFor(q, {
+      search: typeof A?.searchTypes === 'function' ? (t, n) => A.searchTypes(t, n) : null,
+      sheets: s.sheetsSeen
+    })
+  };
+  const box = s.el.querySelector('[data-pane="fleet"]'),
+    f = s.el.querySelector('[data-k="q"]'),
+    had = document.activeElement === f,
+    at = f?.selectionStart;
+  if (!box) return;
+  box.outerHTML = listHtml(s);
+  const g = s.el.querySelector('[data-k="q"]');
+  if (had) {
+    g?.focus();
+    if (at != null) g?.setSelectionRange(at, at);
+  }
+}
 /** La liste : recherche, « Ajouter », sept lignes puis « N autres ». */
 function listHtml(s) {
-  const all = listOf(s),
-    hits = all.filter(a => FL.matches(a, s.q)),
+  // SOG-0270 : la recherche des fiches (types de la base, fiches du registre) en plus de la flotte ; demandée une fois par saisie
+  const tq = s.qTypes?.q === s.q ? s.qTypes.list : [],
+    codes = new Set(tq.map(t => t.code)),
+    all = listOf(s),
+    hits = all.filter(a => FL.matches(a, s.q, codes)),
     shown = s.all ? hits : hits.slice(0, ROWS),
+    // les types qui répondent, après les aéronefs ; « Créer <immatriculation> » seulement quand rien ne répond
+    typeRows = s.q.trim() ? tq.map(t => `<button type="button" class="f-item ac-typerow" data-do="addtype" data-type="${esc(t.code)}"><span>${esc(s.tt(TX.addType, { label: t.label, code: t.code }))}</span></button>`).join('') : '',
     row = a => `<button type="button" class="f-item ac-row" data-reg="${esc(a.registration)}"><span><b>${esc(a.registration)}</b> ${esc(a.type || '')}${a.variant ? ` <span class="f-muted">${esc(a.variant)}</span>` : ''}</span><span class="f-muted">${esc([(a.callsigns || []).join(' '), a.base].filter(Boolean).join(' · '))}${a.operational === false ? ` <span class="f-badge" data-kind="warn">${esc(s.tt(TX.out))}</span>` : ''}</span></button>`;
   return `<div class="f-card" data-pane="fleet"><div class="f-row ac-head"><b data-fleetof>${esc(s.co ? s.tt(TX.fleetOf, { a: s.co }) : s.tt(TX.fleet))}</b> <span class="f-muted" data-count>${esc(countText(s, all.length))}</span><button type="button" class="primary" data-do="add">${esc(s.tt(TX.add))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"></label>
-    <div class="f-list" data-list>${!all.length ? `<p class="f-muted">${esc(s.tt(TX.none))}</p>${noHitActions(s)}` : !hits.length ? `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>${noHitActions(s)}` : shown.map(row).join('')}</div>
+    <div class="f-list" data-list>${!all.length ? `<p class="f-muted">${esc(s.tt(TX.none))}</p>` : !hits.length ? `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>` : shown.map(row).join('')}${typeRows}${hits.length || tq.length ? '' : noHitActions(s)}</div>
     ${hits.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="more">${esc(s.tt(TX.more, { n: hits.length - shown.length }))}</button>` : ''}</div>`;
 }
 
@@ -715,6 +754,7 @@ function onInput(s, e) {
   if (e.target.dataset.k === 'q') {
     s.q = e.target.value;
     s.all = false;
+    typesAsk(s); // SOG-0270 : les types qui répondent, la liste redessinée à la réponse
     const box = s.el.querySelector('[data-pane="fleet"]'),
       at = e.target.selectionStart;
     if (box) box.outerHTML = listHtml(s);
@@ -810,6 +850,15 @@ async function onClick(s, e) {
       s.edit = {
         was: '',
         draft: FL.normalize({})
+      };
+      draw(s);
+      return s.el.querySelector('[data-f="registration"]')?.focus();
+    case 'addtype': // SOG-0270 : « ajouter un aéronef de ce type » : la fiche neuve, le type rempli
+      s.edit = {
+        was: '',
+        draft: FL.normalize({
+          type: String(b.dataset.type || '').slice(0, 8)
+        })
       };
       draw(s);
       return s.el.querySelector('[data-f="registration"]')?.focus();
