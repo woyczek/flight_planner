@@ -6514,7 +6514,7 @@ def k_keptstore(c):
     cls = c.js("""() => ({ keep85: document.querySelector('[data-kept-file="85"]').className, store85: document.querySelector('[data-kept-store="85"]').className, storeX: document.querySelector('[data-kept-store="X-001"]').className })""")
     c.ok('primary' in cls['keep85'] and 'primary' not in cls['store85'] and 'primary' in cls['storeX'], str(cls), 'the button the comparison points to is the highlighted one: « Keep the file » where the file is more complete, « Store in the folder » where there is no file')
     row85 = c.js("() => document.querySelector('#rgKeptList tr[data-kept-id=\"85\"]').textContent.replace(/\\s+/g, ' ')")
-    c.ok('T-085' in row85 and 'résumé 38' in row85 and 'résumé 29' in row85 and 'plus récent' in row85 and 'plus complet' in row85, row85, 'the row sets the file and the browser side by side: the lettered identifier, the lengths of the summary, newer, more complete')
+    c.ok('T-085' in row85 and 'résumé 38' in row85 and 'résumé 29' in row85 and 'plus récent' in row85 and 'plus complet' in row85 and 'Bench' in row85, row85, 'the row sets the file and the browser side by side: the lettered identifier, the lengths of the summary, newer, more complete')
     c.shot('K223_standard_kept_list_delivered.png')
     # « Keep the file » changes nothing
     before = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/missionT-085.yaml')
@@ -6570,3 +6570,49 @@ def k_recubatch(c):
     for mid in ('T-091', 'T-092', 'T-093'):
         recu = c.js(_WFS_READ_JS, 'T_AIRLIFT/' + mid + '/recu') or []
         c.ok(len(recu) == 2 and all(mid in n for n in recu), str(recu), mid + ': its recu/ holds its own two files (YAML and Markdown) and nothing of the others')
+
+
+
+def _hostile_yaml(levels=11, fan=9):
+    """A YAML file whose anchors share one list over and over: small on the disk, enormous once every reference is expanded (the « billion laughs »)."""
+    rows = ["schema: helo-xp-mission", "mission:", "  id: T-085", "  former_id: '85'", "  type: AIRLIFT", "title: Hostile", "l0: &l0 [" + ', '.join(['x'] * fan) + "]"]
+    rows += ["l%d: &l%d [%s]" % (k, k, ', '.join(['*l%d' % (k - 1)] * fan)) for k in range(1, levels)]
+    return '\n'.join(rows) + '\n'
+
+
+_TWO_CLAIMS_JS = r"""async () => { const line = (id, former, folder) => ({ id, formerId: former, series: '', number: 0, type: 'AIRLIFT', family: 'T', subtype: '', title: 'Bench ' + id, folder, files: ['mission' + id + '.yaml'], source: 'dossier',
+    status: 'generated', statusAt: '2026-10-20T10:00:00.000Z', notes: '', flownAt: '', addedAt: '2026-10-20T10:00:00.000Z', teams: [], teamCount: 0, teamTypes: [], aircraftTypes: [], callsigns: [], rdv: 0, origin: '', destination: '', hasYaml: true });
+  await window.MissionIndex.ready;
+  await window.MissionIndex.save([line('T-085', '85', 'T_AIRLIFT/T-085'), line('T-185', '85', 'T_AIRLIFT/T-185'), line('T-086', '', 'T_AIRLIFT/T-086')], new Date().toISOString()); return true }"""
+_STORE_OVER_JS = r"""async () => { const doc = { yaml: { schema: 'helo-xp-mission', mission: { id: 'T-085', type: 'AIRLIFT' }, title: 'New version' } };
+  const r = await window.MissionRegistryCore.record(doc, { md: '', raw: [], source: 'fichiers', request: true }); return r.status }"""
+
+
+@case('K225', 'The comparison of the kept missions refuses a hostile file (shared anchors that expand to billions of nodes) and counts that mission as not compared, in under a second; an ambiguous former number maps to no line; a storing over a file that cannot be read keeps a copy of it in versions/', 'K',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='audit 183 (Sécurisation, 13 Nov): jsyaml.load shares the anchors, canon() and leafCount() expand them: 11 nested levels of 455 bytes cost 2.6 s and 350 MB, 12 throw; a file loaded by the common function is refused beyond a budget of 200 000 nodes, the element becomes « not compared » and the others go on; the former number is followed only when exactly one line claims it; the old file is copied to versions/ as soon as it exists and differs, readable or not')
+def k_hostile(c):
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!window.RepositoryNav && !!window.MissionIndex && !!window.MissionRegistry && !!window.MissionRegistryCore && !!window.FileAccess", timeout=15000, what='the registry page is loaded')
+    c.js("async () => await window.RepositoryNav.cpco.unlock('DEFA')")
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]      # the data folders are not in the test tree
+    c.js(_KEPT_SEED_JS)
+    c.page.route('**/data/missions/T_AIRLIFT/T-085/missionT-085.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_hostile_yaml()))
+    c.page.route('**/data/missions/T_AIRLIFT/T-086/missionT-086.yaml', lambda r: r.fulfill(status=200, content_type='text/yaml', body=_KEPT_FILE_86))
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!document.getElementById('rgKept') && document.getElementById('rgKept').textContent.length > 10", timeout=5000, what='the page answers with the line of the kept missions (a hostile file does not freeze it)')
+    line = c.js("() => document.getElementById('rgKept').textContent.replace(/\\s+/g, ' ').trim()")
+    c.ok('1 sans fichier' in line and '1 identique(s)' in line and '1 non comparée(s)' in line, line, 'the mission of the hostile file is « not compared », the others are counted all the same')
+    # a former number claimed by two lines follows none of them
+    c.js(_TWO_CLAIMS_JS)
+    c.page.goto(c.base + '/apps/cpco/mission_registry.html', wait_until='load')
+    c.until("() => !!document.getElementById('rgKept') && document.getElementById('rgKept').textContent.length > 10", timeout=8000, what='the registry says what the browser keeps')
+    line = c.js("() => document.getElementById('rgKept').textContent.replace(/\\s+/g, ' ').trim()")
+    c.ok('2 sans fichier' in line, line, 'the number « 85 », claimed by two lines, is followed to none: the snapshot counts as without a file')
+    # the old file cannot be read: a copy of it goes to versions/ before it is replaced
+    c.js(_WFS_JS, {'T_AIRLIFT': {'T-085': {'missionT-085.yaml': 'key: [unclosed\n  - : :'}}})
+    st = c.js(_STORE_OVER_JS)
+    c.eq(st, 'version', 'the new version replaces the unreadable file', what='status')
+    vers = c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/versions') or []
+    c.ok(len(vers) == 1 and c.js(_WFS_READ_JS, 'T_AIRLIFT/T-085/versions/' + vers[0]) == 'key: [unclosed\n  - : :', str(vers), 'a copy of the file that could not be read is kept in versions/, intact')
+    c.errors[:] = [e for e in c.errors if not e.startswith('missing file 404')]

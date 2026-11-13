@@ -178,6 +178,53 @@
       return null;
     }
   };
+  // ---- lecture d'un YAML venu du dossier ou d'un fichier choisi : refusé s'il est hostile (audit 183). jsyaml.load PARTAGE les ancres (le document reste petit), mais tout ce qui parcourt
+  // l'arbre (canon, leafCount, JSON.stringify) les développe : onze niveaux de 455 octets coûtent 2,6 s et 350 Mo, douze font jeter l'appel. Le document est donc compté avec chaque
+  // référence partagée développée (une fois par objet : le calcul reste linéaire) et REFUSÉ au-delà d'un budget de nœuds.
+  const YAML_BUDGET = 200000;
+  /** Charge un texte YAML ; jette une erreur « TooBig » si le document développé dépasse YAML_BUDGET nœuds. */
+  function loadYaml(text) {
+    const doc = window.jsyaml.load(text);
+    const memo = new Map();
+    const size = v => {
+      if (!v || typeof v !== 'object') return 1;
+      if (memo.has(v)) return memo.get(v);
+      memo.set(v, 1); // une référence circulaire ne boucle pas
+      let n = 1;
+      for (const x of Array.isArray(v) ? v : Object.values(v)) {
+        n += size(x);
+        if (n > YAML_BUDGET) {
+          n = YAML_BUDGET + 1;
+          break;
+        }
+      }
+      memo.set(v, n);
+      return n;
+    };
+    if (size(doc) > YAML_BUDGET) throw Object.assign(new Error(t([
+      'document YAML trop volumineux une fois ses références partagées développées',
+      'YAML document too large once its shared references are expanded',
+      'YAML-Dokument zu groß, wenn seine gemeinsamen Verweise aufgelöst sind',
+      'documento YAML demasiado grande una vez desplegadas sus referencias compartidas'
+    ])), {
+      name: 'TooBig'
+    });
+    return doc;
+  }
+  /** Parmi des textes reçus, ceux qui se chargent (un YAML refusé est écarté, dit en notification) ; les Markdown passent. */
+  function acceptYaml(texts) {
+    return texts.filter(f => {
+      if (!/\.ya?ml$/i.test(f.name || '')) return true;
+      try {
+        loadYaml(f.text);
+        return true;
+      } catch (e) {
+        if (e?.name !== 'TooBig') return true; // illisible : le lecteur de la mission le dira, comme avant
+        window.AppFramework?.notify?.(`${f.name} : ${e.message}`, 'warn');
+        return false;
+      }
+    });
+  }
   /** Trigramme du profil pilote (missionReportingConfig:v1) : signature (by) des suivis écrits. */
   const me = () => {
     try {
@@ -667,7 +714,15 @@
     }));
   }
   /** Identifiants de mission que cite un texte reçu (YAML : mission.id ; Markdown : titre « # Mission … » ; un texte à plusieurs missions : tous). */
+  const citedCache = new WeakMap(); // identifiants cités par texte reçu : une analyse par texte, pas une par texte et par mission du lot
   function receivedIds(f) {
+    if (citedCache.has(f)) return citedCache.get(f);
+    const ids = receivedIdsOf(f);
+    citedCache.set(f, ids);
+    return ids;
+  }
+
+  function receivedIdsOf(f) {
     const SM = window.SiaMission,
       parts = SM?.splitBundle?.(f.text) || [],
       one = x => {
@@ -725,7 +780,7 @@
     const oldText = await readText(m.h, name);
     let old = null;
     try {
-      old = oldText ? window.jsyaml.load(oldText.replace(/^#.*\n/, '')) : null;
+      old = oldText ? loadYaml(oldText.replace(/^#.*\n/, '')) : null;
     } catch {
       old = null;
     }
@@ -733,21 +788,22 @@
     let status = 'new',
       diff = [];
     if (old && canon(old) === canon(y)) status = 'same';
-    else if (old) {
+    else if (old || oldText) {
+      // l'ancien fichier part dans versions/ dès qu'il existe et diffère, lisible ou non (un fichier illisible n'est pas écrasé sans copie)
       status = 'version';
-      diff = diffOf(old, y);
+      diff = old ? diffOf(old, y) : [];
       const vh = await m.h.getDirectoryHandle(SUB.versions, {
         create: true
       });
       await writeText(vh, `mission${id}_${st}.yaml`, oldText);
       // réglages du studio repris sur les cartes de même nom ; profil vertical gardé s'il n'est pas redonné
       for (const mp of Array.isArray(y.maps) ? y.maps : []) {
-        const o = (old.maps || []).find(x => x?.filename && x.filename === mp?.filename);
+        const o = (old?.maps || []).find(x => x?.filename && x.filename === mp?.filename);
         if (o)
           for (const k of ['profile', 'view', 'trace', 'generated_at', 'profile_def', 'resolved_bbox', 'cycle'])
             if (o[k] !== undefined && mp[k] === undefined) mp[k] = o[k];
       }
-      if (!y.vertical_profile && old.vertical_profile) y.vertical_profile = old.vertical_profile;
+      if (!y.vertical_profile && old?.vertical_profile) y.vertical_profile = old.vertical_profile;
     }
     const om = old?.meta || {};
     y.meta = {
@@ -1131,6 +1187,9 @@
           });
         }
         try {
+          for (const x of texts)
+            if (/\.ya?ml$/i.test(x.name || '')) loadYaml(x
+              .text); // refusé (TooBig) : la mission du dossier est un problème dit, les autres se lisent
           const {
             docs
           } = window.SiaMission.fromTextsBatch(texts);
@@ -1262,10 +1321,10 @@
     }
     let n = 0;
     for (const [folder, files] of groups) {
-      const texts = await Promise.all(files.map(async f => ({
+      const texts = acceptYaml(await Promise.all(files.map(async f => ({
         name: f.name,
         text: await f.text()
-      })));
+      }))));
       if (!folder) {
         n += (await receive(texts)).length;
         continue;
@@ -2401,9 +2460,14 @@
     }).filter(Boolean);
   }
   /** La ligne du registre qui a des fichiers et porte cet identifiant, sinon cet ancien numéro (former_id). */
-  const lineWithFiles = id => reg.missions.find(m => !m.supersededBy && !m.missingFile && m.files?.some(f => /\.ya?ml$/i.test(f)) && m
-      .id === id) ||
-    reg.missions.find(m => !m.supersededBy && !m.missingFile && m.files?.some(f => /\.ya?ml$/i.test(f)) && m.formerId === id) || null;
+  const lineWithFiles = id => {
+    const ok = m => !m.supersededBy && !m.missingFile && m.files?.some(f => /\.ya?ml$/i.test(f)),
+      byId = reg.missions.find(m => ok(m) && m.id === id);
+    if (byId) return byId;
+    const claims = reg.missions.filter(m => ok(m) && m.formerId ===
+      id); // l'ancien numéro ne se suit que si UNE ligne exactement le revendique
+    return claims.length === 1 ? claims[0] : null;
+  };
   /** Le YAML du fichier de la mission, lu au lanceur (même origine) ; null s'il ne se lit pas. */
   async function fileYaml(line) {
     try {
@@ -2412,7 +2476,7 @@
       const r = await fetch(url, {
         cache: 'no-store'
       });
-      return r.ok ? window.jsyaml.load(await r.text()) : null;
+      return r.ok ? loadYaml(await r.text()) : null;
     } catch {
       return null;
     }
@@ -2473,6 +2537,7 @@
           key: sn.key,
           nature: sn.nature,
           lineId: line?.id || '',
+          lineTitle: line?.title || '',
           kind: sn.kind,
           yaml: sn.yaml,
           at: sn.at,
@@ -2480,10 +2545,10 @@
           state: 'none',
           chosen: choices[sn.key]?.at === sn.at ? choices[sn.key].choice : ''
         };
-      if (line) {
-        const f = await fileYaml(line);
-        if (!f) item.state = 'unknown';
-        else {
+      try {
+        const f = line ? await fileYaml(line) : null;
+        if (line && !f) item.state = 'unknown';
+        else if (line) {
           item.state = canon(f) === canon(sn.yaml) ? 'same' : 'diff';
           const stamp = Date.parse(f.meta?.modified_at || f.meta?.received_at || '') || 0;
           item.file = facts(f, stamp);
@@ -2492,6 +2557,8 @@
             .leaves ? item.file.leaves > browser.leaves ? 'file' :
             'browser' : item.file.chars > browser.chars ? 'file' : 'browser';
         }
+      } catch {
+        item.state = 'unknown'; // la comparaison de cette mission a échoué : non comparée, les autres continuent
       }
       if (sn.counted) {
         if (item.state === 'diff') diff++;
@@ -2548,7 +2615,7 @@
       }))}</span>` : '—',
       yes = k => k ? ` <b>${esc(t(k === 'file' ? ['fichier', 'file', 'Datei', 'archivo'] : ['navigateur', 'browser', 'Browser', 'navegador']))}</b>` : ' —',
       todo = (kept?.items || []).filter(i => i.state === 'diff' || i.state === 'none'),
-      rows = todo.map(i => `<tr data-kept-id="${esc(i.key)}"><td><b>${esc(i.id)}</b>${i.lineId && i.lineId !== i.id ? ` → ${esc(i.lineId)}` : ''}<br><span class="rg-small">${esc(natureOf(i))}</span></td>
+      rows = todo.map(i => `<tr data-kept-id="${esc(i.key)}"><td><b>${esc(i.id)}</b>${i.lineId && i.lineId !== i.id ? ` → ${esc(i.lineId)}${i.lineTitle ? ` — ${esc(i.lineTitle)}` : ''}` : ''}<br><span class="rg-small">${esc(natureOf(i))}</span></td>
         <td>${i.state === 'none' ? esc(t(['sans fichier', 'no file', 'keine Datei', 'sin archivo'])) : cell(i.file)}</td><td>${cell(i.browser)}</td>
         <td class="rg-small">${i.state === 'none' ? '' : `${esc(t(['plus récent :', 'newer:', 'neuer:', 'más reciente:']))}${yes(i.newer)}<br>${esc(t(['plus complet :', 'more complete:', 'vollständiger:', 'más completo:']))}${yes(i.fuller)}`}</td>
         <td>${i.chosen === 'file' ? `<span class="rg-small">${esc(t(['fichier gardé', 'file kept', 'Datei behalten', 'archivo conservado']))}</span>` : `<button type="button" class="${lean(i) === 'file' ? 'secondary' : lean(i) === '' && i.state !== 'none' ? 'secondary' : 'primary'}" data-kept-store="${esc(i.key)}">${esc(t(['Ranger dans le dossier', 'Store in the folder', 'Im Ordner ablegen', 'Guardar en la carpeta']))}</button>${i.state === 'none' ? '' : ` <button type="button" class="${lean(i) === 'file' ? 'primary' : 'secondary'}" data-kept-file="${esc(i.key)}">${esc(t(['Garder le fichier', 'Keep the file', 'Datei behalten', 'Conservar el archivo']))}</button>`}`}</td></tr>`).join(''),
