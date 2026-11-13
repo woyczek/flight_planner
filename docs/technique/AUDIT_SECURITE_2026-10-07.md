@@ -1043,6 +1043,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 191 | The published site's root: one added step in `pages.yml` and `build_pages.py --root-only` (93258d646, SOG-0278 / Q-0039), read before the push | accepted, three notes |
 | 192 | The Map alone: “Choose this route” is never a dead button (edbe901be, SOG-0224) | acceptable, display only |
 | 193 | The publication of the site's root (78053845b on v3, 027747a83 on develop), the Map's “around the flight only” (b4efa222d), Fuel's proposals after a choice on the Map (dd7c3f8d2, 95d0a34f2), the stop points' runway and the ENV charts (e79e56dd1), the wording of the recette verbs (001b4aa56) | acceptable, one note |
+| 194 | The fix of 190 (ac9489a17: the timeline where the file keeps it, every tolerated shape kept) | defect of 190 closed, its three notes taken; one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2963,6 +2964,18 @@ document is of the `cache` kind: it stays on the device and is not in the data r
 if it matches `^\d{2}[LRC]?(?:/\d{2}[LRC]?)?$`; the ENV charts leave the approach charts by a word test on the file name. K228 and K229 green. *Recette (001b4aa56).* Wording only: the two verbs' rule
 now says “no control character but tab and line feed”, which is what the pattern does (the note of 188 is closed). **Note.** `altsFromDoc` hands `d.alternatives.slice(0, 3)` to the Map as the
 list without passing it through the validation `raltsOfDoc` applies to the Fuel list; the document is device-local, so it is hygiene: give the Map the validated list.
+
+**194. The fix of 190 — defect closed, notes taken; the editor's rule is complete.** `eventsHome` finds the events where the file holds them (`timeline` as a list, `timeline.events`, `chronology`
+as a list or `chronology.events`; the first that carries some, else `timeline.events`) and `withEvents` writes back there, never replacing the container. Probed on the fixed code:
+`timeline: [e1, e2]` plus one new event gives e1, e2 and the new one, still a list (counter-test of 190, and the round trip is identical); a `chronology.events` is shown with the text
+read from `text`, else `description`, else `label`, an edit goes back to the key it came from (no `timeline` key appears), clearing the text removes the event; with a `timeline` and a
+`chronology` both present only the one holding the events is touched, its extra key (`note`) and the other list are kept. The notes of 190: an event under another text key is
+kept and edited in place; the names of the proposed maps carry the identifier only when it has the form `^[A-Z]-\d{3}[A-Z]?$` (probed: `../../x`, a text with a quote and angle bracket, and
+a text with a space give `general.png`, `cible.png`, … with no identifier); a `null` entry of `aircraft` stays where it was (clearing the first of three leaves `{}`, `null`, the
+third). The same pass also tolerates a `radiusKm`, a `center`, a single participant given as a text and a single secondary objective given as a text, and a string entry of `maps`.
+N58 to N60 green. With this, the six steps and the commercial family keep what they do not show: for every shape I probed the round trip is identical, an edit writes only the fields
+that changed, and “Nothing to save” writes nothing. **Note.** A `timeline` that is a bare text (neither a list nor an object) is replaced by `{ events: […] }` at the first added event;
+no reader takes a text for a timeline, so nothing is lost that the sheet showed, but leave a non-container value alone.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
