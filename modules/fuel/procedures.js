@@ -107,7 +107,7 @@ export const PROC_STYLE = `
   [data-module="fuel"] .fu-onmap{grid-column:2;justify-self:start;margin-top:2px}
 }
 /* replié : une phrase et une marque ; déplié : les lignes, la source au pied */
-[data-module="fuel"] .fu-procsum{display:flex;align-items:flex-start;gap:8px;margin:0 0 4px 32px}
+[data-module="fuel"] .fu-procsum{display:flex;align-items:flex-start;gap:8px;margin:6px 0 4px 32px}
 [data-module="fuel"] .fu-procsum:empty,[data-module="fuel"] .fu-proc:not(.fu-folded)>.fu-procsum{display:none}
 [data-module="fuel"] .fu-proc.fu-folded>.fu-prows,[data-module="fuel"] .fu-proc.fu-folded>.fu-procfoot,[data-module="fuel"] .fu-proc.fu-folded>.fu-lnmline{display:none}
 [data-module="fuel"] .fu-mark{flex:none;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;font-weight:700}
@@ -127,10 +127,14 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-prow>.fu-plist{grid-column:1 / -1}
 /* la liste de la piste, seule dans sa ligne : son nom n'est pas redit (il reste lu par un lecteur d'écran) */
 [data-module="fuel"] .fu-pf-rwy>.fu-pflab{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-[data-module="fuel"] .fu-prow.fu-pwarn{background:color-mix(in srgb,var(--sog-warn) 12%,transparent);padding:8px 10px;margin:4px 0}
+/* l'avertissement déborde de 10 px de chaque côté : son texte et son « Changer » restent alignés sur les autres lignes (retouche c) */
+[data-module="fuel"] .fu-prow.fu-pwarn{background:color-mix(in srgb,var(--sog-warn) 12%,transparent);padding:8px 10px;margin:4px -10px}
 [data-module="fuel"] .fu-prow.fu-pwarn>.fu-pval{color:var(--sog-warn)}
 [data-module="fuel"] .fu-procfoot:not([open])>:not(summary){display:none} /* fermé : rien de vu ni d'atteignable (sûr sous tous les moteurs) */
 [data-module="fuel"] .fu-procfoot>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--sog-muted)}
+/* le même signe de pli que les côtés (▸ / ▾), à la place du chevron du cadre (retouche c) */
+[data-module="fuel"] .fu-procfoot>summary::before{content:'▸';border:0;width:auto;height:auto;transform:none;margin:0 .5em 0 0;font-size:.9em}
+[data-module="fuel"] .fu-procfoot[open]>summary::before{content:'▾';transform:none}
 [data-module="fuel"] .fu-rwyprob{margin:4px 0 0}
 [data-module="fuel"] .fu-procmeta{display:flex;flex-wrap:wrap;align-items:center;column-gap:.45em;font-size:.85em}
 [data-module="fuel"] .fu-procmeta .fu-linkbtn{padding:0 2px}
@@ -143,6 +147,11 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-proc .wind-ok{color:var(--sog-ok)}
 [data-module="fuel"] .fu-proc .wind-warn{color:var(--sog-warn)}
 [data-module="fuel"] .fu-proc .wind-alert{color:var(--sog-err)}
+/* au téléphone, les lignes, la phrase repliée et le pied partent du bord de la carte, comme sur la maquette (retouches a et b ; après
+   les règles de base, qu'elles remplacent) */
+@container (max-width: 479px){
+  [data-module="fuel"] .fu-prows,[data-module="fuel"] .fu-procfoot,[data-module="fuel"] .fu-lnmline,[data-module="fuel"] .fu-proc>.fu-procmeta,[data-module="fuel"] .fu-procsum{margin-left:0}
+}
 `;
 
 /** Crée le bloc « Procédures » d'un montage de Carburant (voir l'interface en tête de fichier). */
@@ -383,13 +392,19 @@ export function createProcedures(host) {
   /** La piste probable d'un côté d'après son METAR (SOG-0090 ; l'utilisateur, Q-0033) : celle du plus fort vent de face, sans rouge
    *  (arrière ou travers au-delà des limites, celle de la fiche comprise) ; null par vent calme (moins de 3 kt), variable ou sans METAR :
    *  rien n'est dit sans preuve (§ 10.30). { r, w } */
+  /** SOG-0301 : la règle « une piste sert-elle une procédure publiée du côté ? » — vrai pour toute piste sur un terrain qui ne publie ni
+   *  SID (départ) ni STAR (arrivée) ; sinon seules les procédures elles-mêmes comptent, jamais leurs transitions. */
+  function servedOf(m) {
+    const procs = [...(m?.lists?.SID || []), ...(m?.lists?.STAR || [])].filter(p => !p.transition);
+    return r => !procs.length || procs.some(p => PR.servesRwy(p, r.id));
+  }
+
   function probableRwy(m) {
     const w = m?.wind;
     if (!w || !(+w.kt >= 3) || !Number.isFinite(+w.dir)) return null;
     // SOG-0301 : sur un terrain qui publie des SID (au départ) ou des STAR (à l'arrivée), une piste qu'aucune ne sert n'est jamais probable ;
     // seules les procédures elles-mêmes comptent, pas leurs transitions (« NTS1A.RWALL.LUGEN » ne dit aucune piste : servesAll serait vrai)
-    const procs = [...(m.lists?.SID || []), ...(m.lists?.STAR || [])].filter(p => !p.transition),
-      served = r => !procs.length || procs.some(p => PR.servesRwy(p, r.id));
+    const served = servedOf(m);
     let best = null;
     for (const r of m.rwys || []) {
       if (!served(r)) continue;
@@ -468,12 +483,25 @@ export function createProcedures(host) {
   }
   /** Options de la liste des pistes : « — », les pistes de PR.orderProcedures, chacune suivie du vent du METAR connu (« 13R — face 12 kt
    *  · travers 6 kt », en vert, orange ou rouge selon severity, la raison en infobulle), puis la piste choisie si elle n'y est plus. */
-  function runwayOptionsHtml(m, o) {
-    const rwys = PR.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, recsNow()),
-      lim = +host.crossLimit?.() || 0,
+  function runwayOptionsHtml(m, o, side) {
+    // SOG-0308, tranche 2 : la mieux orientée en tête (la piste probable du METAR), puis le vent de face décroissant ; une piste qu'aucune
+    // procédure publiée du côté ne sert en dernier, dite (SOG-0301) ; sans vent connu, l'ordre de toujours (PR.orderProcedures)
+    const lim = +host.crossLimit?.() || 0,
+      served = servedOf(m),
+      p = probableRwy(m),
+      head = r => runwayWind(m, r, lim)?.c?.head ?? -Infinity,
+      base = PR.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, recsNow()),
+      rank = r => !served(r) ? 2 : p && r.id === p.r.id ? 0 : 1,
+      rwys = base.map((r, i) => ({
+        r,
+        i
+      })).sort((a, b) => rank(a.r) - rank(b.r) || (m.wind ? head(b.r) - head(a.r) : 0) || a.i - b.i).map(x => x.r),
+      none = tt(side === 'dep' ? TX.procRwyNoSid : TX.procRwyNoStar),
       opt = r => {
         const w = runwayWind(m, r, lim),
-          l = w ? `${r.id} — ${w.text}` : String(r.id);
+          marks = [p && r.id === p.r.id ? tt(TX.procRwyBest) : '', w?.c?.head < 0 ? tt(TX.procRwyTailMark) : '', served(r) ? '' : none]
+          .filter(Boolean),
+          l = (w ? `${r.id} — ${w.text}` : String(r.id)) + (marks.length ? ` · ${marks.join(' · ')}` : '');
         return `<option value="${esc(r.id)}"${PR.rwNum(r.id) === PR.rwNum(o.rwy) ? ' selected' : ''}${w ? ` class="wind-${w.level}"` : ''}${w ? ` title="${esc([l, ...w.why].join(' · '))}"` : ''}>${esc(l)}</option>`;
       };
     return `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(opt).join('')}${o.rwy && !rwys.some(r => PR.rwNum(r.id) === PR.rwNum(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
@@ -495,7 +523,7 @@ export function createProcedures(host) {
       sel = (field, cls, label, recs, none = true, lab) => add(field, cls, label, optionsHtml(recs, o[field], field, none, o, lab)),
       main = recs => recs.filter(r => !r.transition);
     if (o.appTrans && o.appTrans === o.app) delete o.appTrans; // un ancien choix : la transition n'est pas l'approche elle-même
-    add('rwy', 'rwy', TX.procRwy, runwayOptionsHtml(m, o));
+    add('rwy', 'rwy', TX.procRwy, runwayOptionsHtml(m, o, side));
     if (side === 'dep') {
       sel('sid', 'main', TX.procSid, main(m.lists.SID));
       const t = PR.transitionsOf(m.lists.SID, o.sid); // les transitions de la SID choisie

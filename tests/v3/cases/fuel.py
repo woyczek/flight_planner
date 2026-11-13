@@ -5221,6 +5221,14 @@ def f209(c):
     c.tap(f'{A} [data-prow="rwy"] [data-do="procchange"]')
     c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F209_arriere_{c.design}_{c.width}_{c.lang}.png')
+    # the ergonomist's touches (15 h 27): every « Changer » on one right edge, the warning's too; on a phone the lines start at the card's
+    # edge (as the head), the folded sentence too
+    rights = c.js(f"[...document.querySelectorAll('{A} [data-do=procchange]')].map(b => Math.round(b.getBoundingClientRect().right))")
+    c.ok(max(rights) - min(rights) <= 1, rights, 'every « Changer » on one right edge, the warning line\'s too')
+    if c.width < 480:
+        edge = c.box(f'{A} .fu-proctitle')['l']
+        c.ok(abs(c.box(f'{A} .fu-prows')['l'] - edge) <= 1, [c.box(f'{A} .fu-prows')['l'], edge], 'on a phone the lines start at the card\'s edge')
+        c.ok(abs(c.box(f'{D} [data-procsum]')['l'] - edge) <= 1, [c.box(f'{D} [data-procsum]')['l'], edge], 'and the folded sentence')
 
 
 
@@ -5242,3 +5250,28 @@ def f210(c):
     c.js(over, f'{FUEL} [data-proc="arr"] .fu-proctitle')
     c.until("(window.__pth || []).at(-1) === null", timeout=4000, what='route-point-hover { id: null } once out of the list')
     c.eq(len([x for x in c.js('window.__pth') if x == first]), 1, 'one event per change, not one per pixel', what='events')
+
+
+
+@case('F211', 'Procedures, the runway list (second slice of the mock-up): the best oriented first and said, then by head wind; a tail wind '
+      'said in words; a runway that no published SID serves last, « aucun départ publié »', 'F', tags=('fuel', 'weather'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0308 (mock-up validated, Q-0047: « Pistes : la mieux orientée en tête, chaque piste avec son vent en mots, le vent arrière '
+      'marqué ; une piste sans aucun départ publié en dernier, « aucun départ publié » ») and SOG-0301 — the list kept the order of the '
+      'procedures, the wind in arrows')
+def f211(c):
+    route_metar(c, {'LFRS': (240, 8), 'LFML': (310, 12)})
+    c.page.add_init_script(_NO_SID_21_STUB)
+    open_proc(c)
+    wait_rows(c, 'arr')
+    opts = lambda k: [o for o in c.js(f"[...document.querySelectorAll('{FUEL} select[data-k={k}] option')].map(o => o.textContent.trim())") if o != '—']
+    c.until(f"[...document.querySelectorAll('{FUEL} select[data-k=p-arr-rwy] option')].some(o => o.textContent.includes('kt'))", timeout=20000, what='the METAR read')
+    arr = opts('p-arr-rwy')
+    best, tail = norm(tx(PT, 'procRwyBest', c.lang)), norm(tx(PT, 'procRwyTailMark', c.lang))
+    c.ok(arr[0].startswith('31L') and best in norm(arr[0]), arr, 'the best oriented first, said')
+    c.ok(all(tail in norm(o) for o in arr if o.startswith('13')) and min(i for i, o in enumerate(arr) if o.startswith('13')) > max(i for i, o in enumerate(arr) if o.startswith('31')), arr,
+         'the runways of 13 after those of 31, « vent arrière »')
+    wait_rows(c, 'dep')
+    dep = opts('p-dep-rwy')
+    c.ok(dep and dep[-1].startswith('21') and norm(tx(PT, 'procRwyNoSid', c.lang)) in norm(dep[-1]), dep,
+         'runway 21, which no SID serves any more, last, « aucun départ publié » — although the wind favours it')

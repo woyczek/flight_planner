@@ -1885,3 +1885,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   6db4e07cc: the Map highlights the point and its two legs without moving) when the point under the pointer or the focus changes, and
   `{ id: null }` out of the list, when the pointer leaves Fuel, and when Fuel is left with a point highlighted. One event per change.
   F210 (red before: nothing emitted). The profile is the Map's (`modules/maps`, its canvas): its hover is BUGS SOG's, not done here.
+- **13 Nov 2026 — SOG-0308, second slice: the runway list; the ergonomist's three touches at 390** (written by Features SOG). The list:
+  the probable runway first (the rule of `probableRwy`, said « la mieux orientée »), then the others by decreasing head wind (the
+  order of the procedures when no wind is known), a tail wind said « vent arrière » after the wind in words, and a runway that no
+  published SID (STAR) of the side serves last, « aucun départ publié » / « aucune arrivée publiée » — the rule of SOG-0301, now one
+  function (`servedOf`) for the probable runway and the list. Touches (ergonomist, 15 h 27): below 480 px of container the lines, the
+  folded sentence and the foot start at the card's edge (a second `@container` after the base rules, which it overrides); the folded
+  sentence 6 px under « Choisir sur la carte »; the warning line overflows by 10 px each side so that its « Changer » stays on the
+  right edge of the others; the foot folds with ▸ / ▾ like the sides. F211 (red before); F209 extended (red before: « Changer » of the
+  warning 10 px left of the others).

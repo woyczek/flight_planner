@@ -331,6 +331,11 @@ export const TX = {
     'Tomar la {rwy} (viento de cara)'
   ],
   procRwyTakeOne: ['Prendre la {rwy}', 'Take {rwy}', '{rwy} nehmen', 'Tomar la {rwy}'],
+  // la liste des pistes (SOG-0308, tranche 2 ; SOG-0301) : ce qui distingue une piste, après son vent
+  procRwyBest: ['la mieux orientée', 'best oriented', 'am besten ausgerichtet', 'la mejor orientada'],
+  procRwyTailMark: ['vent arrière', 'tailwind', 'Rückenwind', 'viento de cola'],
+  procRwyNoSid: ['aucun départ publié', 'no published departure', 'kein veröffentlichter Abflug', 'ninguna salida publicada'],
+  procRwyNoStar: ['aucune arrivée publiée', 'no published arrival', 'keine veröffentlichte Ankunft', 'ninguna llegada publicada'],
   // le vent d'une piste en mots (plus de flèche seule ni de couleur seule : le mot d'abord)
   windHead: ['face {kt} kt', 'headwind {kt} kt', 'Gegenwind {kt} kt', 'de cara {kt} kt'],
   windTail: ['arrière {kt} kt', 'tailwind {kt} kt', 'Rückenwind {kt} kt', 'de cola {kt} kt'],
