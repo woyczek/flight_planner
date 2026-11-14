@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5973802",
-  "fiches": 348,
+  "organisation": "f50e38f",
+  "fiches": 350,
   "untranslated": 0,
   "priorities": 310
  },
@@ -1318,6 +1318,15 @@
      "en": "Proposed routes, on the Map: tapping a line of the list does not choose it (only the drawn route answers)",
      "de": "Vorgeschlagene Routen, auf der Karte: das Antippen einer Listenzeile wählt sie nicht (nur die gezeichnete Route reagiert)",
      "es": "Rutas propuestas, en el Mapa: tocar una línea de la lista no la elige (solo responde el trazado)"
+    },
+    {
+     "id": "SOG-0350",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Écran Carburant au téléphone : dans le volet du bas (préférences, couches), les coches sont trop petites",
+     "en": "Fuel screen on the phone: in the bottom sheet (preferences, layers) the checkboxes are too small",
+     "de": "Kraftstoff-Bildschirm am Telefon: im unteren Blatt (Einstellungen, Ebenen) sind die Kästchen zu klein",
+     "es": "Pantalla Combustible en el teléfono: en la hoja inferior (preferencias, capas) las casillas son demasiado pequeñas"
     }
    ]
   },
@@ -3896,6 +3905,27 @@
      "de": "Rollwege: zu spät im Zoom angezeigt, ohne Namen; keine Vorfeldnamen",
      "es": "Calles de rodaje: mostradas demasiado tarde en el zoom, sin nombre; sin nombres de plataformas",
      "rank": 234
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carte-base-synchronisation",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carte ; base ; synchronisation",
+    "en": "Carte ; base ; synchronisation",
+    "de": "Carte ; base ; synchronisation",
+    "es": "Carte ; base ; synchronisation"
+   },
+   "items": [
+    {
+     "id": "SOG-0349",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "BLOQUANT au téléphone : la Carte finit avec zéro donnée après avoir coché « Autour du vol » — la base n'est pas lue en entier depuis gitlab.com",
+     "en": "BLOCKING on the phone: the Map ends with no data after ticking « Around the flight » — the base is not read in full from gitlab.com",
+     "de": "BLOCKIEREND am Telefon: die Karte endet ohne Daten nach dem Ankreuzen von « Um den Flug » — die Basis wird von gitlab.com nicht vollständig gelesen",
+     "es": "BLOQUEANTE en el teléfono: el Mapa acaba sin datos tras marcar « Alrededor del vuelo » — la base no se lee entera desde gitlab.com"
     }
    ]
   },
