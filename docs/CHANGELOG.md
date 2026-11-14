@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The frame draws at once with the last known state of the launcher** (SOG-0133: « plusieurs secondes avant l'écran » through a slow link): the detection finishes behind and only a difference rebinds the transport; a first start waits 600 ms at most; noreg A205
 - **The launcher no longer falls on a state file Windows holds** (SOG-0339: `PermissionError: [WinError 32]` on tools/.lnmperf.json): a lock per file, a temporary of its own, the replacement tried again three times, a readable 503 on the Little Navmap routes; noreg K269
 - **Weather: the map takes a read place within a finger's reach, and a tap that takes none reads nothing** (SOG-0343, « il faut avoir de tout petits doigts pour viser les points météo déjà téléchargés »): 22 px for a finger, 8 px for a mouse, the nearest of the route's reading places and the grid's points wins; a tap in the empty grid no longer reads the forecast of the touched spot (the parasitic accesses); the hint and the help say it; E21 (red before).
 - **Missions › « Registre » button marks « Registre » in the rail** (SOG-0338): a module that changes of view tells the frame (`ctx.view`), the address and the marked entry follow as after a click in the rail; noreg A204

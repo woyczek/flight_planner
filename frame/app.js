@@ -5085,6 +5085,36 @@
   // ---------------------------------------------------------------- démarrage
   let aerodb = null,
     configured = null; // transport branché (missing : usages d'échange sans moyen d'échange ici)
+  const LAUNCHER_SEEN = 'sog.launcher.seen',
+    DETECT_WAIT_MS = 600;
+  /** Le dernier état connu du lanceur de cette adresse (SOG-0133) : l'objet de détection, null (« pas de lanceur » vu), ou undefined (jamais vu, ou page hors http). */
+  function readLauncherSeen() {
+    if (location.protocol !== 'http:') return undefined;
+    try {
+      const v = JSON.parse(localStorage.getItem(LAUNCHER_SEEN) || 'null');
+      if (v === null) return undefined;
+      if (v && v.none === true) return null;
+      // l'empreinte du code que le lanceur sert n'est jamais reprise du passé : le cartouche « Version ancienne » (SOG-0168) ne se fonde que sur la détection du moment
+      return v && typeof v === 'object' && typeof v.host === 'string' && typeof v.data === 'boolean' ? {
+        ...v,
+        app: ''
+      } : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  /** Garde le résultat de la détection pour le prochain démarrage (écrit seulement s'il change). */
+  function keepLauncherSeen(found) {
+    if (location.protocol !== 'http:') return;
+    try {
+      const v = JSON.stringify(found || {
+        none: true
+      });
+      if (localStorage.getItem(LAUNCHER_SEEN) !== v) localStorage.setItem(LAUNCHER_SEEN, v);
+    } catch {
+      /* stockage indisponible : le prochain démarrage attendra la détection */
+    }
+  }
   async function boot() {
     noteLoad();
     try {
@@ -5186,9 +5216,44 @@
       else syncNow();
     };
     LC = await import(new URL('frame/lib/launcher.js?v=0', ROOT).href).catch(e => (console.warn('launcher', e), null));
-    launcherHere = await FD.launcher.detect();
+    // SOG-0133 : le cadre se dessine TOUT DE SUITE avec le dernier état connu du lanceur (gardé sur l'appareil) pendant que la détection (GET /__setup/status, lente par un relais ou un téléphone) continue
+    // derrière ; seule une différence (lanceur arrêté, autre, plus à jour) rebranche le transport après coup. Jamais vu : au plus 600 ms d'attente (puis la détection finit derrière, comme au retour du lanceur).
+    const seen = readLauncherSeen(),
+      detectP = FD.launcher.detect();
+    launcherHere = seen !== undefined ? seen : await Promise.race([detectP, new Promise(r => setTimeout(() => r(null),
+      DETECT_WAIT_MS))]);
+    let bootLoaded;
+    const bootLoadedP = new Promise(r => bootLoaded = r);
+    detectP.then(async found => {
+      keepLauncherSeen(found);
+      await bootLoadedP;
+      const same = (x, y) => JSON.stringify(x && {
+        ...x,
+        app: ''
+      }) === JSON.stringify(y && {
+        ...y,
+        app: ''
+      });
+      const staleCheck = !!found && found.app !== launcherHere
+        ?.app; // l'empreinte du moment : le cartouche « Version ancienne » (SOG-0168) la compare à celle de la page
+      if (same(found, launcherHere)) {
+        if (staleCheck) {
+          launcherHere = found;
+          readVersion();
+          paintStatus();
+          paintStale();
+        }
+        return;
+      }
+      launcherHere = found;
+      await loadDevice(); // le transport suit le lanceur trouvé
+      readVersion();
+      paintStatus();
+      paintStale();
+    }).catch(() => {});
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await loadDevice();
+    bootLoaded();
     readVersion(); // en fond : la version de la suite, dernière ligne du bloc d'état
     await takeIvaoReturn(); // retour de l'OpenID d'IVAO : avant le premier routage (l'adresse est remplacée)
     // (accès réglé ou coupé dans un autre onglet : device/keys.json change et own.watch('device/'), plus bas, rebranche ici)

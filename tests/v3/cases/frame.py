@@ -8038,3 +8038,47 @@ def a204(c):
     c.until("!document.querySelector('#fMenu a[aria-current=page]')?.dataset.menuView", timeout=15000, what='the rail comes back to Missions')
     c.eq(c.js(cur)[:2], ['missions', ''], 'the way back marks « Missions » again', what='rail after back')
     c.check_errors()
+
+
+@case('A205', "The frame draws at once with the last known state of the launcher while the detection (GET /__setup/status, slow through a relay or a phone) goes on behind; never seen before: at most 600 ms of waiting (SOG-0133, « plusieurs secondes avant l'écran »)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0133 (Réglages measured it): `boot()` awaited `launcher.detect()` before routing, so with a launcher that answers in 2 s nothing was drawn for 2 s whatever the screen (2.3 s to the first element when only `status` is slow, 4.1 s when every route is); now the last known answer is kept on the device (localStorage) and used at once, the detection finishes behind and only a difference rebinds the transport; the very first visit waits 600 ms at most")
+def a205(c):
+    status = {'server': True, 'root': '', 'git': True, 'data': False, 'dataGit': False, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'SLOWPC', 'lan': False, 'version': {'version': '6.0.0-alpha.5', 'date': '2026-11-14', 'time': '11:00'}}
+    hits = []
+
+    def handler(route):
+        u = urllib.parse.urlparse(route.request.url)
+        if u.path.endswith('/__setup/status'):
+            hits.append(1)
+            c.page.wait_for_timeout(2000)   # a launcher reached through a relay or a phone: two seconds
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps(status))
+        return route.fulfill(status=404, content_type='application/json', body='{}')
+    c.context.route(re.compile(r'/__setup/'), handler)
+    first_draw = "(() => { const v = document.getElementById('fView'); return !!(v && v.firstElementChild) ? Math.round(performance.now()) : 0 })()"
+
+    def draw_time():
+        for _ in range(120):
+            t = c.js(first_draw)
+            if t:
+                return t
+            c.wait(50)
+        return 99999
+    # first visit, nothing known: at most 600 ms of waiting, not the 2 s of the launcher
+    c.open('fuel', docs=LEVEL3, wait=False)
+    t1 = draw_time()
+    c.ok(t1 < 1800, t1, 'first visit: the frame draws without waiting for the 2 s of the launcher (600 ms at most, then behind)')
+    c.until("!!localStorage.getItem('sog.launcher.seen')", timeout=15000, what='the detection finished and kept')
+    c.eq(c.js("JSON.parse(localStorage.getItem('sog.launcher.seen')).host"), 'SLOWPC', 'the answer is kept on the device for the next start', what='kept')
+    # second visit: the last known state is used at once
+    n0 = len(hits)
+    c.open('fuel', docs=LEVEL3, wait=False)
+    t2 = draw_time()
+    c.ok(t2 < 1000, t2, 'second visit: drawn in under a second with a launcher that takes 2 s (the last known state is used, the detection goes on behind)')
+    c.until(f"true", timeout=3000, what='settle')
+    for _ in range(80):
+        if len(hits) > n0:
+            break
+        c.wait(100)
+    c.ok(len(hits) > n0, hits, 'the detection still runs behind (the launcher is asked at every start)')
+    c.check_errors()
