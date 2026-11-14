@@ -2438,9 +2438,15 @@
     "de": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
     "es": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)"
    },
-   "test": "Relance le lanceur. Maintenance › Jetons des pilotes : chaque jeton dit « expire le … · dans n jours », en orange sous 30 jours, en rouge sous 7. Dans les Réglages, l'État prévient quand des jetons de pilotes expirent bientôt, et quand le tien expire dans moins de 30 jours (avec une notification, une fois par jour).",
+   "test": "Recharge la page. Réglages › Accès, sur un dépôt GitHub : saisis une date dans « Ce jeton expire le » proche d'aujourd'hui : l'alerte d'expiration apparaît, dite « (date déclarée) » ; vide le champ : une seule ligne calme dans « État » te demande la date ; coche « n'expire pas » : plus rien.",
    "since": "2026-11-12",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-14T11:39:16Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "oui, pour les jetons locaux. mais pour les jetons gitlab/github, framagit ?",
+    "at": "2026-11-13T16:01:00Z"
+   }
   },
   {
    "id": "SOG-0278",
