@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "40a2b53",
-  "fiches": 336,
+  "organisation": "cc8d2e2",
+  "fiches": 337,
   "untranslated": 0,
   "priorities": 310
  },
@@ -3561,6 +3561,15 @@
      "de": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
      "es": "Synchronisation: one grouped push (every five minutes or on request); only data is synchronised, not the flight being typed nor the display settings",
      "rank": 222
+    },
+    {
+     "id": "SOG-0337",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "BLOQUANT : GitLab répond 429 au téléphone et l'appli ne dit rien ; réduire les requêtes au minimum",
+     "en": "BLOCKING: GitLab answers 429 on the phone and the app says nothing; cut the requests to the minimum",
+     "de": "BLOCKIEREND: GitLab antwortet am Telefon mit 429 und die App sagt nichts; Anfragen auf das Minimum senken",
+     "es": "BLOQUEANTE: GitLab responde 429 en el teléfono y la aplicación no dice nada; reducir las peticiones al mínimo"
     }
    ]
   },
