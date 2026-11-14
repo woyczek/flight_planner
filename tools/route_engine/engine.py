@@ -213,6 +213,9 @@ class Nav:
         if c.get(side+'_max') is not None:high=min(high,c[side+'_max'])
         return low,high
 
+    LOW_MARGIN_FT=1000      # SOG-0161 : une voie dont le plafond est sous le niveau demandé de plus que cela est « basse » (V, T, L…)
+    LOW_ALLOW=1.3           # la montée / la descente, comptées sur la distance qu'elles demandent × ce coefficient (la STAR, les virages)
+    LOW_PENALTY=3.0         # le coût d'une voie basse hors de la montée et de la descente ; jamais interdite (un maillon bas peut être la seule liaison), mais évitée
     def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None):
         """A* with ordered milestones and nondominated reachable-altitude labels.
         Heuristic is geodesic distance through remaining milestones, scaled by
@@ -234,6 +237,20 @@ class Nav:
             key=(u,index)
             if key not in heuristics:heuristics[key]=ratio*(nm(self.nodes[u],targets[index])+suffix[index])
             return heuristics[key]
+        if flight:
+            cruise=flight['ceiling'];kt=flight['speed_kt']/3600
+            climb_nm=max(0,cruise-flight['departure'])/flight['climb_fps']*kt*self.LOW_ALLOW
+            descent_nm=max(0,cruise-flight['arrival'])/flight['descent_fps']*kt*self.LOW_ALLOW
+            first,last=self.nodes[start],targets[-1];from_start={};to_end={}
+        def low_factor(u,v,e):
+            """SOG-0161 (LFOE → KTPA : de JFK à Tampa, 700 NM en V et T à 17 500 ft pour un vol au FL370) : une voie BASSE (plafond sous le niveau demandé) ne se prend pas hors de la montée du départ et de la descente vers l'arrivée : son coût est multiplié (jamais interdite : un maillon bas peut être la seule liaison)."""
+            if not flight or e.get('kind') not in (None,'AIRWAY') or e.get('route')=='DCT' or e.get('connector'):return 1
+            if max(self.edge_band(e,'start')[1],self.edge_band(e,'end')[1])>=cruise-self.LOW_MARGIN_FT:return 1
+            ds=from_start.get(u)
+            if ds is None:ds=from_start[u]=nm(first,self.nodes[u])
+            de=to_end.get(v)
+            if de is None:de=to_end[v]=nm(self.nodes[v],last)
+            return 1 if ds<=climb_nm or de<=descent_nm else self.LOW_PENALTY
         q=[(heuristic(start,0),0,origin)];costs={origin:0};prev={};labels=collections.defaultdict(list)
         labels[origin[:3]].append((0,low,high,origin))
         while q:
@@ -269,7 +286,7 @@ class Nav:
                 c,d=round(c,6),round(d,6)
                 next_index=index+1 if index<len(names) and self.nodes[v]['id']==names[index] and nm(self.nodes[v],self.nodes[waypoints[index]])<.15 else index
                 qualifies=e.get('kind')=='FRA' and (not getattr(g,'required_fra_area',None) or e.get('fra_area')==g.required_fra_area)
-                next_state=(v,next_index,seen_fra or qualifies,c,d);new=cost+e.get('_cost',e['nm'])
+                next_state=(v,next_index,seen_fra or qualifies,c,d);new=cost+e.get('_cost',e['nm'])*low_factor(u,v,e)
                 bucket=labels[next_state[:3]]
                 if any(old<=new+1e-10 and lo<=c+.001 and hi>=d-.001 for old,lo,hi,_ in bucket):continue
                 kept=[]

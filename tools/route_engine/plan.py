@@ -237,7 +237,12 @@ def plan(request, root):
     alternatives = []
     failures = list(coverage_gaps)
     tested = []
-    if (rejected or request.get('alternatives')) and not coverage_gaps:
+    # SOG-0161 : une route de tête refusée parce que sa RECHERCHE a atteint son budget (« Budget de recherche atteint ») : chercher d'autres niveaux refait la même recherche (6 s chacune : EIDW → KBOS rendait une proposition en 35 s) :
+    # les propositions de repli viennent tout de suite
+    budget_hit = rejected and 'Budget de recherche atteint' in str(primary.get('error') or '')
+    if budget_hit and not coverage_gaps:
+        failures.append('Alternatives non cherchées : la recherche de la route de tête a atteint son budget (elles en auraient épuisé un autre à chaque niveau).')
+    if (rejected or request.get('alternatives')) and not coverage_gaps and not budget_hit:
         if not rejected:          # SOG-0296 : la route de tête est bonne, les alternatives sont un PLUS : leur recherche a son propre budget (8 s, `alternatives_budget`) ; un plan refusé garde les 25 s (ses propositions sont son recours)
             secs = float(request.get('alternatives_budget', ALT_BUDGET_S))
             limit['until'] = min(limit['until'], time.perf_counter() + secs)

@@ -145,6 +145,10 @@ def to_view(plan_result, request, include_raw=False):
     for x in plan_result.get('alternative_failures') or []:
         if not alts:
             issues.append({'level': 'review', 'text': x})
+    # SOG-0161 : `status` dit ce que l'écran a reçu — 'computed' (une route calculée et acceptée), 'proposal' (rien de calculé : des propositions de repli, routes PARTIELLES à examiner : `proposal: true` sur chacune), 'none' ; la phrase `message` le dit ; `ok` reste vrai (la réponse est valide)
+    status = 'none' if not alts else 'proposal' if alts[0].get('proposal') else 'computed'
+    why = str(p.get('error') or '').strip()
+    message = f"Aucune route calculée{(' : ' + why[:160].rstrip('. ')) if why else ''}. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée." if status == 'proposal' else plan_result.get('alternative_message', '')
     return {'ok': True, 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'rad': {'title': (p.get('rad_source') or {}).get('title'), 'start': (p.get('rad_source') or {}).get('start')} if p.get('rad_source') else None,
-            'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None, 'report': p.get('report', ''), 'message': plan_result.get('alternative_message', ''), 'gaps': p.get('gaps') or [], 'limitation': p.get('limitation', ''),
+            'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None, 'report': p.get('report', ''), 'message': message, 'status': status, 'gaps': p.get('gaps') or [], 'limitation': p.get('limitation', ''),
             **({'plan': plan_result} if include_raw else {})}

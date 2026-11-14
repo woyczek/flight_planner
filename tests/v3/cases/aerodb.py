@@ -9939,3 +9939,107 @@ def k272(c):
     c.eq((wide, b['cells'].get('51'), b['cells'].get('52')), ([], [[-180, -172], [172, 179]], [[-180, -172], [172, 179]]), 'the contour across the date line gives two short ranges per row (172 to 179 and -180 to -172), no range of the whole width', what='ring')
     c.eq(b['plain'], {'48': [[2, 3]], '49': [[2, 3]]}, 'an ordinary ring is unchanged', what='plain')
     c.eq(b['airway'], {'60': [[-180, -180], [179, 179]]}, 'an airway segment across the date line is sampled the short way round', what='airway')
+
+
+@case('K273', 'Route engine: a LOW airway (ceiling under the requested level) is not taken away from the climb and the descent (SOG-0161, LFOE → KTPA); it is avoided, never forbidden (a low link can be the only one)', 'K', static=True,
+      rule='Ergonomist 14 Nov 2026 (rest of SOG-0161): on the real base LFOE → KTPA at FL370 left the high network at JFK, went down to 17 500 ft and followed V and T airways for 700 NM down the coast (the profile: cruise FL364 until NM 3311, then 17 500 ft on V44, V139, T307, T303, V1, T211). A low airway is not taken outside the climb of the departure and the descent towards the arrival: its cost is multiplied by 3 there (engine.Nav.search, LOW_PENALTY), the climb and the descent counted on the distance they need (from the level, the rate and the speed of the request) × 1.3; kinds other than the airways (procedures, connectors, DCT, FRA) are not concerned; never forbidden: with no other link the low airway is taken. Real base after: LFOE → KTPA 34 NM of low airway (the arrival), 4 274 NM against 4 256')
+def k273(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I
+    from route_engine import plan as P
+
+    def base(td, with_high):
+        data = os.path.join(td, 'data')
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        os.makedirs(d)
+        nodes = {'A': (49.1, 2.9), 'B': (52.16, 7.19), 'CH': (56.0, 7.5), 'D': (56.24, 12.91), 'E': (59.3, 17.2)}
+        pt = lambda k: {'id': k, 'lat': nodes[k][0], 'lon': nodes[k][1]}
+        aw = lambda r, a, b, lo, hi: {'route': r, 'a': pt(a), 'b': pt(b), 'lower': lo, 'upper': hi}
+        high = [aw('H1', 'A', 'B', 6500, 66000), aw('H1', 'B', 'CH', 6500, 66000), aw('H1', 'CH', 'D', 6500, 66000), aw('H1', 'D', 'E', 6500, 66000)]
+        low = [aw('L1', 'A', 'B', 1000, 17999), aw('L1', 'B', 'D', 1000, 17999), aw('L1', 'D', 'E', 1000, 17999)]
+        files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['LFPO', 'PARIS ORLY', 48.72328, 2.37958, 291, 0, 0], ['ESSA', 'STOCKHOLM ARLANDA', 59.6519, 17.9186, 137, 0, 0]]},
+                 'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in nodes.items()], 'navaids': [], 'airways': (high if with_high else []) + low}
+        for k, v in files.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(book)[1]]))
+        return data
+
+    def run(with_high, fl=350):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = base(td, with_high)
+            P.drop_contexts()
+            res = P.compute({'dep': 'LFPO', 'arr': 'ESSA', 'fl': fl, 'date': '2026-11-10T12:00', 'enable_fra': False}, data, os.path.join(data, 'route', 'rad.json.gz'), None)
+            p = res['primary']
+            P.drop_contexts()
+            return p.get('ok'), ' ' + ' '.join(f"{l.get('via')}:{(l.get('start') or {}).get('id')}>{(l.get('end') or {}).get('id')}" for l in p.get('legs', [])) + ' ', round(p.get('distance_nm') or 0)
+    ok, route, nm = run(True)
+    c.eq((ok, '>CH ' in route),(True, True), 'with a high airway that goes round (97 NM more), the middle of a 1 000 NM flight at FL350 goes round by the high airway (via CH), not by the shorter low one (17 999 ft), far from the climb and the descent', what='avoided')
+    ok, route, nm = run(False)
+    c.eq((ok, ' L1:B>D ' in route), (True, True), 'with no other link the low airway is taken in the middle too (B to D): avoided, never forbidden', what='only link')
+    ok, route, nm = run(True, fl=170)
+    c.eq((ok, '>CH ' in route), (True, False), 'at FL170 the low airway is NOT low (its ceiling is the level): the shorter one is flown', what='not low')
+
+
+@case('K274', 'Route engine: a fallback proposal after the search budget says so (`status: proposal`, a sentence) and does not cost the budget of every level (SOG-0161, EIDW → KBOS: 35 s)', 'K', static=True,
+      rule='Ergonomist 14 Nov 2026 (rest of SOG-0161): EIDW → KBOS and EIDW → KJFK took 35 s to answer « ok » with a fallback proposal that looked like a route (12 to 17 % controlled). The head route\'s search had reached its budget (6 s / 100 000 states: « ce résultat ne prouve pas l\'absence de route »); the engine then searched other levels, each reaching the same budget (about 13 s), then the proposals (9 s). Now: when the head route is refused because its search reached the budget, the other levels are NOT searched (it says so in the failures) and the proposals come at once (real base: 35 s → 15 s); the answer of the screen carries `status` — `computed` | `proposal` | `none` — and its `message` says « Aucune route calculée : … Propositions de repli à examiner : routes partielles »; `ok` stays true (the answer is valid) and nothing is removed')
+def k274(c):
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import engine
+    from route_engine import import_books as I
+    from route_engine import plan as P
+    from route_engine import view
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        req = view.to_request({'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-10T12:00', 'proposals': True, 'enable_fra': False})
+        P.drop_contexts()
+        ok = P.compute(req, data, rad, None)
+        got = view.to_view(ok, req)
+        c.eq((got['status'], got['ok'], bool(got['alternatives'])), ('computed', True, True), 'a computed route: status « computed », the message is the engine\'s as before', what='computed')
+        real = engine.assess
+        calls = []
+
+        def budget_then_real(request, nav, radbook, *a, **k):
+            calls.append(request.get('mode'))
+            if len(calls) == 1:
+                raise ValueError('Budget de recherche atteint (6 s / 100 000 états). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
+            return real(request, nav, radbook, *a, **k)
+        engine.assess = budget_then_real
+        try:
+            P.drop_contexts()
+            res = P.compute(req, data, rad, None)
+        finally:
+            engine.assess = real
+            P.drop_contexts()
+        v = view.to_view(res, req)
+        c.eq((res['alternative_attempts'], any('Alternatives non cherchées' in x for x in res['alternative_failures'])), ([], True), 'the head route refused by the search budget: no other level is searched (no attempt), and the failures say why', what='skipped')
+        c.ok(v['status'] == 'proposal' and v['ok'] is True and v['alternatives'] and all(a.get('proposal') and a.get('incomplete') for a in v['alternatives']), str((v['status'], [a.get('proposal') for a in v['alternatives']])), 'the answer says `status: proposal` and each alternative is a proposal, incomplete')
+        c.ok(v['message'].startswith('Aucune route calculée : Budget de recherche atteint') and 'Propositions de repli à examiner' in v['message'], v['message'], 'the message says that no route was computed, why, and that the proposals are partial routes to examine')
+        # a head route refused for another reason still searches the other levels (not the budget): unchanged
+        engine.assess = lambda request, nav, radbook, *a, **k: (_ for _ in ()).throw(ValueError('Aucune route dans la base entre ces points.')) if request.get('mode') != 'validate' else real(request, nav, radbook, *a, **k)
+        try:
+            P.drop_contexts()
+            other = P.compute(req, data, rad, None)
+        finally:
+            engine.assess = real
+            P.drop_contexts()
+        c.ok(not any('Alternatives non cherchées' in x for x in other['alternative_failures']), str(other['alternative_failures'][:2]), 'a head route refused for ANOTHER reason (no route in the base) keeps searching the other levels as before')
