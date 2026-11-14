@@ -613,8 +613,12 @@ export function withRisks(doc, rows) {
   return out;
 }
 
+/** Une valeur qui peut porter des événements : absente, une liste ou un objet (audit 194 : une valeur nue — un texte — n'est jamais
+ *  remplacée). */
+const holder = v => v === undefined || v === null || typeof v === 'object';
 /** Où vivent les événements d'une mission (audit 190) : `timeline` en liste (l'ancienne forme), `timeline.events`, `chronology` en liste
- *  ou `chronology.events` ; la première qui en porte, sinon timeline.events (la forme de shared/mission_exercise.js). → { key, sub } */
+ *  ou `chronology.events` ; la première qui en porte, sinon timeline.events (la forme de shared/mission_exercise.js) ; audit 194 : une
+ *  `timeline` nue laisse la place à `chronology`, et quand les deux sont nues, nulle part (null : rien n'est écrit). → { key, sub } | null */
 function eventsHome(d) {
   for (const key of ['timeline', 'chronology']) {
     const v = d[key];
@@ -631,15 +635,22 @@ function eventsHome(d) {
       sub: true
     };
   }
-  return {
+  if (holder(d.timeline)) return {
     key: 'timeline',
     sub: !Array.isArray(d.timeline)
   };
+  return holder(d.chronology) ? {
+    key: 'chronology',
+    sub: !Array.isArray(d.chronology)
+  } : null;
 }
+/** Vrai quand la mission a une place pour ses événements (audit 194 : faux quand timeline et chronology sont deux valeurs nues). */
+export const eventsStorable = doc => !!eventsHome(obj(doc));
 /** Les événements tels qu'ils sont dans le document (voir eventsHome). */
 const eventsIn = d => {
-  const h = eventsHome(d),
-    v = d[h.key];
+  const h = eventsHome(d);
+  if (!h) return [];
+  const v = d[h.key];
   return arrOf(h.sub ? obj(v).events : v);
 };
 /** Le texte d'un événement : `text`, sinon `description`, sinon `label` (audit 190) ; la clé d'où il vient. */
@@ -661,8 +672,11 @@ export function withEvents(doc, rows) {
     prev = eventsOf(doc),
     list = Array.isArray(rows) ? rows : [];
   if (JSON.stringify(list) === JSON.stringify(prev)) return out;
-  // les événements restent là où le fichier les porte (une liste reste une liste, chronology reste chronology) : jamais remplacés
-  const home = eventsHome(out),
+  // les événements restent là où le fichier les porte (une liste reste une liste, chronology reste chronology) : jamais remplacés ;
+  // audit 194 : sans place (deux valeurs nues), rien n'est écrit
+  const home = eventsHome(out);
+  if (!home) return out;
+  const
     before = eventsIn(out),
     F = ['at', 'place', 'text'],
     N = {

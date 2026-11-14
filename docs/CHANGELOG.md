@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions › editor: a timeline written as a bare text is never replaced; the events go to chronology, or nowhere when both are texts (said on the step)** (missions DECISIONS; noreg N63; audit 194).
 - **Missions: « Mes missions affectées » at the head of the list as soon as an assignment carries my trigram — take-off, aircraft, callsign, rendezvous and channels when the assignment carries them, « Préparer ce vol »** (missions DECISIONS; noreg N62; SOG-0114 (A)).
 - **Fuel › route: without the launcher (the published site), the step says « Le calcul d'itinéraire demande le lanceur du poste » instead of offering nothing** (fuel DECISIONS; noreg F109; SOG-0322).
 - **Fuel › route: a proposed route over the NAT tracks says « via NAT A », and « périmée : routes NAT du 13/11 » when the tracks taken are stale** (fuel DECISIONS; noreg F123; SOG-0263).

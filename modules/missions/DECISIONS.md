@@ -303,3 +303,8 @@
   frame/lib/clipboard.js); a channel with neither is not shown; « Préparer ce vol » by Fuel's door. Painted in place after the read
   (the list and the search field are not redrawn). NOT here: the crew's rendezvous in the assignment (B, waits for the CPCO), the place
   of the rendezvous (not in the assignment yet), keeping an assigned mission out of the draw. N62 (red before).
+- **14 Nov 2026 — the note of audit 194: a bare `timeline` is left alone** (Sécurisation: « A timeline that is a bare text […] is replaced
+  by { events: […] } at the first added event […] leave a non-container value alone »). `eventsHome` takes `timeline` only when it can
+  hold events (absent, a list or an object), else `chronology` on the same terms; with both bare values there is no home: `withEvents`
+  writes nothing, and the Chronologie step says « La chronologie de ce fichier est un texte : elle n'est pas modifiée ici » instead of
+  « + Événement » (`eventsStorable`). N63 (red before).

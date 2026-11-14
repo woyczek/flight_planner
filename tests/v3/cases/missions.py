@@ -2645,3 +2645,23 @@ def n62(c):
     c.settle()
     c.ok(c.js(f"document.querySelector('{G}')?.hidden !== false") and c.count(f'{G} [data-assigned-id]') == 0, '', 'no assignment of mine: no group')
     c.js(_REG_CLEAR)
+
+
+
+@case('N63', 'Missions › editor, timeline: a timeline that is a bare text is never replaced — the events go to chronology; when timeline and '
+      'chronology are both bare values nothing is written and the step says so instead of offering « + Événement »', 'N', tags=('missions',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='Audit 194 (Sécurisation, 13 Nov), its note: « A timeline that is a bare text (neither a list nor an object) is replaced by { events: […] } '
+      'at the first added event […] leave a non-container value alone »')
+def n63(c):
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M}')", timeout=20000, what='Missions mounted')
+    got = c.js("""async () => { const ED = await import('/modules/missions/editor.js');
+        const ev = [{ i: -1, at: 'H+10', place: '', text: 'Décollage' }];
+        const a = ED.withEvents({ timeline: 'voir le briefing' }, ev);
+        const b = ED.withEvents({ timeline: 'voir le briefing', chronology: 'idem' }, ev);
+        return [a.timeline, a.chronology, b, ED.eventsStorable({ timeline: 'x', chronology: 'y' }), ED.eventsStorable({ timeline: 'x' })] }""")
+    c.eq(got[0], 'voir le briefing', 'the bare timeline is left alone', what='timeline')
+    c.eq(got[1], {'events': [{'at': 'H+10', 'text': 'Décollage'}]}, 'the event goes to chronology', what='chronology')
+    c.eq(got[2], {'timeline': 'voir le briefing', 'chronology': 'idem'}, 'both bare: nothing written', what='both bare')
+    c.eq(got[3:], [False, True], 'the step knows when there is no place for the events', what='storable')

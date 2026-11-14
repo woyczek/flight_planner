@@ -668,6 +668,12 @@ const TX = {
   evText: ['Ce qui se passe', 'What happens', 'Was geschieht', 'Lo que ocurre'],
   evAdd: ['+ Événement', '+ Event', '+ Ereignis', '+ Evento'],
   evDel: ['Retirer cet événement', 'Remove this event', 'Dieses Ereignis entfernen', 'Quitar este evento'],
+  // audit 194 : la chronologie du fichier est un texte (timeline et chronology nues) : rien n'y est écrit
+  evNoHome: ['La chronologie de ce fichier est un texte : elle n’est pas modifiée ici.',
+    'This file’s timeline is a text: it is not edited here.',
+    'Die Chronologie dieser Datei ist ein Text: sie wird hier nicht bearbeitet.',
+    'La cronología de este archivo es un texto: no se edita aquí.'
+  ],
   evNone: ['Aucun événement : « + Événement » en ajoute un.', 'No event: « + Event » adds one.',
     'Kein Ereignis: „+ Ereignis“ fügt eines hinzu.',
     'Ningún evento: «+ Evento» añade uno.'
@@ -2198,7 +2204,7 @@ function edTimelineHtml(s) {
     row = (r, i) => `<div class="ms-edteam ms-evrow" data-event="${i}"><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evAt))}</span><input data-k="edevent" data-i="${i}" data-f="at" value="${esc(r.at)}" placeholder="H+30mn" maxlength="20" autocomplete="off"></label><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evPlace))}</span><select data-k="edevent" data-i="${i}" data-f="place">${opt('', s.tt(TX.evFree), r.place)}${[...places.map(p => [p.id.toUpperCase(), `${p.id}${p.name ? ` — ${p.name}` : ''}`]), ...(r.place && !places.some(p => p.id.toUpperCase() === r.place) ? [[r.place, r.place]] : [])].map(([v, l]) => opt(v, l, r.place)).join('')}</select></label><label class="f-field ms-evtext"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evText))}</span><input data-k="edevent" data-i="${i}" data-f="text" value="${esc(r.text)}" maxlength="500" autocomplete="off"></label><button type="button" class="ms-edtdel" data-do="edeventdel" data-i="${i}" title="${esc(s.tt(TX.evDel))}" aria-label="${esc(s.tt(TX.evDel))}">✕</button></div>`;
   return `<h3>6. ${esc(s.tt(TX.stepTimeline))}</h3><p class="f-muted">${esc(s.tt(TX.edTimelineHint))}</p>
     <div class="f-list" data-edevents>${rows.length ? `<div class="ms-edteam ms-evrow ms-edthead f-muted" aria-hidden="true">${[TX.evAt, TX.evPlace, TX.evText].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>${rows.map(row).join('')}` : `<p class="f-muted" data-noevent>${esc(s.tt(TX.evNone))}</p>`}</div>
-    ${rows.length < ED.EVENTS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edeventadd">${esc(s.tt(TX.evAdd))}</button></div>` : ''}
+    ${!ED.eventsStorable(doc) ? `<p class="f-muted" data-evnohome>${esc(s.tt(TX.evNoHome))}</p>` : rows.length < ED.EVENTS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edeventadd">${esc(s.tt(TX.evAdd))}</button></div>` : ''}
     <h4>${esc(s.tt(TX.mpTitle))}</h4>
     <div class="f-list" data-edmaps>${maps.length ? maps.map(m => `<div class="ms-plrow ms-rkrow" data-map="${esc(m.id)}"><span class="ms-plbody"><b>${esc(TX[`mt_${m.type}`] ? s.tt(TX[`mt_${m.type}`]) : m.type || m.id)}</b><span class="f-muted">${esc([m.description || m.id, m.unplaced ? s.tt(TX.mpUnplaced) : ''].filter(Boolean).join(' · '))}</span></span></div>`).join('') : `<p class="f-muted" data-nomap>${esc(s.tt(TX.mpNone))}</p>`}</div>
     <div class="f-row ms-pladd">${missing.length ? `<button type="button" data-do="edmapspropose">${esc(s.tt(TX.mpPropose, { n: missing.length }))}</button>` : ''}<span class="f-muted">${esc(s.tt(TX.mpStudio))}</span></div>`;
