@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › route: an answer without a computed route opens on « Pas de route calculée » and the engine's reason; its proposals are taken with « Prendre cette proposition »** (fuel DECISIONS; noreg F226; SOG-0161).
 - **Fuel › route: a flight across the North Atlantic says the state of the NAT tracks above « Calculer A → B », with « Lire les routes NAT du jour » on the workstation** (fuel DECISIONS; noreg F225; SOG-0352).
 - **Map, phone: a slow or held read of a zone no longer ends with 0 data** (SOG-0349, part of aerodb) — past its bound of 10 s a read is no longer abandoned and restarted from zero at every question: aerodb stops waiting, keeps the one read of the path, the zone is « pending » (an empty answer, never « missing »), and on arrival the part is kept and `change` announced; a read held by the host's limit is reported as « unreadable, retry in n s » (`AeroDb.readStatus()`). Case K275.
 - **The Recette sheet on a phone without launcher** (SOG-0357): a verdict leaves for the data repository (`pilot/<trigram>/recette/verdicts.json`, the form of RECETTE.json), the sheet says « envoyé » / « pas encore envoyé », reads both files and shows the latest verdict by its time; the file read back is an untrusted input and the adapter refuses outside it; the time of a verdict is the device's (« 09/11 à 19 h 05 », SOG-0355); noreg A211, A209

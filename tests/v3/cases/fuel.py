@@ -2896,8 +2896,8 @@ def _route_launcher(c, verbs):
             a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
             res = {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'} \
                 if st['norad'] else {'ok': False, 'reason': 'failed', 'message': 'search stopped'} if a.get('action') == 'compute' and a.get('alternatives') and st.get('fail_alt') else \
-                dict(common, ok=True, alternatives=phase(st.get('alts') or alts, a), segments=alts[0]['segments'], issues=[], message='2 alternative(s).',
-                     **({'cache': st['cache']} if st.get('cache') else {})) if a.get('action') == 'compute' else \
+                dict(dict(common, ok=True, alternatives=phase(st.get('alts') or alts, a), segments=alts[0]['segments'], issues=[], message='2 alternative(s).',
+                     **({'cache': st['cache']} if st.get('cache') else {})), **(st.get('extra') or {})) if a.get('action') == 'compute' else \
                 dict(common, ok=True, alternatives=[st.get('check') or checked], segments=(st.get('check') or checked)['segments'],
                      issues=st.get('issues') or [{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message='')
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
@@ -5846,3 +5846,38 @@ def f225(c):
     open_proc(c)
     c.settle()
     c.ok(c.js(f"document.querySelector('{L}')?.hidden !== false"), c.text(L), 'LFRS → LFML: no NAT line')
+
+
+
+@case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
+      'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
+      tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0161, its rests (AeroDB 329847a19: the answer carries status computed | proposal | none and, for proposal, « Aucune route '
+      'calculée : <raison>. Propositions de repli à examiner… »); EIDW → KBOS, a simulated answer (fake launcher)')
+def f226(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_ctl_seg('EIDW', 'MALOT', 'controlled', 'HIGH'), _ctl_seg('MALOT', 'KBOS', 'fallback', 'NAT', 'raccord direct : aucun chemin contrôlé')]
+    p1 = dict(_alt(1, '', 'EIDW MALOT KBOS', 2600, 370, segs, sid=False), proposal=True, incomplete=True,
+              control={'controlledPct': 30, 'incompletePct': 0, 'fallbackPct': 70, 'errorPct': 0, 'sections': []})
+    st['alts'] = [p1]
+    why = 'Aucune route calculée : budget de recherche atteint. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée.'
+    st['extra'] = {'status': 'proposal', 'message': why}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': 'EIDW KBOS', 'dep': 'EIDW', 'arr': 'KBOS', 'manual': True,
+                             'points': [{'id': 'EIDW', 'lat': 53.42, 'lon': -6.27}, {'id': 'KBOS', 'lat': 42.36, 'lon': -71.0}]}
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-proposals] [data-alt]').length === 1", timeout=12000, what='the proposal, apart')
+    c.eq(norm(c.text(f'{FUEL} [data-rnoroute]') or ''), norm(row(c, 'rNoRoute')), 'titled « Pas de route calculée »', what='title')
+    c.ok(norm(why) in norm(c.text(f'{FUEL} [data-rnone]') or ''), c.text(f'{FUEL} [data-rnone]'), 'the engine\'s reason said')
+    c.eq(c.count(f'{FUEL} [data-altlist]:not([data-proposals]) [data-alt]'), 0, 'no route presented as computed', what='routes')
+    c.ok('%' in (c.text(f'{FUEL} [data-proposals] [data-share]') or ''), c.text(f'{FUEL} [data-proposals] [data-share]'), 'its controlled share')
+    c.eq(norm(c.text(f'{FUEL} [data-proposals] [data-do=rtake]')), norm(row(c, 'rTakeProposal')), '« Prendre cette proposition »', what='take')
+    share = c.js(f"(r => r.children[0].getBoundingClientRect().width / r.getBoundingClientRect().width)(document.querySelector('{FUEL} [data-proposals] [data-alt]'))")
+    c.ok(share > 0.8, share, 'on a phone the text of the proposal takes the width of its row, its button under it')
+    c.js(f"document.querySelector('{FUEL} [data-rnoroute]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F226_{c.design}_390_{c.lang}_delivered.png')

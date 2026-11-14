@@ -259,6 +259,10 @@ export function normalize(res, action = 'compute') {
     errors,
     plans,
     limitation: text(res.limitation, 400),
+    // SOG-0161 (AeroDB 329847a19) : ce que la réponse est — une route calculée, des propositions de repli, rien ; déduit des itinéraires
+    // pour une réponse plus ancienne
+    status: ['computed', 'proposal', 'none'].includes(res.status) ? res.status : !plans.length ? 'none' : plans[0].proposal ? 'proposal' :
+      'computed',
     cache: cacheOf(res.cache),
     gaps: (Array.isArray(res.gaps) ? res.gaps : []).slice(0, 8).map(g => ({
       name: text(g?.name, 80),

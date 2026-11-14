@@ -2014,3 +2014,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   launcher or a failure said); without it, the published copy's date (« … publiées depuis le poste : périmées » / « aucune copie
   publiée depuis le poste »), no gesture. The monthly reminder lives in modules/data/later.js (Réglages' Données screen) and is not
   touched here. F225 (red before).
+- **14 Nov 2026 — SOG-0161, its rests: a proposal never presented as a route** (AeroDB 329847a19: the answer carries `status` computed |
+  proposal | none and, for a proposal, « Aucune route calculée : <raison>. Propositions de repli à examiner… »). `RE.normalize` keeps
+  `status` (derived from the routes for an older answer). Without a computed route the list opens on « Pas de route calculée » and the
+  engine's sentence, then the proposals apart (« Propositions non validées », each « Proposition n » with its controlled share); their
+  button says « Prendre cette proposition ». On a narrow module the button goes under the text (the text never squeezed, as SOG-0344),
+  side by side from 600 px. F226 (red before; EIDW → KBOS, a simulated answer); F125 unchanged.
