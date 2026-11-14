@@ -3199,7 +3199,7 @@
    "test": "Sur le téléphone, recharge l'appli (note « nouvelle version · Recharger », sinon ferme et rouvre deux fois). L'insecte en haut, « Photos ou captures d'écran » : choisis une capture d'écran de ta photothèque — elle doit être acceptée (plus de « Photo refusée »). Si elle est encore refusée, le message dit maintenant pourquoi (illisible avec l'erreur, ou trop lourde avec son poids) : envoie-moi ce message. « Envoyer », puis au poste : Aide › Signaler, « Signalements des pilotes », la vignette est là.",
    "since": "2026-11-13",
    "state": "todo",
-   "delivered": "2026-11-14T10:08:27Z"
+   "delivered": "2026-11-14T10:28:47Z"
   },
   {
    "id": "SOG-0337",
@@ -3217,6 +3217,54 @@
   }
  ],
  "decisions": [
+  {
+   "id": "Q-0055",
+   "fiche": "SOG-0341",
+   "app": "maintenance",
+   "question": "Registre des immatriculations au téléphone : publie-t-on dans ton dépôt privé un registre RÉDUIT à cinq champs (immatriculation, constructeur, type, numéro de série, aérodrome d'attache) ?",
+   "context": "Aujourd'hui le registre reste sur le poste et rien n'est publié (règle de SOG-0270) : le téléphone ne l'a donc pas. Ta demande du 14/11 revient à publier un fichier réduit, sans aucun nom de personne ni adresse : tes deux exemples gardent exactement ces cinq champs. Cela CHANGE la règle, d'où cette question. Ce serait UN seul fichier (pas un par aéronef). Avant de publier, AeroDB lit la licence de l'export du registre. « En service » voudra dire : présent dans l'export du jour ; les dates de mise et de fin de service ne sont pas dans cet export, il faudrait une autre source.",
+   "options": [
+    "Oui, le registre réduit à cinq champs est publié dans le dépôt privé (après lecture de la licence)",
+    "Non : il reste sur le poste, le téléphone s'en passe",
+    "Non : le lanceur répond au téléphone appairé, rien n'est publié",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0056",
+   "fiche": "SOG-0341",
+   "app": "maintenance",
+   "question": "Registre réduit : garde-t-on aussi l'EXPLOITANT (tu demandes : « donnée publique, je me demande si on ne peut pas le laisser ») ?",
+   "context": "Mon objection : dans l'export, la colonne de l'exploitant porte des sociétés (ton exemple HELIDAX) mais aussi des particuliers, quand le propriétaire exploite lui-même son avion — et rien dans le fichier ne les distingue sûrement. Publier la colonne, c'est publier des noms de personnes. Garder seulement « ce qui ressemble à une société » (SAS, SARL, aéro-club…) se trompera dans les deux sens. Je ne la publierais pas ; au mieux elle reste sur le poste.",
+   "options": [
+    "Non, l'exploitant n'est ni publié ni gardé (comme aujourd'hui)",
+    "Gardé sur le poste seulement, jamais publié",
+    "Publié, seulement quand le nom porte une forme de société (liste fermée)",
+    "Publié tel quel"
+   ],
+   "since": "2026-11-14",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0057",
+   "fiche": "SOG-0335",
+   "app": "maintenance",
+   "question": "Ta note du 14/11 dit « bug, champ de données trop petit » : quel champ, sur quel écran ?",
+   "context": "Je n'ai pas su le rattacher à une capture. Si c'est le champ de texte de « Signaler » au téléphone, ou le champ où l'on colle le diagnostic, dis-le en un mot dans le texte.",
+   "options": [
+    "Le texte de « Signaler » au téléphone",
+    "Un champ des Réglages (dis lequel)",
+    "Un champ de Carburant (dis lequel)",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "todo",
+   "recommended": 0
+  },
   {
    "id": "Q-0054",
    "fiche": "SOG-0255",

@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1a34fca",
-  "fiches": 343,
+  "organisation": "9ef5d18",
+  "fiches": 347,
   "untranslated": 0,
   "priorities": 310
  },
@@ -800,6 +800,15 @@
      "milestone": "6.0.0-alpha.6",
      "rank": 129,
      "test": true
+    },
+    {
+     "id": "SOG-0345",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant au téléphone : le bloc « Procédures » est vide, sans un mot ; les procédures doivent venir du dépôt privé",
+     "en": "Fuel on the phone: the « Procedures » block is empty, without a word; procedures must come from the private repository",
+     "de": "Kraftstoff am Telefon: der Block « Verfahren » ist leer, ohne ein Wort; Verfahren müssen aus dem privaten Repository kommen",
+     "es": "Combustible en el teléfono: el bloque « Procedimientos » está vacío, sin una palabra; los procedimientos deben venir del repositorio privado"
     }
    ]
   },
@@ -2674,6 +2683,15 @@
      "de": "Missionsübersicht: die Kurzbeschreibung vollständig, getrennt von der langen",
      "es": "Síntesis de misión: el resumen entero, aparte de la descripción",
      "rank": 165
+    },
+    {
+     "id": "SOG-0344",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions au téléphone : le titre est écrasé dans une colonne étroite, un mot par ligne",
+     "en": "Missions on the phone: the title is squeezed into a narrow column, one word per line",
+     "de": "Missionen am Telefon: der Titel ist in eine schmale Spalte gequetscht, ein Wort pro Zeile",
+     "es": "Misiones en el teléfono: el título queda aplastado en una columna estrecha, una palabra por línea"
     }
    ]
   },
@@ -3417,6 +3435,15 @@
      "de": "Frame: the left bar shrinks to its icons before switching to phone mode",
      "es": "Frame: the left bar shrinks to its icons before switching to phone mode",
      "rank": 216
+    },
+    {
+     "id": "SOG-0346",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Le bouton « Signaler » de la barre du haut est un interrupteur : un second appui ramène à la page d'où l'on vient",
+     "en": "The « Report » button in the top bar is a toggle: a second press returns to the page you came from",
+     "de": "Die Schaltfläche « Melden » in der oberen Leiste ist ein Umschalter: ein zweiter Druck führt zur Ausgangsseite zurück",
+     "es": "El botón « Señalar » de la barra superior es un conmutador: una segunda pulsación vuelve a la página de origen"
     }
    ]
   },
@@ -4596,6 +4623,27 @@
      "es": "Lanzador: la fuente militar británica (aidu.mod.uk, ENR 5.2) falla en SSL",
      "rank": 285,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur-synchronisation",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; synchronisation",
+    "en": "Lanceur ; synchronisation",
+    "de": "Lanceur ; synchronisation",
+    "es": "Lanceur ; synchronisation"
+   },
+   "items": [
+    {
+     "id": "SOG-0347",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Dépôt des données du poste modifié à la main : dire l'écart et offrir les issues (dont « tout jeter et reprendre »)",
+     "en": "Workstation data repository changed by hand: say the gap and offer the ways out (including « discard everything and take the repository »)",
+     "de": "Von Hand geändertes Daten-Repository des Rechners: die Abweichung nennen und Auswege anbieten (auch « alles verwerfen und das Repository übernehmen »)",
+     "es": "Repositorio de datos del puesto modificado a mano: decir la diferencia y ofrecer las salidas (incluida « descartar todo y tomar el repositorio »)"
     }
    ]
   },
