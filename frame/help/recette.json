@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
   "tests": 220,
-  "verdicts": 153
+  "verdicts": 152
  },
  "apps": [
   "pilote",
@@ -2267,8 +2267,7 @@
    },
    "test": "Relance le lanceur, recharge la page. Carburant : EGLL → KJFK puis « Calculer A → B » : un itinéraire par une route NAT arrive en quelques secondes ; même essai dans l'autre sens, KJFK → EGLL. La fiche des routes NAT du jour s'ouvre en clair (plus de JSON).",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-13T20:36:16Z"
+   "state": "known"
   },
   {
    "id": "SOG-0264",
@@ -2629,10 +2628,13 @@
    },
    "test": "Recharge la page. Anciennes pages (V2) › registre des missions › « Comparer avec le dossier » › ligne « 85 → T-085 » › « Ranger dans le dossier » : au bout de deux à trois secondes, une notification dit que le dossier « Missions » ne répond pas et la fenêtre de choix de dossier s'ouvre ; choisis E:\\DEFA\\data\\missions ; la mission est rangée sous T-085, l'ancien fichier gardé dans versions/. Dans la V3, Missions › T-085 : le résumé commence par « À la suite d'un épisode… ».",
    "since": "2026-11-13",
-   "state": "ko",
+   "state": "todo",
    "delivered": "2026-11-13T12:04:40Z",
-   "comment": "c’est bon, au tracé du trajet (+ cartouche de l’AWY) de côte à côte. C’est mauvais, si on doit traverser en plus les USA. Il faut trouver un moyen de fractionner un long trajets en trajets plus facilement testables, que l’on sait valides. par exemple, si on fait une verticale KJFK en venant d’EIDW vers Boston (c’est stupide, mais pourquoi pas), on aurait au moins un premier tronçon de route IFPS valide, parce qu’on sait qu’il existe des routes entre ces deux points. C’est un exemple. il y a probablement bien mieux que ce cache heuristique, pour décomposer une problématique de graphes. C’est un travail pour Fable, de produire un tel algorithme, je pense. ou au moins Opus.",
-   "at": "2026-11-14T11:10:03Z"
+   "previous": {
+    "verdict": "ko",
+    "comment": "ranger dans le dossier ne fait rien : Mission T-085 non rangée : échec (Le dossier des missions ne répond pas (dossier déplacé, lecteur réseau absent ?). Le choisir de nouveau avec « Dossier des missions » ou « Relire le dossier ».).",
+    "at": "2026-11-13T10:16:01Z"
+   }
   },
   {
    "id": "SOG-0294",
