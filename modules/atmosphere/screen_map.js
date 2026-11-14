@@ -5,6 +5,10 @@
 // d'altitude dans la couche des boutons du cadre ; un toucher ouvre la tranche du point (dans la grille du vol) ou les
 // valeurs du synoptique (hors d'elle), jamais d'appel hors de la grille du vol.
 
+import {
+  pick,
+  radiusFor
+} from '../../frame/lib/hit_target.js'; // la règle commune des cibles d'une carte (SOG-0343)
 import * as A from './atmo.js';
 import {
   esc,
@@ -431,35 +435,27 @@ export function createMapScreen(app) {
   }
 
   // ---------------------------------------------------------------- toucher, survol
-  /** Le rayon d'un point qu'on prend (SOG-0343, la règle commune des cibles des cartes) : un doigt (pointeur grossier) 22 px — une cible de 44 px —, une souris 8 px. Une cible n'est pas
-   *  un réglage : c'est ce que l'appareil déclare (le pointeur de l'événement, sinon `(pointer: coarse)`). */
-  const tapRadius = ev => ev?.pointerType === 'touch' || String(ev?.type || '').startsWith('touch') || ev?.sourceCapabilities
-    ?.firesTouchEvents === true // un doigt : l'événement le dit (MapLibre rend le plus souvent le clic synthétisé du toucher)
-    ||
-    ev?.pointerType !== 'mouse' && matchMedia('(pointer: coarse)').matches ? 22 : 8;
-  /** Le lieu déjà lu le plus proche du toucher, s'il est dans le rayon : un lieu de lecture de la route ({ route: i }) ou un point de la grille de la carte ({ place }, ses barbules) ; null sinon.
-   *  pt : le toucher en px de la vue ; rien d'autre n'est cherché. */
+  /** Le type du pointeur d'un toucher de la carte : MapLibre rend le plus souvent le clic synthétisé du toucher (sans pointerType) — l'événement dit pourtant qu'il vient d'un doigt. */
+  const pointerOf = ev => ev?.pointerType || (String(ev?.type || '').startsWith('touch') || ev?.sourceCapabilities?.firesTouchEvents ===
+    true ? 'touch' : undefined);
+  /** Le lieu déjà lu le plus proche du toucher, dans le rayon de la règle commune des cibles (frame/lib/hit_target.js : 22 px au doigt, 8 px à la souris) : un lieu de lecture de la route ({ route: i })
+   *  ou un point de la grille de la carte ({ place }, ses barbules) ; null sinon (SOG-0343). pt : le toucher en px de la vue ; rien d'autre n'est cherché. */
   function nearestRead(lat, lon, pt, ev) {
     if (!pt) return null;
     const v = view(),
-      R = tapRadius(ev);
-    let best = null,
-      bd = R;
-    const take = (la, lo, what) => {
-      const q = v.toC(la, A.nearLon(lo, lon)), // le lieu, sur la copie du monde touchée
-        d = Math.hypot(q.x - pt.x, q.y - pt.y);
-      if (d <= bd) {
-        bd = d;
-        best = what;
-      }
-    };
-    (S.route?.samples || []).forEach((s, i) => take(s.lat, s.lon, {
-      route: i
-    }));
-    for (const p of S.grid?.g?.places || []) take(p.lat, p.lon, {
-      place: p
-    });
-    return best;
+      at = (la, lo) => v.toC(la, A.nearLon(lo, lon)), // le lieu, sur la copie du monde touchée
+      items = [...(S.route?.samples || []).map((s, i) => ({
+        ...at(s.lat, s.lon),
+        what: {
+          route: i
+        }
+      })), ...(S.grid?.g?.places || []).map(p => ({
+        ...at(p.lat, p.lon),
+        what: {
+          place: p
+        }
+      }))];
+    return pick(items, pt.x, pt.y, radiusFor(pointerOf(ev)))?.item.what || null;
   }
   /** Toucher de la carte : dans la grille du vol, la tranche du lieu de lecture touché (le plus proche dans le rayon, 22 px au doigt, 8 px à la souris ; un lieu de la route ou un point de la grille) ; un toucher qui ne prend aucun lieu ne lit
    *  RIEN (SOG-0343 : « il faut avoir de tout petits doigts… ça génère des accès parasites ») ; hors de la grille, les valeurs du synoptique monde. */
