@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
-  "tests": 213,
+  "tests": 214,
   "verdicts": 147
  },
  "apps": [
@@ -3192,6 +3192,20 @@
    "test": "Sur le téléphone, ouvre l'appli : une note « nouvelle version · Recharger » (sinon ferme et rouvre deux fois). En haut, à gauche du « ? », l'icône d'insecte. Une sorte, un titre, un texte ; « Photos ou captures d'écran » ouvre ta photothèque (trois au plus) ; « Envoyer » : la note dit où c'est parti et combien de photos sont jointes. Au poste (lanceur relancé) : Aide › Signaler, « Signalements des pilotes » montre ton signalement avec ses vignettes ; « Reprendre » me l'envoie. Dis-moi ensuite si la fiche est arrivée.",
    "since": "2026-11-13",
    "state": "known"
+  },
+  {
+   "id": "SOG-0337",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT : GitLab répond 429 au téléphone et l'appli ne dit rien ; réduire les requêtes au minimum",
+    "en": "BLOCKING: GitLab answers 429 on the phone and the app says nothing; cut the requests to the minimum",
+    "de": "BLOCKIEREND: GitLab antwortet am Telefon mit 429 und die App sagt nichts; Anfragen auf das Minimum senken",
+    "es": "BLOQUEANTE: GitLab responde 429 en el teléfono y la aplicación no dice nada; reducir las peticiones al mínimo"
+   },
+   "test": "Sur le téléphone, recharge l'appli (note « nouvelle version · Recharger », sinon ferme et rouvre deux fois). Laisse-la ouverte deux à trois minutes : la première lecture se fait maintenant par à-coups, sans repartir de zéro. Réglages › Synchronisation : « Dernière réussie » doit passer à aujourd'hui et ton vol en attente partir ; pendant une attente, la ligne dit « GitLab limite les requêtes : reprise dans n s ». Si ça ne finit pas en cinq minutes : Réglages › Données › « Copier le diagnostic » et envoie-le moi (il dit combien de pages ont été lues, l'attente, et si le délai du serveur était lisible).",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T09:55:59Z"
   }
  ],
  "decisions": [
