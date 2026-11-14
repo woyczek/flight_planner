@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5e9d626",
+  "organisation": "7e86acc",
   "fiches": 358,
   "untranslated": 0,
   "priorities": 310
@@ -5316,7 +5316,7 @@
     {
      "id": "SOG-0358",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Sécurité : un fichier lu du dépôt des données n'a aucun plafond de taille (lu jusqu'au bout, en mémoire, sur le téléphone)",
      "en": "Security: a file read from the data repository has no size cap (read to the end, in memory, on the phone)",
      "de": "Sicherheit: eine aus dem Daten-Repository gelesene Datei hat keine Größengrenze (bis zum Ende gelesen, im Speicher, am Telefon)",
