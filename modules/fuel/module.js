@@ -252,6 +252,10 @@ const TX = {
     'Diagnóstico del cálculo copiado.'
   ],
   // SOG-0208 : un bouton qui ne fait rien sans le dire est un défaut ; le lanceur est vérifié à l'appui
+  // SOG-0322 : le site publié (sans lanceur) dit pourquoi il n'y a pas de calcul d'itinéraire, au lieu de ne rien proposer
+  rNeedLauncher: ['Le calcul d’itinéraire demande le lanceur du poste.', 'Route computation needs the workstation’s launcher.',
+    'Die Routenberechnung braucht den Launcher des Arbeitsplatzes.', 'El cálculo de ruta necesita el lanzador del puesto.'
+  ],
   rNoLauncher: ['Disponible avec le lanceur du poste (il ne répond pas).',
     'Available with the workstation’s launcher (it does not answer).',
     'Mit dem Launcher des Arbeitsplatzes verfügbar (er antwortet nicht).', 'Disponible con el lanzador del puesto (no responde).'
@@ -2276,7 +2280,7 @@ function renderPlanBody() {
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
-      <div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div>
+      <div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p>
       <div data-routealts></div><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
@@ -6703,6 +6707,7 @@ export async function mount(el, ctx) {
     if (gone(self)) return;
     S.routeEngine = on;
     S.body?.querySelector('[data-reng]')?.toggleAttribute('hidden', !on);
+    S.body?.querySelector('[data-rengnone]')?.toggleAttribute('hidden', on); // SOG-0322 : dit, sans le lanceur
   });
   // dessins à la largeur de l'écran
   const ro = new ResizeObserver(() => {

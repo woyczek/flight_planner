@@ -2913,6 +2913,7 @@ def f109(c):
     st = _route_launcher(c, ['route/compute'])
     open_proc(c)
     c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons (the launcher has the job)')
+    c.eq(c.count(f'{FUEL} [data-rengnone]:not([hidden])'), 0, 'with the launcher: no « demande le lanceur » line', what='with launcher')
     # Contrôler: the typed route as it is (action check)
     c.tap(f'{FUEL} [data-do="rcheck"]')
     c.until(f"document.querySelectorAll('{FUEL} [data-segerr]').length === 2", what='two faulty segments red in the list of points')
@@ -2951,6 +2952,9 @@ def f109(c):
     open_proc(c)
     c.settle()
     c.eq(c.count(f'{FUEL} [data-reng]:not([hidden])'), 0, 'no job route/compute: no buttons', what='no launcher job')
+    # SOG-0322 (the user, from the published site: « pas de compute A-B ? que faut-il pour ça ? ») : the screen says why
+    c.until(f"!!document.querySelector('{FUEL} [data-rengnone]:not([hidden])')", timeout=8000, what='« Le calcul d’itinéraire demande le lanceur »')
+    c.ok(norm(tx('modules/fuel/module.js', 'rNeedLauncher', c.lang)) in norm(c.text(f'{FUEL} [data-rengnone]')), c.text(f'{FUEL} [data-rengnone]'), 'said in words')
 
 
 @case('F110', 'Route step without a RAD on the workstation: « Aucun RAD importé » and a link to its line in Data, never an import from Fuel',

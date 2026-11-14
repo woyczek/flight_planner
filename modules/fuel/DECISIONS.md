@@ -1978,3 +1978,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   form; stale only when true); the row says « via NAT A » under its controlled share, and in amber « périmée : routes NAT du 13/11 »
   when the engine took stale tracks. Kept in route_alts.json's `answer` like the rest (read again by `RE.normalize`). F123 extended
   (red before).
+- **14 Nov 2026 — SOG-0322: without the launcher, the route step says why there is no computation** (the user, from the published
+  site: « pas de compute A-B ? que faut-il pour ça ? »; the ergonomist's answer of 13 Nov, 14 h 44: the engine is the launcher's Python;
+  SOG-0129 would bring it into the page). When `RE.available` says no, a muted line « Le calcul d'itinéraire demande le lanceur du
+  poste. » stands where the two buttons would be; with the launcher, the buttons and no line. F109 extended (red before).
