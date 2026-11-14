@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The state block names the data repository** (SOG-0235: a computer and a phone read different repositories and nothing said so): « Échange : GitHub · acme/data », « GitLab · grp/data » (host in front when self-hosted); a GitLab device no longer says « cet appareil »; noreg A203
 - **One tap on « Envoyer » makes one report** (SOG-0335: three identical reports for one text): busy button, the same text within a minute refused with a sentence, identical copies waiting « non envoyé » leave once; noreg A202
 - **The band of the request limit pushes the view down instead of covering its first row** (SOG-0337); noreg A198
 - **Fuel: the line of the first synchronisation no longer promises « a few seconds » (a GitLab rate limit can hold it)** (fuel DECISIONS; noreg F84; SOG-0337).

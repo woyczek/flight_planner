@@ -668,7 +668,8 @@
       tr: {
         local: ['cet appareil', 'this device', 'dieses Gerät', 'este dispositivo'],
         launcher: ['lanceur', 'launcher', 'Starter', 'lanzador'],
-        github: ['GitHub', 'GitHub', 'GitHub', 'GitHub']
+        github: ['GitHub', 'GitHub', 'GitHub', 'GitHub'],
+        gitlab: ['GitLab', 'GitLab', 'GitLab', 'GitLab']
       },
       // transport lanceur : le poste qui sert la page et l'état de l'échange (l'hôte n'est plus dans l'en-tête du téléphone)
       launcher: ['Lanceur : {h} · {s}', 'Launcher: {h} · {s}', 'Starter: {h} · {s}', 'Lanzador: {h} · {s}'],
@@ -2440,7 +2441,7 @@
       k: 'data',
       text: dataLine(s),
       sub: t(T.info.transport, {
-        x: t(T.info.tr[s.transport] || T.info.tr.local)
+        x: t(T.info.tr[s.transport] || T.info.tr.local) + repoName(s)
       }),
       go: s.conflicts ? '#conflicts' : s.lastError === 'invalid repository address' ? 'card:access' : 'card:sync,usages',
       attn: ATTENTION.has(syncState(s)[0])
@@ -2906,6 +2907,21 @@
   // états qui demandent l'attention (pastille orange du ⚙ sur téléphone) ; syncing, ok et local n'en demandent pas
   const ATTENTION = new Set(['pending', 'offline', 'conflicts', 'error']);
   /** Écrit l'état du bouton (seulement s'il change). */
+  /** « · <dépôt> » : le dépôt des données que cet appareil lit, NOMMÉ dans le bloc d'état (SOG-0235 : un ordinateur lisait un autre dépôt que le téléphone, sans que rien ne le dise) ;
+   *  le nom du projet (et l'hôte quand ce n'est pas gitlab.com), jamais le jeton ; vide sans dépôt réglé. */
+  function repoName(s) {
+    if (s.transport !== 'github' && s.transport !== 'gitlab') return '';
+    const cfg = FD.github.config?.();
+    if (!cfg || typeof cfg.repo !== 'string' || !cfg.repo) return '';
+    let host = '';
+    if (cfg.provider === 'gitlab') try {
+      host = new URL(cfg.api).host;
+    } catch {
+      host = '';
+    }
+    return ` · ${host && host !== 'gitlab.com' ? `${host}/` : ''}${cfg.repo.slice(0, 120)}`;
+  }
+
   function paintSync(s) {
     lastStatus = s;
     // le transport du lanceur n'a pas pu l'atteindre : le lanceur est parti (le réseau n'y est pour rien : c'est en local)

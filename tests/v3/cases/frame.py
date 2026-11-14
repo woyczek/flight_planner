@@ -7994,3 +7994,28 @@ def a202(c):
     c.wait(1500)
     c.eq(len(set(c.js(docs_js)) - before), 1, 'three identical copies kept « not sent » leave as ONE report', what='collapsed')
     c.check_errors()
+
+
+@case('A203', "The state block NAMES the data repository this device reads: « Échange : GitHub · acme/data », « Échange : GitLab · grp/data » (a self-hosted host in front of the project) — and a GitLab device no longer says « cet appareil » (SOG-0235: the user's computer read another repository than his phone and nothing said so)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0235 (the ergonomist, 14 Nov: his computer, on the published site, was set to ANOTHER repository, an old GitHub one, read in its tab): the state block said only « Échange : GitHub » — and « cet appareil » for a GitLab device (no label for the transport gitlab); it now names the provider and the project (never the token)")
+def a203(c):
+    word = {'fr': 'Échange', 'en': 'Transport', 'de': 'Übertragung', 'es': 'Transporte'}[c.lang]
+    c.context.route(re.compile(r'https://(api\.github\.com|gitlab\.com|git\.example\.test)/'), lambda r: r.abort())
+
+    def keys(gh):
+        return [['device/keys.json', {'schema': 1, 'github': gh, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache'], ['device/usages.json', {'devices': True}, 'cache']]
+    for gh, want in (({'repo': 'acme/data', 'branch': 'main', 'token': 'ghp_secret_test'}, 'GitHub · acme/data'),
+                     ({'provider': 'gitlab', 'api': 'https://gitlab.com/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-secret-test'}, 'GitLab · grp/data'),
+                     ({'provider': 'gitlab', 'api': 'https://git.example.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-secret-test'}, 'GitLab · git.example.test/grp/data')):
+        c.open('settings', docs=LEVEL3 + keys(gh), wait=False)
+        c.until("!!document.querySelector('[data-card]')", timeout=20000, what='the Settings screen')
+        for _ in range(40):
+            txt = c.js("document.getElementById('fView').innerText")
+            if want in txt:
+                break
+            c.wait(250)
+        txt = c.js("document.getElementById('fView').innerText")
+        c.ok(want in txt and 'secret' not in txt, [l for l in txt.splitlines() if word in l][:2], f'the state block says « {want} » (and no token)')
+    c.shot(f'A203_{c.width}_{c.lang}_delivered.png')
+    c.check_errors()

@@ -3082,3 +3082,6 @@ The ergonomist's decision (not « unknown fingerprints » in the core of the lay
 
 ## 14 November 2026 — the band of the limit pushes the view down, it never covers it (SOG-0337)
 On the capture of A198 the band covered the first row of buttons of the view. The band stays fixed under the header (it is still on every screen at every width), but `html.f-limited` pushes `.f-view` down by the band's height (`--f-limit-h`, set from its real height: one or two lines depending on the language and the width) and takes it back when the wait ends. Noreg A198 (the view starts below the band, the first row is not covered; the class and the variable are gone at the end).
+
+## 14 November 2026 — the state block names the data repository (SOG-0235)
+The user's computer, on the published site, was set to another repository (an old GitHub one) than his phone, and nothing said so: the block said « Échange : GitHub », and « Échange : cet appareil » for a GitLab device (no label for the transport `gitlab`). It now says **the provider and the project**: « Échange : GitHub · acme/data », « Échange : GitLab · grp/data », with the host in front for a self-hosted GitLab (`git.example.test/grp/data`) — never the token. Noreg A203 (the three forms in the four languages, no secret on the screen).
