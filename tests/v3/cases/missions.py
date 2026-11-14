@@ -2699,3 +2699,32 @@ def n64(c):
     c.js(f"document.querySelector('{E} [data-edpreview]').scrollIntoView({{block: 'center'}})")
     c.shot(f'N64_{c.design}_1280_{c.lang}_delivered.png')
     c.js(_REG_CLEAR)
+
+
+
+@case('N65', 'Missions › the list on a phone: each mission\'s title takes the whole width of its row (identifier in bold, then the title), the '
+      'route, the aircraft and the time under it in small type; side by side only when the list card is 560 px wide or more', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0344 (the user\'s iPhone photo, 14 Nov 11 h 12: the titles crushed in a narrow column, one word per line); the ergonomist: on a '
+      'phone the title takes the whole width, the details under it, side by side only from 560 px of card; invented X-7xx missions')
+def n65(c):
+    ROW = f"{M} [data-list] [data-id=\"X-799A\"]"
+    geo = f"""(() => {{ const r = document.querySelector('{ROW}'); if (!r) return null; const [a, b] = r.children;
+        const R = r.getBoundingClientRect(), A = a.getBoundingClientRect(), B = b.getBoundingClientRect();
+        return {{ titleShare: A.width / R.width, below: B.top >= A.bottom - 1, card: document.querySelector('{M} [data-pane=list]').getBoundingClientRect().width }} }})()"""
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_REG_CLEAR)
+        reg = _REG_REGISTRY + "  - { id: X-799A, family: TESTREG, title: Un siège pour chaque caisse et le chronomètre en plus, origin: LFOE, destination: LFOJ, aircraftTypes: [C30J], estimate: { block: 272 }, folder: X_REG/X-799A, files: [missionX-799A.yaml] }\n"
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', reg]] + _REG_TEXTS[1:] + [['missions/X_REG/X-799A/missionX-799A.yaml', mission_doc('X-799A')]])
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{ROW}')", timeout=20000, what=f'{w} px: the list')
+        g = c.js(geo)
+        if g['card'] < 560:
+            c.ok(g['titleShare'] > 0.85 and g['below'], g, f'{w} px: the title over the whole row, the details under it')
+        else:
+            c.ok(not g['below'], g, f'{w} px: a card of 560 px and more: title and details side by side')
+        c.js(f"document.querySelector('{ROW}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'N65_{c.design}_{w}_{c.lang}_delivered.png')
+    c.js(_REG_CLEAR)

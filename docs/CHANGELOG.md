@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions › list on a phone: each title takes the whole width, its route, aircraft and time under it; side by side from 560 px of card** (missions DECISIONS; noreg N65; SOG-0344).
 - **Map: a failed read no longer empties the Map, and a layer change no longer asks again for what the device has** (SOG-0349, blocking on the phone: « après avoir coché / décoché « Autour du vol », la Carte finit avec zéro donnée »): a failed layer keeps what was shown; the reads are kept per layer (boxes, parameters) until the base itself changes; the profile shares them; D237 (red before). V3 Frame's and AeroDB's sides are theirs.
 - **Map: the boxes of the Layers sheet are easy to hit on a phone** (SOG-0350): every row at least 44 px high, the whole line the target, the box 24 px; D236 (red before). **SOG-0348** (a tap on a row of the proposed routes window chooses it): not reproduced, D235 holds a tap and a click.
 - **Map: the flight follow-up, tranche a** (SOG-0304, the user said yes to the mock-up): for a started flight, under the map on a phone (one line: next point, time, heading after it; open: NEXT POINT and the band descent / planned at the point / safety), a 340 px column to the right of the map from 1 000 px; never on the map; the control, the radio-navigation and the procedure link are the next tranches; help ×4; D234.

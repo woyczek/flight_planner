@@ -58,6 +58,12 @@ export const meta = {
 // centre) sur un module large, sans « Détail » ni « Retour » du détail
 const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-thumb{display:block;width:100%;height:auto;margin-top:8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);background:var(--sog-bg)} /* SOG-0287 : la vignette de l'aperçu */
+/* SOG-0344 (photo du 14/11) : au téléphone, le titre d'une mission sur toute la largeur, le trajet, l'aéronef et la durée dessous en petit ;
+   côte à côte seulement quand la carte de la liste fait 560 px et plus */
+[data-module="missions"] [data-pane="list"]{container-type:inline-size}
+[data-module="missions"] .ms-mrow{grid-template-columns:minmax(0,1fr)}
+[data-module="missions"] .ms-mrow>span:last-child{font-size:var(--sog-size-s)}
+@container (min-width: 560px){[data-module="missions"] .ms-mrow{grid-template-columns:minmax(0,1fr) auto}[data-module="missions"] .ms-mrow>span:last-child{font-size:inherit}}
 [data-module="missions"] .ms-assignedbox{margin:0 0 12px} /* SOG-0114 (A) : « Mes missions affectées », en tête */
 [data-module="missions"] .ms-asshead{font-size:1rem;margin:4px 0 8px}
 [data-module="missions"] .ms-assigned>span>small{display:block;margin-top:2px}
@@ -1053,7 +1059,7 @@ function resultsHtml(s) {
     row = r => {
       const f = s.flown.get(r.id) ?? (r.formerId ? s.flown.get(r.formerId) : undefined),
         co = coName(s, r);
-      return `<button type="button" class="f-item" data-id="${esc(r.id)}"><span><b>${esc(r.id)}</b> ${esc(r.title)}${co ? ` <span class="f-badge" data-co>${esc(co)}</span>` : ''}</span><span class="f-muted">${esc([r.originIcao && r.destinationIcao ? `${r.originIcao} → ${r.destinationIcao}` : r.originIcao, r.types[0], hmm(r.blockMin)].filter(Boolean).join(' · '))}${whereHtml(s, r, s.q)}${f !== undefined ? ` <span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flown, { d: day(f) }))}</span>` : ''}</span></button>`;
+      return `<button type="button" class="f-item ms-mrow" data-id="${esc(r.id)}"><span><b>${esc(r.id)}</b> ${esc(r.title)}${co ? ` <span class="f-badge" data-co>${esc(co)}</span>` : ''}</span><span class="f-muted">${esc([r.originIcao && r.destinationIcao ? `${r.originIcao} → ${r.destinationIcao}` : r.originIcao, r.types[0], hmm(r.blockMin)].filter(Boolean).join(' · '))}${whereHtml(s, r, s.q)}${f !== undefined ? ` <span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flown, { d: day(f) }))}</span>` : ''}</span></button>`;
     };
   let fam = '',
     body = '';

@@ -317,3 +317,7 @@
   the decision of 13 Nov). A polygon zone without a centre is not drawn (the reader gives only its number of vertices). N64 (red before).
 - **14 Nov 2026 — « Mes missions affectées » above « Tirer au sort »** (the ergonomist on the N62 capture: for an assigned pilot, his mission
   comes before the draw). The group is the first thing of the list card, above the row « Tirer au sort / Ajouter des missions / Registre ». N62 extended (red before).
+- **14 Nov 2026 — SOG-0344: on a phone, a mission's title takes the whole width of its row** (the user's iPhone photo: one word per line in a
+  narrow column, the details beside it). The list rows (`.ms-mrow`, on the frame's `.f-item`) are one column: identifier and title, then
+  the route, the aircraft and the time in small type; the list card is a size container and the two columns come back only from 560 px
+  of card (the ergonomist's threshold). N65 (red before at 390).
