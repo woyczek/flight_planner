@@ -7955,7 +7955,12 @@ def a201(c):
     used = log[mark:]
     tree_calls = [u for u in used if '/repository/tree' in u]
     c.ok(any('/repository/compare' in u for u in used) and tree_calls and not any('recursive=true' in u for u in tree_calls) and len(tree_calls) == 1, used, 'the second read is one comparison and the one folder of the changed file — no recursive listing')
-    d = c.js("FrameData.diagnostic().then(d => d.treeRead)")
+    d = None
+    for _ in range(60):   # the pass is finished (settled above); the diagnostic is read until it says so — no fixed delay
+        d = c.js("FrameData.diagnostic().then(d => d.treeRead)")
+        if d and d.get('incremental') is True:
+            break
+        c.wait(250)
     c.ok(d and d.get('incremental') is True and d['changed'] == 1 and d['requests'] == 2, d, 'the diagnostic says it was incremental: one file changed, two requests')
     c.check_errors()
 

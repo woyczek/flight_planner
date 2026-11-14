@@ -49,7 +49,8 @@
         treeOf: new Map(), // tête → { chemin: empreinte }
         inflight: new Map(), // tête → lecture de l'arbre en cours
         partial: null, // la lecture de l'arbre en cours : { commit, url (la page à lire), out, pages (lues), entries } — reprise là où elle s'est arrêtée
-        guard: null
+        guard: null,
+        lastTree: null // ce que la dernière lecture de l'arbre a rendu : partagé comme le reste (le diagnostic lit le transport de la page, pas forcément celui qui a lu)
       };
       SHARED.set(key, sh);
     }
@@ -114,6 +115,9 @@
       return j.id;
     }
     const self = {
+      get lastTree() {
+        return sh.lastTree;
+      },
       limit: guard, // la limite de requêtes : l'attente en cours, ce qui en a été lu (diagnostic) ; frame_data y branche l'état
       id: 'gitlab',
       kind: 'remote',
@@ -220,7 +224,7 @@
           next[p] = listed[p];
         }
         treeOf.set(commit, next);
-        self.lastTree = {
+        sh.lastTree = {
           commit: String(commit).slice(0, 12),
           incremental: true, // SOG-0337 T2 : seulement ce qui a changé depuis `from`
           from: String(known.head).slice(0, 12),
@@ -279,7 +283,7 @@
         }
         sh.partial = null;
         treeOf.set(commit, out);
-        self.lastTree = { // ce que la dernière lecture de l'arbre a rendu : dit dans le diagnostic (SOG-0235 : un arbre lu en entier ?)
+        sh.lastTree = { // ce que la dernière lecture de l'arbre a rendu : dit dans le diagnostic (SOG-0235 : un arbre lu en entier ?)
           commit: String(commit).slice(0, 12),
           pages,
           entries,
