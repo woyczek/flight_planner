@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2725260",
-  "fiches": 357,
+  "organisation": "429d1ea",
+  "fiches": 358,
   "untranslated": 0,
   "priorities": 310
  },
@@ -5298,6 +5298,27 @@
      "en": "Base: the United States zone is read for any flight between 51° and 53° N (23 MB for a Paris–Dublin) — its cells cross the antimeridian",
      "de": "Basis: die USA-Zone wird für jeden Flug zwischen 51° und 53° N gelesen (23 MB für Paris–Dublin) — ihre Zellen queren den Antimeridian",
      "es": "Base: la zona de Estados Unidos se lee para todo vuelo entre 51° y 53° N (23 MB para un París–Dublín) — sus celdas cruzan el antimeridiano"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-synchronisation-securite",
+   "app": "maintenance",
+   "label": {
+    "fr": "cadre ; synchronisation ; sécurité",
+    "en": "cadre ; synchronisation ; sécurité",
+    "de": "cadre ; synchronisation ; sécurité",
+    "es": "cadre ; synchronisation ; sécurité"
+   },
+   "items": [
+    {
+     "id": "SOG-0358",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Sécurité : un fichier lu du dépôt des données n'a aucun plafond de taille (lu jusqu'au bout, en mémoire, sur le téléphone)",
+     "en": "Security: a file read from the data repository has no size cap (read to the end, in memory, on the phone)",
+     "de": "Sicherheit: eine aus dem Daten-Repository gelesene Datei hat keine Größengrenze (bis zum Ende gelesen, im Speicher, am Telefon)",
+     "es": "Seguridad: un archivo leído del repositorio de datos no tiene tope de tamaño (leído hasta el final, en memoria, en el teléfono)"
     }
    ]
   },
