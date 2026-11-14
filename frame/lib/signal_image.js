@@ -207,60 +207,135 @@ export function checkWrite(path, value, tri) {
   });
 }
 
-/** Réduit UNE photo (un File choisi) : { bytes, type, w, h } ou { why: 'unreadable' | 'too-big' }. Ré-encodée par un canvas (l'EXIF n'est pas recopié), le plus grand côté à 1 600 px
- *  au plus, WebP si l'appareil sait l'écrire (sinon JPEG), 400 Ko au plus : la qualité puis la taille baissent par paliers. L'orientation de la photo est appliquée (l'image sort droite). */
-export async function reduce(file, env = globalThis) {
-  let bmp;
-  try {
-    bmp = await env.createImageBitmap(file, {
+/** Retire d'un JPEG les segments de métadonnées (APP1 : EXIF et XMP, APP13 : IPTC) et rend les octets ; tout le reste (JFIF, profil de couleur, les données de l'image) est recopié tel quel.
+ *  L'encodeur d'un navigateur peut écrire lui-même un bloc EXIF (celui de Safari d'iOS : les dimensions, la couleur) sans rien de la photo d'origine : il est ôté ici, pour que la garde (hasExif)
+ *  ne refuse pas ce que le canvas vient d'écrire. Rend null si ce n'est pas un JPEG qu'on sait parcourir. */
+export function stripJpegMeta(b) {
+  if (!(b instanceof Uint8Array) || b[0] !== 0xff || b[1] !== 0xd8) return null;
+  const out = [b.subarray(0, 2)];
+  let i = 2;
+  while (i + 4 <= b.length) {
+    if (b[i] !== 0xff) return null;
+    const m = b[i + 1];
+    if (m === 0xff) {
+      i++;
+      continue;
+    }
+    if (m === 0xda || m === 0xd9) { // le début des données de l'image : le reste est recopié tel quel
+      out.push(b.subarray(i));
+      i = b.length;
+      break;
+    }
+    const n = u16be(b, i + 2);
+    if (n < 2 || i + 2 + n > b.length) return null;
+    if (m !== 0xe1 && m !== 0xed) out.push(b.subarray(i, i + 2 + n));
+    i += 2 + n;
+  }
+  const len = out.reduce((a, x) => a + x.length, 0),
+    r = new Uint8Array(len);
+  let o = 0;
+  for (const x of out) {
+    r.set(x, o);
+    o += x.length;
+  }
+  return r;
+}
+
+/** Le pixmap d'une photo choisie : createImageBitmap (avec l'orientation de la photo, puis sans l'option que de vieux Safari refusent), sinon une image décodée (<img> sur un blob : partout).
+ *  Rend { bmp, w, h } ou { why: 'unreadable', detail } (le nom de l'erreur du navigateur, pour dire pourquoi). */
+async function decode(file, env) {
+  let detail = '';
+  for (const opts of [{
       imageOrientation: 'from-image'
-    });
-  } catch {
+    }, undefined]) {
     try {
-      bmp = await env.createImageBitmap(file);
-    } catch {
-      return {
-        why: 'unreadable'
+      const bmp = opts ? await env.createImageBitmap(file, opts) : await env.createImageBitmap(file);
+      if (bmp?.width > 0 && bmp?.height > 0) return {
+        bmp,
+        w: bmp.width,
+        h: bmp.height
       };
+    } catch (e) {
+      detail = String(e?.name || e?.message || 'error').slice(0, 40);
     }
   }
-  const W = bmp.width,
-    H = bmp.height;
-  if (!(W > 0 && H > 0)) return {
-    why: 'unreadable'
+  try { // un navigateur sans createImageBitmap utilisable : l'image est décodée par une balise
+    const url = env.URL.createObjectURL(file),
+      img = new env.Image();
+    try {
+      img.src = url;
+      await (img.decode ? img.decode() : new Promise((ok, no) => {
+        img.onload = ok;
+        img.onerror = no;
+      }));
+    } finally {
+      env.URL.revokeObjectURL(url);
+    }
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) return {
+      bmp: img,
+      w: img.naturalWidth,
+      h: img.naturalHeight
+    };
+  } catch (e) {
+    detail = detail || String(e?.name || 'error').slice(0, 40);
+  }
+  return {
+    why: 'unreadable',
+    detail
   };
-  const encode = (canvas, mime, q) => new Promise(res => canvas.toBlob(res, mime, q));
-  for (const side of [1600, 1280, 1024, 800]) {
-    const k = Math.min(1, side / Math.max(W, H)),
-      w = Math.max(1, Math.round(W * k)),
-      h = Math.max(1, Math.round(H * k)),
+}
+
+/** Réduit UNE photo (un File choisi) : { bytes, type: 'jpeg', w, h } ou { why: 'unreadable', detail } ou { why: 'too-big', bytes: le plus petit poids atteint }. Ré-encodée par un canvas en JPEG (accepté
+ *  partout : Safari d'iOS n'écrit pas le WebP, il rend alors du PNG), donc l'EXIF de la photo n'est pas recopié ; le plus grand côté à 1 600 px au plus, 400 Ko au plus : la qualité baisse par paliers, puis la
+ *  taille ; on ne refuse qu'en tout dernier, en disant le poids atteint. Les métadonnées que l'encodeur écrit lui-même sont ôtées (stripJpegMeta). L'orientation de la photo est appliquée.
+ *  limits : { bytes } pour un essai. */
+export async function reduce(file, env = globalThis, limits = {}) {
+  const max = limits.bytes || LIMITS.bytes,
+    d = await decode(file, env);
+  if (d.why) return d;
+  const encode = (canvas, q) => new Promise(res => {
+    try {
+      canvas.toBlob(res, 'image/jpeg', q);
+    } catch {
+      res(null);
+    }
+  });
+  let least = Infinity;
+  for (const side of [1600, 1280, 1024, 800, 640]) {
+    const k = Math.min(1, side / Math.max(d.w, d.h)),
+      w = Math.max(1, Math.round(d.w * k)),
+      h = Math.max(1, Math.round(d.h * k)),
       canvas = env.document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
     const g = canvas.getContext('2d');
     g.fillStyle = '#fff'; // une transparence ne devient pas du noir
     g.fillRect(0, 0, w, h);
-    g.drawImage(bmp, 0, 0, w, h);
-    for (const q of [0.82, 0.68, 0.52, 0.4]) {
-      for (const mime of ['image/webp', 'image/jpeg']) {
-        const blob = await encode(canvas, mime, q);
-        if (!blob || blob.type !== mime) continue; // l'appareil ne sait pas écrire ce format (un navigateur rend alors du PNG)
-        const bytes = new Uint8Array(await blob.arrayBuffer());
-        if (bytes.length <= LIMITS.bytes && sniff(bytes) && !hasExif(bytes, sniff(bytes))) {
-          bmp.close?.();
-          return {
-            bytes,
-            type: sniff(bytes),
-            w,
-            h
-          };
-        }
-        break; // ce format est écrit mais trop gros à cette qualité : la qualité baisse (un JPEG n'est pas plus petit qu'un WebP)
+    g.drawImage(d.bmp, 0, 0, w, h);
+    for (const q of [0.82, 0.68, 0.52, 0.4, 0.3]) {
+      const blob = await encode(canvas, q);
+      if (!blob || blob.type !== 'image/jpeg')
+        continue; // un navigateur qui ne sait pas écrire le JPEG rendrait du PNG : jamais accepté ici
+      const bytes = stripJpegMeta(new Uint8Array(await blob.arrayBuffer()));
+      if (!bytes || sniff(bytes) !== 'jpeg' || hasExif(bytes, 'jpeg')) continue;
+      least = Math.min(least, bytes.length);
+      if (bytes.length <= max) {
+        d.bmp.close?.();
+        return {
+          bytes,
+          type: 'jpeg',
+          w,
+          h
+        };
       }
     }
   }
-  bmp.close?.();
-  return {
-    why: 'too-big'
+  d.bmp.close?.();
+  return Number.isFinite(least) ? {
+    why: 'too-big',
+    bytes: least
+  } : {
+    why: 'unreadable',
+    detail: 'encode'
   };
 }

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report photos work on iOS** (SOG-0335 reopened: « screenshot refusé. trop lourd »): JPEG only, the metadata the browser's encoder writes is removed (Safari's canvas JPEG carries an EXIF block that every photo was refused for), the refusal says which cause (unreadable with the browser's error, or too heavy with the weight reached); noreg A200
 - **Settings › Synchronisation says the request limit in words** (SOG-0337: « Dernière erreur GitLab 429: » with an empty message on the iPhone): the last error goes through the frame's error text; noreg A199
 - **GitLab 429 on the phone** (SOG-0337, blocking): a request limit is recognised in the GitLab and GitHub transports, waited (Retry-After, else 60 s doubled) and the tree read resumes at its page instead of starting again from zero; the tree is read at a steady pace (600 ms between pages, 80 requests a minute at most); the sync button says « GitLab limite les requêtes : reprise dans n s » (four languages, counting down) and the diagnostic carries the limit that was read; noreg A38, A198
 - **Missions › editor: the preview carries a sketch of the places (departure, arrival — placed from the base when the file has no position —, target, zones, turning points, rendezvous)** (missions DECISIONS; noreg N64; SOG-0287).

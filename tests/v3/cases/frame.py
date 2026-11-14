@@ -7769,3 +7769,67 @@ def a199(c):
     c.ok('limite de requêtes' in txt and not re.search(r'GitLab 429:\s*(\)|$)', txt), txt, 'the last error is the sentence of the limit, not « GitLab 429: » alone')
     c.shot(f'A199_sync_{c.width}_{c.lang}_delivered.png')
     c.check_errors()
+
+
+_SAFARI_JS = """(() => {
+  const o = HTMLCanvasElement.prototype.toBlob;
+  HTMLCanvasElement.prototype.toBlob = function (cb, type, q) {
+    // Safari d'iOS : pas d'encodeur WebP (le navigateur rend du PNG) ; son JPEG de canvas porte un bloc EXIF (les dimensions, la couleur), jamais celui de la photo
+    if (type === 'image/webp') return o.call(this, cb, 'image/png');
+    if (type === 'image/jpeg') return o.call(this, async b => {
+      const u = new Uint8Array(await b.arrayBuffer()), seg = [0xff, 0xe1, 0, 16, 69, 120, 105, 102, 0, 0, 77, 77, 0, 42, 0, 0, 0, 8];
+      const out = new Uint8Array(u.length + seg.length); out.set(u.subarray(0, 2), 0); out.set(seg, 2); out.set(u.subarray(2), 2 + seg.length);
+      cb(new Blob([out], { type: 'image/jpeg' }));
+    }, type, q);
+    return o.call(this, cb, type, q);
+  };
+})()"""
+
+_SHOT_PNG_JS = """async () => {
+  const cv = document.createElement('canvas'); cv.width = 750; cv.height = 1334; const g = cv.getContext('2d');
+  g.fillStyle = '#eef'; g.fillRect(0, 0, 750, 1334); g.fillStyle = '#123'; g.font = '28px sans-serif';
+  for (let i = 0; i < 40; i++) g.fillText('Carte ne se redessine pas, ligne ' + i + ' ' + 'x'.repeat(i % 20), 20, 40 + i * 31);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png')), b = new Uint8Array(await blob.arrayBuffer());
+  let s = ''; for (let i = 0; i < b.length; i += 32768) s += String.fromCharCode(...b.subarray(i, i + 32768)); return btoa(s) }"""
+
+
+@case('A200', "A phone screenshot is accepted as a report photo on a browser that cannot write WebP and whose JPEG carries its own EXIF block (Safari on iOS): it comes out as a JPEG under 400 KB without the block; a photo that cannot be decoded or stays too heavy is refused saying WHICH and with what (SOG-0335 reopened)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0335 reopened (the user, on his iPhone: « screenshot refusé. trop lourd »; « Photo refusée : IMG_0511.png » for a 750 × 1334 PNG): the first version asked the canvas for WebP then JPEG and refused any JPEG with an EXIF block — on iOS the canvas JPEG carries one (dimensions, colour; never the photo's) so EVERY photo was refused; now JPEG only (accepted everywhere), the metadata the encoder wrote is removed (stripJpegMeta: EXIF, XMP, IPTC), quality then size go down by steps, and a refusal says which cause: unreadable (the browser's error) or too heavy (the weight reached at best); the guard (checkDoc) is unchanged: any EXIF block is refused at write and at read")
+def a200(c):
+    import base64
+    c.page.add_init_script(_SAFARI_JS)
+    c.open('fuel', docs=LEVEL3)
+    shot = base64.b64decode(c.js(_SHOT_PNG_JS))
+    c.ok(shot[:4] == b'\x89PNG', len(shot), 'the test builds a 750 × 1334 PNG screenshot')
+    c.open('fuel', docs=LEVEL3 + [['device/signaler.json', {'poste': True, 'mine': [], 'unsent': [], 'draft': {'kind': 'bug', 'title': '', 'text': ''}}, 'cache']])
+    c.ok(c.js("(() => new Promise(r => document.createElement('canvas').toBlob(b => r(b.type), 'image/webp')))()") == 'image/png', '', 'the test browser behaves like Safari: asked for WebP, the canvas gives a PNG')
+    c.tap('#fSignal')
+    c.until("location.hash === '#signaler' && !!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen')
+    c.page.set_input_files('[data-shots]', {'name': 'IMG_0511.png', 'mimeType': 'image/png', 'buffer': shot})
+    c.until("document.querySelector('[data-shotslist]').textContent.includes('IMG_0511.png') || /refus|refused/i.test(document.querySelector('[data-note]').textContent)", timeout=30000, what='the photo reduced or refused')
+    c.ok('IMG_0511.png' in c.text('[data-shotslist]'), c.text('[data-note]'), 'the screenshot is accepted (it was refused as « illisible, ou trop lourde »)')
+    m = re.search(r'\((\d+)×(\d+), (\d+) Ko\)', c.text('[data-shotslist]'))
+    c.ok(m and int(m[3]) <= 400 and max(int(m[1]), int(m[2])) <= 1600, c.text('[data-shotslist]'), 'reduced under 400 KB and 1 600 px')
+    c.page.fill('[data-title]', 'Capture iPhone')
+    c.page.fill('[data-text]', 'La carte.')
+    c.tap('[data-form] [data-send]')
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=20000, what='the report sent')
+    sid = c.js("document.querySelector('[data-mine] li').dataset.id")
+    got = c.js(_SI_DOCS_JS, sid)
+    ik = f'pilot/ABC/signalements/{sid}/1.json'
+    c.ok(ik in got['keys'], got['keys'], 'the image document is written next to the report')
+    out = base64.b64decode(json.loads(got[ik])['b64'])
+    c.ok(out[:3] == b'\xff\xd8\xff' and b'Exif' not in out and len(out) <= 409600, (out[:4], len(out)), 'a JPEG without the block the encoder wrote, under 400 KB')
+    url = c.js(_SI_JS)
+    r = c.js("""async (url) => {
+      const SI = await import(url), out = {};
+      const bad = await SI.reduce(new File([new Uint8Array(200).fill(7)], 'x.png', { type: 'image/png' }));
+      out.bad = [bad.why, typeof bad.detail];
+      const big = await (async () => { const cv = document.createElement('canvas'); cv.width = 600; cv.height = 400; const g = cv.getContext('2d'); const im = g.createImageData(600, 400); for (let i = 0; i < im.data.length; i += 4) { im.data[i] = Math.random() * 255; im.data[i + 1] = Math.random() * 255; im.data[i + 2] = Math.random() * 255; im.data[i + 3] = 255 } g.putImageData(im, 0, 0); return new Promise(r => cv.toBlob(r, 'image/png')) })();
+      const heavy = await SI.reduce(new File([big], 'n.png', { type: 'image/png' }), globalThis, { bytes: 3000 });
+      out.heavy = [heavy.why, heavy.bytes > 3000];
+      return out }""", url)
+    c.eq(r, {'bad': ['unreadable', 'string'], 'heavy': ['too-big', True]}, 'a photo that cannot be decoded says « unreadable » with the browser\'s error; one that stays too heavy says « too-big » with the weight reached', what='causes')
+    c.shot(f'A200_{c.width}_{c.lang}_delivered.png')
+    c.check_errors()

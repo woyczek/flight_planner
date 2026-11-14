@@ -128,10 +128,22 @@
     ],
     photoReducing: ['Réduction de la photo…', 'Reducing the photo…', 'Foto wird verkleinert…', 'Reduciendo la foto…'],
     photoBad: [
-      'Photo refusée : {name} (illisible, ou trop lourde même réduite).',
-      'Photo refused: {name} (unreadable, or too large even when reduced).',
-      'Foto abgelehnt: {name} (unlesbar oder auch verkleinert zu groß).',
-      'Foto rechazada: {name} (ilegible, o demasiado pesada incluso reducida).'
+      'Photo refusée : {name} (trois photos au plus, des images seulement).',
+      'Photo refused: {name} (three photos at most, images only).',
+      'Foto abgelehnt: {name} (höchstens drei Fotos, nur Bilder).',
+      'Foto rechazada: {name} (tres fotos como máximo, solo imágenes).'
+    ],
+    photoUnreadable: [
+      'Photo illisible : {name} — l’appareil ne sait pas la décoder ({why}).',
+      'Unreadable photo: {name} — this device cannot decode it ({why}).',
+      'Foto unlesbar: {name} — dieses Gerät kann sie nicht dekodieren ({why}).',
+      'Foto ilegible: {name} — este dispositivo no puede decodificarla ({why}).'
+    ],
+    photoHeavy: [
+      'Photo trop lourde : {name} — {kb} Ko atteints au mieux après réduction, 400 Ko au plus.',
+      'Photo too heavy: {name} — {kb} KB at best after reduction, 400 KB at most.',
+      'Foto zu schwer: {name} — {kb} KB im besten Fall nach der Verkleinerung, höchstens 400 KB.',
+      'Foto demasiado pesada: {name} — {kb} KB como mínimo tras la reducción, 400 KB como máximo.'
     ],
     photoSent: [
       ' Photos jointes : {n} (réduites, dans le dépôt des données de la compagnie, lisibles par ses pilotes).',
@@ -928,13 +940,21 @@
       paint();
       const SI = await import(new URL('frame/lib/signal_image.js', c.root).href);
       for (const f of files) {
-        const r = await SI.reduce(f);
+        const r = await SI.reduce(f).catch(e => ({
+          why: 'unreadable',
+          detail: String(e?.name || 'error').slice(0, 40)
+        }));
         if (r.why) {
           ui.pshots = [];
+          // LAQUELLE des deux causes, et avec quoi : illisible (l'erreur du navigateur) ou trop lourde (le poids atteint au mieux)
           ui.note = {
             kind: 'warn',
-            text: t(T.photoBad, {
-              name: text(f.name, 60)
+            text: r.why === 'too-big' ? t(T.photoHeavy, {
+              name: text(f.name, 60),
+              kb: Math.round(r.bytes / 1024)
+            }) : t(T.photoUnreadable, {
+              name: text(f.name, 60),
+              why: r.detail || '?'
             })
           };
           input.value = '';
