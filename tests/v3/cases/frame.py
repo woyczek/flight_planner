@@ -8087,3 +8087,33 @@ def a205(c):
         c.wait(100)
     c.ok(len(hits) > n0, hits, 'the detection still runs behind (the launcher is asked at every start)')
     c.check_errors()
+
+
+@case('A206', "The « Signaler » button of the top bar is a switch like « ? »: lit while its screen is open, a second press brings back the screen one came from, at the same place (scroll, address), and a text begun is kept while the app is open (SOG-0346)", 'A',
+      designs=('standard',), screens=True, night=False, langs4=False,
+      rule="SOG-0346 (the user, on his phone: « Bugs : perte de la page d'origine — comme les autres boutons bugs devrait être un toggle »): the button is lit and a second press closes the screen, as « ? » and the gear do; the page one came from comes back where it was (the address, the scroll of the page) and the text begun in Signaler is still there when it is opened again")
+def a206(c):
+    c.open('fuel', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('#fSignal svg') && !!document.querySelector('[data-module=\"fuel\"]')", timeout=20000, what='Fuel')
+    c.wait(800)
+    # a page one has scrolled down
+    c.js("(() => { const h = document.createElement('div'); h.id = 'padTest'; h.style.height = '3000px'; document.getElementById('fView').appendChild(h); window.scrollTo(0, 400) })()")
+    c.wait(300)
+    y0 = c.js("Math.round(window.scrollY)")
+    h0 = c.js("location.hash")
+    c.ok(y0 >= 300, y0, 'the page is scrolled down before the press')
+    c.tap('#fSignal')
+    c.until("location.hash === '#signaler' && !!document.querySelector('[data-form]')", timeout=20000, what='the report screen')
+    c.eq(c.js("document.getElementById('fSignal').getAttribute('aria-pressed')"), 'true', 'lit while the screen is open', what='lit')
+    c.page.fill('[data-title]', 'Un titre commencé')
+    c.page.fill('[data-text]', 'Un texte commencé, gardé.')
+    c.wait(500)
+    c.tap('#fSignal')
+    c.until("location.hash === '" + h0 + "'", timeout=15000, what='the address one came from')
+    c.wait(500)
+    y1 = c.js("Math.round(window.scrollY)")
+    c.eq([c.js("document.getElementById('fSignal').getAttribute('aria-pressed')"), abs(y1 - y0) <= 2], ['false', True], 'a second press closes the screen, the button goes out, the page is where it was (scroll %d → %d)' % (y0, y1), what='back at the same place')
+    c.tap('#fSignal')
+    c.until("location.hash === '#signaler' && !!document.querySelector('[data-form]')", timeout=20000, what='the report screen again')
+    c.eq([c.js("document.querySelector('[data-title]').value"), c.js("document.querySelector('[data-text]').value")], ['Un titre commencé', 'Un texte commencé, gardé.'], 'the text begun is kept while the app is open', what='draft kept')
+    c.check_errors()
