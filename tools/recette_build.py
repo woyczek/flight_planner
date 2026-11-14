@@ -127,6 +127,27 @@ def verdicts(org):
     return out
 
 
+def histories(org):
+    """{ id: [{ verdict, comment?, at? } …] } (SOG-0351): the verdicts a fiche put back to test or a newer verdict replaced, twenty at most, from RECETTE.json — an untrusted input, bounded and filtered."""
+    out = {}
+    for fid, v in list((read_json(os.path.join(org, 'RECETTE.json')).get('items') or {}).items())[:1000]:
+        if not ID.match(str(fid)) or not isinstance(v, dict) or not isinstance(v.get('history'), list):
+            continue
+        hist = []
+        for h in v['history'][-20:]:
+            if not isinstance(h, dict) or h.get('verdict') not in ('ok', 'ko', 'reserve'):
+                continue
+            e = {'verdict': h['verdict']}
+            if isinstance(h.get('comment'), str):
+                e['comment'] = re.sub(r'[\x00-\x1f]', ' ', h['comment'])[:2000]
+            if isinstance(h.get('at'), str) and re.match(r'^\d{4}-\d{2}-\d{2}T', h['at']):
+                e['at'] = h['at'][:24]
+            hist.append(e)
+        if hist:
+            out[fid] = hist
+    return out
+
+
 def clean(text, n):
     """A text of the organisation or of the screen: no control character, bounded."""
     return re.sub(r'[\x00-\x1f]', ' ', str(text)).strip()[:n]
@@ -166,6 +187,7 @@ def build(org):
     fs = fiches(org)
     i18n = read_json(os.path.join(org, 'roadmap_i18n.json'))
     vs = verdicts(org)
+    hs = histories(org)
     tests = []
     for fid, t in sorted((read_json(os.path.join(org, 'RECETTE_TESTS.json')).get('tests') or {}).items()):
         f = fs.get(fid)
@@ -189,6 +211,8 @@ def build(org):
             else:
                 row['state'] = v['verdict']
                 row.update({k: v[k] for k in ('comment', 'at') if k in v})
+        if hs.get(fid):
+            row['history'] = hs[fid]
         tests.append(row)
     return {'schema': 'sog-recette/1',
             'generated': {'tool': 'tools/recette_build.py', 'at': datetime.date.today().isoformat(), 'tests': len(tests),

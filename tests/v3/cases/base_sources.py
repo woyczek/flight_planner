@@ -3300,3 +3300,58 @@ def k269(c):
         # the Little Navmap folder route: a write that fails says so (503), it does not raise
         src = open(L.__file__, encoding='utf-8').read()
         c.ok("_write_json(LNMPERF_STATE, {'folder': folder})\n            except OSError" in src and "'error': 'ecriture'" in src and '_replace_retry(tmp, path)' in src, '', 'the folder route and the file route catch the write error and answer a readable 503')
+
+
+@case('K270', "recette/verdict keeps the history of a fiche (SOG-0351): an entry put back to test is its history alone, twenty verdicts at most, a hostile history refused, a verdict is never erased by a write that does not carry it, the generator carries the history", 'K',
+      static=True, rule="SOG-0351 (the user lost a comment by putting a test back): RECETTE.json items may carry `history` (twenty { verdict, comment?, at? } at most, a failure or reservations with their comment); an entry without verdict is valid only with a non-empty history (a fiche put back to test); a `set` that replaces a verdict or sends the entry without its history keeps the old history and adds the replaced verdict (once); a file read from elsewhere is cleaned; tools/recette_build.py bounds and carries `history`")
+def k270(c):
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('recette', 'verdict')]
+    ko = {'verdict': 'ko', 'comment': 'le bouton reste gris', 'at': '2026-11-14T10:00:00Z'}
+    back = {'history': [ko], 'at': '2026-11-14T10:05:00Z'}
+    for bad in ({'history': []}, {'history': [ko] * 21, 'at': '2026-11-14T10:05:00Z'}, {'history': [{'verdict': 'ko'}]}, {'history': [{**ko, 'x': 1}]}, {'history': [{**ko, 'history': []}]}, {'history': 'x'},
+                {'history': [ko], 'comment': 'x'}, {'history': [ko], 'at': 'hier'}, {'verdict': 'ok', 'history': [{'verdict': 'meh'}]}, {}):
+        c.ok(check({'action': 'set', 'items': {'SOG-0001': bad}}) is not None, '', 'the shape passes the argument check (the entry is checked by the verb)')
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            (Path(td) / 'organisation').mkdir()
+            r = fn(RJ.Job('recette', 'verdict', {}), check({'action': 'set', 'items': {'SOG-0001': bad}}), {'root': td})
+            c.ok(r.get('reason') == 'bad-items', repr(bad)[:70], f'refused in a block: {repr(bad)[:60]}')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'RECETTE.json'
+        run = lambda **a: fn(RJ.Job('recette', 'verdict', {}), check(a), {'root': str(root)})
+        items = lambda: json.loads(f.read_text(encoding='utf-8'))['items']
+        c.ok(run(action='set', items={'SOG-0001': back})['ok'] and items()['SOG-0001'] == back, items(), 'a fiche put back to test is written as its history alone (no verdict)')
+        c.eq(run(action='get')['items']['SOG-0001'], back, 'and read back as it was written', what='read')
+        # a new verdict sent without the history: the history is kept
+        run(action='set', items={'SOG-0001': {'verdict': 'ok', 'at': '2026-11-14T11:00:00Z'}})
+        c.eq(items()['SOG-0001'], {'verdict': 'ok', 'at': '2026-11-14T11:00:00Z', 'history': [ko]}, 'a verdict sent without its history keeps the old history (nothing is erased)', what='kept')
+        # a verdict replaced: it goes to the history, once
+        run(action='set', items={'SOG-0001': {'verdict': 'reserve', 'comment': 'coupé à 390', 'at': '2026-11-14T12:00:00Z'}})
+        run(action='set', items={'SOG-0001': {'verdict': 'reserve', 'comment': 'coupé à 390', 'at': '2026-11-14T12:00:00Z'}})
+        c.eq([h['verdict'] for h in items()['SOG-0001']['history']], ['ko', 'ok'], 'a verdict replaced enters the history, once (a second identical write adds nothing)', what='replaced')
+        # put back to test: the verdict goes in
+        run(action='set', items={'SOG-0001': {'history': [ko], 'at': '2026-11-14T12:30:00Z'}})
+        e = items()['SOG-0001']
+        c.eq(['verdict' in e, [h['verdict'] for h in e['history']]], [False, ['ko', 'ok', 'reserve']], 'put back to test: no verdict, the reservations are in the history (comment kept)', what='put back')
+        c.ok(any(h.get('comment') == 'coupé à 390' for h in e['history']), e, 'the comment of the verdict put back is in the history')
+        # twenty at most, the oldest leave
+        for n in range(25):
+            run(action='set', items={'SOG-0001': {'verdict': 'ko', 'comment': f'c{n}', 'at': f'2026-11-15T{n:02d}:00:00Z'}})
+        c.eq([len(items()['SOG-0001']['history']), items()['SOG-0001']['history'][-1]['comment']], [20, 'c23'], 'twenty at most, the latest kept', what='cap')
+        # a hostile file: a bad history is dropped with its entry (counted)
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'items': {'SOG-0002': {'verdict': 'ok', 'history': 'x'}, 'SOG-0003': {'history': [{'verdict': 'ko'}]}, 'SOG-0004': back}}), encoding='utf-8')
+        g = run(action='get')
+        c.eq([sorted(g['items']), g['dropped']], [['SOG-0004'], 2], 'a hostile file: the entries with a bad history are dropped and counted', what='hostile')
+    # the generator carries the history, bounded
+    import importlib
+    tools = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    RB = importlib.import_module('recette_build')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        org = Path(td)
+        (org / 'RECETTE.json').write_text(json.dumps({'schema': 'sog-recette/1', 'items': {'SOG-0301': {'history': [ko, {'verdict': 'meh'}] + [ko] * 30 + [{**ko, 'comment': 'x' * 3000}]}}}), encoding='utf-8')
+        h = RB.histories(str(org))
+        c.eq([sorted(h), len(h['SOG-0301']), len(h['SOG-0301'][-1]['comment'])], [['SOG-0301'], 20, 2000], 'recette_build.histories: twenty at most, the unknown verdict dropped, a comment bounded to 2000', what='build')

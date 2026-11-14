@@ -7292,7 +7292,7 @@ def a190(c):
         c.until(f"!document.querySelector('[data-section=today] [data-id=\"{first}\"]')", what='the test left the day list')
         c.eq(norm(c.text('[data-summary]')), norm(_rc_summary(lang, 9, 2, 1, 1, 1)), 'the summary counts it with the passed ones and marks it apart', what='summary')
         c.js("document.querySelector('[data-section=seen]').open = true")
-        c.eq(norm(c.text(f'[data-section=seen] [data-id="{first}"] [data-verdict]')).startswith(norm(T('reserve'))), True, 'in « Déjà vus » it says « Accepté avec réserves » and its comment', what='seen')
+        c.eq(norm(T('reserve')) in norm(c.text(f'[data-section=seen] [data-id="{first}"] [data-verdict]')), True, 'in « Déjà vus » it says « Accepté avec réserves » (after the application and the time of the verdict, SOG-0355) and its comment', what='seen')
         c.eq(norm(c.js("document.querySelector('.f-docbar ~ p.f-muted').textContent")), norm(T('intro')), 'the lead sentence is the text of the page', what='intro')
         c.ok(norm(T('reserveBtn')) in norm(T('intro')), T('intro')[:80], 'the lead sentence names the three gestures, « Accepter avec réserves » among them')
         c.shot(f'A190_{c.width}_{lang}_delivered.png')
@@ -8147,4 +8147,95 @@ def a207(c):
     c.eq(r, {'radii': [22, 8, 22, 22, 8], 'media': expect_media, 'onPoint': 'a', 'inside22': 'c', 'outside22': None, 'insideFine': None, 'edge': 'c', 'nearest': 'b', 'nearestA': 'a', 'tie': 'a', 'void': None,
              'bad': [None, None, None, None], 'at': 'z', 'crowded': [0, 1]},
          'finger 22 px, mouse 8 px, the nearest wins (the first at a tie), a press in the void takes nothing, a pointer unknown follows the device (coarse on a phone, fine on a screen)', what='rule')
+    c.check_errors()
+
+
+@case('A208', "Recette: a verdict is never erased — « Remettre à tester » keeps it (and its comment) in the history of the fiche, the sheet shows the last comment in grey under the test, the note after a verdict NAMES the fiche and offers « Annuler » (the state before, the text back in the field), and the comment field says which fiche it is for (SOG-0351)", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule="SOG-0351 (the user lost a comment by putting a test back, then wrote a refusal on the wrong fiche at noon): an entry of RECETTE.json keeps `history` (twenty verdicts at most, key `history`); « Remettre à tester » appends the verdict to it and the entry stays (no verdict, only its history); a new verdict keeps the history and adds the one it replaces; the sheet shows the last comment under the test; the floating note after a verdict names the fiche (« SOG-0301 refusée — title ») and offers « Annuler » (the state before, the typed text back in the field); the open comment field carries the identifier and the title of its fiche (label, aria-label)")
+def a208(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    T = lambda k: tx('frame/help/recette.js', k, lang, after='const T = {')
+    fx = _rc_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'RECETTE.json'
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': '2026-11-09T18:05:00Z', 'items': {}}), encoding='utf-8')
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items']
+        _prio_launcher(c, root, verb=('recette', 'verdict'))
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=15000, what='the tests')
+        first = c.js("document.querySelector('[data-section=today] li[data-id]').dataset.id")
+        title = c.js(f"document.querySelector('[data-id=\"{first}\"] b').textContent")
+
+        def wait_file(pred, what):
+            for _ in range(60):
+                got = written()
+                if pred(got):
+                    return got
+                c.wait(250)
+            raise Fail(f'never written: {what}: {json.dumps(written())[:600]}', 'the launcher wrote it', 'A208')
+        # the open field says which fiche it is for
+        who = norm(c.js(f"document.querySelector('[data-id=\"{first}\"] [data-comment-for]').textContent"))
+        c.ok(first in who and norm(title) in who and first in c.js(f"document.querySelector('[data-comment=\"{first}\"]').getAttribute('aria-label')"), who, 'the comment field carries the identifier and the title of its fiche (label and aria-label)')
+        # a failure: the note names the fiche and offers « Annuler »
+        c.page.fill(f'[data-comment="{first}"]', 'Le bouton reste gris')
+        c.tap(f'[data-ko="{first}"]')
+        wait_file(lambda g: first in g and g[first].get('verdict') == 'ko', 'the failure')
+        c.until("document.querySelectorAll('#fNotes .f-note').length > 0", timeout=15000, what='the note')
+        note = c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ')")
+        c.ok(first in note and norm(title)[:20] in norm(note) and norm(T('undo')) in norm(note), note, 'the note after the verdict names the fiche and offers « Annuler »')
+        # put it back to test: nothing is erased
+        c.js("document.querySelector('[data-section=seen]').open = true")
+        c.js("document.querySelectorAll('#fNotes [data-x]').forEach(b => b.click())")   # on a phone the note covers the bottom of the screen: closed before the next gesture
+        c.tap(f'[data-section=seen] [data-redo="{first}"]')
+        got = wait_file(lambda g: first in g and 'verdict' not in g[first], 'the fiche put back to test')
+        c.eq([got[first].get('history'), 'verdict' in got[first]], [[{'verdict': 'ko', 'comment': 'Le bouton reste gris', 'at': got[first]['history'][0]['at']}], False], 'put back to test: the verdict and its comment are in the history of the fiche, the entry stays', what='history')
+        c.until(f"!!document.querySelector('[data-section=today] [data-id=\"{first}\"], [data-section=older] [data-id=\"{first}\"]')", what='the fiche is to test again')
+        c.until(f"!!document.querySelector('[data-id=\"{first}\"] [data-last-note]')", what='the last comment shown')
+        c.ok('Le bouton reste gris' in c.text(f'[data-id="{first}"] [data-last-note]'), c.text(f'[data-id="{first}"] [data-last-note]'), 'the sheet shows the last comment in grey under the test')
+        c.shot(f'A208_{c.width}_{lang}_delivered.png')
+        # a new verdict keeps the history
+        c.js("document.querySelectorAll('#fNotes [data-x]').forEach(b => b.click())")
+        c.tap(f'[data-ok="{first}"]')
+        got = wait_file(lambda g: g.get(first, {}).get('verdict') == 'ok', 'the pass')
+        c.eq([got[first]['verdict'], [h['verdict'] for h in got[first].get('history', [])]], ['ok', ['ko']], 'a new verdict keeps the history (the failure is still there)', what='kept')
+        # « Annuler » brings the state before back
+        c.wait(1200)   # the note of the pass replaces the note of the put-back (one note per key)
+        c.until(f"[...document.querySelectorAll('#fNotes .f-note')].some(n => n.textContent.includes('{first}'))", timeout=15000, what='the note of the pass')
+        note = c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ')")
+        c.ok(first in note, note, 'the pass is named too')
+        c.page.click('#fNotes .f-note button:has-text("' + T('undo') + '")')
+        got = wait_file(lambda g: first in g and 'verdict' not in g[first], 'the undo')
+        c.eq([got[first].get('history') is not None, 'verdict' in got[first]], [True, False], 'Annuler: the state before (put back to test, history kept)', what='undo')
+        # a refusal undone: the typed text comes back in the field
+        c.page.fill(f'[data-comment="{first}"]', 'Texte à retrouver')
+        c.tap(f'[data-ko="{first}"]')
+        wait_file(lambda g: g.get(first, {}).get('verdict') == 'ko', 'the second failure')
+        c.wait(1200)
+        c.page.click('#fNotes .f-note button:has-text("' + T('undo') + '")')
+        c.until(f"document.querySelector('[data-comment=\"{first}\"]') && document.querySelector('[data-comment=\"{first}\"]').value === 'Texte à retrouver'", timeout=15000, what='the typed text is back in the field')
+    c.check_errors()
+
+
+@case('A209', "Recette: « Déjà vus » is ONE sequence — no group by application, the latest verdict first, the application as a label and the time of the verdict on every line; the sections to test keep their grouping (SOG-0355)", 'A',
+      designs=('standard',), screens=True, night=False, langs4=False,
+      rule="SOG-0355 (the user): « Déjà vus » was grouped by application like the tests to do, so the verdict just given was somewhere in the middle; now one sequence ordered by the time of the verdict (the latest first), each line with its application as a label and the time (UTC) of the verdict; « À tester » keeps its grouping")
+def a209(c):
+    fx = _rc_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    c.open('recette', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=15000, what='the tests')
+    c.js("document.querySelector('[data-section=seen]').open = true")
+    r = c.js("""() => { const sec = document.querySelector('[data-section=seen]');
+      return { groups: sec.querySelectorAll('[data-app-title]').length, tags: [...sec.querySelectorAll('[data-app-tag]')].map(e => e.textContent), at: [...sec.querySelectorAll('[data-verdict-at]')].map(e => e.textContent),
+               ids: [...sec.querySelectorAll('li[data-id]')].map(l => l.dataset.id), today: document.querySelectorAll('[data-section=today] [data-app-title]').length } }""")
+    c.eq([r['groups'], len(r['tags']), r['ids']], [0, 2, ['SOG-0313', 'SOG-0312']], 'no group by application in « Déjà vus »; the latest verdict first (the failure of 18:05 before the pass of 18:00)', what='one sequence')
+    c.ok(all(re.fullmatch(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z', a) for a in r['at']) and r['at'][0].endswith('18:05Z'), r['at'], 'the time of the verdict is on every line')
+    c.ok(r['today'] >= 1, r['today'], 'the sections to test keep their grouping by application')
+    c.shot(f'A209_{c.width}_{c.lang}_delivered.png')
     c.check_errors()

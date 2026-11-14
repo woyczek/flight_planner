@@ -24,6 +24,7 @@ NEEDS_COMMENT = ('ko', 'reserve')        # un refus et des réserves se disent
 ID = re.compile(r'SOG-[0-9]{4}')
 AT = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,3})?Z')
 MAX_ITEMS = 1000
+MAX_HISTORY = 20  # SOG-0351 : les verdicts d'une fiche qu'on remet à tester ou qu'un nouveau verdict remplace ; jamais effacés, les plus anciens au-delà de vingt
 MAX_COMMENT = 2000  # SOG-0303 : 600 avant ; la page, recette_build.py et ce verbe disent la même limite
 FILE_MAX = 2 * 1024 * 1024
 BAD_MAX = 20
@@ -49,10 +50,9 @@ def check(a):
     return out
 
 
-def entry(v):
-    """L'entrée nettoyée { verdict, comment?, at? } d'une valeur, ou None si elle n'est pas aux règles : un verdict ok, ko ou reserve, un commentaire texte de 2000 signes au plus sans caractère de commande hors tabulation et saut de ligne (obligatoire,
-    non vide, pour `ko` et `reserve`), une date ISO UTC ; rien d'autre."""
-    if not isinstance(v, dict) or not set(v) <= {'verdict', 'comment', 'at'} or v.get('verdict') not in VERDICTS:
+def base_entry(v, keys=('verdict', 'comment', 'at')):
+    """{ verdict, comment?, at? } aux règles (celle d'un verdict ou d'un élément d'historique), ou None."""
+    if not isinstance(v, dict) or not set(v) <= set(keys) or v.get('verdict') not in VERDICTS:
         return None
     out = {'verdict': v['verdict']}
     if 'comment' in v:
@@ -68,6 +68,42 @@ def entry(v):
         if not isinstance(v['at'], str) or not AT.fullmatch(v['at']):
             return None
         out['at'] = v['at']
+    return out
+
+
+def history_of(v):
+    """La liste d'historique aux règles (vingt au plus, chaque élément un verdict complet), ou None si un élément n'y est pas."""
+    if not isinstance(v, list) or len(v) > MAX_HISTORY:
+        return None
+    out = [base_entry(h) for h in v]
+    return None if any(h is None for h in out) else out
+
+
+def entry(v):
+    """L'entrée nettoyée { verdict?, comment?, at?, history? } d'une valeur, ou None si elle n'est pas aux règles. Une entrée SANS verdict est une fiche remise à tester (SOG-0351) : elle ne porte que son
+    historique (non vide) et l'heure ; son verdict d'avant y est gardé, jamais effacé. Sinon : un verdict ok, ko ou reserve, un commentaire texte de 2000 signes au plus sans caractère de commande hors tabulation et saut de ligne (obligatoire,
+    non vide, pour `ko` et `reserve`), une date ISO UTC ; rien d'autre."""
+    if not isinstance(v, dict) or not set(v) <= {'verdict', 'comment', 'at', 'history'}:
+        return None
+    hist = None
+    if 'history' in v:
+        hist = history_of(v['history'])
+        if hist is None:
+            return None
+    if 'verdict' not in v:                   # remise à tester : l'historique seul (non vide)
+        if not hist or 'comment' in v:
+            return None
+        out = {'history': hist}
+        if 'at' in v:
+            if not isinstance(v['at'], str) or not AT.fullmatch(v['at']):
+                return None
+            out['at'] = v['at']
+        return out
+    out = base_entry({k: v[k] for k in ('verdict', 'comment', 'at') if k in v})
+    if out is None:
+        return None
+    if hist:
+        out['history'] = hist
     return out
 
 
@@ -110,7 +146,22 @@ def merged(kept, new, drop):
     """Le fichier après un `set` : ce qu'il porte déjà, avec les entrées envoyées (par identifiant) et sans celles que l'utilisateur a reprises (`drop`) ; None si cela dépasse la limite.
     Un `set` ne REMPLACE plus le fichier (11 nov. 2026 : 14 réponses du matin perdues quand l'écran, qui ne les avait pas lues, a envoyé les 7 du midi) : une entrée écrite ne disparaît que par `drop`."""
     out = dict(kept)
-    out.update(new)
+    for k, e in new.items():
+        old = kept.get(k)
+        if old:     # SOG-0351 : un verdict n'est jamais effacé — l'historique d'avant est gardé, et le verdict remplacé y entre (une fois : jamais en double)
+            hist = list(old.get('history') or []) + list(e.get('history') or [])
+            if old.get('verdict'):
+                prior = {x: old[x] for x in ('verdict', 'comment', 'at') if x in old}
+                if (e.get('verdict') is None or {x: e[x] for x in ('verdict', 'comment', 'at') if x in e} != prior) and prior not in hist:
+                    hist.append(prior)
+            seen, uniq = [], []
+            for h in hist:
+                if h not in seen:
+                    seen.append(h)
+                    uniq.append(h)
+            uniq = uniq[-MAX_HISTORY:]
+            e = {**e, 'history': uniq} if uniq else e
+        out[k] = e
     for k in drop or ():
         out.pop(k, None)
     return out if len(out) <= MAX_ITEMS else None

@@ -20,6 +20,7 @@
     ROWS_MIN = 4,
     ROWS_MAX = 12,
     SEVEN = 7,
+    HIST_MAX = 20, // SOG-0351 : l'historique d'une fiche (tools/regen/recette.py dit la même limite)
     SECTIONS = ['today', 'older', 'known', 'seen'];
   /** Le bouton « Signaler » de la barre d'en-tête (SOG-0316 : « pas trouvé le bug report »). */
   /** Un morceau du résumé : le nombre dit avec la forme du singulier ou du pluriel de la langue. */
@@ -93,6 +94,33 @@
       'de ellos {r} con reservas'
     ],
     redo: ['Remettre à tester', 'Test again', 'Erneut testen', 'Volver a probar'],
+    // SOG-0351 : la note qui NOMME la fiche après un verdict (et offre « Annuler »), le dernier commentaire gardé sous le test, le champ qui dit sa fiche
+    noted: {
+      ok: ['{id} validée — {title}', '{id} passed — {title}', '{id} bestanden — {title}', '{id} válida — {title}'],
+      reserve: ['{id} acceptée avec réserves — {title}', '{id} accepted with reservations — {title}',
+        '{id} mit Vorbehalten akzeptiert — {title}',
+        '{id} aceptada con reservas — {title}'
+      ],
+      ko: ['{id} refusée — {title}', '{id} failed — {title}', '{id} abgelehnt — {title}', '{id} rechazada — {title}'],
+      redo: ['{id} remise à tester — {title}', '{id} put back to test — {title}', '{id} erneut zu testen — {title}',
+        '{id} puesta de nuevo a prueba — {title}'
+      ]
+    },
+    undo: ['Annuler', 'Undo', 'Rückgängig', 'Deshacer'],
+    lastNote: {
+      ok: ['Dernier verdict ({d}) : validée', 'Last verdict ({d}): passed', 'Letztes Urteil ({d}): bestanden',
+        'Último veredicto ({d}): válida'
+      ],
+      reserve: ['Dernier verdict ({d}) : réserves — {c}', 'Last verdict ({d}): reservations — {c}',
+        'Letztes Urteil ({d}): Vorbehalte — {c}', 'Último veredicto ({d}): reservas — {c}'
+      ],
+      ko: ['Dernier verdict ({d}) : refusée — {c}', 'Last verdict ({d}): failed — {c}', 'Letztes Urteil ({d}): abgelehnt — {c}',
+        'Último veredicto ({d}): rechazada — {c}'
+      ]
+    },
+    commentFor: ['{id} — {title} : votre commentaire', '{id} — {title}: your comment', '{id} — {title}: Ihr Kommentar',
+      '{id} — {title}: su comentario'
+    ],
     // un test livré de nouveau depuis son verdict : il revient à tester, et la ligne dit pourquoi (SOG-0167)
     redelivered: {
       koBare: ['Relivré depuis votre refus du {d}', 'Delivered again since your failure of {d}',
@@ -190,7 +218,8 @@
   /** Un texte borné, sans caractère de commande. */
   const text = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '';
   /** Un verdict lu d'ailleurs (le fichier du lanceur, le magasin de l'appareil, le fichier généré) : { verdict, comment?, at? } aux règles, sinon null ; un refus sans commentaire n'est pas un verdict. */
-  const entryOf = v => {
+  /** Un élément d'historique : un verdict complet { verdict, comment?, at? } aux règles, sinon null (un refus ou des réserves sans commentaire n'en sont pas). */
+  const histItem = v => {
     if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict)) return null;
     const e = {
         verdict: v.verdict
@@ -199,6 +228,22 @@
     if (c) e.comment = c;
     if (typeof v.at === 'string' && AT.test(v.at)) e.at = v.at;
     return NEEDS_COMMENT.includes(v.verdict) && !e.comment ? null : e;
+  };
+  /** L'historique lu d'ailleurs (le fichier, le générateur) : vingt éléments aux règles au plus, les plus récents. */
+  const histOf = h => (Array.isArray(h) ? h : []).map(histItem).filter(Boolean).slice(-HIST_MAX);
+  /** Une entrée : un verdict aux règles { verdict, comment?, at?, history? }, ou — SOG-0351 — une fiche REMISE À TESTER : { history, at? } sans verdict (son verdict d'avant est gardé dans l'historique). */
+  const entryOf = v => {
+    if (!v || typeof v !== 'object') return null;
+    const hist = histOf(v.history);
+    if (!VERDICTS.includes(v.verdict)) return hist.length ? {
+      history: hist,
+      ...(typeof v.at === 'string' && AT.test(v.at) ? {
+        at: v.at
+      } : {})
+    } : null;
+    const e = histItem(v);
+    if (e && hist.length) e.history = hist;
+    return e;
   };
   /** Le verdict qu'une nouvelle livraison a remplacé (donné par le générateur) : { verdict, comment?, at? } aux règles, sinon null ; contrairement à
    *  entryOf, un refus sans commentaire reste dicible (« Relivré depuis votre refus du … »). */
@@ -375,10 +420,12 @@
       // la date de la dernière livraison de la fiche (UTC, « AAAA-MM-JJThh:mm:ssZ ») et le verdict qu'elle a remplacé : lus comme des entrées non fiables
       delivered: typeof x.delivered === 'string' && DELIVERED.test(x.delivered) ? x.delivered : '',
       previous: previousEntry(x.previous),
+      history: histOf(x.history),
       gen: VERDICTS.includes(x.state) ? entryOf({
         verdict: x.state,
         comment: x.comment,
-        at: x.at
+        at: x.at,
+        history: x.history
       }) : null
     }));
     const apps = (Array.isArray(d.apps) ? d.apps : []).filter(a => typeof a === 'string' && tests.some(x => x.app === a));
@@ -408,7 +455,13 @@
       dwhy: '' // pourquoi la dernière réponse n'est pas partie : unknown (le lanceur n'a pas ce verbe), offline, failed
     };
     // ---- ce que dit un test : son verdict en vigueur (l'appareil, puis le lanceur, puis le fichier généré), ou rien
-    const rawVerdict = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : ui.fileRead ? ui.file[x.id] || null : x.gen;
+    const rawEntry = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : ui.fileRead ? ui.file[x.id] || null : x.gen;
+    const rawVerdict = x => {
+      const e = rawEntry(x);
+      return e && e.verdict ? e : null; // une fiche remise à tester n'a plus de verdict en vigueur (SOG-0351)
+    };
+    /** L'historique d'une fiche : les verdicts qu'elle a remplacés ou qu'on a remis à tester, jamais effacés (SOG-0351). */
+    const historyOf = x => rawEntry(x)?.history || x.history || [];
     // un verdict plus ancien que la dernière livraison de la fiche n'est plus en vigueur : le test revient à tester (comparaison des instants, jamais du texte)
     const superseded = (x, v) => !!(v?.at && x.delivered && Date.parse(v.at) < Date.parse(x.delivered));
     const verdictOf = x => {
@@ -425,7 +478,8 @@
     let lastDay = '';
     const setLastDay = () => {
       const today = new Date().toISOString().slice(0, 10),
-        days = tests.map(x => (ui.fileRead ? ui.file[x.id] : x.gen)).filter((v, i) => v && !superseded(tests[i], v)).map(v => v.at
+        days = tests.map(x => (ui.fileRead ? ui.file[x.id] : x.gen)).filter((v, i) => v && v.verdict && !superseded(tests[i], v)).map(
+          v => v.at
           ?.slice(0, 10)).filter(d => d && d < today)
         .sort(); // les verdicts d'aujourd'hui ne font pas de la recette d'hier
       lastDay = days[days.length - 1] || '';
@@ -464,23 +518,42 @@
       if (el.textContent !== txt) el.textContent = txt;
       if (el.hidden !== (n < COUNT_FROM)) el.hidden = n < COUNT_FROM;
     };
-    const item = x => {
+    const item = (x, flat = false) => {
       const v = verdictOf(x);
       const head = `<p><span class="f-rm-id">${esc(x.id)}</span> <b>${esc(t(row(x.title)))}</b>${x.since ? ` <small class="f-muted">${esc(t(T.since, { d: x.since }))}</small>` : ''}${ui.unsent.has(x.id) ? ` <small class="f-rm-unsent" data-unsent>${esc(t(T.unsent))}</small>` : ''}</p>
         <p class="f-rc-test" lang="fr" data-test>${esc(x.test)}</p>`;
       if (known(x)) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="known">${head}<p class="f-muted" data-known>${esc(t(T.knownLine))}</p></li>`;
-      if (v) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="${v.verdict}">${head}<p data-verdict="${v.verdict}"><b>${esc(t(T[v.verdict]))}</b>${v.at ? ` <small class="f-muted">${esc(v.at.slice(0, 10))}</small>` : ''}${v.comment ? ` — ${esc(v.comment)}` : ''}</p>
+      if (v) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="${v.verdict}">${head}<p data-verdict="${v.verdict}">${flat ? `<span class="f-rc-apptag" data-app-tag>${esc(appName(x.app))}</span> ` : ''}<b>${esc(t(T[v.verdict]))}</b>${v.at ? ` <small class="f-muted" data-verdict-at>${esc(`${v.at.slice(0, 10)} ${v.at.slice(11, 16)}Z`)}</small>` : ''}${v.comment ? ` — ${esc(v.comment)}` : ''}</p>
         <div class="f-row"><button type="button" data-redo="${esc(x.id)}">${esc(t(T.redo))}</button></div></li>`;
       const p = previousOf(x),
         why = p ? `<p class="f-muted" data-redelivered="${p.verdict}">${esc(t(T.redelivered[p.verdict === 'ko' && !p.comment ? 'koBare' : p.verdict === 'reserve' && !p.comment ? 'ok' : p.verdict], { d: (p.at || x.delivered || '').slice(0, 10), c: p.comment || '' }))}</p>` : '';
-      return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="todo">${head}${why}
-        <label class="f-field">${esc(t(T.comment))}<textarea data-comment="${esc(x.id)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(ui.draft[x.id] || '')}</textarea>${counter(ui.draft[x.id])}</label>
+      const hist = historyOf(x),
+        last = hist[hist.length - 1],
+        // le dernier verdict gardé de la fiche, en gris sous le test (SOG-0351) : ce que l'utilisateur a écrit n'est jamais perdu en remettant à tester
+        lastLine = last && !(p && p.comment === last.comment && p.verdict === last.verdict) ? `<p class="f-muted" data-last-note="${last.verdict}">${esc(t(T.lastNote[last.verdict], { d: (last.at || '').slice(0, 10), c: last.comment || '' }))}</p>` : '',
+        who = t(T.commentFor, {
+          id: x.id,
+          title: t(row(x.title))
+        });
+      return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="todo">${head}${why}${lastLine}
+        <label class="f-field"><span data-comment-for>${esc(who)}</span><textarea data-comment="${esc(x.id)}" aria-label="${esc(who)}" placeholder="${esc(x.id)}" rows="${ROWS_MIN}" maxlength="${MAX_COMMENT}">${esc(ui.draft[x.id] || '')}</textarea>${counter(ui.draft[x.id])}</label>
         ${ui.need === x.id ? `<p class="f-warn" data-need>${esc(t(ui.needKind === 'reserve' ? T.needReserve : T.need))}</p>` : ''}
         <div class="f-row"><button type="button" class="primary" data-ok="${esc(x.id)}">${esc(t(T.ok))}</button><button type="button" data-reserve="${esc(x.id)}">${esc(t(T.reserveBtn))}</button><button type="button" data-ko="${esc(x.id)}">${esc(t(T.ko))}</button></div></li>`;
     };
     /** Une section : ses tests par application, sept visibles puis « Voir les n autres » ; hors « Tests du jour » elle est repliée jusqu'à un toucher sur son titre. */
     const sectionHtml = (k, list) => {
       if (!list.length) return '';
+      if (k ===
+        'seen'
+      ) { // SOG-0355 : UNE suite, sans groupe par application, le dernier verdict en tête, l'application en étiquette et l'heure du verdict sur chaque ligne
+        const flat = [...list].sort((a, b) => String(verdictOf(b)?.at || '').localeCompare(String(verdictOf(a)?.at || '')) || a.id
+            .localeCompare(b.id)),
+          all = ui.more[k],
+          vis = all ? flat : flat.slice(0, SEVEN),
+          rest = flat.length - vis.length;
+        const more = rest > 0 ? `<p><button type="button" data-more="${k}">${esc(t(T.more, { n: rest }))}</button></p>` : all && flat.length > SEVEN ? `<p><button type="button" data-more="${k}">${esc(t(T.less))}</button></p>` : '';
+        return `<details class="f-rc-sec" data-section="${k}"${ui.open[k] ? ' open' : ''}><summary><b>${esc(t(T.section[k]))} <span class="f-muted" data-count>(${flat.length})</span></b></summary><ul class="f-rc-list" data-seen-list>${vis.map(x => item(x, true)).join('')}</ul>${more}</details>`;
+      }
       // d'une application, les tests relivrés d'abord (ils reviennent après un verdict), puis les plus récents
       const sorted = [...list].sort((a, b) => apps.indexOf(a.app) - apps.indexOf(b.app) || (previousOf(b) ? 1 : 0) - (previousOf(a) ?
         1 : 0) || (b.since || '').localeCompare(a.since ||
@@ -644,6 +717,58 @@
     })();
     pulling.then(() => Object.keys(ui.local).length ? send(true).then(ok => ok && draw()) : null);
     /** Garde le verdict d'un test (`null` : le retirer) : sur l'appareil d'abord, puis on tente l'envoi. */
+    /** Le verdict qui était là (ou la fiche remise à tester), avant un geste : de quoi « Annuler ». */
+    const snapshot = id => {
+      const x = tests.find(y => y.id === id);
+      const e = x ? rawEntry(x) : null;
+      return e ? JSON.parse(JSON.stringify(e)) : null;
+    };
+    /** L'historique qu'un geste conserve : celui d'avant, plus le verdict qu'il remplace (jamais en double), vingt au plus. */
+    const keepHistory = old => {
+      const hist = [...(old?.history || [])];
+      if (old?.verdict) {
+        const prior = histItem(old);
+        if (prior && !hist.some(h => JSON.stringify(h) === JSON.stringify(prior))) hist.push(prior);
+      }
+      return hist.slice(-HIST_MAX);
+    };
+    /** Un geste de verdict : gardé avec son historique, puis la note NOMME la fiche et offre « Annuler » (l'état d'avant, le texte remis dans le champ). kind : ok | reserve | ko | redo. */
+    const gesture = async (id, kind, e, typed) => {
+      const before = snapshot(id),
+        hist = keepHistory(before),
+        x = tests.find(y => y.id === id);
+      await commit(id, e === null ? {
+        history: hist,
+        at: now()
+      } : {
+        ...e,
+        ...(hist.length ? {
+          history: hist
+        } : {})
+      });
+      const title = x ? String(t(row(x.title))).slice(0, 70) : '';
+      c.notify?.(t(T.noted[kind], {
+        id,
+        title
+      }), kind === 'ko' ? 'warn' : 'ok', {
+        key: 'recette-undo',
+        ms: 15000, // l'occasion d'annuler dure quinze secondes, puis la note s'efface (sur un téléphone elle recouvre le bas de l'écran)
+        action: {
+          label: t(T.undo),
+          run: async () => {
+            ui.local[id] = before; // l'état d'avant (null : la fiche n'avait aucune entrée)
+            ui.unsent.add(id);
+            if (typed) ui.draft[id] = typed;
+            await saveStore(c, {
+              pending: ui.local,
+              unsent: [...ui.unsent]
+            });
+            draw(typed ? `[data-comment="${CSS.escape(id)}"]` : '');
+            if (await send(false)) draw();
+          }
+        }
+      });
+    };
     const commit = async (id, e) => {
       ui.local[id] = e;
       ui.unsent.add(id);
@@ -805,7 +930,7 @@
         ui.more[b.dataset.more] = !ui.more[b.dataset.more];
         return draw(`[data-more="${CSS.escape(b.dataset.more)}"]`);
       }
-      if (b.dataset.redo) return commit(b.dataset.redo, null);
+      if (b.dataset.redo) return gesture(b.dataset.redo, 'redo', null, '');
       const id = b.dataset.ok || b.dataset.ko || b.dataset.reserve;
       if (!id || !ID.test(id)) return;
       const comment = text(ui.draft[id] ?? view.querySelector(`[data-comment="${CSS.escape(id)}"]`)?.value, MAX_COMMENT);
@@ -815,13 +940,13 @@
         ui.needKind = b.dataset.reserve ? 'reserve' : 'ko';
         return draw(`[data-comment="${CSS.escape(id)}"]`);
       }
-      return commit(id, {
+      return gesture(id, b.dataset.ok ? 'ok' : b.dataset.reserve ? 'reserve' : 'ko', {
         verdict: b.dataset.ok ? 'ok' : b.dataset.reserve ? 'reserve' : 'ko',
         ...(comment ? {
           comment
         } : {}),
         at: now()
-      });
+      }, comment);
     };
     view.onchange = e => {
       const r = e.target.closest?.('input[data-dchoice]');

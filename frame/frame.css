@@ -2233,4 +2233,14 @@ html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
 html.f-limited .f-view {
   margin-top: var(--f-limit-h, 0px)
 }
+/* « Déjà vus » en une suite (SOG-0355) : l'application en étiquette devant le verdict de chaque ligne */
+.f-rc-apptag {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  font-size: .75rem;
+  line-height: 1.5;
+  vertical-align: baseline
+}
 

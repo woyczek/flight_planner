@@ -976,7 +976,8 @@
     };
     $('fNotes').append(n);
     notesClear();
-    if (!o.action) setTimeout(drop, kind === 'err' ? 12e3 : 6e3);
+    if (!o.action || o.ms) setTimeout(drop, o.ms || (kind === 'err' ? 12e3 :
+      6e3)); // o.ms : une note à action qui s'efface seule (« Annuler » d'un verdict)
   }
   /** Fenêtre de question du cadre : html du contenu, boutons ; promesse résolue par onDone(valeur) ; Échap : annuler. */
   function modal(html, onReady, cls = '') {
