@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
-  "tests": 217,
-  "verdicts": 153
+  "tests": 218,
+  "verdicts": 152
  },
  "apps": [
   "pilote",
@@ -492,9 +492,15 @@
     "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
     "es": "Ajustes: varios segundos de espera antes de la pantalla, por una versión del repositorio solo accesoria"
    },
-   "test": "Ouvrir Réglages : l'écran apparaît tout de suite ; la ligne « Dépôt des données » montre « … » puis sa valeur, sans que rien ne bouge.",
+   "test": "Recharge la page (deux fois : la première garde l'état du lanceur). Ouvre les Réglages, ou n'importe quel écran, juste après le rechargement : l'écran est là tout de suite, plus de blanc de plusieurs secondes ; la ligne d'état du lanceur peut se mettre à jour une seconde après.",
    "since": "2026-11-09",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-14T11:09:38Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "oui pour git, non pour compagnie.",
+    "at": "2026-11-10T15:12:10Z"
+   }
   },
   {
    "id": "SOG-0134",
@@ -1571,10 +1577,7 @@
    },
    "test": "Recharge la page. Carburant, un terrain dont les procédures viennent de Little Navmap (KDEN par exemple, après « Lire depuis Little Navmap ») : choisis une procédure ; un avertissement dit qu'elle vient de Little Navmap, pour ton usage personnel, sous les listes et dans la ligne de résumé du côté.",
    "since": "2026-11-11",
-   "state": "ko",
-   "delivered": "2026-11-13T12:02:33Z",
-   "comment": "je vole vers KTPA. je veux choisir la piste. j’ai star/sid, mais pas de meteo sur la piste… pourtant, des fois, on l’a. screenshot. rien ne me dit que les données viennent de lnm. normal ? ah si, une popup discrète qui disparaît. rien sur la zone de choix. screenshot. Une fois qu’on a choisi la piste conseillée, la météo apparaît … bizarre comme bug (screenshot)",
-   "at": "2026-11-13T15:53:35Z"
+   "state": "known"
   },
   {
    "id": "SOG-0211",
@@ -2265,12 +2268,7 @@
    "test": "Relance le lanceur, recharge la page. Carburant : EGLL → KJFK puis « Calculer A → B » : un itinéraire par une route NAT arrive en quelques secondes ; même essai dans l'autre sens, KJFK → EGLL. La fiche des routes NAT du jour s'ouvre en clair (plus de JSON).",
    "since": "2026-11-12",
    "state": "todo",
-   "delivered": "2026-11-13T20:36:16Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "je ne sais pas si ça fonctionne. en tout cas, il faudrais mettre le bouton de prise des nats sur la sélection de route (dès qu’on détecte un vol transat). D’ailleurs, les nats c’est comme la météo, ça se fait tous les jours, pas tous les mois. ce n’est donc pas dans cette page « mensuelle », mais dans la page quotidienne qu’il faut un rappel. Screenshot. (nats à jour jusque demain).",
-    "at": "2026-11-13T15:48:38Z"
-   }
+   "delivered": "2026-11-13T20:36:16Z"
   },
   {
    "id": "SOG-0264",
@@ -3233,6 +3231,20 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T10:33:14Z"
+  },
+  {
+   "id": "SOG-0346",
+   "app": "maintenance",
+   "title": {
+    "fr": "Le bouton « Signaler » de la barre du haut est un interrupteur : un second appui ramène à la page d'où l'on vient",
+    "en": "The « Report » button in the top bar is a toggle: a second press returns to the page you came from",
+    "de": "Die Schaltfläche « Melden » in der oberen Leiste ist ein Umschalter: ein zweiter Druck führt zur Ausgangsseite zurück",
+    "es": "El botón « Señalar » de la barra superior es un conmutador: una segunda pulsación vuelve a la página de origen"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Depuis un écran défilé à mi-page, touche l'insecte : il s'allume et le formulaire s'ouvre ; écris quelques mots ; touche l'insecte de nouveau : tu reviens à l'écran d'où tu venais, au même endroit ; rouvre : ton texte est encore là.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T11:03:42Z"
   }
  ],
  "decisions": [

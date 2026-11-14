@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4444a58",
-  "fiches": 350,
+  "organisation": "0b8978c",
+  "fiches": 353,
   "untranslated": 0,
   "priorities": 310
  },
@@ -364,6 +364,15 @@
      "de": "Abnahme: ein drittes Urteil « Mit Vorbehalt annehmen (kein Nachtest) »; Ablehnen heißt Nachtest",
      "es": "Recepción: un tercer veredicto « Aceptar con reservas (sin nueva prueba) »; rechazar implica una nueva prueba",
      "test": true
+    },
+    {
+     "id": "SOG-0351",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Recette : « Remettre à tester » efface le verdict et son commentaire — garder l'historique",
+     "en": "Acceptance: « Test again » erases the verdict and its comment — keep the history",
+     "de": "Abnahme: « Erneut testen » löscht das Urteil und seinen Kommentar — den Verlauf behalten",
+     "es": "Recepción: « Volver a probar » borra el veredicto y su comentario — conservar el historial"
     }
    ]
   },
@@ -1327,6 +1336,15 @@
      "en": "Fuel screen on the phone: in the bottom sheet (preferences, layers) the checkboxes are too small",
      "de": "Kraftstoff-Bildschirm am Telefon: im unteren Blatt (Einstellungen, Ebenen) sind die Kästchen zu klein",
      "es": "Pantalla Combustible en el teléfono: en la hoja inferior (preferencias, capas) las casillas son demasiado pequeñas"
+    },
+    {
+     "id": "SOG-0353",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte à côté de Carburant et Carte en grand : la même vue avec les mêmes paramètres — une spécification de ce qui survit",
+     "en": "Map beside Fuel and full Map: the same view with the same parameters — a specification of what survives",
+     "de": "Karte neben Kraftstoff und große Karte: dieselbe Ansicht mit denselben Parametern — eine Spezifikation dessen, was erhalten bleibt",
+     "es": "Mapa junto a Combustible y Mapa grande: la misma vista con los mismos parámetros — una especificación de lo que sobrevive"
     }
    ]
   },
@@ -3217,7 +3235,7 @@
     {
      "id": "SOG-0210",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "États-Unis : aucune procédure pour KDEN, et le repli Little Navmap annoncé n'a pas de geste",
      "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
      "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
@@ -3452,11 +3470,12 @@
     {
      "id": "SOG-0346",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Le bouton « Signaler » de la barre du haut est un interrupteur : un second appui ramène à la page d'où l'on vient",
      "en": "The « Report » button in the top bar is a toggle: a second press returns to the page you came from",
      "de": "Die Schaltfläche « Melden » in der oberen Leiste ist ein Umschalter: ein zweiter Druck führt zur Ausgangsseite zurück",
-     "es": "El botón « Señalar » de la barra superior es un conmutador: una segunda pulsación vuelve a la página de origen"
+     "es": "El botón « Señalar » de la barra superior es un conmutador: una segunda pulsación vuelve a la página de origen",
+     "test": true
     }
    ]
   },
@@ -3817,6 +3836,27 @@
      "milestone": "6.0.0-alpha.5",
      "rank": 39,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-route-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; route ; Données",
+    "en": "Carburant ; route ; Données",
+    "de": "Carburant ; route ; Données",
+    "es": "Carburant ; route ; Données"
+   },
+   "items": [
+    {
+     "id": "SOG-0352",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes NAT : les prendre depuis l'étape Route dès qu'un vol traverse l'Atlantique, et un rappel quotidien (pas mensuel)",
+     "en": "NAT tracks: fetch them from the Route step as soon as a flight crosses the Atlantic, and a daily (not monthly) reminder",
+     "de": "NAT-Routen: im Schritt Route holen, sobald ein Flug den Atlantik quert, und eine tägliche (nicht monatliche) Erinnerung",
+     "es": "Rutas NAT: tomarlas desde el paso Ruta en cuanto un vuelo cruza el Atlántico, y un recordatorio diario (no mensual)"
     }
    ]
   },
@@ -4956,12 +4996,13 @@
     {
      "id": "SOG-0133",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Réglages : plusieurs secondes d'attente avant l'écran, pour une version du dépôt qui n'est qu'accessoire",
      "en": "Settings: several seconds of waiting before the screen, for a repository version that is only accessory",
      "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
      "es": "Ajustes: varios segundos de espera antes de la pantalla, por una versión del repositorio solo accesoria",
-     "rank": 299
+     "rank": 299,
+     "test": true
     },
     {
      "id": "SOG-0172",
