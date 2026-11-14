@@ -416,6 +416,7 @@ export async function mount(el, ctx) {
       loadProcs();
     }
     if (e?.coverage && !e.refreshed && !e.zone && !e.changed) return schedule(); // ni zone ni fichier d'espaces : rien à relire
+    S.dataEpoch = (S.dataEpoch || 0) + 1; // la base a changé : ce que l'appareil a gardé de ses lectures ne vaut plus
     invalidate(); // relue au prochain dessin, montrée telle quelle jusque-là
     if (e?.refreshed) { // la base a été relue (Paramètres) : les procédures du vol aussi
       S.procsKey = null;

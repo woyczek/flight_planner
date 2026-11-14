@@ -890,7 +890,9 @@ function draw() {
   // les données couvrent le débordement aussi (le couloir autour du vol dans sa limite)
   const corr = corridorFor(shown, W),
     want = wantBox(wide);
-  if (!within(want, S.data?.box) || corr !== S.data?.corridor || !fresh()) refresh(want, corr);
+  // une couche changée ou une lecture arrivée alors que la vue tient dans ce qui est lu : la MÊME emprise est relue (ses lectures déjà gardées par couche ne sont pas redemandées, SOG-0349)
+  if (!within(want, S.data?.box) || corr !== S.data?.corridor || !fresh()) refresh(within(want, S.data?.box) && corr === S.data?.corridor ?
+    S.data.box : want, corr);
   // la lecture limitée au couloir du vol masque des espaces : la Carte le dit (SOG-0169), écrit seulement quand cela change
   const forced = corr > 0 && !(+S.profile?.corridorNm > 0) && !
     mission; // la case décochée, mais la vue est à l'échelle du monde : le dernier garde-fou la force (SOG-0246)

@@ -7912,3 +7912,29 @@ def d236(c):
     c.wait(500)
     c.eq(c.js(f"() => document.querySelector('input[data-layer={key}]').checked"), not before, 'a tap at the far end of the row toggles its box', what='checked')
 
+
+@case('D237', 'A failed read never empties what the Map shows, and a layer ticked or unticked asks for nothing the device already has: after « Around the flight only » is ticked while the base fails to answer the data kept is still there; unticking an unrelated layer makes no new read of the base', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0349 (BLOCKING on the phone, his report: « après avoir coché / décoché « Autour du vol », la Carte finit avec zéro donnée »; the ergonomist: a failed read never empties what is shown, and ticking or unticking a layer asks for nothing already on the device): a failed read became an empty answer that replaced the data, and every layer change read everything again')
+def d237(c):
+    c.open('maps', flight=True, airfields=True, aero=True)
+    c.js(_STATE_JS)
+    c.until("() => { const d = window.__mp.S.data; return !!d && !!d.data && (d.data.aerodromes || []).length > 0 }", timeout=20000, what='the aerodromes are read')
+    c.wait(1500)
+    n0 = c.js("() => window.__mp.S.data.data.aerodromes.length")
+    # count every read of the base
+    c.js("""() => { const A = window.__mp.S.ctx.aerodb; window.__calls = []; for (const m of ['airspaces', 'aerodromes', 'navaids', 'airways', 'vrp', 'points', 'moraCells', 'obstacles', 'cities']) { if (typeof A[m] !== 'function') continue; const o = A[m].bind(A); A[m] = (...a) => { window.__calls.push(m); return o(...a) } } return true }""")
+    c.tap('[data-mp="layers"]')
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='the Layers content')
+    # a layer that reads nothing of the base: no read at all
+    c.tap('input[data-layer="graticule"]')
+    c.wait(2500)
+    calls = c.js("() => window.__calls.slice()")
+    c.eq(calls, [], 'unticking a layer that reads nothing of the base asks the base for nothing', what=str(calls))
+    # the base stops answering: « Around the flight only » toggled, the data kept is still shown
+    c.js("""() => { const A = window.__mp.S.ctx.aerodb; for (const m of ['airspaces', 'aerodromes', 'navaids', 'airways', 'vrp', 'points', 'moraCells', 'obstacles', 'cities']) if (typeof A[m] === 'function') A[m] = async () => { throw new Error('the base does not answer') }; return true }""")
+    c.tap('input[data-layer="corridor"]')
+    c.wait(3500)
+    n1 = c.js("() => (window.__mp.S.data.data.aerodromes || []).length")
+    c.ok(n1 >= n0 and n0 > 0, f'{n1} aerodromes after, {n0} before', 'a read that fails does not empty the aerodromes the Map showed')
+

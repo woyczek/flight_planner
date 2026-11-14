@@ -552,6 +552,23 @@ export async function many(f, boxes, extra = {}) {
     }
   return out;
 }
+/** Ce qu'une lecture d'aerodb a rendu, gardé le temps de la page (la coupe aussi s'en sert : profile_view.js) (SOG-0349 : « cocher ou décocher une couche ne redemande rien de ce qui est déjà sur l'appareil ») : par couche, emprises et
+ *  paramètres ; vidé quand la base change (S.dataEpoch, module.js). Une lecture en échec n'est JAMAIS gardée ni prise pour « rien » : FAILED, et l'appelant garde ce qu'il montrait. */
+export const FAILED = Symbol('failed');
+export async function readOnce(name, f, boxes, extra) {
+  const memo = S.dataMemo ||= new Map(),
+    k = `${S.dataEpoch || 0}|${name}|${JSON.stringify(boxes)}|${JSON.stringify(extra || {})}`;
+  if (memo.has(k)) return memo.get(k);
+  let v;
+  try {
+    v = await many(f, boxes, extra);
+  } catch {
+    return FAILED;
+  }
+  memo.set(k, v);
+  if (memo.size > 80) memo.delete(memo.keys().next().value);
+  return v;
+}
 /** Éléments de l'emprise box selon le profil : { box, corridor, data, empty }. Espaces et voies lus pour le couloir de la
  *  route, tronçon par tronçon, quand corridor (NM, corridorFor) n'est pas nul (SPEC § 5). */
 async function loadData(box, corridor = 0) {
@@ -576,24 +593,36 @@ async function loadData(box, corridor = 0) {
     E = p.elements,
     boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, alignBox(box, route)) : bboxes,
     t0 = performance.now();
-  const [airspaces, aerodromes, navaids, airways, moraCells, obstacles, cities, vrp, points] = await Promise.all([
-    many(A.airspaces, boxes),
+  const prev = S.data?.data || {},
+    failed = []; // les couches dont la lecture a échoué : ce qui était montré reste
+  const read = async (name, on, f, extra) => {
+    if (!on) return [];
+    const v = await readOnce(name, f, boxes, extra);
+    if (v === FAILED) {
+      failed.push(name);
+      return prev[name] || []; // ce qui était montré reste : un échec ne vide jamais la carte (SOG-0349)
+    }
+    return v;
+  };
+  const [airspaces, aerodromes, navaids, airways, moraCells, obstacles, cities, vrp0, points] = await Promise.all([
+    read('airspaces', true, A.airspaces),
     // « Autour du vol seulement » cochée : TOUT ce qui est lu autour du plan l'est dans le couloir de la route (SOG-0246 : les terrains, balises, MORA, obstacles, villes, VRP et points RNAV se lisaient sur toute
     // la vue) ; décochée, toute la vue (boxes vaut bboxes sans couloir)
-    E.aerodromes ? many(A.aerodromes, boxes) : [],
-    E.navaids ? many(A.navaids, boxes) : [],
-    E.airwaysLow || E.airwaysHigh ? many(A.airways, boxes) : [],
-    E.mora ? many(A.moraCells, boxes) : [],
-    E.obstacles ? many(A.obstacles, boxes, {
+    read('aerodromes', E.aerodromes, A.aerodromes),
+    read('navaids', E.navaids, A.navaids),
+    read('airways', E.airwaysLow || E.airwaysHigh, A.airways),
+    read('moraCells', E.mora, A.moraCells),
+    read('obstacles', E.obstacles, A.obstacles, {
       minHgt: +E.obstacleMin || 300
-    }) : [],
-    p.cities || E.agglos ? many(A.cities, boxes, {
+    }),
+    read('cities', p.cities || E.agglos, A.cities, {
       n: 400
-    }) : [],
-    // un point par code et par lieu (la base SIA le publie deux fois)
-    E.vrpPoints ? Promise.resolve(many(A.vrp, boxes)).then(l => MapsRender.dedupeVrp(l)) : [],
-    E.rnavPoints ? many(A.points, boxes) : []
-  ].map(x => Promise.resolve(x).catch(() => [])));
+    }),
+    read('vrp', E.vrpPoints, A.vrp),
+    read('points', E.rnavPoints, A.points)
+  ]);
+  // un point par code et par lieu (la base SIA le publie deux fois)
+  const vrp = E.vrpPoints && failed.indexOf('vrp') < 0 ? MapsRender.dedupeVrp(vrp0) : vrp0;
   // axes de ravitaillement et tracks NAT : lus après les zones de la vue (SPEC § 6.3)
   const [aar, nat] = await Promise.all([E.aarTracks && A.aarTracks ? A.aarTracks() : [], E.natTracks && A.natTracks ? A.natTracks() : []]
     .map(x => Promise.resolve(x).catch(() => [])));
@@ -623,7 +652,8 @@ async function loadData(box, corridor = 0) {
       aar,
       nat
     },
-    empty: !airspaces.length && !aerodromes.length && !navaids.length
+    empty: !airspaces.length && !aerodromes.length && !navaids.length,
+    failed
   };
 }
 /** Relit les éléments pour l'emprise b (une lecture à la fois ; la dernière demandée gagne). */
@@ -636,13 +666,12 @@ export async function refresh(b, corridor = 0) {
   const gen = S.dataGen || 0; // une arrivée pendant la lecture : relue après (fresh() faux), jamais une remise à zéro
   try {
     // lecture en échec : rien cette fois, relue quand la vue sort de b
-    const got = await loadData(b, corridor).catch(() => ({
-      box: b,
-      corridor,
-      data: {},
-      empty: true
-    }));
+    const got = await loadData(b, corridor).catch(() => null);
     if (!S) return;
+    if (!got) { // lecture en échec : ce qui est montré reste (SOG-0349), la vue est relue quand elle sort de ce qu'elle a
+      S.loadFailedAt = Date.now();
+      return;
+    }
     S.data = {
       ...got,
       gen

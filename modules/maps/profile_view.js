@@ -34,8 +34,9 @@ import {
   schedule
 } from './draw.js';
 import {
-  many,
-  corridorBoxes
+  corridorBoxes,
+  readOnce,
+  FAILED
 } from './data.js';
 import {
   groupOf,
@@ -99,7 +100,10 @@ export async function buildProfile() {
   const key = S.route.updated;
   let airspaces = [];
   if (A) {
-    const list = await many(A.airspaces, corridorBoxes(pts, 2, null)).catch(() => []);
+    const got = await readOnce('profile:airspaces', A.airspaces, corridorBoxes(pts, 2,
+        null)), // la lecture de la coupe est gardée comme celles de la carte (SOG-0349)
+      list = got === FAILED ? S?.profAirspaces || [] : got;
+    if (S && got !== FAILED) S.profAirspaces = got;
     if (!S) return; // la Carte a été quittée pendant la lecture
     const p = S.vprofProfile || S.profile;
     airspaces = MapsRender.selectAirspaces(list, {
@@ -118,7 +122,9 @@ export async function buildProfile() {
     if (!onMission() && !layersNow().asOther) airspaces = airspaces.filter(a => !profileNoise(a));
   }
   // les voies que la route suit : leurs segments au long de la route (coupe : bloc de la voie, SPEC § 8.2) ; pas sur une carte de mission
-  const airways = A && !onMission() ? await many(A.airways, corridorBoxes(pts, 2, null)).catch(() => []) : [];
+  const wgot = A && !onMission() ? await readOnce('profile:airways', A.airways, corridorBoxes(pts, 2, null)) : [],
+    airways = wgot === FAILED ? S?.profAirways || [] : wgot;
+  if (S && wgot !== FAILED) S.profAirways = wgot;
   if (!S) return;
   S.terrain ||= SiaProfile.terrainSampler(9, tileLoader(S.ctx));
   // la route modifiée sur la carte (by 'maps') : le profil de Carburant est périmé jusqu'au devis refait ; by est le dernier
