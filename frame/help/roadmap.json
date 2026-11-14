@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f50e38f",
+  "organisation": "4444a58",
   "fiches": 350,
   "untranslated": 0,
   "priorities": 310
@@ -4674,7 +4674,7 @@
     {
      "id": "SOG-0347",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Dépôt des données du poste modifié à la main : dire l'écart et offrir les issues (dont « tout jeter et reprendre »)",
      "en": "Workstation data repository changed by hand: say the gap and offer the ways out (including « discard everything and take the repository »)",
      "de": "Von Hand geändertes Daten-Repository des Rechners: die Abweichung nennen und Auswege anbieten (auch « alles verwerfen und das Repository übernehmen »)",

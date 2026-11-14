@@ -3235,5 +3235,22 @@
    "delivered": "2026-11-14T10:33:14Z"
   }
  ],
- "decisions": []
+ "decisions": [
+  {
+   "id": "Q-0058",
+   "fiche": "SOG-0347",
+   "app": "maintenance",
+   "question": "Dossier data/ du poste modifié à la main : que doit faire le lanceur avant d'envoyer ?",
+   "context": "Ce que fait le lanceur aujourd'hui (relevé de V3 Frame) : tout fichier changé à la main dans les dossiers partagés (missions, comptes rendus, compagnies, sia/base…) est commité à ton nom et envoyé au passage suivant, sans question — une suppression aussi. Hors de ces dossiers, rien ne part (tes trois fichiers modifiés ce matin n'étaient pas concernés, et le dépôt est intact). En cas de divergence il fusionne et garde la version la plus récente, l'autre va dans _conflits/. Aucun choix ne t'est proposé. Mon objection à « tout retenir » : les pages de la V2 écrivent dans data/ par le navigateur et comptent sur l'envoi automatique. Ma proposition : l'envoi automatique reste pour les ajouts et les modifications, mais il s'arrête et te demande dès qu'un passage porterait une suppression, ou plus de vingt fichiers changés à la main — avec « Envoyer » ou « Remettre comme dans le dépôt ». Dans tous les cas j'ajoute le geste « Tout jeter et reprendre le dépôt », qui ne supprime jamais un fichier non suivi.",
+   "options": [
+    "Il demande pour une suppression ou plus de vingt fichiers ; le reste part tout seul",
+    "Il demande pour TOUT changement fait à la main",
+    "Comme aujourd'hui, avec seulement le geste « Tout jeter et reprendre le dépôt »",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "todo",
+   "recommended": 0
+  }
+ ]
 }
