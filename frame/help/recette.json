@@ -3191,8 +3191,7 @@
    },
    "test": "Sur le téléphone, ouvre l'appli : une note « nouvelle version · Recharger » (sinon ferme et rouvre deux fois). En haut, à gauche du « ? », l'icône d'insecte. Une sorte, un titre, un texte ; « Photos ou captures d'écran » ouvre ta photothèque (trois au plus) ; « Envoyer » : la note dit où c'est parti et combien de photos sont jointes. Au poste (lanceur relancé) : Aide › Signaler, « Signalements des pilotes » montre ton signalement avec ses vignettes ; « Reprendre » me l'envoie. Dis-moi ensuite si la fiche est arrivée.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T22:12:02Z"
+   "state": "known"
   }
  ],
  "decisions": [
