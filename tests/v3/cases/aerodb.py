@@ -9759,6 +9759,18 @@ def k268(c):
     c.eq(r.stdout.decode().strip(), '[]', 'status() reads the versions without importing any of the libraries', what='no import')
     real = G.versions(['pypdf', 'nonexistent-package-xyz'])
     c.ok(real['nonexistent-package-xyz'] is None and (real['pypdf'] is None or real['pypdf'][0].isdigit()), str(real), 'the real versions come from the metadata of an isolated child (an unknown package: none)')
+    calls = []
+    was = G.versions
+    G.versions = lambda names=None: (calls.append(1), ok())[1]
+    G._STATUS['value'] = None
+    try:
+        a, b = G.status(), G.status()
+        G._STATUS['at'] -= G.STATUS_TTL + 1
+        G.status()
+    finally:
+        G.versions = was
+        G._STATUS['value'] = None
+    c.eq((len(calls), a == b), (2, True), 'the answer of pdf/status is kept a few seconds: two calls in a row read the versions once, a call after the delay reads them again', what='status cache')
     fn, check = RJ.REGISTRY[('pdf', 'status')]
     r = fn(RJ.Job('pdf', 'status', {}), {}, {})
     c.eq((check({}), check({'x': 1}), r['ok'], sorted(r)), ({}, None, True, ['command', 'ok', 'packages', 'python', 'ready']), 'the verb pdf/status takes no argument and answers read-only: packages, ready, command, python', what='verb')
@@ -9837,11 +9849,20 @@ def k268(c):
                 return None, e.reason
         pidfile = (work / 'gpid.txt').as_posix()
         t0 = time.time()
-        res, why = run("import subprocess, sys, time\ng = subprocess.Popen([sys.executable, '-I', '-c', 'import time; time.sleep(120)'])\nopen(%r, 'w').write(str(g.pid))\ntime.sleep(120)\n" % pidfile, timeout=4)
+        res, why = run("import subprocess, sys, time\ntry:\n    g = subprocess.Popen([sys.executable, '-I', '-c', 'import time; time.sleep(120)'])\n    open(%r, 'w').write(str(g.pid))\nexcept OSError:\n    open(%r, 'w').write('0')\ntime.sleep(120)\n" % (pidfile, pidfile), timeout=4)
         took = time.time() - t0
         time.sleep(1.0)
         gp = int((work / 'gpid.txt').read_text())
-        c.eq((why, took < 30, alive(gp)), ('timeout', True, False), 'a child that does not finish is stopped at the timeout WITH the whole tree (its grandchild is gone)', what='timeout')
+        c.eq((why, took < 30, gp == 0 or not alive(gp)), ('timeout', True, True), 'a child that does not finish is stopped at the timeout WITH the whole tree (its grandchild is gone, or was never allowed to start)', what='timeout')
+        if os.name == 'nt' and sys.prefix == getattr(sys, 'base_prefix', sys.prefix):
+            c.eq(gp, 0, 'on Windows the Job object allows ONE process: the reader cannot start a child (ActiveProcessLimit)', what='no child')
+            real_job = G._jobify
+            G._jobify = lambda proc, memory: None
+            try:
+                res, why = run("import json, sys\njson.dump({'pages': 1, 'texts': ['read without a limit']}, open(sys.argv[2], 'w'))\n", 'nojob.py')
+            finally:
+                G._jobify = real_job
+            c.eq((res, why), (None, 'failed'), 'with no Job object (no memory limit, no tree stop) the read is REFUSED, never made without a limit', what='no job')
         if os.name == 'nt' or sys.platform.startswith('linux'):
             hog = "import json, sys\nx = bytearray(900 * 1024 * 1024)\nfor i in range(0, len(x), 4096):\n    x[i] = 1\njson.dump({'pages': 1, 'texts': ['allocated']}, open(sys.argv[2], 'w'))\n"
             res, why = run(hog, 'hog.py', memory=200 * 1024 * 1024)

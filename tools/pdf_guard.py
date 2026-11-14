@@ -91,12 +91,22 @@ def judge(name, have):
     return 'ok'
 
 
+_STATUS = {'at': 0.0, 'value': None}
+STATUS_TTL = 5.0                           # secondes : une page qui appelle `pdf/status` en boucle ne lance pas un sous-processus à chaque fois
+
+
 def status(versions_of=None):
-    """L'état des paquets, pour la page (verbe `pdf/status`, lecture seule) : { packages: [{ name, version, minimum, maximum, state }], ready: { text, vectors }, command, python }."""
+    """L'état des paquets, pour la page (verbe `pdf/status`, lecture seule) : { packages: [{ name, version, minimum, maximum, state }], ready: { text, vectors }, command, python }. Sans `versions_of`, la réponse est gardée STATUS_TTL secondes."""
+    now = time.monotonic()
+    if versions_of is None and _STATUS['value'] is not None and now - _STATUS['at'] < STATUS_TTL:
+        return json.loads(json.dumps(_STATUS['value']))
     have = (versions_of or versions)()
     packages = [{'name': n, 'version': have.get(n), 'minimum': lo, 'maximum': hi, 'state': judge(n, have.get(n))} for n, lo, hi in MINIMA]
     by = {p['name']: p['state'] for p in packages}
-    return {'packages': packages, 'ready': {k: all(by.get(n) == 'ok' for n in v) for k, v in PURPOSES.items()}, 'command': COMMAND, 'python': '.'.join(map(str, sys.version_info[:3]))}
+    out = {'packages': packages, 'ready': {k: all(by.get(n) == 'ok' for n in v) for k, v in PURPOSES.items()}, 'command': COMMAND, 'python': '.'.join(map(str, sys.version_info[:3]))}
+    if versions_of is None:
+        _STATUS['at'], _STATUS['value'] = now, json.loads(json.dumps(out))
+    return out
 
 
 def require(purpose, versions_of=None):
@@ -154,7 +164,8 @@ def _jobify(proc, memory):
     if not job:
         return None
     info = Extended()
-    info.Basic.LimitFlags = 0x100 | 0x2000                       # JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    info.Basic.LimitFlags = 0x100 | 0x2000 | 0x8                 # JOB_OBJECT_LIMIT_PROCESS_MEMORY | KILL_ON_JOB_CLOSE | ACTIVE_PROCESS (le lecteur n'a aucune raison de lancer un processus fils)
+    info.Basic.ActiveProcessLimit = 2 if sys.prefix != getattr(sys, 'base_prefix', sys.prefix) else 1          # un environnement virtuel lance l'interpréteur de base comme fils : un processus de plus
     info.ProcessMemoryLimit = int(memory)
     k.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
     k.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
@@ -219,6 +230,9 @@ def read_text(data, path, first=0, count=MAX_PAGES, timeout=TIMEOUT, memory=MEMO
         proc = subprocess.Popen([sys.executable, '-I', child or _CHILD, path, out, str(first), str(first + count), str(MAX_CHARS_PAGE), json.dumps(_dirs())], cwd=tmp, env=_env(),
                                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kw)
         job = _jobify(proc, memory)
+        if os.name == 'nt' and job is None:                     # sans objet Job : NI limite de mémoire NI arrêt de l'arbre : la lecture est refusée, jamais faite sans limite
+            _kill(proc, None)
+            raise PdfError('failed', 'la limite de mémoire du lecteur de PDF n’a pas pu être posée : lecture refusée')
         try:
             proc.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
