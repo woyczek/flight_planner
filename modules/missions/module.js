@@ -57,6 +57,7 @@ export const meta = {
 // la fiche en deux niveaux (§ 10.45) : un écran après l'autre sur un module étroit ; côte à côte (première page à gauche, détail au
 // centre) sur un module large, sans « Détail » ni « Retour » du détail
 const STYLE = `[data-module="missions"] .ms-detail{display:none}
+[data-module="missions"] .ms-thumb{display:block;width:100%;height:auto;margin-top:8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);background:var(--sog-bg)} /* SOG-0287 : la vignette de l'aperçu */
 [data-module="missions"] .ms-assignedbox{margin:0 0 12px} /* SOG-0114 (A) : « Mes missions affectées », en tête */
 [data-module="missions"] .ms-asshead{font-size:1rem;margin:4px 0 8px}
 [data-module="missions"] .ms-assigned>span>small{display:block;margin-top:2px}
@@ -523,6 +524,9 @@ const TX = {
   edSave: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
   edNext: ['Suivante', 'Next', 'Weiter', 'Siguiente'],
   edPreview: ['Aperçu de la fiche', 'Preview of the sheet', 'Vorschau des Blatts', 'Vista previa de la ficha'],
+  edThumb: ['Croquis des lieux de la mission', 'Sketch of the mission\'s places', 'Skizze der Orte der Mission',
+    'Croquis de los lugares de la misión'
+  ],
   edTodo: ['À compléter', 'To complete', 'Zu ergänzen', 'Por completar'],
   edNothing: ['rien', 'nothing', 'nichts', 'nada'],
   edSeriesN: ['série {n}', 'series {n}', 'Serie {n}', 'serie {n}'],
@@ -2083,7 +2087,7 @@ function edAsideHtml(s, doc) {
   return `<div class="f-card" data-edpreview><p class="f-muted">${esc(s.tt(TX.edPreview))}</p><h3>${esc(c.title || s.tt(TX.edNewTitle))}</h3>
       <p class="f-muted">${c.family ? famHtml(s, c.family) : ''}${c.series !== '' ? ` · ${esc(s.tt(TX.edSeriesN, { n: c.series }))}` : ''}</p>
       ${sum ? `<p>${esc(sum.length > 160 ? `${sum.slice(0, 159)}…` : sum)}</p>` : ''}
-      ${m?.risks.length ? `<ul class="ms-lines">${m.risks.slice(0, 3).map(x => `<li>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>` : ''}</div>
+      ${m?.risks.length ? `<ul class="ms-lines">${m.risks.slice(0, 3).map(x => `<li>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>` : ''}${thumbHtml(s, doc)}</div>
     <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
 }
 
@@ -2309,6 +2313,84 @@ function edInput(s, ev) {
   }
   if (ev.type !== 'input') return;
   edRefresh(s);
+}
+/** SOG-0287 (fin) : la position d'un terrain de liaison d'après la base publiée (aerodb.aerodromes), demandée une fois par code ; null
+ *  (inconnu), absente tant que la réponse n'est pas venue ; l'aperçu redessiné à la réponse. */
+function adPosOf(s, icao) {
+  const k = String(icao || '').toUpperCase();
+  if (!/^[A-Z0-9]{4}$/.test(k)) return null;
+  s.adPos = s.adPos || new Map();
+  if (!s.adPos.has(k) && typeof s.ctx.aerodb?.aerodromes === 'function') {
+    s.adPos.set(k, undefined);
+    Promise.resolve().then(() => s.ctx.aerodb.aerodromes({
+      icao: k
+    })).then(list => {
+      const a = list?.[0],
+        lat = +a?.lat,
+        lon = +a?.lon;
+      return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? {
+        lat,
+        lon
+      } : null;
+    }).catch(() => null).then(v => {
+      s.adPos.set(k, v);
+      if (v && S === s && s.ed) edRefresh(s);
+    });
+  }
+  return s.adPos.get(k) || null;
+}
+/** SOG-0287 (fin, maquette editeur_lieux_1280.png) : la vignette de carte de l'aperçu — un croquis, pas une carte : départ et arrivée
+ *  (bleu ; la position du fichier, sinon celle de la base), la cible (rouge), les zones à cercle (pointillé, leur rayon), une zone sans
+ *  rayon (un carré pointillé), les points tournants et le rendez-vous ; projection équirectangulaire autour de la latitude moyenne. Rien
+ *  sans au moins un lieu placé. */
+function thumbHtml(s, doc) {
+  const pts = [];
+  for (const p of ED.placesOf(doc)) {
+    let lat = p.lat === '' ? NaN : +p.lat,
+      lon = p.lon === '' ? NaN : +p.lon;
+    if ((p.kind === 'dep' || p.kind === 'arr') && !(Number.isFinite(lat) && Number.isFinite(lon))) {
+      const q = adPosOf(s, (/^[A-Z]{4}(?= ·|$)/.exec(String(p.name || '')) || [])[0]); // « XTST · Base Test » (placeText : le code d'abord)
+      if (q)[lat, lon] = [q.lat, q.lon];
+    }
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
+    pts.push({
+      k: p.kind,
+      lat,
+      lon,
+      r: p.kind === 'zone' && p.radius !== '' && +p.radius > 0 ? Math.min(+p.radius, 2000) / 111.2 : 0
+    });
+  }
+  if (!pts.length) return '';
+  const W = 200,
+    H = 120,
+    P = 12,
+    lat0 = pts.reduce((t, p) => t + p.lat, 0) / pts.length,
+    kx = Math.max(0.1, Math.cos(lat0 * Math.PI / 180)),
+    X = p => p.lon * kx,
+    Y = p => -p.lat,
+    x0 = Math.min(...pts.map(p => X(p) - p.r)),
+    x1 = Math.max(...pts.map(p => X(p) + p.r)),
+    y0 = Math.min(...pts.map(p => Y(p) - p.r)),
+    y1 = Math.max(...pts.map(p => Y(p) + p.r)),
+    dx = Math.max(x1 - x0, 0.05),
+    dy = Math.max(y1 - y0, 0.05),
+    k = Math.min((W - 2 * P) / dx, (H - 2 * P) / dy),
+    ox = (W - dx * k) / 2 - (x0 - (dx - (x1 - x0)) / 2) * k,
+    oy = (H - dy * k) / 2 - (y0 - (dy - (y1 - y0)) / 2) * k,
+    sx = p => (X(p) * k + ox).toFixed(1),
+    sy = p => (Y(p) * k + oy).toFixed(1),
+    COL = {
+      dep: 'var(--sog-accent)',
+      arr: 'var(--sog-accent)',
+      target: 'var(--sog-err)',
+      pt: 'var(--sog-muted)',
+      rdv: 'var(--sog-warn)'
+    },
+    shape = p => p.k === 'zone' ? p.r ? `<circle cx="${sx(p)}" cy="${sy(p)}" r="${Math.max(3, p.r * k).toFixed(1)}" fill="none" stroke="var(--sog-ok)" stroke-width="1.5" stroke-dasharray="4 3"/>` :
+    `<rect x="${(sx(p) - 6).toFixed(1)}" y="${(sy(p) - 6).toFixed(1)}" width="12" height="12" fill="none" stroke="var(--sog-ok)" stroke-width="1.5" stroke-dasharray="3 2"/>` :
+    `<circle cx="${sx(p)}" cy="${sy(p)}" r="${p.k === 'pt' ? 3 : 4}" fill="${COL[p.k] || 'var(--sog-muted)'}"/>`;
+  // les zones dessous, les points dessus
+  return `<svg class="ms-thumb" data-edthumb viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.tt(TX.edThumb))}">${[...pts.filter(p => p.k === 'zone'), ...pts.filter(p => p.k !== 'zone')].map(shape).join('')}</svg>`;
 }
 /** L'aperçu, les pastilles et l'en-tête redessinés seuls (pendant la frappe). */
 function edRefresh(s) {

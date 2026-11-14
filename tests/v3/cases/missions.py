@@ -2665,3 +2665,35 @@ def n63(c):
     c.eq(got[1], {'events': [{'at': 'H+10', 'text': 'Décollage'}]}, 'the event goes to chronology', what='chronology')
     c.eq(got[2], {'timeline': 'voir le briefing', 'chronology': 'idem'}, 'both bare: nothing written', what='both bare')
     c.eq(got[3:], [False, True], 'the step knows when there is no place for the events', what='storable')
+
+
+
+@case('N64', 'Missions › editor, the preview\'s map thumbnail (the mock-up): departure and arrival, the target, the zones in dashed circles, '
+      'the turning points and the rendezvous; a liaison aerodrome without a position in the file is placed from the base', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0287, what was left (the user validated on 13 Nov at 16 h 28): « la vignette de carte de l\'aperçu, la position d\'un terrain '
+      'prise dans la base pour une liaison »; the mock-up modules/missions/maquette/editeur_lieux_1280.png; invented X-001A, aerodrome XTST')
+def n64(c):
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    full = _ED_FULL.replace('origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }', 'origin: { name: Base Test (XTST) }')
+    c.ok(full != _ED_FULL, '', 'the departure without its position in the file')
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', full]])
+    c.open('missions', wait=False, app='company', aero_extra={'aerodromes': [{'icao': 'XTST', 'name': 'XTST TEST', 'lat': 45.0, 'lon': 1.0, 'elev': 100}]})
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    T = f'{E} [data-edpreview] [data-edthumb]'
+    c.until(f"document.querySelectorAll('{T} circle').length === 7", timeout=15000,
+            what='seven marks: departure (from the base), arrival, target, two turning points, the rendezvous, the circle zone')
+    got = c.js(f"[...document.querySelectorAll('{T} circle')].map(e => [e.getAttribute('fill'), e.getAttribute('stroke-dasharray')])")
+    c.eq(sum(1 for f, d in got if d), 1, 'one dashed circle: the zone with a radius', what='zone')
+    c.eq(sum(1 for f, d in got if f == 'var(--sog-accent)'), 2, 'departure and arrival in the accent colour', what='dep arr')
+    c.eq(sum(1 for f, d in got if f == 'var(--sog-err)'), 1, 'the target in red', what='target')
+    c.js(f"document.querySelector('{E} [data-edpreview]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'N64_{c.design}_1280_{c.lang}_delivered.png')
+    c.js(_REG_CLEAR)

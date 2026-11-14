@@ -308,3 +308,10 @@
   hold events (absent, a list or an object), else `chronology` on the same terms; with both bare values there is no home: `withEvents`
   writes nothing, and the Chronologie step says « La chronologie de ce fichier est un texte : elle n'est pas modifiée ici » instead of
   « + Événement » (`eventsStorable`). N63 (red before).
+- **14 Nov 2026 — SOG-0287, what was left: the preview's map thumbnail, and a liaison aerodrome placed from the base** (the mock-up
+  `maquette/editeur_lieux_1280.png`). `thumbHtml` draws a sketch, not a map: departure and arrival (accent colour), the target (red),
+  the zones with a radius in dashed circles, a zone without one in a dashed square, the turning points and the rendezvous, in an
+  equirectangular projection around the mean latitude; nothing without a placed place. A departure or an arrival without a position in
+  the file is placed from the base (`adPosOf`: `aerodb.aerodromes({ icao })`, asked once per code, the preview redrawn at the answer);
+  the file is not written for it (« À compléter » still asks a non-liaison mission for its positions; a liaison's come from the base,
+  the decision of 13 Nov). A polygon zone without a centre is not drawn (the reader gives only its number of vertices). N64 (red before).
