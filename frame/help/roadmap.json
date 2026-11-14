@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7d63860",
+  "organisation": "2725260",
   "fiches": 357,
   "untranslated": 0,
   "priorities": 310
@@ -5095,11 +5095,12 @@
     {
      "id": "SOG-0342",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Réglages au téléphone : la page remonte en haut toute seule pendant la synchronisation",
      "en": "Settings on the phone: the page jumps to the top by itself during synchronisation",
      "de": "Einstellungen am Telefon: die Seite springt während der Synchronisation von selbst nach oben",
-     "es": "Ajustes en el teléfono: la página sube sola durante la sincronización"
+     "es": "Ajustes en el teléfono: la página sube sola durante la sincronización",
+     "test": true
     }
    ]
   },

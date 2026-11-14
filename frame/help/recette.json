@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
-  "tests": 225,
+  "tests": 226,
   "verdicts": 152
  },
  "apps": [
@@ -3228,6 +3228,20 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T10:38:04Z"
+  },
+  {
+   "id": "SOG-0342",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages au téléphone : la page remonte en haut toute seule pendant la synchronisation",
+    "en": "Settings on the phone: the page jumps to the top by itself during synchronisation",
+    "de": "Einstellungen am Telefon: die Seite springt während der Synchronisation von selbst nach oben",
+    "es": "Ajustes en el teléfono: la página sube sola durante la sincronización"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Réglages, descends à mi-page pendant une synchronisation : ce que tu lis reste en place, la page ne remonte plus et ne glisse plus.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T11:50:11Z"
   },
   {
    "id": "SOG-0343",
