@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7624a7c",
+  "organisation": "2efe034",
   "fiches": 356,
   "untranslated": 0,
   "priorities": 310
@@ -368,20 +368,22 @@
     {
      "id": "SOG-0351",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Recette : « Remettre à tester » efface le verdict et son commentaire — garder l'historique",
      "en": "Acceptance: « Test again » erases the verdict and its comment — keep the history",
      "de": "Abnahme: « Erneut testen » löscht das Urteil und seinen Kommentar — den Verlauf behalten",
-     "es": "Recepción: « Volver a probar » borra el veredicto y su comentario — conservar el historial"
+     "es": "Recepción: « Volver a probar » borra el veredicto y su comentario — conservar el historial",
+     "test": true
     },
     {
      "id": "SOG-0355",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Recette : ranger les tests acceptés ou refusés par l'heure du verdict, le plus récent en tête",
      "en": "Acceptance: order passed or failed tests by the time of the verdict, most recent first",
      "de": "Abnahme: bestandene oder abgelehnte Tests nach der Uhrzeit des Urteils ordnen, das neueste zuerst",
-     "es": "Recepción: ordenar las pruebas aceptadas o rechazadas por la hora del veredicto, la más reciente primero"
+     "es": "Recepción: ordenar las pruebas aceptadas o rechazadas por la hora del veredicto, la más reciente primero",
+     "test": true
     }
    ]
   },
