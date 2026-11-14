@@ -1033,8 +1033,8 @@ function listHtml(s) {
     held = new Set(s.rows.filter(r => ofAirline(s, r)).map(r => catOf(s, r)?.id).filter(Boolean)),
     cats = s.cats.all.filter(c => held.has(c.id)),
     lang = s.ctx.lang?.() || 'fr';
-  return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
-    <section class="ms-assignedbox" data-assigned hidden></section>
+  // retouche de l'ergonome (14/11) : « Mes missions affectées » au-dessus de « Tirer au sort » — pour un pilote affecté, sa mission vient avant le tirage
+  return `<div class="f-card" data-pane="list"><section class="ms-assignedbox" data-assigned hidden></section><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
     ${scopeHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     ${famFilterHtml(s, 'family', 'subtype', mine, s.family, s.subtype)}

@@ -315,3 +315,5 @@
   the file is placed from the base (`adPosOf`: `aerodb.aerodromes({ icao })`, asked once per code, the preview redrawn at the answer);
   the file is not written for it (« À compléter » still asks a non-liaison mission for its positions; a liaison's come from the base,
   the decision of 13 Nov). A polygon zone without a centre is not drawn (the reader gives only its number of vertices). N64 (red before).
+- **14 Nov 2026 — « Mes missions affectées » above « Tirer au sort »** (the ergonomist on the N62 capture: for an assigned pilot, his mission
+  comes before the draw). The group is the first thing of the list card, above the row « Tirer au sort / Ajouter des missions / Registre ». N62 extended (red before).

@@ -2631,6 +2631,8 @@ def n62(c):
     c.ok(norm(tx(MS, 'assignedHead', c.lang)) in t and 'LFRS' in t and 'F-TEST C30J' in t and 'TEST01' in t, t, 'the take-off, the aircraft, the callsign')
     c.ok(c.js(f"!!document.querySelector('{G} [data-rdv]')"), t, 'the rendezvous, the assignment carries it')
     c.eq(c.js(f"document.querySelector('{G} [data-do=prepare]').getAttribute('href')"), '#fuel?mission=X-701A', '« Préparer ce vol » in one gesture', what='prepare')
+    # retouche de l'ergonome (14/11, 1 h 30) : pour un pilote affecté, sa mission vient avant le tirage — le groupe au-dessus de la rangée « Tirer au sort »
+    c.ok(c.js(f"!!(document.querySelector('{G}').compareDocumentPosition(document.querySelector('{M} [data-do=draw]')) & Node.DOCUMENT_POSITION_FOLLOWING)"), '', 'the group above « Tirer au sort »')
     c.eq(c.js(f"[...document.querySelectorAll('{G} [data-meetopen]')].map(a => a.getAttribute('href'))"), ['https://discord.example.test/abc'],
          'a channel\'s address: https only, never javascript:', what='links')
     c.ok(c.js(f"!!document.querySelector('{G} [data-do=meetcopy][data-v=\"243.000\"]')") and 'Invented' not in t, t, 'a value to copy; never a name')
