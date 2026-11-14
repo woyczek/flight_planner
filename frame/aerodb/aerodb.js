@@ -527,9 +527,8 @@
         wait: true
       });
       return (bounded ? Promise.race([got, new Promise(res => timer = setTimeout(() => {
-        // la borne : la lecture partagée de ce chemin est oubliée, la question suivante la relance vraiment
+        // la borne : on cesse d'ATTENDRE (SOG-0349) ; la lecture, partagée par le cadre, CONTINUE : jamais `abandon` ici (un gros fichier sur le réseau mobile était coupé à la borne et relancé de zéro à chaque question)
         lateN++;
-        reader.abandon?.(path);
         res(null);
       }, readWait))]) : got).then(r => {
         if (r) revs.set(path, r.rev || '');
@@ -540,6 +539,82 @@
         if (n > 0) reading.set(path, n);
         else reading.delete(path);
       });
+    };
+
+    // ---- lectures LENTES d'une zone (SOG-0349, contrat du cadre : une lecture partagée par chemin, patiente, jamais annulée par une borne) : la question n'attend que readWait (ou que le cadre dise la lecture tenue : limite, file, hors ligne) ; la part
+    // est alors « en cours » (ni vide ni absente), la lecture CONTINUE, UNE seule par chemin (les questions suivantes s'y raccrochent), et à son arrivée la part est gardée et `change` est annoncé : la Carte se repeint.
+    const slow =
+      new Map(); // chemin → { path, zone, kind, late, state: 'reading' | 'queued' | 'limit' | 'offline' | 'error', retryIn, settled, held }
+    let slowGen = 0; // compte les arrivées et les changements d'état des lectures lentes
+    /** Lecture d'un chemin, bornée par readWait SANS l'abandonner : la valeur ou null (absent), ou { late: true, entry } (cessé d'attendre ; `entry.state` dit où en est la lecture). `onArrive(r)` : appelé UNE fois à l'arrivée d'une lecture
+     *  dont une question a cessé d'attendre. */
+    const readSlow = (path, meta, onArrive) => {
+      let entry = slow.get(path);
+      if (!entry) {
+        entry = {
+          path,
+          ...meta,
+          late: false,
+          state: 'reading',
+          retryIn: null
+        };
+        entry.held = new Promise(res => entry.hold = res);
+        reading.set(path, (reading.get(path) || 0) + 1);
+        const self = entry;
+        entry.settled = Promise.resolve().then(() => reader.read(path, {
+          policy: 'reference',
+          wait: true,
+          detail: true
+        })).then(r => {
+          if (r && r
+            .unreadable
+          ) { // le cadre tient la lecture (limite de l'hôte, file, hors ligne) et la reprend SEUL : « illisible, reprise dans n s » n'est pas « absent »
+            self.state = ['limit', 'queued', 'offline', 'error'].includes(r.why) ? r.why : 'error';
+            self.retryIn = Number.isFinite(+r.retryIn) ? +r.retryIn : null;
+            slowGen++;
+            self.hold({
+              late: true,
+              entry: self
+            });
+            emitState();
+            return reader.read(path, {
+              policy: 'reference',
+              wait: true
+            }); // la même lecture partagée, sans `detail` : l'arrivée
+          }
+          return r;
+        }).then(r => {
+          if (r) revs.set(path, r.rev || '');
+          return r;
+        }, () => null).then(r => {
+          slow.delete(path);
+          const n = (reading.get(path) || 1) - 1;
+          if (n > 0) reading.set(path, n);
+          else reading.delete(path);
+          slowGen++;
+          if (self.late) self.onArrive?.(r); // une question avait cessé d'attendre : la part arrive, on le dit
+          emitState();
+          return r;
+        });
+        slow.set(path, entry);
+      }
+      const e = entry;
+      let timer = 0;
+      return Promise.race([e.settled, e.held, new Promise(res => timer = setTimeout(() => res({
+        late: true,
+        entry: e
+      }), readWait))]).then(r => {
+        if (r && r.late && r.entry) {
+          if (!e.late) {
+            e.late = true;
+            lateN++;
+            slowGen++;
+            emitState();
+          }
+          if (onArrive && !e.onArrive) e.onArrive = onArrive;
+        }
+        return r;
+      }).finally(() => clearTimeout(timer));
     };
 
     // ---- zones publiées : liste du lecteur (arbre du dépôt), sinon manifeste sia/base/index.json, sinon inconnues
@@ -570,11 +645,14 @@
       const cells = {},
         wide = {};
       let rows = 0,
+        seen = 0,
         nc = 0,
         nw = 0;
       for (const [k, v] of Object.entries(c)) {
+        if (++seen > 2000) break; // un manifeste n'a pas plus de 181 lignes : le reste est du bruit
         const y = +k;
-        if (!Number.isInteger(y) || y < -90 || y > 90 || !Array.isArray(v) || ++rows > 181) continue;
+        if (!Number.isInteger(y) || y < -90 || y > 90 || !Array.isArray(v)) continue;
+        if (++rows > 181) break;
         for (const r of v.slice(0, 400)) {
           if (!Array.isArray(r) || r.length !== 2 || !Number.isFinite(r[0]) || !Number.isFinite(r[1]) || r[0] < -180 || r[1] > 180 || r[
               0] > r[1]) continue;
@@ -642,10 +720,11 @@
      *  cet appareil : ni lanceur ni dépôt réglé), 'offline' (rien de publié connu et pas de réseau), 'unpublished' (l'accès
      *  marche, rien n'est publié), 'idle' (jamais demandée). Ne lit rien. */
     async function baseState() {
-      if (listing || loading.size) return {
+      if (listing || loading.size || [...slow.values()].some(e => e.late)) return {
         state: 'loading',
         asked,
-        loading: [...loading.keys()]
+        loading: [...loading.keys()],
+        pending: [...slow.values()].filter(e => e.late).length
       };
       if (!asked || !listedP) return {
         state: access() ? 'idle' : 'noaccess',
@@ -1144,7 +1223,17 @@
           // découpé : préféré ; méta lue d'emblée (petite : cycle, axes AAR, tracks NAT)
           if (!pub || e.split.has(cycle)) {
             const t0 = performance.now(),
-              r = await read(`${base}meta.json`);
+              r = await readSlow(`${base}meta.json`, {
+                zone: id,
+                kind: 'meta'
+              }, got => {
+                if (got) emit({ // la méta de la zone est arrivée : la zone s'ouvre à la prochaine question, la Carte se repeint
+                  zone: id,
+                  cycle
+                });
+              });
+            if (r?.late)
+              return null; // la zone est « en cours » : pas lue cette fois, JAMAIS dite absente ni retenue comme manquante ; la prochaine question s'y raccroche
             if (r) {
               Object.assign(z, {
                 split: true,
@@ -1273,13 +1362,45 @@
       } else if (z.split) {
         p = (async () => {
           const t0 = performance.now(),
-            r = await read(`${z.base}${kind}.json`, true);
+            r = await readSlow(`${z.base}${kind}.json`, {
+              zone: z.id,
+              kind
+            }, got => {
+              // la part arrive après que la question a cessé d'attendre : gardée, ses index refaits, la Carte se repeint (jamais un fichier relancé)
+              if (!got) return;
+              z.reads.push({
+                kind,
+                bytes: sizeOf(got),
+                ms: Math.round(performance.now() - t0),
+                late: true
+              });
+              z.parts.set(kind, Promise.resolve(valueOf(got)?.data ?? empty));
+              for (const k of [kind, `ident:${kind}`, ...(kind === 'aeroindex' ? ['aerodromes:lite'] : [])]) delete z.idx[k];
+              if (kind === 'aeroindex') z.parts.delete('aeroindex:list');
+              emit({
+                zone: z.id,
+                cycle: z.cycle,
+                part: kind
+              });
+            });
+          if (r
+            ?.late
+          ) { // la lecture continue (une seule par chemin) : la part est « en cours », ni vide ni absente ; redemandée à la prochaine question, qui s'y raccroche
+            z.parts.delete(kind);
+            z.reads.push({
+              kind,
+              bytes: 0,
+              ms: Math.round(performance.now() - t0),
+              pending: true
+            });
+            return empty;
+          }
           z.reads.push({
             kind,
             bytes: sizeOf(r),
             ms: Math.round(performance.now() - t0)
           });
-          if (!r) z.parts.delete(kind); // illisible (hors ligne, sorte non gardée) : vide cette fois, redemandée ensuite
+          if (!r) z.parts.delete(kind); // sorte non gardée ou lecture échouée : vide cette fois, redemandée ensuite
           return valueOf(r)?.data ?? empty;
         })();
       } else {
@@ -1802,8 +1923,24 @@
 
     const EMPTY_RETRY = 30e3;
     const api = {
-      /** État de la base (sans rien lire), voir baseState : { state, asked, zones, loading }. */
+      /** État de base (sans rien lire), voir baseState : { state, asked, zones, loading }. */
       state: baseState,
+      /** Les lectures de la base dont une question a cessé d'attendre (SOG-0349), sans rien lire : { pending: n, unreadable: n, entries: [{ zone, kind, state: 'reading' | 'queued' | 'limit' | 'offline' | 'error', retryIn (s ou null) }], gen }. Une réponse faite pendant que `pending` > 0 est PARTIELLE : la Carte
+       *  garde ce qu'elle montre (jamais remplacé par une part illisible), dit « n zones n'ont pas pu être lues : nouvelle tentative dans … » avec `unreadable` et le plus petit `retryIn`, et se repeint à l'événement `change` de l'arrivée. */
+      readStatus() {
+        const entries = [...slow.values()].filter(e => e.late).map(e => ({
+          zone: e.zone,
+          kind: e.kind,
+          state: e.state,
+          retryIn: e.retryIn ?? reader.readState?.(e.path)?.retryIn ?? null
+        }));
+        return {
+          pending: entries.length,
+          unreadable: entries.filter(e => ['limit', 'offline', 'error'].includes(e.state)).length,
+          entries,
+          gen: slowGen
+        };
+      },
       /** L'accès ou la source a changé (dépôt réglé, accès coupé, réseau revenu) : la liste des zones publiées est relue
        *  à la prochaine question ; les zones déjà ouvertes restent. */
       refresh() {

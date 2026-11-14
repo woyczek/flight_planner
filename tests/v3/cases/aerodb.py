@@ -4674,18 +4674,18 @@ def k59(c):
     c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
     r = c.js("""async () => {
       const day = Date.parse('2026-10-25T12:00:00Z'), cyc = AeroDB.airacCycles(1, day)[0], base = `sia/base/fr/${cyc}/`;
-      // like the frame's data layer: one shared read per path until it ends, or until abandon(path)
+      // like the frame's data layer since its contract of 14 Nov (SOG-0349): ONE shared read per path, patient; `abandon(path)` only says « I no longer wait » and removes nothing
       const reader = (files, hold) => ({
         asked: [], shared: new Map(), held: !!hold,
         read(p) {
           if (this.shared.has(p)) return this.shared.get(p);
           this.asked.push(p);
-          const job = this.held && hold && p.endsWith(hold) ? new Promise(() => {}) : Promise.resolve(p in files ? { value: files[p], rev: 'r' } : null);
+          const job = this.held && hold && p.endsWith(hold) ? new Promise(res => this.release = () => res(p in files ? { value: files[p], rev: 'r' } : null)) : Promise.resolve(p in files ? { value: files[p], rev: 'r' } : null);
           this.shared.set(p, job);
           job.then(() => this.shared.get(p) === job && this.shared.delete(p));
           return job;
         },
-        abandon(p) { this.shared.delete(p) },
+        abandon(p) { this.abandoned = (this.abandoned || 0) + 1 },
         async list(prefix) { return Object.keys(files).filter(p => p.startsWith(prefix)) },
         watch: () => () => {}
       });
@@ -4699,16 +4699,16 @@ def k59(c):
       t = performance.now();
       const m2 = await Promise.race([db2.mora(46.5, 2.5), new Promise(res => setTimeout(() => res('pending'), 8000))]), ms2 = performance.now() - t;
       const mora2 = r2.asked.filter(p => p.endsWith('mora.json')).length;
-      // 3. the read freed: the next question really reads again (the pending read was abandoned at the bound)
-      r2.held = false;
+      // 3. the read freed: it ARRIVES (the same read, not a new one: nothing was abandoned at the bound)
+      r2.release();
       const m3 = await Promise.race([db2.mora(46.5, 2.5), new Promise(res => setTimeout(() => res('pending'), 8000))]);
-      return { m1, ms1, mora1: r1.asked.filter(p => p.endsWith('mora.json')).length, m2, ms2, mora2, m3, mora3: r2.asked.filter(p => p.endsWith('mora.json')).length };
+      return { m1, ms1, mora1: r1.asked.filter(p => p.endsWith('mora.json')).length, m2, ms2, mora2, m3, mora3: r2.asked.filter(p => p.endsWith('mora.json')).length, abandoned: r2.abandoned || 0 };
     }""")
     c.eq((r['m1'], r['mora1']), (None, 0), 'a part the repository lacks: nothing, and never read', what='absent part')
     c.ok(r['ms1'] < 1000, f"{r['ms1']:.0f} ms", 'answered at once')
     c.eq((r['m2'], r['mora2']), (None, 1), 'a read that never ends: nothing at the bound, not a pending promise', what='held read')
     c.ok(500 <= r['ms2'] < 3000, f"{r['ms2']:.0f} ms", 'ended at the bound (600 ms in this bench)')
-    c.eq((r['m3'], r['mora3']), (3200, 2), 'the next question reads again (the pending shared read abandoned at the bound) and gets the data', what='after the bound')
+    c.eq((r['m3'], r['mora3'], r['abandoned']), (3200, 1, 0), 'the read the bound stopped waiting for ARRIVES and the next question gets its data: one read, `abandon` never called (SOG-0349: a large file was cut at the bound and restarted from zero at every question)', what='after the bound')
 
 
 @case('K62', 'aircraft() answers or fails, never pending: a held registry read gives an empty registry at the bound, then is read again once freed', 'K',
@@ -10043,3 +10043,64 @@ def k274(c):
             engine.assess = real
             P.drop_contexts()
         c.ok(not any('Alternatives non cherchées' in x for x in other['alternative_failures']), str(other['alternative_failures'][:2]), 'a head route refused for ANOTHER reason (no route in the base) keeps searching the other levels as before')
+
+
+@case('K275', 'A slow or held read of a zone (SOG-0349, the Map at zero data on the phone): past the bound aerodb stops WAITING and does not abandon or restart the read; the part is « pending », one read per path, kept on arrival, `change` announced; a read the frame holds (limit) is « unreadable, retry in n s », never absent', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist 14 Nov 2026 (contract of V3 Frame, 3794a0024, frame/INTEGRATION.md: a file read is shared, patient and in order; `abandon` only says « I no longer wait »; `detail: true` answers { unreadable, why, retryIn } after 1.5 s when the read is held): before, the bound of 10 s called `reader.abandon(path)` then answered null: a large file (the 14.5 MB of the airspaces of a zone) on a mobile network was cut at 10 s and restarted from zero at every question, never arriving, and a read refused by the host limit looked like a missing file (zero data on the Map). Now: the bound only stops the WAITING (an empty part for that answer, the zone « en cours », never missing), the read continues, ONE per path (the next questions attach to it), on arrival the part is kept, its indexes redone and `change` announced; a held read is reported by `readStatus()` ({ pending, unreadable, entries: [{ zone, kind, state, retryIn }] }) so that the Map keeps what it shows and says « n zones n\'ont pas pu être lues : nouvelle tentative dans … »')
+def k275(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const C = '2026-10-29', cells = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [String(44 + i), [[-6, 8]]]));
+      const airspace = { name: 'PARIS TMA', type: 'TMA', key: 'k', lower: 1500, upper: 19500, rings: [[[48.5, 2], [48.5, 3], [49, 3], [49, 2]]] };
+      const files = { 'sia/base/index.json': { zones: { fr: { cycle: C, prefixes: ['LF'], kb: {}, cells } } },
+        [`sia/base/fr/${C}/meta.json`]: { data: {} }, [`sia/base/fr/${C}/airspaces.json`]: { data: [airspace] } };
+      const A = `sia/base/fr/${C}/airspaces.json`, box = [1.9, 48.4, 3.1, 49.1];
+      const make = (slowMs, held) => {
+        const starts = {}, nets = {}, abandons = [], detail = { done: false };
+        const reader = {
+          read: (p, o = {}) => {
+            if (!(p in files)) return Promise.resolve(null);
+            if (!nets[p]) { starts[p] = (starts[p] || 0) + 1; nets[p] = new Promise(res => setTimeout(() => res({ value: files[p], rev: 'r' }), p === A ? slowMs : 0)); }
+            if (held && p === A && o.detail && !detail.done) { detail.done = true; return Promise.resolve({ unreadable: true, why: 'limit', retryIn: 20 }); }
+            return nets[p];
+          },
+          abandon: p => { abandons.push(p); delete nets[p]; }, // what the frame did BEFORE its contract: the next question starts a new network read
+          list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {}
+        };
+        const db = AeroDB.create({ reader, lnmperf: false, readWait: 300, now: () => Date.parse('2026-11-14T12:00:00Z') });
+        const changes = [];
+        db.on('change', w => { if (w && w.part) changes.push(w.part); });
+        return { db, starts, abandons, changes };
+      };
+      const out = {};
+      // 1. a slow file (1.2 s against a bound of 0.3 s)
+      let m = make(1200, false), t = performance.now();
+      const first = await m.db.airspaces({ bbox: box });
+      out.first = { n: first.length, fast: performance.now() - t < 1000 };
+      out.status1 = m.db.readStatus();
+      const again = await m.db.airspaces({ bbox: box });
+      out.again = again.length;
+      out.state = (await m.db.state()).state;
+      await new Promise(res => setTimeout(res, 1500));
+      out.changes = m.changes.slice();
+      const third = await m.db.airspaces({ bbox: box });
+      out.third = third.map(a => a.name);
+      out.starts = m.starts[A];
+      out.abandons = m.abandons.length;
+      out.after = m.db.readStatus().pending;
+      for (let i = 0; i < 3; i++) await m.db.airspaces({ bbox: box });
+      out.startsAfterToggle = m.starts[A];
+      // 2. a held read (the host limit): unreadable, retry in 20 s, then it arrives
+      m = make(800, true);
+      const held = await m.db.airspaces({ bbox: box });
+      out.held = { n: held.length, status: m.db.readStatus() };
+      await new Promise(res => setTimeout(res, 1200));
+      out.heldAfter = { names: (await m.db.airspaces({ bbox: box })).map(a => a.name), starts: m.starts[A], abandons: m.abandons.length, status: m.db.readStatus() };
+      return out;
+    }""")
+    c.eq((r['first'], r['again']), ({'n': 0, 'fast': True}, 0), 'a read that is slower than the bound: the answer is EMPTY at the bound (the part is pending, not missing) and comes quickly; the next question does not start another read', what='bound')
+    c.eq((r['status1']['pending'], r['status1']['entries'][0]['kind'], r['status1']['entries'][0]['state'], r['state']), (1, 'airspaces', 'reading', 'loading'), 'readStatus() says one part pending (airspaces, still reading) and the base state is « loading » while it is', what='status')
+    c.eq((r['changes'], r['third'], r['after']), (['airspaces'], ['PARIS TMA'], 0), 'on arrival the part is kept and `change` is announced (the Map repaints); the next question has the airspace; nothing pending', what='arrival')
+    c.eq((r['starts'], r['abandons'], r['startsAfterToggle']), (1, 0, 1), 'ONE network read for the path, `abandon` never called by the bound, and asking again (ticking and unticking a layer) restarts nothing', what='one read')
+    c.eq((r['held']['n'], r['held']['status']['pending'], r['held']['status']['unreadable'], r['held']['status']['entries'][0]['state'], r['held']['status']['entries'][0]['retryIn']), (0, 1, 1, 'limit', 20), 'a read the frame holds (the host limit) is reported « limit », retry in 20 s, UNREADABLE: not absent, the answer is partial', what='held')
+    c.eq((r['heldAfter']['names'], r['heldAfter']['starts'], r['heldAfter']['abandons'], r['heldAfter']['status']['pending']), (['PARIS TMA'], 1, 0, 0), 'the frame retries by itself: the part arrives, one read, nothing abandoned', what='held arrival')
