@@ -2381,10 +2381,15 @@
     moraCells = []
   } = {}) {
     const set = new Set(),
+      // la longitude d'une case ramenée dans [-180, 180[ (un anneau ramené d'un seul tenant de part et d'autre de l'antiméridien dépasse 180)
+      wrapX = x => ((x + 180) % 360 + 360) % 360 - 180,
       add = (lat, lon) => {
-        if (Number.isFinite(lat) && Number.isFinite(lon)) set.add(`${Math.floor(lat)}|${Math.floor(lon)}`);
+        if (Number.isFinite(lat) && Number.isFinite(lon)) set.add(`${Math.floor(lat)}|${wrapX(Math.floor(lon))}`);
       },
-      line = (a, b) => {
+      // un anneau qui passe l'antiméridien (un saut de plus de 180° entre deux sommets) : ses longitudes négatives sont portées de +360 (SOG-0356 : les Aléoutiennes ; sans cela le contour ordinaire couvrait toute la largeur et la zone des États-Unis était « touchée » par Paris)
+      unwrap = r => r.some((p, i) => i && Math.abs(p[1] - r[i - 1][1]) > 180) ? r.map(([la, lo]) => [la, lo < 0 ? lo + 360 : lo]) : r,
+      line = (a, b0) => {
+        const b = Math.abs(b0[1] - a[1]) > 180 ? [b0[0], b0[1] + (b0[1] < a[1] ? 360 : -360)] : b0;
         const n = Math.max(1, Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) / .25));
         for (let k = 0; k <= n; k++) add(a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n);
       };
@@ -2394,7 +2399,7 @@
       if (Number.isFinite(+w?.a?.lat) && Number.isFinite(+w?.b?.lat)) line([+w.a.lat, +w.a.lon], [+w.b.lat, +w.b.lon]);
     for (const c of moraCells) add(+c.lat + .5, +c.lon + .5);
     for (const a of airspaces) {
-      const rings = (a.rings || []).filter(r => r?.length > 2);
+      const rings = (a.rings || []).filter(r => r?.length > 2).map(unwrap);
       if (!rings.length) continue;
       let s = 90,
         n = -90,
@@ -2420,7 +2425,7 @@
                 if ((r[i][0] > la) !== (r[j][0] > la) && lo < (r[j][1] - r[i][1]) * (la - r[i][0]) / (r[j][0] - r[i][0]) + r[i][1])
                   c = !c;
               return c;
-            })) set.add(`${y}|${x}`);
+            })) set.add(`${y}|${wrapX(x)}`);
         }
     }
     const rows = {};

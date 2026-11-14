@@ -9891,3 +9891,51 @@ def k268(c):
         c.eq((res, why), (None, 'failed'), 'a child that fails without an answer is « failed »', what='failed')
         left = [x for x in os.listdir(tempfile.gettempdir()) if x.startswith('pdfread-')]
         c.eq(left, [], 'the temporary folder of a read is removed every time (success, failure, timeout)', what='cleanup')
+
+
+@case('K272', 'The zone of the United States is not read for Paris → Dublin (SOG-0356): a manifest line that covers the whole width (a contour across the date line) does not retain a zone on its own; the builder cuts the contour at the antimeridian; the manifest is an untrusted input', 'K', tags=('aerodb',), phone=False,
+      rule='Ergonomist 14 Nov 2026 (SOG-0349, phone, « 0 données affichées »; survey of AeroDB): for LFPO → EIDW the Map asked for the zone `us` (23.4 MB of the 30.4 MB) because its manifest cells say [-180, 180] on the latitudes 51 and 52 and [-180, 67] on 53: an Aleutian contour that crosses the date line, counted across the whole width (the builder walked the ring without cutting it). TWO gestures: (1) at the READING (aerodb.js zonesFor), so that the phone gains without the base being published again: a range of more than 180° is not a sure coverage, it is kept apart (`wide`) and the zone is retained by it only if the box also touches one of the country\'s frames of the zones table (no value for a country: the table is the zones\' real extent; a zone with no frame known keeps its old behaviour); the manifest being a file of the data repository, its cells are cleaned (integer latitudes -90..90, ranges of two finite numbers in [-180, 180], at most 181 lines of 400); (2) at the BUILDER (shared/sia_base.js coverage): a ring with a jump of more than 180° between two vertices is carried by +360 on its negative longitudes, its cells wrapped back. Paris → Dublin does not ask `us`; Anchorage and the Aleutians do')
+def k272(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const C = '2026-10-29', rows = (a, b, lo, hi) => Object.fromEntries(Array.from({ length: b - a + 1 }, (_, i) => [String(a + i), [[lo, hi]]]));
+      const manifest = {
+        fr: { cycle: C, prefixes: ['LF'], kb: {}, cells: rows(42, 51, -5, 8) },
+        gb: { cycle: C, prefixes: ['EG'], kb: {}, cells: rows(49, 60, -9, 2) },
+        ie: { cycle: C, prefixes: ['EI'], kb: {}, cells: rows(51, 55, -11, -5) },
+        us: { cycle: C, prefixes: ['K'], kb: {}, cells: { '48': [[-179, -88]], '51': [[-180, 180]], '52': [[-180, 180]], '53': [[-180, 67], [166, 180]], '61': [[-155, -145]] } },
+        // an untrusted manifest: rows and ranges that are not what they say
+        at: { cycle: C, prefixes: [], kb: {}, cells: { 'a': [[0, 1]], '200': [[0, 1]], '48': 'x', '49': [[0], [1, 'b'], [5, 2], null, [-300, 5]] } },
+        pl: { cycle: C, prefixes: [], kb: {}, cells: [1, 2, 3] }
+      };
+      const files = { 'sia/base/index.json': { zones: manifest } };
+      for (const z of Object.keys(manifest)) { files[`sia/base/${z}/${C}/meta.json`] = { data: {} }; files[`sia/base/${z}/${C}/airspaces.json`] = { data: [] }; }
+      const asked = [];
+      const reader = { read: async p => { asked.push(p); return p in files ? { value: files[p], rev: 'r' } : null; }, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
+      const zonesOf = async bbox => { asked.length = 0; const db = AeroDB.create({ reader, lnmperf: false, now: () => Date.parse('2026-11-14T12:00:00Z') }); await db.airspaces({ bbox }); return [...new Set(asked.map(p => /^sia\\/base\\/([a-z]+)\\//.exec(p)?.[1]).filter(z => z && z !== 'index'))].sort(); };
+      const out = {};
+      out.paris = await zonesOf([-6.3, 48.6, 2.4, 53.5]);
+      out.anchorage = await zonesOf([-151, 61, -149, 62]);
+      out.aleutians = await zonesOf([-176.3, 51.7, -175.9, 52.0]);
+      out.mid = await zonesOf([-30, 52, -20, 53]);
+      out.junk = [await zonesOf([16.2, 48.1, 16.5, 48.3]), await zonesOf([20.9, 52.1, 21.1, 52.3]), await zonesOf([0, 0, 1, 1])];
+      return out;
+    }""")
+    c.eq(r['paris'], ['fr', 'gb', 'ie'], 'LFPO → EIDW asks for fr, gb and ie: NOT the United States (its manifest rows of the whole width do not retain it)', what='Paris-Dublin')
+    c.eq((r['anchorage'], r['aleutians']), (['us'], ['us']), 'a flight to Anchorage (its own cells) and one over the Aleutians (the whole-width rows, confirmed by a frame of the country) still ask for the zone', what='Alaska')
+    c.eq(r['mid'], [], 'mid-Atlantic at 52° N asks for no land zone: the rows of the whole width alone retain nothing', what='ocean')
+    c.eq(r['junk'], [['at'], ['pl'], []], 'a hostile manifest (rows that are not integers, ranges that are not two finite numbers in the globe, a list for cells) is cleaned and breaks nothing: the zone falls back on its frames, none elsewhere', what='junk')
+    # the builder: a ring across the date line is cut, its cells wrapped back
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.SiaBase', timeout=30000)
+    b = c.js("""() => {
+      const ring = [[51.2, 172], [51.2, -172], [52.8, -172], [52.8, 172]];
+      const cells = SiaBase.zoneEntry('2026-10-29', { airspaces: [{ rings: [ring] }], aero: {}, moraCells: [] }, {}).cells;
+      const plain = SiaBase.zoneEntry('2026-10-29', { airspaces: [{ rings: [[[48.1, 2.1], [48.1, 3.9], [49.9, 3.9], [49.9, 2.1]]] }], aero: {}, moraCells: [] }, {}).cells;
+      const airway = SiaBase.zoneEntry('2026-10-29', { airspaces: [], aero: { airways: [{ a: { lat: 60.5, lon: 179.5 }, b: { lat: 60.5, lon: -179.5 } }] }, moraCells: [] }, {}).cells;
+      return { cells, plain, airway };
+    }""")
+    wide = [(y, rg) for y, rs in b['cells'].items() for rg in rs if rg[1] - rg[0] + 1 > 180]
+    c.eq((wide, b['cells'].get('51'), b['cells'].get('52')), ([], [[-180, -172], [172, 179]], [[-180, -172], [172, 179]]), 'the contour across the date line gives two short ranges per row (172 to 179 and -180 to -172), no range of the whole width', what='ring')
+    c.eq(b['plain'], {'48': [[2, 3]], '49': [[2, 3]]}, 'an ordinary ring is unchanged', what='plain')
+    c.eq(b['airway'], {'60': [[-180, -180], [179, 179]]}, 'an airway segment across the date line is sampled the short way round', what='airway')

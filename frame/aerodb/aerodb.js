@@ -562,6 +562,34 @@
       return mine;
     }
 
+    /** Les cases d'une zone d'après le manifeste (SOG-0356) : { cells, wide } ou null. Le manifeste est un fichier du dépôt des données, une ENTRÉE NON FIABLE : seules les lignes de latitude entières de -90 à 90, les plages [lon0, lon1] de deux nombres
+     *  finis de -180 à 180 (lon0 ≤ lon1), au plus 181 lignes de 400 plages, sont gardées. Une plage de plus de 180° (une ligne ENTIÈRE : un contour qui passe l'antiméridien compté sur toute la largeur, les Aléoutiennes comptées sur Paris) n'est pas une
+     *  couverture sûre : elle est mise à part dans `wide` (la zone n'y est retenue que si l'emprise touche aussi l'un des cadres du pays de la table des zones). */
+    const cleanCells = c => {
+      if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
+      const cells = {},
+        wide = {};
+      let rows = 0,
+        nc = 0,
+        nw = 0;
+      for (const [k, v] of Object.entries(c)) {
+        const y = +k;
+        if (!Number.isInteger(y) || y < -90 || y > 90 || !Array.isArray(v) || ++rows > 181) continue;
+        for (const r of v.slice(0, 400)) {
+          if (!Array.isArray(r) || r.length !== 2 || !Number.isFinite(r[0]) || !Number.isFinite(r[1]) || r[0] < -180 || r[1] > 180 || r[
+              0] > r[1]) continue;
+          const into = r[1] - r[0] + 1 > 180 ? wide : cells;
+          (into[y] ||= []).push([r[0], r[1]]);
+          if (into === wide) nw++;
+          else nc++;
+        }
+      }
+      return nc || nw ? {
+        cells: nc ? cells : null,
+        wide: nw ? wide : null
+      } : null;
+    };
+
     function listZones() {
       return (async () => {
         const out = {},
@@ -597,7 +625,10 @@
             kb: e.cycle ? {
               [e.cycle]: e.kb || {}
             } : null,
-            cells: e.cells && typeof e.cells === 'object' ? e.cells : null // cases d'un degré couvertes par ses données
+            ...(c => ({
+              cells: c?.cells || null, // cases d'un degré couvertes par ses données
+              wide: c?.wide || null // plages de plus de 180° : à confirmer par les cadres du pays (SOG-0356)
+            }))(cleanCells(e.cells))
           });
         for (const z of Object.values(out)) z.cycles = [...new Set([...z.split, ...z.whole])].sort();
         return {
@@ -1072,10 +1103,14 @@
     async function zonesFor(b) {
       const pub = (await published()).zones,
         out = [];
+      // les cadres du pays (table des zones, élargis de la marge) touchent-ils l'emprise ? vrai sans cadre connu (une zone océanique)
+      const frameHit = z => !(z?.b || []).length || z.b.some(p => hits([p[0] - MARGIN, p[1] - MARGIN, p[2] + MARGIN, p[3] + MARGIN],
+        b));
       for (const [id, e] of Object.entries(pub || {}))
-        if (e.cells && cellsHit(e.cells, b)) out.push(id);
+        // SOG-0356 : une plage de plus de 180° (`wide`) ne retient pas une zone à elle seule : l'emprise doit aussi toucher un cadre du pays
+        if ((e.cells && cellsHit(e.cells, b)) || (e.wide && cellsHit(e.wide, b) && frameHit(zones[id]))) out.push(id);
       for (const [id, z] of Object.entries(zones)) {
-        if (pub && (!pub[id] || pub[id].cells)) continue;
+        if (pub && (!pub[id] || pub[id].cells || pub[id].wide)) continue;
         if ((z.b || []).some(p => hits([p[0] - MARGIN, p[1] - MARGIN, p[2] + MARGIN, p[3] + MARGIN], b))) out.push(id);
       }
       // zones publiées sans cases ni cadre (zone océanique, nouvelle zone) : chargées si aucune autre ne couvre l'emprise
