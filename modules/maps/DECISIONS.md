@@ -3127,3 +3127,8 @@ The list, one line per layer (what `loadData` reads around the plan; the box is 
 - **Source**: the user's extractor's XML (`VfrCircuits`, AeroDB's reader 34c24550e, Settings' deposit 3818191f6), read by the launcher's read-only verb `vfr/circuits`. **New**: the Map declares `launcher.routes: ['regen/job']` (`module.js`) and runs that one verb (`circuits.js`) — to be seen by Sécurisation (a module that can run the launcher's jobs, here with a fixed body, read only). Without a launcher (a phone) nothing is read and nothing is drawn.
 - Look: fixed wing solid black (night: near white), rotary dotted green, a paper edge under the line, arrows in the order of flight, the altitude (`1000 AAL`) on the longest leg. D233 (the three states, the drawing, the obsolete one dropped).
 
+## The flight follow-up, tranche a (SOG-0304; the user said yes to the mock-up, Q-0051)
+- **Surface**: the Map's DOM gets `.mp-main` (a flex wrapper: the box and `.mp-follow`) — column on a phone, row from 1 000 px with the follow-up at 340 px; the sheet stays below. Never over the map (the ergonomist's objection to « une popup »).
+- **Data**: nothing new is read — `progressState` (real position, age), `etaOf`, `flownPts`, the profile's TOD. Deviations from the mock-up, said: PLANNED AT THE POINT carries the plan's time and the **fuel remaining now** (the plan's fuel per point is the question to Features SOG: `quote.legs` has minutes only); SAFETY is « — » until tranche c (the MORA of the leg: its cells are read only when the MORA layer is on); the closed line has no control half yet (tranche b).
+- D234 (390 and 1 280 px; the three cells, the layout, fold / open, nothing for a flight not started); captures against the mock-up in the case's shots.
+

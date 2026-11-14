@@ -132,6 +132,8 @@ Position (GPS oder Netz nicht aktiviert) sagt es eine Benachrichtigung einmal, d
 Minuten ist, erscheint grau. Die Zeile endet mit der Quelle der Position: GPS, Netz, IVAO, VATSIM, X-Plane oder Little
 Navmap. Die voraussichtlichen Zeiten erscheinen auch für einen in Kraftstoff datierten Flug, vor dem Abflug. Nach der Ankunft ersetzt die Notiz „Angekommen“ die Zeile und „Folgen“ verschwindet; eine Ausweichlandung wird in den Notizen genannt.
 
+**Die Flugverfolgung.** Während eines gestarteten Fluges liegt eine Verfolgung UNTER der Karte (nie darüber: sie verdeckt weder das Flugzeug noch die Route): auf dem Telefon eine Zeile — „LUGEN 5 min → 123°“, der nächste Punkt, die Zeit bis dorthin und der folgende Kurs —, die man antippt, um sie zu öffnen; ab 1 000 px Bildschirmbreite eine 340-px-Spalte rechts der Karte, die schmaler wird. Geöffnet: NÄCHSTER PUNKT (Zeit und Entfernung, „danach Kurs … nach …“), dann drei Felder: SINKFLUG (Zeit und Entfernung bis zum Sinkflugbeginn oder „im Sinkflug“), GEPLANT AM PUNKT (die geplante Zeit und der Restkraftstoff) und SICHERHEIT. Ohne echte Position sagt die Zeile „Nach dem Plan — GPS oder Netz nicht aktiviert“.
+
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
 Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
 50 kt, eine Fieder für 10 kt, eine halbe Fieder für 5 kt. Tippen Sie eine Fieder an (oder fahren Sie mit der Maus

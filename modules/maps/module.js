@@ -113,6 +113,9 @@ import {
   altsStart,
   altsHover
 } from './alts.js';
+import {
+  followStart
+} from './follow.js';
 
 export const meta = {
   id: 'maps',
@@ -150,7 +153,7 @@ export const meta = {
     'layers.js?v=0',
     'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'ground.js?v=0', 'coverage.js?v=0', 'tips.js?v=0',
     'lv.js?v=0',
-    'vfr.js?v=0', 'circuits.js?v=0', 'light.js?v=0',
+    'vfr.js?v=0', 'circuits.js?v=0', 'follow.js?v=0', 'light.js?v=0',
     'flight_time.js?v=0',
     'mission_view.js?v=0',
     'weather.js?v=0',
@@ -189,13 +192,14 @@ function skeleton(ctx) {
   return `<style>${STYLE}</style>
 <h1 class="mp-sr">${T(TX.title)}</h1>
 ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>' : ''}
-<div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
+<div class="mp-main"><div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
 <div class="mp-empty f-card" hidden aria-live="polite"></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-mbar f-card" hidden></div>
 <div class="mp-alts f-card" hidden></div>
 </div>
+<div class="mp-follow" hidden></div></div>
 <div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><div class="mp-chips mp-chips-l">${chip('data-mp="layers"', 'layers', TX.layers, false).replace('class="mp-chip"', 'class="mp-lchip"')}</div><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${T(TX.sheetSize)}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${T(TX.segLabel)}"><button type="button" class="mp-whole" hidden title="${T(TX.winWholeHelp)}" aria-label="${T(TX.winWholeHelp)}">${T(TX.winWhole)}</button>${chip('data-view="profile"', 'chart', TX.dataProfile, true)}${chip('data-view="weather" disabled aria-disabled="true"', 'cloud', TX.wxTitle, false)}${chip('data-legend disabled aria-disabled="true"', 'info', TX.legend, false)}</div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${T(TX.close)}" title="${T(TX.close)}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${T(TX.legend)}"></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${T(TX.profileLabel)}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div><div class="mp-spsel f-card" hidden></div></div>
@@ -237,6 +241,7 @@ export async function mount(el, ctx) {
     stEl: q('.mp-empty'),
     mbarEl: q('.mp-mbar'),
     altsEl: q('.mp-alts'),
+    followEl: q('.mp-follow'),
     profBox: q('.mp-prof'),
     pc: q('canvas.mp-pc'),
     pcur: q('canvas.mp-pcur'),
@@ -395,6 +400,7 @@ export async function mount(el, ctx) {
   S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
   S.stops.push(atcStart()); // les contrôleurs en ligne IVAO / VATSIM, lus tant que leur couche est allumée (SOG-0094)
   S.stops.push(lvEvents()); // la fiche d'un espace de la liste (SOG-0163)
+  S.stops.push(followStart()); // le suivi du vol (SOG-0304) : sous la carte au téléphone, une colonne de 340 px dès 1 000 px
   S.stops.push(directEvents()); // « Direct vers ce point » des fiches : l'adresse de Carburant, jamais le vol (SOG-0088)
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte

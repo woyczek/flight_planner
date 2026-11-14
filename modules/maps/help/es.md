@@ -125,6 +125,8 @@ la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su 
 el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), una notificación lo dice una vez, la línea queda en las notas con un botón «Activar la posición»; una posición de más de 2 minutos aparece en gris. La línea termina con la fuente de la posición: GPS, red,
 IVAO, VATSIM, X-Plane o Little Navmap. Las horas estimadas también se muestran para un vuelo fechado en Combustible, antes de su salida. Una vez llegado, la nota «Llegado» sustituye a la línea y «Seguir» desaparece; un desvío se indica en las notas.
 
+**El seguimiento del vuelo.** Durante un vuelo iniciado, un seguimiento se coloca DEBAJO del mapa (nunca encima: no oculta ni el avión ni la ruta): en el teléfono una línea —«LUGEN 5 min → 123°», el próximo punto, el tiempo hasta él y el rumbo que sigue—, que se toca para abrirla; en una pantalla de 1 000 px o más, una columna de 340 px a la derecha del mapa, que se estrecha. Abierto: PRÓXIMO PUNTO (el tiempo y la distancia, «luego rumbo … a …»), después tres casillas: DESCENSO (el tiempo y la distancia antes del inicio del descenso, o «en descenso»), PREVISTO EN EL PUNTO (la hora prevista y el combustible restante) y SEGURIDAD. Sin posición real, la línea dice «Según el plan — GPS o red no activados».
+
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
 a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un
 banderín vale 50 kt, una barba 10 kt, media barba 5 kt. Toque una barba (o pase el ratón por encima): la burbuja da la

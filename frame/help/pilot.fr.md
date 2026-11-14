@@ -400,6 +400,8 @@ estimée (ETA) sous son nom, sans jamais couvrir un terrain, en UTC (« 14:52Z �
 ou réseau non activés), une notification le dit une fois, la ligne reste dans les notes avec un bouton « Activer la position » ; une position de plus de 2 minutes est grisée.
 La ligne finit par la source de la position : GPS, réseau, IVAO, VATSIM, X-Plane ou Little Navmap. Les heures estimées sont aussi montrées pour un vol daté dans Carburant, avant son départ. Vol arrivé : la note « Arrivé » remplace la ligne et « Suivre » disparaît ; un déroutement est dit dans les notes.
 
+**Le suivi du vol.** Pendant un vol démarré, un suivi se pose SOUS la carte (jamais dessus : il ne cache ni l'avion ni la route) : au téléphone une ligne — « LUGEN 5 min → 123° », le prochain point, le temps pour l'atteindre et le cap qui suit —, qu'on touche pour la déplier ; sur un écran de 1 000 px et plus, une colonne de 340 px à droite de la carte, qui se rétrécit. Déplié : PROCHAIN POINT (le temps et la distance, « ensuite cap … vers … »), puis trois cases : DESCENTE (le temps et la distance avant le début de descente, ou « en descente »), PRÉVU AU POINT (l'heure prévue et le carburant restant) et SÉCURITÉ. Sans position réelle, la ligne dit « D'après le plan — GPS ou réseau non activé ».
+
 **Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
 le long de la route : à chaque point, et tous les 50 NM entre deux points. La hampe pointe d'où vient le vent ; un
 fanion vaut 50 kt, une barbe 10 kt, une demi-barbe 5 kt. Touchez une barbule (ou passez dessus à la souris) : la bulle

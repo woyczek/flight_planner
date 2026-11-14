@@ -7815,3 +7815,47 @@ def d233(c):
     r3 = c.js(card, 'LFPO')
     c.eq(r3, [], 'the chart not read: nothing is said', what=str(r3))
 
+
+@case('D234', 'The flight follow-up, tranche a (SOG-0304, the validated mock-up): for a started flight, never ON the map — under it on a phone (one line closed, the whole when open), a 340 px column to the right of the map from 1 000 px (the map shrinks); the closed line says the next point, the time to it and the heading after it; open: NEXT POINT and the band of three cells (descent, planned at the point, safety); nothing for a flight not started', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0304 (the user, 13 Nov: « Écran carte pendant le vol : une popup avec les infos cruciales, et un suivi du vol » ; Q-0051 yes to the mock-up modules/maps/maquette/suivi.html; the ergonomist: tranche a = the sheet / the column, the closed line, the next point, the band; captures against the mock-up): the Map showed the flight\u2019s progress in one note line only')
+def d234(c):
+    for w, h in ((390, 844), (1280, 760)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        _d234(c)
+
+
+def _d234(c):
+    start = now() - datetime.timedelta(minutes=12)
+    f = _legs_flight(start=start)
+    f['progress'] = {'phase': 'cruise', 'fuelRemainingKg': 2340, 'actual': {'lat': 46.87, 'lon': -1.404, 'at': iso(now()), 'gsKt': 240, 'altFt': 9000, 'source': 'device'}}
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!document.querySelector('.mp-follow') && !document.querySelector('.mp-follow').hidden", timeout=15000, what='the follow-up shows for a started flight')
+    c.wait(600)
+    g = c.js("""() => { const r = e => { const q = e.getBoundingClientRect(); return [Math.round(q.left), Math.round(q.top), Math.round(q.right), Math.round(q.bottom)] }, F = document.querySelector('.mp-follow');
+      return { follow: r(F), box: r(document.querySelector('.mp-box')), main: r(document.querySelector('.mp-main')), line: F.querySelector('.mp-fl-line').textContent.replace(/\\s+/g, ' ').trim(),
+        sec: (F.querySelector('.mp-fl-sec') || {}).textContent || '', cells: F.querySelectorAll('.mp-fl-band > div').length, full: !!F.querySelector('.mp-fl-full') } }""")
+    c.ok(g['line'].startswith('LUGEN') and 'min' in g['line'] and '→' in g['line'] and '°' in g['line'], g['line'], 'the closed line: the next point, the time to it, the heading after it')
+    c.ok('LUGEN' in g['sec'] and 'NM' in g['sec'] and 'NEPIX' in g['sec'], g['sec'], 'open: NEXT POINT with its time and distance, and the heading that follows')
+    c.eq(g['cells'], 3, 'the band has its three cells (descent, planned at the point, safety)', what=str(g))
+    c.ok(g['full'], str(g['full']), 'open by default on a started flight')
+    wide = c.page.viewport_size['width'] >= 1000
+    if wide:
+        c.ok(g['follow'][0] >= g['box'][2] - 1 and abs((g['follow'][2] - g['follow'][0]) - 340) <= 2, f"follow {g['follow']} box {g['box']}", 'from 1 000 px: a column of 340 px to the right of the map')
+        c.ok(g['box'][2] - g['box'][0] <= g['main'][2] - g['main'][0] - 338, f"box {g['box']} main {g['main']}", 'the map shrinks by the column')
+    else:
+        c.ok(g['follow'][1] >= g['box'][3] - 1 and g['follow'][2] - g['follow'][0] >= g['main'][2] - g['main'][0] - 2, f"follow {g['follow']} box {g['box']}", 'on a phone: under the map, the whole width — never over it')
+    # folded to one line, opened again
+    c.js("() => { document.querySelector('[data-follow-toggle]').click(); return true }")
+    c.until("() => !document.querySelector('.mp-follow .mp-fl-full')", timeout=3000, what='the follow-up folds to its line')
+    c.js("() => { document.querySelector('[data-follow-toggle]').click(); return true }")
+    c.until("() => !!document.querySelector('.mp-follow .mp-fl-full')", timeout=3000, what='and opens again')
+    c.shot(f'D234_standard_follow_{c.page.viewport_size["width"]}.png')
+    # a flight not started: nothing
+    c.open('maps', docs=fdocs(_legs_flight(planned=now() + datetime.timedelta(hours=2))), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.wait(1500)
+    c.eq(c.js("() => { const F = document.querySelector('.mp-follow'); return !F || F.hidden }"), True, 'no follow-up for a flight not started', what='hidden')
+

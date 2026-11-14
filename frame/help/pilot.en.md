@@ -394,6 +394,8 @@ planned one; the profile shows both altitudes. Close up, each point carries its 
 map on your position; moving the map stops it. Without a position (GPS or network not enabled), a notification says so once, the line stays in the notes with an “Enable the position” button; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
 IVAO, VATSIM, X-Plane or Little Navmap. The estimated times are also shown for a flight dated in Fuel, before it leaves. Once arrived, the note “Arrived” replaces the line and “Follow” goes; a diversion is said in the notes.
 
+**The flight follow-up.** During a started flight a follow-up sits UNDER the map (never over it: it hides neither the aircraft nor the route): on a phone one line — “LUGEN 5 min → 123°”, the next point, the time to it and the heading that follows —, which you touch to open; on a screen of 1 000 px and more, a 340 px column to the right of the map, which shrinks. Open: NEXT POINT (the time and distance, “then heading … to …”), then three cells: DESCENT (the time and distance before the start of the descent, or “descending”), PLANNED AT THE POINT (the planned time and the fuel remaining) and SAFETY. Without a real position the line says “From the plan — GPS or network not enabled”.
+
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
 barb 10 kt, a half barb 5 kt. Tap a barb (or move the mouse over it): the bubble gives the direction, the speed, the

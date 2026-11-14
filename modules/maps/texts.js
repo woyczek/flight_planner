@@ -860,6 +860,17 @@ export const TX = {
   vfrPoints: ['Points de report ({n})', 'Reporting points ({n})', 'Meldepunkte ({n})', 'Puntos de notificación ({n})'],
   vfrBaseCount: ['{n} points de report', '{n} reporting points', '{n} Meldepunkte', '{n} puntos de notificación'],
   vfrSeqCount: ['{r} séquences VAC', '{r} VAC sequences', '{r} VAC-Sequenzen', '{r} secuencias VAC'],
+  followLine: ['{id} {t}', '{id} {t}', '{id} {t}', '{id} {t}'],
+  followNext: ['Prochain point', 'Next point', 'Nächster Punkt', 'Próximo punto'],
+  followPoint: ['{id} · {t} ({d} NM)', '{id} · {t} ({d} NM)', '{id} · {t} ({d} NM)', '{id} · {t} ({d} NM)'],
+  followThen: ['ensuite cap {h}° vers {id}', 'then heading {h}° to {id}', 'danach Kurs {h}° nach {id}', 'luego rumbo {h}° a {id}'],
+  followDescent: ['Descente', 'Descent', 'Sinkflug', 'Descenso'],
+  followDescending: ['en descente', 'descending', 'im Sinkflug', 'en descenso'],
+  followPlanned: ['Prévu au point', 'Planned at the point', 'Geplant am Punkt', 'Previsto en el punto'],
+  followSafety: ['Sécurité', 'Safety', 'Sicherheit', 'Seguridad'],
+  followPlan: ['D’après le plan — GPS ou réseau non activé', 'From the plan — GPS or network not enabled',
+    'Nach dem Plan — GPS oder Netz nicht aktiviert', 'Según el plan — GPS o red no activados'
+  ],
   circuitDefault: ['Tour de piste : main gauche (rien de publié sur la carte)',
     'Traffic circuit: left-hand (nothing published on the chart)', 'Platzrunde: Linksrunde (nichts auf der Karte veröffentlicht)',
     'Circuito de tránsito: mano izquierda (nada publicado en la carta)'

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the flight follow-up, tranche a** (SOG-0304, the user said yes to the mock-up): for a started flight, under the map on a phone (one line: next point, time, heading after it; open: NEXT POINT and the band descent / planned at the point / safety), a 340 px column to the right of the map from 1 000 px; never on the map; the control, the radio-navigation and the procedure link are the next tranches; help ×4; D234.
 - **One rule for the points of a map** (SOG-0343): a finger takes a point in 22 px, a mouse in 8 px, the nearest wins, a press in the void reads nothing (`frame/lib/hit_target.js`, the Weather screen applies it first); noreg A207
 - **A201 is deterministic** (SOG-0337 T2 guard): the diagnostic reads the tree read of the repository, shared by all the transports of the page (the page makes a new one at each reading of the device's settings, the diagnostic read another); the case waits for the diagnostic, not a delay
 - **The frame draws at once with the last known state of the launcher** (SOG-0133: « plusieurs secondes avant l'écran » through a slow link): the detection finishes behind and only a difference rebinds the transport; a first start waits 600 ms at most; noreg A205

@@ -11,6 +11,29 @@ export const STYLE = `
    page d'essai) la hauteur est donnée plus bas. */
 [data-module="maps"]{display:flex;flex-direction:column;min-height:0;overflow:hidden;isolation:isolate}
 [data-module="maps"] .mp-sr{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+[data-module="maps"] .mp-main{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+[data-module="maps"] .mp-follow{flex:none;background:var(--sog-surface);border-top:1px solid var(--sog-border);display:flex;flex-direction:column;min-width:0}
+[data-module="maps"] .mp-follow[hidden]{display:none}
+[data-module="maps"] .mp-fl-line{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:48px;padding:6px 14px;font:inherit;font-weight:600;color:var(--sog-fg);background:none;border:0;text-align:left;cursor:pointer;width:100%;box-sizing:border-box}
+[data-module="maps"] .mp-fl-a{flex:1 1 auto;min-width:0}
+[data-module="maps"] .mp-fl-gps{flex:none;font-weight:400;font-size:13px;color:var(--sog-warn,#7d4e00)}
+[data-module="maps"] .mp-fl-ch{flex:none;color:var(--sog-muted);font-size:14px}
+[data-module="maps"] .mp-fl-full{padding:0 14px 12px;overflow:auto;max-height:42vh}
+[data-module="maps"] .mp-fl-sec{border-top:1px solid var(--sog-border);padding:9px 0}
+[data-module="maps"] .mp-fl-k{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--sog-muted)}
+[data-module="maps"] .mp-fl-v{font-weight:600;font-size:17px}
+[data-module="maps"] .mp-fl-s{color:var(--sog-muted);font-size:14px}
+[data-module="maps"] .mp-fl-band{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+[data-module="maps"] .mp-fl-band>div{border:1px solid var(--sog-border);border-radius:8px;padding:6px 8px;min-width:0}
+[data-module="maps"] .mp-fl-band .mp-fl-k{font-size:11px}
+[data-module="maps"] .mp-fl-band .mp-fl-v{font-size:14px;line-height:1.25}
+@media (min-width:1000px){
+  [data-module="maps"] .mp-main{flex-direction:row}
+  [data-module="maps"] .mp-main>.mp-box{flex:1 1 0;min-width:0}
+  [data-module="maps"] .mp-follow{width:340px;border-top:0;border-left:1px solid var(--sog-border);overflow:auto}
+  [data-module="maps"] .mp-fl-line{font-size:15px;flex-wrap:nowrap}
+  [data-module="maps"] .mp-fl-full{max-height:none;flex:1}
+}
 [data-module="maps"] .mp-box{position:relative;flex:1 1 0;min-height:0;border:solid var(--sog-border);border-width:1px 0;overflow:hidden;background:var(--mp-base,var(--sog-bg));touch-action:none}
 [data-module="maps"] .mp-map{position:absolute;inset:0}
 [data-module="maps"] canvas.mp-over{position:absolute;left:0;top:0;pointer-events:none}

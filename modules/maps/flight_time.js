@@ -44,6 +44,9 @@ import {
 import {
   drawCursor
 } from './profile_view.js';
+import {
+  followRender
+} from './follow.js';
 
 export {
   isStarted
@@ -130,6 +133,7 @@ export function progressUpdate() {
   S.progHtml = progressHtml(st);
   writeNotes();
   if (!st.actual && !isArrived(f)) noteOnce('gps', tt(TX.progNoPos)); // une fois par montage ; la ligne et son bouton restent
+  followRender(); // le suivi du vol (SOG-0304) : la ligne et ce qu'elle dit se refont avec la progression
   if (S.follow && st.actual && S.map) {
     S.selfMove = true;
     S.map.once('moveend', () => {
@@ -183,7 +187,7 @@ function alongRoute(p) {
 }
 /** État de la progression : position prévue (dérivée), position réelle, écart en distance et en temps, écart latéral,
  *  péremption. */
-function progressState() {
+export function progressState() {
   const f = S.route.flight,
     pl = plannedPositionAt(f, Date.now(), {
       path: flownPts()
