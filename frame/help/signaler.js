@@ -105,6 +105,13 @@
       'Captura rechazada: {name} (png, jpeg o webp, 1,5 MB como máximo, tres como máximo).'
     ],
     send: ['Envoyer', 'Send', 'Senden', 'Enviar'],
+    sendingLbl: ['Envoi…', 'Sending…', 'Wird gesendet…', 'Enviando…'],
+    duplicate: [
+      'Ce signalement vient déjà de partir (même texte dans la minute) : un seul appui suffit.',
+      'This report has just been sent (same text within a minute): one tap is enough.',
+      'Diese Meldung wurde gerade gesendet (gleicher Text innerhalb einer Minute): Ein Tippen genügt.',
+      'Este informe acaba de enviarse (mismo texto en el último minuto): basta con una pulsación.'
+    ],
     whyPost: ['Écrit tout de suite sur ce poste.', 'Written at once on this workstation.', 'Sofort auf diesem Rechner geschrieben.',
       'Escrito de inmediato en este puesto.'
     ],
@@ -520,6 +527,9 @@
       });
       const can = !chk && ui.ch !== 'old' && !ui.sending && !ui.reducing && d.title.trim() && d.text.trim();
       $('[data-send]').disabled = !can;
+      const sendTxt = t(ui.sending || ui.reducing ? T.sendingLbl : T
+        .send); // le bouton est « occupé » pendant l'envoi : un second appui n'a rien à faire
+      if ($('[data-send]').textContent !== sendTxt) $('[data-send]').textContent = sendTxt;
       $('[data-why]').textContent = ui.ch === 'pilote' ? t(T.whyPilot) : ui.ch === 'poste' ? t(T.whyPost) : '';
       const n = $('[data-note]');
       const html = ui.note ? `<p class="${ui.note.kind === 'warn' ? 'f-warn' : 'f-card'}" data-kind="${esc(ui.note.kind)}">${esc(ui.note.text)}</p>` : '';
@@ -696,8 +706,22 @@
       }
     };
     /** Ce que l'appareil garde, « non envoyé » : renvoyé quand le canal répond. */
+    // SOG-0335 : un appui sur « Envoyer » fait UN signalement. Le même texte (sorte, titre, texte) dans la minute n'en fait pas un second, et ce qui attend « non envoyé » en plusieurs
+    // exemplaires identiques ne part qu'une fois
+    const sigOf = r => [r.kind, r.title, r.text].join('\u0001'),
+      DUP_MS = 60000;
+    const isDup = r => {
+      const k = sigOf(r);
+      return (ui.lastSent && ui.lastSent.sig === k && Date.now() - ui.lastSent.at < DUP_MS) || st.unsent.some(u => sigOf(u) === k &&
+        Date.now() - Date.parse(u.at) < DUP_MS);
+    };
     const flush = async () => {
       if (!st.unsent.length || (ui.ch !== 'poste' && ui.ch !== 'pilote')) return;
+      const seen = new Set();
+      st.unsent = st.unsent.filter(u => {
+        const k = `${u.via}|${sigOf(u)}`;
+        return seen.has(k) ? false : (seen.add(k), true);
+      });
       const keep = [];
       for (const u of st.unsent) {
         const ok = ui.ch === 'poste' ? u.via === 'poste' && await sendPost(u) : u.via === 'pilote' && await sendPilot(u);
@@ -809,8 +833,20 @@
         } : {})
       });
       if (!r) return;
+      if (isDup(r)) {
+        ui.note = {
+          kind: 'warn',
+          text: t(T.duplicate)
+        };
+        paint();
+        return;
+      }
       ui.sending = true;
       ui.refusal = null;
+      ui.lastSent = {
+        sig: sigOf(r),
+        at: Date.now()
+      };
       paint();
       let id = false;
       if (ui.ch === 'poste') id = await sendPost(r, ui.shots);
@@ -819,6 +855,8 @@
         offline: true
       };
       ui.sending = false;
+      if (!id && !ui.refusal?.offline && ui.ch !== 'poste-off' && ui.refusal?.reason !== 'no-write') ui.lastSent =
+        null; // refusé net : le même texte peut être renvoyé
       if (id) {
         ui.note = {
           kind: 'ok',

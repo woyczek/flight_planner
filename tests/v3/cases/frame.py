@@ -7958,3 +7958,39 @@ def a201(c):
     d = c.js("FrameData.diagnostic().then(d => d.treeRead)")
     c.ok(d and d.get('incremental') is True and d['changed'] == 1 and d['requests'] == 2, d, 'the diagnostic says it was incremental: one file changed, two requests')
     c.check_errors()
+
+
+@case('A202', "One tap on « Envoyer » makes ONE report: the button is busy while it leaves, the same text within a minute does not make a second one, and identical reports waiting « not sent » leave once (SOG-0335: three identical reports arrived for one text)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False,
+      rule="SOG-0335 (the ergonomist, 14 Nov: « trois signalements identiques sont arrivés pour un seul texte »): a report is a document under pilot/<trigram>/signalements/<id>.json with an identifier made at each send; a second tap, a retyped text or copies kept « non envoyé » each made a document of their own; now the button says « Envoi… » and is off while it leaves, the same kind + title + text within a minute is refused with a sentence, and identical unsent copies are collapsed before they leave")
+def a202(c):
+    docs_js = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => /signalements\/SIG-[0-9a-f]{10}\.json$/.test(String(k)))) } })"""
+    c.open('signaler', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen')
+    c.page.fill('[data-title]', 'Bouton cassé')
+    c.page.fill('[data-text]', 'Un seul texte.')
+    # two taps at once (a nervous finger, a phone that does not answer at once)
+    c.js("(() => { const b = document.querySelector('[data-form] [data-send]'); b.click(); b.click(); b.click(); return 1 })()")
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length >= 1", timeout=20000, what='the report sent')
+    c.wait(800)
+    c.eq(len(c.js(docs_js)), 1, 'three taps at once make ONE document', what='one document')
+    # the same text again within a minute: refused, said
+    c.page.fill('[data-title]', 'Bouton cassé')
+    c.page.fill('[data-text]', 'Un seul texte.')
+    c.tap('[data-form] [data-send]')
+    c.wait(600)
+    c.eq([len(c.js(docs_js)), c.count('[data-note] .f-warn') + c.count('[data-note] [data-kind=warn]') >= 1], [1, True], 'the same text within a minute makes no second report, and the screen says why', what='duplicate refused')
+    # another text goes
+    c.page.fill('[data-text]', 'Un autre texte.')
+    c.tap('[data-form] [data-send]')
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length >= 2", timeout=20000, what='the second report')
+    c.eq(len(c.js(docs_js)), 2, 'a different text is a second report', what='two documents')
+    # three identical copies waiting « not sent » leave once
+    cp = {'kind': 'bug', 'title': 'Copie', 'text': 'Attente.', 'screen': 'fuel', 'via': 'pilote'}
+    un = [{**cp, 'id': f'SIG-{n:010x}', 'at': '2026-11-14T09:00:00Z'} for n in (1, 2, 3)]
+    before = set(c.js(docs_js))
+    c.open('signaler', docs=LEVEL3 + [['device/signaler.json', {'poste': False, 'mine': [], 'unsent': un, 'draft': {'kind': 'bug', 'title': '', 'text': ''}}, 'cache']])
+    c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen')
+    c.wait(1500)
+    c.eq(len(set(c.js(docs_js)) - before), 1, 'three identical copies kept « not sent » leave as ONE report', what='collapsed')
+    c.check_errors()

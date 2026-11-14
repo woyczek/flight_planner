@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **One tap on « Envoyer » makes one report** (SOG-0335: three identical reports for one text): busy button, the same text within a minute refused with a sentence, identical copies waiting « non envoyé » leave once; noreg A202
 - **The band of the request limit pushes the view down instead of covering its first row** (SOG-0337); noreg A198
 - **Fuel: the line of the first synchronisation no longer promises « a few seconds » (a GitLab rate limit can hold it)** (fuel DECISIONS; noreg F84; SOG-0337).
 - **With a tree already known, only what changed is read** (SOG-0337, T2): one comparison of the two heads and the one folder of each changed file instead of the 105 pages of the whole repository; whole tree (paced) when the comparison is refused or truncated, touches more than 100 files, or a folder is too large to list; noreg A38, A201
