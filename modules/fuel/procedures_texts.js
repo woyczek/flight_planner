@@ -19,6 +19,12 @@ export const TX = {
     'Little Navmap, leída en este equipo'
   ],
   // SOG-0210 (refus du 13 nov.) : une procédure choisie lue de Little Navmap le dit sous les listes et sur la ligne de résumé
+  // SOG-0210 (second refus) : des listes lues de Little Navmap, dites avant tout choix
+  procLnmLists: ['⚠ Des procédures de ce terrain sont lues de Little Navmap, sur ce poste, pour votre usage personnel.',
+    '⚠ Procedures of this aerodrome are read from Little Navmap, on this device, for your personal use.',
+    '⚠ Verfahren dieses Flugplatzes stammen aus Little Navmap, auf diesem Gerät, für Ihren persönlichen Gebrauch.',
+    '⚠ Procedimientos de este aeródromo leídos de Little Navmap, en este equipo, para su uso personal.'
+  ],
   procLnmChosen: ['⚠ Lue de Little Navmap sur ce poste, pour votre usage personnel : {list}',
     '⚠ Read from Little Navmap on this device, for your personal use: {list}',
     '⚠ Aus Little Navmap auf diesem Gerät gelesen, für Ihren persönlichen Gebrauch: {list}',

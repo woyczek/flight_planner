@@ -1987,3 +1987,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   contradicted it). `waitFlight` now only says it waits for the first synchronisation. The controls still come back after
   FLIGHT_WAIT_MS (4 s) on an empty flight, said by `lateFlight`; the flight itself comes when the synchronisation does. F84 extended
   (red before).
+- **14 Nov 2026 — SOG-0210, second refusal (13 Nov 16 h 53, KDEN, read by the ergonomist on 14 Nov)**. (1) « pas de meteo sur la
+  piste… Une fois qu'on a choisi la piste conseillée, la météo apparaît »: the captures 165228 / 165309 show the weather of the mount
+  served from the reserve (« Hors réseau : dernières valeurs lues … 15:35Z ») without KDEN's METAR; only a runway choice (the flight
+  changed → scheduleWx) read it again. Now a side of the card without wind asks for the read (`host.wantWind`: one attempt every 15 s
+  at most, 4 per aerodrome and opening; offline, only a timer that asks again later); the Piste line « à choisir » says the METAR and
+  offers the best runway as soon as it is read. F222 (red before: the fixture answers the arrival's METAR only 6 s after the opening's
+  reads). (2) « rien ne me dit que les données viennent de lnm … une popup discrète qui disparaît. rien sur la zone de choix »: the
+  side's warning line now shows as soon as its lists come from Little Navmap (`procLnmLists`), before any choice, and the Arrivée /
+  Départ / Approche lines carry « Little Navmap, lue sur ce poste » when their whole list comes from it, chosen or not. F223 (red
+  before); F203 unchanged.

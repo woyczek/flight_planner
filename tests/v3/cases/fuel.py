@@ -5703,3 +5703,64 @@ def f221(c):
     to_step(c, 1)
     wait_rows(c, 'arr')
     c.until(f"document.querySelector('{A} [data-prow=rwy]')?.classList.contains('fu-pwarn')", timeout=20000, what='a tailwind runway: the warning')
+
+
+
+@case('F222', 'Procedures: a side whose METAR was not in the first weather read asks for it — the Piste line « à choisir » then says the '
+      'METAR and offers the best runway, without waiting for a first choice', 'F', tags=('fuel', 'weather'), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0210 refused on 13 Nov 16 h 53 (KDEN: « pas de meteo sur la piste… Une fois qu\'on a choisi la piste conseillée, la météo '
+      'apparaît »; captures 165228 / 165309: the weather of the mount came from the reserve, without the arrival\'s METAR, and only a '
+      'runway choice read it again): one attempt every 15 s at most, 4 per aerodrome and opening')
+def f222(c):
+    import time as _tt
+    seen = {'t0': 0.0}
+    # the arrival's METAR exists only 6 s after the first read: the reads of the opening never get it (the reserve of the user's case)
+    has = lambda: bool(seen['t0']) and _tt.time() - seen['t0'] > 6
+
+    def aw(route):
+        import time as _t
+        now = int(_t.time())
+        rows = [{'icaoId': 'LFRS', 'obsTime': now, 'wdir': 30, 'wspd': 5, 'visib': '6+', 'clouds': [{'cover': 'CAVOK'}], 'temp': 15, 'dewp': 10,
+                 'altim': 1015, 'rawOb': f'LFRS {_t.strftime("%d%H%M", _t.gmtime(now))}Z 03005KT CAVOK 15/10 Q1015', 'fltCat': 'VFR'}]
+        seen['t0'] = seen['t0'] or _tt.time()
+        if has():
+            rows.append({'icaoId': 'LFML', 'obsTime': now, 'wdir': 310, 'wspd': 12, 'visib': '6+', 'clouds': [{'cover': 'CAVOK'}], 'temp': 15, 'dewp': 10,
+                         'altim': 1015, 'rawOb': f'LFML {_t.strftime("%d%H%M", _t.gmtime(now))}Z 31012KT CAVOK 15/10 Q1015', 'fltCat': 'VFR'})
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(rows))
+    c.context.route(re.compile(r'aviationweather\.gov(/|%2F)api(/|%2F)data(/|%2F)metar', re.I), aw)
+    def vat(route):
+        import time as _t
+        stamp = _t.strftime('%d%H%M', _t.gmtime())
+        seen['t0'] = seen['t0'] or _tt.time()
+        lines = [f'LFRS {stamp}Z 03005KT CAVOK 15/10 Q1015'] + ([f'LFML {stamp}Z 31012KT CAVOK 15/10 Q1015'] if has() else [])
+        route.fulfill(status=200, content_type='text/plain', body='\n'.join(lines))
+    c.context.route(re.compile(r'metar\.vatsim\.net', re.I), vat)
+    A = f'{FUEL} [data-proc="arr"]'
+    c.open('fuel', docs=proc_docs() + proc_flight({'dep': {}, 'arr': {}}), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'arr')
+    c.until(f"/METAR/.test(document.querySelector('{A} [data-r=src-rwy]')?.textContent || '') && !!document.querySelector('{A} [data-metarline] [data-do=rwyprob]')",
+            timeout=30000, what='the arrival\'s METAR read without a gesture: said on the Piste line « à choisir », the best runway offered')
+    c.ok(c.js(f"document.querySelector('{A} [data-r=v-rwy]').hasAttribute('data-todo')"), c.text(f'{A} [data-r=v-rwy]'), 'no runway chosen')
+
+
+
+@case('F223', 'Little Navmap, before any choice: the side says its procedures come from Little Navmap (the warning line, always on screen) and '
+      'the Arrivée line says « Little Navmap, lue sur ce poste » — never a notification alone', 'F', tags=('fuel',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0210 refused on 13 Nov 16 h 53 (« rien ne me dit que les données viennent de lnm. normal ? ah si, une popup discrète qui disparaît. '
+      'rien sur la zone de choix »); the ergonomist: the source written ON the line and its list; LFML read as from Little Navmap (stub)')
+def f223(c):
+    c.page.add_init_script(_LNM_RECORDS_STUB)
+    A = f'{FUEL} [data-proc="arr"]'
+    c.open('fuel', docs=proc_docs() + proc_flight({'dep': {}, 'arr': {}}), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'arr')
+    c.until(f"(() => {{ const e = document.querySelector('{A} [data-lnmline]'); return !!e && !e.hidden }})()", timeout=8000,
+            what='the warning line, nothing chosen yet')
+    T = 'modules/fuel/procedures_texts.js'
+    c.ok(norm(tx(T, 'procLnmLists', c.lang)) in norm(c.text(f'{A} [data-lnmline]')), c.text(f'{A} [data-lnmline]'), 'it says the lists come from Little Navmap')
+    c.ok(norm(tx(T, 'procSrcLnm', c.lang)) in norm(c.text(f'{A} [data-r=src-main]') or ''), c.text(f'{A} [data-prow=main]'),
+         'the Arrivée line says its source, nothing chosen')
+    c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-lnmline]:not([hidden])'), 0, 'not on the departure (the base\'s)', what='departure')

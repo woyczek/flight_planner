@@ -6436,6 +6436,28 @@ export async function mount(el, ctx) {
     },
     refresh: () => S === self && refresh(),
     // le vent du METAR connu du terrain, celui de l'étape Départ (jamais le TAF) : { dir (vrai, d'où il vient), kt, magVar } ou null
+    // SOG-0210 (refus du 13/11, KDEN) : un terrain de la carte des procédures sans METAR en demande la lecture — une tentative toutes
+    // les 15 s au plus, 4 par terrain et par ouverture (rien en boucle) ; la carte suit à la réponse (wxFetch redessine). Rend null.
+    wantWind: icao => {
+      const k = String(icao || '').toUpperCase(),
+        w = self.wxWant || (self.wxWant = {}),
+        a = w[k] || (w[k] = {
+          n: 0,
+          at: 0
+        });
+      if (!/^[A-Z0-9]{4}$/.test(k) || a.n >= 4) return null;
+      // hors réseau, ou trop tôt : un nouvel essai à l'échéance (la carte se redessine et redemande), rien n'est lu maintenant
+      const due = self.ctx.net?.online?.() === false ? 15e3 : a.at + 15e3 - Date.now();
+      if (due > 0) {
+        clearTimeout(a.timer);
+        a.timer = setTimeout(() => S === self && !gone(self) && self.P?.render?.(), due + 50);
+        return null;
+      }
+      a.n++;
+      a.at = Date.now();
+      wxFetch(false);
+      return null;
+    },
     wind: icao => {
       const st = WX.station(self.wx?.metar?.[icao], null);
       return st && st.wspd != null ? {

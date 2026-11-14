@@ -243,6 +243,9 @@ export function createProcedures(host) {
    *  ajouté par l'appelant, après ⌛. o : le choix courant du côté. */
   /** La source d'une fiche du poste dite dans la liste : « Little Navmap, lue sur ce poste » (SOG-0210 ; une fiche lnm est aussi
    *  local), « X-Plane, local » pour le repli d'X-Plane ; '' pour une lecture officielle. */
+  /** Une fiche lue de Little Navmap (statut lnm). */
+  const isLnm = r => r?.status === 'lnm' || r?.lnm === true;
+
   function srcLabel(rec) {
     return rec?.status === 'lnm' || rec?.lnm === true ? tt(TX.procSrcLnm) : rec?.status === 'xplane' || rec?.local ? tt(TX.procXplane) : '';
   }
@@ -321,7 +324,8 @@ export function createProcedures(host) {
         icao
       }), // la règle du nom partagée avec la Carte (frame/lib/adnames.js)
       cov, // couverture du terrain : read_at (date de la dernière lecture), outdated
-      wind: host.wind?.(icao) || null, // le vent du METAR connu (étape Départ) : { dir, kt, magVar }, null sans METAR (§ 10.30)
+      wind: host.wind?.(icao) || host.wantWind?.(icao) ||
+        null, // le vent du METAR connu (étape Départ) : { dir, kt, magVar }, null sans METAR (§ 10.30) ; SOG-0210 : sans lui, la lecture est demandée
       rwys: await runwayChoicesOf(icao, known, all),
       all,
       // procédures non lues (§ 10.26) : les fiches douteuses du terrain, jamais dans les listes. aerodb ne rend plus celles de statut
@@ -1104,7 +1108,17 @@ export function createProcedures(host) {
     el.querySelector('[data-prow="rwy"]')?.classList.toggle('fu-pwarn', !!(v.rwy && p && PR.rwNum(p.r.id) !== v.rwy && v.w?.c && Math
       .round(-v.w.c.head) >= 1));
     val('main', v.proc === null ? tt(TX.procNone) : v.proc);
-    src('main', mainRec ? srcLabel(mainRec) : '');
+    // SOG-0210 (second refus) : la source sur la ligne — celle de la procédure choisie, sinon, avant tout choix, celle de toute la liste
+    // quand elle vient de Little Navmap
+    const listLnm = kinds => {
+        const l = kinds.flatMap(k => m.lists?.[k] || []);
+        return l.length && l.every(isLnm) ? tt(TX.procSrcLnm) : '';
+      },
+      appRec = byId.get(o.app);
+    src('main', mainRec ? srcLabel(mainRec) : o[side === 'dep' ? 'sid' : 'star'] === undefined ? listLnm([side === 'dep' ? 'SID' :
+      'STAR'
+    ]) : '');
+    if (side === 'arr') src('app', appRec ? srcLabel(appRec) : o.app === undefined ? listLnm(['APP']) : '');
     val('app', v.app === null ? tt(TX.procNone) : v.app);
     const tr = el.querySelector('[data-r="v-terrain"]');
     if (tr) setHtml(tr, terrainHtml(m));
@@ -1242,14 +1256,16 @@ export function createProcedures(host) {
       rp.hidden = !lines.length;
       setHtml(rp, lines.join(''));
     }
-    // SOG-0210 : une procédure choisie lue de Little Navmap, dite sous les listes (source, usage personnel)
+    // SOG-0210 : une procédure choisie lue de Little Navmap, dite sous les listes (source, usage personnel) ; second refus (13/11) : dès
+    // que les listes du côté en viennent, avant tout choix (« rien sur la zone de choix »)
     const ll = el.querySelector('[data-r="lnm"]');
     if (ll) {
-      const lnm = chosenLnm(side, m);
-      ll.hidden = !lnm.length;
+      const lnm = chosenLnm(side, m),
+        any = (m.all || []).some(isLnm);
+      ll.hidden = !lnm.length && !any;
       setHtml(ll, lnm.length ? esc(tt(TX.procLnmChosen, {
         list: lnm.join(', ')
-      })) : '');
+      })) : any ? esc(tt(TX.procLnmLists)) : '');
     }
     // retouche de F139 : une approche en doute choisie, sa raison dite en clair sous la liste (pas de survol sur un téléphone)
     const dl = el.querySelector('[data-r="doubt"]');

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › procedures: a missing METAR of an aerodrome is asked again by itself, so the Piste line « à choisir » says it and offers the best runway without a first choice; procedures from Little Navmap are said on the side and its lines before any choice** (fuel DECISIONS; noreg F222, F223; SOG-0210).
 - **Missions › list on a phone: each title takes the whole width, its route, aircraft and time under it; side by side from 560 px of card** (missions DECISIONS; noreg N65; SOG-0344).
 - **Map: a failed read no longer empties the Map, and a layer change no longer asks again for what the device has** (SOG-0349, blocking on the phone: « après avoir coché / décoché « Autour du vol », la Carte finit avec zéro donnée »): a failed layer keeps what was shown; the reads are kept per layer (boxes, parameters) until the base itself changes; the profile shares them; D237 (red before). V3 Frame's and AeroDB's sides are theirs.
 - **Recette: a verdict is never erased** (SOG-0351): « Remettre à tester » keeps the verdict and its comment in the history of the fiche (twenty at most), the sheet shows the last comment under the test, the note after a verdict names the fiche and offers « Annuler », the comment field says which fiche it is for; **« Déjà vus » is one sequence**, the latest verdict first, the application as a label and the time of the verdict on every line (SOG-0355); noreg A208, A209, K270
