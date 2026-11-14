@@ -21,7 +21,6 @@
   if (!FD?.git || FD.gitlab) return;
   const G = FD.git;
 
-  const DEFAULT_MAX = 64 * 1024 * 1024; // sans plafond donné par l'appelant : 64 Mio
   const INC_FILES_MAX = 100, // au-delà de cent fichiers changés, l'arbre entier (cadencé) est plus simple et pas plus cher
     INC_REQ_MAX = 12; // la comparaison et les dossiers à lister : douze requêtes au plus
   const SHARED = new Map(); // dépôt + jeton → l'état partagé des transports (voir gitlab)
@@ -310,8 +309,8 @@
           priority: o.priority,
           onStart: o.onStart
         });
-        return new TextDecoder().decode(await G.bounded(r, o.max ||
-          DEFAULT_MAX)); // plafonné : jamais plus que la politique du fichier ne l'autorise (Sécurisation)
+        return new TextDecoder().decode(await G.bounded(r, o
+          .max)); // plafonné : le plafond du cadre, que le module peut abaisser (SOG-0358)
       },
       /** Octets d'un fichier (une image : le logo de la compagnie), sans décodage. */
       async readBytes(path, sha, o = {}) {
@@ -321,7 +320,7 @@
           priority: o.priority,
           onStart: o.onStart
         });
-        return G.bounded(r, o.max || DEFAULT_MAX);
+        return G.bounded(r, o.max);
       },
       /** Un commit pour tout le lot [{ path, text (null : suppression) }] sur parent ; nouvelle tête. remote : arbre
        *  connu (une suppression d'un fichier absent du dépôt est sautée). */

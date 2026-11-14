@@ -117,8 +117,6 @@
     }
   };
 
-  const DEFAULT_MAX = 64 * 1024 * 1024; // sans plafond donné par l'appelant : 64 Mio (Sécurisation : aucune lecture sans plafond)
-
   function github(c = config()) {
     if (!c?.repo || !c.token) throw new Error('github transport: repository and token required');
     // réglage d'une instance GitLab : son transport (même forme)
@@ -188,7 +186,7 @@
           priority: o.priority,
           onStart: o.onStart
         });
-        return new TextDecoder().decode(await G.bounded(r, o.max || DEFAULT_MAX)); // plafonné (Sécurisation)
+        return new TextDecoder().decode(await G.bounded(r, o.max)); // plafonné (Sécurisation)
       },
       /** Octets d'un fichier (une image : le logo de la compagnie), sans décodage. */
       async readBytes(path, sha, o = {}) {
@@ -199,7 +197,7 @@
           priority: o.priority,
           onStart: o.onStart
         });
-        return G.bounded(r, o.max || DEFAULT_MAX);
+        return G.bounded(r, o.max);
       },
       /** Un commit pour tout le lot [{ path, text (null : suppression) }] sur parent ; nouvelle tête. remote : arbre
        *  connu (une suppression d'un fichier absent du dépôt est sautée). */

@@ -797,7 +797,17 @@
           r = await tryRead({}, {
             total: 70 * MiB
           });
-          ck('plafond : sans plafond donné, 64 Mio — jamais une lecture sans borne', r.err?.tooBig === true && G.st.served <= 66 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          ck('plafond : sans plafond donné, celui du cadre (48 Mio) — jamais une lecture sans borne', r.err?.tooBig === true && G.st.served <= 50 * MiB && FD.git.MAX_READ === 48 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          r = await tryRead({
+            max: 500 * MiB
+          }, {
+            total: 70 * MiB
+          });
+          ck('plafond : un module ne peut que l’abaisser — demander 500 Mio n’ouvre rien au-dessus de 48', r.err?.tooBig === true && G.st.served <= 50 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          r = await tryRead({}, {
+            total: 15 * MiB
+          });
+          ck('plafond : le plus gros fichier légitime d’aujourd’hui (14,5 Mo : les espaces d’une zone) passe avec marge', r.err === null && r.txt.length === 15 * MiB, JSON.stringify([r.err?.message, r.txt?.length]));
           let rb = null;
           G.st.bigBlob = {
             total: 300 * MiB

@@ -666,6 +666,9 @@
           if (quick.err) return quick.err?.offline ? {
             unreadable: true,
             why: 'offline'
+          } : quick.err?.tooBig ? {
+            unreadable: true,
+            why: 'toobig' // trop gros : refusé, jamais « absent » (SOG-0358)
           } : quick.err?.aborted ? null : {
             unreadable: true,
             why: 'error',
@@ -1013,7 +1016,7 @@
   /** Le plafond d'octets d'un fichier lu du dépôt, par politique (Sécurisation : n'importe quel pilote peut commiter un fichier énorme) : une base compilée (`reference`) plus haut qu'un document ; au-delà la lecture
    *  s'arrête (le transport compte les octets en lisant) et est dite illisible (why 'error'), jamais gardée ; une révision déjà refusée n'est pas relue. */
   const READ_CAP = {
-    reference: 64 * 1024 * 1024,
+    reference: 48 * 1024 * 1024, // = le plafond du cadre (transport_git.js MAX_READ, SOG-0358) : un module ne peut que l'abaisser
     document: 8 * 1024 * 1024,
     cache: 8 * 1024 * 1024
   };

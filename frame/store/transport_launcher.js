@@ -93,12 +93,13 @@
         };
         return j.tree;
       },
-      async read(path) {
-        return (await fileOf(path)).text();
+      async read(path, sha, o = {}) {
+        return new TextDecoder().decode(await FD.git.bounded(await fileOf(path), o
+          .max)); // plafonné comme les autres transports (SOG-0358)
       },
       /** Octets d'un fichier de data/ (une image : le logo de la compagnie), sans décodage. */
-      async readBytes(path) {
-        return (await fileOf(path)).arrayBuffer();
+      async readBytes(path, sha, o = {}) {
+        return FD.git.bounded(await fileOf(path), o.max);
       },
       async commit(changes, message, parent) {
         const j = await call('__setup/batch', {

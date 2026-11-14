@@ -347,10 +347,14 @@
     };
   }
 
+  /** LE plafond d'une lecture de fichier du dépôt, pour tout le cadre (SOG-0358) : 48 Mio — plus de trois fois le plus gros fichier légitime d'aujourd'hui (14,5 Mo : les espaces aériens d'une zone). */
+  const MAX_READ = 48 * 1024 * 1024;
   /** Les octets d'une réponse, PLAFONNÉS (Sécurisation, classe de défaut ouverte : n'importe quel pilote peut commiter un fichier énorme) : la taille annoncée (Content-Length) au-delà du plafond refuse sans
    *  rien lire ; sinon les octets sont comptés EN LISANT (la réponse en flux : au-delà du plafond la lecture s'arrête et le flux est annulé, la mémoire ne suit jamais). Rend un ArrayBuffer, ou lève
    *  err.tooBig. Le plafond est celui de la politique du fichier (frame_data.js : une base compilée plus haut qu'un document de pilote). */
-  async function bounded(r, max) {
+  async function bounded(r, want) {
+    const max = Math.min(Number(want) > 0 ? Number(want) : MAX_READ,
+      MAX_READ); // UNE valeur du cadre ; un module ne peut que l'abaisser (SOG-0358)
     const tooBig = n => Object.assign(new Error(`over ${max} bytes${n ? ` (${n} read)` : ''}`), {
       tooBig: true,
       max
@@ -410,6 +414,7 @@
     guard,
     limitOf,
     bounded,
+    MAX_READ,
     publish,
     b64
   };
