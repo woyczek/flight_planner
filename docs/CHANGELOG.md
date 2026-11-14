@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › route: a flight across the North Atlantic says the state of the NAT tracks above « Calculer A → B », with « Lire les routes NAT du jour » on the workstation** (fuel DECISIONS; noreg F225; SOG-0352).
 - **Fuel › procedures: never a bare title — each side is painted as soon as it is read, what is missing says « Lecture des procédures de … », then « pas encore lues » or the GitLab limit's sentence** (fuel DECISIONS; noreg F224; SOG-0345).
 - **File reads are shared, patient and in order** (SOG-0349 corrected): `abandon` no longer cancels nor restarts, a limit never makes a read « absent » (`read(path, { detail: true })` says « unreadable, retry in n s », `readState`), the screen's files go before the background tree, a 429 pauses every request; noreg A38, A210
 - **Fuel › procedures: a missing METAR of an aerodrome is asked again by itself, so the Piste line « à choisir » says it and offers the best runway without a first choice; procedures from Little Navmap are said on the side and its lines before any choice** (fuel DECISIONS; noreg F222, F223; SOG-0210).

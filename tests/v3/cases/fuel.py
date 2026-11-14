@@ -5796,3 +5796,53 @@ def f224(c):
          '« LFML : procédures pas encore lues ; elles se lisent depuis le poste »')
     c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F224_{c.design}_390_{c.lang}_delivered.png')
+
+
+
+def _nat_flight():
+    """The planned flight of lib.FLIGHT, sent across the North Atlantic: EINN → CYYT (positions given, route set by hand)."""
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': 'EINN CYYT', 'dep': 'EINN', 'arr': 'CYYT', 'manual': True,
+                             'points': [{'id': 'EINN', 'lat': 52.70, 'lon': -8.92}, {'id': 'CYYT', 'lat': 47.62, 'lon': -52.75}]}
+    return docs
+
+
+@case('F225', 'Route step, a flight across the North Atlantic: before « Calculer A → B », a line says the state of the NAT tracks; with the '
+      'launcher, ONE gesture « Lire les routes NAT du jour » (the launcher\'s base/update of the nat zone); without it, the published copy\'s '
+      'date and no gesture; nothing for a flight that does not cross', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0352 (the ergonomist, 14 Nov, with AeroDB\'s line: the NAT message is read by the LAUNCHER from the FAA and published with the '
+      'base; a phone without launcher reads only that copy and cannot refresh it): the validity read in the message, never a fixed duration; '
+      'the reminder leaves the monthly Data screen (Réglages\' file, untouched)')
+def f225(c):
+    L = f'{FUEL} [data-natline]'
+    T = 'modules/fuel/module.js'
+    # without the launcher: the line, no gesture
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    c.until(f"(() => {{ const e = document.querySelector('{L}'); return !!e && !e.hidden }})()", timeout=15000, what='the NAT line, no launcher')
+    c.ok(norm(tx(T, 'natNoCopy', c.lang)) in norm(c.text(L)), c.text(L), 'no copy published: said')
+    c.eq(c.count(f'{L} [data-do=natread]'), 0, 'without the launcher, no gesture', what='no gesture')
+    # with the launcher: « Lire les routes NAT du jour » starts the launcher's job for the nat zone
+    st = _route_launcher(c, ['route/compute'])
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{L}:not([hidden]) [data-do=natread]')", timeout=15000, what='with the launcher: the gesture')
+    c.ok(norm(tx(T, 'natNone', c.lang)) in norm(c.text(L)), c.text(L), '« Routes NAT pas lues aujourd’hui »')
+    c.ok(c.js(f"!!(document.querySelector('{L}').compareDocumentPosition(document.querySelector('{FUEL} [data-do=rcompute]')) & Node.DOCUMENT_POSITION_FOLLOWING)"), '', 'the line before « Calculer A → B »')
+    c.js(f"document.querySelector('{L}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F225_{c.design}_390_{c.lang}_delivered.png')
+    c.tap(f'{L} [data-do="natread"]')
+    for _ in range(80):
+        if any(p.get('set') == 'base' and (p.get('args') or {}).get('zones') == ['nat'] for p in st['posts']):
+            break
+        c.wait(100)
+    c.ok(any(p.get('set') == 'base' and (p.get('args') or {}).get('zones') == ['nat'] for p in st['posts']), [p.get('set') for p in st['posts']],
+         'the launcher\'s job for the nat zone was asked')
+    c.context.unroute(re.compile(r'/__setup/'))
+    # a flight that does not cross: nothing
+    open_proc(c)
+    c.settle()
+    c.ok(c.js(f"document.querySelector('{L}')?.hidden !== false"), c.text(L), 'LFRS → LFML: no NAT line')

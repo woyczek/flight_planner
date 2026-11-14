@@ -257,6 +257,28 @@ const TX = {
   rNeedLauncher: ['Le calcul d’itinéraire demande le lanceur du poste.', 'Route computation needs the workstation’s launcher.',
     'Die Routenberechnung braucht den Launcher des Arbeitsplatzes.', 'El cálculo de ruta necesita el lanzador del puesto.'
   ],
+  // SOG-0352 : les routes NAT d'un vol qui traverse l'Atlantique nord, dites à l'étape Route avant le calcul
+  natValid: ['Routes NAT du {d}, valides jusqu’à {t}', 'NAT tracks of {d}, valid until {t}', 'NAT-Tracks vom {d}, gültig bis {t}',
+    'Rutas NAT del {d}, válidas hasta las {t}'
+  ],
+  natNone: ['Routes NAT pas lues aujourd’hui', 'NAT tracks not read today', 'NAT-Tracks heute nicht gelesen', 'Rutas NAT no leídas hoy'],
+  natStale: ['Routes NAT du {d} : périmées', 'NAT tracks of {d}: stale', 'NAT-Tracks vom {d}: veraltet', 'Rutas NAT del {d}: caducadas'],
+  natStaleCopy: ['Routes NAT du {d}, publiées depuis le poste : périmées', 'NAT tracks of {d}, published from the workstation: stale',
+    'NAT-Tracks vom {d}, vom Arbeitsplatz veröffentlicht: veraltet', 'Rutas NAT del {d}, publicadas desde el puesto: caducadas'
+  ],
+  natNoCopy: ['Routes NAT : aucune copie publiée depuis le poste', 'NAT tracks: no copy published from the workstation',
+    'NAT-Tracks: keine vom Arbeitsplatz veröffentlichte Kopie', 'Rutas NAT: ninguna copia publicada desde el puesto'
+  ],
+  natRead: ['Lire les routes NAT du jour', 'Read the day’s NAT tracks', 'NAT-Tracks des Tages lesen', 'Leer las rutas NAT del día'],
+  natReading: ['Lecture des routes NAT…', 'Reading the NAT tracks…', 'NAT-Tracks werden gelesen…', 'Leyendo las rutas NAT…'],
+  natBusyL: ['Le poste fait une autre opération : réessayez dans un instant.',
+    'The workstation is busy with another operation: try again in a moment.',
+    'Der Arbeitsplatz führt einen anderen Vorgang aus: gleich noch einmal versuchen.',
+    'El puesto está ocupado con otra operación: vuelva a intentarlo en un momento.'
+  ],
+  natFail: ['Les routes NAT n’ont pas pu être lues.', 'The NAT tracks could not be read.', 'Die NAT-Tracks konnten nicht gelesen werden.',
+    'No se pudieron leer las rutas NAT.'
+  ],
   rNoLauncher: ['Disponible avec le lanceur du poste (il ne répond pas).',
     'Available with the workstation’s launcher (it does not answer).',
     'Mit dem Launcher des Arbeitsplatzes verfügbar (er antwortet nicht).', 'Disponible con el lanzador del puesto (no responde).'
@@ -2281,7 +2303,7 @@ function renderPlanBody() {
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
-      <div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p>
+      <p class="fu-natline" data-natline hidden></p><div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div><p class="f-muted" data-rengnone${S.routeEngine === false ? '' : ' hidden'}>${esc(tt(TX.rNeedLauncher))}</p>
       <div data-routealts></div><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
@@ -2857,6 +2879,7 @@ function onPlanClick(e) {
   if (rb) return rb.dataset.do === 'rtake' ? routeTake(+rb.dataset.i) : routeAsk(rb.dataset.do === 'rcompute' ? 'compute' : 'check');
   const ar = e.target.closest('[data-altlist] [data-alt]');
   if (ar && !e.target.closest('summary, a, button, input')) return altsShow(+ar.dataset.alt);
+  if (e.target.closest('[data-do="natread"]')) return natRead(); // SOG-0352
   if (e.target.closest('[data-do="when30"]')) return setWhen(30);
   if (e.target.closest('[data-do="whennow"]')) return setWhen(0);
   const wb = e.target.closest('[data-do="wx"]');
@@ -3886,6 +3909,66 @@ function moreHtml(A) {
     'cache' &&
     A.moreCache?.at ? TX.rMoreCache : null;
   return t ? `<p class="${k === 'fail' || k === 'stop' ? 'f-warn' : 'f-muted'}" data-rmore="${k}">${esc(tt(t, { t: k === 'cache' ? hhmmLocal(A.moreCache.at) : '' }))}</p>` : '';
+}
+// ---------------------------------------------------------------- les routes NAT à l'étape Route (SOG-0352)
+/** Le départ et l'arrivée de part et d'autre de l'Atlantique nord : l'un à l'est de 25° W, l'autre à l'ouest de 50° W, tous deux au nord
+ *  de 15° N (les deux bouts de la route du vol, avec leur position). */
+function natCrossing(r) {
+  const p = Array.isArray(r?.points) ? r.points : [],
+    a = p[0],
+    b = p.at(-1),
+    v = [a?.lat, a?.lon, b?.lat, b?.lon].map(x => x === null || x === '' ? NaN : +x);
+  if (!v.every(Number.isFinite) || v[0] < 15 || v[2] < 15) return false;
+  return v[1] >= -25 && v[3] <= -50 || v[3] >= -25 && v[1] <= -50;
+}
+/** Le lanceur de ce poste est là (pas une paire distante) : il peut lire le message NAT du jour (aerodb.natEnsure). */
+const natHere = () => typeof S?.ctx?.launcher?.job === 'function' && !!S.ctx.launcher.info?.() && !S.ctx.launcher.info().lan;
+/** SOG-0352 : la ligne des routes NAT de l'étape Route, avant le calcul — la date et la validité lues dans le message (aerodb.natState,
+ *  jamais une durée en dur) ; avec le lanceur, « Lire les routes NAT du jour » quand elles ne sont pas valides ; sans lui, la date de
+ *  la copie publiée depuis le poste, sans geste. Rien pour un vol qui ne traverse pas. Une demande à la fois. */
+async function natLine() {
+  const s = S,
+    el = s?.body?.querySelector('[data-natline]');
+  if (!el) return;
+  if (!natCrossing(s.flight.route)) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  if (s.natAsking) return;
+  s.natAsking = true;
+  const st = await Promise.resolve().then(() => s.ctx.aerodb?.natState?.()).catch(() => null);
+  s.natAsking = false;
+  const box = S === s && !gone(s) ? s.body?.querySelector('[data-natline]') : null;
+  if (!box) return;
+  const day = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '?',
+    hm = iso => iso ? `${iso.slice(11, 16)}Z` : '?',
+    fresh = !!st?.present && st.expired === false,
+    here = natHere(),
+    text = fresh ? tt(TX.natValid, {
+      d: day(st.from),
+      t: hm(st.validUntil)
+    }) : here ? st?.present ? tt(TX.natStale, {
+      d: day(st.from)
+    }) : tt(TX.natNone) : st?.present ? tt(TX.natStaleCopy, {
+      d: day(st.from)
+    }) : tt(TX.natNoCopy);
+  box.innerHTML = `<span class="${fresh ? 'f-muted' : 'f-warn'}" data-natstate="${fresh ? 'ok' : st?.present ? 'old' : 'none'}">${esc(text)}</span>${here && !fresh ? ` <button type="button" class="fu-linkbtn" data-do="natread"${s.natBusy ? ' disabled aria-busy="true"' : ''}>${esc(tt(s.natBusy ? TX.natReading : TX.natRead))}</button>` : ''}`;
+  box.hidden = false;
+}
+/** SOG-0352 : « Lire les routes NAT du jour » — le travail du lanceur (aerodb.natEnsure : base/update zones nat), puis la ligne relue ;
+ *  un poste occupé ou un échec dits. */
+async function natRead() {
+  const s = S;
+  if (!s || s.natBusy || !natHere()) return;
+  s.natBusy = true;
+  natLine();
+  const r = await Promise.resolve().then(() => s.ctx.aerodb?.natEnsure?.()).catch(() => null);
+  s.natBusy = false;
+  if (gone(s)) return;
+  if (r?.busy) s.ctx.notify(tt(TX.natBusyL), 'warn');
+  else if (!r || r.refreshed && r.ok === false) s.ctx.notify(tt(TX.natFail), 'warn');
+  natLine();
 }
 // ---------------------------------------------------------------- la durée d'un calcul de route (SOG-0134)
 // Refusé en recette le 11/11 (« toujours pareil. instable, lent. ») sans un fait : le poste de l'utilisateur les donne lui-même. Quatre
@@ -6108,6 +6191,7 @@ function refresh() {
   acSelected();
   renderSummary(C);
   aidsDraw();
+  natLine(); // SOG-0352 : les routes NAT d'un vol qui traverse l'Atlantique nord
   updateProgress();
   const done = stepsDone(C);
   S.body.querySelectorAll('.fu-steps button').forEach((b, i) => b.toggleAttribute('data-done', !!done[i]));

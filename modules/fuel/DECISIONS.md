@@ -2005,3 +2005,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   « pas encore lues ; elles se lisent depuis le poste », or, when `ctx.data.status().rateLimit` says the repository limits the requests,
   the frame banner's own sentence (SOG-0337); (c) the bound is on the whole side, so an unbounded read below (zone manifest, meta) no
   longer leaves a bare title. F224 (red before at 390: LFML's reads held); the 86 cases of the block and D224 green.
+- **14 Nov 2026 — SOG-0352: the NAT tracks said at the Route step, before « Calculer A → B »** (the ergonomist with AeroDB's line: the
+  NAT message is read by the LAUNCHER from the FAA and published with the base; a phone reads only that copy and cannot refresh it).
+  When the departure and the arrival are on either side of the North Atlantic (`natCrossing`: one east of 25° W, the other west of
+  50° W, both north of 15° N), a line above the buttons reads `aerodb.natState()` — the date and the validity come from the message,
+  never a fixed duration: « Routes NAT du 14/11, valides jusqu'à 19:00Z », else, with the launcher, « pas lues aujourd'hui » / « du …
+  : périmées » and ONE gesture « Lire les routes NAT du jour » (`aerodb.natEnsure`: the launcher's base/update of the nat zone; a busy
+  launcher or a failure said); without it, the published copy's date (« … publiées depuis le poste : périmées » / « aucune copie
+  publiée depuis le poste »), no gesture. The monthly reminder lives in modules/data/later.js (Réglages' Données screen) and is not
+  touched here. F225 (red before).
