@@ -9554,3 +9554,23 @@ def l136(c):
     i = seq.index('busy') if 'busy' in seq else -1
     c.ok(i >= 0 and 'warn' not in seq[i:], seq, 'from the first « en cours » to the end of the chain the country is never amber again')
     c.check_errors()
+
+
+@case('L138', 'Données: the mouse wheel zooms the map of the countries only when the pointer is ON the map; anywhere else on the page it scrolls the page and the map keeps its view (SOG-0340, the user: « la roulette de souris est active sur toute la page, pas seulement au survol de la carte »)',
+      'L', tags=('data',), designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0340: `mapWheel` took the first map of the page when the target was not inside one (mapOf falls back on it for the buttons), so a wheel anywhere in the screen zoomed the map and was swallowed (preventDefault); it now answers only a wheel whose target is inside the map; the buttons keep the fallback')
+def l138(c):
+    _l102_open(c)
+    c.until("!!document.querySelector('[data-wmap]')", timeout=12000, what='the map')
+    vb = lambda: c.js("document.querySelector('[data-wmap]').getAttribute('viewBox')")
+    v0 = vb()
+    r = c.js("""() => { const el = document.querySelector('[data-update-all]') || document.querySelector('details.f-group'); if (!el) return null; const b = el.getBoundingClientRect();
+      const ev = new WheelEvent('wheel', { deltaY: -240, clientX: b.left + 10, clientY: b.top + 10, bubbles: true, cancelable: true }); const ok = el.dispatchEvent(ev);
+      return { ok, onMap: !!el.closest('[data-wmap]') } }""")
+    c.ok(r is not None and not r['onMap'], r, 'a wheel is sent on an element of the page that is not the map')
+    c.ok(r['ok'], r, 'the wheel off the map is not swallowed: the page scrolls')
+    c.eq(vb(), v0, 'and the map keeps its view', what='viewBox')
+    on = c.js("""() => { const s = document.querySelector('[data-wmap]'), b = s.getBoundingClientRect();
+      return !s.dispatchEvent(new WheelEvent('wheel', { deltaY: -240, clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true, cancelable: true })) }""")
+    c.ok(on and vb() != v0, [on, vb(), v0], 'on the map the wheel still zooms it (and is taken)')
+    c.check_errors()

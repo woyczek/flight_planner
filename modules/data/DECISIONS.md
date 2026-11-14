@@ -738,3 +738,7 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   tick says « un fichier attend dans Téléchargements »; the layer the workstation ALREADY took (status `download.sources`, present, dated) was no longer said. `downloadTick`
   (`countries.js`) now adds « déjà pris le {date} » to the waiting tick (text `TX.cw.dlTaken`). The page-side rule of SOG-0318 (a source the launcher calls `auto` that the
   catalogue marks `fetch.pick` is a hand-taken source) stays: the catalogue is the user's view. Case L137 (red before: the date is missing).
+- **14 Nov 2026 — SOG-0340: the wheel zooms the map only when the pointer is ON it** (the user: « la roulette de souris, sur page maintenance, est active sur toute la page, pas seulement au survol de la carte »).
+  `mapWheel` (`mapview.js`) asked `mapOf(e.target)`, which falls back on the first map of the page when the target is not inside one (that fallback is for the zoom buttons), so a wheel anywhere in the
+  screen zoomed the map and was swallowed. It now answers only a wheel whose target is inside `[data-wmap]`; everywhere else the page scrolls. Case L138 (red before: the wheel on another
+  element is swallowed); L96 and L123 (the wheel on the map, plain or with Ctrl) stay green. Help ×4.

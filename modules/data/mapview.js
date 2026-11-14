@@ -65,9 +65,11 @@ export function viewFor(base) {
   const v = S?.cw?.view;
   return v && v.key === base.join(' ') && okBox(v.box) ? v.box : base;
 }
-/** Un cran de molette : zoom autour du pointeur, borné, où que soit le pointeur sur la carte (le contour d'un pays compris). La molette ne revient à la page que lorsque le zoom ne peut pas aller plus loin (SOG-0285 : sans cette sortie, la carte
+/** Un cran de molette : zoom autour du pointeur, borné, seulement quand le pointeur est SUR la carte (SOG-0340), où qu'il soit sur elle (le contour d'un pays compris). La molette ne revient à la page que lorsque le zoom ne peut pas aller plus loin (SOG-0285 : sans cette sortie, la carte
  *  serait un piège à défilement) ; avec Ctrl (aussi le pincement d'un pavé tactile) elle est toujours prise, le navigateur ne zoome pas la page. */
 export function mapWheel(e) {
+  if (!e.target?.closest?.('[data-wmap]'))
+    return; // hors de la carte la molette défile la page (SOG-0340) : mapOf retombe sur la première carte pour les boutons, pas ici
   const m = mapOf(e.target);
   if (!m || !S.cw) return;
   const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 100 : e.deltaY,
