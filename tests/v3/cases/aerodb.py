@@ -10104,3 +10104,37 @@ def k275(c):
     c.eq((r['starts'], r['abandons'], r['startsAfterToggle']), (1, 0, 1), 'ONE network read for the path, `abandon` never called by the bound, and asking again (ticking and unticking a layer) restarts nothing', what='one read')
     c.eq((r['held']['n'], r['held']['status']['pending'], r['held']['status']['unreadable'], r['held']['status']['entries'][0]['state'], r['held']['status']['entries'][0]['retryIn']), (0, 1, 1, 'limit', 20), 'a read the frame holds (the host limit) is reported « limit », retry in 20 s, UNREADABLE: not absent, the answer is partial', what='held')
     c.eq((r['heldAfter']['names'], r['heldAfter']['starts'], r['heldAfter']['abandons'], r['heldAfter']['status']['pending']), (['PARIS TMA'], 1, 0, 0), 'the frame retries by itself: the part arrives, one read, nothing abandoned', what='held arrival')
+
+
+@case('K276', 'The base builder says a published file that passes HALF of the frame\'s read cap (SOG-0358, audit 214): « zone us, espaces : 14,5 Mo — plus de la moitié du plafond de lecture du cadre ; à découper »; the cap is read where the frame declares it, never copied', 'K', static=True,
+      rule='Ergonomist 14 Nov 2026 (audit 214, SOG-0358): the frame caps every file read of the repository (frame/store/transport_git.js MAX_READ); Sécurisation asks for an alert when the base grows towards it. Not a test that reads data/ (the user\'s data never enter the tests): the BUILDER says it in its report, for every file it publishes above half of the cap (a bench base: the sizes are made up). The value of the cap is read in the frame\'s declaration (`const MAX_READ = 32 * 1024 * 1024;`), never copied; unreadable: no alert and the log says so, never a guessed value. The result of base/build carries `big` (file, bytes, cap, message) and `readCap`')
+def k276(c):
+    import os
+    import tempfile
+    RJ = _regen()
+    G = RJ.REGISTRY[('base', 'build')][0].__globals__
+    cap_of, report = G['frame_read_cap'], G['size_report']
+    MiB = 1024 * 1024
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        def decl(text):
+            p = os.path.join(td, 'transport.js')
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write(text)
+            return cap_of(p)
+        c.eq((decl('  const MAX_READ = 32 * 1024 * 1024;\n'), decl('const MAX_READ = 10 * 1024 * 1024; // 10 Mio'), decl('const MAX_READ = 12345;'), decl('const MAX_READ=48*1024*1024;')), (32 * MiB, 10 * MiB, 12345, 48 * MiB),
+             'the cap is READ in the declaration of the frame (a product of numbers, spaces or none): changing the declaration changes the cap, nothing is copied here', what='read')
+        c.eq((decl('const MAX_READ = foo();'), decl('// nothing declared'), decl('const MAX_READ = 99999999999999 * 99999999999999;'), decl('const MAX_READ = 0;'), cap_of(os.path.join(td, 'absent.js'))), (None,) * 5,
+             'a declaration that is not a plain product, absent, absurd or zero gives NO cap (never a guessed value)', what='unreadable')
+    real = cap_of()
+    decl_text = open(G['READ_CAP_FILE'], encoding='utf-8').read()
+    c.ok(real and real % MiB == 0 and f'MAX_READ = {real // MiB} * 1024 * 1024' in decl_text, str(real), 'the real declaration of the frame (frame/store/transport_git.js) is read: a whole number of MiB, the same as in the file')
+    cap = 32 * MiB
+    mk = lambda n: 'x' * n
+    r = report('us', {'airspaces.json': mk(14_500_000), 'aerodromes.json': mk(16 * MiB), 'navaids.json': mk(16 * MiB + 1), 'airways.json': mk(1000)}, cap)
+    c.eq([(x['file'], x['bytes']) for x in r], [('navaids.json', 16 * MiB + 1)], 'only a file ABOVE half of the cap is reported (exactly half: no; 14.5 MB under a cap of 32 MiB: no)', what='threshold')
+    r = report('us', {'airspaces.json': mk(14_500_000)}, 24 * MiB)
+    c.eq([x['message'] for x in r], ['zone us, espaces : 13,8 Mo — plus de la moitié du plafond de lecture du cadre (24 Mo) ; à découper'], 'the sentence: the zone, the kind in words, the size in Mo, the cap read, « à découper »', what='message')
+    c.eq((report('us', {'airspaces.json': mk(40 * MiB)}, None), report('us', {}, cap)), ([], []), 'no cap read: nothing said (the log of the build says the cap is unreadable); nothing to report: nothing', what='none')
+    import inspect
+    src = inspect.getsource(RJ.REGISTRY[('base', 'build')][0])
+    c.ok('size_report(zone, texts, cap)' in src and "'big':" in src and "'readCap': cap" in src and 'plafond de lecture du cadre illisible' in src, 'build() source', 'base/build calls it for every zone it writes, carries `big` and `readCap` in its result and logs an unreadable cap')

@@ -13,6 +13,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### V3
 
 - **The read cap is 32 MiB; a verdict read from the repository says « du téléphone »** (SOG-0358, SOG-0357): on a workstation with a launcher, a verdict whose winner is the repository file carries its origin; noreg A38, A212
+- **Base build: files that pass half of the frame's read cap are said** (SOG-0358) — the build of a zone reports each file above half of the cap the frame sets on file reads (read in the frame's own declaration): « zone us, espaces : 14,5 Mo — plus de la moitié du plafond de lecture du cadre ; à découper ». Launcher Python: restart the launcher. Case K276.
 - **ONE cap (48 MiB) for every file read of the frame, in the three transports** (SOG-0358): GitHub, GitLab and the launcher; a module can only lower it; a file over the cap is « unreadable (toobig) », never « absent »; noreg A38
 - **Map: the slow reads of the base no longer empty the Map** (SOG-0349, with AeroDB's `readStatus` / `change`): an answer given while zones are pending adds to what is shown and replaces nothing; a discreet line says « n zones n'ont pas pu être lues : nouvelle tentative dans s s » and goes when all is read; the Map repaints at the base's `change`; unticking then ticking « Autour du vol » empties nothing; D238 (red before).
 - **Fuel › route: an answer without a computed route opens on « Pas de route calculée » and the engine's reason; its proposals are taken with « Prendre cette proposition »** (fuel DECISIONS; noreg F226; SOG-0161).

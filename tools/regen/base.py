@@ -439,6 +439,41 @@ def _without_date(obj):
     return {k: v for k, v in obj.items() if k != 'updated_at'} if isinstance(obj, dict) else obj
 
 
+# ---- l'alerte de taille (SOG-0358, audit 214) : le cadre PLAFONNE toute lecture d'un fichier du dépôt ; un fichier publié qui dépasse la MOITIÉ de ce plafond est dit dans le compte rendu de la construction (« à découper »)
+READ_CAP_FILE = os.path.join(ROOT, 'frame', 'store', 'transport_git.js')       # LÀ où le cadre déclare le plafond (MAX_READ) : la valeur n'est jamais recopiée ici
+_CAP_DECL = re.compile(r'const\s+MAX_READ\s*=\s*((?:\d+\s*\*\s*)*\d+)\s*;')
+KIND_LABEL = {'airspaces': 'espaces', 'aerodromes': 'terrains', 'aeroindex': 'index des terrains', 'navaids': 'balises', 'points': 'points', 'vrp': 'points VFR', 'airways': 'voies', 'obstacles': 'obstacles',
+              'obstaclemax': 'obstacles (maximum)', 'mora': 'MORA', 'cities': 'villes', 'meta': 'méta', 'cities_major': 'grandes villes'}
+
+
+def frame_read_cap(path=None):
+    """Le plafond d'octets d'une lecture de fichier du cadre, lu où le cadre le déclare (`const MAX_READ = 32 * 1024 * 1024;` de frame/store/transport_git.js), ou None s'il ne se lit pas (jamais une valeur devinée)."""
+    try:
+        with open(path or READ_CAP_FILE, encoding='utf-8') as f:
+            m = _CAP_DECL.search(f.read(400000))
+    except OSError:
+        return None
+    if not m:
+        return None
+    n = 1
+    for x in m.group(1).split('*'):
+        n *= int(x)
+    return n if 0 < n < 1 << 40 else None
+
+
+def size_report(zone, texts, cap):
+    """Les fichiers d'une zone qui dépassent la moitié du plafond de lecture du cadre : [{ file, bytes, cap, message }] (le texte du compte rendu : « zone us, espaces : 14,5 Mo — plus de la moitié du plafond de lecture du cadre ; à découper »). Sans plafond lisible : rien."""
+    if not cap:
+        return []
+    out = []
+    for name, text in sorted(texts.items()):
+        n = len(text.encode('utf-8'))
+        if n * 2 > cap:
+            kind = name[:-5] if name.endswith('.json') else name
+            out.append({'file': name, 'bytes': n, 'cap': cap, 'message': f"zone {zone}, {KIND_LABEL.get(kind, kind)} : {n / 1048576:.1f} Mo".replace('.', ',') + f" — plus de la moitié du plafond de lecture du cadre ({cap // 1048576} Mo) ; à découper"})
+    return out
+
+
 def validate(zone, cycle, files):
     """Contrôle le rendu d'une zone avant toute écriture : les noms exacts (12 sortes, l'entrée du manifeste, les grandes villes en
     plus), du JSON, et pour chaque sorte son en-tête (schéma 2, zone, cycle, sorte) et le type de ses données. Rend (textes, entrée du
@@ -615,6 +650,9 @@ def build(job, args, ctx):
     # une zone n'a de compte de sources (done / total) que si le constructeur en donne un pour ELLE ; le compte de toute la construction
     # (zone « * ») va une fois dans job.data['inputs'] = { done, total } (1er nov. 2026 : il était recopié sur chaque zone, « 90 / 90 » partout)
     st = {z: {'state': 'waiting'} for z in zones}
+    cap = frame_read_cap()
+    if not cap:
+        job.log('plafond de lecture du cadre illisible (frame/store/transport_git.js) : alerte de taille des fichiers publiés non faite')
 
     def publish_progress():
         done = sum(1 for s in st.values() if s['state'] in ('built', 'failed', 'cancelled'))
@@ -638,6 +676,9 @@ def build(job, args, ctx):
         except (OSError, ValueError) as e:
             return update(zone, state='failed', error='write-failed', message=str(e)[:200], seconds=round(time.time() - z0, 1))
         job.log(f'{zone}: construite, {written} fichier(s) écrit(s), commit {(done.get("commit") or "aucun")[:10]}')
+        big = size_report(zone, texts, cap)         # SOG-0358 : un fichier au-delà de la moitié du plafond de lecture du cadre est dit (il sera illisible le jour où il le dépasse)
+        for b in big:
+            job.log(b['message'])
         if state:
             try:
                 version = json.loads(texts['meta.json']).get('parserVersion')
@@ -649,7 +690,7 @@ def build(job, args, ctx):
         except Exception as e:  # un nettoyage qui échoue ne défait pas une construction réussie
             cleaned = []
             job.log(f'{zone}: nettoyage de data/local/upload/ non fait ({type(e).__name__})')
-        update(zone, state='built', commit=done.get('commit'), warning=done.get('warning'), files=written, seconds=round(time.time() - z0, 1), **({'cleaned': cleaned} if cleaned else {}))
+        update(zone, state='built', commit=done.get('commit'), warning=done.get('warning'), files=written, seconds=round(time.time() - z0, 1), **({'cleaned': cleaned} if cleaned else {}), **({'big': big} if big else {}))
 
     z0 = time.time()
     profile = tempfile.mkdtemp(prefix='sog-base-')
@@ -752,6 +793,7 @@ def build(job, args, ctx):
            'previous': [{'source': s, 'cycle': v['cycle'], 'current': v['current']} for s, v in sources.items() if v['cycle'] and v['stale']],
            'siaFrom': {'new': [m['name'] for m in moved], 'legacy': sorted(rel for rel in legacy if SIA_RAW.match(rel))},
            'built': built, 'failed': failed, 'unread': [u for u in unread if u['zone'] in built], 'excluded': excluded,
+           'big': [b for z in built for b in st[z].get('big', [])], 'readCap': cap,
            'commits': [{'zone': z, 'commit': st[z].get('commit')} for z in built], 'zones': {z: dict(st[z]) for z in zones},
            'instances': 1, 'seconds': round(time.time() - t0, 1)}
     if job.cancelled():
