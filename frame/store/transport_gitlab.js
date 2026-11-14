@@ -21,6 +21,8 @@
   if (!FD?.git || FD.gitlab) return;
   const G = FD.git;
 
+  const INC_FILES_MAX = 100, // au-delà de cent fichiers changés, l'arbre entier (cadencé) est plus simple et pas plus cher
+    INC_REQ_MAX = 12; // la comparaison et les dossiers à lister : douze requêtes au plus
   const SHARED = new Map(); // dépôt + jeton → l'état partagé des transports (voir gitlab)
 
   function gitlab(c) {
@@ -144,21 +146,102 @@
         return headSha;
       },
       /** Fichiers du commit : { chemin: empreinte du blob } (pages de 100, pagination par clés, lien « next »). */
-      tree(commit) {
+      tree(commit, known) {
         if (treeOf.has(commit)) return Promise.resolve({
           ...treeOf.get(commit)
         });
         // une seule lecture à la fois pour une même tête (SOG-0337) : les demandes simultanées (passage, première lecture, module) partagent la même, elles ne la recommencent pas chacune
         let p = inflight.get(commit);
         if (!p) {
-          p = self.readTree(commit).finally(() => inflight.delete(commit));
+          p = self.readTree(commit, known).finally(() => inflight.delete(commit));
           inflight.set(commit, p);
         }
         return p.then(o => ({
           ...o
         }));
       },
-      async readTree(commit) {
+      /** SOG-0337, T2 : avec un arbre déjà connu (known : { head, tree }), ne relit que ce qui a changé — UNE comparaison des deux têtes (les chemins touchés), puis, sans récursion, le seul dossier de chaque
+       *  fichier ajouté ou modifié (l'empreinte du blob) ; supprimés et renommés sont retirés par leur chemin ; l'arbre gardé reste COMPLET. Null (et l'arbre entier, cadencé, est lu) si la comparaison
+       *  est refusée, tronquée, ou touche plus de 100 fichiers, si l'ancienne tête a disparu, si les dossiers à lister coûteraient plus de 12 requêtes, ou si un listing ne dit pas un fichier changé. */
+      async incrementalTree(commit, known) {
+        if (!known?.head || !known.tree || known.head === commit) return null;
+        let cmp;
+        try {
+          cmp = await (await call(`${project}/repository/compare?from=${encodeURIComponent(known.head)}&to=${encodeURIComponent(commit)}&straight=true`)).json();
+        } catch (e) {
+          if (e?.status && !e.rateLimited && e.status !== 401 && e.status !== 403)
+            return null; // l'ancienne tête n'existe plus, ou la comparaison est refusée : l'arbre entier
+          throw e;
+        }
+        const diffs = cmp?.diffs;
+        if (!Array.isArray(diffs) || cmp.compare_timeout || cmp.compare_same_ref || diffs.length > INC_FILES_MAX) return null;
+        const dirOf = p => p.slice(0, Math.max(0, p.lastIndexOf('/'))),
+          ok = p => typeof p === 'string' && p && !p.startsWith('/') && p.length < 1024,
+          next = {
+            ...known.tree
+          },
+          want = new Set();
+        for (const d of diffs) {
+          if (!ok(d?.new_path) || !ok(d?.old_path)) return null;
+          if (d.deleted_file) delete next[d.old_path];
+          else {
+            if (d.renamed_file || d.old_path !== d.new_path) delete next[d.old_path];
+            want.add(d.new_path);
+          }
+        }
+        const dirs = new Map(); // dossier → ses fichiers voulus ; le coût d'un dossier : ses entrées connues, cent par page
+        for (const p of want) dirs.set(dirOf(p), (dirs.get(dirOf(p)) || 0) + 1);
+        const counts = new Map();
+        for (const p of Object.keys(known.tree)) counts.set(dirOf(p), (counts.get(dirOf(p)) || 0) + 1);
+        let cost = 1;
+        for (const [dir, n] of dirs) cost += Math.max(1, Math.ceil(((counts.get(dir) || 0) + n) / 100));
+        if (cost > INC_REQ_MAX) return null;
+        const listed = {};
+        let requests = 1;
+        for (const dir of dirs.keys()) {
+          let url = `${project}/repository/tree?ref=${encodeURIComponent(commit)}${dir ? `&path=${encodeURIComponent(dir)}` : ''}&per_page=100&pagination=keyset`,
+            first = true;
+          while (url) {
+            if (++requests > INC_REQ_MAX + 4) return null;
+            if (!first && guard.pacing.gapMs) await guard.sleep(guard.pacing.gapMs);
+            const r = await call(url, {
+              suspectLimit: requests > 2
+            });
+            first = false;
+            for (const x of await r.json())
+              if (x?.type === 'blob' && typeof x.path === 'string' && typeof x.id === 'string') listed[x.path] = x.id;
+            const nx = /<([^>]+)>\s*;\s*rel="next"/.exec(r.headers.get('Link') || '');
+            url = nx && nx[1].startsWith(`${api}/`) ? nx[1] : '';
+          }
+        }
+        for (const p of want) {
+          if (!(p in listed))
+            return null; // un fichier que la comparaison dit changé et que son dossier ne montre pas : on ne devine pas
+          next[p] = listed[p];
+        }
+        treeOf.set(commit, next);
+        self.lastTree = {
+          commit: String(commit).slice(0, 12),
+          incremental: true, // SOG-0337 T2 : seulement ce qui a changé depuis `from`
+          from: String(known.head).slice(0, 12),
+          changed: diffs.length,
+          dirs: dirs.size,
+          requests,
+          blobs: Object.keys(next).length,
+          pages: 0,
+          entries: 0,
+          resumedAt: 0,
+          at: new Date().toISOString()
+        };
+        return {
+          ...next
+        };
+      },
+      async readTree(commit, known) {
+        if (known && !(sh.partial && sh.partial.commit === commit)) {
+          const inc = await self.incrementalTree(commit, known);
+          if (inc) return inc;
+        }
         // SOG-0337 : une lecture arrêtée (limite, réseau) REPREND à sa page pour la même tête, elle ne recommence pas de zéro
         const resume = sh.partial && sh.partial.commit === commit ? sh.partial : null,
           out = resume ? resume.out : {};

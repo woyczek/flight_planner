@@ -7887,3 +7887,72 @@ def a200(c):
     c.eq(r, {'bad': ['unreadable', 'string'], 'heavy': ['too-big', True]}, 'a photo that cannot be decoded says « unreadable » with the browser\'s error; one that stays too heavy says « too-big » with the weight reached', what='causes')
     c.shot(f'A200_{c.width}_{c.lang}_delivered.png')
     c.check_errors()
+
+
+@case('A201', "With a tree already known, the next synchronisation reads only what changed between the two heads — one comparison and the folder of the changed file, no recursive listing of the whole repository (SOG-0337, T2)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False, phone=True,
+      rule="SOG-0337 T2 (the ergonomist: « ne relire que ce qui a changé »): the data repository holds 10 448 files, 105 pages of 100; the tree was read again in full whenever the head moved; now the frame hands the tree it keeps to the transport, which asks GitLab to compare the two heads (the paths touched) and lists, without recursion, only the folder of each added or modified file; the kept tree stays complete; a refused or truncated comparison, more than 100 files or a folder too large to list falls back to the whole tree, paced")
+def a201(c):
+    log = []
+    state = {'head': 'c1', 'files': {f'sia/{i}.json': f'b{i}' for i in range(6)} | {'pilot/ABC/x.json': 'bx1', 'root.json': 'br'}, 'snaps': {}}
+    state['snaps']['c1'] = dict(state['files'])
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        q = urllib.parse.parse_qs(u.query)
+        rest = u.path.split('/api/v4/projects/grp%2Fdata', 1)[-1]
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        log.append(rest + ('?' + u.query if u.query else ''))
+        ok = lambda body, st=200, h=None: route.fulfill(status=st, headers={**hdr, **(h or {})}, body=json.dumps(body))
+        if rest.endswith('/repository/branches/main'):
+            return ok({'name': 'main', 'commit': {'id': state['head']}})
+        if rest.endswith('/repository/compare'):
+            a, b = state['snaps'].get(q['from'][0]), state['snaps'].get(q['to'][0])
+            if not a or not b:
+                return ok({'message': '404 Not Found'}, 404)
+            diffs = [{'old_path': p, 'new_path': p, 'new_file': p not in a, 'renamed_file': False, 'deleted_file': False, 'diff': ''} for p in b if a.get(p) != b[p]]
+            diffs += [{'old_path': p, 'new_path': p, 'new_file': False, 'renamed_file': False, 'deleted_file': True, 'diff': ''} for p in a if p not in b]
+            return ok({'diffs': diffs, 'compare_timeout': False, 'compare_same_ref': False})
+        if rest.endswith('/repository/tree'):
+            snap = state['snaps'][q['ref'][0]]
+            if q.get('recursive', [''])[0] == 'true':
+                return ok([{'id': sha, 'name': p.split('/')[-1], 'type': 'blob', 'path': p, 'mode': '100644'} for p, sha in sorted(snap.items())])
+            d = q.get('path', [''])[0]
+            return ok([{'id': sha, 'name': p.split('/')[-1], 'type': 'blob', 'path': p, 'mode': '100644'} for p, sha in sorted(snap.items()) if p.rsplit('/', 1)[0] == d or ('/' not in p and d == '')])
+        if '/repository/blobs/' in rest:
+            return route.fulfill(status=200, headers={**hdr, 'Content-Type': 'text/plain'}, body='{"a":1}')
+        return ok({'message': '404 Not Found'}, 404)
+    c.context.route(re.compile(r'https://gitlab\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
+    c.open('fuel', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    def settled(what):
+        for _ in range(120):
+            if c.js("FrameData.status().then(s => !!s.lastSync && !s.syncing)"):
+                return
+            c.wait(250)
+        raise Fail(f'never settled: {what}', 'a finished synchronisation', 'A201')
+    c.until("!!document.querySelector('#fSync') && !!window.FrameData", timeout=20000, what='the frame')
+    settled('the first synchronisation')
+    first = [u for u in log if '/repository/tree' in u]
+    c.ok(any('recursive=true' in u for u in first), first, 'the first read lists the whole tree (nothing is known yet)')
+    # the head moves: one file changed in a small folder
+    state['files']['pilot/ABC/x.json'] = 'bx2'
+    state['head'] = 'c2'
+    state['snaps']['c2'] = dict(state['files'])
+    mark = len(log)
+    c.js("FrameData.sync({ reason: 'manual' }).then(() => 1)")
+    for _ in range(80):
+        if any('/repository/tree' in u or '/repository/compare' in u for u in log[mark:]):
+            break
+        c.wait(250)
+    settled('the second synchronisation')
+    c.wait(400)
+    used = log[mark:]
+    tree_calls = [u for u in used if '/repository/tree' in u]
+    c.ok(any('/repository/compare' in u for u in used) and tree_calls and not any('recursive=true' in u for u in tree_calls) and len(tree_calls) == 1, used, 'the second read is one comparison and the one folder of the changed file — no recursive listing')
+    d = c.js("FrameData.diagnostic().then(d => d.treeRead)")
+    c.ok(d and d.get('incremental') is True and d['changed'] == 1 and d['requests'] == 2, d, 'the diagnostic says it was incremental: one file changed, two requests')
+    c.check_errors()

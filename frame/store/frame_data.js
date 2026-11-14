@@ -885,6 +885,11 @@
   let treeChecked = false,
     peek = null,
     peekP = null; // lecture de l'arbre du moment en cours : partagée par les lectures lancées en même temps
+  /** L'arbre déjà connu, offert au transport pour ne lire que ce qui a changé entre l'ancienne tête et la nouvelle (SOG-0337, T2) ; un transport qui ne sait pas l'ignore. */
+  const knownOf = remote => remote?.head && remote?.tree ? {
+    head: remote.head,
+    tree: remote.tree
+  } : undefined;
   /** Arbre à jour pour une lecture : celui du dernier tirage s'il a été comparé à la tête dans cette page, sinon celui
    *  du moment (tête relue, arbre lu si elle a bougé), lu une seule fois pour toutes les lectures qui l'attendent (un
    *  module qui lit ses références au premier passage en lance plusieurs à la fois) ; hors ligne ou en échec : l'arbre
@@ -897,7 +902,7 @@
         const head = await T.head(remote?.head);
         peek = {
           head,
-          tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head)
+          tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head, knownOf(remote))
         };
         return peek.tree;
       } catch {
@@ -919,7 +924,7 @@
       head = await T.head(remote?.head);
     return {
       head,
-      tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head)
+      tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head, knownOf(remote))
     };
   })().finally(() => treeNowP = null);
 
@@ -1404,7 +1409,7 @@
       peek = null;
       return out;
     }
-    const tree = await T.tree(head),
+    const tree = await T.tree(head, knownOf(remote)),
       old = remote?.tree || {};
     for (const [path, rev] of Object.entries(tree)) {
       if (old[path] === rev && remote?.head) continue;

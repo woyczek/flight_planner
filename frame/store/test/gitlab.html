@@ -33,7 +33,8 @@
       PROJECT = `${API}/projects/${encodeURIComponent('grp/data')}`,
       st = {
         files: {}, // chemin → { sha, text }
-        head: 'c0',
+        snaps: {}, // tête → { chemin: sha } : de quoi comparer deux têtes (SOG-0337, T2)
+        compareTimeout: false,
         n: 0,
         offline: false,
         moveBeforeCommit: false, // la branche part ailleurs juste avant le POST du commit
@@ -47,6 +48,16 @@
         calls: [],
         perPage: 2
       };
+    let headNow = 'c0';
+    Object.defineProperty(st, 'head', {
+      enumerable: true,
+      get: () => headNow,
+      set(v) {
+        headNow = v;
+        st.snaps[v] = Object.fromEntries(Object.entries(st.files).map(([p, f]) => [p, f.sha]));
+      }
+    });
+    st.head = 'c0';
     // « hors ligne » : le navigateur le dit aussi (le transport ne dit offline que si navigator.onLine est faux, 31 oct. 2026)
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
@@ -112,6 +123,55 @@
           id: st.head
         }
       });
+      if (rest === '/repository/compare') {
+        const a = st.snaps[u.searchParams.get('from')],
+          b = st.snaps[u.searchParams.get('to')];
+        if (!a || !b) return json({
+          message: '404 Commit Not Found'
+        }, 404);
+        const del = Object.keys(a).filter(p => !(p in b)),
+          add = Object.keys(b).filter(p => !(p in a) || a[p] !== b[p]),
+          moved = {}; // un fichier de même empreinte supprimé ici et ajouté là : renommé
+        const diffs = [];
+        for (const p of add) {
+          const from = del.find(q => a[q] === b[p] && !moved[q]);
+          if (from) moved[from] = 1;
+          diffs.push({
+            old_path: from || p,
+            new_path: p,
+            new_file: !(p in a) && !from,
+            renamed_file: !!from,
+            deleted_file: false,
+            diff: '@@ -1 +1 @@\n-x\n+y'
+          });
+        }
+        for (const p of del)
+          if (!moved[p]) diffs.push({
+            old_path: p,
+            new_path: p,
+            new_file: false,
+            renamed_file: false,
+            deleted_file: true,
+            diff: ''
+          });
+        return json({
+          commits: [],
+          diffs,
+          compare_timeout: st.compareTimeout,
+          compare_same_ref: false
+        });
+      }
+      if (rest === '/repository/tree' && u.searchParams.get('recursive') !== 'true') {
+        const dir = u.searchParams.get('path') || '',
+          inDir = Object.keys(st.files).sort().filter(p => p.slice(0, Math.max(0, p.lastIndexOf('/'))) === dir).map(p => ({
+            id: st.files[p].sha,
+            name: p.split('/').pop(),
+            type: 'blob',
+            path: p,
+            mode: '100644'
+          }));
+        return json(inDir);
+      }
       if (rest === '/repository/tree') {
         const all = Object.keys(st.files).sort().map(p => ({
             id: st.files[p].sha,
@@ -596,6 +656,130 @@
         for (let i = 0; i < 4; i++) await g.call('x');
         ck('cadence : la quatrième demande dans la fenêtre attend sa fin (au moins 450 ms)', Date.now() - t0 >= 450 && Date.now() - t0 < 2000, `${Date.now() - t0} ms`);
         L.onLimit = null;
+      }
+      // SOG-0337, T2 : avec un arbre déjà connu, seulement ce qui a changé — UNE comparaison des deux têtes, puis le SEUL dossier de chaque fichier ajouté ou modifié, sans récursion ; l'arbre gardé reste
+      // COMPLET ; supprimés et renommés retirés par leur chemin ; repli sur l'arbre entier si la comparaison est tronquée, refusée, trop grosse, ou si les dossiers coûteraient trop
+      {
+        const T = FD.gitlab({
+          api: G.API,
+          repo: 'grp/data',
+          token: 'glpat-test'
+        });
+        T.limit.pacing.gapMs = 0;
+        T.limit.pacing.perMin = 1e9;
+        const expected = () => Object.fromEntries(Object.entries(G.st.files).map(([p, f]) => [p, f.sha]));
+        const same = (a, b) => JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
+        const bump = () => {
+          G.st.head = `c${++G.st.n}`;
+          return G.st.head;
+        };
+        const base = {};
+        for (let i = 0; i < 30; i++) base[`d/${String(i).padStart(2, '0')}.json`] = `[${i}]`;
+        for (let i = 0; i < 6; i++) base[`e/${i}.json`] = `[e${i}]`;
+        base['root.json'] = '{}';
+        const reads = from => G.st.calls.slice(from).map(c => c.url.replace(G.API, ''));
+        G.reset(base);
+        G.st.perPage = 100;
+        const h0 = await T.head(),
+          t0 = await T.tree(h0);
+        ck('arbre incrémental : l’arbre de départ est lu en entier (37 fichiers)', Object.keys(t0).length === 37 && T.lastTree?.incremental !== true, JSON.stringify(T.lastTree));
+        // modifié, ajouté, supprimé, renommé (d vers e)
+        G.st.files['d/03.json'] = {
+          sha: 'b-new-03',
+          text: '[3b]'
+        };
+        G.st.files['d/new.json'] = {
+          sha: 'b-new',
+          text: '[n]'
+        };
+        delete G.st.files['d/05.json'];
+        G.st.files['e/seven.json'] = G.st.files['d/07.json'];
+        delete G.st.files['d/07.json'];
+        const h1 = bump();
+        let mark = G.st.calls.length;
+        const t1 = await T.tree(h1, {
+          head: h0,
+          tree: t0
+        });
+        const used = reads(mark);
+        ck('arbre incrémental : même arbre qu’une lecture entière (modifié, ajouté, supprimé, renommé)', same(t1, expected()), JSON.stringify([Object.keys(t1).length, Object.keys(expected()).length]));
+        ck('arbre incrémental : une comparaison puis les deux dossiers touchés (d, e) : trois requêtes, aucune lecture récursive', used.length === 3 && /\/repository\/compare\?from=/.test(used[0]) && used.slice(1).every(u => /\/repository\/tree\?/.test(u) && !/recursive=true/.test(u)), JSON.stringify(used));
+        ck('arbre incrémental : ce qui a été fait est dit pour le diagnostic (incrémental, fichiers changés, dossiers, requêtes)', T.lastTree?.incremental === true && T.lastTree.changed === 4 + 0 && T.lastTree.dirs === 2 && T.lastTree.requests === 3, JSON.stringify(T.lastTree));
+        // repli : une tête qui a disparu (la comparaison refuse)
+        mark = G.st.calls.length;
+        G.st.files['e/9.json'] = {
+          sha: 'b-9',
+          text: '[9]'
+        };
+        const h2 = bump(),
+          t2 = await T.tree(h2, {
+            head: 'c-disparue',
+            tree: t1
+          });
+        ck('repli : l’ancienne tête a disparu — l’arbre entier est lu, et il est juste', same(t2, expected()) && reads(mark).some(u => /recursive=true/.test(u)) && T.lastTree?.incremental !== true, JSON.stringify(reads(mark)));
+        // repli : la comparaison est tronquée
+        G.st.compareTimeout = true;
+        mark = G.st.calls.length;
+        G.st.files['e/10.json'] = {
+          sha: 'b-10',
+          text: '[10]'
+        };
+        const h3 = bump(),
+          t3 = await T.tree(h3, {
+            head: h2,
+            tree: t2
+          });
+        G.st.compareTimeout = false;
+        ck('repli : la comparaison est tronquée (compare_timeout) — l’arbre entier, et il est juste', same(t3, expected()) && reads(mark).some(u => /recursive=true/.test(u)), JSON.stringify(reads(mark)));
+        // repli : plus de cent fichiers changés
+        G.reset(Object.fromEntries(Array.from({
+          length: 130
+        }, (_, i) => [`big/${i}.json`, `[${i}]`])));
+        G.st.perPage = 100;
+        const hb = await T.head(),
+          tb = await T.tree(hb);
+        for (let i = 0; i < 101; i++) G.st.files[`big/${i}.json`] = {
+          sha: `b-chg-${i}`,
+          text: 'x'
+        };
+        const hc = bump();
+        mark = G.st.calls.length;
+        const tc = await T.tree(hc, {
+          head: hb,
+          tree: tb
+        });
+        ck('repli : 101 fichiers changés — l’arbre entier (plus de cent : plus simple, pas plus cher), et il est juste', same(tc, expected()) && reads(mark).some(u => /recursive=true/.test(u)) && T.lastTree?.incremental !== true, JSON.stringify(reads(mark).slice(0, 3)));
+        // repli : un dossier trop grand à lister (1 500 fichiers = quinze pages pour en lire un)
+        G.reset(Object.fromEntries(Array.from({
+          length: 1500
+        }, (_, i) => [`h/${i}.json`, `[${i}]`])));
+        G.st.perPage = 100;
+        const hh = await T.head(),
+          th = await T.tree(hh);
+        G.st.files['h/7.json'] = {
+          sha: 'b-h7',
+          text: 'y'
+        };
+        const hi = bump();
+        mark = G.st.calls.length;
+        const ti = await T.tree(hi, {
+          head: hh,
+          tree: th
+        });
+        ck('repli : un fichier changé dans un dossier de 1 500 entrées (quinze pages à lister) — l’arbre entier cadencé, et il est juste', same(ti, expected()) && T.lastTree?.incremental !== true, JSON.stringify(reads(mark).slice(0, 3)));
+        // un petit changement dans un grand arbre : deux requêtes, pas quinze (ni cent cinq)
+        G.st.files['small/a.json'] = {
+          sha: 'b-small',
+          text: 'z'
+        };
+        const hj = bump();
+        mark = G.st.calls.length;
+        const tj = await T.tree(hj, {
+          head: hi,
+          tree: ti
+        });
+        ck('arbre incrémental : un fichier ajouté dans un arbre de 1 500 — la comparaison et son dossier, deux requêtes', same(tj, expected()) && T.lastTree?.incremental === true && T.lastTree.requests === 2 && reads(mark).length === 2, JSON.stringify([T.lastTree, reads(mark).length]));
+        G.st.perPage = 2;
       }
     } catch (x) {
       ck('exception du banc', false, x?.stack || x);
