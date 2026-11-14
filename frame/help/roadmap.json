@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0a19a36",
+  "organisation": "705c3b2",
   "fiches": 336,
   "untranslated": 0,
   "priorities": 310
@@ -849,11 +849,12 @@
     {
      "id": "SOG-0322",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Site publié : pas de « Calculer A → B » sans le lanceur",
      "en": "Published site: no « Compute A → B » without the launcher",
      "de": "Veröffentlichte Seite: kein « A → B berechnen » ohne den Launcher",
-     "es": "Sitio publicado: sin « Calcular A → B » sin el lanzador"
+     "es": "Sitio publicado: sin « Calcular A → B » sin el lanzador",
+     "test": true
     },
     {
      "id": "SOG-0332",
@@ -3196,13 +3197,14 @@
     {
      "id": "SOG-0114",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Missions (après la stabilisation) : missions communes du dépôt lues par tous, une mission engendre le vol (départ, rendez-vous, arrivée) et sa carte, usage…",
      "en": "Missions (after the stabilisation): common missions of the repository read by all, a mission generates the flight (departure, rendezvous, arrival) and its map, \"crew member\" usage of the Pilot, CPCO as the third application once rebuilt",
      "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Piloten, CPCO als dritte Anwendung nach dem Neubau",
      "es": "Misiones (tras la estabilización): misiones comunes del depósito leídas por todos, una misión genera el vuelo (salida, punto de encuentro, llegada) y su mapa, uso «tripulante» del Piloto, CPCO como tercera aplicación cuando se rehaga",
      "milestone": "6.0.0-alpha.6",
-     "rank": 127
+     "rank": 127,
+     "test": true
     },
     {
      "id": "SOG-0115",

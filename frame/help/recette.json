@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
-  "tests": 211,
+  "tests": 213,
   "verdicts": 147
  },
  "apps": [
@@ -395,6 +395,20 @@
    "state": "ok",
    "delivered": "2026-11-12T22:43:16Z",
    "at": "2026-11-13T10:44:59Z"
+  },
+  {
+   "id": "SOG-0114",
+   "app": "maintenance",
+   "title": {
+    "fr": "Missions (après la stabilisation) : missions communes du dépôt lues par tous, une mission engendre le vol (départ, rendez-vous, arrivée) et sa carte, usage…",
+    "en": "Missions (after the stabilisation): common missions of the repository read by all, a mission generates the flight (departure, rendezvous, arrival) and its map, \"crew member\" usage of the Pilot, CPCO a",
+    "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Pilo",
+    "es": "Misiones (tras la estabilización): misiones comunes del depósito leídas por todos, una misión genera el vuelo (salida, punto de encuentro, llegada) y su mapa, uso «tripulante» del Piloto, CPCO como te"
+   },
+   "test": "Recharge la page. Missions, avec une affectation à ton trigramme dans les affectations de la V2 : un groupe « Mes missions affectées » montre la mission avec son décollage, son aéronef et son indicatif, le rendez-vous et les canaux quand ils sont donnés ; « Préparer ce vol » ouvre Carburant sur ce vol. Sans affectation à ton trigramme : pas de groupe.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T00:23:12Z"
   },
   {
    "id": "SOG-0118",
@@ -3025,6 +3039,20 @@
    "state": "ok",
    "delivered": "2026-11-13T14:57:47Z",
    "at": "2026-11-13T15:25:48Z"
+  },
+  {
+   "id": "SOG-0322",
+   "app": "pilote",
+   "title": {
+    "fr": "Site publié : pas de « Calculer A → B » sans le lanceur",
+    "en": "Published site: no « Compute A → B » without the launcher",
+    "de": "Veröffentlichte Seite: kein « A → B berechnen » ohne den Launcher",
+    "es": "Sitio publicado: sin « Calcular A → B » sin el lanzador"
+   },
+   "test": "Sur le téléphone (site publié, sans lanceur), Carburant, étape Route : à la place de « Calculer A → B », une phrase dit que le calcul d'itinéraire demande le lanceur du poste. Sur le poste, avec le lanceur, le bouton est là comme avant.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T00:14:22Z"
   },
   {
    "id": "SOG-0323",
