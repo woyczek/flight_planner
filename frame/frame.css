@@ -2243,4 +2243,7 @@ html.f-limited .f-view {
   line-height: 1.5;
   vertical-align: baseline
 }
+.f-rm-sent {
+  color: var(--sog-ok, inherit)
+}
 

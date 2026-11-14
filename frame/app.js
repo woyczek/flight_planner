@@ -4315,6 +4315,32 @@
     }
     return signalAdapters.get(tri);
   };
+  // le dépôt de données pour la RECETTE d'un appareil sans lanceur (SOG-0357) : UN fichier, pilot/<trigramme>/recette/verdicts.json, dans le dossier du trigramme de l'appareil ; lu : pilot/ ;
+  // les bornes sont refusées ICI (le chemin, le schéma, chaque entrée aux règles, la taille), pas seulement par l'écran ; `sendNow` ne part que de cette écriture déclarée
+  const recetteAdapters = new Map();
+  const recetteData = () => {
+    const tri = /^[A-Za-z0-9]{2,8}$/.test(identity.trigram || '') ? identity.trigram : '';
+    if (!recetteAdapters.has(tri)) {
+      const ad = FD.adapter({
+        id: 'frame-recette',
+        reads: ['pilot/'],
+        writes: tri ? [{
+          prefix: `pilot/${tri}/recette/`,
+          merge: 'record'
+        }] : []
+      });
+      recetteAdapters.set(tri, {
+        ...ad,
+        put: async (path, value, opts) => {
+          const RV = await import(new URL('frame/lib/recette_verdicts.js', ROOT).href),
+            r = RV.checkWrite(path, value, tri);
+          if (!r.ok) throw new Error(`recette: write refused (${r.why})`);
+          return ad.put(path, value, opts);
+        }
+      });
+    }
+    return recetteAdapters.get(tri);
+  };
   const helpCtx = () => ({
     t,
     lang,
@@ -4336,6 +4362,7 @@
     version: () => suiteVersion,
     trigram: () => identity.trigram || '',
     data: signalData(),
+    recData: recetteData(), // la recette d'un appareil sans lanceur : son fichier dans le dépôt (SOG-0357)
     app: APP.id, // le manuel de l'application affichée (frame/help/<app>.<langue>.md)
     tutorials: APP.welcome !== false, // les tutoriels sont ceux de Pilote
     // « Toute l'aide » : le manuel de chaque application que l'appareil ouvre (son niveau), à son adresse

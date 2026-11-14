@@ -54,3 +54,38 @@ export function fmtDayZ(iso) {
   const d = dateOf(iso);
   return d ? `${two(d.getUTCDate())}/${two(d.getUTCMonth() + 1)} ${fmtZ(d)}` : '';
 }
+
+const MOMENT = {
+  fr: {
+    on: (d, h) => `${d} à ${h}`,
+    today: h => `aujourd’hui à ${h}`,
+    hour: (hh, mm) => `${hh} h ${mm}`
+  },
+  en: {
+    on: (d, h) => `${d} at ${h}`,
+    today: h => `today at ${h}`,
+    hour: (hh, mm) => `${hh}:${mm}`
+  },
+  de: {
+    on: (d, h) => `${d} um ${h}`,
+    today: h => `heute um ${h}`,
+    hour: (hh, mm) => `${hh}:${mm}`
+  },
+  es: {
+    on: (d, h) => `${d} a las ${h}`,
+    today: h => `hoy a las ${h}`,
+    hour: (hh, mm) => `${hh}:${mm}`
+  }
+};
+/** « 14/11 à 12 h 10 » (fr), « aujourd’hui à 12 h 10 » le jour même : l'instant à l'heure de l'APPAREIL (l'utilisateur lit sa montre), dans l'écriture de la langue ; '' si la date est illisible. now : l'instant d'« aujourd'hui »
+ *  (la date locale de l'appareil). L'instant UTC reste celui des tris : seule la lecture change. */
+export function fmtMoment(iso, lang = 'fr', now = Date.now()) {
+  const d = dateOf(iso);
+  if (!d) return '';
+  const m = MOMENT[lang] || MOMENT.fr,
+    n = new Date(now),
+    h = m.hour(two(d.getHours()), two(d.getMinutes()));
+  if (d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()) return m.today(h);
+  const day = lang === 'de' ? `${two(d.getDate())}.${two(d.getMonth() + 1)}.` : `${two(d.getDate())}/${two(d.getMonth() + 1)}`;
+  return m.on(day, h);
+}

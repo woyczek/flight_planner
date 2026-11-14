@@ -8235,7 +8235,12 @@ def a209(c):
       return { groups: sec.querySelectorAll('[data-app-title]').length, tags: [...sec.querySelectorAll('[data-app-tag]')].map(e => e.textContent), at: [...sec.querySelectorAll('[data-verdict-at]')].map(e => e.textContent),
                ids: [...sec.querySelectorAll('li[data-id]')].map(l => l.dataset.id), today: document.querySelectorAll('[data-section=today] [data-app-title]').length } }""")
     c.eq([r['groups'], len(r['tags']), r['ids']], [0, 2, ['SOG-0313', 'SOG-0312']], 'no group by application in « Déjà vus »; the latest verdict first (the failure of 18:05 before the pass of 18:00)', what='one sequence')
-    c.ok(all(re.fullmatch(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z', a) for a in r['at']) and r['at'][0].endswith('18:05Z'), r['at'], 'the time of the verdict is on every line')
+    want = c.js("['2026-11-09T18:05:00Z', '2026-11-09T18:00:00Z'].map(z => { const d = new Date(z), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + ' à ' + p(d.getHours()) + ' h ' + p(d.getMinutes()) })")
+    c.eq([r['at'], c.js("document.querySelector('[data-section=seen] [data-verdict-at]').title")], [want, '2026-11-09T18:05:00Z'], "the time of the verdict is on every line, at the time of the DEVICE as one reads one's watch (« 09/11 à 19 h 05 »; the UTC instant in the tooltip, the sort stays on it) — SOG-0355", what='moment')
+    tm = c.js("""async () => { const T = await import(document.querySelector('script[src*="app.js"]').src.replace(/app\.js.*$/, 'lib/time.js')), d = new Date(2026, 10, 14, 12, 10), now = new Date(2026, 10, 14, 18, 0).getTime(), other = new Date(2026, 10, 9, 7, 5).toISOString();
+      return { fr: T.fmtMoment(d.toISOString(), 'fr', now), en: T.fmtMoment(d.toISOString(), 'en', now), de: T.fmtMoment(d.toISOString(), 'de', now), es: T.fmtMoment(d.toISOString(), 'es', now),
+               frOld: T.fmtMoment(other, 'fr', now), deOld: T.fmtMoment(other, 'de', now), esOld: T.fmtMoment(other, 'es', now), bad: T.fmtMoment('nope', 'fr') } }""")
+    c.eq(tm, {'fr': 'aujourd’hui à 12 h 10', 'en': 'today at 12:10', 'de': 'heute um 12:10', 'es': 'hoy a las 12:10', 'frOld': '09/11 à 07 h 05', 'deOld': '09.11. um 07:05', 'esOld': '09/11 a las 07:05', 'bad': ''}, 'the time of the verdict as one reads a watch, in the four languages (« aujourd’hui à 12 h 10 » the same day, « 09/11 à 07 h 05 » before)', what='fmtMoment')
     c.ok(r['today'] >= 1, r['today'], 'the sections to test keep their grouping by application')
     c.shot(f'A209_{c.width}_{c.lang}_delivered.png')
 
@@ -8422,4 +8427,77 @@ def a232(c):
     c.wait(20000)
     drift = c.js("(() => { clearInterval(window.__iv); return window.__drift.slice(0, 4) })()")
     c.eq(drift, [], 'for 20 s of waits and failures the title of the card read stays where it was (a shift that lasts 90 ms or more counts)', what='drift')
+@case('A211', "Recette on a phone without launcher (SOG-0357): a verdict leaves for the data repository — one file `pilot/<trigram>/recette/verdicts.json`, the same form as RECETTE.json — and the sheet says « envoyé » or « pas encore envoyé »; it reads the repository file too (the latest verdict wins by its time), as an untrusted input; the adapter refuses outside that file and outside the bounds; fingers: 44 px", 'A',
+      designs=('standard',), screens=True, night=False, langs4=False,
+      rule="SOG-0357 (the user: « la fiche de recette sur téléphone aussi… à noter en dette technique de secu et vie privée »): without a launcher a verdict was only kept on the device; now it is put in pilot/<trigram>/recette/verdicts.json (the folder of the device's trigram, sog-recette/1 with the bounded `history`) and sent at once (sendNow, bounded to that declared write, like « Signaler »); the sheet reads the launcher's file if there is one AND the repository file, the latest by its time; the file read back is an UNTRUSTED input (identifiers SOG-nnnn, verdicts of the list, bounded lengths, escaped, never a path read from the file); debt written in the card: readable and modifiable by any pilot, author not signed")
+def a211(c):
+    fx = _rc_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    key = 'pilot/ABC/recette/verdicts.json'
+    docs_js = """(k) => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const s = r.result.transaction('docs').objectStore('docs'), g = s.get(k); g.onsuccess = () => res(g.result ? g.result.text : null) } })"""
+    # a verdict of ANOTHER device of this trigram already in the repository (later than the generated one), and hostile entries
+    other = {'schema': 'sog-recette/1', 'updated': '2026-11-14T09:00:00Z', 'items': {
+        'SOG-0312': {'verdict': 'ko', 'comment': 'refusé depuis le téléphone', 'at': '2026-11-14T09:00:00Z'},
+        'SOG-0999': {'verdict': 'ok', 'at': '2026-11-14T09:01:00Z'},
+        '../../x': {'verdict': 'ok'}, 'SOG-0305': {'verdict': 'meh'}, 'SOG-0306': {'verdict': 'ko'},
+        'SOG-0307': {'verdict': 'ok', 'comment': '<img src=x onerror=window.__pwn=1>' + 'x' * 5000, 'at': '2026-11-14T09:02:00Z'}}}
+    c.open('recette', docs=LEVEL3 + [[key, other, 'document']])
+    c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=20000, what='the tests')
+    c.until("!!document.querySelector('[data-section=seen] [data-id=\"SOG-0312\"][data-state=ko]')", timeout=15000, what='the repository file read')
+    c.js("document.querySelector('[data-section=seen]').open = true")
+    seen = c.js("""() => { const li = document.querySelector('[data-section=seen] [data-id="SOG-0312"]'); return { state: li.dataset.state, text: li.querySelector('[data-verdict]').textContent, pwn: window.__pwn === undefined,
+      img: !!document.querySelector('#fView img'), ids: [...document.querySelectorAll('li[data-id]')].map(l => l.dataset.id).filter(i => !/^SOG-03/.test(i)) } }""")
+    c.ok(seen['state'] == 'ko' and 'refusé depuis le téléphone' in seen['text'], seen['text'][:80], "the repository's verdict (09:00 on the 14th) wins over the generated one of the 9th: the latest by its time")
+    c.ok(seen['pwn'] and not seen['img'] and seen['ids'] == [], seen, 'the repository file is an untrusted input: nothing executed, no foreign identifier shown')
+    # a verdict from this phone: written in the file of the trigram, sent
+    first = c.js("document.querySelector('[data-section=today] li[data-id]').dataset.id")
+    b = c.box(f'[data-ok="{first}"]')
+    c.ok(b['h'] >= 43.5, b, 'the buttons are 44 px at least for a finger')
+    c.tap(f'[data-ok="{first}"]')
+    txt = None
+    for _ in range(60):
+        txt = c.js(docs_js, key)
+        if txt and first in txt:
+            break
+        c.wait(250)
+    doc = json.loads(txt)
+    c.eq([doc['schema'], doc['items'][first]['verdict'], 'SOG-0312' in doc['items'], sorted(doc)], ['sog-recette/1', 'ok', True, ['items', 'schema', 'updated']], 'the verdict is in pilot/ABC/recette/verdicts.json, with the verdicts the file already held (one file, the form of RECETTE.json)', what='file')
+    c.js("document.querySelector('[data-section=seen]').open = true")
+    c.until(f"!!document.querySelector('[data-section=seen] [data-id=\"{first}\"] [data-sent]')", timeout=15000, what='« envoyé »')
+    c.ok(c.count(f'[data-section=seen] [data-id="{first}"] [data-unsent]') == 0, '', 'the sheet says « envoyé » (not « pas encore envoyé »)')
+    c.shot(f'A211_{c.width}_{c.lang}_delivered.png')
+    # the adapter's bounds (the library the adapter and the screen share)
+    url = c.js("(() => document.querySelector('script[src*=\"app.js\"]').src.replace(/app\\.js.*$/, 'lib/recette_verdicts.js'))()")
+    r = c.js("""async (url) => { const RV = await import(url), ok = { schema: 'sog-recette/1', updated: '2026-11-14T09:00:00Z', items: { 'SOG-0301': { verdict: 'ok', at: '2026-11-14T09:00:00Z' } } }, out = {};
+      const w = (p, v, t = 'ABC') => { const k = RV.checkWrite(p, v, t); return k.ok ? 'ok' : k.why };
+      const P = 'pilot/ABC/recette/verdicts.json';
+      out.good = w(P, ok);
+      out.otherTri = w('pilot/XYZ/recette/verdicts.json', ok);
+      out.otherFile = w('pilot/ABC/recette/other.json', ok);
+      out.signalements = w('pilot/ABC/signalements/SIG-0123456789.json', ok);
+      out.noTri = w(P, ok, '');
+      out.schema = w(P, { ...ok, schema: 'x' });
+      out.extra = w(P, { ...ok, path: '../x' });
+      out.badId = w(P, { ...ok, items: { 'x/../y': { verdict: 'ok' } } });
+      out.badVerdict = w(P, { ...ok, items: { 'SOG-0301': { verdict: 'meh' } } });
+      out.koBare = w(P, { ...ok, items: { 'SOG-0301': { verdict: 'ko' } } });
+      out.longComment = w(P, { ...ok, items: { 'SOG-0301': { verdict: 'ko', comment: 'x'.repeat(2001) } } });
+      out.histBig = w(P, { ...ok, items: { 'SOG-0301': { history: Array.from({ length: 21 }, () => ({ verdict: 'ok' })) } } });
+      out.tooMany = w(P, { ...ok, items: Object.fromEntries(Array.from({ length: 1001 }, (_, i) => ['SOG-' + String(i).padStart(4, '0'), { verdict: 'ok' }])) });
+      out.keyOrder = w(P, { ...ok, items: { 'SOG-0301': { at: '2026-11-14T09:00:00Z', verdict: 'ok' } } });
+      out.read = Object.keys(RV.readDoc(JSON.stringify({ schema: 'sog-recette/1', items: { 'SOG-0301': { verdict: 'ok' }, 'SOG-9': { verdict: 'ok' }, '__proto__': { verdict: 'ok' } } })).items);
+      out.readHuge = Object.keys(RV.readDoc('x'.repeat(1600000)).items).length;
+      return out }""", url)
+    c.eq(r, {'good': 'ok', 'otherTri': 'path', 'otherFile': 'path', 'signalements': 'path', 'noTri': 'path', 'schema': 'shape', 'extra': 'shape', 'badId': 'entry', 'badVerdict': 'entry', 'koBare': 'entry', 'longComment': 'entry',
+             'histBig': 'entry', 'tooMany': 'size', 'keyOrder': 'ok', 'read': ['SOG-0301'], 'readHuge': 0},
+         'the adapter refuses outside the file of the device and outside the bounds (foreign trigram, another file, bad shape, an entry not to the rules, size), and the reading keeps only what is to the rules', what='bounds')
+    # without a trigram: nothing can leave, the sheet says « pas encore envoyé »
+    forget(c.page, ['device/identity.json', key, 'device/recette.json'], base=c.base)   # the device forgets its trigram (and what it kept)
+    c.open('recette', docs=LEVEL3, trigram='')
+    c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=20000, what='the tests (no trigram)')
+    f2 = c.js("document.querySelector('[data-section=today] li[data-id]').dataset.id")
+    c.tap(f'[data-ok="{f2}"]')
+    c.js("document.querySelector('[data-section=seen]').open = true")
+    c.until(f"!!document.querySelector('[data-section=seen] [data-id=\"{f2}\"] [data-unsent]')", timeout=15000, what='« pas encore envoyé »')
+    c.eq(c.js(docs_js, key), None, 'a device without trigram writes nothing in the repository (the verdict stays on the device, said « pas encore envoyé »)', what='no file')
     c.check_errors()

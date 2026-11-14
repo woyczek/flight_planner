@@ -148,7 +148,13 @@
     ],
     more: ['Voir les {n} autres', 'Show the other {n}', 'Die anderen {n} zeigen', 'Ver las otras {n}'],
     less: ['Réduire', 'Show fewer', 'Weniger zeigen', 'Reducir'],
-    unsent: ['non envoyé', 'not sent', 'nicht gesendet', 'no enviado'],
+    unsent: ['pas encore envoyé', 'not sent yet', 'noch nicht gesendet', 'aún no enviado'],
+    sent: ['envoyé', 'sent', 'gesendet', 'enviado'],
+    noRepo: ['Le dépôt des données n’a pas reçu les verdicts : ils restent sur cet appareil et repartiront.',
+      'The data repository did not get the verdicts: they stay on this device and will leave again.',
+      'Das Datenarchiv hat die Urteile nicht erhalten: Sie bleiben auf diesem Gerät und gehen erneut.',
+      'El repositorio de datos no recibió los veredictos: se quedan en este dispositivo y volverán a salir.'
+    ],
     noOrg: ['Pas de dossier « organisation » sur ce poste : les verdicts restent sur cet appareil.',
       'No “organisation” folder on this computer: the verdicts stay on this device.',
       'Auf diesem Rechner gibt es keinen Ordner „organisation“: Die Urteile bleiben auf diesem Gerät.',
@@ -218,33 +224,13 @@
   /** Un texte borné, sans caractère de commande. */
   const text = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '';
   /** Un verdict lu d'ailleurs (le fichier du lanceur, le magasin de l'appareil, le fichier généré) : { verdict, comment?, at? } aux règles, sinon null ; un refus sans commentaire n'est pas un verdict. */
-  /** Un élément d'historique : un verdict complet { verdict, comment?, at? } aux règles, sinon null (un refus ou des réserves sans commentaire n'en sont pas). */
-  const histItem = v => {
-    if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict)) return null;
-    const e = {
-        verdict: v.verdict
-      },
-      c = text(v.comment, MAX_COMMENT);
-    if (c) e.comment = c;
-    if (typeof v.at === 'string' && AT.test(v.at)) e.at = v.at;
-    return NEEDS_COMMENT.includes(v.verdict) && !e.comment ? null : e;
-  };
-  /** L'historique lu d'ailleurs (le fichier, le générateur) : vingt éléments aux règles au plus, les plus récents. */
-  const histOf = h => (Array.isArray(h) ? h : []).map(histItem).filter(Boolean).slice(-HIST_MAX);
-  /** Une entrée : un verdict aux règles { verdict, comment?, at?, history? }, ou — SOG-0351 — une fiche REMISE À TESTER : { history, at? } sans verdict (son verdict d'avant est gardé dans l'historique). */
-  const entryOf = v => {
-    if (!v || typeof v !== 'object') return null;
-    const hist = histOf(v.history);
-    if (!VERDICTS.includes(v.verdict)) return hist.length ? {
-      history: hist,
-      ...(typeof v.at === 'string' && AT.test(v.at) ? {
-        at: v.at
-      } : {})
-    } : null;
-    const e = histItem(v);
-    if (e && hist.length) e.history = hist;
-    return e;
-  };
+  // les règles d'une entrée (un verdict, son historique, une fiche remise à tester) sont celles de frame/lib/recette_verdicts.js — les mêmes que celles de l'adaptateur qui écrit le fichier du dépôt (SOG-0357) ;
+  // la bibliothèque est chargée au début de l'écran
+  let R = null,
+    TM = null;
+  const histItem = v => R.histItem(v);
+  const histOf = h => R.histOf(h);
+  const entryOf = v => R.entryOf(v);
   /** Le verdict qu'une nouvelle livraison a remplacé (donné par le générateur) : { verdict, comment?, at? } aux règles, sinon null ; contrairement à
    *  entryOf, un refus sans commentaire reste dicible (« Relivré depuis votre refus du … »). */
   const previousEntry = v => {
@@ -258,19 +244,7 @@
     return e;
   };
   /** Une carte de verdicts lue d'ailleurs : seules les entrées aux règles (identifiant SOG-nnnn), 1000 au plus. */
-  const cleanMap = m => {
-    const out = {};
-    if (!m || typeof m !== 'object' || Array.isArray(m)) return out;
-    let n = 0;
-    for (const k of Object.keys(m)) {
-      const e = ID.test(k) && n < MAX_ITEMS ? entryOf(m[k]) : null;
-      if (e) {
-        out[k] = e;
-        n++;
-      }
-    }
-    return out;
-  };
+  const cleanMap = m => R.cleanMap(m);
   /** Le magasin de l'appareil (device/recette.json) : { pending (id → verdict, ou null : à retirer), unsent, open (sections dépliées) }. */
   const readStore = async c => {
     let s = null;
@@ -405,6 +379,8 @@
     const {
       t
     } = c;
+    R ||= await import(new URL('frame/lib/recette_verdicts.js', c.root).href);
+    TM ||= await import(new URL('frame/lib/time.js', c.root).href).catch(() => null);
     const d = await load(c);
     if (!d || !Array.isArray(d.tests)) {
       view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-card">${esc(t(T.missing))}</p>`;
@@ -436,6 +412,8 @@
       file: {},
       // les verdicts écrits par le lanceur
       fileRead: false,
+      repo: {}, // SOG-0357 : les verdicts du fichier du dépôt (pilot/<trigramme>/recette/verdicts.json), entrée non fiable
+      repoRead: false,
       local: saved.pending,
       // ceux de cet appareil, pas encore envoyés (null : à retirer)
       unsent: new Set(saved.unsent),
@@ -455,7 +433,11 @@
       dwhy: '' // pourquoi la dernière réponse n'est pas partie : unknown (le lanceur n'a pas ce verbe), offline, failed
     };
     // ---- ce que dit un test : son verdict en vigueur (l'appareil, puis le lanceur, puis le fichier généré), ou rien
-    const rawEntry = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : ui.fileRead ? ui.file[x.id] || null : x.gen;
+    /** L'entrée en vigueur d'une fiche dans les FICHIERS : la plus récente, par son heure, de celle du lanceur (organisation/RECETTE.json) et de celle du dépôt (le téléphone) — SOG-0357. */
+    // le fichier du lanceur, quand il est lu, est LA source (la liste générée en est tirée) ; sinon la liste générée et le dépôt se départagent aussi par l'heure
+    const fileEntry = x => ui.fileRead ? R.latest(ui.file[x.id], ui.repo[x.id]) || null : R.latest(ui.repoRead ? ui.repo[x.id] : null, x
+      .gen) || null;
+    const rawEntry = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : fileEntry(x);
     const rawVerdict = x => {
       const e = rawEntry(x);
       return e && e.verdict ? e : null; // une fiche remise à tester n'a plus de verdict en vigueur (SOG-0351)
@@ -478,7 +460,7 @@
     let lastDay = '';
     const setLastDay = () => {
       const today = new Date().toISOString().slice(0, 10),
-        days = tests.map(x => (ui.fileRead ? ui.file[x.id] : x.gen)).filter((v, i) => v && v.verdict && !superseded(tests[i], v)).map(
+        days = tests.map(x => fileEntry(x)).filter((v, i) => v && v.verdict && !superseded(tests[i], v)).map(
           v => v.at
           ?.slice(0, 10)).filter(d => d && d < today)
         .sort(); // les verdicts d'aujourd'hui ne font pas de la recette d'hier
@@ -523,7 +505,7 @@
       const head = `<p><span class="f-rm-id">${esc(x.id)}</span> <b>${esc(t(row(x.title)))}</b>${x.since ? ` <small class="f-muted">${esc(t(T.since, { d: x.since }))}</small>` : ''}${ui.unsent.has(x.id) ? ` <small class="f-rm-unsent" data-unsent>${esc(t(T.unsent))}</small>` : ''}</p>
         <p class="f-rc-test" lang="fr" data-test>${esc(x.test)}</p>`;
       if (known(x)) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="known">${head}<p class="f-muted" data-known>${esc(t(T.knownLine))}</p></li>`;
-      if (v) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="${v.verdict}">${head}<p data-verdict="${v.verdict}">${flat ? `<span class="f-rc-apptag" data-app-tag>${esc(appName(x.app))}</span> ` : ''}<b>${esc(t(T[v.verdict]))}</b>${v.at ? ` <small class="f-muted" data-verdict-at>${esc(`${v.at.slice(0, 10)} ${v.at.slice(11, 16)}Z`)}</small>` : ''}${v.comment ? ` — ${esc(v.comment)}` : ''}</p>
+      if (v) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="${v.verdict}">${head}<p data-verdict="${v.verdict}">${flat ? `<span class="f-rc-apptag" data-app-tag>${esc(appName(x.app))}</span> ` : ''}<b>${esc(t(T[v.verdict]))}</b>${v.at ? ` <small class="f-muted" data-verdict-at title="${esc(v.at)}">${esc(TM?.fmtMoment ? TM.fmtMoment(v.at, c.lang?.() || 'fr') : `${v.at.slice(0, 10)} ${v.at.slice(11, 16)}Z`)}</small>` : ''}${ui.unsent.has(x.id) ? '' : ` <small class="f-rm-sent" data-sent>${esc(t(T.sent))}</small>`}${v.comment ? ` — ${esc(v.comment)}` : ''}</p>
         <div class="f-row"><button type="button" data-redo="${esc(x.id)}">${esc(t(T.redo))}</button></div></li>`;
       const p = previousOf(x),
         why = p ? `<p class="f-muted" data-redelivered="${p.verdict}">${esc(t(T.redelivered[p.verdict === 'ko' && !p.comment ? 'koBare' : p.verdict === 'reserve' && !p.comment ? 'ok' : p.verdict], { d: (p.at || x.delivered || '').slice(0, 10), c: p.comment || '' }))}</p>` : '';
@@ -653,6 +635,8 @@
     /** Les verdicts du fichier avec ceux de l'appareil (un retrait : `null`) ; vrai si le lanceur les a écrits (les « non envoyé » disparaissent), faux sinon (avec la raison dite). */
     const send = quiet => sending = sending.then(async () => {
       await pulling; // ce que le fichier porte déjà est lu avant d'écrire
+      if (!launcher()) return sendRepo(
+        quiet); // SOG-0357 : sans lanceur, le verdict part dans le dépôt des données, dans le fichier du trigramme de l'appareil
       if (!ui
         .fileRead
       ) { // la lecture a échoué (lanceur occupé, redémarré) : on la refait ; jamais d'envoi sans avoir lu (le lanceur fusionne, mais un lanceur plus ancien remplace)
@@ -701,6 +685,63 @@
       }
       return notSent(quiet, r);
     });
+    /** Le fichier du dépôt pour cet appareil : `pilot/<trigramme>/recette/verdicts.json`, ou '' sans trigramme. */
+    const repoPath = () => R.pathOf(c.trigram?.() || '');
+    /** Relit le fichier du dépôt (entrée non fiable : aux règles, borné) ; les verdicts qu'il porte sont ceux de tout appareil de ce trigramme. */
+    const readRepo = async () => {
+      const path = repoPath();
+      if (!path || !c.recData?.read) return false;
+      try {
+        const r = await Promise.race([Promise.resolve(c.recData.read(path, {
+          wait: true
+        })), new Promise(res => setTimeout(() => res(null), 4000))]);
+        const doc = R.readDoc(r?.value ?? r?.text ?? null);
+        ui.repo = doc.items;
+        ui.repoRead = true;
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    /** Sans lanceur : les verdicts du dépôt avec ceux de l'appareil (un retrait : `null`), écrits dans le fichier du trigramme, envoyés tout de suite (sendNow, borné à cette écriture) ; vrai si partis. */
+    const sendRepo = async quiet => {
+      const path = repoPath();
+      if (!path || !c.recData?.put) return quiet ? false : (c.notify?.(t(T.noRepo), 'warn'), false);
+      await readRepo();
+      const mine = {
+          ...ui.local
+        },
+        all = {
+          ...ui.repo
+        };
+      for (const [k, v] of Object.entries(mine)) {
+        if (v) all[k] = v;
+        else delete all[k];
+      }
+      const doc = R.docOf(all, now());
+      if (!doc) return quiet ? false : (c.notify?.(t(T.noRepo), 'warn'), false);
+      try {
+        await c.recData.put(path, doc, {
+          force: true
+        });
+        const r = await c.recData.sendNow?.([path]);
+        if (r && r.ok === false) throw new Error(r.error || 'send');
+      } catch {
+        if (!quiet) c.notify?.(t(T.noRepo), 'warn');
+        return false;
+      }
+      ui.repo = R.cleanMap(all);
+      ui.repoRead = true;
+      for (const k of Object.keys(mine)) {
+        if (!Object.hasOwn(ui.local, k) || JSON.stringify(ui.local[k]) === JSON.stringify(mine[k])) delete ui.local[k];
+        if (!Object.hasOwn(ui.local, k)) ui.unsent.delete(k);
+      }
+      await saveStore(c, {
+        pending: ui.local,
+        unsent: [...ui.unsent]
+      });
+      return true;
+    };
     const notSent = (quiet, r) => {
       if (!quiet && launcher()) c.notify?.(t(r?.reason === 'no-organisation' ? T.noOrg : T.noWrite), 'warn');
       return false;
@@ -715,6 +756,22 @@
       setLastDay();
       draw();
     })();
+    // le fichier du dépôt est lu à l'ouverture, et à chaque fois qu'il change (un autre appareil de ce trigramme y a écrit)
+    const repoLoad = async () => {
+      if (await readRepo()) {
+        setLastDay();
+        draw();
+      }
+    };
+    pulling = pulling.then(repoLoad);
+    try {
+      const dir = repoPath().replace(/verdicts\.json$/, '');
+      if (dir && c.recData?.watch) {
+        const off = c.recData.watch(dir, () => view.isConnected ? repoLoad() : off?.());
+      }
+    } catch {
+      /* sans observation : la lecture de l'ouverture suffit */
+    }
     pulling.then(() => Object.keys(ui.local).length ? send(true).then(ok => ok && draw()) : null);
     /** Garde le verdict d'un test (`null` : le retirer) : sur l'appareil d'abord, puis on tente l'envoi. */
     /** Le verdict qui était là (ou la fiche remise à tester), avant un geste : de quoi « Annuler ». */
