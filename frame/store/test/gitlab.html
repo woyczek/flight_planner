@@ -45,6 +45,9 @@
         retryAfter: null,
         dropAt: 0, // la page qui est coupée une fois (le navigateur ne dit alors que « réseau » : un 429 sans en-tête CORS)
         pageHits: {}, // page → demandes reçues
+        bigBlob: null, // Sécurisation : { total, header } — un fichier énorme servi en flux (header : Content-Length annoncé) ; served : octets réellement servis
+        served: 0,
+        cancelled: false,
         blobLimit: 0, // SOG-0349 : combien de lectures de fichier répondent encore 429 (Retry-After : 1)
         calls: [],
         perPage: 2
@@ -210,6 +213,28 @@
         } : {});
       }
       const blob = /^\/repository\/blobs\/([^/]+)\/raw$/.exec(rest);
+      if (blob && st.bigBlob) {
+        const total = st.bigBlob.total;
+        st.served = 0;
+        st.cancelled = false;
+        const stream = new ReadableStream({
+          pull(ctl) {
+            if (st.served >= total) return ctl.close();
+            const chunk = new Uint8Array(1 << 20);
+            st.served += chunk.length;
+            ctl.enqueue(chunk);
+          },
+          cancel() {
+            st.cancelled = true;
+          }
+        });
+        return new Response(stream, {
+          status: 200,
+          headers: st.bigBlob.header ? {
+            'Content-Length': String(total)
+          } : {}
+        });
+      }
       if (blob && st.blobLimit > 0) {
         st.blobLimit--;
         return json({
@@ -735,6 +760,63 @@
           await Promise.all(ps);
           ck('file à priorité : la tête d’abord, puis les lectures de fichiers (la dernière demandée d’abord), l’arbre de fond après', JSON.stringify(order) === JSON.stringify(['head', 'read2', 'read1', 'tree2', 'tree1']), JSON.stringify(order));
           L.pacing.retries = 3;
+        }
+        // Sécurisation (classe de défaut) : la lecture d'un fichier est PLAFONNÉE en octets — un faux dépôt qui sert 300 Mo : la lecture s'arrête au plafond, le flux est annulé, la mémoire ne suit pas
+        {
+          fresh();
+          const f = Object.values(G.st.files)[0],
+            MiB = 1 << 20;
+          const tryRead = async (o, big) => {
+            G.st.bigBlob = big;
+            let err = null,
+              txt = null;
+            try {
+              txt = await T.read('d/00.json', f.sha, o);
+            } catch (e) {
+              err = e;
+            }
+            G.st.bigBlob = null;
+            return {
+              err,
+              txt
+            };
+          };
+          let r = await tryRead({
+            max: 2 * MiB
+          }, {
+            total: 300 * MiB
+          });
+          ck('plafond : 300 Mo servis en flux, plafond de 2 Mo — la lecture s’arrête (tooBig), le flux est annulé, au plus quelques Mo lus', r.err?.tooBig === true && G.st.cancelled && G.st.served <= 5 * MiB, JSON.stringify([r.err?.message, G.st.cancelled, G.st.served / MiB]));
+          r = await tryRead({
+            max: 2 * MiB
+          }, {
+            total: 300 * MiB,
+            header: true
+          });
+          ck('plafond : la taille annoncée (Content-Length) au-delà du plafond refuse sans rien lire', r.err?.tooBig === true && G.st.served <= 2 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          r = await tryRead({}, {
+            total: 70 * MiB
+          });
+          ck('plafond : sans plafond donné, 64 Mio — jamais une lecture sans borne', r.err?.tooBig === true && G.st.served <= 66 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          let rb = null;
+          G.st.bigBlob = {
+            total: 300 * MiB
+          };
+          try {
+            await T.readBytes('d/00.json', f.sha, {
+              max: 1 * MiB
+            });
+          } catch (e) {
+            rb = e;
+          }
+          G.st.bigBlob = null;
+          ck('plafond : les octets d’un fichier (logo) sont plafonnés de même', rb?.tooBig === true && G.st.served <= 4 * MiB, JSON.stringify([rb?.message, G.st.served / MiB]));
+          r = await tryRead({
+            max: 2 * MiB
+          }, {
+            total: MiB
+          });
+          ck('plafond : un fichier sous son plafond est lu en entier', r.err === null && r.txt.length === MiB, JSON.stringify([r.err?.message, r.txt?.length]));
         }
       }
       // SOG-0337, T2 : avec un arbre déjà connu, seulement ce qui a changé — UNE comparaison des deux têtes, puis le SEUL dossier de chaque fichier ajouté ou modifié, sans récursion ; l'arbre gardé reste

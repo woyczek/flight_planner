@@ -347,6 +347,57 @@
     };
   }
 
+  /** Les octets d'une réponse, PLAFONNÉS (Sécurisation, classe de défaut ouverte : n'importe quel pilote peut commiter un fichier énorme) : la taille annoncée (Content-Length) au-delà du plafond refuse sans
+   *  rien lire ; sinon les octets sont comptés EN LISANT (la réponse en flux : au-delà du plafond la lecture s'arrête et le flux est annulé, la mémoire ne suit jamais). Rend un ArrayBuffer, ou lève
+   *  err.tooBig. Le plafond est celui de la politique du fichier (frame_data.js : une base compilée plus haut qu'un document de pilote). */
+  async function bounded(r, max) {
+    const tooBig = n => Object.assign(new Error(`over ${max} bytes${n ? ` (${n} read)` : ''}`), {
+      tooBig: true,
+      max
+    });
+    const len = Number(r.headers?.get?.('content-length'));
+    if (Number.isFinite(len) && len > max) {
+      try {
+        await r.body?.cancel?.();
+      } catch {
+        /* le flux est déjà fermé */
+      }
+      throw tooBig(len);
+    }
+    if (!r.body?.getReader) {
+      const b = await r.arrayBuffer();
+      if (b.byteLength > max) throw tooBig(b.byteLength);
+      return b;
+    }
+    const rd = r.body.getReader(),
+      chunks = [];
+    let n = 0;
+    for (;;) {
+      const {
+        done,
+        value
+      } = await rd.read();
+      if (done) break;
+      n += value.byteLength;
+      if (n > max) {
+        try {
+          await rd.cancel();
+        } catch {
+          /* rien à annuler */
+        }
+        throw tooBig(n);
+      }
+      chunks.push(value);
+    }
+    const out = new Uint8Array(n);
+    let o = 0;
+    for (const c of chunks) {
+      out.set(c, o);
+      o += c.byteLength;
+    }
+    return out.buffer;
+  }
+
   /** Contenu d'un Blob en base64. */
   async function b64(blob) {
     const u = new Uint8Array(await blob.arrayBuffer());
@@ -358,6 +409,7 @@
     caller,
     guard,
     limitOf,
+    bounded,
     publish,
     b64
   };

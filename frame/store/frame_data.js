@@ -987,13 +987,18 @@
       const rev = tree[path];
       if (!rev) return null;
       if (kept?.rev === rev) return kept.buf;
-      buf = await T.readBytes(path, rev);
+      buf = await T.readBytes(path, rev, {
+        max
+      });
       if (!(buf instanceof ArrayBuffer)) return null;
       if (buf.byteLength <= max) await setMeta(key, {
         rev,
         buf
       });
-    } catch {
+    } catch (e) {
+      if (e?.tooBig) throw Object.assign(new Error(`${path}: larger than ${max} bytes`), {
+        tooBig: true
+      });
       return kept?.buf || null;
     }
     if (buf.byteLength > max) throw Object.assign(new Error(`${path}: larger than ${max} bytes`), {
@@ -1005,6 +1010,15 @@
   /** SOG-0349 : l'état de chaque lecture de fichier en cours, PARTAGÉE par chemin (un seul appel réseau par chemin, tous les demandeurs sur la même promesse) : { ctl, waiters (ceux qui l'attendent),
    *  gone (ceux qui ont cessé d'attendre : `abandon`), started (la requête est partie), why }. */
   const readMeta = new Map();
+  /** Le plafond d'octets d'un fichier lu du dépôt, par politique (Sécurisation : n'importe quel pilote peut commiter un fichier énorme) : une base compilée (`reference`) plus haut qu'un document ; au-delà la lecture
+   *  s'arrête (le transport compte les octets en lisant) et est dite illisible (why 'error'), jamais gardée ; une révision déjà refusée n'est pas relue. */
+  const READ_CAP = {
+    reference: 64 * 1024 * 1024,
+    document: 8 * 1024 * 1024,
+    cache: 8 * 1024 * 1024
+  };
+  const capOf = policy => READ_CAP[policy] || READ_CAP.document;
+  const bigRevs = new Map(); // chemin → révision refusée pour sa taille
   /** L'état d'une lecture en cours de ce chemin, ou null (rien en cours) : { state: 'queued' | 'reading' | 'limit', retryIn? } — « illisible, reprise dans n s » : la limite du dépôt la retient, le cadre la reprend seul. */
   function readState(path) {
     const m = readMeta.get(String(path || ''));
@@ -1052,16 +1066,26 @@
         }
         let rev = tree[path];
         if (!rev) return null;
+        if (bigRevs.get(path) === rev) throw Object.assign(new Error(`${path}: over the size cap`), {
+          tooBig: true
+        });
         // une lecture PATIENTE (SOG-0349) : une limite de requêtes de l'hôte la fait attendre (dite par la bande), jamais rendre « absent » ; PRIORITAIRE sur l'arbre de fond (ce qui est demandé en dernier,
         // l'écran en vue, passe d'abord) ; elle ne sort de la file que si plus personne ne l'attend ET qu'elle n'est pas partie
-        let text = await T.read(path, rev, {
-          signal: ctl.signal,
-          patient: true,
-          priority: 2,
-          onStart: () => {
-            meta.started = true;
-          }
-        });
+        let text;
+        try {
+          text = await T.read(path, rev, {
+            signal: ctl.signal,
+            patient: true,
+            priority: 2,
+            max: capOf(policy),
+            onStart: () => {
+              meta.started = true;
+            }
+          });
+        } catch (e) {
+          if (e?.tooBig) bigRevs.set(path, rev);
+          throw e;
+        }
         // lecture abandonnée entre-temps (abandon) : rendue à qui l'attend encore, sans rien écrire ni annoncer — une
         // révision plus ancienne arrivée tard n'écrase jamais celle d'une lecture plus récente (Sécurisation, ligne 129)
         if (fetching.get(path) !== job) return {
@@ -1090,6 +1114,7 @@
               signal: ctl.signal,
               patient: true,
               priority: 2,
+              max: capOf(policy),
               onStart: () => {
                 meta.started = true;
               }
@@ -1518,8 +1543,20 @@
         out.paths.push(path);
         continue;
       }
-      const text = await T.read(path, rev),
-        pend = await idb('pending', 'get', path);
+      let text;
+      try {
+        text = await T.read(path, rev, {
+          max: capOf(pol)
+        });
+      } catch (e) {
+        if (e
+          ?.tooBig) { // un fichier plus gros que son plafond ne casse pas le passage : il n'est pas lu, la révision est retenue refusée
+          bigRevs.set(path, rev);
+          continue;
+        }
+        throw e;
+      }
+      const pend = await idb('pending', 'get', path);
       // SOG-0136 : une révision que CE navigateur a poussée lui-même (les dix dernières, par chemin) n'est pas un autre appareil : sa propre version précédente qui revient — la locale gagne, sans entrée de conflit
       const own = ((await getMeta('pushed'))?.revs?.[path] || []).includes(rev);
       if (own && pend && pend.text !== null) await noteOwnSeen(path); // dit dans le diagnostic : combien de fois, et la dernière
