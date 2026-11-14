@@ -2109,6 +2109,8 @@ def f84(c):
     c.open('fuel', wait=False)
     c.until("!!document.querySelector('[data-module=fuel] [data-body]')", timeout=15000, what='Fuel is drawn')
     wait = norm(tx(F, 'waitFlight', c.lang))
+    # SOG-0337 (l'ergonome, 14/11) : pendant une limite de GitLab, la ligne ne promet plus « quelques secondes » : elle dit seulement l'attente
+    c.ok(not any(x in wait.lower() for x in ('seconde', 'second', 'sekunde', 'segundo')), wait, 'the wait promises no duration (a GitLab limit can hold it)')
     c.until("(w) => { const p = document.querySelector('[data-module=fuel] [data-wait]'); const b = document.querySelector('[data-module=fuel] [data-body]');"
             " return !!p && !p.hidden && p.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w || (!!b && !b.inert) }", wait,
             what='while the controls wait, the wait is said above the step')

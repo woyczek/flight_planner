@@ -144,10 +144,11 @@ const TX = {
   ],
   loadingFlight: ['Chargement du vol…', 'Loading the flight…', 'Flug wird geladen…', 'Cargando el vuelo…'],
   // appareil neuf : le vol courant attend la première synchronisation (dit dans l'écran, au-dessus du pas affiché)
-  waitFlight: ['Lecture du vol courant (première synchronisation)… les commandes reviennent dans quelques secondes.',
-    'Reading the current flight (first synchronisation)… the controls come back in a few seconds.',
-    'Aktueller Flug wird gelesen (erste Synchronisierung)… die Bedienelemente sind in wenigen Sekunden wieder da.',
-    'Leyendo el vuelo actual (primera sincronización)… los controles vuelven en unos segundos.'
+  // SOG-0337 : aucune durée promise — une limite de GitLab peut retenir la première synchronisation (la bande du cadre dit la reprise)
+  waitFlight: ['Lecture du vol courant : en attente de la première synchronisation.',
+    'Reading the current flight: waiting for the first synchronisation.',
+    'Aktueller Flug wird gelesen: Warten auf die erste Synchronisierung.',
+    'Leyendo el vuelo actual: esperando la primera sincronización.'
   ],
   lateFlight: ['Données pas encore synchronisées : vous préparez un vol neuf ; votre vol enregistré sera repris dès qu’il arrive.',
     'Data not synchronised yet: you are preparing a new flight; your saved flight is taken back as soon as it arrives.',

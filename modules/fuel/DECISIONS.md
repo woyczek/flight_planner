@@ -1982,3 +1982,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   site: « pas de compute A-B ? que faut-il pour ça ? »; the ergonomist's answer of 13 Nov, 14 h 44: the engine is the launcher's Python;
   SOG-0129 would bring it into the page). When `RE.available` says no, a muted line « Le calcul d'itinéraire demande le lanceur du
   poste. » stands where the two buttons would be; with the launcher, the buttons and no line. F109 extended (red before).
+- **14 Nov 2026 — SOG-0337: the wait for the first synchronisation promises no duration** (the ergonomist: during a GitLab rate limit
+  V3 Frame shows « GitLab limite les requêtes : reprise dans n s »; Fuel's line « … les commandes reviennent dans quelques secondes »
+  contradicted it). `waitFlight` now only says it waits for the first synchronisation. The controls still come back after
+  FLIGHT_WAIT_MS (4 s) on an empty flight, said by `lateFlight`; the flight itself comes when the synchronisation does. F84 extended
+  (red before).
