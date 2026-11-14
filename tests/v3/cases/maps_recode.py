@@ -7859,3 +7859,56 @@ def _d234(c):
     c.wait(1500)
     c.eq(c.js("() => { const F = document.querySelector('.mp-follow'); return !F || F.hidden }"), True, 'no follow-up for a flight not started', what='hidden')
 
+
+@case('D235', 'A tap or a click on a row of the « Proposed routes » window chooses that route (shows it, like a tap on its trace): the row becomes the shown one, its trace thick, its detail written — with a mouse, and with a finger', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0348 (the user, 14 Nov, accepting SOG-0224 with a reserve: « sur la vue carte, on ne peut toujours pas choisir autrement qu’en cliquant le tracé sur la carte, pas sur la légende. Le survol fonctionne, mais pas le toucher/clic »)')
+def d235(c):
+    for w, h in ((390, 844), (1280, 760)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        d = _alts_doc(schema=2, open=None, computed_at=iso(now()), aircraft='F-ABCD', base='')
+        d['answer'] = {'ok': True, 'alternatives': [{'name': 'Via UN10', 'route': 'LFRS LUGEN NEPIX LFML', 'distanceNm': 366, 'fl': 270, 'faults': 0},
+                                                      {'name': 'Via UN20', 'route': 'LFRS X Y LFML', 'distanceNm': 402, 'fl': 250, 'faults': 1}]}
+        c.open('maps', docs=fdocs(flight()) + [['cache/fuel/route_alts.json', d, 'cache']], flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!window.__mp.S.alts && window.__mp.S.alts.list.length === 2 && !document.querySelector('.mp-alts').hidden", timeout=15000, what=f'{w}: the window of the proposals')
+        c.wait(800)
+        shown = "() => { const r = document.querySelector('.mp-al-row[data-shown=\"1\"]'); return r ? +r.dataset.alt : null }"
+        c.eq(c.js(shown), 0, f'{w}: the first route is shown by default', what='shown')
+        box = c.js("() => { const r = document.querySelector('.mp-al-row[data-alt=\"1\"]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }")
+        if w < 700:
+            c.page.touchscreen.tap(box[0], box[1])
+        else:
+            c.page.mouse.move(box[0], box[1])
+            c.page.mouse.click(box[0], box[1])
+        c.until(shown + " === 1".replace('() => ', ''), timeout=1) if False else None
+        c.wait(900)
+        c.eq(c.js(shown), 1, f'{w}: a {"tap" if w < 700 else "click"} on the second row chooses it', what='shown')
+        c.ok(c.js("() => !!window.__mp.S.alts && window.__mp.S.altShow === 1"), 'altShow', f'{w}: the Map’s shown route is the second')
+
+
+@case('D236', 'The boxes of the Layers sheet are easy to hit on a phone: every row of the sheet (the box and its words, the whole line) is at least 44 px high, the box itself at least 22 px, and touching the words toggles the box', 'D',
+      tags=('maps', 'sheet'), screens=False, designs=('standard',), night=False,
+      rule='SOG-0350 (the user, from his phone, 14 Nov: « volet bas - taille des coches. je parle du calque de préférences sur l’écran fuel »): the rows of the Layers sheet were 32 px high with the browser’s 13 px boxes')
+def d236(c):
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    c.open('maps', flight=True, aero=True)
+    c.tap('[data-mp="layers"]')
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='the Layers content')
+    c.wait(600)
+    g = c.js("""() => [...document.querySelectorAll('.mp-dbody .mp-layers label')].filter(l => l.offsetParent && l.querySelector('input[type=checkbox]')).map(l => { const r = l.getBoundingClientRect(), i = l.querySelector('input').getBoundingClientRect();
+      return [l.querySelector('input').dataset.layer, Math.round(r.height), Math.round(Math.min(i.width, i.height))] })""")
+    c.ok(len(g) >= 8, str(g), 'the sheet has its boxes')
+    low = [x for x in g if x[1] < 44]
+    small = [x for x in g if x[2] < 22]
+    c.ok(not low, str(low), 'every row is at least 44 px high (the whole line is the target)')
+    c.ok(not small, str(small), 'every box is at least 22 px')
+    # touching the words (not the box) toggles it
+    key = 'asTma'
+    before = c.js(f"() => document.querySelector('input[data-layer={key}]').checked")
+    pos = c.js(f"""() => {{ const l = document.querySelector('input[data-layer={key}]').closest('label'), r = l.getBoundingClientRect(); return [r.right - 12, r.top + r.height / 2] }}""")
+    c.page.touchscreen.tap(pos[0], pos[1])
+    c.wait(500)
+    c.eq(c.js(f"() => document.querySelector('input[data-layer={key}]').checked"), not before, 'a tap at the far end of the row toggles its box', what='checked')
+

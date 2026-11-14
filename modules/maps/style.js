@@ -79,6 +79,10 @@ export const STYLE = `
 [data-module="maps"] .mp-layers .mp-layer-set[hidden]{display:none}
 [data-module="maps"] .mp-layers [data-layers-reset]{grid-column:1/-1;justify-self:start;margin-top:8px}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
+@media (pointer:coarse),(max-width:700px){
+  [data-module="maps"] .mp-layers label{min-height:var(--sog-touch)}
+  [data-module="maps"] .mp-layers input[type="checkbox"]{flex:none;width:24px;height:24px;margin:0}
+}
 [data-module="maps"] .mp-layers .mp-l-main{grid-column:1/-1;align-items:flex-start;border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px;font-weight:600}
 [data-module="maps"] .mp-layers .mp-l-main small{display:block;font-weight:400}
 /* Complexité : libellé, valeur et curseur sur UNE ligne de 44 px (le bloc faisait 73 px, plus 51 de phrase d'aide) ; l'aide reste
