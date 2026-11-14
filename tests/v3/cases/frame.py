@@ -8019,3 +8019,22 @@ def a203(c):
         c.ok(want in txt and 'secret' not in txt, [l for l in txt.splitlines() if word in l][:2], f'the state block says « {want} » (and no token)')
     c.shot(f'A203_{c.width}_{c.lang}_delivered.png')
     c.check_errors()
+
+
+@case('A204', "Missions › the « Registre » button of the page marks « Registre » in the rail and puts the address at #missions?view=registry, as a click in the rail does; the way back marks « Missions » again (SOG-0338)", 'A',
+      designs=('standard', 'metro'), screens=True, night=False, langs4=False,
+      rule="SOG-0338 (the user, on his phone: « un clic sur « registre » ne met pas à jour le rail gauche. on reste sur mission au lieu de passer sur registre »): Missions and Registre are two entries of the Company rail for one module; the page's button opened the Registry inside the module without telling the frame, so the rail kept « Missions »; the module now says it by ctx.view('registry') (the address and the marked entry follow, a push so that the back button returns), and by ctx.view('') on its way back")
+def a204(c):
+    cur = "(() => { const a = document.querySelector('#fMenu a[aria-current=page]'); return a ? [a.dataset.id, a.dataset.menuView || '', location.hash] : null })()"
+    c.open('missions', docs=LEVEL3, wait=False, app='company')
+    c.until("!!document.querySelector('[data-module=\"missions\"] [data-do=\"regopen\"]')", timeout=20000, what='the Registre button')
+    c.eq(c.js(cur)[:2], ['missions', ''], 'on the Missions screen the rail marks « Missions »', what='before')
+    c.tap('[data-module="missions"] [data-do="regopen"]')
+    c.until("location.hash.includes('view=registry')", timeout=15000, what='the address follows')
+    got = c.js(cur)
+    c.eq(got[:2], ['missions', 'registry'], 'after the page\'s button the rail marks « Registre » (the same as a click in the rail)', what='rail after button')
+    c.shot(f'A204_registre_{c.width}_{c.lang}_{c.design}_delivered.png')
+    c.tap('[data-module="missions"] [data-do="regback"]')
+    c.until("!document.querySelector('#fMenu a[aria-current=page]')?.dataset.menuView", timeout=15000, what='the rail comes back to Missions')
+    c.eq(c.js(cur)[:2], ['missions', ''], 'the way back marks « Missions » again', what='rail after back')
+    c.check_errors()

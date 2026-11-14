@@ -3251,6 +3251,19 @@
     menuActive = '',
     menuScreen = '',
     menuView = ''; // la vue demandée par l'adresse (?view=…) : sépare deux entrées d'un même module (Missions, Registre)
+  /** Le module affiché change de vue (Missions › Registre) : adresse et rail suivent (SOG-0338). */
+  function setModuleView(id, name) {
+    const v = typeof name === 'string' && /^[a-z]{1,16}$/.test(name) ? name : '',
+      cur = parseHash();
+    if (current?.id !== id || over || cur.id !== id || (cur.query.view || '') === v) return false;
+    const q = new URLSearchParams(location.hash.split('?')[1] || '');
+    v ? q.set('view', v) : q.delete('view');
+    const qs = q.toString();
+    history.pushState(history.state, '', `#${id}${qs ? `?${qs}` : ''}`); // sans hashchange : le module reste monté ; le retour revient à la vue d'avant
+    menuView = v;
+    renderMenu(id, menuScreen);
+    return true;
+  }
   /** Modules du menu au niveau de l'appareil (meta.level ≤ niveau) ; un module au niveau encore inconnu est montré. */
   const visibleModules = () => APP.modules.filter(m => (moduleLevel[m.id] ?? 1) <= level);
   /** Niveau (meta.level) et vue fixe (meta.fixed) déclarés par chaque module, puis menu et barre redessinés ; module
@@ -4264,7 +4277,10 @@
       }),
       // ctx.helpAnchor(id | () => id | null) : l'ancre du chapitre du module pour l'écran ou le pas affiché ; le « ? » de
       // l'en-tête ouvre l'aide à ce paragraphe (sans ancre : au début du chapitre). Valable jusqu'au démontage.
-      helpAnchor: a => void(helpAnchors[entry.id] = a || null)
+      helpAnchor: a => void(helpAnchors[entry.id] = a || null),
+      // ctx.view(nom | '') : le module change de VUE sans changer de page (Missions › Registre : deux entrées du rail pour un même module) ; l'adresse (#module?view=nom) et l'entrée marquée du rail
+      // suivent, comme après un clic dans le rail ; le retour du navigateur revient à l'écran d'avant (SOG-0338). Sans effet si ce module n'est plus affiché.
+      view: name => setModuleView(entry.id, name)
     };
   }
   /** Contexte de l'aide (frame/help/help.js) : textes, langue, documents de l'appareil, racine de la suite. */

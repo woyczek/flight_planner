@@ -1440,6 +1440,7 @@ function onClick(s, e) {
     case 'first':
       return history.back();
     case 'regopen':
+      s.ctx.view?.('registry'); // le rail marque « Registre » comme après un clic dans le rail (SOG-0338)
       return regOpen(s);
     case 'add':
       s.add = {
@@ -2673,6 +2674,7 @@ async function regClick(s, b) {
     line = r.lines.find(e => e.idx === idx);
   switch (b.dataset.do) {
     case 'regback':
+      s.ctx.view?.('');
       s.reg = null;
       return draw(s);
     case 'regplan':
