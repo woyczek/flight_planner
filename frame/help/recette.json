@@ -3210,10 +3210,10 @@
     "de": "BLOCKIEREND: GitLab antwortet am Telefon mit 429 und die App sagt nichts; Anfragen auf das Minimum senken",
     "es": "BLOQUEANTE: GitLab responde 429 en el teléfono y la aplicación no dice nada; reducir las peticiones al mínimo"
    },
-   "test": "Sur le téléphone, recharge l'appli (note « nouvelle version · Recharger », sinon ferme et rouvre deux fois). Laisse-la ouverte deux à trois minutes : la première lecture se fait maintenant par à-coups, sans repartir de zéro. Réglages › Synchronisation : « Dernière réussie » doit passer à aujourd'hui et ton vol en attente partir ; pendant une attente, la ligne dit « GitLab limite les requêtes : reprise dans n s ». Si ça ne finit pas en cinq minutes : Réglages › Données › « Copier le diagnostic » et envoie-le moi (il dit combien de pages ont été lues, l'attente, et si le délai du serveur était lisible).",
+   "test": "Sur le téléphone, recharge l'appli. Réglages › Synchronisation : « Dernière réussie » est d'aujourd'hui. Fais un changement sur le poste (un vol enregistré, par exemple), puis rouvre l'appli du téléphone : la synchronisation se fait en quelques secondes, sans la bande « GitLab limite les requêtes ». Si la bande revient à chaque ouverture, « Copier le diagnostic » (Réglages › Données) et envoie-le par « Signaler ».",
    "since": "2026-11-14",
    "state": "todo",
-   "delivered": "2026-11-14T09:55:59Z"
+   "delivered": "2026-11-14T10:26:51Z"
   }
  ],
  "decisions": [
