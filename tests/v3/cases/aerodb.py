@@ -9724,3 +9724,149 @@ def k267(c):
     c.ok(out['1 s'][0] < 3 and out['1 s'][1] < out['25 s'][1], str(out), 'with `alternatives_budget` 1 the search stops after the first search that goes past it: fewer attempts, fewer alternatives, the primary unchanged')
     c.eq(out['default'][0], 3, 'the default is 8 s: three searches of 3 s fit before the third check (6 s)', what='default')
     c.eq(out['none asked'][1], 0, 'no alternatives asked: none searched (the primary alone, as before)', what='none')
+
+
+@case('K268', 'PDF libraries as an OPTION (Q-0053, SOG-0336 later): the launcher never imports them; `pdf/status` reads their versions in an isolated child and says the command; a PDF is read in a bounded child (path, timeout of the whole tree, memory, output, clean environment, untrusted answer)', 'K', static=True,
+      rule='Q-0053 (the user: yes to pypdf, and pdfplumber for his VAC parser) with the ergonomics session\'s rule (a builder in a separate process, never imported by the launcher or the page, never installed by it) and Sécurisation\'s opinion of 14 Nov 2026: minima pypdf >= 6.21.4 (three denial-of-service advisories before), pdfplumber >= 0.11.10, Pillow >= 13.0.0 (39 advisories before; the workstation has 12.3.0, and pdfplumber asks only >= 12.2.0 so the resolver will not raise it alone: the command names it), versions read by importlib.metadata in `python -I -c` and compared as NUMBERS, never `import`; the child of a read: `-I`, an empty temporary working folder, a cleaned environment, a hard timeout that stops the whole tree, memory limited (a Job object on Windows), a bounded output file whose content is an untrusted input; the PDF under data/local/upload/ or data/sia/zones/<zone>/ only, real path, no link, name by pattern. The mechanism only: no reader uses it yet')
+def k268(c):
+    import json
+    import os
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import pdf_guard as G
+    RJ = _regen()
+    ok = lambda: {'pypdf': '6.21.4', 'pdfplumber': '0.11.10', 'Pillow': '13.0.0', 'pdfminer.six': '20260107'}
+    c.eq([(p['name'], p['state']) for p in G.status(lambda: {'pypdf': '6.21.3', 'pdfplumber': None, 'Pillow': '12.3.0', 'pdfminer.six': '20250101'})['packages']],
+         [('pypdf', 'old'), ('pdfplumber', 'missing'), ('Pillow', 'old'), ('pdfminer.six', 'old')], 'a library below its minimum is « old », an absent one « missing » (the workstation\'s pypdf 6.21.3 and Pillow 12.3.0 are old)', what='old')
+    c.eq([G.judge('pypdf', v) for v in ('6.21.4', '6.99.0', '7.0.0', '6.9.0', '6.21.10')], ['ok', 'ok', 'new', 'old', 'ok'], 'versions are compared as NUMBERS (6.21.10 is above 6.21.4, 6.9.0 below), the next major is refused', what='numbers')
+    st = G.status(ok)
+    c.eq((st['ready'], st['command']), ({'text': True, 'vectors': True}, G.COMMAND), 'with every minimum met both uses are ready; the command is the one of Sécurisation', what='ready')
+    c.ok('pypdf>=6.21.4,<7' in G.COMMAND and 'pdfplumber>=0.11.10,<0.12' in G.COMMAND and 'Pillow>=13.0.0,<14' in G.COMMAND, G.COMMAND, 'the command names the three minima and the upper bounds')
+    for purpose, bad, want in (('text', {'pypdf': None}, 'missing'), ('text', {'pypdf': '6.21.3'}, 'version'), ('vectors', {'Pillow': '12.3.0'}, 'version')):
+        try:
+            G.require(purpose, lambda: {**ok(), **bad})
+            got = None
+        except G.PdfError as e:
+            got = (e.reason, G.COMMAND in str(e))
+        c.eq(got, (want, True), f'{purpose} with {bad}: refused, said with the command', what=f'require {purpose}')
+    # the launcher never imports the libraries: asked in a clean interpreter
+    code = f"import sys; sys.path.insert(0, {str(ROOT / 'tools')!r}); import pdf_guard; pdf_guard.status(); print([m for m in ('pypdf', 'pdfplumber', 'pdfminer', 'PIL', 'pypdfium2') if m in sys.modules])"
+    r = subprocess.run([sys.executable, '-I', '-c', code], capture_output=True, timeout=60)
+    c.eq(r.stdout.decode().strip(), '[]', 'status() reads the versions without importing any of the libraries', what='no import')
+    real = G.versions(['pypdf', 'nonexistent-package-xyz'])
+    c.ok(real['nonexistent-package-xyz'] is None and (real['pypdf'] is None or real['pypdf'][0].isdigit()), str(real), 'the real versions come from the metadata of an isolated child (an unknown package: none)')
+    fn, check = RJ.REGISTRY[('pdf', 'status')]
+    r = fn(RJ.Job('pdf', 'status', {}), {}, {})
+    c.eq((check({}), check({'x': 1}), r['ok'], sorted(r)), ({}, None, True, ['command', 'ok', 'packages', 'python', 'ready']), 'the verb pdf/status takes no argument and answers read-only: packages, ready, command, python', what='verb')
+
+    def tiny(text):
+        body = f'BT /F1 18 Tf 20 100 Td ({text}) Tj ET'.encode()
+        objs = [b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+                b'<< /Length ' + str(len(body)).encode() + b' >>\nstream\n' + body + b'\nendstream', b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
+        out, offs = b'%PDF-1.4\n', []
+        for i, o in enumerate(objs, 1):
+            offs.append(len(out))
+            out += f'{i} 0 obj\n'.encode() + o + b'\nendobj\n'
+        x = len(out)
+        out += f'xref\n0 {len(objs) + 1}\n0000000000 65535 f \n'.encode() + b''.join(f'{o:010d} 00000 n \n'.encode() for o in offs)
+        return out + f'trailer\n<< /Size {len(objs) + 1} /Root 1 0 R >>\nstartxref\n{x}\n%%EOF\n'.encode()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        for sub in ('local/upload', 'sia/zones/dk', 'sia/base', 'local/upload/sub'):
+            (data / sub).mkdir(parents=True)
+        good = data / 'local' / 'upload' / 'a.pdf'
+        good.write_bytes(tiny('HELLO TOWER'))
+        (data / 'sia' / 'zones' / 'dk' / 'b.pdf').write_bytes(tiny('x'))
+        for rel in ('sia/base/x.pdf', 'local/upload/sub/c.pdf', 'local/upload/bad$name.pdf', 'local/upload/a.txt', 'sia/zones/DK/u.pdf'):
+            (data / rel).parent.mkdir(parents=True, exist_ok=True)
+            (data / rel).write_bytes(tiny('x'))
+        (data / 'local' / 'upload' / 'd.pdf').mkdir()
+        (data / 'sia' / 'zones' / 'denmark').mkdir()
+        (data / 'sia' / 'zones' / 'denmark' / 'z.pdf').write_bytes(tiny('x'))
+
+        def path_ok(p):
+            try:
+                G.safe_pdf(data, p)
+                return True
+            except G.PdfError:
+                return False
+        cases = {'upload': (good, True), 'zone': (data / 'sia' / 'zones' / 'dk' / 'b.pdf', True), 'base': (data / 'sia' / 'base' / 'x.pdf', False), 'deeper': (data / 'local' / 'upload' / 'sub' / 'c.pdf', False),
+                 'name': (data / 'local' / 'upload' / 'bad$name.pdf', False), 'extension': (data / 'local' / 'upload' / 'a.txt', False), 'directory': (data / 'local' / 'upload' / 'd.pdf', False),
+                 'zone upper': (data / 'sia' / 'zones' / 'DK' / 'u.pdf', False), 'zone long': (data / 'sia' / 'zones' / 'denmark' / 'z.pdf', False), 'traversal': (str(data / 'local' / 'upload' / '..' / '..' / 'a.pdf'), False),
+                 'outside': (Path(td) / 'a.pdf', False), 'absent': (data / 'local' / 'upload' / 'none.pdf', False)}
+        c.eq({k: path_ok(p) for k, (p, w) in cases.items()}, {k: w for k, (p, w) in cases.items()}, 'the PDF is under data/local/upload/ or data/sia/zones/<zone>/ with a name by pattern; anything else (another folder, deeper, a bad name or extension, a directory, a long zone, traversal, outside, absent) is refused', what='paths')
+        try:
+            link = data / 'local' / 'upload' / 'lnk.pdf'
+            os.symlink(good, link)
+            c.eq(path_ok(link), False, 'a symbolic link is not followed', what='symlink')
+        except (OSError, NotImplementedError):
+            pass
+        t = G.read_text(data, good, versions_of=ok)
+        c.ok(t['pages'] == 1 and 'HELLO TOWER' in t['texts'][0], str(t), 'a real PDF is read by the child: its page count and its text')
+        try:
+            G.read_text(data, good, versions_of=lambda: {**ok(), 'pypdf': '6.21.3'})
+            got = None
+        except G.PdfError as e:
+            got = e.reason
+        c.eq(got, 'version', 'a read with a library below its minimum is refused before any child starts', what='read refuses')
+        work = Path(td) / 'children'
+        work.mkdir()
+
+        def child(name, src):
+            p = work / name
+            p.write_text(src, encoding='utf-8')
+            return str(p)
+
+        def alive(pid):
+            if os.name == 'nt':
+                return str(pid) in subprocess.run(['tasklist', '/FI', f'PID eq {pid}', '/NH'], capture_output=True, text=True).stdout
+            try:
+                os.kill(pid, 0)
+                return True
+            except OSError:
+                return False
+
+        def run(src, name='c.py', **kw):
+            try:
+                return G.read_text(data, good, versions_of=ok, child=child(name, src), **kw), None
+            except G.PdfError as e:
+                return None, e.reason
+        pidfile = (work / 'gpid.txt').as_posix()
+        t0 = time.time()
+        res, why = run("import subprocess, sys, time\ng = subprocess.Popen([sys.executable, '-I', '-c', 'import time; time.sleep(120)'])\nopen(%r, 'w').write(str(g.pid))\ntime.sleep(120)\n" % pidfile, timeout=4)
+        took = time.time() - t0
+        time.sleep(1.0)
+        gp = int((work / 'gpid.txt').read_text())
+        c.eq((why, took < 30, alive(gp)), ('timeout', True, False), 'a child that does not finish is stopped at the timeout WITH the whole tree (its grandchild is gone)', what='timeout')
+        if os.name == 'nt' or sys.platform.startswith('linux'):
+            hog = "import json, sys\nx = bytearray(900 * 1024 * 1024)\nfor i in range(0, len(x), 4096):\n    x[i] = 1\njson.dump({'pages': 1, 'texts': ['allocated']}, open(sys.argv[2], 'w'))\n"
+            res, why = run(hog, 'hog.py', memory=200 * 1024 * 1024)
+            c.eq((res, why), (None, 'failed'), 'a child that asks for more memory than its limit is stopped (the limit of the Job object / RLIMIT_AS)', what='memory')
+            res, why = run(hog, 'hog2.py')
+            c.eq(res and res['texts'], ['allocated'], 'the same child under the default limit (2 GiB) finishes: it is the limit that stopped it', what='memory control')
+        res, why = run("import sys\nopen(sys.argv[2], 'w').write('[' + '0,' * 3_000_000 + '0]')\n", 'big.py')
+        c.eq((res, why), (None, 'output'), 'an output file above the bound is refused', what='big output')
+        res, why = run("import json, os, sys\njson.dump({'pages': 1, 'texts': [json.dumps({'env': sorted(os.environ), 'cwd': os.getcwd(), 'list': os.listdir('.')})]}, open(sys.argv[2], 'w'))\n", 'env.py')
+        seen = json.loads(res['texts'][0]) if res else {}
+        c.ok(res and not [k for k in seen['env'] if k.upper() not in ('SYSTEMROOT',)] and os.path.realpath(seen['cwd']) != os.path.realpath(str(ROOT)) and seen['list'] == [] and 'pdfread-' in seen['cwd'],
+             str(seen), 'the child starts with a cleaned environment (nothing but SYSTEMROOT, no CMAP_PATH) in an EMPTY temporary working folder')
+        os.environ['CMAP_PATH'] = str(work)
+        try:
+            res, why = run("import json, os, sys\njson.dump({'pages': 1, 'texts': [str('CMAP_PATH' in os.environ)]}, open(sys.argv[2], 'w'))\n", 'cmap.py')
+        finally:
+            del os.environ['CMAP_PATH']
+        c.eq(res['texts'], ['False'], 'a variable set for the launcher is not passed to the child', what='cmap')
+        for label, body, want in (('control characters', "{'pages': 2, 'texts': ['a\\x00b\\x07c\\n d']}", ['a b c\n d']), ('wrong shape', "{'pages': 1, 'texts': [1]}", 'output'), ('extra field', "{'pages': 1, 'texts': [], 'evil': 1}", 'output'),
+                                  ('boolean pages', "{'pages': True, 'texts': []}", 'output'), ('too many pages', "{'pages': 1, 'texts': ['x'] * 401}", 'output')):
+            res, why = run(f"import json, sys\njson.dump({body}, open(sys.argv[2], 'w'))\n", 'shape.py')
+            c.eq(res['texts'] if res else why, want, f'the answer of the child is an untrusted input: {label}', what=label)
+        res, why = run("import sys\nopen(sys.argv[2], 'w').write('{\"pages\": NaN, \"texts\": []}')\n", 'nan.py')
+        c.eq((res, why), (None, 'output'), 'a non-finite number in the answer is refused', what='NaN')
+        res, why = run("import sys\nsys.exit(3)\n", 'exit.py')
+        c.eq((res, why), (None, 'failed'), 'a child that fails without an answer is « failed »', what='failed')
+        left = [x for x in os.listdir(tempfile.gettempdir()) if x.startswith('pdfread-')]
+        c.eq(left, [], 'the temporary folder of a read is removed every time (success, failure, timeout)', what='cleanup')
