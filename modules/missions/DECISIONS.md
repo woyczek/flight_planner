@@ -294,3 +294,12 @@
   takes the file's `mission.series` (1 to 99999), else the family's current series (the largest of the registry, `seriesRows`), else
   nothing — never the letter. Vocabulary: the final letter of an identifier, A to Y, is a flight linked to the mission without suffix
   (« vol lié »), Z its organisation (« organisation »); never « variante ». N61 (red before).
+- **14 Nov 2026 — SOG-0114 (A) « équipier »: « Mes missions affectées » at the head of Missions** (the ergonomist's decision of 13 Nov,
+  16 h 05: no usage flag — the group exists as soon as an assignment carries my trigram, and not otherwise). `assigned.js` (pure) reads
+  the V2 index `missions/affectations.json` as it is (SPEC § 6): my lines (by trigram), a cancelled one or a take-off more than 12 h past
+  left out, by take-off; every field bounded (the index is written by any pilot: audit 157). Each row: the mission, the take-off
+  (aerodrome, time Z), the aircraft and the callsign; `rendezvous_at` (ISO or « H±n ») and `meet[]` when the line carries them (SPEC
+  § 6, the CPCO will write them): a channel with an https address (« Ouvrir », never javascript: nor data:) or a value (« Copier »,
+  frame/lib/clipboard.js); a channel with neither is not shown; « Préparer ce vol » by Fuel's door. Painted in place after the read
+  (the list and the search field are not redrawn). NOT here: the crew's rendezvous in the assignment (B, waits for the CPCO), the place
+  of the rendezvous (not in the assignment yet), keeping an assigned mission out of the draw. N62 (red before).

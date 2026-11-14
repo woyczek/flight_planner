@@ -2598,3 +2598,50 @@ def n61(c):
     c.eq(by['X-710A'].get('series'), 7, 'no series in the file: the current series of its family (TESTREG: 7)', what='X-710A')
     c.ok(by['X-711A'].get('series') in ('', None), by['X-711A'], 'a family without a series yet: none, never a letter')
     c.js(_REG_CLEAR)
+
+
+
+@case('N62', 'Missions: « Mes missions affectées » heads the list as soon as an assignment carries my trigram — the take-off, the aircraft, '
+      'the callsign, the rendezvous and the crew\'s channels when the assignment carries them, « Préparer ce vol » in one gesture; another '
+      'pilot\'s or a cancelled line is not mine; no group without an assignment of mine; a channel\'s address is https only',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0114 (A), the ergonomist\'s decision of 13 Nov, 16 h 05: « on m\'a affecté une mission : je la vois en tête de Missions, sous '
+      '« Mes missions affectées », avec mon rendez-vous […] et le canal quand l\'affectation les porte ; je la prépare en un geste ; je ne tire '
+      'rien au sort »; no usage flag; the V2 index missions/affectations.json read as it is (SPEC § 6), an untrusted input; invented X-7xx')
+def n62(c):
+    import datetime
+    import json
+    soon = lambda h: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=h)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    idx = {'updatedAt': soon(0), 'assignments': [
+        {'mission': 'X-701A', 'title': 'Registre un', 'pilot': 'ABC', 'callsign': 'TEST01', 'aircraft': {'registration': 'F-TEST', 'type': 'C30J'},
+         'departure': 'LFRS', 'takeoff': soon(30), 'status': 'affectée', 'role': 'mission', 'rendezvous_at': soon(31),
+         'meet': [{'kind': 'discord', 'label': 'Discord VA', 'url': 'https://discord.example.test/abc'}, {'kind': 'srs', 'label': 'SRS', 'value': '243.000'},
+                  {'kind': 'other', 'label': 'Piège', 'url': 'javascript:window.__pwn=1'}], 'name': 'Invented Person'},
+        {'mission': 'X-705A', 'title': 'Registre cinq', 'pilot': 'XYZ', 'takeoff': soon(5), 'status': 'affectée'},
+        {'mission': 'X-704A', 'title': 'Registre quatre', 'pilot': 'ABC', 'takeoff': soon(5), 'status': 'annulée'},
+        {'mission': 'X-702A', 'title': 'Passée', 'pilot': 'ABC', 'takeoff': soon(-48), 'status': 'affectée'}]}
+    G = f'{M} [data-assigned]'
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _REG_TEXTS + [['missions/affectations.json', json.dumps(idx)]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"document.querySelectorAll('{G}:not([hidden]) [data-assigned-id]').length === 1", timeout=20000, what='one assigned mission, mine')
+    c.eq(c.js(f"document.querySelector('{G} [data-assigned-id]').dataset.assignedId"), 'X-701A', 'mine only: not another pilot\'s, not a cancelled or past one', what='mine')
+    t = norm(c.text(G))
+    c.ok(norm(tx(MS, 'assignedHead', c.lang)) in t and 'LFRS' in t and 'F-TEST C30J' in t and 'TEST01' in t, t, 'the take-off, the aircraft, the callsign')
+    c.ok(c.js(f"!!document.querySelector('{G} [data-rdv]')"), t, 'the rendezvous, the assignment carries it')
+    c.eq(c.js(f"document.querySelector('{G} [data-do=prepare]').getAttribute('href')"), '#fuel?mission=X-701A', '« Préparer ce vol » in one gesture', what='prepare')
+    c.eq(c.js(f"[...document.querySelectorAll('{G} [data-meetopen]')].map(a => a.getAttribute('href'))"), ['https://discord.example.test/abc'],
+         'a channel\'s address: https only, never javascript:', what='links')
+    c.ok(c.js(f"!!document.querySelector('{G} [data-do=meetcopy][data-v=\"243.000\"]')") and 'Invented' not in t, t, 'a value to copy; never a name')
+    c.ok(c.js('window.__pwn') is None, '', 'nothing ran')
+    c.js(f"document.querySelector('{G}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'N62_{c.design}_{c.width}_{c.lang}_delivered.png')
+    # no assignment of mine: no group at all
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _REG_TEXTS + [['missions/affectations.json', json.dumps({'assignments': [idx['assignments'][1]]})]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list]')", timeout=20000, what='the list')
+    c.settle()
+    c.ok(c.js(f"document.querySelector('{G}')?.hidden !== false") and c.count(f'{G} [data-assigned-id]') == 0, '', 'no assignment of mine: no group')
+    c.js(_REG_CLEAR)

@@ -10,6 +10,10 @@ import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
 import * as SE from './search.js'; // la recherche dans le contenu des missions (SOG-0288) : le calcul pur
 import * as ED from './editor.js'; // l'éditeur de missions (SOG-0287) : le calcul pur
+import * as AS from './assigned.js'; // « Mes missions affectées » (SOG-0114 (A)) : le calcul pur
+import {
+  copyText
+} from '../../frame/lib/clipboard.js';
 import *
 as MT from '../../frame/lib/mission_themes.js'; // le thème d'une ancienne catégorie (SOG-0202 T2) // changer la compagnie d'une mission : le champ airline retouché dans le texte (SOG-0223)
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
@@ -24,7 +28,9 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'assigned.js', '../../frame/lib/clipboard.js',
+    '../../frame/lib/mission.js',
+    '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
@@ -51,6 +57,12 @@ export const meta = {
 // la fiche en deux niveaux (§ 10.45) : un écran après l'autre sur un module étroit ; côte à côte (première page à gauche, détail au
 // centre) sur un module large, sans « Détail » ni « Retour » du détail
 const STYLE = `[data-module="missions"] .ms-detail{display:none}
+[data-module="missions"] .ms-assignedbox{margin:0 0 12px} /* SOG-0114 (A) : « Mes missions affectées », en tête */
+[data-module="missions"] .ms-asshead{font-size:1rem;margin:4px 0 8px}
+[data-module="missions"] .ms-assigned>span>small{display:block;margin-top:2px}
+[data-module="missions"] .ms-meets{display:block}
+[data-module="missions"] .ms-meet{display:flex;align-items:center;gap:8px;min-height:44px} /* un canal par ligne, son geste à 44 px */
+[data-module="missions"] .ms-meet>.f-linkbtn{display:inline-flex;align-items:center}
 [data-module="missions"] .ms-sheet[data-detail] .ms-first{display:none}
 [data-module="missions"] .ms-sheet[data-detail] .ms-detail{display:block}
 [data-module="missions"] .ms-lines{margin:.2em 0 .4em;padding-left:1.1em}
@@ -352,6 +364,14 @@ const TX = {
     'Alle Missionen dieses Filters wurden bereits geflogen.', 'Todas las misiones de este filtro ya se han volado.'
   ],
   flown: ['volée le {d}', 'flown on {d}', 'geflogen am {d}', 'volada el {d}'],
+  // SOG-0114 (A) : les missions qu'une affectation de la compagnie donne à ce pilote
+  assignedHead: ['Mes missions affectées', 'My assigned missions', 'Meine zugewiesenen Missionen', 'Mis misiones asignadas'],
+  assignedOff: ['décollage {ad} {t}', 'take-off {ad} {t}', 'Start {ad} {t}', 'despegue {ad} {t}'],
+  assignedFerry: ['convoyage', 'ferry', 'Überführung', 'traslado'],
+  assignedRdv: ['rendez-vous {t}', 'rendezvous {t}', 'Treffpunkt {t}', 'encuentro {t}'],
+  meetOpen: ['Ouvrir', 'Open', 'Öffnen', 'Abrir'],
+  meetCopy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
+  meetCopied: ['Copié : {v}', 'Copied: {v}', 'Kopiert: {v}', 'Copiado: {v}'],
   drawn: ['Tirée au sort', 'Drawn at random', 'Zufällig gezogen', 'Sorteada'],
   route: ['Trajet', 'Route', 'Strecke', 'Trayecto'],
   aircraft: ['Aéronef', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
@@ -849,6 +869,24 @@ export async function mount(el, ctx) {
   if (S !== s) return;
   s.flown = await flownOf(s);
   if (S === s && !s.open) results(s);
+  // SOG-0114 (A) : les affectations de ce pilote, lues une fois ; le groupe posé à sa place sans redessiner la liste
+  const idx = await Promise.resolve().then(() => s.ctx.data.get('missions/affectations.json')).catch(() => null);
+  if (S !== s) return;
+  s.assigned = AS.mine(idx, s.ctx.identity?.trigram);
+  assignedPaint(s);
+}
+/** SOG-0114 (A) : « Mes missions affectées » en tête de la liste — dès qu'une affectation porte mon trigramme, et seulement alors
+ *  (pas de drapeau d'usage) ; chaque ligne : la mission, le décollage (terrain, heure Z), l'aéronef et l'indicatif, le rendez-vous et
+ *  les canaux quand l'affectation les porte, « Préparer ce vol » en un geste. Jamais le tirage au sort. */
+function assignedPaint(s) {
+  const box = s.el?.querySelector('[data-assigned]');
+  if (!box) return;
+  const list = s.assigned || [],
+    z = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)} ${iso.slice(11, 16)}Z` : '',
+    meet = m => `<span class="ms-meet" data-meet="${esc(m.kind)}">${esc(m.label)}${m.url ? ` <a class="f-linkbtn" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer" data-meetopen>${esc(s.tt(TX.meetOpen))}</a>` : ''}${m.value ? ` <code>${esc(m.value)}</code> <button type="button" class="f-linkbtn" data-do="meetcopy" data-v="${esc(m.value)}">${esc(s.tt(TX.meetCopy))}</button>` : ''}</span>`,
+    row = a => `<div class="f-item ms-assigned" data-assigned-id="${esc(a.mission)}"><span><b>${esc(a.mission)}</b> ${esc(a.title)}<small class="f-muted">${esc([a.ferry ? s.tt(TX.assignedFerry) : '', a.departure || a.takeoff ? s.tt(TX.assignedOff, { ad: a.departure, t: z(a.takeoff) }).replace(/\s+/g, ' ').trim() : '', [a.registration, a.type].filter(Boolean).join(' '), a.callsign].filter(Boolean).join(' · '))}</small>${a.rdv ? `<small data-rdv>${esc(s.tt(TX.assignedRdv, { t: a.rdv.startsWith('H') ? a.rdv : z(a.rdv) }))}</small>` : ''}${a.meet.length ? `<small class="ms-meets">${a.meet.map(meet).join('')}</small>` : ''}</span><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(a.mission)}">${esc(s.tt(TX.prepare))}</a></div>`;
+  box.hidden = !list.length;
+  box.innerHTML = list.length ? `<h2 class="ms-asshead">${esc(s.tt(TX.assignedHead))}</h2><div class="f-list">${list.map(row).join('')}</div>` : '';
 }
 
 const UNLISTED_MAX = 500; // fichiers de mission hors registre lus à un affichage, au plus (un dépôt hors norme ne bloque pas l'écran)
@@ -986,6 +1024,7 @@ function listHtml(s) {
     cats = s.cats.all.filter(c => held.has(c.id)),
     lang = s.ctx.lang?.() || 'fr';
   return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button><button type="button" data-do="regopen">${esc(s.tt(TX.reg))}</button>${s.co?.filter ? `<button type="button" data-do="moveall">${esc(s.tt(TX.moveAll))}</button>` : ''}</div>
+    <section class="ms-assignedbox" data-assigned hidden></section>
     ${scopeHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     ${famFilterHtml(s, 'family', 'subtype', mine, s.family, s.subtype)}
@@ -1359,6 +1398,12 @@ function onClick(s, e) {
   if (!b) return;
   if (b.dataset.do.startsWith('ed') && (s.ed || s.reg)) return edClick(s, b);
   switch (b.dataset.do) {
+    case 'meetcopy': // SOG-0114 (A) : un canal à copier (serveur, fréquence, code) ; le pilote ne le tape jamais
+      return copyText(String(b.dataset.v || '').slice(0, 80), {
+        near: b
+      }).then(how => how !== 'shown' && s.ctx.notify(s.tt(TX.meetCopied, {
+        v: String(b.dataset.v || '').slice(0, 80)
+      }), 'ok'));
     case 'draw': {
       // parmi les missions du filtre que ce pilote n'a pas volées, au hasard, sans poids ; jamais un départ silencieux
       const pool = filtered(s).filter(r => !s.flown.has(r.id));
