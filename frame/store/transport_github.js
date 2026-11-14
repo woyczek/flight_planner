@@ -178,15 +178,19 @@
         return Object.fromEntries(j.tree.filter(x => x.type === 'blob').map(x => [x.path, x.sha]));
       },
       /** Contenu d'un fichier (blob brut, UTF-8). */
-      async read(path, sha) {
+      async read(path, sha, o = {}) {
         return (await call(`${repo}/git/blobs/${sha}`, {
-          accept: 'application/vnd.github.raw'
+          accept: 'application/vnd.github.raw',
+          signal: o.signal,
+          patient: o.patient
         })).text();
       },
       /** Octets d'un fichier (une image : le logo de la compagnie), sans décodage. */
-      async readBytes(path, sha) {
+      async readBytes(path, sha, o = {}) {
         return (await call(`${repo}/git/blobs/${sha}`, {
-          accept: 'application/vnd.github.raw'
+          accept: 'application/vnd.github.raw',
+          signal: o.signal,
+          patient: o.patient
         })).arrayBuffer();
       },
       /** Un commit pour tout le lot [{ path, text (null : suppression) }] sur parent ; nouvelle tête. remote : arbre

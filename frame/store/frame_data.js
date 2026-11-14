@@ -962,9 +962,11 @@
     return buf;
   }
 
+  const aborters = new Map(); // chemin → AbortController de la lecture en cours (SOG-0349)
   function fetchOne(path, policy) {
     if (fetching.has(path)) return fetching.get(path);
     const startedAt = Date.now(),
+      ctl = new AbortController(),
       job = (async () => {
         let T = cfg.transport,
           tree;
@@ -989,7 +991,11 @@
         }
         let rev = tree[path];
         if (!rev) return null;
-        let text = await T.read(path, rev);
+        // une lecture PATIENTE et abandonnable (SOG-0349) : une limite de requêtes de l'hôte la fait attendre (dit par la bande), jamais rendre « absent » ; l'abandon l'annule sans qu'elle prenne sa place dans la file
+        let text = await T.read(path, rev, {
+          signal: ctl.signal,
+          patient: true
+        });
         // lecture abandonnée entre-temps (abandon) : rendue à qui l'attend encore, sans rien écrire ni annoncer — une
         // révision plus ancienne arrivée tard n'écrase jamais celle d'une lecture plus récente (Sécurisation, ligne 129)
         if (fetching.get(path) !== job) return {
@@ -1014,7 +1020,10 @@
             };
             if (!moved || moved === rev) break;
             rev = moved;
-            text = await T.read(path, rev);
+            text = await T.read(path, rev, {
+              signal: ctl.signal,
+              patient: true
+            });
           }
         }
         await idb('docs', 'put', {
@@ -1036,6 +1045,7 @@
           at: Date.now()
         };
       })().catch(e => {
+        if (e?.aborted) throw e; // abandonnée par celui qui la demandait : pas une erreur de lecture
         lastReadError = {
           path,
           message: e?.offline ? 'offline' : e?.message || String(e),
@@ -1044,12 +1054,20 @@
         throw e;
       }).finally(() => fetching.get(path) === job && fetching.delete(path)); // abandonnée entre-temps : la suivante n'est pas touchée
     fetching.set(path, job);
+    aborters.set(path, ctl);
+    job.catch(() => {}).finally(() => aborters.get(path) === ctl && aborters.delete(path));
     return job;
   }
   /** Oublie la lecture partagée en cours de ce chemin (rien n'est annulé sur le réseau) : la demande suivante la relance
    *  au lieu d'attendre la même promesse ; l'ancienne, si elle finit, n'écrit rien dans le cache. Pour un lecteur qui a
    *  cessé d'attendre (borne d'aerodb, 31 oct. 2026). */
-  const abandon = path => void fetching.delete(String(path || ''));
+  const abandon = path => {
+    path = String(path || '');
+    fetching.delete(path);
+    aborters.get(path)
+      ?.abort(); // SOG-0349 : la requête abandonnée est annulée (en file ou en vol) — elle ne compte plus dans la cadence et ne se refait pas deux fois
+    aborters.delete(path);
+  };
 
   // ---------------------------------------------------------------- source des références (transport local)
   /** Source en lecture seule des fichiers « reference » : seulement sans échange (transport local), si elle est réglée. */

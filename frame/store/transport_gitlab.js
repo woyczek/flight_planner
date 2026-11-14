@@ -296,12 +296,18 @@
         };
       },
       /** Contenu d'un fichier (blob brut, UTF-8). */
-      async read(path, sha) {
-        return (await call(`${project}/repository/blobs/${encodeURIComponent(sha)}/raw`)).text();
+      async read(path, sha, o = {}) {
+        return (await call(`${project}/repository/blobs/${encodeURIComponent(sha)}/raw`, {
+          signal: o.signal,
+          patient: o.patient
+        })).text();
       },
       /** Octets d'un fichier (une image : le logo de la compagnie), sans décodage. */
-      async readBytes(path, sha) {
-        return (await call(`${project}/repository/blobs/${encodeURIComponent(sha)}/raw`)).arrayBuffer();
+      async readBytes(path, sha, o = {}) {
+        return (await call(`${project}/repository/blobs/${encodeURIComponent(sha)}/raw`, {
+          signal: o.signal,
+          patient: o.patient
+        })).arrayBuffer();
       },
       /** Un commit pour tout le lot [{ path, text (null : suppression) }] sur parent ; nouvelle tête. remote : arbre
        *  connu (une suppression d'un fichier absent du dépôt est sautée). */

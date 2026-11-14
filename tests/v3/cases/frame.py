@@ -8239,3 +8239,53 @@ def a209(c):
     c.ok(r['today'] >= 1, r['today'], 'the sections to test keep their grouping by application')
     c.shot(f'A209_{c.width}_{c.lang}_delivered.png')
     c.check_errors()
+
+
+@case('A210', "A file read that waits for a request limit is abandoned without a trace: the request stops, the wait ends, the band goes — nothing is asked again, nothing counted (SOG-0349: the map around the flight ended with 0 data)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False, phone=True,
+      rule="SOG-0349 (the user, on his phone: the map around the flight ended with 0 data on gitlab.com): a read of a file of the base waits for a limit (said by the band), never returns « absent » for it; a module that gives up (the 10 s bound of aerodb → `abandon`) cancels the request — in the pace queue or in the wait of a 429 — so it neither waits any more nor takes a share of the 80 requests a minute, and the next question starts one clean read")
+def a210(c):
+    log = []
+    state = {'head': 'c1', 'files': {'sia/base/a.json': 'ba', 'root.json': 'br'}}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        q = urllib.parse.parse_qs(u.query)
+        rest = u.path.split('/api/v4/projects/grp%2Fdata', 1)[-1]
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        log.append(rest)
+        if rest.endswith('/repository/branches/main'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps({'name': 'main', 'commit': {'id': state['head']}}))
+        if rest.endswith('/repository/tree'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps([{'id': sha, 'name': p.split('/')[-1], 'type': 'blob', 'path': p, 'mode': '100644'} for p, sha in sorted(state['files'].items())]))
+        if '/repository/blobs/' in rest:
+            return route.fulfill(status=429, headers={**hdr, 'Retry-After': '30'}, body='{}')
+        return route.fulfill(status=404, headers=hdr, body='{}')
+    c.context.route(re.compile(r'https://gitlab\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
+    c.open('fuel', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    c.until("!!window.FrameData && !!document.querySelector('#fSync')", timeout=20000, what='the frame')
+    c.wait(2500)   # the first pass settles (the tree is read)
+    blobs = lambda: len([u for u in log if '/repository/blobs/' in u])
+    n0 = blobs()
+    # a module asks for a file of the base: the host answers 429 (30 s): the read waits, and the band says it
+    c.js("(() => { window.__ad = FrameData.adapter({ id: 'a210', reads: ['sia/'] }); window.__rd = window.__ad.read('sia/base/a.json', { policy: 'reference', wait: true }).then(v => (window.__rdv = v ? 'value' : 'null'), e => (window.__rdv = 'error ' + e.message)); return 1 })()")
+    for _ in range(60):
+        if blobs() > n0 and c.js("!document.getElementById('fLimit').hidden"):
+            break
+        c.wait(250)
+    c.ok(blobs() == n0 + 1 and c.js("!document.getElementById('fLimit').hidden"), [blobs() - n0, c.js("document.getElementById('fLimit').textContent")], 'the read waits for the limit (one request), the band says so')
+    c.eq(c.js("window.__rdv || 'pending'"), 'pending', 'the read does not return « absent » for a limit: it is still waiting', what='patient')
+    # the module gives up (the bound of aerodb): the request is cancelled, the wait ends, the band goes, nothing is asked again
+    c.js("window.__ad.abandon('sia/base/a.json')")
+    for _ in range(40):
+        if c.js("document.getElementById('fLimit').hidden"):
+            break
+        c.wait(250)
+    c.wait(1500)
+    c.ok(c.js("document.getElementById('fLimit').hidden") and blobs() == n0 + 1, [blobs() - n0, c.js("document.getElementById('fLimit').hidden")], 'abandoned: the wait ended, the band went, no second request')
+    c.shot(f'A210_{c.width}_{c.lang}_delivered.png')
+    c.check_errors()

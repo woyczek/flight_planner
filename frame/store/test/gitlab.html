@@ -45,6 +45,7 @@
         retryAfter: null,
         dropAt: 0, // la page qui est coupée une fois (le navigateur ne dit alors que « réseau » : un 429 sans en-tête CORS)
         pageHits: {}, // page → demandes reçues
+        blobLimit: 0, // SOG-0349 : combien de lectures de fichier répondent encore 429 (Retry-After : 1)
         calls: [],
         perPage: 2
       };
@@ -209,6 +210,14 @@
         } : {});
       }
       const blob = /^\/repository\/blobs\/([^/]+)\/raw$/.exec(rest);
+      if (blob && st.blobLimit > 0) {
+        st.blobLimit--;
+        return json({
+          message: '429 Too Many Requests'
+        }, 429, {
+          'Retry-After': '1'
+        });
+      }
       if (blob) {
         const f = Object.values(st.files).find(x => x.sha === decodeURIComponent(blob[1]));
         return f ? new Response(f.text) : json({
@@ -656,6 +665,58 @@
         for (let i = 0; i < 4; i++) await g.call('x');
         ck('cadence : la quatrième demande dans la fenêtre attend sa fin (au moins 450 ms)', Date.now() - t0 >= 450 && Date.now() - t0 < 2000, `${Date.now() - t0} ms`);
         L.onLimit = null;
+        // SOG-0349 : la lecture d'un fichier que l'on attend est PATIENTE (une limite la fait attendre, dit, jamais « absent ») et ABANDONNABLE (la requête abandonnée n'est ni attendue ni comptée)
+        {
+          fresh();
+          L.pacing.retries = 1;
+          L.pacing.windowMs = 50;
+          const f = G.st.files['d/00.json'] || Object.values(G.st.files)[0],
+            sha = f.sha;
+          G.st.blobLimit = 3;
+          let e1 = null;
+          try {
+            await T.read('d/00.json', sha);
+          } catch (e) {
+            e1 = e;
+          }
+          ck('lecture : sans patience, une limite qui dure après ses reprises lève l’erreur (comme l’arbre)', e1?.rateLimited === true, e1?.message);
+          G.st.blobLimit = 3;
+          const t0 = Date.now(),
+            txt = await T.read('d/00.json', sha, {
+              patient: true
+            });
+          ck('lecture patiente : la même limite est attendue jusqu’au bout (trois attentes) et le fichier est rendu — jamais « absent »', typeof txt === 'string' && Date.now() - t0 >= 2500 && L.info.waits >= 3, `${Date.now() - t0} ms`);
+          // abandonnée pendant l'attente : la requête s'arrête, l'attente aussi
+          G.st.blobLimit = 50;
+          const ctl = new AbortController(),
+            t1 = Date.now(),
+            p1 = T.read('d/00.json', sha, {
+              signal: ctl.signal,
+              patient: true
+            }).then(() => null, e => e);
+          await new Promise(r => setTimeout(r, 500));
+          const during = L.waiting();
+          ctl.abort();
+          const e2 = await p1;
+          ck('lecture abandonnée pendant l’attente d’une limite : annulée tout de suite (aborted), l’attente finie', !!during && e2?.aborted === true && Date.now() - t1 < 1800 && L.waiting() === null, JSON.stringify([!!during, e2?.message, Date.now() - t1]));
+          G.st.blobLimit = 0;
+          // abandonnée dans la file de la cadence : elle ne prend ni sa place ni une part de la cadence
+          const g = FD.git.guard(async () => 'ok');
+          g.pacing.perMin = 1;
+          g.pacing.windowMs = 700;
+          await g.call('a');
+          const c2 = new AbortController(),
+            q2 = g.call('b', {
+              signal: c2.signal
+            }).then(() => null, e => e);
+          await new Promise(r => setTimeout(r, 100));
+          c2.abort();
+          const e3 = await q2,
+            t2 = Date.now();
+          await g.call('c');
+          ck('file de la cadence : une requête abandonnée n’attend plus et ne compte pas — la suivante part à la fin de la fenêtre, pas une fenêtre plus tard', e3?.aborted === true && Date.now() - t2 < 800, JSON.stringify([e3?.message, Date.now() - t2]));
+          L.pacing.retries = 3;
+        }
       }
       // SOG-0337, T2 : avec un arbre déjà connu, seulement ce qui a changé — UNE comparaison des deux têtes, puis le SEUL dossier de chaque fichier ajouté ou modifié, sans récursion ; l'arbre gardé reste
       // COMPLET ; supprimés et renommés retirés par leur chemin ; repli sur l'arbre entier si la comparaison est tronquée, refusée, trop grosse, ou si les dossiers coûteraient trop

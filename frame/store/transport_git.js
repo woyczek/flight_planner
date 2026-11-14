@@ -30,6 +30,9 @@
           method,
           cache: 'no-store',
           redirect: 'error',
+          ...(opts.signal ? {
+            signal: opts.signal
+          } : {}),
           headers: {
             ...headers(opts),
             ...(body ? {
@@ -39,6 +42,10 @@
           body: body ? JSON.stringify(body) : undefined
         });
       } catch (e) {
+        if (e?.name === 'AbortError') throw Object.assign(new Error(
+          'aborted'), { // abandonnée par celui qui la demandait (SOG-0349) : ni hors ligne, ni injoignable
+          aborted: true
+        });
         // « hors ligne » seulement quand le navigateur le dit ; en ligne, une exception de fetch (réseau, CORS, DNS, redirection
         // refusée, adresse illisible) est une erreur nommée, avec l'hôte seul, jamais l'adresse entière (31 oct. 2026 : le
         // téléphone disait « offline » en ligne depuis la veille)
@@ -129,7 +136,24 @@
         last: null
       };
     let waiting = null;
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const aborted = () => Object.assign(new Error('aborted'), {
+      aborted: true
+    });
+    /** Une attente que l'abandon (opts.signal) interrompt : la requête abandonnée ne prend ni sa place dans la file ni une part de la cadence (SOG-0349). */
+    const sleep = (ms, signal) => new Promise((ok, no) => {
+      if (signal?.aborted) return no(aborted());
+      const t = setTimeout(() => {
+        signal?.removeEventListener('abort', off);
+        ok();
+      }, ms);
+      const off = () => {
+        clearTimeout(t);
+        no(aborted());
+      };
+      signal?.addEventListener('abort', off, {
+        once: true
+      });
+    });
     const tell = () => {
       try {
         api.onLimit?.();
@@ -143,8 +167,9 @@
           const t = Date.now();
           while (stamps.length && stamps[0] <= t - pacing.windowMs) stamps.shift();
           if (stamps.length < pacing.perMin) break;
-          await sleep(Math.min(5000, stamps[0] + pacing.windowMs - t + 5));
+          await sleep(Math.min(5000, stamps[0] + pacing.windowMs - t + 5), opts.signal);
         }
+        if (opts.signal?.aborted) throw aborted();
         stamps.push(Date.now());
         try {
           return await call(url, opts);
@@ -159,8 +184,10 @@
             remaining: e.limitInfo?.remaining ?? null,
             limit: e.limitInfo?.limit ?? null
           };
-          if (attempt >= pacing.retries) throw e;
-          const secs = Math.min(pacing.maxWait, Math.max(pacing.minWait, Math.ceil(e.retryAfter ?? pacing.defWait * 2 ** attempt)));
+          if (attempt >= pacing.retries && !opts.patient)
+            throw e; // une lecture PATIENTE (celle d'un fichier qu'on attend) ne rend jamais « absent » : elle attend, dite, jusqu'à ce qu'on l'abandonne
+          const secs = Math.min(pacing.maxWait, Math.max(pacing.minWait, Math.ceil(e.retryAfter ?? pacing.defWait * 2 ** Math.min(
+            attempt, 6))));
           waiting = {
             until: Date.now() + secs * 1000,
             secs,
@@ -169,9 +196,12 @@
           info.waits++;
           info.waitedS += secs;
           tell();
-          await sleep(secs * 1000);
-          waiting = null;
-          tell();
+          try {
+            await sleep(secs * 1000, opts.signal);
+          } finally {
+            waiting = null;
+            tell();
+          }
         }
       }
     }
