@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "429d1ea",
+  "organisation": "e8a1fbb",
   "fiches": 358,
   "untranslated": 0,
   "priorities": 310
@@ -400,11 +400,12 @@
     {
      "id": "SOG-0357",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Recette : donner ses verdicts depuis le téléphone (ils passent par le dépôt des données, comme les signalements)",
      "en": "Acceptance: give verdicts from the phone (they go through the data repository, like reports)",
      "de": "Abnahme: Urteile vom Telefon aus abgeben (sie laufen über das Daten-Repository, wie die Meldungen)",
-     "es": "Recepción: dar los veredictos desde el teléfono (pasan por el repositorio de datos, como los avisos)"
+     "es": "Recepción: dar los veredictos desde el teléfono (pasan por el repositorio de datos, como los avisos)",
+     "test": true
     }
    ]
   },
@@ -4424,11 +4425,12 @@
     {
      "id": "SOG-0340",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Maintenance › Données : la molette agit sur la carte depuis toute la page",
      "en": "Maintenance › Data: the mouse wheel acts on the map from the whole page",
      "de": "Wartung › Daten: das Mausrad wirkt von der ganzen Seite aus auf die Karte",
-     "es": "Mantenimiento › Datos: la rueda del ratón actúa sobre el mapa desde toda la página"
+     "es": "Mantenimiento › Datos: la rueda del ratón actúa sobre el mapa desde toda la página",
+     "test": true
     }
    ]
   },
