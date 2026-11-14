@@ -1001,9 +1001,9 @@ def _bench(c, page, var):
     try:
         c.page.wait_for_function(f'window.{var} && window.{var}.done', timeout=60000)
     except Exception:
-        raise Fail(f'the bench never reported done (window.{var}.done)', 'a finished bench', page) from None
+        raise Fail(f'the bench never reported done (window.{var}.done): ' + str(c.js("document.getElementById('out') ? document.getElementById('out').textContent.slice(-900) : ''")).replace(chr(10), ' | '), 'a finished bench', page) from None
     r = c.js(f'({{ pass: window.{var}.pass, fail: window.{var}.fail, rows: window.{var}.rows }})')
-    bad = [x for x in (r['rows'] or []) if str(x).startswith('FAIL')][:3]
+    bad = [x for x in (r['rows'] or []) if (x[0] if isinstance(x, list) and x else str(x)) == 'FAIL' or str(x).startswith('FAIL')][:3]
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {bad}", 'every assertion of the bench passes')
 
 
@@ -7691,4 +7691,58 @@ def a197(c):
         e = next(iter(items.values()))
         files = sorted(p.name for p in (root / 'organisation' / 'images').iterdir())
         c.eq((len(items), e.get('from'), len(e.get('images', [])), [n.rsplit('.', 1)[-1] for n in files]), (1, 'pilote', 1, ['png']), 'taken over with the report: only the checked photo, written by the launcher under a name it made', what='taken')
+    c.check_errors()
+
+
+@case('A198', "GitLab limits the requests (429): the data layer WAITS, says so in the sync button (« GitLab limite les requêtes : reprise dans n s », four languages, counting down) and carries on from the page it stopped at — never a silence, never a read that starts again from zero (SOG-0337)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule="SOG-0337 (the user, 14 Nov: « gitlab 429 sur téléphone. pas de message d'erreur… on réduit donc au minimum. c'est bloquant »): the tree of the data repository (10 448 files, 105 pages of 100) was read again from page 1 each time and a 429 was recognised nowhere (the screen explained 401, 403, 404 only; `liveTree` swallowed the error); now a 429 (Retry-After when the page can read it, else 60 s doubled) is waited, said (state of the sync button and tooltip, diagnostic: waits, seconds, last status) and the read resumes at its page; pace: a pause between two pages and 80 requests a minute at most")
+def a198(c):
+    state = {'hits': {}, 'limited': 0}
+    files = {f'sia/{i:02d}.json': f'[{i}]' for i in range(8)}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        path = u.path.split('/api/v4/projects/grp%2Fdata', 1)[-1]
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        if path.endswith('/repository/branches/main'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps({'name': 'main', 'commit': {'id': 'c1'}}))
+        if path.endswith('/repository/tree'):
+            q = urllib.parse.parse_qs(u.query)
+            frm = int(q.get('page_token', ['0'])[0])
+            num = frm // 2 + 1
+            state['hits'][num] = state['hits'].get(num, 0) + 1
+            if num == 3 and state['limited'] < 1:
+                state['limited'] += 1
+                return route.fulfill(status=429, headers={**hdr, 'Retry-After': '5'}, body=json.dumps({'message': '429 Too Many Requests'}))
+            allp = sorted(files)
+            page = [{'id': 'b' + str(i), 'name': p, 'type': 'blob', 'path': p, 'mode': '100644'} for i, p in enumerate(allp)][frm:frm + 2]
+            more = frm + 2 < len(allp)
+            link = {'Link': f'<https://gitlab.test/api/v4/projects/grp%2Fdata/repository/tree?ref=c1&recursive=true&per_page=100&pagination=keyset&page_token={frm + 2}>; rel="next"'} if more else {}
+            return route.fulfill(status=200, headers={**hdr, **link}, body=json.dumps(page))
+        if '/repository/blobs/' in path:
+            return route.fulfill(status=200, headers={**hdr, 'Content-Type': 'text/plain'}, body='[0]')
+        return route.fulfill(status=404, headers=hdr, body=json.dumps({'message': '404 Not Found'}))
+    c.context.route(re.compile(r'https://gitlab\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
+    lang = c.lang
+    word = {'fr': 'limite les requêtes', 'en': 'is limiting requests', 'de': 'begrenzt die Anfragen', 'es': 'limita las solicitudes'}[lang]
+    c.open('fuel', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    c.until("!!document.querySelector('#fSync .f-lbl')", timeout=20000, what='the sync button')
+    c.until(f"document.querySelector('#fSync .f-lbl').textContent.includes({json.dumps(word)})", timeout=40000, what='the sync button says that GitLab limits the requests')
+    lbl = c.text('#fSync .f-lbl')
+    c.ok(re.search(r'GitLab', lbl) and re.search(r'\d+ s', lbl), lbl, 'the sentence names GitLab and the seconds left')
+    n1 = int(re.search(r'(\d+) s', lbl)[1])
+    c.wait(1600)
+    n2 = int(re.search(r'(\d+) s', c.text('#fSync .f-lbl'))[1]) if word in c.text('#fSync .f-lbl') else 0
+    c.ok(n2 < n1, (n1, n2), 'the count goes down, second after second')
+    c.shot(f'A198_limit_{c.width}_{c.lang}_delivered.png')
+    c.until(f"!document.querySelector('#fSync .f-lbl').textContent.includes({json.dumps(word)})", timeout=30000, what='the wait ends')
+    c.wait(500)
+    c.ok(state['limited'] == 1 and state['hits'].get(1) == 1 and state['hits'].get(2) == 1 and state['hits'].get(3) == 2, state, 'the read resumed at page 3: pages 1 and 2 were asked once, page 3 twice (the wait between)')
+    diag = c.js("async () => { const d = await FrameData.diagnostic(); return { rl: d.rateLimit, tree: d.treeRead } }")
+    c.ok(diag['rl'] and diag['rl']['waits'] == 1 and diag['rl']['last']['status'] == 429 and diag['rl']['last']['retryAfterS'] == 5 and diag['rl']['pacing']['perMin'] == 80, diag, 'the diagnostic carries the limit that was read (status, Retry-After, waits) and the pace kept')
     c.check_errors()

@@ -133,7 +133,7 @@
     const treeOf = new Map(); // commit → arbre (sha)
     /** Appel de l'API (base commune) ; un 304 est une réponse (tête inchangée) ; refus → message lisible (jeton, droits),
      *  err.status ; err.conflict pour l'avancée de la branche refusée (ref). */
-    const call = G.caller({
+    const guard = G.guard(G.caller({
       headers: ({
         accept = 'application/vnd.github+json',
         etag = ''
@@ -153,8 +153,10 @@
         message: `GitHub ${r.status}: ${String(j.message || r.statusText || '').slice(0, 120)}`,
         conflict: ref && (r.status === 409 || r.status === 422) // branche partie ailleurs (avancée refusée)
       })
-    });
+    }));
+    const call = guard.call; // SOG-0337 : la limite de requêtes attendue et dite, la cadence tenue (transport_git.js, guard)
     const self = {
+      limit: guard,
       id: 'github',
       kind: 'remote',
       /** Tête de la branche (sha du dernier commit). */

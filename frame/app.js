@@ -445,6 +445,10 @@
         'Vuelo en curso: en este dispositivo (se envía con «Enviar este vuelo»)'
       ],
       syncing: ['Synchronisation…', 'Syncing…', 'Synchronisiere…', 'Sincronizando…'],
+      // SOG-0337 : le dépôt limite les requêtes ; la couche attend et reprend toute seule — jamais un silence
+      limited: ['{who} limite les requêtes : reprise dans {n} s', '{who} is limiting requests: resuming in {n} s',
+        '{who} begrenzt die Anfragen: Fortsetzung in {n} s', '{who} limita las solicitudes: se reanuda en {n} s'
+      ],
       offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión'],
       // le lanceur du poste ne répond plus (le réseau n'y est pour rien) : dit comme cela, pas « hors ligne » (SOG-0208)
       launcherLost: ['Lanceur injoignable', 'Launcher not answering', 'Starter antwortet nicht', 'Lanzador sin respuesta'],
@@ -482,6 +486,10 @@
           'project not found or token without access (scope api, or read_repository and write_repository)',
           'Projekt nicht gefunden oder Token ohne Zugriff (Bereich api, oder read_repository und write_repository)',
           'proyecto no encontrado o token sin acceso (ámbito api, o read_repository y write_repository)'
+        ],
+        http429: ['limite de requêtes atteinte : la lecture reprendra toute seule',
+          'request limit reached: reading will resume by itself', 'Anfragelimit erreicht: Das Lesen wird von selbst fortgesetzt',
+          'límite de solicitudes alcanzado: la lectura se reanudará sola'
         ],
         http401: ['jeton refusé ou expiré', 'token refused or expired', 'Token abgelehnt oder abgelaufen',
           'token rechazado o caducado'
@@ -2351,6 +2359,10 @@
     if (s.conflicts) return t(T.info.conflicts, {
       n: s.conflicts
     });
+    if (s.rateLimit) return t(T.sync.limited, {
+      who: s.rateLimit.who,
+      n: s.rateLimit.secs
+    });
     if (s.syncing) return t(T.info.syncing);
     if (s.transport === 'local' || s.transport === 'none') return t(T.info.localOnly);
     if (s.lastError && s.online && s.lastError !== 'offline') return t(T.info.error, {
@@ -2848,6 +2860,10 @@
   /** État du bouton de synchronisation et son libellé : [état, libellé]. Un seul calcul pour le bouton de l'en-tête et pour
    *  la ligne des données du bloc d'état. */
   function syncState(s) {
+    if (s.rateLimit) return ['syncing', t(T.sync.limited, {
+      who: s.rateLimit.who,
+      n: s.rateLimit.secs
+    })];
     if (s.syncing) return ['syncing', t(T.sync.syncing)];
     if (s.conflicts) return ['conflicts', t(T.sync.conflicts, {
       n: s.conflicts
@@ -2903,6 +2919,12 @@
       clearInterval(syncCountdown);
       syncCountdown = 0;
     }
+    // la limite de requêtes du dépôt : « reprise dans n s » compte à rebours chaque seconde tant qu'elle dure (un événement : l'attente commence, elle finit)
+    if (s.rateLimit && !limitTick) limitTick = setInterval(() => FD.status().then(paintSync).catch(() => {}), 1e3);
+    else if (!s.rateLimit && limitTick) {
+      clearInterval(limitTick);
+      limitTick = 0;
+    }
     if (key === lastSyncState) return;
     lastSyncState = key;
     const b = $('fSync');
@@ -2913,6 +2935,7 @@
     fitStale(); // le texte de la synchronisation a changé : le cartouche se remet à sa taille
   }
   let rewrittenSaid = false,
+    limitTick = 0,
     syncCountdown = 0;
   /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
   async function syncNow(quiet = false) {
@@ -2973,7 +2996,8 @@
     if (http) {
       const [, who, code, msg] = http,
       phrase = code === '404' ? T.sync.errs[who === 'GitLab' ? 'gitlab404' : 'http404'] : code === '401' ? T.sync.errs.http401 :
-        code === '403' ? T.sync.errs.http403 : code === '400' && /branch/i.test(msg) ? T.sync.errs.branch : null;
+        code === '429' ? T.sync.errs.http429 : code === '403' ? T.sync.errs.http403 : code === '400' && /branch/i.test(msg) ? T.sync
+        .errs.branch : null;
       if (who === 'GitLab' && code === '403' && /not allowed to push|protected branch/i.test(msg)) return `${t(T.sync.errs.gitlabBranch, {
         b: FD.github.config?.()?.branch || 'main'
       })} (${who} ${code})`;

@@ -57,12 +57,134 @@
         });
       }
       if (ok(r)) return r;
-      const why = refuse(r, await r.json().catch(() => ({})), opts);
+      const lim = limitOf(r),
+        why = refuse(r, await r.json().catch(() => ({})), opts);
       throw Object.assign(new Error(why.message), {
         status: r.status,
-        conflict: why.conflict
+        conflict: why.conflict,
+        ...(lim ? {
+          rateLimited: true, // SOG-0337 : un 429 (ou le 403 de GitHub à quota épuisé) n'est pas un refus : le dépôt demande d'attendre
+          retryAfter: lim.secs, // en secondes, ou null quand la page ne peut pas lire l'en-tête (CORS)
+          limitInfo: lim
+        } : {})
       });
     };
+  }
+
+  /** La limite de requêtes d'une réponse (SOG-0337) : { secs, source, remaining, limit } ou null. 429, ou 403 avec un quota GitHub épuisé. secs : le temps à attendre d'après
+   *  Retry-After (secondes ou date) ou, à défaut, l'instant de remise à zéro (RateLimit-Reset, x-ratelimit-reset) ; null quand aucun en-tête n'est lisible depuis la page. */
+  function limitOf(r) {
+    const h = n => {
+      try {
+        return r.headers.get(n);
+      } catch {
+        return null;
+      }
+    };
+    if (!(r.status === 429 || (r.status === 403 && h('x-ratelimit-remaining') === '0'))) return null;
+    let secs = null,
+      source = '';
+    const ra = h('retry-after');
+    if (ra) {
+      const n = Number(ra),
+        d = Date.parse(ra);
+      if (Number.isFinite(n) && n >= 0) secs = n;
+      else if (Number.isFinite(d)) secs = Math.max(0, (d - Date.now()) / 1000);
+      if (secs !== null) source = 'retry-after';
+    }
+    if (secs === null) {
+      const reset = Number(h('ratelimit-reset') ?? h('x-ratelimit-reset'));
+      if (Number.isFinite(reset) && reset > 0) {
+        secs = reset > 1e9 ? Math.max(0, reset - Date.now() / 1000) : reset; // un instant (epoch) ou un délai
+        source = 'reset';
+      }
+    }
+    return {
+      secs,
+      source,
+      remaining: h('ratelimit-remaining') ?? h('x-ratelimit-remaining'),
+      limit: h('ratelimit-limit') ?? h('x-ratelimit-limit')
+    };
+  }
+
+  /** Garde d'un appel d'API (SOG-0337, « GitLab 429 sur le téléphone ») : (1) CADENCE : au plus `perMin` requêtes par minute glissante (80 : sous les 100 par minute des offres gratuites), les
+   *  suivantes attendent leur tour ; (2) une LIMITE reconnue (429) n'est ni une erreur ni un recommencement : le transport ATTEND (Retry-After s'il est lisible, sinon 60 s, doublé à chaque fois,
+   *  entre 5 et 300 s) puis REPREND le même appel, trois fois au plus avant de lever l'erreur (err.rateLimited) ; opts.suspectLimit : une réponse illisible (le 429 de GitLab peut venir sans
+   *  en-tête CORS : le navigateur ne dit alors que « réseau ») en plein milieu d'une lecture déjà entamée est traitée de même. Chaque attente est DITE : waiting() { until, secs, status } tant
+   *  qu'elle dure, onLimit() à chaque changement, info (attentes, secondes, dernière limite lue) pour le diagnostic. */
+  function guard(call) {
+    const stamps = [],
+      pacing = {
+        perMin: 80,
+        windowMs: 60000,
+        gapMs: 0, // pause entre deux pages d'une lecture d'arbre (le transport la pose)
+        retries: 3,
+        minWait: 5,
+        maxWait: 300,
+        defWait: 60
+      },
+      info = {
+        waits: 0,
+        waitedS: 0,
+        last: null
+      };
+    let waiting = null;
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const tell = () => {
+      try {
+        api.onLimit?.();
+      } catch {
+        /* un observateur ne casse pas l'appel */
+      }
+    };
+    async function guarded(url, opts = {}) {
+      for (let attempt = 0;; attempt++) {
+        for (;;) { // la cadence
+          const t = Date.now();
+          while (stamps.length && stamps[0] <= t - pacing.windowMs) stamps.shift();
+          if (stamps.length < pacing.perMin) break;
+          await sleep(Math.min(5000, stamps[0] + pacing.windowMs - t + 5));
+        }
+        stamps.push(Date.now());
+        try {
+          return await call(url, opts);
+        } catch (e) {
+          if (!(e?.rateLimited || (opts.suspectLimit && e?.unreachable))) throw e;
+          info.last = {
+            at: new Date().toISOString(),
+            status: e.status || 0,
+            kind: e.rateLimited ? 'limit' : 'unreadable',
+            retryAfterS: e.retryAfter ?? null,
+            source: e.limitInfo?.source || '',
+            remaining: e.limitInfo?.remaining ?? null,
+            limit: e.limitInfo?.limit ?? null
+          };
+          if (attempt >= pacing.retries) throw e;
+          const secs = Math.min(pacing.maxWait, Math.max(pacing.minWait, Math.ceil(e.retryAfter ?? pacing.defWait * 2 ** attempt)));
+          waiting = {
+            until: Date.now() + secs * 1000,
+            secs,
+            status: e.status || 0
+          };
+          info.waits++;
+          info.waitedS += secs;
+          tell();
+          await sleep(secs * 1000);
+          waiting = null;
+          tell();
+        }
+      }
+    }
+    const api = {
+      call: guarded,
+      pacing,
+      info,
+      sleep,
+      onLimit: null,
+      /** L'attente en cours : { until, secs, status } ou null. */
+      waiting: () => waiting && waiting.until > Date.now() ? waiting : null
+    };
+    return api;
   }
 
   /** Publication de fichiers générés : un commit par groupe [{ name, files: [{ path, text | blob }], removed: [path],
@@ -150,6 +272,8 @@
   }
   FD.git = {
     caller,
+    guard,
+    limitOf,
     publish,
     b64
   };

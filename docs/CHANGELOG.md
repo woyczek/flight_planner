@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **GitLab 429 on the phone** (SOG-0337, blocking): a request limit is recognised in the GitLab and GitHub transports, waited (Retry-After, else 60 s doubled) and the tree read resumes at its page instead of starting again from zero; the tree is read at a steady pace (600 ms between pages, 80 requests a minute at most); the sync button says « GitLab limite les requêtes : reprise dans n s » (four languages, counting down) and the diagnostic carries the limit that was read; noreg A38, A198
 - **Missions › editor: the preview carries a sketch of the places (departure, arrival — placed from the base when the file has no position —, target, zones, turning points, rendezvous)** (missions DECISIONS; noreg N64; SOG-0287).
 - **Missions › editor: a timeline written as a bare text is never replaced; the events go to chronology, or nowhere when both are texts (said on the step)** (missions DECISIONS; noreg N63; audit 194).
 - **Missions: « Mes missions affectées » at the head of the list as soon as an assignment carries my trigram — take-off, aircraft, callsign, rendezvous and channels when the assignment carries them, « Préparer ce vol »** (missions DECISIONS; noreg N62; SOG-0114 (A)).

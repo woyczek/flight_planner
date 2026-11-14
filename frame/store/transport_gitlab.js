@@ -21,6 +21,8 @@
   if (!FD?.git || FD.gitlab) return;
   const G = FD.git;
 
+  const SHARED = new Map(); // dépôt + jeton → l'état partagé des transports (voir gitlab)
+
   function gitlab(c) {
     if (!c?.repo || !c.token) throw new Error('gitlab transport: project and token required');
     // l'api de l'instance, de la seule forme https://hôte/api/v4 : jamais un jeton vers une autre forme d'adresse
@@ -32,11 +34,26 @@
         const t = typeof c.author === 'function' ? String(c.author() || '') : '';
         return /^[A-Z0-9]{2,5}$/.test(t) ? t : '';
       };
-    const treeOf = new Map(); // tête → { chemin: empreinte }
     let headSha = '';
     /** Appel de l'API (base commune) ; refus → message lisible (jeton, droits), err.status ; err.conflict pour un refus
      *  qui dit que le dépôt a bougé (fichier déjà là, absent, changé entre-temps). */
-    const call = G.caller({
+    // l'état partagé par tous les transports du même dépôt et du même jeton (la page en recrée un à chaque relecture des réglages de l'appareil) : la garde de limite (une attente dite une
+    // fois, pour tous), l'arbre lu, la lecture en cours et son point de reprise (SOG-0337)
+    const key = [api, c.repo, branch, c.token].join('|');
+    let sh = SHARED.get(key);
+    if (!sh) {
+      if (SHARED.size >= 8) SHARED.delete(SHARED.keys().next().value);
+      sh = {
+        treeOf: new Map(), // tête → { chemin: empreinte }
+        inflight: new Map(), // tête → lecture de l'arbre en cours
+        partial: null, // la lecture de l'arbre en cours : { commit, url (la page à lire), out, pages (lues), entries } — reprise là où elle s'est arrêtée
+        guard: null
+      };
+      SHARED.set(key, sh);
+    }
+    const treeOf = sh.treeOf,
+      inflight = sh.inflight;
+    const guard = sh.guard ||= G.guard(G.caller({
       headers: () => ({
         'PRIVATE-TOKEN': c.token
       }),
@@ -50,7 +67,12 @@
           conflict: [400, 409, 422].includes(r.status) && /exist|changed|already|conflict|does not/i.test(m)
         };
       }
-    });
+    }));
+    if (!guard.pacing.set) {
+      guard.pacing.set = true;
+      guard.pacing.gapMs = 600; // entre deux pages de l'arbre : 80 pages à la minute au plus (SOG-0337)
+    }
+    const call = guard.call;
     const conflict = why => Object.assign(new Error(why), {
       conflict: true
     });
@@ -90,6 +112,7 @@
       return j.id;
     }
     const self = {
+      limit: guard, // la limite de requêtes : l'attente en cours, ce qui en a été lu (diagnostic) ; frame_data y branche l'état
       id: 'gitlab',
       kind: 'remote',
       /** Qui est le jeton (§ 10.36 : « Tester » de Réglages avertit d'un jeton personnel ou d'une expiration absente ou au-delà d'un an) : { bot (true : jeton de projet
@@ -121,17 +144,41 @@
         return headSha;
       },
       /** Fichiers du commit : { chemin: empreinte du blob } (pages de 100, pagination par clés, lien « next »). */
-      async tree(commit) {
-        if (treeOf.has(commit)) return {
+      tree(commit) {
+        if (treeOf.has(commit)) return Promise.resolve({
           ...treeOf.get(commit)
+        });
+        // une seule lecture à la fois pour une même tête (SOG-0337) : les demandes simultanées (passage, première lecture, module) partagent la même, elles ne la recommencent pas chacune
+        let p = inflight.get(commit);
+        if (!p) {
+          p = self.readTree(commit).finally(() => inflight.delete(commit));
+          inflight.set(commit, p);
+        }
+        return p.then(o => ({
+          ...o
+        }));
+      },
+      async readTree(commit) {
+        // SOG-0337 : une lecture arrêtée (limite, réseau) REPREND à sa page pour la même tête, elle ne recommence pas de zéro
+        const resume = sh.partial && sh.partial.commit === commit ? sh.partial : null,
+          out = resume ? resume.out : {};
+        let url = resume ? resume.url : `${project}/repository/tree?ref=${encodeURIComponent(commit)}&recursive=true&per_page=100&pagination=keyset`,
+          pages = resume ? resume.pages : 0,
+          entries = resume ? resume.entries : 0;
+        const resumedAt = resume ? pages : 0;
+        sh.partial = resume || {
+          commit,
+          url,
+          out,
+          pages,
+          entries
         };
-        const out = {};
-        let url = `${project}/repository/tree?ref=${encodeURIComponent(commit)}&recursive=true&per_page=100&pagination=keyset`,
-          pages = 0,
-          entries = 0;
         while (url) {
           if (++pages > 2000) throw new Error('GitLab tree: too many pages');
-          const r = await call(url);
+          if (pages > 1 && guard.pacing.gapMs) await guard.sleep(guard.pacing.gapMs);
+          const r = await call(url, {
+            suspectLimit: pages > 1
+          });
           for (const x of await r.json()) {
             entries++;
             if (x.type === 'blob') out[x.path] = x.id;
@@ -139,13 +186,22 @@
           const next = /<([^>]+)>\s*;\s*rel="next"/.exec(r.headers.get('Link') || '');
           // le lien suivant doit rester sur l'API de cette instance (jamais ailleurs avec le jeton)
           url = next && next[1].startsWith(`${api}/`) ? next[1] : '';
+          sh.partial = {
+            commit,
+            url,
+            out,
+            pages,
+            entries
+          };
         }
+        sh.partial = null;
         treeOf.set(commit, out);
         self.lastTree = { // ce que la dernière lecture de l'arbre a rendu : dit dans le diagnostic (SOG-0235 : un arbre lu en entier ?)
           commit: String(commit).slice(0, 12),
           pages,
           entries,
           blobs: Object.keys(out).length,
+          resumedAt, // la page d'où la lecture a repris après une limite ou une coupure (0 : lue d'un trait)
           at: new Date().toISOString()
         };
         return {

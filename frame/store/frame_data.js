@@ -431,6 +431,8 @@
         ...(o.identity || {})
       }
     };
+    // SOG-0337 : l'attente d'une limite de requêtes du dépôt change l'état (la phrase « reprise dans n s » suit)
+    if (cfg.transport?.limit && !cfg.transport.limit.onLimit) cfg.transport.limit.onLimit = () => emitStatus(false);
     return cfg;
   }
 
@@ -483,6 +485,12 @@
       syncing: !!syncing,
       lastSync: s?.lastSync || '',
       lastError: lastError || s?.lastError || '',
+      // SOG-0337 : le dépôt limite les requêtes et la couche attend : { who, until, secs } (la phrase « reprise dans n s »), null sinon
+      rateLimit: (w => w ? {
+        who: cfg.transport.id === 'github' ? 'GitHub' : 'GitLab',
+        until: w.until,
+        secs: Math.max(1, Math.ceil((w.until - Date.now()) / 1000))
+      } : null)(cfg.transport?.limit?.waiting?.()),
       // SOG-0279 : `pending` ne compte que ce qui part avec l'envoi groupé ; `held`, le vol en cours retenu jusqu'à son geste ; `nextSendAt` : l'instant de l'envoi groupé (0 : rien d'armé)
       pending: pend.filter(p => !isHeld(p.path)).length,
       held: pend.filter(p => isHeld(p.path)).length,
@@ -1659,6 +1667,14 @@
       lastReadError,
       // ce que la dernière lecture de l'arbre du dépôt a rendu (pages, entrées, fichiers) : un arbre lu en entier ? (SOG-0235, téléphone sans lanceur)
       treeRead: cfg.transport?.lastTree || null,
+      // SOG-0337 : les limites de requêtes lues (attentes, secondes, dernière : statut, Retry-After lisible ou non, quota restant), la cadence tenue
+      rateLimit: cfg.transport?.limit ? {
+        ...cfg.transport.limit.info,
+        pacing: {
+          perMin: cfg.transport.limit.pacing.perMin,
+          gapMs: cfg.transport.limit.pacing.gapMs
+        }
+      } : null,
       // les compagnies telles que CET appareil les voit (SOG-0235) : l'index dans l'arbre gardé et dans le document gardé (révisions, écriture en attente, copie plus ancienne que l'arbre), les codes qu'il cite, et, pour
       // chacun, ses deux fichiers dans l'arbre ; jamais le contenu
       airlines: await airlineDiagnostic(remote, tree),

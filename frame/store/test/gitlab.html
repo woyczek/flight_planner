@@ -39,6 +39,11 @@
         moveBeforeCommit: false, // la branche part ailleurs juste avant le POST du commit
         moveDuringCommit: false, // un autre commit se glisse avant le nôtre (parent_ids[0] ≠ tête attendue)
         evilNext: false, // le lien « next » mène à un autre hôte
+        limitAt: 0, // SOG-0337 : la page (à partir de 1) qui répond 429 ; limitHits : combien de fois encore ; retryAfter : l'en-tête (null : absent)
+        limitHits: 0,
+        retryAfter: null,
+        dropAt: 0, // la page qui est coupée une fois (le navigateur ne dit alors que « réseau » : un 429 sans en-tête CORS)
+        pageHits: {}, // page → demandes reçues
         calls: [],
         perPage: 2
       };
@@ -122,7 +127,21 @@
             mode: '040000'
           }]),
           from = +(u.searchParams.get('page_token') || 0),
-          page = all.slice(from, from + st.perPage),
+          num = from / st.perPage + 1;
+        st.pageHits[num] = (st.pageHits[num] || 0) + 1;
+        if (st.dropAt === num) {
+          st.dropAt = 0;
+          throw new TypeError('Failed to fetch');
+        }
+        if (st.limitAt === num && st.limitHits > 0) {
+          st.limitHits--;
+          return json({
+            message: '429 Too Many Requests'
+          }, 429, st.retryAfter === null ? {} : {
+            'Retry-After': String(st.retryAfter)
+          });
+        }
+        const page = all.slice(from, from + st.perPage),
           more = from + st.perPage < all.length;
         const next = st.evilNext ? 'https://evil.example/api/v4/steal' : `${PROJECT}/repository/tree?ref=${u.searchParams.get('ref')}&recursive=true&per_page=100&pagination=keyset&page_token=${from + st.perPage}`;
         return json(page, 200, more ? {
@@ -223,6 +242,8 @@
         author: () => 'ABC'
       });
       ck('FD.github renvoie vers le transport GitLab', T.id === 'gitlab' && T.kind === 'remote');
+      T.limit.pacing.gapMs = 0; // le banc lit des arbres entiers : la pause entre deux pages (SOG-0337) a son propre essai plus bas
+      T.limit.pacing.perMin = 1e9;
       // tête, arbre page par page, lecture
       G.reset({
         'a.json': '{"a":1}',
@@ -312,11 +333,13 @@
       }).api && refused);
       // lien « next » vers un autre hôte : jamais suivi (le jeton n'y part pas)
       G.st.evilNext = true;
+      G.st.head = `c${++G.st.n}`; // une tête neuve : l'arbre déjà lu (partagé entre les transports du même dépôt) ne répond pas à sa place
       const T2 = FD.github({
         ...cfg
       });
       const t2 = await T2.tree(await T2.head());
       G.st.evilNext = false;
+      G.st.head = `c${++G.st.n}`; // l'arbre tronqué de cette lecture reste à sa tête : la suite lit la sienne
       ck('tree : un lien « next » vers un autre hôte n’est pas suivi', G.st.calls.every(c => !c.url.startsWith(
           'https://evil.example')) && Object.keys(t2).length ===
         2, JSON.stringify(Object.keys(t2)));
@@ -459,6 +482,120 @@
           Object.keys(bt).length);
         ck('tree : ce que la lecture a rendu est dit (pages, entrées, fichiers), pour le diagnostic', T.lastTree?.pages === 105 && T.lastTree?.blobs === 10444 && T.lastTree?.entries === 10445, JSON.stringify(T.lastTree));
         G.st.perPage = 2;
+      }
+      // SOG-0337 (« GitLab 429 sur le téléphone », 14 nov. 2026) : un 429 est une demande d'attendre, pas un échec ni un recommencement : la lecture de l'arbre ATTEND (Retry-After, sinon 60 s doublé),
+      // REPREND à sa page, le DIT (waiting, info), et la cadence est tenue
+      {
+        const files = {};
+        for (let i = 0; i < 12; i++) files[`d/${String(i).padStart(2, '0')}.json`] = `[${i}]`; // 12 fichiers + 1 dossier, deux par page : 7 pages
+        const fresh = () => {
+          G.reset(files);
+          G.st.perPage = 2;
+          G.st.pageHits = {};
+          G.st.limitAt = 0;
+          G.st.limitHits = 0;
+          G.st.dropAt = 0;
+          G.st.retryAfter = null;
+        };
+        const T = FD.gitlab({
+          api: G.API,
+          repo: 'grp/data',
+          token: 'glpat-test'
+        }); // un transport neuf : sa garde a ses valeurs par défaut
+        const L = T.limit,
+          waits = [],
+          prev = {
+            ...L.pacing
+          };
+        L.pacing.gapMs = 600; // le banc l'avait coupée pour ses arbres entiers (la garde est partagée par les transports du même dépôt et du même jeton)
+        L.pacing.perMin = 80;
+        ck('limite : le transport porte sa garde (cadence, attente, état)', !!L && typeof L.waiting === 'function' && L.pacing.perMin === 80 && L.pacing.gapMs === 600 && L.pacing.retries === 3, JSON.stringify(L?.pacing));
+        L.pacing.windowMs = 50; // les 105 pages du grand arbre sont dans la minute : la fenêtre du banc est courte (la cadence a son propre essai, plus bas)
+        L.pacing.gapMs = 0;
+        L.pacing.minWait = 1;
+        L.pacing.defWait = 1;
+        L.onLimit = () => waits.push(L.waiting()?.secs || 0);
+        // (a) un 429 à la page 4, Retry-After lisible : attendu, la même page reprise, les pages 1 à 3 jamais relues
+        fresh();
+        G.st.limitAt = 4;
+        G.st.limitHits = 1;
+        G.st.retryAfter = 1;
+        let h = await T.head(),
+          t0 = Date.now(),
+          pr = T.tree(h);
+        await new Promise(r => setTimeout(r, 300));
+        const during = L.waiting();
+        const bt = await pr;
+        ck('limite : un 429 à la page 4 — l’arbre est lu en entier après l’attente (12 fichiers)', Object.keys(bt).length === 12 && Date.now() - t0 >= 900, `${Object.keys(bt).length} fichiers en ${Date.now() - t0} ms`);
+        ck('limite : l’attente est dite pendant qu’elle dure (waiting : secondes, statut 429) et finie ensuite', !!during && during.secs === 1 && during.status === 429 && L.waiting() === null && waits.includes(1) && waits.at(-1) === 0, JSON.stringify([during, waits]));
+        ck('limite : la lecture REPREND — les pages 1 à 3 lues une fois, la page 4 deux fois, rien ne recommence de zéro', [1, 2, 3].every(n => G.st.pageHits[n] === 1) && G.st.pageHits[4] === 2 && G.st.pageHits[7] === 1, JSON.stringify(G.st.pageHits));
+        ck('limite : ce qui a été lu est gardé pour le diagnostic (attentes, secondes, statut, Retry-After lisible)', L.info.waits === 1 && L.info.waitedS === 1 && L.info.last?.status === 429 && L.info.last?.retryAfterS === 1 && L.info.last?.source === 'retry-after', JSON.stringify(L.info));
+        // (b) Retry-After illisible (CORS) : 60 s par défaut, doublé (ici 1 s, 2 s)
+        fresh();
+        L.info.waits = 0;
+        L.info.waitedS = 0;
+        G.st.limitAt = 3;
+        G.st.limitHits = 2;
+        h = await T.head();
+        const b2 = await T.tree(h);
+        ck('limite : sans Retry-After lisible, l’attente est la valeur par défaut DOUBLÉE à chaque fois (1 s puis 2 s)', Object.keys(b2).length === 12 && L.info.waits === 2 && L.info.waitedS === 3 && L.info.last?.retryAfterS === null, JSON.stringify(L.info));
+        // (c) la limite ne passe pas : l’erreur est levée après les reprises, l’arbre lu jusque-là est GARDÉ ; la lecture suivante reprend à la page où elle s’était arrêtée
+        fresh();
+        L.pacing.retries = 1;
+        G.st.limitAt = 4;
+        G.st.limitHits = 99;
+        G.st.retryAfter = 1;
+        h = await T.head();
+        let err = null;
+        try {
+          await T.tree(h);
+        } catch (e) {
+          err = e;
+        }
+        ck('limite : une limite qui dure lève l’erreur après les reprises (rateLimited, statut 429, message GitLab 429)', err?.rateLimited === true && err.status === 429 && /^GitLab 429:/.test(err.message), `${err?.message} ${err?.rateLimited}`);
+        G.st.limitHits = 0;
+        const before = {
+          ...G.st.pageHits
+        };
+        const b3 = await T.tree(h);
+        ck('limite : la lecture suivante REPREND à la page 4 (pages 1 à 3 non redemandées), l’arbre est entier', Object.keys(b3).length === 12 && [1, 2, 3].every(n => G.st.pageHits[n] === before[n]) && T.lastTree?.resumedAt === 3, JSON.stringify([G.st.pageHits, T.lastTree]));
+        // (d) le 429 d’une réponse sans en-tête CORS : le navigateur ne dit que « réseau » — en pleine lecture, traité de même
+        fresh();
+        L.pacing.retries = 3;
+        L.info.waits = 0;
+        G.st.dropAt = 3;
+        h = await T.head();
+        const b4 = await T.tree(h);
+        ck('limite : une coupure en pleine lecture de l’arbre (429 sans en-tête CORS) est attendue puis reprise, pas un échec muet', Object.keys(b4).length === 12 && L.info.waits === 1 && L.info.last?.kind === 'unreadable', JSON.stringify(L.info));
+        // (e) un refus qui n’est pas une limite (401, 404) n’est jamais attendu
+        L.info.waits = 0;
+        const bad = FD.gitlab({
+          api: G.API,
+          repo: 'grp/data',
+          token: 'wrong'
+        });
+        let e401 = null;
+        try {
+          await bad.head();
+        } catch (e) {
+          e401 = e;
+        }
+        ck('limite : un 401 n’est pas une limite (levé tout de suite, aucune attente)', e401?.status === 401 && !e401.rateLimited && bad.limit.info.waits === 0, e401?.message);
+        // (f) la cadence : une pause entre deux pages (600 ms par défaut : 80 pages à la minute au plus)
+        fresh();
+        L.pacing.gapMs = 150;
+        h = await T.head();
+        t0 = Date.now();
+        await T.tree(h);
+        ck('cadence : une pause entre deux pages de l’arbre (150 ms demandées : 7 pages, six pauses)', Date.now() - t0 >= 800, `${Date.now() - t0} ms`);
+        // (g) la cadence par fenêtre : à `perMin` demandes dans la fenêtre, la suivante attend son tour (jamais perdue) — fenêtre de 500 ms pour le banc
+        const g = FD.git.guard(async () => 'ok');
+        g.pacing.perMin = 3;
+        g.pacing.windowMs = 500;
+        t0 = Date.now();
+        for (let i = 0; i < 4; i++) await g.call('x');
+        ck('cadence : la quatrième demande dans la fenêtre attend sa fin (au moins 450 ms)', Date.now() - t0 >= 450 && Date.now() - t0 < 2000, `${Date.now() - t0} ms`);
+        L.onLimit = null;
       }
     } catch (x) {
       ck('exception du banc', false, x?.stack || x);
