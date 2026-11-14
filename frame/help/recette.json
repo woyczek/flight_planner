@@ -3078,9 +3078,10 @@
     "de": "Einstellungen › Zustand: eine Geste, um auf diesem Gerät neu anzufangen; das Grün-Braun-Grün-Flackern beim Neuaufbau",
     "es": "Ajustes › Estado: un gesto para empezar de cero en este dispositivo; el parpadeo verde-marrón-verde al reconstruir"
    },
-   "test": "Recharge la page. (1) Données, « Mettre à jour ce pays » : la tuile reste bleue « en cours » du début à la fin, plus de marron. (2) Réglages › Appareil (déplie la ligne) : « Repartir de zéro sur cet appareil » — AVANT d'agir il dit combien de fichiers seront relus et ce qui reste (tes documents, tes réglages, tes envois en attente) ; une seule confirmation ; puis l'appareil relit le dépôt. Vérifie après coup que tes vols, tes réglages et ta compagnie sont toujours là.",
+   "test": "Recharge la page. (1) Données, « Tout mettre à jour » : les tuiles restent bleues « en cours » d'un bout à l'autre, plus de marron. (2) Réglages : dans « État », la ligne « Quelque chose semble bizarre ? » mène à « Repartir de zéro sur cet appareil » ; il dit en chiffres ce qui part et ce qui reste, demande une confirmation, puis l'appareil relit le dépôt ; tes vols, tes réglages et ta compagnie sont toujours là. (3) Coupe le réseau et refais le geste : il refuse, « rien n'a été vidé ».",
    "since": "2026-11-13",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-14T10:15:09Z"
   },
   {
    "id": "SOG-0325",

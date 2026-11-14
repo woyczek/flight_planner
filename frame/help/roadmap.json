@@ -5,7 +5,7 @@
  "generated": {
   "tool": "tools/roadmap_build.py",
   "organisation": "1de5839",
-  "fiches": 337,
+  "fiches": 343,
   "untranslated": 0,
   "priorities": 310
  },
@@ -2248,6 +2248,15 @@
      "de": "Missionen (App Gesellschaft): die rechte Spalte flackert, wenn die Leiste breiter wird",
      "es": "Misiones (aplicación Compañía): la columna derecha parpadea cuando el riel se ensancha",
      "test": true
+    },
+    {
+     "id": "SOG-0338",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : un clic sur « Registre » ne met pas à jour le rail de gauche",
+     "en": "Missions: a click on « Register » does not update the left rail",
+     "de": "Missionen: ein Klick auf « Register » aktualisiert die linke Leiste nicht",
+     "es": "Misiones: un clic en « Registro » no actualiza el riel izquierdo"
     }
    ]
   },
@@ -2835,6 +2844,27 @@
    ]
   },
   {
+   "id": "maintenance-aeronefs-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Aéronefs ; lanceur",
+    "en": "Aéronefs ; lanceur",
+    "de": "Aéronefs ; lanceur",
+    "es": "Aéronefs ; lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0341",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Registre des immatriculations : comment un téléphone appairé y accède-t-il, s'il n'est pas publié ?",
+     "en": "Aircraft register: how does a paired phone reach it, if it is not published?",
+     "de": "Luftfahrzeugregister: wie erreicht ein gekoppeltes Telefon es, wenn es nicht veröffentlicht ist?",
+     "es": "Registro de matrículas: ¿cómo accede un teléfono emparejado, si no está publicado?"
+    }
+   ]
+  },
+  {
    "id": "maintenance-base-carburant",
    "app": "maintenance",
    "label": {
@@ -3350,7 +3380,7 @@
     {
      "id": "SOG-0235",
      "kind": "bug",
-     "state": "later",
+     "state": "doing",
      "fr": "BLOQUANT : une compagnie disparaît de la liste de l'appareil (DEFA) — la couche de données garde un document plus ancien que l'arbre",
      "en": "BLOCKING: an airline vanishes from the device's list (DEFA) — the data layer keeps a document older than its tree",
      "de": "BLOCKIEREND: eine Gesellschaft verschwindet aus der Liste des Geräts (DEFA) — die Datenschicht behält ein Dokument, das älter ist als ihr Baum",
@@ -4229,6 +4259,15 @@
      "de": "Daten: das Blatt Portugal widerspricht sich — « nichts abzulegen » und « dieses Land wartet auf eine Datei »",
      "es": "Datos: la ficha de Portugal se contradice — « nada que depositar » y « este país espera un fichero »",
      "test": true
+    },
+    {
+     "id": "SOG-0340",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Maintenance › Données : la molette agit sur la carte depuis toute la page",
+     "en": "Maintenance › Data: the mouse wheel acts on the map from the whole page",
+     "de": "Wartung › Daten: das Mausrad wirkt von der ganzen Seite aus auf die Karte",
+     "es": "Mantenimiento › Datos: la rueda del ratón actúa sobre el mapa desde toda la página"
     }
    ]
   },
@@ -4471,6 +4510,15 @@
      "de": "Launcher: the lines of its log carry no time",
      "es": "Launcher: the lines of its log carry no time",
      "rank": 282
+    },
+    {
+     "id": "SOG-0339",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Lanceur : une écriture refusée par Windows (fichier occupé) fait tomber la requête ; relais METAR en échec",
+     "en": "Launcher: a write refused by Windows (file in use) brings the request down; METAR relay failing",
+     "de": "Launcher: ein von Windows verweigerter Schreibvorgang (Datei belegt) lässt die Anfrage abstürzen; METAR-Relais schlägt fehl",
+     "es": "Lanzador: una escritura rechazada por Windows (archivo en uso) hace caer la petición; relé METAR en fallo"
     }
    ]
   },
@@ -4646,6 +4694,27 @@
      "de": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
      "es": "Data screen, the map: no wheel zoom over countries, Shift + click does not highlight the chosen countries, hovering a group should show its perimeter",
      "rank": 290
+    }
+   ]
+  },
+  {
+   "id": "maintenance-meteo-cadre",
+   "app": "maintenance",
+   "label": {
+    "fr": "Météo ; cadre",
+    "en": "Météo ; cadre",
+    "de": "Météo ; cadre",
+    "es": "Météo ; cadre"
+   },
+   "items": [
+    {
+     "id": "SOG-0343",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Météo au téléphone : les points déjà lus sont trop petits pour un doigt",
+     "en": "Weather on the phone: the points already read are too small for a finger",
+     "de": "Wetter am Telefon: die bereits gelesenen Punkte sind zu klein für einen Finger",
+     "es": "Meteo en el teléfono: los puntos ya leídos son demasiado pequeños para un dedo"
     }
    ]
   },
@@ -4838,6 +4907,15 @@
      "de": "Einstellungen: nach Nutzungshäufigkeit ordnen, und was Pfeil und Titel eines Blocks tun",
      "es": "Ajustes: ordenar por frecuencia de uso, y qué hacen la flecha y el título de un bloque",
      "test": true
+    },
+    {
+     "id": "SOG-0342",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages au téléphone : la page remonte en haut toute seule pendant la synchronisation",
+     "en": "Settings on the phone: the page jumps to the top by itself during synchronisation",
+     "de": "Einstellungen am Telefon: die Seite springt während der Synchronisation von selbst nach oben",
+     "es": "Ajustes en el teléfono: la página sube sola durante la sincronización"
     }
    ]
   },
@@ -4864,11 +4942,12 @@
     {
      "id": "SOG-0324",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Réglages › État : un geste pour repartir de zéro sur cet appareil ; le clignotement vert-marron-vert à la reconstruction",
      "en": "Settings › Status: one gesture to start again from scratch on this device; the green-brown-green flicker during a rebuild",
      "de": "Einstellungen › Zustand: eine Geste, um auf diesem Gerät neu anzufangen; das Grün-Braun-Grün-Flackern beim Neuaufbau",
-     "es": "Ajustes › Estado: un gesto para empezar de cero en este dispositivo; el parpadeo verde-marrón-verde al reconstruir"
+     "es": "Ajustes › Estado: un gesto para empezar de cero en este dispositivo; el parpadeo verde-marrón-verde al reconstruir",
+     "test": true
     }
    ]
   },
