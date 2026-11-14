@@ -797,13 +797,13 @@
           r = await tryRead({}, {
             total: 70 * MiB
           });
-          ck('plafond : sans plafond donné, celui du cadre (48 Mio) — jamais une lecture sans borne', r.err?.tooBig === true && G.st.served <= 50 * MiB && FD.git.MAX_READ === 48 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          ck('plafond : sans plafond donné, celui du cadre (32 Mio) — jamais une lecture sans borne', r.err?.tooBig === true && G.st.served <= 34 * MiB && FD.git.MAX_READ === 32 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
           r = await tryRead({
             max: 500 * MiB
           }, {
             total: 70 * MiB
           });
-          ck('plafond : un module ne peut que l’abaisser — demander 500 Mio n’ouvre rien au-dessus de 48', r.err?.tooBig === true && G.st.served <= 50 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
+          ck('plafond : un module ne peut que l’abaisser — demander 500 Mio n’ouvre rien au-dessus de 32', r.err?.tooBig === true && G.st.served <= 34 * MiB, JSON.stringify([r.err?.message, G.st.served / MiB]));
           r = await tryRead({}, {
             total: 15 * MiB
           });

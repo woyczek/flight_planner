@@ -347,8 +347,9 @@
     };
   }
 
-  /** LE plafond d'une lecture de fichier du dépôt, pour tout le cadre (SOG-0358) : 48 Mio — plus de trois fois le plus gros fichier légitime d'aujourd'hui (14,5 Mo : les espaces aériens d'une zone). */
-  const MAX_READ = 48 * 1024 * 1024;
+  /** LE plafond d'une lecture de fichier du dépôt, pour tout le cadre (SOG-0358) : 32 Mio, tranché par l'ergonome — c'est le téléphone que la garde protège (un fichier lu pèse bien plus en mémoire : octets, texte UTF-16, JSON analysé) ;
+   *  le plus gros fichier légitime d'aujourd'hui fait 14,5 Mo (les espaces aériens d'une zone) : un fichier de base qui approche 16 Mio doit être DÉCOUPÉ, pas toléré. */
+  const MAX_READ = 32 * 1024 * 1024;
   /** Les octets d'une réponse, PLAFONNÉS (Sécurisation, classe de défaut ouverte : n'importe quel pilote peut commiter un fichier énorme) : la taille annoncée (Content-Length) au-delà du plafond refuse sans
    *  rien lire ; sinon les octets sont comptés EN LISANT (la réponse en flux : au-delà du plafond la lecture s'arrête et le flux est annulé, la mémoire ne suit jamais). Rend un ArrayBuffer, ou lève
    *  err.tooBig. Le plafond est celui de la politique du fichier (frame_data.js : une base compilée plus haut qu'un document de pilote). */

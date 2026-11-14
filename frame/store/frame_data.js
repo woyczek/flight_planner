@@ -1016,7 +1016,7 @@
   /** Le plafond d'octets d'un fichier lu du dépôt, par politique (Sécurisation : n'importe quel pilote peut commiter un fichier énorme) : une base compilée (`reference`) plus haut qu'un document ; au-delà la lecture
    *  s'arrête (le transport compte les octets en lisant) et est dite illisible (why 'error'), jamais gardée ; une révision déjà refusée n'est pas relue. */
   const READ_CAP = {
-    reference: 48 * 1024 * 1024, // = le plafond du cadre (transport_git.js MAX_READ, SOG-0358) : un module ne peut que l'abaisser
+    reference: 32 * 1024 * 1024, // = le plafond du cadre (transport_git.js MAX_READ, SOG-0358) : un module ne peut que l'abaisser
     document: 8 * 1024 * 1024,
     cache: 8 * 1024 * 1024
   };

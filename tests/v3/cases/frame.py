@@ -8505,3 +8505,40 @@ def a211(c):
     c.until(f"!!document.querySelector('[data-section=seen] [data-id=\"{f2}\"] [data-unsent]')", timeout=15000, what='« pas encore envoyé »')
     c.eq(c.js(docs_js, key), None, 'a device without trigram writes nothing in the repository (the verdict stays on the device, said « pas encore envoyé »)', what='no file')
     c.check_errors()
+
+
+@case('A212', "Recette on the workstation (a launcher): a verdict read from the REPOSITORY file says where it comes from — « du téléphone » — and does not pass for a verdict given here; a verdict given here, or read from the launcher's own file, says nothing (SOG-0357, Sécurisation's note)", 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule="SOG-0357 (Sécurisation: an entry of the repository file dated a few hours in the future masks the workstation's verdict, the file's author is not signed; the ergonomist: the sheet shows the origin and nothing more, the signature is the debt): on a device WITH a launcher, a verdict whose winner is the repository file carries « du téléphone » (data-origin); a verdict given on this workstation (written in organisation/RECETTE.json) carries none")
+def a212(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    T = lambda k: tx('frame/help/recette.js', k, lang, after='const T = {')
+    fx = _rc_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    key = 'pilot/ABC/recette/verdicts.json'
+    other = {'schema': 'sog-recette/1', 'updated': '2026-11-14T09:00:00Z', 'items': {'SOG-0312': {'verdict': 'ko', 'comment': 'refusé depuis le téléphone', 'at': '2026-11-14T09:00:00Z'}}}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'RECETTE.json'
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': '2026-11-09T18:05:00Z', 'items': {'SOG-0313': {'verdict': 'ko', 'comment': 'le bouton reste gris', 'at': '2026-11-09T18:05:00Z'}}}), encoding='utf-8')
+        _prio_launcher(c, root, verb=('recette', 'verdict'))
+        c.open('recette', docs=LEVEL3 + [[key, other, 'document']])
+        c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=20000, what='the tests')
+        c.until("!!document.querySelector('[data-section=seen] [data-id=\"SOG-0312\"][data-state=ko]')", timeout=20000, what="the repository's verdict")
+        c.js("document.querySelector('[data-section=seen]').open = true")
+        o = c.js("""() => ({ phone: document.querySelector('[data-section=seen] [data-id="SOG-0312"] [data-origin]')?.textContent || null, launcherFile: document.querySelector('[data-section=seen] [data-id="SOG-0313"] [data-origin]')?.textContent || null })""")
+        c.eq([norm(o['phone'] or ''), o['launcherFile']], [norm(T('fromRepo')), None], "the verdict from the repository says « du téléphone »; the one of the launcher's own file says nothing", what='origin')
+        first = c.js("document.querySelector('[data-section=today] li[data-id]').dataset.id")
+        c.tap(f'[data-ok="{first}"]')
+        for _ in range(60):
+            if first in json.loads(f.read_text(encoding='utf-8'))['items']:
+                break
+            c.wait(250)
+        c.js("document.querySelector('[data-section=seen]').open = true")
+        c.until(f"!!document.querySelector('[data-section=seen] [data-id=\"{first}\"] [data-verdict]')", timeout=15000, what='the verdict given here')
+        c.ok(c.js(f"!document.querySelector('[data-section=seen] [data-id=\"{first}\"] [data-origin]')"), '', 'a verdict given on this workstation carries no origin')
+        c.shot(f'A212_{c.width}_{lang}_delivered.png')
+    c.check_errors()

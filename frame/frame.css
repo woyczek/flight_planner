@@ -2246,4 +2246,7 @@ html.f-limited .f-view {
 .f-rm-sent {
   color: var(--sog-ok, inherit)
 }
+.f-rm-origin {
+  font-style: italic
+}
 

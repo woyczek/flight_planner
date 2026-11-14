@@ -150,6 +150,8 @@
     less: ['Réduire', 'Show fewer', 'Weniger zeigen', 'Reducir'],
     unsent: ['pas encore envoyé', 'not sent yet', 'noch nicht gesendet', 'aún no enviado'],
     sent: ['envoyé', 'sent', 'gesendet', 'enviado'],
+    // SOG-0357 (note de Sécurisation) : un verdict lu du DÉPÔT porte son origine ; il ne passe pas pour un verdict donné sur ce poste (l'auteur du fichier du dépôt n'est pas signé)
+    fromRepo: ['du téléphone', 'from the phone', 'vom Telefon', 'del teléfono'],
     noRepo: ['Le dépôt des données n’a pas reçu les verdicts : ils restent sur cet appareil et repartiront.',
       'The data repository did not get the verdicts: they stay on this device and will leave again.',
       'Das Datenarchiv hat die Urteile nicht erhalten: Sie bleiben auf diesem Gerät und gehen erneut.',
@@ -438,6 +440,8 @@
     const fileEntry = x => ui.fileRead ? R.latest(ui.file[x.id], ui.repo[x.id]) || null : R.latest(ui.repoRead ? ui.repo[x.id] : null, x
       .gen) || null;
     const rawEntry = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : fileEntry(x);
+    /** Le verdict en vigueur vient-il du fichier du DÉPÔT (le téléphone), sur un poste qui a son propre fichier (un lanceur) ? Il le dit : « du téléphone » — il ne passe pas pour un verdict donné ici. */
+    const fromRepoOf = x => !!launcher() && !Object.hasOwn(ui.local, x.id) && !!ui.repo[x.id] && rawEntry(x) === ui.repo[x.id];
     const rawVerdict = x => {
       const e = rawEntry(x);
       return e && e.verdict ? e : null; // une fiche remise à tester n'a plus de verdict en vigueur (SOG-0351)
@@ -505,7 +509,7 @@
       const head = `<p><span class="f-rm-id">${esc(x.id)}</span> <b>${esc(t(row(x.title)))}</b>${x.since ? ` <small class="f-muted">${esc(t(T.since, { d: x.since }))}</small>` : ''}${ui.unsent.has(x.id) ? ` <small class="f-rm-unsent" data-unsent>${esc(t(T.unsent))}</small>` : ''}</p>
         <p class="f-rc-test" lang="fr" data-test>${esc(x.test)}</p>`;
       if (known(x)) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="known">${head}<p class="f-muted" data-known>${esc(t(T.knownLine))}</p></li>`;
-      if (v) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="${v.verdict}">${head}<p data-verdict="${v.verdict}">${flat ? `<span class="f-rc-apptag" data-app-tag>${esc(appName(x.app))}</span> ` : ''}<b>${esc(t(T[v.verdict]))}</b>${v.at ? ` <small class="f-muted" data-verdict-at title="${esc(v.at)}">${esc(TM?.fmtMoment ? TM.fmtMoment(v.at, c.lang?.() || 'fr') : `${v.at.slice(0, 10)} ${v.at.slice(11, 16)}Z`)}</small>` : ''}${ui.unsent.has(x.id) ? '' : ` <small class="f-rm-sent" data-sent>${esc(t(T.sent))}</small>`}${v.comment ? ` — ${esc(v.comment)}` : ''}</p>
+      if (v) return `<li class="f-rc-item" data-id="${esc(x.id)}" data-state="${v.verdict}">${head}<p data-verdict="${v.verdict}">${flat ? `<span class="f-rc-apptag" data-app-tag>${esc(appName(x.app))}</span> ` : ''}<b>${esc(t(T[v.verdict]))}</b>${v.at ? ` <small class="f-muted" data-verdict-at title="${esc(v.at)}">${esc(TM?.fmtMoment ? TM.fmtMoment(v.at, c.lang?.() || 'fr') : `${v.at.slice(0, 10)} ${v.at.slice(11, 16)}Z`)}</small>` : ''}${fromRepoOf(x) ? ` <small class="f-rm-origin" data-origin>${esc(t(T.fromRepo))}</small>` : ''}${ui.unsent.has(x.id) ? '' : ` <small class="f-rm-sent" data-sent>${esc(t(T.sent))}</small>`}${v.comment ? ` — ${esc(v.comment)}` : ''}</p>
         <div class="f-row"><button type="button" data-redo="${esc(x.id)}">${esc(t(T.redo))}</button></div></li>`;
       const p = previousOf(x),
         why = p ? `<p class="f-muted" data-redelivered="${p.verdict}">${esc(t(T.redelivered[p.verdict === 'ko' && !p.comment ? 'koBare' : p.verdict === 'reserve' && !p.comment ? 'ok' : p.verdict], { d: (p.at || x.delivered || '').slice(0, 10), c: p.comment || '' }))}</p>` : '';
