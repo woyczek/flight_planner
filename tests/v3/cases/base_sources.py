@@ -3230,3 +3230,73 @@ def k264(c):
             except subprocess.TimeoutExpired:
                 p.kill()
             log.close()
+
+
+@case('K269', "The launcher's state files are written under a lock and a replacement Windows refuses (« fichier occupé », WinError 32) is tried again three times, then said as an OSError — it no longer takes the request down (SOG-0339)", 'K',
+      static=True, rule="SOG-0339 (the user's launcher log, 14 Nov): `PermissionError: [WinError 32]` in `_lnmperf` → `_write_json` → `os.replace` on tools/.lnmperf.json, an exception nobody caught, the request fell; now `_write_json` takes a lock per file, writes a temporary of its own (two requests no longer share `.tmp`), tries `os.replace` again after 0.05, 0.2 and 0.5 s when the file is busy, removes the temporary and raises OSError when it never works; the Little Navmap folder route answers a readable 503 instead of raising")
+def k269(c):
+    import importlib
+    import tempfile
+    import threading
+    import time as _t
+    tools = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    L = importlib.import_module('launch')
+    real = os.replace
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        f = os.path.join(td, 'state.json')
+        calls = []
+
+        def busy_twice(a, b):
+            calls.append(_t.monotonic())
+            if len(calls) <= 2:
+                raise PermissionError(13, 'The process cannot access the file because it is being used by another process', None, 32)
+            return real(a, b)
+        os.replace = busy_twice
+        try:
+            L._write_json(f, {'a': 1})
+        finally:
+            os.replace = real
+        c.eq((len(calls), json.loads(open(f, encoding='utf-8').read())), (3, {'a': 1}), 'a replacement refused twice then accepted: written at the third try', what='retry')
+        c.ok(calls[2] - calls[0] >= 0.2, calls, 'the tries are spaced (0.05 s, then 0.2 s)')
+        # never accepted: OSError, the temporary removed, the old file untouched
+        os.replace = lambda a, b: (_ for _ in ()).throw(PermissionError(13, 'busy', None, 32))
+        try:
+            raised = None
+            try:
+                L._write_json(f, {'a': 2})
+            except OSError as e:
+                raised = e
+        finally:
+            os.replace = real
+        c.ok(isinstance(raised, OSError) and json.loads(open(f, encoding='utf-8').read()) == {'a': 1} and not [n for n in os.listdir(td) if n.endswith('.tmp')], raised, 'a replacement never accepted: an OSError (the caller says it), no temporary left, the file as it was')
+        # a refusal that is not « busy » is raised at once (no waiting)
+        n0 = []
+        os.replace = lambda a, b: (n0.append(1), (_ for _ in ()).throw(FileNotFoundError(2, 'gone')))[1]
+        t0 = _t.monotonic()
+        try:
+            try:
+                L._write_json(os.path.join(td, 'x.json'), {})
+            except OSError:
+                pass
+        finally:
+            os.replace = real
+        c.ok(len(n0) == 1 and _t.monotonic() - t0 < 0.2, n0, 'an error that is not « file busy » is raised at once, never retried')
+        # two threads write the same file: no crossing (each its own temporary, one lock), the file is one of the two documents, whole
+        errs = []
+
+        def w(k):
+            try:
+                for i in range(25):
+                    L._write_json(f, {'by': k, 'i': i, 'pad': 'x' * 2000})
+            except Exception as e:
+                errs.append(repr(e))
+        ts = [threading.Thread(target=w, args=(k,)) for k in range(4)]
+        [x.start() for x in ts]
+        [x.join() for x in ts]
+        got = json.loads(open(f, encoding='utf-8').read())
+        c.ok(not errs and got.get('by') in range(4) and not [n for n in os.listdir(td) if n.endswith('.tmp')], errs[:2], 'four threads writing the same file together: no error, a whole document, no temporary left')
+        # the Little Navmap folder route: a write that fails says so (503), it does not raise
+        src = open(L.__file__, encoding='utf-8').read()
+        c.ok("_write_json(LNMPERF_STATE, {'folder': folder})\n            except OSError" in src and "'error': 'ecriture'" in src and '_replace_retry(tmp, path)' in src, '', 'the folder route and the file route catch the write error and answer a readable 503')

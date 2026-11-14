@@ -709,7 +709,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 real = os.path.normcase(os.path.realpath(folder))
                 if real == data or real.startswith(data + os.sep):
                     return self._json({'ok': False, 'error': 'data', 'message': 'Dossier de données refusé.'}, 400)
-            _write_json(LNMPERF_STATE, {'folder': folder})
+            try:
+                _write_json(LNMPERF_STATE, {'folder': folder})
+            except OSError as e:
+                return self._json({'ok': False, 'error': 'ecriture', 'message': f'Écriture impossible (fichier occupé ?) : {e.__class__.__name__}. Réessayez dans un instant.'}, 503)
             return self._json({'ok': True, 'folder': folder})
         folder = lnmperf_folder()
         if not folder:
@@ -730,10 +733,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 e['text'] = f.read().decode('utf-8', 'replace')
             return self._json(e)
         if self.command == 'PUT':
-            tmp = path + '.tmp'
-            with open(tmp, 'wb') as f:
-                f.write(body)
-            os.replace(tmp, path)
+            tmp = f'{path}.{os.getpid()}.{threading.get_ident()}.tmp'
+            try:
+                with _file_lock(path):
+                    with open(tmp, 'wb') as f:
+                        f.write(body)
+                    _replace_retry(tmp, path)
+            except OSError as e:
+                return self._json({'ok': False, 'error': 'ecriture', 'message': f'Écriture impossible (fichier occupé ?) : {e.__class__.__name__}. Réessayez dans un instant.'}, 503)
             return self._json(lnmperf_entry(path))
         if (q.get('action') or [''])[0] == 'retire':
             if not os.path.isfile(path):
@@ -2552,13 +2559,50 @@ def _read_json(path):
         return {}
 
 
+REPLACE_WAITS = (0.05, 0.2, 0.5)  # secondes avant chaque nouvel essai d'un remplacement refusé par Windows (SOG-0339)
+_FILE_LOCKS = {}
+_FILE_LOCKS_GUARD = threading.Lock()
+
+
+def _file_lock(path):
+    """Un verrou par fichier d'état : deux requêtes qui écrivent le même fichier ne se croisent pas (SOG-0339)."""
+    key = os.path.normcase(os.path.abspath(path))
+    with _FILE_LOCKS_GUARD:
+        return _FILE_LOCKS.setdefault(key, threading.RLock())
+
+
+def _busy(e):
+    """Le remplacement est-il refusé parce que le fichier est tenu un instant (antivirus, autre lecteur : WinError 5, 32, 33) ?"""
+    return isinstance(e, PermissionError) or getattr(e, 'winerror', 0) in (5, 32, 33)
+
+
+def _replace_retry(tmp, path, waits=None, sleep=None):
+    """os.replace(tmp, path), réessayé après chaque attente de REPLACE_WAITS quand Windows dit « fichier occupé » ; la dernière erreur est levée telle quelle (OSError), le temporaire est retiré."""
+    waits = REPLACE_WAITS if waits is None else waits
+    sleep = sleep or time.sleep
+    for i in range(len(waits) + 1):
+        try:
+            os.replace(tmp, path)
+            return
+        except OSError as e:
+            if not _busy(e) or i == len(waits):
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
+                raise
+            sleep(waits[i])
+
+
 def _write_json(path, value):
-    """Écrit un JSON par fichier temporaire puis remplacement (jamais de fichier à moitié écrit)."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = path + '.tmp'
-    with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
-        json.dump(value, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, path)
+    """Écrit un JSON par fichier temporaire puis remplacement (jamais de fichier à moitié écrit) : un verrou par fichier, un temporaire à soi, le remplacement réessayé trois fois s'il est refusé
+    parce que le fichier est occupé (SOG-0339) ; si l'écriture échoue quand même : OSError (les appelants la disent, la requête ne tombe pas)."""
+    with _file_lock(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = f'{path}.{os.getpid()}.{threading.get_ident()}.tmp'
+        with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
+            json.dump(value, f, ensure_ascii=False, indent=1)
+        _replace_retry(tmp, path)
 
 
 def _hint(v):
