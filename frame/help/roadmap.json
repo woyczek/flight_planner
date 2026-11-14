@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "668ec4f",
+  "organisation": "7d63860",
   "fiches": 357,
   "untranslated": 0,
   "priorities": 310
@@ -5292,7 +5292,7 @@
     {
      "id": "SOG-0356",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Base : la zone des États-Unis est lue pour tout vol entre 51° et 53° N (23 Mo pour un Paris–Dublin) — ses cases traversent l'antiméridien",
      "en": "Base: the United States zone is read for any flight between 51° and 53° N (23 MB for a Paris–Dublin) — its cells cross the antimeridian",
      "de": "Basis: die USA-Zone wird für jeden Flug zwischen 51° und 53° N gelesen (23 MB für Paris–Dublin) — ihre Zellen queren den Antimeridian",
