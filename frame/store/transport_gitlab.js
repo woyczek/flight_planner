@@ -144,7 +144,9 @@
       },
       /** Tête de la branche (sha du dernier commit). */
       async head() {
-        const j = await (await call(`${project}/repository/branches/${encodeURIComponent(branch)}`)).json();
+        const j = await (await call(`${project}/repository/branches/${encodeURIComponent(branch)}`, {
+          priority: 3
+        })).json();
         headSha = j.commit?.id || '';
         if (!headSha) throw new Error('GitLab: branch without commit');
         return headSha;
@@ -171,7 +173,9 @@
         if (!known?.head || !known.tree || known.head === commit) return null;
         let cmp;
         try {
-          cmp = await (await call(`${project}/repository/compare?from=${encodeURIComponent(known.head)}&to=${encodeURIComponent(commit)}&straight=true`)).json();
+          cmp = await (await call(`${project}/repository/compare?from=${encodeURIComponent(known.head)}&to=${encodeURIComponent(commit)}&straight=true`, {
+            priority: 0
+          })).json();
         } catch (e) {
           if (e?.status && !e.rateLimited && e.status !== 401 && e.status !== 403)
             return null; // l'ancienne tête n'existe plus, ou la comparaison est refusée : l'arbre entier
@@ -209,7 +213,8 @@
             if (++requests > INC_REQ_MAX + 4) return null;
             if (!first && guard.pacing.gapMs) await guard.sleep(guard.pacing.gapMs);
             const r = await call(url, {
-              suspectLimit: requests > 2
+              suspectLimit: requests > 2,
+              priority: 0
             });
             first = false;
             for (const x of await r.json())
@@ -264,7 +269,8 @@
           if (++pages > 2000) throw new Error('GitLab tree: too many pages');
           if (pages > 1 && guard.pacing.gapMs) await guard.sleep(guard.pacing.gapMs);
           const r = await call(url, {
-            suspectLimit: pages > 1
+            suspectLimit: pages > 1,
+            priority: 0 // l'arbre est un travail de fond : l'écran en vue (les lectures de fichiers) passe devant (SOG-0349)
           });
           for (const x of await r.json()) {
             entries++;
@@ -299,14 +305,18 @@
       async read(path, sha, o = {}) {
         return (await call(`${project}/repository/blobs/${encodeURIComponent(sha)}/raw`, {
           signal: o.signal,
-          patient: o.patient
+          patient: o.patient,
+          priority: o.priority,
+          onStart: o.onStart
         })).text();
       },
       /** Octets d'un fichier (une image : le logo de la compagnie), sans décodage. */
       async readBytes(path, sha, o = {}) {
         return (await call(`${project}/repository/blobs/${encodeURIComponent(sha)}/raw`, {
           signal: o.signal,
-          patient: o.patient
+          patient: o.patient,
+          priority: o.priority,
+          onStart: o.onStart
         })).arrayBuffer();
       },
       /** Un commit pour tout le lot [{ path, text (null : suppression) }] sur parent ; nouvelle tête. remote : arbre

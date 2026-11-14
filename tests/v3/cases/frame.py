@@ -8268,17 +8268,16 @@ def a189(c):
     c.check_errors()
 
 
-@case('A210', "A file read that waits for a request limit is abandoned without a trace: the request stops, the wait ends, the band goes — nothing is asked again, nothing counted (SOG-0349: the map around the flight ended with 0 data)", 'A',
+@case('A210', "A file read held by a request limit is SHARED per path and never turns « absent »: a second asker gets « unreadable, retry in n s » at once (not null), a module that stops waiting removes and restarts nothing — the read arrives later, is kept and `changed` says so; one request per path, the frame retries by itself (SOG-0349)", 'A',
       designs=('standard',), screens=False, night=False, langs4=False, phone=True,
-      rule="SOG-0349 (the user, on his phone: the map around the flight ended with 0 data on gitlab.com): a read of a file of the base waits for a limit (said by the band), never returns « absent » for it; a module that gives up (the 10 s bound of aerodb → `abandon`) cancels the request — in the pace queue or in the wait of a 429 — so it neither waits any more nor takes a share of the 80 requests a minute, and the next question starts one clean read")
+      rule="SOG-0349 (the user, on his phone: the map around the flight ended with 0 data on gitlab.com; the ergonomist: no more abandon): after the three retries of a 429 a read returned null, exactly like an absent file, and aerodb's 10 s bound called `abandon` which forgot the read and asked again behind the first; now one read per path shared by every asker; `read(path, { detail: true })` says `{ unreadable: true, why: 'limit', retryIn }` after 1.5 s instead of blocking or returning null; `readState(path)` says queued / reading / limit; `abandon` removes nothing once the request is sent (and a request nobody waits for that has not left yet may leave the queue); the file arrives later and `watch` is told")
 def a210(c):
     log = []
-    state = {'head': 'c1', 'files': {'sia/base/a.json': 'ba', 'root.json': 'br'}}
+    state = {'head': 'c1', 'files': {'sia/base/a.json': 'ba', 'root.json': 'br'}, 'blob429': 1}
 
     def handler(route):
         req = route.request
         u = urllib.parse.urlparse(req.url)
-        q = urllib.parse.parse_qs(u.query)
         rest = u.path.split('/api/v4/projects/grp%2Fdata', 1)[-1]
         hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
         if req.method == 'OPTIONS':
@@ -8289,7 +8288,10 @@ def a210(c):
         if rest.endswith('/repository/tree'):
             return route.fulfill(status=200, headers=hdr, body=json.dumps([{'id': sha, 'name': p.split('/')[-1], 'type': 'blob', 'path': p, 'mode': '100644'} for p, sha in sorted(state['files'].items())]))
         if '/repository/blobs/' in rest:
-            return route.fulfill(status=429, headers={**hdr, 'Retry-After': '30'}, body='{}')
+            if state['blob429'] > 0:
+                state['blob429'] -= 1
+                return route.fulfill(status=429, headers={**hdr, 'Retry-After': '4'}, body='{}')
+            return route.fulfill(status=200, headers={**hdr, 'Content-Type': 'text/plain'}, body='{"zone":"a"}')
         return route.fulfill(status=404, headers=hdr, body='{}')
     c.context.route(re.compile(r'https://gitlab\.test/'), handler)
     keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
@@ -8298,22 +8300,35 @@ def a210(c):
     c.wait(2500)   # the first pass settles (the tree is read)
     blobs = lambda: len([u for u in log if '/repository/blobs/' in u])
     n0 = blobs()
-    # a module asks for a file of the base: the host answers 429 (30 s): the read waits, and the band says it
-    c.js("(() => { window.__ad = FrameData.adapter({ id: 'a210', reads: ['sia/'] }); window.__rd = window.__ad.read('sia/base/a.json', { policy: 'reference', wait: true }).then(v => (window.__rdv = v ? 'value' : 'null'), e => (window.__rdv = 'error ' + e.message)); return 1 })()")
+    c.js("""(() => { window.__ad = FrameData.adapter({ id: 'a210', reads: ['sia/'] }); window.__changed = [];
+      window.__ad.watch('sia/', p => window.__changed.push(...p));
+      window.__rd = window.__ad.read('sia/base/a.json', { policy: 'reference', wait: true }).then(v => (window.__rdv = v ? 'value' : 'null'), e => (window.__rdv = 'error ' + e.message)); return 1 })()""")
     for _ in range(60):
         if blobs() > n0 and c.js("!document.getElementById('fLimit').hidden"):
             break
         c.wait(250)
-    c.ok(blobs() == n0 + 1 and c.js("!document.getElementById('fLimit').hidden"), [blobs() - n0, c.js("document.getElementById('fLimit').textContent")], 'the read waits for the limit (one request), the band says so')
-    c.eq(c.js("window.__rdv || 'pending'"), 'pending', 'the read does not return « absent » for a limit: it is still waiting', what='patient')
-    # the module gives up (the bound of aerodb): the request is cancelled, the wait ends, the band goes, nothing is asked again
+    c.ok(blobs() == n0 + 1 and c.js("!document.getElementById('fLimit').hidden"), [blobs() - n0], 'the read waits for the limit: one request sent, the band says so')
+    st = c.js("window.__ad.readState('sia/base/a.json')")
+    c.ok(st and st['state'] == 'limit' and 1 <= st['retryIn'] <= 5, st, 'readState says « limit » with the delay (illisible, reprise dans n s)')
+    # a second asker (another module, or the same one later): « unreadable » at once, NOT null, and no second request
+    t0 = c.js("performance.now()")
+    d = c.js("window.__ad.read('sia/base/a.json', { policy: 'reference', wait: true, detail: true })")
+    dt = c.js("performance.now()") - t0
+    c.ok(d and d.get('unreadable') is True and d.get('why') == 'limit' and d.get('retryIn', 0) >= 1 and dt < 3500 and blobs() == n0 + 1, [d, dt, blobs() - n0], 'a second asker with detail gets « unreadable (limit), retry in n s » — not null, not a wait without end — and shares the same request')
+    c.eq(c.js("window.__rdv || 'pending'"), 'pending', 'the first asker is still waiting (the read is not « absent »)', what='patient')
+    # the module gives up: nothing removed, nothing restarted
     c.js("window.__ad.abandon('sia/base/a.json')")
-    for _ in range(40):
-        if c.js("document.getElementById('fLimit').hidden"):
+    c.wait(600)
+    c.ok(blobs() == n0 + 1 and c.js("!!window.__ad.readState('sia/base/a.json')"), [blobs() - n0], 'abandon after the request left removes nothing and asks nothing again')
+    # the pause ends: the FRAME retries by itself (one more request), the file arrives, is kept, and `changed` says so
+    for _ in range(60):
+        if 'sia/base/a.json' in (c.js("window.__changed") or []):
             break
         c.wait(250)
-    c.wait(1500)
-    c.ok(c.js("document.getElementById('fLimit').hidden") and blobs() == n0 + 1, [blobs() - n0, c.js("document.getElementById('fLimit').hidden")], 'abandoned: the wait ended, the band went, no second request')
+    c.ok('sia/base/a.json' in c.js("window.__changed") and blobs() == n0 + 2, [c.js("window.__changed"), blobs() - n0], 'the read arrived later (the frame retried once), `watch` was told — one request per path, two sent in all (the refused one and the retry)')
+    n1 = blobs()
+    v = c.js("window.__ad.read('sia/base/a.json', { policy: 'reference', wait: true }).then(r => r && r.value)")
+    c.ok(v == {'zone': 'a'} and blobs() == n1, [v, blobs() - n1], 'kept by its fingerprint: the next read comes from the device, no request')
     c.shot(f'A210_{c.width}_{c.lang}_delivered.png')
 
 

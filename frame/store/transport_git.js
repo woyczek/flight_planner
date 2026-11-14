@@ -114,13 +114,17 @@
     };
   }
 
-  /** Garde d'un appel d'API (SOG-0337, « GitLab 429 sur le téléphone ») : (1) CADENCE : au plus `perMin` requêtes par minute glissante (80 : sous les 100 par minute des offres gratuites), les
-   *  suivantes attendent leur tour ; (2) une LIMITE reconnue (429) n'est ni une erreur ni un recommencement : le transport ATTEND (Retry-After s'il est lisible, sinon 60 s, doublé à chaque fois,
-   *  entre 5 et 300 s) puis REPREND le même appel, trois fois au plus avant de lever l'erreur (err.rateLimited) ; opts.suspectLimit : une réponse illisible (le 429 de GitLab peut venir sans
-   *  en-tête CORS : le navigateur ne dit alors que « réseau ») en plein milieu d'une lecture déjà entamée est traitée de même. Chaque attente est DITE : waiting() { until, secs, status } tant
-   *  qu'elle dure, onLimit() à chaque changement, info (attentes, secondes, dernière limite lue) pour le diagnostic. */
+  /** Garde d'un appel d'API (SOG-0337, « GitLab 429 sur le téléphone » ; SOG-0349) :
+   *  (1) CADENCE : au plus `perMin` requêtes par fenêtre glissante (80 la minute : sous les 100 des offres gratuites) ; les demandes qui attendent leur tour font une FILE À PRIORITÉ : la plus
+   *      haute `opts.priority` d'abord (l'écran en vue avant l'arbre de fond), et à priorité égale la DERNIÈRE demandée d'abord (ce que l'utilisateur regarde maintenant) ;
+   *  (2) une LIMITE reconnue (429) n'est ni une erreur ni un recommencement : la garde se MET EN PAUSE pour toutes les demandes (Retry-After s'il est lisible, sinon 60 s doublé, entre 5 et 300 s : personne
+   *      ne frappe pendant la pause) puis la demande refaite REPREND, trois fois au plus avant de lever l'erreur (err.rateLimited) — `opts.patient` (une lecture de fichier qu'on attend) ne lève jamais :
+   *      elle attend, dite ; opts.suspectLimit : une réponse illisible (le 429 de GitLab peut venir sans en-tête CORS) en plein milieu d'une lecture déjà entamée est traitée de même ;
+   *  (3) `opts.signal` : une demande qui n'est PAS ENCORE PARTIE peut sortir de la file (elle ne prend ni place ni part de la cadence) ; `opts.onStart` est appelé quand elle part vraiment.
+   *  Chaque pause est DITE : waiting() { until, secs, status } tant qu'elle dure, onLimit() à chaque changement, queued() (demandes en file et pause), info (pauses, secondes, dernière limite lue). */
   function guard(call) {
     const stamps = [],
+      queue = [], // { prio, seq, signal, go, stop }
       pacing = {
         perMin: 80,
         windowMs: 60000,
@@ -135,11 +139,14 @@
         waitedS: 0,
         last: null
       };
-    let waiting = null;
+    let pause = null, // { until, secs, status } : la pause de toutes les demandes
+      seq = 0,
+      pump = 0, // la minuterie qui réveille la file
+      endTimer = 0;
     const aborted = () => Object.assign(new Error('aborted'), {
       aborted: true
     });
-    /** Une attente que l'abandon (opts.signal) interrompt : la requête abandonnée ne prend ni sa place dans la file ni une part de la cadence (SOG-0349). */
+    /** Une attente que l'abandon (opts.signal) interrompt. */
     const sleep = (ms, signal) => new Promise((ok, no) => {
       if (signal?.aborted) return no(aborted());
       const t = setTimeout(() => {
@@ -161,17 +168,57 @@
         /* un observateur ne casse pas l'appel */
       }
     };
+    /** La file : donne leur tour, tant que la cadence et la pause le permettent, aux demandes dans l'ordre (priorité, puis la dernière demandée). */
+    const run = () => {
+      clearTimeout(pump);
+      pump = 0;
+      const t = Date.now();
+      while (stamps.length && stamps[0] <= t - pacing.windowMs) stamps.shift();
+      if (pause && pause.until <= t) {
+        pause = null;
+        tell(); // la pause est finie : la bande et l'état le savent tout de suite
+      }
+      while (queue.length && !pause && stamps.length < pacing.perMin) {
+        let b = 0;
+        for (let k = 1; k < queue.length; k++)
+          if (queue[k].prio > queue[b].prio || (queue[k].prio === queue[b].prio && queue[k].seq > queue[b].seq)) b = k;
+        const w = queue.splice(b, 1)[0];
+        stamps.push(Date.now());
+        w.go();
+      }
+      if (queue.length) {
+        const wait = pause ? pause.until - t : stamps[0] + pacing.windowMs - t;
+        pump = setTimeout(run, Math.max(5, Math.min(5000, wait + 5)));
+      }
+    };
+    /** Une place dans la file : résolue quand la demande peut partir (sa part de cadence est prise à cet instant), rejetée (aborted) si elle est abandonnée avant. */
+    const acquire = opts => new Promise((ok, no) => {
+      if (opts.signal?.aborted) return no(aborted());
+      const w = {
+        prio: Number(opts.priority) || 1,
+        seq: ++seq,
+        signal: opts.signal,
+        go: () => {
+          opts.signal?.removeEventListener('abort', w.stop);
+          ok();
+        },
+        stop: () => {
+          const k = queue.indexOf(w);
+          if (k >= 0) queue.splice(k, 1);
+          no(aborted());
+        }
+      };
+      opts.signal?.addEventListener('abort', w.stop, {
+        once: true
+      });
+      queue.push(w);
+      run();
+    });
     async function guarded(url, opts = {}) {
       for (let attempt = 0;; attempt++) {
-        for (;;) { // la cadence
-          const t = Date.now();
-          while (stamps.length && stamps[0] <= t - pacing.windowMs) stamps.shift();
-          if (stamps.length < pacing.perMin) break;
-          await sleep(Math.min(5000, stamps[0] + pacing.windowMs - t + 5), opts.signal);
-        }
-        if (opts.signal?.aborted) throw aborted();
-        stamps.push(Date.now());
+        await acquire(opts);
         try {
+          opts.onStart?.();
           return await call(url, opts);
         } catch (e) {
           if (!(e?.rateLimited || (opts.suspectLimit && e?.unreachable))) throw e;
@@ -185,23 +232,28 @@
             limit: e.limitInfo?.limit ?? null
           };
           if (attempt >= pacing.retries && !opts.patient)
-            throw e; // une lecture PATIENTE (celle d'un fichier qu'on attend) ne rend jamais « absent » : elle attend, dite, jusqu'à ce qu'on l'abandonne
+            throw e; // une lecture PATIENTE ne rend jamais « absent » à cause d'une limite : elle attend, dite
           const secs = Math.min(pacing.maxWait, Math.max(pacing.minWait, Math.ceil(e.retryAfter ?? pacing.defWait * 2 ** Math.min(
-            attempt, 6))));
-          waiting = {
-            until: Date.now() + secs * 1000,
-            secs,
-            status: e.status || 0
-          };
-          info.waits++;
-          info.waitedS += secs;
-          tell();
-          try {
-            await sleep(secs * 1000, opts.signal);
-          } finally {
-            waiting = null;
+              attempt, 6)))),
+            until = Date.now() + secs * 1000;
+          if (!pause || until > pause
+            .until) { // la pause est celle de TOUTES les demandes ; une pause déjà plus longue n'est pas raccourcie
+            if (!pause) info.waits++;
+            info.waitedS += pause ? Math.max(0, Math.ceil((until - pause.until) / 1000)) : secs;
+            pause = {
+              until,
+              secs,
+              status: e.status || 0
+            };
+            clearTimeout(endTimer);
+            endTimer = setTimeout(() => {
+              if (pause && pause.until <= Date.now()) pause = null;
+              tell();
+              run();
+            }, secs * 1000 + 5);
             tell();
           }
+          await sleep(Math.max(0, pause.until - Date.now()), opts.signal);
         }
       }
     }
@@ -211,8 +263,10 @@
       info,
       sleep,
       onLimit: null,
-      /** L'attente en cours : { until, secs, status } ou null. */
-      waiting: () => waiting && waiting.until > Date.now() ? waiting : null
+      /** La pause en cours : { until, secs, status } ou null. */
+      waiting: () => pause && pause.until > Date.now() ? pause : null,
+      /** Les demandes qui attendent leur tour (cadence ou pause). */
+      queued: () => queue.length
     };
     return api;
   }

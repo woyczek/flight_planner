@@ -624,7 +624,8 @@
    *  première demande (wait : attendu, sinon null tout de suite et la valeur arrive par watch). */
   async function read(path, {
     policy = 'document',
-    wait = false
+    wait = false,
+    detail = false
   } = {}) {
     let e = await local(path);
     if (e?.deleted) return null;
@@ -638,9 +639,48 @@
       const job = fetchOne(path, policy).then(r => {
         if (!r && policy === 'reference') absent.set(path, Date.now());
         return r;
-      }).catch(() => null);
+      });
+      const m = readMeta.get(path);
+      job.catch(() => {}); // une lecture que personne n'attend (ou abandonnée) qui échoue : rien n'est levé dans le vide
       if (!wait && !old) return null;
-      e = await job;
+      if (m) m.waiters++;
+      try {
+        // `detail` (SOG-0349) : « illisible, reprise dans n s » ≠ « absent » — une lecture retenue plus de DETAIL_MS par la limite du dépôt ou par la file le DIT au lieu de bloquer ; elle continue, le cadre la reprend,
+        // la valeur arrive plus tard (watch). Sans `detail` : comme avant, null seulement pour un fichier absent ou une lecture qui a échoué.
+        if (detail && !old) {
+          const quick = await Promise.race([job.then(r => ({
+            r
+          }), err => ({
+            err
+          })), new Promise(res => setTimeout(() => res(null), DETAIL_MS))]);
+          if (quick === null) {
+            const st = readState(path);
+            return {
+              unreadable: true,
+              why: st?.state === 'limit' ? 'limit' : 'queued',
+              ...(st?.retryIn ? {
+                retryIn: st.retryIn
+              } : {})
+            };
+          }
+          if (quick.err) return quick.err?.offline ? {
+            unreadable: true,
+            why: 'offline'
+          } : quick.err?.aborted ? null : {
+            unreadable: true,
+            why: 'error',
+            ...(quick.err?.rateLimited ? {
+              retryIn: 60
+            } : {})
+          };
+          e = quick.r;
+        } else e = await job.catch(() => null);
+      } finally {
+        if (m) {
+          if (m.gone > 0) m.gone--;
+          else m.waiters--;
+        }
+      }
       if (!e && !old) return null;
       e ||= old;
     }
@@ -962,11 +1002,32 @@
     return buf;
   }
 
-  const aborters = new Map(); // chemin → AbortController de la lecture en cours (SOG-0349)
+  /** SOG-0349 : l'état de chaque lecture de fichier en cours, PARTAGÉE par chemin (un seul appel réseau par chemin, tous les demandeurs sur la même promesse) : { ctl, waiters (ceux qui l'attendent),
+   *  gone (ceux qui ont cessé d'attendre : `abandon`), started (la requête est partie), why }. */
+  const readMeta = new Map();
+  /** L'état d'une lecture en cours de ce chemin, ou null (rien en cours) : { state: 'queued' | 'reading' | 'limit', retryIn? } — « illisible, reprise dans n s » : la limite du dépôt la retient, le cadre la reprend seul. */
+  function readState(path) {
+    const m = readMeta.get(String(path || ''));
+    if (!m) return null;
+    const w = cfg.transport?.limit?.waiting?.();
+    return w ? {
+      state: 'limit',
+      retryIn: Math.max(1, Math.ceil((w.until - Date.now()) / 1000))
+    } : {
+      state: m.started ? 'reading' : 'queued'
+    };
+  }
+  const DETAIL_MS = 1500; // une lecture « avec détail » qui attend plus que cela dit pourquoi (limite, file) sans cesser d'être lue
   function fetchOne(path, policy) {
     if (fetching.has(path)) return fetching.get(path);
     const startedAt = Date.now(),
       ctl = new AbortController(),
+      meta = {
+        ctl,
+        waiters: 0,
+        gone: 0,
+        started: false
+      },
       job = (async () => {
         let T = cfg.transport,
           tree;
@@ -991,10 +1052,15 @@
         }
         let rev = tree[path];
         if (!rev) return null;
-        // une lecture PATIENTE et abandonnable (SOG-0349) : une limite de requêtes de l'hôte la fait attendre (dit par la bande), jamais rendre « absent » ; l'abandon l'annule sans qu'elle prenne sa place dans la file
+        // une lecture PATIENTE (SOG-0349) : une limite de requêtes de l'hôte la fait attendre (dite par la bande), jamais rendre « absent » ; PRIORITAIRE sur l'arbre de fond (ce qui est demandé en dernier,
+        // l'écran en vue, passe d'abord) ; elle ne sort de la file que si plus personne ne l'attend ET qu'elle n'est pas partie
         let text = await T.read(path, rev, {
           signal: ctl.signal,
-          patient: true
+          patient: true,
+          priority: 2,
+          onStart: () => {
+            meta.started = true;
+          }
         });
         // lecture abandonnée entre-temps (abandon) : rendue à qui l'attend encore, sans rien écrire ni annoncer — une
         // révision plus ancienne arrivée tard n'écrase jamais celle d'une lecture plus récente (Sécurisation, ligne 129)
@@ -1022,7 +1088,11 @@
             rev = moved;
             text = await T.read(path, rev, {
               signal: ctl.signal,
-              patient: true
+              patient: true,
+              priority: 2,
+              onStart: () => {
+                meta.started = true;
+              }
             });
           }
         }
@@ -1054,19 +1124,27 @@
         throw e;
       }).finally(() => fetching.get(path) === job && fetching.delete(path)); // abandonnée entre-temps : la suivante n'est pas touchée
     fetching.set(path, job);
-    aborters.set(path, ctl);
-    job.catch(() => {}).finally(() => aborters.get(path) === ctl && aborters.delete(path));
+    readMeta.set(path, meta);
+    job.catch(() => {}).finally(() => readMeta.get(path) === meta && readMeta.delete(path));
     return job;
   }
-  /** Oublie la lecture partagée en cours de ce chemin (rien n'est annulé sur le réseau) : la demande suivante la relance
-   *  au lieu d'attendre la même promesse ; l'ancienne, si elle finit, n'écrit rien dans le cache. Pour un lecteur qui a
-   *  cessé d'attendre (borne d'aerodb, 31 oct. 2026). */
+  /** Un lecteur cesse d'attendre cette lecture (la borne d'un module, SOG-0349) : elle n'est PAS retirée ni relancée — une seule lecture par chemin, elle arrive plus tard, est gardée, `changed` le dit. Seule une
+   *  demande que plus personne n'attend ET qui n'est pas encore partie sort de la file. */
   const abandon = path => {
     path = String(path || '');
-    fetching.delete(path);
-    aborters.get(path)
-      ?.abort(); // SOG-0349 : la requête abandonnée est annulée (en file ou en vol) — elle ne compte plus dans la cadence et ne se refait pas deux fois
-    aborters.delete(path);
+    const m = readMeta.get(path);
+    if (!m) return;
+    // SOG-0349 : un module qui cesse d'attendre NE RETIRE RIEN et NE RELANCE RIEN : la lecture continue (une seule par chemin), arrive plus tard, est gardée, et l'événement `changed` le dit ;
+    // seule une demande que plus personne n'attend ET qui n'est pas encore partie sort de la file (elle ne prend ni place ni part de la cadence)
+    if (m.waiters > 0) {
+      m.waiters--;
+      m.gone++;
+    }
+    if (m.waiters <= 0 && !m.started) {
+      fetching.delete(path);
+      readMeta.delete(path);
+      m.ctl.abort();
+    }
   };
 
   // ---------------------------------------------------------------- source des références (transport local)
@@ -2066,6 +2144,7 @@
       cached,
       evict,
       abandon,
+      readState,
       revalidate,
       put: (path, value, opts) => (guard(path), put(path, value, {
         ...(opts || {}),

@@ -182,7 +182,9 @@
         return (await call(`${repo}/git/blobs/${sha}`, {
           accept: 'application/vnd.github.raw',
           signal: o.signal,
-          patient: o.patient
+          patient: o.patient,
+          priority: o.priority,
+          onStart: o.onStart
         })).text();
       },
       /** Octets d'un fichier (une image : le logo de la compagnie), sans décodage. */
@@ -190,7 +192,9 @@
         return (await call(`${repo}/git/blobs/${sha}`, {
           accept: 'application/vnd.github.raw',
           signal: o.signal,
-          patient: o.patient
+          patient: o.patient,
+          priority: o.priority,
+          onStart: o.onStart
         })).arrayBuffer();
       },
       /** Un commit pour tout le lot [{ path, text (null : suppression) }] sur parent ; nouvelle tête. remote : arbre
