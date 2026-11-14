@@ -13,12 +13,16 @@ dossier est une entrée non fiable : taille bornée, JSON seulement, version, cl
 import datetime as dt
 import hashlib
 import json
+import math
 import os
+import re
 
 VERSION = 1
 ENABLED = True                    # les essais du CONTEXTE (K238) le coupent : sans cela le second appel ne demanderait même pas le contexte
 MAX_FILES = 64
 MAX_BYTES = 4_000_000
+MAX_DEPTH = 32                     # un résultat honnête est peu imbriqué ; un fichier plus profond est refusé (audit 205)
+ENTRY = re.compile(r'[0-9a-f]{64}\.(?:json|tmp)')      # les seuls noms que ce dossier écrit : prune() ne touche à aucun autre fichier
 FOLDER = ('local', 'route-cache')
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _STAMP = {}
@@ -76,6 +80,26 @@ def until_of(res, now):
     return _iso((now + dt.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0))
 
 
+def _sound(doc):
+    """Le document est-il sain ? profondeur ≤ MAX_DEPTH et AUCUN nombre non fini (NaN, Infinity, 1e999 : un fichier compilé n'en porte jamais ; renvoyé au navigateur il casserait le JSON). Parcours itératif : jamais de récursion sur un fichier hostile."""
+    stack = [(doc, 1)]
+    while stack:
+        v, d = stack.pop()
+        if d > MAX_DEPTH:
+            return False
+        if isinstance(v, float) and not math.isfinite(v):
+            return False
+        if isinstance(v, dict):
+            stack.extend((x, d + 1) for x in v.values())
+        elif isinstance(v, list):
+            stack.extend((x, d + 1) for x in v)
+    return True
+
+
+def _refuse_constant(name):
+    raise ValueError('nombre non fini : ' + name)
+
+
 def load(data, k, sig, now=None):
     """(résultat, { computedAt, until }) gardé pour cette demande, ou None : fichier absent, trop gros, illisible, d'une autre version, d'une autre empreinte, échu."""
     if not ENABLED:
@@ -86,10 +110,10 @@ def load(data, k, sig, now=None):
         if os.path.getsize(path) > MAX_BYTES:
             return None
         with open(path, encoding='utf-8') as f:
-            doc = json.load(f)
-    except (OSError, ValueError):
+            doc = json.load(f, parse_constant=_refuse_constant)
+    except (OSError, ValueError, RecursionError, MemoryError):          # RecursionError : un fichier très imbriqué (audit 205) est un fichier illisible, le calcul est refait
         return None
-    if not isinstance(doc, dict) or doc.get('version') != VERSION or doc.get('key') != k or doc.get('sig') != sig or not isinstance(doc.get('result'), dict) or doc['result'].get('ok') is not True:
+    if not _sound(doc) or not isinstance(doc, dict) or doc.get('version') != VERSION or doc.get('key') != k or doc.get('sig') != sig or not isinstance(doc.get('result'), dict) or doc['result'].get('ok') is not True:
         return None
     at, until = doc.get('computedAt'), doc.get('until')
     if not isinstance(at, str) or (until is not None and (not isinstance(until, str) or until <= _iso(now))):
@@ -126,7 +150,7 @@ def store(data, k, sig, res, now=None):
 def prune(d):
     """Au plus MAX_FILES entrées : les moins récemment utilisées partent ; les restes d'écriture (.tmp) aussi."""
     try:
-        files = sorted((e for e in os.scandir(d) if e.is_file()), key=lambda e: e.stat().st_mtime)
+        files = sorted((e for e in os.scandir(d) if e.is_file(follow_symlinks=False) and ENTRY.fullmatch(e.name)), key=lambda e: e.stat().st_mtime)
     except OSError:
         return
     for e in files:

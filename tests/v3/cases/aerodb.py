@@ -9643,17 +9643,30 @@ def k266(c):
             for label, body in (('garbage', b'not json'), ('array', b'[1,2]'), ('other key', json.dumps({'version': 1, 'key': 'x', 'sig': 'S2', 'computedAt': 'a', 'until': None, 'result': {'ok': True, 'evil': 1}}).encode()),
                                 ('other signature', json.dumps({'version': 1, 'key': kk, 'sig': 'OLD', 'computedAt': 'a', 'until': None, 'result': {'ok': True, 'evil': 1}}).encode()),
                                 ('not ok', json.dumps({'version': 1, 'key': kk, 'sig': 'S2', 'computedAt': 'a', 'until': None, 'result': {'ok': False, 'evil': 1}}).encode()),
-                                ('too big', b'{"a":"' + b'x' * (RC.MAX_BYTES + 10) + b'"}')):
+                                ('too big', b'{"a":"' + b'x' * (RC.MAX_BYTES + 10) + b'"}'),
+                                ('very nested (audit 205)', b'[' * 200000 + b']' * 200000),
+                                ('deeper than a result is', json.dumps({'version': 1, 'key': kk, 'sig': 'S2', 'computedAt': 'a', 'until': None, 'result': {'ok': True, 'evil': 1, 'deep': json.loads('[' * 40 + ']' * 40)}}).encode()),
+                                ('NaN (audit 205)', json.dumps({'version': 1, 'key': kk, 'sig': 'S2', 'computedAt': 'a', 'until': None, 'result': {'ok': True, 'evil': float('nan')}}).encode()),
+                                ('Infinity', b'{"version":1,"key":"' + kk.encode() + b'","sig":"S2","computedAt":"a","until":null,"result":{"ok":true,"evil":-Infinity}}'),
+                                ('1e999', b'{"version":1,"key":"' + kk.encode() + b'","sig":"S2","computedAt":"a","until":null,"result":{"ok":true,"evil":1e999}}')):
                 p.write_bytes(body)
                 n = len(calls)
                 r = R.compute(job(), dict(ok), ctx)
                 seen.append((label, len(calls) - n, 'evil' in r))
-            c.eq(seen, [(x, 1, False) for x in ('garbage', 'array', 'other key', 'other signature', 'not ok', 'too big')], 'a file of the folder that is garbage, not a dict, of another key or signature, not ok or too big is ignored (the search is redone), its content never returned', what='hostile')
+            c.eq(seen, [(x, 1, False) for x in ('garbage', 'array', 'other key', 'other signature', 'not ok', 'too big', 'very nested (audit 205)', 'deeper than a result is', 'NaN (audit 205)', 'Infinity', '1e999')], 'a file of the folder that is garbage, not a dict, of another key or signature, not ok or too big is ignored (the search is redone), its content never returned', what='hostile')
+            # the pruning touches nothing but the entries this folder writes (audit 205): other files and folders stay
+            keep = data / 'local' / 'route-cache'
+            (keep / 'notes.txt').write_text('mine', encoding='utf-8')
+            (keep / 'x.json').write_text('{}', encoding='utf-8')
+            (keep / ('A' * 64 + '.json')).write_text('{}', encoding='utf-8')
+            (keep / 'sub').mkdir(exist_ok=True)
             # bounded
             for i in range(RC.MAX_FILES + 8):
                 R.compute(job(), dict(req, fl=100 + i), ctx)
             files = [x for x in (data / 'local' / 'route-cache').iterdir()]
-            c.ok(len(files) <= RC.MAX_FILES and not [x for x in files if x.name.endswith('.tmp')], str(len(files)), f'at most {RC.MAX_FILES} kept (the least recently used leave), no leftover of a write')
+            mine = [x for x in files if RC.ENTRY.fullmatch(x.name)]
+            c.ok(len(mine) <= RC.MAX_FILES and not [x for x in files if x.name.endswith('.tmp')], str(len(mine)), f'at most {RC.MAX_FILES} kept (the least recently used leave), no leftover of a write')
+            c.eq(sorted(x.name for x in files if not RC.ENTRY.fullmatch(x.name)), sorted(['notes.txt', 'x.json', 'A' * 64 + '.json', 'sub']), 'the pruning leaves alone every file that is not one of its own entries (a name that is not 64 lowercase hex digits, a folder)', what='foreign files')
         finally:
             G['_compute_fresh'], RC.signature = was
 
