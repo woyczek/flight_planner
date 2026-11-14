@@ -9544,3 +9544,38 @@ def l138(c):
       return !s.dispatchEvent(new WheelEvent('wheel', { deltaY: -240, clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true, cancelable: true })) }""")
     c.ok(on and vb() != v0, [on, vb(), v0], 'on the map the wheel still zooms it (and is taken)')
     c.check_errors()
+
+
+@case('L139', 'Données: the sheet of a country says, in ONE calm line, the size alert of the builder (SOG-0358, AeroDB 19e48c4c9): a published file above half of the frame’s read cap — the sentence of the launcher as it is, bounded and escaped, no gesture, no alert dot, nothing when `big` is empty or absent',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0358 / audit 214 (the ergonomist, 14 Nov 13 h 12): `base/build` answers `big: [{ file, bytes, cap, message }]`, `readCap` and `zones[zone].big`; the journal of the launcher (base/last) keeps that result, so the line survives a reload; the page shows the message of the zone it concerns on its sheet, as plain text (an untrusted launcher string: bounded, escaped), without a button and without changing the tone of the country')
+def l139(c):
+    msg = 'zone gb, espaces : 14,5 Mo — plus de la moitié du plafond de lecture du cadre (32 Mo) ; à découper <b>x</b>'
+    big = [{'file': 'espaces', 'bytes': 15200000, 'cap': 33554432, 'message': msg}]
+    world = _l97_world()
+    world['last'] = {'ok': True, 'results': {'base/build': _l103_entry({'ok': True, 'built': ['gb'], 'failed': [], 'commits': [], 'readCap': 33554432, 'big': big, 'zones': {'gb': {'big': big}, 'fr': {'big': []}}}, 30)}}
+    st, _x4 = _l89_open(c, world, verbs=('base/pickup', 'base/cycle', 'base/last'), last_results=lambda a: world['last'])
+    c.wait(1500)
+    tone0 = c.js("document.querySelector('[data-wmap] path[data-zone=gb]').dataset.tone")
+    _l89_sheet(c, 'gb')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-big]')", timeout=15000, what='the size line on the sheet of the country')
+    line = c.js("(e => [e.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim(), e.querySelectorAll('b, a, button').length, e.classList.contains('f-muted'), !!e.querySelector('[data-attn]')])(document.querySelector('[data-sheet=gb] [data-sheet-big]'))")
+    c.eq(line, [msg, 0, True, False], 'the sentence of the launcher as it is (the markup in it stays text), calm, no link, no button, no alert dot', what='line')
+    c.eq(c.count('[data-sheet=gb] [data-sheet-big]'), 1, 'one line (one file above the half)', what='one')
+    c.eq(c.js("document.querySelector('[data-wmap] path[data-zone=gb]').dataset.tone"), tone0, 'the tone of the country in the map does not change: no alert in the list', what='tone')
+    # a country with an empty `big`, and one the build did not mention: nothing
+    _l89_sheet(c, 'fr')
+    c.eq(c.count('[data-sheet=fr] [data-sheet-big]'), 0, 'an empty `big`: nothing', what='fr')
+    # the file is smaller after another build: the next journal has no `big`, the line is gone after a reload
+    world['last'] = {'ok': True, 'results': {'base/build': _l103_entry({'ok': True, 'built': ['gb'], 'failed': [], 'commits': []}, 5)}}
+    _l98_fresh(c, st)
+    _l89_sheet(c, 'gb')
+    c.eq(c.count('[data-sheet=gb] [data-sheet-big]'), 0, 'a build without `big`: nothing', what='gone')
+    # hostile values are bounded: a huge message, a message that is not text, bytes that are not numbers
+    world['last'] = {'ok': True, 'results': {'base/build': _l103_entry({'ok': True, 'built': ['gb'], 'failed': [], 'commits': [], 'zones': {'gb': {'big': [{'file': 'x' * 500, 'bytes': 'lots', 'cap': None, 'message': 'y' * 5000}, {'file': 'ok', 'message': {'a': 1}}, 'string', None]}}}, 5)}}
+    _l98_fresh(c, st)
+    _l89_sheet(c, 'gb')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-big]')", timeout=15000, what='the bounded line')
+    n = c.js("[...document.querySelectorAll('[data-sheet=gb] [data-sheet-big]')].map(e => e.textContent.length)")
+    c.ok(len(n) == 1 and n[0] <= 400, n, 'a hostile launcher: only the readable entry is said, bounded to 400 characters')
+    c.check_errors()

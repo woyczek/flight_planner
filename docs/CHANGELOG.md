@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: the sheet of a country says when a published file is getting too big for the frame** — one calm line with the builder's sentence (« zone us, espaces : 14,5 Mo — plus de la moitié du plafond de lecture du cadre (32 Mo) ; à découper »), no gesture, no alert in the list (SOG-0358).
 - **The read cap is 32 MiB; a verdict read from the repository says « du téléphone »** (SOG-0358, SOG-0357): on a workstation with a launcher, a verdict whose winner is the repository file carries its origin; noreg A38, A212
 - **Base build: files that pass half of the frame's read cap are said** (SOG-0358) — the build of a zone reports each file above half of the cap the frame sets on file reads (read in the frame's own declaration): « zone us, espaces : 14,5 Mo — plus de la moitié du plafond de lecture du cadre ; à découper ». Launcher Python: restart the launcher. Case K276.
 - **ONE cap (48 MiB) for every file read of the frame, in the three transports** (SOG-0358): GitHub, GitLab and the launcher; a module can only lower it; a file over the cap is « unreadable (toobig) », never « absent »; noreg A38

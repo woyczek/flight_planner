@@ -224,6 +224,12 @@ export function threadHtml(zone) {
   return `<div class="d-thread" data-sheet-thread data-thread-state="${stateOf(t)}"${t.journal ? ' data-thread-from="journal"' : ''}><p class="d-thr-h"><b>${esc(tt(TX.zx.thTitle))}</b></p>${t.steps.length ? stepsHtml(t) : ''}
     <p class="${b.level === 'ok' ? 'f-ok' : b.level === 'err' ? 'f-warn' : 'f-muted'}" data-thread-bilan data-level="${b.level}">${esc(b.text)}</p></div>`;
 }
+/** L'alerte de taille du constructeur sur la fiche d'un pays (SOG-0358) : UNE ligne calme par fichier publié au-delà de la moitié du plafond de lecture du cadre, la phrase du lanceur telle quelle (texte seulement : bornée par le modèle, échappée ici), sans geste
+ *  et sans point d'alerte ; '' sans alerte (le journal du lanceur survit au rechargement, la ligne aussi). */
+export function bigHtml(zone) {
+  const rows = S.cw?.last?.data ? M.bigOf(S.cw.last.data, zone) : [];
+  return rows.map(b => `<p class="f-muted" data-sheet-big>${esc(b.message)}</p>`).join('');
+}
 /** Le geste de la fiche (ou un travail de la base qui compte ce pays) est-il en cours ? */
 export const progressOn = zone => S.zop?.zone === zone || (!!S.run && S.run.set === 'base' && S.run.verb !== 'purge' && !!S.ids?.includes(
   zone));

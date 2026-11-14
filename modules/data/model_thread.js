@@ -154,6 +154,30 @@ function mentions(zone, e, out) {
     .failed, out.taken, out.missing, out.manual
   ].some(a => Array.isArray(a) && a.some(x => x?.zone === zone));
 }
+/** L'alerte de taille du constructeur pour une zone (SOG-0358, AeroDB 19e48c4c9) d'après le journal du lanceur (lastOf) : la construction la plus récente qui parle de cette zone (`base/build`, ou `base/update` dont le résultat est celui de la construction)
+ *  et ce que dit `result.zones[zone].big` — [{ file, bytes, cap, message }] : des fichiers publiés au-delà de la moitié du plafond de lecture du cadre. Entrée non fiable : au plus 5 rangées, des phrases bornées à 300 caractères (la phrase du
+ *  lanceur telle quelle, la page l'échappe), un nom borné à 120 ; une rangée sans phrase lisible est écartée. [] sans alerte, sans zone mentionnée, ou si la plus récente construction n'en a plus. */
+export function bigOf(last, zone) {
+  if (!last || !ZONE.test(zone || '')) return [];
+  let best = null;
+  for (const verb of ['base/build', 'base/update']) {
+    const e = last[verb],
+      zs = e?.result?.zones;
+    if (!e || zs === null || typeof zs !== 'object' || !Object.hasOwn(zs, zone)) continue;
+    if (!best || e.ended > best.ended) best = {
+      ended: e.ended,
+      big: zs[zone]?.big
+    };
+  }
+  if (!best || !Array.isArray(best.big)) return [];
+  return best.big.slice(0, 5).filter(b => b !== null && typeof b === 'object' && typeof b.message === 'string' && b.message.trim()).map(b =>
+    ({
+      file: typeof b.file === 'string' ? b.file.slice(0, 120) : '',
+      bytes: Number.isFinite(b.bytes) && b.bytes >= 0 && b.bytes < 1e12 ? Math.round(b.bytes) : 0,
+      cap: Number.isFinite(b.cap) && b.cap >= 0 && b.cap < 1e12 ? Math.round(b.cap) : 0,
+      message: b.message.trim().slice(0, 300)
+    }));
+}
 /** Le fil de la dernière opération d'une zone d'après le journal du lanceur (lastOf) : { at (la fin la plus récente, ms), steps: [{ k, st ('done' | 'same' | 'fail' | 'stop' | 'todo'), at, v (le verdict de stepVerdict : failed, error, missing, kind) }] } ; null sans opération de cette zone.
  *  Une opération est la dernière ; celles qui la précèdent dans l'ordre des étapes (prise, téléchargement, construction) en font partie si elles la précèdent de 30 minutes au plus ; une étape en échec ou arrêtée avant la construction laisse la construction « pas encore faite ». */
 export function lastThread(last, zone) {
