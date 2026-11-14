@@ -8485,11 +8485,15 @@ def a211(c):
       out.histBig = w(P, { ...ok, items: { 'SOG-0301': { history: Array.from({ length: 21 }, () => ({ verdict: 'ok' })) } } });
       out.tooMany = w(P, { ...ok, items: Object.fromEntries(Array.from({ length: 1001 }, (_, i) => ['SOG-' + String(i).padStart(4, '0'), { verdict: 'ok' }])) });
       out.keyOrder = w(P, { ...ok, items: { 'SOG-0301': { at: '2026-11-14T09:00:00Z', verdict: 'ok' } } });
+      out.updated = w(P, { ...ok, updated: 'hier' });
+      out.bytes = w(P, { ...ok, items: { 'SOG-0301': { verdict: 'ko', comment: 'é'.repeat(1000) }, ...Object.fromEntries(Array.from({ length: 480 }, (_, i) => ['SOG-' + String(1000 + i), { verdict: 'ko', comment: 'é'.repeat(1000) }])) } });
+      const fut = RV.readDoc(JSON.stringify({ schema: 'sog-recette/1', items: { 'SOG-0301': { verdict: 'ko', comment: 'x', at: '2099-01-01T00:00:00Z', history: [{ verdict: 'ok', at: '2099-01-01T00:00:00Z' }] } } })).items['SOG-0301'];
+      out.future = [fut.at <= new Date(Date.now() + 86400000 + 5000).toISOString(), fut.history[0].at <= new Date(Date.now() + 86400000 + 5000).toISOString()];
       out.read = Object.keys(RV.readDoc(JSON.stringify({ schema: 'sog-recette/1', items: { 'SOG-0301': { verdict: 'ok' }, 'SOG-9': { verdict: 'ok' }, '__proto__': { verdict: 'ok' } } })).items);
       out.readHuge = Object.keys(RV.readDoc('x'.repeat(1600000)).items).length;
       return out }""", url)
     c.eq(r, {'good': 'ok', 'otherTri': 'path', 'otherFile': 'path', 'signalements': 'path', 'noTri': 'path', 'schema': 'shape', 'extra': 'shape', 'badId': 'entry', 'badVerdict': 'entry', 'koBare': 'entry', 'longComment': 'entry',
-             'histBig': 'entry', 'tooMany': 'size', 'keyOrder': 'ok', 'read': ['SOG-0301'], 'readHuge': 0},
+             'histBig': 'entry', 'tooMany': 'size', 'keyOrder': 'ok', 'updated': 'shape', 'bytes': 'size', 'future': [True, True], 'read': ['SOG-0301'], 'readHuge': 0},
          'the adapter refuses outside the file of the device and outside the bounds (foreign trigram, another file, bad shape, an entry not to the rules, size), and the reading keeps only what is to the rules', what='bounds')
     # without a trigram: nothing can leave, the sheet says « pas encore envoyé »
     forget(c.page, ['device/identity.json', key, 'device/recette.json'], base=c.base)   # the device forgets its trigram (and what it kept)

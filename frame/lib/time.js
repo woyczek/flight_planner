@@ -82,7 +82,7 @@ const MOMENT = {
 export function fmtMoment(iso, lang = 'fr', now = Date.now()) {
   const d = dateOf(iso);
   if (!d) return '';
-  const m = MOMENT[lang] || MOMENT.fr,
+  const m = Object.hasOwn(MOMENT, lang) ? MOMENT[lang] : MOMENT.fr,
     n = new Date(now),
     h = m.hour(two(d.getHours()), two(d.getMinutes()));
   if (d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()) return m.today(h);

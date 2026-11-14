@@ -18,6 +18,8 @@ export const LIMITS = {
 export const READ_MAX = 1500000;
 export const pathOf = tri => /^[A-Za-z0-9]{2,8}$/.test(tri || '') ? `pilot/${tri}/recette/verdicts.json` : '';
 
+/** La taille d'un texte en OCTETS (UTF-8), pas en caractères : les bornes de taille se comptent ainsi. */
+const bytes = t => new TextEncoder().encode(String(t)).length;
 /** Un texte : sans caractère de commande, rogné, borné ; '' si ce n'est pas un texte. */
 export const text = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '';
 
@@ -67,7 +69,7 @@ export function readDoc(raw) {
   let d = raw;
   try {
     if (typeof raw === 'string') {
-      if (raw.length > READ_MAX) return {
+      if (bytes(raw) > READ_MAX) return {
         items: {},
         updated: ''
       };
@@ -83,8 +85,22 @@ export function readDoc(raw) {
     items: {},
     updated: ''
   };
+  // l'heure d'un verdict lu d'un fichier que tout pilote peut écrire est BORNÉE à maintenant + 24 h : une entrée datée de 2099 ne l'emporte jamais sur un vrai verdict (« le plus récent » se départage par l'heure)
+  const cap = new Date(Date.now() + 864e5).toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    cut = e => e && e.at && e.at > cap ? {
+      ...e,
+      at: cap
+    } : e,
+    items = cleanMap(d.items);
+  for (const k of Object.keys(items)) {
+    const e = cut(items[k]);
+    items[k] = e.history ? {
+      ...e,
+      history: e.history.map(cut)
+    } : e;
+  }
   return {
-    items: cleanMap(d.items),
+    items,
     updated: typeof d.updated === 'string' && AT.test(d.updated) ? d.updated : ''
   };
 }
@@ -96,7 +112,7 @@ export function docOf(items, nowIso) {
       updated: AT.test(nowIso || '') ? nowIso : new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
       items: Object.fromEntries(Object.keys(clean).sort().map(k => [k, clean[k]]))
     };
-  return JSON.stringify(doc).length <= LIMITS.doc ? doc : null;
+  return bytes(JSON.stringify(doc)) <= LIMITS.doc ? doc : null;
 }
 /** JSON à clés triées : de quoi comparer deux entrées sans compter sur l'ordre de leurs clés. */
 const canon = v => Array.isArray(v) ? `[${v.map(canon).join(',')}]` : v && typeof v === 'object' ? `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${canon(v[k])}`).join(',')}}` : JSON.stringify(v);
@@ -121,7 +137,8 @@ export function checkWrite(path, value, tri) {
     ok: false,
     why: 'shape'
   };
-  if (Object.keys(doc).some(k => !['schema', 'updated', 'items'].includes(k))) return {
+  if (Object.keys(doc).some(k => !['schema', 'updated', 'items'].includes(k)) || ('updated' in doc && !(typeof doc.updated === 'string' &&
+      AT.test(doc.updated)))) return {
     ok: false,
     why: 'shape'
   };
@@ -138,7 +155,7 @@ export function checkWrite(path, value, tri) {
       why: 'entry'
     };
   }
-  return JSON.stringify(doc).length <= LIMITS.doc ? {
+  return bytes(JSON.stringify(doc)) <= LIMITS.doc ? {
     ok: true
   } : {
     ok: false,
