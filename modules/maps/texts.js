@@ -16,6 +16,11 @@ export const TX = {
   ],
   // trois états de la base, jamais confondus : en cours de chargement, accès aux données non réglé sur cet appareil (elle n'est
   // pas accessible d'ici), non publiée (l'accès marche, rien n'est publié : noBase)
+  reading: ['Lecture de {n} zone(s)…', 'Reading {n} zone(s)…', '{n} Zone(n) werden gelesen…', 'Leyendo {n} zona(s)…'],
+  readFailed: ['{n} zone(s) n’ont pas pu être lues : nouvelle tentative dans {s} s',
+    '{n} zone(s) could not be read: trying again in {s} s', '{n} Zone(n) konnten nicht gelesen werden: neuer Versuch in {s} s',
+    '{n} zona(s) no se pudieron leer: nuevo intento en {s} s'
+  ],
   loading: ['Base aéronautique en cours de chargement{z}…', 'Aeronautical database loading{z}…',
     'Luftfahrtdatenbank wird geladen{z}…', 'Base aeronáutica cargándose{z}…'
   ],

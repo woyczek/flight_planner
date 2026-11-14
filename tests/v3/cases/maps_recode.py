@@ -7938,3 +7938,39 @@ def d237(c):
     n1 = c.js("() => (window.__mp.S.data.data.aerodromes || []).length")
     c.ok(n1 >= n0 and n0 > 0, f'{n1} aerodromes after, {n0} before', 'a read that fails does not empty the aerodromes the Map showed')
 
+
+@case('D238', 'A slow or held read of the base (AeroDb.readStatus): the answer given while zones are pending is PARTIAL — it adds to what the Map shows and never replaces it; a discreet line says « n zones could not be read: trying again in s s » and goes when all is read; the Map repaints at the base’s change without a gesture; unticking then ticking « Around the flight only » empties nothing', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0349 (BLOCKING on the phone: « après avoir coché / décoché « Autour du vol », la Carte finit avec zéro donnée »; the ergonomist: contract of AeroDB 350f2f157, readStatus + change): the Map took an empty answer for « nothing there » and replaced what it showed by it')
+def d238(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'D', 'cls': '', 'name': '62', 'key': 'LFD62', 'lower': 'SFC', 'upper': 'FL195', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => { const d = window.__mp.S.data; return !!d && !!d.data && (d.data.airspaces || []).length > 0 }", timeout=20000, what='the airspaces are read')
+    c.wait(1500)
+    n0 = c.js("() => window.__mp.S.data.data.airspaces.length")
+    # the base answers PARTIALLY: zones pending, one unreadable (retry in 20 s), the airspaces answer empty
+    c.js("""() => { const A = window.__mp.S.ctx.aerodb; window.__orig = A.airspaces.bind(A); A.readStatus = () => ({ pending: 2, unreadable: 1, entries: [{ zone: 'fr', kind: 'airspaces', state: 'limit', retryIn: 20 }], gen: 1 });
+      A.airspaces = async () => []; return true }""")
+    c.tap('[data-mp="layers"]')
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=corridor]'))", what='the Layers content')
+    for _ in range(2):   # unticked, then ticked: « Around the flight only »
+        c.tap('input[data-layer="corridor"]')
+        c.wait(1500)
+    c.tap('input[data-layer="asTma"]')
+    c.wait(1500)
+    n1 = c.js("() => window.__mp.S.data.data.airspaces.length")
+    c.ok(n1 >= n0, f'{n1} airspaces after, {n0} before', 'a partial answer (zones pending) does not replace what is shown: nothing is emptied')
+    line = c.js("() => (document.querySelector('.mp-notes [data-readstate]') || {}).textContent || ''")
+    c.ok('1' in line and '20' in line, repr(line), 'a discreet line says one zone could not be read and when it tries again (20 s)')
+    # everything is read: the base announces the arrival, the Map repaints by itself, the line goes
+    c.js("""() => { const A = window.__mp.S.ctx.aerodb; A.readStatus = () => ({ pending: 0, unreadable: 0, entries: [], gen: 2 }); A.airspaces = window.__orig; window.__reads = 0; const o = A.airspaces; A.airspaces = (...a) => { window.__reads++; return o(...a) }; A.refresh(); return true }""")
+    c.until("() => window.__reads > 0", timeout=10000, what='the Map reads again at the base’s change, without a gesture')
+    c.until("() => !document.querySelector('.mp-notes [data-readstate]')", timeout=8000, what='the line goes when everything is read')
+    n2 = c.js("() => window.__mp.S.data.data.airspaces.length")
+    c.ok(n2 >= n0, f'{n2} airspaces', 'the complete answer is shown')
+

@@ -555,8 +555,24 @@ export async function many(f, boxes, extra = {}) {
 /** Ce qu'une lecture d'aerodb a rendu, gardé le temps de la page (la coupe aussi s'en sert : profile_view.js) (SOG-0349 : « cocher ou décocher une couche ne redemande rien de ce qui est déjà sur l'appareil ») : par couche, emprises et
  *  paramètres ; vidé quand la base change (S.dataEpoch, module.js). Une lecture en échec n'est JAMAIS gardée ni prise pour « rien » : FAILED, et l'appelant garde ce qu'il montrait. */
 export const FAILED = Symbol('failed');
+/** Des zones sont-elles encore en lecture (aerodb.readStatus, SOG-0349) ? Une réponse faite alors est PARTIELLE : une part en attente ou illisible n'est pas « absente ». */
+const pendingNow = () => (S?.ctx?.aerodb?.readStatus?.()?.pending || 0) > 0;
+/** Réunion sans doublons (keyOf) : ce qui est déjà montré et la part qui arrive. */
+const union = (a, b) => {
+  const seen = new Set(),
+    out = [];
+  for (const x of [...(a || []), ...(b || [])]) {
+    const k = keyOf(x);
+    if (!seen.has(k)) {
+      seen.add(k);
+      out.push(x);
+    }
+  }
+  return out;
+};
 export async function readOnce(name, f, boxes, extra) {
   const memo = S.dataMemo ||= new Map(),
+    last = S.dataLast ||= new Map(),
     k = `${S.dataEpoch || 0}|${name}|${JSON.stringify(boxes)}|${JSON.stringify(extra || {})}`;
   if (memo.has(k)) return memo.get(k);
   let v;
@@ -565,6 +581,14 @@ export async function readOnce(name, f, boxes, extra) {
   } catch {
     return FAILED;
   }
+  if (
+    pendingNow()
+  ) { // réponse partielle : elle S'AJOUTE à ce qui est montré, elle ne le remplace pas, et n'est pas gardée (la part qui arrive la complétera)
+    v = union(last.get(name), v);
+    last.set(name, v);
+    return v;
+  }
+  last.set(name, v);
   memo.set(k, v);
   if (memo.size > 80) memo.delete(memo.keys().next().value);
   return v;

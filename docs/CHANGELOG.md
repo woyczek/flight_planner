@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the slow reads of the base no longer empty the Map** (SOG-0349, with AeroDB's `readStatus` / `change`): an answer given while zones are pending adds to what is shown and replaces nothing; a discreet line says « n zones n'ont pas pu être lues : nouvelle tentative dans s s » and goes when all is read; the Map repaints at the base's `change`; unticking then ticking « Autour du vol » empties nothing; D238 (red before).
 - **Fuel › route: an answer without a computed route opens on « Pas de route calculée » and the engine's reason; its proposals are taken with « Prendre cette proposition »** (fuel DECISIONS; noreg F226; SOG-0161).
 - **Data: the mouse wheel zooms the map only over the map** — anywhere else on the page it scrolls the page (SOG-0340).
 - **Fuel › route: a flight across the North Atlantic says the state of the NAT tracks above « Calculer A → B », with « Lire les routes NAT du jour » on the workstation** (fuel DECISIONS; noreg F225; SOG-0352).

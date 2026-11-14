@@ -271,6 +271,18 @@ export function writeNotes() {
   if (S.notesEl.innerHTML !== html) S.notesEl.innerHTML = html;
 }
 /** Ligne de l'état de la base aéronautique « en lecture » (les zones lues entre parenthèses). */
+/** La lecture lente des zones (aerodb.readStatus, SOG-0349) : « Lecture de n zones… », puis « n zones n'ont pas pu être lues : nouvelle tentative dans s s » ; rien quand tout est lu. */
+const readLine = rs => {
+  if (!(rs?.pending > 0)) return '';
+  const wait = (rs.entries || []).map(e => e.retryIn).filter(Number.isFinite),
+    t = rs.unreadable > 0 ? tt(TX.readFailed, {
+      n: rs.unreadable,
+      s: wait.length ? Math.round(Math.min(...wait)) : '…'
+    }) : tt(TX.reading, {
+      n: rs.pending
+    });
+  return `<p class="f-muted" data-readstate>${esc(t)}</p>`;
+};
 const loadingLine = st => `<p class="f-muted">${esc(tt(TX.loading, { z: st.loading?.length ? ` (${st.loading.join(', ')})` : '' }))}</p>`;
 /** État du vol, de la base, de la mission et du fond : l'état vide est une carte posée au milieu de la zone de la carte ; les
  *  manques sont dits une fois par notification et restent dans les notes ; écrits seulement s'ils changent. */
@@ -305,6 +317,12 @@ export async function status() {
     const st = await read,
       now = await a.state?.().catch(() => null);
     if (!S) return;
+    const rs = a.readStatus?.();
+    if (rs?.pending > 0) { // une lecture lente ou tenue : dite, et redite toutes les 2 s tant qu'elle dure (le compte à rebours)
+      warn.push(readLine(rs));
+      clearTimeout(S.readTick);
+      S.readTick = setTimeout(() => S && status(), 2000);
+    }
     if (now?.state === 'loading') warn.push(loadingLine(now));
     else if (!st?.published || !Object.keys(st.published).length) {
       // la cause d'abord : accès non réglé ici, hors ligne, sinon la base n'est pas publiée
