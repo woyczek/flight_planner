@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2c2d9f5",
-  "fiches": 355,
+  "organisation": "7624a7c",
+  "fiches": 356,
   "untranslated": 0,
   "priorities": 310
  },
@@ -5248,6 +5248,27 @@
      "es": "Zona ausente: en todas partes, decir qué falta, ofrecer el gesto (Datos) y los recursos externos (LittleNavMap, Navigraph, ChartFox)",
      "rank": 310,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-base-carte-synchronisation",
+   "app": "maintenance",
+   "label": {
+    "fr": "base ; Carte ; synchronisation",
+    "en": "base ; Carte ; synchronisation",
+    "de": "base ; Carte ; synchronisation",
+    "es": "base ; Carte ; synchronisation"
+   },
+   "items": [
+    {
+     "id": "SOG-0356",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Base : la zone des États-Unis est lue pour tout vol entre 51° et 53° N (23 Mo pour un Paris–Dublin) — ses cases traversent l'antiméridien",
+     "en": "Base: the United States zone is read for any flight between 51° and 53° N (23 MB for a Paris–Dublin) — its cells cross the antimeridian",
+     "de": "Basis: die USA-Zone wird für jeden Flug zwischen 51° und 53° N gelesen (23 MB für Paris–Dublin) — ihre Zellen queren den Antimeridian",
+     "es": "Base: la zona de Estados Unidos se lee para todo vuelo entre 51° y 53° N (23 MB para un París–Dublín) — sus celdas cruzan el antimeridiano"
     }
    ]
   },

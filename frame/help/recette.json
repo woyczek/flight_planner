@@ -3295,12 +3295,28 @@
    "id": "Q-0059",
    "fiche": "SOG-0354",
    "app": "maintenance",
-   "question": "Découpage des longues routes en tronçons valides : quand ?",
-   "context": "Ton texte de 12 h 10 (écrit sur SOG-0293 par erreur) demande un vrai algorithme pour les longues routes : je l'ai repris dans SOG-0354. Mon avis : oui sur le principe ; plutôt qu'une verticale de grand terrain, des « portes » publiées (entrée et sortie de l'océan, points de frontière de FIR), une recherche de porte en porte puis tronçon par tronçon, et pour les États-Unis les routes préférentielles publiées par la FAA avant tout calcul. Ce que je conteste : le faire avant l'alpha 5 — c'est un chantier de moteur, et tes refus ouverts passent avant. Je propose : le relevé d'AeroDB (cinq vols mesurés) et ma note de conception maintenant, le code après l'alpha 5.",
+   "question": "Longues routes : les données qui manquent (Canada, routes de la FAA) puis le découpage par tronçons — quand ?",
+   "context": "Ton texte de 12 h 10 demande un vrai algorithme pour les longues routes (SOG-0354). AeroDB a mesuré cinq vols : vers Denver et Los Angeles la route est plausible en 2 s ; vers Boston et New York il n'y a PAS de route (35 s, puis une proposition de repli absurde) ; vers Tampa, des voies basses volées à FL370 sur 1 000 NM. Les causes : la base n'a ni points ni voies du Canada (la sortie de l'océan est un direct de 398 NM), elle ne connaît ni les routes nord-américaines ni les routes préférentielles de la FAA, et le moteur a deux défauts. Ce que je conteste : commencer par l'algorithme — sans le Canada, aucun découpage ne trouve la sortie de l'océan. Je fais corriger les deux défauts tout de suite (restes de SOG-0161). Reste à décider quand viennent les DONNÉES (Canada, routes de la FAA) puis le découpage par portes.",
    "options": [
-    "Relevé et note de conception maintenant ; le code après l'alpha 5",
+    "Les deux défauts maintenant ; données et découpage après l'alpha 5",
     "Tout de suite, avant l'alpha 5 : c'est bloquant pour moi",
-    "Relevé et note maintenant ; le code à la bêta 1",
+    "Les deux défauts maintenant ; données et découpage à la bêta 1",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0060",
+   "fiche": "SOG-0341",
+   "app": "maintenance",
+   "question": "Registre français réduit à cinq champs : le publier dans ton dépôt privé alors qu'aucune licence n'est trouvée ?",
+   "context": "Tu avais dit oui « après lecture de la licence » (Q-0055). AeroDB l'a cherchée : il n'y en a pas — aucun jeu ouvert du registre, rien sur l'export. Le registre est public par la loi (toute personne peut en obtenir copie), ce qui est un droit d'accès, pas une autorisation écrite de redistribuer. Ce que je conteste : dire oui à ta place. Mon avis : les cinq champs (immatriculation, constructeur, type, numéro de série, aérodrome d'attache) ne portent aucun nom de personne, le constructeur est vidé sous dix aéronefs, et le dépôt est privé — le risque est faible, mais ton dépôt est lu par tous les pilotes du groupe : c'est une diffusion à un groupe, pas un usage sur ton seul poste. Je ne suis pas juriste.",
+   "options": [
+    "Oui : le fichier réduit dans le dépôt privé du groupe",
+    "Non : il reste sur mon poste, comme aujourd'hui",
+    "Attendre : je demande d'abord à la DGAC",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-14",
