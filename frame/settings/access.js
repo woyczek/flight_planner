@@ -26,6 +26,19 @@
     ],
     // fournisseur GitLab (configuration reçue ou accès de l'appareil) : champ du dépôt et aide du jeton
     repoGl: ['Adresse du projet GitLab', 'GitLab project address', 'Adresse des GitLab-Projekts', 'Dirección del proyecto GitLab'],
+    expires: ['Ce jeton expire le (facultatif)', 'This token expires on (optional)', 'Dieses Token läuft ab am (optional)',
+      'Este token caduca el (opcional)'
+    ],
+    expiresNever: ['Ce jeton n’expire pas', 'This token does not expire', 'Dieses Token läuft nicht ab', 'Este token no caduca'],
+    expiresHint: [
+      'GitHub ne donne pas la date d’expiration à une page : si vous la saisissez, elle est gardée sur cet appareil seulement (jamais dans le dépôt) et vous êtes prévenu 30 jours avant, comme avec GitLab.',
+      'GitHub does not give a page the expiry date: if you enter it, it is kept on this device only (never in the repository) and you are warned 30 days before, as with GitLab.',
+      'GitHub gibt einer Seite das Ablaufdatum nicht: Wenn Sie es eingeben, bleibt es nur auf diesem Gerät (nie im Repository) und Sie werden 30 Tage vorher gewarnt, wie bei GitLab.',
+      'GitHub no da la fecha de caducidad a una página: si la introduce, se guarda solo en este dispositivo (nunca en el repositorio) y se le avisa 30 días antes, como con GitLab.'
+    ],
+    expiresSaved: ['Date d’expiration gardée sur cet appareil.', 'Expiry date kept on this device.',
+      'Ablaufdatum auf diesem Gerät gespeichert.', 'Fecha de caducidad guardada en este dispositivo.'
+    ],
     tokenHintGl: [
       'GitLab : collez l’adresse du projet et le jeton d’accès de projet que l’administrateur vous a donné (rôle Developer, portée api) ; il n’est envoyé qu’à cette instance. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
       'GitLab: paste the project’s address and the project access token the administrator gave you (Developer role, api scope); it is sent to that instance only. Kept on this device only, never shown again; never paste it in a message.',
@@ -130,8 +143,19 @@
       ph = gl ? (jd && !gh ? SogConfig.webUrl(jd) : table.gitlab.placeholder) : table.github.placeholder;
     return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
         ${fld('repo', gl ? T.repoGl : T.repo, SogConfig.repoField(gh), { ph })}<p class="f-muted" data-repo-provider aria-live="polite"></p><p class="f-warn" data-repo-warn hidden></p>${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenKept) : '' })}
-        ${gh?.token ? `<p data-token-set>${esc(t(T.tokenSet))}</p>` : ''}<p class="f-muted">${esc(t(gl ? T.tokenHintGl : T.tokenHint))}</p><p class="f-msg" data-msg></p>
+        ${gh?.token ? `<p data-token-set>${esc(t(T.tokenSet))}</p>` : ''}<p class="f-muted">${esc(t(gl ? T.tokenHintGl : T.tokenHint))}</p>${gl ? '' : expiresHtml(env)}<p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`;
+  }
+  /** Le champ facultatif « Ce jeton expire le … » (GitHub seulement, SOG-0277) : une date (AAAA-MM-JJ) ou « n'expire pas », gardés sur l'appareil par frame/lib/token_expiry.js ; rien quand le module n'est pas chargé. */
+  function expiresHtml(env) {
+    const {
+      t
+    } = env;
+    const TE = window.SogSettingsKit.expiry?.(),
+      own = TE?.readCache().own;
+    if (!TE) return '';
+    return `<div data-expires><label class="f-field">${esc(t(T.expires))}<input data-f="tokenExpires" type="date" value="${esc(own?.declared === 'date' ? own.expiresAt : '')}" autocomplete="off"></label>
+        <label class="f-check"><input type="checkbox" data-f="tokenNever" ${own?.declared === 'none' ? 'checked' : ''}><span>${esc(t(T.expiresNever))}</span></label><p class="f-muted">${esc(t(T.expiresHint))}</p></div>`;
   }
   /** Carte Synchronisation : montrée si un échange est coché ou tant que des écritures attendent (suit l'état). */
   function syncHtml(env) {
@@ -220,6 +244,16 @@
         return [];
       }
     };
+    /** GitHub : la date d'expiration DÉCLARÉE (ou « n'expire pas ») du formulaire, gardée sur l'appareil ; GitLab : rien (la date vient du fournisseur) ; un autre fournisseur : la date gardée est oubliée. */
+    const keepDeclared = async (r, cfg) => {
+      const K = window.SogSettingsKit;
+      await K.teReady;
+      const TE = K.expiry?.();
+      if (!TE) return;
+      if (cfg.provider === 'gitlab') return;
+      TE.recordDeclared(r.querySelector('[data-f="tokenExpires"]')?.value || '', !!r.querySelector('[data-f="tokenNever"]')
+        ?.checked);
+    };
     if (act === 'access' || act === 'test') {
       const r = card('access'),
         // l'adresse saisie, normalisée d'abord : illisible ou sans fournisseur connu, refusée et rien n'est écrit
@@ -254,6 +288,7 @@
       const warn = await warnings(
         cfg, true); // dit après l'enregistrement : jamais bloquant (seul avec son dépôt, un jeton personnel est le bon)
       FD.github.save(cfg);
+      await keepDeclared(r, cfg);
       await c.reload();
       // la première synchronisation sur le nouveau dépôt, proposée par le bouton de la notification (jamais une fenêtre bloquante)
       c.notify(t(T.saved), 'ok', {
@@ -269,6 +304,7 @@
     if (act === 'cut') {
       if (!await c.ask(t(T.cutAsk))) return;
       await c.cutAccess();
+      window.SogSettingsKit.expiry?.()?.clearOwn(); // la date de ce jeton (déclarée ou lue) n'a plus d'objet
       c.notify(t(T.cutDone), 'ok');
       return again();
     }

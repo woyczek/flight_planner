@@ -811,6 +811,7 @@
   async function render(view, c) {
     performance.mark?.('sog-settings-start'); // la mesure du premier dessin (SOG-0133) : de ce repère à « sog-settings-first »
     window.SogSettingsKit.bind(c.launcherRequest); // les routes du lanceur passent par le client du cadre
+    await window.SogSettingsKit.teReady; // l'expiration des jetons : le champ de la carte Accès (SOG-0277)
     await window.SogSettingsKit.plReady; // l'accord des textes (frame/lib/plural.js) : un seul chargement, ensuite immédiat
     const t = window.SogSettingsKit.agreeT(c.t),
       {

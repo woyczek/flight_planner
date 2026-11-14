@@ -759,6 +759,8 @@ your personal token, then “Test” and “Save”. On a workstation served by 
 not a git repository, the card opens the door to fetch or take it over; its remote repository is set in the
 “Administration” card (see “A git repository for data/”). On the launcher's computer, the “Data access” card starts with a “Data repository:” line giving the address and branch of the remote repository: the screen does not wait for it (the launcher may take several seconds to read it), the line shows “…” then its value, without moving; what depends on the repository (the “Remote repository” panel of Administration, for example) appears when it arrives.
 
+**The GitHub token expiry.** GitHub does not give a page the expiry date: a line of the “Status” block asks you for it, and the optional field “This token expires on” of the “Access” card keeps it. It stays on this device (never in the repository) and you are warned 30 days before, as with GitLab, the date being said “declared”. A token without expiry is told with the box “This token does not expire”: the line goes away. “Cut access” forgets the date.
+
 **No access and no launcher, no bases.** A device with no access set and no launcher — the website opened on a phone
 for the first time, for instance — has neither the aeronautical base (airspaces, airfields, beacons) nor the aircraft
 base: “Offline data” says so. Two ways in: set the access to the data repository, even without ticking an exchange (it

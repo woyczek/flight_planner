@@ -808,3 +808,15 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
 - Not mine, found by the same measure: the frame's own boot (`frame/app.js`, `launcher.detect()` → `GET /__setup/status`) waits for the launcher's first answer before routing, so on a
   relay answering in 2 s nothing is drawn for 2 s whatever the screen is (measured: first card at 4.1 s with every route 2 s late, 2.3 s with only `status` late). Handed to V3 Frame.
   Also seen: `sync-remote` and `sync-status?fresh=1` are each asked twice by a settings opening (two drawings) — harmless here, noted.
+
+## SOG-0277, the GitHub half (14 Nov 2026)
+
+- The ergonomist (LOT 14 Nov, 11 h 05; the user on 13 Nov: « bon pour les jetons locaux ; manquent les jetons GitLab, GitHub, framagit »): GitLab and framagit were done in the first lot
+  (2f48f472c); GitHub does not give the date to a page (Sécurisation's survey, 12 Nov), so the pilot DECLARES it. In the Access card, for a provider other than GitLab, an optional
+  field « Ce jeton expire le » (a date) and a box « Ce jeton n'expire pas » (`access.js` `expiresHtml`); « Enregistrer » keeps them through `frame/lib/token_expiry.js`
+  (`recordDeclared(date, none)`: the cache `own` gets `declared: 'date' | 'none'`; `clearOwn()` when the field is emptied, and on « Couper l'accès »). Nothing is written to the repository; the cache
+  holds a date and instants, never the token. With a date, the line is the own-token line of GitLab (« Votre jeton expire le … (dans 12 jours) », amber, one floating note a day, same
+  thresholds) followed by « (date déclarée) ». Without a date and without « n'expire pas », ONE calm line in the Status block (`token-own-unknown`, level info: no amber dot, level 2 and above,
+  a token saved, provider other than GitLab) says that GitHub does not give the date and leads to the Access card (`go: card:access`); it stays until the pilot answers (a date or the
+  box), which is how « une fois » is read here: one line, never a daily note. Cases A230 (the line, the field, the date kept, the alert with « date déclarée », the line gone; red before:
+  no line) and A231 (the box ends the question, cutting the access forgets the date). Not done: the renewal by rotation (« plus tard » in the fiche); framagit is GitLab, covered by the first lot.

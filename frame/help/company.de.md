@@ -156,6 +156,8 @@ bedienten Rechner gibt es kein Token; solange `data/` kein Git-Repository ist, �
 oder zu übernehmen; sein entferntes Repository wird in der Karte „Verwaltung“ eingestellt (siehe „Ein Git-Repository
 für data/“). Auf dem Rechner des Starters beginnt die Karte „Datenzugriff“ mit der Zeile „Datenrepository:“, die Adresse und Zweig des entfernten Repositorys nennt: Der Bildschirm wartet nicht darauf (der Starter braucht zum Lesen mitunter mehrere Sekunden), die Zeile zeigt „…“ und dann ihren Wert, ohne sich zu bewegen; was vom Repository abhängt (zum Beispiel das Feld „Entferntes Repository“ der Administration), erscheint bei seinem Eintreffen.
 
+**Der Ablauf des GitHub-Tokens.** GitHub gibt einer Seite das Ablaufdatum nicht: Eine Zeile des Blocks „Status“ fragt danach, und das optionale Feld „Dieses Token läuft ab am“ der Karte „Zugang“ bewahrt es auf. Es bleibt auf diesem Gerät (nie im Repository) und Sie werden 30 Tage vorher gewarnt, wie bei GitLab; das Datum heißt „angegeben“. Ein Token ohne Ablauf wird mit dem Kästchen „Dieses Token läuft nicht ab“ gemeldet: Die Zeile verschwindet. „Zugang trennen“ vergisst das Datum.
+
 **Ohne Zugang und ohne Starter keine Basen.** Ein Gerät ohne eingestellten Zugang und ohne Starter — etwa die Website,
 zum ersten Mal auf einem Telefon geöffnet — hat weder die Luftfahrtdatenbasis (Lufträume, Flugplätze, Funkfeuer) noch
 die Flugzeugbasis: „Offline-Daten“ sagt es. Zwei Wege: Stellen Sie den Zugang zum Datenrepository ein, auch ohne

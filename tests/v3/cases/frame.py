@@ -1703,7 +1703,7 @@ def a49(c):
         c.until("!!document.querySelector('[data-card=\"access\"] input[data-f=\"repo\"]')", what='the Access card')
         return c.js("""() => { const k = document.querySelector('[data-card="access"]');
           return { ph: k.querySelector('input[data-f="repo"]').placeholder, label: k.querySelector('input[data-f="repo"]').closest('label').textContent.trim(),
-                   hint: k.querySelector('p.f-msg[data-msg]').previousElementSibling.textContent.trim() } }""")
+                   hint: (k.querySelector('[data-expires]') || k.querySelector('p.f-msg[data-msg]')).previousElementSibling.textContent.trim() } }""")
     gl = access({'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/proj', 'branch': 'main', 'token': 'test-token'})
     c.eq([gl['ph'], norm(gl['label']), norm(gl['hint'])],
          ['https://gitlab.com/group/project', norm(tx(access_file, 'repoGl', c.lang)), norm(tx(access_file, 'tokenHintGl', c.lang))],
@@ -8315,4 +8315,63 @@ def a210(c):
     c.wait(1500)
     c.ok(c.js("document.getElementById('fLimit').hidden") and blobs() == n0 + 1, [blobs() - n0, c.js("document.getElementById('fLimit').hidden")], 'abandoned: the wait ended, the band went, no second request')
     c.shot(f'A210_{c.width}_{c.lang}_delivered.png')
+
+
+@case('A230', 'GitHub token expiry (SOG-0277, GitHub half): GitHub does not give the date to a page, so ONE calm line in the Status block asks for it (« indiquez la date dans Accès »), leading to the Access card; a date entered in the optional field « Ce jeton expire le » is kept on the device only, said « (date déclarée) », and gives the same alert as GitLab under 30 days',
+      'A', langs4=True, designs=('standard',), screens=True, night=False, tags=('settings',),
+      rule='SOG-0277 (the user, 13 Nov: « manquent les jetons GitLab, GitHub, framagit »; Sécurisation: GitHub renders the date through no endpoint a page can read, only an optional field typed by the pilot and said declared): no date known and none declared = one line of level info (no amber dot) leading to card:access; the date typed is kept in sogFrame:tokenExpiry (a date and instants, never the token); under 30 days the line is the own-token line with the declared word; the unknown line is gone')
+def a230(c):
+    import datetime
+    c.context.add_init_script(GITHUB_SET)
+    c.open('fuel')
+    rows = open_status(c)
+    row = next((r for r in rows if r['k'] == 'token-own-unknown'), None)
+    want = tx('frame/lib/token_expiry.js', 'ownUnknown', c.lang)
+    c.ok(row is not None and norm(want) in norm(row['text']), [r['k'] for r in rows] if row is None else row['text'], 'a GitHub token with no known date: one line asks for it, in the language of the run')
+    c.ok(not c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"token-own-unknown\"] .f-status-dot').hasAttribute('data-attn')"), None, 'it is calm: no amber dot')
+    c.eq(row['go'], 'card:access', 'the line leads to the Access card', what='go')
+    c.tap('[data-card="status"] li[data-k="token-own-unknown"] [data-go]')
+    c.until("!!document.querySelector('[data-card=\"access\"] [data-f=\"tokenExpires\"]')", timeout=12000, what='the optional field is in the Access card')
+    c.js("document.querySelector('[data-expires]').scrollIntoView({ block: 'center' })")
+    c.wait(400)
+    c.shot(f'A230_{c.width}_{c.lang}_field.png')
+    date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=10)).date().isoformat()
+    c.js("(() => { const i = document.querySelector('[data-card=\"access\"] [data-f=\"tokenExpires\"]'); i.value = '%s'; i.dispatchEvent(new Event('input', { bubbles: true })) })()" % date)
+    c.tap('[data-card="access"] [data-act=access]')
+    c.until("(JSON.parse(localStorage.getItem('sogFrame:tokenExpiry') || 'null') || {}).own?.declared === 'date'", timeout=15000, what='the declared date is kept on the device')
+    kept = c.js("localStorage.getItem('sogFrame:tokenExpiry')")
+    c.ok(date in kept and 'ghp_' not in kept, kept, 'only the date and instants are kept, never the token')
+    c.open('fuel')
+    rows = open_status(c)
+    row = next((r for r in rows if r['k'] == 'token-own'), None)
+    when = tx('frame/lib/token_expiry.js', 'inDays', c.lang).replace('{n}', str(_days_left(date)))
+    soon = tx('frame/lib/token_expiry.js', 'ownSoon', c.lang).replace('{d}', date).replace('{w}', when)
+    c.ok(row is not None and norm(soon) in norm(row['text']) and norm(tx('frame/lib/token_expiry.js', 'declared', c.lang)) in norm(row['text']), [r['k'] for r in rows] if row is None else row['text'],
+         'ten days ahead: the same alert as GitLab, with « date déclarée »')
+    c.ok(all(r['k'] != 'token-own-unknown' for r in rows), [r['k'] for r in rows], 'the line that asks for the date is gone')
+    c.shot(f'A230_{c.width}_{c.lang}_declared.png')
+
+
+@case('A231', 'GitHub token expiry (SOG-0277): « Ce jeton n’expire pas » in the Access card ends the question (no line in the Status block, nothing to warn), and cutting the access forgets the date',
+      'A', designs=('standard',), screens=False, night=False, tags=('settings',),
+      rule='SOG-0277: a classic token without expiry must not be asked about for ever: the box is kept as declared `none`; « Couper l’accès » forgets what was kept for the token (clearOwn)')
+def a231(c):
+    c.context.add_init_script(GITHUB_SET)
+    c.open('fuel')
+    rows = open_status(c)
+    c.ok(any(r['k'] == 'token-own-unknown' for r in rows), [r['k'] for r in rows], 'the question is asked while nothing is declared')
+    c.tap('[data-card="status"] li[data-k="token-own-unknown"] [data-go]')
+    c.until("!!document.querySelector('[data-card=\"access\"] [data-f=\"tokenNever\"]')", timeout=12000, what='the box is in the Access card')
+    c.js("(() => { const b = document.querySelector('[data-card=\"access\"] [data-f=\"tokenNever\"]'); b.checked = true; b.dispatchEvent(new Event('change', { bubbles: true })) })()")
+    c.tap('[data-card="access"] [data-act=access]')
+    c.until("(JSON.parse(localStorage.getItem('sogFrame:tokenExpiry') || 'null') || {}).own?.declared === 'none'", timeout=15000, what='« does not expire » is kept')
+    c.open('fuel')
+    rows = open_status(c)
+    c.ok(all(not r['k'].startswith('token-own') for r in rows), [r['k'] for r in rows], 'declared as never expiring: no line about the token')
+    c.open('settings?card=access')
+    c.until("!!document.querySelector('[data-card=\"access\"] [data-act=cut]')", timeout=12000, what='the cut button')
+    c.tap('[data-card="access"] [data-act=cut]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the question')
+    c.tap('.f-modal [data-ok]')
+    c.until("!(JSON.parse(localStorage.getItem('sogFrame:tokenExpiry') || 'null') || {}).own", timeout=12000, what='the date is forgotten')
     c.check_errors()

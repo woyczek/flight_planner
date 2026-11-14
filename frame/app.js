@@ -4055,11 +4055,14 @@
     const poste = !!launcherHere && !launcherHere.lan,
       pilotsGo = launcherHere && !launcherHere.lan && level >= 3 ? APP.modules.some(m => m.id === 'pilot-tokens') ? '#pilot-tokens' :
       '?app=maintenance#pilot-tokens' : '';
-    return TOKEN_EXP.lines(TOKEN_EXP.readCache(), Date.now(), poste).map(l => ({
+    // GitHub (un jeton enregistré, niveau 2 et plus) : la date n'est pas lue, la ligne calme « indiquez-la dans Accès » en tient lieu tant qu'aucune date ni « n'expire pas » n'est déclarée (SOG-0277)
+    const g = FD.github.config?.(),
+      github = level >= 2 && !!g?.token && g.provider !== 'gitlab';
+    return TOKEN_EXP.lines(TOKEN_EXP.readCache(), Date.now(), poste, github).map(l => ({
       k: l.k,
       text: l.text(t),
       go: l.go === 'pilot-tokens' ? pilotsGo : l.go,
-      attn: true
+      attn: l.level !== 'info'
     }));
   }
   /** Relit ce qui est dû (au plus une fois par jour : son jeton, les jetons des pilotes), repeint la puce et dit une fois par jour, en notification

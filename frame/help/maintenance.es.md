@@ -175,6 +175,8 @@ del lanzador, incluso sin casilla marcada; un uso de intercambio la comparte ade
 hay token; mientras `data/` no es un repositorio git, la tarjeta abre la vía para obtenerlo o retomarlo; su repositorio
 remoto se configura en la tarjeta «Administración» (vea «Un repositorio git para data/»). En el equipo del lanzador, la tarjeta «Acceso a los datos» empieza con una línea «Repositorio de datos:» que da la dirección y la rama del repositorio remoto: la pantalla no la espera (el lanzador puede tardar varios segundos en leerlo), la línea muestra «…» y luego su valor, sin moverse; lo que depende del repositorio (el panel «Repositorio remoto» de la Administración, por ejemplo) aparece cuando llega.
 
+**La caducidad del token de GitHub.** GitHub no da a una página la fecha de caducidad: una línea del bloque «Estado» se la pide y el campo opcional «Este token caduca el» de la tarjeta «Acceso» la guarda. Se queda en este dispositivo (nunca en el repositorio) y se le avisa 30 días antes, como con GitLab; la fecha se dice «declarada». Un token sin caducidad se indica con la casilla «Este token no caduca»: la línea desaparece. «Cortar el acceso» olvida la fecha.
+
 **Sin acceso ni lanzador, no hay bases.** Un dispositivo sin acceso configurado y sin lanzador — el sitio abierto en un
 teléfono por primera vez, por ejemplo — no tiene ni la base aeronáutica (espacios, aeródromos, radioayudas) ni la base
 de aeronaves: «Datos sin conexión» lo dice. Dos vías: configure el acceso al repositorio de datos, incluso sin marcar

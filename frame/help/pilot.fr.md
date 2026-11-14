@@ -764,6 +764,8 @@ branche et votre jeton personnel, puis « Tester » et « Enregistrer ». Sur un
 tant que `data/` n'est pas un dépôt git, la carte ouvre la porte pour le récupérer ou le reprendre ; son dépôt distant se
 règle dans la carte « Administration » (voir « Un dépôt git pour data/ »). Sur le poste du lanceur, la carte « Accès aux données » commence par une ligne « Dépôt des données : » qui donne l'adresse et la branche du dépôt distant : l'écran ne l'attend pas (le lanceur peut mettre plusieurs secondes à la lire), la ligne affiche « … » puis sa valeur, sans bouger ; ce qui dépend du dépôt (le volet « Dépôt distant » de l'Administration, par exemple) apparaît à son arrivée.
 
+**L'expiration du jeton GitHub.** GitHub ne donne pas la date d'expiration à une page : une ligne du bloc « État » vous la demande, et le champ facultatif « Ce jeton expire le » de la carte « Accès » la garde. Elle reste sur cet appareil (jamais dans le dépôt) et vous êtes prévenu 30 jours avant, comme avec GitLab, la date étant dite « déclarée ». Un jeton sans expiration se dit avec la case « Ce jeton n'expire pas » : la ligne disparaît. « Couper l'accès » oublie la date.
+
 **Sans accès ni lanceur, pas de bases.** Un appareil sans accès réglé et sans lanceur — le site ouvert sur un téléphone
 pour la première fois, par exemple — n'a ni base aéronautique (espaces, terrains, balises) ni base des appareils :
 « Données hors ligne » le dit. Deux portes : réglez l'accès au dépôt des données, même sans cocher d'échange (il sert

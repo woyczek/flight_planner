@@ -1,4 +1,4 @@
-// V3 frame — l'expiration des jetons (SOG-0277, premier lot : GitLab seulement).
+// V3 frame — l'expiration des jetons (SOG-0277 : GitLab lu chez le fournisseur ; GitHub déclarée par l'utilisateur, `recordDeclared`).
 // La suite ne garde JAMAIS un jeton : l'alerte se fonde sur la DATE d'expiration que GitLab rend (AAAA-MM-JJ, « à minuit UTC » : le jeton
 // ne vaut plus à 00:00 UTC de ce jour). Ce module ne connaît que des dates : il dit combien de jours restent et à quel niveau (orange sous
 // 30 jours, rouge sous 7, expiré), range dans le stockage de l'appareil (jamais dans le dépôt des données) la dernière date connue de son
@@ -27,6 +27,13 @@ export const TX = {
     'Your token expired on {d}: ask the administrator for a new one.',
     'Ihr Token ist am {d} abgelaufen: Bitten Sie den Administrator um einen neuen.',
     'Su token caducó el {d}: pida uno nuevo al administrador.'
+  ],
+  declared: [' (date déclarée)', ' (declared date)', ' (angegebenes Datum)', ' (fecha declarada)'],
+  ownUnknown: [
+    'GitHub ne dit pas quand votre jeton expire : indiquez la date dans Accès pour être prévenu avant, ou dites qu’il n’expire pas.',
+    'GitHub does not say when your token expires: give the date in Access to be warned beforehand, or say that it does not expire.',
+    'GitHub sagt nicht, wann Ihr Token abläuft: Geben Sie das Datum unter Zugang an, um vorher gewarnt zu werden, oder sagen Sie, dass es nicht abläuft.',
+    'GitHub no dice cuándo caduca su token: indique la fecha en Acceso para ser avisado antes, o diga que no caduca.'
   ],
   chipSoon1: ['1 jeton de pilote expire bientôt ({d})', '1 pilot token expires soon ({d})', '1 Pilotentoken läuft bald ab ({d})',
     '1 token de piloto caduca pronto ({d})'
@@ -94,7 +101,9 @@ export function readCache(s) {
     own: own && ISO.test(String(own.at)) ? {
       expiresAt: dayOf(own.expiresAt),
       at: own.at,
-      toldOn: dayOf(own.toldOn)
+      toldOn: dayOf(own.toldOn),
+      declared: own.declared === 'date' || own.declared === 'none' ? own.declared :
+        '' // saisie par l'utilisateur (GitHub ne rend pas la date) : une date, ou « n'expire pas »
     } : null,
     pilots: pil && ISO.test(String(pil.at)) ? {
       soon: count(pil.soon),
@@ -127,6 +136,26 @@ export function recordOwn(expiresAt, now = Date.now(), s) {
       at: new Date(now).toISOString(),
       toldOn: readCache(s).own?.toldOn || ''
     }
+  }, s);
+}
+/** GitHub ne rend la date par aucun point d'accès qu'une page puisse lire (avis de Sécurisation, 12 nov.) : l'utilisateur la DÉCLARE. Une date lisible est gardée (dite « déclarée »),
+ *  sinon rien ; `none` : l'utilisateur dit que son jeton n'expire pas (plus de ligne qui demande la date). Dans le stockage de l'appareil, jamais le jeton. */
+export function recordDeclared(date, none = false, now = Date.now(), s) {
+  const d = dayOf(date);
+  if (!d && !none) return clearOwn(s);
+  write({
+    own: {
+      expiresAt: d,
+      at: new Date(now).toISOString(),
+      toldOn: readCache(s).own?.toldOn || '',
+      declared: d ? 'date' : 'none'
+    }
+  }, s);
+}
+/** Oublie la date de SON jeton (jeton coupé, autre fournisseur, date effacée). */
+export function clearOwn(s) {
+  write({
+    own: null
   }, s);
 }
 /** Note que la notification du jour a été dite (une fois par jour au plus). */
@@ -176,7 +205,7 @@ export function recordPilots(v, now = Date.now(), s) {
 }
 /** Les lignes de la puce d'état du cadre d'après le contenu gardé : [{ k, level, go, text(t) }] où `t(row, vars)` est le traducteur de
  *  l'appelant ; son jeton d'abord, puis les jetons des pilotes. `pilots` : faux sur un appareil qui n'est pas le poste (rien à dire). */
-export function lines(cache, now = Date.now(), pilots = true) {
+export function lines(cache, now = Date.now(), pilots = true, github = false) {
   const out = [],
     own = stateOf(cache?.own?.expiresAt, now);
   if (own && own.level !== 'ok') out.push({
@@ -185,10 +214,17 @@ export function lines(cache, now = Date.now(), pilots = true) {
     go: 'card:access',
     text: t => own.level === 'expired' ? t(TX.ownExpired, {
       d: own.date
-    }) : t(TX.ownSoon, {
+    }) + (cache.own.declared === 'date' ? t(TX.declared) : '') : t(TX.ownSoon, {
       d: own.date,
       w: t(...whenRow(own))
-    })
+    }) + (cache.own.declared === 'date' ? t(TX.declared) : '')
+  });
+  // GitHub : pas de date lue, aucune déclarée ni « n'expire pas » : UNE ligne calme (niveau « info », pas d'attention) qui mène à la carte Accès
+  if (github && !cache?.own?.declared) out.push({
+    k: 'token-own-unknown',
+    level: 'info',
+    go: 'card:access',
+    text: t => t(TX.ownUnknown)
   });
   const p = cache?.pilots;
   if (pilots && p && p.expired > 0) out.push({
