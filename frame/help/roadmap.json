@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2efe034",
-  "fiches": 356,
+  "organisation": "9afb5c1",
+  "fiches": 357,
   "untranslated": 0,
   "priorities": 310
  },
@@ -384,6 +384,27 @@
      "de": "Abnahme: bestandene oder abgelehnte Tests nach der Uhrzeit des Urteils ordnen, das neueste zuerst",
      "es": "Recepción: ordenar las pruebas aceptadas o rechazadas por la hora del veredicto, la más reciente primero",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-aide-recette-telephone",
+   "app": "pilote",
+   "label": {
+    "fr": "Aide ; recette ; téléphone",
+    "en": "Aide ; recette ; téléphone",
+    "de": "Aide ; recette ; téléphone",
+    "es": "Aide ; recette ; téléphone"
+   },
+   "items": [
+    {
+     "id": "SOG-0357",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Recette : donner ses verdicts depuis le téléphone (ils passent par le dépôt des données, comme les signalements)",
+     "en": "Acceptance: give verdicts from the phone (they go through the data repository, like reports)",
+     "de": "Abnahme: Urteile vom Telefon aus abgeben (sie laufen über das Daten-Repository, wie die Meldungen)",
+     "es": "Recepción: dar los veredictos desde el teléfono (pasan por el repositorio de datos, como los avisos)"
     }
    ]
   },
