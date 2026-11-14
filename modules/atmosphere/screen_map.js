@@ -210,7 +210,7 @@ export function createMapScreen(app) {
             if (e.originalEvent && !isOwnResize(map)) S.userMoved = true;
           });
           map.on('resize', schedule);
-          map.on('click', e => mapTap(e.lngLat.lat, e.lngLat.lng));
+          map.on('click', e => mapTap(e.lngLat.lat, e.lngLat.lng, e.point, e.originalEvent));
           map.on('mousemove', e => mapTip(e.lngLat.lat, e.lngLat.lng, e.point, e.originalEvent));
           map.on('mouseout', () => $('mapTip').style.display = 'none');
         }
@@ -240,9 +240,14 @@ export function createMapScreen(app) {
       };
     over.onclick = ev => {
       const {
+        x,
+        y,
         ll
       } = llOf(ev);
-      if (ll) mapTap(ll.lat, ll.lon);
+      if (ll) mapTap(ll.lat, ll.lon, {
+        x,
+        y
+      }, ev);
     };
     over.onpointermove = ev => {
       const {
@@ -426,8 +431,39 @@ export function createMapScreen(app) {
   }
 
   // ---------------------------------------------------------------- toucher, survol
-  /** Toucher de la carte : dans la grille du vol, la tranche à ce point ; hors d'elle, les valeurs du synoptique monde. */
-  function mapTap(lat, lon) {
+  /** Le rayon d'un point qu'on prend (SOG-0343, la règle commune des cibles des cartes) : un doigt (pointeur grossier) 22 px — une cible de 44 px —, une souris 8 px. Une cible n'est pas
+   *  un réglage : c'est ce que l'appareil déclare (le pointeur de l'événement, sinon `(pointer: coarse)`). */
+  const tapRadius = ev => ev?.pointerType === 'touch' || String(ev?.type || '').startsWith('touch') || ev?.sourceCapabilities
+    ?.firesTouchEvents === true // un doigt : l'événement le dit (MapLibre rend le plus souvent le clic synthétisé du toucher)
+    ||
+    ev?.pointerType !== 'mouse' && matchMedia('(pointer: coarse)').matches ? 22 : 8;
+  /** Le lieu déjà lu le plus proche du toucher, s'il est dans le rayon : un lieu de lecture de la route ({ route: i }) ou un point de la grille de la carte ({ place }, ses barbules) ; null sinon.
+   *  pt : le toucher en px de la vue ; rien d'autre n'est cherché. */
+  function nearestRead(lat, lon, pt, ev) {
+    if (!pt) return null;
+    const v = view(),
+      R = tapRadius(ev);
+    let best = null,
+      bd = R;
+    const take = (la, lo, what) => {
+      const q = v.toC(la, A.nearLon(lo, lon)), // le lieu, sur la copie du monde touchée
+        d = Math.hypot(q.x - pt.x, q.y - pt.y);
+      if (d <= bd) {
+        bd = d;
+        best = what;
+      }
+    };
+    (S.route?.samples || []).forEach((s, i) => take(s.lat, s.lon, {
+      route: i
+    }));
+    for (const p of S.grid?.g?.places || []) take(p.lat, p.lon, {
+      place: p
+    });
+    return best;
+  }
+  /** Toucher de la carte : dans la grille du vol, la tranche du lieu de lecture touché (le plus proche dans le rayon, 22 px au doigt, 8 px à la souris ; un lieu de la route ou un point de la grille) ; un toucher qui ne prend aucun lieu ne lit
+   *  RIEN (SOG-0343 : « il faut avoir de tout petits doigts… ça génère des accès parasites ») ; hors de la grille, les valeurs du synoptique monde. */
+  function mapTap(lat, lon, pt, ev) {
     const b = gridBox();
     if (!b || !inBox(b, lat, lon)) {
       // la longitude touchée (continue chez MapLibre) : le repère suit ; les valeurs se lisent modulo 360
@@ -438,7 +474,10 @@ export function createMapScreen(app) {
       app.show('wpoint');
       return schedule();
     }
-    app.openPointSlice(lat, A.nearLon(lon, (b[0] + b[2]) / 2));
+    const hit = nearestRead(lat, lon, pt, ev);
+    if (!hit) return;
+    if (hit.route != null) app.openRouteSlice(hit.route);
+    else app.openPointSlice(hit.place.lat, hit.place.lon); // un point de la grille : sa colonne est déjà lue
   }
   /** Infobulle de survol (souris seulement) : la valeur de la carte météo au pointeur. */
   function mapTip(lat, lon, pt, ev) {

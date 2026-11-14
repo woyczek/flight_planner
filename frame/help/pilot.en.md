@@ -481,7 +481,7 @@ area, the map shows the world synoptic published with the application, asking fo
 <a id="atmosphere-map"></a>**The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
 ("SFC", the requested level, the computed path or a fixed altitude). The Layers chip, left of the sheet's grip, opens a
 panel over the map, just above the sheet: it chooses what is drawn on the map and in the profile, and the cut stays in view below, redrawn by each box; the
-cross or Escape closes it. Touch a point of the map to open its slice.
+cross or Escape closes it. Touch a point already read on the map (a place of the route or a point of the grid, with its barbs) to open its slice: a finger takes the point within 22 px (the nearest wins), a mouse within 8 px; a touch on the empty map reads nothing.
 
 <a id="atmosphere-zones"></a>**The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
 (Météo-France AROME 1.3 km and ARPEGE 0.1° over France, ICON in Europe); outside, the world synoptic (NOAA GFS,

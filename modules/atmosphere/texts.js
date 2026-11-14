@@ -136,10 +136,10 @@ export const TX = {
   ],
   whenPlanned: ['Départ prévu · {at}', 'Planned departure · {at}', 'Geplanter Abflug · {at}', 'Salida prevista · {at}'],
   whenPlus: ['Départ +{h} h · {at}', 'Departure +{h} h · {at}', 'Abflug +{h} h · {at}', 'Salida +{h} h · {at}'],
-  tapNote: ['Touchez la carte pour voir l’atmosphère en ce point (tranche locale).',
-    'Tap the map to see the atmosphere at that point (local slice).',
-    'Tippen Sie auf die Karte, um die Atmosphäre an diesem Punkt zu sehen (lokaler Schnitt).',
-    'Toque el mapa para ver la atmósfera en ese punto (corte local).'
+  tapNote: ['Touchez un point déjà lu de la carte (route ou grille) pour voir l’atmosphère en ce point (tranche locale).',
+    'Tap a point already read on the map (route or grid) to see the atmosphere there (local slice).',
+    'Tippen Sie auf einen bereits gelesenen Punkt der Karte (Route oder Raster), um die Atmosphäre dort zu sehen (lokaler Schnitt).',
+    'Toque un punto ya leído del mapa (ruta o rejilla) para ver la atmósfera allí (corte local).'
   ],
   sheetSize: ['Hauteur du bloc de données : toucher ou glisser', 'Data block height: tap or drag',
     'Höhe des Datenblocks: antippen oder ziehen', 'Altura del bloque de datos: tocar o arrastrar'

@@ -775,3 +775,9 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   limit as `edge.show` (an object, extensible) in `airline/map_profiles.json` (`frame/settings/INTEGRATION.md` § 4); the module read
   `edge === false` only. `readEdge` now reads both forms: `d?.edge !== false && d?.edge?.show !== false` (absent means shown, rule 15).
   Atmosphere session informed; the boolean form may be dropped when nothing writes it any more.
+
+## The map takes the read places only (SOG-0343)
+- The user, from his phone (14 Nov): « sur l'écran météo, il faut avoir de tout petits doigts pour viser les points météo déjà téléchargés. Ça génère donc des accès parasites. » The ergonomist: not a setting — the size of a finger is a fact the device declares; one common rule for the maps.
+- **Rule** (`screen_map.js` `tapRadius`, `nearestRead`, `mapTap`): a touch takes the **nearest read place** within **22 px** for a finger (the event says touch, else `(pointer: coarse)`) and **8 px** for a mouse; the places are the route's reading places (`S.route.samples` → its slice) and the points of the grid (`S.grid.g.places`, the wind barbs → the column already read); a touch that takes none reads **nothing** (it used to open the slice of the exact touched spot, and read its forecast: the parasitic accesses); outside the grid the synoptic's values are shown as before. The hint (« Touchez un point déjà lu… ») says it, four languages.
+- `openPointSlice` stays for the grid points. When V3 Frame puts the common rule in the maps' primitive (its name is theirs), `tapRadius` becomes a call to it. E21 (red before at 1 280: a mouse 18 px away took a place; at 390 a finger takes it).
+

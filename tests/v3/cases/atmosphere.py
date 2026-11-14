@@ -662,3 +662,56 @@ def e20(c):
       for (const f of [.1, .3, .5, .7, .9]) { const p = A.posAt(pts, nm, nm[1] * f), t = (psi(p.lat) - psi(R.lat)) / (psi(E.lat) - psi(R.lat)), x = R.lon + (E.lon - R.lon) * t; worst = Math.max(worst, Math.abs(p.lon - x) * Math.cos(p.lat * Math.PI / 180) * 60) }
       return { worst: Math.round(worst * 10) / 10, mid: A.posAt(pts, nm, nm[1] / 2), same: JSON.stringify(G.rhumbAt(R, E, .5)) === JSON.stringify((({ lat, lon }) => ({ lat, lon }))(A.posAt(pts, nm, nm[1] / 2))) } }""")
     c.ok(r['worst'] < 1 and r['same'], f'{r}', 'the place at a distance is on the rhumb line (longitude linear in the Mercator ordinate), the function of the Map’s line')
+
+
+@case('E21', 'The weather map takes a read place (a place of the route, a point of the grid) within a finger’s reach and reads NOTHING from a tap that takes none: 22 px for a finger, 8 px for a mouse, the nearest wins; most taps of the empty grid open no slice', 'E', tags=('atmosphere',), designs=('standard',), night=False,
+      rule='SOG-0343 (the user, from his phone, 14 Nov: « sur l’écran météo, il faut avoir de tout petits doigts pour viser les points météo déjà téléchargés. Ça génère donc des accès parasites »): mapTap took every tap, with no radius and no test of a point, and opened the slice of the touched spot')
+def e21(c):
+    c.open('atmosphere?donnees=demo')
+    c.until("() => !!window.maplibregl && !!document.querySelector('[data-module=\"atmosphere\"] .maplibregl-canvas')", timeout=15000, what='the map')
+    c.until("() => !!document.querySelector('[data-module=\"atmosphere\"] [data-at=whenOut]') && /[0-9]/.test(document.querySelector('[data-module=\"atmosphere\"] [data-at=whenOut]').textContent)", timeout=15000, what='the data is drawn')
+    c.wait(1500)
+    c.js("""() => { const M = window.maplibregl.Map; if (!M.prototype.__atHook) { const o = M.prototype.project; M.prototype.project = function (...a) { window.__atMap = this; return o.apply(this, a) }; M.prototype.__atHook = true } return true }""")
+    for _ in range(4):   # a nudge of the wheel on the map: it draws again, the hook keeps the map
+        c.page.mouse.move(c.page.viewport_size['width'] / 2, 200)
+        c.page.mouse.wheel(0, 1)
+        c.wait(600)
+        if c.js("() => !!window.__atMap"):
+            break
+    c.until("() => !!window.__atMap", timeout=6000, what='the map of the screen is kept')
+    c.wait(1500)
+    xy = lambda la, lo: c.js("""([la, lo]) => { const m = window.__atMap, p = m.project([lo, la]), r = m.getContainer().getBoundingClientRect(); return [r.left + p.x, r.top + p.y] }""", [la, lo])
+    slice_open = "() => !!document.querySelector('[data-module=\"atmosphere\"] .at-slice-info')"
+    close = "() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }"
+    phone = c.page.viewport_size['width'] < 700
+    def hit(x, y):
+        if phone:
+            c.page.touchscreen.tap(x, y)
+        else:
+            c.page.mouse.click(x, y)
+        c.wait(700)
+        return c.js(slice_open)
+    def shut():
+        c.js(close)
+        c.wait(400)
+    # LFRS (47.1569, -1.6078) is the first read place of the route: on it, taken
+    x, y = xy(47.1569, -1.6078)
+    c.ok(hit(x, y), f'at ({x:.0f}, {y:.0f})', 'a tap on a read place opens its slice')
+    shut()
+    # 18 px from it: a finger takes it (22 px reach), a mouse does not (8 px)
+    far = hit(x + 18, y)
+    if phone:
+        c.ok(far, 'taken', 'a finger 18 px from a read place takes it')
+        shut()
+    else:
+        c.ok(not far, 'not taken', 'a mouse 18 px from a read place does not take it (8 px reach)')
+    # in the empty grid: eight taps on a ring of 70 px around the middle of the route; most of them take nothing (old code: every one opened a slice)
+    mx, my = [(a + b) / 2 for a, b in zip(xy(47.1569, -1.6078), xy(43.4367, 5.215))]
+    import math
+    opened = 0
+    for k in range(8):
+        a = k * math.pi / 4
+        if hit(mx + 70 * math.cos(a), my + 70 * math.sin(a)):
+            opened += 1
+            shut()
+    c.ok(opened <= 5, f'{opened} of 8 taps opened a slice', 'taps of the empty grid read nothing: most of eight taps open no slice')

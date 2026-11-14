@@ -485,7 +485,7 @@ zone du vol, la carte montre le synoptique mondial publié avec l'application, s
 <a id="atmosphere-map"></a>**La carte météo.** Isobares, isothermes, nuages, vent, courant-jet et convection, au niveau choisi par la pastille du
 niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). La puce Couches, à gauche de la poignée de la
 feuille, ouvre un volet posé sur la carte, juste au-dessus de la feuille : il choisit ce qui est dessiné sur la carte et dans le profil, et la coupe reste visible en
-bas, redessinée à chaque case ; la croix ou Échap le ferme. Touchez un point de la carte pour ouvrir sa tranche.
+bas, redessinée à chaque case ; la croix ou Échap le ferme. Touchez un point déjà lu de la carte (un lieu de la route ou un point de la grille, avec ses barbules) pour ouvrir sa tranche : au doigt le point se prend dans un rayon de 22 px (le plus proche gagne), à la souris dans 8 px ; un toucher dans le vide ne lit rien.
 
 <a id="atmosphere-zones"></a>**La zone du vol et le monde.** Un trait fin entoure la zone du vol : dedans, la prévision fine chargée pour le vol
 (Météo-France AROME 1,3 km et ARPEGE 0,1° sur la France, ICON en Europe) ; dehors, le synoptique mondial (GFS de la

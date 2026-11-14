@@ -514,7 +514,7 @@ Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlicht
 <a id="atmosphere-map"></a>**Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
 Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Der Ebenen-Chip links vom Griff des Blatts
 öffnet ein Feld über der Karte, direkt über dem Blatt: Es wählt, was auf der Karte und im Profil gezeichnet wird, und der Schnitt bleibt unten
-sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schließt es. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
+sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schließt es. Tippen Sie auf einen bereits gelesenen Punkt der Karte (ein Ort der Route oder ein Rasterpunkt mit seinen Windfahnen), um seinen Schnitt zu öffnen: ein Finger nimmt den Punkt im Umkreis von 22 px (der nächste gewinnt), eine Maus im Umkreis von 8 px; ein Tippen auf die leere Karte liest nichts.
 
 <a id="atmosphere-zones"></a>**Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
 (Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
