@@ -7739,8 +7739,13 @@ def a198(c):
     c.wait(1600)
     n2 = int(re.search(r'(\d+) s', c.text('#fSync .f-lbl'))[1]) if word in c.text('#fSync .f-lbl') else 0
     c.ok(n2 < n1, (n1, n2), 'the count goes down, second after second')
+    # dite LÀ OÙ L'ON EST : une bande sous l'en-tête à toutes les largeurs (le bouton de synchronisation n'est pas dans la barre du haut d'un téléphone), et une note flottante
+    band = c.js("(b => ({ shown: !b.hidden && b.getBoundingClientRect().height > 0, text: b.textContent, top: Math.round(b.getBoundingClientRect().top), head: Math.round(document.querySelector('.f-head').getBoundingClientRect().bottom), w: Math.round(b.getBoundingClientRect().width), vw: innerWidth }))(document.getElementById('fLimit'))")
+    c.ok(band['shown'] and word in band['text'] and abs(band['top'] - band['head']) <= 1 and band['w'] >= band['vw'] - 1, band, 'the sentence of the limit is on the screen where one is: a band right under the header, full width')
+    c.ok(word in c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ')"), '', 'and a floating note says it once for this wait')
     c.shot(f'A198_limit_{c.width}_{c.lang}_delivered.png')
     c.until(f"!document.querySelector('#fSync .f-lbl').textContent.includes({json.dumps(word)})", timeout=30000, what='the wait ends')
+    c.eq(c.js("document.getElementById('fLimit').hidden"), True, 'the band goes when the wait ends', what='band gone')
     c.wait(500)
     c.ok(state['limited'] == 1 and state['hits'].get(1) == 1 and state['hits'].get(2) == 1 and state['hits'].get(3) == 2, state, 'the read resumed at page 3: pages 1 and 2 were asked once, page 3 twice (the wait between)')
     diag = c.js("async () => { const d = await FrameData.diagnostic(); return { rl: d.rateLimit, tree: d.treeRead } }")

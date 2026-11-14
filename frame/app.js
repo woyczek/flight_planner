@@ -2919,6 +2919,8 @@
       clearInterval(syncCountdown);
       syncCountdown = 0;
     }
+    // la phrase de la limite, DITE LÀ OÙ L'ON EST (SOG-0337) : une bande sous l'en-tête, à toutes les largeurs, tant que la couche attend, et une note flottante une fois par attente
+    paintLimit(s);
     // la limite de requêtes du dépôt : « reprise dans n s » compte à rebours chaque seconde tant qu'elle dure (un événement : l'attente commence, elle finit)
     if (s.rateLimit && !limitTick) limitTick = setInterval(() => FD.status().then(paintSync).catch(() => {}), 1e3);
     else if (!s.rateLimit && limitTick) {
@@ -2933,6 +2935,23 @@
     b.setAttribute('aria-label', label);
     b.querySelector('.f-lbl').textContent = label;
     fitStale(); // le texte de la synchronisation a changé : le cartouche se remet à sa taille
+  }
+  let limitUntil = 0; // la fin de l'attente déjà annoncée par une note (une seule note par attente)
+  function paintLimit(s) {
+    const bar = $('fLimit');
+    if (!bar) return;
+    const text = s.rateLimit ? t(T.sync.limited, {
+      who: s.rateLimit.who,
+      n: s.rateLimit.secs
+    }) : '';
+    if (bar.textContent !== text) bar.textContent = text;
+    if (bar.hidden !== !text) bar.hidden = !text;
+    if (s.rateLimit && s.rateLimit.until !== limitUntil) {
+      limitUntil = s.rateLimit.until;
+      notify(text, 'warn', {
+        key: 'frame-limit'
+      });
+    }
   }
   let rewrittenSaid = false,
     limitTick = 0,
