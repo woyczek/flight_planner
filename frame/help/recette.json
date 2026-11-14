@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
-  "tests": 222,
+  "tests": 223,
   "verdicts": 152
  },
  "apps": [
@@ -1575,9 +1575,15 @@
     "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
     "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto"
    },
-   "test": "Recharge la page. Carburant, un terrain dont les procédures viennent de Little Navmap (KDEN par exemple, après « Lire depuis Little Navmap ») : choisis une procédure ; un avertissement dit qu'elle vient de Little Navmap, pour ton usage personnel, sous les listes et dans la ligne de résumé du côté.",
+   "test": "Recharge la page. Carburant, un vol vers KTPA (ou KDEN), bloc Procédures, AVANT de choisir une piste : la ligne Piste dit le vent du METAR et propose une piste ; les lignes Arrivée, Départ et Approche disent « Little Navmap, lue sur ce poste » sans attendre un choix.",
    "since": "2026-11-11",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-14T11:33:36Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "je vole vers KTPA. je veux choisir la piste. j’ai star/sid, mais pas de meteo sur la piste… pourtant, des fois, on l’a. screenshot. rien ne me dit que les données viennent de lnm. normal ? ah si, une popup discrète qui disparaît. rien sur la zone de choix. screenshot. Une fois qu’on a choisi la piste conseillée, la météo apparaît … bizarre comme bug (screenshot)",
+    "at": "2026-11-13T15:53:35Z"
+   }
   },
   {
    "id": "SOG-0211",
@@ -3230,6 +3236,20 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T10:33:14Z"
+  },
+  {
+   "id": "SOG-0344",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions au téléphone : le titre est écrasé dans une colonne étroite, un mot par ligne",
+    "en": "Missions on the phone: the title is squeezed into a narrow column, one word per line",
+    "de": "Missionen am Telefon: der Titel ist in eine schmale Spalte gequetscht, ein Wort pro Zeile",
+    "es": "Misiones en el teléfono: el título queda aplastado en una columna estrecha, una palabra por línea"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Missions : chaque titre se lit en entier sur toute la largeur, le trajet, l'aéronef et la durée sont dessous, en petit.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T11:21:26Z"
   },
   {
    "id": "SOG-0346",

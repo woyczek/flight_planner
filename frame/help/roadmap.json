@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9afb5c1",
+  "organisation": "5669d9a",
   "fiches": 357,
   "untranslated": 0,
   "priorities": 310
@@ -2752,11 +2752,12 @@
     {
      "id": "SOG-0344",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions au téléphone : le titre est écrasé dans une colonne étroite, un mot par ligne",
      "en": "Missions on the phone: the title is squeezed into a narrow column, one word per line",
      "de": "Missionen am Telefon: der Titel ist in eine schmale Spalte gequetscht, ein Wort pro Zeile",
-     "es": "Misiones en el teléfono: el título queda aplastado en una columna estrecha, una palabra por línea"
+     "es": "Misiones en el teléfono: el título queda aplastado en una columna estrecha, una palabra por línea",
+     "test": true
     }
    ]
   },
@@ -3269,12 +3270,13 @@
     {
      "id": "SOG-0210",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "États-Unis : aucune procédure pour KDEN, et le repli Little Navmap annoncé n'a pas de geste",
      "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
      "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
      "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto",
-     "rank": 197
+     "rank": 197,
+     "test": true
     },
     {
      "id": "SOG-0216",
