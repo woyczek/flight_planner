@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
-  "tests": 218,
+  "tests": 220,
   "verdicts": 153
  },
  "apps": [
@@ -3242,6 +3242,34 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T11:03:42Z"
+  },
+  {
+   "id": "SOG-0348",
+   "app": "pilote",
+   "title": {
+    "fr": "Itinéraires proposés, sur la Carte : toucher une ligne de la liste ne la choisit pas (seul le tracé répond)",
+    "en": "Proposed routes, on the Map: tapping a line of the list does not choose it (only the drawn route answers)",
+    "de": "Vorgeschlagene Routen, auf der Karte: das Antippen einer Listenzeile wählt sie nicht (nur die gezeichnete Route reagiert)",
+    "es": "Rutas propuestas, en el Mapa: tocar una línea de la lista no la elige (solo responde el trazado)"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Carburant › Route, « Calculer A → B » : touche une LIGNE de la liste des itinéraires (pas le trait sur la carte) : elle est choisie, son trait passe en avant. Si rien ne se passe, dis sur quel vol.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T11:15:43Z"
+  },
+  {
+   "id": "SOG-0350",
+   "app": "pilote",
+   "title": {
+    "fr": "Écran Carburant au téléphone : dans le volet du bas (préférences, couches), les coches sont trop petites",
+    "en": "Fuel screen on the phone: in the bottom sheet (preferences, layers) the checkboxes are too small",
+    "de": "Kraftstoff-Bildschirm am Telefon: im unteren Blatt (Einstellungen, Ebenen) sind die Kästchen zu klein",
+    "es": "Pantalla Combustible en el teléfono: en la hoja inferior (preferencias, capas) las casillas son demasiado pequeñas"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Carburant, un vol ouvert, la carte, le volet « Couches » : chaque case se coche du premier coup au doigt, en touchant la case ou son libellé.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T11:15:43Z"
   }
  ],
  "decisions": [

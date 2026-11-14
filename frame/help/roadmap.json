@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c714e75",
+  "organisation": "79d852e",
   "fiches": 355,
   "untranslated": 0,
   "priorities": 310
@@ -1331,20 +1331,22 @@
     {
      "id": "SOG-0348",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Itinéraires proposés, sur la Carte : toucher une ligne de la liste ne la choisit pas (seul le tracé répond)",
      "en": "Proposed routes, on the Map: tapping a line of the list does not choose it (only the drawn route answers)",
      "de": "Vorgeschlagene Routen, auf der Karte: das Antippen einer Listenzeile wählt sie nicht (nur die gezeichnete Route reagiert)",
-     "es": "Rutas propuestas, en el Mapa: tocar una línea de la lista no la elige (solo responde el trazado)"
+     "es": "Rutas propuestas, en el Mapa: tocar una línea de la lista no la elige (solo responde el trazado)",
+     "test": true
     },
     {
      "id": "SOG-0350",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Écran Carburant au téléphone : dans le volet du bas (préférences, couches), les coches sont trop petites",
      "en": "Fuel screen on the phone: in the bottom sheet (preferences, layers) the checkboxes are too small",
      "de": "Kraftstoff-Bildschirm am Telefon: im unteren Blatt (Einstellungen, Ebenen) sind die Kästchen zu klein",
-     "es": "Pantalla Combustible en el teléfono: en la hoja inferior (preferencias, capas) las casillas son demasiado pequeñas"
+     "es": "Pantalla Combustible en el teléfono: en la hoja inferior (preferencias, capas) las casillas son demasiado pequeñas",
+     "test": true
     },
     {
      "id": "SOG-0353",
