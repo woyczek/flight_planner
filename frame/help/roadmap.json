@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4a0f068",
-  "fiches": 347,
+  "organisation": "5973802",
+  "fiches": 348,
   "untranslated": 0,
   "priorities": 310
  },
@@ -1309,6 +1309,15 @@
      "de": "Direct auf Anweisung der Flugsicherung: die ursprüngliche Route violett behalten, den Direct anders zeichnen",
      "es": "Directo por instrucción del control: mantener la ruta inicial en violeta, trazar el directo con otro trazo",
      "test": true
+    },
+    {
+     "id": "SOG-0348",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Itinéraires proposés, sur la Carte : toucher une ligne de la liste ne la choisit pas (seul le tracé répond)",
+     "en": "Proposed routes, on the Map: tapping a line of the list does not choose it (only the drawn route answers)",
+     "de": "Vorgeschlagene Routen, auf der Karte: das Antippen einer Listenzeile wählt sie nicht (nur die gezeichnete Route reagiert)",
+     "es": "Rutas propuestas, en el Mapa: tocar una línea de la lista no la elige (solo responde el trazado)"
     }
    ]
   },
@@ -2870,7 +2879,7 @@
     {
      "id": "SOG-0341",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Registre des immatriculations : comment un téléphone appairé y accède-t-il, s'il n'est pas publié ?",
      "en": "Aircraft register: how does a paired phone reach it, if it is not published?",
      "de": "Luftfahrzeugregister: wie erreicht ein gekoppeltes Telefon es, wenn es nicht veröffentlicht ist?",
@@ -3455,7 +3464,7 @@
     {
      "id": "SOG-0255",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Un moteur de recherche global (par exemple « un858 » depuis la carte)",
      "en": "A global search engine (for instance “un858” from the map)",
      "de": "A global search engine (for instance “un858” from the map)",
