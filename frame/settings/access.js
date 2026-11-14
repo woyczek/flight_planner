@@ -184,7 +184,7 @@
         [T.last, s.lastSync ? c.time.fmtDateZ(s.lastSync) : t(T.never)],
         [T.network, t(s.online === false ? T.offline : T.online)],
         ...(s.lastError ? [
-          [T.lastError, s.lastError]
+          [T.lastError, c.errText ? c.errText(s.lastError) : s.lastError]
         ] : [])
       ].map(([k, v]) => `<dt>${esc(t(k))}</dt><dd>${esc(v)}</dd>`).join('');
       // la tête (un compte par sorte) et les listes repliées des éléments qui attendent : la synthèse (sync_summary.js)
@@ -287,7 +287,9 @@
     ficheFold: ['Genre et familles de missions · {n} sur {m}', 'Kind and mission families · {n} of {m}',
       'Art und Missionsfamilien · {n} von {m}', 'Tipo y familias de misiones · {n} de {m}'
     ],
-    moreLine: ['Créer ou rejoindre une compagnie : « Mise en route », en bas.', 'Create or join an airline: “Getting started”, below.', 'Gesellschaft gründen oder beitreten: „Einrichtung“, unten.', 'Crear o unirse a una compañía: «Puesta en marcha», abajo.'],
+    moreLine: ['Créer ou rejoindre une compagnie : « Mise en route », en bas.', 'Create or join an airline: “Getting started”, below.',
+      'Gesellschaft gründen oder beitreten: „Einrichtung“, unten.', 'Crear o unirse a una compañía: «Puesta en marcha», abajo.'
+    ],
     onboardTitle: ['Créer ou rejoindre une compagnie', 'Create or join an airline', 'Gesellschaft gründen oder beitreten',
       'Crear o unirse a una compañía'
     ],

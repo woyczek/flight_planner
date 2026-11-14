@@ -4403,6 +4403,7 @@
       transport: () => configured,
       aerodb: () => aerodb,
       syncNow,
+      errText, // la dernière erreur de la couche dans la langue de l'appli (Réglages › Synchronisation : « GitLab 429: » vide devient la phrase de la limite, SOG-0337)
       level: () => level,
       modules: async () => (await levelsP, APP.modules.map(m => ({
         id: m.id,

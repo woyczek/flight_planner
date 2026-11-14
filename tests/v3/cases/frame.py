@@ -7746,3 +7746,26 @@ def a198(c):
     diag = c.js("async () => { const d = await FrameData.diagnostic(); return { rl: d.rateLimit, tree: d.treeRead } }")
     c.ok(diag['rl'] and diag['rl']['waits'] == 1 and diag['rl']['last']['status'] == 429 and diag['rl']['last']['retryAfterS'] == 5 and diag['rl']['pacing']['perMin'] == 80, diag, 'the diagnostic carries the limit that was read (status, Retry-After, waits) and the pace kept')
     c.check_errors()
+
+
+@case('A199', "Settings › Synchronisation: a request limit that outlasts the retries is said in words, not as « GitLab 429: » with an empty message (SOG-0337, the user's iPhone)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False, phone=True,
+      rule="SOG-0337 (capture of the user's iPhone, Settings › Synchronisation): « Dernière erreur GitLab 429: » (an empty message) and nothing leaves the phone; the card now says the same sentence as the sync button's tooltip (« limite de requêtes atteinte : la lecture reprendra toute seule (GitLab 429) »)")
+def a199(c):
+    def handler(route):
+        req = route.request
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        if req.url.split('?')[0].endswith('/repository/branches/main'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps({'name': 'main', 'commit': {'id': 'c1'}}))
+        return route.fulfill(status=429, headers={**hdr, 'Retry-After': '5'}, body='{}')
+    c.context.route(re.compile(r'https://gitlab\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
+    c.open('settings?card=sync', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    c.until("!!document.querySelector('[data-card=\"sync\"] [data-sync]')", timeout=20000, what='the Synchronisation card')
+    c.until("/Dernière erreur|Last error/.test(document.querySelector('[data-card=\"sync\"] [data-sync]').textContent)", timeout=60000, what='the last error shown')
+    txt = c.text('[data-card="sync"] [data-sync]')
+    c.ok('limite de requêtes' in txt and not re.search(r'GitLab 429:\s*(\)|$)', txt), txt, 'the last error is the sentence of the limit, not « GitLab 429: » alone')
+    c.shot(f'A199_sync_{c.width}_{c.lang}_delivered.png')
+    c.check_errors()
