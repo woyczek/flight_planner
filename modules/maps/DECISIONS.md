@@ -3142,3 +3142,24 @@ The list, one line per layer (what `loadData` reads around the plan; the box is 
   2. **Every layer change read everything again**: `reprofile` → `invalidate` → `refresh` with the new view box, and the profile (`profile_view.js`) read the airspaces and the airways on each profile rebuild. Now the reads are kept per layer, boxes and parameters (`readOnce`, `S.dataMemo`, 80 entries, emptied by the base's own change event: `S.dataEpoch`), the profile uses the same memo, and a refresh forced by a layer change while the view fits in what is read re-reads the **same box** (draw.js) — its keys are the same, so only the layers that need data they do not have ask the base.
 - D237 (red before): unticking a layer that reads nothing of the base makes no read; with the base answering nothing, ticking « Around the flight only » keeps the aerodromes shown.
 
+## Survey, no code: what the Map beside Fuel knows that the full Map does not find again (SOG-0353)
+His words: « si on affiche la vue cible dans fuel, et qu'on passe sur carte, on doit voir la vue cible avec les mêmes paramètres… Faut-il une spec pour conserver les données entre les deux ? » The two are the **same module mounted twice** (`maps?pane=1` / `fuel?with=maps` beside Fuel, `maps` full): each mount makes a **new state `S`** (`setS` in `mount`), so only what is written to the device or to the flight survives the change of screen.
+
+**Survives today** (written, read again by the other mount)
+1. The **mode** (`preset`: auto / VFR / IFR / …) and **the boxes ticked per mode** (only the differences from the defaults) — `cache/maps/ui.json` (`saveUi`).
+2. The **view chosen per mission map**, keyed `<mission>|<file>` (VFR / IFR / base / yaml) — same file (`mission`).
+3. What the **flight** carries: its route and points, the chosen runway / SID / STAR / approach (`route.procedures`), the aerodromes, the level, the mission it names (`mission`), the progress; the company's profiles (`airline/map_profiles.json`).
+4. Fuel's proposals in progress (`cache/fuel/route_alts.json`, schema 2: the open row, the detail, the age).
+
+**Lost at the change of screen** (in `S`, memory of the mount only)
+1. **The provided map shown in place — « la vue cible »**: `S.mapWanted` / `S.mapDef` (the choice of map in the mission window). The view chosen for it is kept (item 2 above) but **which file** was shown is not: the full Map comes back on the flight view with the selector empty. This is his case.
+2. **The window of the mission**: folded or open (`mbmin`), the inline question of abandoning, the loading state.
+3. **The framing**: centre, zoom, bearing (`S.userMoved` and the camera; the address `?view=w,s,e,n` is read at mount but nothing writes it) — the full Map frames the flight again.
+4. **The content open in the sheet** (`S.dpanel`: Layers, the spaces at a point, an aerodrome's content, the weather, the ground) and its details: the space chosen on the profile (`S.selSpace`, `S.lvOpen` card), the aerodrome pinned in the VFR view (`S.vfrPin`), the ground panel's highlighted element (`S.ground.hl`).
+5. **The procedure shown**: what is **chosen** survives (it is the flight's); a procedure only **previewed or highlighted** (`S.procs` hover, the « choose on the map » mode `S.choose`, its list and fit) does not.
+6. **The profile's state**: the cursor (`S.cursor`), the zoomed window (`S.axw`), the weather cut gesture (« Route weather »).
+7. **Transient pointing**: the hovered route point (`S.hlPoint`, the `route-point-hover` event), the hovered proposed route (`S.altHover`), the route shown on the Map alone (`S.altShow`; Fuel's `open` survives), the « Suivre » toggle (`S.follow`) and the follow-up's fold (`S.followOpen`), the edit mode and its undo.
+8. **What was read**: `S.data`, the per-layer memo (`S.dataMemo`), the tracks, the wind grids — read again at each mount (the base answers from the device, but nothing is shown until the first read ends).
+
+**What a spec would have to decide** (his question): which of 1 – 7 are a *view* the pilot wants to find again (the shown map, the framing, the mode, the layers, the open content) and which are a gesture (hover, undo, edit); where the shared state lives (a document `cache/maps/state.json` per device, read at mount and written on change — the same place as `ui.json` — rather than a state shared in memory, since the pane and the full Map are never mounted at once); and the rule when the flight changed in between (a state for another flight or another mission is dropped, like Fuel's proposals). No code until the ergonomist's spec.
+
