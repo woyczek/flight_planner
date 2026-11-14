@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The band of the request limit pushes the view down instead of covering its first row** (SOG-0337); noreg A198
 - **Fuel: the line of the first synchronisation no longer promises « a few seconds » (a GitLab rate limit can hold it)** (fuel DECISIONS; noreg F84; SOG-0337).
 - **With a tree already known, only what changed is read** (SOG-0337, T2): one comparison of the two heads and the one folder of each changed file instead of the 105 pages of the whole repository; whole tree (paced) when the comparison is refused or truncated, touches more than 100 files, or a folder is too large to list; noreg A38, A201
 - **PDF libraries as an option** (Q-0053) — `pdf/status` says whether pypdf, pdfplumber and Pillow are there at the minimum versions of the security review (and the command to run if not; the launcher installs nothing and never imports them), and `tools/pdf_guard.py` reads a deposited PDF in a bounded child (hard timeout on the whole process tree, memory limit, bounded untrusted output, clean environment, empty working folder). Launcher Python: restart the launcher. Case K268.

@@ -2211,7 +2211,8 @@ html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
   white-space: nowrap
 }
 /* la limite de requêtes du dépôt (SOG-0337) : « GitLab limite les requêtes : reprise dans n s » dite LÀ OÙ L'ON EST, sous l'en-tête, à toutes les largeurs, tant que la couche attend (le bouton de
-   synchronisation n'est pas dans la barre du haut d'un téléphone) ; hors du flux : la mise en page ne bouge pas */
+   synchronisation n'est pas dans la barre du haut d'un téléphone) ; la vue est poussée vers le bas de sa hauteur (html.f-limited, --f-limit-h posée par frame/app.js) : elle ne recouvre jamais la
+   première rangée de la vue */
 .f-limit {
   position: fixed;
   top: var(--f-head-h);
@@ -2228,5 +2229,8 @@ html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
 }
 .f-limit[hidden] {
   display: none
+}
+html.f-limited .f-view {
+  margin-top: var(--f-limit-h, 0px)
 }
 

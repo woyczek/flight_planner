@@ -2956,6 +2956,11 @@
     }) : '';
     if (bar.textContent !== text) bar.textContent = text;
     if (bar.hidden !== !text) bar.hidden = !text;
+    // la vue est poussée de la hauteur de la bande (jamais recouverte) : la hauteur change avec la langue et la largeur (une ou deux lignes)
+    const h = text ? `${bar.offsetHeight}px` : '0px',
+      root = document.documentElement;
+    if (root.style.getPropertyValue('--f-limit-h') !== h) root.style.setProperty('--f-limit-h', h);
+    if (root.classList.contains('f-limited') !== !!text) root.classList.toggle('f-limited', !!text);
     if (s.rateLimit && s.rateLimit.until !== limitUntil) {
       limitUntil = s.rateLimit.until;
       notify(text, 'warn', {

@@ -7742,10 +7742,12 @@ def a198(c):
     # dite LÀ OÙ L'ON EST : une bande sous l'en-tête à toutes les largeurs (le bouton de synchronisation n'est pas dans la barre du haut d'un téléphone), et une note flottante
     band = c.js("(b => ({ shown: !b.hidden && b.getBoundingClientRect().height > 0, text: b.textContent, top: Math.round(b.getBoundingClientRect().top), head: Math.round(document.querySelector('.f-head').getBoundingClientRect().bottom), w: Math.round(b.getBoundingClientRect().width), vw: innerWidth }))(document.getElementById('fLimit'))")
     c.ok(band['shown'] and word in band['text'] and abs(band['top'] - band['head']) <= 1 and band['w'] >= band['vw'] - 1, band, 'the sentence of the limit is on the screen where one is: a band right under the header, full width')
+    flow = c.js("(() => { const b = document.getElementById('fLimit').getBoundingClientRect(), v = document.getElementById('fView'), r = v.getBoundingClientRect(), k = v.firstElementChild?.getBoundingClientRect(); return { bandBottom: Math.round(b.bottom), viewTop: Math.round(r.top), firstTop: Math.round(k ? k.top : r.top), pushed: document.documentElement.classList.contains('f-limited') } })()")
+    c.ok(flow['pushed'] and flow['viewTop'] >= flow['bandBottom'] - 1 and flow['firstTop'] >= flow['bandBottom'] - 1, flow, 'the band is IN the flow: the view starts below it, the first row is never covered')
     c.ok(word in c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ')"), '', 'and a floating note says it once for this wait')
     c.shot(f'A198_limit_{c.width}_{c.lang}_delivered.png')
     c.until(f"!document.querySelector('#fSync .f-lbl').textContent.includes({json.dumps(word)})", timeout=30000, what='the wait ends')
-    c.eq(c.js("document.getElementById('fLimit').hidden"), True, 'the band goes when the wait ends', what='band gone')
+    c.eq(c.js("[document.getElementById('fLimit').hidden, document.documentElement.classList.contains('f-limited'), document.documentElement.style.getPropertyValue('--f-limit-h')]"), [True, False, '0px'], 'the band goes when the wait ends, the view comes back up', what='band gone')
     c.wait(500)
     c.ok(state['limited'] == 1 and state['hits'].get(1) == 1 and state['hits'].get(2) == 1 and state['hits'].get(3) == 2, state, 'the read resumed at page 3: pages 1 and 2 were asked once, page 3 twice (the wait between)')
     diag = c.js("async () => { const d = await FrameData.diagnostic(); return { rl: d.rateLimit, tree: d.treeRead } }")
