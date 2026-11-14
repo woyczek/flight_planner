@@ -1290,22 +1290,55 @@ export function createProcedures(host) {
   function paint(box, models) {
     const sides = ['dep', 'arr'].map((side, i) => {
         const m = models[i];
-        return m ? {
+        return m?.wait ? {
+          side,
+          wait: m
+        } : m ? {
           side,
           m,
           fields: fieldsOf(side, m)
         } : null;
       }),
-      struct = sides.map((s, i) => s ? structOf(s.side, s.m, s.fields) : structOf(['dep', 'arr'][i], null)).join('|');
+      real = sides.filter(s => s?.m),
+      // SOG-0345 : un côté en attente a sa ligne (« Lecture des procédures de LFML… », puis, à la borne, pas encore lues ou la limite)
+      struct = sides.map((s, i) => s?.wait ? `${s.side}:wait:${s.wait.icao}:${s.wait.text}` : s ? structOf(s.side, s.m, s.fields) :
+        structOf(['dep', 'arr'][i], null)).join('|');
     if (box.dataset.struct !== struct) {
       const k = box.contains(document.activeElement) ? document.activeElement.dataset?.k : null;
-      box.innerHTML = sides.filter(Boolean).map(s => skeleton(s.side, s.m, s.fields)).join('');
+      box.innerHTML = sides.filter(Boolean).map(s => s.wait ? waitHtml(s.side, s.wait) : skeleton(s.side, s.m, s.fields)).join('');
       box.dataset.struct = struct;
-      for (const s of sides.filter(Boolean)) patchSide(box.querySelector(`[data-proc="${s.side}"]`), s.side, s.m, s.fields);
+      for (const s of real) patchSide(box.querySelector(`[data-proc="${s.side}"]`), s.side, s.m, s.fields);
       if (k && !coarse()) box.querySelector(`[data-k="${k}"]`)?.focus(); // ordinateur : la liste qui l'avait le retrouve
     } else
-      for (const s of sides.filter(Boolean)) patchSide(box.querySelector(`[data-proc="${s.side}"]`), s.side, s.m, s.fields);
+      for (const s of real) patchSide(box.querySelector(`[data-proc="${s.side}"]`), s.side, s.m, s.fields);
     fitGrid(box);
+  }
+  /** SOG-0345 : un côté dont le modèle n'est pas encore là — son terrain et une ligne qui dit pourquoi ; jamais un titre seul. */
+  const waitHtml = (side, w) => `<div class="fu-proc" data-proc="${side}" data-procwait data-icao="${esc(w.icao)}"><div class="fu-proctitle"><b>${esc(tt(TX[side]))} ${esc(w.icao)}</b></div><p class="f-muted" data-procwaittext>${esc(w.text)}</p></div>`;
+  /** SOG-0345 : la borne d'un côté (ms) : au-delà, la ligne d'attente dit que les procédures ne sont pas encore lues (ou la limite). */
+  const SIDE_WAIT = 8000;
+  // SOG-0345 (a) : le dernier modèle de chaque côté, par terrain — peint d'abord à la demande suivante, jamais remplacé par une attente
+  const keptModels = new Map();
+  /** Le terrain d'un côté du vol (4 signes), '' sinon. */
+  const icaoOfSide = side => {
+    const r = host.flight().route || {},
+      v = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
+    return /^[A-Z0-9]{4}$/.test(v) ? v : '';
+  };
+  /** SOG-0345 (b) : la phrase d'un côté en attente — la lecture en cours, puis, à la borne, la limite du dépôt (la phrase du bandeau du
+   *  cadre, SOG-0337) ou « pas encore lues ; elles se lisent depuis le poste ». */
+  async function waitText(icao, late) {
+    if (!late) return tt(TX.procWaiting, {
+      icao
+    });
+    const st = await Promise.resolve().then(() => ctx.data?.status?.()).catch(() => null),
+      lim = st?.rateLimit;
+    return lim ? tt(TX.procLimited, {
+      who: String(lim.who || '').slice(0, 20),
+      n: Math.max(1, Math.round(+lim.secs) || 1)
+    }) : tt(TX.procNotYet, {
+      icao
+    });
   }
   /** Clé de ce que montrent les lignes : choix, terrains, vol démarré ; changée, sync redessine. */
   const rowsKey = () => JSON.stringify([host.key(), !!host.flight().started?.at]);
@@ -1329,13 +1362,46 @@ export function createProcedures(host) {
     }
     key = rowsKey();
     if (!box) return;
-    const models = await Promise.all([sideModel('dep'), sideModel('arr')]);
-    if (host.gone() || mine !== seq || !host.body()) return;
-    // toutes les fiches des deux terrains, retrouvées par leur identifiant quand une piste choisie en retire le choix
-    for (const m of models.filter(Boolean)) {
-      adOf(m.icao).recs = new Map(m.all.map(r => [r.id, r]));
-      adOf(m.icao).rwys = m.rwys.map(r => String(r.id)); // les pistes proposées : seules admises dans une proposition de la Carte
-    }
+    // SOG-0345 (photo du 14/11 : le bloc réduit à son titre au téléphone) : chaque côté se peint dès que SON modèle est là ; ce que
+    // l'appareil a déjà (le dernier modèle du terrain) d'abord ; ce qui manque dit « Lecture des procédures de LFML… », puis, à la
+    // borne (SIDE_WAIT, la lecture continue), pas encore lues ou la limite du dépôt — jamais un titre seul
+    const sides = ['dep', 'arr'],
+      icaos = sides.map(icaoOfSide),
+      got = icaos.map((k, i) => k ? keptModels.get(`${sides[i]}|${k}`) : null),
+      waits = icaos.map(k => k ? tt(TX.procWaiting, {
+        icao: k
+      }) : ''),
+      live = () => !host.gone() && mine === seq && !!host.body(),
+      keep = m => {
+        // toutes les fiches du terrain, retrouvées par leur identifiant quand une piste choisie en retire le choix
+        adOf(m.icao).recs = new Map(m.all.map(r => [r.id, r]));
+        adOf(m.icao).rwys = m.rwys.map(r => String(r.id)); // les pistes proposées : seules admises dans une proposition de la Carte
+      },
+      shown = () => got.map((m, i) => m !== undefined ? m : icaos[i] ? {
+        wait: true,
+        icao: icaos[i],
+        text: waits[i]
+      } : null);
+    got.forEach(m => m && keep(m));
+    if (got.some(m => m === undefined)) paint(box, shown());
+    const late = setTimeout(async () => {
+      const t = await Promise.all(icaos.map((k, i) => k && got[i] === undefined ? waitText(k, true) : waits[i]));
+      if (!live()) return;
+      t.forEach((x, i) => waits[i] = x);
+      if (got.some(m => m === undefined)) paint(box, shown());
+    }, SIDE_WAIT);
+    const models = await Promise.all(sides.map((side, i) => sideModel(side).catch(() => null).then(m => {
+      if (!live()) return m;
+      got[i] = m;
+      if (m) {
+        keptModels.set(`${side}|${m.icao}`, m);
+        keep(m);
+      }
+      if (got.some(x => x === undefined)) paint(box, shown()); // l'autre côté attend encore : celui-ci est peint tout de suite
+      return m;
+    })));
+    clearTimeout(late);
+    if (!live()) return;
     paint(box, models);
     host.drawn?.(); // les fiches des deux terrains sont connues : le texte de route peut suivre le choix (§ 10.31)
     applyFocus();

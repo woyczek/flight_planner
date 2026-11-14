@@ -19,6 +19,19 @@ export const TX = {
     'Little Navmap, leída en este equipo'
   ],
   // SOG-0210 (refus du 13 nov.) : une procédure choisie lue de Little Navmap le dit sous les listes et sur la ligne de résumé
+  // SOG-0345 : un côté dont les procédures ne sont pas encore là le dit — jamais un titre seul
+  procWaiting: ['Lecture des procédures de {icao}…', 'Reading the procedures of {icao}…', 'Verfahren von {icao} werden gelesen…',
+    'Leyendo los procedimientos de {icao}…'
+  ],
+  procNotYet: ['{icao} : procédures pas encore lues ; elles se lisent depuis le poste.',
+    '{icao}: procedures not read yet; they are read from the workstation.',
+    '{icao}: Verfahren noch nicht gelesen; sie werden am Arbeitsplatz gelesen.',
+    '{icao}: procedimientos aún no leídos; se leen desde el puesto.'
+  ],
+  // la phrase du bandeau du cadre (SOG-0337, frame/app.js T.sync.limited), pour que la cause se reconnaisse
+  procLimited: ['{who} limite les requêtes : reprise dans {n} s', '{who} is limiting requests: resuming in {n} s',
+    '{who} begrenzt die Anfragen: Fortsetzung in {n} s', '{who} limita las solicitudes: se reanuda en {n} s'
+  ],
   // SOG-0210 (second refus) : des listes lues de Little Navmap, dites avant tout choix
   procLnmLists: ['⚠ Des procédures de ce terrain sont lues de Little Navmap, sur ce poste, pour votre usage personnel.',
     '⚠ Procedures of this aerodrome are read from Little Navmap, on this device, for your personal use.',

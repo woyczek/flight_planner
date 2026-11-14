@@ -1997,3 +1997,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   side's warning line now shows as soon as its lists come from Little Navmap (`procLnmLists`), before any choice, and the Arrivée /
   Départ / Approche lines carry « Little Navmap, lue sur ce poste » when their whole list comes from it, chosen or not. F223 (red
   before); F203 unchanged.
+- **14 Nov 2026 — SOG-0345: the procedures block is never a bare title** (the user's iPhone photo, 11 h 15: « Procédures » and nothing;
+  survey: LFPO and EIDW are in the private repository, `render()` waited for every read of both sides — runways, procedures, coverage,
+  coords, catalogue — some unbounded (A15) — before painting anything). The ergonomist's agreement (12 h 21) with three points: (a) each
+  side is painted as soon as ITS model is there, and the last model of the aerodrome (`keptModels`) is painted first, never replaced by a
+  waiting line; (b) what is missing says « Lecture des procédures de LFML… », then at the bound (`SIDE_WAIT`, 8 s, the read goes on)
+  « pas encore lues ; elles se lisent depuis le poste », or, when `ctx.data.status().rateLimit` says the repository limits the requests,
+  the frame banner's own sentence (SOG-0337); (c) the bound is on the whole side, so an unbounded read below (zone manifest, meta) no
+  longer leaves a bare title. F224 (red before at 390: LFML's reads held); the 86 cases of the block and D224 green.

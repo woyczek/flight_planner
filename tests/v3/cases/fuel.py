@@ -5764,3 +5764,35 @@ def f223(c):
     c.ok(norm(tx(T, 'procSrcLnm', c.lang)) in norm(c.text(f'{A} [data-r=src-main]') or ''), c.text(f'{A} [data-prow=main]'),
          'the Arrivée line says its source, nothing chosen')
     c.eq(c.count(f'{FUEL} [data-proc="dep"] [data-lnmline]:not([hidden])'), 0, 'not on the departure (the base\'s)', what='departure')
+
+
+
+_PROC_HANG_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { for (const f of ['procedures', 'runways', 'coverage', 'coords']) { const o = db[f];
+        db[f] = (icao, ...r) => String(icao).toUpperCase() === 'LFML' ? new Promise(() => {}) : o.call(db, icao, ...r) } } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F224', 'Procedures on a phone, an aerodrome whose reads never answer: never a bare title — the departure is painted as soon as it is '
+      'read, the arrival says « Lecture des procédures de LFML… », then, at the bound, « pas encore lues ; elles se lisent depuis le poste »',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0345 (the user\'s iPhone photo, 14 Nov 11 h 15: the block reduced to its title; the survey: render() waited for every read of '
+      'both sides, some unbounded); the ergonomist\'s agreement at 12 h 21: what the device has first, a waiting line for what is missing, '
+      'the GitLab limit\'s sentence under the limit, a bound on the whole side — never a title alone; LFML\'s reads held (stub)')
+def f224(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.add_init_script(_PROC_HANG_STUB)
+    T = 'modules/fuel/procedures_texts.js'
+    D, A = f'{FUEL} [data-proc="dep"]', f'{FUEL} [data-proc="arr"]'
+    c.open('fuel', docs=proc_docs() + proc_flight({'dep': {}, 'arr': {}}), airfields=True)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{D}:not([data-procwait]) [data-r=sum]') && !!document.querySelector('{A}[data-procwait]')", timeout=15000,
+            what='the departure painted while the arrival waits')
+    c.ok(norm(tx(T, 'procWaiting', c.lang).replace('{icao}', 'LFML')) in norm(c.text(f'{A} [data-procwaittext]')), c.text(A), '« Lecture des procédures de LFML… »')
+    c.until(f"(document.querySelector('{A} [data-procwaittext]')?.textContent || '').includes('LFML') && "
+            f"!/…|\\.\\.\\./.test(document.querySelector('{A} [data-procwaittext]').textContent)", timeout=15000, what='the bound reached')
+    c.ok(norm(tx(T, 'procNotYet', c.lang).replace('{icao}', 'LFML')) in norm(c.text(f'{A} [data-procwaittext]')), c.text(A),
+         '« LFML : procédures pas encore lues ; elles se lisent depuis le poste »')
+    c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F224_{c.design}_390_{c.lang}_delivered.png')
