@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5301bd9",
+  "organisation": "f9172b8",
   "fiches": 343,
   "untranslated": 0,
   "priorities": 310
@@ -971,13 +971,14 @@
     {
      "id": "SOG-0307",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Carte : elle clignote pendant qu'on réduit le volet des espaces aériens",
      "en": "Map: it flickers while the airspace panel is being reduced",
      "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
      "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos",
      "milestone": "6.0.0-alpha.5",
-     "rank": 41
+     "rank": 41,
+     "test": true
     },
     {
      "id": "SOG-0046",
@@ -1266,7 +1267,7 @@
     {
      "id": "SOG-0328",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Cadre gradué / rose : de l'espace entre les pointes de flèches et les chiffres",
      "en": "Graduated frame / rose: some space between the arrowheads and the digits",
      "de": "Gradrahmen / Rose: etwas Abstand zwischen Pfeilspitzen und Ziffern",
@@ -1503,7 +1504,7 @@
     {
      "id": "SOG-0327",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Sol : un point d'attente garde son trait rouge quand son étiquette est retirée ; LFBD, deux étiquettes superposées",
      "en": "Ground: a holding point keeps its red bar when its label is dropped; LFBD, two labels on top of each other",
      "de": "Boden: ein Rollhalt behält seinen roten Strich, wenn sein Schild entfällt; LFBD, zwei Schilder übereinander",

@@ -2846,9 +2846,15 @@
     "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
     "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos"
    },
-   "test": "Recharge la page. Carte : ouvre « Couches », puis touche la carte dans un ou deux espaces aériens pour passer à leur vue : la carte ne clignote plus et le volet du bas garde sa hauteur. Si tu vois encore le volet rétrécir, dis-moi par quel geste.",
+   "test": "Recharge la page. Carte avec une route qui traverse des espaces, touche un point : le volet du bas montre le graphique des niveaux à gauche et la liste des espaces À DROITE ; rétrécis la fenêtre jusque vers 700 px : la liste reste à droite ; le volet ne clignote pas et ne change pas de hauteur. Si la liste repasse dessous chez toi, donne-moi la largeur de ta fenêtre.",
    "since": "2026-11-13",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-14T10:23:26Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "régression : la liste des espaces, qui devait être à droite du graphique, est maintenant à nouveau en bas.",
+    "at": "2026-11-13T15:21:57Z"
+   }
   },
   {
    "id": "SOG-0308",
