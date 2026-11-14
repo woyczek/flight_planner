@@ -820,3 +820,15 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   a token saved, provider other than GitLab) says that GitHub does not give the date and leads to the Access card (`go: card:access`); it stays until the pilot answers (a date or the
   box), which is how « une fois » is read here: one line, never a daily note. Cases A230 (the line, the field, the date kept, the alert with « date déclarée », the line gone; red before:
   no line) and A231 (the box ends the question, cutting the access forgets the date). Not done: the renewal by rotation (« plus tard » in the fiche); framagit is GitLab, covered by the first lot.
+
+## SOG-0342, nothing moves under the finger (14 Nov 2026)
+
+- The user, from his phone (14 Nov): « un refresh de la page settings forcé vers le haut de la page. On peut décoller, mais le scroll bouge. Probablement un rapport avec la 429 Gitlab. »
+  Survey with the rig of A199 (GitLab answers 429, the pass waits, fails, repeats) at 390: the screen is NOT redrawn (no card, group or screen node is replaced in 20 s) — the blocks are
+  updated in place — but three blocks ABOVE the part being read change height when the error arrives: the status block (+12 px, +44 px for a moment), the offline data (+44 then +68 px: the
+  list of zones fills in) and the synchronisation card (+69 px: « Dernière erreur » and the lists). Chromium compensates (scroll anchoring); Safari on a phone does not, so what is read slides.
+- Now `keepPlace(view)` (`settings.js`): each card and each fold of the screen is observed (`ResizeObserver`); when one of them, entirely above the top edge of the screen, changes height, the scroll is adjusted
+  by the same amount (one adjustment per batch). A block cut by the top edge or below it moves nothing: nothing to compensate. Observing is idempotent per view and runs at the end of every drawing.
+  Case A232 (anchoring of the browser switched off to be the phone, the Synchronisation card in the middle of the screen, 20 s of 429: the top of its title stays within 2 px; a shift that lasts
+  90 ms or more counts, because a read taken between a DOM change and the next painting is not what the user sees): red before (13 px at the arrival of the error), green after. Not done: the
+  bar under the header that says the request limit (V3 Frame, 74defd235) is in the frame; it was not seen to move the page in this rig.

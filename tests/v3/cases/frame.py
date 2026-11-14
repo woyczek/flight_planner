@@ -8390,3 +8390,36 @@ def a231(c):
     c.tap('.f-modal [data-ok]')
     c.until("!(JSON.parse(localStorage.getItem('sogFrame:tokenExpiry') || 'null') || {}).own", timeout=12000, what='the date is forgotten')
     c.check_errors()
+
+
+@case('A232', 'Settings on a phone: when a block ABOVE the part being read changes height (the status block, the offline data, the synchronisation card: a pass, a wait for a request limit, an error) the part being read does not move under the finger (SOG-0342, the user: « un refresh de la page settings forcé vers le haut de la page »)',
+      'A', designs=('standard',), screens=False, phone=True, night=False, tags=('settings',),
+      rule='SOG-0342: Safari on a phone has no scroll anchoring, so a block above the viewport that grows or shrinks pushes what is read; here the browser anchoring is switched off (overflow-anchor: none) and the Synchronisation card is put in the middle of the screen while GitLab answers 429 (the pass waits, fails, repeats): the top of its title stays where it was (±2 px, a shift lasting 90 ms or more) for 20 s although the blocks above it change height')
+def a232(c):
+    def handler(route):
+        req = route.request
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        if req.url.split('?')[0].endswith('/repository/branches/main'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps({'name': 'main', 'commit': {'id': 'c1'}}))
+        return route.fulfill(status=429, headers={**hdr, 'Retry-After': '2'}, body='{}')
+    c.context.route(re.compile(r'https://gitlab\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-01T00:00:00Z'}, 'cache']]
+    c.page.add_init_script("""(() => { const st = document.createElement('style'); st.textContent = '*, html, body { overflow-anchor: none !important; scroll-behavior: auto !important }';
+      document.addEventListener('DOMContentLoaded', () => document.head.appendChild(st)) })()""")
+    c.open('settings', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    c.until("!!document.querySelector('[data-card=\"sync\"] [data-sync]')", timeout=20000, what='the Synchronisation card')
+    c.js("document.querySelector('[data-group=sync]')?.setAttribute('open', '')")
+    c.wait(500)
+    title = "document.querySelector('[data-card=\"sync\"] h2')"
+    c.js(title + ".scrollIntoView({ block: 'center' })")
+    c.wait(300)
+    top0 = c.js("Math.round(" + title + ".getBoundingClientRect().top)")
+    c.ok(0 < top0 < c.js('innerHeight'), top0, 'the Synchronisation card is in the middle of the screen')
+    c.js("""window.__t0 = %s; window.__run = 0; window.__drift = []; window.__iv = setInterval(() => { const e = document.querySelector('[data-card="sync"] h2'); const d = e ? Math.round(e.getBoundingClientRect().top) - window.__t0 : 0;
+      window.__run = Math.abs(d) > 2 ? window.__run + 1 : 0; if (window.__run === 3) window.__drift.push([Math.round(performance.now()), d]) }, 30)""" % top0)
+    c.wait(20000)
+    drift = c.js("(() => { clearInterval(window.__iv); return window.__drift.slice(0, 4) })()")
+    c.eq(drift, [], 'for 20 s of waits and failures the title of the card read stays where it was (a shift that lasts 90 ms or more counts)', what='drift')
+    c.check_errors()

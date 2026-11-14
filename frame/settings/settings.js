@@ -677,6 +677,29 @@
     merge(view, tmp);
   }
 
+  /** Rien ne bouge sous le doigt (SOG-0342) : Safari sur téléphone n'ancre pas le défilement, donc un bloc AU-DESSUS de ce qu'on lit qui change de hauteur (le bloc d'état, les données hors ligne, la synchronisation :
+   *  un passage, une attente de limite, une erreur) pousse la page. Chaque carte et chaque pli de l'écran est observé ; quand l'un d'eux, tout entier au-dessus du bord haut de l'écran, change de hauteur, le
+   *  défilement est ajusté de la même quantité (un seul ajustement par lot de changements). Un bloc que l'écran coupe par le haut ou qui est dessous ne déplace rien : rien à compenser. Idempotent par vue. */
+  function keepPlace(view) {
+    if (!window.ResizeObserver) return;
+    const seen = view.__keepPlace ||= {
+      heights: new WeakMap(),
+      ro: new ResizeObserver(entries => {
+        let shift = 0;
+        for (const e of entries) {
+          const h = e.borderBoxSize?.[0]?.blockSize ?? e.contentRect.height,
+            was = seen.heights.get(e.target);
+          seen.heights.set(e.target, h);
+          if (was === undefined || was === h || !e.target.isConnected) continue;
+          // sa base AVANT le changement : si elle était déjà au-dessus du bord haut de l'écran, ce qui se lit a glissé de la différence
+          if (e.target.getBoundingClientRect().bottom - (h - was) <= 0) shift += h - was;
+        }
+        if (shift) scrollBy(0, shift);
+      })
+    };
+    for (const el of view.querySelectorAll('[data-card], details.f-group')) seen.ro.observe(el);
+  }
+
   /** État vivant de la carte Données hors ligne : zones publiées ou ouvertes, stockage du navigateur, puis la liste des zones (paintZones) et le diagnostic du cadre. */
   async function paintOffline(env) {
     const {
@@ -964,6 +987,7 @@
       runwayZoom
     });
     performance.mark?.('sog-settings-first');
+    keepPlace(view); // rien ne bouge sous le doigt quand un bloc au-dessus change de hauteur (SOG-0342)
 
     /** Carte de l'écran par son nom (data-card). */
     const card = k => view.querySelector(`[data-card="${k}"]`);
