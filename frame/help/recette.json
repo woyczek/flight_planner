@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
-  "tests": 223,
+  "tests": 225,
   "verdicts": 152
  },
  "apps": [
@@ -3258,6 +3258,20 @@
    "delivered": "2026-11-14T11:21:26Z"
   },
   {
+   "id": "SOG-0345",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant au téléphone : le bloc « Procédures » est vide, sans un mot ; les procédures doivent venir du dépôt privé",
+    "en": "Fuel on the phone: the « Procedures » block is empty, without a word; procedures must come from the private repository",
+    "de": "Kraftstoff am Telefon: der Block « Verfahren » ist leer, ohne ein Wort; Verfahren müssen aus dem privaten Repository kommen",
+    "es": "Combustible en el teléfono: el bloque « Procedimientos » está vacío, sin una palabra; los procedimientos deben venir del repositorio privado"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Carburant, un vol (LFPO → EIDW), bloc Procédures : chaque côté montre ses procédures dès qu'elles sont lues ; un côté qui attend le dit (« Lecture des procédures de … ») et, après quelques secondes, dit pourquoi — jamais un titre seul.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T11:40:24Z"
+  },
+  {
    "id": "SOG-0346",
    "app": "maintenance",
    "title": {
@@ -3312,6 +3326,20 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T11:26:29Z"
+  },
+  {
+   "id": "SOG-0352",
+   "app": "maintenance",
+   "title": {
+    "fr": "Routes NAT : les prendre depuis l'étape Route dès qu'un vol traverse l'Atlantique, et un rappel quotidien (pas mensuel)",
+    "en": "NAT tracks: fetch them from the Route step as soon as a flight crosses the Atlantic, and a daily (not monthly) reminder",
+    "de": "NAT-Routen: im Schritt Route holen, sobald ein Flug den Atlantik quert, und eine tägliche (nicht monatliche) Erinnerung",
+    "es": "Rutas NAT: tomarlas desde el paso Ruta en cuanto un vuelo cruza el Atlántico, y un recordatorio diario (no mensual)"
+   },
+   "test": "Relance le lanceur si ce n'est pas fait, recharge la page. Carburant › Route, EGLL → KJFK (ou LFOE → KTPA) : au-dessus de « Calculer A → B », une ligne dit de quand sont les routes NAT ; si elles ne sont pas du jour, « Lire les routes NAT du jour » les lit et la ligne se met à jour. Sur un vol LFPO → EIDW : pas de ligne. Au téléphone : la ligne dit la date de la copie publiée, sans geste.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T11:46:45Z"
   },
   {
    "id": "SOG-0355",

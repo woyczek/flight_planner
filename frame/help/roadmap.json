@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a86cd3d",
+  "organisation": "668ec4f",
   "fiches": 357,
   "untranslated": 0,
   "priorities": 310
@@ -845,11 +845,12 @@
     {
      "id": "SOG-0345",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant au téléphone : le bloc « Procédures » est vide, sans un mot ; les procédures doivent venir du dépôt privé",
      "en": "Fuel on the phone: the « Procedures » block is empty, without a word; procedures must come from the private repository",
      "de": "Kraftstoff am Telefon: der Block « Verfahren » ist leer, ohne ein Wort; Verfahren müssen aus dem privaten Repository kommen",
-     "es": "Combustible en el teléfono: el bloque « Procedimientos » está vacío, sin una palabra; los procedimientos deben venir del repositorio privado"
+     "es": "Combustible en el teléfono: el bloque « Procedimientos » está vacío, sin una palabra; los procedimientos deben venir del repositorio privado",
+     "test": true
     }
    ]
   },
@@ -3888,11 +3889,12 @@
     {
      "id": "SOG-0352",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes NAT : les prendre depuis l'étape Route dès qu'un vol traverse l'Atlantique, et un rappel quotidien (pas mensuel)",
      "en": "NAT tracks: fetch them from the Route step as soon as a flight crosses the Atlantic, and a daily (not monthly) reminder",
      "de": "NAT-Routen: im Schritt Route holen, sobald ein Flug den Atlantik quert, und eine tägliche (nicht monatliche) Erinnerung",
-     "es": "Rutas NAT: tomarlas desde el paso Ruta en cuanto un vuelo cruza el Atlántico, y un recordatorio diario (no mensual)"
+     "es": "Rutas NAT: tomarlas desde el paso Ruta en cuanto un vuelo cruza el Atlántico, y un recordatorio diario (no mensual)",
+     "test": true
     }
    ]
   },
