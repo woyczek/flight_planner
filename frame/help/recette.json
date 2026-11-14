@@ -3189,9 +3189,10 @@
     "de": "Einen Fehler vom Telefon aus melden, mit einer Geste (für seine Tests am Wochenende)",
     "es": "Señalar un error desde el teléfono, con un gesto (para sus pruebas del fin de semana)"
    },
-   "test": "Sur le téléphone, ouvre l'appli : une note « nouvelle version · Recharger » (sinon ferme et rouvre deux fois). En haut, à gauche du « ? », l'icône d'insecte. Une sorte, un titre, un texte ; « Photos ou captures d'écran » ouvre ta photothèque (trois au plus) ; « Envoyer » : la note dit où c'est parti et combien de photos sont jointes. Au poste (lanceur relancé) : Aide › Signaler, « Signalements des pilotes » montre ton signalement avec ses vignettes ; « Reprendre » me l'envoie. Dis-moi ensuite si la fiche est arrivée.",
+   "test": "Sur le téléphone, recharge l'appli (note « nouvelle version · Recharger », sinon ferme et rouvre deux fois). L'insecte en haut, « Photos ou captures d'écran » : choisis une capture d'écran de ta photothèque — elle doit être acceptée (plus de « Photo refusée »). Si elle est encore refusée, le message dit maintenant pourquoi (illisible avec l'erreur, ou trop lourde avec son poids) : envoie-moi ce message. « Envoyer », puis au poste : Aide › Signaler, « Signalements des pilotes », la vignette est là.",
    "since": "2026-11-13",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-14T10:08:27Z"
   },
   {
    "id": "SOG-0337",

@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "de4c495",
+  "organisation": "1de5839",
   "fiches": 337,
   "untranslated": 0,
   "priorities": 310
@@ -3477,11 +3477,12 @@
     {
      "id": "SOG-0335",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Signaler un bug depuis le téléphone, en un geste (pour ses essais du week-end)",
      "en": "Report a bug from the phone, in one gesture (for his weekend tests)",
      "de": "Einen Fehler vom Telefon aus melden, mit einer Geste (für seine Tests am Wochenende)",
-     "es": "Señalar un error desde el teléfono, con un gesto (para sus pruebas del fin de semana)"
+     "es": "Señalar un error desde el teléfono, con un gesto (para sus pruebas del fin de semana)",
+     "test": true
     }
    ]
   },
