@@ -7317,7 +7317,7 @@ def l93(c):
 
 @case('L94', 'Données: under « Publier », three folded blocks in this order (SOG-0262, lot C) — « Cycle suivant (2612) » (already in Downloads by the file names, still to fetch by hand, taken by itself once in force, the shelved ones apart), « Quand ça change » (X-Plane, Little Navmap, openAIP, GeoNames, MORA with their last date and a button where the screen has the gesture; the NAT tracks say their validity and are taken again when the fold opens, no « Ouvrir »), « Vu par le poste, pas encore lu » (file names, reason in words, the note); « Ma couverture » folded at the foot; the page order',
       'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
-      rule='SOG-0262 lot C: the lists come from the one read of base/cycle (next, unread) — no launcher call of their own; the NAT line reads aerodb.natState() and calls natEnsure() when the fold opens (SOG-0263); an untrusted launcher string is escaped; nothing in « vu, pas encore lu » is an action')
+      rule='SOG-0262 lot C: the lists come from the one read of base/cycle (next, unread) — no launcher call of their own; the NAT line reads aerodb.natState() when the fold opens and never calls natEnsure() (SOG-0352: the NAT tracks are a daily datum, read at the Route step); an untrusted launcher string is escaped; nothing in « vu, pas encore lu » is an action')
 def l94(c):
     lang = c.lang
     LC = lambda k, row=0, after='  lc: {': _trow(k, lang, after=after, row=row)
@@ -7353,20 +7353,17 @@ def l94(c):
     c.eq([last('openaip'), last('xplane'), last('geonames')], [norm(LC('changeLast').replace('{d}', _date_text(datetime.date(2026, 11, 2), lang))), norm(LC('changeNoDate')), norm(LC('changeNoDate'))], 'the last date of a source (the day of its file), « date non lue » when the list of the cycle gives none', what='dates')
     c.eq(c.js("[...document.querySelectorAll('[data-change-list] [data-act=change-act]')].map(b => [b.closest('li').dataset.change, b.dataset.kind, b.disabled])"), [['xplane', 'build', False], ['openaip', 'fetch', False], ['mora', 'fetch', False]], 'a button where the screen already has the gesture (rebuild, download again), none for Little Navmap, GeoNames and the NAT tracks', what='buttons')
     until = f"{_date_text(datetime.date(2026, 11, 12), lang)} 19:00Z"
-    c.eq(last('nat'), norm(NAT('valid').replace('{d}', until) + ' · ' + NAT('count').replace('{n}', '17')), 'the NAT line says the validity and the number of tracks', what='nat valid')
-    c.eq([calls().get('natState', 0), calls().get('natEnsure', 0), c.count('[data-change=nat] a, [data-change=nat] button'), c.count('[data-set=nat] a[target=_blank]')], [1, 0, 0, 0], 'valid tracks: read once, not taken again, and « Ouvrir » is gone (no link, no button on the line or on the row)', what='nat calls')
-    # expired tracks: the fold opens -> taken again; then the launcher cannot (said, no new try at once)
+    where = ' — ' + NAT('where')
+    c.eq(last('nat'), norm(NAT('valid').replace('{d}', until) + ' · ' + NAT('count').replace('{n}', '17') + where), 'the NAT line says the validity, the number of tracks and WHERE they are read (the Route step of a transatlantic flight)', what='nat valid')
+    c.eq([calls().get('natState', 0), calls().get('natEnsure', 0), c.count('[data-change=nat] a, [data-change=nat] button'), c.count('[data-set=nat] a[target=_blank]')], [1, 0, 0, 0], 'valid tracks: read once, not taken again, and no link, no button on the line or on the row', what='nat calls')
+    # expired tracks (SOG-0352): the fold says so and where they are read; NOTHING is taken from here, however many times it opens
     c.js("window.__stub.nat = { state: " + json.dumps(expired) + ", ensure: " + json.dumps({**valid, 'validUntil': '2026-11-13T07:00:00Z'}) + ", ok: true }")
     c.js("document.querySelector('[data-lc-fold=change]').open = false")
     c.tap('[data-lc-fold=change] > summary')
-    c.until("(window.__stub.calls.natEnsure || 0) === 1", timeout=8000, what='the expired tracks are taken again when the fold opens')
-    c.until("document.querySelector('[data-change=nat] [data-change-last]').textContent.includes('07:00Z')", timeout=8000, what='the new validity')
-    c.eq(last('nat'), norm(NAT('refreshed').replace('{d}', f"{_date_text(datetime.date(2026, 11, 13), lang)} 07:00Z") + ' · ' + NAT('count').replace('{n}', '17')), 'taken again: said, with the new validity', what='nat refreshed')
-    c.js("window.__stub.nat = { state: " + json.dumps(expired) + ", ensure: null, ok: false }")
-    c.js("document.querySelector('[data-lc-fold=change]').open = false")
-    c.tap('[data-lc-fold=change] > summary')
-    c.until("(window.__stub.calls.natEnsure || 0) === 2 && document.querySelector('[data-change=nat] [data-change-last]').textContent.includes('10')", timeout=8000, what='the failed retake is said')
-    c.ok(norm(NAT('expired').replace('{d}', f"{_date_text(datetime.date(2026, 11, 10), lang)} 19:00Z")) in last('nat') and norm(NAT('failed')) in last('nat'), last('nat'), 'expired tracks: « périmées (valides jusqu\'à … ) » then the failure in words')
+    c.until("(window.__stub.calls.natState || 0) === 2 && document.querySelector('[data-change=nat] [data-change-last]').textContent.includes('10')", timeout=8000, what='the expired validity is read again')
+    c.ok(norm(NAT('expired').replace('{d}', f"{_date_text(datetime.date(2026, 11, 10), lang)} 19:00Z")) in last('nat') and norm(NAT('where')) in last('nat'), last('nat'), 'expired tracks: « périmées (valides jusqu\'à … ) » and where they are read, nothing else')
+    c.wait(600)
+    c.eq([calls().get('natEnsure', 0), c.count('[data-change=nat] button'), c.count('[data-change=nat] [data-busy-card]')], [0, 0, 0], 'the fold never takes the tracks again (natEnsure is never called from this screen), no button on the line', what='nothing taken')
     # ---- 4. Vu par le poste, pas encore lu: file names, reason in words, the note (escaped); no action
     c.tap('[data-lc-fold=unread] > summary')
     c.until("document.querySelector('[data-lc-fold=unread]').open", timeout=3000, what='the fold opens')
@@ -7725,14 +7722,15 @@ def l98(c):
     c.tap('[data-sheet=gb] [data-act=sheet-update]')
     card('[data-sheet=gb]', 'sheet: « Mettre à jour ce pays »')
     c.eq(c.count('[data-state-head] [data-busy-card]'), 0, 'the state bar does not repeat it', what='head silent')
-    # the NAT routes (expired): an operation runs, so they are not taken now: the line says so and the card of that operation is there too
+    # the NAT routes (SOG-0352): not taken from this screen at all, so opening « Quand ça change » while an operation runs adds no card and no « reprise » sentence of its own
     c.tap('[data-sheet] [data-act=sheet-close]:visible')
     c.until("!document.querySelector('[data-sheet]')", timeout=4000, what='the sheet closes')
     c.eq(c.count('[data-state-head] [data-busy-card]'), 1, 'the sheet closed, the card of the refusal is not lost: it moves to the state bar', what='card moves')
     c.tap('[data-lc-fold=change] > summary')
-    c.until("document.querySelector('[data-lc-fold=change]').open && !!document.querySelector('[data-later-blocks] [data-busy-card]')", timeout=8000, what='the card in the NAT block')
-    c.eq([c.count('[data-later-blocks] [data-busy-card]'), (c.js('window.__stub.calls') or {}).get('natEnsure', 0), norm(ZX('natDeferred')) in norm(c.text('[data-change=nat]'))], [1, 0, True],
-         'NAT routes: not taken while an operation runs; the line says it will be taken again at its end, with the card of that operation', what='nat deferred')
+    c.until("document.querySelector('[data-lc-fold=change]').open", timeout=8000, what='the fold opens')
+    c.wait(500)
+    c.eq([c.count('[data-later-blocks] [data-busy-card]'), (c.js('window.__stub.calls') or {}).get('natEnsure', 0), c.count('[data-state-head] [data-busy-card]')], [0, 0, 1],
+         'NAT routes: nothing is taken from this screen, the fold adds no card of its own (the one card stays in the state bar)', what='nat not taken')
     # (b) the top button of the state bar
     _l98_fresh(c, st)
     st['start'] = (409, busy)
@@ -8311,36 +8309,6 @@ def l104(c):
     c.check_errors()
 
 
-@case('L105', 'Données: natEnsure answering « busy » (the launcher already runs another operation, SOG-0262 lot D3, K186) shows THE busy card at the NAT line — which operation, since when, where it is, Voir / Arrêter — never the bare sentence; it is no failure, the line says it will be taken again at its end',
-      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
-      rule='SOG-0262 D3 + K186: `AeroDb.natEnsure()` returns `busy: true` + `running` (the 409 of the launcher) when the launcher is busy: refreshed false, no failure counted; the screen draws the card of that operation (busy.js, S.at) at the NAT line with that `running`; one card on the page, no « autre opération » sentence alone')
-def l105(c):
-    lang = c.lang
-    B = lambda key: _trow(key, lang, after='  busy: {')
-    ZX = lambda k: _trow(k, lang, after='  zx: {')
-    name = f"{_trow('proc', lang, after='  groups: {')} · {_trow('fetch', lang, after='Ruta (RAD, FRA)')}"
-    R = _running()
-    RV = {**_fview({}, state='running', step='Lecture des sources', jid='o1', verb='fetch'), 'set': 'proc'}
-    expired = {'present': True, 'count': 17, 'from': '2026-11-09T07:00:00Z', 'validUntil': '2026-11-10T19:00:00Z', 'expired': True, 'current': 0}
-    world = _l93_world()
-    st, _x4 = _l89_open(c, world, busy_running=R, busy_view=RV, verbs=('base/pickup', 'base/cycle', 'base/publish'), publish=lambda a: world['plan'] if a.get('dry', True) else world['real'],
-                        nat={'state': expired, 'busy': True, 'running': R}, my_coverage=False)
-    c.eq(c.count('[data-busy-card]'), 0, 'nothing runs on the page: no card before the NAT tracks are read', what='no card yet')
-    c.tap('[data-lc-fold=change] > summary')
-    c.until("!!document.querySelector('[data-change=nat] [data-busy-card]')", timeout=12000, what='the card at the NAT line')
-    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    c.eq([c.count('[data-change=nat] [data-busy-card]'), c.count('[data-busy-card]'), c.count('[data-other]'), c.count('[data-refusal=busy]'), (c.js('window.__stub.calls') or {}).get('natEnsure', 0)], [1, 1, 0, 0, 1],
-         'natEnsure said busy: ONE card, at the NAT line, no bare sentence, natEnsure asked once', what='card at the nat line')
-    c.eq(norm(c.text('[data-change=nat] [data-busy-name]')), norm(B('title').replace('{n}', name)), 'the card names the operation of the launcher\'s `running` (the card of SOG-0245)', what='card name')
-    c.eq(c.js("[...document.querySelectorAll('[data-change=nat] [data-busy-act]')].map(b => b.dataset.busyAct)"), ['see', 'stop', 'hide'], 'Voir and Arrêter (Masquer for the card alone)', what='card buttons')
-    c.eq(norm(ZX('natDeferred')) in norm(c.text('[data-change=nat]')), True, 'it is no failure: the line says the tracks will be taken again at the end of that operation', what='deferred line')
-    c.eq(c.count('[data-change=nat] [data-change-last]'), 1, 'the validity of the tracks is still said on the line', what='validity')
-    if c.width in (390, 1280):
-        c.js("document.querySelector('[data-change=nat]').scrollIntoView({ block: 'center' })")
-        c.shot(f'L105_{c.width}_{lang}_delivered.png')
-    c.check_errors()
-
-
 @case('L106', 'Données: there is ONE « Tout mettre à jour » and the page follows its own order (SOG-0262 lot D3, redone at lot D4) — the older card of the data sets is gone (its function lives in the button of the cycle header, which does the base AND the other sets that need something); the base group sits right under the cycle header in the code (the keyboard goes where the eye goes) and no CSS `order` is left on the page body',
       'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
       rule='SOG-0262 D3 + D4: the label « Tout mettre à jour » existed twice (the button of the base header and the older chain card); the ergonomist decided (D4) on ONE, the one of the header, that runs the chain machinery (chain.js) when other sets need something and the base update otherwise; the D2 layout used CSS `order` to put the base group under the header, so the Tab order differed from the visual order: the DOM now follows the visual order')
@@ -8583,26 +8551,27 @@ def l116(c):
     line = lambda g: c.js(f"(e => e ? [e.dataset.foldState, e.dataset.foldWhy || '', e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-body] > details.f-group[data-group={g}] .d-fstate'))")
     got = {g: line(g) for g in ('proc', 'vfr', 'aircraft', 'weather')}
     exp = {'proc': ['todo', 'older-than-cycle', f"{todo(D5('dsWhyOlder'))} · {on('2026-10-05')}"],
-           'weather': ['todo', 'expired', f"{todo(named('dsWhyExpired', 'nat'))} · {on('2026-11-11')}"],
            'aircraft': ['todo', 'absent', todo(named('dsWhyAbsent', 'sheets'))]}
-    what = {'proc': 'Procédures: « à faire — plus ancien que le cycle · le 05/10 »', 'weather': 'the weather fold names the set to do when it is not its main one: « à faire — expiré (Routes NAT du jour) · le 11/11 »',
-            'aircraft': 'the aircraft fold names the performance sheets: « à faire — absent (Fiches de performances) », no date (the launcher has none)'}
+    what = {'proc': 'Procédures: « à faire — plus ancien que le cycle · le 05/10 »', 'aircraft': 'the aircraft fold names the performance sheets: « à faire — absent (Fiches de performances) », no date (the launcher has none)'}
     # the useful date / counts of a set (SOG-0262, « date utile ») sit between the reason and the date of the file: the sentence is checked around them (L120 checks them in words)
     for g, e in exp.items():
         shown, full = norm(got[g][2]), norm(e[2])
-        pre = full if g == 'aircraft' else norm(D5('dsTodo').split('{w}')[0]) if g == 'weather' else full.split(' · ')[0]
+        pre = full if g == 'aircraft' else full.split(' · ')[0]
         tail = full if g == 'aircraft' else full.rsplit(' · ', 1)[-1]
-        c.ok(got[g][:2] == e[:2] and shown.startswith(pre) and shown.endswith(tail) and (g != 'weather' or f'({lab("nat")})' in shown), (got[g], e), what[g])
+        c.ok(got[g][:2] == e[:2] and shown.startswith(pre) and shown.endswith(tail) and True, (got[g], e), what[g])
+    # the NAT tracks are a daily datum, read at the Route step (SOG-0352): the launcher's `nat` dataset is not on this screen, the weather fold is « à jour » and never names it
+    wx = got['weather']
+    c.ok(wx is not None and wx[0] == 'ok' and wx[1] == '' and f'({lab("nat")})' not in wx[2] and 'NAT' not in wx[2], wx, 'the weather fold is up to date and does not name the NAT tracks')
     # VFR: no due date: counted done; the line says « sans échéance » and the date of the file (unless the publication of the rows asks for something)
     vfr = got['vfr']
     c.ok(vfr is not None and vfr[1] == '' and (vfr[0] == 'todo' or D5('dsNa') in norm(vfr[2]) and on('2026-10-20') in norm(vfr[2])), vfr, 'VFR points: « sans échéance · le 20/10 » (n/a counts as done), unless the publication of its rows has something to do')
     # the header: the base sources plus one per other set; n/a and up to date count as done
     head = norm(c.text('[data-todo-head]'))
     nb = re.search(r'(\d+)\D+(\d+)\D*$', head)
-    c.ok(nb and int(nb.group(2)) == 9 + 6 and int(nb.group(1)) == 5 + 3, head, 'the header counts the nine sources of the base plus the six other sets, and as done the five sources and the three sets that are up to date or without a due date: 8 on 15')
-    exp_head = CW('todoHead').replace('{c}', '2611').replace('{n}', '8').replace('{m}', '15')
-    c.eq(head, exp_head, 'the header sentence: « Cycle AIRAC 2611 · 8 faits sur 15 »', what='header')
-    c.eq([c.attr('[data-cycle-bar]', 'aria-valuenow'), c.attr('[data-cycle-bar]', 'aria-valuemax')], ['8', '15'], 'the progress bar says the same count', what='bar')
+    c.ok(nb and int(nb.group(2)) == 9 + 5 and int(nb.group(1)) == 5 + 3, head, 'the header counts the nine sources of the base plus the five other sets, and as done the five sources and the three sets that are up to date or without a due date: 8 on 14')
+    exp_head = CW('todoHead').replace('{c}', '2611').replace('{n}', '8').replace('{m}', '14')
+    c.eq(head, exp_head, 'the header sentence: « Cycle AIRAC 2611 · 8 faits sur 14 »', what='header')
+    c.eq([c.attr('[data-cycle-bar]', 'aria-valuenow'), c.attr('[data-cycle-bar]', 'aria-valuemax')], ['8', '14'], 'the progress bar says the same count', what='bar')
     c.check_errors()
 
 
@@ -8612,7 +8581,8 @@ def l116(c):
 def l117(c):
     evil = [{'id': 'procedures', 'label': ['<img src=x onerror=window.__pwn=1>' + 'x' * 400, 'P', 'P', 'P'], 'state': 'todo', 'why': '<b>nope</b>', 'at': '2026-10-05T10:00:00Z'},
             {'id': 'weather', 'label': ['W'] * 4, 'state': 'exploded', 'why': 'absent', 'at': None},
-            {'id': 'nat', 'label': ['N'] * 4, 'state': 'up-to-date', 'why': 'expired', 'at': 'not a date'},
+            {'id': 'aircraft', 'label': ['A'] * 4, 'state': 'up-to-date', 'why': 'expired', 'at': 'not a date'},
+            {'id': 'nat', 'label': ['N'] * 4, 'state': 'todo', 'why': 'expired', 'at': None},
             {'id': '../evil', 'label': ['E'] * 4, 'state': 'todo'}, 'string', None, {'id': 'vfr', 'state': 'n/a', 'at': None, 'label': 'nope', 'counts': {'aerodromes': '9<script>'}}]
     _l102_open(c, wrap=_l116_wrap(evil))
     c.until("!!document.querySelector('[data-body] > details.f-group[data-group=proc] .d-fstate')", timeout=8000, what='the folded line of the procedures')
@@ -8624,7 +8594,7 @@ def l117(c):
     c.ok(weather in (None, 'ok', 'todo', 'unknown'), weather, 'a set whose state is out of the list is dropped (the line is the one of the rows, or none)')
     head = norm(c.text('[data-todo-head]'))
     nb = re.search(r'(\d+)\D+(\d+)\D*$', head)
-    # kept rows: procedures (todo), nat (up-to-date; its reason is dropped), vfr (n/a): 3 sets; weather, the odd ids and the non-objects are dropped
+    # kept rows: procedures (todo), aircraft (up-to-date; its reason is dropped), vfr (n/a): 3 sets; weather, the odd ids, the non-objects and the NAT tracks (a daily datum, not on this screen: SOG-0352) are dropped
     c.ok(nb and int(nb.group(2)) == 9 + 3 and int(nb.group(1)) == 5 + 2, head, 'only the three readable sets are counted: 9 + 3 on the total, 5 + 2 done')
     c.check_errors()
 
@@ -8700,18 +8670,18 @@ def l120(c):
     nb = re.search(r'(\d+)\D+(\d+)\D*$', head)
     n, m = int(nb.group(1)), int(nb.group(2))
     lines = c.count('[data-todo-list] > li')
-    c.eq([n, m, m - lines], [8, 15, 8], f'the header says {n} done on {m}: the block has {lines} lines to do, and m minus the lines is n (the four sources and the three sets)', what='same count')
+    c.eq([n, m, m - lines], [8, 14, 8], f'the header says {n} done on {m}: the block has {lines} lines to do, and m minus the lines is n (the four sources and the three sets); the NAT tracks are not counted (SOG-0352)', what='same count')
     c.ok(re.search(rf'\b{lines}\b', norm(c.text('[data-todo-marker]'))) is not None, c.text('[data-todo-marker]'), 'the marker of the block says the same number of lines')
-    c.eq(c.js("[...document.querySelectorAll('[data-todo-list] [data-todo-dataset]')].map(e => e.dataset.todoDataset)"), ['procedures', 'nat', 'sheets'], 'the sets to do are the lines of the block, after the sources', what='ids')
+    c.eq(c.js("[...document.querySelectorAll('[data-todo-list] [data-todo-dataset]')].map(e => e.dataset.todoDataset)"), ['procedures', 'sheets'], 'the sets to do are the lines of the block, after the sources (the NAT tracks are a daily datum, not a line of this screen: SOG-0352)', what='ids')
     # the gesture of each: the one the screen already has; a greyed button says why beside it
-    for i, k in (('procedures', 'actProc'), ('nat', 'actNat'), ('sheets', 'actSheets')):
+    for i, k in (('procedures', 'actProc'), ('sheets', 'actSheets')):
         b = c.js(f"(e => e ? [e.textContent.trim(), e.dataset.todoAct, e.disabled] : null)(document.querySelector('[data-todo-dataset={i}] [data-todo-act=ds]'))")
         c.ok(b is not None and norm(b[0]) == D6(k) and b[1] == 'ds', b, f'{i}: the line carries its gesture « {D6(k)} »')
         c.ok(not b[2] or c.count(f'[data-todo-dataset={i}] [data-grey]') == 1, b, f'{i}: a greyed gesture says why beside it')
     # the reason in words
     why = lambda i: norm(c.text(f'[data-todo-dataset={i}] [data-ds-why]'))
     c.ok(why('procedures').startswith(D5('dsWhyOlder')) and D6('procCycle').replace('{c}', '2610') in why('procedures'), why('procedures'), 'procedures: « plus ancien que le cycle · cycle 2610 · … » (the reason, then the cycle read)')
-    c.ok(re.fullmatch(_l120_tpl(_trow('natExpired', lang, after='  d6: {')), why('nat')) is not None, why('nat'), 'NAT tracks: « routes NAT périmées depuis le … » (the date of the end, written by the page)')
+    c.eq(c.count('[data-todo-dataset=nat]'), 0, 'the NAT tracks have no line in the block, whatever the launcher says of them', what='no nat line')
     c.eq(why('sheets'), D5('dsWhyAbsent'), 'sheets: « absent »', what='sheets')
     # n/a: no line anywhere in the block; up to date: among the done
     c.eq([c.count('[data-todo] [data-todo-dataset=vfr]'), c.count('[data-todo] [data-todo-dataset=aircraft]')], [0, 0], 'a set « without due date » has no line (it counts as done in the header only)', what='n/a')
@@ -8726,7 +8696,7 @@ def l120(c):
     want = f"{D6('procCycle').replace('{c}', '2610')} · {norm(num(1200))} {unit(1)} CIFP · {norm(num(30))} {unit(1)} eAIP"
     c.ok(want in proc, (proc, want), 'the folded line of the procedures says « cycle 2610 · 1 200 terrains CIFP · 30 terrains eAIP » (numbers formatted for the language)')
     wx = norm(c.text('[data-body] > details.f-group[data-group=weather] .d-fstate'))
-    c.ok(re.search(_l120_tpl(_trow('natExpired', lang, after='  d6: {')), wx) is not None, wx, 'the weather fold names the expired NAT tracks and the date they ended')
+    c.ok('NAT' not in wx and 'nat' not in wx.lower().split(), wx, 'the weather fold does not name the NAT tracks')
     # ONE fold sign, the chevron on the LEFT: the right-hand triangle of the folds (the block, the sets, the blocks under the packs) is gone; the packs carry their chevron on the left too
     c.eq(c.js("[...document.querySelectorAll('details > summary > .d-chev')].every(e => getComputedStyle(e).display === 'none') && document.querySelectorAll('details > summary > .d-chev').length > 4"), True, 'the folds (the block, the other sets, the blocks under the packs) show only the chevron on the left, the one of the frame', what='one sign')
     c.eq(c.js("[...document.querySelectorAll('details > summary')].every(s => getComputedStyle(s, '::before').content !== 'none')"), True, 'which is drawn for each of them', what='left chevron')
@@ -8742,7 +8712,7 @@ def l120(c):
     c.check_errors()
 
 
-@case('L121', 'Données: the folded line of a set that is up to date says its useful date in words — « routes NAT valides jusqu’au … » (validUntil), « prévision du … » (the weather run), « cycle 2611 · 3 069 terrains » (the procedures) — with the numbers in the locale of the language (SOG-0262, K207)',
+@case('L121', 'Données: the folded line of a set that is up to date says its useful date in words — « prévision du … » (the weather run), « cycle 2611 · 3 069 terrains » (the procedures) — with the numbers in the locale of the language (SOG-0262, K207)',
       'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
       rule='the folded line said « à jour · le 05/10 » (the date of the file): the useful date was read (base/cycle.datasets validUntil, run, cycle, counts) and not shown. Now the line says it, from the launcher\'s own fields only, bounded; a set that has none of these keeps the date of its file.')
 def l121(c):
@@ -8761,8 +8731,8 @@ def l121(c):
     line = lambda g: norm(c.text(f'[data-body] > details.f-group[data-group={g}] .d-fstate'))
     c.ok(f"{norm(D6('procCycle')).replace('{c}', '2611')} · {norm(num)} {unit}" in line('proc'), line('proc'), 'procedures: « cycle 2611 · 3 069 terrains » (a count at 0 is not said, the number is written for the language)')
     wx = line('weather')
-    c.ok(re.search(_l120_tpl(D6('run')), wx) is not None and re.search(_l120_tpl(D6('natValid')), wx) is not None, wx, 'weather: « prévision du … » and, for the NAT tracks of the same fold, « routes NAT valides jusqu’au … »')
-    c.ok('06:00Z' in wx and '19:00Z' in wx, wx, 'both with the hour in UTC, as the rest of the screen writes it')
+    c.ok(re.search(_l120_tpl(D6('run')), wx) is not None, wx, 'weather: « prévision du … » (the NAT tracks are a daily datum read at the Route step: not said here, SOG-0352)')
+    c.ok('06:00Z' in wx and '19:00Z' not in wx, wx, 'with the hour in UTC, as the rest of the screen writes it, and without the NAT validity')
     c.ok(norm(_trow('dsNa', lang, after='  d5: {')) in line('vfr') or line('vfr').startswith(norm(_trow('stTodo', lang, after='  d4: {')).split('{n}')[0]), line('vfr'), 'a set that gives no useful date keeps its own word and the date of its file')
     # the capture: the other sets, folded, each with its useful date
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")

@@ -32,9 +32,6 @@ import {
   selection
 } from './panels.js';
 import {
-  natOpen
-} from './later.js';
-import {
   startWorld,
   worldGate
 } from './world.js';
@@ -182,7 +179,6 @@ const DS_WHY = Object.freeze({
 const DS_GESTURE = Object.freeze({
   procedures: 'actProc',
   weather: 'actWeather',
-  nat: 'actNat',
   vfr: 'actVfr',
   aircraft: 'actAircraft',
   sheets: 'actSheets'
@@ -207,13 +203,6 @@ function datasetGate(id) {
   if (reason) return {
     off: true,
     reason
-  };
-  if (id === 'nat') return typeof S.ctx.aerodb?.natEnsure === 'function' ? {
-    off: false,
-    reason: ''
-  } : {
-    off: true,
-    reason: 'unknown-verb'
   };
   const set = DS_SET[id],
     verb = id === 'sheets' ? M.SHEETS.verb :
@@ -260,7 +249,6 @@ export function todoGesture(btn) {
     const id = btn.dataset.dataset;
     if (!Object.hasOwn(DS_GESTURE, id) || datasetGate(id).off) return;
     if (id === 'weather') return startWorld();
-    if (id === 'nat') return natOpen();
     return startOp(DS_SET[id], id === 'sheets' ? M.SHEETS.verb : 'fetch');
   }
   if (act === 'pick' && zones.length) {

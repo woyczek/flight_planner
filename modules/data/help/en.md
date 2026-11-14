@@ -18,7 +18,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-group-aircraft"></a>**Aircraft.** The aircraft types and their performance: the edition date, the number of types and of files. After 28 days the badge turns orange.
 
-<a id="data-group-weather"></a>**Weather.** The world weather and the NAT tracks are published with the website: these lines have neither a cycle nor a badge.
+<a id="data-group-weather"></a>**Weather.** The world weather is published with the website: this line has neither a cycle nor a badge. The NAT tracks are a daily datum: they are read at the Route step of a transatlantic flight, and here the “When it changes” line only says their validity, taking nothing again.
 
 <a id="data-world"></a>**World synoptic (GFS).** In the Weather group, one row for the world synoptic forecast of the Atmosphere map: its state (“Not on this workstation” until one is published, “Over 12 h old” as it ages), the GFS run, the number of steps, its weight and its age. “Build” makes it on the workstation (about 2 minutes the first time; a few seconds if the run is already there, it is then reused). It is published **locally**, in data/weather/world/: never synchronised nor committed. A failure says its reason (no run published or NOAA unreachable, invalid folder, time exceeded) and the old publication stays.
 

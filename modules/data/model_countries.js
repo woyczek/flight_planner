@@ -243,10 +243,13 @@ const DS_STATES = ['up-to-date', 'todo', 'n/a'];
 const DS_WHYS = ['absent', 'older-than-cycle', 'old', 'expired'];
 /** Les AUTRES jeux de l'écran (`datasets` de base/cycle, K207) lus : [{ id, label[4], state ('up-to-date' | 'todo' | 'n/a' : « existe, sans échéance », compté fait), why ('absent' | 'older-than-cycle' | 'old' | 'expired', seulement avec `todo`, sinon ''), at (instant ISO UTC du fichier, ou null),
  *  cycle, run, validUntil, counts { cifp, eaip, aerodromes } (entiers) }] ; un état hors de la liste fermée écarte la ligne ; [] sans rien de lisible (un lanceur sans `datasets` : l'écran garde le compte de la base seule). */
-export function datasetsOf(a) {
+export function datasetsOf(
+  a
+) { // les routes NAT sont une donnée du JOUR, lue à l'étape Route : jamais « à faire » ni « fait » sur cet écran au rythme du cycle (SOG-0352)
   const out = [];
   for (const it of (Array.isArray(a) ? a : []).slice(0, 24))
-    if (it !== null && typeof it === 'object' && typeof it.id === 'string' && SRC.test(it.id) && DS_STATES.includes(it.state) && !out.some(
+    if (it !== null && typeof it === 'object' && typeof it.id === 'string' && SRC.test(it.id) && it.id !== 'nat' && DS_STATES.includes(it
+        .state) && !out.some(
         x => x.id === it.id)) {
       const c = it.counts !== null && typeof it.counts === 'object' ? it.counts : {};
       out.push({

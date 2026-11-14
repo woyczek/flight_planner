@@ -41,7 +41,7 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 
 <a id="data-group-aircraft"></a>**Luftfahrzeuge.** Die Luftfahrzeugmuster und ihre Leistungen: das Datum der Ausgabe, die Zahl der Muster und der Dateien. Nach 28 Tagen wird die Marke orange.
 
-<a id="data-group-weather"></a>**Wetter.** Das Weltwetter und die NAT-Routen werden mit der Website veröffentlicht: Diese Zeilen haben weder Zyklus noch Marke.
+<a id="data-group-weather"></a>**Wetter.** Das Weltwetter wird mit der Website veröffentlicht: Diese Zeile hat weder Zyklus noch Marke. Die NAT-Routen sind ein Tagesdatum: Sie werden beim Schritt Route eines Transatlantikflugs gelesen, und die Zeile „Wenn es sich ändert“ nennt hier nur ihre Gültigkeit, ohne etwas neu zu holen.
 
 <a id="data-world"></a>**Welt-Synoptik (GFS).** In der Gruppe Wetter eine Zeile für die synoptische Weltvorhersage der Atmosphärenkarte: ihr Zustand („Nicht auf diesem Rechner“, solange keine veröffentlicht ist, „Über 12 Std. alt“, wenn sie altert), der GFS-Lauf, die Zahl der Schritte, ihre Größe und ihr Alter. „Aufbauen“ erstellt sie auf dem Rechner (etwa 2 Minuten beim ersten Mal; wenige Sekunden, wenn der Lauf schon da ist, er wird dann wiederverwendet). Sie wird **lokal** in data/weather/world/ veröffentlicht: nie synchronisiert oder committet. Ein Fehlschlag nennt seinen Grund (kein Lauf veröffentlicht oder NOAA nicht erreichbar, ungültiger Ordner, Zeit überschritten); die alte Veröffentlichung bleibt.
 

@@ -41,7 +41,7 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 
 <a id="data-group-aircraft"></a>**Aeronaves.** Los tipos de aeronave y sus prestaciones: la fecha de la edición, el número de tipos y de archivos. Pasados 28 días, la etiqueta se vuelve naranja.
 
-<a id="data-group-weather"></a>**Meteorología.** La meteorología mundial y las rutas NAT se publican con el sitio: estas líneas no tienen ciclo ni etiqueta.
+<a id="data-group-weather"></a>**Meteorología.** La meteorología mundial se publica con el sitio: esta línea no tiene ciclo ni etiqueta. Las rutas NAT son un dato del día: se leen en el paso Ruta de un vuelo transatlántico, y aquí la línea «Cuando cambia» solo dice su validez, sin volver a tomar nada.
 
 <a id="data-world"></a>**Sinóptico mundial (GFS).** En el grupo Meteorología, una fila para la previsión sinóptica mundial del mapa de Atmósfera: su estado («Ausente del puesto» mientras no haya ninguna publicada, «Más de 12 h» al envejecer), la pasada GFS, el número de pasos, su tamaño y su edad. «Construir» la hace en el puesto (unos 2 minutos la primera vez; unos segundos si la pasada ya está, entonces se reutiliza). Se publica **localmente**, en data/weather/world/: nunca sincronizada ni confirmada. Un fallo dice su motivo (ninguna pasada publicada o NOAA inaccesible, carpeta no válida, tiempo agotado) y la publicación anterior se queda.
 

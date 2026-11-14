@@ -1,7 +1,7 @@
 // V3 data — les trois blocs repliés sous « Publier » (SOG-0262, lot C), dans cet ordre : « Cycle suivant » (ce que Téléchargements a déjà pour le cycle suivant, ce qui reste à aller chercher à la main, ce que le poste prendra seul quand il sera en vigueur), « Quand ça change » (ce qui bouge en dehors du cycle
-// AIRAC : X-Plane, Little Navmap, openAIP, GeoNames, MORA, les routes NAT du jour — chacun avec sa dernière date et, quand cela existe, le geste pour le rafraîchir) et « Vu par le poste, pas encore lu par la suite » (ce qui est dans Téléchargements et que la suite ne lit pas : rien à faire). Les deux
-// premiers se lisent dans la liste du cycle (base/cycle : `next`, `unread`), lue une fois à l'ouverture par countries.js — aucun appel de plus. Les routes NAT se lisent à l'ouverture du bloc « Quand ça change » : leur validité (natState) puis, si elles sont périmées, leur reprise (natEnsure :
-// un seul travail à la fois). Tout ce que dit le lanceur est une entrée non fiable : le modèle (model_countries.js) l'a borné, tout est échappé ici.
+// AIRAC : X-Plane, Little Navmap, openAIP, GeoNames, MORA, les routes NAT, en information — chacun avec sa dernière date et, quand cela existe, le geste pour le rafraîchir) et « Vu par le poste, pas encore lu par la suite » (ce qui est dans Téléchargements et que la suite ne lit pas : rien à faire). Les deux
+// premiers se lisent dans la liste du cycle (base/cycle : `next`, `unread`), lue une fois à l'ouverture par countries.js — aucun appel de plus. La validité des routes NAT se lit à l'ouverture du bloc « Quand ça change » (natState, information seulement : la donnée est du jour,
+// elle se lit à l'étape Route d'un vol transatlantique, SOG-0352). Tout ce que dit le lanceur est une entrée non fiable : le modèle (model_countries.js) l'a borné, tout est échappé ici.
 import * as M from './model.js';
 import {
   TX
@@ -57,10 +57,7 @@ export const lcInit = () => ({
   reveal: '', // un pli à ouvrir et à amener dans la vue au prochain dessin (l'adresse #data?registry=1)
   nat: {
     phase: 'idle',
-    state: null,
-    refreshed: false,
-    failed: false,
-    busy: false // natEnsure a répondu « le lanceur fait déjà autre chose » (K186) : la carte de cette opération est à la ligne des routes NAT
+    state: null
   }
 });
 /** Ce que la liste du cycle a donné (lue) : null tant qu'elle ne l'est pas. */
@@ -123,21 +120,21 @@ function lastOf(cyc, data) {
   const d = cyc ? data?.items?.[cyc]?.download : null;
   return d?.at ? dateOf(d.at) : d?.cycle ? M.dateText(d.cycle, lang()) : '';
 }
-/** La phrase de la validité des routes NAT : en lecture, en reprise, « valides jusqu'à 19:00Z », « périmées », « aucune route prise », « validité inconnue » — et, après une reprise, qu'elle a eu lieu ou qu'elle a échoué. */
+/** La phrase de la validité des routes NAT, en information seulement : en lecture, « valides jusqu'à 19:00Z », « périmées », « aucune route prise », « validité inconnue », puis OÙ elles se lisent (l'étape Route d'un vol transatlantique : la donnée est du jour, cet écran est au rythme du cycle). Rien n'est repris d'ici (SOG-0352). */
 export function natText() {
   const n = S.cw.lc.nat,
     T = TX.lc.nat;
   if (n.phase === 'idle') return '';
   if (n.phase === 'reading') return tt(T.reading);
-  if (n.phase === 'refreshing') return tt(T.refreshing);
-  const s = n.state;
-  if (!s) return tt(T.unknown);
-  if (!s.present) return tt(T.none) + (n.failed ? ` — ${tt(T.failed)}` : '');
+  const s = n.state,
+    where = tt(T.where);
+  if (!s) return `${tt(T.unknown)} — ${where}`;
+  if (!s.present) return `${tt(T.none)} — ${where}`;
   const until = s.validUntil ? fmtDateZ(s.validUntil, lang()) : '',
-    head = s.expired === null || !until ? tt(T.unknown) : tt(s.expired ? T.expired : n.refreshed ? T.refreshed : T.valid, {
+    head = s.expired === null || !until ? tt(T.unknown) : tt(s.expired ? T.expired : T.valid, {
       d: until
     });
-  return `${head}${s.count ? ` · ${tt(T.count, { n: s.count })}` : ''}${n.failed ? ` — ${tt(T.failed)}` : ''}${n.deferred ? ` — ${tt(TX.zx.natDeferred)}` : ''}`;
+  return `${head}${s.count ? ` · ${tt(T.count, { n: s.count })}` : ''} — ${where}`;
 }
 /** Une ligne de « Quand ça change » : son nom, sa dernière date (ou la validité des routes NAT), la note de ce que fait son geste, le geste (gris pour sa raison, écrite une fois sous la liste). */
 function changeLine(c, data, grey) {
@@ -150,7 +147,7 @@ function changeLine(c, data, grey) {
     note = M.own(TX.lc.changeNote, c.id) || (c.act === 'build' || c.act === 'fetch' ? TX.lc.changeNote[c.act] : null),
     gate = c.act === 'build' || c.act === 'fetch' ? gateOf('base', S.ticked?.size || 0, [c.act]).verbs[c.act] : null;
   if (gate?.disabled && gate.reason) grey.add(gate.reason);
-  return `<li class="d-chg" data-change="${esc(c.id)}"><p><b>${esc(name)}</b> <span class="f-muted" data-change-last>${esc(shown)}</span>${loc?.zoneCount > 0 ? ` <span class="f-muted" data-change-zones>${esc(tt(TX.d3.changeZones, { z: count('country', loc.zoneCount) }))}</span>` : ''}</p>${c.act === 'nat' && S.cw.lc.nat.busy ? busyCardHtml('base', 'later') : ''}${note ? `<p class="f-muted" data-change-note>${esc(tt(note))}</p>` : ''}${gate ? `<p class="d-verbs"><button type="button" data-act="change-act" data-change="${esc(c.id)}" data-kind="${c.act}"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.lc.changeAct[c.act]))}</button></p>` : ''}</li>`;
+  return `<li class="d-chg" data-change="${esc(c.id)}"><p><b>${esc(name)}</b> <span class="f-muted" data-change-last>${esc(shown)}</span>${loc?.zoneCount > 0 ? ` <span class="f-muted" data-change-zones>${esc(tt(TX.d3.changeZones, { z: count('country', loc.zoneCount) }))}</span>` : ''}</p>${note ? `<p class="f-muted" data-change-note>${esc(tt(note))}</p>` : ''}${gate ? `<p class="d-verbs"><button type="button" data-act="change-act" data-change="${esc(c.id)}" data-kind="${c.act}"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.lc.changeAct[c.act]))}</button></p>` : ''}</li>`;
 }
 /** Une source calculée sur ce poste que la page n'a pas dans ses six lignes (`local` en dit plus que CHANGE) : son nom dit par le lanceur (dans la langue), sa date, le nombre de pays ; aucun geste. */
 function extraLine(l) {
@@ -165,7 +162,7 @@ function changeHtml() {
     extra = (data?.local || []).filter(l => !CHANGE.some(c => c.id === l.id)),
     lines = CHANGE.map(c => changeLine(c, data, grey)).join('') + extra.map(extraLine).join(''),
     why = [...grey].find(r => greyOnce(r, 'base'));
-  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${S.cw.lc.nat.busy ? '' : busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`, tt(TX.d2.pillSources, {
+  return fold('change', tt(TX.lc.changeTitle), `<p class="f-muted">${esc(tt(TX.lc.changeHint))}</p><ul class="d-lcl d-chgl" data-change-list>${lines}</ul>${busyCardHtml('base', 'later')}${why ? `<p class="f-muted" data-change-reason="${esc(why)}">${esc(tt(TX.greyReason[why]))}</p>` : ''}`, tt(TX.d2.pillSources, {
     n: CHANGE.length + extra.length
   }));
 }
@@ -235,23 +232,19 @@ function holdReveal(id) {
   lc.iv = setInterval(go, 250);
   for (const ev of events) window.addEventListener(ev, stop, true);
 }
-/** L'ouverture d'un pli : l'état est retenu ; celui de « Quand ça change » lit la validité des routes NAT et, si elles sont périmées ou absentes, les reprend (un seul travail à la fois, pas pendant une autre opération). */
+/** L'ouverture d'un pli : l'état est retenu ; celui de « Quand ça change » lit la validité des routes NAT (information seulement). */
 export function toggleLc(id, open) {
   const was = !!S.cw.lc.open[id];
   S.cw.lc.open[id] = open;
   if (open && !was && id === 'change')
-    natOpen(); // un pli redessiné déjà ouvert rejoue l'événement toggle : seule l'ouverture à la main lit les routes
+    natRead(); // un pli redessiné déjà ouvert rejoue l'événement toggle : seule l'ouverture à la main lit les routes
 }
-/** Lit la validité des routes NAT (aerodb.natState, rien demandé au réseau) puis, si elles ne sont plus valides, les reprend (aerodb.natEnsure : le lanceur télécharge puis construit la zone « nat ») ; chaque étape se dit dans la ligne. Ne lève jamais. */
-export async function natOpen() {
+/** Lit la validité des routes NAT (aerodb.natState, rien demandé au réseau) pour la ligne d'information de « Quand ça change » ; rien n'est repris d'ici : la lecture du jour se fait à l'étape Route (SOG-0352). */
+export async function natRead() {
   const n = S.cw.lc.nat,
     ab = S.ctx.aerodb,
     me = S;
-  if (n.phase === 'reading' || n.phase === 'refreshing') return;
-  n.refreshed = false;
-  n.failed = false;
-  n.deferred = false;
-  n.busy = false;
+  if (n.phase === 'reading') return;
   if (typeof ab?.natState !== 'function') {
     n.phase = 'ready';
     n.state = null;
@@ -267,34 +260,6 @@ export async function natOpen() {
   }
   if (S !== me) return;
   n.state = s;
-  n.deferred = (!s || s.expired !== false) && typeof ab.natEnsure === 'function' && busyNow() && !!S.ctx
-    .launcher; // une opération tourne : la reprise attend sa fin, et le dit (avec la carte de cette opération)
-  if ((!s || s.expired !== false) && typeof ab.natEnsure === 'function' && !busyNow() && S.ctx.launcher) {
-    n.phase = 'refreshing';
-    renderLater();
-    let e = null;
-    try {
-      e = await serial(() => ab.natEnsure());
-    } catch {
-      e = null;
-    }
-    if (S !== me) return;
-    if (e && typeof e === 'object') {
-      n.state = e;
-      n.refreshed = e.refreshed === true && e.ok !== false;
-      n.failed = e.refreshed === true && e.ok === false;
-      // le lanceur fait déjà autre chose (K186) : pas un échec ; la carte de cette opération est à la ligne des routes NAT, la reprise repart à sa fin
-      if (e.busy === true) {
-        const running = M.runningOf(e.running);
-        n.busy = !!running;
-        n.deferred = true;
-        n.refreshed = false;
-        n.failed = false;
-        n.phase = 'ready';
-        if (running) return showBusy(running, 'base', 'later');
-      }
-    }
-  }
   n.phase = 'ready';
   renderLater();
 }

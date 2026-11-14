@@ -72,7 +72,7 @@ import {
 } from './todo.js';
 import {
   lcInit,
-  natOpen
+  natRead
 } from './later.js';
 import {
   forgetSetStates,
@@ -375,15 +375,12 @@ export function shortDate(iso) {
 }
 /** « 2026-11-10T06:00 » (le run de la météo, tel que le lanceur le dit) écrit « 10 nov. 2026 06:00Z » ; un texte d'une autre forme est rendu tel quel (borné par le modèle). */
 const runText = run => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(run) ? `${M.dateText(run.slice(0, 10), lang())} ${run.slice(11, 16)}Z` : run;
-/** La date utile d'un jeu que le lanceur dit (`datasets`, K207), en mots : les routes NAT « valides jusqu'au … » (« périmées depuis le … » une fois finies), la météo « prévision du … » (le run), les procédures « cycle 2611 · 3 069 terrains » (le cycle de la ligne CIFP la plus récente
+/** La date utile d'un jeu que le lanceur dit (`datasets`, K207), en mots : la météo « prévision du … » (le run), les procédures « cycle 2611 · 3 069 terrains » (le cycle de la ligne CIFP la plus récente
  *  et les terrains lus : les nombres au format de la langue) ; '' pour un jeu qui n'en dit pas (la date de son fichier suffit). Rien n'est lu au-delà de ce que le lanceur a dit. */
 export function datasetUseful(d) {
   const T = TX.d6,
     unit = n => tt(TX.unit.aerodrome[n === 1 ? 0 : 1]),
     num = n => `${n.toLocaleString(lang())} ${unit(n)}`;
-  if (d.id === 'nat' && d.validUntil) return tt(d.why === 'expired' ? T.natExpired : T.natValid, {
-    d: fmtDateZ(d.validUntil, lang())
-  });
   if (d.id === 'weather' && d.run) return tt(T.run, {
     d: runText(d.run)
   });
@@ -1128,8 +1125,6 @@ export function readsIdle() {
   if (c.sheet && due(c.cycle)) wantCycle(c.sheet);
   if (due(c.todo)) wantTodo();
   if (due(c.last)) wantLast();
-  if (c.lc?.nat?.deferred && c.lc.open.change)
-    natOpen(); // la reprise des routes NAT, reportée pour cause d'opération en cours, repart quand l'écran est libre
   setStatesIdle(); // l'état des autres jeux : relu quand il est « à relire » ou qu'un refus l'a laissé en attente
   wantPlan(); // le plan de « Publier » : lu dès que l'état des zones l'est, relu quand il est « à relire »
 }

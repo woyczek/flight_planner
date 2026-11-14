@@ -742,3 +742,9 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   `mapWheel` (`mapview.js`) asked `mapOf(e.target)`, which falls back on the first map of the page when the target is not inside one (that fallback is for the zoom buttons), so a wheel anywhere in the
   screen zoomed the map and was swallowed. It now answers only a wheel whose target is inside `[data-wmap]`; everywhere else the page scrolls. Case L138 (red before: the wheel on another
   element is swallowed); L96 and L123 (the wheel on the map, plain or with Ctrl) stay green. Help ×4.
+- **14 Nov 2026 — SOG-0352, the NAT tracks leave the screen at the rhythm of the cycle** (the user: « les nats c'est comme la météo, ça se fait tous les jours, pas tous les mois » — the reminder is the line of the Route step of Fuel, Features SOG c762f8e26).
+  Two places held them: the block « À faire ce mois-ci » (the launcher's `nat` dataset with « Reprendre les routes NAT ») and the line of « Quand ça change » (`natOpen`: validity read AND `natEnsure` called when the fold opens, with its
+  busy card and its « reprise à la fin » sentence). Now: (1) `datasetsOf` (`model_countries.js`) drops `nat`: never « à faire », never « fait », never counted in « n faits sur m » nor planned by « Tout mettre à jour »;
+  the weather fold no longer names it; its gesture, gate and texts (`actNat`, `natValid`, `natExpired`, `natDeferred`) are gone. (2) The line of « Quand ça change » stays as INFORMATION: the validity read by `natRead` (aerodb.natState,
+  nothing asked to the network), the number of tracks and where they are read (« se lisent à l'étape Route d'un vol transatlantique »); no `natEnsure` from here, no button, no busy card, no retake sentence (`refreshing`,
+  `refreshed`, `failed` gone). Cases L94, L98, L116, L117, L120, L121 adapted (L94, L98, L116, L120, L121 red before); L105 (the busy card at the NAT line) retired with its feature. Help ×4, SPEC.

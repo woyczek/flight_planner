@@ -18,7 +18,7 @@ Ce que la compagnie publie pour l'appli — la base aéronautique, les procédur
 
 <a id="data-group-aircraft"></a>**Appareils.** Les types d'appareils et leurs performances : la date de l'édition, le nombre de types et de fichiers. Plus de 28 jours, la pastille passe à l'orange.
 
-<a id="data-group-weather"></a>**Météo.** La météo mondiale et les routes NAT sont publiées avec le site : ces lignes n'ont ni cycle ni pastille.
+<a id="data-group-weather"></a>**Météo.** La météo mondiale est publiée avec le site : cette ligne n'a ni cycle ni pastille. Les routes NAT sont une donnée du jour : elles se lisent à l'étape Route d'un vol transatlantique, et ici la ligne « Quand ça change » n'en dit que la validité, sans rien reprendre.
 
 <a id="data-world"></a>**Synoptique monde (GFS).** Dans le groupe Météo, une ligne pour la prévision synoptique mondiale de la carte Atmosphère : son état (« Absent du poste » tant qu'aucune n'est publiée, « Plus de 12 h » quand elle vieillit), le run GFS, le nombre d'étapes, son poids et son âge. « Construire » la fait sur le poste (environ 2 minutes la première fois ; quelques secondes si le run est déjà là, il est alors réutilisé). Elle est publiée **localement**, dans data/weather/world/ : jamais synchronisée ni commitée. Un échec dit sa raison (pas de run publié ou NOAA injoignable, dossier invalide, délai dépassé) et l'ancienne publication reste.
 

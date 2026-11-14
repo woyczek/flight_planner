@@ -65,7 +65,7 @@ export const DATASET_FOLD = Object.freeze({
   proc: Object.freeze(['procedures']),
   vfr: Object.freeze(['vfr']),
   aircraft: Object.freeze(['aircraft', 'sheets']),
-  weather: Object.freeze(['weather', 'nat'])
+  weather: Object.freeze(['weather'])
 });
 /** Le compte du cycle : les sources de la base comptées par todoOf, plus UN par autre jeu que le lanceur dit (`data.datasets`) ; `n/a` (« existe, sans échéance ») compte fait. Sans `datasets`, le compte de la base seule. { done, total }. */
 export function cycleCount(r, data) {

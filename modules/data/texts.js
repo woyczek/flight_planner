@@ -2405,23 +2405,16 @@ export const TX = {
       reading: ['Lecture des routes prises…', 'Reading the tracks taken…', 'Die geholten Routen werden gelesen…',
         'Leyendo las rutas tomadas…'
       ],
-      refreshing: ['Routes périmées : reprise en cours…', 'Tracks expired: taking them again…', 'Routen abgelaufen: werden neu geholt…',
-        'Rutas caducadas: tomándolas de nuevo…'
-      ],
       valid: ['valides jusqu’à {d}', 'valid until {d}', 'gültig bis {d}', 'válidas hasta {d}'],
       expired: ['périmées (valides jusqu’à {d})', 'expired (valid until {d})', 'abgelaufen (gültig bis {d})',
         'caducadas (válidas hasta {d})'
       ],
       none: ['aucune route prise', 'no track taken', 'keine Route geholt', 'ninguna ruta tomada'],
       unknown: ['validité inconnue', 'validity unknown', 'Gültigkeit unbekannt', 'validez desconocida'],
-      refreshed: ['reprises à l’instant, valides jusqu’à {d}', 'just taken again, valid until {d}', 'soeben neu geholt, gültig bis {d}',
-        'recién tomadas, válidas hasta {d}'
-      ],
-      failed: ['reprise impossible pour l’instant (nouvel essai dans quelques minutes)',
-        'could not be taken now (new try in a few minutes)',
-        'derzeit nicht möglich (neuer Versuch in einigen Minuten)', 'no se pudo tomar ahora (nuevo intento en unos minutos)'
-      ],
-      count: ['{n} routes', '{n} tracks', '{n} Routen', '{n} rutas']
+      count: ['{n} routes', '{n} tracks', '{n} Routen', '{n} rutas'],
+      where: ['se lisent à l’étape Route d’un vol transatlantique', 'are read at the Route step of a transatlantic flight', 'werden beim Schritt Route eines Transatlantikflugs gelesen',
+        'se leen en el paso Ruta de un vuelo transatlántico'
+      ]
     },
     // Vu par le poste, pas encore lu
     unreadTitle: ['Vu par le poste, pas encore lu par la suite', 'Seen by the workstation, not read by the suite yet',
@@ -2592,9 +2585,6 @@ export const TX = {
       '{s}: calculada en este equipo'
     ],
     // la liste du mois : un bloc encadré, replié, dont chaque ligne porte son geste
-    natDeferred: ['reprise à la fin de l’opération en cours', 'taken again when the running operation ends',
-      'wird nach dem laufenden Vorgang erneut geholt', 'se tomarán de nuevo al terminar la operación en curso'
-    ],
     tdMarker: ['À faire ce mois-ci · {n}', 'To do this month · {n}', 'Diesen Monat zu tun · {n}', 'Por hacer este mes · {n}'],
     tdAll: ['Tout mettre à jour ({n})', 'Update everything ({n})', 'Alles aktualisieren ({n})', 'Actualizar todo ({n})'],
     tdUpdate: ['Mettre à jour ({z})', 'Update ({z})', 'Aktualisieren ({z})', 'Actualizar ({z})'],
@@ -2715,17 +2705,10 @@ export const TX = {
   },
   // les autres jeux dans « À faire ce mois-ci » (une ligne avec son geste et sa raison) et leur date utile sur la ligne repliée (SOG-0262, d'après `datasets` de base/cycle : validUntil, run, cycle, counts)
   d6: {
-    natValid: ['routes NAT valides jusqu’au {d}', 'NAT tracks valid until {d}', 'NAT-Routen gültig bis {d}',
-      'rutas NAT válidas hasta el {d}'
-    ],
-    natExpired: ['routes NAT périmées depuis le {d}', 'NAT tracks expired since {d}', 'NAT-Routen abgelaufen seit {d}',
-      'rutas NAT caducadas desde el {d}'
-    ],
     run: ['prévision du {d}', 'forecast of {d}', 'Vorhersage vom {d}', 'pronóstico del {d}'],
     procCycle: ['cycle {c}', 'cycle {c}', 'Zyklus {c}', 'ciclo {c}'],
     actProc: ['Relire les procédures', 'Read the procedures again', 'Verfahren erneut lesen', 'Volver a leer los procedimientos'],
     actWeather: ['Refaire la météo du monde', 'Rebuild the world weather', 'Weltwetter neu erstellen', 'Rehacer el tiempo mundial'],
-    actNat: ['Reprendre les routes NAT', 'Take the NAT tracks again', 'NAT-Routen neu holen', 'Volver a tomar las rutas NAT'],
     actVfr: ['Refaire les points VFR', 'Rebuild the VFR points', 'VFR-Punkte neu erstellen', 'Rehacer los puntos VFR'],
     actAircraft: ['Relire les aéronefs', 'Read the aircraft again', 'Luftfahrzeuge erneut lesen', 'Volver a leer las aeronaves'],
     actSheets: ['Publier les fiches', 'Publish the sheets', 'Leistungsblätter veröffentlichen', 'Publicar las fichas']
