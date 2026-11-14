@@ -8117,3 +8117,34 @@ def a206(c):
     c.until("location.hash === '#signaler' && !!document.querySelector('[data-form]')", timeout=20000, what='the report screen again')
     c.eq([c.js("document.querySelector('[data-title]').value"), c.js("document.querySelector('[data-text]').value")], ['Un titre commencé', 'Un texte commencé, gardé.'], 'the text begun is kept while the app is open', what='draft kept')
     c.check_errors()
+
+
+@case('A207', "The common rule for the points of a map (frame/lib/hit_target.js): 22 px for a finger (a 44 px target), 8 px for a mouse, the nearest point of the radius wins, a press that takes nothing gives null (SOG-0343)", 'A',
+      designs=('standard',), screens=True, night=False, langs4=False,
+      rule="SOG-0343 (the user, on his phone: « il faut avoir de tout petits doigts pour viser les points météo déjà téléchargés. Ça génère des accès parasites »; the ergonomist: the size of a finger is a fact the device declares, not a setting): one rule for every map — a coarse pointer takes a point in 22 px, a mouse in 8 px; between two points the nearest to the press is taken; a press in the void reads NOTHING; the Weather screen applies it first (BUGS SOG), any map after")
+def a207(c):
+    c.open('fuel', docs=LEVEL3)
+    url = c.js("(() => document.querySelector('script[src*=\"app.js\"]').src.replace(/app\.js.*$/, 'lib/hit_target.js'))()")
+    r = c.js("""async (url) => {
+      const H = await import(url), P = [{ x: 100, y: 100, id: 'a' }, { x: 110, y: 100, id: 'b' }, { x: 300, y: 300, id: 'c' }], out = {};
+      out.radii = [H.RADIUS.coarse, H.RADIUS.fine, H.radiusFor('touch'), H.radiusFor('pen'), H.radiusFor('mouse')];
+      out.media = H.radiusFor(undefined);
+      const id = h => h ? h.item.id : null;
+      out.onPoint = id(H.pick(P, 100, 100, 22));
+      out.inside22 = id(H.pick(P, 300 + 21, 300, 22));           // 21 px from c: taken with a finger
+      out.outside22 = id(H.pick(P, 300 + 23, 300, 22));          // 23 px: nothing
+      out.insideFine = id(H.pick(P, 300 + 9, 300, 8));           // 9 px with a mouse: nothing
+      out.edge = id(H.pick(P, 300 + 22, 300, 22));               // exactly 22: taken (inclusive)
+      out.nearest = id(H.pick(P, 107, 100, 22));                 // between a and b: b is nearer (3 px against 7)
+      out.nearestA = id(H.pick(P, 102, 100, 22));
+      out.tie = id(H.pick(P, 105, 100, 22));                     // exactly in the middle: the first of the list
+      out.void = H.pick(P, 500, 500, 22);                        // a press in the void: null
+      out.bad = [H.pick(null, 1, 1, 22), H.pick(P, NaN, 1, 22), H.pick(P, 1, 1, 0), H.pick([{ x: NaN, y: 1 }], 1, 1, 22)];
+      out.at = id(H.pick([{ id: 'z', pos: { x: 10, y: 10 } }].map(o => o), 12, 10, 22, o => o.pos));
+      out.crowded = H.crowded(P, 22);
+      return out }""", url)
+    expect_media = 22 if c.phone else 8
+    c.eq(r, {'radii': [22, 8, 22, 22, 8], 'media': expect_media, 'onPoint': 'a', 'inside22': 'c', 'outside22': None, 'insideFine': None, 'edge': 'c', 'nearest': 'b', 'nearestA': 'a', 'tie': 'a', 'void': None,
+             'bad': [None, None, None, None], 'at': 'z', 'crowded': [0, 1]},
+         'finger 22 px, mouse 8 px, the nearest wins (the first at a tie), a press in the void takes nothing, a pointer unknown follows the device (coarse on a phone, fine on a screen)', what='rule')
+    c.check_errors()

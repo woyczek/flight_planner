@@ -1389,3 +1389,24 @@ import { FUEL_DENSITY, density, toKg, fromKg, pricePerKg } from '../../frame/lib
 An unreadable input (missing number, negative price, density outside 0.5–1.0, unknown unit) gives `null`, never an invented
 number. A number is a number or a text that writes one, never a boolean nor an array (`+true` is 1, `+[5]` is 5); a kind
 is one of the object's own keys, never a name of the prototype (`constructor`, `toString`, `__proto__`; audit line 137). Bench: `frame/lib/test/fuel_units.html` (A53).
+
+## 17. The target of a point on a map (`frame/lib/hit_target.js`, SOG-0343)
+
+The size of a finger is not a setting, it is a fact the device declares (a coarse or a fine pointer): ONE rule for every map. A pure ES module, no state, no text.
+
+```js
+import { RADIUS, radiusFor, pick, crowded } from '../../frame/lib/hit_target.js';
+const hit = pick(points /* [{ x, y, … }] already drawn, in px like the press */, e.offsetX, e.offsetY, radiusFor(e.pointerType));
+if (!hit) return;           // a press that takes nothing reads NOTHING (no access, no fetch)
+open(hit.item);             // the nearest point of the radius
+```
+
+| Rule | Value |
+| --- | --- |
+| radius on a coarse pointer (a finger, a pen) | **22 px** (a 44 px target) |
+| radius with a mouse | **8 px** |
+| two points in the radius | the **nearest** to the press wins; at a tie, the first of the list |
+| a press that takes nothing | `null`: the caller launches **no** reading |
+
+`radiusFor(pointerType)`: `'touch'` / `'pen'` → 22, `'mouse'` → 8, unknown → the `(pointer: coarse)` media query. `pick(points, x, y, radius, at)` → `{ item, d, i }` or `null` (`at(item)` gives `{ x, y }` when the items are not already points). `crowded(points, radius, at)` lists the points closer to one another than the radius. Readers: Weather (`modules/atmosphere/screen_map.js`, first), then any map that lets one press a point.
+
