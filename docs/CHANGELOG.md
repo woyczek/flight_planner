@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel › route: a proposed route over the NAT tracks says « via NAT A », and « périmée : routes NAT du 13/11 » when the tracks taken are stale** (fuel DECISIONS; noreg F123; SOG-0263).
 - **Missions › Registre: a mission added from its file takes its file's series, else its family's current series (a number, never the letter)** (missions DECISIONS; noreg N61; SOG-0036).
 - **Fuel › procedures: the runway line warns only for a tailwind (a headwind runway that is not the best stays calm); RNAV / RNP approaches read in words (« H01LZ » → « RNP AR 01L Z »); an ATIS runway is the only gesture offered** (fuel DECISIONS; noreg F221, F152).
 - **Fuel: the arrival data (elevation, QNH, ATIS) kept in the flight with their time and source, on a gesture only; `CF.arrInfoOf` reads them bounded** (fuel DECISIONS, INTEGRATION § 3; noreg F220; SOG-0325).

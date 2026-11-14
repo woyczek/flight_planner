@@ -411,6 +411,9 @@ const TX = {
     'Nicht bestätigter Vorschlag übernommen: zu prüfen — {share}.', 'Propuesta no validada tomada: a verificar — {share}.'
   ],
   // un itinéraire dont le contrôle est incomplet faute de données (SOG-0081, RouteSim du 9 nov. 17 h 05) : jamais présenté comme contrôlé
+  // SOG-0263 : un itinéraire qui emprunte les routes NAT du jour le dit, et dit si elles sont périmées
+  rNat: ['via NAT {t}', 'via NAT {t}', 'über NAT {t}', 'vía NAT {t}'],
+  rNatStale: ['périmée : routes NAT du {d}', 'stale: NAT tracks of {d}', 'veraltet: NAT-Tracks vom {d}', 'caducada: rutas NAT del {d}'],
   rIncomplete: ['contrôle incomplet', 'incomplete check', 'unvollständige Prüfung', 'control incompleto'],
   rIncompleteWhy: ['Contrôle incomplet faute de données : ce qui n’a pas pu être vérifié n’est pas un écart, ni une route validée.',
     'Incomplete check for missing data: what could not be checked is neither a deviation nor a validated route.',
@@ -4044,7 +4047,7 @@ function routeAltsDraw() {
   // SOG-0134 : la ligne montrée (un appui sur elle ou sur son tracé dans la Carte) est marquée et son détail déplié ; « Choisir » la prend
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
     html;
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
@@ -4263,6 +4266,17 @@ function altsPicked(e) {
   if (!S?.ralts?.list?.length) return;
   if (i === null) return altsShow(-1);
   if (Number.isInteger(i) && i >= 0 && i < S.ralts.list.length) altsShow(i);
+}
+/** SOG-0263 : « via NAT A » sous la part contrôlée d'un itinéraire, et en ambre « périmée : routes NAT du JJ/MM » quand le moteur a
+ *  pris des tracks périmées ; rien sans track. */
+function natHtml(n) {
+  if (!n?.tracks?.length) return '';
+  const t = n.tracks.join(', ');
+  return `<small class="f-muted fu-rnat" data-nat="${esc(t)}">${esc(tt(TX.rNat, {
+    t
+  }))}${n.stale ? ` · <span class="f-warn" data-natstale>${esc(tt(TX.rNatStale, {
+    d: n.issued || '?'
+  }))}</span>` : ''}</small>`;
 }
 /** Les itinéraires du document (cache/fuel/route_alts.json) pour la liste de Carburant : null s'il n'en porte pas pour ce vol (un calcul,
  *  le même couple). Le document est relu comme une entrée : textes bornés, procédures à leur forme, trois lignes au plus. */

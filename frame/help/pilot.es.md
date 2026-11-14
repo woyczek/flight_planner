@@ -112,7 +112,7 @@ nivel, el viento medio y la aeronave de su último plan.
 
 **Las propuestas se quedan.** Las rutas propuestas por «Calcular A → B», y aquella cuyo detalle está abierto, se quedan al pasar al Mapa, cambiar de pantalla o recargar la página, sin nuevo cálculo; se dice su hora («Calculado a las 14:32Z»). Se van al tomar una ruta, tocar «Cerrar las propuestas», lanzar un nuevo cálculo o cambiar la salida, la llegada o la aeronave. Al cambiar el ciclo AIRAC, si la base aeronáutica cambió desde entonces, o al día siguiente para una ruta por los NAT, se dicen «caducadas», con «Recalcular», sin desaparecer.
 
-**Puntos NAT.** Un punto de las rutas del Atlántico norte se escribe como en el mensaje del día: «51/20» (51° N 020° W), «5030/30» (50° 30' N 030° W); se lee como una coordenada y se guarda tal como está escrito. Fuera del Atlántico norte, la barra conserva su sentido habitual (un punto y su nivel o su pista).
+**Puntos NAT.** Un punto de las rutas del Atlántico norte se escribe como en el mensaje del día: «51/20» (51° N 020° W), «5030/30» (50° 30' N 030° W); se lee como una coordenada y se guarda tal como está escrito. Fuera del Atlántico norte, la barra conserva su sentido habitual (un punto y su nivel o su pista). Una ruta propuesta que toma las rutas NAT lo dice bajo su parte controlada («vía NAT A»), y en ámbar «caducada: rutas NAT del 13/11» cuando el cálculo tomó las rutas de otro día: vuelva a calcular con el mensaje del día.
 
 El botón «Auto» junto al campo «Ruta» inscribe las aerovías entre los puntos: para cada pareja de puntos con nombre que se
 siguen sin aerovía entre ellos, busca el camino más corto por las aerovías de la base publicada, abiertas al nivel previsto

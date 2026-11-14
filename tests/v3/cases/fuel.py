@@ -3454,6 +3454,7 @@ def f123(c):
     full = dict(_alt(2, 'Via UN10', 'LFRS LUGEN NEPIX LFML', 372, 270, [_ctl_seg('LFRS', 'LUGEN', 'controlled', 'SID'), _ctl_seg('LUGEN', 'NEPIX', 'controlled', 'HIGH'),
                                                                         _ctl_seg('NEPIX', 'LFML', 'controlled', 'STAR')], sid=False),
                 control={'controlledPct': 100, 'incompletePct': 0, 'fallbackPct': 0, 'errorPct': 0, 'sections': []})
+    full['nat'] = {'tracks': ['A'], 'issued': '13/11', 'stale': True}   # SOG-0263: the engine took the NAT tracks of the day, stale
     st['alts'] = [part, full]
     open_proc(c)
     c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
@@ -3463,6 +3464,11 @@ def f123(c):
     c.eq(len(shares), 2, 'each route says its share', what='shares')
     c.ok(shares[0].count('%') == 3 and '22 %' in shares[0] and '65 %' in shares[0] and '14 %' in shares[0], shares, 'three words and three numbers: 22 / 65 / 14')
     c.ok('%' not in shares[1] and shares[1], shares, '« contrôlé » alone only at 100 %')
+    # SOG-0263 (user, 12 Nov: the NAT tracks): the route that takes them says « via NAT A », and « périmée » when they are
+    nat = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].map(e => [e.querySelector('[data-nat]')?.textContent || '', "
+               f"!!e.querySelector('[data-natstale]')])")
+    c.eq(nat[0], ['', False], 'a route without NAT says nothing of them', what='no NAT')
+    c.ok('NAT A' in nat[1][0] and '13/11' in nat[1][0] and nat[1][1], nat, '« via NAT A » and « périmée : routes NAT du 13/11 »')
     c.js(f"document.querySelector('{FUEL} [data-alt=\"0\"] [data-sections]').open = true")
     sec = c.js(f"[...document.querySelectorAll('{FUEL} [data-alt=\"0\"] [data-sections] [data-section]')].map(e => [e.dataset.layer, e.dataset.section])")
     c.eq(sec, [['SID', 'fallback'], ['FRA', 'incomplete'], ['STAR', 'fallback']], 'the sections by layer with their state', what='sections')

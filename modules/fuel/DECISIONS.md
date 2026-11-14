@@ -1973,3 +1973,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (3, the ergonomist at 23 h 36, on the capture of slice 4) When an ATIS gives the runway in use, « Prendre la piste de l'ATIS »
   is the ONLY gesture (the controller's choice): « Prendre la 31L (vent de face) » beside it contradicted it; the wind suggestion
   comes back only without an ATIS runway. F152 (red before: two gestures).
+- **14 Nov 2026 — SOG-0263, the NAT screen: a proposed route says its NAT tracks** (AeroDB's `nat` per alternative, `view.nat_of`:
+  { tracks, issued, stale }). `RE.normalize` keeps it bounded (`natOf`: track letters, one or two capitals, six at most; the date at its
+  form; stale only when true); the row says « via NAT A » under its controlled share, and in amber « périmée : routes NAT du 13/11 »
+  when the engine took stale tracks. Kept in route_alts.json's `answer` like the rest (read again by `RE.normalize`). F123 extended
+  (red before).

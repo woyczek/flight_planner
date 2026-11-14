@@ -194,6 +194,18 @@ function controlOf(c) {
     })).filter(x => x.control)
   };
 }
+/** SOG-0263 : les routes NAT d'un itinéraire (view.nat_of du moteur) : { tracks: ['A'], issued: 'JJ/MM' | '', stale } ; null sans
+ *  track. Lettres de track seules (une ou deux capitales, six au plus), date à sa forme, périmée seulement si vrai. */
+function natOf(n) {
+  if (!n || typeof n !== 'object') return null;
+  const tracks = [...new Set((Array.isArray(n.tracks) ? n.tracks : []).map(t => String(t ?? '').toUpperCase()).filter(t =>
+    /^[A-Z]{1,2}$/.test(t)))].slice(0, 6);
+  return tracks.length ? {
+    tracks,
+    issued: /^\d{2}\/\d{2}$/.test(String(n.issued ?? '')) ? String(n.issued) : '',
+    stale: n.stale === true
+  } : null;
+}
 /** Un itinéraire de la réponse, borné. */
 function altOf(a, role, errors, reviews = []) {
   const segments = (Array.isArray(a?.segments) ? a.segments : []).slice(0, 800).map(segOf).filter(s => s.from && s.to),
@@ -214,6 +226,7 @@ function altOf(a, role, errors, reviews = []) {
     sid: procOf(a?.sid, 'SID'),
     star: procOf(a?.star, 'STAR'),
     control: controlOf(a?.control),
+    nat: natOf(a?.nat),
     segments
   };
 }
