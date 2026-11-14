@@ -8238,6 +8238,33 @@ def a209(c):
     c.ok(all(re.fullmatch(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z', a) for a in r['at']) and r['at'][0].endswith('18:05Z'), r['at'], 'the time of the verdict is on every line')
     c.ok(r['today'] >= 1, r['today'], 'the sections to test keep their grouping by application')
     c.shot(f'A209_{c.width}_{c.lang}_delivered.png')
+
+
+@case('A189', 'Settings: with a launcher that is known but answers its data routes 2 s late (a phone on a relay) the first drawing of the screen still takes under 300 ms at the Full level — nothing that travels is awaited before it (SOG-0133, refused 10 Nov: « oui pour git, non pour compagnie »)',
+      'A', tags=('settings',), designs=('standard',), screens=True, night=False,
+      rule='SOG-0133: at the Full level the first drawing awaited airline/map_profiles.json (`readProfiles`, `wait: true`: a read through the transport, 2 s on a relay) for an Administration card that the list does not even show (a row); the file is now read only for the Administration page (`#settings?card=admin`). Every `/__setup/` route but `status` (the launcher is known) and `sync-remote` (the repository line, SOG-0133 first lot) answers 2 s late here, the store of the page at once; sog-settings-start → sog-settings-first stays under 300 ms and the cards are in the page. Not covered here: the frame`s own boot, which waits for `/__setup/status` before routing (V3 Frame)')
+def a189(c):
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    remote = {'repo': True, 'remote': 'origin', 'url': 'https://example.test/acme/data.git', 'branch': 'main', 'state': 'repo', 'default': ''}
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/sync-remote') and route.request.method == 'GET':
+            body = remote
+        elif path.endswith('/__setup/secrets'):
+            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.page.add_init_script("""(() => { const f = window.fetch; window.fetch = function (u, o) { const url = String((u && u.url) || u);
+      return /__setup\/(?!status|sync-remote)/.test(url) ? new Promise(ok => setTimeout(ok, 2000)).then(() => f.apply(this, arguments)) : f.apply(this, arguments) } })()""")
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"display\"]')", timeout=15000, what='the cards are drawn')
+    t_first = c.js("(() => { const m = performance.getEntriesByName('sog-settings-first').pop(), s = performance.getEntriesByName('sog-settings-start').pop(); return m && s ? m.startTime - s.startTime : null })()")
+    c.ok(t_first is not None and t_first < 300, t_first, 'the first drawing took less than 300 ms although every route of the launcher answers 2 s late (sog-settings-start → sog-settings-first)')
+    c.ok(c.count('[data-card="status"]') == 1 and c.count('[data-card="display"]') == 1, None, 'the status block and the display card are there')
     c.check_errors()
 
 

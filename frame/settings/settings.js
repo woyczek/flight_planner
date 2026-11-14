@@ -852,7 +852,8 @@
     const {
       edge: edgeShow,
       runwayZoom
-    } = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readProfiles(c) : P.admin.PROFILE_DEFAULTS;
+    } = focus === 'admin' ? await P.admin.readProfiles(c) : P.admin
+      .PROFILE_DEFAULTS; // la lecture (réseau, attendue) ne sert qu'à la page Administration : la liste n'en montre que la ligne (SOG-0133)
     const route = await routeJoin(view, c, {
       t,
       FD,

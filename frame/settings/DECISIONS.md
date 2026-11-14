@@ -796,3 +796,15 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   the network) must be ok with no error and no warning, else « Rien n'a été vidé : pas de réseau pour relire les fichiers du dépôt » and nothing is emptied; a send that did not go
   still stops it. Case A188 (red before: the copies are gone after a failed pass; green after: the copies stay, offline and with a failed pass). The rest of the audit stands
   (never what the device alone carries, never `reset()`).
+
+## SOG-0133 again, the first drawing at the Full level (14 Nov 2026)
+
+- The ergonomist re-listed SOG-0133 as refused (the user on 10 Nov: « oui pour git, non pour compagnie »; the company list was SOG-0218). Survey with the launcher of the user's
+  workstation (read only): the screen is drawn in 0.67 s from the navigation, `sog-settings-start` → `sog-settings-first` 134 to 240 ms; nothing slow there. On a slow link
+  (a relay, a phone) the case A189 makes every data route of the launcher answer 2 s late while `status` answers: the first drawing took **1.8 s** at the Full level — `readProfiles`
+  awaited `airline/map_profiles.json` (`FrameData` read with `wait: true`, so a read of the repository tree through the transport) for the Administration card, which the list no longer
+  shows (a row since SOG-0320). Now the file is read only for the Administration page (`#settings?card=admin`); the list draws at once (134 ms with the same delays). A189 red before
+  (1 883 ms), green after; A106, A140, A183, A184 stay green.
+- Not mine, found by the same measure: the frame's own boot (`frame/app.js`, `launcher.detect()` → `GET /__setup/status`) waits for the launcher's first answer before routing, so on a
+  relay answering in 2 s nothing is drawn for 2 s whatever the screen is (measured: first card at 4.1 s with every route 2 s late, 2.3 s with only `status` late). Handed to V3 Frame.
+  Also seen: `sync-remote` and `sync-status?fresh=1` are each asked twice by a settings opening (two drawings) — harmless here, noted.
