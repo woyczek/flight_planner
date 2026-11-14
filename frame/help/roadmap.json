@@ -4,8 +4,8 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0b8978c",
-  "fiches": 353,
+  "organisation": "c714e75",
+  "fiches": 355,
   "untranslated": 0,
   "priorities": 310
  },
@@ -373,6 +373,15 @@
      "en": "Acceptance: « Test again » erases the verdict and its comment — keep the history",
      "de": "Abnahme: « Erneut testen » löscht das Urteil und seinen Kommentar — den Verlauf behalten",
      "es": "Recepción: « Volver a probar » borra el veredicto y su comentario — conservar el historial"
+    },
+    {
+     "id": "SOG-0355",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Recette : ranger les tests acceptés ou refusés par l'heure du verdict, le plus récent en tête",
+     "en": "Acceptance: order passed or failed tests by the time of the verdict, most recent first",
+     "de": "Abnahme: bestandene oder abgelehnte Tests nach der Uhrzeit des Urteils ordnen, das neueste zuerst",
+     "es": "Recepción: ordenar las pruebas aceptadas o rechazadas por la hora del veredicto, la más reciente primero"
     }
    ]
   },
@@ -2798,8 +2807,7 @@
      "en": "Missions edited in the V2 editor and never filed: get them out of the browser (YAML to files, then V3)",
      "de": "In V2 bearbeitete, nie abgelegte Missionen: aus dem Browser holen (YAML in Dateien, dann V3)",
      "es": "Misiones editadas en la V2 y nunca guardadas: sacarlas del navegador (YAML a ficheros, luego V3)",
-     "rank": 169,
-     "test": true
+     "rank": 169
     }
    ]
   },
@@ -3857,6 +3865,27 @@
      "en": "NAT tracks: fetch them from the Route step as soon as a flight crosses the Atlantic, and a daily (not monthly) reminder",
      "de": "NAT-Routen: im Schritt Route holen, sobald ein Flug den Atlantik quert, und eine tägliche (nicht monatliche) Erinnerung",
      "es": "Rutas NAT: tomarlas desde el paso Ruta en cuanto un vuelo cruza el Atlántico, y un recordatorio diario (no mensual)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-route-base",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; route ; base",
+    "en": "Carburant ; route ; base",
+    "de": "Carburant ; route ; base",
+    "es": "Carburant ; route ; base"
+   },
+   "items": [
+    {
+     "id": "SOG-0354",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Moteur de route : découper une longue route en tronçons que l'on sait valides (au-delà de la côte : traverser aussi les États-Unis)",
+     "en": "Route engine: split a long route into legs known to be valid (beyond the coast: crossing the United States too)",
+     "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
+     "es": "Motor de ruta: dividir una ruta larga en tramos que se saben válidos (más allá de la costa: cruzar también Estados Unidos)"
     }
    ]
   },

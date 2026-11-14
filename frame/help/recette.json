@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
   "tests": 218,
-  "verdicts": 152
+  "verdicts": 153
  },
  "apps": [
   "pilote",
@@ -2629,13 +2629,10 @@
    },
    "test": "Recharge la page. Anciennes pages (V2) › registre des missions › « Comparer avec le dossier » › ligne « 85 → T-085 » › « Ranger dans le dossier » : au bout de deux à trois secondes, une notification dit que le dossier « Missions » ne répond pas et la fenêtre de choix de dossier s'ouvre ; choisis E:\\DEFA\\data\\missions ; la mission est rangée sous T-085, l'ancien fichier gardé dans versions/. Dans la V3, Missions › T-085 : le résumé commence par « À la suite d'un épisode… ».",
    "since": "2026-11-13",
-   "state": "todo",
+   "state": "ko",
    "delivered": "2026-11-13T12:04:40Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "ranger dans le dossier ne fait rien : Mission T-085 non rangée : échec (Le dossier des missions ne répond pas (dossier déplacé, lecteur réseau absent ?). Le choisir de nouveau avec « Dossier des missions » ou « Relire le dossier ».).",
-    "at": "2026-11-13T10:16:01Z"
-   }
+   "comment": "c’est bon, au tracé du trajet (+ cartouche de l’AWY) de côte à côte. C’est mauvais, si on doit traverser en plus les USA. Il faut trouver un moyen de fractionner un long trajets en trajets plus facilement testables, que l’on sait valides. par exemple, si on fait une verticale KJFK en venant d’EIDW vers Boston (c’est stupide, mais pourquoi pas), on aurait au moins un premier tronçon de route IFPS valide, parce qu’on sait qu’il existe des routes entre ces deux points. C’est un exemple. il y a probablement bien mieux que ce cache heuristique, pour décomposer une problématique de graphes. C’est un travail pour Fable, de produire un tel algorithme, je pense. ou au moins Opus.",
+   "at": "2026-11-14T11:10:03Z"
   },
   {
    "id": "SOG-0294",
@@ -3258,6 +3255,22 @@
     "Il demande pour une suppression ou plus de vingt fichiers ; le reste part tout seul",
     "Il demande pour TOUT changement fait à la main",
     "Comme aujourd'hui, avec seulement le geste « Tout jeter et reprendre le dépôt »",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0059",
+   "fiche": "SOG-0354",
+   "app": "maintenance",
+   "question": "Découpage des longues routes en tronçons valides : quand ?",
+   "context": "Ton texte de 12 h 10 (écrit sur SOG-0293 par erreur) demande un vrai algorithme pour les longues routes : je l'ai repris dans SOG-0354. Mon avis : oui sur le principe ; plutôt qu'une verticale de grand terrain, des « portes » publiées (entrée et sortie de l'océan, points de frontière de FIR), une recherche de porte en porte puis tronçon par tronçon, et pour les États-Unis les routes préférentielles publiées par la FAA avant tout calcul. Ce que je conteste : le faire avant l'alpha 5 — c'est un chantier de moteur, et tes refus ouverts passent avant. Je propose : le relevé d'AeroDB (cinq vols mesurés) et ma note de conception maintenant, le code après l'alpha 5.",
+   "options": [
+    "Relevé et note de conception maintenant ; le code après l'alpha 5",
+    "Tout de suite, avant l'alpha 5 : c'est bloquant pour moi",
+    "Relevé et note maintenant ; le code à la bêta 1",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-14",
