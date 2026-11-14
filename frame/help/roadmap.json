@@ -4,7 +4,7 @@
  "updated": "2026-11-14",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9ef5d18",
+  "organisation": "4a0f068",
   "fiches": 347,
   "untranslated": 0,
   "priorities": 310
@@ -852,8 +852,7 @@
      "en": "« Compute A → B »: 27.8 s spent in the launcher (LFPO → EIDW)",
      "de": "« A → B berechnen »: 27,8 s im Launcher (LFPO → EIDW)",
      "es": "« Calcular A → B »: 27,8 s en el lanzador (LFPO → EIDW)",
-     "rank": 34,
-     "test": true
+     "rank": 34
     },
     {
      "id": "SOG-0322",
@@ -986,8 +985,7 @@
      "de": "Karte: sie flackert, während das Luftraum-Panel verkleinert wird",
      "es": "Mapa: parpadea mientras se reduce el panel de espacios aéreos",
      "milestone": "6.0.0-alpha.5",
-     "rank": 41,
-     "test": true
+     "rank": 41
     },
     {
      "id": "SOG-0046",
@@ -1218,8 +1216,7 @@
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
      "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)",
-     "rank": 73,
-     "test": true
+     "rank": 73
     },
     {
      "id": "SOG-0233",
@@ -1239,8 +1236,7 @@
      "en": "Map: the box “around the flight plan only” has no effect",
      "de": "Map: the box “around the flight plan only” has no effect",
      "es": "Map: the box “around the flight plan only” has no effect",
-     "rank": 75,
-     "test": true
+     "rank": 75
     },
     {
      "id": "SOG-0252",
@@ -1793,8 +1789,7 @@
      "en": "Aircraft sheets: a converted value shows thirteen decimals",
      "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",
      "es": "Fichas de aeronaves: un valor convertido muestra trece decimales",
-     "rank": 102,
-     "test": true
+     "rank": 102
     }
    ]
   },
@@ -2262,11 +2257,12 @@
     {
      "id": "SOG-0338",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : un clic sur « Registre » ne met pas à jour le rail de gauche",
      "en": "Missions: a click on « Register » does not update the left rail",
      "de": "Missionen: ein Klick auf « Register » aktualisiert die linke Leiste nicht",
-     "es": "Misiones: un clic en « Registro » no actualiza el riel izquierdo"
+     "es": "Misiones: un clic en « Registro » no actualiza el riel izquierdo",
+     "test": true
     }
    ]
   },
@@ -2575,8 +2571,7 @@
      "en": "Fleet: say which airline it is; tapping the aircraft's name opens its editing",
      "de": "Flotte: sagen, um welche Gesellschaft es geht; ein Tipp auf den Namen öffnet die Bearbeitung",
      "es": "Flota: decir de qué compañía se trata; tocar el nombre del aparato abre su edición",
-     "rank": 156,
-     "test": true
+     "rank": 156
     }
    ]
   },
@@ -4542,11 +4537,12 @@
     {
      "id": "SOG-0339",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Lanceur : une écriture refusée par Windows (fichier occupé) fait tomber la requête ; relais METAR en échec",
      "en": "Launcher: a write refused by Windows (file in use) brings the request down; METAR relay failing",
      "de": "Launcher: ein von Windows verweigerter Schreibvorgang (Datei belegt) lässt die Anfrage abstürzen; METAR-Relais schlägt fehl",
-     "es": "Lanzador: una escritura rechazada por Windows (archivo en uso) hace caer la petición; relé METAR en fallo"
+     "es": "Lanzador: una escritura rechazada por Windows (archivo en uso) hace caer la petición; relé METAR en fallo",
+     "test": true
     }
    ]
   },
@@ -4759,11 +4755,12 @@
     {
      "id": "SOG-0343",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Météo au téléphone : les points déjà lus sont trop petits pour un doigt",
      "en": "Weather on the phone: the points already read are too small for a finger",
      "de": "Wetter am Telefon: die bereits gelesenen Punkte sind zu klein für einen Finger",
-     "es": "Meteo en el teléfono: los puntos ya leídos son demasiado pequeños para un dedo"
+     "es": "Meteo en el teléfono: los puntos ya leídos son demasiado pequeños para un dedo",
+     "test": true
     }
    ]
   },

@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-14",
-  "tests": 214,
-  "verdicts": 147
+  "tests": 217,
+  "verdicts": 153
  },
  "apps": [
   "pilote",
@@ -1284,13 +1284,9 @@
    },
    "test": "Recharge la page. La compagnie de l'appareil est dans l'en-tête (la puce à côté du nom de l'application). Compagnie › Flotte : le titre dit « Flotte de <ta compagnie> » avec son genre, et un appui sur le nom ouvre la fiche de la compagnie. Si c'est ce que tu demandais le 10/11, valide ; sinon dis ce qui manque.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-13T20:31:16Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "non, toujours rien dans l’entête, là où ça devrait être, dans le header. possibilité de changer rapidement de compagnie, imho (nota à challenger, comme pour TOUTES MES DÉCISIONS !), quand on clique sur « pilote », on a 3 « compagnie ITF », ou « compagnie DEFA VIRTUAL » si on a 3 compagnies enregistrées (on n’en aura jamais plus de 7 :)",
-    "at": "2026-11-10T14:56:14Z"
-   }
+   "at": "2026-11-14T10:55:46Z"
   },
   {
    "id": "SOG-0191",
@@ -1696,13 +1692,9 @@
    },
    "test": "Recharge la page. Appareils, une fiche dont une valeur est convertie d'une autre unité (un débit en lb/h lu en kg/h, par exemple) : elle s'affiche avec quatre chiffres significatifs au plus — « 12410 », « 847 », « 84.74 », « 8.47 », « 0.85 » — et plus jamais treize décimales. Une valeur que tu as saisie reste telle que tu l'as écrite. Dis si tu veux une virgule à la place du point.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-13T19:17:08Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "Ah. pardon. j’avais dit « deux chiffres significatifs » … après la virgule… oui, trois ou 4 chiffres avant la virgule, max 2 après si moins de 3 chiffres avant. au total, max 4 chiffres significatifs. #meaculpa",
-    "at": "2026-11-13T15:59:27Z"
-   }
+   "at": "2026-11-14T10:54:37Z"
   },
   {
    "id": "SOG-0221",
@@ -1760,13 +1752,10 @@
    },
    "test": "Recharge la page. Carburant, un vol, « Calculer A → B » : ouvre le détail du DEUXIÈME itinéraire sans le choisir. Passe à la Carte en grand : la fenêtre « Itinéraires proposés » est là, le deuxième ouvert avec son détail. Reviens à Carburant : la liste et le détail sont toujours là. Recharge la page : toujours là, sans recalcul. « Choisir cet itinéraire » puis « Prendre » : tout part, et rien ne revient. Essaie aussi « Fermer les propositions ».",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "reserve",
    "delivered": "2026-11-13T20:34:22Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "Techniquement, il n’y a plus de bug. néanmoins, je voulais pouvoir choisir et conserver le détail. Y a-t-il un souci à afficher la popup, comme pour les missions, sur la carte sidecar, switcher carte full, revenir, tout en conservant le statut ? On spécifie ça correctement, et on arrête de bricoler. il y a des éléments qui doivent survivre au changement (il y en a, puisqu’en revenant sur fuel, on reclique sur calcul et il réaffiche instantanément). on regarde quelles sont les contraintes de faire survivre ce point au changement de page, et on code. ça semblait simple, sur le papier.",
-    "at": "2026-11-13T15:06:53Z"
-   }
+   "comment": "oui, c’est bon pour ça. mais sur la vue carte, on ne peut toujours pas choisir autrement qu’en cliquant le tracé sur la carte, pas sur la légende. Le survol fonctionne, mais pas le toucher/clic.",
+   "at": "2026-11-14T10:53:04Z"
   },
   {
    "id": "SOG-0225",
@@ -2041,13 +2030,9 @@
    },
    "test": "Recharge la page. Carte, LFOE → KTPA (ou un autre vol transatlantique), « Autour du vol seulement » cochée : les terrains, les points et les voies ne sont montrés que le long de la route — plus rien au Maroc ni au Canada ; décoche : tout revient. Les espaces aériens suivent le même couloir.",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-13T19:19:52Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "c’est mieux. maintenant, tu sélectionne un rectangle, par simplification mathématique. le calcul intégral était trop coûteux, et tu as raison. néamoins, un rectangle de 4500nm de côté, ça donne deux pays de hauteur. c’est trop :) les airspaces sont mieux calculés, mais ad, points tournants, awy, elles, n’ont manifestement pas le même calcul. À revoir.",
-    "at": "2026-11-13T16:04:24Z"
-   }
+   "at": "2026-11-14T10:53:13Z"
   },
   {
    "id": "SOG-0247",
@@ -2694,13 +2679,9 @@
    },
    "test": "Relance le lanceur, recharge la page. Carburant, LFOE → KDEN, « Calculer A → B » : la route de tête arrive en une à trois secondes, avec « Variantes en recherche… » ; quelques secondes plus tard les variantes s'ajoutent dessous, la première ne bouge pas. Refais le même calcul : immédiat, et l'écran dit « du cache, calculé à … ». Change le niveau pendant la recherche des variantes : elle s'arrête et le calcul repart.",
    "since": "2026-11-13",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-13T22:00:01Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "oui, il faut garder un cache, qui périme uniquement au changement d’airac, ou s’il passe par les nats. second calcul lfoe kden aussi long, sauf si on shifte de page. étonnant, non ? détail amusant : l’affichage reste identique si on change d’écran 1-> 5, mais est différent si on fait un aller-retour carte (screenshot).",
-    "at": "2026-11-13T16:07:09Z"
-   }
+   "at": "2026-11-14T10:50:39Z"
   },
   {
    "id": "SOG-0297",
@@ -2848,13 +2829,9 @@
    },
    "test": "Recharge la page. Carte avec une route qui traverse des espaces, touche un point : le volet du bas montre le graphique des niveaux à gauche et la liste des espaces À DROITE ; rétrécis la fenêtre jusque vers 700 px : la liste reste à droite ; le volet ne clignote pas et ne change pas de hauteur. Si la liste repasse dessous chez toi, donne-moi la largeur de ta fenêtre.",
    "since": "2026-11-13",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-14T10:23:26Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "régression : la liste des espaces, qui devait être à droite du graphique, est maintenant à nouveau en bas.",
-    "at": "2026-11-13T15:21:57Z"
-   }
+   "at": "2026-11-14T10:51:13Z"
   },
   {
    "id": "SOG-0308",
@@ -3214,57 +3191,51 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T10:26:51Z"
+  },
+  {
+   "id": "SOG-0338",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : un clic sur « Registre » ne met pas à jour le rail de gauche",
+    "en": "Missions: a click on « Register » does not update the left rail",
+    "de": "Missionen: ein Klick auf « Register » aktualisiert die linke Leiste nicht",
+    "es": "Misiones: un clic en « Registro » no actualiza el riel izquierdo"
+   },
+   "test": "Recharge la page. Compagnie › Missions, bouton « Registre » de la page : dans le rail de gauche, c'est « Registre » qui est marqué, plus « Missions » ; le retour du navigateur ramène à Missions, marqué à son tour.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T10:35:21Z"
+  },
+  {
+   "id": "SOG-0339",
+   "app": "maintenance",
+   "title": {
+    "fr": "Lanceur : une écriture refusée par Windows (fichier occupé) fait tomber la requête ; relais METAR en échec",
+    "en": "Launcher: a write refused by Windows (file in use) brings the request down; METAR relay failing",
+    "de": "Launcher: ein von Windows verweigerter Schreibvorgang (Datei belegt) lässt die Anfrage abstürzen; METAR-Relais schlägt fehl",
+    "es": "Lanzador: una escritura rechazada por Windows (archivo en uso) hace caer la petición; relé METAR en fallo"
+   },
+   "test": "Relance le lanceur. Rien à faire de particulier : dans sa fenêtre, plus de bloc « Exception occurred during processing of request … PermissionError: [WinError 32] » pendant l'usage. Si tu en revois un, colle-le dans la note.",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T10:38:04Z"
+  },
+  {
+   "id": "SOG-0343",
+   "app": "maintenance",
+   "title": {
+    "fr": "Météo au téléphone : les points déjà lus sont trop petits pour un doigt",
+    "en": "Weather on the phone: the points already read are too small for a finger",
+    "de": "Wetter am Telefon: die bereits gelesenen Punkte sind zu klein für einen Finger",
+    "es": "Meteo en el teléfono: los puntos ya leídos son demasiado pequeños para un dedo"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Météo : touche près d'un point déjà lu — c'est lui qui s'ouvre, sans viser au millimètre ; touche dans le vide entre deux points : rien ne se lit (plus d'accès parasite).",
+   "since": "2026-11-14",
+   "state": "todo",
+   "delivered": "2026-11-14T10:33:14Z"
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0055",
-   "fiche": "SOG-0341",
-   "app": "maintenance",
-   "question": "Registre des immatriculations au téléphone : publie-t-on dans ton dépôt privé un registre RÉDUIT à cinq champs (immatriculation, constructeur, type, numéro de série, aérodrome d'attache) ?",
-   "context": "Aujourd'hui le registre reste sur le poste et rien n'est publié (règle de SOG-0270) : le téléphone ne l'a donc pas. Ta demande du 14/11 revient à publier un fichier réduit, sans aucun nom de personne ni adresse : tes deux exemples gardent exactement ces cinq champs. Cela CHANGE la règle, d'où cette question. Ce serait UN seul fichier (pas un par aéronef). Avant de publier, AeroDB lit la licence de l'export du registre. « En service » voudra dire : présent dans l'export du jour ; les dates de mise et de fin de service ne sont pas dans cet export, il faudrait une autre source.",
-   "options": [
-    "Oui, le registre réduit à cinq champs est publié dans le dépôt privé (après lecture de la licence)",
-    "Non : il reste sur le poste, le téléphone s'en passe",
-    "Non : le lanceur répond au téléphone appairé, rien n'est publié",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-14",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0056",
-   "fiche": "SOG-0341",
-   "app": "maintenance",
-   "question": "Registre réduit : garde-t-on aussi l'EXPLOITANT (tu demandes : « donnée publique, je me demande si on ne peut pas le laisser ») ?",
-   "context": "Mon objection : dans l'export, la colonne de l'exploitant porte des sociétés (ton exemple HELIDAX) mais aussi des particuliers, quand le propriétaire exploite lui-même son avion — et rien dans le fichier ne les distingue sûrement. Publier la colonne, c'est publier des noms de personnes. Garder seulement « ce qui ressemble à une société » (SAS, SARL, aéro-club…) se trompera dans les deux sens. Je ne la publierais pas ; au mieux elle reste sur le poste.",
-   "options": [
-    "Non, l'exploitant n'est ni publié ni gardé (comme aujourd'hui)",
-    "Gardé sur le poste seulement, jamais publié",
-    "Publié, seulement quand le nom porte une forme de société (liste fermée)",
-    "Publié tel quel"
-   ],
-   "since": "2026-11-14",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0057",
-   "fiche": "SOG-0335",
-   "app": "maintenance",
-   "question": "Ta note du 14/11 dit « bug, champ de données trop petit » : quel champ, sur quel écran ?",
-   "context": "Je n'ai pas su le rattacher à une capture. Si c'est le champ de texte de « Signaler » au téléphone, ou le champ où l'on colle le diagnostic, dis-le en un mot dans le texte.",
-   "options": [
-    "Le texte de « Signaler » au téléphone",
-    "Un champ des Réglages (dis lequel)",
-    "Un champ de Carburant (dis lequel)",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-14",
-   "state": "todo",
-   "recommended": 0
-  },
   {
    "id": "Q-0054",
    "fiche": "SOG-0255",
@@ -3282,6 +3253,63 @@
    "choice": 0,
    "text": "",
    "at": "2026-11-13T20:32:43Z"
+  },
+  {
+   "id": "Q-0055",
+   "fiche": "SOG-0341",
+   "app": "maintenance",
+   "question": "Registre des immatriculations au téléphone : publie-t-on dans ton dépôt privé un registre RÉDUIT à cinq champs (immatriculation, constructeur, type, numéro de série, aérodrome d'attache) ?",
+   "context": "Aujourd'hui le registre reste sur le poste et rien n'est publié (règle de SOG-0270) : le téléphone ne l'a donc pas. Ta demande du 14/11 revient à publier un fichier réduit, sans aucun nom de personne ni adresse : tes deux exemples gardent exactement ces cinq champs. Cela CHANGE la règle, d'où cette question. Ce serait UN seul fichier (pas un par aéronef). Avant de publier, AeroDB lit la licence de l'export du registre. « En service » voudra dire : présent dans l'export du jour ; les dates de mise et de fin de service ne sont pas dans cet export, il faudrait une autre source.",
+   "options": [
+    "Oui, le registre réduit à cinq champs est publié dans le dépôt privé (après lecture de la licence)",
+    "Non : il reste sur le poste, le téléphone s'en passe",
+    "Non : le lanceur répond au téléphone appairé, rien n'est publié",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-14T10:45:06Z"
+  },
+  {
+   "id": "Q-0056",
+   "fiche": "SOG-0341",
+   "app": "maintenance",
+   "question": "Registre réduit : garde-t-on aussi l'EXPLOITANT (tu demandes : « donnée publique, je me demande si on ne peut pas le laisser ») ?",
+   "context": "Mon objection : dans l'export, la colonne de l'exploitant porte des sociétés (ton exemple HELIDAX) mais aussi des particuliers, quand le propriétaire exploite lui-même son avion — et rien dans le fichier ne les distingue sûrement. Publier la colonne, c'est publier des noms de personnes. Garder seulement « ce qui ressemble à une société » (SAS, SARL, aéro-club…) se trompera dans les deux sens. Je ne la publierais pas ; au mieux elle reste sur le poste.",
+   "options": [
+    "Non, l'exploitant n'est ni publié ni gardé (comme aujourd'hui)",
+    "Gardé sur le poste seulement, jamais publié",
+    "Publié, seulement quand le nom porte une forme de société (liste fermée)",
+    "Publié tel quel"
+   ],
+   "since": "2026-11-14",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-14T10:45:26Z"
+  },
+  {
+   "id": "Q-0057",
+   "fiche": "SOG-0335",
+   "app": "maintenance",
+   "question": "Ta note du 14/11 dit « bug, champ de données trop petit » : quel champ, sur quel écran ?",
+   "context": "Je n'ai pas su le rattacher à une capture. Si c'est le champ de texte de « Signaler » au téléphone, ou le champ où l'on colle le diagnostic, dis-le en un mot dans le texte.",
+   "options": [
+    "Le texte de « Signaler » au téléphone",
+    "Un champ des Réglages (dis lequel)",
+    "Un champ de Carburant (dis lequel)",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "j’essaie de préfixer le domaine dans le titre, à chaque fois. « bug » voulait dire, ici, « module “bugs” »",
+   "at": "2026-11-14T10:46:08Z"
   }
  ]
 }
