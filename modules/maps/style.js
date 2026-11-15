@@ -216,7 +216,9 @@ export const STYLE = `
 [data-module="maps"] .mp-dbody p{margin:2px 0}
 [data-module="maps"] .mp-lv-wrap{display:flex;align-items:flex-start;gap:8px 12px}
 [data-module="maps"] .mp-lv-wrap[data-wide="0"]{flex-direction:column;gap:6px}
-[data-module="maps"] .mp-lv-stack{flex:none;position:sticky;top:0;z-index:2;background:var(--sog-surface)}
+[data-module="maps"] .mp-lv-stack{flex:none;position:sticky;top:-7px;padding-top:7px;z-index:2;background:var(--sog-surface)}
+[data-module="maps"] .mp-lv-wrap[data-solo="1"] .mp-lv-list{display:none}
+[data-module="maps"] .mp-data[data-card="1"] .mp-notes{display:none}
 [data-module="maps"] .mp-lv-wrap[data-wide="0"] .mp-lv-stack{width:100%}
 [data-module="maps"] .mp-lv-side{flex:1 1 auto;min-width:0;width:100%}
 [data-module="maps"] .mp-lv-col{cursor:pointer}

@@ -8022,35 +8022,47 @@ def d239(c):
     c.shot('D239_standard_sheet_open_390x667.png')
 
 
-@case('D240', 'On a phone (390 × 667) the sheet of the spaces at a point shows its list and the card of a space under the stack, in full width, reachable: the stack is a band (96 – 150 px), the first row of the list is visible under it without scrolling, the card opened by a tap on a row is under the stack on the whole width, the sheet is at most half of the view', 'D',
+@case('D240', 'On a phone (390 × 667) the sheet of the spaces at a point reads at once: ONE space: no stack, its card first on the whole width, name, type and limits in one line (SFC → FL115) and class readable without scrolling; several spaces: the stack is a compact band (96 px at most) above, the card of the chosen space under it; the sheet takes the height of its content, the half of the view at most', 'D',
       tags=('maps', 'sheet'), screens=False, designs=('standard',), night=False,
-      rule='SOG-0364 (the user, from his phone, 14 Nov: « la fiche de l’espace est invisible, cachée par du blanc, sur le côté de la pile d’espaces », photo SIG-c7c4337ccd): « 1 espace sur ce point » in a sheet of 170 px: the stack of 110 px covered the whole body, the list and the card were under it')
+      rule='SOG-0364 (the user, from his phone, 14 Nov: « la fiche de l’espace est invisible, cachée par du blanc, sur le côté de la pile d’espaces », photo SIG-c7c4337ccd; the ergonomist, 15 Nov: a card of one line under a stack of 180 px that draws one rectangle is the default moved): one space → no stack, the card first; several → a band ≤ 96 px, the card under it')
 def d240(c):
     ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
-    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
-    c.page.set_viewport_size({'width': 390, 'height': 667})
-    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
-    c.ready('maps', sheet=True)
-    c.js(_STATE_JS)
-    hook_map(c)
-    c.until("() => !!(window.__mp.S && window.__mp.S.prof)", timeout=15000, what='the profile')
-    c.wait(1200)
-    _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", 'the list of the space at this point')
-    c.wait(1500)
+    one = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    three = one + [{'type': 'D', 'cls': '', 'name': '62', 'key': 'LFD62', 'lower': 'SFC', 'upper': 'FL195', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+                   {'type': 'TMA', 'cls': 'D', 'name': 'TESTVILLE', 'key': 'LFT1', 'lower': '2000 ft AMSL', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.5, 45.5, 0.3, 1.3)]}]
     geo = """() => { const q = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)] }, S = window.__mp.S, root = document.querySelector('[data-module="maps"]'),
-      li = document.querySelector('.mp-lv-list li[data-i]'), card = document.querySelector('.mp-sp-card');
-      return { root: root.clientHeight, data: q(S.dataEl)[3] - q(S.dataEl)[1], body: q(S.dbodyEl), stack: q(document.querySelector('.mp-lv-stack')), li: q(li), card: card && !card.hidden ? q(card) : null, scrollTop: S.dbodyEl.scrollTop } }"""
-    g = c.js(geo)
-    c.ok(g['data'] <= g['root'] / 2 + 3, f"sheet {g['data']} of {g['root']}", 'the sheet is at most half of the view')
-    c.ok(g['stack'][3] - g['stack'][1] <= 152, str(g['stack']), 'the stack is a band (150 px at most)')
-    c.ok(g['li'][1] >= g['stack'][3] - 1 and g['li'][3] <= g['body'][3] + 1, f"first row {g['li']} under the stack {g['stack']} in the body {g['body']}", 'the first row of the list is visible under the stack, without scrolling')
-    # a tap on a row opens its card: under the stack, the whole width
-    c.page.touchscreen.tap((g['li'][0] + g['li'][2]) / 2, (g['li'][1] + g['li'][3]) / 2)
-    c.until("() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", timeout=6000, what='the card opens')
-    c.wait(900)
-    g2 = c.js(geo)
-    k = g2['card']
-    c.ok(k and k[1] >= g2['stack'][3] - 1 and k[0] <= g2['body'][0] + 24 and k[2] >= g2['body'][2] - 24, f"card {k} stack {g2['stack']} body {g2['body']}", 'the card is under the stack on the whole width (not beside it)')
-    c.ok(g2['data'] <= g2['root'] / 2 + 3, f"sheet {g2['data']} of {g2['root']}", 'the sheet stays at most half of the view')
-    c.shot('D240_standard_spaces_390x667.png')
-
+      st = document.querySelector('.mp-lv-stack'), card = document.querySelector('.mp-sp-card'), ps = card && !card.hidden ? [...card.querySelectorAll('.mp-sp-lines p')].map(q) : [];
+      return { root: root.clientHeight, data: q(S.dataEl)[3] - q(S.dataEl)[1], body: q(S.dbodyEl), stack: st ? q(st) : null, card: card && !card.hidden ? q(card) : null, lines: ps, first: (card && card.querySelector('.mp-sp-lines p')) ? card.querySelector('.mp-sp-lines p').textContent : '',
+        second: ((card && card.querySelectorAll('.mp-sp-lines p')[1]) || {}).textContent || '', notes: getComputedStyle(S.notesEl).display } }"""
+    for name, zones, n in (('un_espace', one, 1), ('trois_espaces', three, 3)):
+        c.page.set_viewport_size({'width': 390, 'height': 667})
+        c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        hook_map(c)
+        c.until("() => !!(window.__mp.S && window.__mp.S.prof)", timeout=15000, what='the profile')
+        c.wait(1200)
+        _click_until(c, lambda: xy(c, 44.65, .8), f"() => window.__mp.S.lvList && window.__mp.S.lvList.length >= {n} && !!document.querySelector('.mp-lv-list li[data-i]')", f'{name}: the list of the spaces at this point')
+        c.wait(1500)
+        g = c.js(geo)
+        c.ok(g['data'] <= g['root'] / 2 + 3, f"sheet {g['data']} of {g['root']}", f'{name}: the sheet is at most half of the view')
+        if n == 1:
+            c.ok(g['stack'] is None, str(g['stack']), 'one space: no stack that draws a single rectangle')
+            c.ok(g['card'] is not None, 'card', 'one space: its card is open at once')
+        else:
+            c.ok(g['stack'] is not None and g['stack'][3] - g['stack'][1] <= 100, str(g['stack']), 'several spaces: the stack is a compact band (96 px and its axis at most)')
+            row = c.js("() => { const r = document.querySelector('.mp-lv-list li[data-i]').getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2] }")
+            c.page.touchscreen.tap(row[0], row[1])
+            c.until("() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", timeout=6000, what='the card of the chosen space')
+            c.wait(1000)
+            g = c.js(geo)
+            c.ok(g['card'][1] >= g['stack'][3] - 1, f"card {g['card']} stack {g['stack']}", 'several spaces: the card is under the band')
+        k, b = g['card'], g['body']
+        c.ok(k[0] <= b[0] + 24 and k[2] >= b[2] - 24, f"card {k} body {b}", f'{name}: the card is on the whole width')
+        c.ok(len(g['lines']) >= 2 and g['lines'][1][3] <= b[3] + 1, f"lines {g['lines'][:3]} body {b}", f'{name}: name, type and limits (the two first lines) are read without scrolling')
+        c.ok('→' in g['second'], g['second'], f'{name}: the limits are one line « SFC → FL115 »')
+        c.eq(g['notes'], 'none', f'{name}: the notes of the map under the sheet fold while a card is open (they cut it)', what=str(g['notes']))
+        c.shot(f'D240_standard_{name}_390x667.png')
+        c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
+        c.wait(900)
+        c.eq(c.js("() => window.__mp.S.dataEl.dataset.card"), '0', f'{name}: the fold of the notes is released when the card is closed', what='card flag')

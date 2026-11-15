@@ -380,6 +380,7 @@ export function endData(kind = null) {
   S.dpanel = null;
   S.dkey = null;
   S.dhtml = '';
+  if (S.dataEl) S.dataEl.dataset.card = '0'; // les notes reviennent (SOG-0364)
   if (S.lvFrom) { // la fiche d'un espace avait agrandi la feuille (téléphone) : elle reprend sa place (SOG-0364)
     const from = S.lvFrom;
     S.lvFrom = null;

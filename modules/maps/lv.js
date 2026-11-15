@@ -68,7 +68,7 @@ const linesOf = v => (Array.isArray(v) ? v : [v]).filter(x => typeof x === 'stri
 export function spaceCardHtml(a) {
   const type = String(a.type || ''),
     live = ['R', 'D', 'TSA', 'TRA'].includes(type), // les espaces dont l'activité varie
-    lim = a.lower == null && a.upper == null ? '' : `${MapsRender.siaLimit(a.lower)} | ${MapsRender.siaLimit(a.upper)}`,
+    lim = a.lower == null && a.upper == null ? '' : `${MapsRender.siaLimit(a.lower)} → ${MapsRender.siaLimit(a.upper)}`,
     act = String(a.act || '').toUpperCase(),
     hours = linesOf(a.hours ?? a.sched),
     rem = linesOf(a.rem ?? a.remarks),
@@ -108,6 +108,7 @@ export function lvEvents() {
       for (const x of body.querySelectorAll('.mp-lv-list li[data-open="1"]')) x.dataset.open = '0';
       card.hidden = open;
       S.lvOpen = open ? null : a;
+      cardFlag();
       markSel(body);
       if (open) return;
       li.dataset.open = '1';
@@ -147,17 +148,29 @@ function showIn(body, el) {
   else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
 }
 /** La fiche écrite (et la date de la base, quand AeroDB la donne). */
+/** Une fiche d'espace ouverte sur un téléphone : les notes de la carte sous le volet se replient (elles coupaient la fiche), elles reviennent à sa fermeture (SOG-0364). */
+function cardFlag() {
+  const on = S?.dpanel === 'lv' && !!S.lvOpen && innerWidth < 1000;
+  if (S?.dataEl && S.dataEl.dataset.card !== (on ? '1' : '0')) S.dataEl.dataset.card = on ? '1' : '0';
+}
+
 function fillCard(card, a) {
+  cardFlag();
   const html = spaceCardHtml(a);
   if (card.innerHTML !== html) card.innerHTML = html; // écrite seulement si elle change (un second passage ne la fait pas clignoter)
   card.hidden = false;
   showIn(S.dbodyEl, card); // la fiche sous le graphique : le corps de la feuille la montre
   if (innerWidth < 1000 && innerHeight > innerWidth && S.sh && S.sh.pos ===
     'default'
-  ) { // un téléphone : la fiche ouverte, la feuille passe à sa position agrandie (la moitié de la vue au plus, SOG-0364 : la fiche n'est plus cachée sous la pile)
-    S.lvFrom = S.sh.pos;
+  ) { // un téléphone : la fiche ouverte, la feuille prend la hauteur de son contenu ; si elle déborde encore, la position agrandie (la moitié de la vue au plus, SOG-0364)
     sheetFit();
-    S.sh.set('expanded', true);
+    S.sh.settle?.();
+    requestAnimationFrame(() => {
+      if (S?.sh && S.sh.pos === 'default' && S.dpanel === 'lv' && S.dbodyEl.scrollHeight > S.dbodyEl.clientHeight + 2) {
+        S.lvFrom ??= S.sh.pos;
+        S.sh.set('expanded', true);
+      }
+    });
   }
   Promise.resolve(S.ctx?.aerodb?.status?.()).catch(() => null).then(st => {
     const el = card.querySelector('.mp-sp-cyc');
@@ -229,7 +242,7 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     // au téléphone la pile reste en haut de la feuille quand la fiche est ouverte (elle ne défile pas avec elle) : elle ne prend alors que le
     // tiers de la hauteur, la fiche garde le reste
     // sur un téléphone la pile reste un bandeau (96 à 150 px, 42 % du corps) : la liste, puis la fiche, sont dessous, toujours atteignables (SOG-0364)
-    H = Math.round(narrow ? Math.min(150, Math.max(64, bh * .42), Math.max(64, bh - 52)) : Math.max(also?.length ? 90 : 110, Math.min(300,
+    H = Math.round(narrow ? Math.min(88, Math.max(64, bh * .42), Math.max(64, bh - 52)) : Math.max(also?.length ? 90 : 110, Math.min(300,
       bh - 16))),
     T = unl ? 16 : 6,
     B = H - 6,
@@ -268,7 +281,9 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
   const fam = sameFamilyOverlap(list, read) ? `<p class="f-muted mp-lv-fam">${esc(tt(TX.levelsFamily))}</p>` : '';
   // la pile (colonnes plancher → plafond sur l'échelle) reste en vue pendant que la fiche défile (SOG-0163) : à côté de la liste et de la fiche en vue large,
   // au-dessus au téléphone ; seul le corps de la feuille défile, rien ne sort de l'écran
-  return `<div class="mp-lv-wrap" data-wide="${narrow ? 0 : 1}"><div class="mp-lv-stack"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg></div><div class="mp-lv-side"><ol class="mp-lv-list">${items}</ol>${fam}${alsoHtml(also)}<div class="mp-sp-card f-card"${S.lvOpen ? '' : ' hidden'} aria-live="polite">${S.lvOpen ? spaceCardHtml(S.lvOpen) : ''}</div></div></div>`;
+  const noStack = narrow && rows.length === 1 && !!S
+    .lvOpen; // UN espace sur un téléphone : la fiche d'abord, pleine largeur, pas de pile qui ne dessine qu'un rectangle (SOG-0364)
+  return `<div class="mp-lv-wrap" data-wide="${narrow ? 0 : 1}"${noStack ? ' data-solo="1"' : ''}>${noStack ? '' : `<div class="mp-lv-stack"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg></div>`}<div class="mp-lv-side"><ol class="mp-lv-list">${items}</ol>${fam}${alsoHtml(also)}<div class="mp-sp-card f-card"${S.lvOpen ? '' : ' hidden'} aria-live="polite">${S.lvOpen ? spaceCardHtml(S.lvOpen) : ''}</div></div></div>`;
 }
 /** Ligne repliée sous la liste : les espaces écartés du point (FIR, UIR, SIV, secteurs, surface au plafond), par leur nom, sans
  *  colonne ni compte dans le titre (règle 21 amendée). Rien quand il n'y en a pas ; repliée à chaque écriture. */
@@ -312,7 +327,8 @@ export function showLvAt(lat, lon) {
   if (!shown.length) return false;
   S.lvList = shown;
   S.lvAlso = onMission() ? [] : also;
-  S.lvOpen = null; // les fiches s'ouvrent par un appui sur une ligne
+  // les fiches s'ouvrent par un appui sur une ligne ; UN seul espace sur un téléphone en portrait : sa fiche d'abord, ouverte d'emblée (SOG-0364)
+  S.lvOpen = shown.length === 1 && innerWidth < 1000 && innerHeight > innerWidth ? shown[0] : null;
   showLv();
   return true;
 }
