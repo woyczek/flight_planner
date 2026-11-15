@@ -861,3 +861,6 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   synchronisation state announces only changes of NATURE). Survey of the Settings with the rig of A198 (GitLab answers 429, Retry-After 14, the tree read waits): once the wait is said under the header, over 7 s not ONE element of the
   screen is added or removed (the card of synchronisation, the status block, the offline data are updated in place; only the text node of the countdown is replaced). Nothing to change in `frame/settings`; case A243 is the guard of
   that contract (green against the frame fix; it counts elements, not the text node of a number written in place).
+- **Writes only when the value changes** (V3 Frame's note, 15 Nov): `paintSync` (`access.js`) rewrote `dl.innerHTML` and `SogSyncSummary.paint` (`sync_summary.js`) rewrote its head, queue, timings and pushed boxes at EVERY status
+  announced, even with identical HTML — a field being typed in these cards would be replaced, a fold opened would close, the card could blink. Each now writes only when its HTML changes (`put(el, html)` keeps the last HTML written
+  in `el.__html`). Case A244 (the card's lines and boxes are the SAME nodes after the state is announced three times; red before: 11 nodes replaced).

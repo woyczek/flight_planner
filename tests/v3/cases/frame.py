@@ -8751,3 +8751,33 @@ def a243(c):
     c.ok(c.js("!document.querySelector('#fLimit').hidden"), None, 'the wait was still on during the 7 s observed')
     c.eq(mut, [], 'during the wait, once it is said, no element of the screen is added or removed for 7 s (the countdown is written in place)', what='mutations')
     c.check_errors()
+
+
+@case('A244', 'Settings › Synchronisation: a status that says the same thing writes nothing in the DOM — the lines of the card and its head are the same nodes after the state is announced again (SOG-0359, V3 Frame: « une écriture dans le DOM n’a lieu que si la valeur change »)',
+      'A', designs=('standard',), screens=False, phone=True, night=False, tags=('settings',),
+      rule='SOG-0359: `paintSync` rewrote `dl.innerHTML` and `SogSyncSummary.paint` rewrote its head, queue, timings and pushed boxes at EVERY status announced, even when the HTML was identical (a field being typed in these cards would be replaced, a fold opened closed again, the card blinked); each now writes only when its HTML changes')
+def a244(c):
+    def handler(route):
+        req = route.request
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        if req.url.split('?')[0].endswith('/repository/branches/main'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps({'name': 'main', 'commit': {'id': 'c1'}}))
+        return route.fulfill(status=404, headers=hdr, body=json.dumps({'message': '404 Not Found'}))
+    c.context.route(re.compile(r'https://gitlab\\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
+    c.open('settings?card=sync', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    c.until("!!document.querySelector('[data-card=\"sync\"] [data-sync] dt')", timeout=20000, what='the lines of the Synchronisation card')
+    c.wait(2500)
+    c.js("""(() => { const k = document.querySelector('[data-card="sync"]'); for (const e of k.querySelectorAll('[data-sync], [data-sync] dt, [data-sync] dd, [data-sync-head], [data-sync-head] *, [data-sync-timings-box], [data-sync-timings-box] *, [data-queue], [data-queue] *, [data-pushed-box], [data-pushed-box] *')) e.__keep = true;
+      window.__kept = [...k.querySelectorAll('[data-sync], [data-sync] dt, [data-sync] dd, [data-sync-head], [data-sync-head] *, [data-sync-timings-box], [data-sync-timings-box] *, [data-queue], [data-queue] *, [data-pushed-box], [data-pushed-box] *')].length })()""")
+    n = c.js('window.__kept')
+    c.ok(n >= 5, n, 'the card has its lines and its boxes')
+    # the state is announced again, three times, with the same content (the pass of the data layer ends each time)
+    for _ in range(3):
+        c.js("FrameData.sync({ reason: 'manual' }).catch(() => null)")
+        c.wait(900)
+    lost = c.js("[...document.querySelector('[data-card=\"sync\"]').querySelectorAll('[data-sync], [data-sync] dt, [data-sync] dd, [data-sync-head], [data-sync-head] *, [data-sync-timings-box], [data-sync-timings-box] *, [data-queue], [data-queue] *, [data-pushed-box], [data-pushed-box] *')].filter(e => !e.__keep).length")
+    c.eq(lost, 0, 'the same state announced again replaces no node of the card', what='replaced nodes')
+    c.check_errors()

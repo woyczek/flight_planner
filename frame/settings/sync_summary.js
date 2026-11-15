@@ -409,6 +409,13 @@
       more = pushed.items.length - shown.length;
     return `<details data-pushed data-count="${pushed.items.length}" data-refused="${refused}"${wasOpen ? ' open' : ''}><summary>${esc(line)}</summary><ul class="f-queue">${shown.map(i => `<li data-pushed-item="${i.ok ? 'ok' : 'refused'}" title="${esc(i.path)}">${titles.get(i.path) ? `<span data-title>${esc(titles.get(i.path))}</span>` : `<code>${esc(i.path)}</code>`}${i.ok ? '' : ` <span class="f-warn" data-reason>${esc(i.result)}</span>`}</li>`).join('')}${more ? `<li class="f-muted" data-more>${esc(t(T.queueMore, { n: more }))}</li>` : ''}</ul></details>`;
   }
+  /** Une écriture dans le DOM n'a lieu que si la valeur change (SOG-0359, règle commune) : le même HTML ne remplace rien (un champ pris ou un pli ouvert ne saute pas, rien ne clignote pendant une attente de limite). */
+  function put(el, html) {
+    if (el.__html === html) return;
+    el.innerHTML = html;
+    el.__html = html;
+  }
+
   /** Dessine la tête (un compte par sorte) et les listes repliées de la carte Synchronisation d'après l'état du transport `s` (FD.status) ; la carte se montre si un échange est coché ou si quelque chose attend. */
   async function paint(env, s) {
     const {
@@ -451,15 +458,15 @@
     if (tmBox) {
       const html = await timingsHtml(env, status);
       if (tokens.get(view) !== token || !view.isConnected) return;
-      tmBox.innerHTML = html;
+      put(tmBox, html);
     }
     const out = view.querySelector('[data-pushed-box]');
     if (out) {
       const wasOpen = !!out.querySelector('details[data-pushed][open]');
-      out.innerHTML = pushedHtml(env, pushed, pushedTitles, wasOpen);
+      put(out, pushedHtml(env, pushed, pushedTitles, wasOpen));
     }
-    head.innerHTML = `<b>${esc(t(T.pending))}</b> : ${KINDS.filter(k => k !== 'other' || n.other).map(k => `<span data-kind="${k}" data-count="${n[k]}">${esc(t(T.kind[k]))} : ${n[k]}</span>`).join(' · ')}`;
-    box.innerHTML = groups.map(g => `<details data-kind-list="${g.kind}"${open.has(g.kind) ? ' open' : ''}><summary>${esc(t(T.kind[g.kind]))} (${g.total})</summary><ul class="f-queue">${g.shown.map(it => itemHtml(it, titled.get(it), env)).join('')}${g.more ? `<li class="f-muted" data-more>${esc(t(T.queueMore, { n: g.more }))}</li>` : ''}</ul></details>`).join('');
+    put(head, `<b>${esc(t(T.pending))}</b> : ${KINDS.filter(k => k !== 'other' || n.other).map(k => `<span data-kind="${k}" data-count="${n[k]}">${esc(t(T.kind[k]))} : ${n[k]}</span>`).join(' · ')}`);
+    put(box, groups.map(g => `<details data-kind-list="${g.kind}"${open.has(g.kind) ? ' open' : ''}><summary>${esc(t(T.kind[g.kind]))} (${g.total})</summary><ul class="f-queue">${g.shown.map(it => itemHtml(it, titled.get(it), env)).join('')}${g.more ? `<li class="f-muted" data-more>${esc(t(T.queueMore, { n: g.more }))}</li>` : ''}</ul></details>`).join(''));
   }
 
   window.SogSyncSummary = Object.freeze({

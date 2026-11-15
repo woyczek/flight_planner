@@ -204,13 +204,17 @@
     const paintSync = s => {
       const dl = view.querySelector('[data-sync]');
       if (!dl) return;
-      dl.innerHTML = [
+      const html = [
         [T.last, s.lastSync ? c.time.fmtDateZ(s.lastSync) : t(T.never)],
         [T.network, t(s.online === false ? T.offline : T.online)],
         ...(s.lastError ? [
           [T.lastError, c.errText ? c.errText(s.lastError) : s.lastError]
         ] : [])
       ].map(([k, v]) => `<dt>${esc(t(k))}</dt><dd>${esc(v)}</dd>`).join('');
+      if (dl.__html !== html) { // une écriture dans le DOM n'a lieu que si la valeur change (SOG-0359)
+        dl.innerHTML = html;
+        dl.__html = html;
+      }
       // la tête (un compte par sorte) et les listes repliées des éléments qui attendent : la synthèse (sync_summary.js)
       window.SogSyncSummary?.paint(env, s);
     };
