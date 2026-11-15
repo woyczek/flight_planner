@@ -854,3 +854,10 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   Accès » at the top of the Settings (`data-token-expired`, role alert) and in the band under the header (`#fLimit`, `data-level=expired`, when no request limit is being waited), as long as the known date is past. The pilots' tokens follow the same levels.
   Cases A240 (the summary, the card dot, the gear, the line, at 4 days and 1 day, nothing at 12 days), A241 (expired: the sentence at the top, the band, the red dots); A170 (the bench), A171, A230 adapted to the new thresholds.
   Not done: the red of the token list of the Maintenance › Pilot tokens screen follows the same levels by itself (it reads the same constants), not re-captured.
+
+## SOG-0359, the Settings part: nothing is redrawn for the seconds that pass (15 Nov 2026)
+
+- The user (15 Nov): the Settings blinked every second during a request-limit wait. V3 Frame found the cause in the frame (bd77e9c98: the countdown « reprise dans n s » is an element of its own whose number is written in place, and the
+  synchronisation state announces only changes of NATURE). Survey of the Settings with the rig of A198 (GitLab answers 429, Retry-After 14, the tree read waits): once the wait is said under the header, over 7 s not ONE element of the
+  screen is added or removed (the card of synchronisation, the status block, the offline data are updated in place; only the text node of the countdown is replaced). Nothing to change in `frame/settings`; case A243 is the guard of
+  that contract (green against the frame fix; it counts elements, not the text node of a number written in place).

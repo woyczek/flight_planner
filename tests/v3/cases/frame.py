@@ -8707,3 +8707,47 @@ def a241(c):
     c.eq([norm(c.text('#fLimit')), c.attr('#fLimit', 'data-level')], [want, 'expired'], 'the band under the header says it', what='band')
     c.eq([c.js("(e => e ? (e.dataset.level || '') : null)(document.querySelector('[data-group=start] > summary > .f-status-dot:not([hidden])'))"), c.js("(e => e ? (e.dataset.level || '') : null)(document.querySelector('[data-card=access] > h2 > .f-card-dot'))"), c.js("document.querySelector('#fDevice').dataset.level || ''")], ['expired'] * 3, 'the dots of the fold, of the card and of the gear are red', what='red dots')
     c.check_errors()
+
+
+@case('A243', 'Settings during a request-limit wait: the screen is not redrawn for a number of seconds — once the wait is said, no node of the Settings is added or removed while the countdown runs (SOG-0359, Settings part: the user, « les Réglages clignotent chaque seconde pendant une attente de limite »)',
+      'A', designs=('standard',), screens=False, phone=True, night=False, tags=('settings',),
+      rule='SOG-0359: V3 Frame made the countdown an element of its own (bd77e9c98); the Settings part: the cards of the screen (status, synchronisation, offline data) are updated in place and the screen is not drawn again for the seconds that pass — over 8 s of a 429 wait (Retry-After 20) not one node is added or removed under the screen, the text of the countdown aside')
+def a243(c):
+    state = {'limited': 0}
+    files = {f'sia/{i:02d}.json': f'[{i}]' for i in range(8)}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        path = u.path.split('/api/v4/projects/grp%2Fdata', 1)[-1]
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        if path.endswith('/repository/branches/main'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps({'name': 'main', 'commit': {'id': 'c1'}}))
+        if path.endswith('/repository/tree'):
+            q = urllib.parse.parse_qs(u.query)
+            frm = int(q.get('page_token', ['0'])[0])
+            if frm // 2 + 1 == 3 and state['limited'] < 1:
+                state['limited'] += 1
+                return route.fulfill(status=429, headers={**hdr, 'Retry-After': '14'}, body=json.dumps({'message': '429 Too Many Requests'}))
+            allp = sorted(files)
+            page = [{'id': 'b' + str(k), 'name': f, 'type': 'blob', 'path': f, 'mode': '100644'} for k, f in enumerate(allp)][frm:frm + 2]
+            link = {'Link': f'<https://gitlab.test/api/v4/projects/grp%2Fdata/repository/tree?ref=c1&recursive=true&per_page=100&pagination=keyset&page_token={frm + 2}>; rel="next"'} if frm + 2 < len(allp) else {}
+            return route.fulfill(status=200, headers={**hdr, **link}, body=json.dumps(page))
+        if '/repository/blobs/' in path:
+            return route.fulfill(status=200, headers={**hdr, 'Content-Type': 'text/plain'}, body='[0]')
+        return route.fulfill(status=404, headers=hdr, body=json.dumps({'message': '404 Not Found'}))
+    c.context.route(re.compile(r'https://gitlab\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
+    c.open('settings', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    c.until("!!document.querySelector('[data-card=\"sync\"] [data-sync]')", timeout=20000, what='the Synchronisation card')
+    c.until("!!document.querySelector('#fLimit:not([hidden])')", timeout=40000, what='the wait is said under the header')
+    c.wait(1500)
+    c.js("""window.__mut = []; new MutationObserver(ms => { for (const m of ms) { if (m.type !== 'childList') continue; const added = [...m.addedNodes].filter(n => n.nodeType === 1).length, removed = [...m.removedNodes].filter(n => n.nodeType === 1).length; // des éléments : un nombre réécrit en place remplace son nœud texte, ce n'est pas un redessin
+      if (added || removed) window.__mut.push([Math.round(performance.now()), (m.target.dataset && (m.target.dataset.card || m.target.dataset.group)) || m.target.className || m.target.nodeName, added, removed]) } }).observe(document.querySelector('#fView'), { childList: true, subtree: true })""")
+    c.wait(7000)
+    mut = c.js('window.__mut')
+    c.ok(c.js("!document.querySelector('#fLimit').hidden"), None, 'the wait was still on during the 7 s observed')
+    c.eq(mut, [], 'during the wait, once it is said, no element of the screen is added or removed for 7 s (the countdown is written in place)', what='mutations')
+    c.check_errors()
