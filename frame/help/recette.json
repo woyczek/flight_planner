@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-15",
-  "tests": 234,
+  "tests": 235,
   "verdicts": 152
  },
  "apps": [
@@ -3424,6 +3424,20 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T11:54:44Z"
+  },
+  {
+   "id": "SOG-0359",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT au téléphone : pendant un souci de synchronisation avec GitLab, la page se redessine toutes les secondes (Réglages qui clignote, pages inutilisables)",
+    "en": "BLOCKING on the phone: during a GitLab sync problem the page redraws every second (Settings flickers, pages unusable)",
+    "de": "BLOCKIEREND am Telefon: bei einem GitLab-Synchronisationsproblem wird die Seite jede Sekunde neu gezeichnet (Einstellungen flackern, Seiten unbenutzbar)",
+    "es": "BLOQUEANTE en el teléfono: durante un problema de sincronización con GitLab la página se redibuja cada segundo (Ajustes parpadea, páginas inutilizables)"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Si le bandeau « GitLab limite les requêtes » réapparaît : les Réglages et les autres écrans ne clignotent plus et ne se rechargent plus ; seul le nombre de secondes du bandeau change. Sans limite, rien à voir : valide sur l'absence du défaut pendant tes essais.",
+   "since": "2026-11-15",
+   "state": "todo",
+   "delivered": "2026-11-15T19:28:47Z"
   },
   {
    "id": "SOG-0361",

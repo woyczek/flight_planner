@@ -4,7 +4,7 @@
  "updated": "2026-11-15",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b6b55ac",
+  "organisation": "69cdcd6",
   "fiches": 366,
   "untranslated": 0,
   "priorities": 310
@@ -5436,11 +5436,12 @@
     {
      "id": "SOG-0359",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "BLOQUANT au téléphone : pendant un souci de synchronisation avec GitLab, la page se redessine toutes les secondes (Réglages qui clignote, pages inutilisables)",
      "en": "BLOCKING on the phone: during a GitLab sync problem the page redraws every second (Settings flickers, pages unusable)",
      "de": "BLOCKIEREND am Telefon: bei einem GitLab-Synchronisationsproblem wird die Seite jede Sekunde neu gezeichnet (Einstellungen flackern, Seiten unbenutzbar)",
-     "es": "BLOQUEANTE en el teléfono: durante un problema de sincronización con GitLab la página se redibuja cada segundo (Ajustes parpadea, páginas inutilizables)"
+     "es": "BLOQUEANTE en el teléfono: durante un problema de sincronización con GitLab la página se redibuja cada segundo (Ajustes parpadea, páginas inutilizables)",
+     "test": true
     }
    ]
   },
