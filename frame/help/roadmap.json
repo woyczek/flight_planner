@@ -4,7 +4,7 @@
  "updated": "2026-11-15",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "27d3785",
+  "organisation": "412cca6",
   "fiches": 366,
   "untranslated": 0,
   "priorities": 310
@@ -5459,11 +5459,12 @@
     {
      "id": "SOG-0360",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Synchronisation GitLab : le bandeau disait « limite de requêtes » pendant des heures — tout est rentré dans l'ordre en renouvelant le jeton",
      "en": "GitLab sync: the banner said « request limit » for hours — everything came back after renewing the token",
      "de": "GitLab-Synchronisation: das Banner meldete stundenlang « Anfragelimit » — nach Erneuern des Tokens war alles wieder in Ordnung",
-     "es": "Sincronización GitLab: el aviso decía « límite de peticiones » durante horas — todo volvió al renovar el token"
+     "es": "Sincronización GitLab: el aviso decía « límite de peticiones » durante horas — todo volvió al renovar el token",
+     "test": true
     }
    ]
   },
