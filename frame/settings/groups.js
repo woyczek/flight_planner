@@ -88,17 +88,66 @@
   function goCard(view, go) {
     return go.slice(5).split(',').map(k => view.querySelector(`[data-card="${k}"]`)).find(x => x && !x.hidden) || null;
   }
-  /** Pastille et ouverture des groupes qui portent une attention : un avertissement ou une erreur dans une de leurs cartes,
-   *  ou la cible d'une ligne orange du bloc d'état. */
+  /** Pastille et ouverture des groupes qui portent une attention : un avertissement ou une erreur dans une de leurs cartes, ou la cible d'une ligne orange du bloc d'état. UN POINT A TOUJOURS SA PHRASE (SOG-0362) : le résumé du pli
+   *  dit ce qui est en défaut (« Accès : le jeton expire dans 4 jours ») à la place de sa fréquence, et la carte fautive porte le même point devant son titre ; rouge quand une ligne l'est (un jeton qui expire demain ou a expiré). */
   function markAttention(view) {
-    const targets = [...view.querySelectorAll('[data-card="status"] [data-go^="card:"]')].filter(b => b.querySelector(
-        '.f-status-dot[data-attn]:not([hidden])'))
-      .map(b => goCard(view, b.dataset.go)).filter(Boolean);
+    const clip = s => {
+        const x = String(s || '').replace(/\s+/g, ' ').trim();
+        return x.length > 90 ? `${x.slice(0, 89)}…` : x;
+      },
+      rows = [...view.querySelectorAll('[data-card="status"] li[data-k]')].filter(li => li.querySelector(
+        '.f-status-dot[data-attn]:not([hidden])') && li.querySelector('[data-go^="card:"]'))
+      .map(li => ({
+        card: goCard(view, li.querySelector('[data-go^="card:"]').dataset.go),
+        level: li.querySelector('.f-status-dot').dataset.level || '',
+        text: li.dataset.short || li.querySelector('.f-status-txt span')?.textContent || ''
+      })).filter(r => r.card);
+    const byCard = new Map();
+    for (const r of rows)
+      if (!byCard.has(r.card)) byCard.set(r.card, r);
+    view.querySelectorAll('.f-card').forEach(k => {
+      // seulement un avertissement VU : ni caché, ni vide (un `.f-warn` caché ou sans texte allumait le point sans rien dire : SOG-0362)
+      const warn = [...k.querySelectorAll('.f-warn, .f-msg[data-kind="err"]')].find(e => !e.hidden && !e.closest('[hidden]') && e
+        .textContent.trim());
+      if (warn && !byCard.has(k)) byCard.set(k, {
+        card: k,
+        level: '',
+        text: warn.textContent
+      });
+    });
+    const dots = new Set();
+    for (const r of byCard.values()) {
+      const h2 = r.card.querySelector(':scope > h2');
+      if (!h2) continue;
+      let d = h2.querySelector(':scope > .f-card-dot');
+      if (!d) {
+        d = document.createElement('i');
+        d.className = 'f-status-dot f-card-dot';
+        d.setAttribute('data-attn', '');
+        d.setAttribute('aria-hidden', 'true');
+        h2.prepend(d);
+      }
+      r.level ? d.dataset.level = r.level : delete d.dataset.level;
+      dots.add(d);
+    }
+    view.querySelectorAll('.f-card-dot').forEach(d => {
+      if (!dots.has(d)) d.remove();
+    });
     view.querySelectorAll('details.f-group').forEach(g => {
-      const on = !!g.querySelector(
-          '.f-warn, .f-msg[data-kind="err"]:not(:empty)') ||
-        targets.some(k => g.contains(k));
-      g.querySelector(':scope > summary > .f-status-dot').hidden = !on;
+      const mine = [...byCard.values()].filter(r => g.contains(r.card)),
+        on = mine.length > 0,
+        dot = g.querySelector(':scope > summary > .f-status-dot'),
+        hint = g.querySelector(':scope > summary > .f-ghint');
+      dot.hidden = !on;
+      const red = mine.find(r => r.level === 'expired' || r.level === 'urgent');
+      red ? dot.dataset.level = red.level : delete dot.dataset.level;
+      if (hint) {
+        if (hint.dataset.hint === undefined) hint.dataset.hint = hint.textContent;
+        const first = mine[0],
+          why = on ? `${clip(first.card.querySelector(':scope > h2')?.textContent)} : ${clip(first.text)}${mine.length > 1 ? ` (+${mine.length - 1})` : ''}` : '';
+        if (hint.textContent !== (why || hint.dataset.hint)) hint.textContent = why || hint.dataset.hint;
+        why ? hint.dataset.reason = '' : delete hint.dataset.reason;
+      }
       if (on) g.open = true;
     });
   }

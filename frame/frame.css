@@ -1747,6 +1747,31 @@ p.f-back {
 .f-status-dot[data-attn] {
   color: var(--sog-warn)
 }
+/* un jeton qui expire demain ou a expiré : ROUGE (SOG-0362), la pastille de la ligne, celle du pli, celle de la carte et celle du ⚙ */
+.f-status-dot[data-level="urgent"],
+.f-status-dot[data-level="expired"] {
+  color: var(--sog-err)
+}
+#fDevice[data-level="urgent"]::after,
+#fDevice[data-level="expired"]::after {
+  background: var(--sog-err) !important
+}
+/* la pastille de la carte en défaut, à l'intérieur du pli : la même que celle du résumé */
+.f-card-dot {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px
+}
+/* la bande sous l'en-tête quand le jeton a expiré : rouge */
+.f-limit[data-level="expired"] {
+  background: var(--sog-err);
+  color: #fff
+}
+/* le résumé d'un pli en défaut dit POURQUOI, à la place de sa fréquence */
+.f-group>summary .f-ghint[data-reason] {
+  color: var(--sog-text);
+  font-weight: 600
+}
 /* la ligne « Position » remplace, sur téléphone, le bouton de position de l'en-tête : sur un écran l'en-tête le garde */
 @media (min-width: 761px) {
   .f-status-list>li[data-phone] {

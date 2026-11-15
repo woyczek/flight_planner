@@ -841,3 +841,16 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   with a repository that waits for its request limit the read never ended and 620 px of blank stayed for ever. Now `airlineLive` (`access.js`) gives the reserve back 3 s at most after the list is drawn from the index
   (a sheet that arrives later pushes what is below once, which `keepPlace` follows), and in every case when the read ends or fails (the list of the index stays). Case A242 (390, the details of each airline 60 s late: the sheet 620 px and
   the card taller than the screen before, under 100 px and shorter than the screen after); A183 (the empty sheet keeps no place once the read is done), A140 (the details late: nothing moves), A105, A184 stay green.
+
+## SOG-0362, a dot always has its sentence; the token thresholds (15 Nov 2026)
+
+- The user, from his phone (15 Nov, version 0721a0c, photo): « Le point jaune de settings apparaît sur « mise en route », sans expliquer quelle case est en défaut. BTW : le jeton Gitlab expire tous les 30j par défaut. Avertir 5 jours
+  avant seulement, et plus violemment la veille (rouge ?) Si expiré, encore plus violemment. » Survey: the dot of a fold was lit by a warning or an error in one of its cards (`.f-warn`, `.f-msg[data-kind=err]`, hidden or empty ones
+  included — the Access card carries a hidden `data-repo-warn`) or by the target of an amber line of the status block; it never said which. And the alert of SOG-0277 began 30 days before the expiry of a token that lives 30 days: lit for ever.
+- (a) **A dot always has its sentence** (`groups.js` `markAttention`): the summary of the fold replaces its frequency by « card : reason » (`Accès aux données : le jeton expire dans 4 jours`; the reason of a status line is its brief phrase
+  `data-short`, otherwise its text; of a card, its visible warning, clipped to 90 characters; « (+n) » when several), the card at fault carries the SAME dot inside, before its title (`.f-card-dot`), and the gear of the header says the first
+  reason in its title (`badge.why`). Only a SEEN warning counts: not hidden, not empty. The marks follow the status block when it is painted again (event `f-status-painted`). (b) **Thresholds, all tokens** (`token_expiry.js`): nothing before D-5 (`SOON_DAYS` 5);
+  yellow and the calm sentence from D-5 to D-2; RED the day before (`URGENT_DAYS` 1: the dot of the line, of the fold, of the card, of the gear, the floating note in error tone); expired: red and the sentence « jeton expiré : le renouveler dans
+  Accès » at the top of the Settings (`data-token-expired`, role alert) and in the band under the header (`#fLimit`, `data-level=expired`, when no request limit is being waited), as long as the known date is past. The pilots' tokens follow the same levels.
+  Cases A240 (the summary, the card dot, the gear, the line, at 4 days and 1 day, nothing at 12 days), A241 (expired: the sentence at the top, the band, the red dots); A170 (the bench), A171, A230 adapted to the new thresholds.
+  Not done: the red of the token list of the Maintenance › Pilot tokens screen follows the same levels by itself (it reads the same constants), not re-captured.

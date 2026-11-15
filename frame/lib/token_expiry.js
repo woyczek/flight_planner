@@ -1,12 +1,12 @@
 // V3 frame — l'expiration des jetons (SOG-0277 : GitLab lu chez le fournisseur ; GitHub déclarée par l'utilisateur, `recordDeclared`).
 // La suite ne garde JAMAIS un jeton : l'alerte se fonde sur la DATE d'expiration que GitLab rend (AAAA-MM-JJ, « à minuit UTC » : le jeton
 // ne vaut plus à 00:00 UTC de ce jour). Ce module ne connaît que des dates : il dit combien de jours restent et à quel niveau (orange sous
-// 30 jours, rouge sous 7, expiré), range dans le stockage de l'appareil (jamais dans le dépôt des données) la dernière date connue de son
+// 5 jours, rouge la veille, expiré), range dans le stockage de l'appareil (jamais dans le dépôt des données) la dernière date connue de son
 // propre jeton et le compte des jetons de pilote qui expirent, et rend les lignes de la puce d'état du cadre. Aucune lecture réseau ici.
 
-/** Les seuils du niveau : orange (soon) en dessous de 30 jours, rouge (urgent) en dessous de 7. */
-export const SOON_DAYS = 30;
-export const URGENT_DAYS = 7;
+/** Les seuils du niveau (SOG-0362 : un jeton GitLab vit 30 jours, une alerte à 30 jours tenait le point allumé en permanence) : rien avant J-5 ; jaune (soon) de J-5 à J-2 ; ROUGE (urgent) la veille (moins de 24 h) ; expiré : rouge et la phrase en tête. */
+export const SOON_DAYS = 5;
+export const URGENT_DAYS = 1;
 /** Une relecture de la date au plus par jour (ms). */
 export const DAILY_MS = 864e5;
 /** La clé du stockage de l'appareil : { own: { expiresAt, at, toldOn } | null, pilots: { soon, expired, nearest, at } | null }. */
@@ -27,6 +27,13 @@ export const TX = {
     'Your token expired on {d}: ask the administrator for a new one.',
     'Ihr Token ist am {d} abgelaufen: Bitten Sie den Administrator um einen neuen.',
     'Su token caducó el {d}: pida uno nuevo al administrador.'
+  ],
+  shortSoon: ['le jeton expire dans {n} jours', 'the token expires in {n} days', 'das Token läuft in {n} Tagen ab',
+    'el token caduca en {n} días'
+  ],
+  shortTomorrow: ['le jeton expire demain', 'the token expires tomorrow', 'das Token läuft morgen ab', 'el token caduca mañana'],
+  shortExpired: ['jeton expiré : le renouveler dans Accès', 'token expired: renew it in Access',
+    'Token abgelaufen: unter Zugang erneuern', 'token caducado: renuévelo en Acceso'
   ],
   declared: [' (date déclarée)', ' (declared date)', ' (angegebenes Datum)', ' (fecha declarada)'],
   ownUnknown: [
@@ -212,6 +219,9 @@ export function lines(cache, now = Date.now(), pilots = true, github = false) {
     k: 'token-own',
     level: own.level,
     go: 'card:access',
+    short: t => own.level === 'expired' ? t(TX.shortExpired) : own.days <= 1 ? t(TX.shortTomorrow) : t(TX.shortSoon, {
+      n: own.days
+    }),
     text: t => own.level === 'expired' ? t(TX.ownExpired, {
       d: own.date
     }) + (cache.own.declared === 'date' ? t(TX.declared) : '') : t(TX.ownSoon, {

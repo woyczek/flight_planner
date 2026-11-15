@@ -5474,19 +5474,19 @@ def _days_left(date):
     return math.ceil((end - datetime.datetime.now(datetime.timezone.utc)).total_seconds() / 86400)
 
 
-@case('A171', 'Expiry of the own token (SOG-0277): « Your token expires on … (in 12 days) » in the Status block (amber), once a day in a floating note, never shown for a far or unknown date', 'A', langs4=True,
+@case('A171', 'Expiry of the own token (SOG-0277): « Your token expires on … (in 4 days) » in the Status block (amber), once a day in a floating note, never shown for a far or unknown date', 'A', langs4=True,
       designs=('standard',), screens=False, night=False, tags=('settings',),
-      rule='SOG-0277 (the user, 12 Nov: « penser à le renouveler. avoir une alerte »): the date of the own token, read from GitLab once a day (never the token), is said under 30 days with its date and the days left, in the Status block and once a day in a floating note; a far date or none says nothing')
+      rule='SOG-0277 (the user, 12 Nov: « penser à le renouveler. avoir une alerte »): the date of the own token, read from GitLab once a day (never the token), is said under 5 days with its date and the days left, in the Status block and once a day in a floating note; a far date or none says nothing')
 def a171(c):
     import datetime
-    _expiry_seed(c, own_days=12)
+    _expiry_seed(c, own_days=4)
     c.open('fuel')
     rows = open_status(c)
     row = next((r for r in rows if r['k'] == 'token-own'), None)
-    date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=12)).date().isoformat()
+    date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=4)).date().isoformat()
     when = tx('frame/lib/token_expiry.js', 'inDays', c.lang).replace('{n}', str(_days_left(date)))
     want = tx('frame/lib/token_expiry.js', 'ownSoon', c.lang).replace('{d}', date).replace('{w}', when)
-    c.ok(row is not None and norm(want) in norm(row['text']), [r['k'] for r in rows] if row is None else row['text'], 'the own token expires in 12 days: the line says the date and the days left, in the language of the run')
+    c.ok(row is not None and norm(want) in norm(row['text']), [r['k'] for r in rows] if row is None else row['text'], 'the own token expires in 4 days: the line says the date and the days left, in the language of the run')
     c.ok(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"token-own\"] .f-status-dot').hasAttribute('data-attn')"), 'no amber dot', 'an amber dot (attention)')
     c.eq(row['go'], 'card:access', 'the line leads to the Access card', what='go')
     # the floating note: once, then not again the same day (the page remembers the day, not the token)
@@ -7444,9 +7444,9 @@ def a184(c):
     order = c.js("[...document.querySelector('[data-card=\"status\"]').parentElement.children].filter(e => e.dataset.card || e.dataset.group).map(e => e.dataset.card || 'group:' + e.dataset.group)")
     c.eq([k for k in order if k != 'assistant'], ['status', 'display', 'company', 'group:data', 'group:sync', 'group:device', 'group:admin', 'group:start', 'about'],
          'the order: status, display, device airline, then data, synchronisation, device (folded), the Administration row, « Mise en route » (folded), « À propos » last', what='order')
-    folds = c.js("[...document.querySelectorAll('details.f-group')].map(g => [g.dataset.group, g.open === !g.querySelector(':scope > summary > .f-status-dot').hidden, g.querySelector(':scope > summary > span:nth-child(2)')?.textContent.trim() || ''])")
+    folds = c.js("[...document.querySelectorAll('details.f-group')].map(g => [g.dataset.group, g.open === !g.querySelector(':scope > summary > .f-status-dot').hidden, (e => e ? (e.dataset.hint ?? e.textContent).trim() : '')(g.querySelector(':scope > summary > .f-ghint'))])")
     c.eq([[f[0], f[1]] for f in folds], [['data', True], ['sync', True], ['device', True], ['start', True]], 'the four folds are folded unless their title carries the attention dot', what='folded')
-    c.eq([norm(f[2]) for f in folds], [norm(H('data')), norm(H('sync')), norm(H('device')), norm(H('start'))], 'each says how often it is used', what='hints')
+    c.eq([norm(f[2]) for f in folds], [norm(H('data')), norm(H('sync')), norm(H('device')), norm(H('start'))], 'each says how often it is used (a fold with a dot says what is wrong in its place: SOG-0362, its original hint is kept in data-hint)', what='hints')
     row = c.js("(a => a ? [a.tagName, a.getAttribute('href'), a.textContent.replace(/\s+/g, ' ').trim(), a.getBoundingClientRect().height] : null)(document.querySelector('a.f-grow[data-group=admin]'))")
     c.ok(row and row[0] == 'A' and row[1] == '#settings?card=admin' and norm(row[2]).startswith(norm(G('admin'))) and row[3] >= 43.5, row, 'Administration is a row (a link, 44 px) to its page, not a fold')
     start = c.js("[...document.querySelectorAll('details.f-group[data-group=start] [data-card]')].map(e => e.dataset.card)")
@@ -8337,9 +8337,9 @@ def a210(c):
     c.shot(f'A210_{c.width}_{c.lang}_delivered.png')
 
 
-@case('A230', 'GitHub token expiry (SOG-0277, GitHub half): GitHub does not give the date to a page, so ONE calm line in the Status block asks for it (« indiquez la date dans Accès »), leading to the Access card; a date entered in the optional field « Ce jeton expire le » is kept on the device only, said « (date déclarée) », and gives the same alert as GitLab under 30 days',
+@case('A230', 'GitHub token expiry (SOG-0277, GitHub half): GitHub does not give the date to a page, so ONE calm line in the Status block asks for it (« indiquez la date dans Accès »), leading to the Access card; a date entered in the optional field « Ce jeton expire le » is kept on the device only, said « (date déclarée) », and gives the same alert as GitLab under 5 days',
       'A', langs4=True, designs=('standard',), screens=True, night=False, tags=('settings',),
-      rule='SOG-0277 (the user, 13 Nov: « manquent les jetons GitLab, GitHub, framagit »; Sécurisation: GitHub renders the date through no endpoint a page can read, only an optional field typed by the pilot and said declared): no date known and none declared = one line of level info (no amber dot) leading to card:access; the date typed is kept in sogFrame:tokenExpiry (a date and instants, never the token); under 30 days the line is the own-token line with the declared word; the unknown line is gone')
+      rule='SOG-0277 (the user, 13 Nov: « manquent les jetons GitLab, GitHub, framagit »; Sécurisation: GitHub renders the date through no endpoint a page can read, only an optional field typed by the pilot and said declared): no date known and none declared = one line of level info (no amber dot) leading to card:access; the date typed is kept in sogFrame:tokenExpiry (a date and instants, never the token); under 5 days the line is the own-token line with the declared word; the unknown line is gone')
 def a230(c):
     import datetime
     c.context.add_init_script(GITHUB_SET)
@@ -8355,7 +8355,7 @@ def a230(c):
     c.js("document.querySelector('[data-expires]').scrollIntoView({ block: 'center' })")
     c.wait(400)
     c.shot(f'A230_{c.width}_{c.lang}_field.png')
-    date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=10)).date().isoformat()
+    date = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3)).date().isoformat()
     c.js("(() => { const i = document.querySelector('[data-card=\"access\"] [data-f=\"tokenExpires\"]'); i.value = '%s'; i.dispatchEvent(new Event('input', { bubbles: true })) })()" % date)
     c.tap('[data-card="access"] [data-act=access]')
     c.until("(JSON.parse(localStorage.getItem('sogFrame:tokenExpiry') || 'null') || {}).own?.declared === 'date'", timeout=15000, what='the declared date is kept on the device')
@@ -8367,7 +8367,7 @@ def a230(c):
     when = tx('frame/lib/token_expiry.js', 'inDays', c.lang).replace('{n}', str(_days_left(date)))
     soon = tx('frame/lib/token_expiry.js', 'ownSoon', c.lang).replace('{d}', date).replace('{w}', when)
     c.ok(row is not None and norm(soon) in norm(row['text']) and norm(tx('frame/lib/token_expiry.js', 'declared', c.lang)) in norm(row['text']), [r['k'] for r in rows] if row is None else row['text'],
-         'ten days ahead: the same alert as GitLab, with « date déclarée »')
+         'three days ahead: the same alert as GitLab, with « date déclarée »')
     c.ok(all(r['k'] != 'token-own-unknown' for r in rows), [r['k'] for r in rows], 'the line that asks for the date is gone')
     c.shot(f'A230_{c.width}_{c.lang}_declared.png')
 
@@ -8656,4 +8656,54 @@ def a214(c):
     c.wait(600)
     d1 = (c.js(store_js) or {}).get('draft', {})
     c.ok(sid_re.match(d1.get('id', '')) and d1['id'] != d0['id'], [d0, d1], 'a new draft has its own identifier')
+
+
+
+@case('A240', 'Settings: A DOT ALWAYS HAS ITS SENTENCE (SOG-0362, the user: « le point jaune de settings apparaît sur « mise en route », sans expliquer quelle case est en défaut ») — the summary of the fold names what is wrong (« Accès : le jeton expire dans 4 jours »), the card at fault carries the same dot inside, the gear says it in its title; nothing before D-5, yellow D-5 to D-2, RED the day before',
+      'A', langs4=True, designs=('standard',), screens=True, night=False, tags=('settings',),
+      rule='SOG-0362: a GitLab token lives 30 days; the alert at 30 days kept the dot of « Mise en route » lit for ever without saying why. Now: nothing before 5 days; 4 days = yellow dot and the calm sentence; the day before = RED (the dot of the line, of the fold, of the card and of the gear); the summary of the fold replaces its frequency by « card : reason », the faulty card has the same dot before its title, the gear title says the reason')
+def a240(c):
+    import datetime
+    TEC = 'frame/lib/token_expiry.js'
+    for days, level, key in ((4, 'soon', 'shortSoon'), (1, 'urgent', 'shortTomorrow')):
+        c.page.add_init_script("localStorage.removeItem('sogFrame:tokenExpiry')")
+        _expiry_seed(c, own_days=days)
+        c.open('fuel')
+        open_status(c)
+        c.until("!!document.querySelector('[data-group=start] > summary > .f-ghint[data-reason]')", timeout=15000, what='the summary of the fold says why')
+        want = tx(TEC, key, c.lang).replace('{n}', str(days))
+        hint = norm(c.text('[data-group=start] > summary > .f-ghint'))
+        card = norm(c.text('[data-card=access] > h2'))
+        c.eq(hint, norm(card + ' : ' + want), 'the summary of the fold names the card and the reason', what='summary')
+        c.eq(c.js("(e => e ? (e.dataset.level || '') : null)(document.querySelector('[data-group=start] > summary > .f-status-dot:not([hidden])'))"), 'urgent' if level == 'urgent' else '', 'the dot of the fold is of the right level (red the day before, yellow before)', what='fold dot')
+        c.eq(c.js("(e => e ? (e.dataset.level || '') : null)(document.querySelector('[data-card=access] > h2 > .f-card-dot'))"), level, 'the card at fault carries the same dot inside the fold', what='card dot')
+        c.ok(norm(want) in norm(c.js("document.querySelector('#fDevice').title")), c.js("document.querySelector('#fDevice').title"), 'the gear says the reason in its title')
+        c.eq(c.js("(e => e ? (e.dataset.level || '') : null)(document.querySelector('[data-card=status] li[data-k=token-own] .f-status-dot'))"), level, 'and the line of the status block', what='line dot')
+        c.js("document.querySelector('[data-group=start] > summary').scrollIntoView({ block: 'center' })")
+        c.wait(300)
+        c.shot(f'A240_{c.width}_{c.lang}_{days}d.png')
+    # nothing before D-5: a token that lives 12 days more is not an alert
+    c.page.add_init_script("localStorage.removeItem('sogFrame:tokenExpiry')")
+    _expiry_seed(c, own_days=12)
+    c.open('fuel')
+    open_status(c)
+    c.wait(1200)
+    c.eq([c.count('[data-card=status] li[data-k=token-own]'), c.count('[data-group=start] > summary > .f-ghint[data-reason]'), c.count('[data-card=access] > h2 > .f-card-dot')], [0, 0, 0], 'twelve days ahead: no line, no phrase on the fold, no dot on the access card', what='nothing')
+
+
+@case('A241', 'Settings: an EXPIRED token is red and says itself everywhere (SOG-0362): the sentence at the top of the Settings, the band under the header, the red dot of the fold, of the card and of the gear — until it is renewed',
+      'A', langs4=True, designs=('standard',), screens=False, night=False, tags=('settings',),
+      rule='SOG-0362: expired = red, the sentence « jeton expiré : le renouveler dans Accès » at the head of the Settings (role alert) and in the band under the header, as long as the date known is past')
+def a241(c):
+    TEC = 'frame/lib/token_expiry.js'
+    _expiry_seed(c, own_days=-3)
+    c.open('fuel')
+    open_status(c)
+    want = norm(tx(TEC, 'shortExpired', c.lang))
+    c.until("!!document.querySelector('[data-token-expired]')", timeout=15000, what='the sentence at the top of the Settings')
+    top = c.js("(e => [e.getAttribute('role'), e.textContent.replace(/\\s+/g, ' ').trim(), !!document.querySelector('h1 + [data-token-expired]')])(document.querySelector('[data-token-expired]'))")
+    c.ok(top[0] == 'alert' and want in norm(top[1]) and top[2], top, 'the sentence is at the very top of the Settings, a role alert')
+    c.until("!!document.querySelector('#fLimit:not([hidden])')", timeout=10000, what='the band under the header')
+    c.eq([norm(c.text('#fLimit')), c.attr('#fLimit', 'data-level')], [want, 'expired'], 'the band under the header says it', what='band')
+    c.eq([c.js("(e => e ? (e.dataset.level || '') : null)(document.querySelector('[data-group=start] > summary > .f-status-dot:not([hidden])'))"), c.js("(e => e ? (e.dataset.level || '') : null)(document.querySelector('[data-card=access] > h2 > .f-card-dot'))"), c.js("document.querySelector('#fDevice').dataset.level || ''")], ['expired'] * 3, 'the dots of the fold, of the card and of the gear are red', what='red dots')
     c.check_errors()

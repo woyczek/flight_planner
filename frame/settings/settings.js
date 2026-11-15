@@ -630,8 +630,13 @@
     const all = [...cards, P.diagnostic.aboutHtml(env), adminHtml, ivaoApp],
       one = focus ? P.groups.pick(all, focus) : '';
     // carte demandée par l'adresse : elle seule, sous « ← Réglages » ; sinon la liste, rangée selon le niveau
+    // un jeton expiré : la phrase en TÊTE de l'écran, rouge, tant qu'il n'est pas renouvelé (SOG-0362)
+    const TE = window.SogSettingsKit.expiry?.(),
+      own = TE ? TE.readCache().own : null,
+      gone = own && TE.stateOf(own.expiresAt)?.level === 'expired' ? TE.stateOf(own.expiresAt) : null,
+      banner = gone ? `<p class="f-warn" data-token-expired role="alert"><b>${esc(t(TE.TX.shortExpired))}</b> ${esc(t(TE.TX.ownExpired, { d: gone.date }))}</p>` : '';
     reconcile(view, one ? `<h1>${esc(t(T.title))}</h1><p><a class="f-btn" href="#settings" data-settings-back>${esc(t(T.backToList))}</a></p>${one}` :
-      `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange(all, t, lvl)}`);
+      `<h1>${esc(t(T.title))}</h1>${banner}<p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange(all, t, lvl)}`);
     P.groups.wireGroups(view);
     if (help && !one)(view.querySelector('details.f-group[data-group="start"]') || view.querySelector('[data-card="status"]') || view
       .querySelector('h1 + p'))?.after(help); // « Comment s'en servir » : sous « Mise en route » (SOG-0320)
@@ -1025,6 +1030,10 @@
       if (link) link.hidden = !!s.relay; // en relais, l'administrateur la règle sur le relais : pas d'écran ici
     };
     P.groups.markAttention(view);
+    if (!view.__markWired) { // la ligne du bloc d'état change (un jeton qui approche) : les points et leurs phrases suivent (SOG-0362)
+      view.__markWired = true;
+      view.addEventListener('f-status-painted', () => P.groups.markAttention(view));
+    }
     // ordinateur ↔ téléphone (« frame-desk » du cadre) : la liste des designs et la ligne « réservé à l'ordinateur » suivent,
     // si l'écran est toujours là (une écoute par vue)
     if (!DESK.has(view)) {

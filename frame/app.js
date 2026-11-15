@@ -2540,8 +2540,8 @@
   }
 
   const statusRows = items => items.map(it => {
-    const inner = `<i class="f-status-dot"${it.news || it.attn ? '' : ' hidden'}${it.attn && !it.news ? ' data-attn' : ''}></i><span class="f-status-txt"><span>${esc(it.text).replace('', `<span data-limit-n>${it.limitN ?? ''}</span>`)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
-    return `<li data-k="${esc(it.k)}"${it.phone ? ' data-phone' : ''}>${it.go ? `<button type="button" class="f-status-row" data-go="${esc(it.go)}">${inner}</button>` : `<div class="f-status-row">${inner}</div>`}</li>`;
+    const inner = `<i class="f-status-dot"${it.news || it.attn ? '' : ' hidden'}${it.attn && !it.news ? ' data-attn' : ''}${it.attn && !it.news && it.level ? ` data-level="${esc(it.level)}"` : ''}></i><span class="f-status-txt"><span>${esc(it.text).replace('', `<span data-limit-n>${it.limitN ?? ''}</span>`)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
+    return `<li data-k="${esc(it.k)}"${it.phone ? ' data-phone' : ''}${it.attn && it.short ? ` data-short="${esc(it.short)}"` : ''}>${it.go ? `<button type="button" class="f-status-row" data-go="${esc(it.go)}">${inner}</button>` : `<div class="f-status-row">${inner}</div>`}</li>`;
   }).join('');
   /** Signature courte d'un texte : un bloc d'état n'est réécrit que si elle change. */
   const sig = s => {
@@ -2573,14 +2573,17 @@
   }
   const badge = {
     news: false,
-    attn: false
+    attn: false,
+    level: '',
+    why: ''
   };
   /** Pastille d'état (badge) et nom accessible du ⚙ de l'en-tête, dans toutes les applications. Écrit seulement si cela
    *  change. */
   function paintBadge() {
-    const label = badge.news || badge.attn ? `${t(T.device)} — ${t(T.info.news)}` : t(T.device),
+    const label = badge.attn && badge.why ? `${t(T.device)} — ${badge.why}` : badge.news || badge.attn ? `${t(T.device)} — ${t(T.info.news)}` : t(T.device),
       b = $('fDevice');
     if (!b) return;
+    if ((b.dataset.level || '') !== badge.level) badge.level ? b.dataset.level = badge.level : delete b.dataset.level;
     if (b.hasAttribute('data-badge') !== badge.news) badge.news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
     if (b.hasAttribute('data-attn') !== badge.attn) badge.attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
     if (b.title !== label) b.title = label;
@@ -2661,6 +2664,10 @@
     const items = statusItems();
     badge.news = items.some(it => it.news);
     badge.attn = items.some(it => it.attn);
+    const worst = items.find(it => it.attn && (it.level === 'expired' || it.level === 'urgent')) || null,
+      first = items.find(it => it.attn) || null;
+    badge.level = worst ? worst.level : ''; // rouge quand un jeton expire demain ou a expiré (SOG-0362)
+    badge.why = first ? first.short || first.text : ''; // un point a TOUJOURS sa phrase : le titre du ⚙ la dit
     paintBadge();
     if (!statusViews.size) return;
     const body = statusBody(items),
@@ -2674,6 +2681,9 @@
       if (el.dataset.sig !== s) {
         el.innerHTML = body;
         el.dataset.sig = s;
+        el.dispatchEvent(new CustomEvent('f-status-painted', {
+          bubbles: true
+        })); // les plis des Réglages reprennent leur point et sa phrase (SOG-0362)
       }
       for (const sp of el.querySelectorAll('[data-limit-n]'))
         if (n !== undefined && sp.textContent !== String(n)) sp.textContent = n; // le compte à rebours : son texte seulement
@@ -2974,11 +2984,14 @@
   function paintLimit(s) {
     const bar = $('fLimit');
     if (!bar) return;
-    const text = s.rateLimit ? t(T.sync.limited, {
-      who: s.rateLimit.who,
-      n: s.rateLimit.secs
-    }) : '';
+    const expired = !s.rateLimit && TOKEN_EXP && TOKEN_EXP.stateOf(TOKEN_EXP.readCache().own?.expiresAt)?.level === 'expired' ? t(
+        TOKEN_EXP.TX.shortExpired) : '', // SOG-0362 : « jeton expiré : le renouveler dans Accès », tant qu'il ne l'est pas
+      text = s.rateLimit ? t(T.sync.limited, {
+        who: s.rateLimit.who,
+        n: s.rateLimit.secs
+      }) : expired;
     if (bar.textContent !== text) bar.textContent = text;
+    if (bar.dataset.level !== (expired ? 'expired' : '')) expired ? bar.dataset.level = 'expired' : delete bar.dataset.level;
     if (bar.hidden !== !text) bar.hidden = !text;
     // la vue est poussée de la hauteur de la bande (jamais recouverte) : la hauteur change avec la langue et la largeur (une ou deux lignes)
     const h = text ? `${bar.offsetHeight}px` : '0px',
@@ -4068,6 +4081,9 @@
     return TOKEN_EXP.lines(TOKEN_EXP.readCache(), Date.now(), poste, github).map(l => ({
       k: l.k,
       text: l.text(t),
+      short: l.short ? l.short(t) :
+      '', // la phrase brève du résumé d'un pli et du titre du ⚙ (SOG-0362 : un point a TOUJOURS sa phrase)
+      level: l.level,
       go: l.go === 'pilot-tokens' ? pilotsGo : l.go,
       attn: l.level !== 'info'
     }));
@@ -4093,9 +4109,10 @@
       /* le lanceur ne répond pas : rien */
     }
     paintStatus();
+    FD.status().then(paintLimit).catch(() => {}); // la bande dit un jeton expiré (SOG-0362)
     const own = TE.lines(TE.readCache(), Date.now(), false).find(l => l.k === 'token-own');
     if (own && TE.readCache().own?.toldOn !== new Date().toISOString().slice(0, 10)) {
-      notify(own.text(t), own.level === 'soon' ? 'info' : 'warn');
+      notify(own.text(t), own.level === 'soon' ? 'info' : own.level === 'urgent' ? 'warn' : 'err'); // rouge expiré (SOG-0362)
       TE.recordTold();
     }
   }

@@ -31,10 +31,10 @@
     ],
     expiresNever: ['Ce jeton n’expire pas', 'This token does not expire', 'Dieses Token läuft nicht ab', 'Este token no caduca'],
     expiresHint: [
-      'GitHub ne donne pas la date d’expiration à une page : si vous la saisissez, elle est gardée sur cet appareil seulement (jamais dans le dépôt) et vous êtes prévenu 30 jours avant, comme avec GitLab.',
-      'GitHub does not give a page the expiry date: if you enter it, it is kept on this device only (never in the repository) and you are warned 30 days before, as with GitLab.',
-      'GitHub gibt einer Seite das Ablaufdatum nicht: Wenn Sie es eingeben, bleibt es nur auf diesem Gerät (nie im Repository) und Sie werden 30 Tage vorher gewarnt, wie bei GitLab.',
-      'GitHub no da la fecha de caducidad a una página: si la introduce, se guarda solo en este dispositivo (nunca en el repositorio) y se le avisa 30 días antes, como con GitLab.'
+      'GitHub ne donne pas la date d’expiration à une page : si vous la saisissez, elle est gardée sur cet appareil seulement (jamais dans le dépôt) et vous êtes prévenu 5 jours avant, comme avec GitLab.',
+      'GitHub does not give a page the expiry date: if you enter it, it is kept on this device only (never in the repository) and you are warned 5 days before, as with GitLab.',
+      'GitHub gibt einer Seite das Ablaufdatum nicht: Wenn Sie es eingeben, bleibt es nur auf diesem Gerät (nie im Repository) und Sie werden 5 Tage vorher gewarnt, wie bei GitLab.',
+      'GitHub no da la fecha de caducidad a una página: si la introduce, se guarda solo en este dispositivo (nunca en el repositorio) y se le avisa 5 días antes, como con GitLab.'
     ],
     expiresSaved: ['Date d’expiration gardée sur cet appareil.', 'Expiry date kept on this device.',
       'Ablaufdatum auf diesem Gerät gespeichert.', 'Fecha de caducidad guardada en este dispositivo.'

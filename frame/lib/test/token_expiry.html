@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Banc de l'expiration des jetons (frame/lib/token_expiry.js ; SOG-0277) : jours restants et niveau (orange sous 30 jours, rouge sous 7, expiré à
+<!-- Banc de l'expiration des jetons (frame/lib/token_expiry.js ; SOG-0277) : jours restants et niveau (rien avant 5 jours, orange de 5 à 2, rouge la veille, expiré à
      00:00 UTC de la date), liste de jetons de pilote (actifs qui expirent, expirés non remplacés, jamais un nom), stockage de l'appareil relu avec
      méfiance (des dates et des nombres bornés, jamais une chaîne libre ni un jeton), une relecture par jour, lignes de la puce d'état en quatre
      langues. window.__tokenExpiryBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
@@ -50,12 +50,12 @@
     },
     tr = (row, v = {}) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? `{${k}}`),
     s = d => TE.stateOf(d, now);
-  ck('jours restants : 12 jours → soon, 6 → urgent, 230 → ok',
-    JSON.stringify([s('2026-11-24'), s('2026-11-18'), s('2027-06-30')].map(x => [x.days, x.level])) ===
-    '[[12,"soon"],[6,"urgent"],[230,"ok"]]');
-  ck('les seuils : 30 jours orange (soon), 31 jours rien ; 7 jours rouge (urgent), 8 orange',
-    [s('2026-12-12').level, s('2026-12-13').level, s('2026-11-19').level, s('2026-11-20').level].join() === 'soon,ok,urgent,soon', [s(
-      '2026-12-12').level, s('2026-12-13').level, s('2026-11-19').level, s('2026-11-20').level].join());
+  ck('jours restants : 4 jours → soon, 1 → urgent, 12 et 230 → ok (SOG-0362 : rien avant J-5)',
+    JSON.stringify([s('2026-11-16'), s('2026-11-13'), s('2026-11-24'), s('2027-06-30')].map(x => [x.days, x.level])) ===
+    '[[4,"soon"],[1,"urgent"],[12,"ok"],[230,"ok"]]');
+  ck('les seuils : 5 jours orange (soon), 6 jours rien ; la veille (1 jour) rouge (urgent), 2 jours orange',
+    [s('2026-11-17').level, s('2026-11-18').level, s('2026-11-13').level, s('2026-11-14').level].join() === 'soon,ok,urgent,soon', [s(
+      '2026-11-17').level, s('2026-11-18').level, s('2026-11-13').level, s('2026-11-14').level].join());
   ck('un jeton ne vaut plus à 00:00 UTC de sa date : le jour même, expiré (à 10:00 UTC) ; la veille, 1 jour',
     s('2026-11-12').level === 'expired' && s('2026-11-13').days === 1 && s('2026-11-13').level === 'urgent');
   ck('un horodatage d’API est lu par sa date ; une date qui n’existe pas, un texte, un jeton, rien : null',
@@ -69,12 +69,12 @@
     revoked,
     expires
   });
-  ck('les jetons de pilote : actifs sous 30 jours (soon), expirés ni révoqués ni remplacés (expired), la date la plus proche ; ni le jeton du propriétaire ni un révoqué',
-    JSON.stringify(TE.pilotsOf([L('ABC', true, false, '2026-11-20'), L('DEF', true, false, '2026-12-01'), L('GHI', false, false,
+  ck('les jetons de pilote : actifs sous 5 jours (soon), expirés ni révoqués ni remplacés (expired), la date la plus proche ; ni le jeton du propriétaire ni un révoqué',
+    JSON.stringify(TE.pilotsOf([L('ABC', true, false, '2026-11-15'), L('DEF', true, false, '2026-11-17'), L('GHI', false, false,
         '2026-10-01'), L('JKL', false, true, '2026-10-01'),
       L('owner-bot', true, false, '2026-11-14'), L('MNO', true, false, null), L('PQR', true, false, '2027-12-01')
-    ], now)) === '{"soon":2,"expired":1,"nearest":"2026-11-20"}',
-    JSON.stringify(TE.pilotsOf([L('ABC', true, false, '2026-11-20'), L('DEF', true, false, '2026-12-01')], now)));
+    ], now)) === '{"soon":2,"expired":1,"nearest":"2026-11-15"}',
+    JSON.stringify(TE.pilotsOf([L('ABC', true, false, '2026-11-15'), L('DEF', true, false, '2026-11-17')], now)));
   ck('un jeton expiré remplacé par un actif du même nom ne compte pas', JSON.stringify(TE.pilotsOf([L('ABC', false, false, '2026-10-01'), L(
     'ABC', true, false, '2027-10-01')], now)) === '{"soon":0,"expired":0,"nearest":""}');
   ck('pilotsOf : une liste absente ou des entrées inattendues ne lèvent rien', JSON.stringify(TE.pilotsOf(null, now)) ===
@@ -171,13 +171,25 @@
     texts = l => l.text((row, v) => tr(row, v));
   const own12 = lines({
     own: {
-      expiresAt: '2026-11-24'
+      expiresAt: '2026-11-16'
     },
     pilots: null
   });
-  ck('son jeton sous 30 jours : « Votre jeton expire le 2026-11-24 (dans 12 jours) … », niveau soon, mène à la carte Accès',
-    own12.length === 1 && /^Votre jeton expire le 2026-11-24 \(dans 12 jours\)/.test(texts(own12[0])) && own12[0].level === 'soon' &&
-    own12[0].go === 'card:access', own12[0] && texts(own12[0]));
+  ck('son jeton sous 5 jours : « Votre jeton expire le 2026-11-16 (dans 4 jours) … », niveau soon, mène à la carte Accès, phrase brève « le jeton expire dans 4 jours »',
+    own12.length === 1 && /^Votre jeton expire le 2026-11-16 \(dans 4 jours\)/.test(texts(own12[0])) && own12[0].level === 'soon' &&
+    own12[0].go === 'card:access' && texts({ text: own12[0].short }) === 'le jeton expire dans 4 jours', own12[0] && texts(own12[0]));
+  const tomorrow = lines({
+    own: {
+      expiresAt: '2026-11-13'
+    },
+    pilots: null
+  });
+  ck('la veille : niveau urgent (rouge), phrase brève « le jeton expire demain » ; à 12 jours : rien (SOG-0362)',
+    tomorrow.length === 1 && tomorrow[0].level === 'urgent' && texts({ text: tomorrow[0].short }) === 'le jeton expire demain' && lines({
+      own: {
+        expiresAt: '2026-11-24'
+      }
+    }).length === 0);
   const gone = lines({
     own: {
       expiresAt: '2026-11-01'
@@ -185,7 +197,7 @@
     pilots: null
   });
   ck('son jeton expiré : « Votre jeton a expiré le … » (niveau expired) ; lointain ou inconnu : rien',
-    /^Votre jeton a expiré le 2026-11-01 :/.test(texts(gone[0])) && gone[0].level === 'expired' && lines({
+    /^Votre jeton a expiré le 2026-11-01 :/.test(texts(gone[0])) && gone[0].level === 'expired' && texts({ text: gone[0].short }) === 'jeton expiré : le renouveler dans Accès' && lines({
       own: {
         expiresAt: '2027-06-30'
       }
@@ -199,12 +211,12 @@
     pilots: {
       soon: 2,
       expired: 1,
-      nearest: '2026-11-15'
+      nearest: '2026-11-13'
     }
   });
-  ck('les jetons des pilotes : un expiré d’abord, puis « 2 jetons de pilote expirent bientôt (le plus proche : …) » en rouge quand la date est sous 7 jours ; menés à l’écran des jetons',
+  ck('les jetons des pilotes : un expiré d’abord, puis « 2 jetons de pilote expirent bientôt (le plus proche : …) » en rouge quand la date est la veille ; menés à l’écran des jetons',
     pil.length === 2 && /^1 jeton de pilote a expiré$/.test(texts(pil[0])) &&
-    /^2 jetons de pilote expirent bientôt \(le plus proche : 2026-11-15\)$/.test(texts(pil[1])) && pil[1].level === 'urgent' && pil.every(
+    /^2 jetons de pilote expirent bientôt \(le plus proche : 2026-11-13\)$/.test(texts(pil[1])) && pil[1].level === 'urgent' && pil.every(
       x => x.go === 'pilot-tokens'),
     pil.map(texts).join(' | '));
   ck('un seul : le singulier ; hors du poste (pilots faux) : rien sur les jetons de pilote',
