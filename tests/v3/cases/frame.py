@@ -8434,13 +8434,15 @@ def a211(c):
     fx = _rc_fixture()
     c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
     key = 'pilot/ABC/recette/verdicts.json'
+    import datetime as _dt
+    today = _dt.datetime.now(_dt.timezone.utc).strftime('%Y-%m-%d')   # the day of the run: « today » is the real day (a fixed date would turn « the day's tests » into « older » tomorrow)
     docs_js = """(k) => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const s = r.result.transaction('docs').objectStore('docs'), g = s.get(k); g.onsuccess = () => res(g.result ? g.result.text : null) } })"""
     # a verdict of ANOTHER device of this trigram already in the repository (later than the generated one), and hostile entries
-    other = {'schema': 'sog-recette/1', 'updated': '2026-11-14T09:00:00Z', 'items': {
-        'SOG-0312': {'verdict': 'ko', 'comment': 'refusé depuis le téléphone', 'at': '2026-11-14T09:00:00Z'},
-        'SOG-0999': {'verdict': 'ok', 'at': '2026-11-14T09:01:00Z'},
+    other = {'schema': 'sog-recette/1', 'updated': f'{today}T09:00:00Z', 'items': {
+        'SOG-0312': {'verdict': 'ko', 'comment': 'refusé depuis le téléphone', 'at': f'{today}T09:00:00Z'},
+        'SOG-0999': {'verdict': 'ok', 'at': f'{today}T09:01:00Z'},
         '../../x': {'verdict': 'ok'}, 'SOG-0305': {'verdict': 'meh'}, 'SOG-0306': {'verdict': 'ko'},
-        'SOG-0307': {'verdict': 'ok', 'comment': '<img src=x onerror=window.__pwn=1>' + 'x' * 5000, 'at': '2026-11-14T09:02:00Z'}}}
+        'SOG-0307': {'verdict': 'ok', 'comment': '<img src=x onerror=window.__pwn=1>' + 'x' * 5000, 'at': f'{today}T09:02:00Z'}}}
     c.open('recette', docs=LEVEL3 + [[key, other, 'document']])
     c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=20000, what='the tests')
     c.until("!!document.querySelector('[data-section=seen] [data-id=\"SOG-0312\"][data-state=ko]')", timeout=15000, what='the repository file read')
@@ -8518,7 +8520,9 @@ def a212(c):
     fx = _rc_fixture()
     c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
     key = 'pilot/ABC/recette/verdicts.json'
-    other = {'schema': 'sog-recette/1', 'updated': '2026-11-14T09:00:00Z', 'items': {'SOG-0312': {'verdict': 'ko', 'comment': 'refusé depuis le téléphone', 'at': '2026-11-14T09:00:00Z'}}}
+    import datetime as _dt
+    today = _dt.datetime.now(_dt.timezone.utc).strftime('%Y-%m-%d')
+    other = {'schema': 'sog-recette/1', 'updated': f'{today}T09:00:00Z', 'items': {'SOG-0312': {'verdict': 'ko', 'comment': 'refusé depuis le téléphone', 'at': f'{today}T09:00:00Z'}}}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         root = Path(td)
         (root / 'organisation').mkdir()
@@ -8541,4 +8545,53 @@ def a212(c):
         c.until(f"!!document.querySelector('[data-section=seen] [data-id=\"{first}\"] [data-verdict]')", timeout=15000, what='the verdict given here')
         c.ok(c.js(f"!document.querySelector('[data-section=seen] [data-id=\"{first}\"] [data-origin]')"), '', 'a verdict given on this workstation carries no origin')
         c.shot(f'A212_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('A213', "During a request limit the countdown redraws only its own text: on the Settings screen no node is replaced outside the band, the state block keeps its nodes (only the number changes), and the sync state announces only a change of NATURE (SOG-0359: « la page settings clignote… toutes les secondes, pendant une vingtaine de secondes »)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False, phone=True,
+      rule="SOG-0359 (the user, on his phone: « La page se fait refresh s'il y a un souci de synchro avec GitLab, toutes les quelques secondes. Bloque l'utilisation des pages »; « La page settings clignote pendant le refresh git. Toutes les secondes, pendant une 20aine de secondes »): the countdown « reprise dans n s » was part of the text of the state block, so its signature changed every second and the whole block (and the Settings card that listens to the sync state) was rewritten each second; now the number lives in its own element (`data-limit-n`) written in place, the block is rewritten only when its NATURE changes, the sync state is announced only when its nature changes (a request limit that goes on is not a new state), and a field being typed in is never replaced")
+def a213(c):
+    state = {'head': 'c1', 'files': {'sia/base/a.json': 'ba', 'root.json': 'br'}, 'blob429': 1}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        rest = u.path.split('/api/v4/projects/grp%2Fdata', 1)[-1]
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        if rest.endswith('/repository/branches/main'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps({'name': 'main', 'commit': {'id': state['head']}}))
+        if rest.endswith('/repository/tree'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps([{'id': sha, 'name': p.split('/')[-1], 'type': 'blob', 'path': p, 'mode': '100644'} for p, sha in sorted(state['files'].items())]))
+        if '/repository/blobs/' in rest:
+            if state['blob429'] > 0:
+                state['blob429'] -= 1
+                return route.fulfill(status=429, headers={**hdr, 'Retry-After': '9'}, body='{}')
+            return route.fulfill(status=200, headers={**hdr, 'Content-Type': 'text/plain'}, body='{"zone":"a"}')
+        return route.fulfill(status=404, headers=hdr, body='{}')
+    c.context.route(re.compile(r'https://gitlab\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
+    c.open('settings', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    c.until("!!document.querySelector('[data-card=\"status\"]') && !!window.FrameData", timeout=25000, what='the Settings screen')
+    c.wait(2500)   # the first pass settles
+    # a module reads a file of the base: the host answers 429 (a pause of 9 s: « reprise dans n s » counts down)
+    c.js("""(() => { window.__ad = FrameData.adapter({ id: 'a213', reads: ['sia/'] }); window.__ad.read('sia/base/a.json', { policy: 'reference', wait: true }).catch(() => null);
+      window.__removed = []; window.__status = 0; const root = document.getElementById('fView');
+      new MutationObserver(ms => { for (const m of ms) for (const n of m.removedNodes) if (n.nodeType === 1 && !n.closest?.('#fLimit')) window.__removed.push(n.tagName + (n.dataset?.card ? '[' + n.dataset.card + ']' : '')) }).observe(root, { childList: true, subtree: true });
+      window.addEventListener('frame-data-status', () => window.__status++); return 1 })()""")
+    for _ in range(40):
+        if c.js("!document.getElementById('fLimit').hidden"):
+            break
+        c.wait(250)
+    c.ok(c.js("!document.getElementById('fLimit').hidden"), '', 'the limit is on (the band says it)')
+    c.js("window.__removed.length = 0; window.__status = 0")   # from now on: the wait goes on, the countdown counts
+    block_before = c.js("(el => ({ n: el.querySelector('[data-limit-n]')?.textContent || null, node: !!el.querySelector('li[data-k=data]') }))(document.querySelector('[data-card=status]'))")
+    c.wait(4500)   # four countdown seconds
+    r = c.js("""() => ({ removed: window.__removed.slice(0, 8), status: window.__status, n: document.querySelector('[data-card=status] [data-limit-n]')?.textContent || null,
+                         band: document.getElementById('fLimit').textContent })""")
+    c.eq([r['removed'], r['status']], [[], 0], 'four seconds of countdown: no node of the screen replaced outside the band, and the sync state announced nothing (a limit that goes on is not a new state)', what='no redraw')
+    c.ok(block_before['n'] is not None and r['n'] is not None and int(r['n']) < int(block_before['n']), [block_before, r['n']], 'the state block counts down in place (its number is its own element)')
+    c.shot(f'A213_{c.width}_{c.lang}_delivered.png')
     c.check_errors()

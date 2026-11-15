@@ -537,8 +537,18 @@
     return () => statusFns.delete(fn);
   }
   /** Diffuse l'état (ici, et aux autres onglets si share). */
+  let lastEmitted = ''; // la NATURE du dernier état annoncé (SOG-0359)
   async function emitStatus(share = true) {
     const s = await status();
+    // l'état n'annonce un changement que de NATURE (en cours, limité, en échec, à jour, la file) : une limite qui dure, avec son compte à rebours, n'est pas un nouvel état — chaque écran qui l'écoute se redessinait
+    const nature = JSON.stringify({
+      ...s,
+      rateLimit: s.rateLimit ? {
+        who: s.rateLimit.who
+      } : null
+    });
+    if (nature === lastEmitted) return;
+    lastEmitted = nature;
     for (const fn of statusFns) try {
       fn(s);
     } catch (e) {

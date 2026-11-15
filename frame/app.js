@@ -2365,9 +2365,10 @@
     if (s.conflicts) return t(T.info.conflicts, {
       n: s.conflicts
     });
+    // le nombre de secondes est un ÉLÉMENT À PART dans le bloc d'état (le marqueur , posé par statusRows) : son compte à rebours écrit son texte en place, il ne redessine pas le bloc (SOG-0359)
     if (s.rateLimit) return t(T.sync.limited, {
       who: s.rateLimit.who,
-      n: s.rateLimit.secs
+      n: ''
     });
     if (s.syncing) return t(T.info.syncing);
     if (s.transport === 'local' || s.transport === 'none') return t(T.info.localOnly);
@@ -2441,6 +2442,7 @@
     if (s) items.push({
       k: 'data',
       text: dataLine(s),
+      limitN: s.rateLimit ? s.rateLimit.secs : undefined,
       sub: t(T.info.transport, {
         x: t(T.info.tr[s.transport] || T.info.tr.local) + repoName(s)
       }),
@@ -2538,7 +2540,7 @@
   }
 
   const statusRows = items => items.map(it => {
-    const inner = `<i class="f-status-dot"${it.news || it.attn ? '' : ' hidden'}${it.attn && !it.news ? ' data-attn' : ''}></i><span class="f-status-txt"><span>${esc(it.text)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
+    const inner = `<i class="f-status-dot"${it.news || it.attn ? '' : ' hidden'}${it.attn && !it.news ? ' data-attn' : ''}></i><span class="f-status-txt"><span>${esc(it.text).replace('', `<span data-limit-n>${it.limitN ?? ''}</span>`)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
     return `<li data-k="${esc(it.k)}"${it.phone ? ' data-phone' : ''}>${it.go ? `<button type="button" class="f-status-row" data-go="${esc(it.go)}">${inner}</button>` : `<div class="f-status-row">${inner}</div>`}</li>`;
   }).join('');
   /** Signature courte d'un texte : un bloc d'état n'est réécrit que si elle change. */
@@ -2549,12 +2551,14 @@
   };
   /** Contenu du bloc d'état : titre et lignes. */
   const statusBody = items => `<h2>${esc(t(T.info.title))}</h2><ul class="f-status-list">${statusRows(items)}</ul>`;
+  /** La signature d'un bloc d'état SANS le compte à rebours de la limite (le nombre est écrit en place) : le bloc n'est réécrit que si sa NATURE change (SOG-0359). */
+  const bodySig = body => sig(body.replace(/(<span data-limit-n>)[^<]*/g, '$1'));
   /** Bloc d'état de tête des Réglages (carte, `data-card="status"`), à la valeur du moment ; frame/settings le pose en
    *  première carte puis le confie à bindStatus. Sans ligne il est caché. */
   function statusBlock() {
     const items = statusItems(),
       body = statusBody(items);
-    return `<div class="f-card f-status" data-card="status" data-sig="${sig(body)}"${items.length ? '' : ' hidden'}>${body}</div>`;
+    return `<div class="f-card f-status" data-card="status" data-sig="${bodySig(body)}"${items.length ? '' : ' hidden'}>${body}</div>`;
   }
   /** Rend vivant le bloc el (posé par statusBlock) : un toucher sur une ligne mène où elle dit ; il est redessiné par
    *  paintStatus quand l'état change, jusqu'à ce qu'il quitte la page. */
@@ -2660,7 +2664,8 @@
     paintBadge();
     if (!statusViews.size) return;
     const body = statusBody(items),
-      s = sig(body);
+      s = bodySig(body),
+      n = items.find(it => it.limitN !== undefined)?.limitN;
     for (const el of [...statusViews]) {
       if (!el.isConnected) {
         statusViews.delete(el);
@@ -2670,6 +2675,8 @@
         el.innerHTML = body;
         el.dataset.sig = s;
       }
+      for (const sp of el.querySelectorAll('[data-limit-n]'))
+        if (n !== undefined && sp.textContent !== String(n)) sp.textContent = n; // le compte à rebours : son texte seulement
       if (el.hidden !== !items.length) el.hidden = !items.length;
     }
   }
