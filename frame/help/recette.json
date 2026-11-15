@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-15",
-  "tests": 231,
+  "tests": 232,
   "verdicts": 152
  },
  "apps": [
@@ -3438,6 +3438,20 @@
    "since": "2026-11-15",
    "state": "todo",
    "delivered": "2026-11-15T19:34:42Z"
+  },
+  {
+   "id": "SOG-0366",
+   "app": "maintenance",
+   "title": {
+    "fr": "Signaler : un même signalement arrive deux ou trois fois dans le dépôt",
+    "en": "Report: the same report reaches the repository two or three times",
+    "de": "Melden: dieselbe Meldung kommt zwei- oder dreimal im Repository an",
+    "es": "Avisar: un mismo aviso llega dos o tres veces al repositorio"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Envoie un signalement (avec ou sans photo), même pendant une synchronisation difficile : il n'arrive qu'UNE fois — je te le confirme à la lecture du dépôt.",
+   "since": "2026-11-15",
+   "state": "todo",
+   "delivered": "2026-11-15T19:42:45Z"
   }
  ],
  "decisions": [

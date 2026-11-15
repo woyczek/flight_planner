@@ -4,7 +4,7 @@
  "updated": "2026-11-15",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1bf39d5",
+  "organisation": "2700ac5",
   "fiches": 366,
   "untranslated": 0,
   "priorities": 310
@@ -5412,11 +5412,12 @@
     {
      "id": "SOG-0366",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Signaler : un même signalement arrive deux ou trois fois dans le dépôt",
      "en": "Report: the same report reaches the repository two or three times",
      "de": "Melden: dieselbe Meldung kommt zwei- oder dreimal im Repository an",
-     "es": "Avisar: un mismo aviso llega dos o tres veces al repositorio"
+     "es": "Avisar: un mismo aviso llega dos o tres veces al repositorio",
+     "test": true
     }
    ]
   },
