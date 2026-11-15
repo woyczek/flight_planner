@@ -329,3 +329,8 @@
   (gone since the list) names its mission (`missing`: id, title, path). It changes two older rules, on purpose: N5 no longer lists the
   absent X-006A, and N48's search no longer offers the unread X-503A in the list (the « non lue » line still counts it, the Registry
   still finds it). Fixtures that listed registry lines without files get them (`with_files`). N66 (red before).
+- **15 Nov 2026 — SOG-0365, the ergonomist's arbitration: the rule is « the file EXISTS in the device's tree », not « already read »**.
+  A mission whose file is in the tree but not read yet stays in the list, the draw (which reads it) and the search (found on its registry
+  line); only a line WITHOUT a file leaves them, and is not counted « non lue » either (`unreadHtml` counts the playable rows); the
+  Registry shows it « sans fichier ». N48 back to X-503A found (its file in the tree, empty here: out of the index), plus the counterpart:
+  X-504A, a line without a file, not offered.

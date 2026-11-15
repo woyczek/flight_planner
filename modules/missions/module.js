@@ -1143,7 +1143,9 @@ function whereHtml(s, r, q) {
 /** « n missions non lues sur cet appareil » pendant une recherche, une fois l'index prêt (SOG-0288) ; '' sinon. */
 function unreadHtml(s, q) {
   if (!q || !s.idx?.ready) return '';
-  const n = new Set([...s.rows, ...(s.reg?.lines || []).map(e => e.row)].map(rowPath).filter(p => p && !s.idx.map.has(p))).size;
+  // SOG-0365 (arbitrage du 15/11) : une ligne sans fichier sur l'appareil n'est ni proposée ni comptée « non lue »
+  const n = new Set([...s.rows.filter(r => playable(s, r)), ...(s.reg?.lines || []).map(e => e.row)].map(rowPath).filter(p => p && !s.idx
+    .map.has(p))).size;
   return n ? `<p class="f-muted" data-unread="${n}">${esc(s.tt(TX.unreadN, { n }))}</p>` : '';
 }
 /** Redessine les résultats seuls (frappe, famille, « N autres », comptes rendus lus) ; la liste entière si elle n'est pas là. */

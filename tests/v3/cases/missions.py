@@ -1915,6 +1915,7 @@ _SRCH_REG = """missions:
   - { id: X-501A, family: TESTREG, title: Première mission, origin: Base Test (XTST), folder: X_REG/X-501A, files: [missionX-501A.yaml] }
   - { id: X-502A, family: TESTREG, title: Deuxième mission, folder: X_REG/X-502A, files: [missionX-502A.yaml] }
   - { id: X-503A, family: TESTREG, title: Troisième mission, origin: Base Nord (XNRD), folder: X_REG/X-503A, files: [missionX-503A.yaml] }
+  - { id: X-504A, family: TESTREG, title: Quatrième mission, origin: Base Sud (XSUD), folder: X_REG/X-504A, files: [missionX-504A.yaml] }
 """
 _SRCH_501 = """mission: { id: X-501A, type: SAR }
 title: Première mission
@@ -1927,8 +1928,10 @@ title: Deuxième mission
 detailed_description: |-
   Une description inventée qui passe par Clermont-Ferrand, ville citée ici seulement.
 """
+# SOG-0365 (arbitrage du 15/11) : X-503A a son fichier dans l'arbre de l'appareil, pas encore lu (vide : hors de l'index) ; X-504A n'a
+# aucun fichier
 _SRCH_TEXTS = [['missions/mission_registry.yaml', _SRCH_REG], ['missions/X_REG/X-501A/missionX-501A.yaml', _SRCH_501],
-               ['missions/X_REG/X-502A/missionX-502A.yaml', _SRCH_502]]
+               ['missions/X_REG/X-502A/missionX-502A.yaml', _SRCH_502], ['missions/X_REG/X-503A/missionX-503A.yaml', '']]
 _SRCH_LIST = f"""(() => [...document.querySelectorAll('{M} [data-list] [data-id]')].map(e => [e.dataset.id, e.querySelector('[data-where]')?.dataset.where || '',
   (e.querySelector('[data-where]')?.textContent || '').trim()]))()"""
 
@@ -1967,10 +1970,12 @@ def n48(c):
         c.eq([x[:2] for x in c.js(_SRCH_LIST)], [['X-502A', 'description']], f'« {text} »: the town of the description, any case, hyphen or space',
              what=text)
     _type(c, q, 'xnrd')
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-503A\"]')", timeout=10000, what='the unread mission')
+    c.eq([x[:2] for x in c.js(_SRCH_LIST)], [['X-503A', 'line']], 'a mission whose file is on the device, not read yet, is found on its registry line', what='xnrd')
+    # SOG-0365, le pendant : une ligne sans fichier sur l'appareil n'est pas proposée
+    _type(c, q, 'xsud')
     c.settle()
-    # SOG-0365 : une mission dont le fichier n'est pas sur l'appareil n'est plus proposée dans la liste ; la ligne « non lue » la compte
-    c.eq(c.count(f'{M} [data-list] [data-id="X-503A"]'), 0, 'a mission not on the device is not offered in the list (SOG-0365)', what='xnrd')
-    c.ok(c.js(f"document.querySelector('{M} [data-unread]')?.dataset.unread") == '1', c.text(f'{M} [data-results]'), 'still counted as not read on this device')
+    c.eq(c.count(f'{M} [data-list] [data-id="X-504A"]'), 0, 'a registry line without its file is not offered (SOG-0365)', what='xsud')
     c.shot('N48_390_list.png')
     c.eq(reqs, [], 'the index is built from the copies on the device: no outgoing request while searching', what='requests')
     # the Registry: the same search
