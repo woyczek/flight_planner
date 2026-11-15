@@ -7834,13 +7834,18 @@ def _d234(c):
     c.js(_STATE_JS)
     c.until("() => !!document.querySelector('.mp-follow') && !document.querySelector('.mp-follow').hidden", timeout=15000, what='the follow-up shows for a started flight')
     c.wait(600)
+    if c.page.viewport_size['width'] < 1000:   # a phone: it starts on ONE line (SOG-0363); opened by its line
+        c.eq(c.js("() => !!document.querySelector('.mp-follow .mp-fl-full')"), False, 'on a phone the follow-up starts folded on one line', what='full')
+        c.js("() => { document.querySelector('[data-follow-toggle]').click(); return true }")
+        c.until("() => !!document.querySelector('.mp-follow .mp-fl-full')", timeout=3000, what='opened by its line')
+        c.wait(500)
     g = c.js("""() => { const r = e => { const q = e.getBoundingClientRect(); return [Math.round(q.left), Math.round(q.top), Math.round(q.right), Math.round(q.bottom)] }, F = document.querySelector('.mp-follow');
       return { follow: r(F), box: r(document.querySelector('.mp-box')), main: r(document.querySelector('.mp-main')), line: F.querySelector('.mp-fl-line').textContent.replace(/\\s+/g, ' ').trim(),
         sec: (F.querySelector('.mp-fl-sec') || {}).textContent || '', cells: F.querySelectorAll('.mp-fl-band > div').length, full: !!F.querySelector('.mp-fl-full') } }""")
     c.ok(g['line'].startswith('LUGEN') and 'min' in g['line'] and '→' in g['line'] and '°' in g['line'], g['line'], 'the closed line: the next point, the time to it, the heading after it')
     c.ok('LUGEN' in g['sec'] and 'NM' in g['sec'] and 'NEPIX' in g['sec'], g['sec'], 'open: NEXT POINT with its time and distance, and the heading that follows')
     c.eq(g['cells'], 3, 'the band has its three cells (descent, planned at the point, safety)', what=str(g))
-    c.ok(g['full'], str(g['full']), 'open by default on a started flight')
+    c.ok(g['full'] or c.page.viewport_size['width'] < 1000, str(g['full']), 'open by default on the column (folded on a phone)')
     wide = c.page.viewport_size['width'] >= 1000
     if wide:
         c.ok(g['follow'][0] >= g['box'][2] - 1 and abs((g['follow'][2] - g['follow'][0]) - 340) <= 2, f"follow {g['follow']} box {g['box']}", 'from 1 000 px: a column of 340 px to the right of the map')
@@ -7974,3 +7979,44 @@ def d238(c):
     n2 = c.js("() => window.__mp.S.data.data.airspaces.length")
     c.ok(n2 >= n0, f'{n2} airspaces', 'the complete answer is shown')
 
+
+@case('D239', 'On a phone (390 × 667) the follow-up leaves the map room and the profile its height (SOG-0363): the map keeps at least half of the useful height whatever is open; ONE panel unfolded below the map at a time (opening the follow-up folds the sheet to its handle, opening the sheet folds the follow-up to its line); the follow-up starts on one line; the tools stay ON the map; the profile, when open, is 180 px high at least', 'D',
+      tags=('maps', 'sheet'), screens=False, designs=('standard',), night=False,
+      rule='SOG-0363 (the user, from his phone, 15 Nov, photo SIG-3b036506ce: « sur petit écran, trop d’infos en même temps rend tout illisible. Le profil vertical n’est plus utilisable, c’est pire en « ouvrant » le volet »): the map was a 60 px band, the follow-up unfolded, the profile under it, the tool row over the first line of the follow-up')
+def d239(c):
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    start = now() - datetime.timedelta(minutes=12)
+    f = _legs_flight(start=start)
+    f['progress'] = {'phase': 'cruise', 'fuelRemainingKg': 2340, 'actual': {'lat': 46.87, 'lon': -1.404, 'at': iso(now()), 'gsKt': 240, 'altFt': 9000, 'source': 'device'}}
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!document.querySelector('.mp-follow') && !document.querySelector('.mp-follow').hidden && !!window.__mp.S.prof", timeout=20000, what='the follow-up and the profile')
+    c.wait(1500)
+    geo = """() => { const r = e => { const q = e.getBoundingClientRect(); return [Math.round(q.top), Math.round(q.bottom), Math.round(q.height)] }, root = document.querySelector('[data-module="maps"]'), S = window.__mp.S, F = document.querySelector('.mp-follow');
+      const tools = [...document.querySelectorAll('button[data-mp]')].filter(b => b.offsetParent && b.getBoundingClientRect().width > 30 && b.getBoundingClientRect().top < document.querySelector('.mp-box').getBoundingClientRect().bottom);
+      return { root: r(root)[2], box: r(document.querySelector('.mp-box')), follow: r(F), full: !!F.querySelector('.mp-fl-full'), pos: S.sh.pos, prof: S.profBox && !S.profBox.hidden ? r(S.profBox)[2] : 0,
+        toolsOut: tools.filter(b => { const q = b.getBoundingClientRect(), bx = document.querySelector('.mp-box').getBoundingClientRect(); return q.top < bx.top - 1 || q.bottom > bx.bottom + 1 }).length, nTools: tools.length } }"""
+    g = c.js(geo)
+    c.eq(g['full'], False, 'the follow-up starts on ONE line', what=str(g))
+    c.ok(g['follow'][2] <= 60, str(g['follow']), 'its line is one line high')
+    c.ok(g['box'][2] >= g['root'] * .5 - 2, f"map {g['box'][2]} of {g['root']}", 'the map keeps at least half of the useful height (folded follow-up, sheet at its default)')
+    c.eq(g['toolsOut'], 0, 'the tools of the map stay ON the map', what=str(g))
+    d0 = c.js("""() => { const S = window.__mp.S, r = e => Math.round(e.getBoundingClientRect().height); return { data: r(S.dataEl), head: r(S.dheadEl), prof: r(S.profBox), strip: r(S.stripEl), notes: r(S.notesEl), pc: r(S.pc), dprof: r(S.dprofEl), body: r(S.dbodyEl) } }""")
+    c.ok(g['pos'] != 'collapsed' and g['prof'] >= 180, str(g) + str(d0), 'the profile, open, is 180 px high at least')
+    # unfolding the follow-up folds the sheet to its handle; the map keeps half
+    c.js("() => { document.querySelector('[data-follow-toggle]').click(); return true }")
+    c.wait(1200)
+    g2 = c.js(geo)
+    c.ok(g2['full'] and g2['pos'] == 'collapsed', str(g2), 'unfolding the follow-up folds the sheet to its handle: one panel open')
+    c.ok(g2['box'][2] >= g2['root'] * .5 - 2, f"map {g2['box'][2]} of {g2['root']}", 'the map keeps at least half of the useful height with the follow-up unfolded')
+    c.eq(g2['toolsOut'], 0, 'the tools stay on the map', what=str(g2))
+    c.shot('D239_standard_follow_open_390x667.png')
+    # opening the sheet folds the follow-up to its line
+    c.js("() => { window.__mp.S.sh.set('default', true); return true }")
+    c.wait(1200)
+    g3 = c.js(geo)
+    c.ok(not g3['full'] and g3['pos'] != 'collapsed', str(g3), 'opening the sheet folds the follow-up to its line')
+    dims = c.js("""() => { const S = window.__mp.S, r = e => Math.round(e.getBoundingClientRect().height); return { pos: S.sh.pos, data: r(S.dataEl), head: r(S.dheadEl), prof: r(S.profBox), strip: r(S.stripEl), notes: r(S.notesEl), pc: r(S.pc), dprof: r(S.dprofEl) } }""")
+    c.ok(g3['box'][2] >= g3['root'] * .5 - 2 and g3['prof'] >= 180, f"map {g3['box'][2]} of {g3['root']}, profile {g3['prof']}, {dims}", 'map at least half and the profile at least 180 px')
+    c.shot('D239_standard_sheet_open_390x667.png')

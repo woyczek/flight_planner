@@ -80,6 +80,8 @@ export function followState(now = Date.now()) {
     stale: st.stale
   };
 }
+/** Un téléphone (sous 1 000 px) : le suivi part replié sur UNE ligne, et un seul panneau est déplié sous la carte à la fois (SOG-0363) ; sur un grand écran, la colonne est dépliée. */
+const phone = () => innerWidth < 1000;
 const mins = m => m < 1 ? '< 1 min' : `${Math.round(m)} min`;
 /** La ligne fermée : toujours lisible (la seconde moitié, le contrôle, est la tranche b). */
 function lineHtml(s) {
@@ -107,7 +109,7 @@ export function followRender() {
   const el = S?.followEl;
   if (!el) return;
   const s = followState(),
-    open = S.followOpen !== false,
+    open = (S.followOpen ??= !phone()) !== false,
     folded = !!S.followFolded;
   let html = '';
   if (s) html = `<button type="button" class="mp-fl-line" data-follow-toggle aria-expanded="${open && !folded}">${lineHtml(s)}${s.gps ? '' : `<span class="mp-fl-gps">${esc(tt(TX.followPlan))}</span>`}<span class="mp-fl-ch" aria-hidden="true">${open && !folded ? '▾' : '▴'}</span></button>${open && !folded ? `<div class="mp-fl-full">${fullHtml(s)}</div>` : ''}`;
@@ -123,9 +125,25 @@ export function followStart() {
   const tick = setInterval(followRender, 15000),
     click = e => {
       if (!e.target.closest('[data-follow-toggle]')) return;
-      S.followOpen = S.followOpen === false;
+      S.followOpen = !(S.followOpen ?? !phone());
+      if (S.followOpen && phone() && S.sh && S.sh.pos !==
+        'collapsed') { // déplier le suivi replie le volet à sa poignée (un seul panneau déplié, SOG-0363)
+        S.sheetBeforeFollow = S.sh.pos;
+        S.sh.set('collapsed', true);
+      } else if (!S.followOpen && phone() && S.sheetBeforeFollow && S.sh?.pos === 'collapsed') { // replié, le volet reprend sa place
+        S.sh.set(S.sheetBeforeFollow, true);
+        S.sheetBeforeFollow = null;
+      }
       followRender();
     };
+  // ouvrir le volet (le profil, un contenu) replie le suivi à sa ligne
+  S.onSheetPos = pos => {
+    if (phone() && pos !== 'collapsed' && S.followOpen) {
+      S.followOpen = false;
+      S.sheetBeforeFollow = null;
+      followRender();
+    }
+  };
   S.followEl?.addEventListener('click', click);
   followRender();
   return () => {

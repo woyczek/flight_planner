@@ -637,8 +637,9 @@ def tap_airspaces(c):
     """Opens the airspaces list: a tap on an empty place of the map under the two airspaces of lib.aero_docs() (retried while
     the seeded base is being read)."""
     mp = c.js(MAP_JS, 'maps')
-    x, y = mp['x'] + 0.577 * mp['w'], mp['y'] + 0.4755 * mp['h']      # off the route, inside the CTA and the TMA
-    for _ in range(10):
+    x = mp['x'] + 0.577 * mp['w']      # off the route, inside the CTA and the TMA; the height of the place follows the shape of the map (a sheet taller by 40 px moves the airspaces)
+    for k in range(10):
+        y = mp['y'] + (0.4755, 0.42, 0.53, 0.38, 0.58)[k % 5] * mp['h']
         c.page.mouse.click(x, y)
         c.wait(700)
         if c.shown('.f-sheet-close'):

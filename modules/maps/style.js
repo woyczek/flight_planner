@@ -18,7 +18,8 @@ export const STYLE = `
 [data-module="maps"] .mp-fl-a{flex:1 1 auto;min-width:0}
 [data-module="maps"] .mp-fl-gps{flex:none;font-weight:400;font-size:13px;color:var(--sog-warn,#7d4e00)}
 [data-module="maps"] .mp-fl-ch{flex:none;color:var(--sog-muted);font-size:14px}
-[data-module="maps"] .mp-fl-full{padding:0 14px 12px;overflow:auto;max-height:42vh}
+[data-module="maps"] .mp-follow{max-height:50%;min-height:0}
+[data-module="maps"] .mp-fl-full{padding:0 14px 12px;overflow:auto;min-height:0;flex:1 1 auto}
 [data-module="maps"] .mp-fl-sec{border-top:1px solid var(--sog-border);padding:9px 0}
 [data-module="maps"] .mp-fl-k{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--sog-muted)}
 [data-module="maps"] .mp-fl-v{font-weight:600;font-size:17px}
@@ -30,7 +31,7 @@ export const STYLE = `
 @media (min-width:1000px){
   [data-module="maps"] .mp-main{flex-direction:row}
   [data-module="maps"] .mp-main>.mp-box{flex:1 1 0;min-width:0}
-  [data-module="maps"] .mp-follow{width:340px;border-top:0;border-left:1px solid var(--sog-border);overflow:auto}
+  [data-module="maps"] .mp-follow{max-height:none;width:340px;border-top:0;border-left:1px solid var(--sog-border);overflow:auto}
   [data-module="maps"] .mp-fl-line{font-size:15px;flex-wrap:nowrap}
   [data-module="maps"] .mp-fl-full{max-height:none;flex:1}
 }

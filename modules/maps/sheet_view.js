@@ -94,6 +94,7 @@ export function makeSheet(el) {
     onChange: p => {
       keep.sheet = p;
       dataHead(); // nue sur un dessin à la position par défaut seulement
+      S.onSheetPos?.(p); // le suivi du vol se replie quand le volet s'ouvre (SOG-0363)
     },
     onSettle: onSheetSettled
   });
@@ -127,7 +128,9 @@ export function sheetFit() {
     def: cs.getPropertyValue('--f-sheet-default').trim(),
     min: cs.getPropertyValue('--f-sheet-default-min').trim()
   };
-  const half = Math.round(vh / 2);
+  // la carte garde au moins la MOITIÉ de la hauteur utile (SOG-0363) : le suivi du vol (sa ligne) fait partie de ce qui n'est pas la carte
+  const fh = S.followEl && !S.followEl.hidden && innerWidth < 1000 ? S.followEl.offsetHeight : 0,
+    half = Math.max(0, Math.round(vh / 2) - fh);
   let exp = half;
   if (S.dpanel && S.dpanel !== 'weather') {
     const r = document.createRange(),
@@ -137,7 +140,13 @@ export function sheetFit() {
     const own = r.getBoundingClientRect().height + (parseFloat(b.paddingTop) || 0) + (parseFloat(b.paddingBottom) || 0);
     exp = Math.min(half, Math.ceil(S.dheadEl.offsetHeight + panelTop + own));
   }
-  const def = Math.min(Math.round(Math.max(tokLen(S.sheetTok?.def || '30%', vh), tokLen(S.sheetTok?.min || '170px', vh))), exp);
+  let def = Math.min(Math.round(Math.max(tokLen(S.sheetTok?.def || '30%', vh), tokLen(S.sheetTok?.min || '170px', vh))), exp);
+  // un téléphone : le dessin (le profil, la coupe) garde 180 px de hauteur lisible, sinon il ne s'ouvre pas (SOG-0363) — la carte garde sa moitié, la place du dessin est ce qui reste
+  if (innerWidth < 1000 && innerHeight > innerWidth && drawingShown()) { // un téléphone en portrait (en paysage la feuille est une colonne)
+    const need = S.dheadEl.offsetHeight + 184; // 180 px de dessin, et les bordures
+    if (exp >= need) def = Math.max(def, need);
+    else if (S.sh.pos !== 'collapsed') queueMicrotask(() => S?.sh.pos !== 'collapsed' && S.sh.set('collapsed', true));
+  }
   put('--f-sheet-expanded', `${exp}px`);
   put('--f-sheet-expanded-min', '0px');
   put('--f-sheet-default', `${def}px`);
@@ -167,6 +176,7 @@ export function bodyRoom() {
 function onSheetSettled() {
   if (!S) return;
   sheetFit(); // une vue d'une autre taille : la moitié change (un jeton changé relance la feuille, puis ce passage)
+  S.onSheetPos?.(S.sh.pos); // le volet ouvert (par un geste ou par le code) : le suivi du vol se replie (SOG-0363)
   const key = [S.box, S.dbodyEl, S.profBox].map(e => `${e.clientWidth}x${e.clientHeight}`).join(' ') +
     ` ${S.sh.pos} ${document.documentElement.classList.contains('f-land')}`;
   if (key === S.settledKey) return;
