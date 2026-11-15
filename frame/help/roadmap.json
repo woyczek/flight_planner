@@ -4,7 +4,7 @@
  "updated": "2026-11-15",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d6b59af",
+  "organisation": "533bacd",
   "fiches": 366,
   "untranslated": 0,
   "priorities": 310
@@ -2828,7 +2828,7 @@
     {
      "id": "SOG-0365",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Missions au téléphone : « Tirer au sort » tire une mission dont le fichier est introuvable — ne proposer que les missions jouables",
      "en": "Missions on the phone: « Draw at random » draws a mission whose file cannot be found — offer only playable missions",
      "de": "Missionen am Telefon: « Auslosen » zieht eine Mission, deren Datei nicht gefunden wird — nur spielbare Missionen anbieten",
