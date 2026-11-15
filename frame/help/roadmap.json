@@ -4,7 +4,7 @@
  "updated": "2026-11-15",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "69cdcd6",
+  "organisation": "ea38a30",
   "fiches": 366,
   "untranslated": 0,
   "priorities": 310
@@ -5205,11 +5205,12 @@
     {
      "id": "SOG-0362",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Réglages : le point jaune de « Mise en route » ne dit pas ce qui est en défaut ; jeton GitLab : prévenir 5 jours avant, plus fort la veille, plus fort encore expiré",
      "en": "Settings: the yellow dot on « Getting started » does not say what is wrong; GitLab token: warn 5 days before, louder the day before, louder still once expired",
      "de": "Einstellungen: der gelbe Punkt bei « Erste Schritte » sagt nicht, was fehlt; GitLab-Token: 5 Tage vorher warnen, am Vortag deutlicher, abgelaufen noch deutlicher",
-     "es": "Ajustes: el punto amarillo de « Puesta en marcha » no dice qué falla; token de GitLab: avisar 5 días antes, más fuerte la víspera, más aún caducado"
+     "es": "Ajustes: el punto amarillo de « Puesta en marcha » no dice qué falla; token de GitLab: avisar 5 días antes, más fuerte la víspera, más aún caducado",
+     "test": true
     }
    ]
   },
