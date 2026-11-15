@@ -8783,3 +8783,68 @@ def a244(c):
     lost = c.js("[...document.querySelector('[data-card=\"sync\"]').querySelectorAll('[data-sync], [data-sync] dt, [data-sync] dd, [data-sync-head], [data-sync-head] *, [data-sync-timings-box], [data-sync-timings-box] *, [data-queue], [data-queue] *, [data-pushed-box], [data-pushed-box] *')].filter(e => !e.__keep).length")
     c.eq(lost, 0, 'the same state announced again replaces no node of the card', what='replaced nodes')
     c.check_errors()
+
+
+@case('A245', "A request limit that LASTS (three waits in a row with no successful read between them) adds a clue to the band and to the state block — « this token may be shared by several devices » — with a link to Settings › Data access; a limit that has just begun says nothing of it; the clue is not redrawn every second (SOG-0367)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=True, phone=True,
+      rule="SOG-0367 (the ergonomist, after SOG-0360: the GitLab counter is the TOKEN OWNER's, a project token serves several devices; the user waited 115 to 172 s): the guard counts the waits of a row (`streak`, back to 0 at a successful read), the status says `rateLimit.lasting` from three, the band and the state block add the clue (a CLUE, « peut-être », never a statement) and a link to the card that sets the token; the first wait says nothing of it; the clue and the countdown redraw nothing each second (SOG-0359 kept); when the limit ends the clue goes")
+def a245(c):
+    lang = c.lang
+    T = lambda k: tx('frame/app.js', k, lang, after='limited: [')
+    state = {'head': 'c1', 'files': {'sia/base/a.json': 'ba', 'root.json': 'br'}, 'blob429': 99}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        rest = u.path.split('/api/v4/projects/grp%2Fdata', 1)[-1]
+        hdr = {'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Link, Retry-After', 'Content-Type': 'application/json'}
+        if req.method == 'OPTIONS':
+            return route.fulfill(status=204, headers={**hdr, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*'})
+        if rest.endswith('/repository/branches/main'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps({'name': 'main', 'commit': {'id': state['head']}}))
+        if rest.endswith('/repository/tree'):
+            return route.fulfill(status=200, headers=hdr, body=json.dumps([{'id': sha, 'name': p.split('/')[-1], 'type': 'blob', 'path': p, 'mode': '100644'} for p, sha in sorted(state['files'].items())]))
+        if '/repository/blobs/' in rest:
+            if state['blob429'] > 0:
+                state['blob429'] -= 1
+                return route.fulfill(status=429, headers={**hdr, 'Retry-After': '1'}, body='{}')
+            return route.fulfill(status=200, headers={**hdr, 'Content-Type': 'text/plain'}, body='{"zone":"a"}')
+        return route.fulfill(status=404, headers=hdr, body='{}')
+    c.context.route(re.compile(r'https://gitlab\.test/'), handler)
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/data', 'branch': 'main', 'token': 'glpat-test'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-11-14T08:00:00Z'}, 'cache']]
+    c.open('settings', docs=LEVEL3 + [['device/usages.json', {'devices': True}, 'cache']] + keys, wait=False)
+    c.until("!!document.querySelector('[data-card=\"status\"]') && !!window.FrameData", timeout=25000, what='the Settings screen')
+    c.wait(2500)
+    c.js("""(() => { window.__ad = FrameData.adapter({ id: 'a243', reads: ['sia/'] }); window.__ad.read('sia/base/a.json', { policy: 'reference', wait: true }).catch(() => null);
+      window.__removed = []; const root = document.getElementById('fView');
+      new MutationObserver(ms => { for (const m of ms) for (const n of m.removedNodes) if (n.nodeType === 1 && !n.closest?.('#fLimit')) window.__removed.push(n.tagName + (n.dataset?.card ? '[' + n.dataset.card + ']' : '')) }).observe(root, { childList: true, subtree: true });
+      return 1 })()""")
+    for _ in range(60):
+        if c.js("!document.getElementById('fLimit').hidden"):
+            break
+        c.wait(250)
+    c.ok(c.js("!document.getElementById('fLimit').hidden"), '', 'the limit is on')
+    first = c.js("({ hint: !!document.querySelector('#fLimit [data-limit-hint]'), row: !!document.querySelector('[data-card=status] li[data-k=limit-hint]') })")
+    c.eq(first, {'hint': False, 'row': False}, 'the first wait says nothing of a lasting limit', what='no clue yet')
+    for _ in range(100):
+        if c.js("!!document.querySelector('#fLimit [data-limit-hint]')"):
+            break
+        c.wait(250)
+    got = c.js("""() => ({ band: document.querySelector('#fLimit [data-limit-hint]')?.textContent || '', href: document.querySelector('#fLimit [data-limit-hint] a')?.getAttribute('href') || '',
+                          row: document.querySelector('[data-card=status] li[data-k=limit-hint]')?.textContent || '', h: document.querySelector('#fLimit [data-limit-hint] a')?.getBoundingClientRect().height || 0 })""")
+    c.ok(norm(T('lasting')) in norm(got['band']) and norm(T('lastingGo')) in norm(got['band']), got['band'], 'the band says the limit lasts and names the card where the token is set')
+    c.ok(norm(T('lasting')) in norm(got['row']), got['row'], 'the state block says it too')
+    c.eq(got['href'], '#settings?card=access', 'the link opens the card of the access', what='link')
+    c.ok(got['h'] >= 43.5, got['h'], 'the link is a finger target (44 px)')
+    c.js("window.__removed.length = 0")
+    c.wait(3500)
+    c.eq(c.js("window.__removed.slice(0, 6)"), [], 'three seconds of countdown with the clue shown: no node of the screen replaced outside the band', what='no redraw')
+    c.shot(f'A245_{c.width}_{lang}_delivered.png')
+    # the limit ends: a read succeeds, the clue goes with the band
+    state['blob429'] = 0
+    for _ in range(120):
+        if c.js("document.getElementById('fLimit').hidden"):
+            break
+        c.wait(250)
+    c.eq(c.js("({ band: document.getElementById('fLimit').hidden, hint: !!document.querySelector('#fLimit [data-limit-hint]'), row: !!document.querySelector('[data-card=status] li[data-k=limit-hint]') })"), {'band': True, 'hint': False, 'row': False}, 'the limit has ended: no band, no clue', what='ended')
+    c.check_errors()

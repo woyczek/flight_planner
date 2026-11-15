@@ -2255,6 +2255,19 @@ html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
 .f-limit[hidden] {
   display: none
 }
+/* la piste quand la limite dure (SOG-0367) : sur sa ligne, avec un lien assez haut pour un doigt */
+.f-limit [data-limit-hint] {
+  display: block
+}
+.f-limit a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline
+}
 html.f-limited .f-view {
   margin-top: var(--f-limit-h, 0px)
 }

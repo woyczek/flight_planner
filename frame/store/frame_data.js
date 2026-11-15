@@ -189,6 +189,7 @@
   const isNewer = (a, b) => instantOf(stampOf(a)) > instantOf(stampOf(b));
   /** La fiche a est au moins aussi récente que b : à égalité d'instant, a (la locale) gagne. */
   const notOlder = (a, b) => !isNewer(b, a);
+  const LASTING_WAITS = 3; // une limite de requêtes DURE après trois attentes de suite sans lecture réussie entre elles (SOG-0367)
   const STAMPS = ['updated_at', 'updatedAt'];
   const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
   /** JSON canonique : clés triées à tous les niveaux, pour comparer deux valeurs sans regarder l'ordre des clés ni la mise en forme. */
@@ -489,7 +490,8 @@
       rateLimit: (w => w ? {
         who: cfg.transport.id === 'github' ? 'GitHub' : 'GitLab',
         until: w.until,
-        secs: Math.max(1, Math.ceil((w.until - Date.now()) / 1000))
+        secs: Math.max(1, Math.ceil((w.until - Date.now()) / 1000)),
+        lasting: w.streak >= LASTING_WAITS // la limite DURE : trois attentes de suite sans lecture réussie entre elles (SOG-0367)
       } : null)(cfg.transport?.limit?.waiting?.()),
       // SOG-0279 : `pending` ne compte que ce qui part avec l'envoi groupé ; `held`, le vol en cours retenu jusqu'à son geste ; `nextSendAt` : l'instant de l'envoi groupé (0 : rien d'armé)
       pending: pend.filter(p => !isHeld(p.path)).length,
@@ -544,7 +546,8 @@
     const nature = JSON.stringify({
       ...s,
       rateLimit: s.rateLimit ? {
-        who: s.rateLimit.who
+        who: s.rateLimit.who,
+        lasting: s.rateLimit.lasting
       } : null
     });
     if (nature === lastEmitted) return;

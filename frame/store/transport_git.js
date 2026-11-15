@@ -137,6 +137,7 @@
       info = {
         waits: 0,
         waitedS: 0,
+        streak: 0, // les attentes de SUITE : aucune réponse réussie entre elles (SOG-0367 : une limite qui dure, le jeton sert peut-être à plusieurs appareils)
         last: null
       };
     let pause = null, // { until, secs, status } : la pause de toutes les demandes
@@ -219,7 +220,9 @@
         await acquire(opts);
         try {
           opts.onStart?.();
-          return await call(url, opts);
+          const r = await call(url, opts);
+          info.streak = 0; // une réponse réussie : la limite ne « dure » plus
+          return r;
         } catch (e) {
           if (!(e?.rateLimited || (opts.suspectLimit && e?.unreachable))) throw e;
           info.last = {
@@ -238,7 +241,10 @@
             until = Date.now() + secs * 1000;
           if (!pause || until > pause
             .until) { // la pause est celle de TOUTES les demandes ; une pause déjà plus longue n'est pas raccourcie
-            if (!pause) info.waits++;
+            if (!pause) {
+              info.waits++;
+              info.streak++;
+            }
             info.waitedS += pause ? Math.max(0, Math.ceil((until - pause.until) / 1000)) : secs;
             pause = {
               until,
@@ -263,8 +269,11 @@
       info,
       sleep,
       onLimit: null,
-      /** La pause en cours : { until, secs, status } ou null. */
-      waiting: () => pause && pause.until > Date.now() ? pause : null,
+      /** La pause en cours : { until, secs, status, streak } ou null ; streak : le nombre d'attentes de suite sans lecture réussie entre elles. */
+      waiting: () => pause && pause.until > Date.now() ? {
+        ...pause,
+        streak: info.streak
+      } : null,
       /** Les demandes qui attendent leur tour (cadence ou pause). */
       queued: () => queue.length
     };

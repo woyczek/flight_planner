@@ -449,6 +449,17 @@
       limited: ['{who} limite les requêtes : reprise dans {n} s', '{who} is limiting requests: resuming in {n} s',
         '{who} begrenzt die Anfragen: Fortsetzung in {n} s', '{who} limita las solicitudes: se reanuda en {n} s'
       ],
+      // SOG-0367 : la limite DURE (trois attentes de suite sans lecture réussie entre elles) : une PISTE, pas une affirmation — le compteur du dépôt est celui de l'utilisateur du jeton, et un jeton de projet sert souvent
+      // plusieurs appareils ; `lastingGo` est le titre de la carte où l'on règle le jeton (Réglages › Accès aux données)
+      lasting: [
+        'La limite dure : ce jeton sert peut-être à plusieurs appareils — un jeton par appareil, ou un jeton renouvelé, la lève.',
+        'The limit is lasting: this token may be shared by several devices — one token per device, or a renewed token, lifts it.',
+        'Die Begrenzung hält an: Dieses Token wird vielleicht von mehreren Geräten genutzt — ein Token pro Gerät oder ein erneuertes Token hebt sie auf.',
+        'El límite persiste: quizá este token se comparta entre varios dispositivos — un token por dispositivo, o un token renovado, lo levanta.'
+      ],
+      lastingGo: ['Réglages › Accès aux données', 'Settings › Data access', 'Einstellungen › Datenzugang',
+        'Ajustes › Acceso a los datos'
+      ],
       offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión'],
       // le lanceur du poste ne répond plus (le réseau n'y est pour rien) : dit comme cela, pas « hors ligne » (SOG-0208)
       launcherLost: ['Lanceur injoignable', 'Launcher not answering', 'Starter antwortet nicht', 'Lanzador sin respuesta'],
@@ -2449,6 +2460,12 @@
       go: s.conflicts ? '#conflicts' : s.lastError === 'invalid repository address' ? 'card:access' : 'card:sync,usages',
       attn: ATTENTION.has(syncState(s)[0])
     });
+    // la limite dure (SOG-0367) : une ligne de plus, une piste, qui mène à la carte où l'on règle le jeton
+    if (s?.rateLimit?.lasting) items.push({
+      k: 'limit-hint',
+      text: t(T.sync.lasting),
+      go: 'card:access'
+    });
     if (launcherState() === 'down') items.push({
       k: 'launcher-down',
       text: t(T.info.launcherDown),
@@ -2981,6 +2998,16 @@
     fitStale(); // le texte de la synchronisation a changé : le cartouche se remet à sa taille
   }
   let limitUntil = 0; // la fin de l'attente déjà annoncée par une note (une seule note par attente)
+  /** Le navigateur n'ancre pas le défilement (Safari sur téléphone : la propriété n'existe pas ; ou l'ancrage est coupé sur la page). */
+  const scrollAnchoringOff = () => {
+    try {
+      return !('overflowAnchor' in document.documentElement.style) || getComputedStyle(document.scrollingElement || document
+        .documentElement).overflowAnchor === 'none';
+    } catch {
+      return false;
+    }
+  };
+
   function paintLimit(s) {
     const bar = $('fLimit');
     if (!bar) return;
@@ -2990,13 +3017,42 @@
         who: s.rateLimit.who,
         n: s.rateLimit.secs
       }) : expired;
-    if (bar.textContent !== text) bar.textContent = text;
+    // la bande a deux parties posées par ce code : la phrase (son compte à rebours est écrit en place) et, quand la limite DURE, la piste avec son lien (SOG-0367) ; rien n'est réécrit que si sa valeur change
+    let tx = bar.querySelector('[data-limit-t]');
+    if (!tx) {
+      tx = document.createElement('span');
+      tx.dataset.limitT = '';
+      bar.replaceChildren(tx);
+    }
+    if (tx.textContent !== text) tx.textContent = text;
+    let hint = bar.querySelector('[data-limit-hint]');
+    if (s.rateLimit?.lasting) {
+      if (!hint) {
+        hint = document.createElement('span');
+        hint.dataset.limitHint = '';
+        const a = document.createElement('a');
+        a.href = '#settings?card=access';
+        hint.append(document.createTextNode(''), a);
+        bar.append(hint);
+      }
+      const say = t(T.sync.lasting) + ' ',
+        go = t(T.sync.lastingGo);
+      if (hint.firstChild.nodeValue !== say) hint.firstChild.nodeValue = say;
+      if (hint.lastChild.textContent !== go) hint.lastChild.textContent = go;
+    } else if (hint) hint.remove();
     if (bar.dataset.level !== (expired ? 'expired' : '')) expired ? bar.dataset.level = 'expired' : delete bar.dataset.level;
     if (bar.hidden !== !text) bar.hidden = !text;
     // la vue est poussée de la hauteur de la bande (jamais recouverte) : la hauteur change avec la langue et la largeur (une ou deux lignes)
     const h = text ? `${bar.offsetHeight}px` : '0px',
       root = document.documentElement;
-    if (root.style.getPropertyValue('--f-limit-h') !== h) root.style.setProperty('--f-limit-h', h);
+    if (root.style.getPropertyValue('--f-limit-h') !== h) {
+      const was = parseFloat(root.style.getPropertyValue('--f-limit-h')) || 0,
+        now = text ? bar.offsetHeight : 0;
+      root.style.setProperty('--f-limit-h', h);
+      // la bande qui paraît, disparaît ou GRANDIT (la piste d'une limite qui dure : SOG-0367) pousse la vue de la différence : sur un navigateur sans ancrage du défilement (Safari sur téléphone, SOG-0342) ce qu'on lit glisse
+      // sous le doigt ; le défilement est ajusté de la même quantité. Là où le navigateur ancre lui-même, il ne l'est pas (il compterait deux fois).
+      if (now !== was && window.scrollY > 0 && scrollAnchoringOff()) scrollBy(0, now - was);
+    }
     if (root.classList.contains('f-limited') !== !!text) root.classList.toggle('f-limited', !!text);
     if (s.rateLimit && s.rateLimit.until !== limitUntil) {
       limitUntil = s.rateLimit.until;
