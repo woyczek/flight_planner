@@ -624,7 +624,7 @@
         ck('limite : l’attente est dite pendant qu’elle dure (waiting : secondes, statut 429) et finie ensuite', !!during && during.secs === 1 && during.status === 429 && L.waiting() === null && waits.includes(1) && waits.at(-1) === 0, JSON.stringify([during, waits]));
         ck('limite : la lecture REPREND — les pages 1 à 3 lues une fois, la page 4 deux fois, rien ne recommence de zéro', [1, 2, 3].every(n => G.st.pageHits[n] === 1) && G.st.pageHits[4] === 2 && G.st.pageHits[7] === 1, JSON.stringify(G.st.pageHits));
         ck('limite : ce qui a été lu est gardé pour le diagnostic (attentes, secondes, statut, Retry-After lisible)', L.info.waits === 1 && L.info.waitedS === 1 && L.info.last?.status === 429 && L.info.last?.retryAfterS === 1 && L.info.last?.source === 'retry-after', JSON.stringify(L.info));
-        ck('limite : une attente seule n’est pas une limite qui DURE (SOG-0367) — streak 1 pendant l’attente, 0 dès qu’une réponse réussit', during?.streak === 1 && L.info.streak === 0, JSON.stringify([during?.streak, L.info.streak]));
+        ck('limite : une attente seule n’est pas une limite qui DURE (SOG-0360) — streak 1 pendant l’attente, 0 dès qu’une réponse réussit', during?.streak === 1 && L.info.streak === 0, JSON.stringify([during?.streak, L.info.streak]));
         // (b) Retry-After illisible (CORS) : 60 s par défaut, doublé (ici 1 s, 2 s)
         fresh();
         L.info.waits = 0;
@@ -712,7 +712,7 @@
               patient: true
             });
           ck('lecture patiente : la même limite est attendue jusqu’au bout (trois attentes) et le fichier est rendu — jamais « absent »', typeof txt === 'string' && Date.now() - t0 >= 2500 && L.info.waits >= 3, `${Date.now() - t0} ms`);
-          ck('lecture patiente : trois attentes de suite sans réponse réussie entre elles — la limite DURE (streak 3) jusqu’à la première réponse réussie, qui la remet à 0 (SOG-0367)', L.info.streak === 0 && L.info.waits >= 3, JSON.stringify(L.info));
+          ck('lecture patiente : trois attentes de suite sans réponse réussie entre elles — la limite DURE (streak 3) jusqu’à la première réponse réussie, qui la remet à 0 (SOG-0360)', L.info.streak === 0 && L.info.waits >= 3, JSON.stringify(L.info));
           // abandonnée pendant l'attente : la requête s'arrête, l'attente aussi
           G.st.blobLimit = 50;
           const ctl = new AbortController(),

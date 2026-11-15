@@ -449,7 +449,7 @@
       limited: ['{who} limite les requêtes : reprise dans {n} s', '{who} is limiting requests: resuming in {n} s',
         '{who} begrenzt die Anfragen: Fortsetzung in {n} s', '{who} limita las solicitudes: se reanuda en {n} s'
       ],
-      // SOG-0367 : la limite DURE (trois attentes de suite sans lecture réussie entre elles) : une PISTE, pas une affirmation — le compteur du dépôt est celui de l'utilisateur du jeton, et un jeton de projet sert souvent
+      // SOG-0360 : la limite DURE (trois attentes de suite sans lecture réussie entre elles) : une PISTE, pas une affirmation — le compteur du dépôt est celui de l'utilisateur du jeton, et un jeton de projet sert souvent
       // plusieurs appareils ; `lastingGo` est le titre de la carte où l'on règle le jeton (Réglages › Accès aux données)
       lasting: [
         'La limite dure : ce jeton sert peut-être à plusieurs appareils — un jeton par appareil, ou un jeton renouvelé, la lève.',
@@ -2460,7 +2460,7 @@
       go: s.conflicts ? '#conflicts' : s.lastError === 'invalid repository address' ? 'card:access' : 'card:sync,usages',
       attn: ATTENTION.has(syncState(s)[0])
     });
-    // la limite dure (SOG-0367) : une ligne de plus, une piste, qui mène à la carte où l'on règle le jeton
+    // la limite dure (SOG-0360) : une ligne de plus, une piste, qui mène à la carte où l'on règle le jeton
     if (s?.rateLimit?.lasting) items.push({
       k: 'limit-hint',
       text: t(T.sync.lasting),
@@ -3017,7 +3017,7 @@
         who: s.rateLimit.who,
         n: s.rateLimit.secs
       }) : expired;
-    // la bande a deux parties posées par ce code : la phrase (son compte à rebours est écrit en place) et, quand la limite DURE, la piste avec son lien (SOG-0367) ; rien n'est réécrit que si sa valeur change
+    // la bande a deux parties posées par ce code : la phrase (son compte à rebours est écrit en place) et, quand la limite DURE, la piste avec son lien (SOG-0360) ; rien n'est réécrit que si sa valeur change
     let tx = bar.querySelector('[data-limit-t]');
     if (!tx) {
       tx = document.createElement('span');
@@ -3049,7 +3049,7 @@
       const was = parseFloat(root.style.getPropertyValue('--f-limit-h')) || 0,
         now = text ? bar.offsetHeight : 0;
       root.style.setProperty('--f-limit-h', h);
-      // la bande qui paraît, disparaît ou GRANDIT (la piste d'une limite qui dure : SOG-0367) pousse la vue de la différence : sur un navigateur sans ancrage du défilement (Safari sur téléphone, SOG-0342) ce qu'on lit glisse
+      // la bande qui paraît, disparaît ou GRANDIT (la piste d'une limite qui dure : SOG-0360) pousse la vue de la différence : sur un navigateur sans ancrage du défilement (Safari sur téléphone, SOG-0342) ce qu'on lit glisse
       // sous le doigt ; le défilement est ajusté de la même quantité. Là où le navigateur ancre lui-même, il ne l'est pas (il compterait deux fois).
       if (now !== was && window.scrollY > 0 && scrollAnchoringOff()) scrollBy(0, now - was);
     }

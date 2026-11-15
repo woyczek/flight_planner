@@ -8785,9 +8785,9 @@ def a244(c):
     c.check_errors()
 
 
-@case('A245', "A request limit that LASTS (three waits in a row with no successful read between them) adds a clue to the band and to the state block — « this token may be shared by several devices » — with a link to Settings › Data access; a limit that has just begun says nothing of it; the clue is not redrawn every second (SOG-0367)", 'A',
+@case('A245', "A request limit that LASTS (three waits in a row with no successful read between them) adds a clue to the band and to the state block — « this token may be shared by several devices » — with a link to Settings › Data access; a limit that has just begun says nothing of it; the clue is not redrawn every second (SOG-0360)", 'A',
       designs=('standard',), screens=False, night=False, langs4=True, phone=True,
-      rule="SOG-0367 (the ergonomist, after SOG-0360: the GitLab counter is the TOKEN OWNER's, a project token serves several devices; the user waited 115 to 172 s): the guard counts the waits of a row (`streak`, back to 0 at a successful read), the status says `rateLimit.lasting` from three, the band and the state block add the clue (a CLUE, « peut-être », never a statement) and a link to the card that sets the token; the first wait says nothing of it; the clue and the countdown redraw nothing each second (SOG-0359 kept); when the limit ends the clue goes")
+      rule="SOG-0360 (the ergonomist, after SOG-0360: the GitLab counter is the TOKEN OWNER's, a project token serves several devices; the user waited 115 to 172 s): the guard counts the waits of a row (`streak`, back to 0 at a successful read), the status says `rateLimit.lasting` from three, the band and the state block add the clue (a CLUE, « peut-être », never a statement) and a link to the card that sets the token; the first wait says nothing of it; the clue and the countdown redraw nothing each second (SOG-0359 kept); when the limit ends the clue goes")
 def a245(c):
     lang = c.lang
     T = lambda k: tx('frame/app.js', k, lang, after='limited: [')

@@ -12,7 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
-- **A request limit that lasts gives a clue** (SOG-0367): after three waits in a row with no successful read between them, the band and the state block add « this token may be shared by several devices — one token per device, or a renewed token, lifts it », with a link to Settings › Data access; the page no longer slides under the finger when the band grows; noreg A245, A232
+- **A request limit that lasts gives a clue** (SOG-0360): after three waits in a row with no successful read between them, the band and the state block add « this token may be shared by several devices — one token per device, or a renewed token, lifts it », with a link to Settings › Data access; the page no longer slides under the finger when the band grows; noreg A245, A232
 - **Map on a phone: the card of a space is visible** (SOG-0364, « la fiche de l'espace est invisible, cachée par du blanc, sur le côté de la pile d'espaces »): the stack is a band, the list and the card are under it on the whole width, the sheet takes the height of its content (the half of the view at most) and goes to expanded when a card opens; capture at 390 × 667; D240 (red before).
 - **Settings › Synchronisation: nothing is rewritten when the state says the same thing** — the lines and boxes of the card keep their nodes (no blink, no fold closed, no field replaced) (SOG-0359).
 - **A report arrives once, even under a request limit** (SOG-0366): its identifier is fixed when the typing begins and kept with the draft (a retry rewrites the same file), one screen mount at a time, « Envoyer » inert while a send runs; noreg A214

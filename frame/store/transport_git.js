@@ -137,7 +137,7 @@
       info = {
         waits: 0,
         waitedS: 0,
-        streak: 0, // les attentes de SUITE : aucune réponse réussie entre elles (SOG-0367 : une limite qui dure, le jeton sert peut-être à plusieurs appareils)
+        streak: 0, // les attentes de SUITE : aucune réponse réussie entre elles (SOG-0360 : une limite qui dure, le jeton sert peut-être à plusieurs appareils)
         last: null
       };
     let pause = null, // { until, secs, status } : la pause de toutes les demandes
