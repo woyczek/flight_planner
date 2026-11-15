@@ -15,7 +15,8 @@ import {
 import {
   openData,
   endData,
-  bodyRoom
+  bodyRoom,
+  sheetFit
 } from './sheet_view.js';
 import {
   releaseAd
@@ -151,6 +152,13 @@ function fillCard(card, a) {
   if (card.innerHTML !== html) card.innerHTML = html; // écrite seulement si elle change (un second passage ne la fait pas clignoter)
   card.hidden = false;
   showIn(S.dbodyEl, card); // la fiche sous le graphique : le corps de la feuille la montre
+  if (innerWidth < 1000 && innerHeight > innerWidth && S.sh && S.sh.pos ===
+    'default'
+  ) { // un téléphone : la fiche ouverte, la feuille passe à sa position agrandie (la moitié de la vue au plus, SOG-0364 : la fiche n'est plus cachée sous la pile)
+    S.lvFrom = S.sh.pos;
+    sheetFit();
+    S.sh.set('expanded', true);
+  }
   Promise.resolve(S.ctx?.aerodb?.status?.()).catch(() => null).then(st => {
     const el = card.querySelector('.mp-sp-cyc');
     if (el && st?.cycle) el.textContent = `(${String(st.cycle).slice(0, 10)})`;
@@ -220,7 +228,9 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     // avec la ligne « Aussi ici », le plancher de la hauteur laisse la place de la ligne
     // au téléphone la pile reste en haut de la feuille quand la fiche est ouverte (elle ne défile pas avec elle) : elle ne prend alors que le
     // tiers de la hauteur, la fiche garde le reste
-    H = Math.round(narrow && S.lvOpen ? Math.min(150, Math.max(96, bh * .4)) : Math.max(also?.length ? 90 : 110, Math.min(300, bh - 16))),
+    // sur un téléphone la pile reste un bandeau (96 à 150 px, 42 % du corps) : la liste, puis la fiche, sont dessous, toujours atteignables (SOG-0364)
+    H = Math.round(narrow ? Math.min(150, Math.max(64, bh * .42), Math.max(64, bh - 52)) : Math.max(also?.length ? 90 : 110, Math.min(300,
+      bh - 16))),
     T = unl ? 16 : 6,
     B = H - 6,
     y = ft => B - ((Math.min(Math.max(ft, bot), top) - bot) / (top - bot)) * (B - T),

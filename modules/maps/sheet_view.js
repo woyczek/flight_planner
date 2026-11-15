@@ -103,6 +103,9 @@ export function makeSheet(el) {
 const FIT_KEYS = ['--f-sheet-default', '--f-sheet-default-min', '--f-sheet-expanded', '--f-sheet-expanded-min'];
 /** Longueur d'un jeton de la feuille : « 35% » une part de h, « 170px » des pixels (la lecture de frame/lib/sheet.js). */
 const tokLen = (v, h) => String(v).includes('%') ? (parseFloat(v) || 0) * h / 100 : parseFloat(v) || 0;
+/** Un téléphone en portrait montre la liste des espaces d'un point (SOG-0364) : la feuille y grandit avec son contenu jusqu'à la moitié de la vue (la ligne du suivi du vol en moins), la pile en haut, la fiche dessous. */
+const lvOnPhone = () => innerWidth < 1000 && innerHeight > innerWidth && S.dpanel === 'lv';
+const followRoom = () => S.followEl && !S.followEl.hidden && innerWidth < 1000 ? S.followEl.offsetHeight : 0;
 /** La hauteur de ce que la feuille montre (SPEC § 7.1, sixième lecture) : jamais plus haute que son contenu ni que la moitié de la
  *  vue, la carte prend le reste. Un dessin (profil, coupe) remplit le corps, la position agrandie à la moitié de la vue ; un contenu
  *  fait de la position agrandie son en-tête et sa propre hauteur, plafonnée, et de la normale la plus petite de celle du cadre et
@@ -129,8 +132,7 @@ export function sheetFit() {
     min: cs.getPropertyValue('--f-sheet-default-min').trim()
   };
   // la carte garde au moins la MOITIÉ de la hauteur utile (SOG-0363) : le suivi du vol (sa ligne) fait partie de ce qui n'est pas la carte
-  const fh = S.followEl && !S.followEl.hidden && innerWidth < 1000 ? S.followEl.offsetHeight : 0,
-    half = Math.max(0, Math.round(vh / 2) - fh);
+  const half = Math.max(0, Math.round(vh / 2) - followRoom());
   let exp = half;
   if (S.dpanel && S.dpanel !== 'weather') {
     const r = document.createRange(),
@@ -138,7 +140,9 @@ export function sheetFit() {
       panelTop = parseFloat(getComputedStyle(S.dataEl).borderTopWidth) || 0;
     r.selectNodeContents(S.dbodyEl);
     const own = r.getBoundingClientRect().height + (parseFloat(b.paddingTop) || 0) + (parseFloat(b.paddingBottom) || 0);
-    exp = Math.min(half, Math.ceil(S.dheadEl.offsetHeight + panelTop + own));
+    exp = Math.min(half, Math.ceil(S.dheadEl.offsetHeight + panelTop + own) + (lvOnPhone() ? 12 :
+      0
+    )); // la liste des espaces sur un téléphone : sa dernière ligne ne touche pas le bord (bordures de la feuille et de la liste, SOG-0364)
   }
   let def = Math.min(Math.round(Math.max(tokLen(S.sheetTok?.def || '30%', vh), tokLen(S.sheetTok?.min || '170px', vh))), exp);
   // un téléphone : le dessin (le profil, la coupe) garde 180 px de hauteur lisible, sinon il ne s'ouvre pas (SOG-0363) — la carte garde sa moitié, la place du dessin est ce qui reste
@@ -146,6 +150,12 @@ export function sheetFit() {
     const need = S.dheadEl.offsetHeight + 184; // 180 px de dessin, et les bordures
     if (exp >= need) def = Math.max(def, need);
     else if (S.sh.pos !== 'collapsed') queueMicrotask(() => S?.sh.pos !== 'collapsed' && S.sh.set('collapsed', true));
+  }
+  if (
+    lvOnPhone()
+  ) { // les espaces d'un point sur un téléphone : normale = le contenu (les 80 % de la moitié s'il la dépasse), agrandie = la moitié de la vue : deux positions distinctes (SOG-0364)
+    def = exp < half - 2 ? exp : Math.round(half * .8);
+    exp = half;
   }
   put('--f-sheet-expanded', `${exp}px`);
   put('--f-sheet-expanded-min', '0px');
@@ -164,8 +174,9 @@ export function bodyRoom() {
     vh = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
   if (!(vh > 0)) return 0;
   // normale : le jeton du cadre ; agrandie : la moitié de la vue (le plafond de sheetFit) ; l'une et l'autre ne dépendent pas du contenu
-  const def = S.sh.pos === 'expanded' ? Math.round(vh / 2) : Math.round(Math.max(tokLen(S.sheetTok.def || '30%', vh), tokLen(S.sheetTok
-    .min || '170px', vh)));
+  const def = lvOnPhone() ? Math.max(0, Math.round(vh / 2) - followRoom()) : S.sh.pos === 'expanded' ? Math.round(vh / 2) : Math.round(Math
+    .max(tokLen(S.sheetTok.def || '30%', vh), tokLen(S.sheetTok
+      .min || '170px', vh)));
   // ce que la feuille met autour du corps (la poignée, l'en-tête, les bordures) : mesuré, il ne dépend pas du contenu
   const chrome = S.dataEl.getBoundingClientRect().height - S.dbodyEl.getBoundingClientRect().height;
   return S.dbodyEl.clientHeight > 0 && chrome >= 0 ? Math.max(0, def - chrome) : 0;
@@ -369,6 +380,11 @@ export function endData(kind = null) {
   S.dpanel = null;
   S.dkey = null;
   S.dhtml = '';
+  if (S.lvFrom) { // la fiche d'un espace avait agrandi la feuille (téléphone) : elle reprend sa place (SOG-0364)
+    const from = S.lvFrom;
+    S.lvFrom = null;
+    if (S.sh && S.sh.pos !== from) S.sh.set(from, true);
+  }
   if (back) return showWeather();
   show(S.dbodyEl, false);
   S.dbodyEl.textContent = '';

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map on a phone: the card of a space is visible** (SOG-0364, « la fiche de l'espace est invisible, cachée par du blanc, sur le côté de la pile d'espaces »): the stack is a band, the list and the card are under it on the whole width, the sheet takes the height of its content (the half of the view at most) and goes to expanded when a card opens; capture at 390 × 667; D240 (red before).
 - **A report arrives once, even under a request limit** (SOG-0366): its identifier is fixed when the typing begins and kept with the draft (a retry rewrites the same file), one screen mount at a time, « Envoyer » inert while a send runs; noreg A214
 - **Map, follow-up on a phone: room for the map and the profile** (SOG-0363, the tranche a refused by a phone report): the follow-up starts on one line; the map keeps at least half of the useful height; one panel unfolded at a time (unfolding the follow-up folds the sheet to its handle, opening the sheet folds the follow-up to its line); the tools stay on the map; the profile keeps 180 px or does not open; captures at 390 × 667; D239 (red before).
 - **Missions: the list and the draw offer only the missions whose file is on the device; none readable is said (« synchronisez »), never a drawn mission without its file** (missions DECISIONS; noreg N66; SOG-0365).

@@ -8020,3 +8020,37 @@ def d239(c):
     dims = c.js("""() => { const S = window.__mp.S, r = e => Math.round(e.getBoundingClientRect().height); return { pos: S.sh.pos, data: r(S.dataEl), head: r(S.dheadEl), prof: r(S.profBox), strip: r(S.stripEl), notes: r(S.notesEl), pc: r(S.pc), dprof: r(S.dprofEl) } }""")
     c.ok(g3['box'][2] >= g3['root'] * .5 - 2 and g3['prof'] >= 180, f"map {g3['box'][2]} of {g3['root']}, profile {g3['prof']}, {dims}", 'map at least half and the profile at least 180 px')
     c.shot('D239_standard_sheet_open_390x667.png')
+
+
+@case('D240', 'On a phone (390 × 667) the sheet of the spaces at a point shows its list and the card of a space under the stack, in full width, reachable: the stack is a band (96 – 150 px), the first row of the list is visible under it without scrolling, the card opened by a tap on a row is under the stack on the whole width, the sheet is at most half of the view', 'D',
+      tags=('maps', 'sheet'), screens=False, designs=('standard',), night=False,
+      rule='SOG-0364 (the user, from his phone, 14 Nov: « la fiche de l’espace est invisible, cachée par du blanc, sur le côté de la pile d’espaces », photo SIG-c7c4337ccd): « 1 espace sur ce point » in a sheet of 170 px: the stack of 110 px covered the whole body, the list and the card were under it')
+def d240(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof)", timeout=15000, what='the profile')
+    c.wait(1200)
+    _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", 'the list of the space at this point')
+    c.wait(1500)
+    geo = """() => { const q = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)] }, S = window.__mp.S, root = document.querySelector('[data-module="maps"]'),
+      li = document.querySelector('.mp-lv-list li[data-i]'), card = document.querySelector('.mp-sp-card');
+      return { root: root.clientHeight, data: q(S.dataEl)[3] - q(S.dataEl)[1], body: q(S.dbodyEl), stack: q(document.querySelector('.mp-lv-stack')), li: q(li), card: card && !card.hidden ? q(card) : null, scrollTop: S.dbodyEl.scrollTop } }"""
+    g = c.js(geo)
+    c.ok(g['data'] <= g['root'] / 2 + 3, f"sheet {g['data']} of {g['root']}", 'the sheet is at most half of the view')
+    c.ok(g['stack'][3] - g['stack'][1] <= 152, str(g['stack']), 'the stack is a band (150 px at most)')
+    c.ok(g['li'][1] >= g['stack'][3] - 1 and g['li'][3] <= g['body'][3] + 1, f"first row {g['li']} under the stack {g['stack']} in the body {g['body']}", 'the first row of the list is visible under the stack, without scrolling')
+    # a tap on a row opens its card: under the stack, the whole width
+    c.page.touchscreen.tap((g['li'][0] + g['li'][2]) / 2, (g['li'][1] + g['li'][3]) / 2)
+    c.until("() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", timeout=6000, what='the card opens')
+    c.wait(900)
+    g2 = c.js(geo)
+    k = g2['card']
+    c.ok(k and k[1] >= g2['stack'][3] - 1 and k[0] <= g2['body'][0] + 24 and k[2] >= g2['body'][2] - 24, f"card {k} stack {g2['stack']} body {g2['body']}", 'the card is under the stack on the whole width (not beside it)')
+    c.ok(g2['data'] <= g2['root'] / 2 + 3, f"sheet {g2['data']} of {g2['root']}", 'the sheet stays at most half of the view')
+    c.shot('D240_standard_spaces_390x667.png')
+
