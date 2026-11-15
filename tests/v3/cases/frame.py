@@ -8618,4 +8618,42 @@ def a242(c):
     m = c.js("""(() => { const k = document.querySelector('[data-card="company"]'), f = k.querySelector('[data-airline-fiche]'), l = k.querySelector('[data-airlines]');
       return { card: Math.round(k.getBoundingClientRect().height), fiche: f ? Math.round(f.getBoundingClientRect().height) : -1, list: Math.round(l.getBoundingClientRect().height), vh: innerHeight } })()""")
     c.ok(m['fiche'] < 100 and m['card'] < m['vh'], m, 'the details are late: the sheet keeps no reserved place and the card is shorter than the screen (it was 620 px of blank)')
+
+@case('A214', "A report's identifier is fixed ONCE, when the typing begins, and kept with the draft: a screen mounted again, a retry, a second press write the SAME file, never a second report (SOG-0366: four reports arrived twice or three times, same text, same second, different identifiers)", 'A',
+      designs=('standard',), screens=False, night=False, langs4=False, phone=True,
+      rule="SOG-0366 (the user, on his phone, under a request limit): the identifier was made at each send (and again when the text was kept « not sent »), so a send that ran twice (a screen redrawn and mounted again, a retry) wrote two files for one text; now the draft carries its identifier from the first keystroke (device/signaler.json), the send uses it, a text kept « not sent » keeps it, a new draft starts after a success; « Envoyer » does nothing while a send runs, whatever the number of times the screen has been mounted (one lock for the page)")
+def a214(c):
+    sid_re = re.compile(r'^SIG-[0-9a-f]{10}$')
+    store_js = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const g = r.result.transaction('docs').objectStore('docs').get('device/signaler.json'); g.onsuccess = () => res(g.result ? JSON.parse(g.result.text) : null) } })"""
+    keys_js = """() => new Promise(res => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const q = r.result.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result.filter(k => /signalements\/SIG-[0-9a-f]{10}\.json$/.test(String(k)))) } })"""
+    c.open('signaler', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen')
+    c.page.fill('[data-title]', 'Le bouton reste gris')
+    c.page.fill('[data-text]', 'Sous limite, en triple.')
+    c.wait(600)
+    d0 = (c.js(store_js) or {}).get('draft', {})
+    c.ok(sid_re.match(d0.get('id', '')), d0, 'the identifier is made when the typing begins and kept with the draft')
+    # the screen is mounted again (a redraw): the same draft, the same identifier
+    c.js("location.hash = '#fuel'")
+    c.wait(800)
+    c.js("location.hash = '#signaler'")
+    c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-title]').value === 'Le bouton reste gris'", timeout=20000, what='the screen mounted again')
+    c.eq((c.js(store_js) or {}).get('draft', {}).get('id'), d0['id'], 'a screen mounted again keeps the draft and its identifier', what='same id')
+    # two presses: ONE report, the file of the identifier
+    c.js("(() => { const b = document.querySelector('[data-form] [data-send]'); b.click(); b.click() })()")
+    for _ in range(60):
+        keys = c.js(keys_js)
+        if keys:
+            break
+        c.wait(250)
+    c.wait(800)
+    keys = c.js(keys_js)
+    c.eq(keys, [f"pilot/ABC/signalements/{d0['id']}.json"], 'the report is the file of the identifier fixed at the typing (two presses: one file)', what='file')
+    c.eq((c.js(store_js) or {}).get('draft', {}).get('id', 'x'), '', 'after a success the next draft starts without an identifier (it will have its own)', what='renewed')
+    # the screen mounted again left no listener behind: the next draft is written by the current screen only, with its own identifier
+    c.page.fill('[data-title]', 'Autre')
+    c.page.fill('[data-text]', 'Un autre texte.')
+    c.wait(600)
+    d1 = (c.js(store_js) or {}).get('draft', {})
+    c.ok(sid_re.match(d1.get('id', '')) and d1['id'] != d0['id'], [d0, d1], 'a new draft has its own identifier')
     c.check_errors()

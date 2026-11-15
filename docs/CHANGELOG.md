@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **A report arrives once, even under a request limit** (SOG-0366): its identifier is fixed when the typing begins and kept with the draft (a retry rewrites the same file), one screen mount at a time, « Envoyer » inert while a send runs; noreg A214
 - **Map, follow-up on a phone: room for the map and the profile** (SOG-0363, the tranche a refused by a phone report): the follow-up starts on one line; the map keeps at least half of the useful height; one panel unfolded at a time (unfolding the follow-up folds the sheet to its handle, opening the sheet folds the follow-up to its line); the tools stay on the map; the profile keeps 180 px or does not open; captures at 390 × 667; D239 (red before).
 - **Missions: the list and the draw offer only the missions whose file is on the device; none readable is said (« synchronisez »), never a drawn mission without its file** (missions DECISIONS; noreg N66; SOG-0365).
 - **The screens no longer blink during a request limit** (SOG-0359): the countdown redraws only its own number, the sync state announces only a change of nature; noreg A213

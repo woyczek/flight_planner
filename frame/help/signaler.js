@@ -301,6 +301,10 @@
   const multi = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').replace(/\r\n?/g, '\n').trim()
     .slice(0, n) : '';
   const now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  let MOUNTED =
+    null; // le montage en cours : un nouveau montage retire les écouteurs du précédent, quel que soit l'élément où il les avait posés
+  let SENDING =
+    false; // un seul envoi à la fois, quel que soit le nombre de fois que l'écran est monté (un écran qui se redessine ne double rien : SOG-0366)
   const rid = () => {
     const a = new Uint8Array(5);
     crypto.getRandomValues(a);
@@ -366,7 +370,8 @@
       draft: {
         kind: KINDS.includes(d.kind) ? d.kind : 'bug',
         title: text(d.title, MAX_TITLE),
-        text: multi(d.text, MAX_TEXT)
+        text: multi(d.text, MAX_TEXT),
+        id: SG_ID.test(d.id) ? d.id : '' // l'identifiant du signalement, fixé UNE fois à la saisie (SOG-0366)
       }
     };
   };
@@ -394,7 +399,13 @@
     const {
       t
     } = c;
+    // l'écran est monté de nouveau (une page qui se redessine, un retour, un autre élément de vue) : les écouteurs du montage précédent sont retirés, où qu'ils aient été posés — sinon chaque appui sur
+    // « Envoyer » les faisait tous partir, chacun avec son état et son identifiant, et chaque saisie réécrivait le brouillon de l'ancien montage (SOG-0366 : un signalement en double ou en triple, même texte, même seconde, identifiants différents)
+    MOUNTED?.abort();
+    const mount = new AbortController();
+    MOUNTED = mount;
     const st = await readStore(c);
+    if (mount.signal.aborted) return; // un montage plus récent a pris la place pendant la lecture
     const ui = {
       ch: null, // 'poste' | 'poste-off' | 'pilote' | 'old'
       shots: [], // les fichiers choisis (poste)
@@ -485,12 +496,21 @@
           .paddingBottom)) / lh);
       x.rows = Math.max(ROWS_MIN, Math.min(ROWS_MAX, need));
     };
+    const on = (type, fn) => view.addEventListener(type, fn, {
+      signal: mount.signal
+    }); // les écouteurs de CE montage : retirés quand l'écran est monté de nouveau
     const draft = () => ({
       kind: view.querySelector('input[name="sg-kind"]:checked')?.value || 'bug',
       title: $('[data-title]').value,
       text: $('[data-text]').value
     });
+    /** Le brouillon avec son identifiant : fixé UNE fois, à la première saisie, gardé avec le brouillon ; un envoi, une reprise, un écran remonté réécrivent le MÊME fichier (SOG-0366 : quatre signalements arrivés en double ou en triple). */
+    const withId = d => ({
+      ...d,
+      id: SG_ID.test(st.draft?.id) ? st.draft.id : d.title.trim() || d.text.trim() ? rid() : ''
+    });
     const paint = () => {
+      if (mount.signal.aborted) return; // un montage plus récent a pris la place : celui-ci n'écrit plus rien
       const chk = ui.ch === null;
       $('[data-lead]').textContent = chk ? t(T.checking) : ui.ch === 'pilote' ? t(T.leadPilot) : t(T.leadPost);
       const k = ctxNow(),
@@ -823,8 +843,8 @@
       return id;
     };
     const submit = async () => {
-      if (ui.sending) return;
-      const d = draft();
+      if (ui.sending || SENDING || mount.signal.aborted) return;
+      const d = withId(draft());
       const r = reportOf({
         ...d,
         screen: screenNow(),
@@ -841,7 +861,9 @@
         paint();
         return;
       }
+      r.id = d.id; // l'identifiant fixé à la saisie : une reprise réécrit le même fichier
       ui.sending = true;
+      SENDING = true;
       ui.refusal = null;
       ui.lastSent = {
         sig: sigOf(r),
@@ -849,12 +871,17 @@
       };
       paint();
       let id = false;
-      if (ui.ch === 'poste') id = await sendPost(r, ui.shots);
-      else if (ui.ch === 'pilote') id = await sendPilot(r, ui.pshots);
-      else if (ui.ch === 'poste-off') ui.refusal = {
-        offline: true
-      };
-      ui.sending = false;
+      try {
+        if (ui.ch === 'poste') id = await sendPost(r, ui.shots);
+        else if (ui.ch === 'pilote') id = await sendPilot(r, ui.pshots);
+        else if (ui.ch === 'poste-off') ui.refusal = {
+          offline: true
+        };
+      } finally {
+        // le verrou se rend toujours, même si une lecture de capture ou une écriture lève (Sécurisation : sinon « Envoyer » resterait mort jusqu'au rechargement)
+        ui.sending = false;
+        SENDING = false;
+      }
       if (!id && !ui.refusal?.offline && ui.ch !== 'poste-off' && ui.refusal?.reason !== 'no-write') ui.lastSent =
         null; // refusé net : le même texte peut être renvoyé
       if (id) {
@@ -870,7 +897,8 @@
         st.draft = {
           kind: d.kind,
           title: '',
-          text: ''
+          text: '',
+          id: '' // le signalement suivant aura le sien
         };
         $('[data-title]').value = '';
         $('[data-text]').value = '';
@@ -885,14 +913,15 @@
           keepUnsent = async via => {
             st.unsent.unshift({
               ...r,
-              id: rid(),
+              id: SG_ID.test(r.id) ? r.id : rid(), // le même identifiant : sa reprise réécrira le même fichier
               at: now(),
               via
             });
             st.draft = {
               kind: d.kind,
               title: '',
-              text: ''
+              text: '',
+              id: ''
             };
             $('[data-title]').value = '';
             $('[data-text]').value = '';
@@ -1009,17 +1038,17 @@
       ui.reducing = false;
       paint();
     };
-    view.addEventListener('input', e => {
+    on('input', e => {
       if (e.target.matches('[data-title],[data-text]')) {
         fitText();
-        st.draft = draft();
+        st.draft = withId(draft());
         paint();
         saveStore(c, st);
       }
     });
-    view.addEventListener('change', e => {
+    on('change', e => {
       if (e.target.matches('input[name="sg-kind"]')) {
-        st.draft = draft();
+        st.draft = withId(draft());
         saveStore(c, st);
       } else if (e.target.matches('[data-shots]')) {
         const files = [...e.target.files];
@@ -1044,11 +1073,11 @@
         paint();
       } else if (e.target.matches('[data-wc]')) $('[data-wtext]').style.opacity = e.target.checked ? '' : '.4';
     });
-    view.addEventListener('submit', e => {
+    on('submit', e => {
       e.preventDefault();
       submit();
     });
-    view.addEventListener('click', e => {
+    on('click', e => {
       const b = e.target.closest('[data-take]');
       if (b) take(b.dataset.take);
     });
