@@ -1,11 +1,11 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-14",
+ "updated": "2026-11-15",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1a29d4d",
-  "fiches": 358,
+  "organisation": "98f3492",
+  "fiches": 366,
   "untranslated": 0,
   "priorities": 310
  },
@@ -1613,6 +1613,36 @@
    ]
   },
   {
+   "id": "pilote-carte-telephone",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; téléphone",
+    "en": "Carte ; téléphone",
+    "de": "Carte ; téléphone",
+    "es": "Carte ; téléphone"
+   },
+   "items": [
+    {
+     "id": "SOG-0363",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte au téléphone, vol démarré : le suivi du vol et le profil ne laissent plus de carte, les outils recouvrent le texte",
+     "en": "Map on the phone, flight started: flight following and the profile leave no map, the tools cover the text",
+     "de": "Karte am Telefon, Flug gestartet: Flugverfolgung und Profil lassen keine Karte übrig, die Werkzeuge verdecken den Text",
+     "es": "Mapa en el teléfono, vuelo iniciado: el seguimiento y el perfil no dejan mapa, las herramientas tapan el texto"
+    },
+    {
+     "id": "SOG-0364",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte au téléphone : dans le volet du bas, la fiche d'un espace est cachée à côté de la pile des espaces",
+     "en": "Map on the phone: in the bottom sheet, an airspace's card is hidden beside the airspace stack",
+     "de": "Karte am Telefon: im unteren Blatt ist die Karte eines Luftraums neben dem Luftraumstapel verdeckt",
+     "es": "Mapa en el teléfono: en la hoja inferior, la ficha de un espacio queda oculta junto a la pila de espacios"
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-vol",
    "app": "pilote",
    "label": {
@@ -2782,6 +2812,27 @@
      "de": "Familien: der Kennbuchstabe in den Auswahllisten, und der Untertyp",
      "es": "Familias: la letra del identificador en las listas, y el subtipo",
      "rank": 166
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-telephone",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; téléphone",
+    "en": "Missions ; téléphone",
+    "de": "Missions ; téléphone",
+    "es": "Missions ; téléphone"
+   },
+   "items": [
+    {
+     "id": "SOG-0365",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions au téléphone : « Tirer au sort » tire une mission dont le fichier est introuvable — ne proposer que les missions jouables",
+     "en": "Missions on the phone: « Draw at random » draws a mission whose file cannot be found — offer only playable missions",
+     "de": "Missionen am Telefon: « Auslosen » zieht eine Mission, deren Datei nicht gefunden wird — nur spielbare Missionen anbieten",
+     "es": "Misiones en el teléfono: « Sortear » saca una misión cuyo archivo no se encuentra — proponer solo las jugables"
     }
    ]
   },
@@ -5139,6 +5190,48 @@
    ]
   },
   {
+   "id": "maintenance-reglages-acces",
+   "app": "maintenance",
+   "label": {
+    "fr": "Réglages ; accès",
+    "en": "Réglages ; accès",
+    "de": "Réglages ; accès",
+    "es": "Réglages ; accès"
+   },
+   "items": [
+    {
+     "id": "SOG-0362",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages : le point jaune de « Mise en route » ne dit pas ce qui est en défaut ; jeton GitLab : prévenir 5 jours avant, plus fort la veille, plus fort encore expiré",
+     "en": "Settings: the yellow dot on « Getting started » does not say what is wrong; GitLab token: warn 5 days before, louder the day before, louder still once expired",
+     "de": "Einstellungen: der gelbe Punkt bei « Erste Schritte » sagt nicht, was fehlt; GitLab-Token: 5 Tage vorher warnen, am Vortag deutlicher, abgelaufen noch deutlicher",
+     "es": "Ajustes: el punto amarillo de « Puesta en marcha » no dice qué falla; token de GitLab: avisar 5 días antes, más fuerte la víspera, más aún caducado"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-reglages-telephone",
+   "app": "maintenance",
+   "label": {
+    "fr": "Réglages ; téléphone",
+    "en": "Réglages ; téléphone",
+    "de": "Réglages ; téléphone",
+    "es": "Réglages ; téléphone"
+   },
+   "items": [
+    {
+     "id": "SOG-0361",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages au téléphone, dépôt non synchronisé : les cartes « compagnie » s'étirent sur un écran de vide",
+     "en": "Settings on the phone, repository not synced: the « airline » cards stretch over a screen of empty space",
+     "de": "Einstellungen am Telefon, Repository nicht synchron: die « Gesellschaft »-Karten dehnen sich über einen leeren Bildschirm",
+     "es": "Ajustes en el teléfono, repositorio sin sincronizar: las tarjetas de « compañía » se estiran sobre una pantalla vacía"
+    }
+   ]
+  },
+  {
    "id": "maintenance-suite",
    "app": "maintenance",
    "label": {
@@ -5300,6 +5393,69 @@
      "en": "Base: the United States zone is read for any flight between 51° and 53° N (23 MB for a Paris–Dublin) — its cells cross the antimeridian",
      "de": "Basis: die USA-Zone wird für jeden Flug zwischen 51° und 53° N gelesen (23 MB für Paris–Dublin) — ihre Zellen queren den Antimeridian",
      "es": "Base: la zona de Estados Unidos se lee para todo vuelo entre 51° y 53° N (23 MB para un París–Dublín) — sus celdas cruzan el antimeridiano"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-signalements",
+   "app": "maintenance",
+   "label": {
+    "fr": "cadre ; signalements",
+    "en": "cadre ; signalements",
+    "de": "cadre ; signalements",
+    "es": "cadre ; signalements"
+   },
+   "items": [
+    {
+     "id": "SOG-0366",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Signaler : un même signalement arrive deux ou trois fois dans le dépôt",
+     "en": "Report: the same report reaches the repository two or three times",
+     "de": "Melden: dieselbe Meldung kommt zwei- oder dreimal im Repository an",
+     "es": "Avisar: un mismo aviso llega dos o tres veces al repositorio"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-synchronisation-reglages",
+   "app": "maintenance",
+   "label": {
+    "fr": "cadre ; synchronisation ; Réglages",
+    "en": "cadre ; synchronisation ; Réglages",
+    "de": "cadre ; synchronisation ; Réglages",
+    "es": "cadre ; synchronisation ; Réglages"
+   },
+   "items": [
+    {
+     "id": "SOG-0359",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "BLOQUANT au téléphone : pendant un souci de synchronisation avec GitLab, la page se redessine toutes les secondes (Réglages qui clignote, pages inutilisables)",
+     "en": "BLOCKING on the phone: during a GitLab sync problem the page redraws every second (Settings flickers, pages unusable)",
+     "de": "BLOCKIEREND am Telefon: bei einem GitLab-Synchronisationsproblem wird die Seite jede Sekunde neu gezeichnet (Einstellungen flackern, Seiten unbenutzbar)",
+     "es": "BLOQUEANTE en el teléfono: durante un problema de sincronización con GitLab la página se redibuja cada segundo (Ajustes parpadea, páginas inutilizables)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-synchronisation-acces",
+   "app": "maintenance",
+   "label": {
+    "fr": "cadre ; synchronisation ; accès",
+    "en": "cadre ; synchronisation ; accès",
+    "de": "cadre ; synchronisation ; accès",
+    "es": "cadre ; synchronisation ; accès"
+   },
+   "items": [
+    {
+     "id": "SOG-0360",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Synchronisation GitLab : le bandeau disait « limite de requêtes » pendant des heures — tout est rentré dans l'ordre en renouvelant le jeton",
+     "en": "GitLab sync: the banner said « request limit » for hours — everything came back after renewing the token",
+     "de": "GitLab-Synchronisation: das Banner meldete stundenlang « Anfragelimit » — nach Erneuern des Tokens war alles wieder in Ordnung",
+     "es": "Sincronización GitLab: el aviso decía « límite de peticiones » durante horas — todo volvió al renovar el token"
     }
    ]
   },
