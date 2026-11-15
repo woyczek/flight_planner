@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-15",
-  "tests": 230,
+  "tests": 231,
   "verdicts": 152
  },
  "apps": [
@@ -3424,6 +3424,20 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T11:54:44Z"
+  },
+  {
+   "id": "SOG-0365",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions au téléphone : « Tirer au sort » tire une mission dont le fichier est introuvable — ne proposer que les missions jouables",
+    "en": "Missions on the phone: « Draw at random » draws a mission whose file cannot be found — offer only playable missions",
+    "de": "Missionen am Telefon: « Auslosen » zieht eine Mission, deren Datei nicht gefunden wird — nur spielbare Missionen anbieten",
+    "es": "Misiones en el teléfono: « Sortear » saca una misión cuyo archivo no se encuentra — proponer solo las jugables"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Missions, « Tirer au sort » plusieurs fois : la mission tirée s'ouvre à chaque fois, plus jamais « fichier introuvable ».",
+   "since": "2026-11-15",
+   "state": "todo",
+   "delivered": "2026-11-15T19:34:42Z"
   }
  ],
  "decisions": [
