@@ -832,3 +832,12 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
   Case A232 (anchoring of the browser switched off to be the phone, the Synchronisation card in the middle of the screen, 20 s of 429: the top of its title stays within 2 px; a shift that lasts
   90 ms or more counts, because a read taken between a DOM change and the next painting is not what the user sees): red before (13 px at the arrival of the error), green after. Not done: the
   bar under the header that says the request limit (V3 Frame, 74defd235) is in the frame; it was not seen to move the page in this rig.
+
+## SOG-0361, the company cards keep the height of their content (15 Nov 2026)
+
+- The user's photos (15 Nov, version 0721a0c, « Lorsque le dépôt n'est pas synchro, l'affichage des settings de compagnie est trop grand »): « Compagnie de cet appareil » and the card above it stretched over more than a screen of blank
+  while the banner said « GitLab limite les requêtes : reprise dans 166 s ». Survey: `keepPlace` (SOG-0342) was not the cause (it only adjusts the scroll). The cause is the reserve of rule 22 (SOG-0218, SOG-0320):
+  `.f-fiche:empty:not([data-settled]) { min-height: 620px }` (and `.f-cos:empty:not([data-settled])`) keeps the place of the chosen airline's sheet before the read, and `data-settled` was set only when the read of the details ENDED:
+  with a repository that waits for its request limit the read never ended and 620 px of blank stayed for ever. Now `airlineLive` (`access.js`) gives the reserve back 3 s at most after the list is drawn from the index
+  (a sheet that arrives later pushes what is below once, which `keepPlace` follows), and in every case when the read ends or fails (the list of the index stays). Case A242 (390, the details of each airline 60 s late: the sheet 620 px and
+  the card taller than the screen before, under 100 px and shorter than the screen after); A183 (the empty sheet keeps no place once the read is done), A140 (the details late: nothing moves), A105, A184 stay green.

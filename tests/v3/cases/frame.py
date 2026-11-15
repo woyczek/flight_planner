@@ -8595,3 +8595,27 @@ def a213(c):
     c.ok(block_before['n'] is not None and r['n'] is not None and int(r['n']) < int(block_before['n']), [block_before, r['n']], 'the state block counts down in place (its number is its own element)')
     c.shot(f'A213_{c.width}_{c.lang}_delivered.png')
     c.check_errors()
+
+
+@case('A242', 'Settings on a phone: when the data repository does not answer (a request limit, a failed sync) the cards of the company keep the height of their content — no reserved place stays for ever (SOG-0361, the user’s photos: two cards stretched over more than a screen of blank)',
+      'A', designs=('standard',), screens=False, phone=True, night=False, tags=('settings',),
+      rule='SOG-0361: `.f-fiche:empty:not([data-settled]) { min-height: 620px }` and `.f-cos:empty:not([data-settled])` reserve the place of the airline sheet and list before the read (rule 22); `data-settled` was set only when the read of the details ENDED, so a repository that does not answer (GitLab 429: the read waits) kept 620 px of blank for ever. The reserve is now given back when the list is drawn and the details are late (3 s at most), and in every case when the read ends or fails')
+def a242(c):
+    docs = LEVEL3 + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+                     ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+                     ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document']]
+    # the details of each airline never come back within the test (the repository waits for its request limit): a read of 60 s
+    c.page.add_init_script("""(() => { const get = IDBObjectStore.prototype.get;
+      IDBObjectStore.prototype.get = function (key) { const q = get.call(this, key);
+        if (!/^airline\\/[a-z0-9_-]+\\/(settings|fleet|themes)\\.json$/.test(String(key))) return q;
+        const late = { get result() { return q.result }, get error() { return q.error } };
+        q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), 60000);
+        q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), 60000);
+        return late } })()""")
+    c.open('settings?card=company', docs=docs, wait=False)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length >= 2", timeout=20000, what='the list of airlines is drawn from the index')
+    c.wait(5000)
+    m = c.js("""(() => { const k = document.querySelector('[data-card="company"]'), f = k.querySelector('[data-airline-fiche]'), l = k.querySelector('[data-airlines]');
+      return { card: Math.round(k.getBoundingClientRect().height), fiche: f ? Math.round(f.getBoundingClientRect().height) : -1, list: Math.round(l.getBoundingClientRect().height), vh: innerHeight } })()""")
+    c.ok(m['fiche'] < 100 and m['card'] < m['vh'], m, 'the details are late: the sheet keeps no reserved place and the card is shorter than the screen (it was 620 px of blank)')
+    c.check_errors()

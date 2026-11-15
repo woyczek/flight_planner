@@ -1723,9 +1723,22 @@
     paintRows(box, first, t, can, prev?.CL || null, n => nounText(view, 'aircraft', n));
     markCurrent(view, now0);
     paintAirlineNotes(env, index.list, can);
+    // la place gardée (règle 22) n'est JAMAIS gardée pour toujours (SOG-0361) : si les détails tardent (un dépôt qui attend sa limite de requêtes), elle est rendue au bout de 3 s au plus ; une fiche qui arrive ensuite pousse ce qui est dessous une fois
+    const settle = () => {
+        for (const h of [box, view.querySelector('[data-airline-fiche]')]) h?.setAttribute('data-settled', '');
+      },
+      late = setTimeout(settle, 3000);
     // 2) les détails de chaque compagnie (et les deux modules) : la ligne grise, la fiche de la compagnie choisie
-    const [rows, [CL, PL], now] = await Promise.all([readAirlines(FD, t, index), libs, nowP]);
+    let got = null;
+    try {
+      got = await Promise.all([readAirlines(FD, t, index), libs, nowP]);
+    } catch {
+      got = null; // la lecture a échoué : la liste d'après l'index reste, la place est rendue
+    }
+    clearTimeout(late);
     if (!view.isConnected || token !== view.__airToken) return;
+    if (!got) return settle();
+    const [rows, [CL, PL], now] = got;
     AIR.set(view, {
       rows,
       CL,
@@ -1739,7 +1752,7 @@
     markCurrent(view, now);
     paintFiche(env);
     // la lecture est finie : la place gardée (règle 22) est rendue quand la liste ou la fiche reste vide (aucune compagnie choisie : SOG-0320)
-    for (const h of [box, view.querySelector('[data-airline-fiche]')]) h?.setAttribute('data-settled', '');
+    settle();
   }
   /** La migration (seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine de data/airline/) et la note sous la liste (le choix pas encore possible, ou aucune compagnie). */
   function paintAirlineNotes(env, list, can) {
