@@ -4,7 +4,7 @@
  "updated": "2026-11-15",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "98f3492",
+  "organisation": "e35d9ba",
   "fiches": 366,
   "untranslated": 0,
   "priorities": 310
@@ -4072,11 +4072,12 @@
     {
      "id": "SOG-0349",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "BLOQUANT au téléphone : la Carte finit avec zéro donnée après avoir coché « Autour du vol » — la base n'est pas lue en entier depuis gitlab.com",
      "en": "BLOCKING on the phone: the Map ends with no data after ticking « Around the flight » — the base is not read in full from gitlab.com",
      "de": "BLOCKIEREND am Telefon: die Karte endet ohne Daten nach dem Ankreuzen von « Um den Flug » — die Basis wird von gitlab.com nicht vollständig gelesen",
-     "es": "BLOQUEANTE en el teléfono: el Mapa acaba sin datos tras marcar « Alrededor del vuelo » — la base no se lee entera desde gitlab.com"
+     "es": "BLOQUEANTE en el teléfono: el Mapa acaba sin datos tras marcar « Alrededor del vuelo » — la base no se lee entera desde gitlab.com",
+     "test": true
     }
    ]
   },
@@ -5388,11 +5389,12 @@
     {
      "id": "SOG-0356",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Base : la zone des États-Unis est lue pour tout vol entre 51° et 53° N (23 Mo pour un Paris–Dublin) — ses cases traversent l'antiméridien",
      "en": "Base: the United States zone is read for any flight between 51° and 53° N (23 MB for a Paris–Dublin) — its cells cross the antimeridian",
      "de": "Basis: die USA-Zone wird für jeden Flug zwischen 51° und 53° N gelesen (23 MB für Paris–Dublin) — ihre Zellen queren den Antimeridian",
-     "es": "Base: la zona de Estados Unidos se lee para todo vuelo entre 51° y 53° N (23 MB para un París–Dublín) — sus celdas cruzan el antimeridiano"
+     "es": "Base: la zona de Estados Unidos se lee para todo vuelo entre 51° y 53° N (23 MB para un París–Dublín) — sus celdas cruzan el antimeridiano",
+     "test": true
     }
    ]
   },

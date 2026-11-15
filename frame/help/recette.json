@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-15",
-  "tests": 228,
+  "tests": 230,
   "verdicts": 152
  },
  "apps": [
@@ -3328,6 +3328,20 @@
    "delivered": "2026-11-14T11:15:43Z"
   },
   {
+   "id": "SOG-0349",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT au téléphone : la Carte finit avec zéro donnée après avoir coché « Autour du vol » — la base n'est pas lue en entier depuis gitlab.com",
+    "en": "BLOCKING on the phone: the Map ends with no data after ticking « Around the flight » — the base is not read in full from gitlab.com",
+    "de": "BLOCKIEREND am Telefon: die Karte endet ohne Daten nach dem Ankreuzen von « Um den Flug » — die Basis wird von gitlab.com nicht vollständig gelesen",
+    "es": "BLOQUEANTE en el teléfono: el Mapa acaba sin datos tras marcar « Alrededor del vuelo » — la base no se lee entera desde gitlab.com"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Carte, LFPO → EIDW : les terrains, les voies et les espaces apparaissent ; coche puis décoche « Autour du vol seulement » : rien ne se vide ; si GitLab limite les requêtes, une ligne dit combien de zones restent à lire et la carte garde ce qu'elle montrait.",
+   "since": "2026-11-15",
+   "state": "todo",
+   "delivered": "2026-11-14T12:24:57Z"
+  },
+  {
    "id": "SOG-0350",
    "app": "pilote",
    "title": {
@@ -3382,6 +3396,20 @@
    "since": "2026-11-14",
    "state": "todo",
    "delivered": "2026-11-14T11:26:29Z"
+  },
+  {
+   "id": "SOG-0356",
+   "app": "maintenance",
+   "title": {
+    "fr": "Base : la zone des États-Unis est lue pour tout vol entre 51° et 53° N (23 Mo pour un Paris–Dublin) — ses cases traversent l'antiméridien",
+    "en": "Base: the United States zone is read for any flight between 51° and 53° N (23 MB for a Paris–Dublin) — its cells cross the antimeridian",
+    "de": "Basis: die USA-Zone wird für jeden Flug zwischen 51° und 53° N gelesen (23 MB für Paris–Dublin) — ihre Zellen queren den Antimeridian",
+    "es": "Base: la zona de Estados Unidos se lee para todo vuelo entre 51° y 53° N (23 MB para un París–Dublín) — sus celdas cruzan el antimeridiano"
+   },
+   "test": "Même essai que SOG-0349 : au téléphone, la Carte de LFPO → EIDW se remplit nettement plus vite qu'avant (elle ne lit plus les 23 Mo des États-Unis).",
+   "since": "2026-11-15",
+   "state": "todo",
+   "delivered": "2026-11-14T11:44:02Z"
   },
   {
    "id": "SOG-0357",
