@@ -8422,11 +8422,13 @@ def a232(c):
     c.wait(300)
     top0 = c.js("Math.round(" + title + ".getBoundingClientRect().top)")
     c.ok(0 < top0 < c.js('innerHeight'), top0, 'the Synchronisation card is in the middle of the screen')
-    c.js("""window.__t0 = %s; window.__run = 0; window.__drift = []; window.__iv = setInterval(() => { const e = document.querySelector('[data-card="sync"] h2'); const d = e ? Math.round(e.getBoundingClientRect().top) - window.__t0 : 0;
-      window.__run = Math.abs(d) > 2 ? window.__run + 1 : 0; if (window.__run === 3) window.__drift.push([Math.round(performance.now()), d]) }, 30)""" % top0)
-    c.wait(20000)
+    c.js("""window.__t0 = %s; window.__since = 0; window.__flag = 0; window.__drift = []; window.__iv = setInterval(() => { const e = document.querySelector('[data-card="sync"] h2'); const d = e ? Math.round(e.getBoundingClientRect().top) - window.__t0 : 0;
+      if (Math.abs(d) > 2) { window.__since = window.__since || performance.now(); if (performance.now() - window.__since >= 400 && !window.__flag) { window.__flag = 1; window.__drift.push([Math.round(performance.now()), d]) } } else { window.__since = 0; window.__flag = 0 } }, 30)""" % top0)
+    # on the state, not on a duration: the error that changes the blocks above has arrived (« Dernière erreur » / « Last error »), then a few seconds more for them to settle
+    c.until("/Dernière erreur|Last error|Letzter Fehler|Último error/.test(document.querySelector('[data-card=\"sync\"] [data-sync]')?.textContent || '')", timeout=90000, what='the error is said in the card')
+    c.wait(4000)
     drift = c.js("(() => { clearInterval(window.__iv); return window.__drift.slice(0, 4) })()")
-    c.eq(drift, [], 'for 20 s of waits and failures the title of the card read stays where it was (a shift that lasts 90 ms or more counts)', what='drift')
+    c.eq(drift, [], 'for 20 s of waits and failures the title of the card read stays where it was (a shift that lasts 400 ms or more counts: a read between a DOM change and the next painting is not what the user sees)', what='drift')
 @case('A211', "Recette on a phone without launcher (SOG-0357): a verdict leaves for the data repository — one file `pilot/<trigram>/recette/verdicts.json`, the same form as RECETTE.json — and the sheet says « envoyé » or « pas encore envoyé »; it reads the repository file too (the latest verdict wins by its time), as an untrusted input; the adapter refuses outside that file and outside the bounds; fingers: 44 px", 'A',
       designs=('standard',), screens=True, night=False, langs4=False,
       rule="SOG-0357 (the user: « la fiche de recette sur téléphone aussi… à noter en dette technique de secu et vie privée »): without a launcher a verdict was only kept on the device; now it is put in pilot/<trigram>/recette/verdicts.json (the folder of the device's trigram, sog-recette/1 with the bounded `history`) and sent at once (sendNow, bounded to that declared write, like « Signaler »); the sheet reads the launcher's file if there is one AND the repository file, the latest by its time; the file read back is an UNTRUSTED input (identifiers SOG-nnnn, verdicts of the list, bounded lengths, escaped, never a path read from the file); debt written in the card: readable and modifiable by any pilot, author not signed")
