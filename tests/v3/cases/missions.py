@@ -77,6 +77,15 @@ def mission_doc(mid):
     return f"mission: {{ id: {mid}, type: TEST }}\ntitle: Mission {mid}\n"
 
 
+def with_files(registry):
+    """[[path, text]] : the registry, plus a minimal mission file for each of its lines (id, folder, files) — SOG-0365: a mission whose file
+    is not on the device is not offered, so a case that lists registry lines gives them their files."""
+    out = [['missions/mission_registry.yaml', registry]]
+    for m in re.finditer(r"id: '?([A-Z]-\d{3}[A-Z]?)'?,.*?folder: ([^,}\s]+), files: \[([^\]]+)\]", registry):
+        out.append([f'missions/{m.group(2)}/{m.group(3).strip()}', mission_doc(m.group(1))])
+    return out
+
+
 def report(i, mission, by):
     """A report of the flight log that names a mission (cr/reports/, metadata.missionId)."""
     return [f'cr/reports/2026-10-2{i}_{by}_{i}.json', {'schema': 1, 'by': by, 'metadata': {'date': f'2026-10-2{i}', 'missionId': mission,
@@ -304,7 +313,9 @@ def n5(c):
     c.open('missions', docs=docs(), wait=False, app='company')
     c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions is drawn')
     c.page.select_option(f'{M} [data-k="family"]', 'TESTCHARLIE')
-    c.until(f"document.querySelectorAll('{M} [data-list] [data-id]').length === 3", what='the three rows of TESTCHARLIE')
+    # SOG-0365 : X-006A (son fichier n'est pas sur l'appareil) n'est plus proposé ; X-007A et X-008A (fichiers là, illisibles) le sont
+    c.until(f"document.querySelectorAll('{M} [data-list] [data-id]').length === 2", what='the two rows of TESTCHARLIE whose file is on the device')
+    c.eq(c.count(f'{M} [data-list] [data-id="X-006A"]'), 0, 'a mission whose file is not on the device is not offered (SOG-0365)', what='X-006A')
 
     def opened(mid):
         c.tap(f'{M} [data-list] [data-id="{mid}"]')
@@ -314,9 +325,6 @@ def n5(c):
         c.until(f"!!document.querySelector('{M} [data-pane=list]')", what='back to the list')
         return got
 
-    why, text = opened('X-006A')
-    c.eq(why, 'missing', 'a file the repository has not: « introuvable »', what='X-006A')
-    c.eq(text, norm(tx(MS, 'missing', c.lang).replace('{p}', 'missions/Z_TEST/X-006A/missionX-006A.yaml')), 'with its path', what='X-006A text')
     why, text = opened('X-007A')
     c.eq(why, 'unreadable', 'an invalid YAML: « illisible »', what='X-007A')
     head = norm(tx(MS, 'unreadable', c.lang).split('{e}')[0])
@@ -611,7 +619,7 @@ def n12(c):
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.page.goto(c.base + '/frame/manifest.webmanifest')
-        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _FAM_REGISTRY]])
+        c.js(_TEXTS_JS, with_files(_FAM_REGISTRY))
         c.open('missions', wait=False, app='company')
         c.until(f"document.querySelectorAll('{M} [data-pane=list] [data-family]').length === 3", timeout=15000, what='the three family headings')
         heads = c.js(f"""[...document.querySelectorAll('{M} [data-list] [data-family]')].map(h => [h.dataset.family, h.querySelector('b[data-famshort]')?.textContent || '',
@@ -726,7 +734,7 @@ def n15(c):
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.page.goto(c.base + '/frame/manifest.webmanifest')
-        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _FAM_REGISTRY]])
+        c.js(_TEXTS_JS, with_files(_FAM_REGISTRY))
         c.open('missions', wait=False, app='company')
         c.until(f"document.querySelectorAll('{M} [data-pane=list] [data-family]').length === 3", timeout=15000, what='the list')
         c.page.select_option(f'{M} select[data-k=family]', 'SAR')
@@ -1959,8 +1967,10 @@ def n48(c):
         c.eq([x[:2] for x in c.js(_SRCH_LIST)], [['X-502A', 'description']], f'« {text} »: the town of the description, any case, hyphen or space',
              what=text)
     _type(c, q, 'xnrd')
-    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-503A\"]')", timeout=10000, what='the unread mission')
-    c.eq([x[:2] for x in c.js(_SRCH_LIST)], [['X-503A', 'line']], 'a mission not on the device is found on its registry line', what='xnrd')
+    c.settle()
+    # SOG-0365 : une mission dont le fichier n'est pas sur l'appareil n'est plus proposée dans la liste ; la ligne « non lue » la compte
+    c.eq(c.count(f'{M} [data-list] [data-id="X-503A"]'), 0, 'a mission not on the device is not offered in the list (SOG-0365)', what='xnrd')
+    c.ok(c.js(f"document.querySelector('{M} [data-unread]')?.dataset.unread") == '1', c.text(f'{M} [data-results]'), 'still counted as not read on this device')
     c.shot('N48_390_list.png')
     c.eq(reqs, [], 'the index is built from the copies on the device: no outgoing request while searching', what='requests')
     # the Registry: the same search
@@ -2727,4 +2737,42 @@ def n65(c):
             c.ok(not g['below'], g, f'{w} px: a card of 560 px and more: title and details side by side')
         c.js(f"document.querySelector('{ROW}').scrollIntoView({{block: 'center'}})")
         c.shot(f'N65_{c.design}_{w}_{c.lang}_delivered.png')
+    c.js(_REG_CLEAR)
+
+
+
+@case('N66', 'Missions on a device: the list and the draw offer only the missions whose file is in the tree the device keeps of the repository '
+      '(nothing more read); none readable: the screen says « Aucune mission lisible sur cet appareil : synchronisez » instead of drawing; a file '
+      'missing at the opening is said with the mission\'s name', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0365 (the phone, d091ecf, still true on 0721a0c: « On tire une mission au sort, mais le fichier est introuvable […] filtrer les '
+      'missions réellement jouables »); invented X-7xx: X-702A is in the registry without its file')
+def n66(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _REG_TEXTS)
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id]')", timeout=20000, what='the list')
+    c.settle()
+    if c.js(f"!!document.querySelector('{M} [data-do=more]')"):
+        c.tap(f'{M} [data-do="more"]')
+    ids = c.js(f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(e => e.dataset.id)")
+    c.ok('X-702A' not in ids and 'X-701A' in ids, ids, 'X-702A (no file on the device) is not offered; X-701A is')
+    for _ in range(12):   # the draw never opens a mission without its file
+        c.tap(f'{M} [data-do="draw"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=list]') || !!document.querySelector('{M} [data-why]') || !!document.querySelector('{M} .ms-sheet')",
+                timeout=8000, what='drawn')
+        c.ok(c.count(f'{M} [data-why=missing]') == 0, c.text(f'{M} [data-why]'), 'the draw opened a mission whose file is there')
+        if c.js(f"!!document.querySelector('{M} [data-do=back]')"):
+            c.tap(f'{M} [data-do="back"]')
+            c.until(f"!!document.querySelector('{M} [data-pane=list]')", timeout=8000, what='back to the list')
+    # only a mission without its file: the screen says it, nothing is drawn
+    c.js(_REG_CLEAR)
+    reg = 'schema: mission-registry\nversion: 1\nmissions:\n  - { id: X-702A, family: TESTREG, title: Registre deux, folder: X_REG/X-702A, files: [missionX-702A.yaml] }\n'
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', reg]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-noplayable]')", timeout=20000, what='« Aucune mission lisible sur cet appareil »')
+    c.ok(norm(tx(MS, 'noPlayable', c.lang)) in norm(c.text(f'{M} [data-noplayable]')), c.text(f'{M} [data-noplayable]'), 'said in words')
+    c.tap(f'{M} [data-do="draw"]')
+    c.settle()
+    c.eq(c.count(f'{M} [data-why=missing]'), 0, 'nothing drawn', what='no draw')
     c.js(_REG_CLEAR)

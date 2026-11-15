@@ -321,3 +321,11 @@
   narrow column, the details beside it). The list rows (`.ms-mrow`, on the frame's `.f-item`) are one column: identifier and title, then
   the route, the aircraft and the time in small type; the list card is a size container and the two columns come back only from 560 px
   of card (the ergonomist's threshold). N65 (red before at 390).
+- **15 Nov 2026 — SOG-0365: only the missions whose file is on the device are offered** (a phone, d091ecf, still true on 0721a0c:
+  « On tire une mission au sort, mais le fichier est introuvable »). `unlisted` already lists the device's tree of `missions/`; it is kept
+  (`s.tree`, nothing more read) and `filtered` keeps only the rows whose file is in it (`playable`; an unknown tree filters nothing), so
+  the list and the draw offer only readable missions; a file the module writes (« Ajouter », the editor) joins the tree. None readable:
+  the list and the draw say « Aucune mission lisible sur cet appareil : synchronisez » instead of drawing. A file missing at the opening
+  (gone since the list) names its mission (`missing`: id, title, path). It changes two older rules, on purpose: N5 no longer lists the
+  absent X-006A, and N48's search no longer offers the unread X-503A in the list (the « non lue » line still counts it, the Registry
+  still finds it). Fixtures that listed registry lines without files get them (`with_files`). N66 (red before).

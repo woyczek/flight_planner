@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: the list and the draw offer only the missions whose file is on the device; none readable is said (« synchronisez »), never a drawn mission without its file** (missions DECISIONS; noreg N66; SOG-0365).
 - **The screens no longer blink during a request limit** (SOG-0359): the countdown redraws only its own number, the sync state announces only a change of nature; noreg A213
 - **Data: the sheet of a country says when a published file is getting too big for the frame** — one calm line with the builder's sentence (« zone us, espaces : 14,5 Mo — plus de la moitié du plafond de lecture du cadre (32 Mo) ; à découper »), no gesture, no alert in the list (SOG-0358).
 - **The read cap is 32 MiB; a verdict read from the repository says « du téléphone »** (SOG-0358, SOG-0357): on a workstation with a launcher, a verdict whose winner is the repository file carries its origin; noreg A38, A212

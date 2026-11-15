@@ -387,10 +387,15 @@ const TX = {
   notes: ['Notes', 'Notes', 'Hinweise', 'Notas'],
   // le fichier d'une mission qui ne donne pas la mission, par cause (Simplification, 1er nov. : « beaucoup de missions sans fichiers ») ;
   // seul le registre est alors montré
-  missing: ['Fichier de la mission introuvable ({p}) : seul le registre est montré.',
-    'Mission file not found ({p}): only the registry is shown.',
-    'Missionsdatei nicht gefunden ({p}): nur das Register wird gezeigt.',
-    'Archivo de la misión no encontrado ({p}): solo se muestra el registro.'
+  // SOG-0365 : le fichier qui manque se dit avec le nom de la mission
+  missing: ['Le fichier de la mission {id} « {t} » n’est pas sur cet appareil ({p}) : synchronisez. Seul le registre est montré.',
+    'The file of mission {id} « {t} » is not on this device ({p}): synchronise. Only the registry is shown.',
+    'Die Datei der Mission {id} „{t}“ ist nicht auf diesem Gerät ({p}): synchronisieren. Nur das Register wird gezeigt.',
+    'El archivo de la misión {id} «{t}» no está en este equipo ({p}): sincronice. Solo se muestra el registro.'
+  ],
+  // SOG-0365 : aucune mission dont le fichier est sur l'appareil
+  noPlayable: ['Aucune mission lisible sur cet appareil : synchronisez.', 'No readable mission on this device: synchronise.',
+    'Keine lesbare Mission auf diesem Gerät: synchronisieren.', 'Ninguna misión legible en este equipo: sincronice.'
   ],
   late: [
     'Fichier de la mission pas encore sur l’appareil (synchronisation) : seul le registre est montré, la mission s’affiche dès qu’il arrive.',
@@ -914,6 +919,8 @@ const UNLISTED_MAX = 500; // fichiers de mission hors registre lus à un afficha
 async function unlisted(s, reg) {
   const paths = await Promise.resolve().then(() => s.ctx.data.list('missions/')).catch(() => null);
   if (S !== s || !Array.isArray(paths)) return;
+  // SOG-0365 : l'arbre que l'appareil garde du dépôt — la liste et le tirage ne proposent que les missions dont le fichier y est
+  s.tree = new Set(paths);
   const named = new Set(s.rows.map(r => `missions/${r.folder}/${r.file}`)),
     ids = new Set(MS.readRegistry(reg).map(r => r.id)),
     todo = paths.map(p => [p, MS.missionPath(p)]).filter(([p, w]) => w && !named.has(p) && !ids.has(w.id)).slice(0, UNLISTED_MAX),
@@ -1013,8 +1020,12 @@ async function flownOf(s) {
   return out;
 }
 
-/** Les lignes retenues par la recherche et le filtre de famille. */
-const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.subtype || r.subtype === s
+/** SOG-0365 : une mission jouable sur cet appareil — son fichier est dans l'arbre qu'il garde du dépôt (s.tree, lu par unlisted ;
+ *  inconnu : toutes le sont, rien n'est lu de plus). */
+const playable = (s, r) => !s.tree || s.tree.has(`missions/${r.folder}/${r.file}`);
+/** Les lignes retenues par la recherche et le filtre de famille (SOG-0365 : jouables sur cet appareil). */
+const filtered = s => s.rows.filter(r => playable(s, r) && ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.subtype || r
+  .subtype === s
   .subtype) && (!s.category || catOf(s, r)?.id === s
   .category) && (!s.q || qWhere(s, r, s.q) !== null));
 
@@ -1068,7 +1079,7 @@ function resultsHtml(s) {
     body += row(r);
   }
   return `<p class="f-muted" data-count${s.q && s.idx?.ready ? ' data-indexed' : ''}>${esc(s.tt(one(s, hits.length) ? TX.count1 : TX.count, { n: hits.length }))}</p>${unreadHtml(s, s.q)}
-    <div class="f-list" data-list>${hits.length ? body : `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>`}</div>
+    <div class="f-list" data-list>${hits.length ? body : s.tree && !s.rows.some(r => playable(s, r)) ? `<p class="f-warn" data-noplayable>${esc(s.tt(TX.noPlayable))}</p>` : `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>`}</div>
     ${hits.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="more">${esc(s.tt(TX.more, { n: hits.length - shown.length }))}</button>` : ''}`;
 }
 
@@ -1151,7 +1162,7 @@ function missionHtml(s) {
     mission: m,
     drawn
   } = s.open,
-    why = s.open.why ? `<p class="f-muted" data-why="${esc(s.open.why)}">${esc(s.open.why === 'late' ? s.tt(TX.late) : s.open.why === 'missing' ? s.tt(TX.missing, { p: `missions/${r.folder}/${r.file}` }) : s.tt(TX.unreadable, { e: s.open.err || s.tt(TX.noIdType) }))}</p>` : '';
+    why = s.open.why ? `<p class="f-muted" data-why="${esc(s.open.why)}">${esc(s.open.why === 'late' ? s.tt(TX.late) : s.open.why === 'missing' ? s.tt(TX.missing, { id: r.id, t: r.title || '', p: `missions/${r.folder}/${r.file}` }) : s.tt(TX.unreadable, { e: s.open.err || s.tt(TX.noIdType) }))}</p>` : '';
   return `<div class="f-card ms-sheet" data-pane="mission" data-id="${esc(r.id)}"${s.open.detail ? ' data-detail' : ''}>
     <section class="ms-first" data-first>${firstHtml(s, r, m, drawn, why)}</section>
     <section class="ms-detail" data-detailpane>${m ? detailHtml(s, r, m) : ''}</section></div>`;
@@ -1423,6 +1434,8 @@ function onClick(s, e) {
     case 'draw': {
       // parmi les missions du filtre que ce pilote n'a pas volées, au hasard, sans poids ; jamais un départ silencieux
       const pool = filtered(s).filter(r => !s.flown.has(r.id));
+      // SOG-0365 : aucune mission dont le fichier est sur l'appareil — dit, rien n'est tiré
+      if (s.tree && !s.rows.some(r => playable(s, r))) return s.ctx.notify(s.tt(TX.noPlayable), 'warn');
       if (!pool.length) return s.ctx.notify(s.tt(TX.allFlown), 'warn');
       return openMission(s, pool[Math.floor(Math.random() * pool.length)], true);
     }
@@ -1659,6 +1672,7 @@ async function addWrite(s) {
       await s.ctx.data.put(i.path, i.text, {
         module: 'missions'
       });
+      s.tree?.add(i.path); // SOG-0365 : écrit sur cet appareil, il y est jouable
     } catch (e) {
       s.ctx.notify(s.tt(TX.addFailed, {
         e: String(e?.message || e).slice(0, 120)
@@ -2459,6 +2473,7 @@ async function edSave(s) {
     await s.ctx.data.put(path, ED.yamlText(doc, globalThis.jsyaml), {
       module: 'missions'
     });
+    s.tree?.add(path); // SOG-0365 : écrit sur cet appareil, il y est jouable
     const regErr = await edRegister(s, reg => {
       if (e.mode !== 'edit' || !e.regId) return ED.regAdd(reg, RG.entryOfMission(doc, path, undefined, RG.seriesRows(RG.entries(
         reg))));
