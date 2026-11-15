@@ -4,7 +4,7 @@
  "updated": "2026-11-15",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2700ac5",
+  "organisation": "b6b55ac",
   "fiches": 366,
   "untranslated": 0,
   "priorities": 310
@@ -1625,11 +1625,12 @@
     {
      "id": "SOG-0363",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte au téléphone, vol démarré : le suivi du vol et le profil ne laissent plus de carte, les outils recouvrent le texte",
      "en": "Map on the phone, flight started: flight following and the profile leave no map, the tools cover the text",
      "de": "Karte am Telefon, Flug gestartet: Flugverfolgung und Profil lassen keine Karte übrig, die Werkzeuge verdecken den Text",
-     "es": "Mapa en el teléfono, vuelo iniciado: el seguimiento y el perfil no dejan mapa, las herramientas tapan el texto"
+     "es": "Mapa en el teléfono, vuelo iniciado: el seguimiento y el perfil no dejan mapa, las herramientas tapan el texto",
+     "test": true
     },
     {
      "id": "SOG-0364",
@@ -5225,11 +5226,12 @@
     {
      "id": "SOG-0361",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Réglages au téléphone, dépôt non synchronisé : les cartes « compagnie » s'étirent sur un écran de vide",
      "en": "Settings on the phone, repository not synced: the « airline » cards stretch over a screen of empty space",
      "de": "Einstellungen am Telefon, Repository nicht synchron: die « Gesellschaft »-Karten dehnen sich über einen leeren Bildschirm",
-     "es": "Ajustes en el teléfono, repositorio sin sincronizar: las tarjetas de « compañía » se estiran sobre una pantalla vacía"
+     "es": "Ajustes en el teléfono, repositorio sin sincronizar: las tarjetas de « compañía » se estiran sobre una pantalla vacía",
+     "test": true
     }
    ]
   },
