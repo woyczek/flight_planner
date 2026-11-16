@@ -119,6 +119,11 @@ def derive(src, out_dir, today=None):
     return {'rows': len(rows), 'skipped': skipped, 'makerBlanked': blanked, 'date': date, 'size': size}
 
 
+def _is_link(p):
+    """Vrai pour un lien symbolique ou une jonction Windows (os.path.isjunction : Python 3.12 et plus ; avant, la comparaison des chemins réels de publish couvre le dossier)."""
+    return os.path.islink(p) or bool(getattr(os.path, 'isjunction', lambda _p: False)(p))
+
+
 def rebuild(doc):
     """(lignes, constructeurs vidés, date) d'un document du registre reconstruits comme une ENTRÉE NON FIABLE (SOG-0341) : exactement cinq cellules de texte par ligne, bornées et nettoyées, une immatriculation de la forme attendue, un type présent ; le k-anonymat du constructeur
     recompté ; la date AAAA-MM-JJ ou ''. Sert à publier (ce que le poste écrit) et à lire le fichier publié (ce que n'importe quel pilote a pu écrire). RegistryError('headers' | 'rows' | 'empty') sinon."""
@@ -165,12 +170,28 @@ def publish(local_dir, data_dir):
     rows, blanked, date = rebuild(doc)
     out = {'schema': 1, 'source': CREDIT, 'date': date, 'columns': list(WHITELIST), 'rows': rows}
     folder = os.path.join(data_dir, REPO_FOLDER)
-    os.makedirs(folder, exist_ok=True)
     path = os.path.join(folder, OUT_NAME)
     tmp = path + '.tmp'
-    with open(tmp, 'w', encoding='utf-8') as f:
-        json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
-    os.replace(tmp, path)
+    # data/registry peut être un LIEN commité par un pilote (le dépôt est ouvert à tous) : ni le dossier, ni la destination, ni le .tmp ne sont des liens (ni des jonctions Windows), et le dossier réel reste sous le dossier réel de data/
+    try:
+        if any(_is_link(x) for x in (folder, path, tmp)) or (os.path.lexists(folder) and not os.path.isdir(folder)):
+            raise RegistryError('write')
+        root = os.path.normcase(os.path.realpath(data_dir))
+        os.makedirs(folder, exist_ok=True)
+        if os.path.normcase(os.path.realpath(folder)) != os.path.join(root, REPO_FOLDER):
+            raise RegistryError('write')
+        try:
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
+            os.replace(tmp, path)
+        finally:
+            try:
+                if os.path.lexists(tmp):
+                    os.remove(tmp)
+            except OSError:
+                pass
+    except OSError:
+        raise RegistryError('write') from None
     return {'published': True, 'rows': len(rows), 'makerBlanked': blanked, 'size': os.path.getsize(path)}
 
 

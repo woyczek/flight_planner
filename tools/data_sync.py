@@ -549,11 +549,10 @@ def merge_raw(path, raw):
         vo, vt = (v if isinstance(v, int) else -1 for v in (vo, vt))
         win, lose, side = (raw[2], raw[3], 'distante') if vo >= vt else (raw[3], raw[2], 'locale')
         return win, {'how': 'registre (version la plus haute)'}, lose, side
-    # le registre réduit (SOG-0341) : un fichier REMPLACÉ en entier à chaque export ; deux postes qui l'ont repris : la date de l'export la plus récente gagne, sans copie (aucune information ne se perd : c'est une table entière)
-    if path.endswith('registry/fr_immat.json') and isinstance(ours, dict) and isinstance(theirs, dict):
-        dated = lambda d: d.get('date') if isinstance(d.get('date'), str) else ''
-        win = raw[2] if dated(ours) >= dated(theirs) else raw[3]
-        return win, {'how': 'registre réduit (export le plus récent)'}, None, ''
+    # le registre réduit (SOG-0341, Sécurisation) : un fichier REMPLACÉ en entier à chaque export ; sur un conflit la version de CE POSTE gagne, aucun champ du fichier ne décide (une date, par exemple, serait écrite par le pilote qui veut gagner), pas de copie
+    # dans _conflits/ (une table entière). Limite écrite : un fichier trafiqué poussé SANS conflit est repris par tous jusqu'au prochain export d'un poste honnête
+    if path.endswith('registry/fr_immat.json'):
+        return (raw[2] if raw[2] is not None else raw[3]), {'how': 'registre réduit (la version de ce poste)'}, None, ''
     # une fiche par fichier : supprimée d'un côté, modifiée de l'autre → gardée ; sinon la plus récente
     if raw[2] is None or raw[3] is None:
         return raw[2] if raw[2] is not None else raw[3], {'how': 'gardée (supprimée d’un côté seulement)'}, None, ''

@@ -10723,7 +10723,7 @@ def k284(c):
 
 @case('K285', 'French aircraft registry in the private data repository (SOG-0341, Q-0060: yes): the launcher writes registry/fr_immat.json when the export is taken up — five columns, REBUILT row by row from the derived file (nothing of an owner, nothing but the five columns, the maker shared by fewer than 10 aircraft recounted and left empty), only when data/ is a git repository and no merge waits; it goes out only at « Synchroniser » (a gesture), and two workstations\' versions resolve by the date of the export',
       'K', static=True,
-      rule='SOG-0341 (the user, 16 Nov 2026, Q-0060 « oui »: the reduced file of five fields goes to the private repository of the group so that the phone has it; the rule « nothing published » of SOG-0270 is lifted for these five fields only; the operator is neither published nor kept, Q-0056). The licence of the export is NOT confirmed (public by law, no licence of reuse): it is the user\'s decision, written in DECISIONS. Sécurisation\'s conditions on a file that goes to a shared repository: the published file is REBUILT from the local derived file (exactly the five columns, bounded and cleaned cells, a registration of the expected form, a type present; never copied byte for byte, so that a doctored local file carries nothing else), the k-anonymity of the maker recounted at the boundary (not trusted from the previous step), refusals say a code and never a content, nothing is written into data/ when a merge waits (as every write of the launcher), nothing when data/ is not a git repository; the file is in the pool but only a gesture sends it (GESTURE_ONLY: a background pass never commits 3 MB alone); when two workstations took the export, the most recent date wins, no copy (a whole table is replaced).')
+      rule='SOG-0341 (the user, 16 Nov 2026, Q-0060 « oui »: the reduced file of five fields goes to the private repository of the group so that the phone has it; the rule « nothing published » of SOG-0270 is lifted for these five fields only; the operator is neither published nor kept, Q-0056). The licence of the export is NOT confirmed (public by law, no licence of reuse): it is the user\'s decision, written in DECISIONS. Sécurisation\'s conditions on a file that goes to a shared repository: the published file is REBUILT from the local derived file (exactly the five columns, bounded and cleaned cells, a registration of the expected form, a type present; never copied byte for byte, so that a doctored local file carries nothing else), the k-anonymity of the maker recounted at the boundary (not trusted from the previous step), refusals say a code and never a content, nothing is written into data/ when a merge waits (as every write of the launcher), nothing when data/ is not a git repository; the file is in the pool but only a gesture sends it (GESTURE_ONLY: a background pass never commits 3 MB alone); on a conflict the version of THIS workstation wins and no field of the file decides (decided by Sécurisation, 15:16); data/registry may be a link committed by a pilot: nothing is written through a link or a junction.')
 def k285(c):
     import json
     import subprocess
@@ -10797,12 +10797,62 @@ def k285(c):
              'registry is in the pool and only a gesture (« Synchroniser ») sends it: a background pass never commits it alone', what='pool')
         mk = lambda date, rows: json.dumps({'schema': 1, 'source': RF.CREDIT, 'date': date, 'columns': list(RF.WHITELIST), 'rows': rows}).encode('utf-8')
         old, new = mk('2026-11-10', [['F-AAAA', '', 'T', '1', '']]), mk('2026-11-16', [['F-BBBB', '', 'T', '1', '']])
-        win, info, lose, side = DS.merge_raw('registry/fr_immat.json', {1: old, 2: old, 3: new})
-        c.eq((win, lose), (new, None), 'two versions: the export with the most recent date wins (theirs here), no conflict copy (a whole table is replaced)', what='merge theirs')
-        win, info, lose, side = DS.merge_raw('registry/fr_immat.json', {1: old, 2: new, 3: old})
-        c.eq((win, lose), (new, None), 'and ours when ours is the more recent', what='merge ours')
-        win, info, lose, side = DS.merge_raw('registry/fr_immat.json', {1: old, 2: old, 3: old})
-        c.eq(lose, None, 'the same date: no copy either', what='merge same')
+        future = mk('9999-12-31', [['F-ZZZZ', '', 'T', '1', '']])
+        for label, ours, theirs in (('theirs dated 9999-12-31', old, future), ('theirs more recent', old, new), ('ours more recent', new, old), ('same', old, old)):
+            win, info, lose, side = DS.merge_raw('registry/fr_immat.json', {1: old, 2: ours, 3: theirs})
+            c.eq((win, lose), (ours, None), f'on a conflict ({label}) the version of THIS workstation wins and no field of the file decides (a date would be written by the pilot who wants to win); no copy in _conflits/', what=f'merge {label}')
+        win, info, lose, side = DS.merge_raw('registry/fr_immat.json', {1: old, 2: None, 3: new})
+        c.eq((win, lose), (new, None), 'with no version of this workstation (deleted here), theirs is kept', what='merge no ours')
+        # (6) publish: data/registry may be a LINK committed by a pilot, nothing is written through it
+        import os
+        import shutil
+
+        def link(target, name):
+            try:
+                os.symlink(str(target), str(name), target_is_directory=True)
+                return 'symlink'
+            except (OSError, NotImplementedError):
+                if sys.platform == 'win32':
+                    r = subprocess.run(['cmd', '/c', 'mklink', '/J', str(name), str(target)], capture_output=True)
+                    if r.returncode == 0:
+                        return 'junction'
+            return None
+        outside = td / 'outside'
+        outside.mkdir()
+        data4 = td / 'data4'
+        (data4 / 'local' / 'registry').mkdir(parents=True)
+        shutil.copy(local / 'fr_immat.json', data4 / 'local' / 'registry' / 'fr_immat.json')
+        kind = link(outside, data4 / 'registry')
+        if kind:
+            try:
+                RF.publish(str(data4 / 'local' / 'registry'), str(data4))
+                got = None
+            except RF.RegistryError as e:
+                got = e.code
+            c.eq((got, sorted(x.name for x in outside.iterdir())), ('write', []), f'data/registry is a {kind} to another folder: refused (`write`), NOTHING written through it', what='folder link')
+            os.rmdir(data4 / 'registry') if kind == 'junction' else os.unlink(data4 / 'registry')
+        else:
+            c.ok(True, 'skipped', 'SKIPPED: no link can be created on this workstation (no symlink right, no junction): the folder-link counter-proof did not run')
+        (data4 / 'registry').mkdir()
+        target = td / 'elsewhere.json'
+        target.write_text('KEEP', encoding='utf-8')
+        try:
+            os.symlink(str(target), str(data4 / 'registry' / 'fr_immat.json'))
+            made = True
+        except (OSError, NotImplementedError):
+            made = False
+        if made:
+            try:
+                RF.publish(str(data4 / 'local' / 'registry'), str(data4))
+                got = None
+            except RF.RegistryError as e:
+                got = e.code
+            c.eq((got, target.read_text(encoding='utf-8')), ('write', 'KEEP'), 'the destination is a link: refused, the file it points to is not overwritten', what='file link')
+        else:
+            c.ok(True, 'skipped', 'SKIPPED: no file symlink can be created on this workstation (Windows without the right): the destination-link counter-proof did not run')
+        (data4 / 'registry' / 'fr_immat.json').unlink(missing_ok=True)
+        out5 = RF.publish(str(data4 / 'local' / 'registry'), str(data4))
+        c.eq((out5['published'], sorted(x.name for x in (data4 / 'registry').iterdir())), (True, ['fr_immat.json']), 'a real folder: published, and no .tmp left behind', what='no tmp')
     # the old pin of tools/report-vfr is gone: one bound only, no pip command in the texts that sent to it
     req = (ROOT / 'tools' / 'report-vfr' / 'requirements-vfr.txt').read_text(encoding='utf-8')
     texts = {n: (ROOT / 'tools' / 'report-vfr' / n).read_text(encoding='utf-8') for n in ('audit_vac.py', 'vfr_core.py', 'MODE-D-EMPLOI.md', 'README.md')}
