@@ -1472,3 +1472,65 @@ def m49(c):
     c.wait(1500)
     c.eq(c.count(f'{M} [data-regline] [data-regsays]'), 0, 'a file of another form is not read', what='columns')
 
+
+# SOG-0385: a sheet read from the V2 base (no stamps: « base V2 »), in lb, without engine map; invented values, not the user's sheet
+_TWIN = {'id': 'XTWN', 'name': 'Twin test', 'icao': 'XTWN', 'unit': 'lb', 'usableFuel': 1500, 'reserveFuel': 200, 'updated_at': '2026-11-16T08:00:00Z',
+         'cruise': {'tasKt': 210, 'fuelFlowPerHour': 400, 'rpmNominal': 1800}, 'climb': {'iasKt': 140}}
+# the reply in the form the prompt asks (perf_prompt.js): the whole schema, units imposed in kg and kg/h, the map of three rows
+_TWIN_REPLY = """```json
+{"name": "Twin test", "icao": "XTWN", "unit": "kg", "airframe": "aeroplane", "propulsion": "turboprop", "pressurized": true, "jetFuel": true,
+ "usableFuel": null, "taxiFuel": 25, "reserveFuel": null, "minRunwayLengthFt": null, "runwayType": "HARD", "engineCriticalAltFt": null,
+ "taxi": {"fuelFlowPerHour": null, "rpmNominal": null},
+ "climb": {"iasKt": 140, "tasKt": null, "rateFpm": 1800, "fuelFlowPerHour": 220, "rpmNominal": 1900},
+ "cruise": {"iasKt": null, "tasKt": 210, "fuelFlowPerHour": null, "ceilingFt": 28000, "refAltFt": 21000, "rpmNominal": 1800},
+ "descent": {"iasKt": null, "tasKt": null, "rateFpm": 1500, "fuelFlowPerHour": 120, "rpmNominal": 1700},
+ "rpmPowerReference": "Propeller RPM (Np); fuel flow for both engines in kg/h.",
+ "rpmFuelCurve": [
+  {"rpm": 1900, "altFt": 0, "fuelFlowMin": 230, "fuelFlowPerHour": 240, "fuelFlowMax": 250, "phaseLabel": "climb", "comment": "invented"},
+  {"rpm": 1800, "altFt": 21000, "fuelFlowMin": 170, "fuelFlowPerHour": 180, "fuelFlowMax": 190, "phaseLabel": "cruise", "comment": "invented"},
+  {"rpm": 1700, "altFt": 10000, "fuelFlowMin": 110, "fuelFlowPerHour": 120, "fuelFlowMax": 130, "phaseLabel": "descent", "comment": "invented"}],
+ "estimated": ["cruise.ceilingFt"], "sources": [{"title": "invented", "publisher": "", "url": ""}], "notes": ""}
+```"""
+
+
+@case('M50', 'Sheets, a ChatGPT reply in the form of the prompt applied to a sheet of the V2 base: its engine map (rpm / fuel flow / altitude) '
+      'enters the sheet and is SHOWN in « Table régime / débit » with its source; a value ChatGPT gave says « ChatGPT », even when the V2 had '
+      'the same', 'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0385 (the user, 16 h 37: « après une requête chatgpt, il manque le tableau rpms / fuel flow / altitude. les champs trouvés par '
+      'chatgpt après requête manuelle sont identifiés comme issus de la v2 »); the ergonomist: the table enters or the preview says why, never '
+      'silent; the source of a field is that of the LAST import that wrote it; an invented sheet and reply')
+def m50(c):
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + SHEET_DOCS + [['aircraft/sheets/XTWN.json', _TWIN, 'document'], TYPES,
+           ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']], wait=False, app='maintenance')
+    edit_sheet(c, 'XTWN')
+    c.js(f"(() => {{ const d = document.querySelector('{M} {SHEETS} textarea[data-k=gptreply]').closest('details'); if (d) d.open = true }})()")
+    c.page.fill(f'{M} {SHEETS} textarea[data-k="gptreply"]', _TWIN_REPLY)
+    c.tap(f'{M} {SHEETS} [data-do="gptread"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review of the reply')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    d = c.until_doc('aircraft/sheets/XTWN.json', lambda d: d and (d.get('_fields') or {}).get('climb.rateFpm'), 'the reply is written', timeout=8000)
+    c.eq(len(d.get('rpmFuelCurve') or []), 3, 'the three rows of the map in the sheet', what='rows stored')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=save]')", what='the editor again')
+    shown = c.js(f"[...document.querySelectorAll('{M} {SHEETS} input[data-rk=rpm]')].map(i => i.value)")
+    c.eq(sorted(shown), ['1700', '1800', '1900'], 'the three rows shown in « Table régime / débit »', what='rows shown')
+    stamps = {k: (d['_fields'].get(k) or {}).get('source') for k in ('cruise.rpmNominal', 'cruise.tasKt', 'climb.iasKt', 'climb.rateFpm', 'rpmFuelCurve')}
+    c.eq(stamps, {k: 'chatgpt' for k in stamps}, 'every value ChatGPT gave is stamped « chatgpt », the same as the V2 or not', what='stamps')
+    src = c.js(f"(document.querySelector('{M} {SHEETS} [data-rpmsources]')?.textContent || '')")
+    c.ok('ChatGPT' in src, src, 'the table says its source')
+    # a reply with no row of the map (ChatGPT says in its notes it found no usable table): said in the preview, never silent
+    T = 'modules/aircraft/sheets_texts.js'
+    for reply, want in (('```json\n{"cruise": {"ceilingFt": 29000}, "rpmFuelCurve": [], "notes": "no usable table"}\n```', [tx(T, 'gptNoTable', c.lang)]),
+                        ('```json\n{"rpmFuelCurve": [{"rpm": null, "altFt": 0, "fuelFlowPerHour": 150, "phaseLabel": "cruise", "comment": "torque"}]}\n```',
+                         [tx(T, 'gptNoTable', c.lang), tx(T, 'gptRowRefused', c.lang).replace('{i}', '1').replace('{v}', '—')])):
+        c.js(f"(() => {{ const d = document.querySelector('{M} {SHEETS} textarea[data-k=gptreply]').closest('details'); if (d) d.open = true }})()")
+        c.page.fill(f'{M} {SHEETS} textarea[data-k="gptreply"]', reply)
+        c.tap(f'{M} {SHEETS} [data-do="gptread"]')
+        c.until(f"!!document.querySelector('{M} {SHEETS} [data-review]')", what='the review of the reply')
+        got = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-review] [data-reviewnote]')].map(e => e.textContent)")
+        c.eq([norm(x) for x in got], [norm(x) for x in want], 'the preview says what the reply carries for the table', what='notes')
+        c.shot(f'M50_{c.design}_1280_{c.lang}_notes.png')
+        c.tap(f'{M} {SHEETS} [data-do="cancel"]')
+        c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=save]')", what='the editor again')
+

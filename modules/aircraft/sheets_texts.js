@@ -132,6 +132,17 @@ export const TX = {
     'Añadir las filas marcadas al borrador'
   ],
   rpmGone: ['retirée', 'removed', 'entfernt', 'retirada'],
+  // SOG-0385 : ce que la réponse de ChatGPT porte pour la table régime / débit, dit dans l'aperçu (jamais en silence)
+  gptNoTable: ['Aucune ligne de table régime / débit lue dans la réponse : la table de la fiche reste telle quelle.',
+    "No row of RPM / fuel flow table read in the reply: the sheet's table stays as it is.",
+    'Keine Zeile der Drehzahl-/Verbrauchstabelle in der Antwort gelesen: die Tabelle des Eintrags bleibt, wie sie ist.',
+    'Ninguna fila de tabla régimen / consumo leída en la respuesta: la tabla de la ficha queda como está.'
+  ],
+  gptRowRefused: ['Ligne {i} de la table refusée : régime ou débit illisible ({v}).',
+    'Row {i} of the table refused: RPM or fuel flow unreadable ({v}).',
+    'Zeile {i} der Tabelle abgelehnt: Drehzahl oder Verbrauch unlesbar ({v}).',
+    'Fila {i} de la tabla rechazada: régimen o consumo ilegible ({v}).'
+  ],
   rpmTable: ['Table régime / débit', 'RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle', 'Tabla régimen / consumo'],
   review: ['Changements proposés', 'Proposed changes', 'Vorgeschlagene Änderungen', 'Cambios propuestos'],
   // l'unité de lecture et de saisie du carburant de l'éditeur (SOG-0032) ; la fiche garde son unité d'enregistrement

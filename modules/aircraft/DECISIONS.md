@@ -201,3 +201,18 @@
   the cited source is the page's text (REG_CREDIT), never the file's. In a new aircraft, the search by type is offered without a launcher
   once the published register is read (inserted at the head of the editor, nothing else redrawn). Rows go through `regRow` and every text
   is escaped as before. Without a published register: nothing said, as before. M49 (red before).
+- **16 Nov 2026 — SOG-0385: a ChatGPT reply — every value it GIVES is stamped « chatgpt »; the preview says what it carries for the
+  table** (the user, 16 h 37: « après une requête chatgpt, il manque le tableau rpms / fuel flow / altitude. les champs trouvés par chatgpt
+  après requête manuelle sont identifiés comme issus de la v2 »; written by Features SOG). Reading of the user's sheets (structure only,
+  nothing copied): the turboprop of the capture HAS its table in the sheet (ten rows, stamped « chatgpt ») — its fold « Table régime /
+  débit » simply had no « Sources » line (sourcesOf was computed for the PROFILE_FIELDS groups only); the helicopter imported next has no
+  row, ChatGPT having said in its description that it found no usable correspondence (said nowhere by the import); the aerodb reader
+  drops a row without readable RPM or fuel flow with a floating note only (« rpmFuelCurve[0] »). The stamps: `registry.stamp` stamps
+  CHANGED fields only, so a value ChatGPT gave equal to the V2's kept « base V2 ». Now (1) `gptGiven(reply)` lists the fields the reply
+  gives (a value, not null nor empty; the table when it has a row; neither identity nor the reply's own texts), carried by the preview;
+  `applyReview` passes those still ticked to `storeSheet`, which sets them in the `_fields` of the next sheet (`{ at, source }`), which
+  `stamp` keeps (it merges old and next `_fields` before stamping the changed ones) — registry.js unchanged; (2) the table's fold says its
+  sources (`[data-rpmsources]`); (3) the preview says « Aucune ligne de table régime / débit lue dans la réponse… » and each row of the
+  reply the reader refused (« Ligne 1 de la table refusée : régime ou débit illisible (—) »), from a bounded reading of the reply's raw rows
+  (`gptRawRows`: the JSON of the code block, a key « rpmFuelCurve » four levels deep, 200 rows; never used to fill the sheet). M50 (red
+  before: three values equal to the V2's not stamped; no note).

@@ -182,8 +182,89 @@ export function createSheetsView(host) {
 
   /** Enregistre une fiche par aerodb (champs changés tamponnés avec leur source, fichier aircraft/sheets/<id>.json et
    *  miroir V2 écrits par aerodb), puis relit la liste. */
-  async function storeSheet(p, source = 'edit') {
-    await st.A.sheets.put(plain(p), {
+  /** SOG-0385 : les champs qu'une réponse de ChatGPT DONNE (une valeur : ni null, ni vide), en chemins à plat comme ceux du registre
+   *  (la table régime / débit comptée quand elle a une ligne) ; ni l'identité, ni les textes propres à la réponse, ni les champs « _ ». */
+  const GPT_NOT_GIVEN = new Set(['id', 'name', 'icao', 'unit', 'notes', 'sources', 'estimated', 'estimatedFields', 'gptSources',
+    'description',
+    'source', 'updated_at', 'updatedAt'
+  ]);
+
+  function gptGiven(o, pre = '', out = []) {
+    for (const [k, v] of Object.entries(o && typeof o === 'object' ? o : {})) {
+      if (k.startsWith('_') || !pre && GPT_NOT_GIVEN.has(k)) continue;
+      const path = pre + k;
+      if (Array.isArray(v)) {
+        if (v.length) out.push(path);
+      } else if (v && typeof v === 'object') gptGiven(v, `${path}.`, out);
+      else if (v !== null && v !== undefined && v !== '') out.push(path);
+    }
+    return out;
+  }
+  /** SOG-0385 : les lignes BRUTES de la table d'une réponse de ChatGPT (le JSON du bloc de code, ou le texte entier), cherchées sous une
+   *  clé « rpmFuelCurve » (casse et séparateurs indifférents) à quatre niveaux au plus ; 200 au plus ; [] sans JSON lisible. Une lecture
+   *  pour le dire, jamais pour remplir la fiche (c'est le lecteur d'aerodb qui la remplit). */
+  function gptRawRows(txt) {
+    const t = String(txt || '').slice(0, 200000),
+      block = /```(?:json)?\s*([\s\S]*?)```/i.exec(t),
+      src = block ? block[1] : t.slice(Math.max(0, t.indexOf('{')), t.lastIndexOf('}') + 1);
+    let doc = null;
+    try {
+      doc = JSON.parse(src);
+    } catch {
+      return [];
+    }
+    const find = (o, d) => {
+      if (!o || typeof o !== 'object' || d > 4) return null;
+      if (Array.isArray(o)) {
+        for (const x of o.slice(0, 50)) {
+          const f = find(x, d + 1);
+          if (f) return f;
+        }
+        return null;
+      }
+      for (const [k, v] of Object.entries(o)) {
+        if (/^rpm[\s_-]*fuel[\s_-]*curve$/i.test(k) && Array.isArray(v)) return v;
+        const f = v && typeof v === 'object' ? find(v, d + 1) : null;
+        if (f) return f;
+      }
+      return null;
+    };
+    return (find(doc, 0) || []).slice(0, 200);
+  }
+  /** SOG-0385 : ce que l'aperçu dit de la table régime / débit d'une réponse de ChatGPT — aucune ligne lue, et chaque ligne que la
+   *  réponse portait mais que la lecture a refusée (régime, ou débit — moyen, ou bas et haut —, illisible : la règle du lecteur), avec son
+   *  régime tel qu'écrit (borné). */
+  function gptTableNotes(incoming, txt) {
+    const read = Array.isArray(incoming?.rpmFuelCurve) ? incoming.rpmFuelCurve.length : 0,
+      raw = gptRawRows(txt),
+      num = v => {
+        const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(',', '.'));
+        return Number.isFinite(n) ? n : null;
+      },
+      out = [];
+    raw.forEach((r, i) => {
+      const o = r && typeof r === 'object' && !Array.isArray(r) ? r : {},
+        rpm = num(o.rpm),
+        ff = num(o.fuelFlowPerHour) ?? (num(o.fuelFlowMin) !== null && num(o.fuelFlowMax) !== null ? 1 : null);
+      if (rpm === null || rpm <= 0 || ff === null) out.push(tt(TX.gptRowRefused, {
+        i: i + 1,
+        v: String(o.rpm ?? '—').replace(/[\u0000-\u001f\u007f]|\p{Cf}/gu, '').slice(0, 20)
+      }));
+    });
+    if (!read) out.unshift(tt(TX.gptNoTable));
+    return out;
+  }
+  /** Écrit la fiche par le registre (stamp : chaque champ changé reçoit sa source) ; `given` (SOG-0385) : les champs qu'un import a DONNÉS,
+   *  tamponnés de sa source même quand la valeur ne change pas (la source d'un champ est celle du dernier import qui l'a écrit) — par les
+   *  _fields de la fiche suivante, que le registre garde (registry.js stamp). */
+  async function storeSheet(p, source = 'edit', given = []) {
+    const at = new Date().toISOString(),
+      next = plain(p);
+    if (given.length) next._fields = Object.fromEntries(given.map(k => [k, {
+      at,
+      source
+    }]));
+    await st.A.sheets.put(next, {
       source
     });
     if (gone()) return;
@@ -504,9 +585,11 @@ export function createSheetsView(host) {
           const r = F.parseGptReply(txt, F.normalize(structuredClone(p)).icao),
             incoming = r.profile?.sheets ? r.profile.sheets.find(x => x.id === p.id) || r.profile.sheets[0] : r.profile;
           for (const w of r.warnings || []) ctx.notify(w, 'warn');
-          return review(p, mergeInto(p, F.normalize(incoming)), {
+          return review(p, mergeInto(p, F.normalize(structuredClone(incoming))), {
             src: 'ChatGPT',
-            source: 'chatgpt'
+            source: 'chatgpt',
+            given: gptGiven(incoming), // SOG-0385 : chaque valeur donnée se dit « ChatGPT », même égale à celle d'avant
+            notes: gptTableNotes(incoming, txt) // et la table : aucune ligne lue, et chaque ligne refusée, dites dans l'aperçu
           });
         } catch (err) {
           return ctx.notify(String(err.message || err), 'err');
@@ -1022,8 +1105,10 @@ export function createSheetsView(host) {
             return `<details class="ac-rpmgroup" data-rpmgroup="${esc(key)}"${open ? ' open' : ''}><summary>${esc(`${h === null ? tt(TX.rpmNoAlt) : `${h} ft`} · ${tt(n === 1 ? TX.rpmN1 : TX.rpmN, { n })}`)}</summary>${table(list)}</details>`;
           },
           body = keys.length > 1 ? keys.map(group).join('') : table(rows);
-        if (edit) return `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary>${curvesHtml()}${body}<button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${outputHtml(p)}${measuredHtml(p)}</details>`;
-        return rows.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary>${curvesHtml()}${body}</details>` : '';
+        // SOG-0385 : le pli de la table dit sa source, comme les autres
+        const srcLine = (src => src ? ` <small class="f-muted ac-sources" data-rpmsources>${esc(src)}</small>` : '')(sourcesOf(p, ['rpmFuelCurve']));
+        if (edit) return `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}${srcLine}</summary>${curvesHtml()}${body}<button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${outputHtml(p)}${measuredHtml(p)}</details>`;
+        return rows.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}${srcLine}</summary>${curvesHtml()}${body}</details>` : '';
       },
       // SOG-0055 : « Courbes », le débit selon le régime, une couleur par altitude (les lignes de même altFt), la légende, et les points
       // mesurés de « Proposer depuis les mesures » en surimpression (carrés) ; dans l'unité de lecture ; rien sous deux lignes chiffrées
@@ -1173,11 +1258,13 @@ export function createSheetsView(host) {
       before,
       after,
       diff,
-      gone: dropped
+      gone: dropped,
+      given: Array.isArray(o.given) ? o.given : []
     };
+    const notes = (Array.isArray(o.notes) ? o.notes : []).map(n => `<p class="f-note" data-kind="warn" data-reviewnote>${esc(n)}</p>`).join('');
     const many = o.batch?.n > 1;
     b.innerHTML = `<div class="f-card" data-review><h2>${esc(before ? many ? tt(TX.reviewOf, { n: before.name || before.id }) : tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}${many ? ` <span class="f-muted" data-rank>· ${o.batch.i} / ${o.batch.n}</span>` : ''}</h2>
-    ${rows.length || diff.curve.length || dropped.length ? `<div class="f-scroll"><table class="f-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="f-num">${esc(tt(TX.before))}</th><th class="f-num">${esc(tt(TX.after))}</th></tr></thead><tbody>
+    ${notes}${rows.length || diff.curve.length || dropped.length ? `<div class="f-scroll"><table class="f-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="f-num">${esc(tt(TX.before))}</th><th class="f-num">${esc(tt(TX.after))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td>${cell(r.old)}${cell(r.now)}</tr>`).join('')}
       ${diff.curve.map(c => `<tr>${box(`data-curve="${esc(c.key)}"`, true)}<td>RPM ${esc(c.label)} <span class="f-muted">(${esc(tt(c.kind === 'added' ? TX.added : TX.replaced))})</span></td><td class="f-num">${esc(c.old)}</td><td class="f-num">${esc(c.now)}</td></tr>`).join('')}
       ${dropped.map((r, i) => `<tr>${box(`data-gone="${i}"`, true)}<td>RPM ${esc(r.rpm)}${r.altFt !== null && r.altFt !== undefined && r.altFt !== '' ? ` @ ${esc(r.altFt)} ft` : ''} <span class="f-muted">(${esc(tt(TX.rpmGone))})</span></td><td class="f-num">${esc(ff(r))}</td><td class="f-num">—</td></tr>`).join('')}
@@ -1191,7 +1278,8 @@ export function createSheetsView(host) {
       {
         before,
         after,
-        diff
+        diff,
+        given
       } = st.pending,
       skip = new Set([...b.querySelectorAll('[data-path]')].filter(i => !i.checked).map(i => i.dataset.path)),
       skipCurve = new Set([...b.querySelectorAll('[data-curve]')].filter(i => !i.checked).map(i => i.dataset.curve)),
@@ -1203,7 +1291,9 @@ export function createSheetsView(host) {
     for (const i of b.querySelectorAll('[data-gone]'))
       if (!i.checked) out.rpmFuelCurve = [...(out.rpmFuelCurve || []), structuredClone(st.pending.gone[+i.dataset.gone])];
     if (!before) out.id = uniqueId(out.id);
-    await storeSheet(out, st.pending.source);
+    // SOG-0385 : les champs donnés par l'import et gardés (cochés) ; la table, si elle a des lignes
+    await storeSheet(out, st.pending.source, (given || []).filter(k => !skip.has(k) && (k !== 'rpmFuelCurve' || (out.rpmFuelCurve || [])
+      .length)));
     if (gone()) return;
     st.pending = null;
     if (st.batch) {
