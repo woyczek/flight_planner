@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 250,
+  "tests": 251,
   "verdicts": 188
  },
  "apps": [
@@ -3719,10 +3719,10 @@
     "de": "Installation: optionale Python-Bibliotheken werden per Skript installiert, und der Bildschirm sagt, welche fehlen",
     "es": "Instalación: las bibliotecas opcionales de Python se instalan con un script, y la pantalla dice cuáles faltan"
    },
-   "test": "Ferme le lanceur. Dans le dossier de la suite (E:\\DEFA), double-clique « installer_bibliotheques.cmd ». Il dit quel Python il utilise, ce qu'il va installer et d'où ; attendu chez toi : pypdf et Pillow à mettre à niveau, pdfplumber et pdfminer.six à installer, l'OCR « rien à faire ». Réponds « o » à la question des PDF. À la fin il relit les versions : pypdf 6.21.4 au moins. S'il échoue, copie-moi ses dernières lignes (ton Python est le 3.14 : une bibliothèque peut ne pas avoir de paquet prêt pour lui). Relance lancer.cmd. Ensuite tu peux essayer SOG-0374 (les départs d'EGLL). La ligne d'état dans Maintenance › Données arrive avec le push suivant : je te le dirai.",
+   "test": "Relance le lanceur, puis ouvre Maintenance › Données : sous la ligne du cycle, une ligne ambre doit dire « Lecture des PDF : pypdf 6.21.3, il faut 6.21.4 au moins — lancez installer_bibliotheques.cmd, dans le dossier de la suite, puis relancez le lanceur ». Ferme le lanceur. Dans E:\\DEFA, double-clique « installer_bibliotheques.cmd » : il dit quel Python il utilise, ce qu'il va installer et d'où ; attendu chez toi : pypdf et Pillow à mettre à niveau, pdfplumber et pdfminer.six à installer, l'OCR « rien à faire ». Réponds « o » à la question des PDF. À la fin il relit les versions : pypdf 6.21.4 au moins. S'il échoue, copie-moi ses dernières lignes (ton Python est le 3.14 : une bibliothèque p",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T14:45:08Z"
+   "delivered": "2026-11-16T14:51:53Z"
   },
   {
    "id": "SOG-0378",
@@ -3765,6 +3765,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T14:30:03Z"
+  },
+  {
+   "id": "SOG-0383",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : les barbules de vent cachent le tracé de la route — les poser en quinconce de part et d'autre, et moins nombreuses",
+    "en": "Map: the wind barbs hide the route line — stagger them on either side, and fewer of them",
+    "de": "Karte: die Windfiedern verdecken die Streckenlinie — versetzt beidseitig anordnen, und weniger davon",
+    "es": "Mapa: las barbas de viento tapan el trazado de la ruta — colocarlas al tresbolillo a ambos lados, y menos"
+   },
+   "test": "Sur l'ordinateur, recharge l'appli (pas de relance du lanceur) : Carte, ton vol LFST → EIDW, barbules de vent allumées, au zoom de ta capture de 15 h 11. Attendu : le trait de la route se lit d'un bout à l'autre — aucune barbule posée dessus, ni par son pied ni par sa hampe ; elles alternent d'un côté et de l'autre ; il y en a une douzaine, pas soixante-dix ; les repères de distance (425, 400…) et TOC / TOD ne sont pas couverts. Zoome et dézoome : jamais deux barbules collées. Même chose au téléphone.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T14:47:54Z"
   }
  ],
  "decisions": [

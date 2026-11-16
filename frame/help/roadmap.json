@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "608d92d",
+  "organisation": "4ae4d4d",
   "fiches": 382,
   "untranslated": 0,
   "priorities": 374
@@ -1623,11 +1623,12 @@
     {
      "id": "SOG-0383",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : les barbules de vent cachent le tracé de la route — les poser en quinconce de part et d'autre, et moins nombreuses",
      "en": "Map: the wind barbs hide the route line — stagger them on either side, and fewer of them",
      "de": "Karte: die Windfiedern verdecken die Streckenlinie — versetzt beidseitig anordnen, und weniger davon",
-     "es": "Mapa: las barbas de viento tapan el trazado de la ruta — colocarlas al tresbolillo a ambos lados, y menos"
+     "es": "Mapa: las barbas de viento tapan el trazado de la ruta — colocarlas al tresbolillo a ambos lados, y menos",
+     "test": true
     }
    ]
   },
