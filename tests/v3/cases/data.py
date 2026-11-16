@@ -732,7 +732,7 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 body = {'id': 'jpb', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'étapes', 'log': [], 'result': res, 'zones': {}}
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'circuits' and st['posts'][-1].get('set') == 'vfr' and st.get('circuits') is not None:
                 body = {'id': 'jcc', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'terrains', 'log': [], 'result': st['circuits'], 'zones': {}}   # vfr/circuits (SOG-0253): read only, what the launcher kept of the user’s XML
-            elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st['posts'][-1].get('set') in ('proc', 'vfr', 'aircraft') and st.get('setstate') is not None:
+            elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st['posts'][-1].get('set') in ('proc', 'vfr', 'aircraft', 'pdf') and st.get('setstate') is not None:
                 res = st['setstate'].get(st['posts'][-1]['set'])   # the state verbs of the other sets (SOG-0119: proc/status, vfr/status, aircraft/status): a dict, or a function of the args
                 if callable(res):
                     res = res(st['posts'][-1].get('args') or {})
@@ -2473,9 +2473,9 @@ def l17(c):
     st3['views'], st3['i'], st3['start'] = [nop], 0, (200, {'job': 'v4'})
     c.tap('[data-set-panel=vfr] [data-verb=build]')
     c.until("document.querySelector('[data-set-panel=vfr] [data-build-result]')?.dataset.result === 'no-pypdf'", timeout=8000, what='no-pypdf is said')
-    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.attr('[data-set-panel=vfr] [data-build-result] a', 'href').endswith('/apps/settings/premier_lancement.html'),
-          _line(c, '[data-set-panel=vfr] [data-build-result] a'), c.count('[data-set-panel=vfr] [data-failed]')],
-         [norm(_trow('noPypdf', lang, 'vfrSum: {').replace('{s}', label('vfr'))), True, norm(_trow('firstInstall', lang)), 0], 'a sentence and the link to the first-install assistant', what='no-pypdf')
+    c.eq([_line(c, '[data-set-panel=vfr] [data-build-result] b'), c.count('[data-set-panel=vfr] [data-build-result] a'), c.count('[data-set-panel=vfr] [data-failed]')],
+         [norm(_trow('noPypdf', lang, 'vfrSum: {').replace('{s}', label('vfr'))), 0, 0], 'a sentence that names the script to run (SOG-0376: the first-install assistant installs nothing, no link to it)', what='no-pypdf')
+    c.ok('premier_lancement' not in c.js("document.querySelector('[data-set-panel=vfr]').outerHTML") and 'pip' not in _line(c, '[data-set-panel=vfr] [data-build-result] b').split(), '', 'no link to the first-install page and no pip command')
     # the plan refused: its problems are listed
     inv = _sview('vfr', 'build', 'cycles', {cyc: {'state': 'failed', 'error': 'invalid'}}, state='error', jid='v5', unit='steps', done=1, total=3,
                  result={'ok': False, 'cycle': cyc, 'reason': 'invalid', 'failed': [{'item': 'plan', 'error': 'point <b>x</b>'}], 'summary': {}})
@@ -10011,3 +10011,94 @@ def l150(c):
     op = norm(c.text('[data-sheet=is] [data-thread-step=download]'))
     c.ok(norm(_trow('parse', lang, after='  fetchError: {')) in op, op, 'and so does the line « Dernière opération »')
     c.check_errors()
+
+
+_PDF_OK = {'name': 'pypdf', 'version': '6.21.4', 'minimum': '6.21.4', 'maximum': '7', 'state': 'ok'}
+_PDF_PKGS = [{'name': 'pdfplumber', 'version': '0.11.10', 'minimum': '0.11.10', 'maximum': '0.12', 'state': 'ok'},
+             {'name': 'Pillow', 'version': '13.0.0', 'minimum': '13.0.0', 'maximum': '14', 'state': 'ok'},
+             {'name': 'pdfminer.six', 'version': '20260107', 'minimum': '20260107', 'maximum': None, 'state': 'ok'}]
+_PDF_OCR = [{'name': 'pypdfium2', 'version': None, 'minimum': '4', 'maximum': '5', 'state': 'missing'}, {'name': 'rapidocr-onnxruntime', 'version': None, 'minimum': '1.3', 'maximum': '2', 'state': 'missing'}]
+
+
+def _pdf_answer(pypdf, ready=True, **extra):
+    """What `pdf/status` says (AeroDB 52bef1144): packages, groups, ready flags, the NAME of the script; pypdf is the one package a case changes."""
+    pk = [pypdf] + _PDF_PKGS + _PDF_OCR
+    ok = pypdf['state'] == 'ok'
+    return {'ok': True, 'packages': pk, 'groups': [{'id': 'pdf', 'packages': ['pypdf', 'pdfplumber', 'pdfminer.six', 'Pillow'], 'ready': ok}, {'id': 'ocr', 'packages': ['pypdfium2', 'rapidocr-onnxruntime'], 'ready': False}],
+            'ready': {'text': ok, 'vectors': True, 'ocr': False}, 'script': 'installer_bibliotheques.cmd', 'python': '3.14.0', **extra}
+
+
+def _l151(c, answer, state, shot):
+    """The line « Lecture des PDF » of the head of Données, for one answer of pdf/status."""
+    lang = c.lang
+    P = lambda k: norm(_trow(k, lang, after='  pdfl: {'))
+    st = _l102_open(c, extra_verbs=['pdf/status'], setstate={'pdf': answer})
+    c.until("!!document.querySelector('[data-data-head] [data-pdf-libs]')", timeout=15000, what='the line of the PDF libraries is drawn')
+    el = '[data-data-head] [data-pdf-libs]'
+    c.eq(c.attr(el, 'data-state'), state, 'the state of the line', what='state')
+    c.eq(c.count('[data-data-head] [data-pdf-libs]'), 1, 'one line', what='one')
+    txt = norm(c.text(el))
+    c.ok('pip' not in txt.split(), txt, 'no pip command on the screen')
+    c.shot(f'{shot}_{c.width}_{lang}.png')
+    c.check_errors()
+    return P, txt
+
+
+@case('L151', 'Données: when the libraries are READY the head says NOTHING — a good state is silent, and the optional OCR group is never shown (SOG-0376, the ergonomist: « trop d\'infos tue l\'info »)',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=True, night=False,
+      rule='SOG-0376: `ready.text && ready.vectors` → no line at all; the OCR group (optional) is never written in the head, whatever its state')
+def l151(c):
+    lang = c.lang
+    st = _l102_open(c, extra_verbs=['pdf/status'], setstate={'pdf': _pdf_answer(_PDF_OK)})
+    for _ in range(60):
+        if any(r[0] == 'pdf' for r in st.get('setstate_reads', [])):
+            break
+        c.wait(250)
+    c.ok(any(r[0] == 'pdf' for r in st.get('setstate_reads', [])), st.get('setstate_reads'), 'pdf/status was read')
+    c.wait(600)
+    c.eq([c.count('[data-data-head] [data-pdf-libs]'), c.count('[data-pdf-ocr]'), c.count('[data-data-head] p')], [0, 0, 1], 'no PDF line, no OCR line: the head keeps its one line', what='silent')
+    c.shot(f'L151_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+@case('L152', 'Données: a pypdf too OLD is named with its version and the minimum, then the NAME of the script (SOG-0376) — no pip command',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0376: « pypdf 6.21.3, il faut 6.21.4 au moins — lancez <script>, dans le dossier de la suite, puis relancez le lanceur »; the names and versions are the launcher\'s text: escaped')
+def l152(c):
+    P, txt = _l151(c, _pdf_answer({**_PDF_OK, 'version': '6.21.3', 'state': 'old'}), 'need', 'L152')
+    why = P('old').replace('{n}', 'pypdf').replace('{v}', '6.21.3').replace('{m}', '6.21.4')
+    c.eq(txt, norm(f"! {P('label')} : {why} — {P('fix').replace('{s}', 'installer_bibliotheques.cmd')}"), 'the package at fault, then the script to run', what='text')
+    c.eq(c.attr('[data-data-head] [data-pdf-libs]', 'class'), 'd-headline f-warn', 'in the warning tone, at the size of the head line', what='tone')
+
+
+@case('L153', 'Données: a MISSING pypdf says « pypdf manque » then the script to run (SOG-0376)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0376: the sentence « pypdf manque — l\'assistant de première installation l\'installe » was false: nothing installs it')
+def l153(c):
+    P, txt = _l151(c, _pdf_answer({'name': 'pypdf', 'version': None, 'minimum': '6.21.4', 'maximum': '7', 'state': 'missing'}), 'need', 'L153')
+    c.eq(txt, norm(f"! {P('label')} : {P('missing').replace('{n}', 'pypdf')} — {P('fix').replace('{s}', 'installer_bibliotheques.cmd')}"), 'pypdf is missing, then the script to run', what='text')
+
+
+@case('L154', 'Données: a REFUSED bounds file says that nothing is ready and what to do — never « prête » (SOG-0376, error: bounds)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0376: a bounds file the strict reader refuses makes pdf/status say error: bounds, every `ready` false: the page never shows « prête » on unknown bounds')
+def l154(c):
+    ans = {'ok': True, 'packages': [], 'groups': [], 'ready': {'text': False, 'vectors': False, 'ocr': False}, 'script': 'installer_bibliotheques.cmd', 'python': '3.14.0', 'error': 'bounds'}
+    P, txt = _l151(c, ans, 'bounds', 'L154')
+    c.eq(txt, norm(f"! {P('label')} : {P('bounds')}"), 'nothing is ready, said', what='text')
+    c.ok('tools/requirements-optional.txt' in txt and 'bornes' not in txt.lower() and 'bounds' not in txt.lower(), txt, 'the file is NAMED (a pilot does not know « le fichier des bornes »)')
+    c.eq(c.count('[data-data-head] [data-pdf-ocr]'), 0, 'and no OCR half-line', what='ocr')
+
+
+@case('L155', 'Données: what the launcher says in `pdf/status` is TEXT, never markup nor a command (SOG-0376, hostile answer) — a name or a script outside the closed form is dropped, the rest is escaped',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0376: names, versions and script are bounded by a closed form in the model, then written with esc as text nodes, never in an attribute')
+def l155(c):
+    evil = _pdf_answer({'name': 'pypdf', 'version': '<img src=x onerror=window.__pwn=1>', 'minimum': '6.21.4', 'maximum': '7', 'state': 'old'})
+    evil['packages'].append({'name': '<b>evil</b>', 'version': '1', 'minimum': '1', 'maximum': '2', 'state': 'old'})
+    evil['groups'][0]['packages'].append('<b>evil</b>')
+    evil['script'] = 'x"><img src=x onerror=window.__pwn=2>'
+    _l151(c, evil, 'need', 'L155')
+    c.eq([c.count('[data-data-head] img'), c.count('[data-data-head] [data-pdf-libs] b'), c.js('window.__pwn === undefined')], [0, 0, True], 'nothing in it is markup; the hostile version and script are dropped (the line says the generic script names)', what='escaped')
+    txt = norm(c.text('[data-data-head] [data-pdf-libs]'))
+    c.ok('evil' not in txt and 'onerror' not in txt, txt, 'and the dropped texts are not on the screen')

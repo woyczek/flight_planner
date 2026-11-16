@@ -1631,10 +1631,11 @@ export const TX = {
       '{s}: the SIA has not published the charts of this cycle yet',
       '{s}: der SIA hat die Karten dieses Zyklus noch nicht veröffentlicht', '{s}: el SIA aún no ha publicado las cartas de este ciclo'
     ],
-    noPypdf: ['{s} : pypdf manque — l’assistant de première installation l’installe',
-      '{s}: pypdf is missing — the first-install assistant installs it',
-      '{s}: pypdf fehlt — der Assistent der Ersteinrichtung installiert es',
-      '{s}: falta pypdf — el asistente de primera instalación lo instala'
+    noPypdf: [
+      '{s} : pypdf manque — lancez installer_bibliotheques.cmd (Windows) ou installer_bibliotheques.sh, dans le dossier de la suite, puis relancez le lanceur',
+      '{s}: pypdf is missing — run installer_bibliotheques.cmd (Windows) or installer_bibliotheques.sh, in the folder of the suite, then restart the launcher',
+      '{s}: pypdf fehlt — starten Sie installer_bibliotheques.cmd (Windows) oder installer_bibliotheques.sh im Ordner der Suite und starten Sie dann den Starter neu',
+      '{s}: falta pypdf — ejecute installer_bibliotheques.cmd (Windows) o installer_bibliotheques.sh, en la carpeta de la suite, y reinicie el lanzador'
     ],
     noCache: ['{s} : téléchargez d’abord les cartes de ce cycle', '{s}: download the charts of this cycle first',
       '{s}: laden Sie zuerst die Karten dieses Zyklus herunter', '{s}: descargue primero las cartas de este ciclo'
@@ -1664,11 +1665,42 @@ export const TX = {
     'In data/ wartet eine Zusammenführung: synchronisieren Sie zuerst (Einstellungen › Synchronisierung)',
     'Una fusión espera en data/: sincronice primero (Ajustes › Sincronización)'
   ],
-  firstInstall: ['Ouvrir l’assistant de première installation (page de l’ancienne version)',
-    'Open the first-install assistant (a page of the old version)',
-    'Assistenten der Ersteinrichtung öffnen (Seite der alten Version)',
-    'Abrir el asistente de primera instalación (página de la versión antigua)'
-  ],
+  // la ligne « Lecture des PDF » de l'en-tête (SOG-0376) : l'état des bibliothèques, lu par pdf/status ; jamais une commande pip, seulement le NOM du script
+  pdfl: {
+    label: ['Lecture des PDF', 'PDF reading', 'PDF-Lesen', 'Lectura de PDF'],
+    missing: ['{n} manque', '{n} is missing', '{n} fehlt', 'falta {n}'],
+    old: ['{n} {v}, il faut {m} au moins', '{n} {v}, {m} or later is needed', '{n} {v}, mindestens {m} nötig',
+      '{n} {v}, se necesita {m} como mínimo'
+    ],
+    oldNoV: ['{n} est trop ancienne, il faut {m} au moins', '{n} is too old, {m} or later is needed',
+      '{n} ist zu alt, mindestens {m} nötig', '{n} es demasiado antigua, se necesita {m} como mínimo'
+    ],
+    newer: ['{n} {v} est trop récente, il faut moins de {m}', '{n} {v} is too new, below {m} is needed',
+      '{n} {v} ist zu neu, unter {m} nötig', '{n} {v} es demasiado reciente, se necesita menos de {m}'
+    ],
+    newerNoV: ['{n} est trop récente, il faut moins de {m}', '{n} is too new, below {m} is needed', '{n} ist zu neu, unter {m} nötig',
+      '{n} es demasiado reciente, se necesita menos de {m}'
+    ],
+    unknown: ['{n} : état inconnu', '{n}: unknown state', '{n}: Zustand unbekannt', '{n}: estado desconocido'],
+    notReady: ['pas prête', 'not ready', 'nicht bereit', 'no está lista'],
+    fix: ['lancez {s}, dans le dossier de la suite, puis relancez le lanceur',
+      'run {s}, in the folder of the suite, then restart the launcher',
+      'starten Sie {s} im Ordner der Suite und starten Sie dann den Starter neu',
+      'ejecute {s}, en la carpeta de la suite, y reinicie el lanzador'
+    ],
+    fixAny: [
+      'lancez installer_bibliotheques.cmd (Windows) ou installer_bibliotheques.sh, dans le dossier de la suite, puis relancez le lanceur',
+      'run installer_bibliotheques.cmd (Windows) or installer_bibliotheques.sh, in the folder of the suite, then restart the launcher',
+      'starten Sie installer_bibliotheques.cmd (Windows) oder installer_bibliotheques.sh im Ordner der Suite und starten Sie dann den Starter neu',
+      'ejecute installer_bibliotheques.cmd (Windows) o installer_bibliotheques.sh, en la carpeta de la suite, y reinicie el lanzador'
+    ],
+    bounds: [
+      'le fichier tools/requirements-optional.txt de la suite a été modifié et n’est plus lisible — remettez celui de la suite (une mise à jour le remet), puis relancez le lanceur',
+      'the file tools/requirements-optional.txt of the suite was modified and is no longer readable — put back the one of the suite (an update puts it back), then restart the launcher',
+      'die Datei tools/requirements-optional.txt der Suite wurde verändert und ist nicht mehr lesbar — stellen Sie die der Suite wieder her (ein Update stellt sie wieder her) und starten Sie dann den Starter neu',
+      'el archivo tools/requirements-optional.txt de la suite fue modificado y ya no se puede leer — restaure el de la suite (una actualización lo restaura) y reinicie el lanzador'
+    ]
+  },
   // la carte des États à cocher (procédures) : son nom, ce que dit chaque teinte, la légende
   zoneMap: {
     proc: ['Carte des États à cocher', 'Map of the States to tick', 'Karte der anzukreuzenden Staaten', 'Mapa de los Estados por marcar']

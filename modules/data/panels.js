@@ -64,7 +64,6 @@ import {
 } from './todo.js';
 
 /** L'assistant de première installation (page V2 servie par le lanceur : SPEC § 6.5), adresse fixe du dépôt, jamais prise d'une réponse. */
-const FIRST_INSTALL = new URL('../../apps/settings/premier_lancement.html', import.meta.url).pathname;
 /** Les zones de la couverture dans l'ordre de zones() et, parmi elles, les cochées. */
 export function buildZones() {
   const ids = M.orderZones(S.d.cov.ids, S.d.zones);
@@ -602,7 +601,6 @@ function resultHtml(panel = 'base', carded = false) {
   const blocked = set === 'base' && r.out.blocking?.length ? blockingHtml(r.out) : '';
   return `<div data-build-result data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>${blocked}
     ${(sm.notes || []).map(n => `<p class="f-warn" data-line>${esc(n)}</p>`).join('')}
-    ${r.out.kind === 'no-pypdf' ? `<p data-line><a href="${esc(FIRST_INSTALL)}">${esc(tt(TX.firstInstall))}</a></p>` : ''}
     ${sm.advice ? `<p class="f-muted" data-advice>${esc(tt(sm.advice))}</p>` : ''}
     ${failedHtml(r.out, set)}
     ${rows.length ? `<ul class="d-zl">${rows.map(z => zoneLineHtml(z, 'build', set)).join('')}</ul>` : ''}</div>`;

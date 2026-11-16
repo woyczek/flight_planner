@@ -2,21 +2,61 @@
 // lanceur à la fois, jamais pendant une autre opération). Ce que le lanceur dit REMPLACE ce que la page déduisait de la publication pour la ligne repliée du jeu et pour « Tout mettre à jour » ; sans le verbe (un lanceur plus ancien), rien n'est lu et la page garde sa
 // déduction. L'état est gardé dans S.cw.ss : { <jeu>: { state: 'loading' | 'ready' | 'none' | 'busy' | 'unread', data, dirty } }.
 import {
+  pdfLine,
   SET_STATE_VERBS,
   procArgs,
   setStateOf
 } from './model_setstate.js';
 import {
   busyNow,
+  esc,
   ROUTE,
   S,
-  serial
+  serial,
+  tt
 } from './state.js';
+import {
+  TX
+} from './texts.js';
 import {
   procList,
   renderBuild
 } from './panels.js';
 
+/** La ligne « Lecture des PDF » (SOG-0376), d'après `pdf/status` lu une fois à l'ouverture : « prête », ou le paquet du groupe pdf en cause (« pypdf 6.21.3, il faut 6.21.4 au moins », « pypdf manque ») puis le NOM du script à lancer — aucune commande pip ; le groupe OCR à part,
+ *  jamais le groupe OCR (facultatif : il n'a pas sa place ici). Les noms, versions et script viennent du lanceur : écrits en texte, jamais dans un attribut. '' sans l'état (lanceur plus ancien, lecture refusée). */
+export function pdfLibsHtml() {
+  const e = S.cw?.ss?.pdf,
+    ln = e?.data ? pdfLine(e.data) : null;
+  if (!ln || ln.kind === 'ready') return ''; // un état bon se tait : la ligne n'apparaît que s'il y a quelque chose à faire
+  const T = TX.pdfl,
+    fix = ln.script ? tt(T.fix, {
+      s: ln.script
+    }) : tt(T.fixAny),
+    why = p => p.state === 'missing' ? tt(T.missing, {
+      n: p.name
+    }) : p.state === 'old' ? tt(p.version ? T.old : T.oldNoV, {
+      n: p.name,
+      v: p.version,
+      m: p.minimum
+    }) : p.state === 'new' ? tt(p.version ? T.newer : T.newerNoV, {
+      n: p.name,
+      v: p.version,
+      m: p.maximum
+    }) : tt(T.unknown, {
+      n: p.name
+    }),
+    main = ln.kind === 'bounds' ? `<p class="d-headline f-warn" data-pdf-libs data-state="bounds">${esc(`! ${tt(T.label)} : ${tt(T.bounds)}`)}</p>` :
+    `<p class="d-headline f-warn" data-pdf-libs data-state="need">${esc(`! ${tt(T.label)} : ${ln.bad.length ? ln.bad.map(why).join(' ; ') : tt(T.notReady)} — ${fix}`)}</p>`;
+  return main;
+}
+/** Redessine la ligne « Lecture des PDF » de l'en-tête quand sa lecture arrive (renderBuild ne redessine que les panneaux, pas l'en-tête). */
+function redrawPdfLibs() {
+  const head = S?.body?.querySelector('[data-data-head]');
+  if (!head) return;
+  head.querySelectorAll('[data-pdf-libs]').forEach(e => e.remove());
+  head.insertAdjacentHTML('beforeend', pdfLibsHtml());
+}
 /** L'état de lecture de tous les jeux, créé avec celui de la carte. */
 export const ssInit = () => ({});
 /** L'état que le lanceur dit d'un jeu (`{ state, n, reasons, cycle }`), ou null tant qu'il n'est pas lu (ou sans verbe) : la page garde alors sa déduction. */
@@ -96,6 +136,7 @@ async function wantOne(set) {
     state: 'unread'
   };
   renderBuild();
+  if (set === 'pdf') redrawPdfLibs();
 }
 /** Lit ce qui est à lire (appelée après un dessin complet de l'écran et quand il est libre) : les trois jeux, l'un après l'autre. */
 export function wantSetStates() {

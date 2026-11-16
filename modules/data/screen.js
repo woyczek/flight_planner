@@ -32,6 +32,9 @@ import {
   refreshStatus
 } from './status.js';
 import {
+  pdfLibsHtml
+} from './setstate.js';
+import {
   showZone,
   wantZone
 } from './update.js';
@@ -387,7 +390,7 @@ function headHtml() {
       n: h.daysToNext
     });
   return `<section class="f-card" data-data-head><p class="d-headline"><span class="f-muted">${esc(tt(TX.cycleNow))}</span> <b data-cycle-now>${esc(h.id)}</b>
-    <span class="f-muted" data-cycle-dates>${esc(tt(TX.cycleDates, { a: M.dateText(h.date, lang()), b: M.dateText(h.end, lang()) }))} · ${esc(next)}</span> <span class="f-muted">·</span> ${runner}</p></section>`;
+    <span class="f-muted" data-cycle-dates>${esc(tt(TX.cycleDates, { a: M.dateText(h.date, lang()), b: M.dateText(h.end, lang()) }))} · ${esc(next)}</span> <span class="f-muted">·</span> ${runner}</p>${pdfLibsHtml()}</section>`;
 }
 /** Une ligne de la liste des États : le point de couleur (jamais la couleur seule : le libellé suit), le motif et les États. */
 function stateLineHtml(l) {
