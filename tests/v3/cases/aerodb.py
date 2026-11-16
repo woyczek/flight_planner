@@ -11105,3 +11105,63 @@ def k289(c):
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+
+
+@case('K288', 'Launcher jobs (SOG-0384): a pure READ of the state (base/status, base/cycle, pdf/status…) runs BESIDE a running job instead of being refused 409 « a job is already running » — the Data screen asked pdf/status while it asked base/status and one of the two was refused: « L\'état de votre base n\'est pas connu » ten seconds after the opening; what is slow no longer blocks another read; a job that writes keeps the place and a second writer is still refused',
+      'K', static=True,
+      rule='SOG-0384 (the user, 16 Nov 15:58, version a01d580a5): ten seconds after opening Maintenance › Data, « L\'état de votre base n\'est pas connu : il n\'a pas encore été lu », every group « état non lu ». Measured on his real base (read only): base/status 0.4–0.7 s for 84 zones and pdf/status 0.15 s — neither is slow; the cause is the launcher: `Jobs.start` accepts ONE job at a time (409 busy), the page now fires pdf/status at the opening together with base/status and base/cycle, and whichever comes second is refused (reproduced on the real base: pdf/status then base/status → 409; base/cycle then base/status → 409). Fix: the pure reads (`regen_jobs.PARALLEL`) are jobs of their own that do not take the place: they run beside the current job (or beside each other), are polled by their id (view, cancel), never written to the last-job file, never counted as « the job that holds the place » (`running()`).')
+def k288(c):
+    import sys
+    import threading
+    import time
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import regen_jobs as RJ
+    gate = threading.Event()
+
+    def slow(job, args, ctx):
+        gate.wait(10)
+        return {'ok': True, 'wrote': True}
+    fast = lambda job, args, ctx: {'ok': True, 'read': 1}
+    boom = lambda job, args, ctx: (_ for _ in ()).throw(ValueError('no secret here'))
+    reg = {('base', 'build'): (slow, lambda a: {}), ('base', 'update'): (fast, lambda a: {}), ('pdf', 'status'): (fast, lambda a: {} if a == {} else None), ('base', 'status'): (fast, lambda a: {}), ('base', 'cycle'): (boom, lambda a: {})}
+    jobs = RJ.Jobs(reg, {})
+    a = jobs.start('base', 'build', {})
+    c.ok(a.get('ok'), str(a), 'a job that writes starts')
+    results = {}
+    for key in (('pdf', 'status'), ('base', 'status'), ('base', 'cycle')):
+        results[key] = jobs.start(*key, {})
+    c.eq([bool(v.get('ok')) for v in results.values()], [True, True, True], 'the reads start BESIDE the running job (before: 409 « a job is already running »)', what='reads start')
+    second = jobs.start('base', 'update', {})
+    c.eq((second.get('ok'), second.get('status'), second.get('reason')), (False, 409, 'busy'), 'a second job that writes is still refused while the first runs', what='second writer')
+    ids = [v['job'] for v in results.values()]
+    deadline = time.time() + 5
+    views = {}
+    while time.time() < deadline:
+        views = {i: jobs.view(i) for i in ids}
+        if all(v.get('state') in ('done', 'error') for v in views.values()):
+            break
+        time.sleep(0.02)
+    c.eq([(views[i].get('state'), (views[i].get('result') or {}).get('read')) for i in ids[:2]], [('done', 1), ('done', 1)], 'the reads are polled by their id and answer while the writer still runs', what='reads answer')
+    c.eq((views[ids[2]].get('state'), 'no secret here' in str((views[ids[2]].get('result') or {}).get('message'))), ('error', True), 'a read that fails says so (an error job), the launcher goes on', what='read error')
+    running = jobs.running()
+    c.eq((running or {}).get('verb'), 'build', 'the place is still held by the writer: the reads never count as « the job that holds the place »', what='place')
+    c.eq(jobs.cancel(ids[0]).get('ok'), True, 'a read can be cancelled by its id like any job', what='cancel read')
+    gate.set()
+    deadline = time.time() + 5
+    while time.time() < deadline and jobs.running():
+        time.sleep(0.02)
+    c.eq(jobs.view(a['job']).get('state'), 'done', 'the writer finishes undisturbed', what='writer')
+    c.ok(('base', 'status') in RJ.PARALLEL and ('pdf', 'status') in RJ.PARALLEL and ('base', 'cycle') in RJ.PARALLEL and ('base', 'build') not in RJ.PARALLEL and ('base', 'update') not in RJ.PARALLEL and RJ.PARALLEL <= RJ.READ_ONLY | {('pdf', 'status')},
+         str(sorted(RJ.PARALLEL)), 'only pure reads run in parallel: status, cycle, coverage, last, registry, fra-points, ground state, pdf status; never a build, an update, a pickup or a fetch')
+    # the case of the screen: two reads in a row with NO job that writes (before: the second was refused 409)
+    gate2 = threading.Event()
+    slow_read = lambda job, args, ctx: (gate2.wait(10), {'ok': True, 'read': 2})[1]
+    jobs2 = RJ.Jobs({('pdf', 'status'): (slow_read, lambda a: {}), ('base', 'status'): (fast, lambda a: {}), ('base', 'cycle'): (fast, lambda a: {})}, {})
+    first = jobs2.start('pdf', 'status', {})
+    others = [jobs2.start('base', 'status', {}), jobs2.start('base', 'cycle', {})]
+    c.eq((bool(first.get('ok')), [bool(o.get('ok')) for o in others]), (True, [True, True]), 'two reads started while a slow read runs and no job writes: none is refused (the Data screen asks pdf/status, base/status and base/cycle together)', what='screen case')
+    deadline = time.time() + 5
+    while time.time() < deadline and not all((jobs2.view(o['job']).get('state') == 'done') for o in others):
+        time.sleep(0.02)
+    c.eq([jobs2.view(o['job']).get('state') for o in others], ['done', 'done'], 'and they answer while the slow read is still running (what is slow does not block another read)', what='screen answers')
+    gate2.set()

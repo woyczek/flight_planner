@@ -12,6 +12,7 @@ Socle commun à toutes les opérations de régénération (lot D0 ; les verbes d
 Routes (tools/launch.py, ce poste seulement : refusées à un appareil du réseau local) : GET /__setup/regen/state,
 POST /__setup/regen/job { set, verb, args } → { job }, GET /__setup/regen/job[?id=], POST /__setup/regen/job/cancel { id }.
 """
+import collections
 import hmac
 import importlib.util
 import json
@@ -237,6 +238,9 @@ READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('base', 'cycle'), ('base
 # SOG-0206 : la page lit seule, en fond, la couche sol d'un terrain (ground/fetch, ~30 s) dès qu'elle a lu ses procédures ; le contrôle de route que le pilote lance à ce moment-là
 # était refusé (409 « a job is already running ») et l'écran disait « n'a pas répondu ». Un travail de SIDE (le calcul et le contrôle de route, qui ne font que lire la base et les
 # procédures) part donc à côté d'un travail de BACKGROUND (qui n'écrit que proc/ground/, jamais ce que le calcul lit) : un seul à côté à la fois, jamais à côté d'un autre travail.
+# SOG-0384 : les LECTURES PURES de l'état (rien n'est écrit, chacune est brève) ne tiennent PAS la place : un travail qui écrit tourne, elles partent à côté (et à côté l'une de l'autre) au lieu d'être refusées 409 « a job is already running » — l'écran Données demande base/status, base/cycle et pdf/status
+# à l'ouverture ; la seconde était refusée et l'écran disait « l'état de votre base n'est pas connu ». Chacune est un travail à part (son identifiant, view, cancel), jamais écrit dans le fichier du dernier travail, jamais « le travail qui tient la place » (running()).
+PARALLEL = {('base', 'status'), ('base', 'cycle'), ('base', 'coverage'), ('base', 'last'), ('aircraft', 'registry'), ('route', 'fra-points'), ('ground', 'state'), ('pdf', 'status')}
 BACKGROUND = {('ground', 'fetch')}
 SIDE = {('route', 'compute')}
 
@@ -278,6 +282,7 @@ class Jobs:
         self.kept = None  # dernier travail d'un lancement précédent (« interrupted » s'il courait encore)
         self.work = None  # la vue du dernier travail qui n'est pas une simple lecture (une construction, une reprise…) : un base/status juste après ne l'écrase pas
         self.held = ''  # raison d'une suspension des départs (la mise à jour de la suite) ; vide : les travaux partent
+        self.reads = collections.OrderedDict()  # SOG-0384 : les dernières lectures parallèles (PARALLEL), par identifiant : view et cancel les trouvent ; au plus READS_KEPT
         self._load()
 
     def _load(self):
@@ -321,6 +326,40 @@ class Jobs:
         except (OSError, TypeError, ValueError):
             pass
 
+    READS_KEPT = 32
+
+    def _start_read(self, key, fn, a, author):
+        """SOG-0384 : une lecture pure part à côté du travail en cours (et des autres lectures), sans tenir la place : un fil à elle, son identifiant, ni le fichier du dernier travail, ni le journal persistant, ni le délai minimal."""
+        job = Job(*key, a, clean=lambda t: clean_error(t, self.ctx), author=author)
+        with self.lock:
+            self.reads[job.id] = job
+            while len(self.reads) > self.READS_KEPT:
+                old = next(iter(self.reads))
+                if self.reads[old].data['state'] == 'running':
+                    break
+                self.reads.pop(old)
+        job.thread = threading.Thread(target=self._run_read, args=(job, fn, a), daemon=True)
+        job.thread.start()
+        return {'ok': True, 'job': job.id}
+
+    def _run_read(self, job, fn, a):
+        try:
+            try:
+                res = fn(job, a, self.ctx)
+                job.data['state'] = 'cancelled' if job.cancelled() else 'done'
+                job.data['result'] = res
+            except Exception as e:      # la lecture échoue : l'erreur est dite à la page, nettoyée ; le lanceur continue
+                msg = clean_error(e, self.ctx)
+                job.log(f'error: {msg}')
+                job.data['state'] = 'error'
+                job.data['result'] = {'message': msg[:300]}
+            job.data['ended'] = int(time.time())
+        finally:
+            job.drop()
+            if job.data['state'] == 'running':
+                job.data['state'] = 'error'
+                job.data['ended'] = job.data['ended'] or int(time.time())
+
     def start(self, set_, verb, args, author=''):
         key = (str(set_ or ''), str(verb or ''))
         author = author if isinstance(author, str) and TRIGRAM.fullmatch(author) else ''
@@ -335,6 +374,13 @@ class Jobs:
             except Exception:       # la raison est un plus : un refus reste un refus
                 why = None
             return {'ok': False, 'status': 400, **(why if isinstance(why, dict) and why.get('message') else {'message': 'invalid arguments'})}
+        if key in PARALLEL:
+            with self.lock:
+                held, running = self.held, bool(self.cur and self.cur.data['state'] == 'running')
+            if held:
+                return {'ok': False, 'status': 409, 'reason': held, 'message': f'no job starts now ({held})'}
+            if running:      # une lecture pure à côté du travail qui tient la place (ou d'une autre lecture qui la tient) : jamais refusée. Seule, elle se comporte comme avant (le dernier travail, le fichier du dernier travail)
+                return self._start_read(key, fn, a, author)
         with self.lock:
             if self.held:
                 return {'ok': False, 'status': 409, 'reason': self.held, 'message': f'no job starts now ({self.held})'}
@@ -470,6 +516,10 @@ class Jobs:
         if j and v and v.get('state') == 'running':
             v = {**v, **self.vitals(j)}      # SOG-0245 : le travail en cours dit s'il est vivant (seen, silent, alive, cancelling)
         if id_:
+            with self.lock:
+                r = self.reads.get(id_)
+            if r is not None:      # SOG-0384 : une lecture parallèle
+                return {**r.view(), **(self.vitals(r) if r.data['state'] == 'running' else {})}
             if s and s.id == id_ and not (v and v.get('id') == id_):
                 return {**s.view(), **(self.vitals(s) if s.data['state'] == 'running' else {})}
             return v if v and v.get('id') == id_ else {'ok': False, 'status': 410, 'message': 'no such job'}
@@ -480,6 +530,8 @@ class Jobs:
             j = self.cur
             if self.side and self.side.id == id_:
                 j = self.side
+            if id_ in self.reads:
+                j = self.reads[id_]
         if not j or j.id != id_:
             return {'ok': False, 'status': 410, 'message': 'no such job'}
         j._cancel.set()
