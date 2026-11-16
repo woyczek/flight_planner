@@ -11241,3 +11241,67 @@ def k291(c):
         mark.unlink(missing_ok=True)
         subprocess.run([sys.executable, '-I', '-c', code], capture_output=True, timeout=60, cwd=str(td), env={**{k: os.environ[k] for k in ('SYSTEMROOT',) if k in os.environ}, 'SOG_MARK': str(mark)})
         c.eq(mark.read_text(encoding='utf-8') if mark.exists() else None, 'new', 'pdf_child: the library of the USER site is imported, not the old one that is first in the path of the child', what='pdf_child')
+
+
+@case('K292', 'No tool of the launcher uses a standard-library module that it did not import (the class of the defect « name \'time\' is not defined » of the Iceland taking, found only on the real network because the cases replaced the pause): a static check over every Python file of tools/ and frame/, which finds the known defect in a snippet and nothing in the repository',
+      'K', static=True,
+      rule='Ergonomics session 16 Nov (the user\'s second real try of Iceland said « name \'time\' is not defined »: tools/aero_fetch.py called `time.sleep` in its pause without importing `time`, since 94b18b2b4; the cases replaced `_pause`, only the real network met it; the ergonomics session added I44, which this case does not replace). The lesson: « a path that only the cases with a stand-in cover is not proved ». This case is AeroDB\'s general form of the check: for every `X.attr` where X is one of the modules of the standard library that the tools use (time, os, re, json, datetime, subprocess, threading, zipfile, csv, … 50 names), X must be bound in the scope: imported at the module level or in the enclosing function, not shadowed by a parameter or a local variable. It finds the defect in the file as it was at 94b18b2b4 (embedded here as a snippet) and nothing in the 150 Python files of tools/ and frame/.')
+def k292(c):
+    import ast
+    import warnings
+    MODS = set('time os re sys json datetime math shutil subprocess threading urllib io zipfile csv struct hashlib tempfile collections itertools functools random secrets socket ssl http email unicodedata base64 gzip zlib heapq glob fnmatch ctypes locale argparse shlex traceback signal stat errno hmac uuid html types copy pathlib'.split())
+
+    def bound_in(body):
+        out = set()
+        stack = list(body)
+        while stack:
+            n = stack.pop()
+            if isinstance(n, (ast.Import, ast.ImportFrom)):
+                out.update((a.asname or a.name).split('.')[0] for a in n.names)
+            elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                continue
+            else:
+                stack.extend(ast.iter_child_nodes(n))
+        return out
+
+    def check(source):
+        tree = ast.parse(source)
+        found = []
+
+        def walk(node, bound):
+            for ch in ast.iter_child_nodes(node):
+                if isinstance(ch, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    local = bound | bound_in(ch.body)
+                    shadow = {a.arg for a in ast.walk(ch.args) if isinstance(a, ast.arg)} | {m.id for m in ast.walk(ch) if isinstance(m, ast.Name) and isinstance(m.ctx, ast.Store)}
+                    for m in ast.walk(ch):
+                        if isinstance(m, ast.Attribute) and isinstance(m.value, ast.Name) and m.value.id in MODS and m.value.id not in local and m.value.id not in shadow:
+                            found.append((m.lineno, f'{m.value.id}.{m.attr}'))
+                    walk(ch, local)
+                else:
+                    walk(ch, bound)
+        top = bound_in(tree.body)
+        for n in tree.body:
+            if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                for m in ast.walk(n):
+                    if isinstance(m, ast.Attribute) and isinstance(m.value, ast.Name) and m.value.id in MODS and m.value.id not in top:
+                        found.append((m.lineno, f'{m.value.id}.{m.attr}'))
+        walk(tree, top)
+        return sorted(set(found))
+    c.eq(check('import os\n\n\ndef pause(s):\n    time.sleep(s)\n'), [(5, 'time.sleep')], 'the defect of the Iceland taking (a function that calls time.sleep with no import of time) is found', what='finds it')
+    c.eq((check('import time\n\n\ndef pause(s):\n    time.sleep(s)\n'), check('def pause(s):\n    import time\n    time.sleep(s)\n'), check('def pause(time):\n    time.sleep(1)\n'), check('def f(items):\n    for time in items:\n        time.sleep(1)\n')), ([], [], [], []),
+         'not a defect: the import at the module level, the import inside the function, a parameter or a loop variable that is called `time`', what='no false alarm')
+    files = subprocess_list = None
+    import subprocess
+    listed = subprocess.run(['git', 'ls-files', 'tools/*.py', 'frame/*.py'], cwd=str(ROOT), capture_output=True, text=True)
+    files = [f for f in listed.stdout.split('\n') if f.endswith('.py')] if listed.returncode == 0 else [str(p.relative_to(ROOT)).replace('\\', '/') for p in list((ROOT / 'tools').rglob('*.py')) + list((ROOT / 'frame').rglob('*.py'))]
+    bad = {}
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        for f in files:
+            try:
+                hits = check((ROOT / f).read_text(encoding='utf-8'))
+            except (SyntaxError, UnicodeDecodeError, OSError):
+                continue
+            if hits:
+                bad[f] = hits[:5]
+    c.eq((bad, len(files) > 100), ({}, True), 'no Python file of tools/ or frame/ (' + str(len(files)) + ' here) uses a module of the standard library that it did not import in scope', what='repository')
