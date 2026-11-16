@@ -14,6 +14,35 @@ export const TX = {
   // procédure lue sans nom (identifiant « ….STAR.NONAME.… ») : sa sorte, jamais le mot de l'identifiant
   procUnnamed: ['{k} sans nom', '{k} without a name', '{k} ohne Namen', '{k} sin nombre'],
   procXplane: ['X-Plane, local', 'X-Plane, local', 'X-Plane, lokal', 'X-Plane, local'],
+  // SOG-0374 : les départs d'un terrain du Royaume-Uni lus dans le paquet eAIP de NATS décompressé sur le poste (aerodb, source ukpkg)
+  procUkRead: ['Lire les départs dans le paquet du Royaume-Uni', 'Read the departures in the United Kingdom package',
+    'Abflüge im Paket des Vereinigten Königreichs lesen', 'Leer las salidas en el paquete del Reino Unido'
+  ],
+  procUkReading: ['Lecture du paquet du Royaume-Uni…', 'Reading the United Kingdom package…',
+    'Paket des Vereinigten Königreichs wird gelesen…',
+    'Leyendo el paquete del Reino Unido…'
+  ],
+  procUkOk: ['{n} SID lues en partie (point de sortie et niveaux)', '{n} SIDs read in part (exit point and levels)',
+    '{n} SIDs teilweise gelesen (Ausflugpunkt und Höhen)', '{n} SID leídas en parte (punto de salida y niveles)'
+  ],
+  procUkPersonal: ['Cochez l’usage personnel dans Données pour lire les cartes de NATS',
+    'Tick personal use in Data to read the NATS charts', 'Persönliche Nutzung in Daten ankreuzen, um die Karten von NATS zu lesen',
+    'Marque el uso personal en Datos para leer las cartas de NATS'
+  ],
+  procUkNoPkg: ['Aucun paquet eAIP du Royaume-Uni dans Téléchargements : téléchargez-le chez NATS et décompressez-le',
+    'No United Kingdom eAIP package in Downloads: download it from NATS and unzip it',
+    'Kein eAIP-Paket des Vereinigten Königreichs in Downloads: bei NATS herunterladen und entpacken',
+    'Ningún paquete eAIP del Reino Unido en Descargas: descárguelo de NATS y descomprímalo'
+  ],
+  procUkFail: ['Lecture impossible : {m}', 'Could not read: {m}', 'Lesen nicht möglich: {m}', 'Lectura imposible: {m}'],
+  procUkFail0: ['Lecture impossible', 'Could not read', 'Lesen nicht möglich', 'Lectura imposible'],
+  procPartial: ['lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte',
+    'read in part: exit point and levels; path not read, see the chart',
+    'teilweise gelesen: Ausflugpunkt und Höhen; Verlauf nicht gelesen, siehe Karte',
+    'leída en parte: punto de salida y niveles; trazado no leído, ver la carta'
+  ],
+  procPartialShort: ['en partie', 'in part', 'teilweise', 'en parte'],
+  procCycleUnknown: ['cycle inconnu', 'cycle unknown', 'Zyklus unbekannt', 'ciclo desconocido'],
   // SOG-0210 : une fiche lue dans la base de Little Navmap du poste (en mémoire de la page seulement, jamais écrite ni exportée)
   procSrcLnm: ['Little Navmap, lue sur ce poste', 'Little Navmap, read on this device', 'Little Navmap, auf diesem Gerät gelesen',
     'Little Navmap, leída en este equipo'

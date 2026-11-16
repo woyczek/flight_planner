@@ -2050,3 +2050,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   are an untrusted input (60 at most, one or two capitals) — and writes « Route NAT G : absente des routes du 16/11 » on a muted line
   (`[data-natwarn]`), never « point inconnu »; tracks not read or stale: nothing. Asked again after each route reading and after the NAT
   line (a read of the day's tracks). F230 (red before).
+- **16 Nov 2026 — SOG-0374: « Lire les départs dans le paquet du Royaume-Uni »** (the user: « pas de SID sur EGLL ? »; AeroDB 9fd52890c
+  reads the SIDs of EGLL in part from the NATS eAIP package unzipped in the launcher's Downloads; no screen called it). The gesture is in
+  the discreet line of « Source et cartes » of the DEPARTURE, next to « Relire » and « Lire depuis Little Navmap »: an aerodrome EG.., the
+  workstation's own launcher (not a pair), `aerodb.fetchProcedures(icao, { source: 'ukpkg' })`; one at a time. Its answer is kept per
+  aerodrome and said IN the line (`[data-ukres]`), never a notification alone: « n SID lues en partie (point de sortie et niveaux) »,
+  `not-personal` → the personal-use box in Data, `no-package` → download and unzip it from NATS, otherwise the launcher's sentence (bounded,
+  escaped). A SID with `partial` is listed like another, marked « en partie »; chosen, its line says « lue en partie : point de sortie et
+  niveaux ; tracé non lu, voir la carte »; a source with `cycle_unknown` (or a cycle written 1970-01-01) says « cycle inconnu », never 1970.
+  F231 (red before; aerodb's answer held by the case, invented EGLL records). Seen for the Map, not changed (its file): with a runway
+  chosen, `expandedPath` turns a one-point SID into a « sid » leg threshold → exit point.

@@ -2859,6 +2859,8 @@ function onPlanClick(e) {
   if (rp) return S.P.choose(`p-${rp.dataset.side}-rwy`, rp.dataset.rwy); // SOG-0090 : « Prendre la piste probable », un geste du pilote
   const pl = e.target.closest('[data-do="proclnm"]');
   if (pl) return S.P.readLnm(pl.dataset.icao); // « Lire depuis Little Navmap » (SOG-0210)
+  const uk = e.target.closest('[data-do="procukpkg"]');
+  if (uk) return S.P.readUk(uk.dataset.icao); // SOG-0374 : « Lire les départs dans le paquet du Royaume-Uni »
   const gr = e.target.closest('[data-do="groundretry"]');
   if (gr) return S.P.groundRetry(gr.dataset.icao); // « Réessayer » : le sol seul (SOG-0135)
   // « Sur la carte » : le mode choix de la Carte pour ce côté (§ 10.23) ; elle revient par location.replace avec son choix

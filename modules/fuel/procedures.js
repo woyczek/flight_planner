@@ -81,6 +81,10 @@ const keep = x => x === null ? null : cleanSide(x);
 let reading = null;
 /** Lecture de Little Navmap en cours (SOG-0210), hors de l'instance comme `reading` : l'OACI lu, null sinon. */
 let lnmReading = null;
+/** SOG-0374 : lecture du paquet du Royaume-Uni en cours (l'OACI, null sinon) et la dernière réponse de chaque terrain, dite dans sa ligne
+ *  ({ k: 'ok' | 'not-personal' | 'no-package' | 'fail', n, m }), hors de l'instance comme `reading`. */
+let ukReading = null;
+const ukDone = new Map();
 /** Ce que l'appareil a mémorisé de la coche « usage personnel » (module Données, Réglages › Sources). */
 const PERSONAL_DOC = 'cache/data/personal.json';
 /** L'instance du montage vivant : la fin d'une lecture lui est rendue même si elle a commencé sous un autre montage. */
@@ -249,11 +253,19 @@ export function createProcedures(host) {
   function srcLabel(rec) {
     return rec?.status === 'lnm' || rec?.lnm === true ? tt(TX.procSrcLnm) : rec?.status === 'xplane' || rec?.local ? tt(TX.procXplane) : '';
   }
+  /** SOG-0374 : une fiche lue EN PARTIE (le paquet du Royaume-Uni : point de sortie, niveaux, position ; tracé non lu). */
+  const isPartial = r => !!r?.partial && typeof r.partial === 'object';
+  /** SOG-0374 : un cycle que la lecture n'a pas su dater (source.cycle_unknown, écrit « 1970-01-01 ») : dit « cycle inconnu », jamais 1970. */
+  const cycleUnknown = r => r?.source?.cycle_unknown === true || /^1970-01-01/.test(String(r?.source?.cycle ?? ''));
+  /** La source d'une fiche choisie, sur sa ligne : celle du poste (srcLabel), puis « lue en partie : … » et « cycle inconnu » (SOG-0374). */
+  const srcLine = rec => [srcLabel(rec), isPartial(rec) ? tt(TX.procPartial) : '', cycleUnknown(rec) ? tt(TX.procCycleUnknown) : ''].filter(
+    Boolean).join(' · ');
 
   function procLabel(rec, o) {
     const name = rec.name || nameOfId(rec.id),
       one = o?.rwy || PR.servesAll(rec) ? [] : [...new Set(rec.runways.map(PR.rwNum))];
-    return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', srcLabel(rec)]
+    return [name, one.length === 1 && !name.toUpperCase().includes(one[0]) ? one[0] : '', srcLabel(rec), isPartial(rec) ? tt(TX
+        .procPartialShort) : '']
       .filter(Boolean).join(' · ') + (rec.outdated ? PROC_OLD : '');
   }
   /** Raisons (textes ×4) pour lesquelles une fiche est en conflit avec le choix courant o du côté ; [] sans conflit. La règle est celle
@@ -706,6 +718,29 @@ export function createProcedures(host) {
     const busy = reading?.icao === icao;
     return `<button type="button" class="fu-linkbtn" data-do="procfetch"${again ? ' data-again="1"' : ''} data-icao="${esc(icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(busy ? reading.text : text)}</button>`;
   };
+  /** SOG-0374 : le lanceur de CE poste répond (pas une paire distante) — le paquet du Royaume-Uni se lit dans ses Téléchargements. */
+  const launcherHere = () => {
+    try {
+      const i = ctx.launcher?.info?.();
+      return typeof ctx.launcher?.job === 'function' && !!i && !i.lan;
+    } catch {
+      return false;
+    }
+  };
+  /** SOG-0374 : la ligne du paquet du Royaume-Uni, au départ d'un terrain EG.. avec le lanceur du poste : le geste, puis la dernière
+   *  réponse DANS la ligne (jamais une notification seule) ; '' ailleurs. */
+  function ukHtml(m, side) {
+    const k = String(m.icao || '').toUpperCase();
+    if (side !== 'dep' || !/^EG[A-Z]{2}$/.test(k) || typeof ctx.aerodb?.fetchProcedures !== 'function' || !launcherHere()) return '';
+    const busy = ukReading === k,
+      d = busy ? null : ukDone.get(k),
+      said = !d ? '' : d.k === 'ok' ? tt(TX.procUkOk, {
+        n: d.n
+      }) : d.k === 'not-personal' ? tt(TX.procUkPersonal) : d.k === 'no-package' ? tt(TX.procUkNoPkg) : d.m ? tt(TX.procUkFail, {
+        m: d.m
+      }) : tt(TX.procUkFail0);
+    return `<span class="fu-ukline" data-ukline><button type="button" class="fu-linkbtn" data-do="procukpkg" data-icao="${esc(k)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(tt(busy ? TX.procUkReading : TX.procUkRead))}</button>${said ? ` <span class="${d.k === 'ok' ? 'f-muted' : 'f-warn'}" data-ukres="${esc(d.k)}">${esc(said)}</span>` : ''}</span>`;
+  }
   /** Ce poste peut lire Little Navmap (AeroDb.lnmAvailable : un booléen, ni chemin ni nom de base) ; faux en cas de doute. */
   const lnmHere = () => {
     try {
@@ -747,7 +782,8 @@ export function createProcedures(host) {
     // SOG-0203 : les avertissements de la dernière lecture, en texte, repliés (« 2 avertissements » seuls ne disaient rien de LFOE)
     const wl = adOf(m.icao).warnings || [],
       warn = wl.length ? `<details class="fu-procwarn" data-procwarn><summary>${esc(tt(TX.procWarnList, { n: wl.length }))}</summary><ul>${wl.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : '';
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ground + ` <span data-source-slot>${chartsHtml(m.icao)}</span>${gap}${warn}`;
+    const uk = ukHtml(m, side); // SOG-0374 : sur sa ligne, sous la ligne discrète
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ground + ` <span data-source-slot>${chartsHtml(m.icao)}</span>${gap}${warn}${uk ? `<br>${uk}` : ''}`;
   }
   // l'adresse des cartes officielles de chaque terrain, demandée une fois à aerodb (chartsUrl, lot C2) : une adresse, null (État inconnu
   // d'aerodb) ; absente tant que la réponse n'est pas venue. Les emplacements de ce terrain se remplissent à la réponse
@@ -1115,7 +1151,7 @@ export function createProcedures(host) {
         return l.length && l.every(isLnm) ? tt(TX.procSrcLnm) : '';
       },
       appRec = byId.get(o.app);
-    src('main', mainRec ? srcLabel(mainRec) : o[side === 'dep' ? 'sid' : 'star'] === undefined ? listLnm([side === 'dep' ? 'SID' :
+    src('main', mainRec ? srcLine(mainRec) : o[side === 'dep' ? 'sid' : 'star'] === undefined ? listLnm([side === 'dep' ? 'SID' :
       'STAR'
     ]) : '');
     if (side === 'arr') src('app', appRec ? srcLabel(appRec) : o.app === undefined ? listLnm(['APP']) : '');
@@ -1870,8 +1906,52 @@ export function createProcedures(host) {
       render();
     }
   }
+  /** SOG-0374 : « Lire les départs dans le paquet du Royaume-Uni » — aerodb.fetchProcedures(icao, { source: 'ukpkg' }) (le lanceur lit le
+   *  paquet eAIP de NATS décompressé dans ses Téléchargements) ; la réponse est gardée pour la ligne du terrain : le nombre de SID lues en
+   *  partie, l'usage personnel à cocher, l'absence du paquet, ou la phrase du lanceur (texte borné, échappé au dessin). Un geste à la fois. */
+  async function readUk(icao) {
+    const k = String(icao || '').toUpperCase();
+    if (!/^EG[A-Z]{2}$/.test(k) || ukReading || typeof ctx.aerodb?.fetchProcedures !== 'function') return;
+    ukReading = k;
+    ukDone.delete(k);
+    if (!host.gone()) {
+      key = null;
+      render();
+    }
+    let res;
+    try {
+      res = await ctx.aerodb.fetchProcedures(k, {
+        source: 'ukpkg'
+      });
+    } catch (e) {
+      res = {
+        ok: false,
+        reason: 'failed',
+        message: e?.message || ''
+      };
+    }
+    ukReading = null;
+    const list = Array.isArray(res?.procedures) ? res.procedures : [],
+      msg = String(res?.message ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    ukDone.set(k, res?.ok ? {
+      k: 'ok',
+      n: Math.min(999, list.filter(p => p?.kind === 'SID' && isPartial(p)).length)
+    } : ['not-personal', 'no-package'].includes(res?.reason) ? {
+      k: res.reason
+    } : {
+      k: 'fail',
+      m: msg
+    });
+    if (res?.ok) live?.afterRead(k, res); // les SID lues entrent dans la liste
+    else if (live && live !== api) live.render(); // un autre montage vivant : sa ligne aussi
+    if (!host.gone()) {
+      key = null;
+      render();
+    }
+  }
   const api = {
     approachAid,
+    readUk,
     readLnm,
     sync,
     render,

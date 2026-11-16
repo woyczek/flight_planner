@@ -6016,6 +6016,102 @@ def f230(c):
     c.ok(c.js(f"document.querySelector('{W}')?.hidden === true"), c.text(W), 'tracks not read for today: nothing said')
 
 
+# SOG-0374: aerodb.fetchProcedures(icao, { source: 'ukpkg' }) held by the case (window.__uk.go(answer)); the other sources unchanged
+_UK_STUB = """(() => { window.__uk = { go: null, asked: [] };
+  let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { const f = db.fetchProcedures; db.fetchProcedures = (icao, o = {}) => o && o.source === 'ukpkg'
+        ? (window.__uk.asked.push(String(icao)), new Promise(res => window.__uk.go = r => { window.__uk.go = null; res(r); })) : f.call(db, icao, o); } catch (e) {}
+      return db } } } }) })()"""
+
+
+def _uk_docs():
+    """EGLL → KJFK, with an invented EGLL: a published approach (the card has data) and, read by hand earlier from the UK package, two SIDs
+    read IN PART (one point: the exit, its level, its position; cycle unknown, written 1970-01-01). Nothing from an AIP."""
+    from fixtures.procedures import rec as _prec, file as _pfile, pt as _ppt, PROC_CYCLE as _PCY
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': 'EGLL KJFK', 'dep': 'EGLL', 'arr': 'KJFK', 'manual': True,
+                             'points': [{'id': 'EGLL', 'lat': 51.47, 'lon': -0.46}, {'id': 'KJFK', 'lat': 40.64, 'lon': -73.78}]}
+    app = _prec('EGLL', 'APP', 'I27L', ['27L'], [_ppt(1, 'XEG27', 51.47, 0.1, {'type': 'at', 'ft': 2500}), _ppt(2, 'RW27L', 51.46, -0.43)])
+    sids = []
+    for name, rw, pid, lat, lon in (('XMODA1J', '09L', 'XMODA', 51.6, -0.9), ('XMAXI1F', '27R', 'XMAXI', 51.8, -0.6)):
+        r = _prec('EGLL', 'SID', name, [rw], [_ppt(1, pid, lat, lon, {'type': 'min', 'ft': 6000})], status='check', kind_src='manual',
+                  src_cycle='1970-01-01')
+        r['source'].update(ref='ukpkg', cycle_unknown=True)
+        r['partial'] = {'read': ['exit', 'level', 'position'], 'unread': ['path'], 'note': 'SID lue en partie'}
+        sids.append(r)
+    return docs + [[f'proc/{_PCY}/EGLL.json', _pfile('EGLL', [app]), 'reference'],
+                   ['proc/manual/EGLL.json', _pfile('EGLL', sids, cy='1970-01-01'), 'reference'],
+                   ['proc/manual/index.json', {'schema': 1, 'aerodromes': {'EGLL': {'SID': 2, 'partial': 2, 'cycle': '1970-01-01', 'updated_at': '2026-11-16T09:00:00Z'}}}, 'reference']]
+
+
+@case('F231', 'Procedures, departure from an aerodrome of the United Kingdom with the workstation\'s launcher: in « Source et cartes », the '
+      'gesture « Lire les départs dans le paquet du Royaume-Uni » (fetchProcedures source ukpkg); its answer said IN the line (read, personal '
+      'use, no package, the launcher\'s failure escaped); a SID read in part is chosen like another and says so; an unknown cycle is « cycle '
+      'inconnu », never 1970; without the launcher, no gesture', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0374 (the user: « pas de SID sur EGLL ? »; AeroDB 9fd52890c: the SIDs of EGLL read in part from the UK eAIP package the user '
+      'unzipped in Downloads; no screen called it); the ergonomist at 10 h 02; aerodb\'s answer held by the case (stub), invented EGLL records')
+def f231(c):
+    T = 'modules/fuel/procedures_texts.js'
+    D = f'{FUEL} [data-proc="dep"]'
+    L = f'{D} [data-ukline]'
+    # without the launcher: no gesture
+    c.page.add_init_script(_UK_STUB)
+    c.open('fuel', docs=_uk_docs())
+    to_step(c, 1)
+    open_foot(c, 'dep')
+    c.until(f"!!document.querySelector('{D} [data-r=meta] [data-do=procfetch]')", timeout=15000, what='the reading line of EGLL')
+    c.eq(c.count(f'{D} [data-do=procukpkg]'), 0, 'without the launcher: no gesture', what='no launcher')
+    # with the launcher
+    _route_launcher(c, ['route/compute'])
+    c.open('fuel', docs=_uk_docs())
+    to_step(c, 1)
+    open_foot(c, 'dep')
+    c.until(f"!!document.querySelector('{D} [data-do=procukpkg]')", timeout=15000, what='the gesture in « Source et cartes » of the departure')
+    c.eq(norm(c.text(f'{D} [data-do=procukpkg]')), norm(tx(T, 'procUkRead', c.lang)), '« Lire les départs dans le paquet du Royaume-Uni »', what='label')
+    c.eq(c.count(f'{FUEL} [data-proc="arr"] [data-do=procukpkg]'), 0, 'not on the arrival (KJFK)', what='arrival')
+
+    def answer(ans, what):
+        c.tap(f'{D} [data-do=procukpkg]')
+        c.until("window.__uk.go !== null", timeout=8000, what=f'asked ({what})')
+        c.js(f"window.__uk.go({ans})")
+        c.until(f"!!document.querySelector('{L} [data-ukres]')", timeout=8000, what=f'the answer in the line ({what})')
+        return norm(c.text(f'{L} [data-ukres]'))
+    got = answer("{ ok: false, reason: 'not-personal' }", 'personal use')
+    c.eq(got, norm(tx(T, 'procUkPersonal', c.lang)), '« Cochez l’usage personnel dans Données… »', what='not-personal')
+    got = answer("{ ok: false, reason: 'no-package' }", 'no package')
+    c.eq(got, norm(tx(T, 'procUkNoPkg', c.lang)), '« Aucun paquet eAIP du Royaume-Uni dans Téléchargements… »', what='no-package')
+    got = answer("{ ok: false, reason: 'failed', message: '<b>pypdf 6.21.3</b> trop ancienne : pip install -U pypdf' }", 'failure')
+    c.ok('pypdf 6.21.3' in got and 'pip install' in got, got, 'the launcher\'s sentence said')
+    c.eq(c.count(f'{L} [data-ukres] b'), 0, 'escaped, never markup', what='escaped')
+    c.eq(c.js("window.__uk.asked"), ['EGLL', 'EGLL', 'EGLL'], 'aerodb asked for EGLL, source ukpkg', what='asked')
+    sids = "[{ kind: 'SID', id: 'EGLL.SID.XMODA1J.RW09L.NONE', partial: {} }, { kind: 'SID', id: 'EGLL.SID.XMAXI1F.RW27R.NONE', partial: {} }, { kind: 'APP', id: 'x' }]"
+    got = answer(f"{{ ok: true, icao: 'EGLL', procedures: {sids} }}", 'read')
+    c.eq(got, norm(tx(T, 'procUkOk', c.lang).replace('{n}', '2')), '« 2 SID lues en partie (point de sortie et niveaux) »', what='ok')
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.js(f"document.querySelector('{L}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F231_{c.design}_390_{c.lang}_line.png')
+    # a SID read in part: chosen like another, says so; the cycle unknown never 1970
+    opts = sel_opts(c, 'p-dep-sid') or []
+    part = [x for x in opts if x[0] == 'EGLL.SID.XMODA1J.RW09L.NONE']
+    c.ok(part and norm(tx(T, 'procPartialShort', c.lang)) in norm(part[0][1]), opts, 'in the list, marked « en partie »')
+    pick_proc(c, 'p-dep-sid', 'EGLL.SID.XMODA1J.RW09L.NONE')
+    c.until(f"(document.querySelector('{D} [data-r=src-main]')?.textContent || '').length > 0", timeout=8000, what='the SID line says its source')
+    src = norm(c.text(f'{D} [data-r=src-main]'))
+    c.ok(norm(tx(T, 'procPartial', c.lang)) in src, src, '« lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte »')
+    c.ok(norm(tx(T, 'procCycleUnknown', c.lang)) in src, src, '« cycle inconnu »')
+    c.ok('1970' not in (c.text(D) or ''), c.text(D), 'never 1970')
+    c.js(f"document.querySelector('{D} [data-r=src-main]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F231_{c.design}_390_{c.lang}_partial.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.js(f"document.querySelector('{D}').scrollIntoView({{block: 'start'}})")
+    c.shot(f'F231_{c.design}_1280_{c.lang}_partial.png')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
