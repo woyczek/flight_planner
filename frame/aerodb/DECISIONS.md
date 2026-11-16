@@ -3169,7 +3169,7 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 ## 16 November 2026 — SOG-0376: optional libraries installed by a script
 
-- **Touch-up** (ergonomics session, after the first real run on the user's workstation: every version at its bound, but « deux librairies hors path »): `--no-warn-script-location` and a sentence at the end of the script. Reviewed by Sécurisation.
+- **Touch-up** (ergonomics session, after the first real run on the user's workstation: every version at its bound, but « deux librairies hors path »): `--no-warn-script-location`; the sentence at the end of the script is the user's own (`path_warning`, his patch 1a25b5311): the sentence of this session, which said the same, was removed (one only). Reviewed by Sécurisation.
 
 - **Report** (the user, 14:37): « si python à lancer pour installer des bibliothèque, il faut que ça apparaisse dans une page ou un script d'installation » (pypdf 6.21.3 on the workstation, 6.21.4 asked; the screen sent to the first-install assistant, which installs nothing).
 - **Decided** (ergonomics session, with the opinion of Sécurisation before the code): YES, for ALL the optional libraries; OBJECTION to « a page that installs »: the SCRIPT installs, the PAGE says. One file of bounds; two groups (pdf, ocr); the sentences of failure name the script. No `--require-hashes` (it would freeze the security fixes): wheels only, fixed index, isolated, instead.

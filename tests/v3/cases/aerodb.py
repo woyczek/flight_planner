@@ -10649,7 +10649,7 @@ def k284(c):
         c.eq((kw['was_dir'], kw['was_empty'], cwd.exists(), [k for k in kw['env'] if k.upper().startswith('PYTHON')], kw.get('stdin') == subprocess.DEVNULL, 'shell' in kw), (True, True, False, [], True, False),
              'the working folder is a neutral EMPTY one during the call and is ERASED after the pass, no PYTHON* variable reaches pip, the command is a list (never a shell), no keyboard is given to pip', what='sandbox')
         text = '\n'.join(map(str, said))
-        c.ok(sys.executable in text and 'https://pypi.org/simple' in text and 'Pillow' in text and 'jamais de descente' in text and 'prêt' in text and 'lancer.cmd' in text and 'pas besoin de programmes dans le PATH' in text and '[o/N]' in ''.join(q for q in said if '[o/N]' in q),
+        c.ok(sys.executable in text and 'https://pypi.org/simple' in text and 'Pillow' in text and 'jamais de descente' in text and 'prêt' in text and 'lancer.cmd' in text and '[o/N]' in ''.join(q for q in said if '[o/N]' in q),
              text[:300], 'the script says the interpreter, where the packages come from, what it will do for each (Pillow: left as it is), asks o/N, reads the versions again and says to restart the launcher')
         # the other answers, the options
         for answer in ('', 'n', 'N', 'non', 'x', None):
@@ -11179,3 +11179,65 @@ def k288(c):
         time.sleep(0.02)
     again = jobs3.start('base', 'status', {})
     c.eq(bool(again.get('ok')), True, 'once the reads have ended a new one starts', what='cap released')
+
+
+@case('K291', 'PDF libraries seen by the launcher (SOG-0376, the user\'s patch): the isolated children of pdf_guard (`-I`) put the GLOBAL site first, so an old copy there hid the one that the script had just installed with --user; now the user site comes first (when it is enabled) and the child puts `sys.path` back in the order of its parent — red before: a fake global site with an old version and a fake user site with the good one: versions() and pdf_child gave the old one',
+      'K', static=True,
+      rule='SOG-0376 (the user, 16 Nov, after the script worked): the script installed pypdf 6.21.5 and Pillow 13 with --user, the launcher still said pypdf 6.21.3 and Pillow 12.3.0. Cause: `python -I` adds the GLOBAL site-packages to `sys.path` before the user site, and `sys.path.extend(dirs)` of the children could not put the user site first. The fix is his (1a25b5311: `_dirs` puts the user site first when `site.ENABLE_USER_SITE`; the children replace `sys.path` by the entries that are not in `dirs` followed by `dirs` in the order of the parent). This case is the proof the ergonomics session asked for: a fake GLOBAL site holding an old version (a dist-info only) that is already first in the path of the child, a fake USER site holding the good one; `versions()` answers the good one; the PDF child imports the library of the user site; `_dirs` puts the user site first and honours `ENABLE_USER_SITE`. Deterministic: a package name that the workstation does not have.')
+def k291(c):
+    import json
+    import os
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import pdf_guard as G
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        old, new = td / 'global', td / 'user'
+        for folder, version in ((old, '1.0'), (new, '2.0')):
+            meta = folder / f'sogfakepkg-{version}.dist-info'
+            meta.mkdir(parents=True)
+            (meta / 'METADATA').write_text(f'Metadata-Version: 2.1\nName: sogfakepkg\nVersion: {version}\n', encoding='utf-8')
+        # (1) the order of the folders, and -s / PYTHONNOUSERSITE (site.ENABLE_USER_SITE)
+        import site
+        real = (site.getsitepackages, site.getusersitepackages, site.ENABLE_USER_SITE)
+        site.getsitepackages, site.getusersitepackages = (lambda: [str(old)]), (lambda: str(new))
+        try:
+            site.ENABLE_USER_SITE = True
+            enabled = G._dirs()
+            site.ENABLE_USER_SITE = False
+            disabled = G._dirs()
+        finally:
+            site.getsitepackages, site.getusersitepackages, site.ENABLE_USER_SITE = real
+        c.eq((enabled, disabled), ([str(new), str(old)], [str(old)]), '_dirs: the user site FIRST when it is enabled (as Python does outside -I), and left out when it is not (-s, PYTHONNOUSERSITE, a virtual environment)', what='_dirs')
+        # (2) versions(): the child is `-I`, the old site is ALREADY first in its path (what -I does with the global site): the answer must be the user one
+        real_run, real_dirs = G.subprocess.run, G._dirs
+
+        class Shim:
+            def __getattr__(self, name):
+                return getattr(subprocess, name)
+
+            @staticmethod
+            def run(args, **kw):
+                args = list(args)
+                args[3] = f'import sys; sys.path.insert(0, {str(old)!r})\n' + args[3]      # the global site is first in the path of the child, as under -I
+                return subprocess.run(args, **kw)
+        G.subprocess, G._dirs = Shim(), (lambda: [str(new), str(old)])
+        try:
+            got = G.versions(['sogfakepkg'])
+        finally:
+            G.subprocess, G._dirs = subprocess, real_dirs
+        c.eq(got, {'sogfakepkg': '2.0'}, 'versions(): an old copy in the global site (first in the path of the child) does not hide the version installed in the user site', what='versions')
+        # (3) the PDF child: the same, through the real tools/pdf_child.py (a fake `pypdf` in each site writes which one was imported)
+        for folder, label in ((old, 'old'), (new, 'new')):
+            (folder / 'pypdf').mkdir()
+            (folder / 'pypdf' / '__init__.py').write_text(f'import os\nopen(os.environ["SOG_MARK"], "w").write("{label}")\nclass PdfReader:\n    def __init__(self, path):\n        raise SystemExit(0)\n', encoding='utf-8')
+        mark = td / 'mark.txt'
+        real_dirs_list = [d for d in list(site.getsitepackages()) if os.path.isdir(d)]      # the real sites stay in `dirs`: after the user one (as in production)
+        code = (f'import sys, runpy\nsys.path.insert(0, {str(old)!r})\nsys.argv = ["pdf_child.py", {str(td / "x.pdf")!r}, {str(td / "out.json")!r}, "0", "1", "100", {json.dumps(json.dumps([str(new), str(old)] + real_dirs_list))}]\n'
+                f'runpy.run_path({str(ROOT / "tools" / "pdf_child.py")!r}, run_name="__main__")\n')
+        mark.unlink(missing_ok=True)
+        subprocess.run([sys.executable, '-I', '-c', code], capture_output=True, timeout=60, cwd=str(td), env={**{k: os.environ[k] for k in ('SYSTEMROOT',) if k in os.environ}, 'SOG_MARK': str(mark)})
+        c.eq(mark.read_text(encoding='utf-8') if mark.exists() else None, 'new', 'pdf_child: the library of the USER site is imported, not the old one that is first in the path of the child', what='pdf_child')
