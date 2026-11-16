@@ -90,6 +90,7 @@ def propose(request,nav,rad):
         r['status']='PROPOSITION DE REPLI — NON VALIDÉE';r['report']=engine.report(r)
         return r
     proposals=[];notes=[]
+    late=lambda:engine.DEADLINE is not None and time.perf_counter()>engine.DEADLINE      # SOG-0371 : le calcul entier a sa borne (plan.TOTAL_BUDGET_S) : passée, les jalons ne s'affinent plus (la proposition de l'orthodromie suffit à dire quelque chose)
     try:
         great=orthodrome(nav,anchors)
         if great:proposals.append(assess(great[0],'Orthodromie — direct par points en coordonnées, un tous les 10° de longitude (hors réseau)','direct',great[1]))
@@ -106,6 +107,8 @@ def propose(request,nav,rad):
     for a,b in zip(anchors,anchors[1:]):
         distance=engine.nm(nav.nodes[a],nav.nodes[b]);count=min(14,max(1,math.ceil(distance/160)))
         for j in range(1,count):
+            if late():
+                break
             aim=interpolate(nav.nodes[a],nav.nodes[b],j/count)
             nearby=[(engine.nm(aim,nav.nodes[k]),k) for k in pool if abs(nav.nodes[k]['lat']-aim['lat'])<1.2 and abs(nav.nodes[k]['lon']-aim['lon'])*math.cos(math.radians(aim['lat']))<1.8]
             nearby=[(d,k) for d,k in nearby if d<=60 and engine.nm(nav.nodes[a],nav.nodes[k])>10 and engine.nm(nav.nodes[b],nav.nodes[k])>10]
@@ -117,7 +120,7 @@ def propose(request,nav,rad):
     assembled=[];pieces=[]
     for a,b in zip(expanded,expanded[1:]):
         path=None;distance=engine.nm(nav.nodes[a],nav.nodes[b])
-        if a in connected and b in connected and distance<=400 and time.perf_counter()-begun<5:
+        if a in connected and b in connected and distance<=400 and time.perf_counter()-begun<5 and not late():
             try:path=nav.path(g,a,b)
             except ValueError:pass
             if path and sum(e['nm'] for u,v,e in path)>max(1,distance)*1.6:path=None
@@ -133,13 +136,18 @@ def propose(request,nav,rad):
         except ValueError as e:notes.append('Tronçons : '+str(e))
     piece_proposal_type='pieces';regional=None
     try:
+        if late():
+            raise ValueError('budget de calcul atteint')
         if len(anchors)>8:
             fra_recovery.build(request,nav,rad,anchors,expanded,prepare_only=True)
             regional=fra_recovery.windowed(request,nav,rad,anchors,assembled)
         else:regional=fra_recovery.build(request,nav,rad,anchors,expanded)
     except ValueError as e:notes.append('Recherche FRA globale : '+str(e))
     if not regional:
-        try:regional=fra_recovery.windowed(request,nav,rad,anchors,assembled)
+        try:
+            if late():
+                raise ValueError('budget de calcul atteint')
+            regional=fra_recovery.windowed(request,nav,rad,anchors,assembled)
         except ValueError as e:notes.append('Recherche FRA par portions : '+str(e))
     if regional:
         title='Repli FRA — portions régionales et raccords proposés'

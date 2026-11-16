@@ -10204,3 +10204,79 @@ def k276(c):
     import inspect
     src = inspect.getsource(RJ.REGISTRY[('base', 'build')][0])
     c.ok('size_report(zone, texts, cap)' in src and "'big':" in src and "'readCap': cap" in src and 'plafond de lecture du cadre illisible' in src, 'build() source', 'base/build calls it for every zone it writes, carries `big` and `readCap` in its result and logs an unreadable cap')
+
+
+@case('K278', 'Route engine: every phase has a HARD bound that the searches in flight obey (SOG-0371): the head route 5 s, the whole calculation 15 s, the alternatives their own (8 s); what did not finish is said « proposition »; EGLL → KJFK took 40 s at the launcher', 'K', static=True,
+      rule='User report 16 Nov 2026 (« SOG route check EGLL → KJFK · launcher 39685 ms »): measured on the real base with the NAT of the day (16/11): the head route is computed and accepted in 2.5 to 3.0 s cold (context 1.0 s, NAT layer 0.2 s, the search 1.7 s; 34 % controlled, 53 % incomplete: the ocean is « autorisation non vérifiée », 13 % fallback); the 40 s are the ALTERNATIVES the Fuel screen asks with `alternatives: true`: 25 s of budget (the whole plan) plus the searches under way, which finished 3 to 5 s past it (28.5 s here with 25 s asked, 11.6 s since the budget of 8 s of 14 Nov was pushed: a launcher that was not restarted still ran the old code); the 1.6 s of 13 Nov were measured WITHOUT alternatives. Now `engine.DEADLINE` (set by plan() for each phase: the head route and its RAD retries 5 s, then the alternatives their budget, the proposals the whole 15 s) bounds EVERY search, also the one under way, and `generate` does not build a graph (1 to 3 s) it would have no time to search; the proposals of recovery stop refining their anchors past it. Measured here after: EGLL → KJFK with the alternatives 11.8 s, without 2.5 s; EIDW → KBOS (head route refused) 14 to 15 s as a proposition')
+def k278(c):
+    import os
+    import sys
+    import tempfile
+    import time
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import engine
+    from route_engine import import_books as I
+    from route_engine import plan as P
+    c.eq((P.HEAD_BUDGET_S, P.TOTAL_BUDGET_S, P.ALT_BUDGET_S), (5.0, 15.0, 8.0), 'the budgets: the head route 5 s, the whole calculation 15 s, the alternatives 8 s', what='constants')
+    clock = {'t': 0.0}
+    real = (time.perf_counter, engine.assess)
+    seen = []
+
+    def stepped(request, nav, radbook, *a, **k):
+        seen.append((request.get('mode'), round(engine.DEADLINE - clock['t0'], 3) if engine.DEADLINE is not None else None, round(clock['t'], 3)))
+        clock['t'] += 2.0
+        if len(seen) == 1 and clock.get('fail_head'):
+            raise ValueError('Budget de recherche atteint (3 s / 100 000 états). Ce résultat ne prouve pas l’absence de route.')
+        return real[1](request, nav, radbook, *a, **k)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        base = {'dep': 'LFPO', 'arr': 'EIDW', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': False, 'alternatives': True}
+        out = {}
+        time.perf_counter = lambda: clock['t']
+        engine.assess = stepped
+        try:
+            for label, head_fails in (('accepted', False), ('refused by its budget', True)):
+                clock.update(t=100.0, t0=100.0, fail_head=head_fails)
+                seen.clear()
+                P.drop_contexts()
+                P.compute(dict(base), data, rad, None)
+                out[label] = (list(seen), engine.DEADLINE)
+        finally:
+            time.perf_counter, engine.assess = real
+            P.drop_contexts()
+    a_seen, a_after = out['accepted']
+    c.eq(a_seen[0][1], 5.0, 'the head route is searched under a deadline of 5 s after the start of the calculation', what='head')
+    c.ok(len(a_seen) > 1 and all(0 < s[1] <= 15.0 for s in a_seen[1:]) and a_seen[1][1] == 10.0, str(a_seen), 'then the alternatives: their own bound (8 s after the head route: 2 + 8 = 10 s here, never over the 15 s of the whole); the first of them is checked under it')
+    r_seen, r_after = out['refused by its budget']
+    c.ok(r_seen[0][1] == 5.0 and all(s[1] == 15.0 for s in r_seen[1:]) and len(r_seen) >= 2, str(r_seen), 'a head route refused by its budget: no alternative is searched (the proposals only) and they have the whole 15 s')
+    c.eq((a_after, r_after), (None, None), 'the deadline is reset when the calculation ends (a later search has none but its own 6 s)', what='reset')
+    # the entry of generate: no graph for a search that has no time
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        engine.DATA_DIR, engine.RAD_FILE = data, rad
+        try:
+            nav, _ = P.context({'date': '2026-11-10T12:00'}, data)
+            engine.DEADLINE = time.perf_counter() - 1
+            try:
+                nav.generate('LFPO', 'EIDW', 350, 40)
+                got = None
+            except ValueError as e:
+                got = str(e)
+            c.ok(got and got.startswith('Budget de recherche atteint'), str(got), 'a search asked after the deadline says « Budget de recherche atteint » at once (no graph is built)')
+        finally:
+            engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+            P.drop_contexts()

@@ -12,6 +12,7 @@ from . import nat_layer     # SOG-0263
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
+DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE recherche doit finir, posé par plan.plan() pour chaque phase (route de tête, alternatives, propositions) : aucune recherche ne dépasse la borne de sa phase ; None : seule la borne propre de la recherche (6 s)
 RAD_FILE = None   # SOG-0081 : chemin de rad.json.gz posé par le travail du lanceur (data/route/rad.json.gz) ; None : à côté du module, comme RouteSim 2
 MONTHS = dict(zip('JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC'.split(),range(1,13)))
 
@@ -223,6 +224,7 @@ class Nav:
         """
         import time
         begun=time.perf_counter();expanded=0;fra_reachable=False
+        stop_at=begun+6 if DEADLINE is None else min(begun+6,DEADLINE)      # SOG-0371 : la borne de la phase en cours borne AUSSI la recherche déjà partie
         names=[self.nodes[k]['id'] for k in waypoints]
         flight=getattr(g,'flight',None)
         low,high=initial_band or ((flight['departure'],flight['ceiling'] if flight.get('free_departure') else flight['departure']) if flight else (-1e9,1e9))   # SOG-0161 : free_departure : aucune SID lue, la montée n'est pas bornée par le raccord
@@ -254,9 +256,9 @@ class Nav:
         q=[(heuristic(start,0),0,origin)];costs={origin:0};prev={};labels=collections.defaultdict(list)
         labels[origin[:3]].append((0,low,high,origin))
         while q:
-            if expanded%128==0 and (expanded>=100000 or time.perf_counter()-begun>6):
+            if expanded%128==0 and (expanded>=100000 or time.perf_counter()>stop_at):
                 self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=False,truncated=True,fra_reachable=fra_reachable)
-                raise ValueError('Budget de recherche atteint (6 s / 100 000 états). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
+                raise ValueError(f'Budget de recherche atteint ({max(stop_at-begun,0):.0f} s / 100 000 états). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
             _,cost,state=heapq.heappop(q)
             if cost!=costs.get(state):continue
             expanded+=1;u,index,seen_fra,low,high=state
@@ -456,6 +458,9 @@ class Nav:
         return self.search(g,start,end,waypoints,require_fra,fra_already,initial_band)
 
     def generate(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
+        import time
+        if DEADLINE is not None and time.perf_counter()>DEADLINE:      # SOG-0371 : le graphe (1 à 3 s) ne se construit pas pour une recherche qui n'aurait plus le temps
+            raise ValueError('Budget de recherche atteint (0 s / limite de temps du calcul). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
         g,a,b=self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,terminal)
         mandatory=self.resolve_vias(g,a,b,via)
         path=self.constrained_path(g,a,b,mandatory,bool((terminal or {}).get('require_fra'))) if self.connected(g,a,b) else None   # SOG-0161 : sans liaison, même sans contrainte d'altitude, la recherche de niveaux ne cherche pas 6 s dans le vide

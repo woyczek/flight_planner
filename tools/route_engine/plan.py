@@ -25,6 +25,8 @@ FIELDS = {
     'objective': str, 'traffic': str, 'require_fra': bool, 'unable_rnav': bool, 'fra_preference': (int, float), 'aircraft': str, 'fuel_climb': (int, float), 'fuel_cruise': (int, float), 'fuel_descent': (int, float),     # RouteSim 4 (planning.py)
 }
 MAX_ROUTE = 600
+HEAD_BUDGET_S = 5.0                 # SOG-0371 : la route de TÊTE répond en 5 s au plus (à froid : le chargement du contexte compris) ; ce qui n'a pas abouti se dit « proposition »
+TOTAL_BUDGET_S = 15.0               # SOG-0371 : tout le calcul (tête, alternatives, propositions de repli) en 15 s au plus ; AUCUNE recherche ne dépasse la borne de sa phase (engine.DEADLINE)
 ALT_BUDGET_S = 8.0                  # SOG-0296 : la recherche des ALTERNATIVES (après la route de tête) tient le poste au plus ce temps (facultatif, `alternatives_budget`, 1 à 25 s) : 25 s pour ne rien trouver de plus n'a pas à le tenir
 MAX_ALTERNATIVES = 3
 MAX_LEGS = 800
@@ -173,7 +175,7 @@ def plan(request, root):
     import time
     started = time.perf_counter()
 
-    limit = {'until': started + 25, 'what': 'Budget global de recherche atteint (25 s)'}
+    limit = {'until': started + TOTAL_BUDGET_S, 'what': f'Budget global de recherche atteint ({TOTAL_BUDGET_S:g} s)'}
 
     def check_budget():
         if time.perf_counter() > limit['until']:
@@ -205,7 +207,8 @@ def plan(request, root):
     if request.get('mode', 'calculate') == 'calculate' and request.get('allow_levels', True):
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
-    request['_deadline'] = started + 25
+    request['_deadline'] = started + HEAD_BUDGET_S
+    engine.DEADLINE = started + HEAD_BUDGET_S       # SOG-0371 : la route de tête et ses reprises RAD ; la phase suivante pose la sienne
     if request.get('objective') == 'economical':
         request['alternatives'] = True
     try:
@@ -232,6 +235,7 @@ def plan(request, root):
             except (ValueError, SearchBudget) as e:
                 rad_retries.append(dict(excluded=avoids, error=str(e)))
                 break
+    engine.DEADLINE = started + TOTAL_BUDGET_S
     rejected = not primary['ok'] or bool(primary.get('data_gaps')) or any(i['level'] == 'ERREUR' for i in primary['issues'])
     coverage_gaps = recovery.terminal_gaps(request, nav) if rejected else []
     alternatives = []
@@ -248,6 +252,7 @@ def plan(request, root):
             limit['until'] = min(limit['until'], time.perf_counter() + secs)
             limit['what'] = f'Budget de recherche des alternatives atteint ({secs:g} s)'
             request['_deadline'] = limit['until']
+            engine.DEADLINE = limit['until']
         try:
             dep = str(request['dep']).strip().upper()
             arr = str(request['arr']).strip().upper()
@@ -421,4 +426,4 @@ def compute(request, data, rad_file, fra_file):
         with SOLVER_LOCK:
             return bound_result(plan(request, data))
     finally:
-        engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = None
+        engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = None
