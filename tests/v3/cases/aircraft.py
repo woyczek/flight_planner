@@ -1405,3 +1405,70 @@ def m48(c):
     c.until(f"!!document.querySelector('{M} [data-do=addtype][data-type=S210]')", timeout=10000, what='the type again')
     c.tap(f'{M} [data-do="addtype"][data-type="S210"]')
     c.until(f"(document.querySelector('{M} [data-f=type]') || {{}}).value === 'S210'", what='a new aircraft of this type: the editor, type filled')
+
+
+def _reg_published(rows=None, **over):
+    """registry/fr_immat.json as the launcher publishes it (SOG-0341: five columns, the date of the export), from _REG_ROWS plus a tenth
+    CESSNA (the maker kept: ten aircraft) and a homebuilder's name on one aircraft (emptied by the reader: fewer than ten); invented."""
+    base = [[r['reg'], r['maker'], r['model'], r['serial'], r['base']] for r in _REG_ROWS if r['reg'] != 'F-PXYZ']
+    base += [['F-GCZZ', 'CESSNA', '152', '15299901', 'LFPT'], ['F-PXYZ', 'DUPONT JEAN', 'RV-7', '70001', '']]
+    doc = {'schema': 1, 'source': 'Registre français des immatriculations, DGAC', 'date': '2026-10-01',
+           'columns': ['IMMATRICULATION', 'CONSTRUCTEUR', 'MODELE', 'NUMERO_SERIE', 'AERODROME_ATTACHE'], 'rows': rows if rows is not None else base}
+    doc.update(over)
+    return ['registry/fr_immat.json', doc, 'reference']
+
+
+@case('M49', 'Fleet without the workstation\'s launcher (the phone): the French register PUBLISHED in the data repository answers the search — '
+      'the register line and « Créer à l\'identique », the registrations of a type; read as an untrusted input (five named columns, five texts '
+      'per row, a maker on fewer than ten aircraft emptied, markup never drawn, a file of another form ignored)',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0341 (the user: « comment le téléphone appairé peut-il avoir les infos ? »; Q-0060: the reduced file in the private repository; '
+      'AeroDB c790bf7d6, frame/aerodb/INTEGRATION.md: read it as an UNTRUSTED input, policy reference); the same reconstruction as the '
+      'launcher (registry_fr.rebuild) and the same search (lookup); invented rows')
+def m49(c):
+    A = 'modules/aircraft/module.js'
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    trap = [['F-GTRP', 'CESSNA', '<img src=x onerror="window.__pwn=1">', '1', ''], ['F-GBAD', 'CESSNA'], 'F-GSTR',
+            ['F-GNUM', 'CESSNA', 172, '1', ''], ['NOT A REG', 'CESSNA', '172', '1', '']]
+    pub = _reg_published()
+    pub[1]['rows'] = pub[1]['rows'] + trap
+    pub[1]['owner'] = 'DUPONT'   # another key: ignored
+    c.open('aircraft', docs=[_REG_TYPES, pub], app='maintenance')
+    c.until(f"!!document.querySelector('{M} input[data-k=q]')", timeout=15000, what='the fleet and its search')
+    # a registration of the published register: its line, as with the launcher
+    c.page.fill(f'{M} input[data-k="q"]', 'fbhhh')
+    c.until(f"!!document.querySelector('{M} [data-regline] [data-regsays]')", timeout=10000, what='the register line, from the published file')
+    says = norm(c.text(f'{M} [data-regsays]') or '')
+    c.ok(says.startswith('F-BHHH') and 'CESSNA 172 S' in says and norm(tx(A, 'regLine', c.lang).split('{type}')[1].split('{date}')[0]) in says and '2026' in says
+         and norm(tx(A, 'regBase', c.lang).replace('{b}', 'LFPN')) in says, says, 'the registration, the label, the source and its date, the home aerodrome')
+    c.eq(norm(c.text(f'{M} [data-regsug]') or ''), norm(tx(A, 'regSug', c.lang).replace('{t}', 'C172')), 'C172 proposed, said a suggestion', what='suggestion')
+    c.shot(f'M49_{c.design}_390_{c.lang}_line.png')
+    # the homebuilder's name: emptied (one aircraft), « constructeur non précisé »
+    c.page.fill(f'{M} input[data-k="q"]', 'fpxyz')
+    c.until(f"(document.querySelector('{M} [data-regline] [data-regsays]')?.textContent || '').includes('RV-7')", timeout=10000, what='the register line of F-PXYZ')
+    said = c.text(f'{M} [data-regsays]') or ''
+    c.ok('DUPONT' not in said and norm(tx(A, 'regNoMaker', c.lang).replace('{model}', 'RV-7')) in norm(said), said, 'never the name: « constructeur non précisé »')
+    # markup in a cell: text, never drawn
+    c.page.fill(f'{M} input[data-k="q"]', 'fgtrp')
+    c.until(f"!!document.querySelector('{M} [data-regline] [data-regsays]')", timeout=10000, what='the line of the trapped row')
+    c.eq(c.js(f"document.querySelectorAll('{M} [data-regline] img').length + (window.__pwn ? 100 : 0)"), 0, 'markup shown as text, never run', what='escaped')
+    # rows of another form are dropped (four cells, a number, not a list, not a registration)
+    for q in ('fgbad', 'fgnum'):
+        c.page.fill(f'{M} input[data-k="q"]', q)
+        c.wait(1200)
+        c.eq(c.count(f'{M} [data-regline] [data-regsays]'), 0, f'{q}: a row of another form is not read', what=q)
+    # the registrations of a type, in a new aircraft
+    c.page.fill(f'{M} input[data-k="q"]', '')
+    c.tap(f'{M} [data-do="add"]')
+    c.until(f"!!document.querySelector('{M} [data-regsearch] input[data-k=rq]')", timeout=5000, what='the register search in a new aircraft')
+    c.page.fill(f'{M} input[data-k="rq"]', 'cessna 172')
+    c.until(f"document.querySelectorAll('{M} [data-regpick]').length === 7", timeout=10000, what='seven registrations of the type')
+    c.ok('2026' in (c.text(f'{M} [data-regsource]') or '') and 'DGAC' in (c.text(f'{M} [data-regsource]') or ''), c.text(f'{M} [data-regsource]'), 'the source and its date')
+    # a file of another form (columns renamed): nothing read, nothing said
+    c.open('aircraft', docs=[_REG_TYPES, _reg_published(columns=['IMMATRICULATION', 'PROPRIETAIRE', 'MODELE', 'NUMERO_SERIE', 'AERODROME_ATTACHE'])],
+           app='maintenance')
+    c.until(f"!!document.querySelector('{M} input[data-k=q]')", timeout=15000, what='the fleet and its search')
+    c.page.fill(f'{M} input[data-k="q"]', 'fbhhh')
+    c.wait(1500)
+    c.eq(c.count(f'{M} [data-regline] [data-regsays]'), 0, 'a file of another form is not read', what='columns')
+

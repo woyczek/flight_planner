@@ -189,3 +189,15 @@
   fleet's aircraft, then the types (« Caravelle — S210 : ajouter un aéronef de ce type », a new aircraft with the type filled), then
   « Créer <immatriculation> » only when nothing answers. The types are asked once per entry and the list redrawn in place, the field
   keeping focus and caret. M48 (red before).
+- **16 Nov 2026 — SOG-0341: without the launcher, the French register PUBLISHED in the data repository answers** (the user: « comment le
+  téléphone appairé peut-il avoir les infos ? »; Q-0060; AeroDB publishes `registry/fr_immat.json`, c790bf7d6, frame/aerodb/INTEGRATION.md:
+  « read it as an UNTRUSTED input »; written by Features SOG). `registry_read.js` (pure): `rebuildRegistry` is the launcher's
+  `registry_fr.rebuild` — own `columns` exactly the five names, `rows` a list of 300 000 at most, each kept row exactly five strings,
+  cleaned (control characters AND format marks, 80 signs), a registration of the expected form, a model; the maker of fewer than ten
+  aircraft recounted and emptied (a homebuilder is a person: « constructeur non précisé »); the date AAAA-MM-JJ or ''; any other key ignored;
+  another form → null (nothing read, nothing said). `lookupRegistry` is its `lookup` (registration without dash, or every word of the type in
+  maker + model; `truncated`). The module declares `registry/` read under the policy `reference` (on demand) and reads it only WITHOUT a
+  launcher (`regAsk`: with one, the verb `aircraft/registry`, which itself falls back on the published file); rebuilt once per session;
+  the cited source is the page's text (REG_CREDIT), never the file's. In a new aircraft, the search by type is offered without a launcher
+  once the published register is read (inserted at the head of the editor, nothing else redrawn). Rows go through `regRow` and every text
+  is escaped as before. Without a published register: nothing said, as before. M49 (red before).

@@ -9,6 +9,7 @@
 // (collage de la page Flotte) écrit le même fichier, règle « record » des deux côtés (frame/INTEGRATION.md § 3, préfixe
 // partagé). Une ligne d'état (cache/aircraft/status.json, frame/INTEGRATION.md § 10.0) dit le nombre d'appareils et de fiches.
 import * as FL from './fleet.js';
+import * as RR from './registry_read.js'; // SOG-0341 : le registre publié, lu sans lanceur (le téléphone)
 import {
   createSuggestList
 } from '../fuel/suggest.js'; // la liste de propositions sous un champ (celle des terrains de Carburant)
@@ -25,7 +26,8 @@ export const meta = {
   apps: ['maintenance', 'company'],
   level: 3,
   title: ['Aéronefs', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
-  files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js', '../../frame/lib/clipboard.js',
+  files: ['fleet.js', 'registry_read.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js',
+    '../../frame/lib/clipboard.js',
     '../../frame/lib/dom.js', '../../frame/lib/fuel_units.js', '../stats/phases.js', '../stats/journals.js',
     '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js'
   ],
@@ -46,7 +48,11 @@ export const meta = {
       `Flota de la compañía (${n} aeronaves)`
     ];
   },
-  reads: ['airline/', 'pilot/', 'cache/aircraft/'],
+  // SOG-0341 : registry/ — le registre français publié (environ 3 Mo), lu à la demande (politique « reference »), seulement sans lanceur
+  reads: ['airline/', 'pilot/', 'cache/aircraft/', {
+    prefix: 'registry/',
+    policy: 'reference'
+  }],
   // « Depuis le dossier Output » (SOG-0052 étape 2) : le travail stats/output d'AeroDB (status, set, clear, read), comme fetchProcedures
   launcher: {
     routes: ['regen/job', 'regen/job/cancel'],
@@ -464,11 +470,36 @@ function regRow(r) {
     base: regText(r.base, 40)
   };
 }
-/** Demande au registre (une fois par question et par séance, 350 ms après la dernière frappe) ; le dessin suit la réponse. Sans
- *  lanceur, lanceur occupé ou réponse illisible : rien n'est dit (la question pourra être reposée). */
+/** SOG-0341 : le registre publié dans le dépôt des données (registry/fr_immat.json), reconstruit une fois par séance comme une entrée
+ *  non sûre (registry_read.js) ; null s'il est absent ou d'une autre forme. */
+function regPublished(s) {
+  return s.regPub ||= Promise.resolve().then(() => s.ctx.data?.get?.(RR.REG_PATH)).then(doc => RR.rebuildRegistry(doc)).catch(() => null);
+}
+/** La réponse du registre publié à une question, dans la forme de celle du verbe ; null sans registre publié lisible (rien n'est dit). */
+async function regFromPublished(s, args, key) {
+  const reb = await regPublished(s);
+  if (!reb) return null;
+  const res = RR.lookupRegistry(reb, args.reg ? {
+    reg: args.reg
+  } : {
+    type: key.slice(2)
+  }, args.reg ? 5 : 50);
+  return {
+    rows: res.rows.map(regRow).filter(Boolean),
+    source: RR.REG_CREDIT,
+    date: reb.date,
+    truncated: res.truncated,
+    origin: 'published'
+  };
+}
+/** Demande au registre (une fois par question et par séance, 350 ms après la dernière frappe) ; le dessin suit la réponse. Avec le
+ *  lanceur du poste : son verbe aircraft/registry (qui lit lui-même le fichier publié quand le poste n'a pas d'export). Sans lanceur (le
+ *  téléphone, le site publié) : le registre publié dans le dépôt des données (SOG-0341). Lanceur occupé, réponse illisible ou aucun
+ *  registre : rien n'est dit (la question pourra être reposée). */
 function regAsk(s, args) {
   const key = regKey(args);
-  if (!key || s.regs.has(key) || typeof s.ctx.launcher?.job !== 'function') return;
+  if (!key || s.regs.has(key)) return;
+  const viaLauncher = typeof s.ctx.launcher?.job === 'function';
   clearTimeout(s.regTimer);
   s.regTimer = setTimeout(async () => {
     if (S !== s || s.regs.has(key)) return;
@@ -476,7 +507,8 @@ function regAsk(s, args) {
       wait: true
     });
     let v = null;
-    try {
+    if (!viaLauncher) v = await regFromPublished(s, args, key).catch(() => null);
+    else try {
       const r = await s.ctx.launcher.job('regen/job', {
         set: 'aircraft',
         verb: 'registry',
@@ -684,12 +716,29 @@ function listHtml(s) {
 }
 
 /** L'éditeur d'un appareil : deux groupes de champs, la ligne des changements, les gestes. */
+/** La recherche dans le registre d'un nouvel aéronef (« cessna 172 » → ses immatriculations). */
+const regSearchHtml = s => `<div class="ac-regsearch" data-regsearch><label class="f-field">${esc(s.tt(TX.regSearch))}<input type="search" data-k="rq" value="${esc(s.edit.rq || '')}" placeholder="cessna 172" autocomplete="off" spellcheck="false"></label><div data-regres>${regResHtml(s)}</div></div>`;
+/** SOG-0341 : la recherche dans le registre est offerte avec le lanceur du poste, ou sans lui (le téléphone) quand le registre publié
+ *  est lisible — lu une fois ; à sa lecture, la recherche est posée en tête de l'éditeur ouvert (rien d'autre n'est redessiné). */
+function regSearchable(s) {
+  if (typeof s.ctx.launcher?.job === 'function') return true;
+  if (s.regPubOk === undefined) {
+    s.regPubOk = null; // lecture en cours
+    regPublished(s).then(r => {
+      s.regPubOk = !!r;
+      const pane = r && S === s && s.edit && !s.edit.was ? s.el.querySelector('[data-pane="edit"]') : null;
+      if (pane && !pane.querySelector('[data-regsearch]')) pane.insertAdjacentHTML('afterbegin', regSearchHtml(s));
+    });
+  }
+  return s.regPubOk === true;
+}
+
 function editorHtml(s) {
   const d = s.edit.draft,
     field = (k, label, extra = '') => `<label class="f-field">${esc(s.tt(label))}<input data-f="${k}" value="${esc(k === 'callsigns' ? (d.callsigns || []).join(', ') : d[k] ?? '')}"${extra} autocomplete="off"></label>`,
     old = s.edit.was ? listOf(s).find(a => a.registration === s.edit.was) : null;
   const note = s.edit.note ? `<small class="f-muted" data-regnote>${esc(`${s.tt(TX.regFrom, { label: s.edit.note.label })} ${s.edit.note.sug ? s.tt(TX.regSug, { t: s.edit.note.sug }) : s.tt(TX.regNoType)}`)}</small>` : '',
-    search = s.edit.was || typeof s.ctx.launcher?.job !== 'function' ? '' : `<div class="ac-regsearch" data-regsearch><label class="f-field">${esc(s.tt(TX.regSearch))}<input type="search" data-k="rq" value="${esc(s.edit.rq || '')}" placeholder="cessna 172" autocomplete="off" spellcheck="false"></label><div data-regres>${regResHtml(s)}</div></div>`;
+    search = s.edit.was || !regSearchable(s) ? '' : regSearchHtml(s);
   return `<div class="f-card" data-pane="edit">${search}<fieldset class="ac-group"><legend>${esc(s.tt(TX.identity))}</legend>
       ${field('registration', TX.registration, ' autocapitalize="characters" spellcheck="false"')}
       ${field('type', TX.type, ' autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ac-typesug"')}<small class="f-muted" data-typeinfo></small>${note}
