@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0998211",
+  "organisation": "c22e405",
   "fiches": 373,
   "untranslated": 0,
   "priorities": 310
@@ -393,8 +393,7 @@
      "fr": "Recette : « Remettre à tester » efface le verdict et son commentaire — garder l'historique",
      "en": "Acceptance: « Test again » erases the verdict and its comment — keep the history",
      "de": "Abnahme: « Erneut testen » löscht das Urteil und seinen Kommentar — den Verlauf behalten",
-     "es": "Recepción: « Volver a probar » borra el veredicto y su comentario — conservar el historial",
-     "test": true
+     "es": "Recepción: « Volver a probar » borra el veredicto y su comentario — conservar el historial"
     },
     {
      "id": "SOG-0355",
@@ -403,8 +402,7 @@
      "fr": "Recette : ranger les tests acceptés ou refusés par l'heure du verdict, le plus récent en tête",
      "en": "Acceptance: order passed or failed tests by the time of the verdict, most recent first",
      "de": "Abnahme: bestandene oder abgelehnte Tests nach der Uhrzeit des Urteils ordnen, das neueste zuerst",
-     "es": "Recepción: ordenar las pruebas aceptadas o rechazadas por la hora del veredicto, la más reciente primero",
-     "test": true
+     "es": "Recepción: ordenar las pruebas aceptadas o rechazadas por la hora del veredicto, la más reciente primero"
     }
    ]
   },
@@ -425,8 +423,7 @@
      "fr": "Recette : donner ses verdicts depuis le téléphone (ils passent par le dépôt des données, comme les signalements)",
      "en": "Acceptance: give verdicts from the phone (they go through the data repository, like reports)",
      "de": "Abnahme: Urteile vom Telefon aus abgeben (sie laufen über das Daten-Repository, wie die Meldungen)",
-     "es": "Recepción: dar los veredictos desde el teléfono (pasan por el repositorio de datos, como los avisos)",
-     "test": true
+     "es": "Recepción: dar los veredictos desde el teléfono (pasan por el repositorio de datos, como los avisos)"
     }
    ]
   },
@@ -882,8 +879,7 @@
      "de": "Kraftstoff: den Block « Verfahren » klarer machen — zuerst ein Entwurf",
      "es": "Combustible: aclarar el bloque « Procedimientos » — primero una maqueta",
      "milestone": "6.0.0-alpha.6",
-     "rank": 129,
-     "test": true
+     "rank": 129
     },
     {
      "id": "SOG-0345",
@@ -946,8 +942,7 @@
      "fr": "Site publié : pas de « Calculer A → B » sans le lanceur",
      "en": "Published site: no « Compute A → B » without the launcher",
      "de": "Veröffentlichte Seite: kein « A → B berechnen » ohne den Launcher",
-     "es": "Sitio publicado: sin « Calcular A → B » sin el lanzador",
-     "test": true
+     "es": "Sitio publicado: sin « Calcular A → B » sin el lanzador"
     },
     {
      "id": "SOG-0332",
@@ -1056,8 +1051,7 @@
      "de": "Flugzeugdatenblätter: Das JSON ist die einzige Quelle, lnmperf ist nur ein Import/Export",
      "es": "Fichas de aeronave: el JSON es la única fuente, lnmperf es solo una importación/exportación",
      "milestone": "6.0.0-alpha.3",
-     "rank": 38,
-     "test": true
+     "rank": 38
     },
     {
      "id": "SOG-0028",
@@ -1443,8 +1437,7 @@
      "fr": "Carte à côté de Carburant et Carte en grand : la même vue avec les mêmes paramètres — une spécification de ce qui survit",
      "en": "Map beside Fuel and full Map: the same view with the same parameters — a specification of what survives",
      "de": "Karte neben Kraftstoff und große Karte: dieselbe Ansicht mit denselben Parametern — eine Spezifikation dessen, was erhalten bleibt",
-     "es": "Mapa junto a Combustible y Mapa grande: la misma vista con los mismos parámetros — una especificación de lo que sobrevive",
-     "test": true
+     "es": "Mapa junto a Combustible y Mapa grande: la misma vista con los mismos parámetros — una especificación de lo que sobrevive"
     }
    ]
   },
@@ -1693,8 +1686,7 @@
      "fr": "Carte au téléphone, vol démarré : le suivi du vol et le profil ne laissent plus de carte, les outils recouvrent le texte",
      "en": "Map on the phone, flight started: flight following and the profile leave no map, the tools cover the text",
      "de": "Karte am Telefon, Flug gestartet: Flugverfolgung und Profil lassen keine Karte übrig, die Werkzeuge verdecken den Text",
-     "es": "Mapa en el teléfono, vuelo iniciado: el seguimiento y el perfil no dejan mapa, las herramientas tapan el texto",
-     "test": true
+     "es": "Mapa en el teléfono, vuelo iniciado: el seguimiento y el perfil no dejan mapa, las herramientas tapan el texto"
     },
     {
      "id": "SOG-0364",
@@ -1703,8 +1695,7 @@
      "fr": "Carte au téléphone : dans le volet du bas, la fiche d'un espace est cachée à côté de la pile des espaces",
      "en": "Map on the phone: in the bottom sheet, an airspace's card is hidden beside the airspace stack",
      "de": "Karte am Telefon: im unteren Blatt ist die Karte eines Luftraums neben dem Luftraumstapel verdeckt",
-     "es": "Mapa en el teléfono: en la hoja inferior, la ficha de un espacio queda oculta junto a la pila de espacios",
-     "test": true
+     "es": "Mapa en el teléfono: en la hoja inferior, la ficha de un espacio queda oculta junto a la pila de espacios"
     }
    ]
   },
@@ -3016,11 +3007,12 @@
     {
      "id": "SOG-0368",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Islande : la prise d'Avians échoue (« fichier illisible ») et rien ne permet de déposer à la main ; les routes de l'ENR 3.2 sont à une page par route",
      "en": "Iceland: taking Avians fails (« unreadable file ») and nothing allows a manual drop; ENR 3.2 routes come one page per route",
      "de": "Island: der Abruf von Avians scheitert (« Datei unlesbar ») und nichts erlaubt das manuelle Ablegen; die ENR-3.2-Strecken haben je eine Seite",
-     "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta"
+     "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta",
+     "test": true
     }
    ]
   },
@@ -3085,8 +3077,7 @@
      "en": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
      "de": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
      "es": "Aircraft: a local register of registrations — the type from a registration, the registrations of a type",
-     "rank": 173,
-     "test": true
+     "rank": 173
     }
    ]
   },
@@ -5222,8 +5213,7 @@
      "en": "Settings: several seconds of waiting before the screen, for a repository version that is only accessory",
      "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
      "es": "Ajustes: varios segundos de espera antes de la pantalla, por una versión del repositorio solo accesoria",
-     "rank": 299,
-     "test": true
+     "rank": 299
     },
     {
      "id": "SOG-0172",
@@ -5609,11 +5599,12 @@
     {
      "id": "SOG-0371",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "« Calculer A → B » : 39,7 s passées dans le lanceur pour EGLL → KJFK, routes NAT du jour lues",
      "en": "« Compute A → B »: 39.7 s spent in the launcher for EGLL → KJFK with the day's NAT tracks read",
      "de": "« A → B berechnen »: 39,7 s im Launcher für EGLL → KJFK mit gelesenen NAT-Tracks des Tages",
-     "es": "« Calcular A → B »: 39,7 s en el lanzador para EGLL → KJFK con las rutas NAT del día leídas"
+     "es": "« Calcular A → B »: 39,7 s en el lanzador para EGLL → KJFK con las rutas NAT del día leídas",
+     "test": true
     }
    ]
   },

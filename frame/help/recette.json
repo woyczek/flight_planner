@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 239,
-  "verdicts": 152
+  "tests": 241,
+  "verdicts": 163
  },
  "apps": [
   "pilote",
@@ -24,8 +24,9 @@
    },
    "test": "Recharge la page. Réglages, carte « Fiches Little Navmap (.lnmperf) » : le bouton s'appelle « Exporter les fiches » ; il écrit tes fiches dans le dossier et ne reprend rien. Modifie un .lnmperf dans Little Navmap (ou déposes-en un nouveau dans le dossier), puis « Exporter les fiches » : le fichier est listé « Changés dans Little Navmap — non repris » et ta fiche n'a pas bougé. Pour le reprendre : Appareils › « Importer un fichier », avec l'aperçu avant l'écriture.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-12T23:16:08Z"
+   "state": "ok",
+   "delivered": "2026-11-12T23:16:08Z",
+   "at": "2026-11-16T08:09:10Z"
   },
   {
    "id": "SOG-0036",
@@ -494,13 +495,16 @@
    },
    "test": "Recharge la page (deux fois : la première garde l'état du lanceur). Ouvre les Réglages, ou n'importe quel écran, juste après le rechargement : l'écran est là tout de suite, plus de blanc de plusieurs secondes ; la ligne d'état du lanceur peut se mettre à jour une seconde après.",
    "since": "2026-11-09",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-14T11:09:38Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "oui pour git, non pour compagnie.",
-    "at": "2026-11-10T15:12:10Z"
-   }
+   "at": "2026-11-16T08:07:14Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "oui pour git, non pour compagnie.",
+     "at": "2026-11-10T15:12:10Z"
+    }
+   ]
   },
   {
    "id": "SOG-0134",
@@ -1703,7 +1707,13 @@
    "since": "2026-11-10",
    "state": "ok",
    "delivered": "2026-11-13T19:17:08Z",
-   "at": "2026-11-14T10:54:37Z"
+   "at": "2026-11-16T07:55:34Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-14T10:54:37Z"
+    }
+   ]
   },
   {
    "id": "SOG-0221",
@@ -2041,7 +2051,13 @@
    "since": "2026-11-12",
    "state": "ok",
    "delivered": "2026-11-13T19:19:52Z",
-   "at": "2026-11-14T10:53:13Z"
+   "at": "2026-11-16T07:55:30Z",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-14T10:53:13Z"
+    }
+   ]
   },
   {
    "id": "SOG-0247",
@@ -2374,13 +2390,16 @@
    },
    "test": "Recharge la page. Compagnie › Flotte, tape « caravelle » (ou « carav ») : les aéronefs de la flotte de ce type s'affichent, puis la fiche du type avec « ajouter un aéronef de ce type » ; plus de « Aucun aéronef ne correspond » ni de « Créer C-ARAV ». Tape une immatriculation inconnue : « Créer » est proposé.",
    "since": "2026-11-12",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-13T20:34:22Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "nope. recherche « caravelle », qui fonctionne partout ailleurs, ne donne rien. screenshot. imho, cette recherche est une évolution de la recherche des fiches, en ajoutant le critère flotte dans ta fonction.",
-    "at": "2026-11-13T16:00:44Z"
-   }
+   "at": "2026-11-16T08:06:24Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "nope. recherche « caravelle », qui fonctionne partout ailleurs, ne donne rien. screenshot. imho, cette recherche est une évolution de la recherche des fiches, en ajoutant le critère flotte dans ta fonction.",
+     "at": "2026-11-13T16:00:44Z"
+    }
+   ]
   },
   {
    "id": "SOG-0274",
@@ -2853,8 +2872,9 @@
    },
    "test": "Recharge la page. Carburant, un vol avec ses deux terrains, bloc « Procédures ». (1) Un seul côté ouvert ; l'autre tient en une phrase avec sa marque. (2) « Changer » de la piste : la mieux orientée en tête, le vent arrière dit, une piste sans départ publié en dernier. (3) Une piste en vent ARRIÈRE passe en avertissement avec « Prendre la … (vent de face) » ; une piste en vent de face, non (ton essai à KDEN, « 16L — face 3 kt »). (4) L'approche se lit en mots : « ILS 13R », et à KTPA « RNP AR 01L Z » au lieu de « H01LZ ». (5) Avec un ATIS en ligne : sa ligne complète, « Prendre la piste de l'ATIS » seul, et dessous la ligne « Terrain » (altitude, QNH). Au téléphone, rien ne se coupe.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-14T00:05:02Z"
+   "state": "ok",
+   "delivered": "2026-11-14T00:05:02Z",
+   "at": "2026-11-16T08:09:06Z"
   },
   {
    "id": "SOG-0309",
@@ -3043,8 +3063,9 @@
    },
    "test": "Sur le téléphone (site publié, sans lanceur), Carburant, étape Route : à la place de « Calculer A → B », une phrase dit que le calcul d'itinéraire demande le lanceur du poste. Sur le poste, avec le lanceur, le bouton est là comme avant.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T00:14:22Z"
+   "state": "ok",
+   "delivered": "2026-11-14T00:14:22Z",
+   "at": "2026-11-16T08:07:46Z"
   },
   {
    "id": "SOG-0323",
@@ -3366,8 +3387,9 @@
    },
    "test": "Relance le lanceur (le Python a changé), recharge la page. Maintenance › Recette : refuse un test avec un commentaire : une note nomme la fiche et offre « Annuler » — touche-le : la fiche revient à tester et ton texte est de nouveau dans le champ. Refuse de nouveau, puis « Remettre à tester » : ton commentaire reste lisible en gris sous le test. Le champ de commentaire dit de quelle fiche il s'agit.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T11:26:29Z"
+   "state": "ok",
+   "delivered": "2026-11-14T11:26:29Z",
+   "at": "2026-11-16T08:08:45Z"
   },
   {
    "id": "SOG-0352",
@@ -3394,8 +3416,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli. Carburant, un vol d'une mission qui fournit une carte, la carte affichée à côté : choisis la carte fournie (la vue cible), puis déplace et zoome. Passe sur l'écran Carte : la même carte fournie est affichée, le sélecteur rempli, au même cadrage. Reviens au Carburant : pareil. Ouvre un autre vol : la Carte cadre ce vol, sans reprendre l'ancienne vue.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T07:53:08Z"
+   "state": "ok",
+   "delivered": "2026-11-16T07:53:08Z",
+   "at": "2026-11-16T08:05:40Z"
   },
   {
    "id": "SOG-0355",
@@ -3408,8 +3431,9 @@
    },
    "test": "Recharge la page. Maintenance › Recette, ouvre « Déjà vus » : ton dernier verdict est en tête, puis les précédents dans l'ordre où tu les as donnés, chacun avec son application et son heure (encore en UTC, une heure de moins : la retouche suit).",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T11:26:29Z"
+   "state": "ok",
+   "delivered": "2026-11-14T11:26:29Z",
+   "at": "2026-11-16T08:09:22Z"
   },
   {
    "id": "SOG-0356",
@@ -3436,8 +3460,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli (attends la nouvelle version du site). Maintenance › Recette : donne un verdict avec un commentaire : la ligne dit « envoyé ». Sur l'ordinateur, après la synchronisation des données, recharge la feuille : ton verdict du téléphone y est, avec son heure.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T11:54:44Z"
+   "state": "ok",
+   "delivered": "2026-11-14T11:54:44Z",
+   "at": "2026-11-16T08:09:18Z"
   },
   {
    "id": "SOG-0359",
@@ -3506,8 +3531,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli. Carte, un vol démarré : la carte garde la moitié de l'écran ; sous elle, UNE ligne de suivi (prochain point, temps, cap). Touche-la : elle se déplie et le volet du bas se replie ; ouvre le profil : le suivi revient à sa ligne et le profil est lisible. Les boutons ronds restent sur la carte.",
    "since": "2026-11-15",
-   "state": "todo",
-   "delivered": "2026-11-15T19:36:39Z"
+   "state": "ok",
+   "delivered": "2026-11-15T19:36:39Z",
+   "at": "2026-11-16T08:06:01Z"
   },
   {
    "id": "SOG-0364",
@@ -3520,8 +3546,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli. Carte : touche un point où il n'y a qu'un espace — sa fiche s'ouvre en entier dans le volet du bas (nom, type, limites sur une ligne), sans pile à côté et sans texte coupé. Touche un point où il y en a plusieurs : un bandeau étroit en haut du volet, et dessous la fiche de l'espace choisi, lisible sans défiler de côté. Ferme la fiche : les notes de la carte reviennent.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-15T20:00:53Z"
+   "state": "ok",
+   "delivered": "2026-11-15T20:00:53Z",
+   "at": "2026-11-16T08:05:52Z"
   },
   {
    "id": "SOG-0365",
@@ -3550,25 +3577,37 @@
    "since": "2026-11-15",
    "state": "todo",
    "delivered": "2026-11-15T19:42:45Z"
+  },
+  {
+   "id": "SOG-0368",
+   "app": "maintenance",
+   "title": {
+    "fr": "Islande : la prise d'Avians échoue (« fichier illisible ») et rien ne permet de déposer à la main ; les routes de l'ENR 3.2 sont à une page par route",
+    "en": "Iceland: taking Avians fails (« unreadable file ») and nothing allows a manual drop; ENR 3.2 routes come one page per route",
+    "de": "Island: der Abruf von Avians scheitert (« Datei unlesbar ») und nichts erlaubt das manuelle Ablegen; die ENR-3.2-Strecken haben je eine Seite",
+    "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta"
+   },
+   "test": "Relance d'abord le lanceur (son Python a changé). Sur l'ordinateur, Données, Islande, coche d'usage personnel faite : « Mettre à jour ce pays ». C'est la première prise réelle sur le site d'Avians (35 requêtes environ, une à la fois) : à la fin la source Avians dit l'édition du 29/10/2026 et « 31 pages lues sur 31 » (ou le nombre lu, avec la page qui manque), et le pays se construit. Si la prise échoue encore, copie-moi la phrase affichée.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T08:10:14Z"
+  },
+  {
+   "id": "SOG-0371",
+   "app": "maintenance",
+   "title": {
+    "fr": "« Calculer A → B » : 39,7 s passées dans le lanceur pour EGLL → KJFK, routes NAT du jour lues",
+    "en": "« Compute A → B »: 39.7 s spent in the launcher for EGLL → KJFK with the day's NAT tracks read",
+    "de": "« A → B berechnen »: 39,7 s im Launcher für EGLL → KJFK mit gelesenen NAT-Tracks des Tages",
+    "es": "« Calcular A → B »: 39,7 s en el lanzador para EGLL → KJFK con las rutas NAT del día leídas"
+   },
+   "test": "Relance d'abord le lanceur (son Python a changé). Carburant, EGLL → KJFK, routes NAT du jour lues : « Calculer A → B ». La réponse arrive en 15 s au plus (12 s environ mesurées). « Copier le diagnostic » : la valeur « launcher » est sous 15 000 ms.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T08:00:04Z"
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0058",
-   "fiche": "SOG-0347",
-   "app": "maintenance",
-   "question": "Dossier data/ du poste modifié à la main : que doit faire le lanceur avant d'envoyer ?",
-   "context": "Ce que fait le lanceur aujourd'hui (relevé de V3 Frame) : tout fichier changé à la main dans les dossiers partagés (missions, comptes rendus, compagnies, sia/base…) est commité à ton nom et envoyé au passage suivant, sans question — une suppression aussi. Hors de ces dossiers, rien ne part (tes trois fichiers modifiés ce matin n'étaient pas concernés, et le dépôt est intact). En cas de divergence il fusionne et garde la version la plus récente, l'autre va dans _conflits/. Aucun choix ne t'est proposé. Mon objection à « tout retenir » : les pages de la V2 écrivent dans data/ par le navigateur et comptent sur l'envoi automatique. Ma proposition : l'envoi automatique reste pour les ajouts et les modifications, mais il s'arrête et te demande dès qu'un passage porterait une suppression, ou plus de vingt fichiers changés à la main — avec « Envoyer » ou « Remettre comme dans le dépôt ». Dans tous les cas j'ajoute le geste « Tout jeter et reprendre le dépôt », qui ne supprime jamais un fichier non suivi.",
-   "options": [
-    "Il demande pour une suppression ou plus de vingt fichiers ; le reste part tout seul",
-    "Il demande pour TOUT changement fait à la main",
-    "Comme aujourd'hui, avec seulement le geste « Tout jeter et reprendre le dépôt »",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-14",
-   "state": "todo",
-   "recommended": 0
-  },
   {
    "id": "Q-0059",
    "fiche": "SOG-0354",
@@ -3600,6 +3639,25 @@
    "since": "2026-11-14",
    "state": "todo",
    "recommended": 0
+  },
+  {
+   "id": "Q-0058",
+   "fiche": "SOG-0347",
+   "app": "maintenance",
+   "question": "Dossier data/ du poste modifié à la main : que doit faire le lanceur avant d'envoyer ?",
+   "context": "Ce que fait le lanceur aujourd'hui (relevé de V3 Frame) : tout fichier changé à la main dans les dossiers partagés (missions, comptes rendus, compagnies, sia/base…) est commité à ton nom et envoyé au passage suivant, sans question — une suppression aussi. Hors de ces dossiers, rien ne part (tes trois fichiers modifiés ce matin n'étaient pas concernés, et le dépôt est intact). En cas de divergence il fusionne et garde la version la plus récente, l'autre va dans _conflits/. Aucun choix ne t'est proposé. Mon objection à « tout retenir » : les pages de la V2 écrivent dans data/ par le navigateur et comptent sur l'envoi automatique. Ma proposition : l'envoi automatique reste pour les ajouts et les modifications, mais il s'arrête et te demande dès qu'un passage porterait une suppression, ou plus de vingt fichiers changés à la main — avec « Envoyer » ou « Remettre comme dans le dépôt ». Dans tous les cas j'ajoute le geste « Tout jeter et reprendre le dépôt », qui ne supprime jamais un fichier non suivi.",
+   "options": [
+    "Il demande pour une suppression ou plus de vingt fichiers ; le reste part tout seul",
+    "Il demande pour TOUT changement fait à la main",
+    "Comme aujourd'hui, avec seulement le geste « Tout jeter et reprendre le dépôt »",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-16T08:09:51Z"
   }
  ]
 }
