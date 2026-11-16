@@ -934,11 +934,13 @@ function viewOf(id, cy, off) {
     avail: split.filter(x => !x.un).map(x => x.id)
   };
 }
-/** Le pays ouvert est construit sur un dépôt à la main dont l'édition n'est pas connue (SOG-0368) : la tuile et la carte disent ce que dit sa fiche, jamais « à jour ». Seul le pays dont la fiche est lue le sait (la liste du cycle est lue pays par pays). */
+/** Le pays est construit sur un dépôt à la main dont l'édition n'est pas connue (SOG-0368) : la tuile, les compteurs du groupe et la carte disent ce que dit sa fiche, jamais « à jour ». Le lanceur le dit dans base/status (`datedBy: 'file'`) pour tous les pays ; à défaut (un lanceur plus ancien), la fiche ouverte, dont la liste du cycle est lue, le sait. */
 function depositOnly(id) {
   const cy = cycleOf(id),
     z = Object.hasOwn(S.status?.zones || {}, id) ? S.status.zones[id] : null;
-  if (cy.state !== 'ready' || !S.d.cov.ids.includes(id) || offCountry(id) || z?.state !== 'up-to-date') return false;
+  if (!S.d.cov.ids.includes(id) || offCountry(id) || z?.state !== 'up-to-date') return false;
+  if (z.datedBy === 'file') return true; // le lanceur le dit pour CHAQUE pays de la liste (base/status) : pas besoin d'ouvrir la fiche
+  if (cy.state !== 'ready') return false;
   const v = viewOf(id, cy, false);
   return takingStepOf(id, z, cy, v.avail, v.split)?.k === 'edition-unknown';
 }

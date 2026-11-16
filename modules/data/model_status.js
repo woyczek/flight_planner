@@ -99,7 +99,10 @@ export function zoneStateOf(z) {
     expectedCycle: day(z.expectedCycle),
     builtAt: typeof z.builtAt === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(z.builtAt) ? z.builtAt.slice(0, 30) : null,
     publish: publishOf(z.publish),
-    download: downloadOf(z.download)
+    download: downloadOf(z.download),
+    datedBy: z.datedBy === 'file' ? 'file' :
+    null, // la zone est construite sur un dépôt à la main, sans édition (SOG-0368 ; AeroDB 1e8ac887f) : la liste des pays le sait sans ouvrir la fiche
+    deposited: day(z.deposited)
   };
 }
 /** La réponse de base/status lue : { current, parserVersion, zones: { id: { state, reasons: [raison], buildable, builtCycle, expectedCycle } } } ; null si ce n'est pas une réponse lisible (échec, refus, forme inattendue). Une zone dont l'identifiant ou l'état est hors règle est écartée. */

@@ -10102,3 +10102,22 @@ def l155(c):
     c.eq([c.count('[data-data-head] img'), c.count('[data-data-head] [data-pdf-libs] b'), c.js('window.__pwn === undefined')], [0, 0, True], 'nothing in it is markup; the hostile version and script are dropped (the line says the generic script names)', what='escaped')
     txt = norm(c.text('[data-data-head] [data-pdf-libs]'))
     c.ok('evil' not in txt and 'onerror' not in txt, txt, 'and the dropped texts are not on the screen')
+
+
+@case('L156', 'Données: the LIST knows a country is built on a hand deposit without opening its sheet (SOG-0368; AeroDB 1e8ac887f: base/status gives `datedBy: “file”` and `deposited` per zone) — the tile of Iceland says « ! édition non connue » in amber, the counters of its group and the map follow, for every country of the list',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0368: the tile said « ✓ à jour » (green) for a country built on a hand deposit until its sheet was opened (the cycle list is read country by country); base/status now says it for each zone')
+def l156(c):
+    lang = c.lang
+    def world(w):
+        w['zs']['is'] = {**_zst('up-to-date'), 'builtAt': '2026-11-16T09:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}, 'datedBy': 'file', 'deposited': '2026-11-16'}
+    _l102_open(c, cover_more=('is',), world_tweak=world)
+    sum_ = lambda: norm(c.text('[data-group-id=europe-north] [data-group-sum]'))
+    c.tap('[data-group-id=europe-north] [data-act=grp-toggle]')
+    c.until("!!document.querySelector('[data-group-body] [data-zone=is]')", timeout=8000, what='the tile of Iceland')
+    c.eq(c.count('[data-sheet]'), 0, 'no sheet is open: the list alone knows', what='no sheet')
+    c.eq([c.attr('[data-group-body] [data-zone=is]', 'data-tone'), norm(_trow('editionUnknownShort', lang, after='  zst: {')) in norm(c.text('[data-group-body] [data-zone=is]')), c.js("document.querySelector('[data-wmap] path[data-zone=is]')?.dataset.tone")], ['warn', True, 'warn'], 'the tile says « édition non connue » in amber and the map is amber too', what='tile and map')
+    warn, ok = c.count('[data-group-body] [data-tone=warn]'), c.count('[data-group-body] [data-tone=ok]')
+    c.ok(warn >= 1 and f'{warn}' in sum_() and f'{ok}' in sum_(), (warn, ok, sum_()), 'the counters of the group follow the tiles: Iceland is counted among those to do, not among the up to date')
+    c.shot(f'L156_{c.width}_{lang}.png')
+    c.check_errors()
