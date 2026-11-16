@@ -170,6 +170,7 @@ Some optional readings (UK procedure charts, VAC charts, the workstation builder
 
 - Windows: double-click `installer_bibliotheques.cmd`; macOS / Linux: `sh installer_bibliotheques.sh` — in the folder of the suite. Python is looked for as `lancer.cmd` / `lancer.sh` do (and is not installed by this script: run the launcher first).
 - The script says the interpreter it uses, what it will install and from where (PyPI, prebuilt versions only), asks `o/N` (no by default) once for PDF reading (pypdf, pdfplumber, Pillow) and once for OCR (heavy), installs for your account only (`--user`; it refuses to run as an administrator), never lowers a version, reads the versions again at the end. `--dry-run` shows the command and runs nothing. Then restart the launcher.
+- pip also pulls INDIRECT dependencies that the file does not list (for PDF reading: `charset-normalizer`, `cryptography`…; for OCR: `numpy`, `opencv`, `onnxruntime`…), as prebuilt wheels only, from PyPI only; the script shows the command, not the resolved list. The bounds of the OCR group are versions proved on the workstation, not security minima.
 - The names and bounds are in `tools/requirements-optional.txt`, the single file read by the script and by the launcher (`pypdf>=6.21.4,<7`, …). The Data screen says the state in one line; the failures say the name of the script, never a pip command.
 
 ### Données SIA (Missions SIA)

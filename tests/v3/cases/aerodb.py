@@ -10575,6 +10575,7 @@ def k284(c):
     c.eq(([g['id'] for g in groups], OL.minima(groups) == G.MINIMA, [p[0] for p in groups[0]['packages']], [p[0] for p in groups[1]['packages']]),
          (['pdf', 'ocr'], True, ['pypdf', 'pdfplumber', 'Pillow', 'pdfminer.six'], ['pypdfium2', 'rapidocr-onnxruntime']),
          'the bounds file has two groups (pdf, ocr) and the minima of pdf_guard ARE the lines of the file (one source: the script and the state cannot disagree)', what='one file')
+    c.eq({p[0]: p[1] for p in G.MINIMA if p[0] in ('pypdfium2', 'rapidocr-onnxruntime')}, {'pypdfium2': '5.14.0', 'rapidocr-onnxruntime': '1.2.3'}, 'the OCR bounds are the versions proved on the workstation (5.14.0, 1.2.3), not « >=5 »', what='ocr bounds')
     c.eq({p[0]: (p[1], p[2]) for p in G.MINIMA if p[0] in ('pypdf', 'pdfplumber', 'Pillow', 'pdfminer.six')},
          {'pypdf': ('6.21.4', '7'), 'pdfplumber': ('0.11.10', '0.12'), 'Pillow': ('13.0.0', '14'), 'pdfminer.six': ('20260107', None)}, 'the minima of Sécurisation (14 Nov) are the ones of the file', what='minima')
     # (2) the counter-proof: any other line refuses the WHOLE file
@@ -10625,6 +10626,7 @@ def k284(c):
     calls, said = [], []
 
     def run(cmd, **kw):
+        kw = {**kw, 'was_dir': Path(kw['cwd']).is_dir(), 'was_empty': not list(Path(kw['cwd']).iterdir())}      # what pip would see, looked at DURING the call
         calls.append((cmd, kw))
         return subprocess.CompletedProcess(cmd, 0)
 
@@ -10643,8 +10645,8 @@ def k284(c):
              and cmd[cmd.index('--index-url') + 1] == 'https://pypi.org/simple' and '--require-hashes' not in cmd and '-I' not in cmd and '--upgrade' not in cmd and '--force-reinstall' not in cmd, flags,
              '`python -P -m pip install --only-binary :all: --index-url https://pypi.org/simple --no-input --isolated --user …`: no -I, no --require-hashes, no --upgrade')
         cwd = Path(kw['cwd'])
-        c.eq((cwd.is_dir(), list(cwd.iterdir()), [k for k in kw['env'] if k.upper().startswith('PYTHON')], kw.get('stdin') == subprocess.DEVNULL, 'shell' in kw), (True, [], [], True, False),
-             'the working folder is a neutral EMPTY one, no PYTHON* variable reaches pip, the command is a list (never a shell), no keyboard is given to pip', what='sandbox')
+        c.eq((kw['was_dir'], kw['was_empty'], cwd.exists(), [k for k in kw['env'] if k.upper().startswith('PYTHON')], kw.get('stdin') == subprocess.DEVNULL, 'shell' in kw), (True, True, False, [], True, False),
+             'the working folder is a neutral EMPTY one during the call and is ERASED after the pass, no PYTHON* variable reaches pip, the command is a list (never a shell), no keyboard is given to pip', what='sandbox')
         text = '\n'.join(map(str, said))
         c.ok(sys.executable in text and 'https://pypi.org/simple' in text and 'Pillow' in text and 'jamais de descente' in text and 'prêt' in text and 'lancer.cmd' in text and '[o/N]' in ''.join(q for q in said if '[o/N]' in q),
              text[:300], 'the script says the interpreter, where the packages come from, what it will do for each (Pillow: left as it is), asks o/N, reads the versions again and says to restart the launcher')
@@ -10681,7 +10683,7 @@ def k284(c):
         IL.in_venv = IL_in_venv
     c.eq((IL.pip_command(['x>=1'], 'py', False, True, (3, 11))[:3], IL.pip_command(['x>=1'], 'py', False, True, (3, 10))[:3], '--user' in IL.pip_command(['x>=1'], 'py', True, True, (3, 12)), '--user' in IL.pip_command(['x>=1'], 'py', False, True, (3, 12))),
          (['py', '-P', '-m'], ['py', '-m', 'pip'], False, True), '-P from Python 3.11; --user outside a virtual environment, omitted inside one', what='pip_command')
-    c.eq(IL.clean_env({'PYTHONPATH': 'x', 'pythonhome': 'y', 'PYTHONSTARTUP': 'z', 'PATH': 'p', 'APPDATA': 'a'}), {'PATH': 'p', 'APPDATA': 'a'}, 'no PYTHON* variable (PYTHONPATH, PYTHONHOME, PYTHONSTARTUP) reaches pip', what='clean env')
+    c.eq(IL.clean_env({'PYTHONPATH': 'x', 'pythonhome': 'y', 'PYTHONSTARTUP': 'z', 'PYTHONUSERBASE': 'u', 'PATH': 'p', 'APPDATA': 'a'}), {'PYTHONUSERBASE': 'u', 'PATH': 'p', 'APPDATA': 'a'}, 'no PYTHON* variable (PYTHONPATH, PYTHONHOME, PYTHONSTARTUP) reaches pip, except PYTHONUSERBASE (where the user wants his --user libraries: without it the library would go to another site than the one the launcher reads)', what='clean env')
     # the texts: four languages, the same fields in each
     fields = lambda t: sorted(re.findall(r'\{(\w+)[^}]*\}', t))
     c.eq([(k, len(v), len({tuple(fields(x)) for x in v})) for k, v in IL.M.items() if len(v) != 4 or len({tuple(fields(x)) for x in v}) != 1], [], 'every sentence of the script exists in fr, en, de, es with the same fields', what='four languages')
@@ -10713,6 +10715,7 @@ def k284(c):
             if isinstance(node, ast.Constant) and isinstance(node.value, str) and re.search(r'-m pip|pip install|\'pip\'', node.value):
                 bad.append((path.name, node.value[:60]))
     c.eq(bad, [], 'no string of the launcher, of the PDF guard or of the builders asks to run pip: they name the script', what='no pip text')
+    c.ok('PAS des minima de sécurité' in (ROOT / 'tools' / 'requirements-optional.txt').read_text(encoding='utf-8') and 'INDIRECT dependencies' in (ROOT / 'docs' / 'INSTALL.md').read_text(encoding='utf-8'), 'docs', 'the bounds file says that the OCR bounds are not security minima; INSTALL.md says that pip pulls indirect dependencies')
     docs = {p: (ROOT / p).read_text(encoding='utf-8') for p in ('docs/INSTALL.md', 'docs/MANUEL_ADMINISTRATEUR.md', 'docs/en/MANUEL_ADMINISTRATEUR.md', 'docs/de/MANUEL_ADMINISTRATEUR.md', 'docs/es/MANUEL_ADMINISTRATEUR.md')}
     c.eq([p for p, t in docs.items() if 'installer_bibliotheques' not in t], [], 'INSTALL.md and the administrator\'s manual in four languages name the script', what='docs')
 

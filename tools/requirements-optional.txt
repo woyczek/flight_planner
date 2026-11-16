@@ -22,5 +22,7 @@ pdfminer.six>=20260107
 # group: ocr
 # OCR des constructeurs de poste (tools/proc_ocr.py), à part : lourd (numpy, opencv, onnxruntime) et rarement utile.
 # Jamais installé par défaut.
-pypdfium2>=5,<6
+# ATTENTION : les bornes de ce groupe sont des versions ÉPROUVÉES sur le poste (celles qui ont servi à écrire et à tester les
+# constructeurs), PAS des minima de sécurité : aucun avis n'a été relu pour elles (contrairement au groupe pdf).
+pypdfium2>=5.14.0,<6
 rapidocr-onnxruntime>=1.2.3,<2

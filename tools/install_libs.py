@@ -14,6 +14,7 @@ Pourquoi un script et pas un bouton : une page ou le lanceur qui installeraient 
 Quatre langues (fr, en, de, es : la langue du système, ou --lang). Bibliothèque standard seulement."""
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -116,9 +117,12 @@ def pip_command(specs, py=None, venv=None, isolated=True, version=None):
     return cmd + list(specs)
 
 
+KEEP_ENV = ('PYTHONUSERBASE',)      # le dossier « --user » de l'utilisateur : sans elle, la bibliothèque irait dans un autre site que celui que lit le lanceur
+
+
 def clean_env(env=None):
-    """L'environnement du sous-processus : celui de l'utilisateur sans aucune variable PYTHON* (PYTHONPATH, PYTHONHOME, PYTHONSTARTUP… ne détournent pas pip)."""
-    return {k: v for k, v in (os.environ if env is None else env).items() if not k.upper().startswith('PYTHON')}
+    """L'environnement du sous-processus : celui de l'utilisateur sans aucune variable PYTHON* (PYTHONPATH, PYTHONHOME, PYTHONSTARTUP… ne détournent pas pip), sauf PYTHONUSERBASE, que l'utilisateur a posée pour dire où vont ses bibliothèques « --user » (celle que le lanceur lit aussi)."""
+    return {k: v for k, v in (os.environ if env is None else env).items() if not k.upper().startswith('PYTHON') or k.upper() in KEEP_ENV}
 
 
 def main(argv=None, *, run=subprocess.run, ask=input, out=print, have_of=None, admin=None):
@@ -171,7 +175,11 @@ def main(argv=None, *, run=subprocess.run, ask=input, out=print, have_of=None, a
         if answer not in YES[lang]:
             say('skipped', title=title)
             continue
-        r = run(cmd, cwd=tempfile.mkdtemp(prefix='suite-libs-'), env=clean_env(), stdin=subprocess.DEVNULL)
+        work = tempfile.mkdtemp(prefix='suite-libs-')      # un dossier courant VIDE pour pip, effacé après le passage
+        try:
+            r = run(cmd, cwd=work, env=clean_env(), stdin=subprocess.DEVNULL)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
         if r.returncode != 0:
             say('pip_failed', title=title, code=r.returncode)
             code = 1
