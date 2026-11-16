@@ -178,6 +178,22 @@ export function bigOf(last, zone) {
       message: b.message.trim().slice(0, 300)
     }));
 }
+/** L'échec de la dernière prise (base/fetch, ou le téléchargement de base/update) qui parle de cette zone, pour une source : { zone, source, error, status?, message?, pages?, stopped? } d'après le journal du lanceur (lastOf), ou null (aucune prise, ou la dernière a réussi pour cette source). Entrée non fiable : lue par fetchOutcome, qui borne tout (SOG-0368). */
+export function fetchFailOf(last, zone, source) {
+  if (!last || !ZONE.test(zone || '') || typeof source !== 'string') return null;
+  let best = null;
+  for (const verb of ['base/fetch', 'base/update']) {
+    const e = last[verb];
+    if (!e) continue;
+    const out = lastOut(verb, 'download', e);
+    if (!out || !mentions(zone, e, out)) continue;
+    if (!best || e.ended > best.ended) best = {
+      ended: e.ended,
+      out
+    };
+  }
+  return best && Array.isArray(best.out.failed) ? best.out.failed.find(f => f.zone === zone && f.source === source) || null : null;
+}
 /** Le fil de la dernière opération d'une zone d'après le journal du lanceur (lastOf) : { at (la fin la plus récente, ms), steps: [{ k, st ('done' | 'same' | 'fail' | 'stop' | 'todo'), at, v (le verdict de stepVerdict : failed, error, missing, kind) }] } ; null sans opération de cette zone.
  *  Une opération est la dernière ; celles qui la précèdent dans l'ordre des étapes (prise, téléchargement, construction) en font partie si elles la précèdent de 30 minutes au plus ; une étape en échec ou arrêtée avant la construction laisse la construction « pas encore faite ». */
 export function lastThread(last, zone) {

@@ -7989,7 +7989,7 @@ def _l102_cycle(world, labels):
     return answer
 
 
-def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs=(), setstate=None, world_tweak=None, cover_more=()):
+def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs=(), setstate=None, world_tweak=None, cover_more=(), last_results=None):
     """The Données screen of the capture: real outlines, real names, real packs, real catalogue; invented states."""
     labels = _l102_labels()
     geo, packs, cover = _l102_world()
@@ -8006,7 +8006,7 @@ def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs
         world['zs'][z] = {**_zst('stale', _NEWER), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}}
     world['zs']['it'] = {**_zst('failed', {'code': 'failed', 'error': 'x'}), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'unpublished', 'at': '2026-10-29T11:00:00Z'}}
     procs = {z: {'cycle': '2026-10-29', 'counts': {}, 'procedures': 9, 'sources': {}, 'procSources': ['eaip']} for z in ('fr', 'es', 'gb', 'ie', 'nl', 'de', 'ch', 'it')}
-    st = _launcher(c, [_view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': procs})], verbs=_VERBS + ['base/pickup', 'base/cycle', 'base/coverage'] + list(extra_verbs), cycle=(wrap or (lambda a: a))(_l102_cycle(world, labels)))
+    st = _launcher(c, [_view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': procs})], verbs=_VERBS + ['base/pickup', 'base/cycle', 'base/coverage'] + list(extra_verbs), cycle=(wrap or (lambda a: a))(_l102_cycle(world, labels)), last_results=last_results)
     if world_tweak:
         world_tweak(world)   # SOG-0318: what the launcher says of one country
     st['status'] = lambda args: _status(world['zs'])
@@ -9697,4 +9697,51 @@ def l142(c):
     c.eq(sh('[data-sheet-remove] button'), norm(_trow('removeZone', lang, after='    removeBtn:')), '« Retirer cette zone »', what='remove')
     c.js("document.querySelector('[data-sheet=nat]').scrollIntoView({ block: 'start' })")
     c.shot(f'L142_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+def _l143_wrap(answer):
+    """The list of the cycle for Iceland: Avians taken by hand-deposited pages, dated by the FILE (no edition)."""
+    def go(args):
+        res = answer(args)
+        av = _l89_item('avians', 'hand', {'state': 'done', 'at': '2026-11-16T08:00:00Z', 'datedBy': 'file', 'deposited': '2026-11-16'}, (1, 0), (0, 0, 1), ['is'], None,
+                       {'link': 'https://eaip.avians.is/', 'expected': ['*.html'], 'inDownloads': []}, ['Avians (eAIP d’Islande)'] * 4)
+        res['items'] = list(res.get('items') or []) + [av]
+        if args.get('zone') == 'is':
+            res['zoneView'] = {'zone': 'is', 'known': True, 'inCoverage': True, 'sources': [av], 'state': None, 'addWillAsk': {'sources': [], 'auto': [], 'hand': [], 'personal': [], 'noReader': []}}
+        return res
+    return go
+
+
+@case('L143', 'Données: the card of a source whose taking FAILED says what failed, gives the link and offers the hand deposit (SOG-0368, Iceland / Avians) — the reason of the launcher, the address tried, « 29 pages lues sur 31 », the server’s sentence (all text, escaped), the link to the source; a file deposited by hand is « déposé le …, édition non connue », never « fait » nor « à jour »',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0368: the card of Iceland said « rien à déposer » then « fichier illisible » with nothing to do; the launcher now keeps a `message` (the address tried), `pages` { read, of } and `stopped` (the host’s sentence, 240 characters) on the failed source and the journal keeps them; a deposit has no edition (`datedBy: file`): the tick says « déposé le … » (neutral), never a green « fait »')
+def l143(c):
+    lang = c.lang
+    CW = lambda k: _trow(k, lang, after='  cw: {')
+    CWB = lambda k: _trow(k, lang, after='  cwb: {')
+    entry = _l103_entry({'ok': False, 'fetched': [], 'unchanged': [], 'manual': [],
+                         'failed': [{'zone': 'is', 'source': 'avians', 'error': 'parse', 'message': 'https://eaip.avians.is/A_10-2026_2026_10_29/eAIP/menu.html : <b>refusé</b>\u0007 429',
+                                     'pages': {'read': 29, 'of': 31, 'missing': ['x.html']}, 'stopped': 'HTTP 429 Too Many Requests'}]}, 120, zones=('is',))
+    _l102_open(c, wrap=_l143_wrap, cover_more=('is',), extra_verbs=('base/last',), last_results=lambda a: {'ok': True, 'results': {'base/fetch': entry}})
+    c.tap('[data-group-id=europe-north] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-zone=is]')
+    c.until("!!document.querySelector('[data-sheet=is] [data-sheet-source=avians] [data-source-failed]')", timeout=15000, what='the card of Avians says what failed')
+    c.until("!document.querySelector('[data-sheet=is] [data-inventory-state]')", timeout=10000, what='the view of Iceland is read')
+    c.wait(300)
+    card = '[data-sheet=is] [data-sheet-source=avians]'
+    head = norm(c.text(f'{card} [data-source-failed] .f-warn'))
+    c.ok(norm(CWB('failedLine').split('{r}')[0]) in head, head, 'the card says that the taking failed, with the reason of the launcher')
+    detail = norm(c.text(f'{card} [data-failed-detail]'))
+    pre, post = CW('pagesRead').split('{n}')[1].split('{m}')[0], CW('pagesRead').split('{m}')[1]
+    c.ok('29' in detail and '31' in detail and norm(pre) in detail, detail, 'the pages read are said: « 29 pages lues sur 31 »')
+    c.ok('https://eaip.avians.is/A_10-2026_2026_10_29/eAIP/menu.html' in detail and '<b>refusé</b>' in detail and 'HTTP 429 Too Many Requests' in detail, detail, 'the address tried and the sentence of the server are written, as TEXT (a tag stays a tag)')
+    c.eq([c.count(f'{card} [data-failed-detail] b'), '\u0007' in c.text(f'{card} [data-failed-detail]')], [0, False], 'nothing in it is markup, and a control character is dropped', what='escaped')
+    c.eq(c.js(f"(a => a ? [a.target, /noopener/.test(a.rel), a.href.startsWith('https://')] : null)(document.querySelector('{card} [data-failed-link] a'))"), ['_blank', True, True], 'the link to the source opens in another tab without a referrer', what='link')
+    c.eq(c.count(f'{card} [data-act=zone-upload]'), 1, 'the hand deposit is on the card (« Choisir le fichier… »)', what='deposit gesture')
+    tk = c.js(f"(e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('{card} .d-cells1 li'))")
+    dpre, dpost = CW('depositedUnknown').split('{d}')
+    c.ok(tk and tk[0] != 'yes' and norm(dpre) in norm(tk[1]) and norm(dpost) in norm(tk[1]), tk, 'a file deposited by hand is « déposé le …, édition non connue »: not a green « fait »')
+    c.js(f"document.querySelector('[data-sheet=is]').scrollIntoView({{ block: 'start' }})")
+    c.shot(f'L143_{c.width}_{lang}.png')
     c.check_errors()

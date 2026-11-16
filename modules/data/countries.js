@@ -368,6 +368,27 @@ function groupsHtml() {
     });
   return `<section class="d-groups" data-cw-groups><h3 class="d-sh">${esc(tt(TX.cw.groupsTitle))} (${packs.length}) <small>${esc(tt(TX.d2.groupsHelp, { n: count('country', new Set(packs.flatMap(x => x.state.known)).size) }))}</small></h3><ul class="d-gl">${items.join('')}</ul></section>`;
 }
+/** L'échec de la dernière prise d'une source de ce pays : celui que la page vient de voir (base/fetch), à défaut celui du journal du lanceur ; null sans (SOG-0368). */
+function failOf(zone, sid) {
+  const r = S.result,
+    live = r?.set === 'base' && r.verb === 'fetch' ? (r.out?.failed || []).find(f => f.zone === zone && f.source === sid) : null;
+  return live || M.fetchFailOf(S.cw?.last?.data, zone, sid);
+}
+/** La carte d'une source dont la dernière prise a échoué (SOG-0368) : ce qui a échoué (le motif et le statut), le détail du lanceur (l'adresse essayée, « n pages lues sur m », la phrase du serveur : du texte, toujours échappé), le lien vers la source ; le dépôt à la main est le geste de la carte. '' sans échec. */
+function fetchFailHtml(sid, zone) {
+  const f = failOf(zone, sid);
+  if (!f) return '';
+  const T = TX.cw,
+    bits = [f.pages ? tt(T.pagesRead, {
+      n: f.pages.read,
+      m: f.pages.of
+    }) : '', f.message || '', f.stopped ? tt(T.stoppedBy, {
+      s: f.stopped
+    }) : ''].filter(Boolean),
+    page = filesOf(sid, null).steps?.page?.url,
+    a = M.isHttps(page) ? link(page, tt(T.pageLink)) : '';
+  return `<div class="d-fail" data-source-failed="${esc(sid)}"><p class="f-warn">${esc(tt(TX.cwb.failedLine, { r: sourcesWhy([{ source: sid, code: f.error, status: f.status ?? null }]) }))}</p>${bits.length ? `<p class="f-muted" data-failed-detail>${esc(bits.join(' · '))}</p>` : ''}${a ? `<p class="f-muted" data-failed-link>${a}</p>` : ''}</div>`;
+}
 /** Un lien https en texte sûr (nouvel onglet, sans référent) ; sans adresse en https, le libellé seul. */
 const link = (url, label) => M.isHttps(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
 /** La date (AAAA-MM-JJ) d'un instant ISO, écrite dans la langue ; '' sans. */
@@ -473,6 +494,10 @@ function partsText(id) {
 export function downloadTick(id, item, z) {
   const T = TX.cw,
     d = item?.download;
+  // un dépôt à la main n'a pas d'édition : « déposé le …, édition non connue », jamais « fait » ni « à jour » (SOG-0368)
+  if (d?.datedBy === 'file') return tickHtml('download', 'todo', tt(T.depositedUnknown, {
+    d: dateOf(d.deposited || d.at)
+  }), 'twDeposit');
   if (d?.state) {
     const cyc = d.cycle && S.airac ? tt(T.cycleOf, {
       c: M.cycleName(S.airac, d.cycle)
@@ -668,10 +693,11 @@ function sourceHtml(id, zone, z, inCov, msg) {
     } : null)),
     name = (catSource(id)?.n?.[li()] || item?.label?.[li()] || loc?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
   const ds = item?.download?.state,
-    tone = ds === 'done' ? 'ok' : ds === 'failed' ? 'err' : !ds || ds === 'n/a' || ds === 'unavailable' ? 'muted' :
+    tone = ds === 'done' ? item?.download?.datedBy === 'file' ? 'warn' : 'ok' : ds === 'failed' ? 'err' : !ds || ds === 'n/a' || ds ===
+    'unavailable' ? 'muted' :
     'warn'; // la couleur du bord gauche du bloc : l'état de CETTE source
   return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="${tone}"${reg ? ` data-regime="${reg}"` : ''}><div class="d-srch"><h4>${esc(name)}</h4>${reg ? `<p class="f-muted d-regbadge" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}</div>
-    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${M.isComputed(reg) ? '' : handWhyHtml(id)}${reg === 'hand' ? inventoryHtml(id, item, cy, zone, seenNamesOf(id, z, item, cy)) : ''}${reg === 'hand' ? handHtml(id, zone, z, item, cy, msg) : ''}</section>`;
+    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>${fetchFailHtml(id, zone)}` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${M.isComputed(reg) ? '' : handWhyHtml(id)}${reg === 'hand' ? inventoryHtml(id, item, cy, zone, seenNamesOf(id, z, item, cy)) : ''}${reg === 'hand' ? handHtml(id, zone, z, item, cy, msg) : ''}</section>`;
 }
 /** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
  *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */

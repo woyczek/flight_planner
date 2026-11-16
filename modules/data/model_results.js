@@ -264,6 +264,24 @@ function handOf(zones) {
   }
   return out;
 }
+/** Le détail d'un échec de prise (SOG-0368), lu sans confiance : `message` (l'adresse essayée), `stopped` (la phrase du serveur), 240 caractères au plus, sans caractère de commande ; `pages` { read, of, missing } (« 29 pages lues sur 31 »), des entiers bornés. Rien d'autre ; {} sans. */
+function failDetail(f) {
+  const o = obj(f),
+    out = {},
+    message = clean(o.message, 240),
+    stopped = clean(o.stopped, 240),
+    pg = obj(o.pages),
+    read = num(pg.read),
+    of = num(pg.of);
+  if (message) out.message = message;
+  if (stopped) out.stopped = stopped;
+  if (Number.isInteger(read) && Number.isInteger(of) && read >= 0 && of > 0 && of <= 1e4 && read <= of) out.pages = {
+    read,
+    of,
+    missing: Array.isArray(pg.missing) ? Math.min(pg.missing.length, 1e4) : Math.max(0, Math.min(num(pg.missing) ?? 0, 1e4))
+  };
+  return out;
+}
 /** La fin d'un téléchargement, d'après sa dernière vue : { kind, fetched: [zone], unchanged: [zone], failed: [{ zone, source, error,
  *  status? }], manual: [{ zone, source, url, name }], outside, level } ; kind : 'done' | 'partial' | 'failed' | 'cancelled' |
  *  'interrupted' | 'nothing' (rien à télécharger pour ces zones) ; outside : les fichiers suivis par git que le travail a modifiés
@@ -283,7 +301,8 @@ export function fetchOutcome(final) {
       error: f.error ?? null,
       ...(num(f.status) !== null ? {
         status: f.status
-      } : {})
+      } : {}),
+      ...failDetail(f)
     }));
   } else {
     const srcs = z => Object.entries(obj(zs[z]?.sources)).map(([id, s]) => [id, obj(s)]);
@@ -295,7 +314,8 @@ export function fetchOutcome(final) {
         error: s.error ?? zs[z].error ?? null,
         ...(num(s.status) !== null ? {
           status: s.status
-        } : {})
+        } : {}),
+        ...failDetail(s)
       };
     });
     const done = keys.filter(z => zs[z]?.state === 'done');

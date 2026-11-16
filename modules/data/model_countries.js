@@ -141,7 +141,9 @@ function itemOf(it) {
       state: DL_STATES.includes(dl?.state) ? dl.state : '',
       cycle: day(dl?.cycle),
       at: stamp(dl?.at),
-      edition: text(dl?.edition, 40)
+      edition: text(dl?.edition, 40),
+      datedBy: dl?.datedBy === 'file' ? 'file' : '', // un dépôt à la main n'a pas d'édition : sa date est celle du fichier (SOG-0368)
+      deposited: day(dl?.deposited)
     },
     build: {
       zones: int(it.steps?.build?.zones),

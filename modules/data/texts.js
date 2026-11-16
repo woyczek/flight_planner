@@ -657,6 +657,11 @@ export const TX = {
       'übernommen am {d} · eine neuere Datei wartet in Downloads',
       'tomada el {d} · un archivo más reciente espera en Descargas'
     ],
+    depositedUnknown: ['le {d}, édition non connue', 'on {d}, edition not known', 'am {d}, Ausgabe unbekannt',
+      'el {d}, edición desconocida'
+    ],
+    pagesRead: ['{n} pages lues sur {m}', '{n} pages read of {m}', '{n} Seiten von {m} gelesen', '{n} páginas leídas de {m}'],
+    stoppedBy: ['le serveur a répondu : {s}', 'the server answered: {s}', 'der Server antwortete: {s}', 'el servidor respondió: {s}'],
     seenName: ['vu : « {n} »', 'seen: “{n}”', 'gesehen: „{n}“', 'visto: «{n}»'],
     // une zone hors pays (Atlantique Nord) : ce qu'elle lit, sans cases construit ni publié
     offPublished: ['copie publiée du {d}', 'copy published on {d}', 'Kopie veröffentlicht am {d}', 'copia publicada el {d}'],
@@ -2538,6 +2543,7 @@ export const TX = {
     twNo: ['en échec', 'failed', 'fehlgeschlagen', 'fallido'],
     twNa: ['sans objet', 'not applicable', 'nicht zutreffend', 'no aplicable'],
     twTake: ['à prendre', 'to take', 'zu übernehmen', 'por tomar'],
+    twDeposit: ['déposé', 'deposited', 'hinterlegt', 'depositado'],
     pubWaitBuild: ['pas encore possible : ce pays n’est pas construit', 'not possible yet: this country is not built',
       'noch nicht möglich: dieses Land ist nicht erstellt', 'aún no es posible: este país no está construido'
     ],

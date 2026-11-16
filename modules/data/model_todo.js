@@ -15,7 +15,8 @@ export function stepsState(it) {
     b = it.build,
     p = it.publish;
   return {
-    download: d === 'done' ? 'yes' : d === 'n/a' ? 'na' : 'no',
+    download: d === 'done' && it.download.datedBy !== 'file' ? 'yes' : d === 'n/a' ? 'na' :
+    'no', // un dépôt à la main n'a pas d'édition : jamais « fait » (SOG-0368)
     build: b.zones <= 0 ? 'na' : b.upToDate >= b.zones ? 'yes' : 'no',
     publish: p.unpublished > 0 ? 'no' : p.published > 0 ? 'yes' : p.unknown > 0 ? 'unknown' : 'na'
   };
