@@ -188,10 +188,7 @@ function bilanOf(t) {
   const bad = t.steps.find(s => s.st === 'fail');
   if (bad) return {
     level: 'err',
-    text: tt(T.thFailed, {
-      w: tt(WORD[bad.k]()),
-      r: bad.why
-    })
+    text: '' // la ligne « ✗ … : <raison> » et « Réessayer » le disent : une seule fois (SOG-0368), pas de « Arrêté à l'étape … »
   };
   if (t.steps.some(s => s.st === 'stop')) return {
     level: 'warn',
@@ -222,7 +219,7 @@ export function threadHtml(zone) {
   if (!t || (S.zop?.zone === zone)) return '';
   const b = bilanOf(t);
   return `<div class="d-thread" data-sheet-thread data-thread-state="${stateOf(t)}"${t.journal ? ' data-thread-from="journal"' : ''}><p class="d-thr-h"><b>${esc(tt(TX.zx.thTitle))}</b></p>${t.steps.length ? stepsHtml(t) : ''}
-    <p class="${b.level === 'ok' ? 'f-ok' : b.level === 'err' ? 'f-warn' : 'f-muted'}" data-thread-bilan data-level="${b.level}">${esc(b.text)}</p></div>`;
+    ${b.text ? `<p class="${b.level === 'ok' ? 'f-ok' : b.level === 'err' ? 'f-warn' : 'f-muted'}" data-thread-bilan data-level="${b.level}">${esc(b.text)}</p>` : ''}</div>`;
 }
 /** L'alerte de taille du constructeur sur la fiche d'un pays (SOG-0358) : UNE ligne calme par fichier publié au-delà de la moitié du plafond de lecture du cadre, la phrase du lanceur telle quelle (texte seulement : bornée par le modèle, échappée ici), sans geste
  *  et sans point d'alerte ; '' sans alerte (le journal du lanceur survit au rechargement, la ligne aussi). */
@@ -321,7 +318,7 @@ function end(me) {
 }
 /** « Mettre à jour ce pays » : lit l'état du pays, puis enchaîne, sans question, la prise du fichier vu dans Téléchargements, le téléchargement de ce qui manque et la construction (relue : rien à construire se dit) ; au premier échec la chaîne s'arrête, le fil le garde avec sa raison. Un départ
  *  refusé (« une autre opération est en cours ») dessine la carte de cette opération à la place du bouton ; l'avancement et le fil sont sur la fiche. */
-export async function zoneUpdate(zone) {
+export async function zoneUpdate(zone, opts = {}) {
   const me = S;
   if (!ZONE.test(zone || '') || !S.d?.cov?.ids?.includes(zone) || updateGate([zone]).disabled) return;
   const personal = selectionOf([zone]).personal,
@@ -352,9 +349,11 @@ export async function zoneUpdate(zone) {
     seen = (st0.zones?.[zone]?.reasons || []).some(r => r.code === 'pickup-waiting' && r.zip),
     keys = M.stepsFor({
       seen,
-      fetch: dp.fetch.includes(zone)
+      fetch: dp.fetch.includes(zone) || opts.retake ===
+        true // retenter la prise sur le site d'un pays construit sur un dépôt dont l'édition n'est pas connue (SOG-0368)
     });
-  if (!seen && !dp.fetch.includes(zone) && !dp.build.includes(zone)) { // rien que le lanceur puisse faire seul pour ce pays
+  if (!seen && !dp.fetch.includes(zone) && !dp.build.includes(zone) && opts.retake !==
+    true) { // rien que le lanceur puisse faire seul pour ce pays
     t.fixed = {
       level: 'warn',
       text: tt(TX.zx.thNothing)

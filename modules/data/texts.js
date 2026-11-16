@@ -333,6 +333,14 @@ export const TX = {
     stale: ['À reconstruire', 'To rebuild', 'Neu zu bauen', 'Por reconstruir'],
     // SOG-0370 : la raison réelle d'un pays « périmé » est un fichier qui attend dans Téléchargements (non constructible) : l'étape qui BLOQUE se dit, pas « à reconstruire »
     waiting: ['Un fichier à prendre', 'A file to take', 'Eine Datei zu übernehmen', 'Un archivo por tomar'],
+    staleShort: ['à reconstruire', 'to rebuild', 'neu zu bauen', 'por reconstruir'],
+    neverShort: ['jamais construit', 'never built', 'nie erstellt', 'nunca construido'],
+    staleShort: ['à reconstruire', 'to rebuild', 'neu zu bauen', 'por reconstruir'],
+    neverShort: ['jamais construit', 'never built', 'nie erstellt', 'nunca construido'],
+    staleShort: ['à reconstruire', 'to rebuild', 'neu zu bauen', 'por reconstruir'],
+    neverShort: ['jamais construit', 'never built', 'nie erstellt', 'nunca construido'],
+    fetchFailed: ['La prise a échoué', 'The taking failed', 'Die Übernahme ist fehlgeschlagen', 'La toma falló'],
+    editionUnknown: ['Édition non connue', 'Edition not known', 'Ausgabe unbekannt', 'Edición desconocida'],
     waitingShort: ['un fichier à prendre', 'a file to take', 'Datei zu übernehmen', 'archivo por tomar'],
     'never-built': ['Jamais construite', 'Never built', 'Noch nie erstellt', 'Nunca construida'],
     failed: ['En échec', 'Failed', 'Fehlgeschlagen', 'Fallida'],
@@ -602,6 +610,11 @@ export const TX = {
       'Für dieses Land ist keine Dateiquelle bekannt.', 'No se conoce ninguna fuente de archivos para este país.'
     ],
     regime: {
+      autoFallback: ['Prise par le lanceur — dépôt à la main possible si elle échoue.',
+        'Taken by the launcher — hand deposit possible if it fails.',
+        'Vom Starter geholt — Hinterlegung von Hand möglich, wenn es fehlschlägt.',
+        'La toma el lanzador — depósito a mano posible si falla.'
+      ],
       auto: ['Prise seule par le lanceur : rien à déposer.', 'Taken by the launcher alone: nothing to drop.',
         'Vom Starter allein geholt: nichts abzulegen.', 'La toma el lanzador solo: nada que depositar.'
       ],
@@ -645,6 +658,20 @@ export const TX = {
     buildNot: ['pas à jour : {r}', 'not up to date: {r}', 'nicht aktuell: {r}', 'no está al día: {r}'],
     buildLast: ['construction précédente : {b}', 'previous build: {b}', 'vorheriger Aufbau: {b}', 'construcción anterior: {b}'],
     // SOG-0370 : un pays construit dont un fichier plus récent attend n'est pas « à faire » : il est construit, d'une édition (ou d'un cycle) précédente
+    pubBeforeBuild: ['le {d} · avant cette construction', 'on {d} · before this build', 'am {d} · vor diesem Aufbau',
+      'el {d} · antes de esta construcción'
+    ],
+    pubBeforeBuild: ['le {d} · avant cette construction', 'on {d} · before this build', 'am {d} · vor diesem Aufbau',
+      'el {d} · antes de esta construcción'
+    ],
+    pubBeforeBuild: ['le {d} · avant cette construction', 'on {d} · before this build', 'am {d} · vor diesem Aufbau',
+      'el {d} · antes de esta construcción'
+    ],
+    builtOnDeposit: ['sur un dépôt du {d}, édition non connue', 'on a deposit of {d}, edition not known',
+      'auf einer Hinterlegung vom {d}, Ausgabe unbekannt', 'sobre un depósito del {d}, edición desconocida'
+    ],
+    whatPages: ['les pages', 'the pages', 'die Seiten', 'las páginas'],
+    whatFile: ['le fichier', 'the file', 'die Datei', 'el archivo'],
     builtPrevEdition: ['{d} · édition précédente', '{d} · previous edition', '{d} · vorherige Ausgabe', '{d} · edición anterior'],
     builtPrevCycle: ['{d} · cycle précédent', '{d} · previous cycle', '{d} · vorheriger Zyklus', '{d} · ciclo anterior'],
     dlTakenEdition: ['édition prise le {d} · une plus récente attend dans Téléchargements',
@@ -657,6 +684,36 @@ export const TX = {
       'übernommen am {d} · eine neuere Datei wartet in Downloads',
       'tomada el {d} · un archivo más reciente espera en Descargas'
     ],
+    // SOG-0369 : l'âge d'une source sans rythme (en gris), et l'état PAR CONTENU d'un pays
+    ageToday: ['lu aujourd’hui', 'read today', 'heute gelesen', 'leído hoy'],
+    ageDays: ['{n} jours', '{n} days', '{n} Tage', '{n} días'],
+    ageOneDay: ['1 jour', '1 day', '1 Tag', '1 día'],
+    content: {
+      airspace: ['espaces', 'airspaces', 'Lufträume', 'espacios aéreos'],
+      aerodromes: ['aérodromes', 'aerodromes', 'Flugplätze', 'aeródromos'],
+      navaids: ['aides radio', 'navaids', 'Funknavigationsanlagen', 'radioayudas'],
+      points: ['points', 'points', 'Punkte', 'puntos'],
+      vfr_points: ['points VFR', 'VFR points', 'VFR-Punkte', 'puntos VFR'],
+      airways: ['voies aériennes', 'airways', 'Luftstraßen', 'aerovías'],
+      obstacles: ['obstacles', 'obstacles', 'Hindernisse', 'obstáculos'],
+      aar_tracks: ['axes de ravitaillement', 'refuelling tracks', 'Luftbetankungsstrecken', 'ejes de reabastecimiento'],
+      mil_routes: ['routes militaires', 'military routes', 'Militärstrecken', 'rutas militares'],
+      nat_tracks: ['routes NAT', 'NAT tracks', 'NAT-Routen', 'rutas NAT'],
+      mora: ['MORA', 'MORA', 'MORA', 'MORA']
+    },
+    contentOnly: ['{c} : {s} seulement{d}', '{c}: {s} only{d}', '{c}: nur {s}{d}', '{c}: solo {s}{d}'],
+    contentOnlyDate: [', du {d}', ', of {d}', ', vom {d}', ', del {d}'],
+    contentState: {
+      late: ['en retard', 'late', 'verspätet', 'con retraso'],
+      waiting: ['un fichier attend dans Téléchargements', 'a file waits in Downloads', 'eine Datei wartet in Downloads',
+        'un archivo espera en Descargas'
+      ],
+      unavailable: ['indisponible chez l’éditeur', 'unavailable at the publisher', 'beim Herausgeber nicht verfügbar',
+        'no disponible en el editor'
+      ],
+      missing: ['pas encore pris', 'not taken yet', 'noch nicht übernommen', 'aún no tomado']
+    },
+    contentLine: ['{c} : {w} ({s})', '{c}: {w} ({s})', '{c}: {w} ({s})', '{c}: {w} ({s})'],
     depositedUnknown: ['le {d}, édition non connue', 'on {d}, edition not known', 'am {d}, Ausgabe unbekannt',
       'el {d}, edición desconocida'
     ],
@@ -2149,6 +2206,11 @@ export const TX = {
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     legendMore: ['Autres signes de la carte', 'Other signs of the map', 'Weitere Zeichen der Karte', 'Otros signos del mapa'],
     update: ['Mettre à jour ce pays', 'Update this country', 'Dieses Land aktualisieren', 'Actualizar este país'],
+    depositReason: ['Construit sur un dépôt à la main : l’édition du site n’est pas connue.',
+      'Built on a hand deposit: the edition of the site is not known.',
+      'Auf einer Hinterlegung von Hand erstellt: die Ausgabe der Webseite ist unbekannt.',
+      'Construido sobre un depósito a mano: la edición del sitio es desconocida.'
+    ],
     updateZone: ['Mettre à jour cette zone', 'Update this zone', 'Diese Zone aktualisieren', 'Actualizar esta zona'],
     updateNat: ['Lire les routes NAT du jour', 'Read the NAT tracks of the day', 'Die NAT-Routen des Tages lesen',
       'Leer las rutas NAT del día'
@@ -2851,6 +2913,51 @@ export const TX = {
   },
   // SOG-0318 : la phrase de tête de la fiche d'un pays : ce qu'il faut faire MAINTENANT (une seule), que rien dessous ne contredit
   now: {
+    handFiles: ['{s} : {n} fichiers du cycle en vigueur à prendre à la main, puis « Prendre le fichier téléchargé ».',
+      '{s}: {n} files of the cycle in force to take by hand, then “Take the downloaded file”.',
+      '{s}: {n} Dateien des gültigen Zyklus von Hand zu holen, dann „Heruntergeladene Datei übernehmen“.',
+      '{s}: {n} archivos del ciclo vigente por tomar a mano, luego «Tomar el archivo descargado».'
+    ],
+    handFile: ['{s} : le fichier du cycle en vigueur est à prendre à la main, puis « Prendre le fichier téléchargé ».',
+      '{s}: the file of the cycle in force is to take by hand, then “Take the downloaded file”.',
+      '{s}: die Datei des gültigen Zyklus ist von Hand zu holen, dann „Heruntergeladene Datei übernehmen“.',
+      '{s}: el archivo del ciclo vigente se toma a mano, luego «Tomar el archivo descargado».'
+    ],
+    handFiles: ['{s} : {n} fichiers du cycle en vigueur à prendre à la main, puis « Prendre le fichier téléchargé ».',
+      '{s}: {n} files of the cycle in force to take by hand, then “Take the downloaded file”.',
+      '{s}: {n} Dateien des gültigen Zyklus von Hand zu holen, dann „Heruntergeladene Datei übernehmen“.',
+      '{s}: {n} archivos del ciclo vigente por tomar a mano, luego «Tomar el archivo descargado».'
+    ],
+    handFile: ['{s} : le fichier du cycle en vigueur est à prendre à la main, puis « Prendre le fichier téléchargé ».',
+      '{s}: the file of the cycle in force is to take by hand, then “Take the downloaded file”.',
+      '{s}: die Datei des gültigen Zyklus ist von Hand zu holen, dann „Heruntergeladene Datei übernehmen“.',
+      '{s}: el archivo del ciclo vigente se toma a mano, luego «Tomar el archivo descargado».'
+    ],
+    handFiles: ['{s} : {n} fichiers du cycle en vigueur à prendre à la main, puis « Prendre le fichier téléchargé ».',
+      '{s}: {n} files of the cycle in force to take by hand, then “Take the downloaded file”.',
+      '{s}: {n} Dateien des gültigen Zyklus von Hand zu holen, dann „Heruntergeladene Datei übernehmen“.',
+      '{s}: {n} archivos del ciclo vigente por tomar a mano, luego «Tomar el archivo descargado».'
+    ],
+    handFile: ['{s} : le fichier du cycle en vigueur est à prendre à la main, puis « Prendre le fichier téléchargé ».',
+      '{s}: the file of the cycle in force is to take by hand, then “Take the downloaded file”.',
+      '{s}: die Datei des gültigen Zyklus ist von Hand zu holen, dann „Heruntergeladene Datei übernehmen“.',
+      '{s}: el archivo del ciclo vigente se toma a mano, luego «Tomar el archivo descargado».'
+    ],
+    fetchFailed: ['{s} : la prise sur le site a échoué. Réessayez, ou déposez {w} à la main.',
+      '{s}: the taking from the site failed. Try again, or deposit {w} by hand.',
+      '{s}: die Übernahme von der Webseite ist fehlgeschlagen. Versuchen Sie es erneut oder hinterlegen Sie {w} von Hand.',
+      '{s}: la toma desde el sitio falló. Reintente, o deposite {w} a mano.'
+    ],
+    editionUnknown: ['Ce pays est construit sur un dépôt à la main du {d} : son édition n’est pas connue.',
+      'This country is built on a hand deposit of {d}: its edition is not known.',
+      'Dieses Land ist auf einer Hinterlegung von Hand vom {d} erstellt: ihre Ausgabe ist unbekannt.',
+      'Este país está construido sobre un depósito a mano del {d}: su edición es desconocida.'
+    ],
+    kept: ['Ce pays reste à jour (construit le {b}) ; la dernière prise a échoué, rien n’a changé.',
+      'This country stays up to date (built on {b}); the last taking failed, nothing changed.',
+      'Dieses Land bleibt aktuell (erstellt am {b}); die letzte Übernahme ist fehlgeschlagen, nichts hat sich geändert.',
+      'Este país sigue al día (construido el {b}); la última toma falló, nada cambió.'
+    ],
     pickEdition: ['Une édition plus récente attend dans Téléchargements : prenez-la, le pays se reconstruit ensuite.',
       'A newer edition waits in Downloads: take it, then the country rebuilds.',
       'Eine neuere Ausgabe wartet in Downloads: übernehmen Sie sie, danach wird das Land neu aufgebaut.',

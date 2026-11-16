@@ -274,7 +274,9 @@ function onClick(e) {
     if (su.disabled || !/^[a-z0-9_-]{2,12}$/.test(su.dataset.zone || '')) return;
     startGesture(su);
     return zoneUpdate(su.dataset
-      .zone); // un seul pays : prise du fichier vu, téléchargement, construction, enchaînés, l'avancement sur place (zoneop.js)
+      .zone, {
+        retake: su.dataset.retake === '1'
+      }); // un seul pays : prise du fichier vu, téléchargement, construction, enchaînés, l'avancement sur place (zoneop.js)
   }
   const zs = e.target.closest?.('[data-act="zop-stop"], [data-act="zop-retry"]');
   if (zs) return zs.disabled ? undefined : zs.dataset.act === 'zop-stop' ? zopStop() : zopRetry(zs.dataset.zone);

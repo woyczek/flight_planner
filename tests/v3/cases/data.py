@@ -6523,7 +6523,7 @@ def l88(c):
     word = lambda t: _trow(t, lang, after='    word: {')
     tile = norm(c.text('[data-group-body] [data-zone=fr]'))
     nm = norm(c.js("document.querySelector('[data-group-body] [data-zone=fr] span').textContent"))
-    c.ok(tile.startswith(nm) and norm(word('warn')) in tile, tile, 'a country tile: its name and its state in a word (lot D2: with its sign, and « proc. » where it has procedures)')
+    c.ok(tile.startswith(nm) and norm(_trow('staleShort', lang, after='  zst: {')) in tile, tile, 'a country tile: its name and its STEP in a word — France is to rebuild (SOG-0370: not the generic « à faire »), with its sign, and « proc. » where it has procedures')
     accent = c.js("(() => { const i = document.createElement('i'); i.style.color = 'var(--sog-accent)'; document.body.append(i); const v = getComputedStyle(i).color; i.remove(); return v })()")
     br = c.js("['fr', 'gb', 'es', 'de', 'it', 'ca'].map(z => { const p = document.querySelector(`[data-wmap] path[data-zone=${z}]`), s = getComputedStyle(p); return [s.stroke, s.fill, p.hasAttribute('data-grp')] })")
     c.eq([b[0] for b in br[:5]], [accent] * 5, 'the open pack: a blue border (the accent) on all its countries', what='blue border')
@@ -7806,7 +7806,7 @@ def l99(c):
     c.eq(steps, [['download', 'no'], ['build', 'todo']], 'the thread: the download FAILED (a red failure, with its reason), the build was not reached (to do, neutral)', what='failed thread')
     c.ok(norm(c.text('[data-sheet=gb] [data-thread-step=download] [data-thread-text]')).startswith(norm(ZX('thWDl'))) and '404' in c.text('[data-sheet=gb] [data-thread-step=download] [data-thread-text]'),
          c.text('[data-sheet=gb] [data-thread-step=download] [data-thread-text]'), 'the failed step stays with the launcher\'s reason (the status 404)')
-    c.eq([c.attr('[data-sheet=gb] [data-sheet-thread]', 'data-thread-state'), c.attr('[data-sheet=gb] [data-thread-bilan]', 'data-level'), c.count('[data-sheet=gb] [data-act=zop-retry]')], ['failed', 'err', 1], 'the bilan is a failure with « Réessayer » on the failed step', what='failed bilan')
+    c.eq([c.attr('[data-sheet=gb] [data-sheet-thread]', 'data-thread-state'), c.count('[data-sheet=gb] [data-thread-bilan]'), c.count('[data-sheet=gb] [data-act=zop-retry]')], ['failed', 0, 1], 'a failure is said ONCE (SOG-0368): the red step line and « Réessayer » — no « Arrêté à l’étape … » bilan under it', what='failed bilan')
     c.eq([[p['verb']] for p in st['posts'] if p['verb'] in ('fetch', 'build')], [['fetch']], 'the chain stopped at the failure: nothing was built', what='stopped')
     c.eq(len(c.note_log()), n_notes, 'the failure is not said in a floating note (it would vanish): the thread says it', what='no note')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -8003,7 +8003,7 @@ def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs
     world = {'zs': {z: ok() for z in cover}}
     world['zs']['pt'] = {**_zst('stale', {'code': 'pickup-waiting', 'source': 'navpt', 'cycle': '2026-11-26', 'zip': 'EAIP ISO.zip'}, buildable=False), 'builtAt': '2026-10-05T10:00:00Z', 'builtCycle': '2026-10-01', 'publish': {'state': 'unpublished', 'at': '2026-10-05T11:00:00Z'}}
     for z in ('fr', 'gb', 'de'):
-        world['zs'][z] = {**_zst('stale', _NEWER), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}}
+        world['zs'][z] = {**_zst('stale', {**_NEWER, 'source': {'fr': 'sia', 'gb': 'nats', 'de': 'dfs'}[z]}), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}}   # each country's OWN source is the newer one (SOG-0368: the sheet of the United Kingdom said « Source SIA France … »)
     world['zs']['it'] = {**_zst('failed', {'code': 'failed', 'error': 'x'}), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'unpublished', 'at': '2026-10-29T11:00:00Z'}}
     procs = {z: {'cycle': '2026-10-29', 'counts': {}, 'procedures': 9, 'sources': {}, 'procSources': ['eaip']} for z in ('fr', 'es', 'gb', 'ie', 'nl', 'de', 'ch', 'it')}
     st = _launcher(c, [_view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': procs})], verbs=_VERBS + ['base/pickup', 'base/cycle', 'base/coverage'] + list(extra_verbs), cycle=(wrap or (lambda a: a))(_l102_cycle(world, labels)), last_results=last_results)
@@ -8246,7 +8246,7 @@ def l103(c):
     t = steps()
     c.eq([[k, ok] for k, ok, _t in t], [['download', 'no'], ['build', 'todo']], 'the download FAILED (red, with its reason), the build was not reached (neutral)', what='failed steps')
     c.ok(norm(t[0][2]).startswith(norm(ZX('thWDl'))) and '404' in t[0][2], t[0][2], 'the failed step keeps the launcher\'s reason (the status 404)')
-    c.eq([c.attr('[data-sheet=gb] [data-sheet-thread]', 'data-thread-state'), c.attr('[data-sheet=gb] [data-thread-bilan]', 'data-level'), c.count('[data-sheet=gb] [data-act=zop-retry]')], ['failed', 'err', 1], 'the bilan is a failure with « Réessayer » on the failed step', what='failed bilan')
+    c.eq([c.attr('[data-sheet=gb] [data-sheet-thread]', 'data-thread-state'), c.count('[data-sheet=gb] [data-thread-bilan]'), c.count('[data-sheet=gb] [data-act=zop-retry]')], ['failed', 0, 1], 'a failure is said ONCE (SOG-0368): the red step line and « Réessayer » — no « Arrêté à l’étape … » bilan under it', what='failed bilan')
     world['last'] = _l103_journal('built')
     world['zs']['gb'] = _zst('stale', _NEWER)
     _l97_run_retry = [_l97_dl('done', jid='f2'), _l97_build('done', jid='b2')]
@@ -9744,4 +9744,188 @@ def l143(c):
     c.ok(tk and tk[0] != 'yes' and norm(dpre) in norm(tk[1]) and norm(dpost) in norm(tk[1]), tk, 'a file deposited by hand is « déposé le …, édition non connue »: not a green « fait »')
     c.js(f"document.querySelector('[data-sheet=is]').scrollIntoView({{ block: 'start' }})")
     c.shot(f'L143_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+def _l144_wrap(answer):
+    """base/cycle of AeroDB bba9390ae: rank, rhythm, content, the age of a source without rhythm, and the state PER CONTENT of a zone — openAIP is secondary; an OLD launcher still says it is « late » and the page must not alert on it."""
+    def tag(it):
+        if it.get('id') == 'openaip':
+            it['rank'], it['rhythm'], it['content'], it['handMode'] = 'secondary', 'none', ['airspace', 'aerodromes'], 'fallback'
+            it['steps'] = {**it['steps'], 'download': {'state': 'late', 'cycle': '2026-10-06', 'at': '2026-10-06T08:00:00Z', 'ageDays': 40}}
+        if it.get('id') == 'nats':
+            it['rank'], it['rhythm'], it['content'] = 'primary', 'airac', ['points', 'aerodromes']
+        if it.get('id') == 'dircam':   # DIRCAM has no cycle: an age, never « pas à jour »
+            it['rank'], it['rhythm'], it['content'] = 'primary', 'none', ['aar_tracks']
+            it['steps'] = {**it['steps'], 'download': {'state': 'done', 'at': '2026-11-13T08:00:00Z', 'ageDays': 3}}
+    def go(args):
+        res = answer(args)
+        if args.get('zone') == 'fr' and res.get('zoneView'):
+            op = next(i for i in res['items'] if i.get('id') == 'openaip')
+            res['zoneView']['sources'] = list(res['zoneView']['sources']) + [dict(op)]
+        for it in list(res.get('items') or []) + list((res.get('zoneView') or {}).get('sources') or []):
+            tag(it)
+        if args.get('zone') == 'gb':
+            res['zoneView']['contents'] = [{'id': 'airspace', 'state': 'secondary-only', 'by': [], 'secondary': ['openaip']}, {'id': 'points', 'state': 'late', 'by': ['nats'], 'secondary': []},
+                                           {'id': 'aerodromes', 'state': 'done', 'by': ['nats'], 'secondary': ['openaip']}, {'id': 'bogus', 'state': 'done', 'by': [], 'secondary': []}]
+        if args.get('zone') == 'fr':
+            res['zoneView']['contents'] = [{'id': 'aar_tracks', 'state': 'done', 'by': ['dircam'], 'secondary': []}, {'id': 'airspace', 'state': 'done', 'by': ['sia'], 'secondary': ['openaip']}]
+        return res
+    return go
+
+
+@case('L144', 'Données: a SECONDARY source never alerts and an absent rhythm is only an age (SOG-0369, the user: « toujours du rouge sur OpenAIP… DIRCAM pas à jour ») — openAIP, even « late » for an old launcher, is a done line with its date and age in grey (neutral tick, calm card); the sheet of a country writes only the contents that are NOT up to date: « espaces : openAIP seulement » and « points : en retard (NATS) »',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0369: `base/cycle` compared the date of the FILE of a source with no cycle to the start of the AIRAC cycle (« en retard » every cycle: the brown of openAIP, « DIRCAM pas à jour »); the launcher now says rank / rhythm / content, `ageDays`, and `zoneView.contents` (the state per content from the PRIMARY sources); the page keeps a secondary source out of every alert and writes the age')
+def l144(c):
+    lang = c.lang
+    CW = lambda k: _trow(k, lang, after='    ageToday:')
+    _l102_open(c, wrap=_l144_wrap)
+    kind = c.js("(e => e ? e.dataset.todoKind : null)(document.querySelector('[data-todo-item=openaip]'))")
+    c.eq(kind, 'done', 'openAIP is a done line of « À faire ce mois-ci », whatever an old launcher says (never late, never to do)', what='todo kind')
+    c.tap('[data-wmap] path[data-zone=gb]')
+    c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-source=openaip]') && !document.querySelector('[data-sheet=gb] [data-inventory-state]')", timeout=12000, what='the sheet of the United Kingdom, the view read')
+    c.wait(400)
+    card = '[data-sheet=gb] [data-sheet-source=openaip]'
+    tk = c.js(f"(e => e ? [e.dataset.ok, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('{card} .d-cells1 li'))")
+    c.ok(tk and tk[0] == 'yes' and '40' in tk[1], tk, 'the tick of openAIP is neutral-good with its date and its age (40 days), not « en retard »')
+    c.eq(c.attr(card, 'data-src-tone'), 'ok', 'and the card is calm', what='tone')
+    c.eq(c.attr('[data-sheet=gb] [data-sheet-now]', 'data-now'), 'hand', 'the line names the hand files that WAIT (NATS UK), never « Rien à déposer » above a source to take by hand', what='line')
+    c.ok('NATS' in norm(c.text('[data-sheet=gb] [data-sheet-now]')) and 'SIA' not in norm(c.text('[data-sheet=gb] [data-cell-note=build]')), c.text('[data-sheet=gb] [data-sheet-now]'), 'with its name, and the reason of the United Kingdom is its own source (no « Source SIA France » on its sheet)')
+    lines = [norm(x) for x in c.js("[...document.querySelectorAll('[data-sheet=gb] [data-contents] li')].map(l => l.textContent)")]
+    only = norm(_trow('contentOnly', lang, after='    ageDays:').split('{s}')[1].split('{d}')[0])
+    late = norm(_trow('late', lang, after='    contentState:'))
+    c.ok(len(lines) == 2 and only in lines[0] and norm(_trow('airspace', lang, after='    ageDays:')) in lines[0] and late in lines[1], lines, 'only the contents that are not up to date are written: « espaces : openAIP seulement », « points : en retard (NATS) » — not the up-to-date one, not the unknown one')
+    c.js("document.querySelector('[data-sheet=gb]').scrollIntoView({ block: 'start' })")
+    c.shot(f'L144_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+def _l145_open(c, zstate, deposit=False, failed=False, dl_state='done', built='2026-10-29T10:00:00Z'):
+    """The sheet of Iceland (Avians) in one of the REAL cases of SOG-0368: the state the launcher gives the zone, the last taking (failed or not), a deposit by hand or not."""
+    def world(w):
+        w['zs']['is'] = {**zstate, 'builtAt': built, 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}} if built else zstate
+
+    def wrap(answer):
+        def go(args):
+            res = answer(args)
+            dl = {'state': dl_state, 'cycle': '2026-10-29', 'at': '2026-11-16T08:00:00Z' if deposit else '2026-10-29T08:00:00Z', **({'datedBy': 'file', 'deposited': '2026-11-16'} if deposit else {})}
+            av = _l89_item('avians', 'auto', dl, (1, 0), (0, 0, 1), ['is'], None, {'link': 'https://eaip.avians.is/', 'expected': ['*.html'], 'inDownloads': []}, ['Avians (eAIP d’Islande)'] * 4)
+            av['handMode'] = 'fallback'   # base/cycle (AeroDB 4a7664621): taken by the launcher, the hand deposit is a repair
+            res['items'] = list(res.get('items') or []) + [av]
+            if args.get('zone') == 'is':
+                res['zoneView'] = {'zone': 'is', 'known': True, 'inCoverage': True, 'sources': [av], 'state': None, 'addWillAsk': {'sources': [], 'auto': [], 'hand': [], 'personal': [], 'noReader': []}}
+            return res
+        return go
+    entry = _l103_entry({'ok': False, 'fetched': [], 'unchanged': [], 'manual': [],
+                         'failed': [{'zone': 'is', 'source': 'avians', 'error': 'parse', 'message': 'https://eaip.avians.is/x/menu.html : 429', 'pages': {'read': 29, 'of': 31}, 'stopped': 'HTTP 429'}]}, 120, zones=('is',))
+    last = {'ok': True, 'results': ({'base/fetch': entry} if failed else {})}
+    st = _l102_open(c, wrap=wrap, cover_more=('is',), extra_verbs=('base/last',), last_results=lambda a: last, world_tweak=world)
+    c.tap('[data-group-id=europe-north] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-zone=is]')
+    c.until("!!document.querySelector('[data-sheet=is] [data-sheet-source=avians]') && !document.querySelector('[data-sheet=is] [data-inventory-state]')", timeout=15000, what='the sheet of Iceland, the view read')
+    c.wait(500)
+    return st
+
+
+def _l145_read(c, lang):
+    CW = lambda k: _trow(k, lang, after='  cw: {')
+    sh = lambda sel: norm(c.text(f'[data-sheet=is] {sel}'))
+    stc = norm(c.js("(e => e ? (k => { k.querySelectorAll('[data-why-hint]').forEach(x => x.remove()); return k.textContent })(e.cloneNode(true)) : '')(document.querySelector('[data-sheet=is] [data-sheet-state] .d-st'))"))
+    return sh, stc
+
+
+@case('L145', 'Données: (i) the FIRST taking of Iceland failed, the country never built (the user’s case of 16 Nov) — the badge, STATE and the line name the SAME step « La prise a échoué »; never « à jour »; the card is « prise par le lanceur — dépôt à la main possible si elle échoue » and its hand part (why, files, « Choisir le fichier… ») is open because the taking failed (SOG-0368)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0368 (the ergonomist, 16 Nov 9 h 56): the sheet around a failed taking said « ✓ à jour » and « Rien à faire »; Avians is taken by the launcher with a hand FALLBACK, not « à prendre à la main sur le site de la source »')
+def l145(c):
+    lang = c.lang
+    Z = lambda k: _trow(k, lang, after='  zst: {')
+    N = lambda k: _trow(k, lang, after='  now: {')
+    CW = lambda k: _trow(k, lang, after='  cw: {')
+    _l145_open(c, _zst('never-built', {'code': 'never-built'}), failed=True, dl_state='missing', built='')
+    sh, stc = _l145_read(c, lang)
+    step = norm(Z('fetchFailed'))
+    c.eq([sh('[data-sheet-badge]').lstrip('✗!? '), stc, c.attr('[data-sheet=is] [data-sheet-badge]', 'data-tone')], [step, step, 'err'], 'the badge and the STATE cell name the same step, in red', what='one step')
+    c.eq(c.attr('[data-sheet=is] [data-sheet-now]', 'data-now'), 'fetch-failed', 'and the line too', what='line')
+    pre = N('fetchFailed').split('{s}')[1].split('{w}')[0]
+    c.ok(norm(pre) in sh('[data-sheet-now]') and 'Avians' in sh('[data-sheet-now]'), sh('[data-sheet-now]'), 'the line says that the taking from the site failed, names the source, and says to try again or to deposit the pages by hand')
+    c.eq(sh('[data-sheet-source=avians] [data-regime-line]'), norm(CW('autoFallback')), 'Avians is « prise par le lanceur — dépôt à la main possible si elle échoue »', what='regime')
+    note = sh('[data-cell-note=build]')
+    c.ok(bool(note) and norm(CW('buildLast').split('{b}')[0]) not in note, note, 'a country NEVER built says nothing about a previous build (« construction précédente : cycle 2611 » was a contradiction)')
+    c.eq([c.count('[data-sheet=is] [data-sheet-source=avians] [data-source-failed]'), c.count('[data-sheet=is] [data-sheet-source=avians] [data-inventory]'), c.count('[data-sheet=is] [data-sheet-source=avians] [data-act=zone-upload]')], [1, 1, 1], 'the card says what failed; the hand part is open: the files to take and « Choisir le fichier… »', what='hand part')
+    c.js("document.querySelector('[data-sheet=is]').scrollIntoView({ block: 'start' })")
+    c.shot(f'L145_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+@case('L146', 'Données: (ii) pages DEPOSITED BY HAND, then the country built — never « à jour » (SOG-0368): BUILT « ✓ … · sur un dépôt du 16/11, édition non connue », the badge and STATE amber « Édition non connue », the line says so; the hand part is closed (a taking succeeded: nothing to repair)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0368: a deposit has no edition (`datedBy: file`); a country built on it said « ✓ à jour »')
+def l146(c):
+    lang = c.lang
+    Z = lambda k: _trow(k, lang, after='  zst: {')
+    N = lambda k: _trow(k, lang, after='  now: {')
+    CW = lambda k: _trow(k, lang, after='  cw: {')
+    st = _l145_open(c, _zst('up-to-date'), deposit=True, built='2026-11-16T09:00:00Z')
+    sh, stc = _l145_read(c, lang)
+    step = norm(Z('editionUnknown'))
+    c.eq([sh('[data-sheet-badge]').lstrip('✓!? '), stc, c.attr('[data-sheet=is] [data-sheet-badge]', 'data-tone')], [step, step, 'warn'], 'the badge and the STATE cell say « Édition non connue », in amber — not « À jour »', what='one step')
+    c.eq(c.attr('[data-sheet=is] [data-sheet-now]', 'data-now'), 'edition-unknown', 'and the line too (no « Rien à faire : ce pays est à jour »)', what='line')
+    b = c.js("(e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=is] [data-sheet-facts] [data-tick=build]'))")
+    suffix = CW('builtOnDeposit').split('{d}')[1]
+    c.ok(b and b[0] == 'yes' and norm(suffix) in norm(b[1]) and '16' in b[1], b, 'BUILT: ✓ the date · on a deposit of 16/11, edition not known')
+    c.eq(sh('[data-sheet-update-reason]'), norm(_trow('depositReason', lang, after='  cwb: {')), 'and the button below does not say « Ce pays est à jour »: it says the country is built on a hand deposit', what='update reason')
+    pb = c.js("(e => e ? [e.dataset.ok, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=is] [data-sheet-facts] [data-tick=publish]'))")
+    c.ok(pb and pb[0] != 'yes' and norm(CW('pubBeforeBuild').split('{d}')[1]) in norm(pb[1]), pb, 'PUBLISHED (30/10) is older than the build (16/11): the cell says « avant cette construction » and is not green')
+    up = c.js("(b => b ? [b.disabled, b.dataset.retake] : null)(document.querySelector('[data-sheet=is] [data-act=sheet-update]'))")
+    c.eq(up, [False, '1'], 'the button stays ACTIVE: it is the gesture to retake from the site and get a real edition', what='retake button')
+    n0 = len([p for p in st['posts'] if p['verb'] == 'fetch'])
+    c.tap('[data-sheet=is] [data-act=sheet-update]')
+    for _ in range(40):
+        if len([p for p in st['posts'] if p['verb'] == 'fetch']) > n0:
+            break
+        c.wait(250)
+    c.ok(len([p for p in st['posts'] if p['verb'] == 'fetch']) > n0, [p['verb'] for p in st['posts']], 'the click retakes from the site (a download is sent although the country is « up to date »)')
+    c.eq([c.count('[data-sheet=is] [data-sheet-source=avians] [data-inventory]'), sh('[data-sheet-source=avians] [data-regime-line]')], [0, norm(CW('autoFallback'))], 'the hand part is closed (no failure, a taking is there); the card says it is taken by the launcher', what='closed')
+    c.js("document.querySelector('[data-sheet=is]').scrollIntoView({ block: 'start' })")
+    c.shot(f'L146_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+@case('L147', 'Données: (iii) a country that stays up to date from an EARLIER taking, the last taking failed — « Ce pays reste à jour (construit le …) ; la dernière prise a échoué, rien n’a changé. » with the failure on the card (SOG-0368)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0368: the line was « Rien à faire : ce pays est à jour » above a failed taking; the badge stays « à jour » (it is true), the line says the rest')
+def l147(c):
+    lang = c.lang
+    N = lambda k: _trow(k, lang, after='  now: {')
+    _l145_open(c, _zst('up-to-date'), failed=True, built='2026-10-29T10:00:00Z')
+    sh, stc = _l145_read(c, lang)
+    c.eq(c.attr('[data-sheet=is] [data-sheet-now]', 'data-now'), 'kept', 'the line says the country is kept and the last taking failed', what='line')
+    pre, post = N('kept').split('{b}')
+    c.ok(norm(pre) in sh('[data-sheet-now]') and norm(post) in sh('[data-sheet-now]'), sh('[data-sheet-now]'), '« Ce pays reste à jour (construit le …) ; la dernière prise a échoué, rien n’a changé. »')
+    c.eq(c.attr('[data-sheet=is] [data-sheet-badge]', 'data-tone'), 'ok', 'the badge is still green: the country IS up to date', what='tone')
+    c.eq(c.count('[data-sheet=is] [data-sheet-source=avians] [data-source-failed]'), 1, 'and the failure is on the card', what='card')
+    c.check_errors()
+
+
+@case('L148', 'Données: the sheet of FRANCE with DIRCAM (no cycle) and openAIP (secondary) says a date and an age, never « pas à jour » nor « en retard » (SOG-0369, the user: « dircam : pas à jour alors qu’on a récupéré des infos par une autre source »)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0369: DIRCAM has no cycle (its publisher no longer answers) and openAIP is a second source: neither compares the date of its FILE with the start of the AIRAC cycle')
+def l148(c):
+    lang = c.lang
+    _l102_open(c, wrap=_l144_wrap)
+    c.tap('[data-group-id=europe-west] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-zone=fr]')
+    c.until("!!document.querySelector('[data-sheet=fr] [data-sheet-source=openaip] .d-cells1 li[data-ok]')", timeout=15000, what='the sheet of France, the view read')
+    c.wait(400)
+    ages = c.js("['dircam', 'openaip'].map(i => (e => e ? [e.dataset.ok, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector(`[data-sheet=fr] [data-sheet-source=${i}] .d-cells1 li`)))")
+    c.ok(ages[0] and ages[0][0] == 'yes' and '3' in ages[0][1] and ages[1] and ages[1][0] == 'yes' and '40' in ages[1][1], ages, 'DIRCAM (3 days) and openAIP (40 days): a date and an age, neither « pas à jour » nor « en retard »')
+    c.eq(c.count('[data-sheet=fr] [data-contents]'), 0, 'and no content is written: all are up to date', what='contents')
+    c.eq(norm(c.text('[data-sheet=fr] [data-sheet-source=openaip] [data-regime-line]')), norm(_trow('autoFallback', lang, after='  cw: {')), 'openAIP (handMode fallback) is « prise par le lanceur — dépôt à la main possible si elle échoue »', what='regime')
+    stc = norm(c.js("(e => e ? (k => { k.querySelectorAll('[data-why-hint]').forEach(x => x.remove()); return k.textContent })(e.cloneNode(true)) : '')(document.querySelector('[data-sheet=fr] [data-sheet-state] .d-st'))"))
+    c.eq(norm(c.text('[data-sheet=fr] [data-sheet-badge]')).lstrip('!? '), stc, 'the badge says the word of the STATE cell (« À reconstruire »), not the generic « à faire »', what='badge')
+    c.ok(norm(_trow('staleShort', lang, after='  zst: {')) in norm(c.text('[data-group-body] [data-zone=fr]')), c.text('[data-group-body] [data-zone=fr]'), 'and the tile of France in its group names the step in short: « à reconstruire »')
+    c.js("document.querySelector('[data-sheet=fr] [data-sheet-source=dircam]').scrollIntoView({ block: 'start' })")
+    c.shot(f'L148_{c.width}_{lang}.png')
     c.check_errors()

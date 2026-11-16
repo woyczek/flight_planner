@@ -120,6 +120,13 @@ export function procZonesOf(rows) {
 // ------------------------------------------------------------------------------------------------ base/cycle
 const REGIMES = ['auto', 'hand', 'local'];
 const DL_STATES = ['done', 'late', 'missing', 'waiting', 'n/a', 'unavailable'];
+/** Le vocabulaire fermé de ce que donne une source (AeroDB, SOG-0369 : CONTENTS), son rang et son rythme de publication. */
+export const CONTENTS = Object.freeze(['airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles', 'aar_tracks',
+  'mil_routes', 'nat_tracks', 'mora'
+]);
+const RANKS = ['primary', 'secondary'];
+const RHYTHMS = ['airac', 'editions', 'daily', 'none'];
+const CONTENT_STATES = ['done', 'late', 'waiting', 'unavailable', 'missing', 'secondary-only'];
 const WHYS = ['older-than-cycle', 'newer-in-downloads', 'no-file', 'not-downloaded', 'unavailable-at-publisher'];
 /** Les textes d'une liste, bornés (n au plus, de longueur m). */
 const texts = (a, n, m = 120) => (Array.isArray(a) ? a : []).slice(0, n).map(x => text(x, m)).filter(Boolean);
@@ -143,8 +150,15 @@ function itemOf(it) {
       at: stamp(dl?.at),
       edition: text(dl?.edition, 40),
       datedBy: dl?.datedBy === 'file' ? 'file' : '', // un dépôt à la main n'a pas d'édition : sa date est celle du fichier (SOG-0368)
-      deposited: day(dl?.deposited)
+      deposited: day(dl?.deposited),
+      ageDays: Number.isInteger(dl?.ageDays) && dl.ageDays >= 0 && dl.ageDays < 1e5 ? dl.ageDays :
+        null // l'âge du fichier le plus récent d'une source sans rythme (SOG-0369) : dit en gris, jamais une alerte
     },
+    handMode: ['only', 'fallback', 'none'].includes(it.handMode) ? it.handMode : '', // à la main seulement | prise par le lanceur avec un repli à la main | rien à déposer (SOG-0368)
+    rank: RANKS.includes(it.rank) ? it.rank :
+    '', // primaire : l'éditeur officiel ; secondaire : communautaire ou dérivée (openAIP, X-Plane, MORA) : n'alerte jamais
+    rhythm: RHYTHMS.includes(it.rhythm) ? it.rhythm : '',
+    content: (Array.isArray(it.content) ? it.content : []).filter(c => CONTENTS.includes(c)).slice(0, 12),
     build: {
       zones: int(it.steps?.build?.zones),
       upToDate: int(it.steps?.build?.upToDate)
@@ -185,6 +199,14 @@ function zoneViewOf(v) {
     state: zoneStateOf(v.state),
     sources,
     order,
+    // l'état PAR CONTENU (SOG-0369) : un contenu est à jour dès qu'UNE source primaire l'a pris ; une secondaire ne le rend jamais « à jour »
+    contents: (Array.isArray(v.contents) ? v.contents : []).slice(0, 16).filter(c => c !== null && typeof c === 'object' && CONTENTS
+      .includes(c.id) && CONTENT_STATES.includes(c.state)).map(c => ({
+      id: c.id,
+      state: c.state,
+      by: srcIds(c.by),
+      secondary: srcIds(c.secondary)
+    })),
     addWillAsk: {
       sources: srcIds(a.sources),
       auto: srcIds(a.auto),

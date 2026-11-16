@@ -51,6 +51,12 @@ export function todoOf(data, skip = null) {
       continue;
     }
     out.total++;
+    if (it.rank ===
+      'secondary'
+    ) { // une source secondaire (openAIP) n'alerte JAMAIS : ni « en retard », ni « à construire » ; son âge s'écrit en gris (SOG-0369)
+      out.done.push(it);
+      continue;
+    }
     const kind = todoKind(it);
     if (kind) out.todo.push({
       item: it,

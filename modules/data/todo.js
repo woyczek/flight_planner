@@ -63,7 +63,8 @@ import {
 /** La coche « téléchargé » d'une source dans la liste : celle de la fiche d'un pays (l'état du fichier, sa date, son édition), mais un fichier plus ancien que le cycle dit sa raison en dates (« en retard : fichier du 1 oct., le cycle est du 29 oct. »). */
 function downloadStep(it, data) {
   const d = it.download;
-  if (d.state !== 'late') return downloadTick(it.id, it, null);
+  if (d.state !== 'late' || it.rank === 'secondary' || it.rhythm === 'none') return downloadTick(it.id, it,
+    null); // une source secondaire ou sans rythme n'est jamais « en retard » (SOG-0369)
   const cycle = data.inForceDate || (S.airac ? S.airac.cycleOf(S.now).date : ''),
     file = d.cycle || (d.at ? d.at.slice(0, 10) : '');
   return tickHtml('download', 'todo', file && cycle ? tt(TX.cwb.dlLateDates, {
