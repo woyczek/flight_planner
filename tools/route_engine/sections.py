@@ -8,7 +8,9 @@ résolues dans l'ordre de leur minorant ; une chaîne résolue remplace ses esti
 il n'est pas, par construction, le meilleur de tous les vols (un vol sans track n'y est pas) : l'option est une demande, pas le défaut.
 
 `solve` rend le chemin (la liste des tronçons, comme Nav.search) ou None (pas applicable : pas de track dans le sens du vol, un vol hors Atlantique, rien de résolu) ; dans ce cas la recherche entière suit, comme sans l'option. Ce que la dernière résolution a fait est dans `nav.sections_info` : les sections (nom, de, à, distance, coût, états développés), la track retenue, les tracks essayées."""
-from . import engine
+import datetime
+
+from . import engine, nat_layer
 
 WEST_LON, EAST_LON = -35.0, -15.0      # les mêmes limites que plan.crosses_ocean et nat_layer.hint
 
@@ -70,24 +72,57 @@ def solve(nav, g, start, end):
     east = a['lon'] < b['lon']
     if not ((a['lon'] < WEST_LON and b['lon'] > EAST_LON) or (b['lon'] < WEST_LON and a['lon'] > EAST_LON)):
         return None      # pas un vol qui traverse l'Atlantique
+    # SOG-0354 L5 (1) : une track n'est une porte que si elle est VALABLE POUR CE VOL (sens, niveau de sa liste, heure estimée au passage de l'entrée dans la validité du message) ; chaque track écartée est dite avec sa raison
+    fl = int(round((flight.get('ceiling') or 0) / 100))
+    meta = (getattr(nav, 'nat', None) or {}).get('meta') or {}
+    depart = getattr(nav, 'depart', None)
+    speed = flight.get('speed_kt') or 450
+    eta_of = lambda nm_: depart[0] + datetime.timedelta(hours=nm_ / speed)
+    rejected = {tid: why for tid, m in meta.items() if (why := nat_layer.check(m, fl, east))}
     candidates = []
     for tid, options in oriented_chains(nav.nodes, g, east).items():
-        candidates.extend((tid, o) for o in options)
+        if tid in rejected:
+            continue
+        for o in options:
+            why = nat_layer.check(meta[tid], fl, east, eta_of(engine.nm(a, nav.nodes[o['entry']]))) if depart and tid in meta else None
+            if why:
+                rejected[tid] = why
+                continue
+            candidates.append((tid, o))
+    for tid in meta:
+        if tid not in rejected and tid not in {c[0] for c in candidates}:
+            rejected[tid] = ('network', f"route NAT {tid} : ni son entrée ni sa sortie ne se relie au réseau haut à ce niveau")
+    info = {'candidates': [], 'tried': [], 'chosen': None, 'sections': [], 'rejected': [], 'depart': ({'time': depart[0].strftime('%Y-%m-%dT%H:%MZ'), 'basis': depart[1]} if depart else None)}
+    nav.sections_info = info
+
+    nav.nat_rejected = frozenset(rejected)      # la recherche entière qui suit (si rien n'abouti ici) ne prend pas non plus une track écartée pour ce vol
+
+    def said():
+        info['rejected'] = [{'track': tid, 'code': code, 'text': text} for tid, (code, text) in sorted(rejected.items())]
     if not candidates:
+        said()
+        info['reason'] = 'Aucune route NAT valable pour ce vol : la recherche entière suit.'
         return None
     ratio = min((e.get('_cost', e['nm']) / e['nm'] for es in g.values() for _v, e in es if e['nm'] > .00001), default=0)
     skeleton = sorted(((ratio * (engine.nm(a, nav.nodes[o['entry']]) + engine.nm(nav.nodes[o['exit']], b)) + o['cost'], tid, o) for tid, o in candidates), key=lambda x: x[0])
-    info = {'candidates': [{'track': tid, 'lower_bound': round(lb, 1)} for lb, tid, _o in skeleton], 'tried': [], 'chosen': None, 'sections': []}
-    nav.sections_info = info
+    info['candidates'] = [{'track': tid, 'lower_bound': round(lb, 1)} for lb, tid, _o in skeleton]
     best = None
     for lb, tid, o in skeleton:
         if best is not None and lb >= best[0]:
             break      # le minorant des suivantes dépasse déjà le meilleur coût trouvé : leur recherche chère n'est pas faite
         resolved = _resolve(nav, g, start, end, tid, o)
+        if resolved and depart:      # l'heure au passage de l'entrée, refaite avec la distance RÉELLE de la section d'Europe
+            why = nat_layer.check(meta[tid], fl, east, eta_of(resolved[2][0]['nm'])) if tid in meta else None
+            if why:
+                rejected[tid] = why
+                nav.nat_rejected = frozenset(rejected)
+                resolved = None
         info['tried'].append({'track': tid, 'cost': round(resolved[0], 1) if resolved else None})
         if resolved and (best is None or resolved[0] < best[0]):
             best = resolved + (tid,)
+    said()
     if best is None:
+        info['reason'] = 'Aucune chaîne par une route NAT valable n\'a abouti : la recherche entière suit.'
         return None
     cost, path, sections, tid = best
     info['chosen'], info['sections'], info['cost'] = tid, sections, round(cost, 1)

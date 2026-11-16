@@ -55,6 +55,26 @@ def _levels(raw):
     return sorted(set(out))
 
 
+def check(meta, fl, east, eta=None):
+    """SOG-0354 L5 (1) : une track est-elle valable POUR CE VOL ? None si oui, sinon (code, phrase) : `direction` (le sens de la track n'est pas celui du vol), `level` (le niveau demandé n'est pas dans la LISTE des niveaux de la track pour ce sens), `time` (l'heure estimée au passage de l'entrée, `eta`, un datetime UTC, n'est pas dans la
+    validité du message : `from` / `to`). Chaque track écartée est dite avec sa raison, une fois : jamais une omission silencieuse. `meta` : la méta d'une track (nav.nat['meta'][id])."""
+    tid, direction = meta['track'], meta.get('direction')
+    wanted = 'east' if east else 'west'
+    if direction not in (wanted, 'both'):
+        return 'direction', f"route NAT {tid} : sens contraire (la track va vers l'{'ouest' if direction == 'west' else 'est'}, le vol vers l'{'est' if east else 'ouest'})"
+    levels = meta.get('levels_' + wanted)
+    if isinstance(levels, list) and levels and int(fl) not in levels:
+        return 'level', f"route NAT {tid} : FL{int(fl)} non proposé vers l'{'est' if east else 'ouest'} (FL{levels[0]} à FL{levels[-1]})"
+    if eta is not None:
+        a, b = _date(meta.get('from')), _date(meta.get('to'))
+        t = eta if eta.tzinfo else eta.replace(tzinfo=dt.timezone.utc)
+        if (a and t < a) or (b and t > b):
+            window = ' de ' + a.strftime('%H%M') + 'Z' if a else ''
+            window += (' à ' + b.strftime('%H%M') + 'Z') if b else ''
+            return 'time', f"route NAT {tid} : non valide à {t.strftime('%H%M')}Z (valide{window})"
+    return None
+
+
 def coordinate(token):
     """(lat, lon) d'une coordonnée NAT (« 5530/20 », « 57/30 ») : nord, ouest ; None sinon."""
     m = COORD.fullmatch(token)
@@ -189,7 +209,7 @@ def add(nav, nm):
         lower, upper = min(levels) * 100, max(levels) * 100
         direction = 'west' if t['west'] and not t['east'] else 'east' if t['east'] and not t['west'] else 'both'
         stale = bool(t['to'] and day and t['to'].date() < day)
-        meta = {'track': t['id'], 'direction': direction, 'from': t['from'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['from'] else None,
+        meta = {'track': t['id'], 'direction': direction, 'levels': sorted(set(levels)), 'levels_east': list(t['east']), 'levels_west': list(t['west']), 'from': t['from'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['from'] else None,
                 'to': t['to'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['to'] else None, 'stale': stale, 'issued': t['from'].strftime('%d/%m') if t['from'] else None}
         sense = 'FB' if direction == 'both' else 'F'
         for a, b in zip(keys, keys[1:]):
@@ -207,6 +227,7 @@ def add(nav, nm):
             if not near:
                 nav.nat['skipped'].append(f'{t["id"]}: {end} sans réseau haut à moins de {LINK_NM} NM')
         nav.nat['tracks'].append(t['id'])
+        nav.nat.setdefault('meta', {})[t['id']] = meta      # SOG-0354 L5 : la méta de chaque track, pour dire pourquoi l'une est écartée (check)
         nav.nat['directions'] = sorted(set(nav.nat['directions']) | ({'east', 'west'} if direction == 'both' else {direction}))
         nav.nat['stale'] = nav.nat['stale'] or stale
     return nav.nat

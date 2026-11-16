@@ -11394,3 +11394,81 @@ def k292(c):
             if hits:
                 bad[f] = hits[:5]
     c.eq((bad, len(files) > 100), ({}, True), 'no Python file of tools/ or frame/ (' + str(len(files)) + ' here) uses a module of the standard library that it did not import in scope', what='repository')
+
+
+@case('K293', 'Route engine, SOG-0354 lot L5 (1): a NAT track is a gate only when it is VALID FOR THIS FLIGHT — its direction, the requested level in ITS LIST of levels (not between the minimum and the maximum), the estimated time at the entry inside the validity of the message — and every track that is set aside is said once with its reason (direction, level, time, network); a request with no hour is answered for « now » and says so; the whole search that follows does not take a track that was set aside',
+      'K', static=True,
+      rule='SOG-0354 L5 (1) (note § 13.1; the user: « sécuriser et fiabiliser le calcul des routes » on the North Atlantic). Before: `nat_layer` kept only `lower = min(levels)` and `upper = max(levels)` of a track, so a track that offers FL350 and FL390 but not FL370 was taken at FL370; no hour was checked (a track of the message of the day was taken at 03:40 although it is valid from 11:30); a track that was not taken was not said. Now: `nat_layer.check(meta, fl, east, eta)` says `direction`, `level` or `time` with a French sentence (« route NAT E : non valide à 0341Z (valide de 1130Z à 1900Z) »), the metadata of each track (`levels_east`, `levels_west`, `levels`) is kept in `nav.nat[\'meta\']`, `Nav.level` refuses an edge of a track at a level that is not in its list, `sections.solve` sets aside the tracks that fail (sense, level, the time estimated from the departure of the request and the distance before the entry, then again with the REAL distance of the European section) and lists them in `sections.rejected`; the departure is the hour of the request (`plan.depart_of`): a date without an hour is « now » and `sections.depart.basis` says it; `Nav.nat_rejected` keeps the whole search that follows from taking a track that was set aside. Measured on the real base (EIDW → KJFK at 03:00, the message being valid from 11:30 to 19:00): tracks D and E « non valide à 0341Z », the tracks R to Z « sens contraire », no gate, the whole search follows.')
+def k293(c):
+    import datetime
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, nat_layer as N, plan as P, sections as S
+    utc = datetime.timezone.utc
+    meta = lambda tid, direction='west', east_levels=(), west_levels=(), a='2026-11-16T11:30:00Z', b='2026-11-16T19:00:00Z': {'track': tid, 'direction': direction, 'levels_east': list(east_levels), 'levels_west': list(west_levels), 'levels': sorted(set(east_levels) | set(west_levels)), 'from': a, 'to': b}
+    at = lambda h, m: datetime.datetime(2026, 11, 16, h, m, tzinfo=utc)
+    t = meta('E', 'west', west_levels=(350, 390))
+    c.eq((N.check(t, 390, False, at(12, 0)), N.check(t, 370, False, at(12, 0))[0], N.check(t, 390, True, at(12, 0))[0], N.check(t, 390, False, at(3, 41))[0], N.check(t, 390, False, at(19, 30))[0], N.check(t, 390, False)), (None, 'level', 'direction', 'time', 'time', None),
+         'valid at FL390 westbound at 12:00; FL370 is NOT in its list (FL350 and FL390: between the minimum and the maximum is not a level of the track); the other direction, before the beginning and after the end of the message are set aside; with no estimated time the time is not asked', what='check')
+    c.eq((N.check(t, 370, False, at(12, 0))[1], N.check(t, 390, False, at(3, 41))[1], N.check(t, 390, True)[1]),
+         ('route NAT E : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'route NAT E : non valide à 0341Z (valide de 1130Z à 1900Z)', 'route NAT E : sens contraire (la track va vers l\'ouest, le vol vers l\'est)'),
+         'every reason is a sentence of the pilot: the level, the hour with the validity of the message, the direction', what='sentences')
+    c.eq((N.check(meta('B', 'both', (350,), (370,)), 370, False, at(12, 0)), N.check(meta('B', 'both', (350,), (370,)), 370, True, at(12, 0))[0], N.check(meta('N', 'west', west_levels=(370,), a=None, b=None), 370, False, at(3, 0))),
+         (None, 'level', None), 'a both-ways track has a list per direction (FL370 westbound, FL350 eastbound); a track with no validity in the message is valid at any hour', what='both ways')
+    edge = {'lower': 35000, 'upper': 39000, 'nat': {'track': 'E', 'levels': [350, 390]}}
+    c.eq((engine.Nav.level(edge, 350), engine.Nav.level(edge, 370), engine.Nav.level(edge, 390), engine.Nav.level({'lower': 35000, 'upper': 39000}, 370), engine.Nav.level({'lower': 35000, 'upper': 39000, 'nat': {'track': 'E'}}, 370)), (True, False, True, True, True),
+         'Nav.level: an edge of a track is refused at a level that is not in its list; an airway (no track), and a track that carries no list, are as before', what='level')
+    now = datetime.datetime(2026, 11, 16, 9, 30, tzinfo=utc)
+    c.eq((P.depart_of({'date': '2026-11-16T12:00'}, now), P.depart_of({'date': '2026-11-16T12:00:00Z'}, now), P.depart_of({'date': '2026-11-16'}, now)),
+         ((datetime.datetime(2026, 11, 16, 12, 0), 'request'), (datetime.datetime(2026, 11, 16, 12, 0), 'request'), (datetime.datetime(2026, 11, 16, 9, 30), 'now')),
+         'the departure is the hour of the request; a date with no hour is « now », and the basis says so', what='depart')
+    # sections.solve: the tracks that fail are set aside with their reason, the valid one is the gate, the whole search that follows does not take the others
+    nodes = {'DEP': {'id': 'DEP', 'lat': 52.0, 'lon': -6.0}, 'ARR': {'id': 'ARR', 'lat': 41.0, 'lon': -74.0}}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0, 'ceiling': 37000, 'speed_kt': 450}
+    metas = {}
+
+    def track(tid, pts, direction, west_levels=(350, 360, 370, 380), east_levels=(), a='2026-11-16T11:30:00Z', b='2026-11-16T19:00:00Z'):
+        metas[tid] = meta(tid, direction, east_levels, west_levels, a, b)
+        for (n0, la0, lo0), (n1, la1, lo1) in zip(pts, pts[1:]):
+            nodes.setdefault(n0, {'id': n0, 'lat': la0, 'lon': lo0})
+            nodes.setdefault(n1, {'id': n1, 'lat': la1, 'lon': lo1})
+            e = {'a': n0, 'b': n1, 'route': 'NAT' + tid, 'nm': engine.nm(nodes[n0], nodes[n1]), 'nat': dict(metas[tid]), 'dir': 'F'}
+            g.setdefault(n0, []).append((n1, e))
+    track('A', [('EA', 52, -15), ('XA', 47, -60)], 'west')
+    track('B', [('EB', 54, -15), ('XB', 48, -60)], 'west', west_levels=(350, 390))
+    track('C', [('EC', 55, -15), ('XC', 49, -60)], 'west', a='2026-11-16T14:00:00Z')
+    track('D', [('ED', 56, -15), ('XD', 50, -60)], 'east', west_levels=(), east_levels=(350, 370))
+    track('F', [('EF', 61, -15), ('XF', 56, -60)], 'west')
+
+    class Fake:
+        def __init__(self):
+            self.nodes, self.calls, self.last_search, self.sections_info, self.nat = nodes, [], None, None, {'meta': metas, 'tracks': list(metas)}
+            self.depart = (datetime.datetime(2026, 11, 16, 12, 0), 'request')
+            self.nat_rejected = frozenset()
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False):
+            self.calls.append((s, e))
+            if graph is g:
+                d = engine.nm(nodes[s], nodes[e])
+                self.last_search = {'cost': d * 1.2, 'band': (37000, 37000), 'expanded': 1, 'seconds': 0.0, 'found': True}
+                return [(s, e, {'nm': d, 'route': 'DCT'})]
+            legs, node = [], s
+            while node != e:
+                v, ed = graph[node][0]
+                legs.append((node, v, ed))
+                node = v
+            self.last_search = {'cost': sum(x['nm'] for _u, _v, x in legs), 'band': band, 'expanded': len(legs), 'seconds': 0.0, 'found': True}
+            return legs
+    nav = Fake()
+    path = S.solve(nav, g, 'DEP', 'ARR')
+    info = nav.sections_info
+    rej = {r['track']: r['code'] for r in info['rejected']}
+    c.eq((info['chosen'], rej, sorted(nav.nat_rejected), info['depart']), ('A', {'B': 'level', 'C': 'time', 'D': 'direction'}, ['B', 'C', 'D'], {'time': '2026-11-16T12:00Z', 'basis': 'request'}),
+         'at 12:00 FL370: A is the gate; B does not offer FL370 (level), C is valid only from 14:00 (time), D goes the other way (direction); F (far north) is valid but not resolved (its bound is above the best cost); the answer lists the three with their reason and the hour of the departure; the whole search that follows is told not to take them', what='solve')
+    c.ok(all(r['text'].startswith('route NAT ') for r in info['rejected']), str(info['rejected']), 'each reason is a sentence of the pilot')
+    nav2 = Fake()
+    nav2.depart = (datetime.datetime(2026, 11, 16, 3, 0), 'now')
+    c.eq((S.solve(nav2, g, 'DEP', 'ARR'), sorted(r['track'] for r in nav2.sections_info['rejected'] if r['code'] == 'time'), nav2.sections_info['chosen'], bool(nav2.sections_info.get('reason')), nav2.sections_info['depart']['basis']),
+         (None, ['A', 'C', 'F'], None, True, 'now'), 'at 03:00 (before the message is valid): no track is valid (B is still set aside for its level, D for its direction), the answer says each one and the reason (« la recherche entière suit »), the basis says « now »', what='no track')

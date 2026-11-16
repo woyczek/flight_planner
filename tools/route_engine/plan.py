@@ -187,6 +187,13 @@ def budgets(request, ocean):
     return {'ocean': long_, 'head_s': OCEAN_HEAD_BUDGET_S if long_ else HEAD_BUDGET_S, 'search_s': OCEAN_SEARCH_CAP_S if long_ else 6.0, 'total_s': OCEAN_TOTAL_BUDGET_S if long_ else TOTAL_BUDGET_S}
 
 
+def depart_of(request, now=None):
+    """(l'instant de départ UTC sans fuseau, 'request' | 'now') : l'heure de la demande ; une date SANS heure (« 2026-11-16 ») est traitée pour « maintenant » et la réponse le dit (`sections.depart.basis`) : une route NAT n'est valable qu'à une heure, la demande doit en avoir une."""
+    if len(str(request.get('date', ''))) > 10:
+        return nav_time(request), 'request'
+    return (now or dt.datetime.now(dt.timezone.utc)).replace(tzinfo=None), 'now'
+
+
 def plan(request, root):
     """Le plan, tel que server.plan() de RouteSim 4 le fait (voir l'en-tête du module). Le mode VFR (vfr.py) n'est pas porté : la demande IFR seule est acceptée (check_request)."""
     import time
@@ -226,6 +233,8 @@ def plan(request, root):
     if request.get('allow_levels', True):      # SOG-0371 (aller-retour) : le contrôle lit la route avec le MÊME modèle vertical que la recherche qui l'a écrite (une route du moteur n'est pas refusée au contrôle pour une montée que la recherche adaptait)
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
+    nav.nat_rejected = frozenset()
+    nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ de la demande (sans heure : « maintenant », dit)
     nav.sections = bool(request.get('sections'))      # SOG-0354 L2b (3) : l'option de la demande (posée à CHAQUE plan : le contexte gardé d'un calcul à l'autre ne porte jamais l'option d'une demande précédente)
     bounds = budgets(request, crosses_ocean(nav.ads.get(str(request.get('dep', '')).upper()) or {}, nav.ads.get(str(request.get('arr', '')).upper()) or {}))      # SOG-0354 L2b : un vol qui traverse l'Atlantique cherche plus longtemps
     reserve = 4.0 if bounds['ocean'] else 0.0      # SOG-0354 L2b : un vol océanique réserve la fin de ses 20 s aux propositions de repli ; les alternatives (un graphe de 4 s et une recherche chacune) s'arrêtent avant

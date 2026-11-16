@@ -272,7 +272,9 @@ everything else of this note. Four requirements; each is a case, and the matrix 
 - **Time**: the estimated time at the track's entry point is inside the validity of the track message. The estimate
   is the departure time of the request plus the time of the section before the ocean; without a departure time, the
   request is answered for "now" and says so.
-- **Level**: the requested level is one of the track's levels for that direction.
+- **Level**: the requested level is one of the track's levels for that direction — the LIST of the levels, kept in the metadata of
+  the track (`levels_east`, `levels_west`): a minimum and a maximum are not a list (a track that offers FL350 and FL390 does not offer
+  FL370). *(Accepted objection of AeroDB, 16 November: `nat_layer` kept only the minimum and the maximum.)*
 - A track that fails one of the three is not a gate, and the answer names the reason once per track ("track E: not
   valid at 0340Z", "track E: FL370 not offered"). Never a silent omission.
 
@@ -283,9 +285,10 @@ is a **random route**, created, not proposed:
 
 - one point at each ten degrees of longitude between the oceanic entry and exit, on the shortest path between them,
   its latitude rounded to the whole degree (the form `54N030W`, written `54/30`);
-- the entry and the exit are the published points nearest to that path on each side of the ocean, among the points
-  the tracks of the season use (kept from the messages read) and the oceanic boundary points of the base; when the base
-  has none, the answer says "no oceanic entry point known" — it does not invent one;
+- the entry and the exit are the published points nearest to that path on each side of the ocean, among the ENTRIES and the
+  EXITS of all the routes of the day (both directions), read from the message already loaded — no memory of the season, no file
+  written (accepted objection of AeroDB: the message of the day is all that the launcher keeps); when none is known, the answer
+  says "no oceanic entry point known" — it does not invent one;
 - the section is labelled `source: random` and said on the screen "route libre, créée" with its points; the message of
   the day, when read, is still shown so the pilot can see why no track was taken.
 
@@ -296,7 +299,9 @@ The user decides nothing here: the route is always given, and always says how it
 Six aerodromes in Europe (EIDW, EGLL, LFPG, EHAM, EDDF, LEMD) × six in North America (KJFK, KBOS, KIAD, KORD, CYYZ,
 CYUL), both directions, two departure times (one inside the track system for that direction, one outside): 144
 requests. For each: route or not, total time, and the proof of each section (`computed`, `published`, `random`,
-`direct`). Run by AeroDB read-only on the user's base; the table goes to `frame/aerodb/INTEGRATION.md`; a reduced set on
+`direct`). Run by AeroDB read-only on the user's base — in ONE process, sequential, at low priority, by packs of 12, outside the user's
+working hours and only on the word of the ergonomics session (the load of the workstation: up to 144 × 20 s); the table goes to
+`frame/aerodb/INTEGRATION.md`; a reduced set on
 fixtures becomes a case replayed at every change of the engine. Accepted when: every request returns a route or a
 named reason; none returns a "proposal"; no direct over 200 NM without its reason.
 
@@ -309,6 +314,9 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 | skeleton | 0.5 s | — (it is arithmetic) |
 | each section | 3 s | the section is a labelled direct with its reason |
 | whole answer, transatlantic, cold | 5 s target, 20 s hard | nothing is ever returned after 20 s |
+
+A graph build (about 4 s, not interruptible) is not begun when less than 5 s remain: the section is then a labelled
+direct and `timing.sections[].hit` says it (accepted objection of AeroDB).
 
 The answer carries `timing: { context_s, tracks_s, skeleton_s, sections: [{ name, seconds, bound_s, hit }], total_s }`
 so the screen and the matrix read the same numbers. The loading of the launcher's state (SOG-0384) follows the same

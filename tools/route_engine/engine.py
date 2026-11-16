@@ -206,7 +206,9 @@ class Nav:
 
     @staticmethod
     def level(e,fl):
-        return isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100<=e['upper']
+        if not (isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100<=e['upper']):return False
+        m=e.get('nat')      # SOG-0354 L5 (1) : une track n'est prise qu'à un niveau de SA LISTE (min et max ne disent pas les niveaux entre les deux : FL350 et FL390 sans FL370)
+        return not (m and m.get('levels') and fl not in m['levels'])
 
     @staticmethod
     def edge_band(e,side):
@@ -219,6 +221,8 @@ class Nav:
     LOW_MARGIN_FT=1000      # SOG-0161 : une voie dont le plafond est sous le niveau demandé de plus que cela est « basse » (V, T, L…)
     LOW_ALLOW=1.3           # la montée / la descente, comptées sur la distance qu'elles demandent × ce coefficient (la STAR, les virages)
     LOW_PENALTY=3.0         # le coût d'une voie basse hors de la montée et de la descente ; jamais interdite (un maillon bas peut être la seule liaison), mais évitée
+    nat_rejected=frozenset()      # SOG-0354 L5 (1) : les tracks écartées pour CE vol (sections.solve, avec l'option `sections`) : la recherche entière qui suit ne les prend pas non plus ; remis à vide par plan.plan à chaque demande
+
     def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False):
         """A* with ordered milestones and nondominated reachable-altitude labels.
         Heuristic is geodesic distance through remaining milestones, scaled by
@@ -275,6 +279,7 @@ class Nav:
                 self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,band=(low,high),cost=cost)
                 return list(reversed(path))
             for v,e in g.get(u,[]):
+                if self.nat_rejected and e.get('nat') and e['nat']['track'] in self.nat_rejected:continue
                 a,b=self.edge_band(e,'start');a=max(a,low);b=min(b,high)
                 if a>b+.001:continue
                 c,d=self.edge_band(e,'end')
