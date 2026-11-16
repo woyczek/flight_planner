@@ -8153,3 +8153,31 @@ def d242(c):
         c.eq(v['file'], want, f'{what}: the provided map is {"the one of the state" if want else "not taken from it"}', what=str(v))
         c.ok(abs(v['c'][0]) < 200 and abs(v['c'][1]) < 90, str(v), f'{what}: the camera stays in range')
 
+
+@case('D243', 'A SID read in part (one point, `partial`: the exit point only) draws nothing in the path of the flight: the route stays the route (no little SID leg from the threshold to the exit point, none from the aerodrome); a complete SID still does (SOG-0374)', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0374 (the ergonomist, 16 Nov): AeroDB reads the UK SIDs in part — ONE point per SID, the exit point, the procedure marked `partial`; the Map draws no path it does not have: expandedPath (frame/lib/flight_path.js) gives no procedure leg for a partial procedure, the path stays the route’s; the profile and the follow read this path')
+def d243(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js("""async () => {
+      const FP = await import('/frame/lib/flight_path.js'),
+        pt = (id, lat, lon) => ({ id, lat, lon }),
+        f = { route: { dep: 'EGLL', arr: 'KJFK', points: [pt('EGLL', 51.4706, -0.4619), pt('MID', 52.5, -20), pt('KJFK', 40.6398, -73.7789)] } },
+        rwy = { id: '09L', lat: 51.4775, lon: -0.4833 },
+        one = { id: 'EGLL.SID.XMODA1J.RW09L', icao: 'EGLL', points: [pt('XMODA', 51.3, 0.5)] },
+        full = { id: 'EGLL.SID.CPT1J.RW09L', icao: 'EGLL', points: [pt('CPT1', 51.45, -0.2), pt('CPT2', 51.4, 0.1), pt('CPT3', 51.3, 0.5)] },
+        ids = p => p.map(x => x.origin + ':' + x.id).join(' '),
+        run = procs => FP.expandedPath(f, procs);
+      return {
+        partialRwy: ids(run({ sid: { ...one, partial: { read: true } }, depRwy: rwy })),
+        partialBare: ids(run({ sid: { ...one, partial: { read: true } } })),
+        partialTrans: ids(run({ sid: { ...full }, sidTrans: { id: 'EGLL.SID.CPT1J.RW09L.T', icao: 'EGLL', partial: { read: true }, points: [pt('TRANSX', 51.2, 1.5)] }, depRwy: rwy })),
+        route: ids(run({})),
+        oneRead: ids(run({ sid: { ...one }, depRwy: rwy })),
+        full: ids(run({ sid: full, depRwy: rwy })) } }""")
+    route = r['route']
+    c.eq(r['partialRwy'], route, 'with a chosen runway: the path is the route’s alone (no sid leg, no threshold)', what=str(r))
+    c.eq(r['partialBare'], route, 'without a runway: the path is the route’s alone (no leg from the aerodrome to the exit point)', what=str(r))
+    c.ok('sid:CPT3' in r['partialTrans'] and 'TRANSX' not in r['partialTrans'], str(r), 'a complete SID keeps its legs, its partial transition adds none')
+    c.ok('sid:CPT1' in r['full'] and 'sid:RW09L' in r['full'], str(r), 'a complete SID still draws its legs from the threshold (the rule is about `partial`, not about every SID)')
+    c.ok('sid:XMODA' in r['oneRead'], str(r), 'a one-point SID that is not marked `partial` keeps its leg (the marker decides, not the count of points)')

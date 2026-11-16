@@ -245,7 +245,7 @@ const finish = p => ({
  *  transition d'approche, approche jusqu'au seuil ; la route s'arrête au premier point de cette chaîne qu'elle contient,
  *  sinon à son avant-dernier point ; le terrain ferme le chemin. Un tronçon sans point (lat / lon null) reste dans le tableau
  *  pour le dessin ; l'approche interrompue vient à la fin (origin 'missed'), jamais volée. Longitudes dans [-180, 180[.
- *  procs : loadProcedures ; un enregistrement d'un autre aérodrome est ignoré. */
+ *  procs : loadProcedures ; un enregistrement d'un autre aérodrome est ignoré, de même une procédure `partial` (lue en partie : pas de tracé). */
 export function expandedPath(f, procs = {}) {
   const R = (f?.route?.points || []).filter(p => coord(p?.lat) !== null && coord(p?.lon) !== null).map(p => ({
       ...p,
@@ -258,7 +258,9 @@ export function expandedPath(f, procs = {}) {
     n = R.length;
   if (n < 2) return R;
   const P = procs || {},
-    ofIcao = (rec, icao) => rec && (!rec.icao || String(rec.icao).toUpperCase() === icao) ? rec : null,
+    // une procédure lue EN PARTIE (rec.partial : AeroDB, un seul point, le point de sortie d'une SID du Royaume-Uni, SOG-0374) n'a pas de tracé : le
+    // chemin n'en dessine aucun tronçon et reste celui de la route (la Carte ne dessine pas ce qu'elle n'a pas lu)
+    ofIcao = (rec, icao) => rec && !rec.partial && (!rec.icao || String(rec.icao).toUpperCase() === icao) ? rec : null,
     depIcao = String(f.route?.dep || R[0].id).toUpperCase(),
     arrIcao = String(f.route?.arr || R[n - 1].id).toUpperCase(),
     depChain = chainOf([

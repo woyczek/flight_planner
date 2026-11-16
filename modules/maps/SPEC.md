@@ -419,7 +419,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   read through `proceduresOf`: a side whose aerodrome is not the route's is read as not chosen; the map never writes it, not even
   in Edit mode, which keeps it as it is). The records come from `aerodb.procedure(id)`, the runways from `aerodb.runways(icao)`
   (`loadProcedures`, once per change of the choice, without waiting: the route is drawn first and redrawn when they arrive); without
-  `aerodb`, without a choice or without a record the path is the route and nothing changes. **One path**: `expandedPath(flight,
+  `aerodb`, without a choice or without a record the path is the route and nothing changes; **a procedure read in part (`partial`,
+  SOG-0374: one point per UK SID, the exit point) gives no leg either**: the map draws no path it does not have, the path stays the
+  route's, whatever the runway chosen. **One path**: `expandedPath(flight,
   procs)` gives the points "route + procedures" in flight order (kept in the state as `S.route.path`), `flownPath(path)` the points
   flown with their cumulative NM (`S.route.flown`: the only measure of distances, for the profile, the NM marks, the cursor, the
   times and the header's distance). Drawn over the route, thinner, with a background edge, one hue per kind (`procs.js` `colOf`, day / night; user, 29 Oct: "des couleurs de contraste autres que violet"): SID green, STAR orange, approach and missed approach sky blue — neither the route's and high airways' violet nor the low airways' dark blue; the constraints and point names take their procedure's hue; the airway boxes of the legs the procedures follow are painted over their trace, as for the route (`MapsRender.draw` `legs`, `overRoute`):

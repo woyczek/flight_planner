@@ -3184,3 +3184,7 @@ His words: « si on affiche la vue cible dans fuel, et qu'on passe sur carte, on
 - **Security review (accepted)**: with `?flight=` (the address chooses the flight view) the state is neither read nor written, as with `?mission=`, the choose mode and the tuning page; a map name or a signature beyond the read bounds (200 / 600 characters, they come from a mission's YAML) is not written; a failed write is silent (a cache).
 - **Tranche b** (sheet content with a stable subject, profile open and its window, mission window folded, Follow and its fold) waits for alpha 5. D241 (red before), D242.
 
+## A procedure read in part draws no leg (SOG-0374; the ergonomist's rule of 16 Nov)
+- AeroDB now reads the UK SIDs "in part" from the eAIP package (9fd52890c): ONE point per SID (the exit point), the record marked `partial`. `expandedPath` (frame/lib/flight_path.js) made of it a small « sid » leg from the threshold (or the aerodrome) to the exit point: a path nobody had read.
+- **Rule**: the Map draws no path it does not have. A record with `partial` is ignored by `expandedPath` as a record of another aerodrome is (`ofIcao`): no procedure leg, no threshold point, no `join` mark; the path stays the route's. A complete SID, a one-point SID that is not marked `partial` keep their legs (the marker decides, not the count of points). The profile, the follow and Fuel's quote read the same path: nothing to change there.
+- The screen that says « tracé non lu, voir la carte » is Features SOG's (F231). D243 (red before), D88, D41, D42, D44, D52–D54, D80 and F15 replayed.
