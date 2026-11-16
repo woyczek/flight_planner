@@ -3484,10 +3484,10 @@
     "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
     "es": "Motor de ruta: dividir una ruta larga en tramos que se saben válidos (más allá de la costa: cruzar también Estados Unidos)"
    },
-   "test": "D'abord RELANCE LE LANCEUR. Carburant, étape Route, « Calculer A → B ». (1) EIDW → KJFK, départ dans la fenêtre des routes NAT vers l'ouest (vers 12 h Z) : une route en 2 secondes environ ; sous l'itinéraire, la ligne de preuve — « EIDW–… : calculée · … : publiée, route NAT E du 16/11 · …–KJFK : calculée ». (2) Le même vol avec un départ à 03 h Z : une ROUTE LIBRE créée (« … : route libre, créée »), en 2 secondes ; le pli « n routes NAT du jour écartées » donne la raison de chacune. (3) EIDW → KLAX : une route en 3 à 4 secondes. (4) LFPO ou LFPG → KLAX : une route en 3 secondes environ (c’était « aucune route »). Pas encore bon, en correction : sans heure de départ, le calcul suppose encore ",
+   "test": "D'abord RELANCE LE LANCEUR. Carburant, étape Route, « Calculer A → B » (les temps sont ceux mesurés par AeroDB sur ta base). (1) EIDW → KJFK, départ vers 12 h Z : une route en 2 secondes à froid, moins d'une seconde ensuite ; sous l'itinéraire, la preuve de chaque morceau (« calculée », « publiée, route NAT E du 16/11 »). (2) Le même vol, départ à 03 h Z : une ROUTE LIBRE créée (« route libre, créée »), en 2 secondes ; le pli « n routes NAT du jour écartées » dit pourquoi chacune est écartée. (3) Sans heure de départ : la route NAT est prise et une ligne dit « Heure de départ non donnée : validité horaire des routes NAT non vérifiée ». (4) EIDW → KLAX : 3 à 4 secondes. (5) LFPO ou LFPG → KLA",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T17:15:26Z"
+   "delivered": "2026-11-16T17:35:30Z"
   },
   {
    "id": "SOG-0355",
