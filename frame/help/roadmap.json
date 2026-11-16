@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "779190a",
-  "fiches": 387,
+  "organisation": "36ef443",
+  "fiches": 388,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1127,6 +1127,27 @@
      "es": "Fichas: varias curvas de RPM / consumo por altitud, en crucero",
      "milestone": "6.0.0-alpha.5",
      "rank": 51
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-et-route-atlantique-nord",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant et route ; Atlantique Nord",
+    "en": "Carburant et route ; Atlantique Nord",
+    "de": "Carburant et route ; Atlantique Nord",
+    "es": "Carburant et route ; Atlantique Nord"
+   },
+   "items": [
+    {
+     "id": "SOG-0389",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route KABQ → EGLL : la route calculée ne prend pas les routes NAT",
+     "en": "Route KABQ → EGLL: the computed route does not take the NAT tracks",
+     "de": "Route KABQ → EGLL: die berechnete Route nutzt die NAT-Tracks nicht",
+     "es": "Ruta KABQ → EGLL: la ruta calculada no toma las rutas NAT"
     }
    ]
   },
