@@ -481,21 +481,37 @@
         el: ms,
         kind: 'milestone'
       };
+      const li = el?.closest?.('li.f-rm-item[data-id]');
+      if (ui.view ===
+        'themes'
+      ) { // « Par thème » : le même geste, sur une carte (avant ou après elle, dans l'ordre des priorités) ; ni colonne ni zone vide ne reçoivent (SOG-0387)
+        const lane = li?.closest('[data-lane]'),
+          col = li?.closest('.f-rm-col');
+        if (!li || li === g.li || li.dataset.state === 'done' || !lane || !col || !view.contains(li)) return null;
+        const r = li.getBoundingClientRect();
+        return {
+          el: li,
+          kind: y > r.top + r.height / 2 ? 'after' : 'before',
+          col,
+          name: t(row((d.lanes || []).find(l => l.id === lane.dataset.lane)?.label || lane.dataset.lane))
+        };
+      }
       const col = colAt(x, y);
       if (!col) return null;
-      const li = el?.closest?.('li.f-rm-item[data-id]');
       if (li && li !== g.li && col.contains(li)) {
         const r = li.getBoundingClientRect();
         return {
           el: li,
           kind: y > r.top + r.height / 2 ? 'after' : 'before',
-          col
+          col,
+          name: colName(col.dataset.col)
         };
       }
       return {
         el: col,
         kind: 'column',
-        col
+        col,
+        name: colName(col.dataset.col)
       };
     };
     /** La première carte d'une colonne (hors la carte qu'on déplace) : la cible d'un dépôt « en tête ». */
@@ -524,7 +540,7 @@
         text = !a ? '' : a.kind === 'milestone' ? t(T.aimStone, {
           c: a.el.querySelector('b')?.textContent.trim() || a.el.dataset.ms || ''
         }) : t(a.kind === 'column' ? T.aimHead : a.kind === 'before' ? T.aimBefore : T.aimAfter, {
-          c: colName(a.col.dataset.col),
+          c: a.name,
           i: a.el.dataset?.id || ''
         });
       if (!text) {
@@ -565,8 +581,8 @@
       if (!g.drag) {
         if (Math.hypot(dx, dy) <= SLOP) return;
         if (!g.armed) return clear(); // le doigt a bougé avant l'appui long : c'est un défilement
-        if (ui.view !== 'priorities' || g.li.closest('.f-rm-pcol[data-fixed]'))
-          return clear(); // « Par thème » se lit sans glisser ; une carte livrée ou en test ne bouge pas
+        if (g.li.closest('.f-rm-pcol[data-fixed]') || g.li.dataset.state === 'done')
+          return clear(); // une carte livrée ou en test ne bouge pas (dans les deux vues : « Par thème » se glisse aussi, SOG-0387)
         g.drag = true;
         scroller = scrollParent();
         g.tick = setInterval(autoScroll, 30);
@@ -593,7 +609,8 @@
         if (a?.kind === 'milestone') reschedule(id, a.el.dataset.ms);
         else if (a?.kind === 'column') place(id, headOf(a.col, id), false, a.col.dataset
           .col); // lâchée sur la colonne : EN TÊTE (SOG-0257 ; une colonne vide : sa seule carte)
-        else if (a) place(id, a.el.dataset.id, a.kind === 'after', a.col.dataset.col);
+        else if (a) place(id, a.el.dataset.id, a.kind === 'after', ui.view === 'themes' ? null : a.col.dataset
+          .col); // par thème : l'ordre seul (le jalon ne change pas)
       } else if (armed && type !== 'mouse') copy(id);
     }
 

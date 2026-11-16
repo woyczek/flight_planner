@@ -4463,9 +4463,9 @@ def _prio_fixture():
                       {'id': 'data', 'app': 'pilote', 'label': lab('Thème B', 'Theme B'), 'items': [item('planned', 13), item('planned', 14)]}]}
 
 
-@case('A114', 'The roadmap opens « Par thème »; « Priorités » is a mode you choose (kept on the device): the columns of the open milestones (alpha.5, alpha.6, beta.1) and Backlog (SOG-0256), the cards flat by rank with their theme as a label; a card of theme B above a card of theme A, sent to development, held after a reload; « Par thème » is the read-only secondary view', 'A',
+@case('A114', 'The roadmap opens « Par thème »; « Priorités » is a mode you choose (kept on the device): the columns of the open milestones (alpha.5, alpha.6, beta.1) and Backlog (SOG-0256), the cards flat by rank with their theme as a label; a card of theme B above a card of theme A, sent to development, held after a reload; « Par thème » is the secondary view (A247 drags there)', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
-      rule='SOG-0160 (the user, 10 Nov 2026, then refused: « oui, mais par thème par défaut. c’est un « mode priorités », pas un default »): the roadmap opens « Par thème »; « Priorités » is a mode the user chooses and the device keeps; that view is a flat list in three columns drawn from the milestones, a drag (a phone: Monter, Descendre, Envoyer vers…) writes the rank and the milestone in organisation/PRIORITES.json; « Par thème » keeps today’s lanes, without dragging')
+      rule='SOG-0160 (the user, 10 Nov 2026, then refused: « oui, mais par thème par défaut. c’est un « mode priorités », pas un default »): the roadmap opens « Par thème »; « Priorités » is a mode the user chooses and the device keeps; that view is a flat list in three columns drawn from the milestones, a drag (a phone: Monter, Descendre, Envoyer vers…) writes the rank and the milestone in organisation/PRIORITES.json; « Par thème » keeps today’s lanes (it is dragged too since SOG-0387: A247)')
 def a114(c):
     import tempfile
     from pathlib import Path
@@ -4547,17 +4547,143 @@ def a114(c):
         # ---- « Par thème »: today’s lanes, read only
         c.tap('[data-view=themes]')
         c.until("document.querySelectorAll('[data-lane]').length === 2", what='the lanes')
-        c.eq([c.count('[data-priorities]'), c.js("[...document.querySelectorAll('[data-lane]')].map(l => l.dataset.lane)")], [0, ['fuel', 'data']], '« Par thème »: the lanes of today, no column', what='themes')
-        n = len(written() or {})
-        c.page.locator('[data-lane=data] [data-id="SOG-0013"]').evaluate("el => el.scrollIntoView({ block: 'center' })")
-        a = c.page.locator('[data-lane=data] [data-id="SOG-0013"]').bounding_box()
+        c.eq([c.count('[data-priorities]'), c.js("[...document.querySelectorAll('[data-lane]')].map(l => l.dataset.lane)")], [0, ['fuel', 'data']], '« Par thème »: the lanes of today, no column (its drag is A247’s)', what='themes')
+    c.check_errors()
+
+
+@case('A247', 'The roadmap « Par thème » is dragged like « Priorités » (SOG-0387, the user: « pas de d’n’d sur la vue par thème ? bloquant »): a card dropped above or under another one is its rank in organisation/PRIORITES.json (its milestone untouched), dropped on the strip it is a milestone, a click without moving writes nothing, a long touch does the same, a delivered card does not move, and a reload holds the order', 'A',
+      designs=('metro',), screens=True, night=False, langs4=False,
+      rule='SOG-0387 (the user, 16 Nov 2026, Metro, computer): the priorities are changed by dragging the cards from the « Par thème » view of the roadmap too — the same gesture, the same file (organisation/PRIORITES.json through the launcher; without one the order stays on the device), mouse and finger, a click without moving never moves a card; the lanes keep their cards, the order is the global rank (a card dropped on a card of another theme takes its place in the priorities order)')
+def a247(c):
+    import tempfile
+    from pathlib import Path
+    fx = _prio_fixture()
+    fx['lanes'][0]['items'].append({'state': 'done', 'id': 'SOG-0009', 'fr': 'Carte 9', 'en': 'Card 9', 'de': 'Card 9 (de)', 'es': 'Card 9 (es)'})
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'frame' / 'help').mkdir(parents=True)
+        (root / 'frame' / 'help' / 'roadmap.json').write_text(json.dumps(fx), encoding='utf-8')
+        (root / 'organisation').mkdir()
+        prio = root / 'organisation' / 'PRIORITES.json'
+        written = lambda: json.loads(prio.read_text(encoding='utf-8'))['items'] if prio.exists() else None
+        st = _prio_launcher(c, root)
+        lane = lambda k: c.js("(k) => [...document.querySelectorAll('[data-lane=\"' + k + '\"] li[data-id]')].map(l => l.dataset.id)", k)
+        writes = lambda: len([p for p in st['posts'] if p['args']['action'] == 'set'])
+        c.open('roadmap', docs=LEVEL3 + [['device/design.json', {'design': 'metro', 'tone': 'day'}, 'cache']])    # the user's design, at every width of the case
+        c.until("document.querySelectorAll('[data-lane] li[data-id]').length >= 5", timeout=15000, what='the lanes (« Par thème » is the default)')
+        c.until("document.querySelectorAll('[data-lane=data] li[data-id]').length === 2", timeout=15000, what='both lanes')
+        c.wait(1500)    # the read of the launcher's file may redraw once
+        c.eq(c.count('[data-priorities]'), 0, 'the view is « Par thème »: lanes, no column', what='view')
+        c.eq([lane('fuel'), lane('data')], [['SOG-0015', 'SOG-0011', 'SOG-0012'], ['SOG-0013', 'SOG-0014']], 'the lanes at first: the file\'s order', what='first')
+
+        def up_to_strip():
+            for _ in range(60):
+                c.page.mouse.move(60, 20)
+            c.js("document.querySelector('[data-ms=\"beta.1\"]').scrollIntoView({ block: 'nearest', inline: 'center' })")
+
+        def drag(src, dst, where='before', hold=None):
+            c.js("document.querySelectorAll('.f-note').forEach(n => n.remove())")
+            c.page.locator(src).evaluate("el => el.scrollIntoView({ block: 'center' })")
+            c.wait(150)
+            a = c.page.locator(src).bounding_box()
+            c.page.mouse.move(a['x'] + a['width'] / 2, a['y'] + 8)
+            c.page.mouse.down()
+            c.page.mouse.move(a['x'] + a['width'] / 2 + 10, a['y'] + 18, steps=2)
+            if hold == up_to_strip:
+                hold()
+            b = c.page.locator(dst).bounding_box()
+            y = b['y'] + (4 if where == 'before' else b['height'] - 4) if where in ('before', 'after') else b['y'] + b['height'] / 2
+            c.page.mouse.move(b['x'] + b['width'] / 2, y, steps=10)
+            if hold and hold != up_to_strip:
+                hold()
+            c.page.mouse.up()
+
+        def shown():
+            c.eq(c.js("[...document.querySelectorAll('.f-rm-aim')].map(n => n.textContent.trim().length > 0)"), [True], 'while dragging a label says where the card falls', what='label')
+            c.shot(f'A247_themes_drag_metro_{c.width}_delivered.png')
+        # ---- a click without moving: nothing moves, nothing is written
+        c.page.locator('[data-id="SOG-0014"]').evaluate("el => el.scrollIntoView({ block: 'center' })")
+        c.wait(150)
+        a = c.page.locator('[data-id="SOG-0014"]').bounding_box()
+        c.page.mouse.click(a['x'] + a['width'] / 2, a['y'] + 8)
+        c.wait(600)
+        c.eq([c.count('[data-drag]'), writes(), lane('data')], [0, 0, ['SOG-0013', 'SOG-0014']], 'a click without moving moves nothing and writes nothing', what='click')
+        # ---- a card dropped above another of its lane: the rank, written by the launcher; the lane follows at once; the milestone is untouched
+        drag('[data-lane=data] [data-id="SOG-0014"]', '[data-lane=data] [data-id="SOG-0013"]', 'before', hold=shown)
+        c.until("document.querySelector('[data-lane=data] li[data-id]').dataset.id === 'SOG-0014'", what='SOG-0014 above SOG-0013')
+        c.eq(lane('data'), ['SOG-0014', 'SOG-0013'], 'dropped above: the lane follows', what='lane')
+        pri = None
+        for _ in range(40):
+            pri = written()
+            if pri:
+                break
+            c.wait(250)
+        c.ok(bool(pri) and pri['SOG-0014']['rank'] < pri['SOG-0013']['rank'] and 'milestone' not in pri['SOG-0014'], pri, 'the launcher wrote organisation/PRIORITES.json: the new rank, the milestone untouched')
+        c.until("document.querySelectorAll('[data-unsent]').length === 0", what='written: nothing « not sent » left')
+        c.wait(3000)    # the launcher client polls a job once a second: the send is over
+        # ---- a card dropped under a card of ANOTHER theme: the order is global
+        drag('[data-lane=data] [data-id="SOG-0013"]', '[data-lane=fuel] [data-id="SOG-0011"]', 'after')
+        for _ in range(40):
+            pri = written()
+            if pri and pri['SOG-0013']['rank'] < pri['SOG-0012']['rank']:
+                break
+            c.wait(250)
+        c.ok(pri['SOG-0011']['rank'] < pri['SOG-0013']['rank'] < pri['SOG-0012']['rank'], pri, 'dropped under a card of another theme: its rank falls between the two, in the one order of the priorities')
+        c.eq(c.count('[data-lane]'), 2, 'the lanes stay', what='lanes')
+        c.wait(3000)
+        # ---- a delivered card does not move (the box « hide delivered » is off to see it)
+        c.tap('input[data-hide]')
+        c.until("!!document.querySelector('[data-id=\"SOG-0009\"]')", what='the delivered card')
+        n = writes()
+        c.page.locator('[data-id="SOG-0009"]').evaluate("el => el.scrollIntoView({ block: 'center' })")
+        a = c.page.locator('[data-id="SOG-0009"]').bounding_box()
         c.page.mouse.move(a['x'] + a['width'] / 2, a['y'] + 8)
         c.page.mouse.down()
         c.page.mouse.move(a['x'] + a['width'] / 2 + 12, a['y'] + 60, steps=6)
+        c.eq(c.count('[data-drag]'), 0, 'a delivered card is not dragged', what='delivered')
         c.page.mouse.up()
-        c.wait(800)
-        c.eq(c.js("document.querySelectorAll('[data-lane] [data-drag]').length"), 0, 'no drag in « Par thème »', what='no drag')
-        c.eq(len(written() or {}), n, 'nothing written by a gesture in the read-only view', what='nothing written')
+        c.wait(500)
+        c.eq(writes(), n, 'and nothing is written for it', what='delivered write')
+
+        # ---- onto a point of the strip: the milestone
+        drag('[data-lane=fuel] [data-id="SOG-0012"]', '[data-ms="beta.1"]', 'on', hold=up_to_strip)
+        for _ in range(40):
+            pri = written()
+            if pri and pri.get('SOG-0012', {}).get('milestone'):
+                break
+            c.wait(250)
+        c.eq(pri['SOG-0012'].get('milestone'), 'beta.1', 'dropped on a milestone: its milestone is written', what='milestone')
+        c.wait(3000)
+        # ---- a long touch (synthetic pointer events): a drag after the hold moves the card; a move before the hold is a scroll
+        touch = lambda kind, sel, dx=0, dy=0, to=None: c.js("""([k, sel, dx, dy, to]) => { const el = document.querySelector(sel); const r = el.getBoundingClientRect(); const t = to ? document.querySelector(to).getBoundingClientRect() : null;
+          const x = t ? t.left + t.width / 2 : r.left + r.width / 2 + dx, y = t ? t.top + 4 : r.top + r.height / 2 + dy;
+          const o = { pointerId: 7, pointerType: 'touch', isPrimary: true, bubbles: true, cancelable: true, clientX: x, clientY: y };
+          (k === 'down' ? el : document).dispatchEvent(new PointerEvent('pointer' + k, o)); return true }""", [kind, sel, dx, dy, to])
+        c.js("document.querySelectorAll('.f-note').forEach(n => n.remove())")
+        card = '[data-lane=data] [data-id="SOG-0013"]'
+        c.page.locator(card).evaluate("el => el.scrollIntoView({ block: 'center' })")
+        touch('down', card)
+        c.wait(120)
+        touch('move', card, dy=40)
+        c.eq(c.js("document.querySelector('" + card + "').hasAttribute('data-drag')"), False, 'a move before the long hold does not start a drag (the page scrolls)', what='no drag')
+        touch('up', card)
+        touch('down', card)
+        c.wait(600)
+        touch('move', card, dy=-10)
+        touch('move', card, to='[data-lane=data] [data-id="SOG-0014"]')
+        touch('up', card)
+        c.until("document.querySelector('[data-lane=data] li[data-id]').dataset.id === 'SOG-0013'", what='the long touch moved the card')
+        c.eq(lane('data'), ['SOG-0013', 'SOG-0014'], 'a drag after the long hold: the card goes above its neighbour, as with the mouse', what='touch')
+        c.wait(2500)
+        # ---- a reload: each lane follows the ranks the launcher wrote
+        want = written()
+        c.page.reload()
+        c.until("document.querySelectorAll('[data-lane] li[data-id]').length >= 5", timeout=15000, what='the screen again')
+        c.wait(1500)
+        rank = lambda i: want.get(i, {}).get('rank', 1e9)
+        cols = c.js("[...document.querySelectorAll('.f-rm-col ul')].map(u => [...u.querySelectorAll('li[data-id]')].map(l => l.dataset.id))")
+        c.ok(all(rank(a) <= rank(b) for ls in cols for a, b in zip(ls, ls[1:])) and lane('data') == ['SOG-0013', 'SOG-0014'], [cols, want], 'after a reload every column of every lane follows the written ranks')
     c.check_errors()
 
 

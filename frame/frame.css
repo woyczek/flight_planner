@@ -1333,7 +1333,8 @@ p.f-back {
   gap: 6px
 }
 .f-rm-pcol[data-drop],
-.f-rm-pcol[data-dropcol] {
+.f-rm-pcol[data-dropcol],
+.f-rm-col[data-dropcol] {
   outline: 2px dashed var(--sog-accent);
   background: color-mix(in srgb, var(--sog-accent) 10%, var(--sog-surface))
 }
