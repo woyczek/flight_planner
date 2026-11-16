@@ -27,6 +27,9 @@ FIELDS = {
 MAX_ROUTE = 600
 HEAD_BUDGET_S = 5.0                 # SOG-0371 : la route de TÊTE répond en 5 s au plus (à froid : le chargement du contexte compris) ; ce qui n'a pas abouti se dit « proposition »
 TOTAL_BUDGET_S = 15.0               # SOG-0371 : tout le calcul (tête, alternatives, propositions de repli) en 15 s au plus ; AUCUNE recherche ne dépasse la borne de sa phase (engine.DEADLINE)
+OCEAN_HEAD_BUDGET_S = 10.0            # SOG-0354 L2b : un vol qui traverse l'Atlantique : la route de tête 10 s, une recherche 12 s, tout 20 s (les alternatives et les propositions seulement s'il reste du temps) — la route d'EIDW → KJFK EXISTE et demande ~7 s de recherche
+OCEAN_SEARCH_CAP_S = 12.0
+OCEAN_TOTAL_BUDGET_S = 20.0
 ALT_BUDGET_S = 8.0                  # SOG-0296 : la recherche des ALTERNATIVES (après la route de tête) tient le poste au plus ce temps (facultatif, `alternatives_budget`, 1 à 25 s) : 25 s pour ne rien trouver de plus n'a pas à le tenir
 MAX_ALTERNATIVES = 3
 MAX_LEGS = 800
@@ -170,6 +173,20 @@ class SearchBudget(Exception):
     pass
 
 
+def crosses_ocean(a, b):
+    """Vrai si le vol traverse l'Atlantique : un bout à l'ouest de 35°W et l'autre à l'est de 15°W (le critère de nat_layer.hint), décidé AVANT la recherche (aucune route n'est connue encore). a et b : des positions { lon }."""
+    try:
+        return (a['lon'] < -35 and b['lon'] > -15) or (b['lon'] < -35 and a['lon'] > -15)
+    except (KeyError, TypeError):
+        return False
+
+
+def budgets(request, ocean):
+    """Les bornes de ce calcul : { ocean, head_s, search_s, total_s } — 5 s / 6 s / 15 s (SOG-0371), 10 s / 12 s / 20 s pour un vol qui traverse l'Atlantique en CALCUL ; un CONTRÔLE (une route saisie) garde les siennes. La réponse les rend (`budget`) : l'écran dit qu'il cherche plus longtemps."""
+    long_ = bool(ocean) and request.get('mode', 'calculate') == 'calculate'
+    return {'ocean': long_, 'head_s': OCEAN_HEAD_BUDGET_S if long_ else HEAD_BUDGET_S, 'search_s': OCEAN_SEARCH_CAP_S if long_ else 6.0, 'total_s': OCEAN_TOTAL_BUDGET_S if long_ else TOTAL_BUDGET_S}
+
+
 def plan(request, root):
     """Le plan, tel que server.plan() de RouteSim 4 le fait (voir l'en-tête du module). Le mode VFR (vfr.py) n'est pas porté : la demande IFR seule est acceptée (check_request)."""
     import time
@@ -177,8 +194,10 @@ def plan(request, root):
 
     limit = {'until': started + TOTAL_BUDGET_S, 'what': f'Budget global de recherche atteint ({TOTAL_BUDGET_S:g} s)'}
 
+    next_attempt = {'cost': 0.0}      # SOG-0354 L2b : le coût d'une tentative de plus (un graphe de ~4 s et une recherche) : un vol océanique n'en commence pas une qui ne finirait pas dans son budget
+
     def check_budget():
-        if time.perf_counter() > limit['until']:
+        if time.perf_counter() > limit['until'] - next_attempt['cost']:
             raise SearchBudget(limit['what'] + '. Les propositions déjà contrôlées sont conservées ; la recherche n’est pas exhaustive.')
     request = dict(request, root=root)
     request.setdefault('date', '2026-11-09T12:00')
@@ -207,8 +226,12 @@ def plan(request, root):
     if request.get('allow_levels', True):      # SOG-0371 (aller-retour) : le contrôle lit la route avec le MÊME modèle vertical que la recherche qui l'a écrite (une route du moteur n'est pas refusée au contrôle pour une montée que la recherche adaptait)
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
-    request['_deadline'] = started + HEAD_BUDGET_S
-    engine.DEADLINE = started + HEAD_BUDGET_S       # SOG-0371 : la route de tête et ses reprises RAD ; la phase suivante pose la sienne
+    bounds = budgets(request, crosses_ocean(nav.ads.get(str(request.get('dep', '')).upper()) or {}, nav.ads.get(str(request.get('arr', '')).upper()) or {}))      # SOG-0354 L2b : un vol qui traverse l'Atlantique cherche plus longtemps
+    reserve = 4.0 if bounds['ocean'] else 0.0      # SOG-0354 L2b : un vol océanique réserve la fin de ses 20 s aux propositions de repli ; les alternatives (un graphe de 4 s et une recherche chacune) s'arrêtent avant
+    limit['until'], limit['what'] = started + bounds['total_s'] - reserve, f"Budget global de recherche atteint ({bounds['total_s']:g} s)"
+    engine.SEARCH_CAP_S = bounds['search_s']
+    request['_deadline'] = started + bounds['head_s']
+    engine.DEADLINE = started + bounds['head_s']       # SOG-0371 : la route de tête et ses reprises RAD ; la phase suivante pose la sienne
     if request.get('objective') == 'economical':
         request['alternatives'] = True
     try:
@@ -226,6 +249,9 @@ def plan(request, root):
             if not findings or not extra:
                 break
             avoids = list({json.dumps(x, sort_keys=True): x for x in [*avoids, *extra]}.values())
+            if bounds['ocean'] and time.perf_counter() > started + bounds['head_s']:      # SOG-0354 L2b : un vol océanique ne reprend pas la route de tête après sa borne (chaque reprise refait un graphe et une recherche : 6 s) — le total de 20 s tient
+                rad_retries.append(dict(excluded=avoids, error='reprise RAD non faite : la borne de la route de tête est atteinte'))
+                break
             try:
                 check_budget()
                 candidate = engine.assess(dict(request, _rad_avoid=avoids), nav, rad)
@@ -235,8 +261,10 @@ def plan(request, root):
             except (ValueError, SearchBudget) as e:
                 rad_retries.append(dict(excluded=avoids, error=str(e)))
                 break
-    engine.DEADLINE = started + TOTAL_BUDGET_S
+    engine.DEADLINE = limit['until']
     rejected = not primary['ok'] or bool(primary.get('data_gaps')) or any(i['level'] == 'ERREUR' for i in primary['issues'])
+    if bounds['ocean'] and rejected:      # SOG-0354 L2b : une route de tête refusée : chaque tentative de plus refait un graphe (~4 s) et une recherche ; elle ne commence pas si elle ne finirait pas dans le budget (les alternatives d'une BONNE route de tête, elles, sont peu coûteuses : inchangées)
+        next_attempt['cost'] = 6.5
     # SOG-0371 : en CONTRÔLE (une route saisie, sans `alternatives` demandées) la réponse dit ce qui est refusé, dans la borne de la route de tête : ni variantes d'office ni propositions de repli (c'est « Calculer A → B » qui cherche)
     check_only = request.get('mode', 'calculate') == 'validate' and not request.get('alternatives')
     coverage_gaps = recovery.terminal_gaps(request, nav) if rejected else []
@@ -356,6 +384,7 @@ def plan(request, root):
                if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''
     repli = None
     if rejected and not alternatives and not check_only:
+        engine.DEADLINE = started + bounds['total_s']      # les propositions de repli ont la fin du budget
         nav._routing_cache.clear()
         try:
             repli = recovery.propose(request, nav, rad)
@@ -365,7 +394,7 @@ def plan(request, root):
             message = 'Calcul réseau incomplet : ' + str(len(repli['proposals'])) + ' propositions de repli, dont ' + str(repli.get('fra_pieces', 0)) + ' portion(s) FRA. Les raccords DCT restent non validés.'
     for r in [primary, *alternatives, *((repli or {}).get('proposals') or [])]:        # SOG-0161 : chaque tronçon classé (contrôlé / incomplet / repli / erreur), par couche, et le pourcentage de la distance contrôlée
         layered.annotate(r, rad)
-    return dict(primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
+    return dict(budget=bounds, primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
                 automatic_alternatives=rejected and not check_only, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
 
@@ -429,3 +458,4 @@ def compute(request, data, rad_file, fra_file):
             return bound_result(plan(request, data))
     finally:
         engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = None
+        engine.SEARCH_CAP_S = 6.0

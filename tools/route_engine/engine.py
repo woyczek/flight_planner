@@ -12,6 +12,7 @@ from . import nat_layer     # SOG-0263
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
+SEARCH_CAP_S = 6.0   # SOG-0354 : la borne d'UNE recherche (A*) ; plan.plan() la porte à 12 s pour un vol qui traverse l'Atlantique (plan.budgets), et la remet à 6 s à la fin du calcul
 DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE recherche doit finir, posé par plan.plan() pour chaque phase (route de tête, alternatives, propositions) : aucune recherche ne dépasse la borne de sa phase ; None : seule la borne propre de la recherche (6 s)
 RAD_FILE = None   # SOG-0081 : chemin de rad.json.gz posé par le travail du lanceur (data/route/rad.json.gz) ; None : à côté du module, comme RouteSim 2
 MONTHS = dict(zip('JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC'.split(),range(1,13)))
@@ -225,7 +226,7 @@ class Nav:
         """
         import time
         begun=time.perf_counter();expanded=0;fra_reachable=False
-        stop_at=begun+6 if DEADLINE is None else min(begun+6,DEADLINE)      # SOG-0371 : la borne de la phase en cours borne AUSSI la recherche déjà partie
+        stop_at=begun+SEARCH_CAP_S if DEADLINE is None else min(begun+SEARCH_CAP_S,DEADLINE)      # SOG-0371 : la borne de la phase en cours borne AUSSI la recherche déjà partie
         names=[self.nodes[k]['id'] for k in waypoints]
         flight=getattr(g,'flight',None)
         low,high=initial_band or ((flight['departure'],flight['ceiling'] if flight.get('free_departure') else flight['departure']) if flight else (-1e9,1e9))   # SOG-0161 : free_departure : aucune SID lue, la montée n'est pas bornée par le raccord

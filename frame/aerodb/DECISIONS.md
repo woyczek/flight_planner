@@ -3215,3 +3215,18 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Done and NOT kept**: the corridor, proved exact (a result is kept only when no path outside the corridor can beat it) and measured: no gain (the A* already stays inside; the number of edges per state is not the cost). See INTEGRATION « the corridor, measured ». Kept: the dominance test as a plain loop (same expanded states, same routes, ≈ 30 % faster).
 - **Choices of this session** (to relax if wished): the corridor code is not in the repository (it would add a failed attempt of 0.4–0.7 s to a flight that it cannot speed up); the idea stays in the design note for the skeleton (L2b 3), where the region of a section is the natural corridor.
 - **To decide** (the ergonomics session): the bounds of the head search of a long flight (5 s, 6 s per search): the real route of EIDW → KJFK / KBOS is found at about 10 s; a skeleton (L2b 3) would bring it under 8 s; a policy of 10 s for the head would give the route now at the price of a longer wait when there is none.
+
+## 16 November 2026 — SOG-0384: the state of the base « not read » after ten seconds
+
+- **Report** (the user, 15:58, a01d580a5, launcher restarted): ten seconds after opening Maintenance › Data, « L'état de votre base n'est pas connu », every group « état non lu », the cycle line and the libraries line present. Suspected: `base/status` slower since `datedBy` (1e8ac887f), or `pdf/status`.
+- **Measured** (the ergonomics session asked three lines): `base/status` 0.44 s before and 0.69 s after `1e8ac887f` (84 zones); `pdf/status` 0.15 s; and the launcher refuses a second job while one runs (409 busy), reproduced on his real base with the real job manager: the screen asks the three reads together, one was refused.
+- **Done**: the pure reads run beside the job that holds the place (K288, red before: the reads started 409). See INTEGRATION « Launcher jobs ».
+- **Choices of this session** (to relax if wished): the list `PARALLEL` is the pure reads only; `route/compute` keeps its own rule (SIDE beside a background read); a read is not refused while a job writes zones (the verbs read files that are replaced atomically; a state read during a build can show the zone as it was a moment ago); `held` (the update of the suite) still refuses them.
+- **Not done**: the page's own behaviour on a refused read (it should have said « busy », not « état non lu »): for Réglages, now rarely reachable.
+
+## 16 November 2026 — SOG-0354: the bounds of a flight across the Atlantic
+
+- **Decided** (ergonomics session, 16:06, my question (a)): « une vraie route en dix secondes vaut mieux qu'une proposition en huit » — for a flight that crosses the ocean ONLY: the head route 10 s, a search 12 s, the alternatives and the proposals only if time remains, 20 s in all.
+- **Done**: `plan.crosses_ocean`, `plan.budgets`, `engine.SEARCH_CAP_S`, the field `budget` of the answer and of the view; EIDW → KJFK and EIDW → KBOS now return a ROUTE (K289, red before: no such function; the behaviour measured before: a proposal at 15 s).
+- **Choices of this session** (to relax if wished): the criterion is the longitude test of `nat_layer.hint` (the Atlantic), not the distance; the Pacific and the Indian Ocean keep the short bounds (no NAT layer there); the margin of the head bound is thin (1 to 1.5 s): 12 s would widen it; the RAD retries stop after the head bound for an ocean flight; an attempt of 6.5 s is not begun in the last 6.5 s of the alternatives window when the head route is refused.
+- **Not done**: the screen saying « cherche plus longtemps » (Features SOG, from `budget.ocean`); the skeleton (L2b 3), which stays the way back to 8 s.

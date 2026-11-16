@@ -11068,3 +11068,40 @@ def k287(c):
     got = [engine.date_in(t) for t in ('12 NOV 2026', 'valid from 5-JAN-2027 to 6/FEB/2027', '31 FEB 2026', 'no date here', '12 NOV 2026')]
     info = engine.date_in.cache_info()
     c.eq((got[0].isoformat(), got[1].isoformat(), got[2], got[3], got[4] == got[0], info.hits, info.misses), ('2026-11-12', '2027-01-05', None, None, True, 1, 4), 'date_in gives the same dates as before (the first date of the text; an impossible one or none: None) and a text seen twice is parsed once', what='date_in')
+
+
+@case('K289', 'Route engine, SOG-0354: a flight that crosses the ATLANTIC has longer bounds (10 s for the head route, 12 s for a search, 20 s in all) so that the route that EXISTS is found instead of a fallback proposal; the flights of Europe keep their 5 s / 15 s; a CHECK keeps its 5 s; the answer says it (`budget`: { ocean, head_s, search_s, total_s })',
+      'K', static=True,
+      rule='Ergonomics session 16:06 (decision on the question (a) of AeroDB, L2b 1): measured on the real base, EIDW → KJFK and EIDW → KBOS DO have a route (the NAT E track and the North American Route N260B–N271B, already in the base) that the search finds in about 7 s of search; the head bound of 5 s (SOG-0371) cut it at 6 000 states of the 15 000 it needs and the screen got a fallback proposal. « A real route in ten seconds is worth more than a proposal in eight. » For a flight that crosses the Atlantic ONLY: the head route 10 s, a search 12 s, the alternatives and the fallback proposals only if time remains, 20 s in all. The criterion is decided BEFORE the search (no route known yet): the departure west of 35°W and the arrival east of 15°W, or the reverse (the very test of `nat_layer.hint`); the direct distance alone is not used (a flight of Europe of 1 500 NM keeps its 5 s). The answer carries `budget` so that the screen can say that it searches longer. The case is on the real base when it is there (skipped otherwise).')
+def k289(c):
+    import sys
+    import time
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as P, engine
+    c.eq((P.crosses_ocean({'lon': -6.27}, {'lon': -73.78}), P.crosses_ocean({'lon': -73.78}, {'lon': -6.27}), P.crosses_ocean({'lon': 2.4}, {'lon': 11.0}), P.crosses_ocean({'lon': -6.27}, {'lon': 2.55}), P.crosses_ocean({'lon': -73.78}, {'lon': -118.4}), P.crosses_ocean({'lon': -6.27}, {'lon': -30.0}), P.crosses_ocean({'lon': -25.0}, {'lon': -6.0})),
+         (True, True, False, False, False, False, False), 'the criterion: departure west of 35°W and arrival east of 15°W, or the reverse (Dublin → New York, New York → Dublin); Paris → Munich, Dublin → Paris, New York → Los Angeles, Dublin → mid-Atlantic and an Azores → Europe flight are not', what='criterion')
+    c.eq(P.budgets({'mode': 'calculate'}, True), {'ocean': True, 'head_s': 10.0, 'search_s': 12.0, 'total_s': 20.0}, 'the bounds of a flight that crosses the ocean', what='ocean bounds')
+    c.eq((P.budgets({'mode': 'calculate'}, False), P.budgets({'mode': 'validate'}, True)), ({'ocean': False, 'head_s': 5.0, 'search_s': 6.0, 'total_s': 15.0}, {'ocean': False, 'head_s': 5.0, 'search_s': 6.0, 'total_s': 15.0}), 'a flight that does not cross the ocean keeps 5 s / 6 s / 15 s, and a CHECK (a route entered) keeps its bounds whatever the flight', what='other bounds')
+    data = Path('E:/DEFA/data')
+    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    from route_engine import view, results_cache
+    results_cache.ENABLED = False
+    try:
+        args = {'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-16T12:00', 'proposals': True, 'alternatives': False}
+        t = time.perf_counter()
+        res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        took = time.perf_counter() - t
+        v = view.to_view(res, view.to_request(args))
+        c.eq((v['status'], res['primary'].get('ok'), res['budget']['ocean'], 'NAT' in str(res['primary'].get('route')), took < 20), ('computed', True, True, True, True), 'EIDW → KJFK on the real base: a ROUTE (by a NAT track), not a fallback proposal, in less than 20 s', what='real flight')
+        # the 20 s in all hold, even for the flight that has no route (LFPO → KLAX on this base): the alternatives are not started when they could not end in time, the fallback proposals keep the end of the budget
+        args = {'action': 'compute', 'adep': 'LFPO', 'adest': 'KLAX', 'fl': 370, 'date': '2026-11-16T12:00', 'proposals': True, 'alternatives': True}
+        t = time.perf_counter()
+        res2 = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        took2 = time.perf_counter() - t
+        c.ok(took2 <= 20.5, f'{took2:.1f} s', 'LFPO → KLAX (a flight with no route on this base): the whole answer in 20 s at most (the bound of a flight that crosses the ocean)')
+    finally:
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
