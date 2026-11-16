@@ -3601,45 +3601,13 @@
     "de": "« A → B berechnen »: 39,7 s im Launcher für EGLL → KJFK mit gelesenen NAT-Tracks des Tages",
     "es": "« Calcular A → B »: 39,7 s en el lanzador para EGLL → KJFK con las rutas NAT del día leídas"
    },
-   "test": "Relance d'abord le lanceur (son Python a changé). Carburant, EGLL → KJFK, routes NAT du jour lues : « Calculer A → B ». La réponse arrive en 15 s au plus (12 s environ mesurées). « Copier le diagnostic » : la valeur « launcher » est sous 15 000 ms.",
+   "test": "Relance d'abord le lanceur (son Python a changé). Carburant, EGLL → KJFK, routes NAT du jour lues : « Calculer A → B », prends la proposition, puis « Contrôler » (c'est ce geste qui avait pris 40 s). « Copier le diagnostic » : la valeur « launcher » est sous 15 000 ms. (Une suite est en cours pour que « Contrôler » réponde en 5 s.)",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T08:00:04Z"
+   "delivered": "2026-11-16T08:14:47Z"
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0059",
-   "fiche": "SOG-0354",
-   "app": "maintenance",
-   "question": "Longues routes : les données qui manquent (Canada, routes de la FAA) puis le découpage par tronçons — quand ?",
-   "context": "Ton texte de 12 h 10 demande un vrai algorithme pour les longues routes (SOG-0354). AeroDB a mesuré cinq vols : vers Denver et Los Angeles la route est plausible en 2 s ; vers Boston et New York il n'y a PAS de route (35 s, puis une proposition de repli absurde) ; vers Tampa, des voies basses volées à FL370 sur 1 000 NM. Les causes : la base n'a ni points ni voies du Canada (la sortie de l'océan est un direct de 398 NM), elle ne connaît ni les routes nord-américaines ni les routes préférentielles de la FAA, et le moteur a deux défauts. Ce que je conteste : commencer par l'algorithme — sans le Canada, aucun découpage ne trouve la sortie de l'océan. Je fais corriger les deux défauts tout de suite (restes de SOG-0161). Reste à décider quand viennent les DONNÉES (Canada, routes de la FAA) puis le découpage par portes.",
-   "options": [
-    "Les deux défauts maintenant ; données et découpage après l'alpha 5",
-    "Tout de suite, avant l'alpha 5 : c'est bloquant pour moi",
-    "Les deux défauts maintenant ; données et découpage à la bêta 1",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-14",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0060",
-   "fiche": "SOG-0341",
-   "app": "maintenance",
-   "question": "Registre français réduit à cinq champs : le publier dans ton dépôt privé alors qu'aucune licence n'est trouvée ?",
-   "context": "Tu avais dit oui « après lecture de la licence » (Q-0055). AeroDB l'a cherchée : il n'y en a pas — aucun jeu ouvert du registre, rien sur l'export. Le registre est public par la loi (toute personne peut en obtenir copie), ce qui est un droit d'accès, pas une autorisation écrite de redistribuer. Ce que je conteste : dire oui à ta place. Mon avis : les cinq champs (immatriculation, constructeur, type, numéro de série, aérodrome d'attache) ne portent aucun nom de personne, le constructeur est vidé sous dix aéronefs, et le dépôt est privé — le risque est faible, mais ton dépôt est lu par tous les pilotes du groupe : c'est une diffusion à un groupe, pas un usage sur ton seul poste. Je ne suis pas juriste.",
-   "options": [
-    "Oui : le fichier réduit dans le dépôt privé du groupe",
-    "Non : il reste sur mon poste, comme aujourd'hui",
-    "Attendre : je demande d'abord à la DGAC",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-14",
-   "state": "todo",
-   "recommended": 0
-  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",
@@ -3658,6 +3626,44 @@
    "choice": 0,
    "text": "",
    "at": "2026-11-16T08:09:51Z"
+  },
+  {
+   "id": "Q-0059",
+   "fiche": "SOG-0354",
+   "app": "maintenance",
+   "question": "Longues routes : les données qui manquent (Canada, routes de la FAA) puis le découpage par tronçons — quand ?",
+   "context": "Ton texte de 12 h 10 demande un vrai algorithme pour les longues routes (SOG-0354). AeroDB a mesuré cinq vols : vers Denver et Los Angeles la route est plausible en 2 s ; vers Boston et New York il n'y a PAS de route (35 s, puis une proposition de repli absurde) ; vers Tampa, des voies basses volées à FL370 sur 1 000 NM. Les causes : la base n'a ni points ni voies du Canada (la sortie de l'océan est un direct de 398 NM), elle ne connaît ni les routes nord-américaines ni les routes préférentielles de la FAA, et le moteur a deux défauts. Ce que je conteste : commencer par l'algorithme — sans le Canada, aucun découpage ne trouve la sortie de l'océan. Je fais corriger les deux défauts tout de suite (restes de SOG-0161). Reste à décider quand viennent les DONNÉES (Canada, routes de la FAA) puis le découpage par portes.",
+   "options": [
+    "Les deux défauts maintenant ; données et découpage après l'alpha 5",
+    "Tout de suite, avant l'alpha 5 : c'est bloquant pour moi",
+    "Les deux défauts maintenant ; données et découpage à la bêta 1",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 1,
+   "text": "avec la correction de tracés NATS (actuellement, un DCT est dessiné entrée/sortie, alors que les points sont connus. ça changera totalement le calcul carbu (plus faible en suivant la route nats).",
+   "at": "2026-11-16T08:11:32Z"
+  },
+  {
+   "id": "Q-0060",
+   "fiche": "SOG-0341",
+   "app": "maintenance",
+   "question": "Registre français réduit à cinq champs : le publier dans ton dépôt privé alors qu'aucune licence n'est trouvée ?",
+   "context": "Tu avais dit oui « après lecture de la licence » (Q-0055). AeroDB l'a cherchée : il n'y en a pas — aucun jeu ouvert du registre, rien sur l'export. Le registre est public par la loi (toute personne peut en obtenir copie), ce qui est un droit d'accès, pas une autorisation écrite de redistribuer. Ce que je conteste : dire oui à ta place. Mon avis : les cinq champs (immatriculation, constructeur, type, numéro de série, aérodrome d'attache) ne portent aucun nom de personne, le constructeur est vidé sous dix aéronefs, et le dépôt est privé — le risque est faible, mais ton dépôt est lu par tous les pilotes du groupe : c'est une diffusion à un groupe, pas un usage sur ton seul poste. Je ne suis pas juriste.",
+   "options": [
+    "Oui : le fichier réduit dans le dépôt privé du groupe",
+    "Non : il reste sur mon poste, comme aujourd'hui",
+    "Attendre : je demande d'abord à la DGAC",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-14",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-16T08:12:22Z"
   }
  ]
 }
