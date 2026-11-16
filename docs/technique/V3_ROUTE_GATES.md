@@ -320,6 +320,8 @@ working hours and only on the word of the ergonomics session (the load of the wo
 fixtures becomes a case replayed at every change of the engine. Accepted when: every request returns a route or a
 named reason; none returns a "proposal"; no direct over 200 NM without its reason.
 
+**Done (L5 4, 16 November, case K298)**: `tools/route_matrix.py` and the first run on the real base (11 minutes, 20:04 to 20:15): 144 requests, 110 with a route (median 1.4 s, maximum 2.3 s), 34 « proposals » of 10.6 to 14.5 s (none over 20 s), no direct over 200 NM without a reason outside a FRA zone. The acceptance (« none returns a proposal ») is NOT met: 24 of the 34 are the requests that have EHAM as an end (elevation -10 ft: the vertical profile is judged impossible), 8 are eastbound « out » to EDDF / LFPG, 2 are LEMD → KBOS (RAD LF2096). The table and the five defects are in `frame/aerodb/INTEGRATION.md`; nothing was corrected during the pass. Two departures are made for each pair: the passage at the entry of the ocean inside the window of the message of that direction, and twelve hours away from it.
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |

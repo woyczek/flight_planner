@@ -11820,3 +11820,87 @@ def k296(c):
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
         engine.GRAPH_MIN_S = 0.0
+
+
+@case('K298', 'Route engine, SOG-0354 lot L5 (4): the matrix of flights (`tools/route_matrix.py`) makes its 144 requests from the NAT messages of the base — six aerodromes of Europe × six of North America, both directions, a departure whose PASSAGE at the entry of the ocean is inside the window of the message of that direction and one twelve hours away from it —, a request is answered by a route or a named reason (never a proposal on the bench), each record carries its seconds, NM, proofs, reason and bound, and the reduced table has no route text',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) (the user\'s word « go. », 16 Nov, 20:01). The matrix itself runs on the user\'s real base (first run: 110 routes, 34 proposals, see frame/aerodb/INTEGRATION.md); this case is its REDUCED form on a bench, replayed at every change of the engine: (1) the list of requests on a synthetic base (12 aerodromes, one message west and one east): 144 distinct, 36 pairs × 2 directions × 2 hours, the « in » passage inside the window, the « out » one outside; (2) three requests of the K237 bench through the same `route_matrix.one`: a track in its window, the same flight outside the window (a free route, `origin: random`, proofs created), the other direction (a free route): each « computed », a code of reason empty, no direct of more than 200 NM without a reason, the proofs and the timing in the record; (3) `summary` writes a table without any route text.')
+def k298(c):
+    import contextlib
+    import datetime
+    import gzip
+    import io
+    import json
+    import os
+    import sys
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_matrix as M
+    from route_engine import import_books as I, plan as P, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    where = {'EIDW': (53.42, -6.27), 'EGLL': (51.47, -0.45), 'LFPG': (49.01, 2.55), 'EHAM': (52.31, 4.76), 'EDDF': (50.04, 8.56), 'LEMD': (40.47, -3.56),
+             'KJFK': (40.64, -73.78), 'KBOS': (42.36, -71.01), 'KORD': (41.98, -87.91), 'CYYZ': (43.68, -79.63), 'KLAX': (33.94, -118.41), 'KSFO': (37.62, -122.38)}
+    nodes = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *nodes[a]), 'b': pt(b, *nodes[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        # 1. the list of requests, from a base that has the twelve aerodromes and one message in each direction
+        lists = os.path.join(td, 'lists')
+        os.makedirs(os.path.join(lists, 'sia', 'base', 'xx', '2026-10-29'))
+        os.makedirs(os.path.join(lists, 'sia', 'zones', 'nat'))
+        with open(os.path.join(lists, 'sia', 'base', 'xx', '2026-10-29', 'aeroindex.json'), 'w', encoding='utf-8') as f:
+            json.dump({'data': {'fields': ['icao', 'lat', 'lon'], 'rows': [[k, la, lo] for k, (la, lo) in where.items()]}}, f)
+        win = {'W': ('2026-11-16T11:30:00Z', '2026-11-16T19:00:00Z'), 'E': ('2026-11-17T01:00:00Z', '2026-11-17T08:00:00Z')}
+        with open(os.path.join(lists, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [{'id': 'A', 'west': ['350'], 'east': [], 'from': win['W'][0], 'to': win['W'][1]}, {'id': 'R', 'east': ['350'], 'west': [], 'from': win['E'][0], 'to': win['E'][1]}]}, f)
+        items = M.requests_of(lists)
+        c.eq((len(items), len({x['id'] for x in items}), sorted({(x['sense'], x['slot']) for x in items}), sum(1 for x in items if x['sense'] == 'W' and x['slot'] == 'in')), (144, 144, [('E', 'in'), ('E', 'out'), ('W', 'in'), ('W', 'out')], 36),
+             'the matrix is 144 distinct requests: 6 × 6 pairs, two directions, two hours', what='144')
+        passage = lambda x: datetime.datetime.fromisoformat(x['date']) + datetime.timedelta(hours=x['est_to_entry_h'])
+        inside = lambda x: datetime.datetime.fromisoformat(win[x['sense']][0].replace('Z', '')) <= passage(x) <= datetime.datetime.fromisoformat(win[x['sense']][1].replace('Z', ''))
+        c.eq((all(inside(x) for x in items if x['slot'] == 'in'), any(inside(x) for x in items if x['slot'] == 'out'), items == sorted(items, key=lambda x: (x['date'][:10], x['sense'], x['dep'], x['arr'], x['slot']))), (True, False, True),
+             'the PASSAGE at the entry of the ocean is inside the window of the message of that direction for « in » and outside for « out » (the hour of a NAT route is read at the passage, 16 Nov); the requests are in the order of their day (the two contexts stay warm)', what='windows')
+        # 2. the K237 bench: a track in its window, the same flight outside the window, the other direction
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in nodes.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+        with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [A]}, f)
+        results_cache.ENABLED = False
+        try:
+            recs = [M.one(P, view, {'id': dep + '-' + arr + '-' + slot, 'dep': dep, 'arr': arr, 'sense': sense, 'slot': slot, 'date': date}, data, radz, fra)
+                    for dep, arr, date, slot, sense in (('KJFK', 'EGLL', '2026-11-10T04:30', 'in', 'E'), ('KJFK', 'EGLL', '2026-11-10T16:30', 'out', 'E'), ('EGLL', 'KJFK', '2026-11-10T12:00', 'in', 'W'))]
+        finally:
+            results_cache.ENABLED = True
+        c.eq([(r['status'], r['code'], r['directs_unexplained'], r['hit']) for r in recs], [('computed', '', [], [])] * 3,
+             'each request of the bench is answered by a route — no proposal, no reason code, no direct of more than 200 NM without a reason (the legs of a free route are labelled `random`), no search cut by its bound', what='answers')
+        c.eq([(r['source'], [p[1] for p in r['proofs']]) for r in recs], [('track A', ['computed', 'published', 'computed']), ('random', ['computed', 'created', 'computed']), ('random', ['computed', 'created', 'computed'])],
+             'inside its window the flight takes the track (proofs computed / published / computed); outside the window and in the direction that no track goes, a free route made of created points (proof `created`, said)', what='proofs')
+        c.ok(all(r.get('nm') and r['wall_s'] >= 0 and set(r['timing']) >= {'context_s', 'graph_s', 'total_s'} and r.get('route') for r in recs), str(recs[0].get('timing')), 'the record carries the NM, the seconds, the route text (for the detail file), and the timing of the answer')
+        # 3. the reduced table: no route text
+        out = os.path.join(td, 'out')
+        os.makedirs(out)
+        with open(os.path.join(out, 'detail.jsonl'), 'w', encoding='utf-8') as f:
+            for r in recs:
+                f.write(json.dumps(r, ensure_ascii=False, default=str) + '\n')
+        with contextlib.redirect_stdout(io.StringIO()) as said:
+            M.summary(type('A', (), {'out': out})())
+        table = open(os.path.join(out, 'table.md'), encoding='utf-8').read()
+        c.ok(recs[1]['route'] not in table and 'DCT' not in table and '| KJFK–EGLL | NA→EU |' in table and '3 demandes ; avec route : 3 ; sans route : 0 ; « proposition » : 0' in said.getvalue(), table[:300],
+             'the reduced table has the pair, the direction, the hour, yes / no, seconds, NM and proofs — and NO text of route; the summary counts 3 with a route, none without, no proposal')

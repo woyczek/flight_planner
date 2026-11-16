@@ -33,6 +33,7 @@ PACK = 12
 PAUSE_S = 5.0
 LIMIT_S, HARD_S = 5.0, 20.0
 GROUND_KT = 450.0
+SHORT = {'computed': 'c', 'published': 'p', 'created': 'r', 'direct': 'd'}      # preuves : c calculée, p publiée, r créée (route libre), d direct
 # l'entrée approximative de l'océan, seulement pour calculer l'heure de départ (lat, lon)
 GATE_WEST, GATE_EAST = (55.0, -15.0), (47.0, -50.0)
 
@@ -252,10 +253,10 @@ def summary(args):
             ctx = json.load(f)
     except OSError:
         pass
-    lines = ['| couple | sens | heure | route | s | NM | preuves | raison |', '|---|---|---|---|---:|---:|---|---|']
+    lines = ['| pair | sense | departure (UTC) | route | s | NM | proofs | reason |', '|---|---|---|---|---:|---:|---|---|']
     for r in recs:
-        proof = '+'.join(str(p[1]) for p in r.get('proofs') or []) or '-'
-        lines.append(f"| {r['dep']}–{r['arr']} | {'EU→NA' if r['sense'] == 'W' else 'NA→EU'} | {r['date'][5:10]} {r['date'][11:]}Z {r['slot']} | {'oui' if r.get('status') == 'computed' else 'non' if r.get('status') == 'none' else r.get('status')} | {r['wall_s']:.1f} | {r.get('nm') or '-'} | {proof} | {r.get('code') or ''} |")
+        proof = '+'.join(SHORT.get(str(p[1]), '?') for p in r.get('proofs') or []) or '-'
+        lines.append(f"| {r['dep']}–{r['arr']} | {'EU→NA' if r['sense'] == 'W' else 'NA→EU'} | {r['date'][5:10]} {r['date'][11:]}Z {r['slot']} | {'yes' if r.get('status') == 'computed' else 'no' if r.get('status') == 'none' else r.get('status')} | {r['wall_s']:.1f} | {r.get('nm') or '-'} | {proof} | {r.get('code') or ''} |")
     n = len(recs)
     ok = [r for r in recs if r.get('status') == 'computed']
     none = [r for r in recs if r.get('status') == 'none']
@@ -264,8 +265,8 @@ def summary(args):
     over5 = [r for r in recs if r['wall_s'] > LIMIT_S]
     over20 = [r for r in recs if r['wall_s'] > HARD_S]
     hit = [r for r in recs if r.get('hit')]
-    direct = [r for r in recs if any(not d['fra'] for d in r.get('directs_unexplained') or [])]
-    direct_fra = [r for r in recs if any(d['fra'] for d in r.get('directs_unexplained') or [])]
+    direct = [r for r in ok if any(not d['fra'] for d in r.get('directs_unexplained') or [])]      # seulement les réponses AVEC route
+    direct_fra = [r for r in ok if any(d['fra'] for d in r.get('directs_unexplained') or [])]
     walls = sorted(r['wall_s'] for r in recs)
     p = lambda q: walls[min(len(walls) - 1, int(q * len(walls)))] if walls else 0
     text = [f'{n} demandes ; avec route : {len(ok)} ; sans route : {len(none)} ; « proposition » : {len(prop)} ; en erreur : {len(err)} ; au-delà de {LIMIT_S:.0f} s : {len(over5)} ; au-delà de {HARD_S:.0f} s : {len(over20)} ; borne atteinte (étape coupée) : {len(hit)} ; direct de plus de 200 NM sans raison hors zone FRA : {len(direct)} (dans une zone FRA, où le direct est publié : {len(direct_fra)})',

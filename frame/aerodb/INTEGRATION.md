@@ -823,6 +823,173 @@ The report of a synchronisation pass (`data_sync.run`, kept in `data/local/sync.
 
 **French registry: the reduced file in the private data repository** (SOG-0341, 16 Nov 2026; Q-0060: yes, the user knowing that the licence of the export is NOT confirmed — public by law, no licence of reuse). The upload of the registry export (`base/upload`, recognised by its header) still derives the five-column file under `data/local/registry/fr_immat.json` (SOG-0270, k-anonymity of the maker) and now ALSO publishes it: `registry_fr.publish` writes `data/registry/fr_immat.json` — `{ schema: 1, source, date, columns: [5], rows: [[registration, maker, type, serial, home aerodrome]] }`, the date being the date of the export — REBUILT from the derived file (exactly five text cells per row, bounded to 80 characters and cleaned of control characters, a registration of the expected form, a type present; any other key or cell dropped; the maker of fewer than 10 aircraft recounted at this boundary and left empty), atomic, one file. Gates: `data/` a git repository (else `published: false, notPublished: 'no-repo'`), no merge waiting (`'merge-pending'`: nothing written into `data/`), else the code of a refusal (`read`, `headers`, `rows`, `empty`, `size`; never a content). The answer of the upload carries `published` and `notPublished`. **Synchronisation**: `registry` is in the pool (`data_sync.POOL`) and in `GESTURE_ONLY` (only « Synchroniser » commits a ~3 MB file; a background pass never does); on a conflict (`merge_raw`) the version of THIS workstation wins, no field of the file decides (a date would be written by the pilot who wants to win), no copy in `_conflits/` (a whole table). LIMIT: a doctored file pushed WITHOUT a conflict is taken by everyone until the next export of an honest workstation. `publish` writes nothing through a link: neither the folder, nor the destination, nor the `.tmp` is a link or a junction and the real folder stays under the real `data/` (else `notPublished: 'write'`); the `.tmp` is erased in a `finally`. **For the readers** (the phone, the site in GitHub mode: Features SOG / Réglages): the file comes from a repository every pilot can write to — read it as an UNTRUSTED input (type by content, `columns` equal to the five names, `rows` a list of five-text lists, numbers bounded, text escaped, never trusted for HTML); it is read under the policy `reference` (cap of the frame, 32 MB). The page that says « Registre français non déposé sur ce poste » and its notice « ce poste seulement » are Réglages'. Case K285.
 
+**Route engine, lot L5 (4): the matrix of flights** (SOG-0354, 16 Nov 2026; note § 13.3; case K298). `tools/route_matrix.py` (standard library only) runs 144 requests on the user's REAL base, read only: six aerodromes of Europe (EIDW, EGLL, LFPG, EHAM, EDDF, LEMD) × six of North America (KJFK, KBOS, KORD, CYYZ, KLAX, KSFO), both directions, two departure times. « In » = the estimated time at the entry of the ocean is the middle of the window of the message of that direction (departure = that time minus the estimated flight to the entry at 450 kt: the hour of a NAT route is read at the passage of the entry); « out » = twelve hours before (Europe → America) or after (America → Europe) the same day. One process, one request after the other, low priority, packs of 12 (a pause and a `STOP` file between two packs, resumable), no network (connections refused in the process), results cache off, graph caches emptied before each request (the worst case: the bound of 20 s must hold with a graph to build), the load of the context measured apart (0.90 s and 0.84 s, once per day of flight). The detail of each request, route text included, goes to `data/local/route_matrix/detail.jsonl` (never committed) and one line per request to `progress.txt`; `--summary` writes `table.md` (the table below) and the summary. Nothing was corrected during the pass.
+
+Run of 16 Nov 2026, 20:04 to 20:15, 11 minutes, on the cycle 2026-10-29 and the NAT messages CZQX1117/26 (east, 17 Nov 01:00-08:00) and EGGX1116/26 (west, 16 Nov 11:30-19:00):
+
+- 144 requests: **110 with a route**, 0 « none », **34 « proposal »** (the answer carries no route, only partial proposals), 0 in error.
+- Seconds (requests with a route): median 1.4, 90th percentile 2.1, maximum 2.3, none over 5 s. The 34 proposals take 10.6 to 14.5 s: **34 over 5 s, none over 20 s**; 6 requests hit the bound of a search (all « budget »).
+- Sources of the 110 routes: 62 free routes created (`random`), 48 NAT tracks (E 18, V 21, Y 5, T 4). Proofs: 62 `c+r+c`, 48 `c+p+c`.
+- Directs over 200 NM: none without a reason outside a FRA zone; 50 routes carry a DCT of more than 200 NM inside a FRA zone, where the direct is published (not a defect; counted).
+- Longest route: LEMD → KSFO 7 513 NM, 2.0 s.
+
+**Defects, listed and not corrected** (to be ordered by the ergonomics session):
+
+1. **Every request that has EHAM as an end is a « proposal » (24 of the 34).** Cause found and checked: the base has EHAM at an elevation of **−10 ft** and the vertical profile is judged infeasible (« Profil vertical impossible avec les altitudes AD… », an ERREUR of the control): the route itself is found (EHAM → KJFK at 13:30: 3 408 NM, NATE), and with the elevation set to 0 the same request has no error. The engine then retries at FL350, 330, 310… and every attempt gives the same error, 10 to 14.5 s in all. Any aerodrome below sea level is concerned.
+2. **Eastbound « out » to EDDF and LFPG: 8 « proposals » (`no_chain`, 12-13.5 s)**: all the east tracks are set aside by the hour (said), the free route is created for the other destinations but its three tries fail for these two; EGLL, EIDW and LEMD answer. Not examined further.
+3. **LEMD → KBOS westbound, 2 « proposals »**: a free route is created (REGHI 48/10 50/20 50/30 49/40 48/50 NICSO) and the control reports RAD LF2096 (Annex 2B, line 4948, « COMPULSORY FOR TFC ») as an ERREUR: the RAD rule is not examined; it is the same one as in L5 2 bis.
+4. **The answer's `sections` and `timing.sections` describe the LAST attempt** (after the retries at lower levels: FL290 for a request at FL370), not the requested level: the reason of the first failure is lost, and the screen would say « FL270 non proposé vers l'est » for a flight at FL370. The reason code of the table is the one of the last attempt for the same reason (`no_valid_track` for the EHAM westbound, which in fact have a route and an ERREUR).
+5. **The retries at lower levels** (up to six attempts) are what takes the 10-14 s of a request that has no route: when the first attempt failed for a reason that is not the level (a control error, a track set aside by the hour), the next ones cannot do better.
+
+Table (UTC time of departure: month-day hour; « in » / « out » as above; proofs: c computed, p published, r created, d direct):
+
+| pair | sense | departure (UTC) | route | s | NM | proofs | reason |
+|---|---|---|---|---:|---:|---|---|
+| KLAX–EDDF | NA→EU | 11-16 21:30Z in | yes | 1.9 | 5633.3 | c+p+c |  |
+| KLAX–EGLL | NA→EU | 11-16 21:30Z in | yes | 1.1 | 5314.9 | c+p+c |  |
+| KLAX–EHAM | NA→EU | 11-16 21:30Z in | proposal | 14.5 | - | - | budget |
+| KLAX–EIDW | NA→EU | 11-16 21:30Z in | yes | 2.0 | 6382.4 | c+p+c |  |
+| KLAX–LEMD | NA→EU | 11-16 21:30Z in | yes | 1.4 | 7129.5 | c+p+c |  |
+| KLAX–LFPG | NA→EU | 11-16 21:30Z in | yes | 1.1 | 5371.4 | c+p+c |  |
+| KSFO–EDDF | NA→EU | 11-16 21:30Z in | yes | 1.5 | 6982.0 | c+p+c |  |
+| KSFO–EGLL | NA→EU | 11-16 21:30Z in | yes | 1.2 | 6638.1 | c+p+c |  |
+| KSFO–EHAM | NA→EU | 11-16 21:30Z in | proposal | 13.9 | - | - | budget |
+| KSFO–EIDW | NA→EU | 11-16 21:30Z in | yes | 2.1 | 6498.8 | c+p+c |  |
+| KSFO–LEMD | NA→EU | 11-16 21:30Z in | yes | 1.1 | 7230.6 | c+p+c |  |
+| KSFO–LFPG | NA→EU | 11-16 21:30Z in | yes | 1.1 | 5472.4 | c+p+c |  |
+| EDDF–CYYZ | EU→NA | 11-16 13:10Z in | yes | 2.2 | 3757.7 | c+p+c |  |
+| EDDF–CYYZ | EU→NA | 11-16 01:10Z out | yes | 2.0 | 3755.8 | c+r+c |  |
+| EDDF–KBOS | EU→NA | 11-16 13:10Z in | yes | 2.1 | 3418.3 | c+p+c |  |
+| EDDF–KBOS | EU→NA | 11-16 01:10Z out | yes | 1.9 | 3234.7 | c+r+c |  |
+| EDDF–KJFK | EU→NA | 11-16 13:10Z in | yes | 2.1 | 3590.9 | c+p+c |  |
+| EDDF–KJFK | EU→NA | 11-16 01:10Z out | yes | 2.0 | 3407.3 | c+r+c |  |
+| EDDF–KLAX | EU→NA | 11-16 13:10Z in | yes | 2.3 | 5661.0 | c+p+c |  |
+| EDDF–KLAX | EU→NA | 11-16 01:10Z out | yes | 2.0 | 5751.5 | c+r+c |  |
+| EDDF–KORD | EU→NA | 11-16 13:10Z in | yes | 2.3 | 4154.9 | c+p+c |  |
+| EDDF–KORD | EU→NA | 11-16 01:10Z out | yes | 2.1 | 4195.8 | c+r+c |  |
+| EDDF–KSFO | EU→NA | 11-16 13:10Z in | yes | 2.3 | 5749.5 | c+p+c |  |
+| EDDF–KSFO | EU→NA | 11-16 01:10Z out | yes | 2.0 | 5840.0 | c+r+c |  |
+| EGLL–CYYZ | EU→NA | 11-16 14:00Z in | yes | 1.7 | 3397.9 | c+p+c |  |
+| EGLL–CYYZ | EU→NA | 11-16 02:00Z out | yes | 1.3 | 3416.0 | c+r+c |  |
+| EGLL–KBOS | EU→NA | 11-16 14:00Z in | yes | 1.8 | 3058.6 | c+p+c |  |
+| EGLL–KBOS | EU→NA | 11-16 02:00Z out | yes | 1.5 | 2874.9 | c+r+c |  |
+| EGLL–KJFK | EU→NA | 11-16 14:00Z in | yes | 1.7 | 3231.2 | c+p+c |  |
+| EGLL–KJFK | EU→NA | 11-16 02:00Z out | yes | 1.2 | 3047.5 | c+r+c |  |
+| EGLL–KLAX | EU→NA | 11-16 14:00Z in | yes | 1.7 | 5301.2 | c+p+c |  |
+| EGLL–KLAX | EU→NA | 11-16 02:00Z out | yes | 1.1 | 5391.8 | c+r+c |  |
+| EGLL–KORD | EU→NA | 11-16 14:00Z in | yes | 1.7 | 3795.1 | c+p+c |  |
+| EGLL–KORD | EU→NA | 11-16 02:00Z out | yes | 1.3 | 3834.2 | c+r+c |  |
+| EGLL–KSFO | EU→NA | 11-16 14:00Z in | yes | 1.6 | 5389.7 | c+p+c |  |
+| EGLL–KSFO | EU→NA | 11-16 02:00Z out | yes | 1.2 | 5480.2 | c+r+c |  |
+| EHAM–CYYZ | EU→NA | 11-16 13:30Z in | proposal | 12.3 | 3574.6 | c+r+c | no_valid_track |
+| EHAM–CYYZ | EU→NA | 11-16 01:30Z out | proposal | 12.5 | 3587.0 | c+r+c | no_valid_track |
+| EHAM–KBOS | EU→NA | 11-16 13:30Z in | proposal | 12.4 | 3235.2 | c+r+c | no_valid_track |
+| EHAM–KBOS | EU→NA | 11-16 01:30Z out | proposal | 10.6 | 3051.6 | c+r+c | no_valid_track |
+| EHAM–KJFK | EU→NA | 11-16 13:30Z in | proposal | 12.4 | 3407.8 | c+r+c | no_valid_track |
+| EHAM–KJFK | EU→NA | 11-16 01:30Z out | proposal | 11.0 | 3224.2 | c+r+c | no_valid_track |
+| EHAM–KLAX | EU→NA | 11-16 13:30Z in | proposal | 12.5 | 5477.9 | c+r+c | no_valid_track |
+| EHAM–KLAX | EU→NA | 11-16 01:30Z out | proposal | 11.3 | 5562.9 | c+r+c | no_valid_track |
+| EHAM–KORD | EU→NA | 11-16 13:30Z in | proposal | 12.2 | 3971.8 | c+r+c | no_valid_track |
+| EHAM–KORD | EU→NA | 11-16 01:30Z out | proposal | 10.9 | 4005.2 | c+r+c | no_valid_track |
+| EHAM–KSFO | EU→NA | 11-16 13:30Z in | proposal | 12.0 | 5566.4 | c+r+c | no_valid_track |
+| EHAM–KSFO | EU→NA | 11-16 01:30Z out | proposal | 11.4 | 5651.4 | c+r+c | no_valid_track |
+| EIDW–CYYZ | EU→NA | 11-16 14:30Z in | yes | 0.9 | 3189.4 | c+p+c |  |
+| EIDW–CYYZ | EU→NA | 11-16 02:30Z out | yes | 1.1 | 3199.7 | c+r+c |  |
+| EIDW–KBOS | EU→NA | 11-16 14:30Z in | yes | 0.9 | 2850.1 | c+p+c |  |
+| EIDW–KBOS | EU→NA | 11-16 02:30Z out | yes | 1.0 | 2666.4 | c+r+c |  |
+| EIDW–KJFK | EU→NA | 11-16 14:30Z in | yes | 1.0 | 3022.7 | c+p+c |  |
+| EIDW–KJFK | EU→NA | 11-16 02:30Z out | yes | 1.0 | 2839.0 | c+r+c |  |
+| EIDW–KLAX | EU→NA | 11-16 14:30Z in | yes | 0.9 | 5095.2 | c+p+c |  |
+| EIDW–KLAX | EU→NA | 11-16 02:30Z out | yes | 1.1 | 5164.2 | c+r+c |  |
+| EIDW–KORD | EU→NA | 11-16 14:30Z in | yes | 0.9 | 3589.1 | c+p+c |  |
+| EIDW–KORD | EU→NA | 11-16 02:30Z out | yes | 1.0 | 3657.7 | c+r+c |  |
+| EIDW–KSFO | EU→NA | 11-16 14:30Z in | yes | 1.0 | 5183.7 | c+p+c |  |
+| EIDW–KSFO | EU→NA | 11-16 02:30Z out | yes | 1.0 | 5252.7 | c+r+c |  |
+| LEMD–CYYZ | EU→NA | 11-16 13:00Z in | yes | 1.9 | 5400.1 | c+r+c |  |
+| LEMD–CYYZ | EU→NA | 11-16 01:00Z out | yes | 1.6 | 5400.1 | c+r+c |  |
+| LEMD–KBOS | EU→NA | 11-16 13:00Z in | proposal | 10.8 | 3227.7 | c+r+c | no_valid_track |
+| LEMD–KBOS | EU→NA | 11-16 01:00Z out | proposal | 12.2 | 3227.7 | c+r+c | no_valid_track |
+| LEMD–KJFK | EU→NA | 11-16 13:00Z in | yes | 1.9 | 4984.9 | c+r+c |  |
+| LEMD–KJFK | EU→NA | 11-16 01:00Z out | yes | 1.4 | 4984.9 | c+r+c |  |
+| LEMD–KLAX | EU→NA | 11-16 13:00Z in | yes | 1.8 | 7424.2 | c+r+c |  |
+| LEMD–KLAX | EU→NA | 11-16 01:00Z out | yes | 1.5 | 7424.2 | c+r+c |  |
+| LEMD–KORD | EU→NA | 11-16 13:00Z in | yes | 1.9 | 5797.3 | c+r+c |  |
+| LEMD–KORD | EU→NA | 11-16 01:00Z out | yes | 1.6 | 5797.3 | c+r+c |  |
+| LEMD–KSFO | EU→NA | 11-16 13:00Z in | yes | 1.7 | 7512.7 | c+r+c |  |
+| LEMD–KSFO | EU→NA | 11-16 01:00Z out | yes | 1.5 | 7512.7 | c+r+c |  |
+| LFPG–CYYZ | EU→NA | 11-16 13:30Z in | yes | 1.9 | 3700.7 | c+r+c |  |
+| LFPG–CYYZ | EU→NA | 11-16 01:30Z out | yes | 1.6 | 3700.7 | c+r+c |  |
+| LFPG–KBOS | EU→NA | 11-16 13:30Z in | yes | 1.6 | 3069.4 | c+r+c |  |
+| LFPG–KBOS | EU→NA | 11-16 01:30Z out | yes | 1.2 | 3069.4 | c+r+c |  |
+| LFPG–KJFK | EU→NA | 11-16 13:30Z in | yes | 1.6 | 3242.1 | c+r+c |  |
+| LFPG–KJFK | EU→NA | 11-16 01:30Z out | yes | 1.3 | 3242.1 | c+r+c |  |
+| LFPG–KLAX | EU→NA | 11-16 13:30Z in | yes | 2.0 | 5630.1 | c+r+c |  |
+| LFPG–KLAX | EU→NA | 11-16 01:30Z out | yes | 1.7 | 5630.1 | c+r+c |  |
+| LFPG–KORD | EU→NA | 11-16 13:30Z in | yes | 2.0 | 4042.9 | c+r+c |  |
+| LFPG–KORD | EU→NA | 11-16 01:30Z out | yes | 1.5 | 4042.9 | c+r+c |  |
+| LFPG–KSFO | EU→NA | 11-16 13:30Z in | yes | 1.9 | 5751.2 | c+r+c |  |
+| LFPG–KSFO | EU→NA | 11-16 01:30Z out | yes | 1.8 | 5751.2 | c+r+c |  |
+| CYYZ–EDDF | NA→EU | 11-17 01:40Z in | yes | 1.9 | 3741.1 | c+p+c |  |
+| CYYZ–EDDF | NA→EU | 11-17 13:40Z out | proposal | 13.2 | - | - | no_chain |
+| CYYZ–EGLL | NA→EU | 11-17 01:40Z in | yes | 1.2 | 3422.7 | c+p+c |  |
+| CYYZ–EGLL | NA→EU | 11-17 13:40Z out | yes | 1.4 | 3404.2 | c+r+c |  |
+| CYYZ–EHAM | NA→EU | 11-17 01:40Z in | proposal | 13.2 | - | - | budget |
+| CYYZ–EHAM | NA→EU | 11-17 13:40Z out | proposal | 12.2 | - | - | no_chain |
+| CYYZ–EIDW | NA→EU | 11-17 01:40Z in | yes | 1.9 | 3301.8 | c+p+c |  |
+| CYYZ–EIDW | NA→EU | 11-17 13:40Z out | yes | 1.0 | 3255.3 | c+r+c |  |
+| CYYZ–LEMD | NA→EU | 11-17 01:40Z in | yes | 1.3 | 5237.4 | c+p+c |  |
+| CYYZ–LEMD | NA→EU | 11-17 13:40Z out | yes | 1.2 | 5151.7 | c+r+c |  |
+| CYYZ–LFPG | NA→EU | 11-17 01:40Z in | yes | 1.1 | 3479.2 | c+p+c |  |
+| CYYZ–LFPG | NA→EU | 11-17 13:40Z out | proposal | 12.6 | - | - | no_chain |
+| KBOS–EDDF | NA→EU | 11-17 02:20Z in | yes | 1.6 | 3348.7 | c+p+c |  |
+| KBOS–EDDF | NA→EU | 11-17 14:20Z out | yes | 1.7 | 3244.6 | c+r+c |  |
+| KBOS–EGLL | NA→EU | 11-17 02:20Z in | yes | 1.2 | 3030.3 | c+p+c |  |
+| KBOS–EGLL | NA→EU | 11-17 14:20Z out | yes | 1.3 | 3086.6 | c+r+c |  |
+| KBOS–EHAM | NA→EU | 11-17 02:20Z in | proposal | 13.7 | - | - | budget |
+| KBOS–EHAM | NA→EU | 11-17 14:20Z out | proposal | 11.9 | - | - | no_chain |
+| KBOS–EIDW | NA→EU | 11-17 02:20Z in | yes | 2.1 | 2914.4 | c+p+c |  |
+| KBOS–EIDW | NA→EU | 11-17 14:20Z out | yes | 1.2 | 2723.9 | c+r+c |  |
+| KBOS–LEMD | NA→EU | 11-17 02:20Z in | yes | 1.2 | 4844.9 | c+p+c |  |
+| KBOS–LEMD | NA→EU | 11-17 14:20Z out | yes | 1.3 | 4809.5 | c+r+c |  |
+| KBOS–LFPG | NA→EU | 11-17 02:20Z in | yes | 1.2 | 3086.8 | c+p+c |  |
+| KBOS–LFPG | NA→EU | 11-17 14:20Z out | yes | 1.3 | 3104.0 | c+r+c |  |
+| KJFK–EDDF | NA→EU | 11-17 02:00Z in | yes | 1.6 | 3672.0 | c+p+c |  |
+| KJFK–EDDF | NA→EU | 11-17 14:00Z out | yes | 1.5 | 3522.0 | c+r+c |  |
+| KJFK–EGLL | NA→EU | 11-17 02:00Z in | yes | 1.1 | 3353.7 | c+p+c |  |
+| KJFK–EGLL | NA→EU | 11-17 14:00Z out | yes | 1.2 | 3368.3 | c+r+c |  |
+| KJFK–EHAM | NA→EU | 11-17 02:00Z in | proposal | 14.4 | - | - | budget |
+| KJFK–EHAM | NA→EU | 11-17 14:00Z out | proposal | 12.1 | - | - | no_chain |
+| KJFK–EIDW | NA→EU | 11-17 02:00Z in | yes | 2.0 | 3237.8 | c+p+c |  |
+| KJFK–EIDW | NA→EU | 11-17 14:00Z out | yes | 1.0 | 3001.3 | c+r+c |  |
+| KJFK–LEMD | NA→EU | 11-17 02:00Z in | yes | 1.3 | 5279.3 | c+p+c |  |
+| KJFK–LEMD | NA→EU | 11-17 14:00Z out | yes | 1.1 | 5078.3 | c+r+c |  |
+| KJFK–LFPG | NA→EU | 11-17 02:00Z in | yes | 1.1 | 3410.2 | c+p+c |  |
+| KJFK–LFPG | NA→EU | 11-17 14:00Z out | yes | 1.4 | 3375.7 | c+r+c |  |
+| KLAX–EDDF | NA→EU | 11-17 09:30Z out | proposal | 13.6 | - | - | no_chain |
+| KLAX–EGLL | NA→EU | 11-17 09:30Z out | yes | 1.3 | 5303.1 | c+r+c |  |
+| KLAX–EHAM | NA→EU | 11-17 09:30Z out | proposal | 12.9 | - | - | no_chain |
+| KLAX–EIDW | NA→EU | 11-17 09:30Z out | yes | 1.2 | 5154.3 | c+r+c |  |
+| KLAX–LEMD | NA→EU | 11-17 09:30Z out | yes | 1.2 | 7299.0 | c+r+c |  |
+| KLAX–LFPG | NA→EU | 11-17 09:30Z out | proposal | 12.7 | - | - | no_chain |
+| KORD–EDDF | NA→EU | 11-17 00:50Z in | yes | 1.7 | 4126.6 | c+p+c |  |
+| KORD–EDDF | NA→EU | 11-17 12:50Z out | proposal | 13.5 | - | - | no_chain |
+| KORD–EGLL | NA→EU | 11-17 00:50Z in | yes | 1.2 | 3808.2 | c+p+c |  |
+| KORD–EGLL | NA→EU | 11-17 12:50Z out | yes | 1.3 | 3796.4 | c+r+c |  |
+| KORD–EHAM | NA→EU | 11-17 00:50Z in | proposal | 13.6 | - | - | budget |
+| KORD–EHAM | NA→EU | 11-17 12:50Z out | proposal | 12.7 | - | - | no_chain |
+| KORD–EIDW | NA→EU | 11-17 00:50Z in | yes | 2.1 | 4908.4 | c+p+c |  |
+| KORD–EIDW | NA→EU | 11-17 12:50Z out | yes | 1.2 | 3647.6 | c+r+c |  |
+| KORD–LEMD | NA→EU | 11-17 00:50Z in | yes | 1.2 | 5622.9 | c+p+c |  |
+| KORD–LEMD | NA→EU | 11-17 12:50Z out | yes | 1.3 | 5792.3 | c+r+c |  |
+| KORD–LFPG | NA→EU | 11-17 00:50Z in | yes | 1.2 | 3864.8 | c+p+c |  |
+| KORD–LFPG | NA→EU | 11-17 12:50Z out | proposal | 11.6 | - | - | no_chain |
+| KSFO–EDDF | NA→EU | 11-17 09:30Z out | proposal | 13.1 | - | - | no_chain |
+| KSFO–EGLL | NA→EU | 11-17 09:30Z out | yes | 1.2 | 5404.1 | c+r+c |  |
+| KSFO–EHAM | NA→EU | 11-17 09:30Z out | proposal | 12.3 | - | - | no_chain |
+| KSFO–EIDW | NA→EU | 11-17 09:30Z out | yes | 1.2 | 5255.3 | c+r+c |  |
+| KSFO–LEMD | NA→EU | 11-17 09:30Z out | yes | 1.2 | 7400.0 | c+r+c |  |
+| KSFO–LFPG | NA→EU | 11-17 09:30Z out | proposal | 13.5 | - | - | no_chain |
+
 **Route engine, lot L5 (3): `timing`, the bounds, the default** (SOG-0354, 16 Nov 2026; note § 13.4; case K296). `plan.plan` returns `timing` (and `view.to_view` carries it): `{ context_s, tracks_s (nav.nat['seconds']), graph_s (nav.graph_seconds: 0 when the graph is kept), skeleton_s (sections.solve: the time outside the searches), sections: sections_info['steps'], total_s }`; a step: `{ name, seconds, bound_s, hit, track?, shared?, goals?, reached? }` (`sections._step`, `sections._bound`: min(SEARCH_CAP_S, DEADLINE − now)). `engine.GRAPH_MIN_S` (module variable, 5.0 for an oceanic flight, 0 otherwise, posted by every plan): `Nav.routing_graph` refuses to BUILD (not to read the kept graph) when `perf_counter() + GRAPH_MIN_S > DEADLINE`. `plan.plan`: `nav.sections = bool(request['sections'])` when the request has the key, else `crossing and mode == 'calculate'`.
 
 **Route engine, lot L5 (1 bis): one search to all the entries** (SOG-0354, 16 Nov 2026; note § 13; case K295). `Nav.search(g, start, end, …, goals=[nodes])` → `{ goal: { path, cost, band } }` (`end` ignored, no waypoints; `last_search.goals` when all are reached, `truncated` when the budget cut: the partial answer is returned, no exception). `sections._europe(nav, g, start, entries, info)` makes it; `info['europe'] = { goals, reached, expanded, seconds, truncated }`; `sections._resolve(…, first=found[entry])` starts its first section from it (its entry in `sections[]` carries `shared: true` and the states / seconds of the one search). The skeleton bound of a track is now the REAL European cost + the lower bound of the America side + the cost of the track; the hour at the entry is checked with the real distance before anything is resolved; a track whose entry is not reached is set aside (`network`). Measured: see the note § 13 « Done (L5 1 bis) ».
