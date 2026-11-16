@@ -12301,7 +12301,7 @@ def k303(c):
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
 
 
-@case('K304', 'Route engine, SOG-0354 lot L5 (4) d1: the free route makes ONE European search to ALL its candidate entries (`need = 2`: it stops as soon as two are reached, whatever they are) instead of one search per pack of five — a goal that cannot be reached no longer makes the search go through the whole space —, the order by lower bound only chooses the pairs, and another search is made only when none of the entries reached gave a chain; EIDW « out » (Dublin, 6 requests of the matrix, 6.2 to 8.2 s) answers in 1.4 to 2.5 s',
+@case('K304', 'Route engine, SOG-0354 lot L5 (4) d1: the free route makes ONE European search to ALL its candidate entries (`need = 2`: it stops as soon as two are reached, whatever they are) instead of one search per pack of five — a goal that cannot be reached no longer makes the search go through the whole space —, the order by lower bound only chooses the pairs, and (d1 bis, K306) another search is made to the entries that remain while their lower bound is below the best chain; EIDW « out » (Dublin, 6 requests of the matrix, 6.2 to 8.2 s) answers in 1.4 to 2.5 s',
       'K', static=True,
       rule='SOG-0354 L5 (4) d1 (second run of the matrix, 17 requests over 5 s: EIDW → CYYZ / KBOS / KJFK / KLAX / KORD / KSFO « out », one European search of 4.7 to 6.6 s; ergonomics session: « une recherche dont tous les buts sont inatteignables ne doit plus parcourir tout l\'espace. UNE recherche d\'Europe vers TOUTES les entrées candidates (need = 2) ; l\'ordre par proximité ne sert qu\'au choix des couples »). Before: the entries were searched by packs of five, the nearest to the path first; a pack with ONE reachable entry never met `need = 2` and made the search go through all the reachable states (4.7 to 6.6 s from Dublin). Now one search to all the candidates: it stops at two reached; when fewer than two are reached the whole reachable space has been seen, the others cannot be reached. A second search (to the entries that were not reached) is made only if no chain succeeded. Measured on the real base, read only: EIDW → KJFK « out » 7.4 → 2.1 s (one search, 13 goals, 2 reached, 1 197 states, 0.16 s; the same route DOGAL … NICSO), EIDW → CYYZ 7.5 → 2.5 s, EIDW → KLAX 7.5 → 1.4 s, LFPG → KLAX 6.3 → 3.4 s, EDDF → KSFO 5.2 → 2.3 s, KBOS → EDDF « out » 5.0 → 4.1 s.')
 def k304(c):
@@ -12369,7 +12369,7 @@ def k304(c):
     nav2 = Fake(ends2)
     S.solve(nav2, g, 'DEP', 'ARR')
     f2 = nav2.sections_info['free']
-    c.eq((len(nav2.calls), f2['ok'], f2['entry'] in ('EB', 'EC'), f2['searches']), (1, True, True, 1), 'two entries reached by the first search (EB, EC): the free route is made among them and no second search is made', what='two reached')
+    c.eq((len(nav2.calls), f2['ok'], f2['entry'] in ('EB', 'EC'), f2['searches']), (2, True, True, 2), 'two entries reached by the first search (EB, EC): the free route is made among them; the seven that remain have a lower bound below its chain, so ONE more search is made to them (d1 bis, K306): it reaches none (fewer than two: the others cannot be reached) and the loop ends', what='two reached')
     # none reached: the answer says so (one search, no other)
     nav3 = Fake({'T1': ['EA1', 'XA'], 'T2': ['EA2', 'XA'], 'T3': ['EA3', 'XA'], 'T4': ['EA4', 'XA'], 'T5': ['EA5', 'XA'], 'T6': ['EA6', 'XA'], 'T7': ['EA7', 'XA']})
     c.eq((S.solve(nav3, g, 'DEP', 'ARR'), len(nav3.calls), nav3.sections_info['free']['reason'] == F.NO_REACH), (None, 1, True), 'no entry reached: ONE search (not one per pack), the reason is « aucune entrée océanique du jour n\'est atteignable »', what='none reached')
@@ -12423,3 +12423,74 @@ def k305(c):
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+
+
+@case('K306', 'Route engine, SOG-0354 lot L5 (4) d1 bis: after the first European search (which stops at two entries reached), the free route makes ANOTHER search to the entries that remain as long as the lower bound of one of them is BELOW the best chain found (in NM: the great circle is an exact lower bound) and the time of the section lasts; the shortest chain wins; the answer says how many searches (`sections.free.searches`) — KBOS → EDDF « out » is back to 3 244.6 NM (d1 had made it 170.6 NM longer)',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) d1 bis (ergonomics session, 21:40: « une route plus longue qu\'avant, sans le dire, ne part pas »). d1 stopped at the first search (two entries reached, whatever they are): KBOS → EDDF « hors fenêtre » 3 244.6 → 3 415.2 NM (+5.3 %), three flights from Paris +3.1 NM. Now: while the lower bound of an entry that remains (the great circle to the entry + the free route + the great circle from the exit: an exact lower bound in NM) is below the best chain found, another search, to the entries that remain, at most EXTRA_SEARCH_S (0.15 s: a search whose goals cannot be reached would go through the whole space), the whole free route at most FREE_S (3 s) or the bound of the phase; the chains are compared by their distance in NM (what the user sees; the engine\'s cost prices the free legs at the cheapest rate and chose routes 5 % longer). Measured on the real base, read only, the 17 requests of the matrix over 5 s: all computed, the longest 4.66 s (LEMD → KORD « in » 3.97 s; KBOS → EDDF « out » 4.66 s); the distances: 13 identical to the second run, LFPG → KLAX 5 312.1 → 5 293.8 and LFPG → KORD 3 806.0 → 3 787.7 (shorter), KBOS → EDDF 3 244.6 (as before d1).')
+def k306(c):
+    import heapq
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as F, sections as S
+    pos = {'DEP': (52.0, -6.0), 'ARR': (41.0, -74.0), 'H1': (60.5, -8.0), 'H2': (44.0, -70.0), 'H3': (51.5, -10.0), 'XA': (47.0, -60.0), 'EB': (60.0, -15.0), 'EC': (60.2, -14.0), 'ED': (50.5, -30.0)}
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in pos.items()}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+    for a, b in (('DEP', 'H1'), ('DEP', 'H3'), ('H2', 'ARR')):
+        g.setdefault(a, []).append((b, {'a': a, 'b': b, 'route': 'UL', 'nm': engine.nm(nodes[a], nodes[b])}))
+
+    class Fake:
+        def __init__(self, ends):
+            self.nodes, self.nat, self.last_search, self.sections_info = dict(nodes), {'ends': ends}, None, None
+            self.depart, self.nat_rejected, self._nat_high = None, frozenset(), {'H1', 'H2', 'H3'}
+            self.calls = []
+
+        def add(self, p):
+            self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
+            return p['id']
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+            best, q, prev = {s: 0.0}, [(0.0, s)], {}
+            while q:
+                d, u = heapq.heappop(q)
+                if not goals and u == e:
+                    break
+                if d > best[u]:
+                    continue
+                for v, ed in graph.get(u, ()):
+                    if d + ed['nm'] < best.get(v, 1e18):
+                        best[v] = d + ed['nm']
+                        prev[v] = (u, v, ed)
+                        heapq.heappush(q, (best[v], v))
+
+            def way(x):
+                legs, node = [], x
+                while node != s:
+                    legs.append(prev[node])
+                    node = prev[node][0]
+                return list(reversed(legs))
+            self.last_search = {'expanded': len(best), 'seconds': 0.0, 'found': True}
+            if goals:
+                self.calls.append((tuple(goals), need))
+                found = sorted((x for x in goals if x in best), key=lambda x: best[x])[:need or len(goals)]      # the search stops at `need` goals reached: the two CHEAPEST
+                return {x: {'path': way(x), 'cost': best[x], 'band': (36000, 36000)} for x in found}
+            if e not in best:
+                return None
+            self.last_search.update(cost=best[e], band=band)
+            return way(e)
+    # EB and EC are near the departure (cheap to reach: the first search stops on them) but far from the path; ED is farther to reach (a link of 750 NM) and on the path: the shortest chain passes by ED
+    ends = {'T1': ['EB', 'XA'], 'T2': ['EC', 'XA'], 'T3': ['ED', 'XA']}
+    nav = Fake(ends)
+    S.solve(nav, g, 'DEP', 'ARR')
+    free = nav.sections_info['free']
+    c.eq(([(len(goals), need) for goals, need in nav.calls], free['ok'], free['entry'], free['searches'], free['stopped']), ([(3, F.NEED), (1, F.NEED)], True, 'ED', 2, 'bound'),
+         'the first search (three goals, need = 2) reaches EB and EC, the cheapest to reach; the lower bound of ED is below their chains: ONE more search, to ED; the chain by ED is the shortest and wins (red before: EB or EC, the first search only); it stops on the bound', what='second search')
+    # the entries that remain cannot be shorter: no second search
+    far = {'T1': ['EB', 'XA'], 'T2': ['EC', 'XA']}
+    nav2 = Fake(far)
+    S.solve(nav2, g, 'DEP', 'ARR')
+    f2 = nav2.sections_info['free']
+    c.eq((len(nav2.calls), f2['searches'], f2['entry'] in ('EB', 'EC')), (1, 1, True), 'with no entry that remains: ONE search, no other', what='no other search')
+    src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
+    c.ok("total_nm" in src and 'EXTRA_SEARCH_S' in src and 'nm_of(' in src, 'free_route.py', 'the chains are compared in NM, and an extra search has its own cap')

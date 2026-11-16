@@ -336,6 +336,8 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 
 **Done (L5 4 d2 A, 16 November, case K305)**: a RAD finding on a rule whose target is a POINT excludes the point, not only the segments of the route found: LEMD → KBOS needs one RAD retry instead of two (7.4 → 4.2 s).
 
+**Done (L5 4 d1 bis, 16 November, case K306)**: the free route makes another European search to the entries that remain while their lower bound (NM) is below the best chain, within 3 s, and keeps the SHORTEST chain: KBOS → EDDF « out » is back to 3 244.6 NM (d1 alone: 3 415.2), the 17 requests of the matrix over 5 s all answer in 4.66 s at most.
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |

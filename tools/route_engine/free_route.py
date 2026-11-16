@@ -15,6 +15,7 @@ STEP_LON = 10          # un point par 10° de longitude
 LOW_FT, HIGH_FT = 28500, 60000      # le plancher de l'espace RVSM / HLA et le plafond : une route libre est une route de croisière
 NEED = 2               # la recherche vers un paquet d'entrées s'arrête dès que deux sont atteintes (une entrée inatteignable fait sinon parcourir tout l'espace des états)
 FREE_S = 3.0           # le temps de la section (§ 13.4 : 3 s) : les couples (entrée, sortie) sont essayés dans l'ordre de leur minorant, SANS nombre fixe (SOG-0354 L5 4, défaut 3), jusqu'à ce que le minorant du suivant dépasse le meilleur coût trouvé, ou que ce temps (ou la borne de la phase) soit épuisé
+EXTRA_SEARCH_S = 0.15   # d1 bis : une recherche de plus (vers les entrées restantes) ne dure pas plus : quand ses buts ne sont pas atteignables elle parcourrait tout l'espace (4,5 s depuis Dublin) ; coupée, elle rend ce qu'elle a atteint
 LABEL = 'route libre, créée'
 NO_REACH = 'aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau'
 NO_CHAIN = 'aucune chaîne par une route libre n\'a abouti'
@@ -124,26 +125,33 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     report = report if report is not None else {}
     report.update(tried=0, searches=0, stopped='end')
     began = time.perf_counter()
-    pack_bound = lambda i: ratio * min(head(i) + ocean[(i, o)] + tail(o) for o in exits)      # le minorant du meilleur couple de cette entrée (la recherche d'Europe vaut au moins ratio × le grand cercle)
+    pack_bound = lambda i: min(head(i) + ocean[(i, o)] + tail(o) for o in exits)      # le minorant, en NM, du meilleur couple de cette entrée : les distances orthodromiques (un minorant EXACT : aucune route n'est plus courte)
+    nm_of = lambda path: sum(x['nm'] for _u, _v, x in path)
 
     def out_of_time():
         now = time.perf_counter()
         return now - began > FREE_S or (engine.DEADLINE is not None and now >= engine.DEADLINE)
-    remaining = list(rank)      # SOG-0354 L5 (4) d1 : UNE recherche d'Europe vers TOUTES les entrées candidates (need = NEED : elle s'arrête dès que NEED sont atteintes, quelles qu'elles soient : un but inatteignable ne fait plus parcourir tout l'espace) ; l'ordre par minorant ne sert qu'au choix des couples
+    remaining = list(rank)      # SOG-0354 L5 (4) d1 : une recherche d'Europe vers TOUTES les entrées candidates (need = NEED : elle s'arrête dès que NEED sont atteintes, quelles qu'elles soient : un but inatteignable ne fait plus parcourir tout l'espace) ; d1 bis : une recherche de plus vers les entrées restantes tant que leur minorant est SOUS le meilleur coût trouvé et qu'il reste du temps à la section
     while remaining:
-        if best and pack_bound(remaining[0]) >= best['cost']:      # les entrées qui restent ne peuvent pas faire mieux
+        if best and pack_bound(remaining[0]) >= best['total_nm']:      # les entrées qui restent ne peuvent pas être plus COURTES
             report['stopped'] = 'bound'
             break
         if out_of_time():
             report['stopped'] = 'time'
             break
-        reached = europe(g2, start, [eff(i) for i in remaining])
+        saved_cap = engine.SEARCH_CAP_S      # SOG-0354 L5 (4) d1 bis : une recherche de plus (vers les entrées restantes, dont le minorant est sous le meilleur coût) ne dure pas plus que le temps qui reste à la section
+        if report.get('searches'):
+            engine.SEARCH_CAP_S = min(saved_cap, EXTRA_SEARCH_S, max(0.1, FREE_S - (time.perf_counter() - began)))
+        try:
+            reached = europe(g2, start, [eff(i) for i in remaining])
+        finally:
+            engine.SEARCH_CAP_S = saved_cap
         report['searches'] = report.get('searches', 0) + 1
         any_reached = any_reached or bool(reached)
         pack = [i for i in remaining if eff(i) in reached]
-        pairs = sorted(((reached[eff(i)]['cost'] + ratio * (lead_nm(i) + ocean[(i, o)] + tail(o)), i, o) for i in pack if eff(i) in reached for o in exits), key=lambda x: x[0])
+        pairs = sorted(((nm_of(reached[eff(i)]['path']) + lead_nm(i) + ocean[(i, o)] + tail(o), i, o) for i in pack if eff(i) in reached for o in exits), key=lambda x: x[0])      # le minorant en NM : la section d'Europe RÉELLE + le reste orthodromique
         for bound, i, o in pairs:
-            if best and bound >= best['cost']:      # les couples suivants ne peuvent pas faire mieux que le meilleur trouvé
+            if best and bound >= best['total_nm']:      # les couples suivants ne peuvent pas être plus courts que le meilleur trouvé
                 report['stopped'] = 'bound'
                 break
             if o in dead:
@@ -162,13 +170,12 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
             resolved = resolve(g2, start, end, eff(i), eff(o), legs, reached[eff(i)])
             if resolved:
                 cost, path, sects = resolved
-                if best is None or cost < best['cost']:
-                    best = {'entry': nav.nodes[i]['id'], 'exit': nav.nodes[o]['id'], 'points': [nav.nodes[k]['id'] for k in keys], 'nm': round(ocean[(i, o)], 1), 'cost': cost, 'path': path, 'sections': sects}
+                total = nm_of(path)
+                if best is None or total < best['total_nm']:      # la route libre la plus COURTE en NM (la distance que l'utilisateur voit) parmi les couples essayés
+                    best = {'entry': nav.nodes[i]['id'], 'exit': nav.nodes[o]['id'], 'points': [nav.nodes[k]['id'] for k in keys], 'nm': round(ocean[(i, o)], 1), 'cost': cost, 'total_nm': total, 'path': path, 'sections': sects}
                 continue
             dead.add(o)      # la section d'Amérique de cette sortie n'a pas abouti (ou la borne a coupé) : elle n'est pas reprise avec une autre entrée
         if report['stopped'] == 'time':
-            break
-        if best:      # UNE recherche d'Europe suffit quand une chaîne a abouti entre les entrées atteintes (une autre recherche, vers les entrées restantes, ne vient que si aucune chaîne n'a abouti)
             break
         if len(reached) < NEED:      # moins de NEED atteintes : la recherche a parcouru tout l'espace atteignable, les autres entrées ne sont pas atteignables
             break
