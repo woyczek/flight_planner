@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8a488fa",
+  "organisation": "d145e24",
   "fiches": 374,
   "untranslated": 0,
   "priorities": 310
@@ -5643,11 +5643,12 @@
     {
      "id": "SOG-0370",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Données : la fiche d'un pays se contredit (Portugal ; Atlantique Nord)",
      "en": "Data: a country's sheet contradicts itself (Portugal; North Atlantic)",
      "de": "Daten: das Blatt eines Landes widerspricht sich (Portugal; Nordatlantik)",
-     "es": "Datos: la ficha de un país se contradice (Portugal; Atlántico Norte)"
+     "es": "Datos: la ficha de un país se contradice (Portugal; Atlántico Norte)",
+     "test": true
     }
    ]
   },

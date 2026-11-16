@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 242,
+  "tests": 243,
   "verdicts": 163
  },
  "apps": [
@@ -3591,6 +3591,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T08:10:14Z"
+  },
+  {
+   "id": "SOG-0370",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la fiche d'un pays se contredit (Portugal ; Atlantique Nord)",
+    "en": "Data: a country's sheet contradicts itself (Portugal; North Atlantic)",
+    "de": "Daten: das Blatt eines Landes widerspricht sich (Portugal; Nordatlantik)",
+    "es": "Datos: la ficha de un país se contradice (Portugal; Atlántico Norte)"
+   },
+   "test": "Sur l'ordinateur, recharge l'appli. Données, Europe du Sud, Portugal : la tuile dit « ! un fichier à prendre » ; la fiche dit « Un fichier à prendre », CONSTRUIT « ✓ 12/11 · édition précédente », un seul bandeau, et le fichier « ✓ vu : « AIP Portugal 2611 » » sans « manquant » ni « renommez ». « Prendre le fichier téléchargé » : le fichier est pris tel quel et le pays se reconstruit. Puis Océans, Atlantique Nord : l'état dit les routes du jour et leur validité, le bouton s'appelle « Lire les routes NAT du jour ».",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T08:49:20Z"
   },
   {
    "id": "SOG-0371",
