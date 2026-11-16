@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 241,
+  "tests": 242,
   "verdicts": 163
  },
  "apps": [
@@ -3605,6 +3605,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T08:28:47Z"
+  },
+  {
+   "id": "SOG-0372",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes NAT à l'étape Route : la lecture du jour réussit sans que l'écran le montre ; la proposition calculée sur les routes périmées reste ; la route prise donne des « points inconnus »",
+    "en": "NAT tracks at the Route step: the day's read succeeds without the screen showing it; the proposal computed on outdated tracks stays; the route taken gives « unknown points »",
+    "de": "NAT-Tracks im Schritt Route: das Lesen gelingt, ohne dass der Bildschirm es zeigt; der Vorschlag auf veralteten Tracks bleibt; die übernommene Route ergibt « unbekannte Punkte »",
+    "es": "Rutas NAT en el paso Ruta: la lectura del día funciona sin que la pantalla lo muestre; la propuesta calculada con rutas caducadas permanece; la ruta tomada da « puntos desconocidos »"
+   },
+   "test": "Relance d'abord le lanceur. Carburant, un vol transatlantique (EGLL → KJFK), étape Route. Si la ligne dit les routes NAT périmées : « Lire les routes NAT du jour » — la ligne dit « Lecture… » puis la date et la validité, sans recharger la page ; une proposition calculée sur les routes d'un autre jour disparaît, avec « Recalculer ». « Calculer A → B », prends une proposition par une route NAT : aucune ligne « Points inconnus ».",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T08:34:34Z"
   }
  ],
  "decisions": [
