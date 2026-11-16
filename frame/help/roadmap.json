@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "80f1c00",
+  "organisation": "8a8e5cd",
   "fiches": 380,
   "untranslated": 0,
   "priorities": 310
@@ -4739,11 +4739,12 @@
     {
      "id": "SOG-0378",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Données : sur la page de mise à jour, un clic est pris pour un glisser, même hors de la carte",
      "en": "Data: on the update page a click is taken for a drag, even outside the map",
      "de": "Daten: auf der Aktualisierungsseite wird ein Klick als Ziehen gewertet, auch außerhalb der Karte",
-     "es": "Datos: en la página de actualización un clic se toma por un arrastre, incluso fuera del mapa"
+     "es": "Datos: en la página de actualización un clic se toma por un arrastre, incluso fuera del mapa",
+     "test": true
     }
    ]
   },

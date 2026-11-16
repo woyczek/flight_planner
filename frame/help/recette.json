@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 245,
+  "tests": 246,
   "verdicts": 188
  },
  "apps": [
@@ -3689,6 +3689,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T09:16:46Z"
+  },
+  {
+   "id": "SOG-0378",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : sur la page de mise à jour, un clic est pris pour un glisser, même hors de la carte",
+    "en": "Data: on the update page a click is taken for a drag, even outside the map",
+    "de": "Daten: auf der Aktualisierungsseite wird ein Klick als Ziehen gewertet, auch außerhalb der Karte",
+    "es": "Datos: en la página de actualización un clic se toma por un arrastre, incluso fuera del mapa"
+   },
+   "test": "Sur l'ordinateur, recharge l'appli (pas de relance du lanceur) : Maintenance › Données. Clique un pays dans la liste, un bouton, un pli : chaque clic agit du premier coup. Sélectionne un texte à la souris hors de la carte : il se sélectionne et la carte ne bouge pas. Glisse sur la carte : elle se déplace, comme avant. Relâche la souris hors de la fenêtre puis reviens : la carte ne suit plus la souris.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T13:57:38Z"
   }
  ],
  "decisions": [
