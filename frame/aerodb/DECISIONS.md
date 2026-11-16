@@ -3340,3 +3340,9 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Asked** (ergonomics session): a search whose goals are all unreachable must not go through the whole space; ONE European search to ALL the candidate entries (`need = 2`); the order by proximity only chooses the pairs; red case before, measure before / after.
 - **Done**: see INTEGRATION « Route engine, lot L5 (4) d1 ». K304; K297's source assertion (« rank[start_at:start_at + CHUNK] ») replaced by « remaining = list(rank) » — it described the packs of five that this decision removes.
 - **Choices of this session** (to relax if wished): the first search stops at two reached entries WHATEVER they are (the two cheapest by the search order, not necessarily the best entries for the whole route): the free route keeps the best chain among them and does not search again once a chain succeeded; a second search is made only when no chain succeeded; that can give a route a little longer than the best entry would (the answer of EIDW → KJFK stays the same: DOGAL … NICSO).
+
+## 16 November 2026 — SOG-0354 lot L5 (4) d2 A: the RAD finding on a point rule excludes the point
+
+- **Asked** (ergonomics session, 21:33): d2 in the order A, B, C, one local commit and one measure per step, stop as soon as every flight of the matrix is at 5 s or less. A: a finding on a rule whose target is a POINT excludes the point.
+- **Done**: see INTEGRATION « Route engine, lot L5 (4) d2 A ». K305. LEMD → KBOS 7.4 → 4.2 s, one retry.
+- **Choices of this session** (to relax if wished): the point is excluded for the WHOLE search (every edge that touches it, as the engine already does for a `point` block), also for a violation of `ONLY AVBL FOR TFC`; an aerodrome (the departure, the arrival) is never excluded as a point; a segment rule and a procedure leg keep their exclusions.

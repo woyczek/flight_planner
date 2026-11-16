@@ -12375,3 +12375,51 @@ def k304(c):
     c.eq((S.solve(nav3, g, 'DEP', 'ARR'), len(nav3.calls), nav3.sections_info['free']['reason'] == F.NO_REACH), (None, 1, True), 'no entry reached: ONE search (not one per pack), the reason is « aucune entrée océanique du jour n\'est atteignable »', what='none reached')
     src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
     c.ok('CHUNK' not in src and 'remaining = list(rank)' in src and 'dead.add(o)' in src, 'free_route.py', 'no more packs of five: the entries still to search are « remaining », the exit that failed is not taken again')
+
+
+@case('K305', 'Route engine, SOG-0354 lot L5 (4) d2 A: a RAD finding on a rule whose target is a POINT (LE2666: « DELOG : NOT AVBL FOR TFC DEP LEMD & VIA DGO ») excludes the POINT — every edge that touches it —, not only the segments of the route found: the next route no longer arrives at the point by another segment, and one RAD retry is enough (LEMD → KBOS 7.4 → 4.2 s)',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) d2 A (decision of the ergonomics session, 21:33: « un constat sur une règle dont la cible est un POINT exclut le point »). Cause measured by AeroDB: a RAD retry costs 2.5 to 2.9 s (a graph rebuilt, a search by sections, the control); LEMD → KBOS made TWO because LE2666 is a point rule (DELOG) and the finding excluded only the segments touching DELOG on the route found (N75 XORNA–DELOG, DCT DELOG–KORUL): the next route came in by another segment of the same point (N864 … DELOG). Now the point is excluded (`kind: point`, the mechanism of `graph.rad_avoid` and of the edge rules) — except an aerodrome (the departure or the arrival) and a procedure leg (the procedure is excluded as before). Measured on the real base, read only: LEMD → KBOS 7.4 → 4.2 s, one retry, the same route (3 267.2 NM, KORUL DCT ETIKI DCT REGHI); LEMD → CYYZ 3.6 s, LEMD → KORD 3.7 s.')
+def k305(c):
+    import datetime
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import rad_flight as RF
+    rule = {'sheet': 'Annex 2B', 'id': 'LE2666', 'row': 4790, 'change': '', 'values': ['', '22 NOV 2024 [2411]', 'UFN', 'LE2666', '', '', '', 'DELOG', 'NOT AVBL FOR TFC\nDEP LEMD & VIA DGO', 'H24', 'C', 'Traffic organization', '', 'LECMACC', 'LE', '20 NOV 2024', '']}
+
+    class Book:      # the RAD book reduced to what the condition reads: an aerodrome matches itself
+        groups = {}
+
+        def match(self, spec, ad):
+            return ad in spec.replace(',', ' ').split()
+    leg = lambda a, b, via='DCT', kind='ENROUTE': {'kind': kind, 'via': via, 'start': {'id': a}, 'end': {'id': b}, 'time_start_min': 0, 'time_end_min': 10}
+    when = datetime.datetime(2026, 11, 16, 13)
+    known = {'LEMD', 'KBOS', 'DGO', 'BLV', 'DELOG', 'KORUL', 'XORNA', 'NENEM', 'LOTEE'}
+    point = {'kind': 'point', 'point': 'DELOG', 'id': 'LE2666', 'sheet': 'Annex 2B', 'row': 4790}
+    out = []
+    for legs in ([leg('LEMD', 'DGO'), leg('DGO', 'BLV', 'N867'), leg('BLV', 'XORNA', 'N75'), leg('XORNA', 'DELOG', 'N75'), leg('DELOG', 'KORUL'), leg('KORUL', 'KBOS')],
+                 [leg('LEMD', 'DGO'), leg('DGO', 'BLV', 'N867'), leg('BLV', 'LOTEE', 'N864'), leg('LOTEE', 'DELOG', 'N864'), leg('DELOG', 'KORUL'), leg('KORUL', 'KBOS')],
+                 [leg('LEMD', 'DGO'), leg('DGO', 'BLV', 'N867'), leg('BLV', 'NENEM', 'N867'), leg('NENEM', 'KORUL'), leg('KORUL', 'KBOS')]):
+        r = RF.evaluate(Book(), legs, 'LEMD', 'KBOS', when, [dict(rule)], known)
+        out.append(([f['id'] for f in r['findings']], r['search_exclusions']))
+    c.eq(out, [(['LE2666'], [point]), (['LE2666'], [point]), ([], [])],
+         'whatever the segments by which a route reaches DELOG (N75 XORNA–DELOG, N864 LOTEE–DELOG), the finding is the SAME exclusion: the point DELOG (red before: the segments of each route, and a second retry); a route that does not touch DELOG: nothing', what='point exclusion')
+    src = (ROOT / 'tools' / 'route_engine' / 'rad_flight.py').read_text(encoding='utf-8')
+    c.ok('point_rule=' in src and "v[7] not in [dep,arr]" in src and "elif point_rule:" in src, 'rad_flight.py', 'a point rule excludes the point (not an aerodrome, not a procedure leg, which keep their own exclusions)')
+    data = Path('E:/DEFA/data')
+    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    from route_engine import engine, plan as P, view, results_cache
+    results_cache.ENABLED = False
+    try:
+        args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-16T13:00', 'alternatives': False, 'proposals': True}
+        res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        p = res['primary']
+        errors = [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR']
+        points = [x['point'] for a in res['rad_search_attempts'] for x in a.get('excluded', []) if x.get('kind') == 'point']
+        c.ok(bool(p.get('ok')) and not errors and len(res['rad_search_attempts']) == 1 and 'DELOG' in points, str((errors, len(res['rad_search_attempts']), points)), 'LEMD → KBOS on the real base: a route with no error of the control after ONE RAD retry, which excluded the point DELOG (and passed by ETIKI)')
+    finally:
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None

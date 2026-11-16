@@ -334,6 +334,8 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 
 **Done (L5 4 d1, 16 November, case K304)**: the free route makes ONE European search to all its candidate entries (`need = 2`), not one per pack of five: a goal that cannot be reached no longer makes the search go through the whole space. EIDW « out » (6 requests of the matrix, 6.2 to 8.2 s) answers in 1.4 to 2.5 s.
 
+**Done (L5 4 d2 A, 16 November, case K305)**: a RAD finding on a rule whose target is a POINT excludes the point, not only the segments of the route found: LEMD → KBOS needs one RAD retry instead of two (7.4 → 4.2 s).
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |

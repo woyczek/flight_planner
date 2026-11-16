@@ -134,9 +134,13 @@ def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None):
                     if re.fullmatch('[A-Z0-9]{2,8}',v[7] or ''):avoids.append(dict(kind='compel',point=v[7],before=point,id=rule['id'],sheet=sheet,row=rule['row']))
                     avoids.append(dict(kind='point',point=point,fallback=True,id=rule['id'],sheet=sheet,row=rule['row']))
         findings.append(dict(id=rule['id'],sheet=sheet,row=rule['row'],segments=affected,phases=phases,text=f"RAD {rule['id']} ({sheet}, ligne {rule['row']}) : {mode} ; contexte départ–SID–route–STAR–arrivée pris en compte."))
+        point_rule=sheet=='Annex 2B' and bool(v[7]) and not any(v[i] for i in [4,5,6]) and re.fullmatch('[A-Z0-9]{2,8}',v[7]) and v[7] not in [dep,arr]      # SOG-0354 L5 (4) d2 A : la cible de la règle est un POINT (LE2666 : DELOG) : le constat exclut le POINT (toutes les arêtes qui le touchent), pas les seuls tronçons de la route trouvée : la route suivante y arrivait par un AUTRE tronçon du même point (une 2e reprise, 2,8 s)
         for i in affected:
             l=legs[i]
             if l.get('procedure_id'):avoids.append(dict(kind='procedure',procedure_id=l['procedure_id']))
+            elif point_rule:
+                block=dict(kind='point',point=v[7],id=rule['id'],sheet=sheet,row=rule['row'])
+                if block not in avoids:avoids.append(block)
             else:avoids.append(dict(kind='segment',via=l['via'],start=l['start']['id'],end=l['end']['id']))
     return dict(scope='Vol entier : départ, tous les points SID, route, tous les points STAR et arrivée',segments=len(legs),phases=ctx['phases'],
         evaluated_conditions=decided,review_conditions=sum('interpréter' in c['assessment'] for c in candidates),findings=findings,search_exclusions=avoids)
