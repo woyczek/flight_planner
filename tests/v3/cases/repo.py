@@ -3140,3 +3140,42 @@ def i43(c):
         i = src.index(verb)
         c.ok('self._lan()' in src[i:i + 400] and 'self._allowed()' in src[i:i + 400], verb, 'the gesture is refused to a paired device: ' + verb)
     c.ok("data_sync.run(DATA, str(author or '').upper(), '', True, None, True)" in src, '', 'the build’s publication is out of the question')
+
+
+# the standard modules the launcher's tools call as « name.something »: a name of this list that a file uses must be bound in that file
+_STD_NAMES = ('time', 'os', 'sys', 're', 'json', 'math', 'datetime', 'shutil', 'subprocess', 'zipfile', 'io', 'csv', 'hashlib', 'base64', 'tempfile', 'threading', 'socket', 'ssl',
+              'glob', 'itertools', 'collections', 'functools', 'urllib', 'zlib', 'gzip', 'html', 'struct', 'uuid', 'random', 'traceback', 'logging')
+
+
+def _unbound_std(path):
+    """The standard-module names a Python file reads as « name.attr » without ever binding them (no import, no assignment, no argument): [(name, line)]."""
+    import ast
+    tree = ast.parse(path.read_text(encoding='utf-8'), str(path))
+    bound, used = set(), {}
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            bound |= {(a.asname or a.name).split('.')[0] for a in n.names}
+        elif isinstance(n, ast.ImportFrom):
+            bound |= {a.asname or a.name for a in n.names}
+        elif isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)):
+            bound.add(n.id)
+        elif isinstance(n, ast.arg):
+            bound.add(n.arg)
+        elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            bound.add(n.name)
+        elif isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and isinstance(n.value.ctx, ast.Load) and n.value.id in _STD_NAMES:
+            used.setdefault(n.value.id, n.lineno)
+    return sorted((k, v) for k, v in used.items() if k not in bound)
+
+
+@case('I44', 'Launcher tools: a standard module is never called without being imported', 'I', static=True,
+      rule='SOG-0368, the user\'s real taking of Iceland on 16 Nov: « name \'time\' is not defined » — the pause between two requests called time.sleep in a file that never imported time; the cases replaced the pause, so only the real network met it')
+def i44(c):
+    bad = []
+    for p in sorted((c.root / 'tools').rglob('*.py')):
+        try:
+            for name, line in _unbound_std(p):
+                bad.append(f'{p.relative_to(c.root).as_posix()}:{line} {name}')
+        except SyntaxError as e:
+            bad.append(f'{p.relative_to(c.root).as_posix()}: does not parse ({e.msg})')
+    c.eq(bad, [], 'no tool of the launcher calls a standard module it did not import', what='unbound standard names')

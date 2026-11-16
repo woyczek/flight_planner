@@ -38,7 +38,7 @@ Usage (racine du dépôt) :
 Appelé aussi par le lanceur (POST /__setup/aero-fetch) pour les boutons de Paramètres › Maintenance › Données
 aéronautiques.
 """
-import datetime, email.utils, http.client, json, os, re, ssl, sys, urllib.error, urllib.parse, urllib.request
+import datetime, email.utils, http.client, json, os, re, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import outbound  # noqa: E402 (le User-Agent du lanceur, chaque échec dit en console)
