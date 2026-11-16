@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 249,
+  "tests": 250,
   "verdicts": 188
  },
  "apps": [
@@ -3355,6 +3355,20 @@
    "state": "ok",
    "delivered": "2026-11-14T11:03:42Z",
    "at": "2026-11-16T13:55:55Z"
+  },
+  {
+   "id": "SOG-0347",
+   "app": "maintenance",
+   "title": {
+    "fr": "Dépôt des données du poste modifié à la main : dire l'écart et offrir les issues (dont « tout jeter et reprendre »)",
+    "en": "Workstation data repository changed by hand: say the gap and offer the ways out (including « discard everything and take the repository »)",
+    "de": "Von Hand geändertes Daten-Repository des Rechners: die Abweichung nennen und Auswege anbieten (auch « alles verwerfen und das Repository übernehmen »)",
+    "es": "Repositorio de datos del puesto modificado a mano: decir la diferencia y ofrecer las salidas (incluida « descartar todo y tomar el repositorio »)"
+   },
+   "test": "D'abord RELANCE LE LANCEUR. Essai SANS RISQUE, sur l'ordinateur : dans E:\\DEFA\\data\\missions, RENOMME un fichier de mission (ajoute « -essai » à son nom) — pour git c'est une suppression. Dans l'appli, « Synchroniser ». Attendu : une fenêtre demande avant d'envoyer, dit qu'un passage porterait une suppression et liste le fichier, avec « Envoyer », « Remettre comme dans le dépôt » et « Plus tard » (le focus est sur « Plus tard »). Choisis « Remettre comme dans le dépôt » : le fichier d'origine revient sous son nom ; ton fichier « -essai », que git ne suit pas, reste là (supprime-le à la main). Rien n'est parti. Ensuite, sans rien confirmer : ouvre « Tout jeter et reprendre le dépôt » et lis s",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T14:42:49Z"
   },
   {
    "id": "SOG-0348",
