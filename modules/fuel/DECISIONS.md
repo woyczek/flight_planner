@@ -2060,3 +2060,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   niveaux ; tracé non lu, voir la carte »; a source with `cycle_unknown` (or a cycle written 1970-01-01) says « cycle inconnu », never 1970.
   F231 (red before; aerodb's answer held by the case, invented EGLL records). Seen for the Map, not changed (its file): with a runway
   chosen, `expandedPath` turns a one-point SID into a « sid » leg threshold → exit point.
+- **16 Nov 2026 — SOG-0380: « Contrôler » never sends the « aerodrome/runway » word as a point** (the user, 14 h 39, 24595511f: « Point
+  inconnu dans AeroDB : LFPO/02 » on EGLL MAY Y47 DRAKE DCT SITET A34 LGL H20 BOBSA BOBSA9E LFPO/02). The page sent the field's text as it
+  is (`RE.request`, `route`), and the field writes the chosen runway after the aerodrome (SOG-0089); the engine looked « LFPO/02 » up as a
+  point. Now the word of the departure or the arrival is sent as the aerodrome alone and its runway goes to `rwyDep` / `rwyArr` when none is
+  chosen (a chosen one stays); another aerodrome's word is not touched; the name of the SID or the STAR stays (the engine reads it as a
+  procedure, AeroDB SOG-0371 b). The field keeps its text. F233 (red before, the route of the report).

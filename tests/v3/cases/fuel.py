@@ -6112,6 +6112,43 @@ def f231(c):
     c.shot(f'F231_{c.design}_1280_{c.lang}_partial.png')
 
 
+_S0380_ROUTE = 'EGLL MAY Y47 DRAKE DCT SITET A34 LGL H20 BOBSA BOBSA9E LFPO/02'
+
+
+@case('F233', '« Contrôler »: the route sent to the engine never carries the « aerodrome/runway » word of the field (« LFPO/02 »): the aerodrome '
+      'alone in the text, the runway in its own field (rwyArr / rwyDep); the STAR\'s name stays', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0380 (the user, 14 h 39, 24595511f: « Point inconnu dans AeroDB : LFPO/02 » on « Contrôler »; the ergonomist: in a route, the '
+      'name of a SID or a STAR and the « aerodrome/runway » word are never looked for as points); the route of his report, a fake launcher')
+def f233(c):
+    st = _route_launcher(c, ['route/compute'])
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': _S0380_ROUTE, 'dep': 'EGLL', 'arr': 'LFPO', 'manual': True,
+                             'points': [{'id': 'EGLL', 'lat': 51.47, 'lon': -0.46}, {'id': 'LFPO', 'lat': 48.72, 'lon': 2.38}],
+                             'procedures': {'dep': {}, 'arr': {'rwy': '02'}, 'by': 'fuel', 'at': '2026-11-16T13:00:00Z'}}
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcheck]')", timeout=10000, what='« Contrôler » (the launcher has the job)')
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    for _ in range(50):
+        if any((p.get('args') or {}).get('action') == 'check' for p in st['posts']):
+            break
+        c.wait(200)
+    chk = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'check'][-1]
+    words = str(chk.get('route', '')).split()
+    c.ok(not any('/' in w for w in words), chk.get('route'), 'no « aerodrome/runway » word in the route sent')
+    c.eq([words[0], words[-1]], ['EGLL', 'LFPO'], 'the aerodromes alone at both ends', what='ends')
+    c.ok('BOBSA9E' in words, words, 'the STAR\'s name kept (the engine reads it as a procedure)')
+    c.eq(chk.get('rwyArr'), '02', 'the arrival runway in its own field', what='rwyArr')
+    # the pure request: a runway written only in the text goes to its field; another aerodrome's « XXXX/NN » is not touched
+    got = c.js("""async () => { const RE = await import('/modules/fuel/route_engine.js');
+      return RE.request({ action: 'check', dep: 'EGLL', arr: 'LFPO', text: 'EGLL/27L MAY Y47 DRAKE LFOB/12 LFPO/02', date: '2026-11-16T14:00' }) }""")
+    c.eq([got.get('route'), got.get('rwyDep'), got.get('rwyArr')], ['EGLL MAY Y47 DRAKE LFOB/12 LFPO', '27L', '02'],
+         'the runways of the text to their fields, the aerodromes alone', what='request')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

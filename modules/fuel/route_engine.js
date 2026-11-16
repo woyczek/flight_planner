@@ -76,8 +76,18 @@ export function request({
   if (Number.isInteger(fl) && fl >= 10 && fl <= 660) out.fl = fl;
   if (/^[0-9]{2}[LRC]?$/.test(String(depRunway || ''))) out.rwyDep = String(depRunway);
   if (/^[0-9]{2}[LRC]?$/.test(String(arrRunway || ''))) out.rwyArr = String(arrRunway);
-  if (check) out.route = text(typed, 600).toUpperCase();
-  else {
+  if (check) {
+    // SOG-0380 : le mot « aérodrome/piste » du champ (« LFPO/02 », SOG-0089) n'est pas un point pour le moteur (« Point inconnu dans AeroDB :
+    // LFPO/02 ») : le départ ou l'arrivée seul dans le texte, sa piste dans son champ quand aucune n'est choisie ; un autre terrain intact
+    const words = text(typed, 600).toUpperCase().split(/\s+/).filter(Boolean);
+    out.route = words.map(w => {
+      const m = /^([A-Z]{4})\/([0-9]{2}[LRC]?)$/.exec(w);
+      if (!m || (m[1] !== out.adep && m[1] !== out.adest)) return w;
+      const k = m[1] === out.adep && (w === words[0] || m[1] !== out.adest) ? 'rwyDep' : 'rwyArr';
+      if (!out[k]) out[k] = m[2];
+      return m[1];
+    }).join(' ');
+  } else {
     out.via = (Array.isArray(points) ? points : []).slice(1, -1).map(p => ident(p?.id)).filter(Boolean).slice(0, 8);
     // SOG-0296 : la première demande sans variantes (la route de tête en 1 à 3 s), la seconde avec
     if (alternatives) out.alternatives = true;
