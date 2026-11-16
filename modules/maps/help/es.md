@@ -15,7 +15,7 @@ radioayudas, y en cada cuadro de un grado la altitud mínima de seguridad (la ci
 millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom (durante el gesto el mapa conserva solo sus trazos — espacios, aerovías,
 ruta con la SID y la STAR elegidas, aeródromos y radioayudas en pequeños círculos, los mismos que muestra en reposo — y sus nombres vuelven en cuanto se detiene); «Recentrar» (la diana, arriba a la derecha del mapa) vuelve a toda la ruta. El
 mapa se queda donde usted lo puso, aunque la ruta cambie: solo «Recentrar» (u otro vuelo) lo reencuadra. Al volver al mapa (desde Combustible, o tras «Terminar»), recupera su encuadre
-mientras la ruta y los procedimientos elegidos no hayan cambiado; si no, el vuelo se reencuadra, procedimientos incluidos. Mientras «Solo alrededor
+mientras la ruta y los procedimientos elegidos no hayan cambiado; si no, el vuelo se reencuadra, procedimientos incluidos. El mapa de la misión que mostraba (mapa suministrado, ventana arriba a la izquierda) también se recupera, del mapa junto a Combustible al mapa entero y a la inversa, para el mismo vuelo y la misma misión, durante 12 horas; la dirección de un mapa de misión tiene prioridad. Mientras «Solo alrededor
 del vuelo» esté marcada (Capas), los espacios y aerovías solo se leen cerca del vuelo, de lejos; desmárquela o acérquese
 para verlo todo.
 

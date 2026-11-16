@@ -42,6 +42,11 @@ import {
 import {
   buildProfile
 } from './profile_view.js';
+import {
+  viewSave,
+  viewPending,
+  viewAdopt
+} from './view_state.js';
 
 /** Chemin du YAML d'une mission : missions/<l>_<FAMILLE>/<ID>/mission<ID>.yaml (l'identifiant capturé). */
 const MISSION_YAML = /^missions\/[^/]+\/([^/]+)\/mission[^/]*\.ya?ml$/i;
@@ -82,7 +87,21 @@ export async function deriveMission() {
 export async function retryMission() {
   if (!S || S.missionId || S.missionAside || !S.missionWanted) return;
   await deriveMission();
-  if (S?.missionAside) await loadAside();
+  if (!S?.missionAside) return;
+  // la carte fournie d'un montage précédent, attendue avec la liste (SOG-0353) : reprise ici si la mission la déclare, sinon la fenêtre se lit comme avant
+  const pend = viewPending();
+  if (pend?.file && !S.missionId && await restoreProvided(pend.file)) {
+    await applyMission(true);
+    if (!S) return;
+    viewAdopt(pend);
+    if (S.map) {
+      S.userMoved = false;
+      frameFlight(false); // le cadrage de l'état s'il y en a un (viewAdopt), sinon la carte choisie
+    }
+    schedule();
+    return;
+  }
+  await loadAside();
 }
 /** Points du cheminement de la mission : route_points écrits par le studio, sinon le texte (vertical_profile.route,
  *  sinon départ, points tournants, destination) résolu par les points de la mission, puis par aerodb. */
@@ -197,7 +216,20 @@ export const showProvided = file => serial(async () => {
     frameFlight(true); // la carte choisie est cadrée (SOG-0184 b)
   }
   schedule();
+  viewSave(); // la carte montrée se retrouve au montage suivant (SOG-0353)
 });
+/** SOG-0353 : la carte fournie qu'un montage précédent montrait (cache/maps/state.json, vérifié par view_state.js) est montrée de nouveau au montage ; le fichier doit être UN de ceux
+ *  que la mission déclare (jamais un chemin pris tel quel). Rend vrai si elle est posée (S.missionId, S.mapWanted : applyMission la dessine) ; la mission lue reste dans S.mission. */
+export async function restoreProvided(file) {
+  const me = S,
+    id = S.missionAside;
+  if (!id || !file) return false;
+  await loadMission(id);
+  if (S !== me || S.missionAside !== id || !S.mission || S.missionError || !S.mission.maps.some(x => x.file === file)) return false;
+  S.missionId = id;
+  S.mapWanted = file;
+  return true;
+}
 /** Retour au vol depuis la carte fournie montrée sur place : le vol, ses couches et son fond reviennent, la mission en surimpression. */
 export const leaveProvided = () => serial(async () => {
   if (!S?.missionAside || !S.missionId) return;
@@ -210,6 +242,7 @@ export const leaveProvided = () => serial(async () => {
   restyle(before);
   missionUi();
   await loadAside();
+  viewSave();
 });
 /** Le vol nomme maintenant une mission que la Carte n'a pas (« Préparer ce vol » pendant que la Carte est ouverte à côté, SOG-0312 : « le sélecteur de carte n'apparaît qu'après un aller-retour ») :
  *  la mission est cherchée comme au montage, la fenêtre est là tout de suite (elle dit qu'elle charge), puis la mission se lit. */
@@ -248,6 +281,7 @@ export const followMission = () => serial(async () => {
   if (S.missionAside) await loadAside();
   bannerFill();
   schedule();
+  viewSave();
 });
 /** La croix de la fenêtre d'un vol : le vol est écrit sans sa mission ni ses verrous (mission: null, missionCategory vide, route.locks et lock / mission des points retirés) ; Carburant suit, la Carte la quitte. */
 async function leaveMission() {

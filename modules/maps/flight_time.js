@@ -42,6 +42,9 @@ import {
   syncButtons
 } from './screen.js';
 import {
+  viewSave
+} from './view_state.js';
+import {
   drawCursor
 } from './profile_view.js';
 import {
@@ -413,6 +416,7 @@ export function setFollow(on) {
   if (on) {
     S.userMoved = false;
     keep.cam = null; // « Suivre » : le cadrage gardé est oublié
+    viewSave();
     progressUpdate();
   }
 }

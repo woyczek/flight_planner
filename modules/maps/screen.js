@@ -62,6 +62,9 @@ import {
 import {
   previewAd
 } from './vfr.js';
+import {
+  viewSave
+} from './view_state.js';
 
 /** Bibliothèques du dossier du module (scripts classiques, une fois par page) : [variable globale (chemin pointé), fichier]. */
 const LIBS = [
@@ -165,6 +168,7 @@ export function buildOverlay(ctx, modesHtml) {
       closePanels();
       S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol, le cadrage gardé est oublié
       keep.cam = null;
+      viewSave();
       if (S.map) frameFlight(true);
       schedule(); // redessinée même quand le cadrage n'a pas changé (frameFlight ne pose alors aucune caméra)
     }
@@ -459,6 +463,7 @@ function keepCam() {
     center: [c.lng, c.lat],
     zoom: S.map.getZoom()
   };
+  viewSave(); // le cadrage de l'utilisateur se retrouve au montage suivant (SOG-0353)
 }
 /** Cadre la carte sur le vol (S.fit) : le seul mouvement de caméra du module avec « Suivre », marqué pour ne pas passer pour
  *  celui de l'utilisateur ; appelé par frameFlight. */

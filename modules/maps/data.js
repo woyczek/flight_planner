@@ -48,6 +48,9 @@ import {
   buildProfile
 } from './profile_view.js';
 import {
+  viewFlight
+} from './view_state.js';
+import {
   syncView,
   legendSync
 } from './sheet_view.js';
@@ -351,6 +354,7 @@ export function watchFlight() {
         if (S.missionId) return left;
       }
       const f = await S?.ctx.data.get(flightPath()).catch(() => null);
+      if (S) viewFlight(f); // le trajet du vol change : l'état de la vue est celui du nouveau vol (SOG-0353)
       // le vol vient de nommer une mission (« Préparer ce vol » avec la Carte à côté) : la fenêtre n'attend pas un remontage (SOG-0312) ; pas attendu, la lecture est longue
       if (S && !S.missionAside && !S.missionId && typeof f?.mission === 'string' && f.mission.trim() && f.mission.trim() !== S
         .missionWanted) gainMission();

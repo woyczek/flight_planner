@@ -8066,3 +8066,90 @@ def d240(c):
         c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
         c.wait(900)
         c.eq(c.js("() => window.__mp.S.dataEl.dataset.card"), '0', f'{name}: the fold of the notes is released when the card is closed', what='card flag')
+
+
+_MOUNT_JS = "() => !!window.__mp && !!window.__mp.S && !!window.__mp.S.vs && !!window.__mp.S.map"
+_VIEW_JS = """() => { const S = window.__mp.S, m = S.map.getCenter(), sel = document.querySelector('.mp-mbar .mp-mb-sel');
+  return { id: S.missionId, file: S.mapDef ? S.mapDef.file : '', sel: sel ? sel.value : null, c: [m.lng, m.lat], z: S.map.getZoom(), key: S.vs.key } }"""
+
+
+def _remount(c, hash_='#maps'):
+    """The Map mounted again from nothing but the device (a reload keeps the cache, not what the page remembered)."""
+    c.page.reload()
+    c.ready('maps')
+    c.js(_STATE_JS)
+    c.until(_MOUNT_JS, timeout=20000, what='the Map mounted again')
+    c.wait(900)
+    return c.js(_VIEW_JS)
+
+
+@case('D241', 'The view of the Map is found again from one mount to the next (SOG-0353, tranche a): the provided map shown beside Fuel is the one the whole Map shows, its selector filled; the camera the pilot gave comes back; for another flight, nothing', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0353 (the user, 13 Nov: « si on affiche la vue cible dans fuel, et qu’on passe sur carte, on doit voir la vue cible avec les mêmes paramètres »; the ergonomist’s specification, 16 Nov): ONE document of the device, cache/maps/state.json, written on change, read at mount, never sent to the repository; the flight and the mission it carries decide whether it is read')
+def d241(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('fuel?with=maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!document.querySelector('.mp-mbar .mp-mb-sel') && !document.querySelector('.mp-mbar').hidden", timeout=20000, what='the window of the mission beside Fuel')
+    hook_map(c)
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_cible.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.missionId === 'ESSAI1' && window.__mp.S.mapDef && window.__mp.S.mapDef.file === 'carte_cible.png'", timeout=10000, what='the provided map is shown beside Fuel')
+    c.js("() => { const S = window.__mp.S; S.gesture = true; window.__mpMap.jumpTo({ center: [2.5, 47.5], zoom: 7 }); return true }")
+    st = c.until_doc('cache/maps/state.json', lambda d: bool(d) and d.get('file') == 'carte_cible.png' and bool(d.get('cam')) and abs(d['cam']['zoom'] - 7) < .01,
+                     what='the view written once the pilot moved the map')
+    c.ok(st.get('mission') == 'ESSAI1' and st.get('v') == 1 and st.get('flight'), str(st), 'the document carries the flight and the mission')
+    # the whole Map: the same map, its selector filled, the camera the pilot gave
+    c.js("() => { location.hash = '#maps' }")
+    c.wait(600)
+    v = _remount(c)
+    c.eq([v['id'], v['file'], v['sel']], ['ESSAI1', 'carte_cible.png', 'carte_cible.png'], 'the whole Map shows the provided map of the Fuel side, its selector filled', what=str(v))
+    c.ok(abs(v['c'][0] - 2.5) < .05 and abs(v['c'][1] - 47.5) < .05 and abs(v['z'] - 7) < .05, str(v), 'and the camera the pilot gave')
+    c.shot('D241_standard_retrouvee_1280.png')
+    # another flight: the document is thrown away whole
+    c.js("""async () => { const S = window.__mp.S, path = `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`, f = await S.ctx.data.get(path);
+      await S.ctx.data.put(path, { ...f, route: { ...f.route, dep: 'LFRB', arr: 'LFRN' }, updated_at: new Date(Date.now() + 60000).toISOString() }); return true }""")
+    c.wait(800)
+    v = _remount(c)
+    c.eq([v['id'], v['file']], ['', ''], 'for another flight the Map shows the flight, not the provided map', what=str(v))
+    c.ok(not (abs(v['c'][0] - 2.5) < .05 and abs(v['c'][1] - 47.5) < .05), str(v), 'and not the camera of the other flight')
+    # the flight view: the camera the pilot gave comes back too; « Recentre » forgets it
+    hook_map(c)
+    c.js("() => { const S = window.__mp.S; S.gesture = true; window.__mpMap.jumpTo({ center: [3.1, 46.2], zoom: 8 }); return true }")
+    c.until_doc('cache/maps/state.json', lambda d: bool(d) and d.get('file') == '' and bool(d.get('cam')) and abs(d['cam']['zoom'] - 8) < .01, what='the camera written for the flight view')
+    v = _remount(c)
+    c.ok(abs(v['c'][0] - 3.1) < .05 and abs(v['c'][1] - 46.2) < .05 and abs(v['z'] - 8) < .05, str(v), 'the flight view gets the camera the pilot gave back')
+    c.tap('[data-mp="fit"]')
+    c.until_doc('cache/maps/state.json', lambda d: bool(d) and d.get('cam') is None, what='« Recentre » forgets the camera in the state too')
+
+
+@case('D242', 'The state of the Map is read as an untrusted input (SOG-0353): too old (12 h), a map the mission does not declare, numbers out of range, a document that is not an object: no provided map taken from it, no camera out of range', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0353 (the ergonomist’s specification, 16 Nov): bounded numbers, keys by own(), the file must be one of those the mission declares — never a path taken as it is; an unreadable state is no state, without a message')
+def d242(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js(_STATE_JS)
+    c.until(_MOUNT_JS, timeout=20000, what='the Map mounted')
+    key = c.js("() => window.__mp.S.vs.key")
+    hour = 3600 * 1000
+    when = lambda ago: datetime.datetime.fromtimestamp((time.time() * 1000 - ago) / 1000, datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    good = {'v': 1, 'flight': key, 'mission': 'ESSAI1', 'file': 'carte_cible.png', 'cam': None, 'at': when(60 * 1000)}
+    wild = {'sig': '[]', 'center': [999, 91], 'zoom': 99}
+    variants = [
+        ('too old', {**good, 'at': when(13 * hour)}, ''),
+        ('a file the mission does not declare', {**good, 'file': '../../secret.png'}, ''),
+        ('a file that is not a string', {**good, 'file': {'a': 1}}, ''),
+        ('numbers out of range', {**good, 'cam': wild}, 'carte_cible.png'),
+        ('not an object', ['x', 1], ''),
+        ('another version', {**good, 'v': 2}, ''),
+    ]
+    for what, d, want in variants:
+        c.js("async (d) => { await window.__mp.S.ctx.data.put('cache/maps/state.json', d); return true }", d)
+        v = _remount(c)
+        c.eq(v['file'], want, f'{what}: the provided map is {"the one of the state" if want else "not taken from it"}', what=str(v))
+        c.ok(abs(v['c'][0]) < 200 and abs(v['c'][1]) < 90, str(v), f'{what}: the camera stays in range')
+

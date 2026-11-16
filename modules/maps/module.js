@@ -10,6 +10,7 @@
 //   · sheet_view.js : la feuille ; profile_view.js : le profil vertical ; procs.js : SID, STAR et approche choisies ;
 //     tips.js : infobulles, vents, toucher sur la carte ;
 //   · lv.js : les espaces d'un point ; vfr.js : les points de report d'un terrain ; flight_time.js : heures et vol démarré ;
+//   · view_state.js : la vue retrouvée d'un montage à l'autre (cache/maps/state.json, SOG-0353) ;
 //   · mission_view.js : cartes de mission ; weather.js : la coupe météo ; à la demande : edit.js (mode Édition), tune.js
 //     (réglage des seuils).
 
@@ -85,8 +86,14 @@ import {
   loadAside,
   deriveMission,
   retryMission,
+  restoreProvided,
   missionEvents
 } from './mission_view.js';
+import {
+  viewRead,
+  viewAdopt,
+  viewStop
+} from './view_state.js';
 import {
   weatherEvents
 } from './weather.js';
@@ -153,7 +160,7 @@ export const meta = {
     'layers.js?v=0',
     'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'ground.js?v=0', 'coverage.js?v=0', 'tips.js?v=0',
     'lv.js?v=0',
-    'vfr.js?v=0', 'circuits.js?v=0', 'follow.js?v=0', 'light.js?v=0',
+    'vfr.js?v=0', 'circuits.js?v=0', 'follow.js?v=0', 'light.js?v=0', 'view_state.js?v=0',
     'flight_time.js?v=0',
     'mission_view.js?v=0',
     'weather.js?v=0',
@@ -366,12 +373,19 @@ export async function mount(el, ctx) {
     S.missionWatch = true; // (dit pour les essais)
     S.stops.push(S.ctx.data.watch('missions/', () => retryMission()));
   }
-  if (S.missionId) await applyMission();
+  // la vue d'un montage précédent (cache/maps/state.json, SOG-0353) : la carte fournie qu'il montrait (si la mission la déclare encore ; l'adresse, ?flight=, passe avant), puis son cadrage
+  const vst = await viewRead();
+  if (!S) return;
+  S.stops.push(viewStop());
+  if (vst?.file && !S.missionId && !ctx.query?.flight) await restoreProvided(vst.file);
+  if (!S) return;
+  if (S.missionId) await applyMission(S.mission?.id === S.missionId);
   else {
     await applyFlight();
     if (S?.missionAside) loadAside(); // la surimpression arrive quand elle arrive : la carte du vol n'attend pas la mission
   }
   if (!S) return;
+  viewAdopt(vst);
   // mode « choisir sur la carte » : les procédures du terrain sont lues avant le fond, qui part de la vue qu'elles donnent (S.fit)
   if (S.choose) {
     await chooseLoad();

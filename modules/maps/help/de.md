@@ -17,7 +17,7 @@ Luftstraßen, Route mit der gewählten SID und STAR, Flugplätze und Funkfeuer a
 „Zentrieren“ (das Zielsymbol oben rechts auf der Karte) kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
 ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Kehren Sie zur Karte zurück (aus Kraftstoff oder nach „Fertig“),
 finden Sie Ihren Ausschnitt wieder, solange Route und gewählte Verfahren unverändert sind; sonst wird der Flug samt Verfahren neu
-eingepasst. Solange „Nur rund um den Flug“ (Ebenen) angehakt
+eingepasst. Auch die Einsatzkarte, die Sie gezeigt haben (mitgelieferte Karte, Fenster oben links), finden Sie wieder, von der Karte neben Kraftstoff zur ganzen Karte und zurück, für denselben Flug und denselben Einsatz, 12 Stunden lang; die Adresse einer Einsatzkarte hat Vorrang. Solange „Nur rund um den Flug“ (Ebenen) angehakt
 ist, werden Lufträume und Luftstraßen von weitem nur nahe dem Flug gelesen; entfernen Sie den Haken oder zoomen Sie hinein,
 um alles zu sehen.
 

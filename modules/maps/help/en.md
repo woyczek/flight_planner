@@ -15,7 +15,7 @@ The small purple figures along the route are the distances from the departure, i
 finger, spread two fingers to zoom (during the gesture the map keeps only its lines — airspaces, airways, route with the chosen SID and STAR,
 aerodromes and beacons as small rings, the very ones it shows at rest — and its names come back as soon as it stops); “Recentre” (the target, at the top right of the map) comes back to the whole route. The map stays where you put it, even when
 the route changes: only “Recentre” (or another flight) reframes it. Coming back to the map (from Fuel, or after “Done”), you find your framing
-again as long as the route and the chosen procedures have not changed; otherwise the flight is framed, procedures included. While “Around the flight only” is ticked (Layers),
+again as long as the route and the chosen procedures have not changed; otherwise the flight is framed, procedures included. The mission map you were showing (provided map, window at the top left) is found again too, from the Map beside Fuel to the whole Map and back, for the same flight and the same mission, for 12 hours; the address of a mission map comes first. While “Around the flight only” is ticked (Layers),
 airspaces and airways are read only near the flight, from afar; untick it or zoom in to see everything.
 
 **The great-circle route.** As soon as the departure and the arrival are known, the map draws the shortest path between them (the great circle) as a thin dotted line, in the muted tint of the route and under it: the gap with your route shows at a glance. Hover or touch the dotted line: the bubble gives its length in NM.

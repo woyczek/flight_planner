@@ -16,7 +16,7 @@ distances depuis le départ, en milles nautiques. Faites glisser la carte avec u
 zoomer (pendant le geste, la carte se réduit à ses traits — espaces, voies, route avec la SID et la STAR choisies, terrains et balises en petits ronds, ceux-là mêmes qu'elle montre au repos — et ses
 noms reviennent dès qu'elle s'arrête) ; « Recentrer » (la cible, en haut à droite de la carte) revient sur toute la route. La carte reste où vous l'avez mise, même quand la route change :
 seul « Recentrer » (ou un autre vol) la recadre. En revenant sur la carte (depuis Carburant, ou après « Terminer »), vous retrouvez
-votre cadrage tant que la route et les procédures choisies n'ont pas changé ; sinon le vol est recadré, procédures comprises. Tant que « Autour du vol seulement » est cochée (Couches),
+votre cadrage tant que la route et les procédures choisies n'ont pas changé ; sinon le vol est recadré, procédures comprises. La carte de la mission que vous montriez (carte fournie, fenêtre en haut à gauche) se retrouve aussi, d'une Carte à côté de Carburant à la Carte entière et inversement, pour le même vol et la même mission, pendant 12 heures ; l'adresse d'une carte de mission passe avant. Tant que « Autour du vol seulement » est cochée (Couches),
 les espaces et les voies ne sont lus que près du vol, de loin ; décochez-la ou rapprochez-vous pour tout voir.
 
 **La route orthodromique.** Dès que le départ et l'arrivée sont connus, la carte trace le plus court chemin entre eux (le grand cercle) en pointillé fin, dans la teinte atténuée de la route et sous elle : l'écart avec votre route se lit d'un coup d'œil. Passez la souris ou touchez le pointillé : la bulle donne sa longueur en NM.
