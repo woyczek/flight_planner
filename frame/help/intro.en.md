@@ -47,6 +47,7 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 - **Conflicts.** A file changed here and elsewhere at the same time keeps its newest version; the other one stays
   available (status button, then "Conflicts") and can be taken back; "Seen" takes a conflict off the list and the count, "Mark
   all as seen" does it for all of them at once.
+- **The launcher asks before sending what deletes.** On the launcher’s workstation, a pass that would send the **deletion** of a tracked file, or **more than twenty files changed by hand**, stops and asks you: a window lists the files, with « Send » (they go to every pilot, deletions included), « Put back as in the repository » (the tracked files get their repository state back; a new file is never deleted) or « Later » (nothing is sent, the list is not asked again until it changes). Additions and modifications go on alone, as before. Under the three buttons, « Throw everything away and take the repository » puts every tracked file back as in the repository, after showing you what would be lost; it never deletes or overwrites an untracked file, and the old state stays kept in the workstation’s local repository. A paired device is never asked: the answer belongs to the workstation. « Put back as in the repository » first keeps your changes in the workstation’s local repository. At the « Synchronise » gesture, rebuilding a whole zone of the aeronautical base (more than twenty files) also raises the question.
 
 ## Report a problem or make a request
 

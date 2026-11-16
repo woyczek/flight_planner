@@ -535,6 +535,64 @@
       failed: ['Synchronisation impossible : {e}', 'Synchronisation failed: {e}', 'Synchronisation fehlgeschlagen: {e}',
         'Sincronización imposible: {e}'
       ],
+      // SOG-0347 (Q-0058) : le lanceur DEMANDE avant d'envoyer une suppression ou plus de vingt fichiers changés à la main
+      askHead: ['Le lanceur demande avant d’envoyer : {what}.', 'The launcher asks before sending: {what}.',
+        'Der Starter fragt, bevor er sendet: {what}.', 'El lanzador pregunta antes de enviar: {what}.'
+      ],
+      askDel: ['{n} fichier(s) supprimé(s) à la main', '{n} file(s) deleted by hand', '{n} Datei(en) von Hand gelöscht',
+        '{n} archivo(s) borrado(s) a mano'
+      ],
+      askMany: ['{n} fichiers changés à la main (plus de {l})', '{n} files changed by hand (more than {l})',
+        '{n} Dateien von Hand geändert (mehr als {l})', '{n} archivos cambiados a mano (más de {l})'
+      ],
+      askAnd: [' et ', ' and ', ' und ', ' y '],
+      askDeleted: ['Supprimés', 'Deleted', 'Gelöscht', 'Eliminados'],
+      askChanged: ['Changés', 'Changed', 'Geändert', 'Cambiados'],
+      askNote: [
+        '« Envoyer » envoie ces fichiers, suppressions comprises, à tous les pilotes. « Remettre comme dans le dépôt » rend aux fichiers suivis leur état du dépôt ; un fichier nouveau n’est jamais supprimé.',
+        '« Send » sends these files, deletions included, to every pilot. « Put back as in the repository » gives the tracked files their repository state back; a new file is never deleted.',
+        '„Senden“ sendet diese Dateien, auch die Löschungen, an alle Piloten. „Wie im Repository wiederherstellen“ gibt den verfolgten Dateien ihren Stand im Repository zurück; eine neue Datei wird nie gelöscht.',
+        '«Enviar» envía estos archivos, borrados incluidos, a todos los pilotos. «Dejar como en el repositorio» devuelve a los archivos seguidos su estado del repositorio; un archivo nuevo nunca se borra.'
+      ],
+      askSend: ['Envoyer', 'Send', 'Senden', 'Enviar'],
+      askRestore: ['Remettre comme dans le dépôt', 'Put back as in the repository', 'Wie im Repository wiederherstellen',
+        'Dejar como en el repositorio'
+      ],
+      askLater: ['Plus tard', 'Later', 'Später', 'Más tarde'],
+      askDiscard: ['Tout jeter et reprendre le dépôt…', 'Throw everything away and take the repository…',
+        'Alles verwerfen und das Repository übernehmen…', 'Descartar todo y tomar el repositorio…'
+      ],
+      askSent: ['Envoyé, comme vous l’avez demandé.', 'Sent, as you asked.', 'Gesendet, wie gewünscht.', 'Enviado, como pidió.'],
+      askRestored: ['Remis comme dans le dépôt : rien n’est envoyé ; vos modifications restent gardées dans le dépôt local du poste.',
+        'Put back as in the repository: nothing is sent; your changes stay kept in the workstation’s local repository.',
+        'Wie im Repository wiederhergestellt: nichts wird gesendet; Ihre Änderungen bleiben im lokalen Repository des Rechners erhalten.',
+        'Dejado como en el repositorio: no se envía nada; sus cambios quedan guardados en el repositorio local del equipo.'
+      ],
+      askStale: ['La liste a changé depuis que vous l’avez vue : relisez-la.', 'The list changed since you saw it: read it again.',
+        'Die Liste hat sich seit Ihrem Blick geändert: bitte erneut lesen.', 'La lista cambió desde que la vio: léala de nuevo.'
+      ],
+      askFailed: ['Réponse impossible : {e}', 'Could not answer: {e}', 'Antwort nicht möglich: {e}', 'No se pudo responder: {e}'],
+      discardAsk: [
+        'Tout jeter ? {n} fichier(s) suivis seront remis comme dans le dépôt{c}. Les {k} fichier(s) non suivis ne sont jamais touchés ; l’état d’avant reste gardé dans le dépôt local de ce poste.',
+        'Throw everything away? {n} tracked file(s) will be put back as in the repository{c}. The {k} untracked file(s) are never touched; the state before stays kept in this computer’s local repository.',
+        'Alles verwerfen? {n} verfolgte Datei(en) werden wie im Repository wiederhergestellt{c}. Die {k} nicht verfolgten Datei(en) bleiben unberührt; der Stand davor bleibt im lokalen Repository dieses Rechners erhalten.',
+        '¿Descartar todo? {n} archivo(s) seguidos quedarán como en el repositorio{c}. Los {k} archivo(s) no seguidos no se tocan nunca; el estado anterior se conserva en el repositorio local de este equipo.'
+      ],
+      discardCommits: [', et les commits pas encore envoyés seront jetés ({c})', ', and the commits not yet sent will be dropped ({c})',
+        ', und die noch nicht gesendeten Commits werden verworfen ({c})', ', y se descartarán los commits aún no enviados ({c})'
+      ],
+      discardGo: ['Tout jeter', 'Throw everything away', 'Alles verwerfen', 'Descartar todo'],
+      discardLost: ['Seraient perdus', 'Would be lost', 'Gingen verloren', 'Se perderían'],
+      discardBlocked: ['{n} fichier(s) de ce poste, non suivis, seraient écrasés par le dépôt : rien n’est jeté.',
+        '{n} untracked file(s) of this computer would be overwritten by the repository: nothing is thrown away.',
+        '{n} nicht verfolgte Datei(en) dieses Rechners würden vom Repository überschrieben: nichts wird verworfen.',
+        '{n} archivo(s) no seguidos de este equipo serían sobrescritos por el repositorio: no se descarta nada.'
+      ],
+      discardDone: ['{n} fichier(s) suivis remis comme dans le dépôt ; les fichiers non suivis n’ont pas été touchés.',
+        '{n} tracked file(s) put back as in the repository; the untracked files were not touched.',
+        '{n} verfolgte Datei(en) wie im Repository wiederhergestellt; nicht verfolgte Dateien blieben unberührt.',
+        '{n} archivo(s) seguidos dejados como en el repositorio; los archivos no seguidos no se tocaron.'
+      ],
       rewritten: [
         'L’historique du dépôt des données a été réécrit : rien n’est fusionné, vos écritures restent sur le poste du lanceur. Sur ce poste : Réglages › Administration › Dépôt distant, « Reprendre le nouvel historique ».',
         'The data repository’s history was rewritten: nothing is merged, your writes stay on the launcher’s computer. On that computer: Settings › Administration › Remote repository, « Take up the new history ».',
@@ -3063,7 +3121,90 @@
   }
   let rewrittenSaid = false,
     limitTick = 0,
-    syncCountdown = 0;
+    syncCountdown = 0,
+    askShown = '';
+  /** SOG-0347 (Q-0058) : le lanceur demande avant d'envoyer ce qui supprime, ou plus de vingt fichiers changés à la main. La liste des
+   *  fichiers est montrée (des textes, échappés) ; « Envoyer » ou « Remettre comme dans le dépôt » répond pour CETTE liste (son empreinte) ;
+   *  « Plus tard » ne la redemande pas avant qu'elle change ; le geste « Tout jeter et reprendre le dépôt » est dessous. */
+  async function askQuestion(a) {
+    if (!a || a.fingerprint === askShown) return;
+    askShown = a.fingerprint;
+    const what = [a.why.includes('delete') ? t(T.sync.askDel, {
+      n: a.deletedTotal
+    }) : '', a.why.includes('many') ? t(T.sync.askMany, {
+      n: a.changedTotal,
+      l: a.limit
+    }) : ''].filter(Boolean).join(t(T.sync.askAnd));
+    const sections = [{
+      id: 'deleted',
+      title: t(T.sync.askDeleted),
+      lines: a.deleted
+    }, {
+      id: 'changed',
+      title: t(T.sync.askChanged),
+      lines: a.changed.filter(x => !a.deleted.includes(x))
+    }].filter(g => g.lines.length);
+    const pick = await modal(`<p>${esc(t(T.sync.askHead, {
+      what
+    }))}</p>${askSections({
+      sections,
+      note: t(T.sync.askNote)
+    })}<div class="f-row"><button type="button" data-pick="send">${esc(t(T.sync.askSend))}</button><button type="button" data-pick="restore">${esc(t(T.sync.askRestore))}</button><button type="button" data-pick="later">${esc(t(T.sync.askLater))}</button></div><p><button type="button" data-pick="discard">${esc(t(T.sync.askDiscard))}</button></p>`,
+      (m, close) => {
+        m.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => close(b.dataset.pick));
+        m.querySelector('[data-pick=later]').focus(); // jamais « Envoyer » par défaut : une suppression envoyée ne se rattrape pas
+      });
+    if (pick === 'send' || pick === 'restore') {
+      const r = await FD.answerAsk(pick, a.fingerprint);
+      if (r.ask?.stale) {
+        notify(t(T.sync.askStale), 'warn');
+        askShown = '';
+        return askQuestion(r.ask);
+      }
+      if (r.ok) notify(t(pick === 'send' ? T.sync.askSent : T.sync.askRestored), 'ok');
+      else notify(t(T.sync.askFailed, {
+        e: errText(r.message || 'launcher')
+      }), 'err');
+    } else if (pick === 'discard') await discardAll();
+  }
+  /** « Tout jeter et reprendre le dépôt » : le plan d'abord (ce qui serait perdu, ce qui reste), une question avec la liste, puis le geste pour
+   *  cette liste. Un fichier non suivi n'est jamais supprimé ni écrasé : le lanceur refuse sinon. */
+  async function discardAll() {
+    const plan = await FD.discardPlan();
+    if (!plan) return notify(t(T.sync.askFailed, {
+      e: errText('launcher')
+    }), 'err');
+    if (plan.blocked.length) return notify(t(T.sync.discardBlocked, {
+      n: plan.blocked.length
+    }) + ' ' + plan.blocked.slice(0, 3).join(', '), 'warn');
+    if (!plan.ok) return notify(errText(plan.message || 'launcher'), 'warn');
+    const yes = await ask(t(T.sync.discardAsk, {
+      n: plan.lostTotal,
+      k: plan.kept,
+      c: plan.commits ? t(T.sync.discardCommits, {
+        c: plan.commits
+      }) : ''
+    }), {
+      ok: t(T.sync.discardGo),
+      sections: [{
+        id: 'lost',
+        title: t(T.sync.discardLost),
+        lines: plan.lost
+      }].filter(g => g.lines.length)
+    });
+    if (!yes) return;
+    const r = await FD.discard(plan.fingerprint);
+    if (r.ok) notify(t(T.sync.discardDone, {
+      n: plan.lostTotal
+    }), 'ok');
+    else notify(t(T.sync.askFailed, {
+      e: errText(r.message || 'launcher')
+    }), 'err');
+  }
+  /** Le lanceur du poste a-t-il une demande en attente ? (relevé au chargement, chaque minute et après un passage) */
+  async function checkAsk() {
+    if (launcherHere && !launcherDown) askQuestion(await FD.askState());
+  }
   /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
   async function syncNow(quiet = false) {
     const r = await FD.sync();
@@ -3075,6 +3216,7 @@
       rewrittenSaid = true;
       notify(t(T.sync.rewritten), 'warn');
     }
+    if (r.exchange?.ask) askQuestion(r.exchange.ask); // le lanceur a retenu le passage : la question, tout de suite
     if (quiet) return r;
     if (r.error === 'offline') notify(t(T.sync.offlineNote), 'warn');
     else if (r.error) notify(t(T.sync.failed, {
@@ -5415,6 +5557,8 @@
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
     // le lanceur est revu chaque minute et au retour au premier plan : relancé en moins d'une passe, il change de version sans que la page l'apprenne (SOG-0215)
     setInterval(() => void(launcherHere && !launcherDown && recheckLauncher()), 60e3);
+    setTimeout(checkAsk, 4e3); // SOG-0347 : ce que le lanceur retient, dit dès le chargement puis chaque minute
+    setInterval(checkAsk, 60e3);
     window.addEventListener('hashchange', route);
     infoData.watch('cache/', paths => {
       if (paths.some(p => /^cache\/[\w-]+\/status\.json$/.test(p))) readModuleLines();

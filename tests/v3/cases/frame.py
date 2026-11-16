@@ -8848,3 +8848,160 @@ def a245(c):
         c.wait(250)
     c.eq(c.js("({ band: document.getElementById('fLimit').hidden, hint: !!document.querySelector('#fLimit [data-limit-hint]'), row: !!document.querySelector('[data-card=status] li[data-k=limit-hint]') })"), {'band': True, 'hint': False, 'row': False}, 'the limit has ended: no band, no clue', what='ended')
     c.check_errors()
+
+
+@case('A246', "The launcher ASKS before sending what deletes or what is massive (SOG-0347, Q-0058): the frame shows the list and answers « Send » or « Put back as in the repository » for THAT list (its fingerprint); « Later » asks nothing more; « Throw everything away and take the repository » shows what would be lost first; a paired device never gets the question; the paths are texts", 'A',
+      designs=('standard',), screens=False, night=False, langs4=True, phone=True,
+      rule="SOG-0347 (the user, Q-0058, 16 Nov 2026: the launcher asks before sending a deletion or more than twenty files changed by hand, with « Envoyer » or « Remettre comme dans le dépôt »; the rest goes alone; plus « Tout jeter et reprendre le dépôt », which never deletes an untracked file): the frame reads the question from the launcher (GET sync-status › ask, and the report of a pass), shows the files (escaped), never defaults to « Send », answers for the fingerprint it showed (a stale list asks again) and says what happened in its own four languages")
+def a246(c):
+    lang = c.lang
+    TT = lambda k: norm(tx('frame/app.js', k, lang))
+    RAW = lambda k: tx('frame/app.js', k, lang)
+    plural = lambda x: re.sub(r'\(([a-zA-Z]+)\)', r'\1', x)     # « fichier(s) » with n = 2 (the frame resolves the plural)
+    singular = lambda x: re.sub(r'\(([a-zA-Z]+)\)', '', x)     # with n = 1
+    fp = lambda n: f'{n:016x}'
+    hostile = '<img src=x onerror=window.__pwn=1>.json'
+    ask = {'why': ['delete', 'many'], 'deleted': ['missions/m2.json', hostile], 'deletedTotal': 2, 'changed': ['missions/m2.json', hostile, 'cr/ABC/a.json'],
+           'changedTotal': 23, 'limit': 20, 'fingerprint': fp(1)}
+    st = {'ask': ask, 'posts': [], 'discards': [], 'plain': {'ok': True, 'pushed': True}, 'answer': {'ok': True, 'pushed': True},
+          'plan': {'ok': True, 'lost': ['cr/ABC/f06.json', 'notes.txt'], 'lostTotal': 2, 'commits': 1, 'kept': 3, 'blocked': [], 'target': 'a' * 40, 'fingerprint': fp(9), 'message': ''},
+          'lan': False}
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    asked = lambda n: {'ok': False, 'code': 'ask', 'message': 'x', 'ask': {**ask, 'fingerprint': fp(n)}}
+
+    def handler(route):
+        req = route.request
+        path = urllib.parse.urlparse(req.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = {**status, 'lan': st['lan']}
+        elif path.endswith('/__setup/sync-status'):
+            a = st['ask']
+            if a and st['lan']:
+                a = {k: v for k, v in a.items() if k not in ('deleted', 'changed', 'fingerprint')}
+            body = {'repo': True, 'branch': 'main', 'behind': 0, 'changes': 3, 'ahead': 0, 'merging': False, 'last': None, 'ask': a}
+        elif path.endswith('/__setup/sync-discard'):
+            if req.method == 'POST':
+                st['discards'].append(json.loads(req.post_data or '{}'))
+                body = {**st['plan'], 'ok': True, 'discarded': st['plan']['lostTotal'], 'message': 'done'}
+            else:
+                body = st['plan']
+        elif path.endswith('/__setup/sync') and req.method == 'POST':
+            post = json.loads(req.post_data or '{}')
+            st['posts'].append(post)
+            body = st['answer'] if post.get('decision') else st['plain']
+        elif path.endswith('/__setup/secrets'):
+            body = {'app': {}, 'user': {}}
+        elif path.endswith('/__setup/changes'):
+            body = {'head': 'h1', 'tree': {}}
+        elif path.endswith('/__setup/batch'):
+            body = {'ok': True, 'head': 'h1'}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    # « several devices »: the frame exchanges with the launcher at each pass (the header button) and reads the question of its report
+    docs = LEVEL3 + [['device/identity.json', {'trigram': 'ABC'}, 'cache'], ['device/usages.json', {'devices': True}, 'cache']]
+
+    def modal():
+        c.until("!!document.querySelector('.f-modal [data-pick]')", timeout=15000, what='the launcher’s question')
+
+    def gone():
+        c.until("!document.querySelector('.f-modal')", timeout=8000, what='the question is closed')
+
+    def notes():
+        return norm(c.js("[...document.querySelectorAll('.f-note > span')].map(n => n.textContent).join(' | ')"))
+
+    def said(text, what):
+        c.until("(w) => [...document.querySelectorAll('.f-note > span')].some(n => n.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", text, timeout=8000, what=what)
+
+    def clear():
+        c.js("document.querySelectorAll('.f-note [data-x]').forEach(b => b.click())")
+
+    def pass_():
+        c.js("document.getElementById('fSync').click()")    # the header button: a pass, which exchanges with the launcher
+    c.open('settings', docs=docs, wait=False)
+    modal()
+    # what the question says: the two reasons, the files as TEXT, the three answers, the focus on « Later » (never on « Send »)
+    what = norm(plural(RAW('askDel').replace('{n}', '2')) + RAW('askAnd') + RAW('askMany').replace('{n}', '23').replace('{l}', '20'))
+    r = c.js("""() => ({ text: document.querySelector('.f-modal p').textContent, lines: [...document.querySelectorAll('.f-modal .f-ask-lines li')].map(l => l.textContent),
+      img: document.querySelectorAll('.f-modal img').length, pwn: window.__pwn || 0, pick: [...document.querySelectorAll('.f-modal [data-pick]')].map(b => [b.dataset.pick, b.textContent]),
+      focus: document.activeElement?.dataset?.pick || null })""")
+    c.eq(norm(r['text']), TT('askHead').replace('{what}', what), 'the question names what holds the pass back, in the language of the run', what='question')
+    c.eq([r['img'], r['pwn']], [0, 0], 'a path is a text: no element, nothing run', what='escaped')
+    c.ok(hostile in r['lines'] and 'missions/m2.json' in r['lines'] and 'cr/ABC/a.json' in r['lines'], r['lines'], 'the files are listed (the deleted ones, then the others)')
+    c.eq([[k, norm(v)] for k, v in r['pick']], [['send', TT('askSend')], ['restore', TT('askRestore')], ['later', TT('askLater')], ['discard', TT('askDiscard')]],
+         'the answers: Send, Put back as in the repository, Later, and the discard gesture under them', what='answers')
+    c.eq(r['focus'], 'later', 'the focus is on « Later »: a deletion sent cannot be taken back', what='focus')
+    c.shot(f'A246_{c.width}_{lang}_delivered.png')
+    # « Later »: nothing is answered, and the same list is not asked again
+    c.tap('.f-modal [data-pick=later]')
+    gone()
+    pass_()
+    c.wait(1500)
+    c.eq([[p for p in st['posts'] if p.get('decision')], c.count('.f-modal')], [[], 0], '« Later » answers nothing, the same list is not asked again', what='later')
+    # « Put back »: a pass whose report holds a question; the answer carries the fingerprint of the list shown, as a gesture; the frame says what happened
+    st['plain'] = asked(3)
+    pass_()
+    modal()
+    c.tap('.f-modal [data-pick=restore]')
+    gone()
+    said(TT('askRestored'), 'the frame says it')
+    c.eq([[p['decision'], p.get('gesture')] for p in st['posts'] if p.get('decision')], [[{'choice': 'restore', 'ask': fp(3)}, True]],
+         'the answer: « restore » for the fingerprint of the list shown, as a gesture', what='post')
+    c.ok(TT('askRestored') in notes(), notes(), 'the frame says it in its own words, not the launcher’s')
+    # « Send », and the list changed meanwhile: the launcher answers a new question; the frame says so and asks again
+    st['posts'].clear()
+    clear()
+    st['plain'], st['answer'] = asked(4), {**asked(5), 'ask': {**asked(5)['ask'], 'stale': True}}
+    pass_()
+    modal()
+    c.tap('.f-modal [data-pick=send]')
+    said(TT('askStale'), 'a list that changed since it was seen is said')
+    modal()   # and asked again
+    c.eq([p['decision'] for p in st['posts'] if p.get('decision')][:1], [{'choice': 'send', 'ask': fp(4)}], 'the first answer was for the list that was shown', what='first post')
+    c.tap('.f-modal [data-pick=later]')
+    gone()
+    st['answer'] = {'ok': True, 'pushed': True}
+    # « Send » on a list that holds: the launcher sent; the frame says so
+    st['posts'].clear()
+    clear()
+    st['plain'] = asked(6)
+    pass_()
+    modal()
+    c.tap('.f-modal [data-pick=send]')
+    gone()
+    said(TT('askSent'), 'sent')
+    c.eq([p['decision'] for p in st['posts'] if p.get('decision')], [{'choice': 'send', 'ask': fp(6)}], '« send » for the fingerprint of the list shown', what='send post')
+    c.ok(TT('askSent') in notes(), notes(), 'the frame says it was sent, as asked')
+    # the discard gesture: the plan first (what would be lost), then a question with the list, then the gesture for that list
+    clear()
+    st['plain'] = asked(7)
+    pass_()
+    modal()
+    c.tap('.f-modal [data-pick=discard]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the confirmation of the discard')
+    r = c.js("() => ({ text: document.querySelector('.f-modal p').textContent, lines: [...document.querySelectorAll('.f-modal .f-ask-lines li')].map(l => l.textContent), ok: document.querySelector('.f-modal [data-ok]').textContent })")
+    want = plural(TT('discardAsk').replace('{n}', '2').replace('{k}', '3').replace('{c}', TT('discardCommits').replace('{c}', '1')))
+    c.eq([norm(r['text']), r['lines'], norm(r['ok'])], [want, ['cr/ABC/f06.json', 'notes.txt'], TT('discardGo')], 'the question lists what would be lost and what stays', what='plan')
+    c.eq(st['discards'], [], 'nothing is thrown away before the answer', what='no post yet')
+    c.tap('.f-modal [data-ok]')
+    gone()
+    said(plural(TT('discardDone').replace('{n}', '2')), 'the gesture ran')
+    c.eq(st['discards'], [{'confirm': fp(9)}], 'the gesture is given for the fingerprint of the plan the user saw', what='discard post')
+    c.ok(plural(TT('discardDone').replace('{n}', '2')) in notes(), notes(), 'the frame says what was done, in its own words')
+    # a plan that is refused (an untracked file in the way): said, nothing thrown away
+    st['discards'].clear()
+    clear()
+    st['plan'] = {**st['plan'], 'ok': False, 'blocked': ['cr/ABC/from_a.json']}
+    st['plain'] = asked(8)
+    pass_()
+    modal()
+    c.tap('.f-modal [data-pick=discard]')
+    said(singular(TT('discardBlocked').replace('{n}', '1')), 'the refusal')
+    c.ok(singular(TT('discardBlocked').replace('{n}', '1')) in notes() and not st['discards'], notes(), 'a refused gesture says so, and throws nothing away')
+    c.eq(c.count('.f-modal'), 0, 'no question is left open', what='closed')
+    # a paired device of the local network: the launcher gives it the figures only, never the paths nor the fingerprint: no question
+    st['lan'], st['plain'] = True, {'ok': False, 'code': 'ask', 'message': 'x', 'ask': {k: v for k, v in ask.items() if k not in ('deleted', 'changed', 'fingerprint')}}
+    c.page.reload(wait_until='load')
+    c.wait(6500)
+    c.eq(c.count('.f-modal'), 0, 'a paired device is never asked: the answer belongs to the workstation', what='lan')
+    c.check_errors()

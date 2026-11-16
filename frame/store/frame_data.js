@@ -476,6 +476,88 @@
   // ---------------------------------------------------------------- état
   let syncing = null,
     lastError = '';
+  /** SOG-0347 : ce que le lanceur demande avant d'envoyer (une suppression, plus de vingt fichiers changés à la main), lu chez lui ;
+   *  null sans lanceur ou sans demande. */
+  async function askState() {
+    try {
+      return cleanAsk((await cfg.transport?.askState?.())?.ask);
+    } catch {
+      return null;
+    }
+  }
+  /** La réponse de l'utilisateur : 'send' (envoyer) ou 'restore' (remettre comme dans le dépôt), pour la liste dont il a vu
+   *  l'empreinte ; rend { ok, message, ask } (ask : la demande qui reste, s'il en reste une). Puis un passage : la copie de l'appareil suit. */
+  async function answerAsk(choice, fingerprint) {
+    if (!cfg.transport?.answer || (choice !== 'send' && choice !== 'restore') || !/^[0-9a-f]{16}$/.test(fingerprint)) return {
+      ok: false,
+      message: '',
+      ask: null
+    };
+    let r;
+    try {
+      r = await cfg.transport.answer({
+        choice,
+        ask: fingerprint
+      });
+    } catch (e) {
+      return {
+        ok: false,
+        message: e?.offline ? 'offline' : String(e?.message || e).slice(0, 300),
+        ask: null
+      };
+    }
+    sync({
+      reason: 'manual'
+    }).catch(() => {});
+    return {
+      ok: r.ok === true,
+      message: String(r.message || '').slice(0, 300),
+      ask: cleanAsk(r.ask)
+    };
+  }
+  /** « Tout jeter et reprendre le dépôt » : le plan (ce qui serait perdu, ce qui reste), sans rien changer. */
+  async function discardPlan() {
+    try {
+      const p = await cfg.transport?.discardPlan?.();
+      if (!p || typeof p !== 'object') return null;
+      const num = v => Math.min(1e6, Math.max(0, +v || 0)),
+        list = v => (Array.isArray(v) ? v : []).slice(0, 200).map(x => String(x).slice(0, 200));
+      return {
+        ok: p.ok === true,
+        lost: list(p.lost),
+        lostTotal: num(p.lostTotal),
+        commits: num(p.commits),
+        kept: num(p.kept),
+        blocked: list(p.blocked),
+        fingerprint: /^[0-9a-f]{16}$/.test(p.fingerprint) ? p.fingerprint : '',
+        message: String(p.message || '').slice(0, 300)
+      };
+    } catch {
+      return null;
+    }
+  }
+  /** Le geste, pour la liste dont l'utilisateur a vu l'empreinte ; rend { ok, message }. Puis un passage : la copie de l'appareil suit. */
+  async function discard(fingerprint) {
+    if (!cfg.transport?.discard || !/^[0-9a-f]{16}$/.test(fingerprint)) return {
+      ok: false,
+      message: ''
+    };
+    try {
+      const r = await cfg.transport.discard(fingerprint);
+      sync({
+        reason: 'manual'
+      }).catch(() => {});
+      return {
+        ok: r.ok === true,
+        message: String(r.message || '').slice(0, 400)
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        message: e?.offline ? 'offline' : String(e?.message || e).slice(0, 300)
+      };
+    }
+  }
   /** État : { transport, online, syncing, lastSync, lastError, pending, conflicts }. */
   async function status() {
     const s = await getMeta('status').catch(() => null),
@@ -1460,6 +1542,23 @@
       'other'
     ],
     SYNC_STEPS = ['settle', 'commit', 'prepare', 'receive', 'untrack', 'push'];
+  /** La demande du lanceur (SOG-0347) lue comme une entrée non sûre : des nombres bornés, des chemins en texte (200 au plus, 200
+   *  caractères), l'empreinte en 16 chiffres hexadécimaux ; null sans demande. */
+  function cleanAsk(a) {
+    if (!a || typeof a !== 'object' || !/^[0-9a-f]{16}$/.test(a.fingerprint)) return null;
+    const num = v => Math.min(1e6, Math.max(0, +v || 0)),
+      list = v => (Array.isArray(v) ? v : []).slice(0, 200).map(x => String(x).slice(0, 200));
+    return {
+      why: (Array.isArray(a.why) ? a.why : []).filter(x => x === 'delete' || x === 'many'),
+      deletedTotal: num(a.deletedTotal),
+      changedTotal: num(a.changedTotal),
+      limit: num(a.limit),
+      deleted: list(a.deleted),
+      changed: list(a.changed),
+      stale: a.stale === true,
+      fingerprint: a.fingerprint
+    };
+  }
   async function exchange(T, result, reason) {
     if (!T.exchange) return;
     try {
@@ -1478,6 +1577,7 @@
         settled: typeof r.settled === 'string' ? r.settled : '',
         // code d'un refus que la page sait dire (rewritten : historique du dépôt réécrit, à reprendre par un geste)
         code: typeof r.code === 'string' ? r.code.slice(0, 30) : '',
+        ask: cleanAsk(r.ask),
         cause: SYNC_CAUSES.includes(r.cause) ? r.cause : '',
         step: SYNC_STEPS.includes(r.step) ? r.step : '',
         message: String(r.message || '').slice(0, 300)
@@ -2363,6 +2463,10 @@
     setAirline,
     isNewer, // la fiche a est plus récente que b, par l'instant de updated_at / updatedAt (la seule règle de comparaison des dates)
     sync,
+    askState, // SOG-0347 : ce que le lanceur demande avant d'envoyer ; answerAsk('send' | 'restore', empreinte) ; discardPlan() / discard(empreinte) : « Tout jeter et reprendre le dépôt »
+    answerAsk,
+    discardPlan,
+    discard,
     sendPending,
     sendNow,
     isHeld,

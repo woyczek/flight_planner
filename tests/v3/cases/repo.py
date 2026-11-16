@@ -2388,8 +2388,11 @@ def i37(c):
         for nm in names:
             Path(a, *nm.split('/')).write_text(json.dumps({'updated_at': '2026-11-06T10:00:00Z', 'dispos': {}}), encoding='utf-8')
         c.ge(sum(len(x) + 1 for x in names), 40000, 'more than a command line holds', what='characters of paths')
-        r = DS.update(a, 'AAA')
-        c.ok('impossible' not in r.get('message', '') and r.get('committed') == n, json.dumps(r, ensure_ascii=False)[:300], 'update commits the 1400 files, no refusal')
+        r = DS.update(a, 'AAA')    # SOG-0347: more than twenty files changed by hand are asked about, not committed by the start-up pass
+        c.ok('impossible' not in r.get('message', '') and r.get('committed') == 0 and (r.get('ask') or {}).get('changedTotal') == n, json.dumps(r, ensure_ascii=False)[:300],
+             'the start-up pass reads the 1400 files without a command too long, and asks instead of committing them')
+        r = DS.run(a, 'AAA', decision={'choice': 'send', 'ask': r['ask']['fingerprint']})
+        c.ok('impossible' not in r.get('message', '') and r.get('committed') == n, json.dumps(r, ensure_ascii=False)[:300], 'on the user’s word the pass commits the 1400 files, no refusal')
         code, out = DS.git(a, 'ls-files')
         c.eq(len(out.splitlines()), n, 'every file is in the commit', what='tracked files')
         c.eq(DS.pool_changes(a), [], 'nothing left to commit', what='pool changes')
@@ -2943,3 +2946,197 @@ def k231(c):
          '', 'triggers and permissions are as they were')
     c.ok(not re.search(r'\brm\b|rmtree|--force|\bcurl\b|\bwget\b|secrets\.', wf), '', 'no deletion, download or secret in the workflow')
     c.ok(steps.count("Racine du site → l'appli V3 (SOG-0278)") == 1, steps, 'the step is named')
+
+
+@case('I43', 'Data sync: a pass that would delete a file, or send more than twenty hand-changed files, asks first; « Send » / « Put back as in the repository »; « Throw everything away and take the repository » never deletes an untracked file', 'I', static=True,
+      rule="SOG-0347 (Q-0058, the user, 16 Nov 2026): the launcher no longer sends by itself what deletes or what is massive: a pass that would carry a DELETION of a tracked file, or more than twenty files changed by hand, stops and asks (nothing committed, received or sent), with « Send » or « Put back as in the repository »; additions and modifications go on alone; the discard gesture puts the TRACKED files back as in the repository and never deletes or overwrites an untracked file; the answer comes from the workstation only")
+def i43(c):
+    import importlib
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    D = importlib.import_module('data_sync')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-ask-'))
+
+    def g(cwd, *a):
+        r = subprocess.run(['git', '-C', str(cwd), *a], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        return r.returncode, (r.stdout + r.stderr).strip()
+
+    def put(repo, rel, text):
+        f = repo / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text, encoding='utf-8')
+
+    def remote_has(rel):
+        return g(tmp / 'remote.git', 'cat-file', '-e', f'main:{rel}')[0] == 0
+
+    try:
+        bare, a, b = tmp / 'remote.git', tmp / 'a', tmp / 'b'
+        g(tmp, 'init', '-q', '--bare', '-b', 'main', str(bare))
+        g(tmp, 'clone', '-q', str(bare), str(a))
+        for k, val in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+            g(a, 'config', k, val)
+        for i in range(30):
+            put(a, f'cr/ABC/f{i:02d}.json', json.dumps({'v': i}) + '\n')
+        put(a, 'missions/m1.json', '{"m": 1}\n')
+        put(a, 'missions/m2.json', '{"m": 2}\n')
+        put(a, 'sia/base/us/zone.json', '{"z": 1}\n')
+        put(a, 'notes.txt', 'outside the pool\n')
+        g(a, 'add', '-A')
+        g(a, 'commit', '-qm', 'one')
+        g(a, 'push', '-q', '-u', 'origin', 'main')
+        g(tmp, 'clone', '-q', str(bare), str(b))
+        for k, val in (('user.name', 'pilote'), ('user.email', 'pilote@example.invalid')):
+            g(b, 'config', k, val)
+
+        # 1. additions and modifications go on alone (as today)
+        put(b, 'missions/m1.json', '{"m": 1, "edited": true}\n')
+        put(b, 'missions/m3.json', '{"m": 3}\n')
+        r = D.run(str(b), 'ABC')
+        c.ok(r['ok'] and r['pushed'] and r['committed'] == 2 and 'ask' not in r, json.dumps(r, ensure_ascii=False)[:300],
+             'a modification and an addition are sent by the pass, no question')
+        c.eq(D.status(str(b))['ask'], None, 'the status holds no question', what='status ask, clean')
+
+        # 2. a DELETION stops the pass: nothing committed, received or sent; the file stays deleted on the workstation
+        (b / 'missions' / 'm2.json').unlink()
+        before = g(b, 'rev-parse', 'HEAD')[1]
+        st = D.status(str(b))
+        c.ok(st['ask'] and st['ask']['why'] == ['delete'] and st['ask']['deleted'] == ['missions/m2.json'], json.dumps(st['ask']), 'the status says what a background pass would ask')
+        r = D.run(str(b), 'ABC')
+        ask = r.get('ask') or {}
+        c.ok(not r['ok'] and r.get('code') == 'ask' and not r['pushed'] and r['committed'] == 0 and ask.get('deleted') == ['missions/m2.json']
+             and 'attend votre réponse' in r['message'], json.dumps(r, ensure_ascii=False)[:400], 'a pass that would delete a tracked file asks and says which one')
+        c.ok(g(b, 'rev-parse', 'HEAD')[1] == before and remote_has('missions/m2.json') and not (b / 'missions' / 'm2.json').exists(), '',
+             'nothing committed, nothing sent, the workstation left as the user made it')
+        u = D.update(str(b), 'ABC')
+        c.ok(u['committed'] == 0 and u.get('ask') and 'demande' in u['message'] and g(b, 'rev-parse', 'HEAD')[1] == before, json.dumps(u, ensure_ascii=False)[:300],
+             'the pass of the launcher’s start commits no deletion either, and says it')
+        # a stale answer (the list has changed since the user saw it) asks again
+        stale = {'choice': 'send', 'ask': ask['fingerprint']}
+        put(b, 'missions/m4.json', '{"m": 4}\n')
+        r = D.run(str(b), 'ABC', decision=stale)
+        c.ok(r.get('code') == 'ask' and r['ask']['stale'] and not r['pushed'] and remote_has('missions/m2.json'), json.dumps(r, ensure_ascii=False)[:300],
+             'an answer given for another list asks again (stale), nothing sent')
+        (b / 'missions' / 'm4.json').unlink()   # the list is the same as the one the user saw
+        r = D.run(str(b), 'ABC')
+        c.eq(r['ask']['fingerprint'], ask['fingerprint'], 'the same list, the same fingerprint', what='fingerprint')
+        r = D.run(str(b), 'ABC', decision={'choice': 'maybe', 'ask': ask['fingerprint']})
+        c.ok(r.get('code') == 'ask', '', 'an unknown answer is not an answer')
+
+        # 3. « Put back as in the repository »: the deleted file returns, the modified one is as it was, an untracked file stays and is not sent
+        put(b, 'missions/m1.json', '{"m": 1, "edited again": true}\n')
+        put(b, 'missions/new_by_hand.json', '{"new": 1}\n')
+        r = D.run(str(b), 'ABC')
+        fp = r['ask']['fingerprint']
+        c.ok(r['ask']['deletedTotal'] == 1 and r['ask']['changedTotal'] == 3, json.dumps(r['ask']), 'the list: one deletion, three files')
+        r = D.run(str(b), 'ABC', decision={'choice': 'restore', 'ask': fp})
+        c.ok(r['ok'] and r['pushed'] and r['committed'] == 0 and r['restored'] == 2 and r['left'] == 1 and 'Remis comme dans le dépôt' in r['message'], json.dumps(r, ensure_ascii=False)[:400],
+             'put back: two tracked files restored, one new file left, nothing committed')
+        c.eq([(b / 'missions' / 'm2.json').read_text(encoding='utf-8'), (b / 'missions' / 'm1.json').read_text(encoding='utf-8'), (b / 'missions' / 'new_by_hand.json').exists()],
+             ['{"m": 2}\n', '{"m": 1, "edited": true}\n', True], 'the deleted file is back, the changed one as the repository has it, the untracked one is never removed', what='put back')
+        c.ok(not remote_has('missions/new_by_hand.json') and remote_has('missions/m2.json'), '', 'the new file was not sent, the deleted one is still on the remote')
+        refs = g(b, 'for-each-ref', '--format=%(refname)', 'refs/sog/avant-remise-*')[1].split()
+        saved = g(b, 'show', f'{refs[0]}:missions/m1.json') if refs else (1, '')
+        c.ok(len(refs) == 1 and r.get('ref') == refs[0] and saved == (0, '{"m": 1, "edited again": true}') and refs[0] in r['message'] and g(b, 'stash', 'list')[1] == '',
+             json.dumps([refs, saved, r.get('ref')]), 'what « Put back » throws away is kept first, in refs/sog/avant-remise-<date> (the stash stack untouched), and the answer says so')
+        (b / 'missions' / 'new_by_hand.json').unlink()
+
+        # 4. « Send »: the deletion goes, on the user's word, for the list he saw
+        (b / 'missions' / 'm2.json').unlink()
+        fp = D.run(str(b), 'ABC')['ask']['fingerprint']
+        r = D.run(str(b), 'ABC', decision={'choice': 'send', 'ask': fp})
+        c.ok(r['ok'] and r['pushed'] and r['committed'] == 1 and r['sentAfterAsk'] == 1 and not remote_has('missions/m2.json'), json.dumps(r, ensure_ascii=False)[:300],
+             'sent on the user’s word: the deletion reaches the remote')
+
+        # 5. more than twenty hand-changed files ask, twenty go alone; the asked list is the pool files only
+        for i in range(20):
+            put(b, f'cr/ABC/f{i:02d}.json', json.dumps({'v': i, 'hand': 1}) + '\n')
+        r = D.run(str(b), 'ABC')
+        c.ok(r['ok'] and r['pushed'] and r['committed'] == 20, json.dumps(r, ensure_ascii=False)[:200], 'twenty changed files go alone')
+        for i in range(21):
+            put(b, f'cr/ABC/f{i:02d}.json', json.dumps({'v': i, 'hand': 2}) + '\n')
+        r = D.run(str(b), 'ABC')
+        c.ok(r.get('code') == 'ask' and r['ask']['why'] == ['many'] and r['ask']['changedTotal'] == 21 and r['ask']['limit'] == 20 and not r['pushed'], json.dumps(r['ask']),
+             'twenty-one changed files stop the pass and ask')
+        seen = r['ask']['fingerprint']
+        put(b, 'cr/ABC/f00.json', json.dumps({'v': 0, 'hand': 3, 'longer': 'x' * 50}) + '\n')   # the SAME file, modified again after the user saw the list
+        r = D.run(str(b), 'ABC', decision={'choice': 'send', 'ask': seen})
+        c.ok(r.get('code') == 'ask' and r['ask']['stale'] and r['ask']['fingerprint'] != seen and not r['pushed'], json.dumps(r.get('ask'))[:200],
+             'the same file modified again changes the fingerprint: the answer is stale, nothing sent')
+        r = D.run(str(b), 'ABC', decision={'choice': 'send', 'ask': r['ask']['fingerprint']})
+        c.ok(r['ok'] and r['pushed'] and r['committed'] == 21, json.dumps(r, ensure_ascii=False)[:200], 'sent on the user’s word')
+        # sia/base: without the gesture it stays on the workstation (as before), with the build’s own pass it is out of the question
+        for i in range(25):
+            put(b, f'sia/base/us/z{i}.json', '{"z": 1}\n')
+        (b / 'sia' / 'base' / 'us' / 'zone.json').unlink()
+        r = D.run(str(b), 'ABC')
+        c.ok(r['ok'] and r['held'] == 26 and 'ask' not in r, json.dumps(r, ensure_ascii=False)[:200], 'a background pass keeps sia/base on the workstation: no question about it')
+        r = D.run(str(b), 'ABC', gesture=True, build=True)
+        c.ok(r['ok'] and r['pushed'] and r['committed'] == 26 and 'ask' not in r, json.dumps(r, ensure_ascii=False)[:200], 'the build’s own pass publishes its base, no question')
+
+        # 6. « Throw everything away and take the repository »
+        a_files = {'cr/ABC/f25.json': json.dumps({'v': 5, 'a': 1}) + '\n'}
+        put(a, 'cr/ABC/f25.json', a_files['cr/ABC/f25.json'])
+        put(a, 'cr/ABC/from_a.json', '{"a": 1}\n')
+        g(a, 'add', '-A')
+        g(a, 'commit', '-qm', 'another pilot')
+        g(a, 'pull', '-q', '--no-rebase', 'origin', 'main')
+        g(a, 'push', '-q', 'origin', 'main')
+        put(b, 'cr/ABC/f06.json', '{"mine": 1}\n')                 # tracked, changed
+        (b / 'cr' / 'ABC' / 'f07.json').unlink()                    # tracked, deleted
+        put(b, 'notes.txt', 'changed outside the pool\n')           # tracked outside the pool
+        put(b, 'cr/ABC/untracked_mine.json', '{"u": 1}\n')          # never tracked: never touched
+        put(b, 'atelier/vac.txt', 'my workshop\n')
+        put(b, 'cr/ABC/from_a.json', 'MY OWN FILE, same name as one the repository brings\n')   # untracked, in the way
+        plan = D.discard_plan(str(b))
+        c.ok(not plan['ok'] and plan['blocked'] == ['cr/ABC/from_a.json'] and 'écrasés' in plan['message'], json.dumps(plan, ensure_ascii=False)[:400],
+             'an untracked file the repository would overwrite refuses the gesture, nothing changed')
+        r = D.discard_apply(str(b), plan['fingerprint'])
+        c.ok(not r['ok'] and (b / 'cr' / 'ABC' / 'from_a.json').read_text(encoding='utf-8').startswith('MY OWN') and not (b / 'cr' / 'ABC' / 'f07.json').exists(), '',
+             'refused: the untracked file is intact, the tracked changes are still there')
+        (b / 'cr' / 'ABC' / 'from_a.json').rename(b / 'cr' / 'ABC' / 'from_a_mine.json')
+        plan = D.discard_plan(str(b))
+        c.ok(plan['ok'] and plan['lostTotal'] == 3 and sorted(plan['lost']) == ['cr/ABC/f06.json', 'cr/ABC/f07.json', 'notes.txt'] and plan['kept'] >= 3,
+             json.dumps(plan, ensure_ascii=False)[:400], 'the plan lists the tracked files that would be lost, and counts the untracked ones that stay')
+        put(b, 'cr/ABC/f06.json', '{"mine": 1, "and more": 2}\n')       # the same file modified again after the plan
+        r = D.discard_apply(str(b), plan['fingerprint'])
+        c.ok(not r['ok'] and r.get('stale') and (b / 'cr' / 'ABC' / 'f06.json').exists(), '', 'a file modified again after the plan makes the confirmation stale: nothing thrown away')
+        put(b, 'cr/ABC/f06.json', '{"mine": 1}\n')
+        plan = D.discard_plan(str(b))
+        r = D.discard_apply(str(b), 'not-the-list')
+        c.ok(not r['ok'] and r.get('stale') and (b / 'cr' / 'ABC' / 'f06.json').read_text(encoding='utf-8') == '{"mine": 1}\n', '', 'a wrong confirmation throws nothing')
+        r = D.discard_apply(str(b), plan['fingerprint'])
+        c.ok(r['ok'] and r['discarded'] == 3 and r['ref'].startswith('refs/sog/avant-reprise-'), json.dumps(r, ensure_ascii=False)[:400], 'the gesture runs on the list the user saw')
+        c.eq(g(b, 'rev-parse', 'HEAD')[1], g(b, 'rev-parse', 'origin/main')[1], 'the branch is the repository’s', what='head')
+        c.eq([(b / 'cr' / 'ABC' / 'f25.json').read_text(encoding='utf-8'), (b / 'cr' / 'ABC' / 'f07.json').exists(), (b / 'notes.txt').read_text(encoding='utf-8')],
+             [a_files['cr/ABC/f25.json'], True, 'outside the pool\n'], 'the tracked files are the repository’s (the other pilot’s change is there, the deleted file is back)', what='tracked')
+        c.eq([(b / 'cr' / 'ABC' / 'untracked_mine.json').read_text(encoding='utf-8'), (b / 'atelier' / 'vac.txt').read_text(encoding='utf-8'),
+              (b / 'cr' / 'ABC' / 'from_a_mine.json').exists()], ['{"u": 1}\n', 'my workshop\n', True], 'the untracked files are never deleted or touched', what='untracked')
+        saved = g(b, 'show', f'{r["ref"]}:cr/ABC/f06.json')
+        c.ok(saved[0] == 0 and saved[1] == '{"mine": 1}', saved, 'nothing is lost for good: the state before is kept in refs/sog/avant-reprise-<date>')
+        c.eq(g(b, 'stash', 'list')[1], '', 'the stack of stashes (shared with the other sessions) is not touched', what='stash list')
+        c.eq(D.status(str(b))['ask'], None, 'afterwards nothing is asked', what='status after')
+        # an untracked file that is a COMPONENT of a path the repository brings (« cr/zz » a file, the repository wants « cr/zz/b.json ») would be replaced by a folder
+        put(b, 'cr/zz', 'my own file, named like a folder of the repository\n')
+        put(a, 'cr/zz/b.json', '{"b": 1}\n')
+        g(a, 'add', '-A')
+        g(a, 'commit', '-qm', 'a folder where the workstation has a file')
+        g(a, 'pull', '-q', '--no-rebase', 'origin', 'main')
+        g(a, 'push', '-q', 'origin', 'main')
+        plan = D.discard_plan(str(b))
+        c.ok(not plan['ok'] and plan['blocked'] == ['cr/zz/b.json'], json.dumps(plan, ensure_ascii=False)[:300], 'a file in the way as a COMPONENT of the path refuses the gesture (every prefix is tested)')
+        r = D.discard_apply(str(b), plan['fingerprint'])
+        c.ok(not r['ok'] and (b / 'cr' / 'zz').is_file() and (b / 'cr' / 'zz').read_text(encoding='utf-8').startswith('my own'), '', 'refused: the file is intact, not replaced by a folder')
+        # a deleted file the user wants gone: the answer is « Send », not the gesture; a workstation without a remote has nothing to take up
+        c.ok(not D.discard_plan(str(tmp / 'nowhere'))['ok'], '', 'not a repository: nothing to take up')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    # the launcher: the answer to a question comes from the workstation only; the gesture too; the build's pass is out of the question
+    src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    post = src[src.index("def _post_sync(self, path, body):"):src.index("@route('POST', '/__setup/aircraft-db'")]
+    c.ok("decision = a.get('decision') if isinstance(a, dict) and not (self._lan() or self._relay()) else None" in post and 'sync_gesture(a), decision)' in post, '',
+         'POST /__setup/sync takes an answer only from the workstation itself (never a paired device nor the relay)')
+    c.ok("'deleted', 'changed', 'fingerprint'" in post, '', 'a paired device is told the figures of the question, never the paths')
+    for verb in ("@route('GET', '/__setup/sync-discard', public='poste')", "@route('POST', '/__setup/sync-discard', public='poste')"):
+        i = src.index(verb)
+        c.ok('self._lan()' in src[i:i + 400] and 'self._allowed()' in src[i:i + 400], verb, 'the gesture is refused to a paired device: ' + verb)
+    c.ok("data_sync.run(DATA, str(author or '').upper(), '', True, None, True)" in src, '', 'the build’s publication is out of the question')

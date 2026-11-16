@@ -138,7 +138,16 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   launcher's report, `exchange: { ok, committed, held, received, pushed, conflicts, refused, settled, message }` (numbers
   and its cleaned message: no path, no git output; absent without a launcher). A module checks the capacity with
   `data.sync.gesture === true` (an older frame: keep the button grey, never fall back to a pass without the gesture); it
-  never posts `/__setup/sync` itself.
+  never posts `/__setup/sync` itself. The report may carry `exchange.ask` (SOG-0347): see the next item.
+- **The launcher asks before sending what deletes or what is massive** (16 Nov 2026, SOG-0347, Q-0058): `exchange.ask`
+  (`{ why: ['delete'|'many'], deletedTotal, changedTotal, limit, deleted, changed, stale, fingerprint }`, paths as texts, 200 at most)
+  says a pass was held back; the frame shows the question itself (a modal, the focus on « Later »), at once on the report and every
+  minute from `GET /__setup/sync-status`. For a page that wants to offer the same answers (Settings › Synchronisation):
+  `await FrameData.askState()` (the question or `null`), `await FrameData.answerAsk('send' | 'restore', fingerprint)` →
+  `{ ok, message, ask }` (`ask`: the question that remains, `stale: true` when the list changed), `await FrameData.discardPlan()` →
+  `{ ok, lost, lostTotal, commits, kept, blocked, fingerprint, message }`, `await FrameData.discard(fingerprint)` → `{ ok, message }`
+  (« Tout jeter et reprendre le dépôt »). Workstation only: a paired device gets the figures, never the paths nor the fingerprint,
+  and no function answers for it. A page never posts `/__setup/sync` or `sync-discard` itself.
 - Always design for the cached value first: the network may never come.
 
 **A copy older than the tree is never served** (SOG-0235, 10–11 Nov 2026). A document with nothing pending whose revision is not the one of the repository tree this device knows — and that was written

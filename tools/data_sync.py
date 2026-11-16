@@ -16,7 +16,7 @@ Un passage de synchronisation (run) :
 Essai sans toucher au vrai dépôt : python tools/data_sync.py --essai (dépôt distant et deux copies dans un dossier
 temporaire, modifications croisées, conflits, vérifications).
 """
-import json, os, re, shutil, subprocess, sys, tempfile, time
+import hashlib, json, os, re, shutil, subprocess, sys, tempfile, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_guard  # .js du pool : format des fichiers de données seulement (jamais de code commité)
@@ -285,8 +285,10 @@ def branch_info(data):
     return br, up, remote
 
 
-def pool_changes(data, spec=None):
-    """Fichiers du pool (ou d'autres chemins : spec) modifiés, ajoutés ou supprimés sur ce poste (non commités)."""
+def pool_entries(data, spec=None):
+    """Fichiers du pool (ou d'autres chemins : spec) modifiés, ajoutés ou supprimés sur ce poste (non commités) : des
+    couples (code d'état sur deux caractères, chemin). Un renommage donne le nouveau chemin, puis l'ancien en « D »
+    (l'ancien disparaît : c'est une suppression) ; une copie, l'ancien chemin tel quel."""
     try:  # sortie brute, -z : l'espace de tête du code d'état compte (pas de strip) ; chemins sans guillemets
         out = subprocess.run(git_cmd('-C', data, 'status', '--porcelain', '-z', '-uall', '--', *(spec or [*POOL, *EXCLUDE])),
                              capture_output=True, env=git_env(), timeout=TIMEOUT).stdout.decode('utf-8', errors='replace')
@@ -297,12 +299,53 @@ def pool_changes(data, spec=None):
     while i < len(items):
         e = items[i]
         if len(e) > 3:
-            files.append(e[3:])
-            if e[0] in 'RC':  # renommage : l'ancien chemin suit
+            files.append((e[:2], e[3:]))
+            if e[0] in 'RC':  # renommage ou copie : l'ancien chemin suit
                 i += 1
-                files.append(items[i])
+                files.append(('D ' if e[0] == 'R' else '  ', items[i]))
         i += 1
     return files
+
+
+def pool_changes(data, spec=None):
+    """Fichiers du pool (ou d'autres chemins : spec) modifiés, ajoutés ou supprimés sur ce poste (non commités)."""
+    return [p for _, p in pool_entries(data, spec)]
+
+
+# SOG-0347 (Q-0058, 16 nov. 2026) : le lanceur n'envoie plus tout seul ce qui supprime ou ce qui est massif. Un passage qui
+# porterait une SUPPRESSION de fichier suivi, ou plus de ASK_FILES fichiers changés à la main, s'arrête et demande ;
+# les ajouts et les modifications partent seuls, comme avant. L'utilisateur répond « Envoyer » ou « Remettre comme dans le
+# dépôt » (decision) ; sa réponse porte l'empreinte de la liste qu'il a vue : une liste qui a changé depuis redemande.
+ASK_FILES = 20
+ASK_LISTED = 200  # chemins rendus à la page (le nombre total les accompagne)
+
+
+def stamp_of(data, p):
+    """Taille et date de modification (ns) d'un fichier de data/, sans suivre un lien (lstat) ; « - » s'il n'existe pas (une
+    suppression) : ce que l'empreinte d'une demande ajoute aux noms et aux états, pour qu'un fichier modifié de nouveau
+    redemande (SOG-0347, audit : l'empreinte ne couvrait que les noms)."""
+    try:
+        s = os.lstat(os.path.join(data, *p.split('/')))
+        return f'{s.st_size}:{s.st_mtime_ns}'
+    except (OSError, ValueError):
+        return '-'
+
+
+def ask_of(entries, gesture=False, build=False, data=''):
+    """La demande d'un passage : None quand tout part seul ; sinon { why (« delete » et/ou « many »), deleted, deletedTotal,
+    changed, changedTotal, limit, fingerprint }. entries : les couples (code, chemin) que le passage commiterait. Sans geste
+    de l'utilisateur, les chemins GESTURE_ONLY restent sur le poste (hors de la demande) ; build : le travail de construction
+    de la base commite ses propres chemins GESTURE_ONLY (hors de la demande aussi) ; data : le dossier, dont la taille et
+    la date de chaque fichier de la liste entrent dans l'empreinte (stamp_of)."""
+    es = {p: xy for xy, p in entries if (gesture and not build) or not any(p.startswith(g) for g in GESTURE_ONLY)}
+    names = sorted(es)
+    deleted = [p for p in names if 'D' in es[p]]
+    why = (['delete'] if deleted else []) + (['many'] if len(names) > ASK_FILES else [])
+    if not why:
+        return None
+    fp = hashlib.sha1('\n'.join(f'{es[p]}\t{p}\t{stamp_of(data, p) if data else ""}' for p in names).encode('utf-8', errors='replace')).hexdigest()[:16]
+    return {'why': why, 'deleted': deleted[:ASK_LISTED], 'deletedTotal': len(deleted), 'changed': names[:ASK_LISTED],
+            'changedTotal': len(names), 'limit': ASK_FILES, 'fingerprint': fp}
 
 
 # ---- écart entre data/ et sa sauvegarde git distante : seuils [à synchroniser, alerte] ; surchargeables dans
@@ -406,7 +449,8 @@ def status(data, fetch=False):
         if code == 0 and len(out.split()) == 2:
             ahead, behind = map(int, out.split())
     merging = os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD'))
-    changes = pool_changes(data)
+    entries = pool_entries(data)
+    changes = [p for _, p in entries]
     # les chemins à envoyer, noms seuls (jamais le contenu), 200 au plus avec leur nombre : modifiés ici (pas encore
     # commités) et ceux des commits qui attendent l'envoi — pour la carte Synchronisation (1er nov. 2026)
     pushing = []
@@ -418,7 +462,7 @@ def status(data, fetch=False):
           'changed': names[:PATHS_MAX], 'changedTotal': len(names), 'toPush': pushing[:PATHS_MAX], 'toPushTotal': len(pushing),
           'oldest_h': oldest_age_h(data, changes), 'outside': outside_changes(data)[:200],
           'ahead': ahead, 'behind': behind, 'merging': merging, 'fetched': fetched, 'last': last_sync(data),
-          'rewritten': bool(up) and rewritten(data, up)}
+          'rewritten': bool(up) and rewritten(data, up), 'ask': ask_of(entries, data=data)}  # SOG-0347 : ce qu'un passage de fond demanderait
     st['divergence'] = divergence(data, st)
     return st
 
@@ -748,11 +792,15 @@ def building(data, gap=BUILD_GAP):
     return False
 
 
-def _commit_local(data, who, env, res, label, gesture=False):
+def _commit_local(data, who, env, res, label, gesture=False, decision=None, build=False):
     """Fichiers du pool modifiés sur ce poste : un commit « <label> : n fichier(s) » (res['committed']) ; .js hors du format
     des fichiers de données jamais commités (res['refused']) ; sans geste de l'utilisateur, les chemins GESTURE_ONLY
-    restent sur le poste (res['held'] : leur nombre)."""
-    changes = pool_changes(data)
+    restent sur le poste (res['held'] : leur nombre). SOG-0347 : un passage qui porterait une suppression ou plus de
+    ASK_FILES fichiers changés ne commite rien et demande (res['ask'], ask_of) ; decision { choice: 'send' | 'restore', ask:
+    l'empreinte vue } : « send » commite tout, « restore » remet les fichiers suivis comme dans le dépôt (jamais un fichier
+    non suivi supprimé, ni commité) ; une empreinte qui ne correspond plus redemande (res['ask']['stale'])."""
+    entries = pool_entries(data)
+    changes = [p for _, p in entries]
     if not gesture:
         held = [c for c in changes if any(c.startswith(g) for g in GESTURE_ONLY)]
         changes = [c for c in changes if c not in held]
@@ -764,12 +812,159 @@ def _commit_local(data, who, env, res, label, gesture=False):
         if not ok:
             changes.remove(p)
             res['refused'].append({'path': p, 'why': why})
+    ask = ask_of([(xy, p) for xy, p in entries if p in set(changes)], gesture, build, data)
+    if ask:
+        d = decision if isinstance(decision, dict) else {}
+        if d.get('ask') != ask['fingerprint'] or d.get('choice') not in ('send', 'restore'):
+            res['ask'] = {**ask, 'stale': bool(d.get('ask'))}
+            return
+        if d['choice'] == 'restore':
+            _put_back(data, changes, env, res)
+            return
+        res['sentAfterAsk'] = len(changes)
     if changes:
         git_paths(data, 'add', '-A', paths=changes, env=lit(env), check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
         code, _ = git(data, 'diff', '--cached', '--quiet')
         if code:
             git(data, *who, 'commit', '-m', f'{label} : {len(changes)} fichier(s)', env=env, check=True)
             res['committed'] = len(changes)
+
+
+def ask_what(ask):
+    """Ce qui retient un passage, en une proposition : « 2 fichier(s) supprimé(s) à la main et 31 fichiers changés (plus de 20) »."""
+    parts = []
+    if 'delete' in ask['why']:
+        parts.append(f'{ask["deletedTotal"]} fichier(s) supprimé(s) à la main')
+    if 'many' in ask['why']:
+        parts.append(f'{ask["changedTotal"]} fichiers changés à la main (plus de {ask["limit"]})')
+    return ' et '.join(parts)
+
+
+def ask_message(ask):
+    """La phrase d'une demande (res['message'], notification du lanceur) : ce qui retient le passage et ce qu'il attend."""
+    return 'Rien n’est envoyé : ' + ask_what(ask) + '. « Envoyer » ou « Remettre comme dans le dépôt » : le lanceur attend votre réponse.'
+
+
+def ask_note(res):
+    """Ce que la réponse à une demande a fait (« Envoyer » : res['sentAfterAsk'] ; « Remettre » : restored, left)."""
+    if 'restored' in res:
+        return (f' Remis comme dans le dépôt : {res["restored"]} fichier(s)'
+                + (f' ; {res["left"]} fichier(s) nouveau(x) laissé(s) sur ce poste, pas envoyé(s) par ce passage' if res['left'] else '')
+                + '.' + (f' Vos modifications sont gardées dans {res["ref"]}.' if res.get('ref') else ''))
+    return f' Envoyé sur votre accord : {res["sentAfterAsk"]} fichier(s).' if res.get('sentAfterAsk') else ''
+
+
+def _put_back(data, changes, env, res):
+    """« Remettre comme dans le dépôt » : les fichiers de la demande qui sont dans le dernier commit (HEAD) y sont remis,
+    dans le dossier et dans l'index (un fichier supprimé revient, un fichier changé redevient ce qu'il était) ; ceux qui n'y
+    sont pas (nouveaux, jamais suivis) restent TELS QUELS sur le poste, jamais supprimés, désindexés pour ne pas partir
+    (res['restored'], res['left'] : leurs nombres). Chaque chemin est un nom de fichier, jamais un motif."""
+    _, tracked = git(data, 'ls-tree', '-r', '-z', '--name-only', 'HEAD')
+    have = {x for x in tracked.split('\0') if x}
+    back = [p for p in changes if p in have]
+    left = [p for p in changes if p not in have]
+    lenv = lit(env)
+    if back:
+        # le filet : les modifications faites à la main (suivies, dans le dossier et l'index) gardées dans une référence avant d'être
+        # remises (git stash create : un commit, la pile des remisages partagée n'est pas touchée) ; les nouveaux fichiers ne sont pas touchés
+        _, snap = git(data, 'stash', 'create')
+        if snap.strip():
+            res['ref'] = f'refs/sog/avant-remise-{time.strftime("%Y%m%d-%H%M%S")}'
+            git(data, 'update-ref', res['ref'], snap.strip(), check=True)
+        git_paths(data, 'checkout', 'HEAD', paths=back, env=lenv, check=True)
+    if left:
+        git_paths(data, 'reset', '-q', paths=left, env=lenv)  # indexés pendant l'attente : ne partent pas ; le fichier reste
+    res['restored'], res['left'] = len(back), len(left)
+
+
+def _in_the_way(data, x):
+    """Vrai si un fichier de ce poste, non suivi, serait écrasé par l'arrivée du chemin x (que le dépôt apporte) : le chemin
+    lui-même existe, ou UN DE SES PRÉFIXES existe et n'est pas un dossier (un fichier « cr/a » là où le dépôt veut « cr/a/b.json » :
+    git le remplacerait par un dossier) ; un lien est un fichier. Un chemin que data_path refuse (« : », « \\ », nom de
+    périphérique…) compte aussi : il peut exister sous un autre système. Les index régénérés, que le lanceur refait, ne comptent pas."""
+    if not data_path(data, x):
+        return True
+    parts = x.split('/')
+    base = os.path.realpath(data)
+    for i in range(1, len(parts) + 1):
+        f = os.path.join(data, *parts[:i])
+        if not os.path.lexists(f):
+            return False  # le reste n'existe pas non plus : rien n'est en travers
+        # un préfixe qui n'est pas un dossier, ou dont le vrai chemin n'est pas celui qu'on attend (lien, et jonction Windows :
+        # avant Python 3.12 islink ne la voit pas)
+        if i < len(parts) and (os.path.islink(f) or not os.path.isdir(f)
+                               or os.path.normcase(os.path.realpath(f)) != os.path.normcase(os.path.join(base, *parts[:i]))):
+            return True
+    return not is_index(x)
+
+
+def _discard_state(data, env=None):
+    """Ce que « Tout jeter et reprendre le dépôt » ferait, sans rien changer : (plan, cible). plan { ok, lost (chemins
+    SUIVIS changés sur ce poste, non commités ou commités et pas encore envoyés), lostTotal, commits (non envoyés), kept
+    (fichiers non suivis : jamais touchés), blocked (fichiers non suivis que le dépôt apporterait : le geste est refusé),
+    target (sha repris), fingerprint, message }. Le dépôt distant est lu d'abord (fetch)."""
+    plan = {'ok': False, 'lost': [], 'lostTotal': 0, 'commits': 0, 'kept': 0, 'blocked': [], 'target': '', 'fingerprint': '', 'message': ''}
+    if not is_repo(data):
+        return {**plan, 'message': 'data/ n’est pas un dépôt git (ou git est absent).'}, ''
+    if _busy(data):
+        return {**plan, 'message': 'Un rebase est en cours dans data/ : à terminer ou annuler à la main.'}, ''
+    target, remote = _target(data)
+    if not target:
+        return {**plan, 'message': 'Pas de dépôt distant : rien à reprendre.'}, ''
+    code, out = git(data, 'fetch', '--quiet', remote, env=env)
+    if code:
+        return {**plan, 'message': f'Dépôt distant injoignable : {out[-300:]}'}, ''
+    if git(data, 'rev-parse', '--verify', '--quiet', target)[0]:
+        return {**plan, 'message': 'Le dépôt distant n’a pas encore cette branche : rien à reprendre.'}, ''
+    if rewritten(data, target):
+        return {**plan, 'message': 'L’historique du dépôt a été réécrit : « Reprendre le nouvel historique » (Administration › Dépôt distant).'}, ''
+    _, head = git(data, 'rev-parse', 'HEAD')
+    _, sha = git(data, 'rev-parse', target)
+    raw = subprocess.run(git_cmd('-C', data, 'status', '--porcelain', '-z', '-uno'), capture_output=True, env=git_env(),
+                         timeout=TIMEOUT).stdout.decode('utf-8', errors='replace')
+    lines = [(e[:2], e[3:]) for e in raw.split('\0') if len(e) > 3]
+    lost = {p for _, p in lines}
+    _, unsent = git(data, 'diff', '--name-only', '-z', f'{target}...HEAD')
+    lost |= {x for x in unsent.split('\0') if x}
+    _, n = git(data, 'rev-list', '--count', f'{target}..HEAD')
+    # fichiers que le dépôt apporterait et que ce poste a déjà sans les suivre : jamais écrasés (les index régénérés, que
+    # le lanceur refait, ne comptent pas : même règle que _receive)
+    _, added = git(data, 'diff', '--name-only', '-z', '--no-renames', '--diff-filter=A', 'HEAD', target)
+    blocked = sorted(x for x in added.split('\0') if x and _in_the_way(data, x))
+    _, others = git(data, 'ls-files', '--others', '--exclude-standard', '-z')
+    names = sorted(lost)
+    fp = hashlib.sha1('\n'.join([head, sha, *(f'{xy}\t{p}' for xy, p in sorted(lines)), *(f'{p}\t{stamp_of(data, p)}' for p in names)]).encode('utf-8', errors='replace')).hexdigest()[:16]
+    return {**plan, 'ok': not blocked, 'lost': names[:ASK_LISTED], 'lostTotal': len(names), 'commits': int(n or 0),
+            'kept': len([x for x in others.split('\0') if x]), 'blocked': blocked[:ASK_LISTED], 'target': sha, 'fingerprint': fp,
+            'message': ('' if not blocked else f'{len(blocked)} fichier(s) de ce poste, non suivis, seraient écrasés par le dépôt : le geste est refusé, rien n’est changé.')}, target
+
+
+def discard_plan(data, env=None):
+    """Le plan de « Tout jeter et reprendre le dépôt » (lecture seule, hors le fetch) : voir _discard_state."""
+    return _discard_state(data, env)[0]
+
+
+def discard_apply(data, confirm, env=None):
+    """« Tout jeter et reprendre le dépôt » (SOG-0347, geste de l'utilisateur sur ce poste, confirmé sur la liste qu'il a vue :
+    confirm est l'empreinte du plan) : les fichiers SUIVIS et les commits pas encore envoyés sont jetés, la branche reprend
+    l'état du dépôt distant. Jamais un fichier non suivi supprimé ou écrasé. Rien n'est perdu pour de bon : l'état d'avant
+    est gardé dans refs/sog/avant-reprise-<date> (un commit des fichiers suivis, commande git stash create : la pile des
+    remisages n'est pas touchée). Rend le plan, plus { discarded, ref }."""
+    plan, target = _discard_state(data, env)
+    if not plan['ok'] or not target:
+        return plan
+    if not isinstance(confirm, str) or confirm != plan['fingerprint']:
+        return {**plan, 'ok': False, 'stale': True, 'message': 'La liste a changé depuis que vous l’avez vue : rien n’est jeté, relisez-la.'}
+    ref = f'refs/sog/avant-reprise-{time.strftime("%Y%m%d-%H%M%S")}'
+    _, snap = git(data, 'stash', 'create')  # les fichiers suivis changés, sans toucher ni au dossier ni à la pile des remisages
+    git(data, 'update-ref', ref, snap.strip() or 'HEAD', check=True)
+    code, out = git(data, 'reset', '--hard', target)
+    if code:
+        return {**plan, 'ok': False, 'ref': ref, 'message': f'Reprise refusée par git ({out[-200:]}) ; état d’avant gardé dans {ref}.'}
+    return {**plan, 'ok': True, 'discarded': plan['lostTotal'], 'ref': ref,
+            'message': f'{plan["lostTotal"]} fichier(s) suivis remis comme dans le dépôt'
+                       + (f', {plan["commits"]} commit(s) pas encore envoyé(s) jeté(s)' if plan['commits'] else '')
+                       + f'. {plan["kept"]} fichier(s) non suivis laissés tels quels ; état d’avant gardé dans {ref}.'}
 
 
 # historique du dépôt réécrit (sources purgées puis poussé en forcé, 30 oct. 2026) : aucun ancêtre commun avec la branche
@@ -964,7 +1159,7 @@ def ensure_excludes(data):
         return []
 
 
-def run(data, author, name='', gesture=False):
+def run(data, author, name='', gesture=False, decision=None, build=False):
     """Un passage de synchronisation ; rend le compte rendu (ok, committed, received, pushed, conflicts, message). gesture :
     l'utilisateur l'a demandé (bouton « Synchroniser ») — seul ce passage commite aussi les chemins GESTURE_ONLY."""
     res = {'ok': False, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'author': author, 'committed': 0,
@@ -992,8 +1187,11 @@ def run(data, author, name='', gesture=False):
         res['settled'] = settle(data)
         mark('settle')
         # 1. modifications de ce poste
-        _commit_local(data, who, env, res, f'Synchronisation {author}', gesture)
+        _commit_local(data, who, env, res, f'Synchronisation {author}', gesture, decision, build)
         mark('commit')
+        if res.get('ask'):  # SOG-0347 : rien n'est commité, reçu ni envoyé tant que l'utilisateur n'a pas répondu
+            res.update(code='ask', message=ask_message(res['ask']) + refused_note(res))
+            return res
         # index suivis sur ce poste (reçus d'une version précédente, puis refaits par le lanceur) : retirés du suivi
         # d'abord, sinon la fusion refuserait d'écraser la copie refaite
         res['untracked'] = untrack_indexes(data, who, env)
@@ -1017,7 +1215,7 @@ def run(data, author, name='', gesture=False):
         mark('push')
         res['pushed'] = True
         res['ok'] = True
-        res['message'] = 'Synchronisé.' + _settled_note(res['settled']) + refused_note(res)
+        res['message'] = 'Synchronisé.' + _settled_note(res['settled']) + ask_note(res) + refused_note(res)
     except Exception as e:  # toute erreur, git ou du lanceur : fusion annulée, message à la page (jamais au serveur)
         res['ok'] = res['pushed'] = False
         res['message'] = _why(e, data)[-800:] + _abort(data)
@@ -1075,6 +1273,9 @@ def update(data, author=''):
         return {**res, 'message': f'{res["committed"]} fichier(s) du poste commités ; réception impossible pour l’instant ({why}) : '
                                   'données actuelles gardées.'}
     parts = [f'{res["committed"]} fichier(s) du poste commités'] if res['committed'] else []
+    if res.get('ask'):
+        parts.append('non commités, le lanceur demande avant d’envoyer : ' + ask_what(res['ask'])
+                     + ' (Réglages › Synchronisation : « Envoyer » ou « Remettre comme dans le dépôt »)')
     if res['blocked']:
         parts.append('réception reportée : fichiers modifiés sur ce poste, hors des données synchronisées, que la mise à jour '
                      'écraserait (' + ', '.join(res['blocked']) + ') — à garder ailleurs ou à annuler (git -C data checkout -- '

@@ -1137,6 +1137,33 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': state,
                            'rewritten': state == 'repo' and data_sync.rewritten(DATA)})
 
+    @route('GET', '/__setup/sync-discard', public='poste')
+    def _get_sync_discard(self, path):
+        # « Tout jeter et reprendre le dépôt » (SOG-0347) : le plan, sans rien changer — ce qui serait perdu, ce qui reste ; ce poste
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        with SYNC_LOCK:
+            return self._json(data_sync.discard_plan(DATA))
+
+    @route('POST', '/__setup/sync-discard', public='poste')
+    def _post_sync_discard(self, path, body):
+        # le geste, sur la liste que l'utilisateur a vue ({ confirm } : l'empreinte du plan) ; ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        a = a if isinstance(a, dict) else {}
+        with SYNC_LOCK:
+            r = data_sync.discard_apply(DATA, a.get('confirm'))
+        sync_status_reset()
+        if r.get('ok'):
+            with INDEX_LOCK:
+                index_availability()
+                index_users()
+        return self._json(r)
+
     @route('GET', '/__setup/sync-rewritten', public='poste')
     def _get_sync_rewritten(self, path):
         # historique du dépôt des données réécrit : le plan de la reprise (récupéré du dépôt distant, rien changé) — ce poste
@@ -1528,7 +1555,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
                 if self._relay() and getattr(self, 'relay_device', None) and isinstance(a, dict):
                     a['author'] = self.relay_device['trigram']  # relais : l'auteur du jeton de l'appareil
-                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a))
+                # SOG-0347 : la réponse à une demande (« Envoyer », « Remettre comme dans le dépôt ») ne vient que du poste
+                # lui-même ; un appareil appairé ou le relais ne peut ni envoyer des suppressions ni remettre des fichiers
+                decision = a.get('decision') if isinstance(a, dict) and not (self._lan() or self._relay()) else None
+                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a), decision)
                 if r.get('received'):
                     registry_bridge()
             except Exception as e:  # SOG-0155 : jamais une erreur 500 sans texte : la page dit la cause (le détail nettoyé de data_sync, le type de l'erreur sinon)
@@ -1538,6 +1568,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             # appareil appairé du réseau local ou du relais : rien du poste (sortie de git, chemins) ; le détail reste dans la console
             say(f"  Synchronisation demandée par un appareil appairé, en échec : {r.get('message', '')}")
             r = {**r, 'message': 'Synchronisation interrompue sur le poste du lanceur : le détail est dans sa console.'}
+            if r.get('ask'):  # la demande attend le poste : ses chiffres seulement, jamais les chemins
+                r['ask'] = {k: v for k, v in r['ask'].items() if k not in ('deleted', 'changed', 'fingerprint')}
         sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
         if r.get('received'):
             with INDEX_LOCK:
@@ -4220,7 +4252,7 @@ def base_publish_sync(author):
     with SYNC_LOCK:
         try:
             registry_bridge()
-            r = data_sync.run(DATA, str(author or '').upper(), '', True)
+            r = data_sync.run(DATA, str(author or '').upper(), '', True, None, True)  # build : la base qu'il publie est son travail, hors de la demande
             if r.get('received'):
                 registry_bridge()
         except Exception as e:      # jamais une erreur sans texte

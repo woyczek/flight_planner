@@ -8,7 +8,10 @@
   //   · commit(lot, message, parent) : POST /__setup/batch — toute la file en une fois (écrite dans data/, un commit
   //     local si data/ est un dépôt git) ; tête changée entre-temps : err.conflict ;
   //   · exchange() (si demandé : usages « plusieurs appareils » ou « plusieurs utilisateurs ») : POST /__setup/sync, le
-  //     passage git du poste (commit du pool, fusion fiche par fiche, envoi).
+  //     passage git du poste (commit du pool, fusion fiche par fiche, envoi) ;
+  //   · SOG-0347 (Q-0058) : le lanceur DEMANDE avant d'envoyer une suppression ou plus de vingt fichiers changés à la main ;
+  //     askState() : GET /__setup/sync-status → { ask } ; answer(décision) : POST /__setup/sync { gesture, decision } ; discardPlan()
+  //     / discard(confirm) : GET / POST /__setup/sync-discard (« Tout jeter et reprendre le dépôt », ce poste seulement).
   // En-tête X-SOG-Setup sur chaque route du lanceur ; réseau coupé → err.offline. API : FrameData.launcher({ exchange,
   //   author }) → transport ; FrameData.launcher.detect() → { data, dataGit, host, lan, lnm } | null (page servie par un
   //   lanceur ? host : nom du poste ; lan : page ouverte depuis un autre appareil du réseau local ; lnm : genres de bases de
@@ -112,6 +115,24 @@
         shared.last = null; // l'arbre lu n'est plus celui de data/ : la prochaine lecture le relit (SOG-0063 l'a rangé dans `shared`)
         return j.head;
       },
+      /** La demande en attente d'une réponse (tools/data_sync.status) : { ask } ; ask nul quand rien ne retient le passage. */
+      askState: () => call('__setup/sync-status?fresh=1'),
+      /** La réponse de l'utilisateur à la demande : { choice: 'send' | 'restore', ask: l'empreinte de la liste vue } ; un passage de geste. */
+      answer: decision => call('__setup/sync', {
+        author: o.author?.() || '',
+        gesture: true,
+        decision
+      }).finally(() => {
+        shared.seen = null;
+        shared.last = null;
+      }),
+      discardPlan: () => call('__setup/sync-discard'),
+      discard: confirm => call('__setup/sync-discard', {
+        confirm
+      }).finally(() => {
+        shared.seen = null;
+        shared.last = null;
+      }),
       ...(o.exchange ? {
         exchange: (opts = {}) => call('__setup/sync', {
           author: o.author?.() || '',

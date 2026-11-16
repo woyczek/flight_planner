@@ -117,6 +117,17 @@ sequenceDiagram
 - **Trigger: manual.** No automatic push. The button shows `(n)` = changes on this workstation +
   commits to push + commits to receive (remote repository rechecked at the frequency set per browser, `syncCheck:v1`: on every page, every 30 min by default, 3 times a day, once a day; last known state `syncState:v1` shown between two checks; launcher: last reading served, refreshed in the background after 20 s).
 - **Merge, not rebase**: history is never rewritten, only one merge to resolve.
+- **A pass that deletes or is massive asks first (SOG-0347).** Before the commit, `data_sync.ask_of` looks at what the pass would commit: a
+  DELETION of a tracked file, or more than 20 files changed by hand (`ASK_FILES`), stops the pass — nothing is committed, received or
+  sent — and the report carries `code: 'ask'` and `ask` { `why`, `deleted`, `changed`, `deletedTotal`, `changedTotal`, `limit`,
+  `fingerprint` } (also in `GET /__setup/sync-status`). The answer is `POST /__setup/sync { gesture, decision: { choice, ask } }` with
+  `choice` = `send` (commit it all) or `restore` (put the tracked files back from HEAD; a new file is left where it is, unstaged, never
+  deleted) and `ask` = the fingerprint of the list the user saw (a list that changed asks again, `stale`). The answer comes from the
+  workstation only. The start-up pass (`update`) leaves such changes uncommitted and says so; the build's own publication
+  (`base_publish_sync`, `build=True`) and the gesture-only `sia/base` are out of the question. `GET/POST /__setup/sync-discard`
+  (workstation only) is « Throw everything away and take the repository »: the plan (`lost`, `commits`, `kept`, `blocked`,
+  `fingerprint`), then the reset to the remote branch for that fingerprint; untracked files are never deleted or overwritten, the state
+  before is kept in `refs/sog/avant-reprise-<date>`.
 - **One pass at a time** per launcher (lock). A merge that fails halfway is **aborted**: the repository is
   never left half-merged.
 - **Branch without a remote branch**: the first pass creates it (push `-u`).
